@@ -12,6 +12,7 @@ interface RankingDisplayProps {
   onContinueBattles: () => void;
   onNewBattleSet: () => void;
   rankingGenerated: boolean;
+  onSaveRankings: () => void; // Added onSaveRankings prop
 }
 
 const RankingDisplay: React.FC<RankingDisplayProps> = ({
@@ -19,7 +20,8 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
   battlesCompleted,
   onContinueBattles,
   onNewBattleSet,
-  rankingGenerated
+  rankingGenerated,
+  onSaveRankings // Added onSaveRankings parameter
 }) => {
   console.log("RankingDisplay rendering with finalRankings:", finalRankings.length);
   
@@ -144,6 +146,18 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
             className="border-2 border-indigo-500/30 text-indigo-700 hover:bg-indigo-50"
           >
             Start New Battle Set
+          </Button>
+        )}
+        
+        {/* Add Save Rankings Button */}
+        {finalRankings.length > 0 && (
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={onSaveRankings}
+            className="border-2 border-green-500/30 text-green-700 hover:bg-green-50"
+          >
+            Save Rankings
           </Button>
         )}
       </div>
