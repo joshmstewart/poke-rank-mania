@@ -47,7 +47,7 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
               <div key={pokemon.id} className="flex flex-col items-center">
                 <div className="text-2xl font-bold mb-2">#{index + 1}</div>
                 <div className="w-full">
-                  <PokemonCard pokemon={pokemon} showRank={false} />
+                  <PokemonCard pokemon={pokemon} />
                 </div>
               </div>
             ))}
@@ -63,7 +63,7 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
                     <div className="absolute top-0 left-0 bg-primary text-white text-xs px-2 py-1 rounded-br z-10">
                       #{index + 4}
                     </div>
-                    <PokemonCard pokemon={pokemon} showRank={false} compact />
+                    <PokemonCard pokemon={pokemon} compact={true} />
                   </div>
                 ))}
               </div>
