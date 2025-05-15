@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { BattleType } from "./types";
 import { Pokemon } from "@/services/pokemon";
 import { toast } from "@/hooks/use-toast";
@@ -14,9 +14,27 @@ export const useGenerationSettings = (
   setShowingMilestone: React.Dispatch<React.SetStateAction<boolean>>,
   setCompletionPercentage: React.Dispatch<React.SetStateAction<number>>,
 ) => {
-  const [selectedGeneration, setSelectedGeneration] = useState(0);
-  const [battleType, setBattleType] = useState<BattleType>("pairs");
-  const [fullRankingMode, setFullRankingMode] = useState(false);
+  // Get initial values from localStorage if available
+  const storedBattleType = localStorage.getItem('pokemon-ranker-battle-type');
+  const storedRankingMode = localStorage.getItem('pokemon-ranker-full-ranking-mode');
+  const storedGeneration = localStorage.getItem('pokemon-ranker-generation');
+
+  const [selectedGeneration, setSelectedGeneration] = useState(
+    storedGeneration ? Number(storedGeneration) : 0
+  );
+  const [battleType, setBattleType] = useState<BattleType>(
+    (storedBattleType as BattleType) || "pairs"
+  );
+  const [fullRankingMode, setFullRankingMode] = useState(
+    storedRankingMode === 'true'
+  );
+
+  // Save to localStorage when values change
+  useEffect(() => {
+    localStorage.setItem('pokemon-ranker-battle-type', battleType);
+    localStorage.setItem('pokemon-ranker-full-ranking-mode', fullRankingMode.toString());
+    localStorage.setItem('pokemon-ranker-generation', selectedGeneration.toString());
+  }, [battleType, fullRankingMode, selectedGeneration]);
 
   const handleGenerationChange = (value: string) => {
     setSelectedGeneration(Number(value));
