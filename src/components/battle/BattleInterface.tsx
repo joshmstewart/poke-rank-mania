@@ -39,13 +39,14 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
   // Update animation key when current battle changes to trigger a clean rerender
   useEffect(() => {
     if (currentBattle.length > 0) {
+      console.log("BattleInterface: Current battle changed, updating animation key");
       setAnimationKey(prev => prev + 1);
     }
   }, [currentBattle]);
   
   // Update the displayed battle number when battles completed changes
   useEffect(() => {
-    console.log("Updating displayed battle number to", battlesCompleted + 1);
+    console.log("BattleInterface: Updating displayed battle number to", battlesCompleted + 1);
     setDisplayedBattleNumber(battlesCompleted + 1);
   }, [battlesCompleted]);
 
@@ -62,11 +63,16 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
 
   // Simplified submit handler
   const handleSubmit = useCallback(() => {
-    console.log("Submit button clicked for triplets mode");
+    console.log("BattleInterface: Submit button clicked for triplets mode");
     if (!isProcessing) {
       onTripletSelectionComplete();
+    } else {
+      console.log("BattleInterface: Ignoring submit button click because processing is in progress");
     }
   }, [onTripletSelectionComplete, isProcessing]);
+  
+  console.log("BattleInterface rendering: Battle #", displayedBattleNumber, "IsProcessing:", isProcessing);
+  console.log("BattleInterface current battle:", currentBattle.map(p => p.name));
   
   return (
     <div className="bg-white rounded-lg shadow p-6">
@@ -86,6 +92,13 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
             )}
             <h2 className="text-2xl font-bold">Battle {displayedBattleNumber}</h2>
           </div>
+          
+          {isProcessing && (
+            <div className="text-sm text-amber-600 flex items-center">
+              <div className="animate-spin rounded-full h-3 w-3 border-t-2 border-amber-600 mr-2"></div>
+              Processing...
+            </div>
+          )}
         </div>
         
         {/* Progress bar that shows progress to the next milestone */}
@@ -130,7 +143,14 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
             className="px-8"
             disabled={isProcessing}
           >
-            Submit Your Choices
+            {isProcessing ? (
+              <>
+                <span className="mr-2 animate-spin">⏳</span>
+                Processing...
+              </>
+            ) : (
+              'Submit Your Choices'
+            )}
           </Button>
         </div>
       )}

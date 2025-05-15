@@ -1,3 +1,4 @@
+
 import { useState, useRef, useCallback, useEffect } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
@@ -17,8 +18,6 @@ export const useBattleInteractions = (
   handleNavigateBack: () => void,
   battleType: BattleType
 ) => {
-  console.log("useBattleInteractions initialized with battleType:", battleType);
-  
   // Track if we're currently processing a selection
   const [isProcessing, setIsProcessing] = useState(false);
   const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -38,17 +37,17 @@ export const useBattleInteractions = (
 
   // Create a stable callback function for handling pokemon selection
   const handlePokemonSelect = useCallback((id: number) => {
-    console.log(`Handling Pokemon selection (id: ${id}) in ${battleType} mode. IsProcessing: ${isProcessing}`);
+    console.log(`handlePokemonSelect: Selection for Pokemon ID ${id} in ${battleType} mode. IsProcessing: ${isProcessing}`);
     
     // Prevent double processing
     if (isProcessing) {
-      console.log("Already processing a selection, ignoring this click");
+      console.log("handlePokemonSelect: Already processing a selection, ignoring this click");
       return;
     }
     
     // Check for duplicate clicks on the same Pokemon
     if (lastSelectedIdRef.current === id) {
-      console.log("Duplicate click on the same Pokemon, ignoring");
+      console.log("handlePokemonSelect: Duplicate click on the same Pokemon, ignoring");
       return;
     }
     
@@ -65,40 +64,45 @@ export const useBattleInteractions = (
     setIsProcessing(true);
     
     if (battleType === "pairs") {
-      console.log("Pairs mode: Processing selection for ID:", id);
+      console.log("handlePokemonSelect: Pairs mode - Processing selection for ID:", id);
       
-      // Set the selection
+      // For pairs mode: set selection, update history, then process the selection
       setSelectedPokemon([id]);
       
       // Add to history
-      setBattleHistory(prev => [...prev, { 
-        battle: [...currentBattle], 
-        selected: [id] 
-      }]);
+      setBattleHistory(prev => {
+        const newHistory = [...prev, { 
+          battle: [...currentBattle], 
+          selected: [id] 
+        }];
+        console.log("handlePokemonSelect: Updated battle history length:", newHistory.length);
+        return newHistory;
+      });
       
       // Update last processed battle to prevent duplicate processing
       lastProcessedBattleRef.current = currentBattle.map(p => p.id);
       
       // Process the selection completion with a delay to ensure states are updated
       processingTimeoutRef.current = setTimeout(() => {
-        console.log("Pairs mode: Calling handleTripletSelectionComplete with delay");
+        console.log("handlePokemonSelect: Calling handleTripletSelectionComplete for pairs mode");
+        
+        // Call the completion handler provided by parent hook
         handleTripletSelectionComplete();
         
-        // Allow a longer delay before resetting the processing state
-        // This prevents rapid clicking issues while the new battle loads
+        // Delay resetting the processing state to prevent rapid clicking
         processingTimeoutRef.current = setTimeout(() => {
-          console.log("Pairs mode: Resetting processing state");
+          console.log("handlePokemonSelect: Resetting processing state");
           setIsProcessing(false);
           lastSelectedIdRef.current = null;
-        }, 1500);
-      }, 200);
+        }, 800);
+      }, 300);
     } else {
       // For triplets mode - toggle selection
       setSelectedPokemon(prev => {
         const newSelection = prev.includes(id)
           ? prev.filter(pokemonId => pokemonId !== id)
           : [...prev, id];
-        console.log("New triplet selection:", newSelection);
+        console.log("handlePokemonSelect: New triplet selection:", newSelection);
         return newSelection;
       });
       
@@ -119,7 +123,7 @@ export const useBattleInteractions = (
 
   const handleGoBack = useCallback(() => {
     if (isProcessing) {
-      console.log("Already processing, ignoring back navigation");
+      console.log("handleGoBack: Already processing, ignoring back navigation");
       return;
     }
     handleNavigateBack();
