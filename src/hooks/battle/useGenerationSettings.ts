@@ -29,12 +29,35 @@ export const useGenerationSettings = (
     storedRankingMode === 'true'
   );
 
+  console.log("useGenerationSettings initialized with battleType:", battleType);
+
   // Save to localStorage when values change
   useEffect(() => {
     localStorage.setItem('pokemon-ranker-battle-type', battleType);
     localStorage.setItem('pokemon-ranker-full-ranking-mode', fullRankingMode.toString());
     localStorage.setItem('pokemon-ranker-generation', selectedGeneration.toString());
   }, [battleType, fullRankingMode, selectedGeneration]);
+
+  // Check for localStorage changes
+  useEffect(() => {
+    const checkLocalStorage = () => {
+      const currentBattleType = localStorage.getItem('pokemon-ranker-battle-type') as BattleType;
+      if (currentBattleType && (currentBattleType === "pairs" || currentBattleType === "triplets") && currentBattleType !== battleType) {
+        console.log("useGenerationSettings: Detected battle type change in localStorage:", currentBattleType);
+        setBattleType(currentBattleType);
+      }
+    };
+    
+    // Check immediately
+    checkLocalStorage();
+    
+    // And on storage events
+    window.addEventListener('storage', checkLocalStorage);
+    
+    return () => {
+      window.removeEventListener('storage', checkLocalStorage);
+    };
+  }, [battleType]);
 
   const handleGenerationChange = (value: string) => {
     const newGeneration = Number(value);
@@ -71,7 +94,7 @@ export const useGenerationSettings = (
       setTimeout(() => {
         console.log("Starting new battle after battle type change to:", newBattleType);
         startNewBattle(allPokemon, newBattleType);
-      }, 100);
+      }, 500); // Increased timeout for better state propagation
     } else {
       toast({
         title: "No Pokémon available",

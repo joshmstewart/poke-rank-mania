@@ -28,6 +28,10 @@ const BattleSettings: React.FC<BattleSettingsProps> = ({
   const handleBattleTypeChange = (value: string) => {
     console.log("BattleSettings: handleBattleTypeChange called with", value);
     if (value && (value === "pairs" || value === "triplets")) {
+      // Force update localStorage directly to ensure it's updated immediately
+      localStorage.setItem('pokemon-ranker-battle-type', value);
+      
+      // Then notify the parent component
       onBattleTypeChange(value);
     }
   };

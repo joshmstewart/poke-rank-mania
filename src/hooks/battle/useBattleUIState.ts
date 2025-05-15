@@ -21,33 +21,30 @@ export const useBattleUIState = () => {
     storedGeneration ? Number(storedGeneration) : 0
   );
   
-  // Update state when localStorage changes to ensure cross-tab sync
+  // Update battleType when localStorage changes
   useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'pokemon-ranker-battle-type') {
-        const newBattleType = e.newValue as BattleType;
-        if (newBattleType && (newBattleType === "pairs" || newBattleType === "triplets") && newBattleType !== battleType) {
-          console.log("useBattleUIState: Storage event changed battle type to", newBattleType);
-          setBattleType(newBattleType);
-        }
-      } else if (e.key === 'pokemon-ranker-full-ranking-mode') {
-        const newRankingMode = e.newValue === 'true';
-        if (newRankingMode !== fullRankingMode) {
-          setFullRankingMode(newRankingMode);
-        }
-      } else if (e.key === 'pokemon-ranker-generation') {
-        const newGeneration = Number(e.newValue || '0');
-        if (newGeneration !== selectedGeneration) {
-          setSelectedGeneration(newGeneration);
-        }
+    const checkLocalStorage = () => {
+      const currentValue = localStorage.getItem('pokemon-ranker-battle-type');
+      if (currentValue && (currentValue === "pairs" || currentValue === "triplets") && currentValue !== battleType) {
+        console.log("useBattleUIState: Detected localStorage change for battle type:", currentValue);
+        setBattleType(currentValue as BattleType);
       }
     };
     
-    // Listen for storage changes
-    window.addEventListener('storage', handleStorageChange);
+    // Initial check
+    checkLocalStorage();
     
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, [battleType, fullRankingMode, selectedGeneration]);
+    // Listen for storage changes
+    window.addEventListener('storage', checkLocalStorage);
+    
+    // Check periodically (every second) as a fallback
+    const interval = setInterval(checkLocalStorage, 1000);
+    
+    return () => {
+      window.removeEventListener('storage', checkLocalStorage);
+      clearInterval(interval);
+    };
+  }, [battleType]);
   
   // Milestone triggers - show rankings at these battle counts
   const milestones = [10, 25, 50, 100, 200, 500, 1000];

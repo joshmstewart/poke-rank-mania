@@ -8,6 +8,7 @@ export const useBattleSelectionState = () => {
   // Get initial value from localStorage
   const storedBattleType = localStorage.getItem('pokemon-ranker-battle-type');
   const initialBattleType = (storedBattleType === "triplets") ? "triplets" : "pairs";
+  console.log("useBattleSelectionState initialized with battleType:", initialBattleType);
   
   const [currentBattle, setCurrentBattle] = useState<Pokemon[]>([]);
   const [allPokemon, setAllPokemon] = useState<Pokemon[]>([]);
@@ -18,6 +19,25 @@ export const useBattleSelectionState = () => {
   const [currentBattleType, setCurrentBattleType] = useState<BattleType>(initialBattleType);
 
   const { startNewBattle: initiateNewBattle } = useBattleStarter();
+  
+  // Listen for changes to the battle type in localStorage
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const newBattleType = localStorage.getItem('pokemon-ranker-battle-type') as BattleType;
+      if (newBattleType && (newBattleType === "pairs" || newBattleType === "triplets") && newBattleType !== currentBattleType) {
+        console.log("useBattleSelectionState: Detected battle type change in localStorage:", newBattleType);
+        setCurrentBattleType(newBattleType);
+      }
+    };
+    
+    // Check immediately and then on storage events
+    handleStorageChange();
+    window.addEventListener('storage', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, [currentBattleType]);
   
   // Define startNewBattle function
   const startNewBattle = (pokemonList: Pokemon[], battleType: BattleType = currentBattleType) => {
@@ -33,10 +53,10 @@ export const useBattleSelectionState = () => {
     if (battleType !== currentBattleType) {
       console.log("Updating currentBattleType to:", battleType);
       setCurrentBattleType(battleType);
+      
+      // Force update localStorage
+      localStorage.setItem('pokemon-ranker-battle-type', battleType);
     }
-    
-    // Force update local storage to ensure it's always in sync
-    localStorage.setItem('pokemon-ranker-battle-type', battleType);
     
     // Start the new battle
     console.log("Starting new battle with pokemonList:", pokemonList.length);

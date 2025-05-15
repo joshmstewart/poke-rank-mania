@@ -18,24 +18,12 @@ export const useBattleInteractions = (
   goBack: () => void,
   battleTypeParam: BattleType
 ) => {
-  // Use the parameter directly instead of reading from localStorage
-  const [battleType, setBattleType] = useState<BattleType>(battleTypeParam);
-  
-  // Update local state when the parameter changes
-  useEffect(() => {
-    if (battleTypeParam !== battleType) {
-      console.log("useBattleInteractions: Updating battle type from param:", battleTypeParam);
-      setBattleType(battleTypeParam);
-    }
-  }, [battleTypeParam]);
-  
-  console.log("useBattleInteractions using battleType:", battleType);
+  console.log("useBattleInteractions initialized with battleType:", battleTypeParam);
   
   const handlePokemonSelect = (id: number) => {
-    // Always get the current battle type from the prop value
-    console.log(`Handling Pokemon selection (id: ${id}) in ${battleType} mode`);
+    console.log(`Handling Pokemon selection (id: ${id}) in ${battleTypeParam} mode`);
     
-    if (battleType === "pairs") {
+    if (battleTypeParam === "pairs") {
       // For pairs, immediately handle the selection as a completed battle
       // First save to battle history
       setBattleHistory([...battleHistory, { 
