@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { Pokemon } from "@/services/pokemon";
-import { BattleResult, BattleType } from "./types";
+import { BattleResult } from "./types";
 import { toast } from "@/hooks/use-toast";
 
 export const useCompletionTracker = (
@@ -11,6 +11,9 @@ export const useCompletionTracker = (
   generateRankings: (results: BattleResult) => void,
   setCompletionPercentage: React.Dispatch<React.SetStateAction<number>>
 ) => {
+  // Track if we've already generated a complete ranking to avoid showing the toast multiple times
+  const [currentRankingGenerated, setCurrentRankingGenerated] = useState(false);
+
   const calculateCompletionPercentage = () => {
     // For a complete ranking in a tournament style, we need at least n-1 comparisons
     // where n is the number of Pokémon. This is the minimum number of comparisons
@@ -51,18 +54,11 @@ export const useCompletionTracker = (
     }
   };
 
-  // Track if we've already generated a complete ranking to avoid showing the toast multiple times
-  const [currentRankingGenerated, setCurrentRankingGenerated] = useState(false);
-
   // Update the local state when the ranking is generated
   useEffect(() => {
-    // Check if ranking is generated, and if so, update our local state
-    const updateRankingState = () => {
-      setCurrentRankingGenerated(true);
-    };
-    
+    // Check if ranking is generated 
     if (setRankingGenerated) {
-      updateRankingState();
+      setCurrentRankingGenerated(true);
     }
   }, [setRankingGenerated]);
 

@@ -12,3 +12,4 @@ export * from "./useGenerationSettings";
 export * from "./useBattleActions";
 export * from "./usePokemonLoader";
 export * from "./useBattleEffects";
+export * from "./useBattleStarter";

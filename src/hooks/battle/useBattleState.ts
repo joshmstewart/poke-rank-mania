@@ -58,7 +58,8 @@ export const useBattleState = () => {
     setShowingMilestone,
     setCompletionPercentage,
     setSelectedPokemon,
-    startNewBattle
+    startNewBattle,
+    battleType
   );
   
   const { saveBattleState, loadBattleState } = useLocalStorage();
@@ -114,7 +115,7 @@ export const useBattleState = () => {
     battlesCompleted,
     setBattlesCompleted,
     allPokemon,
-    startNewBattle,
+    (pokemonList) => startNewBattle(pokemonList, battleType),
     setShowingMilestone,
     milestones,
     generateRankings,
@@ -135,7 +136,8 @@ export const useBattleState = () => {
     setShowingMilestone,
     setCompletionPercentage,
     startNewBattle,
-    generateRankings
+    generateRankings,
+    battleType
   );
 
   // Setup effects

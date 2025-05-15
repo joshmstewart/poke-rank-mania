@@ -4,7 +4,7 @@ import { BattleType } from "./types";
 import { Pokemon } from "@/services/pokemon";
 
 export const useGenerationSettings = (
-  startNewBattle: (pokemonList: Pokemon[]) => void,
+  startNewBattle: (pokemonList: Pokemon[], battleType: BattleType) => void,
   allPokemon: Pokemon[],
   setRankingGenerated: React.Dispatch<React.SetStateAction<boolean>>,
   setBattleResults: React.Dispatch<React.SetStateAction<any[]>>,
@@ -22,7 +22,8 @@ export const useGenerationSettings = (
   };
 
   const handleBattleTypeChange = (value: string) => {
-    setBattleType(value as BattleType);
+    const newBattleType = value as BattleType;
+    setBattleType(newBattleType);
     // Reset battles and start new one with current Pokémon pool
     setBattleResults([]);
     setBattlesCompleted(0);
@@ -33,11 +34,7 @@ export const useGenerationSettings = (
     
     // Important: Start a new battle with the correct number of Pokémon for the selected battle type
     if (allPokemon.length > 0) {
-      // Create a new battle with the correct number of Pokémon
-      const battleSize = value === "pairs" ? 2 : 3;
-      const shuffled = [...allPokemon].sort(() => Math.random() - 0.5);
-      const newBattle = shuffled.slice(0, battleSize);
-      startNewBattle(allPokemon);
+      startNewBattle(allPokemon, newBattleType);
     }
   };
 

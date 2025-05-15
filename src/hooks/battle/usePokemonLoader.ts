@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Pokemon, fetchAllPokemon } from "@/services/pokemon";
 import { toast } from "@/hooks/use-toast";
+import { BattleType } from "./types";
 
 export const usePokemonLoader = (
   setRankingGenerated: React.Dispatch<React.SetStateAction<boolean>>,
@@ -11,7 +12,8 @@ export const usePokemonLoader = (
   setShowingMilestone: React.Dispatch<React.SetStateAction<boolean>>,
   setCompletionPercentage: React.Dispatch<React.SetStateAction<number>>,
   setSelectedPokemon: React.Dispatch<React.SetStateAction<number[]>>,
-  startNewBattle: (pokemonList: Pokemon[]) => void
+  startNewBattle: (pokemonList: Pokemon[], battleType: BattleType) => void,
+  battleType: BattleType
 ) => {
   const [isLoading, setIsLoading] = useState(true);
 
@@ -34,7 +36,7 @@ export const usePokemonLoader = (
       
       // Start the first battle or continue from previous battle
       if (pokemon.length > 0) {
-        startNewBattle(pokemon);
+        startNewBattle(pokemon, battleType);
       }
       
       return pokemon;
