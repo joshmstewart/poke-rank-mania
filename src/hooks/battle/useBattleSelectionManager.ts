@@ -10,12 +10,19 @@ export const useBattleSelectionManager = (
   setSelectedPokemon: React.Dispatch<React.SetStateAction<number[]>>
 ) => {
   const [selectedPokemon, setLocalSelectedPokemon] = useState<number[]>([]);
+  // Add a processing flag to prevent duplicate handling
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const handlePokemonSelect = (id: number, battleType: BattleType, currentBattle: Pokemon[]) => {
-    // For pairs, immediately process the battle when selection is made
+    // Prevent processing while another selection is in progress
+    if (isProcessing) return;
+    
     if (battleType === "pairs") {
-      // Save current battle to history before processing
-      setBattleHistory([...battleHistory, { 
+      // For pairs mode, immediately process the battle
+      setIsProcessing(true);
+      
+      // Save current battle to history
+      setBattleHistory(prev => [...prev, { 
         battle: [...currentBattle], 
         selected: [id] 
       }]);
@@ -24,8 +31,11 @@ export const useBattleSelectionManager = (
       setLocalSelectedPokemon([id]);
       setSelectedPokemon([id]);
       
-      // Process the battle result directly - no delays or timeouts
+      // Process the battle result directly
       processBattleResult([id], battleType, currentBattle);
+      
+      // Reset processing state after a delay
+      setTimeout(() => setIsProcessing(false), 500);
     } else {
       // For triplets/trios, toggle selection
       let newSelected;
@@ -42,22 +52,28 @@ export const useBattleSelectionManager = (
   };
 
   const handleTripletSelectionComplete = (battleType: BattleType, currentBattle: Pokemon[]) => {
+    // Prevent duplicate processing
+    if (isProcessing) return;
+    
     console.log("Triplet selection complete. Battle type:", battleType);
     console.log("Current battle:", currentBattle.map(p => p.name));
     
-    // If it's pairs mode and we already processed the selection in handlePokemonSelect,
-    // we should return early - this prevents duplicate processing
+    // If it's pairs mode, we should return early - we already processed it
     if (battleType === "pairs") {
       return;
     }
     
-    // For triplets mode, use the current selections
+    // For triplets mode, process selections if we have any
     if (selectedPokemon.length > 0) {
+      setIsProcessing(true);
       console.log("Using triplet selections from state:", selectedPokemon);
       processBattleResult(selectedPokemon, battleType, currentBattle);
       
       // Reset selections after processing
       setLocalSelectedPokemon([]);
+      
+      // Reset processing flag
+      setTimeout(() => setIsProcessing(false), 500);
     }
   };
 

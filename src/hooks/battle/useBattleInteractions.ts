@@ -18,34 +18,51 @@ export const useBattleInteractions = (
   battleType: BattleType
 ) => {
   console.log("useBattleInteractions initialized with battleType:", battleType);
+  
+  // Use a simple state to prevent multiple rapid clicks
+  let processingClick = false;
 
   const handlePokemonSelect = (id: number) => {
+    // If already processing a click, ignore this one
+    if (processingClick) return;
+    
+    // Set processing flag to prevent multiple clicks
+    processingClick = true;
+    
     console.log(`Handling Pokemon selection (id: ${id}) in ${battleType} mode`);
     
     if (battleType === "pairs") {
-      // For pairs mode, we need a direct approach that works reliably
+      // For pairs mode:
       
-      // Set the selection
+      // 1. Set the selection immediately
       setSelectedPokemon([id]);
       
-      // Update history
+      // 2. Update history
       setBattleHistory(prev => [...prev, { 
         battle: [...currentBattle], 
         selected: [id] 
       }]);
       
-      // Directly trigger the triplet selection handler - this initiates the battle processing
+      // 3. Immediately trigger the triplet selection handler
       handleTripletSelectionComplete();
       
-      // No need for timeouts or async operations
+      // Clear the processing flag after a short delay
+      setTimeout(() => {
+        processingClick = false;
+      }, 300);
     } else {
       // For triplets/trios, toggle selection in the array
       setSelectedPokemon(prev => {
-        if (prev.includes(id)) {
-          return prev.filter(pokemonId => pokemonId !== id);
-        } else {
-          return [...prev, id];
-        }
+        const newSelection = prev.includes(id)
+          ? prev.filter(pokemonId => pokemonId !== id)
+          : [...prev, id];
+          
+        // Clear the processing flag
+        setTimeout(() => {
+          processingClick = false;
+        }, 100);
+        
+        return newSelection;
       });
     }
   };

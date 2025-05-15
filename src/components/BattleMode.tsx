@@ -10,7 +10,10 @@ import BattleContent from "./battle/BattleContent";
 import BattleFooterNote from "./battle/BattleFooterNote";
 import ViewRankings from "./battle/ViewRankings";
 import { Button } from "@/components/ui/button";
-import { List, RefreshCw, Settings } from "lucide-react";
+import { List, RefreshCw } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { BattleType } from "@/hooks/battle/types";
+import { generations } from "@/services/pokemon";
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -25,7 +28,6 @@ import {
 
 const BattleMode = () => {
   const [showViewRankings, setShowViewRankings] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
   const [restartDialogOpen, setRestartDialogOpen] = useState(false);
   
   const {
@@ -78,9 +80,52 @@ const BattleMode = () => {
   return (
     <div className="container max-w-7xl mx-auto py-6">
       <div className="flex flex-col space-y-4">
-        {/* Controls bar with all primary actions on one row */}
-        <div className="flex items-center bg-white p-3 rounded-lg shadow border">
-          {/* Left side buttons */}
+        {/* Simplified Controls bar with inline settings */}
+        <div className="flex items-center justify-between bg-white p-3 rounded-lg shadow border">
+          {/* Left side - Gen and Mode selectors */}
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium whitespace-nowrap">Gen:</span>
+              <Select 
+                value={selectedGeneration.toString()} 
+                onValueChange={handleGenerationChange}
+              >
+                <SelectTrigger className="w-[140px] h-9">
+                  <SelectValue placeholder="Generation" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0">All Generations</SelectItem>
+                  {generations.map(gen => (
+                    <SelectItem key={gen.id} value={gen.id.toString()}>
+                      {gen.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium whitespace-nowrap">Mode:</span>
+              <Select
+                value={battleType}
+                onValueChange={(value: BattleType) => handleBattleTypeChange(value)}
+              >
+                <SelectTrigger className="w-[120px] h-9">
+                  <SelectValue placeholder="Battle Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pairs">Pairs</SelectItem>
+                  <SelectItem value="triplets">Trios</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="text-sm text-gray-500 ml-2">
+              {battleType === "pairs" ? "Compare one-by-one" : "Select multiple preferences"}
+            </div>
+          </div>
+          
+          {/* Right side - action buttons */}
           <div className="flex gap-2">
             <Button
               variant="outline"
@@ -124,38 +169,6 @@ const BattleMode = () => {
               </AlertDialogContent>
             </AlertDialog>
           </div>
-          
-          {/* Center area for battle settings */}
-          <div className="flex-1 px-4">
-            {showSettings ? (
-              <BattleSettings
-                selectedGeneration={selectedGeneration}
-                battleType={battleType}
-                onGenerationChange={handleGenerationChange}
-                onBattleTypeChange={handleBattleTypeChange}
-              />
-            ) : (
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-medium">
-                  Gen: {selectedGeneration === 0 ? "All" : selectedGeneration}
-                </span>
-                <span className="text-sm font-medium">
-                  Mode: {battleType === "pairs" ? "Pairs" : "Trios"}
-                </span>
-              </div>
-            )}
-          </div>
-          
-          {/* Settings toggle */}
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => setShowSettings(!showSettings)}
-            className="flex items-center gap-1"
-          >
-            <Settings className="h-4 w-4" />
-            {showSettings ? "Hide" : "Show"} Settings
-          </Button>
         </div>
 
         {/* Progress tracker */}

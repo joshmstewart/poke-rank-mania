@@ -31,6 +31,8 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
 }) => {
   // Animation state without the flashing issue
   const [animationKey, setAnimationKey] = useState(0);
+  // State to prevent multiple rapid submits
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Update animation key when current battle changes to trigger a clean rerender
   useEffect(() => {
@@ -38,6 +40,19 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
       setAnimationKey(prev => prev + 1);
     }
   }, [currentBattle]);
+
+  // Handle submit with debounce
+  const handleSubmit = () => {
+    if (isSubmitting) return;
+    
+    setIsSubmitting(true);
+    onTripletSelectionComplete();
+    
+    // Reset after delay
+    setTimeout(() => {
+      setIsSubmitting(false);
+    }, 500);
+  };
 
   // Label for the battle type
   const battleLabel = battleType === "pairs" ? "favorite" : "preferences (0-3)";
@@ -101,7 +116,8 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
         <div className="mt-8 flex justify-center">
           <Button 
             size="lg" 
-            onClick={onTripletSelectionComplete}
+            onClick={handleSubmit}
+            disabled={isSubmitting}
             className="px-8"
           >
             Submit Your Choices
