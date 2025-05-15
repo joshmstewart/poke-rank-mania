@@ -1,45 +1,32 @@
-import { useState, useEffect } from "react";
+
+import { useState } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType, BattleResult } from "./types";
 import { useLocalStorage } from "./useLocalStorage";
 import { useBattleManager } from "./useBattleManager";
 import { useRankings } from "./useRankings";
-import { useBattleInitializer } from "./useBattleInitializer";
 import { useCompletionTracker } from "./useCompletionTracker";
+import { useGenerationSettings } from "./useGenerationSettings";
+import { useBattleActions } from "./useBattleActions";
+import { usePokemonLoader } from "./usePokemonLoader";
+import { useBattleEffects } from "./useBattleEffects";
 
 export * from "./types";
 
 export const useBattleState = () => {
   // State variables
-  const [selectedGeneration, setSelectedGeneration] = useState(0);
-  const [battleType, setBattleType] = useState<BattleType>("pairs");
   const [battleResults, setBattleResults] = useState<BattleResult>([]);
   const [battlesCompleted, setBattlesCompleted] = useState(0);
   const [battleHistory, setBattleHistory] = useState<{ battle: Pokemon[], selected: number[] }[]>([]);
   const [showingMilestone, setShowingMilestone] = useState(false);
-  const [fullRankingMode, setFullRankingMode] = useState(false);
   const [currentBattle, setCurrentBattle] = useState<Pokemon[]>([]);
   const [selectedPokemon, setSelectedPokemon] = useState<number[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [allPokemon, setAllPokemon] = useState<Pokemon[]>([]);
   const [completionPercentage, setCompletionPercentage] = useState(0);
   
   // Milestone triggers - show rankings at these battle counts
   const milestones = [10, 25, 50, 100, 200, 500, 1000];
   
-  // Hooks
-  const { saveBattleState, loadBattleState } = useLocalStorage();
-  
-  const {
-    finalRankings,
-    rankingGenerated,
-    setRankingGenerated,
-    generateRankings,
-    handleSaveRankings: saveRankings
-  } = useRankings(allPokemon);
-
-  // Function declarations
-  // Move startNewBattle function before it's referenced
+  // Core function for starting a new battle
   const startNewBattle = (pokemonList: Pokemon[]) => {
     if (pokemonList.length < 2) {
       // Not enough Pokémon for a battle
@@ -54,10 +41,54 @@ export const useBattleState = () => {
     setCurrentBattle(shuffled.slice(0, battleSize));
     setSelectedPokemon([]);
   };
+
+  // Hooks
+  const { saveBattleState, loadBattleState } = useLocalStorage();
+  
+  const {
+    isLoading,
+    allPokemon,
+    loadPokemon
+  } = usePokemonLoader(
+    setRankingGenerated,
+    setBattleResults,
+    setBattlesCompleted,
+    setBattleHistory,
+    setShowingMilestone,
+    setCompletionPercentage,
+    setSelectedPokemon,
+    startNewBattle
+  );
+
+  const {
+    selectedGeneration,
+    battleType,
+    fullRankingMode,
+    setFullRankingMode,
+    handleGenerationChange,
+    handleBattleTypeChange
+  } = useGenerationSettings(
+    startNewBattle,
+    allPokemon,
+    setRankingGenerated,
+    setBattleResults,
+    setBattlesCompleted,
+    setBattleHistory,
+    setShowingMilestone,
+    setCompletionPercentage
+  );
+  
+  const {
+    finalRankings,
+    rankingGenerated,
+    setRankingGenerated,
+    generateRankings,
+    handleSaveRankings: saveRankings
+  } = useRankings(allPokemon);
   
   const {
     calculateCompletionPercentage,
-    getBattlesRemaining: getRemainingBattles
+    getBattlesRemaining
   } = useCompletionTracker(
     allPokemon,
     battleResults,
@@ -85,106 +116,37 @@ export const useBattleState = () => {
     setSelectedPokemon
   );
 
-  const loadPokemon = async (genId = selectedGeneration, preserveState = false) => {
-    setIsLoading(true);
-    try {
-      const response = await fetch(`/api/pokemon?generation=${genId}&full=${fullRankingMode}`);
-      if (!response.ok) throw new Error('Failed to fetch Pokémon');
-      const pokemon = await response.json();
-      setAllPokemon(pokemon);
-      
-      if (!preserveState) {
-        // Reset battle state if not preserving state
-        setBattleResults([]);
-        setBattlesCompleted(0);
-        setRankingGenerated(false);
-        setSelectedPokemon([]);
-        setBattleHistory([]);
-        setShowingMilestone(false);
-        setCompletionPercentage(0);
-      }
-      
-      // Start the first battle or continue from previous battle
-      if (pokemon.length > 0) {
-        startNewBattle(pokemon);
-      }
-      
-      return pokemon;
-    } catch (error) {
-      console.error('Error loading Pokémon:', error);
-      return [];
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const {
+    handleContinueBattles,
+    handleNewBattleSet
+  } = useBattleActions(
+    allPokemon,
+    setRankingGenerated,
+    setBattleResults,
+    setBattlesCompleted,
+    setBattleHistory,
+    setShowingMilestone,
+    setCompletionPercentage,
+    startNewBattle,
+    generateRankings
+  );
 
-  // Load saved battle state on initial load
-  useEffect(() => {
-    const savedState = loadBattleState();
-    if (savedState) {
-      setSelectedGeneration(savedState.selectedGeneration);
-      setBattleType(savedState.battleType);
-      setBattleResults(savedState.battleResults || []);
-      setBattlesCompleted(savedState.battlesCompleted || 0);
-      setBattleHistory(savedState.battleHistory || []);
-      setCompletionPercentage(savedState.completionPercentage || 0);
-      setFullRankingMode(savedState.fullRankingMode || false);
-      
-      // We'll load the Pokemon separately based on the saved generation
-      loadPokemon(savedState.selectedGeneration, true);
-    } else {
-      loadPokemon();
-    }
-  }, []);
-
-  useEffect(() => {
-    // Only reload Pokemon if generation changes
-    if (!isLoading) {
-      loadPokemon();
-    }
-  }, [selectedGeneration, fullRankingMode]);
-
-  useEffect(() => {
-    // Calculate completion percentage when battle results change
-    if (allPokemon.length > 0) {
-      calculateCompletionPercentage();
-      
-      // Save battle state whenever results change
-      saveBattleState({
-        selectedGeneration,
-        battleType,
-        battleResults,
-        battlesCompleted,
-        battleHistory,
-        completionPercentage,
-        fullRankingMode
-      });
-    }
-  }, [battleResults, allPokemon, selectedGeneration, battleType]);
-
-  const handleGenerationChange = (value: string) => {
-    setSelectedGeneration(Number(value));
-  };
-
-  const handleBattleTypeChange = (value: string) => {
-    setBattleType(value as BattleType);
-    // Reset battles and start new one with current Pokémon pool
-    setBattleResults([]);
-    setBattlesCompleted(0);
-    setRankingGenerated(false);
-    setBattleHistory([]);
-    setShowingMilestone(false);
-    setCompletionPercentage(0);
-    
-    // Important: Start a new battle with the correct number of Pokémon for the selected battle type
-    if (allPokemon.length > 0) {
-      // Create a new battle with the correct number of Pokémon
-      const battleSize = value === "pairs" ? 2 : 3;
-      const shuffled = [...allPokemon].sort(() => Math.random() - 0.5);
-      setCurrentBattle(shuffled.slice(0, battleSize));
-      setSelectedPokemon([]);
-    }
-  };
+  // Setup effects
+  useBattleEffects(
+    isLoading,
+    allPokemon,
+    selectedGeneration,
+    battleType,
+    battleResults,
+    battlesCompleted,
+    battleHistory,
+    completionPercentage,
+    fullRankingMode,
+    saveBattleState,
+    loadBattleState,
+    loadPokemon,
+    calculateCompletionPercentage
+  );
 
   const handlePokemonSelect = (id: number) => {
     selectPokemon(id, battleType, currentBattle);
@@ -198,36 +160,17 @@ export const useBattleState = () => {
     saveRankings(selectedGeneration);
   };
 
-  const handleContinueBattles = () => {
-    setShowingMilestone(false);
-    startNewBattle(allPokemon);
-  };
-
-  const handleNewBattleSet = () => {
-    setBattleResults([]);
-    setBattlesCompleted(0);
-    setRankingGenerated(false);
-    setBattleHistory([]);
-    setShowingMilestone(false);
-    setCompletionPercentage(0);
-    startNewBattle(allPokemon);
-  };
-
   const goBack = () => {
     navigateBack(setCurrentBattle, battleType);
-  };
-
-  const getBattlesRemaining = () => {
-    return getRemainingBattles(battleType);
   };
 
   return {
     isLoading,
     selectedGeneration,
-    setSelectedGeneration,
+    setSelectedGeneration: handleGenerationChange,
     allPokemon,
     battleType,
-    setBattleType,
+    setBattleType: handleBattleTypeChange,
     currentBattle,
     battleResults,
     selectedPokemon,
