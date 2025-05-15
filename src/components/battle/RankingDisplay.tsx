@@ -57,12 +57,14 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
                 const TrophyIcon = trophyIcons[index].icon;
                 return (
                   <div key={pokemon.id} className="flex flex-col items-center">
-                    <div className={`${trophyIcons[index].color} mb-3 flex flex-col items-center`}>
+                    <div className={`${trophyIcons[index].color} mb-2 flex flex-col items-center`}>
                       <TrophyIcon className="h-8 w-8" />
                       <div className="text-xl font-bold mt-1">#{index + 1}</div>
                     </div>
                     <div className="w-full transform hover:scale-105 transition-transform duration-200">
-                      <PokemonCard pokemon={pokemon} />
+                      <div className="w-full h-full">
+                        <PokemonCard pokemon={pokemon} />
+                      </div>
                     </div>
                   </div>
                 );
@@ -74,10 +76,10 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
           {finalRankings.length > 3 && (
             <div className="border-t pt-6 mt-6">
               <h3 className="text-lg font-semibold mb-4 text-gray-700">Other Rankings</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                 {finalRankings.slice(3).map((pokemon, index) => (
                   <div key={pokemon.id} className="relative group">
-                    <div className="absolute top-0 left-0 bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-xs px-2 py-1 rounded-br z-10 font-medium">
+                    <div className="absolute top-0 left-0 bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-xs font-medium px-2 py-1 rounded-br z-10">
                       #{index + 4}
                     </div>
                     <div className="transform group-hover:scale-105 transition-transform duration-200">
