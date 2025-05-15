@@ -9,6 +9,7 @@ interface PokemonCardProps {
   pokemon: Pokemon;
   isDragging?: boolean;
   viewMode?: "list" | "grid";
+  compact?: boolean;
 }
 
 // Map of Pokemon types to colors
@@ -33,7 +34,7 @@ const typeColors: Record<string, string> = {
   Fairy: "bg-pink-300",
 };
 
-const PokemonCard = ({ pokemon, isDragging, viewMode = "list" }: PokemonCardProps) => {
+const PokemonCard = ({ pokemon, isDragging, viewMode = "list", compact }: PokemonCardProps) => {
   if (viewMode === "grid") {
     return (
       <div 
@@ -61,9 +62,9 @@ const PokemonCard = ({ pokemon, isDragging, viewMode = "list" }: PokemonCardProp
     <Card 
       className={`w-full flex items-start p-2 gap-3 cursor-grab active:cursor-grabbing transition-opacity ${
         isDragging ? "opacity-50" : "opacity-100"
-      }`}
+      } ${compact ? "scale-90" : ""}`}
     >
-      <div className="flex-shrink-0 w-16 h-16 rounded-md overflow-hidden">
+      <div className={`flex-shrink-0 ${compact ? "w-12 h-12" : "w-16 h-16"} rounded-md overflow-hidden`}>
         <AspectRatio ratio={1 / 1} className="h-full">
           <img 
             src={pokemon.image} 
@@ -76,7 +77,7 @@ const PokemonCard = ({ pokemon, isDragging, viewMode = "list" }: PokemonCardProp
       <CardContent className="p-0 flex-1">
         <div className="flex flex-col gap-1">
           <div className="flex items-center justify-between">
-            <div className="font-medium">{pokemon.name}</div>
+            <div className={`font-medium ${compact ? "text-sm" : ""}`}>{pokemon.name}</div>
             <div className="text-xs text-muted-foreground">#{pokemon.id}</div>
           </div>
           
@@ -93,7 +94,7 @@ const PokemonCard = ({ pokemon, isDragging, viewMode = "list" }: PokemonCardProp
             </div>
           )}
           
-          {pokemon.flavorText && (
+          {!compact && pokemon.flavorText && (
             <div className="text-xs text-muted-foreground mt-1 line-clamp-2">
               {pokemon.flavorText}
             </div>
