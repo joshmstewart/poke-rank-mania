@@ -38,9 +38,6 @@ const Index = () => {
                     <CardTitle>
                       {mode === "rank" ? "Manual Ranking" : "Battle Mode"}
                     </CardTitle>
-                    <CardDescription>
-                      Click to {isOpen ? "hide" : "show"} ranking options
-                    </CardDescription>
                   </div>
                   <div className="text-muted-foreground">
                     {isOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}

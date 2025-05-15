@@ -17,6 +17,8 @@ export const useBattleSelectionManager = (
     // Prevent processing while another selection is in progress
     if (isProcessing) return;
     
+    console.log(`handlePokemonSelect called with id: ${id}, battleType: ${battleType}`);
+    
     if (battleType === "pairs") {
       // For pairs mode, immediately process the battle
       setIsProcessing(true);
@@ -35,7 +37,7 @@ export const useBattleSelectionManager = (
       processBattleResult([id], battleType, currentBattle);
       
       // Reset processing state after a delay
-      setTimeout(() => setIsProcessing(false), 500);
+      setTimeout(() => setIsProcessing(false), 300);
     } else {
       // For triplets/trios, toggle selection
       let newSelected;
@@ -60,6 +62,7 @@ export const useBattleSelectionManager = (
     
     // If it's pairs mode, we should return early - we already processed it
     if (battleType === "pairs") {
+      console.log("Pairs mode - selection was already processed in handlePokemonSelect");
       return;
     }
     
@@ -81,7 +84,7 @@ export const useBattleSelectionManager = (
       setSelectedPokemon([]);
       
       // Reset processing flag
-      setTimeout(() => setIsProcessing(false), 500);
+      setTimeout(() => setIsProcessing(false), 300);
     }
   };
 
