@@ -18,7 +18,7 @@ import {
   saveUnifiedSessionData,
   loadUnifiedSessionData
 } from "@/services/pokemonService";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 import { 
   Pagination, 
   PaginationContent, 

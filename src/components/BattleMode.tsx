@@ -252,8 +252,7 @@ const BattleMode = () => {
 
   const processBattleResult = (selections: number[]) => {
     if ((battleType === "triplets" && selections.length === 0)) {
-      toast({
-        title: "Selection Required",
+      toast("Selection Required", {
         description: "Please select at least one Pokémon to continue.",
         variant: "destructive"
       });
@@ -296,8 +295,7 @@ const BattleMode = () => {
 
   const goBack = () => {
     if (battleHistory.length === 0) {
-      toast({
-        title: "No previous battles",
+      toast("No previous battles", {
         description: "There are no previous battles to return to."
       });
       return;
@@ -373,8 +371,7 @@ const BattleMode = () => {
       setRankingGenerated(true);
     }
     
-    toast({
-      title: "Milestone Reached!",
+    toast("Milestone Reached!", {
       description: `You've completed ${battlesCompleted} battles. Here's your current ranking!`
     });
   };
@@ -427,8 +424,7 @@ const BattleMode = () => {
       // Load the Pokemon data and restore state
       loadPokemon(sessionData.selectedGeneration, true);
     } catch (error) {
-      toast({
-        title: "Import Error",
+      toast("Import Error", {
         description: "The session data could not be imported.",
         variant: "destructive"
       });

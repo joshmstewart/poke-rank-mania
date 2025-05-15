@@ -11,10 +11,16 @@ type ToastOptions = ToastProps & {
 };
 
 const useToast = () => {
-  const toast = (options: ToastOptions) => {
+  const toast = (options: ToastOptions | string) => {
+    // Handle string case (simple message)
+    if (typeof options === 'string') {
+      return toastSonner(options);
+    }
+    
+    // Handle object case (with title and potentially other options)
     const { title, description, variant = "default", action, ...props } = options;
     
-    return toastSonner(title, {
+    return toastSonner(title as string, {
       description,
       ...props,
     });
@@ -26,4 +32,9 @@ const useToast = () => {
   };
 };
 
-export { useToast, toastSonner as toast };
+// Export a simplified version for direct usage
+const toast = (title: string, options?: any) => {
+  return toastSonner(title, options);
+};
+
+export { useToast, toast };

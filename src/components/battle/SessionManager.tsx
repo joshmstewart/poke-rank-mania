@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,15 +32,13 @@ const SessionManager: React.FC<SessionManagerProps> = ({ onImport, onExport }) =
       };
       
       const dataStr = JSON.stringify(exportData);
-      toast({
-        title: "Session data copied!",
+      toast("Session data copied!", {
         description: "Your session ID and data have been copied to clipboard."
       });
       
       navigator.clipboard.writeText(dataStr);
     } catch (error) {
-      toast({
-        title: "Export failed",
+      toast("Export failed", {
         description: "Could not export session data.",
         variant: "destructive"
       });
@@ -54,16 +51,14 @@ const SessionManager: React.FC<SessionManagerProps> = ({ onImport, onExport }) =
       if (importData && importData.data) {
         onImport(importData.data);
         setSessionId(importData.id || sessionId);
-        toast({
-          title: "Session loaded!",
+        toast("Session loaded!", {
           description: "Your battle progress has been restored."
         });
       } else {
         throw new Error("Invalid session data");
       }
     } catch (error) {
-      toast({
-        title: "Import failed",
+      toast("Import failed", {
         description: "Could not import session data. Please check the format.",
         variant: "destructive"
       });
@@ -127,7 +122,7 @@ const SessionManager: React.FC<SessionManagerProps> = ({ onImport, onExport }) =
                 size="icon" 
                 onClick={() => {
                   navigator.clipboard.writeText(sessionId);
-                  toast({ title: "Copied!" });
+                  toast("Copied!");
                 }}
               >
                 <Copy className="h-4 w-4" />
