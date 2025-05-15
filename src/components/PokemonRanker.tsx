@@ -152,7 +152,8 @@ const PokemonRanker = () => {
         setRankedPokemon(savedRankings);
         setAvailablePokemon(remainingPokemon);
         
-        toast({
+        // Fix the toast call by providing a title as first parameter
+        toast("Rankings Loaded", {
           description: "Your previously saved rankings have been restored."
         });
       } else {
@@ -240,7 +241,8 @@ const PokemonRanker = () => {
     // Clear local storage for the current generation
     localStorage.removeItem(`pokemon-rankings-gen-${selectedGeneration}`);
     
-    toast("Rankings reset", {
+    // Fix the toast call by providing a title as first parameter
+    toast("Rankings Reset", {
       description: "Your rankings have been cleared."
     });
     
