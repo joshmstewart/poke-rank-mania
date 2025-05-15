@@ -29,6 +29,15 @@ export const useGenerationSettings = (
     storedRankingMode === 'true'
   );
 
+  // Always ensure local state matches localStorage
+  useEffect(() => {
+    const currentStoredType = localStorage.getItem('pokemon-ranker-battle-type') as BattleType;
+    if (currentStoredType && (currentStoredType === "pairs" || currentStoredType === "triplets") && currentStoredType !== battleType) {
+      console.log("useGenerationSettings: Synchronizing with localStorage battleType:", currentStoredType);
+      setBattleType(currentStoredType);
+    }
+  }, []);
+
   // Save to localStorage when values change
   useEffect(() => {
     localStorage.setItem('pokemon-ranker-battle-type', battleType);
@@ -50,6 +59,8 @@ export const useGenerationSettings = (
     
     const newBattleType = value as BattleType;
     console.log("Changing battle type to:", newBattleType);
+    
+    // Update state
     setBattleType(newBattleType);
     
     // Force update in localStorage to ensure cross-tab sync
@@ -66,10 +77,11 @@ export const useGenerationSettings = (
     
     // Important: Start a new battle with the correct number of Pokémon for the selected battle type
     if (allPokemon.length > 0) {
-      // Small delay to ensure state updates have propagated
+      // Use a timeout to ensure state updates have propagated
       setTimeout(() => {
+        console.log("Starting new battle after battle type change to:", newBattleType);
         startNewBattle(allPokemon, newBattleType);
-      }, 0);
+      }, 50);
     } else {
       toast({
         title: "No Pokémon available",

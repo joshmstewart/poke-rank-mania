@@ -1,4 +1,5 @@
 
+import { useEffect, useState } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
 
@@ -17,23 +18,44 @@ export const useBattleInteractions = (
   goBack: () => void,
   battleTypeParam: BattleType
 ) => {
-  // Read directly from localStorage to ensure we have the most up-to-date value
-  const storedBattleType = localStorage.getItem('pokemon-ranker-battle-type') as BattleType;
+  // Initialize with the value from localStorage
+  const [battleType, setBattleType] = useState<BattleType>(
+    localStorage.getItem('pokemon-ranker-battle-type') === "triplets" ? "triplets" : "pairs"
+  );
   
-  // Use the stored value if available, otherwise fall back to the parameter
-  const battleType = (storedBattleType === "pairs" || storedBattleType === "triplets") ? 
-    storedBattleType : 
-    (battleTypeParam === "pairs" || battleTypeParam === "triplets") ? 
-      battleTypeParam : "pairs";
+  // Update battleType whenever localStorage changes
+  useEffect(() => {
+    const storedType = localStorage.getItem('pokemon-ranker-battle-type') as BattleType;
+    if (storedType && (storedType === "pairs" || storedType === "triplets") && storedType !== battleType) {
+      console.log("useBattleInteractions: Updating battle type from localStorage:", storedType);
+      setBattleType(storedType);
+    }
+  }, [currentBattle]); // Re-check whenever the current battle changes
   
-  console.log("useBattleInteractions initialized with battleType:", battleType, 
-              "param was:", battleTypeParam, 
-              "stored was:", storedBattleType);
+  // Listen for storage changes
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'pokemon-ranker-battle-type') {
+        const newType = e.newValue as BattleType;
+        if (newType && (newType === "pairs" || newType === "triplets") && newType !== battleType) {
+          console.log("useBattleInteractions: Storage event updated battle type to:", newType);
+          setBattleType(newType);
+        }
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [battleType]);
+  
+  console.log("useBattleInteractions using battleType:", battleType, 
+              "param was:", battleTypeParam);
   
   const handlePokemonSelect = (id: number) => {
-    console.log(`Handling Pokemon selection (id: ${id}) in ${battleType} mode`);
+    const currentBattleType = localStorage.getItem('pokemon-ranker-battle-type') as BattleType;
+    console.log(`Handling Pokemon selection (id: ${id}) in ${currentBattleType} mode`);
     
-    if (battleType === "pairs") {
+    if (currentBattleType === "pairs") {
       // For pairs, immediately handle the selection as a completed battle
       // First save to battle history
       setBattleHistory([...battleHistory, { 

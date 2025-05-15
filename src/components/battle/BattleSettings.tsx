@@ -25,11 +25,6 @@ const BattleSettings: React.FC<BattleSettingsProps> = ({
 }) => {
   console.log("Rendering BattleSettings with battleType:", battleType);
   
-  // Force re-render when battleType changes
-  useEffect(() => {
-    console.log("BattleSettings effect: battle type updated to", battleType);
-  }, [battleType]);
-  
   return (
     <Card>
       <CardHeader className="pb-2">

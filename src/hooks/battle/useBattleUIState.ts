@@ -21,6 +21,15 @@ export const useBattleUIState = () => {
     storedGeneration ? Number(storedGeneration) : 0
   );
   
+  // Always ensure the state matches localStorage
+  useEffect(() => {
+    const currentStoredType = localStorage.getItem('pokemon-ranker-battle-type') as BattleType;
+    if (currentStoredType && (currentStoredType === "pairs" || currentStoredType === "triplets") && currentStoredType !== battleType) {
+      console.log("useBattleUIState: Synchronizing battleType with localStorage:", currentStoredType);
+      setBattleType(currentStoredType);
+    }
+  }, []);
+  
   // React to localStorage changes for cross-tab synchronization
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
@@ -48,15 +57,6 @@ export const useBattleUIState = () => {
     
     return () => window.removeEventListener('storage', handleStorageChange);
   }, [battleType, fullRankingMode, selectedGeneration]);
-  
-  // Check localStorage on initial load and whenever battleType state changes
-  useEffect(() => {
-    const currentBattleType = localStorage.getItem('pokemon-ranker-battle-type') as BattleType;
-    if (currentBattleType && (currentBattleType === "pairs" || currentBattleType === "triplets") && currentBattleType !== battleType) {
-      console.log("Initial load: Setting battle type to", currentBattleType);
-      setBattleType(currentBattleType);
-    }
-  }, []);
   
   // Milestone triggers - show rankings at these battle counts
   const milestones = [10, 25, 50, 100, 200, 500, 1000];

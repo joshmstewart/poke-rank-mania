@@ -18,6 +18,15 @@ export const useBattleSelectionState = () => {
 
   const { startNewBattle: initiateNewBattle } = useBattleStarter();
   
+  // Always ensure the state matches localStorage on mount
+  useEffect(() => {
+    const storedType = localStorage.getItem('pokemon-ranker-battle-type') as BattleType;
+    if (storedType && (storedType === "pairs" || storedType === "triplets") && storedType !== currentBattleType) {
+      console.log("useBattleSelectionState: Initial battle type from localStorage:", storedType);
+      setCurrentBattleType(storedType);
+    }
+  }, []);
+  
   // Update battle type when localStorage changes
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
@@ -33,15 +42,6 @@ export const useBattleSelectionState = () => {
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
   }, [currentBattleType]);
-  
-  // Check localStorage on mount
-  useEffect(() => {
-    const storedType = localStorage.getItem('pokemon-ranker-battle-type') as BattleType;
-    if (storedType && (storedType === "pairs" || storedType === "triplets") && storedType !== currentBattleType) {
-      console.log("useBattleSelectionState: Initial battle type from localStorage:", storedType);
-      setCurrentBattleType(storedType);
-    }
-  }, []);
   
   // Define startNewBattle function
   const startNewBattle = (pokemonList: Pokemon[], battleType: BattleType = "pairs") => {
@@ -59,11 +59,14 @@ export const useBattleSelectionState = () => {
       setCurrentBattleType(battleType);
     }
     
-    // Ensure localStorage is updated
+    // Force update local storage to ensure it's always in sync
     localStorage.setItem('pokemon-ranker-battle-type', battleType);
     
+    // Start the new battle
+    console.log("Starting new battle with pokemonList:", pokemonList.length);
     const newBattlePokemon = initiateNewBattle(pokemonList, battleType);
     if (newBattlePokemon && newBattlePokemon.length > 0) {
+      console.log("New battle Pokémon:", newBattlePokemon.map(p => p.name));
       console.log("Setting current battle to:", newBattlePokemon.map(p => p.name));
       setCurrentBattle(newBattlePokemon);
       setSelectedPokemon([]);
