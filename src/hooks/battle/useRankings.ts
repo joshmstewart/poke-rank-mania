@@ -9,6 +9,8 @@ export const useRankings = (allPokemon: Pokemon[]) => {
   const [rankingGenerated, setRankingGenerated] = useState(false);
 
   const generateRankings = (results: BattleResult) => {
+    console.log("Generating rankings with battle results:", results.length);
+    
     // Use a simple ELO-like algorithm to rank Pokémon
     const scores = new Map<number, { pokemon: Pokemon, score: number, battled: boolean }>();
     
@@ -51,7 +53,7 @@ export const useRankings = (allPokemon: Pokemon[]) => {
       }
     });
     
-    // DEBUG: Log how many Pokémon are battled
+    // Log battle statistics for debugging
     console.log("Battled Pokémon IDs:", [...battledPokemonIds]);
     console.log("Total battled Pokémon:", battledPokemonIds.size);
     
@@ -69,6 +71,7 @@ export const useRankings = (allPokemon: Pokemon[]) => {
       .map(item => item.pokemon);
     
     console.log("Generated rankings length:", rankings.length);
+    console.log("Top 3 ranked Pokémon:", rankings.slice(0, 3).map(p => p.name));
     setFinalRankings(rankings);
     
     // Don't show toast for milestone if we're generating final rankings

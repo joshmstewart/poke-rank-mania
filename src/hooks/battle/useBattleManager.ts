@@ -46,14 +46,25 @@ export const useBattleManager = (
   };
 
   const handleTripletSelectionComplete = (battleType: BattleType, currentBattle: Pokemon[]) => {
-    // Save current battle to history
-    const selectionsToUse = battleType === "pairs" ? selectedPokemon : [...selectedPokemon];
+    console.log("Triplet selection complete. Battle type:", battleType);
+    console.log("Current battle:", currentBattle.map(p => p.name));
+    console.log("Global selectedPokemon state:", selectedPokemon);
     
-    setBattleHistory([...battleHistory, { 
-      battle: [...currentBattle], 
-      selected: selectionsToUse 
-    }]);
+    // For pairs mode, we need to get the selection from the most recent history entry
+    let selectionsToUse;
     
+    if (battleType === "pairs" && battleHistory.length > 0) {
+      // Use the selection from the most recent history entry
+      const lastHistoryEntry = battleHistory[battleHistory.length - 1];
+      selectionsToUse = lastHistoryEntry.selected;
+      console.log("Using selections from history:", selectionsToUse);
+    } else {
+      // Use the current selection state for triplets
+      selectionsToUse = [...selectedPokemon];
+      console.log("Using selections from state:", selectionsToUse);
+    }
+    
+    // Process the battle result with the correct selections
     processBattleResult(selectionsToUse, battleType, currentBattle);
   };
 
