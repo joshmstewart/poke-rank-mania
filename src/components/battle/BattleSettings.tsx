@@ -8,7 +8,6 @@ import { RefreshCw } from "lucide-react";
 import { generations } from "@/services/pokemon";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -24,19 +23,15 @@ import {
 interface BattleSettingsProps {
   selectedGeneration: number;
   battleType: BattleType;
-  fullRankingMode: boolean;
   onGenerationChange: (generation: string) => void;
   onBattleTypeChange: (type: BattleType) => void;
-  onRankingModeChange: (mode: boolean) => void;
 }
 
 const BattleSettings: React.FC<BattleSettingsProps> = ({
   selectedGeneration,
   battleType,
-  fullRankingMode,
   onGenerationChange,
-  onBattleTypeChange,
-  onRankingModeChange
+  onBattleTypeChange
 }) => {
   const [restartDialogOpen, setRestartDialogOpen] = useState(false);
 
@@ -92,23 +87,7 @@ const BattleSettings: React.FC<BattleSettingsProps> = ({
       <Card className="p-4">
         <div className="space-y-4">
           <div>
-            <h3 className="text-lg font-medium mb-2">Ranking Options</h3>
-            
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <label className="text-sm font-medium">Full Ranking Mode</label>
-                <p className="text-xs text-muted-foreground">
-                  Rank all Pokémon instead of a sample
-                </p>
-              </div>
-              <Switch 
-                checked={fullRankingMode}
-                onCheckedChange={onRankingModeChange}
-              />
-            </div>
-          </div>
-          
-          <div className="pt-3">
+            <h3 className="text-lg font-medium mb-2">Reset Options</h3>
             <AlertDialog open={restartDialogOpen} onOpenChange={setRestartDialogOpen}>
               <AlertDialogTrigger asChild>
                 <Button variant="outline" className="w-full gap-2">

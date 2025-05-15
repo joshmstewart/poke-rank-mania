@@ -1,11 +1,9 @@
-
 import { useState, useEffect } from "react";
 import { BattleType } from "./types";
 
 export const useBattleUIState = () => {
   // Initialize with values from localStorage if available
   const storedBattleType = localStorage.getItem('pokemon-ranker-battle-type');
-  const storedRankingMode = localStorage.getItem('pokemon-ranker-full-ranking-mode');
   const storedGeneration = localStorage.getItem('pokemon-ranker-generation');
   
   const [showingMilestone, setShowingMilestone] = useState(false);
@@ -14,9 +12,11 @@ export const useBattleUIState = () => {
   const [battleType, setBattleType] = useState<BattleType>(
     (storedBattleType === "triplets") ? "triplets" : "pairs"
   );
-  const [fullRankingMode, setFullRankingMode] = useState(
-    storedRankingMode === 'true'
-  );
+  
+  // Always use full ranking mode, but keep in localStorage for compatibility
+  const fullRankingMode = true;
+  localStorage.setItem('pokemon-ranker-full-ranking-mode', 'true');
+  
   const [selectedGeneration, setSelectedGeneration] = useState(
     storedGeneration ? Number(storedGeneration) : 0
   );
@@ -59,7 +59,7 @@ export const useBattleUIState = () => {
     battleType,
     setBattleType,
     fullRankingMode,
-    setFullRankingMode,
+    // No setter for fullRankingMode since it's always true
     selectedGeneration,
     setSelectedGeneration,
     milestones

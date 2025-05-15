@@ -17,11 +17,7 @@ export const useGenerationSettings = (
   const storedGeneration = localStorage.getItem('pokemon-ranker-generation');
   const initialGeneration = storedGeneration ? parseInt(storedGeneration) : 0;
   
-  const storedRankingMode = localStorage.getItem('pokemon-ranker-full-ranking-mode');
-  const initialRankingMode = storedRankingMode === null ? true : storedRankingMode === 'true';
-  
   const [selectedGeneration, setSelectedGeneration] = useState(initialGeneration);
-  const [fullRankingMode, setFullRankingModeState] = useState(initialRankingMode);
   
   // Set defaults in localStorage if not already set
   useEffect(() => {
@@ -29,9 +25,8 @@ export const useGenerationSettings = (
       localStorage.setItem('pokemon-ranker-generation', '0');
     }
     
-    if (localStorage.getItem('pokemon-ranker-full-ranking-mode') === null) {
-      localStorage.setItem('pokemon-ranker-full-ranking-mode', 'true'); // Set default to true
-    }
+    // Always set full ranking mode to true
+    localStorage.setItem('pokemon-ranker-full-ranking-mode', 'true');
   }, []);
   
   const handleGenerationChange = (value: string) => {
@@ -47,14 +42,6 @@ export const useGenerationSettings = (
     localStorage.setItem('pokemon-ranker-battle-type', value);
     
     // Reset battle state when type changes
-    resetBattleState();
-  };
-  
-  const handleRankingModeChange = (value: boolean) => {
-    setFullRankingModeState(value);
-    localStorage.setItem('pokemon-ranker-full-ranking-mode', value.toString());
-    
-    // Reset battle state when mode changes
     resetBattleState();
   };
   
@@ -76,9 +63,7 @@ export const useGenerationSettings = (
   
   return {
     selectedGeneration,
-    fullRankingMode,
     handleGenerationChange,
     handleBattleTypeChange,
-    setFullRankingMode: handleRankingModeChange
   };
 };

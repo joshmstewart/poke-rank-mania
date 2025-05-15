@@ -30,8 +30,6 @@ const BattleMode = () => {
     battleHistory,
     showingMilestone,
     completionPercentage,
-    fullRankingMode,
-    setFullRankingMode,
     milestones,
     handleGenerationChange,
     handleBattleTypeChange,
@@ -102,10 +100,8 @@ const BattleMode = () => {
               <BattleSettings
                 selectedGeneration={selectedGeneration}
                 battleType={battleType}
-                fullRankingMode={fullRankingMode}
                 onGenerationChange={handleGenerationChange}
                 onBattleTypeChange={handleBattleTypeChange}
-                onRankingModeChange={setFullRankingMode}
               />
 
               {/* Progress tracker */}
@@ -127,9 +123,6 @@ const BattleMode = () => {
               </span>
               <span className="text-sm font-medium">
                 Mode: {battleType === "pairs" ? "Pairs" : "Trios"}
-              </span>
-              <span className="text-sm font-medium">
-                Type: {fullRankingMode ? "Full" : "Sample"}
               </span>
             </div>
             <div className="flex items-center gap-2">
