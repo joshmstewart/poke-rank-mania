@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { DragDropContext, DropResult } from "react-beautiful-dnd";
 import { Button } from "@/components/ui/button";
@@ -6,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Download, Save, Info, AlertTriangle } from "lucide-react";
+import { Link } from "react-router-dom";
 import PokemonList from "./PokemonList";
 import { 
   Pokemon, 
@@ -234,6 +236,9 @@ const PokemonRanker = () => {
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold">Pokémon Rank Mania</h1>
           <div className="flex items-center gap-2">
+            <Link to="/battle">
+              <Button variant="secondary">Battle Mode</Button>
+            </Link>
             <Dialog>
               <DialogTrigger asChild>
                 <Button variant="ghost" size="icon">
@@ -252,6 +257,7 @@ const PokemonRanker = () => {
                   <p>All Generations mode uses pagination for better performance.</p>
                   <p>Don't forget to save your progress using the Save button!</p>
                   <p>You can also export your rankings as a JSON file to share or keep for reference.</p>
+                  <p>Try <strong>Battle Mode</strong> for a different way to rank your Pokémon by making direct comparisons!</p>
                 </div>
               </DialogContent>
             </Dialog>
