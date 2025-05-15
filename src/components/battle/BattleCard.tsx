@@ -16,8 +16,10 @@ const BattleCard: React.FC<BattleCardProps> = ({
   battleType,
   onSelect
 }) => {
-  // Ensure we directly call onSelect with the pokemon id
-  const handleClick = () => {
+  // Make the click handler more robust with a direct function call
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent any default behavior
+    e.stopPropagation(); // Stop event bubbling
     console.log(`BattleCard clicked: ${pokemon.id}, ${pokemon.name}`);
     onSelect(pokemon.id);
   };

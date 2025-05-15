@@ -39,6 +39,12 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
     }
   }, [currentBattle]);
 
+  // Direct click handler for pokemon selection
+  const handlePokemonCardSelect = (id: number) => {
+    console.log("BattleInterface: handlePokemonCardSelect called with id:", id);
+    onPokemonSelect(id);
+  };
+
   // Simplified submit handler - no debouncing
   const handleSubmit = () => {
     console.log("Submit button clicked for triplets mode");
@@ -91,7 +97,7 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
             pokemon={pokemon}
             isSelected={selectedPokemon.includes(pokemon.id)}
             battleType={battleType}
-            onSelect={onPokemonSelect}
+            onSelect={handlePokemonCardSelect}
           />
         ))}
       </div>
