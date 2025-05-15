@@ -7,6 +7,8 @@ export const useBattleStarter = () => {
   const [previousBattles, setPreviousBattles] = useState<number[][]>([]);
 
   const startNewBattle = (pokemonList: Pokemon[], battleType: "pairs" | "triplets") => {
+    console.log("Starting new battle with pokemonList:", pokemonList.length);
+    
     if (!pokemonList || pokemonList.length < 2) {
       console.log("Not enough Pokémon for a battle:", pokemonList?.length || 0);
       return [];
@@ -22,7 +24,7 @@ export const useBattleStarter = () => {
     if (previousBattles.length > 0) {
       const lastBattleIds = previousBattles[previousBattles.length - 1];
       
-      // Filter out recently used Pokemon
+      // Filter out recently used Pokemon if we have enough remaining
       const filteredPokemon = availablePokemon.filter(p => !lastBattleIds.includes(p.id));
       
       // Only use filtered list if we have enough Pokémon left

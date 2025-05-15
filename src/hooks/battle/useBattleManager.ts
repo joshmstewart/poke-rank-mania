@@ -10,7 +10,7 @@ export const useBattleManager = (
   battlesCompleted: number,
   setBattlesCompleted: React.Dispatch<React.SetStateAction<number>>,
   allPokemon: Pokemon[],
-  startNewBattle: (pokemon: Pokemon[]) => void,
+  startNewBattle: (pokemon: Pokemon[], battleType: BattleType) => void,
   setShowingMilestone: React.Dispatch<React.SetStateAction<boolean>>,
   milestones: number[],
   generateRankings: (results: BattleResult) => void,
@@ -94,9 +94,18 @@ export const useBattleManager = (
       generateRankings(newResults);
       setShowingMilestone(true);
     } else {
-      // Continue with next battle
-      console.log("Starting new battle with new Pokémon...");
-      startNewBattle(allPokemon);
+      // Continue with next battle - FIXED: Pass both allPokemon and battleType to startNewBattle
+      console.log("Starting new battle with new Pokémon...", allPokemon.length);
+      if (allPokemon.length >= 2) {
+        startNewBattle(allPokemon, battleType);
+      } else {
+        console.error("Not enough Pokémon available for battle");
+        toast({
+          title: "Error",
+          description: "Not enough Pokémon available for battle",
+          variant: "destructive"
+        });
+      }
     }
     
     // Reset selections

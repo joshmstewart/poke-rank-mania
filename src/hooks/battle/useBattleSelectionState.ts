@@ -16,6 +16,8 @@ export const useBattleSelectionState = () => {
   
   // Define startNewBattle function
   const startNewBattle = (pokemonList: Pokemon[], battleType: BattleType = "pairs") => {
+    console.log("useBattleSelectionState - startNewBattle with pokemonList length:", pokemonList?.length || 0);
+    
     if (!pokemonList || pokemonList.length < 2) {
       // Not enough Pokémon for a battle
       console.log("Not enough Pokémon for a battle:", pokemonList?.length || 0);
@@ -23,8 +25,13 @@ export const useBattleSelectionState = () => {
     }
     
     const newBattlePokemon = initiateNewBattle(pokemonList, battleType);
-    setCurrentBattle(newBattlePokemon);
-    setSelectedPokemon([]);
+    if (newBattlePokemon && newBattlePokemon.length > 0) {
+      console.log("Setting current battle to:", newBattlePokemon.map(p => p.name));
+      setCurrentBattle(newBattlePokemon);
+      setSelectedPokemon([]);
+    } else {
+      console.error("Failed to create new battle - no pokemon returned");
+    }
   };
 
   return {
