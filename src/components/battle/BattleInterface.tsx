@@ -30,19 +30,22 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
 }) => {
   return (
     <div className="bg-white rounded-lg shadow p-6">
-      <div className="mb-4 relative">
-        {battleHistory.length > 0 && (
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="absolute -left-2 top-0" 
-            onClick={onGoBack}
-          >
-            <ChevronLeft className="mr-1" /> Back
-          </Button>
-        )}
+      <div className="mb-4">
         <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-bold">Battle {battlesCompleted + 1}</h2>
+          {/* Moved the back button into the flex container */}
+          <div className="flex items-center">
+            {battleHistory.length > 0 && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="mr-2" 
+                onClick={onGoBack}
+              >
+                <ChevronLeft className="mr-1" /> Back
+              </Button>
+            )}
+            <h2 className="text-2xl font-bold">Battle {battlesCompleted + 1}</h2>
+          </div>
           <div className="text-sm text-gray-500">
             Select your {battleType === "pairs" ? "favorite" : "favorites"}
           </div>
