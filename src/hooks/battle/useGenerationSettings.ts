@@ -21,7 +21,7 @@ export const useGenerationSettings = (
   const initialRankingMode = storedRankingMode === null ? true : storedRankingMode === 'true';
   
   const [selectedGeneration, setSelectedGeneration] = useState(initialGeneration);
-  const [fullRankingMode, setFullRankingMode] = useState(initialRankingMode);
+  const [fullRankingMode, setFullRankingModeState] = useState(initialRankingMode);
   
   // Set defaults in localStorage if not already set
   useEffect(() => {
@@ -50,8 +50,8 @@ export const useGenerationSettings = (
     resetBattleState();
   };
   
-  const setFullRankingMode = (value: boolean) => {
-    setFullRankingMode(value);
+  const handleRankingModeChange = (value: boolean) => {
+    setFullRankingModeState(value);
     localStorage.setItem('pokemon-ranker-full-ranking-mode', value.toString());
     
     // Reset battle state when mode changes
@@ -79,6 +79,6 @@ export const useGenerationSettings = (
     fullRankingMode,
     handleGenerationChange,
     handleBattleTypeChange,
-    setFullRankingMode
+    setFullRankingMode: handleRankingModeChange
   };
 };
