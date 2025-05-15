@@ -23,27 +23,13 @@ export const useBattleState = () => {
   const [selectedPokemon, setSelectedPokemon] = useState<number[]>([]);
   const [completionPercentage, setCompletionPercentage] = useState(0);
   const [rankingGenerated, setRankingGenerated] = useState(false);
+  const [allPokemon, setAllPokemon] = useState<Pokemon[]>([]);
+  const [battleType, setBattleType] = useState<BattleType>("pairs");
   
   // Milestone triggers - show rankings at these battle counts
   const milestones = [10, 25, 50, 100, 200, 500, 1000];
-
-  // Load Pokémon first before any other hook that depends on it
-  const {
-    isLoading,
-    allPokemon,
-    loadPokemon
-  } = usePokemonLoader(
-    setRankingGenerated,
-    setBattleResults,
-    setBattlesCompleted,
-    setBattleHistory,
-    setShowingMilestone,
-    setCompletionPercentage,
-    setSelectedPokemon,
-    startNewBattle
-  );
   
-  // Core function for starting a new battle
+  // Define startNewBattle function first so it can be passed to other hooks
   const startNewBattle = (pokemonList: Pokemon[]) => {
     if (pokemonList.length < 2) {
       // Not enough Pokémon for a battle
@@ -59,6 +45,21 @@ export const useBattleState = () => {
     setSelectedPokemon([]);
   };
 
+  // Now we can use the pokemonLoader hook with the startNewBattle function
+  const {
+    isLoading,
+    loadPokemon
+  } = usePokemonLoader(
+    setRankingGenerated,
+    setBattleResults,
+    setBattlesCompleted,
+    setBattleHistory,
+    setShowingMilestone,
+    setCompletionPercentage,
+    setSelectedPokemon,
+    startNewBattle
+  );
+  
   // Hooks
   const { saveBattleState, loadBattleState } = useLocalStorage();
   
@@ -70,7 +71,6 @@ export const useBattleState = () => {
   
   const {
     selectedGeneration,
-    battleType,
     fullRankingMode,
     setFullRankingMode,
     handleGenerationChange,

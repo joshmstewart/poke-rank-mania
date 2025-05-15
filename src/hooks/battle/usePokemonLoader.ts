@@ -13,7 +13,6 @@ export const usePokemonLoader = (
   startNewBattle: (pokemonList: Pokemon[]) => void
 ) => {
   const [isLoading, setIsLoading] = useState(true);
-  const [allPokemon, setAllPokemon] = useState<Pokemon[]>([]);
 
   const loadPokemon = async (genId = 0, fullRankingMode = false, preserveState = false) => {
     setIsLoading(true);
@@ -21,7 +20,6 @@ export const usePokemonLoader = (
       const response = await fetch(`/api/pokemon?generation=${genId}&full=${fullRankingMode}`);
       if (!response.ok) throw new Error('Failed to fetch Pokémon');
       const pokemon = await response.json();
-      setAllPokemon(pokemon);
       
       if (!preserveState) {
         // Reset battle state if not preserving state
@@ -51,8 +49,6 @@ export const usePokemonLoader = (
   return {
     isLoading,
     setIsLoading,
-    allPokemon,
-    setAllPokemon,
     loadPokemon
   };
 };
