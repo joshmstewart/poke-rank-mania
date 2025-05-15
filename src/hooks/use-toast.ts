@@ -1,6 +1,29 @@
 
-import { useToast as useToastOriginal, toast as toastOriginal } from "@/components/ui/toast";
+import { toast as toastSonner, type Toast } from "sonner";
+import { 
+  ToastActionElement, 
+  ToastProps 
+} from "@/components/ui/toast";
 
-// Re-export the hooks with the same names
-export const useToast = useToastOriginal;
-export const toast = toastOriginal;
+type ToastOptions = ToastProps & {
+  description?: React.ReactNode;
+  action?: ToastActionElement;
+};
+
+const useToast = () => {
+  const toast = (options: ToastOptions) => {
+    const { title, description, variant = "default", action, ...props } = options;
+    
+    return toastSonner(title, {
+      description,
+      ...props,
+    });
+  };
+
+  return {
+    toast,
+    toasts: [] // Compatibility with existing interface
+  };
+};
+
+export { useToast, toastSonner as toast };
