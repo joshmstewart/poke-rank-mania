@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { AlertTriangle } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -208,7 +207,15 @@ const BattleMode = () => {
     setBattleHistory([]);
     setShowingMilestone(false);
     setCompletionPercentage(0);
-    startNewBattle(allPokemon);
+    
+    // Important: Start a new battle with the correct number of Pokémon for the selected battle type
+    if (allPokemon.length > 0) {
+      // Create a new battle with the correct number of Pokémon
+      const battleSize = value === "pairs" ? 2 : 3;
+      const shuffled = [...allPokemon].sort(() => Math.random() - 0.5);
+      setCurrentBattle(shuffled.slice(0, battleSize));
+      setSelectedPokemon([]);
+    }
   };
 
   const handlePokemonSelect = (id: number) => {

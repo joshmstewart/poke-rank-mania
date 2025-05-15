@@ -55,7 +55,7 @@ const SessionManager: React.FC<SessionManagerProps> = ({ onImport, onExport }) =
         onImport(importData.data);
         setSessionId(importData.id || sessionId);
         toast({
-          title: "Session imported!",
+          title: "Session loaded!",
           description: "Your battle progress has been restored."
         });
       } else {
@@ -72,19 +72,28 @@ const SessionManager: React.FC<SessionManagerProps> = ({ onImport, onExport }) =
   
   return (
     <div className="flex items-center gap-2">
+      <Button 
+        variant="outline" 
+        size="sm" 
+        className="gap-1" 
+        onClick={handleExport}
+      >
+        <Download className="h-4 w-4" /> Save Progress
+      </Button>
+      
       <Dialog>
         <DialogTrigger asChild>
           <Button variant="outline" size="sm" className="gap-1">
-            <Upload className="h-4 w-4" /> Import
+            <Upload className="h-4 w-4" /> Load Session
           </Button>
         </DialogTrigger>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Import Session Data</DialogTitle>
+            <DialogTitle>Load Previous Session</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 mt-2">
             <p className="text-sm text-muted-foreground">
-              Paste your previously exported session data below:
+              Paste your previously saved session data below:
             </p>
             <textarea 
               className="w-full min-h-[150px] p-3 border rounded-md" 
@@ -99,13 +108,13 @@ const SessionManager: React.FC<SessionManagerProps> = ({ onImport, onExport }) =
       
       <Dialog>
         <DialogTrigger asChild>
-          <Button variant="outline" size="sm" className="gap-1">
-            <Download className="h-4 w-4" /> Export
+          <Button variant="secondary" size="sm" className="gap-1">
+            <Copy className="h-4 w-4" /> Session ID
           </Button>
         </DialogTrigger>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Export Session Data</DialogTitle>
+            <DialogTitle>Your Session ID</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 mt-2">
             <p className="text-sm text-muted-foreground">
@@ -124,11 +133,8 @@ const SessionManager: React.FC<SessionManagerProps> = ({ onImport, onExport }) =
                 <Copy className="h-4 w-4" />
               </Button>
             </div>
-            <Button onClick={handleExport} className="w-full">
-              Copy Full Session Data to Clipboard
-            </Button>
             <p className="text-sm text-muted-foreground">
-              Save this data somewhere safe. You can import it later to continue your progress on any device.
+              Save this ID somewhere safe. You can use it later with the full session data to continue your progress.
             </p>
           </div>
         </DialogContent>

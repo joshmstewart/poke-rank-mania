@@ -84,6 +84,7 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
           <Button 
             size="lg" 
             onClick={onTripletSelectionComplete}
+            disabled={selectedPokemon.length === 0}
             className="px-8"
           >
             Submit Your Choices
