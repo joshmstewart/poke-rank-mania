@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleResult, BattleType } from "./types";
 import { toast } from "@/hooks/use-toast";
@@ -56,8 +56,10 @@ export const useCompletionTracker = (
 
   // Update the local state when the ranking is generated
   useEffect(() => {
-    setCurrentRankingGenerated(rankingGenerated);
-  }, [rankingGenerated]);
+    setCurrentRankingGenerated(currentRankingGenerated => {
+      return setRankingGenerated || currentRankingGenerated;
+    });
+  }, [setRankingGenerated]);
 
   // Modified to return a number without requiring battleType parameter
   const getBattlesRemaining = () => {
