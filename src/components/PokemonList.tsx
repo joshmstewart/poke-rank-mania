@@ -12,9 +12,16 @@ interface PokemonListProps {
   pokemonList: Pokemon[];
   droppableId: string;
   onDragEnd?: (result: DropResult) => void;
+  isRankingArea?: boolean;
 }
 
-const PokemonList = ({ title, pokemonList, droppableId, onDragEnd }: PokemonListProps) => {
+const PokemonList = ({ 
+  title, 
+  pokemonList, 
+  droppableId, 
+  onDragEnd,
+  isRankingArea = false
+}: PokemonListProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   
   const filteredPokemon = pokemonList.filter(pokemon => 
@@ -22,7 +29,7 @@ const PokemonList = ({ title, pokemonList, droppableId, onDragEnd }: PokemonList
   );
 
   return (
-    <div className="flex flex-col h-full">
+    <div className={`flex flex-col h-full ${isRankingArea ? 'relative' : ''}`}>
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-bold">{title}</h2>
         <div className="relative w-full max-w-xs">
@@ -36,13 +43,13 @@ const PokemonList = ({ title, pokemonList, droppableId, onDragEnd }: PokemonList
         </div>
       </div>
       
-      <div className="flex-1 overflow-auto bg-gray-50 rounded-lg p-2 min-h-[400px]">
+      <div className={`flex-1 overflow-auto bg-gray-50 rounded-lg p-2 min-h-[400px] ${isRankingArea ? 'z-10' : ''}`}>
         <Droppable droppableId={droppableId}>
-          {(provided) => (
+          {(provided, snapshot) => (
             <div
               {...provided.droppableProps}
               ref={provided.innerRef}
-              className="space-y-2"
+              className={`space-y-2 h-full ${snapshot.isDraggingOver && isRankingArea ? 'bg-green-50 border-2 border-dashed border-green-500 rounded' : ''}`}
             >
               {filteredPokemon.length > 0 ? (
                 filteredPokemon.map((pokemon, index) => (
@@ -75,6 +82,25 @@ const PokemonList = ({ title, pokemonList, droppableId, onDragEnd }: PokemonList
           )}
         </Droppable>
       </div>
+      
+      {/* Full-screen droppable overlay that appears when dragging and this is the ranking area */}
+      {isRankingArea && (
+        <Droppable droppableId={`${droppableId}-overlay`}>
+          {(provided, snapshot) => (
+            <div
+              {...provided.droppableProps}
+              ref={provided.innerRef}
+              className={`absolute inset-0 z-0 ${snapshot.isDraggingOver ? 'bg-green-100/50' : ''}`}
+              style={{ 
+                display: snapshot.isDraggingOver ? 'block' : 'none',
+                pointerEvents: snapshot.isDraggingOver ? 'auto' : 'none'
+              }}
+            >
+              {provided.placeholder}
+            </div>
+          )}
+        </Droppable>
+      )}
     </div>
   );
 };

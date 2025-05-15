@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { DragDropContext, DropResult } from "react-beautiful-dnd";
 import { Button } from "@/components/ui/button";
@@ -55,6 +54,20 @@ const PokemonRanker = () => {
     
     // Dropped outside of any droppable area
     if (!destination) return;
+    
+    // Check if the destination is the overlay area
+    if (destination.droppableId === "ranked-overlay") {
+      // When dropped on the overlay, add to the end of the ranked list
+      const sourceItems = Array.from(availablePokemon);
+      const destItems = Array.from(rankedPokemon);
+      
+      const [movedItem] = sourceItems.splice(source.index, 1);
+      destItems.push(movedItem); // Add to the end
+      
+      setAvailablePokemon(sourceItems);
+      setRankedPokemon(destItems);
+      return;
+    }
     
     // Moving within the same list
     if (source.droppableId === destination.droppableId) {
@@ -222,6 +235,7 @@ const PokemonRanker = () => {
                       title="Your Rankings"
                       pokemonList={rankedPokemon}
                       droppableId="ranked"
+                      isRankingArea={true}
                     />
                   </div>
                 </div>
