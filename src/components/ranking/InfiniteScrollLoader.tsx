@@ -1,5 +1,6 @@
 
 import React from "react";
+import { generations } from "@/services/pokemon";
 
 interface InfiniteScrollLoaderProps {
   isLoading: boolean;

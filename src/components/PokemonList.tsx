@@ -1,8 +1,8 @@
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Droppable, Draggable, DropResult } from "react-beautiful-dnd";
 import PokemonCard from "./PokemonCard";
-import { Pokemon } from "@/services/pokemonService";
+import { Pokemon, generations } from "@/services/pokemon";
 import { Button } from "@/components/ui/button";
 import { Search, List, Grid } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,26 @@ interface PokemonListProps {
   isRankingArea?: boolean;
 }
 
+// Function to get generation info for a Pokemon
+const getPokemonGeneration = (pokemonId: number) => {
+  return generations.find(gen => 
+    pokemonId >= gen.start && pokemonId <= gen.end && gen.id !== 0
+  );
+};
+
+// Mapping of generation IDs to regions and games
+const generationDetails: Record<number, { region: string, games: string }> = {
+  1: { region: "Kanto", games: "Red, Blue, Yellow" },
+  2: { region: "Johto", games: "Gold, Silver, Crystal" },
+  3: { region: "Hoenn", games: "Ruby, Sapphire, Emerald" },
+  4: { region: "Sinnoh", games: "Diamond, Pearl, Platinum" },
+  5: { region: "Unova", games: "Black, White, Black 2, White 2" },
+  6: { region: "Kalos", games: "X, Y" },
+  7: { region: "Alola", games: "Sun, Moon, Ultra Sun, Ultra Moon" },
+  8: { region: "Galar", games: "Sword, Shield" },
+  9: { region: "Paldea", games: "Scarlet, Violet" }
+};
+
 const PokemonList = ({ 
   title, 
   pokemonList, 
@@ -26,9 +46,51 @@ const PokemonList = ({
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   
-  const filteredPokemon = pokemonList.filter(pokemon => 
-    pokemon.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Group Pokemon by generation and apply searching
+  const groupedAndFilteredPokemon = useMemo(() => {
+    // First filter by search term
+    const filtered = pokemonList.filter(pokemon => 
+      pokemon.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    
+    // If this is the ranking area or we're searching, don't group by generation
+    if (isRankingArea || searchTerm) {
+      return {
+        items: filtered.map(pokemon => ({ type: 'pokemon', data: pokemon })),
+        showGenerationHeaders: false
+      };
+    }
+    
+    // Group by generation for the available Pokemon list
+    const result = [];
+    let lastGeneration: number | null = null;
+    
+    for (const pokemon of filtered) {
+      const generation = getPokemonGeneration(pokemon.id);
+      
+      if (generation && generation.id !== lastGeneration) {
+        // Add a header for new generation
+        result.push({ 
+          type: 'header', 
+          generationId: generation.id,
+          data: {
+            name: generation.name,
+            region: generationDetails[generation.id]?.region || "Unknown",
+            games: generationDetails[generation.id]?.games || ""
+          }
+        });
+        lastGeneration = generation.id;
+      }
+      
+      // Add the Pokemon
+      result.push({ type: 'pokemon', data: pokemon });
+    }
+    
+    return {
+      items: result,
+      showGenerationHeaders: true
+    };
+  }, [pokemonList, searchTerm, isRankingArea]);
 
   return (
     <div className={`flex flex-col h-full ${isRankingArea ? 'relative' : ''}`}>
@@ -66,28 +128,58 @@ const PokemonList = ({
                 h-full ${snapshot.isDraggingOver && isRankingArea ? 'bg-green-50 border-2 border-dashed border-green-500 rounded' : ''}
               `}
             >
-              {filteredPokemon.length > 0 ? (
-                filteredPokemon.map((pokemon, index) => (
-                  <Draggable
-                    key={`${pokemon.id}-${droppableId}`}
-                    draggableId={`${pokemon.id}-${droppableId}`}
-                    index={index}
-                  >
-                    {(provided, snapshot) => (
-                      <div
-                        ref={provided.innerRef}
-                        {...provided.draggableProps}
-                        {...provided.dragHandleProps}
+              {groupedAndFilteredPokemon.items.length > 0 ? (
+                groupedAndFilteredPokemon.items.map((item, index) => {
+                  if (item.type === 'header') {
+                    // Render generation header
+                    return (
+                      <div 
+                        key={`header-${item.generationId}`} 
+                        className={`${viewMode === "grid" ? "col-span-full" : ""} bg-gradient-to-r from-primary/10 to-transparent p-2 rounded-md my-2`}
                       >
-                        <PokemonCard
-                          pokemon={pokemon}
-                          isDragging={snapshot.isDragging}
-                          viewMode={viewMode}
-                        />
+                        <h3 className="font-bold">{item.data.name}</h3>
+                        <p className="text-xs text-muted-foreground">
+                          Region: {item.data.region} | Games: {item.data.games}
+                        </p>
                       </div>
-                    )}
-                  </Draggable>
-                ))
+                    );
+                  } else {
+                    // Render Pokemon card
+                    const pokemon = item.data;
+                    let draggableIndex = index;
+                    
+                    // If showing generation headers, we need to adjust the draggable index
+                    // to account for the non-draggable headers
+                    if (groupedAndFilteredPokemon.showGenerationHeaders) {
+                      draggableIndex = groupedAndFilteredPokemon.items
+                        .slice(0, index)
+                        .filter(i => i.type === 'pokemon')
+                        .length;
+                    }
+                    
+                    return (
+                      <Draggable
+                        key={`${pokemon.id}-${droppableId}`}
+                        draggableId={`${pokemon.id}-${droppableId}`}
+                        index={draggableIndex}
+                      >
+                        {(provided, snapshot) => (
+                          <div
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            {...provided.dragHandleProps}
+                          >
+                            <PokemonCard
+                              pokemon={pokemon}
+                              isDragging={snapshot.isDragging}
+                              viewMode={viewMode}
+                            />
+                          </div>
+                        )}
+                      </Draggable>
+                    );
+                  }
+                })
               ) : (
                 <div className={`flex items-center justify-center ${viewMode === "grid" ? "col-span-full" : ""} h-32 text-muted-foreground`}>
                   {searchTerm ? "No Pokemon found" : "No Pokemon here yet"}

@@ -29,7 +29,7 @@ export function useScrollObserver(
           setCurrentPage(prevPage => prevPage + 1);
         }
       }, { 
-        rootMargin: '100px', // Start loading before element is fully visible
+        rootMargin: '200px', // Start loading even earlier before element is visible
         threshold: 0.1 // Trigger when 10% of element is visible
       });
       
