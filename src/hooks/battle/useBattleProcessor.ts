@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useRef } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { toast } from "@/hooks/use-toast";
@@ -73,29 +72,27 @@ export const useBattleProcessor = (
     
     // Increment battles completed
     const newBattlesCompleted = incrementBattlesCompleted();
+    console.log("useBattleProcessor: Battles completed incremented to", newBattlesCompleted);
     
-    // setTimeout to ensure state updates have time to propagate
+    // Use a direct timeout to keep flow moving
     setTimeout(() => {
       // Check if we've hit a milestone
       const reachedMilestone = checkMilestone(newBattlesCompleted, newResults);
+      console.log("useBattleProcessor: Milestone reached?", reachedMilestone);
       
       if (!reachedMilestone) {
         // Start a new battle if no milestone reached
-        setTimeout(() => {
-          setupNextBattle(battleType);
-          
-          // Reset processing state
-          setTimeout(() => {
-            isProcessingRef.current = false;
-            setIsProcessingResult(false);
-          }, 300);
-        }, 300);
-      } else {
-        // Reset processing state
+        console.log("useBattleProcessor: Setting up next battle with battle type", battleType);
+        setupNextBattle(battleType);
+      }
+      
+      // Reset processing state after a delay to ensure UI updates
+      setTimeout(() => {
         isProcessingRef.current = false;
         setIsProcessingResult(false);
-      }
-    }, 300);
+        console.log("useBattleProcessor: Processing state reset to false");
+      }, 300);
+    }, 200);
   }, [
     processResult,
     setBattleResults,

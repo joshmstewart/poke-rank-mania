@@ -18,13 +18,17 @@ export const useBattleProgression = (
   const checkMilestone = useCallback((newBattlesCompleted: number, battleResults: any[]) => {
     if (milestones.includes(newBattlesCompleted)) {
       console.log(`useBattleProgression: Milestone reached at ${newBattlesCompleted} battles`);
-      generateRankings(battleResults);
-      setShowingMilestone(true);
       
-      toast({
-        title: "Milestone Reached!",
-        description: `You've completed ${newBattlesCompleted} battles. Check out your current ranking!`
-      });
+      // Force rankings generation with current results
+      setTimeout(() => {
+        generateRankings(battleResults);
+        setShowingMilestone(true);
+        
+        toast({
+          title: "Milestone Reached!",
+          description: `You've completed ${newBattlesCompleted} battles. Check out your current ranking!`
+        });
+      }, 100);
       
       return true;
     }
@@ -34,6 +38,7 @@ export const useBattleProgression = (
   // Increment battles completed counter
   const incrementBattlesCompleted = useCallback(() => {
     const newBattlesCompleted = battlesCompleted + 1;
+    console.log(`useBattleProgression: Incrementing battles from ${battlesCompleted} to ${newBattlesCompleted}`);
     setBattlesCompleted(newBattlesCompleted);
     return newBattlesCompleted;
   }, [battlesCompleted, setBattlesCompleted]);

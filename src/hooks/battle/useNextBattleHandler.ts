@@ -14,7 +14,7 @@ export const useNextBattleHandler = (
 ) => {
   // Set up the next battle
   const setupNextBattle = useCallback((battleType: BattleType) => {
-    // Clear selections
+    // Clear selections first
     setSelectedPokemon([]);
     
     // Validate pokemon data
@@ -27,9 +27,14 @@ export const useNextBattleHandler = (
       return false;
     }
     
-    // Start a new battle
+    // Start a new battle - ensure this isn't blocked by any state updates
     console.log("useNextBattleHandler: Starting new battle with", allPokemon.length, "Pokémon");
-    startNewBattle(allPokemon, battleType);
+    
+    // Use a small timeout to ensure state updates have completed
+    setTimeout(() => {
+      startNewBattle(allPokemon, battleType);
+    }, 100);
+    
     return true;
   }, [allPokemon, startNewBattle, setSelectedPokemon]);
 

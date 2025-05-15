@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
 
@@ -10,20 +10,23 @@ export const useBattleSelectionManager = (
   setSelectedPokemon: React.Dispatch<React.SetStateAction<number[]>>
 ) => {
   const [selectedPokemon, setLocalSelectedPokemon] = useState<number[]>([]);
-  // Add a processing flag to prevent duplicate handling
-  const [isProcessing, setIsProcessing] = useState(false);
+  // Add a processing flag to prevent duplicate handling and use ref for stability
+  const isProcessingRef = useRef(false);
 
   const handlePokemonSelect = (id: number, battleType: BattleType, currentBattle: Pokemon[]) => {
     // Prevent processing while another selection is in progress
-    if (isProcessing) return;
+    if (isProcessingRef.current) {
+      console.log(`useBattleSelectionManager: Ignoring selection for ${id} - processing in progress`);
+      return;
+    }
     
-    console.log(`handlePokemonSelect called with id: ${id}, battleType: ${battleType}`);
+    console.log(`useBattleSelectionManager: Handling selection for id: ${id}, battleType: ${battleType}`);
     
     if (battleType === "pairs") {
       // For pairs mode, immediately process the battle
-      setIsProcessing(true);
+      isProcessingRef.current = true;
       
-      // Save current battle to history
+      // Save current battle to history first
       setBattleHistory(prev => [...prev, { 
         battle: [...currentBattle], 
         selected: [id] 
@@ -33,11 +36,18 @@ export const useBattleSelectionManager = (
       setLocalSelectedPokemon([id]);
       setSelectedPokemon([id]);
       
-      // Process the battle result directly
-      processBattleResult([id], battleType, currentBattle);
+      console.log(`useBattleSelectionManager: Selected Pokémon ID ${id} for pairs mode`);
       
-      // Reset processing state after a delay
-      setTimeout(() => setIsProcessing(false), 300);
+      // Process the battle result with a small delay
+      setTimeout(() => {
+        processBattleResult([id], battleType, currentBattle);
+        
+        // Reset processing state after a delay
+        setTimeout(() => {
+          isProcessingRef.current = false;
+          console.log("useBattleSelectionManager: Processing state reset to false");
+        }, 300);
+      }, 50);
     } else {
       // For triplets/trios, toggle selection
       let newSelected;
@@ -50,26 +60,22 @@ export const useBattleSelectionManager = (
       }
       setLocalSelectedPokemon(newSelected);
       setSelectedPokemon(newSelected);
+      console.log(`useBattleSelectionManager: Updated triplet selection to:`, newSelected);
     }
   };
 
   const handleTripletSelectionComplete = (battleType: BattleType, currentBattle: Pokemon[]) => {
     // Prevent duplicate processing
-    if (isProcessing) return;
-    
-    console.log("Triplet selection complete. Battle type:", battleType);
-    console.log("Current battle:", currentBattle.map(p => p.name));
-    
-    // If it's pairs mode, we should return early - we already processed it
-    if (battleType === "pairs") {
-      console.log("Pairs mode - selection was already processed in handlePokemonSelect");
+    if (isProcessingRef.current || battleType === "pairs") {
+      console.log("useBattleSelectionManager: Ignoring triplet completion - already processing or pairs mode");
       return;
     }
     
+    console.log("useBattleSelectionManager: Triplet selection complete with selections:", selectedPokemon);
+    
     // For triplets mode, process selections if we have any
     if (selectedPokemon.length > 0) {
-      setIsProcessing(true);
-      console.log("Using triplet selections from state:", selectedPokemon);
+      isProcessingRef.current = true;
       
       // Save current battle to history
       setBattleHistory(prev => [...prev, { 
@@ -77,14 +83,20 @@ export const useBattleSelectionManager = (
         selected: [...selectedPokemon] 
       }]);
       
-      processBattleResult(selectedPokemon, battleType, currentBattle);
-      
-      // Reset selections after processing
-      setLocalSelectedPokemon([]);
-      setSelectedPokemon([]);
-      
-      // Reset processing flag
-      setTimeout(() => setIsProcessing(false), 300);
+      // Process with a small delay
+      setTimeout(() => {
+        processBattleResult(selectedPokemon, battleType, currentBattle);
+        
+        // Reset selections after processing
+        setLocalSelectedPokemon([]);
+        setSelectedPokemon([]);
+        
+        // Reset processing flag after a delay
+        setTimeout(() => {
+          isProcessingRef.current = false;
+          console.log("useBattleSelectionManager: Processing state reset to false after triplet completion");
+        }, 300);
+      }, 50);
     }
   };
 
