@@ -47,7 +47,7 @@ const PokemonCard = ({ pokemon, isDragging, viewMode = "list" }: PokemonCardProp
           className="w-full h-full object-cover"
           loading="lazy"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex flex-col justify-end p-2">
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent flex flex-col justify-end p-2">
           <div className="text-white font-medium">{pokemon.name}</div>
           <div className="text-white/80 text-xs">#{pokemon.id}</div>
         </div>
