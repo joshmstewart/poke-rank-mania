@@ -20,6 +20,9 @@ export const useBattleSelectionManager = (
         selected: [id] 
       }]);
       
+      // Set the selected Pokémon and process the result immediately
+      setLocalSelectedPokemon([id]);
+      setSelectedPokemon([id]);
       processBattleResult([id], battleType, currentBattle);
     } else {
       // For triplets/trios, toggle selection
@@ -40,43 +43,16 @@ export const useBattleSelectionManager = (
     console.log("Triplet selection complete. Battle type:", battleType);
     console.log("Current battle:", currentBattle.map(p => p.name));
     
-    // Find the proper selection to use
-    let selectionsToUse: number[] = [];
-    
-    if (battleType === "pairs") {
-      // For pairs, get the most recent history entry or fall back to selectedPokemon
-      if (battleHistory.length > 0) {
-        const lastEntry = battleHistory[battleHistory.length - 1];
-        // Check if the last entry matches the current battle
-        const lastBattleIds = lastEntry.battle.map(p => p.id);
-        const currentBattleIds = currentBattle.map(p => p.id);
-        
-        if (lastBattleIds.length === currentBattleIds.length && 
-            lastBattleIds.every((id, i) => id === currentBattleIds[i])) {
-          selectionsToUse = [...lastEntry.selected];
-          console.log("Using selections from matching history:", selectionsToUse);
-        } else {
-          // If battle doesn't match, check if there's a selection for the current Pokemon
-          const selectedIds = currentBattle.filter(p => selectedPokemon.includes(p.id)).map(p => p.id);
-          if (selectedIds.length > 0) {
-            selectionsToUse = selectedIds;
-            console.log("Using selections from filtered currentBattle:", selectionsToUse);
-          } else {
-            console.error("No valid selections found for current battle");
-          }
-        }
-      } else if (selectedPokemon.length > 0) {
-        // If no history but we have selections
-        selectionsToUse = [...selectedPokemon];
-        console.log("Using selections from state with no history:", selectionsToUse);
-      } else {
-        console.error("No selections available!");
-      }
-    } else {
-      // For triplets mode, use the current selections
-      selectionsToUse = [...selectedPokemon];
-      console.log("Using triplet selections from state:", selectionsToUse);
+    // If it's pairs mode and we already processed the selection in handlePokemonSelect,
+    // we can return early to avoid duplicate processing
+    if (battleType === "pairs" && selectedPokemon.length === 1) {
+      // We've already processed this in handlePokemonSelect for pairs mode
+      return;
     }
+    
+    // For triplets mode, use the current selections
+    const selectionsToUse = [...selectedPokemon];
+    console.log("Using triplet selections from state:", selectionsToUse);
     
     // Process the battle result
     processBattleResult(selectionsToUse, battleType, currentBattle);

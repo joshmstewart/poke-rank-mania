@@ -21,10 +21,19 @@ const BattleCard: React.FC<BattleCardProps> = ({
     onSelect(pokemon.id);
   };
 
+  // For keyboard accessibility
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onSelect(pokemon.id);
+    }
+  };
+
   return (
     <div 
       className={`cursor-pointer ${isSelected && battleType === "triplets" ? "ring-4 ring-primary" : ""}`}
       onClick={handleClick}
+      onKeyDown={handleKeyDown}
       role="button"
       aria-pressed={isSelected}
       tabIndex={0}
