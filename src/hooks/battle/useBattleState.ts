@@ -50,7 +50,8 @@ export const useBattleState = () => {
     selectedGeneration: generationSetting,
     fullRankingMode: rankingModeSetting,
     handleGenerationChange,
-    handleBattleTypeChange
+    handleBattleTypeChange,
+    setFullRankingMode: handleRankingModeChange
   } = useGenerationSettings(
     selectionState.startNewBattle,
     selectionState.allPokemon,
@@ -181,7 +182,7 @@ export const useBattleState = () => {
     showingMilestone: uiState.showingMilestone,
     completionPercentage: uiState.completionPercentage,
     fullRankingMode: uiState.fullRankingMode,
-    setFullRankingMode: uiState.setFullRankingMode,
+    setFullRankingMode: handleRankingModeChange,
     milestones: uiState.milestones,
     handleGenerationChange,
     handleBattleTypeChange,

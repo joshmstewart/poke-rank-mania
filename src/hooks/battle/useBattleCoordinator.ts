@@ -54,7 +54,7 @@ export const useBattleCoordinator = (
         fullRankingMode
       });
     }
-  }, [battleResults, allPokemon, selectedGeneration, battleType]);
+  }, [battleResults, allPokemon, selectedGeneration, battleType, fullRankingMode]);
   
   return {};
 };

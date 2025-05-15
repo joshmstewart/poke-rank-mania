@@ -37,7 +37,9 @@ export const useGenerationSettings = (
   }, [battleType, fullRankingMode, selectedGeneration]);
 
   const handleGenerationChange = (value: string) => {
-    setSelectedGeneration(Number(value));
+    const newGeneration = Number(value);
+    setSelectedGeneration(newGeneration);
+    localStorage.setItem('pokemon-ranker-generation', value);
   };
 
   const handleBattleTypeChange = (value: string) => {
@@ -46,6 +48,7 @@ export const useGenerationSettings = (
     const newBattleType = value as BattleType;
     console.log("Changing battle type to:", newBattleType);
     setBattleType(newBattleType);
+    localStorage.setItem('pokemon-ranker-battle-type', newBattleType);
     
     // Reset battles and start new one with current Pokémon pool
     setBattleResults([]);
@@ -66,13 +69,18 @@ export const useGenerationSettings = (
     }
   };
 
+  const handleRankingModeChange = (value: boolean) => {
+    setFullRankingMode(value);
+    localStorage.setItem('pokemon-ranker-full-ranking-mode', value.toString());
+  };
+
   return {
     selectedGeneration,
     setSelectedGeneration,
     battleType,
     setBattleType,
     fullRankingMode,
-    setFullRankingMode,
+    setFullRankingMode: handleRankingModeChange,
     handleGenerationChange,
     handleBattleTypeChange
   };
