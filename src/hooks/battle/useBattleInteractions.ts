@@ -25,7 +25,7 @@ export const useBattleInteractions = (
     if (battleType === "pairs") {
       // For pairs mode - immediate selection and trigger completion
       
-      // Set the selection
+      // Set the selection immediately
       setSelectedPokemon([id]);
       
       // Add to history
@@ -34,7 +34,8 @@ export const useBattleInteractions = (
         selected: [id] 
       }]);
       
-      // Immediately trigger completion
+      // Force immediate update and trigger completion
+      // We need to make sure this executes synchronously
       handleTripletSelectionComplete();
     } else {
       // For triplets mode - toggle selection

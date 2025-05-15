@@ -17,7 +17,11 @@ const BattleCard: React.FC<BattleCardProps> = ({
   onSelect
 }) => {
   // Simple click handler without debouncing or state
-  const handleClick = () => {
+  const handleClick = (e: React.MouseEvent) => {
+    // Prevent default behavior and stop propagation
+    e.preventDefault();
+    e.stopPropagation();
+    
     console.log(`BattleCard clicked: ${pokemon.id}, ${pokemon.name}`);
     onSelect(pokemon.id);
   };

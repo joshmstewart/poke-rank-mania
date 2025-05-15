@@ -44,9 +44,6 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
     console.log("Submit button clicked for triplets mode");
     onTripletSelectionComplete();
   };
-
-  // Label for the battle type
-  const battleLabel = battleType === "pairs" ? "favorite" : "preferences (0-3)";
   
   return (
     <div className="bg-white rounded-lg shadow p-6">
@@ -64,9 +61,6 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
               </Button>
             )}
             <h2 className="text-2xl font-bold">Battle {battlesCompleted + 1}</h2>
-          </div>
-          <div className="text-sm text-gray-500">
-            Select your {battleLabel}
           </div>
         </div>
         
