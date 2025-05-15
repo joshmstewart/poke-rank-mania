@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { 
   Pokemon, 
@@ -25,7 +24,7 @@ export const usePokemonRanker = (): RankingState & RankingActions & { loadingRef
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [loadSize, setLoadSize] = useState(50); // Default to first option
-  const [loadingType, setLoadingType] = useState<LoadingType>("pagination");
+  const [loadingType, setLoadingType] = useState<LoadingType>("infinite"); // Changed default to infinite
   
   const { loadData } = useDataLoader(
     selectedGeneration,

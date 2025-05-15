@@ -58,8 +58,8 @@ export const RankingControls: React.FC<RankingControlsProps> = ({
                 <SelectValue placeholder="Loading Method" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="pagination">Pagination</SelectItem>
                 <SelectItem value="infinite">Infinite Scroll</SelectItem>
+                <SelectItem value="pagination">Pagination</SelectItem>
                 <SelectItem value="single">Single Load</SelectItem>
               </SelectContent>
             </Select>

@@ -33,7 +33,8 @@ export const InfiniteScrollLoader: React.FC<InfiniteScrollLoaderProps> = ({
         </>
       ) : currentPage < totalPages ? (
         <p className="text-sm text-muted-foreground">
-          Scroll down to load more (Loaded {currentlyLoaded-itemsPerPage}-{currentlyLoaded} of approximately {totalEstimated}+ Pokémon)
+          <span>Scroll down for more Pokémon</span>
+          <span className="ml-1 text-xs">(Loaded {currentlyLoaded-itemsPerPage}-{currentlyLoaded} of approximately {totalEstimated}+ Pokémon)</span>
         </p>
       ) : (
         <p className="text-sm text-muted-foreground">All Pokémon loaded (Approximately {totalEstimated}+)</p>
