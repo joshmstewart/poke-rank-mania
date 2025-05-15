@@ -1,15 +1,15 @@
 
 import { useState } from "react";
+import { Pokemon } from "@/services/pokemon";
 import { BattleResult, BattleType } from "./types";
 
 export const useCompletionTracker = (
   allPokemon: Pokemon[],
   battleResults: BattleResult,
   setRankingGenerated: React.Dispatch<React.SetStateAction<boolean>>,
-  generateRankings: (results: BattleResult) => void
+  generateRankings: (results: BattleResult) => void,
+  setCompletionPercentage: React.Dispatch<React.SetStateAction<number>>
 ) => {
-  const [completionPercentage, setCompletionPercentage] = useState(0);
-
   const calculateCompletionPercentage = () => {
     // For a complete ranking in a tournament style, we need at least n-1 comparisons
     // where n is the number of Pokémon
@@ -39,7 +39,7 @@ export const useCompletionTracker = (
   };
 
   const getBattlesRemaining = (battleType: BattleType) => {
-    if (completionPercentage >= 100) return 0;
+    if (allPokemon.length <= 1) return 0;
     
     const totalPokemon = allPokemon.length;
     const minimumComparisons = totalPokemon - 1;
@@ -47,16 +47,15 @@ export const useCompletionTracker = (
     
     // Estimate remaining battles based on battle type
     if (battleType === "pairs") {
-      return minimumComparisons - currentComparisons;
+      return Math.max(0, minimumComparisons - currentComparisons);
     } else {
       // For triplets, each battle can generate multiple comparisons
       // Use a conservative estimate: each triplet battle gives ~2 comparisons on average
-      return Math.ceil((minimumComparisons - currentComparisons) / 2);
+      return Math.max(0, Math.ceil((minimumComparisons - currentComparisons) / 2));
     }
   };
 
   return {
-    completionPercentage,
     setCompletionPercentage,
     calculateCompletionPercentage,
     getBattlesRemaining

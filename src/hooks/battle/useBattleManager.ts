@@ -16,8 +16,9 @@ export const useBattleManager = (
   generateRankings: (results: BattleResult) => void,
   battleHistory: { battle: Pokemon[], selected: number[] }[],
   setBattleHistory: React.Dispatch<React.SetStateAction<{ battle: Pokemon[], selected: number[] }[]>>,
+  setSelectedPokemon: React.Dispatch<React.SetStateAction<number[]>>
 ) => {
-  const [selectedPokemon, setSelectedPokemon] = useState<number[]>([]);
+  const [selectedPokemon, setLocalSelectedPokemon] = useState<number[]>([]);
 
   const handlePokemonSelect = (id: number, battleType: BattleType, currentBattle: Pokemon[]) => {
     // For pairs, immediately process the battle when selection is made
@@ -31,13 +32,16 @@ export const useBattleManager = (
       processBattleResult([id], battleType, currentBattle);
     } else {
       // For triplets, toggle selection
+      let newSelected;
       if (selectedPokemon.includes(id)) {
         // If already selected, unselect it
-        setSelectedPokemon(selectedPokemon.filter(pokemonId => pokemonId !== id));
+        newSelected = selectedPokemon.filter(pokemonId => pokemonId !== id);
       } else {
         // Add to selection
-        setSelectedPokemon([...selectedPokemon, id]);
+        newSelected = [...selectedPokemon, id];
       }
+      setLocalSelectedPokemon(newSelected);
+      setSelectedPokemon(newSelected);
     }
   };
 
@@ -95,6 +99,7 @@ export const useBattleManager = (
     }
     
     // Reset selections
+    setLocalSelectedPokemon([]);
     setSelectedPokemon([]);
   };
 
@@ -133,6 +138,7 @@ export const useBattleManager = (
     // Set the current battle back to the previous one
     if (lastBattle) {
       setCurrentBattle(lastBattle.battle);
+      setLocalSelectedPokemon([]);
       setSelectedPokemon([]);
     }
     
@@ -142,7 +148,7 @@ export const useBattleManager = (
 
   return {
     selectedPokemon,
-    setSelectedPokemon,
+    setSelectedPokemon: setLocalSelectedPokemon,
     handlePokemonSelect,
     handleTripletSelectionComplete,
     goBack

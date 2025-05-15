@@ -1,6 +1,6 @@
 
 import { toast } from "@/hooks/use-toast";
-import { BattleResult } from "./useBattleState";
+import { BattleResult } from "@/hooks/battle/types";
 import { Pokemon } from "@/services/pokemon";
 
 export interface BattleSessionData {

@@ -19,6 +19,11 @@ export const useBattleState = () => {
   const [battleHistory, setBattleHistory] = useState<{ battle: Pokemon[], selected: number[] }[]>([]);
   const [showingMilestone, setShowingMilestone] = useState(false);
   const [fullRankingMode, setFullRankingMode] = useState(false);
+  const [currentBattle, setCurrentBattle] = useState<Pokemon[]>([]);
+  const [selectedPokemon, setSelectedPokemon] = useState<number[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [allPokemon, setAllPokemon] = useState<Pokemon[]>([]);
+  const [completionPercentage, setCompletionPercentage] = useState(0);
   
   // Milestone triggers - show rankings at these battle counts
   const milestones = [10, 25, 50, 100, 200, 500, 1000];
@@ -35,37 +40,17 @@ export const useBattleState = () => {
   } = useRankings(allPokemon);
   
   const {
-    isLoading,
-    allPokemon,
-    currentBattle,
-    setCurrentBattle,
-    loadPokemon: initPokemon,
-    startNewBattle
-  } = useBattleInitializer(
-    setBattleResults,
-    setBattlesCompleted,
-    setRankingGenerated,
-    setBattleHistory,
-    setShowingMilestone,
-    setCompletionPercentage,
-    setSelectedPokemon
-  );
-  
-  const {
-    completionPercentage,
-    setCompletionPercentage,
     calculateCompletionPercentage,
     getBattlesRemaining: getRemainingBattles
   } = useCompletionTracker(
     allPokemon,
     battleResults,
     setRankingGenerated,
-    generateRankings
+    generateRankings,
+    setCompletionPercentage
   );
   
   const {
-    selectedPokemon,
-    setSelectedPokemon,
     handlePokemonSelect: selectPokemon,
     handleTripletSelectionComplete: completeTripletSelection,
     goBack: navigateBack
@@ -80,8 +65,58 @@ export const useBattleState = () => {
     milestones,
     generateRankings,
     battleHistory,
-    setBattleHistory
+    setBattleHistory,
+    setSelectedPokemon
   );
+
+  // Function declarations
+  const startNewBattle = (pokemonList: Pokemon[]) => {
+    if (pokemonList.length < 2) {
+      // Not enough Pokémon for a battle
+      return;
+    }
+    
+    // Shuffle the list to get random Pokémon
+    const shuffled = [...pokemonList].sort(() => Math.random() - 0.5);
+    
+    // Get the first 2 or 3 Pokémon based on battle type
+    const battleSize = battleType === "pairs" ? 2 : 3;
+    setCurrentBattle(shuffled.slice(0, battleSize));
+    setSelectedPokemon([]);
+  };
+
+  const loadPokemon = async (genId = selectedGeneration, preserveState = false) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(`/api/pokemon?generation=${genId}&full=${fullRankingMode}`);
+      if (!response.ok) throw new Error('Failed to fetch Pokémon');
+      const pokemon = await response.json();
+      setAllPokemon(pokemon);
+      
+      if (!preserveState) {
+        // Reset battle state if not preserving state
+        setBattleResults([]);
+        setBattlesCompleted(0);
+        setRankingGenerated(false);
+        setSelectedPokemon([]);
+        setBattleHistory([]);
+        setShowingMilestone(false);
+        setCompletionPercentage(0);
+      }
+      
+      // Start the first battle or continue from previous battle
+      if (pokemon.length > 0) {
+        startNewBattle(pokemon);
+      }
+      
+      return pokemon;
+    } catch (error) {
+      console.error('Error loading Pokémon:', error);
+      return [];
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Load saved battle state on initial load
   useEffect(() => {
@@ -126,19 +161,6 @@ export const useBattleState = () => {
       });
     }
   }, [battleResults, allPokemon, selectedGeneration, battleType]);
-
-  const loadPokemon = async (genId = selectedGeneration, preserveState = false) => {
-    const pokemon = await initPokemon(genId, fullRankingMode, preserveState);
-    
-    // If preserving state and we have battle history, restore the last battle
-    if (preserveState && battleHistory.length > 0) {
-      const lastBattle = battleHistory[battleHistory.length - 1];
-      setCurrentBattle(lastBattle.battle);
-      setSelectedPokemon([]);
-    }
-    
-    return pokemon;
-  };
 
   const handleGenerationChange = (value: string) => {
     setSelectedGeneration(Number(value));
