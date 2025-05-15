@@ -16,9 +16,11 @@ export interface Generation {
 
 // Unified session data interface
 export interface UnifiedSessionData {
-  sessionId?: string;
+  sessionId: string;
   rankings?: Record<string, Pokemon[]>;
   battleState?: any;
+  battleHistory?: any[];
+  generationFilter: number;
   lastUpdate?: number;
   lastManualSave?: number;
 }

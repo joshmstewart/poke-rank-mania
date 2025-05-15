@@ -1,5 +1,5 @@
 
-import { Pokemon } from "./types";
+import { Pokemon, UnifiedSessionData } from "./types";
 
 // Alias for backwards compatibility
 export const getSavedRankings = loadRankings;
@@ -23,7 +23,7 @@ export function saveRankings(
  * Load rankings from local storage
  */
 export function loadRankings(
-  generation: number =.0,
+  generation: number = 0,
   type: "manual" | "battle" = "manual"
 ): Pokemon[] {
   const storageKey = getStorageKey(generation, type);
@@ -62,12 +62,14 @@ function getStorageKey(
 }
 
 // Get session data for Pokemon Ranker app
-export function loadUnifiedSessionData() {
+export function loadUnifiedSessionData(): UnifiedSessionData {
   const storageKey = 'pokemon-ranker-session';
-  let data = {
+  let data: UnifiedSessionData = {
     generationFilter: 0,
     rankings: {} as Record<string, Pokemon[]>,
-    battleHistory: [] as any[]
+    battleHistory: [] as any[],
+    sessionId: '', // Add sessionId property to default data
+    lastUpdate: Date.now()
   };
   
   try {
@@ -83,7 +85,7 @@ export function loadUnifiedSessionData() {
 }
 
 // Save session data for Pokemon Ranker app
-export function saveUnifiedSessionData(data: any): void {
+export function saveUnifiedSessionData(data: UnifiedSessionData): void {
   const storageKey = 'pokemon-ranker-session';
   localStorage.setItem(storageKey, JSON.stringify(data));
 }
@@ -104,4 +106,31 @@ function updateUnifiedSessionData(
   sessionData.rankings[rankingKey] = rankings;
   
   saveUnifiedSessionData(sessionData);
+}
+
+/**
+ * Export session data for sharing/backup
+ */
+export function exportUnifiedSessionData(): string {
+  const sessionData = loadUnifiedSessionData();
+  return JSON.stringify(sessionData);
+}
+
+/**
+ * Import session data from external source
+ */
+export function importUnifiedSessionData(jsonData: string): boolean {
+  try {
+    const data = JSON.parse(jsonData) as UnifiedSessionData;
+    // Basic validation to ensure it's a valid session data
+    if (!data || typeof data !== 'object') {
+      return false;
+    }
+    
+    saveUnifiedSessionData(data);
+    return true;
+  } catch (e) {
+    console.error("Error importing session data:", e);
+    return false;
+  }
 }
