@@ -28,6 +28,7 @@ export async function fetchPaginatedPokemon(
       // For all generations, use direct pagination with the PokeAPI
       offset = (page - 1) * ITEMS_PER_PAGE;
       limit = ITEMS_PER_PAGE;
+      console.log(`Fetching Pokemon page ${page}: Items ${offset+1}-${offset+limit} (offset=${offset}, limit=${limit})`);
     } else {
       // For specific generations, calculate offset from generation start
       offset = selectedGeneration.start - 1 + ((page - 1) * ITEMS_PER_PAGE);

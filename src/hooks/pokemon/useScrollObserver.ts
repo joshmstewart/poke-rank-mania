@@ -15,14 +15,25 @@ export function useScrollObserver(
   useEffect(() => {
     // Only set up observer when using infinite loading
     if (loadingType === "infinite") {
+      // Cleanup previous observer first
+      if (observerRef.current && loadingRef.current) {
+        observerRef.current.unobserve(loadingRef.current);
+        observerRef.current = null;
+      }
+      
+      // Create new observer
       observerRef.current = new IntersectionObserver((entries) => {
         if (entries[0].isIntersecting && !isLoading && currentPage < totalPages) {
-          // When the loading element is visible, load more Pokemon
-          console.log("Loading more Pokémon: page", currentPage + 1);
+          // When the loading element is visible and we're not already loading, increment the page
+          console.log(`Loading next page: ${currentPage + 1} of ${totalPages}`);
           setCurrentPage(prevPage => prevPage + 1);
         }
-      }, { threshold: 0.1 }); // Lower threshold for earlier triggering
+      }, { 
+        rootMargin: '100px', // Start loading before element is fully visible
+        threshold: 0.1 // Trigger when 10% of element is visible
+      });
       
+      // Start observing the loading element
       if (loadingRef.current) {
         observerRef.current.observe(loadingRef.current);
       }

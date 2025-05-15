@@ -29,7 +29,7 @@ export function useDataLoader(
       
       // Check if we should use pagination (for All Generations)
       if (selectedGeneration === 0) {
-        // For single load option, fetch with larger page size
+        // For single load option, adjust the limit/page size
         const pageSize = loadingType === "single" ? loadSize : ITEMS_PER_PAGE;
         const { pokemon, totalPages: pages } = await fetchPaginatedPokemon(selectedGeneration, currentPage);
         
@@ -45,6 +45,7 @@ export function useDataLoader(
             setAvailablePokemon(prev => {
               const existingIds = new Set(prev.map(p => p.id));
               const newPokemon = remainingPokemon.filter(p => !existingIds.has(p.id));
+              console.log(`Adding ${newPokemon.length} new Pokemon to existing ${prev.length}`);
               return [...prev, ...newPokemon];
             });
           } else {
@@ -58,6 +59,7 @@ export function useDataLoader(
             setAvailablePokemon(prev => {
               const existingIds = new Set(prev.map(p => p.id));
               const newPokemon = pokemon.filter(p => !existingIds.has(p.id));
+              console.log(`Adding ${newPokemon.length} new Pokemon to existing ${prev.length}. Page: ${currentPage}`);
               return [...prev, ...newPokemon];
             });
           } else {
