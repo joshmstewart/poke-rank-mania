@@ -16,6 +16,7 @@ export interface Generation {
 
 // Pokémon generations data
 export const generations: Generation[] = [
+  { id: 0, name: "All Generations", start: 1, end: 1025 },
   { id: 1, name: "Generation I", start: 1, end: 151 },
   { id: 2, name: "Generation II", start: 152, end: 251 },
   { id: 3, name: "Generation III", start: 252, end: 386 },
@@ -29,29 +30,69 @@ export const generations: Generation[] = [
 
 export async function fetchAllPokemon(generationId: number = 1): Promise<Pokemon[]> {
   try {
-    const selectedGeneration = generations.find(gen => gen.id === generationId) || generations[0];
+    const selectedGeneration = generations.find(gen => gen.id === generationId) || generations[1];
     const limit = selectedGeneration.end - selectedGeneration.start + 1;
     const offset = selectedGeneration.start - 1;
     
-    const response = await fetch(`https://pokeapi.co/api/v2/pokemon?offset=${offset}&limit=${limit}`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch Pokemon');
+    // For large requests (All Generations), we need to paginate the requests
+    if (generationId === 0 && limit > 300) {
+      let allPokemon: Pokemon[] = [];
+      let currentOffset = offset;
+      const maxPerRequest = 300;
+      
+      toast({
+        title: "Loading all Pokémon",
+        description: "This might take a moment as we're fetching over 1000 Pokémon...",
+      });
+      
+      while (currentOffset < selectedGeneration.end) {
+        const currentLimit = Math.min(maxPerRequest, selectedGeneration.end - currentOffset);
+        const response = await fetch(`https://pokeapi.co/api/v2/pokemon?offset=${currentOffset}&limit=${currentLimit}`);
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch Pokemon');
+        }
+        
+        const data = await response.json();
+        
+        const pokemonBatch = await Promise.all(
+          data.results.map(async (pokemon: { name: string; url: string }) => {
+            const pokemonId = pokemon.url.split('/').filter(Boolean).pop();
+            return {
+              id: Number(pokemonId),
+              name: pokemon.name.charAt(0).toUpperCase() + pokemon.name.slice(1),
+              image: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemonId}.png`
+            };
+          })
+        );
+        
+        allPokemon = [...allPokemon, ...pokemonBatch];
+        currentOffset += currentLimit;
+      }
+      
+      return allPokemon;
+    } else {
+      // Standard request for specific generations
+      const response = await fetch(`https://pokeapi.co/api/v2/pokemon?offset=${offset}&limit=${limit}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch Pokemon');
+      }
+      
+      const data = await response.json();
+      
+      const pokemonList = await Promise.all(
+        data.results.map(async (pokemon: { name: string; url: string }) => {
+          const pokemonId = pokemon.url.split('/').filter(Boolean).pop();
+          return {
+            id: Number(pokemonId),
+            name: pokemon.name.charAt(0).toUpperCase() + pokemon.name.slice(1),
+            image: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemonId}.png`
+          };
+        })
+      );
+      
+      return pokemonList;
     }
-    
-    const data = await response.json();
-    
-    const pokemonList = await Promise.all(
-      data.results.map(async (pokemon: { name: string; url: string }) => {
-        const pokemonId = pokemon.url.split('/').filter(Boolean).pop();
-        return {
-          id: Number(pokemonId),
-          name: pokemon.name.charAt(0).toUpperCase() + pokemon.name.slice(1),
-          image: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemonId}.png`
-        };
-      })
-    );
-    
-    return pokemonList;
   } catch (error) {
     console.error('Error fetching Pokemon:', error);
     toast({
@@ -106,7 +147,8 @@ export function exportRankings(rankings: Pokemon[], generationId: number = 1): v
     const dataStr = JSON.stringify(rankings, null, 2);
     const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
     
-    const exportFileDefaultName = `pokemon-rankings-gen-${generationId}.json`;
+    const genLabel = generationId === 0 ? "all" : `gen-${generationId}`;
+    const exportFileDefaultName = `pokemon-rankings-${genLabel}.json`;
     
     const linkElement = document.createElement('a');
     linkElement.setAttribute('href', dataUri);
@@ -121,4 +163,3 @@ export function exportRankings(rankings: Pokemon[], generationId: number = 1): v
     });
   }
 }
-

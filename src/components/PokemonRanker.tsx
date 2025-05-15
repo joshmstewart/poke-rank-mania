@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Download, Save, Info } from "lucide-react";
+import { Download, Save, Info, AlertTriangle } from "lucide-react";
 import PokemonList from "./PokemonList";
 import { Pokemon, fetchAllPokemon, saveRankings, loadRankings, exportRankings, generations } from "@/services/pokemonService";
 import { toast } from "@/hooks/use-toast";
@@ -119,6 +119,19 @@ const PokemonRanker = () => {
     });
   };
 
+  const handleGenerationChange = (value: string) => {
+    const newGenId = Number(value);
+    
+    // If switching to All Generations and we have over 1000 Pokémon
+    if (newGenId === 0) {
+      toast({
+        description: "Loading all Pokémon may take a moment and could slow down performance.",
+      });
+    }
+    
+    setSelectedGeneration(newGenId);
+  };
+
   return (
     <div className="container max-w-7xl mx-auto py-6">
       <div className="flex flex-col space-y-4">
@@ -139,6 +152,7 @@ const PokemonRanker = () => {
                   <p>Drag Pokémon from the left panel to your ranking list on the right.</p>
                   <p>Rearrange them in your preferred order from favorite (top) to least favorite (bottom).</p>
                   <p>Use the search box to find specific Pokémon quickly.</p>
+                  <p>You can choose to rank Pokémon within a specific generation or across all generations.</p>
                   <p>Don't forget to save your progress using the Save button!</p>
                   <p>You can also export your rankings as a JSON file to share or keep for reference.</p>
                 </div>
@@ -156,14 +170,18 @@ const PokemonRanker = () => {
 
         <div className="flex items-center mb-4">
           <div className="w-64">
-            <Select value={selectedGeneration.toString()} onValueChange={(value) => setSelectedGeneration(Number(value))}>
+            <Select value={selectedGeneration.toString()} onValueChange={handleGenerationChange}>
               <SelectTrigger>
                 <SelectValue placeholder="Select Generation" />
               </SelectTrigger>
               <SelectContent>
                 {generations.map((gen) => (
                   <SelectItem key={gen.id} value={gen.id.toString()}>
-                    {gen.name} (#{gen.start}-{gen.end})
+                    {gen.name} {gen.id === 0 ? (
+                      <span className="text-yellow-600 ml-2">(May be slow)</span>
+                    ) : (
+                      <span>(#{gen.start}-{gen.end})</span>
+                    )}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -182,6 +200,11 @@ const PokemonRanker = () => {
                 <div className="text-center">
                   <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto"></div>
                   <p className="mt-4">Loading Pokémon...</p>
+                  {selectedGeneration === 0 && (
+                    <p className="text-sm text-muted-foreground mt-2">
+                      Loading all generations may take a moment...
+                    </p>
+                  )}
                 </div>
               </div>
             ) : (
