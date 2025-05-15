@@ -37,8 +37,7 @@ const BattleContent: React.FC<BattleContentProps> = ({
   onTripletSelectionComplete,
   onGoBack,
   onNewBattleSet,
-  onContinueBattles,
-  onSaveRankings
+  onContinueBattles
 }) => {
   if (!showingMilestone && !rankingGenerated) {
     return (
