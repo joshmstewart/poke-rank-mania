@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { DragDropContext, DropResult } from "react-beautiful-dnd";
 import { Button } from "@/components/ui/button";
@@ -6,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Info, AlertTriangle } from "lucide-react";
+import { Info } from "lucide-react";
 import PokemonList from "./PokemonList";
 import { 
   Pokemon, 
@@ -28,7 +27,6 @@ import {
   PaginationNext, 
   PaginationPrevious 
 } from "@/components/ui/pagination";
-import { Slider } from "@/components/ui/slider";
 
 // Load options for the number of Pokémon to show
 const loadSizeOptions = [50, 100, 200, 500, 1000];
@@ -106,7 +104,9 @@ const PokemonRanker = () => {
     if (selectedGeneration === 0) {
       // For single load option, fetch with larger page size
       const pageSize = loadingType === "single" ? loadSize : ITEMS_PER_PAGE;
-      const { pokemon, totalPages: pages } = await fetchPaginatedPokemon(selectedGeneration, currentPage, pageSize);
+      // Fix here: Make sure to pass only two arguments to fetchPaginatedPokemon
+      const { pokemon, totalPages: pages } = await fetchPaginatedPokemon(selectedGeneration, currentPage);
+      
       setTotalPages(pages);
       
       if (savedRankings.length > 0) {
@@ -152,7 +152,7 @@ const PokemonRanker = () => {
         setRankedPokemon(savedRankings);
         setAvailablePokemon(remainingPokemon);
         
-        toast("Rankings loaded", {
+        toast({
           description: "Your previously saved rankings have been restored."
         });
       } else {
