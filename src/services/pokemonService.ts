@@ -95,8 +95,7 @@ export async function fetchPaginatedPokemon(
     };
   } catch (error) {
     console.error('Error fetching Pokemon:', error);
-    toast({
-      title: "Error",
+    toast("Error", {
       description: "Failed to fetch Pokemon. Please try again.",
       variant: "destructive"
     });
@@ -114,9 +113,8 @@ export async function fetchAllPokemon(generationId: number = 1, fullRankingMode:
         // This gives a diverse but manageable set
         const sampleSize = 150; // A reasonable number for battles
         
-        toast({
-          title: "Loading sample",
-          description: `Loading a selection of ${sampleSize} Pokémon from all generations for battling.`,
+        toast("Loading sample", {
+          description: `Loading a selection of ${sampleSize} Pokémon from all generations for battling.`
         });
         
         // Create an array representing all Pokemon IDs
@@ -168,9 +166,8 @@ export async function fetchAllPokemon(generationId: number = 1, fullRankingMode:
         return pokemonList;
       } else {
         // For full ranking mode, we need to fetch all Pokemon in batches
-        toast({
-          title: "Loading all Pokémon",
-          description: "This may take a moment as we load all Pokémon for a complete ranking.",
+        toast("Loading all Pokémon", {
+          description: "This may take a moment as we load all Pokémon for a complete ranking."
         });
         
         // Batch size for API requests
@@ -208,14 +205,12 @@ export async function fetchAllPokemon(generationId: number = 1, fullRankingMode:
             allPokemon.push(...batchResults);
             
             // Update progress
-            toast({
-              title: "Loading progress",
-              description: `Loaded ${Math.min(offset + BATCH_SIZE, totalPokemon)} of ${totalPokemon} Pokémon...`,
+            toast("Loading progress", {
+              description: `Loaded ${Math.min(offset + BATCH_SIZE, totalPokemon)} of ${totalPokemon} Pokémon...`
             });
           } catch (error) {
             console.error(`Error fetching batch at offset ${offset}:`, error);
-            toast({
-              title: "Error",
+            toast("Error", {
               description: `Failed to fetch some Pokémon. Your ranking might be incomplete.`,
               variant: "destructive"
             });
@@ -275,8 +270,7 @@ export async function fetchAllPokemon(generationId: number = 1, fullRankingMode:
     return pokemonList;
   } catch (error) {
     console.error('Error fetching Pokemon:', error);
-    toast({
-      title: "Error",
+    toast("Error", {
       description: "Failed to fetch Pokemon. Please try again.",
       variant: "destructive"
     });
@@ -327,8 +321,7 @@ export function loadRankings(generationId: number = 1): Pokemon[] {
     return [];
   } catch (error) {
     console.error('Error loading rankings:', error);
-    toast({
-      title: "Error",
+    toast("Error", {
       description: "Failed to load saved rankings.",
       variant: "destructive"
     });
@@ -351,8 +344,7 @@ export function exportRankings(rankings: Pokemon[], generationId: number = 1): v
     linkElement.click();
   } catch (error) {
     console.error('Error exporting rankings:', error);
-    toast({
-      title: "Error",
+    toast("Error", {
       description: "Failed to export rankings. Please try again.",
       variant: "destructive"
     });

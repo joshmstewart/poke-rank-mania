@@ -87,9 +87,8 @@ const PokemonRanker = () => {
         setRankedPokemon(savedRankings);
         setAvailablePokemon(remainingPokemon);
         
-        toast({
-          title: "Rankings loaded",
-          description: "Your previously saved rankings have been restored.",
+        toast("Rankings loaded", {
+          description: "Your previously saved rankings have been restored."
         });
       } else {
         setAvailablePokemon(allPokemon);
