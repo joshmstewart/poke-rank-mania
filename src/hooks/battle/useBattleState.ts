@@ -26,6 +26,22 @@ export const useBattleState = () => {
   
   // Milestone triggers - show rankings at these battle counts
   const milestones = [10, 25, 50, 100, 200, 500, 1000];
+
+  // Load Pokémon first before any other hook that depends on it
+  const {
+    isLoading,
+    allPokemon,
+    loadPokemon
+  } = usePokemonLoader(
+    setRankingGenerated,
+    setBattleResults,
+    setBattlesCompleted,
+    setBattleHistory,
+    setShowingMilestone,
+    setCompletionPercentage,
+    setSelectedPokemon,
+    startNewBattle
+  );
   
   // Core function for starting a new battle
   const startNewBattle = (pokemonList: Pokemon[]) => {
@@ -52,21 +68,6 @@ export const useBattleState = () => {
     handleSaveRankings: saveRankings
   } = useRankings(allPokemon);
   
-  const {
-    isLoading,
-    allPokemon,
-    loadPokemon
-  } = usePokemonLoader(
-    setRankingGenerated,
-    setBattleResults,
-    setBattlesCompleted,
-    setBattleHistory,
-    setShowingMilestone,
-    setCompletionPercentage,
-    setSelectedPokemon,
-    startNewBattle
-  );
-
   const {
     selectedGeneration,
     battleType,
