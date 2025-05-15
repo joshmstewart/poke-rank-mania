@@ -56,9 +56,13 @@ export const useCompletionTracker = (
 
   // Update the local state when the ranking is generated
   useEffect(() => {
-    // Check if setRankingGenerated is true, and if so, update our local state
+    // Check if ranking is generated, and if so, update our local state
+    const updateRankingState = () => {
+      setCurrentRankingGenerated(true);
+    };
+    
     if (setRankingGenerated) {
-      setCurrentRankingGenerated(prev => prev || true);
+      updateRankingState();
     }
   }, [setRankingGenerated]);
 
