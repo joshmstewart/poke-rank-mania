@@ -2,7 +2,6 @@
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Pokemon } from "@/services/pokemonService";
 
 interface BattleCardProps {
@@ -52,21 +51,12 @@ const BattleCard: React.FC<BattleCardProps> = ({
             </div>
           )}
           
-          {battleType === "pairs" ? (
-            <div className="mt-4 px-3 py-2 bg-gray-100 rounded flex items-center justify-center w-full">
-              <div className={`text-sm ${isSelected ? "font-bold text-primary" : ""}`}>
-                {isSelected ? "Selected" : "Click to select"}
-              </div>
+          {/* Simple visual indicator with no interaction elements */}
+          <div className="mt-4 px-3 py-2 bg-gray-100 rounded flex items-center justify-center w-full">
+            <div className={`text-sm ${isSelected ? "font-bold text-primary" : ""}`}>
+              {isSelected ? "Selected" : "Click to select"}
             </div>
-          ) : (
-            <Button
-              variant={isSelected ? "default" : "outline"}
-              onClick={handleClick}
-              className="mt-4 w-full"
-            >
-              {isSelected ? "Selected" : "Select"}
-            </Button>
-          )}
+          </div>
         </CardContent>
       </Card>
     </div>
