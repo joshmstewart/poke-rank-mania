@@ -32,7 +32,8 @@ const BattleMode = () => {
     handleContinueBattles,
     handleNewBattleSet,
     goBack,
-    getBattlesRemaining
+    getBattlesRemaining,
+    isProcessing
   } = useBattleState();
 
   const handleConfirmRestart = () => {
@@ -101,6 +102,7 @@ const BattleMode = () => {
           onNewBattleSet={handleNewBattleSet}
           onContinueBattles={handleContinueBattles}
           onSaveRankings={handleSaveRankings}
+          isProcessing={isProcessing}
         />
       </div>
     </div>

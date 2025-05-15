@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft } from "lucide-react";
 import { Pokemon } from "@/services/pokemon";
@@ -16,6 +16,7 @@ interface BattleInterfaceProps {
   onTripletSelectionComplete: () => void;
   onGoBack: () => void;
   milestones: number[];
+  isProcessing?: boolean;
 }
 
 const BattleInterface: React.FC<BattleInterfaceProps> = ({
@@ -27,7 +28,8 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
   onPokemonSelect,
   onTripletSelectionComplete,
   onGoBack,
-  milestones
+  milestones,
+  isProcessing = false
 }) => {
   // Animation state without the flashing issue
   const [animationKey, setAnimationKey] = useState(0);
@@ -39,18 +41,23 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
     }
   }, [currentBattle]);
 
-  // Simple direct click handler with immediate forwarding
-  const handlePokemonCardSelect = (id: number) => {
+  // Stable click handler that won't change on rerenders
+  const handlePokemonCardSelect = useCallback((id: number) => {
     console.log("BattleInterface: handlePokemonCardSelect called with id:", id);
-    // Direct immediate execution - no delays
-    onPokemonSelect(id);
-  };
+    if (!isProcessing) {
+      onPokemonSelect(id);
+    } else {
+      console.log("BattleInterface: Ignoring click because processing is in progress");
+    }
+  }, [onPokemonSelect, isProcessing]);
 
   // Simplified submit handler
-  const handleSubmit = () => {
+  const handleSubmit = useCallback(() => {
     console.log("Submit button clicked for triplets mode");
-    onTripletSelectionComplete();
-  };
+    if (!isProcessing) {
+      onTripletSelectionComplete();
+    }
+  }, [onTripletSelectionComplete, isProcessing]);
   
   return (
     <div className="bg-white rounded-lg shadow p-6">
@@ -63,6 +70,7 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
                 size="sm" 
                 className="mr-2" 
                 onClick={onGoBack}
+                disabled={isProcessing}
               >
                 <ChevronLeft className="mr-1" /> Back
               </Button>
@@ -99,6 +107,7 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
             isSelected={selectedPokemon.includes(pokemon.id)}
             battleType={battleType}
             onSelect={handlePokemonCardSelect}
+            isProcessing={isProcessing}
           />
         ))}
       </div>
@@ -110,6 +119,7 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
             size="lg" 
             onClick={handleSubmit}
             className="px-8"
+            disabled={isProcessing}
           >
             Submit Your Choices
           </Button>

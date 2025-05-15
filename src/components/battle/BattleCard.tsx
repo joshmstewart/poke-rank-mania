@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { memo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Pokemon } from "@/services/pokemonService";
 import { MousePointerClick } from "lucide-react";
@@ -9,31 +9,45 @@ interface BattleCardProps {
   isSelected: boolean;
   battleType: "pairs" | "triplets";
   onSelect: (id: number) => void;
+  isProcessing?: boolean;
 }
 
-const BattleCard: React.FC<BattleCardProps> = ({
+// Use memo to prevent unnecessary re-renders
+const BattleCard: React.FC<BattleCardProps> = memo(({
   pokemon,
   isSelected,
   battleType,
-  onSelect
+  onSelect,
+  isProcessing
 }) => {
-  // Create a direct click handler without useCallback to avoid stale closures
+  // Create a direct click handler that prevents event bubbling
   const handleCardClick = (e: React.MouseEvent) => {
-    // Prevent default and stop propagation to avoid double clicks
     e.preventDefault();
     e.stopPropagation();
     
-    console.log(`BattleCard clicked: ${pokemon.id}, ${pokemon.name}`);
+    // Skip if processing
+    if (isProcessing) {
+      console.log(`Card click ignored for ${pokemon.name} because processing is in progress`);
+      return;
+    }
     
-    // Pass the ID directly to the onSelect function
+    console.log(`BattleCard clicked: ${pokemon.id}, ${pokemon.name}`);
     onSelect(pokemon.id);
   };
 
+  // Determine card styling based on selection and processing state
+  const cardStyles = `
+    cursor-pointer 
+    h-full 
+    transform 
+    transition-all 
+    ${isSelected ? "ring-4 ring-primary" : ""} 
+    ${isProcessing ? "opacity-80" : "hover:scale-105"}
+  `;
+
   return (
     <Card 
-      className={`cursor-pointer h-full transform transition-all hover:scale-105 ${
-        isSelected ? "ring-4 ring-primary" : ""
-      }`}
+      className={cardStyles}
       onClick={handleCardClick}
       role="button"
       aria-pressed={isSelected}
@@ -62,12 +76,12 @@ const BattleCard: React.FC<BattleCardProps> = ({
             </div>
           )}
           
-          {/* Show click indicator for pairs mode */}
+          {/* Show click indicator for pairs mode with improved feedback */}
           {battleType === "pairs" ? (
             <div className="mt-4 px-3 py-2 bg-gray-100 rounded flex items-center justify-center w-full">
-              <div className="text-sm flex items-center gap-1">
-                <MousePointerClick size={16} />
-                Click to select
+              <div className={`text-sm flex items-center gap-1 ${isProcessing ? "text-gray-400" : "text-primary"}`}>
+                <MousePointerClick size={16} className={isProcessing ? "animate-pulse" : ""} />
+                {isProcessing ? "Processing..." : "Click to select"}
               </div>
             </div>
           ) : (
@@ -82,6 +96,8 @@ const BattleCard: React.FC<BattleCardProps> = ({
       </CardContent>
     </Card>
   );
-};
+});
+
+BattleCard.displayName = "BattleCard";
 
 export default BattleCard;

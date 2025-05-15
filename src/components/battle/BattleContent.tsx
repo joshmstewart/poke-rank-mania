@@ -21,6 +21,7 @@ interface BattleContentProps {
   onNewBattleSet: () => void;
   onContinueBattles: () => void;
   onSaveRankings: () => void;
+  isProcessing?: boolean;
 }
 
 const BattleContent: React.FC<BattleContentProps> = ({
@@ -38,7 +39,8 @@ const BattleContent: React.FC<BattleContentProps> = ({
   onGoBack,
   onNewBattleSet,
   onContinueBattles,
-  onSaveRankings
+  onSaveRankings,
+  isProcessing = false
 }) => {
   if (!showingMilestone && !rankingGenerated) {
     return (
@@ -52,6 +54,7 @@ const BattleContent: React.FC<BattleContentProps> = ({
         onTripletSelectionComplete={onTripletSelectionComplete}
         onGoBack={onGoBack}
         milestones={milestones}
+        isProcessing={isProcessing}
       />
     );
   } else {

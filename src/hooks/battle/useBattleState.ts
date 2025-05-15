@@ -114,7 +114,8 @@ export const useBattleState = () => {
   // Setup battle interactions hook
   const {
     handlePokemonSelect,
-    handleGoBack
+    handleGoBack,
+    isProcessing
   } = useBattleInteractions(
     selectionState.currentBattle,
     selectionState.setCurrentBattle,
@@ -178,6 +179,7 @@ export const useBattleState = () => {
     completionPercentage: uiState.completionPercentage,
     fullRankingMode: uiState.fullRankingMode,
     milestones: uiState.milestones,
+    isProcessing,
     handleGenerationChange,
     handleBattleTypeChange,
     handlePokemonSelect,
