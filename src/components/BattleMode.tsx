@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertTriangle } from "lucide-react";
+import { ChevronLeft, AlertTriangle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { 
   Pokemon, 
@@ -28,6 +28,11 @@ const BattleMode = () => {
   const [battlesCompleted, setBattlesCompleted] = useState(0);
   const [rankingGenerated, setRankingGenerated] = useState(false);
   const [finalRankings, setFinalRankings] = useState<Pokemon[]>([]);
+  const [battleHistory, setBattleHistory] = useState<{ battle: Pokemon[], selected: number[] }[]>([]);
+  const [showingMilestone, setShowingMilestone] = useState(false);
+  
+  // Milestone triggers - show rankings at these battle counts
+  const milestones = [10, 25, 50, 100, 200, 500, 1000];
   
   useEffect(() => {
     loadPokemon();
@@ -43,6 +48,8 @@ const BattleMode = () => {
     setBattlesCompleted(0);
     setRankingGenerated(false);
     setSelectedPokemon([]);
+    setBattleHistory([]);
+    setShowingMilestone(false);
     
     // Start the first battle
     if (pokemon.length > 0) {
@@ -77,32 +84,47 @@ const BattleMode = () => {
     setBattleResults([]);
     setBattlesCompleted(0);
     setRankingGenerated(false);
+    setBattleHistory([]);
     startNewBattle(allPokemon);
   };
 
   const handlePokemonSelect = (id: number) => {
-    if (selectedPokemon.includes(id)) {
-      // If already selected, unselect it
-      setSelectedPokemon(selectedPokemon.filter(pokemonId => pokemonId !== id));
+    // For pairs, immediately process the battle when selection is made
+    if (battleType === "pairs") {
+      // Save current battle to history before processing
+      setBattleHistory([...battleHistory, { 
+        battle: [...currentBattle], 
+        selected: [id] 
+      }]);
+      
+      processBattleResult([id]);
     } else {
-      // If in pairs mode, only allow one selection
-      if (battleType === "pairs") {
-        setSelectedPokemon([id]);
+      // For triplets, toggle selection
+      if (selectedPokemon.includes(id)) {
+        // If already selected, unselect it
+        setSelectedPokemon(selectedPokemon.filter(pokemonId => pokemonId !== id));
       } else {
-        // In triplets mode, allow multiple selections
+        // Add to selection
         setSelectedPokemon([...selectedPokemon, id]);
       }
     }
   };
 
-  const handleBattleSubmit = () => {
-    if ((battleType === "pairs" && selectedPokemon.length !== 1) ||
-        (battleType === "triplets" && selectedPokemon.length === 0)) {
+  const handleTripletSelectionComplete = () => {
+    // Save current battle to history
+    setBattleHistory([...battleHistory, { 
+      battle: [...currentBattle], 
+      selected: [...selectedPokemon] 
+    }]);
+    
+    processBattleResult(selectedPokemon);
+  };
+
+  const processBattleResult = (selections: number[]) => {
+    if ((battleType === "triplets" && selections.length === 0)) {
       toast({
         title: "Selection Required",
-        description: battleType === "pairs" 
-          ? "Please select your favorite Pokémon to continue." 
-          : "Please select at least one Pokémon to continue.",
+        description: "Please select at least one Pokémon to continue.",
         variant: "destructive"
       });
       return;
@@ -113,13 +135,13 @@ const BattleMode = () => {
     
     if (battleType === "pairs") {
       // For pairs, we know who won and who lost
-      const winner = currentBattle.find(p => p.id === selectedPokemon[0])!;
-      const loser = currentBattle.find(p => p.id !== selectedPokemon[0])!;
+      const winner = currentBattle.find(p => p.id === selections[0])!;
+      const loser = currentBattle.find(p => p.id !== selections[0])!;
       newResults.push({ winner, loser });
     } else {
       // For triplets, each selected is considered a "winner" against each unselected
-      const winners = currentBattle.filter(p => selectedPokemon.includes(p.id));
-      const losers = currentBattle.filter(p => !selectedPokemon.includes(p.id));
+      const winners = currentBattle.filter(p => selections.includes(p.id));
+      const losers = currentBattle.filter(p => !selections.includes(p.id));
       
       winners.forEach(winner => {
         losers.forEach(loser => {
@@ -129,14 +151,59 @@ const BattleMode = () => {
     }
     
     setBattleResults(newResults);
-    setBattlesCompleted(battlesCompleted + 1);
+    const newBattlesCompleted = battlesCompleted + 1;
+    setBattlesCompleted(newBattlesCompleted);
     
-    // Decide whether to generate rankings or start a new battle
-    if (battlesCompleted >= 9) { // After 10 battles (0-indexed)
+    // Check if we've hit a milestone
+    if (milestones.includes(newBattlesCompleted)) {
       generateRankings(newResults);
+      setShowingMilestone(true);
     } else {
+      // Continue with next battle
       startNewBattle(allPokemon);
     }
+  };
+
+  const goBack = () => {
+    if (battleHistory.length === 0) {
+      toast({
+        title: "No previous battles",
+        description: "There are no previous battles to return to."
+      });
+      return;
+    }
+    
+    // Remove the last battle result
+    const newHistory = [...battleHistory];
+    const lastBattle = newHistory.pop();
+    setBattleHistory(newHistory);
+    
+    // Also remove the last result from battleResults
+    const newResults = [...battleResults];
+    
+    // Calculate how many results to remove based on the battle type and selections
+    let resultsToRemove = 1; // Default for pairs
+    if (battleType === "triplets" && lastBattle) {
+      const selectedCount = lastBattle.selected.length;
+      const unselectedCount = lastBattle.battle.length - selectedCount;
+      resultsToRemove = selectedCount * unselectedCount;
+    }
+    
+    // Remove the appropriate number of results
+    newResults.splice(newResults.length - resultsToRemove, resultsToRemove);
+    setBattleResults(newResults);
+    
+    // Decrement battles completed
+    setBattlesCompleted(battlesCompleted - 1);
+    
+    // Set the current battle back to the previous one
+    if (lastBattle) {
+      setCurrentBattle(lastBattle.battle);
+      setSelectedPokemon([]);
+    }
+    
+    // If we were showing a milestone, go back to battles
+    setShowingMilestone(false);
   };
 
   const generateRankings = (results: BattleResult) => {
@@ -170,11 +237,15 @@ const BattleMode = () => {
       .map(item => item.pokemon);
     
     setFinalRankings(rankings);
-    setRankingGenerated(true);
+    
+    // Only set rankingGenerated to true if we're at the final milestone
+    if (battlesCompleted >= milestones[milestones.length - 1]) {
+      setRankingGenerated(true);
+    }
     
     toast({
-      title: "Ranking Complete!",
-      description: "Your Pokémon ranking has been generated based on your battle choices."
+      title: "Milestone Reached!",
+      description: `You've completed ${battlesCompleted} battles. Here's your current ranking!`
     });
   };
 
@@ -182,10 +253,17 @@ const BattleMode = () => {
     saveRankings(finalRankings, selectedGeneration);
   };
 
+  const handleContinueBattles = () => {
+    setShowingMilestone(false);
+    startNewBattle(allPokemon);
+  };
+
   const handleNewBattleSet = () => {
     setBattleResults([]);
     setBattlesCompleted(0);
     setRankingGenerated(false);
+    setBattleHistory([]);
+    setShowingMilestone(false);
     startNewBattle(allPokemon);
   };
 
@@ -230,20 +308,38 @@ const BattleMode = () => {
           </div>
         </div>
 
-        {!rankingGenerated ? (
+        {!showingMilestone && !rankingGenerated ? (
           <div className="bg-white rounded-lg shadow p-6">
-            <div className="mb-4">
+            <div className="mb-4 relative">
+              {battleHistory.length > 0 && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="absolute -left-2 top-0" 
+                  onClick={goBack}
+                >
+                  <ChevronLeft className="mr-1" /> Back
+                </Button>
+              )}
               <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold">Battle {battlesCompleted + 1}/10</h2>
+                <h2 className="text-2xl font-bold">Battle {battlesCompleted + 1}</h2>
                 <div className="text-sm text-gray-500">
                   Select your {battleType === "pairs" ? "favorite" : "favorites"}
                 </div>
               </div>
+              
+              {/* Progress bar that shows progress to the next milestone */}
               <div className="h-1 w-full bg-gray-200 rounded-full mt-2">
                 <div 
                   className="h-1 bg-primary rounded-full transition-all" 
-                  style={{ width: `${(battlesCompleted) * 10}%` }}
+                  style={{ 
+                    width: `${(battlesCompleted % (milestones.find(m => m > battlesCompleted) || 10)) / 
+                    (milestones.find(m => m > battlesCompleted) || 10) * 100}%` 
+                  }}
                 ></div>
+              </div>
+              <div className="text-xs text-right mt-1 text-gray-500">
+                Next milestone: {milestones.find(m => m > battlesCompleted) || "∞"} battles
               </div>
             </div>
             
@@ -306,21 +402,26 @@ const BattleMode = () => {
               ))}
             </div>
             
-            <div className="mt-8 flex justify-center">
-              <Button 
-                size="lg" 
-                onClick={handleBattleSubmit}
-                className="px-8"
-              >
-                Submit Your Choice
-              </Button>
-            </div>
+            {/* Only show the submit button for triplets */}
+            {battleType === "triplets" && (
+              <div className="mt-8 flex justify-center">
+                <Button 
+                  size="lg" 
+                  onClick={handleTripletSelectionComplete}
+                  className="px-8"
+                >
+                  Submit Your Choices
+                </Button>
+              </div>
+            )}
           </div>
         ) : (
           <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-2xl font-bold mb-4">Your Generated Ranking</h2>
+            <h2 className="text-2xl font-bold mb-4">
+              {rankingGenerated ? "Your Final Ranking" : "Milestone Reached!"}
+            </h2>
             <p className="mb-8 text-gray-600">
-              Based on your {battlesCompleted} battle choices, we've generated a ranking of your favorite Pokémon.
+              Based on your {battlesCompleted} battle choices, here's your{rankingGenerated ? " final" : " current"} ranking of Pokémon.
             </p>
             
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -345,15 +446,40 @@ const BattleMode = () => {
             </div>
             
             <div className="flex justify-center gap-4 mt-8">
-              <Button variant="outline" onClick={handleNewBattleSet}>
-                Start New Battle Set
-              </Button>
-              <Button onClick={handleSaveRankings}>
-                Save This Ranking
-              </Button>
+              {rankingGenerated ? (
+                <>
+                  <Button variant="outline" onClick={handleNewBattleSet}>
+                    Start New Battle Set
+                  </Button>
+                  <Button onClick={handleSaveRankings}>
+                    Save This Ranking
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button variant="outline" onClick={handleNewBattleSet}>
+                    Restart Battles
+                  </Button>
+                  <Button onClick={handleContinueBattles}>
+                    Continue Battling
+                  </Button>
+                  <Button variant="secondary" onClick={handleSaveRankings}>
+                    Save Current Ranking
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         )}
+
+        <div className="bg-white rounded-lg shadow p-4">
+          <div className="flex items-center">
+            <AlertTriangle className="h-5 w-5 text-amber-500 mr-2" />
+            <p className="text-sm text-gray-600">
+              You've completed {battlesCompleted} battles. The more battles you complete, the more accurate your ranking will be!
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );
