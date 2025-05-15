@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { DragDropContext, Droppable, Draggable, DropResult } from "react-beautiful-dnd";
+import { Droppable, Draggable, DropResult } from "react-beautiful-dnd";
 import PokemonCard from "./PokemonCard";
 import { Pokemon } from "@/services/pokemonService";
 import { Button } from "@/components/ui/button";
@@ -37,45 +37,43 @@ const PokemonList = ({ title, pokemonList, droppableId, onDragEnd }: PokemonList
       </div>
       
       <div className="flex-1 overflow-auto bg-gray-50 rounded-lg p-2 min-h-[400px]">
-        <DragDropContext onDragEnd={onDragEnd || (() => {})}>
-          <Droppable droppableId={droppableId}>
-            {(provided) => (
-              <div
-                {...provided.droppableProps}
-                ref={provided.innerRef}
-                className="space-y-2"
-              >
-                {filteredPokemon.length > 0 ? (
-                  filteredPokemon.map((pokemon, index) => (
-                    <Draggable
-                      key={`${pokemon.id}-${droppableId}`}
-                      draggableId={`${pokemon.id}-${droppableId}`}
-                      index={index}
-                    >
-                      {(provided, snapshot) => (
-                        <div
-                          ref={provided.innerRef}
-                          {...provided.draggableProps}
-                          {...provided.dragHandleProps}
-                        >
-                          <PokemonCard
-                            pokemon={pokemon}
-                            isDragging={snapshot.isDragging}
-                          />
-                        </div>
-                      )}
-                    </Draggable>
-                  ))
-                ) : (
-                  <div className="flex items-center justify-center h-32 text-muted-foreground">
-                    {searchTerm ? "No Pokemon found" : "No Pokemon here yet"}
-                  </div>
-                )}
-                {provided.placeholder}
-              </div>
-            )}
-          </Droppable>
-        </DragDropContext>
+        <Droppable droppableId={droppableId}>
+          {(provided) => (
+            <div
+              {...provided.droppableProps}
+              ref={provided.innerRef}
+              className="space-y-2"
+            >
+              {filteredPokemon.length > 0 ? (
+                filteredPokemon.map((pokemon, index) => (
+                  <Draggable
+                    key={`${pokemon.id}-${droppableId}`}
+                    draggableId={`${pokemon.id}-${droppableId}`}
+                    index={index}
+                  >
+                    {(provided, snapshot) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                        {...provided.dragHandleProps}
+                      >
+                        <PokemonCard
+                          pokemon={pokemon}
+                          isDragging={snapshot.isDragging}
+                        />
+                      </div>
+                    )}
+                  </Draggable>
+                ))
+              ) : (
+                <div className="flex items-center justify-center h-32 text-muted-foreground">
+                  {searchTerm ? "No Pokemon found" : "No Pokemon here yet"}
+                </div>
+              )}
+              {provided.placeholder}
+            </div>
+          )}
+        </Droppable>
       </div>
     </div>
   );
