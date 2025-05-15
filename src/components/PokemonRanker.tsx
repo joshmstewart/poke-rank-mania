@@ -3,7 +3,7 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Info } from "lucide-react";
+import { Info, Trash2 } from "lucide-react";
 import { ITEMS_PER_PAGE } from "@/services/pokemon";
 import { RankingControls } from "./ranking/RankingControls";
 import { RankingResults } from "./ranking/RankingResults";
@@ -33,6 +33,9 @@ const PokemonRanker = () => {
     handleLoadSizeChange,
     getPageRange
   } = usePokemonRanker();
+
+  const generationName = selectedGeneration === 0 ? "All Generations" : 
+    `Generation ${selectedGeneration}`;
 
   return (
     <div className="container max-w-7xl mx-auto py-6">
@@ -66,7 +69,14 @@ const PokemonRanker = () => {
                 </div>
               </DialogContent>
             </Dialog>
-            <Button onClick={resetRankings} variant="outline">Reset Rankings</Button>
+            <Button 
+              onClick={resetRankings} 
+              variant="outline"
+              title={`Reset rankings for ${generationName}`}
+            >
+              <Trash2 className="h-4 w-4 mr-1" />
+              Reset {generationName} Rankings
+            </Button>
           </div>
         </div>
 
