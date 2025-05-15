@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleResult, BattleType } from "./types";
+import { toast } from "@/hooks/use-toast";
 
 export const useCompletionTracker = (
   allPokemon: Pokemon[],
@@ -12,7 +13,9 @@ export const useCompletionTracker = (
 ) => {
   const calculateCompletionPercentage = () => {
     // For a complete ranking in a tournament style, we need at least n-1 comparisons
-    // where n is the number of Pokémon
+    // where n is the number of Pokémon. This is the minimum number of comparisons
+    // needed to sort a list (optimal comparison-based sorting algorithms).
+    // We don't need to compare every possible pair, which would be n*(n-1)/2.
     const totalPokemon = allPokemon.length;
     
     if (totalPokemon <= 1) {
@@ -21,10 +24,13 @@ export const useCompletionTracker = (
     }
     
     // Minimum number of comparisons needed for a complete ranking
+    // This is based on sort theory - you need at least n-1 comparisons
+    // to fully sort n items (in the best case)
     const minimumComparisons = totalPokemon - 1;
     
     // For pairs, each battle gives us 1 comparison
     // For triplets, each battle can give us multiple comparisons depending on selections
+    // In both cases, battleResults stores each individual comparison
     const currentComparisons = battleResults.length;
     
     // Calculate percentage (cap at 100%)
@@ -32,11 +38,26 @@ export const useCompletionTracker = (
     setCompletionPercentage(percentage);
     
     // If we've reached 100%, make sure to show the final rankings
-    if (percentage >= 100) {
+    if (percentage >= 100 && !currentRankingGenerated) {
       generateRankings(battleResults);
       setRankingGenerated(true);
+      
+      // Show a toast to inform the user they've reached 100%
+      toast({
+        title: "Complete Ranking Achieved!",
+        description: "You've completed enough battles to generate a full ranking of all Pokémon!",
+        variant: "default"
+      });
     }
   };
+
+  // Track if we've already generated a complete ranking to avoid showing the toast multiple times
+  const [currentRankingGenerated, setCurrentRankingGenerated] = useState(false);
+
+  // Update the local state when the ranking is generated
+  useEffect(() => {
+    setCurrentRankingGenerated(rankingGenerated);
+  }, [rankingGenerated]);
 
   // Modified to return a number without requiring battleType parameter
   const getBattlesRemaining = () => {

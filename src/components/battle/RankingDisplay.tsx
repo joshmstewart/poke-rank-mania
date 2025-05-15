@@ -2,7 +2,8 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Pokemon } from "@/services/pokemonService";
+import { Trophy, Medal, Award, CheckCircle } from "lucide-react";
+import { Pokemon } from "@/services/pokemon";
 
 interface RankingDisplayProps {
   finalRankings: Pokemon[];
@@ -21,20 +22,36 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
   onContinueBattles,
   onSaveRankings
 }) => {
+  const renderRankBadge = (rank: number) => {
+    if (rank === 1) return <Trophy className="h-6 w-6 text-yellow-500" />;
+    if (rank === 2) return <Medal className="h-6 w-6 text-gray-400" />;
+    if (rank === 3) return <Medal className="h-6 w-6 text-amber-700" />;
+    return <span className="text-2xl font-bold">{rank}</span>;
+  };
+  
   return (
     <div className="bg-white rounded-lg shadow p-6">
-      <h2 className="text-2xl font-bold mb-4">
-        {rankingGenerated ? "Your Final Ranking" : "Milestone Reached!"}
-      </h2>
-      <p className="mb-8 text-gray-600">
-        Based on your {battlesCompleted} battle choices, here's your{rankingGenerated ? " final" : " current"} ranking of Pokémon.
-      </p>
+      <div className="text-center mb-8">
+        <h2 className="text-2xl font-bold">
+          {rankingGenerated ? "Your Final Ranking" : "Milestone Reached!"}
+        </h2>
+        <p className="mb-2 text-gray-600">
+          Based on your {battlesCompleted} battle choices, here's your{rankingGenerated ? " final" : " current"} ranking of Pokémon.
+        </p>
+        
+        {rankingGenerated && (
+          <div className="flex items-center justify-center mt-2 text-green-600 font-semibold">
+            <CheckCircle className="mr-2 h-5 w-5" />
+            <span>Complete ranking achieved!</span>
+          </div>
+        )}
+      </div>
       
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {finalRankings.slice(0, 10).map((pokemon, index) => (
-          <Card key={pokemon.id} className="flex items-center p-4">
-            <div className="flex-shrink-0 mr-4">
-              <span className="text-2xl font-bold">{index + 1}</span>
+          <Card key={pokemon.id} className={`flex items-center p-4 ${index < 3 ? 'border-2 ' + (index === 0 ? 'border-yellow-400' : index === 1 ? 'border-gray-300' : 'border-amber-600') : ''}`}>
+            <div className="flex-shrink-0 mr-4 flex items-center justify-center w-10">
+              {renderRankBadge(index + 1)}
             </div>
             <div className="flex-shrink-0 w-16 h-16">
               <img 
@@ -50,6 +67,15 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
           </Card>
         ))}
       </div>
+      
+      {rankingGenerated && (
+        <div className="mt-8 text-center">
+          <p className="text-gray-600 mb-4">
+            <Award className="inline-block mr-1 text-primary" size={18} />
+            Congratulations! You've completed enough battles to generate a full ranking.
+          </p>
+        </div>
+      )}
       
       <div className="flex justify-center gap-4 mt-8">
         {rankingGenerated ? (
