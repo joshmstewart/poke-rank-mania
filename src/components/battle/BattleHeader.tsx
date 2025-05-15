@@ -6,8 +6,8 @@ const BattleHeader: React.FC = () => {
   return (
     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
       <div>
-        <h1 className="text-3xl font-bold mb-1">Battle Mode</h1>
-        <p className="text-muted-foreground">
+        <Logo />
+        <p className="text-muted-foreground mt-2">
           Compare Pokémon head-to-head to create your personal ranking
         </p>
       </div>

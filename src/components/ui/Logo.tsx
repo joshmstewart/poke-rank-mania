@@ -6,12 +6,22 @@ export const Logo: React.FC = () => {
     <div className="relative inline-flex items-center">
       {/* Pokemon logo container */}
       <div className="mr-2">
-        <span className="font-bold text-3xl md:text-4xl text-[#ea384c]">Pokémon</span>
+        <span className="font-bold text-3xl md:text-4xl text-[#ea384c] tracking-wider" style={{
+          textShadow: "0 1px 2px rgba(0, 0, 0, 0.6), 2px 1px 0 #3761a8",
+          fontFamily: "'Arial', sans-serif",
+          letterSpacing: "0.05em",
+        }}>
+          Pokémon
+        </span>
       </div>
       
       {/* Rank Mania text */}
       <div className="relative">
-        <span className="font-bold text-2xl md:text-3xl text-white bg-[#ea384c] px-3 py-1 rounded-md shadow-md">
+        <span className="font-bold text-2xl md:text-3xl text-white bg-[#ea384c] px-3 py-1 rounded-md shadow-md" style={{
+          textShadow: "1px 1px 1px rgba(0, 0, 0, 0.5)",
+          fontFamily: "'Arial', sans-serif",
+          letterSpacing: "0.03em",
+        }}>
           Rank Mania
         </span>
         {/* Pokeball-inspired circle */}
