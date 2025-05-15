@@ -1,3 +1,4 @@
+
 import { toast } from "@/hooks/use-toast";
 import { Pokemon, ITEMS_PER_PAGE } from "./types";
 import { generations } from "./data";
@@ -65,7 +66,8 @@ export async function fetchPaginatedPokemon(
     };
   } catch (error) {
     console.error('Error fetching Pokemon:', error);
-    toast("Error", {
+    toast({
+      title: "Error",
       description: "Failed to fetch Pokemon. Please try again.",
       variant: "destructive"
     });

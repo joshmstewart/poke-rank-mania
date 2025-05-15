@@ -49,6 +49,9 @@ const PokemonRanker = () => {
   useEffect(() => {
     if (loadingType === "pagination" || loadingType === "single") {
       loadData();
+    } else if (loadingType === "infinite" && availablePokemon.length === 0) {
+      // Initialize infinite scroll with first page
+      loadData();
     }
   }, [selectedGeneration, currentPage, loadSize, loadingType]);
   
@@ -71,7 +74,8 @@ const PokemonRanker = () => {
     if (loadingType === "infinite") {
       observerRef.current = new IntersectionObserver((entries) => {
         if (entries[0].isIntersecting && !isLoading && currentPage < totalPages) {
-          loadMorePokemon();
+          // When the loading element is visible, load more Pokemon
+          setCurrentPage(prevPage => prevPage + 1);
         }
       }, { threshold: 0.5 });
       
@@ -87,12 +91,12 @@ const PokemonRanker = () => {
     }
   }, [loadingType, isLoading, currentPage, totalPages]);
   
-  // Initial load for infinite scrolling
-  useEffect(() => {
-    if (loadingType === "infinite" && availablePokemon.length === 0) {
-      loadData();
-    }
-  }, [loadingType]);
+  // No longer needed since we handle it in the first useEffect
+  // useEffect(() => {
+  //   if (loadingType === "infinite" && availablePokemon.length === 0) {
+  //     loadData();
+  //   }
+  // }, [loadingType]);
   
   const loadData = async () => {
     setIsLoading(true);
@@ -104,7 +108,7 @@ const PokemonRanker = () => {
     if (selectedGeneration === 0) {
       // For single load option, fetch with larger page size
       const pageSize = loadingType === "single" ? loadSize : ITEMS_PER_PAGE;
-      // Fix here: Make sure to pass only two arguments to fetchPaginatedPokemon
+      // Fix here: Make sure we're using the correct parameters
       const { pokemon, totalPages: pages } = await fetchPaginatedPokemon(selectedGeneration, currentPage);
       
       setTotalPages(pages);
@@ -165,12 +169,12 @@ const PokemonRanker = () => {
     setIsLoading(false);
   };
   
-  // Load more Pokemon for infinite scrolling
-  const loadMorePokemon = () => {
-    if (!isLoading && currentPage < totalPages) {
-      setCurrentPage(prev => prev + 1);
-    }
-  };
+  // Load more Pokemon for infinite scrolling - no longer needed as we use the observer
+  // const loadMorePokemon = () => {
+  //   if (!isLoading && currentPage < totalPages) {
+  //     setCurrentPage(prev => prev + 1);
+  //   }
+  // };
   
   const handleDragEnd = (result: DropResult) => {
     const { source, destination } = result;
@@ -446,19 +450,21 @@ const PokemonRanker = () => {
                       droppableId="available"
                     />
                     
-                    {/* Infinite scroll loading indicator */}
-                    {loadingType === "infinite" && currentPage < totalPages && (
+                    {/* Infinite scroll loading indicator - make it more visible */}
+                    {loadingType === "infinite" && (
                       <div 
                         ref={loadingRef}
-                        className="flex justify-center items-center h-16 mt-4"
+                        className="flex justify-center items-center h-16 mt-4 bg-gray-100 border border-gray-200 rounded-md"
                       >
                         {isLoading ? (
                           <>
                             <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-primary mr-2"></div>
                             <p className="text-sm">Loading more Pokémon...</p>
                           </>
-                        ) : (
+                        ) : currentPage < totalPages ? (
                           <p className="text-sm text-muted-foreground">Scroll down to load more</p>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">All Pokémon loaded</p>
                         )}
                       </div>
                     )}
