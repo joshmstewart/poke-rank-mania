@@ -21,7 +21,8 @@ export const useBattleInteractions = (
   
   // Track if we're currently processing a selection
   const [isProcessing, setIsProcessing] = useState(false);
-  const processingTimeoutRef = useRef<number | null>(null);
+  const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastSelectedIdRef = useRef<number | null>(null);
   
   // Keep track of the last processed battle IDs to avoid duplicate processing
   const lastProcessedBattleRef = useRef<number[]>([]);
@@ -30,7 +31,7 @@ export const useBattleInteractions = (
   useEffect(() => {
     return () => {
       if (processingTimeoutRef.current !== null) {
-        window.clearTimeout(processingTimeoutRef.current);
+        clearTimeout(processingTimeoutRef.current);
       }
     };
   }, []);
@@ -45,9 +46,18 @@ export const useBattleInteractions = (
       return;
     }
     
+    // Check for duplicate clicks on the same Pokemon
+    if (lastSelectedIdRef.current === id) {
+      console.log("Duplicate click on the same Pokemon, ignoring");
+      return;
+    }
+    
+    // Update last selected ID
+    lastSelectedIdRef.current = id;
+    
     // Force clear any existing timeouts to prevent race conditions
     if (processingTimeoutRef.current !== null) {
-      window.clearTimeout(processingTimeoutRef.current);
+      clearTimeout(processingTimeoutRef.current);
       processingTimeoutRef.current = null;
     }
     
@@ -70,16 +80,17 @@ export const useBattleInteractions = (
       lastProcessedBattleRef.current = currentBattle.map(p => p.id);
       
       // Process the selection completion with a delay to ensure states are updated
-      processingTimeoutRef.current = window.setTimeout(() => {
+      processingTimeoutRef.current = setTimeout(() => {
         console.log("Pairs mode: Calling handleTripletSelectionComplete with delay");
         handleTripletSelectionComplete();
         
         // Allow a longer delay before resetting the processing state
         // This prevents rapid clicking issues while the new battle loads
-        processingTimeoutRef.current = window.setTimeout(() => {
+        processingTimeoutRef.current = setTimeout(() => {
           console.log("Pairs mode: Resetting processing state");
           setIsProcessing(false);
-        }, 1000);
+          lastSelectedIdRef.current = null;
+        }, 1500);
       }, 200);
     } else {
       // For triplets mode - toggle selection
@@ -91,8 +102,11 @@ export const useBattleInteractions = (
         return newSelection;
       });
       
-      // Reset processing flag immediately for triplets
-      setIsProcessing(false);
+      // Reset processing flag after a short delay for triplets
+      processingTimeoutRef.current = setTimeout(() => {
+        setIsProcessing(false);
+        lastSelectedIdRef.current = null;
+      }, 300);
     }
   }, [
     battleType, 

@@ -1,3 +1,4 @@
+
 import { useState, useRef } from "react";
 import { Pokemon } from "@/services/pokemon";
 
@@ -8,6 +9,18 @@ export const useBattleStarter = () => {
   const lastBattleRef = useRef<number[]>([]);
   // Track seen Pokemon IDs to avoid repeating the same Pokemon too frequently
   const recentlySeenPokemon = useRef<Set<number>>(new Set());
+  // Count consecutive repeats to force more variety
+  const consecutiveRepeatsRef = useRef(0);
+
+  // Fisher-Yates shuffle algorithm for better randomization
+  const shuffleArray = (array: Pokemon[]): Pokemon[] => {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  };
 
   const startNewBattle = (pokemonList: Pokemon[], battleType: "pairs" | "triplets") => {
     console.log("Starting new battle with pokemonList:", pokemonList?.length || 0);
@@ -49,6 +62,9 @@ export const useBattleStarter = () => {
         const preferredPokemon = availablePokemon.filter(p => !lastBattleIds.includes(p.id));
         if (preferredPokemon.length >= battleSize) {
           availablePokemon = preferredPokemon;
+        } else {
+          // Force more variety if we have too many consecutive repeats
+          consecutiveRepeatsRef.current += 1;
         }
       }
     }
@@ -63,8 +79,8 @@ export const useBattleStarter = () => {
       }
     }
     
-    // Shuffle the list to get random Pokémon - use a more random shuffle
-    const shuffled = availablePokemon.sort(() => 0.5 - Math.random());
+    // Better shuffle algorithm
+    const shuffled = shuffleArray(availablePokemon);
     
     // Get the first N Pokémon based on battle type
     let newBattlePokemon = shuffled.slice(0, battleSize);
@@ -79,17 +95,18 @@ export const useBattleStarter = () => {
       const isSameBattle = newBattleIds.length === sortedLastIds.length && 
         newBattleIds.every((id, i) => id === sortedLastIds[i]);
       
-      if (isSameBattle) {
-        console.log("Still got the same Pokemon, forcing different selection...");
+      // If we got the same battle or have too many repeats, force a different selection
+      if (isSameBattle || consecutiveRepeatsRef.current > 2) {
+        console.log("Still got the same Pokemon or too many repeats, forcing different selection...");
+        consecutiveRepeatsRef.current += 1;
         
         // Force a completely different selection
         if (shuffled.length > battleSize * 2) {
           newBattlePokemon = shuffled.slice(battleSize, battleSize * 2);
         } else {
           // Last resort - just take a new random selection from the full list
-          newBattlePokemon = [...pokemonList]
-            .sort(() => 0.5 - Math.random())
-            .slice(0, battleSize);
+          // but with a different random seed
+          newBattlePokemon = shuffleArray(pokemonList).slice(0, battleSize);
             
           // Ensure at least one Pokemon is different from last battle
           const forceNewIndex = Math.floor(Math.random() * battleSize);
@@ -100,6 +117,9 @@ export const useBattleStarter = () => {
             newBattlePokemon[forceNewIndex] = forcedDifferentPokemon;
           }
         }
+      } else {
+        // Reset consecutive repeats counter since we got a different battle
+        consecutiveRepeatsRef.current = 0;
       }
     }
     
