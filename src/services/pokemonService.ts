@@ -1,4 +1,3 @@
-
 import { toast } from "@/hooks/use-toast";
 
 export interface Pokemon {
@@ -30,119 +29,141 @@ export const generations: Generation[] = [
   { id: 9, name: "Generation IX", start: 906, end: 1025 }
 ];
 
+// For "All Generations", we'll implement pagination
+export const ITEMS_PER_PAGE = 50;
+
+// Function to fetch paginated Pokemon
+export async function fetchPaginatedPokemon(
+  generationId: number = 0, 
+  page: number = 1
+): Promise<{pokemon: Pokemon[], totalPages: number}> {
+  try {
+    const selectedGeneration = generations.find(gen => gen.id === generationId) || generations[0];
+    const totalPokemon = selectedGeneration.end - selectedGeneration.start + 1;
+    const totalPages = Math.ceil(totalPokemon / ITEMS_PER_PAGE);
+    
+    // Calculate offset and limit based on page
+    const offset = selectedGeneration.start - 1 + ((page - 1) * ITEMS_PER_PAGE);
+    const limit = Math.min(ITEMS_PER_PAGE, selectedGeneration.end - offset);
+    
+    // Fetch the Pokemon list for the current page
+    const response = await fetch(`https://pokeapi.co/api/v2/pokemon?offset=${offset}&limit=${limit}`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch Pokemon');
+    }
+    
+    const data = await response.json();
+    
+    const pokemonList = await Promise.all(
+      data.results.map(async (pokemon: { name: string; url: string }) => {
+        const pokemonId = pokemon.url.split('/').filter(Boolean).pop();
+        
+        // Get detailed Pokemon data
+        const detailResponse = await fetch(`https://pokeapi.co/api/v2/pokemon/${pokemonId}`);
+        let types: string[] = [];
+        if (detailResponse.ok) {
+          const detailData = await detailResponse.json();
+          types = detailData.types.map((type: any) => type.type.name.charAt(0).toUpperCase() + type.type.name.slice(1));
+        }
+        
+        // Get species data for flavor text
+        const speciesResponse = await fetch(`https://pokeapi.co/api/v2/pokemon-species/${pokemonId}`);
+        let flavorText = "";
+        if (speciesResponse.ok) {
+          const speciesData = await speciesResponse.json();
+          const englishFlavorText = speciesData.flavor_text_entries.find(
+            (entry: any) => entry.language.name === "en"
+          );
+          flavorText = englishFlavorText 
+            ? englishFlavorText.flavor_text.replace(/\f/g, " ").replace(/\n/g, " ").replace(/\r/g, " ")
+            : "";
+        }
+        
+        return {
+          id: Number(pokemonId),
+          name: pokemon.name.charAt(0).toUpperCase() + pokemon.name.slice(1),
+          image: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemonId}.png`,
+          types,
+          flavorText
+        };
+      })
+    );
+    
+    return {
+      pokemon: pokemonList,
+      totalPages
+    };
+  } catch (error) {
+    console.error('Error fetching Pokemon:', error);
+    toast({
+      title: "Error",
+      description: "Failed to fetch Pokemon. Please try again.",
+      variant: "destructive"
+    });
+    return { pokemon: [], totalPages: 0 };
+  }
+}
+
+// Keep the original function for backward compatibility and specific generations
 export async function fetchAllPokemon(generationId: number = 1): Promise<Pokemon[]> {
   try {
+    // If requesting all generations, we recommend using the paginated version instead
+    if (generationId === 0) {
+      toast({
+        title: "Loading sample",
+        description: "Loading first page of All Generations. Use pagination for better performance.",
+      });
+      const result = await fetchPaginatedPokemon(0, 1);
+      return result.pokemon;
+    }
+    
     const selectedGeneration = generations.find(gen => gen.id === generationId) || generations[1];
     const limit = selectedGeneration.end - selectedGeneration.start + 1;
     const offset = selectedGeneration.start - 1;
     
-    // For large requests (All Generations), we need to paginate the requests
-    if (generationId === 0 && limit > 300) {
-      let allPokemon: Pokemon[] = [];
-      let currentOffset = offset;
-      const maxPerRequest = 300;
-      
-      toast({
-        title: "Loading all Pokémon",
-        description: "This might take a moment as we're fetching over 1000 Pokémon...",
-      });
-      
-      while (currentOffset < selectedGeneration.end) {
-        const currentLimit = Math.min(maxPerRequest, selectedGeneration.end - currentOffset);
-        const response = await fetch(`https://pokeapi.co/api/v2/pokemon?offset=${currentOffset}&limit=${currentLimit}`);
+    const response = await fetch(`https://pokeapi.co/api/v2/pokemon?offset=${offset}&limit=${limit}`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch Pokemon');
+    }
+    
+    const data = await response.json();
+    
+    const pokemonList = await Promise.all(
+      data.results.map(async (pokemon: { name: string; url: string }) => {
+        const pokemonId = pokemon.url.split('/').filter(Boolean).pop();
         
-        if (!response.ok) {
-          throw new Error('Failed to fetch Pokemon');
+        // Get detailed Pokemon data
+        const detailResponse = await fetch(`https://pokeapi.co/api/v2/pokemon/${pokemonId}`);
+        let types: string[] = [];
+        if (detailResponse.ok) {
+          const detailData = await detailResponse.json();
+          types = detailData.types.map((type: any) => type.type.name.charAt(0).toUpperCase() + type.type.name.slice(1));
         }
         
-        const data = await response.json();
+        // Get species data for flavor text
+        const speciesResponse = await fetch(`https://pokeapi.co/api/v2/pokemon-species/${pokemonId}`);
+        let flavorText = "";
+        if (speciesResponse.ok) {
+          const speciesData = await speciesResponse.json();
+          const englishFlavorText = speciesData.flavor_text_entries.find(
+            (entry: any) => entry.language.name === "en"
+          );
+          flavorText = englishFlavorText 
+            ? englishFlavorText.flavor_text.replace(/\f/g, " ").replace(/\n/g, " ").replace(/\r/g, " ")
+            : "";
+        }
         
-        const pokemonBatch = await Promise.all(
-          data.results.map(async (pokemon: { name: string; url: string }) => {
-            const pokemonId = pokemon.url.split('/').filter(Boolean).pop();
-            
-            // Get detailed Pokemon data
-            const detailResponse = await fetch(`https://pokeapi.co/api/v2/pokemon/${pokemonId}`);
-            let types: string[] = [];
-            if (detailResponse.ok) {
-              const detailData = await detailResponse.json();
-              types = detailData.types.map((type: any) => type.type.name.charAt(0).toUpperCase() + type.type.name.slice(1));
-            }
-            
-            // Get species data for flavor text
-            const speciesResponse = await fetch(`https://pokeapi.co/api/v2/pokemon-species/${pokemonId}`);
-            let flavorText = "";
-            if (speciesResponse.ok) {
-              const speciesData = await speciesResponse.json();
-              const englishFlavorText = speciesData.flavor_text_entries.find(
-                (entry: any) => entry.language.name === "en"
-              );
-              flavorText = englishFlavorText 
-                ? englishFlavorText.flavor_text.replace(/\f/g, " ").replace(/\n/g, " ").replace(/\r/g, " ")
-                : "";
-            }
-            
-            return {
-              id: Number(pokemonId),
-              name: pokemon.name.charAt(0).toUpperCase() + pokemon.name.slice(1),
-              image: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemonId}.png`,
-              types,
-              flavorText
-            };
-          })
-        );
-        
-        allPokemon = [...allPokemon, ...pokemonBatch];
-        currentOffset += currentLimit;
-      }
-      
-      return allPokemon;
-    } else {
-      // Standard request for specific generations
-      const response = await fetch(`https://pokeapi.co/api/v2/pokemon?offset=${offset}&limit=${limit}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch Pokemon');
-      }
-      
-      const data = await response.json();
-      
-      const pokemonList = await Promise.all(
-        data.results.map(async (pokemon: { name: string; url: string }) => {
-          const pokemonId = pokemon.url.split('/').filter(Boolean).pop();
-          
-          // Get detailed Pokemon data
-          const detailResponse = await fetch(`https://pokeapi.co/api/v2/pokemon/${pokemonId}`);
-          let types: string[] = [];
-          if (detailResponse.ok) {
-            const detailData = await detailResponse.json();
-            types = detailData.types.map((type: any) => type.type.name.charAt(0).toUpperCase() + type.type.name.slice(1));
-          }
-          
-          // Get species data for flavor text
-          const speciesResponse = await fetch(`https://pokeapi.co/api/v2/pokemon-species/${pokemonId}`);
-          let flavorText = "";
-          if (speciesResponse.ok) {
-            const speciesData = await speciesResponse.json();
-            const englishFlavorText = speciesData.flavor_text_entries.find(
-              (entry: any) => entry.language.name === "en"
-            );
-            flavorText = englishFlavorText 
-              ? englishFlavorText.flavor_text.replace(/\f/g, " ").replace(/\n/g, " ").replace(/\r/g, " ")
-              : "";
-          }
-          
-          return {
-            id: Number(pokemonId),
-            name: pokemon.name.charAt(0).toUpperCase() + pokemon.name.slice(1),
-            image: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemonId}.png`,
-            types,
-            flavorText
-          };
-        })
-      );
-      
-      return pokemonList;
-    }
+        return {
+          id: Number(pokemonId),
+          name: pokemon.name.charAt(0).toUpperCase() + pokemon.name.slice(1),
+          image: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemonId}.png`,
+          types,
+          flavorText
+        };
+      })
+    );
+    
+    return pokemonList;
   } catch (error) {
     console.error('Error fetching Pokemon:', error);
     toast({

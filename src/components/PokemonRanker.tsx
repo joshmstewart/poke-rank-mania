@@ -7,23 +7,62 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Download, Save, Info, AlertTriangle } from "lucide-react";
 import PokemonList from "./PokemonList";
-import { Pokemon, fetchAllPokemon, saveRankings, loadRankings, exportRankings, generations } from "@/services/pokemonService";
+import { 
+  Pokemon, 
+  fetchAllPokemon, 
+  fetchPaginatedPokemon,
+  saveRankings, 
+  loadRankings, 
+  exportRankings, 
+  generations,
+  ITEMS_PER_PAGE
+} from "@/services/pokemonService";
 import { toast } from "@/hooks/use-toast";
+import { 
+  Pagination, 
+  PaginationContent, 
+  PaginationItem, 
+  PaginationLink, 
+  PaginationNext, 
+  PaginationPrevious 
+} from "@/components/ui/pagination";
 
 const PokemonRanker = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [availablePokemon, setAvailablePokemon] = useState<Pokemon[]>([]);
   const [rankedPokemon, setRankedPokemon] = useState<Pokemon[]>([]);
-  const [selectedGeneration, setSelectedGeneration] = useState(1);
+  const [selectedGeneration, setSelectedGeneration] = useState(0); // Default to All Generations
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   
   useEffect(() => {
-    const loadData = async () => {
-      setIsLoading(true);
+    loadData();
+  }, [selectedGeneration, currentPage]);
+  
+  const loadData = async () => {
+    setIsLoading(true);
+    
+    // First try to load saved rankings for the selected generation
+    const savedRankings = loadRankings(selectedGeneration);
+    
+    // Check if we should use pagination (for All Generations)
+    if (selectedGeneration === 0) {
+      const { pokemon, totalPages: pages } = await fetchPaginatedPokemon(selectedGeneration, currentPage);
+      setTotalPages(pages);
       
-      // First try to load saved rankings for the selected generation
-      const savedRankings = loadRankings(selectedGeneration);
-      
-      // Then fetch all Pokemon for the selected generation
+      if (savedRankings.length > 0) {
+        // Filter out the already ranked Pokémon from the available list
+        const savedIds = new Set(savedRankings.map(p => p.id));
+        const remainingPokemon = pokemon.filter(p => !savedIds.has(p.id));
+        
+        setAvailablePokemon(remainingPokemon);
+        setRankedPokemon(savedRankings);
+      } else {
+        setAvailablePokemon(pokemon);
+        setRankedPokemon([]);
+      }
+    } else {
+      // For specific generations, use the original function
       const allPokemon = await fetchAllPokemon(selectedGeneration);
       
       if (savedRankings.length > 0) {
@@ -42,12 +81,10 @@ const PokemonRanker = () => {
         setAvailablePokemon(allPokemon);
         setRankedPokemon([]);
       }
-      
-      setIsLoading(false);
-    };
+    }
     
-    loadData();
-  }, [selectedGeneration]);
+    setIsLoading(false);
+  };
   
   const handleDragEnd = (result: DropResult) => {
     const { source, destination } = result;
@@ -134,15 +171,61 @@ const PokemonRanker = () => {
 
   const handleGenerationChange = (value: string) => {
     const newGenId = Number(value);
+    setSelectedGeneration(newGenId);
+    setCurrentPage(1); // Reset to page 1 when changing generations
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  // Calculate page range for pagination
+  const getPageRange = () => {
+    const range = [];
+    const maxVisiblePages = 5;
     
-    // If switching to All Generations and we have over 1000 Pokémon
-    if (newGenId === 0) {
-      toast({
-        description: "Loading all Pokémon may take a moment and could slow down performance.",
-      });
+    if (totalPages <= maxVisiblePages) {
+      // If total pages is small enough, show all pages
+      for (let i = 1; i <= totalPages; i++) {
+        range.push(i);
+      }
+    } else {
+      // Always include first page
+      range.push(1);
+      
+      // Calculate start and end of middle range
+      let middleStart = Math.max(2, currentPage - 1);
+      let middleEnd = Math.min(totalPages - 1, currentPage + 1);
+      
+      // Adjust to always show 3 pages in middle if possible
+      if (middleEnd - middleStart < 2) {
+        if (middleStart === 2) {
+          middleEnd = Math.min(4, totalPages - 1);
+        } else if (middleEnd === totalPages - 1) {
+          middleStart = Math.max(2, totalPages - 3);
+        }
+      }
+      
+      // Add ellipsis after first page if needed
+      if (middleStart > 2) {
+        range.push(-1); // Use -1 as a signal for ellipsis
+      }
+      
+      // Add middle pages
+      for (let i = middleStart; i <= middleEnd; i++) {
+        range.push(i);
+      }
+      
+      // Add ellipsis before last page if needed
+      if (middleEnd < totalPages - 1) {
+        range.push(-2); // Use -2 as another signal for ellipsis
+      }
+      
+      // Always include last page
+      range.push(totalPages);
     }
     
-    setSelectedGeneration(newGenId);
+    return range;
   };
 
   return (
@@ -166,6 +249,7 @@ const PokemonRanker = () => {
                   <p>Rearrange them in your preferred order from favorite (top) to least favorite (bottom).</p>
                   <p>Use the search box to find specific Pokémon quickly.</p>
                   <p>You can choose to rank Pokémon within a specific generation or across all generations.</p>
+                  <p>All Generations mode uses pagination for better performance.</p>
                   <p>Don't forget to save your progress using the Save button!</p>
                   <p>You can also export your rankings as a JSON file to share or keep for reference.</p>
                 </div>
@@ -191,7 +275,7 @@ const PokemonRanker = () => {
                 {generations.map((gen) => (
                   <SelectItem key={gen.id} value={gen.id.toString()}>
                     {gen.name} {gen.id === 0 ? (
-                      <span className="text-yellow-600 ml-2">(May be slow)</span>
+                      <span className="text-green-600 ml-2">(Paginated)</span>
                     ) : (
                       <span>(#{gen.start}-{gen.end})</span>
                     )}
@@ -213,11 +297,12 @@ const PokemonRanker = () => {
                 <div className="text-center">
                   <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto"></div>
                   <p className="mt-4">Loading Pokémon...</p>
-                  {selectedGeneration === 0 && (
-                    <p className="text-sm text-muted-foreground mt-2">
-                      Loading all generations may take a moment...
-                    </p>
-                  )}
+                  <p className="text-sm text-muted-foreground mt-2">
+                    {selectedGeneration === 0 
+                      ? `Loading page ${currentPage} of All Generations...` 
+                      : `Loading Generation ${selectedGeneration}...`
+                    }
+                  </p>
                 </div>
               </div>
             ) : (
@@ -229,6 +314,53 @@ const PokemonRanker = () => {
                       pokemonList={availablePokemon}
                       droppableId="available"
                     />
+                    
+                    {/* Pagination for All Generations */}
+                    {selectedGeneration === 0 && totalPages > 1 && (
+                      <div className="mt-4">
+                        <Pagination>
+                          <PaginationContent>
+                            <PaginationItem>
+                              <PaginationPrevious 
+                                onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
+                                aria-disabled={currentPage === 1}
+                                tabIndex={currentPage === 1 ? -1 : 0}
+                                className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+                              />
+                            </PaginationItem>
+                            
+                            {getPageRange().map((page, i) => (
+                              <PaginationItem key={`page-${i}`}>
+                                {page < 0 ? (
+                                  <span className="flex h-9 w-9 items-center justify-center">...</span>
+                                ) : (
+                                  <PaginationLink
+                                    isActive={currentPage === page}
+                                    onClick={() => handlePageChange(page)}
+                                  >
+                                    {page}
+                                  </PaginationLink>
+                                )}
+                              </PaginationItem>
+                            ))}
+                            
+                            <PaginationItem>
+                              <PaginationNext 
+                                onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
+                                aria-disabled={currentPage === totalPages}
+                                tabIndex={currentPage === totalPages ? -1 : 0}
+                                className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
+                              />
+                            </PaginationItem>
+                          </PaginationContent>
+                        </Pagination>
+                        
+                        <div className="text-center text-sm text-muted-foreground mt-2">
+                          Page {currentPage} of {totalPages} • 
+                          Showing {ITEMS_PER_PAGE} Pokémon per page
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <div>
                     <PokemonList
