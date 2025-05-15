@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Pokemon } from "@/services/pokemonService";
 
@@ -16,16 +16,26 @@ const BattleCard: React.FC<BattleCardProps> = ({
   battleType,
   onSelect
 }) => {
-  // Create a handler that immediately triggers the onSelect function
+  const [isClicking, setIsClicking] = useState(false);
+
+  // Create a handler with debounce to prevent multiple rapid clicks
   const handleClick = () => {
+    if (isClicking) return;
+    
+    setIsClicking(true);
     onSelect(pokemon.id);
+    
+    // Reset after a short delay
+    setTimeout(() => {
+      setIsClicking(false);
+    }, 500);
   };
 
   // For keyboard accessibility
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
-      onSelect(pokemon.id);
+      handleClick();
     }
   };
 

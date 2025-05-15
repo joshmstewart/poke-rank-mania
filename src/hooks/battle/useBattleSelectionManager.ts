@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
 
@@ -20,10 +20,14 @@ export const useBattleSelectionManager = (
         selected: [id] 
       }]);
       
-      // Set the selected Pokémon and process the result immediately
+      // Set the selected Pokémon
       setLocalSelectedPokemon([id]);
       setSelectedPokemon([id]);
-      processBattleResult([id], battleType, currentBattle);
+      
+      // Add a small delay to ensure state updates before processing
+      setTimeout(() => {
+        processBattleResult([id], battleType, currentBattle);
+      }, 10);
     } else {
       // For triplets/trios, toggle selection
       let newSelected;
@@ -45,20 +49,28 @@ export const useBattleSelectionManager = (
     
     // If it's pairs mode and we already processed the selection in handlePokemonSelect,
     // we can return early to avoid duplicate processing
-    if (battleType === "pairs" && selectedPokemon.length === 1) {
-      // We've already processed this in handlePokemonSelect for pairs mode
+    if (battleType === "pairs") {
+      // For pairs mode, explicitly check if we have a selection
+      if (selectedPokemon.length > 0) {
+        processBattleResult(selectedPokemon, battleType, currentBattle);
+      } else if (battleHistory.length > 0) {
+        // Try to get the selection from the most recent history entry
+        const lastEntry = battleHistory[battleHistory.length - 1];
+        if (lastEntry.selected.length > 0) {
+          processBattleResult(lastEntry.selected, battleType, currentBattle);
+        }
+      }
       return;
     }
     
     // For triplets mode, use the current selections
-    const selectionsToUse = [...selectedPokemon];
-    console.log("Using triplet selections from state:", selectionsToUse);
-    
-    // Process the battle result
-    processBattleResult(selectionsToUse, battleType, currentBattle);
-    
-    // Reset selections after processing
-    setLocalSelectedPokemon([]);
+    if (selectedPokemon.length > 0) {
+      console.log("Using triplet selections from state:", selectedPokemon);
+      processBattleResult(selectedPokemon, battleType, currentBattle);
+      
+      // Reset selections after processing
+      setLocalSelectedPokemon([]);
+    }
   };
 
   return {
