@@ -1,9 +1,10 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Pokemon } from "@/services/pokemon";
 import PokemonCard from "@/components/PokemonCard";
-import { Trophy, Award, Medal } from "lucide-react";
+import { Trophy, Award, Medal, Info } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface RankingDisplayProps {
   finalRankings: Pokemon[];
@@ -72,20 +73,53 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
             </div>
           )}
           
-          {/* Remaining rankings */}
+          {/* Remaining rankings - simplified with just images and ranks */}
           {finalRankings.length > 3 && (
             <div className="border-t pt-6 mt-6">
               <h3 className="text-lg font-semibold mb-4 text-gray-700">Other Rankings</h3>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
                 {finalRankings.slice(3).map((pokemon, index) => (
-                  <div key={pokemon.id} className="relative group">
-                    <div className="absolute top-0 left-0 bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-xs font-medium px-2 py-1 rounded-br z-10">
-                      #{index + 4}
-                    </div>
-                    <div className="transform group-hover:scale-105 transition-transform duration-200">
-                      <PokemonCard pokemon={pokemon} compact={true} />
-                    </div>
-                  </div>
+                  <TooltipProvider key={pokemon.id}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="relative group overflow-hidden rounded-lg bg-gray-50 hover:shadow-lg transition-all duration-200">
+                          <div className="absolute top-0 left-0 bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-xs font-bold px-2 py-1 rounded-br z-10">
+                            #{index + 4}
+                          </div>
+                          <div className="p-2">
+                            <img 
+                              src={pokemon.image} 
+                              alt={pokemon.name} 
+                              className="w-full h-24 object-contain mx-auto" 
+                              loading="lazy"
+                            />
+                          </div>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent className="p-3 max-w-xs bg-white shadow-xl border rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <img 
+                            src={pokemon.image} 
+                            alt={pokemon.name} 
+                            className="w-10 h-10 object-contain" 
+                          />
+                          <div>
+                            <div className="font-medium">{pokemon.name}</div>
+                            <div className="text-xs text-gray-500">#{pokemon.id}</div>
+                            {pokemon.types && (
+                              <div className="flex gap-1 mt-1">
+                                {pokemon.types.map(type => (
+                                  <span key={type} className="px-1.5 py-0.5 bg-gray-100 text-gray-800 text-xs rounded-full">
+                                    {type}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 ))}
               </div>
             </div>

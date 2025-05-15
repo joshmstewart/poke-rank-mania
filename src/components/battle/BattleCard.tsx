@@ -18,10 +18,16 @@ const BattleCard: React.FC<BattleCardProps> = ({
   battleType,
   onSelect
 }) => {
+  // Create a handler that immediately triggers the onSelect function
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onSelect(pokemon.id);
+  };
+
   return (
     <div 
       className={`cursor-pointer ${isSelected ? "ring-4 ring-primary" : ""}`}
-      onClick={() => onSelect(pokemon.id)}
+      onClick={handleClick}
     >
       <Card className="h-full transform transition-all hover:scale-105">
         <CardContent className="flex flex-col items-center justify-center p-4">
@@ -50,20 +56,28 @@ const BattleCard: React.FC<BattleCardProps> = ({
             <RadioGroup 
               value={isSelected ? pokemon.id.toString() : ""} 
               className="mt-4"
-              onValueChange={() => onSelect(pokemon.id)}
+              // Use the same handler to prevent double-click issue
+              onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center space-x-2">
-                <RadioGroupItem value={pokemon.id.toString()} id={`radio-${pokemon.id}`} />
-                <label htmlFor={`radio-${pokemon.id}`}>Select</label>
+                <RadioGroupItem 
+                  value={pokemon.id.toString()} 
+                  id={`radio-${pokemon.id}`}
+                  // Handle the click on the radio button itself
+                  onClick={handleClick}
+                />
+                <label 
+                  htmlFor={`radio-${pokemon.id}`}
+                  onClick={handleClick}
+                >
+                  Select
+                </label>
               </div>
             </RadioGroup>
           ) : (
             <Button
               variant={isSelected ? "default" : "outline"}
-              onClick={(e) => {
-                e.stopPropagation();
-                onSelect(pokemon.id);
-              }}
+              onClick={handleClick}
               className="mt-4"
             >
               {isSelected ? "Selected" : "Select"}
