@@ -10,14 +10,17 @@ export const useRankings = (allPokemon: Pokemon[]) => {
 
   const generateRankings = (results: BattleResult) => {
     // Use a simple ELO-like algorithm to rank Pokémon
-    const scores = new Map<number, { pokemon: Pokemon, score: number }>();
+    const scores = new Map<number, { pokemon: Pokemon, score: number, battled: boolean }>();
     
     // Initialize all Pokémon with a base score
     allPokemon.forEach(pokemon => {
       if (pokemon && pokemon.id) {
-        scores.set(pokemon.id, { pokemon, score: 1000 });
+        scores.set(pokemon.id, { pokemon, score: 1000, battled: false });
       }
     });
+    
+    // Track which Pokémon have been involved in battles
+    const battledPokemonIds = new Set<number>();
     
     // Update scores based on battle results
     results.forEach(result => {
@@ -29,6 +32,10 @@ export const useRankings = (allPokemon: Pokemon[]) => {
       const winnerId = result.winner.id;
       const loserId = result.loser.id;
       
+      // Mark these Pokémon as battled
+      battledPokemonIds.add(winnerId);
+      battledPokemonIds.add(loserId);
+      
       const winnerData = scores.get(winnerId);
       const loserData = scores.get(loserId);
       
@@ -36,14 +43,17 @@ export const useRankings = (allPokemon: Pokemon[]) => {
         // Simple score adjustment
         winnerData.score += 10;
         loserData.score -= 5;
+        winnerData.battled = true;
+        loserData.battled = true;
         
         scores.set(winnerId, winnerData);
         scores.set(loserId, loserData);
       }
     });
     
-    // Convert to array and sort by score
+    // Convert to array, filter for only battled Pokémon, and sort by score
     const rankings = Array.from(scores.values())
+      .filter(item => battledPokemonIds.has(item.pokemon.id)) // Only include Pokémon that have battled
       .sort((a, b) => b.score - a.score)
       .map(item => item.pokemon);
     

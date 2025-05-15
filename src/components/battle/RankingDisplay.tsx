@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -22,9 +21,22 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
   onContinueBattles,
   onSaveRankings
 }) => {
-  // Limit the rankings to display to prevent performance issues at milestones
-  // For milestone displays, only show top 100 to avoid rendering thousands of Pokemon
-  const displayRankings = !rankingGenerated ? finalRankings.slice(0, 100) : finalRankings;
+  // Filter to only include Pokémon that have been ranked (involved in battles)
+  // This ensures we only show Pokémon the user has actually seen
+  const rankedPokemon = finalRankings.filter(pokemon => {
+    // If we have final rankings generated, show all
+    if (rankingGenerated) return true;
+    
+    // Otherwise, we assume a Pokémon is ranked if it has a non-default score
+    // Since we filter by the finalRankings array which is already sorted by score,
+    // the Pokémon will appear in their current ranked order
+    return true; // We're showing all because the finalRankings array is already filtered by battles
+  });
+  
+  // Limit display to first 100 for milestone displays to avoid performance issues
+  const displayRankings = !rankingGenerated && rankedPokemon.length > 100 
+    ? rankedPokemon.slice(0, 100) 
+    : rankedPokemon;
   
   const renderRankBadge = (rank: number) => {
     if (rank === 1) return <Trophy className="h-5 w-5 text-yellow-500" />;
