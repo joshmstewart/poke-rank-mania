@@ -23,7 +23,7 @@ import RankingDisplay from "./battle/RankingDisplay";
 import SessionManager from "./battle/SessionManager";
 
 // Import our hooks
-import { useBattleState } from "@/hooks/useBattleState";
+import { useBattleState } from "@/hooks/battle/useBattleState";
 import { useSessionManager, BattleSessionData } from "@/hooks/useSessionManager";
 
 const BattleMode = () => {
