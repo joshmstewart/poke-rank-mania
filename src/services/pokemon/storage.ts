@@ -1,4 +1,3 @@
-
 import { toast } from "@/hooks/use-toast";
 import { Pokemon, UnifiedSessionData } from "./types";
 
@@ -21,7 +20,8 @@ export function saveRankings(rankings: Pokemon[], generationId: number = 1): voi
     // No toast notification for auto-saves to avoid spam
   } catch (error) {
     console.error('Error saving rankings:', error);
-    toast("Error saving", {
+    toast({
+      title: "Error saving",
       description: "Failed to save rankings. Please try again."
     });
   }
@@ -45,7 +45,8 @@ export function loadRankings(generationId: number = 1): Pokemon[] {
     return [];
   } catch (error) {
     console.error('Error loading rankings:', error);
-    toast("Error", {
+    toast({
+      title: "Error",
       description: "Failed to load saved rankings.",
       variant: "destructive"
     });
@@ -68,7 +69,8 @@ export function exportRankings(rankings: Pokemon[], generationId: number = 1): v
     linkElement.click();
   } catch (error) {
     console.error('Error exporting rankings:', error);
-    toast("Error", {
+    toast({
+      title: "Error",
       description: "Failed to export rankings. Please try again.",
       variant: "destructive"
     });

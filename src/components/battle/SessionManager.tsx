@@ -32,13 +32,15 @@ const SessionManager: React.FC<SessionManagerProps> = ({ onImport, onExport }) =
       };
       
       const dataStr = JSON.stringify(exportData);
-      toast("Session data copied!", {
+      toast({
+        title: "Session data copied!",
         description: "Your session ID and data have been copied to clipboard."
       });
       
       navigator.clipboard.writeText(dataStr);
     } catch (error) {
-      toast("Export failed", {
+      toast({
+        title: "Export failed",
         description: "Could not export session data.",
         variant: "destructive"
       });
@@ -51,14 +53,16 @@ const SessionManager: React.FC<SessionManagerProps> = ({ onImport, onExport }) =
       if (importData && importData.data) {
         onImport(importData.data);
         setSessionId(importData.id || sessionId);
-        toast("Session loaded!", {
+        toast({
+          title: "Session loaded!",
           description: "Your battle progress has been restored."
         });
       } else {
         throw new Error("Invalid session data");
       }
     } catch (error) {
-      toast("Import failed", {
+      toast({
+        title: "Import failed",
         description: "Could not import session data. Please check the format.",
         variant: "destructive"
       });

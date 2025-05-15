@@ -1,4 +1,3 @@
-
 import { toast } from "@/hooks/use-toast";
 import { Pokemon, ITEMS_PER_PAGE } from "./types";
 import { generations } from "./data";
@@ -85,7 +84,8 @@ export async function fetchAllPokemon(generationId: number = 1, fullRankingMode:
         // This gives a diverse but manageable set
         const sampleSize = 150; // A reasonable number for battles
         
-        toast("Loading sample", {
+        toast({
+          title: "Loading sample",
           description: `Loading a selection of ${sampleSize} Pokémon from all generations for battling.`
         });
         
@@ -138,7 +138,8 @@ export async function fetchAllPokemon(generationId: number = 1, fullRankingMode:
         return pokemonList;
       } else {
         // For full ranking mode, we need to fetch all Pokemon in batches
-        toast("Loading all Pokémon", {
+        toast({
+          title: "Loading all Pokémon",
           description: "This may take a moment as we load all Pokémon for a complete ranking."
         });
         
@@ -177,12 +178,14 @@ export async function fetchAllPokemon(generationId: number = 1, fullRankingMode:
             allPokemon.push(...batchResults);
             
             // Update progress
-            toast("Loading progress", {
+            toast({
+              title: "Loading progress",
               description: `Loaded ${Math.min(offset + BATCH_SIZE, totalPokemon)} of ${totalPokemon} Pokémon...`
             });
           } catch (error) {
             console.error(`Error fetching batch at offset ${offset}:`, error);
-            toast("Error", {
+            toast({
+              title: "Error",
               description: `Failed to fetch some Pokémon. Your ranking might be incomplete.`,
               variant: "destructive"
             });
@@ -242,7 +245,8 @@ export async function fetchAllPokemon(generationId: number = 1, fullRankingMode:
     return pokemonList;
   } catch (error) {
     console.error('Error fetching Pokemon:', error);
-    toast("Error", {
+    toast({
+      title: "Error",
       description: "Failed to fetch Pokemon. Please try again.",
       variant: "destructive"
     });

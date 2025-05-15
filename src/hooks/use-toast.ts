@@ -1,49 +1,25 @@
+// This is where the real implementation should be
+import { toast as sonnerToast } from "sonner";
 
-import { toast as toastSonner } from "sonner";
-import { 
-  ToastActionElement, 
-  ToastProps 
-} from "@/components/ui/toast";
+interface ToastOptions {
+  title?: string;
+  description?: string;
+  variant?: "default" | "destructive";
+  action?: React.ReactNode;
+}
 
-type ToastOptions = ToastProps & {
-  description?: React.ReactNode;
-  action?: ToastActionElement;
-};
-
-const useToast = () => {
-  const toast = (options: ToastOptions | string) => {
-    // Handle string case (simple message)
-    if (typeof options === 'string') {
-      return toastSonner(options);
-    }
-    
-    // Handle object case (with title and potentially other options)
-    const { title, description, variant = "default", action, ...props } = options;
-    
-    return toastSonner(title as string, {
-      description,
-      ...props,
-    });
-  };
-
-  return {
-    toast,
-    toasts: [] // Compatibility with existing interface
-  };
-};
-
-// Export a simplified version for direct usage
-const toast = (options: ToastOptions | string) => {
-  if (typeof options === 'string') {
-    return toastSonner(options);
+// Allow calling toast with options object or with title string + options
+export function toast(titleOrOptions: string | ToastOptions, options?: Omit<ToastOptions, "title">) {
+  if (typeof titleOrOptions === 'string') {
+    // If first arg is a string, it's the title
+    const title = titleOrOptions;
+    sonnerToast(title, options);
+  } else {
+    // If first arg is an object, it's the options
+    const { title, ...rest } = titleOrOptions;
+    sonnerToast(title || "", rest);
   }
-  
-  const { title, description, variant = "default", action, ...props } = options;
-  
-  return toastSonner(title as string, {
-    description,
-    ...props,
-  });
-};
+}
 
-export { useToast, toast };
+// Re-export other toast hook functionality
+export { useToast } from "./use-toast-base";
