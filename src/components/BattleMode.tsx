@@ -1,7 +1,20 @@
+
 import React, { useState, useEffect } from "react";
 import { AlertTriangle } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
+import { 
+  RadioGroup,
+  RadioGroupItem
+} from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { 
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
+} from "@/components/ui/card";
 import { 
   Pokemon, 
   fetchAllPokemon, 
@@ -10,17 +23,18 @@ import {
   generations
 } from "@/services/pokemonService";
 
-// Import our new components
+// Import our components
 import ProgressTracker from "./battle/ProgressTracker";
 import BattleInterface from "./battle/BattleInterface";
 import RankingDisplay from "./battle/RankingDisplay";
+import SessionManager from "./battle/SessionManager";
 
 type BattleType = "pairs" | "triplets";
 type BattleResult = { winner: Pokemon, loser: Pokemon }[];
 
 const BattleMode = () => {
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedGeneration, setSelectedGeneration] = useState(1);
+  const [selectedGeneration, setSelectedGeneration] = useState(0); // Default to All Generations
   const [allPokemon, setAllPokemon] = useState<Pokemon[]>([]);
   const [battleType, setBattleType] = useState<BattleType>("pairs");
   const [currentBattle, setCurrentBattle] = useState<Pokemon[]>([]);
@@ -32,6 +46,7 @@ const BattleMode = () => {
   const [battleHistory, setBattleHistory] = useState<{ battle: Pokemon[], selected: number[] }[]>([]);
   const [showingMilestone, setShowingMilestone] = useState(false);
   const [completionPercentage, setCompletionPercentage] = useState(0);
+  const [fullRankingMode, setFullRankingMode] = useState(false);
   
   // Milestone triggers - show rankings at these battle counts
   const milestones = [10, 25, 50, 100, 200, 500, 1000];
@@ -42,10 +57,11 @@ const BattleMode = () => {
     if (savedState) {
       setSelectedGeneration(savedState.selectedGeneration);
       setBattleType(savedState.battleType);
-      setBattleResults(savedState.battleResults);
-      setBattlesCompleted(savedState.battlesCompleted);
-      setBattleHistory(savedState.battleHistory);
-      setCompletionPercentage(savedState.completionPercentage);
+      setBattleResults(savedState.battleResults || []);
+      setBattlesCompleted(savedState.battlesCompleted || 0);
+      setBattleHistory(savedState.battleHistory || []);
+      setCompletionPercentage(savedState.completionPercentage || 0);
+      setFullRankingMode(savedState.fullRankingMode || false);
       
       // We'll load the Pokemon separately based on the saved generation
       loadPokemon(savedState.selectedGeneration, true);
@@ -59,7 +75,7 @@ const BattleMode = () => {
     if (!isLoading) {
       loadPokemon();
     }
-  }, [selectedGeneration]);
+  }, [selectedGeneration, fullRankingMode]);
 
   useEffect(() => {
     // Calculate completion percentage when battle results change
@@ -80,7 +96,8 @@ const BattleMode = () => {
         battleResults,
         battlesCompleted,
         battleHistory,
-        completionPercentage
+        completionPercentage,
+        fullRankingMode
       };
       localStorage.setItem('pokemon-battle-state', JSON.stringify(state));
     } catch (error) {
@@ -104,7 +121,7 @@ const BattleMode = () => {
 
   const loadPokemon = async (genId = selectedGeneration, preserveState = false) => {
     setIsLoading(true);
-    const pokemon = await fetchAllPokemon(genId);
+    const pokemon = await fetchAllPokemon(genId, fullRankingMode);
     setAllPokemon(pokemon);
     
     if (!preserveState) {
@@ -374,6 +391,43 @@ const BattleMode = () => {
     startNewBattle(allPokemon);
   };
 
+  // Export battle state data for session sharing
+  const exportSessionData = (): string => {
+    const sessionData = {
+      selectedGeneration,
+      battleType,
+      battleResults,
+      battlesCompleted,
+      battleHistory,
+      completionPercentage,
+      fullRankingMode
+    };
+    return JSON.stringify(sessionData);
+  };
+
+  // Import battle state data from session sharing
+  const importSessionData = (sessionDataStr: string) => {
+    try {
+      const sessionData = JSON.parse(sessionDataStr);
+      setSelectedGeneration(sessionData.selectedGeneration || 0);
+      setBattleType(sessionData.battleType || "pairs");
+      setBattleResults(sessionData.battleResults || []);
+      setBattlesCompleted(sessionData.battlesCompleted || 0);
+      setBattleHistory(sessionData.battleHistory || []);
+      setCompletionPercentage(sessionData.completionPercentage || 0);
+      setFullRankingMode(sessionData.fullRankingMode || false);
+      
+      // Load the Pokemon data and restore state
+      loadPokemon(sessionData.selectedGeneration, true);
+    } catch (error) {
+      toast({
+        title: "Import Error",
+        description: "The session data could not be imported.",
+        variant: "destructive"
+      });
+    }
+  };
+
   // Calculate how many more battles are needed for a complete ranking
   const getBattlesRemaining = () => {
     if (completionPercentage >= 100) return 0;
@@ -406,33 +460,84 @@ const BattleMode = () => {
   return (
     <div className="container max-w-7xl mx-auto py-6">
       <div className="flex flex-col space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold">Battle Mode</h1>
-          <div className="flex items-center gap-2">
-            <Select value={selectedGeneration.toString()} onValueChange={handleGenerationChange}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Select Generation" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="0">All Generations</SelectItem>
-                {generations.filter(gen => gen.id > 0).map((gen) => (
-                  <SelectItem key={gen.id} value={gen.id.toString()}>
-                    {gen.name} (#{gen.start}-{gen.end})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={battleType} onValueChange={handleBattleTypeChange}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Battle Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="pairs">Pairs (1v1)</SelectItem>
-                <SelectItem value="triplets">Triplets (3-way)</SelectItem>
-              </SelectContent>
-            </Select>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold mb-1">Battle Mode</h1>
+            <p className="text-muted-foreground">
+              Compare Pokémon head-to-head to create your personal ranking
+            </p>
+          </div>
+          <div className="flex flex-col md:flex-row gap-2">
+            <SessionManager onExport={exportSessionData} onImport={importSessionData} />
           </div>
         </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Battle Settings</CardTitle>
+            <CardDescription>Configure your battle experience</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div>
+                <Label htmlFor="generation" className="mb-2 block">Generation</Label>
+                <Select value={selectedGeneration.toString()} onValueChange={handleGenerationChange}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select Generation" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="0">All Generations</SelectItem>
+                    {generations.filter(gen => gen.id > 0).map((gen) => (
+                      <SelectItem key={gen.id} value={gen.id.toString()}>
+                        {gen.name} (#{gen.start}-{gen.end})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <Label className="mb-2 block">Battle Type</Label>
+                <RadioGroup value={battleType} onValueChange={handleBattleTypeChange} className="flex flex-col space-y-1">
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="pairs" id="pairs" />
+                    <Label htmlFor="pairs">
+                      Pairs (1v1) - Compare two Pokémon at a time
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="triplets" id="triplets" />
+                    <Label htmlFor="triplets">
+                      Triplets (3-way) - Compare three Pokémon at a time (faster)
+                    </Label>
+                  </div>
+                </RadioGroup>
+              </div>
+              
+              <div>
+                <Label className="mb-2 block">Ranking Mode</Label>
+                <RadioGroup 
+                  value={fullRankingMode ? "full" : "sample"} 
+                  onValueChange={(v) => setFullRankingMode(v === "full")}
+                  className="flex flex-col space-y-1"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="sample" id="sample" />
+                    <Label htmlFor="sample">
+                      Sample (~150 Pokémon) - Faster experience
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="full" id="full" />
+                    <Label htmlFor="full">
+                      Full Ranking - All Pokémon in selected generation
+                    </Label>
+                  </div>
+                </RadioGroup>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Overall completion progress */}
         <ProgressTracker
