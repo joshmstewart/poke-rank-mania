@@ -1,5 +1,5 @@
 
-import React, { useEffect } from "react";
+import React from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,6 +24,13 @@ const BattleSettings: React.FC<BattleSettingsProps> = ({
   onRankingModeChange,
 }) => {
   console.log("Rendering BattleSettings with battleType:", battleType);
+  
+  const handleBattleTypeChange = (value: string) => {
+    console.log("BattleSettings: handleBattleTypeChange called with", value);
+    if (value && (value === "pairs" || value === "triplets")) {
+      onBattleTypeChange(value);
+    }
+  };
   
   return (
     <Card>
@@ -55,12 +62,7 @@ const BattleSettings: React.FC<BattleSettingsProps> = ({
             <ToggleGroup 
               type="single" 
               value={battleType}
-              onValueChange={(value) => {
-                console.log("ToggleGroup onValueChange called with:", value);
-                if (value && (value === "pairs" || value === "triplets")) {
-                  onBattleTypeChange(value);
-                }
-              }}
+              onValueChange={handleBattleTypeChange}
               className="justify-start"
             >
               <ToggleGroupItem value="pairs" aria-label="Pairs" className="px-3 py-1 text-xs">

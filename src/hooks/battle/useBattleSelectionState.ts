@@ -5,6 +5,7 @@ import { BattleResult, BattleType } from "./types";
 import { useBattleStarter } from "./useBattleStarter";
 
 export const useBattleSelectionState = () => {
+  // Get initial value from localStorage
   const storedBattleType = localStorage.getItem('pokemon-ranker-battle-type');
   const initialBattleType = (storedBattleType === "triplets") ? "triplets" : "pairs";
   
@@ -18,33 +19,8 @@ export const useBattleSelectionState = () => {
 
   const { startNewBattle: initiateNewBattle } = useBattleStarter();
   
-  // Always ensure the state matches localStorage on mount
-  useEffect(() => {
-    const storedType = localStorage.getItem('pokemon-ranker-battle-type') as BattleType;
-    if (storedType && (storedType === "pairs" || storedType === "triplets") && storedType !== currentBattleType) {
-      console.log("useBattleSelectionState: Initial battle type from localStorage:", storedType);
-      setCurrentBattleType(storedType);
-    }
-  }, []);
-  
-  // Update battle type when localStorage changes
-  useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'pokemon-ranker-battle-type') {
-        const newBattleType = e.newValue as BattleType;
-        if (newBattleType && (newBattleType === "pairs" || newBattleType === "triplets") && newBattleType !== currentBattleType) {
-          console.log("useBattleSelectionState: Storage event updated battle type to:", newBattleType);
-          setCurrentBattleType(newBattleType);
-        }
-      }
-    };
-    
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, [currentBattleType]);
-  
   // Define startNewBattle function
-  const startNewBattle = (pokemonList: Pokemon[], battleType: BattleType = "pairs") => {
+  const startNewBattle = (pokemonList: Pokemon[], battleType: BattleType = currentBattleType) => {
     console.log("useBattleSelectionState - startNewBattle with pokemonList length:", pokemonList?.length || 0, "and battleType:", battleType);
     
     if (!pokemonList || pokemonList.length < 2) {
@@ -53,7 +29,7 @@ export const useBattleSelectionState = () => {
       return;
     }
     
-    // Update our current battle type
+    // Update our current battle type if different
     if (battleType !== currentBattleType) {
       console.log("Updating currentBattleType to:", battleType);
       setCurrentBattleType(battleType);

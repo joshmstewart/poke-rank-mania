@@ -21,22 +21,13 @@ export const useBattleUIState = () => {
     storedGeneration ? Number(storedGeneration) : 0
   );
   
-  // Always ensure the state matches localStorage
-  useEffect(() => {
-    const currentStoredType = localStorage.getItem('pokemon-ranker-battle-type') as BattleType;
-    if (currentStoredType && (currentStoredType === "pairs" || currentStoredType === "triplets") && currentStoredType !== battleType) {
-      console.log("useBattleUIState: Synchronizing battleType with localStorage:", currentStoredType);
-      setBattleType(currentStoredType);
-    }
-  }, []);
-  
-  // React to localStorage changes for cross-tab synchronization
+  // Update state when localStorage changes to ensure cross-tab sync
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'pokemon-ranker-battle-type') {
         const newBattleType = e.newValue as BattleType;
         if (newBattleType && (newBattleType === "pairs" || newBattleType === "triplets") && newBattleType !== battleType) {
-          console.log("Storage event: Setting battle type to", newBattleType);
+          console.log("useBattleUIState: Storage event changed battle type to", newBattleType);
           setBattleType(newBattleType);
         }
       } else if (e.key === 'pokemon-ranker-full-ranking-mode') {
