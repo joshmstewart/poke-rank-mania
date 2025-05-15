@@ -23,25 +23,18 @@ export const useBattleInteractions = (
   const [isProcessing, setIsProcessing] = useState(false);
   const processingTimeoutRef = useRef<number | null>(null);
   
-  // Keep track of the last processed battle to avoid duplicates
+  // Keep track of the last processed battle IDs to avoid duplicate processing
   const lastProcessedBattleRef = useRef<number[]>([]);
-  // Keep track of the last battle completed number
-  const lastBattleCompletedRef = useRef<number>(battlesCompleted);
 
   // Clean up timeout on unmount
   useEffect(() => {
     return () => {
       if (processingTimeoutRef.current !== null) {
-        clearTimeout(processingTimeoutRef.current);
+        window.clearTimeout(processingTimeoutRef.current);
       }
     };
   }, []);
 
-  // Update the last battle completed ref when the prop changes
-  useEffect(() => {
-    lastBattleCompletedRef.current = battlesCompleted;
-  }, [battlesCompleted]);
-  
   // Create a stable callback function for handling pokemon selection
   const handlePokemonSelect = useCallback((id: number) => {
     console.log(`Handling Pokemon selection (id: ${id}) in ${battleType} mode. IsProcessing: ${isProcessing}`);
@@ -52,30 +45,13 @@ export const useBattleInteractions = (
       return;
     }
     
-    // Check if current battle is the same as last processed battle
-    const currentBattleIds = currentBattle.map(p => p.id).sort();
-    const lastProcessedIds = [...lastProcessedBattleRef.current].sort();
-    
-    const isSameBattle = currentBattleIds.length === lastProcessedIds.length &&
-      currentBattleIds.every((id, i) => id === lastProcessedIds[i]);
-      
-    if (isSameBattle && lastProcessedIds.length > 0) {
-      console.log("This appears to be the same battle we just processed, forcing a new battle");
-      // Set processing flag to prevent further clicks
-      setIsProcessing(true);
-      
-      processingTimeoutRef.current = window.setTimeout(() => {
-        handleTripletSelectionComplete();
-        
-        // Reset processing flag after a suitable delay
-        processingTimeoutRef.current = window.setTimeout(() => {
-          setIsProcessing(false);
-        }, 600);
-      }, 100);
-      return;
+    // Force clear any existing timeouts to prevent race conditions
+    if (processingTimeoutRef.current !== null) {
+      window.clearTimeout(processingTimeoutRef.current);
+      processingTimeoutRef.current = null;
     }
     
-    // Set processing state
+    // Set processing state immediately to prevent further clicks
     setIsProcessing(true);
     
     if (battleType === "pairs") {
@@ -90,21 +66,21 @@ export const useBattleInteractions = (
         selected: [id] 
       }]);
       
-      // Update last processed battle
+      // Update last processed battle to prevent duplicate processing
       lastProcessedBattleRef.current = currentBattle.map(p => p.id);
       
-      // Process the selection completion with a small delay
-      // This ensures state updates have time to propagate
+      // Process the selection completion with a delay to ensure states are updated
       processingTimeoutRef.current = window.setTimeout(() => {
-        console.log("Processing selection after delay. Current battle count:", lastBattleCompletedRef.current);
+        console.log("Pairs mode: Calling handleTripletSelectionComplete with delay");
         handleTripletSelectionComplete();
         
-        // Reset processing flag after a suitable delay to allow the next battle to load
+        // Allow a longer delay before resetting the processing state
+        // This prevents rapid clicking issues while the new battle loads
         processingTimeoutRef.current = window.setTimeout(() => {
-          console.log("Resetting processing flag");
+          console.log("Pairs mode: Resetting processing state");
           setIsProcessing(false);
-        }, 800); // Increased delay to ensure new battle is loaded
-      }, 300);
+        }, 1000);
+      }, 200);
     } else {
       // For triplets mode - toggle selection
       setSelectedPokemon(prev => {

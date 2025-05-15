@@ -53,6 +53,7 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
   const handlePokemonCardSelect = useCallback((id: number) => {
     console.log("BattleInterface: handlePokemonCardSelect called with id:", id);
     if (!isProcessing) {
+      console.log("BattleInterface: Processing click for Pokemon id:", id);
       onPokemonSelect(id);
     } else {
       console.log("BattleInterface: Ignoring click because processing is in progress");

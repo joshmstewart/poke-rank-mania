@@ -26,6 +26,8 @@ export const useBattleProcessor = (
       return;
     }
     
+    console.log("Processing battle result with selections:", selections);
+    console.log("Current battle:", currentBattle.map(p => p.name));
     setIsProcessingResult(true);
     
     if (!currentBattle || currentBattle.length === 0) {
@@ -33,9 +35,6 @@ export const useBattleProcessor = (
       setIsProcessingResult(false);
       return;
     }
-
-    console.log("Processing battle result with selections:", selections);
-    console.log("Current battle:", currentBattle.map(p => p.name));
     
     // Process battle results
     const newResults = [...battleResults];
@@ -74,12 +73,12 @@ export const useBattleProcessor = (
       }
     }
     
-    // Update battle results state
+    // Important: Update battle results first
     setBattleResults(newResults);
     
-    // Important: Increment and update battle count BEFORE starting new battle
+    // CRITICAL: Increment the battles completed counter BEFORE starting a new battle
     const newBattlesCompleted = battlesCompleted + 1;
-    console.log(`Updating battles completed from ${battlesCompleted} to ${newBattlesCompleted}`);
+    console.log(`Incrementing battles completed from ${battlesCompleted} to ${newBattlesCompleted}`);
     setBattlesCompleted(newBattlesCompleted);
     
     // Check if we've hit a milestone
@@ -98,33 +97,30 @@ export const useBattleProcessor = (
         setIsProcessingResult(false);
       }, 500);
     } else {
-      // Continue with next battle - Make sure we have the allPokemon list
-      console.log("Starting new battle with allPokemon:", allPokemon?.length || 0);
-      
-      // Validate allPokemon before starting a new battle
-      if (!allPokemon || allPokemon.length < 2) {
-        console.error("Not enough Pokémon available for battle:", allPokemon?.length || 0);
-        toast({
-          title: "Error",
-          description: "Not enough Pokémon available for battle",
-          variant: "destructive"
-        });
-        setIsProcessingResult(false);
-        return;
-      }
-      
-      // Reset selections BEFORE starting a new battle
+      // Reset selections before starting a new battle
       setSelectedPokemon([]);
       
       // Use a timeout to ensure state updates happen first
       setTimeout(() => {
-        // Force a completely new battle with the full Pokemon list
+        // Validate allPokemon before starting a new battle
+        if (!allPokemon || allPokemon.length < 2) {
+          console.error("Not enough Pokémon available for battle:", allPokemon?.length || 0);
+          toast({
+            title: "Error",
+            description: "Not enough Pokémon available for battle",
+            variant: "destructive"
+          });
+          setIsProcessingResult(false);
+          return;
+        }
+        
+        console.log(`Starting new battle after completing battle #${newBattlesCompleted}`);
         startNewBattle(allPokemon, battleType);
         
         // Reset processing state after the new battle has started
         setTimeout(() => {
           setIsProcessingResult(false);
-        }, 300);
+        }, 500);
       }, 300);
     }
   };
