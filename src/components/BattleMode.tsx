@@ -1,29 +1,10 @@
 
 import React, { useState } from "react";
 import { useBattleState } from "@/hooks/battle/useBattleState";
-
-// Import our components
-import ProgressTracker from "./battle/ProgressTracker";
-import BattleHeader from "./battle/BattleHeader";
-import BattleContent from "./battle/BattleContent";
-import BattleFooterNote from "./battle/BattleFooterNote";
 import ViewRankings from "./battle/ViewRankings";
-import { Button } from "@/components/ui/button";
-import { List, RefreshCw } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BattleType } from "@/hooks/battle/types";
-import { generations } from "@/services/pokemon";
-import { 
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger
-} from "@/components/ui/alert-dialog";
+import BattleControls from "./battle/BattleControls";
+import BattleDialogs from "./battle/BattleDialogs";
+import BattleContentContainer from "./battle/BattleContentContainer";
 
 const BattleMode = () => {
   const [showViewRankings, setShowViewRankings] = useState(false);
@@ -54,6 +35,11 @@ const BattleMode = () => {
     getBattlesRemaining
   } = useBattleState();
 
+  const handleConfirmRestart = () => {
+    handleGenerationChange(selectedGeneration.toString());
+    setRestartDialogOpen(false);
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-96">
@@ -79,109 +65,32 @@ const BattleMode = () => {
   return (
     <div className="container max-w-7xl mx-auto py-6">
       <div className="flex flex-col space-y-4">
-        {/* Simplified Controls bar with inline settings - more condensed */}
-        <div className="flex items-center justify-between bg-white p-3 rounded-lg shadow border">
-          {/* Left side - Gen and Mode dropdowns with inline descriptions */}
-          <div className="flex items-center gap-4">
-            <div className="flex items-center">
-              <span className="text-sm font-medium whitespace-nowrap mr-1">Gen:</span>
-              <Select 
-                value={selectedGeneration.toString()} 
-                onValueChange={handleGenerationChange}
-              >
-                <SelectTrigger className="w-[140px] h-8 text-sm">
-                  <SelectValue placeholder="Generation" />
-                </SelectTrigger>
-                <SelectContent>
-                  {generations.map(gen => (
-                    <SelectItem key={gen.id} value={gen.id.toString()}>
-                      {gen.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="flex items-center">
-              <span className="text-sm font-medium whitespace-nowrap mr-1">Mode:</span>
-              <Select
-                value={battleType}
-                onValueChange={(value: BattleType) => handleBattleTypeChange(value)}
-              >
-                <SelectTrigger className="w-[100px] h-8 text-sm">
-                  <SelectValue placeholder="Battle Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pairs">Pairs</SelectItem>
-                  <SelectItem value="triplets">Trios</SelectItem>
-                </SelectContent>
-              </Select>
-              <span className="text-xs text-gray-500 ml-2">
-                {battleType === "pairs" ? "Compare one-by-one" : "Select multiple preferences"}
-              </span>
-            </div>
-          </div>
-          
-          {/* Right side - action buttons */}
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex items-center gap-1 h-8 text-sm"
-              onClick={() => setShowViewRankings(true)}
-            >
-              <List className="h-4 w-4" /> Rankings
-            </Button>
-            
-            {/* Reset button */}
-            <AlertDialog open={restartDialogOpen} onOpenChange={setRestartDialogOpen}>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex items-center gap-1 h-8 text-sm"
-                >
-                  <RefreshCw className="h-4 w-4" /> Restart
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will permanently delete all your current battle progress and rankings.
-                    This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction 
-                    onClick={() => {
-                      handleGenerationChange(selectedGeneration.toString());
-                      setRestartDialogOpen(false);
-                    }}
-                  >
-                    Yes, restart
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
-        </div>
+        {/* Controls bar */}
+        <BattleControls 
+          selectedGeneration={selectedGeneration}
+          battleType={battleType}
+          onGenerationChange={handleGenerationChange}
+          onBattleTypeChange={handleBattleTypeChange}
+          onViewRankings={() => setShowViewRankings(true)}
+          onOpenRestartDialog={() => setRestartDialogOpen(true)}
+        />
 
-        {/* Progress tracker */}
-        <ProgressTracker
+        {/* Dialogs */}
+        <BattleDialogs 
+          isRestartDialogOpen={restartDialogOpen}
+          onRestartDialogChange={setRestartDialogOpen}
+          onConfirmRestart={handleConfirmRestart}
+        />
+
+        {/* Battle content container with progress tracker and battle content */}
+        <BattleContentContainer 
           completionPercentage={completionPercentage}
           battlesCompleted={battlesCompleted}
           getBattlesRemaining={getBattlesRemaining}
-        />
-
-        {/* Battle content is always shown */}
-        <BattleContent 
           showingMilestone={showingMilestone}
           rankingGenerated={rankingGenerated}
           currentBattle={currentBattle}
           selectedPokemon={selectedPokemon}
-          battlesCompleted={battlesCompleted}
           battleType={battleType}
           battleHistory={battleHistory}
           finalRankings={finalRankings}
@@ -193,8 +102,6 @@ const BattleMode = () => {
           onContinueBattles={handleContinueBattles}
           onSaveRankings={handleSaveRankings}
         />
-
-        <BattleFooterNote battlesCompleted={battlesCompleted} />
       </div>
     </div>
   );
