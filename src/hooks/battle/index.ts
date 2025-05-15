@@ -13,3 +13,6 @@ export * from "./useBattleActions";
 export * from "./usePokemonLoader";
 export * from "./useBattleEffects";
 export * from "./useBattleStarter";
+export * from "./useBattleInteractions";
+export * from "./useBattleStateInitializer";
+export * from "./useBattlePersistence";
