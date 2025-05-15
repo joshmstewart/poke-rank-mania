@@ -56,9 +56,10 @@ export const useCompletionTracker = (
 
   // Update the local state when the ranking is generated
   useEffect(() => {
-    setCurrentRankingGenerated(currentRankingGenerated => {
-      return setRankingGenerated || currentRankingGenerated;
-    });
+    // Check if setRankingGenerated is true, and if so, update our local state
+    if (setRankingGenerated) {
+      setCurrentRankingGenerated(prev => prev || true);
+    }
   }, [setRankingGenerated]);
 
   // Modified to return a number without requiring battleType parameter
