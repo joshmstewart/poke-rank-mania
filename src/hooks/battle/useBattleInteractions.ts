@@ -17,8 +17,15 @@ export const useBattleInteractions = (
   goBack: () => void,
   battleType: BattleType
 ) => {
+  // Verify the battle type is valid
+  const validBattleType = (battleType === "pairs" || battleType === "triplets") ? battleType : "pairs";
+  
+  console.log("useBattleInteractions initialized with battleType:", validBattleType);
+  
   const handlePokemonSelect = (id: number) => {
-    if (battleType === "pairs") {
+    console.log(`Handling Pokemon selection (id: ${id}) in ${validBattleType} mode`);
+    
+    if (validBattleType === "pairs") {
       // For pairs, immediately handle the selection as a completed battle
       // First save to battle history
       setBattleHistory([...battleHistory, { 
@@ -38,6 +45,7 @@ export const useBattleInteractions = (
         // Add to selection
         newSelected = [...selectedPokemon, id];
       }
+      console.log("Updating selected pokemon:", newSelected);
       setSelectedPokemon(newSelected);
     }
   };

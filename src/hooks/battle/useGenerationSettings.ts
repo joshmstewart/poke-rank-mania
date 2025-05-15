@@ -43,11 +43,17 @@ export const useGenerationSettings = (
   };
 
   const handleBattleTypeChange = (value: string) => {
-    if (!value) return; // Don't proceed if no value
+    if (!value || (value !== "pairs" && value !== "triplets")) {
+      console.error("Invalid battle type:", value);
+      return; 
+    }
     
     const newBattleType = value as BattleType;
     console.log("Changing battle type to:", newBattleType);
     setBattleType(newBattleType);
+    
+    // Force update in localStorage to ensure cross-tab sync
+    localStorage.removeItem('pokemon-ranker-battle-type');
     localStorage.setItem('pokemon-ranker-battle-type', newBattleType);
     
     // Reset battles and start new one with current Pokémon pool

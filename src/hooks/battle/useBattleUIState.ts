@@ -12,7 +12,7 @@ export const useBattleUIState = () => {
   const [completionPercentage, setCompletionPercentage] = useState(0);
   const [rankingGenerated, setRankingGenerated] = useState(false);
   const [battleType, setBattleType] = useState<BattleType>(
-    (storedBattleType as BattleType) || "pairs"
+    (storedBattleType as BattleType) === "triplets" ? "triplets" : "pairs"
   );
   const [fullRankingMode, setFullRankingMode] = useState(
     storedRankingMode === 'true'
@@ -23,23 +23,32 @@ export const useBattleUIState = () => {
   
   // React to localStorage changes for cross-tab synchronization
   useEffect(() => {
-    const handleStorageChange = () => {
-      const newBattleType = localStorage.getItem('pokemon-ranker-battle-type') as BattleType;
-      const newRankingMode = localStorage.getItem('pokemon-ranker-full-ranking-mode') === 'true';
-      const newGeneration = Number(localStorage.getItem('pokemon-ranker-generation') || '0');
-      
-      if (newBattleType && newBattleType !== battleType) {
-        setBattleType(newBattleType);
-      }
-      
-      if (newRankingMode !== fullRankingMode) {
-        setFullRankingMode(newRankingMode);
-      }
-      
-      if (newGeneration !== selectedGeneration) {
-        setSelectedGeneration(newGeneration);
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'pokemon-ranker-battle-type') {
+        const newBattleType = e.newValue as BattleType;
+        if (newBattleType && (newBattleType === "pairs" || newBattleType === "triplets") && newBattleType !== battleType) {
+          console.log("Storage event: Setting battle type to", newBattleType);
+          setBattleType(newBattleType);
+        }
+      } else if (e.key === 'pokemon-ranker-full-ranking-mode') {
+        const newRankingMode = e.newValue === 'true';
+        if (newRankingMode !== fullRankingMode) {
+          setFullRankingMode(newRankingMode);
+        }
+      } else if (e.key === 'pokemon-ranker-generation') {
+        const newGeneration = Number(e.newValue || '0');
+        if (newGeneration !== selectedGeneration) {
+          setSelectedGeneration(newGeneration);
+        }
       }
     };
+    
+    // Also check on initial load
+    const currentBattleType = localStorage.getItem('pokemon-ranker-battle-type') as BattleType;
+    if (currentBattleType && (currentBattleType === "pairs" || currentBattleType === "triplets") && currentBattleType !== battleType) {
+      console.log("Initial load: Setting battle type to", currentBattleType);
+      setBattleType(currentBattleType);
+    }
     
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);

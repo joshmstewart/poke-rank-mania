@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,6 +24,11 @@ const BattleSettings: React.FC<BattleSettingsProps> = ({
   onRankingModeChange,
 }) => {
   console.log("Rendering BattleSettings with battleType:", battleType);
+  
+  // Force re-render when battleType changes
+  useEffect(() => {
+    console.log("BattleSettings effect: battle type updated to", battleType);
+  }, [battleType]);
   
   return (
     <Card>
@@ -56,8 +61,8 @@ const BattleSettings: React.FC<BattleSettingsProps> = ({
               type="single" 
               value={battleType} 
               onValueChange={(value) => {
+                console.log("ToggleGroup onValueChange called with:", value);
                 if (value) {
-                  console.log("ToggleGroup onValueChange called with:", value);
                   onBattleTypeChange(value);
                 }
               }}
