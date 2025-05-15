@@ -60,6 +60,7 @@ export const useBattleProcessor = (
       }
     }
     
+    // Update battle results state
     setBattleResults(newResults);
     const newBattlesCompleted = battlesCompleted + 1;
     setBattlesCompleted(newBattlesCompleted);
@@ -76,7 +77,7 @@ export const useBattleProcessor = (
       });
     } else {
       // Continue with next battle - Make sure we have the allPokemon list
-      console.log("Starting new battle with new Pokémon...", allPokemon?.length || 0);
+      console.log("Starting new battle with allPokemon:", allPokemon?.length || 0);
       
       // Validate allPokemon before starting a new battle
       if (!allPokemon || allPokemon.length < 2) {
@@ -89,8 +90,11 @@ export const useBattleProcessor = (
         return;
       }
       
-      // Start new battle with the full Pokemon list
-      startNewBattle(allPokemon, battleType);
+      // Explicitly trigger a new battle with the full Pokemon list
+      console.log("Starting new battle after processing result");
+      setTimeout(() => {
+        startNewBattle(allPokemon, battleType);
+      }, 100); // Small delay to ensure state updates complete
     }
     
     // Reset selections

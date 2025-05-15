@@ -64,8 +64,11 @@ export const useBattleInteractions = (
         console.log("Processing triplet selection after delay");
         handleTripletSelectionComplete();
         
-        // Reset processing flag after completion
-        setIsProcessing(false);
+        // Reset processing flag after a suitable delay to allow the next battle to load
+        processingTimeoutRef.current = window.setTimeout(() => {
+          console.log("Resetting processing flag");
+          setIsProcessing(false);
+        }, 500);
       }, 300);
     } else {
       // For triplets mode - toggle selection
@@ -90,8 +93,12 @@ export const useBattleInteractions = (
   ]);
 
   const handleGoBack = useCallback(() => {
+    if (isProcessing) {
+      console.log("Already processing, ignoring back navigation");
+      return;
+    }
     handleNavigateBack();
-  }, [handleNavigateBack]);
+  }, [handleNavigateBack, isProcessing]);
 
   return {
     handlePokemonSelect,
