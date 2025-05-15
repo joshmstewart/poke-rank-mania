@@ -1,10 +1,10 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronLeft, AlertTriangle } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { ChevronLeft, AlertTriangle, CheckCircle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { 
   Pokemon, 
@@ -30,6 +30,7 @@ const BattleMode = () => {
   const [finalRankings, setFinalRankings] = useState<Pokemon[]>([]);
   const [battleHistory, setBattleHistory] = useState<{ battle: Pokemon[], selected: number[] }[]>([]);
   const [showingMilestone, setShowingMilestone] = useState(false);
+  const [completionPercentage, setCompletionPercentage] = useState(0);
   
   // Milestone triggers - show rankings at these battle counts
   const milestones = [10, 25, 50, 100, 200, 500, 1000];
@@ -37,6 +38,13 @@ const BattleMode = () => {
   useEffect(() => {
     loadPokemon();
   }, [selectedGeneration]);
+
+  useEffect(() => {
+    // Calculate completion percentage when battle results change
+    if (allPokemon.length > 0) {
+      calculateCompletionPercentage();
+    }
+  }, [battleResults, allPokemon]);
 
   const loadPokemon = async () => {
     setIsLoading(true);
@@ -50,6 +58,7 @@ const BattleMode = () => {
     setSelectedPokemon([]);
     setBattleHistory([]);
     setShowingMilestone(false);
+    setCompletionPercentage(0);
     
     // Start the first battle
     if (pokemon.length > 0) {
@@ -57,6 +66,35 @@ const BattleMode = () => {
     }
     
     setIsLoading(false);
+  };
+
+  // Calculate how complete the ranking process is
+  const calculateCompletionPercentage = () => {
+    // For a complete ranking in a tournament style, we need at least n-1 comparisons
+    // where n is the number of Pokémon
+    const totalPokemon = allPokemon.length;
+    
+    if (totalPokemon <= 1) {
+      setCompletionPercentage(100);
+      return;
+    }
+    
+    // Minimum number of comparisons needed for a complete ranking
+    const minimumComparisons = totalPokemon - 1;
+    
+    // For pairs, each battle gives us 1 comparison
+    // For triplets, each battle can give us multiple comparisons depending on selections
+    const currentComparisons = battleResults.length;
+    
+    // Calculate percentage (cap at 100%)
+    const percentage = Math.min(100, Math.floor((currentComparisons / minimumComparisons) * 100));
+    setCompletionPercentage(percentage);
+    
+    // If we've reached 100%, make sure to show the final rankings
+    if (percentage >= 100 && !rankingGenerated) {
+      generateRankings(battleResults);
+      setRankingGenerated(true);
+    }
   };
 
   const startNewBattle = (pokemonList: Pokemon[]) => {
@@ -85,6 +123,8 @@ const BattleMode = () => {
     setBattlesCompleted(0);
     setRankingGenerated(false);
     setBattleHistory([]);
+    setShowingMilestone(false);
+    setCompletionPercentage(0);
     startNewBattle(allPokemon);
   };
 
@@ -238,8 +278,8 @@ const BattleMode = () => {
     
     setFinalRankings(rankings);
     
-    // Only set rankingGenerated to true if we're at the final milestone
-    if (battlesCompleted >= milestones[milestones.length - 1]) {
+    // Only set rankingGenerated to true if we're at the final milestone or completion percentage is 100%
+    if (battlesCompleted >= milestones[milestones.length - 1] || completionPercentage >= 100) {
       setRankingGenerated(true);
     }
     
@@ -264,7 +304,26 @@ const BattleMode = () => {
     setRankingGenerated(false);
     setBattleHistory([]);
     setShowingMilestone(false);
+    setCompletionPercentage(0);
     startNewBattle(allPokemon);
+  };
+
+  // Calculate how many more battles are needed for a complete ranking
+  const getBattlesRemaining = () => {
+    if (completionPercentage >= 100) return 0;
+    
+    const totalPokemon = allPokemon.length;
+    const minimumComparisons = totalPokemon - 1;
+    const currentComparisons = battleResults.length;
+    
+    // Estimate remaining battles based on battle type
+    if (battleType === "pairs") {
+      return minimumComparisons - currentComparisons;
+    } else {
+      // For triplets, each battle can generate multiple comparisons
+      // Use a conservative estimate: each triplet battle gives ~2 comparisons on average
+      return Math.ceil((minimumComparisons - currentComparisons) / 2);
+    }
   };
 
   if (isLoading) {
@@ -307,6 +366,28 @@ const BattleMode = () => {
             </Select>
           </div>
         </div>
+
+        {/* Overall completion progress */}
+        <Card className="bg-white rounded-lg shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-semibold">Overall Ranking Progress</h3>
+              <span className="text-sm text-gray-500">
+                {completionPercentage}% Complete
+              </span>
+            </div>
+            <Progress value={completionPercentage} className="h-2" />
+            <div className="flex justify-between mt-2 text-sm text-gray-500">
+              <span>Battles completed: {battlesCompleted}</span>
+              <span>
+                {completionPercentage < 100 
+                  ? `~${getBattlesRemaining()} more battles needed` 
+                  : <span className="flex items-center text-green-600"><CheckCircle size={16} className="mr-1" /> Complete ranking achieved!</span>
+                }
+              </span>
+            </div>
+          </CardContent>
+        </Card>
 
         {!showingMilestone && !rankingGenerated ? (
           <div className="bg-white rounded-lg shadow p-6">
