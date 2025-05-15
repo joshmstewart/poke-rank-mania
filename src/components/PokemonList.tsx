@@ -4,7 +4,7 @@ import { Droppable, Draggable, DropResult } from "react-beautiful-dnd";
 import PokemonCard from "./PokemonCard";
 import { Pokemon } from "@/services/pokemonService";
 import { Button } from "@/components/ui/button";
-import { Search } from "lucide-react";
+import { Search, List, Grid } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
 interface PokemonListProps {
@@ -23,6 +23,7 @@ const PokemonList = ({
   isRankingArea = false
 }: PokemonListProps) => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   
   const filteredPokemon = pokemonList.filter(pokemon => 
     pokemon.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -31,7 +32,27 @@ const PokemonList = ({
   return (
     <div className={`flex flex-col h-full ${isRankingArea ? 'relative' : ''}`}>
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold">{title}</h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-xl font-bold">{title}</h2>
+          <div className="flex border rounded-md overflow-hidden">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className={`p-1 h-8 ${viewMode === "list" ? "bg-muted" : ""}`}
+              onClick={() => setViewMode("list")}
+            >
+              <List className="h-4 w-4" />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className={`p-1 h-8 ${viewMode === "grid" ? "bg-muted" : ""}`}
+              onClick={() => setViewMode("grid")}
+            >
+              <Grid className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
         <div className="relative w-full max-w-xs">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
@@ -49,7 +70,10 @@ const PokemonList = ({
             <div
               {...provided.droppableProps}
               ref={provided.innerRef}
-              className={`space-y-2 h-full ${snapshot.isDraggingOver && isRankingArea ? 'bg-green-50 border-2 border-dashed border-green-500 rounded' : ''}`}
+              className={`
+                ${viewMode === "grid" ? "grid grid-cols-2 md:grid-cols-3 gap-2" : "space-y-2"} 
+                h-full ${snapshot.isDraggingOver && isRankingArea ? 'bg-green-50 border-2 border-dashed border-green-500 rounded' : ''}
+              `}
             >
               {filteredPokemon.length > 0 ? (
                 filteredPokemon.map((pokemon, index) => (
@@ -67,13 +91,14 @@ const PokemonList = ({
                         <PokemonCard
                           pokemon={pokemon}
                           isDragging={snapshot.isDragging}
+                          viewMode={viewMode}
                         />
                       </div>
                     )}
                   </Draggable>
                 ))
               ) : (
-                <div className="flex items-center justify-center h-32 text-muted-foreground">
+                <div className={`flex items-center justify-center ${viewMode === "grid" ? "col-span-full" : ""} h-32 text-muted-foreground`}>
                   {searchTerm ? "No Pokemon found" : "No Pokemon here yet"}
                 </div>
               )}
