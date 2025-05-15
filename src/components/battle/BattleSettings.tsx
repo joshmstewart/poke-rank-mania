@@ -59,10 +59,10 @@ const BattleSettings: React.FC<BattleSettingsProps> = ({
             <label className="text-sm font-medium mb-2 block">Battle Type</label>
             <ToggleGroup 
               type="single" 
-              value={battleType} 
+              value={battleType}
               onValueChange={(value) => {
                 console.log("ToggleGroup onValueChange called with:", value);
-                if (value) {
+                if (value && (value === "pairs" || value === "triplets")) {
                   onBattleTypeChange(value);
                 }
               }}

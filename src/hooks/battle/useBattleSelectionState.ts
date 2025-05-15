@@ -18,26 +18,30 @@ export const useBattleSelectionState = () => {
 
   const { startNewBattle: initiateNewBattle } = useBattleStarter();
   
-  // Update local battle type when it changes in localStorage
+  // Update battle type when localStorage changes
   useEffect(() => {
-    const handleStorageChange = () => {
-      const newBattleType = localStorage.getItem('pokemon-ranker-battle-type') as BattleType;
-      if (newBattleType && (newBattleType === "pairs" || newBattleType === "triplets") && newBattleType !== currentBattleType) {
-        console.log("useBattleSelectionState: Updated battle type from localStorage:", newBattleType);
-        setCurrentBattleType(newBattleType);
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'pokemon-ranker-battle-type') {
+        const newBattleType = e.newValue as BattleType;
+        if (newBattleType && (newBattleType === "pairs" || newBattleType === "triplets") && newBattleType !== currentBattleType) {
+          console.log("useBattleSelectionState: Storage event updated battle type to:", newBattleType);
+          setCurrentBattleType(newBattleType);
+        }
       }
     };
     
-    // Also check on initial load
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [currentBattleType]);
+  
+  // Check localStorage on mount
+  useEffect(() => {
     const storedType = localStorage.getItem('pokemon-ranker-battle-type') as BattleType;
     if (storedType && (storedType === "pairs" || storedType === "triplets") && storedType !== currentBattleType) {
       console.log("useBattleSelectionState: Initial battle type from localStorage:", storedType);
       setCurrentBattleType(storedType);
     }
-    
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, [currentBattleType]);
+  }, []);
   
   // Define startNewBattle function
   const startNewBattle = (pokemonList: Pokemon[], battleType: BattleType = "pairs") => {

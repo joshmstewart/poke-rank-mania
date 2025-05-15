@@ -12,7 +12,7 @@ export const useBattleUIState = () => {
   const [completionPercentage, setCompletionPercentage] = useState(0);
   const [rankingGenerated, setRankingGenerated] = useState(false);
   const [battleType, setBattleType] = useState<BattleType>(
-    (storedBattleType as BattleType) === "triplets" ? "triplets" : "pairs"
+    (storedBattleType === "triplets") ? "triplets" : "pairs"
   );
   const [fullRankingMode, setFullRankingMode] = useState(
     storedRankingMode === 'true'
@@ -43,16 +43,20 @@ export const useBattleUIState = () => {
       }
     };
     
-    // Also check on initial load
+    // Listen for storage changes
+    window.addEventListener('storage', handleStorageChange);
+    
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [battleType, fullRankingMode, selectedGeneration]);
+  
+  // Check localStorage on initial load and whenever battleType state changes
+  useEffect(() => {
     const currentBattleType = localStorage.getItem('pokemon-ranker-battle-type') as BattleType;
     if (currentBattleType && (currentBattleType === "pairs" || currentBattleType === "triplets") && currentBattleType !== battleType) {
       console.log("Initial load: Setting battle type to", currentBattleType);
       setBattleType(currentBattleType);
     }
-    
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, [battleType, fullRankingMode, selectedGeneration]);
+  }, []);
   
   // Milestone triggers - show rankings at these battle counts
   const milestones = [10, 25, 50, 100, 200, 500, 1000];

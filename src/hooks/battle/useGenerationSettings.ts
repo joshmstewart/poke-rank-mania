@@ -23,7 +23,7 @@ export const useGenerationSettings = (
     storedGeneration ? Number(storedGeneration) : 0
   );
   const [battleType, setBattleType] = useState<BattleType>(
-    (storedBattleType as BattleType) || "pairs"
+    (storedBattleType === "triplets") ? "triplets" : "pairs"
   );
   const [fullRankingMode, setFullRankingMode] = useState(
     storedRankingMode === 'true'
@@ -66,7 +66,10 @@ export const useGenerationSettings = (
     
     // Important: Start a new battle with the correct number of Pokémon for the selected battle type
     if (allPokemon.length > 0) {
-      startNewBattle(allPokemon, newBattleType);
+      // Small delay to ensure state updates have propagated
+      setTimeout(() => {
+        startNewBattle(allPokemon, newBattleType);
+      }, 0);
     } else {
       toast({
         title: "No Pokémon available",

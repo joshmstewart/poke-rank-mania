@@ -15,17 +15,25 @@ export const useBattleInteractions = (
   setBattleHistory: React.Dispatch<React.SetStateAction<{ battle: Pokemon[], selected: number[] }[]>>,
   handleTripletSelectionComplete: () => void,
   goBack: () => void,
-  battleType: BattleType
+  battleTypeParam: BattleType
 ) => {
-  // Verify the battle type is valid
-  const validBattleType = (battleType === "pairs" || battleType === "triplets") ? battleType : "pairs";
+  // Read directly from localStorage to ensure we have the most up-to-date value
+  const storedBattleType = localStorage.getItem('pokemon-ranker-battle-type') as BattleType;
   
-  console.log("useBattleInteractions initialized with battleType:", validBattleType);
+  // Use the stored value if available, otherwise fall back to the parameter
+  const battleType = (storedBattleType === "pairs" || storedBattleType === "triplets") ? 
+    storedBattleType : 
+    (battleTypeParam === "pairs" || battleTypeParam === "triplets") ? 
+      battleTypeParam : "pairs";
+  
+  console.log("useBattleInteractions initialized with battleType:", battleType, 
+              "param was:", battleTypeParam, 
+              "stored was:", storedBattleType);
   
   const handlePokemonSelect = (id: number) => {
-    console.log(`Handling Pokemon selection (id: ${id}) in ${validBattleType} mode`);
+    console.log(`Handling Pokemon selection (id: ${id}) in ${battleType} mode`);
     
-    if (validBattleType === "pairs") {
+    if (battleType === "pairs") {
       // For pairs, immediately handle the selection as a completed battle
       // First save to battle history
       setBattleHistory([...battleHistory, { 
