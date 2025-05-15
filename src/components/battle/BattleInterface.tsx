@@ -31,18 +31,23 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
   // Animation state
   const [isAnimating, setIsAnimating] = useState(false);
   const [previousBattle, setPreviousBattle] = useState<Pokemon[]>([]);
+  const [initialRender, setInitialRender] = useState(true);
   
   // Set up animation when current battle changes
   useEffect(() => {
     // Skip animation on first render
-    if (previousBattle.length > 0) {
+    if (initialRender) {
+      setPreviousBattle(currentBattle);
+      setInitialRender(false);
+      return;
+    }
+    
+    if (currentBattle !== previousBattle && currentBattle.length > 0) {
       setIsAnimating(true);
       const timer = setTimeout(() => setIsAnimating(false), 500); // Animation duration
       return () => clearTimeout(timer);
-    } else {
-      setPreviousBattle(currentBattle);
     }
-  }, [currentBattle]);
+  }, [currentBattle, previousBattle]);
 
   // Update previous battle after animation completes
   useEffect(() => {
@@ -51,9 +56,6 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
     }
   }, [isAnimating, currentBattle]);
 
-  // Log the current battle Pokémon for debugging
-  console.log("Current battle Pokémon:", currentBattle.map(p => p.name));
-  
   // Label for the battle type
   const battleLabel = battleType === "pairs" ? "favorite" : "preferences (0-3)";
   
@@ -61,7 +63,6 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
     <div className="bg-white rounded-lg shadow p-6">
       <div className="mb-4">
         <div className="flex justify-between items-center">
-          {/* Moved the back button into the flex container */}
           <div className="flex items-center">
             {battleHistory.length > 0 && (
               <Button 
@@ -73,9 +74,9 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
                 <ChevronLeft className="mr-1" /> Back
               </Button>
             )}
-            <h2 className={`text-2xl font-bold ${isAnimating ? 'animate-fade-in' : ''}`}>Battle {battlesCompleted + 1}</h2>
+            <h2 className="text-2xl font-bold">Battle {battlesCompleted + 1}</h2>
           </div>
-          <div className={`text-sm text-gray-500 ${isAnimating ? 'animate-fade-in' : ''}`}>
+          <div className="text-sm text-gray-500">
             Select your {battleLabel}
           </div>
         </div>
@@ -95,8 +96,10 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
         </div>
       </div>
       
-      {/* Battle cards with animation */}
-      <div className={`grid grid-cols-1 md:grid-cols-3 gap-4 mt-8 ${isAnimating ? 'opacity-0 translate-y-4' : 'opacity-100 translate-y-0'} transition-all duration-500`}>
+      {/* Battle cards with improved animation handling */}
+      <div 
+        className={`grid grid-cols-1 md:grid-cols-${currentBattle.length} gap-4 mt-8 transition-opacity duration-300 ${isAnimating ? 'opacity-0' : 'opacity-100'}`}
+      >
         {currentBattle.map(pokemon => (
           <BattleCard
             key={pokemon.id}
@@ -110,7 +113,7 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
       
       {/* Always show the submit button for triplets */}
       {battleType === "triplets" && (
-        <div className={`mt-8 flex justify-center ${isAnimating ? 'opacity-0 scale-95' : 'opacity-100 scale-100'} transition-all duration-500`}>
+        <div className={`mt-8 flex justify-center transition-all duration-300 ${isAnimating ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
           <Button 
             size="lg" 
             onClick={onTripletSelectionComplete}

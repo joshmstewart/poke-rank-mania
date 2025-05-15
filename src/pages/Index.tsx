@@ -16,11 +16,8 @@ const Index = () => {
           <Logo />
           <AppSessionManager />
         </div>
-        <p className="text-center text-muted-foreground mb-8">
-          Create your personal Pokémon rankings using two different methods
-        </p>
 
-        <div className="max-w-3xl mx-auto mb-8">
+        <div className="max-w-3xl mx-auto mb-6">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle>Choose Your Ranking Method</CardTitle>

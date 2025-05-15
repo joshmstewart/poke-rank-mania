@@ -1,8 +1,8 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Trophy, Medal, Award, CheckCircle } from "lucide-react";
+import { Trophy, Medal, Award, CheckCircle, ChevronDown, ChevronUp } from "lucide-react";
 import { Pokemon } from "@/services/pokemon";
 
 interface RankingDisplayProps {
@@ -22,6 +22,9 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
   onContinueBattles,
   onSaveRankings
 }) => {
+  const [showAllRankings, setShowAllRankings] = useState(false);
+  const displayCount = showAllRankings ? finalRankings.length : 10;
+  
   const renderRankBadge = (rank: number) => {
     if (rank === 1) return <Trophy className="h-6 w-6 text-yellow-500" />;
     if (rank === 2) return <Medal className="h-6 w-6 text-gray-400" />;
@@ -48,7 +51,7 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
       </div>
       
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {finalRankings.slice(0, 10).map((pokemon, index) => (
+        {finalRankings.slice(0, displayCount).map((pokemon, index) => (
           <Card key={pokemon.id} className={`flex items-center p-4 ${index < 3 ? 'border-2 ' + (index === 0 ? 'border-yellow-400' : index === 1 ? 'border-gray-300' : 'border-amber-600') : ''}`}>
             <div className="flex-shrink-0 mr-4 flex items-center justify-center w-10">
               {renderRankBadge(index + 1)}
@@ -67,6 +70,22 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
           </Card>
         ))}
       </div>
+      
+      {finalRankings.length > 10 && (
+        <div className="flex justify-center mt-4">
+          <Button 
+            variant="outline" 
+            onClick={() => setShowAllRankings(!showAllRankings)}
+            className="flex items-center gap-1"
+          >
+            {showAllRankings ? (
+              <>Show Less <ChevronUp className="h-4 w-4" /></>
+            ) : (
+              <>Show All {finalRankings.length} Rankings <ChevronDown className="h-4 w-4" /></>
+            )}
+          </Button>
+        </div>
+      )}
       
       {rankingGenerated && (
         <div className="mt-8 text-center">
