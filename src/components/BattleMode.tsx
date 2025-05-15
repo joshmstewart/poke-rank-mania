@@ -1,6 +1,7 @@
 
 import React, { useState } from "react";
 import { useBattleState } from "@/hooks/battle/useBattleState";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 // Import our components
 import ProgressTracker from "./battle/ProgressTracker";
@@ -10,7 +11,7 @@ import BattleContent from "./battle/BattleContent";
 import BattleFooterNote from "./battle/BattleFooterNote";
 import ViewRankings from "./battle/ViewRankings";
 import { Button } from "@/components/ui/button";
-import { List } from "lucide-react";
+import { List, ChevronDown, ChevronUp } from "lucide-react";
 
 const BattleMode = () => {
   const [showViewRankings, setShowViewRankings] = useState(false);
@@ -68,16 +69,9 @@ const BattleMode = () => {
   return (
     <div className="container max-w-7xl mx-auto py-6">
       <div className="flex flex-col space-y-4">
-        {/* Compact settings bar */}
+        {/* Controls bar */}
         <div className="flex justify-between items-center">
           <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => setShowSettings(!showSettings)}
-            >
-              {showSettings ? "Hide" : "Show"} Settings
-            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -88,42 +82,67 @@ const BattleMode = () => {
             </Button>
           </div>
           
-          {/* Simplified progress indicator for collapsed state */}
-          {!showSettings && (
-            <div className="flex items-center gap-4">
-              <div className="text-sm text-gray-600">
-                Battles: <span className="font-semibold">{battlesCompleted}</span>
-              </div>
-              <div className="h-2 w-24 bg-gray-200 rounded-full">
+          {/* View settings toggle */}
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setShowSettings(!showSettings)}
+            className="flex items-center gap-1"
+          >
+            {showSettings ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            {showSettings ? "Hide" : "Show"} Settings
+          </Button>
+        </div>
+
+        {/* Collapsible settings section */}
+        <Collapsible open={showSettings} onOpenChange={setShowSettings}>
+          <CollapsibleContent>
+            <div className="grid gap-4">
+              {/* Battle settings */}
+              <BattleSettings
+                selectedGeneration={selectedGeneration}
+                battleType={battleType}
+                fullRankingMode={fullRankingMode}
+                onGenerationChange={handleGenerationChange}
+                onBattleTypeChange={handleBattleTypeChange}
+                onRankingModeChange={setFullRankingMode}
+              />
+
+              {/* Progress tracker */}
+              <ProgressTracker
+                completionPercentage={completionPercentage}
+                battlesCompleted={battlesCompleted}
+                getBattlesRemaining={getBattlesRemaining}
+              />
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+
+        {/* Always show compact progress bar when settings are collapsed */}
+        {!showSettings && (
+          <div className="bg-white p-3 rounded-lg shadow border flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-medium">
+                Gen: {selectedGeneration === 0 ? "All" : selectedGeneration}
+              </span>
+              <span className="text-sm font-medium">
+                Mode: {battleType === "pairs" ? "Pairs" : "Trios"}
+              </span>
+              <span className="text-sm font-medium">
+                Type: {fullRankingMode ? "Full" : "Sample"}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm">Battles: {battlesCompleted}</span>
+              <div className="w-32 bg-gray-200 h-2 rounded-full">
                 <div 
-                  className="h-2 bg-primary rounded-full" 
+                  className="bg-primary h-full rounded-full" 
                   style={{ width: `${completionPercentage}%` }}
                 ></div>
               </div>
-              <div className="text-xs text-gray-600">{completionPercentage}% Complete</div>
+              <span className="text-xs">{completionPercentage}%</span>
             </div>
-          )}
-        </div>
-
-        {/* Only show settings when expanded */}
-        {showSettings && (
-          <>
-            <BattleSettings
-              selectedGeneration={selectedGeneration}
-              battleType={battleType}
-              fullRankingMode={fullRankingMode}
-              onGenerationChange={handleGenerationChange}
-              onBattleTypeChange={handleBattleTypeChange}
-              onRankingModeChange={setFullRankingMode}
-            />
-
-            {/* Overall completion progress */}
-            <ProgressTracker
-              completionPercentage={completionPercentage}
-              battlesCompleted={battlesCompleted}
-              getBattlesRemaining={getBattlesRemaining}
-            />
-          </>
+          </div>
         )}
 
         {/* Battle content is always shown */}

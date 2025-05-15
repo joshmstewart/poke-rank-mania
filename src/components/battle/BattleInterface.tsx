@@ -42,16 +42,16 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
       return;
     }
     
-    if (currentBattle !== previousBattle && currentBattle.length > 0) {
+    if (currentBattle.length > 0) {
       setIsAnimating(true);
-      const timer = setTimeout(() => setIsAnimating(false), 500); // Animation duration
+      const timer = setTimeout(() => setIsAnimating(false), 300); // Shorter animation duration
       return () => clearTimeout(timer);
     }
-  }, [currentBattle, previousBattle]);
+  }, [currentBattle, initialRender]);
 
   // Update previous battle after animation completes
   useEffect(() => {
-    if (!isAnimating) {
+    if (!isAnimating && currentBattle.length > 0) {
       setPreviousBattle(currentBattle);
     }
   }, [isAnimating, currentBattle]);
@@ -98,7 +98,8 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
       
       {/* Battle cards with improved animation handling */}
       <div 
-        className={`grid grid-cols-1 md:grid-cols-${currentBattle.length} gap-4 mt-8 transition-opacity duration-300 ${isAnimating ? 'opacity-0' : 'opacity-100'}`}
+        className={`grid grid-cols-${currentBattle.length} gap-4 mt-8 transition-opacity duration-300 ${isAnimating ? 'opacity-0' : 'opacity-100'}`}
+        style={{ display: 'grid', gridTemplateColumns: `repeat(${currentBattle.length}, 1fr)` }}
       >
         {currentBattle.map(pokemon => (
           <BattleCard
