@@ -15,7 +15,7 @@ export const useBattleCoordinator = (
   fullRankingMode: boolean,
   saveBattleState: (state: BattleState) => void,
   loadBattleState: () => BattleState | null,
-  loadPokemon: (genId?: number, fullMode?: boolean, preserveState?: boolean) => Promise<void>,
+  loadPokemon: (genId?: number, fullMode?: boolean, preserveState?: boolean) => Promise<Pokemon[] | void>,
   calculateCompletionPercentage: () => void
 ) => {
   // Load saved battle state on initial load
