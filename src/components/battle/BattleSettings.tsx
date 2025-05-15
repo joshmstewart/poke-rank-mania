@@ -23,6 +23,8 @@ const BattleSettings: React.FC<BattleSettingsProps> = ({
   onBattleTypeChange,
   onRankingModeChange,
 }) => {
+  console.log("Rendering BattleSettings with battleType:", battleType);
+  
   return (
     <Card>
       <CardHeader className="pb-2">
@@ -54,7 +56,10 @@ const BattleSettings: React.FC<BattleSettingsProps> = ({
               type="single" 
               value={battleType} 
               onValueChange={(value) => {
-                if (value) onBattleTypeChange(value);
+                if (value) {
+                  console.log("ToggleGroup onValueChange called with:", value);
+                  onBattleTypeChange(value);
+                }
               }}
               className="justify-start"
             >
