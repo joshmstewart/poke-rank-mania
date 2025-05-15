@@ -53,16 +53,19 @@ export const useRankings = (allPokemon: Pokemon[]) => {
     
     // Convert to array, filter for only battled Pokémon, and sort by score
     const rankings = Array.from(scores.values())
-      .filter(item => battledPokemonIds.has(item.pokemon.id)) // Only include Pokémon that have battled
+      .filter(item => item.battled || battledPokemonIds.has(item.pokemon.id)) // Only include Pokémon that have battled
       .sort((a, b) => b.score - a.score)
       .map(item => item.pokemon);
     
     setFinalRankings(rankings);
     
-    toast({
-      title: "Milestone Reached!",
-      description: `You've completed ${results.length} battles. Here's your current ranking!`
-    });
+    // Don't show toast for milestone if we're generating final rankings
+    if (!rankingGenerated) {
+      toast({
+        title: "Milestone Reached!",
+        description: `You've completed ${results.length} battles. Here's your current ranking!`
+      });
+    }
   };
 
   const handleSaveRankings = (selectedGeneration: number) => {

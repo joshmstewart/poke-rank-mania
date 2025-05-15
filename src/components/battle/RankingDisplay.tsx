@@ -1,7 +1,8 @@
+
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Trophy, Medal, Award, CheckCircle, ChevronDown, ChevronUp } from "lucide-react";
+import { Trophy, Medal, Award, CheckCircle } from "lucide-react";
 import { Pokemon } from "@/services/pokemon";
 
 interface RankingDisplayProps {
@@ -21,22 +22,8 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
   onContinueBattles,
   onSaveRankings
 }) => {
-  // Filter to only include Pokémon that have been ranked (involved in battles)
-  // This ensures we only show Pokémon the user has actually seen
-  const rankedPokemon = finalRankings.filter(pokemon => {
-    // If we have final rankings generated, show all
-    if (rankingGenerated) return true;
-    
-    // Otherwise, we assume a Pokémon is ranked if it has a non-default score
-    // Since we filter by the finalRankings array which is already sorted by score,
-    // the Pokémon will appear in their current ranked order
-    return true; // We're showing all because the finalRankings array is already filtered by battles
-  });
-  
-  // Limit display to first 100 for milestone displays to avoid performance issues
-  const displayRankings = !rankingGenerated && rankedPokemon.length > 100 
-    ? rankedPokemon.slice(0, 100) 
-    : rankedPokemon;
+  // Show all ranked Pokemon without limiting them
+  const displayRankings = finalRankings;
   
   const renderRankBadge = (rank: number) => {
     if (rank === 1) return <Trophy className="h-5 w-5 text-yellow-500" />;
@@ -53,8 +40,10 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
         </h2>
         <p className="mb-2 text-gray-600">
           Based on your {battlesCompleted} battle choices, here's your{rankingGenerated ? " final" : " current"} ranking of Pokémon.
-          {!rankingGenerated && displayRankings.length < finalRankings.length && (
-            <span className="block text-xs mt-1">(Showing top {displayRankings.length} of {finalRankings.length})</span>
+          {displayRankings.length === 0 && (
+            <span className="block text-orange-500 mt-2">
+              No Pokémon have been ranked yet. Continue battling to see rankings.
+            </span>
           )}
         </p>
         
@@ -67,33 +56,31 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
       </div>
       
       {/* Grid display for rankings */}
-      <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-        {displayRankings.map((pokemon, index) => (
-          <Card key={pokemon.id} className={`flex items-center p-2 ${index < 3 ? 'border-2 ' + (index === 0 ? 'border-yellow-400' : index === 1 ? 'border-gray-300' : 'border-amber-600') : ''}`}>
-            <div className="flex-shrink-0 mr-2 flex items-center justify-center w-8">
-              {renderRankBadge(index + 1)}
-            </div>
-            <div className="flex-shrink-0 w-12 h-12">
-              <img 
-                src={pokemon.image} 
-                alt={pokemon.name} 
-                className="w-full h-full object-contain" 
-              />
-            </div>
-            <div className="ml-2 overflow-hidden">
-              <h3 className="font-bold text-sm truncate">{pokemon.name}</h3>
-              <p className="text-xs text-gray-500">#{pokemon.id}</p>
-            </div>
-          </Card>
-        ))}
-      </div>
-      
-      {rankingGenerated && (
-        <div className="mt-4 text-center">
-          <p className="text-gray-600 text-sm">
-            <Award className="inline-block mr-1 text-primary" size={16} />
-            Congratulations! You've completed enough battles to generate a full ranking.
-          </p>
+      {displayRankings.length > 0 ? (
+        <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+          {displayRankings.map((pokemon, index) => (
+            <Card key={pokemon.id} className={`flex items-center p-2 ${index < 3 ? 'border-2 ' + (index === 0 ? 'border-yellow-400' : index === 1 ? 'border-gray-300' : 'border-amber-600') : ''}`}>
+              <div className="flex-shrink-0 mr-2 flex items-center justify-center w-8">
+                {renderRankBadge(index + 1)}
+              </div>
+              <div className="flex-shrink-0 w-12 h-12">
+                <img 
+                  src={pokemon.image} 
+                  alt={pokemon.name} 
+                  className="w-full h-full object-contain" 
+                />
+              </div>
+              <div className="ml-2 overflow-hidden">
+                <h3 className="font-bold text-sm truncate">{pokemon.name}</h3>
+                <p className="text-xs text-gray-500">#{pokemon.id}</p>
+              </div>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-12 bg-gray-50 rounded-lg">
+          <p className="text-gray-500">No Pokémon have been ranked yet.</p>
+          <p className="mt-2 text-gray-500">Continue battling to see your rankings!</p>
         </div>
       )}
       

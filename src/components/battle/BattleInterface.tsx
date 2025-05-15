@@ -2,14 +2,15 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft } from "lucide-react";
-import { Pokemon } from "@/services/pokemonService";
+import { Pokemon } from "@/services/pokemon";
 import BattleCard from "./BattleCard";
+import { BattleType } from "@/hooks/battle/types";
 
 interface BattleInterfaceProps {
   currentBattle: Pokemon[];
   selectedPokemon: number[];
   battlesCompleted: number;
-  battleType: "pairs" | "triplets";
+  battleType: BattleType;
   battleHistory: { battle: Pokemon[], selected: number[] }[];
   onPokemonSelect: (id: number) => void;
   onTripletSelectionComplete: () => void;
