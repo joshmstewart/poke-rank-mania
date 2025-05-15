@@ -22,8 +22,12 @@ export const useGenerationSettings = (
   };
 
   const handleBattleTypeChange = (value: string) => {
+    if (!value) return; // Don't proceed if no value
+    
     const newBattleType = value as BattleType;
+    console.log("Changing battle type to:", newBattleType);
     setBattleType(newBattleType);
+    
     // Reset battles and start new one with current Pokémon pool
     setBattleResults([]);
     setBattlesCompleted(0);

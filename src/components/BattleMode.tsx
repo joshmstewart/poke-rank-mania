@@ -51,7 +51,8 @@ const BattleMode = () => {
   return (
     <div className="container max-w-7xl mx-auto py-6">
       <div className="flex flex-col space-y-6">
-        <BattleHeader />
+        {/* Only show BattleHeader when not inside Index page */}
+        {window.location.pathname === '/battle' && <BattleHeader />}
 
         <BattleSettings
           selectedGeneration={selectedGeneration}

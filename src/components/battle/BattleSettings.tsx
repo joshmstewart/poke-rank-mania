@@ -50,7 +50,14 @@ const BattleSettings: React.FC<BattleSettingsProps> = ({
           
           <div>
             <label className="text-sm font-medium mb-2 block">Battle Type</label>
-            <ToggleGroup type="single" value={battleType} onValueChange={onBattleTypeChange} className="justify-start">
+            <ToggleGroup 
+              type="single" 
+              value={battleType} 
+              onValueChange={(value) => {
+                if (value) onBattleTypeChange(value);
+              }}
+              className="justify-start"
+            >
               <ToggleGroupItem value="pairs" aria-label="Pairs" className="px-3 py-1 text-xs">
                 Pairs (1v1)
               </ToggleGroupItem>
@@ -70,7 +77,9 @@ const BattleSettings: React.FC<BattleSettingsProps> = ({
             <ToggleGroup 
               type="single" 
               value={fullRankingMode ? "full" : "sample"}
-              onValueChange={(v) => onRankingModeChange(v === "full")}
+              onValueChange={(v) => {
+                if (v) onRankingModeChange(v === "full");
+              }}
               className="justify-start"
             >
               <ToggleGroupItem value="sample" aria-label="Sample" className="px-3 py-1 text-xs">
