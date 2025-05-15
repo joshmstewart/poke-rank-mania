@@ -24,7 +24,7 @@ export const useBattleSelectionManager = (
       setLocalSelectedPokemon([id]);
       setSelectedPokemon([id]);
       
-      // Process the battle result with the correct ID
+      // Process the battle result directly - no delays or timeouts
       processBattleResult([id], battleType, currentBattle);
     } else {
       // For triplets/trios, toggle selection
@@ -46,7 +46,7 @@ export const useBattleSelectionManager = (
     console.log("Current battle:", currentBattle.map(p => p.name));
     
     // If it's pairs mode and we already processed the selection in handlePokemonSelect,
-    // we should return early
+    // we should return early - this prevents duplicate processing
     if (battleType === "pairs") {
       return;
     }

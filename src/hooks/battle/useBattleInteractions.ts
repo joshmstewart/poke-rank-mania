@@ -23,7 +23,7 @@ export const useBattleInteractions = (
     console.log(`Handling Pokemon selection (id: ${id}) in ${battleType} mode`);
     
     if (battleType === "pairs") {
-      // For pairs mode, we need a direct approach with no async operations
+      // For pairs mode, we need a direct approach that works reliably
       
       // Set the selection
       setSelectedPokemon([id]);
@@ -34,8 +34,10 @@ export const useBattleInteractions = (
         selected: [id] 
       }]);
       
-      // Directly trigger the triplet selection handler
+      // Directly trigger the triplet selection handler - this initiates the battle processing
       handleTripletSelectionComplete();
+      
+      // No need for timeouts or async operations
     } else {
       // For triplets/trios, toggle selection in the array
       setSelectedPokemon(prev => {

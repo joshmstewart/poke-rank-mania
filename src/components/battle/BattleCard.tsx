@@ -18,17 +18,21 @@ const BattleCard: React.FC<BattleCardProps> = ({
 }) => {
   const [isClicking, setIsClicking] = useState(false);
 
-  // Prevent multiple rapid clicks with a simpler approach
+  // Improved click handler with better protection against multiple clicks
   const handleClick = () => {
+    // If already processing a click, ignore subsequent clicks
     if (isClicking) return;
     
+    // Set clicking state to prevent additional clicks
     setIsClicking(true);
+    
+    // Call the selection handler with the pokemon ID
     onSelect(pokemon.id);
     
-    // Reset after a short delay
+    // Reset after a short delay - shorter for pairs mode for better responsiveness
     setTimeout(() => {
       setIsClicking(false);
-    }, 300);
+    }, battleType === "pairs" ? 100 : 300);
   };
 
   // For keyboard accessibility
