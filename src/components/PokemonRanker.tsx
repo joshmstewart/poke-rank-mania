@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { DragDropContext, DropResult } from "react-beautiful-dnd";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -27,6 +28,10 @@ import {
   PaginationNext, 
   PaginationPrevious 
 } from "@/components/ui/pagination";
+import { Slider } from "@/components/ui/slider";
+
+// Load options for the number of Pokémon to show
+const loadSizeOptions = [50, 100, 200, 500, 1000];
 
 const PokemonRanker = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -35,10 +40,19 @@ const PokemonRanker = () => {
   const [selectedGeneration, setSelectedGeneration] = useState(0); // Default to All Generations
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [loadSize, setLoadSize] = useState(loadSizeOptions[0]); // Default to first option
+  const [loadingType, setLoadingType] = useState<"pagination" | "infinite" | "single">("pagination");
   
+  // For infinite scrolling
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const loadingRef = useRef<HTMLDivElement | null>(null);
+  
+  // Load data on generation change or page change
   useEffect(() => {
-    loadData();
-  }, [selectedGeneration, currentPage]);
+    if (loadingType === "pagination" || loadingType === "single") {
+      loadData();
+    }
+  }, [selectedGeneration, currentPage, loadSize, loadingType]);
   
   // Add auto-save functionality
   useEffect(() => {
@@ -53,6 +67,35 @@ const PokemonRanker = () => {
     }
   }, [rankedPokemon, selectedGeneration]);
   
+  // Setup infinite scroll observer
+  useEffect(() => {
+    // Only set up observer when using infinite loading
+    if (loadingType === "infinite") {
+      observerRef.current = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && !isLoading && currentPage < totalPages) {
+          loadMorePokemon();
+        }
+      }, { threshold: 0.5 });
+      
+      if (loadingRef.current) {
+        observerRef.current.observe(loadingRef.current);
+      }
+      
+      return () => {
+        if (observerRef.current && loadingRef.current) {
+          observerRef.current.unobserve(loadingRef.current);
+        }
+      };
+    }
+  }, [loadingType, isLoading, currentPage, totalPages]);
+  
+  // Initial load for infinite scrolling
+  useEffect(() => {
+    if (loadingType === "infinite" && availablePokemon.length === 0) {
+      loadData();
+    }
+  }, [loadingType]);
+  
   const loadData = async () => {
     setIsLoading(true);
     
@@ -61,7 +104,9 @@ const PokemonRanker = () => {
     
     // Check if we should use pagination (for All Generations)
     if (selectedGeneration === 0) {
-      const { pokemon, totalPages: pages } = await fetchPaginatedPokemon(selectedGeneration, currentPage);
+      // For single load option, fetch with larger page size
+      const pageSize = loadingType === "single" ? loadSize : ITEMS_PER_PAGE;
+      const { pokemon, totalPages: pages } = await fetchPaginatedPokemon(selectedGeneration, currentPage, pageSize);
       setTotalPages(pages);
       
       if (savedRankings.length > 0) {
@@ -69,10 +114,30 @@ const PokemonRanker = () => {
         const savedIds = new Set(savedRankings.map(p => p.id));
         const remainingPokemon = pokemon.filter(p => !savedIds.has(p.id));
         
-        setAvailablePokemon(remainingPokemon);
+        // For infinite scrolling, append to the list
+        if (loadingType === "infinite" && currentPage > 1) {
+          setAvailablePokemon(prev => {
+            const existingIds = new Set(prev.map(p => p.id));
+            const newPokemon = remainingPokemon.filter(p => !existingIds.has(p.id));
+            return [...prev, ...newPokemon];
+          });
+        } else {
+          setAvailablePokemon(remainingPokemon);
+        }
+        
         setRankedPokemon(savedRankings);
       } else {
-        setAvailablePokemon(pokemon);
+        // For infinite scrolling, append to the list
+        if (loadingType === "infinite" && currentPage > 1) {
+          setAvailablePokemon(prev => {
+            const existingIds = new Set(prev.map(p => p.id));
+            const newPokemon = pokemon.filter(p => !existingIds.has(p.id));
+            return [...prev, ...newPokemon];
+          });
+        } else {
+          setAvailablePokemon(pokemon);
+        }
+        
         setRankedPokemon([]);
       }
     } else {
@@ -97,6 +162,13 @@ const PokemonRanker = () => {
     }
     
     setIsLoading(false);
+  };
+  
+  // Load more Pokemon for infinite scrolling
+  const loadMorePokemon = () => {
+    if (!isLoading && currentPage < totalPages) {
+      setCurrentPage(prev => prev + 1);
+    }
   };
   
   const handleDragEnd = (result: DropResult) => {
@@ -184,10 +256,23 @@ const PokemonRanker = () => {
     const newGenId = Number(value);
     setSelectedGeneration(newGenId);
     setCurrentPage(1); // Reset to page 1 when changing generations
+    setAvailablePokemon([]); // Clear the list for infinite scrolling
   };
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
+  };
+
+  const handleLoadingTypeChange = (value: string) => {
+    setLoadingType(value as "pagination" | "infinite" | "single");
+    setCurrentPage(1);
+    setAvailablePokemon([]);
+  };
+
+  const handleLoadSizeChange = (value: string) => {
+    setLoadSize(Number(value));
+    setCurrentPage(1);
+    setAvailablePokemon([]);
   };
 
   // Calculate page range for pagination
@@ -260,7 +345,13 @@ const PokemonRanker = () => {
                   <p>Rearrange them in your preferred order from favorite (top) to least favorite (bottom).</p>
                   <p>Use the search box to find specific Pokémon quickly.</p>
                   <p>You can choose to rank Pokémon within a specific generation or across all generations.</p>
-                  <p>All Generations mode uses pagination for better performance.</p>
+                  <p>Choose your preferred loading method:
+                    <ul className="list-disc list-inside mt-2 ml-4">
+                      <li><strong>Pagination:</strong> Navigate through pages of Pokémon</li>
+                      <li><strong>Infinite Scroll:</strong> Load more as you scroll down</li>
+                      <li><strong>Single Load:</strong> Load a larger batch at once</li>
+                    </ul>
+                  </p>
                   <p>Your rankings are automatically saved as you make changes!</p>
                 </div>
               </DialogContent>
@@ -269,7 +360,7 @@ const PokemonRanker = () => {
           </div>
         </div>
 
-        <div className="flex items-center mb-4">
+        <div className="flex flex-wrap items-center gap-4 mb-4">
           <div className="w-64">
             <Select value={selectedGeneration.toString()} onValueChange={handleGenerationChange}>
               <SelectTrigger>
@@ -279,7 +370,7 @@ const PokemonRanker = () => {
                 {generations.map((gen) => (
                   <SelectItem key={gen.id} value={gen.id.toString()}>
                     {gen.name} {gen.id === 0 ? (
-                      <span className="text-green-600 ml-2">(Paginated)</span>
+                      <span className="text-green-600 ml-2">(Loadable)</span>
                     ) : (
                       <span>(#{gen.start}-{gen.end})</span>
                     )}
@@ -288,6 +379,40 @@ const PokemonRanker = () => {
               </SelectContent>
             </Select>
           </div>
+          
+          {selectedGeneration === 0 && (
+            <>
+              <div className="w-64">
+                <Select value={loadingType} onValueChange={handleLoadingTypeChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Loading Method" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pagination">Pagination</SelectItem>
+                    <SelectItem value="infinite">Infinite Scroll</SelectItem>
+                    <SelectItem value="single">Single Load</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {loadingType === "single" && (
+                <div className="w-64">
+                  <Select value={loadSize.toString()} onValueChange={handleLoadSizeChange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Load Size" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {loadSizeOptions.map((size) => (
+                        <SelectItem key={size} value={size.toString()}>
+                          Load {size} Pokémon
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </>
+          )}
         </div>
 
         <Tabs defaultValue="rank" className="w-full">
@@ -296,14 +421,14 @@ const PokemonRanker = () => {
             <TabsTrigger value="results">View Rankings</TabsTrigger>
           </TabsList>
           <TabsContent value="rank" className="mt-4">
-            {isLoading ? (
+            {isLoading && availablePokemon.length === 0 ? (
               <div className="flex justify-center items-center h-96">
                 <div className="text-center">
                   <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto"></div>
                   <p className="mt-4">Loading Pokémon...</p>
                   <p className="text-sm text-muted-foreground mt-2">
                     {selectedGeneration === 0 
-                      ? `Loading page ${currentPage} of All Generations...` 
+                      ? `Loading ${loadingType === "single" ? loadSize : ITEMS_PER_PAGE} Pokémon...` 
                       : `Loading Generation ${selectedGeneration}...`
                     }
                   </p>
@@ -319,8 +444,25 @@ const PokemonRanker = () => {
                       droppableId="available"
                     />
                     
-                    {/* Pagination for All Generations */}
-                    {selectedGeneration === 0 && totalPages > 1 && (
+                    {/* Infinite scroll loading indicator */}
+                    {loadingType === "infinite" && currentPage < totalPages && (
+                      <div 
+                        ref={loadingRef}
+                        className="flex justify-center items-center h-16 mt-4"
+                      >
+                        {isLoading ? (
+                          <>
+                            <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-primary mr-2"></div>
+                            <p className="text-sm">Loading more Pokémon...</p>
+                          </>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">Scroll down to load more</p>
+                        )}
+                      </div>
+                    )}
+                    
+                    {/* Pagination controls */}
+                    {selectedGeneration === 0 && loadingType === "pagination" && totalPages > 1 && (
                       <div className="mt-4">
                         <Pagination>
                           <PaginationContent>
@@ -363,6 +505,13 @@ const PokemonRanker = () => {
                           Page {currentPage} of {totalPages} • 
                           Showing {ITEMS_PER_PAGE} Pokémon per page
                         </div>
+                      </div>
+                    )}
+                    
+                    {/* Single load info */}
+                    {loadingType === "single" && (
+                      <div className="text-center text-sm text-muted-foreground mt-2">
+                        Loaded {availablePokemon.length} Pokémon
                       </div>
                     )}
                   </div>

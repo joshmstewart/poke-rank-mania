@@ -6,6 +6,7 @@ import { Pokemon } from "@/services/pokemonService";
 import { Button } from "@/components/ui/button";
 import { Search, List, Grid } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 interface PokemonListProps {
   title: string;
@@ -34,24 +35,14 @@ const PokemonList = ({
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <h2 className="text-xl font-bold">{title}</h2>
-          <div className="flex border rounded-md overflow-hidden">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className={`p-1 h-8 ${viewMode === "list" ? "bg-muted" : ""}`}
-              onClick={() => setViewMode("list")}
-            >
+          <ToggleGroup type="single" value={viewMode} onValueChange={(value) => value && setViewMode(value as "list" | "grid")}>
+            <ToggleGroupItem value="list" aria-label="List view">
               <List className="h-4 w-4" />
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className={`p-1 h-8 ${viewMode === "grid" ? "bg-muted" : ""}`}
-              onClick={() => setViewMode("grid")}
-            >
+            </ToggleGroupItem>
+            <ToggleGroupItem value="grid" aria-label="Grid view">
               <Grid className="h-4 w-4" />
-            </Button>
-          </div>
+            </ToggleGroupItem>
+          </ToggleGroup>
         </div>
         <div className="relative w-full max-w-xs">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />

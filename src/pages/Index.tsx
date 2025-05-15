@@ -2,8 +2,6 @@
 import React, { useState } from "react";
 import PokemonRanker from "@/components/PokemonRanker";
 import BattleMode from "@/components/BattleMode";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import AppSessionManager from "@/components/AppSessionManager";
 
@@ -28,34 +26,40 @@ const Index = () => {
               <CardDescription>Select how you want to create your Pokémon rankings</CardDescription>
             </CardHeader>
             <CardContent>
-              <RadioGroup 
-                className="grid grid-cols-1 md:grid-cols-2 gap-4"
-                value={mode} 
-                onValueChange={(value) => setMode(value as "rank" | "battle")}
-              >
-                <div className={`border rounded-lg p-4 ${mode === "rank" ? "border-primary bg-primary/5" : "border-muted"}`}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div 
+                  onClick={() => setMode("rank")}
+                  className={`border rounded-lg p-4 cursor-pointer transition-all duration-200 hover:border-primary-400 hover:bg-primary/10 ${mode === "rank" ? "border-primary bg-primary/5" : "border-muted"}`}
+                >
                   <div className="flex items-start space-x-2">
-                    <RadioGroupItem value="rank" id="rank" />
+                    <div className={`w-5 h-5 rounded-full border-2 mt-1 flex items-center justify-center ${mode === "rank" ? "border-primary" : "border-muted-foreground"}`}>
+                      {mode === "rank" && <div className="w-2.5 h-2.5 rounded-full bg-primary" />}
+                    </div>
                     <div className="grid gap-1.5">
-                      <Label htmlFor="rank" className="text-lg font-medium">Manual Ranking</Label>
+                      <h3 className="text-lg font-medium">Manual Ranking</h3>
                       <p className="text-sm text-muted-foreground">
                         Drag and drop Pokémon to create your ranking list. Perfect for precise control over your order.
                       </p>
                     </div>
                   </div>
                 </div>
-                <div className={`border rounded-lg p-4 ${mode === "battle" ? "border-primary bg-primary/5" : "border-muted"}`}>
+                <div 
+                  onClick={() => setMode("battle")}
+                  className={`border rounded-lg p-4 cursor-pointer transition-all duration-200 hover:border-primary-400 hover:bg-primary/10 ${mode === "battle" ? "border-primary bg-primary/5" : "border-muted"}`}
+                >
                   <div className="flex items-start space-x-2">
-                    <RadioGroupItem value="battle" id="battle" />
+                    <div className={`w-5 h-5 rounded-full border-2 mt-1 flex items-center justify-center ${mode === "battle" ? "border-primary" : "border-muted-foreground"}`}>
+                      {mode === "battle" && <div className="w-2.5 h-2.5 rounded-full bg-primary" />}
+                    </div>
                     <div className="grid gap-1.5">
-                      <Label htmlFor="battle" className="text-lg font-medium">Battle Mode</Label>
+                      <h3 className="text-lg font-medium">Battle Mode</h3>
                       <p className="text-sm text-muted-foreground">
                         Compare Pokémon head-to-head to automatically generate rankings. Faster for ranking many Pokémon.
                       </p>
                     </div>
                   </div>
                 </div>
-              </RadioGroup>
+              </div>
             </CardContent>
           </Card>
         </div>
