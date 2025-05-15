@@ -55,13 +55,13 @@ const BattleSettings: React.FC<BattleSettingsProps> = ({
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="pairs" id="pairs" />
                 <Label htmlFor="pairs">
-                  Pairs (1v1) - Compare two Pokémon at a time
+                  Pairs (1v1)
                 </Label>
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="triplets" id="triplets" />
                 <Label htmlFor="triplets">
-                  Triplets (3-way) - Compare three Pokémon at a time (faster)
+                  Triplets (3-way)
                 </Label>
               </div>
             </RadioGroup>
@@ -77,13 +77,13 @@ const BattleSettings: React.FC<BattleSettingsProps> = ({
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="sample" id="sample" />
                 <Label htmlFor="sample">
-                  Sample (~150 Pokémon) - Faster experience
+                  Sample (~150 Pokémon)
                 </Label>
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="full" id="full" />
                 <Label htmlFor="full">
-                  Full Ranking - All Pokémon in selected generation
+                  Full Ranking
                 </Label>
               </div>
             </RadioGroup>

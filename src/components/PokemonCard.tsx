@@ -44,7 +44,7 @@ const PokemonCard = ({ pokemon, isDragging, viewMode = "list" }: PokemonCardProp
         <img 
           src={pokemon.image} 
           alt={pokemon.name}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-contain"
           loading="lazy"
         />
         <div className="absolute bottom-0 left-0 right-0 p-2">
@@ -63,12 +63,12 @@ const PokemonCard = ({ pokemon, isDragging, viewMode = "list" }: PokemonCardProp
         isDragging ? "opacity-50" : "opacity-100"
       }`}
     >
-      <div className="flex-shrink-0 w-16 h-16 bg-gray-100 rounded-md overflow-hidden">
+      <div className="flex-shrink-0 w-16 h-16 rounded-md overflow-hidden">
         <AspectRatio ratio={1 / 1} className="h-full">
           <img 
             src={pokemon.image} 
             alt={pokemon.name} 
-            className="w-full h-full object-cover"
+            className="w-full h-full object-contain"
             loading="lazy"
           />
         </AspectRatio>

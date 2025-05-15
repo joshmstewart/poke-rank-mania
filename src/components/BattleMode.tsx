@@ -37,14 +37,6 @@ const BattleMode = () => {
     getBattlesRemaining
   } = useBattleState();
 
-  // Handle session import
-  const importSessionCallback = (sessionData: any) => {
-    // This will be handled by the useBattleState hook automatically
-    // Just need to save the data to localStorage
-    localStorage.setItem('pokemon-battle-state', JSON.stringify(sessionData));
-    window.location.reload(); // Refresh to apply the imported session
-  };
-
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-96">
@@ -59,7 +51,7 @@ const BattleMode = () => {
   return (
     <div className="container max-w-7xl mx-auto py-6">
       <div className="flex flex-col space-y-6">
-        <BattleHeader importSessionCallback={importSessionCallback} />
+        <BattleHeader />
 
         <BattleSettings
           selectedGeneration={selectedGeneration}

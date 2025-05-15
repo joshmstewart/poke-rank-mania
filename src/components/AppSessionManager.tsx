@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Copy, Download, Upload, Save } from "lucide-react";
+import { Copy, Download, Upload } from "lucide-react";
 import { toast } from "sonner";
 import {
   exportUnifiedSessionData,
@@ -14,7 +14,6 @@ import {
 const AppSessionManager = () => {
   const [sessionId, setSessionId] = useState("");
   const [importValue, setImportValue] = useState("");
-  const [lastSaved, setLastSaved] = useState(Date.now());
   
   // Generate a random session ID if not already generated or load from storage
   useEffect(() => {
@@ -42,27 +41,6 @@ const AppSessionManager = () => {
       description: "Your progress is automatically saved to your session ID"
     });
   }, []);
-  
-  const handleManualSave = () => {
-    try {
-      const sessionData = loadUnifiedSessionData();
-      // Just update the timestamp to show it was manually saved
-      saveUnifiedSessionData({
-        ...sessionData,
-        lastManualSave: Date.now()
-      });
-      
-      setLastSaved(Date.now());
-      
-      toast("Session saved", {
-        description: "Your session data has been manually saved"
-      });
-    } catch (error) {
-      toast("Save failed", {
-        description: "Could not save session data"
-      });
-    }
-  };
   
   const handleExport = () => {
     try {
@@ -132,7 +110,7 @@ const AppSessionManager = () => {
           </DialogHeader>
           <div className="space-y-4 mt-2">
             <p className="text-sm text-muted-foreground">
-              Your unique session ID that identifies all your rankings and progress:
+              Your unique session ID identifies all your rankings and progress:
             </p>
             <div className="flex items-center gap-2">
               <input 
@@ -151,21 +129,12 @@ const AppSessionManager = () => {
                 <Copy className="h-4 w-4" />
               </Button>
             </div>
-            <p className="text-sm text-muted-foreground">
-              Save this ID somewhere safe. You can use it later to continue your progress on another device.
+            <p className="text-xs text-muted-foreground">
+              Your progress is automatically saved. You can use this ID to continue your progress on another device.
             </p>
           </div>
         </DialogContent>
       </Dialog>
-      
-      <Button 
-        variant="outline" 
-        size="sm" 
-        className="gap-1" 
-        onClick={handleManualSave}
-      >
-        <Save className="h-4 w-4" /> Save
-      </Button>
       
       <Button 
         variant="outline" 
