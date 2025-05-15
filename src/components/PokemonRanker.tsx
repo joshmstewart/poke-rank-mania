@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { DragDropContext, DropResult } from "react-beautiful-dnd";
 import { Button } from "@/components/ui/button";
@@ -6,8 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Download, Save, Info, AlertTriangle } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Info, AlertTriangle } from "lucide-react";
 import PokemonList from "./PokemonList";
 import { 
   Pokemon, 
@@ -15,11 +13,12 @@ import {
   fetchPaginatedPokemon,
   saveRankings, 
   loadRankings, 
-  exportRankings, 
   generations,
-  ITEMS_PER_PAGE
+  ITEMS_PER_PAGE,
+  saveUnifiedSessionData,
+  loadUnifiedSessionData
 } from "@/services/pokemonService";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { 
   Pagination, 
   PaginationContent, 
@@ -40,6 +39,19 @@ const PokemonRanker = () => {
   useEffect(() => {
     loadData();
   }, [selectedGeneration, currentPage]);
+  
+  // Add auto-save functionality
+  useEffect(() => {
+    // Only save when rankedPokemon changes and is not empty
+    if (rankedPokemon.length > 0) {
+      // Use a short delay to avoid excessive saves during drag operations
+      const saveTimer = setTimeout(() => {
+        saveRankings(rankedPokemon, selectedGeneration);
+      }, 1000);
+      
+      return () => clearTimeout(saveTimer);
+    }
+  }, [rankedPokemon, selectedGeneration]);
   
   const loadData = async () => {
     setIsLoading(true);
@@ -148,14 +160,6 @@ const PokemonRanker = () => {
     }
   };
   
-  const handleSave = () => {
-    saveRankings(rankedPokemon, selectedGeneration);
-  };
-  
-  const handleExport = () => {
-    exportRankings(rankedPokemon, selectedGeneration);
-  };
-  
   const resetRankings = () => {
     // Get all Pokemon back to available list
     const allPokemon = [...availablePokemon, ...rankedPokemon].sort((a, b) => a.id - b.id);
@@ -165,10 +169,16 @@ const PokemonRanker = () => {
     // Clear local storage for the current generation
     localStorage.removeItem(`pokemon-rankings-gen-${selectedGeneration}`);
     
-    toast({
-      title: "Rankings reset",
+    toast("Rankings reset", {
       description: "Your rankings have been cleared."
     });
+    
+    // Also update the unified session data
+    const sessionData = loadUnifiedSessionData();
+    if (sessionData.rankings) {
+      delete sessionData.rankings[`gen-${selectedGeneration}`];
+      saveUnifiedSessionData(sessionData);
+    }
   };
 
   const handleGenerationChange = (value: string) => {
@@ -234,11 +244,8 @@ const PokemonRanker = () => {
     <div className="container max-w-7xl mx-auto py-6">
       <div className="flex flex-col space-y-4">
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold">Pokémon Rank Mania</h1>
+          <h1 className="text-3xl font-bold">Manual Ranking</h1>
           <div className="flex items-center gap-2">
-            <Link to="/battle">
-              <Button variant="secondary">Battle Mode</Button>
-            </Link>
             <Dialog>
               <DialogTrigger asChild>
                 <Button variant="ghost" size="icon">
@@ -247,7 +254,7 @@ const PokemonRanker = () => {
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>How to use Pokémon Rank Mania</DialogTitle>
+                  <DialogTitle>How to use Pokémon Ranking</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4 mt-2">
                   <p>Drag Pokémon from the left panel to your ranking list on the right.</p>
@@ -255,19 +262,11 @@ const PokemonRanker = () => {
                   <p>Use the search box to find specific Pokémon quickly.</p>
                   <p>You can choose to rank Pokémon within a specific generation or across all generations.</p>
                   <p>All Generations mode uses pagination for better performance.</p>
-                  <p>Don't forget to save your progress using the Save button!</p>
-                  <p>You can also export your rankings as a JSON file to share or keep for reference.</p>
-                  <p>Try <strong>Battle Mode</strong> for a different way to rank your Pokémon by making direct comparisons!</p>
+                  <p>Your rankings are automatically saved as you make changes!</p>
                 </div>
               </DialogContent>
             </Dialog>
             <Button onClick={resetRankings} variant="outline">Reset Rankings</Button>
-            <Button onClick={handleSave} className="flex items-center gap-2">
-              <Save className="h-4 w-4" /> Save
-            </Button>
-            <Button onClick={handleExport} variant="secondary" className="flex items-center gap-2">
-              <Download className="h-4 w-4" /> Export
-            </Button>
           </div>
         </div>
 

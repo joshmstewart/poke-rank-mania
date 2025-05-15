@@ -5,6 +5,7 @@ import BattleMode from "@/components/BattleMode";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import AppSessionManager from "@/components/AppSessionManager";
 
 const Index = () => {
   const [mode, setMode] = useState<"rank" | "battle">("rank");
@@ -12,7 +13,10 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container max-w-7xl mx-auto py-6">
-        <h1 className="text-4xl font-bold text-center mb-4">Pokémon Rank Mania</h1>
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-4xl font-bold">Pokémon Rank Mania</h1>
+          <AppSessionManager />
+        </div>
         <p className="text-center text-muted-foreground mb-8">
           Create your personal Pokémon rankings using two different methods
         </p>

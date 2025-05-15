@@ -294,18 +294,17 @@ export function saveRankings(rankings: Pokemon[], generationId: number = 1): voi
     const sessionData = loadUnifiedSessionData();
     sessionData.rankings = sessionData.rankings || {};
     sessionData.rankings[`gen-${generationId}`] = rankings;
+    
+    // Add timestamp for last update
+    sessionData.lastUpdate = Date.now();
+    
     saveUnifiedSessionData(sessionData);
     
-    toast({
-      title: "Success",
-      description: "Your rankings have been saved!",
-    });
+    // No toast notification for auto-saves to avoid spam
   } catch (error) {
     console.error('Error saving rankings:', error);
-    toast({
-      title: "Error",
-      description: "Failed to save rankings. Please try again.",
-      variant: "destructive"
+    toast("Error saving", {
+      description: "Failed to save rankings. Please try again."
     });
   }
 }
@@ -365,6 +364,8 @@ interface UnifiedSessionData {
   sessionId?: string;
   rankings?: Record<string, Pokemon[]>;
   battleState?: any;
+  lastUpdate?: number;
+  lastManualSave?: number;
 }
 
 export function loadUnifiedSessionData(): UnifiedSessionData {
@@ -391,7 +392,7 @@ export function saveUnifiedSessionData(data: UnifiedSessionData): void {
 // Unified session import/export functions
 export function exportUnifiedSessionData(): string {
   const sessionData = loadUnifiedSessionData();
-  return JSON.stringify(sessionData);
+  return JSON.stringify(sessionData, null, 2);
 }
 
 export function importUnifiedSessionData(data: string): boolean {

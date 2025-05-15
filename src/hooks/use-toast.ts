@@ -1,5 +1,5 @@
 
-import { toast as toastSonner, type Toast } from "sonner";
+import { toast as toastSonner } from "sonner";
 import { 
   ToastActionElement, 
   ToastProps 
