@@ -5,25 +5,27 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Download, Save, Info } from "lucide-react";
 import PokemonList from "./PokemonList";
-import { Pokemon, fetchAllPokemon, saveRankings, loadRankings, exportRankings } from "@/services/pokemonService";
+import { Pokemon, fetchAllPokemon, saveRankings, loadRankings, exportRankings, generations } from "@/services/pokemonService";
 import { toast } from "@/hooks/use-toast";
 
 const PokemonRanker = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [availablePokemon, setAvailablePokemon] = useState<Pokemon[]>([]);
   const [rankedPokemon, setRankedPokemon] = useState<Pokemon[]>([]);
+  const [selectedGeneration, setSelectedGeneration] = useState(1);
   
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true);
       
-      // First try to load saved rankings
-      const savedRankings = loadRankings();
+      // First try to load saved rankings for the selected generation
+      const savedRankings = loadRankings(selectedGeneration);
       
-      // Then fetch all Pokemon
-      const allPokemon = await fetchAllPokemon(151); // First generation
+      // Then fetch all Pokemon for the selected generation
+      const allPokemon = await fetchAllPokemon(selectedGeneration);
       
       if (savedRankings.length > 0) {
         // Filter out the already ranked Pokemon from available list
@@ -39,13 +41,14 @@ const PokemonRanker = () => {
         });
       } else {
         setAvailablePokemon(allPokemon);
+        setRankedPokemon([]);
       }
       
       setIsLoading(false);
     };
     
     loadData();
-  }, []);
+  }, [selectedGeneration]);
   
   const handleDragEnd = (result: DropResult) => {
     const { source, destination } = result;
@@ -94,11 +97,11 @@ const PokemonRanker = () => {
   };
   
   const handleSave = () => {
-    saveRankings(rankedPokemon);
+    saveRankings(rankedPokemon, selectedGeneration);
   };
   
   const handleExport = () => {
-    exportRankings(rankedPokemon);
+    exportRankings(rankedPokemon, selectedGeneration);
   };
   
   const resetRankings = () => {
@@ -107,8 +110,8 @@ const PokemonRanker = () => {
     setAvailablePokemon(allPokemon);
     setRankedPokemon([]);
     
-    // Clear local storage
-    localStorage.removeItem('pokemon-rankings');
+    // Clear local storage for the current generation
+    localStorage.removeItem(`pokemon-rankings-gen-${selectedGeneration}`);
     
     toast({
       title: "Rankings reset",
@@ -148,6 +151,23 @@ const PokemonRanker = () => {
             <Button onClick={handleExport} variant="secondary" className="flex items-center gap-2">
               <Download className="h-4 w-4" /> Export
             </Button>
+          </div>
+        </div>
+
+        <div className="flex items-center mb-4">
+          <div className="w-64">
+            <Select value={selectedGeneration.toString()} onValueChange={(value) => setSelectedGeneration(Number(value))}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select Generation" />
+              </SelectTrigger>
+              <SelectContent>
+                {generations.map((gen) => (
+                  <SelectItem key={gen.id} value={gen.id.toString()}>
+                    {gen.name} (#{gen.start}-{gen.end})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 

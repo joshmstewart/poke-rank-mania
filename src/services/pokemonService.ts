@@ -7,9 +7,33 @@ export interface Pokemon {
   image: string;
 }
 
-export async function fetchAllPokemon(limit: number = 151): Promise<Pokemon[]> {
+export interface Generation {
+  id: number;
+  name: string;
+  start: number;
+  end: number;
+}
+
+// Pokémon generations data
+export const generations: Generation[] = [
+  { id: 1, name: "Generation I", start: 1, end: 151 },
+  { id: 2, name: "Generation II", start: 152, end: 251 },
+  { id: 3, name: "Generation III", start: 252, end: 386 },
+  { id: 4, name: "Generation IV", start: 387, end: 493 },
+  { id: 5, name: "Generation V", start: 494, end: 649 },
+  { id: 6, name: "Generation VI", start: 650, end: 721 },
+  { id: 7, name: "Generation VII", start: 722, end: 809 },
+  { id: 8, name: "Generation VIII", start: 810, end: 905 },
+  { id: 9, name: "Generation IX", start: 906, end: 1025 }
+];
+
+export async function fetchAllPokemon(generationId: number = 1): Promise<Pokemon[]> {
   try {
-    const response = await fetch(`https://pokeapi.co/api/v2/pokemon?limit=${limit}`);
+    const selectedGeneration = generations.find(gen => gen.id === generationId) || generations[0];
+    const limit = selectedGeneration.end - selectedGeneration.start + 1;
+    const offset = selectedGeneration.start - 1;
+    
+    const response = await fetch(`https://pokeapi.co/api/v2/pokemon?offset=${offset}&limit=${limit}`);
     if (!response.ok) {
       throw new Error('Failed to fetch Pokemon');
     }
@@ -40,9 +64,9 @@ export async function fetchAllPokemon(limit: number = 151): Promise<Pokemon[]> {
 }
 
 // Save rankings to local storage
-export function saveRankings(rankings: Pokemon[]): void {
+export function saveRankings(rankings: Pokemon[], generationId: number = 1): void {
   try {
-    localStorage.setItem('pokemon-rankings', JSON.stringify(rankings));
+    localStorage.setItem(`pokemon-rankings-gen-${generationId}`, JSON.stringify(rankings));
     toast({
       title: "Success",
       description: "Your rankings have been saved!",
@@ -58,9 +82,9 @@ export function saveRankings(rankings: Pokemon[]): void {
 }
 
 // Load rankings from local storage
-export function loadRankings(): Pokemon[] {
+export function loadRankings(generationId: number = 1): Pokemon[] {
   try {
-    const savedRankings = localStorage.getItem('pokemon-rankings');
+    const savedRankings = localStorage.getItem(`pokemon-rankings-gen-${generationId}`);
     if (savedRankings) {
       return JSON.parse(savedRankings);
     }
@@ -77,12 +101,12 @@ export function loadRankings(): Pokemon[] {
 }
 
 // Export rankings as JSON file
-export function exportRankings(rankings: Pokemon[]): void {
+export function exportRankings(rankings: Pokemon[], generationId: number = 1): void {
   try {
     const dataStr = JSON.stringify(rankings, null, 2);
     const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
     
-    const exportFileDefaultName = 'pokemon-rankings.json';
+    const exportFileDefaultName = `pokemon-rankings-gen-${generationId}.json`;
     
     const linkElement = document.createElement('a');
     linkElement.setAttribute('href', dataUri);
@@ -97,3 +121,4 @@ export function exportRankings(rankings: Pokemon[]): void {
     });
   }
 }
+
