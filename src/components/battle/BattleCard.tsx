@@ -1,5 +1,5 @@
 
-import React, { memo } from "react";
+import React, { memo, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Pokemon } from "@/services/pokemon";
 import { MousePointerClick } from "lucide-react";
@@ -20,8 +20,8 @@ const BattleCard: React.FC<BattleCardProps> = memo(({
   onSelect,
   isProcessing = false
 }) => {
-  // Create a direct click handler that prevents event bubbling
-  const handleCardClick = (e: React.MouseEvent) => {
+  // Create a stable click handler using useCallback
+  const handleCardClick = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
@@ -33,7 +33,7 @@ const BattleCard: React.FC<BattleCardProps> = memo(({
     
     console.log(`BattleCard: Clicked Pokemon: ${pokemon.id}, ${pokemon.name}`);
     onSelect(pokemon.id);
-  };
+  }, [pokemon.id, pokemon.name, onSelect, isProcessing]);
 
   // Determine card styling based on selection and processing state
   const cardStyles = `

@@ -18,64 +18,27 @@ export const useBattleInteractions = (
   handleNavigateBack: () => void,
   battleType: BattleType
 ) => {
-  // Use a ref to track processing state to avoid state update issues
-  const isProcessingRef = useRef(false);
-  // Expose a state version for UI rendering
+  // Processing state
   const [isProcessing, setIsProcessing] = useState(false);
   
-  // Refs to prevent race conditions
-  const timeoutIdsRef = useRef<NodeJS.Timeout[]>([]);
-  
-  // Safety cleanup on unmount or when dependencies change
-  useEffect(() => {
-    return () => {
-      // Clear all timeouts to prevent memory leaks
-      timeoutIdsRef.current.forEach(id => clearTimeout(id));
-      timeoutIdsRef.current = [];
-    };
-  }, []);
-
-  // Safe timeout function that tracks and cleans up timeouts
-  const safeTimeout = useCallback((callback: () => void, delay: number) => {
-    const id = setTimeout(() => {
-      // Remove from tracked timeouts when executed
-      timeoutIdsRef.current = timeoutIdsRef.current.filter(t => t !== id);
-      callback();
-    }, delay);
-    
-    // Add to tracked timeouts
-    timeoutIdsRef.current.push(id);
-    return id;
-  }, []);
-  
-  // Clear all pending timeouts
-  const clearAllTimeouts = useCallback(() => {
-    timeoutIdsRef.current.forEach(id => clearTimeout(id));
-    timeoutIdsRef.current = [];
-  }, []);
-
-  // Create stable handler for Pokemon selection
+  // Function to handle Pokemon selection
   const handlePokemonSelect = useCallback((id: number) => {
-    // Check if we're currently processing - use ref for immediate value
-    if (isProcessingRef.current) {
+    // Prevent actions while processing
+    if (isProcessing) {
       console.log(`useBattleInteractions: Selection ignored for Pokemon ID ${id} - processing in progress`);
       return;
     }
     
-    // Set the processing flags immediately to prevent further clicks
-    isProcessingRef.current = true;
-    setIsProcessing(true);
-    
-    console.log(`useBattleInteractions: Processing selection for Pokemon ID ${id} in ${battleType} mode`);
-    
-    // Clear any existing timeouts to prevent conflicts
-    clearAllTimeouts();
+    console.log(`useBattleInteractions: Handling selection for Pokemon ID ${id} in ${battleType} mode`);
     
     if (battleType === "pairs") {
-      // For pairs mode, we update selection and immediately process
+      // For pairs mode, set processing state immediately
+      setIsProcessing(true);
+      
+      // Update selection
       setSelectedPokemon([id]);
       
-      // Update history - important for back navigation
+      // Update history
       setBattleHistory(prev => {
         const newHistory = [...prev, { 
           battle: [...currentBattle], 
@@ -85,18 +48,17 @@ export const useBattleInteractions = (
         return newHistory;
       });
       
-      // Use safe timeout to ensure state updates complete before proceeding
-      safeTimeout(() => {
+      // Call selection complete after a short delay
+      setTimeout(() => {
         console.log("useBattleInteractions: Calling handleTripletSelectionComplete for pairs mode");
         handleTripletSelectionComplete();
         
-        // Reset processing state after completion with a delay
-        safeTimeout(() => {
+        // Reset processing state after completion
+        setTimeout(() => {
           console.log("useBattleInteractions: Resetting processing state to false");
-          isProcessingRef.current = false;
           setIsProcessing(false);
-        }, 1000);
-      }, 300);
+        }, 500);
+      }, 200);
     } else {
       // For triplets mode, toggle the selection
       setSelectedPokemon(prev => {
@@ -106,51 +68,35 @@ export const useBattleInteractions = (
         console.log("useBattleInteractions: New triplet selection:", newSelection);
         return newSelection;
       });
-      
-      // Reset processing state more quickly for triplets since we're just toggling
-      safeTimeout(() => {
-        console.log("useBattleInteractions: Resetting processing state after triplet selection");
-        isProcessingRef.current = false;
-        setIsProcessing(false);
-      }, 300);
     }
   }, [
-    battleType,
-    currentBattle,
-    setSelectedPokemon,
-    setBattleHistory,
-    handleTripletSelectionComplete,
-    safeTimeout,
-    clearAllTimeouts
+    battleType, 
+    currentBattle, 
+    isProcessing, 
+    setBattleHistory, 
+    setSelectedPokemon, 
+    handleTripletSelectionComplete
   ]);
 
-  // Create stable handler for back navigation
+  // Function to handle back navigation
   const handleGoBack = useCallback(() => {
-    if (isProcessingRef.current) {
+    if (isProcessing) {
       console.log("useBattleInteractions: Back navigation ignored - processing in progress");
       return;
     }
     
-    isProcessingRef.current = true;
     setIsProcessing(true);
     
-    console.log("useBattleInteractions: Handling back navigation");
-    
-    // Clear any existing timeouts first
-    clearAllTimeouts();
-    
-    // Execute navigation after a short delay to ensure UI updates
-    safeTimeout(() => {
+    // Execute navigation after a short delay
+    setTimeout(() => {
       handleNavigateBack();
       
       // Reset processing state after navigation
-      safeTimeout(() => {
-        console.log("useBattleInteractions: Resetting processing state after navigation");
-        isProcessingRef.current = false;
+      setTimeout(() => {
         setIsProcessing(false);
-      }, 500);
+      }, 300);
     }, 100);
-  }, [handleNavigateBack, safeTimeout, clearAllTimeouts]);
+  }, [handleNavigateBack, isProcessing]);
 
   return {
     handlePokemonSelect,

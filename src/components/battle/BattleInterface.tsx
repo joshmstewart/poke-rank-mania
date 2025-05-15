@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft } from "lucide-react";
 import { Pokemon } from "@/services/pokemon";
@@ -31,68 +31,44 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
   milestones,
   isProcessing = false
 }) => {
-  // Animation state without the flashing issue
+  // Component state
   const [animationKey, setAnimationKey] = useState(0);
-  // Store battle number for display - initialized with props
   const [displayedBattleNumber, setDisplayedBattleNumber] = useState(battlesCompleted + 1);
-  
-  // Track last seen completed battles to prevent display jumps
-  const lastBattlesCompletedRef = useRef(battlesCompleted);
   
   // Update the displayed battle number when battles completed changes
   useEffect(() => {
-    if (battlesCompleted !== lastBattlesCompletedRef.current) {
-      console.log("BattleInterface: Updating displayed battle number to", battlesCompleted + 1);
-      setDisplayedBattleNumber(battlesCompleted + 1);
-      lastBattlesCompletedRef.current = battlesCompleted;
-    }
+    setDisplayedBattleNumber(battlesCompleted + 1);
   }, [battlesCompleted]);
   
-  // Update animation key when current battle changes to trigger a clean rerender
-  // Using a proper equality check to avoid unnecessary rerenders
+  // Update animation key when current battle changes
   useEffect(() => {
     if (currentBattle && currentBattle.length > 0) {
-      const currentIds = currentBattle.map(p => p.id).sort().join(',');
       setAnimationKey(prev => prev + 1);
-      console.log("BattleInterface: Updated animation key for new battle:", currentIds);
     }
   }, [currentBattle]);
 
-  // Stable click handler that won't change on rerenders
+  // Handle pokemon selection
   const handlePokemonCardSelect = useCallback((id: number) => {
-    console.log("BattleInterface: handlePokemonCardSelect called with id:", id);
     if (!isProcessing) {
-      console.log("BattleInterface: Processing click for Pokemon id:", id);
       onPokemonSelect(id);
-    } else {
-      console.log("BattleInterface: Ignoring click because processing is in progress");
     }
   }, [onPokemonSelect, isProcessing]);
 
-  // Stable submit handler for triplets mode
+  // Handle submission for triplets mode
   const handleSubmit = useCallback(() => {
-    console.log("BattleInterface: Submit button clicked for triplets mode");
     if (!isProcessing) {
       onTripletSelectionComplete();
-    } else {
-      console.log("BattleInterface: Ignoring submit button click because processing is in progress");
     }
   }, [onTripletSelectionComplete, isProcessing]);
 
-  // Stable back button handler
+  // Handle back button click
   const handleBackClick = useCallback(() => {
-    console.log("BattleInterface: Back button clicked");
     if (!isProcessing) {
       onGoBack();
-    } else {
-      console.log("BattleInterface: Ignoring back button because processing is in progress");
     }
   }, [onGoBack, isProcessing]);
   
-  console.log("BattleInterface rendering: Battle #", displayedBattleNumber, "IsProcessing:", isProcessing);
-  console.log("BattleInterface current battle:", currentBattle.map(p => p.name));
-  
-  // Only render if we actually have Pokemon to display
+  // Only render if we have Pokemon to display
   if (!currentBattle || currentBattle.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow p-6 flex items-center justify-center h-64">
@@ -128,7 +104,6 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
           )}
         </div>
         
-        {/* Progress bar that shows progress to the next milestone */}
         <div className="h-1 w-full bg-gray-200 rounded-full mt-2">
           <div 
             className="h-1 bg-primary rounded-full transition-all duration-500" 
@@ -143,7 +118,6 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
         </div>
       </div>
       
-      {/* Battle cards with key to avoid stale renders */}
       <div 
         key={animationKey}
         className="grid gap-4 mt-8"
@@ -161,7 +135,6 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
         ))}
       </div>
       
-      {/* Only show submit button for triplets mode */}
       {battleType === "triplets" && (
         <div className="mt-8 flex justify-center">
           <Button 
