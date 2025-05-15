@@ -16,9 +16,21 @@ export const useBattleProcessor = (
   generateRankings: (results: BattleResult) => void,
   setSelectedPokemon: React.Dispatch<React.SetStateAction<number[]>>
 ) => {
+  // Track if processing is happening
+  const [isProcessingResult, setIsProcessingResult] = useState(false);
+
   const processBattleResult = (selections: number[], battleType: BattleType, currentBattle: Pokemon[]) => {
+    // Prevent double processing
+    if (isProcessingResult) {
+      console.log("Already processing a battle result, ignoring");
+      return;
+    }
+    
+    setIsProcessingResult(true);
+    
     if (!currentBattle || currentBattle.length === 0) {
       console.error("No current battle data available");
+      setIsProcessingResult(false);
       return;
     }
 
@@ -38,6 +50,7 @@ export const useBattleProcessor = (
         newResults.push({ winner, loser });
       } else {
         console.error("Invalid selection for pair battle", selections, currentBattle);
+        setIsProcessingResult(false);
         return; // Don't continue if we can't determine winner/loser
       }
     } else {
@@ -56,6 +69,7 @@ export const useBattleProcessor = (
         });
       } else {
         console.error("Invalid selection for triplet battle", selections, currentBattle);
+        setIsProcessingResult(false);
         return; // Don't continue if we can't determine winners/losers
       }
     }
@@ -75,6 +89,11 @@ export const useBattleProcessor = (
         title: "Milestone Reached!",
         description: `You've completed ${newBattlesCompleted} battles. Check out your current ranking!`
       });
+      
+      // Reset processing state after a delay
+      setTimeout(() => {
+        setIsProcessingResult(false);
+      }, 500);
     } else {
       // Continue with next battle - Make sure we have the allPokemon list
       console.log("Starting new battle with allPokemon:", allPokemon?.length || 0);
@@ -87,19 +106,23 @@ export const useBattleProcessor = (
           description: "Not enough Pokémon available for battle",
           variant: "destructive"
         });
+        setIsProcessingResult(false);
         return;
       }
       
       // Explicitly trigger a new battle with the full Pokemon list
       console.log("Starting new battle after processing result");
+      
+      // Use a timeout to ensure state updates happen first
       setTimeout(() => {
         startNewBattle(allPokemon, battleType);
-      }, 100); // Small delay to ensure state updates complete
+        setIsProcessingResult(false);
+      }, 600); // Give enough time for the UI to update
     }
     
     // Reset selections
     setSelectedPokemon([]);
   };
 
-  return { processBattleResult };
+  return { processBattleResult, isProcessingResult };
 };

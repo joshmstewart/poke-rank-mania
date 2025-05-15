@@ -33,6 +33,8 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
 }) => {
   // Animation state without the flashing issue
   const [animationKey, setAnimationKey] = useState(0);
+  // Store battle number for display
+  const [displayedBattleNumber, setDisplayedBattleNumber] = useState(battlesCompleted + 1);
   
   // Update animation key when current battle changes to trigger a clean rerender
   useEffect(() => {
@@ -40,6 +42,11 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
       setAnimationKey(prev => prev + 1);
     }
   }, [currentBattle]);
+  
+  // Update the displayed battle number when battles completed changes
+  useEffect(() => {
+    setDisplayedBattleNumber(battlesCompleted + 1);
+  }, [battlesCompleted]);
 
   // Stable click handler that won't change on rerenders
   const handlePokemonCardSelect = useCallback((id: number) => {
@@ -75,7 +82,7 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
                 <ChevronLeft className="mr-1" /> Back
               </Button>
             )}
-            <h2 className="text-2xl font-bold">Battle {battlesCompleted + 1}</h2>
+            <h2 className="text-2xl font-bold">Battle {displayedBattleNumber}</h2>
           </div>
         </div>
         

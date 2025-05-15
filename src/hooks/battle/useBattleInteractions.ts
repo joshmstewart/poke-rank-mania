@@ -1,4 +1,3 @@
-
 import { useState, useRef, useCallback, useEffect } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
@@ -23,6 +22,9 @@ export const useBattleInteractions = (
   // Track if we're currently processing a selection
   const [isProcessing, setIsProcessing] = useState(false);
   const processingTimeoutRef = useRef<number | null>(null);
+  
+  // Keep track of the last processed battle to avoid duplicates
+  const lastProcessedBattleRef = useRef<number[]>([]);
 
   // Clean up timeout on unmount
   useEffect(() => {
@@ -43,6 +45,20 @@ export const useBattleInteractions = (
       return;
     }
     
+    // Check if current battle is the same as last processed battle
+    const currentBattleIds = currentBattle.map(p => p.id).sort();
+    const lastProcessedIds = lastProcessedBattleRef.current.sort();
+    const isSameBattle = currentBattleIds.length === lastProcessedIds.length &&
+      currentBattleIds.every((id, i) => id === lastProcessedIds[i]);
+      
+    if (isSameBattle && lastProcessedIds.length > 0) {
+      console.log("This appears to be the same battle we just processed, forcing a new battle");
+      processingTimeoutRef.current = window.setTimeout(() => {
+        handleTripletSelectionComplete();
+      }, 100);
+      return;
+    }
+    
     // Set processing state
     setIsProcessing(true);
     
@@ -58,6 +74,9 @@ export const useBattleInteractions = (
         selected: [id] 
       }]);
       
+      // Update last processed battle
+      lastProcessedBattleRef.current = currentBattle.map(p => p.id);
+      
       // Process the selection completion with a small delay
       // This ensures state updates have time to propagate
       processingTimeoutRef.current = window.setTimeout(() => {
@@ -68,7 +87,7 @@ export const useBattleInteractions = (
         processingTimeoutRef.current = window.setTimeout(() => {
           console.log("Resetting processing flag");
           setIsProcessing(false);
-        }, 500);
+        }, 700); // Increased delay to ensure new battle is loaded
       }, 300);
     } else {
       // For triplets mode - toggle selection

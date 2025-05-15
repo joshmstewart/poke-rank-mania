@@ -1,4 +1,3 @@
-
 import { useState, useRef } from "react";
 import { Pokemon } from "@/services/pokemon";
 
@@ -7,6 +6,8 @@ export const useBattleStarter = () => {
   const [previousBattles, setPreviousBattles] = useState<number[][]>([]);
   // Use ref to track the most recent battle Pokemon IDs for immediate comparison
   const lastBattleRef = useRef<number[]>([]);
+  // Track seen Pokemon IDs to avoid repeating the same Pokemon too frequently
+  const recentlySeenPokemon = useRef<Set<number>>(new Set());
 
   const startNewBattle = (pokemonList: Pokemon[], battleType: "pairs" | "triplets") => {
     console.log("Starting new battle with pokemonList:", pokemonList?.length || 0);
@@ -25,6 +26,9 @@ export const useBattleStarter = () => {
     // Get the last battle Pokemon IDs from ref for immediate comparison
     const lastBattleIds = lastBattleRef.current;
     
+    // Get the recently seen Pokemon IDs
+    const seenPokemonIds = Array.from(recentlySeenPokemon.current);
+    
     // IMPORTANT: Filter out the Pokemon from the last battle to avoid repetition
     if (lastBattleIds.length > 0) {
       console.log("Filtering out previously used Pokemon:", lastBattleIds);
@@ -38,7 +42,22 @@ export const useBattleStarter = () => {
         
         // If we don't have enough Pokemon after filtering, use the full list but ensure
         // we don't get the exact same combination as before
-        availablePokemon = [...pokemonList];
+        availablePokemon = [...pokemonList].filter(p => !lastBattleIds.includes(p.id));
+        
+        // If we still don't have enough, use the full list
+        if (availablePokemon.length < battleSize) {
+          availablePokemon = [...pokemonList];
+        }
+      }
+    }
+    
+    // Also try to avoid recently seen Pokemon (beyond just the last battle)
+    if (seenPokemonIds.length > 0 && availablePokemon.length > battleSize * 2) {
+      // Prefer Pokemon that haven't been seen recently
+      const preferredPokemon = availablePokemon.filter(p => !seenPokemonIds.includes(p.id));
+      
+      if (preferredPokemon.length >= battleSize) {
+        availablePokemon = preferredPokemon;
       }
     }
     
@@ -87,6 +106,15 @@ export const useBattleStarter = () => {
     
     // Update the ref with current battle IDs for immediate use in next battle
     lastBattleRef.current = newBattleIds;
+    
+    // Add these Pokemon to the recently seen set (keep only the last 10-15 Pokemon)
+    newBattleIds.forEach(id => {
+      recentlySeenPokemon.current.add(id);
+      if (recentlySeenPokemon.current.size > 15) {
+        // Remove the oldest Pokemon from the set
+        recentlySeenPokemon.current.delete(Array.from(recentlySeenPokemon.current)[0]);
+      }
+    });
     
     console.log("New battle Pokémon:", newBattlePokemon.map(p => p.name));
     return newBattlePokemon;
