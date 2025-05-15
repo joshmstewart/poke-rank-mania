@@ -28,6 +28,9 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
   onGoBack,
   milestones
 }) => {
+  // Log the current battle Pokémon for debugging
+  console.log("Current battle Pokémon:", currentBattle.map(p => p.name));
+  
   return (
     <div className="bg-white rounded-lg shadow p-6">
       <div className="mb-4">

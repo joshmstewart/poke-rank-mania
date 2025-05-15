@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType, BattleResult } from "./types";
@@ -33,15 +32,32 @@ export const useBattleState = () => {
   const startNewBattle = (pokemonList: Pokemon[]) => {
     if (pokemonList.length < 2) {
       // Not enough Pokémon for a battle
+      console.log("Not enough Pokémon for a battle");
       return;
     }
     
+    // Track previous Pokémon IDs to avoid repetition
+    const previousPokemonIds = currentBattle.map(p => p.id);
+    console.log("Previous Pokémon IDs:", previousPokemonIds);
+    
+    // Create a copy of the pokemon list that excludes the ones we just used
+    let availablePokemon = [...pokemonList].filter(p => !previousPokemonIds.includes(p.id));
+    
+    // If we've filtered out too many, reset the list (this prevents issues with small lists)
+    if (availablePokemon.length < 3) {
+      console.log("Not enough unique Pokémon left, resetting the pool");
+      availablePokemon = [...pokemonList];
+    }
+    
     // Shuffle the list to get random Pokémon
-    const shuffled = [...pokemonList].sort(() => Math.random() - 0.5);
+    const shuffled = availablePokemon.sort(() => Math.random() - 0.5);
     
     // Get the first 2 or 3 Pokémon based on battle type
     const battleSize = battleType === "pairs" ? 2 : 3;
-    setCurrentBattle(shuffled.slice(0, battleSize));
+    const newBattlePokemon = shuffled.slice(0, battleSize);
+    
+    console.log("New battle Pokémon:", newBattlePokemon.map(p => p.name));
+    setCurrentBattle(newBattlePokemon);
     setSelectedPokemon([]);
   };
 

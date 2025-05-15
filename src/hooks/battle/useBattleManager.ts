@@ -95,6 +95,7 @@ export const useBattleManager = (
       setShowingMilestone(true);
     } else {
       // Continue with next battle
+      console.log("Starting new battle with new Pokémon...");
       startNewBattle(allPokemon);
     }
     
