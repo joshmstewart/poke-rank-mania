@@ -1,3 +1,4 @@
+
 import { toast } from "@/hooks/use-toast";
 import { Pokemon, UnifiedSessionData } from "./types";
 
@@ -53,6 +54,9 @@ export function loadRankings(generationId: number = 1): Pokemon[] {
     return [];
   }
 }
+
+// Add getSavedRankings as an alias for loadRankings to fix the import error
+export const getSavedRankings = loadRankings;
 
 // Export rankings as JSON file
 export function exportRankings(rankings: Pokemon[], generationId: number = 1): void {
