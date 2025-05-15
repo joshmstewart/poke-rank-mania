@@ -26,9 +26,9 @@ export const InfiniteScrollLoader: React.FC<InfiniteScrollLoaderProps> = ({
           <p className="text-sm">Loading more Pokémon...</p>
         </>
       ) : currentPage < totalPages ? (
-        <p className="text-sm text-muted-foreground">Scroll down to load more</p>
+        <p className="text-sm text-muted-foreground">Scroll down to load more ({currentPage * 20} of {totalPages * 20}+ Pokémon)</p>
       ) : (
-        <p className="text-sm text-muted-foreground">All Pokémon loaded</p>
+        <p className="text-sm text-muted-foreground">All Pokémon loaded ({totalPages * 20}+)</p>
       )}
     </div>
   );

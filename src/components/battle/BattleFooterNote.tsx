@@ -31,7 +31,10 @@ const BattleFooterNote: React.FC<BattleFooterNoteProps> = ({ battlesCompleted })
             </p>
             {battlesCompleted > 50 && (
               <p className="text-xs text-gray-500">
-                With {battlesCompleted} battles, your rankings are becoming statistically significant.
+                With {battlesCompleted} battles, your rankings are becoming statistically significant. 
+                {battlesCompleted > 100 ? 
+                  " At this point, your top and bottom rankings are very reliable." : 
+                  " Consider completing 100+ battles for even more reliable rankings."}
               </p>
             )}
           </div>
