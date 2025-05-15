@@ -33,8 +33,17 @@ const useToast = () => {
 };
 
 // Export a simplified version for direct usage
-const toast = (title: string, options?: any) => {
-  return toastSonner(title, options);
+const toast = (options: ToastOptions | string) => {
+  if (typeof options === 'string') {
+    return toastSonner(options);
+  }
+  
+  const { title, description, variant = "default", action, ...props } = options;
+  
+  return toastSonner(title as string, {
+    description,
+    ...props,
+  });
 };
 
 export { useToast, toast };

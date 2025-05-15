@@ -1,7 +1,7 @@
 
 import { toast } from "@/hooks/use-toast";
 import { BattleResult } from "./useBattleState";
-import { Pokemon } from "@/services/pokemonService";
+import { Pokemon } from "@/services/pokemon";
 
 export interface BattleSessionData {
   selectedGeneration: number;
