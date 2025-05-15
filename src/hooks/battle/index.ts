@@ -17,3 +17,6 @@ export * from "./useBattleInteractions";
 export * from "./useBattleStateInitializer";
 export * from "./useBattlePersistence";
 export * from "./useBattleCoordinator";
+export * from "./useBattleProcessor";
+export * from "./useBattleNavigation";
+export * from "./useBattleSelectionManager";

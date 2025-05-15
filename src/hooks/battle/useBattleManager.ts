@@ -1,8 +1,9 @@
 
-import { useState } from "react";
 import { Pokemon } from "@/services/pokemon";
-import { toast } from "@/hooks/use-toast";
 import { BattleResult, BattleType } from "./types";
+import { useBattleProcessor } from "./useBattleProcessor";
+import { useBattleNavigation } from "./useBattleNavigation";
+import { useBattleSelectionManager } from "./useBattleSelectionManager";
 
 export const useBattleManager = (
   battleResults: BattleResult,
@@ -18,209 +19,52 @@ export const useBattleManager = (
   setBattleHistory: React.Dispatch<React.SetStateAction<{ battle: Pokemon[], selected: number[] }[]>>,
   setSelectedPokemon: React.Dispatch<React.SetStateAction<number[]>>
 ) => {
-  const [selectedPokemon, setLocalSelectedPokemon] = useState<number[]>([]);
-
-  const handlePokemonSelect = (id: number, battleType: BattleType, currentBattle: Pokemon[]) => {
-    // For pairs, immediately process the battle when selection is made
-    if (battleType === "pairs") {
-      // Save current battle to history before processing
-      setBattleHistory([...battleHistory, { 
-        battle: [...currentBattle], 
-        selected: [id] 
-      }]);
-      
-      processBattleResult([id], battleType, currentBattle);
-    } else {
-      // For triplets/trios, toggle selection
-      let newSelected;
-      if (selectedPokemon.includes(id)) {
-        // If already selected, unselect it
-        newSelected = selectedPokemon.filter(pokemonId => pokemonId !== id);
-      } else {
-        // Add to selection
-        newSelected = [...selectedPokemon, id];
-      }
-      setLocalSelectedPokemon(newSelected);
-      setSelectedPokemon(newSelected);
-    }
-  };
-
-  const handleTripletSelectionComplete = (battleType: BattleType, currentBattle: Pokemon[]) => {
-    console.log("Triplet selection complete. Battle type:", battleType);
-    console.log("Current battle:", currentBattle.map(p => p.name));
-    
-    // Find the proper selection to use
-    let selectionsToUse: number[] = [];
-    
-    if (battleType === "pairs") {
-      // For pairs, get the most recent history entry or fall back to selectedPokemon
-      if (battleHistory.length > 0) {
-        const lastEntry = battleHistory[battleHistory.length - 1];
-        // Check if the last entry matches the current battle
-        const lastBattleIds = lastEntry.battle.map(p => p.id);
-        const currentBattleIds = currentBattle.map(p => p.id);
-        
-        if (lastBattleIds.length === currentBattleIds.length && 
-            lastBattleIds.every((id, i) => id === currentBattleIds[i])) {
-          selectionsToUse = [...lastEntry.selected];
-          console.log("Using selections from matching history:", selectionsToUse);
-        } else {
-          // If battle doesn't match, check if there's a selection for the current Pokemon
-          const selectedIds = currentBattle.filter(p => selectedPokemon.includes(p.id)).map(p => p.id);
-          if (selectedIds.length > 0) {
-            selectionsToUse = selectedIds;
-            console.log("Using selections from filtered currentBattle:", selectionsToUse);
-          } else {
-            console.error("No valid selections found for current battle");
-          }
-        }
-      } else if (selectedPokemon.length > 0) {
-        // If no history but we have selections
-        selectionsToUse = [...selectedPokemon];
-        console.log("Using selections from state with no history:", selectionsToUse);
-      } else {
-        console.error("No selections available!");
-      }
-    } else {
-      // For triplets mode, use the current selections
-      selectionsToUse = [...selectedPokemon];
-      console.log("Using triplet selections from state:", selectionsToUse);
-    }
-    
-    // Process the battle result
-    processBattleResult(selectionsToUse, battleType, currentBattle);
-  };
-
-  const processBattleResult = (selections: number[], battleType: BattleType, currentBattle: Pokemon[]) => {
-    if (!currentBattle || currentBattle.length === 0) {
-      console.error("No current battle data available");
-      return;
-    }
-
-    console.log("Processing battle result with selections:", selections);
-    console.log("Current battle:", currentBattle.map(p => p.name));
-    
-    // Process battle results
-    const newResults = [...battleResults];
-    
-    if (battleType === "pairs") {
-      // For pairs, we know who won and who lost
-      const winner = currentBattle.find(p => selections.includes(p.id));
-      const loser = currentBattle.find(p => !selections.includes(p.id));
-      
-      if (winner && loser) {
-        console.log(`Adding pair result: ${winner.name} beats ${loser.name}`);
-        newResults.push({ winner, loser });
-      } else {
-        console.error("Invalid selection for pair battle", selections, currentBattle);
-        return; // Don't continue if we can't determine winner/loser
-      }
-    } else {
-      // For triplets/trios, each selected is considered a "winner" against each unselected
-      const winners = currentBattle.filter(p => selections.includes(p.id));
-      const losers = currentBattle.filter(p => !selections.includes(p.id));
-      
-      // Only add results if there are winners AND losers
-      if (winners.length > 0 && losers.length > 0) {
-        console.log(`Adding ${winners.length} winners against ${losers.length} losers`);
-        winners.forEach(winner => {
-          losers.forEach(loser => {
-            console.log(`- ${winner.name} beats ${loser.name}`);
-            newResults.push({ winner, loser });
-          });
-        });
-      } else {
-        console.error("Invalid selection for triplet battle", selections, currentBattle);
-        return; // Don't continue if we can't determine winners/losers
-      }
-    }
-    
-    setBattleResults(newResults);
-    const newBattlesCompleted = battlesCompleted + 1;
-    setBattlesCompleted(newBattlesCompleted);
-    
-    // Check if we've hit a milestone
-    if (milestones.includes(newBattlesCompleted)) {
-      console.log(`Milestone reached at ${newBattlesCompleted} battles!`);
-      generateRankings(newResults);
-      setShowingMilestone(true);
-      
-      toast({
-        title: "Milestone Reached!",
-        description: `You've completed ${newBattlesCompleted} battles. Check out your current ranking!`
-      });
-    } else {
-      // Continue with next battle - Make sure we have the allPokemon list
-      console.log("Starting new battle with new Pokémon...", allPokemon?.length || 0);
-      
-      // Validate allPokemon before starting a new battle
-      if (!allPokemon || allPokemon.length < 2) {
-        console.error("Not enough Pokémon available for battle:", allPokemon?.length || 0);
-        toast({
-          title: "Error",
-          description: "Not enough Pokémon available for battle",
-          variant: "destructive"
-        });
-        return;
-      }
-      
-      // Start new battle with the full Pokemon list
-      startNewBattle(allPokemon, battleType);
-    }
-    
-    // Reset selections
-    setLocalSelectedPokemon([]);
-    setSelectedPokemon([]);
-  };
-
-  const goBack = (setCurrentBattle: React.Dispatch<React.SetStateAction<Pokemon[]>>, battleType: BattleType) => {
-    if (battleHistory.length === 0) {
-      toast({
-        title: "No previous battles",
-        description: "There are no previous battles to return to."
-      });
-      return;
-    }
-    
-    // Remove the last battle result
-    const newHistory = [...battleHistory];
-    const lastBattle = newHistory.pop();
-    setBattleHistory(newHistory);
-    
-    // Also remove the last result from battleResults
-    const newResults = [...battleResults];
-    
-    // Calculate how many results to remove based on the battle type and selections
-    let resultsToRemove = 1; // Default for pairs
-    if (battleType === "triplets" && lastBattle) {
-      const selectedCount = lastBattle.selected.length;
-      const unselectedCount = lastBattle.battle.length - selectedCount;
-      resultsToRemove = selectedCount * unselectedCount;
-    }
-    
-    // Remove the appropriate number of results
-    newResults.splice(newResults.length - resultsToRemove, resultsToRemove);
-    setBattleResults(newResults);
-    
-    // Decrement battles completed
-    setBattlesCompleted(battlesCompleted - 1);
-    
-    // Set the current battle back to the previous one
-    if (lastBattle) {
-      setCurrentBattle(lastBattle.battle);
-      setLocalSelectedPokemon([]);
-      setSelectedPokemon([]);
-    }
-    
-    // If we were showing a milestone, go back to battles
-    setShowingMilestone(false);
-  };
-
-  return {
+  // Use the battle processor for handling battle results
+  const { processBattleResult } = useBattleProcessor(
+    battleResults,
+    setBattleResults,
+    battlesCompleted,
+    setBattlesCompleted,
+    allPokemon,
+    startNewBattle,
+    setShowingMilestone,
+    milestones,
+    generateRankings,
+    setSelectedPokemon
+  );
+  
+  // Use the battle navigation for handling back navigation
+  const { goBack } = useBattleNavigation(
+    battleHistory,
+    setBattleHistory,
+    battleResults,
+    setBattleResults,
+    battlesCompleted,
+    setBattlesCompleted,
+    setShowingMilestone,
+    setSelectedPokemon
+  );
+  
+  // Use the selection manager for handling Pokemon selections
+  const {
     selectedPokemon,
     setSelectedPokemon: setLocalSelectedPokemon,
     handlePokemonSelect,
-    handleTripletSelectionComplete,
+    handleTripletSelectionComplete
+  } = useBattleSelectionManager(
+    battleHistory,
+    setBattleHistory,
+    processBattleResult,
+    setSelectedPokemon
+  );
+  
+  return {
+    selectedPokemon,
+    setSelectedPokemon: setLocalSelectedPokemon,
+    handlePokemonSelect: (id: number, battleType: BattleType, currentBattle: Pokemon[]) => 
+      handlePokemonSelect(id, battleType, currentBattle),
+    handleTripletSelectionComplete: (battleType: BattleType, currentBattle: Pokemon[]) => 
+      handleTripletSelectionComplete(battleType, currentBattle),
     goBack
   };
 };
