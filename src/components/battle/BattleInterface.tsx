@@ -39,15 +39,6 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
     }
   }, [currentBattle]);
 
-  // Handle Pokemon selection with direct processing for pairs mode
-  const handleSelect = (id: number) => {
-    onPokemonSelect(id);
-    // For pairs mode, immediately submit after selection
-    if (battleType === "pairs") {
-      onTripletSelectionComplete();
-    }
-  };
-
   // Label for the battle type
   const battleLabel = battleType === "pairs" ? "favorite" : "preferences (0-3)";
   
@@ -100,7 +91,7 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
             pokemon={pokemon}
             isSelected={selectedPokemon.includes(pokemon.id)}
             battleType={battleType}
-            onSelect={handleSelect}
+            onSelect={onPokemonSelect}
           />
         ))}
       </div>

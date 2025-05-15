@@ -23,15 +23,17 @@ export const useBattleInteractions = (
     console.log(`Handling Pokemon selection (id: ${id}) in ${battleType} mode`);
     
     if (battleType === "pairs") {
-      // Just update the selection state
-      // The BattleInterface component will handle the immediate submission
-      setSelectedPokemon([id]);
-      
-      // Add to history
+      // For pairs mode, we update history first
       setBattleHistory(prev => [...prev, { 
         battle: [...currentBattle], 
         selected: [id] 
       }]);
+      
+      // Then update selection state
+      setSelectedPokemon([id]);
+      
+      // Immediately trigger completion for pairs mode
+      handleTripletSelectionComplete();
     } else {
       // For triplets, toggle selection in the array
       setSelectedPokemon(prev => {
