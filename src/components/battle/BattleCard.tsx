@@ -53,6 +53,7 @@ const BattleCard: React.FC<BattleCardProps> = memo(({
       aria-pressed={isSelected}
       tabIndex={0}
       aria-disabled={isProcessing}
+      data-testid={`battle-card-${pokemon.id}`}
     >
       <CardContent className="flex flex-col items-center justify-center p-4">
         <div className="w-full h-full flex flex-col items-center justify-center">

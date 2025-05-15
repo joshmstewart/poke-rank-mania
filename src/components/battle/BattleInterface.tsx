@@ -33,7 +33,7 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
 }) => {
   // Animation state without the flashing issue
   const [animationKey, setAnimationKey] = useState(0);
-  // Store battle number for display
+  // Store battle number for display - initialized with props
   const [displayedBattleNumber, setDisplayedBattleNumber] = useState(battlesCompleted + 1);
   
   // Track last seen completed battles to prevent display jumps
@@ -49,9 +49,12 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
   }, [battlesCompleted]);
   
   // Update animation key when current battle changes to trigger a clean rerender
+  // Using a proper equality check to avoid unnecessary rerenders
   useEffect(() => {
-    if (currentBattle.length > 0) {
+    if (currentBattle && currentBattle.length > 0) {
+      const currentIds = currentBattle.map(p => p.id).sort().join(',');
       setAnimationKey(prev => prev + 1);
+      console.log("BattleInterface: Updated animation key for new battle:", currentIds);
     }
   }, [currentBattle]);
 
@@ -66,7 +69,7 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
     }
   }, [onPokemonSelect, isProcessing]);
 
-  // Simplified submit handler for triplets mode
+  // Stable submit handler for triplets mode
   const handleSubmit = useCallback(() => {
     console.log("BattleInterface: Submit button clicked for triplets mode");
     if (!isProcessing) {
@@ -75,9 +78,28 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
       console.log("BattleInterface: Ignoring submit button click because processing is in progress");
     }
   }, [onTripletSelectionComplete, isProcessing]);
+
+  // Stable back button handler
+  const handleBackClick = useCallback(() => {
+    console.log("BattleInterface: Back button clicked");
+    if (!isProcessing) {
+      onGoBack();
+    } else {
+      console.log("BattleInterface: Ignoring back button because processing is in progress");
+    }
+  }, [onGoBack, isProcessing]);
   
   console.log("BattleInterface rendering: Battle #", displayedBattleNumber, "IsProcessing:", isProcessing);
   console.log("BattleInterface current battle:", currentBattle.map(p => p.name));
+  
+  // Only render if we actually have Pokemon to display
+  if (!currentBattle || currentBattle.length === 0) {
+    return (
+      <div className="bg-white rounded-lg shadow p-6 flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-primary"></div>
+      </div>
+    );
+  }
   
   return (
     <div className="bg-white rounded-lg shadow p-6">
@@ -89,7 +111,7 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
                 variant="ghost" 
                 size="sm" 
                 className="mr-2" 
-                onClick={onGoBack}
+                onClick={handleBackClick}
                 disabled={isProcessing}
               >
                 <ChevronLeft className="mr-1" /> Back
@@ -146,7 +168,7 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
             size="lg" 
             onClick={handleSubmit}
             className="px-8"
-            disabled={isProcessing}
+            disabled={isProcessing || selectedPokemon.length === 0}
           >
             {isProcessing ? (
               <>
