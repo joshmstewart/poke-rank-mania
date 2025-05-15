@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -18,6 +19,9 @@ export default {
 			}
 		},
 		extend: {
+			textShadow: {
+				DEFAULT: '0 1px 2px rgba(0, 0, 0, 0.8), 0 -1px 1px rgba(0, 0, 0, 0.8), 1px 0 1px rgba(0, 0, 0, 0.8), -1px 0 1px rgba(0, 0, 0, 0.8)',
+			},
 			colors: {
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
@@ -92,5 +96,15 @@ export default {
 			}
 		}
 	},
-	plugins: [require("tailwindcss-animate")],
+	plugins: [
+		require("tailwindcss-animate"),
+		function({ addUtilities }) {
+			const newUtilities = {
+				'.text-shadow': {
+					textShadow: '0 1px 2px rgba(0, 0, 0, 0.8), 0 -1px 1px rgba(0, 0, 0, 0.8), 1px 0 1px rgba(0, 0, 0, 0.8), -1px 0 1px rgba(0, 0, 0, 0.8)',
+				},
+			}
+			addUtilities(newUtilities)
+		}
+	],
 } satisfies Config;
