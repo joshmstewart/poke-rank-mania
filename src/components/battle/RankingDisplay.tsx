@@ -1,113 +1,93 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Trophy, Medal, Award, CheckCircle } from "lucide-react";
 import { Pokemon } from "@/services/pokemon";
+import PokemonCard from "@/components/PokemonCard";
 
 interface RankingDisplayProps {
   finalRankings: Pokemon[];
   battlesCompleted: number;
-  rankingGenerated: boolean;
-  onNewBattleSet: () => void;
   onContinueBattles: () => void;
-  onSaveRankings: () => void;
+  onNewBattleSet: () => void;
+  rankingGenerated: boolean;
 }
 
 const RankingDisplay: React.FC<RankingDisplayProps> = ({
   finalRankings,
   battlesCompleted,
-  rankingGenerated,
-  onNewBattleSet,
   onContinueBattles,
-  onSaveRankings
+  onNewBattleSet,
+  rankingGenerated
 }) => {
-  // Show all ranked Pokemon
-  const displayRankings = finalRankings;
-  
   console.log("RankingDisplay rendering with finalRankings:", finalRankings.length);
-  
-  const renderRankBadge = (rank: number) => {
-    if (rank === 1) return <Trophy className="h-5 w-5 text-yellow-500" />;
-    if (rank === 2) return <Medal className="h-5 w-5 text-gray-400" />;
-    if (rank === 3) return <Medal className="h-5 w-5 text-amber-700" />;
-    return <span className="text-lg font-bold">{rank}</span>;
-  };
   
   return (
     <div className="bg-white rounded-lg shadow p-6">
-      <div className="text-center mb-4">
-        <h2 className="text-2xl font-bold">
-          {rankingGenerated ? "Your Final Ranking" : "Milestone Reached!"}
-        </h2>
-        <p className="mb-2 text-gray-600">
-          Based on your {battlesCompleted} battle choices, here's your{rankingGenerated ? " final" : " current"} ranking of Pokémon.
-          {displayRankings.length === 0 && (
-            <span className="block text-orange-500 mt-2">
-              No Pokémon have been ranked yet. Continue battling to see rankings.
-            </span>
-          )}
-        </p>
-        
-        {rankingGenerated && (
-          <div className="flex items-center justify-center mt-2 text-green-600 font-semibold">
-            <CheckCircle className="mr-2 h-5 w-5" />
-            <span>Complete ranking achieved!</span>
-          </div>
-        )}
+      <div className="mb-4">
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-bold">
+            {rankingGenerated ? "Final Rankings" : "Current Rankings"}
+          </h2>
+          <span className="text-sm text-gray-500">
+            After {battlesCompleted} battles
+          </span>
+        </div>
       </div>
       
-      {/* Grid display for rankings */}
-      {displayRankings.length > 0 ? (
-        <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-          {displayRankings.map((pokemon, index) => (
-            <Card key={pokemon.id} className={`flex items-center p-2 ${index < 3 ? 'border-2 ' + (index === 0 ? 'border-yellow-400' : index === 1 ? 'border-gray-300' : 'border-amber-600') : ''}`}>
-              <div className="flex-shrink-0 mr-2 flex items-center justify-center w-8">
-                {renderRankBadge(index + 1)}
-              </div>
-              <div className="flex-shrink-0 w-12 h-12">
-                <img 
-                  src={pokemon.image} 
-                  alt={pokemon.name} 
-                  className="w-full h-full object-contain" 
-                />
-              </div>
-              <div className="ml-2 overflow-hidden">
-                <h3 className="font-bold text-sm truncate">{pokemon.name}</h3>
-                <p className="text-xs text-gray-500">#{pokemon.id}</p>
-              </div>
-            </Card>
-          ))}
+      {finalRankings.length === 0 ? (
+        <div className="text-center p-8">
+          <p className="text-lg text-gray-500">No ranked Pokémon yet.</p>
+          <p className="text-gray-400">Complete more battles to start ranking Pokémon.</p>
         </div>
       ) : (
-        <div className="text-center py-12 bg-gray-50 rounded-lg">
-          <p className="text-gray-500">No Pokémon have been ranked yet.</p>
-          <p className="mt-2 text-gray-500">Continue battling to see your rankings!</p>
+        <div className="space-y-4">
+          {/* Top 3 section with larger cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            {finalRankings.slice(0, 3).map((pokemon, index) => (
+              <div key={pokemon.id} className="flex flex-col items-center">
+                <div className="text-2xl font-bold mb-2">#{index + 1}</div>
+                <div className="w-full">
+                  <PokemonCard pokemon={pokemon} showRank={false} />
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          {/* Remaining rankings */}
+          {finalRankings.length > 3 && (
+            <div className="border-t pt-4">
+              <h3 className="text-lg font-semibold mb-4">Other Rankings</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                {finalRankings.slice(3).map((pokemon, index) => (
+                  <div key={pokemon.id} className="relative">
+                    <div className="absolute top-0 left-0 bg-primary text-white text-xs px-2 py-1 rounded-br z-10">
+                      #{index + 4}
+                    </div>
+                    <PokemonCard pokemon={pokemon} showRank={false} compact />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
       
-      <div className="flex justify-center gap-4 mt-6">
-        {rankingGenerated ? (
-          <>
-            <Button variant="outline" onClick={onNewBattleSet}>
-              Start New Battle Set
-            </Button>
-            <Button onClick={onSaveRankings}>
-              Save This Ranking
-            </Button>
-          </>
-        ) : (
-          <>
-            <Button variant="outline" onClick={onNewBattleSet}>
-              Restart Battles
-            </Button>
-            <Button onClick={onContinueBattles}>
-              Continue Battling
-            </Button>
-            <Button variant="secondary" onClick={onSaveRankings}>
-              Save Current Ranking
-            </Button>
-          </>
+      <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4">
+        <Button 
+          variant="default" 
+          size="lg" 
+          onClick={onContinueBattles}
+        >
+          Continue Battles
+        </Button>
+        {rankingGenerated && (
+          <Button 
+            variant="outline" 
+            size="lg" 
+            onClick={onNewBattleSet}
+          >
+            Start New Battle Set
+          </Button>
         )}
       </div>
     </div>
