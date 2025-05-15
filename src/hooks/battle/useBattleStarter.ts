@@ -25,11 +25,12 @@ export const useBattleStarter = () => {
     
     // Get the last battle Pokemon IDs from ref for immediate comparison
     const lastBattleIds = lastBattleRef.current;
+    console.log("Last battle IDs:", lastBattleIds);
     
     // Get the recently seen Pokemon IDs
     const seenPokemonIds = Array.from(recentlySeenPokemon.current);
     
-    // IMPORTANT: Filter out the Pokemon from the last battle to avoid repetition
+    // CRITICAL: Filter out the Pokemon from the last battle to avoid repetition
     if (lastBattleIds.length > 0) {
       console.log("Filtering out previously used Pokemon:", lastBattleIds);
       
@@ -42,17 +43,18 @@ export const useBattleStarter = () => {
         
         // If we don't have enough Pokemon after filtering, use the full list but ensure
         // we don't get the exact same combination as before
-        availablePokemon = [...pokemonList].filter(p => !lastBattleIds.includes(p.id));
+        availablePokemon = [...pokemonList];
         
-        // If we still don't have enough, use the full list
-        if (availablePokemon.length < battleSize) {
-          availablePokemon = [...pokemonList];
+        // Still try to avoid the last battle's Pokemon if possible
+        const preferredPokemon = availablePokemon.filter(p => !lastBattleIds.includes(p.id));
+        if (preferredPokemon.length >= battleSize) {
+          availablePokemon = preferredPokemon;
         }
       }
     }
     
     // Also try to avoid recently seen Pokemon (beyond just the last battle)
-    if (seenPokemonIds.length > 0 && availablePokemon.length > battleSize * 2) {
+    if (seenPokemonIds.length > 0 && availablePokemon.length > battleSize * 3) {
       // Prefer Pokemon that haven't been seen recently
       const preferredPokemon = availablePokemon.filter(p => !seenPokemonIds.includes(p.id));
       
@@ -61,8 +63,8 @@ export const useBattleStarter = () => {
       }
     }
     
-    // Shuffle the list to get random Pokémon
-    const shuffled = availablePokemon.sort(() => Math.random() - 0.5);
+    // Shuffle the list to get random Pokémon - use a more random shuffle
+    const shuffled = availablePokemon.sort(() => 0.5 - Math.random());
     
     // Get the first N Pokémon based on battle type
     let newBattlePokemon = shuffled.slice(0, battleSize);
@@ -70,31 +72,32 @@ export const useBattleStarter = () => {
     // Double-check to ensure we don't get the exact same battle
     if (lastBattleIds.length > 0) {
       // Extract IDs from the new battle Pokemon
-      const newBattleIds = newBattlePokemon.map(p => p.id);
+      const newBattleIds = newBattlePokemon.map(p => p.id).sort();
+      const sortedLastIds = [...lastBattleIds].sort();
       
       // Check if the new battle contains exactly the same Pokemon (regardless of order)
-      const isSameBattle = newBattleIds.length === lastBattleIds.length && 
-        newBattleIds.every(id => lastBattleIds.includes(id));
+      const isSameBattle = newBattleIds.length === sortedLastIds.length && 
+        newBattleIds.every((id, i) => id === sortedLastIds[i]);
       
       if (isSameBattle) {
         console.log("Still got the same Pokemon, forcing different selection...");
         
-        // Force a different selection by taking different Pokemon from the shuffled array
-        // Use the next set in the shuffled array if available
+        // Force a completely different selection
         if (shuffled.length > battleSize * 2) {
           newBattlePokemon = shuffled.slice(battleSize, battleSize * 2);
         } else {
           // Last resort - just take a new random selection from the full list
           newBattlePokemon = [...pokemonList]
-            .sort(() => Math.random() - 0.5)
-            .filter(p => !lastBattleIds.includes(p.id))
+            .sort(() => 0.5 - Math.random())
             .slice(0, battleSize);
             
-          // If we still don't have enough, just get any that aren't all the same
-          if (newBattlePokemon.length < battleSize) {
-            newBattlePokemon = [...pokemonList]
-              .sort(() => Math.random() - 0.5)
-              .slice(0, battleSize);
+          // Ensure at least one Pokemon is different from last battle
+          const forceNewIndex = Math.floor(Math.random() * battleSize);
+          let replacementOptions = pokemonList.filter(p => !lastBattleIds.includes(p.id));
+          
+          if (replacementOptions.length > 0) {
+            const forcedDifferentPokemon = replacementOptions[Math.floor(Math.random() * replacementOptions.length)];
+            newBattlePokemon[forceNewIndex] = forcedDifferentPokemon;
           }
         }
       }
@@ -102,15 +105,15 @@ export const useBattleStarter = () => {
     
     // Save this battle to track and avoid repetition
     const newBattleIds = newBattlePokemon.map(p => p.id);
-    setPreviousBattles(prev => [...prev, newBattleIds].slice(-5)); // Keep only the last 5 battles
+    setPreviousBattles(prev => [...prev, newBattleIds].slice(-10)); // Keep only the last 10 battles
     
     // Update the ref with current battle IDs for immediate use in next battle
     lastBattleRef.current = newBattleIds;
     
-    // Add these Pokemon to the recently seen set (keep only the last 10-15 Pokemon)
+    // Add these Pokemon to the recently seen set (keep only the last 20 Pokemon)
     newBattleIds.forEach(id => {
       recentlySeenPokemon.current.add(id);
-      if (recentlySeenPokemon.current.size > 15) {
+      if (recentlySeenPokemon.current.size > 20) {
         // Remove the oldest Pokemon from the set
         recentlySeenPokemon.current.delete(Array.from(recentlySeenPokemon.current)[0]);
       }

@@ -76,7 +76,10 @@ export const useBattleProcessor = (
     
     // Update battle results state
     setBattleResults(newResults);
+    
+    // Important: Increment and update battle count BEFORE starting new battle
     const newBattlesCompleted = battlesCompleted + 1;
+    console.log(`Updating battles completed from ${battlesCompleted} to ${newBattlesCompleted}`);
     setBattlesCompleted(newBattlesCompleted);
     
     // Check if we've hit a milestone
@@ -110,18 +113,20 @@ export const useBattleProcessor = (
         return;
       }
       
-      // Explicitly trigger a new battle with the full Pokemon list
-      console.log("Starting new battle after processing result");
+      // Reset selections BEFORE starting a new battle
+      setSelectedPokemon([]);
       
       // Use a timeout to ensure state updates happen first
       setTimeout(() => {
+        // Force a completely new battle with the full Pokemon list
         startNewBattle(allPokemon, battleType);
-        setIsProcessingResult(false);
-      }, 600); // Give enough time for the UI to update
+        
+        // Reset processing state after the new battle has started
+        setTimeout(() => {
+          setIsProcessingResult(false);
+        }, 300);
+      }, 300);
     }
-    
-    // Reset selections
-    setSelectedPokemon([]);
   };
 
   return { processBattleResult, isProcessingResult };

@@ -25,6 +25,8 @@ export const useBattleInteractions = (
   
   // Keep track of the last processed battle to avoid duplicates
   const lastProcessedBattleRef = useRef<number[]>([]);
+  // Keep track of the last battle completed number
+  const lastBattleCompletedRef = useRef<number>(battlesCompleted);
 
   // Clean up timeout on unmount
   useEffect(() => {
@@ -34,6 +36,11 @@ export const useBattleInteractions = (
       }
     };
   }, []);
+
+  // Update the last battle completed ref when the prop changes
+  useEffect(() => {
+    lastBattleCompletedRef.current = battlesCompleted;
+  }, [battlesCompleted]);
   
   // Create a stable callback function for handling pokemon selection
   const handlePokemonSelect = useCallback((id: number) => {
@@ -47,14 +54,23 @@ export const useBattleInteractions = (
     
     // Check if current battle is the same as last processed battle
     const currentBattleIds = currentBattle.map(p => p.id).sort();
-    const lastProcessedIds = lastProcessedBattleRef.current.sort();
+    const lastProcessedIds = [...lastProcessedBattleRef.current].sort();
+    
     const isSameBattle = currentBattleIds.length === lastProcessedIds.length &&
       currentBattleIds.every((id, i) => id === lastProcessedIds[i]);
       
     if (isSameBattle && lastProcessedIds.length > 0) {
       console.log("This appears to be the same battle we just processed, forcing a new battle");
+      // Set processing flag to prevent further clicks
+      setIsProcessing(true);
+      
       processingTimeoutRef.current = window.setTimeout(() => {
         handleTripletSelectionComplete();
+        
+        // Reset processing flag after a suitable delay
+        processingTimeoutRef.current = window.setTimeout(() => {
+          setIsProcessing(false);
+        }, 600);
       }, 100);
       return;
     }
@@ -80,14 +96,14 @@ export const useBattleInteractions = (
       // Process the selection completion with a small delay
       // This ensures state updates have time to propagate
       processingTimeoutRef.current = window.setTimeout(() => {
-        console.log("Processing triplet selection after delay");
+        console.log("Processing selection after delay. Current battle count:", lastBattleCompletedRef.current);
         handleTripletSelectionComplete();
         
         // Reset processing flag after a suitable delay to allow the next battle to load
         processingTimeoutRef.current = window.setTimeout(() => {
           console.log("Resetting processing flag");
           setIsProcessing(false);
-        }, 700); // Increased delay to ensure new battle is loaded
+        }, 800); // Increased delay to ensure new battle is loaded
       }, 300);
     } else {
       // For triplets mode - toggle selection

@@ -33,7 +33,7 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
 }) => {
   // Animation state without the flashing issue
   const [animationKey, setAnimationKey] = useState(0);
-  // Store battle number for display
+  // Store battle number for display - always 1 more than completed battles
   const [displayedBattleNumber, setDisplayedBattleNumber] = useState(battlesCompleted + 1);
   
   // Update animation key when current battle changes to trigger a clean rerender
@@ -45,6 +45,7 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
   
   // Update the displayed battle number when battles completed changes
   useEffect(() => {
+    console.log("Updating displayed battle number to", battlesCompleted + 1);
     setDisplayedBattleNumber(battlesCompleted + 1);
   }, [battlesCompleted]);
 
