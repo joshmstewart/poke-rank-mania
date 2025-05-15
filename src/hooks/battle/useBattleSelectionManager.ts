@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
 
@@ -24,10 +24,8 @@ export const useBattleSelectionManager = (
       setLocalSelectedPokemon([id]);
       setSelectedPokemon([id]);
       
-      // Add a small delay to ensure state updates before processing
-      setTimeout(() => {
-        processBattleResult([id], battleType, currentBattle);
-      }, 10);
+      // Process the battle result with the correct ID
+      processBattleResult([id], battleType, currentBattle);
     } else {
       // For triplets/trios, toggle selection
       let newSelected;
@@ -48,18 +46,8 @@ export const useBattleSelectionManager = (
     console.log("Current battle:", currentBattle.map(p => p.name));
     
     // If it's pairs mode and we already processed the selection in handlePokemonSelect,
-    // we can return early to avoid duplicate processing
+    // we should return early
     if (battleType === "pairs") {
-      // For pairs mode, explicitly check if we have a selection
-      if (selectedPokemon.length > 0) {
-        processBattleResult(selectedPokemon, battleType, currentBattle);
-      } else if (battleHistory.length > 0) {
-        // Try to get the selection from the most recent history entry
-        const lastEntry = battleHistory[battleHistory.length - 1];
-        if (lastEntry.selected.length > 0) {
-          processBattleResult(lastEntry.selected, battleType, currentBattle);
-        }
-      }
       return;
     }
     

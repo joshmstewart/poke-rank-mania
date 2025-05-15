@@ -18,7 +18,7 @@ const BattleCard: React.FC<BattleCardProps> = ({
 }) => {
   const [isClicking, setIsClicking] = useState(false);
 
-  // Create a handler with debounce to prevent multiple rapid clicks
+  // Prevent multiple rapid clicks with a simpler approach
   const handleClick = () => {
     if (isClicking) return;
     
@@ -28,7 +28,7 @@ const BattleCard: React.FC<BattleCardProps> = ({
     // Reset after a short delay
     setTimeout(() => {
       setIsClicking(false);
-    }, 500);
+    }, 300);
   };
 
   // For keyboard accessibility
