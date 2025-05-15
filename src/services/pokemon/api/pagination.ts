@@ -20,9 +20,18 @@ export async function fetchPaginatedPokemon(
     
     const totalPages = Math.ceil(totalPokemon / ITEMS_PER_PAGE);
     
-    // Calculate offset and limit based on page
-    const offset = selectedGeneration.start - 1 + ((page - 1) * ITEMS_PER_PAGE);
-    const limit = Math.min(ITEMS_PER_PAGE, selectedGeneration.end - offset + 1);
+    // Calculate offset and limit based on page and generation
+    let offset, limit;
+    
+    if (generationId === 0) {
+      // For all generations, use direct pagination with the PokeAPI
+      offset = (page - 1) * ITEMS_PER_PAGE;
+      limit = ITEMS_PER_PAGE;
+    } else {
+      // For specific generations, calculate offset from generation start
+      offset = selectedGeneration.start - 1 + ((page - 1) * ITEMS_PER_PAGE);
+      limit = Math.min(ITEMS_PER_PAGE, selectedGeneration.end - offset + 1);
+    }
     
     console.log(`Fetching Pokemon: generation=${generationId}, page=${page}, offset=${offset}, limit=${limit}, totalPages=${totalPages}`);
     
