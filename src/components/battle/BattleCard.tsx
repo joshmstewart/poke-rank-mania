@@ -53,32 +53,16 @@ const BattleCard: React.FC<BattleCardProps> = ({
           )}
           
           {battleType === "pairs" ? (
-            <RadioGroup 
-              value={isSelected ? pokemon.id.toString() : ""} 
-              className="mt-4"
-              // Use the same handler to prevent double-click issue
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem 
-                  value={pokemon.id.toString()} 
-                  id={`radio-${pokemon.id}`}
-                  // Handle the click on the radio button itself
-                  onClick={handleClick}
-                />
-                <label 
-                  htmlFor={`radio-${pokemon.id}`}
-                  onClick={handleClick}
-                >
-                  Select
-                </label>
+            <div className="mt-4 px-3 py-2 bg-gray-100 rounded flex items-center justify-center w-full">
+              <div className={`text-sm ${isSelected ? "font-bold text-primary" : ""}`}>
+                {isSelected ? "Selected" : "Click to select"}
               </div>
-            </RadioGroup>
+            </div>
           ) : (
             <Button
               variant={isSelected ? "default" : "outline"}
               onClick={handleClick}
-              className="mt-4"
+              className="mt-4 w-full"
             >
               {isSelected ? "Selected" : "Select"}
             </Button>
