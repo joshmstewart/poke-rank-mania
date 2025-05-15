@@ -36,34 +36,99 @@ const BattleMode = () => {
   // Milestone triggers - show rankings at these battle counts
   const milestones = [10, 25, 50, 100, 200, 500, 1000];
   
+  // Load saved battle state on initial load
   useEffect(() => {
-    loadPokemon();
+    const savedState = loadBattleState();
+    if (savedState) {
+      setSelectedGeneration(savedState.selectedGeneration);
+      setBattleType(savedState.battleType);
+      setBattleResults(savedState.battleResults);
+      setBattlesCompleted(savedState.battlesCompleted);
+      setBattleHistory(savedState.battleHistory);
+      setCompletionPercentage(savedState.completionPercentage);
+      
+      // We'll load the Pokemon separately based on the saved generation
+      loadPokemon(savedState.selectedGeneration, true);
+    } else {
+      loadPokemon();
+    }
+  }, []);
+
+  useEffect(() => {
+    // Only reload Pokemon if generation changes
+    if (!isLoading) {
+      loadPokemon();
+    }
   }, [selectedGeneration]);
 
   useEffect(() => {
     // Calculate completion percentage when battle results change
     if (allPokemon.length > 0) {
       calculateCompletionPercentage();
+      
+      // Save battle state whenever results change
+      saveBattleState();
     }
-  }, [battleResults, allPokemon]);
+  }, [battleResults, allPokemon, selectedGeneration, battleType]);
 
-  const loadPokemon = async () => {
+  // Save current battle state to local storage
+  const saveBattleState = () => {
+    try {
+      const state = {
+        selectedGeneration,
+        battleType,
+        battleResults,
+        battlesCompleted,
+        battleHistory,
+        completionPercentage
+      };
+      localStorage.setItem('pokemon-battle-state', JSON.stringify(state));
+    } catch (error) {
+      console.error('Error saving battle state:', error);
+    }
+  };
+
+  // Load battle state from local storage
+  const loadBattleState = () => {
+    try {
+      const savedState = localStorage.getItem('pokemon-battle-state');
+      if (savedState) {
+        return JSON.parse(savedState);
+      }
+      return null;
+    } catch (error) {
+      console.error('Error loading battle state:', error);
+      return null;
+    }
+  };
+
+  const loadPokemon = async (genId = selectedGeneration, preserveState = false) => {
     setIsLoading(true);
-    const pokemon = await fetchAllPokemon(selectedGeneration);
+    const pokemon = await fetchAllPokemon(genId);
     setAllPokemon(pokemon);
     
-    // Reset battle state
-    setBattleResults([]);
-    setBattlesCompleted(0);
-    setRankingGenerated(false);
-    setSelectedPokemon([]);
-    setBattleHistory([]);
-    setShowingMilestone(false);
-    setCompletionPercentage(0);
+    if (!preserveState) {
+      // Reset battle state if not preserving state
+      setBattleResults([]);
+      setBattlesCompleted(0);
+      setRankingGenerated(false);
+      setSelectedPokemon([]);
+      setBattleHistory([]);
+      setShowingMilestone(false);
+      setCompletionPercentage(0);
+    }
     
-    // Start the first battle
+    // Start the first battle or continue from previous battle
     if (pokemon.length > 0) {
-      startNewBattle(pokemon);
+      if (preserveState && battleHistory.length > 0) {
+        // If we're preserving state, restore the last battle
+        const lastBattle = battleHistory[battleHistory.length - 1];
+        setCurrentBattle(lastBattle.battle);
+        setSelectedPokemon([]);
+      } else {
+        // Otherwise start a new battle
+        startNewBattle(pokemon);
+      }
     }
     
     setIsLoading(false);
@@ -349,6 +414,7 @@ const BattleMode = () => {
                 <SelectValue placeholder="Select Generation" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="0">All Generations</SelectItem>
                 {generations.filter(gen => gen.id > 0).map((gen) => (
                   <SelectItem key={gen.id} value={gen.id.toString()}>
                     {gen.name} (#{gen.start}-{gen.end})

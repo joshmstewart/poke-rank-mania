@@ -107,14 +107,65 @@ export async function fetchPaginatedPokemon(
 // Keep the original function for backward compatibility and specific generations
 export async function fetchAllPokemon(generationId: number = 1): Promise<Pokemon[]> {
   try {
-    // If requesting all generations, we recommend using the paginated version instead
+    // For battle mode, when selecting "All Generations", we'll return a reasonable sample size
+    // rather than all 1000+ Pokemon at once
     if (generationId === 0) {
+      // For battle mode, select random samples from different generations
+      // This gives a diverse but manageable set
+      const sampleSize = 150; // A reasonable number for battles
+      
       toast({
         title: "Loading sample",
-        description: "Loading first page of All Generations. Use pagination for better performance.",
+        description: `Loading a selection of ${sampleSize} Pokémon from all generations for battling.`,
       });
-      const result = await fetchPaginatedPokemon(0, 1);
-      return result.pokemon;
+      
+      // Create an array representing all Pokemon IDs
+      const allPokemonIds = Array.from({ length: generations[0].end }, (_, i) => i + 1);
+      
+      // Shuffle the array
+      const shuffledIds = allPokemonIds.sort(() => Math.random() - 0.5);
+      
+      // Take the first 'sampleSize' Pokemon
+      const selectedIds = shuffledIds.slice(0, sampleSize);
+      
+      // Fetch details for each selected Pokemon
+      const pokemonList = await Promise.all(
+        selectedIds.map(async (id) => {
+          // Get detailed Pokemon data
+          const detailResponse = await fetch(`https://pokeapi.co/api/v2/pokemon/${id}`);
+          let name = `Pokemon #${id}`;
+          let types: string[] = [];
+          
+          if (detailResponse.ok) {
+            const detailData = await detailResponse.json();
+            name = detailData.name.charAt(0).toUpperCase() + detailData.name.slice(1);
+            types = detailData.types.map((type: any) => type.type.name.charAt(0).toUpperCase() + type.type.name.slice(1));
+          }
+          
+          // Get species data for flavor text
+          const speciesResponse = await fetch(`https://pokeapi.co/api/v2/pokemon-species/${id}`);
+          let flavorText = "";
+          if (speciesResponse.ok) {
+            const speciesData = await speciesResponse.json();
+            const englishFlavorText = speciesData.flavor_text_entries.find(
+              (entry: any) => entry.language.name === "en"
+            );
+            flavorText = englishFlavorText 
+              ? englishFlavorText.flavor_text.replace(/\f/g, " ").replace(/\n/g, " ").replace(/\r/g, " ")
+              : "";
+          }
+          
+          return {
+            id: Number(id),
+            name: name,
+            image: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`,
+            types,
+            flavorText
+          };
+        })
+      );
+      
+      return pokemonList;
     }
     
     const selectedGeneration = generations.find(gen => gen.id === generationId) || generations[1];
