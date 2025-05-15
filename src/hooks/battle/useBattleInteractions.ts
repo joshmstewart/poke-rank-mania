@@ -23,7 +23,7 @@ export const useBattleInteractions = (
     console.log(`Handling Pokemon selection (id: ${id}) in ${battleType} mode`);
     
     if (battleType === "pairs") {
-      // For pairs mode - immediate selection and trigger completion
+      // For pairs mode - immediate selection and direct completion
       console.log("Pairs mode: Setting selection and triggering completion");
       
       // Set the selection immediately
@@ -35,10 +35,8 @@ export const useBattleInteractions = (
         selected: [id] 
       }]);
       
-      // Force immediate completion
-      setTimeout(() => {
-        handleTripletSelectionComplete();
-      }, 10);
+      // Execute completion synchronously - no setTimeout
+      handleTripletSelectionComplete();
     } else {
       // For triplets mode - toggle selection
       setSelectedPokemon(prev => {

@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import PokemonRanker from "@/components/PokemonRanker";
 import BattleMode from "@/components/BattleMode";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import AppSessionManager from "@/components/AppSessionManager";
 import Logo from "@/components/ui/Logo";

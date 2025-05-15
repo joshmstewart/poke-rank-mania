@@ -16,29 +16,16 @@ const BattleCard: React.FC<BattleCardProps> = ({
   battleType,
   onSelect
 }) => {
-  // Enhanced click handler with explicit event handling
-  const handleClick = (e: React.MouseEvent) => {
-    // Prevent event bubbling
-    e.preventDefault();
-    e.stopPropagation();
-    
+  // Simplified click handler that directly calls onSelect
+  const handleClick = () => {
     console.log(`BattleCard clicked: ${pokemon.id}, ${pokemon.name}`);
     onSelect(pokemon.id);
-  };
-
-  // Add keyboard handler for accessibility
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      onSelect(pokemon.id);
-    }
   };
 
   return (
     <div 
       className={`cursor-pointer ${isSelected && battleType === "triplets" ? "ring-4 ring-primary" : ""}`}
       onClick={handleClick}
-      onKeyDown={handleKeyPress}
       role="button"
       aria-pressed={isSelected}
       tabIndex={0}

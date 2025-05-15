@@ -36,7 +36,7 @@ const BattleControls: React.FC<BattleControlsProps> = ({
             <SelectTrigger className="w-[140px] h-8 text-sm">
               <SelectValue placeholder="Generation" className="text-left" />
             </SelectTrigger>
-            <SelectContent align="start">
+            <SelectContent align="start" className="min-w-[200px]">
               {generations.map(gen => (
                 <SelectItem key={gen.id} value={gen.id.toString()}>
                   {gen.name}
