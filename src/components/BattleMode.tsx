@@ -25,7 +25,7 @@ import {
 
 const BattleMode = () => {
   const [showViewRankings, setShowViewRankings] = useState(false);
-  const [showSettings, setShowSettings] = useState(true);
+  const [showSettings, setShowSettings] = useState(false);
   const [restartDialogOpen, setRestartDialogOpen] = useState(false);
   
   const {
@@ -80,6 +80,7 @@ const BattleMode = () => {
       <div className="flex flex-col space-y-4">
         {/* Controls bar with all primary actions on one row */}
         <div className="flex items-center bg-white p-3 rounded-lg shadow border">
+          {/* Left side buttons */}
           <div className="flex gap-2">
             <Button
               variant="outline"
@@ -124,6 +125,7 @@ const BattleMode = () => {
             </AlertDialog>
           </div>
           
+          {/* Center area for battle settings */}
           <div className="flex-1 px-4">
             {showSettings ? (
               <BattleSettings
@@ -151,7 +153,7 @@ const BattleMode = () => {
             onClick={() => setShowSettings(!showSettings)}
             className="flex items-center gap-1"
           >
-            <Settings className="h-4 w-4 mr-1" />
+            <Settings className="h-4 w-4" />
             {showSettings ? "Hide" : "Show"} Settings
           </Button>
         </div>

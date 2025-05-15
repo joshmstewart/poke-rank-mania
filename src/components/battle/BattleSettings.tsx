@@ -18,7 +18,7 @@ const BattleSettings: React.FC<BattleSettingsProps> = ({
   onBattleTypeChange
 }) => {
   return (
-    <div className="flex flex-row gap-4 items-center">
+    <div className="flex flex-row gap-4 items-center w-full">
       {/* Generation selector */}
       <div className="flex-1">
         <label className="text-sm font-medium block mb-1">Generation</label>
@@ -26,7 +26,7 @@ const BattleSettings: React.FC<BattleSettingsProps> = ({
           value={selectedGeneration.toString()} 
           onValueChange={onGenerationChange}
         >
-          <SelectTrigger>
+          <SelectTrigger className="w-full">
             <SelectValue placeholder="Select a generation" />
           </SelectTrigger>
           <SelectContent>
@@ -47,7 +47,7 @@ const BattleSettings: React.FC<BattleSettingsProps> = ({
           value={battleType}
           onValueChange={(value: BattleType) => onBattleTypeChange(value)}
         >
-          <SelectTrigger>
+          <SelectTrigger className="w-full">
             <SelectValue placeholder="Select battle type" />
           </SelectTrigger>
           <SelectContent>

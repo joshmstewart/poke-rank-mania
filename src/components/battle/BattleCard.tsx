@@ -17,8 +17,7 @@ const BattleCard: React.FC<BattleCardProps> = ({
   onSelect
 }) => {
   // Create a handler that immediately triggers the onSelect function
-  const handleClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleClick = () => {
     onSelect(pokemon.id);
   };
 
@@ -26,6 +25,9 @@ const BattleCard: React.FC<BattleCardProps> = ({
     <div 
       className={`cursor-pointer ${isSelected && battleType === "triplets" ? "ring-4 ring-primary" : ""}`}
       onClick={handleClick}
+      role="button"
+      aria-pressed={isSelected}
+      tabIndex={0}
     >
       <Card className="h-full transform transition-all hover:scale-105">
         <CardContent className="flex flex-col items-center justify-center p-4">
