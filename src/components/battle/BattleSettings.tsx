@@ -30,7 +30,6 @@ const BattleSettings: React.FC<BattleSettingsProps> = ({
             <SelectValue placeholder="Select a generation" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="0">All Generations</SelectItem>
             {generations.map(gen => (
               <SelectItem key={gen.id} value={gen.id.toString()}>
                 {gen.name}

@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Pokemon } from "@/services/pokemonService";
 
@@ -16,27 +16,16 @@ const BattleCard: React.FC<BattleCardProps> = ({
   battleType,
   onSelect
 }) => {
-  // Remove the click state - it's causing issues with responsiveness
-  
+  // Simple click handler without debouncing or state
   const handleClick = () => {
-    // Simply call the selection handler with the pokemon ID
-    // We'll handle debouncing at a higher level
+    console.log(`BattleCard clicked: ${pokemon.id}, ${pokemon.name}`);
     onSelect(pokemon.id);
-  };
-
-  // For keyboard accessibility
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      handleClick();
-    }
   };
 
   return (
     <div 
       className={`cursor-pointer ${isSelected && battleType === "triplets" ? "ring-4 ring-primary" : ""}`}
       onClick={handleClick}
-      onKeyDown={handleKeyDown}
       role="button"
       aria-pressed={isSelected}
       tabIndex={0}

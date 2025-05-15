@@ -5,7 +5,6 @@ import { useBattleState } from "@/hooks/battle/useBattleState";
 // Import our components
 import ProgressTracker from "./battle/ProgressTracker";
 import BattleHeader from "./battle/BattleHeader";
-import BattleSettings from "./battle/BattleSettings";
 import BattleContent from "./battle/BattleContent";
 import BattleFooterNote from "./battle/BattleFooterNote";
 import ViewRankings from "./battle/ViewRankings";
@@ -80,21 +79,20 @@ const BattleMode = () => {
   return (
     <div className="container max-w-7xl mx-auto py-6">
       <div className="flex flex-col space-y-4">
-        {/* Simplified Controls bar with inline settings */}
+        {/* Simplified Controls bar with inline settings - more condensed */}
         <div className="flex items-center justify-between bg-white p-3 rounded-lg shadow border">
-          {/* Left side - Gen and Mode selectors */}
+          {/* Left side - Gen and Mode dropdowns with inline descriptions */}
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium whitespace-nowrap">Gen:</span>
+            <div className="flex items-center">
+              <span className="text-sm font-medium whitespace-nowrap mr-1">Gen:</span>
               <Select 
                 value={selectedGeneration.toString()} 
                 onValueChange={handleGenerationChange}
               >
-                <SelectTrigger className="w-[140px] h-9">
+                <SelectTrigger className="w-[140px] h-8 text-sm">
                   <SelectValue placeholder="Generation" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="0">All Generations</SelectItem>
                   {generations.map(gen => (
                     <SelectItem key={gen.id} value={gen.id.toString()}>
                       {gen.name}
@@ -104,13 +102,13 @@ const BattleMode = () => {
               </Select>
             </div>
             
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium whitespace-nowrap">Mode:</span>
+            <div className="flex items-center">
+              <span className="text-sm font-medium whitespace-nowrap mr-1">Mode:</span>
               <Select
                 value={battleType}
                 onValueChange={(value: BattleType) => handleBattleTypeChange(value)}
               >
-                <SelectTrigger className="w-[120px] h-9">
+                <SelectTrigger className="w-[100px] h-8 text-sm">
                   <SelectValue placeholder="Battle Type" />
                 </SelectTrigger>
                 <SelectContent>
@@ -118,10 +116,9 @@ const BattleMode = () => {
                   <SelectItem value="triplets">Trios</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-            
-            <div className="text-sm text-gray-500 ml-2">
-              {battleType === "pairs" ? "Compare one-by-one" : "Select multiple preferences"}
+              <span className="text-xs text-gray-500 ml-2">
+                {battleType === "pairs" ? "Compare one-by-one" : "Select multiple preferences"}
+              </span>
             </div>
           </div>
           
@@ -130,10 +127,10 @@ const BattleMode = () => {
             <Button
               variant="outline"
               size="sm"
-              className="flex items-center gap-1"
+              className="flex items-center gap-1 h-8 text-sm"
               onClick={() => setShowViewRankings(true)}
             >
-              <List className="h-4 w-4" /> View Rankings
+              <List className="h-4 w-4" /> Rankings
             </Button>
             
             {/* Reset button */}
@@ -142,7 +139,7 @@ const BattleMode = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="flex items-center gap-1"
+                  className="flex items-center gap-1 h-8 text-sm"
                 >
                   <RefreshCw className="h-4 w-4" /> Restart
                 </Button>
