@@ -25,7 +25,7 @@ const BattleCard: React.FC<BattleCardProps> = ({
 
   return (
     <div 
-      className={`cursor-pointer ${isSelected ? "ring-4 ring-primary" : ""}`}
+      className={`cursor-pointer ${isSelected && battleType === "triplets" ? "ring-4 ring-primary" : ""}`}
       onClick={handleClick}
     >
       <Card className="h-full transform transition-all hover:scale-105">
@@ -51,12 +51,14 @@ const BattleCard: React.FC<BattleCardProps> = ({
             </div>
           )}
           
-          {/* Simple visual indicator with no interaction elements */}
-          <div className="mt-4 px-3 py-2 bg-gray-100 rounded flex items-center justify-center w-full">
-            <div className={`text-sm ${isSelected ? "font-bold text-primary" : ""}`}>
-              {isSelected ? "Selected" : "Click to select"}
+          {/* Only show selection indicator for triplets mode */}
+          {battleType === "triplets" && (
+            <div className="mt-4 px-3 py-2 bg-gray-100 rounded flex items-center justify-center w-full">
+              <div className={`text-sm ${isSelected ? "font-bold text-primary" : ""}`}>
+                {isSelected ? "Selected" : "Click to select"}
+              </div>
             </div>
-          </div>
+          )}
         </CardContent>
       </Card>
     </div>
