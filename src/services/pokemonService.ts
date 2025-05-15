@@ -284,10 +284,18 @@ export async function fetchAllPokemon(generationId: number = 1, fullRankingMode:
   }
 }
 
-// Save rankings to local storage
+// Save rankings to both local storage and unified session storage
 export function saveRankings(rankings: Pokemon[], generationId: number = 1): void {
   try {
+    // Save to local storage for backward compatibility
     localStorage.setItem(`pokemon-rankings-gen-${generationId}`, JSON.stringify(rankings));
+    
+    // Save to unified session storage
+    const sessionData = loadUnifiedSessionData();
+    sessionData.rankings = sessionData.rankings || {};
+    sessionData.rankings[`gen-${generationId}`] = rankings;
+    saveUnifiedSessionData(sessionData);
+    
     toast({
       title: "Success",
       description: "Your rankings have been saved!",
@@ -302,13 +310,21 @@ export function saveRankings(rankings: Pokemon[], generationId: number = 1): voi
   }
 }
 
-// Load rankings from local storage
+// Load rankings from unified session storage (with fallback to local storage)
 export function loadRankings(generationId: number = 1): Pokemon[] {
   try {
+    // Try to get from unified session storage first
+    const sessionData = loadUnifiedSessionData();
+    if (sessionData.rankings && sessionData.rankings[`gen-${generationId}`]) {
+      return sessionData.rankings[`gen-${generationId}`];
+    }
+    
+    // Fall back to legacy local storage
     const savedRankings = localStorage.getItem(`pokemon-rankings-gen-${generationId}`);
     if (savedRankings) {
       return JSON.parse(savedRankings);
     }
+    
     return [];
   } catch (error) {
     console.error('Error loading rankings:', error);
@@ -341,5 +357,53 @@ export function exportRankings(rankings: Pokemon[], generationId: number = 1): v
       description: "Failed to export rankings. Please try again.",
       variant: "destructive"
     });
+  }
+}
+
+// Unified session data functions
+interface UnifiedSessionData {
+  sessionId?: string;
+  rankings?: Record<string, Pokemon[]>;
+  battleState?: any;
+}
+
+export function loadUnifiedSessionData(): UnifiedSessionData {
+  try {
+    const data = localStorage.getItem('pokemon-unified-session');
+    if (data) {
+      return JSON.parse(data);
+    }
+    return {};
+  } catch (error) {
+    console.error('Error loading unified session data:', error);
+    return {};
+  }
+}
+
+export function saveUnifiedSessionData(data: UnifiedSessionData): void {
+  try {
+    localStorage.setItem('pokemon-unified-session', JSON.stringify(data));
+  } catch (error) {
+    console.error('Error saving unified session data:', error);
+  }
+}
+
+// Unified session import/export functions
+export function exportUnifiedSessionData(): string {
+  const sessionData = loadUnifiedSessionData();
+  return JSON.stringify(sessionData);
+}
+
+export function importUnifiedSessionData(data: string): boolean {
+  try {
+    const sessionData = JSON.parse(data);
+    if (sessionData) {
+      saveUnifiedSessionData(sessionData);
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error('Error importing unified session data:', error);
+    return false;
   }
 }
