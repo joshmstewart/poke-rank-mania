@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft } from "lucide-react";
 import { Pokemon } from "@/services/pokemon";
@@ -33,22 +33,27 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
 }) => {
   // Animation state without the flashing issue
   const [animationKey, setAnimationKey] = useState(0);
-  // Store battle number for display - always 1 more than completed battles
+  // Store battle number for display
   const [displayedBattleNumber, setDisplayedBattleNumber] = useState(battlesCompleted + 1);
+  
+  // Track last seen completed battles to prevent display jumps
+  const lastBattlesCompletedRef = useRef(battlesCompleted);
+  
+  // Update the displayed battle number when battles completed changes
+  useEffect(() => {
+    if (battlesCompleted !== lastBattlesCompletedRef.current) {
+      console.log("BattleInterface: Updating displayed battle number to", battlesCompleted + 1);
+      setDisplayedBattleNumber(battlesCompleted + 1);
+      lastBattlesCompletedRef.current = battlesCompleted;
+    }
+  }, [battlesCompleted]);
   
   // Update animation key when current battle changes to trigger a clean rerender
   useEffect(() => {
     if (currentBattle.length > 0) {
-      console.log("BattleInterface: Current battle changed, updating animation key");
       setAnimationKey(prev => prev + 1);
     }
   }, [currentBattle]);
-  
-  // Update the displayed battle number when battles completed changes
-  useEffect(() => {
-    console.log("BattleInterface: Updating displayed battle number to", battlesCompleted + 1);
-    setDisplayedBattleNumber(battlesCompleted + 1);
-  }, [battlesCompleted]);
 
   // Stable click handler that won't change on rerenders
   const handlePokemonCardSelect = useCallback((id: number) => {
@@ -61,7 +66,7 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
     }
   }, [onPokemonSelect, isProcessing]);
 
-  // Simplified submit handler
+  // Simplified submit handler for triplets mode
   const handleSubmit = useCallback(() => {
     console.log("BattleInterface: Submit button clicked for triplets mode");
     if (!isProcessing) {
@@ -95,7 +100,7 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
           
           {isProcessing && (
             <div className="text-sm text-amber-600 flex items-center">
-              <div className="animate-spin rounded-full h-3 w-3 border-t-2 border-amber-600 mr-2"></div>
+              <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-amber-600 mr-2"></div>
               Processing...
             </div>
           )}
@@ -116,7 +121,7 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
         </div>
       </div>
       
-      {/* Battle cards without the animation that causes flashing */}
+      {/* Battle cards with key to avoid stale renders */}
       <div 
         key={animationKey}
         className="grid gap-4 mt-8"

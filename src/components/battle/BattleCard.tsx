@@ -42,7 +42,7 @@ const BattleCard: React.FC<BattleCardProps> = memo(({
     transform 
     transition-all 
     ${isSelected ? "ring-4 ring-primary" : ""} 
-    ${isProcessing ? "opacity-80 pointer-events-none" : "hover:scale-105"}
+    ${isProcessing ? "opacity-70 pointer-events-none" : "hover:scale-105"}
   `;
 
   return (
@@ -78,10 +78,10 @@ const BattleCard: React.FC<BattleCardProps> = memo(({
             </div>
           )}
           
-          {/* Status indicator */}
+          {/* Status indicator with clearer processing state */}
           <div className="mt-4 px-3 py-2 bg-gray-100 rounded flex items-center justify-center w-full">
             {isProcessing ? (
-              <div className="text-sm flex items-center gap-1 text-gray-400">
+              <div className="text-sm flex items-center gap-1 text-amber-600">
                 <MousePointerClick size={16} className="animate-pulse" />
                 Processing...
               </div>
