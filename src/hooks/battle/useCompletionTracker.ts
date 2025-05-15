@@ -38,21 +38,16 @@ export const useCompletionTracker = (
     }
   };
 
-  const getBattlesRemaining = (battleType: BattleType) => {
+  // Modified to return a number without requiring battleType parameter
+  const getBattlesRemaining = () => {
     if (allPokemon.length <= 1) return 0;
     
     const totalPokemon = allPokemon.length;
     const minimumComparisons = totalPokemon - 1;
     const currentComparisons = battleResults.length;
     
-    // Estimate remaining battles based on battle type
-    if (battleType === "pairs") {
-      return Math.max(0, minimumComparisons - currentComparisons);
-    } else {
-      // For triplets, each battle can generate multiple comparisons
-      // Use a conservative estimate: each triplet battle gives ~2 comparisons on average
-      return Math.max(0, Math.ceil((minimumComparisons - currentComparisons) / 2));
-    }
+    // Just return the remaining comparisons as a simple estimate
+    return Math.max(0, minimumComparisons - currentComparisons);
   };
 
   return {

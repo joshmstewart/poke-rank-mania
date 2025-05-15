@@ -22,6 +22,7 @@ export const useBattleState = () => {
   const [currentBattle, setCurrentBattle] = useState<Pokemon[]>([]);
   const [selectedPokemon, setSelectedPokemon] = useState<number[]>([]);
   const [completionPercentage, setCompletionPercentage] = useState(0);
+  const [rankingGenerated, setRankingGenerated] = useState(false);
   
   // Milestone triggers - show rankings at these battle counts
   const milestones = [10, 25, 50, 100, 200, 500, 1000];
@@ -44,6 +45,12 @@ export const useBattleState = () => {
 
   // Hooks
   const { saveBattleState, loadBattleState } = useLocalStorage();
+  
+  const {
+    finalRankings,
+    generateRankings,
+    handleSaveRankings: saveRankings
+  } = useRankings(allPokemon);
   
   const {
     isLoading,
@@ -77,14 +84,6 @@ export const useBattleState = () => {
     setShowingMilestone,
     setCompletionPercentage
   );
-  
-  const {
-    finalRankings,
-    rankingGenerated,
-    setRankingGenerated,
-    generateRankings,
-    handleSaveRankings: saveRankings
-  } = useRankings(allPokemon);
   
   const {
     calculateCompletionPercentage,
