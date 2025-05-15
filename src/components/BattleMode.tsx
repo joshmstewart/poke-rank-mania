@@ -1,7 +1,6 @@
 
 import React, { useState } from "react";
 import { useBattleState } from "@/hooks/battle/useBattleState";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 // Import our components
 import ProgressTracker from "./battle/ProgressTracker";
@@ -11,7 +10,7 @@ import BattleContent from "./battle/BattleContent";
 import BattleFooterNote from "./battle/BattleFooterNote";
 import ViewRankings from "./battle/ViewRankings";
 import { Button } from "@/components/ui/button";
-import { List, ChevronDown, ChevronUp, RefreshCw, Settings } from "lucide-react";
+import { List, RefreshCw, Settings } from "lucide-react";
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -79,8 +78,8 @@ const BattleMode = () => {
   return (
     <div className="container max-w-7xl mx-auto py-6">
       <div className="flex flex-col space-y-4">
-        {/* Controls bar */}
-        <div className="flex justify-between items-center">
+        {/* Controls bar with all primary actions on one row */}
+        <div className="flex items-center bg-white p-3 rounded-lg shadow border">
           <div className="flex gap-2">
             <Button
               variant="outline"
@@ -91,7 +90,7 @@ const BattleMode = () => {
               <List className="h-4 w-4" /> View Rankings
             </Button>
             
-            {/* Reset button (moved here) */}
+            {/* Reset button */}
             <AlertDialog open={restartDialogOpen} onOpenChange={setRestartDialogOpen}>
               <AlertDialogTrigger asChild>
                 <Button
@@ -125,6 +124,26 @@ const BattleMode = () => {
             </AlertDialog>
           </div>
           
+          <div className="flex-1 px-4">
+            {showSettings ? (
+              <BattleSettings
+                selectedGeneration={selectedGeneration}
+                battleType={battleType}
+                onGenerationChange={handleGenerationChange}
+                onBattleTypeChange={handleBattleTypeChange}
+              />
+            ) : (
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-medium">
+                  Gen: {selectedGeneration === 0 ? "All" : selectedGeneration}
+                </span>
+                <span className="text-sm font-medium">
+                  Mode: {battleType === "pairs" ? "Pairs" : "Trios"}
+                </span>
+              </div>
+            )}
+          </div>
+          
           {/* Settings toggle */}
           <Button 
             variant="outline" 
@@ -137,51 +156,12 @@ const BattleMode = () => {
           </Button>
         </div>
 
-        {/* Collapsible settings section */}
-        <Collapsible open={showSettings} onOpenChange={setShowSettings}>
-          <CollapsibleContent>
-            <div className="grid gap-4">
-              {/* Battle settings */}
-              <BattleSettings
-                selectedGeneration={selectedGeneration}
-                battleType={battleType}
-                onGenerationChange={handleGenerationChange}
-                onBattleTypeChange={handleBattleTypeChange}
-              />
-
-              {/* Progress tracker */}
-              <ProgressTracker
-                completionPercentage={completionPercentage}
-                battlesCompleted={battlesCompleted}
-                getBattlesRemaining={getBattlesRemaining}
-              />
-            </div>
-          </CollapsibleContent>
-        </Collapsible>
-
-        {/* Always show compact progress bar when settings are collapsed */}
-        {!showSettings && (
-          <div className="bg-white p-3 rounded-lg shadow border flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-medium">
-                Gen: {selectedGeneration === 0 ? "All" : selectedGeneration}
-              </span>
-              <span className="text-sm font-medium">
-                Mode: {battleType === "pairs" ? "Pairs" : "Trios"}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm">Battles: {battlesCompleted}</span>
-              <div className="w-32 bg-gray-200 h-2 rounded-full">
-                <div 
-                  className="bg-primary h-full rounded-full" 
-                  style={{ width: `${completionPercentage}%` }}
-                ></div>
-              </div>
-              <span className="text-xs">{completionPercentage}%</span>
-            </div>
-          </div>
-        )}
+        {/* Progress tracker */}
+        <ProgressTracker
+          completionPercentage={completionPercentage}
+          battlesCompleted={battlesCompleted}
+          getBattlesRemaining={getBattlesRemaining}
+        />
 
         {/* Battle content is always shown */}
         <BattleContent 
