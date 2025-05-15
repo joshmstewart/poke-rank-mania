@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { 
   Pokemon, 
@@ -58,9 +57,10 @@ export const usePokemonRanker = () => {
       observerRef.current = new IntersectionObserver((entries) => {
         if (entries[0].isIntersecting && !isLoading && currentPage < totalPages) {
           // When the loading element is visible, load more Pokemon
+          console.log("Loading more Pokémon: page", currentPage + 1);
           setCurrentPage(prevPage => prevPage + 1);
         }
-      }, { threshold: 0.5 });
+      }, { threshold: 0.1 }); // Lower threshold for earlier triggering
       
       if (loadingRef.current) {
         observerRef.current.observe(loadingRef.current);
@@ -77,71 +77,80 @@ export const usePokemonRanker = () => {
   const loadData = async () => {
     setIsLoading(true);
     
-    // First try to load saved rankings for the selected generation
-    const savedRankings = loadRankings(selectedGeneration);
-    
-    // Check if we should use pagination (for All Generations)
-    if (selectedGeneration === 0) {
-      // For single load option, fetch with larger page size
-      const pageSize = loadingType === "single" ? loadSize : ITEMS_PER_PAGE;
-      const { pokemon, totalPages: pages } = await fetchPaginatedPokemon(currentPage);
+    try {
+      // First try to load saved rankings for the selected generation
+      const savedRankings = loadRankings(selectedGeneration);
       
-      setTotalPages(pages);
-      
-      if (savedRankings.length > 0) {
-        // Filter out the already ranked Pokémon from the available list
-        const savedIds = new Set(savedRankings.map(p => p.id));
-        const remainingPokemon = pokemon.filter(p => !savedIds.has(p.id));
+      // Check if we should use pagination (for All Generations)
+      if (selectedGeneration === 0) {
+        // For single load option, fetch with larger page size
+        const pageSize = loadingType === "single" ? loadSize : ITEMS_PER_PAGE;
+        const { pokemon, totalPages: pages } = await fetchPaginatedPokemon(selectedGeneration, currentPage);
         
-        // For infinite scrolling, append to the list
-        if (loadingType === "infinite" && currentPage > 1) {
-          setAvailablePokemon(prev => {
-            const existingIds = new Set(prev.map(p => p.id));
-            const newPokemon = remainingPokemon.filter(p => !existingIds.has(p.id));
-            return [...prev, ...newPokemon];
-          });
+        setTotalPages(pages);
+        
+        if (savedRankings.length > 0) {
+          // Filter out the already ranked Pokémon from the available list
+          const savedIds = new Set(savedRankings.map(p => p.id));
+          const remainingPokemon = pokemon.filter(p => !savedIds.has(p.id));
+          
+          // For infinite scrolling, append to the list
+          if (loadingType === "infinite" && currentPage > 1) {
+            setAvailablePokemon(prev => {
+              const existingIds = new Set(prev.map(p => p.id));
+              const newPokemon = remainingPokemon.filter(p => !existingIds.has(p.id));
+              return [...prev, ...newPokemon];
+            });
+          } else {
+            setAvailablePokemon(remainingPokemon);
+          }
+          
+          setRankedPokemon(savedRankings);
         } else {
+          // For infinite scrolling, append to the list
+          if (loadingType === "infinite" && currentPage > 1) {
+            setAvailablePokemon(prev => {
+              const existingIds = new Set(prev.map(p => p.id));
+              const newPokemon = pokemon.filter(p => !existingIds.has(p.id));
+              return [...prev, ...newPokemon];
+            });
+          } else {
+            setAvailablePokemon(pokemon);
+          }
+          
+          setRankedPokemon([]);
+        }
+      } else {
+        // For specific generations, use the original function
+        const allPokemon = await fetchAllPokemon(selectedGeneration);
+        
+        if (savedRankings.length > 0) {
+          // Filter out the already ranked Pokemon from available list
+          const savedIds = new Set(savedRankings.map(p => p.id));
+          const remainingPokemon = allPokemon.filter(p => !savedIds.has(p.id));
+          
+          setRankedPokemon(savedRankings);
           setAvailablePokemon(remainingPokemon);
-        }
-        
-        setRankedPokemon(savedRankings);
-      } else {
-        // For infinite scrolling, append to the list
-        if (loadingType === "infinite" && currentPage > 1) {
-          setAvailablePokemon(prev => {
-            const existingIds = new Set(prev.map(p => p.id));
-            const newPokemon = pokemon.filter(p => !existingIds.has(p.id));
-            return [...prev, ...newPokemon];
+          
+          toast({
+            title: "Rankings Loaded",
+            description: "Your previously saved rankings have been restored."
           });
         } else {
-          setAvailablePokemon(pokemon);
+          setAvailablePokemon(allPokemon);
+          setRankedPokemon([]);
         }
-        
-        setRankedPokemon([]);
       }
-    } else {
-      // For specific generations, use the original function
-      const allPokemon = await fetchAllPokemon(selectedGeneration);
-      
-      if (savedRankings.length > 0) {
-        // Filter out the already ranked Pokemon from available list
-        const savedIds = new Set(savedRankings.map(p => p.id));
-        const remainingPokemon = allPokemon.filter(p => !savedIds.has(p.id));
-        
-        setRankedPokemon(savedRankings);
-        setAvailablePokemon(remainingPokemon);
-        
-        toast({
-          title: "Rankings Loaded",
-          description: "Your previously saved rankings have been restored."
-        });
-      } else {
-        setAvailablePokemon(allPokemon);
-        setRankedPokemon([]);
-      }
+    } catch (error) {
+      console.error("Error loading Pokémon data:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load Pokémon data. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
     }
-    
-    setIsLoading(false);
   };
   
   const resetRankings = () => {

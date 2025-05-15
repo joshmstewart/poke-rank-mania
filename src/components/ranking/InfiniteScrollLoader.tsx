@@ -18,6 +18,7 @@ export const InfiniteScrollLoader: React.FC<InfiniteScrollLoaderProps> = ({
     <div 
       ref={loadingRef}
       className="flex justify-center items-center h-16 mt-4 bg-gray-100 border border-gray-200 rounded-md"
+      data-testid="infinite-scroll-loader"
     >
       {isLoading ? (
         <>

@@ -17,6 +17,8 @@ export async function fetchPaginatedPokemon(
     const offset = selectedGeneration.start - 1 + ((page - 1) * ITEMS_PER_PAGE);
     const limit = Math.min(ITEMS_PER_PAGE, selectedGeneration.end - offset);
     
+    console.log(`Fetching Pokemon: generation=${generationId}, page=${page}, offset=${offset}, limit=${limit}`);
+    
     // Fetch the Pokemon list for the current page
     const response = await fetch(`https://pokeapi.co/api/v2/pokemon?offset=${offset}&limit=${limit}`);
     if (!response.ok) {
