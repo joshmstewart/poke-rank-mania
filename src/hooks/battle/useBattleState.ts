@@ -1,4 +1,3 @@
-
 import { useBattleUIState } from "./useBattleUIState";
 import { useBattleSelectionState } from "./useBattleSelectionState";
 import { usePokemonLoader } from "./usePokemonLoader";
@@ -51,6 +50,7 @@ export const useBattleState = () => {
     isLoading,
     loadPokemon
   } = usePokemonLoader(
+    setAllPokemon, // FIXED: Pass setAllPokemon to ensure Pokemon are loaded properly
     setRankingGenerated,
     setBattleResults,
     setBattlesCompleted,
@@ -114,8 +114,8 @@ export const useBattleState = () => {
     setBattleResults,
     battlesCompleted,
     setBattlesCompleted,
-    allPokemon,
-    (pokemonList) => startNewBattle(pokemonList, battleType),
+    allPokemon, // This is critical - make sure allPokemon is passed correctly
+    startNewBattle,
     setShowingMilestone,
     milestones,
     generateRankings,

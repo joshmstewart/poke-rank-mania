@@ -5,6 +5,7 @@ import { toast } from "@/hooks/use-toast";
 import { BattleType } from "./types";
 
 export const usePokemonLoader = (
+  setAllPokemon: React.Dispatch<React.SetStateAction<Pokemon[]>>, // FIXED: Add this parameter
   setRankingGenerated: React.Dispatch<React.SetStateAction<boolean>>,
   setBattleResults: React.Dispatch<React.SetStateAction<any[]>>,
   setBattlesCompleted: React.Dispatch<React.SetStateAction<number>>,
@@ -23,6 +24,9 @@ export const usePokemonLoader = (
       // Use fetchAllPokemon instead of trying to hit a non-existent API endpoint
       const pokemon = await fetchAllPokemon(genId, fullRankingMode);
       
+      // FIXED: Always update allPokemon state
+      setAllPokemon(pokemon);
+      
       if (!preserveState) {
         // Reset battle state if not preserving state
         setBattleResults([]);
@@ -36,7 +40,15 @@ export const usePokemonLoader = (
       
       // Start the first battle or continue from previous battle
       if (pokemon.length > 0) {
+        console.log("Starting initial battle with", pokemon.length, "Pokémon");
         startNewBattle(pokemon, battleType);
+      } else {
+        console.error("No Pokémon loaded");
+        toast({
+          title: "Error",
+          description: "No Pokémon loaded. Please try again.",
+          variant: "destructive"
+        });
       }
       
       return pokemon;

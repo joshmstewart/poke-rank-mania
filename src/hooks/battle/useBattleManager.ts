@@ -94,18 +94,22 @@ export const useBattleManager = (
       generateRankings(newResults);
       setShowingMilestone(true);
     } else {
-      // Continue with next battle - FIXED: Pass both allPokemon and battleType to startNewBattle
-      console.log("Starting new battle with new Pokémon...", allPokemon.length);
-      if (allPokemon.length >= 2) {
-        startNewBattle(allPokemon, battleType);
-      } else {
-        console.error("Not enough Pokémon available for battle");
+      // Continue with next battle - Make sure we have the allPokemon list
+      console.log("Starting new battle with new Pokémon...", allPokemon?.length || 0);
+      
+      // Validate allPokemon before starting a new battle
+      if (!allPokemon || allPokemon.length < 2) {
+        console.error("Not enough Pokémon available for battle:", allPokemon?.length || 0);
         toast({
           title: "Error",
           description: "Not enough Pokémon available for battle",
           variant: "destructive"
         });
+        return;
       }
+      
+      // Start new battle with the full Pokemon list
+      startNewBattle(allPokemon, battleType);
     }
     
     // Reset selections

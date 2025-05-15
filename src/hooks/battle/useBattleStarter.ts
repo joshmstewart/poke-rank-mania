@@ -7,10 +7,10 @@ export const useBattleStarter = () => {
   const [previousBattles, setPreviousBattles] = useState<number[][]>([]);
 
   const startNewBattle = (pokemonList: Pokemon[], battleType: "pairs" | "triplets") => {
-    console.log("Starting new battle with pokemonList:", pokemonList.length);
+    console.log("Starting new battle with pokemonList:", pokemonList?.length || 0);
     
     if (!pokemonList || pokemonList.length < 2) {
-      console.log("Not enough Pokémon for a battle:", pokemonList?.length || 0);
+      console.error("Not enough Pokémon for a battle:", pokemonList?.length || 0);
       return [];
     }
     
