@@ -24,6 +24,7 @@ interface BattleContentContainerProps {
   onNewBattleSet: () => void;
   onContinueBattles: () => void;
   onSaveRankings: () => void;
+  isProcessing?: boolean; // Added isProcessing property
 }
 
 const BattleContentContainer: React.FC<BattleContentContainerProps> = ({
@@ -43,7 +44,8 @@ const BattleContentContainer: React.FC<BattleContentContainerProps> = ({
   onGoBack,
   onNewBattleSet,
   onContinueBattles,
-  onSaveRankings
+  onSaveRankings,
+  isProcessing = false // Added default value
 }) => {
   return (
     <>
@@ -71,6 +73,7 @@ const BattleContentContainer: React.FC<BattleContentContainerProps> = ({
         onNewBattleSet={onNewBattleSet}
         onContinueBattles={onContinueBattles}
         onSaveRankings={onSaveRankings}
+        isProcessing={isProcessing} // Pass isProcessing to BattleContent
       />
 
       <BattleFooterNote battlesCompleted={battlesCompleted} />

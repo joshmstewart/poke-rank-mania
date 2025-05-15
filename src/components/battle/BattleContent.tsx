@@ -65,6 +65,7 @@ const BattleContent: React.FC<BattleContentProps> = ({
         rankingGenerated={rankingGenerated}
         onNewBattleSet={onNewBattleSet}
         onContinueBattles={onContinueBattles}
+        onSaveRankings={onSaveRankings}
       />
     );
   }
