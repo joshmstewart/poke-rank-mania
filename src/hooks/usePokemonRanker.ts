@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { 
   Pokemon, 
@@ -14,7 +13,8 @@ import { useScrollObserver } from "./pokemon/useScrollObserver";
 import { usePagination } from "./pokemon/usePagination";
 import { useAutoSave } from "./pokemon/useAutoSave";
 
-export { LoadingType } from "./pokemon/types";
+// Change to "export type" for proper type re-exporting with isolatedModules
+export type { LoadingType } from "./pokemon/types";
 
 export const usePokemonRanker = (): RankingState & RankingActions & { loadingRef: React.RefObject<HTMLDivElement> } => {
   const [isLoading, setIsLoading] = useState(true);
