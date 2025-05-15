@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useRef } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { toast } from "@/hooks/use-toast";
@@ -57,26 +58,25 @@ export const useBattleProcessor = (
       return;
     }
 
-    // Process battle results using the specialized hook
-    const newResults = processResult(selections, battleType, currentBattle);
-    
-    if (!newResults) {
-      console.error("useBattleProcessor: Failed to process results");
-      isProcessingRef.current = false;
-      setIsProcessingResult(false);
-      return;
-    }
-    
-    // Update battle results
-    setBattleResults(newResults);
-    
-    // Increment battles completed
-    const newBattlesCompleted = incrementBattlesCompleted();
-    console.log("useBattleProcessor: Battles completed incremented to", newBattlesCompleted);
-    
-    // Use a direct timeout to keep flow moving
-    setTimeout(() => {
-      // Check if we've hit a milestone
+    try {
+      // Process battle results using the specialized hook
+      const newResults = processResult(selections, battleType, currentBattle);
+      
+      if (!newResults) {
+        console.error("useBattleProcessor: Failed to process results");
+        isProcessingRef.current = false;
+        setIsProcessingResult(false);
+        return;
+      }
+      
+      // Update battle results
+      setBattleResults(newResults);
+      
+      // Increment battles completed
+      const newBattlesCompleted = incrementBattlesCompleted();
+      console.log("useBattleProcessor: Battles completed incremented to", newBattlesCompleted);
+      
+      // Check if we've hit a milestone immediately
       const reachedMilestone = checkMilestone(newBattlesCompleted, newResults);
       console.log("useBattleProcessor: Milestone reached?", reachedMilestone);
       
@@ -86,13 +86,20 @@ export const useBattleProcessor = (
         setupNextBattle(battleType);
       }
       
-      // Reset processing state after a delay to ensure UI updates
-      setTimeout(() => {
-        isProcessingRef.current = false;
-        setIsProcessingResult(false);
-        console.log("useBattleProcessor: Processing state reset to false");
-      }, 300);
-    }, 200);
+      // Reset processing state after all operations are done
+      isProcessingRef.current = false;
+      setIsProcessingResult(false);
+      console.log("useBattleProcessor: Processing state reset to false");
+    } catch (error) {
+      console.error("useBattleProcessor: Error processing battle:", error);
+      toast({
+        title: "Error",
+        description: "Failed to process battle result",
+        variant: "destructive"
+      });
+      isProcessingRef.current = false;
+      setIsProcessingResult(false);
+    }
   }, [
     processResult,
     setBattleResults,

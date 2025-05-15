@@ -30,10 +30,8 @@ export const useNextBattleHandler = (
     // Start a new battle - ensure this isn't blocked by any state updates
     console.log("useNextBattleHandler: Starting new battle with", allPokemon.length, "Pokémon");
     
-    // Use a small timeout to ensure state updates have completed
-    setTimeout(() => {
-      startNewBattle(allPokemon, battleType);
-    }, 100);
+    // Process synchronously instead of using timeout
+    startNewBattle(allPokemon, battleType);
     
     return true;
   }, [allPokemon, startNewBattle, setSelectedPokemon]);

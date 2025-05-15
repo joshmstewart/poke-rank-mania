@@ -19,16 +19,14 @@ export const useBattleProgression = (
     if (milestones.includes(newBattlesCompleted)) {
       console.log(`useBattleProgression: Milestone reached at ${newBattlesCompleted} battles`);
       
-      // Force rankings generation with current results
-      setTimeout(() => {
-        generateRankings(battleResults);
-        setShowingMilestone(true);
-        
-        toast({
-          title: "Milestone Reached!",
-          description: `You've completed ${newBattlesCompleted} battles. Check out your current ranking!`
-        });
-      }, 100);
+      // Force rankings generation with current results immediately
+      generateRankings(battleResults);
+      setShowingMilestone(true);
+      
+      toast({
+        title: "Milestone Reached!",
+        description: `You've completed ${newBattlesCompleted} battles. Check out your current ranking!`
+      });
       
       return true;
     }
