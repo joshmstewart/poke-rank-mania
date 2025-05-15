@@ -2,6 +2,7 @@
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Pokemon } from "@/services/pokemonService";
+import { MousePointerClick } from "lucide-react";
 
 interface BattleCardProps {
   pokemon: Pokemon;
@@ -16,27 +17,30 @@ const BattleCard: React.FC<BattleCardProps> = ({
   battleType,
   onSelect
 }) => {
-  // Completely restructured click handler to be more reliable
-  const handleCardClick = React.useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+  // Create a direct click handler without useCallback to avoid stale closures
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Prevent default and stop propagation to avoid double clicks
     e.preventDefault();
     e.stopPropagation();
+    
     console.log(`BattleCard clicked: ${pokemon.id}, ${pokemon.name}`);
+    
+    // Pass the ID directly to the onSelect function
     onSelect(pokemon.id);
-  }, [pokemon.id, pokemon.name, onSelect]);
+  };
 
   return (
     <Card 
-      className={`cursor-pointer h-full transform transition-all hover:scale-105 ${isSelected && battleType === "triplets" ? "ring-4 ring-primary" : ""}`}
+      className={`cursor-pointer h-full transform transition-all hover:scale-105 ${
+        isSelected ? "ring-4 ring-primary" : ""
+      }`}
       onClick={handleCardClick}
       role="button"
       aria-pressed={isSelected}
       tabIndex={0}
     >
       <CardContent className="flex flex-col items-center justify-center p-4">
-        <div 
-          className="w-full h-full flex flex-col items-center justify-center"
-          onClick={handleCardClick} // Add a second click handler for nested elements
-        >
+        <div className="w-full h-full flex flex-col items-center justify-center">
           <img 
             src={pokemon.image} 
             alt={pokemon.name} 
@@ -58,8 +62,16 @@ const BattleCard: React.FC<BattleCardProps> = ({
             </div>
           )}
           
-          {/* Only show selection indicator for triplets mode */}
-          {battleType === "triplets" && (
+          {/* Show click indicator for pairs mode */}
+          {battleType === "pairs" ? (
+            <div className="mt-4 px-3 py-2 bg-gray-100 rounded flex items-center justify-center w-full">
+              <div className="text-sm flex items-center gap-1">
+                <MousePointerClick size={16} />
+                Click to select
+              </div>
+            </div>
+          ) : (
+            /* Only show selection indicator for triplets mode */
             <div className="mt-4 px-3 py-2 bg-gray-100 rounded flex items-center justify-center w-full">
               <div className={`text-sm ${isSelected ? "font-bold text-primary" : ""}`}>
                 {isSelected ? "Selected" : "Click to select"}
