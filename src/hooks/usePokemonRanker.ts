@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { 
   Pokemon, 
@@ -54,8 +55,11 @@ export const usePokemonRanker = (): RankingState & RankingActions & { loadingRef
   useEffect(() => {
     if (loadingType === "pagination" || loadingType === "single") {
       loadData();
-    } else if (loadingType === "infinite" && availablePokemon.length === 0) {
+    } else if (loadingType === "infinite" && currentPage === 1) {
       // Initialize infinite scroll with first page
+      loadData();
+    } else if (loadingType === "infinite" && currentPage > 1) {
+      // Load additional pages for infinite scroll
       loadData();
     }
   }, [selectedGeneration, currentPage, loadSize, loadingType]);
