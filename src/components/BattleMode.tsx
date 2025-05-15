@@ -1,10 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { AlertTriangle } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Progress } from "@/components/ui/progress";
-import { ChevronLeft, AlertTriangle, CheckCircle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { 
   Pokemon, 
@@ -13,6 +9,11 @@ import {
   loadRankings, 
   generations
 } from "@/services/pokemonService";
+
+// Import our new components
+import ProgressTracker from "./battle/ProgressTracker";
+import BattleInterface from "./battle/BattleInterface";
+import RankingDisplay from "./battle/RankingDisplay";
 
 type BattleType = "pairs" | "triplets";
 type BattleResult = { winner: Pokemon, loser: Pokemon }[];
@@ -368,189 +369,33 @@ const BattleMode = () => {
         </div>
 
         {/* Overall completion progress */}
-        <Card className="bg-white rounded-lg shadow">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="font-semibold">Overall Ranking Progress</h3>
-              <span className="text-sm text-gray-500">
-                {completionPercentage}% Complete
-              </span>
-            </div>
-            <Progress value={completionPercentage} className="h-2" />
-            <div className="flex justify-between mt-2 text-sm text-gray-500">
-              <span>Battles completed: {battlesCompleted}</span>
-              <span>
-                {completionPercentage < 100 
-                  ? `~${getBattlesRemaining()} more battles needed` 
-                  : <span className="flex items-center text-green-600"><CheckCircle size={16} className="mr-1" /> Complete ranking achieved!</span>
-                }
-              </span>
-            </div>
-          </CardContent>
-        </Card>
+        <ProgressTracker
+          completionPercentage={completionPercentage}
+          battlesCompleted={battlesCompleted}
+          getBattlesRemaining={getBattlesRemaining}
+        />
 
         {!showingMilestone && !rankingGenerated ? (
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="mb-4 relative">
-              {battleHistory.length > 0 && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="absolute -left-2 top-0" 
-                  onClick={goBack}
-                >
-                  <ChevronLeft className="mr-1" /> Back
-                </Button>
-              )}
-              <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold">Battle {battlesCompleted + 1}</h2>
-                <div className="text-sm text-gray-500">
-                  Select your {battleType === "pairs" ? "favorite" : "favorites"}
-                </div>
-              </div>
-              
-              {/* Progress bar that shows progress to the next milestone */}
-              <div className="h-1 w-full bg-gray-200 rounded-full mt-2">
-                <div 
-                  className="h-1 bg-primary rounded-full transition-all" 
-                  style={{ 
-                    width: `${(battlesCompleted % (milestones.find(m => m > battlesCompleted) || 10)) / 
-                    (milestones.find(m => m > battlesCompleted) || 10) * 100}%` 
-                  }}
-                ></div>
-              </div>
-              <div className="text-xs text-right mt-1 text-gray-500">
-                Next milestone: {milestones.find(m => m > battlesCompleted) || "∞"} battles
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
-              {currentBattle.map(pokemon => (
-                <div 
-                  key={pokemon.id} 
-                  className={`cursor-pointer ${selectedPokemon.includes(pokemon.id) ? "ring-4 ring-primary" : ""}`}
-                  onClick={() => handlePokemonSelect(pokemon.id)}
-                >
-                  <Card className="h-full transform transition-all hover:scale-105">
-                    <CardContent className="flex flex-col items-center justify-center p-4">
-                      <img 
-                        src={pokemon.image} 
-                        alt={pokemon.name} 
-                        className="w-32 h-32 object-contain mb-4" 
-                      />
-                      <h3 className="text-xl font-bold">{pokemon.name}</h3>
-                      <p className="text-gray-500">#{pokemon.id}</p>
-                      
-                      {pokemon.types && pokemon.types.length > 0 && (
-                        <div className="flex gap-2 mt-2">
-                          {pokemon.types.map((type, index) => (
-                            <span 
-                              key={index} 
-                              className="px-2 py-1 text-xs rounded-full bg-gray-100"
-                            >
-                              {type}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                      
-                      {battleType === "pairs" ? (
-                        <RadioGroup 
-                          value={selectedPokemon.includes(pokemon.id) ? pokemon.id.toString() : ""} 
-                          className="mt-4"
-                          onValueChange={(val) => handlePokemonSelect(Number(val))}
-                        >
-                          <div className="flex items-center space-x-2">
-                            <RadioGroupItem value={pokemon.id.toString()} id={`radio-${pokemon.id}`} />
-                            <label htmlFor={`radio-${pokemon.id}`}>Select</label>
-                          </div>
-                        </RadioGroup>
-                      ) : (
-                        <Button
-                          variant={selectedPokemon.includes(pokemon.id) ? "default" : "outline"}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handlePokemonSelect(pokemon.id);
-                          }}
-                          className="mt-4"
-                        >
-                          {selectedPokemon.includes(pokemon.id) ? "Selected" : "Select"}
-                        </Button>
-                      )}
-                    </CardContent>
-                  </Card>
-                </div>
-              ))}
-            </div>
-            
-            {/* Only show the submit button for triplets */}
-            {battleType === "triplets" && (
-              <div className="mt-8 flex justify-center">
-                <Button 
-                  size="lg" 
-                  onClick={handleTripletSelectionComplete}
-                  className="px-8"
-                >
-                  Submit Your Choices
-                </Button>
-              </div>
-            )}
-          </div>
+          <BattleInterface
+            currentBattle={currentBattle}
+            selectedPokemon={selectedPokemon}
+            battlesCompleted={battlesCompleted}
+            battleType={battleType}
+            battleHistory={battleHistory}
+            onPokemonSelect={handlePokemonSelect}
+            onTripletSelectionComplete={handleTripletSelectionComplete}
+            onGoBack={goBack}
+            milestones={milestones}
+          />
         ) : (
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-2xl font-bold mb-4">
-              {rankingGenerated ? "Your Final Ranking" : "Milestone Reached!"}
-            </h2>
-            <p className="mb-8 text-gray-600">
-              Based on your {battlesCompleted} battle choices, here's your{rankingGenerated ? " final" : " current"} ranking of Pokémon.
-            </p>
-            
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {finalRankings.slice(0, 10).map((pokemon, index) => (
-                <Card key={pokemon.id} className="flex items-center p-4">
-                  <div className="flex-shrink-0 mr-4">
-                    <span className="text-2xl font-bold">{index + 1}</span>
-                  </div>
-                  <div className="flex-shrink-0 w-16 h-16">
-                    <img 
-                      src={pokemon.image} 
-                      alt={pokemon.name} 
-                      className="w-full h-full object-contain" 
-                    />
-                  </div>
-                  <div className="ml-4">
-                    <h3 className="font-bold">{pokemon.name}</h3>
-                    <p className="text-sm text-gray-500">#{pokemon.id}</p>
-                  </div>
-                </Card>
-              ))}
-            </div>
-            
-            <div className="flex justify-center gap-4 mt-8">
-              {rankingGenerated ? (
-                <>
-                  <Button variant="outline" onClick={handleNewBattleSet}>
-                    Start New Battle Set
-                  </Button>
-                  <Button onClick={handleSaveRankings}>
-                    Save This Ranking
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Button variant="outline" onClick={handleNewBattleSet}>
-                    Restart Battles
-                  </Button>
-                  <Button onClick={handleContinueBattles}>
-                    Continue Battling
-                  </Button>
-                  <Button variant="secondary" onClick={handleSaveRankings}>
-                    Save Current Ranking
-                  </Button>
-                </>
-              )}
-            </div>
-          </div>
+          <RankingDisplay
+            finalRankings={finalRankings}
+            battlesCompleted={battlesCompleted}
+            rankingGenerated={rankingGenerated}
+            onNewBattleSet={handleNewBattleSet}
+            onContinueBattles={handleContinueBattles}
+            onSaveRankings={handleSaveRankings}
+          />
         )}
 
         <div className="bg-white rounded-lg shadow p-4">

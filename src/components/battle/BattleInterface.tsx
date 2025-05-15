@@ -1,0 +1,94 @@
+
+import React from "react";
+import { Button } from "@/components/ui/button";
+import { ChevronLeft } from "lucide-react";
+import { Pokemon } from "@/services/pokemonService";
+import BattleCard from "./BattleCard";
+
+interface BattleInterfaceProps {
+  currentBattle: Pokemon[];
+  selectedPokemon: number[];
+  battlesCompleted: number;
+  battleType: "pairs" | "triplets";
+  battleHistory: { battle: Pokemon[], selected: number[] }[];
+  onPokemonSelect: (id: number) => void;
+  onTripletSelectionComplete: () => void;
+  onGoBack: () => void;
+  milestones: number[];
+}
+
+const BattleInterface: React.FC<BattleInterfaceProps> = ({
+  currentBattle,
+  selectedPokemon,
+  battlesCompleted,
+  battleType,
+  battleHistory,
+  onPokemonSelect,
+  onTripletSelectionComplete,
+  onGoBack,
+  milestones
+}) => {
+  return (
+    <div className="bg-white rounded-lg shadow p-6">
+      <div className="mb-4 relative">
+        {battleHistory.length > 0 && (
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="absolute -left-2 top-0" 
+            onClick={onGoBack}
+          >
+            <ChevronLeft className="mr-1" /> Back
+          </Button>
+        )}
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-bold">Battle {battlesCompleted + 1}</h2>
+          <div className="text-sm text-gray-500">
+            Select your {battleType === "pairs" ? "favorite" : "favorites"}
+          </div>
+        </div>
+        
+        {/* Progress bar that shows progress to the next milestone */}
+        <div className="h-1 w-full bg-gray-200 rounded-full mt-2">
+          <div 
+            className="h-1 bg-primary rounded-full transition-all" 
+            style={{ 
+              width: `${(battlesCompleted % (milestones.find(m => m > battlesCompleted) || 10)) / 
+              (milestones.find(m => m > battlesCompleted) || 10) * 100}%` 
+            }}
+          ></div>
+        </div>
+        <div className="text-xs text-right mt-1 text-gray-500">
+          Next milestone: {milestones.find(m => m > battlesCompleted) || "∞"} battles
+        </div>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
+        {currentBattle.map(pokemon => (
+          <BattleCard
+            key={pokemon.id}
+            pokemon={pokemon}
+            isSelected={selectedPokemon.includes(pokemon.id)}
+            battleType={battleType}
+            onSelect={onPokemonSelect}
+          />
+        ))}
+      </div>
+      
+      {/* Only show the submit button for triplets */}
+      {battleType === "triplets" && (
+        <div className="mt-8 flex justify-center">
+          <Button 
+            size="lg" 
+            onClick={onTripletSelectionComplete}
+            className="px-8"
+          >
+            Submit Your Choices
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default BattleInterface;
