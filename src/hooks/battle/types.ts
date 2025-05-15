@@ -1,3 +1,4 @@
+
 import { Pokemon } from "@/services/pokemon";
 
 // Keep "triplets" as the internal value for backward compatibility
@@ -43,5 +44,5 @@ export interface BattleContextValue {
   goBack: () => void;
   getBattlesRemaining: () => number;
   loadPokemon: (genId?: number, preserveState?: boolean) => Promise<void>;
-  startNewBattle: (pokemonList: Pokemon[]) => void;
+  startNewBattle: (pokemonList: Pokemon[], battleType?: BattleType) => void;
 }

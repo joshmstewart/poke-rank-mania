@@ -18,13 +18,7 @@ export const useBattleInteractions = (
   battleType: BattleType
 ) => {
   const handlePokemonSelect = (id: number) => {
-    if (battleType === "triplets") {
-      // For triplets, manage selection state, but don't complete the battle
-      const newSelected = selectedPokemon.includes(id)
-        ? selectedPokemon.filter(pokemonId => pokemonId !== id)
-        : [...selectedPokemon, id];
-      setSelectedPokemon(newSelected);
-    } else {
+    if (battleType === "pairs") {
       // For pairs, immediately handle the selection as a completed battle
       // First save to battle history
       setBattleHistory([...battleHistory, { 
@@ -34,6 +28,17 @@ export const useBattleInteractions = (
       
       // Then simulate a triplet completion with just one selected ID
       handleTripletSelectionComplete();
+    } else {
+      // For trios, toggle selection
+      let newSelected;
+      if (selectedPokemon.includes(id)) {
+        // If already selected, unselect it
+        newSelected = selectedPokemon.filter(pokemonId => pokemonId !== id);
+      } else {
+        // Add to selection
+        newSelected = [...selectedPokemon, id];
+      }
+      setSelectedPokemon(newSelected);
     }
   };
 

@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { BattleType } from "./types";
 import { Pokemon } from "@/services/pokemon";
+import { toast } from "@/hooks/use-toast";
 
 export const useGenerationSettings = (
   startNewBattle: (pokemonList: Pokemon[], battleType: BattleType) => void,
@@ -39,6 +40,11 @@ export const useGenerationSettings = (
     // Important: Start a new battle with the correct number of Pokémon for the selected battle type
     if (allPokemon.length > 0) {
       startNewBattle(allPokemon, newBattleType);
+    } else {
+      toast({
+        title: "No Pokémon available",
+        description: "Please load Pokémon first before changing battle type."
+      });
     }
   };
 
