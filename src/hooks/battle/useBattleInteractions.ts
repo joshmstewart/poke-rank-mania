@@ -1,5 +1,5 @@
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
 
@@ -48,17 +48,12 @@ export const useBattleInteractions = (
         return newHistory;
       });
       
-      // Call selection complete after a short delay
-      setTimeout(() => {
-        console.log("useBattleInteractions: Calling handleTripletSelectionComplete for pairs mode");
-        handleTripletSelectionComplete();
-        
-        // Reset processing state after completion
-        setTimeout(() => {
-          console.log("useBattleInteractions: Resetting processing state to false");
-          setIsProcessing(false);
-        }, 500);
-      }, 200);
+      // Call selection complete immediately
+      console.log("useBattleInteractions: Calling handleTripletSelectionComplete for pairs mode");
+      handleTripletSelectionComplete();
+      
+      // Reset processing state after completion
+      setIsProcessing(false);
     } else {
       // For triplets mode, toggle the selection
       setSelectedPokemon(prev => {
@@ -87,15 +82,11 @@ export const useBattleInteractions = (
     
     setIsProcessing(true);
     
-    // Execute navigation after a short delay
-    setTimeout(() => {
-      handleNavigateBack();
-      
-      // Reset processing state after navigation
-      setTimeout(() => {
-        setIsProcessing(false);
-      }, 300);
-    }, 100);
+    // Execute navigation immediately
+    handleNavigateBack();
+    
+    // Reset processing state after navigation
+    setIsProcessing(false);
   }, [handleNavigateBack, isProcessing]);
 
   return {

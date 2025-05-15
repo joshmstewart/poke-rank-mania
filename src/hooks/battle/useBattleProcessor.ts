@@ -1,5 +1,5 @@
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { toast } from "@/hooks/use-toast";
 import { BattleType } from "./types";
@@ -22,8 +22,6 @@ export const useBattleProcessor = (
   generateRankings: (results: any[]) => void,
   setSelectedPokemon: React.Dispatch<React.SetStateAction<number[]>>
 ) => {
-  // Processing state using ref to avoid state updates during processing
-  const isProcessingRef = useRef(false);
   const [isProcessingResult, setIsProcessingResult] = useState(false);
 
   // Use our smaller, focused hooks
@@ -39,21 +37,13 @@ export const useBattleProcessor = (
 
   // Process the battle result
   const processBattleResult = useCallback((selections: number[], battleType: BattleType, currentBattle: Pokemon[]) => {
-    // Prevent processing if already in progress
-    if (isProcessingRef.current) {
-      console.log("useBattleProcessor: Already processing a battle result, ignoring");
-      return;
-    }
-    
     console.log("useBattleProcessor: Processing battle result with selections:", selections);
     
     // Set processing flag
-    isProcessingRef.current = true;
     setIsProcessingResult(true);
     
     if (!currentBattle || currentBattle.length === 0) {
       console.error("useBattleProcessor: No current battle data available");
-      isProcessingRef.current = false;
       setIsProcessingResult(false);
       return;
     }
@@ -64,7 +54,6 @@ export const useBattleProcessor = (
       
       if (!newResults) {
         console.error("useBattleProcessor: Failed to process results");
-        isProcessingRef.current = false;
         setIsProcessingResult(false);
         return;
       }
@@ -87,9 +76,7 @@ export const useBattleProcessor = (
       }
       
       // Reset processing state after all operations are done
-      isProcessingRef.current = false;
       setIsProcessingResult(false);
-      console.log("useBattleProcessor: Processing state reset to false");
     } catch (error) {
       console.error("useBattleProcessor: Error processing battle:", error);
       toast({
@@ -97,7 +84,6 @@ export const useBattleProcessor = (
         description: "Failed to process battle result",
         variant: "destructive"
       });
-      isProcessingRef.current = false;
       setIsProcessingResult(false);
     }
   }, [

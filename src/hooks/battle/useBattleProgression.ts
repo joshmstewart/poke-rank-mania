@@ -1,7 +1,5 @@
 
 import { useCallback } from "react";
-import { Pokemon } from "@/services/pokemon";
-import { BattleType } from "./types";
 import { toast } from "@/hooks/use-toast";
 
 /**

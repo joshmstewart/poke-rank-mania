@@ -10,22 +10,14 @@ export const useBattleSelectionManager = (
   setSelectedPokemon: React.Dispatch<React.SetStateAction<number[]>>
 ) => {
   const [selectedPokemon, setLocalSelectedPokemon] = useState<number[]>([]);
-  // Add a processing flag to prevent duplicate handling and use ref for stability
+  // Add a processing flag to prevent duplicate handling
   const isProcessingRef = useRef(false);
 
   const handlePokemonSelect = (id: number, battleType: BattleType, currentBattle: Pokemon[]) => {
-    // Prevent processing while another selection is in progress
-    if (isProcessingRef.current) {
-      console.log(`useBattleSelectionManager: Ignoring selection for ${id} - processing in progress`);
-      return;
-    }
-    
     console.log(`useBattleSelectionManager: Handling selection for id: ${id}, battleType: ${battleType}`);
     
     if (battleType === "pairs") {
       // For pairs mode, immediately process the battle
-      isProcessingRef.current = true;
-      
       // Save current battle to history first
       setBattleHistory(prev => [...prev, { 
         battle: [...currentBattle], 
@@ -40,8 +32,6 @@ export const useBattleSelectionManager = (
       
       // Process the battle result immediately
       processBattleResult([id], battleType, currentBattle);
-      
-      // Reset processing state - this will happen in useBattleProcessor after processing is complete
     } else {
       // For triplets/trios, toggle selection
       let newSelected;
@@ -59,9 +49,8 @@ export const useBattleSelectionManager = (
   };
 
   const handleTripletSelectionComplete = (battleType: BattleType, currentBattle: Pokemon[]) => {
-    // Prevent duplicate processing
-    if (isProcessingRef.current || battleType === "pairs") {
-      console.log("useBattleSelectionManager: Ignoring triplet completion - already processing or pairs mode");
+    // Skip if we're in pairs mode
+    if (battleType === "pairs") {
       return;
     }
     
@@ -69,8 +58,6 @@ export const useBattleSelectionManager = (
     
     // For triplets mode, process selections if we have any
     if (selectedPokemon.length > 0) {
-      isProcessingRef.current = true;
-      
       // Save current battle to history
       setBattleHistory(prev => [...prev, { 
         battle: [...currentBattle], 
@@ -83,8 +70,6 @@ export const useBattleSelectionManager = (
       // Reset selections after processing
       setLocalSelectedPokemon([]);
       setSelectedPokemon([]);
-      
-      // Reset processing flag happens in useBattleProcessor after processing is complete
     }
   };
 
