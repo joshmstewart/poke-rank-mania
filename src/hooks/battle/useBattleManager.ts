@@ -61,6 +61,9 @@ export const useBattleManager = (
       return;
     }
 
+    console.log("Processing battle result with selections:", selections);
+    console.log("Current battle:", currentBattle.map(p => p.name));
+    
     // Process battle results
     const newResults = [...battleResults];
     
@@ -70,6 +73,7 @@ export const useBattleManager = (
       const loser = currentBattle.find(p => p.id !== selections[0]);
       
       if (winner && loser) {
+        console.log(`Adding pair result: ${winner.name} beats ${loser.name}`);
         newResults.push({ winner, loser });
       } else {
         console.error("Invalid selection for pair battle", selections, currentBattle);
@@ -81,8 +85,10 @@ export const useBattleManager = (
       
       // Only add results if there are winners AND losers
       if (winners.length > 0 && losers.length > 0) {
+        console.log(`Adding ${winners.length} winners against ${losers.length} losers`);
         winners.forEach(winner => {
           losers.forEach(loser => {
+            console.log(`- ${winner.name} beats ${loser.name}`);
             newResults.push({ winner, loser });
           });
         });
@@ -95,6 +101,7 @@ export const useBattleManager = (
     
     // Check if we've hit a milestone
     if (milestones.includes(newBattlesCompleted)) {
+      console.log(`Milestone reached at ${newBattlesCompleted} battles!`);
       generateRankings(newResults);
       setShowingMilestone(true);
       

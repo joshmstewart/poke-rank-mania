@@ -51,12 +51,18 @@ export const useRankings = (allPokemon: Pokemon[]) => {
       }
     });
     
+    // DEBUG: Log how many Pokémon are battled
+    console.log("Battled Pokémon IDs:", [...battledPokemonIds]);
+    console.log("Total battled Pokémon:", battledPokemonIds.size);
+    
     // Convert to array, filter for only battled Pokémon, and sort by score
+    // The issue was here - we need to make sure we're only including Pokémon that actually participated in battles
     const rankings = Array.from(scores.values())
-      .filter(item => item.battled || battledPokemonIds.has(item.pokemon.id)) // Only include Pokémon that have battled
+      .filter(item => battledPokemonIds.has(item.pokemon.id)) // Only include Pokémon that have battled
       .sort((a, b) => b.score - a.score)
       .map(item => item.pokemon);
     
+    console.log("Generated rankings length:", rankings.length);
     setFinalRankings(rankings);
     
     // Don't show toast for milestone if we're generating final rankings

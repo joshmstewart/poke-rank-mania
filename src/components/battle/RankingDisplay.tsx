@@ -22,8 +22,10 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
   onContinueBattles,
   onSaveRankings
 }) => {
-  // Show all ranked Pokemon without limiting them
+  // Show all ranked Pokemon
   const displayRankings = finalRankings;
+  
+  console.log("RankingDisplay rendering with finalRankings:", finalRankings.length);
   
   const renderRankBadge = (rank: number) => {
     if (rank === 1) return <Trophy className="h-5 w-5 text-yellow-500" />;
