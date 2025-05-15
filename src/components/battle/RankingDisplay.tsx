@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Trophy, Medal, Award, CheckCircle, ChevronDown, ChevronUp } from "lucide-react";
@@ -22,7 +22,9 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
   onContinueBattles,
   onSaveRankings
 }) => {
-  const [showAllRankings, setShowAllRankings] = useState(true); // Default to showing all
+  // Limit the rankings to display to prevent performance issues at milestones
+  // For milestone displays, only show top 100 to avoid rendering thousands of Pokemon
+  const displayRankings = !rankingGenerated ? finalRankings.slice(0, 100) : finalRankings;
   
   const renderRankBadge = (rank: number) => {
     if (rank === 1) return <Trophy className="h-5 w-5 text-yellow-500" />;
@@ -39,6 +41,9 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
         </h2>
         <p className="mb-2 text-gray-600">
           Based on your {battlesCompleted} battle choices, here's your{rankingGenerated ? " final" : " current"} ranking of Pokémon.
+          {!rankingGenerated && displayRankings.length < finalRankings.length && (
+            <span className="block text-xs mt-1">(Showing top {displayRankings.length} of {finalRankings.length})</span>
+          )}
         </p>
         
         {rankingGenerated && (
@@ -51,7 +56,7 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
       
       {/* Grid display for rankings */}
       <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-        {finalRankings.map((pokemon, index) => (
+        {displayRankings.map((pokemon, index) => (
           <Card key={pokemon.id} className={`flex items-center p-2 ${index < 3 ? 'border-2 ' + (index === 0 ? 'border-yellow-400' : index === 1 ? 'border-gray-300' : 'border-amber-600') : ''}`}>
             <div className="flex-shrink-0 mr-2 flex items-center justify-center w-8">
               {renderRankBadge(index + 1)}

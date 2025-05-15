@@ -36,7 +36,7 @@ export const useGenerationSettings = (
     }
     
     if (!localStorage.getItem('pokemon-ranker-full-ranking-mode')) {
-      localStorage.setItem('pokemon-ranker-full-ranking-mode', 'true');
+      localStorage.setItem('pokemon-ranker-full-ranking-mode', 'true'); // Set default to true
     }
   }, []);
 
