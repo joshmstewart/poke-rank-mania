@@ -31,7 +31,7 @@ export const useBattleManager = (
       
       processBattleResult([id], battleType, currentBattle);
     } else {
-      // For triplets, toggle selection
+      // For triplets/trios, toggle selection
       let newSelected;
       if (selectedPokemon.includes(id)) {
         // If already selected, unselect it
@@ -56,14 +56,8 @@ export const useBattleManager = (
   };
 
   const processBattleResult = (selections: number[], battleType: BattleType, currentBattle: Pokemon[]) => {
-    if ((battleType === "triplets" && selections.length === 0)) {
-      toast({
-        title: "Selection Required",
-        description: "Please select at least one Pokémon to continue.",
-        variant: "destructive"
-      });
-      return;
-    }
+    // For triplets/trios, we now accept any number of selections (0-3)
+    // No validation needed as users can choose any number of Pokémon they like
 
     // Process battle results
     const newResults = [...battleResults];
@@ -74,15 +68,18 @@ export const useBattleManager = (
       const loser = currentBattle.find(p => p.id !== selections[0])!;
       newResults.push({ winner, loser });
     } else {
-      // For triplets, each selected is considered a "winner" against each unselected
+      // For triplets/trios, each selected is considered a "winner" against each unselected
       const winners = currentBattle.filter(p => selections.includes(p.id));
       const losers = currentBattle.filter(p => !selections.includes(p.id));
       
-      winners.forEach(winner => {
-        losers.forEach(loser => {
-          newResults.push({ winner, loser });
+      // Only add results if there are winners AND losers
+      if (winners.length > 0 && losers.length > 0) {
+        winners.forEach(winner => {
+          losers.forEach(loser => {
+            newResults.push({ winner, loser });
+          });
         });
-      });
+      }
     }
     
     setBattleResults(newResults);

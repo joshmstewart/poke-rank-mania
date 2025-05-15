@@ -1,7 +1,5 @@
 
 import React from "react";
-import { Info } from "lucide-react";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface BattleFooterNoteProps {
   battlesCompleted: number;
@@ -9,18 +7,15 @@ interface BattleFooterNoteProps {
 
 const BattleFooterNote: React.FC<BattleFooterNoteProps> = ({ battlesCompleted }) => {
   return (
-    <div className="text-center text-sm text-muted-foreground p-2">
+    <div className="text-center text-xs text-muted-foreground p-2 opacity-70 mt-4">
       <p>
-        You've completed <span className="font-medium">{battlesCompleted}</span> battles
+        {battlesCompleted} battles completed
         {battlesCompleted < 10 ? 
-          ". The more battles you complete, the more accurate your ranking will be." : 
-          ". Your ranking is getting more accurate with each battle."}
+          " · More battles = more accurate rankings" : 
+          battlesCompleted > 50 ? 
+          " · Your rankings are becoming statistically significant" :
+          " · Your ranking is improving with each battle"}
       </p>
-      {battlesCompleted > 50 && (
-        <p className="text-xs text-muted-foreground mt-1 opacity-75">
-          With {battlesCompleted} battles, your rankings are becoming statistically significant.
-        </p>
-      )}
     </div>
   );
 };

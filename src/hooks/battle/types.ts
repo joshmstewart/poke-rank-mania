@@ -1,6 +1,6 @@
-
 import { Pokemon } from "@/services/pokemon";
 
+// Keep "triplets" as the internal value for backward compatibility
 export type BattleType = "pairs" | "triplets";
 export type BattleResult = { winner: Pokemon, loser: Pokemon }[];
 

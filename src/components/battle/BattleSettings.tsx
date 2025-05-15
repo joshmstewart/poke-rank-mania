@@ -54,10 +54,15 @@ const BattleSettings: React.FC<BattleSettingsProps> = ({
               <ToggleGroupItem value="pairs" aria-label="Pairs" className="px-3 py-1 text-xs">
                 Pairs (1v1)
               </ToggleGroupItem>
-              <ToggleGroupItem value="triplets" aria-label="Triplets" className="px-3 py-1 text-xs">
-                Triplets (3-way)
+              <ToggleGroupItem value="triplets" aria-label="Trios" className="px-3 py-1 text-xs">
+                Trios (3-way)
               </ToggleGroupItem>
             </ToggleGroup>
+            <p className="mt-2 text-xs text-muted-foreground">
+              {battleType === "pairs" ? 
+                "In Pairs mode, you'll compare two Pokémon at a time and select your favorite." :
+                "In Trios mode, you can select any number of Pokémon (0-3) that you like from each group of three."}
+            </p>
           </div>
           
           <div>
@@ -75,6 +80,11 @@ const BattleSettings: React.FC<BattleSettingsProps> = ({
                 Full Ranking
               </ToggleGroupItem>
             </ToggleGroup>
+            <p className="mt-2 text-xs text-muted-foreground">
+              {fullRankingMode ? 
+                "Full Ranking mode will include all available Pokémon in the ranking process." :
+                "Sample mode uses a subset of ~150 Pokémon for faster ranking."}
+            </p>
           </div>
         </div>
       </CardContent>

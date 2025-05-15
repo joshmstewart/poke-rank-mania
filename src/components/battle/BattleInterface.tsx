@@ -54,6 +54,9 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
   // Log the current battle Pokémon for debugging
   console.log("Current battle Pokémon:", currentBattle.map(p => p.name));
   
+  // Label for the battle type
+  const battleLabel = battleType === "pairs" ? "favorite" : "preferences (0-3)";
+  
   return (
     <div className="bg-white rounded-lg shadow p-6">
       <div className="mb-4">
@@ -73,7 +76,7 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
             <h2 className={`text-2xl font-bold ${isAnimating ? 'animate-fade-in' : ''}`}>Battle {battlesCompleted + 1}</h2>
           </div>
           <div className={`text-sm text-gray-500 ${isAnimating ? 'animate-fade-in' : ''}`}>
-            Select your {battleType === "pairs" ? "favorite" : "favorites"}
+            Select your {battleLabel}
           </div>
         </div>
         
@@ -105,13 +108,12 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
         ))}
       </div>
       
-      {/* Only show the submit button for triplets */}
+      {/* Always show the submit button for triplets */}
       {battleType === "triplets" && (
         <div className={`mt-8 flex justify-center ${isAnimating ? 'opacity-0 scale-95' : 'opacity-100 scale-100'} transition-all duration-500`}>
           <Button 
             size="lg" 
             onClick={onTripletSelectionComplete}
-            disabled={selectedPokemon.length === 0}
             className="px-8"
           >
             Submit Your Choices
