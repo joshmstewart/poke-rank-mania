@@ -34,7 +34,7 @@ const BattleControls: React.FC<BattleControlsProps> = ({
             onValueChange={onGenerationChange}
           >
             <SelectTrigger className="w-[140px] h-8 text-sm">
-              <SelectValue placeholder="Generation" />
+              <SelectValue placeholder="Generation" className="text-left" />
             </SelectTrigger>
             <SelectContent>
               {generations.map(gen => (
@@ -53,7 +53,7 @@ const BattleControls: React.FC<BattleControlsProps> = ({
             onValueChange={(value: BattleType) => onBattleTypeChange(value)}
           >
             <SelectTrigger className="w-[100px] h-8 text-sm">
-              <SelectValue placeholder="Battle Type" />
+              <SelectValue placeholder="Battle Type" className="text-left" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="pairs">Pairs</SelectItem>

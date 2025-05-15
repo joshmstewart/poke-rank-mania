@@ -35,9 +35,7 @@ export const useBattleInteractions = (
       }]);
       
       // Immediately trigger completion
-      setTimeout(() => {
-        handleTripletSelectionComplete();
-      }, 50);
+      handleTripletSelectionComplete();
     } else {
       // For triplets mode - toggle selection
       setSelectedPokemon(prev => {

@@ -67,10 +67,18 @@ export const useBattleSelectionManager = (
     if (selectedPokemon.length > 0) {
       setIsProcessing(true);
       console.log("Using triplet selections from state:", selectedPokemon);
+      
+      // Save current battle to history
+      setBattleHistory(prev => [...prev, { 
+        battle: [...currentBattle], 
+        selected: [...selectedPokemon] 
+      }]);
+      
       processBattleResult(selectedPokemon, battleType, currentBattle);
       
       // Reset selections after processing
       setLocalSelectedPokemon([]);
+      setSelectedPokemon([]);
       
       // Reset processing flag
       setTimeout(() => setIsProcessing(false), 500);

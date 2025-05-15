@@ -29,7 +29,6 @@ const BattleDialogs: React.FC<BattleDialogsProps> = ({
           <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
           <AlertDialogDescription>
             This will permanently delete all your current battle progress and rankings.
-            This action cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
