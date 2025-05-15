@@ -2,6 +2,7 @@
 import { toast } from "@/hooks/use-toast";
 import { Pokemon, ITEMS_PER_PAGE } from "../types";
 import { generations } from "../data";
+import { fetchPokemonDetails } from "./utils";
 
 // Function to fetch paginated Pokemon
 export async function fetchPaginatedPokemon(
@@ -53,35 +54,7 @@ export async function fetchPaginatedPokemon(
     const pokemonList = await Promise.all(
       data.results.map(async (pokemon: { name: string; url: string }) => {
         const pokemonId = pokemon.url.split('/').filter(Boolean).pop();
-        
-        // Get detailed Pokemon data
-        const detailResponse = await fetch(`https://pokeapi.co/api/v2/pokemon/${pokemonId}`);
-        let types: string[] = [];
-        if (detailResponse.ok) {
-          const detailData = await detailResponse.json();
-          types = detailData.types.map((type: any) => type.type.name.charAt(0).toUpperCase() + type.type.name.slice(1));
-        }
-        
-        // Get species data for flavor text
-        const speciesResponse = await fetch(`https://pokeapi.co/api/v2/pokemon-species/${pokemonId}`);
-        let flavorText = "";
-        if (speciesResponse.ok) {
-          const speciesData = await speciesResponse.json();
-          const englishFlavorText = speciesData.flavor_text_entries.find(
-            (entry: any) => entry.language.name === "en"
-          );
-          flavorText = englishFlavorText 
-            ? englishFlavorText.flavor_text.replace(/\f/g, " ").replace(/\n/g, " ").replace(/\r/g, " ")
-            : "";
-        }
-        
-        return {
-          id: Number(pokemonId),
-          name: pokemon.name.charAt(0).toUpperCase() + pokemon.name.slice(1),
-          image: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemonId}.png`,
-          types,
-          flavorText
-        };
+        return fetchPokemonDetails(Number(pokemonId));
       })
     );
     

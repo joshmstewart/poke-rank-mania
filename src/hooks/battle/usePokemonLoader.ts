@@ -1,6 +1,7 @@
 
 import { useState } from "react";
-import { Pokemon } from "@/services/pokemon";
+import { Pokemon, fetchAllPokemon } from "@/services/pokemon";
+import { toast } from "@/hooks/use-toast";
 
 export const usePokemonLoader = (
   setRankingGenerated: React.Dispatch<React.SetStateAction<boolean>>,
@@ -17,9 +18,8 @@ export const usePokemonLoader = (
   const loadPokemon = async (genId = 0, fullRankingMode = false, preserveState = false) => {
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/pokemon?generation=${genId}&full=${fullRankingMode}`);
-      if (!response.ok) throw new Error('Failed to fetch Pokémon');
-      const pokemon = await response.json();
+      // Use fetchAllPokemon instead of trying to hit a non-existent API endpoint
+      const pokemon = await fetchAllPokemon(genId, fullRankingMode);
       
       if (!preserveState) {
         // Reset battle state if not preserving state
@@ -40,6 +40,11 @@ export const usePokemonLoader = (
       return pokemon;
     } catch (error) {
       console.error('Error loading Pokémon:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load Pokémon. Please try again.",
+        variant: "destructive"
+      });
       return [];
     } finally {
       setIsLoading(false);

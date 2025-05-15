@@ -14,10 +14,10 @@ export const InfiniteScrollLoader: React.FC<InfiniteScrollLoaderProps> = ({
   totalPages,
   loadingRef
 }) => {
-  // Calculate approximate count based on pages and items per page (20 is default from API)
-  const itemsPerPage = 20;
-  const currentCount = currentPage * itemsPerPage;
-  const totalCount = totalPages * itemsPerPage;
+  // Calculate more accurate counts based on pages and items per page
+  const itemsPerPage = 50; // Using the constant from Pokemon service
+  const currentlyLoaded = currentPage * itemsPerPage;
+  const totalEstimated = totalPages * itemsPerPage;
   
   return (
     <div 
@@ -31,9 +31,11 @@ export const InfiniteScrollLoader: React.FC<InfiniteScrollLoaderProps> = ({
           <p className="text-sm">Loading more Pokémon...</p>
         </>
       ) : currentPage < totalPages ? (
-        <p className="text-sm text-muted-foreground">Scroll down to load more ({currentCount} of {totalCount}+ Pokémon)</p>
+        <p className="text-sm text-muted-foreground">
+          Scroll down to load more (Loaded {currentlyLoaded} of approximately {totalEstimated}+ Pokémon)
+        </p>
       ) : (
-        <p className="text-sm text-muted-foreground">All Pokémon loaded ({totalCount}+)</p>
+        <p className="text-sm text-muted-foreground">All Pokémon loaded (Approximately {totalEstimated}+)</p>
       )}
     </div>
   );
