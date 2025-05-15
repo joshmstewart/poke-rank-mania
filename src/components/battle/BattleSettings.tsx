@@ -36,58 +36,53 @@ const BattleSettings: React.FC<BattleSettingsProps> = ({
   const [restartDialogOpen, setRestartDialogOpen] = useState(false);
 
   return (
-    <div className="grid gap-4 md:grid-cols-2">
-      <Card className="p-4">
-        <div className="space-y-4">
-          <div>
-            <h3 className="text-lg font-medium mb-2">Battle Settings</h3>
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Generation</label>
-                <Select 
-                  value={selectedGeneration.toString()} 
-                  onValueChange={onGenerationChange}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a generation" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="0">All Generations</SelectItem>
-                    {generations.map(gen => (
-                      <SelectItem key={gen.id} value={gen.id.toString()}>
-                        {gen.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Battle Type</label>
-                <RadioGroup 
-                  value={battleType}
-                  onValueChange={(value: BattleType) => onBattleTypeChange(value)}
-                  className="flex gap-4"
-                >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="pairs" id="pairs" />
-                    <Label htmlFor="pairs">Pairs</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="triplets" id="triplets" />
-                    <Label htmlFor="triplets">Trios</Label>
-                  </div>
-                </RadioGroup>
-              </div>
-            </div>
+    <Card className="p-4">
+      <div className="space-y-4">
+        <h3 className="text-lg font-medium mb-2">Battle Settings</h3>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Generation selector */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Generation</label>
+            <Select 
+              value={selectedGeneration.toString()} 
+              onValueChange={onGenerationChange}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select a generation" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="0">All Generations</SelectItem>
+                {generations.map(gen => (
+                  <SelectItem key={gen.id} value={gen.id.toString()}>
+                    {gen.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-        </div>
-      </Card>
 
-      <Card className="p-4">
-        <div className="space-y-4">
-          <div>
-            <h3 className="text-lg font-medium mb-2">Reset Options</h3>
+          {/* Battle Type selector */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Battle Type</label>
+            <RadioGroup 
+              value={battleType}
+              onValueChange={(value: BattleType) => onBattleTypeChange(value)}
+              className="flex gap-4"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="pairs" id="pairs" />
+                <Label htmlFor="pairs">Pairs</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="triplets" id="triplets" />
+                <Label htmlFor="triplets">Trios</Label>
+              </div>
+            </RadioGroup>
+          </div>
+          
+          {/* Reset button */}
+          <div className="md:col-span-2">
             <AlertDialog open={restartDialogOpen} onOpenChange={setRestartDialogOpen}>
               <AlertDialogTrigger asChild>
                 <Button variant="outline" className="w-full gap-2">
@@ -117,8 +112,8 @@ const BattleSettings: React.FC<BattleSettingsProps> = ({
             </AlertDialog>
           </div>
         </div>
-      </Card>
-    </div>
+      </div>
+    </Card>
   );
 };
 

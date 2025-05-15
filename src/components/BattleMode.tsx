@@ -11,11 +11,23 @@ import BattleContent from "./battle/BattleContent";
 import BattleFooterNote from "./battle/BattleFooterNote";
 import ViewRankings from "./battle/ViewRankings";
 import { Button } from "@/components/ui/button";
-import { List, ChevronDown, ChevronUp } from "lucide-react";
+import { List, ChevronDown, ChevronUp, RefreshCw, Settings } from "lucide-react";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger
+} from "@/components/ui/alert-dialog";
 
 const BattleMode = () => {
   const [showViewRankings, setShowViewRankings] = useState(false);
   const [showSettings, setShowSettings] = useState(true);
+  const [restartDialogOpen, setRestartDialogOpen] = useState(false);
   
   const {
     isLoading,
@@ -78,16 +90,49 @@ const BattleMode = () => {
             >
               <List className="h-4 w-4" /> View Rankings
             </Button>
+            
+            {/* Reset button (moved here) */}
+            <AlertDialog open={restartDialogOpen} onOpenChange={setRestartDialogOpen}>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-1"
+                >
+                  <RefreshCw className="h-4 w-4" /> Restart
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently delete all your current battle progress and rankings.
+                    This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction 
+                    onClick={() => {
+                      handleGenerationChange(selectedGeneration.toString());
+                      setRestartDialogOpen(false);
+                    }}
+                  >
+                    Yes, restart
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
           
-          {/* View settings toggle */}
+          {/* Settings toggle */}
           <Button 
             variant="outline" 
             size="sm" 
             onClick={() => setShowSettings(!showSettings)}
             className="flex items-center gap-1"
           >
-            {showSettings ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            <Settings className="h-4 w-4 mr-1" />
             {showSettings ? "Hide" : "Show"} Settings
           </Button>
         </div>

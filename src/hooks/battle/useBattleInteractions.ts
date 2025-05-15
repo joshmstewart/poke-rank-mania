@@ -33,8 +33,8 @@ export const useBattleInteractions = (
       // Update selection state
       setSelectedPokemon([id]);
       
-      // Directly trigger completion without requiring a second click
-      setTimeout(() => handleTripletSelectionComplete(), 0);
+      // Directly trigger completion
+      handleTripletSelectionComplete();
     } else {
       // For triplets, toggle selection in the array
       setSelectedPokemon(prev => {
