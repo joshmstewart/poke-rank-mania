@@ -16,52 +16,57 @@ const BattleCard: React.FC<BattleCardProps> = ({
   battleType,
   onSelect
 }) => {
-  // Make the click handler more robust with a direct function call
-  const handleClick = (e: React.MouseEvent) => {
-    e.preventDefault(); // Prevent any default behavior
-    e.stopPropagation(); // Stop event bubbling
+  // Completely restructured click handler to be more reliable
+  const handleCardClick = React.useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
     console.log(`BattleCard clicked: ${pokemon.id}, ${pokemon.name}`);
     onSelect(pokemon.id);
-  };
+  }, [pokemon.id, pokemon.name, onSelect]);
 
   return (
     <Card 
       className={`cursor-pointer h-full transform transition-all hover:scale-105 ${isSelected && battleType === "triplets" ? "ring-4 ring-primary" : ""}`}
-      onClick={handleClick}
+      onClick={handleCardClick}
       role="button"
       aria-pressed={isSelected}
       tabIndex={0}
     >
       <CardContent className="flex flex-col items-center justify-center p-4">
-        <img 
-          src={pokemon.image} 
-          alt={pokemon.name} 
-          className="w-32 h-32 object-contain mb-4" 
-        />
-        <h3 className="text-xl font-bold">{pokemon.name}</h3>
-        <p className="text-gray-500">#{pokemon.id}</p>
-        
-        {pokemon.types && pokemon.types.length > 0 && (
-          <div className="flex gap-2 mt-2">
-            {pokemon.types.map((type, index) => (
-              <span 
-                key={index} 
-                className="px-2 py-1 text-xs rounded-full bg-gray-100"
-              >
-                {type}
-              </span>
-            ))}
-          </div>
-        )}
-        
-        {/* Only show selection indicator for triplets mode */}
-        {battleType === "triplets" && (
-          <div className="mt-4 px-3 py-2 bg-gray-100 rounded flex items-center justify-center w-full">
-            <div className={`text-sm ${isSelected ? "font-bold text-primary" : ""}`}>
-              {isSelected ? "Selected" : "Click to select"}
+        <div 
+          className="w-full h-full flex flex-col items-center justify-center"
+          onClick={handleCardClick} // Add a second click handler for nested elements
+        >
+          <img 
+            src={pokemon.image} 
+            alt={pokemon.name} 
+            className="w-32 h-32 object-contain mb-4" 
+          />
+          <h3 className="text-xl font-bold">{pokemon.name}</h3>
+          <p className="text-gray-500">#{pokemon.id}</p>
+          
+          {pokemon.types && pokemon.types.length > 0 && (
+            <div className="flex gap-2 mt-2">
+              {pokemon.types.map((type, index) => (
+                <span 
+                  key={index} 
+                  className="px-2 py-1 text-xs rounded-full bg-gray-100"
+                >
+                  {type}
+                </span>
+              ))}
             </div>
-          </div>
-        )}
+          )}
+          
+          {/* Only show selection indicator for triplets mode */}
+          {battleType === "triplets" && (
+            <div className="mt-4 px-3 py-2 bg-gray-100 rounded flex items-center justify-center w-full">
+              <div className={`text-sm ${isSelected ? "font-bold text-primary" : ""}`}>
+                {isSelected ? "Selected" : "Click to select"}
+              </div>
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   );

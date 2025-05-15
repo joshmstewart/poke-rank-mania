@@ -1,4 +1,5 @@
 
+import { useState, useRef } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
 
@@ -19,24 +20,24 @@ export const useBattleInteractions = (
 ) => {
   console.log("useBattleInteractions initialized with battleType:", battleType);
 
-  // Track if we're currently processing a selection to prevent duplicate processing
-  let isProcessingSelection = false;
+  // Use useRef instead of a local variable to track processing state
+  const isProcessingRef = useRef(false);
 
   const handlePokemonSelect = (id: number) => {
     console.log(`Handling Pokemon selection (id: ${id}) in ${battleType} mode`);
     
-    // Prevent duplicate processing
-    if (isProcessingSelection) {
+    // Prevent duplicate processing using ref
+    if (isProcessingRef.current) {
       console.log("Already processing a selection, ignoring this click");
       return;
     }
 
     if (battleType === "pairs") {
       // For pairs mode - immediate selection and directly process completion
-      console.log("Pairs mode: Setting selection and triggering completion");
+      console.log("Pairs mode: Setting selection and processing");
       
       // Lock to prevent duplicate processing
-      isProcessingSelection = true;
+      isProcessingRef.current = true;
       
       // Set the selection immediately
       setSelectedPokemon([id]);
@@ -47,13 +48,17 @@ export const useBattleInteractions = (
         selected: [id] 
       }]);
       
-      // Important: Call the completion handler synchronously
-      handleTripletSelectionComplete();
-
-      // Reset processing lock after a short delay
+      // Use setTimeout to ensure state updates have time to process
       setTimeout(() => {
-        isProcessingSelection = false;
-      }, 500);
+        console.log("Processing selection completion after timeout");
+        // Important: Call the completion handler after a short delay
+        handleTripletSelectionComplete();
+        
+        // Reset processing lock after completion
+        setTimeout(() => {
+          isProcessingRef.current = false;
+        }, 300);
+      }, 50);
     } else {
       // For triplets mode - toggle selection
       setSelectedPokemon(prev => {

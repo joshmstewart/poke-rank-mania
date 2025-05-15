@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft } from "lucide-react";
 import { Pokemon } from "@/services/pokemon";
@@ -39,17 +39,20 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
     }
   }, [currentBattle]);
 
-  // Direct click handler for pokemon selection
-  const handlePokemonCardSelect = (id: number) => {
+  // Memoized click handler to prevent unnecessary rerenders
+  const handlePokemonCardSelect = useCallback((id: number) => {
     console.log("BattleInterface: handlePokemonCardSelect called with id:", id);
-    onPokemonSelect(id);
-  };
+    // Add a short delay to ensure the UI is updated before processing
+    setTimeout(() => {
+      onPokemonSelect(id);
+    }, 10);
+  }, [onPokemonSelect]);
 
-  // Simplified submit handler - no debouncing
-  const handleSubmit = () => {
+  // Simplified submit handler
+  const handleSubmit = useCallback(() => {
     console.log("Submit button clicked for triplets mode");
     onTripletSelectionComplete();
-  };
+  }, [onTripletSelectionComplete]);
   
   return (
     <div className="bg-white rounded-lg shadow p-6">
