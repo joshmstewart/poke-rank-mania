@@ -19,8 +19,8 @@ export const useBattleManager = (
   setBattleHistory: React.Dispatch<React.SetStateAction<{ battle: Pokemon[], selected: number[] }[]>>,
   setSelectedPokemon: React.Dispatch<React.SetStateAction<number[]>>
 ) => {
-  // Use the battle processor for handling battle results
-  const { processBattleResult } = useBattleProcessor(
+  // Use the refactored battle processor for handling battle results
+  const { processBattleResult, isProcessingResult } = useBattleProcessor(
     battleResults,
     setBattleResults,
     battlesCompleted,
@@ -65,6 +65,7 @@ export const useBattleManager = (
       handlePokemonSelect(id, battleType, currentBattle),
     handleTripletSelectionComplete: (battleType: BattleType, currentBattle: Pokemon[]) => 
       handleTripletSelectionComplete(battleType, currentBattle),
-    goBack
+    goBack,
+    isProcessingResult
   };
 };
