@@ -60,7 +60,19 @@ export const useRankings = (allPokemon: Pokemon[]) => {
     // If no battles have been recorded yet, show a message
     if (battledPokemonIds.size === 0) {
       console.log("No Pokémon have battled yet");
+      
+      // Show an empty list but with a message
       setFinalRankings([]);
+      
+      // Still show the milestone even if no battles were recorded
+      return;
+    }
+    
+    // Create default rankings if there are no battle results
+    if (results.length === 0) {
+      const defaultRankings = allPokemon.slice(0, 10);
+      console.log("Using default rankings due to no battle results");
+      setFinalRankings(defaultRankings);
       return;
     }
     

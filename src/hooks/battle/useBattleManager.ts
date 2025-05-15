@@ -48,23 +48,46 @@ export const useBattleManager = (
   const handleTripletSelectionComplete = (battleType: BattleType, currentBattle: Pokemon[]) => {
     console.log("Triplet selection complete. Battle type:", battleType);
     console.log("Current battle:", currentBattle.map(p => p.name));
-    console.log("Global selectedPokemon state:", selectedPokemon);
     
-    // For pairs mode, we need to get the selection from the most recent history entry
-    let selectionsToUse;
+    // Find the proper selection to use
+    let selectionsToUse: number[] = [];
     
-    if (battleType === "pairs" && battleHistory.length > 0) {
-      // Use the selection from the most recent history entry
-      const lastHistoryEntry = battleHistory[battleHistory.length - 1];
-      selectionsToUse = lastHistoryEntry.selected;
-      console.log("Using selections from history:", selectionsToUse);
+    if (battleType === "pairs") {
+      // For pairs, get the most recent history entry or fall back to selectedPokemon
+      if (battleHistory.length > 0) {
+        const lastEntry = battleHistory[battleHistory.length - 1];
+        // Check if the last entry matches the current battle
+        const lastBattleIds = lastEntry.battle.map(p => p.id);
+        const currentBattleIds = currentBattle.map(p => p.id);
+        
+        if (lastBattleIds.length === currentBattleIds.length && 
+            lastBattleIds.every((id, i) => id === currentBattleIds[i])) {
+          selectionsToUse = [...lastEntry.selected];
+          console.log("Using selections from matching history:", selectionsToUse);
+        } else {
+          // If battle doesn't match, check if there's a selection for the current Pokemon
+          const selectedIds = currentBattle.filter(p => selectedPokemon.includes(p.id)).map(p => p.id);
+          if (selectedIds.length > 0) {
+            selectionsToUse = selectedIds;
+            console.log("Using selections from filtered currentBattle:", selectionsToUse);
+          } else {
+            console.error("No valid selections found for current battle");
+          }
+        }
+      } else if (selectedPokemon.length > 0) {
+        // If no history but we have selections
+        selectionsToUse = [...selectedPokemon];
+        console.log("Using selections from state with no history:", selectionsToUse);
+      } else {
+        console.error("No selections available!");
+      }
     } else {
-      // Use the current selection state for triplets
+      // For triplets mode, use the current selections
       selectionsToUse = [...selectedPokemon];
-      console.log("Using selections from state:", selectionsToUse);
+      console.log("Using triplet selections from state:", selectionsToUse);
     }
     
-    // Process the battle result with the correct selections
+    // Process the battle result
     processBattleResult(selectionsToUse, battleType, currentBattle);
   };
 
@@ -82,14 +105,15 @@ export const useBattleManager = (
     
     if (battleType === "pairs") {
       // For pairs, we know who won and who lost
-      const winner = currentBattle.find(p => p.id === selections[0]);
-      const loser = currentBattle.find(p => p.id !== selections[0]);
+      const winner = currentBattle.find(p => selections.includes(p.id));
+      const loser = currentBattle.find(p => !selections.includes(p.id));
       
       if (winner && loser) {
         console.log(`Adding pair result: ${winner.name} beats ${loser.name}`);
         newResults.push({ winner, loser });
       } else {
         console.error("Invalid selection for pair battle", selections, currentBattle);
+        return; // Don't continue if we can't determine winner/loser
       }
     } else {
       // For triplets/trios, each selected is considered a "winner" against each unselected
@@ -105,6 +129,9 @@ export const useBattleManager = (
             newResults.push({ winner, loser });
           });
         });
+      } else {
+        console.error("Invalid selection for triplet battle", selections, currentBattle);
+        return; // Don't continue if we can't determine winners/losers
       }
     }
     
