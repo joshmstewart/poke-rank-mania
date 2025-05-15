@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType, BattleResult } from "./types";
@@ -38,6 +37,23 @@ export const useBattleState = () => {
     generateRankings,
     handleSaveRankings: saveRankings
   } = useRankings(allPokemon);
+
+  // Function declarations
+  // Move startNewBattle function before it's referenced
+  const startNewBattle = (pokemonList: Pokemon[]) => {
+    if (pokemonList.length < 2) {
+      // Not enough Pokémon for a battle
+      return;
+    }
+    
+    // Shuffle the list to get random Pokémon
+    const shuffled = [...pokemonList].sort(() => Math.random() - 0.5);
+    
+    // Get the first 2 or 3 Pokémon based on battle type
+    const battleSize = battleType === "pairs" ? 2 : 3;
+    setCurrentBattle(shuffled.slice(0, battleSize));
+    setSelectedPokemon([]);
+  };
   
   const {
     calculateCompletionPercentage,
@@ -68,22 +84,6 @@ export const useBattleState = () => {
     setBattleHistory,
     setSelectedPokemon
   );
-
-  // Function declarations
-  const startNewBattle = (pokemonList: Pokemon[]) => {
-    if (pokemonList.length < 2) {
-      // Not enough Pokémon for a battle
-      return;
-    }
-    
-    // Shuffle the list to get random Pokémon
-    const shuffled = [...pokemonList].sort(() => Math.random() - 0.5);
-    
-    // Get the first 2 or 3 Pokémon based on battle type
-    const battleSize = battleType === "pairs" ? 2 : 3;
-    setCurrentBattle(shuffled.slice(0, battleSize));
-    setSelectedPokemon([]);
-  };
 
   const loadPokemon = async (genId = selectedGeneration, preserveState = false) => {
     setIsLoading(true);
