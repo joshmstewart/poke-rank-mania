@@ -14,23 +14,32 @@ export const useRankings = (allPokemon: Pokemon[]) => {
     
     // Initialize all Pokémon with a base score
     allPokemon.forEach(pokemon => {
-      scores.set(pokemon.id, { pokemon, score: 1000 });
+      if (pokemon && pokemon.id) {
+        scores.set(pokemon.id, { pokemon, score: 1000 });
+      }
     });
     
     // Update scores based on battle results
     results.forEach(result => {
+      if (!result.winner || !result.loser) {
+        console.error("Invalid battle result:", result);
+        return;
+      }
+      
       const winnerId = result.winner.id;
       const loserId = result.loser.id;
       
-      const winnerData = scores.get(winnerId)!;
-      const loserData = scores.get(loserId)!;
+      const winnerData = scores.get(winnerId);
+      const loserData = scores.get(loserId);
       
-      // Simple score adjustment
-      winnerData.score += 10;
-      loserData.score -= 5;
-      
-      scores.set(winnerId, winnerData);
-      scores.set(loserId, loserData);
+      if (winnerData && loserData) {
+        // Simple score adjustment
+        winnerData.score += 10;
+        loserData.score -= 5;
+        
+        scores.set(winnerId, winnerData);
+        scores.set(loserId, loserData);
+      }
     });
     
     // Convert to array and sort by score
@@ -47,7 +56,13 @@ export const useRankings = (allPokemon: Pokemon[]) => {
   };
 
   const handleSaveRankings = (selectedGeneration: number) => {
-    saveRankings(finalRankings, selectedGeneration);
+    // Save as battle rankings
+    saveRankings(finalRankings, selectedGeneration, "battle");
+    
+    toast({
+      title: "Rankings Saved",
+      description: "Your battle rankings have been saved successfully."
+    });
   };
 
   return {

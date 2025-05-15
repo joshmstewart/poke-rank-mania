@@ -22,19 +22,18 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
   onContinueBattles,
   onSaveRankings
 }) => {
-  const [showAllRankings, setShowAllRankings] = useState(false);
-  const displayCount = showAllRankings ? finalRankings.length : 10;
+  const [showAllRankings, setShowAllRankings] = useState(true); // Default to showing all
   
   const renderRankBadge = (rank: number) => {
-    if (rank === 1) return <Trophy className="h-6 w-6 text-yellow-500" />;
-    if (rank === 2) return <Medal className="h-6 w-6 text-gray-400" />;
-    if (rank === 3) return <Medal className="h-6 w-6 text-amber-700" />;
-    return <span className="text-2xl font-bold">{rank}</span>;
+    if (rank === 1) return <Trophy className="h-5 w-5 text-yellow-500" />;
+    if (rank === 2) return <Medal className="h-5 w-5 text-gray-400" />;
+    if (rank === 3) return <Medal className="h-5 w-5 text-amber-700" />;
+    return <span className="text-lg font-bold">{rank}</span>;
   };
   
   return (
     <div className="bg-white rounded-lg shadow p-6">
-      <div className="text-center mb-8">
+      <div className="text-center mb-4">
         <h2 className="text-2xl font-bold">
           {rankingGenerated ? "Your Final Ranking" : "Milestone Reached!"}
         </h2>
@@ -50,53 +49,38 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
         )}
       </div>
       
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {finalRankings.slice(0, displayCount).map((pokemon, index) => (
-          <Card key={pokemon.id} className={`flex items-center p-4 ${index < 3 ? 'border-2 ' + (index === 0 ? 'border-yellow-400' : index === 1 ? 'border-gray-300' : 'border-amber-600') : ''}`}>
-            <div className="flex-shrink-0 mr-4 flex items-center justify-center w-10">
+      {/* Grid display for rankings */}
+      <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+        {finalRankings.map((pokemon, index) => (
+          <Card key={pokemon.id} className={`flex items-center p-2 ${index < 3 ? 'border-2 ' + (index === 0 ? 'border-yellow-400' : index === 1 ? 'border-gray-300' : 'border-amber-600') : ''}`}>
+            <div className="flex-shrink-0 mr-2 flex items-center justify-center w-8">
               {renderRankBadge(index + 1)}
             </div>
-            <div className="flex-shrink-0 w-16 h-16">
+            <div className="flex-shrink-0 w-12 h-12">
               <img 
                 src={pokemon.image} 
                 alt={pokemon.name} 
                 className="w-full h-full object-contain" 
               />
             </div>
-            <div className="ml-4">
-              <h3 className="font-bold">{pokemon.name}</h3>
-              <p className="text-sm text-gray-500">#{pokemon.id}</p>
+            <div className="ml-2 overflow-hidden">
+              <h3 className="font-bold text-sm truncate">{pokemon.name}</h3>
+              <p className="text-xs text-gray-500">#{pokemon.id}</p>
             </div>
           </Card>
         ))}
       </div>
       
-      {finalRankings.length > 10 && (
-        <div className="flex justify-center mt-4">
-          <Button 
-            variant="outline" 
-            onClick={() => setShowAllRankings(!showAllRankings)}
-            className="flex items-center gap-1"
-          >
-            {showAllRankings ? (
-              <>Show Less <ChevronUp className="h-4 w-4" /></>
-            ) : (
-              <>Show All {finalRankings.length} Rankings <ChevronDown className="h-4 w-4" /></>
-            )}
-          </Button>
-        </div>
-      )}
-      
       {rankingGenerated && (
-        <div className="mt-8 text-center">
-          <p className="text-gray-600 mb-4">
-            <Award className="inline-block mr-1 text-primary" size={18} />
+        <div className="mt-4 text-center">
+          <p className="text-gray-600 text-sm">
+            <Award className="inline-block mr-1 text-primary" size={16} />
             Congratulations! You've completed enough battles to generate a full ranking.
           </p>
         </div>
       )}
       
-      <div className="flex justify-center gap-4 mt-8">
+      <div className="flex justify-center gap-4 mt-6">
         {rankingGenerated ? (
           <>
             <Button variant="outline" onClick={onNewBattleSet}>

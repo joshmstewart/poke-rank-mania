@@ -14,7 +14,7 @@ export const useGenerationSettings = (
   setShowingMilestone: React.Dispatch<React.SetStateAction<boolean>>,
   setCompletionPercentage: React.Dispatch<React.SetStateAction<number>>,
 ) => {
-  // Get initial values from localStorage if available
+  // Get initial values from localStorage if available, default to pairs and full ranking
   const storedBattleType = localStorage.getItem('pokemon-ranker-battle-type');
   const storedRankingMode = localStorage.getItem('pokemon-ranker-full-ranking-mode');
   const storedGeneration = localStorage.getItem('pokemon-ranker-generation');
@@ -26,8 +26,19 @@ export const useGenerationSettings = (
     (storedBattleType === "triplets") ? "triplets" : "pairs"
   );
   const [fullRankingMode, setFullRankingMode] = useState(
-    storedRankingMode === 'true'
+    storedRankingMode === 'false' ? false : true // Default to true
   );
+
+  // Initialize localStorage with defaults if not set
+  useEffect(() => {
+    if (!localStorage.getItem('pokemon-ranker-battle-type')) {
+      localStorage.setItem('pokemon-ranker-battle-type', 'pairs');
+    }
+    
+    if (!localStorage.getItem('pokemon-ranker-full-ranking-mode')) {
+      localStorage.setItem('pokemon-ranker-full-ranking-mode', 'true');
+    }
+  }, []);
 
   console.log("useGenerationSettings initialized with battleType:", battleType);
 

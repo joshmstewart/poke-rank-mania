@@ -56,17 +56,24 @@ export const useBattleManager = (
   };
 
   const processBattleResult = (selections: number[], battleType: BattleType, currentBattle: Pokemon[]) => {
-    // For triplets/trios, we now accept any number of selections (0-3)
-    // No validation needed as users can choose any number of Pokémon they like
+    if (!currentBattle || currentBattle.length === 0) {
+      console.error("No current battle data available");
+      return;
+    }
 
     // Process battle results
     const newResults = [...battleResults];
     
     if (battleType === "pairs") {
       // For pairs, we know who won and who lost
-      const winner = currentBattle.find(p => p.id === selections[0])!;
-      const loser = currentBattle.find(p => p.id !== selections[0])!;
-      newResults.push({ winner, loser });
+      const winner = currentBattle.find(p => p.id === selections[0]);
+      const loser = currentBattle.find(p => p.id !== selections[0]);
+      
+      if (winner && loser) {
+        newResults.push({ winner, loser });
+      } else {
+        console.error("Invalid selection for pair battle", selections, currentBattle);
+      }
     } else {
       // For triplets/trios, each selected is considered a "winner" against each unselected
       const winners = currentBattle.filter(p => selections.includes(p.id));
@@ -90,6 +97,11 @@ export const useBattleManager = (
     if (milestones.includes(newBattlesCompleted)) {
       generateRankings(newResults);
       setShowingMilestone(true);
+      
+      toast({
+        title: "Milestone Reached!",
+        description: `You've completed ${newBattlesCompleted} battles. Check out your current ranking!`
+      });
     } else {
       // Continue with next battle - Make sure we have the allPokemon list
       console.log("Starting new battle with new Pokémon...", allPokemon?.length || 0);

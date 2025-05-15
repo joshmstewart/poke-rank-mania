@@ -28,33 +28,15 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
   onGoBack,
   milestones
 }) => {
-  // Animation state
-  const [isAnimating, setIsAnimating] = useState(false);
-  const [previousBattle, setPreviousBattle] = useState<Pokemon[]>([]);
-  const [initialRender, setInitialRender] = useState(true);
+  // Animation state without the flashing issue
+  const [animationKey, setAnimationKey] = useState(0);
   
-  // Set up animation when current battle changes
+  // Update animation key when current battle changes to trigger a clean rerender
   useEffect(() => {
-    // Skip animation on first render
-    if (initialRender) {
-      setPreviousBattle(currentBattle);
-      setInitialRender(false);
-      return;
-    }
-    
     if (currentBattle.length > 0) {
-      setIsAnimating(true);
-      const timer = setTimeout(() => setIsAnimating(false), 300); // Shorter animation duration
-      return () => clearTimeout(timer);
+      setAnimationKey(prev => prev + 1);
     }
-  }, [currentBattle, initialRender]);
-
-  // Update previous battle after animation completes
-  useEffect(() => {
-    if (!isAnimating && currentBattle.length > 0) {
-      setPreviousBattle(currentBattle);
-    }
-  }, [isAnimating, currentBattle]);
+  }, [currentBattle]);
 
   // Label for the battle type
   const battleLabel = battleType === "pairs" ? "favorite" : "preferences (0-3)";
@@ -96,9 +78,10 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
         </div>
       </div>
       
-      {/* Battle cards with improved animation handling */}
+      {/* Battle cards without the animation that causes flashing */}
       <div 
-        className={`grid grid-cols-${currentBattle.length} gap-4 mt-8 transition-opacity duration-300 ${isAnimating ? 'opacity-0' : 'opacity-100'}`}
+        key={animationKey}
+        className="grid gap-4 mt-8"
         style={{ display: 'grid', gridTemplateColumns: `repeat(${currentBattle.length}, 1fr)` }}
       >
         {currentBattle.map(pokemon => (
@@ -114,7 +97,7 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
       
       {/* Always show the submit button for triplets */}
       {battleType === "triplets" && (
-        <div className={`mt-8 flex justify-center transition-all duration-300 ${isAnimating ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
+        <div className="mt-8 flex justify-center">
           <Button 
             size="lg" 
             onClick={onTripletSelectionComplete}
