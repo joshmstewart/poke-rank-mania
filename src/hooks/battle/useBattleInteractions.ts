@@ -1,5 +1,4 @@
 
-import { useEffect, useState } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
 
@@ -15,41 +14,32 @@ export const useBattleInteractions = (
   battleHistory: { battle: Pokemon[], selected: number[] }[],
   setBattleHistory: React.Dispatch<React.SetStateAction<{ battle: Pokemon[], selected: number[] }[]>>,
   handleTripletSelectionComplete: () => void,
-  goBack: () => void,
-  battleTypeParam: BattleType
+  handleNavigateBack: () => void,
+  battleType: BattleType
 ) => {
-  console.log("useBattleInteractions initialized with battleType:", battleTypeParam);
-  
+  console.log("useBattleInteractions initialized with battleType:", battleType);
+
   const handlePokemonSelect = (id: number) => {
-    console.log(`Handling Pokemon selection (id: ${id}) in ${battleTypeParam} mode`);
+    console.log(`Handling Pokemon selection (id: ${id}) in ${battleType} mode`);
     
-    if (battleTypeParam === "pairs") {
-      // For pairs, immediately handle the selection as a completed battle
-      // First save to battle history
-      setBattleHistory([...battleHistory, { 
-        battle: [...currentBattle], 
-        selected: [id] 
-      }]);
-      
-      // Then simulate a triplet completion with just one selected ID
+    if (battleType === "pairs") {
+      // For pairs, immediately commit the selection
+      setSelectedPokemon([id]);
       handleTripletSelectionComplete();
     } else {
-      // For trios, toggle selection
-      let newSelected;
-      if (selectedPokemon.includes(id)) {
-        // If already selected, unselect it
-        newSelected = selectedPokemon.filter(pokemonId => pokemonId !== id);
-      } else {
-        // Add to selection
-        newSelected = [...selectedPokemon, id];
-      }
-      console.log("Updating selected pokemon:", newSelected);
-      setSelectedPokemon(newSelected);
+      // For triplets, toggle selection in the array
+      setSelectedPokemon(prev => {
+        if (prev.includes(id)) {
+          return prev.filter(pokemonId => pokemonId !== id);
+        } else {
+          return [...prev, id];
+        }
+      });
     }
   };
 
   const handleGoBack = () => {
-    goBack();
+    handleNavigateBack();
   };
 
   return {

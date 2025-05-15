@@ -47,12 +47,14 @@ export const useBattleManager = (
 
   const handleTripletSelectionComplete = (battleType: BattleType, currentBattle: Pokemon[]) => {
     // Save current battle to history
+    const selectionsToUse = battleType === "pairs" ? selectedPokemon : [...selectedPokemon];
+    
     setBattleHistory([...battleHistory, { 
       battle: [...currentBattle], 
-      selected: [...selectedPokemon] 
+      selected: selectionsToUse 
     }]);
     
-    processBattleResult(selectedPokemon, battleType, currentBattle);
+    processBattleResult(selectionsToUse, battleType, currentBattle);
   };
 
   const processBattleResult = (selections: number[], battleType: BattleType, currentBattle: Pokemon[]) => {

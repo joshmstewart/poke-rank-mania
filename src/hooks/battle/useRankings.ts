@@ -55,8 +55,14 @@ export const useRankings = (allPokemon: Pokemon[]) => {
     console.log("Battled Pokémon IDs:", [...battledPokemonIds]);
     console.log("Total battled Pokémon:", battledPokemonIds.size);
     
+    // If no battles have been recorded yet, show a message
+    if (battledPokemonIds.size === 0) {
+      console.log("No Pokémon have battled yet");
+      setFinalRankings([]);
+      return;
+    }
+    
     // Convert to array, filter for only battled Pokémon, and sort by score
-    // The issue was here - we need to make sure we're only including Pokémon that actually participated in battles
     const rankings = Array.from(scores.values())
       .filter(item => battledPokemonIds.has(item.pokemon.id)) // Only include Pokémon that have battled
       .sort((a, b) => b.score - a.score)
@@ -75,6 +81,15 @@ export const useRankings = (allPokemon: Pokemon[]) => {
   };
 
   const handleSaveRankings = (selectedGeneration: number) => {
+    // Only save if we have rankings
+    if (finalRankings.length === 0) {
+      toast({
+        title: "No Rankings to Save",
+        description: "Complete more battles to generate rankings first."
+      });
+      return;
+    }
+    
     // Save as battle rankings
     saveRankings(finalRankings, selectedGeneration, "battle");
     
