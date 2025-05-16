@@ -45,23 +45,23 @@ export const useGenerationSettings = (
     resetBattleState();
   };
   
-  const resetBattleState = () => {
-    setRankingGenerated(false);
-    setBattleResults([]);
-    setBattlesCompleted(0);
-    setBattleHistory([]);
-    setShowingMilestone(false);
-    setCompletionPercentage(0);
-    
-    // Only start a new battle if we have Pokémon loaded
-    if (allPokemon && allPokemon.length > 1) {
-      // Use the current battle type from localStorage
-const stored = localStorage.getItem('pokemon-ranker-battle-type');
-const currentBattleType: BattleType = stored === 'triplets' ? 'triplets' : 'pairs';
-startNewBattle(allPokemon, currentBattleType);
+const resetBattleState = () => {
+  setRankingGenerated(false);
+  setBattleResults([]);
+  setBattlesCompleted(0);
+  setBattleHistory([]);
+  setShowingMilestone(false);
+  setCompletionPercentage(0);
 
-    }
-  };
+  if (Array.isArray(allPokemon) && allPokemon.length > 1) {
+    const stored = localStorage.getItem("pokemon-ranker-battle-type");
+    const currentBattleType: BattleType = stored === "triplets" ? "triplets" : "pairs";
+    startNewBattle(allPokemon, currentBattleType);
+  } else {
+    console.error("resetBattleState: allPokemon is not a valid array", allPokemon);
+  }
+};
+
   
   return {
     selectedGeneration,
