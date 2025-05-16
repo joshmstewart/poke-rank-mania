@@ -63,8 +63,15 @@ export const useBattleManager = (
     setSelectedPokemon: setLocalSelectedPokemon,
     handlePokemonSelect: (id: number, battleType: BattleType, currentBattle: Pokemon[]) => 
       handlePokemonSelect(id, battleType, currentBattle),
-    handleTripletSelectionComplete: (battleType: BattleType, currentBattle: Pokemon[]) => 
-      handleTripletSelectionComplete(battleType, currentBattle),
+handleTripletSelectionComplete: (battleType: BattleType, currentBattle: Pokemon[]) => {
+  handleTripletSelectionComplete(battleType, currentBattle);
+  if (battleType === "pairs") {
+    // Trigger the next battle manually
+    console.log("useBattleManager: Starting next battle for pairs mode");
+    startNewBattle(allPokemon, battleType);
+  }
+},
+
     goBack,
     isProcessingResult
   };
