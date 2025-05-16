@@ -27,21 +27,22 @@ export const useBattleState = () => {
   const selectionState = useBattleSelectionState();
   
   // Pokemon loading logic
-  const {
-    isLoading,
-    loadPokemon
-  } = usePokemonLoader(
-    selectionState.setAllPokemon,
-    progressState.setRankingGenerated,
-    selectionState.setBattleResults,
-    selectionState.setBattlesCompleted,
-    selectionState.setBattleHistory,
-    progressState.setShowingMilestone,
-    progressState.setCompletionPercentage,
-    selectionState.setSelectedPokemon,
-    selectionState.startNewBattle,
-    battleTypeState.battleType
-  );
+const {
+  isLoading,
+  loadPokemon
+} = usePokemonLoader({
+  setAllPokemon: selectionState.setAllPokemon,
+  setRankingGenerated: progressState.setRankingGenerated,
+  setBattleResults: selectionState.setBattleResults,
+  setBattlesCompleted: selectionState.setBattlesCompleted,
+  setBattleHistory: selectionState.setBattleHistory,
+  setShowingMilestone: progressState.setShowingMilestone,
+  setCompletionPercentage: progressState.setCompletionPercentage,
+  setSelectedPokemon: selectionState.setSelectedPokemon,
+  startNewBattle: selectionState.startNewBattle,
+  battleType: battleTypeState.battleType
+});
+
   
   // Local storage management
   const { saveBattleState, loadBattleState } = useLocalStorage();
@@ -59,7 +60,8 @@ export const useBattleState = () => {
     handleGenerationChange,
     handleBattleTypeChange,
   } = useGenerationSettings(
-    selectionState.startNewBattle,
+(pokemonList: Pokemon[]) => selectionState.startNewBattle(pokemonList, battleTypeState.battleType),
+
     selectionState.allPokemon,
     progressState.setRankingGenerated,
     selectionState.setBattleResults,
@@ -161,7 +163,10 @@ export const useBattleState = () => {
     progressState.fullRankingMode,
     saveBattleState,
     loadBattleState,
-    loadPokemon,
+(genId?: number, preserveState?: boolean) => {
+  return loadPokemon(genId, false, preserveState).then(() => {});
+},
+
     calculateCompletionPercentage
   );
 
