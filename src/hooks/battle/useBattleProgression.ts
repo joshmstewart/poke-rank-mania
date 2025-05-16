@@ -32,9 +32,11 @@ export const useBattleProgression = (
         description: `You've completed ${newBattlesCompleted} battles. Check out your current ranking!`
       });
       
-      return true;
+return true;  // Ensure it returns a boolean
+
     }
-    return false;
+    return false;  // Ensure it returns a boolean
+
   }, [milestones, generateRankings, setShowingMilestone]);
 
   const incrementBattlesCompleted = useCallback((callback?: (newCount: number) => void) => {
