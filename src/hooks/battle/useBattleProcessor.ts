@@ -83,12 +83,9 @@ export const useBattleProcessor = (
         // Start a new battle if no milestone reached
         console.log("useBattleProcessor: Setting up next battle with battle type", battleType);
         // Force a small delay to make sure UI is updated properly
-        setTimeout(() => {
-          setupNextBattle(battleType);
-          // Reset processing flags after completion
-          setIsProcessingResult(false);
-          processingRef.current = false;
-        }, 50);
+        setupNextBattle(battleType);
+setIsProcessingResult(false);
+processingRef.current = false;
       } else {
         // Reset processing flags
         setIsProcessingResult(false);
