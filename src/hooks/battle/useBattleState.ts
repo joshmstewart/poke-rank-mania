@@ -136,29 +136,50 @@ const {
   );
 
   // Battle interactions
-  const {
-    handlePokemonSelect,
-    handleGoBack,
-    isProcessing
-  } = useBattleInteractions(
-    selectionState.currentBattle,
-    selectionState.setCurrentBattle,
-    selectionState.selectedPokemon,
-    selectionState.setSelectedPokemon,
-    selectionState.battleResults,
-    selectionState.setBattleResults,
-    selectionState.battlesCompleted,
-    selectionState.setBattlesCompleted,
-    selectionState.battleHistory,
-    selectionState.setBattleHistory,
-    () => completeTripletSelection(battleTypeState.battleType, selectionState.currentBattle),
-    () => navigateBack(selectionState.setCurrentBattle, battleTypeState.battleType),
-    battleTypeState.battleType,
-(selections, battleType, currentBattle) => {
-  const currentGeneration = generationState.selectedGeneration;
-  return selectionState.processBattleResult(selections, currentBattle, battleType, currentGeneration);
-}
-  );
+const {
+  handlePokemonSelect,
+  handleGoBack,
+  isProcessing
+} = useBattleInteractions(
+  selectionState.currentBattle,
+  selectionState.setCurrentBattle,
+  selectionState.selectedPokemon,
+  selectionState.setSelectedPokemon,
+  selectionState.battleResults,
+  selectionState.setBattleResults,
+  selectionState.battlesCompleted,
+  selectionState.setBattlesCompleted,
+  selectionState.battleHistory,
+  selectionState.setBattleHistory,
+  () => completeTripletSelection(battleTypeState.battleType, selectionState.currentBattle),
+  () => navigateBack(selectionState.setCurrentBattle, battleTypeState.battleType),
+ 
+  
+  
+  battleTypeState.battleType,
+  (selectedPokemonIds: number[], battleType: BattleType, currentBattle: Pokemon[]) => {
+    // ---- basic type‑safety guards ----
+    if (
+      !Array.isArray(selectedPokemonIds) ||
+      selectedPokemonIds.some(id => typeof id !== "number")
+    ) {
+      throw new Error("selectedPokemonIds must be number[]");
+    }
+    if (!Array.isArray(currentBattle)) {
+      throw new Error("currentBattle must be Pokemon[]");
+    }
+    // ----------------------------------
+    const currentGeneration = generationState.selectedGeneration;
+    return selectionState.processBattleResult(
+      selectedPokemonIds,
+      currentBattle,
+      battleType,
+      currentGeneration
+    );
+  }
+);
+
+
 
   // Coordinator for state initialization and persistence
   useBattleCoordinatorState(
