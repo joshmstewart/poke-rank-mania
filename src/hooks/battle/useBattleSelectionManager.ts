@@ -108,4 +108,4 @@ export const useBattleSelectionManager = (
     handlePokemonSelect,
     handleTripletSelectionComplete
   };
-}, []);
+};
