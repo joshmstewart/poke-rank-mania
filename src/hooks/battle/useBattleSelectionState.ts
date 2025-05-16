@@ -18,7 +18,8 @@ export const useBattleSelectionState = () => {
   const [battleHistory, setBattleHistory] = useState<{ battle: Pokemon[], selected: number[] }[]>([]);
   const [currentBattleType, setCurrentBattleType] = useState<BattleType>(initialBattleType);
 
-  const { startNewBattle: initiateNewBattle } = useBattleStarter();
+  // Pass setCurrentBattle to useBattleStarter
+  const { startNewBattle: initiateNewBattle } = useBattleStarter(setCurrentBattle);
   
   // Listen for changes to the battle type in localStorage
   useEffect(() => {
