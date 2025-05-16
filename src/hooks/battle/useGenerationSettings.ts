@@ -53,15 +53,21 @@ const resetBattleState = () => {
   setShowingMilestone(false);
   setCompletionPercentage(0);
 
-  // ✅ Add strict type guard
-  if (Array.isArray(allPokemon) && allPokemon.length > 1 && typeof allPokemon[0] === 'object') {
+  // ✅ Strict type safety
+  if (
+    Array.isArray(allPokemon) &&
+    allPokemon.length > 1 &&
+    typeof allPokemon[0] === 'object' &&
+    'id' in allPokemon[0] // extra safeguard
+  ) {
     const stored = localStorage.getItem("pokemon-ranker-battle-type");
     const currentBattleType: BattleType = stored === "triplets" ? "triplets" : "pairs";
-    startNewBattle(allPokemon, currentBattleType);
+    startNewBattle(allPokemon as Pokemon[], currentBattleType);
   } else {
-    console.error("❌ Cannot start battle — allPokemon is invalid", allPokemon);
+    console.error("❌ Not starting new battle: invalid allPokemon", allPokemon);
   }
 };
+
 
 
   
