@@ -175,7 +175,9 @@ const {
     loadBattleState,
     // Fix the function signature to match the expected type in useBattleCoordinatorState
 async (genId?: number, preserveState?: boolean): Promise<void> => {
-  await loadPokemon(genId, false, preserveState);
+  // Fix: Convert genId to number explicitly before passing to loadPokemon
+  const generationId = genId !== undefined ? Number(genId) : undefined;
+  await loadPokemon(generationId, false, preserveState);
 },
 
 
