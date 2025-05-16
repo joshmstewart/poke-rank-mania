@@ -27,39 +27,43 @@ export const useBattleInteractions = (
     return storedGeneration ? Number(storedGeneration) : 0;
   };
   
-  const handlePokemonSelect = (id: number) => {
+const handlePokemonSelect = (id: number) => {
     console.log("useBattleInteractions: Handling selection for Pokemon ID", id, "in", battleType, "mode");
     
-    // Prevent selecting when we're already processing a result
     if (isProcessing) return;
     
-    setIsProcessing(true);
+    setIsProcessing(true); // Processing starts
 
-    // Update selected Pokemon
     let newSelected: number[];
     
     if (battleType === "pairs") {
-      // For pairs, we just select this Pokemon and immediately process it against the other one
       newSelected = [id];
-      setSelectedPokemon(newSelected);
+      // This updates the selected Pokemon state that the manager function will use
+      setSelectedPokemon(newSelected); 
       
-      // Get the current generation from localStorage
-      const currentGeneration = getCurrentGeneration();
+      // Call the comprehensive battle completion logic.
+      // 'handleTripletSelectionComplete' is the function from useBattleManager 
+      // that handles full turn processing (results, history, starting new battle).
+      handleTripletSelectionComplete(battleType, currentBattle); 
       
-      // Process the result with the selected ID and current battle Pokemon
-      processBattleResult(newSelected, currentBattle, battleType, currentGeneration);
-    } else {
-      // For triplets, toggle the selection
+      // Now that all processing and advancement should be done:
+      setIsProcessing(false); // Processing ends
+    } else { // triplets mode
+      // Logic for triplets (when user is just picking, not confirming the battle outcome yet)
       if (selectedPokemon.includes(id)) {
         newSelected = selectedPokemon.filter(pid => pid !== id);
-      } else if (selectedPokemon.length < 3) {
+      } else if (selectedPokemon.length < 3) { 
         newSelected = [...selectedPokemon, id];
       } else {
-        newSelected = [...selectedPokemon.slice(1), id];
+        // Example: if 3 are already selected, clicking a 4th replaces the first one selected.
+        // Adjust this part if triplet selection logic should be different.
+        newSelected = [...selectedPokemon.slice(1), id]; 
       }
-      
       setSelectedPokemon(newSelected);
-      setIsProcessing(false);
+      // For triplets, selecting a Pokemon doesn't mean the battle is processed yet,
+      // so isProcessing is set to false quickly. The actual battle processing
+      // for triplets happens when a "confirm" button calls handleTripletSelectionComplete.
+      setIsProcessing(false); 
     }
   };
 
