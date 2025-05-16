@@ -54,7 +54,8 @@ const {
     finalRankings,
     generateRankings,
     handleSaveRankings: saveRankings
-} = useRankings(Array.isArray(selectionState.allPokemon) ? selectionState.allPokemon : []);
+} = useRankings(selectionState.allPokemon as Pokemon[]);
+
 
 
   
@@ -65,7 +66,14 @@ const {
   handleBattleTypeChange,
 } = useGenerationSettings(
   // ✅ CORRECT: first argument is a Pokemon array
-  (pokemonList: Pokemon[]) => selectionState.startNewBattle(pokemonList, battleTypeState.battleType),
+  (pokemonList) => {
+  if (Array.isArray(pokemonList)) {
+    selectionState.startNewBattle(pokemonList, battleTypeState.battleType);
+  } else {
+    console.error("Expected a Pokémon array but received:", pokemonList);
+  }
+},
+
 
   selectionState.allPokemon,
   progressState.setRankingGenerated,
@@ -173,6 +181,8 @@ const {
 (genId?: number, preserveState?: boolean) => {
   return loadPokemon(genId, false, preserveState).then(() => {});
 },
+
+
 
 
     calculateCompletionPercentage
