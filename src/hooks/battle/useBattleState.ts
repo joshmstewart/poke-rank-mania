@@ -178,9 +178,10 @@ const {
     saveBattleState,
     loadBattleState,
     // Fix the function signature to match the expected type in useBattleCoordinatorState
-(genId?: number, preserveState?: boolean) => {
-  return loadPokemon(genId, false, preserveState).then(() => {});
+async (genId?: number, preserveState?: boolean): Promise<void> => {
+  await loadPokemon(genId, false, preserveState);
 },
+
 
 
 
@@ -189,9 +190,14 @@ const {
   );
 
   // Convenience wrappers for component usage
-  const handleTripletSelectionComplete = () => {
+const handleTripletSelectionComplete = () => {
+  if (Array.isArray(selectionState.currentBattle)) {
     completeTripletSelection(battleTypeState.battleType, selectionState.currentBattle);
-  };
+  } else {
+    console.error("Expected a Pokémon array but got:", selectionState.currentBattle);
+  }
+};
+
 
   const handleSaveRankings = () => {
     saveRankings(generationState.selectedGeneration);
