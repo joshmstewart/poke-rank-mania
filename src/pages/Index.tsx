@@ -9,7 +9,7 @@ import Logo from "@/components/ui/Logo";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
 const Index = () => {
-  const [mode, setMode] = useState<"rank" | "battle">("rank");
+  const [mode, setMode] = useState<"rank" | "battle">("battle"); // Changed default from "rank" to "battle"
   const [isOpen, setIsOpen] = useState(true);
   
   // Collapse the ranking method selection after a short delay on initial load
