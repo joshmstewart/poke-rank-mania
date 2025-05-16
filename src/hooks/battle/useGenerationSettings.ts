@@ -53,14 +53,16 @@ const resetBattleState = () => {
   setShowingMilestone(false);
   setCompletionPercentage(0);
 
-  if (Array.isArray(allPokemon) && allPokemon.length > 1) {
+  // ✅ Add strict type guard
+  if (Array.isArray(allPokemon) && allPokemon.length > 1 && typeof allPokemon[0] === 'object') {
     const stored = localStorage.getItem("pokemon-ranker-battle-type");
     const currentBattleType: BattleType = stored === "triplets" ? "triplets" : "pairs";
     startNewBattle(allPokemon, currentBattleType);
   } else {
-    console.error("resetBattleState: allPokemon is not a valid array", allPokemon);
+    console.error("❌ Cannot start battle — allPokemon is invalid", allPokemon);
   }
 };
+
 
   
   return {
