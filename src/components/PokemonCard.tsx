@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Pokemon } from "@/services/pokemonService";
@@ -35,6 +35,31 @@ const typeColors: Record<string, string> = {
 };
 
 const PokemonCard = ({ pokemon, isDragging, viewMode = "list", compact }: PokemonCardProps) => {
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
+
+  // Handle image load success
+  const handleImageLoad = () => {
+    setImageLoaded(true);
+  };
+
+  // Handle image load error
+  const handleImageError = () => {
+    setImageError(true);
+    // Try to load a fallback after a short delay
+    setTimeout(() => {
+      setImageError(false);
+    }, 1000);
+  };
+
+  // Generate fallback image URL
+  const getImageUrl = () => {
+    if (imageError) {
+      return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pokemon.id}.png`;
+    }
+    return pokemon.image;
+  };
+
   if (viewMode === "grid") {
     return (
       <div 
@@ -42,12 +67,19 @@ const PokemonCard = ({ pokemon, isDragging, viewMode = "list", compact }: Pokemo
           isDragging ? "opacity-50" : "opacity-100"
         }`}
       >
-        <img 
-          src={pokemon.image} 
-          alt={pokemon.name}
-          className="w-full h-full object-contain"
-          loading="lazy"
-        />
+        <div className="absolute inset-0 flex items-center justify-center">
+          {!imageLoaded && !imageError && (
+            <div className="animate-pulse bg-gray-200 w-full h-full absolute"></div>
+          )}
+          <img 
+            src={getImageUrl()} 
+            alt={pokemon.name}
+            className="w-full h-full object-contain"
+            loading="lazy"
+            onLoad={handleImageLoad}
+            onError={handleImageError}
+          />
+        </div>
         <div className="absolute bottom-0 left-0 right-0 p-2">
           <div className="flex items-center justify-between">
             <div className="font-medium text-white text-shadow">{pokemon.name}</div>
@@ -65,13 +97,18 @@ const PokemonCard = ({ pokemon, isDragging, viewMode = "list", compact }: Pokemo
       } ${compact ? "" : ""} transition-all`}
     >
       <div className="flex items-start p-3 gap-3">
-        <div className={`flex-shrink-0 ${compact ? "w-16 h-16" : "w-20 h-20"} bg-gray-50 rounded-md overflow-hidden`}>
+        <div className={`flex-shrink-0 ${compact ? "w-16 h-16" : "w-20 h-20"} bg-gray-50 rounded-md overflow-hidden relative`}>
           <AspectRatio ratio={1 / 1} className="h-full">
+            {!imageLoaded && !imageError && (
+              <div className="animate-pulse bg-gray-200 w-full h-full absolute"></div>
+            )}
             <img 
-              src={pokemon.image} 
+              src={getImageUrl()} 
               alt={pokemon.name} 
-              className="w-full h-full object-contain p-1"
+              className={`w-full h-full object-contain p-1 ${!imageLoaded ? 'opacity-70' : 'opacity-100'}`}
               loading="lazy"
+              onLoad={handleImageLoad}
+              onError={handleImageError}
             />
           </AspectRatio>
         </div>

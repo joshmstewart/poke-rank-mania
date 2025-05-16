@@ -1,5 +1,5 @@
 
-import React, { memo, useCallback } from "react";
+import React, { memo, useCallback, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Pokemon } from "@/services/pokemon";
 import { MousePointerClick } from "lucide-react";
@@ -20,6 +20,10 @@ const BattleCard: React.FC<BattleCardProps> = memo(({
   onSelect,
   isProcessing = false
 }) => {
+  // Add image loading state
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
+
   // Create a stable click handler using useCallback
   const handleCardClick = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -34,6 +38,31 @@ const BattleCard: React.FC<BattleCardProps> = memo(({
     console.log(`BattleCard: Clicked Pokemon: ${pokemon.id}, ${pokemon.name}`);
     onSelect(pokemon.id);
   }, [pokemon.id, pokemon.name, onSelect, isProcessing]);
+
+  // Handle image load success
+  const handleImageLoad = () => {
+    console.log(`Image loaded for Pokemon: ${pokemon.name}`);
+    setImageLoaded(true);
+  };
+
+  // Handle image load error
+  const handleImageError = () => {
+    console.log(`Image error for Pokemon: ${pokemon.name}`);
+    setImageError(true);
+    // Try to load a fallback image after a short delay
+    setTimeout(() => {
+      setImageError(false); // Reset error state to try loading again
+    }, 1000);
+  };
+
+  // Generate fallback image URL from alternate source if needed
+  const getImageUrl = () => {
+    if (imageError) {
+      // Try an alternate source - use the official Pokemon assets as fallback
+      return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pokemon.id}.png`;
+    }
+    return pokemon.image;
+  };
 
   // Determine card styling based on selection and processing state
   const cardStyles = `
@@ -57,12 +86,19 @@ const BattleCard: React.FC<BattleCardProps> = memo(({
     >
       <CardContent className="flex flex-col items-center justify-center p-4">
         <div className="w-full h-full flex flex-col items-center justify-center">
-          <img 
-            src={pokemon.image} 
-            alt={pokemon.name} 
-            className="w-32 h-32 object-contain mb-4" 
-            loading="eager"
-          />
+          <div className="w-32 h-32 relative flex items-center justify-center">
+            {!imageLoaded && !imageError && (
+              <div className="animate-pulse bg-gray-200 w-full h-full absolute rounded-md"></div>
+            )}
+            <img 
+              src={getImageUrl()} 
+              alt={pokemon.name} 
+              className={`w-full h-full object-contain mb-4 ${!imageLoaded ? 'opacity-0' : 'opacity-100'}`} 
+              loading="eager"
+              onLoad={handleImageLoad}
+              onError={handleImageError}
+            />
+          </div>
           <h3 className="text-xl font-bold">{pokemon.name}</h3>
           <p className="text-gray-500">#{pokemon.id}</p>
           
