@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
 
@@ -14,79 +14,66 @@ export const useBattleInteractions = (
   setBattlesCompleted: React.Dispatch<React.SetStateAction<number>>,
   battleHistory: { battle: Pokemon[], selected: number[] }[],
   setBattleHistory: React.Dispatch<React.SetStateAction<{ battle: Pokemon[], selected: number[] }[]>>,
-  handleTripletSelectionComplete: () => void,
-  handleNavigateBack: () => void,
+  handleTripletSelectionComplete: (battleType: BattleType, currentBattle: Pokemon[]) => void,
+  handleGoBack: (setCurrentBattle: React.Dispatch<React.SetStateAction<Pokemon[]>>, battleType: BattleType) => void,
   battleType: BattleType,
-  processBattleResult: (selections: number[], battleType: BattleType, currentBattle: Pokemon[]) => void
+  processBattleResult: (selectedPokemonIds: number[], currentBattlePokemon: Pokemon[], battleType: BattleType, currentSelectedGeneration: number) => void
 ) => {
-
-
-  // Processing state
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Get current generation from localStorage
+  const getCurrentGeneration = () => {
+    const storedGeneration = localStorage.getItem('pokemon-ranker-generation');
+    return storedGeneration ? Number(storedGeneration) : 0;
+  };
   
-  // Function to handle Pokemon selection
-  const handlePokemonSelect = useCallback((id: number) => {
-    // Prevent actions while processing
-    if (isProcessing) {
-      console.log(`useBattleInteractions: Selection ignored for Pokemon ID ${id} - processing in progress`);
-      return;
-    }
+  const handlePokemonSelect = (id: number) => {
+    console.log("useBattleInteractions: Handling selection for Pokemon ID", id, "in", battleType, "mode");
     
-    console.log(`useBattleInteractions: Handling selection for Pokemon ID ${id} in ${battleType} mode`);
-    
-   if (battleType === "pairs") {
-  setIsProcessing(true);
-
-  // Update selection and history
-  setSelectedPokemon([id]);
-  setBattleHistory(prev => [...prev, { battle: [...currentBattle], selected: [id] }]);
-
-  // NEW: Process the result!
-  processBattleResult([id], battleType, currentBattle);
-
-  // Let the UI catch up
-  setTimeout(() => {
-    setIsProcessing(false);
-  }, 100);
-}
- else {
-      // For triplets mode, toggle the selection
-      setSelectedPokemon(prev => {
-        const newSelection = prev.includes(id)
-          ? prev.filter(pokemonId => pokemonId !== id)
-          : [...prev, id];
-        console.log("useBattleInteractions: New triplet selection:", newSelection);
-        return newSelection;
-      });
-    }
-  }, [
-    battleType, 
-    currentBattle, 
-    isProcessing, 
-    setBattleHistory, 
-    setSelectedPokemon, 
-    handleTripletSelectionComplete
-  ]);
-
-  // Function to handle back navigation
-  const handleGoBack = useCallback(() => {
-    if (isProcessing) {
-      console.log("useBattleInteractions: Back navigation ignored - processing in progress");
-      return;
-    }
+    // Prevent selecting when we're already processing a result
+    if (isProcessing) return;
     
     setIsProcessing(true);
-    
-    // Execute navigation immediately
-    handleNavigateBack();
-    
-    // Reset processing state after navigation
-    setIsProcessing(false);
-  }, [handleNavigateBack, isProcessing]);
 
+    // Update selected Pokemon
+    let newSelected: number[];
+    
+    if (battleType === "pairs") {
+      // For pairs, we just select this Pokemon and immediately process it against the other one
+      newSelected = [id];
+      setSelectedPokemon(newSelected);
+      
+      // Get the current generation from localStorage
+      const currentGeneration = getCurrentGeneration();
+      
+      // Process the result with the selected ID and current battle Pokemon
+      processBattleResult(newSelected, currentBattle, battleType, currentGeneration);
+    } else {
+      // For triplets, toggle the selection
+      if (selectedPokemon.includes(id)) {
+        newSelected = selectedPokemon.filter(pid => pid !== id);
+      } else if (selectedPokemon.length < 3) {
+        newSelected = [...selectedPokemon, id];
+      } else {
+        newSelected = [...selectedPokemon.slice(1), id];
+      }
+      
+      setSelectedPokemon(newSelected);
+      setIsProcessing(false);
+    }
+  };
+
+  const handleGoBackClick = () => {
+    if (isProcessing) return;
+    
+    setIsProcessing(true);
+    handleGoBack(setCurrentBattle, battleType);
+    setIsProcessing(false);
+  };
+  
   return {
     handlePokemonSelect,
-    handleGoBack,
+    handleGoBack: handleGoBackClick,
     isProcessing
   };
 };

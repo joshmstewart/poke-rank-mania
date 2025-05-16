@@ -17,7 +17,17 @@ export const useBattleProgression = (
   
   // Check if we've hit a milestone
   const checkMilestone = useCallback((newBattlesCompleted: number, battleResults: any[]) => {
-    if (milestones.includes(newBattlesCompleted)) {
+    // Determine if we should show milestone
+    // 1. Check if exactly on a milestone number
+    const isExactMilestone = milestones.includes(newBattlesCompleted);
+    
+    // 2. Check if we've gone 50 battles since last milestone
+    const nextMilestone = milestones.find(m => m > newBattlesCompleted) || Infinity;
+    const prevMilestone = [...milestones].reverse().find(m => m <= newBattlesCompleted) || 0;
+    const battlesFromLastMilestone = newBattlesCompleted - prevMilestone;
+    const isEvery50Battles = battlesFromLastMilestone > 0 && battlesFromLastMilestone % 50 === 0;
+    
+    if (isExactMilestone || isEvery50Battles) {
       console.log(`useBattleProgression: Milestone reached at ${newBattlesCompleted} battles`);
       
       // Set the milestone flag
@@ -32,21 +42,19 @@ export const useBattleProgression = (
         description: `You've completed ${newBattlesCompleted} battles. Check out your current ranking!`
       });
       
-return true;  // Ensure it returns a boolean
-
+      return true;  // Ensure it returns a boolean
     }
+    
     return false;  // Ensure it returns a boolean
-
   }, [milestones, generateRankings, setShowingMilestone]);
 
   const incrementBattlesCompleted = useCallback((callback?: (newCount: number) => void) => {
-  setBattlesCompleted(prev => {
-    const updated = prev + 1;
-    if (callback) callback(updated);
-    return updated;
-  });
-}, [setBattlesCompleted]);
-
+    setBattlesCompleted(prev => {
+      const updated = prev + 1;
+      if (callback) callback(updated);
+      return updated;
+    });
+  }, [setBattlesCompleted]);
 
   return {
     checkMilestone,

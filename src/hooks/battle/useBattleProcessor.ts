@@ -1,32 +1,27 @@
 
-import { useState, useCallback, useRef } from "react";
+import { useState } from "react";
 import { Pokemon } from "@/services/pokemon";
-import { toast } from "@/hooks/use-toast";
-import { BattleType } from "./types";
-import { useBattleResultProcessor } from "./useBattleResultProcessor";
+import { BattleResult, BattleType } from "./types";
 import { useBattleProgression } from "./useBattleProgression";
 import { useNextBattleHandler } from "./useNextBattleHandler";
+import { useBattleResultProcessor } from "./useBattleResultProcessor";
+import { saveRankings } from "@/services/pokemon";
 
-/**
- * Main hook for processing battle results and managing progression
- */
 export const useBattleProcessor = (
-  battleResults: any[],
-  setBattleResults: React.Dispatch<React.SetStateAction<any[]>>,
+  battleResults: BattleResult,
+  setBattleResults: React.Dispatch<React.SetStateAction<BattleResult>>,
   battlesCompleted: number,
   setBattlesCompleted: React.Dispatch<React.SetStateAction<number>>,
   allPokemon: Pokemon[],
   startNewBattle: (pokemon: Pokemon[], battleType: BattleType) => void,
   setShowingMilestone: React.Dispatch<React.SetStateAction<boolean>>,
   milestones: number[],
-  generateRankings: (results: any[]) => void,
+  generateRankings: (results: BattleResult) => void,
   setSelectedPokemon: React.Dispatch<React.SetStateAction<number[]>>
 ) => {
   const [isProcessingResult, setIsProcessingResult] = useState(false);
-  const processingRef = useRef(false);
-
-  // Use our smaller, focused hooks
-  const { processResult } = useBattleResultProcessor(battleResults, setBattleResults);
+  
+  // Use battle progression hook for handling milestones
   const { checkMilestone, incrementBattlesCompleted } = useBattleProgression(
     battlesCompleted,
     setBattlesCompleted,
@@ -34,84 +29,68 @@ export const useBattleProcessor = (
     milestones,
     generateRankings
   );
-  const { setupNextBattle } = useNextBattleHandler(allPokemon, startNewBattle, setSelectedPokemon);
-
-  // Process the battle result
-  const processBattleResult = useCallback((selections: number[], battleType: BattleType, currentBattle: Pokemon[]) => {
-    console.log("useBattleProcessor: Processing battle result with selections:", selections);
+  
+  // Use next battle handler hook for setting up the next battle
+  const { setupNextBattle } = useNextBattleHandler(
+    allPokemon,
+    startNewBattle,
+    setSelectedPokemon
+  );
+  
+  // Use the battle result processor for recording battle results
+  const { addResult: processBattleResult } = useBattleResultProcessor(
+    battleResults,
+    setBattleResults
+  );
+  
+  const processBattle = (
+    selectedPokemonIds: number[],
+    currentBattlePokemon: Pokemon[],
+    battleType: BattleType,
+    currentSelectedGeneration: number // Added parameter for generation
+  ) => {
+    console.log("useBattleProcessor: Processing battle result with selections:", selectedPokemonIds);
     
-    // Prevent duplicate processing
-    if (processingRef.current) {
-      console.log("useBattleProcessor: Already processing a result, skipping");
+    if (isProcessingResult) {
+      console.log("Already processing a result, skipping");
       return;
     }
     
-    // Set processing flags
     setIsProcessingResult(true);
-    processingRef.current = true;
     
-    if (!currentBattle || currentBattle.length === 0) {
-      console.error("useBattleProcessor: No current battle data available");
-      setIsProcessingResult(false);
-      processingRef.current = false;
-      return;
-    }
+    // First, process the battle result
+    processBattleResult(selectedPokemonIds, currentBattlePokemon, battleType);
 
-    try {
-      // Process battle results using the specialized hook
-      const newResults = processResult(selections, battleType, currentBattle);
+    // Increment the battles completed counter
+    incrementBattlesCompleted((newCount: number) => {
+      console.log("useBattleProcessor: Battles completed incremented to", newCount);
       
-      if (!newResults) {
-        console.error("useBattleProcessor: Failed to process results");
-        setIsProcessingResult(false);
-        processingRef.current = false;
-        return;
+      // Check if we've hit a milestone
+      const hitMilestone = checkMilestone(newCount, battleResults);
+      console.log("useBattleProcessor: Milestone reached?", hitMilestone);
+      
+      if (hitMilestone) {
+        // When a milestone is hit, also save the rankings automatically
+        saveRankings(
+          // Generate fresh rankings from battle results
+          Array.from(new Map(battleResults.map(result => {
+            const winnerData = result.winner;
+            return [winnerData.id, winnerData];
+          })).values()),
+          currentSelectedGeneration,
+          "battle"
+        );
       }
       
-      // Update battle results
-      setBattleResults(newResults);
-      
-// Increment battles completed and run milestone logic immediately
-setBattlesCompleted(prev => {
-  const newCount = prev + 1;
-  console.log("useBattleProcessor: Battles completed incremented to", newCount);
-
-  const reachedMilestone = checkMilestone(newCount, newResults);  // Make sure this returns a boolean
-  console.log("useBattleProcessor: Milestone reached?", reachedMilestone);
-
-  if (!reachedMilestone) {
-    console.log("useBattleProcessor: Setting up next battle with battle type", battleType);
-    setupNextBattle(battleType);
-  }
-
-  // Reset processing flags after everything finishes
-  setIsProcessingResult(false);
-  processingRef.current = false;
-
-  return newCount;  // Ensure this is a valid number
-});
-
-
-
-    } catch (error) {
-      console.error("useBattleProcessor: Error processing battle:", error);
-      toast({
-        title: "Error",
-        description: "Failed to process battle result",
-        variant: "destructive"
-      });
+      // Setup the next battle
+      console.log("useBattleProcessor: Setting up next battle with battle type", battleType);
+      setupNextBattle(battleType);
       setIsProcessingResult(false);
-      processingRef.current = false;
-    }
-}, [
-  processResult,
-  setBattleResults,
-  checkMilestone,
-  setupNextBattle,
-  setBattlesCompleted,
-  setIsProcessingResult
-]);
+    });
+  };
 
-
-  return { processBattleResult, isProcessingResult };
+  return {
+    processBattleResult: processBattle,
+    isProcessingResult
+  };
 };
