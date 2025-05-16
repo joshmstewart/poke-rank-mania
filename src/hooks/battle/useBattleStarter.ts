@@ -2,7 +2,9 @@
 import { useState, useRef } from "react";
 import { Pokemon } from "@/services/pokemon";
 
-export const useBattleStarter = () => {
+export const useBattleStarter = (
+  setCurrentBattle: React.Dispatch<React.SetStateAction<Pokemon[]>>
+) => {
   // Track previous battles to avoid repetition
   const [previousBattles, setPreviousBattles] = useState<number[][]>([]);
   // Use ref to track the most recent battle Pokemon IDs for immediate comparison
@@ -140,6 +142,10 @@ export const useBattleStarter = () => {
     });
     
     console.log("New battle Pokémon:", newBattlePokemon.map(p => p.name));
+    
+    // Update React state with the new battle Pokémon
+    setCurrentBattle(newBattlePokemon);
+    
     return newBattlePokemon;
   };
 
