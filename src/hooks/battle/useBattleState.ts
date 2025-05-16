@@ -63,12 +63,8 @@ const {
   handleGenerationChange,
   handleBattleTypeChange,
 } = useGenerationSettings(
-  (pokemonList) => {
-    if (Array.isArray(pokemonList)) {
-      selectionState.startNewBattle(pokemonList, battleTypeState.battleType);
-    } else {
-      console.error("Expected a Pokémon array but received:", pokemonList);
-    }
+  (pokemonList: Pokemon[]) => {
+    selectionState.startNewBattle(pokemonList, battleTypeState.battleType);
   },
   Array.isArray(selectionState.allPokemon) ? selectionState.allPokemon : [],
   progressState.setRankingGenerated,
@@ -78,6 +74,7 @@ const {
   progressState.setShowingMilestone,
   progressState.setCompletionPercentage
 );
+
 
 
   

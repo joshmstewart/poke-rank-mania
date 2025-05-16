@@ -51,17 +51,24 @@ export const usePokemonLoader = ({
       }
       
       // Start the first battle or continue from previous battle
-      if (pokemon.length > 0) {
-        console.log("Starting initial battle with", pokemon.length, "Pokémon");
-        startNewBattle(pokemon, battleType);
-      } else {
-        console.error("No Pokémon loaded");
-        toast({
-          title: "Error",
-          description: "No Pokémon loaded. Please try again.",
-          variant: "destructive"
-        });
-      }
+// Start the first battle or continue from previous battle
+if (
+  Array.isArray(pokemon) &&
+  pokemon.length > 0 &&
+  typeof pokemon[0] === "object" &&
+  "id" in pokemon[0]
+) {
+  console.log("✅ Starting initial battle with", pokemon.length, "Pokémon");
+  startNewBattle(pokemon, battleType);
+} else {
+  console.error("❌ Invalid Pokémon data:", pokemon);
+  toast({
+    title: "Error",
+    description: "Invalid Pokémon data received. Please refresh or try again.",
+    variant: "destructive"
+  });
+}
+
       
       return pokemon;
     } catch (error) {
