@@ -1,20 +1,13 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Info, RefreshCw, List } from "lucide-react";
-import { ITEMS_PER_PAGE } from "@/services/pokemon";
-import { RankingControls } from "./ranking/RankingControls";
 import { RankingResults } from "./ranking/RankingResults";
 import { RankingUI } from "./ranking/RankingUI";
 import { usePokemonRanker } from "@/hooks/usePokemonRanker";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { generations } from "@/services/pokemon";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-
-// Load options for the number of Pokémon to show
-const loadSizeOptions = [50, 100, 200, 500, 1000];
 
 const PokemonRanker = () => {
   const {
@@ -32,8 +25,6 @@ const PokemonRanker = () => {
     resetRankings,
     handleGenerationChange,
     handlePageChange,
-    handleLoadingTypeChange,
-    handleLoadSizeChange,
     getPageRange
   } = usePokemonRanker();
 
@@ -45,7 +36,7 @@ const PokemonRanker = () => {
       <div className="flex flex-col space-y-4">
         {/* Controls bar - similar to BattleControls */}
         <div className="flex items-center justify-between bg-white p-3 rounded-lg shadow border">
-          {/* Left side - Gen and Loading type */}
+          {/* Left side - Gen dropdown only */}
           <div className="flex items-center gap-4">
             <div className="flex items-center">
               <span className="text-sm font-medium whitespace-nowrap mr-1">Gen:</span>
@@ -53,7 +44,7 @@ const PokemonRanker = () => {
                 value={selectedGeneration.toString()} 
                 onValueChange={handleGenerationChange}
               >
-                <SelectTrigger className="w-[140px] h-8 text-sm">
+                <SelectTrigger className="w-[180px] h-8 text-sm">
                   <SelectValue placeholder="Generation" />
                 </SelectTrigger>
                 <SelectContent align="start" className="min-w-[200px]">
@@ -65,33 +56,6 @@ const PokemonRanker = () => {
                 </SelectContent>
               </Select>
             </div>
-            
-            <div className="flex items-center">
-              <span className="text-sm font-medium whitespace-nowrap mr-1">Load:</span>
-              <ToggleGroup type="single" value={loadingType} onValueChange={handleLoadingTypeChange} className="h-8">
-                <ToggleGroupItem value="pagination" className="text-xs h-8">Pages</ToggleGroupItem>
-                <ToggleGroupItem value="infinite" className="text-xs h-8">Infinite</ToggleGroupItem>
-                <ToggleGroupItem value="single" className="text-xs h-8">Single</ToggleGroupItem>
-              </ToggleGroup>
-            </div>
-            
-            {loadingType === "single" && (
-              <div className="flex items-center">
-                <span className="text-sm font-medium whitespace-nowrap mr-1">Size:</span>
-                <Select value={loadSize.toString()} onValueChange={handleLoadSizeChange}>
-                  <SelectTrigger className="w-[80px] h-8 text-sm">
-                    <SelectValue placeholder="Size" />
-                  </SelectTrigger>
-                  <SelectContent align="start">
-                    {loadSizeOptions.map(size => (
-                      <SelectItem key={size} value={size.toString()}>
-                        {size}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
           </div>
           
           {/* Right side - action buttons */}
@@ -130,14 +94,8 @@ const PokemonRanker = () => {
                   <p>Rearrange them in your preferred order from favorite (top) to least favorite (bottom).</p>
                   <p>Use the search box to find specific Pokémon quickly.</p>
                   <p>You can choose to rank Pokémon within a specific generation or across all generations.</p>
-                  <p>Choose your preferred loading method:
-                    <ul className="list-disc list-inside mt-2 ml-4">
-                      <li><strong>Pagination:</strong> Navigate through pages of Pokémon</li>
-                      <li><strong>Infinite Scroll:</strong> Load more as you scroll down</li>
-                      <li><strong>Single Load:</strong> Load a larger batch at once</li>
-                    </ul>
-                  </p>
                   <p>Your rankings are automatically saved as you make changes!</p>
+                  <p>Scroll down to load more Pokémon automatically.</p>
                 </div>
               </DialogContent>
             </Dialog>
@@ -159,7 +117,7 @@ const PokemonRanker = () => {
             availablePokemon={availablePokemon}
             rankedPokemon={rankedPokemon}
             selectedGeneration={selectedGeneration}
-            loadingType={loadingType}
+            loadingType="infinite"
             currentPage={currentPage}
             totalPages={totalPages}
             loadSize={loadSize}

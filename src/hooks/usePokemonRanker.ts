@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { 
   Pokemon, 
@@ -24,7 +25,7 @@ export const usePokemonRanker = (): RankingState & RankingActions & { loadingRef
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [loadSize, setLoadSize] = useState(50); // Default to first option
-  const [loadingType, setLoadingType] = useState<LoadingType>("infinite"); // Changed default to infinite
+  const [loadingType, setLoadingType] = useState<LoadingType>("infinite"); // Always use infinite scrolling
   
   const { loadData } = useDataLoader(
     selectedGeneration,
@@ -52,16 +53,14 @@ export const usePokemonRanker = (): RankingState & RankingActions & { loadingRef
   
   // Load data on generation change or page change
   useEffect(() => {
-    if (loadingType === "pagination" || loadingType === "single") {
-      loadData();
-    } else if (loadingType === "infinite" && currentPage === 1) {
+    if (currentPage === 1) {
       // Initialize infinite scroll with first page
       loadData();
-    } else if (loadingType === "infinite" && currentPage > 1) {
+    } else {
       // Load additional pages for infinite scroll
       loadData();
     }
-  }, [selectedGeneration, currentPage, loadSize, loadingType]);
+  }, [selectedGeneration, currentPage, loadSize]);
   
   const resetRankings = () => {
     // Get all Pokemon back to available list
@@ -96,6 +95,7 @@ export const usePokemonRanker = (): RankingState & RankingActions & { loadingRef
     setCurrentPage(page);
   };
 
+  // These functions are kept for compatibility, but are no longer actively used in the UI
   const handleLoadingTypeChange = (value: string) => {
     setLoadingType(value as LoadingType);
     setCurrentPage(1);
