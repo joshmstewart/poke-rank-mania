@@ -73,12 +73,29 @@ export const useBattleManager = (
     setSelectedPokemon: setLocalSelectedPokemon,
     handlePokemonSelect: (id: number, battleType: BattleType, currentBattle: Pokemon[]) => 
       handlePokemonSelect(id, battleType, currentBattle),
-    handleTripletSelectionComplete: (battleType: BattleType, currentBattle: Pokemon[]) => {
-      handleTripletSelectionComplete(battleType, currentBattle);
+  handleTripletSelectionComplete: (battleType: BattleType, currentBattle: Pokemon[]) => {
+      // The 'selectedPokemon' variable here comes from the useBattleSelectionManager hook.
+      // It should contain the ID of the Pokemon selected in 'pairs' mode.
+      // The 'processBattleResult' variable here comes from the useBattleProcessor hook.
+      // The 'getCurrentGeneration' function is defined earlier in useBattleManager.ts.
+      // The 'handleTripletSelectionComplete' called in the 'else' block refers to the one
+      // destructured from useBattleSelectionManager earlier in useBattleManager.ts.
+
       if (battleType === "pairs") {
-        // Trigger the next battle manually
-        console.log("useBattleManager: Starting next battle for pairs mode");
-        startNewBattle(allPokemon, battleType);
+        // For "pairs" mode:
+        // Directly process the result using the main battle processor.
+        // This ensures battlesCompleted, battleResults, history are updated,
+        // and then the next battle should be started by the processor.
+        console.log("useBattleManager: Processing battle result for pairs mode with selections:", selectedPokemon);
+        const currentGeneration = getCurrentGeneration();
+        processBattleResult(selectedPokemon, currentBattle, battleType, currentGeneration);
+      } else {
+        // For "triplets" mode:
+        // Use the existing logic, which calls the handleTripletSelectionComplete 
+        // from useBattleSelectionManager. This function handles triplet-specific 
+        // selection management and then calls the main processBattleResult (from processor)
+        // via a callback.
+        handleTripletSelectionComplete(battleType, currentBattle);
       }
     },
     goBack,
