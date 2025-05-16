@@ -39,10 +39,13 @@ export const useBattleProgression = (
 
   // Increment battles completed counter
   const incrementBattlesCompleted = useCallback(() => {
-    const newBattlesCompleted = battlesCompleted + 1;
-    console.log(`useBattleProgression: Incrementing battles from ${battlesCompleted} to ${newBattlesCompleted}`);
-    setBattlesCompleted(newBattlesCompleted);
-    return newBattlesCompleted;
+    let newCount = 0;
+setBattlesCompleted(prev => {
+  newCount = prev + 1;
+  return newCount;
+});
+return newCount;
+
   }, [battlesCompleted, setBattlesCompleted]);
 
   return {
