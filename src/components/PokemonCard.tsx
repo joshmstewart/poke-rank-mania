@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Pokemon } from "@/services/pokemonService";
@@ -37,26 +37,58 @@ const typeColors: Record<string, string> = {
 const PokemonCard = ({ pokemon, isDragging, viewMode = "list", compact }: PokemonCardProps) => {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const maxRetries = 3;
+
+  // Reset image states when pokemon changes
+  useEffect(() => {
+    setImageLoaded(false);
+    setImageError(false);
+    setRetryCount(0);
+  }, [pokemon.id]);
 
   // Handle image load success
   const handleImageLoad = () => {
     setImageLoaded(true);
+    setImageError(false);
   };
 
-  // Handle image load error
+  // Handle image load error with more robust retry logic
   const handleImageError = () => {
-    setImageError(true);
-    // Try to load a fallback after a short delay
-    setTimeout(() => {
-      setImageError(false);
-    }, 1000);
+    if (retryCount < maxRetries) {
+      // Try to reload with a small increasing delay
+      const delay = 1000 * (retryCount + 1);
+      setImageError(true);
+      
+      setTimeout(() => {
+        setRetryCount(prev => prev + 1);
+        // Force image reload by adding timestamp to URL
+        setImageError(false);
+      }, delay);
+    } else {
+      // After max retries, stay in error state
+      setImageError(true);
+    }
   };
 
-  // Generate fallback image URL
+  // Generate fallback image URL with more options
   const getImageUrl = () => {
+    if (!pokemon || !pokemon.id) return '';
+    
     if (imageError) {
-      return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pokemon.id}.png`;
+      // Try different fallback sources
+      const fallbacks = [
+        // PokeAPI official artwork
+        `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pokemon.id}.png`,
+        // Default sprite as last resort
+        `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemon.id}.png`
+      ];
+      
+      // Use different fallback based on retry count
+      return fallbacks[Math.min(retryCount - 1, fallbacks.length - 1)];
     }
+    
+    // Try the original image URL
     return pokemon.image;
   };
 
@@ -74,11 +106,18 @@ const PokemonCard = ({ pokemon, isDragging, viewMode = "list", compact }: Pokemo
           <img 
             src={getImageUrl()} 
             alt={pokemon.name}
-            className="w-full h-full object-contain"
+            className={`w-full h-full object-contain ${!imageLoaded ? 'opacity-0' : 'opacity-100'} transition-opacity duration-200`}
             loading="lazy"
             onLoad={handleImageLoad}
             onError={handleImageError}
           />
+          {imageError && retryCount >= maxRetries && (
+            <div className="absolute inset-0 flex items-center justify-center bg-gray-100 bg-opacity-80">
+              <div className="text-sm text-gray-500 text-center p-2">
+                Unable to load image
+              </div>
+            </div>
+          )}
         </div>
         <div className="absolute bottom-0 left-0 right-0 p-2">
           <div className="flex items-center justify-between">
@@ -105,11 +144,16 @@ const PokemonCard = ({ pokemon, isDragging, viewMode = "list", compact }: Pokemo
             <img 
               src={getImageUrl()} 
               alt={pokemon.name} 
-              className={`w-full h-full object-contain p-1 ${!imageLoaded ? 'opacity-70' : 'opacity-100'}`}
+              className={`w-full h-full object-contain p-1 ${!imageLoaded ? 'opacity-0' : 'opacity-100'} transition-opacity duration-200`}
               loading="lazy"
               onLoad={handleImageLoad}
               onError={handleImageError}
             />
+            {imageError && retryCount >= maxRetries && (
+              <div className="absolute inset-0 flex items-center justify-center bg-gray-100 bg-opacity-80">
+                <div className="text-xs text-gray-500">Unable to load</div>
+              </div>
+            )}
           </AspectRatio>
         </div>
         <div className="flex-1 min-w-0">
