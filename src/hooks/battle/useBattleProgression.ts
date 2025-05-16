@@ -37,16 +37,14 @@ export const useBattleProgression = (
     return false;
   }, [milestones, generateRankings, setShowingMilestone]);
 
-  // Increment battles completed counter
-  const incrementBattlesCompleted = useCallback(() => {
-    let newCount = 0;
-setBattlesCompleted(prev => {
-  newCount = prev + 1;
-  return newCount;
-});
-return newCount;
+  const incrementBattlesCompleted = useCallback((callback?: (newCount: number) => void) => {
+  setBattlesCompleted(prev => {
+    const updated = prev + 1;
+    if (callback) callback(updated);
+    return updated;
+  });
+}, [setBattlesCompleted]);
 
-  }, [battlesCompleted, setBattlesCompleted]);
 
   return {
     checkMilestone,
