@@ -50,11 +50,12 @@ const {
   const { saveBattleState, loadBattleState } = useLocalStorage();
   
   // Rankings generation and management
-  const {
-    finalRankings,
-    generateRankings,
-    handleSaveRankings: saveRankings
-} = useRankings(selectionState.allPokemon as Pokemon[]);
+const {
+  finalRankings,
+  generateRankings,
+  handleSaveRankings: saveRankings
+} = useRankings(Array.isArray(selectionState.allPokemon) ? selectionState.allPokemon : []);
+
 
 
 
@@ -65,17 +66,14 @@ const {
   handleGenerationChange,
   handleBattleTypeChange,
 } = useGenerationSettings(
-  // ✅ CORRECT: first argument is a Pokemon array
   (pokemonList) => {
-  if (Array.isArray(pokemonList)) {
-    selectionState.startNewBattle(pokemonList, battleTypeState.battleType);
-  } else {
-    console.error("Expected a Pokémon array but received:", pokemonList);
-  }
-},
-
-
-  selectionState.allPokemon,
+    if (Array.isArray(pokemonList)) {
+      selectionState.startNewBattle(pokemonList, battleTypeState.battleType);
+    } else {
+      console.error("Expected a Pokémon array but received:", pokemonList);
+    }
+  },
+  Array.isArray(selectionState.allPokemon) ? selectionState.allPokemon : [],
   progressState.setRankingGenerated,
   selectionState.setBattleResults,
   selectionState.setBattlesCompleted,
@@ -83,6 +81,7 @@ const {
   progressState.setShowingMilestone,
   progressState.setCompletionPercentage
 );
+
 
   
   // Synchronize settings state
