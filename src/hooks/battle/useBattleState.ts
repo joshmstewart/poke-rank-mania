@@ -142,10 +142,11 @@ export const useBattleState = () => {
     () => completeTripletSelection(battleTypeState.battleType, selectionState.currentBattle),
     () => navigateBack(selectionState.setCurrentBattle, battleTypeState.battleType),
     battleTypeState.battleType,
-    (selectedIds, currentBattle, battleType) => {
-      const currentGeneration = generationState.selectedGeneration;
-      return selectionState.processBattleResult(selectedIds, currentBattle, battleType, currentGeneration);
-    }
+(selections, battleType, currentBattle) => {
+  const currentGeneration = generationState.selectedGeneration;
+  return selectionState.processBattleResult(selections, currentBattle, battleType, currentGeneration);
+}
+
   );
 
   // Coordinator for state initialization and persistence
