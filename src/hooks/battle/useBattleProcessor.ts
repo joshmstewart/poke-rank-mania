@@ -76,7 +76,7 @@ setBattlesCompleted(prev => {
   const newCount = prev + 1;
   console.log("useBattleProcessor: Battles completed incremented to", newCount);
 
-  const reachedMilestone = checkMilestone(newCount, newResults);
+  const reachedMilestone = checkMilestone(newCount, newResults);  // Make sure this returns a boolean
   console.log("useBattleProcessor: Milestone reached?", reachedMilestone);
 
   if (!reachedMilestone) {
@@ -88,8 +88,9 @@ setBattlesCompleted(prev => {
   setIsProcessingResult(false);
   processingRef.current = false;
 
-  return newCount;
+  return newCount;  // Ensure this is a valid number
 });
+
 
 
     } catch (error) {
