@@ -4,8 +4,19 @@ import { Pokemon, fetchAllPokemon } from "@/services/pokemon";
 import { toast } from "@/hooks/use-toast";
 import { BattleType } from "./types";
 
-export const usePokemonLoader = (
-  setAllPokemon: React.Dispatch<React.SetStateAction<Pokemon[]>>, // FIXED: Add this parameter
+export const usePokemonLoader = ({
+  setAllPokemon,
+  setRankingGenerated,
+  setBattleResults,
+  setBattlesCompleted,
+  setBattleHistory,
+  setShowingMilestone,
+  setCompletionPercentage,
+  setSelectedPokemon,
+  startNewBattle,
+  battleType
+}: {
+  setAllPokemon: React.Dispatch<React.SetStateAction<Pokemon[]>>,
   setRankingGenerated: React.Dispatch<React.SetStateAction<boolean>>,
   setBattleResults: React.Dispatch<React.SetStateAction<any[]>>,
   setBattlesCompleted: React.Dispatch<React.SetStateAction<number>>,
@@ -15,7 +26,8 @@ export const usePokemonLoader = (
   setSelectedPokemon: React.Dispatch<React.SetStateAction<number[]>>,
   startNewBattle: (pokemonList: Pokemon[], battleType: BattleType) => void,
   battleType: BattleType
-) => {
+}) => {
+
   const [isLoading, setIsLoading] = useState(true);
 
   const loadPokemon = async (genId = 0, fullRankingMode = false, preserveState = false) => {
