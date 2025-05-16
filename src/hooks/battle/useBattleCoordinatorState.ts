@@ -16,7 +16,7 @@ export const useBattleCoordinatorState = (
   battleHistory: { battle: Pokemon[], selected: number[] }[],
   completionPercentage: number,
   fullRankingMode: boolean,
-  saveBattleState: () => void,
+  saveBattleState: () => void, // Updated to match the signature in useLocalStorage
   loadBattleState: () => any | null,
   loadPokemon: (genId?: number, preserveState?: boolean) => Promise<void>,
   calculateCompletionPercentage: () => void

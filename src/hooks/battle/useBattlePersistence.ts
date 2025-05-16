@@ -12,7 +12,7 @@ export const useBattlePersistence = (
   battleHistory: { battle: Pokemon[], selected: number[] }[],
   completionPercentage: number,
   fullRankingMode: boolean,
-  saveBattleState: (state: BattleState) => void,
+  saveBattleState: () => void, // Updated to match useLocalStorage
   calculateCompletionPercentage: () => void
 ) => {
   // Calculate completion percentage and save state when results change
@@ -22,15 +22,7 @@ export const useBattlePersistence = (
       calculateCompletionPercentage();
       
       // Save battle state whenever results change
-      saveBattleState({
-        selectedGeneration,
-        battleType,
-        battleResults,
-        battlesCompleted,
-        battleHistory,
-        completionPercentage,
-        fullRankingMode
-      });
+      saveBattleState();
     }
   }, [battleResults, allPokemon, selectedGeneration, battleType]);
   

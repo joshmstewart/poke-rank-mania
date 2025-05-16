@@ -146,7 +146,6 @@ export const useBattleState = () => {
   const currentGeneration = generationState.selectedGeneration;
   return selectionState.processBattleResult(selections, currentBattle, battleType, currentGeneration);
 }
-
   );
 
   // Coordinator for state initialization and persistence
