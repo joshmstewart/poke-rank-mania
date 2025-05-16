@@ -71,26 +71,23 @@ export const useBattleProcessor = (
       // Update battle results
       setBattleResults(newResults);
       
-      // Increment battles completed
-      const newBattlesCompleted = incrementBattlesCompleted();
-      console.log("useBattleProcessor: Battles completed incremented to", newBattlesCompleted);
-      
-      // Check if we've hit a milestone immediately
-      const reachedMilestone = checkMilestone(newBattlesCompleted, newResults);
-      console.log("useBattleProcessor: Milestone reached?", reachedMilestone);
-      
-      if (!reachedMilestone) {
-        // Start a new battle if no milestone reached
-        console.log("useBattleProcessor: Setting up next battle with battle type", battleType);
-        // Force a small delay to make sure UI is updated properly
-        setupNextBattle(battleType);
-setIsProcessingResult(false);
-processingRef.current = false;
-      } else {
-        // Reset processing flags
-        setIsProcessingResult(false);
-        processingRef.current = false;
-      }
+     // Increment battles completed and act only after it's updated
+incrementBattlesCompleted((newCount) => {
+  console.log("useBattleProcessor: Battles completed incremented to", newCount);
+
+  const reachedMilestone = checkMilestone(newCount, newResults);
+  console.log("useBattleProcessor: Milestone reached?", reachedMilestone);
+
+  if (!reachedMilestone) {
+    console.log("useBattleProcessor: Setting up next battle with battle type", battleType);
+    setupNextBattle(battleType);
+  }
+
+  // Reset processing flags after everything finishes
+  setIsProcessingResult(false);
+  processingRef.current = false;
+});
+
     } catch (error) {
       console.error("useBattleProcessor: Error processing battle:", error);
       toast({
