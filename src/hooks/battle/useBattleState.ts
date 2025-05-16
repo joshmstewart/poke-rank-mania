@@ -50,11 +50,8 @@ const {
   const { saveBattleState, loadBattleState } = useLocalStorage();
   
   // Rankings generation and management
-const {
-  finalRankings,
-  generateRankings,
-  handleSaveRankings: saveRankings
-} = useRankings(Array.isArray(selectionState.allPokemon) ? selectionState.allPokemon : []);
+const allPokemonSafe = Array.isArray(selectionState.allPokemon) ? selectionState.allPokemon : [];
+const { finalRankings, generateRankings, handleSaveRankings: saveRankings } = useRankings(allPokemonSafe);
 
 
 
