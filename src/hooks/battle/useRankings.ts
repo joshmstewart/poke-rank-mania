@@ -218,4 +218,3 @@ const generateRankings = (results: BattleResult) => {
     generateRankings,
     handleSaveRankings
   };
-};
