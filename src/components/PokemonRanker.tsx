@@ -17,6 +17,7 @@ const PokemonRanker = () => {
     selectedGeneration,
     currentPage,
     totalPages,
+    loadSize,
     loadingType,
     loadingRef,
     setAvailablePokemon,
