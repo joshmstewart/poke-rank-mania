@@ -73,9 +73,12 @@ export const useRankings = (allPokemon: Pokemon[]) => {
     // --- Added Log ---
     console.log('[useRankings] battledPokemonIds.size (after processing results):', battledPokemonIds.size);
 
+    // FIX: If no battles completed yet, use a default subset of Pokémon as initial rankings
     if (battledPokemonIds.size === 0) {
-      console.log("[useRankings] Condition met: battledPokemonIds.size is 0. Setting empty finalRankings.");
-      setFinalRankings([]);
+      console.log("[useRankings] No battles completed yet. Using default initial rankings.");
+      const defaultRankings = allPokemon.slice(0, 10);
+      setFinalRankings(defaultRankings);
+      setRankingGenerated(true);
       return;
     }
 
@@ -85,6 +88,7 @@ export const useRankings = (allPokemon: Pokemon[]) => {
       const defaultRankings = allPokemon.slice(0, 10);
       console.log("Using default rankings due to no battle results (original log)");
       setFinalRankings(defaultRankings);
+      setRankingGenerated(true);
       return;
     }
 

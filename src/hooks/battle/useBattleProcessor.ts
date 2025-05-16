@@ -71,15 +71,18 @@ export const useBattleProcessor = (
       
       if (hitMilestone && currentSelectedGeneration) {
         // When a milestone is hit, also save the rankings automatically
-        saveRankings(
-          // Generate fresh rankings from battle results
-          Array.from(new Map(battleResults.map(result => {
-            const winnerData = result.winner;
-            return [winnerData.id, winnerData];
-          })).values()),
-          currentSelectedGeneration,
-          "battle"
-        );
+        // Update: Only save if we actually have battle results
+        if (battleResults.length > 0) {
+          saveRankings(
+            // Generate fresh rankings from battle results
+            Array.from(new Map(battleResults.map(result => {
+              const winnerData = result.winner;
+              return [winnerData.id, winnerData];
+            })).values()),
+            currentSelectedGeneration,
+            "battle"
+          );
+        }
       }
       
       // Setup the next battle
