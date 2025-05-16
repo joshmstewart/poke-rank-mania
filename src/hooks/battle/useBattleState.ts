@@ -54,25 +54,28 @@ const {
     finalRankings,
     generateRankings,
     handleSaveRankings: saveRankings
-} = useRankings(selectionState.allPokemon as Pokemon[]);
+} = useRankings(Array.isArray(selectionState.allPokemon) ? selectionState.allPokemon : []);
+
 
   
   // Generation settings management
-  const {
-    selectedGeneration: generationSetting,
-    handleGenerationChange,
-    handleBattleTypeChange,
-  } = useGenerationSettings(
-    // Fix: Pass the function properly with correct types
-    (pokemonList: Pokemon[]) => selectionState.startNewBattle(pokemonList, battleTypeState.battleType),
-    selectionState.allPokemon,
-    progressState.setRankingGenerated,
-    selectionState.setBattleResults,
-    selectionState.setBattlesCompleted,
-    selectionState.setBattleHistory,
-    progressState.setShowingMilestone,
-    progressState.setCompletionPercentage,
-  );
+const {
+  selectedGeneration: generationSetting,
+  handleGenerationChange,
+  handleBattleTypeChange,
+} = useGenerationSettings(
+  // ✅ CORRECT: first argument is a Pokemon array
+  (pokemonList: Pokemon[]) => selectionState.startNewBattle(pokemonList, battleTypeState.battleType),
+
+  selectionState.allPokemon,
+  progressState.setRankingGenerated,
+  selectionState.setBattleResults,
+  selectionState.setBattlesCompleted,
+  selectionState.setBattleHistory,
+  progressState.setShowingMilestone,
+  progressState.setCompletionPercentage
+);
+
   
   // Synchronize settings state
   if (generationSetting !== generationState.selectedGeneration) {
