@@ -170,10 +170,11 @@ const {
     saveBattleState,
     loadBattleState,
     // Fix the function signature to match the expected type in useBattleCoordinatorState
-    (genId?: number, preserveState?: boolean) => {
-      // We'll ignore fullRankingMode here since it's always true in the current implementation
-      return loadPokemon(genId, false, preserveState);
-    },
+(genId?: number, preserveState?: boolean) => {
+  return loadPokemon(genId, false, preserveState).then(() => {});
+},
+
+
     calculateCompletionPercentage
   );
 
