@@ -52,8 +52,10 @@ export const useBattleInteractions = (
       console.log("useBattleInteractions: Calling handleTripletSelectionComplete for pairs mode");
       handleTripletSelectionComplete();
       
-      // Reset processing state after completion
-      setIsProcessing(false);
+      // Delay next battle slightly to ensure UI updates cleanly
+      setTimeout(() => {
+        setIsProcessing(false);
+      }, 100);
     } else {
       // For triplets mode, toggle the selection
       setSelectedPokemon(prev => {

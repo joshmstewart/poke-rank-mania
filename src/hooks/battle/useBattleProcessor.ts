@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { toast } from "@/hooks/use-toast";
 import { BattleType } from "./types";
@@ -23,6 +23,7 @@ export const useBattleProcessor = (
   setSelectedPokemon: React.Dispatch<React.SetStateAction<number[]>>
 ) => {
   const [isProcessingResult, setIsProcessingResult] = useState(false);
+  const processingRef = useRef(false);
 
   // Use our smaller, focused hooks
   const { processResult } = useBattleResultProcessor(battleResults, setBattleResults);
@@ -39,12 +40,20 @@ export const useBattleProcessor = (
   const processBattleResult = useCallback((selections: number[], battleType: BattleType, currentBattle: Pokemon[]) => {
     console.log("useBattleProcessor: Processing battle result with selections:", selections);
     
-    // Set processing flag
+    // Prevent duplicate processing
+    if (processingRef.current) {
+      console.log("useBattleProcessor: Already processing a result, skipping");
+      return;
+    }
+    
+    // Set processing flags
     setIsProcessingResult(true);
+    processingRef.current = true;
     
     if (!currentBattle || currentBattle.length === 0) {
       console.error("useBattleProcessor: No current battle data available");
       setIsProcessingResult(false);
+      processingRef.current = false;
       return;
     }
 
@@ -55,6 +64,7 @@ export const useBattleProcessor = (
       if (!newResults) {
         console.error("useBattleProcessor: Failed to process results");
         setIsProcessingResult(false);
+        processingRef.current = false;
         return;
       }
       
@@ -72,11 +82,18 @@ export const useBattleProcessor = (
       if (!reachedMilestone) {
         // Start a new battle if no milestone reached
         console.log("useBattleProcessor: Setting up next battle with battle type", battleType);
-        setupNextBattle(battleType);
+        // Force a small delay to make sure UI is updated properly
+        setTimeout(() => {
+          setupNextBattle(battleType);
+          // Reset processing flags after completion
+          setIsProcessingResult(false);
+          processingRef.current = false;
+        }, 50);
+      } else {
+        // Reset processing flags
+        setIsProcessingResult(false);
+        processingRef.current = false;
       }
-      
-      // Reset processing state after all operations are done
-      setIsProcessingResult(false);
     } catch (error) {
       console.error("useBattleProcessor: Error processing battle:", error);
       toast({
@@ -85,6 +102,7 @@ export const useBattleProcessor = (
         variant: "destructive"
       });
       setIsProcessingResult(false);
+      processingRef.current = false;
     }
   }, [
     processResult,

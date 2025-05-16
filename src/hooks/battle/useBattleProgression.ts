@@ -1,5 +1,5 @@
 
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 import { toast } from "@/hooks/use-toast";
 
 /**
@@ -12,10 +12,16 @@ export const useBattleProgression = (
   milestones: number[],
   generateRankings: (results: any[]) => void,
 ) => {
+  // Add a ref to track if a milestone is currently being shown
+  const showingMilestoneRef = useRef(false);
+  
   // Check if we've hit a milestone
   const checkMilestone = useCallback((newBattlesCompleted: number, battleResults: any[]) => {
     if (milestones.includes(newBattlesCompleted)) {
       console.log(`useBattleProgression: Milestone reached at ${newBattlesCompleted} battles`);
+      
+      // Set the milestone flag
+      showingMilestoneRef.current = true;
       
       // Force rankings generation with current results immediately
       generateRankings(battleResults);
@@ -41,6 +47,7 @@ export const useBattleProgression = (
 
   return {
     checkMilestone,
-    incrementBattlesCompleted
+    incrementBattlesCompleted,
+    isShowingMilestone: showingMilestoneRef.current
   };
 };
