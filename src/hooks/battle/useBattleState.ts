@@ -153,31 +153,39 @@ const {
   selectionState.setBattleHistory,
   () => completeTripletSelection(battleTypeState.battleType, selectionState.currentBattle),
   () => navigateBack(selectionState.setCurrentBattle, battleTypeState.battleType),
- 
-  
-  
   battleTypeState.battleType,
-  (selectedPokemonIds: number[], battleType: BattleType, currentBattle: Pokemon[]) => {
-    // ---- basic type‑safety guards ----
+  // CORRECTED Anonymous Callback Function:
+  (
+    selectedPokemonIds: number[],
+    currentBattlePokemon: Pokemon[], // Was: battleType, Now: Pokemon[] (parameter 2)
+    battleType: BattleType,        // Was: currentBattle, Now: BattleType (parameter 3)
+    currentSelectedGeneration: number // New parameter (parameter 4)
+  ) => {
+    // ---- updated basic type‑safety guards ----
     if (
       !Array.isArray(selectedPokemonIds) ||
       selectedPokemonIds.some(id => typeof id !== "number")
     ) {
       throw new Error("selectedPokemonIds must be number[]");
     }
-    if (!Array.isArray(currentBattle)) {
-      throw new Error("currentBattle must be Pokemon[]");
+    if (!Array.isArray(currentBattlePokemon)) { // Updated guard to use currentBattlePokemon
+      throw new Error("currentBattlePokemon must be Pokemon[]");
     }
+    // You might also want a guard for battleType if its definition is complex
     // ----------------------------------
-    const currentGeneration = generationState.selectedGeneration;
+
+    // The `currentGeneration` variable is no longer needed here if `currentSelectedGeneration` is passed correctly by useBattleInteractions.
+    // const currentGeneration = generationState.selectedGeneration; // This line can likely be removed.
+
     return selectionState.processBattleResult(
-      selectedPokemonIds,
-      currentBattle,
-      battleType,
-      currentGeneration
+      selectedPokemonIds,       // Parameter 1
+      currentBattlePokemon,   // Use the new 2nd parameter from the callback signature
+      battleType,               // Use the new 3rd parameter from the callback signature
+      currentSelectedGeneration // Use the new 4th parameter from the callback signature
     );
   }
 );
+
 
 
 
