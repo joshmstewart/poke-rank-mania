@@ -71,8 +71,9 @@ export const useBattleProcessor = (
       // Update battle results
       setBattleResults(newResults);
       
-     // Increment battles completed and act only after it's updated
-incrementBattlesCompleted((newCount) => {
+// Increment battles completed and run milestone logic immediately
+setBattlesCompleted(prev => {
+  const newCount = prev + 1;
   console.log("useBattleProcessor: Battles completed incremented to", newCount);
 
   const reachedMilestone = checkMilestone(newCount, newResults);
@@ -86,7 +87,10 @@ incrementBattlesCompleted((newCount) => {
   // Reset processing flags after everything finishes
   setIsProcessingResult(false);
   processingRef.current = false;
+
+  return newCount;
 });
+
 
     } catch (error) {
       console.error("useBattleProcessor: Error processing battle:", error);
@@ -98,13 +102,15 @@ incrementBattlesCompleted((newCount) => {
       setIsProcessingResult(false);
       processingRef.current = false;
     }
-  }, [
-    processResult,
-    setBattleResults,
-    incrementBattlesCompleted,
-    checkMilestone,
-    setupNextBattle
-  ]);
+}, [
+  processResult,
+  setBattleResults,
+  checkMilestone,
+  setupNextBattle,
+  setBattlesCompleted,
+  setIsProcessingResult
+]);
+
 
   return { processBattleResult, isProcessingResult };
 };
