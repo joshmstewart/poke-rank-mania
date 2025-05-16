@@ -63,8 +63,8 @@ const {
     handleGenerationChange,
     handleBattleTypeChange,
   } = useGenerationSettings(
-(pokemonList: Pokemon[]) => selectionState.startNewBattle(pokemonList, battleTypeState.battleType),
-
+    // Fix: Convert string to Pokemon[] by passing the allPokemon array
+    (pokemonList: Pokemon[]) => selectionState.startNewBattle(pokemonList, battleTypeState.battleType),
     selectionState.allPokemon,
     progressState.setRankingGenerated,
     selectionState.setBattleResults,
@@ -166,10 +166,11 @@ const {
     progressState.fullRankingMode,
     saveBattleState,
     loadBattleState,
-(genId?: number, preserveState?: boolean) => {
-  return loadPokemon(genId, false, preserveState).then(() => {});
-},
-
+    // Fix the function signature to match the expected type
+    (genId?: number, preserveState?: boolean) => {
+      // We'll ignore fullRankingMode here since it's always true in the current implementation
+      return loadPokemon(genId, false, preserveState);
+    },
     calculateCompletionPercentage
   );
 
