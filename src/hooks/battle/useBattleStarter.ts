@@ -23,9 +23,29 @@ export const useBattleStarter = (
     }
     return shuffled;
   };
+// Utility function to roll a random number between 0–100
+const roll = () => Math.random() * 100;
+  // Simulate priority status (e.g., Pokémon in top 25%) using a Set of high IDs
+const priorityPokemon = new Set<number>();
+const PRIORITY_THRESHOLD = 200; // Adjust this if needed
+
+// We'll mark Pokémon with IDs <= PRIORITY_THRESHOLD as priority
+const updatePriorityPokemon = (pokemonList: Pokemon[]) => {
+  priorityPokemon.clear();
+  const sorted = [...pokemonList].sort((a, b) => a.id - b.id);
+  const topCount = Math.floor(sorted.length * 0.25);
+  sorted.slice(0, topCount).forEach(p => priorityPokemon.add(p.id));
+};
+
+
 
   const startNewBattle = (pokemonList: Pokemon[], battleType: "pairs" | "triplets") => {
     console.log("Starting new battle with pokemonList:", pokemonList?.length || 0);
+
+    updatePriorityPokemon(pokemonList);
+    let availablePokemon = [...pokemonList];
+
+
     
     if (!pokemonList || pokemonList.length < 3) { // Need at least 3 for rotation
       console.error("Not enough Pokémon for a battle:", pokemonList?.length || 0);
@@ -36,7 +56,34 @@ export const useBattleStarter = (
     const battleSize = battleType === "pairs" ? 2 : 3;
     
     // Create a copy of the pokemon list
-    let availablePokemon = [...pokemonList];
+// Divide into priority and non-priority pools
+let priorityPool = pokemonList.filter(p => priorityPokemon.has(p.id));
+let nonPriorityPool = pokemonList.filter(p => !priorityPokemon.has(p.id));
+
+// Roll for tiered selection strategy
+const rollValue = roll();
+let newBattlePokemon: Pokemon[] = [];
+
+if (rollValue < 40 && priorityPool.length >= 1 && nonPriorityPool.length >= 1) {
+  // 40%: Test top 25% Pokémon vs a non-priority challenger
+  const p1 = shuffleArray(priorityPool)[0];
+  const p2 = shuffleArray(nonPriorityPool)[0];
+  newBattlePokemon = [p1, p2];
+} else if (rollValue < 70 && nonPriorityPool.length >= 1) {
+  // 30%: Test two mid/lower-tier Pokémon (one may be ranked)
+  const p1 = shuffleArray(nonPriorityPool)[0];
+  const p2 = shuffleArray(pokemonList)[0]; // opponent can be anyone
+  newBattlePokemon = [p1, p2];
+} else {
+  // 30%: Full random pair
+  newBattlePokemon = shuffleArray(pokemonList).slice(0, battleSize);
+}
+
+// Fallback safeguard: ensure we always return a full pair
+if (newBattlePokemon.length < battleSize) {
+  newBattlePokemon = shuffleArray(pokemonList).slice(0, battleSize);
+}
+
     
     // Get the last battle Pokemon IDs from ref for immediate comparison
     const lastBattleIds = lastBattleRef.current;
@@ -84,8 +131,6 @@ export const useBattleStarter = (
     // Better shuffle algorithm
     const shuffled = shuffleArray(availablePokemon);
     
-    // Get the first N Pokémon based on battle type
-    let newBattlePokemon = shuffled.slice(0, battleSize);
     
     // Double-check to ensure we don't get the exact same battle
     if (lastBattleIds.length > 0) {
