@@ -56,8 +56,10 @@ export const useGenerationSettings = (
     // Only start a new battle if we have Pokémon loaded
     if (allPokemon && allPokemon.length > 1) {
       // Use the current battle type from localStorage
-      const currentBattleType = localStorage.getItem('pokemon-ranker-battle-type') as BattleType || 'pairs';
-      startNewBattle(allPokemon, currentBattleType);
+const stored = localStorage.getItem('pokemon-ranker-battle-type');
+const currentBattleType: BattleType = stored === 'triplets' ? 'triplets' : 'pairs';
+startNewBattle(allPokemon, currentBattleType);
+
     }
   };
   
