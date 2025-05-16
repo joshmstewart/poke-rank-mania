@@ -1,4 +1,3 @@
-
 import { useBattleUIState } from "./useBattleUIState";
 import { useBattleSelectionState } from "./useBattleSelectionState";
 import { usePokemonLoader } from "./usePokemonLoader";
@@ -12,7 +11,9 @@ import { useBattleStateInitializer } from "./useBattleStateInitializer";
 import { useBattlePersistence } from "./useBattlePersistence";
 import { useBattleInteractions } from "./useBattleInteractions";
 import { useBattleCoordinator } from "./useBattleCoordinator";
+import { useBattleProcessor } from "./useBattleProcessor"; // ✅ ADDED THIS
 import { BattleType } from "./types";
+
 
 export * from "./types";
 
@@ -94,6 +95,18 @@ export const useBattleState = () => {
     selectionState.setBattleHistory,
     selectionState.setSelectedPokemon
   );
+const { processBattleResult, isProcessingResult } = useBattleProcessor(
+  selectionState.battleResults,
+  selectionState.setBattleResults,
+  selectionState.battlesCompleted,
+  selectionState.setBattlesCompleted,
+  selectionState.allPokemon,
+  selectionState.startNewBattle,
+  uiState.setShowingMilestone,
+  uiState.milestones,
+  generateRankings,
+  selectionState.setSelectedPokemon
+);
 
   const {
     handleContinueBattles,
@@ -113,24 +126,26 @@ export const useBattleState = () => {
 
   // Setup battle interactions hook
   const {
-    handlePokemonSelect,
-    handleGoBack,
-    isProcessing
-  } = useBattleInteractions(
-    selectionState.currentBattle,
-    selectionState.setCurrentBattle,
-    selectionState.selectedPokemon,
-    selectionState.setSelectedPokemon,
-    selectionState.battleResults,
-    selectionState.setBattleResults,
-    selectionState.battlesCompleted,
-    selectionState.setBattlesCompleted,
-    selectionState.battleHistory,
-    selectionState.setBattleHistory,
-    () => completeTripletSelection(uiState.battleType, selectionState.currentBattle),
-    () => navigateBack(selectionState.setCurrentBattle, uiState.battleType),
-    uiState.battleType
-  );
+  handlePokemonSelect,
+  handleGoBack,
+  isProcessing
+} = useBattleInteractions(
+  selectionState.currentBattle,
+  selectionState.setCurrentBattle,
+  selectionState.selectedPokemon,
+  selectionState.setSelectedPokemon,
+  selectionState.battleResults,
+  selectionState.setBattleResults,
+  selectionState.battlesCompleted,
+  selectionState.setBattlesCompleted,
+  selectionState.battleHistory,
+  selectionState.setBattleHistory,
+  () => completeTripletSelection(uiState.battleType, selectionState.currentBattle),
+  () => navigateBack(selectionState.setCurrentBattle, uiState.battleType),
+  uiState.battleType,
+  processBattleResult // ✅ ADDED THIS
+);
+
 
   // Use our new coordinator hook to setup initialization and persistence effects
   useBattleCoordinator(

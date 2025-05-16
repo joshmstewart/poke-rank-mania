@@ -5,19 +5,11 @@ import { BattleType } from "./types";
 
 export const useBattleInteractions = (
   currentBattle: Pokemon[],
-  setCurrentBattle: React.Dispatch<React.SetStateAction<Pokemon[]>>,
-  selectedPokemon: number[],
-  setSelectedPokemon: React.Dispatch<React.SetStateAction<number[]>>,
-  battleResults: any[],
-  setBattleResults: React.Dispatch<React.SetStateAction<any[]>>,
-  battlesCompleted: number,
-  setBattlesCompleted: React.Dispatch<React.SetStateAction<number>>,
-  battleHistory: { battle: Pokemon[], selected: number[] }[],
-  setBattleHistory: React.Dispatch<React.SetStateAction<{ battle: Pokemon[], selected: number[] }[]>>,
-  handleTripletSelectionComplete: () => void,
-  handleNavigateBack: () => void,
-  battleType: BattleType
+  ...
+  battleType: BattleType,
+  processBattleResult: (selections: number[], battleType: BattleType, currentBattle: Pokemon[]) => void
 ) => {
+
   // Processing state
   const [isProcessing, setIsProcessing] = useState(false);
   
@@ -31,23 +23,22 @@ export const useBattleInteractions = (
     
     console.log(`useBattleInteractions: Handling selection for Pokemon ID ${id} in ${battleType} mode`);
     
-    if (battleType === "pairs") {
-     setIsProcessing(true);
+   if (battleType === "pairs") {
+  setIsProcessing(true);
 
-// Update selection and history
-setSelectedPokemon([id]);
-setBattleHistory(prev => [...prev, { battle: [...currentBattle], selected: [id] }]);
+  // Update selection and history
+  setSelectedPokemon([id]);
+  setBattleHistory(prev => [...prev, { battle: [...currentBattle], selected: [id] }]);
 
-// Let the manager handle what comes next
-console.log("useBattleInteractions: Calling handleTripletSelectionComplete");
-handleTripletSelectionComplete();
+  // NEW: Process the result!
+  processBattleResult([id], battleType, currentBattle);
 
-// Clear processing state after short delay to let UI catch up
-setTimeout(() => {
-  setIsProcessing(false);
-}, 100);
-
-    } else {
+  // Let the UI catch up
+  setTimeout(() => {
+    setIsProcessing(false);
+  }, 100);
+}
+ else {
       // For triplets mode, toggle the selection
       setSelectedPokemon(prev => {
         const newSelection = prev.includes(id)
