@@ -33,12 +33,6 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
 }) => {
   // Component state
   const [animationKey, setAnimationKey] = useState(0);
-  const [displayedBattleNumber, setDisplayedBattleNumber] = useState(battlesCompleted + 1);
-  
-  // Update the displayed battle number when battles completed changes
-  useEffect(() => {
-    setDisplayedBattleNumber(battlesCompleted + 1);
-  }, [battlesCompleted]);
   
   // Update animation key when current battle changes
   useEffect(() => {
@@ -93,7 +87,8 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
                 <ChevronLeft className="mr-1" /> Back
               </Button>
             )}
-            <h2 className="text-2xl font-bold">Battle {displayedBattleNumber}</h2>
+   <h2 className="text-2xl font-bold">Battle {battlesCompleted + 1}</h2>
+
           </div>
           
           {isProcessing && (
