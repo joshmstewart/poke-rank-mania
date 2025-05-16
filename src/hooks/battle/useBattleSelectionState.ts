@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleResult, BattleType } from "./types";
 import { useBattleStarter } from "./useBattleStarter";
+import { useBattleProcessor } from "./useBattleProcessor";
 
 export const useBattleSelectionState = () => {
   // Get initial value from localStorage
@@ -20,6 +21,45 @@ export const useBattleSelectionState = () => {
 
   // Pass setCurrentBattle to useBattleStarter
   const { startNewBattle: initiateNewBattle } = useBattleStarter(setCurrentBattle);
+  
+  // Create a processBattleResult function to expose to other hooks
+  const processBattleResult = (
+    selectedPokemonIds: number[],
+    currentBattlePokemon: Pokemon[],
+    battleType: BattleType,
+    currentSelectedGeneration: number = 0
+  ) => {
+    if (selectedPokemonIds.length === 0 || !currentBattlePokemon || currentBattlePokemon.length === 0) {
+      return;
+    }
+    
+    // For pairs battle
+    if (battleType === "pairs") {
+      const winner = currentBattlePokemon.find(p => selectedPokemonIds.includes(p.id));
+      const loser = currentBattlePokemon.find(p => !selectedPokemonIds.includes(p.id));
+      
+      if (winner && loser) {
+        setBattleResults(prev => [...prev, { winner, loser }]);
+      }
+    } 
+    // For triplets battle
+    else {
+      const winners = currentBattlePokemon.filter(p => selectedPokemonIds.includes(p.id));
+      const losers = currentBattlePokemon.filter(p => !selectedPokemonIds.includes(p.id));
+      
+      if (winners.length > 0 && losers.length > 0) {
+        setBattleResults(prev => {
+          const newResults = [...prev];
+          winners.forEach(winner => {
+            losers.forEach(loser => {
+              newResults.push({ winner, loser });
+            });
+          });
+          return newResults;
+        });
+      }
+    }
+  };
   
   // Listen for changes to the battle type in localStorage
   useEffect(() => {
@@ -86,6 +126,7 @@ export const useBattleSelectionState = () => {
     battleHistory,
     setBattleHistory,
     startNewBattle,
-    currentBattleType
+    currentBattleType,
+    processBattleResult
   };
 };

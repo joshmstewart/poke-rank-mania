@@ -38,7 +38,7 @@ export const useBattleProcessor = (
   );
   
   // Use the battle result processor for recording battle results
-  const { addResult: processBattleResult } = useBattleResultProcessor(
+  const { processResult } = useBattleResultProcessor(
     battleResults,
     setBattleResults
   );
@@ -47,7 +47,7 @@ export const useBattleProcessor = (
     selectedPokemonIds: number[],
     currentBattlePokemon: Pokemon[],
     battleType: BattleType,
-    currentSelectedGeneration: number // Added parameter for generation
+    currentSelectedGeneration: number = 0 // Make the parameter optional with default value
   ) => {
     console.log("useBattleProcessor: Processing battle result with selections:", selectedPokemonIds);
     
@@ -59,7 +59,7 @@ export const useBattleProcessor = (
     setIsProcessingResult(true);
     
     // First, process the battle result
-    processBattleResult(selectedPokemonIds, currentBattlePokemon, battleType);
+    processResult(selectedPokemonIds, battleType, currentBattlePokemon);
 
     // Increment the battles completed counter
     incrementBattlesCompleted((newCount: number) => {
@@ -69,7 +69,7 @@ export const useBattleProcessor = (
       const hitMilestone = checkMilestone(newCount, battleResults);
       console.log("useBattleProcessor: Milestone reached?", hitMilestone);
       
-      if (hitMilestone) {
+      if (hitMilestone && currentSelectedGeneration) {
         // When a milestone is hit, also save the rankings automatically
         saveRankings(
           // Generate fresh rankings from battle results

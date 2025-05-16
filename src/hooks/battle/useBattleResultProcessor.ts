@@ -1,5 +1,5 @@
 
-import { useCallback, useRef } from "react";
+import { useCallback } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleResult, BattleType } from "./types";
 
@@ -51,5 +51,9 @@ export const useBattleResultProcessor = (
     }
   }, [battleResults]);
 
-  return { processResult };
+  return { 
+    processResult,
+    // Add this alias to fix the build error
+    addResult: processResult 
+  };
 };

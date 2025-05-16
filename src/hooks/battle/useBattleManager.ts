@@ -45,6 +45,12 @@ export const useBattleManager = (
     setSelectedPokemon
   );
   
+  // Get current generation from localStorage for passing to processBattleResult
+  const getCurrentGeneration = () => {
+    const storedGeneration = localStorage.getItem('pokemon-ranker-generation');
+    return storedGeneration ? Number(storedGeneration) : 0;
+  };
+  
   // Use the selection manager for handling Pokemon selections
   const {
     selectedPokemon,
@@ -54,7 +60,11 @@ export const useBattleManager = (
   } = useBattleSelectionManager(
     battleHistory,
     setBattleHistory,
-    processBattleResult,
+    (selections: number[], battleType: BattleType, currentBattle: Pokemon[]) => {
+      // Get current generation to pass to processBattleResult
+      const currentGeneration = getCurrentGeneration();
+      processBattleResult(selections, currentBattle, battleType, currentGeneration);
+    },
     setSelectedPokemon
   );
   
@@ -63,15 +73,14 @@ export const useBattleManager = (
     setSelectedPokemon: setLocalSelectedPokemon,
     handlePokemonSelect: (id: number, battleType: BattleType, currentBattle: Pokemon[]) => 
       handlePokemonSelect(id, battleType, currentBattle),
-handleTripletSelectionComplete: (battleType: BattleType, currentBattle: Pokemon[]) => {
-  handleTripletSelectionComplete(battleType, currentBattle);
-  if (battleType === "pairs") {
-    // Trigger the next battle manually
-    console.log("useBattleManager: Starting next battle for pairs mode");
-    startNewBattle(allPokemon, battleType);
-  }
-},
-
+    handleTripletSelectionComplete: (battleType: BattleType, currentBattle: Pokemon[]) => {
+      handleTripletSelectionComplete(battleType, currentBattle);
+      if (battleType === "pairs") {
+        // Trigger the next battle manually
+        console.log("useBattleManager: Starting next battle for pairs mode");
+        startNewBattle(allPokemon, battleType);
+      }
+    },
     goBack,
     isProcessingResult
   };

@@ -1,4 +1,7 @@
-import { useBattleUIState } from "./useBattleUIState";
+
+import { useGenerationState } from "./useGenerationState";
+import { useBattleTypeState } from "./useBattleTypeState";
+import { useProgressState } from "./useProgressState";
 import { useBattleSelectionState } from "./useBattleSelectionState";
 import { usePokemonLoader } from "./usePokemonLoader";
 import { useLocalStorage } from "./useLocalStorage";
@@ -7,46 +10,50 @@ import { useCompletionTracker } from "./useCompletionTracker";
 import { useGenerationSettings } from "./useGenerationSettings";
 import { useBattleActions } from "./useBattleActions";
 import { useBattleManager } from "./useBattleManager";
-import { useBattleStateInitializer } from "./useBattleStateInitializer";
-import { useBattlePersistence } from "./useBattlePersistence";
+import { useBattleCoordinatorState } from "./useBattleCoordinatorState";
 import { useBattleInteractions } from "./useBattleInteractions";
-import { useBattleCoordinator } from "./useBattleCoordinator";
-import { useBattleProcessor } from "./useBattleProcessor"; // ✅ ADDED THIS
 import { BattleType } from "./types";
-
 
 export * from "./types";
 
+/**
+ * Main hook for all battle state management
+ */
 export const useBattleState = () => {
-  // Use our custom hooks for state management
-  const uiState = useBattleUIState();
+  // Use smaller focused hooks for specific functionality
+  const generationState = useGenerationState();
+  const battleTypeState = useBattleTypeState();
+  const progressState = useProgressState();
   const selectionState = useBattleSelectionState();
   
-  // Use the existing hooks with our state
+  // Pokemon loading logic
   const {
     isLoading,
     loadPokemon
   } = usePokemonLoader(
     selectionState.setAllPokemon,
-    uiState.setRankingGenerated,
+    progressState.setRankingGenerated,
     selectionState.setBattleResults,
     selectionState.setBattlesCompleted,
     selectionState.setBattleHistory,
-    uiState.setShowingMilestone,
-    uiState.setCompletionPercentage,
+    progressState.setShowingMilestone,
+    progressState.setCompletionPercentage,
     selectionState.setSelectedPokemon,
     selectionState.startNewBattle,
-    uiState.battleType
+    battleTypeState.battleType
   );
   
+  // Local storage management
   const { saveBattleState, loadBattleState } = useLocalStorage();
   
+  // Rankings generation and management
   const {
     finalRankings,
     generateRankings,
     handleSaveRankings: saveRankings
   } = useRankings(selectionState.allPokemon);
   
+  // Generation settings management
   const {
     selectedGeneration: generationSetting,
     handleGenerationChange,
@@ -54,33 +61,36 @@ export const useBattleState = () => {
   } = useGenerationSettings(
     selectionState.startNewBattle,
     selectionState.allPokemon,
-    uiState.setRankingGenerated,
+    progressState.setRankingGenerated,
     selectionState.setBattleResults,
     selectionState.setBattlesCompleted,
     selectionState.setBattleHistory,
-    uiState.setShowingMilestone,
-    uiState.setCompletionPercentage,
+    progressState.setShowingMilestone,
+    progressState.setCompletionPercentage,
   );
   
   // Synchronize settings state
-  if (generationSetting !== uiState.selectedGeneration) {
-    uiState.setSelectedGeneration(generationSetting);
+  if (generationSetting !== generationState.selectedGeneration) {
+    generationState.setSelectedGeneration(generationSetting);
   }
   
+  // Completion tracking
   const {
     calculateCompletionPercentage,
     getBattlesRemaining
   } = useCompletionTracker(
     selectionState.allPokemon,
     selectionState.battleResults,
-    uiState.setRankingGenerated,
+    progressState.setRankingGenerated,
     generateRankings,
-    uiState.setCompletionPercentage
+    progressState.setCompletionPercentage
   );
 
+  // Battle management
   const {
     handleTripletSelectionComplete: completeTripletSelection,
-    goBack: navigateBack
+    goBack: navigateBack,
+    isProcessingResult
   } = useBattleManager(
     selectionState.battleResults,
     selectionState.setBattleResults,
@@ -88,115 +98,111 @@ export const useBattleState = () => {
     selectionState.setBattlesCompleted,
     selectionState.allPokemon,
     selectionState.startNewBattle,
-    uiState.setShowingMilestone,
-    uiState.milestones,
+    progressState.setShowingMilestone,
+    progressState.milestones,
     generateRankings,
     selectionState.battleHistory,
     selectionState.setBattleHistory,
     selectionState.setSelectedPokemon
   );
-const { processBattleResult, isProcessingResult } = useBattleProcessor(
-  selectionState.battleResults,
-  selectionState.setBattleResults,
-  selectionState.battlesCompleted,
-  selectionState.setBattlesCompleted,
-  selectionState.allPokemon,
-  selectionState.startNewBattle,
-  uiState.setShowingMilestone,
-  uiState.milestones,
-  generateRankings,
-  selectionState.setSelectedPokemon
-);
 
+  // Battle actions
   const {
     handleContinueBattles,
     handleNewBattleSet
   } = useBattleActions(
     selectionState.allPokemon,
-    uiState.setRankingGenerated,
+    progressState.setRankingGenerated,
     selectionState.setBattleResults,
     selectionState.setBattlesCompleted,
     selectionState.setBattleHistory,
-    uiState.setShowingMilestone,
-    uiState.setCompletionPercentage,
+    progressState.setShowingMilestone,
+    progressState.setCompletionPercentage,
     selectionState.startNewBattle,
     generateRankings,
-    uiState.battleType
+    battleTypeState.battleType
   );
 
-  // Setup battle interactions hook
+  // Battle interactions
   const {
-  handlePokemonSelect,
-  handleGoBack,
-  isProcessing
-} = useBattleInteractions(
-  selectionState.currentBattle,
-  selectionState.setCurrentBattle,
-  selectionState.selectedPokemon,
-  selectionState.setSelectedPokemon,
-  selectionState.battleResults,
-  selectionState.setBattleResults,
-  selectionState.battlesCompleted,
-  selectionState.setBattlesCompleted,
-  selectionState.battleHistory,
-  selectionState.setBattleHistory,
-  () => completeTripletSelection(uiState.battleType, selectionState.currentBattle),
-  () => navigateBack(selectionState.setCurrentBattle, uiState.battleType),
-  uiState.battleType,
-  processBattleResult // ✅ ADDED THIS
-);
+    handlePokemonSelect,
+    handleGoBack,
+    isProcessing
+  } = useBattleInteractions(
+    selectionState.currentBattle,
+    selectionState.setCurrentBattle,
+    selectionState.selectedPokemon,
+    selectionState.setSelectedPokemon,
+    selectionState.battleResults,
+    selectionState.setBattleResults,
+    selectionState.battlesCompleted,
+    selectionState.setBattlesCompleted,
+    selectionState.battleHistory,
+    selectionState.setBattleHistory,
+    () => completeTripletSelection(battleTypeState.battleType, selectionState.currentBattle),
+    () => navigateBack(selectionState.setCurrentBattle, battleTypeState.battleType),
+    battleTypeState.battleType,
+    (selectedIds, currentBattle, battleType) => {
+      const currentGeneration = generationState.selectedGeneration;
+      return selectionState.processBattleResult(selectedIds, currentBattle, battleType, currentGeneration);
+    }
+  );
 
-
-  // Use our new coordinator hook to setup initialization and persistence effects
-  useBattleCoordinator(
+  // Coordinator for state initialization and persistence
+  useBattleCoordinatorState(
     isLoading,
     selectionState.allPokemon,
-    uiState.selectedGeneration,
-    uiState.battleType,
+    generationState.selectedGeneration,
+    battleTypeState.battleType,
     selectionState.battleResults,
     selectionState.battlesCompleted,
     selectionState.battleHistory,
-    uiState.completionPercentage,
-    uiState.fullRankingMode,
+    progressState.completionPercentage,
+    progressState.fullRankingMode,
     saveBattleState,
     loadBattleState,
     loadPokemon,
     calculateCompletionPercentage
   );
 
+  // Convenience wrappers for component usage
   const handleTripletSelectionComplete = () => {
-    completeTripletSelection(uiState.battleType, selectionState.currentBattle);
+    completeTripletSelection(battleTypeState.battleType, selectionState.currentBattle);
   };
 
   const handleSaveRankings = () => {
-    saveRankings(uiState.selectedGeneration);
+    saveRankings(generationState.selectedGeneration);
   };
 
   const goBack = () => {
-    navigateBack(selectionState.setCurrentBattle, uiState.battleType);
+    navigateBack(selectionState.setCurrentBattle, battleTypeState.battleType);
   };
 
+  // Return all necessary state and functions for components
   return {
+    // State
     isLoading,
-    selectedGeneration: uiState.selectedGeneration,
-    setSelectedGeneration: handleGenerationChange,
+    selectedGeneration: generationState.selectedGeneration,
     allPokemon: selectionState.allPokemon,
-    battleType: uiState.battleType,
-    setBattleType: handleBattleTypeChange,
+    battleType: battleTypeState.battleType,
     currentBattle: selectionState.currentBattle,
     battleResults: selectionState.battleResults,
     selectedPokemon: selectionState.selectedPokemon,
     battlesCompleted: selectionState.battlesCompleted,
-    rankingGenerated: uiState.rankingGenerated,
+    rankingGenerated: progressState.rankingGenerated,
     finalRankings,
     battleHistory: selectionState.battleHistory,
-    showingMilestone: uiState.showingMilestone,
-    completionPercentage: uiState.completionPercentage,
-    fullRankingMode: uiState.fullRankingMode,
-    milestones: uiState.milestones,
-    isProcessing,
+    showingMilestone: progressState.showingMilestone,
+    completionPercentage: progressState.completionPercentage,
+    fullRankingMode: progressState.fullRankingMode,
+    milestones: progressState.milestones,
+    isProcessing: isProcessing || isProcessingResult,
+    
+    // Actions
+    setSelectedGeneration: handleGenerationChange,
     handleGenerationChange,
     handleBattleTypeChange,
+    setBattleType: handleBattleTypeChange,
     handlePokemonSelect,
     handleTripletSelectionComplete,
     handleSaveRankings,
