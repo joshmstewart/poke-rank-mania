@@ -12,6 +12,8 @@ import { useBattleActions } from "./useBattleActions";
 import { useBattleManager } from "./useBattleManager";
 import { useBattleCoordinatorState } from "./useBattleCoordinatorState";
 import { useBattleInteractions } from "./useBattleInteractions";
+import { Pokemon } from "@/services/pokemon";
+
 import { BattleType } from "./types";
 
 export * from "./types";
@@ -52,7 +54,8 @@ const {
     finalRankings,
     generateRankings,
     handleSaveRankings: saveRankings
-  } = useRankings(selectionState.allPokemon);
+} = useRankings(selectionState.allPokemon as Pokemon[]);
+
   
   // Generation settings management
   const {
