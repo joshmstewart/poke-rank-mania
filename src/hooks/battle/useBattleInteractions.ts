@@ -32,30 +32,21 @@ export const useBattleInteractions = (
     console.log(`useBattleInteractions: Handling selection for Pokemon ID ${id} in ${battleType} mode`);
     
     if (battleType === "pairs") {
-      // For pairs mode, set processing state immediately
-      setIsProcessing(true);
-      
-      // Update selection
-      setSelectedPokemon([id]);
-      
-      // Update history
-      setBattleHistory(prev => {
-        const newHistory = [...prev, { 
-          battle: [...currentBattle], 
-          selected: [id] 
-        }];
-        console.log("useBattleInteractions: Updated battle history length:", newHistory.length);
-        return newHistory;
-      });
-      
-      // Call selection complete immediately
-      console.log("useBattleInteractions: Calling handleTripletSelectionComplete for pairs mode");
-      handleTripletSelectionComplete();
-      
-      // Delay next battle slightly to ensure UI updates cleanly
-      setTimeout(() => {
-        setIsProcessing(false);
-      }, 100);
+     setIsProcessing(true);
+
+// Update selection and history
+setSelectedPokemon([id]);
+setBattleHistory(prev => [...prev, { battle: [...currentBattle], selected: [id] }]);
+
+// Let the manager handle what comes next
+console.log("useBattleInteractions: Calling handleTripletSelectionComplete");
+handleTripletSelectionComplete();
+
+// Clear processing state after short delay to let UI catch up
+setTimeout(() => {
+  setIsProcessing(false);
+}, 100);
+
     } else {
       // For triplets mode, toggle the selection
       setSelectedPokemon(prev => {
