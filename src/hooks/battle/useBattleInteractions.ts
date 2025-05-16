@@ -5,10 +5,21 @@ import { BattleType } from "./types";
 
 export const useBattleInteractions = (
   currentBattle: Pokemon[],
-  ...
+  setCurrentBattle: React.Dispatch<React.SetStateAction<Pokemon[]>>,
+  selectedPokemon: number[],
+  setSelectedPokemon: React.Dispatch<React.SetStateAction<number[]>>,
+  battleResults: any[],
+  setBattleResults: React.Dispatch<React.SetStateAction<any[]>>,
+  battlesCompleted: number,
+  setBattlesCompleted: React.Dispatch<React.SetStateAction<number>>,
+  battleHistory: { battle: Pokemon[], selected: number[] }[],
+  setBattleHistory: React.Dispatch<React.SetStateAction<{ battle: Pokemon[], selected: number[] }[]>>,
+  handleTripletSelectionComplete: () => void,
+  handleNavigateBack: () => void,
   battleType: BattleType,
   processBattleResult: (selections: number[], battleType: BattleType, currentBattle: Pokemon[]) => void
 ) => {
+
 
   // Processing state
   const [isProcessing, setIsProcessing] = useState(false);
