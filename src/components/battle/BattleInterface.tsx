@@ -33,6 +33,7 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
 }) => {
   // Component state
   const [animationKey, setAnimationKey] = useState(0);
+  const [internalProcessing, setInternalProcessing] = useState(false);
   
   // Update animation key when current battle changes
   useEffect(() => {
@@ -43,24 +44,36 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
 
   // Handle pokemon selection
   const handlePokemonCardSelect = useCallback((id: number) => {
-    if (!isProcessing) {
+    if (!isProcessing && !internalProcessing) {
+      console.log("BattleInterface: Handling Pokemon selection:", id);
+      setInternalProcessing(true);
       onPokemonSelect(id);
+      
+      // Reset internal processing state after a delay
+      setTimeout(() => setInternalProcessing(false), 500);
+    } else {
+      console.log("BattleInterface: Ignoring click while processing");
     }
-  }, [onPokemonSelect, isProcessing]);
+  }, [onPokemonSelect, isProcessing, internalProcessing]);
 
   // Handle submission for triplets mode
   const handleSubmit = useCallback(() => {
-    if (!isProcessing) {
+    if (!isProcessing && !internalProcessing) {
+      console.log("BattleInterface: Submitting triplet selection");
+      setInternalProcessing(true);
       onTripletSelectionComplete();
+      
+      // Reset internal processing state after a delay
+      setTimeout(() => setInternalProcessing(false), 500);
     }
-  }, [onTripletSelectionComplete, isProcessing]);
+  }, [onTripletSelectionComplete, isProcessing, internalProcessing]);
 
   // Handle back button click
   const handleBackClick = useCallback(() => {
-    if (!isProcessing) {
+    if (!isProcessing && !internalProcessing) {
       onGoBack();
     }
-  }, [onGoBack, isProcessing]);
+  }, [onGoBack, isProcessing, internalProcessing]);
   
   // Only render if we have Pokemon to display
   if (!currentBattle || currentBattle.length === 0) {
@@ -82,16 +95,15 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
                 size="sm" 
                 className="mr-2" 
                 onClick={handleBackClick}
-                disabled={isProcessing}
+                disabled={isProcessing || internalProcessing}
               >
                 <ChevronLeft className="mr-1" /> Back
               </Button>
             )}
-   <h2 className="text-2xl font-bold">Battle {battlesCompleted + 1}</h2>
-
+            <h2 className="text-2xl font-bold">Battle {battlesCompleted + 1}</h2>
           </div>
           
-          {isProcessing && (
+          {(isProcessing || internalProcessing) && (
             <div className="text-sm text-amber-600 flex items-center">
               <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-amber-600 mr-2"></div>
               Processing...
@@ -125,7 +137,7 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
             isSelected={selectedPokemon.includes(pokemon.id)}
             battleType={battleType}
             onSelect={handlePokemonCardSelect}
-            isProcessing={isProcessing}
+            isProcessing={isProcessing || internalProcessing}
           />
         ))}
       </div>
@@ -136,9 +148,9 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
             size="lg" 
             onClick={handleSubmit}
             className="px-8"
-            disabled={isProcessing || selectedPokemon.length === 0}
+            disabled={isProcessing || internalProcessing || selectedPokemon.length === 0}
           >
-            {isProcessing ? (
+            {(isProcessing || internalProcessing) ? (
               <>
                 <span className="mr-2 animate-spin">⏳</span>
                 Processing...

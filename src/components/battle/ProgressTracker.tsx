@@ -17,6 +17,9 @@ const ProgressTracker: React.FC<ProgressTrackerProps> = ({
 }) => {
   const isComplete = completionPercentage >= 100;
   
+  // Ensure battles completed is displayed correctly
+  const displayedBattles = battlesCompleted || 0; // Ensure we never display null/undefined
+  
   return (
     <Card className={`rounded-lg shadow transition-colors ${isComplete ? "bg-green-50 border-green-200" : "bg-white"}`}>
       <CardContent className="p-4">
@@ -31,7 +34,7 @@ const ProgressTracker: React.FC<ProgressTrackerProps> = ({
         </div>
         <Progress value={completionPercentage} className={`h-2 ${isComplete ? "bg-green-100" : ""}`} />
         <div className="flex justify-between mt-1 text-xs text-gray-500">
-          <span>Battles: {battlesCompleted}</span>
+          <span>Battles: {displayedBattles}</span>
           <span>
             {completionPercentage < 100 
               ? `~${getBattlesRemaining()} more needed` 

@@ -31,7 +31,10 @@ export const useBattleInteractions = (
     console.log("BattleCard: Clicked Pokemon:", id, currentBattle.find(p => p.id === id)?.name);
     console.log("useBattleInteractions: Handling selection for Pokemon ID", id, "in", battleType, "mode");
     
-    if (isProcessing) return;
+    if (isProcessing) {
+      console.log("useBattleInteractions: Already processing, ignoring click");
+      return;
+    }
     
     setIsProcessing(true); // Processing starts
 
@@ -44,17 +47,29 @@ export const useBattleInteractions = (
       // This updates the selected Pokemon state immediately
       setSelectedPokemon(newSelected);
       
+      // Save current battle to history
+      const currentBattleCopy = [...currentBattle];
+      setBattleHistory(prev => [...prev, { battle: currentBattleCopy, selected: newSelected }]);
+      
       // Small delay to allow UI to update before processing
       setTimeout(() => {
-        // Get current generation for proper rankings
-        const currentGeneration = getCurrentGeneration();
-        
-        // Process the battle result directly, bypassing the tripletSelectionComplete flow
-        // which was causing issues with empty selections
-        processBattleResult(newSelected, currentBattle, battleType, currentGeneration);
-        
-        // Now that all processing and advancement should be done:
-        setIsProcessing(false);
+        try {
+          // Get current generation for proper rankings
+          const currentGeneration = getCurrentGeneration();
+          
+          // Process the battle result directly
+          processBattleResult(newSelected, currentBattle, battleType, currentGeneration);
+          
+          // Increment battles completed
+          setBattlesCompleted(prev => prev + 1);
+          
+          console.log("useBattleInteractions: Battle processed successfully, battles completed:", battlesCompleted + 1);
+        } catch (error) {
+          console.error("useBattleInteractions: Error processing battle result:", error);
+        } finally {
+          // Reset processing state regardless of success or failure
+          setIsProcessing(false);
+        }
       }, 50);
     } else { // triplets mode
       // Logic for triplets (when user is just picking, not confirming the battle outcome yet)

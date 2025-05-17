@@ -35,6 +35,7 @@ export const useBattleResultProcessor = (
       if (winner && loser) {
         console.log(`useBattleResultProcessor: Adding pair result: ${winner.name} beats ${loser.name}`);
         newResults.push({ winner, loser });
+        setBattleResults(newResults); // Add this line to update the state directly
         return newResults;
       } else {
         console.error("useBattleResultProcessor: Invalid selection for pair battle", 
@@ -52,13 +53,14 @@ export const useBattleResultProcessor = (
             newResults.push({ winner, loser });
           });
         });
+        setBattleResults(newResults); // Add this line to update the state directly
         return newResults;
       } else {
         console.error("useBattleResultProcessor: Invalid selection for triplet battle", selections, currentBattle);
         return null;
       }
     }
-  }, [battleResults]);
+  }, [battleResults, setBattleResults]);
 
   return { 
     processResult,
