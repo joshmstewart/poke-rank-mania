@@ -54,7 +54,7 @@ const BattleMode = () => {
   };
 
   // Fix: Create a properly typed handleConfirmRestart that takes no arguments
-  // This is a self-contained function that uses the current selectedGeneration value
+  // By creating a closure that captures the current state
   const handleConfirmRestart = () => {
     // Store the current selectedGeneration in a local variable to avoid the closure issue
     const currentGeneration = selectedGeneration?.toString() || "0";
