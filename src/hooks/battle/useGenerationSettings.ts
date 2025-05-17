@@ -45,32 +45,29 @@ export const useGenerationSettings = (
     resetBattleState();
   };
   
-const resetBattleState = () => {
-  setRankingGenerated(false);
-  setBattleResults([]);
-  setBattlesCompleted(0);
-  setBattleHistory([]);
-  setShowingMilestone(false);
-  setCompletionPercentage(0);
+  const resetBattleState = () => {
+    setRankingGenerated(false);
+    setBattleResults([]);
+    setBattlesCompleted(0);
+    setBattleHistory([]);
+    setShowingMilestone(false);
+    setCompletionPercentage(0);
 
-  // ✅ Strict type safety
-  if (
-    Array.isArray(allPokemon) &&
-    allPokemon.length > 1 &&
-    typeof allPokemon[0] === 'object' &&
-    'id' in allPokemon[0] // extra safeguard
-  ) {
-    const stored = localStorage.getItem("pokemon-ranker-battle-type");
-    const currentBattleType: BattleType = stored === "triplets" ? "triplets" : "pairs";
-    startNewBattle(allPokemon as Pokemon[], currentBattleType);
-  } else {
-    console.error("❌ Not starting new battle: invalid allPokemon", allPokemon);
-  }
-};
+    // ✅ Strict type safety
+    if (
+      Array.isArray(allPokemon) &&
+      allPokemon.length > 1 &&
+      typeof allPokemon[0] === 'object' &&
+      'id' in allPokemon[0] // extra safeguard
+    ) {
+      const stored = localStorage.getItem("pokemon-ranker-battle-type");
+      const currentBattleType: BattleType = stored === "triplets" ? "triplets" : "pairs";
+      startNewBattle(allPokemon as Pokemon[], currentBattleType);
+    } else {
+      console.error("❌ Not starting new battle: invalid allPokemon", allPokemon);
+    }
+  };
 
-
-
-  
   return {
     selectedGeneration,
     handleGenerationChange,

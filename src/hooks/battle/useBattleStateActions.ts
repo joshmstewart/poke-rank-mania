@@ -14,7 +14,7 @@ export interface UseBattleStateActionsProps {
   setBattleHistory: React.Dispatch<React.SetStateAction<{ battle: Pokemon[], selected: number[] }[]>>;
   setShowingMilestone: React.Dispatch<React.SetStateAction<boolean>>;
   setCompletionPercentage: React.Dispatch<React.SetStateAction<number>>;
-  startNewBattle: (battleType: BattleType) => void;
+  startNewBattle: (battleType: BattleType) => void; // Updated signature
   allPokemon: Pokemon[];
   generateRankings: (results: any[]) => void;
   battleType: BattleType;
@@ -66,7 +66,7 @@ export const useBattleStateActions = ({
     setBattleHistory,
     setShowingMilestone,
     setCompletionPercentage,
-    startNewBattle, // Directly use the new signature here
+    startNewBattle, // Now this matches the expected signature
     generateRankings,
     battleType
   );

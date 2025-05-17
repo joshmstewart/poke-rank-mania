@@ -19,7 +19,7 @@ export interface UseBattleStateIOProps {
   setShowingMilestone: React.Dispatch<React.SetStateAction<boolean>>;
   setCompletionPercentage: React.Dispatch<React.SetStateAction<number>>;
   setSelectedPokemon: React.Dispatch<React.SetStateAction<number[]>>;
-  startNewBattle: (pokemon: Pokemon[], battleType: BattleType) => void;
+  startNewBattle: (battleType: BattleType) => void; // Updated to match the actual signature
   battleType: BattleType;
   allPokemon: Pokemon[];
   battleResults: BattleResult;
@@ -52,7 +52,7 @@ export const useBattleStateIO = ({
     setShowingMilestone,
     setCompletionPercentage,
     setSelectedPokemon,
-    startNewBattle,
+    startNewBattle, // Now this matches the expected signature
     battleType
   });
   
