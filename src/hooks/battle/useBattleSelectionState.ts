@@ -45,12 +45,12 @@ export const useBattleSelectionState = () => {
   };
 
   // Create a battleStarter instance with the needed parameters
-  const { startNewBattle: initiateNewBattle } = useBattleStarter(
-    setCurrentBattle,
-    allPokemon,   // Pass allPokemon to use as the pokemonList
-    allPokemon,   // Pass the same allPokemon as allPokemonForGeneration
-    getCurrentRankings() // Pass current rankings derived from battle results
-  );
+const { startNewBattle: initiateNewBattle } = useBattleStarter(
+  setCurrentBattle,
+  allPokemon,           // This is your `pokemonList`
+  allPokemon,           // This is your `allPokemonForGeneration`
+  battleResults.map(r => r.winner) // this is your crude approximation of `currentFinalRankings`
+);
   
   // Create a processBattleResult function to expose to other hooks
   const processBattleResult = (
