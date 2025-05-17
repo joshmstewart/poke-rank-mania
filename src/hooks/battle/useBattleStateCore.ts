@@ -8,6 +8,7 @@ import { useBattleSelectionState } from "./useBattleSelectionState";
 import { useBattleStateIO } from "./useBattleStateIO";
 import { useBattleStateActions } from "./useBattleStateActions";
 import { useBattleStateCoordinator } from "./useBattleStateCoordinator";
+import { useBattleManager } from "./useBattleManager";
 
 /**
  * Core hook that composes all battle state functionality
@@ -90,6 +91,28 @@ export const useBattleStateCore = () => {
     calculateCompletionPercentage
   });
   
+  // Add battle manager for selection and interaction handling
+  const {
+    selectedPokemon,
+    handlePokemonSelect,
+    handleTripletSelectionComplete,
+    goBack,
+    isProcessingResult: isProcessing
+  } = useBattleManager(
+    selectionState.battleResults,
+    selectionState.setBattleResults,
+    selectionState.battlesCompleted,
+    selectionState.setBattlesCompleted,
+    allPokemonSafe,
+    selectionState.startNewBattle,
+    progressState.setShowingMilestone,
+    progressState.milestones,
+    generateRankings,
+    selectionState.battleHistory,
+    selectionState.setBattleHistory,
+    selectionState.setSelectedPokemon
+  );
+  
   // Return all necessary state and functions for components
   return {
     // State
@@ -99,7 +122,7 @@ export const useBattleStateCore = () => {
     battleType: battleTypeState.battleType,
     currentBattle: selectionState.currentBattle,
     battleResults: selectionState.battleResults,
-    selectedPokemon: selectionState.selectedPokemon,
+    selectedPokemon: selectedPokemon || selectionState.selectedPokemon,
     battlesCompleted: selectionState.battlesCompleted,
     rankingGenerated: progressState.rankingGenerated,
     finalRankings,
@@ -108,19 +131,17 @@ export const useBattleStateCore = () => {
     completionPercentage: progressState.completionPercentage,
     fullRankingMode: progressState.fullRankingMode,
     milestones: progressState.milestones,
-    isProcessing: selectionState.isProcessing,
+    isProcessing,
     
     // Actions
-    setSelectedGeneration: handleGenerationChange,
     handleGenerationChange,
     handleBattleTypeChange,
-    setBattleType: handleBattleTypeChange,
-    handlePokemonSelect: selectionState.handlePokemonSelect,
-    handleTripletSelectionComplete: selectionState.handleTripletSelectionComplete,
+    handlePokemonSelect,
+    handleTripletSelectionComplete,
     handleSaveRankings,
     handleContinueBattles,
     handleNewBattleSet,
-    goBack: selectionState.goBack,
+    goBack,
     getBattlesRemaining,
     loadPokemon,
     startNewBattle: selectionState.startNewBattle
