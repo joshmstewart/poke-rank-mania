@@ -31,3 +31,9 @@ export * from "./useBattleStateCore";
 export * from "./useBattleStateIO";
 export * from "./useBattleStateActions";
 export * from "./useBattleStateCoordinator";
+export * from "./useBattleTypeSelection";
+export * from "./useBattleStateSelection";
+export * from "./useBattleResults";
+export * from "./useBattleOutcomeProcessor";
+export * from "./useBattleStarterIntegration";
+
