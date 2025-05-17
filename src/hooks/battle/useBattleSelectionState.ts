@@ -19,14 +19,37 @@ export const useBattleSelectionState = () => {
   const [battleHistory, setBattleHistory] = useState<{ battle: Pokemon[], selected: number[] }[]>([]);
   const [currentBattleType, setCurrentBattleType] = useState<BattleType>(initialBattleType);
 
+  // Get current ranking from battle results if available
+  const getCurrentRankings = (): Pokemon[] => {
+    if (battleResults.length === 0) return [];
+    
+    // Create a map of Pokemon by ID, prioritizing winners
+    const pokemonMap = new Map<number, Pokemon>();
+    
+    // Add winners first
+    battleResults.forEach(result => {
+      if (!pokemonMap.has(result.winner.id)) {
+        pokemonMap.set(result.winner.id, result.winner);
+      }
+    });
+    
+    // Add any losers that aren't already in the map
+    battleResults.forEach(result => {
+      if (!pokemonMap.has(result.loser.id)) {
+        pokemonMap.set(result.loser.id, result.loser);
+      }
+    });
+    
+    // Convert map to array
+    return Array.from(pokemonMap.values());
+  };
+
   // Create a battleStarter instance with the needed parameters
   const { startNewBattle: initiateNewBattle } = useBattleStarter(
     setCurrentBattle,
     allPokemon,   // Pass allPokemon to use as the pokemonList
     allPokemon,   // Pass the same allPokemon as allPokemonForGeneration
-    battleResults.length > 0 ? 
-      Array.from(new Map(battleResults.map(result => [result.winner.id, result.winner])).values()) : 
-      []  // Create currentFinalRankings from battleResults
+    getCurrentRankings() // Pass current rankings derived from battle results
   );
   
   // Create a processBattleResult function to expose to other hooks
@@ -104,6 +127,11 @@ export const useBattleSelectionState = () => {
       
       // Force update localStorage
       localStorage.setItem('pokemon-ranker-battle-type', battleType);
+    }
+    
+    // Set allPokemon if it's not already set
+    if (allPokemon.length === 0 && pokemonList.length > 0) {
+      setAllPokemon(pokemonList);
     }
     
     // Start the new battle - only pass the battleType, since other params are already provided to useBattleStarter

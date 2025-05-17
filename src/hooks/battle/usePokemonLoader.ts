@@ -36,7 +36,20 @@ export const usePokemonLoader = ({
       // Use fetchAllPokemon instead of trying to hit a non-existent API endpoint
       const pokemon = await fetchAllPokemon(genId, fullRankingMode);
       
-      // FIXED: Always update allPokemon state
+      if (!pokemon || pokemon.length === 0) {
+        console.error("Failed to load Pokemon - API returned empty array");
+        toast({
+          title: "Error",
+          description: "No Pokémon data could be loaded. Please try again.",
+          variant: "destructive"
+        });
+        setIsLoading(false);
+        return [];
+      }
+      
+      console.log(`Successfully loaded ${pokemon.length} Pokemon for generation ${genId}`);
+      
+      // ALWAYS update allPokemon state
       setAllPokemon(pokemon);
       
       if (!preserveState) {
@@ -51,24 +64,17 @@ export const usePokemonLoader = ({
       }
       
       // Start the first battle or continue from previous battle
-// Start the first battle or continue from previous battle
-if (
-  Array.isArray(pokemon) &&
-  pokemon.length > 0 &&
-  typeof pokemon[0] === "object" &&
-  "id" in pokemon[0]
-) {
-  console.log("✅ Starting initial battle with", pokemon.length, "Pokémon");
-  startNewBattle(pokemon, battleType);
-} else {
-  console.error("❌ Invalid Pokémon data:", pokemon);
-  toast({
-    title: "Error",
-    description: "Invalid Pokémon data received. Please refresh or try again.",
-    variant: "destructive"
-  });
-}
-
+      if (Array.isArray(pokemon) && pokemon.length > 0 && typeof pokemon[0] === "object" && "id" in pokemon[0]) {
+        console.log("✅ Starting initial battle with", pokemon.length, "Pokémon");
+        startNewBattle(pokemon, battleType);
+      } else {
+        console.error("❌ Invalid Pokémon data:", pokemon);
+        toast({
+          title: "Error",
+          description: "Invalid Pokémon data received. Please refresh or try again.",
+          variant: "destructive"
+        });
+      }
       
       return pokemon;
     } catch (error) {

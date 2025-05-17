@@ -18,7 +18,6 @@ export const useCompletionTracker = (
     // For a complete ranking in a tournament style, we need at least n-1 comparisons
     // where n is the number of Pokémon. This is the minimum number of comparisons
     // needed to sort a list (optimal comparison-based sorting algorithms).
-    // We don't need to compare every possible pair, which would be n*(n-1)/2.
     const totalPokemon = allPokemon.length;
     
     if (totalPokemon <= 1) {
@@ -29,6 +28,7 @@ export const useCompletionTracker = (
     // Minimum number of comparisons needed - we actually only need n-1 at minimum,
     // but we'll use n*log(n) as a more realistic estimate for getting a good ranking
     // This is similar to the comparisons needed for a merge sort or quicksort
+    const comparisonsNeeded = totalPokemon - 1;
     const logBase2 = Math.log(totalPokemon) / Math.log(2);
     const minimumComparisons = Math.ceil(totalPokemon * logBase2);
     
