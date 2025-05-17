@@ -14,7 +14,7 @@ export interface UseBattleStateActionsProps {
   setBattleHistory: React.Dispatch<React.SetStateAction<{ battle: Pokemon[], selected: number[] }[]>>;
   setShowingMilestone: React.Dispatch<React.SetStateAction<boolean>>;
   setCompletionPercentage: React.Dispatch<React.SetStateAction<number>>;
-  startNewBattle: (pokemon: Pokemon[], battleType: BattleType) => void;
+  startNewBattle: (battleType: BattleType) => void;
   allPokemon: Pokemon[];
   generateRankings: (results: any[]) => void;
   battleType: BattleType;

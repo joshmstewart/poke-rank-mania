@@ -1,5 +1,5 @@
 
-import { useMemo, useCallback } from "react";
+import { useMemo, useCallback, useEffect } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
 import { createBattleStarter } from "./createBattleStarter";
@@ -24,6 +24,23 @@ export const useBattleStarterIntegration = (
       setCurrentBattle
     );
   }, [allPokemon, currentRankings, setCurrentBattle]);
+
+  // Add event listener for custom set-current-battle event
+  useEffect(() => {
+    const handleSetCurrentBattle = (event: any) => {
+      if (event.detail && event.detail.pokemon) {
+        setCurrentBattle(event.detail.pokemon);
+      }
+    };
+
+    // Add event listener for the custom event
+    document.addEventListener('set-current-battle', handleSetCurrentBattle);
+
+    // Clean up
+    return () => {
+      document.removeEventListener('set-current-battle', handleSetCurrentBattle);
+    };
+  }, [setCurrentBattle]);
 
   // Start a new battle
   const startNewBattle = useCallback((battleType: BattleType) => {
