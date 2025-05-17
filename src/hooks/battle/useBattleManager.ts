@@ -11,7 +11,7 @@ export const useBattleManager = (
   battlesCompleted: number,
   setBattlesCompleted: React.Dispatch<React.SetStateAction<number>>,
   allPokemon: Pokemon[],
-  startNewBattle: (pokemon: Pokemon[], battleType: BattleType) => void,
+  startNewBattle: (battleType: BattleType) => void,
   setShowingMilestone: React.Dispatch<React.SetStateAction<boolean>>,
   milestones: number[],
   generateRankings: (results: BattleResult) => void,
@@ -83,8 +83,34 @@ export const useBattleManager = (
         return;
       }
       
-      // Start a new battle with the provided Pokemon
-      startNewBattle(newBattle, currentBattleType);
+      // We need to adapt this to the correct signature
+      // Instead of calling startNewBattle(newBattle, currentBattleType),
+      // we'll update the state directly through a different mechanism.
+      // This is a workaround for the type mismatch.
+      if (newBattle && newBattle.length > 0) {
+        // Here's where we would normally do:
+        // startNewBattle(newBattle, currentBattleType);
+        
+        // Instead, we'll use our local solution:
+        const battleSize = currentBattleType === "pairs" ? 2 : 3;
+        const properBattleSize = newBattle.slice(0, battleSize);
+        
+        // Trigger battle start with correct type
+        if (properBattleSize.length === battleSize) {
+          // Update the current battle through a custom event
+          // This is a workaround to match the function signatures
+          document.dispatchEvent(new CustomEvent('set-current-battle', { 
+            detail: { pokemon: properBattleSize }
+          }));
+          
+          // Then call startNewBattle with just the type
+          startNewBattle(currentBattleType);
+        } else {
+          console.error("Invalid battle size for goBack:", properBattleSize.length);
+          // Just start a new battle as fallback
+          startNewBattle(currentBattleType);
+        }
+      }
     };
     
     // Call the original goBack with the required parameters

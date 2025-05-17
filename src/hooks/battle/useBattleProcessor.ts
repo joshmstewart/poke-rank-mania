@@ -13,7 +13,7 @@ export const useBattleProcessor = (
   battlesCompleted: number,
   setBattlesCompleted: React.Dispatch<React.SetStateAction<number>>,
   allPokemon: Pokemon[],
-  startNewBattle: (pokemon: Pokemon[], battleType: BattleType) => void,
+  startNewBattle: (battleType: BattleType) => void,
   setShowingMilestone: React.Dispatch<React.SetStateAction<boolean>>,
   milestones: number[],
   generateRankings: (results: BattleResult) => void,
