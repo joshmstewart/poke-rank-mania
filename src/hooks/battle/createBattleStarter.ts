@@ -57,6 +57,8 @@ export const createBattleStarter = (
     }
 
     const ranked = [...currentFinalRankings];
+    console.log("[createBattleStarter] ranked.length =", ranked.length);
+
     const unranked = allPokemonForGeneration.filter(p => !ranked.some(r => r.id === p.id));
 
     const getSliceByCount = (list: Pokemon[], count: number) =>
@@ -71,6 +73,11 @@ export const createBattleStarter = (
     const T_Bottom50 = ranked.filter(p => !T_Top50.includes(p));
 
     let result: Pokemon[] = [];
+    console.log("[createBattleStarter] T_Top10:", T_Top10.length);
+console.log("[createBattleStarter] T_Top50:", T_Top50.length);
+console.log("[createBattleStarter] T_Unranked:", unranked.length);
+
+
 
     const r = roll();
     if (r < 15 && T_Top10.length && T_Top20.length) result = pickPokemonFromPools(T_Top10, T_Top20);
@@ -80,9 +87,11 @@ export const createBattleStarter = (
     else if (unranked.length && T_Top50.length) result = pickPokemonFromPools(unranked, T_Top50);
     else if (unranked.length >= 2) result = pickPokemonFromPools(unranked, unranked);
 
-    if (result.length < battleSize) {
-      result = shuffleArray([...allPokemonForGeneration]).slice(0, battleSize);
-    }
+  if (result.length < battleSize) {
+  console.warn("⚠️ Tiered selection failed — using random fallback");
+  result = shuffleArray([...allPokemonForGeneration]).slice(0, battleSize);
+}
+
 
     const newIds = result.map(p => p.id).sort();
     const lastIds = [...lastBattleRef.current].sort();
@@ -104,8 +113,10 @@ export const createBattleStarter = (
       }
     });
 
-    setCurrentBattle(result);
-    return result;
+   setCurrentBattle(result);
+console.log("✅ Final selected Pokémon:", result.map(p => p.name)); // ← add this line
+return result;
+
   };
 
   return { startNewBattle };
