@@ -39,50 +39,158 @@ const updatePriorityPokemon = (pokemonList: Pokemon[]) => {
 
 
 
-  const startNewBattle = (pokemonList: Pokemon[], battleType: "pairs" | "triplets") => {
+  const startNewBattle = (battleType: "pairs" | "triplets") => {
+    console.log("[useBattleStarter] startNewBattle called. battleType:", battleType);
+console.log("[useBattleStarter] Using allPokemonForGeneration length:", allPokemonForGeneration?.length || 0);
+console.log("[useBattleStarter] Using currentFinalRankings length:", currentFinalRankings?.length || 0);
+if (currentFinalRankings && currentFinalRankings.length > 0) {
+  console.log("[useBattleStarter] Sample of currentFinalRankings:", currentFinalRankings.slice(0,3).map(p => p.name));
+} else {
+  console.log("[useBattleStarter] currentFinalRankings is empty or undefined at start of startNewBattle.");
+}
     console.log("Starting new battle with pokemonList:", pokemonList?.length || 0);
 
-    updatePriorityPokemon(pokemonList);
-    let availablePokemon = [...pokemonList];
+    // ----- START OF NEW TIERED PAIRING LOGIC -----
+    const battleSize = battleType === "pairs" ? 2 : 3;
 
-
-    
-    if (!pokemonList || pokemonList.length < 3) { // Need at least 3 for rotation
-      console.error("Not enough Pokémon for a battle:", pokemonList?.length || 0);
+    // This check should be at the very start of startNewBattle using allPokemonForGeneration
+    if (!allPokemonForGeneration || allPokemonForGeneration.length < battleSize) {
+      console.error("[useBattleStarter] Not enough Pokémon in allPokemonForGeneration for a battle. Needed:", battleSize, "Got:", allPokemonForGeneration?.length || 0);
+      setCurrentBattle([]); // Clear current battle if we can't form one
       return [];
     }
+
+    let newBattlePokemon: Pokemon[] = [];
+
+    const ranked = Array.isArray(currentFinalRankings) ? currentFinalRankings : [];
+    const unrankedPool = allPokemonForGeneration.filter(p => !ranked.find(r => r.id === p.id));
+
+    const getSliceByCount = (list: Pokemon[], count: number): Pokemon[] => list.slice(0, Math.min(list.length, Math.max(0, count)));
+    const getSliceByPercent = (list: Pokemon[], percent: number): Pokemon[] => {
+      const count = Math.floor(list.length * (percent / 100));
+      return list.slice(0, Math.max(0, count));
+    };
+
+    const T_Top20_Ranked = getSliceByCount(ranked, 20);
+    const T_Top10Percent_Ranked = getSliceByPercent(ranked, 10);
+    const T_Top25Percent_Ranked = getSliceByPercent(ranked, 25);
+    const T_Top50Percent_Ranked = getSliceByPercent(ranked, 50);
+    const T_Bottom50Percent_Ranked = ranked.filter(p => !T_Top50Percent_Ranked.some(topP => topP.id === p.id));
+    const T_Unranked = [...unrankedPool];
+
+    const pickDistinctFromPools = (pool1: Pokemon[], pool2: Pokemon[], count: number, avoidIds: number[]): Pokemon[] => {
+        let p1: Pokemon | undefined, p2: Pokemon | undefined, p3: Pokemon | undefined;
+        let result: Pokemon[] = [];
+        const maxAttempts = 50; 
+        let attempts = 0;
+
+        const createEffectivePool = (pool: Pokemon[], avoid: number[]) => {
+            if (!Array.isArray(pool) || pool.length === 0) return [];
+            const filtered = shuffleArray(pool.filter(p_filter => !avoid.includes(p_filter.id)));
+            const minRequiredForPool = (pool1 === pool2 && pool === pool1 && count > 1) ? count : 1; 
+            return filtered.length >= minRequiredForPool ? filtered : shuffleArray([...pool]);
+        };
+        
+        let P1_Effective_Pool = createEffectivePool(pool1, avoidIds);
+        let P2_Effective_Pool = createEffectivePool(pool2, avoidIds);
+
+        if (P1_Effective_Pool.length === 0) { console.warn(`[pickDistinct] P1_Effective_Pool is empty. Initial pool1: ${pool1?.length}`); return []; }
+        if (count > 1 && P1_Effective_Pool === P2_Effective_Pool && P1_Effective_Pool.length < count) { console.warn(`[pickDistinct] Cannot pick ${count} distinct from same small pool. Size: ${P1_Effective_Pool.length}`); return [];}
+        if (count > 1 && P2_Effective_Pool.length === 0 && P1_Effective_Pool !== P2_Effective_Pool) { console.warn(`[pickDistinct] P2_Effective_Pool is empty. Initial pool2: ${pool2?.length}`); return []; }
+
+
+        for (attempts = 0; attempts < maxAttempts; attempts++) {
+            if (P1_Effective_Pool.length === 0) break; // Cannot pick p1
+            p1 = P1_Effective_Pool[Math.floor(Math.random() * P1_Effective_Pool.length)];
+            
+            let p2Options = (P1_Effective_Pool === P2_Effective_Pool) 
+                ? P2_Effective_Pool.filter(p => p.id !== p1?.id)
+                : P2_Effective_Pool;
+            
+            if (p2Options.length === 0) continue; 
+            p2 = p2Options[Math.floor(Math.random() * p2Options.length)];
+
+            if (p1 && p2 && p1.id !== p2.id) {
+                if (count === 2) { 
+                    const currentPairIdsSorted = [p1.id, p2.id].sort((a,b)=>a-b);
+                    const avoidIdsSorted = [...avoidIds].sort((a,b)=>a-b);
+                    if (avoidIds.length !== 2 || currentPairIdsSorted.join(',') !== avoidIdsSorted.join(',')) {
+                        result = [p1, p2];
+                        break;
+                    }
+                } else if (count === 3) { 
+                    let p3Options = allPokemonForGeneration.filter(p => p.id !== p1?.id && p.id !== p2?.id && !avoidIds.includes(p.id));
+                    if (p3Options.length === 0) p3Options = allPokemonForGeneration.filter(p => p.id !== p1?.id && p.id !== p2?.id);
+                    
+                    if (p3Options.length > 0) {
+                        p3 = p3Options[Math.floor(Math.random() * p3Options.length)];
+                        if (p3) { result = [p1, p2, p3]; break; }
+                    }
+                }
+            }
+        }
+        if (result.length < count) console.warn(`[pickDistinct] Could not find ${count} distinct Pokemon for strategy: ${strategyUsed}. Attempts: ${attempts}`);
+        return result;
+    };
+
+    const roll = Math.random() * 100;
+    let strategyUsed = "Fallback"; // Will be updated if a specific strategy is chosen
+    newBattlePokemon = []; 
+
+    if (battleType === "pairs") { 
+        if (roll < 15) { 
+          if (T_Top10Percent_Ranked.length > 0 && T_Top20_Ranked.length > 0) {
+            strategyUsed = "Top10%_Ranked vs Top20_Ranked";
+            newBattlePokemon = pickDistinctFromPools(T_Top10Percent_Ranked, T_Top20_Ranked, battleSize, lastBattleRef.current);
+          }
+        } else if (roll < 30) { 
+          if (T_Top10Percent_Ranked.length > 0 && T_Top25Percent_Ranked.length > 0) {
+            strategyUsed = "Top10%_Ranked vs Top25%_Ranked";
+            newBattlePokemon = pickDistinctFromPools(T_Top10Percent_Ranked, T_Top25Percent_Ranked, battleSize, lastBattleRef.current);
+          }
+        } else if (roll < 50) { 
+          if (T_Top25Percent_Ranked.length > 0 && T_Top50Percent_Ranked.length > 0) {
+            strategyUsed = "Top25%_Ranked vs Top50%_Ranked";
+            newBattlePokemon = pickDistinctFromPools(T_Top25Percent_Ranked, T_Top50Percent_Ranked, battleSize, lastBattleRef.current);
+          }
+        } else if (roll < 70) { 
+          if (T_Top50Percent_Ranked.length > 0 && T_Bottom50Percent_Ranked.length > 0) {
+            strategyUsed = "Top50%_Ranked vs Bottom50%_Ranked";
+            newBattlePokemon = pickDistinctFromPools(T_Top50Percent_Ranked, T_Bottom50Percent_Ranked, battleSize, lastBattleRef.current);
+          }
+        } else { 
+          if (T_Unranked.length > 0 && T_Top50Percent_Ranked.length > 0) {
+            strategyUsed = "Unranked vs Top50%_Ranked";
+            newBattlePokemon = pickDistinctFromPools(T_Unranked, T_Top50Percent_Ranked, battleSize, lastBattleRef.current);
+          } else if (T_Unranked.length >= battleSize) { 
+            strategyUsed = "Two_Unranked (Fallback for Unranked strategy)";
+            newBattlePokemon = pickDistinctFromPools(T_Unranked, T_Unranked, battleSize, lastBattleRef.current);
+          }
+        }
+    } // End of pairs-specific tiered strategy
     
-    // Determine battle size based on battle type
-    const battleSize = battleType === "pairs" ? 2 : 3;
-    
-    // Create a copy of the pokemon list
-// Divide into priority and non-priority pools
-let priorityPool = pokemonList.filter(p => priorityPokemon.has(p.id));
-let nonPriorityPool = pokemonList.filter(p => !priorityPokemon.has(p.id));
+    console.log(`[useBattleStarter] Pairing strategy attempted: ${strategyUsed}, Result length: ${newBattlePokemon.length}`);
 
-// Roll for tiered selection strategy
-const rollValue = roll();
-let newBattlePokemon: Pokemon[] = [];
-
-if (rollValue < 40 && priorityPool.length >= 1 && nonPriorityPool.length >= 1) {
-  // 40%: Test top 25% Pokémon vs a non-priority challenger
-  const p1 = shuffleArray(priorityPool)[0];
-  const p2 = shuffleArray(nonPriorityPool)[0];
-  newBattlePokemon = [p1, p2];
-} else if (rollValue < 70 && nonPriorityPool.length >= 1) {
-  // 30%: Test two mid/lower-tier Pokémon (one may be ranked)
-  const p1 = shuffleArray(nonPriorityPool)[0];
-  const p2 = shuffleArray(pokemonList)[0]; // opponent can be anyone
-  newBattlePokemon = [p1, p2];
-} else {
-  // 30%: Full random pair
-  newBattlePokemon = shuffleArray(pokemonList).slice(0, battleSize);
-}
-
-// Fallback safeguard: ensure we always return a full pair
-if (newBattlePokemon.length < battleSize) {
-  newBattlePokemon = shuffleArray(pokemonList).slice(0, battleSize);
-}
+    // Fallback if a strategy failed or produced an insufficient pair/triplet
+    if (newBattlePokemon.length < battleSize) {
+      console.warn(`[useBattleStarter] Strategy '${strategyUsed}' failed or produced insufficient Pokémon (found ${newBattlePokemon.length}, needed ${battleSize}). Using general random fallback.`);
+      newBattlePokemon = pickDistinctFromPools(allPokemonForGeneration, allPokemonForGeneration, battleSize, lastBattleRef.current);
+      
+      // If even the broadest pick fails, it's a critical issue with data or distinct picking.
+      if (newBattlePokemon.length < battleSize) {
+          console.error("[useBattleStarter] Fallback with allPokemonForGeneration also failed to produce enough distinct Pokemon. (Pool size:", allPokemonForGeneration.length, "Needed:", battleSize,")");
+          // Attempt a very simple slice as a last resort, may contain non-distinct if allPokemonForGeneration is small or has duplicates (which it shouldn't by ID)
+          if (allPokemonForGeneration.length >= battleSize) {
+              newBattlePokemon = shuffleArray([...allPokemonForGeneration]).slice(0, battleSize);
+              console.warn("[useBattleStarter] Last resort fallback: Sliced from allPokemonForGeneration. Distinctness not fully guaranteed if list is small with similar IDs.");
+          } else {
+              setCurrentBattle([]); 
+              return []; // Cannot form a battle
+          }
+      }
+    }
+    // ----- END OF NEW TIERED PAIRING LOGIC -----
+    ```
 
     
     // Get the last battle Pokemon IDs from ref for immediate comparison
