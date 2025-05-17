@@ -45,12 +45,15 @@ export const useBattleSelectionState = () => {
   };
 
   // Create a battleStarter instance with the needed parameters
-const { startNewBattle: initiateNewBattle } = useBattleStarter(
-  setCurrentBattle,
-  allPokemon,           // This is your `pokemonList`
-  allPokemon,           // This is your `allPokemonForGeneration`
-  battleResults.map(r => r.winner) // this is your crude approximation of `currentFinalRankings`
+// At the top, get the starter function with a different name
+const { startNewBattle: startBattleFromHook } = useBattleStarter(
+  allPokemon,
+  allPokemon,
+  getCurrentRankings(),
+  setCurrentBattle
 );
+
+
   
   // Create a processBattleResult function to expose to other hooks
   const processBattleResult = (
@@ -111,42 +114,35 @@ const { startNewBattle: initiateNewBattle } = useBattleStarter(
   }, [currentBattleType]);
   
   // Define startNewBattle function
-  const startNewBattle = (pokemonList: Pokemon[], battleType: BattleType = currentBattleType) => {
-    console.log("useBattleSelectionState - startNewBattle with pokemonList length:", pokemonList?.length || 0, "and battleType:", battleType);
-    
-    if (!pokemonList || pokemonList.length < 2) {
-      // Not enough Pokémon for a battle
-      console.log("Not enough Pokémon for a battle:", pokemonList?.length || 0);
-      return;
-    }
-    
-    // Update our current battle type if different
-    if (battleType !== currentBattleType) {
-      console.log("Updating currentBattleType to:", battleType);
-      setCurrentBattleType(battleType);
-      
-      // Force update localStorage
-      localStorage.setItem('pokemon-ranker-battle-type', battleType);
-    }
-    
-    // Set allPokemon if it's not already set
-    if (allPokemon.length === 0 && pokemonList.length > 0) {
-      setAllPokemon(pokemonList);
-    }
-    
-    // Start the new battle - only pass the battleType, since other params are already provided to useBattleStarter
-    console.log("Starting new battle with battleType:", battleType);
-    const newBattlePokemon = initiateNewBattle(battleType);
+ const startNewBattle = (pokemonList: Pokemon[], battleType: BattleType = currentBattleType) => {
+  console.log("useBattleSelectionState - startNewBattle with pokemonList length:", pokemonList?.length || 0, "and battleType:", battleType);
 
-    if (newBattlePokemon && newBattlePokemon.length > 0) {
-      console.log("New battle Pokémon:", newBattlePokemon.map(p => p.name));
-      console.log("Setting current battle to:", newBattlePokemon.map(p => p.name));
-      setCurrentBattle(newBattlePokemon);
-      setSelectedPokemon([]);
-    } else {
-      console.error("Failed to create new battle - no pokemon returned");
-    }
-  };
+  if (!pokemonList || pokemonList.length < 2) {
+    console.log("Not enough Pokémon for a battle:", pokemonList?.length || 0);
+    return;
+  }
+
+  if (battleType !== currentBattleType) {
+    console.log("Updating currentBattleType to:", battleType);
+    setCurrentBattleType(battleType);
+    localStorage.setItem('pokemon-ranker-battle-type', battleType);
+  }
+
+  if (allPokemon.length === 0 && pokemonList.length > 0) {
+    setAllPokemon(pokemonList);
+  }
+
+  const newBattlePokemon = startBattleFromHook(battleType); // ✅ use the renamed one
+
+  if (newBattlePokemon && newBattlePokemon.length > 0) {
+    console.log("New battle Pokémon:", newBattlePokemon.map(p => p.name));
+    setCurrentBattle(newBattlePokemon);
+    setSelectedPokemon([]);
+  } else {
+    console.error("Failed to create new battle - no pokemon returned");
+  }
+};
+
 
   return {
     currentBattle,
