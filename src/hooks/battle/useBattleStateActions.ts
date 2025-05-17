@@ -32,13 +32,19 @@ export const useBattleStateActions = ({
   generateRankings,
   battleType
 }: UseBattleStateActionsProps) => {
+  // Create an adapter function that matches the expected signature in useGenerationSettings
+  const startNewBattleAdapter = (pokemonList: Pokemon[], battleType: BattleType) => {
+    // Ignore the pokemonList parameter, just forward the battleType
+    startNewBattle(battleType);
+  };
+  
   // Generation settings and battle type management
   const {
     selectedGeneration: generationSetting,
     handleGenerationChange,
     handleBattleTypeChange,
   } = useGenerationSettings(
-    startNewBattle,
+    startNewBattleAdapter, // Use the adapter here
     allPokemon,
     setRankingGenerated,
     setBattleResults,
@@ -60,7 +66,7 @@ export const useBattleStateActions = ({
     setBattleHistory,
     setShowingMilestone,
     setCompletionPercentage,
-    startNewBattle,
+    startNewBattleAdapter, // Use the adapter here
     generateRankings,
     battleType
   );

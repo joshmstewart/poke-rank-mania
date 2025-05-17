@@ -29,12 +29,19 @@ export const useBattleSelectionState = () => {
       : allPokemon || [];
   }, [battleResults, allPokemon, getCurrentRankings]);
   
+  // Use the battle starter integration with the new function signature
   const { battleStarter, startNewBattle } = useBattleStarterIntegration(
     allPokemon,
     currentRankings,
     setCurrentBattle,
     setSelectedPokemon
   );
+  
+  // Adapt the startNewBattle function for use with the outcome processor
+  const startNewBattleAdapter = (pokemonList: Pokemon[], battleType: BattleType) => {
+    // Ignore the pokemon list and just use the battle type
+    startNewBattle(battleType);
+  };
   
   const { processBattleResult } = useBattleOutcomeProcessor(
     setBattleResults,

@@ -23,6 +23,12 @@ export const useBattleStateCore = () => {
   // Initialize all variables before using them in other hooks
   const allPokemonSafe = Array.isArray(selectionState.allPokemon) && selectionState.allPokemon.length > 0 ? 
     selectionState.allPokemon : [];
+  
+  // Create an adapter for the startNewBattle function to match expected signatures
+  const startNewBattleAdapter = (pokemonList: Pokemon[], battleType: BattleType) => {
+    // Ignore the pokemonList parameter, just forward the battleType
+    selectionState.startNewBattle(battleType);
+  };
     
   // IO related functionality (loading Pokemon, storage, etc)
   const { 
@@ -44,7 +50,7 @@ export const useBattleStateCore = () => {
     setShowingMilestone: progressState.setShowingMilestone,
     setCompletionPercentage: progressState.setCompletionPercentage,
     setSelectedPokemon: selectionState.setSelectedPokemon,
-    startNewBattle: selectionState.startNewBattle,
+    startNewBattle: startNewBattleAdapter, // Use the adapter here
     battleType: battleTypeState.battleType,
     allPokemon: allPokemonSafe,
     battleResults: selectionState.battleResults
