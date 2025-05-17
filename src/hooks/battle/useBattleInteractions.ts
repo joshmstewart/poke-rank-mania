@@ -48,8 +48,10 @@ export const useBattleInteractions = (
       setSelectedPokemon(newSelected);
       
       // Save current battle to history
-      const currentBattleCopy = [...currentBattle];
-      setBattleHistory(prev => [...prev, { battle: currentBattleCopy, selected: newSelected }]);
+      if (currentBattle && currentBattle.length > 0) {
+        const currentBattleCopy = [...currentBattle];
+        setBattleHistory(prev => [...prev, { battle: currentBattleCopy, selected: newSelected }]);
+      }
       
       // Small delay to allow UI to update before processing
       setTimeout(() => {
@@ -57,18 +59,19 @@ export const useBattleInteractions = (
           // Get current generation for proper rankings
           const currentGeneration = getCurrentGeneration();
           
-          // Process the battle result directly
-          processBattleResult(newSelected, currentBattle, battleType, currentGeneration);
-          
-          // Increment battles completed
-          setBattlesCompleted(prev => prev + 1);
+          // Process the battle result directly with the current battle Pokemon
+          if (currentBattle && currentBattle.length > 0) {
+            processBattleResult(newSelected, currentBattle, battleType, currentGeneration);
+          }
           
           console.log("useBattleInteractions: Battle processed successfully, battles completed:", battlesCompleted + 1);
         } catch (error) {
           console.error("useBattleInteractions: Error processing battle result:", error);
         } finally {
           // Reset processing state regardless of success or failure
-          setIsProcessing(false);
+          setTimeout(() => {
+            setIsProcessing(false);
+          }, 500);
         }
       }, 50);
     } else { // triplets mode

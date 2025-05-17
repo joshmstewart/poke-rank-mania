@@ -44,7 +44,7 @@ export const useBattleSelectionState = () => {
   const currentRankings = useMemo(() => {
     return Array.isArray(battleResults) && battleResults.length > 0
       ? getCurrentRankings()
-      : allPokemon;
+      : allPokemon || [];
   }, [battleResults, allPokemon, getCurrentRankings]);
 
   // Create the battle starter function without hooks
@@ -81,6 +81,16 @@ export const useBattleSelectionState = () => {
       if (winner && loser) {
         console.log(`Battle result: ${winner.name} beats ${loser.name}`);
         setBattleResults(prev => [...prev, { winner, loser }]);
+        
+        // Critical fix: Increment battles completed and start a new battle
+        setBattlesCompleted(prev => prev + 1);
+        
+        // Start a new battle after a short delay to let the UI update
+        setTimeout(() => {
+          if (battleStarter) {
+            battleStarter.startNewBattle(battleType);
+          }
+        }, 300);
       } else {
         console.error("Couldn't determine winner/loser:", { selectedPokemonIds, currentBattlePokemon });
       }
@@ -100,17 +110,27 @@ export const useBattleSelectionState = () => {
           });
           return newResults;
         });
+        
+        // Critical fix: Increment battles completed and start a new battle
+        setBattlesCompleted(prev => prev + 1);
+        
+        // Start a new battle after processing
+        setTimeout(() => {
+          if (battleStarter) {
+            battleStarter.startNewBattle(battleType);
+          }
+        }, 300);
       } else {
         console.error("Invalid triplet selection:", { winners, losers, selectedPokemonIds });
       }
     }
-  }, [currentBattleType]);
+  }, [currentBattleType, battleStarter]);
 
   // Monitor for battle type changes in local storage
   useEffect(() => {
     const handleStorageChange = () => {
       const newBattleType = localStorage.getItem('pokemon-ranker-battle-type') as BattleType;
-      if (newBattleType && newBattleType !== currentBattleType) {
+      if (newBattleType && (newBattleType === "pairs" || newBattleType === "triplets")) {
         console.log("Storage change detected:", newBattleType);
         setCurrentBattleType(newBattleType);
       }
@@ -137,7 +157,7 @@ export const useBattleSelectionState = () => {
     }
 
     // Initialize allPokemon if empty
-    if (allPokemon.length === 0) {
+    if (!allPokemon || allPokemon.length === 0) {
       setAllPokemon(pokemonList);
     }
 
