@@ -19,14 +19,21 @@ export const useBattleSelectionState = () => {
   const [battleHistory, setBattleHistory] = useState<{ battle: Pokemon[], selected: number[] }[]>([]);
   const [currentBattleType, setCurrentBattleType] = useState<BattleType>(initialBattleType);
 
-  // Pass setCurrentBattle to useBattleStarter
-  const { startNewBattle: initiateNewBattle } = useBattleStarter(setCurrentBattle);
+  // Create a battleStarter instance with the needed parameters
+  const { startNewBattle: initiateNewBattle } = useBattleStarter(
+    setCurrentBattle,
+    allPokemon,   // Pass allPokemon to use as the pokemonList
+    allPokemon,   // Pass the same allPokemon as allPokemonForGeneration
+    battleResults.length > 0 ? 
+      Array.from(new Map(battleResults.map(result => [result.winner.id, result.winner])).values()) : 
+      []  // Create currentFinalRankings from battleResults
+  );
   
   // Create a processBattleResult function to expose to other hooks
   const processBattleResult = (
     selectedPokemonIds: number[],
     currentBattlePokemon: Pokemon[],
-    battleType: BattleType,
+    battleType: BattleType = currentBattleType,
     currentSelectedGeneration: number = 0
   ) => {
     if (selectedPokemonIds.length === 0 || !currentBattlePokemon || currentBattlePokemon.length === 0) {
@@ -99,9 +106,9 @@ export const useBattleSelectionState = () => {
       localStorage.setItem('pokemon-ranker-battle-type', battleType);
     }
     
-// Start the new battle
-console.log("Starting new battle with battleType:", battleType);
-const newBattlePokemon = initiateNewBattle(battleType);
+    // Start the new battle - only pass the battleType, since other params are already provided to useBattleStarter
+    console.log("Starting new battle with battleType:", battleType);
+    const newBattlePokemon = initiateNewBattle(battleType);
 
     if (newBattlePokemon && newBattlePokemon.length > 0) {
       console.log("New battle Pokémon:", newBattlePokemon.map(p => p.name));
