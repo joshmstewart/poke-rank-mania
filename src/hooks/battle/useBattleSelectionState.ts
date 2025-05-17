@@ -1,12 +1,10 @@
-
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleResult, BattleType } from "./types";
 import { useBattleStarter } from "./useBattleStarter";
 import { useBattleProcessor } from "./useBattleProcessor";
 
 export const useBattleSelectionState = () => {
-  // Get initial value from localStorage
   const storedBattleType = localStorage.getItem('pokemon-ranker-battle-type');
   const initialBattleType = (storedBattleType === "triplets") ? "triplets" : "pairs";
   console.log("useBattleSelectionState initialized with battleType:", initialBattleType);
@@ -19,67 +17,47 @@ export const useBattleSelectionState = () => {
   const [battleHistory, setBattleHistory] = useState<{ battle: Pokemon[], selected: number[] }[]>([]);
   const [currentBattleType, setCurrentBattleType] = useState<BattleType>(initialBattleType);
 
-  // Get current ranking from battle results if available
   const getCurrentRankings = (): Pokemon[] => {
     if (battleResults.length === 0) return [];
-    
-    // Create a map of Pokemon by ID, prioritizing winners
     const pokemonMap = new Map<number, Pokemon>();
-    
-    // Add winners first
     battleResults.forEach(result => {
       if (!pokemonMap.has(result.winner.id)) {
         pokemonMap.set(result.winner.id, result.winner);
       }
     });
-    
-    // Add any losers that aren't already in the map
     battleResults.forEach(result => {
       if (!pokemonMap.has(result.loser.id)) {
         pokemonMap.set(result.loser.id, result.loser);
       }
     });
-    
-    // Convert map to array
     return Array.from(pokemonMap.values());
   };
 
-  // Create a battleStarter instance with the needed parameters
-// At the top, get the starter function with a different name
-const { startNewBattle: startBattleFromHook } = useBattleStarter(
-  allPokemon,
-  allPokemon,
-  getCurrentRankings(),
-  setCurrentBattle
-);
+  // ✅ Correct useMemo inside the hook
+  const { startNewBattle: startBattleFromHook } = useMemo(() => {
+    return useBattleStarter(
+      allPokemon,
+      allPokemon,
+      getCurrentRankings(),
+      setCurrentBattle
+    );
+  }, [allPokemon, battleResults]);
 
-
-  
-  // Create a processBattleResult function to expose to other hooks
   const processBattleResult = (
     selectedPokemonIds: number[],
     currentBattlePokemon: Pokemon[],
-    battleType: BattleType = currentBattleType,
-    currentSelectedGeneration: number = 0
+    battleType: BattleType = currentBattleType
   ) => {
-    if (selectedPokemonIds.length === 0 || !currentBattlePokemon || currentBattlePokemon.length === 0) {
-      return;
-    }
-    
-    // For pairs battle
+    if (selectedPokemonIds.length === 0 || currentBattlePokemon.length === 0) return;
     if (battleType === "pairs") {
       const winner = currentBattlePokemon.find(p => selectedPokemonIds.includes(p.id));
       const loser = currentBattlePokemon.find(p => !selectedPokemonIds.includes(p.id));
-      
       if (winner && loser) {
         setBattleResults(prev => [...prev, { winner, loser }]);
       }
-    } 
-    // For triplets battle
-    else {
+    } else {
       const winners = currentBattlePokemon.filter(p => selectedPokemonIds.includes(p.id));
       const losers = currentBattlePokemon.filter(p => !selectedPokemonIds.includes(p.id));
-      
       if (winners.length > 0 && losers.length > 0) {
         setBattleResults(prev => {
           const newResults = [...prev];
@@ -93,56 +71,44 @@ const { startNewBattle: startBattleFromHook } = useBattleStarter(
       }
     }
   };
-  
-  // Listen for changes to the battle type in localStorage
+
   useEffect(() => {
     const handleStorageChange = () => {
       const newBattleType = localStorage.getItem('pokemon-ranker-battle-type') as BattleType;
-      if (newBattleType && (newBattleType === "pairs" || newBattleType === "triplets") && newBattleType !== currentBattleType) {
-        console.log("useBattleSelectionState: Detected battle type change in localStorage:", newBattleType);
+      if (newBattleType && newBattleType !== currentBattleType) {
+        console.log("Storage change detected:", newBattleType);
         setCurrentBattleType(newBattleType);
       }
     };
-    
-    // Check immediately and then on storage events
     handleStorageChange();
     window.addEventListener('storage', handleStorageChange);
-    
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, [currentBattleType]);
-  
-  // Define startNewBattle function
- const startNewBattle = (pokemonList: Pokemon[], battleType: BattleType = currentBattleType) => {
-  console.log("useBattleSelectionState - startNewBattle with pokemonList length:", pokemonList?.length || 0, "and battleType:", battleType);
 
-  if (!pokemonList || pokemonList.length < 2) {
-    console.log("Not enough Pokémon for a battle:", pokemonList?.length || 0);
-    return;
-  }
+  const startNewBattle = (pokemonList: Pokemon[], battleType: BattleType = currentBattleType) => {
+    console.log("startNewBattle with", pokemonList?.length, battleType);
+    if (!pokemonList || pokemonList.length < 2) {
+      console.warn("Not enough Pokémon for a battle.");
+      return;
+    }
 
-  if (battleType !== currentBattleType) {
-    console.log("Updating currentBattleType to:", battleType);
-    setCurrentBattleType(battleType);
-    localStorage.setItem('pokemon-ranker-battle-type', battleType);
-  }
+    if (battleType !== currentBattleType) {
+      setCurrentBattleType(battleType);
+      localStorage.setItem('pokemon-ranker-battle-type', battleType);
+    }
 
-  if (allPokemon.length === 0 && pokemonList.length > 0) {
-    setAllPokemon(pokemonList);
-  }
+    if (allPokemon.length === 0) {
+      setAllPokemon(pokemonList);
+    }
 
-  const newBattlePokemon = startBattleFromHook(battleType); // ✅ use the renamed one
-
-  if (newBattlePokemon && newBattlePokemon.length > 0) {
-    console.log("New battle Pokémon:", newBattlePokemon.map(p => p.name));
-    setCurrentBattle(newBattlePokemon);
-    setSelectedPokemon([]);
-  } else {
-    console.error("Failed to create new battle - no pokemon returned");
-  }
-};
-
+    const newBattlePokemon = startBattleFromHook(battleType);
+    if (newBattlePokemon && newBattlePokemon.length > 0) {
+      setCurrentBattle(newBattlePokemon);
+      setSelectedPokemon([]);
+    } else {
+      console.error("Failed to create new battle - no Pokémon returned");
+    }
+  };
 
   return {
     currentBattle,
