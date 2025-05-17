@@ -33,18 +33,15 @@ export const useBattleSelectionState = () => {
     return Array.from(pokemonMap.values());
   };
  
+  const currentRankings = battleResults.length > 0 ? getCurrentRankings() : allPokemon;
 
-const currentRankings = battleResults.length > 0 ? getCurrentRankings() : allPokemon;
-
-const startBattleFromHook = createBattleStarter(
-  allPokemon,
-  allPokemon,
-  currentRankings,
-  setCurrentBattle
-);
-
-
-
+  // Fixed createBattleStarter initialization with correct parameters
+  const startBattleFromHook = createBattleStarter(
+    allPokemon,
+    allPokemon,
+    currentRankings,
+    setCurrentBattle
+  );
 
   const processBattleResult = (
     selectedPokemonIds: number[],

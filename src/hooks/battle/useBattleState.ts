@@ -1,4 +1,3 @@
-
 import { useGenerationState } from "./useGenerationState";
 import { useBattleTypeState } from "./useBattleTypeState";
 import { useProgressState } from "./useProgressState";
@@ -152,21 +151,21 @@ export const useBattleState = () => {
     },
     navigateBack,
     battleTypeState.battleType,
-(selectedPokemonIds: number[], currentBattlePokemon: Pokemon[], battleType: BattleType) => {
-  if (
-    Array.isArray(selectedPokemonIds) && 
-    selectedPokemonIds.length > 0 && 
-    Array.isArray(currentBattlePokemon) &&
-    currentBattlePokemon.length > 0
-  ) {
-    return selectionState.processBattleResult(
-      selectedPokemonIds,
-      currentBattlePokemon,
-      battleType
-    );
-  }
-  return null;
-}
+    (selectedPokemonIds: number[], currentBattlePokemon: Pokemon[], battleType: BattleType, currentGeneration: number) => {
+      if (
+        Array.isArray(selectedPokemonIds) && 
+        selectedPokemonIds.length > 0 && 
+        Array.isArray(currentBattlePokemon) &&
+        currentBattlePokemon.length > 0
+      ) {
+        return selectionState.processBattleResult(
+          selectedPokemonIds,
+          currentBattlePokemon,
+          battleType
+        );
+      }
+      return null;
+    }
   );
   
   // Coordinator for state initialization and persistence
