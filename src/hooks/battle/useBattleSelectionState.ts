@@ -34,12 +34,15 @@ export const useBattleSelectionState = () => {
   };
  
 
+const currentRankings = battleResults.length > 0 ? getCurrentRankings() : allPokemon;
+
 const startBattleFromHook = createBattleStarter(
   allPokemon,
   allPokemon,
-  getCurrentRankings(),
+  currentRankings,
   setCurrentBattle
 );
+
 
 
 
