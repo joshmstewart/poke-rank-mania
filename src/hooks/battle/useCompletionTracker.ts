@@ -26,10 +26,11 @@ export const useCompletionTracker = (
       return;
     }
     
-    // Minimum number of comparisons needed for a complete ranking
-    // This is based on sort theory - you need at least n-1 comparisons
-    // to fully sort n items (in the best case)
-    const minimumComparisons = totalPokemon - 1;
+    // Minimum number of comparisons needed - we actually only need n-1 at minimum,
+    // but we'll use n*log(n) as a more realistic estimate for getting a good ranking
+    // This is similar to the comparisons needed for a merge sort or quicksort
+    const logBase2 = Math.log(totalPokemon) / Math.log(2);
+    const minimumComparisons = Math.ceil(totalPokemon * logBase2);
     
     // For pairs, each battle gives us 1 comparison
     // For triplets, each battle can give us multiple comparisons depending on selections
@@ -62,15 +63,17 @@ export const useCompletionTracker = (
     }
   }, [setRankingGenerated]);
 
-  // Modified to return a number without requiring battleType parameter
+  // Calculate remaining battles
   const getBattlesRemaining = () => {
     if (allPokemon.length <= 1) return 0;
     
     const totalPokemon = allPokemon.length;
-    const minimumComparisons = totalPokemon - 1;
+    // Use n*log(n) as our estimate for comparisons needed
+    const logBase2 = Math.log(totalPokemon) / Math.log(2);
+    const minimumComparisons = Math.ceil(totalPokemon * logBase2);
     const currentComparisons = battleResults.length;
     
-    // Just return the remaining comparisons as a simple estimate
+    // Return the remaining comparisons as a simple estimate
     return Math.max(0, minimumComparisons - currentComparisons);
   };
 
