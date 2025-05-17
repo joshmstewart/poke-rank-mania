@@ -21,11 +21,13 @@ export const useBattleActions = (
     // First reset the milestone flag
     setShowingMilestone(false);
     
-    // Then start a new battle with sufficient delay
+    // Then start a new battle with sufficient delay to ensure state updates
     setTimeout(() => {
       console.log("Starting new battle after milestone");
+      // Double-check that we're not showing a milestone before starting a new battle
+      setShowingMilestone(false);
       startNewBattle(allPokemon, battleType);
-    }, 150);
+    }, 200); // Increased delay to ensure state propagation
   };
 
   const handleNewBattleSet = () => {

@@ -1,5 +1,4 @@
-
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "@/hooks/battle/types";
 import BattleInterface from "./BattleInterface";
@@ -44,16 +43,27 @@ const BattleContent: React.FC<BattleContentProps> = ({
 }) => {
   // Keep track of internal state to handle transitions correctly
   const [internalShowRankings, setInternalShowRankings] = useState(showingMilestone || rankingGenerated);
+  // Use a ref to track when we've handled the continue button press
+  const continuePressedRef = useRef(false);
   
-  // Update internal state when external state changes
+  // Update internal state when external state changes, with special handling for continue button press
   useEffect(() => {
     console.log("BattleContent: props updated -", { 
       showingMilestone,
       rankingGenerated,
       battlesCompleted,
-      finalRankingsLength: finalRankings?.length || 0
+      finalRankingsLength: finalRankings?.length || 0,
+      continuePressedRef: continuePressedRef.current
     });
     
+    // If continue was pressed, we prioritize showing the battle interface
+    if (continuePressedRef.current) {
+      setInternalShowRankings(false);
+      continuePressedRef.current = false; // Reset the flag
+      return;
+    }
+    
+    // Otherwise, follow normal display logic
     setInternalShowRankings(showingMilestone || rankingGenerated);
   }, [showingMilestone, rankingGenerated, battlesCompleted, finalRankings]);
 
@@ -72,6 +82,9 @@ const BattleContent: React.FC<BattleContentProps> = ({
   // Custom continue battles handler with better state handling
   const handleContinueBattles = useCallback(() => {
     console.log("BattleContent: handleContinueBattles called");
+    
+    // Mark that we've handled the continue button press
+    continuePressedRef.current = true;
     
     // First update our internal state
     setInternalShowRankings(false);

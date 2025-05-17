@@ -14,9 +14,16 @@ export const useBattleProgression = (
 ) => {
   // Add a ref to track if a milestone is currently being shown
   const showingMilestoneRef = useRef(false);
+  // Track the last milestone we've shown to avoid showing the same one multiple times
+  const lastMilestoneShownRef = useRef(-1);
   
   // Reset showingMilestone state when battles completed changes
   useEffect(() => {
+    // Only check for milestones if we're not already showing one
+    if (showingMilestoneRef.current || battlesCompleted === lastMilestoneShownRef.current) {
+      return; // Skip milestone check if we're already showing one or just showed this one
+    }
+    
     // Check if we're at a milestone
     const isExactMilestone = milestones.includes(battlesCompleted);
     const isEvery50Battles = battlesCompleted >= 100 && battlesCompleted % 50 === 0;
@@ -25,11 +32,17 @@ export const useBattleProgression = (
       console.log(`useEffect in useBattleProgression: Milestone at ${battlesCompleted} battles - setting milestone flag`);
       showingMilestoneRef.current = true;
       setShowingMilestone(true);
+      lastMilestoneShownRef.current = battlesCompleted;
     }
   }, [battlesCompleted, milestones, setShowingMilestone]);
   
   // Check if we've hit a milestone
   const checkMilestone = useCallback((newBattlesCompleted: number, battleResults: any[]) => {
+    // Don't check if we've already shown this milestone
+    if (newBattlesCompleted === lastMilestoneShownRef.current) {
+      return false;
+    }
+    
     // Determine if we should show milestone
     // 1. Check if exactly on a milestone number
     const isExactMilestone = milestones.includes(newBattlesCompleted);
@@ -51,6 +64,7 @@ export const useBattleProgression = (
         try {
           generateRankings(battleResults);
           setShowingMilestone(true);
+          lastMilestoneShownRef.current = newBattlesCompleted;
           
           toast({
             title: "Milestone Reached!",
@@ -84,6 +98,7 @@ export const useBattleProgression = (
     resetMilestone: useCallback(() => {
       console.log("useBattleProgression: Resetting milestone flag");
       showingMilestoneRef.current = false;
+      lastMilestoneShownRef.current = -1; // Clear the last milestone shown
       setShowingMilestone(false);
     }, [setShowingMilestone])
   };
