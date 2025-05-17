@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+
+import React, { useEffect, useState, useCallback } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "@/hooks/battle/types";
 import BattleInterface from "./BattleInterface";
@@ -68,15 +69,20 @@ const BattleContent: React.FC<BattleContentProps> = ({
     });
   }, [showingMilestone, rankingGenerated, battlesCompleted, finalRankings, internalShowRankings]);
 
-  // Custom continue battles handler that ensures state is updated correctly
-  const handleContinueBattles = () => {
+  // Custom continue battles handler with better state handling
+  const handleContinueBattles = useCallback(() => {
     console.log("BattleContent: handleContinueBattles called");
+    
+    // First update our internal state
     setInternalShowRankings(false);
-    // Use setTimeout to ensure state updates before calling the external handler
+    
+    // Use setTimeout with a bit longer delay to ensure state updates
+    // before calling the external handler
     setTimeout(() => {
+      console.log("BattleContent: Calling external continue handler");
       onContinueBattles();
-    }, 50);
-  };
+    }, 100);
+  }, [onContinueBattles]);
   
   // Add debug log for component rendering decision
   console.log("BattleContent: shouldShowRankings =", internalShowRankings);

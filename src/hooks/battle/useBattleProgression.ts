@@ -82,6 +82,7 @@ export const useBattleProgression = (
     incrementBattlesCompleted,
     isShowingMilestone: showingMilestoneRef.current,
     resetMilestone: useCallback(() => {
+      console.log("useBattleProgression: Resetting milestone flag");
       showingMilestoneRef.current = false;
       setShowingMilestone(false);
     }, [setShowingMilestone])
