@@ -20,7 +20,8 @@ export const useBattleSelectionState = () => {
 
   // Generate current rankings from battle results
 const getCurrentRankings = useCallback((): Pokemon[] => {
-  if (battleResults.length === 0) return [];
+  if (!battleResults || battleResults.length === 0) return [];
+
 
   const pokemonMap = new Map<number, Pokemon>();
 
