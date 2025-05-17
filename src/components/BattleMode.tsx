@@ -54,10 +54,11 @@ const BattleMode = () => {
   };
 
   // Fix: Create a properly typed handleConfirmRestart that takes no arguments
-  const handleConfirmRestart = () => {
+  // with explicit type annotation to avoid inference issues
+  const handleConfirmRestart: () => void = () => {
     // Store the current selectedGeneration in a local variable
     const currentGeneration = selectedGeneration?.toString() || "0";
-    // Create a function that calls handleGenerationChange with the current generation
+    // Call the adapter with the current generation value
     handleGenerationChangeAdapter(currentGeneration);
     // Close the dialog
     setRestartDialogOpen(false);
