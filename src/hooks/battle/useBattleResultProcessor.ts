@@ -25,6 +25,7 @@ export const useBattleResultProcessor = (
     console.log("useBattleResultProcessor: Processing with selections:", selections);
     console.log("useBattleResultProcessor: Current battle Pokémon:", currentBattle.map(p => p.name));
     
+    // Create a new array instead of mutating the existing one
     const newResults = [...battleResults];
     
     if (battleType === "pairs") {
@@ -34,8 +35,10 @@ export const useBattleResultProcessor = (
       
       if (winner && loser) {
         console.log(`useBattleResultProcessor: Adding pair result: ${winner.name} beats ${loser.name}`);
+        // Add new result to array
         newResults.push({ winner, loser });
-        setBattleResults(newResults); // Add this line to update the state directly
+        // Update state with new array
+        setBattleResults(newResults);
         return newResults;
       } else {
         console.error("useBattleResultProcessor: Invalid selection for pair battle", 
@@ -53,7 +56,8 @@ export const useBattleResultProcessor = (
             newResults.push({ winner, loser });
           });
         });
-        setBattleResults(newResults); // Add this line to update the state directly
+        // Update state with new array
+        setBattleResults(newResults);
         return newResults;
       } else {
         console.error("useBattleResultProcessor: Invalid selection for triplet battle", selections, currentBattle);

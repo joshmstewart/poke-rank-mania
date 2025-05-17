@@ -20,6 +20,15 @@ const ProgressTracker: React.FC<ProgressTrackerProps> = ({
   // Ensure battles completed is displayed correctly
   const displayedBattles = battlesCompleted || 0; // Ensure we never display null/undefined
   
+  // Calculate the next milestone (every 10 battles until 100, then every 50)
+  const getNextMilestone = () => {
+    if (battlesCompleted < 100) {
+      return Math.ceil(battlesCompleted / 10) * 10;
+    } else {
+      return Math.ceil(battlesCompleted / 50) * 50;
+    }
+  };
+  
   return (
     <Card className={`rounded-lg shadow transition-colors ${isComplete ? "bg-green-50 border-green-200" : "bg-white"}`}>
       <CardContent className="p-4">
