@@ -39,7 +39,6 @@ export const useBattleSelectionState = () => {
       allPokemon,
       allPokemon,
       getCurrentRankings(),
-      setCurrentBattle
     );
   }, [allPokemon, battleResults]);
 
