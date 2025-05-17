@@ -2,8 +2,9 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleResult, BattleType } from "./types";
+
+// Import the createBattleStarter function, not the hook
 import { createBattleStarter } from "./createBattleStarter";
-import { useBattleProcessor } from "./useBattleProcessor";
 
 export const useBattleSelectionState = () => {
   const storedBattleType = localStorage.getItem('pokemon-ranker-battle-type');
@@ -19,45 +20,40 @@ export const useBattleSelectionState = () => {
   const [currentBattleType, setCurrentBattleType] = useState<BattleType>(initialBattleType);
 
   // Generate current rankings from battle results
-const getCurrentRankings = useCallback((): Pokemon[] => {
-  if (!battleResults || battleResults.length === 0) return [];
+  const getCurrentRankings = useCallback((): Pokemon[] => {
+    if (!battleResults || battleResults.length === 0) return [];
 
+    const pokemonMap = new Map<number, Pokemon>();
 
-  const pokemonMap = new Map<number, Pokemon>();
+    battleResults.forEach(result => {
+      if (!pokemonMap.has(result.winner.id)) {
+        pokemonMap.set(result.winner.id, result.winner);
+      }
+    });
 
-  battleResults.forEach(result => {
-    if (!pokemonMap.has(result.winner.id)) {
-      pokemonMap.set(result.winner.id, result.winner);
-    }
-  });
+    battleResults.forEach(result => {
+      if (!pokemonMap.has(result.loser.id)) {
+        pokemonMap.set(result.loser.id, result.loser);
+      }
+    });
 
-  battleResults.forEach(result => {
-    if (!pokemonMap.has(result.loser.id)) {
-      pokemonMap.set(result.loser.id, result.loser);
-    }
-  });
+    return Array.from(pokemonMap.values());
+  }, [battleResults]);
 
-  return Array.from(pokemonMap.values());
-}, [battleResults]);
-
-    
-
- 
   // Current rankings, either from battle results or all Pokemon
-const currentRankings = useMemo(() => {
-  return Array.isArray(battleResults) && battleResults.length > 0
-    ? getCurrentRankings()
-    : allPokemon;
-}, [battleResults?.length, allPokemon, getCurrentRankings]);
+  const currentRankings = useMemo(() => {
+    return Array.isArray(battleResults) && battleResults.length > 0
+      ? getCurrentRankings()
+      : allPokemon;
+  }, [battleResults, allPokemon, getCurrentRankings]);
 
-
-  // Initialize battle starter without using React hooks inside useMemo
+  // Create the battle starter function without hooks
   const battleStarter = useMemo(() => {
     if (!allPokemon || allPokemon.length === 0) {
       return null;
     }
     
-    // Create battle starter with pure functions only, no hooks
+    // Create a functions-only battle starter
     return createBattleStarter(
       allPokemon,
       allPokemon,
