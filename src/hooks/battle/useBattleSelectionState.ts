@@ -44,9 +44,12 @@ const getCurrentRankings = useCallback((): Pokemon[] => {
 
  
   // Current rankings, either from battle results or all Pokemon
-  const currentRankings = useMemo(() => {
-    return battleResults.length > 0 ? getCurrentRankings() : allPokemon;
-  }, [battleResults, allPokemon, getCurrentRankings]);
+const currentRankings = useMemo(() => {
+  return Array.isArray(battleResults) && battleResults.length > 0
+    ? getCurrentRankings()
+    : allPokemon;
+}, [battleResults?.length, allPokemon, getCurrentRankings]);
+
 
   // Initialize battle starter without using React hooks inside useMemo
   const battleStarter = useMemo(() => {
