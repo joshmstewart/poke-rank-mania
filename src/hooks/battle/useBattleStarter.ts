@@ -1,9 +1,11 @@
-
 import { useState, useRef } from "react";
 import { Pokemon } from "@/services/pokemon";
 
 export const useBattleStarter = (
-  setCurrentBattle: React.Dispatch<React.SetStateAction<Pokemon[]>>
+  setCurrentBattle: React.Dispatch<React.SetStateAction<Pokemon[]>>,
+  pokemonList: Pokemon[] = [],
+  allPokemonForGeneration: Pokemon[] = [],
+  currentFinalRankings: Pokemon[] = []
 ) => {
   // Track previous battles to avoid repetition
   const [previousBattles, setPreviousBattles] = useState<number[][]>([]);
@@ -190,8 +192,6 @@ if (currentFinalRankings && currentFinalRankings.length > 0) {
       }
     }
     // ----- END OF NEW TIERED PAIRING LOGIC -----
-    ```
-
     
     // Get the last battle Pokemon IDs from ref for immediate comparison
     const lastBattleIds = lastBattleRef.current;
@@ -205,7 +205,7 @@ if (currentFinalRankings && currentFinalRankings.length > 0) {
       console.log("Filtering out previously used Pokemon:", lastBattleIds);
       
       // Strictly filter out Pokemon that were in the last battle
-      availablePokemon = availablePokemon.filter(p => !lastBattleIds.includes(p.id));
+      let availablePokemon = allPokemonForGeneration.filter(p => !lastBattleIds.includes(p.id));
       
       // Ensure we have enough Pokemon left
       if (availablePokemon.length < battleSize) {
@@ -227,18 +227,17 @@ if (currentFinalRankings && currentFinalRankings.length > 0) {
     }
     
     // Also try to avoid recently seen Pokemon (beyond just the last battle)
-    if (seenPokemonIds.length > 0 && availablePokemon.length > battleSize * 3) {
+    if (seenPokemonIds.length > 0 && allPokemonForGeneration.length > battleSize * 3) {
       // Prefer Pokemon that haven't been seen recently
-      const preferredPokemon = availablePokemon.filter(p => !seenPokemonIds.includes(p.id));
+      const preferredPokemon = allPokemonForGeneration.filter(p => !seenPokemonIds.includes(p.id));
       
       if (preferredPokemon.length >= battleSize) {
-        availablePokemon = preferredPokemon;
+        const shuffledPreferred = shuffleArray(preferredPokemon);
+        if (newBattlePokemon.length < battleSize) {
+          newBattlePokemon = shuffledPreferred.slice(0, battleSize);
+        }
       }
     }
-    
-    // Better shuffle algorithm
-    const shuffled = shuffleArray(availablePokemon);
-    
     
     // Double-check to ensure we don't get the exact same battle
     if (lastBattleIds.length > 0) {
@@ -256,6 +255,7 @@ if (currentFinalRankings && currentFinalRankings.length > 0) {
         consecutiveRepeatsRef.current += 1;
         
         // Force a completely different selection
+        const shuffled = shuffleArray(allPokemonForGeneration);
         if (shuffled.length > battleSize * 2) {
           newBattlePokemon = shuffled.slice(battleSize, battleSize * 2);
         } else {
