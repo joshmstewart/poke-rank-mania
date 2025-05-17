@@ -210,9 +210,13 @@ export const useBattleStarter = (
     });
     
     console.log("New battle Pokémon:", newBattlePokemon.map(p => p.name));
-    
+
+
     // Update React state
     setCurrentBattle(newBattlePokemon);
+    // Save this battle as the last one
+lastBattleRef.current = newBattlePokemon.map(p => p.id);
+
     
     return newBattlePokemon;
   };
