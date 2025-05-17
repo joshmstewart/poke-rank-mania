@@ -53,6 +53,7 @@ const BattleMode = () => {
     handleGenerationChange(value);
   };
 
+  // Fix: Make handleConfirmRestart take no arguments
   const handleConfirmRestart = () => {
     handleGenerationChangeAdapter(selectedGeneration.toString());
     setRestartDialogOpen(false);
