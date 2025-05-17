@@ -34,6 +34,7 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
   // Component state
   const [animationKey, setAnimationKey] = useState(0);
   const [internalProcessing, setInternalProcessing] = useState(false);
+  const [displayedBattlesCompleted, setDisplayedBattlesCompleted] = useState(battlesCompleted);
   
   // Update animation key when current battle changes
   useEffect(() => {
@@ -41,8 +42,13 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
       setAnimationKey(prev => prev + 1);
     }
   }, [currentBattle]);
-
-  // Handle pokemon selection
+  
+  // Update displayed battles completed for smoother UI
+  useEffect(() => {
+    setDisplayedBattlesCompleted(battlesCompleted);
+  }, [battlesCompleted]);
+  
+  // Handle pokemon selection with debounce to prevent multiple clicks
   const handlePokemonCardSelect = useCallback((id: number) => {
     if (!isProcessing && !internalProcessing) {
       console.log("BattleInterface: Handling Pokemon selection:", id);
@@ -75,6 +81,24 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
     }
   }, [onGoBack, isProcessing, internalProcessing]);
   
+  // Get the next milestone
+  const getNextMilestone = useCallback(() => {
+    return milestones.find(m => m > displayedBattlesCompleted) || milestones[0] || 10;
+  }, [displayedBattlesCompleted, milestones]);
+  
+  // Calculate progress towards next milestone
+  const getMilestoneProgress = useCallback(() => {
+    const currentMilestoneIndex = milestones.findIndex(m => m > displayedBattlesCompleted);
+    if (currentMilestoneIndex === 0) {
+      return (displayedBattlesCompleted / milestones[0]) * 100;
+    } else if (currentMilestoneIndex > 0) {
+      const prevMilestone = milestones[currentMilestoneIndex - 1];
+      const nextMilestone = milestones[currentMilestoneIndex];
+      return ((displayedBattlesCompleted - prevMilestone) / (nextMilestone - prevMilestone)) * 100;
+    }
+    return 0;
+  }, [displayedBattlesCompleted, milestones]);
+  
   // Only render if we have Pokemon to display
   if (!currentBattle || currentBattle.length === 0) {
     return (
@@ -100,7 +124,7 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
                 <ChevronLeft className="mr-1" /> Back
               </Button>
             )}
-            <h2 className="text-2xl font-bold">Battle {battlesCompleted + 1}</h2>
+            <h2 className="text-2xl font-bold">Battle {displayedBattlesCompleted + 1}</h2>
           </div>
           
           {(isProcessing || internalProcessing) && (
@@ -114,14 +138,11 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
         <div className="h-1 w-full bg-gray-200 rounded-full mt-2">
           <div 
             className="h-1 bg-primary rounded-full transition-all duration-500" 
-            style={{ 
-              width: `${(battlesCompleted % (milestones.find(m => m > battlesCompleted) || 10)) / 
-              (milestones.find(m => m > battlesCompleted) || 10) * 100}%` 
-            }}
+            style={{ width: `${getMilestoneProgress()}%` }}
           ></div>
         </div>
         <div className="text-xs text-right mt-1 text-gray-500">
-          Next milestone: {milestones.find(m => m > battlesCompleted) || "∞"} battles
+          Next milestone: {getNextMilestone()} battles
         </div>
       </div>
       

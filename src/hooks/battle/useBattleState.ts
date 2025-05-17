@@ -28,58 +28,52 @@ export const useBattleState = () => {
   const progressState = useProgressState();
   const selectionState = useBattleSelectionState();
   
+  // Initialize all variables before using them in other hooks
+  const allPokemonSafe = Array.isArray(selectionState.allPokemon) && selectionState.allPokemon.length > 0 ? 
+    selectionState.allPokemon : [];
+  
   // Pokemon loading logic
-const {
-  isLoading,
-  loadPokemon
-} = usePokemonLoader({
-  setAllPokemon: selectionState.setAllPokemon,
-  setRankingGenerated: progressState.setRankingGenerated,
-  setBattleResults: selectionState.setBattleResults,
-  setBattlesCompleted: selectionState.setBattlesCompleted,
-  setBattleHistory: selectionState.setBattleHistory,
-  setShowingMilestone: progressState.setShowingMilestone,
-  setCompletionPercentage: progressState.setCompletionPercentage,
-  setSelectedPokemon: selectionState.setSelectedPokemon,
-  startNewBattle: selectionState.startNewBattle,
-  battleType: battleTypeState.battleType
-});
-
+  const {
+    isLoading,
+    loadPokemon
+  } = usePokemonLoader({
+    setAllPokemon: selectionState.setAllPokemon,
+    setRankingGenerated: progressState.setRankingGenerated,
+    setBattleResults: selectionState.setBattleResults,
+    setBattlesCompleted: selectionState.setBattlesCompleted,
+    setBattleHistory: selectionState.setBattleHistory,
+    setShowingMilestone: progressState.setShowingMilestone,
+    setCompletionPercentage: progressState.setCompletionPercentage,
+    setSelectedPokemon: selectionState.setSelectedPokemon,
+    startNewBattle: selectionState.startNewBattle,
+    battleType: battleTypeState.battleType
+  });
   
   // Local storage management
   const { saveBattleState, loadBattleState } = useLocalStorage();
   
   // Rankings generation and management
-const allPokemonSafe: Pokemon[] = Array.isArray(selectionState.allPokemon) && typeof selectionState.allPokemon[0] === "object"
-  ? selectionState.allPokemon
-  : [];
-
-const { finalRankings, generateRankings, handleSaveRankings: saveRankings } = useRankings(allPokemonSafe);
-
-
-
-
+  const { finalRankings, generateRankings, handleSaveRankings: saveRankings } = useRankings(allPokemonSafe);
   
   // Generation settings management
-const {
-  selectedGeneration: generationSetting,
-  handleGenerationChange,
-  handleBattleTypeChange,
-} = useGenerationSettings(
-  (pokemonList: Pokemon[]) => {
-    selectionState.startNewBattle(pokemonList, battleTypeState.battleType);
-  },
-  Array.isArray(selectionState.allPokemon) ? selectionState.allPokemon : [],
-  progressState.setRankingGenerated,
-  selectionState.setBattleResults,
-  selectionState.setBattlesCompleted,
-  selectionState.setBattleHistory,
-  progressState.setShowingMilestone,
-  progressState.setCompletionPercentage
-);
-
-
-
+  const {
+    selectedGeneration: generationSetting,
+    handleGenerationChange,
+    handleBattleTypeChange,
+  } = useGenerationSettings(
+    (pokemonList: Pokemon[]) => {
+      if (pokemonList && pokemonList.length > 0) {
+        selectionState.startNewBattle(pokemonList, battleTypeState.battleType);
+      }
+    },
+    allPokemonSafe,
+    progressState.setRankingGenerated,
+    selectionState.setBattleResults,
+    selectionState.setBattlesCompleted,
+    selectionState.setBattleHistory,
+    progressState.setShowingMilestone,
+    progressState.setCompletionPercentage
+  );
   
   // Synchronize settings state
   if (generationSetting !== generationState.selectedGeneration) {
@@ -97,7 +91,7 @@ const {
     generateRankings,
     progressState.setCompletionPercentage
   );
-
+  
   // Battle management
   const {
     handleTripletSelectionComplete: completeTripletSelection,
@@ -117,7 +111,7 @@ const {
     selectionState.setBattleHistory,
     selectionState.setSelectedPokemon
   );
-
+  
   // Battle actions
   const {
     handleContinueBattles,
@@ -134,61 +128,48 @@ const {
     generateRankings,
     battleTypeState.battleType
   );
-
+  
   // Battle interactions
-const {
-  handlePokemonSelect,
-  handleGoBack,
-  isProcessing
-} = useBattleInteractions(
-  selectionState.currentBattle,
-  selectionState.setCurrentBattle,
-  selectionState.selectedPokemon,
-  selectionState.setSelectedPokemon,
-  selectionState.battleResults,
-  selectionState.setBattleResults,
-  selectionState.battlesCompleted,
-  selectionState.setBattlesCompleted,
-  selectionState.battleHistory,
-  selectionState.setBattleHistory,
-  () => completeTripletSelection(battleTypeState.battleType, selectionState.currentBattle),
-  () => navigateBack(selectionState.setCurrentBattle, battleTypeState.battleType),
-  battleTypeState.battleType,
-  // CORRECTED Anonymous Callback Function:
-  (
-    selectedPokemonIds: number[],
-    currentBattlePokemon: Pokemon[], // Was: battleType, Now: Pokemon[] (parameter 2)
-    battleType: BattleType,        // Was: currentBattle, Now: BattleType (parameter 3)
-    currentSelectedGeneration: number // New parameter (parameter 4)
-  ) => {
-    // ---- updated basic type‑safety guards ----
-    if (
-      !Array.isArray(selectedPokemonIds) ||
-      selectedPokemonIds.some(id => typeof id !== "number")
-    ) {
-      throw new Error("selectedPokemonIds must be number[]");
+  const {
+    handlePokemonSelect,
+    handleGoBack,
+    isProcessing
+  } = useBattleInteractions(
+    selectionState.currentBattle,
+    selectionState.setCurrentBattle,
+    selectionState.selectedPokemon,
+    selectionState.setSelectedPokemon,
+    selectionState.battleResults,
+    selectionState.setBattleResults,
+    selectionState.battlesCompleted,
+    selectionState.setBattlesCompleted,
+    selectionState.battleHistory,
+    selectionState.setBattleHistory,
+    (battleType: BattleType, currentBattle: Pokemon[]) => {
+      if (battleType && currentBattle && currentBattle.length > 0) {
+        completeTripletSelection(battleType, currentBattle);
+      }
+    },
+    navigateBack,
+    battleTypeState.battleType,
+    (selectedPokemonIds: number[], currentBattlePokemon: Pokemon[], battleType: BattleType, currentSelectedGeneration: number) => {
+      if (
+        Array.isArray(selectedPokemonIds) && 
+        selectedPokemonIds.length > 0 && 
+        Array.isArray(currentBattlePokemon) &&
+        currentBattlePokemon.length > 0
+      ) {
+        return selectionState.processBattleResult(
+          selectedPokemonIds,
+          currentBattlePokemon,
+          battleType,
+          currentSelectedGeneration
+        );
+      }
+      return null;
     }
-    if (!Array.isArray(currentBattlePokemon)) { // Updated guard to use currentBattlePokemon
-      throw new Error("currentBattlePokemon must be Pokemon[]");
-    }
-    // You might also want a guard for battleType if its definition is complex
-    // ----------------------------------
-
-    // The `currentGeneration` variable is no longer needed here if `currentSelectedGeneration` is passed correctly by useBattleInteractions.
-    // const currentGeneration = generationState.selectedGeneration; // This line can likely be removed.
-
-    return selectionState.processBattleResult(
-      selectedPokemonIds,       // Parameter 1
-      currentBattlePokemon,   // Use the new 2nd parameter from the callback signature
-      battleType,               // Use the new 3rd parameter from the callback signature
-      currentSelectedGeneration // Use the new 4th parameter from the callback signature
-    );
-  }
-);
-
-
-
-
+  );
+  
   // Coordinator for state initialization and persistence
   useBattleCoordinatorState(
     isLoading,
@@ -202,38 +183,28 @@ const {
     progressState.fullRankingMode,
     saveBattleState,
     loadBattleState,
-    // Fix the function signature to match the expected type in useBattleCoordinatorState
-async (genId?: number, preserveState?: boolean): Promise<void> => {
-  // Fix: Convert genId to number explicitly before passing to loadPokemon
-  const generationId = genId !== undefined ? Number(genId) : undefined;
-  await loadPokemon(generationId, false, preserveState);
-},
-
-
-
-
-
+    async (genId?: number, preserveState?: boolean) => {
+      const generationId = genId !== undefined ? Number(genId) : undefined;
+      await loadPokemon(generationId, false, preserveState);
+    },
     calculateCompletionPercentage
   );
-
+  
   // Convenience wrappers for component usage
-const handleTripletSelectionComplete = () => {
-  if (Array.isArray(selectionState.currentBattle)) {
-    completeTripletSelection(battleTypeState.battleType, selectionState.currentBattle);
-  } else {
-    console.error("Expected a Pokémon array but got:", selectionState.currentBattle);
-  }
-};
-
-
+  const handleTripletSelectionComplete = () => {
+    if (Array.isArray(selectionState.currentBattle) && selectionState.currentBattle.length > 0) {
+      completeTripletSelection(battleTypeState.battleType, selectionState.currentBattle);
+    }
+  };
+  
   const handleSaveRankings = () => {
     saveRankings(generationState.selectedGeneration);
   };
-
+  
   const goBack = () => {
     navigateBack(selectionState.setCurrentBattle, battleTypeState.battleType);
   };
-
+  
   // Return all necessary state and functions for components
   return {
     // State

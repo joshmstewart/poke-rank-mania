@@ -27,7 +27,6 @@ export const usePokemonLoader = ({
   startNewBattle: (pokemonList: Pokemon[], battleType: BattleType) => void,
   battleType: BattleType
 }) => {
-
   const [isLoading, setIsLoading] = useState(true);
 
   const loadPokemon = async (genId = 0, fullRankingMode = false, preserveState = false) => {
@@ -49,7 +48,7 @@ export const usePokemonLoader = ({
       
       console.log(`Successfully loaded ${pokemon.length} Pokemon for generation ${genId}`);
       
-      // ALWAYS update allPokemon state
+      // ALWAYS update allPokemon state first
       setAllPokemon(pokemon);
       
       if (!preserveState) {
@@ -63,18 +62,32 @@ export const usePokemonLoader = ({
         setCompletionPercentage(0);
       }
       
-      // Start the first battle or continue from previous battle
-      if (Array.isArray(pokemon) && pokemon.length > 0 && typeof pokemon[0] === "object" && "id" in pokemon[0]) {
-        console.log("✅ Starting initial battle with", pokemon.length, "Pokémon");
-        startNewBattle(pokemon, battleType);
-      } else {
-        console.error("❌ Invalid Pokémon data:", pokemon);
-        toast({
-          title: "Error",
-          description: "Invalid Pokémon data received. Please refresh or try again.",
-          variant: "destructive"
-        });
-      }
+      // Wait for states to update before starting a new battle
+      setTimeout(() => {
+        // Start the first battle or continue from previous battle
+        if (Array.isArray(pokemon) && pokemon.length > 0 && typeof pokemon[0] === "object" && "id" in pokemon[0]) {
+          console.log("✅ Starting initial battle with", pokemon.length, "Pokémon");
+          try {
+            startNewBattle(pokemon, battleType);
+          } catch (e) {
+            console.error("Error starting initial battle:", e);
+            toast({
+              title: "Error",
+              description: "Could not start battle. Please try refreshing the page.",
+              variant: "destructive"
+            });
+          }
+        } else {
+          console.error("❌ Invalid Pokémon data:", pokemon);
+          toast({
+            title: "Error",
+            description: "Invalid Pokémon data received. Please refresh or try again.",
+            variant: "destructive"
+          });
+        }
+        
+        setIsLoading(false);
+      }, 100);
       
       return pokemon;
     } catch (error) {
@@ -84,9 +97,8 @@ export const usePokemonLoader = ({
         description: "Failed to load Pokémon. Please try again.",
         variant: "destructive"
       });
-      return [];
-    } finally {
       setIsLoading(false);
+      return [];
     }
   };
 
