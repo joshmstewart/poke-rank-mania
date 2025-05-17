@@ -99,9 +99,10 @@ export const useBattleSelectionState = () => {
       localStorage.setItem('pokemon-ranker-battle-type', battleType);
     }
     
-    // Start the new battle
-    console.log("Starting new battle with pokemonList:", pokemonList.length);
-    const newBattlePokemon = initiateNewBattle(pokemonList, battleType);
+// Start the new battle
+console.log("Starting new battle with battleType:", battleType);
+const newBattlePokemon = initiateNewBattle(battleType);
+
     if (newBattlePokemon && newBattlePokemon.length > 0) {
       console.log("New battle Pokémon:", newBattlePokemon.map(p => p.name));
       console.log("Setting current battle to:", newBattlePokemon.map(p => p.name));
