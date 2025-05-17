@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleResult, BattleType } from "./types";
-import { useBattleStarter } from "./useBattleStarter";
+import { createBattleStarter } from "./createBattleStarter";
 import { useBattleProcessor } from "./useBattleProcessor";
 
 export const useBattleSelectionState = () => {
@@ -35,7 +35,7 @@ export const useBattleSelectionState = () => {
 
   // ✅ Correct useMemo inside the hook
   const { startNewBattle: startBattleFromHook } = useMemo(() => {
-    return useBattleStarter(
+    return createBattleStarter(
       allPokemon,
       allPokemon,
       getCurrentRankings(),

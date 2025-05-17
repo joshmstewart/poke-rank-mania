@@ -1,4 +1,3 @@
-
 export * from "./useBattleState";
 export * from "./useBattleUIState";
 export * from "./useBattleSelectionState";
@@ -12,7 +11,7 @@ export * from "./useGenerationSettings";
 export * from "./useBattleActions";
 export * from "./usePokemonLoader";
 export * from "./useBattleEffects";
-export * from "./useBattleStarter";
+export * from "./createBattleStarter";
 export * from "./useBattleInteractions";
 export * from "./useBattleStateInitializer";
 export * from "./useBattlePersistence";

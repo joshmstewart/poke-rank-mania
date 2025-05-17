@@ -1,8 +1,9 @@
+
 import { useState, useRef } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
 
-export const useBattleStarter = (
+export const createBattleStarter = (
   pokemonList: Pokemon[],
   allPokemonForGeneration: Pokemon[],
   currentFinalRankings: Pokemon[],
