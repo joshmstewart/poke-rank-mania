@@ -22,10 +22,16 @@ const ProgressTracker: React.FC<ProgressTrackerProps> = ({
   
   // Calculate the next milestone (every 10 battles until 100, then every 50)
   const getNextMilestone = () => {
-    if (safeBattlesCompleted < 100) {
-      return Math.ceil(safeBattlesCompleted / 10) * 10;
+    if (safeBattlesCompleted < 10) {
+      return 10;
+    } else if (safeBattlesCompleted < 25) {
+      return 25;
+    } else if (safeBattlesCompleted < 50) {
+      return 50;
+    } else if (safeBattlesCompleted < 100) {
+      return 100;
     } else {
-      return Math.ceil(safeBattlesCompleted / 50) * 50;
+      return Math.ceil(safeBattlesCompleted / 50) * 50 + 50;
     }
   };
   
@@ -58,7 +64,7 @@ const ProgressTracker: React.FC<ProgressTrackerProps> = ({
           <span>Battles: {safeBattlesCompleted}</span>
           <span>
             {safeCompletionPercentage < 100 
-              ? `~${battlesRemaining} more needed` 
+              ? `Next milestone: ${getNextMilestone()} battles` 
               : <span className="flex items-center text-green-600 font-semibold"><CheckCircle size={14} className="mr-1" /> Complete ranking!</span>
             }
           </span>

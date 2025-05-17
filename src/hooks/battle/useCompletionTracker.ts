@@ -17,7 +17,7 @@ export const useCompletionTracker = (
   // Force calculation on mount and when battle results change
   useEffect(() => {
     calculateCompletionPercentage();
-  }, [battleResults.length]);
+  }, [battleResults?.length]);
 
   // Calculate completion percentage and check if we should show rankings
   const calculateCompletionPercentage = () => {
@@ -28,26 +28,50 @@ export const useCompletionTracker = (
     
     console.log(`[useCompletionTracker] Calculating completion: ${totalPokemon} total Pokémon, ${battleResults?.length || 0} battles completed`);
     
-    if (totalPokemon <= 1) {
+    if (!totalPokemon || totalPokemon <= 1) {
       setCompletionPercentage(100);
       return;
     }
     
-    // Minimum number of comparisons needed - we actually only need n-1 at minimum,
-    // but we'll use n*log(n) as a more realistic estimate for getting a good ranking
-    // This is similar to the comparisons needed for a merge sort or quicksort
-    const comparisonsNeeded = totalPokemon - 1;
-    const logBase2 = Math.log(totalPokemon) / Math.log(2);
-    const minimumComparisons = Math.ceil(totalPokemon * logBase2);
-    
-    // For pairs, each battle gives us 1 comparison
-    // For triplets, each battle can give us multiple comparisons depending on selections
-    // In both cases, battleResults stores each individual comparison
+    // Minimum number of comparisons needed for a basic ranking
+    // We'll use a simple formula for battles needed to get a basic ranking:
+    // For ranking purposes, we want at least 10% of possible comparisons
     const currentComparisons = battleResults?.length || 0;
     
-    // Calculate percentage (cap at 100%)
-    const percentage = Math.min(100, Math.floor((currentComparisons / minimumComparisons) * 100));
-    console.log(`[useCompletionTracker] Calculated ${percentage}% completion (${currentComparisons}/${minimumComparisons} comparisons)`);
+    // For early milestones, we want to show some progress even with few battles
+    let percentage;
+    
+    if (currentComparisons < 10) {
+      // For the first few battles, show small but noticeable progress
+      percentage = Math.round(currentComparisons / 10 * 5); // Max 5% for first 10 battles
+    } else if (currentComparisons < 50) {
+      // Between 10-50 battles, scale from 5% to 25%
+      percentage = 5 + Math.round((currentComparisons - 10) / 40 * 20); 
+    } else if (currentComparisons < 100) {
+      // Between 50-100 battles, scale from 25% to 50%
+      percentage = 25 + Math.round((currentComparisons - 50) / 50 * 25);
+    } else {
+      // After 100 battles, scale more gradually
+      // n*log2(n) is a reasonable estimate for the number of comparisons needed for a good ranking
+      const logBase2 = Math.log(totalPokemon) / Math.log(2);
+      const estimatedComparisonsForFullRanking = Math.ceil(totalPokemon * logBase2);
+      const maxComparisons = Math.min(estimatedComparisonsForFullRanking, 500); // Cap at 500 to avoid requiring too many battles
+      
+      // Beyond 100 battles, scale from 50% to 100%
+      const remainingPercentage = 50;
+      const remainingComparisons = maxComparisons - 100;
+      const additionalPercentage = Math.min(
+        remainingPercentage,
+        Math.round(((currentComparisons - 100) / remainingComparisons) * remainingPercentage)
+      );
+      
+      percentage = 50 + additionalPercentage;
+    }
+    
+    // Cap at 100%
+    percentage = Math.min(100, percentage);
+    
+    console.log(`[useCompletionTracker] Calculated ${percentage}% completion (${currentComparisons} battles)`);
     setCompletionPercentage(percentage);
     
     // If we've reached 100%, make sure to show the final rankings

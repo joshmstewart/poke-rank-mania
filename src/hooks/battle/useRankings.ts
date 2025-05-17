@@ -23,7 +23,7 @@ export const useRankings = (allPokemon: Pokemon[]) => {
     }
     
     // 'allPokemon' is a parameter to the main useRankings hook, so it's available here.
-    console.log('[useRankings] allPokemon available to generateRankings (at start of function). Length:', allPokemon?.length);
+    console.log('[useRankings] allPokemon available to generateRankings. Length:', allPokemon?.length);
     if (!allPokemon || allPokemon.length === 0) {
       console.error('[useRankings] CRITICAL: allPokemon is empty or undefined when generateRankings is called! Cannot create rankings.');
       setFinalRankings([]); 
@@ -88,52 +88,48 @@ export const useRankings = (allPokemon: Pokemon[]) => {
     console.log("Battled Pokémon IDs:", [...battledPokemonIds]);
     console.log("Total battled Pokémon:", battledPokemonIds.size);
     
-    // If we have battle results but no battled Pokémon yet (edge case), use the first result data
-    if (battledPokemonIds.size === 0 && results.length > 0) {
-      console.log("[useRankings] No battled Pokémon IDs found, but results exist. Using first result winners/losers.");
-      
-      // Try to extract Pokémon from results directly
-      const firstBattle = results[0];
-      if (firstBattle && firstBattle.winner) {
-        battledPokemonIds.add(firstBattle.winner.id);
-      }
-      if (firstBattle && firstBattle.loser) {
-        battledPokemonIds.add(firstBattle.loser.id);
-      }
-    }
-    
-    // Update the ranking logic to ensure we always get rankings after battles
+    // Create rankings from battled Pokémon, even with low count
     let rankings: Pokemon[] = [];
     
-    if (battledPokemonIds.size === 0) {
-      // If still no battled Pokémon, take the first few Pokémon as placeholders
-      console.log("[useRankings] No battles completed yet. Using sample Pokémon for initial rankings.");
-      rankings = allPokemon.slice(0, 10); // Take first 10 as sample
+    if (battledPokemonIds.size > 0) {
+      // For milestone display, we want to show what we have even if it's minimal
+      console.log("[useRankings] Creating rankings from battled Pokémon, count:", battledPokemonIds.size);
       
-      toast({
-        title: "Initial Rankings",
-        description: "These are sample rankings. Complete more battles for accurate rankings.",
-        variant: "default"
-      });
-    } else {
-      // Sort the battled Pokémon by score and create rankings
+      // Extract all battled Pokémon
       rankings = Array.from(scores.values())
         .filter(item => battledPokemonIds.has(item.pokemon.id)) 
         .sort((a, b) => b.score - a.score)
         .map(item => item.pokemon);
-    }
-
-    console.log('[useRankings] Final calculated rankings length before setting state:', rankings.length);
-    if (rankings.length > 0) {
-      console.log("Top 3 ranked Pokémon:", rankings.slice(0, Math.min(3, rankings.length)).map(p => p.name));
+        
+      // Always show rankings at milestones regardless of count
+      console.log(`[useRankings] Final calculated rankings length: ${rankings.length}`);
+      
+      if (rankings.length > 0) {
+        console.log("Top ranked Pokémon:", rankings[0]?.name || "None");
+      }
+    } else if (results.length > 0) {
+      // Fallback: If no battled Pokémon IDs but results exist, extract directly from results
+      console.log("[useRankings] No battled Pokémon IDs found, using winner Pokémon from results");
+      
+      // Create a set to prevent duplicates
+      const seenIds = new Set<number>();
+      
+      // First add winners, then losers (if needed)
+      rankings = results
+        .filter(r => r?.winner?.id && !seenIds.has(r.winner.id) && seenIds.add(r.winner.id))
+        .map(r => r.winner);
+      
+      if (rankings.length === 0) {
+        rankings = results
+          .filter(r => r?.loser?.id && !seenIds.has(r.loser.id) && seenIds.add(r.loser.id))
+          .map(r => r.loser);
+      }
     }
     
     // Set the rankings and mark as generated
+    console.log('[useRankings] Setting finalRankings, count:', rankings.length);
     setFinalRankings(rankings);
-    
-    // IMPORTANT: Always update the rankingGenerated flag to true when we have rankings
-    console.log('[useRankings] Setting rankingGenerated to true');
-    setRankingGenerated(true); 
+    setRankingGenerated(true);
   };
 
   const handleSaveRankings = (selectedGeneration: number) => {

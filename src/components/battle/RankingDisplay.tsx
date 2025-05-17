@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Pokemon } from "@/services/pokemon";
 import PokemonCard from "@/components/PokemonCard";
@@ -12,7 +12,7 @@ interface RankingDisplayProps {
   onContinueBattles: () => void;
   onNewBattleSet: () => void;
   rankingGenerated: boolean;
-  onSaveRankings: () => void; // Added onSaveRankings prop
+  onSaveRankings: () => void;
 }
 
 const RankingDisplay: React.FC<RankingDisplayProps> = ({
@@ -21,9 +21,15 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
   onContinueBattles,
   onNewBattleSet,
   rankingGenerated,
-  onSaveRankings // Added onSaveRankings parameter
+  onSaveRankings
 }) => {
-  console.log("RankingDisplay rendering with finalRankings:", finalRankings.length);
+  console.log("RankingDisplay rendering with finalRankings:", finalRankings?.length || 0);
+  console.log("RankingDisplay first ranked pokemon:", finalRankings?.[0]?.name || "None");
+
+  // Debug effect to log when rankings change
+  useEffect(() => {
+    console.log("RankingDisplay finalRankings changed:", finalRankings?.length || 0);
+  }, [finalRankings]);
   
   // Define trophy icons and colors for the top 3
   const trophyIcons = [
@@ -33,14 +39,14 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
   ];
   
   // Check if we have meaningful rankings to display
-  const hasValidRankings = finalRankings.length > 0;
+  const hasValidRankings = finalRankings && finalRankings.length > 0;
   
   return (
     <div className="bg-white rounded-lg shadow p-6">
       <div className="mb-6">
         <div className="flex justify-between items-center">
           <h2 className="text-2xl font-bold bg-gradient-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent">
-            {rankingGenerated ? "Current Rankings" : "Progress"}
+            {rankingGenerated ? "Current Rankings" : "Milestone Progress"}
           </h2>
           <span className="text-sm bg-primary/10 text-primary px-3 py-1 rounded-full font-medium">
             {battlesCompleted} battles completed
@@ -51,8 +57,10 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
       
       {!hasValidRankings ? (
         <div className="text-center p-12 bg-gray-50 rounded-lg border border-dashed border-gray-300">
-          <p className="text-lg text-gray-500 font-medium">No ranked Pokémon yet.</p>
-          <p className="text-gray-400 mt-2">Complete more battles to start ranking Pokémon.</p>
+          <p className="text-lg text-gray-500 font-medium">Building your rankings...</p>
+          <p className="text-gray-400 mt-2">
+            You've completed {battlesCompleted} battles. Continue battling to see rankings.
+          </p>
         </div>
       ) : (
         <div className="space-y-8">
@@ -152,7 +160,7 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
           </Button>
         )}
         
-        {/* Add Save Rankings Button */}
+        {/* Save Rankings Button */}
         {hasValidRankings && (
           <Button
             variant="outline"

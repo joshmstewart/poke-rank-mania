@@ -19,10 +19,7 @@ export const useBattleProgression = (
   useEffect(() => {
     // Check if we're at a milestone
     const isExactMilestone = milestones.includes(battlesCompleted);
-    const nextMilestone = milestones.find(m => m > battlesCompleted) || Infinity;
-    const prevMilestone = [...milestones].reverse().find(m => m <= battlesCompleted) || 0;
-    const battlesFromLastMilestone = battlesCompleted - prevMilestone;
-    const isEvery50Battles = battlesCompleted >= 100 && battlesFromLastMilestone > 0 && battlesFromLastMilestone % 50 === 0;
+    const isEvery50Battles = battlesCompleted >= 100 && battlesCompleted % 50 === 0;
     
     if (isExactMilestone || isEvery50Battles) {
       console.log(`useEffect in useBattleProgression: Milestone at ${battlesCompleted} battles - setting milestone flag`);
@@ -37,11 +34,8 @@ export const useBattleProgression = (
     // 1. Check if exactly on a milestone number
     const isExactMilestone = milestones.includes(newBattlesCompleted);
     
-    // 2. Check if we've gone 50 battles since last milestone
-    const nextMilestone = milestones.find(m => m > newBattlesCompleted) || Infinity;
-    const prevMilestone = [...milestones].reverse().find(m => m <= newBattlesCompleted) || 0;
-    const battlesFromLastMilestone = newBattlesCompleted - prevMilestone;
-    const isEvery50Battles = newBattlesCompleted >= 100 && battlesFromLastMilestone > 0 && battlesFromLastMilestone % 50 === 0;
+    // 2. Check if we've gone 50 battles since last milestone (after 100)
+    const isEvery50Battles = newBattlesCompleted >= 100 && newBattlesCompleted % 50 === 0;
     
     if (isExactMilestone || isEvery50Battles) {
       console.log(`useBattleProgression: Milestone reached at ${newBattlesCompleted} battles`);
@@ -49,24 +43,30 @@ export const useBattleProgression = (
       // Set the milestone flag
       showingMilestoneRef.current = true;
       
-      // Force rankings generation with current results immediately
-      if (battleResults && battleResults.length > 0) {
+      // Ensure we have battle results before generating rankings
+      if (Array.isArray(battleResults) && battleResults.length > 0) {
         console.log(`Generating rankings at milestone ${newBattlesCompleted} with ${battleResults.length} results`);
-        generateRankings(battleResults);
-        setShowingMilestone(true);
         
-        toast({
-          title: "Milestone Reached!",
-          description: `You've completed ${newBattlesCompleted} battles. Check out your current ranking!`
-        });
+        // FORCE rankings generation with current results
+        try {
+          generateRankings(battleResults);
+          setShowingMilestone(true);
+          
+          toast({
+            title: "Milestone Reached!",
+            description: `You've completed ${newBattlesCompleted} battles. Check out your current ranking!`
+          });
+        } catch (err) {
+          console.error("Error generating rankings at milestone:", err);
+        }
       } else {
         console.warn("Cannot generate rankings at milestone - no battle results available");
       }
       
-      return true;  // Ensure it returns a boolean
+      return true;
     }
     
-    return false;  // Ensure it returns a boolean
+    return false;
   }, [milestones, generateRankings, setShowingMilestone]);
 
   const incrementBattlesCompleted = useCallback((callback?: (newCount: number) => void) => {

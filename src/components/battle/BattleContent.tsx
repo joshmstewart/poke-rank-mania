@@ -42,20 +42,27 @@ const BattleContent: React.FC<BattleContentProps> = ({
   onSaveRankings,
   isProcessing = false
 }) => {
+  // Enhanced debug logging
   useEffect(() => {
-    console.log("BattleContent rendering. showingMilestone:", showingMilestone, 
-      "rankingGenerated:", rankingGenerated,
-      "battlesCompleted:", battlesCompleted,
-      "finalRankings length:", finalRankings?.length);
+    console.log("BattleContent rendering with state:", { 
+      showingMilestone,
+      rankingGenerated,
+      battlesCompleted,
+      finalRankingsLength: finalRankings?.length || 0,
+      firstRankedPokemon: finalRankings?.[0]?.name || "None"
+    });
   }, [showingMilestone, rankingGenerated, battlesCompleted, finalRankings]);
 
   // Show ranking display if we're at a milestone or have generated rankings
   const shouldShowRankings = showingMilestone || rankingGenerated;
   
+  // Add debug log for component rendering decision
+  console.log("BattleContent: shouldShowRankings =", shouldShowRankings);
+  
   if (shouldShowRankings) {
     return (
       <RankingDisplay
-        finalRankings={finalRankings}
+        finalRankings={finalRankings || []}
         battlesCompleted={battlesCompleted}
         rankingGenerated={rankingGenerated}
         onNewBattleSet={onNewBattleSet}
