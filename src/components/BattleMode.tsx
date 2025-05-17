@@ -59,7 +59,7 @@ const BattleMode = () => {
     // Store the current selectedGeneration in a local variable to avoid the closure issue
     const currentGeneration = selectedGeneration?.toString() || "0";
     // Call the adapter with the current generation
-    handleGenerationChange(currentGeneration);
+    handleGenerationChangeAdapter(currentGeneration);
     // Close the dialog
     setRestartDialogOpen(false);
   };
