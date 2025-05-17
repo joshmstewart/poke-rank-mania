@@ -13,13 +13,20 @@ export const useCompletionTracker = (
 ) => {
   // Track if we've already generated a complete ranking to avoid showing the toast multiple times
   const [currentRankingGenerated, setCurrentRankingGenerated] = useState(false);
+  
+  // Force calculation on mount and when battle results change
+  useEffect(() => {
+    calculateCompletionPercentage();
+  }, [battleResults.length]);
 
   // Calculate completion percentage and check if we should show rankings
   const calculateCompletionPercentage = () => {
     // For a complete ranking in a tournament style, we need at least n-1 comparisons
     // where n is the number of Pokémon. This is the minimum number of comparisons
     // needed to sort a list (optimal comparison-based sorting algorithms).
-    const totalPokemon = allPokemon.length;
+    const totalPokemon = allPokemon?.length || 0;
+    
+    console.log(`[useCompletionTracker] Calculating completion: ${totalPokemon} total Pokémon, ${battleResults?.length || 0} battles completed`);
     
     if (totalPokemon <= 1) {
       setCompletionPercentage(100);
@@ -36,15 +43,16 @@ export const useCompletionTracker = (
     // For pairs, each battle gives us 1 comparison
     // For triplets, each battle can give us multiple comparisons depending on selections
     // In both cases, battleResults stores each individual comparison
-    const currentComparisons = battleResults.length;
+    const currentComparisons = battleResults?.length || 0;
     
     // Calculate percentage (cap at 100%)
     const percentage = Math.min(100, Math.floor((currentComparisons / minimumComparisons) * 100));
+    console.log(`[useCompletionTracker] Calculated ${percentage}% completion (${currentComparisons}/${minimumComparisons} comparisons)`);
     setCompletionPercentage(percentage);
     
     // If we've reached 100%, make sure to show the final rankings
     if (percentage >= 100 && !currentRankingGenerated) {
-      console.log("100% completion reached - generating final rankings");
+      console.log("[useCompletionTracker] 100% completion reached - generating final rankings");
       generateRankings(battleResults);
       setRankingGenerated(true);
       setCurrentRankingGenerated(true);
@@ -68,13 +76,13 @@ export const useCompletionTracker = (
 
   // Calculate remaining battles
   const getBattlesRemaining = () => {
-    if (allPokemon.length <= 1) return 0;
+    if (!allPokemon || allPokemon.length <= 1) return 0;
     
     const totalPokemon = allPokemon.length;
     // Use n*log(n) as our estimate for comparisons needed
     const logBase2 = Math.log(totalPokemon) / Math.log(2);
     const minimumComparisons = Math.ceil(totalPokemon * logBase2);
-    const currentComparisons = battleResults.length;
+    const currentComparisons = battleResults?.length || 0;
     
     // Return the remaining comparisons as a simple estimate
     return Math.max(0, minimumComparisons - currentComparisons);

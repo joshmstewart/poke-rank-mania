@@ -39,6 +39,8 @@ const ProgressTracker: React.FC<ProgressTrackerProps> = ({
     }
   })();
   
+  console.log(`ProgressTracker: Battles completed: ${safeBattlesCompleted}, Completion: ${safeCompletionPercentage}%, Remaining: ${battlesRemaining}`);
+  
   return (
     <Card className={`rounded-lg shadow transition-colors ${isComplete ? "bg-green-50 border-green-200" : "bg-white"}`}>
       <CardContent className="p-4">

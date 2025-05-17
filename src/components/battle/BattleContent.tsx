@@ -49,7 +49,10 @@ const BattleContent: React.FC<BattleContentProps> = ({
       "finalRankings length:", finalRankings?.length);
   }, [showingMilestone, rankingGenerated, battlesCompleted, finalRankings]);
 
-  if (showingMilestone || rankingGenerated) {
+  // Show ranking display if we're at a milestone or have generated rankings
+  const shouldShowRankings = showingMilestone || rankingGenerated;
+  
+  if (shouldShowRankings) {
     return (
       <RankingDisplay
         finalRankings={finalRankings}

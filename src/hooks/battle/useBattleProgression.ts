@@ -59,6 +59,8 @@ export const useBattleProgression = (
           title: "Milestone Reached!",
           description: `You've completed ${newBattlesCompleted} battles. Check out your current ranking!`
         });
+      } else {
+        console.warn("Cannot generate rankings at milestone - no battle results available");
       }
       
       return true;  // Ensure it returns a boolean

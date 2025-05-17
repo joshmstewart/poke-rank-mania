@@ -88,34 +88,40 @@ export const useRankings = (allPokemon: Pokemon[]) => {
     console.log("Battled Pokémon IDs:", [...battledPokemonIds]);
     console.log("Total battled Pokémon:", battledPokemonIds.size);
     
-    // FIX: If no battles completed yet, use a default subset of Pokémon as initial rankings
+    // If we have battle results but no battled Pokémon yet (edge case), use the first result data
+    if (battledPokemonIds.size === 0 && results.length > 0) {
+      console.log("[useRankings] No battled Pokémon IDs found, but results exist. Using first result winners/losers.");
+      
+      // Try to extract Pokémon from results directly
+      const firstBattle = results[0];
+      if (firstBattle && firstBattle.winner) {
+        battledPokemonIds.add(firstBattle.winner.id);
+      }
+      if (firstBattle && firstBattle.loser) {
+        battledPokemonIds.add(firstBattle.loser.id);
+      }
+    }
+    
+    // Update the ranking logic to ensure we always get rankings after battles
+    let rankings: Pokemon[] = [];
+    
     if (battledPokemonIds.size === 0) {
-      console.log("[useRankings] No battles completed yet. Using default initial rankings.");
+      // If still no battled Pokémon, take the first few Pokémon as placeholders
+      console.log("[useRankings] No battles completed yet. Using sample Pokémon for initial rankings.");
+      rankings = allPokemon.slice(0, 10); // Take first 10 as sample
       
-      // CRITICAL FIX: Instead of taking arbitrary Pokémon for default rankings,
-      // set an empty array to indicate we don't have real rankings yet
-      setFinalRankings([]);
-      setRankingGenerated(true);
-      
-      // Show toast to inform user that they need to complete more battles
       toast({
-        title: "No Battle Data Yet",
-        description: "Complete more battles to generate accurate rankings.",
+        title: "Initial Rankings",
+        description: "These are sample rankings. Complete more battles for accurate rankings.",
         variant: "default"
       });
-      
-      return;
+    } else {
+      // Sort the battled Pokémon by score and create rankings
+      rankings = Array.from(scores.values())
+        .filter(item => battledPokemonIds.has(item.pokemon.id)) 
+        .sort((a, b) => b.score - a.score)
+        .map(item => item.pokemon);
     }
-
-    if (results.length === 0 && battledPokemonIds.size > 0) { 
-      console.log("[useRankings] Results array is empty, but some Pokémon were marked as battled. This case might need review. Proceeding to rank based on battled status.");
-    }
-
-    // FIX: Only include Pokémon that have actually been in battles in our rankings
-    const rankings = Array.from(scores.values())
-      .filter(item => battledPokemonIds.has(item.pokemon.id)) 
-      .sort((a, b) => b.score - a.score)
-      .map(item => item.pokemon);
 
     console.log('[useRankings] Final calculated rankings length before setting state:', rankings.length);
     if (rankings.length > 0) {
