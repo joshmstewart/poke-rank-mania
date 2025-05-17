@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
 import { toast } from "@/hooks/use-toast";
@@ -21,6 +21,7 @@ export const useBattleInteractions = (
   processBattleResult: (selectedPokemonIds: number[], currentBattlePokemon: Pokemon[], battleType: BattleType, currentSelectedGeneration: number) => void
 ) => {
   const [isProcessing, setIsProcessing] = useState(false);
+  const [milestoneReached, setMilestoneReached] = useState<number | null>(null);
 
   // Get current generation from localStorage
   const getCurrentGeneration = () => {
@@ -68,6 +69,9 @@ export const useBattleInteractions = (
             const isMilestone = checkIfMilestone(nextBattlesCompleted);
             
             console.log(`Battle #${nextBattlesCompleted}: Is milestone? ${isMilestone}`);
+            if (isMilestone) {
+              setMilestoneReached(nextBattlesCompleted);
+            }
             
             // Now process the battle result, which will increment battlesCompleted internally
             processBattleResult(newSelected, currentBattle, battleType, currentGeneration);
@@ -105,6 +109,7 @@ export const useBattleInteractions = (
     
     // Exact milestone match
     if (commonMilestones.includes(battleCount)) {
+      console.log(`Milestone detected for battle count: ${battleCount}`);
       toast({
         title: "Milestone Reached!",
         description: `You've completed ${battleCount} battles. Check out your current ranking!`,
@@ -114,6 +119,7 @@ export const useBattleInteractions = (
     
     // Every 50 battles after 100
     if (battleCount > 100 && battleCount % 50 === 0) {
+      console.log(`50-battle milestone detected: ${battleCount}`);
       toast({
         title: "Milestone Reached!",
         description: `You've completed ${battleCount} battles. Check out your current ranking!`,

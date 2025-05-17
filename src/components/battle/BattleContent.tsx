@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "@/hooks/battle/types";
 import BattleInterface from "./BattleInterface";
@@ -42,7 +42,25 @@ const BattleContent: React.FC<BattleContentProps> = ({
   onSaveRankings,
   isProcessing = false
 }) => {
-  if (!showingMilestone && !rankingGenerated) {
+  useEffect(() => {
+    console.log("BattleContent rendering. showingMilestone:", showingMilestone, 
+      "rankingGenerated:", rankingGenerated,
+      "battlesCompleted:", battlesCompleted,
+      "finalRankings length:", finalRankings?.length);
+  }, [showingMilestone, rankingGenerated, battlesCompleted, finalRankings]);
+
+  if (showingMilestone || rankingGenerated) {
+    return (
+      <RankingDisplay
+        finalRankings={finalRankings}
+        battlesCompleted={battlesCompleted}
+        rankingGenerated={rankingGenerated}
+        onNewBattleSet={onNewBattleSet}
+        onContinueBattles={onContinueBattles}
+        onSaveRankings={onSaveRankings}
+      />
+    );
+  } else {
     return (
       <BattleInterface
         currentBattle={currentBattle}
@@ -55,17 +73,6 @@ const BattleContent: React.FC<BattleContentProps> = ({
         onGoBack={onGoBack}
         milestones={milestones}
         isProcessing={isProcessing}
-      />
-    );
-  } else {
-    return (
-      <RankingDisplay
-        finalRankings={finalRankings}
-        battlesCompleted={battlesCompleted}
-        rankingGenerated={rankingGenerated}
-        onNewBattleSet={onNewBattleSet}
-        onContinueBattles={onContinueBattles}
-        onSaveRankings={onSaveRankings}
       />
     );
   }

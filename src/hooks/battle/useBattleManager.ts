@@ -73,7 +73,7 @@ export const useBattleManager = (
     setSelectedPokemon: setLocalSelectedPokemon,
     handlePokemonSelect: (id: number, battleType: BattleType, currentBattle: Pokemon[]) => 
       handlePokemonSelect(id, battleType, currentBattle),
-  handleTripletSelectionComplete: (battleType: BattleType, currentBattle: Pokemon[]) => {
+    handleTripletSelectionComplete: (battleType: BattleType, currentBattle: Pokemon[]) => {
       // The 'selectedPokemon' variable here comes from the useBattleSelectionManager hook.
       // It should contain the ID of the Pokemon selected in 'pairs' mode.
       // The 'processBattleResult' variable here comes from the useBattleProcessor hook.
@@ -88,6 +88,14 @@ export const useBattleManager = (
         // and then the next battle should be started by the processor.
         console.log("useBattleManager: Processing battle result for pairs mode with selections:", selectedPokemon);
         const currentGeneration = getCurrentGeneration();
+        
+        // Before processing, generate rankings to ensure they're available for milestone display
+        if (milestones.includes(battlesCompleted + 1) || (battlesCompleted + 1) % 50 === 0 && battlesCompleted + 1 >= 100) {
+          console.log("useBattleManager: Milestone battle detected, generating rankings first");
+          generateRankings(battleResults);
+          setShowingMilestone(true);
+        }
+        
         processBattleResult(selectedPokemon, currentBattle, battleType, currentGeneration);
       } else {
         // For "triplets" mode:

@@ -1,5 +1,5 @@
 
-import { useCallback, useRef } from "react";
+import { useCallback, useRef, useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
 
 /**
@@ -14,6 +14,22 @@ export const useBattleProgression = (
 ) => {
   // Add a ref to track if a milestone is currently being shown
   const showingMilestoneRef = useRef(false);
+  
+  // Reset showingMilestone state when battles completed changes
+  useEffect(() => {
+    // Check if we're at a milestone
+    const isExactMilestone = milestones.includes(battlesCompleted);
+    const nextMilestone = milestones.find(m => m > battlesCompleted) || Infinity;
+    const prevMilestone = [...milestones].reverse().find(m => m <= battlesCompleted) || 0;
+    const battlesFromLastMilestone = battlesCompleted - prevMilestone;
+    const isEvery50Battles = battlesCompleted >= 100 && battlesFromLastMilestone > 0 && battlesFromLastMilestone % 50 === 0;
+    
+    if (isExactMilestone || isEvery50Battles) {
+      console.log(`useEffect in useBattleProgression: Milestone at ${battlesCompleted} battles - setting milestone flag`);
+      showingMilestoneRef.current = true;
+      setShowingMilestone(true);
+    }
+  }, [battlesCompleted, milestones, setShowingMilestone]);
   
   // Check if we've hit a milestone
   const checkMilestone = useCallback((newBattlesCompleted: number, battleResults: any[]) => {
@@ -34,7 +50,8 @@ export const useBattleProgression = (
       showingMilestoneRef.current = true;
       
       // Force rankings generation with current results immediately
-      if (battleResults.length > 0) {
+      if (battleResults && battleResults.length > 0) {
+        console.log(`Generating rankings at milestone ${newBattlesCompleted} with ${battleResults.length} results`);
         generateRankings(battleResults);
         setShowingMilestone(true);
         
@@ -61,6 +78,10 @@ export const useBattleProgression = (
   return {
     checkMilestone,
     incrementBattlesCompleted,
-    isShowingMilestone: showingMilestoneRef.current
+    isShowingMilestone: showingMilestoneRef.current,
+    resetMilestone: useCallback(() => {
+      showingMilestoneRef.current = false;
+      setShowingMilestone(false);
+    }, [setShowingMilestone])
   };
 };

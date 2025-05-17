@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Pokemon, saveRankings } from "@/services/pokemon";
 import { BattleResult } from "./types";
 import { toast } from "@/hooks/use-toast";
@@ -8,6 +8,11 @@ export const useRankings = (allPokemon: Pokemon[]) => {
   const [finalRankings, setFinalRankings] = useState<Pokemon[]>([]);
   const [rankingGenerated, setRankingGenerated] = useState(false);
   const [lastBattleCount, setLastBattleCount] = useState(0);
+
+  // Log when ranking generated flag changes
+  useEffect(() => {
+    console.log("useRankings: rankingGenerated state changed to:", rankingGenerated);
+  }, [rankingGenerated]);
 
   const generateRankings = (results: BattleResult) => {
     // --- Start of Added Logs ---
@@ -117,10 +122,12 @@ export const useRankings = (allPokemon: Pokemon[]) => {
       console.log("Top 3 ranked Pokémon:", rankings.slice(0, Math.min(3, rankings.length)).map(p => p.name));
     }
     
+    // Set the rankings and mark as generated
     setFinalRankings(rankings);
+    
+    // IMPORTANT: Always update the rankingGenerated flag to true when we have rankings
+    console.log('[useRankings] Setting rankingGenerated to true');
     setRankingGenerated(true); 
-
-    // Don't show milestone toast here - it's handled by useBattleProgression and useBattleInteractions
   };
 
   const handleSaveRankings = (selectedGeneration: number) => {
