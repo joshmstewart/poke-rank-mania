@@ -1,5 +1,5 @@
 
-import { useState, useRef, useCallback } from "react";
+import { useRef } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
 
@@ -9,32 +9,32 @@ export const createBattleStarter = (
   currentFinalRankings: Pokemon[],
   setCurrentBattle: React.Dispatch<React.SetStateAction<Pokemon[]>>
 ) => {
-  // Track battle history to avoid repeats
-  const [previousBattles, setPreviousBattles] = useState<Set<string>>(new Set());
+  // Use refs instead of state to track battle history
+  const previousBattlesRef = useRef<Set<string>>(new Set());
   const recentlySeenPokemon = useRef<Set<number>>(new Set());
   const lastBattleRef = useRef<number[]>([]);
   const consecutiveRepeatsRef = useRef(0);
 
   // Helper function to shuffle an array
-  const shuffleArray = useCallback(<T,>(array: T[]): T[] => {
+  const shuffleArray = <T,>(array: T[]): T[] => {
     const shuffled = [...array];
     for (let i = shuffled.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
     }
     return shuffled;
-  }, []);
+  };
 
   // Roll a random number between 0 and 100
-  const roll = useCallback(() => Math.random() * 100, []);
+  const roll = () => Math.random() * 100;
 
   // Helper to create a unique battle ID for tracking
-  const getBattleId = useCallback((pokemonIds: number[]): string => {
+  const getBattleId = (pokemonIds: number[]): string => {
     return [...pokemonIds].sort().join("-");
-  }, []);
+  };
 
   // Generate non-repeating pokemon selections
-  const getUniqueRandomPokemon = useCallback((pool: Pokemon[], count: number, excludeIds: Set<number> = new Set()): Pokemon[] => {
+  const getUniqueRandomPokemon = (pool: Pokemon[], count: number, excludeIds: Set<number> = new Set()): Pokemon[] => {
     // If we don't have enough unique Pokemon left, use what we have
     const availablePokemon = pool.filter(p => !excludeIds.has(p.id));
     if (availablePokemon.length < count) {
@@ -56,10 +56,10 @@ export const createBattleStarter = (
     }
     
     return selected;
-  }, [shuffleArray]);
+  };
 
   // Pick pokemon from two different pools, ensuring they are unique
-  const pickPokemonFromPools = useCallback((pool1: Pokemon[], pool2: Pokemon[], battleSize: number): Pokemon[] => {
+  const pickPokemonFromPools = (pool1: Pokemon[], pool2: Pokemon[], battleSize: number): Pokemon[] => {
     if (!pool1.length || !pool2.length) return [];
     
     // Start with empty selection
@@ -97,10 +97,10 @@ export const createBattleStarter = (
     }
     
     return result;
-  }, [getUniqueRandomPokemon]);
+  };
 
   // Main function to start a new battle
-  const startNewBattle = useCallback((battleType: BattleType): Pokemon[] => {
+  const startNewBattle = (battleType: BattleType): Pokemon[] => {
     console.log("[createBattleStarter] Starting new battle with type:", battleType);
     const battleSize = battleType === "pairs" ? 2 : 3;
     
@@ -163,7 +163,7 @@ export const createBattleStarter = (
         battleId = getBattleId(result.map(p => p.id));
         
         // Check if we've seen this battle before
-        if (!previousBattles.has(battleId)) {
+        if (!previousBattlesRef.current.has(battleId)) {
           // Found a new battle, exit the loop
           break;
         }
@@ -174,7 +174,7 @@ export const createBattleStarter = (
     }
     
     // If we couldn't find a new battle, force a completely random one
-    if (attemptCount >= maxAttempts || previousBattles.has(battleId)) {
+    if (attemptCount >= maxAttempts || previousBattlesRef.current.has(battleId)) {
       console.warn("[createBattleStarter] Could not find unique battle, forcing completely random selection");
       result = shuffleArray(allPokemonForGeneration).slice(0, battleSize);
       battleId = getBattleId(result.map(p => p.id));
@@ -184,19 +184,17 @@ export const createBattleStarter = (
     console.log("[createBattleStarter] Selected battle:", result.map(p => p.name));
     
     // Store this battle ID in history
-    setPreviousBattles(prev => {
-      const newSet = new Set(prev);
-      // Limit history size to prevent memory issues
-      if (newSet.size >= 100) {
-        // Remove oldest entries (not perfect but good enough)
-        const oldestEntries = Array.from(newSet).slice(0, 1);
-        for (const entry of oldestEntries) {
-          newSet.delete(entry);
-        }
+    const newSet = new Set(previousBattlesRef.current);
+    // Limit history size to prevent memory issues
+    if (newSet.size >= 100) {
+      // Remove oldest entries (not perfect but good enough)
+      const oldestEntries = Array.from(newSet).slice(0, 1);
+      for (const entry of oldestEntries) {
+        newSet.delete(entry);
       }
-      newSet.add(battleId);
-      return newSet;
-    });
+    }
+    newSet.add(battleId);
+    previousBattlesRef.current = newSet;
     
     // Update recently seen Pokemon
     const newIds = result.map(p => p.id);
@@ -214,16 +212,7 @@ export const createBattleStarter = (
     // Update current battle and return
     setCurrentBattle(result);
     return result;
-  }, [
-    allPokemonForGeneration, 
-    currentFinalRankings, 
-    getUniqueRandomPokemon, 
-    pickPokemonFromPools, 
-    previousBattles, 
-    roll, 
-    shuffleArray, 
-    getBattleId
-  ]);
+  };
 
   return { startNewBattle };
 };
