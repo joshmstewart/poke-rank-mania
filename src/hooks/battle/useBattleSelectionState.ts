@@ -32,16 +32,15 @@ export const useBattleSelectionState = () => {
     });
     return Array.from(pokemonMap.values());
   };
-
-  // ✅ Correct useMemo inside the hook
- import { createBattleStarter } from "./createBattleStarter";
+ 
 
 const startBattleFromHook = createBattleStarter(
-  setCurrentBattle,
   allPokemon,
   allPokemon,
-  getCurrentRankings()
+  getCurrentRankings(),
+  setCurrentBattle
 );
+
 
 
   const processBattleResult = (
@@ -102,7 +101,8 @@ const startBattleFromHook = createBattleStarter(
       setAllPokemon(pokemonList);
     }
 
-    const newBattlePokemon = startBattleFromHook(battleType);
+    const newBattlePokemon = startBattleFromHook.startNewBattle(battleType);
+
     if (newBattlePokemon && newBattlePokemon.length > 0) {
       setCurrentBattle(newBattlePokemon);
       setSelectedPokemon([]);
