@@ -34,13 +34,15 @@ export const useBattleSelectionState = () => {
   };
 
   // ✅ Correct useMemo inside the hook
-  const { startNewBattle: startBattleFromHook } = useMemo(() => {
-    return createBattleStarter(
-      allPokemon,
-      allPokemon,
-      getCurrentRankings(),
-    );
-  }, [allPokemon, battleResults]);
+ import { createBattleStarter } from "./createBattleStarter";
+
+const startBattleFromHook = createBattleStarter(
+  setCurrentBattle,
+  allPokemon,
+  allPokemon,
+  getCurrentRankings()
+);
+
 
   const processBattleResult = (
     selectedPokemonIds: number[],
