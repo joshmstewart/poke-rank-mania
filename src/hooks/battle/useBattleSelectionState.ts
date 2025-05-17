@@ -19,28 +19,26 @@ export const useBattleSelectionState = () => {
   const [currentBattleType, setCurrentBattleType] = useState<BattleType>(initialBattleType);
 
   // Generate current rankings from battle results
-  const getCurrentRankings = useMemo(() => {
-    return () => {
-      if (battleResults.length === 0) return [];
-      
-      const pokemonMap = new Map<number, Pokemon>();
-      
-      // First add all winners
-      battleResults.forEach(result => {
-        if (!pokemonMap.has(result.winner.id)) {
-          pokemonMap.set(result.winner.id, result.winner);
-        }
-      });
-      
-      // Then add losers if they haven't been added yet
-      battleResults.forEach(result => {
-        if (!pokemonMap.has(result.loser.id)) {
-          pokemonMap.set(result.loser.id, result.loser);
-        }
-      });
-      
-      return Array.from(pokemonMap.values());
-    };
+  const getCurrentRankings = useCallback(() => {
+    if (battleResults.length === 0) return [];
+    
+    const pokemonMap = new Map<number, Pokemon>();
+    
+    // First add all winners
+    battleResults.forEach(result => {
+      if (!pokemonMap.has(result.winner.id)) {
+        pokemonMap.set(result.winner.id, result.winner);
+      }
+    });
+    
+    // Then add losers if they haven't been added yet
+    battleResults.forEach(result => {
+      if (!pokemonMap.has(result.loser.id)) {
+        pokemonMap.set(result.loser.id, result.loser);
+      }
+    });
+    
+    return Array.from(pokemonMap.values());
   }, [battleResults]);
  
   // Current rankings, either from battle results or all Pokemon
@@ -48,11 +46,13 @@ export const useBattleSelectionState = () => {
     return battleResults.length > 0 ? getCurrentRankings() : allPokemon;
   }, [battleResults, allPokemon, getCurrentRankings]);
 
-  // Initialize battle starter function without useState inside the memo
+  // Initialize battle starter without using React hooks inside useMemo
   const battleStarter = useMemo(() => {
     if (!allPokemon || allPokemon.length === 0) {
       return null;
     }
+    
+    // Create battle starter with pure functions only, no hooks
     return createBattleStarter(
       allPokemon,
       allPokemon,
@@ -141,7 +141,7 @@ export const useBattleSelectionState = () => {
     }
 
     try {
-      // Start a new battle using our hook
+      // Start a new battle using our battle starter
       if (battleStarter) {
         const newBattlePokemon = battleStarter.startNewBattle(battleType);
         
@@ -186,4 +186,3 @@ export const useBattleSelectionState = () => {
     processBattleResult
   };
 };
-
