@@ -34,7 +34,7 @@ export const useBattleManager = (
   );
   
   // Use the battle navigation for handling back navigation
-  const { goBack } = useBattleNavigation(
+  const { goBack: originalGoBack } = useBattleNavigation(
     battleHistory,
     setBattleHistory,
     battleResults,
@@ -67,45 +67,35 @@ export const useBattleManager = (
     },
     setSelectedPokemon
   );
+
+  // Create a simplified goBack function that doesn't require parameters
+  const goBack = () => {
+    // Get current battle type from localStorage
+    const storedBattleType = localStorage.getItem('pokemon-ranker-battle-type');
+    const currentBattleType: BattleType = storedBattleType === "triplets" ? "triplets" : "pairs";
+    
+    // Create a setCurrentBattle function to pass to originalGoBack
+    const setCurrentBattle = (newBattle: React.SetStateAction<Pokemon[]>) => {
+      // This is an adapter that will be used by the navigation logic
+      // to update the current battle
+      if (typeof newBattle === 'function') {
+        console.warn("Function updater for currentBattle not supported in goBack adapter");
+        return;
+      }
+      
+      // Start a new battle with the provided Pokemon
+      startNewBattle(newBattle, currentBattleType);
+    };
+    
+    // Call the original goBack with the required parameters
+    originalGoBack(setCurrentBattle, currentBattleType);
+  };
   
   return {
     selectedPokemon,
     setSelectedPokemon: setLocalSelectedPokemon,
-    handlePokemonSelect: (id: number, battleType: BattleType, currentBattle: Pokemon[]) => 
-      handlePokemonSelect(id, battleType, currentBattle),
-    handleTripletSelectionComplete: (battleType: BattleType, currentBattle: Pokemon[]) => {
-      // The 'selectedPokemon' variable here comes from the useBattleSelectionManager hook.
-      // It should contain the ID of the Pokemon selected in 'pairs' mode.
-      // The 'processBattleResult' variable here comes from the useBattleProcessor hook.
-      // The 'getCurrentGeneration' function is defined earlier in useBattleManager.ts.
-      // The 'handleTripletSelectionComplete' called in the 'else' block refers to the one
-      // destructured from useBattleSelectionManager earlier in useBattleManager.ts.
-
-      if (battleType === "pairs") {
-        // For "pairs" mode:
-        // Directly process the result using the main battle processor.
-        // This ensures battlesCompleted, battleResults, history are updated,
-        // and then the next battle should be started by the processor.
-        console.log("useBattleManager: Processing battle result for pairs mode with selections:", selectedPokemon);
-        const currentGeneration = getCurrentGeneration();
-        
-        // Before processing, generate rankings to ensure they're available for milestone display
-        if (milestones.includes(battlesCompleted + 1) || (battlesCompleted + 1) % 50 === 0 && battlesCompleted + 1 >= 100) {
-          console.log("useBattleManager: Milestone battle detected, generating rankings first");
-          generateRankings(battleResults);
-          setShowingMilestone(true);
-        }
-        
-        processBattleResult(selectedPokemon, currentBattle, battleType, currentGeneration);
-      } else {
-        // For "triplets" mode:
-        // Use the existing logic, which calls the handleTripletSelectionComplete 
-        // from useBattleSelectionManager. This function handles triplet-specific 
-        // selection management and then calls the main processBattleResult (from processor)
-        // via a callback.
-        handleTripletSelectionComplete(battleType, currentBattle);
-      }
-    },
+    handlePokemonSelect,
+    handleTripletSelectionComplete,
     goBack,
     isProcessingResult
   };

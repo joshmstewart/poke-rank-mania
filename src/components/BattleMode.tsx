@@ -36,8 +36,25 @@ const BattleMode = () => {
     isProcessing
   } = useBattleState();
 
+  // Create adapter functions to match the expected interface
+  const handlePokemonSelectAdapter = (id: number) => {
+    handlePokemonSelect(id, battleType, currentBattle);
+  };
+
+  const handleTripletSelectionCompleteAdapter = () => {
+    handleTripletSelectionComplete(battleType, currentBattle);
+  };
+
+  const goBackAdapter = () => {
+    goBack();
+  };
+
+  const handleGenerationChangeAdapter = (value: string) => {
+    handleGenerationChange(value);
+  };
+
   const handleConfirmRestart = () => {
-    handleGenerationChange(selectedGeneration.toString());
+    handleGenerationChangeAdapter(selectedGeneration.toString());
     setRestartDialogOpen(false);
   };
 
@@ -70,7 +87,7 @@ const BattleMode = () => {
         <BattleControls 
           selectedGeneration={selectedGeneration}
           battleType={battleType}
-          onGenerationChange={handleGenerationChange}
+          onGenerationChange={handleGenerationChangeAdapter}
           onBattleTypeChange={handleBattleTypeChange}
           onViewRankings={() => setShowViewRankings(true)}
           onOpenRestartDialog={() => setRestartDialogOpen(true)}
@@ -96,9 +113,9 @@ const BattleMode = () => {
           battleHistory={battleHistory}
           finalRankings={finalRankings}
           milestones={milestones}
-          onPokemonSelect={handlePokemonSelect}
-          onTripletSelectionComplete={handleTripletSelectionComplete}
-          onGoBack={goBack}
+          onPokemonSelect={handlePokemonSelectAdapter}
+          onTripletSelectionComplete={handleTripletSelectionCompleteAdapter}
+          onGoBack={goBackAdapter}
           onNewBattleSet={handleNewBattleSet}
           onContinueBattles={handleContinueBattles}
           onSaveRankings={handleSaveRankings}
