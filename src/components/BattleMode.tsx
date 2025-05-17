@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useBattleState } from "@/hooks/battle/useBattleState";
 import ViewRankings from "./battle/ViewRankings";
@@ -53,9 +52,8 @@ const BattleMode = () => {
     handleGenerationChange(value);
   };
 
-  // Fix: Create a properly typed handleConfirmRestart that takes no arguments
-  // with explicit type annotation to avoid inference issues
-  const handleConfirmRestart: () => void = () => {
+  // Fix the type error by properly defining a no-argument function
+  const handleConfirmRestart = () => {
     // Store the current selectedGeneration in a local variable
     const currentGeneration = selectedGeneration?.toString() || "0";
     // Call the adapter with the current generation value
@@ -124,7 +122,7 @@ const BattleMode = () => {
           onGoBack={goBackAdapter}
           onNewBattleSet={handleNewBattleSet}
           onContinueBattles={handleContinueBattles}
-         onSaveRankings={() => handleSaveRankings(selectedGeneration)}
+          onSaveRankings={() => handleSaveRankings(selectedGeneration)}
           isProcessing={isProcessing}
         />
       </div>

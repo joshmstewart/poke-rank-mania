@@ -1,5 +1,4 @@
-
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "@/hooks/battle/types";
 import BattleInterface from "./BattleInterface";
@@ -42,31 +41,54 @@ const BattleContent: React.FC<BattleContentProps> = ({
   onSaveRankings,
   isProcessing = false
 }) => {
+  // Keep track of internal state to handle transitions correctly
+  const [internalShowRankings, setInternalShowRankings] = useState(showingMilestone || rankingGenerated);
+  
+  // Update internal state when external state changes
+  useEffect(() => {
+    console.log("BattleContent: props updated -", { 
+      showingMilestone,
+      rankingGenerated,
+      battlesCompleted,
+      finalRankingsLength: finalRankings?.length || 0
+    });
+    
+    setInternalShowRankings(showingMilestone || rankingGenerated);
+  }, [showingMilestone, rankingGenerated, battlesCompleted, finalRankings]);
+
   // Enhanced debug logging
   useEffect(() => {
     console.log("BattleContent rendering with state:", { 
       showingMilestone,
       rankingGenerated,
       battlesCompleted,
+      internalShowRankings,
       finalRankingsLength: finalRankings?.length || 0,
       firstRankedPokemon: finalRankings?.[0]?.name || "None"
     });
-  }, [showingMilestone, rankingGenerated, battlesCompleted, finalRankings]);
+  }, [showingMilestone, rankingGenerated, battlesCompleted, finalRankings, internalShowRankings]);
 
-  // Show ranking display if we're at a milestone or have generated rankings
-  const shouldShowRankings = showingMilestone || rankingGenerated;
+  // Custom continue battles handler that ensures state is updated correctly
+  const handleContinueBattles = () => {
+    console.log("BattleContent: handleContinueBattles called");
+    setInternalShowRankings(false);
+    // Use setTimeout to ensure state updates before calling the external handler
+    setTimeout(() => {
+      onContinueBattles();
+    }, 50);
+  };
   
   // Add debug log for component rendering decision
-  console.log("BattleContent: shouldShowRankings =", shouldShowRankings);
+  console.log("BattleContent: shouldShowRankings =", internalShowRankings);
   
-  if (shouldShowRankings) {
+  if (internalShowRankings) {
     return (
       <RankingDisplay
         finalRankings={finalRankings || []}
         battlesCompleted={battlesCompleted}
         rankingGenerated={rankingGenerated}
         onNewBattleSet={onNewBattleSet}
-        onContinueBattles={onContinueBattles}
+        onContinueBattles={handleContinueBattles}
         onSaveRankings={onSaveRankings}
       />
     );

@@ -15,8 +15,12 @@ export const useBattleActions = (
   battleType: BattleType
 ) => {
   const handleContinueBattles = () => {
+    // Explicitly set showingMilestone to false to fix the continue button issue
+    console.log("handleContinueBattles: Resetting milestone flag");
     setShowingMilestone(false);
-    startNewBattle(allPokemon, battleType);
+    setTimeout(() => {
+      startNewBattle(allPokemon, battleType);
+    }, 100);
   };
 
   const handleNewBattleSet = () => {
