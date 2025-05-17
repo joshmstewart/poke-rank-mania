@@ -9,7 +9,7 @@ import { toast } from "@/hooks/use-toast";
  */
 export const useNextBattleHandler = (
   allPokemon: Pokemon[],
-  startNewBattle: (pokemon: Pokemon[], battleType: BattleType) => void,
+  startNewBattle: (battleType: BattleType) => void,
   setSelectedPokemon: React.Dispatch<React.SetStateAction<number[]>>
 ) => {
   // Add a ref to prevent concurrent setup attempts
@@ -42,8 +42,8 @@ export const useNextBattleHandler = (
     
     try {
       // Start a new battle immediately
-      console.log("useNextBattleHandler: Starting new battle with", allPokemon.length, "Pokémon");
-      startNewBattle(allPokemon, battleType);
+      console.log("useNextBattleHandler: Starting new battle");
+      startNewBattle(battleType);
       
       // Reset flag after successful battle start
       setTimeout(() => {
