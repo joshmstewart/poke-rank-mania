@@ -19,27 +19,28 @@ export const useBattleSelectionState = () => {
   const [currentBattleType, setCurrentBattleType] = useState<BattleType>(initialBattleType);
 
   // Generate current rankings from battle results
-  const getCurrentRankings = useCallback(() => {
-    if (battleResults.length === 0) return [];
+const getCurrentRankings = useCallback((): Pokemon[] => {
+  if (battleResults.length === 0) return [];
+
+  const pokemonMap = new Map<number, Pokemon>();
+
+  battleResults.forEach(result => {
+    if (!pokemonMap.has(result.winner.id)) {
+      pokemonMap.set(result.winner.id, result.winner);
+    }
+  });
+
+  battleResults.forEach(result => {
+    if (!pokemonMap.has(result.loser.id)) {
+      pokemonMap.set(result.loser.id, result.loser);
+    }
+  });
+
+  return Array.from(pokemonMap.values());
+}, [battleResults]);
+
     
-    const pokemonMap = new Map<number, Pokemon>();
-    
-    // First add all winners
-    battleResults.forEach(result => {
-      if (!pokemonMap.has(result.winner.id)) {
-        pokemonMap.set(result.winner.id, result.winner);
-      }
-    });
-    
-    // Then add losers if they haven't been added yet
-    battleResults.forEach(result => {
-      if (!pokemonMap.has(result.loser.id)) {
-        pokemonMap.set(result.loser.id, result.loser);
-      }
-    });
-    
-    return Array.from(pokemonMap.values());
-  }, [battleResults]);
+
  
   // Current rankings, either from battle results or all Pokemon
   const currentRankings = useMemo(() => {
