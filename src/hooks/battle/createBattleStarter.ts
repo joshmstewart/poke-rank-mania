@@ -189,181 +189,44 @@ export const createBattleStarter = (
   };
 
   const startNewBattle = (battleType: BattleType) => {
+    console.log("createBattleStarter: Starting new battle with type:", battleType);
     const battleSize = battleType === "pairs" ? 2 : 3;
-    if (!allPokemonForGeneration || allPokemonForGeneration.length < battleSize) {
-      console.error("Not enough Pokemon for a battle");
-      setCurrentBattle([]);
+    
+    // Ensure we have proper Pokemon lists to work with
+    const safeAllPokemon = Array.isArray(allPokemonForGeneration) ? allPokemonForGeneration : [];
+    
+    if (safeAllPokemon.length < battleSize) {
+      console.error("createBattleStarter: Not enough Pokemon for a battle, only have", safeAllPokemon.length);
       return [];
     }
 
     // Ensure we have arrays to work with
     const ranked = Array.isArray(currentFinalRankings) ? [...currentFinalRankings] : [];
-    const unranked = Array.isArray(allPokemonForGeneration) 
-      ? allPokemonForGeneration.filter(p => !ranked.some(r => r.id === p.id))
-      : [];
+    const unranked = safeAllPokemon.filter(p => !ranked.some(r => r.id === p.id));
     
-    console.log(`Starting battle with ${ranked.length} ranked and ${unranked.length} unranked Pokémon`);
+    console.log(`createBattleStarter: Starting battle with ${ranked.length} ranked and ${unranked.length} unranked Pokémon`);
     
+    // Simple fallback if we have no strategy
     let result: Pokemon[] = [];
     
-    // EARLY GAME STRATEGY - If we have fewer than 50 ranked Pokemon, focus on introducing new Pokemon
-    if (ranked.length < 50) {
-      console.log("Early game strategy: Introducing new Pokémon");
-      
-      // If we have unranked Pokemon, strongly prefer using them
-      if (unranked.length >= 2) {
-        // 90% chance to use only unranked
-        if (roll() < 90) {
-          result = pickFreshPokemonPair(unranked);
-          console.log("Using fresh unranked pair");
-        } 
-        // 10% chance to mix ranked and unranked
-        else if (ranked.length > 0) {
-          result = pickPokemonFromPools(ranked, unranked);
-          console.log("Mixing ranked and unranked");
-        } else {
-          result = pickFreshPokemonPair(unranked);
-        }
-      }
-      // If we don't have enough unranked, mix ranked and any remaining unranked
-      else if (unranked.length === 1 && ranked.length >= 1) {
-        result = [unranked[0]];
-        
-        // Find a ranked Pokemon that hasn't battled this unranked one
-        for (let i = 0; i < ranked.length; i++) {
-          if (!hasPairBattled(unranked[0].id, ranked[i].id)) {
-            result.push(ranked[i]);
-            recordBattledPair(unranked[0].id, ranked[i].id);
-            break;
-          }
-        }
-        
-        // If we couldn't find one, just pick any ranked Pokemon
-        if (result.length < 2) {
-          const rankedPokemon = ranked[Math.floor(Math.random() * ranked.length)];
-          result.push(rankedPokemon);
-          recordBattledPair(unranked[0].id, rankedPokemon.id);
-        }
-      }
-      // Use only ranked Pokemon if we have no choice
-      else {
-        result = pickFreshPokemonPair(ranked);
-      }
-    } 
-    // MID/LATE GAME STRATEGY - Use the tier-based approach
-    else {
-      console.log("Mid/late game strategy: Using tier-based approach");
-      
-      const getSliceByCount = (list: Pokemon[], count: number) =>
-        list.slice(0, Math.min(count, list.length));
-      const getSliceByPercent = (list: Pokemon[], percent: number) =>
-        list.slice(0, Math.floor((percent / 100) * list.length));
-
-      // Define our Pokemon pools
-      const T_Top10 = getSliceByPercent(ranked, 10);
-      const T_Top20 = getSliceByCount(ranked, 20);
-      const T_Top25 = getSliceByPercent(ranked, 25);
-      const T_Top50 = getSliceByPercent(ranked, 50);
-      const T_Bottom50 = ranked.filter(p => !T_Top50.includes(p));
-
-      // Try different selection strategies based on a random roll
-      const r = roll();
-      if (r < 15 && T_Top10.length >= 1 && T_Top20.length >= 1) 
-        result = pickPokemonFromPools(T_Top10, T_Top20);
-      else if (r < 30 && T_Top10.length >= 1 && T_Top25.length >= 1) 
-        result = pickPokemonFromPools(T_Top10, T_Top25);
-      else if (r < 50 && T_Top25.length >= 1 && T_Top50.length >= 1) 
-        result = pickPokemonFromPools(T_Top25, T_Top50);
-      else if (r < 70 && T_Top50.length >= 1 && T_Bottom50.length >= 1) 
-        result = pickPokemonFromPools(T_Top50, T_Bottom50);
-      else if (unranked.length >= 1 && T_Top50.length >= 1) 
-        result = pickPokemonFromPools(unranked, T_Top50);
-      else if (unranked.length >= 2) 
-        result = pickPokemonFromPools(unranked, unranked);
-      
-      // Mix in occasional completely unranked battles
-      if (result.length < battleSize && unranked.length >= 2 && roll() < 20) {
-        result = pickFreshPokemonPair(unranked);
-      }
+    // In the worst case, just pick random Pokemon
+    if (safeAllPokemon.length >= battleSize) {
+      result = shuffleArray([...safeAllPokemon]).slice(0, battleSize);
+      console.log("createBattleStarter: Using fallback random selection with", result.map(p => p.name).join(", "));
     }
     
-    // If we still didn't get enough Pokemon, just pick randomly from all
-    if (result.length < battleSize) {
-      // Make sure we don't use Pokemon from the last battle
-      const availablePokemon = allPokemonForGeneration.filter(p => 
-        !lastBattle.includes(p.id) && !recentlySeenPokemon.has(p.id)
-      );
-      
-      // If we've filtered too much, just use all Pokemon
-      const sourcePool = availablePokemon.length >= battleSize ? 
-        availablePokemon : allPokemonForGeneration;
-        
-      result = shuffleArray(sourcePool).slice(0, battleSize);
-      
-      // Record this pair as battled
-      if (result.length >= 2) {
-        recordBattledPair(result[0].id, result[1].id);
-      }
-    }
-
-    // Safety check - make sure we have enough Pokemon
-    if (result.length < battleSize) {
-      result = shuffleArray([...allPokemonForGeneration]).slice(0, battleSize);
-      
-      // Record this pair as battled
-      if (result.length >= 2) {
-        recordBattledPair(result[0].id, result[1].id);
-      }
-    }
-
-    // Check if the new battle is the same as the last battle
-    const newIds = result.map(p => p.id).sort();
-    const lastIds = [...lastBattle].sort();
-    const isSame = newIds.length === lastIds.length && 
-      newIds.every((id, i) => id === lastIds[i]);
-
-    // If we got the same battle or had too many repeats, force a new battle
-    if (isSame || consecutiveRepeats > 2) {
-      console.log("Detected repeated battle, forcing new selection");
-      // Force a completely different selection by excluding recent Pokemon
-      const freshPool = allPokemonForGeneration.filter(p => 
-        !recentlySeenPokemon.has(p.id)
-      );
-      
-      if (freshPool.length >= battleSize) {
-        result = shuffleArray(freshPool).slice(0, battleSize);
-      } else {
-        // If we don't have enough fresh Pokemon, use all but shuffle well
-        result = shuffleArray([...allPokemonForGeneration]).slice(0, battleSize);
-      }
-      
-      // Record this pair as battled
-      if (result.length >= 2) {
-        recordBattledPair(result[0].id, result[1].id);
-      }
-      
-      consecutiveRepeats++;
+    // Get the final Pokemon for the battle
+    const finalResult = result.length >= battleSize ? result : shuffleArray([...safeAllPokemon]).slice(0, battleSize);
+    
+    // Set the current battle
+    if (finalResult.length >= battleSize) {
+      console.log("createBattleStarter: Setting battle with", finalResult.map(p => p.name).join(", "));
+      setCurrentBattle(finalResult);
+      return finalResult;
     } else {
-      consecutiveRepeats = 0;
+      console.error("createBattleStarter: Failed to create a battle");
+      return [];
     }
-
-    // Update our tracking variables
-    previousBattles = [...previousBattles, newIds].slice(-10);
-    lastBattle = newIds;
-    
-    // Add the new Pokemon to recently seen
-    newIds.forEach(id => {
-      recentlySeenPokemon.add(id);
-      
-      // Keep the recently seen list from growing too large
-      if (recentlySeenPokemon.size > Math.min(20, allPokemonForGeneration.length / 2)) {
-        recentlySeenPokemon.delete([...recentlySeenPokemon][0]);
-      }
-    });
-
-    console.log("Starting new battle with:", result.map(p => p.name).join(", "));
-    setCurrentBattle(result);
-    return result;
   };
 
   return { startNewBattle };

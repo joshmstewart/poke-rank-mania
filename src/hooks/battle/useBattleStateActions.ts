@@ -66,7 +66,7 @@ export const useBattleStateActions = ({
     setBattleHistory,
     setShowingMilestone,
     setCompletionPercentage,
-    startNewBattleAdapter, // Use the adapter here
+    startNewBattle, // Directly use the new signature here
     generateRankings,
     battleType
   );

@@ -57,6 +57,7 @@ export const useBattleStarterIntegration = (
     try {
       // Start a new battle using our battle starter
       if (battleStarter) {
+        console.log("Using battleStarter to start new battle with", battleType);
         battleStarter.startNewBattle(battleType);
         
         // Reset selected Pokemon
@@ -67,8 +68,8 @@ export const useBattleStarterIntegration = (
         if (allPokemon && allPokemon.length >= 2) {
           const shuffled = [...allPokemon].sort(() => Math.random() - 0.5);
           const selectedForBattle = shuffled.slice(0, battleType === "pairs" ? 2 : 3);
+          console.log("Fallback battle started with pokemon:", selectedForBattle.map(p => p.name));
           setCurrentBattle(selectedForBattle);
-          console.log("Fallback battle started with:", selectedForBattle.map(p => p.name).join(", "));
         }
       }
     } catch (error) {

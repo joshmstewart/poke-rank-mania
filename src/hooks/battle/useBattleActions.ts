@@ -10,7 +10,7 @@ export const useBattleActions = (
   setBattleHistory: React.Dispatch<React.SetStateAction<{ battle: Pokemon[], selected: number[] }[]>>,
   setShowingMilestone: React.Dispatch<React.SetStateAction<boolean>>,
   setCompletionPercentage: React.Dispatch<React.SetStateAction<number>>,
-  startNewBattle: (pokemonList: Pokemon[], battleType: BattleType) => void,
+  startNewBattle: (battleType: BattleType) => void,
   generateRankings: (results: BattleResult) => void,
   battleType: BattleType
 ) => {
@@ -26,7 +26,7 @@ export const useBattleActions = (
       console.log("Starting new battle after milestone");
       // Double-check that we're not showing a milestone before starting a new battle
       setShowingMilestone(false);
-      startNewBattle(allPokemon, battleType);
+      startNewBattle(battleType);
     }, 200); // Increased delay to ensure state propagation
   };
 
@@ -37,7 +37,7 @@ export const useBattleActions = (
     setBattleHistory([]);
     setShowingMilestone(false);
     setCompletionPercentage(0);
-    startNewBattle(allPokemon, battleType);
+    startNewBattle(battleType);
   };
 
   return {

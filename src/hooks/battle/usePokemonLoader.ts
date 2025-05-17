@@ -24,7 +24,7 @@ export const usePokemonLoader = ({
   setShowingMilestone: React.Dispatch<React.SetStateAction<boolean>>,
   setCompletionPercentage: React.Dispatch<React.SetStateAction<number>>,
   setSelectedPokemon: React.Dispatch<React.SetStateAction<number[]>>,
-  startNewBattle: (pokemonList: Pokemon[], battleType: BattleType) => void,
+  startNewBattle: (battleType: BattleType) => void,
   battleType: BattleType
 }) => {
   const [isLoading, setIsLoading] = useState(true);
@@ -68,7 +68,7 @@ export const usePokemonLoader = ({
         if (Array.isArray(pokemon) && pokemon.length > 0 && typeof pokemon[0] === "object" && "id" in pokemon[0]) {
           console.log("✅ Starting initial battle with", pokemon.length, "Pokémon");
           try {
-            startNewBattle(pokemon, battleType);
+            startNewBattle(battleType);
           } catch (e) {
             console.error("Error starting initial battle:", e);
             toast({
