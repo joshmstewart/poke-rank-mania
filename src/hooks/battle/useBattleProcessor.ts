@@ -47,7 +47,7 @@ export const useBattleProcessor = (
     selectedPokemonIds: number[],
     currentBattlePokemon: Pokemon[],
     battleType: BattleType,
-    currentSelectedGeneration: number = 0 // Make the parameter optional with default value
+    currentSelectedGeneration: number = 0
   ) => {
     console.log("useBattleProcessor: Processing battle result with selections:", selectedPokemonIds);
     
@@ -56,40 +56,65 @@ export const useBattleProcessor = (
       return;
     }
     
+    // Validate input parameters
+    if (!selectedPokemonIds || selectedPokemonIds.length === 0) {
+      console.error("useBattleProcessor: No selected Pokemon IDs provided");
+      setIsProcessingResult(false);
+      return;
+    }
+
+    if (!currentBattlePokemon || currentBattlePokemon.length < 2) {
+      console.error("useBattleProcessor: Invalid battle Pokemon array:", currentBattlePokemon?.length || 0);
+      setIsProcessingResult(false);
+      return;
+    }
+    
     setIsProcessingResult(true);
     
     // First, process the battle result
-    processResult(selectedPokemonIds, battleType, currentBattlePokemon);
+    const newBattleResults = processResult(selectedPokemonIds, battleType, currentBattlePokemon);
 
-    // Increment the battles completed counter
-    incrementBattlesCompleted((newCount: number) => {
-      console.log("useBattleProcessor: Battles completed incremented to", newCount);
+    // Only proceed if we got valid battle results
+    if (newBattleResults) {
+      // Update the battle results state
+      setBattleResults(newBattleResults);
       
-      // Check if we've hit a milestone
-      const hitMilestone = checkMilestone(newCount, battleResults);
-      console.log("useBattleProcessor: Milestone reached?", hitMilestone);
-      
-      if (hitMilestone && currentSelectedGeneration) {
-        // When a milestone is hit, also save the rankings automatically
-        // Update: Only save if we actually have battle results
-        if (battleResults.length > 0) {
-          saveRankings(
-            // Generate fresh rankings from battle results
-            Array.from(new Map(battleResults.map(result => {
-              const winnerData = result.winner;
-              return [winnerData.id, winnerData];
-            })).values()),
-            currentSelectedGeneration,
-            "battle"
-          );
+      // Increment the battles completed counter
+      incrementBattlesCompleted((newCount: number) => {
+        console.log("useBattleProcessor: Battles completed incremented to", newCount);
+        
+        // Check if we've hit a milestone
+        const hitMilestone = checkMilestone(newCount, newBattleResults);
+        console.log("useBattleProcessor: Milestone reached?", hitMilestone);
+        
+        if (hitMilestone && currentSelectedGeneration) {
+          // When a milestone is hit, also save the rankings automatically
+          // Update: Only save if we actually have battle results
+          if (newBattleResults.length > 0) {
+            saveRankings(
+              // Generate fresh rankings from battle results
+              Array.from(new Map(newBattleResults.map(result => {
+                const winnerData = result.winner;
+                return [winnerData.id, winnerData];
+              })).values()),
+              currentSelectedGeneration,
+              "battle"
+            );
+          }
         }
-      }
-      
-      // Setup the next battle
-      console.log("useBattleProcessor: Setting up next battle with battle type", battleType);
-      setupNextBattle(battleType);
+        
+        // Setup the next battle
+        console.log("useBattleProcessor: Setting up next battle with battle type", battleType);
+        setupNextBattle(battleType);
+        setIsProcessingResult(false);
+      });
+    } else {
+      console.error("useBattleProcessor: Failed to process battle result");
       setIsProcessingResult(false);
-    });
+      
+      // Setup the next battle anyway to prevent getting stuck
+      setupNextBattle(battleType);
+    }
   };
 
   return {

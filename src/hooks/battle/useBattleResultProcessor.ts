@@ -17,19 +17,28 @@ export const useBattleResultProcessor = (
       return null;
     }
 
+    if (!selections || selections.length === 0) {
+      console.error("useBattleResultProcessor: No selections provided");
+      return null;
+    }
+
+    console.log("useBattleResultProcessor: Processing with selections:", selections);
+    console.log("useBattleResultProcessor: Current battle Pokémon:", currentBattle.map(p => p.name));
+    
     const newResults = [...battleResults];
     
     if (battleType === "pairs") {
       // For pairs, we know who won and who lost
-      const winner = currentBattle.find(p => selections.includes(p.id));
-      const loser = currentBattle.find(p => !selections.includes(p.id));
+      const winner = currentBattle.find(p => p.id === selections[0]);
+      const loser = currentBattle.find(p => p.id !== selections[0]);
       
       if (winner && loser) {
         console.log(`useBattleResultProcessor: Adding pair result: ${winner.name} beats ${loser.name}`);
         newResults.push({ winner, loser });
         return newResults;
       } else {
-        console.error("useBattleResultProcessor: Invalid selection for pair battle", selections, currentBattle);
+        console.error("useBattleResultProcessor: Invalid selection for pair battle", 
+          { selections, winner: winner?.name, loser: loser?.name });
         return null;
       }
     } else {

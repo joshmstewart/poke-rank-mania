@@ -32,12 +32,15 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
     { icon: Medal, color: "text-amber-600" }
   ];
   
+  // Check if we have meaningful rankings to display
+  const hasValidRankings = finalRankings.length > 0;
+  
   return (
     <div className="bg-white rounded-lg shadow p-6">
       <div className="mb-6">
         <div className="flex justify-between items-center">
           <h2 className="text-2xl font-bold bg-gradient-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent">
-            {rankingGenerated ? "Final Rankings" : "Current Rankings"}
+            {rankingGenerated ? "Current Rankings" : "Progress"}
           </h2>
           <span className="text-sm bg-primary/10 text-primary px-3 py-1 rounded-full font-medium">
             {battlesCompleted} battles completed
@@ -46,7 +49,7 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
         <div className="h-1 w-full bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full mt-2"></div>
       </div>
       
-      {finalRankings.length === 0 ? (
+      {!hasValidRankings ? (
         <div className="text-center p-12 bg-gray-50 rounded-lg border border-dashed border-gray-300">
           <p className="text-lg text-gray-500 font-medium">No ranked Pokémon yet.</p>
           <p className="text-gray-400 mt-2">Complete more battles to start ranking Pokémon.</p>
@@ -56,7 +59,7 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
           {/* Top 3 section with larger cards and special styling */}
           {finalRankings.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {finalRankings.slice(0, 3).map((pokemon, index) => {
+              {finalRankings.slice(0, Math.min(3, finalRankings.length)).map((pokemon, index) => {
                 const TrophyIcon = trophyIcons[index].icon;
                 return (
                   <div key={pokemon.id} className="flex flex-col items-center">
@@ -150,7 +153,7 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
         )}
         
         {/* Add Save Rankings Button */}
-        {finalRankings.length > 0 && (
+        {hasValidRankings && (
           <Button
             variant="outline"
             size="lg"

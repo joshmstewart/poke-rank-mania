@@ -68,43 +68,47 @@ export const useRankings = (allPokemon: Pokemon[]) => {
     });
 
     // Log battle statistics for debugging
-    console.log("Battled Pokémon IDs (original log):", [...battledPokemonIds]);
-    console.log("Total battled Pokémon (original log):", battledPokemonIds.size);
-    // --- Added Log ---
-    console.log('[useRankings] battledPokemonIds.size (after processing results):', battledPokemonIds.size);
-
+    console.log("Battled Pokémon IDs:", [...battledPokemonIds]);
+    console.log("Total battled Pokémon:", battledPokemonIds.size);
+    
     // FIX: If no battles completed yet, use a default subset of Pokémon as initial rankings
     if (battledPokemonIds.size === 0) {
       console.log("[useRankings] No battles completed yet. Using default initial rankings.");
-      const defaultRankings = allPokemon.slice(0, 10);
-      setFinalRankings(defaultRankings);
+      
+      // CRITICAL FIX: Instead of taking arbitrary Pokémon for default rankings,
+      // set an empty array to indicate we don't have real rankings yet
+      setFinalRankings([]);
       setRankingGenerated(true);
+      
+      // Show toast to inform user that they need to complete more battles
+      toast({
+        title: "No Battle Data Yet",
+        description: "Complete more battles to generate accurate rankings.",
+        variant: "default"
+      });
+      
       return;
     }
 
-    if (results.length === 0 && battledPokemonIds.size > 0) { // Added condition if results are empty but some pokemon were marked battled (e.g. initial state)
+    if (results.length === 0 && battledPokemonIds.size > 0) { 
       console.log("[useRankings] Results array is empty, but some Pokémon were marked as battled. This case might need review. Proceeding to rank based on battled status.");
-    } else if (results.length === 0) { // Original condition if results truly are empty
-      const defaultRankings = allPokemon.slice(0, 10);
-      console.log("Using default rankings due to no battle results (original log)");
-      setFinalRankings(defaultRankings);
-      setRankingGenerated(true);
-      return;
     }
 
+    // FIX: Only include Pokémon that have actually been in battles in our rankings
     const rankings = Array.from(scores.values())
       .filter(item => battledPokemonIds.has(item.pokemon.id)) 
       .sort((a, b) => b.score - a.score)
       .map(item => item.pokemon);
 
-    // --- Added Log ---
     console.log('[useRankings] Final calculated rankings length before setting state:', rankings.length);
-    console.log("Generated rankings length (original log):", rankings.length);
-    console.log("Top 3 ranked Pokémon (original log):", rankings.slice(0, 3).map(p => p.name));
+    if (rankings.length > 0) {
+      console.log("Top 3 ranked Pokémon:", rankings.slice(0, Math.min(3, rankings.length)).map(p => p.name));
+    }
+    
     setFinalRankings(rankings);
-    setRankingGenerated(true); // Ensure this is set to true when rankings are generated
+    setRankingGenerated(true); 
 
-    if (!rankingGenerated) { // This condition might always be true if rankingGenerated is reset or initially false
+    if (!rankingGenerated) {
       toast({
         title: "Milestone Reached!",
         description: `You've completed ${results.length} battles. Here's your current ranking!`
