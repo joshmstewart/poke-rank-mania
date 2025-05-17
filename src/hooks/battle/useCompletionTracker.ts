@@ -14,6 +14,7 @@ export const useCompletionTracker = (
   // Track if we've already generated a complete ranking to avoid showing the toast multiple times
   const [currentRankingGenerated, setCurrentRankingGenerated] = useState(false);
 
+  // Calculate completion percentage and check if we should show rankings
   const calculateCompletionPercentage = () => {
     // For a complete ranking in a tournament style, we need at least n-1 comparisons
     // where n is the number of Pokémon. This is the minimum number of comparisons
@@ -43,8 +44,10 @@ export const useCompletionTracker = (
     
     // If we've reached 100%, make sure to show the final rankings
     if (percentage >= 100 && !currentRankingGenerated) {
+      console.log("100% completion reached - generating final rankings");
       generateRankings(battleResults);
       setRankingGenerated(true);
+      setCurrentRankingGenerated(true);
       
       // Show a toast to inform the user they've reached 100%
       toast({

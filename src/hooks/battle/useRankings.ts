@@ -7,13 +7,16 @@ import { toast } from "@/hooks/use-toast";
 export const useRankings = (allPokemon: Pokemon[]) => {
   const [finalRankings, setFinalRankings] = useState<Pokemon[]>([]);
   const [rankingGenerated, setRankingGenerated] = useState(false);
+  const [lastBattleCount, setLastBattleCount] = useState(0);
 
   const generateRankings = (results: BattleResult) => {
     // --- Start of Added Logs ---
     console.log('[useRankings] generateRankings CALLED. Number of battleResults received:', results?.length);
     if (results?.length > 0) {
       console.log('[useRankings] First battle result sample:', results[0]);
+      console.log('[useRankings] Last battle count:', lastBattleCount, 'Current results length:', results.length);
     }
+    
     // 'allPokemon' is a parameter to the main useRankings hook, so it's available here.
     console.log('[useRankings] allPokemon available to generateRankings (at start of function). Length:', allPokemon?.length);
     if (!allPokemon || allPokemon.length === 0) {
@@ -22,9 +25,18 @@ export const useRankings = (allPokemon: Pokemon[]) => {
       setRankingGenerated(false); 
       return; 
     }
+    
+    // Skip if this is the same battle count as last time (prevent duplicate calls)
+    if (results.length === lastBattleCount && finalRankings.length > 0) {
+      console.log('[useRankings] Skipping duplicate ranking generation - no new battles since last time');
+      return;
+    }
+    
+    // Update the last battle count
+    setLastBattleCount(results.length);
     // --- End of Added Logs ---
 
-    console.log("Generating rankings with battle results (original log):", results.length); // Your original log
+    console.log("Generating rankings with battle results (original log):", results.length);
 
     // Use a simple ELO-like algorithm to rank Pokémon
     const scores = new Map<number, { pokemon: Pokemon, score: number, battled: boolean }>();
@@ -108,12 +120,7 @@ export const useRankings = (allPokemon: Pokemon[]) => {
     setFinalRankings(rankings);
     setRankingGenerated(true); 
 
-    if (!rankingGenerated) {
-      toast({
-        title: "Milestone Reached!",
-        description: `You've completed ${results.length} battles. Here's your current ranking!`
-      });
-    }
+    // Don't show milestone toast here - it's handled by useBattleProgression and useBattleInteractions
   };
 
   const handleSaveRankings = (selectedGeneration: number) => {

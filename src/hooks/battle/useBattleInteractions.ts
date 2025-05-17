@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
+import { toast } from "@/hooks/use-toast";
 
 export const useBattleInteractions = (
   currentBattle: Pokemon[],
@@ -61,10 +62,18 @@ export const useBattleInteractions = (
           
           // Process the battle result directly with the current battle Pokemon
           if (currentBattle && currentBattle.length > 0) {
+            // Check if this battle will reach a milestone BEFORE processing the result
+            // This is important because we want to know if the NEXT battlesCompleted value hits a milestone
+            const nextBattlesCompleted = battlesCompleted + 1;
+            const isMilestone = checkIfMilestone(nextBattlesCompleted);
+            
+            console.log(`Battle #${nextBattlesCompleted}: Is milestone? ${isMilestone}`);
+            
+            // Now process the battle result, which will increment battlesCompleted internally
             processBattleResult(newSelected, currentBattle, battleType, currentGeneration);
+            
+            console.log("useBattleInteractions: Battle processed successfully, battles completed:", battlesCompleted + 1);
           }
-          
-          console.log("useBattleInteractions: Battle processed successfully, battles completed:", battlesCompleted + 1);
         } catch (error) {
           console.error("useBattleInteractions: Error processing battle result:", error);
         } finally {
@@ -87,6 +96,32 @@ export const useBattleInteractions = (
       setSelectedPokemon(newSelected);
       setIsProcessing(false); 
     }
+  };
+
+  // Helper function to check if a battle count is a milestone
+  const checkIfMilestone = (battleCount: number): boolean => {
+    // Check common milestones: 10, 25, 50, 100, etc.
+    const commonMilestones = [10, 25, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500];
+    
+    // Exact milestone match
+    if (commonMilestones.includes(battleCount)) {
+      toast({
+        title: "Milestone Reached!",
+        description: `You've completed ${battleCount} battles. Check out your current ranking!`,
+      });
+      return true;
+    }
+    
+    // Every 50 battles after 100
+    if (battleCount > 100 && battleCount % 50 === 0) {
+      toast({
+        title: "Milestone Reached!",
+        description: `You've completed ${battleCount} battles. Check out your current ranking!`,
+      });
+      return true;
+    }
+    
+    return false;
   };
 
   const handleGoBackClick = () => {
