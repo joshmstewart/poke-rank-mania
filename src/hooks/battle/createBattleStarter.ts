@@ -75,7 +75,8 @@ export const createBattleStarter = (
     let result: Pokemon[] = [];
     console.log("[createBattleStarter] T_Top10:", T_Top10.length);
 console.log("[createBattleStarter] T_Top50:", T_Top50.length);
-console.log("[createBattleStarter] T_Unranked:", unranked.length);
+console.log("[createBattleStarter] unranked:", unranked.length);
+
 
 
 
