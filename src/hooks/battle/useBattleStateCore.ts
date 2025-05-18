@@ -23,13 +23,7 @@ export const useBattleStateCore = () => {
   // Initialize all variables before using them in other hooks
   const allPokemonSafe = Array.isArray(selectionState.allPokemon) && selectionState.allPokemon.length > 0 ? 
     selectionState.allPokemon : [];
-  
-  // Create an adapter function to match the expected signatures
-  // This is the key fix - we're creating an adapter that takes only battleType
-  const startNewBattleAdapter = (battleType: BattleType) => {
-    selectionState.startNewBattle(battleType);
-  };
-  
+    
   // IO related functionality (loading Pokemon, storage, etc)
   const { 
     isLoading, 
@@ -112,7 +106,7 @@ export const useBattleStateCore = () => {
     selectionState.battlesCompleted,
     selectionState.setBattlesCompleted,
     allPokemonSafe,
-    startNewBattleAdapter, // Use our adapter here too
+    (battleType) => selectionState.startNewBattle(battleType),
     progressState.setShowingMilestone,
     progressState.milestones,
     generateRankings,
