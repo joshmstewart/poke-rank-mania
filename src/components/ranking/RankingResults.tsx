@@ -1,5 +1,4 @@
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react"; // ⬅️ make sure useEffect is imported
 import {
   Table,
   TableBody,
@@ -10,7 +9,6 @@ import {
 } from "@/components/ui/table";
 import { Pokemon, generations } from "@/services/pokemon";
 
-// Mapping of generation IDs to regions and games
 const generationDetails: Record<number, { region: string, games: string }> = {
   1: { region: "Kanto", games: "Red, Blue, Yellow" },
   2: { region: "Johto", games: "Gold, Silver, Crystal" },
@@ -20,10 +18,9 @@ const generationDetails: Record<number, { region: string, games: string }> = {
   6: { region: "Kalos", games: "X, Y" },
   7: { region: "Alola", games: "Sun, Moon, Ultra Sun, Ultra Moon" },
   8: { region: "Galar", games: "Sword, Shield" },
-  9: { region: "Paldea", games: "Scarlet, Violet" }
+  9: { region: "Paldea", games: "Scarlet, Violet" },
 };
 
-// Function to get generation info for a Pokemon
 const getPokemonGeneration = (pokemonId: number) => {
   return generations.find(gen => 
     pokemonId >= gen.start && pokemonId <= gen.end && gen.id !== 0
@@ -40,28 +37,33 @@ interface ImageWithFallbackProps {
   initialSrc: string;
 }
 
-// Component for image with fallbacks
 const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({ pokemonId, pokemonName, initialSrc }) => {
   const [currentSrc, setCurrentSrc] = useState<string>(initialSrc);
   const [retryCount, setRetryCount] = useState(0);
   const [imageError, setImageError] = useState(false);
   const maxRetries = 3;
 
+  useEffect(() => {
+    const preload = (src: string) => {
+      const img = new Image();
+      img.src = src;
+    };
+
+    preload(initialSrc);
+    preload(`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pokemonId}.png`);
+    preload(`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/home/${pokemonId}.png`);
+    preload(`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemonId}.png`);
+  }, [pokemonId, initialSrc]);
+
   const handleImageError = () => {
     if (retryCount < maxRetries) {
       setRetryCount(prev => prev + 1);
-      
       const fallbacks = [
-        // Original URL (already failed)
         initialSrc,
-        // PokeAPI official artwork
         `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pokemonId}.png`,
-        // Home artwork
         `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/home/${pokemonId}.png`,
-        // Default sprite as last resort
-        `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemonId}.png`
+        `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemonId}.png`,
       ];
-      
       const nextSrc = fallbacks[Math.min(retryCount + 1, fallbacks.length - 1)];
       setCurrentSrc(nextSrc);
     } else {
@@ -82,7 +84,9 @@ const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({ pokemonId, pokemo
       src={currentSrc} 
       alt={pokemonName} 
       className="w-full h-full object-contain"
+      onLoad={() => setImageError(false)}
       onError={handleImageError}
+      loading="lazy"
     />
   );
 };
@@ -108,7 +112,6 @@ export const RankingResults: React.FC<RankingResultsProps> = ({ rankedPokemon })
               const generation = getPokemonGeneration(pokemon.id);
               const genId = generation?.id || 0;
               const region = generationDetails[genId]?.region || "Unknown";
-              
               return (
                 <TableRow key={pokemon.id}>
                   <TableCell className="font-bold">{index + 1}</TableCell>
