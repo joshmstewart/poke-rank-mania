@@ -17,91 +17,79 @@ export const useCompletionTracker = (
   }, [battleResults?.length]);
 
   const calculateCompletionPercentage = () => {
-    const total = allPokemon?.length || 0;
-    if (!total || total <= 1) {
+    const totalPokemon = allPokemon?.length || 0;
+    if (totalPokemon <= 1) {
       setCompletionPercentage(100);
       return;
     }
 
-    // Build a map of which Pokémon has been compared to which others
-    const comparisonMap = new Map<number, Set<number>>();
+    // Build a map of each Pokémon ID → set of opponents it's been compared to
+    const comparisonMap: Map<number, Set<number>> = new Map();
 
-    battleResults?.forEach(result => {
-      const participants = result.battle.map(p => p.id);
-
-      for (const id of participants) {
-        if (!comparisonMap.has(id)) {
-          comparisonMap.set(id, new Set());
-        }
-
-        for (const opponentId of participants) {
-          if (id !== opponentId) {
-            comparisonMap.get(id)!.add(opponentId);
-          }
-        }
+    for (const { winner, loser } of battleResults) {
+      if (!comparisonMap.has(winner.id)) {
+        comparisonMap.set(winner.id, new Set());
       }
-    });
+      if (!comparisonMap.has(loser.id)) {
+        comparisonMap.set(loser.id, new Set());
+      }
+      comparisonMap.get(winner.id)!.add(loser.id);
+      comparisonMap.get(loser.id)!.add(winner.id);
+    }
 
-    // A Pokémon is "rankable" if it's been compared to at least 30% of the others
-    const threshold = Math.floor(total * 0.3);
-    let rankableCount = 0;
+    // Count how many Pokémon have enough comparisons
+    const threshold = Math.floor(totalPokemon * 0.3); // e.g. must be compared to 30% of others
+    let countAboveThreshold = 0;
 
-    for (const id of comparisonMap.keys()) {
-      if (comparisonMap.get(id)!.size >= threshold) {
-        rankableCount++;
+    for (const pokemon of allPokemon) {
+      const comparedTo = comparisonMap.get(pokemon.id);
+      if (comparedTo && comparedTo.size >= threshold) {
+        countAboveThreshold++;
       }
     }
 
-    const percent = Math.round((rankableCount / total) * 100);
-    setCompletionPercentage(percent);
+    const percentage = Math.min(100, Math.round((countAboveThreshold / totalPokemon) * 100));
+    setCompletionPercentage(percentage);
 
-    console.log(`[useCompletionTracker] ${rankableCount}/${total} Pokémon are rankable → ${percent}%`);
-
-    if (percent >= 100 && !currentRankingGenerated) {
-      console.log("[useCompletionTracker] 100% completion reached - generating final rankings");
+    if (percentage >= 100 && !currentRankingGenerated) {
       generateRankings(battleResults);
       setRankingGenerated(true);
       setCurrentRankingGenerated(true);
 
       toast({
         title: "Complete Ranking Achieved!",
-        description: "You've compared enough Pokémon to generate a full ranking!",
+        description: "You've completed enough battles to generate a full ranking of all Pokémon!",
       });
     }
   };
 
   const getBattlesRemaining = () => {
-    const total = allPokemon?.length || 0;
-    if (total <= 1) return 0;
+    const totalPokemon = allPokemon?.length || 0;
+    if (totalPokemon <= 1) return 0;
 
-    const threshold = Math.floor(total * 0.3);
-    const comparisonMap = new Map<number, Set<number>>();
+    const threshold = Math.floor(totalPokemon * 0.3);
+    const comparisonMap: Map<number, Set<number>> = new Map();
 
-    battleResults?.forEach(result => {
-      const participants = result.battle.map(p => p.id);
-
-      for (const id of participants) {
-        if (!comparisonMap.has(id)) {
-          comparisonMap.set(id, new Set());
-        }
-
-        for (const opponentId of participants) {
-          if (id !== opponentId) {
-            comparisonMap.get(id)!.add(opponentId);
-          }
-        }
+    for (const { winner, loser } of battleResults) {
+      if (!comparisonMap.has(winner.id)) {
+        comparisonMap.set(winner.id, new Set());
       }
-    });
+      if (!comparisonMap.has(loser.id)) {
+        comparisonMap.set(loser.id, new Set());
+      }
+      comparisonMap.get(winner.id)!.add(loser.id);
+      comparisonMap.get(loser.id)!.add(winner.id);
+    }
 
-    let unrankedCount = 0;
-
-    for (const id of allPokemon.map(p => p.id)) {
-      if (!comparisonMap.has(id) || comparisonMap.get(id)!.size < threshold) {
-        unrankedCount++;
+    let remaining = 0;
+    for (const pokemon of allPokemon) {
+      const comparedTo = comparisonMap.get(pokemon.id)?.size || 0;
+      if (comparedTo < threshold) {
+        remaining += threshold - comparedTo;
       }
     }
 
-    return unrankedCount; // Number of Pokémon still needing more comparisons
+    return remaining;
   };
 
   return {
