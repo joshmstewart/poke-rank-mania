@@ -24,6 +24,12 @@ export const useBattleStateCore = () => {
   const allPokemonSafe = Array.isArray(selectionState.allPokemon) && selectionState.allPokemon.length > 0 ? 
     selectionState.allPokemon : [];
   
+  // Create an adapter function to match the expected signatures
+  // This is the key fix - we're creating an adapter that takes only battleType
+  const startNewBattleAdapter = (battleType: BattleType) => {
+    selectionState.startNewBattle(battleType);
+  };
+  
   // IO related functionality (loading Pokemon, storage, etc)
   const { 
     isLoading, 
@@ -44,11 +50,7 @@ export const useBattleStateCore = () => {
     setShowingMilestone: progressState.setShowingMilestone,
     setCompletionPercentage: progressState.setCompletionPercentage,
     setSelectedPokemon: selectionState.setSelectedPokemon,
-    startNewBattle: (pokemonList, battleType) => {
-  selectionState.setAllPokemon(pokemonList); // if needed
-  selectionState.startNewBattle(battleType);
-},
-
+    startNewBattle: startNewBattleAdapter, // Use our adapter that matches the expected signature
     battleType: battleTypeState.battleType,
     allPokemon: allPokemonSafe,
     battleResults: selectionState.battleResults
@@ -67,11 +69,7 @@ export const useBattleStateCore = () => {
     setBattleHistory: selectionState.setBattleHistory,
     setShowingMilestone: progressState.setShowingMilestone,
     setCompletionPercentage: progressState.setCompletionPercentage,
-    startNewBattle: (pokemonList, battleType) => {
-  selectionState.setAllPokemon(pokemonList);
-  selectionState.startNewBattle(battleType);
-},
-
+    startNewBattle: startNewBattleAdapter, // Use our adapter here too
     allPokemon: allPokemonSafe,
     generateRankings,
     battleType: battleTypeState.battleType
@@ -112,8 +110,7 @@ export const useBattleStateCore = () => {
     selectionState.battlesCompleted,
     selectionState.setBattlesCompleted,
     allPokemonSafe,
-      (battleType) => selectionState.startNewBattle(battleType),
-
+    startNewBattleAdapter, // Use our adapter here too
     progressState.setShowingMilestone,
     progressState.milestones,
     generateRankings,
@@ -153,10 +150,6 @@ export const useBattleStateCore = () => {
     goBack,
     getBattlesRemaining,
     loadPokemon,
-    startNewBattle: (pokemonList, battleType) => {
-  selectionState.setAllPokemon(pokemonList);
-  selectionState.startNewBattle(battleType);
-},
-
+    startNewBattle: startNewBattleAdapter, // Expose our adapter through the return value
   };
 };
