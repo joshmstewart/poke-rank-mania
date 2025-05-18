@@ -112,7 +112,8 @@ export const useBattleStateCore = () => {
     selectionState.battlesCompleted,
     selectionState.setBattlesCompleted,
     allPokemonSafe,
-    selectionState.startNewBattle,
+      (battleType) => selectionState.startNewBattle(battleType),
+
     progressState.setShowingMilestone,
     progressState.milestones,
     generateRankings,
