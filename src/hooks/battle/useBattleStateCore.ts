@@ -44,7 +44,11 @@ export const useBattleStateCore = () => {
     setShowingMilestone: progressState.setShowingMilestone,
     setCompletionPercentage: progressState.setCompletionPercentage,
     setSelectedPokemon: selectionState.setSelectedPokemon,
-    startNewBattle: selectionState.startNewBattle, // This is now of type (battleType: BattleType) => void
+    startNewBattle: (pokemonList, battleType) => {
+  selectionState.setAllPokemon(pokemonList); // if needed
+  selectionState.startNewBattle(battleType);
+},
+
     battleType: battleTypeState.battleType,
     allPokemon: allPokemonSafe,
     battleResults: selectionState.battleResults
