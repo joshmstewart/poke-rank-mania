@@ -1,6 +1,5 @@
-
 import { Pokemon } from "@/services/pokemon";
-import { BattleType, BattleResult } from "./types";
+import { BattleType, BattleResult, SingleBattle } from "./types";
 import { toast } from "@/hooks/use-toast";
 
 export const useBattleNavigation = (
@@ -13,7 +12,10 @@ export const useBattleNavigation = (
   setShowingMilestone: React.Dispatch<React.SetStateAction<boolean>>,
   setSelectedPokemon: React.Dispatch<React.SetStateAction<number[]>>
 ) => {
-  const goBack = (setCurrentBattle: React.Dispatch<React.SetStateAction<Pokemon[]>>, battleType: BattleType) => {
+  const goBack = (
+    setCurrentBattle: React.Dispatch<React.SetStateAction<Pokemon[]>>,
+    battleType: BattleType
+  ) => {
     if (battleHistory.length === 0) {
       toast({
         title: "No previous battles",
@@ -21,37 +23,30 @@ export const useBattleNavigation = (
       });
       return;
     }
-    
-    // Remove the last battle result
+
     const newHistory = [...battleHistory];
     const lastBattle = newHistory.pop();
     setBattleHistory(newHistory);
-    
-    // Also remove the last result from battleResults
-    const newResults = [...battleResults];
-    
-    // Calculate how many results to remove based on the battle type and selections
-    let resultsToRemove = 1; // Default for pairs
+
+    const newResults: SingleBattle[] = [...battleResults];
+
+    let resultsToRemove = 1;
     if (battleType === "triplets" && lastBattle) {
       const selectedCount = lastBattle.selected.length;
       const unselectedCount = lastBattle.battle.length - selectedCount;
       resultsToRemove = selectedCount * unselectedCount;
     }
-    
-    // Remove the appropriate number of results
+
     newResults.splice(newResults.length - resultsToRemove, resultsToRemove);
     setBattleResults(newResults);
-    
-    // Decrement battles completed
+
     setBattlesCompleted(battlesCompleted - 1);
-    
-    // Set the current battle back to the previous one
+
     if (lastBattle) {
       setCurrentBattle(lastBattle.battle);
       setSelectedPokemon([]);
     }
-    
-    // If we were showing a milestone, go back to battles
+
     setShowingMilestone(false);
   };
 

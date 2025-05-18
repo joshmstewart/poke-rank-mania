@@ -1,7 +1,6 @@
-
 import { useCallback, useState } from "react";
 import { Pokemon } from "@/services/pokemon";
-import { BattleResult, BattleType } from "./types";
+import { BattleResult, BattleType, SingleBattle } from "./types";
 
 /**
  * Hook for processing battle winners and losers
@@ -12,80 +11,72 @@ export const useBattleResultProcessor = (
 ) => {
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Process the current battle and determine winners and losers
-  const processResult = useCallback((selections: number[], battleType: BattleType, currentBattle: Pokemon[]) => {
+  const processResult = useCallback((
+    selections: number[],
+    battleType: BattleType,
+    currentBattle: Pokemon[]
+  ): SingleBattle[] | null => {
     setIsProcessing(true);
-    
+
     try {
       if (!currentBattle || currentBattle.length === 0) {
-        console.error("useBattleResultProcessor: No current battle data available");
+        console.error("No current battle data");
         setIsProcessing(false);
         return null;
       }
 
       if (!selections || selections.length === 0) {
-        console.error("useBattleResultProcessor: No selections provided");
+        console.error("No selections provided");
         setIsProcessing(false);
         return null;
       }
 
-      console.log("useBattleResultProcessor: Processing with selections:", selections);
-      console.log("useBattleResultProcessor: Current battle Pokémon:", currentBattle.map(p => p.name));
-      
-      // Create a new array instead of mutating the existing one
-      const newResults = [...battleResults];
-      
+      const newResults: SingleBattle[] = [];
+
       if (battleType === "pairs") {
-        // For pairs, we know who won and who lost
         const winner = currentBattle.find(p => p.id === selections[0]);
         const loser = currentBattle.find(p => p.id !== selections[0]);
-        
+
         if (winner && loser) {
-          console.log(`useBattleResultProcessor: Adding pair result: ${winner.name} beats ${loser.name}`);
-          // Add new result to array
           newResults.push({ winner, loser });
-          // Update state with new array
-          setBattleResults(newResults);
+          setBattleResults(prev => [...prev, { winner, loser }]);
           setIsProcessing(false);
           return newResults;
         } else {
-          console.error("useBattleResultProcessor: Invalid selection for pair battle", 
-            { selections, winner: winner?.name, loser: loser?.name });
+          console.error("Invalid selection for pair battle");
           setIsProcessing(false);
           return null;
         }
       } else {
-        // For triplets/trios, each selected is considered a "winner" against each unselected
         const winners = currentBattle.filter(p => selections.includes(p.id));
         const losers = currentBattle.filter(p => !selections.includes(p.id));
-        
+
         if (winners.length > 0 && losers.length > 0) {
           winners.forEach(winner => {
             losers.forEach(loser => {
               newResults.push({ winner, loser });
             });
           });
-          // Update state with new array
-          setBattleResults(newResults);
+
+          setBattleResults(prev => [...prev, ...newResults]);
           setIsProcessing(false);
           return newResults;
         } else {
-          console.error("useBattleResultProcessor: Invalid selection for triplet battle", selections, currentBattle);
+          console.error("Invalid selection for triplet battle");
           setIsProcessing(false);
           return null;
         }
       }
     } catch (error) {
-      console.error("Error processing battle result:", error);
+      console.error("Error processing result:", error);
       setIsProcessing(false);
       return null;
     }
   }, [battleResults, setBattleResults]);
 
-  return { 
+  return {
     processResult,
     isProcessing,
-    // Add this alias to fix the build error
-    addResult: processResult 
+    addResult: processResult
   };
 };

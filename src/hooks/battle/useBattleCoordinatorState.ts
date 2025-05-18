@@ -1,7 +1,6 @@
-
 import { useEffect } from "react";
 import { Pokemon } from "@/services/pokemon";
-import { BattleType, BattleResult } from "./types";
+import { BattleType, BattleResult, BattleState } from "./types";
 
 /**
  * Hook for coordinating battle state initialization and persistence
@@ -16,31 +15,29 @@ export const useBattleCoordinatorState = (
   battleHistory: { battle: Pokemon[], selected: number[] }[],
   completionPercentage: number,
   fullRankingMode: boolean,
-  saveBattleState: () => void, // Updated to match the signature in useLocalStorage
-  loadBattleState: () => any | null,
-  loadPokemon: (genId?: number, preserveState?: boolean) => Promise<void> | Promise<Pokemon[]>, // Updated to accept Promise<Pokemon[]>
+  saveBattleState: () => void,
+  loadBattleState: () => BattleState | null,
+  loadPokemon: (genId?: number, preserveState?: boolean) => Promise<void> | Promise<Pokemon[]>,
   calculateCompletionPercentage: () => void
 ) => {
-  // Load saved battle state on initial load
+  // Load saved battle state on mount
   useEffect(() => {
     const savedState = loadBattleState();
     if (savedState) {
-      // We'll load the Pokemon separately based on the saved generation
       loadPokemon(savedState.selectedGeneration, true);
     } else {
       loadPokemon();
     }
   }, []);
 
-  // Reload Pokemon when generation changes
+  // Reload when generation changes
   useEffect(() => {
-    // Only reload Pokemon if generation changes and not during initial loading
     if (!isLoading) {
       loadPokemon(selectedGeneration, false);
     }
   }, [selectedGeneration, fullRankingMode]);
 
-  // Save battle state whenever it changes
+  // Save battle state when it changes
   useEffect(() => {
     if (!isLoading && allPokemon.length > 0) {
       saveBattleState();
@@ -55,7 +52,7 @@ export const useBattleCoordinatorState = (
     fullRankingMode
   ]);
 
-  // Calculate completion percentage when battle results change
+  // Recalculate progress
   useEffect(() => {
     if (allPokemon.length > 0 && battleResults.length > 0) {
       calculateCompletionPercentage();
