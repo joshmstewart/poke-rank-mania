@@ -67,7 +67,11 @@ export const useBattleStateCore = () => {
     setBattleHistory: selectionState.setBattleHistory,
     setShowingMilestone: progressState.setShowingMilestone,
     setCompletionPercentage: progressState.setCompletionPercentage,
-    startNewBattle: selectionState.startNewBattle,
+    startNewBattle: (pokemonList, battleType) => {
+  selectionState.setAllPokemon(pokemonList);
+  selectionState.startNewBattle(battleType);
+},
+
     allPokemon: allPokemonSafe,
     generateRankings,
     battleType: battleTypeState.battleType
@@ -148,6 +152,10 @@ export const useBattleStateCore = () => {
     goBack,
     getBattlesRemaining,
     loadPokemon,
-    startNewBattle: selectionState.startNewBattle
+    startNewBattle: (pokemonList, battleType) => {
+  selectionState.setAllPokemon(pokemonList);
+  selectionState.startNewBattle(battleType);
+},
+
   };
 };

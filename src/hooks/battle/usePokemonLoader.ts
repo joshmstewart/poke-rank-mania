@@ -24,7 +24,8 @@ export const usePokemonLoader = ({
   setShowingMilestone: React.Dispatch<React.SetStateAction<boolean>>,
   setCompletionPercentage: React.Dispatch<React.SetStateAction<number>>,
   setSelectedPokemon: React.Dispatch<React.SetStateAction<number[]>>,
-  startNewBattle: (battleType: BattleType) => void,
+  startNewBattle: (pokemonList: Pokemon[], battleType: BattleType) => void,
+
   battleType: BattleType
 }) => {
   const [isLoading, setIsLoading] = useState(true);
