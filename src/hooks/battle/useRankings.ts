@@ -1,17 +1,15 @@
 import { useState, useEffect } from "react";
 import { Pokemon } from "@/services/pokemon";
-import { BattleResult } from "./types";
+import { SingleBattle } from "./types";
 
 export const useRankings = (allPokemon: Pokemon[]) => {
   const [finalRankings, setFinalRankings] = useState<Pokemon[]>([]);
   const [confidenceScores, setConfidenceScores] = useState<Record<number, number>>({});
 
-  const generateRankings = (results: BattleResult[]) => {
-    // Map of pokemonId -> score
+  const generateRankings = (results: SingleBattle[]) => {
     const scoreMap = new Map<number, number>();
     const countMap = new Map<number, number>();
 
-    // Initialize all to 0
     allPokemon.forEach(p => {
       scoreMap.set(p.id, 0);
       countMap.set(p.id, 0);
@@ -21,7 +19,7 @@ export const useRankings = (allPokemon: Pokemon[]) => {
       const winnerId = result.winner.id;
       const loserId = result.loser.id;
       scoreMap.set(winnerId, (scoreMap.get(winnerId) || 0) + 1);
-      scoreMap.set(loserId, (scoreMap.get(loserId) || 0)); // Loser gets no point
+      scoreMap.set(loserId, (scoreMap.get(loserId) || 0));
 
       countMap.set(winnerId, (countMap.get(winnerId) || 0) + 1);
       countMap.set(loserId, (countMap.get(loserId) || 0) + 1);
@@ -35,12 +33,9 @@ export const useRankings = (allPokemon: Pokemon[]) => {
       };
     });
 
-    // Sort by score descending
     const sorted = scoresWithPokemon.sort((a, b) => b.score - a.score);
-
     setFinalRankings(sorted);
 
-    // Confidence: % of expected matches participated in
     const totalBattles = results.length;
     const expectedBattles = Math.max(1, totalBattles / allPokemon.length);
     const confidenceMap: Record<number, number> = {};
@@ -54,7 +49,6 @@ export const useRankings = (allPokemon: Pokemon[]) => {
   };
 
   const handleSaveRankings = () => {
-    // Save rankings somewhere if needed
     console.log("[useRankings] Rankings saved.", finalRankings);
   };
 

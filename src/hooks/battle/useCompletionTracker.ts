@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import { Pokemon } from "@/services/pokemon";
-import { BattleResult } from "./types";
+import { SingleBattle } from "./types";
 import { toast } from "@/hooks/use-toast";
 
 export const useCompletionTracker = (
   allPokemon: Pokemon[],
-  battleResults: BattleResult[],
+  battleResults: SingleBattle[],
   setRankingGenerated: React.Dispatch<React.SetStateAction<boolean>>,
-  generateRankings: (results: BattleResult[]) => void,
+  generateRankings: (results: SingleBattle[]) => void,
   setCompletionPercentage: React.Dispatch<React.SetStateAction<number>>
 ) => {
   const [currentRankingGenerated, setCurrentRankingGenerated] = useState(false);
@@ -46,14 +46,15 @@ export const useCompletionTracker = (
       toast({
         title: "Complete Ranking Achieved!",
         description: "You've completed enough battles to generate a full ranking of all Pokémon!",
+        variant: "default"
       });
     }
   };
 
   const getBattlesRemaining = () => {
-    const total = allPokemon.length;
-    const log2N = Math.log2(total);
-    const idealComparisons = Math.ceil(total * log2N);
+    const totalPokemon = allPokemon.length;
+    const log2N = Math.log2(totalPokemon);
+    const idealComparisons = Math.ceil(totalPokemon * log2N);
     const current = battleResults.length;
     return Math.max(0, idealComparisons - current);
   };

@@ -3,10 +3,15 @@ import { Pokemon } from "@/services/pokemon";
 // Keep "triplets" as the internal value for backward compatibility
 export type BattleType = "pairs" | "triplets";
 
-export interface BattleResult {
+// ✅ Represents one winner/loser pair
+export type SingleBattle = {
   winner: Pokemon;
   loser: Pokemon;
-}
+};
+
+// ✅ Represents an array of battle results (used throughout the app)
+export type BattleResult = SingleBattle[];
+
 
 export interface BattleState {
   selectedGeneration: number;
