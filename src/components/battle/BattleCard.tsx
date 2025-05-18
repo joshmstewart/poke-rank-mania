@@ -34,9 +34,13 @@ const BattleCard: React.FC<BattleCardProps> = memo(({
     setImageError(false);
     setRetryCount(0);
     
-    // Start with the preferred image type from settings
+    // Always start with the preferred image type from settings
     const preferredImageUrl = getPokemonImageUrl(pokemon.id, 0);
     setCurrentImageUrl(preferredImageUrl);
+    
+    // Preload the image
+    const preloadImage = new Image();
+    preloadImage.src = preferredImageUrl;
   }, [pokemon.id, pokemon.image]);
 
   // Create a stable click handler using useCallback
@@ -70,6 +74,7 @@ const BattleCard: React.FC<BattleCardProps> = memo(({
       
       // Try next fallback using the image utility function
       const nextUrl = getPokemonImageUrl(pokemon.id, retryCount + 1);
+      console.log(`Trying fallback URL: ${nextUrl} for ${pokemon.name}`);
       setCurrentImageUrl(nextUrl);
     } else {
       console.log(`All fallbacks failed for Pokemon: ${pokemon.name}`);

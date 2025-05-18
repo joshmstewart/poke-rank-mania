@@ -1,7 +1,7 @@
 import { Pokemon } from "../types";
 import { PokemonImageType, getPreferredImageType } from "@/components/settings/ImagePreferenceSelector";
 
-// Function to get image URL based on preference
+// Function to get image URL based on preference with improved fallback handling
 export function getPokemonImageUrl(id: number, fallbackLevel: number = 0): string {
   const preferredType = getPreferredImageType();
   
@@ -20,18 +20,25 @@ export function getPokemonImageUrl(id: number, fallbackLevel: number = 0): strin
     }
   };
 
-  // Generate fallback URLs
-  const fallbackOrder: PokemonImageType[] = ["official", "home", "default", "dream"];
+  // List of all image types for fallbacks
+  const allTypes: PokemonImageType[] = ["official", "home", "default", "dream"];
   
   // If we're at fallback level 0, use the preferred type
   if (fallbackLevel === 0) {
     return getImageUrl(preferredType);
   }
   
-  // Otherwise, use fallbacks in order (excluding the preferred type)
-  const filteredFallbacks = fallbackOrder.filter(type => type !== preferredType);
-  const fallbackIndex = Math.min(fallbackLevel - 1, filteredFallbacks.length - 1);
-  return getImageUrl(filteredFallbacks[fallbackIndex]);
+  // Otherwise, use fallbacks in a priority order, skipping the already-tried preferred type
+  let fallbackTypes = [...allTypes];
+  // Remove the preferred type from the list since it was already tried
+  fallbackTypes = fallbackTypes.filter(type => type !== preferredType);
+  
+  // Add the preferred type at the end as a last resort (if everything else fails)
+  fallbackTypes.push(preferredType);
+  
+  // Get the appropriate fallback
+  const fallbackIndex = Math.min(fallbackLevel - 1, fallbackTypes.length - 1);
+  return getImageUrl(fallbackTypes[fallbackIndex]);
 }
 
 // Function to fetch detailed Pokemon information

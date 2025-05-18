@@ -1,8 +1,6 @@
 
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -62,6 +60,9 @@ export const getPreferredImageUrl = (pokemonId: number): string => {
   return option ? option.url(pokemonId) : imageTypeOptions[1].url(pokemonId); // Fallback to official artwork
 };
 
+// Export image options for use elsewhere
+export const getImageTypeOptions = () => imageTypeOptions;
+
 interface ImagePreferenceSelectorProps {
   onClose?: () => void;
 }
@@ -87,6 +88,10 @@ const ImagePreferenceSelector: React.FC<ImagePreferenceSelectorProps> = ({ onClo
     if (onClose) onClose();
   };
 
+  const selectOption = (optionId: PokemonImageType) => {
+    setSelectedImageType(optionId);
+  };
+
   return (
     <Card className="max-w-2xl mx-auto">
       <CardHeader>
@@ -96,44 +101,40 @@ const ImagePreferenceSelector: React.FC<ImagePreferenceSelectorProps> = ({ onClo
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <RadioGroup 
-          value={selectedImageType} 
-          onValueChange={(value) => setSelectedImageType(value as PokemonImageType)}
-          className="grid gap-6"
-        >
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {imageTypeOptions.map((option) => (
-            <div key={option.id} className="flex items-center space-x-4">
-              <RadioGroupItem value={option.id} id={option.id} />
-              <div className="grid gap-2 w-full">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor={option.id} className="font-medium">
-                    {option.name}
-                  </Label>
-                  <div className="w-16 h-16 rounded bg-gray-100 overflow-hidden relative">
-                    {!imagesLoaded[option.id] && !imageErrors[option.id] && (
-                      <div className="absolute inset-0 flex items-center justify-center animate-pulse bg-gray-200">
-                        <span className="text-xs text-gray-400">Loading...</span>
-                      </div>
-                    )}
-                    <img 
-                      src={option.url(SAMPLE_POKEMON_ID)} 
-                      alt={`${option.name} example`}
-                      className={`w-full h-full object-contain ${imagesLoaded[option.id] ? 'opacity-100' : 'opacity-0'} transition-opacity duration-200`}
-                      onLoad={() => handleImageLoad(option.id)}
-                      onError={() => handleImageError(option.id)}
-                    />
-                    {imageErrors[option.id] && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
-                        <span className="text-xs text-red-500">Failed to load</span>
-                      </div>
-                    )}
+            <Button
+              key={option.id}
+              variant={selectedImageType === option.id ? "default" : "outline"}
+              className={`h-auto p-4 flex flex-col items-center justify-start gap-3 w-full ${selectedImageType === option.id ? 'ring-2 ring-primary' : ''}`}
+              onClick={() => selectOption(option.id)}
+            >
+              <div className="w-20 h-20 rounded bg-gray-100 overflow-hidden relative">
+                {!imagesLoaded[option.id] && !imageErrors[option.id] && (
+                  <div className="absolute inset-0 flex items-center justify-center animate-pulse bg-gray-200">
+                    <span className="text-xs text-gray-400">Loading...</span>
                   </div>
-                </div>
-                <p className="text-sm text-gray-500">{option.description}</p>
+                )}
+                <img 
+                  src={option.url(SAMPLE_POKEMON_ID)} 
+                  alt={`${option.name} example`}
+                  className={`w-full h-full object-contain ${imagesLoaded[option.id] ? 'opacity-100' : 'opacity-0'} transition-opacity duration-200`}
+                  onLoad={() => handleImageLoad(option.id)}
+                  onError={() => handleImageError(option.id)}
+                />
+                {imageErrors[option.id] && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+                    <span className="text-xs text-red-500">Failed to load</span>
+                  </div>
+                )}
               </div>
-            </div>
+              <div className="text-center">
+                <h3 className="font-medium">{option.name}</h3>
+                <p className="text-xs text-gray-500 mt-1">{option.description}</p>
+              </div>
+            </Button>
           ))}
-        </RadioGroup>
+        </div>
       </CardContent>
       <CardFooter className="flex justify-end space-x-2">
         {onClose && (

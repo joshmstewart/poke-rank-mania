@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import PokemonRanker from "@/components/PokemonRanker";
 import BattleMode from "@/components/BattleMode";
 import AppSessionManager from "@/components/AppSessionManager";
@@ -13,12 +13,42 @@ import {
   DialogTrigger
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Settings } from "lucide-react";
-import ImagePreferenceSelector from "@/components/settings/ImagePreferenceSelector";
+import { Settings, Image } from "lucide-react";
+import ImagePreferenceSelector, { getPreferredImageUrl, getImageTypeOptions } from "@/components/settings/ImagePreferenceSelector";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
+// Pikachu ID for preview
+const PIKACHU_ID = 25;
 
 const Index = () => {
   const [mode, setMode] = useState<"rank" | "battle">("battle"); // Default is battle mode
   const [imageSettingsOpen, setImageSettingsOpen] = useState(false);
+  const [previewImageUrl, setPreviewImageUrl] = useState<string>("");
+  const [previewLoaded, setPreviewLoaded] = useState(false);
+
+  // Load preview image when component mounts
+  useEffect(() => {
+    const updatePreviewImage = () => {
+      const url = getPreferredImageUrl(PIKACHU_ID);
+      setPreviewImageUrl(url);
+      setPreviewLoaded(false);
+    };
+
+    updatePreviewImage();
+
+    // Listen for storage changes to update preview if another tab changes the preference
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "pokemon-image-preference") {
+        updatePreviewImage();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -26,22 +56,50 @@ const Index = () => {
         <div className="flex items-center justify-between mb-4">
           <Logo />
           <div className="flex items-center gap-2">
-            <Dialog open={imageSettingsOpen} onOpenChange={setImageSettingsOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" size="sm" className="flex gap-1 items-center">
-                  <Settings className="h-4 w-4" /> Image Style
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl">
-                <DialogHeader>
-                  <DialogTitle>Image Style Preferences</DialogTitle>
-                  <DialogDescription>
-                    Choose your preferred Pokémon image style for the app.
-                  </DialogDescription>
-                </DialogHeader>
-                <ImagePreferenceSelector onClose={() => setImageSettingsOpen(false)} />
-              </DialogContent>
-            </Dialog>
+            <TooltipProvider>
+              <Tooltip>
+                <Dialog open={imageSettingsOpen} onOpenChange={setImageSettingsOpen}>
+                  <TooltipTrigger asChild>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="sm" className="flex gap-2 items-center h-10">
+                        <div className="flex items-center justify-center w-5 h-5 relative">
+                          {!previewLoaded && (
+                            <Image className="w-4 h-4 text-gray-400" />
+                          )}
+                          {previewImageUrl && (
+                            <img 
+                              src={previewImageUrl}
+                              alt="Current style"
+                              className={`w-full h-full object-contain ${previewLoaded ? 'opacity-100' : 'opacity-0'}`}
+                              onLoad={() => setPreviewLoaded(true)}
+                              onError={() => { /* Keep showing icon on error */ }}
+                            />
+                          )}
+                        </div>
+                        <span>Image Style</span>
+                      </Button>
+                    </DialogTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    Choose your preferred Pokémon image style
+                  </TooltipContent>
+                  <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                      <DialogTitle>Image Style Preferences</DialogTitle>
+                      <DialogDescription>
+                        Choose your preferred Pokémon image style for the app.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <ImagePreferenceSelector onClose={() => {
+                      setImageSettingsOpen(false);
+                      // Update preview after closing
+                      setPreviewImageUrl(getPreferredImageUrl(PIKACHU_ID));
+                      setPreviewLoaded(false);
+                    }} />
+                  </DialogContent>
+                </Dialog>
+              </Tooltip>
+            </TooltipProvider>
             <AppSessionManager />
           </div>
         </div>

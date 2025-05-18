@@ -40,7 +40,7 @@ const PokemonCard = ({ pokemon, isDragging, viewMode = "list", compact }: Pokemo
   const [imageError, setImageError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const maxRetries = 3;
-  const [currentImageUrl, setCurrentImageUrl] = useState<string>(pokemon.image);
+  const [currentImageUrl, setCurrentImageUrl] = useState<string>("");
 
   // Reset image states when pokemon changes
   useEffect(() => {
@@ -49,7 +49,12 @@ const PokemonCard = ({ pokemon, isDragging, viewMode = "list", compact }: Pokemo
     setRetryCount(0);
     
     // Always start with the preferred image type
-    setCurrentImageUrl(getPokemonImageUrl(pokemon.id, 0));
+    const preferredImageUrl = getPokemonImageUrl(pokemon.id, 0);
+    setCurrentImageUrl(preferredImageUrl);
+    
+    // Preload the image
+    const preloadImage = new Image();
+    preloadImage.src = preferredImageUrl;
   }, [pokemon.id, pokemon.image]);
 
   // Handle image load success
@@ -67,32 +72,13 @@ const PokemonCard = ({ pokemon, isDragging, viewMode = "list", compact }: Pokemo
       
       // Immediately try the next fallback URL using our utility function
       const nextUrl = getPokemonImageUrl(pokemon.id, retryCount + 1);
+      console.log(`Trying fallback URL for ${pokemon.name}: ${nextUrl}`);
       setCurrentImageUrl(nextUrl);
     } else {
       // After max retries, stay in error state
+      console.log(`All fallbacks failed for Pokemon: ${pokemon.name}`);
       setImageError(true);
     }
-  };
-
-  // Generate fallback image URL based on retry count
-  const getFallbackImageUrl = (retry: number): string => {
-    if (!pokemon || !pokemon.id) return '';
-    
-    // Fallback sources in order of preference
-    const fallbacks = [
-      // Original URL (already tried at this point)
-      pokemon.image,
-      // PokeAPI official artwork
-      `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pokemon.id}.png`,
-      // Home artwork
-      `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/home/${pokemon.id}.png`,
-      // Dream world artwork
-      `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/dream-world/${pokemon.id}.svg`,
-      // Default sprite as last resort
-      `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemon.id}.png`
-    ];
-    
-    return fallbacks[Math.min(retry, fallbacks.length - 1)];
   };
 
   if (viewMode === "grid") {
