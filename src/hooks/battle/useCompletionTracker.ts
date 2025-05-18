@@ -5,53 +5,70 @@ import { toast } from "@/hooks/use-toast";
 
 export const useCompletionTracker = (
   allPokemon: Pokemon[],
-  battleResults: BattleResult,
+  battleResults: BattleResult[],
   setRankingGenerated: React.Dispatch<React.SetStateAction<boolean>>,
-  generateRankings: (results: BattleResult) => void,
+  generateRankings: (results: BattleResult[]) => void,
   setCompletionPercentage: React.Dispatch<React.SetStateAction<number>>
 ) => {
   const [currentRankingGenerated, setCurrentRankingGenerated] = useState(false);
 
   useEffect(() => {
     calculateCompletionPercentage();
-  }, [battleResults?.length]);
+  }, [battleResults?.length, allPokemon?.length]);
 
   const calculateCompletionPercentage = () => {
     const totalPokemon = allPokemon?.length || 0;
-    if (totalPokemon <= 1) {
+    const currentComparisons = battleResults?.length || 0;
+
+    if (!totalPokemon || totalPokemon <= 1) {
       setCompletionPercentage(100);
       return;
     }
 
-    // Build a map of each Pokémon ID → set of opponents it's been compared to
-    const comparisonMap: Map<number, Set<number>> = new Map();
+    // Diagnostic logging
+    console.log(`[useCompletionTracker] totalPokemon: ${totalPokemon}`);
+    console.log(`[useCompletionTracker] currentComparisons: ${currentComparisons}`);
+    console.log(`[useCompletionTracker] first battleResult:`, battleResults[0]);
 
-    for (const { winner, loser } of battleResults) {
-      if (!comparisonMap.has(winner.id)) {
-        comparisonMap.set(winner.id, new Set());
+    // Build a map of which Pokémon have been directly compared
+    const comparisonMap = new Map<number, Set<number>>();
+
+    for (const result of battleResults) {
+      const winnerId = result.winner.id;
+      const loserId = result.loser.id;
+
+      if (!comparisonMap.has(winnerId)) {
+        comparisonMap.set(winnerId, new Set());
       }
-      if (!comparisonMap.has(loser.id)) {
-        comparisonMap.set(loser.id, new Set());
+      if (!comparisonMap.has(loserId)) {
+        comparisonMap.set(loserId, new Set());
       }
-      comparisonMap.get(winner.id)!.add(loser.id);
-      comparisonMap.get(loser.id)!.add(winner.id);
+
+      comparisonMap.get(winnerId)!.add(loserId);
+      comparisonMap.get(loserId)!.add(winnerId);
     }
 
-    // Count how many Pokémon have enough comparisons
-    const threshold = Math.floor(totalPokemon * 0.3); // e.g. must be compared to 30% of others
+    const threshold = Math.ceil(Math.log2(totalPokemon));
     let countAboveThreshold = 0;
 
     for (const pokemon of allPokemon) {
       const comparedTo = comparisonMap.get(pokemon.id);
-      if (comparedTo && comparedTo.size >= threshold) {
+      const comparedCount = comparedTo?.size || 0;
+      if (comparedCount >= threshold) {
         countAboveThreshold++;
       }
+
+      console.log(
+        `[useCompletionTracker] ${pokemon.name} (${pokemon.id}) has been compared to ${comparedCount} others`
+      );
     }
 
-    const percentage = Math.min(100, Math.round((countAboveThreshold / totalPokemon) * 100));
+    const percentage = Math.round((countAboveThreshold / totalPokemon) * 100);
+    console.log(`[useCompletionTracker] ${countAboveThreshold}/${totalPokemon} pass threshold`);
     setCompletionPercentage(percentage);
 
     if (percentage >= 100 && !currentRankingGenerated) {
+      console.log("[useCompletionTracker] 100% completion reached - generating final rankings");
       generateRankings(battleResults);
       setRankingGenerated(true);
       setCurrentRankingGenerated(true);
@@ -59,33 +76,34 @@ export const useCompletionTracker = (
       toast({
         title: "Complete Ranking Achieved!",
         description: "You've completed enough battles to generate a full ranking of all Pokémon!",
+        variant: "default"
       });
     }
   };
 
   const getBattlesRemaining = () => {
     const totalPokemon = allPokemon?.length || 0;
-    if (totalPokemon <= 1) return 0;
+    const threshold = Math.ceil(Math.log2(totalPokemon));
+    const comparisonMap = new Map<number, Set<number>>();
 
-    const threshold = Math.floor(totalPokemon * 0.3);
-    const comparisonMap: Map<number, Set<number>> = new Map();
+    for (const result of battleResults) {
+      const winnerId = result.winner.id;
+      const loserId = result.loser.id;
 
-    for (const { winner, loser } of battleResults) {
-      if (!comparisonMap.has(winner.id)) {
-        comparisonMap.set(winner.id, new Set());
-      }
-      if (!comparisonMap.has(loser.id)) {
-        comparisonMap.set(loser.id, new Set());
-      }
-      comparisonMap.get(winner.id)!.add(loser.id);
-      comparisonMap.get(loser.id)!.add(winner.id);
+      if (!comparisonMap.has(winnerId)) comparisonMap.set(winnerId, new Set());
+      if (!comparisonMap.has(loserId)) comparisonMap.set(loserId, new Set());
+
+      comparisonMap.get(winnerId)!.add(loserId);
+      comparisonMap.get(loserId)!.add(winnerId);
     }
 
     let remaining = 0;
+
     for (const pokemon of allPokemon) {
-      const comparedTo = comparisonMap.get(pokemon.id)?.size || 0;
-      if (comparedTo < threshold) {
-        remaining += threshold - comparedTo;
+      const comparedTo = comparisonMap.get(pokemon.id);
+      const comparedCount = comparedTo?.size || 0;
+      if (comparedCount < threshold) {
+        remaining += threshold - comparedCount;
       }
     }
 
