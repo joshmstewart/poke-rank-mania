@@ -3,6 +3,7 @@ import React, { memo, useCallback, useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Pokemon } from "@/services/pokemon";
 import { MousePointerClick } from "lucide-react";
+import { getPokemonImageUrl } from "@/services/pokemon/api/utils";
 
 interface BattleCardProps {
   pokemon: Pokemon;
@@ -24,15 +25,18 @@ const BattleCard: React.FC<BattleCardProps> = memo(({
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
-  const [currentImageUrl, setCurrentImageUrl] = useState<string>(pokemon.image);
+  const [currentImageUrl, setCurrentImageUrl] = useState<string>("");
   const maxRetries = 3;
 
-  // Reset image states when pokemon changes
+  // Reset image states and use preferred image type when pokemon changes
   useEffect(() => {
     setImageLoaded(false);
     setImageError(false);
     setRetryCount(0);
-    setCurrentImageUrl(pokemon.image);
+    
+    // Start with the preferred image type from settings
+    const preferredImageUrl = getPokemonImageUrl(pokemon.id, 0);
+    setCurrentImageUrl(preferredImageUrl);
   }, [pokemon.id, pokemon.image]);
 
   // Create a stable click handler using useCallback
@@ -64,34 +68,13 @@ const BattleCard: React.FC<BattleCardProps> = memo(({
       setRetryCount(prev => prev + 1);
       setImageError(true);
       
-      // Try next fallback immediately
-      const nextUrl = getFallbackImageUrl(retryCount + 1);
+      // Try next fallback using the image utility function
+      const nextUrl = getPokemonImageUrl(pokemon.id, retryCount + 1);
       setCurrentImageUrl(nextUrl);
     } else {
       console.log(`All fallbacks failed for Pokemon: ${pokemon.name}`);
       setImageError(true);
     }
-  };
-
-  // Generate fallback image URL based on retry count
-  const getFallbackImageUrl = (retry: number): string => {
-    if (!pokemon || !pokemon.id) return '';
-    
-    // Fallback sources in order of preference
-    const fallbacks = [
-      // Original URL (already tried at this point)
-      pokemon.image,
-      // PokeAPI official artwork
-      `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pokemon.id}.png`,
-      // Home artwork
-      `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/home/${pokemon.id}.png`,
-      // Dream world artwork 
-      `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/dream-world/${pokemon.id}.svg`,
-      // Default sprite as last resort
-      `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemon.id}.png`
-    ];
-    
-    return fallbacks[Math.min(retry, fallbacks.length - 1)];
   };
 
   // Determine card styling based on selection and processing state
