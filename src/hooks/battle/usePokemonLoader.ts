@@ -63,31 +63,32 @@ export const usePokemonLoader = ({
       }
       
       // Wait for states to update before starting a new battle
-      setTimeout(() => {
-        // Start the first battle or continue from previous battle
-        if (Array.isArray(pokemon) && pokemon.length > 0 && typeof pokemon[0] === "object" && "id" in pokemon[0]) {
-          console.log("✅ Starting initial battle with", pokemon.length, "Pokémon");
-          try {
-            startNewBattle(battleType);
-          } catch (e) {
-            console.error("Error starting initial battle:", e);
-            toast({
-              title: "Error",
-              description: "Could not start battle. Please try refreshing the page.",
-              variant: "destructive"
-            });
-          }
-        } else {
-          console.error("❌ Invalid Pokémon data:", pokemon);
-          toast({
-            title: "Error",
-            description: "Invalid Pokémon data received. Please refresh or try again.",
-            variant: "destructive"
-          });
-        }
-        
-        setIsLoading(false);
-      }, 100);
+     setTimeout(() => {
+  // Start the first battle or continue from previous battle
+  if (Array.isArray(pokemon) && pokemon.length > 0 && typeof pokemon[0] === "object" && "id" in pokemon[0]) {
+    console.log("✅ Starting initial battle with", pokemon.length, "Pokémon");
+    try {
+      startNewBattle(pokemon, battleType);
+    } catch (e) {
+      console.error("Error starting initial battle:", e);
+      toast({
+        title: "Error",
+        description: "Could not start battle. Please try refreshing the page.",
+        variant: "destructive"
+      });
+    }
+  } else {
+    console.error("❌ Invalid Pokémon data:", pokemon);
+    toast({
+      title: "Error",
+      description: "Invalid Pokémon data received. Please refresh or try again.",
+      variant: "destructive"
+    });
+  }
+
+  setIsLoading(false);
+}, 100);
+
       
       return pokemon;
     } catch (error) {
