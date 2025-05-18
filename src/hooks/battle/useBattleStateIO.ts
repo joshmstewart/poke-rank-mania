@@ -19,7 +19,7 @@ export interface UseBattleStateIOProps {
   setShowingMilestone: React.Dispatch<React.SetStateAction<boolean>>;
   setCompletionPercentage: React.Dispatch<React.SetStateAction<number>>;
   setSelectedPokemon: React.Dispatch<React.SetStateAction<number[]>>;
-  startNewBattle: (battleType: BattleType) => void; // Updated to match the actual signature
+  startNewBattle: (pokemonList: Pokemon[], battleType: BattleType) => void;
   battleType: BattleType;
   allPokemon: Pokemon[];
   battleResults: BattleResult;
