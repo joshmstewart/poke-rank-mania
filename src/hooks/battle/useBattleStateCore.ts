@@ -50,7 +50,8 @@ export const useBattleStateCore = () => {
     setShowingMilestone: progressState.setShowingMilestone,
     setCompletionPercentage: progressState.setCompletionPercentage,
     setSelectedPokemon: selectionState.setSelectedPokemon,
-    startNewBattle: startNewBattleAdapter, // Use our adapter that matches the expected signature
+    startNewBattle: startNewBattle,
+
     battleType: battleTypeState.battleType,
     allPokemon: allPokemonSafe,
     battleResults: selectionState.battleResults
@@ -69,7 +70,8 @@ export const useBattleStateCore = () => {
     setBattleHistory: selectionState.setBattleHistory,
     setShowingMilestone: progressState.setShowingMilestone,
     setCompletionPercentage: progressState.setCompletionPercentage,
-    startNewBattle: startNewBattleAdapter, // Use our adapter here too
+   startNewBattle: startNewBattle,
+
     allPokemon: allPokemonSafe,
     generateRankings,
     battleType: battleTypeState.battleType
@@ -150,6 +152,7 @@ export const useBattleStateCore = () => {
     goBack,
     getBattlesRemaining,
     loadPokemon,
-    startNewBattle: startNewBattleAdapter, // Expose our adapter through the return value
+  startNewBattle: startNewBattle,
+
   };
 };
