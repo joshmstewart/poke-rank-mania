@@ -70,7 +70,9 @@ const startNewBattle = (pokemonList: Pokemon[], battleType: BattleType) => {
     setBattleHistory: selectionState.setBattleHistory,
     setShowingMilestone: progressState.setShowingMilestone,
     setCompletionPercentage: progressState.setCompletionPercentage,
-   startNewBattle: startNewBattle,
+ startNewBattle: startNewBattle,
+
+
 
     allPokemon: allPokemonSafe,
     generateRankings,
