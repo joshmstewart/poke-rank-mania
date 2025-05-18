@@ -4,7 +4,14 @@ import PokemonRanker from "@/components/PokemonRanker";
 import BattleMode from "@/components/BattleMode";
 import AppSessionManager from "@/components/AppSessionManager";
 import Logo from "@/components/ui/Logo";
-import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogHeader } from "@/components/ui/dialog";
+import { 
+  Dialog,
+  DialogContent, 
+  DialogTitle, 
+  DialogDescription, 
+  DialogHeader,
+  DialogTrigger
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Settings } from "lucide-react";
 import ImagePreferenceSelector from "@/components/settings/ImagePreferenceSelector";
