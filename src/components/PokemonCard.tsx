@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Pokemon } from "@/services/pokemonService";
+import { Pokemon } from "@/services/pokemon";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 
 interface PokemonCardProps {
@@ -39,13 +39,15 @@ const PokemonCard = ({ pokemon, isDragging, viewMode = "list", compact }: Pokemo
   const [imageError, setImageError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const maxRetries = 3;
+  const [currentImageUrl, setCurrentImageUrl] = useState<string>(pokemon.image);
 
   // Reset image states when pokemon changes
   useEffect(() => {
     setImageLoaded(false);
     setImageError(false);
     setRetryCount(0);
-  }, [pokemon.id]);
+    setCurrentImageUrl(pokemon.image);
+  }, [pokemon.id, pokemon.image]);
 
   // Handle image load success
   const handleImageLoad = () => {
@@ -56,40 +58,40 @@ const PokemonCard = ({ pokemon, isDragging, viewMode = "list", compact }: Pokemo
   // Handle image load error with more robust retry logic
   const handleImageError = () => {
     if (retryCount < maxRetries) {
-      // Try to reload with a small increasing delay
-      const delay = 1000 * (retryCount + 1);
+      // Try a different image source
+      setRetryCount(prev => prev + 1);
       setImageError(true);
       
-      setTimeout(() => {
-        setRetryCount(prev => prev + 1);
-        // Force image reload by adding timestamp to URL
-        setImageError(false);
-      }, delay);
+      // Immediately try the next fallback URL
+      const nextUrl = getFallbackImageUrl(retryCount + 1);
+      setCurrentImageUrl(nextUrl);
+      console.log(`Trying fallback #${retryCount + 1} for Pokemon #${pokemon.id}: ${nextUrl}`);
     } else {
       // After max retries, stay in error state
       setImageError(true);
+      console.log(`All fallbacks failed for Pokemon #${pokemon.id}`);
     }
   };
 
-  // Generate fallback image URL with more options
-  const getImageUrl = () => {
+  // Generate fallback image URL based on retry count
+  const getFallbackImageUrl = (retry: number): string => {
     if (!pokemon || !pokemon.id) return '';
     
-    if (imageError) {
-      // Try different fallback sources
-      const fallbacks = [
-        // PokeAPI official artwork
-        `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pokemon.id}.png`,
-        // Default sprite as last resort
-        `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemon.id}.png`
-      ];
-      
-      // Use different fallback based on retry count
-      return fallbacks[Math.min(retryCount - 1, fallbacks.length - 1)];
-    }
+    // Fallback sources in order of preference
+    const fallbacks = [
+      // Original URL (already tried at this point)
+      pokemon.image,
+      // PokeAPI official artwork
+      `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pokemon.id}.png`,
+      // Home artwork
+      `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/home/${pokemon.id}.png`,
+      // Dream world artwork
+      `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/dream-world/${pokemon.id}.svg`,
+      // Default sprite as last resort
+      `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemon.id}.png`
+    ];
     
-    // Try the original image URL
-    return pokemon.image;
+    return fallbacks[Math.min(retry, fallbacks.length - 1)];
   };
 
   if (viewMode === "grid") {
@@ -104,7 +106,7 @@ const PokemonCard = ({ pokemon, isDragging, viewMode = "list", compact }: Pokemo
             <div className="animate-pulse bg-gray-200 w-full h-full absolute"></div>
           )}
           <img 
-            src={getImageUrl()} 
+            src={currentImageUrl} 
             alt={pokemon.name}
             className={`w-full h-full object-contain ${!imageLoaded ? 'opacity-0' : 'opacity-100'} transition-opacity duration-200`}
             loading="lazy"
@@ -114,7 +116,7 @@ const PokemonCard = ({ pokemon, isDragging, viewMode = "list", compact }: Pokemo
           {imageError && retryCount >= maxRetries && (
             <div className="absolute inset-0 flex items-center justify-center bg-gray-100 bg-opacity-80">
               <div className="text-sm text-gray-500 text-center p-2">
-                Unable to load image
+                {pokemon.name}<br/>(#{pokemon.id})
               </div>
             </div>
           )}
@@ -142,7 +144,7 @@ const PokemonCard = ({ pokemon, isDragging, viewMode = "list", compact }: Pokemo
               <div className="animate-pulse bg-gray-200 w-full h-full absolute"></div>
             )}
             <img 
-              src={getImageUrl()} 
+              src={currentImageUrl} 
               alt={pokemon.name} 
               className={`w-full h-full object-contain p-1 ${!imageLoaded ? 'opacity-0' : 'opacity-100'} transition-opacity duration-200`}
               loading="lazy"
@@ -151,7 +153,7 @@ const PokemonCard = ({ pokemon, isDragging, viewMode = "list", compact }: Pokemo
             />
             {imageError && retryCount >= maxRetries && (
               <div className="absolute inset-0 flex items-center justify-center bg-gray-100 bg-opacity-80">
-                <div className="text-xs text-gray-500">Unable to load</div>
+                <div className="text-xs text-gray-500">{pokemon.name}<br/>(#{pokemon.id})</div>
               </div>
             )}
           </AspectRatio>

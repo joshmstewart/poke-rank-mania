@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import {
   Table,
   TableBody,
@@ -34,6 +34,59 @@ interface RankingResultsProps {
   rankedPokemon: Pokemon[];
 }
 
+interface ImageWithFallbackProps {
+  pokemonId: number;
+  pokemonName: string;
+  initialSrc: string;
+}
+
+// Component for image with fallbacks
+const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({ pokemonId, pokemonName, initialSrc }) => {
+  const [currentSrc, setCurrentSrc] = useState<string>(initialSrc);
+  const [retryCount, setRetryCount] = useState(0);
+  const [imageError, setImageError] = useState(false);
+  const maxRetries = 3;
+
+  const handleImageError = () => {
+    if (retryCount < maxRetries) {
+      setRetryCount(prev => prev + 1);
+      
+      const fallbacks = [
+        // Original URL (already failed)
+        initialSrc,
+        // PokeAPI official artwork
+        `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pokemonId}.png`,
+        // Home artwork
+        `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/home/${pokemonId}.png`,
+        // Default sprite as last resort
+        `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemonId}.png`
+      ];
+      
+      const nextSrc = fallbacks[Math.min(retryCount + 1, fallbacks.length - 1)];
+      setCurrentSrc(nextSrc);
+    } else {
+      setImageError(true);
+    }
+  };
+
+  if (imageError) {
+    return (
+      <div className="w-10 h-10 bg-gray-100 rounded flex items-center justify-center text-xs text-gray-500">
+        #{pokemonId}
+      </div>
+    );
+  }
+
+  return (
+    <img 
+      src={currentSrc} 
+      alt={pokemonName} 
+      className="w-full h-full object-contain"
+      onError={handleImageError}
+    />
+  );
+};
+
 export const RankingResults: React.FC<RankingResultsProps> = ({ rankedPokemon }) => {
   return (
     <div className="bg-white rounded-lg shadow p-6">
@@ -61,10 +114,10 @@ export const RankingResults: React.FC<RankingResultsProps> = ({ rankedPokemon })
                   <TableCell className="font-bold">{index + 1}</TableCell>
                   <TableCell>
                     <div className="w-10 h-10">
-                      <img 
-                        src={pokemon.image} 
-                        alt={pokemon.name} 
-                        className="w-full h-full object-contain"
+                      <ImageWithFallback 
+                        pokemonId={pokemon.id}
+                        pokemonName={pokemon.name}
+                        initialSrc={pokemon.image}
                       />
                     </div>
                   </TableCell>

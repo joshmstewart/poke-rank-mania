@@ -15,6 +15,64 @@ interface RankingDisplayProps {
   onSaveRankings: () => void;
 }
 
+// Component for Rank image with fallbacks
+const RankImageWithFallback: React.FC<{ pokemon: Pokemon, size?: string }> = ({ pokemon, size = "w-full h-24" }) => {
+  const [currentSrc, setCurrentSrc] = useState<string>(pokemon.image);
+  const [retryCount, setRetryCount] = useState(0);
+  const [imageError, setImageError] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const maxRetries = 3;
+
+  const handleImageError = () => {
+    if (retryCount < maxRetries) {
+      setRetryCount(prev => prev + 1);
+      
+      const fallbacks = [
+        // Original URL (already failed)
+        pokemon.image,
+        // PokeAPI official artwork
+        `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pokemon.id}.png`,
+        // Home artwork
+        `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/home/${pokemon.id}.png`,
+        // Default sprite as last resort
+        `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemon.id}.png`
+      ];
+      
+      const nextSrc = fallbacks[Math.min(retryCount + 1, fallbacks.length - 1)];
+      setCurrentSrc(nextSrc);
+    } else {
+      setImageError(true);
+    }
+  };
+
+  const handleImageLoad = () => {
+    setImageLoaded(true);
+  };
+
+  return (
+    <div className={`${size} relative`}>
+      {!imageLoaded && !imageError && (
+        <div className="absolute inset-0 bg-gray-100 animate-pulse rounded"></div>
+      )}
+      {!imageError ? (
+        <img 
+          src={currentSrc} 
+          alt={pokemon.name} 
+          className={`w-full h-full object-contain transition-opacity duration-200 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+          onError={handleImageError}
+          onLoad={handleImageLoad}
+          loading="lazy"
+        />
+      ) : (
+        <div className="w-full h-full bg-gray-100 rounded flex flex-col items-center justify-center p-2">
+          <div className="font-medium text-sm">{pokemon.name}</div>
+          <div className="text-xs text-gray-500">#{pokemon.id}</div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const RankingDisplay: React.FC<RankingDisplayProps> = ({
   finalRankings,
   battlesCompleted,
@@ -100,22 +158,13 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
                             #{index + 4}
                           </div>
                           <div className="p-2">
-                            <img 
-                              src={pokemon.image} 
-                              alt={pokemon.name} 
-                              className="w-full h-24 object-contain mx-auto" 
-                              loading="lazy"
-                            />
+                            <RankImageWithFallback pokemon={pokemon} />
                           </div>
                         </div>
                       </TooltipTrigger>
                       <TooltipContent className="p-3 max-w-xs bg-white shadow-xl border rounded-lg">
                         <div className="flex items-center gap-3">
-                          <img 
-                            src={pokemon.image} 
-                            alt={pokemon.name} 
-                            className="w-10 h-10 object-contain" 
-                          />
+                          <RankImageWithFallback pokemon={pokemon} size="w-10 h-10" />
                           <div>
                             <div className="font-medium">{pokemon.name}</div>
                             <div className="text-xs text-gray-500">#{pokemon.id}</div>

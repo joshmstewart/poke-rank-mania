@@ -21,18 +21,21 @@ export const useBattleStateCore = () => {
   const selectionState = useBattleSelectionState();
   
   // Initialize all variables before using them in other hooks
-const allPokemonSafe = Array.isArray(selectionState.allPokemon) && selectionState.allPokemon.length > 0 ? 
-  selectionState.allPokemon : [];
+  const allPokemonSafe = Array.isArray(selectionState.allPokemon) && selectionState.allPokemon.length > 0 ? 
+    selectionState.allPokemon : [];
 
-const startNewBattle = (pokemonList: Pokemon[], battleType: BattleType) => {
-  selectionState.setAllPokemon(pokemonList);
-  selectionState.startNewBattle(battleType);
-};
+  // Define a full function for direct start with Pokemon list
+  const startNewBattle = (pokemonList: Pokemon[], battleType: BattleType) => {
+    console.log("startNewBattle with pokemonList.length:", pokemonList.length, "and type:", battleType);
+    selectionState.setAllPokemon(pokemonList);
+    selectionState.startNewBattle(battleType);
+  };
 
-  const startNewBattleOneArg = (battleType: BattleType) => {
-  selectionState.startNewBattle(battleType);
-};
-
+  // Define an adapter function for the single-argument version
+  const startNewBattleAdapter = (battleType: BattleType) => {
+    console.log("startNewBattleAdapter with type:", battleType);
+    selectionState.startNewBattle(battleType);
+  };
     
   // IO related functionality (loading Pokemon, storage, etc)
   const { 
@@ -55,7 +58,6 @@ const startNewBattle = (pokemonList: Pokemon[], battleType: BattleType) => {
     setCompletionPercentage: progressState.setCompletionPercentage,
     setSelectedPokemon: selectionState.setSelectedPokemon,
     startNewBattle: startNewBattle,
-
     battleType: battleTypeState.battleType,
     allPokemon: allPokemonSafe,
     battleResults: selectionState.battleResults
@@ -74,11 +76,7 @@ const startNewBattle = (pokemonList: Pokemon[], battleType: BattleType) => {
     setBattleHistory: selectionState.setBattleHistory,
     setShowingMilestone: progressState.setShowingMilestone,
     setCompletionPercentage: progressState.setCompletionPercentage,
- startNewBattle: startNewBattleOneArg,
-
-
-
-
+    startNewBattle: startNewBattleAdapter,
     allPokemon: allPokemonSafe,
     generateRankings,
     battleType: battleTypeState.battleType
@@ -105,7 +103,6 @@ const startNewBattle = (pokemonList: Pokemon[], battleType: BattleType) => {
     loadPokemon,
     calculateCompletionPercentage
   });
-
   
   // Add battle manager for selection and interaction handling
   const {
@@ -120,8 +117,7 @@ const startNewBattle = (pokemonList: Pokemon[], battleType: BattleType) => {
     selectionState.battlesCompleted,
     selectionState.setBattlesCompleted,
     allPokemonSafe,
-    startNewBattleOneArg,
-
+    startNewBattleAdapter,
     progressState.setShowingMilestone,
     progressState.milestones,
     generateRankings,
@@ -161,7 +157,6 @@ const startNewBattle = (pokemonList: Pokemon[], battleType: BattleType) => {
     goBack,
     getBattlesRemaining,
     loadPokemon,
-  startNewBattle: startNewBattle,
-
+    startNewBattle: startNewBattle,
   };
 };

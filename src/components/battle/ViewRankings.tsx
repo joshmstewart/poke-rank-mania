@@ -12,6 +12,62 @@ interface ViewRankingsProps {
   onClose: () => void;
 }
 
+// Component for image with fallbacks
+const RankingPokemonImage: React.FC<{ pokemon: Pokemon }> = ({ pokemon }) => {
+  const [currentSrc, setCurrentSrc] = useState<string>(pokemon.image);
+  const [retryCount, setRetryCount] = useState(0);
+  const [imageError, setImageError] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const maxRetries = 3;
+
+  const handleImageError = () => {
+    if (retryCount < maxRetries) {
+      setRetryCount(prev => prev + 1);
+      
+      const fallbacks = [
+        // Original URL (already failed)
+        pokemon.image,
+        // PokeAPI official artwork
+        `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pokemon.id}.png`,
+        // Home artwork
+        `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/home/${pokemon.id}.png`,
+        // Default sprite as last resort
+        `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemon.id}.png`
+      ];
+      
+      const nextSrc = fallbacks[Math.min(retryCount + 1, fallbacks.length - 1)];
+      setCurrentSrc(nextSrc);
+    } else {
+      setImageError(true);
+    }
+  };
+
+  const handleImageLoad = () => {
+    setImageLoaded(true);
+  };
+
+  return (
+    <div className="w-10 h-10 flex-shrink-0 relative">
+      {!imageLoaded && !imageError && (
+        <div className="absolute inset-0 bg-gray-100 animate-pulse rounded"></div>
+      )}
+      {!imageError ? (
+        <img 
+          src={currentSrc} 
+          alt={pokemon.name} 
+          className={`w-full h-full object-contain transition-opacity duration-200 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+          onError={handleImageError}
+          onLoad={handleImageLoad}
+        />
+      ) : (
+        <div className="w-full h-full bg-gray-100 rounded flex items-center justify-center text-xs text-gray-500 p-1">
+          #{pokemon.id}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const ViewRankings: React.FC<ViewRankingsProps> = ({ selectedGeneration: defaultGeneration, onClose }) => {
   const [rankings, setRankings] = useState<Pokemon[]>([]);
   const [selectedGeneration, setSelectedGeneration] = useState<number>(defaultGeneration || 0);
@@ -85,13 +141,7 @@ const ViewRankings: React.FC<ViewRankingsProps> = ({ selectedGeneration: default
             {rankings.map((pokemon, index) => (
               <div key={pokemon.id} className="flex items-center p-2 border rounded-md">
                 <div className="font-bold text-sm mr-2">#{index + 1}</div>
-                <div className="w-10 h-10 flex-shrink-0">
-                  <img 
-                    src={pokemon.image} 
-                    alt={pokemon.name} 
-                    className="w-full h-full object-contain" 
-                  />
-                </div>
+                <RankingPokemonImage pokemon={pokemon} />
                 <div className="ml-2 overflow-hidden">
                   <div className="font-medium text-sm truncate">{pokemon.name}</div>
                   <div className="text-xs text-gray-500">#{pokemon.id}</div>
