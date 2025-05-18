@@ -1,0 +1,152 @@
+
+import React, { useState, useEffect } from "react";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+
+// Sample Pokémon ID to show as example
+const SAMPLE_POKEMON_ID = 25; // Pikachu
+
+// Image type options
+export type PokemonImageType = "default" | "official" | "home" | "dream";
+
+interface ImageTypeOption {
+  id: PokemonImageType;
+  name: string;
+  url: (id: number) => string;
+  description: string;
+}
+
+const imageTypeOptions: ImageTypeOption[] = [
+  {
+    id: "default",
+    name: "Default Sprite",
+    url: (id) => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`,
+    description: "Simple pixel art sprite from the games"
+  },
+  {
+    id: "official",
+    name: "Official Artwork",
+    url: (id) => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`,
+    description: "High quality official artwork"
+  },
+  {
+    id: "home",
+    name: "Home Artwork",
+    url: (id) => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/home/${id}.png`,
+    description: "Modern 3D style from Pokémon Home"
+  },
+  {
+    id: "dream",
+    name: "Dream World",
+    url: (id) => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/dream-world/${id}.svg`,
+    description: "Vector artwork from Dream World (SVG format)"
+  }
+];
+
+// Get the preferred image type from local storage
+export const getPreferredImageType = (): PokemonImageType => {
+  const stored = localStorage.getItem("pokemon-image-preference");
+  if (stored && (stored === "default" || stored === "official" || stored === "home" || stored === "dream")) {
+    return stored;
+  }
+  return "official"; // Default to official artwork
+};
+
+// Get URL for preferred image type
+export const getPreferredImageUrl = (pokemonId: number): string => {
+  const preference = getPreferredImageType();
+  const option = imageTypeOptions.find(opt => opt.id === preference);
+  return option ? option.url(pokemonId) : imageTypeOptions[1].url(pokemonId); // Fallback to official artwork
+};
+
+interface ImagePreferenceSelectorProps {
+  onClose?: () => void;
+}
+
+const ImagePreferenceSelector: React.FC<ImagePreferenceSelectorProps> = ({ onClose }) => {
+  const [selectedImageType, setSelectedImageType] = useState<PokemonImageType>(getPreferredImageType());
+  const [imagesLoaded, setImagesLoaded] = useState<Record<string, boolean>>({});
+  const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
+
+  const handleImageLoad = (id: string) => {
+    setImagesLoaded(prev => ({ ...prev, [id]: true }));
+  };
+
+  const handleImageError = (id: string) => {
+    setImageErrors(prev => ({ ...prev, [id]: true }));
+  };
+
+  const handleSave = () => {
+    localStorage.setItem("pokemon-image-preference", selectedImageType);
+    toast.success("Image preference saved!", {
+      description: "Your preferred Pokémon image style has been saved."
+    });
+    if (onClose) onClose();
+  };
+
+  return (
+    <Card className="max-w-2xl mx-auto">
+      <CardHeader>
+        <CardTitle>Choose Preferred Pokémon Image Style</CardTitle>
+        <CardDescription>
+          Select which style of Pokémon images you prefer to see throughout the app
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <RadioGroup 
+          value={selectedImageType} 
+          onValueChange={(value) => setSelectedImageType(value as PokemonImageType)}
+          className="grid gap-6"
+        >
+          {imageTypeOptions.map((option) => (
+            <div key={option.id} className="flex items-center space-x-4">
+              <RadioGroupItem value={option.id} id={option.id} />
+              <div className="grid gap-2 w-full">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor={option.id} className="font-medium">
+                    {option.name}
+                  </Label>
+                  <div className="w-16 h-16 rounded bg-gray-100 overflow-hidden relative">
+                    {!imagesLoaded[option.id] && !imageErrors[option.id] && (
+                      <div className="absolute inset-0 flex items-center justify-center animate-pulse bg-gray-200">
+                        <span className="text-xs text-gray-400">Loading...</span>
+                      </div>
+                    )}
+                    <img 
+                      src={option.url(SAMPLE_POKEMON_ID)} 
+                      alt={`${option.name} example`}
+                      className={`w-full h-full object-contain ${imagesLoaded[option.id] ? 'opacity-100' : 'opacity-0'} transition-opacity duration-200`}
+                      onLoad={() => handleImageLoad(option.id)}
+                      onError={() => handleImageError(option.id)}
+                    />
+                    {imageErrors[option.id] && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+                        <span className="text-xs text-red-500">Failed to load</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <p className="text-sm text-gray-500">{option.description}</p>
+              </div>
+            </div>
+          ))}
+        </RadioGroup>
+      </CardContent>
+      <CardFooter className="flex justify-end space-x-2">
+        {onClose && (
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+        )}
+        <Button onClick={handleSave}>
+          Save Preference
+        </Button>
+      </CardFooter>
+    </Card>
+  );
+};
+
+export default ImagePreferenceSelector;

@@ -1,5 +1,38 @@
-
 import { Pokemon } from "../types";
+import { PokemonImageType, getPreferredImageType } from "@/components/settings/ImagePreferenceSelector";
+
+// Function to get image URL based on preference
+export function getPokemonImageUrl(id: number, fallbackLevel: number = 0): string {
+  const preferredType = getPreferredImageType();
+  
+  // Generate URLs in order of preference
+  const getImageUrl = (type: PokemonImageType): string => {
+    switch(type) {
+      case "official":
+        return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`;
+      case "home":
+        return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/home/${id}.png`;
+      case "dream":
+        return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/dream-world/${id}.svg`;
+      case "default":
+      default:
+        return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
+    }
+  };
+
+  // Generate fallback URLs
+  const fallbackOrder: PokemonImageType[] = ["official", "home", "default", "dream"];
+  
+  // If we're at fallback level 0, use the preferred type
+  if (fallbackLevel === 0) {
+    return getImageUrl(preferredType);
+  }
+  
+  // Otherwise, use fallbacks in order (excluding the preferred type)
+  const filteredFallbacks = fallbackOrder.filter(type => type !== preferredType);
+  const fallbackIndex = Math.min(fallbackLevel - 1, filteredFallbacks.length - 1);
+  return getImageUrl(filteredFallbacks[fallbackIndex]);
+}
 
 // Function to fetch detailed Pokemon information
 export async function fetchPokemonDetails(id: number): Promise<Pokemon> {
@@ -34,16 +67,8 @@ export async function fetchPokemonDetails(id: number): Promise<Pokemon> {
       console.warn(`Failed to fetch species data for Pokemon #${id}:`, speciesError);
     }
   
-    // Prepare the best image URL - try to use official artwork when available
-    const imageUrls = [
-      // Default image (sprite)
-      `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`,
-      // Official artwork (higher quality when available)
-      `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`
-    ];
-
-    // Use the first URL that works
-    let imageUrl = imageUrls[0]; // Default to the first option
+    // Get preferred image URL
+    const imageUrl = getPokemonImageUrl(id);
 
     return {
       id: Number(id),
@@ -58,7 +83,7 @@ export async function fetchPokemonDetails(id: number): Promise<Pokemon> {
     return {
       id: Number(id),
       name: name,
-      image: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`,
+      image: getPokemonImageUrl(id),
       types,
       flavorText: ""
     };

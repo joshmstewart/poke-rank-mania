@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Pokemon } from "@/services/pokemon";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { getPokemonImageUrl } from "@/services/pokemon/api/utils";
 
 interface PokemonCardProps {
   pokemon: Pokemon;
@@ -46,7 +47,9 @@ const PokemonCard = ({ pokemon, isDragging, viewMode = "list", compact }: Pokemo
     setImageLoaded(false);
     setImageError(false);
     setRetryCount(0);
-    setCurrentImageUrl(pokemon.image);
+    
+    // Always start with the preferred image type
+    setCurrentImageUrl(getPokemonImageUrl(pokemon.id, 0));
   }, [pokemon.id, pokemon.image]);
 
   // Handle image load success
@@ -62,14 +65,12 @@ const PokemonCard = ({ pokemon, isDragging, viewMode = "list", compact }: Pokemo
       setRetryCount(prev => prev + 1);
       setImageError(true);
       
-      // Immediately try the next fallback URL
-      const nextUrl = getFallbackImageUrl(retryCount + 1);
+      // Immediately try the next fallback URL using our utility function
+      const nextUrl = getPokemonImageUrl(pokemon.id, retryCount + 1);
       setCurrentImageUrl(nextUrl);
-      console.log(`Trying fallback #${retryCount + 1} for Pokemon #${pokemon.id}: ${nextUrl}`);
     } else {
       // After max retries, stay in error state
       setImageError(true);
-      console.log(`All fallbacks failed for Pokemon #${pokemon.id}`);
     }
   };
 

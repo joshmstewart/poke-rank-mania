@@ -4,16 +4,33 @@ import PokemonRanker from "@/components/PokemonRanker";
 import BattleMode from "@/components/BattleMode";
 import AppSessionManager from "@/components/AppSessionManager";
 import Logo from "@/components/ui/Logo";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Settings } from "lucide-react";
+import ImagePreferenceSelector from "@/components/settings/ImagePreferenceSelector";
 
 const Index = () => {
   const [mode, setMode] = useState<"rank" | "battle">("battle"); // Default is battle mode
+  const [imageSettingsOpen, setImageSettingsOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container max-w-7xl mx-auto py-6">
         <div className="flex items-center justify-between mb-4">
           <Logo />
-          <AppSessionManager />
+          <div className="flex items-center gap-2">
+            <Dialog open={imageSettingsOpen} onOpenChange={setImageSettingsOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="flex gap-1 items-center">
+                  <Settings className="h-4 w-4" /> Image Style
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <ImagePreferenceSelector onClose={() => setImageSettingsOpen(false)} />
+              </DialogContent>
+            </Dialog>
+            <AppSessionManager />
+          </div>
         </div>
 
         <div className="max-w-3xl mx-auto mb-6">
