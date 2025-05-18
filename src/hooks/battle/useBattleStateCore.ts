@@ -24,17 +24,42 @@ export const useBattleStateCore = () => {
   const allPokemonSafe = Array.isArray(selectionState.allPokemon) && selectionState.allPokemon.length > 0 ? 
     selectionState.allPokemon : [];
 
-  // Define a full function for direct start with Pokemon list
+  // Fix: Create a proper adapter function for the multiple-argument startNewBattle
   const startNewBattle = (pokemonList: Pokemon[], battleType: BattleType) => {
-    console.log("startNewBattle with pokemonList.length:", pokemonList.length, "and type:", battleType);
-    selectionState.setAllPokemon(pokemonList);
-    selectionState.startNewBattle(battleType);
+    console.log(`startNewBattle with ${pokemonList.length} Pokémon and type: ${battleType}`);
+    
+    if (!pokemonList || pokemonList.length < 2) {
+      console.error("Invalid Pokemon list for battle:", pokemonList);
+      return;
+    }
+    
+    // Update allPokemon if it's not set yet
+    if (allPokemonSafe.length === 0 && pokemonList.length > 0) {
+      selectionState.setAllPokemon(pokemonList);
+    }
+    
+    // Create a battle with the first few Pokemon
+    const battleSize = battleType === "triplets" ? 3 : 2;
+    if (pokemonList.length >= battleSize) {
+      const shuffled = [...pokemonList].sort(() => Math.random() - 0.5);
+      const battlePokemon = shuffled.slice(0, battleSize);
+      console.log(`Setting up ${battleType} battle with:`, battlePokemon.map(p => p.name));
+      selectionState.setCurrentBattle(battlePokemon);
+    } else {
+      console.error(`Not enough Pokémon for a ${battleType} battle. Need ${battleSize}, have ${pokemonList.length}`);
+    }
   };
 
   // Define an adapter function for the single-argument version
   const startNewBattleAdapter = (battleType: BattleType) => {
     console.log("startNewBattleAdapter with type:", battleType);
-    selectionState.startNewBattle(battleType);
+    
+    // If we have Pokemon, start a battle with them
+    if (allPokemonSafe && allPokemonSafe.length >= 2) {
+      startNewBattle(allPokemonSafe, battleType);
+    } else {
+      console.error("No Pokémon available for battle");
+    }
   };
     
   // IO related functionality (loading Pokemon, storage, etc)
@@ -57,7 +82,7 @@ export const useBattleStateCore = () => {
     setShowingMilestone: progressState.setShowingMilestone,
     setCompletionPercentage: progressState.setCompletionPercentage,
     setSelectedPokemon: selectionState.setSelectedPokemon,
-    startNewBattle: startNewBattle,
+    startNewBattle: startNewBattle, // Fixed signature
     battleType: battleTypeState.battleType,
     allPokemon: allPokemonSafe,
     battleResults: selectionState.battleResults
@@ -157,6 +182,6 @@ export const useBattleStateCore = () => {
     goBack,
     getBattlesRemaining,
     loadPokemon,
-    startNewBattle: startNewBattle,
+    startNewBattle: startNewBattleAdapter, // Using the adapter here
   };
 };

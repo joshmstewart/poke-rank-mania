@@ -70,10 +70,24 @@ export const useBattleStarterIntegration = (
           const selectedForBattle = shuffled.slice(0, battleType === "pairs" ? 2 : 3);
           console.log("Fallback battle started with pokemon:", selectedForBattle.map(p => p.name));
           setCurrentBattle(selectedForBattle);
+          setSelectedPokemon([]);
         }
       }
     } catch (error) {
       console.error("Error starting new battle:", error);
+      // Even if there's an error, try to set up a basic battle
+      try {
+        const shuffled = [...allPokemon].sort(() => Math.random() - 0.5);
+        const battleSize = battleType === "triplets" ? 3 : 2;
+        if (shuffled.length >= battleSize) {
+          const selectedForBattle = shuffled.slice(0, battleSize);
+          setCurrentBattle(selectedForBattle);
+          setSelectedPokemon([]);
+          console.log("Emergency battle recovery with:", selectedForBattle.map(p => p.name));
+        }
+      } catch (fallbackError) {
+        console.error("Even fallback battle setup failed:", fallbackError);
+      }
     }
   }, [battleStarter, setCurrentBattle, allPokemon, setSelectedPokemon]);
 

@@ -4,7 +4,7 @@ import PokemonRanker from "@/components/PokemonRanker";
 import BattleMode from "@/components/BattleMode";
 import AppSessionManager from "@/components/AppSessionManager";
 import Logo from "@/components/ui/Logo";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogHeader } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Settings } from "lucide-react";
 import ImagePreferenceSelector from "@/components/settings/ImagePreferenceSelector";
@@ -26,6 +26,12 @@ const Index = () => {
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Image Style Preferences</DialogTitle>
+                  <DialogDescription>
+                    Choose your preferred Pokémon image style for the app.
+                  </DialogDescription>
+                </DialogHeader>
                 <ImagePreferenceSelector onClose={() => setImageSettingsOpen(false)} />
               </DialogContent>
             </Dialog>
