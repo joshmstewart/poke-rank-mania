@@ -98,6 +98,10 @@ const startNewBattle = (pokemonList: Pokemon[], battleType: BattleType) => {
     loadPokemon,
     calculateCompletionPercentage
   });
+const startNewBattleOneArg = (battleType: BattleType) => {
+  selectionState.startNewBattle(battleType);
+};
+
   
   // Add battle manager for selection and interaction handling
   const {
@@ -112,7 +116,8 @@ const startNewBattle = (pokemonList: Pokemon[], battleType: BattleType) => {
     selectionState.battlesCompleted,
     selectionState.setBattlesCompleted,
     allPokemonSafe,
-    (battleType) => selectionState.startNewBattle(battleType),
+    startNewBattleOneArg,
+
     progressState.setShowingMilestone,
     progressState.milestones,
     generateRankings,
