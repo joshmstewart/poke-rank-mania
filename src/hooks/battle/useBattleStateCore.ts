@@ -21,8 +21,14 @@ export const useBattleStateCore = () => {
   const selectionState = useBattleSelectionState();
   
   // Initialize all variables before using them in other hooks
-  const allPokemonSafe = Array.isArray(selectionState.allPokemon) && selectionState.allPokemon.length > 0 ? 
-    selectionState.allPokemon : [];
+const allPokemonSafe = Array.isArray(selectionState.allPokemon) && selectionState.allPokemon.length > 0 ? 
+  selectionState.allPokemon : [];
+
+const startNewBattle = (pokemonList: Pokemon[], battleType: BattleType) => {
+  selectionState.setAllPokemon(pokemonList);
+  selectionState.startNewBattle(battleType);
+};
+
     
   // IO related functionality (loading Pokemon, storage, etc)
   const { 
