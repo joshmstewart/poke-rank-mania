@@ -71,13 +71,27 @@ export const createBattleStarter = (
 
     let result: Pokemon[] = [];
 
-    const r = roll();
-    if (r < 15 && T_Top10.length && T_Top20.length) result = pickPokemonFromPools(T_Top10, T_Top20);
-    else if (r < 30 && T_Top10.length && T_Top25.length) result = pickPokemonFromPools(T_Top10, T_Top25);
-    else if (r < 50 && T_Top25.length && T_Top50.length) result = pickPokemonFromPools(T_Top25, T_Top50);
-    else if (r < 70 && T_Top50.length && T_Bottom50.length) result = pickPokemonFromPools(T_Top50, T_Bottom50);
-    else if (unranked.length && T_Top50.length) result = pickPokemonFromPools(unranked, T_Top50);
-    else if (unranked.length >= 2) result = pickPokemonFromPools(unranked, unranked);
+   const pickUnseen = (pool: Pokemon[]) =>
+  pool.filter(p => !recentlySeenPokemon.current.has(p.id));
+
+const priorityOrder: [Pokemon[], Pokemon[]][] = [
+  [T_Top10, T_Top20],
+  [T_Top10, T_Top25],
+  [T_Top25, T_Top50],
+  [T_Top50, T_Bottom50],
+  [unranked, T_Top50],
+  [unranked, unranked],
+];
+
+for (const [poolA, poolB] of priorityOrder) {
+  const cleanA = pickUnseen(poolA);
+  const cleanB = pickUnseen(poolB);
+  const picked = pickPokemonFromPools(cleanA, cleanB);
+  if (picked.length === battleSize) {
+    result = picked;
+    break;
+  }
+}
 
     if (result.length < battleSize) {
       result = shuffleArray([...allPokemonForGeneration]).slice(0, battleSize);
@@ -98,7 +112,7 @@ export const createBattleStarter = (
     lastBattleRef.current = newIds;
     newIds.forEach(id => {
       recentlySeenPokemon.current.add(id);
-      if (recentlySeenPokemon.current.size > 20) {
+      if (recentlySeenPokemon.current.size > 30) {
         recentlySeenPokemon.current.delete([...recentlySeenPokemon.current][0]);
       }
     });
