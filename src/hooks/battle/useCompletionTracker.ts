@@ -5,100 +5,95 @@ import { toast } from "@/hooks/use-toast";
 
 export const useCompletionTracker = (
   allPokemon: Pokemon[],
-  battleResults: BattleResult,
+  battleResults: BattleResult[],
   setRankingGenerated: React.Dispatch<React.SetStateAction<boolean>>,
-  generateRankings: (results: BattleResult) => void,
+  generateRankings: (results: BattleResult[]) => void,
   setCompletionPercentage: React.Dispatch<React.SetStateAction<number>>
 ) => {
   const [currentRankingGenerated, setCurrentRankingGenerated] = useState(false);
 
   useEffect(() => {
     calculateCompletionPercentage();
-  }, [Object.keys(battleResults).length, allPokemon?.length]);
+  }, [battleResults?.length]);
 
   const calculateCompletionPercentage = () => {
-    const totalPokemon = allPokemon?.length || 0;
-    const allResults = Object.values(battleResults);
-    const currentComparisons = allResults.length;
-
-    if (!totalPokemon || totalPokemon <= 1) {
+    if (!allPokemon || allPokemon.length <= 1) {
       setCompletionPercentage(100);
       return;
     }
 
-    const comparisonMap = new Map<number, Set<number>>();
+    const comparisonCountById: Record<number, number> = {};
 
-    for (const result of allResults) {
-      const winnerId = result.winner.id;
-      const loserId = result.loser.id;
+    battleResults.forEach(result => {
+      comparisonCountById[result.winner.id] = (comparisonCountById[result.winner.id] || 0) + 1;
+      comparisonCountById[result.loser.id] = (comparisonCountById[result.loser.id] || 0) + 1;
+    });
 
-      if (!comparisonMap.has(winnerId)) comparisonMap.set(winnerId, new Set());
-      if (!comparisonMap.has(loserId)) comparisonMap.set(loserId, new Set());
+    const log2N = Math.log2(allPokemon.length);
+    const confidences = allPokemon.map(p => {
+      const count = comparisonCountById[p.id] || 0;
+      return Math.min(1, count / log2N);
+    });
 
-      comparisonMap.get(winnerId)!.add(loserId);
-      comparisonMap.get(loserId)!.add(winnerId);
-    }
+    const averageConfidence = confidences.reduce((a, b) => a + b, 0) / allPokemon.length;
+    const percent = Math.round(averageConfidence * 100);
+    setCompletionPercentage(percent);
 
-    const threshold = Math.ceil(Math.log2(totalPokemon));
-    let countAboveThreshold = 0;
-
-    for (const pokemon of allPokemon) {
-      const comparedTo = comparisonMap.get(pokemon.id);
-      const comparedCount = comparedTo?.size || 0;
-      if (comparedCount >= threshold) {
-        countAboveThreshold++;
-      }
-    }
-
-    const percentage = Math.round((countAboveThreshold / totalPokemon) * 100);
-    setCompletionPercentage(percentage);
-
-    if (percentage >= 100 && !currentRankingGenerated) {
+    if (percent >= 100 && !currentRankingGenerated) {
       generateRankings(battleResults);
       setRankingGenerated(true);
       setCurrentRankingGenerated(true);
-
       toast({
         title: "Complete Ranking Achieved!",
         description: "You've completed enough battles to generate a full ranking of all Pokémon!",
-        variant: "default"
       });
     }
   };
 
   const getBattlesRemaining = () => {
-    const totalPokemon = allPokemon?.length || 0;
-    const threshold = Math.ceil(Math.log2(totalPokemon));
-    const allResults = Object.values(battleResults);
-    const comparisonMap = new Map<number, Set<number>>();
+    const total = allPokemon.length;
+    const log2N = Math.log2(total);
+    const idealComparisons = Math.ceil(total * log2N);
+    const current = battleResults.length;
+    return Math.max(0, idealComparisons - current);
+  };
 
-    for (const result of allResults) {
-      const winnerId = result.winner.id;
-      const loserId = result.loser.id;
+  const getConfidentRankedPokemon = (threshold = 0.8) => {
+    const countById: Record<number, number> = {};
+    battleResults.forEach(result => {
+      countById[result.winner.id] = (countById[result.winner.id] || 0) + 1;
+      countById[result.loser.id] = (countById[result.loser.id] || 0) + 1;
+    });
 
-      if (!comparisonMap.has(winnerId)) comparisonMap.set(winnerId, new Set());
-      if (!comparisonMap.has(loserId)) comparisonMap.set(loserId, new Set());
+    const log2N = Math.log2(allPokemon.length);
+    return allPokemon.filter(p => {
+      const count = countById[p.id] || 0;
+      const confidence = count / log2N;
+      return confidence >= threshold;
+    });
+  };
 
-      comparisonMap.get(winnerId)!.add(loserId);
-      comparisonMap.get(loserId)!.add(winnerId);
-    }
+  const getOverallRankingProgress = () => {
+    const countById: Record<number, number> = {};
+    battleResults.forEach(result => {
+      countById[result.winner.id] = (countById[result.winner.id] || 0) + 1;
+      countById[result.loser.id] = (countById[result.loser.id] || 0) + 1;
+    });
 
-    let remaining = 0;
+    const log2N = Math.log2(allPokemon.length);
+    const confidences = allPokemon.map(p => {
+      const count = countById[p.id] || 0;
+      return Math.min(1, count / log2N);
+    });
 
-    for (const pokemon of allPokemon) {
-      const comparedTo = comparisonMap.get(pokemon.id);
-      const comparedCount = comparedTo?.size || 0;
-      if (comparedCount < threshold) {
-        remaining += threshold - comparedCount;
-      }
-    }
-
-    return remaining;
+    return Math.round((confidences.reduce((a, b) => a + b, 0) / allPokemon.length) * 100);
   };
 
   return {
     setCompletionPercentage,
     calculateCompletionPercentage,
-    getBattlesRemaining
+    getBattlesRemaining,
+    getConfidentRankedPokemon,
+    getOverallRankingProgress
   };
 };

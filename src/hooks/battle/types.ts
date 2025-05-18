@@ -1,14 +1,17 @@
-
 import { Pokemon } from "@/services/pokemon";
 
 // Keep "triplets" as the internal value for backward compatibility
 export type BattleType = "pairs" | "triplets";
-export type BattleResult = { winner: Pokemon, loser: Pokemon }[];
+
+export interface BattleResult {
+  winner: Pokemon;
+  loser: Pokemon;
+}
 
 export interface BattleState {
   selectedGeneration: number;
   battleType: BattleType;
-  battleResults: BattleResult;
+  battleResults: BattleResult[];
   battlesCompleted: number;
   battleHistory: { battle: Pokemon[], selected: number[] }[];
   completionPercentage: number;
@@ -23,7 +26,7 @@ export interface BattleContextValue {
   battleType: BattleType;
   setBattleType: (type: BattleType) => void;
   currentBattle: Pokemon[];
-  battleResults: BattleResult;
+  battleResults: BattleResult[];
   selectedPokemon: number[];
   battlesCompleted: number;
   rankingGenerated: boolean;
