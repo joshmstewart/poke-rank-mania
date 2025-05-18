@@ -29,6 +29,10 @@ const startNewBattle = (pokemonList: Pokemon[], battleType: BattleType) => {
   selectionState.startNewBattle(battleType);
 };
 
+  const startNewBattleOneArg = (battleType: BattleType) => {
+  selectionState.startNewBattle(battleType);
+};
+
     
   // IO related functionality (loading Pokemon, storage, etc)
   const { 
@@ -70,7 +74,8 @@ const startNewBattle = (pokemonList: Pokemon[], battleType: BattleType) => {
     setBattleHistory: selectionState.setBattleHistory,
     setShowingMilestone: progressState.setShowingMilestone,
     setCompletionPercentage: progressState.setCompletionPercentage,
- startNewBattle: startNewBattle,
+ startNewBattle: startNewBattleOneArg,
+
 
 
 
@@ -100,9 +105,6 @@ const startNewBattle = (pokemonList: Pokemon[], battleType: BattleType) => {
     loadPokemon,
     calculateCompletionPercentage
   });
-const startNewBattleOneArg = (battleType: BattleType) => {
-  selectionState.startNewBattle(battleType);
-};
 
   
   // Add battle manager for selection and interaction handling
