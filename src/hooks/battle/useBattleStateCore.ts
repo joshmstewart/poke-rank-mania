@@ -125,7 +125,8 @@ export const useBattleStateCore = () => {
     getConfidentRankedPokemon,
     getOverallRankingProgress,
     confidenceScores,
-    resetMilestones // ✅ for milestone reset on restart
+    resetMilestones,
+    getSnapshotForMilestone
   } = useCompletionTracker(
     finalRankings,
     selectionState.battleResults,
@@ -134,7 +135,7 @@ export const useBattleStateCore = () => {
     progressState.setCompletionPercentage
   );
 
-  const confidentRankedPokemon = getConfidentRankedPokemon(0.8); // Adjust threshold as needed
+  const confidentRankedPokemon = getConfidentRankedPokemon(0.8);
 
   return {
     isLoading,
@@ -166,6 +167,7 @@ export const useBattleStateCore = () => {
     startNewBattle: startNewBattleAdapter,
     confidentRankedPokemon,
     confidenceScores,
-    resetMilestones // ✅ now available to call when restarting
+    resetMilestones,
+    getSnapshotForMilestone
   };
 };

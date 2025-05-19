@@ -15,6 +15,8 @@ export const useCompletionTracker = (
   const [currentRankingGenerated, setCurrentRankingGenerated] = useState(false);
   const [confidenceScores, setConfidenceScores] = useState<Record<number, number>>({});
   const [milestoneRankings, setMilestoneRankings] = useState<Record<number, RankedPokemon[]>>({});
+
+  // ✅ Track milestones across renders
   const hitMilestones = useRef<Set<number>>(new Set());
 
   useEffect(() => {

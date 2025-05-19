@@ -3,7 +3,26 @@ import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "@/hooks/battle/types";
 import BattleInterface from "./BattleInterface";
 import RankingDisplay from "./RankingDisplay";
-import { useBattleStateCore } from "@/hooks/battle/useBattleStateCore"; // ✅ make sure this is available
+import { useBattleStateCore } from "@/hooks/battle/useBattleStateCore";
+
+interface BattleContentProps {
+  showingMilestone: boolean;
+  rankingGenerated: boolean;
+  currentBattle: Pokemon[];
+  selectedPokemon: number[];
+  battlesCompleted: number;
+  battleType: BattleType;
+  battleHistory: { battle: Pokemon[]; selected: number[] }[];
+  finalRankings: Pokemon[];
+  milestones: number[];
+  onPokemonSelect: (id: number) => void;
+  onTripletSelectionComplete: () => void;
+  onGoBack: () => void;
+  onNewBattleSet: () => void;
+  onContinueBattles: () => void;
+  onSaveRankings: () => void;
+  isProcessing?: boolean;
+}
 
 const BattleContent: React.FC<BattleContentProps> = ({
   showingMilestone,
@@ -26,12 +45,9 @@ const BattleContent: React.FC<BattleContentProps> = ({
   const [internalShowRankings, setInternalShowRankings] = useState(showingMilestone || rankingGenerated);
   const continuePressedRef = useRef(false);
 
-  // ✅ Pull in getSnapshotForMilestone
+  // ✅ Pull in snapshot data
   const { getSnapshotForMilestone } = useBattleStateCore();
-  const snapshotRankings = showingMilestone
-    ? getSnapshotForMilestone(battlesCompleted) || []
-    : [];
-
+  const snapshotRankings = showingMilestone ? getSnapshotForMilestone(battlesCompleted) || [] : [];
   const rankingsToShow = showingMilestone ? snapshotRankings : finalRankings;
 
   useEffect(() => {
@@ -42,17 +58,6 @@ const BattleContent: React.FC<BattleContentProps> = ({
     }
     setInternalShowRankings(showingMilestone || rankingGenerated);
   }, [showingMilestone, rankingGenerated, battlesCompleted, finalRankings]);
-
-  useEffect(() => {
-    console.log("BattleContent rendering with state:", {
-      showingMilestone,
-      rankingGenerated,
-      battlesCompleted,
-      internalShowRankings,
-      finalRankingsLength: finalRankings?.length || 0,
-      firstRankedPokemon: finalRankings?.[0]?.name || "None"
-    });
-  }, [showingMilestone, rankingGenerated, battlesCompleted, finalRankings, internalShowRankings]);
 
   const handleContinueBattles = useCallback(() => {
     continuePressedRef.current = true;
@@ -65,7 +70,7 @@ const BattleContent: React.FC<BattleContentProps> = ({
   if (internalShowRankings) {
     return (
       <RankingDisplay
-        finalRankings={rankingsToShow || []} // ✅ use the correct source: snapshot or live
+        finalRankings={rankingsToShow || []}
         battlesCompleted={battlesCompleted}
         rankingGenerated={rankingGenerated}
         onNewBattleSet={onNewBattleSet}
@@ -73,22 +78,22 @@ const BattleContent: React.FC<BattleContentProps> = ({
         onSaveRankings={onSaveRankings}
       />
     );
-  } else {
-    return (
-      <BattleInterface
-        currentBattle={currentBattle}
-        selectedPokemon={selectedPokemon}
-        battlesCompleted={battlesCompleted}
-        battleType={battleType}
-        battleHistory={battleHistory}
-        onPokemonSelect={onPokemonSelect}
-        onTripletSelectionComplete={onTripletSelectionComplete}
-        onGoBack={onGoBack}
-        milestones={milestones}
-        isProcessing={isProcessing}
-      />
-    );
   }
+
+  return (
+    <BattleInterface
+      currentBattle={currentBattle}
+      selectedPokemon={selectedPokemon}
+      battlesCompleted={battlesCompleted}
+      battleType={battleType}
+      battleHistory={battleHistory}
+      onPokemonSelect={onPokemonSelect}
+      onTripletSelectionComplete={onTripletSelectionComplete}
+      onGoBack={onGoBack}
+      milestones={milestones}
+      isProcessing={isProcessing}
+    />
+  );
 };
 
 export default BattleContent;
