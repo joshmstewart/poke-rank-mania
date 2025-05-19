@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { SingleBattle } from "./types";
 
@@ -10,29 +9,32 @@ export const useRankings = (allPokemon: Pokemon[]) => {
   const generateRankings = (results: SingleBattle[]) => {
     const scoreMap = new Map<number, number>();
     const countMap = new Map<number, number>();
-
-    allPokemon.forEach(p => {
-      scoreMap.set(p.id, 0);
-      countMap.set(p.id, 0);
-    });
+    const pokemonSeen = new Set<number>();
 
     results.forEach(result => {
       const winnerId = result.winner.id;
       const loserId = result.loser.id;
+
       scoreMap.set(winnerId, (scoreMap.get(winnerId) || 0) + 1);
-      scoreMap.set(loserId, (scoreMap.get(loserId) || 0));
+      scoreMap.set(loserId, scoreMap.get(loserId) || 0); // losers don't gain points
 
       countMap.set(winnerId, (countMap.get(winnerId) || 0) + 1);
       countMap.set(loserId, (countMap.get(loserId) || 0) + 1);
+
+      pokemonSeen.add(winnerId);
+      pokemonSeen.add(loserId);
     });
 
-    const scoresWithPokemon = allPokemon.map(pokemon => {
-      return {
-        ...pokemon,
-        score: scoreMap.get(pokemon.id) || 0,
-        count: countMap.get(pokemon.id) || 0
-      };
-    });
+    // ✅ Only include Pokémon who actually appeared in battles
+    const scoresWithPokemon = allPokemon
+      .filter(p => pokemonSeen.has(p.id))
+      .map(p => {
+        return {
+          ...p,
+          score: scoreMap.get(p.id) || 0,
+          count: countMap.get(p.id) || 0
+        };
+      });
 
     const sorted = scoresWithPokemon.sort((a, b) => b.score - a.score);
     setFinalRankings(sorted);
