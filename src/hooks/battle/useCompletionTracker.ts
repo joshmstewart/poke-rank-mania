@@ -40,7 +40,7 @@ export const useCompletionTracker = (
       confidenceMap[p.id] = Math.round(confidences[i] * 100);
     });
 
-    setConfidenceScores(confidenceMap); // ✅ populate the scores
+    setConfidenceScores(confidenceMap);
 
     const averageConfidence = confidences.reduce((a, b) => a + b, 0) / allPokemon.length;
     const percent = Math.round(averageConfidence * 100);
@@ -74,10 +74,12 @@ export const useCompletionTracker = (
     });
 
     const log2N = Math.log2(allPokemon.length);
+    const minAppearances = 5;
+
     return allPokemon.filter(p => {
       const count = countById[p.id] || 0;
       const confidence = count / log2N;
-      return confidence >= threshold;
+      return confidence >= threshold && count >= minAppearances;
     });
   };
 
@@ -103,6 +105,6 @@ export const useCompletionTracker = (
     getBattlesRemaining,
     getConfidentRankedPokemon,
     getOverallRankingProgress,
-    confidenceScores // ✅ now returned
+    confidenceScores
   };
 };
