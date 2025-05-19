@@ -40,7 +40,7 @@ export const useCompletionTracker = (
       confidenceMap[p.id] = Math.round(confidences[i] * 100);
     });
 
-    setConfidenceScores(confidenceMap);
+    setConfidenceScores(confidenceMap); // ✅ populate the scores
 
     const averageConfidence = confidences.reduce((a, b) => a + b, 0) / allPokemon.length;
     const percent = Math.round(averageConfidence * 100);
@@ -103,6 +103,6 @@ export const useCompletionTracker = (
     getBattlesRemaining,
     getConfidentRankedPokemon,
     getOverallRankingProgress,
-    confidenceScores // ✅ Add this
+    confidenceScores // ✅ now returned
   };
 };
