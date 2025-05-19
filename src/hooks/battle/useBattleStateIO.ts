@@ -1,4 +1,3 @@
-
 import { Pokemon } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
 import { usePokemonLoader } from "./usePokemonLoader";
@@ -54,26 +53,26 @@ export const useBattleStateIO = ({
     startNewBattle,
     battleType
   });
-  
+
   // Local storage management
   const { saveBattleState, loadBattleState } = useLocalStorage();
-  
+
   // Rankings generation and management
   const { finalRankings, generateRankings, handleSaveRankings } = useRankings(allPokemon);
-  
-  // Completion tracking
-const {
-  calculateCompletionPercentage,
-  getBattlesRemaining
-} = useCompletionTracker(
-  finalRankings, // ✅ ranked + scored Pokémon
-  battleResults,
-  setRankingGenerated,
-  generateRankings,
-  setCompletionPercentage
-);
 
-  
+  // Completion tracking (updated to pass in allPokemon)
+  const {
+    calculateCompletionPercentage,
+    getBattlesRemaining
+  } = useCompletionTracker(
+    finalRankings,
+    battleResults,
+    setRankingGenerated,
+    generateRankings,
+    setCompletionPercentage,
+    allPokemon // ✅ NEW 6th ARGUMENT
+  );
+
   return {
     isLoading,
     loadPokemon,
