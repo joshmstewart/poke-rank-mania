@@ -132,8 +132,10 @@ export const useBattleStateCore = () => {
     selectionState.battleResults,
     progressState.setRankingGenerated,
     generateRankings,
-    progressState.setCompletionPercentage
+    progressState.setCompletionPercentage,
+    allPokemonSafe // ✅ Pass full list of Pokémon for current generation
   );
+
 
   const confidentRankedPokemon = getConfidentRankedPokemon(0.8);
 
