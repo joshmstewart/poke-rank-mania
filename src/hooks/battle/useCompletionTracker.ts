@@ -5,6 +5,7 @@ import { Pokemon } from "@/services/pokemon";
 import { toast } from "@/hooks/use-toast";
 
 const MILESTONES = [10, 25, 50, 100];
+const CONFIDENCE_THRESHOLD = 0.5;
 
 export const useCompletionTracker = (
   rankedPokemon: RankedPokemon[],
@@ -26,33 +27,31 @@ export const useCompletionTracker = (
     }
   }, [battleResults.length]);
 
-  // 🔵 OVERALL RANKING PROGRESS — full generation set
+  // 🔵 PROGRESS %: confident Pokémon / total filtered Pokémon
   const calculateCompletionPercentage = () => {
-    const totalPokemon = allPokemonForGeneration.length;
-    if (totalPokemon === 0) {
-      setCompletionPercentage(0);
-      return;
-    }
+    const total = allPokemonForGeneration.length;
+    const log2N = Math.log2(total || 1);
+    const minAppearances = Math.max(2, Math.floor(Math.log2(battleResults.length || 1)));
 
-    const log2N = Math.log2(totalPokemon);
+    let confidentCount = 0;
     const confidenceMap: Record<number, number> = {};
-    let totalConfidence = 0;
-    let counted = 0;
 
     allPokemonForGeneration.forEach(p => {
-      const matched = rankedPokemon.find(r => r.id === p.id);
-      const count = matched?.count || 0;
+      const ranked = rankedPokemon.find(r => r.id === p.id);
+      const count = ranked?.count || 0;
+      const confidence = count / log2N;
+
+      if (count >= minAppearances && confidence >= CONFIDENCE_THRESHOLD) {
+        confidentCount++;
+      }
 
       if (count > 0) {
-        const confidence = Math.min(1, count / log2N);
-        confidenceMap[p.id] = Math.round(confidence * 100);
-        totalConfidence += confidence;
-        counted++;
+        confidenceMap[p.id] = Math.round(Math.min(1, confidence) * 100);
       }
     });
 
-    const percent = counted > 0 ? (totalConfidence / totalPokemon) * 100 : 0;
-    setCompletionPercentage(parseFloat(percent.toFixed(2))); // ✅ 2 decimal places
+    const percent = total > 0 ? (confidentCount / total) * 100 : 0;
+    setCompletionPercentage(parseFloat(percent.toFixed(2))); // show 2 decimal places
     setConfidenceScores(confidenceMap);
 
     if (percent >= 100 && !currentRankingGenerated && battleResults.length >= 50) {
@@ -67,30 +66,28 @@ export const useCompletionTracker = (
     }
   };
 
-  // 🟢 MILESTONE DISPLAY FILTER — confident in relation to confident cohort
-  const getConfidentRankedPokemon = (threshold = 0.5) => {
-    const cohort = rankedPokemon.filter(p => p.count > 0);
+  // 🟢 MILESTONE SNAPSHOTS: confident Pokémon relative to confident group
+  const getConfidentRankedPokemon = (threshold = CONFIDENCE_THRESHOLD) => {
+    const cohort = rankedPokemon.filter(p => p.count >= Math.max(2, Math.floor(Math.log2(battleResults.length || 1))));
     const log2Cohort = Math.log2(cohort.length || 1);
-    const minAppearances = Math.max(2, Math.floor(Math.log2(battleResults.length || 1)));
 
     return cohort
       .filter(p => {
         const confidence = p.count / log2Cohort;
-        return p.count >= minAppearances && confidence >= threshold;
+        return confidence >= threshold;
       })
       .sort((a, b) => b.score - a.score);
   };
 
-  // 🪪 Called when battle count reaches an exact milestone
   const handleMilestoneSnapshot = () => {
     const currentBattleCount = battleResults.length;
     const milestoneHit = MILESTONES.find(m => m === currentBattleCount);
     if (!milestoneHit || hitMilestones.current.has(milestoneHit)) return;
 
-    generateRankings(battleResults); // ensures rankedPokemon is up to date
+    generateRankings(battleResults);
 
     setTimeout(() => {
-      const confidentNow = getConfidentRankedPokemon(0.5);
+      const confidentNow = getConfidentRankedPokemon(CONFIDENCE_THRESHOLD);
       setMilestoneRankings(prev => ({
         ...prev,
         [milestoneHit]: confidentNow
