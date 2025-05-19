@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"; // ⬅️ make sure useEffect is imported
+import React, { useState, useEffect } from "react";
 import {
   Table,
   TableBody,
@@ -8,8 +8,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Pokemon, generations } from "@/services/pokemon";
+import { useCompletionTracker } from "@/hooks/battle/useCompletionTracker"; // ✅ NEW
 
-const generationDetails: Record<number, { region: string, games: string }> = {
+const generationDetails: Record<number, { region: string; games: string }> = {
   1: { region: "Kanto", games: "Red, Blue, Yellow" },
   2: { region: "Johto", games: "Gold, Silver, Crystal" },
   3: { region: "Hoenn", games: "Ruby, Sapphire, Emerald" },
@@ -22,14 +23,10 @@ const generationDetails: Record<number, { region: string, games: string }> = {
 };
 
 const getPokemonGeneration = (pokemonId: number) => {
-  return generations.find(gen => 
-    pokemonId >= gen.start && pokemonId <= gen.end && gen.id !== 0
+  return generations.find(
+    (gen) => pokemonId >= gen.start && pokemonId <= gen.end && gen.id !== 0
   );
 };
-
-interface RankingResultsProps {
-  rankedPokemon: Pokemon[];
-}
 
 interface ImageWithFallbackProps {
   pokemonId: number;
@@ -37,7 +34,11 @@ interface ImageWithFallbackProps {
   initialSrc: string;
 }
 
-const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({ pokemonId, pokemonName, initialSrc }) => {
+const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
+  pokemonId,
+  pokemonName,
+  initialSrc,
+}) => {
   const [currentSrc, setCurrentSrc] = useState<string>(initialSrc);
   const [retryCount, setRetryCount] = useState(0);
   const [imageError, setImageError] = useState(false);
@@ -57,7 +58,7 @@ const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({ pokemonId, pokemo
 
   const handleImageError = () => {
     if (retryCount < maxRetries) {
-      setRetryCount(prev => prev + 1);
+      setRetryCount((prev) => prev + 1);
       const fallbacks = [
         initialSrc,
         `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pokemonId}.png`,
@@ -80,9 +81,9 @@ const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({ pokemonId, pokemo
   }
 
   return (
-    <img 
-      src={currentSrc} 
-      alt={pokemonName} 
+    <img
+      src={currentSrc}
+      alt={pokemonName}
       className="w-full h-full object-contain"
       onLoad={() => setImageError(false)}
       onError={handleImageError}
@@ -91,11 +92,21 @@ const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({ pokemonId, pokemo
   );
 };
 
-export const RankingResults: React.FC<RankingResultsProps> = ({ rankedPokemon }) => {
+export const RankingResults: React.FC = () => {
+  const {
+    getConfidentRankedPokemon,
+    getOverallRankingProgress,
+  } = useCompletionTracker();
+
+  const confidentPokemon = getConfidentRankedPokemon(0.8); // show only 80%+ confident Pokémon
+  const progress = getOverallRankingProgress();
+
   return (
     <div className="bg-white rounded-lg shadow p-6">
-      <h2 className="text-2xl font-bold mb-4">Your Pokémon Rankings</h2>
-      {rankedPokemon.length > 0 ? (
+      <h2 className="text-2xl font-bold mb-4">
+        Your Pokémon Rankings ({confidentPokemon.length} shown, {progress}% complete)
+      </h2>
+      {confidentPokemon.length > 0 ? (
         <Table>
           <TableHeader>
             <TableRow>
@@ -108,16 +119,17 @@ export const RankingResults: React.FC<RankingResultsProps> = ({ rankedPokemon })
             </TableRow>
           </TableHeader>
           <TableBody>
-            {rankedPokemon.map((pokemon, index) => {
+            {confidentPokemon.map((pokemon, index) => {
               const generation = getPokemonGeneration(pokemon.id);
               const genId = generation?.id || 0;
               const region = generationDetails[genId]?.region || "Unknown";
+
               return (
                 <TableRow key={pokemon.id}>
                   <TableCell className="font-bold">{index + 1}</TableCell>
                   <TableCell>
                     <div className="w-10 h-10">
-                      <ImageWithFallback 
+                      <ImageWithFallback
                         pokemonId={pokemon.id}
                         pokemonName={pokemon.name}
                         initialSrc={pokemon.image}
@@ -135,8 +147,8 @@ export const RankingResults: React.FC<RankingResultsProps> = ({ rankedPokemon })
         </Table>
       ) : (
         <div className="text-center py-12 text-muted-foreground">
-          <p>You haven't ranked any Pokémon yet.</p>
-          <p className="mt-2">Go to the "Rank Pokémon" tab to get started!</p>
+          <p>You haven't ranked enough Pokémon to show confident results yet.</p>
+          <p className="mt-2">Keep battling to refine your rankings!</p>
         </div>
       )}
     </div>
