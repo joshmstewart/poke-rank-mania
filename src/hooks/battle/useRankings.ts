@@ -24,27 +24,24 @@ export const useRankings = (allPokemon: Pokemon[]) => {
       countMap.set(result.loser.id, (countMap.get(result.loser.id) || 0) + 1);
     });
 
-    // Set a dynamic minimum appearance threshold based on battles completed
-    const totalBattles = results.length;
-    const minAppearances = Math.max(1, Math.floor(Math.log2(allPokemon.length)));
+    // Explicitly filter to Pokémon that participated in at least one battle
+    const participatingPokemonIds = new Set([...scoreMap.keys(), ...countMap.keys()]);
 
     const scoresWithPokemon: RankedPokemon[] = allPokemon
+      .filter(p => participatingPokemonIds.has(p.id))
       .map(p => ({
         ...p,
         score: scoreMap.get(p.id) || 0,
         count: countMap.get(p.id) || 0
-      }))
-      .filter(p => p.count >= minAppearances); // Only include Pokémon above threshold
-
-    // Ensure sorting by highest score
-    scoresWithPokemon.sort((a, b) => b.score - a.score || b.count - a.count);
+      }));
 
     console.log("🏁 Ranked Pokémon generated:", scoresWithPokemon.length);
+
+    scoresWithPokemon.sort((a, b) => b.score - a.score);
     setFinalRankings(scoresWithPokemon);
 
-    // Compute confidence scores based on the appearance threshold
+    const log2N = Math.log2(scoresWithPokemon.length || 1);
     const confidenceMap: Record<number, number> = {};
-    const log2N = Math.log2(allPokemon.length || 1);
     scoresWithPokemon.forEach(p => {
       confidenceMap[p.id] = Math.round(Math.min(1, p.count / log2N) * 100);
     });
