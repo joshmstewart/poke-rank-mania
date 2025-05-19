@@ -121,21 +121,20 @@ export const useBattleStateCore = () => {
     selectionState.setSelectedPokemon
   );
 
-  // ✅ Add confidence-based rankings using the tracker
-const {
-  getConfidentRankedPokemon,
-  getOverallRankingProgress,
-  confidenceScores
-} = useCompletionTracker(
-  finalRankings, // ✅ use only ranked Pokémon
-  selectionState.battleResults,
-  progressState.setRankingGenerated,
-  generateRankings,
-  progressState.setCompletionPercentage
-);
+  const {
+    getConfidentRankedPokemon,
+    getOverallRankingProgress,
+    confidenceScores,
+    resetMilestones // ✅ for milestone reset on restart
+  } = useCompletionTracker(
+    finalRankings,
+    selectionState.battleResults,
+    progressState.setRankingGenerated,
+    generateRankings,
+    progressState.setCompletionPercentage
+  );
 
-
-  const confidentRankedPokemon = getConfidentRankedPokemon(0.8); // filter to top 80%+ confidence w/ min appearances
+  const confidentRankedPokemon = getConfidentRankedPokemon(0.8); // Adjust threshold as needed
 
   return {
     isLoading,
@@ -165,7 +164,8 @@ const {
     getBattlesRemaining,
     loadPokemon,
     startNewBattle: startNewBattleAdapter,
-    confidentRankedPokemon, // ✅ new
-    confidenceScores        // ✅ new
+    confidentRankedPokemon,
+    confidenceScores,
+    resetMilestones // ✅ now available to call when restarting
   };
 };
