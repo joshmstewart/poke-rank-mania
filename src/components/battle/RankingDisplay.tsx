@@ -97,7 +97,7 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
   ];
   
   // Check if we have meaningful rankings to display
-  const hasValidRankings = finalRankings && finalRankings.length > 0;
+  const hasValidRankings = finalRankings && finalRankings.length > 0 && finalRankings.some(p => p.score > 0);
   
   return (
     <div className="bg-white rounded-lg shadow p-6">

@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { SingleBattle } from "./types";
 import { RankedPokemon } from "./useRankings";
