@@ -7,20 +7,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { RankedPokemon } from "@/hooks/ranking/useRankings";
 import { generations } from "@/services/pokemon";
-import { RankedPokemon } from "@/hooks/useRankings";
 
-const generationDetails: Record<number, { region: string; games: string }> = {
-  1: { region: "Kanto", games: "Red, Blue, Yellow" },
-  2: { region: "Johto", games: "Gold, Silver, Crystal" },
-  3: { region: "Hoenn", games: "Ruby, Sapphire, Emerald" },
-  4: { region: "Sinnoh", games: "Diamond, Pearl, Platinum" },
-  5: { region: "Unova", games: "Black, White, Black 2, White 2" },
-  6: { region: "Kalos", games: "X, Y" },
-  7: { region: "Alola", games: "Sun, Moon, Ultra Sun, Ultra Moon" },
-  8: { region: "Galar", games: "Sword, Shield" },
-  9: { region: "Paldea", games: "Scarlet, Violet" },
-};
+interface RankingResultsProps {
+  confidentRankedPokemon: RankedPokemon[];
+  confidenceScores: Record<number, number>;
+}
 
 const getPokemonGeneration = (pokemonId: number) => {
   return generations.find(
@@ -28,85 +21,16 @@ const getPokemonGeneration = (pokemonId: number) => {
   );
 };
 
-interface ImageWithFallbackProps {
-  pokemonId: number;
-  pokemonName: string;
-  initialSrc: string;
-}
-
-const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
-  pokemonId,
-  pokemonName,
-  initialSrc,
-}) => {
-  const [currentSrc, setCurrentSrc] = useState<string>(initialSrc);
-  const [retryCount, setRetryCount] = useState(0);
-  const [imageError, setImageError] = useState(false);
-  const maxRetries = 3;
-
-  useEffect(() => {
-    const preload = (src: string) => {
-      const img = new Image();
-      img.src = src;
-    };
-
-    preload(initialSrc);
-    preload(`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pokemonId}.png`);
-    preload(`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/home/${pokemonId}.png`);
-    preload(`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemonId}.png`);
-  }, [pokemonId, initialSrc]);
-
-  const handleImageError = () => {
-    if (retryCount < maxRetries) {
-      setRetryCount((prev) => prev + 1);
-      const fallbacks = [
-        initialSrc,
-        `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pokemonId}.png`,
-        `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/home/${pokemonId}.png`,
-        `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemonId}.png`,
-      ];
-      const nextSrc = fallbacks[Math.min(retryCount + 1, fallbacks.length - 1)];
-      setCurrentSrc(nextSrc);
-    } else {
-      setImageError(true);
-    }
-  };
-
-  if (imageError) {
-    return (
-      <div className="w-10 h-10 bg-gray-100 rounded flex items-center justify-center text-xs text-gray-500">
-        #{pokemonId}
-      </div>
-    );
-  }
-
-  return (
-    <img
-      src={currentSrc}
-      alt={pokemonName}
-      className="w-full h-full object-contain"
-      onLoad={() => setImageError(false)}
-      onError={handleImageError}
-      loading="lazy"
-    />
-  );
-};
-
-interface RankingResultsProps {
-  finalRankings: RankedPokemon[];
-  confidenceScores: Record<number, number>;
-}
-
 export const RankingResults: React.FC<RankingResultsProps> = ({
-  finalRankings,
+  confidentRankedPokemon,
   confidenceScores,
 }) => {
   return (
     <div className="bg-white rounded-lg shadow p-6">
       <h2 className="text-2xl font-bold mb-4">
-        Your Pokémon Rankings ({finalRankings.length} shown)
+        Your Pokémon Rankings ({confidentRankedPokemon.length} shown)
       </h2>
-      {finalRankings.length > 0 ? (
+      {confidentRankedPokemon.length > 0 ? (
         <Table>
           <TableHeader>
             <TableRow>
@@ -115,33 +39,23 @@ export const RankingResults: React.FC<RankingResultsProps> = ({
               <TableHead>Name</TableHead>
               <TableHead className="w-16">ID</TableHead>
               <TableHead>Generation</TableHead>
-              <TableHead>Region</TableHead>
               <TableHead className="w-24 text-right">Confidence</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {finalRankings.map((pokemon, index) => {
+            {confidentRankedPokemon.map((pokemon, index) => {
               const generation = getPokemonGeneration(pokemon.id);
-              const genId = generation?.id || 0;
-              const region = generationDetails[genId]?.region || "Unknown";
-              const confidence = confidenceScores?.[pokemon.id] ?? 0;
+              const confidence = confidenceScores[pokemon.id] || 0;
 
               return (
                 <TableRow key={pokemon.id}>
-                  <TableCell className="font-bold">{index + 1}</TableCell>
+                  <TableCell>{index + 1}</TableCell>
                   <TableCell>
-                    <div className="w-10 h-10">
-                      <ImageWithFallback
-                        pokemonId={pokemon.id}
-                        pokemonName={pokemon.name}
-                        initialSrc={pokemon.image}
-                      />
-                    </div>
+                    <img src={pokemon.image} alt={pokemon.name} className="w-10 h-10 object-contain"/>
                   </TableCell>
                   <TableCell>{pokemon.name}</TableCell>
                   <TableCell>#{pokemon.id}</TableCell>
                   <TableCell>{generation?.name || "Unknown"}</TableCell>
-                  <TableCell>{region}</TableCell>
                   <TableCell className="text-right text-sm text-muted-foreground">
                     {confidence}%
                   </TableCell>

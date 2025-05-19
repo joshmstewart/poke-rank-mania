@@ -7,7 +7,7 @@ import { RankingUI } from "./ranking/RankingUI";
 import { usePokemonRanker } from "@/hooks/usePokemonRanker";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { generations } from "@/services/pokemon";
-import { useRankings } from "@/hooks/useRankings"; // ✅ Correct hook import
+import { useRankings } from "@/hooks/ranking/useRankings";
 
 const PokemonRanker = () => {
   const {
@@ -18,7 +18,6 @@ const PokemonRanker = () => {
     currentPage,
     totalPages,
     loadSize,
-    loadingType,
     loadingRef,
     setAvailablePokemon,
     setRankedPokemon,
@@ -31,15 +30,12 @@ const PokemonRanker = () => {
   const [showRankings, setShowRankings] = React.useState(false);
   const generationName = selectedGeneration === 0 ? "All Generations" : `Generation ${selectedGeneration}`;
 
-  // ✅ Corrected hook usage
   const { finalRankings, confidenceScores } = useRankings(availablePokemon);
 
   return (
     <div className="container max-w-7xl mx-auto py-6">
       <div className="flex flex-col space-y-4">
-        {/* Controls bar */}
         <div className="flex items-center justify-between bg-white p-3 rounded-lg shadow border">
-          {/* Left side */}
           <div className="flex items-center gap-4">
             <div className="flex items-center">
               <span className="text-sm font-medium whitespace-nowrap mr-1">Gen:</span>
@@ -60,8 +56,7 @@ const PokemonRanker = () => {
               </Select>
             </div>
           </div>
-          
-          {/* Right side buttons */}
+
           <div className="flex gap-2">
             <Button
               variant="outline"
@@ -71,7 +66,7 @@ const PokemonRanker = () => {
             >
               <List className="h-4 w-4" /> Rankings
             </Button>
-            
+
             <Button 
               variant="outline"
               size="sm"
@@ -81,7 +76,7 @@ const PokemonRanker = () => {
             >
               <RefreshCw className="h-4 w-4" /> Reset
             </Button>
-            
+
             <Dialog>
               <DialogTrigger asChild>
                 <Button variant="ghost" size="sm" className="h-8">
@@ -104,16 +99,11 @@ const PokemonRanker = () => {
             </Dialog>
           </div>
         </div>
-        
-        {/* Main content */}
+
         {showRankings ? (
           <div className="bg-white rounded-lg shadow p-6">
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold">Your Rankings</h2>
-              <div className="h-1 w-full bg-gray-200 rounded-full mt-2"></div>
-            </div>
             <RankingResults
-              confidentRankedPokemon={finalRankings} // ✅ Corrected prop
+              confidentRankedPokemon={finalRankings}
               confidenceScores={confidenceScores}
             />
           </div>
