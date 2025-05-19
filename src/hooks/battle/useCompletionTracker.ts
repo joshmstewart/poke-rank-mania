@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { SingleBattle } from "./types";
 import { RankedPokemon } from "./useRankings";
 import { toast } from "@/hooks/use-toast";
@@ -15,7 +15,9 @@ export const useCompletionTracker = (
   const [currentRankingGenerated, setCurrentRankingGenerated] = useState(false);
   const [confidenceScores, setConfidenceScores] = useState<Record<number, number>>({});
   const [milestoneRankings, setMilestoneRankings] = useState<Record<number, RankedPokemon[]>>({});
-  const [hitMilestones, setHitMilestones] = useState<Set<number>>(new Set());
+
+  // ✅ This tracks which milestones we've already hit — and doesn't reset on re-renders
+  const hitMilestones = useRef<Set<number>>(new Set());
 
   useEffect(() => {
     calculateCompletionPercentage();
@@ -78,13 +80,14 @@ export const useCompletionTracker = (
     const currentBattleCount = battleResults.length;
     const lastMilestoneHit = Math.max(...MILESTONES.filter(m => m <= currentBattleCount));
 
-    if (lastMilestoneHit && !hitMilestones.has(lastMilestoneHit)) {
+    // ✅ Only snapshot new milestones once
+    if (lastMilestoneHit && !hitMilestones.current.has(lastMilestoneHit)) {
       const confidentNow = getConfidentRankedPokemon(0.5);
       setMilestoneRankings(prev => ({
         ...prev,
         [lastMilestoneHit]: confidentNow
       }));
-      setHitMilestones(prev => new Set(prev).add(lastMilestoneHit));
+      hitMilestones.current.add(lastMilestoneHit);
     }
   };
 
@@ -97,7 +100,7 @@ export const useCompletionTracker = (
   };
 
   const resetMilestones = () => {
-    setHitMilestones(new Set());
+    hitMilestones.current = new Set(); // ✅ clear persistent milestone tracking
     setMilestoneRankings({});
     setCurrentRankingGenerated(false);
     setConfidenceScores({});
@@ -112,6 +115,6 @@ export const useCompletionTracker = (
     getOverallRankingProgress,
     confidenceScores,
     getSnapshotForMilestone,
-    resetMilestones // ✅ call this on reset to wipe all milestone state
+    resetMilestones
   };
 };
