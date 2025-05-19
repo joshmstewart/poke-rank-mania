@@ -27,10 +27,10 @@ export const useCompletionTracker = (
     }
   }, [battleResults.length]);
 
-  // 🔵 PROGRESS %: confident Pokémon / total filtered Pokémon
   const calculateCompletionPercentage = () => {
     const total = allPokemonForGeneration.length;
     const log2N = Math.log2(total || 1);
+    const expectedCount = log2N * 2; // ✅ more forgiving than log2 alone
     const minAppearances = Math.max(2, Math.floor(Math.log2(battleResults.length || 1)));
 
     let confidentCount = 0;
@@ -39,7 +39,7 @@ export const useCompletionTracker = (
     allPokemonForGeneration.forEach(p => {
       const ranked = rankedPokemon.find(r => r.id === p.id);
       const count = ranked?.count || 0;
-      const confidence = count / log2N;
+      const confidence = count / expectedCount;
 
       if (count >= minAppearances && confidence >= CONFIDENCE_THRESHOLD) {
         confidentCount++;
@@ -66,15 +66,15 @@ export const useCompletionTracker = (
     }
   };
 
-  // 🟢 MILESTONE SNAPSHOTS: confident Pokémon relative to confident group
   const getConfidentRankedPokemon = (threshold = CONFIDENCE_THRESHOLD) => {
-    const cohort = rankedPokemon.filter(p => p.count >= Math.max(2, Math.floor(Math.log2(battleResults.length || 1))));
-    const log2Cohort = Math.log2(cohort.length || 1);
+    const total = allPokemonForGeneration.length;
+    const expectedCount = Math.log2(total || 1) * 2;
+    const minAppearances = Math.max(2, Math.floor(Math.log2(battleResults.length || 1)));
 
-    return cohort
+    return rankedPokemon
       .filter(p => {
-        const confidence = p.count / log2Cohort;
-        return confidence >= threshold;
+        const confidence = p.count / expectedCount;
+        return p.count >= minAppearances && confidence >= threshold;
       })
       .sort((a, b) => b.score - a.score);
   };
