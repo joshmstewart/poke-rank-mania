@@ -1,17 +1,17 @@
 
 import { Pokemon } from "@/services/pokemon";
-import { BattleResult, BattleType } from "./types";
+import { BattleType, SingleBattle } from "./types";
 
 export const useBattleActions = (
   allPokemon: Pokemon[],
   setRankingGenerated: React.Dispatch<React.SetStateAction<boolean>>,
-  setBattleResults: React.Dispatch<React.SetStateAction<BattleResult>>,
+  setBattleResults: React.Dispatch<React.SetStateAction<SingleBattle[]>>,
   setBattlesCompleted: React.Dispatch<React.SetStateAction<number>>,
   setBattleHistory: React.Dispatch<React.SetStateAction<{ battle: Pokemon[], selected: number[] }[]>>,
   setShowingMilestone: React.Dispatch<React.SetStateAction<boolean>>,
   setCompletionPercentage: React.Dispatch<React.SetStateAction<number>>,
   startNewBattle: (battleType: BattleType) => void,
-  generateRankings: (results: BattleResult) => void,
+  generateRankings: (results: SingleBattle[]) => void,
   battleType: BattleType
 ) => {
   const handleContinueBattles = () => {

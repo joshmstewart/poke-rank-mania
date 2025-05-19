@@ -1,6 +1,7 @@
+
 import { useEffect } from "react";
 import { Pokemon } from "@/services/pokemon";
-import { BattleType, BattleResult, BattleState } from "./types";
+import { BattleType, BattleState, SingleBattle } from "./types";
 
 /**
  * Hook for coordinating battle state initialization and persistence
@@ -10,7 +11,7 @@ export const useBattleCoordinatorState = (
   allPokemon: Pokemon[],
   selectedGeneration: number,
   battleType: BattleType,
-  battleResults: BattleResult,
+  battleResults: SingleBattle[],
   battlesCompleted: number,
   battleHistory: { battle: Pokemon[], selected: number[] }[],
   completionPercentage: number,

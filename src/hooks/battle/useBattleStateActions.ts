@@ -1,5 +1,6 @@
+
 import { Pokemon } from "@/services/pokemon";
-import { BattleType, BattleResult } from "./types";
+import { BattleType, SingleBattle } from "./types";
 import { useGenerationSettings } from "./useGenerationSettings";
 import { useBattleActions } from "./useBattleActions";
 
@@ -8,14 +9,14 @@ import { useBattleActions } from "./useBattleActions";
  */
 export interface UseBattleStateActionsProps {
   setRankingGenerated: React.Dispatch<React.SetStateAction<boolean>>;
-  setBattleResults: React.Dispatch<React.SetStateAction<BattleResult>>;
+  setBattleResults: React.Dispatch<React.SetStateAction<SingleBattle[]>>;
   setBattlesCompleted: React.Dispatch<React.SetStateAction<number>>;
   setBattleHistory: React.Dispatch<React.SetStateAction<{ battle: Pokemon[]; selected: number[] }[]>>;
   setShowingMilestone: React.Dispatch<React.SetStateAction<boolean>>;
   setCompletionPercentage: React.Dispatch<React.SetStateAction<number>>;
   startNewBattle: (battleType: BattleType) => void;
   allPokemon: Pokemon[];
-  generateRankings: (results: BattleResult) => void;
+  generateRankings: (results: SingleBattle[]) => void;
   battleType: BattleType;
 }
 

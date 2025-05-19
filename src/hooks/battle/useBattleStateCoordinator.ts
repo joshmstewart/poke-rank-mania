@@ -1,6 +1,6 @@
 
 import { Pokemon } from "@/services/pokemon";
-import { BattleType, BattleResult } from "./types";
+import { BattleType, SingleBattle } from "./types";
 import { useBattleCoordinatorState } from "./useBattleCoordinatorState";
 
 /**
@@ -11,7 +11,7 @@ export interface UseBattleStateCoordinatorProps {
   allPokemon: Pokemon[];
   selectedGeneration: number;
   battleType: BattleType;
-  battleResults: BattleResult;
+  battleResults: SingleBattle[];
   battlesCompleted: number;
   battleHistory: { battle: Pokemon[], selected: number[] }[];
   completionPercentage: number;

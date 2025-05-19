@@ -1,12 +1,13 @@
+
 import { Pokemon } from "@/services/pokemon";
-import { BattleType, BattleResult, SingleBattle } from "./types";
+import { BattleType, SingleBattle } from "./types";
 import { toast } from "@/hooks/use-toast";
 
 export const useBattleNavigation = (
   battleHistory: { battle: Pokemon[], selected: number[] }[],
   setBattleHistory: React.Dispatch<React.SetStateAction<{ battle: Pokemon[], selected: number[] }[]>>,
-  battleResults: BattleResult,
-  setBattleResults: React.Dispatch<React.SetStateAction<BattleResult>>,
+  battleResults: SingleBattle[],
+  setBattleResults: React.Dispatch<React.SetStateAction<SingleBattle[]>>,
   battlesCompleted: number,
   setBattlesCompleted: React.Dispatch<React.SetStateAction<number>>,
   setShowingMilestone: React.Dispatch<React.SetStateAction<boolean>>,

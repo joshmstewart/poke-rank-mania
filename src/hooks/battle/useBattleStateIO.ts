@@ -1,5 +1,6 @@
+
 import { Pokemon } from "@/services/pokemon";
-import { BattleType, BattleResult } from "./types";
+import { BattleType, SingleBattle } from "./types";
 import { usePokemonLoader } from "./usePokemonLoader";
 import { useLocalStorage } from "./useLocalStorage";
 import { useRankings } from "./useRankings";
@@ -11,7 +12,7 @@ import { useCompletionTracker } from "./useCompletionTracker";
 export interface UseBattleStateIOProps {
   setAllPokemon: React.Dispatch<React.SetStateAction<Pokemon[]>>;
   setRankingGenerated: React.Dispatch<React.SetStateAction<boolean>>;
-  setBattleResults: React.Dispatch<React.SetStateAction<BattleResult[]>>;
+  setBattleResults: React.Dispatch<React.SetStateAction<SingleBattle[]>>;
   setBattlesCompleted: React.Dispatch<React.SetStateAction<number>>;
   setBattleHistory: React.Dispatch<React.SetStateAction<{ battle: Pokemon[], selected: number[] }[]>>;
   setShowingMilestone: React.Dispatch<React.SetStateAction<boolean>>;
@@ -20,7 +21,7 @@ export interface UseBattleStateIOProps {
   startNewBattle: (pokemonList: Pokemon[], battleType: BattleType) => void;
   battleType: BattleType;
   allPokemon: Pokemon[];
-  battleResults: BattleResult[];
+  battleResults: SingleBattle[];
 }
 
 export const useBattleStateIO = ({

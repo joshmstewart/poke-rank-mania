@@ -1,21 +1,22 @@
+
 import { useState } from "react";
 import { Pokemon } from "@/services/pokemon";
-import { BattleResult, BattleType, SingleBattle } from "./types";
+import { BattleType, SingleBattle } from "./types";
 import { useBattleProgression } from "./useBattleProgression";
 import { useNextBattleHandler } from "./useNextBattleHandler";
 import { useBattleResultProcessor } from "./useBattleResultProcessor";
 import { saveRankings } from "@/services/pokemon";
 
 export const useBattleProcessor = (
-  battleResults: BattleResult,
-  setBattleResults: React.Dispatch<React.SetStateAction<BattleResult>>,
+  battleResults: SingleBattle[],
+  setBattleResults: React.Dispatch<React.SetStateAction<SingleBattle[]>>,
   battlesCompleted: number,
   setBattlesCompleted: React.Dispatch<React.SetStateAction<number>>,
   allPokemon: Pokemon[],
   startNewBattle: (battleType: BattleType) => void,
   setShowingMilestone: React.Dispatch<React.SetStateAction<boolean>>,
   milestones: number[],
-  generateRankings: (results: BattleResult) => void,
+  generateRankings: (results: SingleBattle[]) => void,
   setSelectedPokemon: React.Dispatch<React.SetStateAction<number[]>>
 ) => {
   const [isProcessingResult, setIsProcessingResult] = useState(false);

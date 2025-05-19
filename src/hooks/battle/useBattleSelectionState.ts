@@ -1,6 +1,7 @@
+
 import { useMemo } from "react";
 import { Pokemon } from "@/services/pokemon";
-import { BattleType, BattleResult } from "./types";
+import { BattleType, SingleBattle } from "./types";
 import { useBattleTypeSelection } from "./useBattleTypeSelection";
 import { useBattleStateSelection } from "./useBattleStateSelection";
 import { useBattleResults } from "./useBattleResults";
@@ -28,8 +29,8 @@ export const useBattleSelectionState = () => {
     setBattleResults,
     getCurrentRankings
   }: {
-    battleResults: BattleResult;
-    setBattleResults: React.Dispatch<React.SetStateAction<BattleResult>>;
+    battleResults: SingleBattle[];
+    setBattleResults: React.Dispatch<React.SetStateAction<SingleBattle[]>>;
     getCurrentRankings: () => Pokemon[];
   } = useBattleResults();
 

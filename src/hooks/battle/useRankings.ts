@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { SingleBattle } from "./types";

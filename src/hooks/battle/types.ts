@@ -15,7 +15,7 @@ export type BattleResult = SingleBattle[];
 export interface BattleState {
   selectedGeneration: number;
   battleType: BattleType;
-  battleResults: BattleResult;
+  battleResults: SingleBattle[];
   battlesCompleted: number;
   battleHistory: { battle: Pokemon[]; selected: number[] }[];
   completionPercentage: number;
@@ -30,7 +30,7 @@ export interface BattleContextValue {
   battleType: BattleType;
   setBattleType: (type: BattleType) => void;
   currentBattle: Pokemon[];
-  battleResults: BattleResult;
+  battleResults: SingleBattle[];
   selectedPokemon: number[];
   battlesCompleted: number;
   rankingGenerated: boolean;

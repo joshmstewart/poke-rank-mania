@@ -1,10 +1,10 @@
 
 import { useCallback } from "react";
 import { Pokemon } from "@/services/pokemon";
-import { BattleType } from "./types";
+import { BattleType, SingleBattle } from "./types";
 
 export const useBattleOutcomeProcessor = (
-  setBattleResults: React.Dispatch<React.SetStateAction<any[]>>,
+  setBattleResults: React.Dispatch<React.SetStateAction<SingleBattle[]>>,
   setBattlesCompleted: React.Dispatch<React.SetStateAction<number>>,
   battleStarter: { startNewBattle: (battleType: BattleType) => Pokemon[] } | null
 ) => {

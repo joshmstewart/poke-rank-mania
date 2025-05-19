@@ -1,13 +1,14 @@
+
 import { useCallback, useState } from "react";
 import { Pokemon } from "@/services/pokemon";
-import { BattleResult, BattleType, SingleBattle } from "./types";
+import { BattleType, SingleBattle } from "./types";
 
 /**
  * Hook for processing battle winners and losers
  */
 export const useBattleResultProcessor = (
-  battleResults: BattleResult,
-  setBattleResults: React.Dispatch<React.SetStateAction<BattleResult>>
+  battleResults: SingleBattle[],
+  setBattleResults: React.Dispatch<React.SetStateAction<SingleBattle[]>>
 ) => {
   const [isProcessing, setIsProcessing] = useState(false);
 

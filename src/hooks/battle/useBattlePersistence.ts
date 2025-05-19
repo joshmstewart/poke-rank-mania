@@ -1,13 +1,13 @@
 
 import { useEffect } from "react";
 import { Pokemon } from "@/services/pokemon";
-import { BattleResult, BattleState, BattleType } from "./types";
+import { BattleState, BattleType, SingleBattle } from "./types";
 
 export const useBattlePersistence = (
   allPokemon: Pokemon[],
   selectedGeneration: number,
   battleType: BattleType,
-  battleResults: BattleResult,
+  battleResults: SingleBattle[],
   battlesCompleted: number,
   battleHistory: { battle: Pokemon[], selected: number[] }[],
   completionPercentage: number,

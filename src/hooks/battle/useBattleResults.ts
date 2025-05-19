@@ -1,9 +1,10 @@
+
 import { useState, useCallback } from "react";
 import { Pokemon } from "@/services/pokemon";
-import { BattleResult, SingleBattle } from "./types";
+import { SingleBattle } from "./types";
 
 export const useBattleResults = () => {
-  const [battleResults, setBattleResults] = useState<BattleResult>([]); // BattleResult = SingleBattle[]
+  const [battleResults, setBattleResults] = useState<SingleBattle[]>([]); 
 
   // Generate current rankings from battle results
   const getCurrentRankings = useCallback((): Pokemon[] => {
