@@ -16,7 +16,6 @@ export const useCompletionTracker = (
   const [confidenceScores, setConfidenceScores] = useState<Record<number, number>>({});
   const [milestoneRankings, setMilestoneRankings] = useState<Record<number, RankedPokemon[]>>({});
 
-  // ✅ Track milestones across renders
   const hitMilestones = useRef<Set<number>>(new Set());
 
   useEffect(() => {
@@ -79,21 +78,16 @@ export const useCompletionTracker = (
     const lastMilestoneHit = Math.max(...MILESTONES.filter(m => m <= currentBattleCount));
 
     if (lastMilestoneHit && !hitMilestones.current.has(lastMilestoneHit)) {
-      generateRankings(battleResults); // ensure rankings exist
-setTimeout(() => {
-  const confidentNow = getConfidentRankedPokemon(0.5);
-  setMilestoneRankings(prev => ({
-    ...prev,
-    [lastMilestoneHit]: confidentNow
-  }));
-  hitMilestones.current.add(lastMilestoneHit);
-}, 0);
+      generateRankings(battleResults); // refresh rankedPokemon state
 
-      setMilestoneRankings(prev => ({
-        ...prev,
-        [lastMilestoneHit]: confidentNow
-      }));
-      hitMilestones.current.add(lastMilestoneHit);
+      setTimeout(() => {
+        const confidentNow = getConfidentRankedPokemon(0.5);
+        setMilestoneRankings(prev => ({
+          ...prev,
+          [lastMilestoneHit]: confidentNow
+        }));
+        hitMilestones.current.add(lastMilestoneHit);
+      }, 0);
     }
   };
 
