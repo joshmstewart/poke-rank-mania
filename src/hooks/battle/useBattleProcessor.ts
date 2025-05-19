@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
@@ -74,27 +73,27 @@ export const useBattleProcessor = (
     if (newResults && newResults.length > 0) {
       setBattleResults(prev => [...prev, ...newResults]);
 
-      incrementBattlesCompleted((newCount: number) => {
-        console.log("Battles completed incremented to", newCount);
+      // ✅ updated: pass new results directly
+      incrementBattlesCompleted(newResults);
 
-        const hitMilestone = checkMilestone(newCount, newResults);
-        console.log("Milestone hit?", hitMilestone);
+      const updatedCount = battlesCompleted + 1;
+      const hitMilestone = checkMilestone(updatedCount, newResults);
+      console.log("Milestone hit?", hitMilestone);
 
-        if (hitMilestone && currentSelectedGeneration) {
-          saveRankings(
-            Array.from(
-              new Map(
-                newResults.map(result => [result.winner.id, result.winner])
-              ).values()
-            ),
-            currentSelectedGeneration,
-            "battle"
-          );
-        }
+      if (hitMilestone && currentSelectedGeneration) {
+        saveRankings(
+          Array.from(
+            new Map(
+              newResults.map(result => [result.winner.id, result.winner])
+            ).values()
+          ),
+          currentSelectedGeneration,
+          "battle"
+        );
+      }
 
-        setupNextBattle(battleType);
-        setIsProcessingResult(false);
-      });
+      setupNextBattle(battleType);
+      setIsProcessingResult(false);
     } else {
       console.error("No results returned from processResult");
       setupNextBattle(battleType);
