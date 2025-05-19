@@ -7,8 +7,7 @@ import { RankingUI } from "./ranking/RankingUI";
 import { usePokemonRanker } from "@/hooks/usePokemonRanker";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { generations } from "@/services/pokemon";
-import { useRankings } from "@/hooks/battle/useRankings";
-
+import { useRankings } from "@/hooks/battle/useRankings"; // Correct import ✅
 
 const PokemonRanker = () => {
   const {
@@ -19,6 +18,7 @@ const PokemonRanker = () => {
     currentPage,
     totalPages,
     loadSize,
+    loadingType,
     loadingRef,
     setAvailablePokemon,
     setRankedPokemon,
@@ -31,7 +31,7 @@ const PokemonRanker = () => {
   const [showRankings, setShowRankings] = React.useState(false);
   const generationName = selectedGeneration === 0 ? "All Generations" : `Generation ${selectedGeneration}`;
 
-  const { finalRankings, confidenceScores } = useRankings(availablePokemon);
+  const { finalRankings, confidenceScores } = useRankings(availablePokemon); // Correctly using rankings ✅
 
   return (
     <div className="container max-w-7xl mx-auto py-6">
@@ -57,7 +57,6 @@ const PokemonRanker = () => {
               </Select>
             </div>
           </div>
-
           <div className="flex gap-2">
             <Button
               variant="outline"
@@ -67,7 +66,6 @@ const PokemonRanker = () => {
             >
               <List className="h-4 w-4" /> Rankings
             </Button>
-
             <Button 
               variant="outline"
               size="sm"
@@ -77,7 +75,6 @@ const PokemonRanker = () => {
             >
               <RefreshCw className="h-4 w-4" /> Reset
             </Button>
-
             <Dialog>
               <DialogTrigger asChild>
                 <Button variant="ghost" size="sm" className="h-8">
@@ -89,12 +86,7 @@ const PokemonRanker = () => {
                   <DialogTitle>How to use Pokémon Ranking</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4 mt-2">
-                  <p>Drag Pokémon from the left panel to your ranking list on the right.</p>
-                  <p>Rearrange them in your preferred order from favorite (top) to least favorite (bottom).</p>
-                  <p>Use the search box to find specific Pokémon quickly.</p>
-                  <p>You can choose to rank Pokémon within a specific generation or across all generations.</p>
                   <p>Your rankings are automatically saved as you make changes!</p>
-                  <p>Scroll down to load more Pokémon automatically.</p>
                 </div>
               </DialogContent>
             </Dialog>
@@ -103,8 +95,12 @@ const PokemonRanker = () => {
 
         {showRankings ? (
           <div className="bg-white rounded-lg shadow p-6">
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold">Your Rankings</h2>
+              <div className="h-1 w-full bg-gray-200 rounded-full mt-2"></div>
+            </div>
             <RankingResults
-              confidentRankedPokemon={finalRankings}
+              confidentRankedPokemon={finalRankings} // Correct data ✅
               confidenceScores={confidenceScores}
             />
           </div>
