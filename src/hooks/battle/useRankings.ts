@@ -21,7 +21,7 @@ export const useRankings = (allPokemon: Pokemon[]) => {
       const loserId = result.loser.id;
 
       scoreMap.set(winnerId, (scoreMap.get(winnerId) || 0) + 1);
-      scoreMap.set(loserId, scoreMap.get(loserId) || 0); // losers get no points
+      scoreMap.set(loserId, scoreMap.get(loserId) || 0);
 
       countMap.set(winnerId, (countMap.get(winnerId) || 0) + 1);
       countMap.set(loserId, (countMap.get(loserId) || 0) + 1);
@@ -41,13 +41,12 @@ export const useRankings = (allPokemon: Pokemon[]) => {
     const sorted = scoresWithPokemon.sort((a, b) => b.score - a.score);
     setFinalRankings(sorted);
 
-    const totalBattles = results.length;
-    const expectedBattles = Math.max(1, totalBattles / allPokemon.length);
+    // Confidence is relative to active Pokémon
+    const log2N = Math.log2(scoresWithPokemon.length || 1);
     const confidenceMap: Record<number, number> = {};
-
     scoresWithPokemon.forEach(p => {
-      const c = Math.min(100, Math.round((p.count / expectedBattles) * 100));
-      confidenceMap[p.id] = c;
+      const confidence = Math.min(1, p.count / log2N);
+      confidenceMap[p.id] = Math.round(confidence * 100);
     });
 
     setConfidenceScores(confidenceMap);
