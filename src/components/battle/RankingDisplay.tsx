@@ -8,7 +8,7 @@ import { Trophy, Award, Medal, Info } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface RankingDisplayProps {
-  finalRankings: Pokemon[];
+  finalRankings: Pokemon[] | RankedPokemon[];
   battlesCompleted: number;
   onContinueBattles: () => void;
   onNewBattleSet: () => void;
@@ -88,6 +88,10 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
   // Debug effect to log when rankings change
   useEffect(() => {
     console.log("RankingDisplay finalRankings changed:", finalRankings?.length || 0);
+    if (finalRankings && finalRankings.length > 0) {
+      console.log("First ranked pokemon score:", 
+        'score' in finalRankings[0] ? finalRankings[0].score : 'No score property');
+    }
   }, [finalRankings]);
   
   // Define trophy icons and colors for the top 3
@@ -98,9 +102,11 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
   ];
   
   // Check if we have meaningful rankings to display
-  // Fix: Handle the case where Pokemon might not have a score property by using type assertion or checking differently
+  // We need to check if the Pokemon objects have scores (for RankedPokemon type)
   const hasValidRankings = finalRankings && finalRankings.length > 0 && 
-    (finalRankings as any[]).some(p => p.score !== undefined && p.score > 0);
+    finalRankings.some(p => 'score' in p && typeof p.score === 'number' && p.score > 0);
+  
+  console.log("Rankings valid?", hasValidRankings);
   
   return (
     <div className="bg-white rounded-lg shadow p-6">

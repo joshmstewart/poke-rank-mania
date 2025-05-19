@@ -53,13 +53,16 @@ const BattleContent: React.FC<BattleContentProps> = ({
   const rankingsToShow = showingMilestone ? snapshotRankings : finalRankings;
 
   useEffect(() => {
+    console.log("BattleContent: showingMilestone changed to", showingMilestone);
+    console.log("BattleContent: milestone snapshot has", snapshotRankings.length, "Pokemon");
+    
     if (continuePressedRef.current) {
       setInternalShowRankings(false);
       continuePressedRef.current = false;
       return;
     }
     setInternalShowRankings(showingMilestone || rankingGenerated);
-  }, [showingMilestone, rankingGenerated, battlesCompleted, finalRankings]);
+  }, [showingMilestone, rankingGenerated, battlesCompleted, finalRankings, snapshotRankings]);
 
   const handleContinueBattles = useCallback(() => {
     continuePressedRef.current = true;
@@ -70,6 +73,7 @@ const BattleContent: React.FC<BattleContentProps> = ({
   }, [onContinueBattles]);
 
   if (internalShowRankings) {
+    console.log("BattleContent: Showing rankings with", rankingsToShow?.length || 0, "Pokemon");
     return (
       <RankingDisplay
         finalRankings={rankingsToShow || []}
