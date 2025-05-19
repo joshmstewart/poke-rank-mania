@@ -10,6 +10,7 @@ export const createBattleStarter = (
 ) => {
   const recentlySeenPokemon = useRef<Set<number>>(new Set());
   const battleCountRef = useRef(0);
+  const initialSubsetRef = useRef<Pokemon[] | null>(null);
 
   const shuffleArray = (array: Pokemon[]) => {
     const shuffled = [...array];
@@ -34,17 +35,15 @@ export const createBattleStarter = (
 
     let result: Pokemon[] = [];
 
+    // Fixed initial subset selection for first 100 battles
     if (battleCountRef.current <= 100) {
-      const INITIAL_SUBSET_SIZE = 15; // Adjust size as desired
+      const INITIAL_SUBSET_SIZE = 15; // clearly defined size for repetition
 
-      // Initialize subset on first run
-      if (recentlySeenPokemon.current.size === 0) {
-        const initialSubset = shuffleArray(pokemonList).slice(0, INITIAL_SUBSET_SIZE);
-        initialSubset.forEach(p => recentlySeenPokemon.current.add(p.id));
+      if (!initialSubsetRef.current) {
+        initialSubsetRef.current = shuffleArray(pokemonList).slice(0, INITIAL_SUBSET_SIZE);
       }
 
-      const initialSubsetPokemons = pokemonList.filter(p => recentlySeenPokemon.current.has(p.id));
-      result = pickDistinctPair(initialSubsetPokemons, new Set(), battleSize);
+      result = pickDistinctPair(initialSubsetRef.current, recentlySeenPokemon.current, battleSize);
     } else {
       const ranked = [...currentFinalRankings];
       const unranked = allPokemonForGeneration.filter(p => !ranked.some(r => r.id === p.id));
