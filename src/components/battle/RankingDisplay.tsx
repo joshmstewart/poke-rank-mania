@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Pokemon } from "@/services/pokemon";
+import { RankedPokemon } from "@/hooks/battle/useRankings";
 import PokemonCard from "@/components/PokemonCard";
 import { Trophy, Award, Medal, Info } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -97,7 +98,9 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
   ];
   
   // Check if we have meaningful rankings to display
-  const hasValidRankings = finalRankings && finalRankings.length > 0 && finalRankings.some(p => p.score > 0);
+  // Fix: Handle the case where Pokemon might not have a score property by using type assertion or checking differently
+  const hasValidRankings = finalRankings && finalRankings.length > 0 && 
+    (finalRankings as any[]).some(p => p.score !== undefined && p.score > 0);
   
   return (
     <div className="bg-white rounded-lg shadow p-6">

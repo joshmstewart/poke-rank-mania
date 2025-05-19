@@ -5,6 +5,7 @@ import { BattleType } from "@/hooks/battle/types";
 import BattleInterface from "./BattleInterface";
 import RankingDisplay from "./RankingDisplay";
 import { useBattleStateCore } from "@/hooks/battle/useBattleStateCore";
+import { RankedPokemon } from "@/hooks/battle/useRankings";
 
 interface BattleContentProps {
   showingMilestone: boolean;
