@@ -8,7 +8,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Pokemon, generations } from "@/services/pokemon";
-import { useCompletionTracker } from "@/hooks/battle/useCompletionTracker"; // ✅ NEW
+import { useCompletionTracker } from "@/hooks/battle/useCompletionTracker";
 
 const generationDetails: Record<number, { region: string; games: string }> = {
   1: { region: "Kanto", games: "Red, Blue, Yellow" },
@@ -96,9 +96,10 @@ export const RankingResults: React.FC = () => {
   const {
     getConfidentRankedPokemon,
     getOverallRankingProgress,
+    confidenceScores,
   } = useCompletionTracker();
 
-  const confidentPokemon = getConfidentRankedPokemon(0.8); // show only 80%+ confident Pokémon
+  const confidentPokemon = getConfidentRankedPokemon(0.8);
   const progress = getOverallRankingProgress();
 
   return (
@@ -116,6 +117,7 @@ export const RankingResults: React.FC = () => {
               <TableHead className="w-16">ID</TableHead>
               <TableHead>Generation</TableHead>
               <TableHead>Region</TableHead>
+              <TableHead className="w-24 text-right">Confidence</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -123,6 +125,7 @@ export const RankingResults: React.FC = () => {
               const generation = getPokemonGeneration(pokemon.id);
               const genId = generation?.id || 0;
               const region = generationDetails[genId]?.region || "Unknown";
+              const confidence = confidenceScores?.[pokemon.id] ?? 0;
 
               return (
                 <TableRow key={pokemon.id}>
@@ -140,6 +143,9 @@ export const RankingResults: React.FC = () => {
                   <TableCell>#{pokemon.id}</TableCell>
                   <TableCell>{generation?.name || "Unknown"}</TableCell>
                   <TableCell>{region}</TableCell>
+                  <TableCell className="text-right text-sm text-muted-foreground">
+                    {confidence}%
+                  </TableCell>
                 </TableRow>
               );
             })}
