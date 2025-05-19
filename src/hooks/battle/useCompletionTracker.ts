@@ -26,6 +26,7 @@ export const useCompletionTracker = (
     }
   }, [battleResults.length]);
 
+  // 🔵 OVERALL RANKING PROGRESS — full generation set
   const calculateCompletionPercentage = () => {
     const totalPokemon = allPokemonForGeneration.length;
     if (totalPokemon === 0) {
@@ -36,17 +37,22 @@ export const useCompletionTracker = (
     const log2N = Math.log2(totalPokemon);
     const confidenceMap: Record<number, number> = {};
     let totalConfidence = 0;
+    let counted = 0;
 
     allPokemonForGeneration.forEach(p => {
       const matched = rankedPokemon.find(r => r.id === p.id);
       const count = matched?.count || 0;
-      const confidence = Math.min(1, count / log2N);
-      confidenceMap[p.id] = Math.round(confidence * 100);
-      totalConfidence += confidence;
+
+      if (count > 0) {
+        const confidence = Math.min(1, count / log2N);
+        confidenceMap[p.id] = Math.round(confidence * 100);
+        totalConfidence += confidence;
+        counted++;
+      }
     });
 
-    const percent = Math.round((totalConfidence / totalPokemon) * 100);
-    setCompletionPercentage(percent);
+    const percent = counted > 0 ? (totalConfidence / totalPokemon) * 100 : 0;
+    setCompletionPercentage(parseFloat(percent.toFixed(2))); // ✅ 2 decimal places
     setConfidenceScores(confidenceMap);
 
     if (percent >= 100 && !currentRankingGenerated && battleResults.length >= 50) {
@@ -61,24 +67,27 @@ export const useCompletionTracker = (
     }
   };
 
+  // 🟢 MILESTONE DISPLAY FILTER — confident in relation to confident cohort
   const getConfidentRankedPokemon = (threshold = 0.5) => {
-    const log2N = Math.log2(allPokemonForGeneration.length || 1);
+    const cohort = rankedPokemon.filter(p => p.count > 0);
+    const log2Cohort = Math.log2(cohort.length || 1);
     const minAppearances = Math.max(2, Math.floor(Math.log2(battleResults.length || 1)));
 
-    return rankedPokemon
+    return cohort
       .filter(p => {
-        const confidence = p.count / log2N;
+        const confidence = p.count / log2Cohort;
         return p.count >= minAppearances && confidence >= threshold;
       })
       .sort((a, b) => b.score - a.score);
   };
 
+  // 🪪 Called when battle count reaches an exact milestone
   const handleMilestoneSnapshot = () => {
     const currentBattleCount = battleResults.length;
     const milestoneHit = MILESTONES.find(m => m === currentBattleCount);
     if (!milestoneHit || hitMilestones.current.has(milestoneHit)) return;
 
-    generateRankings(battleResults);
+    generateRankings(battleResults); // ensures rankedPokemon is up to date
 
     setTimeout(() => {
       const confidentNow = getConfidentRankedPokemon(0.5);
