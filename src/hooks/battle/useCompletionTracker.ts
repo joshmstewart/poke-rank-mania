@@ -30,7 +30,7 @@ export const useCompletionTracker = (
   const calculateCompletionPercentage = () => {
     const total = allPokemonForGeneration.length;
     const log2N = Math.log2(total || 1);
-    const expectedCount = log2N * 1.25; // ✅ More forgiving threshold
+    const expectedCount = log2N * 1.25;
     const minAppearances = Math.max(2, Math.floor(Math.log2(battleResults.length || 1)));
 
     console.log("🧪 PROGRESS DEBUG:");
@@ -50,7 +50,7 @@ export const useCompletionTracker = (
         console.log(`- ${p.name} (#${p.id}): count=${count}, confidence=${confidence.toFixed(2)}`);
       }
 
-      if (count >= minAppearances && confidence >= CONFIDENCE_THRESHOLD) {
+      if (count >= minAppearances || confidence >= CONFIDENCE_THRESHOLD) {
         console.log(`✅ ${p.name} qualifies`);
         confidentCount++;
       }
@@ -84,7 +84,7 @@ export const useCompletionTracker = (
     return rankedPokemon
       .filter(p => {
         const confidence = p.count / expectedCount;
-        return p.count >= minAppearances && confidence >= threshold;
+        return p.count >= minAppearances || confidence >= threshold;
       })
       .sort((a, b) => b.score - a.score);
   };
