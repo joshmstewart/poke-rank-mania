@@ -12,13 +12,12 @@ export type SingleBattle = {
 // ✅ Represents an array of battle results (used throughout the app)
 export type BattleResult = SingleBattle[];
 
-
 export interface BattleState {
   selectedGeneration: number;
   battleType: BattleType;
-  battleResults: BattleResult[];
+  battleResults: BattleResult;
   battlesCompleted: number;
-  battleHistory: { battle: Pokemon[], selected: number[] }[];
+  battleHistory: { battle: Pokemon[]; selected: number[] }[];
   completionPercentage: number;
   fullRankingMode: boolean;
 }
@@ -31,12 +30,12 @@ export interface BattleContextValue {
   battleType: BattleType;
   setBattleType: (type: BattleType) => void;
   currentBattle: Pokemon[];
-  battleResults: BattleResult[];
+  battleResults: BattleResult;
   selectedPokemon: number[];
   battlesCompleted: number;
   rankingGenerated: boolean;
   finalRankings: Pokemon[];
-  battleHistory: { battle: Pokemon[], selected: number[] }[];
+  battleHistory: { battle: Pokemon[]; selected: number[] }[];
   showingMilestone: boolean;
   completionPercentage: number;
   fullRankingMode: boolean;
