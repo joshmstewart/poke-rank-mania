@@ -2,8 +2,13 @@ import { useState } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { SingleBattle } from "./types";
 
+export interface RankedPokemon extends Pokemon {
+  score: number;
+  count: number;
+}
+
 export const useRankings = (allPokemon: Pokemon[]) => {
-  const [finalRankings, setFinalRankings] = useState<Pokemon[]>([]);
+  const [finalRankings, setFinalRankings] = useState<RankedPokemon[]>([]);
   const [confidenceScores, setConfidenceScores] = useState<Record<number, number>>({});
 
   const generateRankings = (results: SingleBattle[]) => {
@@ -16,7 +21,7 @@ export const useRankings = (allPokemon: Pokemon[]) => {
       const loserId = result.loser.id;
 
       scoreMap.set(winnerId, (scoreMap.get(winnerId) || 0) + 1);
-      scoreMap.set(loserId, scoreMap.get(loserId) || 0); // losers don't gain points
+      scoreMap.set(loserId, scoreMap.get(loserId) || 0); // losers get no points
 
       countMap.set(winnerId, (countMap.get(winnerId) || 0) + 1);
       countMap.set(loserId, (countMap.get(loserId) || 0) + 1);
@@ -25,16 +30,13 @@ export const useRankings = (allPokemon: Pokemon[]) => {
       pokemonSeen.add(loserId);
     });
 
-    // ✅ Only include Pokémon who actually appeared in battles
-    const scoresWithPokemon = allPokemon
+    const scoresWithPokemon: RankedPokemon[] = allPokemon
       .filter(p => pokemonSeen.has(p.id))
-      .map(p => {
-        return {
-          ...p,
-          score: scoreMap.get(p.id) || 0,
-          count: countMap.get(p.id) || 0
-        };
-      });
+      .map(p => ({
+        ...p,
+        score: scoreMap.get(p.id) || 0,
+        count: countMap.get(p.id) || 0
+      }));
 
     const sorted = scoresWithPokemon.sort((a, b) => b.score - a.score);
     setFinalRankings(sorted);

@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
-import { Pokemon } from "@/services/pokemon";
 import { SingleBattle } from "./types";
+import { RankedPokemon } from "./useRankings";
 import { toast } from "@/hooks/use-toast";
 
 export const useCompletionTracker = (
-  rankedPokemon: Pokemon[],
+  rankedPokemon: RankedPokemon[],
   battleResults: SingleBattle[],
   setRankingGenerated: React.Dispatch<React.SetStateAction<boolean>>,
   generateRankings: (results: SingleBattle[]) => void,
@@ -23,16 +23,10 @@ export const useCompletionTracker = (
       return;
     }
 
-    const countById: Record<number, number> = {};
-    battleResults.forEach(result => {
-      countById[result.winner.id] = (countById[result.winner.id] || 0) + 1;
-      countById[result.loser.id] = (countById[result.loser.id] || 0) + 1;
-    });
-
     const log2N = Math.log2(rankedPokemon.length);
+
     const confidences = rankedPokemon.map(p => {
-      const count = countById[p.id] || 0;
-      return Math.min(1, count / log2N);
+      return Math.min(1, p.count / log2N);
     });
 
     const confidenceMap: Record<number, number> = {};
@@ -46,7 +40,7 @@ export const useCompletionTracker = (
     const percent = Math.round(averageConfidence * 100);
     setCompletionPercentage(percent);
 
-    if (percent >= 100 && !currentRankingGenerated) {
+    if (percent >= 100 && !currentRankingGenerated && battleResults.length >= 25) {
       generateRankings(battleResults);
       setRankingGenerated(true);
       setCurrentRankingGenerated(true);
@@ -59,53 +53,29 @@ export const useCompletionTracker = (
   };
 
   const getBattlesRemaining = () => {
-    const totalPokemon = rankedPokemon.length;
-    const log2N = Math.log2(totalPokemon);
-    const idealComparisons = Math.ceil(totalPokemon * log2N);
-    const current = battleResults.length;
-    return Math.max(0, idealComparisons - current);
+    const log2N = Math.log2(rankedPokemon.length);
+    const idealComparisons = Math.ceil(rankedPokemon.length * log2N);
+    return Math.max(0, idealComparisons - battleResults.length);
   };
 
   const getConfidentRankedPokemon = (threshold = 0.8) => {
-    const countById: Record<number, number> = {};
-    battleResults.forEach(result => {
-      countById[result.winner.id] = (countById[result.winner.id] || 0) + 1;
-      countById[result.loser.id] = (countById[result.loser.id] || 0) + 1;
-    });
+    const minAppearances = Math.max(3, Math.ceil(battleResults.length / 10));
 
-    const log2N = Math.log2(rankedPokemon.length);
-    const minAppearances = 5;
+    const confident = rankedPokemon
+      .filter(p => {
+        const confidence = p.count / Math.log2(rankedPokemon.length);
+        return confidence >= threshold && p.count >= minAppearances;
+      })
+      .sort((a, b) => b.score - a.score);
 
-    const filtered = rankedPokemon.filter(p => {
-      const count = countById[p.id] || 0;
-      const confidence = count / log2N;
-      return confidence >= threshold && count >= minAppearances;
-    });
-
-    // Optional: sort by score if it exists
-    filtered.sort((a, b) => {
-      const aScore = (a as any).score || 0;
-      const bScore = (b as any).score || 0;
-      return bScore - aScore;
-    });
-
-    console.log(`🧠 Confident Pokémon count: ${filtered.length} out of ${rankedPokemon.length}`);
-    return filtered;
+    console.log(`👀 Confident Pokémon: ${confident.length} / ${rankedPokemon.length}`);
+    return confident;
   };
 
   const getOverallRankingProgress = () => {
-    const countById: Record<number, number> = {};
-    battleResults.forEach(result => {
-      countById[result.winner.id] = (countById[result.winner.id] || 0) + 1;
-      countById[result.loser.id] = (countById[result.loser.id] || 0) + 1;
-    });
-
-    const log2N = Math.log2(rankedPokemon.length);
     const confidences = rankedPokemon.map(p => {
-      const count = countById[p.id] || 0;
-      return Math.min(1, count / log2N);
+      return Math.min(1, p.count / Math.log2(rankedPokemon.length));
     });
-
     return Math.round((confidences.reduce((a, b) => a + b, 0) / rankedPokemon.length) * 100);
   };
 
