@@ -76,11 +76,21 @@ export const useCompletionTracker = (
     const log2N = Math.log2(rankedPokemon.length);
     const minAppearances = 5;
 
-    return rankedPokemon.filter(p => {
+    const filtered = rankedPokemon.filter(p => {
       const count = countById[p.id] || 0;
       const confidence = count / log2N;
       return confidence >= threshold && count >= minAppearances;
     });
+
+    // Optional: sort by score if it exists
+    filtered.sort((a, b) => {
+      const aScore = (a as any).score || 0;
+      const bScore = (b as any).score || 0;
+      return bScore - aScore;
+    });
+
+    console.log(`🧠 Confident Pokémon count: ${filtered.length} out of ${rankedPokemon.length}`);
+    return filtered;
   };
 
   const getOverallRankingProgress = () => {
