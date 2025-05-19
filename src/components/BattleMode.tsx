@@ -122,7 +122,7 @@ const BattleMode = () => {
           onGoBack={goBackAdapter}
           onNewBattleSet={handleNewBattleSet}
           onContinueBattles={handleContinueBattles}
-          handleSaveRankings(); // ✅
+          onSaveRankings={handleSaveRankings}
           isProcessing={isProcessing}
         />
       </div>

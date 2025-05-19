@@ -23,7 +23,7 @@ interface BattleContentContainerProps {
   onGoBack: () => void;
   onNewBattleSet: () => void;
   onContinueBattles: () => void;
-  onSaveRankings: () => void;
+  onSaveRankings();
   isProcessing?: boolean; // Added isProcessing property
 }
 
