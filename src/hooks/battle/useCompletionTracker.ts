@@ -73,16 +73,21 @@ export const useCompletionTracker = (
     const lastMilestoneHit = Math.max(...MILESTONES.filter(m => m <= currentBattleCount));
 
     if (lastMilestoneHit && !hitMilestones.current.has(lastMilestoneHit)) {
-      generateRankings(battleResults);
+      generateRankings(battleResults); // ensure rankings are fresh
 
       setTimeout(() => {
         const confidentNow = getConfidentRankedPokemon(0.5);
-        setMilestoneRankings(prev => ({
-          ...prev,
-          [lastMilestoneHit]: confidentNow
-        }));
-        hitMilestones.current.add(lastMilestoneHit);
-      }, 0);
+        if (confidentNow.length > 0) {
+          setMilestoneRankings(prev => ({
+            ...prev,
+            [lastMilestoneHit]: confidentNow
+          }));
+          hitMilestones.current.add(lastMilestoneHit);
+          console.log(`📸 Milestone ${lastMilestoneHit} snapshot saved with ${confidentNow.length} Pokémon`);
+        } else {
+          console.warn(`⚠️ No confident Pokémon at milestone ${lastMilestoneHit}`);
+        }
+      }, 50); // small delay to avoid stale reads
     }
   };
 
@@ -114,4 +119,3 @@ export const useCompletionTracker = (
     resetMilestones
   };
 };
-

@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "@/hooks/battle/types";
@@ -47,33 +46,45 @@ const BattleContent: React.FC<BattleContentProps> = ({
   const [internalShowRankings, setInternalShowRankings] = useState(showingMilestone || rankingGenerated);
   const continuePressedRef = useRef(false);
 
-  // ✅ Pull in snapshot data
+  // ✅ Pull in milestone snapshot
   const { getSnapshotForMilestone } = useBattleStateCore();
   const snapshotRankings = showingMilestone ? getSnapshotForMilestone(battlesCompleted) || [] : [];
   const rankingsToShow = showingMilestone ? snapshotRankings : finalRankings;
 
   useEffect(() => {
-    console.log("BattleContent: showingMilestone changed to", showingMilestone);
-    console.log("BattleContent: milestone snapshot has", snapshotRankings.length, "Pokemon");
-    
+    console.log("🎯 BattleContent update:");
+    console.log("- showingMilestone:", showingMilestone);
+    console.log("- snapshot length:", snapshotRankings.length);
+    console.log("- continuePressedRef:", continuePressedRef.current);
+
     if (continuePressedRef.current) {
       setInternalShowRankings(false);
       continuePressedRef.current = false;
       return;
     }
+
     setInternalShowRankings(showingMilestone || rankingGenerated);
   }, [showingMilestone, rankingGenerated, battlesCompleted, finalRankings, snapshotRankings]);
 
   const handleContinueBattles = useCallback(() => {
+    console.log("➡️ Continue Battles clicked");
     continuePressedRef.current = true;
     setInternalShowRankings(false);
+
     setTimeout(() => {
       onContinueBattles();
+
+      // Reset continue flag to prevent stuck behavior
+      setTimeout(() => {
+        continuePressedRef.current = false;
+        console.log("🔁 continuePressedRef reset");
+      }, 300);
     }, 100);
   }, [onContinueBattles]);
 
   if (internalShowRankings) {
-    console.log("BattleContent: Showing rankings with", rankingsToShow?.length || 0, "Pokemon");
+    console.log("🏆 Showing rankings with", rankingsToShow?.length || 0, "Pokémon");
+
     return (
       <RankingDisplay
         finalRankings={rankingsToShow || []}

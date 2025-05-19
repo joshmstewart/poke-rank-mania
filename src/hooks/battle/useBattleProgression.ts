@@ -1,4 +1,3 @@
-
 import { useCallback, useRef, useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
 
@@ -10,62 +9,45 @@ export const useBattleProgression = (
   setBattlesCompleted: React.Dispatch<React.SetStateAction<number>>,
   setShowingMilestone: React.Dispatch<React.SetStateAction<boolean>>,
   milestones: number[],
-  generateRankings: (results: any[]) => void,
+  generateRankings: (results: any[]) => void
 ) => {
-  // Add a ref to track if a milestone is currently being shown
   const showingMilestoneRef = useRef(false);
-  // Track the last milestone we've shown to avoid showing the same one multiple times
   const lastMilestoneShownRef = useRef(-1);
-  
-  // Reset showingMilestone state when battles completed changes
+
+  // Check on mount or battles change — passive milestone detection
   useEffect(() => {
-    // Only check for milestones if we're not already showing one
-    if (showingMilestoneRef.current || battlesCompleted === lastMilestoneShownRef.current) {
-      return; // Skip milestone check if we're already showing one or just showed this one
-    }
-    
-    // Check if we're at a milestone
+    if (showingMilestoneRef.current || battlesCompleted === lastMilestoneShownRef.current) return;
+
     const isExactMilestone = milestones.includes(battlesCompleted);
     const isEvery50Battles = battlesCompleted >= 100 && battlesCompleted % 50 === 0;
-    
+
     if (isExactMilestone || isEvery50Battles) {
-      console.log(`useEffect in useBattleProgression: Milestone at ${battlesCompleted} battles - setting milestone flag`);
+      console.log(`🔔 useEffect milestone hit: ${battlesCompleted}`);
       showingMilestoneRef.current = true;
-      setShowingMilestone(true);
       lastMilestoneShownRef.current = battlesCompleted;
+      setShowingMilestone(true);
     }
   }, [battlesCompleted, milestones, setShowingMilestone]);
-  
-  // Check if we've hit a milestone
+
+  // Actively invoked after battle result
   const checkMilestone = useCallback((newBattlesCompleted: number, battleResults: any[]) => {
-    // Don't check if we've already shown this milestone
-    if (newBattlesCompleted === lastMilestoneShownRef.current) {
-      return false;
-    }
-    
-    // Determine if we should show milestone
-    // 1. Check if exactly on a milestone number
+    if (newBattlesCompleted === lastMilestoneShownRef.current) return false;
+
     const isExactMilestone = milestones.includes(newBattlesCompleted);
-    
-    // 2. Check if we've gone 50 battles since last milestone (after 100)
     const isEvery50Battles = newBattlesCompleted >= 100 && newBattlesCompleted % 50 === 0;
-    
+
     if (isExactMilestone || isEvery50Battles) {
-      console.log(`useBattleProgression: Milestone reached at ${newBattlesCompleted} battles`);
-      
-      // Set the milestone flag
+      console.log(`🔔 checkMilestone triggered at ${newBattlesCompleted}`);
+
+      // ✅ Set flags early to avoid re-triggering
       showingMilestoneRef.current = true;
-      
-      // Ensure we have battle results before generating rankings
+      lastMilestoneShownRef.current = newBattlesCompleted;
+
       if (Array.isArray(battleResults) && battleResults.length > 0) {
-        console.log(`Generating rankings at milestone ${newBattlesCompleted} with ${battleResults.length} results`);
-        
-        // FORCE rankings generation with current results
         try {
           generateRankings(battleResults);
           setShowingMilestone(true);
-          lastMilestoneShownRef.current = newBattlesCompleted;
-          
+
           toast({
             title: "Milestone Reached!",
             description: `You've completed ${newBattlesCompleted} battles. Check out your current ranking!`
@@ -74,32 +56,33 @@ export const useBattleProgression = (
           console.error("Error generating rankings at milestone:", err);
         }
       } else {
-        console.warn("Cannot generate rankings at milestone - no battle results available");
+        console.warn("No battle results to generate rankings");
       }
-      
+
       return true;
     }
-    
+
     return false;
   }, [milestones, generateRankings, setShowingMilestone]);
 
-  const incrementBattlesCompleted = useCallback((callback?: (newCount: number) => void) => {
+  const incrementBattlesCompleted = useCallback((battleResults: any[]) => {
     setBattlesCompleted(prev => {
       const updated = prev + 1;
-      if (callback) callback(updated);
+      checkMilestone(updated, battleResults);
       return updated;
     });
-  }, [setBattlesCompleted]);
+  }, [setBattlesCompleted, checkMilestone]);
+
+  const resetMilestone = useCallback(() => {
+    console.log("🧹 Resetting milestone flag");
+    showingMilestoneRef.current = false;
+    setShowingMilestone(false);
+  }, [setShowingMilestone]);
 
   return {
     checkMilestone,
     incrementBattlesCompleted,
     isShowingMilestone: showingMilestoneRef.current,
-    resetMilestone: useCallback(() => {
-      console.log("useBattleProgression: Resetting milestone flag");
-      showingMilestoneRef.current = false;
-      lastMilestoneShownRef.current = -1; // Clear the last milestone shown
-      setShowingMilestone(false);
-    }, [setShowingMilestone])
+    resetMilestone
   };
 };
