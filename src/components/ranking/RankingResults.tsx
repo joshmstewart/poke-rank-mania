@@ -7,7 +7,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Pokemon } from "@/services/pokemon";
+import { Pokemon, generations } from "@/services/pokemon"; // ✅ FIXED: generations imported
 import { useCompletionTracker } from "@/hooks/battle/useCompletionTracker";
 
 const generationDetails: Record<number, { region: string; games: string }> = {
@@ -122,7 +122,7 @@ export const RankingResults: React.FC = () => {
           </TableHeader>
           <TableBody>
             {confidentPokemon.map((pokemon, index) => {
-              const generation = getPokemonGeneration(pokemon.id);
+              const generation = getPokemonGeneration(pokemon.id); // ✅ Correct usage
               const genId = generation?.id || 0;
               const region = generationDetails[genId]?.region || "Unknown";
               const confidence = confidenceScores?.[pokemon.id] ?? 0;
