@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "@/hooks/battle/types";
@@ -14,7 +15,7 @@ interface BattleContentProps {
   battlesCompleted: number;
   battleType: BattleType;
   battleHistory: { battle: Pokemon[]; selected: number[] }[];
-  finalRankings: Pokemon[];
+  finalRankings: Pokemon[] | RankedPokemon[];
   milestones: number[];
   onPokemonSelect: (id: number) => void;
   onTripletSelectionComplete: () => void;
@@ -46,16 +47,21 @@ const BattleContent: React.FC<BattleContentProps> = ({
   const [internalShowRankings, setInternalShowRankings] = useState(showingMilestone || rankingGenerated);
   const continuePressedRef = useRef(false);
 
-  // ✅ Pull in milestone snapshot
+  // ✅ Get milestone snapshot but completely separate from completion percentage
   const { getSnapshotForMilestone } = useBattleStateCore();
-  const snapshotRankings = showingMilestone ? getSnapshotForMilestone(battlesCompleted) || [] : [];
-  const rankingsToShow = showingMilestone ? snapshotRankings : finalRankings;
+  
+  // This is the key fix - we properly handle milestone vs. final rankings
+  const snapshotRankings = showingMilestone ? getSnapshotForMilestone(battlesCompleted) : [];
+  const rankingsToShow = showingMilestone && snapshotRankings.length > 0 
+    ? snapshotRankings 
+    : finalRankings;
 
   useEffect(() => {
     console.log("🎯 BattleContent update:");
     console.log("- showingMilestone:", showingMilestone);
     console.log("- snapshot length:", snapshotRankings.length);
     console.log("- continuePressedRef:", continuePressedRef.current);
+    console.log("- finalRankings length:", finalRankings?.length || 0);
 
     if (continuePressedRef.current) {
       setInternalShowRankings(false);
@@ -84,6 +90,8 @@ const BattleContent: React.FC<BattleContentProps> = ({
 
   if (internalShowRankings) {
     console.log("🏆 Showing rankings with", rankingsToShow?.length || 0, "Pokémon");
+    console.log("🏆 showingMilestone:", showingMilestone);
+    console.log("🏆 rankingGenerated:", rankingGenerated);
 
     return (
       <RankingDisplay
@@ -93,6 +101,7 @@ const BattleContent: React.FC<BattleContentProps> = ({
         onNewBattleSet={onNewBattleSet}
         onContinueBattles={handleContinueBattles}
         onSaveRankings={onSaveRankings}
+        isMilestoneView={showingMilestone}
       />
     );
   }

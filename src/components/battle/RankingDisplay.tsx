@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Pokemon } from "@/services/pokemon";
@@ -14,6 +13,7 @@ interface RankingDisplayProps {
   onNewBattleSet: () => void;
   rankingGenerated: boolean;
   onSaveRankings: () => void;
+  isMilestoneView?: boolean; // New prop to differentiate milestone view
 }
 
 // Component for Rank image with fallbacks
@@ -80,20 +80,9 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
   onContinueBattles,
   onNewBattleSet,
   rankingGenerated,
-  onSaveRankings
+  onSaveRankings,
+  isMilestoneView = false
 }) => {
-  console.log("RankingDisplay rendering with finalRankings:", finalRankings?.length || 0);
-  console.log("RankingDisplay first ranked pokemon:", finalRankings?.[0]?.name || "None");
-
-  // Debug effect to log when rankings change
-  useEffect(() => {
-    console.log("RankingDisplay finalRankings changed:", finalRankings?.length || 0);
-    if (finalRankings && finalRankings.length > 0) {
-      console.log("First ranked pokemon score:", 
-        'score' in finalRankings[0] ? finalRankings[0].score : 'No score property');
-    }
-  }, [finalRankings]);
-  
   // Define trophy icons and colors for the top 3
   const trophyIcons = [
     { icon: Trophy, color: "text-yellow-400" },
@@ -101,19 +90,21 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
     { icon: Medal, color: "text-amber-600" }
   ];
   
-  // Check if we have meaningful rankings to display
- // Replace the existing hasValidRankings logic with this:
-const hasValidRankings = finalRankings && finalRankings.length > 0;
-
+  // Safely check if this is a RankedPokemon array vs plain Pokemon array
+  const isRankedPokemonList = finalRankings.length > 0 && 'score' in finalRankings[0];
   
-  console.log("Rankings valid?", hasValidRankings);
+  // We have rankings to show if there are Pokemon AND they have scores (RankedPokemon)
+  const hasRankingsToShow = finalRankings.length > 0 && isRankedPokemonList;
+  
+  // Get a correctly typed finalRankings array
+  const typedRankings = finalRankings as RankedPokemon[];
   
   return (
     <div className="bg-white rounded-lg shadow p-6">
       <div className="mb-6">
         <div className="flex justify-between items-center">
           <h2 className="text-2xl font-bold bg-gradient-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent">
-            {rankingGenerated ? "Current Rankings" : "Milestone Progress"}
+            {isMilestoneView ? `Milestone: ${battlesCompleted} Battles` : "Current Rankings"}
           </h2>
           <span className="text-sm bg-primary/10 text-primary px-3 py-1 rounded-full font-medium">
             {battlesCompleted} battles completed
@@ -122,19 +113,22 @@ const hasValidRankings = finalRankings && finalRankings.length > 0;
         <div className="h-1 w-full bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full mt-2"></div>
       </div>
       
-      {!hasValidRankings ? (
+      {!hasRankingsToShow ? (
         <div className="text-center p-12 bg-gray-50 rounded-lg border border-dashed border-gray-300">
-          <p className="text-lg text-gray-500 font-medium">Building your rankings...</p>
+          <p className="text-lg text-gray-500 font-medium">
+            {isMilestoneView ? "Milestone snapshot" : "Building your rankings..."}
+          </p>
           <p className="text-gray-400 mt-2">
-            You've completed {battlesCompleted} battles. Continue battling to see rankings.
+            You've completed {battlesCompleted} battles. 
+            {!hasRankingsToShow && " Continue battling to see rankings."}
           </p>
         </div>
       ) : (
         <div className="space-y-8">
           {/* Top 3 section with larger cards and special styling */}
-          {finalRankings.length > 0 && (
+          {typedRankings.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {finalRankings.slice(0, Math.min(3, finalRankings.length)).map((pokemon, index) => {
+              {typedRankings.slice(0, Math.min(3, typedRankings.length)).map((pokemon, index) => {
                 const TrophyIcon = trophyIcons[index].icon;
                 return (
                   <div key={pokemon.id} className="flex flex-col items-center">
@@ -154,11 +148,11 @@ const hasValidRankings = finalRankings && finalRankings.length > 0;
           )}
           
           {/* Remaining rankings - simplified with just images and ranks */}
-          {finalRankings.length > 3 && (
+          {typedRankings.length > 3 && (
             <div className="border-t pt-6 mt-6">
               <h3 className="text-lg font-semibold mb-4 text-gray-700">Other Rankings</h3>
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
-                {finalRankings.slice(3).map((pokemon, index) => (
+                {typedRankings.slice(3).map((pokemon, index) => (
                   <TooltipProvider key={pokemon.id}>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -207,7 +201,8 @@ const hasValidRankings = finalRankings && finalRankings.length > 0;
         >
           Continue Battles
         </Button>
-        {rankingGenerated && (
+        
+        {rankingGenerated && !isMilestoneView && (
           <Button 
             variant="outline" 
             size="lg" 
@@ -219,7 +214,7 @@ const hasValidRankings = finalRankings && finalRankings.length > 0;
         )}
         
         {/* Save Rankings Button */}
-        {hasValidRankings && (
+        {hasRankingsToShow && !isMilestoneView && (
           <Button
             variant="outline"
             size="lg"

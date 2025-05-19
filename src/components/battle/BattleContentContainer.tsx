@@ -23,8 +23,8 @@ interface BattleContentContainerProps {
   onGoBack: () => void;
   onNewBattleSet: () => void;
   onContinueBattles: () => void;
-  onSaveRankings();
-  isProcessing?: boolean; // Added isProcessing property
+  onSaveRankings: () => void;
+  isProcessing?: boolean;
 }
 
 const BattleContentContainer: React.FC<BattleContentContainerProps> = ({
@@ -45,11 +45,11 @@ const BattleContentContainer: React.FC<BattleContentContainerProps> = ({
   onNewBattleSet,
   onContinueBattles,
   onSaveRankings,
-  isProcessing = false // Added default value
+  isProcessing = false
 }) => {
   return (
     <>
-      {/* Progress tracker */}
+      {/* Progress tracker - completely separate from milestone ranking display */}
       <ProgressTracker
         completionPercentage={completionPercentage}
         battlesCompleted={battlesCompleted}
@@ -73,7 +73,7 @@ const BattleContentContainer: React.FC<BattleContentContainerProps> = ({
         onNewBattleSet={onNewBattleSet}
         onContinueBattles={onContinueBattles}
         onSaveRankings={onSaveRankings}
-        isProcessing={isProcessing} // Pass isProcessing to BattleContent
+        isProcessing={isProcessing}
       />
 
       <BattleFooterNote battlesCompleted={battlesCompleted} />

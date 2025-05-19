@@ -1,9 +1,9 @@
+
 import { Pokemon } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
 import { usePokemonLoader } from "./usePokemonLoader";
 import { useLocalStorage } from "./useLocalStorage";
 import { useRankings } from "./useRankings";
-import { useCompletionTracker } from "./useCompletionTracker";
 
 /**
  * Hook for handling input/output operations in the battle state
@@ -60,18 +60,12 @@ export const useBattleStateIO = ({
   // Rankings generation and management
   const { finalRankings, generateRankings, handleSaveRankings } = useRankings(allPokemon);
 
-  // Completion tracking (updated to pass in allPokemon)
-  const {
-    calculateCompletionPercentage,
-    getBattlesRemaining
-  } = useCompletionTracker(
-    finalRankings,
-    battleResults,
-    setRankingGenerated,
-    generateRankings,
-    setCompletionPercentage,
-    allPokemon // ✅ NEW 6th ARGUMENT
-  );
+  // Simple calculation for battles remaining
+  const getBattlesRemaining = () => {
+    const uniquePokemonCount = allPokemon.length || 1;
+    const log2N = Math.log2(uniquePokemonCount);
+    return Math.max(0, Math.ceil(uniquePokemonCount * log2N) - battleResults.length);
+  };
 
   return {
     isLoading,
@@ -81,7 +75,6 @@ export const useBattleStateIO = ({
     finalRankings,
     generateRankings,
     handleSaveRankings,
-    calculateCompletionPercentage,
     getBattlesRemaining
   };
 };

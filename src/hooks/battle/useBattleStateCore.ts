@@ -1,3 +1,4 @@
+
 import { Pokemon } from "@/services/pokemon";
 import { BattleType, BattleResult } from "./types";
 import { useGenerationState } from "./useGenerationState";
@@ -9,6 +10,7 @@ import { useBattleStateActions } from "./useBattleStateActions";
 import { useBattleStateCoordinator } from "./useBattleStateCoordinator";
 import { useBattleManager } from "./useBattleManager";
 import { useCompletionTracker } from "./useCompletionTracker";
+import { useConfidenceRanking } from "./useConfidenceRanking";
 
 export const useBattleStateCore = () => {
   const generationState = useGenerationState();
@@ -49,8 +51,7 @@ export const useBattleStateCore = () => {
     finalRankings,
     generateRankings,
     handleSaveRankings,
-    getBattlesRemaining,
-    calculateCompletionPercentage
+    getBattlesRemaining
   } = useBattleStateIO({
     setAllPokemon: selectionState.setAllPokemon,
     setRankingGenerated: progressState.setRankingGenerated,
@@ -65,6 +66,33 @@ export const useBattleStateCore = () => {
     allPokemon: allPokemonSafe,
     battleResults: selectionState.battleResults
   });
+
+  // SEPARATED HOOK #1: Completion tracker (only tracks battle completion % and milestones)
+  const {
+    calculateCompletionPercentage,
+    resetMilestones,
+    getSnapshotForMilestone
+  } = useCompletionTracker(
+    selectionState.battleResults,
+    progressState.setRankingGenerated,
+    progressState.setCompletionPercentage,
+    progressState.setShowingMilestone,
+    generateRankings,
+    allPokemonSafe
+  );
+
+  // SEPARATED HOOK #2: Confidence ranking (only handles confidence scores for ranking Pokémon)
+  const {
+    confidenceScores,
+    calculateConfidenceScores,
+    getConfidentRankedPokemon,
+    getOverallRankingProgress
+  } = useConfidenceRanking();
+
+  // Update confidence scores whenever rankings change
+  if (finalRankings && finalRankings.length > 0) {
+    calculateConfidenceScores(finalRankings);
+  }
 
   const {
     handleGenerationChange,
@@ -121,24 +149,7 @@ export const useBattleStateCore = () => {
     selectionState.setSelectedPokemon
   );
 
-  const {
-    getConfidentRankedPokemon,
-    getOverallRankingProgress,
-    confidenceScores,
-    resetMilestones,
-    getSnapshotForMilestone
-  } = useCompletionTracker(
-    finalRankings,
-    selectionState.battleResults,
-    progressState.setRankingGenerated,
-    generateRankings,
-    progressState.setCompletionPercentage,
-    allPokemonSafe // ✅ Pass full list of Pokémon for current generation
-  );
-
-
- const confidentRankedPokemon = getConfidentRankedPokemon(finalRankings, 0.8);
-
+  const confidentRankedPokemon = getConfidentRankedPokemon(finalRankings, 0.8);
 
   return {
     isLoading,

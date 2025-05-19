@@ -1,51 +1,49 @@
-import { useState, useEffect, useRef } from "react";
+
+import { useState, useRef, useEffect } from "react";
 import { SingleBattle } from "./types";
 import { RankedPokemon } from "./useRankings";
-import { Pokemon } from "@/services/pokemon";
 import { toast } from "@/hooks/use-toast";
 
 const MILESTONES = [10, 25, 50, 100];
-const CONFIDENCE_THRESHOLD = 0.15;
 
 export const useCompletionTracker = (
-  rankedPokemon: RankedPokemon[],
   battleResults: SingleBattle[],
   setRankingGenerated: React.Dispatch<React.SetStateAction<boolean>>,
-  generateRankings: (results: SingleBattle[]) => RankedPokemon[], // ← updated type
   setCompletionPercentage: React.Dispatch<React.SetStateAction<number>>,
-  allPokemonForGeneration: Pokemon[]
+  setShowingMilestone: React.Dispatch<React.SetStateAction<boolean>>,
+  generateRankings: (results: SingleBattle[]) => RankedPokemon[],
+  allPokemonForGeneration: any[]
 ) => {
-  const [currentRankingGenerated, setCurrentRankingGenerated] = useState(false);
-  const [confidenceScores, setConfidenceScores] = useState<Record<number, number>>({});
   const [milestoneRankings, setMilestoneRankings] = useState<Record<number, RankedPokemon[]>>({});
+  const [completionPercentCalculated, setCompletionPercentCalculated] = useState(false);
+  const [currentRankingGenerated, setCurrentRankingGenerated] = useState(false);
   const hitMilestones = useRef<Set<number>>(new Set());
 
+  // Track completion percentage based on battle count relative to total Pokémon
+  useEffect(() => {
+    if (battleResults.length > 0 || !completionPercentCalculated) {
+      calculateCompletionPercentage();
+    }
+  }, [battleResults.length, allPokemonForGeneration?.length]);
+
+  // Track milestone snapshots
   useEffect(() => {
     if (battleResults.length > 0) {
-      calculateCompletionPercentage();
-      handleMilestoneSnapshot();
+      checkAndHandleMilestone();
     }
-  }, [battleResults.length, rankedPokemon]);
+  }, [battleResults.length]);
 
   const calculateCompletionPercentage = () => {
-    const uniquePokemonCount = rankedPokemon.length;
-    const totalParticipations = rankedPokemon.reduce((sum, p) => sum + p.count, 0);
-    const avgParticipations = totalParticipations / uniquePokemonCount || 1;
+    // Simple percentage based on expected total battles needed
+    const totalPokemon = allPokemonForGeneration?.length || 1;
+    const expectedBattles = Math.ceil(totalPokemon * Math.log2(totalPokemon));
+    const completionPercent = Math.min(100, (battleResults.length / Math.max(expectedBattles, 1)) * 100);
+    
+    setCompletionPercentage(parseFloat(completionPercent.toFixed(2)));
+    setCompletionPercentCalculated(true);
 
-    let confidentCount = 0;
-    const confidenceMap: Record<number, number> = {};
-
-    rankedPokemon.forEach(p => {
-      const confidence = p.count / avgParticipations;
-      if (confidence >= CONFIDENCE_THRESHOLD) confidentCount++;
-      confidenceMap[p.id] = Math.round(Math.min(1, confidence) * 100);
-    });
-
-    const percent = uniquePokemonCount > 0 ? (confidentCount / uniquePokemonCount) * 100 : 0;
-    setCompletionPercentage(parseFloat(percent.toFixed(2)));
-    setConfidenceScores(confidenceMap);
-
-    if (percent >= 100 && !currentRankingGenerated && battleResults.length >= 50) {
+    // Check if we've reached full ranking status
+    if (completionPercent >= 100 && !currentRankingGenerated && battleResults.length >= 50) {
       generateRankings(battleResults);
       setRankingGenerated(true);
       setCurrentRankingGenerated(true);
@@ -57,76 +55,55 @@ export const useCompletionTracker = (
     }
   };
 
-  const getConfidentRankedPokemon = (
-    currentRankedPokemon: RankedPokemon[],
-    threshold = CONFIDENCE_THRESHOLD
-  ) => {
-    const uniquePokemonCount = currentRankedPokemon.length;
-    const totalParticipations = currentRankedPokemon.reduce((sum, p) => sum + p.count, 0);
-    const avgParticipations = totalParticipations / uniquePokemonCount || 1;
-
-    let minAppearances = 1;
-    if (uniquePokemonCount > 100) minAppearances = 4;
-    else if (uniquePokemonCount > 50) minAppearances = 3;
-    else if (uniquePokemonCount > 20) minAppearances = 2;
-
-    return currentRankedPokemon
-      .filter(p => {
-        const confidence = p.count / avgParticipations;
-        return p.count >= minAppearances || confidence >= threshold;
-      })
-      .sort((a, b) => b.score - a.score);
-  };
-
-  const handleMilestoneSnapshot = () => {
+  const checkAndHandleMilestone = () => {
     const currentBattleCount = battleResults.length;
     const milestoneHit = MILESTONES.find(m => m === currentBattleCount);
-    if (!milestoneHit || hitMilestones.current.has(milestoneHit)) return;
+    
+    if (!milestoneHit || hitMilestones.current.has(milestoneHit)) {
+      return; // Not a milestone or already tracked
+    }
 
-    // ✅ Immediate, fresh calculation (critical fix!)
-    const immediatelyGeneratedRankings = generateRankings(battleResults);
-    const confidentNow = getConfidentRankedPokemon(immediatelyGeneratedRankings, CONFIDENCE_THRESHOLD);
-
+    console.log(`🏆 Milestone ${milestoneHit} reached - generating snapshot rankings`);
+    
+    // Generate fresh rankings specifically for this milestone
+    const milestoneRankingSnapshot = generateRankings(battleResults);
+    
+    // Store the milestone snapshot
     setMilestoneRankings(prev => ({
       ...prev,
-      [milestoneHit]: confidentNow
+      [milestoneHit]: milestoneRankingSnapshot
     }));
 
+    // Mark this milestone as hit
     hitMilestones.current.add(milestoneHit);
-    console.log(`📸 Milestone ${milestoneHit} snapshot saved with ${confidentNow.length} Pokémon`);
+    
+    // Show the milestone UI
+    setShowingMilestone(true);
+    
+    console.log(`📸 Milestone ${milestoneHit} snapshot saved with ${milestoneRankingSnapshot.length} Pokémon`);
+  };
+
+  const getBattlesRemaining = () => {
+    const totalPokemon = allPokemonForGeneration?.length || 1;
+    const expectedBattles = Math.ceil(totalPokemon * Math.log2(totalPokemon));
+    return Math.max(0, expectedBattles - battleResults.length);
   };
 
   const getSnapshotForMilestone = (battleCount: number): RankedPokemon[] => {
     return milestoneRankings[battleCount] || [];
   };
 
-  const getBattlesRemaining = () => {
-    const uniquePokemonCount = rankedPokemon.length || 1;
-    const log2N = Math.log2(uniquePokemonCount);
-    return Math.max(0, Math.ceil(uniquePokemonCount * log2N) - battleResults.length);
-  };
-
-  const getOverallRankingProgress = () => {
-    const values = Object.values(confidenceScores);
-    return values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0;
-  };
-
   const resetMilestones = () => {
-    hitMilestones.current = new Set();
+    hitMilestones.current.clear();
     setMilestoneRankings({});
     setCurrentRankingGenerated(false);
-    setConfidenceScores({});
-    setCompletionPercentage(0);
+    setCompletionPercentCalculated(false);
   };
 
-return {
-  calculateCompletionPercentage,
-  getBattlesRemaining,
-  getConfidentRankedPokemon: (currentRankedPokemon: RankedPokemon[], threshold = CONFIDENCE_THRESHOLD) => 
-    getConfidentRankedPokemon(currentRankedPokemon, threshold),
-  getOverallRankingProgress,
-  confidenceScores,
-  getSnapshotForMilestone,
-  resetMilestones
-};
+  return {
+    calculateCompletionPercentage,
+    getBattlesRemaining,
+    getSnapshotForMilestone,
+    resetMilestones
+  };
 };
