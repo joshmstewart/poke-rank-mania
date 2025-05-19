@@ -137,7 +137,8 @@ export const useBattleStateCore = () => {
   );
 
 
-  const confidentRankedPokemon = getConfidentRankedPokemon(0.8);
+ const confidentRankedPokemon = getConfidentRankedPokemon(finalRankings, 0.8);
+
 
   return {
     isLoading,
