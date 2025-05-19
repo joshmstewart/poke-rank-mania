@@ -30,8 +30,13 @@ export const useCompletionTracker = (
   const calculateCompletionPercentage = () => {
     const total = allPokemonForGeneration.length;
     const log2N = Math.log2(total || 1);
-    const expectedCount = log2N * 2; // ✅ more forgiving than log2 alone
+    const expectedCount = log2N * 2;
     const minAppearances = Math.max(2, Math.floor(Math.log2(battleResults.length || 1)));
+
+    console.log("🧪 PROGRESS DEBUG:");
+    console.log("Total filtered Pokémon:", total);
+    console.log("Expected count threshold:", expectedCount.toFixed(2));
+    console.log("Minimum appearances:", minAppearances);
 
     let confidentCount = 0;
     const confidenceMap: Record<number, number> = {};
@@ -41,7 +46,12 @@ export const useCompletionTracker = (
       const count = ranked?.count || 0;
       const confidence = count / expectedCount;
 
+      if (count > 0) {
+        console.log(`- ${p.name} (#${p.id}): count=${count}, confidence=${confidence.toFixed(2)}`);
+      }
+
       if (count >= minAppearances && confidence >= CONFIDENCE_THRESHOLD) {
+        console.log(`✅ ${p.name} qualifies`);
         confidentCount++;
       }
 
@@ -51,7 +61,7 @@ export const useCompletionTracker = (
     });
 
     const percent = total > 0 ? (confidentCount / total) * 100 : 0;
-    setCompletionPercentage(parseFloat(percent.toFixed(2))); // show 2 decimal places
+    setCompletionPercentage(parseFloat(percent.toFixed(2)));
     setConfidenceScores(confidenceMap);
 
     if (percent >= 100 && !currentRankingGenerated && battleResults.length >= 50) {
