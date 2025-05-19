@@ -8,6 +8,7 @@ import { useBattleStateIO } from "./useBattleStateIO";
 import { useBattleStateActions } from "./useBattleStateActions";
 import { useBattleStateCoordinator } from "./useBattleStateCoordinator";
 import { useBattleManager } from "./useBattleManager";
+import { useCompletionTracker } from "./useCompletionTracker";
 
 export const useBattleStateCore = () => {
   const generationState = useGenerationState();
@@ -120,6 +121,21 @@ export const useBattleStateCore = () => {
     selectionState.setSelectedPokemon
   );
 
+  // ✅ Add confidence-based rankings using the tracker
+  const {
+    getConfidentRankedPokemon,
+    getOverallRankingProgress,
+    confidenceScores
+  } = useCompletionTracker(
+    allPokemonSafe,
+    selectionState.battleResults,
+    progressState.setRankingGenerated,
+    generateRankings,
+    progressState.setCompletionPercentage
+  );
+
+  const confidentRankedPokemon = getConfidentRankedPokemon(0.8); // filter to top 80%+ confidence w/ min appearances
+
   return {
     isLoading,
     selectedGeneration: generationState.selectedGeneration,
@@ -147,6 +163,8 @@ export const useBattleStateCore = () => {
     goBack,
     getBattlesRemaining,
     loadPokemon,
-    startNewBattle: startNewBattleAdapter
+    startNewBattle: startNewBattleAdapter,
+    confidentRankedPokemon, // ✅ new
+    confidenceScores        // ✅ new
   };
 };

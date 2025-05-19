@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -8,6 +7,7 @@ import { RankingUI } from "./ranking/RankingUI";
 import { usePokemonRanker } from "@/hooks/usePokemonRanker";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { generations } from "@/services/pokemon";
+import { useBattleStateCore } from "@/hooks/battle/useBattleStateCore"; // ✅ import
 
 const PokemonRanker = () => {
   const {
@@ -31,12 +31,14 @@ const PokemonRanker = () => {
   const [showRankings, setShowRankings] = React.useState(false);
   const generationName = selectedGeneration === 0 ? "All Generations" : `Generation ${selectedGeneration}`;
 
+  const { confidentRankedPokemon, confidenceScores } = useBattleStateCore(); // ✅ use rankings from battle state
+
   return (
     <div className="container max-w-7xl mx-auto py-6">
       <div className="flex flex-col space-y-4">
-        {/* Controls bar - similar to BattleControls */}
+        {/* Controls bar */}
         <div className="flex items-center justify-between bg-white p-3 rounded-lg shadow border">
-          {/* Left side - Gen dropdown only */}
+          {/* Left side */}
           <div className="flex items-center gap-4">
             <div className="flex items-center">
               <span className="text-sm font-medium whitespace-nowrap mr-1">Gen:</span>
@@ -58,7 +60,7 @@ const PokemonRanker = () => {
             </div>
           </div>
           
-          {/* Right side - action buttons */}
+          {/* Right side buttons */}
           <div className="flex gap-2">
             <Button
               variant="outline"
@@ -109,8 +111,10 @@ const PokemonRanker = () => {
               <h2 className="text-2xl font-bold">Your Rankings</h2>
               <div className="h-1 w-full bg-gray-200 rounded-full mt-2"></div>
             </div>
-            <RankingResults />
-
+            <RankingResults
+              confidentRankedPokemon={confidentRankedPokemon}
+              confidenceScores={confidenceScores}
+            />
           </div>
         ) : (
           <RankingUI

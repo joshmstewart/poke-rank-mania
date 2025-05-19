@@ -7,8 +7,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Pokemon, generations } from "@/services/pokemon"; // ✅ FIXED: generations imported
-import { useCompletionTracker } from "@/hooks/battle/useCompletionTracker";
+import { Pokemon, generations } from "@/services/pokemon";
 
 const generationDetails: Record<number, { region: string; games: string }> = {
   1: { region: "Kanto", games: "Red, Blue, Yellow" },
@@ -92,22 +91,21 @@ const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
   );
 };
 
-export const RankingResults: React.FC = () => {
-  const {
-    getConfidentRankedPokemon,
-    getOverallRankingProgress,
-    confidenceScores,
-  } = useCompletionTracker();
+interface RankingResultsProps {
+  confidentRankedPokemon: Pokemon[];
+  confidenceScores: Record<number, number>;
+}
 
-  const confidentPokemon = getConfidentRankedPokemon(0.8);
-  const progress = getOverallRankingProgress();
-
+export const RankingResults: React.FC<RankingResultsProps> = ({
+  confidentRankedPokemon,
+  confidenceScores,
+}) => {
   return (
     <div className="bg-white rounded-lg shadow p-6">
       <h2 className="text-2xl font-bold mb-4">
-        Your Pokémon Rankings ({confidentPokemon.length} shown, {progress}% complete)
+        Your Pokémon Rankings ({confidentRankedPokemon.length} shown)
       </h2>
-      {confidentPokemon.length > 0 ? (
+      {confidentRankedPokemon.length > 0 ? (
         <Table>
           <TableHeader>
             <TableRow>
@@ -121,8 +119,8 @@ export const RankingResults: React.FC = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {confidentPokemon.map((pokemon, index) => {
-              const generation = getPokemonGeneration(pokemon.id); // ✅ Correct usage
+            {confidentRankedPokemon.map((pokemon, index) => {
+              const generation = getPokemonGeneration(pokemon.id);
               const genId = generation?.id || 0;
               const region = generationDetails[genId]?.region || "Unknown";
               const confidence = confidenceScores?.[pokemon.id] ?? 0;
