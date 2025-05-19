@@ -62,16 +62,17 @@ export const useBattleStateIO = ({
   const { finalRankings, generateRankings, handleSaveRankings } = useRankings(allPokemon);
   
   // Completion tracking
-  const {
-    calculateCompletionPercentage,
-    getBattlesRemaining
-  } = useCompletionTracker(
-    allPokemon,
-    battleResults,
-    setRankingGenerated,
-    generateRankings,
-    setCompletionPercentage
-  );
+const {
+  calculateCompletionPercentage,
+  getBattlesRemaining
+} = useCompletionTracker(
+  finalRankings, // ✅ ranked + scored Pokémon
+  battleResults,
+  setRankingGenerated,
+  generateRankings,
+  setCompletionPercentage
+);
+
   
   return {
     isLoading,
