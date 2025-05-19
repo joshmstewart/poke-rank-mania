@@ -53,21 +53,35 @@ export const useCompletionTracker = (
 
   const getConfidentRankedPokemon = (threshold = 0.5) => {
     const log2N = Math.log2(rankedPokemon.length || 1);
+
+    // Adjust appearance requirement dynamically (e.g. ~6–7 after 200 battles)
     const minAppearances = Math.floor(Math.log2(battleResults.length || 1)) + 1;
 
-    return rankedPokemon
+    const confident = rankedPokemon
       .filter(p => {
         const confidence = p.count / log2N;
         return p.count >= minAppearances && confidence >= threshold;
       })
       .sort((a, b) => b.score - a.score);
+
+    // Debug log
+    console.log(`📊 ${battleResults.length} battles → minAppearances: ${minAppearances}, log2N: ${log2N.toFixed(2)}`);
+    console.log("🧪 Eligible Pokémon:");
+    rankedPokemon.forEach(p => {
+      const confidence = p.count / log2N;
+      console.log(`#${p.id} ${p.name}: count=${p.count}, confidence=${confidence.toFixed(2)}`);
+    });
+
+    console.log(`✅ Confident Pokémon count: ${confident.length}`);
+    return confident;
   };
 
   const handleMilestoneSnapshot = () => {
     const currentBattleCount = battleResults.length;
     const lastMilestoneHit = Math.max(...MILESTONES.filter(m => m <= currentBattleCount));
+
     if (lastMilestoneHit && !milestoneRankings[lastMilestoneHit]) {
-      const confidentNow = getConfidentRankedPokemon(0.5); // was 0.8 — this makes milestone snapshots more forgiving
+      const confidentNow = getConfidentRankedPokemon(0.5); // less strict threshold for milestones
       setMilestoneRankings(prev => ({
         ...prev,
         [lastMilestoneHit]: confidentNow
