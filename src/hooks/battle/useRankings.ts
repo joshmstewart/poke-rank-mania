@@ -18,14 +18,20 @@ export const useRankings = (allPokemon: Pokemon[]) => {
     const countMap = new Map<number, number>();
 
     results.forEach(result => {
+      console.log("Result winner ID:", result.winner.id, "loser ID:", result.loser.id);
       scoreMap.set(result.winner.id, (scoreMap.get(result.winner.id) || 0) + 1);
       scoreMap.set(result.loser.id, scoreMap.get(result.loser.id) || 0);
       countMap.set(result.winner.id, (countMap.get(result.winner.id) || 0) + 1);
       countMap.set(result.loser.id, (countMap.get(result.loser.id) || 0) + 1);
     });
 
-    // Explicitly filter to Pokémon that participated in at least one battle
+    // Verify contents of scoreMap
+    console.log("✅ scoreMap entries:", Array.from(scoreMap.entries()));
+
     const participatingPokemonIds = new Set([...scoreMap.keys(), ...countMap.keys()]);
+
+    // Log a sample of allPokemon IDs for cross-reference
+    console.log("📚 Sample allPokemon IDs:", allPokemon.slice(0, 10).map(p => p.id));
 
     const scoresWithPokemon: RankedPokemon[] = allPokemon
       .filter(p => participatingPokemonIds.has(p.id))
@@ -36,6 +42,7 @@ export const useRankings = (allPokemon: Pokemon[]) => {
       }));
 
     console.log("🏁 Ranked Pokémon generated:", scoresWithPokemon.length);
+    console.log("🎯 Final ranking sample:", scoresWithPokemon.slice(0, 5));
 
     scoresWithPokemon.sort((a, b) => b.score - a.score);
     setFinalRankings(scoresWithPokemon);
