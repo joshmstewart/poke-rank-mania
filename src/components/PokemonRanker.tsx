@@ -109,7 +109,8 @@ const PokemonRanker = () => {
               <h2 className="text-2xl font-bold">Your Rankings</h2>
               <div className="h-1 w-full bg-gray-200 rounded-full mt-2"></div>
             </div>
-            <RankingResults rankedPokemon={rankedPokemon} />
+            <RankingResults />
+
           </div>
         ) : (
           <RankingUI

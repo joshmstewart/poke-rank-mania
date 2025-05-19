@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { SingleBattle } from "./types";
@@ -12,6 +11,7 @@ export const useCompletionTracker = (
   setCompletionPercentage: React.Dispatch<React.SetStateAction<number>>
 ) => {
   const [currentRankingGenerated, setCurrentRankingGenerated] = useState(false);
+  const [confidenceScores, setConfidenceScores] = useState<Record<number, number>>({});
 
   useEffect(() => {
     calculateCompletionPercentage();
@@ -23,18 +23,24 @@ export const useCompletionTracker = (
       return;
     }
 
-    const comparisonCountById: Record<number, number> = {};
-
+    const countById: Record<number, number> = {};
     battleResults.forEach(result => {
-      comparisonCountById[result.winner.id] = (comparisonCountById[result.winner.id] || 0) + 1;
-      comparisonCountById[result.loser.id] = (comparisonCountById[result.loser.id] || 0) + 1;
+      countById[result.winner.id] = (countById[result.winner.id] || 0) + 1;
+      countById[result.loser.id] = (countById[result.loser.id] || 0) + 1;
     });
 
     const log2N = Math.log2(allPokemon.length);
     const confidences = allPokemon.map(p => {
-      const count = comparisonCountById[p.id] || 0;
+      const count = countById[p.id] || 0;
       return Math.min(1, count / log2N);
     });
+
+    const confidenceMap: Record<number, number> = {};
+    allPokemon.forEach((p, i) => {
+      confidenceMap[p.id] = Math.round(confidences[i] * 100);
+    });
+
+    setConfidenceScores(confidenceMap);
 
     const averageConfidence = confidences.reduce((a, b) => a + b, 0) / allPokemon.length;
     const percent = Math.round(averageConfidence * 100);
@@ -96,6 +102,7 @@ export const useCompletionTracker = (
     calculateCompletionPercentage,
     getBattlesRemaining,
     getConfidentRankedPokemon,
-    getOverallRankingProgress
+    getOverallRankingProgress,
+    confidenceScores // ✅ Add this
   };
 };
