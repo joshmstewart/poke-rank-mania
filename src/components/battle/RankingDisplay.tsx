@@ -104,7 +104,8 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
   // Check if we have meaningful rankings to display
   // We need to check if the Pokemon objects have scores (for RankedPokemon type)
 const hasValidRankings = finalRankings && finalRankings.length > 0 &&
-  finalRankings.some(p => 'score' in p && typeof p.score === 'number' && p.score > 0 && p.count >= 2);
+finalRankings.some(p => 'score' in p && typeof p.score === 'number' && p.score > 0 && 'count' in p && typeof p.count === 'number' && p.count >= 2);
+
   
   console.log("Rankings valid?", hasValidRankings);
   
