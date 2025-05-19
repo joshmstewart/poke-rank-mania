@@ -122,17 +122,18 @@ export const useBattleStateCore = () => {
   );
 
   // ✅ Add confidence-based rankings using the tracker
-  const {
-    getConfidentRankedPokemon,
-    getOverallRankingProgress,
-    confidenceScores
-  } = useCompletionTracker(
-    allPokemonSafe,
-    selectionState.battleResults,
-    progressState.setRankingGenerated,
-    generateRankings,
-    progressState.setCompletionPercentage
-  );
+const {
+  getConfidentRankedPokemon,
+  getOverallRankingProgress,
+  confidenceScores
+} = useCompletionTracker(
+  finalRankings, // ✅ use only ranked Pokémon
+  selectionState.battleResults,
+  progressState.setRankingGenerated,
+  generateRankings,
+  progressState.setCompletionPercentage
+);
+
 
   const confidentRankedPokemon = getConfidentRankedPokemon(0.8); // filter to top 80%+ confidence w/ min appearances
 

@@ -4,7 +4,7 @@ import { SingleBattle } from "./types";
 import { toast } from "@/hooks/use-toast";
 
 export const useCompletionTracker = (
-  allPokemon: Pokemon[],
+  rankedPokemon: Pokemon[],
   battleResults: SingleBattle[],
   setRankingGenerated: React.Dispatch<React.SetStateAction<boolean>>,
   generateRankings: (results: SingleBattle[]) => void,
@@ -18,7 +18,7 @@ export const useCompletionTracker = (
   }, [battleResults?.length]);
 
   const calculateCompletionPercentage = () => {
-    if (!allPokemon || allPokemon.length <= 1) {
+    if (!rankedPokemon || rankedPokemon.length <= 1) {
       setCompletionPercentage(100);
       return;
     }
@@ -29,20 +29,20 @@ export const useCompletionTracker = (
       countById[result.loser.id] = (countById[result.loser.id] || 0) + 1;
     });
 
-    const log2N = Math.log2(allPokemon.length);
-    const confidences = allPokemon.map(p => {
+    const log2N = Math.log2(rankedPokemon.length);
+    const confidences = rankedPokemon.map(p => {
       const count = countById[p.id] || 0;
       return Math.min(1, count / log2N);
     });
 
     const confidenceMap: Record<number, number> = {};
-    allPokemon.forEach((p, i) => {
+    rankedPokemon.forEach((p, i) => {
       confidenceMap[p.id] = Math.round(confidences[i] * 100);
     });
 
     setConfidenceScores(confidenceMap);
 
-    const averageConfidence = confidences.reduce((a, b) => a + b, 0) / allPokemon.length;
+    const averageConfidence = confidences.reduce((a, b) => a + b, 0) / rankedPokemon.length;
     const percent = Math.round(averageConfidence * 100);
     setCompletionPercentage(percent);
 
@@ -59,7 +59,7 @@ export const useCompletionTracker = (
   };
 
   const getBattlesRemaining = () => {
-    const totalPokemon = allPokemon.length;
+    const totalPokemon = rankedPokemon.length;
     const log2N = Math.log2(totalPokemon);
     const idealComparisons = Math.ceil(totalPokemon * log2N);
     const current = battleResults.length;
@@ -73,10 +73,10 @@ export const useCompletionTracker = (
       countById[result.loser.id] = (countById[result.loser.id] || 0) + 1;
     });
 
-    const log2N = Math.log2(allPokemon.length);
+    const log2N = Math.log2(rankedPokemon.length);
     const minAppearances = 5;
 
-    return allPokemon.filter(p => {
+    return rankedPokemon.filter(p => {
       const count = countById[p.id] || 0;
       const confidence = count / log2N;
       return confidence >= threshold && count >= minAppearances;
@@ -90,13 +90,13 @@ export const useCompletionTracker = (
       countById[result.loser.id] = (countById[result.loser.id] || 0) + 1;
     });
 
-    const log2N = Math.log2(allPokemon.length);
-    const confidences = allPokemon.map(p => {
+    const log2N = Math.log2(rankedPokemon.length);
+    const confidences = rankedPokemon.map(p => {
       const count = countById[p.id] || 0;
       return Math.min(1, count / log2N);
     });
 
-    return Math.round((confidences.reduce((a, b) => a + b, 0) / allPokemon.length) * 100);
+    return Math.round((confidences.reduce((a, b) => a + b, 0) / rankedPokemon.length) * 100);
   };
 
   return {
