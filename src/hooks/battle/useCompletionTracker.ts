@@ -18,23 +18,27 @@ export const useCompletionTracker = (
   const hitMilestones = useRef<Set<number>>(new Set());
 
   useEffect(() => {
-    calculateCompletionPercentage();
-    handleMilestoneSnapshot();
-  }, [battleResults?.length]);
+    if (battleResults.length > 0) {
+      calculateCompletionPercentage();
+      handleMilestoneSnapshot();
+    }
+  }, [battleResults.length]);
 
   const calculateCompletionPercentage = () => {
-    if (!rankedPokemon || rankedPokemon.length === 0 || battleResults.length === 0) {
+    const freshRankings = generateFreshRankings(rankedPokemon);
+
+    if (!freshRankings || freshRankings.length === 0) {
       setCompletionPercentage(0);
       return;
     }
 
-    const log2N = Math.log2(rankedPokemon.length || 1);
-    const confidences = rankedPokemon.map(p => Math.min(1, p.count / log2N));
-    const percent = Math.round((confidences.reduce((a, b) => a + b, 0) / rankedPokemon.length) * 100);
+    const log2N = Math.log2(freshRankings.length);
+    const confidences = freshRankings.map(p => Math.min(1, p.count / log2N));
+    const percent = Math.round((confidences.reduce((a, b) => a + b, 0) / freshRankings.length) * 100);
     setCompletionPercentage(percent);
 
     const confidenceMap: Record<number, number> = {};
-    rankedPokemon.forEach(p => {
+    freshRankings.forEach(p => {
       confidenceMap[p.id] = Math.round(Math.min(1, p.count / log2N) * 100);
     });
     setConfidenceScores(confidenceMap);
@@ -57,10 +61,11 @@ export const useCompletionTracker = (
   };
 
   const getConfidentRankedPokemon = (threshold = 0.5) => {
-    const log2N = Math.log2(rankedPokemon.length || 1);
+    const freshRankings = generateFreshRankings(rankedPokemon);
+    const log2N = Math.log2(freshRankings.length || 1);
     const minAppearances = Math.max(2, Math.floor(Math.log2(battleResults.length || 1)));
 
-    return rankedPokemon
+    return freshRankings
       .filter(p => {
         const confidence = p.count / log2N;
         return p.count >= minAppearances && confidence >= threshold;
@@ -73,7 +78,7 @@ export const useCompletionTracker = (
     const lastMilestoneHit = Math.max(...MILESTONES.filter(m => m <= currentBattleCount));
 
     if (lastMilestoneHit && !hitMilestones.current.has(lastMilestoneHit)) {
-      generateRankings(battleResults); // ensure rankings are fresh
+      generateRankings(battleResults);
 
       setTimeout(() => {
         const confidentNow = getConfidentRankedPokemon(0.5);
@@ -87,7 +92,7 @@ export const useCompletionTracker = (
         } else {
           console.warn(`⚠️ No confident Pokémon at milestone ${lastMilestoneHit}`);
         }
-      }, 50); // small delay to avoid stale reads
+      }, 50);
     }
   };
 
@@ -106,6 +111,13 @@ export const useCompletionTracker = (
     setCurrentRankingGenerated(false);
     setConfidenceScores({});
     setCompletionPercentage(0);
+  };
+
+  // ✅ Injected helper: regenerates fresh ranking snapshot
+  const generateFreshRankings = (base: RankedPokemon[]) => {
+    return base
+      .filter(p => typeof p.count === "number" && p.count > 0)
+      .sort((a, b) => b.score - a.score);
   };
 
   return {
