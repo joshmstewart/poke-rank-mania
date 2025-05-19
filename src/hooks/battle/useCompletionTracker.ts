@@ -5,7 +5,7 @@ import { Pokemon } from "@/services/pokemon";
 import { toast } from "@/hooks/use-toast";
 
 const MILESTONES = [10, 25, 50, 100];
-const CONFIDENCE_THRESHOLD = 0.5;
+const CONFIDENCE_THRESHOLD = 0.15; // ✅ Lowered for earlier progress
 
 export const useCompletionTracker = (
   rankedPokemon: RankedPokemon[],
@@ -31,7 +31,7 @@ export const useCompletionTracker = (
     const total = allPokemonForGeneration.length;
     const log2N = Math.log2(total || 1);
     const expectedCount = log2N * 1.25;
-    const minAppearances = Math.max(2, Math.floor(Math.log2(battleResults.length || 1)));
+    const minAppearances = Math.min(4, Math.max(2, Math.floor(Math.log2(battleResults.length || 1))));
 
     console.log("🧪 PROGRESS DEBUG:");
     console.log("Total filtered Pokémon:", total);
@@ -79,7 +79,7 @@ export const useCompletionTracker = (
   const getConfidentRankedPokemon = (threshold = CONFIDENCE_THRESHOLD) => {
     const total = allPokemonForGeneration.length;
     const expectedCount = Math.log2(total || 1) * 1.25;
-    const minAppearances = Math.max(2, Math.floor(Math.log2(battleResults.length || 1)));
+    const minAppearances = Math.min(4, Math.max(2, Math.floor(Math.log2(battleResults.length || 1))));
 
     return rankedPokemon
       .filter(p => {
