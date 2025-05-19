@@ -7,7 +7,7 @@ import { RankingUI } from "./ranking/RankingUI";
 import { usePokemonRanker } from "@/hooks/usePokemonRanker";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { generations } from "@/services/pokemon";
-import { useBattleStateCore } from "@/hooks/battle/useBattleStateCore"; // ✅ import
+import { useRankings } from "@/hooks/useRankings"; // ✅ Correct hook import
 
 const PokemonRanker = () => {
   const {
@@ -31,7 +31,8 @@ const PokemonRanker = () => {
   const [showRankings, setShowRankings] = React.useState(false);
   const generationName = selectedGeneration === 0 ? "All Generations" : `Generation ${selectedGeneration}`;
 
-  const { confidentRankedPokemon, confidenceScores } = useBattleStateCore(); // ✅ use rankings from battle state
+  // ✅ Corrected hook usage
+  const { finalRankings, confidenceScores } = useRankings(availablePokemon);
 
   return (
     <div className="container max-w-7xl mx-auto py-6">
@@ -112,7 +113,7 @@ const PokemonRanker = () => {
               <div className="h-1 w-full bg-gray-200 rounded-full mt-2"></div>
             </div>
             <RankingResults
-              confidentRankedPokemon={confidentRankedPokemon}
+              confidentRankedPokemon={finalRankings} // ✅ Corrected prop
               confidenceScores={confidenceScores}
             />
           </div>

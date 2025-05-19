@@ -7,7 +7,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Pokemon, generations } from "@/services/pokemon";
+import { generations } from "@/services/pokemon";
+import { RankedPokemon } from "@/hooks/useRankings";
 
 const generationDetails: Record<number, { region: string; games: string }> = {
   1: { region: "Kanto", games: "Red, Blue, Yellow" },
@@ -92,20 +93,20 @@ const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
 };
 
 interface RankingResultsProps {
-  confidentRankedPokemon: Pokemon[];
+  finalRankings: RankedPokemon[];
   confidenceScores: Record<number, number>;
 }
 
 export const RankingResults: React.FC<RankingResultsProps> = ({
-  confidentRankedPokemon,
+  finalRankings,
   confidenceScores,
 }) => {
   return (
     <div className="bg-white rounded-lg shadow p-6">
       <h2 className="text-2xl font-bold mb-4">
-        Your Pokémon Rankings ({confidentRankedPokemon.length} shown)
+        Your Pokémon Rankings ({finalRankings.length} shown)
       </h2>
-      {confidentRankedPokemon.length > 0 ? (
+      {finalRankings.length > 0 ? (
         <Table>
           <TableHeader>
             <TableRow>
@@ -119,7 +120,7 @@ export const RankingResults: React.FC<RankingResultsProps> = ({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {confidentRankedPokemon.map((pokemon, index) => {
+            {finalRankings.map((pokemon, index) => {
               const generation = getPokemonGeneration(pokemon.id);
               const genId = generation?.id || 0;
               const region = generationDetails[genId]?.region || "Unknown";
