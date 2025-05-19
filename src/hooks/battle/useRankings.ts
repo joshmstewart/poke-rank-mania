@@ -12,22 +12,19 @@ export const useRankings = (allPokemon: Pokemon[]) => {
   const [confidenceScores, setConfidenceScores] = useState<Record<number, number>>({});
 
   const generateRankings = (results: SingleBattle[]) => {
+    console.log("🧠 generateRankings called with", results.length, "battles");
+
     const scoreMap = new Map<number, number>();
     const countMap = new Map<number, number>();
     const pokemonSeen = new Set<number>();
 
     results.forEach(result => {
-      const winnerId = result.winner.id;
-      const loserId = result.loser.id;
-
-      scoreMap.set(winnerId, (scoreMap.get(winnerId) || 0) + 1);
-      scoreMap.set(loserId, scoreMap.get(loserId) || 0);
-
-      countMap.set(winnerId, (countMap.get(winnerId) || 0) + 1);
-      countMap.set(loserId, (countMap.get(loserId) || 0) + 1);
-
-      pokemonSeen.add(winnerId);
-      pokemonSeen.add(loserId);
+      scoreMap.set(result.winner.id, (scoreMap.get(result.winner.id) || 0) + 1);
+      scoreMap.set(result.loser.id, scoreMap.get(result.loser.id) || 0);
+      countMap.set(result.winner.id, (countMap.get(result.winner.id) || 0) + 1);
+      countMap.set(result.loser.id, (countMap.get(result.loser.id) || 0) + 1);
+      pokemonSeen.add(result.winner.id);
+      pokemonSeen.add(result.loser.id);
     });
 
     const scoresWithPokemon: RankedPokemon[] = allPokemon
@@ -38,15 +35,13 @@ export const useRankings = (allPokemon: Pokemon[]) => {
         count: countMap.get(p.id) || 0
       }));
 
-    const sorted = scoresWithPokemon.sort((a, b) => b.score - a.score);
-    setFinalRankings(sorted);
+    console.log("🏁 Ranked Pokémon generated:", scoresWithPokemon.length);
+    setFinalRankings(scoresWithPokemon.sort((a, b) => b.score - a.score));
 
-    // Confidence is relative to active Pokémon
     const log2N = Math.log2(scoresWithPokemon.length || 1);
     const confidenceMap: Record<number, number> = {};
     scoresWithPokemon.forEach(p => {
-      const confidence = Math.min(1, p.count / log2N);
-      confidenceMap[p.id] = Math.round(confidence * 100);
+      confidenceMap[p.id] = Math.round(Math.min(1, p.count / log2N) * 100);
     });
 
     setConfidenceScores(confidenceMap);

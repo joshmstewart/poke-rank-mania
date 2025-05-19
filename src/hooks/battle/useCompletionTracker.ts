@@ -15,8 +15,6 @@ export const useCompletionTracker = (
   const [currentRankingGenerated, setCurrentRankingGenerated] = useState(false);
   const [confidenceScores, setConfidenceScores] = useState<Record<number, number>>({});
   const [milestoneRankings, setMilestoneRankings] = useState<Record<number, RankedPokemon[]>>({});
-
-  // ✅ This tracks which milestones we've already hit — and doesn't reset on re-renders
   const hitMilestones = useRef<Set<number>>(new Set());
 
   useEffect(() => {
@@ -66,12 +64,10 @@ export const useCompletionTracker = (
       .sort((a, b) => b.score - a.score);
 
     console.log(`📊 ${battleResults.length} battles → minAppearances: ${minAppearances}, log2N: ${log2N.toFixed(2)}`);
-    console.log("🧪 Eligible Pokémon:");
+    console.log("📌 Snapshot Source:", rankedPokemon.length, "ranked Pokémon");
     rankedPokemon.forEach(p => {
-      const confidence = p.count / log2N;
-      console.log(`#${p.id} ${p.name}: count=${p.count}, confidence=${confidence.toFixed(2)}`);
+      console.log(`→ ${p.name} (id: ${p.id}) — count: ${p.count}, score: ${p.score}`);
     });
-    console.log(`✅ Confident Pokémon count: ${confident.length}`);
 
     return confident;
   };
@@ -80,7 +76,6 @@ export const useCompletionTracker = (
     const currentBattleCount = battleResults.length;
     const lastMilestoneHit = Math.max(...MILESTONES.filter(m => m <= currentBattleCount));
 
-    // ✅ Only snapshot new milestones once
     if (lastMilestoneHit && !hitMilestones.current.has(lastMilestoneHit)) {
       const confidentNow = getConfidentRankedPokemon(0.5);
       setMilestoneRankings(prev => ({
@@ -100,7 +95,7 @@ export const useCompletionTracker = (
   };
 
   const resetMilestones = () => {
-    hitMilestones.current = new Set(); // ✅ clear persistent milestone tracking
+    hitMilestones.current = new Set();
     setMilestoneRankings({});
     setCurrentRankingGenerated(false);
     setConfidenceScores({});
