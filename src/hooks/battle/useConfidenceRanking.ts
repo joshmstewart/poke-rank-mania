@@ -8,8 +8,9 @@ const DEFAULT_CONFIDENCE_THRESHOLD = 0.15;
 export const useConfidenceRanking = () => {
   const [confidenceScores, setConfidenceScores] = useState<Record<number, number>>({});
 
+  // Only calculates confidence scores without affecting any UI state
   const calculateConfidenceScores = (rankedPokemon: RankedPokemon[]) => {
-    if (!rankedPokemon || rankedPokemon.length === 0) return;
+    if (!rankedPokemon || rankedPokemon.length === 0) return {};
 
     const uniquePokemonCount = rankedPokemon.length;
     const totalParticipations = rankedPokemon.reduce((sum, p) => sum + p.count, 0);
@@ -25,6 +26,7 @@ export const useConfidenceRanking = () => {
     return scores;
   };
 
+  // Filter Pokemon based solely on confidence, no UI state changes
   const getConfidentRankedPokemon = (
     rankedPokemon: RankedPokemon[],
     threshold = DEFAULT_CONFIDENCE_THRESHOLD

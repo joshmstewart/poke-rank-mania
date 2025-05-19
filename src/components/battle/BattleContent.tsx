@@ -47,19 +47,21 @@ const BattleContent: React.FC<BattleContentProps> = ({
   const [internalShowRankings, setInternalShowRankings] = useState(showingMilestone || rankingGenerated);
   const continuePressedRef = useRef(false);
 
-  // ✅ Get milestone snapshot but completely separate from completion percentage
+  // Get milestone snapshot (completely separate from completion percentage)
   const { getSnapshotForMilestone } = useBattleStateCore();
   
-  // This is the key fix - we properly handle milestone vs. final rankings
+  // Get the proper milestone snapshot if we're showing a milestone
   const snapshotRankings = showingMilestone ? getSnapshotForMilestone(battlesCompleted) : [];
-  const rankingsToShow = showingMilestone && snapshotRankings.length > 0 
+  
+  // ✅ CRITICAL FIX: Only use snapshot rankings when showing milestone AND we have valid snapshot data
+  const rankingsToShow = showingMilestone && snapshotRankings && snapshotRankings.length > 0 
     ? snapshotRankings 
     : finalRankings;
 
   useEffect(() => {
     console.log("🎯 BattleContent update:");
     console.log("- showingMilestone:", showingMilestone);
-    console.log("- snapshot length:", snapshotRankings.length);
+    console.log("- snapshot length:", snapshotRankings?.length || 0);
     console.log("- continuePressedRef:", continuePressedRef.current);
     console.log("- finalRankings length:", finalRankings?.length || 0);
 
@@ -88,22 +90,33 @@ const BattleContent: React.FC<BattleContentProps> = ({
     }, 100);
   }, [onContinueBattles]);
 
+  // ✅ CRITICAL FIX: Never render RankingDisplay with empty rankings
   if (internalShowRankings) {
-    console.log("🏆 Showing rankings with", rankingsToShow?.length || 0, "Pokémon");
+    // Safety check - never allow empty rankings to be displayed
+    const hasValidRankingsToShow = rankingsToShow && Array.isArray(rankingsToShow) && rankingsToShow.length > 0;
+    
+    console.log("🏆 Showing rankings check:", hasValidRankingsToShow);
+    console.log("🏆 Rankings length:", rankingsToShow?.length || 0);
     console.log("🏆 showingMilestone:", showingMilestone);
     console.log("🏆 rankingGenerated:", rankingGenerated);
 
-    return (
-      <RankingDisplay
-        finalRankings={rankingsToShow || []}
-        battlesCompleted={battlesCompleted}
-        rankingGenerated={rankingGenerated}
-        onNewBattleSet={onNewBattleSet}
-        onContinueBattles={handleContinueBattles}
-        onSaveRankings={onSaveRankings}
-        isMilestoneView={showingMilestone}
-      />
-    );
+    if (hasValidRankingsToShow) {
+      return (
+        <RankingDisplay
+          finalRankings={rankingsToShow}
+          battlesCompleted={battlesCompleted}
+          rankingGenerated={rankingGenerated}
+          onNewBattleSet={onNewBattleSet}
+          onContinueBattles={handleContinueBattles}
+          onSaveRankings={onSaveRankings}
+          isMilestoneView={showingMilestone}
+        />
+      );
+    }
+    
+    // Fallback for empty rankings - prevent crashing with empty snapshot
+    console.log("⚠️ Empty rankings detected, showing BattleInterface instead");
+    // Fall through to BattleInterface
   }
 
   return (
