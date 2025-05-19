@@ -37,15 +37,17 @@ export const createBattleStarter = (
     const allSeenPokemons = pokemonList.filter(p => recentlySeenPokemon.current.has(p.id));
     const unseenPokemons = pokemonList.filter(p => !recentlySeenPokemon.current.has(p.id));
 
-    if (battleCountRef.current <= 100) {
-      // Strongly repeat Pokémon for the first 100 battles
-      if (allSeenPokemons.length >= battleSize) {
-        result = shuffleArray(allSeenPokemons).slice(0, battleSize);
-      } else {
-        // Gradually introduce new Pokémon if needed
-        result = pickDistinctPair(pokemonList, recentlySeenPokemon.current);
-      }
-    } else {
+   if (battleCountRef.current <= 100) {
+  const initialSubsetSize = 20; // adjust as desired
+  const initialSubset = pokemonList.slice(0, initialSubsetSize);
+
+  if (recentlySeenPokemon.current.size < initialSubsetSize) {
+    result = pickDistinctPair(initialSubset, recentlySeenPokemon.current);
+  } else {
+    result = shuffleArray(initialSubset).slice(0, battleSize);
+  }
+}
+ else {
       // After 100 battles, switch to regular ranking-based logic
       const ranked = [...currentFinalRankings];
       const unranked = allPokemonForGeneration.filter(p => !ranked.some(r => r.id === p.id));
