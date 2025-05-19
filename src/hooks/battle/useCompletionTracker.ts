@@ -76,18 +76,38 @@ export const useCompletionTracker = (
     }
   };
 
-  const getConfidentRankedPokemon = (threshold = CONFIDENCE_THRESHOLD) => {
-    const total = allPokemonForGeneration.length;
-    const expectedCount = Math.log2(total || 1) * 1.25;
-    const minAppearances = Math.min(4, Math.max(2, Math.floor(Math.log2(battleResults.length || 1))));
+const getConfidentRankedPokemon = (threshold = CONFIDENCE_THRESHOLD) => {
+  const uniqueBattledPokemonCount = rankedPokemon.length;
 
-    return rankedPokemon
-      .filter(p => {
-        const confidence = p.count / expectedCount;
-        return p.count >= minAppearances || confidence >= threshold;
-      })
-      .sort((a, b) => b.score - a.score);
-  };
+  // Calculate average battle count per Pokémon actually seen
+  const totalBattlesParticipated = rankedPokemon.reduce((sum, p) => sum + p.count, 0);
+  const avgBattlesPerPokemon = totalBattlesParticipated / uniqueBattledPokemonCount;
+
+  // Gradually scale up minimum required appearances
+  let minAppearances = 1;
+  if (uniqueBattledPokemonCount > 100) minAppearances = 4;
+  else if (uniqueBattledPokemonCount > 50) minAppearances = 3;
+  else if (uniqueBattledPokemonCount > 20) minAppearances = 2;
+
+  console.log("🔍 Confidence calculation debug:");
+  console.log("Unique Pokémon battled:", uniqueBattledPokemonCount);
+  console.log("Average battles per Pokémon:", avgBattlesPerPokemon.toFixed(2));
+  console.log("Min appearances for confidence:", minAppearances);
+
+  return rankedPokemon
+    .filter(p => {
+      const confidence = p.count / avgBattlesPerPokemon;
+      const qualifies = p.count >= minAppearances || confidence >= threshold;
+
+      if (qualifies) {
+        console.log(`✅ Pokémon ${p.name} (#${p.id}) qualifies: count=${p.count}, confidence=${confidence.toFixed(2)}`);
+      }
+
+      return qualifies;
+    })
+    .sort((a, b) => b.score - a.score);
+};
+
 
   const handleMilestoneSnapshot = () => {
     const currentBattleCount = battleResults.length;
