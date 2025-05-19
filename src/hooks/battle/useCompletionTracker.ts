@@ -79,7 +79,16 @@ export const useCompletionTracker = (
     const lastMilestoneHit = Math.max(...MILESTONES.filter(m => m <= currentBattleCount));
 
     if (lastMilestoneHit && !hitMilestones.current.has(lastMilestoneHit)) {
-      const confidentNow = getConfidentRankedPokemon(0.5);
+      generateRankings(battleResults); // ensure rankings exist
+setTimeout(() => {
+  const confidentNow = getConfidentRankedPokemon(0.5);
+  setMilestoneRankings(prev => ({
+    ...prev,
+    [lastMilestoneHit]: confidentNow
+  }));
+  hitMilestones.current.add(lastMilestoneHit);
+}, 0);
+
       setMilestoneRankings(prev => ({
         ...prev,
         [lastMilestoneHit]: confidentNow
