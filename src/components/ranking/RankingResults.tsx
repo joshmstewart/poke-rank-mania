@@ -7,7 +7,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { RankedPokemon } from "@/hooks/ranking/useRankings";
+import { RankedPokemon } from "@/hooks/battle/useRankings";
 import { generations } from "@/services/pokemon";
 
 interface RankingResultsProps {

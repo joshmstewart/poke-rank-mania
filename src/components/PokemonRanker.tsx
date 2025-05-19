@@ -7,7 +7,8 @@ import { RankingUI } from "./ranking/RankingUI";
 import { usePokemonRanker } from "@/hooks/usePokemonRanker";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { generations } from "@/services/pokemon";
-import { useRankings } from "@/hooks/ranking/useRankings";
+import { useRankings } from "@/hooks/battle/useRankings";
+
 
 const PokemonRanker = () => {
   const {
