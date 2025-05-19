@@ -7,7 +7,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Pokemon, generations } from "@/services/pokemon";
+import { Pokemon } from "@/services/pokemon";
 import { useCompletionTracker } from "@/hooks/battle/useCompletionTracker";
 
 const generationDetails: Record<number, { region: string; games: string }> = {
