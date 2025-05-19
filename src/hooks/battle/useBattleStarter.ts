@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useRef } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
 
@@ -20,12 +20,12 @@ export const createBattleStarter = (
     return shuffled;
   };
 
-  const pickDistinctPair = (pool: Pokemon[], seen: Set<number>) => {
+  const pickDistinctPair = (pool: Pokemon[], seen: Set<number>, size: number) => {
     const filteredPool = pool.filter(p => !seen.has(p.id));
-    if (filteredPool.length >= 2) {
-      return shuffleArray(filteredPool).slice(0, 2);
+    if (filteredPool.length >= size) {
+      return shuffleArray(filteredPool).slice(0, size);
     }
-    return shuffleArray(pool).slice(0, 2);
+    return shuffleArray(pool).slice(0, size);
   };
 
   const startNewBattle = (battleType: BattleType) => {
@@ -34,21 +34,18 @@ export const createBattleStarter = (
 
     let result: Pokemon[] = [];
 
-    const allSeenPokemons = pokemonList.filter(p => recentlySeenPokemon.current.has(p.id));
-    const unseenPokemons = pokemonList.filter(p => !recentlySeenPokemon.current.has(p.id));
+    if (battleCountRef.current <= 100) {
+      const INITIAL_SUBSET_SIZE = 15; // Adjust size as desired
 
-   if (battleCountRef.current <= 100) {
-  const initialSubsetSize = 20; // adjust as desired
-  const initialSubset = pokemonList.slice(0, initialSubsetSize);
+      // Initialize subset on first run
+      if (recentlySeenPokemon.current.size === 0) {
+        const initialSubset = shuffleArray(pokemonList).slice(0, INITIAL_SUBSET_SIZE);
+        initialSubset.forEach(p => recentlySeenPokemon.current.add(p.id));
+      }
 
-  if (recentlySeenPokemon.current.size < initialSubsetSize) {
-    result = pickDistinctPair(initialSubset, recentlySeenPokemon.current);
-  } else {
-    result = shuffleArray(initialSubset).slice(0, battleSize);
-  }
-}
- else {
-      // After 100 battles, switch to regular ranking-based logic
+      const initialSubsetPokemons = pokemonList.filter(p => recentlySeenPokemon.current.has(p.id));
+      result = pickDistinctPair(initialSubsetPokemons, new Set(), battleSize);
+    } else {
       const ranked = [...currentFinalRankings];
       const unranked = allPokemonForGeneration.filter(p => !ranked.some(r => r.id === p.id));
 
@@ -68,20 +65,19 @@ export const createBattleStarter = (
       ];
 
       for (const [poolA, poolB] of priorityOrder) {
-        const pair = pickDistinctPair([...poolA, ...poolB], recentlySeenPokemon.current);
+        const pair = pickDistinctPair([...poolA, ...poolB], recentlySeenPokemon.current, battleSize);
         if (pair.length === battleSize) {
           result = pair;
           break;
         }
       }
+
+      if (result.length < battleSize) {
+        result = shuffleArray(pokemonList).slice(0, battleSize);
+      }
     }
 
-    // Ensure result is always populated
-    if (result.length < battleSize) {
-      result = shuffleArray(pokemonList).slice(0, battleSize);
-    }
-
-    // Update recently seen Pokémon
+    // Maintain seen set capped at 50 entries
     result.forEach(p => {
       recentlySeenPokemon.current.add(p.id);
       if (recentlySeenPokemon.current.size > 50) {
