@@ -71,20 +71,22 @@ export const useBattleProcessor = (
     );
 
     if (newResults && newResults.length > 0) {
-      setBattleResults(prev => [...prev, ...newResults]);
+      const cumulativeResults = [...battleResults, ...newResults];
 
-      // ✅ updated: pass new results directly
+      setBattleResults(cumulativeResults);
+
       incrementBattlesCompleted(newResults);
 
       const updatedCount = battlesCompleted + 1;
-      const hitMilestone = checkMilestone(updatedCount, newResults);
+      
+      const hitMilestone = checkMilestone(updatedCount, cumulativeResults);
       console.log("Milestone hit?", hitMilestone);
 
       if (hitMilestone && currentSelectedGeneration) {
         saveRankings(
           Array.from(
             new Map(
-              newResults.map(result => [result.winner.id, result.winner])
+              cumulativeResults.map(result => [result.winner.id, result.winner])
             ).values()
           ),
           currentSelectedGeneration,
