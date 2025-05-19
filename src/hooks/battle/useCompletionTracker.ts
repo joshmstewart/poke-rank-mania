@@ -119,13 +119,14 @@ export const useCompletionTracker = (
     setCompletionPercentage(0);
   };
 
-  return {
-    calculateCompletionPercentage,
-    getBattlesRemaining,
-    getConfidentRankedPokemon: () => getConfidentRankedPokemon(rankedPokemon),
-    getOverallRankingProgress,
-    confidenceScores,
-    getSnapshotForMilestone,
-    resetMilestones
-  };
+return {
+  calculateCompletionPercentage,
+  getBattlesRemaining,
+  getConfidentRankedPokemon: (currentRankedPokemon: RankedPokemon[], threshold = CONFIDENCE_THRESHOLD) => 
+    getConfidentRankedPokemon(currentRankedPokemon, threshold),
+  getOverallRankingProgress,
+  confidenceScores,
+  getSnapshotForMilestone,
+  resetMilestones
+};
 };
