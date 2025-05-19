@@ -25,7 +25,7 @@ export const useCompletionTracker = (
       calculateCompletionPercentage();
       handleMilestoneSnapshot();
     }
-  }, [battleResults.length]);
+  }, [battleResults.length, rankedPokemon]); // ✅ Ensure dependency on rankedPokemon
 
   const calculateCompletionPercentage = () => {
     const total = allPokemonForGeneration.length;
@@ -96,16 +96,24 @@ export const useCompletionTracker = (
 
     generateRankings(battleResults);
 
-    setTimeout(() => {
+    // ✅ Updated snapshot logic to wait until rankings are ready
+    const checkAndSnapshot = () => {
       const confidentNow = getConfidentRankedPokemon(CONFIDENCE_THRESHOLD);
+
+      if (confidentNow.length === 0) {
+        setTimeout(checkAndSnapshot, 50);
+        return;
+      }
+
       setMilestoneRankings(prev => ({
         ...prev,
         [milestoneHit]: confidentNow
       }));
       hitMilestones.current.add(milestoneHit);
-
       console.log(`📸 Milestone ${milestoneHit} snapshot saved with ${confidentNow.length} Pokémon`);
-    }, 100);
+    };
+
+    setTimeout(checkAndSnapshot, 100);
   };
 
   const getSnapshotForMilestone = (battleCount: number): RankedPokemon[] => {
