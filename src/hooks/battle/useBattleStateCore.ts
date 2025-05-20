@@ -1,9 +1,10 @@
 import { useMemo } from "react";
 import { Pokemon } from "@/services/pokemon";
-import { BattleType, SingleBattle } from "./types";
+import { BattleType } from "./types";
 import { useBattleState } from "./useBattleState";
 import { useBattleManager } from "./useBattleManager";
 import { useRankings } from "./useRankings";
+import { useBattleTypeSelection } from "./useBattleTypeSelection";
 
 export const useBattleStateCore = (
   allPokemon: Pokemon[],
@@ -12,6 +13,10 @@ export const useBattleStateCore = (
 ) => {
   const {
     battleType,
+    setBattleType
+  } = useBattleTypeSelection();
+
+  const {
     currentBattle,
     battlesCompleted,
     battleResults,
@@ -29,8 +34,7 @@ export const useBattleStateCore = (
     setSelectedPokemon,
     startNewBattle,
     milestones
-  const { battleType, setBattleType } = useBattleTypeSelection();
-
+  } = useBattleState(allPokemon, initialBattleType, initialSelectedGeneration);
 
   const { generateRankings, finalRankings } = useRankings(allPokemon);
 
@@ -72,6 +76,7 @@ export const useBattleStateCore = (
 
   return {
     battleType,
+    setBattleType,
     currentBattle,
     battlesCompleted,
     battleResults,
