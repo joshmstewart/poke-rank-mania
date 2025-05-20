@@ -91,7 +91,8 @@ const PokemonRanker = () => {
         </div>
 
         {showRankings ? (
-          <RankingResults rankedPokemon={rankedPokemon} />
+          <RankingResults confidentRankedPokemon={rankedPokemon} confidenceScores={{}} />
+
         ) : (
           <RankingUI
             isLoading={isLoading}

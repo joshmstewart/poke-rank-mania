@@ -5,27 +5,36 @@ import { useBattleStateCore } from "@/hooks/battle/useBattleStateCore";
 
 const BattleContentContainer: React.FC = () => {
   const {
-    showingMilestone,
-    rankingGenerated,
+    selectedGeneration,
+    battleType,
     currentBattle,
     selectedPokemon,
     battlesCompleted,
-    battleType,
     battleHistory,
     finalRankings,
     milestones,
+    showingMilestone,
+    rankingGenerated,
+    isProcessing,
     handlePokemonSelect,
     handleTripletSelectionComplete,
-    goBack,
-    handleNewBattleSet,
     handleContinueBattles,
+    handleNewBattleSet,
     handleSaveRankings,
-    isProcessing,
+    handleGenerationChange,
+    handleBattleTypeChange,
+    goBack,
   } = useBattleStateCore();
 
   return (
-    <div className="bg-white rounded-lg shadow p-6 flex flex-col gap-4">
-      {/* ✅ Removed extra Logo to eliminate duplication */}
+    <div className="max-w-3xl mx-auto p-4">
+      <BattleControls
+        selectedGeneration={selectedGeneration}
+        battleType={battleType}
+        onGenerationChange={handleGenerationChange}
+        onBattleTypeChange={handleBattleTypeChange}
+        onRestartBattles={handleNewBattleSet}
+      />
       <BattleContent
         showingMilestone={showingMilestone}
         rankingGenerated={rankingGenerated}
@@ -44,8 +53,6 @@ const BattleContentContainer: React.FC = () => {
         onSaveRankings={handleSaveRankings}
         isProcessing={isProcessing}
       />
-
-      <BattleControls />
     </div>
   );
 };

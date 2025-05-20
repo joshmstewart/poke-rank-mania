@@ -1,6 +1,5 @@
-import { useCallback } from "react"; // <-- add this
 import { Pokemon } from "@/services/pokemon";
-import { BattleType, BattleResult } from "./types";
+import { BattleType } from "./types";
 import { useGenerationState } from "./useGenerationState";
 import { useBattleTypeState } from "./useBattleTypeState";
 import { useProgressState } from "./useProgressState";
@@ -11,7 +10,6 @@ import { useBattleStateCoordinator } from "./useBattleStateCoordinator";
 import { useBattleManager } from "./useBattleManager";
 import { useCompletionTracker } from "./useCompletionTracker";
 import { useConfidenceRanking } from "./useConfidenceRanking";
-
 
 export const useBattleStateCore = () => {
   const generationState = useGenerationState();
@@ -38,12 +36,11 @@ export const useBattleStateCore = () => {
     }
   };
 
- const startNewBattleAdapter = useCallback((battleType: BattleType) => {
-  if (allPokemonSafe && allPokemonSafe.length >= 2) {
-    startNewBattle(allPokemonSafe, battleType);
-  }
-}, [allPokemonSafe, startNewBattle]);
-
+  const startNewBattleAdapter = (battleType: BattleType) => {
+    if (allPokemonSafe && allPokemonSafe.length >= 2) {
+      startNewBattle(allPokemonSafe, battleType);
+    }
+  };
 
   const {
     isLoading,
@@ -69,30 +66,26 @@ export const useBattleStateCore = () => {
     battleResults: selectionState.battleResults
   });
 
-  // SEPARATED HOOK #1: Completion tracker (only tracks battle completion % and milestones)
   const {
-    calculateCompletionPercentage,
     resetMilestones,
+    calculateCompletionPercentage,
     getSnapshotForMilestone
   } = useCompletionTracker(
     selectionState.battleResults,
     progressState.setRankingGenerated,
     progressState.setCompletionPercentage,
-    progressState.showingMilestone, // Explicitly passing showingMilestone here
+    progressState.showingMilestone,
     progressState.setShowingMilestone,
     generateRankings,
     allPokemonSafe
   );
 
-  // SEPARATED HOOK #2: Confidence ranking (only handles confidence scores for ranking Pokémon)
   const {
     confidenceScores,
     calculateConfidenceScores,
-    getConfidentRankedPokemon,
-    getOverallRankingProgress
+    getConfidentRankedPokemon
   } = useConfidenceRanking();
 
-  // Update confidence scores whenever rankings change
   if (finalRankings && finalRankings.length > 0) {
     calculateConfidenceScores(finalRankings);
   }
@@ -155,38 +148,36 @@ export const useBattleStateCore = () => {
   const confidentRankedPokemon = getConfidentRankedPokemon(finalRankings, 0.8);
 
   return {
-  isLoading,
-  selectedGeneration: generationState.selectedGeneration,
-  allPokemon: selectionState.allPokemon,
-  battleType: battleTypeState.battleType,
-  currentBattle: selectionState.currentBattle,
-  battleResults: selectionState.battleResults,
-  selectedPokemon: selectedPokemon || selectionState.selectedPokemon,
-  battlesCompleted: selectionState.battlesCompleted,
-  rankingGenerated: progressState.rankingGenerated,
-  finalRankings,
-  battleHistory: selectionState.battleHistory,
-  showingMilestone: progressState.showingMilestone,
-  completionPercentage: progressState.completionPercentage,
-  fullRankingMode: progressState.fullRankingMode,
-  milestones: progressState.milestones,
-  isProcessing,
-  handleGenerationChange,
-  handleBattleTypeChange,
-  handlePokemonSelect,
-  handleTripletSelectionComplete,
-  handleSaveRankings,
-  handleContinueBattles,
-  handleNewBattleSet,
-  goBack,
-  getBattlesRemaining,
-  loadPokemon,
-  startNewBattle: startNewBattleAdapter,
-  confidentRankedPokemon,
-  confidenceScores,
-  resetMilestones,
-  resetMilestoneRankings: resetMilestones, // ✅ Added this line to fix your crash
-  getSnapshotForMilestone
-};
-
+    isLoading,
+    selectedGeneration: generationState.selectedGeneration,
+    allPokemon: selectionState.allPokemon,
+    battleType: battleTypeState.battleType,
+    currentBattle: selectionState.currentBattle,
+    battleResults: selectionState.battleResults,
+    selectedPokemon: selectedPokemon || selectionState.selectedPokemon,
+    battlesCompleted: selectionState.battlesCompleted,
+    rankingGenerated: progressState.rankingGenerated,
+    finalRankings,
+    battleHistory: selectionState.battleHistory,
+    showingMilestone: progressState.showingMilestone,
+    completionPercentage: progressState.completionPercentage,
+    fullRankingMode: progressState.fullRankingMode,
+    milestones: progressState.milestones,
+    isProcessing,
+    handleGenerationChange,
+    handleBattleTypeChange,
+    handlePokemonSelect,
+    handleTripletSelectionComplete,
+    handleSaveRankings,
+    handleContinueBattles,
+    handleNewBattleSet,
+    goBack,
+    getBattlesRemaining,
+    loadPokemon,
+    startNewBattle: startNewBattleAdapter,
+    confidentRankedPokemon,
+    confidenceScores,
+    resetMilestones,
+    getSnapshotForMilestone
+  };
 };
