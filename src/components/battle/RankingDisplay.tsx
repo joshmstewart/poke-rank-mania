@@ -58,9 +58,7 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
             </div>
             <PokemonCard 
               pokemon={pokemon} 
-              onClick={() => {}} 
-              isSelected={false}
-              smallCard={true} 
+              compact={true}
             />
           </div>
         ))}
