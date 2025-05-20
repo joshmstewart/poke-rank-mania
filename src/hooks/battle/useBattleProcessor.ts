@@ -21,6 +21,7 @@ export const useBattleProcessor = (
 ) => {
   const [isProcessingResult, setIsProcessingResult] = useState(false);
   const processedMilestonesRef = useRef<Set<number>>(new Set());
+  const milestoneInProgressRef = useRef(false);
 
   const { incrementBattlesCompleted } = useBattleProgression(
     battlesCompleted,
@@ -49,7 +50,7 @@ export const useBattleProcessor = (
     battleType: BattleType,
     currentSelectedGeneration: number = 0
   ) => {
-    if (isProcessingResult) return;
+    if (isProcessingResult || milestoneInProgressRef.current) return;
     setIsProcessingResult(true);
 
     try {
@@ -61,10 +62,13 @@ export const useBattleProcessor = (
         console.log("🟡 useBattleProcessor: incremented battles completed");
         incrementBattlesCompleted(cumulativeResults);
 
+        // Calculate updated count directly to prevent race conditions
         const updatedCount = battlesCompleted + newResults.length;
         
         // Check for milestone and handle UI accordingly
         if (milestones.includes(updatedCount) && !processedMilestonesRef.current.has(updatedCount)) {
+          // Flag that we're processing a milestone to prevent duplicate processing
+          milestoneInProgressRef.current = true;
           processedMilestonesRef.current.add(updatedCount);
           console.log(`🎉 Milestone reached: ${updatedCount} battles`);
           
@@ -78,12 +82,18 @@ export const useBattleProcessor = (
           // Generate rankings for the milestone
           generateRankings(cumulativeResults);
           
-          // Do not set up next battle as the milestone view will be shown
+          // Show milestone view
           setShowingMilestone(true);
+          
+          // Important: Do not reset milestoneInProgressRef.current flag here
+          // It will be reset when the user continues or starts a new battle set
           return;
         }
 
-        await setupNextBattle(battleType);
+        // Only setup next battle if we're not showing a milestone
+        if (!milestoneInProgressRef.current) {
+          await setupNextBattle(battleType);
+        }
       }
     } finally {
       setIsProcessingResult(false);
@@ -101,5 +111,11 @@ export const useBattleProcessor = (
     setShowingMilestone
   ]);
 
-  return { processBattleResult: processBattle, isProcessingResult };
+  return { 
+    processBattleResult: processBattle, 
+    isProcessingResult,
+    resetMilestoneInProgress: () => {
+      milestoneInProgressRef.current = false;
+    }
+  };
 };

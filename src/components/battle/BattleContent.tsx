@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { useBattleStateCore } from "@/hooks/battle/useBattleStateCore";
@@ -42,7 +43,8 @@ const BattleContent = ({ allPokemon, initialBattleType, initialSelectedGeneratio
     resetMilestones,
     calculateCompletionPercentage,
     getSnapshotForMilestone,
-    generateRankings
+    generateRankings,
+    processorRefs
   } = useBattleStateCore(allPokemon, initialBattleType, initialSelectedGeneration);
 
   // Only call startNewBattle once when the component mounts and allPokemon is available
@@ -87,17 +89,29 @@ const BattleContent = ({ allPokemon, initialBattleType, initialSelectedGeneratio
 
   const handleContinueBattles = () => {
     setShowingMilestone(false);
+    // Reset the milestone processing flag when continuing battles
+    if (processorRefs?.resetMilestoneInProgress) {
+      processorRefs.resetMilestoneInProgress();
+    }
     startNewBattle(battleType);
   };
 
   const handleNewBattleSet = () => {
     resetMilestones();
+    // Reset the milestone processing flag when starting a new battle set
+    if (processorRefs?.resetMilestoneInProgress) {
+      processorRefs.resetMilestoneInProgress();
+    }
     startNewBattle(battleType);
   };
 
   const handleSaveRankings = () => {
     console.log("Rankings saved!");
     setShowingMilestone(false);
+    // Reset the milestone processing flag after saving rankings
+    if (processorRefs?.resetMilestoneInProgress) {
+      processorRefs.resetMilestoneInProgress();
+    }
   };
 
   // Calculate completion percentage

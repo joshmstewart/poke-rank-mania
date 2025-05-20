@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Pokemon } from "@/services/pokemon";
 import { RankedPokemon } from "@/hooks/battle/useRankings";
 import { Trophy, Award, Medal } from "lucide-react";
-import { getPreferredImageType, getPreferredImageUrl } from "@/components/settings/ImagePreferenceSelector";
+import { getPreferredImageUrl } from "@/components/settings/ImagePreferenceSelector";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 // Map of Pokemon types to colors
@@ -84,33 +84,32 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
           const typeColor = getPokemonTypeColor(pokemon as Pokemon);
           
           return (
-            <div key={pokemon.id} className="relative flex flex-col overflow-hidden bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow h-auto">
+            <div key={pokemon.id} className="relative flex flex-col overflow-hidden bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
               {/* Rank number with type-colored background */}
               <div className={`absolute top-2 left-2 z-10 ${typeColor} text-white rounded-full w-8 h-8 flex items-center justify-center shadow-md`}>
                 <span className="text-sm font-bold">{index + 1}</span>
               </div>
               
-              {/* Pokemon image in center */}
-              <div className={`p-2 flex items-center justify-center ${typeColor} bg-opacity-10`}>
-                <div className="w-full aspect-square relative flex items-center justify-center">
+              {/* Pokemon image in center - more compact */}
+              <div className={`p-1 flex items-center justify-center ${typeColor} bg-opacity-20`}>
+                <div className="w-full aspect-square relative flex items-center justify-center max-h-20">
                   <img 
                     src={getPreferredImageUrl(pokemon.id)} 
                     alt={pokemon.name} 
-                    className="object-contain max-h-24 p-1"
+                    className="object-contain max-h-16 p-1"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
-                      target.src = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/0.png';
+                      // Try a fallback if first image fails
+                      target.src = getPreferredImageUrl(pokemon.id, 1);
                     }}
                   />
                 </div>
               </div>
               
               {/* Pokemon info at bottom */}
-              <div className="py-2 px-3 border-t border-gray-100 bg-white">
-                <div className="flex flex-col">
-                  <div className="font-medium text-sm truncate text-center">{pokemon.name}</div>
-                  <div className="text-xs text-muted-foreground text-center">#{pokemon.id}</div>
-                </div>
+              <div className="py-1 px-2 text-center border-t border-gray-100">
+                <div className="font-medium text-xs truncate">{pokemon.name}</div>
+                <div className="text-xs text-muted-foreground">#{pokemon.id}</div>
               </div>
             </div>
           );
