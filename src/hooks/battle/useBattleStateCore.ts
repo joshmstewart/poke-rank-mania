@@ -66,7 +66,7 @@ export const useBattleStateCore = (allPokemon: Pokemon[], initialBattleType: Bat
     battleTypeRef.current = initialBattleType;
   }, [initialBattleType]);
 
-  // Adding the missing handlePokemonSelect function
+  // This is our main handlePokemonSelect function that will be passed to components
   const handlePokemonSelect = useCallback((pokemonId: number) => {
     setSelectedPokemon(prev => {
       if (prev.includes(pokemonId)) {
@@ -83,6 +83,7 @@ export const useBattleStateCore = (allPokemon: Pokemon[], initialBattleType: Bat
     await processBattleResult(selectedPokemonIds, currentBattle, battleTypeRef.current, selectedGeneration);
   }, [currentBattle, selectedGeneration, processBattleResult, setBattleHistory]);
 
+  // Make handleTripletSelectionComplete accept no arguments to match the expected interface
   const handleTripletSelectionComplete = useCallback(() => {
     if (selectedPokemon.length !== 1) {
       console.warn("Must select exactly one Pokemon when completing a triplet selection.");
@@ -139,7 +140,7 @@ export const useBattleStateCore = (allPokemon: Pokemon[], initialBattleType: Bat
     battleType: battleTypeRef.current,
     setBattleType: (type: BattleType) => battleTypeRef.current = type,
     finalRankings,
-    handlePokemonSelect,
+    handlePokemonSelect, // Make sure this is included in the return object
     handleTripletSelectionComplete,
     handleSelection,
     goBack,
