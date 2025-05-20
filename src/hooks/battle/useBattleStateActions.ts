@@ -3,6 +3,7 @@ import { Pokemon } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
 import { useGenerationSettings } from "./useGenerationSettings";
 import { useBattleActions } from "./useBattleActions";
+import { useGenerationState } from "./useGenerationState";
 
 /**
  * Hook for managing battle state actions
@@ -32,24 +33,41 @@ export const useBattleStateActions = ({
   generateRankings,
   battleType
 }: UseBattleStateActionsProps) => {
-  const startNewBattleAdapter = (pokemonList: Pokemon[], battleType: BattleType) => {
-    startNewBattle(battleType);
+  // Use the generation state management hook
+  const { selectedGeneration, setSelectedGeneration } = useGenerationState();
+  
+  // Use our simplified hook to get the generation name
+  const { generationName } = useGenerationSettings(selectedGeneration);
+  
+  // Handle generation change
+  const handleGenerationChange = (value: string) => {
+    const genId = parseInt(value);
+    setSelectedGeneration(genId);
+    localStorage.setItem("pokemon-ranker-generation", value);
+    resetBattleState();
   };
 
-  const {
-    selectedGeneration: generationSetting,
-    handleGenerationChange,
-    handleBattleTypeChange
-  } = useGenerationSettings(
-    startNewBattleAdapter,
-    allPokemon,
-    setRankingGenerated,
-    setBattleResults,
-    setBattlesCompleted,
-    setBattleHistory,
-    setShowingMilestone,
-    setCompletionPercentage
-  );
+  // Handle battle type change
+  const handleBattleTypeChange = (value: BattleType) => {
+    localStorage.setItem("pokemon-ranker-battle-type", value);
+    resetBattleState();
+  };
+
+  // Reset battle state
+  const resetBattleState = () => {
+    setRankingGenerated(false);
+    setBattleResults([]);
+    setBattlesCompleted(0);
+    setBattleHistory([]);
+    setShowingMilestone(false);
+    setCompletionPercentage(0);
+    
+    if (Array.isArray(allPokemon) && allPokemon.length > 1) {
+      startNewBattle(battleType);
+    } else {
+      console.error("❌ Not starting new battle: invalid allPokemon", allPokemon);
+    }
+  };
 
   const {
     handleContinueBattles,
@@ -68,9 +86,10 @@ export const useBattleStateActions = ({
   );
 
   return {
-    handleGenerationChange: Object.assign(handleGenerationChange, { generationSetting }),
+    handleGenerationChange: Object.assign(handleGenerationChange, { generationSetting: selectedGeneration }),
     handleBattleTypeChange,
     handleContinueBattles,
-    handleNewBattleSet
+    handleNewBattleSet,
+    generationName // Make sure to return the generationName from our simplified hook
   };
 };
