@@ -11,7 +11,8 @@ export const useBattleStateCore = (
   initialBattleType: BattleType,
   initialSelectedGeneration: number = 0
 ) => {
-  const { battleType, setBattleType } = useBattleTypeSelection(initialBattleType);
+  const { currentBattleType: battleType, setCurrentBattleType: setBattleType } =
+    useBattleTypeSelection(initialBattleType);
 
   const {
     currentBattle,
@@ -30,7 +31,11 @@ export const useBattleStateCore = (
     selectedPokemon,
     setSelectedPokemon,
     startNewBattle,
-    milestones
+    milestones,
+    resetMilestones,
+    resetMilestoneRankings,
+    calculateCompletionPercentage,
+    getSnapshotForMilestone
   } = useBattleState(allPokemon, initialBattleType, initialSelectedGeneration);
 
   const { finalRankings, generateRankings } = useRankings(allPokemon);
@@ -38,7 +43,9 @@ export const useBattleStateCore = (
   const {
     handlePokemonSelect,
     handleTripletSelectionComplete,
-    handleSelection
+    handleSelection,
+    goBack,
+    isProcessingResult
   } = useBattleManager(
     currentBattle,
     battleType,
@@ -80,12 +87,19 @@ export const useBattleStateCore = (
     setRankingGenerated,
     selectedPokemon,
     setSelectedPokemon,
+    startNewBattle,
+    milestones,
+    resetMilestones,
+    resetMilestoneRankings,
+    calculateCompletionPercentage,
+    getSnapshotForMilestone,
     handlePokemonSelect,
     handleTripletSelectionComplete,
     handleSelection,
+    goBack,
+    isProcessingResult,
     rankedPokemon,
     finalRankings: rankedPokemon,
-    generateRankings,
-    milestones
+    generateRankings
   };
 };
