@@ -66,8 +66,14 @@ const BattleSettings: React.FC<BattleSettingsProps> = ({
 
       <Separator className="my-4" />
       
-      {/* Form filters component */}
-      <FormFiltersSelector />
+      {/* Form filters with heading */}
+      <div className="flex flex-col space-y-2">
+        <h3 className="text-sm font-medium">Pokémon Form Filters</h3>
+        <p className="text-xs text-muted-foreground mb-2">
+          Control which Pokémon forms appear in battles
+        </p>
+        <FormFiltersSelector />
+      </div>
     </div>
   );
 };
