@@ -11,10 +11,7 @@ export const useBattleStateCore = (
   initialBattleType: BattleType,
   initialSelectedGeneration: number = 0
 ) => {
-  const {
-    battleType,
-    setBattleType
-  } = useBattleTypeSelection();
+  const { battleType, setBattleType } = useBattleTypeSelection(initialBattleType);
 
   const {
     currentBattle,
@@ -36,11 +33,9 @@ export const useBattleStateCore = (
     milestones
   } = useBattleState(allPokemon, initialBattleType, initialSelectedGeneration);
 
-  const { generateRankings, finalRankings } = useRankings(allPokemon);
+  const { finalRankings, generateRankings } = useRankings(allPokemon);
 
   const {
-    selectedPokemon: currentSelectedPokemon,
-    setSelectedPokemon: updateSelectedPokemon,
     handlePokemonSelect,
     handleTripletSelectionComplete,
     handleSelection
@@ -58,13 +53,6 @@ export const useBattleStateCore = (
     generateRankings,
     selectedPokemon
   );
-
-  const goBack = () => {
-    console.log("🔄 Go back action triggered");
-    setBattleHistory((prev) => prev.slice(0, -1));
-  };
-
-  const isProcessingResult = false;
 
   const rankedPokemon = useMemo(() => {
     return finalRankings.map((ranked) => ({
@@ -90,13 +78,11 @@ export const useBattleStateCore = (
     setBattleHistory,
     setCompletionPercentage,
     setRankingGenerated,
-    selectedPokemon: currentSelectedPokemon,
-    setSelectedPokemon: updateSelectedPokemon,
+    selectedPokemon,
+    setSelectedPokemon,
     handlePokemonSelect,
     handleTripletSelectionComplete,
     handleSelection,
-    goBack,
-    isProcessingResult,
     rankedPokemon,
     finalRankings: rankedPokemon,
     generateRankings,
