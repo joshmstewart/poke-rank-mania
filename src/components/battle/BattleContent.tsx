@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "@/hooks/battle/types";
 import BattleInterface from "./BattleInterface";
@@ -43,54 +43,41 @@ const BattleContent: React.FC<BattleContentProps> = ({
   onSaveRankings,
   isProcessing = false
 }) => {
-  const [internalShowRankings, setInternalShowRankings] = useState(showingMilestone || rankingGenerated);
   const continuePressedRef = useRef(false);
-
-  // Get milestone snapshot correctly
   const { getSnapshotForMilestone } = useBattleStateCore();
-  
-  const snapshotRankings = showingMilestone ? getSnapshotForMilestone(battlesCompleted) : [];
 
-  const rankingsToShow = showingMilestone && snapshotRankings.length > 0 
-    ? snapshotRankings 
-    : finalRankings;
-
-  const hasValidRankingsToShow = rankingsToShow.length > 0;
+  const [snapshotRankings, setSnapshotRankings] = useState<RankedPokemon[]>([]);
 
   useEffect(() => {
-    console.log("🎯 BattleContent update:");
-    console.log("- showingMilestone:", showingMilestone);
-    console.log("- snapshot length:", snapshotRankings?.length || 0);
-    console.log("- continuePressedRef:", continuePressedRef.current);
-    console.log("- finalRankings length:", finalRankings?.length || 0);
-    console.log("- hasValidRankingsToShow:", hasValidRankingsToShow);
-
-    if (continuePressedRef.current) {
-      setInternalShowRankings(false);
-      continuePressedRef.current = false;
-      return;
+    if (showingMilestone) {
+      const snapshot = getSnapshotForMilestone(battlesCompleted);
+      if (snapshot && snapshot.length > 0) {
+        setSnapshotRankings(snapshot);
+      } else {
+        console.error(`Snapshot for milestone ${battlesCompleted} was empty.`);
+        onContinueBattles(); // Automatically continue if snapshot is invalid
+      }
+    } else {
+      setSnapshotRankings([]);
     }
+  }, [showingMilestone, battlesCompleted, getSnapshotForMilestone, onContinueBattles]);
 
-    setInternalShowRankings(showingMilestone || rankingGenerated);
-  }, [showingMilestone, rankingGenerated, battlesCompleted, finalRankings, snapshotRankings, hasValidRankingsToShow]);
+  const hasValidRankingsToShow = snapshotRankings.length > 0 || (rankingGenerated && finalRankings.length > 0);
+  const rankingsToShow = snapshotRankings.length > 0 ? snapshotRankings : finalRankings;
 
-  const handleContinueBattles = useCallback(() => {
-    console.log("➡️ Continue Battles clicked");
+  useEffect(() => {
+    if (continuePressedRef.current) {
+      continuePressedRef.current = false;
+    }
+  }, [battlesCompleted]);
+
+  const handleContinueBattles = () => {
     continuePressedRef.current = true;
-    setInternalShowRankings(false);
+    setSnapshotRankings([]);
+    onContinueBattles();
+  };
 
-    setTimeout(() => {
-      onContinueBattles();
-      setTimeout(() => {
-        continuePressedRef.current = false;
-        console.log("🔁 continuePressedRef reset");
-      }, 300);
-    }, 100);
-  }, [onContinueBattles]);
-
-  if (internalShowRankings && hasValidRankingsToShow) {
-    console.log("🏆 Showing rankings, valid data confirmed:", rankingsToShow.length);
-    
+  if ((showingMilestone || rankingGenerated) && hasValidRankingsToShow) {
     return (
       <RankingDisplay
         finalRankings={rankingsToShow}
@@ -103,7 +90,7 @@ const BattleContent: React.FC<BattleContentProps> = ({
       />
     );
   }
-  
+
   return (
     <BattleInterface
       currentBattle={currentBattle}
