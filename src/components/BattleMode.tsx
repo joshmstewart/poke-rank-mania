@@ -1,3 +1,4 @@
+
 import React from "react";
 import BattleContentContainer from "./battle/BattleContentContainer";
 import BattleHeader from "./battle/BattleHeader";
@@ -14,15 +15,19 @@ const BattleMode: React.FC = () => {
 
   return (
     <div className="container mx-auto py-4">
-      <BattleHeader />
+      <div className="mb-6">
+        <BattleHeader />
+      </div>
       <ProgressTracker
         completionPercentage={completionPercentage}
         battlesCompleted={battlesCompleted}
-        getBattlesRemaining={getBattlesRemaining} // ✅ Correct prop name
+        getBattlesRemaining={getBattlesRemaining}
       />
-      <BattleContentContainer />
+      <div className="mt-6">
+        <BattleContentContainer />
+      </div>
       <BattleFooterNote
-        battlesCompleted={battlesCompleted} // ✅ Fixed missing required prop
+        battlesCompleted={battlesCompleted}
       />
     </div>
   );

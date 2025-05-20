@@ -28,32 +28,37 @@ const BattleContentContainer: React.FC = () => {
   } = useBattleStateCore();
 
   return (
-    <div className="max-w-3xl mx-auto p-4">
-      <BattleControls
-        selectedGeneration={selectedGeneration}
-        battleType={battleType}
-        onGenerationChange={handleGenerationChange}
-        onBattleTypeChange={handleBattleTypeChange}
-        onRestartBattles={handleNewBattleSet}
-      />
-      <BattleContent
-        showingMilestone={showingMilestone}
-        rankingGenerated={rankingGenerated}
-        currentBattle={currentBattle}
-        selectedPokemon={selectedPokemon}
-        battlesCompleted={battlesCompleted}
-        battleType={battleType}
-        battleHistory={battleHistory}
-        finalRankings={finalRankings}
-        milestones={milestones}
-        onPokemonSelect={(id) => handlePokemonSelect(id, battleType, currentBattle)}
-        onTripletSelectionComplete={() => handleTripletSelectionComplete(battleType, currentBattle)}
-        onGoBack={goBack}
-        onNewBattleSet={handleNewBattleSet}
-        onContinueBattles={handleContinueBattles}
-        onSaveRankings={handleSaveRankings}
-        isProcessing={isProcessing}
-      />
+    <div className="max-w-3xl mx-auto">
+      <div className="mb-4">
+        <BattleControls
+          selectedGeneration={selectedGeneration}
+          battleType={battleType}
+          onGenerationChange={handleGenerationChange}
+          onBattleTypeChange={handleBattleTypeChange}
+          onRestartBattles={handleNewBattleSet}
+        />
+      </div>
+      
+      <div className="mt-6">
+        <BattleContent
+          showingMilestone={showingMilestone}
+          rankingGenerated={rankingGenerated}
+          currentBattle={currentBattle}
+          selectedPokemon={selectedPokemon}
+          battlesCompleted={battlesCompleted}
+          battleType={battleType}
+          battleHistory={battleHistory}
+          finalRankings={finalRankings}
+          milestones={milestones}
+          onPokemonSelect={(id) => handlePokemonSelect(id, battleType, currentBattle)}
+          onTripletSelectionComplete={() => handleTripletSelectionComplete(battleType, currentBattle)}
+          onGoBack={goBack}
+          onNewBattleSet={handleNewBattleSet}
+          onContinueBattles={handleContinueBattles}
+          onSaveRankings={handleSaveRankings}
+          isProcessing={isProcessing}
+        />
+      </div>
     </div>
   );
 };
