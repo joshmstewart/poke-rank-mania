@@ -17,6 +17,7 @@ export const useCompletionTracker = (
   const [milestoneRankings, setMilestoneRankings] = useState<Record<number, RankedPokemon[]>>({});
   const [completionPercentCalculated, setCompletionPercentCalculated] = useState(false);
   const [currentRankingGenerated, setCurrentRankingGenerated] = useState(false);
+  const [pendingMilestone, setPendingMilestone] = useState<number | null>(null);
   const hitMilestones = useRef<Set<number>>(new Set());
 
   // Track completion percentage based ONLY on battle count relative to total Pokémon
@@ -32,6 +33,15 @@ export const useCompletionTracker = (
       checkAndHandleMilestone();
     }
   }, [battleResults.length]);
+
+  // New effect to safely show milestone UI only after rankings are available
+  useEffect(() => {
+    if (pendingMilestone && milestoneRankings[pendingMilestone]?.length > 0) {
+      console.log(`✅ Milestone ${pendingMilestone} rankings confirmed available, now showing UI`);
+      setShowingMilestone(true);
+      setPendingMilestone(null);
+    }
+  }, [milestoneRankings, pendingMilestone, setShowingMilestone]);
 
   const calculateCompletionPercentage = () => {
     // Simple percentage based ONLY on expected total battles needed
@@ -79,9 +89,9 @@ export const useCompletionTracker = (
     // ✅ THIRD: Mark this milestone as hit
     hitMilestones.current.add(milestoneHit);
     
-    // ✅ LAST: Only NOW show the milestone UI after snapshot is safely stored
+    // ✅ Set the pending milestone but DON'T show UI yet - wait for rankings to be available
     console.log(`📸 Milestone ${milestoneHit} snapshot saved with ${milestoneRankingSnapshot.length} Pokémon`);
-    setShowingMilestone(true);
+    setPendingMilestone(milestoneHit);
   };
 
   const getBattlesRemaining = () => {
@@ -99,6 +109,7 @@ export const useCompletionTracker = (
     setMilestoneRankings({});
     setCurrentRankingGenerated(false);
     setCompletionPercentCalculated(false);
+    setPendingMilestone(null);
   };
 
   return {

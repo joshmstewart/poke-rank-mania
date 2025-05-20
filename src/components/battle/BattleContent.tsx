@@ -58,12 +58,16 @@ const BattleContent: React.FC<BattleContentProps> = ({
     ? snapshotRankings 
     : finalRankings;
 
+  // ✅ NEW: Check if we have valid rankings to display
+  const hasValidRankingsToShow = rankingsToShow && Array.isArray(rankingsToShow) && rankingsToShow.length > 0;
+
   useEffect(() => {
     console.log("🎯 BattleContent update:");
     console.log("- showingMilestone:", showingMilestone);
     console.log("- snapshot length:", snapshotRankings?.length || 0);
     console.log("- continuePressedRef:", continuePressedRef.current);
     console.log("- finalRankings length:", finalRankings?.length || 0);
+    console.log("- hasValidRankingsToShow:", hasValidRankingsToShow);
 
     if (continuePressedRef.current) {
       setInternalShowRankings(false);
@@ -72,7 +76,7 @@ const BattleContent: React.FC<BattleContentProps> = ({
     }
 
     setInternalShowRankings(showingMilestone || rankingGenerated);
-  }, [showingMilestone, rankingGenerated, battlesCompleted, finalRankings, snapshotRankings]);
+  }, [showingMilestone, rankingGenerated, battlesCompleted, finalRankings, snapshotRankings, hasValidRankingsToShow]);
 
   const handleContinueBattles = useCallback(() => {
     console.log("➡️ Continue Battles clicked");
@@ -91,32 +95,25 @@ const BattleContent: React.FC<BattleContentProps> = ({
   }, [onContinueBattles]);
 
   // ✅ CRITICAL FIX: Never render RankingDisplay with empty rankings
+  if (internalShowRankings && hasValidRankingsToShow) {
+    console.log("🏆 Showing rankings, valid data confirmed:", rankingsToShow.length);
+    
+    return (
+      <RankingDisplay
+        finalRankings={rankingsToShow}
+        battlesCompleted={battlesCompleted}
+        rankingGenerated={rankingGenerated}
+        onNewBattleSet={onNewBattleSet}
+        onContinueBattles={handleContinueBattles}
+        onSaveRankings={onSaveRankings}
+        isMilestoneView={showingMilestone}
+      />
+    );
+  }
+  
+  // Fallback for empty rankings or no milestone data - prevent crash with empty snapshot
   if (internalShowRankings) {
-    // Safety check - never allow empty rankings to be displayed
-    const hasValidRankingsToShow = rankingsToShow && Array.isArray(rankingsToShow) && rankingsToShow.length > 0;
-    
-    console.log("🏆 Showing rankings check:", hasValidRankingsToShow);
-    console.log("🏆 Rankings length:", rankingsToShow?.length || 0);
-    console.log("🏆 showingMilestone:", showingMilestone);
-    console.log("🏆 rankingGenerated:", rankingGenerated);
-
-    if (hasValidRankingsToShow) {
-      return (
-        <RankingDisplay
-          finalRankings={rankingsToShow}
-          battlesCompleted={battlesCompleted}
-          rankingGenerated={rankingGenerated}
-          onNewBattleSet={onNewBattleSet}
-          onContinueBattles={handleContinueBattles}
-          onSaveRankings={onSaveRankings}
-          isMilestoneView={showingMilestone}
-        />
-      );
-    }
-    
-    // Fallback for empty rankings - prevent crashing with empty snapshot
-    console.log("⚠️ Empty rankings detected, showing BattleInterface instead");
-    // Fall through to BattleInterface
+    console.log("⚠️ Would show rankings, but no valid data available, showing BattleInterface instead");
   }
 
   return (
