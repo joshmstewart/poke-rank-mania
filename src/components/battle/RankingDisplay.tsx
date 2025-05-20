@@ -48,7 +48,7 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
   onSaveRankings,
   isMilestoneView = false
 }) => {
-  console.log("🟣 RankingDisplay component rendered");
+  console.log("🟣 RankingDisplay component rendered with", finalRankings.length, "Pokémon");
   const [displayCount, setDisplayCount] = useState(20);
   
   // Take the top rankings to display
@@ -61,12 +61,24 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
     return typeColors[primaryType] || "bg-gray-100";
   };
 
+  // Handler for the "Show More" button
+  const handleShowMore = () => {
+    // Increase by a larger number to display more Pokémon at once
+    const increment = 50;
+    const newCount = Math.min(displayCount + increment, finalRankings.length);
+    console.log(`Increasing display count from ${displayCount} to ${newCount} of ${finalRankings.length} total`);
+    setDisplayCount(newCount);
+  };
+
   return (
     <div className="bg-white rounded-lg shadow p-6">
       <div className="mb-6 flex justify-between items-center">
         <h2 className="text-xl font-bold flex items-center gap-2">
           <Trophy className="h-5 w-5 text-yellow-500" />
           {isMilestoneView ? `Milestone: ${battlesCompleted} Battles` : "Current Rankings"}
+          <span className="text-sm font-normal text-muted-foreground ml-2">
+            (Showing {displayCount} of {finalRankings.length})
+          </span>
         </h2>
         <div className="flex gap-2">
           <Button onClick={onContinueBattles} variant="default">Continue Battles</Button>
@@ -120,9 +132,10 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
         <div className="mt-4 text-center">
           <Button 
             variant="outline" 
-            onClick={() => setDisplayCount(prev => Math.min(prev + 20, finalRankings.length))}
+            onClick={handleShowMore}
+            className="px-8"
           >
-            Show More
+            Show More ({displayCount}/{finalRankings.length})
           </Button>
         </div>
       )}
