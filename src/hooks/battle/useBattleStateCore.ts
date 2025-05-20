@@ -27,9 +27,20 @@ export const useBattleStateCore = (
   } = state;
 
   const { generateRankings, finalRankings } = useRankings(allPokemon);
+
   const { processBattleResult, isProcessingResult } = useBattleProcessor(
-    battleResults, setBattleResults, battlesCompleted, setBattlesCompleted, allPokemon,
-    setCurrentBattle, setShowingMilestone, generateRankings
+    battleResults,
+    setBattleResults,
+    battlesCompleted,
+    setBattlesCompleted,
+    allPokemon,
+    setCurrentBattle,
+    setShowingMilestone,
+    generateRankings,
+    selectedPokemon,
+    setSelectedPokemon,
+    battleType,
+    battleHistory
   );
 
   const {
@@ -37,7 +48,20 @@ export const useBattleStateCore = (
     handleTripletSelectionComplete,
     handleSelection,
     goBack
-  } = useBattleSelectionManager(processBattleResult, battleType, selectedPokemon, setSelectedPokemon, currentBattle);
+  } = useBattleSelectionManager(
+    processBattleResult,
+    battleType,
+    selectedPokemon,
+    setSelectedPokemon,
+    currentBattle,
+    setCurrentBattle,
+    battleHistory,
+    setBattleHistory,
+    battlesCompleted,
+    setBattlesCompleted,
+    setShowingMilestone,
+    generateRankings
+  );
 
   const startNewBattle = useCallback(() => {
     setRankingGenerated(false);
@@ -47,9 +71,21 @@ export const useBattleStateCore = (
   }, [setRankingGenerated, setBattlesCompleted, setBattleResults, setCurrentBattle]);
 
   const milestones = [10, 25, 50, 100, 150, 200, 250, 300];
-  const { resetMilestones, resetMilestoneRankings, calculateCompletionPercentage, getSnapshotForMilestone } =
-    useCompletionTracker(battleResults, setRankingGenerated, setCompletionPercentage, showingMilestone,
-      setShowingMilestone, generateRankings, allPokemon);
+
+  const {
+    resetMilestones,
+    resetMilestoneRankings,
+    calculateCompletionPercentage,
+    getSnapshotForMilestone
+  } = useCompletionTracker(
+    battleResults,
+    setRankingGenerated,
+    setCompletionPercentage,
+    showingMilestone,
+    setShowingMilestone,
+    generateRankings,
+    allPokemon
+  );
 
   return {
     ...state,

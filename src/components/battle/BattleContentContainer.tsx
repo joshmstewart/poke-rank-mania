@@ -6,14 +6,14 @@ import { Pokemon } from "@/services/pokemon";
 
 interface BattleContentContainerProps {
   allPokemon: Pokemon[];
-  initialBattleType?: any;
+  initialBattleType?: string;
   initialSelectedGeneration?: number;
 }
 
 const BattleContentContainer: React.FC<BattleContentContainerProps> = ({
   allPokemon,
   initialBattleType = "pairs",
-  initialSelectedGeneration = 0,
+  initialSelectedGeneration = 0
 }) => {
   const {
     showingMilestone,
@@ -22,7 +22,6 @@ const BattleContentContainer: React.FC<BattleContentContainerProps> = ({
     selectedPokemon,
     battlesCompleted,
     battleType,
-    setBattleType,
     battleHistory,
     finalRankings,
     milestones,
@@ -35,16 +34,20 @@ const BattleContentContainer: React.FC<BattleContentContainerProps> = ({
     isProcessingResult,
     generateRankings,
     startNewBattle,
-    battleResults,
-  } = useBattleStateCore();
+    battleResults
+  } = useBattleStateCore(allPokemon, initialBattleType, initialSelectedGeneration);
+
+  const handleGenerationChange = (generation: string) => {
+    setSelectedGeneration(parseInt(generation, 10));
+  };
 
   return (
     <div className="flex flex-col">
       <BattleControls
-        selectedGeneration={selectedGeneration.toString()}
+        selectedGeneration={selectedGeneration}
         battleType={battleType}
-        onGenerationChange={(gen: string) => setSelectedGeneration(parseInt(gen))}
-        onBattleTypeChange={(type) => setBattleType(type)}
+        onGenerationChange={handleGenerationChange}
+        onBattleTypeChange={startNewBattle}
       />
       <BattleContent
         showingMilestone={showingMilestone}
@@ -59,7 +62,7 @@ const BattleContentContainer: React.FC<BattleContentContainerProps> = ({
         onPokemonSelect={handlePokemonSelect}
         onTripletSelectionComplete={handleTripletSelectionComplete}
         onGoBack={goBack}
-        onNewBattleSet={() => startNewBattle(battleType)}
+        onNewBattleSet={startNewBattle}
         onContinueBattles={() => setShowingMilestone(false)}
         onSaveRankings={() => generateRankings(battleResults)}
         isProcessing={isProcessingResult}
