@@ -1,56 +1,37 @@
-
 import React from "react";
-import { 
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle
-} from "@/components/ui/alert-dialog";
-import { useBattleStateCore } from "@/hooks/battle/useBattleStateCore";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 interface BattleDialogsProps {
-  isRestartDialogOpen: boolean;
-  onRestartDialogChange: (open: boolean) => void;
-  onConfirmRestart: () => void;
+  showingMilestone: boolean;
+  onContinueBattles: () => void;
+  onNewBattleSet: () => void;
 }
 
 const BattleDialogs: React.FC<BattleDialogsProps> = ({
-  isRestartDialogOpen,
-  onRestartDialogChange,
-  onConfirmRestart
+  showingMilestone,
+  onContinueBattles,
+  onNewBattleSet
 }) => {
-  const { resetMilestoneRankings, resetMilestones } = useBattleStateCore();
-
-
-
- const { resetMilestoneRankings, resetMilestones } = useBattleStateCore();
-
-    resetMilestones();
-    resetMilestoneRankings();  // Now properly defined
-    onConfirmRestart();
-  };
-
   return (
-    <AlertDialog open={isRestartDialogOpen} onOpenChange={onRestartDialogChange}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-          <AlertDialogDescription>
-            This will permanently delete all your current battle progress and rankings.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={handleRestart}>
-            Yes, restart
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+    <>
+      <Dialog open={showingMilestone}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>🎉 Milestone Reached!</DialogTitle>
+          </DialogHeader>
+          <p>You've hit a ranking milestone. Continue battling or start a new set?</p>
+          <DialogFooter>
+            <Button variant="default" onClick={onContinueBattles}>
+              Continue Battles
+            </Button>
+            <Button variant="outline" onClick={onNewBattleSet}>
+              New Battle Set
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 
