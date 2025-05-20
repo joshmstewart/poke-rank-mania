@@ -30,25 +30,39 @@ const BattleContent: React.FC<BattleContentProps> = (props) => {
   const [snapshotRankings, setSnapshotRankings] = useState<RankedPokemon[]>([]);
   const hasFetchedSnapshotRef = useRef<boolean>(false);
   const previousMilestoneRef = useRef<number>(-1);
+  const isProcessingSnapshotRef = useRef<boolean>(false);
 
   // Only fetch milestone snapshot when the milestone flag changes to true
   useEffect(() => {
+    // Guard against processing multiple times
+    if (isProcessingSnapshotRef.current) return;
+    
     // Only process if we have a milestone to show and haven't fetched it yet
     // or if the battle count has changed since the last fetch
     if (
       props.showingMilestone && 
       (!hasFetchedSnapshotRef.current || previousMilestoneRef.current !== props.battlesCompleted)
     ) {
+      // Set processing flag to prevent multiple fetches
+      isProcessingSnapshotRef.current = true;
+      
       try {
         // Get cached rankings for the milestone
         const snapshot = getSnapshotForMilestone(props.battlesCompleted);
         if (snapshot && snapshot.length > 0) {
-          setSnapshotRankings(snapshot);
-          hasFetchedSnapshotRef.current = true;
-          previousMilestoneRef.current = props.battlesCompleted;
+          // Use setTimeout to avoid state updates during rendering
+          setTimeout(() => {
+            setSnapshotRankings(snapshot);
+            hasFetchedSnapshotRef.current = true;
+            previousMilestoneRef.current = props.battlesCompleted;
+            isProcessingSnapshotRef.current = false;
+          }, 0);
+        } else {
+          isProcessingSnapshotRef.current = false;
         }
       } catch (error) {
         console.error("Error getting milestone snapshot:", error);
+        isProcessingSnapshotRef.current = false;
       }
     } else if (!props.showingMilestone) {
       // Reset the flag when not showing milestone

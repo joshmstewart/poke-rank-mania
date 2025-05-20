@@ -73,13 +73,22 @@ export const useBattleProgression = (
           
           // Defer state update to avoid render loops
           setTimeout(() => {
-            setShowingMilestone(true);
-            processingMilestoneRef.current = false;
-            
-            toast({
-              title: "Milestone Reached!",
-              description: `You've completed ${newBattlesCompleted} battles. Check out your current ranking!`
-            });
+            // Only update if we're still the current milestone
+            if (lastMilestoneShownRef.current === newBattlesCompleted) {
+              setShowingMilestone(true);
+              
+              // Reset processing flag after a delay to allow state to settle
+              setTimeout(() => {
+                processingMilestoneRef.current = false;
+              }, 200);
+              
+              toast({
+                title: "Milestone Reached!",
+                description: `You've completed ${newBattlesCompleted} battles. Check out your current ranking!`
+              });
+            } else {
+              processingMilestoneRef.current = false;
+            }
           }, 100);
         } catch (err) {
           console.error("Error generating rankings at milestone:", err);
@@ -104,6 +113,7 @@ export const useBattleProgression = (
     
     incrementInProgressRef.current = true;
     
+    // Use setTimeout to break the render cycle
     setTimeout(() => {
       setBattlesCompleted(prev => {
         const updated = prev + 1;
@@ -111,7 +121,9 @@ export const useBattleProgression = (
         
         // Defer milestone check to avoid render during render
         setTimeout(() => {
-          checkMilestone(updated, battleResults);
+          if (!showingMilestoneRef.current) {
+            checkMilestone(updated, battleResults);
+          }
           incrementInProgressRef.current = false;
         }, 50);
         
@@ -124,7 +136,11 @@ export const useBattleProgression = (
     console.log("🧹 Resetting milestone flag");
     showingMilestoneRef.current = false;
     processingMilestoneRef.current = false;
-    setShowingMilestone(false);
+    
+    // Use setTimeout to break potential render cycles
+    setTimeout(() => {
+      setShowingMilestone(false);
+    }, 0);
   }, [setShowingMilestone]);
 
   return {

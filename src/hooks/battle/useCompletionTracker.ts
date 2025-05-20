@@ -19,6 +19,12 @@ export const useCompletionTracker = (
   const isMilestoneProcessingRef = useRef(false);
   const previousBattleCountRef = useRef<number>(0);
   const pendingMilestoneRef = useRef<number | null>(null);
+  const showingMilestoneRef = useRef<boolean>(showingMilestone);
+
+  // Sync the ref with the prop value - important to prevent stale ref values
+  useEffect(() => {
+    showingMilestoneRef.current = showingMilestone;
+  }, [showingMilestone]);
 
   // Only check for milestones when battleResults change and we're not already showing one
   useEffect(() => {
@@ -31,7 +37,7 @@ export const useCompletionTracker = (
     previousBattleCountRef.current = battleCount;
     
     // Don't trigger if already showing milestone or processing one
-    if (showingMilestone || isMilestoneProcessingRef.current) {
+    if (showingMilestoneRef.current || isMilestoneProcessingRef.current) {
       return;
     }
     
@@ -55,8 +61,15 @@ export const useCompletionTracker = (
           // Use setTimeout to ensure state updates don't cascade
           setTimeout(() => {
             // Only set milestone flag if we're still processing the same milestone
-            if (pendingMilestoneRef.current === battleCount) {
+            // and another milestone isn't already showing
+            if (pendingMilestoneRef.current === battleCount && !showingMilestoneRef.current) {
               setShowingMilestone(true);
+              // Wait a bit before resetting processing flags to avoid race conditions
+              setTimeout(() => {
+                isMilestoneProcessingRef.current = false;
+                pendingMilestoneRef.current = null;
+              }, 100);
+            } else {
               isMilestoneProcessingRef.current = false;
               pendingMilestoneRef.current = null;
             }
