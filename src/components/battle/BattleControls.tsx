@@ -1,10 +1,18 @@
 
-import React from "react";
-import { List, RefreshCw } from "lucide-react";
+import React, { useState } from "react";
+import { List, RefreshCw, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BattleType } from "@/hooks/battle/types";
 import { generations } from "@/services/pokemon";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
+} from "@/components/ui/dialog";
+import BattleSettings from "./BattleSettings";
 
 interface BattleControlsProps {
   selectedGeneration: number;
@@ -21,6 +29,7 @@ const BattleControls: React.FC<BattleControlsProps> = ({
   onBattleTypeChange,
   onRestartBattles
 }) => {
+  const [settingsOpen, setSettingsOpen] = useState(false);
   // Ensure selectedGeneration has a valid value (defaulting to 0 if undefined)
   const safeSelectedGeneration = selectedGeneration !== undefined ? selectedGeneration : 0;
   
@@ -66,6 +75,35 @@ const BattleControls: React.FC<BattleControlsProps> = ({
       
       {/* Right side - action buttons */}
       <div className="flex gap-2">
+        <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
+          <DialogTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-1 h-8 text-sm"
+            >
+              <Settings className="h-4 w-4" /> Forms
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Pokémon Form Settings</DialogTitle>
+            </DialogHeader>
+            <BattleSettings
+              onGenerationChange={(genId) => {
+                onGenerationChange(genId.toString());
+                setSettingsOpen(false);
+              }}
+              onBattleTypeChange={(type) => {
+                onBattleTypeChange(type);
+                setSettingsOpen(false);
+              }}
+              selectedGeneration={safeSelectedGeneration}
+              battleType={battleType}
+            />
+          </DialogContent>
+        </Dialog>
+        
         <Button
           variant="outline"
           size="sm"
