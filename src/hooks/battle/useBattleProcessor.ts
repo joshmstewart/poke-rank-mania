@@ -78,7 +78,8 @@ export const useBattleProcessor = (
           // Generate rankings for the milestone
           generateRankings(cumulativeResults);
           
-          // Only set up next battle if we're not at a milestone
+          // Do not set up next battle as the milestone view will be shown
+          setShowingMilestone(true);
           return;
         }
 
@@ -96,7 +97,8 @@ export const useBattleProcessor = (
     battlesCompleted, 
     milestones, 
     setupNextBattle,
-    generateRankings
+    generateRankings,
+    setShowingMilestone
   ]);
 
   return { processBattleResult: processBattle, isProcessingResult };

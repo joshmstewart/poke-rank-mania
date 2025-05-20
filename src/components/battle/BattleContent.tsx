@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { useBattleStateCore } from "@/hooks/battle/useBattleStateCore";
@@ -18,6 +17,7 @@ interface BattleContentProps {
 
 const BattleContent = ({ allPokemon, initialBattleType, initialSelectedGeneration }: BattleContentProps) => {
   const battleStartedRef = useRef(false);
+  const previousBattlesCompletedRef = useRef(0);
   
   const {
     currentBattle,
@@ -54,6 +54,11 @@ const BattleContent = ({ allPokemon, initialBattleType, initialSelectedGeneratio
     }
   }, [allPokemon.length, initialBattleType, startNewBattle]);
   
+  // Keep track of battles completed to prevent resetting
+  useEffect(() => {
+    previousBattlesCompletedRef.current = battlesCompleted;
+  }, [battlesCompleted]);
+
   // Calculate remaining battles
   const getBattlesRemaining = () => {
     const totalBattlesNeeded = Math.floor(allPokemon.length * Math.log2(allPokemon.length));
@@ -125,7 +130,7 @@ const BattleContent = ({ allPokemon, initialBattleType, initialSelectedGeneratio
       </div>
       
       {showingMilestone ? (
-        <div className="w-full max-w-3xl">
+        <div className="w-full max-w-4xl">
           <RankingDisplay
             finalRankings={finalRankings}
             battlesCompleted={battlesCompleted}
