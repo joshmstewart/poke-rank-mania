@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { PokemonFormType } from "@/components/settings/FormFiltersSelector";
+import { Pokemon } from "@/services/pokemon";
 
 interface FormFilters {
   mega: boolean;
@@ -57,40 +58,56 @@ export const useFormFilters = () => {
     setFilters(updated);
   };
   
+  // Check if a Pokemon should be included based on current filters
+  const shouldIncludePokemon = (pokemon: Pokemon): boolean => {
+    // If all filters are enabled, include all Pokemon
+    if (isAllEnabled) return true;
+    
+    const name = pokemon.name.toLowerCase();
+    
+    // Check for mega evolutions
+    if (name.includes("mega") && !filters.mega) {
+      return false;
+    }
+    
+    // Check for regional variants (e.g., alolan, galarian, hisuian)
+    if ((name.includes("alolan") || 
+         name.includes("galarian") || 
+         name.includes("hisuian") || 
+         name.includes("paldean")) && !filters.regional) {
+      return false;
+    }
+    
+    // Check for gender differences
+    if ((name.includes("female") || 
+         name.includes("male") || 
+         name.includes("-f") || 
+         name.includes("-m")) && !filters.gender) {
+      return false;
+    }
+    
+    // Check for special forms
+    if ((name.includes("form") || 
+         name.includes("style") || 
+         name.includes("mode") || 
+         name.includes("size") || 
+         name.includes("cloak") ||
+         name.includes("rotom-") ||
+         name.includes("gmax") ||
+         name.includes("primal")) && !filters.forms) {
+      return false;
+    }
+    
+    // Include this Pokemon by default
+    return true;
+  };
+  
   // Return the filter state and functions
   return {
     filters,
     toggleFilter,
     isAllEnabled,
     toggleAll,
-    // Helper function to check if a Pokemon should be included based on current filters
-    shouldIncludePokemon: (pokemon: { name: string, id: number }) => {
-      // This is a simple implementation - in a real app, you'd want to check the actual Pokemon data
-      // to determine its form type more accurately
-      const name = pokemon.name.toLowerCase();
-      
-      // Check for mega evolutions
-      if (name.includes("mega") && !filters.mega) {
-        return false;
-      }
-      
-      // Check for regional variants (e.g., alolan, galarian)
-      if ((name.includes("alolan") || name.includes("galarian") || name.includes("hisuian")) && !filters.regional) {
-        return false;
-      }
-      
-      // Check for gender differences
-      if ((name.includes("female") || name.includes("male")) && !filters.gender) {
-        return false;
-      }
-      
-      // Check for special forms
-      if ((name.includes("form") || name.includes("style") || name.includes("mode") || 
-           name.includes("size") || name.includes("cloak")) && !filters.forms) {
-        return false;
-      }
-      
-      return true;
-    }
+    shouldIncludePokemon
   };
 };

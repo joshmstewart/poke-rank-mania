@@ -4,6 +4,7 @@ import { BattleType, SingleBattle } from "./types";
 import { useGenerationSettings } from "./useGenerationSettings";
 import { useBattleActions } from "./useBattleActions";
 import { useGenerationState } from "./useGenerationState";
+import { useFormFilters } from "@/hooks/useFormFilters";
 
 /**
  * Hook for managing battle state actions
@@ -39,6 +40,9 @@ export const useBattleStateActions = ({
   // Use our simplified hook to get the generation name
   const { generationName } = useGenerationSettings(selectedGeneration);
   
+  // Add form filters
+  const { filters, shouldIncludePokemon } = useFormFilters();
+  
   // Handle generation change
   const handleGenerationChange = (value: string) => {
     const genId = parseInt(value);
@@ -63,7 +67,16 @@ export const useBattleStateActions = ({
     setCompletionPercentage(0);
     
     if (Array.isArray(allPokemon) && allPokemon.length > 1) {
-      startNewBattle(battleType);
+      // Filter the Pokemon based on the current form filters
+      const filteredPokemon = allPokemon.filter(shouldIncludePokemon);
+      console.log(`Form filters applied: ${filteredPokemon.length} of ${allPokemon.length} Pokemon included`);
+      
+      // Only start a new battle if we have enough Pokemon after filtering
+      if (filteredPokemon.length >= 2) {
+        startNewBattle(battleType);
+      } else {
+        console.error("❌ Not enough Pokemon after applying filters");
+      }
     } else {
       console.error("❌ Not starting new battle: invalid allPokemon", allPokemon);
     }
@@ -73,7 +86,8 @@ export const useBattleStateActions = ({
     handleContinueBattles,
     handleNewBattleSet
   } = useBattleActions(
-    allPokemon,
+    // Pass the filtered Pokemon to battle actions
+    allPokemon.filter(shouldIncludePokemon),
     setRankingGenerated,
     setBattleResults,
     setBattlesCompleted,

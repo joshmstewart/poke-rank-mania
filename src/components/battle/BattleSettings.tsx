@@ -66,7 +66,7 @@ const BattleSettings: React.FC<BattleSettingsProps> = ({
 
       <Separator className="my-4" />
       
-      {/* Add our new form filters component */}
+      {/* Form filters component */}
       <FormFiltersSelector />
     </div>
   );
