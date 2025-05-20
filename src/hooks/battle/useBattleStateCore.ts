@@ -1,73 +1,64 @@
-import { useMemo } from "react";
-import { Pokemon } from "@/services/pokemon";
-import { BattleType } from "./types";
 import { useBattleState } from "./useBattleState";
-import { useBattleManager } from "./useBattleManager";
-import { useRankings } from "./useRankings";
 import { useBattleTypeSelection } from "./useBattleTypeSelection";
+import { useBattleSelectionManager } from "./useBattleSelectionManager";
+import { BattleType } from "./types";
 
-export const useBattleStateCore = (
-  allPokemon: Pokemon[],
-  initialBattleType: BattleType,
-  initialSelectedGeneration: number = 0
-) => {
-  const { currentBattleType: battleType, setCurrentBattleType: setBattleType } =
-    useBattleTypeSelection(initialBattleType);
+export const useBattleStateCore = () => {
+  const initialBattleType: BattleType = "pairs";
+  const initialSelectedGeneration = 0;
 
   const {
     currentBattle,
     battlesCompleted,
     battleResults,
     battleHistory,
+    selectedPokemon,
+    setSelectedPokemon,
+    rankingGenerated,
+    setRankingGenerated,
     showingMilestone,
     setShowingMilestone,
+    completionPercentage,
+    setCompletionPercentage,
+    milestones,
+    resetMilestones,
+    resetMilestoneRankings,
+    calculateCompletionPercentage,
+    getSnapshotForMilestone,
+    finalRankings,
+    generateRankings,
     selectedGeneration,
     setSelectedGeneration,
     setBattleResults,
     setBattlesCompleted,
     setBattleHistory,
-    setCompletionPercentage,
-    setRankingGenerated,
-    selectedPokemon,
-    setSelectedPokemon,
     startNewBattle,
-    milestones,
-    resetMilestones,
-    resetMilestoneRankings,
-    calculateCompletionPercentage,
-    getSnapshotForMilestone
-  } = useBattleState(allPokemon, initialBattleType, initialSelectedGeneration);
+    currentBattleType,
+    setCurrentBattleType,
+  } = useBattleState([], initialBattleType, initialSelectedGeneration);
 
-  const { finalRankings, generateRankings } = useRankings(allPokemon);
+  const { battleType, setBattleType } = useBattleTypeSelection(initialBattleType);
 
   const {
     handlePokemonSelect,
     handleTripletSelectionComplete,
     handleSelection,
     goBack,
-    isProcessingResult
-  } = useBattleManager(
-    currentBattle,
-    battleType,
+    isProcessingResult,
+  } = useBattleSelectionManager(
     battleResults,
-    battlesCompleted,
     setBattleResults,
+    battlesCompleted,
     setBattlesCompleted,
-    allPokemon,
+    [],
     startNewBattle,
     setShowingMilestone,
     milestones,
     generateRankings,
-    selectedPokemon
+    setSelectedPokemon,
+    currentBattleType,
+    selectedGeneration
   );
-
-  const rankedPokemon = useMemo(() => {
-    return finalRankings.map((ranked) => ({
-      ...ranked,
-      score: ranked.score || 0,
-      count: ranked.count || 0
-    }));
-  }, [finalRankings]);
 
   return {
     battleType,
@@ -80,11 +71,13 @@ export const useBattleStateCore = (
     setShowingMilestone,
     selectedGeneration,
     setSelectedGeneration,
+    rankingGenerated,
+    setRankingGenerated,
+    completionPercentage,
+    setCompletionPercentage,
     setBattleResults,
     setBattlesCompleted,
     setBattleHistory,
-    setCompletionPercentage,
-    setRankingGenerated,
     selectedPokemon,
     setSelectedPokemon,
     startNewBattle,
@@ -93,13 +86,12 @@ export const useBattleStateCore = (
     resetMilestoneRankings,
     calculateCompletionPercentage,
     getSnapshotForMilestone,
+    finalRankings,
+    generateRankings,
     handlePokemonSelect,
     handleTripletSelectionComplete,
     handleSelection,
     goBack,
     isProcessingResult,
-    rankedPokemon,
-    finalRankings: rankedPokemon,
-    generateRankings
   };
 };

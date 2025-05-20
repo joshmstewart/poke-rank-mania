@@ -29,7 +29,8 @@ const BattleContent: React.FC<BattleContentProps> = (props) => {
   // Destructure only the props we need for dependency arrays
   const { showingMilestone, battlesCompleted } = props;
   
-  const { getSnapshotForMilestone } = useBattleStateCore(allPokemon, battleType, 0);
+  const { getSnapshotForMilestone } = useBattleStateCore();
+
 
   const [snapshotRankings, setSnapshotRankings] = useState<RankedPokemon[]>([]);
   const processingRef = useRef(false);

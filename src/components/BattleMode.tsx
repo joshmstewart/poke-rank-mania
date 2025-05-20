@@ -2,8 +2,18 @@ import React from "react";
 import BattleContentContainer from "./battle/BattleContentContainer";
 import { usePokemonLoader } from "@/hooks/battle/usePokemonLoader";
 
-const BattleMode: React.FC = () => {
-  const allPokemon = usePokemonLoader(0); // Load all generations by default
+const battleState = useBattleState([], "pairs", 0);
+const { loadPokemon } = usePokemonLoader(
+  battleState.setCurrentBattle,
+  battleState.setRankingGenerated,
+  battleState.setBattlesCompleted,
+  battleState.setBattleResults,
+  battleState.setBattleHistory,
+  battleState.setShowingMilestone,
+  battleState.setCompletionPercentage,
+  battleState.setSelectedPokemon,
+  battleState.currentBattleType
+);
 
   return (
     <div className="flex flex-col">

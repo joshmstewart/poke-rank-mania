@@ -1,4 +1,4 @@
-import React from "react";
+\import React from "react";
 import BattleContent from "./BattleContent";
 import BattleControls from "./BattleControls";
 import { useBattleStateCore } from "@/hooks/battle/useBattleStateCore";
@@ -13,7 +13,7 @@ interface BattleContentContainerProps {
 const BattleContentContainer: React.FC<BattleContentContainerProps> = ({
   allPokemon,
   initialBattleType = "pairs",
-  initialSelectedGeneration = 0
+  initialSelectedGeneration = 0,
 }) => {
   const {
     showingMilestone,
@@ -22,6 +22,7 @@ const BattleContentContainer: React.FC<BattleContentContainerProps> = ({
     selectedPokemon,
     battlesCompleted,
     battleType,
+    setBattleType,
     battleHistory,
     finalRankings,
     milestones,
@@ -34,17 +35,16 @@ const BattleContentContainer: React.FC<BattleContentContainerProps> = ({
     isProcessingResult,
     generateRankings,
     startNewBattle,
-    battleResults
-  } = useBattleStateCore(allPokemon, initialBattleType, initialSelectedGeneration);
+    battleResults,
+  } = useBattleStateCore();
 
   return (
     <div className="flex flex-col">
       <BattleControls
-        selectedGeneration={selectedGeneration}
+        selectedGeneration={selectedGeneration.toString()}
         battleType={battleType}
-        onGenerationChange={setSelectedGeneration}
-        onBattleTypeChange={startNewBattle}
-        battlesCompleted={battlesCompleted}
+        onGenerationChange={(gen: string) => setSelectedGeneration(parseInt(gen))}
+        onBattleTypeChange={(type) => setBattleType(type)}
       />
       <BattleContent
         showingMilestone={showingMilestone}

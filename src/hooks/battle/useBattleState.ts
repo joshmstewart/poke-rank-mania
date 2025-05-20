@@ -44,16 +44,17 @@ export const useBattleState = (
   );
 
   const { loadPokemon } = usePokemonLoader(
-    setCurrentBattle,
-    setRankingGenerated,
-    setBattlesCompleted,
-    setBattleResults,
-    setBattleHistory,
-    setShowingMilestone,
-    setCompletionPercentage,
-    setSelectedPokemon,
-    initialBattleType
-  );
+  setCurrentBattle,
+  setRankingGenerated,
+  setBattlesCompleted,
+  setBattleResults,
+  setBattleHistory,
+  setShowingMilestone,
+  setCompletionPercentage,
+  setSelectedPokemon,
+  initialBattleType
+);
+
 
   const [selectedGeneration, setSelectedGeneration] = useState(initialSelectedGeneration);
   const [currentBattleType, setCurrentBattleType] = useState(initialBattleType);
