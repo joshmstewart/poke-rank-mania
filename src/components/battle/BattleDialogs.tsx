@@ -14,26 +14,8 @@ const BattleDialogs: React.FC<BattleDialogsProps> = ({
   onContinueBattles,
   onNewBattleSet
 }) => {
-  return (
-    <>
-      <Dialog open={showingMilestone}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>🎉 Milestone Reached!</DialogTitle>
-          </DialogHeader>
-          <p>You've hit a ranking milestone. Continue battling or start a new set?</p>
-          <DialogFooter>
-            <Button variant="default" onClick={onContinueBattles}>
-              Continue Battles
-            </Button>
-            <Button variant="outline" onClick={onNewBattleSet}>
-              New Battle Set
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
-  );
+  // We're not using this dialog anymore, using toasts instead
+  return null;
 };
 
 export default BattleDialogs;

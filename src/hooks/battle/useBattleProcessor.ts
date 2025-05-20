@@ -1,11 +1,12 @@
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
 import { useBattleProgression } from "./useBattleProgression";
 import { useNextBattleHandler } from "./useNextBattleHandler";
 import { useBattleResultProcessor } from "./useBattleResultProcessor";
 import { saveRankings } from "@/services/pokemon";
+import { toast } from "@/hooks/use-toast";
 
 export const useBattleProcessor = (
   battleResults: SingleBattle[],
@@ -20,6 +21,7 @@ export const useBattleProcessor = (
   setSelectedPokemon: React.Dispatch<React.SetStateAction<number[]>>
 ) => {
   const [isProcessingResult, setIsProcessingResult] = useState(false);
+  const processedMilestonesRef = useRef<Set<number>>(new Set());
 
   const { incrementBattlesCompleted } = useBattleProgression(
     battlesCompleted,
@@ -61,12 +63,27 @@ export const useBattleProcessor = (
         incrementBattlesCompleted(newResults);
 
         const updatedCount = battlesCompleted + newResults.length;
-        if (milestones.includes(updatedCount)) {
+        
+        // Check for milestone and show toast if needed
+        if (milestones.includes(updatedCount) && !processedMilestonesRef.current.has(updatedCount)) {
+          processedMilestonesRef.current.add(updatedCount);
+          
+          // Save the rankings
           saveRankings(
             Array.from(new Map(cumulativeResults.map(result => [result.winner.id, result.winner])).values()),
             currentSelectedGeneration,
             "battle"
           );
+          
+          // Generate rankings at milestone
+          generateRankings(cumulativeResults);
+          
+          // Show toast notification
+          toast({
+            title: "Milestone Reached!",
+            description: `You've completed ${updatedCount} battles. Rankings have been updated.`,
+            duration: 5000
+          });
         }
 
         await setupNextBattle(battleType);
@@ -74,7 +91,17 @@ export const useBattleProcessor = (
     } finally {
       setIsProcessingResult(false);
     }
-  }, [isProcessingResult, processResult, battleResults, setBattleResults, incrementBattlesCompleted, battlesCompleted, milestones, setupNextBattle]);
+  }, [
+    isProcessingResult, 
+    processResult, 
+    battleResults, 
+    setBattleResults, 
+    incrementBattlesCompleted, 
+    battlesCompleted, 
+    milestones, 
+    setupNextBattle,
+    generateRankings
+  ]);
 
   return { processBattleResult: processBattle, isProcessingResult };
 };

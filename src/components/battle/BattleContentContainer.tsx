@@ -16,7 +16,7 @@ const BattleContentContainer: React.FC<BattleContentContainerProps> = ({
   initialSelectedGeneration = 0
 }) => {
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col w-full max-w-4xl mx-auto">
       <BattleContent
         allPokemon={allPokemon}
         initialBattleType={initialBattleType}

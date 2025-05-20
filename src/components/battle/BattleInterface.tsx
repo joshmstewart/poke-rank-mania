@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft } from "lucide-react";
@@ -101,14 +102,14 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
   // Only render if we have Pokemon to display
   if (!currentBattle || currentBattle.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow p-6 flex items-center justify-center h-64">
+      <div className="bg-white rounded-lg shadow p-6 flex items-center justify-center h-64 w-full">
         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-primary"></div>
       </div>
     );
   }
   
   return (
-    <div className="bg-white rounded-lg shadow p-6">
+    <div className="bg-white rounded-lg shadow p-6 w-full">
       <div className="mb-4">
         <div className="flex justify-between items-center">
           <div className="flex items-center">
@@ -148,7 +149,10 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
       <div 
         key={animationKey}
         className="grid gap-4 mt-8"
-        style={{ display: 'grid', gridTemplateColumns: `repeat(${currentBattle.length}, 1fr)` }}
+        style={{ 
+          display: 'grid', 
+          gridTemplateColumns: `repeat(${currentBattle.length}, 1fr)` 
+        }}
       >
         {currentBattle.map(pokemon => (
           <BattleCard

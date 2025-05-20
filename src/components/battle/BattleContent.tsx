@@ -3,11 +3,11 @@ import React, { useEffect, useRef } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { useBattleStateCore } from "@/hooks/battle/useBattleStateCore";
 import BattleInterface from "./BattleInterface";
-import BattleDialogs from "./BattleDialogs";
 import BattleHeader from "./BattleHeader";
 import BattleControls from "./BattleControls";
 import BattleFooterNote from "./BattleFooterNote";
 import { BattleType } from "@/hooks/battle/types";
+import { toast } from "@/hooks/use-toast";
 
 interface BattleContentProps {
   allPokemon: Pokemon[];
@@ -17,6 +17,7 @@ interface BattleContentProps {
 
 const BattleContent = ({ allPokemon, initialBattleType, initialSelectedGeneration }: BattleContentProps) => {
   const battleStartedRef = useRef(false);
+  const milestoneShownRef = useRef<Set<number>>(new Set());
   
   const {
     currentBattle,
@@ -52,6 +53,25 @@ const BattleContent = ({ allPokemon, initialBattleType, initialSelectedGeneratio
       startNewBattle(initialBattleType);
     }
   }, [allPokemon.length, initialBattleType, startNewBattle]);
+  
+  // Check for milestones and show toast notifications
+  useEffect(() => {
+    if (battlesCompleted > 0 && milestones.includes(battlesCompleted)) {
+      if (!milestoneShownRef.current.has(battlesCompleted)) {
+        milestoneShownRef.current.add(battlesCompleted);
+        
+        // Show toast notification instead of dialog
+        toast({
+          title: "Milestone Reached!",
+          description: `You've completed ${battlesCompleted} battles. Rankings have been updated.`,
+          duration: 5000
+        });
+        
+        // Generate rankings at milestone
+        generateRankings([]);
+      }
+    }
+  }, [battlesCompleted, milestones, generateRankings]);
 
   const handleBattleTypeChange = (newType: BattleType) => {
     setBattleType(newType);
@@ -71,6 +91,7 @@ const BattleContent = ({ allPokemon, initialBattleType, initialSelectedGeneratio
   const handleRestartBattles = () => {
     resetMilestones();
     startNewBattle(battleType);
+    milestoneShownRef.current.clear();
   };
 
   if (!allPokemon.length) {
@@ -78,7 +99,7 @@ const BattleContent = ({ allPokemon, initialBattleType, initialSelectedGeneratio
   }
 
   return (
-    <div className="flex flex-col items-center w-full max-w-4xl mx-auto">
+    <div className="flex flex-col items-center w-full gap-4">
       <BattleHeader />
       
       <BattleControls
@@ -103,12 +124,6 @@ const BattleContent = ({ allPokemon, initialBattleType, initialSelectedGeneratio
       />
       
       <BattleFooterNote battlesCompleted={battlesCompleted} />
-      
-      <BattleDialogs
-        showingMilestone={showingMilestone}
-        onContinueBattles={() => setShowingMilestone(false)}
-        onNewBattleSet={() => startNewBattle(battleType)}
-      />
     </div>
   );
 };

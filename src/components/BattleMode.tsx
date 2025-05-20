@@ -29,14 +29,12 @@ const BattleMode = () => {
   }
 
   return (
-    <div className="flex flex-col items-center w-full">
-      <div className="w-full max-w-4xl">
-        <BattleContentContainer
-          allPokemon={allPokemon}
-          initialBattleType="pairs"
-          initialSelectedGeneration={0}
-        />
-      </div>
+    <div className="flex flex-col items-center w-full py-4 px-4 sm:px-6">
+      <BattleContentContainer
+        allPokemon={allPokemon}
+        initialBattleType="pairs"
+        initialSelectedGeneration={0}
+      />
     </div>
   );
 };

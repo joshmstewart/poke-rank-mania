@@ -1,3 +1,4 @@
+
 import { useCallback, useRef, useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
 
@@ -12,6 +13,7 @@ export const useBattleProgression = (
   const processingMilestoneRef = useRef(false);
   const incrementInProgressRef = useRef(false);
   const milestoneTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const milestoneTracker = useRef<Set<number>>(new Set());
 
   useEffect(() => {
     return () => {
@@ -28,20 +30,24 @@ export const useBattleProgression = (
     const isMilestone = milestones.includes(newBattlesCompleted) ||
                         (newBattlesCompleted >= 100 && newBattlesCompleted % 50 === 0);
 
-    if (isMilestone && battleResults.length > 0) {
+    if (isMilestone && !milestoneTracker.current.has(newBattlesCompleted)) {
+      milestoneTracker.current.add(newBattlesCompleted);
       processingMilestoneRef.current = true;
       console.log(`🎉 Milestone reached: ${newBattlesCompleted} battles`);
 
       try {
+        // Generate rankings based on the battle results
         generateRankings(battleResults);
-        showingMilestoneRef.current = true;
-console.log("🔴 useBattleProgression: setShowingMilestone(true) triggered");
-setShowingMilestone(true);
-
+        
+        // Notify user with toast instead of dialog
         toast({
           title: "Milestone Reached!",
           description: `You've completed ${newBattlesCompleted} battles.`,
+          duration: 5000
         });
+        
+        // We're not showing milestone dialog anymore
+        processingMilestoneRef.current = false;
         return true;
       } catch (err) {
         console.error("Error generating rankings at milestone:", err);
@@ -75,8 +81,8 @@ setShowingMilestone(true);
     console.log("🔄 Resetting milestone state");
     showingMilestoneRef.current = false;
     processingMilestoneRef.current = false;
-    setShowingMilestone(false);
-  }, [setShowingMilestone]);
+    milestoneTracker.current.clear();
+  }, []);
 
   return {
     checkMilestone,
