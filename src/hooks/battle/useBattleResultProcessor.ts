@@ -39,8 +39,8 @@ export const useBattleResultProcessor = (
         const loser = currentBattle.find(p => p.id !== selections[0]);
 
         if (winner && loser) {
+          console.log(`Processing pair battle result: ${winner.name} beats ${loser.name}`);
           newResults.push({ winner, loser });
-          setBattleResults(prev => [...prev, { winner, loser }]);
           setIsProcessing(false);
           return newResults;
         } else {
@@ -49,17 +49,19 @@ export const useBattleResultProcessor = (
           return null;
         }
       } else {
+        // For triplets mode
         const winners = currentBattle.filter(p => selections.includes(p.id));
         const losers = currentBattle.filter(p => !selections.includes(p.id));
 
         if (winners.length > 0 && losers.length > 0) {
+          console.log(`Processing triplet battle with ${winners.length} winners and ${losers.length} losers`);
           winners.forEach(winner => {
             losers.forEach(loser => {
               newResults.push({ winner, loser });
+              console.log(`- ${winner.name} beats ${loser.name}`);
             });
           });
 
-          setBattleResults(prev => [...prev, ...newResults]);
           setIsProcessing(false);
           return newResults;
         } else {
@@ -73,7 +75,7 @@ export const useBattleResultProcessor = (
       setIsProcessing(false);
       return null;
     }
-  }, [battleResults, setBattleResults]);
+  }, []);
 
   return {
     processResult,

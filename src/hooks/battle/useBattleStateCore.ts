@@ -68,33 +68,62 @@ export const useBattleStateCore = (allPokemon: Pokemon[], initialBattleType: Bat
 
   // This is our main handlePokemonSelect function that will be passed to components
   const handlePokemonSelect = useCallback((pokemonId: number) => {
+    // Prevent multiple rapid clicks by checking if we're already processing
+    if (isProcessingResult) {
+      console.log("Ignoring selection while processing previous result");
+      return;
+    }
+    
     setSelectedPokemon(prev => {
+      // For pairs mode, select and process immediately
+      if (battleTypeRef.current === "pairs") {
+        const newSelected = [pokemonId];
+        
+        // Save to battle history before processing
+        setBattleHistory(prevHistory => [...prevHistory, { 
+          battle: currentBattle, 
+          selected: newSelected 
+        }]);
+        
+        // Process battle immediately for pairs mode
+        setTimeout(() => {
+          processBattleResult(newSelected, currentBattle, battleTypeRef.current, selectedGeneration);
+        }, 50);
+        
+        return newSelected;
+      }
+      
+      // For triplets mode, just update the selected state
       if (prev.includes(pokemonId)) {
         return prev.filter(id => id !== pokemonId);
       } else {
         return [...prev, pokemonId];
       }
     });
-  }, []);
+  }, [currentBattle, selectedGeneration, processBattleResult, setBattleHistory, isProcessingResult]);
 
   // Define handleSelection before it's used
   const handleSelection = useCallback(async (selectedPokemonIds: number[]) => {
+    if (isProcessingResult) return;
+    
     setBattleHistory(prev => [...prev, { battle: currentBattle, selected: selectedPokemonIds }]);
     await processBattleResult(selectedPokemonIds, currentBattle, battleTypeRef.current, selectedGeneration);
-  }, [currentBattle, selectedGeneration, processBattleResult, setBattleHistory]);
+  }, [currentBattle, selectedGeneration, processBattleResult, setBattleHistory, isProcessingResult]);
 
   // Make handleTripletSelectionComplete accept no arguments to match the expected interface
   const handleTripletSelectionComplete = useCallback(() => {
-    if (selectedPokemon.length !== 1) {
-      console.warn("Must select exactly one Pokemon when completing a triplet selection.");
+    if (isProcessingResult) return;
+    
+    if (selectedPokemon.length === 0) {
+      console.warn("No Pokemon selected for triplet selection.");
       return;
     }
     
     handleSelection(selectedPokemon);
-  }, [handleSelection, selectedPokemon]);
+  }, [handleSelection, selectedPokemon, isProcessingResult]);
 
   const goBack = useCallback(async () => {
-    if (battleHistory.length === 0) return;
+    if (battleHistory.length === 0 || isProcessingResult) return;
 
     setShowingMilestone(false);
     resetMilestoneInProgress?.();
@@ -102,13 +131,13 @@ export const useBattleStateCore = (allPokemon: Pokemon[], initialBattleType: Bat
     const lastBattle = battleHistory[battleHistory.length - 1];
     setBattleHistory(prev => prev.slice(0, -1));
     setBattleResults(prev => {
-      const updatedResults = prev.slice(0, -currentBattle.length);
+      const updatedResults = prev.slice(0, -1);
       return updatedResults;
     });
-    setBattlesCompleted(prev => Math.max(0, prev - currentBattle.length));
+    setBattlesCompleted(prev => Math.max(0, prev - 1));
     setCurrentBattle(lastBattle.battle);
     setSelectedPokemon(lastBattle.selected);
-  }, [battleHistory, currentBattle, resetMilestoneInProgress, setShowingMilestone, setBattleResults, setBattlesCompleted, setCurrentBattle, setSelectedPokemon]);
+  }, [battleHistory, resetMilestoneInProgress, setShowingMilestone, setBattleResults, setBattlesCompleted, isProcessingResult]);
 
   const startNewBattle = useCallback(async (battleType: BattleType) => {
     battleTypeRef.current = battleType;

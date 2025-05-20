@@ -50,11 +50,17 @@ export const useBattleProcessor = (
     battleType: BattleType,
     currentSelectedGeneration: number = 0
   ) => {
-    if (isProcessingResult || milestoneInProgressRef.current) return;
+    if (isProcessingResult || milestoneInProgressRef.current) {
+      console.log("Already processing a battle or milestone, ignoring");
+      return;
+    }
+    
+    console.log(`Processing battle with selected IDs: ${selectedPokemonIds.join(", ")}`);
     setIsProcessingResult(true);
 
     try {
       const newResults = processResult(selectedPokemonIds, battleType, currentBattlePokemon);
+      
       if (newResults && newResults.length > 0) {
         const cumulativeResults = [...battleResults, ...newResults];
         setBattleResults(cumulativeResults);
@@ -63,7 +69,7 @@ export const useBattleProcessor = (
         incrementBattlesCompleted(cumulativeResults);
 
         // Calculate updated count directly to prevent race conditions
-        const updatedCount = battlesCompleted + newResults.length;
+        const updatedCount = battlesCompleted + 1;
         
         // Check for milestone and handle UI accordingly
         if (milestones.includes(updatedCount) && !processedMilestonesRef.current.has(updatedCount)) {
@@ -85,17 +91,25 @@ export const useBattleProcessor = (
           // Show milestone view
           setShowingMilestone(true);
           
-          // Important: Do not reset milestoneInProgressRef.current flag here
-          // It will be reset when the user continues or starts a new battle set
+          // Return early as we're showing milestone view
+          setIsProcessingResult(false);
           return;
         }
 
         // Only setup next battle if we're not showing a milestone
         if (!milestoneInProgressRef.current) {
-          await setupNextBattle(battleType);
+          // Add small delay for UI to update
+          setTimeout(async () => {
+            await setupNextBattle(battleType);
+            setIsProcessingResult(false);
+          }, 300);
         }
+      } else {
+        console.error("Failed to process battle result properly");
+        setIsProcessingResult(false);
       }
-    } finally {
+    } catch (error) {
+      console.error("Error processing battle:", error);
       setIsProcessingResult(false);
     }
   }, [
