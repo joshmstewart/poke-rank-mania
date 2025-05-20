@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
@@ -12,7 +13,7 @@ export const useBattleProcessor = (
   battlesCompleted: number,
   setBattlesCompleted: React.Dispatch<React.SetStateAction<number>>,
   allPokemon: Pokemon[],
-  startNewBattle: (battleType: BattleType) => void,
+  setCurrentBattle: React.Dispatch<React.SetStateAction<Pokemon[]>>,
   setShowingMilestone: React.Dispatch<React.SetStateAction<boolean>>,
   milestones: number[],
   generateRankings: (results: SingleBattle[]) => void,
@@ -30,7 +31,12 @@ export const useBattleProcessor = (
 
   const { setupNextBattle } = useNextBattleHandler(
     allPokemon,
-    startNewBattle,
+    (battleType: BattleType) => {
+      const shuffled = [...allPokemon].sort(() => Math.random() - 0.5);
+      const battleSize = battleType === "triplets" ? 3 : 2;
+      setCurrentBattle(shuffled.slice(0, battleSize));
+      setSelectedPokemon([]);
+    },
     setSelectedPokemon
   );
 

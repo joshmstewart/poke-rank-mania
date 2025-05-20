@@ -37,11 +37,9 @@ export const useBattleStateCore = (
     allPokemon,
     setCurrentBattle,
     setShowingMilestone,
+    [10, 25, 50, 100, 150, 200, 250, 300],
     generateRankings,
-    selectedPokemon,
-    setSelectedPokemon,
-    battleType,
-    battleHistory
+    setSelectedPokemon
   );
 
   const {
@@ -59,9 +57,7 @@ export const useBattleStateCore = (
     battleHistory,
     setBattleHistory,
     battlesCompleted,
-    setBattlesCompleted,
-    setShowingMilestone,
-    generateRankings
+    setBattlesCompleted
   );
 
   const startNewBattle = useCallback((type: BattleType = battleType) => {

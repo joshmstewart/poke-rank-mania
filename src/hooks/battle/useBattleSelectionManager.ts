@@ -13,9 +13,7 @@ export const useBattleSelectionManager = (
   battleHistory: { battle: Pokemon[], selected: number[] }[],
   setBattleHistory: React.Dispatch<React.SetStateAction<{ battle: Pokemon[], selected: number[] }[]>>,
   battlesCompleted: number,
-  setBattlesCompleted: React.Dispatch<React.SetStateAction<number>>,
-  setShowingMilestone: React.Dispatch<React.SetStateAction<boolean>>,
-  generateRankings: any
+  setBattlesCompleted: React.Dispatch<React.SetStateAction<number>>
 ) => {
   const handlePokemonSelect = useCallback((pokemonId: number) => {
     if (!currentBattle || currentBattle.length === 0) return;

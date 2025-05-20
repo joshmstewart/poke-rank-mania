@@ -2,11 +2,11 @@
 import React, { useEffect } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { useBattleStateCore } from "@/hooks/battle/useBattleStateCore";
-import { BattleInterface } from "./BattleInterface";
+import BattleInterface from "./BattleInterface";
 import BattleDialogs from "./BattleDialogs";
-import { BattleHeader } from "./BattleHeader";
-import { BattleControls } from "./BattleControls";
-import { BattleFooterNote } from "./BattleFooterNote";
+import BattleHeader from "./BattleHeader";
+import BattleControls from "./BattleControls";
+import BattleFooterNote from "./BattleFooterNote";
 import { BattleType } from "@/hooks/battle/types";
 
 interface BattleContentProps {
@@ -74,11 +74,7 @@ const BattleContent = ({ allPokemon, initialBattleType, initialSelectedGeneratio
 
   return (
     <div className="flex flex-col items-center w-full max-w-4xl mx-auto">
-      <BattleHeader
-        battlesCompleted={battlesCompleted}
-        battleType={battleType}
-        completionPercentage={completionPercentage}
-      />
+      <BattleHeader />
       
       <BattleControls
         selectedGeneration={selectedGeneration}
@@ -96,18 +92,17 @@ const BattleContent = ({ allPokemon, initialBattleType, initialSelectedGeneratio
         isProcessing={isProcessingResult}
         battleType={battleType}
         onGoBack={goBack}
+        battlesCompleted={battlesCompleted}
+        battleHistory={[]}
+        milestones={milestones}
       />
       
-      <BattleFooterNote />
+      <BattleFooterNote battlesCompleted={battlesCompleted} />
       
       <BattleDialogs
         showingMilestone={showingMilestone}
-        setShowingMilestone={setShowingMilestone}
-        rankingGenerated={rankingGenerated}
-        finalRankings={finalRankings}
-        milestones={milestones}
-        battlesCompleted={battlesCompleted}
-        getSnapshotForMilestone={getSnapshotForMilestone}
+        onContinueBattles={() => setShowingMilestone(false)}
+        onNewBattleSet={() => startNewBattle(battleType)}
       />
     </div>
   );
