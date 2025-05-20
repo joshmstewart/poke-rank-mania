@@ -20,7 +20,9 @@ export const useBattleProcessor = (
 
   const processBattleResult = useCallback((newResults: SingleBattle[]) => {
     console.log("🟡 useBattleProcessor: incremented battles completed");
-    incrementBattlesCompleted(newResults);
+    console.log("🟡 useBattleProcessor: incremented battles completed");
+incrementBattlesCompleted(newResults);
+
   }, [incrementBattlesCompleted]);
 
   return {

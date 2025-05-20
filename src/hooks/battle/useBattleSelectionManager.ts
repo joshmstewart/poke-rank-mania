@@ -24,7 +24,9 @@ export const useBattleSelectionManager = (
       winner: { id: selectedPokemonIds[0] },
       loser: { id: selectedPokemonIds[1] }
     };
-    processBattleResult([newResult]);
+    console.log("⚫ useBattleSelectionManager: Pokémon selected, incrementing battle");
+processBattleResult([newResult]);
+
   }, [processBattleResult]);
 
   return {

@@ -9,13 +9,17 @@ export const useBattleActions = (
 
   const handleContinueBattles = useCallback(() => {
     console.log("🟤 useBattleActions: setShowingMilestone(false) triggered (ContinueBattles)");
-    setShowingMilestone(false);
+    console.log("🟤 useBattleActions: setShowingMilestone(false) triggered");
+setShowingMilestone(false);
+
     startNewBattle(battleType);
   }, [setShowingMilestone, startNewBattle, battleType]);
 
   const handleNewBattleSet = useCallback(() => {
     console.log("🟤 useBattleActions: setShowingMilestone(false) triggered (NewBattleSet)");
-    setShowingMilestone(false);
+    console.log("🟤 useBattleActions: setShowingMilestone(false) triggered");
+setShowingMilestone(false);
+
     startNewBattle(battleType);
   }, [setShowingMilestone, startNewBattle, battleType]);
 
