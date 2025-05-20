@@ -21,7 +21,6 @@ export const useBattleInteractions = (
   processBattleResult: (selectedPokemonIds: number[], currentBattlePokemon: Pokemon[], battleType: BattleType, currentSelectedGeneration: number) => void
 ) => {
   const [isProcessing, setIsProcessing] = useState(false);
-  const [milestoneReached, setMilestoneReached] = useState<number | null>(null);
   const milestoneToastsShownRef = useRef<Set<number>>(new Set());
   
   // Get current generation from localStorage
@@ -64,20 +63,14 @@ export const useBattleInteractions = (
           
           // Process the battle result directly with the current battle Pokemon
           if (currentBattle && currentBattle.length > 0) {
-            // Check if this battle will reach a milestone BEFORE processing the result
-            // This is important because we want to know if the NEXT battlesCompleted value hits a milestone
-            const nextBattlesCompleted = battlesCompleted + 1;
-            const isMilestone = checkIfMilestone(nextBattlesCompleted);
-            
-            console.log(`Battle #${nextBattlesCompleted}: Is milestone? ${isMilestone}`);
-            if (isMilestone) {
-              setMilestoneReached(nextBattlesCompleted);
-            }
-            
-            // Now process the battle result, which will increment battlesCompleted internally
+            // Process the battle result, which will increment battlesCompleted internally
             processBattleResult(newSelected, currentBattle, battleType, currentGeneration);
             
             console.log("useBattleInteractions: Battle processed successfully, battles completed:", battlesCompleted + 1);
+            
+            // Check if this battle reached a milestone AFTER processing
+            const nextBattlesCompleted = battlesCompleted + 1;
+            checkIfMilestone(nextBattlesCompleted);
           }
         } catch (error) {
           console.error("useBattleInteractions: Error processing battle result:", error);
@@ -120,7 +113,7 @@ export const useBattleInteractions = (
       milestoneToastsShownRef.current.add(battleCount);
       toast({
         title: "Milestone Reached!",
-        description: `You've completed ${battleCount} battles. Check out your current ranking!`,
+        description: `You've completed ${battleCount} battles. Check out your current ranking!`
       });
       return true;
     }
@@ -132,7 +125,7 @@ export const useBattleInteractions = (
       milestoneToastsShownRef.current.add(battleCount);
       toast({
         title: "Milestone Reached!",
-        description: `You've completed ${battleCount} battles. Check out your current ranking!`,
+        description: `You've completed ${battleCount} battles. Check out your current ranking!`
       });
       return true;
     }

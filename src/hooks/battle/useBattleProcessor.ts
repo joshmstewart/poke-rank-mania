@@ -78,7 +78,7 @@ export const useBattleProcessor = (
           // Generate rankings at milestone
           generateRankings(cumulativeResults);
           
-          // Show toast notification - fixed by removing duration
+          // Show toast notification
           toast({
             title: "Milestone Reached!",
             description: `You've completed ${updatedCount} battles. Rankings have been updated.`

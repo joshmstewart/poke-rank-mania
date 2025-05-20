@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { useBattleStateCore } from "@/hooks/battle/useBattleStateCore";
@@ -55,11 +56,14 @@ const BattleContent = ({ allPokemon, initialBattleType, initialSelectedGeneratio
   
   // Check for milestones and show toast notifications
   useEffect(() => {
+    // Only check for milestones at specific battle counts
     if (battlesCompleted > 0 && milestones.includes(battlesCompleted)) {
+      // Only show toast if we haven't shown it already for this milestone
       if (!milestoneShownRef.current.has(battlesCompleted)) {
+        console.log(`Showing milestone toast for battle ${battlesCompleted}`);
         milestoneShownRef.current.add(battlesCompleted);
         
-        // Show toast notification instead of dialog - fixed by removing duration
+        // Show toast notification
         toast({
           title: "Milestone Reached!",
           description: `You've completed ${battlesCompleted} battles. Rankings have been updated.`

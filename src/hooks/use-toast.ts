@@ -16,11 +16,19 @@ export function toast(titleOrOptions: string | ToastOptions, options?: Omit<Toas
   if (typeof titleOrOptions === 'string') {
     // If first arg is a string, it's the title
     const title = titleOrOptions;
-    sonnerToast(title, options);
+    sonnerToast(title, {
+      ...options,
+      // Set a default duration if not specified
+      duration: options?.duration ?? 5000
+    });
   } else {
     // If first arg is an object, it's the options
-    const { title, ...rest } = titleOrOptions;
-    sonnerToast(title || "", rest);
+    const { title, duration = 5000, ...rest } = titleOrOptions;
+    sonnerToast(title || "", {
+      ...rest,
+      // Ensure duration is passed to sonner toast
+      duration: duration
+    });
   }
 }
 

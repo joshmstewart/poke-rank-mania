@@ -1,3 +1,4 @@
+
 import { useCallback, useRef, useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
 
@@ -21,8 +22,8 @@ export const useBattleProgression = (
   }, []);
 
   const checkMilestone = useCallback((newBattlesCompleted: number, battleResults: any[]): boolean => {
-    if (processingMilestoneRef.current || showingMilestoneRef.current) {
-      console.log("🚫 Milestone already processing or showing, skipping");
+    if (processingMilestoneRef.current) {
+      console.log("🚫 Milestone already processing, skipping");
       return false;
     }
 
@@ -38,14 +39,17 @@ export const useBattleProgression = (
         // Generate rankings based on the battle results
         generateRankings(battleResults);
         
-        // Notify user with toast instead of dialog - fixed by removing duration
+        // Show a toast notification for this milestone
         toast({
           title: "Milestone Reached!",
           description: `You've completed ${newBattlesCompleted} battles.`
         });
         
-        // We're not showing milestone dialog anymore
-        processingMilestoneRef.current = false;
+        // Reset the processing flag after a short delay
+        setTimeout(() => {
+          processingMilestoneRef.current = false;
+        }, 500);
+        
         return true;
       } catch (err) {
         console.error("Error generating rankings at milestone:", err);
@@ -56,7 +60,7 @@ export const useBattleProgression = (
     }
 
     return false;
-  }, [milestones, generateRankings, setShowingMilestone]);
+  }, [milestones, generateRankings]);
 
   const incrementBattlesCompleted = useCallback((battleResults: any[]) => {
     if (incrementInProgressRef.current) {
