@@ -16,11 +16,22 @@ export const useBattleActions = (
 ) => {
   const [isActioning, setIsActioning] = useState(false);
   const actionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const isShowingMilestoneRef = useRef(false);
+  const milestoneStateRef = useRef<boolean>(false);
 
   // Keep track of the milestone state to avoid infinite update loops
   useEffect(() => {
-    isShowingMilestoneRef.current = false;
+    // No state updates in this effect
+    return () => {
+      if (actionTimeoutRef.current) {
+        clearTimeout(actionTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Update our ref when the prop changes
+  useEffect(() => {
+    // Only track changes, don't set state here
+    milestoneStateRef.current = false;
   }, []);
 
   const handleContinueBattles = useCallback(() => {
@@ -32,23 +43,22 @@ export const useBattleActions = (
       clearTimeout(actionTimeoutRef.current);
     }
     
-    // First reset the milestone flag using the ref
-    isShowingMilestoneRef.current = false;
-    
-    // Then update the state, but break the render cycle with setTimeout
+    // Close milestone view first
     actionTimeoutRef.current = setTimeout(() => {
+      // Update our ref first
+      milestoneStateRef.current = false;
+      
+      // Then update state
       setShowingMilestone(false);
       
-      // Use nested timeout to ensure state updates are processed before starting new battle
+      // Use nested timeout to ensure state updates are processed 
       actionTimeoutRef.current = setTimeout(() => {
         // Start a new battle after milestone display is closed
-        if (!isShowingMilestoneRef.current) {
-          startNewBattle(battleType);
-        }
+        startNewBattle(battleType);
         setIsActioning(false);
         actionTimeoutRef.current = null;
-      }, 200);
-    }, 100);
+      }, 300);
+    }, 200);
   }, [battleType, setShowingMilestone, startNewBattle, isActioning]);
 
   const handleNewBattleSet = useCallback(() => {
@@ -60,28 +70,28 @@ export const useBattleActions = (
       clearTimeout(actionTimeoutRef.current);
     }
     
-    // Use nested timeouts to ensure state updates are processed in sequence
+    // Use a single timeout for resetting state
     actionTimeoutRef.current = setTimeout(() => {
-      // Reset all state atomically
-      const resetStates = () => {
+      // Reset all state sequentially to avoid render loops
+      milestoneStateRef.current = false;
+      setShowingMilestone(false);
+      
+      // Wait a bit before resetting other state
+      setTimeout(() => {
         setBattleResults([]);
         setBattlesCompleted(0);
         setRankingGenerated(false);
         setBattleHistory([]);
-        isShowingMilestoneRef.current = false;
-        setShowingMilestone(false);
         setCompletionPercentage(0);
-      };
-      
-      resetStates();
-      
-      // Start new battle at the end with a delay to ensure all state resets are processed
-      actionTimeoutRef.current = setTimeout(() => {
-        startNewBattle(battleType);
-        setIsActioning(false);
-        actionTimeoutRef.current = null;
+        
+        // Start new battle at the end with a longer delay
+        setTimeout(() => {
+          startNewBattle(battleType);
+          setIsActioning(false);
+          actionTimeoutRef.current = null;
+        }, 300);
       }, 200);
-    }, 100);
+    }, 200);
   }, [
     battleType, 
     setBattleHistory, 

@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState, useMemo, useRef } from "react";
+import React, { useState, useMemo, useRef, useCallback } from "react";
 import { Pokemon } from "@/services/pokemon";
 import BattleInterface from "./BattleInterface";
 import RankingDisplay from "./RankingDisplay";
@@ -28,47 +28,61 @@ interface BattleContentProps {
 const BattleContent: React.FC<BattleContentProps> = (props) => {
   const { getSnapshotForMilestone } = useBattleStateCore();
   const [snapshotRankings, setSnapshotRankings] = useState<RankedPokemon[]>([]);
-  const hasFetchedSnapshotRef = useRef<boolean>(false);
-  const previousMilestoneRef = useRef<number>(-1);
-  const isProcessingSnapshotRef = useRef<boolean>(false);
+  const prevPropsRef = useRef({
+    showingMilestone: false,
+    battlesCompleted: -1
+  });
+  const processingRef = useRef(false);
 
-  // Only fetch milestone snapshot when the milestone flag changes to true
-  useEffect(() => {
-    // Guard against processing multiple times
-    if (isProcessingSnapshotRef.current) return;
+  // Extract milestone snapshot with useCallback to avoid recreating on every render
+  const fetchMilestoneSnapshot = useCallback(() => {
+    // Guard against processing multiple times and infinite loops
+    if (processingRef.current) return;
     
-    // Only process if we have a milestone to show and haven't fetched it yet
-    // or if the battle count has changed since the last fetch
-    if (
-      props.showingMilestone && 
-      (!hasFetchedSnapshotRef.current || previousMilestoneRef.current !== props.battlesCompleted)
-    ) {
-      // Set processing flag to prevent multiple fetches
-      isProcessingSnapshotRef.current = true;
+    const { showingMilestone, battlesCompleted } = props;
+    const prevProps = prevPropsRef.current;
+    
+    // Only process when milestone status actually changes or battle count changes
+    if (showingMilestone && 
+        (!prevProps.showingMilestone || prevProps.battlesCompleted !== battlesCompleted)) {
+      
+      processingRef.current = true;
       
       try {
         // Get cached rankings for the milestone
-        const snapshot = getSnapshotForMilestone(props.battlesCompleted);
+        const snapshot = getSnapshotForMilestone(battlesCompleted);
+        
         if (snapshot && snapshot.length > 0) {
-          // Use setTimeout to avoid state updates during rendering
-          setTimeout(() => {
-            setSnapshotRankings(snapshot);
-            hasFetchedSnapshotRef.current = true;
-            previousMilestoneRef.current = props.battlesCompleted;
-            isProcessingSnapshotRef.current = false;
-          }, 0);
-        } else {
-          isProcessingSnapshotRef.current = false;
+          // Update the state with rankings
+          setSnapshotRankings(snapshot);
         }
       } catch (error) {
         console.error("Error getting milestone snapshot:", error);
-        isProcessingSnapshotRef.current = false;
       }
-    } else if (!props.showingMilestone) {
-      // Reset the flag when not showing milestone
-      hasFetchedSnapshotRef.current = false;
+      
+      // Store current props to prevent duplicate processing
+      prevPropsRef.current = {
+        showingMilestone,
+        battlesCompleted
+      };
+      
+      // Reset processing flag
+      processingRef.current = false;
+    } else if (!showingMilestone) {
+      // Update the ref when milestone is closed
+      prevPropsRef.current = {
+        showingMilestone: false,
+        battlesCompleted: prevProps.battlesCompleted
+      };
     }
-  }, [props.showingMilestone, props.battlesCompleted, getSnapshotForMilestone]);
+  }, [props, getSnapshotForMilestone]);
+
+  // Call the fetch function once per render when needed
+  React.useEffect(() => {
+    if (props.showingMilestone) {
+      fetchMilestoneSnapshot();
+    }
+  }, [props.showingMilestone, props.battlesCompleted, fetchMilestoneSnapshot]);
 
   // Use memoized value to determine which rankings to show to avoid unnecessary renders
   const shouldShowRankings = useMemo(() => {

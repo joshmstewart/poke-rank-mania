@@ -1,3 +1,4 @@
+
 import { useCallback, useRef, useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
 
@@ -11,13 +12,24 @@ export const useBattleProgression = (
   milestones: number[],
   generateRankings: (results: any[]) => void
 ) => {
+  // Refs to track state without causing renders
   const showingMilestoneRef = useRef(false);
   const lastMilestoneShownRef = useRef(-1);
   const processingMilestoneRef = useRef(false);
   const incrementInProgressRef = useRef(false);
   const pendingBattleUpdateRef = useRef(0);
+  const battleUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Update ref when prop changes to keep it in sync
+  // Clean up any timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (battleUpdateTimeoutRef.current) {
+        clearTimeout(battleUpdateTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Reset refs when battle count changes
   useEffect(() => {
     showingMilestoneRef.current = false;
   }, [battlesCompleted]);
@@ -71,25 +83,26 @@ export const useBattleProgression = (
           // Set flag in ref first
           showingMilestoneRef.current = true;
           
-          // Defer state update to avoid render loops
+          // Use a longer timeout to ensure state settles
           setTimeout(() => {
             // Only update if we're still the current milestone
             if (lastMilestoneShownRef.current === newBattlesCompleted) {
               setShowingMilestone(true);
               
-              // Reset processing flag after a delay to allow state to settle
+              // Only show toast after state is updated
               setTimeout(() => {
+                toast({
+                  title: "Milestone Reached!",
+                  description: `You've completed ${newBattlesCompleted} battles. Check out your current ranking!`
+                });
+                
+                // Reset processing flag after everything is complete
                 processingMilestoneRef.current = false;
-              }, 200);
-              
-              toast({
-                title: "Milestone Reached!",
-                description: `You've completed ${newBattlesCompleted} battles. Check out your current ranking!`
-              });
+              }, 300);
             } else {
               processingMilestoneRef.current = false;
             }
-          }, 100);
+          }, 200);
         } catch (err) {
           console.error("Error generating rankings at milestone:", err);
           processingMilestoneRef.current = false;
@@ -113,34 +126,42 @@ export const useBattleProgression = (
     
     incrementInProgressRef.current = true;
     
+    // Clear any existing timeout
+    if (battleUpdateTimeoutRef.current) {
+      clearTimeout(battleUpdateTimeoutRef.current);
+    }
+    
     // Use setTimeout to break the render cycle
-    setTimeout(() => {
+    battleUpdateTimeoutRef.current = setTimeout(() => {
       setBattlesCompleted(prev => {
         const updated = prev + 1;
         pendingBattleUpdateRef.current = updated;
         
-        // Defer milestone check to avoid render during render
-        setTimeout(() => {
+        // Don't check milestone immediately to avoid render loop
+        battleUpdateTimeoutRef.current = setTimeout(() => {
           if (!showingMilestoneRef.current) {
             checkMilestone(updated, battleResults);
           }
           incrementInProgressRef.current = false;
-        }, 50);
+          battleUpdateTimeoutRef.current = null;
+        }, 100);
         
         return updated;
       });
-    }, 0);
+    }, 50);
   }, [setBattlesCompleted, checkMilestone]);
 
   const resetMilestone = useCallback(() => {
     console.log("🧹 Resetting milestone flag");
+    
+    // Update refs first
     showingMilestoneRef.current = false;
     processingMilestoneRef.current = false;
     
-    // Use setTimeout to break potential render cycles
+    // Then update state with a delay to avoid render loops
     setTimeout(() => {
       setShowingMilestone(false);
-    }, 0);
+    }, 50);
   }, [setShowingMilestone]);
 
   return {

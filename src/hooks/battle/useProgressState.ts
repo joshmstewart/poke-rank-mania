@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 
 /**
  * Hook for managing battle progress state
@@ -7,6 +7,20 @@ export const useProgressState = () => {
   const [showingMilestone, setShowingMilestone] = useState(false);
   const [completionPercentage, setCompletionPercentage] = useState(0);
   const [rankingGenerated, setRankingGenerated] = useState(false);
+  
+  // Use refs to avoid redundant state updates
+  const milestoneRef = useRef(false);
+  
+  // Wrap the setShowingMilestone to update both state and ref
+  const safeSetShowingMilestone = (value: boolean | ((prev: boolean) => boolean)) => {
+    const newValue = typeof value === 'function' ? value(milestoneRef.current) : value;
+    
+    // Only update if the value actually changed
+    if (newValue !== milestoneRef.current) {
+      milestoneRef.current = newValue;
+      setShowingMilestone(newValue);
+    }
+  };
   
   // Always use full ranking mode, but keep in localStorage for compatibility
   const fullRankingMode = true;
@@ -18,12 +32,13 @@ export const useProgressState = () => {
 
   return {
     showingMilestone,
-    setShowingMilestone,
+    setShowingMilestone: safeSetShowingMilestone,
     completionPercentage,
     setCompletionPercentage,
     rankingGenerated,
     setRankingGenerated,
     fullRankingMode,
-    milestones
+    milestones,
+    milestoneRef
   };
 };
