@@ -1,4 +1,5 @@
-import React, { useEffect } from "react";
+
+import React, { useEffect, useState } from "react";
 import BattleContentContainer from "@/components/battle/BattleContentContainer";
 import { usePokemonLoader } from "@/hooks/battle/usePokemonLoader";
 

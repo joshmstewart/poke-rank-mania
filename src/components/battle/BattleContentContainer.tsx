@@ -1,12 +1,14 @@
+
 import React from "react";
 import BattleContent from "./BattleContent";
 import BattleControls from "./BattleControls";
 import { useBattleStateCore } from "@/hooks/battle/useBattleStateCore";
 import { Pokemon } from "@/services/pokemon";
+import { BattleType } from "@/hooks/battle/types";
 
 interface BattleContentContainerProps {
   allPokemon: Pokemon[];
-  initialBattleType?: string;
+  initialBattleType?: BattleType;
   initialSelectedGeneration?: number;
 }
 
@@ -48,6 +50,9 @@ const BattleContentContainer: React.FC<BattleContentContainerProps> = ({
         battleType={battleType}
         onGenerationChange={handleGenerationChange}
         onBattleTypeChange={startNewBattle}
+        onRestartBattles={() => {
+          startNewBattle(battleType);
+        }}
       />
       <BattleContent
         showingMilestone={showingMilestone}
@@ -62,7 +67,7 @@ const BattleContentContainer: React.FC<BattleContentContainerProps> = ({
         onPokemonSelect={handlePokemonSelect}
         onTripletSelectionComplete={handleTripletSelectionComplete}
         onGoBack={goBack}
-        onNewBattleSet={startNewBattle}
+        onNewBattleSet={() => startNewBattle(battleType)}
         onContinueBattles={() => setShowingMilestone(false)}
         onSaveRankings={() => generateRankings(battleResults)}
         isProcessing={isProcessingResult}

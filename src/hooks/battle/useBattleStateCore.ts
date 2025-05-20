@@ -1,3 +1,4 @@
+
 import { useCallback } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { useBattleState } from "./useBattleState";
@@ -63,14 +64,27 @@ export const useBattleStateCore = (
     generateRankings
   );
 
-  const startNewBattle = useCallback(() => {
+  const startNewBattle = useCallback((type: BattleType = battleType) => {
+    setBattleType(type);
     setRankingGenerated(false);
     setBattlesCompleted(0);
     setBattleResults([]);
-    setCurrentBattle([]);
-  }, [setRankingGenerated, setBattlesCompleted, setBattleResults, setCurrentBattle]);
-
-  const milestones = [10, 25, 50, 100, 150, 200, 250, 300];
+    
+    // Create a new shuffled battle
+    const shuffled = [...allPokemon].sort(() => Math.random() - 0.5);
+    const battleSize = type === "triplets" ? 3 : 2;
+    setCurrentBattle(shuffled.slice(0, battleSize));
+    setSelectedPokemon([]);
+  }, [
+    allPokemon,
+    battleType,
+    setBattleType,
+    setRankingGenerated,
+    setBattlesCompleted,
+    setBattleResults,
+    setCurrentBattle,
+    setSelectedPokemon
+  ]);
 
   const {
     resetMilestones,
@@ -96,7 +110,7 @@ export const useBattleStateCore = (
     goBack,
     isProcessingResult,
     startNewBattle,
-    milestones,
+    milestones: [10, 25, 50, 100, 150, 200, 250, 300],
     resetMilestones,
     resetMilestoneRankings,
     calculateCompletionPercentage,

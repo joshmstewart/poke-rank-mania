@@ -4,35 +4,31 @@ import { Pokemon, fetchAllPokemon } from "@/services/pokemon";
 import { toast } from "@/hooks/use-toast";
 import { BattleType } from "./types";
 
-export const usePokemonLoader = ({
-  setAllPokemon,
-  setRankingGenerated,
-  setBattleResults,
-  setBattlesCompleted,
-  setBattleHistory,
-  setShowingMilestone,
-  setCompletionPercentage,
-  setSelectedPokemon,
-  startNewBattle,
-  battleType
-}: {
-  setAllPokemon: React.Dispatch<React.SetStateAction<Pokemon[]>>,
-  setRankingGenerated: React.Dispatch<React.SetStateAction<boolean>>,
-  setBattleResults: React.Dispatch<React.SetStateAction<any[]>>,
-  setBattlesCompleted: React.Dispatch<React.SetStateAction<number>>,
-  setBattleHistory: React.Dispatch<React.SetStateAction<any[]>>,
-  setShowingMilestone: React.Dispatch<React.SetStateAction<boolean>>,
-  setCompletionPercentage: React.Dispatch<React.SetStateAction<number>>,
-  setSelectedPokemon: React.Dispatch<React.SetStateAction<number[]>>,
-  startNewBattle: (pokemonList: Pokemon[], battleType: BattleType) => void,
-  battleType: BattleType
-}) => {
+export const usePokemonLoader = () => {
   const [isLoading, setIsLoading] = useState(true);
+  const [allPokemon, setAllPokemon] = useState<Pokemon[]>([]);
+  const [battleType, setBattleType] = useState<BattleType>("pairs");
+
+  const startNewBattle = (pokemonList: Pokemon[], type: BattleType = battleType) => {
+    if (pokemonList.length < 2) {
+      toast({
+        title: "Not enough Pokémon",
+        description: "Need at least 2 Pokémon for a battle.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setBattleType(type);
+    
+    const shuffled = [...pokemonList].sort(() => Math.random() - 0.5);
+    const battleSize = type === "triplets" ? 3 : 2;
+    return shuffled.slice(0, battleSize);
+  };
 
   const loadPokemon = async (genId = 0, fullRankingMode = false, preserveState = false) => {
     setIsLoading(true);
     try {
-      // Use fetchAllPokemon instead of trying to hit a non-existent API endpoint
       const pokemon = await fetchAllPokemon(genId, fullRankingMode);
       
       if (!pokemon || pokemon.length === 0) {
@@ -47,48 +43,8 @@ export const usePokemonLoader = ({
       }
       
       console.log(`Successfully loaded ${pokemon.length} Pokemon for generation ${genId}`);
-      
-      // ALWAYS update allPokemon state first
       setAllPokemon(pokemon);
       
-      if (!preserveState) {
-        // Reset battle state if not preserving state
-        setBattleResults([]);
-        setBattlesCompleted(0);
-        setRankingGenerated(false);
-        setSelectedPokemon([]);
-        setBattleHistory([]);
-        setShowingMilestone(false);
-        setCompletionPercentage(0);
-      }
-      
-      // Ensure we have valid Pokemon data before starting a battle
-      if (Array.isArray(pokemon) && pokemon.length >= 2) {
-        console.log("✅ Starting initial battle with", pokemon.length, "Pokémon");
-        try {
-          // Ensure we have battle type from localStorage or use default
-          const storedBattleType = localStorage.getItem('pokemon-ranker-battle-type') as BattleType;
-          const actualBattleType = storedBattleType === "triplets" ? "triplets" : "pairs";
-          
-          // Start battle directly with the loaded Pokemon
-          startNewBattle(pokemon, actualBattleType);
-        } catch (e) {
-          console.error("Error starting initial battle:", e);
-          toast({
-            title: "Error",
-            description: "Could not start battle. Please try refreshing the page.",
-            variant: "destructive"
-          });
-        }
-      } else {
-        console.error("❌ Invalid Pokémon data:", pokemon);
-        toast({
-          title: "Error",
-          description: "Invalid Pokémon data received. Please refresh or try again.",
-          variant: "destructive"
-        });
-      }
-
       setIsLoading(false);
       return pokemon;
     } catch (error) {
@@ -106,6 +62,9 @@ export const usePokemonLoader = ({
   return {
     isLoading,
     setIsLoading,
-    loadPokemon
+    allPokemon,
+    loadPokemon,
+    startNewBattle,
+    battleType
   };
 };
