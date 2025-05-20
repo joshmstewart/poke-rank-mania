@@ -19,10 +19,10 @@ export const useBattleProgression = (
     };
   }, []);
 
-  const checkMilestone = useCallback((newBattlesCompleted: number, battleResults: any[]) => {
+  const checkMilestone = useCallback((newBattlesCompleted: number, battleResults: any[]): boolean => {
     if (processingMilestoneRef.current || showingMilestoneRef.current) {
       console.log("🚫 Milestone already processing or showing, skipping");
-      return;
+      return false;
     }
 
     const isMilestone = milestones.includes(newBattlesCompleted) ||
@@ -40,12 +40,16 @@ export const useBattleProgression = (
           title: "Milestone Reached!",
           description: `You've completed ${newBattlesCompleted} battles.`,
         });
+        return true;
       } catch (err) {
         console.error("Error generating rankings at milestone:", err);
         processingMilestoneRef.current = false;
         showingMilestoneRef.current = false;
+        return false;
       }
     }
+
+    return false;
   }, [milestones, generateRankings, setShowingMilestone]);
 
   const incrementBattlesCompleted = useCallback((battleResults: any[]) => {
