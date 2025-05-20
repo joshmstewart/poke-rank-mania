@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+
+import React from "react";
 import {
   Table,
   TableBody,
@@ -9,6 +10,7 @@ import {
 } from "@/components/ui/table";
 import { RankedPokemon } from "@/hooks/battle/useRankings";
 import { generations } from "@/services/pokemon";
+import { Progress } from "@/components/ui/progress"; 
 
 interface RankingResultsProps {
   confidentRankedPokemon: RankedPokemon[];
@@ -30,6 +32,16 @@ export const RankingResults: React.FC<RankingResultsProps> = ({
       <h2 className="text-2xl font-bold mb-4">
         Your Pokémon Rankings ({confidentRankedPokemon.length} shown)
       </h2>
+      
+      <div className="mb-4 p-4 bg-gray-50 rounded-md">
+        <h3 className="text-sm font-medium mb-2">About TrueSkill™ Rankings</h3>
+        <p className="text-sm text-gray-600">
+          Rankings use the TrueSkill™ Bayesian rating system, similar to what Xbox Live uses for matchmaking.
+          Each Pokémon has a skill rating (μ) and uncertainty (σ). The displayed score is a conservative estimate (μ - 3σ),
+          and the confidence increases as more battles are completed.
+        </p>
+      </div>
+      
       {confidentRankedPokemon.length > 0 ? (
         <Table>
           <TableHeader>
@@ -39,14 +51,16 @@ export const RankingResults: React.FC<RankingResultsProps> = ({
               <TableHead>Name</TableHead>
               <TableHead className="w-16">ID</TableHead>
               <TableHead>Generation</TableHead>
-              <TableHead className="w-24 text-right">Confidence</TableHead>
+              <TableHead className="w-36 text-right">Rating</TableHead>
+              <TableHead className="w-36">Confidence</TableHead>
+              <TableHead className="w-16 text-right">Battles</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {confidentRankedPokemon.map((pokemon, index) => {
               const generation = getPokemonGeneration(pokemon.id);
-              const confidence = confidenceScores[pokemon.id] || 0;
-
+              const confidence = pokemon.confidence || confidenceScores[pokemon.id] || 0;
+              
               return (
                 <TableRow key={pokemon.id}>
                   <TableCell>{index + 1}</TableCell>
@@ -56,8 +70,17 @@ export const RankingResults: React.FC<RankingResultsProps> = ({
                   <TableCell>{pokemon.name}</TableCell>
                   <TableCell>#{pokemon.id}</TableCell>
                   <TableCell>{generation?.name || "Unknown"}</TableCell>
-                  <TableCell className="text-right text-sm text-muted-foreground">
-                    {confidence}%
+                  <TableCell className="text-right font-mono">
+                    {pokemon.score ? pokemon.score.toFixed(1) : "N/A"}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Progress value={confidence} className="h-2" />
+                      <span className="text-xs">{confidence.toFixed(0)}%</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {pokemon.count || 0}
                   </TableCell>
                 </TableRow>
               );

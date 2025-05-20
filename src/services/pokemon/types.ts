@@ -5,6 +5,7 @@ export interface Pokemon {
   image: string;
   types?: string[];
   flavorText?: string;
+  rating?: any; // We'll use this to store the TrueSkill Rating object
 }
 
 export interface Generation {
@@ -23,6 +24,7 @@ export interface UnifiedSessionData {
   generationFilter: number;
   lastUpdate?: number;
   lastManualSave?: number;
+  ratingData?: Record<number, { mu: number; sigma: number }>; // Store ratings separately
 }
 
 // Settings constants

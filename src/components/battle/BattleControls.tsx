@@ -36,9 +36,9 @@ const BattleControls: React.FC<BattleControlsProps> = ({
   return (
     <div className="flex items-center justify-between bg-white p-3 rounded-lg shadow border">
       {/* Left side - Gen and Mode dropdowns */}
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-8">
         <div className="flex items-center">
-          <span className="text-sm font-medium whitespace-nowrap mr-1">Gen:</span>
+          <span className="text-sm font-medium whitespace-nowrap mr-2">Gen:</span>
           <Select 
             value={safeSelectedGeneration.toString()} 
             onValueChange={onGenerationChange}
@@ -57,7 +57,7 @@ const BattleControls: React.FC<BattleControlsProps> = ({
         </div>
         
         <div className="flex items-center">
-          <span className="text-sm font-medium whitespace-nowrap mr-1">Mode:</span>
+          <span className="text-sm font-medium whitespace-nowrap mr-2">Mode:</span>
           <Select
             value={battleType}
             onValueChange={(value: BattleType) => onBattleTypeChange(value)}
@@ -74,7 +74,7 @@ const BattleControls: React.FC<BattleControlsProps> = ({
       </div>
       
       {/* Right side - action buttons with more spacing */}
-      <div className="flex gap-6 ml-auto">
+      <div className="flex gap-8 ml-auto">
         <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
           <DialogTrigger asChild>
             <Button
