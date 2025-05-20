@@ -17,6 +17,7 @@ export const useBattleActions = (
 ) => {
   const [isActioning, setIsActioning] = useState(false);
   const actionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const actionsQueueRef = useRef<Array<() => void>>([]);
   
   useEffect(() => {
     // Clean up timeouts on unmount
@@ -26,60 +27,75 @@ export const useBattleActions = (
       }
     };
   }, []);
+  
+  // Queue system to prevent action collisions
+  const queueAction = useCallback((action: () => void) => {
+    if (!isActioning) {
+      setIsActioning(true);
+      
+      // Execute action after a small delay to break render cycles
+      setTimeout(() => {
+        try {
+          action();
+        } catch (e) {
+          console.error("Action error:", e);
+        } finally {
+          // Release the lock after completion with a delay
+          setTimeout(() => {
+            setIsActioning(false);
+            
+            // Process next queued action if any
+            if (actionsQueueRef.current.length > 0) {
+              const nextAction = actionsQueueRef.current.shift();
+              if (nextAction) {
+                queueAction(nextAction);
+              }
+            }
+          }, 100);
+        }
+      }, 20);
+    } else {
+      // Queue the action for later execution
+      actionsQueueRef.current.push(action);
+    }
+  }, [isActioning]);
 
   const handleContinueBattles = useCallback(() => {
-    if (isActioning) return;
-    setIsActioning(true);
-    
-    // Clear any existing timeout to prevent race conditions
-    if (actionTimeoutRef.current) {
-      clearTimeout(actionTimeoutRef.current);
-    }
-    
-    // First step: close the milestone view
-    console.log("Closing milestone view");
-    setShowingMilestone(false);
-    
-    // Wait for state update to propagate
-    actionTimeoutRef.current = setTimeout(() => {
-      console.log("Starting new battle after milestone closed");
+    queueAction(() => {
+      console.log("Continue battles action: closing milestone view");
+      // First step: close the milestone view
+      setShowingMilestone(false);
+      
       // Start a new battle after milestone display is closed
-      startNewBattle(battleType);
-      setIsActioning(false);
-      actionTimeoutRef.current = null;
-    }, 300);
-  }, [battleType, setShowingMilestone, startNewBattle, isActioning]);
+      setTimeout(() => {
+        console.log("Starting new battle after milestone closed");
+        startNewBattle(battleType);
+      }, 300);
+    });
+  }, [battleType, setShowingMilestone, startNewBattle, queueAction]);
 
   const handleNewBattleSet = useCallback(() => {
-    if (isActioning) return;
-    setIsActioning(true);
-    
-    // Clear any existing timeout to prevent race conditions
-    if (actionTimeoutRef.current) {
-      clearTimeout(actionTimeoutRef.current);
-    }
-    
-    console.log("Starting new battle set, cleaning up state");
-    
-    // First step: close the milestone view if it's open
-    setShowingMilestone(false);
-    
-    // Wait for state update to propagate
-    actionTimeoutRef.current = setTimeout(() => {
-      // Reset all other state in sequence with delays
-      setBattleResults([]);
-      setBattlesCompleted(0);
-      setRankingGenerated(false);
-      setBattleHistory([]);
-      setCompletionPercentage(0);
+    queueAction(() => {
+      console.log("Starting new battle set, cleaning up state");
       
-      // Start new battle at the end with a longer delay
-      actionTimeoutRef.current = setTimeout(() => {
-        startNewBattle(battleType);
-        setIsActioning(false);
-        actionTimeoutRef.current = null;
+      // First step: close the milestone view if it's open
+      setShowingMilestone(false);
+      
+      // Wait before resetting other state
+      setTimeout(() => {
+        // Reset all other state in sequence
+        setBattleResults([]);
+        setBattlesCompleted(0);
+        setRankingGenerated(false);
+        setBattleHistory([]);
+        setCompletionPercentage(0);
+        
+        // Start new battle at the end with a longer delay
+        setTimeout(() => {
+          startNewBattle(battleType);
+        }, 300);
       }, 300);
-    }, 300);
+    });
   }, [
     battleType, 
     setBattleHistory, 
@@ -89,7 +105,7 @@ export const useBattleActions = (
     setRankingGenerated, 
     setShowingMilestone, 
     startNewBattle,
-    isActioning
+    queueAction
   ]);
 
   return {

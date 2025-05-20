@@ -20,6 +20,7 @@ export const useBattleProgression = (
   const pendingBattleUpdateRef = useRef(0);
   const battleUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const checkMilestoneTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const actionsInProgressRef = useRef(0);
 
   // Clean up any timeouts on unmount
   useEffect(() => {
@@ -31,6 +32,16 @@ export const useBattleProgression = (
         clearTimeout(checkMilestoneTimeoutRef.current);
       }
     };
+  }, []);
+
+  // Helper function to safely execute an async action
+  const safeAsyncAction = useCallback(async (action: () => Promise<void>) => {
+    actionsInProgressRef.current++;
+    try {
+      await action();
+    } finally {
+      actionsInProgressRef.current--;
+    }
   }, []);
 
   // Helper function to check if a battle count is a milestone
@@ -63,6 +74,11 @@ export const useBattleProgression = (
       return false;
     }
 
+    // Only check for milestone if battles were completed
+    if (newBattlesCompleted <= 0) {
+      return false;
+    }
+
     const isExactMilestone = milestones.includes(newBattlesCompleted);
     const isEvery50Battles = newBattlesCompleted >= 100 && newBattlesCompleted % 50 === 0;
 
@@ -92,19 +108,21 @@ export const useBattleProgression = (
             clearTimeout(checkMilestoneTimeoutRef.current);
           }
           
+          // Use a sequence of timeouts to ensure state updates happen in order
           checkMilestoneTimeoutRef.current = setTimeout(() => {
-            // Finally update the state
+            // Update the state - use a function form to ensure we're not depending on stale state
             setShowingMilestone(true);
             
             // Reset processing flag after everything is complete
             setTimeout(() => {
               processingMilestoneRef.current = false;
               checkMilestoneTimeoutRef.current = null;
-            }, 100);
-          }, 100);
+            }, 200);
+          }, 200);
         } catch (err) {
           console.error("Error generating rankings at milestone:", err);
           processingMilestoneRef.current = false;
+          showingMilestoneRef.current = false;
         }
       } else {
         processingMilestoneRef.current = false;
@@ -119,6 +137,7 @@ export const useBattleProgression = (
   const incrementBattlesCompleted = useCallback((battleResults: any[]) => {
     // Prevent multiple increments at the same time
     if (incrementInProgressRef.current) {
+      console.log("Battle increment already in progress, skipping");
       return;
     }
     
@@ -131,22 +150,27 @@ export const useBattleProgression = (
     
     // Use setTimeout to break the render cycle
     battleUpdateTimeoutRef.current = setTimeout(() => {
+      // Use a function updater to avoid stale state
       setBattlesCompleted(prev => {
         const updated = prev + 1;
         pendingBattleUpdateRef.current = updated;
         
-        // Check milestone with a delay
+        // Check milestone with a delay to ensure state updates properly
         battleUpdateTimeoutRef.current = setTimeout(() => {
           if (!showingMilestoneRef.current) {
             checkMilestone(updated, battleResults);
           }
-          incrementInProgressRef.current = false;
-          battleUpdateTimeoutRef.current = null;
-        }, 100);
+          
+          // Reset flag after enough time has passed
+          setTimeout(() => {
+            incrementInProgressRef.current = false;
+            battleUpdateTimeoutRef.current = null;
+          }, 300);
+        }, 200);
         
         return updated;
       });
-    }, 50);
+    }, 100);
   }, [setBattlesCompleted, checkMilestone]);
 
   const resetMilestone = useCallback(() => {
@@ -159,7 +183,7 @@ export const useBattleProgression = (
     // Then update state with a delay to avoid render loops
     setTimeout(() => {
       setShowingMilestone(false);
-    }, 50);
+    }, 100);
   }, [setShowingMilestone]);
 
   return {
@@ -168,4 +192,4 @@ export const useBattleProgression = (
     isShowingMilestone: showingMilestoneRef.current,
     resetMilestone
   };
-};
+}, []);

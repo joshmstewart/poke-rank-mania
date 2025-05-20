@@ -1,3 +1,4 @@
+
 import { useState, useRef, useCallback } from "react";
 
 /**
@@ -9,25 +10,28 @@ export const useProgressState = () => {
   const [showingMilestone, setShowingMilestone] = useState(false);
   const [completionPercentage, setCompletionPercentage] = useState(0);
   const [rankingGenerated, setRankingGenerated] = useState(false);
+  const updatingMilestoneRef = useRef(false); // New ref to track updates in progress
   
   // Wrap the setShowingMilestone to update both state and ref
   const safeSetShowingMilestone = useCallback((value: boolean) => {
     // Only update if the value actually changed to prevent needless rerenders
-    if (milestoneRef.current !== value) {
+    // AND we're not already in the middle of an update
+    if (milestoneRef.current !== value && !updatingMilestoneRef.current) {
+      // Set updating flag to prevent concurrent updates
+      updatingMilestoneRef.current = true;
+      
       // Update ref first
       milestoneRef.current = value;
       
       // Then update state with a small delay to avoid render loops
-      // This is crucial to break the circular dependency
-      if (value === true) {
-        // Show milestone immediately
-        setShowingMilestone(true);
-      } else {
-        // Hide milestone with a small delay
+      setTimeout(() => {
+        setShowingMilestone(value);
+        
+        // Reset updating flag after a short delay
         setTimeout(() => {
-          setShowingMilestone(false);
+          updatingMilestoneRef.current = false;
         }, 50);
-      }
+      }, value ? 10 : 100); // Show faster, hide slower
     }
   }, []);
   
@@ -36,7 +40,6 @@ export const useProgressState = () => {
   localStorage.setItem('pokemon-ranker-full-ranking-mode', 'true');
   
   // Milestone triggers - show rankings at these battle counts
-  // Add more frequent early milestones, then cap at showing every 50 battles
   const milestones = [10, 25, 50, 100, 150, 200, 250, 300];
 
   return {

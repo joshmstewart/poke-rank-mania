@@ -32,6 +32,16 @@ const BattleContent: React.FC<BattleContentProps> = (props) => {
   const milestoneSnapshotFetchedRef = useRef(false);
   const prevShowingMilestone = useRef(props.showingMilestone);
   const prevBattlesCompleted = useRef(props.battlesCompleted);
+  const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Clean up any pending timeouts when component unmounts
+  useEffect(() => {
+    return () => {
+      if (fetchTimeoutRef.current) {
+        clearTimeout(fetchTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Use useEffect to respond to milestone changes rather than doing it in render
   useEffect(() => {
@@ -43,13 +53,20 @@ const BattleContent: React.FC<BattleContentProps> = (props) => {
         (!prevShowingMilestone.current || 
          (prevBattlesCompleted.current !== battlesCompleted && !milestoneSnapshotFetchedRef.current))) {
       
-      if (processingRef.current) return;
+      if (processingRef.current) {
+        return;
+      }
       
       processingRef.current = true;
-      console.log(`Fetching milestone snapshot for battle ${battlesCompleted}`);
+      console.log(`BattleContent: Fetching milestone snapshot for battle ${battlesCompleted}`);
+      
+      // Clear any existing timeout
+      if (fetchTimeoutRef.current) {
+        clearTimeout(fetchTimeoutRef.current);
+      }
       
       // Get cached rankings for the milestone with a delay
-      setTimeout(() => {
+      fetchTimeoutRef.current = setTimeout(() => {
         try {
           const snapshot = getSnapshotForMilestone(battlesCompleted);
           
@@ -67,9 +84,10 @@ const BattleContent: React.FC<BattleContentProps> = (props) => {
           // Reset processing flag after a delay
           setTimeout(() => {
             processingRef.current = false;
-          }, 100);
+            fetchTimeoutRef.current = null;
+          }, 200);
         }
-      }, 50);
+      }, 100);
     } else if (!showingMilestone && prevShowingMilestone.current) {
       // Reset when milestone is hidden
       prevShowingMilestone.current = false;
