@@ -1,5 +1,5 @@
 
-import React, { useEffect } from "react";
+import React from "react";
 import { useFormFilters } from "@/hooks/useFormFilters";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -21,7 +21,7 @@ export function FormFiltersSelector() {
   } = useFormFilters();
 
   // Effect to reload pokemon when filters change
-  useEffect(() => {
+  React.useEffect(() => {
     // Skip on first render
     const isFirstRender = React.useRef(true);
     if (isFirstRender.current) {
