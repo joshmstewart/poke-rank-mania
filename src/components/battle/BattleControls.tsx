@@ -73,8 +73,8 @@ const BattleControls: React.FC<BattleControlsProps> = ({
         </div>
       </div>
       
-      {/* Right side - action buttons with more spacing */}
-      <div className="flex gap-8 ml-auto">
+      {/* Right side - action buttons with controlled spacing */}
+      <div className="flex items-center gap-4">
         <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
           <DialogTrigger asChild>
             <Button
