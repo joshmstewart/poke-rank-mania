@@ -95,27 +95,31 @@ const BattleContent: React.FC<BattleContentProps> = (props) => {
   }, [showingMilestone]);
 
   // Separate effect to handle milestone snapshot fetching
-  useEffect(() => {
-    // Only fetch when milestone becomes visible and we haven't fetched it yet
-    if (showingMilestone && 
-        !milestoneSnapshotFetchedRef.current && 
-        !processingRef.current &&
-        battlesCompleted > 0) {
-      
-      console.log("Milestone visible, fetching snapshot with delay");
-      
-      // Clear any existing timeout
-      if (fetchTimeoutRef.current) {
-        clearTimeout(fetchTimeoutRef.current);
-      }
-      
-      // Delayed fetch to avoid render loops
-      fetchTimeoutRef.current = setTimeout(() => {
-        fetchMilestoneSnapshot(battlesCompleted);
-        prevBattlesCompleted.current = battlesCompleted;
-      }, 300);
+ useEffect(() => {
+  if (showingMilestone && 
+      !milestoneSnapshotFetchedRef.current && 
+      !processingRef.current &&
+      battlesCompleted > 0) {
+
+    console.log("Milestone visible, fetching snapshot with delay");
+
+    if (fetchTimeoutRef.current) {
+      clearTimeout(fetchTimeoutRef.current);
     }
-  }, [showingMilestone, battlesCompleted, fetchMilestoneSnapshot]);
+
+    fetchTimeoutRef.current = setTimeout(() => {
+      if (milestoneSnapshotFetchedRef.current || processingRef.current) {
+        console.log("🚫 Snapshot already fetched or in progress, skipping");
+        return;
+      }
+
+      milestoneSnapshotFetchedRef.current = true;
+      fetchMilestoneSnapshot(battlesCompleted);
+      prevBattlesCompleted.current = battlesCompleted;
+    }, 300);
+  }
+}, [showingMilestone, battlesCompleted, fetchMilestoneSnapshot]);
+
 
   // Memoize rankings logic to avoid unnecessary renders
   const shouldShowRankings = useMemo(() => {
