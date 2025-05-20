@@ -124,8 +124,10 @@ const BattleContent = ({ allPokemon, initialBattleType, initialSelectedGeneratio
   }
 
   // Create a wrapper function to adapt the triplet selection
-  const handleTripletSelectionWrapper = (selectedIds: number[]) => {
-    handleTripletSelectionComplete(selectedIds);
+  // Fix: Change the wrapper function to match the expected signature
+  const handleTripletSelectionWrapper = () => {
+    // Call the original handler with the selected Pokemon IDs
+    handleTripletSelectionComplete(selectedPokemon);
   };
 
   return (

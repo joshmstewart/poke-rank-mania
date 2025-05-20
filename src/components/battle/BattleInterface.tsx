@@ -13,7 +13,7 @@ interface BattleInterfaceProps {
   battleType: BattleType;
   battleHistory: { battle: Pokemon[], selected: number[] }[];
   onPokemonSelect: (id: number) => void;
-  onTripletSelectionComplete: () => void;
+  onTripletSelectionComplete: () => void; // This expects a function with no arguments
   onGoBack: () => void;
   milestones: number[];
   isProcessing?: boolean;
