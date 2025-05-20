@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "@/hooks/battle/types";
@@ -47,19 +46,16 @@ const BattleContent: React.FC<BattleContentProps> = ({
   const [internalShowRankings, setInternalShowRankings] = useState(showingMilestone || rankingGenerated);
   const continuePressedRef = useRef(false);
 
-  // Get milestone snapshot (completely separate from completion percentage)
+  // Get milestone snapshot correctly
   const { getSnapshotForMilestone } = useBattleStateCore();
   
-  // Get the proper milestone snapshot if we're showing a milestone
   const snapshotRankings = showingMilestone ? getSnapshotForMilestone(battlesCompleted) : [];
-  
-  // ✅ CRITICAL FIX: Only use snapshot rankings when showing milestone AND we have valid snapshot data
-  const rankingsToShow = showingMilestone && snapshotRankings && snapshotRankings.length > 0 
+
+  const rankingsToShow = showingMilestone && snapshotRankings.length > 0 
     ? snapshotRankings 
     : finalRankings;
 
-  // ✅ NEW: Check if we have valid rankings to display
-  const hasValidRankingsToShow = rankingsToShow && Array.isArray(rankingsToShow) && rankingsToShow.length > 0;
+  const hasValidRankingsToShow = rankingsToShow.length > 0;
 
   useEffect(() => {
     console.log("🎯 BattleContent update:");
@@ -78,24 +74,20 @@ const BattleContent: React.FC<BattleContentProps> = ({
     setInternalShowRankings(showingMilestone || rankingGenerated);
   }, [showingMilestone, rankingGenerated, battlesCompleted, finalRankings, snapshotRankings, hasValidRankingsToShow]);
 
-const handleContinueBattles = useCallback(() => {
-  console.log("➡️ Continue Battles clicked");
-  continuePressedRef.current = true;
-  setInternalShowRankings(false);
-  setShowingMilestone(false); // ✅ FIX: explicitly reset milestone state here
-
-  setTimeout(() => {
-    onContinueBattles();
+  const handleContinueBattles = useCallback(() => {
+    console.log("➡️ Continue Battles clicked");
+    continuePressedRef.current = true;
+    setInternalShowRankings(false);
 
     setTimeout(() => {
-      continuePressedRef.current = false;
-      console.log("🔁 continuePressedRef reset");
-    }, 300);
-  }, 100);
-}, [onContinueBattles, setShowingMilestone]); // ✅ Don't forget dependency
+      onContinueBattles();
+      setTimeout(() => {
+        continuePressedRef.current = false;
+        console.log("🔁 continuePressedRef reset");
+      }, 300);
+    }, 100);
+  }, [onContinueBattles]);
 
-
-  // ✅ CRITICAL FIX: Never render RankingDisplay with empty rankings
   if (internalShowRankings && hasValidRankingsToShow) {
     console.log("🏆 Showing rankings, valid data confirmed:", rankingsToShow.length);
     
@@ -112,11 +104,6 @@ const handleContinueBattles = useCallback(() => {
     );
   }
   
-  // Fallback for empty rankings or no milestone data - prevent crash with empty snapshot
-  if (internalShowRankings) {
-    console.log("⚠️ Would show rankings, but no valid data available, showing BattleInterface instead");
-  }
-
   return (
     <BattleInterface
       currentBattle={currentBattle}
