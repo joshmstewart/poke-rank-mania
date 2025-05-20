@@ -123,6 +123,11 @@ const BattleContent = ({ allPokemon, initialBattleType, initialSelectedGeneratio
     return <div className="flex justify-center items-center h-64">Loading Pokémon...</div>;
   }
 
+  // Create a wrapper function to adapt the triplet selection
+  const handleTripletSelectionWrapper = (selectedIds: number[]) => {
+    handleTripletSelectionComplete(selectedIds);
+  };
+
   return (
     <div className="flex flex-col items-center w-full gap-4">
       <BattleHeader />
@@ -160,7 +165,7 @@ const BattleContent = ({ allPokemon, initialBattleType, initialSelectedGeneratio
           currentBattle={currentBattle}
           selectedPokemon={selectedPokemon}
           onPokemonSelect={handlePokemonSelect}
-          onTripletSelectionComplete={handleTripletSelectionComplete}
+          onTripletSelectionComplete={handleTripletSelectionWrapper}
           isProcessing={isProcessingResult}
           battleType={battleType}
           onGoBack={goBack}

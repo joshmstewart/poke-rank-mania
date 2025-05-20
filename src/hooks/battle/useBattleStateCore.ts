@@ -1,5 +1,6 @@
+
 import { useState, useCallback, useEffect, useRef } from "react";
-import { Pokemon, getPokemonList } from "@/services/pokemon";
+import { Pokemon, fetchAllPokemon } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
 import { useProgressState } from "./useProgressState";
 import { useBattleProcessor } from "./useBattleProcessor";
@@ -75,6 +76,12 @@ export const useBattleStateCore = (allPokemon: Pokemon[], initialBattleType: Bat
     });
   }, []);
 
+  // Define handleSelection before it's used
+  const handleSelection = useCallback(async (selectedPokemonIds: number[]) => {
+    setBattleHistory(prev => [...prev, { battle: currentBattle, selected: selectedPokemonIds }]);
+    await processBattleResult(selectedPokemonIds, currentBattle, battleTypeRef.current, selectedGeneration);
+  }, [currentBattle, selectedGeneration, processBattleResult, setBattleHistory]);
+
   const handleTripletSelectionComplete = useCallback((selectedIds: number[]) => {
     if (selectedIds.length !== 1) {
       console.warn("Must select exactly one Pokemon when completing a triplet selection.");
@@ -83,11 +90,6 @@ export const useBattleStateCore = (allPokemon: Pokemon[], initialBattleType: Bat
     
     handleSelection(selectedIds);
   }, [handleSelection]);
-
-  const handleSelection = useCallback(async (selectedPokemonIds: number[]) => {
-    setBattleHistory(prev => [...prev, { battle: currentBattle, selected: selectedPokemonIds }]);
-    await processBattleResult(selectedPokemonIds, currentBattle, battleTypeRef.current, selectedGeneration);
-  }, [currentBattle, selectedGeneration, processBattleResult, setBattleHistory]);
 
   const goBack = useCallback(async () => {
     if (battleHistory.length === 0) return;
@@ -116,7 +118,7 @@ export const useBattleStateCore = (allPokemon: Pokemon[], initialBattleType: Bat
 
   useEffect(() => {
     const fetchPokemon = async () => {
-      const pokemonList = await getPokemonList(selectedGeneration);
+      const pokemonList = await fetchAllPokemon(selectedGeneration);
       setAvailablePokemon(pokemonList);
     };
 

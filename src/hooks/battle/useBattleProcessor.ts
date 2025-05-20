@@ -55,7 +55,7 @@ export const useBattleProcessor = (
 
     try {
       const newResults = processResult(selectedPokemonIds, battleType, currentBattlePokemon);
-      if (newResults.length > 0) {
+      if (newResults && newResults.length > 0) {
         const cumulativeResults = [...battleResults, ...newResults];
         setBattleResults(cumulativeResults);
         
