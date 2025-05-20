@@ -8,35 +8,27 @@ export const useCompletionTracker = (
   setRankingGenerated: React.Dispatch<React.SetStateAction<boolean>>,
   setCompletionPercentage: React.Dispatch<React.SetStateAction<number>>,
   showingMilestone: boolean,
-  setShowingMilestone: React.Dispatch<React.SetStateAction<boolean>>,
+  setShowingMilestone: (value: boolean) => void, // Changed to accept our custom setter
   generateRankings: (results: SingleBattle[]) => RankedPokemon[],
   allPokemon: any[]
 ) => {
+  // Use refs to track state without causing renders
   const hitMilestones = useRef(new Set<number>());
   const [milestoneRankings, setMilestoneRankings] = useState<Record<number, RankedPokemon[]>>({});
   const isMilestoneProcessingRef = useRef(false);
   const previousBattleCountRef = useRef<number>(0);
-  const pendingMilestoneRef = useRef<number | null>(null);
   const showingMilestoneRef = useRef<boolean>(showingMilestone);
-  const milestoneTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
+  
   // Sync the ref with the prop value - important to prevent stale ref values
   useEffect(() => {
     showingMilestoneRef.current = showingMilestone;
-    
-    // Clean up timeouts on unmount
-    return () => {
-      if (milestoneTimeoutRef.current) {
-        clearTimeout(milestoneTimeoutRef.current);
-      }
-    };
   }, [showingMilestone]);
 
   // This effect is simplified to avoid causing render loops
   const checkForMilestones = useCallback(() => {
     const battleCount = battleResults.length;
     
-    // Avoid processing if the battle count didn't change
+    // Avoid processing if the battle count didn't change or milestones are already showing
     if (previousBattleCountRef.current === battleCount ||
         showingMilestoneRef.current || 
         isMilestoneProcessingRef.current) {
@@ -80,19 +72,34 @@ export const useCompletionTracker = (
   const getSnapshotForMilestone = useCallback((battleCount: number): RankedPokemon[] => {
     // If we don't have rankings for this milestone yet, generate them
     if (!milestoneRankings[battleCount] && battleResults.length >= battleCount) {
-      // Use the battle results up to this milestone
-      const relevantResults = battleResults.slice(0, battleCount);
-      const rankingsSnapshot = generateRankings(relevantResults);
+      // Mark as processing to prevent loops
+      isMilestoneProcessingRef.current = true;
       
-      // Store the snapshot for this milestone
-      if (rankingsSnapshot && rankingsSnapshot.length > 0) {
-        setMilestoneRankings(prev => ({
-          ...prev,
-          [battleCount]: rankingsSnapshot
-        }));
+      try {
+        // Use the battle results up to this milestone
+        const relevantResults = battleResults.slice(0, battleCount);
+        const rankingsSnapshot = generateRankings(relevantResults);
         
-        return rankingsSnapshot;
+        // Store the snapshot for this milestone
+        if (rankingsSnapshot && rankingsSnapshot.length > 0) {
+          setMilestoneRankings(prev => ({
+            ...prev,
+            [battleCount]: rankingsSnapshot
+          }));
+          
+          // Release processing lock after state update
+          setTimeout(() => {
+            isMilestoneProcessingRef.current = false;
+          }, 100);
+          
+          return rankingsSnapshot;
+        }
+      } catch (error) {
+        console.error("Error generating snapshot for milestone:", error);
       }
+      
+      // Release processing lock if something went wrong
+      isMilestoneProcessingRef.current = false;
     }
     
     return milestoneRankings[battleCount] || [];

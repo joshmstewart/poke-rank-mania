@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useRef, useEffect } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
@@ -8,7 +9,7 @@ export const useBattleActions = (
   setBattleResults: React.Dispatch<React.SetStateAction<SingleBattle[]>>,
   setBattlesCompleted: React.Dispatch<React.SetStateAction<number>>,
   setBattleHistory: React.Dispatch<React.SetStateAction<{ battle: Pokemon[], selected: number[] }[]>>,
-  setShowingMilestone: React.Dispatch<React.SetStateAction<boolean>>,
+  setShowingMilestone: (value: boolean) => void,  // Changed to accept our custom setter
   setCompletionPercentage: React.Dispatch<React.SetStateAction<number>>,
   startNewBattle: (battleType: BattleType) => void,
   generateRankings: (results: SingleBattle[]) => void,
@@ -16,22 +17,14 @@ export const useBattleActions = (
 ) => {
   const [isActioning, setIsActioning] = useState(false);
   const actionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const milestoneStateRef = useRef<boolean>(false);
-
-  // Keep track of the milestone state to avoid infinite update loops
+  
   useEffect(() => {
-    // No state updates in this effect
+    // Clean up timeouts on unmount
     return () => {
       if (actionTimeoutRef.current) {
         clearTimeout(actionTimeoutRef.current);
       }
     };
-  }, []);
-
-  // Update our ref when the prop changes
-  useEffect(() => {
-    // Only track changes, don't set state here
-    milestoneStateRef.current = false;
   }, []);
 
   const handleContinueBattles = useCallback(() => {
@@ -43,12 +36,9 @@ export const useBattleActions = (
       clearTimeout(actionTimeoutRef.current);
     }
     
-    // Close milestone view first
+    // First, close the milestone view with a delay to ensure state settles
     actionTimeoutRef.current = setTimeout(() => {
-      // Update our ref first
-      milestoneStateRef.current = false;
-      
-      // Then update state
+      // Update milestone state to false
       setShowingMilestone(false);
       
       // Use nested timeout to ensure state updates are processed 
@@ -72,8 +62,7 @@ export const useBattleActions = (
     
     // Use a single timeout for resetting state
     actionTimeoutRef.current = setTimeout(() => {
-      // Reset all state sequentially to avoid render loops
-      milestoneStateRef.current = false;
+      // Reset milestone state first
       setShowingMilestone(false);
       
       // Wait a bit before resetting other state

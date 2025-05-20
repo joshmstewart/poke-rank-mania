@@ -8,7 +8,7 @@ import { toast } from "@/hooks/use-toast";
 export const useBattleProgression = (
   battlesCompleted: number,
   setBattlesCompleted: React.Dispatch<React.SetStateAction<number>>,
-  setShowingMilestone: React.Dispatch<React.SetStateAction<boolean>>,
+  setShowingMilestone: (value: boolean) => void, // Changed to accept our custom setter
   milestones: number[],
   generateRankings: (results: any[]) => void
 ) => {
@@ -29,13 +29,13 @@ export const useBattleProgression = (
     };
   }, []);
 
-  // Reset refs when battle count changes
-  useEffect(() => {
-    showingMilestoneRef.current = false;
-  }, [battlesCompleted]);
-
   // Helper function to check if a battle count is a milestone
   const checkIfMilestone = useCallback((battleCount: number): boolean => {
+    // Prevent checking during processing
+    if (processingMilestoneRef.current) {
+      return false;
+    }
+    
     // Check common milestones: 10, 25, 50, 100, etc.
     const commonMilestones = [10, 25, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500];
     
@@ -83,26 +83,27 @@ export const useBattleProgression = (
           // Set flag in ref first
           showingMilestoneRef.current = true;
           
-          // Use a longer timeout to ensure state settles
+          // Show toast first
+          toast({
+            title: "Milestone Reached!",
+            description: `You've completed ${newBattlesCompleted} battles. Check out your current ranking!`
+          });
+          
+          // Update state after a delay to prevent render loops
           setTimeout(() => {
-            // Only update if we're still the current milestone
+            // Only update if still the current milestone
             if (lastMilestoneShownRef.current === newBattlesCompleted) {
+              // Update the milestone state
               setShowingMilestone(true);
               
-              // Only show toast after state is updated
+              // Reset processing flag after everything is complete
               setTimeout(() => {
-                toast({
-                  title: "Milestone Reached!",
-                  description: `You've completed ${newBattlesCompleted} battles. Check out your current ranking!`
-                });
-                
-                // Reset processing flag after everything is complete
                 processingMilestoneRef.current = false;
               }, 300);
             } else {
               processingMilestoneRef.current = false;
             }
-          }, 200);
+          }, 100);
         } catch (err) {
           console.error("Error generating rankings at milestone:", err);
           processingMilestoneRef.current = false;
