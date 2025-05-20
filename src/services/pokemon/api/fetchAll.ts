@@ -1,3 +1,4 @@
+
 import { toast } from "@/hooks/use-toast";
 import { Pokemon } from "../types";
 import { generations } from "../data";
@@ -49,7 +50,7 @@ export async function fetchAllPokemon(generationId: number = 1, fullRankingMode:
       if (!fullRankingMode) {
         // For quick battle mode, select random samples from different generations
         // This gives a diverse but manageable set
-        const sampleSize = 150; // A reasonable number for battles
+        const sampleSize = 500; // Increasing from 150 to 500 to allow for more Pokemon diversity
         
         toast({
           title: "Loading sample",
