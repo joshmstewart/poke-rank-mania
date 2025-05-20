@@ -18,6 +18,7 @@ export const useBattleActions = (
   const [isActioning, setIsActioning] = useState(false);
   const actionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const actionsQueueRef = useRef<Array<() => void>>([]);
+  const milestoneClosingRef = useRef(false);
   
   useEffect(() => {
     // Clean up timeouts on unmount
@@ -51,9 +52,9 @@ export const useBattleActions = (
                 queueAction(nextAction);
               }
             }
-          }, 100);
+          }, 300);
         }
-      }, 20);
+      }, 50);
     } else {
       // Queue the action for later execution
       actionsQueueRef.current.push(action);
@@ -61,6 +62,13 @@ export const useBattleActions = (
   }, [isActioning]);
 
   const handleContinueBattles = useCallback(() => {
+    if (milestoneClosingRef.current) {
+      console.log("Already closing milestone, ignoring duplicate request");
+      return;
+    }
+    
+    milestoneClosingRef.current = true;
+    
     queueAction(() => {
       console.log("Continue battles action: closing milestone view");
       // First step: close the milestone view
@@ -70,7 +78,8 @@ export const useBattleActions = (
       setTimeout(() => {
         console.log("Starting new battle after milestone closed");
         startNewBattle(battleType);
-      }, 300);
+        milestoneClosingRef.current = false;
+      }, 500);
     });
   }, [battleType, setShowingMilestone, startNewBattle, queueAction]);
 
@@ -93,8 +102,8 @@ export const useBattleActions = (
         // Start new battle at the end with a longer delay
         setTimeout(() => {
           startNewBattle(battleType);
-        }, 300);
-      }, 300);
+        }, 500);
+      }, 500);
     });
   }, [
     battleType, 

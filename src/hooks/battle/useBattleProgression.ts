@@ -21,6 +21,7 @@ export const useBattleProgression = (
   const battleUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const checkMilestoneTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const actionsInProgressRef = useRef(0);
+  const requestedMilestoneShowRef = useRef(false);
 
   // Clean up any timeouts on unmount
   useEffect(() => {
@@ -70,7 +71,9 @@ export const useBattleProgression = (
     // Prevent checking during processing or if already shown
     if (processingMilestoneRef.current || 
         showingMilestoneRef.current || 
+        requestedMilestoneShowRef.current ||
         newBattlesCompleted === lastMilestoneShownRef.current) {
+      console.log("Milestone check skipped - already processing or showing");
       return false;
     }
 
@@ -97,32 +100,36 @@ export const useBattleProgression = (
 
       if (Array.isArray(battleResults) && battleResults.length > 0) {
         try {
-          // Generate rankings
+          // Generate rankings - do this first before any state changes
           generateRankings(battleResults);
+          
+          // Mark that we've requested to show the milestone
+          requestedMilestoneShowRef.current = true;
           
           // Set flag in ref first to track milestone state
           showingMilestoneRef.current = true;
           
-          // Wait a moment before updating React state
+          // Cancel any existing timeout
           if (checkMilestoneTimeoutRef.current) {
             clearTimeout(checkMilestoneTimeoutRef.current);
           }
           
           // Use a sequence of timeouts to ensure state updates happen in order
           checkMilestoneTimeoutRef.current = setTimeout(() => {
-            // Update the state - use a function form to ensure we're not depending on stale state
+            // Update the state - use a proper setter to avoid stale state
             setShowingMilestone(true);
+            checkMilestoneTimeoutRef.current = null;
             
             // Reset processing flag after everything is complete
             setTimeout(() => {
               processingMilestoneRef.current = false;
-              checkMilestoneTimeoutRef.current = null;
-            }, 200);
+            }, 300);
           }, 200);
         } catch (err) {
           console.error("Error generating rankings at milestone:", err);
           processingMilestoneRef.current = false;
           showingMilestoneRef.current = false;
+          requestedMilestoneShowRef.current = false;
         }
       } else {
         processingMilestoneRef.current = false;
@@ -157,7 +164,7 @@ export const useBattleProgression = (
         
         // Check milestone with a delay to ensure state updates properly
         battleUpdateTimeoutRef.current = setTimeout(() => {
-          if (!showingMilestoneRef.current) {
+          if (!showingMilestoneRef.current && !requestedMilestoneShowRef.current) {
             checkMilestone(updated, battleResults);
           }
           
@@ -179,6 +186,7 @@ export const useBattleProgression = (
     // Update refs first
     showingMilestoneRef.current = false;
     processingMilestoneRef.current = false;
+    requestedMilestoneShowRef.current = false;
     
     // Then update state with a delay to avoid render loops
     setTimeout(() => {
