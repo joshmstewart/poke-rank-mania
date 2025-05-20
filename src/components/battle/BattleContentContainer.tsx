@@ -1,7 +1,7 @@
-import React, { useCallback } from "react";
+import React from "react";
 import BattleContent from "./BattleContent";
+import BattleControls from "./BattleControls";
 import { useBattleStateCore } from "@/hooks/battle/useBattleStateCore";
-import { RankedPokemon } from "@/hooks/battle/useRankings";
 
 const BattleContentContainer: React.FC = () => {
   const {
@@ -20,45 +20,33 @@ const BattleContentContainer: React.FC = () => {
     handleNewBattleSet,
     handleContinueBattles,
     handleSaveRankings,
-    isProcessing
+    isProcessing,
   } = useBattleStateCore();
 
-  const safeFinalRankings: RankedPokemon[] = (finalRankings as RankedPokemon[]).map(pokemon => ({
-    ...pokemon,
-    score: (pokemon as RankedPokemon).score || 0,
-    count: (pokemon as RankedPokemon).count || 0
-  }));
-
-  // ✅ Fixed handlers with correct signatures
-  const onPokemonSelect = useCallback(
-    (id: number) => handlePokemonSelect(id, battleType, currentBattle),
-    [handlePokemonSelect, battleType, currentBattle]
-  );
-
-  const onTripletSelectionComplete = useCallback(
-    () => handleTripletSelectionComplete(battleType, currentBattle),
-    [handleTripletSelectionComplete, battleType, currentBattle]
-  );
-
   return (
-    <BattleContent
-      showingMilestone={showingMilestone}
-      rankingGenerated={rankingGenerated}
-      currentBattle={currentBattle}
-      selectedPokemon={selectedPokemon}
-      battlesCompleted={battlesCompleted}
-      battleType={battleType}
-      battleHistory={battleHistory}
-      finalRankings={safeFinalRankings}
-      milestones={milestones}
-      onPokemonSelect={onPokemonSelect} // ✅ now correct
-      onTripletSelectionComplete={onTripletSelectionComplete} // ✅ now correct
-      onGoBack={goBack}
-      onNewBattleSet={handleNewBattleSet}
-      onContinueBattles={handleContinueBattles}
-      onSaveRankings={handleSaveRankings}
-      isProcessing={isProcessing}
-    />
+    <div className="bg-white rounded-lg shadow p-6 flex flex-col gap-4">
+      {/* ✅ Removed extra Logo to eliminate duplication */}
+      <BattleContent
+        showingMilestone={showingMilestone}
+        rankingGenerated={rankingGenerated}
+        currentBattle={currentBattle}
+        selectedPokemon={selectedPokemon}
+        battlesCompleted={battlesCompleted}
+        battleType={battleType}
+        battleHistory={battleHistory}
+        finalRankings={finalRankings}
+        milestones={milestones}
+        onPokemonSelect={(id) => handlePokemonSelect(id, battleType, currentBattle)}
+        onTripletSelectionComplete={() => handleTripletSelectionComplete(battleType, currentBattle)}
+        onGoBack={goBack}
+        onNewBattleSet={handleNewBattleSet}
+        onContinueBattles={handleContinueBattles}
+        onSaveRankings={handleSaveRankings}
+        isProcessing={isProcessing}
+      />
+
+      <BattleControls />
+    </div>
   );
 };
 

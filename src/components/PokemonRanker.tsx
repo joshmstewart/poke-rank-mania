@@ -7,7 +7,6 @@ import { RankingUI } from "./ranking/RankingUI";
 import { usePokemonRanker } from "@/hooks/usePokemonRanker";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { generations } from "@/services/pokemon";
-import { useRankings } from "@/hooks/battle/useRankings"; // Correct import ✅
 
 const PokemonRanker = () => {
   const {
@@ -30,8 +29,6 @@ const PokemonRanker = () => {
 
   const [showRankings, setShowRankings] = React.useState(false);
   const generationName = selectedGeneration === 0 ? "All Generations" : `Generation ${selectedGeneration}`;
-
-  const { finalRankings, confidenceScores } = useRankings(availablePokemon); // Correctly using rankings ✅
 
   return (
     <div className="container max-w-7xl mx-auto py-6">
@@ -94,23 +91,14 @@ const PokemonRanker = () => {
         </div>
 
         {showRankings ? (
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold">Your Rankings</h2>
-              <div className="h-1 w-full bg-gray-200 rounded-full mt-2"></div>
-            </div>
-            <RankingResults
-              confidentRankedPokemon={finalRankings} // Correct data ✅
-              confidenceScores={confidenceScores}
-            />
-          </div>
+          <RankingResults rankedPokemon={rankedPokemon} />
         ) : (
           <RankingUI
             isLoading={isLoading}
             availablePokemon={availablePokemon}
             rankedPokemon={rankedPokemon}
             selectedGeneration={selectedGeneration}
-            loadingType="infinite"
+            loadingType={loadingType}
             currentPage={currentPage}
             totalPages={totalPages}
             loadSize={loadSize}

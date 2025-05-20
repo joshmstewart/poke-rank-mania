@@ -1,69 +1,36 @@
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { SingleBattle } from "./types";
 import { RankedPokemon } from "./useRankings";
-import { toast } from "@/hooks/use-toast";
 
 const MILESTONES = [10, 25, 50, 100];
 
 export const useCompletionTracker = (
   battleResults: SingleBattle[],
-  setRankingGenerated: React.Dispatch<React.SetStateAction<boolean>>,
-  setCompletionPercentage: React.Dispatch<React.SetStateAction<number>>,
-  showingMilestone: boolean,
   setShowingMilestone: React.Dispatch<React.SetStateAction<boolean>>,
   generateRankings: (results: SingleBattle[]) => RankedPokemon[],
-  allPokemonForGeneration: any[]
+  setMilestoneRankings: React.Dispatch<React.SetStateAction<Record<number, RankedPokemon[]>>>
 ) => {
-  const [milestoneRankings, setMilestoneRankings] = useState<Record<number, RankedPokemon[]>>({});
-  const hitMilestones = useRef<Set<number>>(new Set());
+  const hitMilestones = useRef(new Set<number>());
 
   useEffect(() => {
-    calculateCompletionPercentage();
-    checkAndHandleMilestone();
-  }, [battleResults.length]);
+    const battleCount = battleResults.length;
+    if (MILESTONES.includes(battleCount) && !hitMilestones.current.has(battleCount)) {
+      hitMilestones.current.add(battleCount);
+      const rankingsSnapshot = generateRankings(battleResults);
+      setMilestoneRankings(prev => ({ ...prev, [battleCount]: rankingsSnapshot }));
 
-  const calculateCompletionPercentage = () => {
-    const totalPokemon = allPokemonForGeneration.length;
-    const expectedBattles = Math.ceil(totalPokemon * Math.log2(totalPokemon));
-    const completionPercent = Math.min(100, (battleResults.length / expectedBattles) * 100);
-    setCompletionPercentage(parseFloat(completionPercent.toFixed(2)));
-
-    if (completionPercent >= 100 && battleResults.length >= 50) {
-      generateRankings(battleResults);
-      setRankingGenerated(true);
-      toast({
-        title: "Complete Ranking Achieved!",
-        description: "Full Pokémon ranking generated!",
-        variant: "default"
-      });
+      if (rankingsSnapshot.length > 0) {
+        setShowingMilestone(true);
+      } else {
+        console.warn("Snapshot was empty, skipping milestone.");
+      }
     }
-  };
-
-  const checkAndHandleMilestone = () => {
-    const milestoneHit = MILESTONES.find(m => m === battleResults.length);
-    if (!milestoneHit || hitMilestones.current.has(milestoneHit)) return;
-
-    const snapshot = generateRankings(battleResults).filter(p => p && p.id);
-    if (snapshot.length === 0) {
-      console.error(`Milestone ${milestoneHit} generated an empty or invalid snapshot.`);
-      return;
-    }
-
-    setMilestoneRankings(prev => ({...prev, [milestoneHit]: snapshot}));
-    hitMilestones.current.add(milestoneHit);
-    setShowingMilestone(true);
-  };
+  }, [battleResults, generateRankings, setMilestoneRankings, setShowingMilestone]);
 
   const resetMilestones = () => {
     hitMilestones.current.clear();
     setMilestoneRankings({});
   };
 
-  const getSnapshotForMilestone = (battleCount: number) => milestoneRankings[battleCount] || [];
-
-  return {
-    calculateCompletionPercentage,
-    resetMilestones,
-    getSnapshotForMilestone
-  };
+  return { resetMilestones };
 };
