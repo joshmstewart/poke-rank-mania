@@ -5,13 +5,24 @@ import { usePokemonLoader } from "@/hooks/battle/usePokemonLoader";
 
 const BattleMode = () => {
   const { allPokemon, isLoading, loadPokemon } = usePokemonLoader();
+  const [loadingInitiated, setLoadingInitiated] = useState(false);
 
   useEffect(() => {
-    loadPokemon(0, true);
-  }, [loadPokemon]);
+    if (!loadingInitiated) {
+      setLoadingInitiated(true);
+      loadPokemon(0, true);
+    }
+  }, [loadPokemon, loadingInitiated]);
 
   if (isLoading || !allPokemon.length) {
-    return <div>Loading Pokémon...</div>;
+    return (
+      <div className="flex justify-center items-center h-64 w-full">
+        <div className="flex flex-col items-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent mb-4"></div>
+          <p>Loading Pokémon data...</p>
+        </div>
+      </div>
+    );
   }
 
   return (

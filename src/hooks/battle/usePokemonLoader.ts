@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Pokemon, fetchAllPokemon } from "@/services/pokemon";
 import { toast } from "@/hooks/use-toast";
 import { BattleType } from "./types";
@@ -8,15 +8,16 @@ export const usePokemonLoader = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [allPokemon, setAllPokemon] = useState<Pokemon[]>([]);
   const [battleType, setBattleType] = useState<BattleType>("pairs");
+  const [loadAttempted, setLoadAttempted] = useState(false);
 
-  const startNewBattle = (pokemonList: Pokemon[], type: BattleType = battleType) => {
+  const startNewBattle = useCallback((pokemonList: Pokemon[], type: BattleType = battleType): Pokemon[] => {
     if (pokemonList.length < 2) {
       toast({
         title: "Not enough Pokémon",
         description: "Need at least 2 Pokémon for a battle.",
         variant: "destructive"
       });
-      return;
+      return [];
     }
     
     setBattleType(type);
@@ -24,10 +25,18 @@ export const usePokemonLoader = () => {
     const shuffled = [...pokemonList].sort(() => Math.random() - 0.5);
     const battleSize = type === "triplets" ? 3 : 2;
     return shuffled.slice(0, battleSize);
-  };
+  }, [battleType]);
 
-  const loadPokemon = async (genId = 0, fullRankingMode = false, preserveState = false) => {
+  const loadPokemon = useCallback(async (genId = 0, fullRankingMode = false, preserveState = false) => {
+    // Prevent multiple loading attempts
+    if (isLoading && loadAttempted) {
+      console.log("Already loading Pokemon, skipping redundant call");
+      return allPokemon;
+    }
+
     setIsLoading(true);
+    setLoadAttempted(true);
+    
     try {
       const pokemon = await fetchAllPokemon(genId, fullRankingMode);
       
@@ -57,7 +66,7 @@ export const usePokemonLoader = () => {
       setIsLoading(false);
       return [];
     }
-  };
+  }, [isLoading, allPokemon, loadAttempted]);
 
   return {
     isLoading,

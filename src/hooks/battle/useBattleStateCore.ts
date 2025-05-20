@@ -61,6 +61,7 @@ export const useBattleStateCore = (
   );
 
   const startNewBattle = useCallback((type: BattleType = battleType) => {
+    console.log("Starting new battle with type:", type);
     setBattleType(type);
     setRankingGenerated(false);
     setBattlesCompleted(0);

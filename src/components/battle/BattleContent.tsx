@@ -42,11 +42,13 @@ const BattleContent = ({ allPokemon, initialBattleType, initialSelectedGeneratio
     generateRankings
   } = useBattleStateCore(allPokemon, initialBattleType, initialSelectedGeneration);
 
+  // Only call startNewBattle in an effect if allPokemon changes
   useEffect(() => {
     if (allPokemon.length > 0) {
+      console.log("BattleContent: Starting new battle on allPokemon change");
       startNewBattle(initialBattleType);
     }
-  }, [allPokemon, initialBattleType, startNewBattle]);
+  }, [allPokemon.length]); // Only dependency is allPokemon.length
 
   const handleBattleTypeChange = (newType: BattleType) => {
     setBattleType(newType);
@@ -69,7 +71,7 @@ const BattleContent = ({ allPokemon, initialBattleType, initialSelectedGeneratio
   };
 
   if (!allPokemon.length) {
-    return <div>No Pokémon to battle!</div>;
+    return <div className="flex justify-center items-center h-64">Loading Pokémon...</div>;
   }
 
   return (
