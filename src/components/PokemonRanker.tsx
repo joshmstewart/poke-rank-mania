@@ -35,8 +35,9 @@ const PokemonRanker = () => {
   // Convert rankedPokemon to proper RankedPokemon type with defaults
   const typedRankedPokemon: RankedPokemon[] = rankedPokemon.map(pokemon => ({
     ...pokemon,
-    score: 0,    // Default score
-    count: 0     // Default count
+    score: 0,      // Default score
+    count: 0,      // Default count
+    confidence: 0  // Add the missing confidence property with default value
   }));
 
   return (
