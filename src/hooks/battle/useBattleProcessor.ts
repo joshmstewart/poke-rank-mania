@@ -45,42 +45,53 @@ export const useBattleProcessor = (
     battleType: BattleType,
     currentSelectedGeneration: number = 0
   ) => {
-    if (isProcessingResult) return;
+    if (isProcessingResult) {
+      console.log("Already processing result, skipping.");
+      return;
+    }
+
+    if (!selectedPokemonIds?.length || !currentBattlePokemon?.length) {
+      console.error("Invalid selection or current battle Pokémon.");
+      return;
+    }
 
     setIsProcessingResult(true);
 
-    const newResults = processResult(selectedPokemonIds, battleType, currentBattlePokemon);
+    try {
+      const newResults = processResult(selectedPokemonIds, battleType, currentBattlePokemon);
 
-    if (newResults.length > 0) {
-      const cumulativeResults = [...battleResults, ...newResults];
+      if (newResults.length > 0) {
+        const cumulativeResults = [...battleResults, ...newResults];
+        setBattleResults(cumulativeResults);
+        incrementBattlesCompleted(newResults);
 
-      setBattleResults(cumulativeResults);
-      incrementBattlesCompleted(newResults);
+        const updatedCount = battlesCompleted + newResults.length;
 
-      const updatedCount = battlesCompleted + newResults.length;
+        if (checkMilestone(updatedCount, cumulativeResults) && currentSelectedGeneration) {
+          saveRankings(
+            Array.from(new Map(cumulativeResults.map(result => [result.winner.id, result.winner])).values()),
+            currentSelectedGeneration,
+            "battle"
+          );
+        }
 
-      const hitMilestone = checkMilestone(updatedCount, cumulativeResults);
-      if (hitMilestone && currentSelectedGeneration) {
-        saveRankings(
-          Array.from(new Map(
-            cumulativeResults.map(result => [result.winner.id, result.winner])
-          ).values()),
-          currentSelectedGeneration,
-          "battle"
-        );
+        setupNextBattle(battleType);
+      } else {
+        console.error("processResult returned empty results.");
+        setupNextBattle(battleType);
       }
-
-      setupNextBattle(battleType);
+    } catch (error) {
+      console.error("Error processing battle:", error);
+    } finally {
+      setIsProcessingResult(false);
     }
-
-    setIsProcessingResult(false);
   }, [
     isProcessingResult,
-    battleResults,
-    battlesCompleted,
     processResult,
+    battleResults,
     setBattleResults,
     incrementBattlesCompleted,
+    battlesCompleted,
     checkMilestone,
     setupNextBattle
   ]);
