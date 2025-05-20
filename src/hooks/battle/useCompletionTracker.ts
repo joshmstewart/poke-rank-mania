@@ -14,25 +14,13 @@ export const useCompletionTracker = (
   generateRankings: (results: SingleBattle[]) => RankedPokemon[],
   allPokemonForGeneration: any[]
 ) => {
-  const [milestoneRankings, setMilestoneRankings] = useState<Record<number, RankedPokemon[]>>({});
+  const milestoneRankings = useRef<Record<number, RankedPokemon[]>>({});
   const hitMilestones = useRef<Set<number>>(new Set());
-  const [pendingMilestone, setPendingMilestone] = useState<number | null>(null);
 
   useEffect(() => {
     calculateCompletionPercentage();
     checkAndHandleMilestone();
   }, [battleResults.length]);
-
-  useEffect(() => {
-    if (
-      pendingMilestone !== null &&
-      milestoneRankings[pendingMilestone]?.length > 0 &&
-      !showingMilestone
-    ) {
-      setShowingMilestone(true);
-      setPendingMilestone(null);
-    }
-  }, [milestoneRankings, pendingMilestone, showingMilestone, setShowingMilestone]);
 
   const calculateCompletionPercentage = () => {
     const totalPokemon = allPokemonForGeneration.length;
@@ -56,18 +44,22 @@ export const useCompletionTracker = (
     if (!milestoneHit || hitMilestones.current.has(milestoneHit)) return;
 
     const snapshot = generateRankings(battleResults);
-    setMilestoneRankings(prev => ({ ...prev, [milestoneHit]: snapshot }));
-    hitMilestones.current.add(milestoneHit);
-    setPendingMilestone(milestoneHit);
+    milestoneRankings.current[milestoneHit] = snapshot;
+
+    if (snapshot.length > 0) {
+      setShowingMilestone(true);
+      hitMilestones.current.add(milestoneHit);
+    } else {
+      console.error(`Snapshot rankings for milestone ${milestoneHit} is empty.`);
+    }
   };
 
   const resetMilestones = () => {
     hitMilestones.current.clear();
-    setMilestoneRankings({});
-    setPendingMilestone(null);
+    milestoneRankings.current = {};
   };
 
-  const getSnapshotForMilestone = (battleCount: number) => milestoneRankings[battleCount] || [];
+  const getSnapshotForMilestone = (battleCount: number) => milestoneRankings.current[battleCount] || [];
 
   return {
     calculateCompletionPercentage,
