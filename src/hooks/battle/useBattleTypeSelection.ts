@@ -19,7 +19,7 @@ export const useBattleTypeSelection = () => {
       }
     };
     
-    handleStorageChange();
+    // Removed immediate call to handleStorageChange() to prevent render loop
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);

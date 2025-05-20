@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft } from "lucide-react";
@@ -55,8 +54,8 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
       setInternalProcessing(true);
       onPokemonSelect(id);
       
-      // Reset internal processing state after a delay
-      setTimeout(() => setInternalProcessing(false), 500);
+      // Reset internal processing state after a shorter delay (100ms)
+      setTimeout(() => setInternalProcessing(false), 100);
     } else {
       console.log("BattleInterface: Ignoring click while processing");
     }
@@ -69,8 +68,8 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
       setInternalProcessing(true);
       onTripletSelectionComplete();
       
-      // Reset internal processing state after a delay
-      setTimeout(() => setInternalProcessing(false), 500);
+      // Reset internal processing state after a shorter delay (100ms)
+      setTimeout(() => setInternalProcessing(false), 100);
     }
   }, [onTripletSelectionComplete, isProcessing, internalProcessing]);
 

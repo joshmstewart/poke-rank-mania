@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { SingleBattle } from "./types";
 import { RankedPokemon } from "./useRankings";
@@ -9,13 +10,27 @@ export const useCompletionTracker = (
   battleResults: SingleBattle[],
   setRankingGenerated: React.Dispatch<React.SetStateAction<boolean>>,
   setCompletionPercentage: React.Dispatch<React.SetStateAction<number>>,
-  showingMilestone: boolean,
+  showingMilestone: boolean, // Explicitly added parameter
   setShowingMilestone: React.Dispatch<React.SetStateAction<boolean>>,
   generateRankings: (results: SingleBattle[]) => RankedPokemon[],
   allPokemonForGeneration: any[]
 ) => {
-  const milestoneRankings = useRef<Record<number, RankedPokemon[]>>({});
+  const [milestoneRankings, setMilestoneRankings] = useState<Record<number, RankedPokemon[]>>({});
+  const [pendingMilestone, setPendingMilestone] = useState<number | null>(null);
   const hitMilestones = useRef<Set<number>>(new Set());
+
+  // Explicitly track milestone rankings and trigger UI update only after data is available
+  useEffect(() => {
+    if (
+      pendingMilestone !== null &&
+      milestoneRankings[pendingMilestone]?.length > 0 &&
+      !showingMilestone
+    ) {
+      console.log(`✅ Milestone ${pendingMilestone} rankings confirmed available, now showing UI`);
+      setShowingMilestone(true);
+      setPendingMilestone(null);
+    }
+  }, [milestoneRankings, pendingMilestone, showingMilestone, setShowingMilestone]);
 
   useEffect(() => {
     calculateCompletionPercentage();
@@ -43,12 +58,14 @@ export const useCompletionTracker = (
     const milestoneHit = MILESTONES.find(m => m === battleResults.length);
     if (!milestoneHit || hitMilestones.current.has(milestoneHit)) return;
 
+    // First generate the snapshot
     const snapshot = generateRankings(battleResults);
-    milestoneRankings.current[milestoneHit] = snapshot;
-
+    
+    // Store it in the milestoneRankings state
     if (snapshot.length > 0) {
-      setShowingMilestone(true);
+      setMilestoneRankings(prev => ({...prev, [milestoneHit]: snapshot}));
       hitMilestones.current.add(milestoneHit);
+      setPendingMilestone(milestoneHit);
     } else {
       console.error(`Snapshot rankings for milestone ${milestoneHit} is empty.`);
     }
@@ -56,10 +73,11 @@ export const useCompletionTracker = (
 
   const resetMilestones = () => {
     hitMilestones.current.clear();
-    milestoneRankings.current = {};
+    setMilestoneRankings({});
+    setPendingMilestone(null);
   };
 
-  const getSnapshotForMilestone = (battleCount: number) => milestoneRankings.current[battleCount] || [];
+  const getSnapshotForMilestone = (battleCount: number) => milestoneRankings[battleCount] || [];
 
   return {
     calculateCompletionPercentage,

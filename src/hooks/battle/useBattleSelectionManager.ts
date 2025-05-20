@@ -39,13 +39,16 @@ export const useBattleSelectionManager = (
       
       console.log(`useBattleSelectionManager: Selected Pokémon ID ${id} for pairs mode`);
       
-      // Process the battle result immediately
-      processBattleResult([id], battleType, currentBattle);
-      
-      // Reset processing flag after a small delay
-      setTimeout(() => {
+      // Process the battle result with guard against re-entry
+      if (!isProcessingRef.current) {
+        isProcessingRef.current = true;
+        processBattleResult([id], battleType, currentBattle);
+        // Clear selections after processing
+        setLocalSelectedPokemon([]);
+        setSelectedPokemon([]);
+        // Reset flag immediately after processing
         isProcessingRef.current = false;
-      }, 200);
+      }
     } else {
       // For triplets/trios, toggle selection
       let newSelected;
@@ -95,10 +98,8 @@ export const useBattleSelectionManager = (
       setLocalSelectedPokemon([]);
       setSelectedPokemon([]);
       
-      // Reset processing flag after a small delay
-      setTimeout(() => {
-        isProcessingRef.current = false;
-      }, 200);
+      // Reset processing flag immediately
+      isProcessingRef.current = false;
     }
   }, [selectedPokemon, setBattleHistory, processBattleResult, setSelectedPokemon]);
 

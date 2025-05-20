@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
@@ -94,11 +95,17 @@ export const useBattleProcessor = (
         );
       }
 
-      setupNextBattle(battleType);
+      // Only setup the next battle if we're not already processing
+      // This helps prevent render loops
+      if (!isProcessingResult) {
+        setupNextBattle(battleType);
+      }
       setIsProcessingResult(false);
     } else {
       console.error("No results returned from processResult");
-      setupNextBattle(battleType);
+      if (!isProcessingResult) {
+        setupNextBattle(battleType);
+      }
       setIsProcessingResult(false);
     }
   };

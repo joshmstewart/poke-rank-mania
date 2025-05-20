@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "@/hooks/battle/types";
@@ -55,12 +56,12 @@ const BattleContent: React.FC<BattleContentProps> = ({
         setSnapshotRankings(snapshot);
       } else {
         console.error(`Snapshot for milestone ${battlesCompleted} was empty.`);
-        onContinueBattles(); // Automatically continue if snapshot is invalid
+        // Removed automatic call to onContinueBattles() to prevent render loop
       }
     } else {
       setSnapshotRankings([]);
     }
-  }, [showingMilestone, battlesCompleted, getSnapshotForMilestone, onContinueBattles]);
+  }, [showingMilestone, battlesCompleted, getSnapshotForMilestone]);
 
   const hasValidRankingsToShow = snapshotRankings.length > 0 || (rankingGenerated && finalRankings.length > 0);
   const rankingsToShow = snapshotRankings.length > 0 ? snapshotRankings : finalRankings;

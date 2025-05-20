@@ -45,10 +45,8 @@ export const useNextBattleHandler = (
       console.log("useNextBattleHandler: Starting new battle");
       startNewBattle(battleType);
       
-      // Reset flag after successful battle start
-      setTimeout(() => {
-        isSettingUpRef.current = false;
-      }, 100);
+      // Reset flag immediately after successful battle start - no timeout
+      isSettingUpRef.current = false;
       
       return true;
     } catch (error) {
