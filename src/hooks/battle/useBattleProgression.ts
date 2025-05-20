@@ -192,4 +192,4 @@ export const useBattleProgression = (
     isShowingMilestone: showingMilestoneRef.current,
     resetMilestone
   };
-}, []);
+};
