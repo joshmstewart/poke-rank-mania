@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useEffect, useRef } from "react";
 import { Pokemon, fetchAllPokemon } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
@@ -64,6 +65,17 @@ export const useBattleStateCore = (allPokemon: Pokemon[], initialBattleType: Bat
   useEffect(() => {
     battleTypeRef.current = initialBattleType;
   }, [initialBattleType]);
+
+  // Adding the missing handlePokemonSelect function
+  const handlePokemonSelect = useCallback((pokemonId: number) => {
+    setSelectedPokemon(prev => {
+      if (prev.includes(pokemonId)) {
+        return prev.filter(id => id !== pokemonId);
+      } else {
+        return [...prev, pokemonId];
+      }
+    });
+  }, []);
 
   // Define handleSelection before it's used
   const handleSelection = useCallback(async (selectedPokemonIds: number[]) => {

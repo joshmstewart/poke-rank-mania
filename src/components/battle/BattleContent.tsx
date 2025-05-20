@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { useBattleStateCore } from "@/hooks/battle/useBattleStateCore";
@@ -124,10 +123,9 @@ const BattleContent = ({ allPokemon, initialBattleType, initialSelectedGeneratio
   }
 
   // Create a wrapper function to adapt the triplet selection
-  // Fix: Change the wrapper function to match the expected signature
+  // Fix: We need to create a wrapper that doesn't take arguments since the interface expects a function with no args
   const handleTripletSelectionWrapper = () => {
-    // Call the original handler with the selected Pokemon IDs
-    handleTripletSelectionComplete(selectedPokemon);
+    handleTripletSelectionComplete();
   };
 
   return (
