@@ -20,21 +20,6 @@ const ProgressTracker: React.FC<ProgressTrackerProps> = ({
   const safeBattlesCompleted = isNaN(battlesCompleted) ? 0 : battlesCompleted;
   const isComplete = safeCompletionPercentage >= 100;
   
-  // Calculate the next milestone (every 10 battles until 100, then every 50)
-  const getNextMilestone = () => {
-    if (safeBattlesCompleted < 10) {
-      return 10;
-    } else if (safeBattlesCompleted < 25) {
-      return 25;
-    } else if (safeBattlesCompleted < 50) {
-      return 50;
-    } else if (safeBattlesCompleted < 100) {
-      return 100;
-    } else {
-      return Math.ceil(safeBattlesCompleted / 50) * 50 + 50;
-    }
-  };
-  
   // Safely get battles remaining
   const battlesRemaining = (() => {
     try {
@@ -60,12 +45,11 @@ const ProgressTracker: React.FC<ProgressTrackerProps> = ({
         <Progress value={safeCompletionPercentage} className={`h-2 ${isComplete ? "bg-green-100" : ""}`} />
         <div className="flex justify-between mt-1 text-xs text-gray-500">
           <span>Battles: {safeBattlesCompleted}</span>
-          <span>
-            {safeCompletionPercentage < 100 
-              ? `Next milestone: ${getNextMilestone()} battles` 
-              : <span className="flex items-center text-green-600 font-semibold"><CheckCircle size={14} className="mr-1" /> Complete ranking!</span>
-            }
-          </span>
+          {safeCompletionPercentage >= 100 && (
+            <span className="flex items-center text-green-600 font-semibold">
+              <CheckCircle size={14} className="mr-1" /> Complete ranking!
+            </span>
+          )}
         </div>
       </CardContent>
     </Card>

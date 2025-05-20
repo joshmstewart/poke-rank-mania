@@ -34,7 +34,7 @@ const BattleControls: React.FC<BattleControlsProps> = ({
   const safeSelectedGeneration = selectedGeneration !== undefined ? selectedGeneration : 0;
   
   return (
-    <div className="flex items-center justify-between bg-white p-3 rounded-lg shadow border">
+    <div className="flex items-center justify-between bg-white p-3 rounded-lg shadow border w-full">
       {/* Left side - Gen and Mode dropdowns */}
       <div className="flex items-center gap-8">
         <div className="flex items-center">
@@ -73,14 +73,14 @@ const BattleControls: React.FC<BattleControlsProps> = ({
         </div>
       </div>
       
-      {/* Right side - action buttons with controlled spacing */}
-      <div className="flex items-center gap-4">
+      {/* Right side - action buttons with proper spacing */}
+      <div className="flex items-center">
         <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
           <DialogTrigger asChild>
             <Button
               variant="outline"
               size="sm"
-              className="flex items-center gap-1 h-8 text-sm px-4 min-w-[90px]"
+              className="flex items-center gap-1 h-8 text-sm px-4 min-w-[90px] mr-4"
             >
               <Settings className="h-4 w-4" /> Forms
             </Button>
