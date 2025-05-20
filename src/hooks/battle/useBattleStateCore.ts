@@ -1,4 +1,4 @@
-
+import { useCallback } from "react"; // <-- add this
 import { Pokemon } from "@/services/pokemon";
 import { BattleType, BattleResult } from "./types";
 import { useGenerationState } from "./useGenerationState";
@@ -11,6 +11,7 @@ import { useBattleStateCoordinator } from "./useBattleStateCoordinator";
 import { useBattleManager } from "./useBattleManager";
 import { useCompletionTracker } from "./useCompletionTracker";
 import { useConfidenceRanking } from "./useConfidenceRanking";
+
 
 export const useBattleStateCore = () => {
   const generationState = useGenerationState();
