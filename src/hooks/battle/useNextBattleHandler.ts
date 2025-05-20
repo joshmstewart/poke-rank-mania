@@ -10,8 +10,11 @@ export const useNextBattleHandler = (
 ) => {
   const isSettingUpRef = useRef(false);
 
-  const setupNextBattle = useCallback((battleType: BattleType, excludePokemon?: Pokemon[]) => {
-    if (isSettingUpRef.current) return;
+  const setupNextBattle = useCallback(async (battleType: BattleType, excludePokemon?: Pokemon[]) => {
+    if (isSettingUpRef.current) {
+      console.log("Already setting up battle, skipping.");
+      return;
+    }
 
     isSettingUpRef.current = true;
     setSelectedPokemon([]);
@@ -27,6 +30,7 @@ export const useNextBattleHandler = (
     }
 
     try {
+      await new Promise(resolve => setTimeout(resolve, 0)); // Force async tick
       startNewBattle(battleType, excludePokemon);
     } catch (error) {
       console.error("Error starting new battle:", error);

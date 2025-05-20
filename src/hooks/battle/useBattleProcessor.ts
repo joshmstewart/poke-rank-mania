@@ -39,7 +39,7 @@ export const useBattleProcessor = (
     setBattleResults
   );
 
-  const processBattle = useCallback((
+  const processBattle = useCallback(async (
     selectedPokemonIds: number[],
     currentBattlePokemon: Pokemon[],
     battleType: BattleType,
@@ -47,11 +47,6 @@ export const useBattleProcessor = (
   ) => {
     if (isProcessingResult) {
       console.log("Already processing result, skipping.");
-      return;
-    }
-
-    if (!selectedPokemonIds?.length || !currentBattlePokemon?.length) {
-      console.error("Invalid selection or current battle Pokémon.");
       return;
     }
 
@@ -75,13 +70,14 @@ export const useBattleProcessor = (
           );
         }
 
-        setupNextBattle(battleType);
+        await setupNextBattle(battleType); // Ensuring async
       } else {
         console.error("processResult returned empty results.");
-        setupNextBattle(battleType);
+        await setupNextBattle(battleType);
       }
     } catch (error) {
       console.error("Error processing battle:", error);
+      await setupNextBattle(battleType);
     } finally {
       setIsProcessingResult(false);
     }
