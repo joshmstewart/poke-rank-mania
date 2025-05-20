@@ -19,11 +19,13 @@ export function FormFiltersSelector() {
     isAllEnabled,
     toggleAll
   } = useFormFilters();
+  
+  // Create the ref at the component top level, not inside useEffect
+  const isFirstRender = React.useRef(true);
 
   // Effect to reload pokemon when filters change
   React.useEffect(() => {
     // Skip on first render
-    const isFirstRender = React.useRef(true);
     if (isFirstRender.current) {
       isFirstRender.current = false;
       return;
