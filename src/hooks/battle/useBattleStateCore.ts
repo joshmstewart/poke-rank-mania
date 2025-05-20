@@ -76,6 +76,7 @@ export const useBattleStateCore = () => {
     selectionState.battleResults,
     progressState.setRankingGenerated,
     progressState.setCompletionPercentage,
+    progressState.showingMilestone, // Explicitly passing showingMilestone here
     progressState.setShowingMilestone,
     generateRankings,
     allPokemonSafe

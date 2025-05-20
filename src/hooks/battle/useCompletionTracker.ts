@@ -10,6 +10,7 @@ export const useCompletionTracker = (
   battleResults: SingleBattle[],
   setRankingGenerated: React.Dispatch<React.SetStateAction<boolean>>,
   setCompletionPercentage: React.Dispatch<React.SetStateAction<number>>,
+  showingMilestone: boolean, // Added this explicitly as a parameter
   setShowingMilestone: React.Dispatch<React.SetStateAction<boolean>>,
   generateRankings: (results: SingleBattle[]) => RankedPokemon[],
   allPokemonForGeneration: any[]
