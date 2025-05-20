@@ -91,6 +91,7 @@ export const useCompletionTracker = (
     }
   }, [allPokemon, battleResults.length, setCompletionPercentage]);
   
+  // Memoize this function to prevent it from causing render loops
   const getSnapshotForMilestone = useCallback((battleCount: number): RankedPokemon[] => {
     // First check if we have a cached snapshot
     if (snapshotCacheRef.current[battleCount]) {
@@ -104,8 +105,8 @@ export const useCompletionTracker = (
       return [];
     }
     
-    // If we don't have rankings for this milestone yet, generate them
-    if (!milestoneRankings[battleCount] && battleResults.length >= battleCount) {
+    // Only generate rankings if we have enough battle results
+    if (battleResults.length >= battleCount) {
       // Mark as processing to prevent loops
       if (isMilestoneProcessingRef.current) {
         console.log("Already processing a milestone, returning empty rankings");
@@ -118,11 +119,6 @@ export const useCompletionTracker = (
       console.log(`Generating snapshot for milestone: ${battleCount}`);
       
       try {
-        // Clear any existing timeout
-        if (rankingGenerationTimeoutRef.current) {
-          clearTimeout(rankingGenerationTimeoutRef.current);
-        }
-        
         // Use the battle results up to this milestone
         const relevantResults = battleResults.slice(0, battleCount);
         const rankingsSnapshot = generateRankings(relevantResults);
@@ -131,32 +127,28 @@ export const useCompletionTracker = (
         if (rankingsSnapshot && rankingsSnapshot.length > 0) {
           snapshotCacheRef.current[battleCount] = rankingsSnapshot;
           
-          // And update state (this won't cause immediate re-render)
+          // Update state (this won't cause immediate re-render)
           setMilestoneRankings(prev => ({
             ...prev,
             [battleCount]: rankingsSnapshot
           }));
-        }
-        
-        // Return the snapshot immediately
-        if (rankingsSnapshot && rankingsSnapshot.length > 0) {
+          
+          // Return the snapshot immediately
           return rankingsSnapshot;
         }
       } catch (error) {
         console.error("Error generating snapshot for milestone:", error);
       } finally {
-        // Release locks after processing is truly done with a delay
+        // Release locks with a delay
         setTimeout(() => {
           isMilestoneProcessingRef.current = false;
           snapshotGenerationInProgressRef.current[battleCount] = false;
-        }, 300);
+        }, 500);
       }
-      
-      return snapshotCacheRef.current[battleCount] || [];
     }
     
-    return milestoneRankings[battleCount] || snapshotCacheRef.current[battleCount] || [];
-  }, [milestoneRankings, battleResults, generateRankings]);
+    return snapshotCacheRef.current[battleCount] || [];
+  }, [battleResults, generateRankings]);
 
   return { 
     resetMilestones,

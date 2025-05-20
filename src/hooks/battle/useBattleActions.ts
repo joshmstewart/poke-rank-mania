@@ -35,7 +35,7 @@ export const useBattleActions = (
       setIsActioning(true);
       
       // Execute action after a small delay to break render cycles
-      setTimeout(() => {
+      actionTimeoutRef.current = setTimeout(() => {
         try {
           action();
         } catch (e) {
@@ -57,6 +57,7 @@ export const useBattleActions = (
       }, 50);
     } else {
       // Queue the action for later execution
+      console.log("Action queued for later execution");
       actionsQueueRef.current.push(action);
     }
   }, [isActioning]);
