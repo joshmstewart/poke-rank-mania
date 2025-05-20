@@ -18,10 +18,12 @@ const BattleMode: React.FC = () => {
       <ProgressTracker
         completionPercentage={completionPercentage}
         battlesCompleted={battlesCompleted}
-        battlesRemaining={getBattlesRemaining()}
+        getBattlesRemaining={getBattlesRemaining} // ✅ Correct prop name
       />
-      <BattleContentContainer /> {/* ✅ Removed incorrect props */}
-      <BattleFooterNote />
+      <BattleContentContainer />
+      <BattleFooterNote
+        battlesCompleted={battlesCompleted} // ✅ Fixed missing required prop
+      />
     </div>
   );
 };
