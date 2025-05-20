@@ -1,3 +1,4 @@
+
 // This is where the real implementation should be
 import { toast as sonnerToast } from "sonner";
 
@@ -6,6 +7,8 @@ interface ToastOptions {
   description?: string;
   variant?: "default" | "destructive";
   action?: React.ReactNode;
+  // Add the duration property to match how we're using it
+  duration?: number;
 }
 
 // Allow calling toast with options object or with title string + options

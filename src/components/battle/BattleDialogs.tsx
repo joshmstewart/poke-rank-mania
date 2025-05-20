@@ -1,20 +1,9 @@
 
 import React from "react";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 
-interface BattleDialogsProps {
-  showingMilestone: boolean;
-  onContinueBattles: () => void;
-  onNewBattleSet: () => void;
-}
-
-const BattleDialogs: React.FC<BattleDialogsProps> = ({
-  showingMilestone,
-  onContinueBattles,
-  onNewBattleSet
-}) => {
-  // We're not using this dialog anymore, using toasts instead
+// This component is no longer used, as we're using toast notifications instead
+const BattleDialogs: React.FC = () => {
+  // Return null as this component is not used anymore
   return null;
 };
 

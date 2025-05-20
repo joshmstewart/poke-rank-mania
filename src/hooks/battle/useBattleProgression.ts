@@ -1,4 +1,3 @@
-
 import { useCallback, useRef, useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
 
@@ -39,11 +38,10 @@ export const useBattleProgression = (
         // Generate rankings based on the battle results
         generateRankings(battleResults);
         
-        // Notify user with toast instead of dialog
+        // Notify user with toast instead of dialog - fixed by removing duration
         toast({
           title: "Milestone Reached!",
-          description: `You've completed ${newBattlesCompleted} battles.`,
-          duration: 5000
+          description: `You've completed ${newBattlesCompleted} battles.`
         });
         
         // We're not showing milestone dialog anymore

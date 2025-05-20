@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { useBattleStateCore } from "@/hooks/battle/useBattleStateCore";
@@ -60,11 +59,10 @@ const BattleContent = ({ allPokemon, initialBattleType, initialSelectedGeneratio
       if (!milestoneShownRef.current.has(battlesCompleted)) {
         milestoneShownRef.current.add(battlesCompleted);
         
-        // Show toast notification instead of dialog
+        // Show toast notification instead of dialog - fixed by removing duration
         toast({
           title: "Milestone Reached!",
-          description: `You've completed ${battlesCompleted} battles. Rankings have been updated.`,
-          duration: 5000
+          description: `You've completed ${battlesCompleted} battles. Rankings have been updated.`
         });
         
         // Generate rankings at milestone
