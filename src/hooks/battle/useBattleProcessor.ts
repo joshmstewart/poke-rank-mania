@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
 import { useBattleProgression } from "./useBattleProgression";
@@ -40,75 +39,51 @@ export const useBattleProcessor = (
     setBattleResults
   );
 
-  const processBattle = (
+  const processBattle = useCallback((
     selectedPokemonIds: number[],
     currentBattlePokemon: Pokemon[],
     battleType: BattleType,
     currentSelectedGeneration: number = 0
   ) => {
-    console.log("useBattleProcessor: Processing battle result with selections:", selectedPokemonIds);
-
-    if (isProcessingResult) {
-      console.log("Already processing a result, skipping");
-      return;
-    }
-
-    if (!selectedPokemonIds || selectedPokemonIds.length === 0) {
-      console.error("No selected Pokémon provided");
-      return;
-    }
-
-    if (!currentBattlePokemon || currentBattlePokemon.length < 2) {
-      console.error("Invalid currentBattlePokemon array");
-      return;
-    }
+    if (isProcessingResult) return;
 
     setIsProcessingResult(true);
 
-    const newResults: SingleBattle[] = processResult(
-      selectedPokemonIds,
-      battleType,
-      currentBattlePokemon
-    );
+    const newResults = processResult(selectedPokemonIds, battleType, currentBattlePokemon);
 
-    if (newResults && newResults.length > 0) {
+    if (newResults.length > 0) {
       const cumulativeResults = [...battleResults, ...newResults];
 
       setBattleResults(cumulativeResults);
-
       incrementBattlesCompleted(newResults);
 
-      const updatedCount = battlesCompleted + 1;
-      
-      const hitMilestone = checkMilestone(updatedCount, cumulativeResults);
-      console.log("Milestone hit?", hitMilestone);
+      const updatedCount = battlesCompleted + newResults.length;
 
+      const hitMilestone = checkMilestone(updatedCount, cumulativeResults);
       if (hitMilestone && currentSelectedGeneration) {
         saveRankings(
-          Array.from(
-            new Map(
-              cumulativeResults.map(result => [result.winner.id, result.winner])
-            ).values()
-          ),
+          Array.from(new Map(
+            cumulativeResults.map(result => [result.winner.id, result.winner])
+          ).values()),
           currentSelectedGeneration,
           "battle"
         );
       }
 
-      // Only setup the next battle if we're not already processing
-      // This helps prevent render loops
-      if (!isProcessingResult) {
-        setupNextBattle(battleType);
-      }
-      setIsProcessingResult(false);
-    } else {
-      console.error("No results returned from processResult");
-      if (!isProcessingResult) {
-        setupNextBattle(battleType);
-      }
-      setIsProcessingResult(false);
+      setupNextBattle(battleType);
     }
-  };
+
+    setIsProcessingResult(false);
+  }, [
+    isProcessingResult,
+    battleResults,
+    battlesCompleted,
+    processResult,
+    setBattleResults,
+    incrementBattlesCompleted,
+    checkMilestone,
+    setupNextBattle
+  ]);
 
   return {
     processBattleResult: processBattle,

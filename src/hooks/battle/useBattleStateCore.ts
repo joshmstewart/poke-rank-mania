@@ -37,11 +37,12 @@ export const useBattleStateCore = () => {
     }
   };
 
-  const startNewBattleAdapter = (battleType: BattleType) => {
-    if (allPokemonSafe && allPokemonSafe.length >= 2) {
-      startNewBattle(allPokemonSafe, battleType);
-    }
-  };
+ const startNewBattleAdapter = useCallback((battleType: BattleType) => {
+  if (allPokemonSafe && allPokemonSafe.length >= 2) {
+    startNewBattle(allPokemonSafe, battleType);
+  }
+}, [allPokemonSafe, startNewBattle]);
+
 
   const {
     isLoading,
