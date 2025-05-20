@@ -7,7 +7,8 @@ import BattleHeader from "./BattleHeader";
 import BattleControls from "./BattleControls";
 import BattleFooterNote from "./BattleFooterNote";
 import { BattleType } from "@/hooks/battle/types";
-import { toast } from "@/hooks/use-toast";
+import RankingDisplay from "./RankingDisplay";
+import ProgressTracker from "./ProgressTracker";
 
 interface BattleContentProps {
   allPokemon: Pokemon[];
@@ -17,7 +18,6 @@ interface BattleContentProps {
 
 const BattleContent = ({ allPokemon, initialBattleType, initialSelectedGeneration }: BattleContentProps) => {
   const battleStartedRef = useRef(false);
-  const milestoneShownRef = useRef<Set<number>>(new Set());
   
   const {
     currentBattle,
@@ -54,26 +54,11 @@ const BattleContent = ({ allPokemon, initialBattleType, initialSelectedGeneratio
     }
   }, [allPokemon.length, initialBattleType, startNewBattle]);
   
-  // Check for milestones and show toast notifications
-  useEffect(() => {
-    // Only check for milestones at specific battle counts
-    if (battlesCompleted > 0 && milestones.includes(battlesCompleted)) {
-      // Only show toast if we haven't shown it already for this milestone
-      if (!milestoneShownRef.current.has(battlesCompleted)) {
-        console.log(`Showing milestone toast for battle ${battlesCompleted}`);
-        milestoneShownRef.current.add(battlesCompleted);
-        
-        // Show toast notification
-        toast({
-          title: "Milestone Reached!",
-          description: `You've completed ${battlesCompleted} battles. Rankings have been updated.`
-        });
-        
-        // Generate rankings at milestone
-        generateRankings([]);
-      }
-    }
-  }, [battlesCompleted, milestones, generateRankings]);
+  // Calculate remaining battles
+  const getBattlesRemaining = () => {
+    const totalBattlesNeeded = Math.floor(allPokemon.length * Math.log2(allPokemon.length));
+    return Math.max(0, totalBattlesNeeded - battlesCompleted);
+  };
 
   const handleBattleTypeChange = (newType: BattleType) => {
     setBattleType(newType);
@@ -93,8 +78,27 @@ const BattleContent = ({ allPokemon, initialBattleType, initialSelectedGeneratio
   const handleRestartBattles = () => {
     resetMilestones();
     startNewBattle(battleType);
-    milestoneShownRef.current.clear();
   };
+
+  const handleContinueBattles = () => {
+    setShowingMilestone(false);
+    startNewBattle(battleType);
+  };
+
+  const handleNewBattleSet = () => {
+    resetMilestones();
+    startNewBattle(battleType);
+  };
+
+  const handleSaveRankings = () => {
+    console.log("Rankings saved!");
+    setShowingMilestone(false);
+  };
+
+  // Calculate completion percentage
+  useEffect(() => {
+    calculateCompletionPercentage();
+  }, [battlesCompleted, calculateCompletionPercentage]);
 
   if (!allPokemon.length) {
     return <div className="flex justify-center items-center h-64">Loading Pokémon...</div>;
@@ -112,18 +116,40 @@ const BattleContent = ({ allPokemon, initialBattleType, initialSelectedGeneratio
         onRestartBattles={handleRestartBattles}
       />
       
-      <BattleInterface
-        currentBattle={currentBattle}
-        selectedPokemon={selectedPokemon}
-        onPokemonSelect={handlePokemonSelect}
-        onTripletSelectionComplete={handleTripletSelectionComplete}
-        isProcessing={isProcessingResult}
-        battleType={battleType}
-        onGoBack={goBack}
-        battlesCompleted={battlesCompleted}
-        battleHistory={[]}
-        milestones={milestones}
-      />
+      <div className="w-full max-w-3xl">
+        <ProgressTracker 
+          completionPercentage={completionPercentage}
+          battlesCompleted={battlesCompleted}
+          getBattlesRemaining={getBattlesRemaining}
+        />
+      </div>
+      
+      {showingMilestone ? (
+        <div className="w-full max-w-3xl">
+          <RankingDisplay
+            finalRankings={finalRankings}
+            battlesCompleted={battlesCompleted}
+            onContinueBattles={handleContinueBattles}
+            onNewBattleSet={handleNewBattleSet}
+            rankingGenerated={true}
+            onSaveRankings={handleSaveRankings}
+            isMilestoneView={true}
+          />
+        </div>
+      ) : (
+        <BattleInterface
+          currentBattle={currentBattle}
+          selectedPokemon={selectedPokemon}
+          onPokemonSelect={handlePokemonSelect}
+          onTripletSelectionComplete={handleTripletSelectionComplete}
+          isProcessing={isProcessingResult}
+          battleType={battleType}
+          onGoBack={goBack}
+          battlesCompleted={battlesCompleted}
+          battleHistory={[]}
+          milestones={milestones}
+        />
+      )}
       
       <BattleFooterNote battlesCompleted={battlesCompleted} />
     </div>

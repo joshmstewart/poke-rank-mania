@@ -6,7 +6,6 @@ import { useBattleProgression } from "./useBattleProgression";
 import { useNextBattleHandler } from "./useNextBattleHandler";
 import { useBattleResultProcessor } from "./useBattleResultProcessor";
 import { saveRankings } from "@/services/pokemon";
-import { toast } from "@/hooks/use-toast";
 
 export const useBattleProcessor = (
   battleResults: SingleBattle[],
@@ -60,13 +59,14 @@ export const useBattleProcessor = (
         setBattleResults(cumulativeResults);
         
         console.log("🟡 useBattleProcessor: incremented battles completed");
-        incrementBattlesCompleted(newResults);
+        incrementBattlesCompleted(cumulativeResults);
 
         const updatedCount = battlesCompleted + newResults.length;
         
-        // Check for milestone and show toast if needed
+        // Check for milestone and handle UI accordingly
         if (milestones.includes(updatedCount) && !processedMilestonesRef.current.has(updatedCount)) {
           processedMilestonesRef.current.add(updatedCount);
+          console.log(`🎉 Milestone reached: ${updatedCount} battles`);
           
           // Save the rankings
           saveRankings(
@@ -75,14 +75,11 @@ export const useBattleProcessor = (
             "battle"
           );
           
-          // Generate rankings at milestone
+          // Generate rankings for the milestone
           generateRankings(cumulativeResults);
           
-          // Show toast notification
-          toast({
-            title: "Milestone Reached!",
-            description: `You've completed ${updatedCount} battles. Rankings have been updated.`
-          });
+          // Only set up next battle if we're not at a milestone
+          return;
         }
 
         await setupNextBattle(battleType);

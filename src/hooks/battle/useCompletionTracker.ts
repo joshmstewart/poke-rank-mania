@@ -1,3 +1,4 @@
+
 import { useEffect, useRef, useState, useCallback } from "react";
 import { SingleBattle } from "./types";
 import { RankedPokemon } from "./useRankings";
@@ -53,7 +54,8 @@ export const useCompletionTracker = (
     hitMilestones.current.clear();
     setMilestoneRankings({});
     snapshotCacheRef.current = {};
-  }, []);
+    setShowingMilestone(false);
+  }, [setShowingMilestone]);
 
   const resetMilestoneRankings = useCallback(() => {
     console.log("🧹 Resetting milestone rankings cache");
@@ -113,8 +115,7 @@ export const useCompletionTracker = (
       try {
         const relevantResults = battleResults.slice(0, battleCount);
         console.log("🔵 useCompletionTracker: generating rankings snapshot");
-const rankingsSnapshot = generateRankings(relevantResults);
-
+        const rankingsSnapshot = generateRankings(relevantResults);
 
         if (rankingsSnapshot.length > 0) {
           snapshotCacheRef.current[battleCount] = rankingsSnapshot;
