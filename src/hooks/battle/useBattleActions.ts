@@ -9,7 +9,7 @@ export const useBattleActions = (
   setBattleResults: React.Dispatch<React.SetStateAction<SingleBattle[]>>,
   setBattlesCompleted: React.Dispatch<React.SetStateAction<number>>,
   setBattleHistory: React.Dispatch<React.SetStateAction<{ battle: Pokemon[], selected: number[] }[]>>,
-  setShowingMilestone: (value: boolean) => void,  // Changed to accept our custom setter
+  setShowingMilestone: (value: boolean) => void,
   setCompletionPercentage: React.Dispatch<React.SetStateAction<number>>,
   startNewBattle: (battleType: BattleType) => void,
   generateRankings: (results: SingleBattle[]) => void,
@@ -36,19 +36,18 @@ export const useBattleActions = (
       clearTimeout(actionTimeoutRef.current);
     }
     
-    // First, close the milestone view with a delay to ensure state settles
+    // First step: close the milestone view
+    console.log("Closing milestone view");
+    setShowingMilestone(false);
+    
+    // Wait for state update to propagate
     actionTimeoutRef.current = setTimeout(() => {
-      // Update milestone state to false
-      setShowingMilestone(false);
-      
-      // Use nested timeout to ensure state updates are processed 
-      actionTimeoutRef.current = setTimeout(() => {
-        // Start a new battle after milestone display is closed
-        startNewBattle(battleType);
-        setIsActioning(false);
-        actionTimeoutRef.current = null;
-      }, 300);
-    }, 200);
+      console.log("Starting new battle after milestone closed");
+      // Start a new battle after milestone display is closed
+      startNewBattle(battleType);
+      setIsActioning(false);
+      actionTimeoutRef.current = null;
+    }, 300);
   }, [battleType, setShowingMilestone, startNewBattle, isActioning]);
 
   const handleNewBattleSet = useCallback(() => {
@@ -60,27 +59,27 @@ export const useBattleActions = (
       clearTimeout(actionTimeoutRef.current);
     }
     
-    // Use a single timeout for resetting state
+    console.log("Starting new battle set, cleaning up state");
+    
+    // First step: close the milestone view if it's open
+    setShowingMilestone(false);
+    
+    // Wait for state update to propagate
     actionTimeoutRef.current = setTimeout(() => {
-      // Reset milestone state first
-      setShowingMilestone(false);
+      // Reset all other state in sequence with delays
+      setBattleResults([]);
+      setBattlesCompleted(0);
+      setRankingGenerated(false);
+      setBattleHistory([]);
+      setCompletionPercentage(0);
       
-      // Wait a bit before resetting other state
-      setTimeout(() => {
-        setBattleResults([]);
-        setBattlesCompleted(0);
-        setRankingGenerated(false);
-        setBattleHistory([]);
-        setCompletionPercentage(0);
-        
-        // Start new battle at the end with a longer delay
-        setTimeout(() => {
-          startNewBattle(battleType);
-          setIsActioning(false);
-          actionTimeoutRef.current = null;
-        }, 300);
-      }, 200);
-    }, 200);
+      // Start new battle at the end with a longer delay
+      actionTimeoutRef.current = setTimeout(() => {
+        startNewBattle(battleType);
+        setIsActioning(false);
+        actionTimeoutRef.current = null;
+      }, 300);
+    }, 300);
   }, [
     battleType, 
     setBattleHistory, 

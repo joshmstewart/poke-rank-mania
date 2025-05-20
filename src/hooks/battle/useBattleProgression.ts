@@ -8,7 +8,7 @@ import { toast } from "@/hooks/use-toast";
 export const useBattleProgression = (
   battlesCompleted: number,
   setBattlesCompleted: React.Dispatch<React.SetStateAction<number>>,
-  setShowingMilestone: (value: boolean) => void, // Changed to accept our custom setter
+  setShowingMilestone: (value: boolean) => void,
   milestones: number[],
   generateRankings: (results: any[]) => void
 ) => {
@@ -19,12 +19,16 @@ export const useBattleProgression = (
   const incrementInProgressRef = useRef(false);
   const pendingBattleUpdateRef = useRef(0);
   const battleUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const checkMilestoneTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Clean up any timeouts on unmount
   useEffect(() => {
     return () => {
       if (battleUpdateTimeoutRef.current) {
         clearTimeout(battleUpdateTimeoutRef.current);
+      }
+      if (checkMilestoneTimeoutRef.current) {
+        clearTimeout(checkMilestoneTimeoutRef.current);
       }
     };
   }, []);
@@ -36,11 +40,7 @@ export const useBattleProgression = (
       return false;
     }
     
-    // Check common milestones: 10, 25, 50, 100, etc.
-    const commonMilestones = [10, 25, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500];
-    
-    // Exact milestone match
-    if (commonMilestones.includes(battleCount)) {
+    if (milestones.includes(battleCount)) {
       console.log(`Milestone detected for battle count: ${battleCount}`);
       return true;
     }
@@ -52,14 +52,14 @@ export const useBattleProgression = (
     }
     
     return false;
-  }, []);
+  }, [milestones]);
 
-  // Actively invoked after battle result - but with debounce to prevent multiple calls
+  // Check milestone with debounce protection
   const checkMilestone = useCallback((newBattlesCompleted: number, battleResults: any[]) => {
     // Prevent checking during processing or if already shown
     if (processingMilestoneRef.current || 
-        newBattlesCompleted === lastMilestoneShownRef.current || 
-        showingMilestoneRef.current) {
+        showingMilestoneRef.current || 
+        newBattlesCompleted === lastMilestoneShownRef.current) {
       return false;
     }
 
@@ -67,49 +67,46 @@ export const useBattleProgression = (
     const isEvery50Battles = newBattlesCompleted >= 100 && newBattlesCompleted % 50 === 0;
 
     if (isExactMilestone || isEvery50Battles) {
-      console.log(`🔔 checkMilestone triggered at ${newBattlesCompleted}`);
-
       // Set processing flag to prevent duplicate processing
       processingMilestoneRef.current = true;
+      
+      // Show toast first
+      toast({
+        title: "Milestone Reached!",
+        description: `You've completed ${newBattlesCompleted} battles. Check out your current ranking!`
+      });
       
       // Update the last milestone shown
       lastMilestoneShownRef.current = newBattlesCompleted;
 
       if (Array.isArray(battleResults) && battleResults.length > 0) {
         try {
-          // Generate rankings but don't update UI state yet
+          // Generate rankings
           generateRankings(battleResults);
           
-          // Set flag in ref first
+          // Set flag in ref first to track milestone state
           showingMilestoneRef.current = true;
           
-          // Show toast first
-          toast({
-            title: "Milestone Reached!",
-            description: `You've completed ${newBattlesCompleted} battles. Check out your current ranking!`
-          });
+          // Wait a moment before updating React state
+          if (checkMilestoneTimeoutRef.current) {
+            clearTimeout(checkMilestoneTimeoutRef.current);
+          }
           
-          // Update state after a delay to prevent render loops
-          setTimeout(() => {
-            // Only update if still the current milestone
-            if (lastMilestoneShownRef.current === newBattlesCompleted) {
-              // Update the milestone state
-              setShowingMilestone(true);
-              
-              // Reset processing flag after everything is complete
-              setTimeout(() => {
-                processingMilestoneRef.current = false;
-              }, 300);
-            } else {
+          checkMilestoneTimeoutRef.current = setTimeout(() => {
+            // Finally update the state
+            setShowingMilestone(true);
+            
+            // Reset processing flag after everything is complete
+            setTimeout(() => {
               processingMilestoneRef.current = false;
-            }
+              checkMilestoneTimeoutRef.current = null;
+            }, 100);
           }, 100);
         } catch (err) {
           console.error("Error generating rankings at milestone:", err);
           processingMilestoneRef.current = false;
         }
       } else {
-        console.warn("No battle results to generate rankings");
         processingMilestoneRef.current = false;
       }
 
@@ -138,7 +135,7 @@ export const useBattleProgression = (
         const updated = prev + 1;
         pendingBattleUpdateRef.current = updated;
         
-        // Don't check milestone immediately to avoid render loop
+        // Check milestone with a delay
         battleUpdateTimeoutRef.current = setTimeout(() => {
           if (!showingMilestoneRef.current) {
             checkMilestone(updated, battleResults);

@@ -29,58 +29,53 @@ const BattleContent: React.FC<BattleContentProps> = (props) => {
   const { getSnapshotForMilestone } = useBattleStateCore();
   const [snapshotRankings, setSnapshotRankings] = useState<RankedPokemon[]>([]);
   const processingRef = useRef(false);
-  const prevShowingMilestone = useRef(false);
-  const prevBattlesCompleted = useRef(-1);
+  const milestoneSnapshotFetchedRef = useRef(false);
+  const prevShowingMilestone = useRef(props.showingMilestone);
+  const prevBattlesCompleted = useRef(props.battlesCompleted);
 
-  // Use memoized snapshot fetch to prevent unnecessary calls
-  const fetchMilestoneSnapshot = useCallback(() => {
-    // Prevent processing multiple times and avoid infinite loops
-    if (processingRef.current) return;
-    
+  // Use useEffect to respond to milestone changes rather than doing it in render
+  useEffect(() => {
     const { showingMilestone, battlesCompleted } = props;
     
-    // Only process when milestone status changes from false to true
+    // Only process when milestone becomes visible
     // or when battle count changes while milestone is showing
     if (showingMilestone && 
-        (!prevShowingMilestone.current || prevBattlesCompleted.current !== battlesCompleted)) {
+        (!prevShowingMilestone.current || 
+         (prevBattlesCompleted.current !== battlesCompleted && !milestoneSnapshotFetchedRef.current))) {
+      
+      if (processingRef.current) return;
       
       processingRef.current = true;
       console.log(`Fetching milestone snapshot for battle ${battlesCompleted}`);
       
-      try {
-        // Get cached rankings for the milestone with a delay
-        setTimeout(() => {
+      // Get cached rankings for the milestone with a delay
+      setTimeout(() => {
+        try {
           const snapshot = getSnapshotForMilestone(battlesCompleted);
           
           if (snapshot && snapshot.length > 0) {
             setSnapshotRankings(snapshot);
+            milestoneSnapshotFetchedRef.current = true;
           }
           
           // Store current status to prevent refetching
           prevShowingMilestone.current = showingMilestone;
           prevBattlesCompleted.current = battlesCompleted;
-          
+        } catch (error) {
+          console.error("Error getting milestone snapshot:", error);
+        } finally {
           // Reset processing flag after a delay
           setTimeout(() => {
             processingRef.current = false;
           }, 100);
-        }, 50);
-      } catch (error) {
-        console.error("Error getting milestone snapshot:", error);
-        processingRef.current = false;
-      }
-    } else if (!showingMilestone) {
-      // Update the tracking refs when milestone is closed
+        }
+      }, 50);
+    } else if (!showingMilestone && prevShowingMilestone.current) {
+      // Reset when milestone is hidden
       prevShowingMilestone.current = false;
+      milestoneSnapshotFetchedRef.current = false;
     }
-  }, [props, getSnapshotForMilestone]);
-
-  // Use effect to call fetch when needed
-  useEffect(() => {
-    if (props.showingMilestone && !processingRef.current) {
-      fetchMilestoneSnapshot();
-    }
-  }, [props.showingMilestone, props.battlesCompleted, fetchMilestoneSnapshot]);
+  }, [props.showingMilestone, props.battlesCompleted, getSnapshotForMilestone, props]);
 
   // Memoize rankings logic to avoid unnecessary renders
   const shouldShowRankings = useMemo(() => {

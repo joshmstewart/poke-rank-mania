@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 
 /**
  * Hook for managing battle progress state
@@ -11,17 +11,25 @@ export const useProgressState = () => {
   const [rankingGenerated, setRankingGenerated] = useState(false);
   
   // Wrap the setShowingMilestone to update both state and ref
-  const safeSetShowingMilestone = (value: boolean) => {
+  const safeSetShowingMilestone = useCallback((value: boolean) => {
     // Only update if the value actually changed to prevent needless rerenders
     if (milestoneRef.current !== value) {
       // Update ref first
       milestoneRef.current = value;
+      
       // Then update state with a small delay to avoid render loops
-      setTimeout(() => {
-        setShowingMilestone(value);
-      }, 0);
+      // This is crucial to break the circular dependency
+      if (value === true) {
+        // Show milestone immediately
+        setShowingMilestone(true);
+      } else {
+        // Hide milestone with a small delay
+        setTimeout(() => {
+          setShowingMilestone(false);
+        }, 50);
+      }
     }
-  };
+  }, []);
   
   // Always use full ranking mode, but keep in localStorage for compatibility
   const fullRankingMode = true;
