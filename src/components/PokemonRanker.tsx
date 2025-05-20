@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -7,6 +8,7 @@ import { RankingUI } from "./ranking/RankingUI";
 import { usePokemonRanker } from "@/hooks/usePokemonRanker";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { generations } from "@/services/pokemon";
+import { RankedPokemon } from "@/hooks/battle/useRankings";
 
 const PokemonRanker = () => {
   const {
@@ -29,6 +31,13 @@ const PokemonRanker = () => {
 
   const [showRankings, setShowRankings] = React.useState(false);
   const generationName = selectedGeneration === 0 ? "All Generations" : `Generation ${selectedGeneration}`;
+
+  // Convert rankedPokemon to proper RankedPokemon type with defaults
+  const typedRankedPokemon: RankedPokemon[] = rankedPokemon.map(pokemon => ({
+    ...pokemon,
+    score: 0,    // Default score
+    count: 0     // Default count
+  }));
 
   return (
     <div className="container max-w-7xl mx-auto py-6">
@@ -91,8 +100,7 @@ const PokemonRanker = () => {
         </div>
 
         {showRankings ? (
-          <RankingResults confidentRankedPokemon={rankedPokemon} confidenceScores={{}} />
-
+          <RankingResults confidentRankedPokemon={typedRankedPokemon} confidenceScores={{}} />
         ) : (
           <RankingUI
             isLoading={isLoading}

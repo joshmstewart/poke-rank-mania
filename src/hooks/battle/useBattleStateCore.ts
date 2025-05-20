@@ -1,3 +1,4 @@
+
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
 import { useGenerationState } from "./useGenerationState";
@@ -68,6 +69,7 @@ export const useBattleStateCore = () => {
 
   const {
     resetMilestones,
+    resetMilestoneRankings,
     calculateCompletionPercentage,
     getSnapshotForMilestone
   } = useCompletionTracker(
@@ -178,6 +180,8 @@ export const useBattleStateCore = () => {
     confidentRankedPokemon,
     confidenceScores,
     resetMilestones,
+    resetMilestoneRankings,
+    calculateCompletionPercentage,
     getSnapshotForMilestone
   };
 };

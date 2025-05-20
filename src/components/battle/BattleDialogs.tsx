@@ -1,3 +1,4 @@
+
 import React from "react";
 import { 
   AlertDialog,
@@ -26,7 +27,7 @@ const BattleDialogs: React.FC<BattleDialogsProps> = ({
 
   const handleRestart = () => {
     resetMilestones();
-    resetMilestoneRankings();  // ✅ Important fix: ensures milestone rankings reset properly
+    resetMilestoneRankings();  // Now properly defined
     onConfirmRestart();
   };
 
