@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "@/hooks/battle/types";
@@ -52,25 +51,18 @@ const BattleContent: React.FC<BattleContentProps> = ({
   useEffect(() => {
     if (showingMilestone) {
       const snapshot = getSnapshotForMilestone(battlesCompleted);
-      if (snapshot && snapshot.length > 0) {
-        setSnapshotRankings(snapshot);
+      if (snapshot.length === 0) {
+        console.error(`Empty snapshot at milestone ${battlesCompleted}, continuing battles.`);
+        onContinueBattles(); // continue automatically if snapshot empty
       } else {
-        console.error(`Snapshot for milestone ${battlesCompleted} was empty.`);
-        // Removed automatic call to onContinueBattles() to prevent render loop
+        setSnapshotRankings(snapshot);
       }
     } else {
       setSnapshotRankings([]);
     }
-  }, [showingMilestone, battlesCompleted, getSnapshotForMilestone]);
+  }, [showingMilestone, battlesCompleted, getSnapshotForMilestone, onContinueBattles]);
 
-  const hasValidRankingsToShow = snapshotRankings.length > 0 || (rankingGenerated && finalRankings.length > 0);
-  const rankingsToShow = snapshotRankings.length > 0 ? snapshotRankings : finalRankings;
-
-  useEffect(() => {
-    if (continuePressedRef.current) {
-      continuePressedRef.current = false;
-    }
-  }, [battlesCompleted]);
+  const rankingsToShow = snapshotRankings.length ? snapshotRankings : finalRankings;
 
   const handleContinueBattles = () => {
     continuePressedRef.current = true;
@@ -78,7 +70,7 @@ const BattleContent: React.FC<BattleContentProps> = ({
     onContinueBattles();
   };
 
-  if ((showingMilestone || rankingGenerated) && hasValidRankingsToShow) {
+  if ((showingMilestone || rankingGenerated) && rankingsToShow.length) {
     return (
       <RankingDisplay
         finalRankings={rankingsToShow}
