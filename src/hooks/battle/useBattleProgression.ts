@@ -15,6 +15,7 @@ export const useBattleProgression = (
   const lastMilestoneShownRef = useRef(-1);
   const processingMilestoneRef = useRef(false);
   const incrementInProgressRef = useRef(false);
+  const pendingBattleUpdateRef = useRef(0);
 
   // Update ref when prop changes to keep it in sync
   useEffect(() => {
@@ -29,20 +30,12 @@ export const useBattleProgression = (
     // Exact milestone match
     if (commonMilestones.includes(battleCount)) {
       console.log(`Milestone detected for battle count: ${battleCount}`);
-      toast({
-        title: "Milestone Reached!",
-        description: `You've completed ${battleCount} battles. Check out your current ranking!`,
-      });
       return true;
     }
     
     // Every 50 battles after 100
     if (battleCount > 100 && battleCount % 50 === 0) {
       console.log(`50-battle milestone detected: ${battleCount}`);
-      toast({
-        title: "Milestone Reached!",
-        description: `You've completed ${battleCount} battles. Check out your current ranking!`,
-      });
       return true;
     }
     
@@ -87,7 +80,7 @@ export const useBattleProgression = (
               title: "Milestone Reached!",
               description: `You've completed ${newBattlesCompleted} battles. Check out your current ranking!`
             });
-          }, 50);
+          }, 100);
         } catch (err) {
           console.error("Error generating rankings at milestone:", err);
           processingMilestoneRef.current = false;
@@ -111,17 +104,20 @@ export const useBattleProgression = (
     
     incrementInProgressRef.current = true;
     
-    setBattlesCompleted(prev => {
-      const updated = prev + 1;
-      
-      // Defer milestone check to avoid render during render
-      setTimeout(() => {
-        checkMilestone(updated, battleResults);
-        incrementInProgressRef.current = false;
-      }, 0);
-      
-      return updated;
-    });
+    setTimeout(() => {
+      setBattlesCompleted(prev => {
+        const updated = prev + 1;
+        pendingBattleUpdateRef.current = updated;
+        
+        // Defer milestone check to avoid render during render
+        setTimeout(() => {
+          checkMilestone(updated, battleResults);
+          incrementInProgressRef.current = false;
+        }, 50);
+        
+        return updated;
+      });
+    }, 0);
   }, [setBattlesCompleted, checkMilestone]);
 
   const resetMilestone = useCallback(() => {

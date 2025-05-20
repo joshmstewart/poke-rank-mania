@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import { Pokemon } from "@/services/pokemon";
 import BattleInterface from "./BattleInterface";
 import RankingDisplay from "./RankingDisplay";
@@ -28,27 +28,33 @@ interface BattleContentProps {
 const BattleContent: React.FC<BattleContentProps> = (props) => {
   const { getSnapshotForMilestone } = useBattleStateCore();
   const [snapshotRankings, setSnapshotRankings] = useState<RankedPokemon[]>([]);
-  const [hasFetchedSnapshot, setHasFetchedSnapshot] = useState<boolean>(false);
+  const hasFetchedSnapshotRef = useRef<boolean>(false);
+  const previousMilestoneRef = useRef<number>(-1);
 
   // Only fetch milestone snapshot when the milestone flag changes to true
   useEffect(() => {
-    if (props.showingMilestone && !hasFetchedSnapshot) {
+    // Only process if we have a milestone to show and haven't fetched it yet
+    // or if the battle count has changed since the last fetch
+    if (
+      props.showingMilestone && 
+      (!hasFetchedSnapshotRef.current || previousMilestoneRef.current !== props.battlesCompleted)
+    ) {
       try {
         // Get cached rankings for the milestone
         const snapshot = getSnapshotForMilestone(props.battlesCompleted);
         if (snapshot && snapshot.length > 0) {
           setSnapshotRankings(snapshot);
-          setHasFetchedSnapshot(true);
+          hasFetchedSnapshotRef.current = true;
+          previousMilestoneRef.current = props.battlesCompleted;
         }
       } catch (error) {
         console.error("Error getting milestone snapshot:", error);
       }
     } else if (!props.showingMilestone) {
-      // Clear snapshot when not showing milestone
-      setSnapshotRankings([]);
-      setHasFetchedSnapshot(false);
+      // Reset the flag when not showing milestone
+      hasFetchedSnapshotRef.current = false;
     }
-  }, [props.showingMilestone, props.battlesCompleted, getSnapshotForMilestone, hasFetchedSnapshot]);
+  }, [props.showingMilestone, props.battlesCompleted, getSnapshotForMilestone]);
 
   // Use memoized value to determine which rankings to show to avoid unnecessary renders
   const shouldShowRankings = useMemo(() => {

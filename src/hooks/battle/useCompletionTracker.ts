@@ -18,6 +18,7 @@ export const useCompletionTracker = (
   const [milestoneRankings, setMilestoneRankings] = useState<Record<number, RankedPokemon[]>>({});
   const isMilestoneProcessingRef = useRef(false);
   const previousBattleCountRef = useRef<number>(0);
+  const pendingMilestoneRef = useRef<number | null>(null);
 
   // Only check for milestones when battleResults change and we're not already showing one
   useEffect(() => {
@@ -30,12 +31,15 @@ export const useCompletionTracker = (
     previousBattleCountRef.current = battleCount;
     
     // Don't trigger if already showing milestone or processing one
-    if (showingMilestone || isMilestoneProcessingRef.current) return;
+    if (showingMilestone || isMilestoneProcessingRef.current) {
+      return;
+    }
     
     // Check if this is a milestone battle count
     if (MILESTONES.includes(battleCount) && !hitMilestones.current.has(battleCount)) {
       // Prevent re-triggers while processing
       isMilestoneProcessingRef.current = true;
+      pendingMilestoneRef.current = battleCount;
       
       // Record this milestone as hit
       hitMilestones.current.add(battleCount);
@@ -46,21 +50,26 @@ export const useCompletionTracker = (
         
         if (rankingsSnapshot && rankingsSnapshot.length > 0) {
           // Update milestone rankings
-          setMilestoneRankings(prev => ({ ...prev, [battleCount]: rankingsSnapshot }));
+          setMilestoneRankings(prev => ({...prev, [battleCount]: rankingsSnapshot}));
           
-          // Mark milestone as showing - this will trigger ranking display
-          // Use setTimeout to break the render cycle
+          // Use setTimeout to ensure state updates don't cascade
           setTimeout(() => {
-            setShowingMilestone(true);
-            isMilestoneProcessingRef.current = false;
-          }, 50);
+            // Only set milestone flag if we're still processing the same milestone
+            if (pendingMilestoneRef.current === battleCount) {
+              setShowingMilestone(true);
+              isMilestoneProcessingRef.current = false;
+              pendingMilestoneRef.current = null;
+            }
+          }, 100);
         } else {
           console.warn("Milestone snapshot was empty, skipping milestone.");
           isMilestoneProcessingRef.current = false;
+          pendingMilestoneRef.current = null;
         }
       } catch (err) {
         console.error("Error generating rankings at milestone:", err);
         isMilestoneProcessingRef.current = false;
+        pendingMilestoneRef.current = null;
       }
     }
   }, [battleResults, generateRankings, setShowingMilestone, showingMilestone]);
@@ -80,10 +89,13 @@ export const useCompletionTracker = (
     const totalBattlesNeeded = allPokemon.length * Math.log2(allPokemon.length);
     const percentage = Math.min(100, Math.floor((battleResults.length / totalBattlesNeeded) * 100));
     
-    // Update state in next tick to avoid render loops
-    setTimeout(() => {
-      setCompletionPercentage(percentage);
-    }, 0);
+    // Only update if percentage changed
+    setCompletionPercentage(prevPercentage => {
+      if (prevPercentage !== percentage) {
+        return percentage;
+      }
+      return prevPercentage;
+    });
     
     return percentage;
   }, [allPokemon, battleResults.length, setCompletionPercentage]);

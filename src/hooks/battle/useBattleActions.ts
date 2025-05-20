@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
 
@@ -16,28 +16,40 @@ export const useBattleActions = (
   battleType: BattleType
 ) => {
   const [isActioning, setIsActioning] = useState(false);
+  const actionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleContinueBattles = useCallback(() => {
     if (isActioning) return;
     setIsActioning(true);
     
+    // Clear any existing timeout to prevent race conditions
+    if (actionTimeoutRef.current) {
+      clearTimeout(actionTimeoutRef.current);
+    }
+    
     // First reset the milestone flag
     setShowingMilestone(false);
     
     // Use setTimeout to ensure state updates are processed before starting new battle
-    setTimeout(() => {
+    actionTimeoutRef.current = setTimeout(() => {
       // Start a new battle after milestone display is closed
       startNewBattle(battleType);
       setIsActioning(false);
-    }, 100);
+      actionTimeoutRef.current = null;
+    }, 200);
   }, [battleType, setShowingMilestone, startNewBattle, isActioning]);
 
   const handleNewBattleSet = useCallback(() => {
     if (isActioning) return;
     setIsActioning(true);
     
-    // Reset all state with timeouts to prevent cascading renders
-    setTimeout(() => {
+    // Clear any existing timeout to prevent race conditions
+    if (actionTimeoutRef.current) {
+      clearTimeout(actionTimeoutRef.current);
+    }
+    
+    // Use nested timeouts to ensure state updates are processed in sequence
+    actionTimeoutRef.current = setTimeout(() => {
       setBattleResults([]);
       setBattlesCompleted(0);
       setRankingGenerated(false);
@@ -45,12 +57,13 @@ export const useBattleActions = (
       setShowingMilestone(false);
       setCompletionPercentage(0);
       
-      // Start new battle at the end
-      setTimeout(() => {
+      // Start new battle at the end with a delay to ensure all state resets are processed
+      actionTimeoutRef.current = setTimeout(() => {
         startNewBattle(battleType);
         setIsActioning(false);
-      }, 50);
-    }, 50);
+        actionTimeoutRef.current = null;
+      }, 200);
+    }, 100);
   }, [
     battleType, 
     setBattleHistory, 
