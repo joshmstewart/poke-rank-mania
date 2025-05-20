@@ -9,7 +9,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle
 } from "@/components/ui/alert-dialog";
-import { useBattleStateCore } from "@/hooks/battle/useBattleStateCore"; // ✅ import the hook
+import { useBattleStateCore } from "@/hooks/battle/useBattleStateCore";
 
 interface BattleDialogsProps {
   isRestartDialogOpen: boolean;
@@ -22,12 +22,12 @@ const BattleDialogs: React.FC<BattleDialogsProps> = ({
   onRestartDialogChange,
   onConfirmRestart
 }) => {
-  const { resetMilestones } = useBattleStateCore(); // ✅ get resetMilestones
+  const { resetMilestones, resetMilestoneRankings } = useBattleStateCore();
 
-  // Wrap the restart handler to include milestone reset
   const handleRestart = () => {
-    resetMilestones();             // ✅ reset milestone snapshots and confidence state
-    onConfirmRestart();            // 🔁 call parent-provided logic (e.g. clearing history/results)
+    resetMilestones();
+    resetMilestoneRankings();  // ✅ Important fix: ensures milestone rankings reset properly
+    onConfirmRestart();
   };
 
   return (
