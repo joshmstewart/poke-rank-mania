@@ -29,26 +29,30 @@ const BattleContent: React.FC<BattleContentProps> = (props) => {
   const { getSnapshotForMilestone } = useBattleStateCore();
   const [snapshotRankings, setSnapshotRankings] = useState<RankedPokemon[]>([]);
 
+  // Only fetch milestone snapshot when the milestone flag changes to true
   useEffect(() => {
     if (props.showingMilestone) {
-      // Use try/catch to handle potential errors
       try {
+        // Get cached rankings for the milestone
         const snapshot = getSnapshotForMilestone(props.battlesCompleted);
         if (snapshot && snapshot.length > 0) {
           setSnapshotRankings(snapshot);
-        } else {
-          console.error("Empty or invalid snapshot received");
-          // Don't automatically call onContinueBattles here to avoid render loops
         }
       } catch (error) {
         console.error("Error getting milestone snapshot:", error);
       }
+    } else {
+      // Clear snapshot when not showing milestone
+      setSnapshotRankings([]);
     }
   }, [props.showingMilestone, props.battlesCompleted, getSnapshotForMilestone]);
 
-  const rankingsToShow = snapshotRankings.length ? snapshotRankings : props.finalRankings;
+  // Use memoized rankings to avoid unnecessary renders
+  const rankingsToShow = props.showingMilestone ? snapshotRankings : props.finalRankings;
+  const shouldShowRankings = (props.showingMilestone || props.rankingGenerated) && 
+    (rankingsToShow && rankingsToShow.length > 0);
 
-  if ((props.showingMilestone || props.rankingGenerated) && rankingsToShow.length) {
+  if (shouldShowRankings) {
     return (
       <RankingDisplay
         finalRankings={rankingsToShow}

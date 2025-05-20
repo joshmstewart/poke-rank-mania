@@ -1,5 +1,5 @@
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { SingleBattle } from "./types";
 import { RankedPokemon } from "./useRankings";
 
@@ -16,49 +16,68 @@ export const useCompletionTracker = (
 ) => {
   const hitMilestones = useRef(new Set<number>());
   const [milestoneRankings, setMilestoneRankings] = useState<Record<number, RankedPokemon[]>>({});
+  const isMilestoneProcessingRef = useRef(false);
 
-  // Only check for milestones when battleResults change
+  // Only check for milestones when battleResults change and we're not already showing one
   useEffect(() => {
     const battleCount = battleResults.length;
     
-    // Don't trigger milestone check if we're already showing one
-    if (showingMilestone) return;
+    // Don't trigger if already showing milestone or processing one
+    if (showingMilestone || isMilestoneProcessingRef.current) return;
     
+    // Check if this is a milestone battle count
     if (MILESTONES.includes(battleCount) && !hitMilestones.current.has(battleCount)) {
-      hitMilestones.current.add(battleCount);
-      const rankingsSnapshot = generateRankings(battleResults);
+      // Prevent re-triggers while processing
+      isMilestoneProcessingRef.current = true;
       
-      // Only update state if we have valid rankings
-      if (rankingsSnapshot && rankingsSnapshot.length > 0) {
-        setMilestoneRankings(prev => ({ ...prev, [battleCount]: rankingsSnapshot }));
-        setShowingMilestone(true);
-      } else {
-        console.warn("Snapshot was empty, skipping milestone.");
+      // Record this milestone as hit
+      hitMilestones.current.add(battleCount);
+      
+      try {
+        // Generate rankings for this milestone
+        const rankingsSnapshot = generateRankings(battleResults);
+        
+        if (rankingsSnapshot && rankingsSnapshot.length > 0) {
+          // Update milestone rankings
+          setMilestoneRankings(prev => ({ ...prev, [battleCount]: rankingsSnapshot }));
+          
+          // Mark milestone as showing - this will trigger ranking display
+          setTimeout(() => {
+            setShowingMilestone(true);
+            isMilestoneProcessingRef.current = false;
+          }, 50);
+        } else {
+          console.warn("Milestone snapshot was empty, skipping milestone.");
+          isMilestoneProcessingRef.current = false;
+        }
+      } catch (err) {
+        console.error("Error generating rankings at milestone:", err);
+        isMilestoneProcessingRef.current = false;
       }
     }
   }, [battleResults, generateRankings, setShowingMilestone, showingMilestone]);
 
-  const resetMilestones = () => {
+  const resetMilestones = useCallback(() => {
     hitMilestones.current.clear();
     setMilestoneRankings({});
-  };
+  }, []);
   
-  const resetMilestoneRankings = () => {
+  const resetMilestoneRankings = useCallback(() => {
     setMilestoneRankings({});
-  };
+  }, []);
   
-  const calculateCompletionPercentage = () => {
+  const calculateCompletionPercentage = useCallback(() => {
     if (!allPokemon || allPokemon.length === 0) return 0;
     
     const totalBattlesNeeded = allPokemon.length * Math.log2(allPokemon.length);
     const percentage = Math.min(100, Math.floor((battleResults.length / totalBattlesNeeded) * 100));
     setCompletionPercentage(percentage);
     return percentage;
-  };
+  }, [allPokemon, battleResults.length, setCompletionPercentage]);
   
-  const getSnapshotForMilestone = (battleCount: number): RankedPokemon[] => {
+  const getSnapshotForMilestone = useCallback((battleCount: number): RankedPokemon[] => {
     return milestoneRankings[battleCount] || [];
-  };
+  }, [milestoneRankings]);
 
   return { 
     resetMilestones,

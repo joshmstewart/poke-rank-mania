@@ -15,23 +15,18 @@ export const useBattleActions = (
   battleType: BattleType
 ) => {
   const handleContinueBattles = () => {
-    // Explicitly set showingMilestone to false to fix the continue button issue
-    console.log("handleContinueBattles: Resetting milestone flag");
-    
-    // First reset the milestone flag, but use setTimeout to avoid render loops
+    // First reset the milestone flag without starting a chain of renders
     setShowingMilestone(false);
     
-    // Then start a new battle with sufficient delay to ensure state updates
+    // Use setTimeout to ensure state updates are processed before starting new battle
     setTimeout(() => {
-      console.log("Starting new battle after milestone");
-      // Double-check that we're not showing a milestone before starting a new battle
-      setShowingMilestone(false);
+      // Start a new battle after milestone display is closed
       startNewBattle(battleType);
-    }, 200); // Increased delay to ensure state propagation
+    }, 100);
   };
 
   const handleNewBattleSet = () => {
-    // Use setTimeout to avoid render loops when resetting multiple states
+    // Reset all state in a single batch to prevent cascading renders
     setTimeout(() => {
       setBattleResults([]);
       setBattlesCompleted(0);
@@ -40,7 +35,7 @@ export const useBattleActions = (
       setShowingMilestone(false);
       setCompletionPercentage(0);
       startNewBattle(battleType);
-    }, 0);
+    }, 50);
   };
 
   return {
