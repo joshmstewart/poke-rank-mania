@@ -1,187 +1,99 @@
-
+import { useMemo } from "react";
 import { Pokemon } from "@/services/pokemon";
-import { BattleType } from "./types";
-import { useGenerationState } from "./useGenerationState";
-import { useBattleTypeState } from "./useBattleTypeState";
-import { useProgressState } from "./useProgressState";
-import { useBattleSelectionState } from "./useBattleSelectionState";
-import { useBattleStateIO } from "./useBattleStateIO";
-import { useBattleStateActions } from "./useBattleStateActions";
-import { useBattleStateCoordinator } from "./useBattleStateCoordinator";
+import { BattleType, SingleBattle } from "./types";
+import { useBattleState } from "./useBattleState";
 import { useBattleManager } from "./useBattleManager";
-import { useCompletionTracker } from "./useCompletionTracker";
-import { useConfidenceRanking } from "./useConfidenceRanking";
+import { useRankings } from "./useRankings";
 
-export const useBattleStateCore = () => {
-  const generationState = useGenerationState();
-  const battleTypeState = useBattleTypeState();
-  const progressState = useProgressState();
-  const selectionState = useBattleSelectionState();
-
-  const allPokemonSafe = Array.isArray(selectionState.allPokemon) && selectionState.allPokemon.length > 0
-    ? selectionState.allPokemon
-    : [];
-
-  const startNewBattle = (pokemonList: Pokemon[], battleType: BattleType) => {
-    if (!pokemonList || pokemonList.length < 2) return;
-
-    if (allPokemonSafe.length === 0 && pokemonList.length > 0) {
-      selectionState.setAllPokemon(pokemonList);
-    }
-
-    const battleSize = battleType === "triplets" ? 3 : 2;
-    if (pokemonList.length >= battleSize) {
-      const shuffled = [...pokemonList].sort(() => Math.random() - 0.5);
-      const battlePokemon = shuffled.slice(0, battleSize);
-      selectionState.setCurrentBattle(battlePokemon);
-    }
-  };
-
-  const startNewBattleAdapter = (battleType: BattleType) => {
-    if (allPokemonSafe && allPokemonSafe.length >= 2) {
-      startNewBattle(allPokemonSafe, battleType);
-    }
-  };
-
+export const useBattleStateCore = (
+  allPokemon: Pokemon[],
+  initialBattleType: BattleType,
+  initialSelectedGeneration: number = 0
+) => {
   const {
-    isLoading,
-    loadPokemon,
-    saveBattleState,
-    loadBattleState,
-    finalRankings,
-    generateRankings,
-    handleSaveRankings,
-    getBattlesRemaining
-  } = useBattleStateIO({
-    setAllPokemon: selectionState.setAllPokemon,
-    setRankingGenerated: progressState.setRankingGenerated,
-    setBattleResults: selectionState.setBattleResults,
-    setBattlesCompleted: selectionState.setBattlesCompleted,
-    setBattleHistory: selectionState.setBattleHistory,
-    setShowingMilestone: progressState.setShowingMilestone,
-    setCompletionPercentage: progressState.setCompletionPercentage,
-    setSelectedPokemon: selectionState.setSelectedPokemon,
-    startNewBattle,
-    battleType: battleTypeState.battleType,
-    allPokemon: allPokemonSafe,
-    battleResults: selectionState.battleResults
-  });
-
-  const {
-    resetMilestones,
-    resetMilestoneRankings,
-    calculateCompletionPercentage,
-    getSnapshotForMilestone
-  } = useCompletionTracker(
-    selectionState.battleResults,
-    progressState.setRankingGenerated,
-    progressState.setCompletionPercentage,
-    progressState.showingMilestone,
-    progressState.setShowingMilestone,
-    generateRankings,
-    allPokemonSafe
-  );
-
-  const {
-    confidenceScores,
-    calculateConfidenceScores,
-    getConfidentRankedPokemon
-  } = useConfidenceRanking();
-
-  if (finalRankings && finalRankings.length > 0) {
-    calculateConfidenceScores(finalRankings);
-  }
-
-  const {
-    handleGenerationChange,
-    handleBattleTypeChange,
-    handleContinueBattles,
-    handleNewBattleSet
-  } = useBattleStateActions({
-    setRankingGenerated: progressState.setRankingGenerated,
-    setBattleResults: selectionState.setBattleResults,
-    setBattlesCompleted: selectionState.setBattlesCompleted,
-    setBattleHistory: selectionState.setBattleHistory,
-    setShowingMilestone: progressState.setShowingMilestone,
-    setCompletionPercentage: progressState.setCompletionPercentage,
-    startNewBattle: startNewBattleAdapter,
-    allPokemon: allPokemonSafe,
-    generateRankings,
-    battleType: battleTypeState.battleType
-  });
-
-  useBattleStateCoordinator({
-    isLoading,
-    allPokemon: allPokemonSafe,
-    selectedGeneration: generationState.selectedGeneration,
-    battleType: battleTypeState.battleType,
-    battleResults: selectionState.battleResults,
-    battlesCompleted: selectionState.battlesCompleted,
-    battleHistory: selectionState.battleHistory,
-    completionPercentage: progressState.completionPercentage,
-    fullRankingMode: progressState.fullRankingMode,
-    saveBattleState,
-    loadBattleState,
-    loadPokemon,
-    calculateCompletionPercentage
-  });
-
-  const {
+    battleType,
+    currentBattle,
+    battlesCompleted,
+    battleResults,
+    battleHistory,
+    showingMilestone,
+    setShowingMilestone,
+    selectedGeneration,
+    setSelectedGeneration,
+    setBattleResults,
+    setBattlesCompleted,
+    setBattleHistory,
+    setCompletionPercentage,
+    setRankingGenerated,
     selectedPokemon,
+    setSelectedPokemon,
+    startNewBattle,
+    milestones
+  } = useBattleState(allPokemon, initialBattleType, initialSelectedGeneration);
+
+  const { generateRankings, finalRankings } = useRankings(allPokemon);
+
+  const {
+    selectedPokemon: currentSelectedPokemon,
+    setSelectedPokemon: updateSelectedPokemon,
     handlePokemonSelect,
     handleTripletSelectionComplete,
-    goBack,
-    isProcessingResult: isProcessing
+    handleSelection
   } = useBattleManager(
-    selectionState.battleResults,
-    selectionState.setBattleResults,
-    selectionState.battlesCompleted,
-    selectionState.setBattlesCompleted,
-    allPokemonSafe,
-    startNewBattleAdapter,
-    progressState.setShowingMilestone,
-    progressState.milestones,
+    currentBattle,
+    battleType,
+    battleResults,
+    battlesCompleted,
+    setBattleResults,
+    setBattlesCompleted,
+    allPokemon,
+    startNewBattle,
+    setShowingMilestone,
+    milestones,
     generateRankings,
-    selectionState.battleHistory,
-    selectionState.setBattleHistory,
-    selectionState.setSelectedPokemon
+    selectedPokemon
   );
 
-  const confidentRankedPokemon = getConfidentRankedPokemon(finalRankings, 0.8);
+  const goBack = () => {
+    console.log("🔄 Go back action triggered");
+    setBattleHistory((prev) => prev.slice(0, -1));
+  };
+
+  const isProcessingResult = false;
+
+  const rankedPokemon = useMemo(() => {
+    return finalRankings.map((ranked) => ({
+      ...ranked,
+      score: ranked.score || 0,
+      count: ranked.count || 0
+    }));
+  }, [finalRankings]);
 
   return {
-    isLoading,
-    selectedGeneration: generationState.selectedGeneration,
-    allPokemon: selectionState.allPokemon,
-    battleType: battleTypeState.battleType,
-    currentBattle: selectionState.currentBattle,
-    battleResults: selectionState.battleResults,
-    selectedPokemon: selectedPokemon || selectionState.selectedPokemon,
-    battlesCompleted: selectionState.battlesCompleted,
-    rankingGenerated: progressState.rankingGenerated,
-    finalRankings,
-    battleHistory: selectionState.battleHistory,
-    showingMilestone: progressState.showingMilestone,
-    completionPercentage: progressState.completionPercentage,
-    fullRankingMode: progressState.fullRankingMode,
-    milestones: progressState.milestones,
-    isProcessing,
-    handleGenerationChange,
-    handleBattleTypeChange,
+    battleType,
+    currentBattle,
+    battlesCompleted,
+    battleResults,
+    battleHistory,
+    showingMilestone,
+    setShowingMilestone,
+    selectedGeneration,
+    setSelectedGeneration,
+    setBattleResults,
+    setBattlesCompleted,
+    setBattleHistory,
+    setCompletionPercentage,
+    setRankingGenerated,
+    selectedPokemon: currentSelectedPokemon,
+    setSelectedPokemon: updateSelectedPokemon,
     handlePokemonSelect,
     handleTripletSelectionComplete,
-    handleSaveRankings,
-    handleContinueBattles,
-    handleNewBattleSet,
+    handleSelection,
     goBack,
-    getBattlesRemaining,
-    loadPokemon,
-    startNewBattle: startNewBattleAdapter,
-    confidentRankedPokemon,
-    confidenceScores,
-    resetMilestones,
-    resetMilestoneRankings,
-    calculateCompletionPercentage,
-    getSnapshotForMilestone
+    isProcessingResult,
+    rankedPokemon,
+    finalRankings: rankedPokemon,
+    generateRankings,
+    milestones
   };
 };
