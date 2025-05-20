@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Pokemon } from "@/services/pokemon";
 import { RankedPokemon } from "@/hooks/battle/useRankings";
@@ -26,14 +26,22 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
   isMilestoneView = false
 }) => {
   console.log("🟣 RankingDisplay component rendered");
-  
-  // REST OF YOUR ORIGINAL COMPONENT CODE HERE (unchanged)
 
-  
   return (
     <div className="bg-white rounded-lg shadow p-6">
-      <h2 className="text-xl">Ranking Display (simplified for debugging)</h2>
-      <Button onClick={props.onContinueBattles}>Continue Battles</Button>
+      <div className="mb-6">
+        <h2 className="text-xl font-bold">
+          {isMilestoneView ? `Milestone: ${battlesCompleted} Battles` : "Current Rankings"}
+        </h2>
+      </div>
+
+      <Button onClick={onContinueBattles}>Continue Battles</Button>
+      {!isMilestoneView && rankingGenerated && (
+        <Button onClick={onNewBattleSet}>Start New Battle Set</Button>
+      )}
+      {!isMilestoneView && rankingGenerated && (
+        <Button onClick={onSaveRankings}>Save Rankings</Button>
+      )}
     </div>
   );
 };
