@@ -11,8 +11,7 @@ interface BattleControlsProps {
   battleType: BattleType;
   onGenerationChange: (generation: string) => void;
   onBattleTypeChange: (type: BattleType) => void;
-  onViewRankings: () => void;
-  onOpenRestartDialog: () => void;
+  onRestartBattles: () => void;
 }
 
 const BattleControls: React.FC<BattleControlsProps> = ({
@@ -20,9 +19,11 @@ const BattleControls: React.FC<BattleControlsProps> = ({
   battleType,
   onGenerationChange,
   onBattleTypeChange,
-  onViewRankings,
-  onOpenRestartDialog
+  onRestartBattles
 }) => {
+  // Ensure selectedGeneration has a valid value (defaulting to 0 if undefined)
+  const safeSelectedGeneration = selectedGeneration !== undefined ? selectedGeneration : 0;
+  
   return (
     <div className="flex items-center justify-between bg-white p-3 rounded-lg shadow border">
       {/* Left side - Gen and Mode dropdowns */}
@@ -30,7 +31,7 @@ const BattleControls: React.FC<BattleControlsProps> = ({
         <div className="flex items-center">
           <span className="text-sm font-medium whitespace-nowrap mr-1">Gen:</span>
           <Select 
-            value={selectedGeneration.toString()} 
+            value={safeSelectedGeneration.toString()} 
             onValueChange={onGenerationChange}
           >
             <SelectTrigger className="w-[180px] h-8 text-sm">
@@ -69,16 +70,7 @@ const BattleControls: React.FC<BattleControlsProps> = ({
           variant="outline"
           size="sm"
           className="flex items-center gap-1 h-8 text-sm"
-          onClick={onViewRankings}
-        >
-          <List className="h-4 w-4" /> Rankings
-        </Button>
-        
-        <Button
-          variant="outline"
-          size="sm"
-          className="flex items-center gap-1 h-8 text-sm"
-          onClick={onOpenRestartDialog}
+          onClick={onRestartBattles}
         >
           <RefreshCw className="h-4 w-4" /> Restart
         </Button>
