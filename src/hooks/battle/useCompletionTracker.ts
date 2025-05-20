@@ -31,6 +31,7 @@ export const useCompletionTracker = (
     return () => {
       if (rankingGenerationTimeoutRef.current) {
         clearTimeout(rankingGenerationTimeoutRef.current);
+        rankingGenerationTimeoutRef.current = null;
       }
     };
   }, [showingMilestone]);
@@ -121,6 +122,12 @@ export const useCompletionTracker = (
       try {
         // Use the battle results up to this milestone
         const relevantResults = battleResults.slice(0, battleCount);
+        // Set a failsafe timeout to release the lock
+        setTimeout(() => {
+          isMilestoneProcessingRef.current = false;
+          snapshotGenerationInProgressRef.current[battleCount] = false;
+        }, 3000);
+        
         const rankingsSnapshot = generateRankings(relevantResults);
         
         // Store the snapshot in our cache immediately
@@ -133,17 +140,20 @@ export const useCompletionTracker = (
             [battleCount]: rankingsSnapshot
           }));
           
+          // Release locks sooner on success
+          setTimeout(() => {
+            isMilestoneProcessingRef.current = false;
+            snapshotGenerationInProgressRef.current[battleCount] = false;
+          }, 200);
+          
           // Return the snapshot immediately
           return rankingsSnapshot;
         }
       } catch (error) {
         console.error("Error generating snapshot for milestone:", error);
-      } finally {
-        // Release locks with a delay
-        setTimeout(() => {
-          isMilestoneProcessingRef.current = false;
-          snapshotGenerationInProgressRef.current[battleCount] = false;
-        }, 500);
+        // Release locks on error
+        isMilestoneProcessingRef.current = false;
+        snapshotGenerationInProgressRef.current[battleCount] = false;
       }
     }
     

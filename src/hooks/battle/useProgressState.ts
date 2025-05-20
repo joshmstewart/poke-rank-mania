@@ -1,4 +1,3 @@
-
 import { useState, useRef, useCallback, useEffect } from "react";
 
 /**
@@ -30,7 +29,7 @@ export const useProgressState = () => {
     };
   }, []);
   
-  // Wrap the setShowingMilestone to update both state and ref with guards
+  // Create a stable version of setShowingMilestone that doesn't cause re-render loops
   const safeSetShowingMilestone = useCallback((value: boolean) => {
     // Skip update if value hasn't changed
     if (milestoneRef.current === value) {
@@ -60,10 +59,11 @@ export const useProgressState = () => {
     // Cancel any pending timeout to prevent race conditions
     if (setMilestoneTimeoutRef.current) {
       clearTimeout(setMilestoneTimeoutRef.current);
+      setMilestoneTimeoutRef.current = null;
     }
     
     // Then update state with a small delay to avoid render loops
-    setMilestoneTimeoutRef.current = setTimeout(() => {
+    setTimeout(() => {
       // Only proceed if this is still the most recent update request
       if (currentUpdateCounter === consecutiveUpdatesRef.current) {
         setShowingMilestone(value);
@@ -78,8 +78,6 @@ export const useProgressState = () => {
         // If not the most recent update, just release the lock
         updatingMilestoneRef.current = false;
       }
-      
-      setMilestoneTimeoutRef.current = null;
     }, value ? 20 : 100); // Show faster, hide slower
   }, []);
   

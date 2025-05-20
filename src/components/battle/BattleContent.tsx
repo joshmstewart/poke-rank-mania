@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { Pokemon } from "@/services/pokemon";
 import BattleInterface from "./BattleInterface";
@@ -25,20 +26,17 @@ interface BattleContentProps {
 }
 
 const BattleContent: React.FC<BattleContentProps> = (props) => {
+  // Destructure only the props we need for dependency arrays
+  const { showingMilestone, battlesCompleted } = props;
+  
   const { getSnapshotForMilestone } = useBattleStateCore();
   const [snapshotRankings, setSnapshotRankings] = useState<RankedPokemon[]>([]);
   const processingRef = useRef(false);
   const milestoneSnapshotFetchedRef = useRef(false);
-  const prevShowingMilestone = useRef(props.showingMilestone);
-  const prevBattlesCompleted = useRef(props.battlesCompleted);
+  const prevShowingMilestone = useRef(showingMilestone);
+  const prevBattlesCompleted = useRef(battlesCompleted);
   const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const renderCountRef = useRef(0);
-
-  // Track render count to detect potential loops
-  renderCountRef.current += 1;
-  if (renderCountRef.current % 10 === 0) {
-    console.log(`BattleContent rendered ${renderCountRef.current} times, milestone: ${props.showingMilestone}`);
-  }
 
   // Clean up any pending timeouts when component unmounts
   useEffect(() => {
@@ -49,7 +47,7 @@ const BattleContent: React.FC<BattleContentProps> = (props) => {
     };
   }, []);
 
-  // Use memoized fetch function to prevent render loops
+  // Memoize the fetch function to prevent recreating it on every render
   const fetchMilestoneSnapshot = useCallback((battleCount: number) => {
     if (processingRef.current) {
       console.log("Already fetching milestone snapshot, skipping");
@@ -78,49 +76,59 @@ const BattleContent: React.FC<BattleContentProps> = (props) => {
     }
   }, [getSnapshotForMilestone]);
 
-  // Use useEffect to respond to milestone changes rather than doing it in render
+  // Separate effect to track showingMilestone changes
   useEffect(() => {
-    const { showingMilestone, battlesCompleted } = props;
-    
-    // Only process when milestone becomes visible
-    if (showingMilestone && !prevShowingMilestone.current) {
-      console.log("Milestone became visible, fetching snapshot");
+    if (showingMilestone !== prevShowingMilestone.current) {
+      prevShowingMilestone.current = showingMilestone;
+      console.log(`Milestone visibility changed to: ${showingMilestone}`);
+      
+      // Reset fetched flag when milestone becomes hidden
+      if (!showingMilestone) {
+        milestoneSnapshotFetchedRef.current = false;
+        // Clear any pending fetch
+        if (fetchTimeoutRef.current) {
+          clearTimeout(fetchTimeoutRef.current);
+          fetchTimeoutRef.current = null;
+        }
+      }
+    }
+  }, [showingMilestone]);
+
+  // Separate effect to handle milestone snapshot fetching
+  useEffect(() => {
+    // Only fetch when milestone becomes visible and we haven't fetched it yet
+    if (showingMilestone && 
+        !milestoneSnapshotFetchedRef.current && 
+        !processingRef.current &&
+        battlesCompleted > 0) {
+      
+      console.log("Milestone visible, fetching snapshot with delay");
       
       // Clear any existing timeout
       if (fetchTimeoutRef.current) {
         clearTimeout(fetchTimeoutRef.current);
       }
       
-      // Get cached rankings for the milestone with a delay to avoid render loops
+      // Delayed fetch to avoid render loops
       fetchTimeoutRef.current = setTimeout(() => {
         fetchMilestoneSnapshot(battlesCompleted);
-        prevShowingMilestone.current = showingMilestone;
         prevBattlesCompleted.current = battlesCompleted;
-      }, 500);
-    } else if (!showingMilestone && prevShowingMilestone.current) {
-      // Reset when milestone is hidden
-      console.log("Milestone became hidden, resetting state");
-      prevShowingMilestone.current = false;
-      milestoneSnapshotFetchedRef.current = false;
-      // Clear any pending fetch
-      if (fetchTimeoutRef.current) {
-        clearTimeout(fetchTimeoutRef.current);
-      }
+      }, 300);
     }
-  }, [props.showingMilestone, props.battlesCompleted, fetchMilestoneSnapshot]);
+  }, [showingMilestone, battlesCompleted, fetchMilestoneSnapshot]);
 
   // Memoize rankings logic to avoid unnecessary renders
   const shouldShowRankings = useMemo(() => {
     // We show rankings if:
     // 1. We're showing a milestone AND we have rankings (snapshot or final)
     // 2. OR final rankings are generated and available
-    const showMilestone = props.showingMilestone && 
+    const showMilestone = showingMilestone && 
       (snapshotRankings.length > 0 || props.finalRankings.length > 0);
     const showFinal = props.rankingGenerated && props.finalRankings && props.finalRankings.length > 0;
     
     return showMilestone || showFinal;
   }, [
-    props.showingMilestone, 
+    showingMilestone, 
     props.rankingGenerated, 
     snapshotRankings.length, 
     props.finalRankings
@@ -128,22 +136,22 @@ const BattleContent: React.FC<BattleContentProps> = (props) => {
 
   // Memoize the rankings to show to avoid render loops
   const rankingsToShow = useMemo(() => {
-    return props.showingMilestone && snapshotRankings.length > 0 ? 
+    return showingMilestone && snapshotRankings.length > 0 ? 
       snapshotRankings : 
       props.finalRankings;
-  }, [props.showingMilestone, snapshotRankings, props.finalRankings]);
+  }, [showingMilestone, snapshotRankings, props.finalRankings]);
 
   // Render RankingDisplay if we should show rankings
   if (shouldShowRankings) {
     return (
       <RankingDisplay
         finalRankings={rankingsToShow}
-        battlesCompleted={props.battlesCompleted}
+        battlesCompleted={battlesCompleted}
         rankingGenerated={props.rankingGenerated}
         onNewBattleSet={props.onNewBattleSet}
         onContinueBattles={props.onContinueBattles}
         onSaveRankings={props.onSaveRankings}
-        isMilestoneView={props.showingMilestone}
+        isMilestoneView={showingMilestone}
       />
     );
   }
