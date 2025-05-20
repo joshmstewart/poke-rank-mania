@@ -1,4 +1,4 @@
-\import React from "react";
+import React from "react";
 import BattleContent from "./BattleContent";
 import BattleControls from "./BattleControls";
 import { useBattleStateCore } from "@/hooks/battle/useBattleStateCore";
