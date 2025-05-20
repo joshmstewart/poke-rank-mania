@@ -78,21 +78,22 @@ const BattleContent: React.FC<BattleContentProps> = ({
     setInternalShowRankings(showingMilestone || rankingGenerated);
   }, [showingMilestone, rankingGenerated, battlesCompleted, finalRankings, snapshotRankings, hasValidRankingsToShow]);
 
-  const handleContinueBattles = useCallback(() => {
-    console.log("➡️ Continue Battles clicked");
-    continuePressedRef.current = true;
-    setInternalShowRankings(false);
+const handleContinueBattles = useCallback(() => {
+  console.log("➡️ Continue Battles clicked");
+  continuePressedRef.current = true;
+  setInternalShowRankings(false);
+  setShowingMilestone(false); // ✅ FIX: explicitly reset milestone state here
+
+  setTimeout(() => {
+    onContinueBattles();
 
     setTimeout(() => {
-      onContinueBattles();
+      continuePressedRef.current = false;
+      console.log("🔁 continuePressedRef reset");
+    }, 300);
+  }, 100);
+}, [onContinueBattles, setShowingMilestone]); // ✅ Don't forget dependency
 
-      // Reset continue flag to prevent stuck behavior
-      setTimeout(() => {
-        continuePressedRef.current = false;
-        console.log("🔁 continuePressedRef reset");
-      }, 300);
-    }, 100);
-  }, [onContinueBattles]);
 
   // ✅ CRITICAL FIX: Never render RankingDisplay with empty rankings
   if (internalShowRankings && hasValidRankingsToShow) {

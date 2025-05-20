@@ -15,44 +15,19 @@ export const useCompletionTracker = (
   allPokemonForGeneration: any[]
 ) => {
   const [milestoneRankings, setMilestoneRankings] = useState<Record<number, RankedPokemon[]>>({});
-  const [completionPercentCalculated, setCompletionPercentCalculated] = useState(false);
-  const [currentRankingGenerated, setCurrentRankingGenerated] = useState(false);
-  const [pendingMilestone, setPendingMilestone] = useState<number | null>(null);
   const hitMilestones = useRef<Set<number>>(new Set());
-
-  useEffect(() => {
-    calculateCompletionPercentage();
-  }, [battleResults.length, allPokemonForGeneration?.length]);
-
-  useEffect(() => {
-    checkAndHandleMilestone();
-  }, [battleResults.length]);
-
-  useEffect(() => {
-    if (
-      pendingMilestone !== null &&
-      milestoneRankings[pendingMilestone]?.length > 0 &&
-      !showingMilestone
-    ) {
-      console.log(`✅ Milestone ${pendingMilestone} rankings confirmed available, now showing UI`);
-      setShowingMilestone(true);
-      setPendingMilestone(null);
-    }
-  }, [milestoneRankings, pendingMilestone, showingMilestone, setShowingMilestone]);
+  const milestoneInProgress = useRef(false);
 
   const calculateCompletionPercentage = () => {
     const totalPokemon = allPokemonForGeneration?.length || 1;
     const expectedBattles = Math.ceil(totalPokemon * Math.log2(totalPokemon));
     const completionPercent = Math.min(100, (battleResults.length / expectedBattles) * 100);
-    
-    setCompletionPercentage(parseFloat(completionPercent.toFixed(2)));
-    setCompletionPercentCalculated(true);
 
-    if (completionPercent >= 100 && !currentRankingGenerated && battleResults.length >= 50) {
+    setCompletionPercentage(parseFloat(completionPercent.toFixed(2)));
+
+    if (completionPercent >= 100 && battleResults.length >= 50) {
       const finalRankings = generateRankings(battleResults);
       setRankingGenerated(true);
-      setCurrentRankingGenerated(true);
-      console.log("Full ranking achieved with", finalRankings.length, "Pokémon");
       toast({
         title: "Complete Ranking Achieved!",
         description: "You've completed enough battles to generate a full ranking of all Pokémon!",
@@ -64,31 +39,38 @@ export const useCompletionTracker = (
   const checkAndHandleMilestone = () => {
     const currentBattleCount = battleResults.length;
 
-    const milestoneHit = MILESTONES.find(m => m === currentBattleCount);
-    if (!milestoneHit || hitMilestones.current.has(milestoneHit)) {
-      return; 
+    if (hitMilestones.current.has(currentBattleCount) || !MILESTONES.includes(currentBattleCount)) {
+      return;
     }
 
-    console.log(`🏆 Milestone ${milestoneHit} reached - generating snapshot rankings`);
+    if (milestoneInProgress.current) return;
+    milestoneInProgress.current = true;
 
-    const milestoneRankingSnapshot = generateRankings(battleResults);
+    const milestoneSnapshot = generateRankings(battleResults);
 
     setMilestoneRankings(prev => ({
       ...prev,
-      [milestoneHit]: milestoneRankingSnapshot
+      [currentBattleCount]: milestoneSnapshot
     }));
 
-    hitMilestones.current.add(milestoneHit);
+    hitMilestones.current.add(currentBattleCount);
 
-    console.log(`📸 Milestone ${milestoneHit} snapshot saved with ${milestoneRankingSnapshot.length} Pokémon`);
-    setPendingMilestone(milestoneHit);
+    setShowingMilestone(true);
   };
 
-  const getBattlesRemaining = () => {
-    const totalPokemon = allPokemonForGeneration?.length || 1;
-    const expectedBattles = Math.ceil(totalPokemon * Math.log2(totalPokemon));
-    return Math.max(0, expectedBattles - battleResults.length);
-  };
+  useEffect(() => {
+    calculateCompletionPercentage();
+  }, [battleResults.length, allPokemonForGeneration.length]);
+
+  useEffect(() => {
+    checkAndHandleMilestone();
+  }, [battleResults.length]);
+
+  useEffect(() => {
+    if (!showingMilestone) {
+      milestoneInProgress.current = false;
+    }
+  }, [showingMilestone]);
 
   const getSnapshotForMilestone = (battleCount: number): RankedPokemon[] => {
     return milestoneRankings[battleCount] || [];
@@ -97,9 +79,13 @@ export const useCompletionTracker = (
   const resetMilestones = () => {
     hitMilestones.current.clear();
     setMilestoneRankings({});
-    setCurrentRankingGenerated(false);
-    setCompletionPercentCalculated(false);
-    setPendingMilestone(null);
+    milestoneInProgress.current = false;
+  };
+
+  const getBattlesRemaining = () => {
+    const totalPokemon = allPokemonForGeneration?.length || 1;
+    const expectedBattles = Math.ceil(totalPokemon * Math.log2(totalPokemon));
+    return Math.max(0, expectedBattles - battleResults.length);
   };
 
   return {
