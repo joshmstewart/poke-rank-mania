@@ -114,7 +114,9 @@ const BattleContent: React.FC<BattleContentProps> = (props) => {
       }
 
       milestoneSnapshotFetchedRef.current = true;
-      fetchMilestoneSnapshot(battlesCompleted);
+      console.log("🟠 BattleContent: milestone snapshot fetching triggered");
+fetchMilestoneSnapshot(battlesCompleted);
+
       prevBattlesCompleted.current = battlesCompleted;
     }, 300);
   }

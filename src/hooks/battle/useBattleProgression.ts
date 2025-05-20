@@ -35,7 +35,9 @@ export const useBattleProgression = (
       try {
         generateRankings(battleResults);
         showingMilestoneRef.current = true;
-        setShowingMilestone(true);
+console.log("🔴 useBattleProgression: setShowingMilestone(true) triggered");
+setShowingMilestone(true);
+
         toast({
           title: "Milestone Reached!",
           description: `You've completed ${newBattlesCompleted} battles.`,

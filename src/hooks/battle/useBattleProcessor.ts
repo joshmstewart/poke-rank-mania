@@ -1,99 +1,29 @@
-import { useState, useCallback } from "react";
-import { Pokemon } from "@/services/pokemon";
-import { BattleType, SingleBattle } from "./types";
+import { useCallback } from "react";
+import { SingleBattle } from "./types";
 import { useBattleProgression } from "./useBattleProgression";
-import { useNextBattleHandler } from "./useNextBattleHandler";
-import { useBattleResultProcessor } from "./useBattleResultProcessor";
-import { saveRankings } from "@/services/pokemon";
 
 export const useBattleProcessor = (
   battleResults: SingleBattle[],
-  setBattleResults: React.Dispatch<React.SetStateAction<SingleBattle[]>>,
-  battlesCompleted: number,
   setBattlesCompleted: React.Dispatch<React.SetStateAction<number>>,
-  allPokemon: Pokemon[],
-  startNewBattle: (battleType: BattleType) => void,
   setShowingMilestone: React.Dispatch<React.SetStateAction<boolean>>,
   milestones: number[],
-  generateRankings: (results: SingleBattle[]) => void,
-  setSelectedPokemon: React.Dispatch<React.SetStateAction<number[]>>
+  generateRankings: (results: SingleBattle[]) => void
 ) => {
-  const [isProcessingResult, setIsProcessingResult] = useState(false);
 
-  const { checkMilestone, incrementBattlesCompleted } = useBattleProgression(
-    battlesCompleted,
+  const { incrementBattlesCompleted } = useBattleProgression(
+    battleResults.length,
     setBattlesCompleted,
     setShowingMilestone,
     milestones,
     generateRankings
   );
 
-  const { setupNextBattle } = useNextBattleHandler(
-    allPokemon,
-    startNewBattle,
-    setSelectedPokemon
-  );
-
-  const { processResult } = useBattleResultProcessor(
-    battleResults,
-    setBattleResults
-  );
-
-  const processBattle = useCallback(async (
-    selectedPokemonIds: number[],
-    currentBattlePokemon: Pokemon[],
-    battleType: BattleType,
-    currentSelectedGeneration: number = 0
-  ) => {
-    if (isProcessingResult) {
-      console.log("Already processing result, skipping.");
-      return;
-    }
-
-    setIsProcessingResult(true);
-
-    try {
-      const newResults = processResult(selectedPokemonIds, battleType, currentBattlePokemon);
-
-      if (newResults.length > 0) {
-        const cumulativeResults = [...battleResults, ...newResults];
-        setBattleResults(cumulativeResults);
-        incrementBattlesCompleted(newResults);
-
-        const updatedCount = battlesCompleted + newResults.length;
-
-        if (checkMilestone(updatedCount, cumulativeResults) && currentSelectedGeneration) {
-          saveRankings(
-            Array.from(new Map(cumulativeResults.map(result => [result.winner.id, result.winner])).values()),
-            currentSelectedGeneration,
-            "battle"
-          );
-        }
-
-        await setupNextBattle(battleType); // Ensuring async
-      } else {
-        console.error("processResult returned empty results.");
-        await setupNextBattle(battleType);
-      }
-    } catch (error) {
-      console.error("Error processing battle:", error);
-      await setupNextBattle(battleType);
-    } finally {
-      setIsProcessingResult(false);
-    }
-  }, [
-    isProcessingResult,
-    processResult,
-    battleResults,
-    setBattleResults,
-    incrementBattlesCompleted,
-    battlesCompleted,
-    checkMilestone,
-    setupNextBattle
-  ]);
+  const processBattleResult = useCallback((newResults: SingleBattle[]) => {
+    console.log("🟡 useBattleProcessor: incremented battles completed");
+    incrementBattlesCompleted(newResults);
+  }, [incrementBattlesCompleted]);
 
   return {
-    processBattleResult: processBattle,
-    isProcessingResult
+    processBattleResult,
   };
 };

@@ -112,7 +112,9 @@ export const useCompletionTracker = (
 
       try {
         const relevantResults = battleResults.slice(0, battleCount);
-        const rankingsSnapshot = generateRankings(relevantResults);
+        console.log("🔵 useCompletionTracker: generating rankings snapshot");
+const rankingsSnapshot = generateRankings(relevantResults);
+
 
         if (rankingsSnapshot.length > 0) {
           snapshotCacheRef.current[battleCount] = rankingsSnapshot;
