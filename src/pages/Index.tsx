@@ -52,9 +52,11 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="container max-w-7xl mx-auto py-6">
-        <div className="flex items-center justify-between mb-4">
-          <Logo />
+      <div className="container max-w-7xl mx-auto py-4">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex-shrink-0">
+            <Logo />
+          </div>
           <div className="flex items-center gap-2">
             <TooltipProvider>
               <Tooltip>
