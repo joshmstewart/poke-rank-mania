@@ -36,12 +36,16 @@ export const useCompletionTracker = (
 
   // New effect to safely show milestone UI only after rankings are available
   useEffect(() => {
-    if (pendingMilestone && milestoneRankings[pendingMilestone]?.length > 0) {
+    if (
+      pendingMilestone !== null &&
+      milestoneRankings[pendingMilestone]?.length > 0 &&
+      !showingMilestone
+    ) {
       console.log(`✅ Milestone ${pendingMilestone} rankings confirmed available, now showing UI`);
       setShowingMilestone(true);
       setPendingMilestone(null);
     }
-  }, [milestoneRankings, pendingMilestone, setShowingMilestone]);
+  }, [milestoneRankings, pendingMilestone, showingMilestone]);
 
   const calculateCompletionPercentage = () => {
     // Simple percentage based ONLY on expected total battles needed
