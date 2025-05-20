@@ -1,4 +1,3 @@
-
 import React, { memo, useCallback, useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Pokemon } from "@/services/pokemon";
@@ -73,7 +72,7 @@ const BattleCard: React.FC<BattleCardProps> = memo(({
       setImageError(true);
       
       // Try next fallback using the image utility function
-      const nextUrl = getPokemonImageUrl(pokemon.id, retryCount + 1);
+      const nextUrl = getPreferredImageUrl(pokemon.id, retryCount + 1);
       console.log(`Trying fallback URL: ${nextUrl} for ${pokemon.name}`);
       setCurrentImageUrl(nextUrl);
     } else {

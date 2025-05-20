@@ -53,11 +53,32 @@ export const getPreferredImageType = (): PokemonImageType => {
   return "official"; // Default to official artwork
 };
 
-// Get URL for preferred image type
-export const getPreferredImageUrl = (pokemonId: number): string => {
+// Get URL for preferred image type with fallback support
+export const getPreferredImageUrl = (pokemonId: number, fallbackLevel?: number): string => {
   const preference = getPreferredImageType();
+  
+  // If fallbackLevel is provided, use it to determine which fallback to try
+  if (fallbackLevel !== undefined && fallbackLevel > 0) {
+    // List of all image types for fallbacks
+    const allTypes: PokemonImageType[] = ["official", "home", "default", "dream"];
+    
+    // Remove the preferred type from the list since it was already tried
+    let fallbackTypes = allTypes.filter(type => type !== preference);
+    
+    // Add the preferred type at the end as a last resort
+    fallbackTypes.push(preference);
+    
+    // Get the appropriate fallback
+    const fallbackIndex = Math.min(fallbackLevel - 1, fallbackTypes.length - 1);
+    const fallbackType = fallbackTypes[fallbackIndex];
+    
+    const option = imageTypeOptions.find(opt => opt.id === fallbackType);
+    return option ? option.url(pokemonId) : imageTypeOptions[1].url(pokemonId);
+  }
+  
+  // No fallback specified, just use preferred type
   const option = imageTypeOptions.find(opt => opt.id === preference);
-  return option ? option.url(pokemonId) : imageTypeOptions[1].url(pokemonId); // Fallback to official artwork
+  return option ? option.url(pokemonId) : imageTypeOptions[1].url(pokemonId);
 };
 
 // Export image options for use elsewhere
