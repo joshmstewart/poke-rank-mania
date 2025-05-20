@@ -30,16 +30,11 @@ const BattleContentContainer: React.FC<BattleContentContainerProps> = ({
     goBack,
     setSelectedGeneration,
     selectedGeneration,
-    setBattleResults,
-    setBattlesCompleted,
     setShowingMilestone,
-    handleSelection,
     isProcessingResult,
-    setCompletionPercentage,
-    setRankingGenerated,
-    setBattleHistory,
     generateRankings,
-    startNewBattle
+    startNewBattle,
+    battleResults
   } = useBattleStateCore(allPokemon, initialBattleType, initialSelectedGeneration);
 
   return (
@@ -48,8 +43,7 @@ const BattleContentContainer: React.FC<BattleContentContainerProps> = ({
         selectedGeneration={selectedGeneration}
         battleType={battleType}
         onGenerationChange={setSelectedGeneration}
-        onBattleTypeChange={(newType) => startNewBattle(newType)}
-        totalPokemonCount={allPokemon.length}
+        onBattleTypeChange={startNewBattle}
         battlesCompleted={battlesCompleted}
       />
       <BattleContent

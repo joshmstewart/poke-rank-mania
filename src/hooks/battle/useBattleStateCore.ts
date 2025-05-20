@@ -29,7 +29,8 @@ export const useBattleStateCore = (
     setSelectedPokemon,
     startNewBattle,
     milestones
-  } = useBattleState(allPokemon, initialBattleType, initialSelectedGeneration);
+  const { battleType, setBattleType } = useBattleTypeSelection();
+
 
   const { generateRankings, finalRankings } = useRankings(allPokemon);
 

@@ -23,7 +23,8 @@ const BattleDialogs: React.FC<BattleDialogsProps> = ({
   onRestartDialogChange,
   onConfirmRestart
 }) => {
-  const { resetMilestones, resetMilestoneRankings } = useBattleStateCore();
+  const { resetMilestoneRankings } = useBattleStateCore(allPokemon, "pairs", 0);
+
 
   const handleRestart = () => {
     resetMilestones();
