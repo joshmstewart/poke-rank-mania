@@ -1,6 +1,5 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { Pokemon } from "@/services/pokemon";
-import { BattleType } from "@/hooks/battle/types";
 import BattleInterface from "./BattleInterface";
 import RankingDisplay from "./RankingDisplay";
 import { useBattleStateCore } from "@/hooks/battle/useBattleStateCore";
@@ -12,9 +11,9 @@ interface BattleContentProps {
   currentBattle: Pokemon[];
   selectedPokemon: number[];
   battlesCompleted: number;
-  battleType: BattleType;
-  battleHistory: { battle: Pokemon[]; selected: number[] }[];
-  finalRankings: Pokemon[] | RankedPokemon[];
+  battleType: any;
+  battleHistory: any[];
+  finalRankings: RankedPokemon[];
   milestones: number[];
   onPokemonSelect: (id: number) => void;
   onTripletSelectionComplete: () => void;
@@ -25,79 +24,41 @@ interface BattleContentProps {
   isProcessing?: boolean;
 }
 
-const BattleContent: React.FC<BattleContentProps> = ({
-  showingMilestone,
-  rankingGenerated,
-  currentBattle,
-  selectedPokemon,
-  battlesCompleted,
-  battleType,
-  battleHistory,
-  finalRankings,
-  milestones,
-  onPokemonSelect,
-  onTripletSelectionComplete,
-  onGoBack,
-  onNewBattleSet,
-  onContinueBattles,
-  onSaveRankings,
-  isProcessing = false
-}) => {
-  const continuePressedRef = useRef(false);
+const BattleContent: React.FC<BattleContentProps> = (props) => {
   const { getSnapshotForMilestone } = useBattleStateCore();
-
   const [snapshotRankings, setSnapshotRankings] = useState<RankedPokemon[]>([]);
 
   useEffect(() => {
-    if (showingMilestone) {
-      const snapshot = getSnapshotForMilestone(battlesCompleted);
-      if (snapshot.length === 0) {
-        console.error(`Empty snapshot at milestone ${battlesCompleted}, continuing battles.`);
-        onContinueBattles(); // continue automatically if snapshot empty
+    if (props.showingMilestone) {
+      const snapshot = getSnapshotForMilestone(props.battlesCompleted);
+      if (!snapshot || snapshot.length === 0) {
+        console.error("Empty or invalid snapshot received:", snapshot);
+        props.onContinueBattles();
       } else {
         setSnapshotRankings(snapshot);
       }
     } else {
       setSnapshotRankings([]);
     }
-  }, [showingMilestone, battlesCompleted, getSnapshotForMilestone, onContinueBattles]);
+  }, [props.showingMilestone, props.battlesCompleted]);
 
-  const rankingsToShow = snapshotRankings.length ? snapshotRankings : finalRankings;
+  const rankingsToShow = snapshotRankings.length ? snapshotRankings : props.finalRankings;
 
-  const handleContinueBattles = () => {
-    continuePressedRef.current = true;
-    setSnapshotRankings([]);
-    onContinueBattles();
-  };
-
-  if ((showingMilestone || rankingGenerated) && rankingsToShow.length) {
+  if ((props.showingMilestone || props.rankingGenerated) && rankingsToShow.length) {
     return (
       <RankingDisplay
         finalRankings={rankingsToShow}
-        battlesCompleted={battlesCompleted}
-        rankingGenerated={rankingGenerated}
-        onNewBattleSet={onNewBattleSet}
-        onContinueBattles={handleContinueBattles}
-        onSaveRankings={onSaveRankings}
-        isMilestoneView={showingMilestone}
+        battlesCompleted={props.battlesCompleted}
+        rankingGenerated={props.rankingGenerated}
+        onNewBattleSet={props.onNewBattleSet}
+        onContinueBattles={props.onContinueBattles}
+        onSaveRankings={props.onSaveRankings}
+        isMilestoneView={props.showingMilestone}
       />
     );
   }
 
-  return (
-    <BattleInterface
-      currentBattle={currentBattle}
-      selectedPokemon={selectedPokemon}
-      battlesCompleted={battlesCompleted}
-      battleType={battleType}
-      battleHistory={battleHistory}
-      onPokemonSelect={onPokemonSelect}
-      onTripletSelectionComplete={onTripletSelectionComplete}
-      onGoBack={onGoBack}
-      milestones={milestones}
-      isProcessing={isProcessing}
-    />
-  );
+  return <BattleInterface {...props} />;
 };
 
 export default BattleContent;
