@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { Pokemon } from "@/services/pokemon";
 import BattleInterface from "./BattleInterface";
 import RankingDisplay from "./RankingDisplay";
@@ -28,29 +28,38 @@ interface BattleContentProps {
 const BattleContent: React.FC<BattleContentProps> = (props) => {
   const { getSnapshotForMilestone } = useBattleStateCore();
   const [snapshotRankings, setSnapshotRankings] = useState<RankedPokemon[]>([]);
+  const [hasFetchedSnapshot, setHasFetchedSnapshot] = useState<boolean>(false);
 
   // Only fetch milestone snapshot when the milestone flag changes to true
   useEffect(() => {
-    if (props.showingMilestone) {
+    if (props.showingMilestone && !hasFetchedSnapshot) {
       try {
         // Get cached rankings for the milestone
         const snapshot = getSnapshotForMilestone(props.battlesCompleted);
         if (snapshot && snapshot.length > 0) {
           setSnapshotRankings(snapshot);
+          setHasFetchedSnapshot(true);
         }
       } catch (error) {
         console.error("Error getting milestone snapshot:", error);
       }
-    } else {
+    } else if (!props.showingMilestone) {
       // Clear snapshot when not showing milestone
       setSnapshotRankings([]);
+      setHasFetchedSnapshot(false);
     }
-  }, [props.showingMilestone, props.battlesCompleted, getSnapshotForMilestone]);
+  }, [props.showingMilestone, props.battlesCompleted, getSnapshotForMilestone, hasFetchedSnapshot]);
+
+  // Use memoized value to determine which rankings to show to avoid unnecessary renders
+  const shouldShowRankings = useMemo(() => {
+    return (props.showingMilestone && snapshotRankings.length > 0) || 
+           (props.rankingGenerated && props.finalRankings && props.finalRankings.length > 0);
+  }, [props.showingMilestone, props.rankingGenerated, snapshotRankings.length, props.finalRankings]);
 
   // Use memoized rankings to avoid unnecessary renders
-  const rankingsToShow = props.showingMilestone ? snapshotRankings : props.finalRankings;
-  const shouldShowRankings = (props.showingMilestone || props.rankingGenerated) && 
-    (rankingsToShow && rankingsToShow.length > 0);
+  const rankingsToShow = useMemo(() => {
+    return props.showingMilestone ? snapshotRankings : props.finalRankings;
+  }, [props.showingMilestone, snapshotRankings, props.finalRankings]);
 
   if (shouldShowRankings) {
     return (
@@ -69,4 +78,4 @@ const BattleContent: React.FC<BattleContentProps> = (props) => {
   return <BattleInterface {...props} />;
 };
 
-export default BattleContent;
+export default React.memo(BattleContent);

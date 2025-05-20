@@ -14,11 +14,40 @@ export const useBattleProgression = (
   const showingMilestoneRef = useRef(false);
   const lastMilestoneShownRef = useRef(-1);
   const processingMilestoneRef = useRef(false);
+  const incrementInProgressRef = useRef(false);
 
   // Update ref when prop changes to keep it in sync
   useEffect(() => {
     showingMilestoneRef.current = false;
   }, [battlesCompleted]);
+
+  // Helper function to check if a battle count is a milestone
+  const checkIfMilestone = useCallback((battleCount: number): boolean => {
+    // Check common milestones: 10, 25, 50, 100, etc.
+    const commonMilestones = [10, 25, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500];
+    
+    // Exact milestone match
+    if (commonMilestones.includes(battleCount)) {
+      console.log(`Milestone detected for battle count: ${battleCount}`);
+      toast({
+        title: "Milestone Reached!",
+        description: `You've completed ${battleCount} battles. Check out your current ranking!`,
+      });
+      return true;
+    }
+    
+    // Every 50 battles after 100
+    if (battleCount > 100 && battleCount % 50 === 0) {
+      console.log(`50-battle milestone detected: ${battleCount}`);
+      toast({
+        title: "Milestone Reached!",
+        description: `You've completed ${battleCount} battles. Check out your current ranking!`,
+      });
+      return true;
+    }
+    
+    return false;
+  }, []);
 
   // Actively invoked after battle result - but with debounce to prevent multiple calls
   const checkMilestone = useCallback((newBattlesCompleted: number, battleResults: any[]) => {
@@ -75,12 +104,22 @@ export const useBattleProgression = (
   }, [milestones, generateRankings, setShowingMilestone]);
 
   const incrementBattlesCompleted = useCallback((battleResults: any[]) => {
+    // Prevent multiple increments at the same time
+    if (incrementInProgressRef.current) {
+      return;
+    }
+    
+    incrementInProgressRef.current = true;
+    
     setBattlesCompleted(prev => {
       const updated = prev + 1;
+      
       // Defer milestone check to avoid render during render
       setTimeout(() => {
         checkMilestone(updated, battleResults);
+        incrementInProgressRef.current = false;
       }, 0);
+      
       return updated;
     });
   }, [setBattlesCompleted, checkMilestone]);

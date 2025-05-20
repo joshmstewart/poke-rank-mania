@@ -17,10 +17,17 @@ export const useCompletionTracker = (
   const hitMilestones = useRef(new Set<number>());
   const [milestoneRankings, setMilestoneRankings] = useState<Record<number, RankedPokemon[]>>({});
   const isMilestoneProcessingRef = useRef(false);
+  const previousBattleCountRef = useRef<number>(0);
 
   // Only check for milestones when battleResults change and we're not already showing one
   useEffect(() => {
     const battleCount = battleResults.length;
+    
+    // Avoid processing if the battle count didn't change
+    if (previousBattleCountRef.current === battleCount) {
+      return;
+    }
+    previousBattleCountRef.current = battleCount;
     
     // Don't trigger if already showing milestone or processing one
     if (showingMilestone || isMilestoneProcessingRef.current) return;
@@ -42,6 +49,7 @@ export const useCompletionTracker = (
           setMilestoneRankings(prev => ({ ...prev, [battleCount]: rankingsSnapshot }));
           
           // Mark milestone as showing - this will trigger ranking display
+          // Use setTimeout to break the render cycle
           setTimeout(() => {
             setShowingMilestone(true);
             isMilestoneProcessingRef.current = false;
@@ -71,7 +79,12 @@ export const useCompletionTracker = (
     
     const totalBattlesNeeded = allPokemon.length * Math.log2(allPokemon.length);
     const percentage = Math.min(100, Math.floor((battleResults.length / totalBattlesNeeded) * 100));
-    setCompletionPercentage(percentage);
+    
+    // Update state in next tick to avoid render loops
+    setTimeout(() => {
+      setCompletionPercentage(percentage);
+    }, 0);
+    
     return percentage;
   }, [allPokemon, battleResults.length, setCompletionPercentage]);
   

@@ -1,4 +1,5 @@
 
+import { useState, useCallback } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
 
@@ -14,19 +15,28 @@ export const useBattleActions = (
   generateRankings: (results: SingleBattle[]) => void,
   battleType: BattleType
 ) => {
-  const handleContinueBattles = () => {
-    // First reset the milestone flag without starting a chain of renders
+  const [isActioning, setIsActioning] = useState(false);
+
+  const handleContinueBattles = useCallback(() => {
+    if (isActioning) return;
+    setIsActioning(true);
+    
+    // First reset the milestone flag
     setShowingMilestone(false);
     
     // Use setTimeout to ensure state updates are processed before starting new battle
     setTimeout(() => {
       // Start a new battle after milestone display is closed
       startNewBattle(battleType);
+      setIsActioning(false);
     }, 100);
-  };
+  }, [battleType, setShowingMilestone, startNewBattle, isActioning]);
 
-  const handleNewBattleSet = () => {
-    // Reset all state in a single batch to prevent cascading renders
+  const handleNewBattleSet = useCallback(() => {
+    if (isActioning) return;
+    setIsActioning(true);
+    
+    // Reset all state with timeouts to prevent cascading renders
     setTimeout(() => {
       setBattleResults([]);
       setBattlesCompleted(0);
@@ -34,12 +44,28 @@ export const useBattleActions = (
       setBattleHistory([]);
       setShowingMilestone(false);
       setCompletionPercentage(0);
-      startNewBattle(battleType);
+      
+      // Start new battle at the end
+      setTimeout(() => {
+        startNewBattle(battleType);
+        setIsActioning(false);
+      }, 50);
     }, 50);
-  };
+  }, [
+    battleType, 
+    setBattleHistory, 
+    setBattleResults, 
+    setBattlesCompleted, 
+    setCompletionPercentage, 
+    setRankingGenerated, 
+    setShowingMilestone, 
+    startNewBattle,
+    isActioning
+  ]);
 
   return {
     handleContinueBattles,
-    handleNewBattleSet
+    handleNewBattleSet,
+    isActioning
   };
 };
