@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { Pokemon } from "@/services/pokemon";
 import BattleInterface from "./BattleInterface";
@@ -30,17 +31,20 @@ const BattleContent: React.FC<BattleContentProps> = (props) => {
 
   useEffect(() => {
     if (props.showingMilestone) {
-      const snapshot = getSnapshotForMilestone(props.battlesCompleted);
-      if (!snapshot || snapshot.length === 0) {
-        console.error("Empty or invalid snapshot received:", snapshot);
-        props.onContinueBattles();
-      } else {
-        setSnapshotRankings(snapshot);
+      // Use try/catch to handle potential errors
+      try {
+        const snapshot = getSnapshotForMilestone(props.battlesCompleted);
+        if (snapshot && snapshot.length > 0) {
+          setSnapshotRankings(snapshot);
+        } else {
+          console.error("Empty or invalid snapshot received");
+          // Don't automatically call onContinueBattles here to avoid render loops
+        }
+      } catch (error) {
+        console.error("Error getting milestone snapshot:", error);
       }
-    } else {
-      setSnapshotRankings([]);
     }
-  }, [props.showingMilestone, props.battlesCompleted]);
+  }, [props.showingMilestone, props.battlesCompleted, getSnapshotForMilestone]);
 
   const rankingsToShow = snapshotRankings.length ? snapshotRankings : props.finalRankings;
 

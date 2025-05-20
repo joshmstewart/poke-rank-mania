@@ -17,20 +17,26 @@ export const useCompletionTracker = (
   const hitMilestones = useRef(new Set<number>());
   const [milestoneRankings, setMilestoneRankings] = useState<Record<number, RankedPokemon[]>>({});
 
+  // Only check for milestones when battleResults change
   useEffect(() => {
     const battleCount = battleResults.length;
+    
+    // Don't trigger milestone check if we're already showing one
+    if (showingMilestone) return;
+    
     if (MILESTONES.includes(battleCount) && !hitMilestones.current.has(battleCount)) {
       hitMilestones.current.add(battleCount);
       const rankingsSnapshot = generateRankings(battleResults);
-      setMilestoneRankings(prev => ({ ...prev, [battleCount]: rankingsSnapshot }));
-
-      if (rankingsSnapshot.length > 0) {
+      
+      // Only update state if we have valid rankings
+      if (rankingsSnapshot && rankingsSnapshot.length > 0) {
+        setMilestoneRankings(prev => ({ ...prev, [battleCount]: rankingsSnapshot }));
         setShowingMilestone(true);
       } else {
         console.warn("Snapshot was empty, skipping milestone.");
       }
     }
-  }, [battleResults, generateRankings, setMilestoneRankings, setShowingMilestone]);
+  }, [battleResults, generateRankings, setShowingMilestone, showingMilestone]);
 
   const resetMilestones = () => {
     hitMilestones.current.clear();

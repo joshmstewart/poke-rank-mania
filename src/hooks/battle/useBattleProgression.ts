@@ -1,4 +1,5 @@
-import { useCallback, useRef, useEffect } from "react";
+
+import { useCallback, useRef } from "react";
 import { toast } from "@/hooks/use-toast";
 
 /**
@@ -14,24 +15,9 @@ export const useBattleProgression = (
   const showingMilestoneRef = useRef(false);
   const lastMilestoneShownRef = useRef(-1);
 
-  // Check on mount or battles change — passive milestone detection
-  useEffect(() => {
-    if (showingMilestoneRef.current || battlesCompleted === lastMilestoneShownRef.current) return;
-
-    const isExactMilestone = milestones.includes(battlesCompleted);
-    const isEvery50Battles = battlesCompleted >= 100 && battlesCompleted % 50 === 0;
-
-    if (isExactMilestone || isEvery50Battles) {
-      console.log(`🔔 useEffect milestone hit: ${battlesCompleted}`);
-      showingMilestoneRef.current = true;
-      lastMilestoneShownRef.current = battlesCompleted;
-      setShowingMilestone(true);
-    }
-  }, [battlesCompleted, milestones, setShowingMilestone]);
-
-  // Actively invoked after battle result
+  // Actively invoked after battle result - but with debounce to prevent multiple calls
   const checkMilestone = useCallback((newBattlesCompleted: number, battleResults: any[]) => {
-    if (newBattlesCompleted === lastMilestoneShownRef.current) return false;
+    if (newBattlesCompleted === lastMilestoneShownRef.current || showingMilestoneRef.current) return false;
 
     const isExactMilestone = milestones.includes(newBattlesCompleted);
     const isEvery50Battles = newBattlesCompleted >= 100 && newBattlesCompleted % 50 === 0;
@@ -46,7 +32,10 @@ export const useBattleProgression = (
       if (Array.isArray(battleResults) && battleResults.length > 0) {
         try {
           generateRankings(battleResults);
-          setShowingMilestone(true);
+          // Defer setting the milestone flag to avoid render loops
+          setTimeout(() => {
+            setShowingMilestone(true);
+          }, 0);
 
           toast({
             title: "Milestone Reached!",
