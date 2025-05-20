@@ -1,97 +1,70 @@
+import { useCallback } from "react";
+import { Pokemon } from "@/services/pokemon";
 import { useBattleState } from "./useBattleState";
-import { useBattleTypeSelection } from "./useBattleTypeSelection";
+import { useBattleProcessor } from "./useBattleProcessor";
 import { useBattleSelectionManager } from "./useBattleSelectionManager";
+import { useCompletionTracker } from "./useCompletionTracker";
+import { useRankings } from "./useRankings";
 import { BattleType } from "./types";
 
-export const useBattleStateCore = () => {
-  const initialBattleType: BattleType = "pairs";
-  const initialSelectedGeneration = 0;
-
+export const useBattleStateCore = (
+  allPokemon: Pokemon[],
+  initialBattleType: BattleType = "pairs",
+  initialSelectedGeneration = 0
+) => {
+  const state = useBattleState();
   const {
-    currentBattle,
-    battlesCompleted,
-    battleResults,
-    battleHistory,
-    selectedPokemon,
-    setSelectedPokemon,
-    rankingGenerated,
-    setRankingGenerated,
-    showingMilestone,
-    setShowingMilestone,
-    completionPercentage,
-    setCompletionPercentage,
-    milestones,
-    resetMilestones,
-    resetMilestoneRankings,
-    calculateCompletionPercentage,
-    getSnapshotForMilestone,
-    finalRankings,
-    generateRankings,
-    selectedGeneration,
-    setSelectedGeneration,
-    setBattleResults,
-    setBattlesCompleted,
-    setBattleHistory,
-    startNewBattle,
-    currentBattleType,
-    setCurrentBattleType,
-  } = useBattleState([], initialBattleType, initialSelectedGeneration);
+    currentBattle, setCurrentBattle,
+    battlesCompleted, setBattlesCompleted,
+    battleResults, setBattleResults,
+    battleHistory, setBattleHistory,
+    showingMilestone, setShowingMilestone,
+    selectedGeneration, setSelectedGeneration,
+    completionPercentage, setCompletionPercentage,
+    rankingGenerated, setRankingGenerated,
+    selectedPokemon, setSelectedPokemon,
+    battleType, setBattleType
+  } = state;
 
-  const { battleType, setBattleType } = useBattleTypeSelection(initialBattleType);
-
-  const {
-    handlePokemonSelect,
-    handleTripletSelectionComplete,
-    handleSelection,
-    goBack,
-    isProcessingResult,
-  } = useBattleSelectionManager(
-    battleResults,
-    setBattleResults,
-    battlesCompleted,
-    setBattlesCompleted,
-    [],
-    startNewBattle,
-    setShowingMilestone,
-    milestones,
-    generateRankings,
-    setSelectedPokemon,
-    currentBattleType,
-    selectedGeneration
+  const { generateRankings, finalRankings } = useRankings(allPokemon);
+  const { processBattleResult, isProcessingResult } = useBattleProcessor(
+    battleResults, setBattleResults, battlesCompleted, setBattlesCompleted, allPokemon,
+    setCurrentBattle, setShowingMilestone, generateRankings
   );
 
+  const {
+    handlePokemonSelect,
+    handleTripletSelectionComplete,
+    handleSelection,
+    goBack
+  } = useBattleSelectionManager(processBattleResult, battleType, selectedPokemon, setSelectedPokemon, currentBattle);
+
+  const startNewBattle = useCallback(() => {
+    setRankingGenerated(false);
+    setBattlesCompleted(0);
+    setBattleResults([]);
+    setCurrentBattle([]);
+  }, [setRankingGenerated, setBattlesCompleted, setBattleResults, setCurrentBattle]);
+
+  const milestones = [10, 25, 50, 100, 150, 200, 250, 300];
+  const { resetMilestones, resetMilestoneRankings, calculateCompletionPercentage, getSnapshotForMilestone } =
+    useCompletionTracker(battleResults, setRankingGenerated, setCompletionPercentage, showingMilestone,
+      setShowingMilestone, generateRankings, allPokemon);
+
   return {
-    battleType,
-    setBattleType,
-    currentBattle,
-    battlesCompleted,
-    battleResults,
-    battleHistory,
-    showingMilestone,
-    setShowingMilestone,
-    selectedGeneration,
-    setSelectedGeneration,
-    rankingGenerated,
-    setRankingGenerated,
-    completionPercentage,
-    setCompletionPercentage,
-    setBattleResults,
-    setBattlesCompleted,
-    setBattleHistory,
-    selectedPokemon,
-    setSelectedPokemon,
+    ...state,
+    finalRankings,
+    handlePokemonSelect,
+    handleTripletSelectionComplete,
+    handleSelection,
+    goBack,
+    isProcessingResult,
     startNewBattle,
     milestones,
     resetMilestones,
     resetMilestoneRankings,
     calculateCompletionPercentage,
     getSnapshotForMilestone,
-    finalRankings,
-    generateRankings,
-    handlePokemonSelect,
-    handleTripletSelectionComplete,
-    handleSelection,
-    goBack,
-    isProcessingResult,
+    generateRankings
   };
 };

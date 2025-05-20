@@ -1,95 +1,39 @@
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { Pokemon } from "@/services/pokemon";
-import { BattleType, SingleBattle } from "./types";
-import { useRankings, RankedPokemon } from "./useRankings";
-import { useProgressState } from "./useProgressState";
-import { useCompletionTracker } from "./useCompletionTracker";
-import { usePokemonLoader } from "./usePokemonLoader";
+import { BattleType } from "./types";
 
-export const useBattleState = (
-  allPokemon: Pokemon[],
-  initialBattleType: BattleType,
-  initialSelectedGeneration: number = 0
-) => {
+export const useBattleState = () => {
   const [currentBattle, setCurrentBattle] = useState<Pokemon[]>([]);
-  const [battlesCompleted, setBattlesCompleted] = useState<number>(0);
-  const [battleResults, setBattleResults] = useState<SingleBattle[]>([]);
-  const [battleHistory, setBattleHistory] = useState<{ battle: Pokemon[], selected: number[] }[]>([]);
-  const [selectedPokemon, setSelectedPokemon] = useState<number[]>([]);
+  const [battlesCompleted, setBattlesCompleted] = useState(0);
+  const [battleResults, setBattleResults] = useState([]);
+  const [battleHistory, setBattleHistory] = useState([]);
+  const [showingMilestone, setShowingMilestone] = useState(false);
+  const [selectedGeneration, setSelectedGeneration] = useState(0);
+  const [completionPercentage, setCompletionPercentage] = useState(0);
   const [rankingGenerated, setRankingGenerated] = useState(false);
-
-  const {
-    showingMilestone,
-    setShowingMilestone,
-    completionPercentage,
-    setCompletionPercentage,
-    milestones
-  } = useProgressState();
-
-  const { finalRankings, generateRankings } = useRankings(allPokemon);
-
-  const {
-    resetMilestones,
-    resetMilestoneRankings,
-    calculateCompletionPercentage,
-    getSnapshotForMilestone
-  } = useCompletionTracker(
-    battleResults,
-    setRankingGenerated,
-    setCompletionPercentage,
-    showingMilestone,
-    setShowingMilestone,
-    generateRankings,
-    allPokemon
-  );
-
-  const { loadPokemon } = usePokemonLoader(
-  setCurrentBattle,
-  setRankingGenerated,
-  setBattlesCompleted,
-  setBattleResults,
-  setBattleHistory,
-  setShowingMilestone,
-  setCompletionPercentage,
-  setSelectedPokemon,
-  initialBattleType
-);
-
-
-  const [selectedGeneration, setSelectedGeneration] = useState(initialSelectedGeneration);
-  const [currentBattleType, setCurrentBattleType] = useState(initialBattleType);
-
-  const startNewBattle = useCallback(() => {
-    loadPokemon(selectedGeneration, true, false);
-  }, [selectedGeneration, loadPokemon]);
+  const [selectedPokemon, setSelectedPokemon] = useState<number[]>([]);
+  const [battleType, setBattleType] = useState<BattleType>("pairs");
 
   return {
     currentBattle,
+    setCurrentBattle,
     battlesCompleted,
+    setBattlesCompleted,
     battleResults,
+    setBattleResults,
     battleHistory,
-    selectedPokemon,
-    setSelectedPokemon,
-    rankingGenerated,
-    setRankingGenerated,
+    setBattleHistory,
     showingMilestone,
     setShowingMilestone,
-    completionPercentage,
-    setCompletionPercentage,
-    milestones,
-    resetMilestones,
-    resetMilestoneRankings,
-    calculateCompletionPercentage,
-    getSnapshotForMilestone,
-    finalRankings,
-    generateRankings,
     selectedGeneration,
     setSelectedGeneration,
-    setBattleResults,
-    setBattlesCompleted,
-    setBattleHistory,
-    startNewBattle,
-    currentBattleType,
-    setCurrentBattleType,
+    completionPercentage,
+    setCompletionPercentage,
+    rankingGenerated,
+    setRankingGenerated,
+    selectedPokemon,
+    setSelectedPokemon,
+    battleType,
+    setBattleType
   };
 };
