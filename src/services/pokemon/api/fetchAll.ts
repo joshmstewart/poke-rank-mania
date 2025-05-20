@@ -3,6 +3,44 @@ import { Pokemon } from "../types";
 import { generations } from "../data";
 import { fetchPokemonDetails } from "./utils";
 
+// Helper function to check if a Pokemon should be included based on current form filters
+const shouldIncludePokemon = (pokemon: { name: string, id: number }) => {
+  // Try to get the stored filters from localStorage
+  try {
+    const storedFilters = localStorage.getItem('pokemon-form-filters');
+    if (storedFilters) {
+      const filters = JSON.parse(storedFilters);
+      const name = pokemon.name.toLowerCase();
+
+      // Check for mega evolutions
+      if (name.includes("mega") && !filters.mega) {
+        return false;
+      }
+      
+      // Check for regional variants
+      if ((name.includes("alolan") || name.includes("galarian") || name.includes("hisuian")) && !filters.regional) {
+        return false;
+      }
+      
+      // Check for gender differences
+      if ((name.includes("female") || name.includes("male")) && !filters.gender) {
+        return false;
+      }
+      
+      // Check for special forms
+      if ((name.includes("form") || name.includes("style") || name.includes("mode") || 
+           name.includes("size") || name.includes("cloak")) && !filters.forms) {
+        return false;
+      }
+    }
+  } catch (e) {
+    console.error("Error applying Pokemon form filters:", e);
+  }
+  
+  // Default to including the Pokemon if there was an error or no filters
+  return true;
+};
+
 // Keep the original function for backward compatibility and specific generations
 export async function fetchAllPokemon(generationId: number = 1, fullRankingMode: boolean = false): Promise<Pokemon[]> {
   try {
@@ -30,11 +68,13 @@ export async function fetchAllPokemon(generationId: number = 1, fullRankingMode:
         // Fetch details for each selected Pokemon
         const pokemonList = await Promise.all(
           selectedIds.map(async (id) => {
-            return fetchPokemonDetails(id);
+            const pokemon = await fetchPokemonDetails(id);
+            return pokemon;
           })
         );
         
-        return pokemonList;
+        // Apply form filters
+        return pokemonList.filter(shouldIncludePokemon);
       } else {
         // For full ranking mode, we need to fetch all Pokemon in batches
         toast({
@@ -74,7 +114,8 @@ export async function fetchAllPokemon(generationId: number = 1, fullRankingMode:
             });
             
             const batchResults = await Promise.all(batchPromises);
-            allPokemon.push(...batchResults);
+            // Filter and add Pokemon based on form preferences
+            allPokemon.push(...batchResults.filter(shouldIncludePokemon));
             
             // Update progress
             toast({
@@ -113,7 +154,8 @@ export async function fetchAllPokemon(generationId: number = 1, fullRankingMode:
       })
     );
     
-    return pokemonList;
+    // Apply form filters and return
+    return pokemonList.filter(shouldIncludePokemon);
   } catch (error) {
     console.error('Error fetching Pokemon:', error);
     toast({
