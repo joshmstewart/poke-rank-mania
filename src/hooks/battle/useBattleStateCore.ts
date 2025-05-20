@@ -180,6 +180,7 @@ export const useBattleStateCore = (allPokemon: Pokemon[], initialBattleType: Bat
     calculateCompletionPercentage,
     getSnapshotForMilestone,
     generateRankings,
-    processorRefs
+    processorRefs,
+    battleHistory // Add the battleHistory to the return object
   };
 };

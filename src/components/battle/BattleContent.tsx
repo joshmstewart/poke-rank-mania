@@ -44,7 +44,8 @@ const BattleContent = ({ allPokemon, initialBattleType, initialSelectedGeneratio
     calculateCompletionPercentage,
     getSnapshotForMilestone,
     generateRankings,
-    processorRefs
+    processorRefs,
+    battleHistory
   } = useBattleStateCore(allPokemon, initialBattleType, initialSelectedGeneration);
 
   // Only call startNewBattle once when the component mounts and allPokemon is available
@@ -170,7 +171,7 @@ const BattleContent = ({ allPokemon, initialBattleType, initialSelectedGeneratio
           battleType={battleType}
           onGoBack={goBack}
           battlesCompleted={battlesCompleted}
-          battleHistory={[]}
+          battleHistory={battleHistory || []}
           milestones={milestones}
         />
       )}
