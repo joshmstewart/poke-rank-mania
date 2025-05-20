@@ -3,7 +3,7 @@ import React, { memo, useCallback, useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Pokemon } from "@/services/pokemon";
 import { MousePointerClick } from "lucide-react";
-import { getPokemonImageUrl } from "@/services/pokemon/api/utils";
+import { getPreferredImageUrl } from "@/components/settings/ImagePreferenceSelector";
 
 interface BattleCardProps {
   pokemon: Pokemon;
@@ -35,7 +35,7 @@ const BattleCard: React.FC<BattleCardProps> = memo(({
     setRetryCount(0);
     
     // Always start with the preferred image type from settings
-    const preferredImageUrl = getPokemonImageUrl(pokemon.id, 0);
+    const preferredImageUrl = getPreferredImageUrl(pokemon.id);
     setCurrentImageUrl(preferredImageUrl);
     
     // Preload the image

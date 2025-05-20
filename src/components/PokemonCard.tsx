@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Pokemon } from "@/services/pokemon";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
-import { getPokemonImageUrl } from "@/services/pokemon/api/utils";
+import { getPreferredImageUrl } from "@/components/settings/ImagePreferenceSelector";
 
 interface PokemonCardProps {
   pokemon: Pokemon;
@@ -49,7 +48,7 @@ const PokemonCard = ({ pokemon, isDragging, viewMode = "list", compact }: Pokemo
     setRetryCount(0);
     
     // Always start with the preferred image type
-    const preferredImageUrl = getPokemonImageUrl(pokemon.id, 0);
+    const preferredImageUrl = getPreferredImageUrl(pokemon.id);
     setCurrentImageUrl(preferredImageUrl);
     
     // Preload the image
@@ -71,7 +70,7 @@ const PokemonCard = ({ pokemon, isDragging, viewMode = "list", compact }: Pokemo
       setImageError(true);
       
       // Immediately try the next fallback URL using our utility function
-      const nextUrl = getPokemonImageUrl(pokemon.id, retryCount + 1);
+      const nextUrl = getPreferredImageUrl(pokemon.id, retryCount + 1);
       console.log(`Trying fallback URL for ${pokemon.name}: ${nextUrl}`);
       setCurrentImageUrl(nextUrl);
     } else {
