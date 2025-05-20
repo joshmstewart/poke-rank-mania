@@ -17,7 +17,7 @@ export interface UseBattleStateIOProps {
   setShowingMilestone: React.Dispatch<React.SetStateAction<boolean>>;
   setCompletionPercentage: React.Dispatch<React.SetStateAction<number>>;
   setSelectedPokemon: React.Dispatch<React.SetStateAction<number[]>>;
-  startNewBattle: (pokemonList: Pokemon[], battleType: BattleType) => void;
+  startNewBattle: (battleType: BattleType) => void;
   battleType: BattleType;
   allPokemon: Pokemon[];
   battleResults: SingleBattle[];
@@ -41,18 +41,7 @@ export const useBattleStateIO = ({
   const {
     isLoading,
     loadPokemon
-  } = usePokemonLoader({
-    setAllPokemon,
-    setRankingGenerated,
-    setBattleResults,
-    setBattlesCompleted,
-    setBattleHistory,
-    setShowingMilestone,
-    setCompletionPercentage,
-    setSelectedPokemon,
-    startNewBattle,
-    battleType
-  });
+  } = usePokemonLoader();
 
   // Local storage management
   const { saveBattleState, loadBattleState } = useLocalStorage();

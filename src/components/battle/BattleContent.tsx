@@ -87,8 +87,8 @@ const BattleContent = ({ allPokemon, initialBattleType, initialSelectedGeneratio
       <BattleInterface
         currentBattle={currentBattle}
         selectedPokemon={selectedPokemon}
-        handlePokemonSelect={handlePokemonSelect}
-        handleTripletSelectionComplete={handleTripletSelectionComplete}
+        onPokemonSelect={handlePokemonSelect}
+        onTripletSelectionComplete={handleTripletSelectionComplete}
         isProcessing={isProcessingResult}
         battleType={battleType}
         onGoBack={goBack}
