@@ -36,7 +36,7 @@ const BattleControls: React.FC<BattleControlsProps> = ({
   return (
     <div className="flex items-center justify-between bg-white p-3 rounded-lg shadow border">
       {/* Left side - Gen and Mode dropdowns */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-6">
         <div className="flex items-center">
           <span className="text-sm font-medium whitespace-nowrap mr-1">Gen:</span>
           <Select 
@@ -74,13 +74,13 @@ const BattleControls: React.FC<BattleControlsProps> = ({
       </div>
       
       {/* Right side - action buttons with more spacing */}
-      <div className="flex gap-4">
+      <div className="flex gap-6 ml-auto">
         <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
           <DialogTrigger asChild>
             <Button
               variant="outline"
               size="sm"
-              className="flex items-center gap-1 h-8 text-sm px-4"
+              className="flex items-center gap-1 h-8 text-sm px-4 min-w-[90px]"
             >
               <Settings className="h-4 w-4" /> Forms
             </Button>
