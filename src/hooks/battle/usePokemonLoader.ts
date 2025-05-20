@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { Pokemon, fetchAllPokemon } from "@/services/pokemon";
 import { toast } from "@/hooks/use-toast";
 import { BattleType } from "./types";
@@ -8,7 +8,7 @@ export const usePokemonLoader = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [allPokemon, setAllPokemon] = useState<Pokemon[]>([]);
   const [battleType, setBattleType] = useState<BattleType>("pairs");
-  const [loadAttempted, setLoadAttempted] = useState(false);
+  const loadingInProgressRef = useRef(false);
 
   const startNewBattle = useCallback((pokemonList: Pokemon[], type: BattleType = battleType): Pokemon[] => {
     if (pokemonList.length < 2) {
@@ -28,14 +28,14 @@ export const usePokemonLoader = () => {
   }, [battleType]);
 
   const loadPokemon = useCallback(async (genId = 0, fullRankingMode = false, preserveState = false) => {
-    // Prevent multiple loading attempts
-    if (isLoading && loadAttempted) {
+    // Prevent multiple simultaneous loading calls
+    if (loadingInProgressRef.current) {
       console.log("Already loading Pokemon, skipping redundant call");
       return allPokemon;
     }
-
+    
+    loadingInProgressRef.current = true;
     setIsLoading(true);
-    setLoadAttempted(true);
     
     try {
       const pokemon = await fetchAllPokemon(genId, fullRankingMode);
@@ -48,6 +48,7 @@ export const usePokemonLoader = () => {
           variant: "destructive"
         });
         setIsLoading(false);
+        loadingInProgressRef.current = false;
         return [];
       }
       
@@ -55,6 +56,7 @@ export const usePokemonLoader = () => {
       setAllPokemon(pokemon);
       
       setIsLoading(false);
+      loadingInProgressRef.current = false;
       return pokemon;
     } catch (error) {
       console.error('Error loading Pokémon:', error);
@@ -64,9 +66,10 @@ export const usePokemonLoader = () => {
         variant: "destructive"
       });
       setIsLoading(false);
+      loadingInProgressRef.current = false;
       return [];
     }
-  }, [isLoading, allPokemon, loadAttempted]);
+  }, [allPokemon]);
 
   return {
     isLoading,

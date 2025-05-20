@@ -1,18 +1,21 @@
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import BattleContentContainer from "@/components/battle/BattleContentContainer";
 import { usePokemonLoader } from "@/hooks/battle/usePokemonLoader";
 
 const BattleMode = () => {
   const { allPokemon, isLoading, loadPokemon } = usePokemonLoader();
   const [loadingInitiated, setLoadingInitiated] = useState(false);
+  const loaderInitiatedRef = useRef(false);
 
   useEffect(() => {
-    if (!loadingInitiated) {
+    // Only load pokemon once to prevent infinite loops
+    if (!loaderInitiatedRef.current) {
+      loaderInitiatedRef.current = true;
       setLoadingInitiated(true);
       loadPokemon(0, true);
     }
-  }, [loadPokemon, loadingInitiated]);
+  }, [loadPokemon]);
 
   if (isLoading || !allPokemon.length) {
     return (

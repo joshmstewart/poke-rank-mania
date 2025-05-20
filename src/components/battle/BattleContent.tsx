@@ -1,5 +1,5 @@
 
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { useBattleStateCore } from "@/hooks/battle/useBattleStateCore";
 import BattleInterface from "./BattleInterface";
@@ -16,6 +16,8 @@ interface BattleContentProps {
 }
 
 const BattleContent = ({ allPokemon, initialBattleType, initialSelectedGeneration }: BattleContentProps) => {
+  const battleStartedRef = useRef(false);
+  
   const {
     currentBattle,
     battlesCompleted,
@@ -42,13 +44,14 @@ const BattleContent = ({ allPokemon, initialBattleType, initialSelectedGeneratio
     generateRankings
   } = useBattleStateCore(allPokemon, initialBattleType, initialSelectedGeneration);
 
-  // Only call startNewBattle in an effect if allPokemon changes
+  // Only call startNewBattle once when the component mounts and allPokemon is available
   useEffect(() => {
-    if (allPokemon.length > 0) {
-      console.log("BattleContent: Starting new battle on allPokemon change");
+    if (allPokemon.length > 0 && !battleStartedRef.current) {
+      console.log("BattleContent: Starting new battle on initial load");
+      battleStartedRef.current = true;
       startNewBattle(initialBattleType);
     }
-  }, [allPokemon.length]); // Only dependency is allPokemon.length
+  }, [allPokemon.length, initialBattleType, startNewBattle]);
 
   const handleBattleTypeChange = (newType: BattleType) => {
     setBattleType(newType);

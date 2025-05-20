@@ -1,8 +1,6 @@
 
 import React from "react";
 import BattleContent from "./BattleContent";
-import BattleControls from "./BattleControls";
-import { useBattleStateCore } from "@/hooks/battle/useBattleStateCore";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "@/hooks/battle/types";
 
