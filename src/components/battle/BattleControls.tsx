@@ -73,14 +73,14 @@ const BattleControls: React.FC<BattleControlsProps> = ({
         </div>
       </div>
       
-      {/* Right side - action buttons */}
-      <div className="flex gap-2">
+      {/* Right side - action buttons with more spacing */}
+      <div className="flex gap-4">
         <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
           <DialogTrigger asChild>
             <Button
               variant="outline"
               size="sm"
-              className="flex items-center gap-1 h-8 text-sm"
+              className="flex items-center gap-1 h-8 text-sm px-4"
             >
               <Settings className="h-4 w-4" /> Forms
             </Button>
@@ -107,7 +107,7 @@ const BattleControls: React.FC<BattleControlsProps> = ({
         <Button
           variant="outline"
           size="sm"
-          className="flex items-center gap-1 h-8 text-sm"
+          className="flex items-center gap-1 h-8 text-sm px-4"
           onClick={onRestartBattles}
         >
           <RefreshCw className="h-4 w-4" /> Restart

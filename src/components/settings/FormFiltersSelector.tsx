@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { useFormFilters } from "@/hooks/useFormFilters";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -29,10 +29,10 @@ export function FormFiltersSelector() {
   } = useFormFilters();
   
   // Create the ref at the component top level
-  const isFirstRender = React.useRef(true);
+  const isFirstRender = useRef(true);
 
   // Effect to reload pokemon when filters change
-  React.useEffect(() => {
+  useEffect(() => {
     // Skip on first render
     if (isFirstRender.current) {
       isFirstRender.current = false;
@@ -50,8 +50,8 @@ export function FormFiltersSelector() {
   }, [filters]);
 
   return (
-    <div className="space-y-4 p-4 border rounded-md bg-white shadow-sm">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4">
+      <div className="flex items-center justify-between mb-2">
         <h3 className="font-medium text-sm">Pokémon Form Filters</h3>
         <div className="flex items-center space-x-2">
           <Switch 
@@ -65,11 +65,11 @@ export function FormFiltersSelector() {
       
       <Separator />
       
-      <div className="space-y-3">
+      <div className="space-y-4">
         {/* Mega Evolutions */}
         <div className="flex items-center space-x-3">
-          <div className="h-12 w-12 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden">
-            <img src={formExampleImages.mega} alt="Mega Form" className="h-10 w-10 object-contain" />
+          <div className="h-10 w-10 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden">
+            <img src={formExampleImages.mega} alt="Mega Form" className="h-8 w-8 object-contain" />
           </div>
           <div className="flex flex-1 items-center justify-between">
             <Label htmlFor="mega" className="text-sm">Mega Evolutions</Label>
@@ -83,8 +83,8 @@ export function FormFiltersSelector() {
         
         {/* Regional Variants */}
         <div className="flex items-center space-x-3">
-          <div className="h-12 w-12 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden">
-            <img src={formExampleImages.regional} alt="Regional Form" className="h-10 w-10 object-contain" />
+          <div className="h-10 w-10 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden">
+            <img src={formExampleImages.regional} alt="Regional Form" className="h-8 w-8 object-contain" />
           </div>
           <div className="flex flex-1 items-center justify-between">
             <Label htmlFor="regional" className="text-sm">Regional Variants</Label>
@@ -98,8 +98,8 @@ export function FormFiltersSelector() {
         
         {/* Gender Differences */}
         <div className="flex items-center space-x-3">
-          <div className="h-12 w-12 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden">
-            <img src={formExampleImages.gender} alt="Gender Form" className="h-10 w-10 object-contain" />
+          <div className="h-10 w-10 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden">
+            <img src={formExampleImages.gender} alt="Gender Form" className="h-8 w-8 object-contain" />
           </div>
           <div className="flex flex-1 items-center justify-between">
             <Label htmlFor="gender" className="text-sm">Gender Differences</Label>
@@ -113,8 +113,8 @@ export function FormFiltersSelector() {
         
         {/* Special Forms */}
         <div className="flex items-center space-x-3">
-          <div className="h-12 w-12 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden">
-            <img src={formExampleImages.forms} alt="Special Form" className="h-10 w-10 object-contain" />
+          <div className="h-10 w-10 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden">
+            <img src={formExampleImages.forms} alt="Special Form" className="h-8 w-8 object-contain" />
           </div>
           <div className="flex flex-1 items-center justify-between">
             <Label htmlFor="forms" className="text-sm">Special Forms</Label>
