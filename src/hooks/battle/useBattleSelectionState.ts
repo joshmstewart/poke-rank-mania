@@ -1,6 +1,5 @@
-
 import { useMemo } from "react";
-import { Pokemon } from "@/services/pokemon";
+import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
 import { useBattleTypeSelection } from "./useBattleTypeSelection";
 import { useBattleStateSelection } from "./useBattleStateSelection";
@@ -30,10 +29,19 @@ export const useBattleSelectionState = () => {
     getCurrentRankings
   } = useBattleResults();
 
-  const currentRankings = useMemo(() => {
-    return Array.isArray(battleResults) && battleResults.length > 0
-      ? getCurrentRankings()
-      : allPokemon || [];
+  // ⚠️ Ensure currentRankings always has full RankedPokemon structure
+  const currentRankings = useMemo<RankedPokemon[]>(() => {
+    if (Array.isArray(battleResults) && battleResults.length > 0) {
+      return getCurrentRankings();
+    }
+
+    // Fallback: convert raw Pokémon into dummy RankedPokemon
+    return (allPokemon || []).map(pokemon => ({
+      ...pokemon,
+      score: 0,
+      count: 0,
+      confidence: 0
+    }));
   }, [battleResults, allPokemon, getCurrentRankings]);
 
   const { battleStarter, startNewBattle } = useBattleStarterIntegration(
@@ -43,7 +51,6 @@ export const useBattleSelectionState = () => {
     setSelectedPokemon
   );
 
-  // Fixed TypeScript error: Now returns Pokemon[] to match the interface
   const startNewBattleAdapter = (pokemonList: Pokemon[], battleType: BattleType): Pokemon[] => {
     return startNewBattle(battleType);
   };
