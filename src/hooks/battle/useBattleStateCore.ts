@@ -162,7 +162,8 @@ useEffect(() => {
     console.log("🔄 Explicitly reloading suggestions after milestone");
     const loadedSuggestions = loadSavedSuggestions();
     console.log(`📥 Reloaded suggestions after milestone: ${loadedSuggestions.size}`);
-    
+
+    // resetMilestones(); // ✅ REMOVED: prevents accidental resets after milestones
     generateRankings(battleResults);
     setNeedsToReloadSuggestions(false);
   }
