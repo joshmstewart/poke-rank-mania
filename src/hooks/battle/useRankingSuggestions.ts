@@ -53,11 +53,35 @@ export const useRankingSuggestions = (
     localStorage.removeItem(STORAGE_KEY);
   }, [setPokemonList]);
 
-  return {
-    suggestRanking,
-    removeSuggestion,
-    clearAllSuggestions,
-    loadSavedSuggestions,
-    activeSuggestions: activeSuggestionsRef.current
-  };
+const markSuggestionUsed = useCallback((pokemon: RankedPokemon) => {
+  const suggestion = activeSuggestionsRef.current.get(pokemon.id);
+  if (suggestion) {
+    suggestion.used = true;
+    activeSuggestionsRef.current.set(pokemon.id, suggestion);
+    setPokemonList(curr => curr.map(p => 
+      p.id === pokemon.id ? { ...p, suggestedAdjustment: { ...suggestion } } : p
+    ));
+    saveSuggestions();
+    toast({
+      title: `Refined match for ${pokemon.name}`,
+      description: `${suggestion.direction === "up" ? "↑" : "↓"} Rating updated!`,
+      duration: 3000
+    });
+  }
+}, [setPokemonList, saveSuggestions]);
+
+const findNextSuggestion = useCallback(() => {
+  return pokemonList.find(p => p.suggestedAdjustment && !p.suggestedAdjustment.used);
+}, [pokemonList]);
+
+return {
+  suggestRanking,
+  removeSuggestion,
+  clearAllSuggestions,
+  loadSavedSuggestions,
+  markSuggestionUsed,     // ✅ added
+  findNextSuggestion,     // ✅ added
+  activeSuggestions: activeSuggestionsRef.current
+};
+
 };
