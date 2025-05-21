@@ -16,10 +16,10 @@ export type PokemonFormType =
 
 // Image URLs for different form types
 const formExampleImages = {
-  megaGmax: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10034.png", // Mega Charizard Y
   regional: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10091.png", // Alolan Muk
   gender: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/female/593.png", // Female Jellicent
   forms: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10120.png", // Hoopa Unbound
+  megaGmax: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10034.png", // Mega Charizard Y
   originPrimal: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10080.png", // Primal Kyogre
   // Updated to use original-cap Pikachu from official artwork
   costumes: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10094.png", // Pikachu with Original Cap
@@ -87,6 +87,51 @@ export function FormFiltersSelector() {
       <Separator />
       
       <div className="space-y-4">
+        {/* Regional Variants - MOVED TO TOP */}
+        <div className="flex items-center space-x-3">
+          <div className="h-10 w-10 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden">
+            <img src={formExampleImages.regional} alt="Regional Form" className="h-8 w-8 object-contain" />
+          </div>
+          <div className="flex flex-1 items-center justify-between">
+            <Label htmlFor="regional" className="text-sm">Regional Variants</Label>
+            <Switch 
+              id="regional" 
+              checked={filters.regional}
+              onCheckedChange={() => handleToggleFilter("regional")} 
+            />
+          </div>
+        </div>
+        
+        {/* Gender Differences - MOVED UP */}
+        <div className="flex items-center space-x-3">
+          <div className="h-10 w-10 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden">
+            <img src={formExampleImages.gender} alt="Gender Form" className="h-8 w-8 object-contain" />
+          </div>
+          <div className="flex flex-1 items-center justify-between">
+            <Label htmlFor="gender" className="text-sm">Gender Differences</Label>
+            <Switch 
+              id="gender" 
+              checked={filters.gender}
+              onCheckedChange={() => handleToggleFilter("gender")} 
+            />
+          </div>
+        </div>
+        
+        {/* Special Forms - MOVED UP */}
+        <div className="flex items-center space-x-3">
+          <div className="h-10 w-10 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden">
+            <img src={formExampleImages.forms} alt="Special Form" className="h-8 w-8 object-contain" />
+          </div>
+          <div className="flex flex-1 items-center justify-between">
+            <Label htmlFor="forms" className="text-sm">Special Forms</Label>
+            <Switch 
+              id="forms" 
+              checked={filters.forms}
+              onCheckedChange={() => handleToggleFilter("forms")} 
+            />
+          </div>
+        </div>
+        
         {/* Mega Evolutions and Gigantamax Forms */}
         <div className="flex items-center space-x-3">
           <div className="h-10 w-10 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden">
@@ -98,21 +143,6 @@ export function FormFiltersSelector() {
               id="megaGmax" 
               checked={filters.megaGmax}
               onCheckedChange={() => handleToggleFilter("megaGmax")} 
-            />
-          </div>
-        </div>
-        
-        {/* Regional Variants */}
-        <div className="flex items-center space-x-3">
-          <div className="h-10 w-10 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden">
-            <img src={formExampleImages.regional} alt="Regional Form" className="h-8 w-8 object-contain" />
-          </div>
-          <div className="flex flex-1 items-center justify-between">
-            <Label htmlFor="regional" className="text-sm">Regional Variants</Label>
-            <Switch 
-              id="regional" 
-              checked={filters.regional}
-              onCheckedChange={() => handleToggleFilter("regional")} 
             />
           </div>
         </div>
@@ -143,36 +173,6 @@ export function FormFiltersSelector() {
               id="costumes" 
               checked={filters.costumes}
               onCheckedChange={() => handleToggleFilter("costumes")} 
-            />
-          </div>
-        </div>
-        
-        {/* Gender Differences */}
-        <div className="flex items-center space-x-3">
-          <div className="h-10 w-10 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden">
-            <img src={formExampleImages.gender} alt="Gender Form" className="h-8 w-8 object-contain" />
-          </div>
-          <div className="flex flex-1 items-center justify-between">
-            <Label htmlFor="gender" className="text-sm">Gender Differences</Label>
-            <Switch 
-              id="gender" 
-              checked={filters.gender}
-              onCheckedChange={() => handleToggleFilter("gender")} 
-            />
-          </div>
-        </div>
-        
-        {/* Special Forms */}
-        <div className="flex items-center space-x-3">
-          <div className="h-10 w-10 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden">
-            <img src={formExampleImages.forms} alt="Special Form" className="h-8 w-8 object-contain" />
-          </div>
-          <div className="flex flex-1 items-center justify-between">
-            <Label htmlFor="forms" className="text-sm">Special Forms</Label>
-            <Switch 
-              id="forms" 
-              checked={filters.forms}
-              onCheckedChange={() => handleToggleFilter("forms")} 
             />
           </div>
         </div>

@@ -7,7 +7,7 @@ export const getPokemonGeneration = (pokemonId: number) => {
   );
 };
 
-// Enhanced function to detect Pokémon form categories
+// Enhanced function to detect Pokémon form categories with standardized gender naming
 export const detectPokemonFormType = (pokemonName: string): string | null => {
   const name = pokemonName.toLowerCase();
   
@@ -19,7 +19,8 @@ export const detectPokemonFormType = (pokemonName: string): string | null => {
       name.includes("belle") || 
       name.includes("libre") || 
       name.includes("pop-star") || 
-      name.includes("rock-star"))) {
+      name.includes("rock-star") ||
+      name.includes("partner"))) {
     return "Costume Pokémon";
   }
   
@@ -54,13 +55,13 @@ export const detectPokemonFormType = (pokemonName: string): string | null => {
     return "Paldean Form";
   }
   
-  // Check for gender differences
+  // Check for gender differences with standardized naming
   if (name.includes("female") || name.includes("-f")) {
-    return "Female Form";
+    return "Female Form (Female)";
   }
   
   if (name.includes("male") || name.includes("-m")) {
-    return "Male Form";
+    return "Male Form (Male)";
   }
   
   // Check for other special forms

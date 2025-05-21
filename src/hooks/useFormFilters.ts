@@ -72,6 +72,7 @@ export const useFormFilters = () => {
     const name = pokemon.name.toLowerCase();
     
     // Check for costumes (Pikachu caps and cosplay forms) - check this FIRST
+    // Expanded pattern to catch all costume Pikachu variants
     if (name.includes("pikachu") && (
         name.includes("cap") || 
         name.includes("phd") || 
@@ -79,7 +80,8 @@ export const useFormFilters = () => {
         name.includes("belle") || 
         name.includes("libre") || 
         name.includes("pop-star") || 
-        name.includes("rock-star"))) {
+        name.includes("rock-star") ||
+        name.includes("partner"))) {
       return "costumes";
     }
     
@@ -101,7 +103,8 @@ export const useFormFilters = () => {
       return "regional";
     }
     
-    // Check for gender differences (expanded to catch more naming patterns)
+    // Check for gender differences (updated to standardize naming)
+    // Looking for female or male indicators in the name
     if (name.includes("female") || 
         name.includes("male") || 
         name.includes("-f") || 
