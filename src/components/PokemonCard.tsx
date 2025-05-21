@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Pokemon } from "@/services/pokemon";
@@ -22,8 +21,7 @@ const typeColors: Record<string, string> = {
   Steel: "bg-slate-400", Fairy: "bg-pink-300",
 };
 
-const PokemonCard = ({ pokemon, isDragging, viewMode = "list", compact }: PokemonCardProps) => {
-  const [preferredImageType, setPreferredImageType] = useState(getPreferredImageType());
+const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
@@ -32,33 +30,27 @@ const PokemonCard = ({ pokemon, isDragging, viewMode = "list", compact }: Pokemo
   const normalizedId = normalizePokedexNumber(pokemon.id);
   const formattedName = formatPokemonName(pokemon.name);
 
-  useEffect(() => {
-    const updateImage = () => {
-      setImageLoaded(false);
-      setImageError(false);
-      setRetryCount(0);
-      const url = getPreferredImageUrl(pokemon.id);
-      setCurrentImageUrl(url);
-      new Image().src = url;
-    };
-    updateImage();
-  }, [pokemon.id, preferredImageType]);
+  const updateImage = useCallback(() => {
+    setImageLoaded(false);
+    setImageError(false);
+    setRetryCount(0);
+    const url = getPreferredImageUrl(pokemon.id);
+    setCurrentImageUrl(url);
+    new Image().src = url;
+  }, [pokemon.id]);
 
   useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "pokemon-image-preference") {
-        setPreferredImageType(getPreferredImageType());
-      }
-    };
-    window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
-  }, []);
+    updateImage();
+    const handlePreferenceChange = () => updateImage();
+    window.addEventListener("imagePreferenceChanged", handlePreferenceChange);
+    return () => window.removeEventListener("imagePreferenceChanged", handlePreferenceChange);
+  }, [updateImage]);
 
   const handleImageLoad = () => setImageLoaded(true);
   const handleImageError = () => {
     if (retryCount < 3) {
-      setRetryCount(c => c + 1);
       const nextUrl = getPreferredImageUrl(pokemon.id, retryCount + 1);
+      setRetryCount(c => c + 1);
       setCurrentImageUrl(nextUrl);
     } else {
       setImageError(true);
@@ -69,7 +61,7 @@ const PokemonCard = ({ pokemon, isDragging, viewMode = "list", compact }: Pokemo
     <Card className={`w-full overflow-hidden ${isDragging ? "opacity-50" : ""}`}>
       <div className="flex items-start p-3 gap-3">
         <div className={`${compact ? "w-16 h-16" : "w-20 h-20"} bg-gray-50 rounded-md relative`}>
-          <AspectRatio ratio={1 / 1}>
+          <AspectRatio ratio={1}>
             {!imageLoaded && !imageError && <div className="animate-pulse bg-gray-200 absolute inset-0"></div>}
             <img
               src={currentImageUrl}

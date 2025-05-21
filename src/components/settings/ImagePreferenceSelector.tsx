@@ -110,14 +110,15 @@ const ImagePreferenceSelector: React.FC<ImagePreferenceSelectorProps> = ({ onClo
     setImageErrors(prev => ({ ...prev, [id]: true }));
   };
 
-  const handleSave = () => {
-    console.log(`🖼️ Saving image preference: ${selectedImageType}`);
-    localStorage.setItem("pokemon-image-preference", selectedImageType);
-    toast.success("Image preference saved!", {
-      description: "Your preferred Pokémon image style has been saved."
-    });
-    if (onClose) onClose();
-  };
+const handleSave = () => {
+  localStorage.setItem("pokemon-image-preference", selectedImageType);
+  toast.success("Image preference saved!", {
+    description: "Your preferred Pokémon image style has been saved."
+  });
+  window.dispatchEvent(new Event("imagePreferenceChanged"));
+  if (onClose) onClose();
+};
+
 
   const selectOption = (optionId: PokemonImageType) => {
     setSelectedImageType(optionId);
