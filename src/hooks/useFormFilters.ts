@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { PokemonFormType } from "@/components/settings/FormFiltersSelector";
 import { Pokemon } from "@/services/pokemon";
@@ -91,8 +90,8 @@ export const useFormFilters = () => {
       return "originPrimal";
     }
     
-    // Check for mega evolutions and gigantamax forms (combined)
-    if (name.includes("mega") || name.includes("gmax")) {
+    // Check for mega evolutions, gigantamax forms and eternamax forms (combined)
+    if (name.includes("mega") || name.includes("gmax") || name.includes("eternamax")) {
       return "megaGmax";
     }
     
@@ -123,7 +122,6 @@ export const useFormFilters = () => {
         name.includes("forme") ||
         name.includes("unbound") ||
         name.includes("gorging") ||
-        name.includes("eternamax") ||
         name.includes("-theme")) {
       return "forms";
     }

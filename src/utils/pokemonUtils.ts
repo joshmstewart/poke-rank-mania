@@ -28,7 +28,7 @@ export const capitalizeSpecialForms = (name: string): string => {
     "mega", "gmax", "alolan", "galarian", "hisuian", "paldean", 
     "x", "y", "primal", "origin", "ash", "black", "white", 
     "therian", "sky", "heat", "wash", "frost", "fan", "mow",
-    "attack", "defense", "speed"
+    "attack", "defense", "speed", "eternamax"
   ];
   
   // Split the name by spaces

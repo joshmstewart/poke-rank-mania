@@ -63,9 +63,9 @@ export const PokemonSuggestionCard: React.FC<PokemonSuggestionCardProps> = ({
   };
   
   return (
-    <HoverCard openDelay={100} closeDelay={200}>
+    <HoverCard openDelay={0} closeDelay={200}>
       <HoverCardTrigger asChild>
-        <div className="relative">
+        <div className="relative cursor-pointer">
           {children}
           {pokemon.suggestedAdjustment && !pokemon.suggestedAdjustment.used && (
             <div 
