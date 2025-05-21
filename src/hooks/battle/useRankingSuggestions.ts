@@ -151,6 +151,7 @@ export const useRankingSuggestions = (
     try {
       const suggestionsObject = Object.fromEntries(suggestions);
       localStorage.setItem('pokemon-active-suggestions', JSON.stringify(suggestionsObject));
+      console.log(`Saved ${suggestions.size} suggestions to localStorage`);
     } catch (e) {
       console.error("Error saving suggestions to localStorage:", e);
     }
@@ -184,6 +185,7 @@ export const useRankingSuggestions = (
   
   // Load saved suggestions when the hook is initialized
   useEffect(() => {
+    console.log("Loading saved ranking suggestions from localStorage");
     loadSavedSuggestions();
   }, [loadSavedSuggestions]);
 

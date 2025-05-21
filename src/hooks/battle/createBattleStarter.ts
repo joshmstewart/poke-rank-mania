@@ -21,6 +21,9 @@ export const createBattleStarter = (
   // Track lower tier losses for temporary tier skipping logic
   const lowerTierLossCounter: Record<string, number> = {};
   
+  // Track when we last used a suggestion (to prevent multiple battles in a row)
+  const lastUsedSuggestion = { timestamp: 0 };
+
   // Function to get a random Pokemon from a group
   const getRandomFromGroup = (group: Pokemon[]): Pokemon | null => {
     if (!group || group.length === 0) return null;
@@ -89,10 +92,16 @@ export const createBattleStarter = (
     // Determine how many Pokemon are needed
     const pokemonNeeded = battleType === "triplets" ? 3 : 2;
     
-    // First, check for any active ranking suggestions
-    // Increase probability of finding a suggestion
-    const forceSuggestionMatch = Math.random() < 0.85; // 85% chance to prioritize suggestions
-    if (forceSuggestionMatch) {
+    // SIGNIFICANTLY INCREASED chance to prioritize suggestions (from 85% to 95%)
+    // This ensures suggested Pokémon will almost always be selected
+    const forceSuggestionMatch = Math.random() < 0.95; // 95% chance to prioritize suggestions
+    
+    // Only attempt suggestion match if we haven't just used a suggestion recently
+    // (within last 2 battles) - this prevents overusing the same suggestion
+    const canUseSuggestion = forceSuggestionMatch && 
+      (Date.now() - lastUsedSuggestion.timestamp > 2000);
+    
+    if (canUseSuggestion) {
       const suggestedPokemon = findActiveSuggestion();
       
       if (suggestedPokemon) {
@@ -115,6 +124,8 @@ export const createBattleStarter = (
                   `createBattleStarter: Setting suggestion battle with ${suggestedPokemon.name}, ${opponent.name}, ${randomPokemon.name}`
                 );
                 setCurrentBattle([suggestedPokemon, opponent, randomPokemon]);
+                // Mark the time we used a suggestion
+                lastUsedSuggestion.timestamp = Date.now();
                 return;
               }
             } else {
@@ -123,6 +134,8 @@ export const createBattleStarter = (
                 `createBattleStarter: Setting suggestion battle with ${suggestedPokemon.name}, ${opponent.name}`
               );
               setCurrentBattle([suggestedPokemon, opponent]);
+              // Mark the time we used a suggestion
+              lastUsedSuggestion.timestamp = Date.now();
               return;
             }
           }

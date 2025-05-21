@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { SingleBattle } from "./types";
@@ -144,7 +145,7 @@ export const useRankings = (allPokemon: Pokemon[]) => {
     console.log("[useRankings] Rankings saved.", finalRankings);
     // Save frozen state as well
     localStorage.setItem("pokemon-frozen-pokemon", JSON.stringify(frozenPokemon));
-    // We no longer clear suggestions when saving rankings
+    // We do NOT clear suggestions when saving rankings
     // This allows the suggestions to persist between milestones
   };
 

@@ -102,7 +102,7 @@ export const useBattleStateCore = (
     markSuggestionUsed
   );
 
-  // Remove the effect that clears suggestions when entering/leaving battle screen
+  // REMOVED: Comment out the effect that clears suggestions
   // We'll keep this commented for reference
   /*
   useEffect(() => {

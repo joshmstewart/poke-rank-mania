@@ -81,6 +81,7 @@ export const useBattleProcessor = (
           currentBattlePokemon.forEach(pokemon => {
             if ((pokemon as RankedPokemon).suggestedAdjustment && 
                 !(pokemon as RankedPokemon).suggestedAdjustment?.used) {
+              console.log(`Marking suggestion used for ${pokemon.name}`);
               markSuggestionUsed(pokemon as RankedPokemon);
             }
           });
@@ -99,7 +100,7 @@ export const useBattleProcessor = (
           processedMilestonesRef.current.add(updatedCount);
           console.log(`🎉 Milestone reached: ${updatedCount} battles`);
           
-          // Save the rankings
+          // Save the rankings - DO NOT CLEAR SUGGESTIONS HERE
           saveRankings(
             Array.from(new Map(cumulativeResults.map(result => [result.winner.id, result.winner])).values()),
             currentSelectedGeneration,
@@ -109,7 +110,7 @@ export const useBattleProcessor = (
           // Generate rankings for the milestone
           generateRankings(cumulativeResults);
           
-          // Show milestone view
+          // Show milestone view - make sure we don't clear suggestions when showing milestone
           setShowingMilestone(true);
           
           // Return early as we're showing milestone view
