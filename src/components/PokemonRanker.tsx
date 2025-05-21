@@ -47,6 +47,17 @@ const PokemonRanker = () => {
     clearAllSuggestions
   } = useRankingSuggestions(typedRankedPokemon, setRankedPokemon as any);
 
+  // Add an effect to clear suggestions when toggling between views
+  React.useEffect(() => {
+    // Clear suggestions when component mounts
+    clearAllSuggestions();
+    
+    // Return a cleanup function to clear suggestions when unmounting
+    return () => {
+      clearAllSuggestions();
+    };
+  }, [clearAllSuggestions]);
+
   return (
     <div className="container max-w-7xl mx-auto py-6">
       <div className="flex flex-col space-y-4">

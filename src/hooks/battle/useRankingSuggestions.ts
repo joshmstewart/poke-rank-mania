@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from "react";
 import { RankedPokemon, RankingSuggestion } from "@/services/pokemon";
 import { toast } from "@/hooks/use-toast";
@@ -52,6 +53,11 @@ export const useRankingSuggestions = (
   const removeSuggestion = useCallback((pokemonId: number) => {
     setActiveSuggestions(prev => {
       const newMap = new Map(prev);
+      
+      // Find the pokemon name before removing for logging
+      const pokemon = pokemonList.find(p => p.id === pokemonId);
+      const pokemonName = pokemon?.name || `Pokemon #${pokemonId}`;
+      
       newMap.delete(pokemonId);
       
       // Update the pokemon list to remove the suggestion
@@ -63,9 +69,11 @@ export const useRankingSuggestions = (
         )
       );
       
+      console.log(`Removing suggestion for '${pokemonName}'`);
+      
       return newMap;
     });
-  }, [setPokemonList]);
+  }, [pokemonList, setPokemonList]);
 
   // Mark a suggestion as used
   const markSuggestionUsed = useCallback((pokemon: RankedPokemon) => {
