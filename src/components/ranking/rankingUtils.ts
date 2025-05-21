@@ -24,8 +24,9 @@ export const detectPokemonFormType = (pokemonName: string): string | null => {
     return "Costume Pokémon";
   }
   
-  // Check for Origin and Primal forms
-  if (name.includes("origin") || name.includes("primal")) {
+  // Check for Origin and Primal forms - make it more strict to avoid false matches
+  if ((name.includes("origin") && !name.includes("pikachu")) || 
+      (name.includes("primal") && !name.includes("pikachu"))) {
     return "Origin & Primal Forms";
   }
   

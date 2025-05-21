@@ -85,8 +85,9 @@ export const useFormFilters = () => {
       return "costumes";
     }
     
-    // Check for Origin and Primal forms (AFTER costumes)
-    if (name.includes("origin") || name.includes("primal")) {
+    // Check for Origin and Primal forms (AFTER costumes) - make more strict
+    if ((name.includes("origin") && !name.includes("pikachu")) || 
+        (name.includes("primal") && !name.includes("pikachu"))) {
       return "originPrimal";
     }
     
