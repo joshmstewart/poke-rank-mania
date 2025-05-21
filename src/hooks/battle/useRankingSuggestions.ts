@@ -10,11 +10,13 @@ export const useRankingSuggestions = (
 ) => {
   const activeSuggestionsRef = useRef<Map<number, RankingSuggestion>>(new Map());
 
-  const saveSuggestions = useCallback(() => {
-    const obj: Record<string, RankingSuggestion> = {};
-    activeSuggestionsRef.current.forEach((v, k) => (obj[k] = v));
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(obj));
-  }, []);
+const saveSuggestions = useCallback(() => {
+  const obj: Record<string, RankingSuggestion> = {};
+  activeSuggestionsRef.current.forEach((v, k) => (obj[k] = v));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(obj));
+  console.log(`💾 saveSuggestions: Saved ${Object.keys(obj).length} suggestions to localStorage`, obj);
+}, []);
+
 
 const loadSavedSuggestions = useCallback(() => {
   const data = localStorage.getItem(STORAGE_KEY);
@@ -47,9 +49,10 @@ const suggestRanking = useCallback((pokemon: RankedPokemon, direction: "up" | "d
   const suggestion = { direction, strength, used: false };
   activeSuggestionsRef.current.set(pokemon.id, suggestion);
   setPokemonList(curr => curr.map(p => p.id === pokemon.id ? { ...p, suggestedAdjustment: suggestion } : p));
+  console.log(`💾 suggestRanking: Suggestion CREATED for Pokémon ${pokemon.name} (${pokemon.id})`, suggestion);
   saveSuggestions();
-  console.log(`💾 Saved suggestion for ${pokemon.name}:`, suggestion);
 }, [saveSuggestions, setPokemonList]);
+
 
 
 const removeSuggestion = useCallback((pokemonId: number) => {
