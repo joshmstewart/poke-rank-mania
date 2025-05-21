@@ -19,6 +19,10 @@ export function createBattleStarter(
   let consecutiveNonSuggestionBattles = 0;
   // Track the last time we used each suggestion to avoid repeating the same one
   const lastUsedSuggestion = new Map<number, number>();
+  // Count battles to use as a reference for when suggestions were last used
+  let battleCounter = 0;
+  // Keep track of pairs that have fought before to avoid repetitive matchups
+  const previousMatchups = new Set<string>();
   
   // Initialize suggestion tracking
   if (suggestedPokemon.length > 0) {
@@ -41,18 +45,21 @@ export function createBattleStarter(
     if (suggestedIds.length === 0) return null;
     
     // Sort suggestions to prioritize those we haven't used recently
-    const battleCounter = consecutiveNonSuggestionBattles + 1; // Current battle number
+    battleCounter++;
     const sortedIds = suggestedIds.sort((a, b) => {
       const lastUsedA = lastUsedSuggestion.get(a) || 0;
       const lastUsedB = lastUsedSuggestion.get(b) || 0;
       return lastUsedA - lastUsedB; // Prioritize suggestions we haven't used in a while
     });
     
-    // Try to find a suggestion we haven't used too recently
+    // Try to find a suggestion we haven't used recently
     let selectedId = null;
     for (const id of sortedIds) {
-      // Check if we've used this suggestion recently and if it's not in the recently used set
-      if (!recentlyUsed.has(id)) {
+      // Check if we've used this suggestion recently
+      const lastUsed = lastUsedSuggestion.get(id) || 0;
+      const notUsedRecently = (battleCounter - lastUsed) > 3;
+      
+      if (notUsedRecently || !lastUsedSuggestion.has(id)) {
         selectedId = id;
         break;
       }
@@ -60,7 +67,14 @@ export function createBattleStarter(
     
     // If all have been used recently, just pick one randomly
     if (selectedId === null && sortedIds.length > 0) {
-      selectedId = sortedIds[Math.floor(Math.random() * sortedIds.length)];
+      // Use weighted random selection - prefer ones used less recently
+      const weights = sortedIds.map(id => {
+        const lastUsed = lastUsedSuggestion.get(id) || 0;
+        return Math.max(1, battleCounter - lastUsed); // Higher weight for less recently used
+      });
+      
+      // Weighted random selection
+      selectedId = weightedRandomChoice(sortedIds, weights);
     }
     
     if (selectedId !== null) {
@@ -92,13 +106,58 @@ export function createBattleStarter(
               targetRank = suggestion.direction === "up" ? targetRank - 1 : targetRank + 1;
             }
             
-            if (targetRank >= 0 && targetRank < rankedPokemon.length) {
-              const opponentData = rankedPokemon[targetRank];
+            // Find an opponent that hasn't been in a matchup with this Pokemon recently
+            let foundUnusedOpponent = false;
+            const potentialOpponents: {pokemon: Pokemon, rank: number}[] = [];
+            
+            // Look at Pokemon around the target rank
+            const rangeStart = Math.max(0, targetRank - 5);
+            const rangeEnd = Math.min(rankedPokemon.length - 1, targetRank + 5);
+            
+            for (let i = rangeStart; i <= rangeEnd; i++) {
+              if (i === currentRank) continue; // Skip the suggested Pokemon itself
+              
+              const opponentData = rankedPokemon[i];
               const opponent = allPokemon.find(p => p.id === opponentData.id);
               
-              if (opponent && opponent.id !== suggestedPokemon.id) {
-                result.push(opponent);
-                console.log(`🎮 Selected opponent ${opponent.name} (rank #${targetRank+1}) for suggested Pokemon ${suggestedPokemon.name} (rank #${currentRank+1}, direction: ${suggestion.direction})`);
+              if (opponent) {
+                const matchupKey = [suggestedPokemon.id, opponent.id].sort().join('-');
+                const isRecentMatchup = previousMatchups.has(matchupKey);
+                
+                if (!isRecentMatchup) {
+                  potentialOpponents.push({pokemon: opponent, rank: i});
+                  foundUnusedOpponent = true;
+                  break;
+                } else {
+                  // Still add it, but we'll prefer unused matchups
+                  potentialOpponents.push({pokemon: opponent, rank: i});
+                }
+              }
+            }
+            
+            // Select an opponent (prefer unused matchups)
+            if (potentialOpponents.length > 0) {
+              const selectedOpponent = foundUnusedOpponent 
+                ? potentialOpponents.find(o => {
+                    const matchupKey = [suggestedPokemon.id, o.pokemon.id].sort().join('-');
+                    return !previousMatchups.has(matchupKey);
+                  }) 
+                : potentialOpponents[0];
+              
+              if (selectedOpponent) {
+                result.push(selectedOpponent.pokemon);
+                console.log(`🎮 Selected opponent ${selectedOpponent.pokemon.name} (rank #${selectedOpponent.rank+1}) for suggested Pokemon ${suggestedPokemon.name} (rank #${currentRank+1}, direction: ${suggestion.direction})`);
+                
+                // Record this matchup
+                const matchupKey = [suggestedPokemon.id, selectedOpponent.pokemon.id].sort().join('-');
+                previousMatchups.add(matchupKey);
+                
+                // Limit the size of previous matchups set
+                if (previousMatchups.size > 50) {
+                  const matchupArray = Array.from(previousMatchups);
+                  const toRemove = matchupArray.slice(0, 20);
+                  toRemove.forEach(m => previousMatchups.delete(m));
+                }
               }
             }
           }
@@ -110,13 +169,25 @@ export function createBattleStarter(
     while (result.length < battleSize) {
       // Fill remaining spots with appropriate Pokemon
       const eligiblePokemon = allPokemon.filter(p => 
-        !result.some(selected => selected.id === p.id)
+        !result.some(selected => selected.id === p.id) &&
+        !recentlyUsed.has(p.id)
       );
       
-      if (eligiblePokemon.length === 0) break;
-      
-      const randomPokemon = eligiblePokemon[Math.floor(Math.random() * eligiblePokemon.length)];
-      result.push(randomPokemon);
+      if (eligiblePokemon.length === 0) {
+        // If no eligible Pokemon without recent use, just use any that aren't in the current battle
+        const anyEligible = allPokemon.filter(p => 
+          !result.some(selected => selected.id === p.id)
+        );
+        
+        if (anyEligible.length === 0) break;
+        
+        const randomPokemon = anyEligible[Math.floor(Math.random() * anyEligible.length)];
+        result.push(randomPokemon);
+      } else {
+        // Randomly select from eligible Pokemon
+        const randomPokemon = eligiblePokemon[Math.floor(Math.random() * eligiblePokemon.length)];
+        result.push(randomPokemon);
+      }
     }
     
     // Record these Pokemon as recently used
@@ -151,9 +222,11 @@ export function createBattleStarter(
     
     // If forcing suggestion priority OR we have active suggestions with high priority (95%)
     // OR if we've gone too many battles without using suggestions
-    if (forceSuggestionPriority || 
-        (suggested.size > 0 && Math.random() < 0.9) || 
-        consecutiveNonSuggestionBattles >= 3) {
+    const suggestionProbability = forceSuggestionPriority ? 1.0 : 0.85;
+    
+    if ((forceSuggestionPriority) || 
+        (suggested.size > 0 && Math.random() < suggestionProbability) || 
+        (consecutiveNonSuggestionBattles >= 3 && suggested.size > 0)) {
       
       if (forceSuggestionPriority) {
         console.log("🚨 FORCING suggestion priority battle");
@@ -165,15 +238,43 @@ export function createBattleStarter(
       if (suggestedBattle) {
         selectedPokemon = suggestedBattle;
         consecutiveNonSuggestionBattles = 0;
+        
+        // Verify if the battle contains a suggestion
+        const hasSuggestion = suggestedBattle.some(p => {
+          return rankedPokemon.some(rp => 
+            rp.id === p.id && 
+            rp.suggestedAdjustment && 
+            !rp.suggestedAdjustment.used
+          );
+        });
+        
+        if (hasSuggestion) {
+          console.log("✅ Successfully created a battle with suggested Pokemon");
+        }
       } else {
         // If no suggestion battle could be created, create a random battle
         consecutiveNonSuggestionBattles++;
-        selectedPokemon = shuffleArray(availablePokemon).slice(0, battleSize);
+        console.log("⚠️ Could not create suggestion battle, using random selection");
+        selectedPokemon = shuffleArray(availablePokemon)
+          .filter(p => !recentlyUsed.has(p.id))
+          .slice(0, battleSize);
+        
+        // If we don't have enough Pokemon, use any available
+        if (selectedPokemon.length < battleSize) {
+          selectedPokemon = shuffleArray(availablePokemon).slice(0, battleSize);
+        }
       }
     } else {
       // Otherwise, create a random battle
       consecutiveNonSuggestionBattles++;
-      selectedPokemon = shuffleArray(availablePokemon).slice(0, battleSize);
+      
+      // Prefer Pokemon not used recently
+      const notRecentlyUsed = availablePokemon.filter(p => !recentlyUsed.has(p.id));
+      if (notRecentlyUsed.length >= battleSize) {
+        selectedPokemon = shuffleArray(notRecentlyUsed).slice(0, battleSize);
+      } else {
+        selectedPokemon = shuffleArray(availablePokemon).slice(0, battleSize);
+      }
     }
     
     // Add these Pokemon to the recently used set
@@ -199,6 +300,31 @@ export function createBattleStarter(
       [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
     }
     return shuffled;
+  }
+  
+  // Helper function for weighted random selection
+  function weightedRandomChoice<T>(items: T[], weights: number[]): T {
+    if (items.length !== weights.length || items.length === 0) {
+      throw new Error('Items and weights must be non-empty arrays of the same length');
+    }
+    
+    // Calculate sum of weights
+    const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+    
+    // Generate a random value between 0 and the sum of weights
+    const randomValue = Math.random() * totalWeight;
+    
+    // Find the item corresponding to the random value
+    let weightSum = 0;
+    for (let i = 0; i < items.length; i++) {
+      weightSum += weights[i];
+      if (randomValue <= weightSum) {
+        return items[i];
+      }
+    }
+    
+    // Fallback
+    return items[items.length - 1];
   }
 
   return { startNewBattle };

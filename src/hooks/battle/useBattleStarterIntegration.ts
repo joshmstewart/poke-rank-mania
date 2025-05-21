@@ -1,4 +1,3 @@
-
 import { useMemo, useEffect, useRef, useState, useCallback } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
@@ -16,10 +15,14 @@ export const useBattleStarterIntegration = (
   const processedSuggestionBattlesRef = useRef<Set<number>>(new Set());
   // Track how many suggestion battles we've processed after each milestone
   const suggestionBattleCountRef = useRef(0);
+  // Track when was the last time we reset suggestion priority
+  const lastPriorityResetTimestampRef = useRef(Date.now());
   // Enhanced tracking of suggestion prioritization
   const suggestionPriorityEnabledRef = useRef(true);
   // Track the total number of suggestions available
   const totalSuggestionsRef = useRef(0);
+  // Force high priority for a specific number of battles after milestone
+  const forcedPriorityBattlesRef = useRef(0);
   
   // This effect runs when the component mounts and sets up event listeners
   useEffect(() => {
@@ -29,6 +32,7 @@ export const useBattleStarterIntegration = (
       suggestionBattleCountRef.current = 0;
       suggestionPriorityEnabledRef.current = true;
       processedSuggestionBattlesRef.current.clear();
+      lastPriorityResetTimestampRef.current = Date.now();
       
       // Count total available suggestions
       const suggestedPokemon = currentRankings.filter(
@@ -36,12 +40,16 @@ export const useBattleStarterIntegration = (
       );
       totalSuggestionsRef.current = suggestedPokemon.length;
       
+      // Force high priority for next 5-10 battles to ensure suggestions are used
+      forcedPriorityBattlesRef.current = Math.min(15, Math.max(5, suggestedPokemon.length * 2));
+      
       if (totalSuggestionsRef.current > 0) {
         toast({
           title: "Prioritizing suggestions",
-          description: `Focusing on ${totalSuggestionsRef.current} suggestion(s) for upcoming battles`,
+          description: `Focusing on ${totalSuggestionsRef.current} suggestion(s) for next ${forcedPriorityBattlesRef.current} battles`,
           duration: 4000
         });
+        console.log(`⚡ Forcing suggestion priority for next ${forcedPriorityBattlesRef.current} battles`);
       }
     };
 
@@ -74,6 +82,9 @@ export const useBattleStarterIntegration = (
         suggestionBattleCountRef.current = 0;
         suggestionPriorityEnabledRef.current = true;
         totalSuggestionsRef.current = pokemonWithSuggestions.length;
+        
+        // Force high priority for these new suggestions
+        forcedPriorityBattlesRef.current = Math.min(10, Math.max(5, newSuggestionsCount * 2));
       }
     }
   }, [currentRankings]);
@@ -110,17 +121,28 @@ export const useBattleStarterIntegration = (
     // Log our suggestion priority status
     console.log(`🔄 Suggestion priority enabled: ${suggestionPriorityEnabledRef.current ? "YES ✅" : "NO ❌"}`);
     console.log(`🔢 Suggestion battles since milestone: ${suggestionBattleCountRef.current}`);
+    console.log(`⚡ Forced priority battles remaining: ${forcedPriorityBattlesRef.current}`);
     
     // Calculate how many priority battles we should do based on suggestion count
     // Use a minimum of 10 battles or 2x the number of suggestions, whichever is greater
     const requiredPriorityBattles = Math.max(10, suggestedPokemon.length * 3);
     
-    // If we have suggestions that haven't been fully processed yet AND priority is enabled
-    if (suggestedPokemon.length > 0 && 
-        suggestionPriorityEnabledRef.current && 
-        suggestionBattleCountRef.current < requiredPriorityBattles) {
+    // Check if we need to force a suggestion priority battle
+    const shouldForcePriority = forcedPriorityBattlesRef.current > 0;
+    
+    // If we should force a priority battle OR we have suggestions and priority is enabled
+    if (shouldForcePriority || 
+        (suggestedPokemon.length > 0 && 
+         suggestionPriorityEnabledRef.current && 
+         suggestionBattleCountRef.current < requiredPriorityBattles)) {
         
       console.log(`🔄 Prioritizing suggestion battles (${suggestionBattleCountRef.current + 1}/${requiredPriorityBattles})`);
+      
+      // Decrease the forced priority counter if applicable
+      if (forcedPriorityBattlesRef.current > 0) {
+        forcedPriorityBattlesRef.current--;
+        console.log(`⚡ Forced priority battles remaining: ${forcedPriorityBattlesRef.current}`);
+      }
       
       // Force a high probability of suggestion battle by calling original function with a flag
       const battle = battleStarter.startNewBattle(battleType, true);
@@ -147,9 +169,9 @@ export const useBattleStarterIntegration = (
       }
       
       // If we've processed enough battles, disable priority for a while
-      if (suggestionBattleCountRef.current >= requiredPriorityBattles) {
-        console.log("🔄 Suggestion priority battles completed for this session");
-        // We'll re-enable on next milestone or explicit prioritization event
+      if (!shouldForcePriority && suggestionBattleCountRef.current >= requiredPriorityBattles) {
+        console.log("🔄 Regular suggestion priority battles completed for this session");
+        // But keep the forced priority if it's still active
       }
       
       return battle;
@@ -157,6 +179,7 @@ export const useBattleStarterIntegration = (
     
     // If we've processed all the suggestion-priority battles or have no suggestions,
     // proceed with normal battle selection
+    console.log("🎮 Using standard battle selection (no suggestion priority)");
     return battleStarter.startNewBattle(battleType, false);
   }, [battleStarter, currentRankings]);
 
@@ -173,6 +196,10 @@ export const useBattleStarterIntegration = (
       suggestionBattleCountRef.current = 0;
       suggestionPriorityEnabledRef.current = true;
       processedSuggestionBattlesRef.current.clear();
+      lastPriorityResetTimestampRef.current = Date.now();
+      // Force high priority for next several battles
+      forcedPriorityBattlesRef.current = 10;
+      console.log("⚡ Forcing suggestion priority for next 10 battles via reset");
     }
   };
 };
