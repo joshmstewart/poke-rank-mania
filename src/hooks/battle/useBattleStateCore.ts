@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useEffect } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { useBattleStarterIntegration } from "@/hooks/battle/useBattleStarterIntegration";
@@ -116,6 +117,21 @@ export const useBattleStateCore = (
     };
   }, [clearAllSuggestions]);
   */
+
+  // Add debug effect to monitor suggestions
+  useEffect(() => {
+    // Count suggestions in finalRankings
+    const suggestedCount = finalRankings.filter(p => p.suggestedAdjustment).length;
+    const unusedCount = finalRankings.filter(p => 
+      p.suggestedAdjustment && !p.suggestedAdjustment.used
+    ).length;
+    
+    if (suggestedCount > 0) {
+      console.log(
+        `🔍 useBattleStateCore: ${suggestedCount} suggestions active (${unusedCount} unused)`
+      );
+    }
+  }, [finalRankings]);
 
   const {
     handlePokemonSelect,

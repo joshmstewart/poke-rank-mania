@@ -24,6 +24,12 @@ export const createBattleStarter = (
   // Track when we last used a suggestion (to prevent multiple battles in a row)
   const lastUsedSuggestion = { timestamp: 0 };
 
+  // Track which suggestions have been used in this session to avoid overusing the same ones
+  const recentlyUsedSuggestions = new Set<number>();
+  
+  // Track consecutive battles without suggestion to force suggestion use
+  let battlesWithoutSuggestion = 0;
+
   // Function to get a random Pokemon from a group
   const getRandomFromGroup = (group: Pokemon[]): Pokemon | null => {
     if (!group || group.length === 0) return null;
@@ -32,13 +38,31 @@ export const createBattleStarter = (
 
   // Find the suggested pokemon to prioritize (if any)
   const findActiveSuggestion = (): RankedPokemon | undefined => {
-    // Higher priority to unused suggestions 
-    const unusedSuggestion = currentRankings.find(p => 
+    console.log("Looking for active suggestions in", currentRankings.length, "Pokémon");
+    
+    // Higher priority to unused suggestions that haven't been used recently 
+    const unusedSuggestions = currentRankings.filter(p => 
+      (p as RankedPokemon).suggestedAdjustment && 
+      !(p as RankedPokemon).suggestedAdjustment!.used &&
+      !recentlyUsedSuggestions.has(p.id)
+    ) as RankedPokemon[];
+    
+    console.log(`Found ${unusedSuggestions.length} unused suggestions that haven't been used recently`);
+    
+    if (unusedSuggestions.length > 0) {
+      // Randomly select from available unused suggestions
+      const selected = unusedSuggestions[Math.floor(Math.random() * unusedSuggestions.length)];
+      console.log(`Selected suggestion for ${selected.name}`);
+      return selected;
+    }
+    
+    // If we've exhausted fresh suggestions, try any unused ones even if used recently
+    const anyUnusedSuggestion = currentRankings.find(p => 
       (p as RankedPokemon).suggestedAdjustment && 
       !(p as RankedPokemon).suggestedAdjustment!.used
     ) as RankedPokemon | undefined;
     
-    if (unusedSuggestion) return unusedSuggestion;
+    if (anyUnusedSuggestion) return anyUnusedSuggestion;
     
     // If no unused suggestions, check for used ones too
     // so we can still use them for battle selection
@@ -56,22 +80,28 @@ export const createBattleStarter = (
     // Calculate offset based on strength (1-3)
     const offset = strength * 5;
     
+    console.log(`Selecting opponent for ${suggested.name} with direction=${direction}, strength=${strength}, offset=${offset}`);
+    
     // Create a pool based on direction
     let pool: Pokemon[] = [];
     
     if (direction === "up") {
       // For "up" suggestion, select from better ranked Pokemon
-      pool = currentRankings.slice(Math.max(0, suggestedIndex - offset), suggestedIndex);
+      const startIdx = Math.max(0, suggestedIndex - offset);
+      pool = currentRankings.slice(startIdx, suggestedIndex);
+      console.log(`For "up" suggestion, selecting from ranks ${startIdx} to ${suggestedIndex-1} (pool size: ${pool.length})`);
     } else {
       // For "down" suggestion, select from lower ranked Pokemon
-      pool = currentRankings.slice(
-        suggestedIndex + 1, 
-        Math.min(currentRankings.length, suggestedIndex + 1 + offset)
-      );
+      const endIdx = Math.min(currentRankings.length, suggestedIndex + 1 + offset);
+      pool = currentRankings.slice(suggestedIndex + 1, endIdx);
+      console.log(`For "down" suggestion, selecting from ranks ${suggestedIndex+1} to ${endIdx-1} (pool size: ${pool.length})`);
     }
     
     // If pool is empty, fallback to normal selection
-    if (pool.length === 0) return null;
+    if (pool.length === 0) {
+      console.log("No suitable opponents in pool, falling back to random selection");
+      return null;
+    }
     
     // Select opponent with lowest confidence or random if not available
     const opponent = pool.reduce((lowest, current) => {
@@ -92,19 +122,28 @@ export const createBattleStarter = (
     // Determine how many Pokemon are needed
     const pokemonNeeded = battleType === "triplets" ? 3 : 2;
     
-    // SIGNIFICANTLY INCREASED chance to prioritize suggestions (from 85% to 95%)
-    // This ensures suggested Pokémon will almost always be selected
-    const forceSuggestionMatch = Math.random() < 0.95; // 95% chance to prioritize suggestions
+    console.log(`Starting new ${battleType} battle (need ${pokemonNeeded} Pokémon)`);
     
-    // Only attempt suggestion match if we haven't just used a suggestion recently
-    // (within last 2 battles) - this prevents overusing the same suggestion
-    const canUseSuggestion = forceSuggestionMatch && 
-      (Date.now() - lastUsedSuggestion.timestamp > 2000);
+    // NEAR CERTAINTY to prioritize suggestions (increased to 99%)
+    // This ensures suggested Pokémon will almost always be selected if available
+    const forceSuggestionMatch = Math.random() < 0.99; 
+    
+    // Force suggestion after 3 battles without using one
+    const mustUseSuggestion = battlesWithoutSuggestion >= 3;
+    
+    if (mustUseSuggestion) {
+      console.log("⚠️ FORCING suggestion match after", battlesWithoutSuggestion, "battles without using one");
+    }
+    
+    // Check if we can use a suggestion
+    const canUseSuggestion = (forceSuggestionMatch || mustUseSuggestion) && 
+      (Date.now() - lastUsedSuggestion.timestamp > 1000);
     
     if (canUseSuggestion) {
       const suggestedPokemon = findActiveSuggestion();
       
       if (suggestedPokemon) {
+        console.log(`Found suggestion for ${suggestedPokemon.name}, trying to create battle`);
         const suggestedIndex = currentRankings.findIndex(p => p.id === suggestedPokemon.id);
         
         if (suggestedIndex !== -1) {
@@ -121,21 +160,35 @@ export const createBattleStarter = (
               
               if (randomPokemon) {
                 console.log(
-                  `createBattleStarter: Setting suggestion battle with ${suggestedPokemon.name}, ${opponent.name}, ${randomPokemon.name}`
+                  `✅ Setting suggestion battle with ${suggestedPokemon.name}, ${opponent.name}, ${randomPokemon.name}`
                 );
                 setCurrentBattle([suggestedPokemon, opponent, randomPokemon]);
-                // Mark the time we used a suggestion
+                
+                // Track that we used this suggestion
                 lastUsedSuggestion.timestamp = Date.now();
+                recentlyUsedSuggestions.add(suggestedPokemon.id);
+                battlesWithoutSuggestion = 0;
+                
+                // Clear recently used suggestions if the set gets too large
+                if (recentlyUsedSuggestions.size > 10) {
+                  const oldestSuggestion = Array.from(recentlyUsedSuggestions)[0];
+                  recentlyUsedSuggestions.delete(oldestSuggestion);
+                }
+                
                 return;
               }
             } else {
               // For pairs, just use the suggestion and opponent
               console.log(
-                `createBattleStarter: Setting suggestion battle with ${suggestedPokemon.name}, ${opponent.name}`
+                `✅ Setting suggestion battle with ${suggestedPokemon.name}, ${opponent.name}`
               );
               setCurrentBattle([suggestedPokemon, opponent]);
-              // Mark the time we used a suggestion
+              
+              // Track that we used this suggestion
               lastUsedSuggestion.timestamp = Date.now();
+              recentlyUsedSuggestions.add(suggestedPokemon.id);
+              battlesWithoutSuggestion = 0;
+              
               return;
             }
           }
@@ -144,13 +197,14 @@ export const createBattleStarter = (
     }
     
     // If no suggestion or we couldn't build a suggestion battle, fall back to normal logic
-    console.log("createBattleStarter: No active suggestions or suggestion match skipped, using normal battle selection");
+    console.log("No active suggestions or suggestion match skipped, using normal battle selection");
+    battlesWithoutSuggestion++; // Increment counter for battles without using suggestions
     
     // Ensure we have proper Pokemon lists to work with
     const safeAllPokemon = Array.isArray(allPokemon) ? allPokemon : [];
     
     if (safeAllPokemon.length < pokemonNeeded) {
-      console.error("createBattleStarter: Not enough Pokemon for a battle, only have", safeAllPokemon.length);
+      console.error("Not enough Pokemon for a battle, only have", safeAllPokemon.length);
       return [];
     }
 
@@ -158,7 +212,7 @@ export const createBattleStarter = (
     const ranked = Array.isArray(currentRankings) ? [...currentRankings] : [];
     const unranked = safeAllPokemon.filter(p => !ranked.some(r => r.id === p.id));
     
-    console.log(`createBattleStarter: Starting battle with ${ranked.length} ranked and ${unranked.length} unranked Pokémon`);
+    console.log(`Starting battle with ${ranked.length} ranked and ${unranked.length} unranked Pokémon`);
     
     // Simple fallback if we have no strategy
     let result: Pokemon[] = [];
@@ -166,7 +220,7 @@ export const createBattleStarter = (
     // In the worst case, just pick random Pokemon
     if (safeAllPokemon.length >= pokemonNeeded) {
       result = shuffleArray([...safeAllPokemon]).slice(0, pokemonNeeded);
-      console.log("createBattleStarter: Using fallback random selection with", result.map(p => p.name).join(", "));
+      console.log("Using fallback random selection with", result.map(p => p.name).join(", "));
     }
     
     // Get the final Pokemon for the battle
@@ -174,11 +228,11 @@ export const createBattleStarter = (
     
     // Set the current battle
     if (finalResult.length >= pokemonNeeded) {
-      console.log("createBattleStarter: Setting battle with", finalResult.map(p => p.name).join(", "));
+      console.log("Setting battle with", finalResult.map(p => p.name).join(", "));
       setCurrentBattle(finalResult);
       return finalResult;
     } else {
-      console.error("createBattleStarter: Failed to create a battle");
+      console.error("Failed to create a battle");
       return [];
     }
   };

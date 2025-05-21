@@ -100,7 +100,9 @@ export const useBattleProcessor = (
           processedMilestonesRef.current.add(updatedCount);
           console.log(`🎉 Milestone reached: ${updatedCount} battles`);
           
-          // Save the rankings - DO NOT CLEAR SUGGESTIONS HERE
+          // CRITICAL - Make sure we DO NOT clear suggestions when saving rankings at milestone
+          // This ensures suggestions persist between milestones
+          console.log("⚠️ Saving rankings at milestone WITHOUT clearing suggestions");
           saveRankings(
             Array.from(new Map(cumulativeResults.map(result => [result.winner.id, result.winner])).values()),
             currentSelectedGeneration,

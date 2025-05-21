@@ -17,6 +17,8 @@ export const useRankingSuggestions = (
     direction: "up" | "down",
     strength: 1 | 2 | 3
   ) => {
+    console.log(`📝 Creating suggestion: ${pokemon.name} should rank ${direction} (strength: ${strength})`);
+    
     setActiveSuggestions(prev => {
       const newMap = new Map(prev);
       
@@ -72,7 +74,7 @@ export const useRankingSuggestions = (
         )
       );
       
-      console.log(`Removing suggestion for '${pokemonName}'`);
+      console.log(`🧹 Removing suggestion for '${pokemonName}'`);
       
       // Update localStorage
       saveActiveSuggestions(newMap);
@@ -83,7 +85,12 @@ export const useRankingSuggestions = (
 
   // Mark a suggestion as used
   const markSuggestionUsed = useCallback((pokemon: RankedPokemon) => {
-    if (!pokemon.suggestedAdjustment) return;
+    if (!pokemon.suggestedAdjustment) {
+      console.log(`⚠️ Attempted to mark suggestion used for ${pokemon.name} but no suggestion exists`);
+      return;
+    }
+    
+    console.log(`✅ Marking suggestion used for ${pokemon.name}`);
     
     setActiveSuggestions(prev => {
       const newMap = new Map(prev);
@@ -102,7 +109,7 @@ export const useRankingSuggestions = (
           )
         );
         
-        console.log(`✅ Used suggestion for '${pokemon.name}' → marking as used`);
+        console.log(`✓ Used suggestion for '${pokemon.name}' successfully marked as used`);
         
         toast({
           title: `Refined match for ${pokemon.name}`,
@@ -120,14 +127,14 @@ export const useRankingSuggestions = (
 
   // Clear all suggestions
   const clearAllSuggestions = useCallback(() => {
+    console.log("♻️ Clearing ALL user ranking suggestions");
+    
     setActiveSuggestions(new Map());
     
     // Remove suggestions from all pokemon
     setPokemonList(currentList => 
       currentList.map(p => ({ ...p, suggestedAdjustment: undefined }))
     );
-    
-    console.log("♻️ All user ranking suggestions cleared");
     
     toast({
       title: "Suggestions cleared",
@@ -141,9 +148,17 @@ export const useRankingSuggestions = (
 
   // Find a pokemon with an active, unused suggestion
   const findNextSuggestion = useCallback(() => {
-    return pokemonList.find(p => 
+    const next = pokemonList.find(p => 
       p.suggestedAdjustment && !p.suggestedAdjustment.used
     );
+    
+    if (next) {
+      console.log(`🔍 Found unused suggestion for ${next.name}`);
+    } else {
+      console.log("🔍 No unused suggestions found");
+    }
+    
+    return next;
   }, [pokemonList]);
   
   // Helper function to save suggestions to localStorage
@@ -151,9 +166,9 @@ export const useRankingSuggestions = (
     try {
       const suggestionsObject = Object.fromEntries(suggestions);
       localStorage.setItem('pokemon-active-suggestions', JSON.stringify(suggestionsObject));
-      console.log(`Saved ${suggestions.size} suggestions to localStorage`);
+      console.log(`💾 Saved ${suggestions.size} suggestions to localStorage`);
     } catch (e) {
-      console.error("Error saving suggestions to localStorage:", e);
+      console.error("❌ Error saving suggestions to localStorage:", e);
     }
   };
   
@@ -166,28 +181,52 @@ export const useRankingSuggestions = (
         const suggestionMap = new Map(Object.entries(parsedSuggestions).map(
           ([id, suggestion]) => [Number(id), suggestion as RankingSuggestion]
         ));
+        
+        console.log(`📂 Loaded ${suggestionMap.size} saved suggestions from localStorage`);
+        
         setActiveSuggestions(suggestionMap);
         
         // Apply these suggestions to the pokemon list
-        setPokemonList(currentList => 
-          currentList.map(p => {
+        setPokemonList(currentList => {
+          console.log(`Applying ${suggestionMap.size} suggestions to ${currentList.length} Pokémon`);
+          
+          return currentList.map(p => {
             const suggestion = suggestionMap.get(p.id);
-            return suggestion ? { ...p, suggestedAdjustment: suggestion } : p;
-          })
-        );
-        
-        console.log(`Loaded ${suggestionMap.size} saved suggestions from localStorage`);
+            
+            if (suggestion) {
+              console.log(`Applied suggestion to ${p.name}: ${suggestion.direction} x${suggestion.strength}`);
+              return { ...p, suggestedAdjustment: suggestion };
+            }
+            
+            return p;
+          });
+        });
+      } else {
+        console.log("No saved suggestions found in localStorage");
       }
     } catch (e) {
-      console.error("Error loading suggestions from localStorage:", e);
+      console.error("❌ Error loading suggestions from localStorage:", e);
     }
   }, [setPokemonList]);
   
   // Load saved suggestions when the hook is initialized
   useEffect(() => {
-    console.log("Loading saved ranking suggestions from localStorage");
+    console.log("⚙️ useRankingSuggestions hook initialized - loading saved suggestions");
     loadSavedSuggestions();
   }, [loadSavedSuggestions]);
+  
+  // Debug effect to monitor suggestion counts
+  useEffect(() => {
+    const unusedCount = pokemonList.filter(p => 
+      p.suggestedAdjustment && !p.suggestedAdjustment.used
+    ).length;
+    
+    const usedCount = pokemonList.filter(p => 
+      p.suggestedAdjustment && p.suggestedAdjustment.used
+    ).length;
+    
+    console.log(`📊 Current suggestions: ${unusedCount} unused, ${usedCount} used (total: ${unusedCount + usedCount})`);
+  }, [pokemonList]);
 
   return {
     activeSuggestions, // Expose the map of suggestions
