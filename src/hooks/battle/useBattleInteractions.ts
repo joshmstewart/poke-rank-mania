@@ -101,6 +101,8 @@ export const useBattleInteractions = (
   return {
     handlePokemonSelect,
     handleGoBack: handleGoBackClick,
-    isProcessing
+    isProcessing,
+    selectedPokemon,
+    setSelectedPokemon
   };
 };

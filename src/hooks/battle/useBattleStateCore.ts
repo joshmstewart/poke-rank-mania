@@ -1,10 +1,10 @@
+
 import { useState, useCallback, useEffect } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { useBattleStarterIntegration } from "@/hooks/battle/useBattleStarterIntegration";
 import { useBattleProcessor } from "@/hooks/battle/useBattleProcessor";
 import { useProgressState } from "@/hooks/battle/useProgressState";
 import { useCompletionTracker } from "@/hooks/battle/useCompletionTracker";
-import { useBattleInteractions } from "@/hooks/battle/useBattleInteractions";
 import { BattleType } from "./types";
 import { useRankings } from "./useRankings";
 
@@ -20,6 +20,7 @@ export const useBattleStateCore = (
   const [selectedGeneration, setSelectedGeneration] = useState(initialSelectedGeneration);
   const initialBattleTypeStored = localStorage.getItem('pokemon-ranker-battle-type') as BattleType || initialBattleType;
   const [battleType, setBattleType] = useState<BattleType>(initialBattleTypeStored);
+  const [selectedPokemon, setSelectedPokemon] = useState<number[]>([]);
 
   const {
     showingMilestone,
@@ -59,11 +60,13 @@ export const useBattleStateCore = (
     allPokemon
   );
 
+  // Filter Pokemon by generation if a specific generation is selected
   const filteredPokemon = allPokemon.filter(pokemon => {
+    // We need to check if the pokemon has a generation property and use it
     if (selectedGeneration === 0) {
       return true;
     }
-    return pokemon.generation === selectedGeneration;
+    return pokemon.hasOwnProperty('generation') && (pokemon as any).generation === selectedGeneration;
   });
 
   const { battleStarter, startNewBattle } = useBattleStarterIntegration(
@@ -105,16 +108,16 @@ export const useBattleStateCore = (
     } else {
       startNewBattle(battleType);
     }
-  }, [battleHistory, setSelectedPokemon, startNewBattle]);
+  }, [battleHistory, startNewBattle]);
 
   const {
-    selectedPokemon,
-    setSelectedPokemon,
-    handlePokemonSelect
+    handlePokemonSelect,
+    handleGoBack: goBackHelper,
+    isProcessing
   } = useBattleInteractions(
     currentBattle,
     setCurrentBattle,
-    [],
+    selectedPokemon,
     setSelectedPokemon,
     battleResults,
     setBattleResults,
@@ -124,7 +127,7 @@ export const useBattleStateCore = (
     setBattleHistory,
     (battleType: BattleType, currentBattle: Pokemon[]) => {
       if (battleType === "triplets") {
-        processBattleResult([], currentBattle, battleType, selectedGeneration);
+        processBattleResult(selectedPokemon, currentBattle, battleType, selectedGeneration);
       }
     },
     handleGoBack,
@@ -160,7 +163,7 @@ export const useBattleStateCore = (
       handlePokemonSelect(id);
     },
     goBack: () => {
-      handleGoBack(setCurrentBattle, battleType);
+      goBackHelper();
     },
     isProcessingResult,
     startNewBattle,
