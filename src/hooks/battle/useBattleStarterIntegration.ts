@@ -209,13 +209,14 @@ const resetSuggestionPriorityExplicitly = () => {
 // Emergency reset should also reset the battle counter to 26
 // This ensures we skip the initial subset phase when doing a reset
 const performEmergencyResetWithCounter = () => {
-  // Only reset to 26 if it's less than that - don't go backwards
-  if (battleCount < 26) {
-    console.log(`🔄 Emergency reset: Setting battle count from ${battleCount} to 26 to bypass initial subset phase`);
-    setBattleCount(26);
+  // Reset explicitly to 11 to bypass the first milestone and activate suggestions immediately.
+  if (battleCount < 11) {
+    console.log(`🔄 Emergency reset: Setting battle count from ${battleCount} to 11 to activate suggestions immediately`);
+    setBattleCount(11);
   }
   performEmergencyReset();
 };
+
 
 return {
   battleStarter,

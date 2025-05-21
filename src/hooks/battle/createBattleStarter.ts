@@ -270,7 +270,7 @@ function selectSuggestedPokemonForced(battleType: BattleType): Pokemon[] | null 
       setBattleCount(currentBattleCount);
     }
     
-    console.log(`🔢 Battle #${currentBattleCount} starting (${currentBattleCount <= 25 ? 'initial subset phase' : 'main selection phase'})`);
+    console.log(`🔢 Battle #${currentBattleCount} starting (${currentBattleCount <= 10 ? 'initial subset phase' : 'main selection phase'})`);
 
     const battleSize = battleType === "triplets" ? 3 : 2;
     let selectedPokemon: Pokemon[] = [];
@@ -285,9 +285,9 @@ function selectSuggestedPokemonForced(battleType: BattleType): Pokemon[] | null 
       console.log(`🎮 Battle Starter: Updated suggestion tracking with ${suggested.size} Pokemon`);
     }
     
-    // Use our fixed initial subset for the first 25 battles
-    if (currentBattleCount <= 25) {
-      console.log(`👾 Battle #${currentBattleCount}: Using initial subset selection (first 25 battles)`);
+    // Use our fixed initial subset for the first 10 battles
+    if (currentBattleCount <= 10) {
+      console.log(`👾 Battle #${currentBattleCount}: Using initial subset selection (first 10 battles)`);
       
       // Create a fixed subset of Pokémon for consistency
       const INITIAL_SUBSET_SIZE = 15;
