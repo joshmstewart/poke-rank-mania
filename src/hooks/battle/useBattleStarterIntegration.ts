@@ -1,3 +1,4 @@
+
 import { useMemo, useCallback, useEffect, useRef, useState } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
@@ -148,13 +149,15 @@ export const useBattleStarterIntegration = (
           title: "Breaking Battle Loop",
           description: `Forcing new Pokémon selection (reset #${globalEmergencyResetsRef.current})`,
           variant: "destructive",
-          action: <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={performEmergencyReset}
-          >
-            Reset Now
-          </Button>,
+          action: (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={performEmergencyReset}
+            >
+              Reset Now
+            </Button>
+          ),
           duration: 6000
         });
         
@@ -180,6 +183,8 @@ export const useBattleStarterIntegration = (
     
     // Get all battle combinations seen so far
     const seenCombinations = Array.from(globalBattleHistoryRef.current);
+    console.log(`📝 DEBUG: Previously seen battle combinations: ${seenCombinations.length}`);
+    console.log(`📝 DEBUG: Last 3 combinations: ${seenCombinations.slice(-3).join(' | ')}`);
     
     // Create a blacklist of Pokémon IDs that have been overused
     const overusedIds = new Set<number>();
@@ -192,15 +197,24 @@ export const useBattleStarterIntegration = (
     
     // Get a pool of Pokémon excluding overused ones
     const freshPool = allPokemon.filter(p => !overusedIds.has(p.id));
+    console.log(`🏊 Fresh pool size: ${freshPool.length} / ${allPokemon.length} Pokémon`);
     
     // If we've filtered too much, use a larger pool
     const workingPool = freshPool.length >= 5 ? freshPool : allPokemon;
+    console.log(`🏊 Working pool size: ${workingPool.length} Pokémon`);
+    
+    // DEEP DEBUG: Log all available Pokémon IDs to see if we have duplicates
+    console.log(`🔍 DEEP DEBUG: First 10 Pokémon in pool: ${workingPool.slice(0, 10).map(p => p.id).join(', ')}`);
     
     // Try to create unique battles up to 10 attempts
     for (let attempt = 0; attempt < 10; attempt++) {
       const shuffled = shuffleArray(workingPool);
       const battleSize = battleType === "triplets" ? 3 : 2;
       const candidateBattle = shuffled.slice(0, battleSize);
+      
+      // Get complete details for logging
+      const candidateDetails = candidateBattle.map(p => `${p.id}:${p.name}`).join(', ');
+      console.log(`🎲 Attempt #${attempt + 1}: Selected ${candidateDetails}`);
       
       // Sort IDs for consistent comparison
       const battleKey = candidateBattle.map(p => p.id).sort().join(',');
@@ -219,12 +233,38 @@ export const useBattleStarterIntegration = (
         });
         
         return candidateBattle;
+      } else {
+        console.log(`❌ Battle combination [${battleKey}] already seen before, trying again`);
       }
     }
     
     // If all attempts failed, create a truly random battle as a last resort
-    const lastResort = shuffleArray(allPokemon).slice(0, battleType === "triplets" ? 3 : 2);
-    console.warn("⚠️ Could not create unique battle, using last resort random selection");
+    console.warn("⚠️ Could not create unique battle after 10 attempts, using last resort random selection");
+    
+    // Desperate measure: Manually construct a battle with Pokémon we haven't used recently
+    const usedIds = new Set([...lastBattlePokemonRef.current, ...recentlyUsedPokemonRef.current]);
+    const trulyFreshPool = allPokemon.filter(p => !usedIds.has(p.id));
+    
+    console.log(`🆘 Emergency: Found ${trulyFreshPool.length} truly fresh Pokémon`);
+    
+    let lastResort: Pokemon[];
+    
+    if (trulyFreshPool.length >= (battleType === "triplets" ? 3 : 2)) {
+      // Use truly fresh Pokémon
+      lastResort = shuffleArray(trulyFreshPool).slice(0, battleType === "triplets" ? 3 : 2);
+      console.log(`🆘 Using truly fresh Pokémon: ${lastResort.map(p => p.name).join(', ')}`);
+    } else {
+      // Absolute last resort - completely random
+      lastResort = shuffleArray(allPokemon).slice(0, battleType === "triplets" ? 3 : 2);
+      console.log(`🆘 ABSOLUTE LAST RESORT: Using random Pokémon: ${lastResort.map(p => p.name).join(', ')}`);
+      
+      // Force clear all tracking to break out of any potential loops
+      globalBattleHistoryRef.current.clear();
+      recentlyUsedPokemonRef.current.clear();
+      lastBattlePokemonRef.current.clear();
+      overusedPokemonRef.current.clear();
+    }
+    
     return lastResort;
   }, [allPokemon, shuffleArray]);
 
@@ -233,16 +273,32 @@ export const useBattleStarterIntegration = (
     battleCreationAttemptsRef.current += 1;
     const attemptNumber = battleCreationAttemptsRef.current;
     
-    console.log(`⚔️ startNewBattle attempt #${attemptNumber} with type: ${battleType}`);
+    console.log(`\n⚔️ --------- STARTING NEW BATTLE #${attemptNumber} (${battleType}) ---------`);
     
     // Record the time of this attempt
     const now = Date.now();
+    const previousTime = lastBattleCreationTimeRef.current;
     lastBattleCreationTimeRef.current = now;
+    
+    console.log(`⏱️ Time since last battle: ${previousTime ? (now - previousTime) / 1000 : 'N/A'} seconds`);
     
     if (!allPokemon || allPokemon.length < 2) {
       console.warn("Not enough Pokémon for a battle.");
       return [];
     }
+    
+    // Dump complete historical state for debugging
+    console.log(`🗄️ Recent battles: ${recentBattlesRef.current.length}`);
+    console.log(`🗄️ Last used Pokémon IDs: [${lastUsedPokemonIdsRef.current.join(', ')}]`);
+    console.log(`🗄️ Last battle Pokémon: [${Array.from(lastBattlePokemonRef.current).join(', ')}]`);
+    console.log(`🗄️ Recently used Pokémon count: ${recentlyUsedPokemonRef.current.size}`);
+    console.log(`🗄️ Global battle history size: ${globalBattleHistoryRef.current.size}`);
+    
+    // Check if the localStorage might be corrupting our selection
+    const lsRecentlyUsed = localStorage.getItem('pokemon-battle-recently-used');
+    const lsLastBattle = localStorage.getItem('pokemon-battle-last-battle');
+    console.log(`🗄️ localStorage.pokemon-battle-recently-used: ${lsRecentlyUsed ? 'present' : 'missing'}`);
+    console.log(`🗄️ localStorage.pokemon-battle-last-battle: ${lsLastBattle ? 'present' : 'missing'}`);
     
     // Update localStorage with battle type
     localStorage.setItem('pokemon-ranker-battle-type', battleType);
@@ -255,7 +311,7 @@ export const useBattleStarterIntegration = (
         // Get forcefully different Pokémon
         const emergencyBattle = getForcefullyDifferentPokemon(battleType);
         
-        console.log(`🆘 Emergency battle created with: ${emergencyBattle.map(p => p.name).join(', ')}`);
+        console.log(`🆘 Emergency battle created with: ${emergencyBattle.map(p => `${p.id}:${p.name}`).join(', ')}`);
         
         // Reset stuck state
         setIsStuckInSameBattle(false);
@@ -281,6 +337,7 @@ export const useBattleStarterIntegration = (
         setCurrentBattle(emergencyBattle);
         setSelectedPokemon([]);
         
+        console.log(`⚔️ --------- FINISHED EMERGENCY BATTLE CREATION #${attemptNumber} ---------\n`);
         return emergencyBattle;
       }
       
@@ -289,13 +346,19 @@ export const useBattleStarterIntegration = (
       const lastPokemonIdsString = sortedLastPokemonIds.join(',');
       const lastUsedIdsString = lastUsedPokemonIdsRef.current.sort((a, b) => a - b).join(',');
       
+      console.log(`🔄 Comparing last battle [${lastPokemonIdsString}] with previous [${lastUsedIdsString}]`);
+      
       if (lastPokemonIdsString === lastUsedIdsString && lastPokemonIdsString.length > 0) {
         sameConsecutiveBattlesRef.current += 1;
         console.warn(`⚠️ STUCK DETECTION: Same Pokemon detected ${sameConsecutiveBattlesRef.current} times in a row: [${lastPokemonIdsString}]`);
         
         if (sameConsecutiveBattlesRef.current >= 2) {
+          console.warn(`🚨 CRITICAL: Detected same Pokemon ${sameConsecutiveBattlesRef.current} times in a row! Using forced selection`);
+          
           // Forcefully get different Pokémon
           const forcedBattle = getForcefullyDifferentPokemon(battleType);
+          
+          console.log(`🔀 FORCED: Created battle with: ${forcedBattle.map(p => `${p.id}:${p.name}`).join(', ')}`);
           
           // Update tracking
           lastBattlePokemonRef.current.clear();
@@ -311,11 +374,14 @@ export const useBattleStarterIntegration = (
           
           setCurrentBattle(forcedBattle);
           setSelectedPokemon([]);
+          
+          console.log(`⚔️ --------- FINISHED FORCED BATTLE CREATION #${attemptNumber} ---------\n`);
           return forcedBattle;
         }
       } else {
         // Reset the counter if battles are different
         sameConsecutiveBattlesRef.current = 0;
+        console.log(`✅ Battles are different, reset consecutive counter to 0`);
       }
       
       // NORMAL FLOW: Create a battle with different Pokémon
@@ -334,9 +400,13 @@ export const useBattleStarterIntegration = (
         availablePokemon : 
         allPokemon.filter(p => !lastBattlePokemonRef.current.has(p.id));
       
+      console.log(`🔄 First fallback pool size: ${pokemonPool.length}`);
+      
       // If we still don't have enough, use all Pokémon
       const finalPool = pokemonPool.length >= battleSize * 1.5 ? 
         pokemonPool : allPokemon;
+      
+      console.log(`🔄 Final selection pool size: ${finalPool.length}`);
       
       // Shuffle and select
       const shuffled = shuffleArray(finalPool);
@@ -344,18 +414,42 @@ export const useBattleStarterIntegration = (
       
       // Create a unique key for this battle
       const battleKey = battlePokemon.map(p => p.id).sort().join(',');
+      console.log(`🔑 Generated battle key: ${battleKey}`);
       
       // Check if this exact battle has been seen before
       if (globalBattleHistoryRef.current.has(battleKey) && globalBattleHistoryRef.current.size > 10) {
         console.warn(`⚠️ This exact battle [${battleKey}] has been seen before. Trying again.`);
         // Try one more time with forceful selection
-        return getForcefullyDifferentPokemon(battleType);
+        const forcedPokemon = getForcefullyDifferentPokemon(battleType);
+        
+        console.log(`🔀 DUPLICATE PREVENTION: Created battle with: ${forcedPokemon.map(p => `${p.id}:${p.name}`).join(', ')}`);
+        
+        // Update tracking
+        lastBattlePokemonRef.current.clear();
+        forcedPokemon.forEach(p => lastBattlePokemonRef.current.add(p.id));
+        lastUsedPokemonIdsRef.current = forcedPokemon.map(p => p.id);
+        
+        // Add to tracking
+        recentBattlesRef.current.push({
+          ids: forcedPokemon.map(p => p.id),
+          timestamp: now
+        });
+        
+        // Add this battle to history
+        const newBattleKey = forcedPokemon.map(p => p.id).sort().join(',');
+        globalBattleHistoryRef.current.add(newBattleKey);
+        
+        setCurrentBattle(forcedPokemon);
+        setSelectedPokemon([]);
+        
+        console.log(`⚔️ --------- FINISHED DUPLICATE PREVENTION BATTLE #${attemptNumber} ---------\n`);
+        return forcedPokemon;
       }
       
       // Add this battle to history
       globalBattleHistoryRef.current.add(battleKey);
       
-      console.log(`🆕 Created battle with: ${battlePokemon.map(p => `${p.id}:${p.name}`).join(', ')}`);
+      console.log(`🆕 Created standard battle with: ${battlePokemon.map(p => `${p.id}:${p.name}`).join(', ')}`);
       
       // Update tracking for future comparisons
       lastUsedPokemonIdsRef.current = battlePokemon.map(p => p.id);
@@ -394,6 +488,7 @@ export const useBattleStarterIntegration = (
       setCurrentBattle(battlePokemon);
       setSelectedPokemon([]);
       
+      console.log(`⚔️ --------- FINISHED STANDARD BATTLE CREATION #${attemptNumber} ---------\n`);
       return battlePokemon;
     } catch (error) {
       console.error(`Error creating battle (attempt #${attemptNumber}):`, error);
@@ -402,6 +497,7 @@ export const useBattleStarterIntegration = (
       const emergencyPokemon = getForcefullyDifferentPokemon(battleType);
       setCurrentBattle(emergencyPokemon);
       setSelectedPokemon([]);
+      console.log(`⚔️ --------- FINISHED ERROR FALLBACK BATTLE #${attemptNumber} ---------\n`);
       return emergencyPokemon;
     }
   }, [

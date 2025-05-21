@@ -59,13 +59,15 @@ export const useBattleEmergencyReset = (
           toast({
             title: "Emergency Reset",
             description: "Battle system has been reset with new Pokémon",
-            action: <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => performEmergencyReset()}
-            >
-              Reset Again
-            </Button>
+            action: (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => performEmergencyReset()}
+              >
+                Reset Again
+              </Button>
+            )
           });
           
           return true;
@@ -106,13 +108,15 @@ export const useBattleEmergencyReset = (
               toast({
                 title: "Battle System Stuck?",
                 description: "Click to reset and get new Pokémon",
-                action: <Button 
-                  variant="outline"
-                  size="sm"
-                  onClick={performEmergencyReset}
-                >
-                  Reset
-                </Button>,
+                action: (
+                  <Button 
+                    variant="outline"
+                    size="sm"
+                    onClick={performEmergencyReset}
+                  >
+                    Reset
+                  </Button>
+                ),
                 duration: 10000
               });
             }
