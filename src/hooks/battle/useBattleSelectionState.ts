@@ -28,10 +28,6 @@ export const useBattleSelectionState = () => {
     battleResults,
     setBattleResults,
     getCurrentRankings
-  }: {
-    battleResults: SingleBattle[];
-    setBattleResults: React.Dispatch<React.SetStateAction<SingleBattle[]>>;
-    getCurrentRankings: () => Pokemon[];
   } = useBattleResults();
 
   const currentRankings = useMemo(() => {
@@ -47,6 +43,7 @@ export const useBattleSelectionState = () => {
     setSelectedPokemon
   );
 
+  // Fixed TypeScript error: Now returns Pokemon[] to match the interface
   const startNewBattleAdapter = (pokemonList: Pokemon[], battleType: BattleType): Pokemon[] => {
     return startNewBattle(battleType);
   };

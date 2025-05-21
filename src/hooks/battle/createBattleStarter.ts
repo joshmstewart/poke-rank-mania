@@ -29,11 +29,19 @@ export const createBattleStarter = (
       return [];
     }
 
+    // DETAILED LOGGING: Check for suggestions before filtering
+    console.log(`🔎 VERIFICATION: Analyzing ${filteredPokemon.length} Pokémon for suggestions`);
+    
     // Find Pokémon with active suggestions that haven't been used yet
     const suggestedPokemon = filteredPokemon.filter(p => {
       const rankedP = p as RankedPokemon;
-      return rankedP.suggestedAdjustment && 
-        !rankedP.suggestedAdjustment.used;
+      const hasSuggestion = rankedP.suggestedAdjustment && !rankedP.suggestedAdjustment.used;
+      
+      if (hasSuggestion) {
+        console.log(`✅ Found suggestion for ${p.name}: ${rankedP.suggestedAdjustment?.direction} x${rankedP.suggestedAdjustment?.strength} (used: ${rankedP.suggestedAdjustment?.used})`);
+      }
+      
+      return hasSuggestion;
     });
     
     console.log(`🎯 createBattleStarter: Found ${suggestedPokemon.length} Pokémon with unused suggestions`);
@@ -46,7 +54,7 @@ export const createBattleStarter = (
       });
     }
     
-    // If we have suggestions, prioritize them with 100% chance (up from before)
+    // CRITICAL FIX: ALWAYS use suggestion with 100% probability if available
     if (suggestedPokemon.length > 0) {
       // Always include at least one suggested Pokémon
       const selectedSuggestion = suggestedPokemon[Math.floor(Math.random() * suggestedPokemon.length)];

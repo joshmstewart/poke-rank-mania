@@ -1,6 +1,6 @@
 
-import { useMemo, useCallback, useEffect } from "react";
-import { Pokemon } from "@/services/pokemon";
+import { useMemo, useCallback, useEffect, useRef } from "react";
+import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
 import { createBattleStarter } from "./createBattleStarter";
 
@@ -10,6 +10,9 @@ export const useBattleStarterIntegration = (
   setCurrentBattle: React.Dispatch<React.SetStateAction<Pokemon[]>>,
   setSelectedPokemon: React.Dispatch<React.SetStateAction<number[]>>
 ) => {
+  // Add ref to track if we've verified suggestions
+  const verifiedSuggestionsRef = useRef(false);
+
   // Create the battle starter function without hooks
   const battleStarter = useMemo(() => {
     if (!allPokemon || allPokemon.length === 0) {
@@ -24,6 +27,36 @@ export const useBattleStarterIntegration = (
       setCurrentBattle
     );
   }, [allPokemon, currentRankings, setCurrentBattle]);
+
+  // Effect to verify suggestions in currentRankings 
+  useEffect(() => {
+    if (!verifiedSuggestionsRef.current && currentRankings && currentRankings.length > 0) {
+      verifiedSuggestionsRef.current = true;
+      
+      // Count and log suggestions
+      const suggestedCount = currentRankings.filter(p => 
+        (p as RankedPokemon).suggestedAdjustment).length;
+      
+      const unusedCount = currentRankings.filter(p => 
+        (p as RankedPokemon).suggestedAdjustment && 
+        !(p as RankedPokemon).suggestedAdjustment?.used).length;
+      
+      console.log(`🔍 VERIFY: currentRankings has ${suggestedCount} Pokemon with suggestions (${unusedCount} unused)`);
+      
+      if (unusedCount > 0) {
+        // Log the first few suggestions for verification
+        const withSuggestions = currentRankings.filter(p => 
+          (p as RankedPokemon).suggestedAdjustment && 
+          !(p as RankedPokemon).suggestedAdjustment?.used
+        ).slice(0, 3);
+        
+        withSuggestions.forEach(p => {
+          const rp = p as RankedPokemon;
+          console.log(`  - ${p.name}: ${rp.suggestedAdjustment?.direction} x${rp.suggestedAdjustment?.strength}`);
+        });
+      }
+    }
+  }, [currentRankings]);
 
   // Add event listener for custom set-current-battle event
   useEffect(() => {
