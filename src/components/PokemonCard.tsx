@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Pokemon } from "@/services/pokemon";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { getPreferredImageUrl, getPreferredImageType } from "@/components/settings/ImagePreferenceSelector";
-import { normalizePokedexNumber, capitalizeSpecialForms } from "@/utils/pokemonUtils";
+import { normalizePokedexNumber, formatPokemonName } from "@/utils/pokemonUtils";
 
 interface PokemonCardProps {
   pokemon: Pokemon;
@@ -29,7 +30,7 @@ const PokemonCard = ({ pokemon, isDragging, viewMode = "list", compact }: Pokemo
   const [currentImageUrl, setCurrentImageUrl] = useState<string>("");
 
   const normalizedId = normalizePokedexNumber(pokemon.id);
-  const formattedName = capitalizeSpecialForms(pokemon.name);
+  const formattedName = formatPokemonName(pokemon.name);
 
   useEffect(() => {
     const updateImage = () => {

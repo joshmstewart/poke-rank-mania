@@ -76,10 +76,17 @@ const BattleContent = ({ allPokemon, initialBattleType, initialSelectedGeneratio
     }
   }, [allPokemon]);
 
-  // Calculate remaining battles
+  // Calculate remaining battles based on the active tier
   const getBattlesRemaining = () => {
-    const totalBattlesNeeded = Math.floor(allPokemon.length * Math.log2(allPokemon.length));
-    return Math.max(0, totalBattlesNeeded - battlesCompleted);
+    // Use a logarithmic model, but focus only on the top N Pokémon
+    const pokemonCount = activeTier === 0 ? allPokemon.length : Math.min(activeTier, allPokemon.length);
+    
+    // Using a logarithmic model: n * log(n) battles are needed for a good ranking
+    // For top tiers, we need fewer battles
+    const totalBattlesNeeded = Math.floor(pokemonCount * Math.log2(pokemonCount)) * 1.2;
+    
+    // Return remaining battles (minimum of 0)
+    return Math.max(0, Math.ceil(totalBattlesNeeded - battlesCompleted));
   };
 
   const handleBattleTypeChange = (newType: BattleType) => {

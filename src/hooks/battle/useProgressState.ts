@@ -7,7 +7,7 @@ export const useProgressState = () => {
   const [rankingGenerated, setRankingGenerated] = useState(false);
   const [fullRankingMode, setFullRankingMode] = useState(false);
   
-  // Updated milestone check points starting with 10, 25, etc.
+  // More frequent early milestones, spaced out later
   const milestones = [10, 25, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 600, 700, 800, 900, 1000];
   
   return {

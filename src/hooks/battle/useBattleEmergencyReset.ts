@@ -1,8 +1,7 @@
+
 import { useEffect, useCallback } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { toast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
-import * as React from "react"; // Needed for React.createElement
 
 export const useBattleEmergencyReset = (
   currentBattle: Pokemon[],
@@ -46,11 +45,6 @@ export const useBattleEmergencyReset = (
           toast({
             title: "Emergency Reset",
             description: "Battle system has been reset with new Pokémon",
-            action: React.createElement(Button, {
-              variant: "outline",
-              size: "sm",
-              onClick: () => performEmergencyReset()
-            }, "Reset Again")
           });
 
           return true;
@@ -75,14 +69,12 @@ export const useBattleEmergencyReset = (
           if (recentlyUsed || lastBattle) {
             toast({
               title: "Battle System Stuck?",
-              description: "Click to reset and get new Pokémon",
-              duration: 10000,
-              action: React.createElement(Button, {
-                variant: "outline",
-                size: "sm",
-                onClick: () => performEmergencyReset()
-              }, "Reset")
+              description: "Auto-reset in progress...",
+              duration: 3000,
             });
+            
+            // Auto-reset without showing UI buttons
+            performEmergencyReset();
           }
         }
       }, 10000);

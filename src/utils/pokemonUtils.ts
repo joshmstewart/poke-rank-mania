@@ -1,3 +1,4 @@
+
 /**
  * Normalize Pokedex numbers - converts special form IDs back to their base form
  * For example: 10117 (Ash-Greninja) -> 658 (Greninja)
@@ -13,6 +14,41 @@ export const normalizePokedexNumber = (id: number): number => {
   }
   
   return id;
+};
+
+/**
+ * Format Pokémon names to properly display regional forms
+ * For example: "Vulpix alola" -> "Alolan Vulpix"
+ * @param name The Pokémon name to format
+ * @returns Formatted name with proper regional forms
+ */
+export const formatPokemonName = (name: string): string => {
+  if (!name) return '';
+  
+  // Handle regional forms by moving them to the front with proper naming
+  const regionalForms = {
+    'alola': 'Alolan',
+    'galar': 'Galarian',
+    'hisui': 'Hisuian',
+    'paldea': 'Paldean',
+    'gmax': 'Gigantamax'
+  };
+  
+  // Convert name to lowercase for comparison
+  const lowerName = name.toLowerCase();
+  
+  // Check if name contains any regional form identifiers
+  for (const [region, prefix] of Object.entries(regionalForms)) {
+    if (lowerName.includes(` ${region}`)) {
+      // Get the base name by removing the region suffix
+      const baseName = name.replace(new RegExp(` ${region}`, 'i'), '').trim();
+      // Return with proper format: "Alolan Vulpix" instead of "Vulpix alola"
+      return `${prefix} ${baseName}`;
+    }
+  }
+  
+  // If no regional form is found, use the capitalizeSpecialForms function
+  return capitalizeSpecialForms(name);
 };
 
 /**

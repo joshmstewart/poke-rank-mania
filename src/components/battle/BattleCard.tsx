@@ -1,8 +1,10 @@
+
 import React, { memo, useCallback, useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Pokemon } from "@/services/pokemon";
 import { MousePointerClick } from "lucide-react";
 import { getPreferredImageUrl, getPreferredImageType } from "@/components/settings/ImagePreferenceSelector";
+import { formatPokemonName } from "@/utils/pokemonUtils";
 
 interface BattleCardProps {
   pokemon: Pokemon;
@@ -58,6 +60,9 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, battl
     if (!isProcessing) onSelect(pokemon.id);
   }, [pokemon.id, onSelect, isProcessing]);
 
+  // Format the Pokémon name using the utility function
+  const formattedName = formatPokemonName(pokemon.name);
+
   return (
     <Card className={`cursor-pointer transition-transform ${isSelected ? "ring-4 ring-primary" : ""} ${isProcessing ? "opacity-70" : "hover:scale-105"}`} onClick={handleClick}>
       <CardContent className="flex flex-col items-center p-4">
@@ -65,14 +70,14 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, battl
           {!imageLoaded && !imageError && <div className="absolute inset-0 bg-gray-200 animate-pulse rounded-md"></div>}
           <img
             src={currentImageUrl}
-            alt={pokemon.name}
+            alt={formattedName}
             className={`w-full h-full object-contain transition-opacity ${imageLoaded ? "opacity-100" : "opacity-0"}`}
             onLoad={handleImageLoad}
             onError={handleImageError}
           />
-          {imageError && <div className="absolute inset-0 flex items-center justify-center bg-gray-100 text-xs">{pokemon.name}</div>}
+          {imageError && <div className="absolute inset-0 flex items-center justify-center bg-gray-100 text-xs">{formattedName}</div>}
         </div>
-        <h3 className="mt-2 text-xl font-bold">{pokemon.name}</h3>
+        <h3 className="mt-2 text-xl font-bold">{formattedName}</h3>
       </CardContent>
     </Card>
   );

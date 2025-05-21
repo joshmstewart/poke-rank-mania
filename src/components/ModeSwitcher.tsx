@@ -1,6 +1,5 @@
 
 import React from "react";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Trophy, DraftingCompass } from "lucide-react";
 import { 
   Tooltip,
@@ -17,41 +16,49 @@ interface ModeSwitcherProps {
 const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ currentMode, onModeChange }) => {
   return (
     <TooltipProvider>
-      <Tooltip>
-        <Tabs defaultValue={currentMode} onValueChange={(value) => onModeChange(value as "rank" | "battle")}>
-          <TabsList className="grid grid-cols-2 h-9">
+      <div className="flex items-center">
+        <div className="bg-gray-100 p-1 rounded-full flex items-center shadow-sm">
+          <Tooltip>
             <TooltipTrigger asChild>
-              <TabsTrigger 
-                value="battle" 
-                className={`flex items-center gap-1 px-3 text-xs ${
-                  currentMode === "battle" 
-                    ? "bg-primary text-primary-foreground font-medium" 
-                    : ""
+              <button
+                onClick={() => onModeChange("battle")}
+                className={`flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-full transition-all duration-300 ${
+                  currentMode === "battle"
+                    ? "bg-primary text-white shadow-md transform scale-105"
+                    : "hover:bg-gray-200"
                 }`}
+                aria-label="Battle Mode"
               >
-                <Trophy className={`h-3.5 w-3.5 ${currentMode === "battle" ? "text-primary-foreground" : ""}`} />
-                <span className="hidden sm:inline">Battle</span>
-              </TabsTrigger>
+                <Trophy className={`h-4 w-4 ${currentMode === "battle" ? "" : "text-gray-500"}`} />
+                <span className="font-medium">Battle</span>
+              </button>
             </TooltipTrigger>
+            <TooltipContent side="bottom" align="center">
+              <p>Battle Mode: Compare Pokémon head-to-head</p>
+            </TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
             <TooltipTrigger asChild>
-              <TabsTrigger 
-                value="rank" 
-                className={`flex items-center gap-1 px-3 text-xs ${
-                  currentMode === "rank" 
-                    ? "bg-primary text-primary-foreground font-medium" 
-                    : ""
+              <button
+                onClick={() => onModeChange("rank")}
+                className={`flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-full transition-all duration-300 ${
+                  currentMode === "rank"
+                    ? "bg-primary text-white shadow-md transform scale-105"
+                    : "hover:bg-gray-200"
                 }`}
+                aria-label="Manual Mode"
               >
-                <DraftingCompass className={`h-3.5 w-3.5 ${currentMode === "rank" ? "text-primary-foreground" : ""}`} />
-                <span className="hidden sm:inline">Rank</span>
-              </TabsTrigger>
+                <DraftingCompass className={`h-4 w-4 ${currentMode === "rank" ? "" : "text-gray-500"}`} />
+                <span className="font-medium">Manual</span>
+              </button>
             </TooltipTrigger>
-          </TabsList>
-        </Tabs>
-        <TooltipContent side="bottom" align="center">
-          <p>{currentMode === "battle" ? "Battle Mode: Compare head-to-head" : "Manual Ranking: Drag to reorder"}</p>
-        </TooltipContent>
-      </Tooltip>
+            <TooltipContent side="bottom" align="center">
+              <p>Manual Mode: Drag and reorder rankings</p>
+            </TooltipContent>
+          </Tooltip>
+        </div>
+      </div>
     </TooltipProvider>
   );
 };

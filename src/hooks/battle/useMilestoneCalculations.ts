@@ -23,7 +23,7 @@ export const useMilestoneCalculations = (battlesCompleted: number, milestones: n
       ((battlesCompleted - prevMilestone) / (nextMilestone - prevMilestone)) * 100
     ));
     
-    return progress;
+    return Math.round(progress); // Round to nearest integer for cleaner display
   }, [battlesCompleted, milestones, getNextMilestone]);
   
   return {
