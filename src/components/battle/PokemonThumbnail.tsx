@@ -53,7 +53,8 @@ const PokemonThumbnail: React.FC<PokemonThumbnailProps> = ({
   // Load image on component mount and if Pokemon changes
   useEffect(() => {
     const preferredType = localStorage.getItem('pokemon-image-preference') || 'official';
-const url = getPreferredImageUrl(pokemon.id, preferredType);
+const url = getPreferredImageUrl(pokemon.id);
+
 
 
 console.log(`🖼️ PokemonThumbnail: Loading image for ${pokemon.name} from: ${url}`);
