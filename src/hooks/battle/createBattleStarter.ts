@@ -19,12 +19,13 @@ export const createBattleStarter = (
       return [];
     }
 
-    // CRITICAL FIX: Always check localStorage directly first
-    console.log(`🔍 DIRECT CHECK: Looking for suggestions directly in localStorage`);
+    // CRITICAL FIX: Consistent storage key
+    const STORAGE_KEY = 'pokemon-active-suggestions';
+    console.log(`🔍 DIRECT CHECK: Looking for suggestions directly in localStorage (${STORAGE_KEY})`);
     let directSuggestionPokemon: Pokemon[] = [];
     
     try {
-      const rawSuggestions = localStorage.getItem('pokemon-active-suggestions');
+      const rawSuggestions = localStorage.getItem(STORAGE_KEY);
       if (rawSuggestions) {
         console.log(`💾 DIRECT CHECK: Found raw suggestion data in localStorage: ${rawSuggestions.substring(0, 100)}...`);
         
@@ -65,9 +66,14 @@ export const createBattleStarter = (
             
             console.log(`🆕 DIRECT CHECK: Created battle with suggested Pokémon: ${shuffledBattle.map(p => p.name).join(', ')}`);
             
-            // CRITICAL FIX: Log the exact suggestion from localStorage
+            // CRITICAL FIX: Add suggestion info to the Pokemon object if it doesn't already have it
             const exactSuggestion = parsedSuggestions[selectedSuggestion.id.toString()];
-            console.log(`🔍 DIRECT CHECK: Exact suggestion for ${selectedSuggestion.name}:`, exactSuggestion);
+            console.log(`🔍 DIRECT CHECK: Adding suggestion to ${selectedSuggestion.name}:`, exactSuggestion);
+            
+            // Apply the suggestion to the Pokemon object if it doesn't already have it
+            if (exactSuggestion && !("suggestedAdjustment" in selectedSuggestion)) {
+              (selectedSuggestion as RankedPokemon).suggestedAdjustment = exactSuggestion;
+            }
             
             setCurrentBattle(shuffledBattle);
             return shuffledBattle;
@@ -80,63 +86,8 @@ export const createBattleStarter = (
       console.error("❌ DIRECT CHECK: Error accessing localStorage:", e);
     }
     
-    // DETAILED LOGGING: Check for suggestions before filtering
-    console.log(`🔎 VERIFICATION: Analyzing ${filteredPokemon.length} Pokémon for suggestions via state`);
-    
-    // Find Pokémon with active suggestions that haven't been used yet
-    const suggestedPokemon = filteredPokemon.filter(p => {
-      const rankedP = p as RankedPokemon;
-      const hasSuggestion = rankedP.suggestedAdjustment && !rankedP.suggestedAdjustment.used;
-      
-      if (hasSuggestion) {
-        console.log(`✅ Found suggestion for ${p.name}: ${rankedP.suggestedAdjustment?.direction} x${rankedP.suggestedAdjustment?.strength} (used: ${rankedP.suggestedAdjustment?.used})`);
-      }
-      
-      return hasSuggestion;
-    });
-    
-    console.log(`🎯 createBattleStarter: Found ${suggestedPokemon.length} Pokémon with unused suggestions in state`);
-    
-    // VERIFICATION: Log each suggested Pokemon for debugging
-    if (suggestedPokemon.length > 0) {
-      suggestedPokemon.forEach(p => {
-        const suggestion = (p as RankedPokemon).suggestedAdjustment;
-        console.log(`  - Suggestion for ${p.name}: ${suggestion?.direction} x${suggestion?.strength} (used: ${suggestion?.used})`);
-      });
-    }
-    
-    // CRITICAL FIX: ALWAYS use suggestion with 100% probability if available
-    if (suggestedPokemon.length > 0) {
-      // Always include at least one suggested Pokémon
-      const selectedSuggestion = suggestedPokemon[Math.floor(Math.random() * suggestedPokemon.length)];
-      console.log(`🎯 createBattleStarter: Selected suggested Pokémon: ${selectedSuggestion.name}`);
-      
-      // Get the remaining battle slots from other Pokémon
-      const remainingSlots = battleType === "triplets" ? 2 : 1;
-      let otherPokemon = filteredPokemon.filter(p => p.id !== selectedSuggestion.id);
-      
-      // Shuffle the other Pokémon
-      otherPokemon = shuffleArray(otherPokemon);
-      
-      // Create the battle with the suggested Pokémon and random others
-      const battlePokemon = [
-        selectedSuggestion,
-        ...otherPokemon.slice(0, remainingSlots)
-      ];
-      
-      // Shuffle the order so the suggested Pokémon isn't always first
-      const shuffledBattle = shuffleArray(battlePokemon);
-      
-      console.log(`🆕 createBattleStarter: Created battle with suggested Pokémon: ${shuffledBattle.map(p => p.name).join(', ')}`);
-      console.log(`🔍 VERIFY: Battle includes suggested Pokémon ${selectedSuggestion.name} with suggestion:`, 
-        (selectedSuggestion as RankedPokemon).suggestedAdjustment);
-      
-      setCurrentBattle(shuffledBattle);
-      return shuffledBattle;
-    }
-    
-    // If no suggestions, proceed with normal selection logic
-    console.log("🎲 createBattleStarter: No suggestions found, using random selection");
+    // If we get here, either there were no suggestions in localStorage or we couldn't use them
+    console.log("🎲 createBattleStarter: Using random selection");
     const shuffled = shuffleArray(filteredPokemon);
     const battleSize = battleType === "triplets" ? 3 : 2;
     

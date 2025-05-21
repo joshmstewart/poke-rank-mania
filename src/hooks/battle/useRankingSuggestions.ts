@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect, useRef } from "react";
 import { RankedPokemon, RankingSuggestion } from "@/services/pokemon";
 import { toast } from "@/hooks/use-toast";
@@ -52,10 +51,7 @@ export const useRankingSuggestions = (
     
     console.log(`${directionSymbol} Suggesting '${pokemon.name}' should be ranked ${directionText} (${arrowSymbol} x${strength})`);
     
-    // CRITICAL FIX: Ensure immediate save to localStorage with direct verification
-    console.log(`⚠️ CRITICAL: Direct save of suggestion for ${pokemon.name} (ID: ${pokemon.id}) to localStorage`);
-    
-    // Create a direct object for storage that's easier to debug
+    // CRITICAL FIX: Create a direct object for storage that's easier to debug
     const storageObject: Record<string, any> = {};
     
     // Add ALL current suggestions to the storage object
@@ -66,18 +62,20 @@ export const useRankingSuggestions = (
     // Directly set to localStorage with simple string keys
     try {
       const storageJson = JSON.stringify(storageObject);
-      localStorage.setItem('pokemon-active-suggestions', storageJson);
+      
+      // CRITICAL FIX: Fix the storage key to ensure consistency - make it a constant
+      const STORAGE_KEY = 'pokemon-active-suggestions';
+      localStorage.setItem(STORAGE_KEY, storageJson);
       
       // Direct verification
-      console.log(`💾 DIRECT SAVE: Saved suggestion with JSON length: ${storageJson.length}`);
-      console.log(`💾 DIRECT SAVE: Sample of JSON:`, storageJson.substring(0, 100) + "...");
+      console.log(`💾 SAVED: Wrote suggestion for ${pokemon.name} (ID: ${pokemon.id}) to localStorage`);
       
       // Immediate verification by reading back
-      const verificationRead = localStorage.getItem('pokemon-active-suggestions');
+      const verificationRead = localStorage.getItem(STORAGE_KEY);
       if (verificationRead) {
         const parsed = JSON.parse(verificationRead);
         const keys = Object.keys(parsed);
-        console.log(`✅ VERIFICATION: Successfully read ${keys.length} suggestions back from localStorage`);
+        console.log(`✅ VERIFICATION: Successfully stored ${keys.length} suggestions in localStorage`);
         
         // Check if our specific pokemon is in there
         if (parsed[pokemon.id.toString()]) {
@@ -95,6 +93,9 @@ export const useRankingSuggestions = (
     return suggestion;
   }, [setPokemonList]);
 
+  // CRITICAL FIX: Ensure we're using a consistent storage key
+  const STORAGE_KEY = 'pokemon-active-suggestions';
+  
   // Remove a suggestion
   const removeSuggestion = useCallback((pokemonId: number) => {
     // Find the pokemon name before removing for logging
@@ -116,17 +117,17 @@ export const useRankingSuggestions = (
     
     // CRITICAL FIX: Direct removal from localStorage
     try {
-      const savedSuggestions = localStorage.getItem('pokemon-active-suggestions');
+      const savedSuggestions = localStorage.getItem(STORAGE_KEY);
       if (savedSuggestions) {
         const parsed = JSON.parse(savedSuggestions);
         delete parsed[pokemonId.toString()];
-        localStorage.setItem('pokemon-active-suggestions', JSON.stringify(parsed));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
         console.log(`✅ VERIFICATION: Removed suggestion for ${pokemonName} from localStorage`);
       }
     } catch (e) {
       console.error(`❌ ERROR removing suggestion from localStorage:`, e);
     }
-  }, [pokemonList, setPokemonList]);
+  }, [pokemonList, setPokemonList, STORAGE_KEY]);
 
   // Mark a suggestion as used
   const markSuggestionUsed = useCallback((pokemon: RankedPokemon) => {
@@ -162,12 +163,12 @@ export const useRankingSuggestions = (
       
       // CRITICAL FIX: Directly update localStorage
       try {
-        const savedSuggestions = localStorage.getItem('pokemon-active-suggestions');
+        const savedSuggestions = localStorage.getItem(STORAGE_KEY);
         if (savedSuggestions) {
           const parsed = JSON.parse(savedSuggestions);
           if (parsed[pokemon.id]) {
             parsed[pokemon.id].used = true;
-            localStorage.setItem('pokemon-active-suggestions', JSON.stringify(parsed));
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
             console.log(`✅ VERIFICATION: Updated suggestion as used for ${pokemon.name} in localStorage`);
           } else {
             console.log(`⚠️ Could not find suggestion for ${pokemon.name} in localStorage to mark as used`);
@@ -177,7 +178,7 @@ export const useRankingSuggestions = (
         console.error(`❌ ERROR updating suggestion in localStorage:`, e);
       }
     }
-  }, [setPokemonList]);
+  }, [setPokemonList, STORAGE_KEY]);
 
   // Clear all suggestions
   const clearAllSuggestions = useCallback(() => {
@@ -197,17 +198,17 @@ export const useRankingSuggestions = (
     });
     
     // Clear from localStorage
-    localStorage.removeItem('pokemon-active-suggestions');
+    localStorage.removeItem(STORAGE_KEY);
     suggestionsLoadedRef.current = false;
     
     // Verify removal
-    const verifyRemoval = localStorage.getItem('pokemon-active-suggestions');
+    const verifyRemoval = localStorage.getItem(STORAGE_KEY);
     if (!verifyRemoval) {
       console.log(`✅ VERIFICATION: Successfully cleared all suggestions from localStorage`);
     } else {
       console.log(`❌ VERIFICATION: Failed to clear suggestions from localStorage!`);
     }
-  }, [setPokemonList]);
+  }, [setPokemonList, STORAGE_KEY]);
 
   // Find a pokemon with an active, unused suggestion
   const findNextSuggestion = useCallback(() => {
@@ -224,36 +225,14 @@ export const useRankingSuggestions = (
     return next;
   }, [pokemonList]);
   
-  // Helper function to save suggestions to localStorage
-  const saveActiveSuggestions = (suggestions: Map<number, RankingSuggestion>) => {
-    try {
-      // Convert the Map to a plain object for storage
-      const suggestionsObject: Record<number, RankingSuggestion> = {};
-      suggestions.forEach((value, key) => {
-        suggestionsObject[key] = value;
-      });
-      
-      localStorage.setItem('pokemon-active-suggestions', JSON.stringify(suggestionsObject));
-      console.log(`💾 SAVED ${suggestions.size} suggestions to localStorage`);
-      
-      // Print suggestion details for debugging
-      Array.from(suggestions.entries()).forEach(([id, suggestion]) => {
-        const pokemonName = pokemonList.find(p => p.id === id)?.name || `#${id}`;
-        console.log(`  - ${pokemonName}: ${suggestion.direction} x${suggestion.strength} (used: ${suggestion.used})`);
-      });
-    } catch (e) {
-      console.error("❌ Error saving suggestions to localStorage:", e);
-    }
-  };
-  
   // Load suggestions from localStorage and apply them to the pokemonList
   const loadSavedSuggestions = useCallback(() => {
     try {
       console.log("🔄 Loading saved suggestions from localStorage...");
-      const savedSuggestions = localStorage.getItem('pokemon-active-suggestions');
+      const savedSuggestions = localStorage.getItem(STORAGE_KEY);
       
       if (savedSuggestions) {
-        console.log(`📋 VERIFY: Raw suggestions data from localStorage: ${savedSuggestions.substring(0, 100)}...`);
+        console.log(`📋 Raw suggestions data from localStorage: ${savedSuggestions.substring(0, 100)}...`);
         
         const parsedSuggestions = JSON.parse(savedSuggestions);
         const suggestionMap = new Map<number, RankingSuggestion>();
@@ -311,7 +290,7 @@ export const useRankingSuggestions = (
       suggestionsLoadedRef.current = true;
       return new Map<number, RankingSuggestion>();
     }
-  }, [pokemonList, setPokemonList]);
+  }, [pokemonList, setPokemonList, STORAGE_KEY]);
   
   // CRITICAL FIX: Load saved suggestions on EVERY mount to ensure they're always available
   useEffect(() => {
@@ -323,31 +302,6 @@ export const useRankingSuggestions = (
     
     // Set init flag
     initDoneRef.current = true;
-    
-    // CRITICAL FIX: Verify the localStorage suggestion format directly
-    try {
-      const directCheck = localStorage.getItem('pokemon-active-suggestions');
-      if (directCheck) {
-        console.log(`🔎 DIRECT VERIFICATION: Found suggestions in localStorage with length ${directCheck.length}`);
-        try {
-          const parsed = JSON.parse(directCheck);
-          const keys = Object.keys(parsed);
-          console.log(`🔎 DIRECT VERIFICATION: Parsed ${keys.length} suggestions from localStorage`);
-          
-          // Log the first suggestion for inspection
-          if (keys.length > 0) {
-            const firstKey = keys[0];
-            console.log(`🔎 DIRECT VERIFICATION: First suggestion:`, parsed[firstKey]);
-          }
-        } catch (e) {
-          console.error(`❌ DIRECT VERIFICATION: Failed to parse suggestions from localStorage:`, e);
-        }
-      } else {
-        console.log(`🔎 DIRECT VERIFICATION: No suggestions found in localStorage`);
-      }
-    } catch (e) {
-      console.error(`❌ DIRECT VERIFICATION: Error checking localStorage:`, e);
-    }
   }, [loadSavedSuggestions]);
   
   // Apply suggestions when pokemonList changes significantly
@@ -391,7 +345,7 @@ export const useRankingSuggestions = (
     
     // CRITICAL FIX: Also verify against localStorage
     try {
-      const savedSuggestions = localStorage.getItem('pokemon-active-suggestions');
+      const savedSuggestions = localStorage.getItem(STORAGE_KEY);
       if (savedSuggestions) {
         try {
           const parsed = JSON.parse(savedSuggestions);
