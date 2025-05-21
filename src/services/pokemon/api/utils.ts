@@ -5,6 +5,7 @@ import { PokemonImageType, getPreferredImageType } from "@/components/settings/I
 // Function to get image URL based on preference with improved fallback handling
 export function getPokemonImageUrl(id: number, fallbackLevel: number = 0): string {
   const preferredType = getPreferredImageType();
+  console.log(`🖼️ getPokemonImageUrl: Using preference ${preferredType} for Pokemon #${id} (fallback: ${fallbackLevel})`);
   
   // Generate URLs in order of preference
   const getImageUrl = (type: PokemonImageType): string => {
@@ -26,7 +27,9 @@ export function getPokemonImageUrl(id: number, fallbackLevel: number = 0): strin
   
   // If we're at fallback level 0, use the preferred type
   if (fallbackLevel === 0) {
-    return getImageUrl(preferredType);
+    const url = getImageUrl(preferredType);
+    console.log(`🖼️ Using primary image URL for ${preferredType}: ${url}`);
+    return url;
   }
   
   // Otherwise, use fallbacks in a priority order, skipping the already-tried preferred type
@@ -39,7 +42,10 @@ export function getPokemonImageUrl(id: number, fallbackLevel: number = 0): strin
   
   // Get the appropriate fallback
   const fallbackIndex = Math.min(fallbackLevel - 1, fallbackTypes.length - 1);
-  return getImageUrl(fallbackTypes[fallbackIndex]);
+  const fallbackType = fallbackTypes[fallbackIndex];
+  const url = getImageUrl(fallbackType);
+  console.log(`🖼️ Using fallback (${fallbackLevel}) image URL: ${url} (type: ${fallbackType})`);
+  return url;
 }
 
 // Function to fetch detailed Pokemon information

@@ -47,15 +47,24 @@ const imageTypeOptions: ImageTypeOption[] = [
 // Get the preferred image type from local storage
 export const getPreferredImageType = (): PokemonImageType => {
   const stored = localStorage.getItem("pokemon-image-preference");
+  console.log("🖼️ Getting preferred image type from localStorage:", stored);
   if (stored && (stored === "default" || stored === "official" || stored === "home" || stored === "dream")) {
     return stored;
   }
+  console.log("🖼️ No valid preference found, defaulting to official");
   return "official"; // Default to official artwork
 };
 
 // Get URL for preferred image type with fallback support
 export const getPreferredImageUrl = (pokemonId: number, fallbackLevel?: number): string => {
   const preference = getPreferredImageType();
+  console.log(`🖼️ Getting image for Pokémon #${pokemonId} with preference: ${preference}, fallback: ${fallbackLevel}`);
+  
+  // Direct function to get URL for a specific type
+  const getUrlForType = (type: PokemonImageType): string => {
+    const option = imageTypeOptions.find(opt => opt.id === type);
+    return option ? option.url(pokemonId) : imageTypeOptions[1].url(pokemonId);
+  };
   
   // If fallbackLevel is provided, use it to determine which fallback to try
   if (fallbackLevel !== undefined && fallbackLevel > 0) {
@@ -72,13 +81,13 @@ export const getPreferredImageUrl = (pokemonId: number, fallbackLevel?: number):
     const fallbackIndex = Math.min(fallbackLevel - 1, fallbackTypes.length - 1);
     const fallbackType = fallbackTypes[fallbackIndex];
     
-    const option = imageTypeOptions.find(opt => opt.id === fallbackType);
-    return option ? option.url(pokemonId) : imageTypeOptions[1].url(pokemonId);
+    console.log(`🖼️ Using fallback #${fallbackLevel}: ${fallbackType}`);
+    return getUrlForType(fallbackType);
   }
   
   // No fallback specified, just use preferred type
-  const option = imageTypeOptions.find(opt => opt.id === preference);
-  return option ? option.url(pokemonId) : imageTypeOptions[1].url(pokemonId);
+  console.log(`🖼️ Using primary preference: ${preference}`);
+  return getUrlForType(preference);
 };
 
 // Export image options for use elsewhere
@@ -102,6 +111,7 @@ const ImagePreferenceSelector: React.FC<ImagePreferenceSelectorProps> = ({ onClo
   };
 
   const handleSave = () => {
+    console.log(`🖼️ Saving image preference: ${selectedImageType}`);
     localStorage.setItem("pokemon-image-preference", selectedImageType);
     toast.success("Image preference saved!", {
       description: "Your preferred Pokémon image style has been saved."

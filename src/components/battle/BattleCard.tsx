@@ -3,7 +3,7 @@ import React, { memo, useCallback, useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Pokemon } from "@/services/pokemon";
 import { MousePointerClick } from "lucide-react";
-import { getPreferredImageUrl } from "@/components/settings/ImagePreferenceSelector";
+import { getPreferredImageUrl, getPreferredImageType } from "@/components/settings/ImagePreferenceSelector";
 
 interface BattleCardProps {
   pokemon: Pokemon;
@@ -34,8 +34,13 @@ const BattleCard: React.FC<BattleCardProps> = memo(({
     setImageError(false);
     setRetryCount(0);
     
+    // Get current preference and log it
+    const currentPreference = getPreferredImageType();
+    console.log(`🖼️ BattleCard: Loading image for ${pokemon.name} with preference: ${currentPreference}`);
+    
     // Always start with the preferred image type from settings
     const preferredImageUrl = getPreferredImageUrl(pokemon.id);
+    console.log(`🖼️ BattleCard: Using image URL: ${preferredImageUrl}`);
     setCurrentImageUrl(preferredImageUrl);
     
     // Preload the image
@@ -60,7 +65,7 @@ const BattleCard: React.FC<BattleCardProps> = memo(({
 
   // Handle image load success
   const handleImageLoad = () => {
-    console.log(`Image loaded for Pokemon: ${pokemon.name}`);
+    console.log(`🖼️ Image loaded for Pokemon: ${pokemon.name} (${currentImageUrl})`);
     setImageLoaded(true);
     setImageError(false);
   };
@@ -68,16 +73,16 @@ const BattleCard: React.FC<BattleCardProps> = memo(({
   // Handle image load error with improved fallback logic
   const handleImageError = () => {
     if (retryCount < maxRetries) {
-      console.log(`Image error for Pokemon: ${pokemon.name}, trying fallback #${retryCount + 1}`);
+      console.log(`🖼️ Image error for Pokemon: ${pokemon.name}, trying fallback #${retryCount + 1}`);
       setRetryCount(prev => prev + 1);
       setImageError(true);
       
       // Try next fallback using the image utility function
       const nextUrl = getPreferredImageUrl(pokemon.id, retryCount + 1);
-      console.log(`Trying fallback URL: ${nextUrl} for ${pokemon.name}`);
+      console.log(`🖼️ Trying fallback URL: ${nextUrl} for ${pokemon.name}`);
       setCurrentImageUrl(nextUrl);
     } else {
-      console.log(`All fallbacks failed for Pokemon: ${pokemon.name}`);
+      console.log(`🖼️ All fallbacks failed for Pokemon: ${pokemon.name}`);
       setImageError(true);
     }
   };
@@ -91,6 +96,12 @@ const BattleCard: React.FC<BattleCardProps> = memo(({
     ${isSelected ? "ring-4 ring-primary" : ""} 
     ${isProcessing ? "opacity-70 pointer-events-none" : "hover:scale-105"}
   `;
+
+  // Debug check if this Pokemon has a suggestion
+  if ((pokemon as any).suggestedAdjustment) {
+    const suggestion = (pokemon as any).suggestedAdjustment;
+    console.log(`🎯 BattleCard: Rendering Pokemon ${pokemon.name} with suggestion: ${suggestion.direction} x${suggestion.strength} (used: ${suggestion.used})`);
+  }
 
   return (
     <Card 

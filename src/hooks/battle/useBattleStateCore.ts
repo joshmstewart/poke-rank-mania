@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { useBattleStarterIntegration } from "@/hooks/battle/useBattleStarterIntegration";
@@ -14,6 +13,9 @@ export const useBattleStateCore = (
   initialBattleType: BattleType,
   initialSelectedGeneration: number
 ) => {
+  // Keep track if we need to reload suggestions after milestone
+  const [needsToReloadSuggestions, setNeedsToReloadSuggestions] = useState(false);
+  
   const [currentBattle, setCurrentBattle] = useState<Pokemon[]>([]);
   const [battleResults, setBattleResults] = useState<any[]>([]);
   const [battlesCompleted, setBattlesCompleted] = useState(0);
@@ -48,7 +50,8 @@ export const useBattleStateCore = (
     removeSuggestion,
     markSuggestionUsed,
     clearAllSuggestions,
-    findNextSuggestion
+    findNextSuggestion,
+    loadSavedSuggestions
   } = useRankings(allPokemon);
 
   const {
@@ -103,15 +106,35 @@ export const useBattleStateCore = (
     markSuggestionUsed
   );
   
+  // This effect ensures that when we show a milestone, we mark that we need to reload suggestions
+  // when we continue battling
+  useEffect(() => {
+    if (showingMilestone) {
+      console.log("🔄 useBattleStateCore: Milestone shown, marking to reload suggestions when continuing");
+      setNeedsToReloadSuggestions(true);
+    }
+  }, [showingMilestone]);
+  
   // This effect ensures that when we resume battling after a milestone,
   // suggestions from localStorage are reloaded and applied
   useEffect(() => {
-    if (!showingMilestone && finalRankings.length > 0) {
+    if (!showingMilestone && needsToReloadSuggestions) {
+      console.log("🔄 useBattleStateCore: Continuing after milestone, reloading suggestions");
+      
+      // Reset the flag
+      setNeedsToReloadSuggestions(false);
+      
+      // Load all saved suggestions from localStorage and apply them
+      const loadedSuggestions = loadSavedSuggestions();
+      console.log(`📥 useBattleStateCore: Reloaded ${loadedSuggestions.size} suggestions after milestone`);
+      
       // Force ranking generation with the current battle results to ensure suggestions are preserved
-      console.log("⭐ Forcing ranking generation to ensure suggestions are preserved after milestone");
-      generateRankings(battleResults);
+      if (finalRankings.length > 0) {
+        console.log("⭐ useBattleStateCore: Forcing ranking generation to ensure suggestions are preserved after milestone");
+        generateRankings(battleResults);
+      }
     }
-  }, [showingMilestone, finalRankings.length, generateRankings, battleResults]);
+  }, [showingMilestone, needsToReloadSuggestions, loadSavedSuggestions, finalRankings.length, generateRankings, battleResults]);
 
   // Added effect to ensure suggestions are loaded at mount time
   useEffect(() => {
@@ -125,9 +148,12 @@ export const useBattleStateCore = (
       if (battleResults.length > 0) {
         console.log(`🔄 useBattleStateCore: Generating initial rankings from ${battleResults.length} battles`);
         generateRankings(battleResults);
+      } else {
+        // If no battle results yet, at least load the suggestions
+        loadSavedSuggestions();
       }
     }
-  }, [finalRankings.length, battleResults, generateRankings]);
+  }, [finalRankings.length, battleResults, generateRankings, loadSavedSuggestions]);
   
   // Debug effect to log every time finalRankings changes
   useEffect(() => {
