@@ -13,14 +13,28 @@ const shouldIncludePokemon = (pokemon: { name: string, id: number }) => {
       const filters = JSON.parse(storedFilters);
       
       // If all filters are enabled, include all Pokemon
-      if (filters.mega && filters.regional && filters.gender && filters.forms) {
+      if (filters.megaGmax && filters.regional && filters.gender && filters.forms && 
+          filters.originPrimal && filters.costumes) {
         return true;
       }
       
       const name = pokemon.name.toLowerCase();
 
-      // Check for mega evolutions
-      if (name.includes("mega") && !filters.mega) {
+      // Check for costume forms (Pikachu variants)
+      if ((name.includes("pikachu") && (
+          name.includes("cap") || name.includes("phd") || name.includes("cosplay") || 
+          name.includes("belle") || name.includes("libre") || name.includes("pop-star") || 
+          name.includes("rock-star"))) && !filters.costumes) {
+        return false;
+      }
+      
+      // Check for Origin and Primal forms
+      if ((name.includes("origin") || name.includes("primal")) && !filters.originPrimal) {
+        return false;
+      }
+      
+      // Check for mega evolutions and gigantamax
+      if ((name.includes("mega") || name.includes("gmax")) && !filters.megaGmax) {
         return false;
       }
       
@@ -39,9 +53,8 @@ const shouldIncludePokemon = (pokemon: { name: string, id: number }) => {
       // Check for special forms - expanded to include more form types
       if ((name.includes("form") || name.includes("style") || name.includes("mode") || 
            name.includes("size") || name.includes("cloak") || name.includes("rotom-") ||
-           name.includes("gmax") || name.includes("primal") || name.includes("forme") ||
-           name.includes("origin") || name.includes("unbound") || name.includes("gorging") ||
-           name.includes("eternamax") || name.includes("cap") || name.includes("-theme")) && 
+           name.includes("forme") || name.includes("unbound") || name.includes("gorging") ||
+           name.includes("eternamax") || name.includes("-theme")) && 
           !filters.forms) {
         return false;
       }

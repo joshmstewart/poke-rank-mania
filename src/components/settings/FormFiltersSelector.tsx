@@ -10,7 +10,9 @@ export type PokemonFormType =
   | "megaGmax" 
   | "regional" 
   | "gender" 
-  | "forms";
+  | "forms"
+  | "originPrimal"
+  | "costumes";
 
 // Image URLs for different form types
 const formExampleImages = {
@@ -18,6 +20,8 @@ const formExampleImages = {
   regional: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10091.png", // Alolan Muk
   gender: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/female/593.png", // Female Jellicent
   forms: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10120.png", // Hoopa Unbound
+  originPrimal: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10080.png", // Primal Kyogre
+  costumes: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25-original-cap.png", // Pikachu with cap
 };
 
 export function FormFiltersSelector() {
@@ -60,6 +64,8 @@ export function FormFiltersSelector() {
       case "regional": return "Regional Variants";
       case "gender": return "Gender Differences";
       case "forms": return "Special Forms";
+      case "originPrimal": return "Origin & Primal Forms";
+      case "costumes": return "Costume Pokémon";
     }
   };
 
@@ -106,6 +112,36 @@ export function FormFiltersSelector() {
               id="regional" 
               checked={filters.regional}
               onCheckedChange={() => handleToggleFilter("regional")} 
+            />
+          </div>
+        </div>
+        
+        {/* Origin & Primal Forms */}
+        <div className="flex items-center space-x-3">
+          <div className="h-10 w-10 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden">
+            <img src={formExampleImages.originPrimal} alt="Origin/Primal Form" className="h-8 w-8 object-contain" />
+          </div>
+          <div className="flex flex-1 items-center justify-between">
+            <Label htmlFor="originPrimal" className="text-sm">Origin & Primal Forms</Label>
+            <Switch 
+              id="originPrimal" 
+              checked={filters.originPrimal}
+              onCheckedChange={() => handleToggleFilter("originPrimal")} 
+            />
+          </div>
+        </div>
+        
+        {/* Costume Pokémon */}
+        <div className="flex items-center space-x-3">
+          <div className="h-10 w-10 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden">
+            <img src={formExampleImages.costumes} alt="Costume Pokémon" className="h-8 w-8 object-contain" />
+          </div>
+          <div className="flex flex-1 items-center justify-between">
+            <Label htmlFor="costumes" className="text-sm">Costume Pokémon</Label>
+            <Switch 
+              id="costumes" 
+              checked={filters.costumes}
+              onCheckedChange={() => handleToggleFilter("costumes")} 
             />
           </div>
         </div>

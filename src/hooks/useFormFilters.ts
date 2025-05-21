@@ -8,6 +8,8 @@ interface FormFilters {
   regional: boolean;
   gender: boolean;
   forms: boolean;
+  originPrimal: boolean;
+  costumes: boolean;
 }
 
 // Store for tracking "excluded" pokemon that were previously in battles
@@ -29,7 +31,9 @@ const getStoredFilters = (): FormFilters => {
     megaGmax: false,
     regional: true,
     gender: true,
-    forms: true
+    forms: true,
+    originPrimal: true,
+    costumes: true
   };
 };
 
@@ -55,7 +59,9 @@ export const useFormFilters = () => {
       megaGmax: newValue,
       regional: newValue,
       gender: newValue,
-      forms: newValue
+      forms: newValue,
+      originPrimal: newValue,
+      costumes: newValue
     };
     localStorage.setItem('pokemon-form-filters', JSON.stringify(updated));
     setFilters(updated);
@@ -64,6 +70,23 @@ export const useFormFilters = () => {
   // Check if a Pokemon belongs to a specific form category
   const getPokemonFormCategory = (pokemon: Pokemon): PokemonFormType | null => {
     const name = pokemon.name.toLowerCase();
+    
+    // Check for costumes (Pikachu caps and cosplay forms)
+    if (name.includes("pikachu") && (
+        name.includes("cap") || 
+        name.includes("phd") || 
+        name.includes("cosplay") || 
+        name.includes("belle") || 
+        name.includes("libre") || 
+        name.includes("pop-star") || 
+        name.includes("rock-star"))) {
+      return "costumes";
+    }
+    
+    // Check for Origin and Primal forms
+    if (name.includes("origin") || name.includes("primal")) {
+      return "originPrimal";
+    }
     
     // Check for mega evolutions and gigantamax forms (combined)
     if (name.includes("mega") || name.includes("gmax")) {
@@ -86,20 +109,17 @@ export const useFormFilters = () => {
       return "gender";
     }
     
-    // Check for special forms (expanded to include more form types)
+    // Check for special forms (expanded to include more form types, but excluding what's now in other categories)
     if (name.includes("form") || 
         name.includes("style") || 
         name.includes("mode") || 
         name.includes("size") || 
         name.includes("cloak") ||
         name.includes("rotom-") ||
-        name.includes("primal") ||
         name.includes("forme") ||
-        name.includes("origin") ||
         name.includes("unbound") ||
         name.includes("gorging") ||
         name.includes("eternamax") ||
-        name.includes("cap") ||
         name.includes("-theme")) {
       return "forms";
     }

@@ -13,11 +13,10 @@ export const logPokemonVariations = (allPokemon: Pokemon[]) => {
       { name: "Galarian Forms", pattern: /galarian/i },
       { name: "Hisuian Forms", pattern: /hisuian/i },
       { name: "Paldean Forms", pattern: /paldean/i },
+      { name: "Origin & Primal Forms", pattern: /(origin|primal)/i },
+      { name: "Costume Pokémon", pattern: /(pikachu.*cap|pikachu-belle|pikachu-libre|pikachu-phd|pikachu-pop-star|pikachu-rock-star|pikachu-cosplay)/i },
       { name: "Special Gender Forms", pattern: /(female|male|-f|-m)/i },
       { name: "Special Rotom Forms", pattern: /rotom-/i },
-      { name: "Primal Forms", pattern: /primal/i },
-      { name: "Origin Forms", pattern: /origin/i },
-      { name: "Costume Pikachu", pattern: /(pikachu.*cap|pikachu-belle|pikachu-libre|pikachu-phd|pikachu-pop-star|pikachu-rock-star|pikachu-cosplay)/i },
       { name: "Other Special Forms", pattern: /(form|style|mode|size|cloak|forme|unbound|gorging|eternamax|theme)/i }
     ];
     
