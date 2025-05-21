@@ -1,4 +1,3 @@
-
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { BattleType } from "./types";
 
@@ -44,12 +43,22 @@ export const createBattleStarter = (
     // Get the current top N Pokémon based on the tier
     const topCandidates = currentFinalRankings
       .slice(0, tierSize)
-      .filter(p => !isPokemonFrozenForTier || !isPokemonFrozenForTier(p.id, activeTier));
+      .filter(p => !isPokemonFrozenForTier || !isPokemonFrozenForTier(p.id, activeTier))
+      .map(p => {
+        // Extract just the Pokemon properties without the ranking properties
+        const { score, count, confidence, isFrozenForTier, ...pokemonProps } = p;
+        return pokemonProps as Pokemon;
+      });
     
     // Get Pokémon just below the cutoff (challenger pool)
     const nearCandidates = currentFinalRankings
       .slice(tierSize, tierSize + 25)
-      .filter(p => !isPokemonFrozenForTier || !isPokemonFrozenForTier(p.id, activeTier));
+      .filter(p => !isPokemonFrozenForTier || !isPokemonFrozenForTier(p.id, activeTier))
+      .map(p => {
+        // Extract just the Pokemon properties
+        const { score, count, confidence, isFrozenForTier, ...pokemonProps } = p;
+        return pokemonProps as Pokemon;
+      });
     
     // Get Pokémon with few battles (discovery pool)
     const unrankedCandidates = allPokemonForGeneration

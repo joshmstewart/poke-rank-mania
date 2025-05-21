@@ -1,4 +1,3 @@
-
 import React from "react";
 import {
   Table,
@@ -8,8 +7,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { RankedPokemon } from "@/hooks/battle/useRankings";
-import { generations, TopNOption } from "@/services/pokemon";
+import { generations, TopNOption, RankedPokemon } from "@/services/pokemon";
 import { Progress } from "@/components/ui/progress"; 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Trophy } from "lucide-react";

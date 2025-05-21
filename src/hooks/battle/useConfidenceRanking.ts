@@ -1,7 +1,5 @@
-
 import { useState } from "react";
-import { Pokemon } from "@/services/pokemon";
-import { RankedPokemon } from "./useRankings";
+import { Pokemon, RankedPokemon } from "@/services/pokemon";
 
 const DEFAULT_CONFIDENCE_THRESHOLD = 0.15;
 

@@ -13,7 +13,7 @@ export interface RankedPokemon extends Pokemon {
   count: number;      // Number of battles the Pokémon has participated in
   confidence: number; // Will be derived from sigma (lower sigma = higher confidence)
   isFrozenForTier?: {
-    [tier: number]: boolean;
+    [tier: string]: boolean;
   };
 }
 

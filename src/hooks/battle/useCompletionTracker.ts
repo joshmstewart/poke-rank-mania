@@ -1,7 +1,6 @@
-
 import { useEffect, useRef, useState, useCallback } from "react";
 import { SingleBattle } from "./types";
-import { RankedPokemon } from "./useRankings";
+import { RankedPokemon } from "@/services/pokemon";
 
 export const useCompletionTracker = (
   battleResults: SingleBattle[],

@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -7,8 +6,7 @@ import { RankingResults } from "./ranking/RankingResults";
 import { RankingUI } from "./ranking/RankingUI";
 import { usePokemonRanker } from "@/hooks/usePokemonRanker";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { generations } from "@/services/pokemon";
-import { RankedPokemon } from "@/hooks/battle/useRankings";
+import { generations, RankedPokemon } from "@/services/pokemon";
 
 const PokemonRanker = () => {
   const {
