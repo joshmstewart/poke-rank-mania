@@ -1,4 +1,5 @@
-import { useState, useCallback, useEffect } from "react";
+
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { useBattleStarterIntegration } from "@/hooks/battle/useBattleStarterIntegration";
 import { useBattleProcessor } from "@/hooks/battle/useBattleProcessor";
