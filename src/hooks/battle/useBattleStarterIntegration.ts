@@ -4,6 +4,7 @@ import { BattleType } from "./types";
 import { createBattleStarter } from "./createBattleStarter";
 import { toast } from "@/hooks/use-toast";
 import { useBattleEmergencyReset } from "./useBattleEmergencyReset";
+import { Button } from "@/components/ui/button";
 
 export const useBattleStarterIntegration = (
   allPokemon: Pokemon[],
@@ -132,20 +133,21 @@ export const useBattleStarterIntegration = (
         
         setIsStuckInSameBattle(true);
         
-        // Show toast with reset option
+        // Show toast with reset option - Fixed by using children instead of label
         toast({
           title: "System Stuck",
           description: "The battle system is showing the same Pokemon repeatedly. Click to reset.",
-          action: {
-            label: "Reset",
-            onClick: () => {
+          action: (
+            <Button variant="destructive" size="sm" onClick={() => {
               // Force complete reset
               performEmergencyReset();
               // Clear our tracking
               recentBattlesRef.current = [];
               setIsStuckInSameBattle(false);
-            }
-          },
+            }}>
+              Reset
+            </Button>
+          ),
           duration: 15000
         });
       } else {

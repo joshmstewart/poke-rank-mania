@@ -2,6 +2,7 @@
 import { useEffect } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { toast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
 
 /**
  * This hook provides emergency reset functionality for battle selection
@@ -78,14 +79,15 @@ export const useBattleEmergencyReset = (
             
             // If both are present, we might have tracking issues
             if (recentlyUsed && lastBattle) {
-              // Give option to reset
+              // Give option to reset - fixed by using children instead of action.label
               toast({
                 title: "Battle System Stuck?",
                 description: "Click to reset and get new Pokémon",
-                action: {
-                  label: "Reset",
-                  onClick: performEmergencyReset
-                },
+                action: (
+                  <Button variant="outline" size="sm" onClick={performEmergencyReset}>
+                    Reset
+                  </Button>
+                ),
                 duration: 10000
               });
             }
