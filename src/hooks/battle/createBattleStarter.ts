@@ -19,21 +19,69 @@ export const createBattleStarter = (
       return [];
     }
 
-    // DETAILED LOGGING: Check for suggestions before filtering
-    console.log(`🔎 VERIFICATION: Analyzing ${filteredPokemon.length} Pokémon for suggestions`);
+    // CRITICAL FIX: Always check localStorage directly first
+    console.log(`🔍 DIRECT CHECK: Looking for suggestions directly in localStorage`);
+    let directSuggestionPokemon: Pokemon[] = [];
     
-    // CRITICAL FIX: Before the battle starts, force a check of localStorage for suggestions
     try {
-      const savedSuggestions = localStorage.getItem('pokemon-active-suggestions');
-      if (savedSuggestions) {
-        console.log("💾 FORCE CHECK: Found suggestions in localStorage before battle!");
-        const parsed = JSON.parse(savedSuggestions);
-        const suggestionsCount = Object.keys(parsed).length;
-        console.log(`💾 FORCE CHECK: Found ${suggestionsCount} suggestions in localStorage`);
+      const rawSuggestions = localStorage.getItem('pokemon-active-suggestions');
+      if (rawSuggestions) {
+        console.log(`💾 DIRECT CHECK: Found raw suggestion data in localStorage: ${rawSuggestions.substring(0, 100)}...`);
+        
+        const parsedSuggestions = JSON.parse(rawSuggestions);
+        const suggestedIds = Object.keys(parsedSuggestions)
+          .map(id => Number(id))
+          .filter(id => !parsedSuggestions[id].used); // Only unused suggestions
+        
+        console.log(`🎯 DIRECT CHECK: Found ${suggestedIds.length} unused suggestion IDs in localStorage`);
+        
+        if (suggestedIds.length > 0) {
+          // Find the Pokemon objects matching these IDs
+          directSuggestionPokemon = filteredPokemon.filter(p => suggestedIds.includes(p.id));
+          
+          console.log(`🎯 DIRECT CHECK: Matched ${directSuggestionPokemon.length} Pokemon with suggestions:`);
+          directSuggestionPokemon.forEach(p => console.log(`  - ${p.name} (ID: ${p.id})`));
+          
+          // If we found direct suggestion Pokemon, use one of them for battle
+          if (directSuggestionPokemon.length > 0) {
+            const selectedSuggestion = directSuggestionPokemon[Math.floor(Math.random() * directSuggestionPokemon.length)];
+            console.log(`⭐ DIRECT CHECK: Selected suggested Pokémon: ${selectedSuggestion.name} (ID: ${selectedSuggestion.id})`);
+            
+            // Get the remaining battle slots from other Pokémon
+            const remainingSlots = battleType === "triplets" ? 2 : 1;
+            let otherPokemon = filteredPokemon.filter(p => p.id !== selectedSuggestion.id);
+            
+            // Shuffle the other Pokémon
+            otherPokemon = shuffleArray(otherPokemon);
+            
+            // Create the battle with the suggested Pokémon and random others
+            const battlePokemon = [
+              selectedSuggestion,
+              ...otherPokemon.slice(0, remainingSlots)
+            ];
+            
+            // Shuffle the order so the suggested Pokémon isn't always first
+            const shuffledBattle = shuffleArray(battlePokemon);
+            
+            console.log(`🆕 DIRECT CHECK: Created battle with suggested Pokémon: ${shuffledBattle.map(p => p.name).join(', ')}`);
+            
+            // CRITICAL FIX: Log the exact suggestion from localStorage
+            const exactSuggestion = parsedSuggestions[selectedSuggestion.id.toString()];
+            console.log(`🔍 DIRECT CHECK: Exact suggestion for ${selectedSuggestion.name}:`, exactSuggestion);
+            
+            setCurrentBattle(shuffledBattle);
+            return shuffledBattle;
+          }
+        }
+      } else {
+        console.log("💾 DIRECT CHECK: No suggestions found in localStorage");
       }
     } catch (e) {
-      console.error("Error checking localStorage:", e);
+      console.error("❌ DIRECT CHECK: Error accessing localStorage:", e);
     }
+    
+    // DETAILED LOGGING: Check for suggestions before filtering
+    console.log(`🔎 VERIFICATION: Analyzing ${filteredPokemon.length} Pokémon for suggestions via state`);
     
     // Find Pokémon with active suggestions that haven't been used yet
     const suggestedPokemon = filteredPokemon.filter(p => {
@@ -47,7 +95,7 @@ export const createBattleStarter = (
       return hasSuggestion;
     });
     
-    console.log(`🎯 createBattleStarter: Found ${suggestedPokemon.length} Pokémon with unused suggestions`);
+    console.log(`🎯 createBattleStarter: Found ${suggestedPokemon.length} Pokémon with unused suggestions in state`);
     
     // VERIFICATION: Log each suggested Pokemon for debugging
     if (suggestedPokemon.length > 0) {
