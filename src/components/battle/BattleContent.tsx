@@ -109,14 +109,15 @@ const BattleContent = ({ allPokemon, initialBattleType, initialSelectedGeneratio
     startNewBattle(battleType);
   };
 
-  const handleContinueBattles = () => {
-    setShowingMilestone(false);
-    // Reset the milestone processing flag when continuing battles
-    if (processorRefs?.resetMilestoneInProgress) {
-      processorRefs.resetMilestoneInProgress();
-    }
-    startNewBattle(battleType);
-  };
+const handleContinueBattles = () => {
+  setShowingMilestone(false);
+  if (processorRefs?.resetMilestoneInProgress) {
+    processorRefs.resetMilestoneInProgress();
+  }
+  window.dispatchEvent(new Event("milestoneEnded")); // 🔥 explicitly added line
+  startNewBattle(battleType);
+};
+
 
   const handleNewBattleSet = () => {
     resetMilestones();

@@ -145,29 +145,18 @@ export const useBattleStateCore = (
   // This effect ensures that when we resume battling after a milestone,
   // suggestions from localStorage are reloaded and applied
   useEffect(() => {
-    if (!showingMilestone && needsToReloadSuggestions) {
-      console.log("🔄 useBattleStateCore: Continuing after milestone, reloading suggestions");
-      
-      // Reset the flag
-      setNeedsToReloadSuggestions(false);
-      
-      // Load all saved suggestions from localStorage and apply them
-      const loadedSuggestions = loadSavedSuggestions();
-      console.log(`📥 useBattleStateCore: Reloaded ${loadedSuggestions.size} suggestions after milestone`);
-      
-      // Force ranking generation with the current battle results to ensure suggestions are preserved
-      if (finalRankings.length > 0) {
-        console.log("⭐ useBattleStateCore: Forcing ranking generation to ensure suggestions are preserved after milestone");
-        generateRankings(battleResults);
-        
-        // VERIFICATION: Check if suggestions were successfully applied
-        setTimeout(() => {
-          const suggestedCount = finalRankings.filter(p => p.suggestedAdjustment).length;
-          console.log(`📊 VERIFY: After reloading, ${suggestedCount} Pokemon have suggestions applied`);
-        }, 100);
-      }
-    }
-  }, [showingMilestone, needsToReloadSuggestions, loadSavedSuggestions, finalRankings.length, generateRankings, battleResults]);
+  if (!showingMilestone && needsToReloadSuggestions) {
+    console.log("🔄 Continuing after milestone, explicitly reloading suggestions");
+    
+    setNeedsToReloadSuggestions(false);
+    
+    const loadedSuggestions = loadSavedSuggestions();
+    console.log(`📥 Reloaded ${loadedSuggestions.size} suggestions explicitly after milestone`);
+
+    // Explicitly regenerate rankings from scratch to ensure suggestions load
+    generateRankings(battleResults);
+  }
+}, [showingMilestone, needsToReloadSuggestions, loadSavedSuggestions, generateRankings, battleResults]);
 
   // Added effect to ensure suggestions are loaded at mount time
   useEffect(() => {

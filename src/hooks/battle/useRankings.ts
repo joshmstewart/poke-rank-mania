@@ -83,11 +83,19 @@ export const useRankings = (allPokemon: Pokemon[]) => {
       })
       .sort((a, b) => b.score - a.score);
 
-    const filteredRankings = activeTier === "All" 
-      ? allRankedPokemon 
-      : allRankedPokemon.slice(0, Number(activeTier));
+const filteredRankings = activeTier === "All" 
+  ? allRankedPokemon 
+  : allRankedPokemon.slice(0, Number(activeTier));
 
-    setFinalRankings(filteredRankings);
+// Explicitly reload suggestions here:
+const savedSuggestions = loadSavedSuggestions();
+const finalWithSuggestions = filteredRankings.map(pokemon => ({
+  ...pokemon,
+  suggestedAdjustment: savedSuggestions.get(pokemon.id)
+}));
+
+setFinalRankings(finalWithSuggestions);
+
 
     const confidenceMap: Record<number, number> = {};
     allRankedPokemon.forEach(p => {

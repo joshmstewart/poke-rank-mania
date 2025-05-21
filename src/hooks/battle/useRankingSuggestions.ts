@@ -72,8 +72,12 @@ const markSuggestionUsed = useCallback((pokemon: RankedPokemon) => {
       description: `${suggestion.direction === "up" ? "↑" : "↓"} Rating updated!`,
       duration: 3000
     });
+
+    // Explicitly reload rankings after marking suggestion used
+    generateRankings(battleResults);
   }
-}, [setPokemonList, saveSuggestions]);
+}, [setPokemonList, saveSuggestions, generateRankings, battleResults]);
+
 
 const findNextSuggestion = useCallback(() => {
   return pokemonList.find(p => p.suggestedAdjustment && !p.suggestedAdjustment.used);
