@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef } from "react";
+import React, { useCallback } from "react";
 import { useFormFilters } from "@/hooks/useFormFilters";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -28,26 +28,40 @@ export function FormFiltersSelector() {
     toggleAll
   } = useFormFilters();
   
-  // Create the ref at the component top level
-  const isFirstRender = useRef(true);
-
-  // Effect to reload pokemon when filters change
-  useEffect(() => {
-    // Skip on first render
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
-    }
+  // Callback to handle toggling a filter
+  const handleToggleFilter = useCallback((filter: PokemonFormType) => {
+    toggleFilter(filter);
     
-    // Inform user that filters have changed
+    // Show toast with appropriate message
     toast({
-      title: "Form filters updated",
-      description: "The Pokemon list has been filtered according to your preferences.",
+      title: `${filters[filter] ? "Disabled" : "Enabled"} ${getFilterName(filter)}`,
+      description: filters[filter] 
+        ? `${getFilterName(filter)} will no longer appear in battles`
+        : `${getFilterName(filter)} will now be included in battles`,
     });
-
-    // Force a reload of the component to apply filters
-    window.location.reload();
-  }, [filters]);
+  }, [filters, toggleFilter]);
+  
+  // Callback to handle toggling all filters
+  const handleToggleAll = useCallback(() => {
+    toggleAll();
+    
+    toast({
+      title: isAllEnabled ? "Disabled some Pokémon forms" : "Enabled all Pokémon forms",
+      description: isAllEnabled 
+        ? "Only standard forms will appear in battles"
+        : "All Pokémon forms will be included in battles",
+    });
+  }, [isAllEnabled, toggleAll]);
+  
+  // Helper to get friendly filter name
+  const getFilterName = (filter: PokemonFormType): string => {
+    switch (filter) {
+      case "megaGmax": return "Mega & Gigantamax Forms";
+      case "regional": return "Regional Variants";
+      case "gender": return "Gender Differences";
+      case "forms": return "Special Forms";
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -57,7 +71,7 @@ export function FormFiltersSelector() {
           <Switch 
             id="all-forms" 
             checked={isAllEnabled}
-            onCheckedChange={toggleAll} 
+            onCheckedChange={handleToggleAll} 
           />
           <Label htmlFor="all-forms" className="text-sm">All Forms</Label>
         </div>
@@ -76,7 +90,7 @@ export function FormFiltersSelector() {
             <Switch 
               id="megaGmax" 
               checked={filters.megaGmax}
-              onCheckedChange={() => toggleFilter("megaGmax")} 
+              onCheckedChange={() => handleToggleFilter("megaGmax")} 
             />
           </div>
         </div>
@@ -91,7 +105,7 @@ export function FormFiltersSelector() {
             <Switch 
               id="regional" 
               checked={filters.regional}
-              onCheckedChange={() => toggleFilter("regional")} 
+              onCheckedChange={() => handleToggleFilter("regional")} 
             />
           </div>
         </div>
@@ -106,7 +120,7 @@ export function FormFiltersSelector() {
             <Switch 
               id="gender" 
               checked={filters.gender}
-              onCheckedChange={() => toggleFilter("gender")} 
+              onCheckedChange={() => handleToggleFilter("gender")} 
             />
           </div>
         </div>
@@ -121,7 +135,7 @@ export function FormFiltersSelector() {
             <Switch 
               id="forms" 
               checked={filters.forms}
-              onCheckedChange={() => toggleFilter("forms")} 
+              onCheckedChange={() => handleToggleFilter("forms")} 
             />
           </div>
         </div>

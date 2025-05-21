@@ -9,7 +9,7 @@ export const usePokemonLoader = () => {
   const [isLoading, setIsLoading] = useState(false);
   
   // Get form filters
-  const { shouldIncludePokemon } = useFormFilters();
+  const { shouldIncludePokemon, storePokemon } = useFormFilters();
 
   const loadPokemon = useCallback(async (genId = 0, fullRankingMode = true) => {
     setIsLoading(true);
@@ -20,32 +20,18 @@ export const usePokemonLoader = () => {
       const pokemon = await fetchAllPokemon(genId, fullRankingMode);
       console.log(`Loaded ${pokemon.length} Pokémon from API before filtering`);
       
-      // Check for special variants in the loaded data
-      const specialForms = pokemon.filter(p => {
-        const name = p.name.toLowerCase();
-        return name.includes("form") || name.includes("mega") || name.includes("alolan") || 
-               name.includes("galarian") || name.includes("gmax") || name.includes("style") || 
-               name.includes("mode");
+      // Filter Pokemon according to user preferences
+      // And store filtered Pokemon for potential later use
+      const filteredPokemon = pokemon.filter(p => {
+        const include = shouldIncludePokemon(p);
+        if (!include) {
+          // Store filtered Pokemon in case filter is re-enabled later
+          storePokemon(p);
+        }
+        return include;
       });
       
-      console.log(`Special forms found in API data: ${specialForms.length}`);
-      if (specialForms.length > 0) {
-        console.log("Examples:", specialForms.slice(0, 5).map(p => p.name));
-      }
-      
-      // Apply form filters
-      const filteredPokemon = pokemon.filter(shouldIncludePokemon);
       console.log(`After filtering: ${filteredPokemon.length} Pokémon remaining`);
-      
-      // Check for special forms after filtering
-      const remainingSpecialForms = filteredPokemon.filter(p => {
-        const name = p.name.toLowerCase();
-        return name.includes("form") || name.includes("mega") || name.includes("alolan") || 
-               name.includes("galarian") || name.includes("gmax") || name.includes("style") || 
-               name.includes("mode");
-      });
-      
-      console.log(`Special forms after filtering: ${remainingSpecialForms.length}`);
       
       setAllPokemon(filteredPokemon);
       setIsLoading(false);
@@ -60,7 +46,7 @@ export const usePokemonLoader = () => {
       setIsLoading(false);
       return [];
     }
-  }, [shouldIncludePokemon]);
+  }, [shouldIncludePokemon, storePokemon]);
 
   return {
     allPokemon,

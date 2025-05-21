@@ -4,6 +4,7 @@ import PokemonRanker from "@/components/PokemonRanker";
 import BattleMode from "@/components/BattleMode";
 import AppSessionManager from "@/components/AppSessionManager";
 import Logo from "@/components/ui/Logo";
+import ModeSwitcher from "@/components/ModeSwitcher";
 import { 
   Dialog,
   DialogContent, 
@@ -13,18 +14,34 @@ import {
   DialogTrigger
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Settings, Image } from "lucide-react";
+import { Settings, Image, Trophy, DraftingCompass } from "lucide-react";
 import ImagePreferenceSelector, { getPreferredImageUrl, getImageTypeOptions } from "@/components/settings/ImagePreferenceSelector";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { FormFiltersSelector } from "@/components/settings/FormFiltersSelector";
 
 // Pikachu ID for preview
 const PIKACHU_ID = 25;
 
 const Index = () => {
-  const [mode, setMode] = useState<"rank" | "battle">("battle"); // Default is battle mode
+  const [mode, setMode] = useState<"rank" | "battle">(() => {
+    // Try to load from localStorage or default to battle
+    const savedMode = localStorage.getItem('pokemon-ranker-mode');
+    return (savedMode === "rank" || savedMode === "battle") ? savedMode : "battle";
+  });
   const [imageSettingsOpen, setImageSettingsOpen] = useState(false);
+  const [formFiltersOpen, setFormFiltersOpen] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState<string>("");
   const [previewLoaded, setPreviewLoaded] = useState(false);
+
+  // Save mode preference when it changes
+  useEffect(() => {
+    localStorage.setItem('pokemon-ranker-mode', mode);
+  }, [mode]);
+
+  // Handle mode change
+  const handleModeChange = (newMode: "rank" | "battle") => {
+    setMode(newMode);
+  };
 
   // Load preview image when component mounts
   useEffect(() => {
@@ -58,12 +75,44 @@ const Index = () => {
             <Logo />
           </div>
           <div className="flex items-center gap-2">
+            {/* Mode Switcher */}
+            <ModeSwitcher currentMode={mode} onModeChange={handleModeChange} />
+            
+            {/* Form Filters Dialog */}
+            <TooltipProvider>
+              <Tooltip>
+                <Dialog open={formFiltersOpen} onOpenChange={setFormFiltersOpen}>
+                  <TooltipTrigger asChild>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="sm" className="flex gap-2 items-center h-9">
+                        <Settings className="h-4 w-4" />
+                        <span className="hidden sm:inline">Forms</span>
+                      </Button>
+                    </DialogTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    Filter different Pokémon form variations
+                  </TooltipContent>
+                  <DialogContent className="max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Pokémon Form Filters</DialogTitle>
+                      <DialogDescription>
+                        Choose which special form variations to include in your Pokémon battles.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <FormFiltersSelector />
+                  </DialogContent>
+                </Dialog>
+              </Tooltip>
+            </TooltipProvider>
+            
+            {/* Image Style Dialog */}
             <TooltipProvider>
               <Tooltip>
                 <Dialog open={imageSettingsOpen} onOpenChange={setImageSettingsOpen}>
                   <TooltipTrigger asChild>
                     <DialogTrigger asChild>
-                      <Button variant="outline" size="sm" className="flex gap-2 items-center h-10">
+                      <Button variant="outline" size="sm" className="flex gap-2 items-center h-9">
                         <div className="flex items-center justify-center w-5 h-5 relative">
                           {!previewLoaded && (
                             <Image className="w-4 h-4 text-gray-400" />
@@ -78,7 +127,7 @@ const Index = () => {
                             />
                           )}
                         </div>
-                        <span>Image Style</span>
+                        <span className="hidden sm:inline">Image Style</span>
                       </Button>
                     </DialogTrigger>
                   </TooltipTrigger>
@@ -102,45 +151,30 @@ const Index = () => {
                 </Dialog>
               </Tooltip>
             </TooltipProvider>
+            
             <AppSessionManager />
           </div>
         </div>
 
-        <div className="max-w-3xl mx-auto mb-6">
-          <div className="grid grid-cols-2 gap-4">
-            <div 
-              onClick={() => setMode("battle")}
-              className={`border rounded-lg p-4 cursor-pointer transition-all duration-200 hover:border-primary hover:bg-primary/5 ${mode === "battle" ? "border-primary bg-primary/5" : "border-muted"}`}
-            >
-              <div className="flex items-center space-x-2">
-                <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${mode === "battle" ? "border-primary" : "border-muted-foreground"}`}>
-                  {mode === "battle" && <div className="w-2 h-2 rounded-full bg-primary" />}
-                </div>
-                <div>
-                  <h3 className="text-base font-medium">Battle Mode</h3>
-                  <p className="text-xs text-muted-foreground">
-                    Compare Pokémon head-to-head to generate rankings.
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div 
-              onClick={() => setMode("rank")}
-              className={`border rounded-lg p-4 cursor-pointer transition-all duration-200 hover:border-primary hover:bg-primary/5 ${mode === "rank" ? "border-primary bg-primary/5" : "border-muted"}`}
-            >
-              <div className="flex items-center space-x-2">
-                <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${mode === "rank" ? "border-primary" : "border-muted-foreground"}`}>
-                  {mode === "rank" && <div className="w-2 h-2 rounded-full bg-primary" />}
-                </div>
-                <div>
-                  <h3 className="text-base font-medium">Manual Ranking</h3>
-                  <p className="text-xs text-muted-foreground">
-                    Drag and drop Pokémon to create your ranking list.
-                  </p>
-                </div>
-              </div>
+        {/* Mode Header */}
+        <div className="max-w-4xl mx-auto mb-6">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-3">
+              {mode === "battle" ? (
+                <Trophy className="h-6 w-6 text-primary" />
+              ) : (
+                <DraftingCompass className="h-6 w-6 text-primary" />
+              )}
+              <h1 className="text-2xl font-bold">
+                {mode === "battle" ? "Battle Mode" : "Manual Ranking"}
+              </h1>
             </div>
           </div>
+          <p className="text-muted-foreground">
+            {mode === "battle" 
+              ? "Compare Pokémon head-to-head to determine your personal ranking. Your choices will be used to generate a personalized tier list." 
+              : "Drag and drop Pokémon to manually create and order your personal ranking list. Perfect for fine-tuning after battles."}
+          </p>
         </div>
 
         {mode === "rank" ? <PokemonRanker /> : <BattleMode />}

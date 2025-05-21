@@ -6,8 +6,27 @@ import { Trophy, Award, Medal } from "lucide-react";
 import { getPreferredImageUrl } from "@/components/settings/ImagePreferenceSelector";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
-// Map of Pokemon types to colors
+// Map of Pokemon types to colors (corrected and expanded)
 const typeColors: Record<string, string> = {
+  normal: "bg-gray-400",
+  fire: "bg-red-500",
+  water: "bg-blue-500",
+  electric: "bg-yellow-400",
+  grass: "bg-green-500",
+  ice: "bg-blue-200",
+  fighting: "bg-red-700",
+  poison: "bg-purple-600",
+  ground: "bg-yellow-700",
+  flying: "bg-indigo-300",
+  psychic: "bg-pink-500",
+  bug: "bg-lime-500",
+  rock: "bg-stone-500",
+  ghost: "bg-purple-700",
+  dragon: "bg-indigo-600",
+  dark: "bg-stone-800 text-white",
+  steel: "bg-slate-400",
+  fairy: "bg-pink-300",
+  // Added for case insensitivity
   Normal: "bg-gray-400",
   Fire: "bg-red-500",
   Water: "bg-blue-500",
@@ -65,19 +84,23 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
     });
   }, [displayRankings]);
   
-  // Get primary type color for a Pokemon - Enhanced with better fallback
+  // Get primary type color for a Pokemon with better error handling
   const getPokemonTypeColor = (pokemon: Pokemon) => {
+    // Safeguard against missing types data
     if (!pokemon.types || !pokemon.types.length) {
-      console.log(`No types found for ${pokemon.name} (ID: ${pokemon.id})`);
-      return "bg-gray-100";
+      return "bg-gray-200";
     }
     
+    // Get primary type (first in the array)
     const primaryType = pokemon.types[0];
+    
+    // Look up the color, with explicit string type check
     const color = typeColors[primaryType];
     
+    // If no color is found, return a default
     if (!color) {
-      console.log(`Unknown type color for ${primaryType} on ${pokemon.name}`);
-      return "bg-gray-100";
+      console.warn(`No color found for type: ${primaryType} on ${pokemon.name}`);
+      return "bg-gray-200";
     }
     
     return color;

@@ -10,6 +10,9 @@ interface FormFilters {
   forms: boolean;
 }
 
+// Store for tracking "excluded" pokemon that were previously in battles
+const excludedPokemonStore = new Map<number, Pokemon>();
+
 // Retrieve filters from localStorage or use defaults (mega/gmax disabled, others enabled)
 const getStoredFilters = (): FormFilters => {
   const stored = localStorage.getItem('pokemon-form-filters');
@@ -58,54 +61,79 @@ export const useFormFilters = () => {
     setFilters(updated);
   };
   
+  // Check if a Pokemon belongs to a specific form category
+  const getPokemonFormCategory = (pokemon: Pokemon): PokemonFormType | null => {
+    const name = pokemon.name.toLowerCase();
+    
+    // Check for mega evolutions and gigantamax forms (combined)
+    if (name.includes("mega") || name.includes("gmax")) {
+      return "megaGmax";
+    }
+    
+    // Check for regional variants (expanded to include paldean variants)
+    if (name.includes("alolan") || 
+        name.includes("galarian") || 
+        name.includes("hisuian") || 
+        name.includes("paldean")) {
+      return "regional";
+    }
+    
+    // Check for gender differences (expanded to catch more naming patterns)
+    if (name.includes("female") || 
+        name.includes("male") || 
+        name.includes("-f") || 
+        name.includes("-m")) {
+      return "gender";
+    }
+    
+    // Check for special forms (expanded to include more form types)
+    if (name.includes("form") || 
+        name.includes("style") || 
+        name.includes("mode") || 
+        name.includes("size") || 
+        name.includes("cloak") ||
+        name.includes("rotom-") ||
+        name.includes("primal") ||
+        name.includes("forme") ||
+        name.includes("origin") ||
+        name.includes("unbound") ||
+        name.includes("gorging") ||
+        name.includes("eternamax") ||
+        name.includes("cap") ||
+        name.includes("-theme")) {
+      return "forms";
+    }
+    
+    return null;
+  };
+  
   // Check if a Pokemon should be included based on current filters
   const shouldIncludePokemon = (pokemon: Pokemon): boolean => {
     // If all filters are enabled, include all Pokemon
     if (isAllEnabled) return true;
     
-    const name = pokemon.name.toLowerCase();
+    const formCategory = getPokemonFormCategory(pokemon);
     
-    // Check for mega evolutions and gigantamax forms (combined)
-    if ((name.includes("mega") || name.includes("gmax")) && !filters.megaGmax) {
-      return false;
-    }
+    // If it's a standard Pokemon (not in any special form category)
+    if (!formCategory) return true;
     
-    // Check for regional variants (expanded to include paldean variants)
-    if ((name.includes("alolan") || 
-         name.includes("galarian") || 
-         name.includes("hisuian") || 
-         name.includes("paldean")) && !filters.regional) {
-      return false;
-    }
-    
-    // Check for gender differences (expanded to catch more naming patterns)
-    if ((name.includes("female") || 
-         name.includes("male") || 
-         name.includes("-f") || 
-         name.includes("-m")) && !filters.gender) {
-      return false;
-    }
-    
-    // Check for special forms (expanded to include more form types)
-    if ((name.includes("form") || 
-         name.includes("style") || 
-         name.includes("mode") || 
-         name.includes("size") || 
-         name.includes("cloak") ||
-         name.includes("rotom-") ||
-         name.includes("primal") ||
-         name.includes("forme") ||
-         name.includes("origin") ||
-         name.includes("unbound") ||
-         name.includes("gorging") ||
-         name.includes("eternamax") ||
-         name.includes("cap") ||
-         name.includes("-theme")) && !filters.forms) {
-      return false;
-    }
-    
-    // Include this Pokemon by default
-    return true;
+    // Return true if the filter for this category is enabled
+    return filters[formCategory];
+  };
+  
+  // Store a Pokemon that gets filtered out (for later re-inclusion)
+  const storePokemon = (pokemon: Pokemon) => {
+    excludedPokemonStore.set(pokemon.id, pokemon);
+  };
+  
+  // Get previously stored Pokemon when a filter is re-enabled
+  const getStoredPokemon = (): Pokemon[] => {
+    return Array.from(excludedPokemonStore.values());
+  };
+  
+  // Clear stored Pokemon (useful when resetting)
+  const clearStoredPokemon = () => {
+    excludedPokemonStore.clear();
   };
   
   // Return the filter state and functions
@@ -114,6 +142,10 @@ export const useFormFilters = () => {
     toggleFilter,
     isAllEnabled,
     toggleAll,
-    shouldIncludePokemon
+    shouldIncludePokemon,
+    getPokemonFormCategory,
+    storePokemon,
+    getStoredPokemon,
+    clearStoredPokemon
   };
 };
