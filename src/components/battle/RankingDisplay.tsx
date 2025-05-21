@@ -91,6 +91,7 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
     try {
       // Safeguard against missing types data
       if (!pokemon.types || !pokemon.types.length) {
+        console.log(`No types found for Pokemon ${pokemon.name} (ID: ${pokemon.id})`);
         return "bg-gray-200";
       }
       
@@ -99,22 +100,32 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
       
       // Check if we have this type in our map
       if (!primaryType || typeof primaryType !== 'string') {
-        console.warn(`Invalid type for Pokemon ${pokemon.name}: ${primaryType}`);
+        console.log(`Invalid type for Pokemon ${pokemon.name}: ${primaryType}`);
         return "bg-gray-200";
+      }
+      
+      // Debug the type matching
+      console.log(`Finding color for ${pokemon.name} primary type: "${primaryType}" (typeof: ${typeof primaryType})`);
+      
+      // Try exact match first
+      if (typeColors[primaryType]) {
+        console.log(`✅ Found exact match for type "${primaryType}": ${typeColors[primaryType]}`);
+        return typeColors[primaryType];
       }
       
       // Normalize type to lowercase for consistent lookup
       const normalizedType = primaryType.toLowerCase();
+      console.log(`Trying normalized type "${normalizedType}"`);
       
-      // Look up the color
-      const color = typeColors[normalizedType] || typeColors[primaryType];
+      // Look up the color with normalized type
+      const color = typeColors[normalizedType];
       
-      // If no color is found, return a default
       if (!color) {
-        console.warn(`No color found for type: ${primaryType} on ${pokemon.name}`);
+        console.log(`❌ No color found for type: "${primaryType}" or "${normalizedType}" on ${pokemon.name}`);
         return "bg-gray-200";
       }
       
+      console.log(`✅ Found color using normalized type "${normalizedType}": ${color}`);
       return color;
     } catch (err) {
       console.error(`Error getting type color for ${pokemon.name}:`, err);

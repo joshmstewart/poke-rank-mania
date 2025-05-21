@@ -25,11 +25,11 @@ const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ currentMode, onModeChange }
                 value="battle" 
                 className={`flex items-center gap-1 px-3 text-xs ${
                   currentMode === "battle" 
-                    ? "bg-primary/10 text-primary font-medium border-b-2 border-primary" 
+                    ? "bg-primary text-primary-foreground font-medium" 
                     : ""
                 }`}
               >
-                <Trophy className={`h-3.5 w-3.5 ${currentMode === "battle" ? "text-primary" : ""}`} />
+                <Trophy className={`h-3.5 w-3.5 ${currentMode === "battle" ? "text-primary-foreground" : ""}`} />
                 <span className="hidden sm:inline">Battle</span>
               </TabsTrigger>
             </TooltipTrigger>
@@ -38,11 +38,11 @@ const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ currentMode, onModeChange }
                 value="rank" 
                 className={`flex items-center gap-1 px-3 text-xs ${
                   currentMode === "rank" 
-                    ? "bg-primary/10 text-primary font-medium border-b-2 border-primary" 
+                    ? "bg-primary text-primary-foreground font-medium" 
                     : ""
                 }`}
               >
-                <DraftingCompass className={`h-3.5 w-3.5 ${currentMode === "rank" ? "text-primary" : ""}`} />
+                <DraftingCompass className={`h-3.5 w-3.5 ${currentMode === "rank" ? "text-primary-foreground" : ""}`} />
                 <span className="hidden sm:inline">Rank</span>
               </TabsTrigger>
             </TooltipTrigger>
