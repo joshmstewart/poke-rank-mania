@@ -18,7 +18,8 @@ export const logPokemonVariations = (allPokemon: Pokemon[]) => {
       { name: "Special Rotom Forms", pattern: /rotom-/i },
       { name: "Primal Forms", pattern: /primal/i },
       { name: "Origin Forms", pattern: /origin/i },
-      { name: "Other Special Forms", pattern: /(form|style|mode|size|cloak|forme|unbound|gorging|eternamax|cap|theme)/i }
+      { name: "Costume Pikachu", pattern: /(pikachu.*cap|pikachu-belle|pikachu-libre|pikachu-phd|pikachu-pop-star|pikachu-rock-star|pikachu-cosplay)/i },
+      { name: "Other Special Forms", pattern: /(form|style|mode|size|cloak|forme|unbound|gorging|eternamax|theme)/i }
     ];
     
     // Group Pokémon by special patterns

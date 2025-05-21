@@ -10,7 +10,7 @@ interface FormFilters {
   forms: boolean;
 }
 
-// Retrieve filters from localStorage or use defaults (all enabled)
+// Retrieve filters from localStorage or use defaults (mega disabled, others enabled)
 const getStoredFilters = (): FormFilters => {
   const stored = localStorage.getItem('pokemon-form-filters');
   if (stored) {
@@ -21,9 +21,9 @@ const getStoredFilters = (): FormFilters => {
     }
   }
   
-  // Default to all forms enabled
+  // Default to mega evolutions disabled, others enabled
   return {
-    mega: true,
+    mega: false,
     regional: true,
     gender: true,
     forms: true
