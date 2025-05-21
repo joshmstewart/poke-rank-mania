@@ -1,6 +1,6 @@
 
 import { useState, useCallback, useRef } from "react";
-import { Pokemon } from "@/services/pokemon";
+import { Pokemon, TopNOption } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
 import { useBattleProgression } from "./useBattleProgression";
 import { useNextBattleHandler } from "./useNextBattleHandler";
@@ -17,7 +17,9 @@ export const useBattleProcessor = (
   setShowingMilestone: React.Dispatch<React.SetStateAction<boolean>>,
   milestones: number[],
   generateRankings: (results: SingleBattle[]) => void,
-  setSelectedPokemon: React.Dispatch<React.SetStateAction<number[]>>
+  setSelectedPokemon: React.Dispatch<React.SetStateAction<number[]>>,
+  activeTier?: TopNOption,
+  freezePokemonForTier?: (pokemonId: number, tier: TopNOption) => void
 ) => {
   const [isProcessingResult, setIsProcessingResult] = useState(false);
   const processedMilestonesRef = useRef<Set<number>>(new Set());
@@ -42,7 +44,12 @@ export const useBattleProcessor = (
     setSelectedPokemon
   );
 
-  const { processResult } = useBattleResultProcessor(battleResults, setBattleResults);
+  const { processResult } = useBattleResultProcessor(
+    battleResults, 
+    setBattleResults,
+    activeTier,
+    freezePokemonForTier
+  );
 
   const processBattle = useCallback(async (
     selectedPokemonIds: number[],

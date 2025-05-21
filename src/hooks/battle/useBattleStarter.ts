@@ -1,12 +1,14 @@
 import { useRef } from "react";
-import { Pokemon } from "@/services/pokemon";
+import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { BattleType } from "./types";
 
 export const createBattleStarter = (
   pokemonList: Pokemon[],
   allPokemonForGeneration: Pokemon[],
-  currentFinalRankings: Pokemon[],
-  setCurrentBattle: React.Dispatch<React.SetStateAction<Pokemon[]>>
+  currentFinalRankings: RankedPokemon[],
+  setCurrentBattle: React.Dispatch<React.SetStateAction<Pokemon[]>>,
+  activeTier: TopNOption = "All",
+  isPokemonFrozenForTier?: (pokemonId: number, tier: TopNOption) => boolean
 ) => {
   const recentlySeenPokemon = useRef<Set<number>>(new Set());
   const battleCountRef = useRef(0);
@@ -29,14 +31,74 @@ export const createBattleStarter = (
     return shuffleArray(pool).slice(0, size);
   };
 
+  const getTierBattlePair = (battleType: BattleType): Pokemon[] => {
+    const battleSize = battleType === "pairs" ? 2 : 3;
+    const randomValue = Math.random();
+    
+    // Different strategy based on tier
+    const tierSize = activeTier === "All" ? 
+      currentFinalRankings.length : 
+      Math.min(Number(activeTier), currentFinalRankings.length);
+    
+    // Get the current top N Pokémon based on the tier
+    const topCandidates = currentFinalRankings
+      .slice(0, tierSize)
+      .filter(p => !isPokemonFrozenForTier || !isPokemonFrozenForTier(p.id, activeTier));
+    
+    // Get Pokémon just below the cutoff (challenger pool)
+    const nearCandidates = currentFinalRankings
+      .slice(tierSize, tierSize + 25)
+      .filter(p => !isPokemonFrozenForTier || !isPokemonFrozenForTier(p.id, activeTier));
+    
+    // Get Pokémon with few battles (discovery pool)
+    const unrankedCandidates = allPokemonForGeneration
+      .filter(p => {
+        // Find the ranked pokemon data if it exists
+        const rankedData = currentFinalRankings.find(rp => rp.id === p.id);
+        // Include if it has < 3 battles or isn't ranked yet
+        return !rankedData || rankedData.count < 3;
+      });
+    
+    // Battle selection logic
+    if (randomValue < 0.5 && topCandidates.length >= battleSize) {
+      // 50%: Two topCandidates battle each other (refine placement)
+      return shuffleArray(topCandidates).slice(0, battleSize);
+    } else if (randomValue < 0.8 && topCandidates.length > 0 && nearCandidates.length > 0) {
+      // 30%: One topCandidate vs one nearCandidate (test for promotion)
+      const result = [
+        topCandidates[Math.floor(Math.random() * topCandidates.length)]
+      ];
+      
+      // Add more needed based on battle type
+      const neededMore = battleSize - result.length;
+      result.push(...shuffleArray(nearCandidates).slice(0, neededMore));
+      
+      return result;
+    } else if (randomValue < 0.95 && topCandidates.length > 0 && unrankedCandidates.length > 0) {
+      // 15%: One topCandidate vs one unranked (discovery)
+      const result = [
+        topCandidates[Math.floor(Math.random() * topCandidates.length)]
+      ];
+      
+      // Add unranked candidates to complete the battle
+      const neededMore = battleSize - result.length;
+      result.push(...shuffleArray(unrankedCandidates).slice(0, neededMore));
+      
+      return result;
+    } else {
+      // 5%: Random battle (keep fresh diversity)
+      return shuffleArray(pokemonList).slice(0, battleSize);
+    }
+  };
+
   const startNewBattle = (battleType: BattleType) => {
     battleCountRef.current++;
     const battleSize = battleType === "pairs" ? 2 : 3;
 
     let result: Pokemon[] = [];
 
-    // Fixed initial subset selection for first 100 battles
-    if (battleCountRef.current <= 100) {
+    // Fixed initial subset selection for first 25 battles (down from 100)
+    if (battleCountRef.current <= 25) {
       const INITIAL_SUBSET_SIZE = 15; // clearly defined size for repetition
 
       if (!initialSubsetRef.current) {
@@ -45,32 +107,10 @@ export const createBattleStarter = (
 
       result = pickDistinctPair(initialSubsetRef.current, recentlySeenPokemon.current, battleSize);
     } else {
-      const ranked = [...currentFinalRankings];
-      const unranked = allPokemonForGeneration.filter(p => !ranked.some(r => r.id === p.id));
-
-      const getSliceByPercent = (list: Pokemon[], percent: number) =>
-        list.slice(0, Math.floor((percent / 100) * list.length));
-
-      const T_Top25 = getSliceByPercent(ranked, 25);
-      const T_Top50 = getSliceByPercent(ranked, 50);
-      const T_Bottom50 = ranked.filter(p => !T_Top50.includes(p));
-
-      const priorityOrder: [Pokemon[], Pokemon[]][] = [
-        [T_Top25, T_Top25],
-        [T_Top25, T_Top50],
-        [T_Top50, T_Bottom50],
-        [unranked, T_Top50],
-        [unranked, unranked],
-      ];
-
-      for (const [poolA, poolB] of priorityOrder) {
-        const pair = pickDistinctPair([...poolA, ...poolB], recentlySeenPokemon.current, battleSize);
-        if (pair.length === battleSize) {
-          result = pair;
-          break;
-        }
-      }
-
+      // Use the tier-based battle selection for battles after the initial phase
+      result = getTierBattlePair(battleType);
+      
+      // Fallback if we couldn't create a battle pair
       if (result.length < battleSize) {
         result = shuffleArray(pokemonList).slice(0, battleSize);
       }

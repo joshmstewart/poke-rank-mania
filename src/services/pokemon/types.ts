@@ -8,12 +8,24 @@ export interface Pokemon {
   rating?: any; // We'll use this to store the TrueSkill Rating object
 }
 
+export interface RankedPokemon extends Pokemon {
+  score: number;      // Will be used for the conservative TrueSkill estimate (μ - 3σ)
+  count: number;      // Number of battles the Pokémon has participated in
+  confidence: number; // Will be derived from sigma (lower sigma = higher confidence)
+  isFrozenForTier?: {
+    [tier: number]: boolean;
+  };
+}
+
 export interface Generation {
   id: number;
   name: string;
   start: number;
   end: number;
 }
+
+// Define the available Top N options
+export type TopNOption = 10 | 25 | 50 | 100 | "All";
 
 // Unified session data interface
 export interface UnifiedSessionData {
@@ -25,6 +37,8 @@ export interface UnifiedSessionData {
   lastUpdate?: number;
   lastManualSave?: number;
   ratingData?: Record<number, { mu: number; sigma: number }>; // Store ratings separately
+  activeTier?: TopNOption; // Store the active tier
+  frozenPokemon?: Record<number, { [tier: string]: boolean }>; // Store frozen state per pokemon per tier
 }
 
 // Settings constants

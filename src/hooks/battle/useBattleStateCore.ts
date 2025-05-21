@@ -1,11 +1,12 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
-import { Pokemon, fetchAllPokemon } from "@/services/pokemon";
+import { Pokemon, fetchAllPokemon, TopNOption } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
 import { useProgressState } from "./useProgressState";
 import { useBattleProcessor } from "./useBattleProcessor";
 import { useRankings } from "./useRankings";
 import { useCompletionTracker } from "./useCompletionTracker";
+import { createBattleStarter } from "./useBattleStarter";
 
 export const useBattleStateCore = (allPokemon: Pokemon[], initialBattleType: BattleType, initialSelectedGeneration: number) => {
   const [currentBattle, setCurrentBattle] = useState<Pokemon[]>([]);
@@ -28,7 +29,16 @@ export const useBattleStateCore = (allPokemon: Pokemon[], initialBattleType: Bat
     milestoneRef
   } = useProgressState();
 
-  const { finalRankings, confidenceScores, generateRankings, handleSaveRankings } = useRankings(availablePokemon);
+  const { 
+    finalRankings, 
+    confidenceScores, 
+    generateRankings, 
+    handleSaveRankings,
+    activeTier,
+    setActiveTier,
+    freezePokemonForTier,
+    isPokemonFrozenForTier
+  } = useRankings(availablePokemon);
 
   const {
     resetMilestones,
@@ -47,6 +57,32 @@ export const useBattleStateCore = (allPokemon: Pokemon[], initialBattleType: Bat
 
   const [battlesCompleted, setBattlesCompleted] = useState(battleResults.length);
 
+  // Create battle starter with tier-aware selection logic
+  const battleStarter = useRef(createBattleStarter(
+    availablePokemon,
+    availablePokemon,
+    finalRankings,
+    setCurrentBattle,
+    activeTier,
+    isPokemonFrozenForTier
+  )).current;
+
+  // Update battle starter when rankings or tier changes
+  useEffect(() => {
+    // Recreate battle starter with updated rankings and tier
+    const updatedStarter = createBattleStarter(
+      availablePokemon,
+      availablePokemon,
+      finalRankings,
+      setCurrentBattle,
+      activeTier,
+      isPokemonFrozenForTier
+    );
+    
+    // Update the ref
+    Object.assign(battleStarter, updatedStarter);
+  }, [finalRankings.length, activeTier, isPokemonFrozenForTier]);
+
   const { processBattleResult, isProcessingResult, resetMilestoneInProgress } = useBattleProcessor(
     battleResults,
     setBattleResults,
@@ -57,7 +93,9 @@ export const useBattleStateCore = (allPokemon: Pokemon[], initialBattleType: Bat
     setShowingMilestone,
     milestones,
     generateRankings,
-    setSelectedPokemon
+    setSelectedPokemon,
+    activeTier,
+    freezePokemonForTier
   );
 
   const processorRefs = useRef({ resetMilestoneInProgress }).current;
@@ -141,11 +179,8 @@ export const useBattleStateCore = (allPokemon: Pokemon[], initialBattleType: Bat
 
   const startNewBattle = useCallback(async (battleType: BattleType) => {
     battleTypeRef.current = battleType;
-    const shuffled = [...availablePokemon].sort(() => Math.random() - 0.5);
-    const battleSize = battleType === "triplets" ? 3 : 2;
-    setCurrentBattle(shuffled.slice(0, battleSize));
-    setSelectedPokemon([]);
-  }, [availablePokemon]);
+    battleStarter.startNewBattle(battleType);
+  }, [battleStarter]);
 
   useEffect(() => {
     const fetchPokemon = async () => {
@@ -169,7 +204,7 @@ export const useBattleStateCore = (allPokemon: Pokemon[], initialBattleType: Bat
     battleType: battleTypeRef.current,
     setBattleType: (type: BattleType) => battleTypeRef.current = type,
     finalRankings,
-    handlePokemonSelect, // Make sure this is included in the return object
+    handlePokemonSelect,
     handleTripletSelectionComplete,
     handleSelection,
     goBack,
@@ -181,6 +216,8 @@ export const useBattleStateCore = (allPokemon: Pokemon[], initialBattleType: Bat
     getSnapshotForMilestone,
     generateRankings,
     processorRefs,
-    battleHistory // Add the battleHistory to the return object
+    battleHistory,
+    activeTier,
+    setActiveTier
   };
 };

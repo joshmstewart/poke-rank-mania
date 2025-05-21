@@ -1,6 +1,6 @@
 
 import { useCallback, useState } from "react";
-import { Pokemon } from "@/services/pokemon";
+import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
 import { Rating, rate_1vs1 } from "ts-trueskill";
 
@@ -20,7 +20,9 @@ const getOrCreateRating = (pokemon: Pokemon): Rating => {
  */
 export const useBattleResultProcessor = (
   battleResults: SingleBattle[],
-  setBattleResults: React.Dispatch<React.SetStateAction<SingleBattle[]>>
+  setBattleResults: React.Dispatch<React.SetStateAction<SingleBattle[]>>,
+  activeTier?: TopNOption,
+  freezePokemonForTier?: (pokemonId: number, tier: TopNOption) => void
 ) => {
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -66,6 +68,27 @@ export const useBattleResultProcessor = (
           
           console.log(`Updated ratings: ${winner.name} (μ=${newWinnerRating.mu.toFixed(2)}, σ=${newWinnerRating.sigma.toFixed(2)}) | ${loser.name} (μ=${newLoserRating.mu.toFixed(2)}, σ=${newLoserRating.sigma.toFixed(2)})`);
           
+          // Check if the loser should be frozen for the current tier
+          // Only freeze if confidence is high enough (low sigma) and the tier is active
+          if (activeTier && activeTier !== "All" && freezePokemonForTier) {
+            const loserConfidence = 100 * (1 - (newLoserRating.sigma / 8.33));
+            const loserScore = newLoserRating.mu - 3 * newLoserRating.sigma;
+            
+            // Count battles for this pokemon
+            const battles = battleResults.filter(
+              result => result.winner.id === loser.id || result.loser.id === loser.id
+            ).length;
+            
+            // Only freeze if:
+            // 1. Pokemon has participated in enough battles
+            // 2. Has high enough confidence
+            // 3. Has a score significantly below the threshold for this tier
+            if (battles >= 5 && loserConfidence > 60 && loserScore < 0) {
+              console.log(`Freezing ${loser.name} for Tier ${activeTier} due to low performance`);
+              freezePokemonForTier(loser.id, activeTier);
+            }
+          }
+          
           newResults.push({ winner, loser });
           setIsProcessing(false);
           return newResults;
@@ -97,6 +120,22 @@ export const useBattleResultProcessor = (
               
               console.log(`Updated ratings: ${winner.name} (μ=${newWinnerRating.mu.toFixed(2)}, σ=${newWinnerRating.sigma.toFixed(2)}) | ${loser.name} (μ=${newLoserRating.mu.toFixed(2)}, σ=${newLoserRating.sigma.toFixed(2)})`);
               
+              // Check freezing criteria for losers in triplet mode
+              if (activeTier && activeTier !== "All" && freezePokemonForTier) {
+                const loserConfidence = 100 * (1 - (newLoserRating.sigma / 8.33));
+                const loserScore = newLoserRating.mu - 3 * newLoserRating.sigma;
+                
+                // Count battles for this pokemon
+                const battles = battleResults.filter(
+                  result => result.winner.id === loser.id || result.loser.id === loser.id
+                ).length;
+                
+                if (battles >= 5 && loserConfidence > 60 && loserScore < 0) {
+                  console.log(`Freezing ${loser.name} for Tier ${activeTier} due to low performance`);
+                  freezePokemonForTier(loser.id, activeTier);
+                }
+              }
+              
               newResults.push({ winner, loser });
             });
           });
@@ -114,7 +153,7 @@ export const useBattleResultProcessor = (
       setIsProcessing(false);
       return null;
     }
-  }, []);
+  }, [battleResults, activeTier, freezePokemonForTier]);
 
   return {
     processResult,

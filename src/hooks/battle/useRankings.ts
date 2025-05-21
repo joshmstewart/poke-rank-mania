@@ -1,20 +1,41 @@
 
-import { useState } from "react";
-import { Pokemon } from "@/services/pokemon";
+import { useState, useEffect } from "react";
+import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { SingleBattle } from "./types";
 import { Rating } from "ts-trueskill";
-
-export interface RankedPokemon extends Pokemon {
-  score: number;      // Will be used for the conservative TrueSkill estimate (μ - 3σ)
-  count: number;      // Number of battles the Pokémon has participated in
-  confidence: number; // Will be derived from sigma (lower sigma = higher confidence)
-}
 
 export const useRankings = (allPokemon: Pokemon[]) => {
   const [finalRankings, setFinalRankings] = useState<RankedPokemon[]>([]);
   const [confidenceScores, setConfidenceScores] = useState<Record<number, number>>({});
+  const [activeTier, setActiveTier] = useState<TopNOption>(() => {
+    const storedTier = localStorage.getItem("pokemon-active-tier");
+    return storedTier ? (storedTier === "All" ? "All" : Number(storedTier) as TopNOption) : 25;
+  });
+  const [frozenPokemon, setFrozenPokemon] = useState<Record<number, { [tier: string]: boolean }>>({});
 
-  // Generate rankings based on TrueSkill ratings
+  useEffect(() => {
+    // Load frozen pokemon state from localStorage
+    const storedFrozen = localStorage.getItem("pokemon-frozen-pokemon");
+    if (storedFrozen) {
+      try {
+        setFrozenPokemon(JSON.parse(storedFrozen));
+      } catch (e) {
+        console.error("Error loading frozen pokemon state:", e);
+      }
+    }
+  }, []);
+
+  // Save active tier to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem("pokemon-active-tier", activeTier.toString());
+  }, [activeTier]);
+
+  // Save frozen pokemon state to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem("pokemon-frozen-pokemon", JSON.stringify(frozenPokemon));
+  }, [frozenPokemon]);
+
+  // Generate rankings based on TrueSkill ratings and the current tier setting
   const generateRankings = (results: SingleBattle[]): RankedPokemon[] => {
     // Create a map to track battle counts
     const countMap = new Map<number, number>();
@@ -29,7 +50,7 @@ export const useRankings = (allPokemon: Pokemon[]) => {
     const participatingPokemonIds = new Set([...countMap.keys()]);
 
     // Create ranked list with TrueSkill scores
-    const rankedPokemon: RankedPokemon[] = allPokemon
+    const allRankedPokemon: RankedPokemon[] = allPokemon
       .filter(p => participatingPokemonIds.has(p.id))
       .map(p => {
         // Create or access the rating
@@ -47,36 +68,71 @@ export const useRankings = (allPokemon: Pokemon[]) => {
         // Lower sigma means higher confidence
         const normalizedConfidence = Math.max(0, Math.min(100, 100 * (1 - (p.rating.sigma / 8.33))));
 
+        // Get current frozen status for this Pokemon (or initialize if not exists)
+        const pokemonFrozenStatus = frozenPokemon[p.id] || {};
+
         return {
           ...p,
           score: conservativeEstimate,
           count: countMap.get(p.id) || 0,
-          confidence: normalizedConfidence
+          confidence: normalizedConfidence,
+          isFrozenForTier: pokemonFrozenStatus
         };
       })
       // Sort by the conservative TrueSkill estimate (higher is better)
       .sort((a, b) => b.score - a.score);
 
-    setFinalRankings(rankedPokemon);
+    // Filter by active tier
+    const filteredRankings = activeTier === "All" 
+      ? allRankedPokemon 
+      : allRankedPokemon.slice(0, Number(activeTier));
+
+    setFinalRankings(filteredRankings);
 
     // Create confidence map for easy lookup
     const confidenceMap: Record<number, number> = {};
-    rankedPokemon.forEach(p => {
+    allRankedPokemon.forEach(p => {
       confidenceMap[p.id] = p.confidence;
     });
     setConfidenceScores(confidenceMap);
 
-    return rankedPokemon;
+    return filteredRankings;
+  };
+
+  // Mark a pokemon as frozen for the current tier
+  const freezePokemonForTier = (pokemonId: number, tier: TopNOption) => {
+    setFrozenPokemon(prev => {
+      const pokemonFrozenState = prev[pokemonId] || {};
+      return {
+        ...prev,
+        [pokemonId]: {
+          ...pokemonFrozenState,
+          [tier.toString()]: true
+        }
+      };
+    });
+  };
+
+  // Check if a pokemon is frozen for the current tier
+  const isPokemonFrozenForTier = (pokemonId: number, tier: TopNOption): boolean => {
+    return Boolean(frozenPokemon[pokemonId]?.[tier.toString()]);
   };
 
   const handleSaveRankings = () => {
     console.log("[useRankings] Rankings saved.", finalRankings);
+    // Save frozen state as well
+    localStorage.setItem("pokemon-frozen-pokemon", JSON.stringify(frozenPokemon));
   };
 
   return {
     finalRankings,
     confidenceScores,
     generateRankings,
-    handleSaveRankings
+    handleSaveRankings,
+    activeTier,
+    setActiveTier,
+    freezePokemonForTier,
+    isPokemonFrozenForTier,
+    allRankedPokemon: finalRankings // This will be useful for battle selection
   };
 };

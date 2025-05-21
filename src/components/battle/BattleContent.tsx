@@ -1,6 +1,5 @@
-
 import React, { useEffect, useRef } from "react";
-import { Pokemon } from "@/services/pokemon";
+import { Pokemon, TopNOption } from "@/services/pokemon";
 import { useBattleStateCore } from "@/hooks/battle/useBattleStateCore";
 import BattleInterface from "./BattleInterface";
 import BattleHeader from "./BattleHeader";
@@ -9,6 +8,7 @@ import BattleFooterNote from "./BattleFooterNote";
 import { BattleType } from "@/hooks/battle/types";
 import RankingDisplay from "./RankingDisplay";
 import ProgressTracker from "./ProgressTracker";
+import TierSelector from "./TierSelector";
 
 interface BattleContentProps {
   allPokemon: Pokemon[];
@@ -45,7 +45,9 @@ const BattleContent = ({ allPokemon, initialBattleType, initialSelectedGeneratio
     getSnapshotForMilestone,
     generateRankings,
     processorRefs,
-    battleHistory
+    battleHistory,
+    activeTier,
+    setActiveTier
   } = useBattleStateCore(allPokemon, initialBattleType, initialSelectedGeneration);
 
   // Only call startNewBattle once when the component mounts and allPokemon is available
@@ -115,6 +117,12 @@ const BattleContent = ({ allPokemon, initialBattleType, initialSelectedGeneratio
     }
   };
 
+  const handleTierChange = (tier: TopNOption) => {
+    console.log("Changing tier to:", tier);
+    setActiveTier(tier);
+    // No need to restart battles, just keep going with new tier focus
+  };
+
   // Calculate completion percentage
   useEffect(() => {
     calculateCompletionPercentage();
@@ -133,20 +141,27 @@ const BattleContent = ({ allPokemon, initialBattleType, initialSelectedGeneratio
     <div className="flex flex-col items-center w-full gap-4">
       <BattleHeader />
       
-      <BattleControls
-        selectedGeneration={selectedGeneration}
-        battleType={battleType}
-        onGenerationChange={handleGenerationChange}
-        onBattleTypeChange={handleBattleTypeChange}
-        onRestartBattles={handleRestartBattles}
-      />
-      
-      <div className="w-full max-w-3xl">
-        <ProgressTracker 
-          completionPercentage={completionPercentage}
-          battlesCompleted={battlesCompleted}
-          getBattlesRemaining={getBattlesRemaining}
+      <div className="w-full max-w-3xl flex flex-col gap-4">
+        <BattleControls
+          selectedGeneration={selectedGeneration}
+          battleType={battleType}
+          onGenerationChange={handleGenerationChange}
+          onBattleTypeChange={handleBattleTypeChange}
+          onRestartBattles={handleRestartBattles}
         />
+        
+        <div className="flex items-center justify-between gap-4">
+          <ProgressTracker 
+            completionPercentage={completionPercentage}
+            battlesCompleted={battlesCompleted}
+            getBattlesRemaining={getBattlesRemaining}
+          />
+          
+          <TierSelector 
+            activeTier={activeTier}
+            onTierChange={handleTierChange}
+          />
+        </div>
       </div>
       
       {showingMilestone ? (
@@ -159,6 +174,8 @@ const BattleContent = ({ allPokemon, initialBattleType, initialSelectedGeneratio
             rankingGenerated={true}
             onSaveRankings={handleSaveRankings}
             isMilestoneView={true}
+            activeTier={activeTier}
+            onTierChange={handleTierChange}
           />
         </div>
       ) : (
