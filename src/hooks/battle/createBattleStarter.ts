@@ -29,9 +29,18 @@ export const createBattleStarter = (
 
   // Find the suggested pokemon to prioritize (if any)
   const findActiveSuggestion = (): RankedPokemon | undefined => {
-    return currentRankings.find(p => 
+    // Higher priority to unused suggestions 
+    const unusedSuggestion = currentRankings.find(p => 
       (p as RankedPokemon).suggestedAdjustment && 
       !(p as RankedPokemon).suggestedAdjustment!.used
+    ) as RankedPokemon | undefined;
+    
+    if (unusedSuggestion) return unusedSuggestion;
+    
+    // If no unused suggestions, check for used ones too
+    // so we can still use them for battle selection
+    return currentRankings.find(p => 
+      (p as RankedPokemon).suggestedAdjustment
     ) as RankedPokemon | undefined;
   };
 
@@ -81,44 +90,48 @@ export const createBattleStarter = (
     const pokemonNeeded = battleType === "triplets" ? 3 : 2;
     
     // First, check for any active ranking suggestions
-    const suggestedPokemon = findActiveSuggestion();
-    
-    if (suggestedPokemon) {
-      const suggestedIndex = currentRankings.findIndex(p => p.id === suggestedPokemon.id);
+    // Increase probability of finding a suggestion
+    const forceSuggestionMatch = Math.random() < 0.85; // 85% chance to prioritize suggestions
+    if (forceSuggestionMatch) {
+      const suggestedPokemon = findActiveSuggestion();
       
-      if (suggestedIndex !== -1) {
-        // Find appropriate opponent for suggestion
-        const opponent = selectOpponentForSuggestion(suggestedPokemon, suggestedIndex);
+      if (suggestedPokemon) {
+        const suggestedIndex = currentRankings.findIndex(p => p.id === suggestedPokemon.id);
         
-        if (opponent) {
-          // We found a suitable opponent based on suggestion
-          if (battleType === "triplets") {
-            // For triplets, add one more random Pokemon
-            const randomPokemon = filteredPokemon
-              .filter(p => p.id !== suggestedPokemon.id && p.id !== opponent.id)
-              .sort(() => 0.5 - Math.random())[0];
-            
-            if (randomPokemon) {
+        if (suggestedIndex !== -1) {
+          // Find appropriate opponent for suggestion
+          const opponent = selectOpponentForSuggestion(suggestedPokemon, suggestedIndex);
+          
+          if (opponent) {
+            // We found a suitable opponent based on suggestion
+            if (battleType === "triplets") {
+              // For triplets, add one more random Pokemon
+              const randomPokemon = filteredPokemon
+                .filter(p => p.id !== suggestedPokemon.id && p.id !== opponent.id)
+                .sort(() => 0.5 - Math.random())[0];
+              
+              if (randomPokemon) {
+                console.log(
+                  `createBattleStarter: Setting suggestion battle with ${suggestedPokemon.name}, ${opponent.name}, ${randomPokemon.name}`
+                );
+                setCurrentBattle([suggestedPokemon, opponent, randomPokemon]);
+                return;
+              }
+            } else {
+              // For pairs, just use the suggestion and opponent
               console.log(
-                `createBattleStarter: Setting suggestion battle with ${suggestedPokemon.name}, ${opponent.name}, ${randomPokemon.name}`
+                `createBattleStarter: Setting suggestion battle with ${suggestedPokemon.name}, ${opponent.name}`
               );
-              setCurrentBattle([suggestedPokemon, opponent, randomPokemon]);
+              setCurrentBattle([suggestedPokemon, opponent]);
               return;
             }
-          } else {
-            // For pairs, just use the suggestion and opponent
-            console.log(
-              `createBattleStarter: Setting suggestion battle with ${suggestedPokemon.name}, ${opponent.name}`
-            );
-            setCurrentBattle([suggestedPokemon, opponent]);
-            return;
           }
         }
       }
     }
     
     // If no suggestion or we couldn't build a suggestion battle, fall back to normal logic
-    console.log("createBattleStarter: No active suggestions, using normal battle selection");
+    console.log("createBattleStarter: No active suggestions or suggestion match skipped, using normal battle selection");
     
     // Ensure we have proper Pokemon lists to work with
     const safeAllPokemon = Array.isArray(allPokemon) ? allPokemon : [];

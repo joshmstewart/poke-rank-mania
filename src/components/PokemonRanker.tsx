@@ -47,7 +47,9 @@ const PokemonRanker = () => {
     clearAllSuggestions
   } = useRankingSuggestions(typedRankedPokemon, setRankedPokemon as any);
 
-  // Add an effect to clear suggestions when toggling between views
+  // REMOVED: Don't automatically clear suggestions when toggling between views
+  // This was causing suggestions to disappear unexpectedly
+  /*
   React.useEffect(() => {
     // Clear suggestions when component mounts
     clearAllSuggestions();
@@ -57,6 +59,7 @@ const PokemonRanker = () => {
       clearAllSuggestions();
     };
   }, [clearAllSuggestions]);
+  */
 
   return (
     <div className="container max-w-7xl mx-auto py-6">
@@ -88,21 +91,21 @@ const PokemonRanker = () => {
               size="sm"
               className="flex items-center gap-1 h-8 text-sm"
               onClick={() => {
-                // Clear all suggestions when toggling view
-                clearAllSuggestions();
+                // No longer clearing suggestions when toggling view
                 setShowRankings(!showRankings);
               }}
             >
               <List className="h-4 w-4" /> Rankings
             </Button>
             <Button 
-              variant="outline"
+              variant="outline" 
               size="sm"
-              className="flex items-center gap-1 h-8 text-sm"
               onClick={() => {
                 resetRankings();
+                // Only clear suggestions when explicitly resetting rankings
                 clearAllSuggestions();
               }}
+              className="flex items-center gap-1 h-8 text-sm"
               title={`Reset rankings for ${generationName}`}
             >
               <RefreshCw className="h-4 w-4" /> Reset
