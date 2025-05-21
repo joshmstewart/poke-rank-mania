@@ -8,8 +8,10 @@ export const createBattleStarter = (
   currentFinalRankings: RankedPokemon[],
   setCurrentBattle: React.Dispatch<React.SetStateAction<Pokemon[]>>,
   activeTier: TopNOption = "All",
-  isPokemonFrozenForTier?: (pokemonId: number, tier: TopNOption) => boolean
+  isPokemonFrozenForTier?: (pokemonId: number, tier: TopNOption) => boolean,
+  suggestedPokemonIds: number[] = [] // ⬅️ ADD THIS PARAMETER
 ) => {
+
   // Use plain objects instead of hooks
   const recentlySeenPokemon = new Set<number>();
   let battleCountRef = 0;
@@ -32,6 +34,24 @@ export const createBattleStarter = (
     }
     return shuffleArray(pool).slice(0, size);
   };
+
+  const getSuggestedBattlePair = (battleSize: number): Pokemon[] | null => {
+  const suggestedCandidates = pokemonList.filter(p => suggestedPokemonIds.includes(p.id));
+  if (suggestedCandidates.length === 0) return null;
+
+  if (suggestedCandidates.length >= battleSize) {
+    return shuffleArray(suggestedCandidates).slice(0, battleSize);
+  }
+
+  // If not enough suggested Pokémon, fill the remaining spots randomly from pokemonList
+  const additionalNeeded = battleSize - suggestedCandidates.length;
+  const additionalCandidates = shuffleArray(
+    pokemonList.filter(p => !suggestedPokemonIds.includes(p.id))
+  ).slice(0, additionalNeeded);
+
+  return [...suggestedCandidates, ...additionalCandidates];
+};
+
 
   const getTierBattlePair = (battleType: BattleType): Pokemon[] => {
     const battleSize = battleType === "pairs" ? 2 : 3;
@@ -145,43 +165,50 @@ export const createBattleStarter = (
     }
   };
 
-  const startNewBattle = (battleType: BattleType): Pokemon[] => {
-    battleCountRef++;
-    const battleSize = battleType === "pairs" ? 2 : 3;
+const startNewBattle = (battleType: BattleType): Pokemon[] => {
+  battleCountRef++;
+  const battleSize = battleType === "pairs" ? 2 : 3;
 
-    let result: Pokemon[] = [];
+  let result: Pokemon[] = [];
 
-    // Fixed initial subset selection for first 25 battles (down from 100)
-    if (battleCountRef <= 25) {
-      const INITIAL_SUBSET_SIZE = 15; // clearly defined size for repetition
+  // Fixed initial subset selection for first 25 battles (down from 100)
+  if (battleCountRef <= 25) {
+    const INITIAL_SUBSET_SIZE = 15; // clearly defined size for repetition
 
-      if (!initialSubsetRef) {
-        initialSubsetRef = shuffleArray(pokemonList).slice(0, INITIAL_SUBSET_SIZE);
-      }
-
-      result = pickDistinctPair(initialSubsetRef, recentlySeenPokemon, battleSize);
-    } else {
-      // Use the tier-based battle selection for battles after the initial phase
-      result = getTierBattlePair(battleType);
-      
-      // Fallback if we couldn't create a battle pair
-      if (result.length < battleSize) {
-        result = shuffleArray(pokemonList).slice(0, battleSize);
-      }
+    if (!initialSubsetRef) {
+      initialSubsetRef = shuffleArray(pokemonList).slice(0, INITIAL_SUBSET_SIZE);
     }
 
-    // Maintain seen set capped at 50 entries
-    result.forEach(p => {
-      recentlySeenPokemon.add(p.id);
-      if (recentlySeenPokemon.size > 50) {
-        const iter = recentlySeenPokemon.values();
-        recentlySeenPokemon.delete(iter.next().value);
-      }
-    });
+    result = pickDistinctPair(initialSubsetRef, recentlySeenPokemon, battleSize);
+  } else {
+    // First, attempt to use suggested Pokémon if any exist
+    const suggestedBattle = getSuggestedBattlePair(battleSize);
+    if (suggestedBattle) {
+      result = suggestedBattle;
+    } else {
+      // Use the tier-based battle selection if no suggested Pokémon available
+      result = getTierBattlePair(battleType);
+    }
+    
+    // Fallback if we couldn't create a battle pair
+    if (result.length < battleSize) {
+      result = shuffleArray(pokemonList).slice(0, battleSize);
+    }
+  }
 
-    setCurrentBattle(result);
-    return result;
-  };
+  // Maintain seen set capped at 50 entries
+  result.forEach(p => {
+    recentlySeenPokemon.add(p.id);
+    if (recentlySeenPokemon.size > 50) {
+      const iter = recentlySeenPokemon.values();
+      recentlySeenPokemon.delete(iter.next().value);
+    }
+  });
+
+  setCurrentBattle(result);
+  return result;
+};
+
 
   return { 
     startNewBattle, 
