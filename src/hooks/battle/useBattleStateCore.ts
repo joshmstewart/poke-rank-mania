@@ -182,20 +182,15 @@ useEffect(() => {
     generateRankings(battleResults);
     setNeedsToReloadSuggestions(false);
     
-    // Explicitly reset suggestion priority clearly and thoroughly
-    if (resetSuggestionPriority) {
-      console.log("🚨 Resetting suggestion priority clearly after milestone");
-      resetSuggestionPriority();
-    }
+// Explicitly reset suggestion priority clearly and thoroughly
+if (resetSuggestionPriority) {
+  console.log("🚨 Resetting suggestion priority clearly after milestone");
+  resetSuggestionPriority();
+}
 
-    // Force immediate suggestion prioritization explicitly
-    forcedPriorityBattlesRef.current = Math.max(20, loadedSuggestions.size * 5);
-    suggestionPriorityEnabledRef.current = true;
-    suggestionBattleCountRef.current = 0;
-    processedSuggestionBattlesRef.current.clear();
+// Immediate trigger suggestion prioritization
+triggerSuggestionPrioritization();
 
-    // Immediate trigger suggestion prioritization
-    triggerSuggestionPrioritization();
 
     // Immediate feedback clearly
     if (loadedSuggestions.size > 0) {

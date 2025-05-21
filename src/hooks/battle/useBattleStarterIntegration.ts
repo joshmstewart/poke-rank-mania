@@ -185,17 +185,20 @@ useEffect(() => {
     allPokemon
   );
 
-  return {
-    battleStarter,
-    startNewBattle: startNewBattle || (() => []),
-    resetSuggestionPriority: () => {
-      suggestionBattleCountRef.current = 0;
-      suggestionPriorityEnabledRef.current = true;
-      processedSuggestionBattlesRef.current.clear();
-      lastPriorityResetTimestampRef.current = Date.now();
-      // Force high priority for next several battles
-      forcedPriorityBattlesRef.current = 10;
-      console.log("⚡ Forcing suggestion priority for next 10 battles via reset");
-    }
-  };
+ // Expose a clear method to reset suggestion priorities explicitly
+const resetSuggestionPriorityExplicitly = () => {
+  suggestionBattleCountRef.current = 0;
+  suggestionPriorityEnabledRef.current = true;
+  processedSuggestionBattlesRef.current.clear();
+  forcedPriorityBattlesRef.current = Math.max(20, totalSuggestionsRef.current * 5);
+  lastPriorityResetTimestampRef.current = Date.now();
+  console.log("⚡ Explicitly reset and forced suggestion prioritization for next battles");
+};
+
+return {
+  battleStarter,
+  startNewBattle: startNewBattle || (() => []),
+  resetSuggestionPriority: resetSuggestionPriorityExplicitly,
+};
+
 };
