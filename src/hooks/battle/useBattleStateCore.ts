@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useEffect } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { useBattleStarterIntegration } from "@/hooks/battle/useBattleStarterIntegration";
@@ -159,7 +160,7 @@ export const useBattleStateCore = (
         console.log(`⭐ useBattleStateCore: Milestone shown: Loaded ${loadedSuggestions.size} suggestions`);
       }, 0);
     }
-  }, [showingMilestone, loadSavedSuggestions]);
+  }, [showingMilestone, loadSavedSuggestions, currentBattle]);
   
   // Enhanced effect to reload suggestions and trigger prioritization after milestone
   useEffect(() => {
@@ -323,7 +324,6 @@ export const useBattleStateCore = (
     getSnapshotForMilestone,
     generateRankings,
     handleSaveRankings,
-    processorRefs: { resetMilestoneInProgress },
     freezePokemonForTier,
     isPokemonFrozenForTier,
     suggestRanking,
