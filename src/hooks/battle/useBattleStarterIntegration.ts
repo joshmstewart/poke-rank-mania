@@ -1,4 +1,3 @@
-
 import { useMemo, useCallback, useEffect, useRef, useState } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
@@ -138,21 +137,7 @@ export const useBattleStarterIntegration = (
         toast({
           title: "System Stuck",
           description: "The battle system is showing the same Pokemon repeatedly. Click to reset.",
-          action: (
-            <Button 
-              variant="destructive" 
-              size="sm" 
-              onClick={() => {
-                // Force complete reset
-                performEmergencyReset();
-                // Clear our tracking
-                recentBattlesRef.current = [];
-                setIsStuckInSameBattle(false);
-              }}
-            >
-              Reset
-            </Button>
-          ),
+          action: <Button variant="destructive" size="sm" onClick={() => { performEmergencyReset(); recentBattlesRef.current = []; setIsStuckInSameBattle(false); }}>Reset</Button>,
           duration: 15000
         });
       } else {
