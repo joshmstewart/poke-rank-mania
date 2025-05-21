@@ -48,6 +48,13 @@ export const useRankings = (allPokemon: Pokemon[]) => {
 
   // Generate rankings based on TrueSkill ratings and the current tier setting
   const generateRankings = (results: SingleBattle[]): RankedPokemon[] => {
+    // ADDED: Better logging to debug suggestion preservation
+    console.log(`👉 generateRankings: Starting with ${finalRankings.length} existing rankings`);
+    
+    // Count how many existing rankings have suggestions
+    const existingSuggestions = finalRankings.filter(p => p.suggestedAdjustment);
+    console.log(`📊 generateRankings: Found ${existingSuggestions.length} existing suggestions`);
+    
     // Create a map to track battle counts
     const countMap = new Map<number, number>();
     
@@ -92,6 +99,11 @@ export const useRankings = (allPokemon: Pokemon[]) => {
         if (!suggestedAdjustment && activeSuggestions && activeSuggestions.has(p.id)) {
           suggestedAdjustment = activeSuggestions.get(p.id);
         }
+        
+        // Debug log for tracking suggestion preservation
+        if (suggestedAdjustment) {
+          console.log(`🔹 Preserving suggestion for ${p.name}: ${suggestedAdjustment.direction} x${suggestedAdjustment.strength} (used: ${suggestedAdjustment.used})`);
+        }
 
         return {
           ...p,
@@ -104,6 +116,10 @@ export const useRankings = (allPokemon: Pokemon[]) => {
       })
       // Sort by the conservative TrueSkill estimate (higher is better)
       .sort((a, b) => b.score - a.score);
+
+    // Count suggestions in the new rankings
+    const newSuggestionCount = allRankedPokemon.filter(p => p.suggestedAdjustment).length;
+    console.log(`🔄 generateRankings: Preserved ${newSuggestionCount} suggestions in new rankings`);
 
     // Filter by active tier
     const filteredRankings = activeTier === "All" 
@@ -147,6 +163,13 @@ export const useRankings = (allPokemon: Pokemon[]) => {
     localStorage.setItem("pokemon-frozen-pokemon", JSON.stringify(frozenPokemon));
     // We do NOT clear suggestions when saving rankings
     // This allows the suggestions to persist between milestones
+    
+    // NEW: Log existing suggestions count when saving
+    const suggestionCount = finalRankings.filter(p => p.suggestedAdjustment).length;
+    const unusedCount = finalRankings.filter(p => 
+      p.suggestedAdjustment && !p.suggestedAdjustment.used
+    ).length;
+    console.log(`💾 handleSaveRankings: Saving with ${suggestionCount} suggestions (${unusedCount} unused)`);
   };
 
   return {

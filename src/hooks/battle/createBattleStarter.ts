@@ -38,31 +38,51 @@ export const createBattleStarter = (
 
   // Find the suggested pokemon to prioritize (if any)
   const findActiveSuggestion = (): RankedPokemon | undefined => {
-    console.log("Looking for active suggestions in", currentRankings.length, "Pokémon");
+    // IMPORTANT: Add more detailed logging to help debug
+    console.log(`🔍 findActiveSuggestion: Searching through ${currentRankings.length} Pokémon for suggestions`);
+    
+    let suggestedCount = 0;
+    let unusedCount = 0;
+    
+    currentRankings.forEach(p => {
+      const rankedP = p as RankedPokemon;
+      if (rankedP.suggestedAdjustment) {
+        suggestedCount++;
+        if (!rankedP.suggestedAdjustment.used) {
+          unusedCount++;
+        }
+      }
+    });
+    
+    console.log(`📊 findActiveSuggestion: Found ${suggestedCount} total suggestions (${unusedCount} unused)`);
     
     // Higher priority to unused suggestions that haven't been used recently 
-    const unusedSuggestions = currentRankings.filter(p => 
-      (p as RankedPokemon).suggestedAdjustment && 
-      !(p as RankedPokemon).suggestedAdjustment!.used &&
-      !recentlyUsedSuggestions.has(p.id)
-    ) as RankedPokemon[];
+    const unusedSuggestions = currentRankings.filter(p => {
+      const rankedP = p as RankedPokemon;
+      return rankedP.suggestedAdjustment && 
+        !rankedP.suggestedAdjustment.used &&
+        !recentlyUsedSuggestions.has(p.id);
+    }) as RankedPokemon[];
     
-    console.log(`Found ${unusedSuggestions.length} unused suggestions that haven't been used recently`);
+    console.log(`🔄 findActiveSuggestion: Found ${unusedSuggestions.length} fresh unused suggestions`);
     
     if (unusedSuggestions.length > 0) {
       // Randomly select from available unused suggestions
       const selected = unusedSuggestions[Math.floor(Math.random() * unusedSuggestions.length)];
-      console.log(`Selected suggestion for ${selected.name}`);
+      console.log(`✅ Selected suggestion for ${selected.name}`);
       return selected;
     }
     
     // If we've exhausted fresh suggestions, try any unused ones even if used recently
-    const anyUnusedSuggestion = currentRankings.find(p => 
-      (p as RankedPokemon).suggestedAdjustment && 
-      !(p as RankedPokemon).suggestedAdjustment!.used
-    ) as RankedPokemon | undefined;
+    const anyUnusedSuggestion = currentRankings.find(p => {
+      const rankedP = p as RankedPokemon;
+      return rankedP.suggestedAdjustment && !rankedP.suggestedAdjustment.used;
+    }) as RankedPokemon | undefined;
     
-    if (anyUnusedSuggestion) return anyUnusedSuggestion;
+    if (anyUnusedSuggestion) {
+      console.log(`⚠️ Using recently seen suggestion for ${anyUnusedSuggestion.name}`);
+      return anyUnusedSuggestion;
+    }
     
     // If no unused suggestions, check for used ones too
     // so we can still use them for battle selection
@@ -124,9 +144,9 @@ export const createBattleStarter = (
     
     console.log(`Starting new ${battleType} battle (need ${pokemonNeeded} Pokémon)`);
     
-    // NEAR CERTAINTY to prioritize suggestions (increased to 99%)
-    // This ensures suggested Pokémon will almost always be selected if available
-    const forceSuggestionMatch = Math.random() < 0.99; 
+    // GUARANTEE to prioritize suggestions (increased to 100%)
+    // This ensures suggested Pokémon will ALWAYS be selected if available
+    const forceSuggestionMatch = true;
     
     // Force suggestion after 3 battles without using one
     const mustUseSuggestion = battlesWithoutSuggestion >= 3;
@@ -135,9 +155,8 @@ export const createBattleStarter = (
       console.log("⚠️ FORCING suggestion match after", battlesWithoutSuggestion, "battles without using one");
     }
     
-    // Check if we can use a suggestion
-    const canUseSuggestion = (forceSuggestionMatch || mustUseSuggestion) && 
-      (Date.now() - lastUsedSuggestion.timestamp > 1000);
+    // Check if we can use a suggestion - removed timing restriction
+    const canUseSuggestion = forceSuggestionMatch || mustUseSuggestion;
     
     if (canUseSuggestion) {
       const suggestedPokemon = findActiveSuggestion();

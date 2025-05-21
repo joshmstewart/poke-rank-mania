@@ -103,8 +103,9 @@ export const useBattleStateCore = (
     markSuggestionUsed
   );
 
-  // REMOVED: Comment out the effect that clears suggestions
-  // We'll keep this commented for reference
+  // WE ARE NO LONGER COMMENTING OUT THIS CODE
+  // We're COMPLETELY REMOVING it as it causes suggestions to be cleared
+  // when the component mounts/unmounts, which is what's causing our issue
   /*
   useEffect(() => {
     // This will run when the component mounts

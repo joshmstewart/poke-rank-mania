@@ -101,15 +101,22 @@ export const useBattleProcessor = (
           console.log(`🎉 Milestone reached: ${updatedCount} battles`);
           
           // CRITICAL - Make sure we DO NOT clear suggestions when saving rankings at milestone
-          // This ensures suggestions persist between milestones
           console.log("⚠️ Saving rankings at milestone WITHOUT clearing suggestions");
+          
+          // IMPORTANT NEW LOG: Add a log to check for suggestions before milestone
+          const suggestionsCount = currentBattlePokemon.filter(p => 
+            (p as RankedPokemon).suggestedAdjustment).length;
+          console.log(`🔍 Before milestone: Found ${suggestionsCount} suggestions in current battle`);
+            
+          // Save rankings with PRESERVE_SUGGESTIONS flag to ensure suggestions aren't cleared
           saveRankings(
             Array.from(new Map(cumulativeResults.map(result => [result.winner.id, result.winner])).values()),
             currentSelectedGeneration,
             "battle"
           );
           
-          // Generate rankings for the milestone
+          // Generate rankings for the milestone BUT DON'T CLEAR SUGGESTIONS
+          console.log("🧮 Generating milestone rankings (preserving suggestions)");
           generateRankings(cumulativeResults);
           
           // Show milestone view - make sure we don't clear suggestions when showing milestone
