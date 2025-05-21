@@ -1,6 +1,6 @@
 
 import React from "react";
-import { Pokemon } from "@/services/pokemon";
+import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { getPokemonTypeColor } from "./utils/pokemonTypeColors";
 import { getPreferredImageUrl } from "@/components/settings/ImagePreferenceSelector";
 import { normalizePokedexNumber, capitalizeSpecialForms } from "@/utils/pokemonUtils";
@@ -21,6 +21,13 @@ const PokemonThumbnail: React.FC<PokemonThumbnailProps> = ({ pokemon, index }) =
   const normalizedId = normalizePokedexNumber(pokemon.id);
   const formattedName = capitalizeSpecialForms(pokemon.name);
   const generation = getPokemonGeneration(pokemon.id);
+  
+  // Check if the pokemon has ranking properties (is a RankedPokemon)
+  const isRankedPokemon = (pokemon: Pokemon): pokemon is RankedPokemon => {
+    return 'score' in pokemon && 'count' in pokemon;
+  };
+  
+  const rankedPokemon = isRankedPokemon(pokemon) ? pokemon : undefined;
   
   return (
     <HoverCard openDelay={0} closeDelay={200}>
@@ -85,15 +92,19 @@ const PokemonThumbnail: React.FC<PokemonThumbnailProps> = ({ pokemon, index }) =
           
           <div className="grid gap-1.5">
             <div className="text-sm">
-              <div className="flex justify-between">
-                <span>Battles:</span>
-                <span>{pokemon.count || "N/A"}</span>
-              </div>
-              {pokemon.score !== undefined && (
-                <div className="flex justify-between">
-                  <span>Rating:</span>
-                  <span className="font-mono">{pokemon.score?.toFixed(1)}</span>
-                </div>
+              {rankedPokemon && (
+                <>
+                  <div className="flex justify-between">
+                    <span>Battles:</span>
+                    <span>{rankedPokemon.count || "N/A"}</span>
+                  </div>
+                  {rankedPokemon.score !== undefined && (
+                    <div className="flex justify-between">
+                      <span>Rating:</span>
+                      <span className="font-mono">{rankedPokemon.score.toFixed(1)}</span>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>
