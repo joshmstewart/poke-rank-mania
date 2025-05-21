@@ -67,6 +67,10 @@ export async function fetchPokemonDetails(id: number): Promise<Pokemon> {
       name = name.replace(/-/g, ' ');
       
       types = detailData.types.map((type: any) => type.type.name.charAt(0).toUpperCase() + type.type.name.slice(1));
+      
+      if (isSpecialForm) {
+        console.log(`Successfully fetched special form: ${name}`);
+      }
     } else {
       console.warn(`Failed to fetch Pokemon details for #${id}, using fallback data`);
     }
