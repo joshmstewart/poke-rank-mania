@@ -4,6 +4,7 @@ import { Pokemon, TopNOption, RankedPokemon } from "@/services/pokemon";
 import PokemonThumbnail from "./PokemonThumbnail";
 import RankingHeader from "./RankingHeader";
 import ShowMoreButton from "./ShowMoreButton";
+import ViewRankings from "./ViewRankings";
 
 interface RankingDisplayProps {
   finalRankings: Pokemon[] | RankedPokemon[];
@@ -27,13 +28,35 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
   rankingGenerated,
   onSaveRankings,
   isMilestoneView = false,
-  activeTier,
+  activeTier = 25,
   onTierChange,
   onSuggestRanking,
   onRemoveSuggestion
 }) => {
   console.log("🟣 RankingDisplay component rendered with", finalRankings.length, "Pokémon");
   const [displayCount, setDisplayCount] = useState(20);
+  
+  // Check if finalRankings contains RankedPokemon objects
+  const hasRankedPokemon = finalRankings.length > 0 && 'score' in finalRankings[0];
+  
+  // Handle the case where we're displaying milestone view with ranked pokemon
+  if (isMilestoneView && hasRankedPokemon) {
+    return (
+      <ViewRankings 
+        rankings={finalRankings as RankedPokemon[]}
+        activeTier={activeTier}
+        onSetActiveTier={onTierChange}
+        onSuggestRanking={onSuggestRanking}
+        onRemoveSuggestion={onRemoveSuggestion}
+        isMilestoneView={isMilestoneView}
+        battlesCompleted={battlesCompleted}
+        onContinueBattles={onContinueBattles}
+        onNewBattleSet={onNewBattleSet}
+        rankingGenerated={rankingGenerated}
+        onSaveRankings={onSaveRankings}
+      />
+    );
+  }
   
   // Take the top rankings to display
   const displayRankings = finalRankings.slice(0, displayCount);
