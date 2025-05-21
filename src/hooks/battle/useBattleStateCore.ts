@@ -7,6 +7,7 @@ import { useCompletionTracker } from "@/hooks/battle/useCompletionTracker";
 import { BattleType } from "./types";
 import { useRankings } from "./useRankings";
 import { useBattleInteractions } from "./useBattleInteractions"; 
+import { toast } from "@/hooks/use-toast";
 
 export const useBattleStateCore = (
   allPokemon: Pokemon[],
