@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { SingleBattle } from "./types";
@@ -20,7 +19,8 @@ export const useRankings = (allPokemon: Pokemon[]) => {
     removeSuggestion, 
     markSuggestionUsed, 
     clearAllSuggestions,
-    findNextSuggestion
+    findNextSuggestion,
+    activeSuggestions
   } = useRankingSuggestions(finalRankings, setFinalRankings);
 
   useEffect(() => {
@@ -83,7 +83,14 @@ export const useRankings = (allPokemon: Pokemon[]) => {
 
         // Preserve existing suggestedAdjustment if it exists
         const existingRankedPokemon = finalRankings.find(rp => rp.id === p.id);
-        const suggestedAdjustment = existingRankedPokemon?.suggestedAdjustment;
+        
+        // Either keep the existing suggestion or check if there's a new one in activeSuggestions
+        let suggestedAdjustment = existingRankedPokemon?.suggestedAdjustment;
+        
+        // If there's no existing suggestion but we have one in the suggestions map, use that
+        if (!suggestedAdjustment && activeSuggestions && activeSuggestions.has(p.id)) {
+          suggestedAdjustment = activeSuggestions.get(p.id);
+        }
 
         return {
           ...p,
@@ -137,8 +144,8 @@ export const useRankings = (allPokemon: Pokemon[]) => {
     console.log("[useRankings] Rankings saved.", finalRankings);
     // Save frozen state as well
     localStorage.setItem("pokemon-frozen-pokemon", JSON.stringify(frozenPokemon));
-    // Clear suggestions when rankings are saved
-    clearAllSuggestions();
+    // We no longer clear suggestions when saving rankings
+    // This allows the suggestions to persist between milestones
   };
 
   return {

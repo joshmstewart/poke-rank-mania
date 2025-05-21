@@ -99,10 +99,12 @@ export const useBattleStateCore = (
     activeTier,
     freezePokemonForTier,
     battleStarter,
-    markSuggestionUsed // Pass the function to mark suggestions as used
+    markSuggestionUsed
   );
 
-  // Effect to clear suggestions when entering/leaving the battle screen
+  // Remove the effect that clears suggestions when entering/leaving battle screen
+  // We'll keep this commented for reference
+  /*
   useEffect(() => {
     // This will run when the component mounts
     clearAllSuggestions();
@@ -113,6 +115,7 @@ export const useBattleStateCore = (
       clearAllSuggestions();
     };
   }, [clearAllSuggestions]);
+  */
 
   const {
     handlePokemonSelect,

@@ -144,7 +144,7 @@ export const useBattleProcessor = (
     setupNextBattle,
     generateRankings,
     setShowingMilestone,
-    markSuggestionUsed // Add this new dependency
+    markSuggestionUsed
   ]);
 
   return { 
