@@ -1,6 +1,5 @@
 
 import React from "react";
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Trophy, DraftingCompass } from "lucide-react";
 import { 
@@ -22,14 +21,28 @@ const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ currentMode, onModeChange }
         <Tabs defaultValue={currentMode} onValueChange={(value) => onModeChange(value as "rank" | "battle")}>
           <TabsList className="grid grid-cols-2 h-9">
             <TooltipTrigger asChild>
-              <TabsTrigger value="battle" className="flex items-center gap-1 px-3 text-xs">
-                <Trophy className="h-3.5 w-3.5" />
+              <TabsTrigger 
+                value="battle" 
+                className={`flex items-center gap-1 px-3 text-xs ${
+                  currentMode === "battle" 
+                    ? "bg-primary/10 text-primary font-medium border-b-2 border-primary" 
+                    : ""
+                }`}
+              >
+                <Trophy className={`h-3.5 w-3.5 ${currentMode === "battle" ? "text-primary" : ""}`} />
                 <span className="hidden sm:inline">Battle</span>
               </TabsTrigger>
             </TooltipTrigger>
             <TooltipTrigger asChild>
-              <TabsTrigger value="rank" className="flex items-center gap-1 px-3 text-xs">
-                <DraftingCompass className="h-3.5 w-3.5" />
+              <TabsTrigger 
+                value="rank" 
+                className={`flex items-center gap-1 px-3 text-xs ${
+                  currentMode === "rank" 
+                    ? "bg-primary/10 text-primary font-medium border-b-2 border-primary" 
+                    : ""
+                }`}
+              >
+                <DraftingCompass className={`h-3.5 w-3.5 ${currentMode === "rank" ? "text-primary" : ""}`} />
                 <span className="hidden sm:inline">Rank</span>
               </TabsTrigger>
             </TooltipTrigger>

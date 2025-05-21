@@ -14,10 +14,9 @@ import {
   DialogTrigger
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Settings, Image, Trophy, DraftingCompass } from "lucide-react";
+import { Image, Trophy, DraftingCompass } from "lucide-react";
 import ImagePreferenceSelector, { getPreferredImageUrl, getImageTypeOptions } from "@/components/settings/ImagePreferenceSelector";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { FormFiltersSelector } from "@/components/settings/FormFiltersSelector";
 
 // Pikachu ID for preview
 const PIKACHU_ID = 25;
@@ -29,7 +28,6 @@ const Index = () => {
     return (savedMode === "rank" || savedMode === "battle") ? savedMode : "battle";
   });
   const [imageSettingsOpen, setImageSettingsOpen] = useState(false);
-  const [formFiltersOpen, setFormFiltersOpen] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState<string>("");
   const [previewLoaded, setPreviewLoaded] = useState(false);
 
@@ -77,34 +75,6 @@ const Index = () => {
           <div className="flex items-center gap-2">
             {/* Mode Switcher */}
             <ModeSwitcher currentMode={mode} onModeChange={handleModeChange} />
-            
-            {/* Form Filters Dialog */}
-            <TooltipProvider>
-              <Tooltip>
-                <Dialog open={formFiltersOpen} onOpenChange={setFormFiltersOpen}>
-                  <TooltipTrigger asChild>
-                    <DialogTrigger asChild>
-                      <Button variant="outline" size="sm" className="flex gap-2 items-center h-9">
-                        <Settings className="h-4 w-4" />
-                        <span className="hidden sm:inline">Forms</span>
-                      </Button>
-                    </DialogTrigger>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    Filter different Pokémon form variations
-                  </TooltipContent>
-                  <DialogContent className="max-w-md">
-                    <DialogHeader>
-                      <DialogTitle>Pokémon Form Filters</DialogTitle>
-                      <DialogDescription>
-                        Choose which special form variations to include in your Pokémon battles.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <FormFiltersSelector />
-                  </DialogContent>
-                </Dialog>
-              </Tooltip>
-            </TooltipProvider>
             
             {/* Image Style Dialog */}
             <TooltipProvider>

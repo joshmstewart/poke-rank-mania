@@ -8,6 +8,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 
 // Map of Pokemon types to colors (corrected and expanded)
 const typeColors: Record<string, string> = {
+  // All lowercase versions
   normal: "bg-gray-400",
   fire: "bg-red-500",
   water: "bg-blue-500",
@@ -26,7 +27,8 @@ const typeColors: Record<string, string> = {
   dark: "bg-stone-800 text-white",
   steel: "bg-slate-400",
   fairy: "bg-pink-300",
-  // Added for case insensitivity
+  
+  // All capitalized versions
   Normal: "bg-gray-400",
   Fire: "bg-red-500",
   Water: "bg-blue-500",
@@ -86,24 +88,38 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
   
   // Get primary type color for a Pokemon with better error handling
   const getPokemonTypeColor = (pokemon: Pokemon) => {
-    // Safeguard against missing types data
-    if (!pokemon.types || !pokemon.types.length) {
-      return "bg-gray-200";
+    try {
+      // Safeguard against missing types data
+      if (!pokemon.types || !pokemon.types.length) {
+        return "bg-gray-200";
+      }
+      
+      // Get primary type (first in the array)
+      const primaryType = pokemon.types[0];
+      
+      // Check if we have this type in our map
+      if (!primaryType || typeof primaryType !== 'string') {
+        console.warn(`Invalid type for Pokemon ${pokemon.name}: ${primaryType}`);
+        return "bg-gray-200";
+      }
+      
+      // Normalize type to lowercase for consistent lookup
+      const normalizedType = primaryType.toLowerCase();
+      
+      // Look up the color
+      const color = typeColors[normalizedType] || typeColors[primaryType];
+      
+      // If no color is found, return a default
+      if (!color) {
+        console.warn(`No color found for type: ${primaryType} on ${pokemon.name}`);
+        return "bg-gray-200";
+      }
+      
+      return color;
+    } catch (err) {
+      console.error(`Error getting type color for ${pokemon.name}:`, err);
+      return "bg-gray-200"; // Default color on error
     }
-    
-    // Get primary type (first in the array)
-    const primaryType = pokemon.types[0];
-    
-    // Look up the color, with explicit string type check
-    const color = typeColors[primaryType];
-    
-    // If no color is found, return a default
-    if (!color) {
-      console.warn(`No color found for type: ${primaryType} on ${pokemon.name}`);
-      return "bg-gray-200";
-    }
-    
-    return color;
   };
 
   // Handler for the "Show More" button
