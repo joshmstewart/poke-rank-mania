@@ -16,19 +16,24 @@ export const useRankingSuggestions = (
     localStorage.setItem(STORAGE_KEY, JSON.stringify(obj));
   }, []);
 
-  const loadSavedSuggestions = useCallback(() => {
-    const data = localStorage.getItem(STORAGE_KEY);
-    if (data) {
-      const parsed: Record<number, RankingSuggestion> = JSON.parse(data);
-      activeSuggestionsRef.current = new Map(Object.entries(parsed).map(([k, v]) => [Number(k), v]));
-      setPokemonList(current =>
-        current.map(p => ({
-          ...p,
-          suggestedAdjustment: activeSuggestionsRef.current.get(p.id)
-        }))
-      );
-    }
-  }, [setPokemonList]);
+const loadSavedSuggestions = useCallback(() => {
+  const data = localStorage.getItem(STORAGE_KEY);
+  if (data) {
+    const parsed: Record<number, RankingSuggestion> = JSON.parse(data);
+    activeSuggestionsRef.current = new Map(Object.entries(parsed).map(([k, v]) => [Number(k), v]));
+    setPokemonList(current =>
+      current.map(p => ({
+        ...p,
+        suggestedAdjustment: activeSuggestionsRef.current.get(p.id)
+      }))
+    );
+  } else {
+    activeSuggestionsRef.current.clear();
+  }
+  
+  return activeSuggestionsRef.current; // ✅ Explicitly return the map
+}, [setPokemonList]);
+
 
   useEffect(() => {
     loadSavedSuggestions();
