@@ -7,7 +7,7 @@ import { useProgressState } from "@/hooks/battle/useProgressState";
 import { useCompletionTracker } from "@/hooks/battle/useCompletionTracker";
 import { BattleType } from "./types";
 import { useRankings } from "./useRankings";
-import { useBattleInteractions } from "./useBattleInteractions"; // Add the missing import
+import { useBattleInteractions } from "./useBattleInteractions"; 
 
 export const useBattleStateCore = (
   allPokemon: Pokemon[],
@@ -94,7 +94,7 @@ export const useBattleStateCore = (
     setSelectedPokemon,
     activeTier,
     freezePokemonForTier,
-    battleStarter // Pass the battleStarter to have access to trackLowerTierLoss
+    battleStarter
   );
 
   const handleGoBack = useCallback((
@@ -175,7 +175,6 @@ export const useBattleStateCore = (
     generateRankings,
     handleSaveRankings,
     processorRefs: { resetMilestoneInProgress },
-    battleHistory, // Remove the duplicate property
     freezePokemonForTier,
     isPokemonFrozenForTier
   };
