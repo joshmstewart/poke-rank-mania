@@ -64,30 +64,26 @@ export const useBattleStarterIntegration = (
   }, [currentRankings]);
   
   // Update the effect that monitors for changes in suggestions
-  useEffect(() => {
-    const pokemonWithSuggestions = currentRankings.filter(
-      p => p.suggestedAdjustment && !p.suggestedAdjustment.used
-    );
-    
-    if (pokemonWithSuggestions.length > 0) {
-      console.log(`🎯 Found ${pokemonWithSuggestions.length} Pokemon with pending suggestions`);
-      
-      // Check if we have new suggestions we haven't seen before
-      const newSuggestionsCount = pokemonWithSuggestions.filter(
-        p => !processedSuggestionBattlesRef.current.has(p.id)
-      ).length;
-      
-      if (newSuggestionsCount > 0) {
-        console.log(`🎮 Found ${newSuggestionsCount} NEW suggestion battles to prioritize`);
-        suggestionBattleCountRef.current = 0;
-        suggestionPriorityEnabledRef.current = true;
-        totalSuggestionsRef.current = pokemonWithSuggestions.length;
-        
-        // Force high priority for these new suggestions
-        forcedPriorityBattlesRef.current = Math.min(10, Math.max(5, newSuggestionsCount * 2));
-      }
-    }
-  }, [currentRankings]);
+useEffect(() => {
+  const pokemonWithSuggestions = currentRankings.filter(
+    p => p.suggestedAdjustment && !p.suggestedAdjustment.used
+  );
+  
+  if (pokemonWithSuggestions.length > 0) {
+    console.log(`🎯 Found ${pokemonWithSuggestions.length} Pokemon with pending suggestions`);
+
+    // Always reset suggestion priority when new suggestions appear or persist
+    suggestionBattleCountRef.current = 0;
+    suggestionPriorityEnabledRef.current = true;
+    totalSuggestionsRef.current = pokemonWithSuggestions.length;
+
+    // Consistently prioritize suggestions for a longer duration
+    forcedPriorityBattlesRef.current = Math.max(15, pokemonWithSuggestions.length * 5);
+
+    console.log(`🎮 Suggestion priority reset: prioritizing for next ${forcedPriorityBattlesRef.current} battles.`);
+  }
+}, [currentRankings]);
+
   
   const battleStarter = useMemo(() => {
     if (!allPokemon || allPokemon.length === 0) return null;

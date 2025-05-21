@@ -171,46 +171,51 @@ export const useBattleStateCore = (
   }, [showingMilestone, loadSavedSuggestions, currentBattle]);
   
   // Enhanced effect to reload suggestions and trigger prioritization after milestone
-  useEffect(() => {
-    if (!showingMilestone && needsToReloadSuggestions) {
-      console.log("🔄 Explicitly reloading suggestions after milestone");
-      const loadedSuggestions = loadSavedSuggestions();
-      console.log(`📥 Reloaded suggestions after milestone: ${loadedSuggestions.size}`);
-      lastSuggestionLoadTimestampRef.current = Date.now();
+useEffect(() => {
+  if (!showingMilestone && needsToReloadSuggestions) {
+    console.log("🔄 Explicitly reloading suggestions after milestone");
+    const loadedSuggestions = loadSavedSuggestions();
+    console.log(`📥 Reloaded suggestions after milestone: ${loadedSuggestions.size}`);
+    lastSuggestionLoadTimestampRef.current = Date.now();
 
-      // Re-generate rankings with suggestions
-      generateRankings(battleResults);
-      setNeedsToReloadSuggestions(false);
-      
-      // Explicitly reset suggestion priority to ensure the next battles prioritize suggestions
-      if (resetSuggestionPriority) {
-        console.log("🚨 Explicitly resetting suggestion priority tracking");
-        resetSuggestionPriority();
-      }
-      
-      // Trigger suggestion prioritization when we continue after milestone
-      setTimeout(() => {
-        triggerSuggestionPrioritization();
-      }, 100);
-      
-      // Immediate feedback on what will happen next
-      if (loadedSuggestions.size > 0) {
-        toast({
-          title: "Prioritizing suggestions",
-          description: `Will focus on ${loadedSuggestions.size} suggested Pokemon in upcoming battles`,
-          duration: 4000
-        });
-      }
+    // Regenerate rankings with suggestions
+    generateRankings(battleResults);
+    setNeedsToReloadSuggestions(false);
+    
+    // Explicitly reset suggestion priority clearly and thoroughly
+    if (resetSuggestionPriority) {
+      console.log("🚨 Resetting suggestion priority clearly after milestone");
+      resetSuggestionPriority();
     }
-  }, [
-    showingMilestone, 
-    needsToReloadSuggestions, 
-    loadSavedSuggestions, 
-    generateRankings, 
-    battleResults, 
-    triggerSuggestionPrioritization,
-    resetSuggestionPriority
-  ]);
+
+    // Force immediate suggestion prioritization explicitly
+    forcedPriorityBattlesRef.current = Math.max(20, loadedSuggestions.size * 5);
+    suggestionPriorityEnabledRef.current = true;
+    suggestionBattleCountRef.current = 0;
+    processedSuggestionBattlesRef.current.clear();
+
+    // Immediate trigger suggestion prioritization
+    triggerSuggestionPrioritization();
+
+    // Immediate feedback clearly
+    if (loadedSuggestions.size > 0) {
+      toast({
+        title: "Prioritizing suggestions",
+        description: `Will explicitly prioritize ${loadedSuggestions.size} Pokémon suggestions consistently`,
+        duration: 4000
+      });
+    }
+  }
+}, [
+  showingMilestone, 
+  needsToReloadSuggestions, 
+  loadSavedSuggestions, 
+  generateRankings, 
+  battleResults, 
+  triggerSuggestionPrioritization,
+  resetSuggestionPriority
+]);
+
 
   // Enhanced milestone ended handler with stronger suggestion focus
   const handleMilestoneEnded = useCallback(() => {
