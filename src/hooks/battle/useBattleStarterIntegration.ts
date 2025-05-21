@@ -134,11 +134,19 @@ useEffect(() => {
         
       console.log(`🔄 Prioritizing suggestion battles (${suggestionBattleCountRef.current + 1}/${requiredPriorityBattles})`);
       
-      // Decrease the forced priority counter if applicable
-      if (forcedPriorityBattlesRef.current > 0) {
-        forcedPriorityBattlesRef.current--;
-        console.log(`⚡ Forced priority battles remaining: ${forcedPriorityBattlesRef.current}`);
-      }
+    // Decrease forced priority ONLY IF no suggestions were found in this battle
+const hasSuggestionInBattle = battle.some(pokemon => {
+  const rankedPokemon = currentRankings.find(p => p.id === pokemon.id);
+  return rankedPokemon?.suggestedAdjustment && !rankedPokemon.suggestedAdjustment.used;
+});
+
+if (forcedPriorityBattlesRef.current > 0 && !hasSuggestionInBattle) {
+  forcedPriorityBattlesRef.current--;
+  console.log(`⚡ Forced priority battles decreased (no suggestion this battle). Remaining: ${forcedPriorityBattlesRef.current}`);
+} else if (hasSuggestionInBattle) {
+  console.log("🎯 Suggestion found in battle, NOT decrementing forcedPriorityBattlesRef");
+}
+
       
       // Force a high probability of suggestion battle by calling original function with a flag
       const battle = battleStarter.startNewBattle(battleType, true);
