@@ -36,10 +36,31 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
   console.log("🟣 RankingDisplay component rendered with", finalRankings.length, "Pokémon");
   const [displayCount, setDisplayCount] = useState(20);
   
-  // Check if finalRankings contains RankedPokemon objects
+  // FIXED: Ensured all hooks are called unconditionally first
+  // Handle the case where we're displaying milestone view with ranked pokemon
   const hasRankedPokemon = finalRankings.length > 0 && 'score' in finalRankings[0];
   
-  // Handle the case where we're displaying milestone view with ranked pokemon
+  // Add debugging to show Pokemon with their types - this must be called unconditionally
+  useEffect(() => {
+    const displayRankings = finalRankings.slice(0, displayCount);
+    console.log("Pokemon list with types:");
+    if (displayRankings.length > 0) {
+      displayRankings.slice(0, Math.min(5, displayRankings.length)).forEach((pokemon, index) => {
+        console.log(`${index + 1}. ${pokemon.name} (ID: ${pokemon.id}) - Types: ${pokemon.types?.join(', ') || 'unknown'}`);
+      });
+    }
+  }, [finalRankings, displayCount]);
+  
+  // Handler for the "Show More" button
+  const handleShowMore = () => {
+    // Increase by a larger number to display more Pokémon at once
+    const increment = 50;
+    const newCount = Math.min(displayCount + increment, finalRankings.length);
+    console.log(`Increasing display count from ${displayCount} to ${newCount} of ${finalRankings.length} total`);
+    setDisplayCount(newCount);
+  };
+
+  // Now we can conditionally render different UI based on props
   if (isMilestoneView && hasRankedPokemon) {
     return (
       <ViewRankings 
@@ -60,23 +81,6 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
   
   // Take the top rankings to display
   const displayRankings = finalRankings.slice(0, displayCount);
-  
-  // Add debugging to show Pokemon with their types
-  useEffect(() => {
-    console.log("Pokemon list with types:");
-    displayRankings.slice(0, 5).forEach((pokemon, index) => {
-      console.log(`${index + 1}. ${pokemon.name} (ID: ${pokemon.id}) - Types: ${pokemon.types?.join(', ') || 'unknown'}`);
-    });
-  }, [displayRankings]);
-  
-  // Handler for the "Show More" button
-  const handleShowMore = () => {
-    // Increase by a larger number to display more Pokémon at once
-    const increment = 50;
-    const newCount = Math.min(displayCount + increment, finalRankings.length);
-    console.log(`Increasing display count from ${displayCount} to ${newCount} of ${finalRankings.length} total`);
-    setDisplayCount(newCount);
-  };
 
   return (
     <div className="bg-white rounded-lg shadow p-6">
