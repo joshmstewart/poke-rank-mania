@@ -118,7 +118,6 @@ const handleContinueBattles = () => {
   startNewBattle(battleType);
 };
 
-
   const handleNewBattleSet = () => {
     resetMilestones();
     // Reset the milestone processing flag when starting a new battle set
@@ -190,8 +189,10 @@ const handleContinueBattles = () => {
         </div>
       </div>
       
-      {showingMilestone ? (
-        <div className="w-full max-w-4xl">
+      {/* FIXED: Changed conditional rendering to CSS visibility control to prevent remounting */}
+      <div className="w-full max-w-4xl">
+        {/* Milestone view - always rendered but conditionally displayed */}
+        <div style={{ display: showingMilestone ? 'block' : 'none' }}>
           <RankingDisplay
             finalRankings={finalRankings}
             battlesCompleted={battlesCompleted}
@@ -204,20 +205,23 @@ const handleContinueBattles = () => {
             onTierChange={handleTierChange}
           />
         </div>
-      ) : (
-        <BattleInterface
-          currentBattle={currentBattle}
-          selectedPokemon={selectedPokemon}
-          onPokemonSelect={handlePokemonSelect}
-          onTripletSelectionComplete={handleTripletSelectionWrapper}
-          isProcessing={isProcessingResult}
-          battleType={battleType}
-          onGoBack={goBack}
-          battlesCompleted={battlesCompleted}
-          battleHistory={battleHistory || []}
-          milestones={milestones}
-        />
-      )}
+        
+        {/* Battle interface - always rendered but conditionally displayed */}
+        <div style={{ display: showingMilestone ? 'none' : 'block' }}>
+          <BattleInterface
+            currentBattle={currentBattle}
+            selectedPokemon={selectedPokemon}
+            onPokemonSelect={handlePokemonSelect}
+            onTripletSelectionComplete={handleTripletSelectionWrapper}
+            isProcessing={isProcessingResult}
+            battleType={battleType}
+            onGoBack={goBack}
+            battlesCompleted={battlesCompleted}
+            battleHistory={battleHistory || []}
+            milestones={milestones}
+          />
+        </div>
+      </div>
       
       <BattleFooterNote battlesCompleted={battlesCompleted} />
     </div>
