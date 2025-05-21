@@ -19,6 +19,7 @@ const ProgressTracker: React.FC<ProgressTrackerProps> = ({
   const safeCompletionPercentage = isNaN(completionPercentage) ? 0 : Math.min(100, completionPercentage);
   const safeBattlesCompleted = isNaN(battlesCompleted) ? 0 : battlesCompleted;
   const isComplete = safeCompletionPercentage >= 100;
+  const hasStarted = safeBattlesCompleted > 0;
   
   // Safely get battles remaining
   const battlesRemaining = (() => {
@@ -36,17 +37,18 @@ const ProgressTracker: React.FC<ProgressTrackerProps> = ({
         <div className="flex items-center justify-between mb-1">
           <h3 className="font-semibold text-sm flex items-center">
             {isComplete && <Award className="mr-1 text-green-600" size={16} />}
-            {!isComplete && <TrendingUp className="mr-1 text-blue-600" size={16} />}
+            {!isComplete && hasStarted && <TrendingUp className="mr-1 text-blue-600" size={16} />}
+            {!isComplete && !hasStarted && <TrendingUp className="mr-1 text-gray-500" size={16} />}
             Overall Ranking Progress
           </h3>
-          <span className={`text-xs ${isComplete ? "text-green-600 font-semibold" : "text-gray-500"}`}>
+          <span className={`text-xs ${isComplete ? "text-green-600 font-semibold" : hasStarted ? "text-blue-600" : "text-gray-500"}`}>
             {safeCompletionPercentage}% Complete
           </span>
         </div>
         <Progress value={safeCompletionPercentage} className={`h-3 ${isComplete ? "bg-green-100" : ""}`} />
         <div className="flex justify-between mt-1 text-xs text-gray-500">
           <span>Battles completed: {safeBattlesCompleted}</span>
-          {battlesRemaining > 0 && (
+          {battlesRemaining > 0 && hasStarted && (
             <span className="text-blue-600">~{battlesRemaining} battles left</span>
           )}
           {safeCompletionPercentage >= 100 && (

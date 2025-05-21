@@ -77,7 +77,8 @@ export const useCompletionTracker = (
       const totalBattlesNeeded = Math.floor(allPokemon.length * Math.log2(allPokemon.length));
       
       // Calculate percentage with a small minimum to show progress from the start
-      const calculatedPercentage = Math.min(100, Math.max(1, 
+      // Only show percentage > 0 if there are actual battles completed
+      const calculatedPercentage = battleResults.length === 0 ? 0 : Math.min(100, Math.max(1, 
         Math.floor((battleResults.length / totalBattlesNeeded) * 100)
       ));
       
