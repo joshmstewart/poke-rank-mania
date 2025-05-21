@@ -71,7 +71,7 @@ export const useFormFilters = () => {
   const getPokemonFormCategory = (pokemon: Pokemon): PokemonFormType | null => {
     const name = pokemon.name.toLowerCase();
     
-    // Check for costumes (Pikachu caps and cosplay forms)
+    // Check for costumes (Pikachu caps and cosplay forms) - check this FIRST
     if (name.includes("pikachu") && (
         name.includes("cap") || 
         name.includes("phd") || 

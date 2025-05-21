@@ -6,15 +6,16 @@ export const logPokemonVariations = (allPokemon: Pokemon[]) => {
   if (process.env.NODE_ENV !== 'production') {
     console.log("========= POKEMON VARIATIONS ANALYSIS =========");
     
-    // Special form patterns to check for
+    // Special form patterns to check for - Order matters here!
     const specialPatterns = [
+      // Check costume Pikachu first to ensure correct categorization
+      { name: "Costume Pokémon", pattern: /(pikachu.*cap|pikachu-belle|pikachu-libre|pikachu-phd|pikachu-pop-star|pikachu-rock-star|pikachu-cosplay)/i },
+      { name: "Origin & Primal Forms", pattern: /(origin|primal)/i },
       { name: "Mega & Gigantamax Forms", pattern: /(mega|gmax)/i },
       { name: "Alolan Forms", pattern: /alolan/i },
       { name: "Galarian Forms", pattern: /galarian/i },
       { name: "Hisuian Forms", pattern: /hisuian/i },
       { name: "Paldean Forms", pattern: /paldean/i },
-      { name: "Origin & Primal Forms", pattern: /(origin|primal)/i },
-      { name: "Costume Pokémon", pattern: /(pikachu.*cap|pikachu-belle|pikachu-libre|pikachu-phd|pikachu-pop-star|pikachu-rock-star|pikachu-cosplay)/i },
       { name: "Special Gender Forms", pattern: /(female|male|-f|-m)/i },
       { name: "Special Rotom Forms", pattern: /rotom-/i },
       { name: "Other Special Forms", pattern: /(form|style|mode|size|cloak|forme|unbound|gorging|eternamax|theme)/i }

@@ -20,7 +20,7 @@ const shouldIncludePokemon = (pokemon: { name: string, id: number }) => {
       
       const name = pokemon.name.toLowerCase();
 
-      // Check for costume forms (Pikachu variants)
+      // Check for costume forms (Pikachu variants) - check this FIRST
       if ((name.includes("pikachu") && (
           name.includes("cap") || name.includes("phd") || name.includes("cosplay") || 
           name.includes("belle") || name.includes("libre") || name.includes("pop-star") || 
