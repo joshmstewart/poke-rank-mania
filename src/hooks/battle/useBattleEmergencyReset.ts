@@ -79,12 +79,15 @@ export const useBattleEmergencyReset = (
             
             // If both are present, we might have tracking issues
             if (recentlyUsed && lastBattle) {
-              // Give option to reset - fixed by using children instead of action.label
               toast({
                 title: "Battle System Stuck?",
                 description: "Click to reset and get new Pokémon",
                 action: (
-                  <Button variant="outline" size="sm" onClick={performEmergencyReset}>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={performEmergencyReset}
+                  >
                     Reset
                   </Button>
                 ),

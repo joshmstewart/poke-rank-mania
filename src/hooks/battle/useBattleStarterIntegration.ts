@@ -1,3 +1,4 @@
+
 import { useMemo, useCallback, useEffect, useRef, useState } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
@@ -133,18 +134,22 @@ export const useBattleStarterIntegration = (
         
         setIsStuckInSameBattle(true);
         
-        // Show toast with reset option - Fixed by using children instead of label
+        // Show toast with reset option
         toast({
           title: "System Stuck",
           description: "The battle system is showing the same Pokemon repeatedly. Click to reset.",
           action: (
-            <Button variant="destructive" size="sm" onClick={() => {
-              // Force complete reset
-              performEmergencyReset();
-              // Clear our tracking
-              recentBattlesRef.current = [];
-              setIsStuckInSameBattle(false);
-            }}>
+            <Button 
+              variant="destructive" 
+              size="sm" 
+              onClick={() => {
+                // Force complete reset
+                performEmergencyReset();
+                // Clear our tracking
+                recentBattlesRef.current = [];
+                setIsStuckInSameBattle(false);
+              }}
+            >
               Reset
             </Button>
           ),
