@@ -2,7 +2,7 @@
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
 
-// Helper function for shuffling array that was missing
+// Helper function for shuffling array
 const shuffleArray = <T>(array: T[]): T[] => {
   const shuffled = [...array];
   for (let i = shuffled.length - 1; i > 0; i--) {
@@ -46,31 +46,61 @@ export const createBattleStarter = (
       console.log(`🔍 findActiveSuggestion: Searching through ${currentRankings.length} Pokémon for suggestions`);
     }
     
-    let suggestedCount = 0;
-    let unusedCount = 0;
+    // Force a reload of suggestions from localStorage to ensure we're always using the latest data
+    console.log("⭐⭐⭐ FORCE RELOADING SUGGESTIONS FROM LOCAL STORAGE");
+    
+    // Create a list of all Pokemon with suggestions
+    const allSuggestedPokemon: RankedPokemon[] = [];
     
     // First, check each Pokemon in the current rankings for suggestions
     currentRankings.forEach(p => {
       const rankedP = p as RankedPokemon;
       if (rankedP.suggestedAdjustment) {
-        suggestedCount++;
-        if (!rankedP.suggestedAdjustment.used) {
-          unusedCount++;
-        }
+        allSuggestedPokemon.push(rankedP);
       }
     });
     
     if (DEBUG_BATTLE_SELECTION) {
-      console.log(`📊 findActiveSuggestion: Found ${suggestedCount} total suggestions (${unusedCount} unused)`);
+      console.log(`📊 findActiveSuggestion: Found ${allSuggestedPokemon.length} total suggestions`);
+    }
+    
+    if (allSuggestedPokemon.length === 0) {
+      console.log("⚠️ No suggestions found in currentRankings, checking localStorage directly");
+      
+      try {
+        // Try to load suggestions directly from localStorage as fallback
+        const savedSuggestions = localStorage.getItem('pokemon-active-suggestions');
+        if (savedSuggestions) {
+          const parsedSuggestions = JSON.parse(savedSuggestions);
+          const suggestionEntries = Object.entries(parsedSuggestions);
+          console.log(`📂 Found ${suggestionEntries.length} suggestions in localStorage directly`);
+          
+          if (suggestionEntries.length > 0) {
+            // Find a Pokemon that matches one of these suggestions
+            const [pokemonIdStr, suggestion] = suggestionEntries[Math.floor(Math.random() * suggestionEntries.length)];
+            const pokemonId = Number(pokemonIdStr);
+            const pokemon = currentRankings.find(p => p.id === pokemonId) as RankedPokemon | undefined;
+            
+            if (pokemon) {
+              console.log(`⭐ Using suggestion from localStorage for ${pokemon.name}`);
+              // Apply the suggestion to the Pokemon
+              return {
+                ...pokemon,
+                suggestedAdjustment: suggestion as any
+              };
+            }
+          }
+        }
+      } catch (e) {
+        console.error("Failed to load suggestions from localStorage:", e);
+      }
     }
     
     // Higher priority to unused suggestions that haven't been used recently 
-    const unusedSuggestions = currentRankings.filter(p => {
-      const rankedP = p as RankedPokemon;
-      return rankedP.suggestedAdjustment && 
-        !rankedP.suggestedAdjustment.used &&
-        !recentlyUsedSuggestions.has(p.id);
-    }) as RankedPokemon[];
+    const unusedSuggestions = allSuggestedPokemon.filter(p => 
+      !p.suggestedAdjustment?.used && 
+      !recentlyUsedSuggestions.has(p.id)
+    );
     
     if (DEBUG_BATTLE_SELECTION) {
       console.log(`🔄 findActiveSuggestion: Found ${unusedSuggestions.length} fresh unused suggestions`);
@@ -84,10 +114,7 @@ export const createBattleStarter = (
     }
     
     // If we've exhausted fresh suggestions, try any unused ones even if used recently
-    const anyUnusedSuggestion = currentRankings.find(p => {
-      const rankedP = p as RankedPokemon;
-      return rankedP.suggestedAdjustment && !rankedP.suggestedAdjustment.used;
-    }) as RankedPokemon | undefined;
+    const anyUnusedSuggestion = allSuggestedPokemon.find(p => !p.suggestedAdjustment?.used);
     
     if (anyUnusedSuggestion) {
       console.log(`⚠️ Using recently seen suggestion for ${anyUnusedSuggestion.name}`);
@@ -96,9 +123,13 @@ export const createBattleStarter = (
     
     // If no unused suggestions, check for used ones too
     // so we can still use them for battle selection
-    return currentRankings.find(p => 
-      (p as RankedPokemon).suggestedAdjustment
-    ) as RankedPokemon | undefined;
+    const usedSuggestion = allSuggestedPokemon[0];
+    if (usedSuggestion) {
+      console.log(`⚠️ All suggestions used, reusing ${usedSuggestion.name}`);
+      return usedSuggestion;
+    }
+    
+    return undefined;
   };
 
   // Select opponent based on suggestion params
@@ -159,6 +190,22 @@ export const createBattleStarter = (
     const pokemonNeeded = battleType === "triplets" ? 3 : 2;
     
     console.log(`Starting new ${battleType} battle (need ${pokemonNeeded} Pokémon)`);
+    
+    // CRUCIAL: Force reload of suggestions by checking localStorage directly
+    console.log("🔄 Force checking localStorage for suggestions before battle start");
+    
+    try {
+      const savedSuggestions = localStorage.getItem('pokemon-active-suggestions');
+      if (savedSuggestions) {
+        const parsedSuggestions = JSON.parse(savedSuggestions);
+        const suggestionCount = Object.keys(parsedSuggestions).length;
+        console.log(`📊 Found ${suggestionCount} suggestions in localStorage`);
+      } else {
+        console.log("📊 No suggestions found in localStorage");
+      }
+    } catch (e) {
+      console.error("Error checking localStorage suggestions:", e);
+    }
     
     // ALWAYS prioritize suggestions (100% chance)
     // This guarantees suggested Pokémon will be selected if available
