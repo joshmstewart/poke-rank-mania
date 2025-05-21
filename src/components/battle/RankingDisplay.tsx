@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Pokemon, TopNOption, RankedPokemon } from "@/services/pokemon";
 import { Trophy, Award, Medal } from "lucide-react";
@@ -57,11 +57,30 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
   // Take the top rankings to display
   const displayRankings = finalRankings.slice(0, displayCount);
   
-  // Get primary type color for a Pokemon
+  // Add debugging to show Pokemon with their types
+  useEffect(() => {
+    console.log("Pokemon list with types:");
+    displayRankings.slice(0, 5).forEach((pokemon, index) => {
+      console.log(`${index + 1}. ${pokemon.name} (ID: ${pokemon.id}) - Types: ${pokemon.types?.join(', ') || 'unknown'}`);
+    });
+  }, [displayRankings]);
+  
+  // Get primary type color for a Pokemon - Enhanced with better fallback
   const getPokemonTypeColor = (pokemon: Pokemon) => {
-    if (!pokemon.types || !pokemon.types.length) return "bg-gray-100";
+    if (!pokemon.types || !pokemon.types.length) {
+      console.log(`No types found for ${pokemon.name} (ID: ${pokemon.id})`);
+      return "bg-gray-100";
+    }
+    
     const primaryType = pokemon.types[0];
-    return typeColors[primaryType] || "bg-gray-100";
+    const color = typeColors[primaryType];
+    
+    if (!color) {
+      console.log(`Unknown type color for ${primaryType} on ${pokemon.name}`);
+      return "bg-gray-100";
+    }
+    
+    return color;
   };
 
   // Handler for the "Show More" button

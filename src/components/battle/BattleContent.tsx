@@ -10,6 +10,7 @@ import { BattleType } from "@/hooks/battle/types";
 import RankingDisplay from "./RankingDisplay";
 import ProgressTracker from "./ProgressTracker";
 import TierSelector from "./TierSelector";
+import { logPokemonVariations } from "@/utils/pokemonListingLogger";
 
 interface BattleContentProps {
   allPokemon: Pokemon[];
@@ -20,6 +21,7 @@ interface BattleContentProps {
 const BattleContent = ({ allPokemon, initialBattleType, initialSelectedGeneration }: BattleContentProps) => {
   const battleStartedRef = useRef(false);
   const previousBattlesCompletedRef = useRef(0);
+  const pokemonAnalysisLoggedRef = useRef(false);
   
   const {
     currentBattle,
@@ -64,6 +66,15 @@ const BattleContent = ({ allPokemon, initialBattleType, initialSelectedGeneratio
   useEffect(() => {
     previousBattlesCompletedRef.current = battlesCompleted;
   }, [battlesCompleted]);
+
+  // Log Pokemon variations once when data is available
+  useEffect(() => {
+    if (allPokemon.length > 0 && !pokemonAnalysisLoggedRef.current) {
+      // Log Pokemon variation analysis
+      logPokemonVariations(allPokemon);
+      pokemonAnalysisLoggedRef.current = true;
+    }
+  }, [allPokemon]);
 
   // Calculate remaining battles
   const getBattlesRemaining = () => {
