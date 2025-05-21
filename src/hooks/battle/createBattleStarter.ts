@@ -1,3 +1,4 @@
+
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
 
@@ -9,7 +10,9 @@ export function createBattleStarter(
   availablePokemon: Pokemon[],
   rankedPokemon: RankedPokemon[] = [],
   setCurrentBattle: React.Dispatch<React.SetStateAction<Pokemon[]>>,
-  suggestedPokemon: RankedPokemon[] = []
+  suggestedPokemon: RankedPokemon[] = [],
+  battleCount: number = 0,                                     // ADD THIS PARAMETER
+  setBattleCount?: React.Dispatch<React.SetStateAction<number>> // ADD THIS PARAMETER
 ) {
   // Keep track of recently used Pokemon to avoid repeats
   const recentlyUsed = new Set<number>();
@@ -45,7 +48,8 @@ export function createBattleStarter(
     if (suggestedIds.length === 0) return null;
     
     // Sort suggestions to prioritize those we haven't used recently
-    battleCounter++;
+    // Use persisted battle count
+    const currentBattleCount = battleCount; 
     const sortedIds = suggestedIds.sort((a, b) => {
       const lastUsedA = lastUsedSuggestion.get(a) || 0;
       const lastUsedB = lastUsedSuggestion.get(b) || 0;
@@ -57,7 +61,7 @@ export function createBattleStarter(
     for (const id of sortedIds) {
       // Check if we've used this suggestion recently
       const lastUsed = lastUsedSuggestion.get(id) || 0;
-      const notUsedRecently = (battleCounter - lastUsed) > 3;
+      const notUsedRecently = (currentBattleCount - lastUsed) > 3;
       
       if (notUsedRecently || !lastUsedSuggestion.has(id)) {
         selectedId = id;
@@ -70,7 +74,7 @@ export function createBattleStarter(
       // Use weighted random selection - prefer ones used less recently
       const weights = sortedIds.map(id => {
         const lastUsed = lastUsedSuggestion.get(id) || 0;
-        return Math.max(1, battleCounter - lastUsed); // Higher weight for less recently used
+        return Math.max(1, currentBattleCount - lastUsed); // Higher weight for less recently used
       });
       
       // Weighted random selection
@@ -83,7 +87,7 @@ export function createBattleStarter(
       
       if (suggestedPokemon && suggestedData) {
         result.push(suggestedPokemon);
-        lastUsedSuggestion.set(selectedId, battleCounter);
+        lastUsedSuggestion.set(selectedId, currentBattleCount);
         console.log(`🎯 Battle includes suggested Pokemon: ${suggestedPokemon.name}`);
         
         // Find an appropriate opponent based on the suggestion direction
@@ -255,6 +259,14 @@ function selectSuggestedPokemonForced(battleType: BattleType): Pokemon[] | null 
       return [];
     }
 
+    // Use the persisted battle count
+    const currentBattleCount = battleCount + 1;
+    if (setBattleCount) {
+      setBattleCount(currentBattleCount);
+    }
+    
+    console.log(`🔢 Battle #${currentBattleCount} starting (${currentBattleCount <= 25 ? 'initial subset phase' : 'main selection phase'})`);
+
     const battleSize = battleType === "triplets" ? 3 : 2;
     let selectedPokemon: Pokemon[] = [];
     
@@ -268,63 +280,86 @@ function selectSuggestedPokemonForced(battleType: BattleType): Pokemon[] | null 
       console.log(`🎮 Battle Starter: Updated suggestion tracking with ${suggested.size} Pokemon`);
     }
     
-    // If forcing suggestion priority OR we have active suggestions with high priority (95%)
-    // OR if we've gone too many battles without using suggestions
-    const suggestionProbability = forceSuggestionPriority ? 1.0 : 0.85;
-    
-    if ((forceSuggestionPriority) || 
-        (suggested.size > 0 && Math.random() < suggestionProbability) || 
-        (consecutiveNonSuggestionBattles >= 3 && suggested.size > 0)) {
+    // Use our fixed initial subset for the first 25 battles
+    if (currentBattleCount <= 25) {
+      console.log(`👾 Battle #${currentBattleCount}: Using initial subset selection (first 25 battles)`);
       
-      if (forceSuggestionPriority) {
-        console.log("🚨 FORCING suggestion priority battle");
+      // Create a fixed subset of Pokémon for consistency
+      const INITIAL_SUBSET_SIZE = 15;
+      
+      const initialSubset = allPokemon
+        .slice(0, Math.min(INITIAL_SUBSET_SIZE, allPokemon.length));
+      
+      // Select from this initial subset
+      const notRecent = initialSubset.filter(p => !recentlyUsed.has(p.id));
+      
+      if (notRecent.length >= battleSize) {
+        selectedPokemon = shuffleArray(notRecent).slice(0, battleSize);
+      } else {
+        selectedPokemon = shuffleArray(initialSubset).slice(0, battleSize);
       }
+    }
+    // Beyond the initial subset phase, use our sophisticated selection strategies
+    else {
+      console.log(`👾 Battle #${currentBattleCount}: Beyond initial subset - using main selection logic`);
       
-      // Try to create a suggestion-focused battle
-      const suggestedBattle = forceSuggestionPriority 
-  ? selectSuggestedPokemonForced(battleType)
-  : selectSuggestedPokemon(battleType);
-
+      // If forcing suggestion priority OR we have active suggestions with high priority (95%)
+      // OR if we've gone too many battles without using suggestions
+      const suggestionProbability = forceSuggestionPriority ? 1.0 : 0.85;
       
-      if (suggestedBattle) {
-        selectedPokemon = suggestedBattle;
-        consecutiveNonSuggestionBattles = 0;
+      if ((forceSuggestionPriority) || 
+          (suggested.size > 0 && Math.random() < suggestionProbability) || 
+          (consecutiveNonSuggestionBattles >= 3 && suggested.size > 0)) {
         
-        // Verify if the battle contains a suggestion
-        const hasSuggestion = suggestedBattle.some(p => {
-          return rankedPokemon.some(rp => 
-            rp.id === p.id && 
-            rp.suggestedAdjustment && 
-            !rp.suggestedAdjustment.used
-          );
-        });
+        if (forceSuggestionPriority) {
+          console.log("🚨 FORCING suggestion priority battle");
+        }
         
-        if (hasSuggestion) {
-          console.log("✅ Successfully created a battle with suggested Pokemon");
+        // Try to create a suggestion-focused battle
+        const suggestedBattle = forceSuggestionPriority 
+          ? selectSuggestedPokemonForced(battleType)
+          : selectSuggestedPokemon(battleType);
+        
+        if (suggestedBattle) {
+          selectedPokemon = suggestedBattle;
+          consecutiveNonSuggestionBattles = 0;
+          
+          // Verify if the battle contains a suggestion
+          const hasSuggestion = suggestedBattle.some(p => {
+            return rankedPokemon.some(rp => 
+              rp.id === p.id && 
+              rp.suggestedAdjustment && 
+              !rp.suggestedAdjustment.used
+            );
+          });
+          
+          if (hasSuggestion) {
+            console.log("✅ Successfully created a battle with suggested Pokemon");
+          }
+        } else {
+          // If no suggestion battle could be created, create a random battle
+          consecutiveNonSuggestionBattles++;
+          console.log("⚠️ Could not create suggestion battle, using random selection");
+          selectedPokemon = shuffleArray(availablePokemon)
+            .filter(p => !recentlyUsed.has(p.id))
+            .slice(0, battleSize);
+          
+          // If we don't have enough Pokemon, use any available
+          if (selectedPokemon.length < battleSize) {
+            selectedPokemon = shuffleArray(availablePokemon).slice(0, battleSize);
+          }
         }
       } else {
         // If no suggestion battle could be created, create a random battle
         consecutiveNonSuggestionBattles++;
-        console.log("⚠️ Could not create suggestion battle, using random selection");
-        selectedPokemon = shuffleArray(availablePokemon)
-          .filter(p => !recentlyUsed.has(p.id))
-          .slice(0, battleSize);
         
-        // If we don't have enough Pokemon, use any available
-        if (selectedPokemon.length < battleSize) {
+        // Prefer Pokemon not used recently
+        const notRecentlyUsed = availablePokemon.filter(p => !recentlyUsed.has(p.id));
+        if (notRecentlyUsed.length >= battleSize) {
+          selectedPokemon = shuffleArray(notRecentlyUsed).slice(0, battleSize);
+        } else {
           selectedPokemon = shuffleArray(availablePokemon).slice(0, battleSize);
         }
-      }
-    } else {
-      // Otherwise, create a random battle
-      consecutiveNonSuggestionBattles++;
-      
-      // Prefer Pokemon not used recently
-      const notRecentlyUsed = availablePokemon.filter(p => !recentlyUsed.has(p.id));
-      if (notRecentlyUsed.length >= battleSize) {
-        selectedPokemon = shuffleArray(notRecentlyUsed).slice(0, battleSize);
-      } else {
-        selectedPokemon = shuffleArray(availablePokemon).slice(0, battleSize);
       }
     }
     

@@ -1,4 +1,3 @@
-
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { BattleType } from "./types";
 
@@ -9,12 +8,13 @@ export const createBattleStarter = (
   setCurrentBattle: React.Dispatch<React.SetStateAction<Pokemon[]>>,
   activeTier: TopNOption = "All",
   isPokemonFrozenForTier?: (pokemonId: number, tier: TopNOption) => boolean,
-  suggestedPokemonIds: number[] = [] // ⬅️ ADD THIS PARAMETER
+  suggestedPokemonIds: number[] = [],
+  battleCount: number = 0,                                      // ⬅️ ADD THIS PARAMETER  
+  setBattleCount?: React.Dispatch<React.SetStateAction<number>> // ⬅️ ADD THIS PARAMETER
 ) => {
 
   // Use plain objects instead of hooks
   const recentlySeenPokemon = new Set<number>();
-  let battleCountRef = 0;
   let initialSubsetRef: Pokemon[] | null = null;
   let lowerTierLosersMap = new Map<number, number>(); // Track Pokemon that lost to lower tier opponents
 
@@ -36,21 +36,21 @@ export const createBattleStarter = (
   };
 
   const getSuggestedBattlePair = (battleSize: number): Pokemon[] | null => {
-  const suggestedCandidates = pokemonList.filter(p => suggestedPokemonIds.includes(p.id));
-  if (suggestedCandidates.length === 0) return null;
+    const suggestedCandidates = pokemonList.filter(p => suggestedPokemonIds.includes(p.id));
+    if (suggestedCandidates.length === 0) return null;
 
-  if (suggestedCandidates.length >= battleSize) {
-    return shuffleArray(suggestedCandidates).slice(0, battleSize);
-  }
+    if (suggestedCandidates.length >= battleSize) {
+      return shuffleArray(suggestedCandidates).slice(0, battleSize);
+    }
 
-  // If not enough suggested Pokémon, fill the remaining spots randomly from pokemonList
-  const additionalNeeded = battleSize - suggestedCandidates.length;
-  const additionalCandidates = shuffleArray(
-    pokemonList.filter(p => !suggestedPokemonIds.includes(p.id))
-  ).slice(0, additionalNeeded);
+    // If not enough suggested Pokémon, fill the remaining spots randomly from pokemonList
+    const additionalNeeded = battleSize - suggestedCandidates.length;
+    const additionalCandidates = shuffleArray(
+      pokemonList.filter(p => !suggestedPokemonIds.includes(p.id))
+    ).slice(0, additionalNeeded);
 
-  return [...suggestedCandidates, ...additionalCandidates];
-};
+    return [...suggestedCandidates, ...additionalCandidates];
+  };
 
 
   const getTierBattlePair = (battleType: BattleType): Pokemon[] => {
@@ -166,33 +166,45 @@ export const createBattleStarter = (
   };
 
 const startNewBattle = (battleType: BattleType): Pokemon[] => {
-  battleCountRef++;
+  // Use the persisted battle count and increment it
+  const newBattleCount = battleCount + 1;
+  if (setBattleCount) {
+    setBattleCount(newBattleCount);
+  }
+  
+  console.log(`🔢 Battle #${newBattleCount} starting (${newBattleCount <= 25 ? 'initial subset phase' : 'main selection phase'})`);
+  
   const battleSize = battleType === "pairs" ? 2 : 3;
-
   let result: Pokemon[] = [];
 
   // Fixed initial subset selection for first 25 battles (down from 100)
-  if (battleCountRef <= 25) {
+  if (newBattleCount <= 25) {
     const INITIAL_SUBSET_SIZE = 15; // clearly defined size for repetition
 
     if (!initialSubsetRef) {
       initialSubsetRef = shuffleArray(pokemonList).slice(0, INITIAL_SUBSET_SIZE);
+      console.log(`🔄 Created initial subset with ${INITIAL_SUBSET_SIZE} Pokémon for first 25 battles`);
     }
 
     result = pickDistinctPair(initialSubsetRef, recentlySeenPokemon, battleSize);
+    console.log(`👾 Battle #${newBattleCount}: Using initial subset selection`);
   } else {
+    console.log(`👾 Battle #${newBattleCount}: Beyond initial subset - using main selection logic`);
     // First, attempt to use suggested Pokémon if any exist
     const suggestedBattle = getSuggestedBattlePair(battleSize);
     if (suggestedBattle) {
       result = suggestedBattle;
+      console.log(`🎯 Using suggested Pokémon for battle #${newBattleCount}`);
     } else {
       // Use the tier-based battle selection if no suggested Pokémon available
       result = getTierBattlePair(battleType);
+      console.log(`🏆 Using tier-based selection for battle #${newBattleCount}`);
     }
     
     // Fallback if we couldn't create a battle pair
     if (result.length < battleSize) {
       result = shuffleArray(pokemonList).slice(0, battleSize);
+      console.log(`⚠️ Fallback to random selection for battle #${newBattleCount}`);
     }
   }
 
@@ -208,7 +220,6 @@ const startNewBattle = (battleType: BattleType): Pokemon[] => {
   setCurrentBattle(result);
   return result;
 };
-
 
   return { 
     startNewBattle, 

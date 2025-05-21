@@ -1,3 +1,4 @@
+
 import { useMemo, useEffect, useRef, useState, useCallback } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
@@ -23,6 +24,17 @@ export const useBattleStarterIntegration = (
   const totalSuggestionsRef = useRef(0);
   // Force high priority for a specific number of battles after milestone
   const forcedPriorityBattlesRef = useRef(0);
+  // Track battle count to persist across renders and milestones
+  const [battleCount, setBattleCount] = useState(() => {
+    const savedCount = localStorage.getItem('pokemon-battle-count');
+    return savedCount ? parseInt(savedCount, 10) : 0;
+  });
+  
+  // Persist battle count to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('pokemon-battle-count', battleCount.toString());
+    console.log(`🔢 Battle count persisted: ${battleCount}`);
+  }, [battleCount]);
   
   // This effect runs when the component mounts and sets up event listeners
   useEffect(() => {
@@ -95,15 +107,22 @@ useEffect(() => {
     console.log(`🎯 Found ${pokemonWithSuggestions.length} Pokemon with pending suggestions`);
     totalSuggestionsRef.current = pokemonWithSuggestions.length;
     
-    // Enhanced battle starter with suggestion prioritization
+    // Extract suggested Pokemon IDs
+    const suggestedPokemonIds = pokemonWithSuggestions.map(p => p.id);
+    
+    // Enhanced battle starter with suggestion prioritization and persisted battle count
     return createBattleStarter(
       allPokemon,
       allPokemon,
       currentRankings,
       setCurrentBattle,
-      pokemonWithSuggestions
+      "All", // defaulting to All tier here
+      undefined, // isPokemonFrozenForTier
+      suggestedPokemonIds,
+      battleCount, // Pass the persisted battle count
+      setBattleCount // Pass the setter for battle count
     );
-  }, [allPokemon, currentRankings, setCurrentBattle]);
+  }, [allPokemon, currentRankings, setCurrentBattle, battleCount]);
 
   // Override startNewBattle to ensure suggestion prioritization
 const startNewBattle = useCallback((battleType: BattleType) => {
@@ -118,6 +137,7 @@ const startNewBattle = useCallback((battleType: BattleType) => {
   console.log(`🔄 Suggestion priority enabled: ${suggestionPriorityEnabledRef.current ? "YES ✅" : "NO ❌"}`);
   console.log(`🔢 Suggestion battles since milestone: ${suggestionBattleCountRef.current}`);
   console.log(`⚡ Forced priority battles remaining: ${forcedPriorityBattlesRef.current}`);
+  console.log(`🎮 Current battle count: ${battleCount}`);
 
   // Calculate required priority battles explicitly
   const requiredPriorityBattles = Math.max(10, suggestedPokemon.length * 3);
@@ -168,7 +188,7 @@ const startNewBattle = useCallback((battleType: BattleType) => {
   }
 
   return battle;
-}, [battleStarter, currentRankings]);
+}, [battleStarter, currentRankings, battleCount]);
 
 
   const { performEmergencyReset } = useBattleEmergencyReset(
@@ -187,10 +207,23 @@ const resetSuggestionPriorityExplicitly = () => {
   console.log("⚡ Explicitly reset and forced suggestion prioritization for next battles");
 };
 
+// Emergency reset should also reset the battle counter to 26
+// This ensures we skip the initial subset phase when doing a reset
+const performEmergencyResetWithCounter = () => {
+  // Only reset to 26 if it's less than that - don't go backwards
+  if (battleCount < 26) {
+    console.log(`🔄 Emergency reset: Setting battle count from ${battleCount} to 26 to bypass initial subset phase`);
+    setBattleCount(26);
+  }
+  performEmergencyReset();
+};
+
 return {
   battleStarter,
   startNewBattle: startNewBattle || (() => []),
   resetSuggestionPriority: resetSuggestionPriorityExplicitly,
+  performEmergencyReset: performEmergencyResetWithCounter,
+  battleCount
 };
 
 };
