@@ -59,7 +59,6 @@ export const useBattleEmergencyReset = (
           toast({
             title: "Emergency Reset",
             description: "Battle system has been reset with new Pokémon",
-            variant: "default",
             action: <Button 
               variant="outline" 
               size="sm" 
