@@ -130,13 +130,14 @@ const PokemonRanker = () => {
         </div>
 
         {showRankings ? (
-          <RankingResults 
-            confidentRankedPokemon={typedRankedPokemon} 
-            confidenceScores={{}}
-            onSuggestRanking={suggestRanking}
-            onRemoveSuggestion={removeSuggestion}
-            onClearSuggestions={clearAllSuggestions}
-          />
+<RankingResults
+  confidentRankedPokemon={typedRankedPokemon}
+  confidenceScores={confidenceScores} // correctly use confidenceScores
+  onSuggestRanking={suggestRanking}
+  onRemoveSuggestion={removeSuggestion}
+  onClearSuggestions={clearAllSuggestions}
+/>
+
         ) : (
           <RankingUI
             isLoading={isLoading}

@@ -158,10 +158,13 @@ export const useCompletionTracker = (
     calculateCompletionPercentage();
   }, [calculateCompletionPercentage]);
 
-  return { 
-    resetMilestones,
-    resetMilestoneRankings,
-    calculateCompletionPercentage,
-    getSnapshotForMilestone
-  };
+return {
+  resetMilestones,
+  resetMilestoneRankings,
+  calculateCompletionPercentage,
+  getSnapshotForMilestone,
+  milestoneRankings, // explicitly add these if needed elsewhere
+  hitMilestones,     // explicitly add these if needed elsewhere
+};
+
 };

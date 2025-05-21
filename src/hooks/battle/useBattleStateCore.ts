@@ -55,20 +55,24 @@ export const useBattleStateCore = (
     loadSavedSuggestions
   } = useRankings(allPokemon);
 
-  const {
-    resetMilestones,
-    resetMilestoneRankings,
-    calculateCompletionPercentage,
-    getSnapshotForMilestone
-  } = useCompletionTracker(
-    battleResults,
-    setRankingGenerated,
-    setCompletionPercentage,
-    showingMilestone,
-    setShowingMilestone,
-    generateRankings,
-    allPokemon
-  );
+const {
+  resetMilestones,
+  resetMilestoneRankings,
+  calculateCompletionPercentage,
+  getSnapshotForMilestone,
+  milestoneRankings,
+  hitMilestones,
+} = useCompletionTracker(
+  battleResults,
+  setRankingGenerated,
+  setCompletionPercentage,
+  showingMilestone,
+  setShowingMilestone,
+  generateRankings,
+  allPokemon
+);
+
+
 
   // Filter Pokemon by generation if a specific generation is selected
   const filteredPokemon = allPokemon.filter(pokemon => {
