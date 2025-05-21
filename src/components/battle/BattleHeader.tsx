@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft } from "lucide-react";
@@ -17,10 +18,25 @@ const BattleHeader: React.FC<BattleHeaderProps> = ({
   isProcessing,
   internalProcessing
 }) => {
-  // We'll keep the component but make it render nothing
-  // This allows us to keep the component interface intact for other components that might use it
-  // but not display the redundant header
-  return null;
+  return (
+    <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onGoBack}
+          disabled={!hasHistory || isProcessing || internalProcessing}
+          className="mr-2"
+        >
+          <ChevronLeft className="h-4 w-4 mr-1" />
+          Back
+        </Button>
+        <span className="text-sm text-muted-foreground">
+          Battles completed: {battlesCompleted}
+        </span>
+      </div>
+    </div>
+  );
 };
 
 export default BattleHeader;

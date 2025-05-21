@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from "react";
 import BattleContentContainer from "@/components/battle/BattleContentContainer";
 import { usePokemonLoader } from "@/hooks/battle/usePokemonLoader";
@@ -88,7 +87,7 @@ const BattleMode = () => {
     });
   }, []);
   
-  // Function to force a new battle
+  // Force new battle and reset functions are kept but not displayed in UI
   const forceNewBattle = () => {
     // Create and dispatch a custom event to force a new battle
     addDebugLog("User requested new battle");
@@ -121,7 +120,6 @@ const BattleMode = () => {
     });
   };
   
-  // Function to trigger emergency reset
   const triggerEmergencyReset = () => {
     // Create and dispatch a custom event to trigger emergency reset
     addDebugLog("User triggered EMERGENCY RESET");
@@ -158,7 +156,6 @@ const BattleMode = () => {
     previousPokemonRef.current = [];
   };
   
-  // Function to clear ALL localStorage
   const clearAllStorage = () => {
     addDebugLog("User requested TOTAL STORAGE CLEAR");
     
@@ -266,7 +263,8 @@ const BattleMode = () => {
 
   return (
     <div className="flex flex-col items-center w-full py-4 px-4 sm:px-6">
-      <div className="w-full flex justify-end mb-4">
+      {/* Admin buttons hidden from normal view, only available in dev mode */}
+      <div className="w-full flex justify-end mb-4 hidden">
         <Button 
           variant="outline" 
           size="sm" 
