@@ -25,7 +25,8 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
     setImageError(false);
     setRetryCount(0);
     const preferredType = localStorage.getItem('pokemon-image-preference') || 'official';
-const url = getPreferredImageUrl(pokemon.id, 0, preferredType);
+const url = getPreferredImageUrl(pokemon.id, preferredType);
+
 
     setCurrentImageUrl(url);
     new Image().src = url;
