@@ -15,6 +15,8 @@ interface RankingDisplayProps {
   isMilestoneView?: boolean;
   activeTier?: TopNOption;
   onTierChange?: (tier: TopNOption) => void;
+  onSuggestRanking?: (pokemon: RankedPokemon, direction: "up" | "down", strength: 1 | 2 | 3) => void;
+  onRemoveSuggestion?: (pokemonId: number) => void;
 }
 
 const RankingDisplay: React.FC<RankingDisplayProps> = ({
@@ -26,7 +28,9 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
   onSaveRankings,
   isMilestoneView = false,
   activeTier,
-  onTierChange
+  onTierChange,
+  onSuggestRanking,
+  onRemoveSuggestion
 }) => {
   console.log("🟣 RankingDisplay component rendered with", finalRankings.length, "Pokémon");
   const [displayCount, setDisplayCount] = useState(20);
@@ -71,6 +75,8 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
             key={pokemon.id} 
             pokemon={pokemon} 
             index={index} 
+            onSuggestRanking={onSuggestRanking && isRankedPokemon(pokemon) ? onSuggestRanking : undefined}
+            onRemoveSuggestion={onRemoveSuggestion}
           />
         ))}
       </div>
@@ -82,6 +88,11 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
       />
     </div>
   );
+};
+
+// Type guard to check if a pokemon is a RankedPokemon
+const isRankedPokemon = (pokemon: Pokemon): pokemon is RankedPokemon => {
+  return 'score' in pokemon && 'count' in pokemon;
 };
 
 export default RankingDisplay;

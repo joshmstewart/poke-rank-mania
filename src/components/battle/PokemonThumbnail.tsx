@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { getPokemonTypeColor } from "./utils/pokemonTypeColors";
 import { getPreferredImageUrl } from "@/components/settings/ImagePreferenceSelector";
@@ -10,13 +10,25 @@ import {
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import { getPokemonGeneration } from "@/components/ranking/rankingUtils";
+import {
+  ToggleGroup,
+  ToggleGroupItem
+} from "@/components/ui/toggle-group";
+import { ArrowUp, ArrowDown } from "lucide-react";
 
 interface PokemonThumbnailProps {
   pokemon: Pokemon;
   index: number;
+  onSuggestRanking?: (pokemon: RankedPokemon, direction: "up" | "down", strength: 1 | 2 | 3) => void;
+  onRemoveSuggestion?: (pokemonId: number) => void;
 }
 
-const PokemonThumbnail: React.FC<PokemonThumbnailProps> = ({ pokemon, index }) => {
+const PokemonThumbnail: React.FC<PokemonThumbnailProps> = ({ 
+  pokemon, 
+  index, 
+  onSuggestRanking, 
+  onRemoveSuggestion 
+}) => {
   const typeColor = getPokemonTypeColor(pokemon);
   const normalizedId = normalizePokedexNumber(pokemon.id);
   const formattedName = capitalizeSpecialForms(pokemon.name);
@@ -29,6 +41,38 @@ const PokemonThumbnail: React.FC<PokemonThumbnailProps> = ({ pokemon, index }) =
   
   const rankedPokemon = isRankedPokemon(pokemon) ? pokemon : undefined;
   
+  // State for the suggestion UI
+  const [activeDirection, setActiveDirection] = useState<"up" | "down" | null>(
+    rankedPokemon?.suggestedAdjustment?.direction || null
+  );
+  const [activeStrength, setActiveStrength] = useState<1 | 2 | 3>(
+    rankedPokemon?.suggestedAdjustment?.strength || 1
+  );
+  
+  // Handle direction change (up/down arrows)
+  const handleDirectionChange = (direction: "up" | "down") => {
+    if (!rankedPokemon || !onSuggestRanking || !onRemoveSuggestion) return;
+    
+    // If same direction is clicked, remove the suggestion
+    if (direction === activeDirection) {
+      setActiveDirection(null);
+      setActiveStrength(1);
+      onRemoveSuggestion(rankedPokemon.id);
+    } else {
+      setActiveDirection(direction);
+      onSuggestRanking(rankedPokemon, direction, activeStrength);
+    }
+  };
+  
+  // Handle strength change (1/2/3 arrows)
+  const handleStrengthChange = (value: string) => {
+    if (!activeDirection || !rankedPokemon || !onSuggestRanking) return;
+    
+    const strength = parseInt(value) as 1 | 2 | 3;
+    setActiveStrength(strength);
+    onSuggestRanking(rankedPokemon, activeDirection, strength);
+  };
+  
   return (
     <HoverCard openDelay={0} closeDelay={200}>
       <HoverCardTrigger asChild>
@@ -37,6 +81,29 @@ const PokemonThumbnail: React.FC<PokemonThumbnailProps> = ({ pokemon, index }) =
           <div className={`absolute top-2 left-2 z-10 ${typeColor} text-white rounded-full w-8 h-8 flex items-center justify-center shadow-md`}>
             <span className="text-sm font-bold">{index + 1}</span>
           </div>
+          
+          {/* Show suggestion indicator if this pokemon has a suggestion */}
+          {rankedPokemon?.suggestedAdjustment && !rankedPokemon.suggestedAdjustment.used && (
+            <div 
+              className={`absolute -top-2 -right-2 px-1 rounded text-xs font-bold
+                ${rankedPokemon.suggestedAdjustment.direction === "up" 
+                  ? "bg-green-100 text-green-800" 
+                  : "bg-red-100 text-red-800"
+                }`}
+            >
+              {rankedPokemon.suggestedAdjustment.direction === "up" 
+                ? "↑".repeat(rankedPokemon.suggestedAdjustment.strength)
+                : "↓".repeat(rankedPokemon.suggestedAdjustment.strength)
+              }
+            </div>
+          )}
+          
+          {/* Show checkmark if suggestion was used */}
+          {rankedPokemon?.suggestedAdjustment?.used && (
+            <div className="absolute -top-2 -right-2 px-1 rounded bg-gray-100 text-gray-500 text-xs font-bold">
+              ✓
+            </div>
+          )}
           
           {/* Pokemon image in center - more compact */}
           <div className={`p-1 flex items-center justify-center ${typeColor} bg-opacity-20`}>
@@ -104,10 +171,79 @@ const PokemonThumbnail: React.FC<PokemonThumbnailProps> = ({ pokemon, index }) =
                       <span className="font-mono">{rankedPokemon.score.toFixed(1)}</span>
                     </div>
                   )}
+                  {rankedPokemon.confidence !== undefined && (
+                    <div className="flex justify-between">
+                      <span>Confidence:</span>
+                      <span>{rankedPokemon.confidence.toFixed(0)}%</span>
+                    </div>
+                  )}
                 </>
               )}
             </div>
           </div>
+          
+          {/* Only show voting UI if we have the callback props */}
+          {onSuggestRanking && onRemoveSuggestion && rankedPokemon && (
+            <div className="border-t pt-2">
+              <div className="text-xs font-medium mb-1">Suggest ranking adjustment:</div>
+              <div className="flex gap-2">
+                <ToggleGroup 
+                  type="single" 
+                  className="justify-start"
+                  value={activeDirection || ""}
+                >
+                  <ToggleGroupItem 
+                    value="up" 
+                    aria-label="Should rank higher"
+                    onClick={() => handleDirectionChange("up")}
+                    className={`${activeDirection === "up" ? "bg-green-100" : ""}`}
+                  >
+                    <ArrowUp className="h-4 w-4" />
+                  </ToggleGroupItem>
+                  
+                  <ToggleGroupItem
+                    value="down"
+                    aria-label="Should rank lower"
+                    onClick={() => handleDirectionChange("down")}
+                    className={`${activeDirection === "down" ? "bg-red-100" : ""}`}
+                  >
+                    <ArrowDown className="h-4 w-4" />
+                  </ToggleGroupItem>
+                </ToggleGroup>
+                
+                {activeDirection && (
+                  <ToggleGroup
+                    type="single"
+                    value={activeStrength.toString()}
+                    onValueChange={handleStrengthChange}
+                  >
+                    <ToggleGroupItem value="1">
+                      {activeDirection === "up" ? "↑" : "↓"}
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="2">
+                      {activeDirection === "up" ? "↑↑" : "↓↓"}
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="3">
+                      {activeDirection === "up" ? "↑↑↑" : "↓↓↓"}
+                    </ToggleGroupItem>
+                  </ToggleGroup>
+                )}
+              </div>
+              
+              {activeDirection && (
+                <p className="text-xs text-muted-foreground mt-1.5">
+                  This will suggest {formattedName} should be ranked 
+                  <span className="font-medium"> {activeDirection === "up" ? "higher" : "lower"}</span> in the next battle.
+                </p>
+              )}
+              
+              {rankedPokemon.suggestedAdjustment?.used && (
+                <p className="text-xs text-muted-foreground mt-1.5 italic">
+                  This suggestion has already been used in battle.
+                </p>
+              )}
+            </div>
+          )}
         </div>
       </HoverCardContent>
     </HoverCard>

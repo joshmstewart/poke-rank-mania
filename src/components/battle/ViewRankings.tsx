@@ -1,3 +1,4 @@
+
 import React from "react";
 import { RankedPokemon, TopNOption } from "@/services/pokemon";
 import { RankingTable } from "@/components/ranking/RankingTable";
