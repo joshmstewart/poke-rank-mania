@@ -22,7 +22,8 @@ export const useBattleResultProcessor = (
   battleResults: SingleBattle[],
   setBattleResults: React.Dispatch<React.SetStateAction<SingleBattle[]>>,
   activeTier?: TopNOption,
-  freezePokemonForTier?: (pokemonId: number, tier: TopNOption) => void
+  freezePokemonForTier?: (pokemonId: number, tier: TopNOption) => void,
+  trackLowerTierLoss?: (pokemonId: number) => void // Add this param to track losses
 ) => {
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -67,6 +68,17 @@ export const useBattleResultProcessor = (
           loser.rating = newLoserRating;
           
           console.log(`Updated ratings: ${winner.name} (μ=${newWinnerRating.mu.toFixed(2)}, σ=${newWinnerRating.sigma.toFixed(2)}) | ${loser.name} (μ=${newLoserRating.mu.toFixed(2)}, σ=${newLoserRating.sigma.toFixed(2)})`);
+          
+          // Find if winner or loser are from different tiers to track upsets
+          const winnerRank = battleResults.filter(r => r.winner.id === winner.id || r.loser.id === winner.id).length;
+          const loserRank = battleResults.filter(r => r.winner.id === loser.id || r.loser.id === loser.id).length;
+          
+          // If winner has a much lower ranking than loser, this is an upset
+          // We use this to identify potential demotions
+          if (loserRank > winnerRank + 10 && trackLowerTierLoss) {
+            console.log(`Upset! Lower-ranked ${winner.name} beat higher-ranked ${loser.name}`);
+            trackLowerTierLoss(loser.id);
+          }
           
           // Check if the loser should be frozen for the current tier
           // Only freeze if confidence is high enough (low sigma) and the tier is active
@@ -153,7 +165,7 @@ export const useBattleResultProcessor = (
       setIsProcessing(false);
       return null;
     }
-  }, [battleResults, activeTier, freezePokemonForTier]);
+  }, [battleResults, activeTier, freezePokemonForTier, trackLowerTierLoss]);
 
   return {
     processResult,

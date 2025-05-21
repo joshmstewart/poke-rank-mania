@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useRef } from "react";
 import { Pokemon, TopNOption } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
@@ -19,7 +18,8 @@ export const useBattleProcessor = (
   generateRankings: (results: SingleBattle[]) => void,
   setSelectedPokemon: React.Dispatch<React.SetStateAction<number[]>>,
   activeTier?: TopNOption,
-  freezePokemonForTier?: (pokemonId: number, tier: TopNOption) => void
+  freezePokemonForTier?: (pokemonId: number, tier: TopNOption) => void,
+  battleStarter?: any // Accept the battle starter to access trackLowerTierLoss
 ) => {
   const [isProcessingResult, setIsProcessingResult] = useState(false);
   const processedMilestonesRef = useRef<Set<number>>(new Set());
@@ -48,7 +48,8 @@ export const useBattleProcessor = (
     battleResults, 
     setBattleResults,
     activeTier,
-    freezePokemonForTier
+    freezePokemonForTier,
+    battleStarter?.trackLowerTierLoss // Pass the function if available
   );
 
   const processBattle = useCallback(async (
