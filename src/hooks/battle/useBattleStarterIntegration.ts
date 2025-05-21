@@ -137,7 +137,17 @@ export const useBattleStarterIntegration = (
         toast({
           title: "System Stuck",
           description: "The battle system is showing the same Pokemon repeatedly. Click to reset.",
-          action: <Button variant="destructive" size="sm" onClick={() => { performEmergencyReset(); recentBattlesRef.current = []; setIsStuckInSameBattle(false); }}>Reset</Button>,
+          action: <Button 
+            variant="destructive" 
+            size="sm" 
+            onClick={() => { 
+              performEmergencyReset(); 
+              recentBattlesRef.current = []; 
+              setIsStuckInSameBattle(false); 
+            }}
+          >
+            Reset
+          </Button>,
           duration: 15000
         });
       } else {
