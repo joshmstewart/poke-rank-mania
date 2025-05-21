@@ -96,7 +96,7 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
         {displayRankings.map((pokemon, index) => {
-          const typeColor = getPokemonTypeColor(pokemon as Pokemon);
+          const typeColor = getPokemonTypeColor(pokemon);
           
           return (
             <div key={pokemon.id} className="relative flex flex-col overflow-hidden bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
