@@ -4,13 +4,13 @@ import { PokemonFormType } from "@/components/settings/FormFiltersSelector";
 import { Pokemon } from "@/services/pokemon";
 
 interface FormFilters {
-  mega: boolean;
+  megaGmax: boolean;
   regional: boolean;
   gender: boolean;
   forms: boolean;
 }
 
-// Retrieve filters from localStorage or use defaults (mega disabled, others enabled)
+// Retrieve filters from localStorage or use defaults (mega/gmax disabled, others enabled)
 const getStoredFilters = (): FormFilters => {
   const stored = localStorage.getItem('pokemon-form-filters');
   if (stored) {
@@ -21,9 +21,9 @@ const getStoredFilters = (): FormFilters => {
     }
   }
   
-  // Default to mega evolutions disabled, others enabled
+  // Default to mega/gmax evolutions disabled, others enabled
   return {
-    mega: false,
+    megaGmax: false,
     regional: true,
     gender: true,
     forms: true
@@ -49,7 +49,7 @@ export const useFormFilters = () => {
   const toggleAll = () => {
     const newValue = !isAllEnabled;
     const updated = {
-      mega: newValue,
+      megaGmax: newValue,
       regional: newValue,
       gender: newValue,
       forms: newValue
@@ -65,8 +65,8 @@ export const useFormFilters = () => {
     
     const name = pokemon.name.toLowerCase();
     
-    // Check for mega evolutions
-    if (name.includes("mega") && !filters.mega) {
+    // Check for mega evolutions and gigantamax forms (combined)
+    if ((name.includes("mega") || name.includes("gmax")) && !filters.megaGmax) {
       return false;
     }
     
@@ -93,7 +93,6 @@ export const useFormFilters = () => {
          name.includes("size") || 
          name.includes("cloak") ||
          name.includes("rotom-") ||
-         name.includes("gmax") ||
          name.includes("primal") ||
          name.includes("forme") ||
          name.includes("origin") ||

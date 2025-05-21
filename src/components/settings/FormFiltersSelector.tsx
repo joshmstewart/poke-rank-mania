@@ -7,14 +7,14 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "@/hooks/use-toast";
 
 export type PokemonFormType = 
-  | "mega" 
+  | "megaGmax" 
   | "regional" 
   | "gender" 
   | "forms";
 
 // Image URLs for different form types
 const formExampleImages = {
-  mega: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10034.png", // Mega Charizard Y
+  megaGmax: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10034.png", // Mega Charizard Y
   regional: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10091.png", // Alolan Muk
   gender: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/female/593.png", // Female Jellicent
   forms: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10120.png", // Hoopa Unbound
@@ -66,17 +66,17 @@ export function FormFiltersSelector() {
       <Separator />
       
       <div className="space-y-4">
-        {/* Mega Evolutions */}
+        {/* Mega Evolutions and Gigantamax Forms */}
         <div className="flex items-center space-x-3">
           <div className="h-10 w-10 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden">
-            <img src={formExampleImages.mega} alt="Mega Form" className="h-8 w-8 object-contain" />
+            <img src={formExampleImages.megaGmax} alt="Mega/Gmax Form" className="h-8 w-8 object-contain" />
           </div>
           <div className="flex flex-1 items-center justify-between">
-            <Label htmlFor="mega" className="text-sm">Mega Evolutions</Label>
+            <Label htmlFor="megaGmax" className="text-sm">Mega & Gigantamax Forms</Label>
             <Switch 
-              id="mega" 
-              checked={filters.mega}
-              onCheckedChange={() => toggleFilter("mega")} 
+              id="megaGmax" 
+              checked={filters.megaGmax}
+              onCheckedChange={() => toggleFilter("megaGmax")} 
             />
           </div>
         </div>

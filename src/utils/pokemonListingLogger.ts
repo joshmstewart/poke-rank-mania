@@ -8,12 +8,11 @@ export const logPokemonVariations = (allPokemon: Pokemon[]) => {
     
     // Special form patterns to check for
     const specialPatterns = [
-      { name: "Mega Evolutions", pattern: /mega/i },
+      { name: "Mega & Gigantamax Forms", pattern: /(mega|gmax)/i },
       { name: "Alolan Forms", pattern: /alolan/i },
       { name: "Galarian Forms", pattern: /galarian/i },
       { name: "Hisuian Forms", pattern: /hisuian/i },
       { name: "Paldean Forms", pattern: /paldean/i },
-      { name: "Gigantamax Forms", pattern: /gmax/i },
       { name: "Special Gender Forms", pattern: /(female|male|-f|-m)/i },
       { name: "Special Rotom Forms", pattern: /rotom-/i },
       { name: "Primal Forms", pattern: /primal/i },
