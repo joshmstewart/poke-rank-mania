@@ -52,12 +52,20 @@ export const useRankingSuggestions = (
     
     console.log(`${directionSymbol} Suggesting '${pokemon.name}' should be ranked ${directionText} (${arrowSymbol} x${strength})`);
     
-    // Save suggestions to localStorage for persistence
+    // Save suggestions to localStorage for persistence - CRITICAL FIX: Ensure immediate sync
     saveActiveSuggestions(activeSuggestionsRef.current);
     
-    // VERIFICATION: Print the current localStorage content right after saving
-    const savedContent = localStorage.getItem('pokemon-active-suggestions');
-    console.log(`🔍 VERIFY: After saving suggestion for ${pokemon.name}, localStorage contains:`, savedContent);
+    // VERIFICATION: Immediately verify localStorage was updated
+    const savedSuggestions = localStorage.getItem('pokemon-active-suggestions');
+    console.log(`⭐ IMMEDIATE VERIFICATION: Active suggestions saved for ${pokemon.name}. localStorage has ${savedSuggestions ? 'data' : 'NO DATA'}`);
+    if (savedSuggestions) {
+      try {
+        const parsed = JSON.parse(savedSuggestions);
+        console.log(`⭐ VERIFY: Suggestion for ${pokemon.name} is in localStorage:`, !!parsed[pokemon.id]);
+      } catch (e) {
+        console.error("❌ Error parsing saved suggestions:", e);
+      }
+    }
     
     return suggestion;
   }, [setPokemonList]);
@@ -117,7 +125,7 @@ export const useRankingSuggestions = (
         duration: 3000
       });
       
-      // Update localStorage
+      // Update localStorage IMMEDIATELY to ensure persistence
       saveActiveSuggestions(activeSuggestionsRef.current);
     }
   }, [setPokemonList]);
@@ -162,14 +170,15 @@ export const useRankingSuggestions = (
   // Helper function to save suggestions to localStorage
   const saveActiveSuggestions = (suggestions: Map<number, RankingSuggestion>) => {
     try {
-      // Throttle saves to avoid excessive writes
-      const now = Date.now();
-      if (now - lastSaveTimeRef.current < 300) { // Only save at most every 300ms
-        return;
-      }
-      lastSaveTimeRef.current = now;
+      // CRITICAL FIX: Removed throttling to ensure ALL saves happen immediately
+      // Previously there was a 300ms throttle which could cause suggestions to be lost
       
-      const suggestionsObject = Object.fromEntries(suggestions);
+      // Convert the Map to a plain object for storage
+      const suggestionsObject: Record<number, RankingSuggestion> = {};
+      suggestions.forEach((value, key) => {
+        suggestionsObject[key] = value;
+      });
+      
       localStorage.setItem('pokemon-active-suggestions', JSON.stringify(suggestionsObject));
       console.log(`💾 SAVED ${suggestions.size} suggestions to localStorage`);
       
@@ -193,15 +202,21 @@ export const useRankingSuggestions = (
         console.log("📋 VERIFY: Raw suggestions data from localStorage:", savedSuggestions);
         
         const parsedSuggestions = JSON.parse(savedSuggestions);
-        const suggestionMap = new Map(Object.entries(parsedSuggestions).map(
-          ([id, suggestion]) => [Number(id), suggestion as RankingSuggestion]
-        ));
+        const suggestionMap = new Map<number, RankingSuggestion>();
+        
+        // CRITICAL FIX: Better parsing of suggestions from localStorage
+        Object.entries(parsedSuggestions).forEach(([idStr, suggestionData]) => {
+          const id = Number(idStr);
+          const suggestion = suggestionData as RankingSuggestion;
+          suggestionMap.set(id, suggestion);
+        });
         
         console.log(`📂 Loaded ${suggestionMap.size} saved suggestions from localStorage`);
         
         // Print out each suggestion for verification
-        Array.from(suggestionMap.entries()).forEach(([id, suggestion]) => {
-          console.log(`  - Pokemon #${id}: ${suggestion.direction} x${suggestion.strength} (used: ${suggestion.used})`);
+        suggestionMap.forEach((suggestion, id) => {
+          const pokemonName = pokemonList.find(p => p.id === id)?.name || `#${id}`;
+          console.log(`  - ${pokemonName}: ${suggestion.direction} x${suggestion.strength} (used: ${suggestion.used})`);
         });
         
         activeSuggestionsRef.current = suggestionMap;
@@ -244,15 +259,16 @@ export const useRankingSuggestions = (
     }
   }, [pokemonList, setPokemonList]);
   
-  // Load saved suggestions when the hook initializes
+  // CRITICAL FIX: Load saved suggestions on EVERY mount to ensure they're always available
   useEffect(() => {
     console.log("⚙️ useRankingSuggestions hook initialized");
     
-    if (!initDoneRef.current) {
-      initDoneRef.current = true;
-      console.log("🔄 useRankingSuggestions: First mount, loading suggestions");
-      loadSavedSuggestions();
-    }
+    // ALWAYS load suggestions on mount
+    console.log("🔄 useRankingSuggestions: Loading suggestions on mount");
+    loadSavedSuggestions();
+    
+    // Set init flag
+    initDoneRef.current = true;
   }, [loadSavedSuggestions]);
   
   // Apply suggestions when pokemonList changes significantly
@@ -302,6 +318,6 @@ export const useRankingSuggestions = (
     markSuggestionUsed,
     clearAllSuggestions,
     findNextSuggestion,
-    loadSavedSuggestions // Expose this function for external use
+    loadSavedSuggestions // CRITICAL FIX: Expose this function for external use
   };
 };

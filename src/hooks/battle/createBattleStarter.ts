@@ -2,16 +2,6 @@
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
 
-// Simple Fisher-Yates shuffle algorithm
-const shuffleArray = <T>(array: T[]): T[] => {
-  const result = [...array];
-  for (let i = result.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [result[i], result[j]] = [result[j], result[i]];
-  }
-  return result;
-};
-
 /**
  * Creates functions for starting battles with optimal opponent selection
  */
@@ -31,6 +21,19 @@ export const createBattleStarter = (
 
     // DETAILED LOGGING: Check for suggestions before filtering
     console.log(`🔎 VERIFICATION: Analyzing ${filteredPokemon.length} Pokémon for suggestions`);
+    
+    // CRITICAL FIX: Before the battle starts, force a check of localStorage for suggestions
+    try {
+      const savedSuggestions = localStorage.getItem('pokemon-active-suggestions');
+      if (savedSuggestions) {
+        console.log("💾 FORCE CHECK: Found suggestions in localStorage before battle!");
+        const parsed = JSON.parse(savedSuggestions);
+        const suggestionsCount = Object.keys(parsed).length;
+        console.log(`💾 FORCE CHECK: Found ${suggestionsCount} suggestions in localStorage`);
+      }
+    } catch (e) {
+      console.error("Error checking localStorage:", e);
+    }
     
     // Find Pokémon with active suggestions that haven't been used yet
     const suggestedPokemon = filteredPokemon.filter(p => {
@@ -103,6 +106,16 @@ export const createBattleStarter = (
   const trackLowerTierLoss = (loserId: number) => {
     // This function can be expanded for additional battle statistics
     console.log(`📉 Pokemon #${loserId} lost a battle`);
+  };
+  
+  // Simple Fisher-Yates shuffle algorithm
+  const shuffleArray = <T>(array: T[]): T[] => {
+    const result = [...array];
+    for (let i = result.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [result[i], result[j]] = [result[j], result[i]];
+    }
+    return result;
   };
 
   return {

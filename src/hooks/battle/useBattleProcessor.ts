@@ -75,16 +75,24 @@ export const useBattleProcessor = (
         const cumulativeResults = [...battleResults, ...newResults];
         setBattleResults(cumulativeResults);
         
-        // Check if any of the Pokemon in the battle had active suggestions
-        // and mark them as used
+        // CRITICAL FIX: ALWAYS check for suggestions in battle Pokemon and mark them used when appropriate
         if (markSuggestionUsed) {
+          // Log the current battle Pokemon to verify suggestions
+          console.log("🔎 PROCESSOR: Checking battle Pokemon for suggestions to mark used:");
+          
           currentBattlePokemon.forEach(pokemon => {
-            if ((pokemon as RankedPokemon).suggestedAdjustment && 
-                !(pokemon as RankedPokemon).suggestedAdjustment?.used) {
-              console.log(`Marking suggestion used for ${pokemon.name}`);
-              markSuggestionUsed(pokemon as RankedPokemon);
+            // More explicit type checking for suggestedAdjustment
+            const rankedPokemon = pokemon as RankedPokemon;
+            if (rankedPokemon.suggestedAdjustment && !rankedPokemon.suggestedAdjustment.used) {
+              console.log(`✅ Found unused suggestion for ${pokemon.name}: ${rankedPokemon.suggestedAdjustment.direction} x${rankedPokemon.suggestedAdjustment.strength}`);
+              console.log(`✅ Marking suggestion used for ${pokemon.name}`);
+              markSuggestionUsed(rankedPokemon);
+            } else if (rankedPokemon.suggestedAdjustment) {
+              console.log(`ℹ️ ${pokemon.name} has a suggestion but it's already used`);
             }
           });
+        } else {
+          console.warn("⚠️ markSuggestionUsed function is not available!");
         }
         
         console.log("🟡 useBattleProcessor: incremented battles completed");
@@ -100,7 +108,7 @@ export const useBattleProcessor = (
           processedMilestonesRef.current.add(updatedCount);
           console.log(`🎉 Milestone reached: ${updatedCount} battles`);
           
-          // CRITICAL - Make sure we DO NOT clear suggestions when saving rankings at milestone
+          // CRITICAL: Make sure we DO NOT clear suggestions when saving rankings at milestone
           console.log("⚠️ Saving rankings at milestone WITHOUT clearing suggestions");
           
           // IMPORTANT NEW LOG: Add a log to check for suggestions before milestone
@@ -108,6 +116,16 @@ export const useBattleProcessor = (
             (p as RankedPokemon).suggestedAdjustment).length;
           console.log(`🔍 Before milestone: Found ${suggestionsCount} suggestions in current battle`);
             
+          // Make sure to check if there are active suggestions in localStorage
+          try {
+            const savedSuggestions = localStorage.getItem('pokemon-active-suggestions');
+            if (savedSuggestions) {
+              console.log(`💾 MILESTONE: Found ${JSON.parse(savedSuggestions).length} suggestions in localStorage`);
+            }
+          } catch (e) {
+            console.error("Error checking localStorage:", e);
+          }
+          
           // Save rankings with PRESERVE_SUGGESTIONS flag to ensure suggestions aren't cleared
           saveRankings(
             Array.from(new Map(cumulativeResults.map(result => [result.winner.id, result.winner])).values()),

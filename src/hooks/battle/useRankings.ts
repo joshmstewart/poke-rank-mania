@@ -27,6 +27,9 @@ export const useRankings = (allPokemon: Pokemon[]) => {
     loadSavedSuggestions
   } = useRankingSuggestions(finalRankings, setFinalRankings);
 
+  // CRITICAL FIX: Add a loading flag to track the first load
+  const hasLoadedSuggestionsRef = useRef(false);
+
   useEffect(() => {
     // Load frozen pokemon state from localStorage
     const storedFrozen = localStorage.getItem("pokemon-frozen-pokemon");
@@ -57,17 +60,24 @@ export const useRankings = (allPokemon: Pokemon[]) => {
     }
   }, [finalRankings]);
 
-  // Force reload suggestions when rankings are empty but we have stored suggestions
+  // CRITICAL FIX: Force load suggestions on mount and when rankings are empty
   useEffect(() => {
-    if (finalRankings.length === 0) {
-      console.log("📣 useRankings: Forcing reload of saved suggestions");
+    // Only do this once on mount
+    if (!hasLoadedSuggestionsRef.current) {
+      hasLoadedSuggestionsRef.current = true;
+      console.log("📣 useRankings: INITIAL MOUNT - Loading saved suggestions");
       const loaded = loadSavedSuggestions();
-      console.log(`📣 useRankings: Loaded ${loaded.size} suggestions from localStorage`);
+      console.log(`📣 useRankings: Loaded ${loaded.size} suggestions from localStorage on mount`);
+    } else if (finalRankings.length === 0) {
+      // Also do this if rankings get reset
+      console.log("📣 useRankings: Forcing reload of saved suggestions (rankings empty)");
+      const loaded = loadSavedSuggestions();
+      console.log(`📣 useRankings: Loaded ${loaded.size} suggestions from localStorage after reset`);
     }
   }, [finalRankings.length, loadSavedSuggestions]);
 
   // Generate rankings based on TrueSkill ratings and the current tier setting
-  const generateRankings = (results: SingleBattle[]): RankedPokemon[] => {
+  const generateRankings = useCallback((results: SingleBattle[]): RankedPokemon[] => {
     console.log(`👉 generateRankings: Starting with ${finalRankings.length} existing rankings`);
     
     // Load any existing suggestions from localStorage that might not be in the rankings
@@ -131,6 +141,17 @@ export const useRankings = (allPokemon: Pokemon[]) => {
     // Count suggestions in the new rankings
     const newSuggestionCount = allRankedPokemon.filter(p => p.suggestedAdjustment).length;
     console.log(`🔄 generateRankings: Preserved ${newSuggestionCount} suggestions in new rankings`);
+    
+    // Log some of the preserved suggestions for verification
+    if (newSuggestionCount > 0) {
+      console.log("🔍 generateRankings: Sample of preserved suggestions:");
+      allRankedPokemon
+        .filter(p => p.suggestedAdjustment)
+        .slice(0, 3)
+        .forEach(p => {
+          console.log(`  - ${p.name}: ${p.suggestedAdjustment?.direction} x${p.suggestedAdjustment?.strength} (used: ${p.suggestedAdjustment?.used})`);
+        });
+    }
 
     // Filter by active tier
     const filteredRankings = activeTier === "All" 
@@ -147,10 +168,10 @@ export const useRankings = (allPokemon: Pokemon[]) => {
     setConfidenceScores(confidenceMap);
 
     return filteredRankings;
-  };
+  }, [allPokemon, activeTier, frozenPokemon, finalRankings.length, loadSavedSuggestions]);
 
   // Mark a pokemon as frozen for the current tier
-  const freezePokemonForTier = (pokemonId: number, tier: TopNOption) => {
+  const freezePokemonForTier = useCallback((pokemonId: number, tier: TopNOption) => {
     setFrozenPokemon(prev => {
       const pokemonFrozenState = prev[pokemonId] || {};
       return {
@@ -161,26 +182,37 @@ export const useRankings = (allPokemon: Pokemon[]) => {
         }
       };
     });
-  };
+  }, []);
 
   // Check if a pokemon is frozen for the current tier
-  const isPokemonFrozenForTier = (pokemonId: number, tier: TopNOption): boolean => {
+  const isPokemonFrozenForTier = useCallback((pokemonId: number, tier: TopNOption): boolean => {
     return Boolean(frozenPokemon[pokemonId]?.[tier.toString()]);
-  };
+  }, [frozenPokemon]);
 
-  const handleSaveRankings = () => {
+  const handleSaveRankings = useCallback(() => {
     console.log("[useRankings] Rankings saved.", finalRankings);
     // Save frozen state as well
     localStorage.setItem("pokemon-frozen-pokemon", JSON.stringify(frozenPokemon));
-    // We do NOT clear suggestions when saving rankings
     
-    // Log existing suggestions count when saving
+    // CRITICAL FIX: Check if we have any suggestions to save
     const suggestionCount = finalRankings.filter(p => p.suggestedAdjustment).length;
     const unusedCount = finalRankings.filter(p => 
       p.suggestedAdjustment && !p.suggestedAdjustment.used
     ).length;
     console.log(`💾 handleSaveRankings: Saving with ${suggestionCount} suggestions (${unusedCount} unused)`);
-  };
+    
+    // Now check localStorage to verify suggestions were saved
+    try {
+      const savedSuggestions = localStorage.getItem('pokemon-active-suggestions');
+      if (savedSuggestions) {
+        const parsed = JSON.parse(savedSuggestions);
+        const count = Object.keys(parsed).length;
+        console.log(`🔢 Verified: Found ${count} suggestions in localStorage after saving`);
+      }
+    } catch (e) {
+      console.error("Error checking saved suggestions:", e);
+    }
+  }, [finalRankings, frozenPokemon]);
 
   return {
     finalRankings,
@@ -198,6 +230,6 @@ export const useRankings = (allPokemon: Pokemon[]) => {
     markSuggestionUsed,
     clearAllSuggestions,
     findNextSuggestion,
-    loadSavedSuggestions  // Expose the loadSavedSuggestions function
+    loadSavedSuggestions  // CRITICAL FIX: Expose the loadSavedSuggestions function
   };
 };
