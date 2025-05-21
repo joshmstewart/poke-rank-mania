@@ -196,6 +196,54 @@ export function createBattleStarter(
     // Only return if we have a valid battle
     return result.length === battleSize ? result : null;
   }
+
+/**
+ * Explicitly forces a battle with suggested Pokémon ONLY.
+ */
+function selectSuggestedPokemonForced(battleType: BattleType): Pokemon[] | null {
+  const forcedSuggestions = rankedPokemon.filter(p => p.suggestedAdjustment && !p.suggestedAdjustment.used);
+  if (forcedSuggestions.length === 0) return null;
+
+  const battleSize = battleType === "triplets" ? 3 : 2;
+  const result: Pokemon[] = [];
+
+  // Explicitly pick the highest-priority suggested Pokémon
+  const suggestedPokemonData = forcedSuggestions[0];
+  const suggestedPokemon = allPokemon.find(p => p.id === suggestedPokemonData.id);
+
+  if (!suggestedPokemon) return null;
+  
+  result.push(suggestedPokemon);
+
+  // Explicitly select opponent near suggested rank
+  const currentRank = rankedPokemon.findIndex(p => p.id === suggestedPokemon.id);
+  const opponentRank = suggestedPokemonData.suggestedAdjustment.direction === "up"
+    ? Math.max(0, currentRank - 1)
+    : Math.min(rankedPokemon.length - 1, currentRank + 1);
+
+  if (opponentRank === currentRank) return null;
+
+  const opponentPokemonData = rankedPokemon[opponentRank];
+  const opponentPokemon = allPokemon.find(p => p.id === opponentPokemonData.id);
+
+  if (!opponentPokemon) return null;
+
+  result.push(opponentPokemon);
+
+  // Ensure we meet battle size requirement
+  while (result.length < battleSize) {
+    const randomPokemon = shuffleArray(allPokemon).find(p => !result.includes(p));
+    if (!randomPokemon) break;
+    result.push(randomPokemon);
+  }
+
+  // Explicitly update recentlyUsed tracking
+  result.forEach(p => recentlyUsed.add(p.id));
+
+  console.log("✅ Forced explicit suggestion battle created");
+  return result;
+}
+
   
   /**
    * Start a new battle using selection strategies
@@ -233,7 +281,10 @@ export function createBattleStarter(
       }
       
       // Try to create a suggestion-focused battle
-      const suggestedBattle = selectSuggestedPokemon(battleType);
+      const suggestedBattle = forceSuggestionPriority 
+  ? selectSuggestedPokemonForced(battleType)
+  : selectSuggestedPokemon(battleType);
+
       
       if (suggestedBattle) {
         selectedPokemon = suggestedBattle;
