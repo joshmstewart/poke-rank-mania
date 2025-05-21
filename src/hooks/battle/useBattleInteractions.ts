@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
+import { toast } from "@/hooks/use-toast";
 
 export const useBattleInteractions = (
   currentBattle: Pokemon[],
@@ -20,12 +21,69 @@ export const useBattleInteractions = (
   processBattleResult: (selectedPokemonIds: number[], currentBattlePokemon: Pokemon[], battleType: BattleType, currentSelectedGeneration: number) => void
 ) => {
   const [isProcessing, setIsProcessing] = useState(false);
+  const consecutiveFailuresRef = useRef(0);
+  const lastAttemptRef = useRef(0);
+  const lastBattlePokemonIds = useRef<number[]>([]);
   
   // Get current generation from localStorage
   const getCurrentGeneration = () => {
     const storedGeneration = localStorage.getItem('pokemon-ranker-generation');
     return storedGeneration ? Number(storedGeneration) : 0;
   };
+  
+  // Check if the battle is stuck
+  useEffect(() => {
+    if (currentBattle && currentBattle.length > 0) {
+      const currentIds = currentBattle.map(p => p.id).sort();
+      const lastIds = [...lastBattlePokemonIds.current].sort();
+      
+      // Check if we have the same Pokemon IDs as the previous battle
+      const areBattlesIdentical = 
+        lastIds.length === currentIds.length && 
+        lastIds.every((id, idx) => id === currentIds[idx]);
+      
+      if (areBattlesIdentical) {
+        console.warn(`⚠️ STUCK DETECTION: Same battle detected [${currentIds.join(',')}]. This may indicate a problem.`);
+        
+        // Only show toast on first detection to avoid spamming
+        if (consecutiveFailuresRef.current === 0) {
+          toast({
+            title: "Warning",
+            description: "The same Pokémon keep appearing. Attempting to fix...",
+            variant: "destructive"
+          });
+        }
+        
+        consecutiveFailuresRef.current++;
+        
+        // If stuck for 3+ battles, try to fix it by forcing localStorage reset
+        if (consecutiveFailuresRef.current >= 3) {
+          console.error(`🚨 CRITICAL: Battle appears to be stuck for ${consecutiveFailuresRef.current} consecutive battles`);
+          console.log("Attempting emergency reset of Pokemon tracking...");
+          
+          // Emergency fix: Clear all local storage tracking of recent Pokemon
+          try {
+            localStorage.removeItem('pokemon-battle-recently-used');
+            localStorage.removeItem('pokemon-battle-last-battle');
+            
+            toast({
+              title: "Reset battle tracking",
+              description: "Cleared Pokemon history. Next battle should show different Pokemon.",
+              variant: "default"
+            });
+          } catch (e) {
+            console.error("Failed to reset tracking:", e);
+          }
+        }
+      } else {
+        // Reset the counter if battles are different
+        consecutiveFailuresRef.current = 0;
+      }
+      
+      // Save the current battle Pokemon IDs for next comparison
+      lastBattlePokemonIds.current = [...currentIds];
+    }
+  }, [currentBattle]);
   
   const handlePokemonSelect = (id: number) => {
     console.log("BattleCard: Clicked Pokemon:", id, currentBattle.find(p => p.id === id)?.name);
@@ -36,6 +94,21 @@ export const useBattleInteractions = (
       return;
     }
     
+    // Check for too-frequent clicks (potential issue source)
+    const now = Date.now();
+    if (now - lastAttemptRef.current < 300) {
+      console.warn("⚠️ Rapid clicking detected, may cause issues. Adding delay...");
+      setTimeout(() => {
+        processSelection(id);
+      }, 300);
+      return;
+    }
+    
+    lastAttemptRef.current = now;
+    processSelection(id);
+  };
+  
+  const processSelection = (id: number) => {
     setIsProcessing(true); // Processing starts
 
     let newSelected: number[];
@@ -53,6 +126,10 @@ export const useBattleInteractions = (
         setBattleHistory(prev => [...prev, { battle: currentBattleCopy, selected: newSelected }]);
       }
       
+      // Log the exact Pokemon IDs for diagnosis
+      console.log(`🔎 PROCESSING: Battle with ${currentBattle.map(p => `${p.id}:${p.name}`).join(', ')}`);
+      console.log(`🔎 PROCESSING: Selected Pokemon ID ${id}`);
+      
       // Small delay to allow UI to update before processing
       setTimeout(() => {
         try {
@@ -68,6 +145,11 @@ export const useBattleInteractions = (
           }
         } catch (error) {
           console.error("useBattleInteractions: Error processing battle result:", error);
+          toast({
+            title: "Error",
+            description: "There was an error processing the battle. Trying to recover...",
+            variant: "destructive"
+          });
         } finally {
           // Reset processing state regardless of success or failure
           setTimeout(() => {

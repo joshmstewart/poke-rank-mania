@@ -1,8 +1,9 @@
-
-import { useMemo, useCallback, useEffect, useRef } from "react";
+import { useMemo, useCallback, useEffect, useRef, useState } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
 import { createBattleStarter } from "./createBattleStarter";
+import { toast } from "@/hooks/use-toast";
+import { useBattleEmergencyReset } from "./useBattleEmergencyReset";
 
 export const useBattleStarterIntegration = (
   allPokemon: Pokemon[],
@@ -12,6 +13,18 @@ export const useBattleStarterIntegration = (
 ) => {
   // Add ref to track if we've verified suggestions
   const verifiedSuggestionsRef = useRef(false);
+  
+  // Track battle creation attempts for debugging
+  const battleCreationAttemptsRef = useRef(0);
+  
+  // Track when the last battle was created
+  const lastBattleCreationTimeRef = useRef(0);
+  
+  // Keep a running list of last several battles for debugging
+  const recentBattlesRef = useRef<{ids: number[], timestamp: number}[]>([]);
+  
+  // Track stuck state
+  const [isStuckInSameBattle, setIsStuckInSameBattle] = useState(false);
   
   // Add tracking for recently used Pokémon to avoid repetition
   const recentlyUsedPokemonRef = useRef<Set<number>>(new Set());
@@ -36,6 +49,13 @@ export const useBattleStarterIntegration = (
       setCurrentBattle
     );
   }, [allPokemon, currentRankings, setCurrentBattle]);
+
+  // Get emergency reset functionality
+  const { performEmergencyReset } = useBattleEmergencyReset(
+    [] as Pokemon[], // This will be populated when used
+    setCurrentBattle,
+    allPokemon
+  );
 
   // Effect to verify suggestions in currentRankings 
   useEffect(() => {
@@ -93,11 +113,58 @@ export const useBattleStarterIntegration = (
     }
     return result;
   }, []);
+  
+  // Detect if we're stuck with the same battle repeatedly
+  useEffect(() => {
+    // If we have multiple recent battles and they're all identical
+    if (recentBattlesRef.current.length >= 3) {
+      const lastThreeBattles = recentBattlesRef.current.slice(-3);
+      const firstBattleIds = [...lastThreeBattles[0].ids].sort().join(',');
+      
+      // Check if all battles have the same Pokemon IDs
+      const allSame = lastThreeBattles.every(battle => 
+        [...battle.ids].sort().join(',') === firstBattleIds
+      );
+      
+      if (allSame) {
+        console.error(`🚨 CRITICAL: System appears stuck with same Pokemon [${firstBattleIds}] for ${lastThreeBattles.length} battles`);
+        console.error(`🚨 Battle timestamps: ${lastThreeBattles.map(b => new Date(b.timestamp).toISOString()).join(', ')}`);
+        
+        setIsStuckInSameBattle(true);
+        
+        // Show toast with reset option
+        toast({
+          title: "System Stuck",
+          description: "The battle system is showing the same Pokemon repeatedly. Click to reset.",
+          action: {
+            label: "Reset",
+            onClick: () => {
+              // Force complete reset
+              performEmergencyReset();
+              // Clear our tracking
+              recentBattlesRef.current = [];
+              setIsStuckInSameBattle(false);
+            }
+          },
+          duration: 15000
+        });
+      } else {
+        setIsStuckInSameBattle(false);
+      }
+    }
+  }, [recentBattlesRef.current.length]);
 
-  // Start a new battle - MAJOR BUG FIX
+  // Start a new battle with forcefully different Pokemon each time
   const startNewBattle = useCallback((battleType: BattleType): Pokemon[] => {
     battleAttemptsRef.current += 1;
-    console.log(`⚔️ startNewBattle attempt #${battleAttemptsRef.current} with type: ${battleType}`);
+    battleCreationAttemptsRef.current += 1;
+    const attemptNumber = battleCreationAttemptsRef.current;
+    
+    console.log(`⚔️ startNewBattle attempt #${attemptNumber} with type: ${battleType}`);
+    
+    // Record the time of this attempt for debugging
+    const now = Date.now();
+    lastBattleCreationTimeRef.current = now;
     
     if (!allPokemon || allPokemon.length < 2) {
       console.warn("Not enough Pokémon for a battle.");
@@ -108,111 +175,118 @@ export const useBattleStarterIntegration = (
     localStorage.setItem('pokemon-ranker-battle-type', battleType);
 
     try {
-      // CRITICAL FIX: Before trying to use battleStarter, create a safety fallback
-      // to absolutely ensure we don't get stuck in a loop with the same Pokémon
+      // If we're stuck in a loop, force completely different selection
+      if (isStuckInSameBattle) {
+        throw new Error("Force emergency selection due to stuck state");
+      }
+      
+      // First attempt: Force different Pokémon from last battle
       const battleSize = battleType === "triplets" ? 3 : 2;
       
-      // Filter out last battle Pokémon to guarantee we don't reuse them
-      const availablePokemon = allPokemon.filter(p => !lastBattlePokemonRef.current.has(p.id));
+      // STEP 1: Get all available Pokémon excluding recently used
+      let availablePokemon = allPokemon.filter(p => !lastBattlePokemonRef.current.has(p.id));
+      console.log(`🔄 Step 1: ${availablePokemon.length} Pokémon available after filtering last battle`);
       
-      // If we have enough Pokémon after filtering, proceed
-      if (availablePokemon.length >= battleSize) {
-        // Start a new battle using our battle starter
-        if (battleStarter) {
-          console.log("Using battleStarter to start new battle with", battleType);
-          const battlePokemon = battleStarter.startNewBattle(battleType);
-          
-          // Reset selected Pokemon
-          setSelectedPokemon([]);
-          
-          // CRITICAL FIX: Check for empty results or same Pokémon again
-          if (!battlePokemon || battlePokemon.length < battleSize) {
-            console.error("⚠️ Battle starter returned insufficient Pokémon, using fallback");
-            throw new Error("Insufficient Pokémon returned");
-          }
-          
-          // CRITICAL FIX: Check if we got the same Pokémon AGAIN
-          const sameAsPreviousBattle = battlePokemon.every(p => lastBattlePokemonRef.current.has(p.id));
-          if (sameAsPreviousBattle) {
-            console.error("⚠️⚠️⚠️ WARNING: Generated the same battle as previous! Using fallback method");
-            throw new Error("Same battle generated"); // Force fallback
-          }
-          
-          // Clear last battle tracking and add new battle Pokémon
-          lastBattlePokemonRef.current.clear();
-          
-          // Track these Pokémon as recently used and last battle
-          battlePokemon.forEach(p => {
-            recentlyUsedPokemonRef.current.add(p.id);
-            lastBattlePokemonRef.current.add(p.id);
-            
-            // Cap the set size
-            if (recentlyUsedPokemonRef.current.size > Math.min(20, allPokemon.length / 3)) {
-              const oldestId = Array.from(recentlyUsedPokemonRef.current)[0];
-              recentlyUsedPokemonRef.current.delete(oldestId);
-            }
-          });
-          
-          console.log(`🔄 Updated recently used Pokémon tracking (${recentlyUsedPokemonRef.current.size} total)`);
-          console.log(`🆔 This battle's Pokémon IDs: ${battlePokemon.map(p => p.id).join(', ')}`);
-          
-          return battlePokemon;
-        } else {
-          console.error("Battle starter not initialized, using emergency fallback");
-          throw new Error("Battle starter not initialized");
+      // STEP 2: If we have enough, also filter out recently used
+      if (availablePokemon.length >= battleSize * 3) {
+        const moreFreshPokemon = availablePokemon.filter(p => !recentlyUsedPokemonRef.current.has(p.id));
+        if (moreFreshPokemon.length >= battleSize) {
+          availablePokemon = moreFreshPokemon;
+          console.log(`🔄 Step 2: Further filtered to ${availablePokemon.length} Pokémon not recently used`);
         }
-      } else {
-        console.warn("Not enough unused Pokémon, using emergency selection");
-        throw new Error("Not enough unused Pokémon");
       }
-    } catch (error) {
-      console.error("Error or fallback in battle creation:", error);
       
-      // EMERGENCY FALLBACK: Create a completely new battle with guaranteed different Pokémon
+      // STEP 3: Shuffle and select
+      const shuffled = shuffleArray(availablePokemon);
+      const battlePokemon = shuffled.slice(0, battleSize);
+      
+      console.log(`🆕 Created FORCED NEW battle with: ${battlePokemon.map(p => `${p.id}:${p.name}`).join(', ')}`);
+      
+      // Clear last battle set and add new battle Pokémon
+      lastBattlePokemonRef.current.clear();
+      
+      // Track these Pokémon as recently used and last battle
+      battlePokemon.forEach(p => {
+        recentlyUsedPokemonRef.current.add(p.id);
+        lastBattlePokemonRef.current.add(p.id);
+        
+        // Cap the set size
+        if (recentlyUsedPokemonRef.current.size > Math.min(40, allPokemon.length / 2)) {
+          const oldestId = Array.from(recentlyUsedPokemonRef.current)[0];
+          recentlyUsedPokemonRef.current.delete(oldestId);
+        }
+      });
+      
+      // Add to recent battles tracking
+      recentBattlesRef.current.push({
+        ids: battlePokemon.map(p => p.id),
+        timestamp: now
+      });
+      
+      // Keep only the last 10 battles in the log
+      if (recentBattlesRef.current.length > 10) {
+        recentBattlesRef.current.shift();
+      }
+      
+      // Set the current battle and reset selected Pokemon
+      setCurrentBattle(battlePokemon);
+      setSelectedPokemon([]);
+      
+      return battlePokemon;
+    } catch (error) {
+      console.error(`Error creating battle (attempt #${attemptNumber}):`, error);
+      
+      // EMERGENCY FALLBACK: Absolutely force different Pokemon
       console.log("🚨 EMERGENCY: Using guaranteed random selection method");
       
-      // Reset all tracking if we've tried multiple times with the same result
-      if (battleAttemptsRef.current > 3) {
-        console.log("🔄 Resetting all Pokémon tracking due to multiple failures");
-        recentlyUsedPokemonRef.current.clear();
-        lastBattlePokemonRef.current.clear();
-      }
+      // Don't use any of the last 5 battle Pokemon
+      const recentIds = new Set<number>();
+      recentBattlesRef.current.slice(-5).forEach(battle => {
+        battle.ids.forEach(id => recentIds.add(id));
+      });
       
-      // Get all available Pokémon excluding the last battle if possible
-      let availableForEmergency = allPokemon;
-      if (lastBattlePokemonRef.current.size > 0 && allPokemon.length > 3) {
-        availableForEmergency = allPokemon.filter(p => !lastBattlePokemonRef.current.has(p.id));
-      }
+      const emergencyPool = allPokemon.filter(p => !recentIds.has(p.id));
+      console.log(`🚨 Emergency pool has ${emergencyPool.length} Pokemon (excluded ${recentIds.size} recent Pokemon)`);
+      
+      // If we don't have enough, use all Pokemon
+      const finalPool = emergencyPool.length >= 3 ? emergencyPool : allPokemon;
       
       // Shuffle and select
-      const shuffled = shuffleArray(availableForEmergency);
+      const shuffled = shuffleArray(finalPool);
       const battleSize = battleType === "triplets" ? 3 : 2;
+      const selectedForBattle = shuffled.slice(0, battleSize);
       
-      if (shuffled.length >= battleSize) {
-        const selectedForBattle = shuffled.slice(0, battleSize);
-        
-        // Clear and update tracking
-        lastBattlePokemonRef.current.clear();
-        
-        // Track these as recently used and last battle
-        selectedForBattle.forEach(p => {
-          recentlyUsedPokemonRef.current.add(p.id);
-          lastBattlePokemonRef.current.add(p.id);
-        });
-        
-        console.log("🆘 Emergency battle created with:", selectedForBattle.map(p => p.name).join(", "));
-        console.log(`🆔 Emergency battle Pokémon IDs: ${selectedForBattle.map(p => p.id).join(', ')}`);
-        
-        setCurrentBattle(selectedForBattle);
-        setSelectedPokemon([]);
-        return selectedForBattle;
-      } else {
-        // This should never happen unless we have fewer than 2-3 Pokémon total
-        console.error("CRITICAL ERROR: Not enough Pokémon for battle");
-        return [];
+      console.log(`🆘 Emergency battle created with: ${selectedForBattle.map(p => `${p.id}:${p.name}`).join(", ")}`);
+      
+      // Track these new Pokemon
+      lastBattlePokemonRef.current.clear();
+      selectedForBattle.forEach(p => {
+        lastBattlePokemonRef.current.add(p.id);
+      });
+      
+      // Add to recent battles tracking
+      recentBattlesRef.current.push({
+        ids: selectedForBattle.map(p => p.id),
+        timestamp: now
+      });
+      
+      // Keep only the last 10 battles in the log
+      if (recentBattlesRef.current.length > 10) {
+        recentBattlesRef.current.shift();
       }
+      
+      setCurrentBattle(selectedForBattle);
+      setSelectedPokemon([]);
+      return selectedForBattle;
     }
-  }, [battleStarter, setCurrentBattle, allPokemon, setSelectedPokemon, shuffleArray]);
+  }, [
+    allPokemon, 
+    setCurrentBattle, 
+    setSelectedPokemon, 
+    shuffleArray, 
+    isStuckInSameBattle,
+    performEmergencyReset
+  ]);
 
   return {
     battleStarter,

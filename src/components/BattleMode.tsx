@@ -10,6 +10,8 @@ const BattleMode = () => {
   const loaderInitiatedRef = useRef(false);
   const loadingFailedRef = useRef(false);
   const retryCountRef = useRef(0);
+  const battleCountRef = useRef(0); // Track number of battles for debug
+  const previousPokemonRef = useRef<number[]>([]); // Track last Pokemon
 
   // Improved Pokémon loading with retry mechanism
   useEffect(() => {
@@ -53,6 +55,39 @@ const BattleMode = () => {
 
     loadPokemonWithRetry();
   }, [loadPokemon]);
+
+  // Custom event handler for debugging battle selection
+  useEffect(() => {
+    const handleBattleCreated = (event: CustomEvent) => {
+      battleCountRef.current += 1;
+      const battleNumber = battleCountRef.current;
+      const currentPokemon = event.detail?.pokemonIds || [];
+      
+      // Compare with previous battle
+      const isPokemonSameAsPrevious = 
+        previousPokemonRef.current.length > 0 && 
+        currentPokemon.length === previousPokemonRef.current.length &&
+        currentPokemon.every(id => previousPokemonRef.current.includes(id));
+      
+      console.log(`🔎 BATTLE MONITOR #${battleNumber}: New battle created with Pokemon IDs: [${currentPokemon.join(', ')}]`);
+      console.log(`🔄 BATTLE MONITOR: Same as previous battle? ${isPokemonSameAsPrevious ? "YES ⚠️" : "NO ✅"}`);
+      
+      if (isPokemonSameAsPrevious) {
+        console.error(`🚨 CRITICAL: Detected identical battle (#${battleNumber}) - same Pokemon as previous battle`);
+        console.error(`🚨 Previous: [${previousPokemonRef.current.join(', ')}], Current: [${currentPokemon.join(', ')}]`);
+      }
+      
+      // Store current Pokemon IDs for next comparison
+      previousPokemonRef.current = [...currentPokemon];
+    };
+
+    // Add custom event listener
+    document.addEventListener('battle-created', handleBattleCreated as EventListener);
+    
+    return () => {
+      document.removeEventListener('battle-created', handleBattleCreated as EventListener);
+    };
+  }, []);
 
   if (isLoading || !allPokemon.length) {
     return (

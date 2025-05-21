@@ -37,6 +37,7 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
   const [animationKey, setAnimationKey] = useState(0);
   const [internalProcessing, setInternalProcessing] = useState(false);
   const [displayedBattlesCompleted, setDisplayedBattlesCompleted] = useState(battlesCompleted);
+  const [previousBattleIds, setPreviousBattleIds] = useState<number[]>([]);
   
   const { getNextMilestone, getMilestoneProgress } = useMilestoneCalculations(
     displayedBattlesCompleted, 
@@ -47,6 +48,26 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
   useEffect(() => {
     if (currentBattle && currentBattle.length > 0) {
       setAnimationKey(prev => prev + 1);
+      
+      // Debug: Log every time current battle changes
+      const currentIds = currentBattle.map(p => p.id);
+      const isSameAsPrevious = previousBattleIds.length === currentIds.length && 
+        previousBattleIds.every(id => currentIds.includes(id));
+      
+      console.log(`🔄 BattleInterface: Battle changed to [${currentBattle.map(p => `${p.id}:${p.name}`).join(', ')}]`);
+      console.log(`🔎 BattleInterface: Same Pokemon IDs as previous? ${isSameAsPrevious ? "YES ⚠️" : "NO ✅"}`);
+      
+      // Create a custom event for monitoring battles
+      const battleEvent = new CustomEvent('battle-created', { 
+        detail: { 
+          pokemonIds: currentIds,
+          pokemonNames: currentBattle.map(p => p.name),
+        } 
+      });
+      document.dispatchEvent(battleEvent);
+      
+      // Store current IDs as previous for next comparison
+      setPreviousBattleIds(currentIds);
     }
   }, [currentBattle]);
   

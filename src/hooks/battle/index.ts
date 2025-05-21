@@ -7,7 +7,7 @@ export * from "./useBattleManager";
 export * from "./useLocalStorage";
 export * from "./useRankings";
 export * from "./useCompletionTracker";
-export * from "./useConfidenceRanking"; // Add the new hook
+export * from "./useConfidenceRanking";
 export * from "./useBattleInitializer";
 export * from "./useGenerationSettings";
 export * from "./useBattleActions";
@@ -37,3 +37,4 @@ export * from "./useBattleStateSelection";
 export * from "./useBattleResults";
 export * from "./useBattleOutcomeProcessor";
 export * from "./useBattleStarterIntegration";
+export * from "./useBattleEmergencyReset"; // New hook
