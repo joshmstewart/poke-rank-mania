@@ -145,21 +145,18 @@ export const useBattleStarterIntegration = (
         globalEmergencyResetsRef.current += 1;
         
         // Force emergency reset
-        toast({
-          title: "Breaking Battle Loop",
-          description: `Forcing new Pokémon selection (reset #${globalEmergencyResetsRef.current})`,
-          variant: "destructive",
-          action: (
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={performEmergencyReset}
-            >
-              Reset Now
-            </Button>
-          ),
-          duration: 6000
-        });
+    toast({
+  title: "Breaking Battle Loop",
+  description: `Forcing new Pokémon selection (reset #${globalEmergencyResetsRef.current})`,
+  variant: "destructive",
+  duration: 6000,
+  action: React.createElement(Button, {
+    variant: "outline",
+    size: "sm",
+    onClick: () => performEmergencyReset()
+  }, "Reset Now")
+});
+
         
         // Clear tracking completely
         recentBattlesRef.current = [];
