@@ -1,7 +1,9 @@
+
 import { useState, useEffect } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { SingleBattle } from "./types";
 import { Rating } from "ts-trueskill";
+import { useRankingSuggestions } from "./useRankingSuggestions";
 
 export const useRankings = (allPokemon: Pokemon[]) => {
   const [finalRankings, setFinalRankings] = useState<RankedPokemon[]>([]);
@@ -11,6 +13,15 @@ export const useRankings = (allPokemon: Pokemon[]) => {
     return storedTier ? (storedTier === "All" ? "All" : Number(storedTier) as TopNOption) : 25;
   });
   const [frozenPokemon, setFrozenPokemon] = useState<Record<number, { [tier: string]: boolean }>>({});
+
+  // Initialize the ranking suggestions hook
+  const {
+    suggestRanking, 
+    removeSuggestion, 
+    markSuggestionUsed, 
+    clearAllSuggestions,
+    findNextSuggestion
+  } = useRankingSuggestions(finalRankings, setFinalRankings);
 
   useEffect(() => {
     // Load frozen pokemon state from localStorage
@@ -70,12 +81,17 @@ export const useRankings = (allPokemon: Pokemon[]) => {
         // Get current frozen status for this Pokemon (or initialize if not exists)
         const pokemonFrozenStatus = frozenPokemon[p.id] || {};
 
+        // Preserve existing suggestedAdjustment if it exists
+        const existingRankedPokemon = finalRankings.find(rp => rp.id === p.id);
+        const suggestedAdjustment = existingRankedPokemon?.suggestedAdjustment;
+
         return {
           ...p,
           score: conservativeEstimate,
           count: countMap.get(p.id) || 0,
           confidence: normalizedConfidence,
-          isFrozenForTier: pokemonFrozenStatus
+          isFrozenForTier: pokemonFrozenStatus,
+          suggestedAdjustment
         };
       })
       // Sort by the conservative TrueSkill estimate (higher is better)
@@ -121,6 +137,8 @@ export const useRankings = (allPokemon: Pokemon[]) => {
     console.log("[useRankings] Rankings saved.", finalRankings);
     // Save frozen state as well
     localStorage.setItem("pokemon-frozen-pokemon", JSON.stringify(frozenPokemon));
+    // Clear suggestions when rankings are saved
+    clearAllSuggestions();
   };
 
   return {
@@ -132,6 +150,12 @@ export const useRankings = (allPokemon: Pokemon[]) => {
     setActiveTier,
     freezePokemonForTier,
     isPokemonFrozenForTier,
-    allRankedPokemon: finalRankings // This will be useful for battle selection
+    allRankedPokemon: finalRankings, // This will be useful for battle selection
+    // Ranking suggestion functions
+    suggestRanking,
+    removeSuggestion,
+    markSuggestionUsed,
+    clearAllSuggestions,
+    findNextSuggestion
   };
 };

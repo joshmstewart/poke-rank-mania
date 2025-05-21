@@ -19,7 +19,8 @@ export const useBattleProcessor = (
   setSelectedPokemon: React.Dispatch<React.SetStateAction<number[]>>,
   activeTier?: TopNOption,
   freezePokemonForTier?: (pokemonId: number, tier: TopNOption) => void,
-  battleStarter?: any // Accept the battle starter to access trackLowerTierLoss
+  battleStarter?: any, // Accept the battle starter to access trackLowerTierLoss
+  markSuggestionUsed?: (pokemon: RankedPokemon) => void // New parameter
 ) => {
   const [isProcessingResult, setIsProcessingResult] = useState(false);
   const processedMilestonesRef = useRef<Set<number>>(new Set());
@@ -72,6 +73,17 @@ export const useBattleProcessor = (
       if (newResults && newResults.length > 0) {
         const cumulativeResults = [...battleResults, ...newResults];
         setBattleResults(cumulativeResults);
+        
+        // Check if any of the Pokemon in the battle had active suggestions
+        // and mark them as used
+        if (markSuggestionUsed) {
+          currentBattlePokemon.forEach(pokemon => {
+            if ((pokemon as RankedPokemon).suggestedAdjustment && 
+                !(pokemon as RankedPokemon).suggestedAdjustment?.used) {
+              markSuggestionUsed(pokemon as RankedPokemon);
+            }
+          });
+        }
         
         console.log("🟡 useBattleProcessor: incremented battles completed");
         incrementBattlesCompleted(cumulativeResults);
@@ -130,7 +142,8 @@ export const useBattleProcessor = (
     milestones, 
     setupNextBattle,
     generateRankings,
-    setShowingMilestone
+    setShowingMilestone,
+    markSuggestionUsed // Add this new dependency
   ]);
 
   return { 

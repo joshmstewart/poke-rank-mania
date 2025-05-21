@@ -1,207 +1,124 @@
-
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
 
 export const createBattleStarter = (
-  pokemonList: Pokemon[],
-  allPokemonForGeneration: Pokemon[],
-  currentFinalRankings: Pokemon[],
-  setCurrentBattle: (battle: Pokemon[]) => void
+  allPokemon: Pokemon[],
+  filteredPokemon: Pokemon[],
+  currentRankings: Pokemon[],
+  setCurrentBattle: React.Dispatch<React.SetStateAction<Pokemon[]>>
 ) => {
-  // Use plain objects instead of hooks
-  let previousBattles: number[][] = [];
-  let lastBattle: number[] = [];
-  let recentlySeenPokemon: Set<number> = new Set();
-  let consecutiveRepeats = 0;
+  // Track lower tier losses for temporary tier skipping logic
+  const lowerTierLossCounter: Record<string, number> = {};
   
-  // Store pairs that have already battled to avoid repeats
-  let battledPairs: Set<string> = new Set();
+  // Function to get a random Pokemon from a group
+  const getRandomFromGroup = (group: Pokemon[]): Pokemon | null => {
+    if (!group || group.length === 0) return null;
+    return group[Math.floor(Math.random() * group.length)];
+  };
 
-  const shuffleArray = (array: Pokemon[]) => {
-    const shuffled = [...array];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  // Find the suggested pokemon to prioritize (if any)
+  const findActiveSuggestion = (): RankedPokemon | undefined => {
+    return currentRankings.find(p => 
+      (p as RankedPokemon).suggestedAdjustment && 
+      !(p as RankedPokemon).suggestedAdjustment!.used
+    ) as RankedPokemon | undefined;
+  };
+
+  // Select opponent based on suggestion params
+  const selectOpponentForSuggestion = (
+    suggested: RankedPokemon, 
+    suggestedIndex: number
+  ): Pokemon | null => {
+    const { direction, strength } = suggested.suggestedAdjustment!;
+    // Calculate offset based on strength (1-3)
+    const offset = strength * 5;
+    
+    // Create a pool based on direction
+    let pool: Pokemon[] = [];
+    
+    if (direction === "up") {
+      // For "up" suggestion, select from better ranked Pokemon
+      pool = currentRankings.slice(Math.max(0, suggestedIndex - offset), suggestedIndex);
+    } else {
+      // For "down" suggestion, select from lower ranked Pokemon
+      pool = currentRankings.slice(
+        suggestedIndex + 1, 
+        Math.min(currentRankings.length, suggestedIndex + 1 + offset)
+      );
     }
-    return shuffled;
+    
+    // If pool is empty, fallback to normal selection
+    if (pool.length === 0) return null;
+    
+    // Select opponent with lowest confidence or random if not available
+    const opponent = pool.reduce((lowest, current) => {
+      const currentConfidence = (current as RankedPokemon).confidence || 0;
+      const lowestConfidence = (lowest as RankedPokemon).confidence || 0;
+      return currentConfidence < lowestConfidence ? current : lowest;
+    }, pool[0]);
+    
+    console.log(
+      `🧪 Pairing '${suggested.name}' (arrow ${direction} x${strength}) vs '${opponent.name}'`
+    );
+    
+    return opponent;
   };
 
-  const roll = () => Math.random() * 100;
-
-  // Check if a pair has already battled
-  const hasPairBattled = (id1: number, id2: number): boolean => {
-    const pairKey = [id1, id2].sort().join('-');
-    return battledPairs.has(pairKey);
-  };
-  
-  // Record a pair as battled
-  const recordBattledPair = (id1: number, id2: number): void => {
-    const pairKey = [id1, id2].sort().join('-');
-    battledPairs.add(pairKey);
+  // Fill in battles based on algorithm
+  const startNewBattle = (battleType: BattleType) => {
+    // Determine how many Pokemon are needed
+    const pokemonNeeded = battleType === "triplets" ? 3 : 2;
     
-    // Limit the size of battledPairs to prevent memory issues
-    if (battledPairs.size > 10000) {
-      // Remove oldest entries (not exactly FIFO but good enough)
-      const entries = Array.from(battledPairs);
-      battledPairs = new Set(entries.slice(entries.length / 2));
-    }
-  };
-
-  // Pick Pokemon that haven't been seen recently, with strong preference for Pokemon that haven't battled yet
-  const pickFreshPokemonPair = (pokemonPool: Pokemon[]): Pokemon[] => {
-    if (!pokemonPool.length || pokemonPool.length < 2) return [];
+    // First, check for any active ranking suggestions
+    const suggestedPokemon = findActiveSuggestion();
     
-    const result: Pokemon[] = [];
-    const used = new Set<number>();
-    
-    // Prioritize Pokemon that haven't been seen recently
-    const unseenPokemon = pokemonPool.filter(p => !recentlySeenPokemon.has(p.id));
-    const pool = unseenPokemon.length >= 2 ? unseenPokemon : pokemonPool;
-    
-    // Shuffle the pool for randomness
-    const shuffledPool = shuffleArray(pool);
-    
-    // Try to find a completely fresh pair (not seen and not battled together)
-    for (let i = 0; i < shuffledPool.length; i++) {
-      const p1 = shuffledPool[i];
-      if (used.has(p1.id)) continue;
+    if (suggestedPokemon) {
+      const suggestedIndex = currentRankings.findIndex(p => p.id === suggestedPokemon.id);
       
-      for (let j = 0; j < shuffledPool.length; j++) {
-        if (i === j) continue;
+      if (suggestedIndex !== -1) {
+        // Find appropriate opponent for suggestion
+        const opponent = selectOpponentForSuggestion(suggestedPokemon, suggestedIndex);
         
-        const p2 = shuffledPool[j];
-        if (used.has(p2.id)) continue;
-        
-        // Check if this pair has battled before
-        if (hasPairBattled(p1.id, p2.id)) continue;
-        
-        // Found a fresh pair!
-        result.push(p1, p2);
-        used.add(p1.id);
-        used.add(p2.id);
-        recordBattledPair(p1.id, p2.id);
-        return result;
-      }
-    }
-    
-    // If we couldn't find a completely fresh pair, try again with just unseen Pokemon
-    if (result.length < 2) {
-      const p1 = shuffledPool[0];
-      if (p1) {
-        result.push(p1);
-        used.add(p1.id);
-        
-        for (let i = 1; i < shuffledPool.length; i++) {
-          const p2 = shuffledPool[i];
-          if (!used.has(p2.id)) {
-            result.push(p2);
-            recordBattledPair(p1.id, p2.id);
-            break;
+        if (opponent) {
+          // We found a suitable opponent based on suggestion
+          if (battleType === "triplets") {
+            // For triplets, add one more random Pokemon
+            const randomPokemon = filteredPokemon
+              .filter(p => p.id !== suggestedPokemon.id && p.id !== opponent.id)
+              .sort(() => 0.5 - Math.random())[0];
+            
+            if (randomPokemon) {
+              console.log(
+                `createBattleStarter: Setting suggestion battle with ${suggestedPokemon.name}, ${opponent.name}, ${randomPokemon.name}`
+              );
+              setCurrentBattle([suggestedPokemon, opponent, randomPokemon]);
+              return;
+            }
+          } else {
+            // For pairs, just use the suggestion and opponent
+            console.log(
+              `createBattleStarter: Setting suggestion battle with ${suggestedPokemon.name}, ${opponent.name}`
+            );
+            setCurrentBattle([suggestedPokemon, opponent]);
+            return;
           }
         }
       }
     }
     
-    // If we still couldn't find a pair, just pick randomly
-    if (result.length < 2) {
-      const randomPair = shuffleArray(pokemonPool).slice(0, 2);
-      if (randomPair.length === 2) {
-        recordBattledPair(randomPair[0].id, randomPair[1].id);
-        return randomPair;
-      }
-    }
-    
-    return result;
-  };
-
-  const pickPokemonFromPools = (pool1: Pokemon[], pool2: Pokemon[]) => {
-    if (!pool1.length || !pool2.length) return [];
-    
-    // Check if pools are the same to avoid picking the same Pokemon twice
-    const isSamePool = pool1 === pool2;
-    const used = new Set<number>();
-    const result: Pokemon[] = [];
-
-    // Try to find pairs that haven't battled yet
-    for (let attempts = 0; attempts < 15; attempts++) {
-      // Pick one Pokemon from pool1
-      const p1Index = Math.floor(Math.random() * pool1.length);
-      const p1 = pool1[p1Index];
-      
-      if (!p1) continue;
-      
-      // Try to find a Pokemon from pool2 that hasn't battled with p1
-      let foundValidP2 = false;
-      
-      for (let p2attempts = 0; p2attempts < 10; p2attempts++) {
-        const p2Index = Math.floor(Math.random() * pool2.length);
-        const p2 = pool2[p2Index];
-        
-        if (!p2 || p1.id === p2.id) continue;
-        
-        // Check if this pair has battled before
-        if (hasPairBattled(p1.id, p2.id)) continue;
-        
-        // Found a valid pair!
-        result.push(p1, p2);
-        recordBattledPair(p1.id, p2.id);
-        foundValidP2 = true;
-        break;
-      }
-      
-      if (foundValidP2) break;
-    }
-    
-    // If we couldn't find a non-battled pair, fall back to the original logic
-    if (result.length < 2) {
-      // Pick one Pokemon from pool1
-      const p1 = pool1[Math.floor(Math.random() * pool1.length)];
-      if (p1) {
-        result.push(p1);
-        used.add(p1.id);
-      }
-      
-      // Try to pick a second Pokemon from pool2 that isn't the same as p1
-      let attempts = 0;
-      const maxAttempts = isSamePool ? 20 : 10;
-      
-      while (result.length < 2 && attempts < maxAttempts) {
-        const p2Index = Math.floor(Math.random() * pool2.length);
-        const p2 = pool2[p2Index];
-        
-        if (p2 && !used.has(p2.id) && !recentlySeenPokemon.has(p2.id)) {
-          result.push(p2);
-          if (result.length === 2) recordBattledPair(result[0].id, result[1].id);
-          break;
-        }
-        attempts++;
-        
-        // If we've tried too many times, relax the constraints
-        if (attempts > maxAttempts / 2 && p2 && !used.has(p2.id)) {
-          result.push(p2);
-          if (result.length === 2) recordBattledPair(result[0].id, result[1].id);
-          break;
-        }
-      }
-    }
-
-    return result;
-  };
-
-  const startNewBattle = (battleType: BattleType) => {
-    console.log("createBattleStarter: Starting new battle with type:", battleType);
-    const battleSize = battleType === "pairs" ? 2 : 3;
+    // If no suggestion or we couldn't build a suggestion battle, fall back to normal logic
+    console.log("createBattleStarter: No active suggestions, using normal battle selection");
     
     // Ensure we have proper Pokemon lists to work with
-    const safeAllPokemon = Array.isArray(allPokemonForGeneration) ? allPokemonForGeneration : [];
+    const safeAllPokemon = Array.isArray(allPokemon) ? allPokemon : [];
     
-    if (safeAllPokemon.length < battleSize) {
+    if (safeAllPokemon.length < pokemonNeeded) {
       console.error("createBattleStarter: Not enough Pokemon for a battle, only have", safeAllPokemon.length);
       return [];
     }
 
     // Ensure we have arrays to work with
-    const ranked = Array.isArray(currentFinalRankings) ? [...currentFinalRankings] : [];
+    const ranked = Array.isArray(currentRankings) ? [...currentRankings] : [];
     const unranked = safeAllPokemon.filter(p => !ranked.some(r => r.id === p.id));
     
     console.log(`createBattleStarter: Starting battle with ${ranked.length} ranked and ${unranked.length} unranked Pokémon`);
@@ -210,16 +127,16 @@ export const createBattleStarter = (
     let result: Pokemon[] = [];
     
     // In the worst case, just pick random Pokemon
-    if (safeAllPokemon.length >= battleSize) {
-      result = shuffleArray([...safeAllPokemon]).slice(0, battleSize);
+    if (safeAllPokemon.length >= pokemonNeeded) {
+      result = shuffleArray([...safeAllPokemon]).slice(0, pokemonNeeded);
       console.log("createBattleStarter: Using fallback random selection with", result.map(p => p.name).join(", "));
     }
     
     // Get the final Pokemon for the battle
-    const finalResult = result.length >= battleSize ? result : shuffleArray([...safeAllPokemon]).slice(0, battleSize);
+    const finalResult = result.length >= pokemonNeeded ? result : shuffleArray([...safeAllPokemon]).slice(0, pokemonNeeded);
     
     // Set the current battle
-    if (finalResult.length >= battleSize) {
+    if (finalResult.length >= pokemonNeeded) {
       console.log("createBattleStarter: Setting battle with", finalResult.map(p => p.name).join(", "));
       setCurrentBattle(finalResult);
       return finalResult;
@@ -229,5 +146,10 @@ export const createBattleStarter = (
     }
   };
 
-  return { startNewBattle };
+  return {
+    startNewBattle,
+    trackLowerTierLoss: (rankIndex: number) => {
+      lowerTierLossCounter[rankIndex] = (lowerTierLossCounter[rankIndex] || 0) + 1;
+    }
+  };
 };

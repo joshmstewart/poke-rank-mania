@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -7,6 +8,7 @@ import { RankingUI } from "./ranking/RankingUI";
 import { usePokemonRanker } from "@/hooks/usePokemonRanker";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { generations, RankedPokemon } from "@/services/pokemon";
+import { useRankingSuggestions } from "@/hooks/battle/useRankingSuggestions";
 
 const PokemonRanker = () => {
   const {
@@ -38,6 +40,13 @@ const PokemonRanker = () => {
     confidence: 0  // Add the missing confidence property with default value
   }));
 
+  // Initialize the ranking suggestions hook
+  const {
+    suggestRanking,
+    removeSuggestion,
+    clearAllSuggestions
+  } = useRankingSuggestions(typedRankedPokemon, setRankedPokemon as any);
+
   return (
     <div className="container max-w-7xl mx-auto py-6">
       <div className="flex flex-col space-y-4">
@@ -67,7 +76,11 @@ const PokemonRanker = () => {
               variant="outline"
               size="sm"
               className="flex items-center gap-1 h-8 text-sm"
-              onClick={() => setShowRankings(!showRankings)}
+              onClick={() => {
+                // Clear all suggestions when toggling view
+                clearAllSuggestions();
+                setShowRankings(!showRankings);
+              }}
             >
               <List className="h-4 w-4" /> Rankings
             </Button>
@@ -75,7 +88,10 @@ const PokemonRanker = () => {
               variant="outline"
               size="sm"
               className="flex items-center gap-1 h-8 text-sm"
-              onClick={resetRankings}
+              onClick={() => {
+                resetRankings();
+                clearAllSuggestions();
+              }}
               title={`Reset rankings for ${generationName}`}
             >
               <RefreshCw className="h-4 w-4" /> Reset
@@ -92,6 +108,7 @@ const PokemonRanker = () => {
                 </DialogHeader>
                 <div className="space-y-4 mt-2">
                   <p>Your rankings are automatically saved as you make changes!</p>
+                  <p>To suggest ranking adjustments, hover over a Pokémon in the rankings view and use the arrow controls.</p>
                 </div>
               </DialogContent>
             </Dialog>
@@ -99,7 +116,13 @@ const PokemonRanker = () => {
         </div>
 
         {showRankings ? (
-          <RankingResults confidentRankedPokemon={typedRankedPokemon} confidenceScores={{}} />
+          <RankingResults 
+            confidentRankedPokemon={typedRankedPokemon} 
+            confidenceScores={{}}
+            onSuggestRanking={suggestRanking}
+            onRemoveSuggestion={removeSuggestion}
+            onClearSuggestions={clearAllSuggestions}
+          />
         ) : (
           <RankingUI
             isLoading={isLoading}

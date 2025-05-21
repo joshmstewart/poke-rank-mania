@@ -11,10 +11,13 @@ import {
 import { Progress } from "@/components/ui/progress"; 
 import { RankedPokemon, TopNOption } from "@/services/pokemon";
 import { getPokemonGeneration } from "./rankingUtils";
+import { PokemonSuggestionCard } from "./PokemonSuggestionCard";
 
 interface RankingTableProps {
   displayRankings: RankedPokemon[];
   activeTier: TopNOption;
+  onSuggestRanking?: (pokemon: RankedPokemon, direction: "up" | "down", strength: 1 | 2 | 3) => void;
+  onRemoveSuggestion?: (pokemonId: number) => void;
 }
 
 // Get the confidence level as a string
@@ -24,7 +27,12 @@ const getConfidenceLevel = (confidenceValue: number) => {
   return "Low";
 };
 
-export const RankingTable: React.FC<RankingTableProps> = ({ displayRankings, activeTier }) => {
+export const RankingTable: React.FC<RankingTableProps> = ({ 
+  displayRankings, 
+  activeTier,
+  onSuggestRanking = () => {}, 
+  onRemoveSuggestion = () => {} 
+}) => {
   if (displayRankings.length === 0) {
     return (
       <div className="text-center py-12 text-muted-foreground">
@@ -62,11 +70,17 @@ export const RankingTable: React.FC<RankingTableProps> = ({ displayRankings, act
             >
               <TableCell>{index + 1}</TableCell>
               <TableCell>
-                <img 
-                  src={pokemon.image} 
-                  alt={pokemon.name} 
-                  className={`w-10 h-10 object-contain ${isFrozen ? "opacity-50" : ""}`}
-                />
+                <PokemonSuggestionCard
+                  pokemon={pokemon}
+                  onSuggestRanking={onSuggestRanking}
+                  onRemoveSuggestion={onRemoveSuggestion}
+                >
+                  <img 
+                    src={pokemon.image} 
+                    alt={pokemon.name} 
+                    className={`w-10 h-10 object-contain ${isFrozen ? "opacity-50" : ""}`}
+                  />
+                </PokemonSuggestionCard>
               </TableCell>
               <TableCell>
                 <div className="flex items-center">

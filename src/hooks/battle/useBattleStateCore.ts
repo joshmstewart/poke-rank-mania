@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { useBattleStarterIntegration } from "@/hooks/battle/useBattleStarterIntegration";
@@ -43,7 +42,12 @@ export const useBattleStateCore = (
     setActiveTier,
     freezePokemonForTier,
     isPokemonFrozenForTier,
-    allRankedPokemon
+    allRankedPokemon,
+    suggestRanking,
+    removeSuggestion,
+    markSuggestionUsed,
+    clearAllSuggestions,
+    findNextSuggestion
   } = useRankings(allPokemon);
 
   const {
@@ -94,22 +98,21 @@ export const useBattleStateCore = (
     setSelectedPokemon,
     activeTier,
     freezePokemonForTier,
-    battleStarter
+    battleStarter,
+    markSuggestionUsed // Pass the function to mark suggestions as used
   );
 
-  const handleGoBack = useCallback((
-    setCurrentBattle: React.Dispatch<React.SetStateAction<Pokemon[]>>,
-    battleType: BattleType
-  ) => {
-    if (battleHistory.length > 0) {
-      const lastBattle = battleHistory[battleHistory.length - 1];
-      setCurrentBattle(lastBattle.battle);
-      setSelectedPokemon(lastBattle.selected);
-      setBattleHistory(prev => prev.slice(0, -1));
-    } else {
-      startNewBattle(battleType);
-    }
-  }, [battleHistory, startNewBattle]);
+  // Effect to clear suggestions when entering/leaving the battle screen
+  useEffect(() => {
+    // This will run when the component mounts
+    clearAllSuggestions();
+    
+    // Return cleanup function that runs when component unmounts
+    return () => {
+      // Clear suggestions when leaving battle screen
+      clearAllSuggestions();
+    };
+  }, [clearAllSuggestions]);
 
   const {
     handlePokemonSelect,
@@ -176,6 +179,9 @@ export const useBattleStateCore = (
     handleSaveRankings,
     processorRefs: { resetMilestoneInProgress },
     freezePokemonForTier,
-    isPokemonFrozenForTier
+    isPokemonFrozenForTier,
+    suggestRanking,
+    removeSuggestion,
+    clearAllSuggestions
   };
 };

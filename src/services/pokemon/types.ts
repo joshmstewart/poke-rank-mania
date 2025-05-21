@@ -1,4 +1,3 @@
-
 export interface Pokemon {
   id: number;
   name: string;
@@ -8,6 +7,12 @@ export interface Pokemon {
   rating?: any; // We'll use this to store the TrueSkill Rating object
 }
 
+export interface RankingSuggestion {
+  direction: "up" | "down";
+  strength: 1 | 2 | 3;
+  used: boolean;
+}
+
 export interface RankedPokemon extends Pokemon {
   score: number;      // Will be used for the conservative TrueSkill estimate (μ - 3σ)
   count: number;      // Number of battles the Pokémon has participated in
@@ -15,13 +20,7 @@ export interface RankedPokemon extends Pokemon {
   isFrozenForTier?: {
     [tier: string]: boolean;
   };
-}
-
-export interface Generation {
-  id: number;
-  name: string;
-  start: number;
-  end: number;
+  suggestedAdjustment?: RankingSuggestion;
 }
 
 // Define the available Top N options

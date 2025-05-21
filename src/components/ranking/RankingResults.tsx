@@ -1,52 +1,71 @@
-
-import React from "react";
-import { TopNOption, RankedPokemon } from "@/services/pokemon";
-import { RankingHeader } from "./RankingHeader";
-import { RankingInfoPanel } from "./RankingInfoPanel";
+import React, { useState } from 'react';
+import { RankedPokemon, TopNOption } from "@/services/pokemon";
 import { RankingTable } from "./RankingTable";
-import { JustMissedTable } from "./JustMissedTable";
+import { Button } from "@/components/ui/button";
+import { RefreshCw } from "lucide-react";
+import { TierSelector } from "@/components/battle/TierSelector";
 
 interface RankingResultsProps {
   confidentRankedPokemon: RankedPokemon[];
   confidenceScores: Record<number, number>;
   activeTier?: TopNOption;
   onTierChange?: (tier: TopNOption) => void;
+  onSuggestRanking?: (pokemon: RankedPokemon, direction: "up" | "down", strength: 1 | 2 | 3) => void;
+  onRemoveSuggestion?: (pokemonId: number) => void;
+  onClearSuggestions?: () => void;
 }
 
 export const RankingResults: React.FC<RankingResultsProps> = ({
   confidentRankedPokemon,
-  confidenceScores, // Kept for backward compatibility
-  activeTier = "All",
-  onTierChange
+  confidenceScores,
+  activeTier = 25,
+  onTierChange,
+  onSuggestRanking,
+  onRemoveSuggestion,
+  onClearSuggestions
 }) => {
-  // Filter rankings based on active tier
-  const displayRankings = activeTier === "All" 
-    ? confidentRankedPokemon
-    : confidentRankedPokemon.slice(0, Number(activeTier));
+  const [currentTier, setCurrentTier] = useState<TopNOption>(activeTier);
   
-  // Calculate just missed cutoff - top 10 outside the current tier
-  const justMissedCutoff = activeTier !== "All" 
-    ? confidentRankedPokemon.slice(Number(activeTier), Number(activeTier) + 10)
-    : [];
-  
+  const handleTierChange = (tier: TopNOption) => {
+    setCurrentTier(tier);
+    if (onTierChange) {
+      onTierChange(tier);
+    }
+  };
+
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <RankingHeader 
-        activeTier={activeTier} 
-        onTierChange={onTierChange}
-      />
-      
-      <RankingInfoPanel />
-      
-      <RankingTable 
-        displayRankings={displayRankings} 
-        activeTier={activeTier} 
-      />
-      
-      <JustMissedTable 
-        justMissedCutoff={justMissedCutoff} 
-        activeTier={activeTier} 
-      />
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold">Ranking Results</h2>
+        <div className="flex items-center gap-2">
+          {onClearSuggestions && (
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={onClearSuggestions}
+              className="flex items-center gap-1"
+            >
+              <RefreshCw className="h-3 w-3" /> 
+              Clear Suggestions
+            </Button>
+          )}
+          {onTierChange && (
+            <TierSelector 
+              activeTier={currentTier} 
+              onTierChange={handleTierChange} 
+            />
+          )}
+        </div>
+      </div>
+
+      <div className="bg-white rounded-lg shadow">
+        <RankingTable 
+          displayRankings={confidentRankedPokemon} 
+          activeTier={currentTier}
+          onSuggestRanking={onSuggestRanking}
+          onRemoveSuggestion={onRemoveSuggestion}
+        />
+      </div>
     </div>
   );
 };
