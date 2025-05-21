@@ -1,5 +1,5 @@
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { RankedPokemon, RankingSuggestion } from "@/services/pokemon";
 import { toast } from "@/hooks/use-toast";
 
@@ -13,6 +13,9 @@ export const useRankingSuggestions = (
   
   // Track whether suggestions have been loaded from localStorage
   const [suggestionsLoaded, setSuggestionsLoaded] = useState(false);
+  
+  // Add a ref to track if we've been initialized
+  const initDoneRef = useRef(false);
 
   // Add or update a suggestion
   const suggestRanking = useCallback((
@@ -175,7 +178,7 @@ export const useRankingSuggestions = (
     }
   };
   
-  // Load suggestions from localStorage on init
+  // Load suggestions from localStorage and apply them to the pokemonList
   const loadSavedSuggestions = useCallback(() => {
     try {
       console.log("🔄 Loading saved suggestions from localStorage...");
@@ -187,30 +190,28 @@ export const useRankingSuggestions = (
         ));
         
         console.log(`📂 Loaded ${suggestionMap.size} saved suggestions from localStorage`);
-        
         setActiveSuggestions(suggestionMap);
         setSuggestionsLoaded(true);
         
         // Apply these suggestions to the pokemon list
-        setPokemonList(currentList => {
-          if (!currentList || currentList.length === 0) {
-            console.warn("Cannot apply suggestions: Pokemon list is empty");
-            return currentList;
-          }
+        if (pokemonList && pokemonList.length > 0) {
+          console.log(`Applying ${suggestionMap.size} suggestions to ${pokemonList.length} Pokémon`);
           
-          console.log(`Applying ${suggestionMap.size} suggestions to ${currentList.length} Pokémon`);
-          
-          return currentList.map(p => {
-            const suggestion = suggestionMap.get(p.id);
-            
-            if (suggestion) {
-              console.log(`Applied suggestion to ${p.name}: ${suggestion.direction} x${suggestion.strength}`);
-              return { ...p, suggestedAdjustment: suggestion };
-            }
-            
-            return p;
-          });
-        });
+          setPokemonList(currentList => 
+            currentList.map(p => {
+              const suggestion = suggestionMap.get(p.id);
+              
+              if (suggestion) {
+                console.log(`Applied suggestion to ${p.name}: ${suggestion.direction} x${suggestion.strength}`);
+                return { ...p, suggestedAdjustment: suggestion };
+              }
+              
+              return p;
+            })
+          );
+        } else {
+          console.log("Cannot apply suggestions yet: Pokemon list is empty");
+        }
         
         return suggestionMap;
       } else {
@@ -221,15 +222,46 @@ export const useRankingSuggestions = (
       console.error("❌ Error loading suggestions from localStorage:", e);
       return new Map<number, RankingSuggestion>();
     }
-  }, [setPokemonList]);
+  }, [pokemonList, setPokemonList]);
   
-  // Load saved suggestions when the hook is initialized
+  // Load saved suggestions when the hook initializes
   useEffect(() => {
     console.log("⚙️ useRankingSuggestions hook initialized");
-    if (!suggestionsLoaded) {
+    
+    if (!initDoneRef.current) {
+      initDoneRef.current = true;
+      console.log("🔄 useRankingSuggestions: First mount, loading suggestions");
+      loadSavedSuggestions();
+    } else if (!suggestionsLoaded) {
+      console.log("🔄 useRankingSuggestions: Suggestions not loaded yet, loading now");
       loadSavedSuggestions();
     }
   }, [suggestionsLoaded, loadSavedSuggestions]);
+  
+  // Apply suggestions when pokemonList changes significantly
+  useEffect(() => {
+    if (suggestionsLoaded && pokemonList.length > 0 && activeSuggestions.size > 0) {
+      // Check if suggestions are already applied to avoid infinite loops
+      const hasAnySuggestion = pokemonList.some(p => p.suggestedAdjustment);
+      
+      if (!hasAnySuggestion) {
+        console.log("🔄 useRankingSuggestions: pokemonList updated but no suggestions applied, applying now");
+        
+        setPokemonList(currentList => 
+          currentList.map(p => {
+            const suggestion = activeSuggestions.get(p.id);
+            
+            if (suggestion) {
+              console.log(`Re-applied suggestion to ${p.name}: ${suggestion.direction} x${suggestion.strength}`);
+              return { ...p, suggestedAdjustment: suggestion };
+            }
+            
+            return p;
+          })
+        );
+      }
+    }
+  }, [pokemonList, activeSuggestions, suggestionsLoaded, setPokemonList]);
   
   // Debug effect to monitor suggestion counts
   useEffect(() => {

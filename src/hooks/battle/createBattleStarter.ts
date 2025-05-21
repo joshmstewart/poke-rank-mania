@@ -49,6 +49,7 @@ export const createBattleStarter = (
     let suggestedCount = 0;
     let unusedCount = 0;
     
+    // First, check each Pokemon in the current rankings for suggestions
     currentRankings.forEach(p => {
       const rankedP = p as RankedPokemon;
       if (rankedP.suggestedAdjustment) {
@@ -146,7 +147,7 @@ export const createBattleStarter = (
     }, pool[0]);
     
     console.log(
-      `🧪 Pairing '${suggested.name}' (arrow ${direction} x${strength}) vs '${opponent.name}'`
+      `🧪 Pairing '${suggested.name}' (${direction} x${strength}) vs '${opponent.name}'`
     );
     
     return opponent;

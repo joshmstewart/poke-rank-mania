@@ -13,6 +13,9 @@ export const useRankings = (allPokemon: Pokemon[]) => {
   });
   const [frozenPokemon, setFrozenPokemon] = useState<Record<number, { [tier: string]: boolean }>>({});
   
+  // Store previous rankings to ensure we don't lose suggestions
+  const previousRankingsRef = useRef<RankedPokemon[]>([]);
+  
   // Keep a reference to the currently active suggestions for debugging
   const activeRankingSuggestionsRef = useRef<Map<number, any>>(new Map());
 
@@ -59,11 +62,20 @@ export const useRankings = (allPokemon: Pokemon[]) => {
     localStorage.setItem("pokemon-frozen-pokemon", JSON.stringify(frozenPokemon));
   }, [frozenPokemon]);
 
+  // Update previous rankings ref when finalRankings changes
+  useEffect(() => {
+    if (finalRankings.length > 0) {
+      previousRankingsRef.current = finalRankings;
+      console.log(`📌 useRankings: Updated previousRankingsRef with ${finalRankings.length} Pokémon`);
+    }
+  }, [finalRankings]);
+
   // Force reload suggestions when rankings are empty but we have stored suggestions
   const forceReloadSuggestions = useCallback(() => {
     if (finalRankings.length === 0 && loadSavedSuggestions) {
       console.log("📣 useRankings: Forcing reload of saved suggestions");
-      loadSavedSuggestions();
+      const loaded = loadSavedSuggestions();
+      console.log(`📣 useRankings: Loaded ${loaded.size} suggestions from localStorage`);
     }
   }, [finalRankings.length, loadSavedSuggestions]);
   
@@ -76,20 +88,37 @@ export const useRankings = (allPokemon: Pokemon[]) => {
   const generateRankings = (results: SingleBattle[]): RankedPokemon[] => {
     console.log(`👉 generateRankings: Starting with ${finalRankings.length} existing rankings`);
     
-    // Count how many existing rankings have suggestions
-    const existingSuggestions = finalRankings.filter(p => p.suggestedAdjustment);
-    console.log(`📊 generateRankings: Found ${existingSuggestions.length} existing suggestions`);
+    // Track all existing suggestions from previous rankings to ensure they're preserved
+    const existingSuggestionsMap = new Map<number, any>();
     
-    // Log all the existing suggestions for debugging
-    if (existingSuggestions.length > 0) {
-      console.log("🔎 Existing suggestions:");
-      existingSuggestions.forEach(p => {
-        console.log(`- ${p.name}: ${p.suggestedAdjustment?.direction} x${p.suggestedAdjustment?.strength} (used: ${p.suggestedAdjustment?.used})`);
+    // First gather suggestions from the current finalRankings
+    finalRankings.forEach(pokemon => {
+      if (pokemon.suggestedAdjustment) {
+        existingSuggestionsMap.set(pokemon.id, pokemon.suggestedAdjustment);
+        console.log(`📝 Preserving suggestion from finalRankings for ${pokemon.name}: ${pokemon.suggestedAdjustment.direction} x${pokemon.suggestedAdjustment.strength}`);
+      }
+    });
+    
+    // Next check previousRankingsRef for any missed suggestions
+    previousRankingsRef.current.forEach(pokemon => {
+      if (pokemon.suggestedAdjustment && !existingSuggestionsMap.has(pokemon.id)) {
+        existingSuggestionsMap.set(pokemon.id, pokemon.suggestedAdjustment);
+        console.log(`🔍 Found additional suggestion in previousRankingsRef for ${pokemon.name}`);
+      }
+    });
+    
+    // Finally check activeRankingSuggestionsRef from the hook
+    if (activeRankingSuggestionsRef.current) {
+      activeRankingSuggestionsRef.current.forEach((suggestion, pokemonId) => {
+        if (!existingSuggestionsMap.has(pokemonId)) {
+          const pokemon = allPokemon.find(p => p.id === pokemonId);
+          existingSuggestionsMap.set(pokemonId, suggestion);
+          console.log(`🔍 Found suggestion in activeSuggestions map for ${pokemon?.name || pokemonId}`);
+        }
       });
     }
     
-    // Also check the suggestions map from the hook
-    console.log(`🔍 generateRankings: activeSuggestions map has ${activeRankingSuggestionsRef.current?.size || 0} items`);
+    console.log(`📊 generateRankings: Found ${existingSuggestionsMap.size} total suggestions to preserve`);
     
     // Create a map to track battle counts
     const countMap = new Map<number, number>();
@@ -125,15 +154,8 @@ export const useRankings = (allPokemon: Pokemon[]) => {
         // Get current frozen status for this Pokemon (or initialize if not exists)
         const pokemonFrozenStatus = frozenPokemon[p.id] || {};
 
-        // Check if this Pokemon has a suggestion in the existing rankings
-        const existingRankedPokemon = finalRankings.find(rp => rp.id === p.id);
-        let suggestedAdjustment = existingRankedPokemon?.suggestedAdjustment;
-        
-        // If there's no suggestion from existing rankings, check the activeSuggestions map
-        if (!suggestedAdjustment && activeRankingSuggestionsRef.current && activeRankingSuggestionsRef.current.has(p.id)) {
-          suggestedAdjustment = activeRankingSuggestionsRef.current.get(p.id);
-          console.log(`📌 Found suggestion for ${p.name} in activeSuggestions map: ${suggestedAdjustment.direction} x${suggestedAdjustment.strength}`);
-        }
+        // IMPORTANT: Get suggestion from our comprehensive map
+        const suggestedAdjustment = existingSuggestionsMap.get(p.id);
         
         // Log if we're preserving a suggestion
         if (suggestedAdjustment) {
@@ -146,7 +168,7 @@ export const useRankings = (allPokemon: Pokemon[]) => {
           count: countMap.get(p.id) || 0,
           confidence: normalizedConfidence,
           isFrozenForTier: pokemonFrozenStatus,
-          suggestedAdjustment
+          suggestedAdjustment // Assign from our preserved suggestions map
         };
       })
       // Sort by the conservative TrueSkill estimate (higher is better)
