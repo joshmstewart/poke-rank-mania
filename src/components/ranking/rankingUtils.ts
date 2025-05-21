@@ -11,8 +11,8 @@ export const getPokemonGeneration = (pokemonId: number) => {
 export const detectPokemonFormType = (pokemonName: string): string | null => {
   const name = pokemonName.toLowerCase();
   
-  // Check for costume forms (Pikachu variants) - check this FIRST
-  if (name.includes("pikachu") && (
+  // Check for costume forms (Pikachu variants and crowned forms) - check this FIRST
+  if ((name.includes("pikachu") && (
       name.includes("cap") || 
       name.includes("phd") || 
       name.includes("cosplay") || 
@@ -20,7 +20,8 @@ export const detectPokemonFormType = (pokemonName: string): string | null => {
       name.includes("libre") || 
       name.includes("pop-star") || 
       name.includes("rock-star") ||
-      name.includes("partner"))) {
+      name.includes("partner"))) ||
+      name.includes("crowned")) {
     return "Costume Pokémon";
   }
   

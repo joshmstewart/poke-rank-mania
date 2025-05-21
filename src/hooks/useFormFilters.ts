@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { PokemonFormType } from "@/components/settings/FormFiltersSelector";
 import { Pokemon } from "@/services/pokemon";
@@ -71,8 +72,8 @@ export const useFormFilters = () => {
     const name = pokemon.name.toLowerCase();
     
     // Check for costumes (Pikachu caps and cosplay forms) - check this FIRST
-    // Expanded pattern to catch all costume Pikachu variants
-    if (name.includes("pikachu") && (
+    // Expanded pattern to catch all costume Pikachu variants and crowned forms
+    if ((name.includes("pikachu") && (
         name.includes("cap") || 
         name.includes("phd") || 
         name.includes("cosplay") || 
@@ -80,7 +81,8 @@ export const useFormFilters = () => {
         name.includes("libre") || 
         name.includes("pop-star") || 
         name.includes("rock-star") ||
-        name.includes("partner"))) {
+        name.includes("partner"))) || 
+        name.includes("crowned")) {
       return "costumes";
     }
     

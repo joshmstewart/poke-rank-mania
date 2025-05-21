@@ -9,7 +9,7 @@ export const logPokemonVariations = (allPokemon: Pokemon[]) => {
     // Special form patterns to check for - Order matters here!
     const specialPatterns = [
       // Check costume Pikachu first to ensure correct categorization
-      { name: "Costume Pokémon", pattern: /(pikachu.*cap|pikachu-belle|pikachu-libre|pikachu-phd|pikachu-pop-star|pikachu-rock-star|pikachu-cosplay|pikachu-partner)/i },
+      { name: "Costume Pokémon", pattern: /(pikachu.*cap|pikachu-belle|pikachu-libre|pikachu-phd|pikachu-pop-star|pikachu-rock-star|pikachu-cosplay|pikachu-partner|crowned)/i },
       // Make Origin & Primal more strict to avoid false matches
       { name: "Origin & Primal Forms", pattern: /(origin|primal)(?!.*pikachu)/i },
       { name: "Mega & Gigantamax Forms", pattern: /(mega|gmax)/i },
