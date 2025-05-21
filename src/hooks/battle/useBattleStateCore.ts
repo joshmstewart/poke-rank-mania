@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useEffect } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { useBattleStarterIntegration } from "@/hooks/battle/useBattleStarterIntegration";
@@ -106,14 +107,40 @@ export const useBattleStateCore = (
     markSuggestionUsed
   );
   
+  // VERIFICATION: Check if suggestions exist in localStorage on mount
+  useEffect(() => {
+    const savedSuggestions = localStorage.getItem('pokemon-active-suggestions');
+    console.log("🔍 MOUNT VERIFICATION: Suggestions in localStorage:", savedSuggestions ? "YES" : "NO");
+    if (savedSuggestions) {
+      try {
+        const parsed = JSON.parse(savedSuggestions);
+        const count = Object.keys(parsed).length;
+        console.log(`🔢 Found ${count} suggestions in localStorage`);
+      } catch (e) {
+        console.error("Error parsing saved suggestions:", e);
+      }
+    }
+  }, []);
+  
   // This effect ensures that when we show a milestone, we mark that we need to reload suggestions
   // when we continue battling
   useEffect(() => {
     if (showingMilestone) {
       console.log("🔄 useBattleStateCore: Milestone shown, marking to reload suggestions when continuing");
       setNeedsToReloadSuggestions(true);
+      
+      // VERIFICATION: Check if current battle contains any suggestions
+      const hasSuggestion = currentBattle.some(p => (p as RankedPokemon).suggestedAdjustment);
+      console.log(`🔍 Before milestone: Found ${hasSuggestion ? "some" : "0"} suggestions in current battle`);
+      
+      // We should also reload suggestions here to ensure they're properly loaded into finalRankings
+      setTimeout(() => {
+        console.log("🧮 Generating milestone rankings (preserving suggestions)");
+        const loadedSuggestions = loadSavedSuggestions();
+        console.log(`⭐ useBattleStateCore: Milestone shown: Loaded ${loadedSuggestions.size} suggestions`);
+      }, 0);
     }
-  }, [showingMilestone]);
+  }, [showingMilestone, loadSavedSuggestions]);
   
   // This effect ensures that when we resume battling after a milestone,
   // suggestions from localStorage are reloaded and applied
@@ -132,6 +159,12 @@ export const useBattleStateCore = (
       if (finalRankings.length > 0) {
         console.log("⭐ useBattleStateCore: Forcing ranking generation to ensure suggestions are preserved after milestone");
         generateRankings(battleResults);
+        
+        // VERIFICATION: Check if suggestions were successfully applied
+        setTimeout(() => {
+          const suggestedCount = finalRankings.filter(p => p.suggestedAdjustment).length;
+          console.log(`📊 VERIFY: After reloading, ${suggestedCount} Pokemon have suggestions applied`);
+        }, 100);
       }
     }
   }, [showingMilestone, needsToReloadSuggestions, loadSavedSuggestions, finalRankings.length, generateRankings, battleResults]);

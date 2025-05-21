@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { getPokemonTypeColor } from "./utils/pokemonTypeColors";
 import { getPreferredImageUrl } from "@/components/settings/ImagePreferenceSelector";
@@ -33,6 +33,7 @@ const PokemonThumbnail: React.FC<PokemonThumbnailProps> = ({
   const normalizedId = normalizePokedexNumber(pokemon.id);
   const formattedName = capitalizeSpecialForms(pokemon.name);
   const generation = getPokemonGeneration(pokemon.id);
+  const [imageSrc, setImageSrc] = useState(getPreferredImageUrl(pokemon.id));
   
   // Check if the pokemon has ranking properties (is a RankedPokemon)
   const isRankedPokemon = (pokemon: Pokemon): pokemon is RankedPokemon => {
@@ -48,6 +49,22 @@ const PokemonThumbnail: React.FC<PokemonThumbnailProps> = ({
   const [activeStrength, setActiveStrength] = useState<1 | 2 | 3>(
     rankedPokemon?.suggestedAdjustment?.strength || 1
   );
+  
+  // Load image on component mount and if Pokemon changes
+  useEffect(() => {
+    const preferredUrl = getPreferredImageUrl(pokemon.id);
+    console.log(`🖼️ PokemonThumbnail: Loading image for ${pokemon.name} from: ${preferredUrl}`);
+    setImageSrc(preferredUrl);
+  }, [pokemon.id, pokemon.name]);
+  
+  // Handle image load errors
+  const handleImageError = () => {
+    console.log(`❌ Image failed to load for ${pokemon.name}, trying fallback`);
+    // Try a fallback
+    const fallbackUrl = getPreferredImageUrl(pokemon.id, 1); // Explicit fallback index
+    console.log(`🖼️ Using fallback URL: ${fallbackUrl}`);
+    setImageSrc(fallbackUrl);
+  };
   
   // Handle direction change (up/down arrows)
   const handleDirectionChange = (direction: "up" | "down") => {
@@ -109,14 +126,11 @@ const PokemonThumbnail: React.FC<PokemonThumbnailProps> = ({
           <div className={`p-1 flex items-center justify-center ${typeColor} bg-opacity-20`}>
             <div className="w-full aspect-square relative flex items-center justify-center max-h-20">
               <img 
-                src={getPreferredImageUrl(pokemon.id)} 
+                src={imageSrc} 
                 alt={formattedName} 
                 className="object-contain max-h-16 p-1"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  // Try a fallback if first image fails
-                  target.src = getPreferredImageUrl(pokemon.id, 1);
-                }}
+                onLoad={() => console.log(`🖼️ Image loaded for Pokemon: ${pokemon.name} (${imageSrc})`)}
+                onError={handleImageError}
               />
             </div>
           </div>

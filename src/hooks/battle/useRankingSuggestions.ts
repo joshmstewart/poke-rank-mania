@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useEffect, useRef } from "react";
 import { RankedPokemon, RankingSuggestion } from "@/services/pokemon";
 import { toast } from "@/hooks/use-toast";
@@ -53,6 +54,10 @@ export const useRankingSuggestions = (
     
     // Save suggestions to localStorage for persistence
     saveActiveSuggestions(activeSuggestionsRef.current);
+    
+    // VERIFICATION: Print the current localStorage content right after saving
+    const savedContent = localStorage.getItem('pokemon-active-suggestions');
+    console.log(`🔍 VERIFY: After saving suggestion for ${pokemon.name}, localStorage contains:`, savedContent);
     
     return suggestion;
   }, [setPokemonList]);
@@ -166,7 +171,13 @@ export const useRankingSuggestions = (
       
       const suggestionsObject = Object.fromEntries(suggestions);
       localStorage.setItem('pokemon-active-suggestions', JSON.stringify(suggestionsObject));
-      console.log(`💾 Saved ${suggestions.size} suggestions to localStorage`);
+      console.log(`💾 SAVED ${suggestions.size} suggestions to localStorage`);
+      
+      // Print suggestion details for debugging
+      Array.from(suggestions.entries()).forEach(([id, suggestion]) => {
+        const pokemonName = pokemonList.find(p => p.id === id)?.name || `#${id}`;
+        console.log(`  - ${pokemonName}: ${suggestion.direction} x${suggestion.strength} (used: ${suggestion.used})`);
+      });
     } catch (e) {
       console.error("❌ Error saving suggestions to localStorage:", e);
     }
@@ -179,12 +190,20 @@ export const useRankingSuggestions = (
       const savedSuggestions = localStorage.getItem('pokemon-active-suggestions');
       
       if (savedSuggestions) {
+        console.log("📋 VERIFY: Raw suggestions data from localStorage:", savedSuggestions);
+        
         const parsedSuggestions = JSON.parse(savedSuggestions);
         const suggestionMap = new Map(Object.entries(parsedSuggestions).map(
           ([id, suggestion]) => [Number(id), suggestion as RankingSuggestion]
         ));
         
         console.log(`📂 Loaded ${suggestionMap.size} saved suggestions from localStorage`);
+        
+        // Print out each suggestion for verification
+        Array.from(suggestionMap.entries()).forEach(([id, suggestion]) => {
+          console.log(`  - Pokemon #${id}: ${suggestion.direction} x${suggestion.strength} (used: ${suggestion.used})`);
+        });
+        
         activeSuggestionsRef.current = suggestionMap;
         suggestionsLoadedRef.current = true;
         

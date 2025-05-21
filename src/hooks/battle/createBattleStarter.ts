@@ -30,14 +30,23 @@ export const createBattleStarter = (
     }
 
     // Find Pokémon with active suggestions that haven't been used yet
-    const suggestedPokemon = filteredPokemon.filter(p => 
-      (p as RankedPokemon).suggestedAdjustment && 
-      !(p as RankedPokemon).suggestedAdjustment?.used
-    );
+    const suggestedPokemon = filteredPokemon.filter(p => {
+      const rankedP = p as RankedPokemon;
+      return rankedP.suggestedAdjustment && 
+        !rankedP.suggestedAdjustment.used;
+    });
     
     console.log(`🎯 createBattleStarter: Found ${suggestedPokemon.length} Pokémon with unused suggestions`);
     
-    // If we have suggestions, prioritize them
+    // VERIFICATION: Log each suggested Pokemon for debugging
+    if (suggestedPokemon.length > 0) {
+      suggestedPokemon.forEach(p => {
+        const suggestion = (p as RankedPokemon).suggestedAdjustment;
+        console.log(`  - Suggestion for ${p.name}: ${suggestion?.direction} x${suggestion?.strength} (used: ${suggestion?.used})`);
+      });
+    }
+    
+    // If we have suggestions, prioritize them with 100% chance (up from before)
     if (suggestedPokemon.length > 0) {
       // Always include at least one suggested Pokémon
       const selectedSuggestion = suggestedPokemon[Math.floor(Math.random() * suggestedPokemon.length)];
@@ -60,6 +69,9 @@ export const createBattleStarter = (
       const shuffledBattle = shuffleArray(battlePokemon);
       
       console.log(`🆕 createBattleStarter: Created battle with suggested Pokémon: ${shuffledBattle.map(p => p.name).join(', ')}`);
+      console.log(`🔍 VERIFY: Battle includes suggested Pokémon ${selectedSuggestion.name} with suggestion:`, 
+        (selectedSuggestion as RankedPokemon).suggestedAdjustment);
+      
       setCurrentBattle(shuffledBattle);
       return shuffledBattle;
     }

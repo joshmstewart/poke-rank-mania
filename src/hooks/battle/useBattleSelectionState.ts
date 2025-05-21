@@ -47,7 +47,7 @@ export const useBattleSelectionState = () => {
     setSelectedPokemon
   );
 
-  const startNewBattleAdapter = (pokemonList: Pokemon[], battleType: BattleType) => {
+  const startNewBattleAdapter = (pokemonList: Pokemon[], battleType: BattleType): Pokemon[] => {
     return startNewBattle(battleType);
   };
 
