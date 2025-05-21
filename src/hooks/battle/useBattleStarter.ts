@@ -145,7 +145,7 @@ export const createBattleStarter = (
     }
   };
 
-  const startNewBattle = (battleType: BattleType) => {
+  const startNewBattle = (battleType: BattleType): Pokemon[] => {
     battleCountRef++;
     const battleSize = battleType === "pairs" ? 2 : 3;
 

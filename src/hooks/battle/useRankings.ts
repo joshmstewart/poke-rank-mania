@@ -197,6 +197,7 @@ export const useRankings = (allPokemon: Pokemon[]) => {
     removeSuggestion,
     markSuggestionUsed,
     clearAllSuggestions,
-    findNextSuggestion
+    findNextSuggestion,
+    loadSavedSuggestions  // Expose the loadSavedSuggestions function
   };
 };

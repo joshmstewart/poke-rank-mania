@@ -43,12 +43,12 @@ export const useBattleStarterIntegration = (
   }, [setCurrentBattle]);
 
   // Start a new battle
-  const startNewBattle = useCallback((battleType: BattleType) => {
+  const startNewBattle = useCallback((battleType: BattleType): Pokemon[] => {
     console.log("startNewBattle with type:", battleType);
     
     if (!allPokemon || allPokemon.length < 2) {
       console.warn("Not enough Pokémon for a battle.");
-      return;
+      return [];
     }
 
     // Update localStorage with battle type
@@ -58,10 +58,12 @@ export const useBattleStarterIntegration = (
       // Start a new battle using our battle starter
       if (battleStarter) {
         console.log("Using battleStarter to start new battle with", battleType);
-        battleStarter.startNewBattle(battleType);
+        const battlePokemon = battleStarter.startNewBattle(battleType);
         
         // Reset selected Pokemon
         setSelectedPokemon([]);
+        
+        return battlePokemon;
       } else {
         console.error("Battle starter not initialized");
         // Initialize with random pokemon as fallback
@@ -71,7 +73,9 @@ export const useBattleStarterIntegration = (
           console.log("Fallback battle started with pokemon:", selectedForBattle.map(p => p.name));
           setCurrentBattle(selectedForBattle);
           setSelectedPokemon([]);
+          return selectedForBattle;
         }
+        return [];
       }
     } catch (error) {
       console.error("Error starting new battle:", error);
@@ -84,10 +88,12 @@ export const useBattleStarterIntegration = (
           setCurrentBattle(selectedForBattle);
           setSelectedPokemon([]);
           console.log("Emergency battle recovery with:", selectedForBattle.map(p => p.name));
+          return selectedForBattle;
         }
       } catch (fallbackError) {
         console.error("Even fallback battle setup failed:", fallbackError);
       }
+      return [];
     }
   }, [battleStarter, setCurrentBattle, allPokemon, setSelectedPokemon]);
 

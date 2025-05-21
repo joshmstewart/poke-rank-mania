@@ -21,12 +21,12 @@ export const createBattleStarter = (
   currentRankings: Pokemon[],
   setCurrentBattle: React.Dispatch<React.SetStateAction<Pokemon[]>>
 ) => {
-  const startNewBattle = (battleType: BattleType) => {
+  const startNewBattle = (battleType: BattleType): Pokemon[] => {
     console.log("🔄 createBattleStarter: Starting new battle with type:", battleType);
     
     if (!filteredPokemon || filteredPokemon.length < 2) {
       console.error("Not enough Pokémon available for battle");
-      return;
+      return [];
     }
 
     // Find Pokémon with active suggestions that haven't been used yet
@@ -61,7 +61,7 @@ export const createBattleStarter = (
       
       console.log(`🆕 createBattleStarter: Created battle with suggested Pokémon: ${shuffledBattle.map(p => p.name).join(', ')}`);
       setCurrentBattle(shuffledBattle);
-      return;
+      return shuffledBattle;
     }
     
     // If no suggestions, proceed with normal selection logic
@@ -73,8 +73,10 @@ export const createBattleStarter = (
       const selected = shuffled.slice(0, battleSize);
       console.log(`🆕 createBattleStarter: Created random battle: ${selected.map(p => p.name).join(', ')}`);
       setCurrentBattle(selected);
+      return selected;
     } else {
       console.error("Not enough Pokémon for the selected battle type");
+      return [];
     }
   };
 
