@@ -70,7 +70,7 @@ export const useFormFilters = () => {
       return false;
     }
     
-    // Check for regional variants (e.g., alolan, galarian, hisuian)
+    // Check for regional variants (expanded to include paldean variants)
     if ((name.includes("alolan") || 
          name.includes("galarian") || 
          name.includes("hisuian") || 
@@ -78,7 +78,7 @@ export const useFormFilters = () => {
       return false;
     }
     
-    // Check for gender differences
+    // Check for gender differences (expanded to catch more naming patterns)
     if ((name.includes("female") || 
          name.includes("male") || 
          name.includes("-f") || 
@@ -86,7 +86,7 @@ export const useFormFilters = () => {
       return false;
     }
     
-    // Check for special forms
+    // Check for special forms (expanded to include more form types)
     if ((name.includes("form") || 
          name.includes("style") || 
          name.includes("mode") || 
@@ -94,7 +94,14 @@ export const useFormFilters = () => {
          name.includes("cloak") ||
          name.includes("rotom-") ||
          name.includes("gmax") ||
-         name.includes("primal")) && !filters.forms) {
+         name.includes("primal") ||
+         name.includes("forme") ||
+         name.includes("origin") ||
+         name.includes("unbound") ||
+         name.includes("gorging") ||
+         name.includes("eternamax") ||
+         name.includes("cap") ||
+         name.includes("-theme")) && !filters.forms) {
       return false;
     }
     

@@ -1,8 +1,8 @@
-
 import { toast } from "@/hooks/use-toast";
 import { Pokemon } from "../types";
 import { generations } from "../data";
 import { fetchPokemonDetails } from "./utils";
+import { useFormFilters } from "@/hooks/useFormFilters";
 
 // Helper function to check if a Pokemon should be included based on current form filters
 const shouldIncludePokemon = (pokemon: { name: string, id: number }) => {
@@ -18,19 +18,25 @@ const shouldIncludePokemon = (pokemon: { name: string, id: number }) => {
         return false;
       }
       
-      // Check for regional variants
-      if ((name.includes("alolan") || name.includes("galarian") || name.includes("hisuian")) && !filters.regional) {
+      // Check for regional variants - expanded to include paldean
+      if ((name.includes("alolan") || name.includes("galarian") || 
+           name.includes("hisuian") || name.includes("paldean")) && !filters.regional) {
         return false;
       }
       
-      // Check for gender differences
-      if ((name.includes("female") || name.includes("male")) && !filters.gender) {
+      // Check for gender differences - expanded to include -f, -m notation
+      if ((name.includes("female") || name.includes("male") || 
+           name.includes("-f") || name.includes("-m")) && !filters.gender) {
         return false;
       }
       
-      // Check for special forms
+      // Check for special forms - expanded to include more form types
       if ((name.includes("form") || name.includes("style") || name.includes("mode") || 
-           name.includes("size") || name.includes("cloak")) && !filters.forms) {
+           name.includes("size") || name.includes("cloak") || name.includes("rotom-") ||
+           name.includes("gmax") || name.includes("primal") || name.includes("forme") ||
+           name.includes("origin") || name.includes("unbound") || name.includes("gorging") ||
+           name.includes("eternamax") || name.includes("cap") || name.includes("-theme")) && 
+          !filters.forms) {
         return false;
       }
     }

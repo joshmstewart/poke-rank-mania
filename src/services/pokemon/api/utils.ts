@@ -1,3 +1,4 @@
+
 import { Pokemon } from "../types";
 import { PokemonImageType, getPreferredImageType } from "@/components/settings/ImagePreferenceSelector";
 
@@ -49,10 +50,22 @@ export async function fetchPokemonDetails(id: number): Promise<Pokemon> {
   let flavorText = "";
   
   try {
+    // First check if this is a special form Pokémon (by checking if it's beyond the standard National Dex)
+    const isSpecialForm = id > 10000;
+    
+    // For special forms, we need to handle them differently
+    if (isSpecialForm) {
+      console.log(`Fetching special form Pokémon with ID: ${id}`);
+    }
+    
     const detailResponse = await fetch(`https://pokeapi.co/api/v2/pokemon/${id}`);
     if (detailResponse.ok) {
       const detailData = await detailResponse.json();
       name = detailData.name.charAt(0).toUpperCase() + detailData.name.slice(1);
+      
+      // Convert dashes to spaces in the name for better readability
+      name = name.replace(/-/g, ' ');
+      
       types = detailData.types.map((type: any) => type.type.name.charAt(0).toUpperCase() + type.type.name.slice(1));
     } else {
       console.warn(`Failed to fetch Pokemon details for #${id}, using fallback data`);
@@ -60,7 +73,10 @@ export async function fetchPokemonDetails(id: number): Promise<Pokemon> {
   
     // Get species data for flavor text
     try {
-      const speciesResponse = await fetch(`https://pokeapi.co/api/v2/pokemon-species/${id}`);
+      // For special forms, we need to get the base species (subtract 10000 and check for special cases)
+      const speciesId = isSpecialForm ? Math.floor(id % 10000) : id;
+      
+      const speciesResponse = await fetch(`https://pokeapi.co/api/v2/pokemon-species/${speciesId}`);
       if (speciesResponse.ok) {
         const speciesData = await speciesResponse.json();
         const englishFlavorText = speciesData.flavor_text_entries.find(
