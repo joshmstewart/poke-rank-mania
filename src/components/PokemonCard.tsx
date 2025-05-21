@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -49,6 +50,7 @@ const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
   const handleImageLoad = () => setImageLoaded(true);
   const handleImageError = () => {
     if (retryCount < 3) {
+      // Use default sprites as first fallback
       const nextUrl = getPreferredImageUrl(pokemon.id, retryCount + 1);
       setRetryCount(c => c + 1);
       setCurrentImageUrl(nextUrl);

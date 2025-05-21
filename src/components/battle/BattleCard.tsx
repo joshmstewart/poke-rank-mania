@@ -1,3 +1,4 @@
+
 import React, { memo, useCallback, useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Pokemon } from "@/services/pokemon";
@@ -24,11 +25,7 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
     setImageLoaded(false);
     setImageError(false);
     setRetryCount(0);
-    const preferredType = localStorage.getItem('pokemon-image-preference') || 'official';
-const url = getPreferredImageUrl(pokemon.id);
-
-
-
+    const url = getPreferredImageUrl(pokemon.id);
     setCurrentImageUrl(url);
     new Image().src = url;
   }, [pokemon.id]);
@@ -43,6 +40,7 @@ const url = getPreferredImageUrl(pokemon.id);
   const handleImageLoad = () => setImageLoaded(true);
   const handleImageError = () => {
     if (retryCount < 3) {
+      // Use default sprite as first fallback
       setRetryCount(c => c + 1);
       setCurrentImageUrl(getPreferredImageUrl(pokemon.id, retryCount + 1));
     } else {

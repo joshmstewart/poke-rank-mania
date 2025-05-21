@@ -22,8 +22,8 @@ export function getPokemonImageUrl(id: number, fallbackLevel: number = 0): strin
     }
   };
 
-  // List of all image types for fallbacks
-  const allTypes: PokemonImageType[] = ["official", "home", "default", "dream"];
+  // Changed fallback order to make default sprites the primary fallback
+  const allTypes: PokemonImageType[] = ["default", "official", "home", "dream"];
   
   // If we're at fallback level 0, use the preferred type
   if (fallbackLevel === 0) {
@@ -37,7 +37,7 @@ export function getPokemonImageUrl(id: number, fallbackLevel: number = 0): strin
   // Remove the preferred type from the list since it was already tried
   fallbackTypes = fallbackTypes.filter(type => type !== preferredType);
   
-  // Add the preferred type at the end as a last resort (if everything else fails)
+  // Add the preferred type at the end as a last resort
   fallbackTypes.push(preferredType);
   
   // Get the appropriate fallback

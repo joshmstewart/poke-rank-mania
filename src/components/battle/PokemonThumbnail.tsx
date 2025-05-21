@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { getPokemonTypeColor } from "./utils/pokemonTypeColors";
@@ -52,21 +51,16 @@ const PokemonThumbnail: React.FC<PokemonThumbnailProps> = ({
   
   // Load image on component mount and if Pokemon changes
   useEffect(() => {
-    const preferredType = localStorage.getItem('pokemon-image-preference') || 'official';
-const url = getPreferredImageUrl(pokemon.id);
-
-
-
-console.log(`🖼️ PokemonThumbnail: Loading image for ${pokemon.name} from: ${url}`);
-setImageSrc(url);
-
+    const url = getPreferredImageUrl(pokemon.id);
+    console.log(`🖼️ PokemonThumbnail: Loading image for ${pokemon.name} from: ${url}`);
+    setImageSrc(url);
   }, [pokemon.id, pokemon.name]);
   
-  // Handle image load errors
+  // Handle image load errors - prioritize default sprite as first fallback
   const handleImageError = () => {
     console.log(`❌ Image failed to load for ${pokemon.name}, trying fallback`);
-    // Try a fallback
-    const fallbackUrl = getPreferredImageUrl(pokemon.id, 1); // Explicit fallback index
+    // Try default sprite as first fallback
+    const fallbackUrl = getPreferredImageUrl(pokemon.id, 1);
     console.log(`🖼️ Using fallback URL: ${fallbackUrl}`);
     setImageSrc(fallbackUrl);
   };
