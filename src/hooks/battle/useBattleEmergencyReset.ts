@@ -79,10 +79,16 @@ export const useBattleEmergencyReset = (
             
             // If both are present, we might have tracking issues
             if (recentlyUsed && lastBattle) {
+              const resetButton = React.createElement(Button, {
+                variant: "outline",
+                size: "sm",
+                onClick: performEmergencyReset
+              }, "Reset");
+              
               toast({
                 title: "Battle System Stuck?",
                 description: "Click to reset and get new Pokémon",
-                action: <Button variant="outline" size="sm" onClick={performEmergencyReset}>Reset</Button>,
+                action: resetButton,
                 duration: 10000
               });
             }

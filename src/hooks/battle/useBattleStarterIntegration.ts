@@ -1,3 +1,4 @@
+
 import { useMemo, useCallback, useEffect, useRef, useState } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
@@ -5,6 +6,7 @@ import { createBattleStarter } from "./createBattleStarter";
 import { toast } from "@/hooks/use-toast";
 import { useBattleEmergencyReset } from "./useBattleEmergencyReset";
 import { Button } from "@/components/ui/button";
+import * as React from "react";
 
 export const useBattleStarterIntegration = (
   allPokemon: Pokemon[],
@@ -133,28 +135,29 @@ export const useBattleStarterIntegration = (
         
         setIsStuckInSameBattle(true);
         
+        // Create reset button element
+        const resetButton = React.createElement(Button, {
+          variant: "destructive",
+          size: "sm",
+          onClick: () => { 
+            performEmergencyReset(); 
+            recentBattlesRef.current = []; 
+            setIsStuckInSameBattle(false); 
+          }
+        }, "Reset");
+        
         // Show toast with reset option
         toast({
           title: "System Stuck",
           description: "The battle system is showing the same Pokemon repeatedly. Click to reset.",
-          action: <Button 
-            variant="destructive" 
-            size="sm" 
-            onClick={() => { 
-              performEmergencyReset(); 
-              recentBattlesRef.current = []; 
-              setIsStuckInSameBattle(false); 
-            }}
-          >
-            Reset
-          </Button>,
+          action: resetButton,
           duration: 15000
         });
       } else {
         setIsStuckInSameBattle(false);
       }
     }
-  }, [recentBattlesRef.current.length]);
+  }, [recentBattlesRef.current.length, performEmergencyReset]);
 
   // Start a new battle with forcefully different Pokemon each time
   const startNewBattle = useCallback((battleType: BattleType): Pokemon[] => {
