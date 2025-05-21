@@ -1,5 +1,5 @@
 
-import { useEffect } from "react";
+import { useEffect, useCallback } from "react";
 import * as React from "react";
 import { Pokemon } from "@/services/pokemon";
 import { toast } from "@/hooks/use-toast";
@@ -15,14 +15,24 @@ export const useBattleEmergencyReset = (
   allPokemon: Pokemon[]
 ) => {
   // Function to completely reset battle state and force new selection
-  const performEmergencyReset = () => {
+  const performEmergencyReset = useCallback(() => {
     console.log("🚨 EMERGENCY: Performing complete battle reset");
     
     try {
-      // Clear all localStorage items related to battle selection
-      localStorage.removeItem('pokemon-battle-recently-used');
-      localStorage.removeItem('pokemon-battle-last-battle');
-      localStorage.removeItem('pokemon-ranker-battle-history');
+      // Clear ALL localStorage items related to battle selection
+      const keysToRemove = [
+        'pokemon-battle-recently-used',
+        'pokemon-battle-last-battle',
+        'pokemon-ranker-battle-history',
+        'pokemon-battle-history',
+        'pokemon-battle-tracking',
+        'pokemon-battle-seen'
+      ];
+      
+      keysToRemove.forEach(key => {
+        console.log(`🧹 Clearing localStorage key: ${key}`);
+        localStorage.removeItem(key);
+      });
       
       // Create completely new battle with guaranteed different Pokémon
       if (allPokemon && allPokemon.length >= 2) {
@@ -37,12 +47,26 @@ export const useBattleEmergencyReset = (
           const newBattle = shuffled.slice(0, 2); // Always use pairs for emergency
           
           console.log(`🆕 EMERGENCY: Created new battle with: ${newBattle.map(p => p.name).join(', ')}`);
+          
+          // Dispatch a custom event to notify the system of a forced battle change
+          const resetEvent = new CustomEvent('emergency-battle-reset', {
+            detail: { newBattle, previousBattle: currentBattle }
+          });
+          document.dispatchEvent(resetEvent);
+          
           setCurrentBattle(newBattle);
           
           toast({
             title: "Emergency Reset",
             description: "Battle system has been reset with new Pokémon",
-            variant: "default"
+            variant: "default",
+            action: <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => performEmergencyReset()}
+            >
+              Reset Again
+            </Button>
           });
           
           return true;
@@ -53,7 +77,7 @@ export const useBattleEmergencyReset = (
       console.error("Failed during emergency reset:", e);
       return false;
     }
-  };
+  }, [currentBattle, setCurrentBattle, allPokemon]);
   
   // Emergency detection: If we get stuck with the same Pokémon for too long
   useEffect(() => {
@@ -79,17 +103,17 @@ export const useBattleEmergencyReset = (
             });
             
             // If both are present, we might have tracking issues
-            if (recentlyUsed && lastBattle) {
-              const resetButton = React.createElement(Button, {
-                variant: "outline",
-                size: "sm",
-                onClick: performEmergencyReset
-              }, "Reset");
-              
+            if (recentlyUsed || lastBattle) {
               toast({
                 title: "Battle System Stuck?",
                 description: "Click to reset and get new Pokémon",
-                action: resetButton,
+                action: <Button 
+                  variant="outline"
+                  size="sm"
+                  onClick={performEmergencyReset}
+                >
+                  Reset
+                </Button>,
                 duration: 10000
               });
             }
@@ -101,7 +125,20 @@ export const useBattleEmergencyReset = (
       
       return () => clearTimeout(timeoutId);
     }
-  }, [currentBattle, setCurrentBattle, allPokemon]);
+  }, [currentBattle, performEmergencyReset]);
+  
+  // Add a listener to force emergency reset from external components
+  useEffect(() => {
+    const handleForceReset = () => {
+      console.log("🚨 Force emergency reset requested externally");
+      performEmergencyReset();
+    };
+    
+    document.addEventListener('force-emergency-reset', handleForceReset);
+    return () => {
+      document.removeEventListener('force-emergency-reset', handleForceReset);
+    };
+  }, [performEmergencyReset]);
   
   return { performEmergencyReset };
 };
