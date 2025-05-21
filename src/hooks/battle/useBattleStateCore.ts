@@ -54,24 +54,22 @@ export const useBattleStateCore = (
     loadSavedSuggestions
   } = useRankings(allPokemon);
 
-const {
-  resetMilestones,
-  resetMilestoneRankings,
-  calculateCompletionPercentage,
-  getSnapshotForMilestone,
-  milestoneRankings,
-  hitMilestones,
-} = useCompletionTracker(
-  battleResults,
-  setRankingGenerated,
-  setCompletionPercentage,
-  showingMilestone,
-  setShowingMilestone,
-  generateRankings,
-  allPokemon
-);
-
-
+  const {
+    resetMilestones,
+    resetMilestoneRankings,
+    calculateCompletionPercentage,
+    getSnapshotForMilestone,
+    milestoneRankings,
+    hitMilestones,
+  } = useCompletionTracker(
+    battleResults,
+    setRankingGenerated,
+    setCompletionPercentage,
+    showingMilestone,
+    setShowingMilestone,
+    generateRankings,
+    allPokemon
+  );
 
   // Filter Pokemon by generation if a specific generation is selected
   const filteredPokemon = allPokemon.filter(pokemon => {
@@ -111,7 +109,7 @@ const {
   );
   
   // VERIFICATION: Check if suggestions exist in localStorage on mount
-useEffect(() => {
+  useEffect(() => {
     const preferredImageType = localStorage.getItem('preferredImageType');
     console.log("🎯 Loaded initial image preference:", preferredImageType);
 
@@ -131,8 +129,7 @@ useEffect(() => {
         console.error("Error parsing saved suggestions:", e);
       }
     }
-}, []);
-
+  }, []);
   
   // Add explicit event to signal that we should prioritize suggestions
   const triggerSuggestionPrioritization = useCallback(() => {
@@ -227,18 +224,19 @@ useEffect(() => {
   );
 
   useEffect(() => {
-  console.log("🔍 Battle Results Updated:", battleResults.length, "battles");
-}, [battleResults]);
+    console.log("🔍 Battle Results Updated:", battleResults.length, "battles");
+  }, [battleResults]);
 
-useEffect(() => {
-  console.log("🔍 Final Rankings Updated:", finalRankings.length, "Pokémon ranked");
-}, [finalRankings]);
+  useEffect(() => {
+    console.log("🔍 Final Rankings Updated:", finalRankings.length, "Pokémon ranked");
+  }, [finalRankings]);
 
-
+  // Fixed handleContinueBattles implementation to not reference undefined processorRefs
   const handleContinueBattles = useCallback(() => {
     setShowingMilestone(false);
-    if (processorRefs?.resetMilestoneInProgress) {
-      processorRefs.resetMilestoneInProgress();
+    
+    if (resetMilestoneInProgress) {
+      resetMilestoneInProgress();
     }
     
     // When continuing battles, explicitly prioritize any suggestions
@@ -246,7 +244,7 @@ useEffect(() => {
     
     // Start a new battle with current battle type
     startNewBattle(battleType);
-  }, [setShowingMilestone, processorRefs, battleType, startNewBattle]);
+  }, [setShowingMilestone, resetMilestoneInProgress, battleType, startNewBattle]);
 
   return {
     currentBattle,
