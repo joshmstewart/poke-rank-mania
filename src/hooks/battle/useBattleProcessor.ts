@@ -39,7 +39,6 @@ export const useBattleProcessor = (
       const shuffled = [...allPokemon].sort(() => Math.random() - 0.5);
       const battleSize = battleType === "triplets" ? 3 : 2;
       const newBattle = shuffled.slice(0, battleSize);
-      console.log(`🆕 Selected new random battle: ${newBattle.map(p => p.name).join(", ")}`);
       setCurrentBattle(newBattle);
       setSelectedPokemon([]);
     },
@@ -65,12 +64,7 @@ export const useBattleProcessor = (
       return;
     }
 
-    console.log("⚔️ Starting processBattle");
-    console.log("Selected:", selectedPokemonIds);
-    console.log("Current battle:", currentBattlePokemon.map(p => p.name).join(", "));
-
     setIsProcessingResult(true);
-
     try {
       const newResults = processResult(selectedPokemonIds, battleType, currentBattlePokemon);
 
@@ -84,21 +78,17 @@ export const useBattleProcessor = (
       setBattleResults(updatedResults);
       setSelectedPokemon([]);
 
-      // 🔁 Mark used suggestions
       if (markSuggestionUsed) {
         currentBattlePokemon.forEach(p => {
           const ranked = p as RankedPokemon;
           if (ranked.suggestedAdjustment && !ranked.suggestedAdjustment.used) {
-            console.log(`✅ Marking suggestion for ${p.name} as used`);
             markSuggestionUsed(ranked);
           }
         });
       }
 
-      // 🧮 Milestone logic
       const milestone = incrementBattlesCompleted(updatedResults);
       if (typeof milestone === "number") {
-        console.log(`🎉 Milestone hit at ${milestone} battles`);
         milestoneInProgressRef.current = true;
         saveRankings(allPokemon, currentSelectedGeneration, "battle");
         generateRankings(updatedResults);
@@ -121,8 +111,13 @@ export const useBattleProcessor = (
     markSuggestionUsed
   ]);
 
+  const resetMilestoneInProgress = useCallback(() => {
+    milestoneInProgressRef.current = false;
+  }, []);
+
   return {
     processBattleResult: processBattle,
-    isProcessingResult
+    isProcessingResult,
+    resetMilestoneInProgress
   };
 };
