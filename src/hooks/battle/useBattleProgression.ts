@@ -70,22 +70,35 @@ export const useBattleProgression = (
     return false;
   }, [milestones, generateRankings, setShowingMilestone]);
 
-  const incrementBattlesCompleted = useCallback((battleResults: any[]) => {
+  // FIXED: Updated to ensure we return the milestone number or null
+  const incrementBattlesCompleted = useCallback((battleResults: any[]): number | null => {
     if (incrementInProgressRef.current) {
       console.log("⏳ Increment already in progress, skipping");
-      return;
+      return null;
     }
 
+    let updatedBattleCount: number = 0;
     incrementInProgressRef.current = true;
+    
     setBattlesCompleted(prev => {
-      const updated = prev + 1;
-      milestoneTimeoutRef.current = setTimeout(() => {
-        checkMilestone(updated, battleResults);
-        incrementInProgressRef.current = false;
-      }, 100);
-      return updated;
+      updatedBattleCount = prev + 1;
+      return updatedBattleCount;
     });
-  }, [setBattlesCompleted, checkMilestone]);
+    
+    // Check if this is a milestone
+    milestoneTimeoutRef.current = setTimeout(() => {
+      checkMilestone(updatedBattleCount, battleResults);
+      incrementInProgressRef.current = false;
+    }, 100);
+    
+    // Return the updated battle count if it's a milestone
+    if (milestones.includes(updatedBattleCount) || 
+        (updatedBattleCount >= 100 && updatedBattleCount % 50 === 0)) {
+      return updatedBattleCount;
+    }
+    
+    return null;
+  }, [setBattlesCompleted, checkMilestone, milestones]);
 
   const resetMilestone = useCallback(() => {
     console.log("🔄 Resetting milestone state");

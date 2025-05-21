@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useRef } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
@@ -86,9 +87,11 @@ export const useBattleProcessor = (
           });
         }
         
-        // Check if milestone is reached
-        const nextMilestone = incrementBattlesCompleted();
-        if (nextMilestone) {
+        // Check if milestone is reached - FIXED: Pass the cumulativeResults to incrementBattlesCompleted
+        const nextMilestone = incrementBattlesCompleted(cumulativeResults);
+        
+        // FIXED: Check if nextMilestone is a number (not void or undefined) before proceeding
+        if (typeof nextMilestone === 'number') {
           console.log(`🎉 Milestone reached: ${nextMilestone} battles`);
           console.log(`⚠️ Saving rankings at milestone WITHOUT clearing suggestions`);
           
