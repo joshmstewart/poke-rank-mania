@@ -13,6 +13,7 @@ export const useBattleProgression = (
   const incrementInProgressRef = useRef(false);
   const milestoneTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const milestoneTracker = useRef<Set<number>>(new Set());
+  const lastTriggeredMilestoneRef = useRef<number | null>(null);
 
   useEffect(() => {
     return () => {
@@ -26,13 +27,22 @@ export const useBattleProgression = (
       return false;
     }
 
-    const isMilestone = milestones.includes(newBattlesCompleted) ||
+    // Check if this is a milestone battle count
+    const isMilestone = milestones.includes(newBattlesCompleted) || 
                         (newBattlesCompleted >= 100 && newBattlesCompleted % 50 === 0);
-
+    
+    // Check if we've already triggered this milestone
     if (isMilestone && !milestoneTracker.current.has(newBattlesCompleted)) {
+      // Avoid duplicate triggers
+      if (lastTriggeredMilestoneRef.current === newBattlesCompleted) {
+        console.log(`🔄 Milestone ${newBattlesCompleted} was just triggered, ignoring duplicate`);
+        return false;
+      }
+      
       milestoneTracker.current.add(newBattlesCompleted);
       processingMilestoneRef.current = true;
       showingMilestoneRef.current = true;
+      lastTriggeredMilestoneRef.current = newBattlesCompleted;
       console.log(`🎉 Milestone reached: ${newBattlesCompleted} battles`);
 
       try {
@@ -83,6 +93,7 @@ export const useBattleProgression = (
     processingMilestoneRef.current = false;
     setShowingMilestone(false);
     milestoneTracker.current.clear();
+    lastTriggeredMilestoneRef.current = null;
   }, [setShowingMilestone]);
 
   return {

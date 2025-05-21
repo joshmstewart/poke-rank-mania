@@ -83,21 +83,27 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
   
   // Get the next milestone
   const getNextMilestone = useCallback(() => {
-    return milestones.find(m => m > displayedBattlesCompleted) || milestones[0] || 10;
-  }, [displayedBattlesCompleted, milestones]);
+    const nextMilestone = milestones.find(m => m > battlesCompleted);
+    return nextMilestone || (battlesCompleted + 50); // If no milestone found, show next 50 battles
+  }, [battlesCompleted, milestones]);
   
   // Calculate progress towards next milestone
   const getMilestoneProgress = useCallback(() => {
-    const currentMilestoneIndex = milestones.findIndex(m => m > displayedBattlesCompleted);
-    if (currentMilestoneIndex === 0) {
-      return (displayedBattlesCompleted / milestones[0]) * 100;
-    } else if (currentMilestoneIndex > 0) {
-      const prevMilestone = milestones[currentMilestoneIndex - 1];
-      const nextMilestone = milestones[currentMilestoneIndex];
-      return ((displayedBattlesCompleted - prevMilestone) / (nextMilestone - prevMilestone)) * 100;
-    }
-    return 0;
-  }, [displayedBattlesCompleted, milestones]);
+    // Find the next milestone
+    const nextMilestone = getNextMilestone();
+    
+    // Find the previous milestone
+    const prevMilestoneIndex = milestones.findIndex(m => m > battlesCompleted) - 1;
+    const prevMilestone = prevMilestoneIndex >= 0 ? milestones[prevMilestoneIndex] : 0;
+    
+    // Calculate progress percentage between milestones
+    if (nextMilestone === prevMilestone) return 100; // Avoid division by zero
+    const progress = Math.min(100, Math.max(0, 
+      ((battlesCompleted - prevMilestone) / (nextMilestone - prevMilestone)) * 100
+    ));
+    
+    return progress;
+  }, [battlesCompleted, milestones, getNextMilestone]);
   
   // Only render if we have Pokemon to display
   if (!currentBattle || currentBattle.length === 0) {
@@ -107,6 +113,9 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
       </div>
     );
   }
+  
+  // Calculate battles remaining until next milestone
+  const battlesUntilNextMilestone = getNextMilestone() - battlesCompleted;
   
   return (
     <div className="bg-white rounded-lg shadow p-6 w-full">
@@ -141,8 +150,11 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
             style={{ width: `${getMilestoneProgress()}%` }}
           ></div>
         </div>
-        <div className="text-xs text-right mt-1 text-gray-500">
-          Next milestone: {getNextMilestone()} battles
+        <div className="flex justify-between text-xs mt-1 text-gray-500">
+          <div>Battle: {displayedBattlesCompleted + 1}</div>
+          <div>
+            Next milestone: <span className="font-medium">{battlesUntilNextMilestone}</span> battles away
+          </div>
         </div>
       </div>
       

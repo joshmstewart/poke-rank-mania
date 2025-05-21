@@ -1,3 +1,4 @@
+
 import { useEffect, useRef, useState, useCallback } from "react";
 import { SingleBattle } from "./types";
 import { RankedPokemon } from "@/services/pokemon";
@@ -19,6 +20,7 @@ export const useCompletionTracker = (
   const percentageCalculationInProgressRef = useRef(false);
   const snapshotCacheRef = useRef<Record<number, RankedPokemon[]>>({});
   const snapshotGenerationInProgressRef = useRef<Record<number, boolean>>({});
+  const lastCalculatedPercentageRef = useRef<number>(0);
 
   useEffect(() => {
     showingMilestoneRef.current = showingMilestone;
@@ -63,23 +65,30 @@ export const useCompletionTracker = (
   }, []);
 
   const calculateCompletionPercentage = useCallback(() => {
-    if (!allPokemon || allPokemon.length === 0 || percentageCalculationInProgressRef.current) return 0;
+    if (!allPokemon || allPokemon.length === 0 || percentageCalculationInProgressRef.current) {
+      return lastCalculatedPercentageRef.current;
+    }
 
     percentageCalculationInProgressRef.current = true;
 
     try {
-      const totalBattlesNeeded = allPokemon.length * Math.log2(allPokemon.length);
-      const percentage = Math.min(100, Math.floor((battleResults.length / totalBattlesNeeded) * 100));
+      // Use a logarithmic formula to determine how many battles are needed for a good ranking
+      // The more Pokemon, the more battles we need, but it grows slower than linear
+      const totalBattlesNeeded = Math.floor(allPokemon.length * Math.log2(allPokemon.length));
+      
+      // Calculate percentage with a small minimum to show progress from the start
+      const calculatedPercentage = Math.min(100, Math.max(1, 
+        Math.floor((battleResults.length / totalBattlesNeeded) * 100)
+      ));
+      
+      // Only update if the percentage has actually changed
+      if (calculatedPercentage !== lastCalculatedPercentageRef.current) {
+        console.log(`📈 Completion percentage updated: ${calculatedPercentage}%`);
+        lastCalculatedPercentageRef.current = calculatedPercentage;
+        setCompletionPercentage(calculatedPercentage);
+      }
 
-      setCompletionPercentage(prev => {
-        if (prev !== percentage) {
-          console.log(`📈 Completion percentage updated: ${percentage}%`);
-          return percentage;
-        }
-        return prev;
-      });
-
-      return percentage;
+      return calculatedPercentage;
     } finally {
       setTimeout(() => {
         percentageCalculationInProgressRef.current = false;
@@ -142,6 +151,11 @@ export const useCompletionTracker = (
     console.log(`⚠️ No snapshot generated for milestone ${battleCount}`);
     return [];
   }, [battleResults, generateRankings]);
+
+  // Force an initial calculation of completion percentage when the tracker mounts
+  useEffect(() => {
+    calculateCompletionPercentage();
+  }, [calculateCompletionPercentage]);
 
   return { 
     resetMilestones,

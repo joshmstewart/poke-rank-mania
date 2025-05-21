@@ -16,7 +16,7 @@ const ProgressTracker: React.FC<ProgressTrackerProps> = ({
   getBattlesRemaining
 }) => {
   // Ensure we have valid values by using defaults if needed
-  const safeCompletionPercentage = isNaN(completionPercentage) ? 0 : completionPercentage;
+  const safeCompletionPercentage = isNaN(completionPercentage) ? 0 : Math.min(100, completionPercentage);
   const safeBattlesCompleted = isNaN(battlesCompleted) ? 0 : battlesCompleted;
   const isComplete = safeCompletionPercentage >= 100;
   
@@ -44,7 +44,10 @@ const ProgressTracker: React.FC<ProgressTrackerProps> = ({
         </div>
         <Progress value={safeCompletionPercentage} className={`h-2 ${isComplete ? "bg-green-100" : ""}`} />
         <div className="flex justify-between mt-1 text-xs text-gray-500">
-          <span>Battles: {safeBattlesCompleted}</span>
+          <span>Battles completed: {safeBattlesCompleted}</span>
+          {battlesRemaining > 0 && (
+            <span className="text-blue-600">~{battlesRemaining} battles left</span>
+          )}
           {safeCompletionPercentage >= 100 && (
             <span className="flex items-center text-green-600 font-semibold">
               <CheckCircle size={14} className="mr-1" /> Complete ranking!
