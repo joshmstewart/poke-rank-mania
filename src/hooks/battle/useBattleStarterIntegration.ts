@@ -1,4 +1,3 @@
-
 import { useMemo, useCallback, useEffect, useRef, useState } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
@@ -37,6 +36,10 @@ export const useBattleStarterIntegration = (
   
   // Add counter to track battle attempts
   const battleAttemptsRef = useRef(0);
+  
+  // Add specific tracking for stuck detection
+  const sameConsecutiveBattlesRef = useRef(0);
+  const lastUsedPokemonIdsRef = useRef<number[]>([]);
 
   // Create the battle starter function without hooks
   const battleStarter = useMemo(() => {
@@ -180,9 +183,95 @@ export const useBattleStarterIntegration = (
     localStorage.setItem('pokemon-ranker-battle-type', battleType);
 
     try {
-      // If we're stuck in a loop, force completely different selection
-      if (isStuckInSameBattle) {
-        throw new Error("Force emergency selection due to stuck state");
+      // CRITICAL: Detect if we're using the same Pokemon as last battle
+      const sortedLastPokemonIds = [...lastBattlePokemonRef.current].sort((a, b) => a - b);
+      const lastPokemonIdsString = sortedLastPokemonIds.join(',');
+      const lastUsedIdsString = lastUsedPokemonIdsRef.current.sort((a, b) => a - b).join(',');
+      
+      if (lastPokemonIdsString === lastUsedIdsString && lastPokemonIdsString.length > 0) {
+        sameConsecutiveBattlesRef.current += 1;
+        console.warn(`⚠️ STUCK DETECTION: Same Pokemon detected ${sameConsecutiveBattlesRef.current} times in a row: [${lastPokemonIdsString}]`);
+        
+        // If stuck for 2+ consecutive times, force emergency reset
+        if (sameConsecutiveBattlesRef.current >= 2) {
+          console.error("🚨 CRITICAL: Force emergency selection due to repetition");
+          // Force a completely random selection excluding ALL recently used Pokemon
+          // Clear last battle tracking to force fresh selection
+          lastBattlePokemonRef.current.clear();
+          
+          // Also ensure our emergency selection excludes the stuck Pokemon
+          const stuckIds = new Set(lastUsedPokemonIdsRef.current);
+          
+          // Get all available Pokemon excluding the stuck ones
+          const emergencyPool = allPokemon.filter(p => !stuckIds.has(p.id));
+          
+          if (emergencyPool.length < 2) {
+            // If we somehow filtered too much, use all Pokemon except the very last pair
+            const tempPool = allPokemon.filter(p => !lastUsedPokemonIdsRef.current.includes(p.id));
+            const finalPool = tempPool.length >= 2 ? tempPool : allPokemon;
+            
+            // Shuffle and select completely new Pokemon
+            const shuffled = shuffleArray(finalPool);
+            const newBattle = shuffled.slice(0, battleType === "triplets" ? 3 : 2);
+            
+            console.log(`🆘 EMERGENCY RESET: Selected completely new Pokemon: ${newBattle.map(p => p.name).join(', ')}`);
+            
+            // Update tracking
+            lastBattlePokemonRef.current.clear();
+            newBattle.forEach(p => lastBattlePokemonRef.current.add(p.id));
+            lastUsedPokemonIdsRef.current = newBattle.map(p => p.id);
+            sameConsecutiveBattlesRef.current = 0;
+            
+            // Add to recent battles tracking
+            recentBattlesRef.current.push({
+              ids: newBattle.map(p => p.id),
+              timestamp: now
+            });
+            
+            // Keep only the last 10 battles in the log
+            if (recentBattlesRef.current.length > 10) {
+              recentBattlesRef.current.shift();
+            }
+            
+            // Set the current battle and reset selected Pokemon
+            setCurrentBattle(newBattle);
+            setSelectedPokemon([]);
+            
+            return newBattle;
+          }
+          
+          // Shuffle and select completely new Pokemon
+          const shuffled = shuffleArray(emergencyPool);
+          const newBattle = shuffled.slice(0, battleType === "triplets" ? 3 : 2);
+          
+          console.log(`🆘 EMERGENCY: Selected completely new Pokemon: ${newBattle.map(p => p.name).join(', ')}`);
+          
+          // Update tracking
+          lastBattlePokemonRef.current.clear();
+          newBattle.forEach(p => lastBattlePokemonRef.current.add(p.id));
+          lastUsedPokemonIdsRef.current = newBattle.map(p => p.id);
+          sameConsecutiveBattlesRef.current = 0;
+          
+          // Add to recent battles tracking
+          recentBattlesRef.current.push({
+            ids: newBattle.map(p => p.id),
+            timestamp: now
+          });
+          
+          // Keep only the last 10 battles in the log
+          if (recentBattlesRef.current.length > 10) {
+            recentBattlesRef.current.shift();
+          }
+          
+          // Set the current battle and reset selected Pokemon
+          setCurrentBattle(newBattle);
+          setSelectedPokemon([]);
+          
+          return newBattle;
+        }
+      } else {
+        // Reset the counter if battles are different
+        sameConsecutiveBattlesRef.current = 0;
       }
       
       // First attempt: Force different Pokémon from last battle
@@ -206,6 +295,9 @@ export const useBattleStarterIntegration = (
       const battlePokemon = shuffled.slice(0, battleSize);
       
       console.log(`🆕 Created FORCED NEW battle with: ${battlePokemon.map(p => `${p.id}:${p.name}`).join(', ')}`);
+      
+      // Update tracking for future comparisons
+      lastUsedPokemonIdsRef.current = battlePokemon.map(p => p.id);
       
       // Clear last battle set and add new battle Pokémon
       lastBattlePokemonRef.current.clear();
@@ -262,6 +354,10 @@ export const useBattleStarterIntegration = (
       const selectedForBattle = shuffled.slice(0, battleSize);
       
       console.log(`🆘 Emergency battle created with: ${selectedForBattle.map(p => `${p.id}:${p.name}`).join(", ")}`);
+      
+      // Reset tracking for future comparisons
+      lastUsedPokemonIdsRef.current = selectedForBattle.map(p => p.id);
+      sameConsecutiveBattlesRef.current = 0;
       
       // Track these new Pokemon
       lastBattlePokemonRef.current.clear();

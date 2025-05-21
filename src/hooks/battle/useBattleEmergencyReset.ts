@@ -1,3 +1,4 @@
+
 import { useEffect } from "react";
 import * as React from "react";
 import { Pokemon } from "@/services/pokemon";
