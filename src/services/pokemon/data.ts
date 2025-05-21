@@ -1,5 +1,12 @@
 
-import { Generation } from './types';
+import { Pokemon } from './types';
+
+interface Generation {
+  id: number;
+  name: string;
+  start: number;
+  end: number;
+}
 
 // Pokémon generations data
 export const generations: Generation[] = [

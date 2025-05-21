@@ -1,7 +1,7 @@
 import React from "react";
 import { RankedPokemon, TopNOption } from "@/services/pokemon";
 import { RankingTable } from "@/components/ranking/RankingTable";
-import { TierSelector } from "./TierSelector";
+import TierSelector from "./TierSelector";
 
 interface ViewRankingsProps {
   rankings: RankedPokemon[];

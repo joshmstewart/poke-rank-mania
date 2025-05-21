@@ -134,7 +134,10 @@ export const useBattleStateCore = (
         processBattleResult(selectedPokemon, currentBattle, battleType, selectedGeneration);
       }
     },
-    handleGoBack,
+    () => {
+      console.log("Going back in battle navigation");
+      // Any additional back logic here
+    },
     battleType,
     processBattleResult
   );

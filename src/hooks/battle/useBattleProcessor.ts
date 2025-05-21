@@ -1,5 +1,6 @@
+
 import { useState, useCallback, useRef } from "react";
-import { Pokemon, TopNOption } from "@/services/pokemon";
+import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
 import { useBattleProgression } from "./useBattleProgression";
 import { useNextBattleHandler } from "./useNextBattleHandler";

@@ -3,7 +3,7 @@ import { RankedPokemon, TopNOption } from "@/services/pokemon";
 import { RankingTable } from "./RankingTable";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
-import { TierSelector } from "@/components/battle/TierSelector";
+import TierSelector from "@/components/battle/TierSelector";
 
 interface RankingResultsProps {
   confidentRankedPokemon: RankedPokemon[];

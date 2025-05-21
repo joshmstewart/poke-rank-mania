@@ -1,5 +1,16 @@
-import { Pokemon } from "@/services/pokemon";
+
+import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
+
+// Helper function for shuffling array that was missing
+const shuffleArray = <T>(array: T[]): T[] => {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+};
 
 export const createBattleStarter = (
   allPokemon: Pokemon[],

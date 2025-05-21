@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from "react";
 import { RankedPokemon, RankingSuggestion } from "@/services/pokemon";
 import { toast } from "@/hooks/use-toast";
@@ -93,7 +92,7 @@ export const useRankingSuggestions = (
         
         toast({
           title: `Refined match for ${pokemon.name}`,
-          description: `${direction === "up" ? "↑" : "↓"} Rating updated!`,
+          description: `${suggestion.direction === "up" ? "↑" : "↓"} Rating updated!`,
           duration: 3000
         });
       }
