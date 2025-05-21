@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { useBattleStarterIntegration } from "@/hooks/battle/useBattleStarterIntegration";
@@ -329,6 +328,7 @@ export const useBattleStateCore = (
     suggestRanking,
     removeSuggestion,
     clearAllSuggestions,
-    handleContinueBattles
+    handleContinueBattles,
+    resetMilestoneInProgress  // Add this line to expose the function directly
   };
 };

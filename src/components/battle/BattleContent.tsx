@@ -46,13 +46,13 @@ const BattleContent = ({ allPokemon, initialBattleType, initialSelectedGeneratio
     calculateCompletionPercentage,
     getSnapshotForMilestone,
     generateRankings,
-    processorRefs,
     battleHistory,
     activeTier,
     setActiveTier,
     suggestRanking,
     removeSuggestion,
-    handleContinueBattles
+    handleContinueBattles,
+    resetMilestoneInProgress
   } = useBattleStateCore(allPokemon, initialBattleType, initialSelectedGeneration);
 
   // Only call startNewBattle once when the component mounts and allPokemon is available
@@ -114,8 +114,8 @@ const BattleContent = ({ allPokemon, initialBattleType, initialSelectedGeneratio
   const handleNewBattleSet = () => {
     resetMilestones();
     // Reset the milestone processing flag when starting a new battle set
-    if (processorRefs?.resetMilestoneInProgress) {
-      processorRefs.resetMilestoneInProgress();
+    if (resetMilestoneInProgress) {
+      resetMilestoneInProgress();
     }
     startNewBattle(battleType);
   };
@@ -124,8 +124,8 @@ const BattleContent = ({ allPokemon, initialBattleType, initialSelectedGeneratio
     console.log("Rankings saved!");
     setShowingMilestone(false);
     // Reset the milestone processing flag after saving rankings
-    if (processorRefs?.resetMilestoneInProgress) {
-      processorRefs.resetMilestoneInProgress();
+    if (resetMilestoneInProgress) {
+      resetMilestoneInProgress();
     }
   };
 
