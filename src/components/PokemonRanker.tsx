@@ -11,23 +11,25 @@ import { generations, RankedPokemon } from "@/services/pokemon";
 import { useRankingSuggestions } from "@/hooks/battle/useRankingSuggestions";
 
 const PokemonRanker = () => {
-  const {
-    isLoading,
-    availablePokemon,
-    rankedPokemon,
-    selectedGeneration,
-    currentPage,
-    totalPages,
-    loadSize,
-    loadingType,
-    loadingRef,
-    setAvailablePokemon,
-    setRankedPokemon,
-    resetRankings,
-    handleGenerationChange,
-    handlePageChange,
-    getPageRange
-  } = usePokemonRanker();
+const {
+  isLoading,
+  availablePokemon,
+  rankedPokemon,
+  selectedGeneration,
+  currentPage,
+  totalPages,
+  loadSize,
+  loadingType,
+  loadingRef,
+  setAvailablePokemon,
+  setRankedPokemon,
+  resetRankings,
+  handleGenerationChange,
+  handlePageChange,
+  getPageRange,
+  confidenceScores // ✅ Make sure this is here!
+} = usePokemonRanker();
+
 
   const [showRankings, setShowRankings] = React.useState(false);
   const generationName = selectedGeneration === 0 ? "All Generations" : `Generation ${selectedGeneration}`;
@@ -132,7 +134,8 @@ const PokemonRanker = () => {
         {showRankings ? (
 <RankingResults
   confidentRankedPokemon={typedRankedPokemon}
-  confidenceScores={confidenceScores} // correctly use confidenceScores
+confidenceScores={confidenceScores}
+
   onSuggestRanking={suggestRanking}
   onRemoveSuggestion={removeSuggestion}
   onClearSuggestions={clearAllSuggestions}

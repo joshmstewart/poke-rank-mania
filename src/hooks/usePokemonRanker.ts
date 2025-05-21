@@ -1,11 +1,11 @@
-
 import { useState, useEffect } from "react";
 import { 
   Pokemon, 
   saveRankings, 
   loadUnifiedSessionData,
   saveUnifiedSessionData,
-  ITEMS_PER_PAGE
+  ITEMS_PER_PAGE,
+  RankedPokemon // make sure this import exists
 } from "@/services/pokemon";
 import { toast } from "@/hooks/use-toast";
 import { LoadingType, RankingState, RankingActions } from "./pokemon/types";
@@ -17,15 +17,16 @@ import { useAutoSave } from "./pokemon/useAutoSave";
 // Change to "export type" for proper type re-exporting with isolatedModules
 export type { LoadingType } from "./pokemon/types";
 
-export const usePokemonRanker = (): RankingState & RankingActions & { loadingRef: React.RefObject<HTMLDivElement> } => {
+export const usePokemonRanker = (): RankingState & RankingActions & { loadingRef: React.RefObject<HTMLDivElement>, confidenceScores: Record<number, number> } => {
   const [isLoading, setIsLoading] = useState(true);
   const [availablePokemon, setAvailablePokemon] = useState<Pokemon[]>([]);
   const [rankedPokemon, setRankedPokemon] = useState<Pokemon[]>([]);
-  const [selectedGeneration, setSelectedGeneration] = useState(0); // Default to All Generations
+  const [confidenceScores, setConfidenceScores] = useState<Record<number, number>>({});
+  const [selectedGeneration, setSelectedGeneration] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [loadSize, setLoadSize] = useState(50); // Default to first option
-  const [loadingType, setLoadingType] = useState<LoadingType>("infinite"); // Always use infinite scrolling
+  const [loadSize, setLoadSize] = useState(50);
+  const [loadingType, setLoadingType] = useState<LoadingType>("infinite");
   
   const { loadData } = useDataLoader(
     selectedGeneration,
@@ -51,24 +52,16 @@ export const usePokemonRanker = (): RankingState & RankingActions & { loadingRef
   // Auto-save functionality
   useAutoSave(rankedPokemon, selectedGeneration);
   
-  // Load data on generation change or page change
   useEffect(() => {
-    if (currentPage === 1) {
-      // Initialize infinite scroll with first page
-      loadData();
-    } else {
-      // Load additional pages for infinite scroll
-      loadData();
-    }
+    loadData();
   }, [selectedGeneration, currentPage, loadSize]);
-  
+
   const resetRankings = () => {
-    // Get all Pokemon back to available list
     const allPokemon = [...availablePokemon, ...rankedPokemon].sort((a, b) => a.id - b.id);
     setAvailablePokemon(allPokemon);
     setRankedPokemon([]);
+    setConfidenceScores({}); // Reset confidence scores as well
     
-    // Clear local storage for the current generation
     localStorage.removeItem(`pokemon-rankings-gen-${selectedGeneration}`);
     
     toast({
@@ -76,7 +69,6 @@ export const usePokemonRanker = (): RankingState & RankingActions & { loadingRef
       description: "Your rankings have been cleared."
     });
     
-    // Also update the unified session data
     const sessionData = loadUnifiedSessionData();
     if (sessionData.rankings) {
       delete sessionData.rankings[`gen-${selectedGeneration}`];
@@ -87,15 +79,14 @@ export const usePokemonRanker = (): RankingState & RankingActions & { loadingRef
   const handleGenerationChange = (value: string) => {
     const newGenId = Number(value);
     setSelectedGeneration(newGenId);
-    setCurrentPage(1); // Reset to page 1 when changing generations
-    setAvailablePokemon([]); // Clear the list for infinite scrolling
+    setCurrentPage(1);
+    setAvailablePokemon([]);
   };
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
   };
 
-  // These functions are kept for compatibility, but are no longer actively used in the UI
   const handleLoadingTypeChange = (value: string) => {
     setLoadingType(value as LoadingType);
     setCurrentPage(1);
@@ -112,6 +103,7 @@ export const usePokemonRanker = (): RankingState & RankingActions & { loadingRef
     isLoading,
     availablePokemon,
     rankedPokemon,
+    confidenceScores, // ✅ Added to resolve your error
     selectedGeneration,
     currentPage,
     totalPages,
