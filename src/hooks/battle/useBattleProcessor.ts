@@ -27,6 +27,7 @@ export const useBattleProcessor = (
   const processedMilestonesRef = useRef<Set<number>>(new Set());
   const milestoneInProgressRef = useRef(false);
   const lastBattlePokemonIds = useRef<Set<number>>(new Set()); // Track last battle's pokemon IDs
+  const recentlyUsedPokemonIds = useRef<Set<number>>(new Set()); // Track recently used Pokémon for variety
 
   const { incrementBattlesCompleted } = useBattleProgression(
     battlesCompleted,
@@ -39,21 +40,53 @@ export const useBattleProcessor = (
   const { setupNextBattle } = useNextBattleHandler(
     allPokemon,
     (battleType: BattleType) => {
-      // Add a filter to exclude the most recently seen Pokémon to prevent repetition
+      // Filter out last battle Pokémon to absolutely prevent repetition
       const filteredPokemon = [...allPokemon].filter(p => !lastBattlePokemonIds.current.has(p.id));
       
-      // If we filtered out too many Pokémon and don't have enough left, use the full list
-      const pokemonPool = filteredPokemon.length >= 4 ? filteredPokemon : allPokemon;
+      // Try to also filter out recently used Pokémon when possible
+      let candidatePokemon = filteredPokemon;
+      if (filteredPokemon.length >= 6) {
+        // We have enough Pokémon to also filter out recently used ones
+        const moreFiltered = filteredPokemon.filter(p => !recentlyUsedPokemonIds.current.has(p.id));
+        // Use this more filtered set if it still leaves us with enough Pokémon
+        if (moreFiltered.length >= 4) {
+          candidatePokemon = moreFiltered;
+        }
+      }
       
-      const shuffled = [...pokemonPool].sort(() => Math.random() - 0.5);
+      // If we've filtered too much and don't have enough left, use the original filtered list
+      const pokemonPool = candidatePokemon.length >= 4 ? candidatePokemon : filteredPokemon;
+      
+      // If we STILL don't have enough, use all Pokémon except last battle
+      const finalPool = pokemonPool.length >= 3 ? pokemonPool : 
+        allPokemon.filter(p => !lastBattlePokemonIds.current.has(p.id));
+      
+      // Last resort - use all Pokémon if we still don't have enough
+      const actualPool = finalPool.length >= 2 ? finalPool : allPokemon;
+      
+      console.log(`🧮 Battle pool selection: final pool has ${actualPool.length} Pokémon`);
+      
+      const shuffled = [...actualPool].sort(() => Math.random() - 0.5);
       const battleSize = battleType === "triplets" ? 3 : 2;
       
       // Create the new battle
       const newBattle = shuffled.slice(0, battleSize);
       
+      // Log the Pokemon we selected
+      console.log(`🆕 New battle: ${newBattle.map(p => p.name).join(', ')} (IDs: ${newBattle.map(p => p.id).join(', ')})`);
+      
       // Update the tracking of recently seen Pokémon
       lastBattlePokemonIds.current.clear();
-      newBattle.forEach(p => lastBattlePokemonIds.current.add(p.id));
+      newBattle.forEach(p => {
+        lastBattlePokemonIds.current.add(p.id);
+        recentlyUsedPokemonIds.current.add(p.id);
+        
+        // Limit the size of recently used set
+        if (recentlyUsedPokemonIds.current.size > Math.min(20, allPokemon.length / 3)) {
+          const oldestId = Array.from(recentlyUsedPokemonIds.current)[0];
+          recentlyUsedPokemonIds.current.delete(oldestId);
+        }
+      });
       
       setCurrentBattle(newBattle);
       setSelectedPokemon([]);
@@ -91,7 +124,21 @@ export const useBattleProcessor = (
         setBattleResults(cumulativeResults);
         
         // Store the current battle Pokémon IDs to avoid reusing them immediately
-        currentBattlePokemon.forEach(p => lastBattlePokemonIds.current.add(p.id));
+        // Always clear first to maintain a fresh set
+        lastBattlePokemonIds.current.clear();
+        currentBattlePokemon.forEach(p => {
+          lastBattlePokemonIds.current.add(p.id);
+          recentlyUsedPokemonIds.current.add(p.id);
+          
+          // Cap the size of recently used set
+          if (recentlyUsedPokemonIds.current.size > Math.min(20, allPokemon.length / 3)) {
+            const oldestId = Array.from(recentlyUsedPokemonIds.current)[0];
+            recentlyUsedPokemonIds.current.delete(oldestId);
+          }
+        });
+        
+        console.log(`🔄 Updated Pokemon tracking: Last battle IDs: ${Array.from(lastBattlePokemonIds.current).join(', ')}`);
+        console.log(`🔄 Recently used: ${recentlyUsedPokemonIds.current.size} Pokemon`);
         
         // CRITICAL FIX: ALWAYS check for suggestions in battle Pokemon and mark them used when appropriate
         if (markSuggestionUsed) {
@@ -105,18 +152,18 @@ export const useBattleProcessor = (
           });
         }
         
-        // Check if milestone is reached - FIXED: Pass the cumulativeResults to incrementBattlesCompleted
+        // Check if milestone is reached - Pass the cumulativeResults to incrementBattlesCompleted
         const nextMilestone = incrementBattlesCompleted(cumulativeResults);
         
-        // FIXED: Check if nextMilestone is a number (not void or undefined) before proceeding
+        // Check if nextMilestone is a number (not void or undefined) before proceeding
         if (typeof nextMilestone === 'number') {
           console.log(`🎉 Milestone reached: ${nextMilestone} battles`);
           console.log(`⚠️ Saving rankings at milestone WITHOUT clearing suggestions`);
           
-          // CRITICAL FIX: Force a save to localStorage here
+          // Force a save to localStorage here
           saveRankings(allPokemon, currentSelectedGeneration, "battle");
           
-          // CRITICAL FIX: Log current battle conditions for verification
+          // Log current battle conditions for verification
           console.log(`🔍 Current battle conditions at milestone ${nextMilestone}:`, {
             battleType,
             pokemonCount: currentBattlePokemon.length,
@@ -126,7 +173,7 @@ export const useBattleProcessor = (
           milestoneInProgressRef.current = true;
           generateRankings(cumulativeResults);
           
-          // CRITICAL FIX: Direct localStorage check to verify suggestions
+          // Direct localStorage check to verify suggestions
           try {
             const savedSuggestions = localStorage.getItem('pokemon-active-suggestions');
             console.log(`💾 DIRECT VERIFICATION AT MILESTONE: Suggestions in localStorage: ${savedSuggestions ? "YES" : "NO"}`);

@@ -15,6 +15,12 @@ export const useBattleStarterIntegration = (
   
   // Add tracking for recently used Pokémon to avoid repetition
   const recentlyUsedPokemonRef = useRef<Set<number>>(new Set());
+  
+  // Add tracking specifically for last battle to absolutely prevent immediate repeats
+  const lastBattlePokemonRef = useRef<Set<number>>(new Set());
+  
+  // Add counter to track battle attempts
+  const battleAttemptsRef = useRef(0);
 
   // Create the battle starter function without hooks
   const battleStarter = useMemo(() => {
@@ -90,7 +96,8 @@ export const useBattleStarterIntegration = (
 
   // Start a new battle
   const startNewBattle = useCallback((battleType: BattleType): Pokemon[] => {
-    console.log("startNewBattle with type:", battleType);
+    battleAttemptsRef.current += 1;
+    console.log(`⚔️ startNewBattle attempt #${battleAttemptsRef.current} with type: ${battleType}`);
     
     if (!allPokemon || allPokemon.length < 2) {
       console.warn("Not enough Pokémon for a battle.");
@@ -109,9 +116,19 @@ export const useBattleStarterIntegration = (
         // Reset selected Pokemon
         setSelectedPokemon([]);
         
-        // Track these Pokémon as recently used
+        // CRITICAL FIX: Check if we got the same Pokémon again and log a warning
+        const sameAsPreviousBattle = battlePokemon.every(p => lastBattlePokemonRef.current.has(p.id));
+        if (sameAsPreviousBattle) {
+          console.error("⚠️⚠️⚠️ WARNING: Generated the same battle as previous! This should not happen!");
+        }
+        
+        // Clear last battle and add new ones
+        lastBattlePokemonRef.current.clear();
+        
+        // Track these Pokémon as recently used and last battle
         battlePokemon.forEach(p => {
           recentlyUsedPokemonRef.current.add(p.id);
+          lastBattlePokemonRef.current.add(p.id);
           // Cap the set size
           if (recentlyUsedPokemonRef.current.size > Math.min(20, allPokemon.length / 3)) {
             const oldestId = Array.from(recentlyUsedPokemonRef.current)[0];
@@ -120,29 +137,46 @@ export const useBattleStarterIntegration = (
         });
         
         console.log(`🔄 Updated recently used Pokémon tracking (${recentlyUsedPokemonRef.current.size} total)`);
+        console.log(`🆔 This battle's Pokémon IDs: ${battlePokemon.map(p => p.id).join(', ')}`);
         
         return battlePokemon;
       } else {
         console.error("Battle starter not initialized");
         // Initialize with random pokemon as fallback, avoiding recently used ones
         if (allPokemon && allPokemon.length >= 2) {
-          // Filter out recently used Pokémon
-          let availablePokemon = allPokemon.filter(p => !recentlyUsedPokemonRef.current.has(p.id));
+          // Filter out recently used Pokémon AND last battle Pokémon
+          let availablePokemon = allPokemon.filter(p => 
+            !recentlyUsedPokemonRef.current.has(p.id) &&
+            !lastBattlePokemonRef.current.has(p.id)
+          );
           
-          // If we filtered out too many, just use all Pokémon
+          // If we filtered out too many, just use all except last battle
           if (availablePokemon.length < (battleType === "pairs" ? 4 : 6)) {
+            availablePokemon = allPokemon.filter(p => !lastBattlePokemonRef.current.has(p.id));
+          }
+          
+          // Last resort - use all Pokémon
+          if (availablePokemon.length < (battleType === "pairs" ? 2 : 3)) {
             availablePokemon = allPokemon;
             // Reset tracking if we had to fall back
             recentlyUsedPokemonRef.current.clear();
+            lastBattlePokemonRef.current.clear();
           }
           
           const shuffled = shuffleArray(availablePokemon);
           const selectedForBattle = shuffled.slice(0, battleType === "pairs" ? 2 : 3);
           
-          // Track these as recently used
-          selectedForBattle.forEach(p => recentlyUsedPokemonRef.current.add(p.id));
+          // Clear last battle and track new ones
+          lastBattlePokemonRef.current.clear();
+          
+          // Track these as recently used and last battle
+          selectedForBattle.forEach(p => {
+            recentlyUsedPokemonRef.current.add(p.id);
+            lastBattlePokemonRef.current.add(p.id);
+          });
           
           console.log("Fallback battle started with pokemon:", selectedForBattle.map(p => p.name));
+          console.log(`🆔 Fallback battle Pokémon IDs: ${selectedForBattle.map(p => p.id).join(', ')}`);
           setCurrentBattle(selectedForBattle);
           setSelectedPokemon([]);
           return selectedForBattle;
@@ -153,13 +187,22 @@ export const useBattleStarterIntegration = (
       console.error("Error starting new battle:", error);
       // Even if there's an error, try to set up a basic battle
       try {
-        // Filter out recently used Pokémon for the emergency battle
-        let availablePokemon = allPokemon.filter(p => !recentlyUsedPokemonRef.current.has(p.id));
+        // Filter out recently used Pokémon AND last battle for the emergency battle
+        let availablePokemon = allPokemon.filter(p => 
+          !recentlyUsedPokemonRef.current.has(p.id) &&
+          !lastBattlePokemonRef.current.has(p.id)
+        );
         
-        // If filtering left too few, use all Pokémon
+        // If filtering left too few, just avoid last battle
         if (availablePokemon.length < 4) {
+          availablePokemon = allPokemon.filter(p => !lastBattlePokemonRef.current.has(p.id));
+        }
+        
+        // Last resort
+        if (availablePokemon.length < 2) {
           availablePokemon = allPokemon;
           recentlyUsedPokemonRef.current.clear();
+          lastBattlePokemonRef.current.clear();
         }
         
         const shuffled = shuffleArray(availablePokemon);
@@ -167,8 +210,14 @@ export const useBattleStarterIntegration = (
         if (shuffled.length >= battleSize) {
           const selectedForBattle = shuffled.slice(0, battleSize);
           
-          // Track these as recently used
-          selectedForBattle.forEach(p => recentlyUsedPokemonRef.current.add(p.id));
+          // Clear last battle and track new ones
+          lastBattlePokemonRef.current.clear();
+          
+          // Track these as recently used and last battle
+          selectedForBattle.forEach(p => {
+            recentlyUsedPokemonRef.current.add(p.id);
+            lastBattlePokemonRef.current.add(p.id);
+          });
           
           setCurrentBattle(selectedForBattle);
           setSelectedPokemon([]);
