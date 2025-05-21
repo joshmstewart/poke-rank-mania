@@ -26,6 +26,7 @@ export const useBattleProcessor = (
   const [isProcessingResult, setIsProcessingResult] = useState(false);
   const processedMilestonesRef = useRef<Set<number>>(new Set());
   const milestoneInProgressRef = useRef(false);
+  const lastBattlePokemonIds = useRef<Set<number>>(new Set()); // Track last battle's pokemon IDs
 
   const { incrementBattlesCompleted } = useBattleProgression(
     battlesCompleted,
@@ -38,9 +39,23 @@ export const useBattleProcessor = (
   const { setupNextBattle } = useNextBattleHandler(
     allPokemon,
     (battleType: BattleType) => {
-      const shuffled = [...allPokemon].sort(() => Math.random() - 0.5);
+      // Add a filter to exclude the most recently seen Pokémon to prevent repetition
+      const filteredPokemon = [...allPokemon].filter(p => !lastBattlePokemonIds.current.has(p.id));
+      
+      // If we filtered out too many Pokémon and don't have enough left, use the full list
+      const pokemonPool = filteredPokemon.length >= 4 ? filteredPokemon : allPokemon;
+      
+      const shuffled = [...pokemonPool].sort(() => Math.random() - 0.5);
       const battleSize = battleType === "triplets" ? 3 : 2;
-      setCurrentBattle(shuffled.slice(0, battleSize));
+      
+      // Create the new battle
+      const newBattle = shuffled.slice(0, battleSize);
+      
+      // Update the tracking of recently seen Pokémon
+      lastBattlePokemonIds.current.clear();
+      newBattle.forEach(p => lastBattlePokemonIds.current.add(p.id));
+      
+      setCurrentBattle(newBattle);
       setSelectedPokemon([]);
     },
     setSelectedPokemon
@@ -74,6 +89,9 @@ export const useBattleProcessor = (
       if (newResults && newResults.length > 0) {
         const cumulativeResults = [...battleResults, ...newResults];
         setBattleResults(cumulativeResults);
+        
+        // Store the current battle Pokémon IDs to avoid reusing them immediately
+        currentBattlePokemon.forEach(p => lastBattlePokemonIds.current.add(p.id));
         
         // CRITICAL FIX: ALWAYS check for suggestions in battle Pokemon and mark them used when appropriate
         if (markSuggestionUsed) {

@@ -1,4 +1,3 @@
-
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
 
@@ -11,6 +10,9 @@ export const createBattleStarter = (
   currentRankings: Pokemon[],
   setCurrentBattle: React.Dispatch<React.SetStateAction<Pokemon[]>>
 ) => {
+  // Track recently used Pokémon to prevent immediate repetition
+  const recentlyUsedPokemon = new Set<number>();
+  
   const startNewBattle = (battleType: BattleType): Pokemon[] => {
     console.log("🔄 createBattleStarter: Starting new battle with type:", battleType);
     
@@ -50,7 +52,18 @@ export const createBattleStarter = (
             
             // Get the remaining battle slots from other Pokémon
             const remainingSlots = battleType === "triplets" ? 2 : 1;
-            let otherPokemon = filteredPokemon.filter(p => p.id !== selectedSuggestion.id);
+            
+            // Filter out recently used Pokémon AND the selected suggestion
+            let otherPokemon = filteredPokemon.filter(p => 
+              p.id !== selectedSuggestion.id && 
+              !recentlyUsedPokemon.has(p.id)
+            );
+            
+            // If filtering left us with too few Pokémon, fall back to just excluding the selected suggestion
+            if (otherPokemon.length < remainingSlots) {
+              console.log("⚠️ Not enough unused Pokémon, including some recently seen ones");
+              otherPokemon = filteredPokemon.filter(p => p.id !== selectedSuggestion.id);
+            }
             
             // Shuffle the other Pokémon
             otherPokemon = shuffleArray(otherPokemon);
@@ -64,7 +77,18 @@ export const createBattleStarter = (
             // Shuffle the order so the suggested Pokémon isn't always first
             const shuffledBattle = shuffleArray(battlePokemon);
             
+            // Update recently used set
+            shuffledBattle.forEach(p => {
+              recentlyUsedPokemon.add(p.id);
+              // Keep the set size reasonable
+              if (recentlyUsedPokemon.size > Math.min(20, filteredPokemon.length / 2)) {
+                const oldestId = recentlyUsedPokemon.values().next().value;
+                recentlyUsedPokemon.delete(oldestId);
+              }
+            });
+            
             console.log(`🆕 DIRECT CHECK: Created battle with suggested Pokémon: ${shuffledBattle.map(p => p.name).join(', ')}`);
+            console.log(`🔄 Now tracking ${recentlyUsedPokemon.size} recently used Pokémon`);
             
             // CRITICAL FIX: Add suggestion info to the Pokemon object if it doesn't already have it
             const exactSuggestion = parsedSuggestions[selectedSuggestion.id.toString()];
@@ -88,12 +112,35 @@ export const createBattleStarter = (
     
     // If we get here, either there were no suggestions in localStorage or we couldn't use them
     console.log("🎲 createBattleStarter: Using random selection");
-    const shuffled = shuffleArray(filteredPokemon);
+    
+    // Filter out recently used Pokémon for variety
+    let availablePokemon = filteredPokemon.filter(p => !recentlyUsedPokemon.has(p.id));
+    
+    // If filtering left us with too few Pokémon, use the full list
     const battleSize = battleType === "triplets" ? 3 : 2;
+    if (availablePokemon.length < battleSize * 2) {
+      console.log("⚠️ Not enough unused Pokémon, resetting recently used tracking");
+      availablePokemon = filteredPokemon;
+      recentlyUsedPokemon.clear();
+    }
+    
+    const shuffled = shuffleArray(availablePokemon);
     
     if (shuffled.length >= battleSize) {
       const selected = shuffled.slice(0, battleSize);
+      
+      // Track these Pokémon as recently used
+      selected.forEach(p => {
+        recentlyUsedPokemon.add(p.id);
+        // Keep the set size reasonable
+        if (recentlyUsedPokemon.size > Math.min(20, filteredPokemon.length / 2)) {
+          const oldestId = recentlyUsedPokemon.values().next().value;
+          recentlyUsedPokemon.delete(oldestId);
+        }
+      });
+      
       console.log(`🆕 createBattleStarter: Created random battle: ${selected.map(p => p.name).join(', ')}`);
+      console.log(`🔄 Now tracking ${recentlyUsedPokemon.size} recently used Pokémon`);
       setCurrentBattle(selected);
       return selected;
     } else {

@@ -12,6 +12,9 @@ export const useBattleStarterIntegration = (
 ) => {
   // Add ref to track if we've verified suggestions
   const verifiedSuggestionsRef = useRef(false);
+  
+  // Add tracking for recently used Pokémon to avoid repetition
+  const recentlyUsedPokemonRef = useRef<Set<number>>(new Set());
 
   // Create the battle starter function without hooks
   const battleStarter = useMemo(() => {
@@ -75,6 +78,16 @@ export const useBattleStarterIntegration = (
     };
   }, [setCurrentBattle]);
 
+  // Helper function to shuffle array
+  const shuffleArray = useCallback(<T>(array: T[]): T[] => {
+    const result = [...array];
+    for (let i = result.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [result[i], result[j]] = [result[j], result[i]];
+    }
+    return result;
+  }, []);
+
   // Start a new battle
   const startNewBattle = useCallback((battleType: BattleType): Pokemon[] => {
     console.log("startNewBattle with type:", battleType);
@@ -96,13 +109,39 @@ export const useBattleStarterIntegration = (
         // Reset selected Pokemon
         setSelectedPokemon([]);
         
+        // Track these Pokémon as recently used
+        battlePokemon.forEach(p => {
+          recentlyUsedPokemonRef.current.add(p.id);
+          // Cap the set size
+          if (recentlyUsedPokemonRef.current.size > Math.min(20, allPokemon.length / 3)) {
+            const oldestId = Array.from(recentlyUsedPokemonRef.current)[0];
+            recentlyUsedPokemonRef.current.delete(oldestId);
+          }
+        });
+        
+        console.log(`🔄 Updated recently used Pokémon tracking (${recentlyUsedPokemonRef.current.size} total)`);
+        
         return battlePokemon;
       } else {
         console.error("Battle starter not initialized");
-        // Initialize with random pokemon as fallback
+        // Initialize with random pokemon as fallback, avoiding recently used ones
         if (allPokemon && allPokemon.length >= 2) {
-          const shuffled = [...allPokemon].sort(() => Math.random() - 0.5);
+          // Filter out recently used Pokémon
+          let availablePokemon = allPokemon.filter(p => !recentlyUsedPokemonRef.current.has(p.id));
+          
+          // If we filtered out too many, just use all Pokémon
+          if (availablePokemon.length < (battleType === "pairs" ? 4 : 6)) {
+            availablePokemon = allPokemon;
+            // Reset tracking if we had to fall back
+            recentlyUsedPokemonRef.current.clear();
+          }
+          
+          const shuffled = shuffleArray(availablePokemon);
           const selectedForBattle = shuffled.slice(0, battleType === "pairs" ? 2 : 3);
+          
+          // Track these as recently used
+          selectedForBattle.forEach(p => recentlyUsedPokemonRef.current.add(p.id));
+          
           console.log("Fallback battle started with pokemon:", selectedForBattle.map(p => p.name));
           setCurrentBattle(selectedForBattle);
           setSelectedPokemon([]);
@@ -114,10 +153,23 @@ export const useBattleStarterIntegration = (
       console.error("Error starting new battle:", error);
       // Even if there's an error, try to set up a basic battle
       try {
-        const shuffled = [...allPokemon].sort(() => Math.random() - 0.5);
+        // Filter out recently used Pokémon for the emergency battle
+        let availablePokemon = allPokemon.filter(p => !recentlyUsedPokemonRef.current.has(p.id));
+        
+        // If filtering left too few, use all Pokémon
+        if (availablePokemon.length < 4) {
+          availablePokemon = allPokemon;
+          recentlyUsedPokemonRef.current.clear();
+        }
+        
+        const shuffled = shuffleArray(availablePokemon);
         const battleSize = battleType === "triplets" ? 3 : 2;
         if (shuffled.length >= battleSize) {
           const selectedForBattle = shuffled.slice(0, battleSize);
+          
+          // Track these as recently used
+          selectedForBattle.forEach(p => recentlyUsedPokemonRef.current.add(p.id));
+          
           setCurrentBattle(selectedForBattle);
           setSelectedPokemon([]);
           console.log("Emergency battle recovery with:", selectedForBattle.map(p => p.name));
@@ -128,7 +180,7 @@ export const useBattleStarterIntegration = (
       }
       return [];
     }
-  }, [battleStarter, setCurrentBattle, allPokemon, setSelectedPokemon]);
+  }, [battleStarter, setCurrentBattle, allPokemon, setSelectedPokemon, shuffleArray]);
 
   return {
     battleStarter,
