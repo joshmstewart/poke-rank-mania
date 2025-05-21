@@ -16,6 +16,28 @@ export const useBattleStarterIntegration = (
   const processedSuggestionBattlesRef = useRef<Set<number>>(new Set());
   // Track how many suggestion battles we've processed after each milestone
   const suggestionBattleCountRef = useRef(0);
+  // Enhanced tracking of suggestion prioritization
+  const suggestionPriorityEnabledRef = useRef(true);
+  
+  // This effect runs when the component mounts and sets up event listeners
+  useEffect(() => {
+    // When a "prioritizeSuggestions" event fires, reset our battle counter and enable priority
+    const handlePrioritize = () => {
+      console.log("🔥 Explicitly prioritizing suggestions for upcoming battles");
+      suggestionBattleCountRef.current = 0;
+      suggestionPriorityEnabledRef.current = true;
+      processedSuggestionBattlesRef.current.clear();
+    };
+
+    // Listen for the custom event to prioritize suggestions
+    window.addEventListener("prioritizeSuggestions", handlePrioritize);
+    window.addEventListener("milestoneEnded", handlePrioritize);
+
+    return () => {
+      window.removeEventListener("prioritizeSuggestions", handlePrioritize);
+      window.removeEventListener("milestoneEnded", handlePrioritize);
+    };
+  }, []);
   
   const battleStarter = useMemo(() => {
     if (!allPokemon || allPokemon.length === 0) return null;
@@ -34,6 +56,7 @@ export const useBattleStarterIntegration = (
       if (newSuggestions.length > 0) {
         console.log(`🎮 Found ${newSuggestions.length} NEW suggestion battles to prioritize`);
         suggestionBattleCountRef.current = 0;
+        suggestionPriorityEnabledRef.current = true;
       }
     }
     
@@ -56,12 +79,20 @@ export const useBattleStarterIntegration = (
       p => p.suggestedAdjustment && !p.suggestedAdjustment.used
     );
     
-    // If we have suggestions that haven't been fully processed yet (3 battles each)
-    if (suggestedPokemon.length > 0 && suggestionBattleCountRef.current < (suggestedPokemon.length * 3)) {
-      console.log(`🔄 Prioritizing suggestion battles (${suggestionBattleCountRef.current + 1}/${suggestedPokemon.length * 3})`);
+    // Log our suggestion priority status
+    console.log(`🔄 Suggestion priority enabled: ${suggestionPriorityEnabledRef.current ? "YES ✅" : "NO ❌"}`);
+    console.log(`🔢 Suggestion battles since milestone: ${suggestionBattleCountRef.current}`);
+    
+    // If we have suggestions that haven't been fully processed yet AND priority is enabled
+    // We'll prioritize for at least 10 battles after a milestone
+    if (suggestedPokemon.length > 0 && 
+        suggestionPriorityEnabledRef.current && 
+        suggestionBattleCountRef.current < Math.max(10, suggestedPokemon.length * 2)) {
+        
+      console.log(`🔄 Prioritizing suggestion battles (${suggestionBattleCountRef.current + 1}/${Math.max(10, suggestedPokemon.length * 2)})`);
       
-      // Force a high probability of suggestion battle by calling original function
-      const battle = battleStarter.startNewBattle(battleType);
+      // Force a high probability of suggestion battle by calling original function with a flag
+      const battle = battleStarter.startNewBattle(battleType, true);
       
       // Increment counter to track how many suggestion-focused battles we've done
       suggestionBattleCountRef.current++;
@@ -84,12 +115,18 @@ export const useBattleStarterIntegration = (
         console.log("🎯 This battle includes a Pokemon with active suggestion");
       }
       
+      // If we've processed enough battles, disable priority for a while
+      if (suggestionBattleCountRef.current >= Math.max(10, suggestedPokemon.length * 2)) {
+        console.log("🔄 Suggestion priority battles completed for this session");
+        // We'll re-enable on next milestone or explicit prioritization event
+      }
+      
       return battle;
     }
     
     // If we've processed all the suggestion-priority battles or have no suggestions,
     // proceed with normal battle selection
-    return battleStarter.startNewBattle(battleType);
+    return battleStarter.startNewBattle(battleType, false);
   }, [battleStarter, currentRankings]);
 
   const { performEmergencyReset } = useBattleEmergencyReset(
@@ -100,6 +137,11 @@ export const useBattleStarterIntegration = (
 
   return {
     battleStarter,
-    startNewBattle: startNewBattle || (() => [])
+    startNewBattle: startNewBattle || (() => []),
+    resetSuggestionPriority: () => {
+      suggestionBattleCountRef.current = 0;
+      suggestionPriorityEnabledRef.current = true;
+      processedSuggestionBattlesRef.current.clear();
+    }
   };
 };

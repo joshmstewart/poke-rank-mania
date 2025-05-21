@@ -80,7 +80,11 @@ export const useBattleStateCore = (
     return pokemon.hasOwnProperty('generation') && (pokemon as any).generation === selectedGeneration;
   });
 
-  const { battleStarter, startNewBattle } = useBattleStarterIntegration(
+  const { 
+    battleStarter, 
+    startNewBattle,
+    resetSuggestionPriority 
+  } = useBattleStarterIntegration(
     filteredPokemon, 
     finalRankings, 
     setCurrentBattle,
@@ -166,10 +170,33 @@ export const useBattleStateCore = (
       generateRankings(battleResults);
       setNeedsToReloadSuggestions(false);
       
+      // Explicitly reset suggestion priority to ensure the next battles prioritize suggestions
+      if (resetSuggestionPriority) {
+        console.log("🚨 Explicitly resetting suggestion priority tracking");
+        resetSuggestionPriority();
+      }
+      
       // Trigger suggestion prioritization when we continue after milestone
       triggerSuggestionPrioritization();
+      
+      // Immediate feedback on what will happen next
+      if (loadedSuggestions.size > 0) {
+        toast({
+          title: "Prioritizing suggestions",
+          description: `Will focus on ${loadedSuggestions.size} suggested Pokemon in upcoming battles`,
+          duration: 4000
+        });
+      }
     }
-  }, [showingMilestone, needsToReloadSuggestions, loadSavedSuggestions, generateRankings, battleResults, triggerSuggestionPrioritization]);
+  }, [
+    showingMilestone, 
+    needsToReloadSuggestions, 
+    loadSavedSuggestions, 
+    generateRankings, 
+    battleResults, 
+    triggerSuggestionPrioritization,
+    resetSuggestionPriority
+  ]);
 
   // Enhanced milestone ended handler with stronger suggestion focus
   const handleMilestoneEnded = useCallback(() => {
@@ -240,11 +267,22 @@ export const useBattleStateCore = (
     }
     
     // When continuing battles, explicitly prioritize any suggestions
+    if (resetSuggestionPriority) {
+      console.log("🚨 Resetting suggestion priority in handleContinueBattles");
+      resetSuggestionPriority();
+    }
+    
     window.dispatchEvent(new Event("milestoneEnded"));
     
     // Start a new battle with current battle type
     startNewBattle(battleType);
-  }, [setShowingMilestone, resetMilestoneInProgress, battleType, startNewBattle]);
+  }, [
+    setShowingMilestone, 
+    resetMilestoneInProgress, 
+    resetSuggestionPriority,
+    battleType, 
+    startNewBattle
+  ]);
 
   return {
     currentBattle,

@@ -1,3 +1,4 @@
+
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { Rating } from "ts-trueskill";
 import { BattleType } from "./types";
@@ -294,7 +295,7 @@ export function createBattleStarter(
   /**
    * Start a new battle using selection strategies
    */
-  function startNewBattle(battleType: BattleType = "pairs"): Pokemon[] {
+  function startNewBattle(battleType: BattleType = "pairs", forceSuggestionPriority: boolean = false): Pokemon[] {
     // Ensure we have available Pokemon
     if (!allPokemon || allPokemon.length < 2) {
       console.error("Not enough Pokemon available for battle");
@@ -304,9 +305,16 @@ export function createBattleStarter(
     // Choose a strategy based on various factors
     let selectedPokemon: Pokemon[] = [];
     
-    // If we have active suggestions, give them a very high priority (90%)
-    // or if we've gone too many battles without using suggestions
-    if ((suggested.size > 0 && Math.random() < 0.9) || consecutiveNonSuggestionBattles >= 5) {
+    // If forcing suggestion priority OR we have active suggestions with high priority (95%)
+    // OR if we've gone too many battles without using suggestions
+    if (forceSuggestionPriority || 
+        (suggested.size > 0 && Math.random() < 0.95) || 
+        consecutiveNonSuggestionBattles >= 3) {
+      
+      if (forceSuggestionPriority) {
+        console.log("🚨 FORCING suggestion priority battle");
+      }
+      
       // Try to create a suggestion-focused battle
       const suggestedBattle = selectSuggestedPokemon(battleType);
       
@@ -320,6 +328,7 @@ export function createBattleStarter(
     } else {
       // Otherwise, use a mix of strategies
       const strategyRoll = Math.random();
+      consecutiveNonSuggestionBattles++;
       
       if (strategyRoll < 0.6) {
         // 60% chance: Select Pokemon from similar tiers
