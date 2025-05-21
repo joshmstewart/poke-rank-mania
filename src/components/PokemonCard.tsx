@@ -1,10 +1,10 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Pokemon } from "@/services/pokemon";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { getPreferredImageUrl } from "@/components/settings/ImagePreferenceSelector";
+import { normalizePokedexNumber, capitalizeSpecialForms } from "@/utils/pokemonUtils";
 
 interface PokemonCardProps {
   pokemon: Pokemon;
@@ -41,6 +41,10 @@ const PokemonCard = ({ pokemon, isDragging, viewMode = "list", compact }: Pokemo
   const [retryCount, setRetryCount] = useState(0);
   const maxRetries = 3;
   const [currentImageUrl, setCurrentImageUrl] = useState<string>("");
+
+  // Normalize the pokemon ID for display and capitalize special forms
+  const normalizedId = normalizePokedexNumber(pokemon.id);
+  const formattedName = capitalizeSpecialForms(pokemon.name);
 
   // Reset image states when pokemon changes
   useEffect(() => {
@@ -94,7 +98,7 @@ const PokemonCard = ({ pokemon, isDragging, viewMode = "list", compact }: Pokemo
           )}
           <img 
             src={currentImageUrl} 
-            alt={pokemon.name}
+            alt={formattedName}
             className={`w-full h-full object-contain ${!imageLoaded ? 'opacity-0' : 'opacity-100'} transition-opacity duration-200`}
             loading="lazy"
             onLoad={handleImageLoad}
@@ -103,15 +107,15 @@ const PokemonCard = ({ pokemon, isDragging, viewMode = "list", compact }: Pokemo
           {imageError && retryCount >= maxRetries && (
             <div className="absolute inset-0 flex items-center justify-center bg-gray-100 bg-opacity-80">
               <div className="text-sm text-gray-500 text-center p-2">
-                {pokemon.name}<br/>(#{pokemon.id})
+                {formattedName}<br/>(#{normalizedId})
               </div>
             </div>
           )}
         </div>
         <div className="absolute bottom-0 left-0 right-0 p-2">
           <div className="flex items-center justify-between">
-            <div className="font-medium text-white text-shadow">{pokemon.name}</div>
-            <div className="text-xs text-white text-shadow">#{pokemon.id}</div>
+            <div className="font-medium text-white text-shadow">{formattedName}</div>
+            <div className="text-xs text-white text-shadow">#{normalizedId}</div>
           </div>
         </div>
       </div>
@@ -132,7 +136,7 @@ const PokemonCard = ({ pokemon, isDragging, viewMode = "list", compact }: Pokemo
             )}
             <img 
               src={currentImageUrl} 
-              alt={pokemon.name} 
+              alt={formattedName} 
               className={`w-full h-full object-contain p-1 ${!imageLoaded ? 'opacity-0' : 'opacity-100'} transition-opacity duration-200`}
               loading="lazy"
               onLoad={handleImageLoad}
@@ -140,7 +144,7 @@ const PokemonCard = ({ pokemon, isDragging, viewMode = "list", compact }: Pokemo
             />
             {imageError && retryCount >= maxRetries && (
               <div className="absolute inset-0 flex items-center justify-center bg-gray-100 bg-opacity-80">
-                <div className="text-xs text-gray-500">{pokemon.name}<br/>(#{pokemon.id})</div>
+                <div className="text-xs text-gray-500">{formattedName}<br/>(#{normalizedId})</div>
               </div>
             )}
           </AspectRatio>
@@ -148,8 +152,8 @@ const PokemonCard = ({ pokemon, isDragging, viewMode = "list", compact }: Pokemo
         <div className="flex-1 min-w-0">
           <div className="flex flex-col gap-1">
             <div className="flex items-center justify-between">
-              <div className={`font-medium truncate ${compact ? "text-sm" : "text-base"}`}>{pokemon.name}</div>
-              <div className="text-xs text-muted-foreground shrink-0 ml-1">#{pokemon.id}</div>
+              <div className={`font-medium truncate ${compact ? "text-sm" : "text-base"}`}>{formattedName}</div>
+              <div className="text-xs text-muted-foreground shrink-0 ml-1">#{normalizedId}</div>
             </div>
             
             {pokemon.types && pokemon.types.length > 0 && (

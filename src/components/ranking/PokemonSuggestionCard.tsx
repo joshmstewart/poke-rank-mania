@@ -12,6 +12,7 @@ import {
 import { RankedPokemon } from "@/services/pokemon";
 import { ArrowUp, ArrowDown } from "lucide-react";
 import { getPokemonGeneration } from "./rankingUtils";
+import { normalizePokedexNumber, capitalizeSpecialForms } from "@/utils/pokemonUtils";
 
 interface PokemonSuggestionCardProps {
   pokemon: RankedPokemon;
@@ -35,6 +36,12 @@ export const PokemonSuggestionCard: React.FC<PokemonSuggestionCardProps> = ({
   
   const generation = getPokemonGeneration(pokemon.id);
   
+  // Normalize the pokemon ID for display
+  const normalizedId = normalizePokedexNumber(pokemon.id);
+  
+  // Capitalize special forms in the name
+  const formattedName = capitalizeSpecialForms(pokemon.name);
+  
   const handleDirectionChange = (direction: "up" | "down") => {
     // If same direction is clicked, remove the suggestion
     if (direction === activeDirection) {
@@ -55,15 +62,8 @@ export const PokemonSuggestionCard: React.FC<PokemonSuggestionCardProps> = ({
     onSuggestRanking(pokemon, activeDirection, strength);
   };
   
-  const getArrowDisplay = () => {
-    if (!activeDirection) return null;
-    
-    const arrow = activeDirection === "up" ? "↑" : "↓";
-    return arrow.repeat(activeStrength);
-  };
-
   return (
-    <HoverCard>
+    <HoverCard openDelay={100} closeDelay={200}>
       <HoverCardTrigger asChild>
         <div className="relative">
           {children}
@@ -95,13 +95,13 @@ export const PokemonSuggestionCard: React.FC<PokemonSuggestionCardProps> = ({
           <div className="flex items-center gap-3">
             <img 
               src={pokemon.image} 
-              alt={pokemon.name}
+              alt={formattedName}
               className="w-12 h-12 object-contain"
             />
             <div>
-              <h4 className="font-semibold">{pokemon.name}</h4>
+              <h4 className="font-semibold">{formattedName}</h4>
               <div className="text-xs text-muted-foreground">
-                #{pokemon.id} • {generation?.name || "Unknown"}
+                #{normalizedId} • {generation?.name || "Unknown"}
               </div>
               {pokemon.types && (
                 <div className="flex gap-1 mt-1">
@@ -183,7 +183,7 @@ export const PokemonSuggestionCard: React.FC<PokemonSuggestionCardProps> = ({
             
             {activeDirection && (
               <p className="text-xs text-muted-foreground mt-1.5">
-                This will suggest {pokemon.name} should be ranked 
+                This will suggest {formattedName} should be ranked 
                 <span className="font-medium"> {activeDirection === "up" ? "higher" : "lower"}</span> in the next battle.
               </p>
             )}

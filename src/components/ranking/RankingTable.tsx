@@ -1,4 +1,3 @@
-
 import React from "react";
 import {
   Table,
@@ -12,13 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { RankedPokemon, TopNOption } from "@/services/pokemon";
 import { getPokemonGeneration } from "./rankingUtils";
 import { PokemonSuggestionCard } from "./PokemonSuggestionCard";
-
-interface RankingTableProps {
-  displayRankings: RankedPokemon[];
-  activeTier: TopNOption;
-  onSuggestRanking?: (pokemon: RankedPokemon, direction: "up" | "down", strength: 1 | 2 | 3) => void;
-  onRemoveSuggestion?: (pokemonId: number) => void;
-}
+import { normalizePokedexNumber, capitalizeSpecialForms } from "@/utils/pokemonUtils";
 
 // Get the confidence level as a string
 const getConfidenceLevel = (confidenceValue: number) => {
@@ -26,6 +19,13 @@ const getConfidenceLevel = (confidenceValue: number) => {
   if (confidenceValue >= 40) return "Medium";
   return "Low";
 };
+
+interface RankingTableProps {
+  displayRankings: RankedPokemon[];
+  activeTier: TopNOption;
+  onSuggestRanking?: (pokemon: RankedPokemon, direction: "up" | "down", strength: 1 | 2 | 3) => void;
+  onRemoveSuggestion?: (pokemonId: number) => void;
+}
 
 export const RankingTable: React.FC<RankingTableProps> = ({ 
   displayRankings, 
@@ -62,6 +62,8 @@ export const RankingTable: React.FC<RankingTableProps> = ({
           const confidence = pokemon.confidence || 0;
           const confidenceLevel = getConfidenceLevel(confidence);
           const isFrozen = pokemon.isFrozenForTier && pokemon.isFrozenForTier[activeTier.toString()];
+          const normalizedId = normalizePokedexNumber(pokemon.id);
+          const formattedName = capitalizeSpecialForms(pokemon.name);
           
           return (
             <TableRow 
@@ -77,20 +79,20 @@ export const RankingTable: React.FC<RankingTableProps> = ({
                 >
                   <img 
                     src={pokemon.image} 
-                    alt={pokemon.name} 
+                    alt={formattedName} 
                     className={`w-10 h-10 object-contain ${isFrozen ? "opacity-50" : ""}`}
                   />
                 </PokemonSuggestionCard>
               </TableCell>
               <TableCell>
                 <div className="flex items-center">
-                  {pokemon.name}
+                  {formattedName}
                   {isFrozen && (
                     <span className="ml-2 text-xs text-gray-500">(Frozen)</span>
                   )}
                 </div>
               </TableCell>
-              <TableCell>#{pokemon.id}</TableCell>
+              <TableCell>#{normalizedId}</TableCell>
               <TableCell>{generation?.name || "Unknown"}</TableCell>
               <TableCell className="text-right font-mono">
                 {pokemon.score ? pokemon.score.toFixed(1) : "N/A"}

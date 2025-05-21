@@ -1,8 +1,8 @@
-
 import React from "react";
 import { Pokemon } from "@/services/pokemon";
 import { getPokemonTypeColor } from "./utils/pokemonTypeColors";
 import { getPreferredImageUrl } from "@/components/settings/ImagePreferenceSelector";
+import { normalizePokedexNumber, capitalizeSpecialForms } from "@/utils/pokemonUtils";
 
 interface PokemonThumbnailProps {
   pokemon: Pokemon;
@@ -11,6 +11,8 @@ interface PokemonThumbnailProps {
 
 const PokemonThumbnail: React.FC<PokemonThumbnailProps> = ({ pokemon, index }) => {
   const typeColor = getPokemonTypeColor(pokemon);
+  const normalizedId = normalizePokedexNumber(pokemon.id);
+  const formattedName = capitalizeSpecialForms(pokemon.name);
   
   return (
     <div className="relative flex flex-col overflow-hidden bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
@@ -24,7 +26,7 @@ const PokemonThumbnail: React.FC<PokemonThumbnailProps> = ({ pokemon, index }) =
         <div className="w-full aspect-square relative flex items-center justify-center max-h-20">
           <img 
             src={getPreferredImageUrl(pokemon.id)} 
-            alt={pokemon.name} 
+            alt={formattedName} 
             className="object-contain max-h-16 p-1"
             onError={(e) => {
               const target = e.target as HTMLImageElement;
@@ -37,8 +39,8 @@ const PokemonThumbnail: React.FC<PokemonThumbnailProps> = ({ pokemon, index }) =
       
       {/* Pokemon info at bottom */}
       <div className="py-1 px-2 text-center border-t border-gray-100">
-        <div className="font-medium text-xs truncate">{pokemon.name}</div>
-        <div className="text-xs text-muted-foreground">#{pokemon.id}</div>
+        <div className="font-medium text-xs truncate">{formattedName}</div>
+        <div className="text-xs text-muted-foreground">#{normalizedId}</div>
       </div>
     </div>
   );
