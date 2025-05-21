@@ -1,4 +1,3 @@
-
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
 
@@ -10,9 +9,11 @@ export function createBattleStarter(
   availablePokemon: Pokemon[],
   rankedPokemon: RankedPokemon[] = [],
   setCurrentBattle: React.Dispatch<React.SetStateAction<Pokemon[]>>,
-  suggestedPokemon: RankedPokemon[] = [],
-  battleCount: number = 0,                                     // ADD THIS PARAMETER
-  setBattleCount?: React.Dispatch<React.SetStateAction<number>> // ADD THIS PARAMETER
+  activeTier: string = "All",  // Updated parameter type to match API
+  isPokemonFrozenForTier?: (pokemonId: number, tier: string) => boolean,
+  suggestedPokemonIds: number[] = [],
+  battleCount: number = 0,
+  setBattleCount?: React.Dispatch<React.SetStateAction<number>>
 ) {
   // Keep track of recently used Pokemon to avoid repeats
   const recentlyUsed = new Set<number>();
@@ -28,8 +29,12 @@ export function createBattleStarter(
   const previousMatchups = new Set<string>();
   
   // Initialize suggestion tracking
-  if (suggestedPokemon.length > 0) {
-    suggestedPokemon.forEach(p => suggested.set(p.id, p));
+  if (suggestedPokemonIds.length > 0) {
+    rankedPokemon.forEach(p => {
+      if (suggestedPokemonIds.includes(p.id)) {
+        suggested.set(p.id, p);
+      }
+    });
     console.log(`🎮 Battle Starter: Tracking ${suggested.size} Pokemon with suggestions`);
   }
 

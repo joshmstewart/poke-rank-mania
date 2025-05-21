@@ -37,4 +37,5 @@ export * from "./useBattleStateSelection";
 export * from "./useBattleResults";
 export * from "./useBattleOutcomeProcessor";
 export * from "./useBattleStarterIntegration";
-export * from "./useBattleEmergencyReset"; // New hook
+export * from "./useBattleEmergencyReset";
+export * from "./useBattleStarter";
