@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   HoverCard,
   HoverCardContent,
@@ -27,12 +27,15 @@ export const PokemonSuggestionCard: React.FC<PokemonSuggestionCardProps> = ({
   onSuggestRanking,
   onRemoveSuggestion
 }) => {
-  const [activeDirection, setActiveDirection] = useState<"up" | "down" | null>(
-    pokemon.suggestedAdjustment?.direction || null
-  );
-  const [activeStrength, setActiveStrength] = useState<1 | 2 | 3>(
-    pokemon.suggestedAdjustment?.strength || 1
-  );
+  const [activeDirection, setActiveDirection] = useState<"up" | "down" | null>(null);
+const [activeStrength, setActiveStrength] = useState<1 | 2 | 3>(1);
+
+// CRITICAL FIX: Sync internal state when pokemon.suggestedAdjustment changes
+useEffect(() => {
+  setActiveDirection(pokemon.suggestedAdjustment?.direction || null);
+  setActiveStrength(pokemon.suggestedAdjustment?.strength || 1);
+}, [pokemon.suggestedAdjustment]);
+
   
   const generation = getPokemonGeneration(pokemon.id);
   
