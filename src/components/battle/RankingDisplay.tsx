@@ -1,8 +1,7 @@
 
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Pokemon } from "@/services/pokemon";
-import { RankedPokemon } from "@/hooks/battle/useRankings";
+import { Pokemon, TopNOption, RankedPokemon } from "@/services/pokemon";
 import { Trophy, Award, Medal } from "lucide-react";
 import { getPreferredImageUrl } from "@/components/settings/ImagePreferenceSelector";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -37,6 +36,8 @@ interface RankingDisplayProps {
   rankingGenerated: boolean;
   onSaveRankings: () => void;
   isMilestoneView?: boolean;
+  activeTier?: TopNOption;
+  onTierChange?: (tier: TopNOption) => void;
 }
 
 const RankingDisplay: React.FC<RankingDisplayProps> = ({
@@ -46,7 +47,9 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
   onNewBattleSet,
   rankingGenerated,
   onSaveRankings,
-  isMilestoneView = false
+  isMilestoneView = false,
+  activeTier,
+  onTierChange
 }) => {
   console.log("🟣 RankingDisplay component rendered with", finalRankings.length, "Pokémon");
   const [displayCount, setDisplayCount] = useState(20);

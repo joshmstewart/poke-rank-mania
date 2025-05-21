@@ -1,6 +1,6 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
-import { Pokemon, fetchAllPokemon, TopNOption } from "@/services/pokemon";
+import { Pokemon, fetchAllPokemon, TopNOption, RankedPokemon } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
 import { useProgressState } from "./useProgressState";
 import { useBattleProcessor } from "./useBattleProcessor";
@@ -57,20 +57,20 @@ export const useBattleStateCore = (allPokemon: Pokemon[], initialBattleType: Bat
 
   const [battlesCompleted, setBattlesCompleted] = useState(battleResults.length);
 
-  // Create battle starter with tier-aware selection logic
-  const battleStarter = useRef(createBattleStarter(
+  // Create battle starter with tier-aware selection logic - without hooks inside
+  const battleStarterRef = useRef(createBattleStarter(
     availablePokemon,
     availablePokemon,
     finalRankings,
     setCurrentBattle,
     activeTier,
     isPokemonFrozenForTier
-  )).current;
+  ));
 
   // Update battle starter when rankings or tier changes
   useEffect(() => {
     // Recreate battle starter with updated rankings and tier
-    const updatedStarter = createBattleStarter(
+    battleStarterRef.current = createBattleStarter(
       availablePokemon,
       availablePokemon,
       finalRankings,
@@ -78,10 +78,7 @@ export const useBattleStateCore = (allPokemon: Pokemon[], initialBattleType: Bat
       activeTier,
       isPokemonFrozenForTier
     );
-    
-    // Update the ref
-    Object.assign(battleStarter, updatedStarter);
-  }, [finalRankings.length, activeTier, isPokemonFrozenForTier]);
+  }, [finalRankings.length, activeTier, isPokemonFrozenForTier, availablePokemon]);
 
   const { processBattleResult, isProcessingResult, resetMilestoneInProgress } = useBattleProcessor(
     battleResults,
@@ -179,8 +176,8 @@ export const useBattleStateCore = (allPokemon: Pokemon[], initialBattleType: Bat
 
   const startNewBattle = useCallback(async (battleType: BattleType) => {
     battleTypeRef.current = battleType;
-    battleStarter.startNewBattle(battleType);
-  }, [battleStarter]);
+    battleStarterRef.current.startNewBattle(battleType);
+  }, []);
 
   useEffect(() => {
     const fetchPokemon = async () => {
@@ -202,7 +199,7 @@ export const useBattleStateCore = (allPokemon: Pokemon[], initialBattleType: Bat
     rankingGenerated,
     selectedPokemon,
     battleType: battleTypeRef.current,
-    setBattleType: (type: BattleType) => battleTypeRef.current = type,
+    setBattleType: (type: BattleType) => { battleTypeRef.current = type; },
     finalRankings,
     handlePokemonSelect,
     handleTripletSelectionComplete,

@@ -1,4 +1,4 @@
-import { useRef } from "react";
+
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { BattleType } from "./types";
 
@@ -10,9 +10,10 @@ export const createBattleStarter = (
   activeTier: TopNOption = "All",
   isPokemonFrozenForTier?: (pokemonId: number, tier: TopNOption) => boolean
 ) => {
-  const recentlySeenPokemon = useRef<Set<number>>(new Set());
-  const battleCountRef = useRef(0);
-  const initialSubsetRef = useRef<Pokemon[] | null>(null);
+  // Use plain objects instead of hooks
+  const recentlySeenPokemon = new Set<number>();
+  let battleCountRef = 0;
+  let initialSubsetRef: Pokemon[] | null = null;
 
   const shuffleArray = (array: Pokemon[]) => {
     const shuffled = [...array];
@@ -92,20 +93,20 @@ export const createBattleStarter = (
   };
 
   const startNewBattle = (battleType: BattleType) => {
-    battleCountRef.current++;
+    battleCountRef++;
     const battleSize = battleType === "pairs" ? 2 : 3;
 
     let result: Pokemon[] = [];
 
     // Fixed initial subset selection for first 25 battles (down from 100)
-    if (battleCountRef.current <= 25) {
+    if (battleCountRef <= 25) {
       const INITIAL_SUBSET_SIZE = 15; // clearly defined size for repetition
 
-      if (!initialSubsetRef.current) {
-        initialSubsetRef.current = shuffleArray(pokemonList).slice(0, INITIAL_SUBSET_SIZE);
+      if (!initialSubsetRef) {
+        initialSubsetRef = shuffleArray(pokemonList).slice(0, INITIAL_SUBSET_SIZE);
       }
 
-      result = pickDistinctPair(initialSubsetRef.current, recentlySeenPokemon.current, battleSize);
+      result = pickDistinctPair(initialSubsetRef, recentlySeenPokemon, battleSize);
     } else {
       // Use the tier-based battle selection for battles after the initial phase
       result = getTierBattlePair(battleType);
@@ -118,9 +119,10 @@ export const createBattleStarter = (
 
     // Maintain seen set capped at 50 entries
     result.forEach(p => {
-      recentlySeenPokemon.current.add(p.id);
-      if (recentlySeenPokemon.current.size > 50) {
-        recentlySeenPokemon.current.delete([...recentlySeenPokemon.current][0]);
+      recentlySeenPokemon.add(p.id);
+      if (recentlySeenPokemon.size > 50) {
+        const iter = recentlySeenPokemon.values();
+        recentlySeenPokemon.delete(iter.next().value);
       }
     });
 
