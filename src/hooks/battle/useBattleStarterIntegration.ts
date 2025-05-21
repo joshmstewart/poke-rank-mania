@@ -1,4 +1,3 @@
-
 import { useMemo, useEffect, useRef, useState, useCallback } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
@@ -110,7 +109,7 @@ useEffect(() => {
     // Extract suggested Pokemon IDs
     const suggestedPokemonIds = pokemonWithSuggestions.map(p => p.id);
     
-    // Enhanced battle starter with suggestion prioritization and persisted battle count
+    // Updated to pass the battle count and setter
     return createBattleStarter(
       allPokemon,
       allPokemon,
@@ -119,8 +118,8 @@ useEffect(() => {
       "All", // defaulting to All tier here
       undefined, // isPokemonFrozenForTier
       suggestedPokemonIds,
-      battleCount, // Pass the persisted battle count
-      setBattleCount // Pass the setter for battle count
+      battleCount, 
+      setBattleCount 
     );
   }, [allPokemon, currentRankings, setCurrentBattle, battleCount]);
 

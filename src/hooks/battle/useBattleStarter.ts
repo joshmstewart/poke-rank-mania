@@ -1,7 +1,7 @@
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { BattleType } from "./types";
 
-export const createBattleStarter = (
+export const createTierBattleStarter = (
   pokemonList: Pokemon[],
   allPokemonForGeneration: Pokemon[],
   currentFinalRankings: RankedPokemon[],
@@ -9,8 +9,8 @@ export const createBattleStarter = (
   activeTier: TopNOption = "All",
   isPokemonFrozenForTier?: (pokemonId: number, tier: TopNOption) => boolean,
   suggestedPokemonIds: number[] = [],
-  battleCount: number = 0,                                      // ⬅️ ADD THIS PARAMETER  
-  setBattleCount?: React.Dispatch<React.SetStateAction<number>> // ⬅️ ADD THIS PARAMETER
+  battleCount: number = 0,                                      
+  setBattleCount?: React.Dispatch<React.SetStateAction<number>> 
 ) => {
 
   // Use plain objects instead of hooks
@@ -51,7 +51,6 @@ export const createBattleStarter = (
 
     return [...suggestedCandidates, ...additionalCandidates];
   };
-
 
   const getTierBattlePair = (battleType: BattleType): Pokemon[] => {
     const battleSize = battleType === "pairs" ? 2 : 3;
