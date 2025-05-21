@@ -134,12 +134,16 @@ useEffect(() => {
         
       console.log(`🔄 Prioritizing suggestion battles (${suggestionBattleCountRef.current + 1}/${requiredPriorityBattles})`);
       
-    // Decrease forced priority ONLY IF no suggestions were found in this battle
+// First, explicitly create the battle (moved declaration above usage)
+const battle = battleStarter.startNewBattle(battleType, shouldForcePriority || (suggestedPokemon.length > 0 && suggestionPriorityEnabledRef.current && suggestionBattleCountRef.current < requiredPriorityBattles));
+
+// Check explicitly if the battle has suggestions
 const hasSuggestionInBattle = battle.some(pokemon => {
   const rankedPokemon = currentRankings.find(p => p.id === pokemon.id);
   return rankedPokemon?.suggestedAdjustment && !rankedPokemon.suggestedAdjustment.used;
 });
 
+// Decrease forced priority ONLY IF no suggestions were found in this battle
 if (forcedPriorityBattlesRef.current > 0 && !hasSuggestionInBattle) {
   forcedPriorityBattlesRef.current--;
   console.log(`⚡ Forced priority battles decreased (no suggestion this battle). Remaining: ${forcedPriorityBattlesRef.current}`);
