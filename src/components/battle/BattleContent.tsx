@@ -51,7 +51,8 @@ const BattleContent = ({ allPokemon, initialBattleType, initialSelectedGeneratio
     activeTier,
     setActiveTier,
     suggestRanking,
-    removeSuggestion
+    removeSuggestion,
+    handleContinueBattles
   } = useBattleStateCore(allPokemon, initialBattleType, initialSelectedGeneration);
 
   // Only call startNewBattle once when the component mounts and allPokemon is available
@@ -110,14 +111,14 @@ const BattleContent = ({ allPokemon, initialBattleType, initialSelectedGeneratio
     startNewBattle(battleType);
   };
 
-const handleContinueBattles = () => {
-  setShowingMilestone(false);
-  if (processorRefs?.resetMilestoneInProgress) {
-    processorRefs.resetMilestoneInProgress();
-  }
-  window.dispatchEvent(new Event("milestoneEnded")); // Explicitly dispatch milestone ended event
-  startNewBattle(battleType);
-};
+  const handleContinueBattles = () => {
+    setShowingMilestone(false);
+    if (processorRefs?.resetMilestoneInProgress) {
+      processorRefs.resetMilestoneInProgress();
+    }
+    window.dispatchEvent(new Event("milestoneEnded")); // Explicitly dispatch milestone ended event
+    startNewBattle(battleType);
+  };
 
   const handleNewBattleSet = () => {
     resetMilestones();
