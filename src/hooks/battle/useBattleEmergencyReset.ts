@@ -1,5 +1,5 @@
-
 import { useEffect } from "react";
+import * as React from "react";
 import { Pokemon } from "@/services/pokemon";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
