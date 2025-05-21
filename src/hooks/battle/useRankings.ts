@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { SingleBattle } from "./types";
 import { Rating } from "ts-trueskill";
@@ -13,6 +12,9 @@ export const useRankings = (allPokemon: Pokemon[]) => {
     return storedTier ? (storedTier === "All" ? "All" : Number(storedTier) as TopNOption) : 25;
   });
   const [frozenPokemon, setFrozenPokemon] = useState<Record<number, { [tier: string]: boolean }>>({});
+  
+  // Keep a reference to the currently active suggestions for debugging
+  const activeRankingSuggestionsRef = useRef<Map<number, any>>(new Map());
 
   // Initialize the ranking suggestions hook
   const {
@@ -21,8 +23,19 @@ export const useRankings = (allPokemon: Pokemon[]) => {
     markSuggestionUsed, 
     clearAllSuggestions,
     findNextSuggestion,
-    activeSuggestions
+    activeSuggestions,
+    loadSavedSuggestions // Make sure this is exported from useRankingSuggestions
   } = useRankingSuggestions(finalRankings, setFinalRankings);
+  
+  // Set ref when activeSuggestions changes
+  useEffect(() => {
+    if (activeSuggestions) {
+      activeRankingSuggestionsRef.current = activeSuggestions;
+      
+      // Debug log the active suggestions
+      console.log(`🔄 useRankings: Received ${activeSuggestions.size} active suggestions from hook`);
+    }
+  }, [activeSuggestions]);
 
   useEffect(() => {
     // Load frozen pokemon state from localStorage
@@ -46,14 +59,37 @@ export const useRankings = (allPokemon: Pokemon[]) => {
     localStorage.setItem("pokemon-frozen-pokemon", JSON.stringify(frozenPokemon));
   }, [frozenPokemon]);
 
+  // Force reload suggestions when rankings are empty but we have stored suggestions
+  const forceReloadSuggestions = useCallback(() => {
+    if (finalRankings.length === 0 && loadSavedSuggestions) {
+      console.log("📣 useRankings: Forcing reload of saved suggestions");
+      loadSavedSuggestions();
+    }
+  }, [finalRankings.length, loadSavedSuggestions]);
+  
+  // Call once on component mount
+  useEffect(() => {
+    forceReloadSuggestions();
+  }, [forceReloadSuggestions]);
+
   // Generate rankings based on TrueSkill ratings and the current tier setting
   const generateRankings = (results: SingleBattle[]): RankedPokemon[] => {
-    // ADDED: Better logging to debug suggestion preservation
     console.log(`👉 generateRankings: Starting with ${finalRankings.length} existing rankings`);
     
     // Count how many existing rankings have suggestions
     const existingSuggestions = finalRankings.filter(p => p.suggestedAdjustment);
     console.log(`📊 generateRankings: Found ${existingSuggestions.length} existing suggestions`);
+    
+    // Log all the existing suggestions for debugging
+    if (existingSuggestions.length > 0) {
+      console.log("🔎 Existing suggestions:");
+      existingSuggestions.forEach(p => {
+        console.log(`- ${p.name}: ${p.suggestedAdjustment?.direction} x${p.suggestedAdjustment?.strength} (used: ${p.suggestedAdjustment?.used})`);
+      });
+    }
+    
+    // Also check the suggestions map from the hook
+    console.log(`🔍 generateRankings: activeSuggestions map has ${activeRankingSuggestionsRef.current?.size || 0} items`);
     
     // Create a map to track battle counts
     const countMap = new Map<number, number>();
@@ -89,18 +125,17 @@ export const useRankings = (allPokemon: Pokemon[]) => {
         // Get current frozen status for this Pokemon (or initialize if not exists)
         const pokemonFrozenStatus = frozenPokemon[p.id] || {};
 
-        // Preserve existing suggestedAdjustment if it exists
+        // Check if this Pokemon has a suggestion in the existing rankings
         const existingRankedPokemon = finalRankings.find(rp => rp.id === p.id);
-        
-        // Either keep the existing suggestion or check if there's a new one in activeSuggestions
         let suggestedAdjustment = existingRankedPokemon?.suggestedAdjustment;
         
-        // If there's no existing suggestion but we have one in the suggestions map, use that
-        if (!suggestedAdjustment && activeSuggestions && activeSuggestions.has(p.id)) {
-          suggestedAdjustment = activeSuggestions.get(p.id);
+        // If there's no suggestion from existing rankings, check the activeSuggestions map
+        if (!suggestedAdjustment && activeRankingSuggestionsRef.current && activeRankingSuggestionsRef.current.has(p.id)) {
+          suggestedAdjustment = activeRankingSuggestionsRef.current.get(p.id);
+          console.log(`📌 Found suggestion for ${p.name} in activeSuggestions map: ${suggestedAdjustment.direction} x${suggestedAdjustment.strength}`);
         }
         
-        // Debug log for tracking suggestion preservation
+        // Log if we're preserving a suggestion
         if (suggestedAdjustment) {
           console.log(`🔹 Preserving suggestion for ${p.name}: ${suggestedAdjustment.direction} x${suggestedAdjustment.strength} (used: ${suggestedAdjustment.used})`);
         }
@@ -162,9 +197,8 @@ export const useRankings = (allPokemon: Pokemon[]) => {
     // Save frozen state as well
     localStorage.setItem("pokemon-frozen-pokemon", JSON.stringify(frozenPokemon));
     // We do NOT clear suggestions when saving rankings
-    // This allows the suggestions to persist between milestones
     
-    // NEW: Log existing suggestions count when saving
+    // Log existing suggestions count when saving
     const suggestionCount = finalRankings.filter(p => p.suggestedAdjustment).length;
     const unusedCount = finalRankings.filter(p => 
       p.suggestedAdjustment && !p.suggestedAdjustment.used
@@ -181,7 +215,7 @@ export const useRankings = (allPokemon: Pokemon[]) => {
     setActiveTier,
     freezePokemonForTier,
     isPokemonFrozenForTier,
-    allRankedPokemon: finalRankings, // This will be useful for battle selection
+    allRankedPokemon: finalRankings, 
     // Ranking suggestion functions
     suggestRanking,
     removeSuggestion,

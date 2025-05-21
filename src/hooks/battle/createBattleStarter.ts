@@ -29,6 +29,9 @@ export const createBattleStarter = (
   
   // Track consecutive battles without suggestion to force suggestion use
   let battlesWithoutSuggestion = 0;
+  
+  // Debug flag to log detailed battle selection information
+  const DEBUG_BATTLE_SELECTION = true;
 
   // Function to get a random Pokemon from a group
   const getRandomFromGroup = (group: Pokemon[]): Pokemon | null => {
@@ -38,8 +41,10 @@ export const createBattleStarter = (
 
   // Find the suggested pokemon to prioritize (if any)
   const findActiveSuggestion = (): RankedPokemon | undefined => {
-    // IMPORTANT: Add more detailed logging to help debug
-    console.log(`🔍 findActiveSuggestion: Searching through ${currentRankings.length} Pokémon for suggestions`);
+    // Add more detailed logging to help debug
+    if (DEBUG_BATTLE_SELECTION) {
+      console.log(`🔍 findActiveSuggestion: Searching through ${currentRankings.length} Pokémon for suggestions`);
+    }
     
     let suggestedCount = 0;
     let unusedCount = 0;
@@ -54,7 +59,9 @@ export const createBattleStarter = (
       }
     });
     
-    console.log(`📊 findActiveSuggestion: Found ${suggestedCount} total suggestions (${unusedCount} unused)`);
+    if (DEBUG_BATTLE_SELECTION) {
+      console.log(`📊 findActiveSuggestion: Found ${suggestedCount} total suggestions (${unusedCount} unused)`);
+    }
     
     // Higher priority to unused suggestions that haven't been used recently 
     const unusedSuggestions = currentRankings.filter(p => {
@@ -64,7 +71,9 @@ export const createBattleStarter = (
         !recentlyUsedSuggestions.has(p.id);
     }) as RankedPokemon[];
     
-    console.log(`🔄 findActiveSuggestion: Found ${unusedSuggestions.length} fresh unused suggestions`);
+    if (DEBUG_BATTLE_SELECTION) {
+      console.log(`🔄 findActiveSuggestion: Found ${unusedSuggestions.length} fresh unused suggestions`);
+    }
     
     if (unusedSuggestions.length > 0) {
       // Randomly select from available unused suggestions
@@ -100,21 +109,27 @@ export const createBattleStarter = (
     // Calculate offset based on strength (1-3)
     const offset = strength * 5;
     
-    console.log(`Selecting opponent for ${suggested.name} with direction=${direction}, strength=${strength}, offset=${offset}`);
+    if (DEBUG_BATTLE_SELECTION) {
+      console.log(`Selecting opponent for ${suggested.name} with direction=${direction}, strength=${strength}, offset=${offset}`);
+    }
     
     // Create a pool based on direction
     let pool: Pokemon[] = [];
     
     if (direction === "up") {
       // For "up" suggestion, select from better ranked Pokemon
-      const startIdx = Math.max(0, suggestedIndex - offset);
+      const startIdx = Math.max(0, suggestedIndex - offset - 5); // Added extra range
       pool = currentRankings.slice(startIdx, suggestedIndex);
-      console.log(`For "up" suggestion, selecting from ranks ${startIdx} to ${suggestedIndex-1} (pool size: ${pool.length})`);
+      if (DEBUG_BATTLE_SELECTION) {
+        console.log(`For "up" suggestion, selecting from ranks ${startIdx} to ${suggestedIndex-1} (pool size: ${pool.length})`);
+      }
     } else {
       // For "down" suggestion, select from lower ranked Pokemon
-      const endIdx = Math.min(currentRankings.length, suggestedIndex + 1 + offset);
+      const endIdx = Math.min(currentRankings.length, suggestedIndex + 1 + offset + 5); // Added extra range
       pool = currentRankings.slice(suggestedIndex + 1, endIdx);
-      console.log(`For "down" suggestion, selecting from ranks ${suggestedIndex+1} to ${endIdx-1} (pool size: ${pool.length})`);
+      if (DEBUG_BATTLE_SELECTION) {
+        console.log(`For "down" suggestion, selecting from ranks ${suggestedIndex+1} to ${endIdx-1} (pool size: ${pool.length})`);
+      }
     }
     
     // If pool is empty, fallback to normal selection
@@ -144,25 +159,25 @@ export const createBattleStarter = (
     
     console.log(`Starting new ${battleType} battle (need ${pokemonNeeded} Pokémon)`);
     
-    // GUARANTEE to prioritize suggestions (increased to 100%)
-    // This ensures suggested Pokémon will ALWAYS be selected if available
+    // ALWAYS prioritize suggestions (100% chance)
+    // This guarantees suggested Pokémon will be selected if available
     const forceSuggestionMatch = true;
     
-    // Force suggestion after 3 battles without using one
+    // Also force suggestion after 3 battles without using one
     const mustUseSuggestion = battlesWithoutSuggestion >= 3;
     
     if (mustUseSuggestion) {
       console.log("⚠️ FORCING suggestion match after", battlesWithoutSuggestion, "battles without using one");
     }
     
-    // Check if we can use a suggestion - removed timing restriction
-    const canUseSuggestion = forceSuggestionMatch || mustUseSuggestion;
+    // Always try to use a suggestion
+    const canUseSuggestion = true;
     
     if (canUseSuggestion) {
       const suggestedPokemon = findActiveSuggestion();
       
       if (suggestedPokemon) {
-        console.log(`Found suggestion for ${suggestedPokemon.name}, trying to create battle`);
+        console.log(`Found suggestion for ${suggestedPokemon.name}, creating battle`);
         const suggestedIndex = currentRankings.findIndex(p => p.id === suggestedPokemon.id);
         
         if (suggestedIndex !== -1) {
@@ -216,7 +231,7 @@ export const createBattleStarter = (
     }
     
     // If no suggestion or we couldn't build a suggestion battle, fall back to normal logic
-    console.log("No active suggestions or suggestion match skipped, using normal battle selection");
+    console.log("No active suggestions found, using normal battle selection");
     battlesWithoutSuggestion++; // Increment counter for battles without using suggestions
     
     // Ensure we have proper Pokemon lists to work with
@@ -231,7 +246,9 @@ export const createBattleStarter = (
     const ranked = Array.isArray(currentRankings) ? [...currentRankings] : [];
     const unranked = safeAllPokemon.filter(p => !ranked.some(r => r.id === p.id));
     
-    console.log(`Starting battle with ${ranked.length} ranked and ${unranked.length} unranked Pokémon`);
+    if (DEBUG_BATTLE_SELECTION) {
+      console.log(`Starting battle with ${ranked.length} ranked and ${unranked.length} unranked Pokémon`);
+    }
     
     // Simple fallback if we have no strategy
     let result: Pokemon[] = [];

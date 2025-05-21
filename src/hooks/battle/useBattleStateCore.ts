@@ -103,35 +103,19 @@ export const useBattleStateCore = (
     markSuggestionUsed
   );
 
-  // WE ARE NO LONGER COMMENTING OUT THIS CODE
-  // We're COMPLETELY REMOVING it as it causes suggestions to be cleared
-  // when the component mounts/unmounts, which is what's causing our issue
-  /*
+  // Debug effect to log every time finalRankings changes
   useEffect(() => {
-    // This will run when the component mounts
-    clearAllSuggestions();
+    console.log(`🔄 useBattleStateCore: finalRankings updated (${finalRankings.length} Pokémon)`);
     
-    // Return cleanup function that runs when component unmounts
-    return () => {
-      // Clear suggestions when leaving battle screen
-      clearAllSuggestions();
-    };
-  }, [clearAllSuggestions]);
-  */
-
-  // Add debug effect to monitor suggestions
-  useEffect(() => {
-    // Count suggestions in finalRankings
+    // Count and log suggestions in finalRankings
     const suggestedCount = finalRankings.filter(p => p.suggestedAdjustment).length;
     const unusedCount = finalRankings.filter(p => 
       p.suggestedAdjustment && !p.suggestedAdjustment.used
     ).length;
     
-    if (suggestedCount > 0) {
-      console.log(
-        `🔍 useBattleStateCore: ${suggestedCount} suggestions active (${unusedCount} unused)`
-      );
-    }
+    console.log(
+      `🔍 useBattleStateCore: ${suggestedCount} suggestions (${unusedCount} unused) in finalRankings`
+    );
   }, [finalRankings]);
 
   const {

@@ -10,6 +10,9 @@ export const useRankingSuggestions = (
   const [activeSuggestions, setActiveSuggestions] = useState<Map<number, RankingSuggestion>>(
     new Map()
   );
+  
+  // Track whether suggestions have been loaded from localStorage
+  const [suggestionsLoaded, setSuggestionsLoaded] = useState(false);
 
   // Add or update a suggestion
   const suggestRanking = useCallback((
@@ -175,6 +178,7 @@ export const useRankingSuggestions = (
   // Load suggestions from localStorage on init
   const loadSavedSuggestions = useCallback(() => {
     try {
+      console.log("🔄 Loading saved suggestions from localStorage...");
       const savedSuggestions = localStorage.getItem('pokemon-active-suggestions');
       if (savedSuggestions) {
         const parsedSuggestions = JSON.parse(savedSuggestions);
@@ -185,9 +189,15 @@ export const useRankingSuggestions = (
         console.log(`📂 Loaded ${suggestionMap.size} saved suggestions from localStorage`);
         
         setActiveSuggestions(suggestionMap);
+        setSuggestionsLoaded(true);
         
         // Apply these suggestions to the pokemon list
         setPokemonList(currentList => {
+          if (!currentList || currentList.length === 0) {
+            console.warn("Cannot apply suggestions: Pokemon list is empty");
+            return currentList;
+          }
+          
           console.log(`Applying ${suggestionMap.size} suggestions to ${currentList.length} Pokémon`);
           
           return currentList.map(p => {
@@ -201,19 +211,25 @@ export const useRankingSuggestions = (
             return p;
           });
         });
+        
+        return suggestionMap;
       } else {
         console.log("No saved suggestions found in localStorage");
+        return new Map<number, RankingSuggestion>();
       }
     } catch (e) {
       console.error("❌ Error loading suggestions from localStorage:", e);
+      return new Map<number, RankingSuggestion>();
     }
   }, [setPokemonList]);
   
   // Load saved suggestions when the hook is initialized
   useEffect(() => {
-    console.log("⚙️ useRankingSuggestions hook initialized - loading saved suggestions");
-    loadSavedSuggestions();
-  }, [loadSavedSuggestions]);
+    console.log("⚙️ useRankingSuggestions hook initialized");
+    if (!suggestionsLoaded) {
+      loadSavedSuggestions();
+    }
+  }, [suggestionsLoaded, loadSavedSuggestions]);
   
   // Debug effect to monitor suggestion counts
   useEffect(() => {
@@ -225,7 +241,9 @@ export const useRankingSuggestions = (
       p.suggestedAdjustment && p.suggestedAdjustment.used
     ).length;
     
-    console.log(`📊 Current suggestions: ${unusedCount} unused, ${usedCount} used (total: ${unusedCount + usedCount})`);
+    if (unusedCount > 0 || usedCount > 0) {
+      console.log(`📊 Current suggestions: ${unusedCount} unused, ${usedCount} used (total: ${unusedCount + usedCount})`);
+    }
   }, [pokemonList]);
 
   return {
@@ -234,6 +252,7 @@ export const useRankingSuggestions = (
     removeSuggestion,
     markSuggestionUsed,
     clearAllSuggestions,
-    findNextSuggestion
+    findNextSuggestion,
+    loadSavedSuggestions // Expose this function for external use
   };
 };
