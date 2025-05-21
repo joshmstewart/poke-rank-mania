@@ -18,19 +18,24 @@ const BattleHeader: React.FC<BattleHeaderProps> = ({
   isProcessing,
   internalProcessing
 }) => {
+  // Only show back button if there's history to go back to
+  const showBackButton = hasHistory && battlesCompleted > 0;
+  
   return (
     <div className="flex items-center justify-between mb-4">
       <div className="flex items-center">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onGoBack}
-          disabled={!hasHistory || isProcessing || internalProcessing}
-          className="mr-2"
-        >
-          <ChevronLeft className="h-4 w-4 mr-1" />
-          Back
-        </Button>
+        {showBackButton && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onGoBack}
+            disabled={isProcessing || internalProcessing}
+            className="mr-2"
+          >
+            <ChevronLeft className="h-4 w-4 mr-1" />
+            Back
+          </Button>
+        )}
         <span className="text-sm text-muted-foreground">
           Battles completed: {battlesCompleted}
         </span>

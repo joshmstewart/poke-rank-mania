@@ -2,7 +2,6 @@ import React, { useEffect, useRef } from "react";
 import { Pokemon, TopNOption } from "@/services/pokemon";
 import { useBattleStateCore } from "@/hooks/battle/useBattleStateCore";
 import BattleInterface from "./BattleInterface";
-import BattleHeader from "./BattleHeader";
 import BattleControls from "./BattleControls";
 import BattleFooterNote from "./BattleFooterNote";
 import { BattleType } from "@/hooks/battle/types";
@@ -151,14 +150,6 @@ const BattleContent = ({ allPokemon, initialBattleType, initialSelectedGeneratio
 
   return (
     <div className="flex flex-col items-center w-full gap-4">
-      <BattleHeader 
-        battlesCompleted={battlesCompleted} 
-        onGoBack={goBack}
-        hasHistory={battleHistory && battleHistory.length > 0}
-        isProcessing={isProcessingResult}
-        internalProcessing={false}
-      />
-      
       <div className="w-full max-w-3xl flex flex-col gap-4">
         <BattleControls
           selectedGeneration={selectedGeneration}
