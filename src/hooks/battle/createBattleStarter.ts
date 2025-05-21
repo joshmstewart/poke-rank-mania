@@ -1,121 +1,282 @@
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
+import { Rating } from "ts-trueskill";
 import { BattleType } from "./types";
 
-export const createBattleStarter = (
+interface RankedPokemonWithTier extends RankedPokemon {
+  tier?: number;
+}
+
+/**
+ * Creates a battle starter with various strategies for Pokemon selection
+ */
+export function createBattleStarter(
   allPokemon: Pokemon[],
-  filteredPokemon: Pokemon[],
-  currentRankings: RankedPokemon[],
-  setCurrentBattle: React.Dispatch<React.SetStateAction<Pokemon[]>>
-) => {
-  const recentlyUsedPokemon = new Set<number>();
-  const lastBattlePokemon = new Set<number>();
-  let totalBattlesStarted = 0;
+  availablePokemon: Pokemon[],
+  rankedPokemon: RankedPokemon[] = [],
+  setCurrentBattle: React.Dispatch<React.SetStateAction<Pokemon[]>>,
+  suggestedPokemon: RankedPokemon[] = []
+) {
+  // Keep track of recently used Pokemon to avoid repeats
+  const recentlyUsed = new Set<number>();
+  // Track Pokemon that have been suggested for ranking adjustments
+  const suggested = new Map<number, RankedPokemon>();
+  
+  // Initialize suggestion tracking
+  if (suggestedPokemon.length > 0) {
+    suggestedPokemon.forEach(p => suggested.set(p.id, p));
+    console.log(`🎮 Battle Starter: Tracking ${suggested.size} Pokemon with suggestions`);
+  }
 
-  const STORAGE_KEY = 'pokemon-active-suggestions';
-
-  const shuffleArray = <T>(array: T[]): T[] => {
-    const result = [...array];
-    for (let i = result.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [result[i], result[j]] = [result[j], result[i]];
-    }
-    return result;
-  };
-
-  const startNewBattle = (battleType: BattleType): Pokemon[] => {
-    totalBattlesStarted++;
-    console.log(`\n🔄 Starting new battle #${totalBattlesStarted} (type: ${battleType})`);
-
+  // Track wins/losses for lower tier Pokemon to identify potential promotions
+  let lowerTierLosses = new Map<number, number>();
+  
+  /**
+   * Strategy: Select two Pokemon from similar tiers
+   * If we have pending suggestions, prioritize those Pokemon
+   */
+  function selectSimilarTier(battleType: BattleType): Pokemon[] {
     const battleSize = battleType === "triplets" ? 3 : 2;
-
-    // Step 1: Try suggestion-based battle from localStorage
-    try {
-      const rawSuggestions = localStorage.getItem(STORAGE_KEY);
-      if (rawSuggestions) {
-        const parsed = JSON.parse(rawSuggestions);
-        const suggestedIds = Object.keys(parsed)
-          .map(id => Number(id))
-          .filter(id => !parsed[id].used);
-
-        if (suggestedIds.length > 0) {
-          const suggestionPool = filteredPokemon.filter(p => suggestedIds.includes(p.id));
-          if (suggestionPool.length > 0) {
-            const selected = suggestionPool[Math.floor(Math.random() * suggestionPool.length)];
-            const suggestion = parsed[selected.id];
-
-            console.log(`🧭 Using suggestion: ${selected.name} (${suggestion.direction} x${suggestion.strength})`);
-
-            const offset = suggestion.strength * 5;
-            const rankedIndex = currentRankings.findIndex(p => p.id === selected.id);
-
-            let opponents: Pokemon[];
+    const result: Pokemon[] = [];
+    
+    // First, prioritize Pokemon with pending suggestions
+    if (suggested.size > 0 && Math.random() < 0.8) { // 80% chance to use a suggested Pokemon if available
+      const suggestedIds = Array.from(suggested.keys());
+      const randomSuggestedId = suggestedIds[Math.floor(Math.random() * suggestedIds.length)];
+      const suggestedPokemon = allPokemon.find(p => p.id === randomSuggestedId);
+      
+      if (suggestedPokemon) {
+        result.push(suggestedPokemon);
+        console.log(`🎯 Battle includes suggested Pokemon: ${suggestedPokemon.name}`);
+        
+        // Find a suitable opponent based on the suggestion direction
+        const suggestion = (suggestedPokemon as RankedPokemon).suggestedAdjustment;
+        if (suggestion) {
+          const currentRank = rankedPokemon.findIndex(p => p.id === suggestedPokemon.id);
+          if (currentRank >= 0) {
+            let targetRank: number;
+            
+            // Choose opponent based on suggestion direction (up or down)
             if (suggestion.direction === "up") {
-              opponents = currentRankings.slice(Math.max(0, rankedIndex - offset), rankedIndex);
+              // For upward movement, battle against higher ranked Pokemon
+              targetRank = Math.max(0, currentRank - (5 + suggestion.strength * 3));
             } else {
-              opponents = currentRankings.slice(rankedIndex + 1, rankedIndex + 1 + offset);
+              // For downward movement, battle against lower ranked Pokemon
+              targetRank = Math.min(rankedPokemon.length - 1, currentRank + (5 + suggestion.strength * 3));
             }
-
-            const battle = [selected, ...shuffleArray(opponents.filter(p => p.id !== selected.id)).slice(0, battleSize - 1)];
-            const shuffledBattle = shuffleArray(battle);
-
-            lastBattlePokemon.clear();
-            shuffledBattle.forEach(p => {
-              lastBattlePokemon.add(p.id);
-              recentlyUsedPokemon.add(p.id);
-              if (recentlyUsedPokemon.size > Math.min(20, filteredPokemon.length / 2)) {
-                recentlyUsedPokemon.delete(Array.from(recentlyUsedPokemon)[0]);
+            
+            if (targetRank >= 0 && targetRank < rankedPokemon.length) {
+              const opponent = allPokemon.find(p => p.id === rankedPokemon[targetRank].id);
+              if (opponent && opponent.id !== suggestedPokemon.id) {
+                result.push(opponent);
+                console.log(`🎮 Selected appropriate opponent ${opponent.name} for suggestion`);
               }
-            });
-
-            console.log(`✅ Created suggestion-based battle: ${shuffledBattle.map(p => p.name).join(', ')}`);
-            setCurrentBattle(shuffledBattle);
-            return shuffledBattle;
+            }
           }
         }
       }
-    } catch (e) {
-      console.error("❌ Error reading suggestion from localStorage:", e);
     }
-
-    // Step 2: Fallback — standard random battle logic with avoidance
-    let candidates = filteredPokemon.filter(p =>
-      !recentlyUsedPokemon.has(p.id) && !lastBattlePokemon.has(p.id)
-    );
-
-    if (candidates.length < battleSize * 2) {
-      console.log("⚠️ Not enough unused Pokémon, relaxing filter to just exclude last battle");
-      candidates = filteredPokemon.filter(p => !lastBattlePokemon.has(p.id));
-    }
-
-    if (candidates.length < battleSize) {
-      console.warn("⚠️ Not enough candidates even after relaxing filter. Using full list.");
-      candidates = filteredPokemon;
-      recentlyUsedPokemon.clear();
-    }
-
-    const shuffled = shuffleArray(candidates);
-    const selected = shuffled.slice(0, battleSize);
-
-    lastBattlePokemon.clear();
-    selected.forEach(p => {
-      lastBattlePokemon.add(p.id);
-      recentlyUsedPokemon.add(p.id);
-      if (recentlyUsedPokemon.size > Math.min(20, filteredPokemon.length / 2)) {
-        recentlyUsedPokemon.delete(Array.from(recentlyUsedPokemon)[0]);
+    
+    // If we still need more Pokemon, select normally
+    while (result.length < battleSize) {
+      // Use standard selection logic to fill remaining spots
+      const eligiblePokemon = allPokemon.filter(p => 
+        !recentlyUsed.has(p.id) && !result.some(selected => selected.id === p.id)
+      );
+      
+      if (eligiblePokemon.length === 0) {
+        // If no eligible Pokemon, reset recently used and try again
+        recentlyUsed.clear();
+        continue;
       }
+      
+      const randomPokemon = eligiblePokemon[Math.floor(Math.random() * eligiblePokemon.length)];
+      result.push(randomPokemon);
+    }
+
+    // Record these Pokemon as recently used
+    result.forEach(p => recentlyUsed.add(p.id));
+    
+    // Limit the recently used set to avoid memory issues
+    if (recentlyUsed.size > 30) {
+      const idsToRemove = Array.from(recentlyUsed).slice(0, 10);
+      idsToRemove.forEach(id => recentlyUsed.delete(id));
+    }
+
+    return result;
+  }
+  
+  /**
+   * Strategy: Select Pokemon from different tiers for more varied battles
+   */
+  function selectDifferentTiers(battleType: BattleType): Pokemon[] {
+    const battleSize = battleType === "triplets" ? 3 : 2;
+    const result: Pokemon[] = [];
+    
+    // Divide Pokemon into tiers based on their ratings
+    const tieredPokemon: RankedPokemonWithTier[] = [];
+    
+    // If we have rankings, use them to create tiers
+    if (rankedPokemon.length > 0) {
+      // Create a copy with tier information
+      tieredPokemon.push(...rankedPokemon.map((p, idx) => ({
+        ...p,
+        tier: Math.floor(idx / 10) // Every 10 Pokemon is a new tier
+      })));
+    } else {
+      // Without rankings, just use random selection
+      return selectSimilarTier(battleType);
+    }
+    
+    // Try to select Pokemon from different tiers
+    const tiers = Array.from(new Set(tieredPokemon.map(p => p.tier)));
+    
+    if (tiers.length < 2) {
+      // Not enough tiers, fall back to similar tier selection
+      return selectSimilarTier(battleType);
+    }
+    
+    // Select Pokemon from different tiers
+    const selectedTiers = tiers.sort(() => Math.random() - 0.5).slice(0, battleSize);
+    
+    for (const tier of selectedTiers) {
+      const tierPokemon = tieredPokemon.filter(p => 
+        p.tier === tier && 
+        !recentlyUsed.has(p.id) && 
+        !result.some(selected => selected.id === p.id)
+      );
+      
+      if (tierPokemon.length === 0) continue;
+      
+      const randomPokemon = tierPokemon[Math.floor(Math.random() * tierPokemon.length)];
+      const originalPokemon = allPokemon.find(p => p.id === randomPokemon.id);
+      
+      if (originalPokemon) {
+        result.push(originalPokemon);
+      }
+      
+      if (result.length >= battleSize) break;
+    }
+    
+    // If we couldn't get enough Pokemon, fill with random ones
+    while (result.length < battleSize) {
+      const eligiblePokemon = allPokemon.filter(p => 
+        !recentlyUsed.has(p.id) && !result.some(selected => selected.id === p.id)
+      );
+      
+      if (eligiblePokemon.length === 0) {
+        recentlyUsed.clear();
+        continue;
+      }
+      
+      const randomPokemon = eligiblePokemon[Math.floor(Math.random() * eligiblePokemon.length)];
+      result.push(randomPokemon);
+    }
+    
+    // Record these Pokemon as recently used
+    result.forEach(p => recentlyUsed.add(p.id));
+    
+    return result;
+  }
+  
+  /**
+   * Strategy: Select Pokemon that haven't been in many battles
+   */
+  function selectUnderrepresented(battleType: BattleType): Pokemon[] {
+    const battleSize = battleType === "triplets" ? 3 : 2;
+    const result: Pokemon[] = [];
+    
+    // Count battle participation for each Pokemon
+    const battleCounts = new Map<number, number>();
+    
+    rankedPokemon.forEach(p => {
+      battleCounts.set(p.id, p.count || 0);
     });
+    
+    // Sort Pokemon by battle count (ascending)
+    const sortedByCount = [...allPokemon].sort((a, b) => {
+      const countA = battleCounts.get(a.id) || 0;
+      const countB = battleCounts.get(b.id) || 0;
+      return countA - countB;
+    });
+    
+    // Select Pokemon with fewest battles that haven't been recently used
+    for (const pokemon of sortedByCount) {
+      if (!recentlyUsed.has(pokemon.id) && !result.some(p => p.id === pokemon.id)) {
+        result.push(pokemon);
+        
+        if (result.length >= battleSize) break;
+      }
+    }
+    
+    // If we couldn't get enough Pokemon, fill with random ones
+    while (result.length < battleSize) {
+      const eligiblePokemon = allPokemon.filter(p => 
+        !recentlyUsed.has(p.id) && !result.some(selected => selected.id === p.id)
+      );
+      
+      if (eligiblePokemon.length === 0) {
+        recentlyUsed.clear();
+        continue;
+      }
+      
+      const randomPokemon = eligiblePokemon[Math.floor(Math.random() * eligiblePokemon.length)];
+      result.push(randomPokemon);
+    }
+    
+    // Record these Pokemon as recently used
+    result.forEach(p => recentlyUsed.add(p.id));
+    
+    return result;
+  }
 
-    console.log(`🆕 Created fallback random battle: ${selected.map(p => p.name).join(', ')}`);
-    setCurrentBattle(selected);
-    return selected;
-  };
-
-  const trackLowerTierLoss = (loserId: number) => {
-    console.log(`📉 Pokémon ${loserId} lost a battle`);
-  };
+  /**
+   * Start a new battle using selection strategies
+   */
+  function startNewBattle(battleType: BattleType = "pairs"): Pokemon[] {
+    // Ensure we have available Pokemon
+    if (!allPokemon || allPokemon.length < 2) {
+      console.error("Not enough Pokemon available for battle");
+      return [];
+    }
+    
+    // Choose a strategy based on various factors
+    let selectedPokemon: Pokemon[] = [];
+    
+    // If we have suggestions, prioritize those Pokemon
+    if (suggested.size > 0 && Math.random() < 0.8) {
+      selectedPokemon = selectSimilarTier(battleType);
+    } else {
+      // Otherwise, use a mix of strategies
+      const strategyRoll = Math.random();
+      
+      if (strategyRoll < 0.6) {
+        // 60% chance: Select Pokemon from similar tiers
+        selectedPokemon = selectSimilarTier(battleType);
+      } else if (strategyRoll < 0.8) {
+        // 20% chance: Select Pokemon from different tiers
+        selectedPokemon = selectDifferentTiers(battleType);
+      } else {
+        // 20% chance: Select underrepresented Pokemon
+        selectedPokemon = selectUnderrepresented(battleType);
+      }
+    }
+    
+    // Update current battle with selected Pokemon
+    setCurrentBattle(selectedPokemon);
+    
+    return selectedPokemon;
+  }
+  
+  // Track when lower-tier Pokemon lose to higher-tier ones
+  // This helps identify misplaced Pokemon
+  function trackLowerTierLoss(pokemonId: number) {
+    const count = (lowerTierLosses.get(pokemonId) || 0) + 1;
+    lowerTierLosses.set(pokemonId, count);
+    return count;
+  }
 
   return {
     startNewBattle,
     trackLowerTierLoss
   };
-};
+}

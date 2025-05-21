@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef } from "react";
 import { Pokemon, TopNOption } from "@/services/pokemon";
 import { useBattleStateCore } from "@/hooks/battle/useBattleStateCore";
@@ -50,7 +49,9 @@ const BattleContent = ({ allPokemon, initialBattleType, initialSelectedGeneratio
     processorRefs,
     battleHistory,
     activeTier,
-    setActiveTier
+    setActiveTier,
+    suggestRanking,
+    removeSuggestion
   } = useBattleStateCore(allPokemon, initialBattleType, initialSelectedGeneration);
 
   // Only call startNewBattle once when the component mounts and allPokemon is available
@@ -114,7 +115,7 @@ const handleContinueBattles = () => {
   if (processorRefs?.resetMilestoneInProgress) {
     processorRefs.resetMilestoneInProgress();
   }
-  window.dispatchEvent(new Event("milestoneEnded")); // 🔥 explicitly added line
+  window.dispatchEvent(new Event("milestoneEnded")); // Explicitly dispatch milestone ended event
   startNewBattle(battleType);
 };
 
@@ -203,6 +204,8 @@ const handleContinueBattles = () => {
             isMilestoneView={true}
             activeTier={activeTier}
             onTierChange={handleTierChange}
+            onSuggestRanking={suggestRanking}
+            onRemoveSuggestion={removeSuggestion}
           />
         </div>
         

@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { useBattleStarterIntegration } from "@/hooks/battle/useBattleStarterIntegration";
@@ -202,6 +201,21 @@ useEffect(() => {
       `🔍 useBattleStateCore: ${suggestedCount} suggestions (${unusedCount} unused) in finalRankings`
     );
   }, [finalRankings]);
+
+  // Add event listener for milestone ended to reload suggestions
+  useEffect(() => {
+    const handleMilestoneEnded = () => {
+      console.log("🏁 Milestone ended event detected, reloading suggestions");
+      const loadedSuggestions = loadSavedSuggestions();
+      console.log(`📥 Reloaded ${loadedSuggestions.size} suggestions after milestone ended event`);
+      
+      // Also regenerate rankings to ensure they include suggestions
+      generateRankings(battleResults);
+    };
+    
+    window.addEventListener("milestoneEnded", handleMilestoneEnded);
+    return () => window.removeEventListener("milestoneEnded", handleMilestoneEnded);
+  }, [loadSavedSuggestions, generateRankings, battleResults]);
 
   const {
     handlePokemonSelect,

@@ -15,11 +15,19 @@ export const useBattleStarterIntegration = (
   const battleStarter = useMemo(() => {
     if (!allPokemon || allPokemon.length === 0) return null;
 
+    const pokemonWithSuggestions = currentRankings.filter(
+      p => p.suggestedAdjustment && !p.suggestedAdjustment.used
+    );
+    
+    console.log(`🎯 Found ${pokemonWithSuggestions.length} Pokemon with pending suggestions`);
+    
+    // Enhanced battle starter with suggestion prioritization
     return createBattleStarter(
       allPokemon,
       allPokemon,
-      currentRankings, // already of type RankedPokemon[]
-      setCurrentBattle
+      currentRankings,
+      setCurrentBattle,
+      pokemonWithSuggestions
     );
   }, [allPokemon, currentRankings, setCurrentBattle]);
 
