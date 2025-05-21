@@ -89,12 +89,16 @@ const filteredRankings = activeTier === "All"
 
 // Explicitly reload suggestions here:
 const savedSuggestions = loadSavedSuggestions();
+console.log("📌 Applying suggestions during ranking generation:", savedSuggestions.size);
+
 const finalWithSuggestions = filteredRankings.map(pokemon => ({
   ...pokemon,
-  suggestedAdjustment: savedSuggestions.get(pokemon.id)
+  suggestedAdjustment: savedSuggestions.get(pokemon.id) || null
 }));
 
 setFinalRankings(finalWithSuggestions);
+console.log(`🎯 Rankings generated with suggestions: ${finalWithSuggestions.length} Pokémon`);
+
 
 
     const confidenceMap: Record<number, number> = {};

@@ -21,6 +21,8 @@ const loadSavedSuggestions = useCallback(() => {
   if (data) {
     const parsed: Record<number, RankingSuggestion> = JSON.parse(data);
     activeSuggestionsRef.current = new Map(Object.entries(parsed).map(([k, v]) => [Number(k), v]));
+    console.log("📥 Loaded suggestions from localStorage:", activeSuggestionsRef.current.size);
+    
     setPokemonList(current =>
       current.map(p => ({
         ...p,
@@ -28,29 +30,35 @@ const loadSavedSuggestions = useCallback(() => {
       }))
     );
   } else {
+    console.log("⚠️ No suggestions found in localStorage");
     activeSuggestionsRef.current.clear();
   }
-  
-  return activeSuggestionsRef.current; // ✅ Explicitly return the map
+
+  return activeSuggestionsRef.current;
 }, [setPokemonList]);
+
 
 
   useEffect(() => {
     loadSavedSuggestions();
   }, [loadSavedSuggestions]);
 
-  const suggestRanking = useCallback((pokemon: RankedPokemon, direction: "up" | "down", strength: 1 | 2 | 3) => {
-    const suggestion = { direction, strength, used: false };
-    activeSuggestionsRef.current.set(pokemon.id, suggestion);
-    setPokemonList(curr => curr.map(p => p.id === pokemon.id ? { ...p, suggestedAdjustment: suggestion } : p));
-    saveSuggestions();
-  }, [saveSuggestions, setPokemonList]);
+const suggestRanking = useCallback((pokemon: RankedPokemon, direction: "up" | "down", strength: 1 | 2 | 3) => {
+  const suggestion = { direction, strength, used: false };
+  activeSuggestionsRef.current.set(pokemon.id, suggestion);
+  setPokemonList(curr => curr.map(p => p.id === pokemon.id ? { ...p, suggestedAdjustment: suggestion } : p));
+  saveSuggestions();
+  console.log(`💾 Saved suggestion for ${pokemon.name}:`, suggestion);
+}, [saveSuggestions, setPokemonList]);
 
-  const removeSuggestion = useCallback((pokemonId: number) => {
-    activeSuggestionsRef.current.delete(pokemonId);
-    setPokemonList(curr => curr.map(p => p.id === pokemonId ? { ...p, suggestedAdjustment: undefined } : p));
-    saveSuggestions();
-  }, [saveSuggestions, setPokemonList]);
+
+const removeSuggestion = useCallback((pokemonId: number) => {
+  activeSuggestionsRef.current.delete(pokemonId);
+  setPokemonList(curr => curr.map(p => p.id === pokemonId ? { ...p, suggestedAdjustment: undefined } : p));
+  saveSuggestions();
+  console.log(`❌ Removed suggestion for Pokémon ID: ${pokemonId}`);
+}, [saveSuggestions, setPokemonList]);
+
 
   const clearAllSuggestions = useCallback(() => {
     activeSuggestionsRef.current.clear();

@@ -112,7 +112,15 @@ const {
   );
   
   // VERIFICATION: Check if suggestions exist in localStorage on mount
-  useEffect(() => {
+useEffect(() => {
+    const preferredImageType = localStorage.getItem('preferredImageType');
+    console.log("🎯 Loaded initial image preference:", preferredImageType);
+
+    if (!preferredImageType) {
+      localStorage.setItem('preferredImageType', 'official');
+      console.log("✅ Set default image preference to 'official'");
+    }
+
     const savedSuggestions = localStorage.getItem('pokemon-active-suggestions');
     console.log("🔍 MOUNT VERIFICATION: Suggestions in localStorage:", savedSuggestions ? "YES" : "NO");
     if (savedSuggestions) {
@@ -124,7 +132,8 @@ const {
         console.error("Error parsing saved suggestions:", e);
       }
     }
-  }, []);
+}, []);
+
   
   // This effect ensures that when we show a milestone, we mark that we need to reload suggestions
   // when we continue battling
@@ -148,17 +157,14 @@ const {
   
   // This effect ensures that when we resume battling after a milestone,
   // suggestions from localStorage are reloaded and applied
-  useEffect(() => {
+useEffect(() => {
   if (!showingMilestone && needsToReloadSuggestions) {
-    console.log("🔄 Continuing after milestone, explicitly reloading suggestions");
-    
-    setNeedsToReloadSuggestions(false);
-    
+    console.log("🔄 Explicitly reloading suggestions after milestone");
     const loadedSuggestions = loadSavedSuggestions();
-    console.log(`📥 Reloaded ${loadedSuggestions.size} suggestions explicitly after milestone`);
-
-    // Explicitly regenerate rankings from scratch to ensure suggestions load
+    console.log(`📥 Reloaded suggestions after milestone: ${loadedSuggestions.size}`);
+    
     generateRankings(battleResults);
+    setNeedsToReloadSuggestions(false);
   }
 }, [showingMilestone, needsToReloadSuggestions, loadSavedSuggestions, generateRankings, battleResults]);
 
@@ -223,6 +229,15 @@ const {
     battleType,
     processBattleResult
   );
+
+  useEffect(() => {
+  console.log("🔍 Battle Results Updated:", battleResults.length, "battles");
+}, [battleResults]);
+
+useEffect(() => {
+  console.log("🔍 Final Rankings Updated:", finalRankings.length, "Pokémon ranked");
+}, [finalRankings]);
+
 
   return {
     currentBattle,
