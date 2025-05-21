@@ -29,7 +29,7 @@ export const useBattleNavigation = (
     const lastBattle = newHistory.pop();
     setBattleHistory(newHistory);
 
-    const newResults: SingleBattle[] = [...battleResults];
+    const newResults = [...battleResults];
 
     let resultsToRemove = 1;
     if (battleType === "triplets" && lastBattle) {

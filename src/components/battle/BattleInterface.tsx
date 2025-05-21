@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "@/hooks/battle/types";
@@ -139,6 +140,7 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
   // Handle back button click
   const handleBackClick = () => {
     if (!isProcessing && !internalProcessing) {
+      console.log("BattleInterface: Handling back button click");
       onGoBack();
     }
   };

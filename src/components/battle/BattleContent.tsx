@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef } from "react";
 import { Pokemon, TopNOption } from "@/services/pokemon";
 import { useBattleStateCore } from "@/hooks/battle/useBattleStateCore";
@@ -148,6 +149,12 @@ const BattleContent = ({ allPokemon, initialBattleType, initialSelectedGeneratio
     handleTripletSelectionComplete();
   };
 
+  // Handle going back in battle history
+  const handleGoBack = () => {
+    console.log("BattleContent: Handling go back from BattleContent");
+    goBack();
+  };
+
   return (
     <div className="flex flex-col items-center w-full gap-4">
       <div className="w-full max-w-3xl flex flex-col gap-4">
@@ -201,7 +208,7 @@ const BattleContent = ({ allPokemon, initialBattleType, initialSelectedGeneratio
             onTripletSelectionComplete={handleTripletSelectionWrapper}
             isProcessing={isProcessingResult}
             battleType={battleType}
-            onGoBack={goBack}
+            onGoBack={handleGoBack}
             battlesCompleted={battlesCompleted}
             battleHistory={battleHistory || []}
             milestones={milestones}
