@@ -8,6 +8,7 @@ export interface RankedPokemon extends Pokemon {
   confidence: number;
   suggestedAdjustment?: {
     direction: 'up' | 'down';
+    strength: 1 | 2 | 3; 
     used: boolean;
   };
 }
@@ -49,15 +50,12 @@ export const useRankings = (allPokemon: Pokemon[]) => {
     return rankings;
   };
 
-  const suggestRanking = (pokemonId: number, direction: 'up' | 'down') => {
+  const suggestRanking = (pokemon: RankedPokemon, direction: 'up' | 'down', strength: 1 | 2 | 3) => {
     setFinalRankings(prevRankings =>
-      prevRankings.map(pokemon =>
-        pokemon.id === pokemonId
-          ? {
-              ...pokemon,
-              suggestedAdjustment: { direction, used: false },
-            }
-          : pokemon
+      prevRankings.map(p =>
+        p.id === pokemon.id
+          ? { ...p, suggestedAdjustment: { direction, strength, used: false } }
+          : p
       )
     );
   };
