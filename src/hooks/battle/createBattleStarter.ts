@@ -201,18 +201,34 @@ export function createBattleStarter(
  * Explicitly forces a battle with suggested Pokémon ONLY.
  */
 function selectSuggestedPokemonForced(battleType: BattleType): Pokemon[] | null {
+  // Add debug logs at the start
+  console.log(`[DEBUG createBattleStarter - selectSuggestedPokemonForced ENTRY] forceSuggestionPriority trigger active. Reviewing rankedPokemon for suggestions.`);
+  console.log(`[DEBUG createBattleStarter - selectSuggestedPokemonForced RAW rankedPokemon suggestions] Input rankedPokemon with suggestions:`, 
+    JSON.stringify(rankedPokemon.filter(p => p.suggestedAdjustment).map(p => ({ id: p.id, name: p.name, used: p.suggestedAdjustment?.used })))
+  );
+
   // Clearly get ALL Pokémon with pending suggestions (used or not)
   const forcedSuggestions = rankedPokemon.filter(p => 
     p.suggestedAdjustment && !p.suggestedAdjustment.used
   );
 
-  if (forcedSuggestions.length === 0) return null;
+  console.log(`[DEBUG createBattleStarter - selectSuggestedPokemonForced FILTERED] Found ${forcedSuggestions.length} forced suggestions (must be !used):`, 
+    JSON.stringify(forcedSuggestions.map(p => ({ id: p.id, name: p.name, used: p.suggestedAdjustment?.used })))
+  );
+
+  if (forcedSuggestions.length === 0) {
+    console.log(`[DEBUG createBattleStarter - selectSuggestedPokemonForced] No forced suggestions found with !p.suggestedAdjustment.used. Returning null.`);
+    return null;
+  }
 
   const battleSize = battleType === "triplets" ? 3 : 2;
   const result: Pokemon[] = [];
 
-  // Explicitly track suggestion usage counts (initialize if needed)
+  // Explicitly read suggestion usage counts from localStorage
+  const rawSuggestionUsageCounts = localStorage.getItem('suggestionUsageCounts');
+  console.log(`[DEBUG createBattleStarter - selectSuggestedPokemonForced LS_READ_RAW] Raw suggestionUsageCounts from localStorage: ${rawSuggestionUsageCounts}`);
   const suggestionUsageCounts = JSON.parse(localStorage.getItem('suggestionUsageCounts') || '{}');
+  console.log(`[DEBUG createBattleStarter - selectSuggestedPokemonForced LS_READ_PARSED] Parsed suggestionUsageCounts:`, JSON.stringify(suggestionUsageCounts));
 
   // Sort suggested Pokémon explicitly by lowest usage count (default 0)
   const sortedSuggestions = forcedSuggestions.sort((a, b) => {
@@ -223,6 +239,9 @@ function selectSuggestedPokemonForced(battleType: BattleType): Pokemon[] | null 
 
   // Select Pokémon with the lowest usage explicitly
   const selectedSuggestion = sortedSuggestions[0];
+  console.log(`[DEBUG createBattleStarter - selectSuggestedPokemonForced SELECTED_PKMN] Selected Pokémon for forced battle: ${selectedSuggestion.name} (${selectedSuggestion.id}). Its current .used flag: ${selectedSuggestion.suggestedAdjustment.used}`);
+  console.log(`[DEBUG createBattleStarter - selectSuggestedPokemonForced USAGE_COUNT_PRE_INC] Usage count for ${selectedSuggestion.id} BEFORE increment: ${suggestionUsageCounts[selectedSuggestion.id] || 0}`);
+
   const suggestedPokemon = allPokemon.find(p => p.id === selectedSuggestion.id);
   if (!suggestedPokemon) return null;
 
@@ -230,18 +249,22 @@ function selectSuggestedPokemonForced(battleType: BattleType): Pokemon[] | null 
 
   // Explicitly update usage count
   suggestionUsageCounts[selectedSuggestion.id] = (suggestionUsageCounts[selectedSuggestion.id] || 0) + 1;
+  console.log(`[DEBUG createBattleStarter - selectSuggestedPokemonForced USAGE_COUNT_POST_INC] Usage count for ${selectedSuggestion.id} AFTER increment: ${suggestionUsageCounts[selectedSuggestion.id]}`);
 
   // After a Pokémon has been explicitly used TWICE, mark suggestion as fully used
   if (suggestionUsageCounts[selectedSuggestion.id] >= 2) {
     // Find the suggestedPokemon in the rankedPokemon array to directly modify it
     const rankedPokemonData = rankedPokemon.find(p => p.id === selectedSuggestion.id);
     if (rankedPokemonData && rankedPokemonData.suggestedAdjustment) {
+      console.log(`[DEBUG createBattleStarter - selectSuggestedPokemonForced MARKING_USED] Attempting to mark ${selectedSuggestion.name} (${selectedSuggestion.id}) as fully used. Current .used flag on its rankedPokemonData: ${rankedPokemonData.suggestedAdjustment.used}`);
       rankedPokemonData.suggestedAdjustment.used = true;
+      console.log(`[DEBUG createBattleStarter - selectSuggestedPokemonForced POST_MARKING_USED] ${selectedSuggestion.name} (${selectedSuggestion.id}) .used flag on its rankedPokemonData is now: ${rankedPokemonData.suggestedAdjustment.used}`);
       console.log(`✨ Suggestion for ${selectedSuggestion.name} (${selectedSuggestion.id}) now fully used after ${suggestionUsageCounts[selectedSuggestion.id]} appearances.`);
     }
   }
 
   // Save explicitly back to localStorage
+  console.log(`[DEBUG createBattleStarter - selectSuggestedPokemonForced LS_WRITE] Saving to localStorage suggestionUsageCounts: ${JSON.stringify(suggestionUsageCounts)}`);
   localStorage.setItem('suggestionUsageCounts', JSON.stringify(suggestionUsageCounts));
 
   // Explicitly select opponent near suggested rank
@@ -313,13 +336,14 @@ function selectSuggestedPokemonForced(battleType: BattleType): Pokemon[] | null 
     // OR if we've gone too many battles without using suggestions
     const suggestionProbability = forceSuggestionPriority ? 1.0 : 0.85;
     
-    if ((forceSuggestionPriority) || 
-        (suggested.size > 0 && Math.random() < suggestionProbability) || 
-        (consecutiveNonSuggestionBattles >= 3 && suggested.size > 0)) {
-      
-      if (forceSuggestionPriority) {
-        console.log("🚨 FORCING suggestion priority battle");
-      }
+    // Log the decision process for forcing suggestions
+    const isForcingSuggestions = (forceSuggestionPriority) || 
+                             (suggested.size > 0 && Math.random() < suggestionProbability) || 
+                             (consecutiveNonSuggestionBattles >= 3 && suggested.size > 0);
+    console.log(`[DEBUG createBattleStarter - startNewBattle DECISION] forceSuggestionPriority: ${forceSuggestionPriority}, suggested.size: ${suggested.size}, Math.random() < prob: ${Math.random() < suggestionProbability}, consecutiveNonSuggestionBattles: ${consecutiveNonSuggestionBattles}. FINAL DECISION to force: ${isForcingSuggestions}`);
+
+    if (isForcingSuggestions) {
+      console.log(`[DEBUG createBattleStarter - startNewBattle] Trying selectSuggestedPokemonForced or selectSuggestedPokemon due to forcing conditions.`);
       
       // Try to create a suggestion-focused battle
       const suggestedBattle = forceSuggestionPriority 

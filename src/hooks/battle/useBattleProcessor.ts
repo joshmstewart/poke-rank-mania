@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useRef, useEffect } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
@@ -128,6 +127,16 @@ export const useBattleProcessor = (
       
       setSelectedPokemon([]);
       console.log(`📝 [${timestamp}] PROCESS BATTLE: Reset selectedPokemon to empty array`);
+
+      // Before the markSuggestionUsed check, add new debug logs
+      console.log(`[DEBUG useBattleProcessor] Timestamp: ${timestamp}. Iterating currentBattlePokemon for markSuggestionUsed.`);
+      currentBattlePokemon.forEach(p => {
+        const ranked = p as RankedPokemon;
+        const suggestionDetails = ranked.suggestedAdjustment 
+          ? `Suggestion Exists - Used: ${ranked.suggestedAdjustment.used}, Direction: ${ranked.suggestedAdjustment.direction}` 
+          : 'No Suggestion Present';
+        console.log(`[DEBUG useBattleProcessor] Pokemon: ${ranked.name} (${ranked.id}). ${suggestionDetails}`);
+      });
 
       if (markSuggestionUsed) {
         currentBattlePokemon.forEach(p => {

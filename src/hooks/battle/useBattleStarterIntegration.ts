@@ -1,3 +1,4 @@
+
 import { useMemo, useEffect, useRef, useCallback } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
@@ -16,6 +17,9 @@ export const useBattleStarterIntegration = (
   const forcedPriorityBattlesRef = useRef(0);
   const totalSuggestionsRef = useRef(0);
 
+  // Log initial value of forcedPriorityBattlesRef
+  console.log('[DEBUG useBattleStarterIntegration] forcedPriorityBattlesRef initialized to:', forcedPriorityBattlesRef.current);
+
   useEffect(() => {
     const handlePrioritize = () => {
       suggestionBattleCountRef.current = 0;
@@ -27,6 +31,7 @@ export const useBattleStarterIntegration = (
 
       totalSuggestionsRef.current = suggestedPokemon.length;
       forcedPriorityBattlesRef.current = Math.max(20, suggestedPokemon.length * 5);
+      console.log('[DEBUG useBattleStarterIntegration] forcedPriorityBattlesRef set to:', forcedPriorityBattlesRef.current, 'after prioritize trigger');
 
       if (totalSuggestionsRef.current > 0) {
         toast({
@@ -54,6 +59,7 @@ export const useBattleStarterIntegration = (
     );
 
     totalSuggestionsRef.current = pokemonWithSuggestions.length;
+    console.log('[DEBUG useBattleStarterIntegration] Identified pokemonWithSuggestions.length:', pokemonWithSuggestions.length);
 
     return createBattleStarter(
       allPokemon,
@@ -70,8 +76,11 @@ export const useBattleStarterIntegration = (
     const suggestedPokemon = currentRankings.filter(
       p => p.suggestedAdjustment && !p.suggestedAdjustment.used
     );
+    console.log('[DEBUG useBattleStarterIntegration] Starting new battle. Available suggestedPokemon.length:', suggestedPokemon.length);
+    console.log('[DEBUG useBattleStarterIntegration] Current forcedPriorityBattlesRef.current:', forcedPriorityBattlesRef.current);
 
     const shouldForcePriority = forcedPriorityBattlesRef.current > 0;
+    console.log('[DEBUG useBattleStarterIntegration] shouldForcePriority decision:', shouldForcePriority);
 
     let battle: Pokemon[];
     if (shouldForcePriority && suggestedPokemon.length > 0) {
@@ -79,6 +88,7 @@ export const useBattleStarterIntegration = (
       console.log("🚨 Explicitly FORCING a suggestion-priority battle.");
 
       forcedPriorityBattlesRef.current--;
+      console.log('[DEBUG useBattleStarterIntegration] forcedPriorityBattlesRef decremented to:', forcedPriorityBattlesRef.current);
 
       const hasSuggestion = battle.some(pokemon => {
         const rankedPokemon = currentRankings.find(p => p.id === pokemon.id);
@@ -87,6 +97,7 @@ export const useBattleStarterIntegration = (
 
       if (!hasSuggestion) {
         forcedPriorityBattlesRef.current++;
+        console.log('[DEBUG useBattleStarterIntegration] forcedPriorityBattlesRef incremented back to:', forcedPriorityBattlesRef.current, 'as no suggestion was found');
         console.log("❌ No suggestion Pokémon found despite forced priority; NOT decrementing counter.");
       }
     } else {
@@ -107,7 +118,7 @@ export const useBattleStarterIntegration = (
     }
 
     setCurrentBattle(battle);
-console.log("📌 Updating current battle state explicitly with IDs:", battle.map(p => p.id));
+    console.log("📌 Updating current battle state explicitly with IDs:", battle.map(p => p.id));
 
     return battle;
   }, [battleStarter, currentRankings, setCurrentBattle]);
@@ -121,7 +132,9 @@ console.log("📌 Updating current battle state explicitly with IDs:", battle.ma
   const resetSuggestionPriorityExplicitly = () => {
     suggestionBattleCountRef.current = 0;
     processedSuggestionBattlesRef.current.clear();
+    const prevValue = forcedPriorityBattlesRef.current;
     forcedPriorityBattlesRef.current = Math.max(20, totalSuggestionsRef.current * 5);
+    console.log('[DEBUG useBattleStarterIntegration] forcedPriorityBattlesRef reset from', prevValue, 'to:', forcedPriorityBattlesRef.current);
     console.log("⚡ Explicitly reset and forced suggestion prioritization for next battles");
   };
 

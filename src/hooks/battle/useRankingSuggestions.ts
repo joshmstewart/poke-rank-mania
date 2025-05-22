@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect, useRef } from "react";
 import { RankedPokemon, RankingSuggestion } from "@/services/pokemon";
 import { toast } from "@/hooks/use-toast";
@@ -72,14 +71,18 @@ export const useRankingSuggestions = (
   }, [setPokemonList]);
 
   const markSuggestionUsed = useCallback((pokemon: RankedPokemon, fullyUsed: boolean = false) => {
+    console.log(`[DEBUG useRankingSuggestions - markSuggestionUsed ENTRY] Called for ${pokemon.name} (${pokemon.id}). fullyUsed: ${fullyUsed}. Current suggestion from activeSuggestionsRef:`, JSON.stringify(activeSuggestionsRef.current.get(pokemon.id)));
+    
     const suggestion = activeSuggestionsRef.current.get(pokemon.id);
     if (suggestion) {
       // Only set to true if fullyUsed is true
       if (fullyUsed) {
         suggestion.used = true;
+        console.log(`[DEBUG useRankingSuggestions - markSuggestionUsed] 'fullyUsed' is true. Set suggestion.used = true for ${pokemon.name} (${pokemon.id}) in activeSuggestionsRef.`);
         console.log(`💾 Suggestion for ${pokemon.name} (${pokemon.id}) marked as fully used.`);
       } else {
         // If not fullyUsed, ensure 'used' remains false for continued selection
+        console.log(`[DEBUG useRankingSuggestions - markSuggestionUsed] 'fullyUsed' is false. NOT setting suggestion.used = true for ${pokemon.name} (${pokemon.id}) in activeSuggestionsRef here.`);
         console.log(`ℹ️ Suggestion for ${pokemon.name} (${pokemon.id}) participated in a battle. Usage count managed by createBattleStarter.`);
       }
 
@@ -88,6 +91,8 @@ export const useRankingSuggestions = (
         p.id === pokemon.id ? { ...p, suggestedAdjustment: { ...suggestion } } : p
       ));
       saveSuggestions();
+      
+      console.log(`[DEBUG useRankingSuggestions - markSuggestionUsed EXIT] After potential updates for ${pokemon.name} (${pokemon.id}). Updated suggestion in activeSuggestionsRef:`, JSON.stringify(activeSuggestionsRef.current.get(pokemon.id)));
 
       toast({
         title: `Refined match for ${pokemon.name}`,

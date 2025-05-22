@@ -89,17 +89,26 @@ const filteredRankings = activeTier === "All"
 
 // Explicitly reload suggestions here:
 const savedSuggestions = loadSavedSuggestions();
-console.log("📌 Applying suggestions during ranking generation:", savedSuggestions.size);
+console.log("[DEBUG useRankings - generateRankings] Applying suggestions during ranking generation:", savedSuggestions.size);
+console.log("[DEBUG useRankings - generateRankings SUGGESTIONS RAW]", JSON.stringify([...savedSuggestions.entries()].map(([id, suggestion]) => ({ id, used: suggestion.used }))));
 
-const finalWithSuggestions = filteredRankings.map(pokemon => ({
-  ...pokemon,
-  suggestedAdjustment: savedSuggestions.get(pokemon.id) || null
-}));
+const finalWithSuggestions = filteredRankings.map(pokemon => {
+  const newPokemon = {
+    ...pokemon,
+    suggestedAdjustment: savedSuggestions.get(pokemon.id) || null
+  };
+  return newPokemon;
+});
+
+console.log("[DEBUG useRankings - generateRankings FINAL] Generated rankings with suggestions. Sample from suggestions:", 
+  JSON.stringify(finalWithSuggestions
+    .filter(p => p.suggestedAdjustment)
+    .slice(0, 3)
+    .map(p => ({ id: p.id, name: p.name, used: p.suggestedAdjustment?.used })))
+);
 
 setFinalRankings(finalWithSuggestions);
 console.log(`🎯 Rankings generated with suggestions: ${finalWithSuggestions.length} Pokémon`);
-
-
 
     const confidenceMap: Record<number, number> = {};
     allRankedPokemon.forEach(p => {
@@ -108,7 +117,7 @@ console.log(`🎯 Rankings generated with suggestions: ${finalWithSuggestions.le
     setConfidenceScores(confidenceMap);
 
     return filteredRankings;
-  }, [allPokemon, activeTier, frozenPokemon, activeSuggestions]);
+  }, [allPokemon, activeTier, frozenPokemon, activeSuggestions, loadSavedSuggestions]);
 
   const freezePokemonForTier = useCallback((pokemonId: number, tier: TopNOption) => {
     setFrozenPokemon(prev => ({
