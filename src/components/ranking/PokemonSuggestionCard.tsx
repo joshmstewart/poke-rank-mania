@@ -28,14 +28,23 @@ export const PokemonSuggestionCard: React.FC<PokemonSuggestionCardProps> = ({
   onRemoveSuggestion
 }) => {
   const [activeDirection, setActiveDirection] = useState<"up" | "down" | null>(null);
-const [activeStrength, setActiveStrength] = useState<1 | 2 | 3>(1);
+  const [activeStrength, setActiveStrength] = useState<1 | 2 | 3>(1);
 
-// CRITICAL FIX: Sync internal state when pokemon.suggestedAdjustment changes
-useEffect(() => {
-  setActiveDirection(pokemon.suggestedAdjustment?.direction || null);
-  setActiveStrength(pokemon.suggestedAdjustment?.strength || 1);
-}, [pokemon.suggestedAdjustment]);
+  // CRITICAL FIX: Sync internal state when pokemon.suggestedAdjustment changes
+  useEffect(() => {
+    setActiveDirection(pokemon.suggestedAdjustment?.direction || null);
+    setActiveStrength(pokemon.suggestedAdjustment?.strength || 1);
+  }, [pokemon.suggestedAdjustment]);
 
+  // Get usage count from localStorage if available
+  const getUsageCount = () => {
+    try {
+      const suggestionUsageCounts = JSON.parse(localStorage.getItem('suggestionUsageCounts') || '{}');
+      return suggestionUsageCounts[pokemon.id] || 0;
+    } catch (e) {
+      return 0;
+    }
+  };
   
   const generation = getPokemonGeneration(pokemon.id);
   
@@ -135,6 +144,12 @@ useEffect(() => {
                 <span>Battles:</span>
                 <span>{pokemon.count}</span>
               </div>
+              {pokemon.suggestedAdjustment && !pokemon.suggestedAdjustment.used && (
+                <div className="flex justify-between">
+                  <span>Suggestion uses:</span>
+                  <span>{getUsageCount()}/2</span>
+                </div>
+              )}
             </div>
           </div>
           
@@ -194,6 +209,12 @@ useEffect(() => {
             {pokemon.suggestedAdjustment?.used && (
               <p className="text-xs text-muted-foreground mt-1.5 italic">
                 This suggestion has already been used in battle.
+              </p>
+            )}
+            
+            {pokemon.suggestedAdjustment && !pokemon.suggestedAdjustment.used && getUsageCount() > 0 && (
+              <p className="text-xs text-muted-foreground mt-1.5">
+                This suggestion has been used in {getUsageCount()} battle(s) so far.
               </p>
             )}
           </div>

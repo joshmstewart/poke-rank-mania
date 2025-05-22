@@ -38,3 +38,4 @@ export * from "./useBattleResults";
 export * from "./useBattleOutcomeProcessor";
 export * from "./useBattleStarterIntegration";
 export * from "./useBattleEmergencyReset"; // Explicitly export the hook
+export * from "./useRankingSuggestions"; // Export the suggestion hook

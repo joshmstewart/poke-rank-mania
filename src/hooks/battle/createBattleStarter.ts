@@ -233,7 +233,12 @@ function selectSuggestedPokemonForced(battleType: BattleType): Pokemon[] | null 
 
   // After a Pokémon has been explicitly used TWICE, mark suggestion as fully used
   if (suggestionUsageCounts[selectedSuggestion.id] >= 2) {
-    selectedSuggestion.suggestedAdjustment.used = true;
+    // Find the suggestedPokemon in the rankedPokemon array to directly modify it
+    const rankedPokemonData = rankedPokemon.find(p => p.id === selectedSuggestion.id);
+    if (rankedPokemonData && rankedPokemonData.suggestedAdjustment) {
+      rankedPokemonData.suggestedAdjustment.used = true;
+      console.log(`✨ Suggestion for ${selectedSuggestion.name} (${selectedSuggestion.id}) now fully used after ${suggestionUsageCounts[selectedSuggestion.id]} appearances.`);
+    }
   }
 
   // Save explicitly back to localStorage
@@ -281,9 +286,6 @@ function selectSuggestedPokemonForced(battleType: BattleType): Pokemon[] | null 
   return result;
 }
 
-
-
-  
   /**
    * Start a new battle using selection strategies
    */
@@ -321,9 +323,8 @@ function selectSuggestedPokemonForced(battleType: BattleType): Pokemon[] | null 
       
       // Try to create a suggestion-focused battle
       const suggestedBattle = forceSuggestionPriority 
-  ? selectSuggestedPokemonForced(battleType)
-  : selectSuggestedPokemon(battleType);
-
+        ? selectSuggestedPokemonForced(battleType)
+        : selectSuggestedPokemon(battleType);
       
       if (suggestedBattle) {
         selectedPokemon = suggestedBattle;
@@ -418,5 +419,4 @@ function selectSuggestedPokemonForced(battleType: BattleType): Pokemon[] | null 
   }
 
   return { startNewBattle, selectSuggestedPokemonForced };
-
 }

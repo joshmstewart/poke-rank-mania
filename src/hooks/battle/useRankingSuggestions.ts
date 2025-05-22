@@ -71,18 +71,27 @@ export const useRankingSuggestions = (
     console.log("🧹 Cleared ALL suggestions and removed from localStorage");
   }, [setPokemonList]);
 
-  const markSuggestionUsed = useCallback((pokemon: RankedPokemon) => {
+  const markSuggestionUsed = useCallback((pokemon: RankedPokemon, fullyUsed: boolean = false) => {
     const suggestion = activeSuggestionsRef.current.get(pokemon.id);
     if (suggestion) {
-      suggestion.used = true;
-      activeSuggestionsRef.current.set(pokemon.id, suggestion);
+      // Only set to true if fullyUsed is true
+      if (fullyUsed) {
+        suggestion.used = true;
+        console.log(`💾 Suggestion for ${pokemon.name} (${pokemon.id}) marked as fully used.`);
+      } else {
+        // If not fullyUsed, ensure 'used' remains false for continued selection
+        console.log(`ℹ️ Suggestion for ${pokemon.name} (${pokemon.id}) participated in a battle. Usage count managed by createBattleStarter.`);
+      }
+
+      activeSuggestionsRef.current.set(pokemon.id, { ...suggestion });
       setPokemonList(curr => curr.map(p => 
         p.id === pokemon.id ? { ...p, suggestedAdjustment: { ...suggestion } } : p
       ));
       saveSuggestions();
+
       toast({
         title: `Refined match for ${pokemon.name}`,
-        description: `${suggestion.direction === "up" ? "↑" : "↓"} Rating updated!`,
+        description: `${suggestion.direction === "up" ? "↑" : "↓"} Rating updated! ${fullyUsed ? "" : "(Suggestion active)"}`,
         duration: 3000
       });
     }

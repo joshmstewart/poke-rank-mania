@@ -21,7 +21,7 @@ export const useBattleProcessor = (
   activeTier?: TopNOption,
   freezePokemonForTier?: (pokemonId: number, tier: TopNOption) => void,
   battleStarter?: any,
-  markSuggestionUsed?: (pokemon: RankedPokemon) => void,
+  markSuggestionUsed?: (pokemon: RankedPokemon, fullyUsed?: boolean) => void,
   isResettingRef?: React.MutableRefObject<boolean> // Add the reset flag reference
 ) => {
   const [isProcessingResult, setIsProcessingResult] = useState(false);
@@ -109,7 +109,7 @@ export const useBattleProcessor = (
         setBattlesCompleted(0);
         console.log(`📝 [${timestamp}] PROCESS BATTLE: ✅ battlesCompleted state updated to 0 via prop setter.`);
         
-        isResettingRef.current = false; // ✅ ADD THIS LINE HERE - Clear the reset flag after using it
+        isResettingRef.current = false; // Clear the reset flag after using it
         console.log(`📝 [${timestamp}] PROCESS BATTLE: Cleared isResettingRef.current to false AFTER using it.`);
       }
       
@@ -133,8 +133,8 @@ export const useBattleProcessor = (
         currentBattlePokemon.forEach(p => {
           const ranked = p as RankedPokemon;
           if (ranked.suggestedAdjustment && !ranked.suggestedAdjustment.used) {
-            markSuggestionUsed(ranked);
-            console.log(`📝 [${timestamp}] PROCESS BATTLE: Marked suggestion used for ${ranked.name} (${ranked.id})`);
+            markSuggestionUsed(ranked, false); // Pass false to indicate not fully used yet
+            console.log(`📝 [${timestamp}] PROCESS BATTLE: Notified markSuggestionUsed for ${ranked.name} (${ranked.id}). fullyUsed=false`);
           }
         });
       }
@@ -178,7 +178,7 @@ export const useBattleProcessor = (
     isProcessingResult,
     setBattlesCompleted,
     setBattleResults,
-    isResettingRef // Add to dependencies
+    isResettingRef
   ]);
 
   const resetMilestoneInProgress = useCallback(() => {
