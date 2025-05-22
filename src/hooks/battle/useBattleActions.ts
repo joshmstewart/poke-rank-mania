@@ -35,7 +35,11 @@ export const useBattleActions = (
     setBattleResults([]);
     setBattlesCompleted(0);
     setRankingGenerated(false);
+  console.log("🟢 setRankingGenerated explicitly set to FALSE.");
+
     setBattleHistory([]);
+  console.log("🔄 setBattleHistory explicitly reset to empty array.");
+
     setCompletionPercentage(0);
     startNewBattle(battleType);
   }, [

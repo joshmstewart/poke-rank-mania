@@ -60,9 +60,13 @@ export const useBattleStateActions = ({
   // Reset battle state
   const resetBattleState = () => {
     setRankingGenerated(false);
+ console.log("🟢 setRankingGenerated explicitly set to FALSE.");
+  
     setBattleResults([]);
     setBattlesCompleted(0);
     setBattleHistory([]);
+ console.log("🔄 setBattleHistory explicitly reset to empty array.");
+
     setShowingMilestone(false);
     setCompletionPercentage(0);
     

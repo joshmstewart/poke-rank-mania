@@ -37,6 +37,8 @@ export const useBattleInitializer = (
         setBattleResults([]);
         setBattlesCompleted(0);
         setRankingGenerated(false);
+   console.log("🟢 setRankingGenerated explicitly set to FALSE.");
+
         setSelectedPokemon([]);
         setBattleHistory([]);
         setShowingMilestone(false);

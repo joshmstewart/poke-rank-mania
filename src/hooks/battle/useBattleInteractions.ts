@@ -50,7 +50,9 @@ export const useBattleInteractions = (
           { battle: currentBattleCopy, selected: updatedSelected }
         ];
         setBattleHistory(updatedHistory);
+console.log("🔄 Updating battle history explicitly. New length:", updatedHistory.length);
 
+        
         // Process the battle results
         setIsProcessing(true);
         try {

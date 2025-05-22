@@ -28,7 +28,9 @@ export const useBattleNavigation = (
     const newHistory = [...battleHistory];
     const lastBattle = newHistory.pop();
     setBattleHistory(newHistory);
+console.log("🔄 Updating battle history explicitly. New length:", newHistory.length);
 
+    
     const newResults = [...battleResults];
 
     let resultsToRemove = 1;

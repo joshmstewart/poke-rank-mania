@@ -26,6 +26,8 @@ export const useBattleSelectionManager = (
         const currentBattleCopy = [...currentBattle];
         // Save to history before processing
         setBattleHistory(prevHistory => [...prevHistory, { 
+   console.log("🔄 Updated battle history explicitly by appending. New length:", prevHistory.length + 1);
+
           battle: currentBattleCopy, 
           selected: newSelected 
         }]);
@@ -49,6 +51,8 @@ export const useBattleSelectionManager = (
     // Save current battle to history
     const currentBattleCopy = [...currentBattle];
     setBattleHistory(prev => [...prev, { 
+ console.log("🔄 Updated battle history explicitly by appending. New length:", prev.length + 1);
+
       battle: currentBattleCopy, 
       selected: selectedPokemon 
     }]);
@@ -70,6 +74,8 @@ export const useBattleSelectionManager = (
     const newHistory = [...battleHistory];
     const lastBattle = newHistory.pop();
     setBattleHistory(newHistory);
+console.log("🔄 Updating battle history explicitly. New length:", newHistory.length);
+
     
     if (lastBattle) {
       setCurrentBattle(lastBattle.battle);
