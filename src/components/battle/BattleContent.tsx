@@ -22,7 +22,8 @@ interface BattleContentProps {
 
 }
 
-const BattleContent = ({ allPokemon, initialBattleType, initialSelectedGeneration }: BattleContentProps) => {
+const BattleContent = ({ allPokemon, initialBattleType, initialSelectedGeneration, setBattlesCompleted, setBattleResults }: BattleContentProps)
+
   const battleStartedRef = useRef(false);
   const previousBattlesCompletedRef = useRef(0);
   const pokemonAnalysisLoggedRef = useRef(false);

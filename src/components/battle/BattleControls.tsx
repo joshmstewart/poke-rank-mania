@@ -22,6 +22,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import BattleSettings from "./BattleSettings";
+import { SingleBattle } from "@/hooks/battle/types";
+
 
 interface BattleControlsProps {
   selectedGeneration: number;
