@@ -2,6 +2,7 @@
 import { useEffect } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleState, BattleType, SingleBattle } from "./types";
+import { toast } from "@/hooks/use-toast";
 
 export const useBattleCoordinator = (
   isLoading: boolean,
@@ -20,19 +21,40 @@ export const useBattleCoordinator = (
 ) => {
   // Load saved battle state on initial load
   useEffect(() => {
-    const savedState = loadBattleState();
-    if (savedState) {
-      loadPokemon(savedState.selectedGeneration, savedState.fullRankingMode, true);
-    } else {
-      loadPokemon();
-    }
+    const initializeApp = async () => {
+      try {
+        const savedState = loadBattleState();
+        if (savedState) {
+          await loadPokemon(savedState.selectedGeneration, savedState.fullRankingMode, true);
+        } else {
+          await loadPokemon();
+        }
+      } catch (error) {
+        console.error("Failed to initialize battle state:", error);
+        toast({
+          title: "Error loading battle data",
+          description: "Please try refreshing the page.",
+          variant: "destructive"
+        });
+      }
+    };
+    
+    initializeApp();
   }, []);
 
   // Reload Pokémon when generation or ranking mode changes
   useEffect(() => {
-    if (!isLoading) {
-      loadPokemon(selectedGeneration, fullRankingMode);
-    }
+    const reloadPokemon = async () => {
+      if (!isLoading) {
+        try {
+          await loadPokemon(selectedGeneration, fullRankingMode);
+        } catch (error) {
+          console.error("Failed to reload Pokémon data:", error);
+        }
+      }
+    };
+    
+    reloadPokemon();
   }, [selectedGeneration, fullRankingMode]);
 
   // Save state and recalculate progress when results change
@@ -40,6 +62,7 @@ export const useBattleCoordinator = (
     if (allPokemon.length > 0) {
       calculateCompletionPercentage();
 
+      // Only attempt to save the state when we have valid data
       saveBattleState({
         selectedGeneration,
         battleType,

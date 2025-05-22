@@ -7,6 +7,7 @@ import { useBattleStateSelection } from "./useBattleStateSelection";
 import { useBattleResults } from "./useBattleResults";
 import { useBattleStarterIntegration } from "./useBattleStarterIntegration";
 import { useBattleOutcomeProcessor } from "./useBattleOutcomeProcessor";
+import { toast } from "@/hooks/use-toast";
 
 export const useBattleSelectionState = () => {
   const { currentBattleType, setCurrentBattleType } = useBattleTypeSelection();
@@ -32,29 +33,39 @@ export const useBattleSelectionState = () => {
 
   // ⚠️ Ensure currentRankings always has full RankedPokemon structure
   const currentRankings = useMemo<RankedPokemon[]>(() => {
-    if (Array.isArray(battleResults) && battleResults.length > 0) {
-      return getCurrentRankings();
-    }
+    try {
+      if (Array.isArray(battleResults) && battleResults.length > 0) {
+        return getCurrentRankings();
+      }
 
-    // Fallback: convert raw Pokémon into dummy RankedPokemon
-    return (allPokemon || []).map(pokemon => ({
-      ...pokemon,
-      score: 0,
-      count: 0,
-      confidence: 0
-    }));
+      // Fallback: convert raw Pokémon into dummy RankedPokemon
+      return (allPokemon || []).map(pokemon => ({
+        ...pokemon,
+        score: 0,
+        count: 0,
+        confidence: 0
+      }));
+    } catch (error) {
+      console.error("Error generating rankings:", error);
+      toast({
+        title: "Error generating rankings",
+        description: "There was a problem processing your battle data.",
+        variant: "destructive"
+      });
+      return [];
+    }
   }, [battleResults, allPokemon, getCurrentRankings]);
 
-  const { battleStarter, startNewBattle } = useBattleStarterIntegration(
+  const { 
+    battleStarter, 
+    startNewBattle,
+    resetSuggestionPriority 
+  } = useBattleStarterIntegration(
     allPokemon,
     currentRankings,
     setCurrentBattle,
     setSelectedPokemon
   );
-
-  const startNewBattleAdapter = (pokemonList: Pokemon[], battleType: BattleType): Pokemon[] => {
-    return startNewBattle(battleType);
-  };
 
   const { processBattleResult } = useBattleOutcomeProcessor(
     setBattleResults,
@@ -77,6 +88,7 @@ export const useBattleSelectionState = () => {
     setBattleHistory,
     startNewBattle,
     currentBattleType,
-    processBattleResult
+    processBattleResult,
+    resetSuggestionPriority
   };
 };
