@@ -191,6 +191,8 @@ return {
   battleStarter,
   startNewBattle: startNewBattle || (() => []),
   resetSuggestionPriority: resetSuggestionPriorityExplicitly,
+  selectSuggestedPokemonForced: battleStarter?.selectSuggestedPokemonForced,
 };
+
 
 };
