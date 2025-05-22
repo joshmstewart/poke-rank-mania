@@ -3,7 +3,9 @@ import BattleContentContainer from "@/components/battle/BattleContentContainer";
 import { usePokemonLoader } from "@/hooks/battle/usePokemonLoader";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+import { useState } from "react";
 import { SingleBattle } from "@/hooks/battle/types";
+
 
 
 const BattleMode = () => {
