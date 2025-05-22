@@ -10,6 +10,8 @@ import RankingDisplay from "./RankingDisplay";
 import ProgressTracker from "./ProgressTracker";
 import TierSelector from "./TierSelector";
 import { logPokemonVariations } from "@/utils/pokemonListingLogger";
+import { SingleBattle } from "@/hooks/battle/types";
+
 
 interface BattleContentProps {
   allPokemon: Pokemon[];
@@ -56,13 +58,12 @@ const BattleContent = ({ allPokemon, initialBattleType, initialSelectedGeneratio
     removeSuggestion,
     handleContinueBattles,
     resetMilestoneInProgress
- } = useBattleStateCore(
+} = useBattleStateCore(
   allPokemon,
   initialBattleType,
-  initialSelectedGeneration,
-  setBattlesCompleted,
-  setBattleResults
+  initialSelectedGeneration
 );
+
 
 
   // Only call startNewBattle once when the component mounts and allPokemon is available
@@ -174,7 +175,6 @@ const BattleContent = ({ allPokemon, initialBattleType, initialSelectedGeneratio
   onGenerationChange={handleGenerationChange}
   onBattleTypeChange={handleBattleTypeChange}
   onRestartBattles={handleRestartBattles}
-  setBattlesCompleted={setBattlesCompleted}
   setBattleResults={setBattleResults}
 />
 
