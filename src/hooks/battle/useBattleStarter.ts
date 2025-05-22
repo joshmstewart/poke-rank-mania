@@ -37,7 +37,8 @@ export const createBattleStarter = (
     console.log("📋 All Pokémon count:", allPokemonForGeneration.length, "Ranked Pokémon count:", currentFinalRankings.length);
 
     const battleSize = battleType === "pairs" ? 2 : 3;
-   console.log("🎯 [useBattleStarter] battleSize determined:", battleSize, "battleType:", battleType, "suggestedPokemon count:", suggestedPokemon.length);
+console.log("🎯 [useBattleStarter] battleSize determined:", battleSize, "battleType:", battleType, "suggestedPokemon count:", suggestions.length);
+
 
     const randomValue = Math.random();
 

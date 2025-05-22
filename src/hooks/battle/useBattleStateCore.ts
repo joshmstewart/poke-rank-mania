@@ -126,9 +126,9 @@ console.log("🎯 [filteredPokemon] Count after filtering:", filteredPokemon.len
   
   // VERIFICATION: Check if suggestions exist in localStorage on mount
   useEffect(() => {
-    console.log("🎯 [Mount] Loaded preferredImageType from localStorage:", preferredImageType);
+  const preferredImageType = localStorage.getItem('preferredImageType');
+console.log("🎯 [Mount] Loaded preferredImageType from localStorage:", preferredImageType);
 
-    const preferredImageType = localStorage.getItem('preferredImageType');
     console.log("🎯 Loaded initial image preference:", preferredImageType);
 
     if (!preferredImageType) {
