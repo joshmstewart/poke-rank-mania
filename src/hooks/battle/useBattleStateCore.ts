@@ -76,14 +76,17 @@ export const useBattleStateCore = (
     allPokemon
   );
 
-  // Filter Pokemon by generation if a specific generation is selected
-  const filteredPokemon = allPokemon.filter(pokemon => {
-    // We need to check if the pokemon has a generation property and use it
-    if (selectedGeneration === 0) {
-      return true;
-    }
-    return pokemon.hasOwnProperty('generation') && (pokemon as any).generation === selectedGeneration;
-  });
+// Filter Pokemon by generation if a specific generation is selected
+const filteredPokemon = allPokemon.filter(pokemon => {
+  if (selectedGeneration === 0) {
+    return true;
+  }
+  return pokemon.hasOwnProperty('generation') && (pokemon as any).generation === selectedGeneration;
+});
+
+// ✅ Correct logging placement AFTER filteredPokemon is fully defined
+console.log("🎯 [filteredPokemon] Count after filtering:", filteredPokemon.length, "Generation selected:", selectedGeneration);
+
 
   const { 
     battleStarter, 
@@ -95,6 +98,8 @@ export const useBattleStateCore = (
     setCurrentBattle,
     setSelectedPokemon
   );
+  console.log("🎯 [useBattleStarterIntegration] initialized:", { battleStarter, currentBattle, filteredPokemonCount: filteredPokemon.length });
+
 
   const { 
     processBattleResult,
@@ -116,9 +121,13 @@ export const useBattleStateCore = (
     battleStarter,
     markSuggestionUsed
   );
+  console.log("🎯 [useBattleProcessor] initialized with battlesCompleted:", battlesCompleted, "currentBattle:", currentBattle);
+
   
   // VERIFICATION: Check if suggestions exist in localStorage on mount
   useEffect(() => {
+    console.log("🎯 [Mount] Loaded preferredImageType from localStorage:", preferredImageType);
+
     const preferredImageType = localStorage.getItem('preferredImageType');
     console.log("🎯 Loaded initial image preference:", preferredImageType);
 
@@ -173,6 +182,8 @@ export const useBattleStateCore = (
   // Enhanced effect to reload suggestions and trigger prioritization after milestone
 useEffect(() => {
   if (!showingMilestone && needsToReloadSuggestions) {
+    console.log("🎯 [Milestone Ended] Reloading suggestions explicitly. Current needsToReloadSuggestions state:", needsToReloadSuggestions);
+
     console.log("🔄 Explicitly reloading suggestions after milestone");
     const loadedSuggestions = loadSavedSuggestions();
     console.log(`📥 Reloaded suggestions after milestone: ${loadedSuggestions.size}`);
@@ -243,6 +254,8 @@ triggerSuggestionPrioritization();
   // Periodically check if suggestions have been refreshed recently
   useEffect(() => {
     const checkInterval = setInterval(() => {
+      console.log("🎯 [Periodic Check] Checking suggestion refresh status. Current final rankings length:", finalRankings.length);
+
       const currentTime = Date.now();
       const timeSinceLastLoad = currentTime - lastSuggestionLoadTimestampRef.current;
       // If it's been more than 30 seconds since suggestions were loaded
@@ -298,6 +311,8 @@ triggerSuggestionPrioritization();
 
   useEffect(() => {
     console.log("🔍 Battle Results Updated:", battleResults.length, "battles");
+ console.log("🎯 [Rankings Updated] Checking for unused suggestions in final rankings:", finalRankings.filter(p => p.suggestedAdjustment && !p.suggestedAdjustment.used));
+
   }, [battleResults]);
 
   useEffect(() => {
@@ -323,6 +338,8 @@ triggerSuggestionPrioritization();
   // Fixed handleContinueBattles implementation to not reference undefined processorRefs
   const handleContinueBattles = useCallback(() => {
     setShowingMilestone(false);
+    console.log("🎯 [Continue Battles] Milestone display turned off, continuing battles.");
+
     
     if (resetMilestoneInProgress) {
       resetMilestoneInProgress();
