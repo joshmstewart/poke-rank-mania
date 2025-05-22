@@ -48,6 +48,29 @@ export const useBattleActions = (
     generateRankings([]);
     console.log("✅ Rankings regenerated explicitly after restart with empty suggestions");
 
+    // ✅ Reset all battle-related localStorage items for complete reset
+    const keysToRemove = [
+      'pokemon-battle-recently-used', 
+      'pokemon-battle-last-battle',
+      'pokemon-ranker-battle-history',
+      'pokemon-battle-history',
+      'pokemon-active-suggestions',
+      'pokemon-battle-tracking',
+      'pokemon-battle-seen',
+      'suggestionUsageCounts'
+    ];
+    
+    keysToRemove.forEach(key => {
+      localStorage.removeItem(key);
+      console.log(`✅ Cleared localStorage key: ${key}`);
+    });
+
+    // Dispatch custom event to notify components that we've done a complete reset
+    const event = new CustomEvent('force-emergency-reset', {
+      detail: { source: 'restart-button' }
+    });
+    document.dispatchEvent(event);
+    
     startNewBattle(battleType);
     
     toast({

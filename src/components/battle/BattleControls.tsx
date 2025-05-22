@@ -138,12 +138,12 @@ const BattleControls: React.FC<BattleControlsProps> = ({
             <AlertDialogHeader>
               <AlertDialogTitle>Are you sure you want to restart?</AlertDialogTitle>
               <AlertDialogDescription>
-                This will reset all battles, progress, rankings, and suggestions. This action cannot be undone.
+                This will reset all battles, progress, rankings, and suggestions. Your battle count will return to 1. This action cannot be undone.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleRestart}>Restart</AlertDialogAction>
+              <AlertDialogAction onClick={handleRestart} className="bg-destructive hover:bg-destructive/90">Restart</AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>

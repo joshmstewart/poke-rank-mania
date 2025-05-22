@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
 import { useBattleProgression } from "./useBattleProgression";
@@ -24,6 +24,22 @@ export const useBattleProcessor = (
 ) => {
   const [isProcessingResult, setIsProcessingResult] = useState(false);
   const milestoneInProgressRef = useRef(false);
+
+  // Listen for emergency reset events
+  useEffect(() => {
+    const handleEmergencyReset = () => {
+      console.log("🚨 Battle processor detected emergency reset event");
+      milestoneInProgressRef.current = false;
+      setIsProcessingResult(false);
+      // This is intentionally separate from main state resets to ensure the processor
+      // is in a clean state ready for the next battle
+    };
+    
+    document.addEventListener('force-emergency-reset', handleEmergencyReset);
+    return () => {
+      document.removeEventListener('force-emergency-reset', handleEmergencyReset);
+    };
+  }, []);
 
   const { incrementBattlesCompleted } = useBattleProgression(
     battlesCompleted,
