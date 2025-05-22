@@ -16,7 +16,7 @@ export const useBattleStateCore = (allPokemon: Pokemon[]) => {
 
   const [battlesCompleted, setBattlesCompleted] = useState(0);
   const [showingMilestone, setShowingMilestone] = useState(false);
-  const [selectedGeneration, setSelectedGeneration] = useState<number | string>("all");
+  const [selectedGeneration, setSelectedGeneration] = useState<number | string>('all');
   const [completionPercentage, setCompletionPercentage] = useState(0);
   const [rankingGenerated, setRankingGenerated] = useState(false);
   const [selectedPokemon, setSelectedPokemon] = useState<number[]>([]);
@@ -31,18 +31,23 @@ export const useBattleStateCore = (allPokemon: Pokemon[]) => {
     resetAfterMilestone,
     disableSuggestionPriority,
     setBattleDirection,
-    battleStarter,
     startNewBattle,
     resetSuggestionPriority,
     resetSuggestionState,
-  } = useBattleSelectionState(finalRankings, allPokemon, setCompletionPercentage, setRankingGenerated, battleType);
+  } = useBattleSelectionState(
+    finalRankings,
+    allPokemon,
+    setCompletionPercentage,
+    setRankingGenerated,
+    battleType,
+  );
 
   const handlePokemonSelect = (pokemonId: number) => {
-    setSelectedPokemon([pokemonId]);
+    handleSelection([pokemonId]);
   };
 
   const handleTripletSelectionComplete = (selectedIds: number[]) => {
-    setSelectedPokemon(selectedIds);
+    handleSelection(selectedIds);
   };
 
   const handleSelection = (selectedIds: number[]) => {
@@ -68,8 +73,8 @@ export const useBattleStateCore = (allPokemon: Pokemon[]) => {
 
   const handleContinueBattles = () => {
     setShowingMilestone(false);
+    resetAfterMilestone();
     resetSuggestionPriority();
-    resetSuggestionState();
     startNewBattle();
   };
 
@@ -78,15 +83,15 @@ export const useBattleStateCore = (allPokemon: Pokemon[]) => {
   };
 
   const handleSaveRankings = () => {
-    // Add your save logic if applicable
+    // Placeholder for saving logic
   };
 
   const freezePokemonForTier = (pokemonId: number) => {
-    // Implement tier freezing logic
+    // Implement freezing logic if needed
   };
 
   const isPokemonFrozenForTier = (pokemonId: number) => {
-    // Return freeze status if tier freezing logic is implemented
+    // Implement checking logic if needed
     return false;
   };
 
@@ -105,7 +110,6 @@ export const useBattleStateCore = (allPokemon: Pokemon[]) => {
     });
   };
 
-  // Example simplified milestone logic:
   useEffect(() => {
     if (battlesCompleted > 0 && battlesCompleted % 50 === 0) {
       setShowingMilestone(true);
@@ -158,7 +162,6 @@ export const useBattleStateCore = (allPokemon: Pokemon[]) => {
     resetAfterMilestone,
     disableSuggestionPriority,
     setBattleDirection,
-    battleStarter,
     startNewBattle,
     resetSuggestionPriority,
     resetSuggestionState,

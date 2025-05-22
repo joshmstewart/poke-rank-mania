@@ -1,23 +1,21 @@
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { Pokemon } from '@/services/pokemon';
-import { createBattleStarter } from './createBattleStarter';
 import { RankedPokemon } from './useRankings';
-
-interface BattleSelectionState {
-  currentBattle: Pokemon[];
-  startNewBattle: () => Pokemon[];
-  resetSuggestions: () => void;
-}
+import { createBattleStarter } from './createBattleStarter';
+import { BattleType } from './types';
 
 export const useBattleSelectionState = (
   rankedPokemon: RankedPokemon[],
-  forceSuggestionPriority: boolean,
-  direction: 'up' | 'down',
   allPokemon: Pokemon[],
-): BattleSelectionState => {
+  setCompletionPercentage: (percentage: number) => void,
+  setRankingGenerated: (generated: boolean) => void,
+  battleType: BattleType
+) => {
   const [currentBattle, setCurrentBattle] = useState<Pokemon[]>([]);
+  const [forceSuggestionPriority, setForceSuggestionPriority] = useState(false);
+  const [direction, setDirection] = useState<'up' | 'down'>('up');
 
-  const { startNewBattle, resetSuggestionState } = createBattleStarter(
+  const { startNewBattle } = createBattleStarter(
     setCurrentBattle,
     rankedPokemon,
     forceSuggestionPriority,
@@ -25,9 +23,35 @@ export const useBattleSelectionState = (
     allPokemon,
   );
 
-  useEffect(() => {
-    startNewBattle();
-  }, [rankedPokemon, forceSuggestionPriority, direction]);
+  const resetSuggestionPriority = useCallback(() => {
+    setForceSuggestionPriority(true);
+  }, []);
 
-  return { currentBattle, startNewBattle, resetSuggestions: resetSuggestionState };
+  const disableSuggestionPriority = useCallback(() => {
+    setForceSuggestionPriority(false);
+  }, []);
+
+  const resetSuggestionState = useCallback(() => {
+    setForceSuggestionPriority(false);
+  }, []);
+
+  const resetAfterMilestone = useCallback(() => {
+    resetSuggestionState();
+    setDirection('up');
+  }, [resetSuggestionState]);
+
+  const setBattleDirection = useCallback((dir: 'up' | 'down') => {
+    setDirection(dir);
+  }, []);
+
+  return {
+    currentBattle,
+    forceSuggestionPriority,
+    resetAfterMilestone,
+    disableSuggestionPriority,
+    setBattleDirection,
+    startNewBattle,
+    resetSuggestionPriority,
+    resetSuggestionState,
+  };
 };
