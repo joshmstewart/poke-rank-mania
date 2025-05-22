@@ -1,3 +1,4 @@
+
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
 
@@ -206,6 +207,8 @@ export function createBattleStarter(
 
 /**
  * Explicitly forces a battle with suggested Pokémon ONLY.
+ * This new function prioritizes suggested Pokémon ABOVE ALL ELSE,
+ * ignoring recently used filtering.
  */
 function selectSuggestedPokemonForced(battleType: BattleType): Pokemon[] | null {
   const forcedSuggestions = rankedPokemon.filter(p => p.suggestedAdjustment && !p.suggestedAdjustment.used);
@@ -225,30 +228,54 @@ function selectSuggestedPokemonForced(battleType: BattleType): Pokemon[] | null 
 
   // Explicitly select opponent near suggested rank
   const currentRank = rankedPokemon.findIndex(p => p.id === suggestedPokemon.id);
-  const opponentRank = suggestedPokemonData.suggestedAdjustment.direction === "up"
-    ? Math.max(0, currentRank - 1)
-    : Math.min(rankedPokemon.length - 1, currentRank + 1);
-
-  if (opponentRank === currentRank) return null;
+  const direction = suggestedPokemonData.suggestedAdjustment.direction;
+  
+  // Choose opponent based on suggestion direction
+  const targetRank = direction === "up"
+    ? Math.max(0, currentRank - 5) // Move up by selecting higher-ranked opponents
+    : Math.min(rankedPokemon.length - 1, currentRank + 5); // Move down with lower-ranked opponents
+  
+  // Find opponent at target rank that isn't the same Pokémon
+  let opponentRank = targetRank;
+  // If opponent rank happened to be the same as current rank, adjust it
+  if (opponentRank === currentRank) {
+    opponentRank = direction === "up"
+      ? Math.max(0, currentRank - 1)
+      : Math.min(rankedPokemon.length - 1, currentRank + 1);
+  }
 
   const opponentPokemonData = rankedPokemon[opponentRank];
-  const opponentPokemon = allPokemon.find(p => p.id === opponentPokemonData.id);
+  const opponentPokemon = allPokemon.find(p => p.id === opponentPokemonData?.id);
 
-  if (!opponentPokemon) return null;
+  // If we couldn't find a specific opponent, just grab any other Pokémon
+  if (!opponentPokemon) {
+    const randomOpponent = shuffleArray(allPokemon).find(p => p.id !== suggestedPokemon.id);
+    if (randomOpponent) {
+      result.push(randomOpponent);
+      console.log(`🎲 Could not find ideal opponent for forced suggestion battle, using random Pokémon ${randomOpponent.name}`);
+    }
+  } else {
+    result.push(opponentPokemon);
+    console.log(`🎮 Selected opponent ${opponentPokemon.name} (rank #${opponentRank+1}) for forced suggestion battle with ${suggestedPokemon.name} (rank #${currentRank+1}, direction: ${direction})`);
+  }
 
-  result.push(opponentPokemon);
-
-  // Ensure we meet battle size requirement
+  // Ensure we meet battle size requirement (for triplets)
   while (result.length < battleSize) {
     const randomPokemon = shuffleArray(allPokemon).find(p => !result.includes(p));
     if (!randomPokemon) break;
     result.push(randomPokemon);
   }
 
-  // Explicitly update recentlyUsed tracking
-  result.forEach(p => recentlyUsed.add(p.id));
+  // Explicitly update tracking data - even with forced selection, we still track
+  result.forEach(p => {
+    recentlyUsed.add(p.id);
+    // For the suggested Pokémon, mark when it was last used in a battle
+    if (p.id === suggestedPokemon.id) {
+      lastUsedSuggestion.set(p.id, battleCount);
+    }
+  });
 
-  console.log("✅ Forced explicit suggestion battle created");
+  console.log("✅ Forced explicit suggestion battle created successfully");
   return result;
 }
 
@@ -307,6 +334,34 @@ function selectSuggestedPokemonForced(battleType: BattleType): Pokemon[] | null 
     // Beyond the initial subset phase, use our sophisticated selection strategies
     else {
       console.log(`👾 Battle #${currentBattleCount}: Beyond initial subset - using main selection logic`);
+      
+      // FORCED SUGGESTION PRIORITY: When explicitly forcing suggestions, bypass all other logic
+      if (forceSuggestionPriority && suggested.size > 0) {
+        console.log("🚨 FORCING suggestion priority battle - bypassing all other selection logic");
+        
+        const forcedBattle = selectSuggestedPokemonForced(battleType);
+        if (forcedBattle) {
+          selectedPokemon = forcedBattle;
+          consecutiveNonSuggestionBattles = 0; // Reset consecutive non-suggestion battles
+          console.log("✅ Successfully created FORCED suggestion battle");
+          
+          // Add these Pokemon to recently used and return immediately
+          selectedPokemon.forEach(p => recentlyUsed.add(p.id));
+          
+          // Limit the size of the recently used set
+          if (recentlyUsed.size > 30) {
+            const idsToRemove = Array.from(recentlyUsed).slice(0, 10);
+            idsToRemove.forEach(id => recentlyUsed.delete(id));
+          }
+          
+          // Update current battle with selected Pokemon
+          setCurrentBattle(selectedPokemon);
+          return selectedPokemon;
+        } else {
+          console.warn("⚠️ Failed to create forced suggestion battle - falling back to standard logic");
+          // Continue with normal selection logic if forced selection failed
+        }
+      }
       
       // If forcing suggestion priority OR we have active suggestions with high priority (95%)
       // OR if we've gone too many battles without using suggestions
