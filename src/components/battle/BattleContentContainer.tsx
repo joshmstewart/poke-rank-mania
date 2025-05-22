@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import BattleContent from "./BattleContent";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "@/hooks/battle/types";
@@ -20,10 +20,22 @@ const BattleContentContainer: React.FC<BattleContentContainerProps> = ({
 }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
+  const loadingTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const emergencyTimerRef = useRef<NodeJS.Timeout | null>(null);
   
   // Safety check - immediately verify data and show loading
   useEffect(() => {
-    const loadTimeout = setTimeout(() => {
+    // Clear any existing timers when component remounts or allPokemon changes
+    if (loadingTimerRef.current) {
+      clearTimeout(loadingTimerRef.current);
+    }
+    
+    if (emergencyTimerRef.current) {
+      clearTimeout(emergencyTimerRef.current);
+    }
+    
+    // Set a loading timeout to ensure we don't show loading indefinitely
+    loadingTimerRef.current = setTimeout(() => {
       if (!allPokemon || allPokemon.length === 0) {
         setHasError(true);
         toast({
@@ -35,14 +47,25 @@ const BattleContentContainer: React.FC<BattleContentContainerProps> = ({
       setIsLoading(false);
     }, 2000); // 2 second timeout
     
+    // Emergency timeout as a failsafe
+    emergencyTimerRef.current = setTimeout(() => {
+      console.log("⚠️ Emergency loading timeout triggered");
+      setIsLoading(false);
+    }, 5000); // 5 second emergency timeout
+    
     // If data loaded more quickly, update state immediately
     if (allPokemon && allPokemon.length > 0) {
-      clearTimeout(loadTimeout);
+      console.log(`✅ BattleContentContainer: ${allPokemon.length} Pokémon loaded successfully`);
+      if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
+      if (emergencyTimerRef.current) clearTimeout(emergencyTimerRef.current);
       setIsLoading(false);
       setHasError(false);
     }
     
-    return () => clearTimeout(loadTimeout);
+    return () => {
+      if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
+      if (emergencyTimerRef.current) clearTimeout(emergencyTimerRef.current);
+    };
   }, [allPokemon]);
   
   // If loading, show a loading state
@@ -55,6 +78,13 @@ const BattleContentContainer: React.FC<BattleContentContainerProps> = ({
             <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-primary"></div>
           </div>
           <p className="text-gray-600">Please wait while we prepare your battle...</p>
+          <Button 
+            onClick={() => window.location.reload()}
+            className="inline-flex items-center mt-4"
+            variant="outline"
+          >
+            <RefreshCw className="mr-2 h-4 w-4" /> Refresh Page
+          </Button>
         </div>
       </div>
     );

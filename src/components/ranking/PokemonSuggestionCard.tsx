@@ -44,7 +44,11 @@ export const PokemonSuggestionCard: React.FC<PokemonSuggestionCardProps> = ({
       setActiveDirection(null);
       setActiveStrength(1);
     }
-  }, [pokemon.suggestedAdjustment, pokemon.name]);
+  }, [
+    pokemon.suggestedAdjustment, 
+    pokemon.name, 
+    pokemon.id
+  ]);
 
   const generation = getPokemonGeneration(pokemon.id);
   
