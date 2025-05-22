@@ -332,11 +332,8 @@ function selectSuggestedPokemonForced(battleType: BattleType): Pokemon[] | null 
       console.log(`🎮 Battle Starter: Updated suggestion tracking with ${suggested.size} Pokemon`);
     }
     
-    // If forcing suggestion priority OR we have active suggestions with high priority (95%)
-    // OR if we've gone too many battles without using suggestions
-    const suggestionProbability = forceSuggestionPriority ? 1.0 : 0.85;
-    
     // Log the decision process for forcing suggestions
+    const suggestionProbability = forceSuggestionPriority ? 1.0 : 0.85;
     const isForcingSuggestions = (forceSuggestionPriority) || 
                              (suggested.size > 0 && Math.random() < suggestionProbability) || 
                              (consecutiveNonSuggestionBattles >= 3 && suggested.size > 0);
@@ -401,8 +398,25 @@ function selectSuggestedPokemonForced(battleType: BattleType): Pokemon[] | null 
       idsToRemove.forEach(id => recentlyUsed.delete(id));
     }
     
+    // ADD NEW LOGGING BEFORE SETTING CURRENT BATTLE
+    console.log(`[DEBUG createBattleStarter - PRE_SET_CURRENT_BATTLE] Preparing to call setCurrentBattle. Inspecting objects in 'selectedPokemon':`);
+    if (selectedPokemon && selectedPokemon.length > 0) {
+      selectedPokemon.forEach(p => {
+        const pkmn = p as RankedPokemon; // Cast to check for RankedPokemon properties
+        const suggestionDetails = pkmn.suggestedAdjustment
+          ? `HAS suggestionAdjustment - Used: ${pkmn.suggestedAdjustment.used}, Direction: ${pkmn.suggestedAdjustment.direction}`
+          : 'DOES NOT HAVE suggestionAdjustment property';
+        // Check for another property that only RankedPokemon would have
+        const isLikelyRankedPokemon = 'score' in pkmn || 'confidence' in pkmn || 'count' in pkmn;
+        console.log(`[DEBUG createBattleStarter - PRE_SET_CURRENT_BATTLE] PKMN: ${pkmn.name} (${pkmn.id}). ${suggestionDetails}. IsLikelyRanked: ${isLikelyRankedPokemon}. Object keys: ${Object.keys(pkmn).join(', ')}`);
+      });
+    } else {
+      console.log(`[DEBUG createBattleStarter - PRE_SET_CURRENT_BATTLE] 'selectedPokemon' is empty or undefined.`);
+    }
+    
     // Update current battle with selected Pokemon
     setCurrentBattle(selectedPokemon);
+    console.log(`[DEBUG createBattleStarter - POST_SET_CURRENT_BATTLE] Called setCurrentBattle.`);
     
     return selectedPokemon;
   }
