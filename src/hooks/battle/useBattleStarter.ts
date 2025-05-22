@@ -1,3 +1,4 @@
+
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { BattleType } from "./types";
 
@@ -37,10 +38,7 @@ export const createBattleStarter = (
     console.log("📋 All Pokémon count:", allPokemonForGeneration.length, "Ranked Pokémon count:", currentFinalRankings.length);
 
     const battleSize = battleType === "pairs" ? 2 : 3;
-console.log("🎯 [useBattleStarter] battleSize determined:", battleSize, "battleType:", battleType);
-
-
-
+    console.log("🎯 [useBattleStarter] battleSize determined:", battleSize, "battleType:", battleType);
 
     const randomValue = Math.random();
 
@@ -50,43 +48,51 @@ console.log("🎯 [useBattleStarter] battleSize determined:", battleSize, "battl
       Math.min(Number(activeTier), currentFinalRankings.length);
 
     // Get the current top N Pokémon based on the tier
+    // CHANGE: Now using the RankedPokemon objects directly without stripping them
     const topCandidates = currentFinalRankings
       .slice(0, tierSize)
-      .filter(p => !isPokemonFrozenForTier || !isPokemonFrozenForTier(p.id, activeTier))
-      .map(p => {
-        const { score, count, confidence, isFrozenForTier, ...pokemonProps } = p;
-        return pokemonProps as Pokemon;
-      });
+      .filter(p => !isPokemonFrozenForTier || !isPokemonFrozenForTier(p.id, activeTier));
 
     // Get Pokémon just below the cutoff (challenger pool)
+    // CHANGE: Now using the RankedPokemon objects directly without stripping them
     const nearCandidates = currentFinalRankings
       .slice(tierSize, tierSize + 25)
-      .filter(p => !isPokemonFrozenForTier || !isPokemonFrozenForTier(p.id, activeTier))
-      .map(p => {
-        const { score, count, confidence, isFrozenForTier, ...pokemonProps } = p;
-        return pokemonProps as Pokemon;
-      });
+      .filter(p => !isPokemonFrozenForTier || !isPokemonFrozenForTier(p.id, activeTier));
 
     // Get lower-tier candidates (50% lower than cutoff)
     const lowerTierIndex = Math.floor(tierSize + (tierSize * 0.5));
+    // CHANGE: Now using the RankedPokemon objects directly without stripping them
     const lowerTierCandidates = currentFinalRankings
       .slice(lowerTierIndex, lowerTierIndex + 30)
-      .filter(p => !isPokemonFrozenForTier || !isPokemonFrozenForTier(p.id, activeTier))
-      .map(p => {
-        const { score, count, confidence, isFrozenForTier, ...pokemonProps } = p;
-        return pokemonProps as Pokemon;
-      });
+      .filter(p => !isPokemonFrozenForTier || !isPokemonFrozenForTier(p.id, activeTier));
 
     // Get Pokémon with few battles (discovery pool)
-    const unrankedCandidates = allPokemonForGeneration
-      .filter(p => {
-        const rankedData = currentFinalRankings.find(rp => rp.id === p.id);
-        return !rankedData || rankedData.count < 3;
-      });
+    // Try to find them as RankedPokemon objects first
+    const unrankedPokemonIds = allPokemonForGeneration.filter(p => {
+      const rankedData = currentFinalRankings.find(rp => rp.id === p.id);
+      return !rankedData || rankedData.count < 3;
+    }).map(p => p.id);
+    
+    // Create a mix of RankedPokemon objects and regular Pokemon objects as needed
+    const unrankedCandidates: Pokemon[] = unrankedPokemonIds.map(id => {
+      // Try to find in rankings first to preserve RankedPokemon properties
+      const rankedVersion = currentFinalRankings.find(rp => rp.id === id);
+      if (rankedVersion) return rankedVersion;
+      
+      // Fall back to regular Pokemon
+      return allPokemonForGeneration.find(p => p.id === id)!;
+    }).filter(Boolean);
 
-    // Get Pokémon that lost to lower tier opponents
+    // Get Pokémon that lost to lower tier opponents - try to get RankedPokemon versions
     const demotionCandidates = Array.from(lowerTierLosersMap.keys())
-      .map(id => allPokemonForGeneration.find(p => p.id === id))
+      .map(id => {
+        // Try to find in rankings first
+        const rankedVersion = currentFinalRankings.find(p => p.id === id);
+        if (rankedVersion) return rankedVersion;
+        
+        // Fall back to regular Pokemon
+        return allPokemonForGeneration.find(p => p.id === id);
+      })
       .filter(Boolean) as Pokemon[];
 
     // Battle selection logic
@@ -122,7 +128,15 @@ console.log("🎯 [useBattleStarter] battleSize determined:", battleSize, "battl
       console.log("⚖️ Final selected battle pair IDs:", selectedBattle.map(p => p.id));
       return selectedBattle;
     } else {
-      const selectedBattle = shuffleArray(pokemonList).slice(0, battleSize);
+      // Look for RankedPokemon objects first if available
+      let sourceList: Pokemon[] = pokemonList;
+      if (currentFinalRankings.length > 0) {
+        // Prefer RankedPokemon objects when they're available
+        const randomPool = Math.random() > 0.7 ? currentFinalRankings : pokemonList;
+        sourceList = randomPool;
+      }
+      
+      const selectedBattle = shuffleArray(sourceList).slice(0, battleSize);
       console.log("⚖️ Final selected battle pair IDs:", selectedBattle.map(p => p.id));
       return selectedBattle;
     }
@@ -163,7 +177,21 @@ console.log("🎯 [useBattleStarter] battleSize determined:", battleSize, "battl
       }
     });
 
+    // Log what objects we're passing to setCurrentBattle
+    console.log(`[DEBUG useBattleStarter - PRE_SET_CURRENT_BATTLE] About to set current battle with:`, 
+      result.map(p => {
+        const asRanked = p as RankedPokemon;
+        return {
+          id: p.id, 
+          name: p.name, 
+          hasRankedProps: 'score' in asRanked || 'count' in asRanked,
+          hasSuggestion: asRanked.suggestedAdjustment ? `YES (${asRanked.suggestedAdjustment.direction}, used: ${asRanked.suggestedAdjustment.used})` : 'NO'
+        };
+      })
+    );
+
     setCurrentBattle(result);
+    console.log(`[DEBUG useBattleStarter - POST_SET_CURRENT_BATTLE] Current battle set.`);
     return result;
   };
 
@@ -172,3 +200,4 @@ console.log("🎯 [useBattleStarter] battleSize determined:", battleSize, "battl
     trackLowerTierLoss
   };
 };
+
