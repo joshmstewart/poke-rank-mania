@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useEffect, useRef } from "react";
 import { RankedPokemon, RankingSuggestion } from "@/services/pokemon";
 import { toast } from "@/hooks/use-toast";
@@ -69,27 +70,46 @@ const removeSuggestion = useCallback((pokemonId: number) => {
     localStorage.removeItem(STORAGE_KEY);
   }, [setPokemonList]);
 
+// ✅ Step 2: Ensure explicit marking of suggestions as used
 const markSuggestionUsed = useCallback((pokemon: RankedPokemon) => {
   const suggestion = activeSuggestionsRef.current.get(pokemon.id);
   if (suggestion) {
+    // Explicitly mark the suggestion as used
     suggestion.used = true;
     activeSuggestionsRef.current.set(pokemon.id, suggestion);
+    
+    // Update the Pokemon list with the used suggestion
     setPokemonList(curr => curr.map(p => 
       p.id === pokemon.id ? { ...p, suggestedAdjustment: { ...suggestion } } : p
     ));
+    
+    // Save to localStorage immediately
     saveSuggestions();
+    
+    console.log(`🎯 Explicitly marked suggestion as USED for Pokémon #${pokemon.id} (${pokemon.name})`);
+    
     toast({
       title: `Refined match for ${pokemon.name}`,
       description: `${suggestion.direction === "up" ? "↑" : "↓"} Rating updated!`,
       duration: 3000
     });
+  } else {
+    console.log(`⚠️ Attempted to mark suggestion as used for Pokémon #${pokemon.id} but no suggestion exists`);
   }
 }, [setPokemonList, saveSuggestions]);
 
 
 
 const findNextSuggestion = useCallback(() => {
-  return pokemonList.find(p => p.suggestedAdjustment && !p.suggestedAdjustment.used);
+  const next = pokemonList.find(p => p.suggestedAdjustment && !p.suggestedAdjustment.used);
+  
+  if (next) {
+    console.log(`🔍 Found next unused suggestion: Pokémon #${next.id} (${next.name})`);
+  } else {
+    console.log(`🔍 No unused suggestions found among ${pokemonList.length} Pokémon`);
+  }
+  
+  return next;
 }, [pokemonList]);
 
 return {
@@ -97,8 +117,8 @@ return {
   removeSuggestion,
   clearAllSuggestions,
   loadSavedSuggestions,
-  markSuggestionUsed,     // ✅ added
-  findNextSuggestion,     // ✅ added
+  markSuggestionUsed,     
+  findNextSuggestion,     
   activeSuggestions: activeSuggestionsRef.current
 };
 

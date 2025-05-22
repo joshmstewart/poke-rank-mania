@@ -15,17 +15,15 @@ export function createBattleStarter(
   battleCount: number = 0,
   setBattleCount?: React.Dispatch<React.SetStateAction<number>>
 ) {
-  // Keep track of recently used Pokemon to avoid repeats
+  // Keep track of recently used Pokemon to avoid repeats - now persistent across battles
   const recentlyUsed = new Set<number>();
   // Track Pokemon that have been suggested for ranking adjustments
   const suggested = new Map<number, RankedPokemon>();
   // Track consecutive non-suggestion battles to ensure we don't go too long without them
   let consecutiveNonSuggestionBattles = 0;
-  // Track the last time we used each suggestion to avoid repeating the same one
+  // Track the last time we used each suggestion to avoid repeating the same one - now persistent
   const lastUsedSuggestion = new Map<number, number>();
-  // Count battles to use as a reference for when suggestions were last used
-  let battleCounter = 0;
-  // Keep track of pairs that have fought before to avoid repetitive matchups
+  // Keep track of pairs that have fought before to avoid repetitive matchups - now persistent
   const previousMatchups = new Set<string>();
   
   // Initialize suggestion tracking
@@ -93,7 +91,7 @@ export function createBattleStarter(
       if (suggestedPokemon && suggestedData) {
         result.push(suggestedPokemon);
         lastUsedSuggestion.set(selectedId, currentBattleCount);
-        console.log(`🎯 Battle includes suggested Pokemon: ${suggestedPokemon.name}`);
+        console.log(`🎯 Explicitly selecting Pokémon #${suggestedPokemon.id} (${suggestedPokemon.name}) due to active suggestion.`);
         
         // Find an appropriate opponent based on the suggestion direction
         const suggestion = suggestedData.suggestedAdjustment;
@@ -223,6 +221,7 @@ function selectSuggestedPokemonForced(battleType: BattleType): Pokemon[] | null 
   if (!suggestedPokemon) return null;
   
   result.push(suggestedPokemon);
+  console.log(`🎯 Explicitly selecting Pokémon #${suggestedPokemon.id} (${suggestedPokemon.name}) due to active suggestion (FORCED).`);
 
   // Explicitly select opponent near suggested rank
   const currentRank = rankedPokemon.findIndex(p => p.id === suggestedPokemon.id);
@@ -271,6 +270,7 @@ function selectSuggestedPokemonForced(battleType: BattleType): Pokemon[] | null 
     }
     
     console.log(`🔢 Battle #${currentBattleCount} starting (${currentBattleCount <= 10 ? 'initial subset phase' : 'main selection phase'})`);
+    console.log(`🔍 Current tracking state: recentlyUsed: ${recentlyUsed.size}, previousMatchups: ${previousMatchups.size}, lastUsedSuggestion: ${lastUsedSuggestion.size}`);
 
     const battleSize = battleType === "triplets" ? 3 : 2;
     let selectedPokemon: Pokemon[] = [];
@@ -282,7 +282,7 @@ function selectSuggestedPokemonForced(battleType: BattleType): Pokemon[] | null 
       .forEach(p => suggested.set(p.id, p));
       
     if (suggested.size > 0) {
-      console.log(`🎮 Battle Starter: Updated suggestion tracking with ${suggested.size} Pokemon`);
+      console.log(`🎮 Battle Starter: Updated suggestion tracking with ${suggested.size} Pokemon with unused suggestions`);
     }
     
     // Use our fixed initial subset for the first 10 battles
@@ -383,6 +383,17 @@ function selectSuggestedPokemonForced(battleType: BattleType): Pokemon[] | null 
     return selectedPokemon;
   }
   
+  /**
+   * ✅ Step 3: Add an explicit reset method to battle starter
+   * This method resets all tracking state after a milestone
+   */
+  function resetStateAfterMilestone() {
+    recentlyUsed.clear();
+    previousMatchups.clear();
+    lastUsedSuggestion.clear();
+    console.log("🔄 Cleared recentlyUsed, previousMatchups, lastUsedSuggestion after milestone");
+  }
+  
   // Helper function to shuffle an array
   function shuffleArray<T>(array: T[]): T[] {
     const shuffled = [...array];
@@ -418,5 +429,8 @@ function selectSuggestedPokemonForced(battleType: BattleType): Pokemon[] | null 
     return items[items.length - 1];
   }
 
-  return { startNewBattle };
+  return { 
+    startNewBattle, 
+    resetStateAfterMilestone  // explicitly added method for resetting state
+  };
 }

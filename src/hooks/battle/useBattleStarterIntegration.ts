@@ -1,3 +1,4 @@
+
 import { useMemo, useEffect, useRef, useState, useCallback } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
@@ -108,8 +109,9 @@ useEffect(() => {
     
     // Extract suggested Pokemon IDs
     const suggestedPokemonIds = pokemonWithSuggestions.map(p => p.id);
+    console.log(`🎯 Current suggestedPokemonIds (${suggestedPokemonIds.length}): ${suggestedPokemonIds.join(', ')}`);
     
-    // Updated to pass the battle count and setter
+    // Create battle starter with persistent battle count
     return createBattleStarter(
       allPokemon,
       allPokemon,
@@ -137,6 +139,7 @@ const startNewBattle = useCallback((battleType: BattleType) => {
   console.log(`🔢 Suggestion battles since milestone: ${suggestionBattleCountRef.current}`);
   console.log(`⚡ Forced priority battles remaining: ${forcedPriorityBattlesRef.current}`);
   console.log(`🎮 Current battle count: ${battleCount}`);
+  console.log(`🎯 Unused suggestions remaining: ${suggestedPokemon.length}`);
 
   // Calculate required priority battles explicitly
   const requiredPriorityBattles = Math.max(10, suggestedPokemon.length * 3);
@@ -204,17 +207,23 @@ const resetSuggestionPriorityExplicitly = () => {
   forcedPriorityBattlesRef.current = Math.max(20, totalSuggestionsRef.current * 5);
   lastPriorityResetTimestampRef.current = Date.now();
   console.log("⚡ Explicitly reset and forced suggestion prioritization for next battles");
+  
+  // ✅ Step 4: Explicitly call reset method after prioritization
+  if (battleStarter?.resetStateAfterMilestone) {
+    battleStarter.resetStateAfterMilestone();
+    console.log("🚩 Explicitly reset battle starter state after suggestion priority reset");
+  }
 };
 
-// Emergency reset should also reset the battle counter to 26
-// This ensures we skip the initial subset phase when doing a reset
+// ✅ Step 5: Emergency reset should reset the battle counter to 10
 const performEmergencyResetWithCounter = () => {
-  // Reset explicitly to 11 to bypass the first milestone and activate suggestions immediately.
-  if (battleCount < 11) {
-    console.log(`🔄 Emergency reset: Setting battle count from ${battleCount} to 11 to activate suggestions immediately`);
-    setBattleCount(11);
-  }
+  // Reset explicitly to 10 to ensure we're in the main selection phase
+  console.log(`🚩 Emergency reset triggered at battleCount=${battleCount}, explicitly resetting to 10`);
+  setBattleCount(10);
   performEmergencyReset();
+  
+  // Also reset other tracking mechanisms
+  resetSuggestionPriorityExplicitly();
 };
 
 

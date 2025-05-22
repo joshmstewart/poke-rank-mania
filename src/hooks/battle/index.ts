@@ -1,5 +1,4 @@
 
-
 export * from "./useBattleState";
 export * from "./useBattleUIState";
 export * from "./useBattleSelectionState";
@@ -39,6 +38,5 @@ export * from "./useBattleResults";
 export * from "./useBattleOutcomeProcessor";
 export * from "./useBattleStarterIntegration";
 export * from "./useBattleEmergencyReset";
-// Export renamed function from useBattleStarter
+// Export renamed function from useBattleStarter to avoid name conflicts
 export * from "./useBattleStarter";
-
