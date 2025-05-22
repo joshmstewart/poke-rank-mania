@@ -170,7 +170,7 @@ export const useBattleStateCore = (
     }
   }, [showingMilestone, loadSavedSuggestions, currentBattle]);
   
-// Enhanced effect to reload suggestions and trigger prioritization after milestone
+  // Enhanced effect to reload suggestions and trigger prioritization after milestone
 useEffect(() => {
   if (!showingMilestone && needsToReloadSuggestions) {
     console.log("🔄 Explicitly reloading suggestions after milestone");
@@ -178,33 +178,25 @@ useEffect(() => {
     console.log(`📥 Reloaded suggestions after milestone: ${loadedSuggestions.size}`);
     lastSuggestionLoadTimestampRef.current = Date.now();
 
-    // Regenerate rankings explicitly after reloading suggestions
+    // Regenerate rankings with suggestions
     generateRankings(battleResults);
     setNeedsToReloadSuggestions(false);
+    
+// Explicitly reset suggestion priority clearly and thoroughly
+if (resetSuggestionPriority) {
+  console.log("🚨 Resetting suggestion priority clearly after milestone");
+  resetSuggestionPriority();
+}
 
-    if (resetSuggestionPriority) {
-      console.log("🚨 Resetting suggestion priority explicitly after milestone");
-      resetSuggestionPriority();
-    }
+// Immediate trigger suggestion prioritization
+triggerSuggestionPrioritization();
 
-    // Now explicitly force prioritization clearly
-    triggerSuggestionPrioritization();
 
-    // Explicitly ensure each suggested Pokemon gets at least 2 battles
-    const suggestedPokemon = finalRankings.filter(
-      p => p.suggestedAdjustment && !p.suggestedAdjustment.used
-    );
-
-    if (suggestedPokemon.length > 0) {
-      console.log("🔥 Explicitly scheduling battles for ALL suggested Pokémon at least twice");
-      suggestedPokemon.forEach(pokemon => {
-        // Force two battles explicitly per suggested pokemon
-        battleStarter.forceBattleWithPokemon(pokemon.id, 2);
-      });
-
+    // Immediate feedback clearly
+    if (loadedSuggestions.size > 0) {
       toast({
         title: "Prioritizing suggestions",
-        description: `Explicitly prioritizing ${suggestedPokemon.length} Pokémon for at least two validation battles each.`,
+        description: `Will explicitly prioritize ${loadedSuggestions.size} Pokémon suggestions consistently`,
         duration: 4000
       });
     }
@@ -216,11 +208,8 @@ useEffect(() => {
   generateRankings, 
   battleResults, 
   triggerSuggestionPrioritization,
-  resetSuggestionPriority,
-  finalRankings,
-  battleStarter
+  resetSuggestionPriority
 ]);
-
 
 
   // Enhanced milestone ended handler with stronger suggestion focus

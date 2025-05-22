@@ -1,95 +1,148 @@
-import { useState } from 'react';
-import { Pokemon } from '@/services/pokemon';
-import { SingleBattle } from './types';
-
-export interface RankedPokemon extends Pokemon {
-  score: number;
-  count: number;
-  confidence: number;
-  suggestedAdjustment?: {
-    direction: 'up' | 'down';
-    strength: 1 | 2 | 3; 
-    used: boolean;
-  };
-}
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
+import { SingleBattle } from "./types";
+import { Rating } from "ts-trueskill";
+import { useRankingSuggestions } from "./useRankingSuggestions";
 
 export const useRankings = (allPokemon: Pokemon[]) => {
   const [finalRankings, setFinalRankings] = useState<RankedPokemon[]>([]);
   const [confidenceScores, setConfidenceScores] = useState<Record<number, number>>({});
+  const [activeTier, setActiveTier] = useState<TopNOption>(() => {
+    const storedTier = localStorage.getItem("pokemon-active-tier");
+    return storedTier ? (storedTier === "All" ? "All" : Number(storedTier) as TopNOption) : 25;
+  });
+  const [frozenPokemon, setFrozenPokemon] = useState<Record<number, { [tier: string]: boolean }>>({});
 
-  const generateRankings = (results: SingleBattle[]) => {
-    const scoreMap = new Map<number, number>();
+  const previousRankingsRef = useRef<RankedPokemon[]>([]);
+
+  const {
+    suggestRanking,
+    removeSuggestion,
+    markSuggestionUsed,
+    clearAllSuggestions,
+    findNextSuggestion,
+    loadSavedSuggestions,
+    activeSuggestions
+  } = useRankingSuggestions(finalRankings, setFinalRankings);
+
+  useEffect(() => {
+    const storedFrozen = localStorage.getItem("pokemon-frozen-pokemon");
+    if (storedFrozen) {
+      try {
+        setFrozenPokemon(JSON.parse(storedFrozen));
+      } catch (e) {
+        console.error("Error loading frozen pokemon state:", e);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("pokemon-active-tier", activeTier.toString());
+  }, [activeTier]);
+
+  useEffect(() => {
+    localStorage.setItem("pokemon-frozen-pokemon", JSON.stringify(frozenPokemon));
+  }, [frozenPokemon]);
+
+  useEffect(() => {
+    if (finalRankings.length > 0) {
+      previousRankingsRef.current = finalRankings;
+    }
+  }, [finalRankings]);
+
+  const generateRankings = useCallback((results: SingleBattle[]) => {
     const countMap = new Map<number, number>();
 
     results.forEach(result => {
-      scoreMap.set(result.winner.id, (scoreMap.get(result.winner.id) || 0) + 1);
       countMap.set(result.winner.id, (countMap.get(result.winner.id) || 0) + 1);
       countMap.set(result.loser.id, (countMap.get(result.loser.id) || 0) + 1);
     });
 
-    const rankings: RankedPokemon[] = allPokemon.map(pokemon => {
-      const wins = scoreMap.get(pokemon.id) || 0;
-      const total = countMap.get(pokemon.id) || 0;
-      const confidence = total ? wins / total : 0;
+    const participatingPokemonIds = new Set([...countMap.keys()]);
 
-      return {
-        ...pokemon,
-        score: wins,
-        count: total,
-        confidence,
-      };
+    const allRankedPokemon: RankedPokemon[] = allPokemon
+      .filter(p => participatingPokemonIds.has(p.id))
+      .map(p => {
+        if (!p.rating) p.rating = new Rating();
+        else if (!(p.rating instanceof Rating)) p.rating = new Rating(p.rating.mu, p.rating.sigma);
+
+        const conservativeEstimate = p.rating.mu - 3 * p.rating.sigma;
+        const normalizedConfidence = Math.max(0, Math.min(100, 100 * (1 - (p.rating.sigma / 8.33))));
+
+        const pokemonFrozenStatus = frozenPokemon[p.id] || {};
+        const suggestedAdjustment = activeSuggestions.get(p.id);
+
+        return {
+          ...p,
+          score: conservativeEstimate,
+          count: countMap.get(p.id) || 0,
+          confidence: normalizedConfidence,
+          isFrozenForTier: pokemonFrozenStatus,
+          suggestedAdjustment
+        };
+      })
+      .sort((a, b) => b.score - a.score);
+
+const filteredRankings = activeTier === "All" 
+  ? allRankedPokemon 
+  : allRankedPokemon.slice(0, Number(activeTier));
+
+// Explicitly reload suggestions here:
+const savedSuggestions = loadSavedSuggestions();
+console.log("📌 Applying suggestions during ranking generation:", savedSuggestions.size);
+
+const finalWithSuggestions = filteredRankings.map(pokemon => ({
+  ...pokemon,
+  suggestedAdjustment: savedSuggestions.get(pokemon.id) || null
+}));
+
+setFinalRankings(finalWithSuggestions);
+console.log(`🎯 Rankings generated with suggestions: ${finalWithSuggestions.length} Pokémon`);
+
+
+
+    const confidenceMap: Record<number, number> = {};
+    allRankedPokemon.forEach(p => {
+      confidenceMap[p.id] = p.confidence;
     });
+    setConfidenceScores(confidenceMap);
 
-    rankings.sort((a, b) => b.confidence - a.confidence);
-    setFinalRankings(rankings);
-    setConfidenceScores(rankings.reduce((acc, curr) => {
-      acc[curr.id] = curr.confidence;
-      return acc;
-    }, {} as Record<number, number>));
+    return filteredRankings;
+  }, [allPokemon, activeTier, frozenPokemon, activeSuggestions]);
 
-    return rankings;
-  };
+  const freezePokemonForTier = useCallback((pokemonId: number, tier: TopNOption) => {
+    setFrozenPokemon(prev => ({
+      ...prev,
+      [pokemonId]: {
+        ...(prev[pokemonId] || {}),
+        [tier.toString()]: true
+      }
+    }));
+  }, []);
 
-  const suggestRanking = (pokemon: RankedPokemon, direction: 'up' | 'down', strength: 1 | 2 | 3) => {
-    setFinalRankings(prevRankings =>
-      prevRankings.map(p =>
-        p.id === pokemon.id
-          ? { ...p, suggestedAdjustment: { direction, strength, used: false } }
-          : p
-      )
-    );
-  };
+  const isPokemonFrozenForTier = useCallback((pokemonId: number, tier: TopNOption): boolean => {
+    return Boolean(frozenPokemon[pokemonId]?.[tier.toString()]);
+  }, [frozenPokemon]);
 
-  const clearAllSuggestions = () => {
-    setFinalRankings(prevRankings =>
-      prevRankings.map(({ suggestedAdjustment, ...pokemon }) => ({
-        ...pokemon,
-      }))
-    );
-  };
-
-  const markSuggestionUsed = (pokemonId: number) => {
-    setFinalRankings(prevRankings =>
-      prevRankings.map(pokemon =>
-        pokemon.id === pokemonId && pokemon.suggestedAdjustment
-          ? {
-              ...pokemon,
-              suggestedAdjustment: {
-                ...pokemon.suggestedAdjustment,
-                used: true,
-              },
-            }
-          : pokemon
-      )
-    );
-  };
+  const handleSaveRankings = useCallback(() => {
+    localStorage.setItem("pokemon-frozen-pokemon", JSON.stringify(frozenPokemon));
+  }, [frozenPokemon]);
 
   return {
     finalRankings,
     confidenceScores,
     generateRankings,
+    handleSaveRankings,
+    activeTier,
+    setActiveTier,
+    freezePokemonForTier,
+    isPokemonFrozenForTier,
+    allRankedPokemon: finalRankings,
     suggestRanking,
-    clearAllSuggestions,
+    removeSuggestion,
     markSuggestionUsed,
+    clearAllSuggestions,
+    findNextSuggestion,
+    loadSavedSuggestions
   };
 };

@@ -378,6 +378,5 @@ function selectSuggestedPokemonForced(battleType: BattleType): Pokemon[] | null 
     return items[items.length - 1];
   }
 
-  return { startNewBattle, selectSuggestedPokemonForced };
-
+  return { startNewBattle };
 }
