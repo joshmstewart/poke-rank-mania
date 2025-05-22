@@ -40,6 +40,8 @@ export const useBattleProcessor = (
       const battleSize = battleType === "triplets" ? 3 : 2;
       const newBattle = shuffled.slice(0, battleSize);
       setCurrentBattle(newBattle);
+  console.log("📌 Updating current battle state explicitly with IDs:", newBattle.map(p => p.id));
+
       setSelectedPokemon([]);
     },
     setSelectedPokemon

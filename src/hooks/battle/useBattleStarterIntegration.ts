@@ -107,6 +107,7 @@ export const useBattleStarterIntegration = (
     }
 
     setCurrentBattle(battle);
+console.log("📌 Updating current battle state explicitly with IDs:", battle.map(p => p.id));
 
     return battle;
   }, [battleStarter, currentRankings, setCurrentBattle]);
