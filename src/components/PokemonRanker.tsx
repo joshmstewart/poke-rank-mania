@@ -2,6 +2,16 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { 
+  AlertDialog, 
+  AlertDialogAction, 
+  AlertDialogCancel, 
+  AlertDialogContent, 
+  AlertDialogDescription, 
+  AlertDialogFooter, 
+  AlertDialogHeader, 
+  AlertDialogTitle 
+} from "@/components/ui/alert-dialog";
 import { Info, RefreshCw, List } from "lucide-react";
 import { RankingResults } from "./ranking/RankingResults";
 import { RankingUI } from "./ranking/RankingUI";
@@ -9,6 +19,7 @@ import { usePokemonRanker } from "@/hooks/usePokemonRanker";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { generations, RankedPokemon } from "@/services/pokemon";
 import { useRankingSuggestions } from "@/hooks/battle/useRankingSuggestions";
+import { toast } from "@/hooks/use-toast";
 
 const PokemonRanker = () => {
 const {
@@ -32,6 +43,7 @@ const {
 
 
   const [showRankings, setShowRankings] = React.useState(false);
+  const [resetDialogOpen, setResetDialogOpen] = React.useState(false);
   const generationName = selectedGeneration === 0 ? "All Generations" : `Generation ${selectedGeneration}`;
 
   // Convert rankedPokemon to proper RankedPokemon type with defaults
@@ -61,6 +73,14 @@ const {
     clearAllSuggestions();
     
     console.log("✅ Rankings and suggestions fully reset");
+    
+    toast({
+      title: "Rankings Reset",
+      description: "All rankings and suggestions have been cleared.",
+      duration: 3000
+    });
+    
+    setResetDialogOpen(false);
   };
 
   return (
@@ -99,15 +119,29 @@ const {
             >
               <List className="h-4 w-4" /> Rankings
             </Button>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={handleReset}
-              className="flex items-center gap-1 h-8 text-sm"
-              title={`Reset rankings for ${generationName}`}
-            >
-              <RefreshCw className="h-4 w-4" /> Reset
-            </Button>
+            <AlertDialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setResetDialogOpen(true)}
+                className="flex items-center gap-1 h-8 text-sm"
+                title={`Reset rankings for ${generationName}`}
+              >
+                <RefreshCw className="h-4 w-4" /> Reset
+              </Button>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Reset Rankings</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will reset all rankings and suggestions for {generationName}. This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleReset}>Reset</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
             <Dialog>
               <DialogTrigger asChild>
                 <Button variant="ghost" size="sm" className="h-8">

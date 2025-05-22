@@ -12,6 +12,16 @@ import {
   DialogTitle,
   DialogTrigger
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import BattleSettings from "./BattleSettings";
 
 interface BattleControlsProps {
@@ -30,6 +40,7 @@ const BattleControls: React.FC<BattleControlsProps> = ({
   onRestartBattles
 }) => {
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [restartDialogOpen, setRestartDialogOpen] = useState(false);
   // Ensure selectedGeneration has a valid value (defaulting to 0 if undefined)
   const safeSelectedGeneration = selectedGeneration !== undefined ? selectedGeneration : 0;
   
@@ -40,6 +51,7 @@ const BattleControls: React.FC<BattleControlsProps> = ({
     
     // Call the original restart handler
     onRestartBattles();
+    setRestartDialogOpen(false);
   };
   
   return (
@@ -113,14 +125,28 @@ const BattleControls: React.FC<BattleControlsProps> = ({
           </DialogContent>
         </Dialog>
         
-        <Button
-          variant="outline"
-          size="sm"
-          className="flex items-center gap-1 h-8 text-sm px-4"
-          onClick={handleRestart}
-        >
-          <RefreshCw className="h-4 w-4" /> Restart
-        </Button>
+        <AlertDialog open={restartDialogOpen} onOpenChange={setRestartDialogOpen}>
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-1 h-8 text-sm px-4"
+            onClick={() => setRestartDialogOpen(true)}
+          >
+            <RefreshCw className="h-4 w-4" /> Restart
+          </Button>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure you want to restart?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will reset all battles, progress, rankings, and suggestions. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleRestart}>Restart</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );

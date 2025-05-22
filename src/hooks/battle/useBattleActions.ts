@@ -2,6 +2,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
+import { toast } from "@/hooks/use-toast";
 
 export const useBattleActions = (
   allPokemon: Pokemon[],
@@ -48,6 +49,12 @@ export const useBattleActions = (
     console.log("✅ Rankings regenerated explicitly after restart with empty suggestions");
 
     startNewBattle(battleType);
+    
+    toast({
+      title: "Battles Restarted",
+      description: "All battles, rankings, and suggestions have been reset.",
+      duration: 3000
+    });
   }, [
     battleType,
     setBattleHistory,
