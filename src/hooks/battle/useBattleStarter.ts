@@ -33,6 +33,24 @@ export const createBattleStarter = (
     return shuffleArray(pool).slice(0, size);
   };
 
+  // Helper function to convert Pokemon to RankedPokemon
+  const ensureRankedPokemon = (pokemon: Pokemon): RankedPokemon => {
+    if ('score' in pokemon && 'count' in pokemon && 'confidence' in pokemon) {
+      return pokemon as RankedPokemon;
+    }
+    return {
+      ...pokemon,
+      score: 0,
+      count: 0,
+      confidence: 0
+    } as RankedPokemon;
+  };
+
+  // Helper function to convert array of Pokemon to array of RankedPokemon
+  const ensureRankedPokemonArray = (pokemonArray: Pokemon[]): RankedPokemon[] => {
+    return pokemonArray.map(ensureRankedPokemon);
+  };
+
   const getTierBattlePair = (battleType: BattleType): Pokemon[] => {
     console.log("🌟 Battle generation started. Battle type:", battleType, "forceSuggestion:", false);
     console.log("📋 All Pokémon count:", allPokemonForGeneration.length, "Ranked Pokémon count:", currentFinalRankings.length);
@@ -74,7 +92,7 @@ export const createBattleStarter = (
     }).map(p => p.id);
     
     // Create a mix of RankedPokemon objects and regular Pokemon objects as needed
-    const unrankedCandidates: Pokemon[] = unrankedPokemonIds.map(id => {
+    const unrankedCandidates: RankedPokemon[] = unrankedPokemonIds.map(id => {
       // Try to find in rankings first to preserve RankedPokemon properties
       const rankedVersion = currentFinalRankings.find(rp => rp.id === id);
       if (rankedVersion) return rankedVersion;
@@ -114,36 +132,36 @@ export const createBattleStarter = (
 
     // Battle selection logic
     if (randomValue < 0.4 && topCandidates.length >= battleSize) {
-      const selectedBattle = shuffleArray(topCandidates).slice(0, battleSize);
+      const selectedBattle = shuffleArray(topCandidates as unknown as Pokemon[]).slice(0, battleSize);
       console.log("⚖️ Final selected battle pair IDs:", selectedBattle.map(p => p.id));
-      return selectedBattle;
+      return ensureRankedPokemonArray(selectedBattle);
     } else if (randomValue < 0.7 && topCandidates.length > 0 && nearCandidates.length > 0) {
       const result = [
         topCandidates[Math.floor(Math.random() * topCandidates.length)]
       ];
       const neededMore = battleSize - result.length;
-      result.push(...shuffleArray(nearCandidates).slice(0, neededMore));
+      result.push(...shuffleArray(nearCandidates as unknown as Pokemon[]).slice(0, neededMore));
       const selectedBattle = result;
       console.log("⚖️ Final selected battle pair IDs:", selectedBattle.map(p => p.id));
-      return selectedBattle;
+      return ensureRankedPokemonArray(selectedBattle);
     } else if (randomValue < 0.8 && demotionCandidates.length > 0 && lowerTierCandidates.length > 0) {
-      const demotionCandidate = shuffleArray(demotionCandidates)[0];
+      const demotionCandidate = shuffleArray(demotionCandidates as unknown as Pokemon[])[0];
       const result = [demotionCandidate];
       const neededMore = battleSize - result.length;
-      result.push(...shuffleArray(lowerTierCandidates).slice(0, neededMore));
+      result.push(...shuffleArray(lowerTierCandidates as unknown as Pokemon[]).slice(0, neededMore));
       console.log(`Testing ${demotionCandidate.name} against lower tier for possible demotion`);
       const selectedBattle = result;
       console.log("⚖️ Final selected battle pair IDs:", selectedBattle.map(p => p.id));
-      return selectedBattle;
+      return ensureRankedPokemonArray(selectedBattle);
     } else if (randomValue < 0.95 && topCandidates.length > 0 && unrankedCandidates.length > 0) {
       const result = [
         topCandidates[Math.floor(Math.random() * topCandidates.length)]
       ];
       const neededMore = battleSize - result.length;
-      result.push(...shuffleArray(unrankedCandidates).slice(0, neededMore));
+      result.push(...shuffleArray(unrankedCandidates as unknown as Pokemon[]).slice(0, neededMore));
       const selectedBattle = result;
       console.log("⚖️ Final selected battle pair IDs:", selectedBattle.map(p => p.id));
-      return selectedBattle;
+      return ensureRankedPokemonArray(selectedBattle);
     } else {
       // Look for RankedPokemon objects first if available
       let sourceList: Pokemon[] = pokemonList;
@@ -166,9 +184,9 @@ export const createBattleStarter = (
         } as RankedPokemon;
       });
       
-      const selectedBattle = shuffleArray(rankCompatibleList).slice(0, battleSize);
+      const selectedBattle = shuffleArray(rankCompatibleList as unknown as Pokemon[]).slice(0, battleSize);
       console.log("⚖️ Final selected battle pair IDs:", selectedBattle.map(p => p.id));
-      return selectedBattle;
+      return ensureRankedPokemonArray(selectedBattle);
     }
   };
 
