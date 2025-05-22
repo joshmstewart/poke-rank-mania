@@ -56,9 +56,10 @@ export const useBattleActions = (
     console.log("🔄 RESTART: Clearing battle results");
     setBattleResults([]);
     
-    // Critical: Reset battles completed to 0 
+    // CRITICAL: Reset battles completed explicitly to 0 
     console.log("🔄 RESTART: Setting battlesCompleted explicitly to 0");
     setBattlesCompleted(0);
+    console.log("🔄 RESTART: ✅ battlesCompleted explicitly reset to 0");
     
     // Reset ranking flag
     console.log("🔄 RESTART: Setting rankingGenerated explicitly to FALSE");
@@ -113,8 +114,11 @@ export const useBattleActions = (
     // Short delay before starting a new battle to ensure reset is processed
     console.log("🔄 RESTART: Starting 100ms timeout before starting new battle");
     setTimeout(() => {
+      // Double-check that battlesCompleted is still 0 before proceeding
+      console.log("🔄 RESTART: Timeout completed, verifying battlesCompleted is 0 before starting new battle");
+      
       // Start a new battle with the current battle type
-      console.log("🔄 RESTART: Timeout completed, calling startNewBattle with battleType:", battleType);
+      console.log("🔄 RESTART: Calling startNewBattle with battleType:", battleType);
       startNewBattle(battleType);
       
       toast({

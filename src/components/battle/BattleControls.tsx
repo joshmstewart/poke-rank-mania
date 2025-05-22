@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { List, RefreshCw, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -30,6 +29,7 @@ interface BattleControlsProps {
   onGenerationChange: (generation: string) => void;
   onBattleTypeChange: (type: BattleType) => void;
   onRestartBattles: () => void;
+  setBattlesCompleted?: React.Dispatch<React.SetStateAction<number>>;  // Added prop
 }
 
 const BattleControls: React.FC<BattleControlsProps> = ({
@@ -37,7 +37,8 @@ const BattleControls: React.FC<BattleControlsProps> = ({
   battleType,
   onGenerationChange,
   onBattleTypeChange,
-  onRestartBattles
+  onRestartBattles,
+  setBattlesCompleted  // Accept the prop
 }) => {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [restartDialogOpen, setRestartDialogOpen] = useState(false);
@@ -79,6 +80,14 @@ const BattleControls: React.FC<BattleControlsProps> = ({
     const battleTrackingBeforeReset = localStorage.getItem('pokemon-battle-tracking');
     localStorage.removeItem('pokemon-battle-tracking');
     console.log(`📝 [${timestamp}] RESTART BUTTON: Cleared pokemon-battle-tracking from localStorage: was ${battleTrackingBeforeReset ? "present" : "empty"}`);
+    
+    // CRITICAL STEP: Explicitly reset battlesCompleted state in React
+    if (setBattlesCompleted) {
+      setBattlesCompleted(0);
+      console.log(`📝 [${timestamp}] RESTART BUTTON: ✅ battlesCompleted explicitly reset to 0`);
+    } else {
+      console.warn(`📝 [${timestamp}] RESTART BUTTON: ⚠️ setBattlesCompleted function not provided, cannot reset React state directly`);
+    }
     
     // Check current state from other localStorage entries
     console.log(`📝 [${timestamp}] RESTART BUTTON: All localStorage related to battles:`, {

@@ -6,7 +6,8 @@ import { toast } from "@/hooks/use-toast";
 export const useBattleEmergencyReset = (
   currentBattle: Pokemon[],
   setCurrentBattle: React.Dispatch<React.SetStateAction<Pokemon[]>>,
-  allPokemon: Pokemon[]
+  allPokemon: Pokemon[],
+  setBattlesCompleted?: React.Dispatch<React.SetStateAction<number>> // Optional prop to handle battle count reset
 ) => {
   const performEmergencyReset = useCallback(() => {
     console.log("🚨 EMERGENCY: Performing complete battle reset");
@@ -18,12 +19,19 @@ export const useBattleEmergencyReset = (
         'pokemon-ranker-battle-history',
         'pokemon-battle-history',
         'pokemon-battle-tracking',
-        'pokemon-battle-seen'
+        'pokemon-battle-seen',
+        'pokemon-battle-count' // Added explicitly to ensure battle count is reset
       ];
       keysToRemove.forEach(key => {
         console.log(`🧹 Clearing localStorage key: ${key}`);
         localStorage.removeItem(key);
       });
+
+      // CRITICAL: Explicitly reset battlesCompleted if the function is provided
+      if (setBattlesCompleted) {
+        setBattlesCompleted(0);
+        console.log("✅ EMERGENCY: battlesCompleted explicitly reset to 0");
+      }
 
       if (allPokemon.length >= 2) {
         const currentIds = currentBattle.map(p => p.id);
@@ -55,7 +63,7 @@ export const useBattleEmergencyReset = (
       console.error("Failed during emergency reset:", e);
       return false;
     }
-  }, [currentBattle, setCurrentBattle, allPokemon]);
+  }, [currentBattle, setCurrentBattle, allPokemon, setBattlesCompleted]);
 
   useEffect(() => {
     if (currentBattle.length > 0) {

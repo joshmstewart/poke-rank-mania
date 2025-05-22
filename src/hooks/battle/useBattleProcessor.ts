@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useRef, useEffect } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
@@ -48,6 +47,10 @@ export const useBattleProcessor = (
       
       isEmergencyResetPending.current = true;
       console.log(`📝 [${timestamp}] RESET HANDLER: Set isEmergencyResetPending = true`);
+
+      // CRITICAL CLARITY: Explicitly set battlesCompleted to 0 directly
+      setBattlesCompleted(0);
+      console.log(`📝 [${timestamp}] RESET HANDLER: ✅ Emergency reset executed: battlesCompleted explicitly reset to 0`);
 
       // Set battlesCompleted to 0 directly if this is a full reset 
       if (customEvent.detail?.fullReset) {
