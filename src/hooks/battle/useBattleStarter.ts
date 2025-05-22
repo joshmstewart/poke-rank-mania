@@ -140,7 +140,8 @@ export const createBattleStarter = (
         topCandidates[Math.floor(Math.random() * topCandidates.length)]
       ];
       const neededMore = battleSize - result.length;
-      result.push(...shuffleArray(nearCandidates as unknown as Pokemon[]).slice(0, neededMore));
+     const shuffledNearSlice = shuffleArray(nearCandidates as unknown as Pokemon[]).slice(0, neededMore);
+result.push(...ensureRankedPokemonArray(shuffledNearSlice));
       const selectedBattle = result;
       console.log("⚖️ Final selected battle pair IDs:", selectedBattle.map(p => p.id));
       return ensureRankedPokemonArray(selectedBattle);
@@ -158,7 +159,8 @@ export const createBattleStarter = (
         topCandidates[Math.floor(Math.random() * topCandidates.length)]
       ];
       const neededMore = battleSize - result.length;
-      result.push(...shuffleArray(unrankedCandidates as unknown as Pokemon[]).slice(0, neededMore));
+     const shuffledUnrankedSlice = shuffleArray(unrankedCandidates as unknown as Pokemon[]).slice(0, neededMore);
+result.push(...ensureRankedPokemonArray(shuffledUnrankedSlice));
       const selectedBattle = result;
       console.log("⚖️ Final selected battle pair IDs:", selectedBattle.map(p => p.id));
       return ensureRankedPokemonArray(selectedBattle);
