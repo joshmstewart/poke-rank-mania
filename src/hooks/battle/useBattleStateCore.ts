@@ -100,12 +100,12 @@ export const useBattleStateCore = (
   );
   console.log("🎯 [useBattleStarterIntegration] initialized:", { battleStarter, currentBattle, filteredPokemonCount: filteredPokemon.length });
 
-  // Get battle processor functions and state
+  // Get battle processor functions and state - now passing the integrated startNewBattle
   const { 
     processBattleResult,
     isProcessingResult, 
     resetMilestoneInProgress,
-    resetBattleProgressionMilestoneTracking // This must be obtained before it's used in performFullBattleReset
+    resetBattleProgressionMilestoneTracking
   } = useBattleProcessor(
     battleResults,
     setBattleResults,
@@ -121,7 +121,8 @@ export const useBattleStateCore = (
     freezePokemonForTier,
     battleStarter,
     markSuggestionUsed,
-    isResettingRef // Pass the reset flag to the processor
+    isResettingRef,
+    startNewBattle // Pass the integrated startNewBattle function
   );
   console.log("🎯 [useBattleProcessor] initialized with battlesCompleted:", battlesCompleted, "currentBattle:", currentBattle);
 

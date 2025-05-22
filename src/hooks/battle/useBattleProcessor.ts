@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useRef, useEffect } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
@@ -21,14 +22,15 @@ export const useBattleProcessor = (
   freezePokemonForTier?: (pokemonId: number, tier: TopNOption) => void,
   battleStarter?: any,
   markSuggestionUsed?: (pokemon: RankedPokemon, fullyUsed?: boolean) => void,
-  isResettingRef?: React.MutableRefObject<boolean> // Add the reset flag reference
+  isResettingRef?: React.MutableRefObject<boolean>,
+  integratedStartNewBattle?: (battleType: BattleType) => Pokemon[]
 ) => {
   const [isProcessingResult, setIsProcessingResult] = useState(false);
   const milestoneInProgressRef = useRef(false);
 
   const { 
     incrementBattlesCompleted,
-    resetMilestone: resetBattleProgressionMilestoneTracking // Renamed for clarity
+    resetMilestone: resetBattleProgressionMilestoneTracking
   } = useBattleProgression(
     battlesCompleted,
     setBattlesCompleted,
@@ -39,31 +41,33 @@ export const useBattleProcessor = (
 
   const { setupNextBattle } = useNextBattleHandler(
     allPokemon,
-    (battleType: BattleType) => {
+    integratedStartNewBattle || ((battleType: BattleType) => {
       const timestamp = new Date().toISOString();
-      console.log(`📝 [${timestamp}] NEXT BATTLE: setupNextBattle callback executing with battleType: ${battleType}`);
-      console.log(`📝 [${timestamp}] NEXT BATTLE: Current allPokemon length: ${allPokemon.length}`);
-      console.log(`📝 [${timestamp}] NEXT BATTLE: isResetting = ${isResettingRef?.current}`);
+      console.log(`📝 [${timestamp}] FALLBACK NEXT BATTLE: setupNextBattle callback executing with battleType: ${battleType}`);
+      console.log(`📝 [${timestamp}] FALLBACK NEXT BATTLE: Current allPokemon length: ${allPokemon.length}`);
+      console.log(`📝 [${timestamp}] FALLBACK NEXT BATTLE: isResetting = ${isResettingRef?.current}`);
       
       // If reset was triggered, ensure battle count is reset
       if (isResettingRef?.current) {
-        console.log(`📝 [${timestamp}] NEXT BATTLE: Reset was active, ensuring battlesCompleted is 0`);
+        console.log(`📝 [${timestamp}] FALLBACK NEXT BATTLE: Reset was active, ensuring battlesCompleted is 0`);
         setBattlesCompleted(0);
-        console.log(`📝 [${timestamp}] NEXT BATTLE: ✅ battlesCompleted explicitly reset to 0`);
+        console.log(`📝 [${timestamp}] FALLBACK NEXT BATTLE: ✅ battlesCompleted explicitly reset to 0`);
       }
       
       const shuffled = [...allPokemon].sort(() => Math.random() - 0.5);
       const battleSize = battleType === "triplets" ? 3 : 2;
       const newBattle = shuffled.slice(0, battleSize);
       
-      console.log(`📝 [${timestamp}] NEXT BATTLE: Creating new ${battleType} battle with ${newBattle.length} Pokémon: ${newBattle.map(p => `${p.name} (${p.id})`).join(', ')}`);
+      console.log(`📝 [${timestamp}] FALLBACK NEXT BATTLE: Creating new ${battleType} battle with ${newBattle.length} Pokémon: ${newBattle.map(p => `${p.name} (${p.id})`).join(', ')}`);
         
       setCurrentBattle(newBattle);
-      console.log(`📝 [${timestamp}] NEXT BATTLE: Updated current battle state explicitly with IDs: ${newBattle.map(p => p.id).join(', ')}`);
+      console.log(`📝 [${timestamp}] FALLBACK NEXT BATTLE: Updated current battle state explicitly with IDs: ${newBattle.map(p => p.id).join(', ')}`);
 
       setSelectedPokemon([]);
-      console.log(`📝 [${timestamp}] NEXT BATTLE: Reset selectedPokemon to empty array`);
-    },
+      console.log(`📝 [${timestamp}] FALLBACK NEXT BATTLE: Reset selectedPokemon to empty array`);
+      
+      return newBattle;
+    }),
     setSelectedPokemon
   );
 
@@ -187,7 +191,8 @@ export const useBattleProcessor = (
     isProcessingResult,
     setBattlesCompleted,
     setBattleResults,
-    isResettingRef
+    isResettingRef,
+    integratedStartNewBattle  // Add the new prop to the dependency array
   ]);
 
   const resetMilestoneInProgress = useCallback(() => {
@@ -201,7 +206,7 @@ export const useBattleProcessor = (
     processBattleResult: processBattle,
     isProcessingResult,
     resetMilestoneInProgress,
-    resetBattleProgressionMilestoneTracking, // Added to return the milestone tracking reset function
+    resetBattleProgressionMilestoneTracking,
     setBattlesCompleted,
     setBattleResults
   };
