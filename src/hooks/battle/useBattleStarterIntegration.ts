@@ -1,10 +1,11 @@
 
 import { useMemo, useEffect, useRef, useState, useCallback } from "react";
-import { Pokemon, RankedPokemon } from "@/services/pokemon";
+import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
 import { createBattleStarter } from "./createBattleStarter";
 import { useBattleEmergencyReset } from "./useBattleEmergencyReset";
 import { toast } from "@/hooks/use-toast";
+import { RankedPokemon } from "@/services/pokemon/types";
 
 export const useBattleStarterIntegration = (
   allPokemon: Pokemon[],
@@ -52,8 +53,7 @@ export const useBattleStarterIntegration = (
       );
       totalSuggestionsRef.current = suggestedPokemon.length;
       
-      // Force high priority for next 5-10 battles to ensure suggestions are used
-      // Increased from 15 to 30 to ensure we truly prioritize suggestions thoroughly
+      // Force high priority for next battles to ensure suggestions are used
       forcedPriorityBattlesRef.current = Math.min(30, Math.max(10, suggestedPokemon.length * 3));
       
       if (totalSuggestionsRef.current > 0) {
@@ -77,26 +77,25 @@ export const useBattleStarterIntegration = (
   }, [currentRankings]);
   
   // Update the effect that monitors for changes in suggestions
-useEffect(() => {
-  const pokemonWithSuggestions = currentRankings.filter(
-    p => p.suggestedAdjustment && !p.suggestedAdjustment.used
-  );
-  
-  if (pokemonWithSuggestions.length > 0) {
-    console.log(`🎯 Found ${pokemonWithSuggestions.length} Pokemon with pending suggestions`);
+  useEffect(() => {
+    const pokemonWithSuggestions = currentRankings.filter(
+      p => p.suggestedAdjustment && !p.suggestedAdjustment.used
+    );
+    
+    if (pokemonWithSuggestions.length > 0) {
+      console.log(`🎯 Found ${pokemonWithSuggestions.length} Pokemon with pending suggestions`);
 
-    // Always reset suggestion priority when new suggestions appear or persist
-    suggestionBattleCountRef.current = 0;
-    suggestionPriorityEnabledRef.current = true;
-    totalSuggestionsRef.current = pokemonWithSuggestions.length;
+      // Always reset suggestion priority when new suggestions appear or persist
+      suggestionBattleCountRef.current = 0;
+      suggestionPriorityEnabledRef.current = true;
+      totalSuggestionsRef.current = pokemonWithSuggestions.length;
 
-    // Significantly increase forced priority battles to ensure ALL suggestions get used
-    forcedPriorityBattlesRef.current = Math.max(30, pokemonWithSuggestions.length * 5);
+      // Significantly increase forced priority battles to ensure ALL suggestions get used
+      forcedPriorityBattlesRef.current = Math.max(30, pokemonWithSuggestions.length * 5);
 
-    console.log(`🎮 Suggestion priority reset: prioritizing for next ${forcedPriorityBattlesRef.current} battles.`);
-  }
-}, [currentRankings]);
-
+      console.log(`🎮 Suggestion priority reset: prioritizing for next ${forcedPriorityBattlesRef.current} battles.`);
+    }
+  }, [currentRankings]);
   
   const battleStarter = useMemo(() => {
     if (!allPokemon || allPokemon.length === 0) return null;
@@ -107,112 +106,106 @@ useEffect(() => {
     
     console.log(`🎯 Found ${pokemonWithSuggestions.length} Pokemon with pending suggestions`);
     totalSuggestionsRef.current = pokemonWithSuggestions.length;
+
+    // Determine direction based on suggestion or default
+    const direction = 'up'; // Default to moving up if no specific direction
     
-    // Extract suggested Pokemon IDs
-    const suggestedPokemonIds = pokemonWithSuggestions.map(p => p.id);
-    console.log(`🎯 Current suggestedPokemonIds (${suggestedPokemonIds.length}): ${suggestedPokemonIds.join(', ')}`);
-    
-    // Create battle starter with persistent battle count
+    // Create battle starter with needed parameters
     return createBattleStarter(
-      allPokemon,
-      allPokemon,
-      currentRankings,
       setCurrentBattle,
-      "All", // defaulting to All tier here
-      undefined, // isPokemonFrozenForTier
-      suggestedPokemonIds,
-      battleCount, 
-      setBattleCount 
+      currentRankings,
+      forcedPriorityBattlesRef.current > 0 && pokemonWithSuggestions.length > 0,
+      direction,
+      allPokemon
     );
-  }, [allPokemon, currentRankings, setCurrentBattle, battleCount]);
+  }, [allPokemon, currentRankings, setCurrentBattle]);
 
   // Override startNewBattle to ensure suggestion prioritization
-const startNewBattle = useCallback((battleType: BattleType) => {
-  if (!battleStarter) return [];
+  const startNewBattle = useCallback((battleType: BattleType): Pokemon[] => {
+    if (!battleStarter) return [];
 
-  // Find Pokémon with pending suggestions
-  const suggestedPokemon = currentRankings.filter(
-    p => p.suggestedAdjustment && !p.suggestedAdjustment.used
-  );
-
-  // Log suggestion priority status clearly
-  console.log(`🔄 Suggestion priority enabled: ${suggestionPriorityEnabledRef.current ? "YES ✅" : "NO ❌"}`);
-  console.log(`🔢 Suggestion battles since milestone: ${suggestionBattleCountRef.current}`);
-  console.log(`⚡ Forced priority battles remaining: ${forcedPriorityBattlesRef.current}`);
-  console.log(`🎮 Current battle count: ${battleCount}`);
-  console.log(`🎯 Unused suggestions remaining: ${suggestedPokemon.length}`);
-
-  // Check explicitly if we need forced suggestion priority
-  const shouldForcePriority = forcedPriorityBattlesRef.current > 0 && suggestedPokemon.length > 0;
-  
-  // If we're forcing priority, log it prominently
-  if (shouldForcePriority) {
-    console.log(`🚨 FORCING SUGGESTION PRIORITY - ${forcedPriorityBattlesRef.current} forced battles remaining`);
-  }
-
-  // Create the battle explicitly with our flag for forced priority
-  const battle = battleStarter.startNewBattle(
-    battleType,
-    shouldForcePriority // Pass the explicit forced priority flag
-  );
-
-  // Explicitly check if the battle has any suggestions
-  const hasSuggestionInBattle = battle.some(pokemon => {
-    const rankedPokemon = currentRankings.find(p => p.id === pokemon.id);
-    return rankedPokemon?.suggestedAdjustment && !rankedPokemon.suggestedAdjustment.used;
-  });
-
-  // Decrease forced priority counter ONLY after each battle
-  if (forcedPriorityBattlesRef.current > 0) {
-    forcedPriorityBattlesRef.current--;
-    console.log(`⚡ Forced priority battles decreased. Remaining: ${forcedPriorityBattlesRef.current}`);
-  }
-
-  // Increment suggestion battle counter clearly when priority active or suggestion in battle
-  if (shouldForcePriority || hasSuggestionInBattle) {
-    suggestionBattleCountRef.current++;
-    battle.forEach(pokemon => {
-      const rankedPokemon = currentRankings.find(p => p.id === pokemon.id);
-      if (rankedPokemon?.suggestedAdjustment) {
-        processedSuggestionBattlesRef.current.add(pokemon.id);
-      }
-    });
-    console.log(`🔄 Suggestion battles incremented: ${suggestionBattleCountRef.current}`);
-  }
-
-  if (hasSuggestionInBattle) {
-    console.log("🎯 This battle includes Pokémon with active suggestions");
-    
-    // If any suggestion Pokémon is in this battle, show a toast notification
-    const suggestedPokemonInBattle = battle.find(p => 
-      suggestedPokemon.some(sp => sp.id === p.id)
+    // Find Pokémon with pending suggestions
+    const suggestedPokemon = currentRankings.filter(
+      p => p.suggestedAdjustment && !p.suggestedAdjustment.used
     );
+
+    // Log suggestion priority status clearly
+    console.log(`🔄 Suggestion priority enabled: ${suggestionPriorityEnabledRef.current ? "YES ✅" : "NO ❌"}`);
+    console.log(`🔢 Suggestion battles since milestone: ${suggestionBattleCountRef.current}`);
+    console.log(`⚡ Forced priority battles remaining: ${forcedPriorityBattlesRef.current}`);
+    console.log(`🎮 Current battle count: ${battleCount}`);
+    console.log(`🎯 Unused suggestions remaining: ${suggestedPokemon.length}`);
+
+    // Check explicitly if we need forced suggestion priority
+    const shouldForcePriority = forcedPriorityBattlesRef.current > 0 && suggestedPokemon.length > 0;
     
-    if (suggestedPokemonInBattle) {
-      const suggestion = suggestedPokemon.find(sp => sp.id === suggestedPokemonInBattle.id)?.suggestedAdjustment;
-      if (suggestion) {
-        toast({
-          title: `Suggestion battle: ${suggestedPokemonInBattle.name}`,
-          description: `Adjusting rank ${suggestion.direction === "up" ? "upward" : "downward"}`,
-          duration: 3000
-        });
+    // If we're forcing priority, log it prominently
+    if (shouldForcePriority) {
+      console.log(`🚨 FORCING SUGGESTION PRIORITY - ${forcedPriorityBattlesRef.current} forced battles remaining`);
+    }
+
+    // Create the battle with our flag for forced priority
+    const battle = battleStarter.startNewBattle();
+    
+    // Increment the battle count
+    setBattleCount(prev => prev + 1);
+
+    // Explicitly check if the battle has any suggestions
+    const hasSuggestionInBattle = battle.some(pokemon => {
+      const rankedPokemon = currentRankings.find(p => p.id === pokemon.id);
+      return rankedPokemon?.suggestedAdjustment && !rankedPokemon.suggestedAdjustment.used;
+    });
+
+    // Decrease forced priority counter ONLY after each battle
+    if (forcedPriorityBattlesRef.current > 0) {
+      forcedPriorityBattlesRef.current--;
+      console.log(`⚡ Forced priority battles decreased. Remaining: ${forcedPriorityBattlesRef.current}`);
+    }
+
+    // Increment suggestion battle counter clearly when priority active or suggestion in battle
+    if (shouldForcePriority || hasSuggestionInBattle) {
+      suggestionBattleCountRef.current++;
+      battle.forEach(pokemon => {
+        const rankedPokemon = currentRankings.find(p => p.id === pokemon.id);
+        if (rankedPokemon?.suggestedAdjustment) {
+          processedSuggestionBattlesRef.current.add(pokemon.id);
+        }
+      });
+      console.log(`🔄 Suggestion battles incremented: ${suggestionBattleCountRef.current}`);
+    }
+
+    if (hasSuggestionInBattle) {
+      console.log("🎯 This battle includes Pokémon with active suggestions");
+      
+      // If any suggestion Pokémon is in this battle, show a toast notification
+      const suggestedPokemonInBattle = battle.find(p => 
+        suggestedPokemon.some(sp => sp.id === p.id)
+      );
+      
+      if (suggestedPokemonInBattle) {
+        const suggestion = suggestedPokemon.find(sp => sp.id === suggestedPokemonInBattle.id)?.suggestedAdjustment;
+        if (suggestion) {
+          toast({
+            title: `Suggestion battle: ${suggestedPokemonInBattle.name}`,
+            description: `Adjusting rank ${suggestion.direction === "up" ? "upward" : "downward"}`,
+            duration: 3000
+          });
+        }
+      }
+    } else {
+      console.log("🎮 Using standard battle selection (no suggestions this battle)");
+      
+      // If we have suggestions but none appeared in the battle despite forced priority,
+      // log a warning for debugging
+      if (shouldForcePriority && suggestedPokemon.length > 0) {
+        console.warn("⚠️ WARNING: Forced priority enabled but no suggestions in battle!");
+        console.warn(`Available suggestions: ${suggestedPokemon.map(p => p.id).join(',')}`);
+        console.warn(`Battle Pokémon: ${battle.map(p => p.id).join(',')}`);
       }
     }
-  } else {
-    console.log("🎮 Using standard battle selection (no suggestions this battle)");
-    
-    // If we have suggestions but none appeared in the battle despite forced priority,
-    // log a warning for debugging
-    if (shouldForcePriority && suggestedPokemon.length > 0) {
-      console.warn("⚠️ WARNING: Forced priority enabled but no suggestions in battle!");
-      console.warn(`Available suggestions: ${suggestedPokemon.map(p => p.id).join(',')}`);
-      console.warn(`Battle Pokémon: ${battle.map(p => p.id).join(',')}`);
-    }
-  }
 
-  return battle;
-}, [battleStarter, currentRankings, battleCount]);
-
+    return battle;
+  }, [battleStarter, currentRankings, battleCount, setBattleCount]);
 
   const { performEmergencyReset } = useBattleEmergencyReset(
     [] as Pokemon[],
@@ -220,48 +213,46 @@ const startNewBattle = useCallback((battleType: BattleType) => {
     allPokemon
   );
 
- // Expose a clear method to reset suggestion priorities explicitly
-const resetSuggestionPriorityExplicitly = () => {
-  suggestionBattleCountRef.current = 0;
-  suggestionPriorityEnabledRef.current = true;
-  processedSuggestionBattlesRef.current.clear();
-  
-  // Get count of unused suggestions
-  const unusedSuggestions = currentRankings.filter(
-    p => p.suggestedAdjustment && !p.suggestedAdjustment.used
-  ).length;
-  
-  // Set an even higher forced priority count to ensure suggestions are used
-  forcedPriorityBattlesRef.current = Math.max(30, unusedSuggestions * 5);
-  
-  lastPriorityResetTimestampRef.current = Date.now();
-  console.log(`⚡ Explicitly reset and forced suggestion prioritization for next ${forcedPriorityBattlesRef.current} battles`);
-  
-  // ✅ Step 4: Explicitly call reset method after prioritization
-  if (battleStarter?.resetStateAfterMilestone) {
-    battleStarter.resetStateAfterMilestone();
-    console.log("🚩 Explicitly reset battle starter state after suggestion priority reset");
-  }
-};
+  // Expose a clear method to reset suggestion priorities explicitly
+  const resetSuggestionPriorityExplicitly = () => {
+    suggestionBattleCountRef.current = 0;
+    suggestionPriorityEnabledRef.current = true;
+    processedSuggestionBattlesRef.current.clear();
+    
+    // Get count of unused suggestions
+    const unusedSuggestions = currentRankings.filter(
+      p => p.suggestedAdjustment && !p.suggestedAdjustment.used
+    ).length;
+    
+    // Set an even higher forced priority count to ensure suggestions are used
+    forcedPriorityBattlesRef.current = Math.max(30, unusedSuggestions * 5);
+    
+    lastPriorityResetTimestampRef.current = Date.now();
+    console.log(`⚡ Explicitly reset and forced suggestion prioritization for next ${forcedPriorityBattlesRef.current} battles`);
+    
+    // Explicitly call reset method after prioritization
+    if (battleStarter?.resetStateAfterMilestone) {
+      battleStarter.resetStateAfterMilestone();
+      console.log("🚩 Explicitly reset battle starter state after suggestion priority reset");
+    }
+  };
 
-// ✅ Step 5: Emergency reset should reset the battle counter to 10
-const performEmergencyResetWithCounter = () => {
-  // Reset explicitly to 10 to ensure we're in the main selection phase
-  console.log(`🚩 Emergency reset triggered at battleCount=${battleCount}, explicitly resetting to 10`);
-  setBattleCount(10);
-  performEmergencyReset();
-  
-  // Also reset other tracking mechanisms
-  resetSuggestionPriorityExplicitly();
-};
+  // Emergency reset should reset the battle counter to 10
+  const performEmergencyResetWithCounter = () => {
+    // Reset explicitly to 10 to ensure we're in the main selection phase
+    console.log(`🚩 Emergency reset triggered at battleCount=${battleCount}, explicitly resetting to 10`);
+    setBattleCount(10);
+    performEmergencyReset();
+    
+    // Also reset other tracking mechanisms
+    resetSuggestionPriorityExplicitly();
+  };
 
-
-return {
-  battleStarter,
-  startNewBattle: startNewBattle || (() => []),
-  resetSuggestionPriority: resetSuggestionPriorityExplicitly,
-  performEmergencyReset: performEmergencyResetWithCounter,
-  battleCount
-};
-
+  return {
+    battleStarter,
+    startNewBattle: startNewBattle || (() => []),
+    resetSuggestionPriority: resetSuggestionPriorityExplicitly,
+    performEmergencyReset: performEmergencyResetWithCounter,
+    battleCount
+  };
 };

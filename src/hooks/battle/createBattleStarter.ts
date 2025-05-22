@@ -1,5 +1,6 @@
+
 import { Pokemon } from '@/services/pokemon';
-import { RankedPokemon } from './useRankings';
+import { RankedPokemon } from '@/services/pokemon/types';
 import { toast } from '@/hooks/use-toast';
 
 export const createBattleStarter = (
@@ -14,7 +15,7 @@ export const createBattleStarter = (
   const previousMatchups = new Set<string>();
   const lastUsedSuggestion = new Map<number, number>();
 
-  const selectSuggestedPokemonForced = () => {
+  const selectSuggestedPokemonForced = (): RankedPokemon | null => {
     const unusedSuggestions = rankedPokemon.filter(
       (p) => p.suggestedAdjustment && !p.suggestedAdjustment.used,
     );
@@ -29,11 +30,12 @@ export const createBattleStarter = (
 
     selectedPokemon.suggestedAdjustment!.used = true;
     lastUsedSuggestion.set(selectedPokemon.id, 0);
-
+    
+    console.log(`🎯 Explicitly selected suggestion Pokémon #${selectedPokemon.id} (${selectedPokemon.name})`);
     return selectedPokemon;
   };
 
-  const startNewBattle = () => {
+  const startNewBattle = (): Pokemon[] => {
     if (forceSuggestionPriority) {
       recentlyUsed.clear();
       previousMatchups.clear();
@@ -53,7 +55,9 @@ export const createBattleStarter = (
       console.log('🚨 Fully reset suggestion state for forced prioritization.');
 
       const suggestionPokemon = selectSuggestedPokemonForced();
-      if (!suggestionPokemon) return;
+      if (!suggestionPokemon) {
+        return [];
+      }
 
       const suggestionIndex = rankedPokemon.findIndex(
         (p) => p.id === suggestionPokemon.id,
@@ -66,15 +70,16 @@ export const createBattleStarter = (
 
       const opponentPokemon = rankedPokemon[opponentIndex];
 
-      setCurrentBattle([suggestionPokemon, opponentPokemon]);
+      const newBattle = [suggestionPokemon, opponentPokemon];
+      setCurrentBattle(newBattle);
       toast({
         title: `Forced suggestion battle: ${suggestionPokemon.name} vs ${opponentPokemon.name}`,
       });
 
-      return;
+      return newBattle;
     }
 
-    // Regular battle logic
+    // Regular battle logic (ensure always returns Pokemon[])
     suggested.clear();
     rankedPokemon
       .filter((p) => p.suggestedAdjustment && !p.suggestedAdjustment.used)
@@ -108,8 +113,21 @@ export const createBattleStarter = (
     recentlyUsed.add(secondPokemon.id);
     previousMatchups.add(`${firstPokemon.id}-${secondPokemon.id}`);
 
-    setCurrentBattle([firstPokemon, secondPokemon]);
+    const newBattle = [firstPokemon, secondPokemon];
+    setCurrentBattle(newBattle);
+
+    return newBattle;
   };
 
-  return { startNewBattle };
+  const resetStateAfterMilestone = () => {
+    recentlyUsed.clear();
+    previousMatchups.clear();
+    lastUsedSuggestion.clear();
+    console.log("🔄 Cleared recentlyUsed, previousMatchups, lastUsedSuggestion after milestone");
+  };
+
+  return { 
+    startNewBattle,
+    resetStateAfterMilestone
+  };
 };
