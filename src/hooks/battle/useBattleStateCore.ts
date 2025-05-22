@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect, useRef } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { useBattleStarterIntegration } from "@/hooks/battle/useBattleStarterIntegration";
@@ -27,6 +26,8 @@ export const useBattleStateCore = (
   const [battleType, setBattleType] = useState<BattleType>(initialBattleTypeStored);
   const [selectedPokemon, setSelectedPokemon] = useState<number[]>([]);
 
+  // Flag to track when a full reset has just happened
+  const isResettingRef = useRef(false);
   // Keep track of the last time suggestions were loaded
   const lastSuggestionLoadTimestampRef = useRef<number>(Date.now());
 
@@ -76,17 +77,16 @@ export const useBattleStateCore = (
     allPokemon
   );
 
-// Filter Pokemon by generation if a specific generation is selected
-const filteredPokemon = allPokemon.filter(pokemon => {
-  if (selectedGeneration === 0) {
-    return true;
-  }
-  return pokemon.hasOwnProperty('generation') && (pokemon as any).generation === selectedGeneration;
-});
+  // Filter Pokemon by generation if a specific generation is selected
+  const filteredPokemon = allPokemon.filter(pokemon => {
+    if (selectedGeneration === 0) {
+      return true;
+    }
+    return pokemon.hasOwnProperty('generation') && (pokemon as any).generation === selectedGeneration;
+  });
 
-// ✅ Correct logging placement AFTER filteredPokemon is fully defined
-console.log("🎯 [filteredPokemon] Count after filtering:", filteredPokemon.length, "Generation selected:", selectedGeneration);
-
+  // ✅ Correct logging placement AFTER filteredPokemon is fully defined
+  console.log("🎯 [filteredPokemon] Count after filtering:", filteredPokemon.length, "Generation selected:", selectedGeneration);
 
   const { 
     battleStarter, 
@@ -100,6 +100,102 @@ console.log("🎯 [filteredPokemon] Count after filtering:", filteredPokemon.len
   );
   console.log("🎯 [useBattleStarterIntegration] initialized:", { battleStarter, currentBattle, filteredPokemonCount: filteredPokemon.length });
 
+  // NEW: Our centralized reset function that will be called from BattleControls
+  const performFullBattleReset = useCallback(() => {
+    const timestamp = new Date().toISOString();
+    console.log(`🔄 [${timestamp}] CENTRALIZED RESET: Beginning full battle reset`);
+    console.log(`🔄 [${timestamp}] CENTRALIZED RESET: Current battlesCompleted before reset:`, battlesCompleted);
+    
+    // 1. Mark that we're resetting to ensure the next battle processing knows
+    isResettingRef.current = true;
+    console.log(`🔄 [${timestamp}] CENTRALIZED RESET: Set isResettingRef.current = true`);
+    
+    // 2. Reset all React state
+    setBattlesCompleted(0);
+    console.log(`🔄 [${timestamp}] CENTRALIZED RESET: ✅ battlesCompleted explicitly reset to 0`);
+    
+    setBattleResults([]);
+    console.log(`🔄 [${timestamp}] CENTRALIZED RESET: ✅ battleResults reset to []`);
+    
+    setBattleHistory([]);
+    console.log(`🔄 [${timestamp}] CENTRALIZED RESET: ✅ battleHistory reset to []`);
+    
+    setSelectedPokemon([]);
+    console.log(`🔄 [${timestamp}] CENTRALIZED RESET: ✅ selectedPokemon reset to []`);
+    
+    setCompletionPercentage(0);
+    console.log(`🔄 [${timestamp}] CENTRALIZED RESET: ✅ completionPercentage reset to 0`);
+    
+    setRankingGenerated(false);
+    console.log(`🔄 [${timestamp}] CENTRALIZED RESET: ✅ rankingGenerated reset to false`);
+    
+    // 3. Reset milestones and suggestions
+    resetMilestones();
+    console.log(`🔄 [${timestamp}] CENTRALIZED RESET: ✅ milestones reset`);
+    
+    clearAllSuggestions();
+    console.log(`🔄 [${timestamp}] CENTRALIZED RESET: ✅ suggestions cleared`);
+    
+    // 4. Clear all relevant localStorage items
+    const keysToRemove = [
+      'pokemon-battle-count',
+      'pokemon-battle-results',
+      'pokemon-battle-history',
+      'pokemon-active-suggestions',
+      'pokemon-battle-tracking',
+      'pokemon-battle-seen',
+      'suggestionUsageCounts',
+      'pokemon-battle-last-battle',
+      'pokemon-ranker-battle-history'
+    ];
+    
+    keysToRemove.forEach(key => {
+      const previousValue = localStorage.getItem(key);
+      localStorage.removeItem(key);
+      console.log(`🔄 [${timestamp}] CENTRALIZED RESET: ✅ Removed ${key} from localStorage (was ${previousValue ? 'present' : 'empty'})`);
+    });
+    
+    // 5. Generate empty rankings to reset the system
+    generateRankings([]);
+    console.log(`🔄 [${timestamp}] CENTRALIZED RESET: ✅ Generated empty rankings`);
+    
+    // 6. Start a new battle with current battle type
+    console.log(`🔄 [${timestamp}] CENTRALIZED RESET: Starting new battle with type ${battleType}`);
+    setTimeout(() => {
+      startNewBattle(battleType);
+      console.log(`🔄 [${timestamp}] CENTRALIZED RESET: New battle started`);
+      
+      // Show a success toast
+      toast({
+        title: "Battles Restarted",
+        description: "All battles have been reset. You're starting from battle #1.",
+        duration: 3000
+      });
+    }, 100);
+    
+    console.log(`🔄 [${timestamp}] CENTRALIZED RESET: Full reset completed`);
+  }, [
+    battlesCompleted,
+    setBattlesCompleted, 
+    setBattleResults, 
+    setBattleHistory, 
+    setSelectedPokemon,
+    setCompletionPercentage,
+    setRankingGenerated,
+    resetMilestones,
+    clearAllSuggestions,
+    generateRankings,
+    battleType,
+    startNewBattle
+  ]);
+
+  // When a new battle is created after reset, clear the isResetting flag
+  useEffect(() => {
+    if (currentBattle.length > 0 && isResettingRef.current) {
+      console.log("🔄 Reset flag detected with new battle - clearing reset flag");
+      isResettingRef.current = false;
+    }
+  }, [currentBattle]);
 
   const { 
     processBattleResult,
@@ -119,15 +215,15 @@ console.log("🎯 [filteredPokemon] Count after filtering:", filteredPokemon.len
     activeTier,
     freezePokemonForTier,
     battleStarter,
-    markSuggestionUsed
+    markSuggestionUsed,
+    isResettingRef // Pass the reset flag to the processor
   );
   console.log("🎯 [useBattleProcessor] initialized with battlesCompleted:", battlesCompleted, "currentBattle:", currentBattle);
 
-  
   // VERIFICATION: Check if suggestions exist in localStorage on mount
   useEffect(() => {
-  const preferredImageType = localStorage.getItem('preferredImageType');
-console.log("🎯 [Mount] Loaded preferredImageType from localStorage:", preferredImageType);
+    const preferredImageType = localStorage.getItem('preferredImageType');
+    console.log("🎯 [Mount] Loaded preferredImageType from localStorage:", preferredImageType);
 
     console.log("🎯 Loaded initial image preference:", preferredImageType);
 
@@ -180,48 +276,46 @@ console.log("🎯 [Mount] Loaded preferredImageType from localStorage:", preferr
   }, [showingMilestone, loadSavedSuggestions, currentBattle]);
   
   // Enhanced effect to reload suggestions and trigger prioritization after milestone
-useEffect(() => {
-  if (!showingMilestone && needsToReloadSuggestions) {
-    console.log("🎯 [Milestone Ended] Reloading suggestions explicitly. Current needsToReloadSuggestions state:", needsToReloadSuggestions);
+  useEffect(() => {
+    if (!showingMilestone && needsToReloadSuggestions) {
+      console.log("🎯 [Milestone Ended] Reloading suggestions explicitly. Current needsToReloadSuggestions state:", needsToReloadSuggestions);
 
-    console.log("🔄 Explicitly reloading suggestions after milestone");
-    const loadedSuggestions = loadSavedSuggestions();
-    console.log(`📥 Reloaded suggestions after milestone: ${loadedSuggestions.size}`);
-    lastSuggestionLoadTimestampRef.current = Date.now();
+      console.log("🔄 Explicitly reloading suggestions after milestone");
+      const loadedSuggestions = loadSavedSuggestions();
+      console.log(`📥 Reloaded suggestions after milestone: ${loadedSuggestions.size}`);
+      lastSuggestionLoadTimestampRef.current = Date.now();
 
-    // Regenerate rankings with suggestions
-    generateRankings(battleResults);
-    setNeedsToReloadSuggestions(false);
-    
-// Explicitly reset suggestion priority clearly and thoroughly
-if (resetSuggestionPriority) {
-  console.log("🚨 Resetting suggestion priority clearly after milestone");
-  resetSuggestionPriority();
-}
+      // Regenerate rankings with suggestions
+      generateRankings(battleResults);
+      setNeedsToReloadSuggestions(false);
+      
+      // Explicitly reset suggestion priority clearly and thoroughly
+      if (resetSuggestionPriority) {
+        console.log("🚨 Resetting suggestion priority clearly after milestone");
+        resetSuggestionPriority();
+      }
 
-// Immediate trigger suggestion prioritization
-triggerSuggestionPrioritization();
+      // Immediate trigger suggestion prioritization
+      triggerSuggestionPrioritization();
 
-
-    // Immediate feedback clearly
-    if (loadedSuggestions.size > 0) {
-      toast({
-        title: "Prioritizing suggestions",
-        description: `Will explicitly prioritize ${loadedSuggestions.size} Pokémon suggestions consistently`,
-        duration: 4000
-      });
+      // Immediate feedback clearly
+      if (loadedSuggestions.size > 0) {
+        toast({
+          title: "Prioritizing suggestions",
+          description: `Will explicitly prioritize ${loadedSuggestions.size} Pokémon suggestions consistently`,
+          duration: 4000
+        });
+      }
     }
-  }
-}, [
-  showingMilestone, 
-  needsToReloadSuggestions, 
-  loadSavedSuggestions, 
-  generateRankings, 
-  battleResults, 
-  triggerSuggestionPrioritization,
-  resetSuggestionPriority
-]);
-
+  }, [
+    showingMilestone, 
+    needsToReloadSuggestions, 
+    loadSavedSuggestions, 
+    generateRankings, 
+    battleResults, 
+    triggerSuggestionPrioritization,
+    resetSuggestionPriority
+  ]);
 
   // Enhanced milestone ended handler with stronger suggestion focus
   const handleMilestoneEnded = useCallback(() => {
@@ -311,8 +405,7 @@ triggerSuggestionPrioritization();
 
   useEffect(() => {
     console.log("🔍 Battle Results Updated:", battleResults.length, "battles");
- console.log("🎯 [Rankings Updated] Checking for unused suggestions in final rankings:", finalRankings.filter(p => p.suggestedAdjustment && !p.suggestedAdjustment.used));
-
+    console.log("🎯 [Rankings Updated] Checking for unused suggestions in final rankings:", finalRankings.filter(p => p.suggestedAdjustment && !p.suggestedAdjustment.used));
   }, [battleResults]);
 
   useEffect(() => {
@@ -412,6 +505,7 @@ triggerSuggestionPrioritization();
     removeSuggestion,
     clearAllSuggestions,
     handleContinueBattles,
-    resetMilestoneInProgress  // Add this line to expose the function directly
+    resetMilestoneInProgress,
+    performFullBattleReset  // Export the centralized reset function
   };
 };

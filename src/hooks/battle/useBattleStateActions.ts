@@ -20,6 +20,7 @@ export interface UseBattleStateActionsProps {
   allPokemon: Pokemon[];
   generateRankings: (results: SingleBattle[]) => void;
   battleType: BattleType;
+  performFullBattleReset?: () => void; // Add our new centralized reset function
 }
 
 export const useBattleStateActions = ({
@@ -32,7 +33,8 @@ export const useBattleStateActions = ({
   startNewBattle,
   allPokemon,
   generateRankings,
-  battleType
+  battleType,
+  performFullBattleReset
 }: UseBattleStateActionsProps) => {
   // Use the generation state management hook
   const { selectedGeneration, setSelectedGeneration } = useGenerationState();
@@ -53,7 +55,12 @@ export const useBattleStateActions = ({
     localStorage.setItem("pokemon-ranker-generation", value);
     console.log("🔄 GENERATION CHANGE: Saved generation", value, "to localStorage");
     
-    resetBattleState();
+    // Use centralized reset if available
+    if (performFullBattleReset) {
+      performFullBattleReset();
+    } else {
+      resetBattleState();
+    }
     console.log("🔄 GENERATION CHANGE: Battle state reset completed");
   };
 
@@ -65,11 +72,16 @@ export const useBattleStateActions = ({
     localStorage.setItem("pokemon-ranker-battle-type", value);
     console.log("🔄 BATTLE TYPE CHANGE: Saved battle type", value, "to localStorage");
     
-    resetBattleState();
+    // Use centralized reset if available
+    if (performFullBattleReset) {
+      performFullBattleReset();
+    } else {
+      resetBattleState();
+    }
     console.log("🔄 BATTLE TYPE CHANGE: Battle state reset completed");
   };
 
-  // Reset battle state with detailed logging
+  // Reset battle state with detailed logging - legacy version
   const resetBattleState = () => {
     console.log("🔄 RESET STATE: resetBattleState called - normal reset from generation/type change");
     console.log("🔄 RESET STATE: Current localStorage 'pokemon-battle-count':", localStorage.getItem("pokemon-battle-count"));
@@ -130,7 +142,8 @@ export const useBattleStateActions = ({
     setCompletionPercentage,
     startNewBattle,
     generateRankings,
-    battleType
+    battleType,
+    performFullBattleReset  // Pass through our centralized reset function
   );
 
   return {

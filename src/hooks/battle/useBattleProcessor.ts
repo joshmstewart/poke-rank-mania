@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useRef, useEffect } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
@@ -20,64 +21,11 @@ export const useBattleProcessor = (
   activeTier?: TopNOption,
   freezePokemonForTier?: (pokemonId: number, tier: TopNOption) => void,
   battleStarter?: any,
-  markSuggestionUsed?: (pokemon: RankedPokemon) => void
+  markSuggestionUsed?: (pokemon: RankedPokemon) => void,
+  isResettingRef?: React.MutableRefObject<boolean> // Add the reset flag reference
 ) => {
   const [isProcessingResult, setIsProcessingResult] = useState(false);
   const milestoneInProgressRef = useRef(false);
-  const isEmergencyResetPending = useRef(false);
-
-  // Listen for emergency reset events with enhanced logging
-  useEffect(() => {
-    const handleEmergencyReset = (event: Event) => {
-      const customEvent = event as CustomEvent;
-      const timestamp = customEvent.detail?.timestamp || new Date().toISOString();
-      
-      console.log(`📝 [${timestamp}] RESET HANDLER: Emergency reset event received in useBattleProcessor`);
-      console.log(`📝 [${timestamp}] RESET HANDLER: Source = ${customEvent.detail?.source || "unknown source"}`);
-      console.log(`📝 [${timestamp}] RESET HANDLER: Current battlesCompleted = ${battlesCompleted}`);
-      console.log(`📝 [${timestamp}] RESET HANDLER: Current battleResults.length = ${battleResults.length}`);
-      console.log(`📝 [${timestamp}] RESET HANDLER: Full reset = ${customEvent.detail?.fullReset ? "YES" : "NO"}`);
-      
-      // Reset flags to allow clean processing of next battle
-      milestoneInProgressRef.current = false;
-      console.log(`📝 [${timestamp}] RESET HANDLER: Reset milestoneInProgressRef = false`);
-      
-      setIsProcessingResult(false);
-      console.log(`📝 [${timestamp}] RESET HANDLER: Reset isProcessingResult = false`);
-      
-      isEmergencyResetPending.current = true;
-      console.log(`📝 [${timestamp}] RESET HANDLER: Set isEmergencyResetPending = true`);
-
-      // CRITICAL CLARITY: Explicitly set battlesCompleted to 0 directly
-      setBattlesCompleted(0);
-      console.log(`📝 [${timestamp}] RESET HANDLER: ✅ Emergency reset executed: battlesCompleted explicitly reset to 0`);
-
-      // Set battlesCompleted to 0 directly if this is a full reset 
-      if (customEvent.detail?.fullReset) {
-        console.log(`📝 [${timestamp}] RESET HANDLER: Full reset detected, explicitly setting battlesCompleted to 0`);
-        setBattlesCompleted(0);
-        
-        // Add a localStorage reset for battle count
-        const beforeValue = localStorage.getItem('pokemon-battle-count');
-        localStorage.removeItem('pokemon-battle-count');
-        console.log(`📝 [${timestamp}] RESET HANDLER: Removed pokemon-battle-count from localStorage: was ${beforeValue ? `"${beforeValue}"` : "empty"}`);
-        
-        // Reset adjacent state also
-        setBattleResults([]);
-        console.log(`📝 [${timestamp}] RESET HANDLER: Reset battle results to empty array`);
-      }
-      
-      console.log(`📝 [${timestamp}] RESET HANDLER: Emergency reset handling complete in useBattleProcessor`);
-    };
-    
-    document.addEventListener('force-emergency-reset', handleEmergencyReset);
-    console.log("🔧 useBattleProcessor: Emergency reset event listener registered");
-    
-    return () => {
-      document.removeEventListener('force-emergency-reset', handleEmergencyReset);
-      console.log("🧹 useBattleProcessor: Emergency reset event listener removed");
-    };
-  }, [battlesCompleted, battleResults, setBattlesCompleted, setBattleResults]);
 
   const { incrementBattlesCompleted } = useBattleProgression(
     battlesCompleted,
@@ -93,14 +41,13 @@ export const useBattleProcessor = (
       const timestamp = new Date().toISOString();
       console.log(`📝 [${timestamp}] NEXT BATTLE: setupNextBattle callback executing with battleType: ${battleType}`);
       console.log(`📝 [${timestamp}] NEXT BATTLE: Current allPokemon length: ${allPokemon.length}`);
-      console.log(`📝 [${timestamp}] NEXT BATTLE: isEmergencyResetPending = ${isEmergencyResetPending.current}`);
+      console.log(`📝 [${timestamp}] NEXT BATTLE: isResetting = ${isResettingRef?.current}`);
       
-      // If emergency reset was triggered, ensure battle count is reset
-      if (isEmergencyResetPending.current) {
-        console.log(`📝 [${timestamp}] NEXT BATTLE: Emergency reset was pending, resetting battle count to 0`);
+      // If reset was triggered, ensure battle count is reset
+      if (isResettingRef?.current) {
+        console.log(`📝 [${timestamp}] NEXT BATTLE: Reset was active, ensuring battlesCompleted is 0`);
         setBattlesCompleted(0);
-        isEmergencyResetPending.current = false;
-        console.log(`📝 [${timestamp}] NEXT BATTLE: Reset isEmergencyResetPending = false`);
+        console.log(`📝 [${timestamp}] NEXT BATTLE: ✅ battlesCompleted explicitly reset to 0`);
       }
       
       const shuffled = [...allPokemon].sort(() => Math.random() - 0.5);
@@ -141,7 +88,7 @@ export const useBattleProcessor = (
       isProcessing: isProcessingResult,
       milestoneInProgress: milestoneInProgressRef.current,
       battlesCompleted: battlesCompleted,
-      isEmergencyResetPending: isEmergencyResetPending.current
+      isResetting: isResettingRef?.current
     });
     
     if (isProcessingResult || milestoneInProgressRef.current) {
@@ -153,12 +100,11 @@ export const useBattleProcessor = (
     console.log(`📝 [${timestamp}] PROCESS BATTLE: Set isProcessingResult = true`);
     
     try {
-      // Check if we need to reset battle count due to emergency reset
-      if (isEmergencyResetPending.current) {
-        console.log(`📝 [${timestamp}] PROCESS BATTLE: Emergency reset was pending, resetting battle count to 0`);
+      // Check if we need to reset battle count due to reset
+      if (isResettingRef?.current) {
+        console.log(`📝 [${timestamp}] PROCESS BATTLE: Reset flag detected, resetting battle count to 0`);
         setBattlesCompleted(0);
-        isEmergencyResetPending.current = false;
-        console.log(`📝 [${timestamp}] PROCESS BATTLE: Reset isEmergencyResetPending = false`);
+        console.log(`📝 [${timestamp}] PROCESS BATTLE: ✅ battlesCompleted explicitly reset to 0`);
       }
       
       console.log(`📝 [${timestamp}] PROCESS BATTLE: Processing battle result with selectedPokemonIds: ${selectedPokemonIds.join(', ')}`);
@@ -225,7 +171,8 @@ export const useBattleProcessor = (
     battlesCompleted,
     isProcessingResult,
     setBattlesCompleted,
-    setBattleResults
+    setBattleResults,
+    isResettingRef // Add to dependencies
   ]);
 
   const resetMilestoneInProgress = useCallback(() => {
@@ -235,12 +182,11 @@ export const useBattleProcessor = (
     console.log(`📝 [${timestamp}] MILESTONE RESET: Completed`);
   }, []);
 
-return {
-  processBattleResult: processBattle,
-  isProcessingResult,
-  resetMilestoneInProgress,
-  setBattlesCompleted,  // explicitly add at line 243
-  setBattleResults      // explicitly add at line 244
-};
-
+  return {
+    processBattleResult: processBattle,
+    isProcessingResult,
+    resetMilestoneInProgress,
+    setBattlesCompleted,
+    setBattleResults
+  };
 };

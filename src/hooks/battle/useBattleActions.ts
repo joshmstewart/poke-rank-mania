@@ -14,7 +14,8 @@ export const useBattleActions = (
   setCompletionPercentage: React.Dispatch<React.SetStateAction<number>>,
   startNewBattle: (battleType: BattleType) => void,
   generateRankings: (results: SingleBattle[]) => void,
-  battleType: BattleType
+  battleType: BattleType,
+  performFullBattleReset?: () => void // Add the centralized reset function
 ) => {
   const [isActioning, setIsActioning] = useState(false);
   const actionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -41,6 +42,17 @@ export const useBattleActions = (
 
   const handleNewBattleSet = useCallback(() => {
     console.log("🔄 RESTART: handleNewBattleSet triggered - FULL RESTART");
+    
+    // If we have the new centralized reset function, use it
+    if (performFullBattleReset) {
+      console.log("🔄 RESTART: Using new centralized reset function");
+      performFullBattleReset();
+      console.log("🔄 RESTART: Centralized reset completed");
+      return;
+    }
+    
+    // Legacy implementation for backward compatibility
+    console.log("🔄 RESTART: Using legacy reset implementation (fallback)");
     console.log("🔄 RESTART: Current battle type =", battleType);
     
     // DEBUG: Check function references
@@ -140,6 +152,7 @@ export const useBattleActions = (
     setShowingMilestone,
     startNewBattle,
     generateRankings,
+    performFullBattleReset
   ]);
 
   return {

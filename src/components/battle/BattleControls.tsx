@@ -24,18 +24,16 @@ import {
 import BattleSettings from "./BattleSettings";
 import { SingleBattle } from "@/hooks/battle/types";
 
-
 interface BattleControlsProps {
   selectedGeneration: number;
   battleType: BattleType;
   onGenerationChange: (generation: string) => void;
   onBattleTypeChange: (type: BattleType) => void;
   onRestartBattles: () => void;
-  setBattlesCompleted?: React.Dispatch<React.SetStateAction<number>>;  // ✅ already there
-  setBattleResults?: React.Dispatch<React.SetStateAction<SingleBattle[]>>;  // ✅ ADD THIS LINE
+  setBattlesCompleted?: React.Dispatch<React.SetStateAction<number>>;
+  setBattleResults?: React.Dispatch<React.SetStateAction<SingleBattle[]>>;
+  performFullBattleReset?: () => void; // Add the new centralized reset function
 }
-
-
 
 const BattleControls: React.FC<BattleControlsProps> = ({
   selectedGeneration,
@@ -44,10 +42,9 @@ const BattleControls: React.FC<BattleControlsProps> = ({
   onBattleTypeChange,
   onRestartBattles,
   setBattlesCompleted,
-  setBattleResults // ✅ ADD THIS LINE
+  setBattleResults,
+  performFullBattleReset
 }) => {
-
-
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [restartDialogOpen, setRestartDialogOpen] = useState(false);
   // Ensure selectedGeneration has a valid value (defaulting to 0 if undefined)
@@ -68,74 +65,57 @@ const BattleControls: React.FC<BattleControlsProps> = ({
     
     // Debug logging with timestamp
     console.log(`📝 [${timestamp}] RESTART BUTTON: handleRestart triggered`);
-    console.log(`📝 [${timestamp}] RESTART BUTTON: Current battle state before restart:`, {
-      selectedGeneration: safeSelectedGeneration,
-      battleType,
-      battlesCompleted: localStorage.getItem('pokemon-battle-count')
-    });
     
-    // ✅ Clear suggestion arrows explicitly on restart
-    const suggestionsBeforeReset = localStorage.getItem('pokemon-active-suggestions');
-    localStorage.removeItem('pokemon-active-suggestions');
-    console.log(`📝 [${timestamp}] RESTART BUTTON: Cleared pokemon-active-suggestions from localStorage: was ${suggestionsBeforeReset ? "present" : "empty"}`);
-    
-    // ✅ Clear battle count explicitly
-    const battleCountBeforeReset = localStorage.getItem('pokemon-battle-count');
-    localStorage.removeItem('pokemon-battle-count');
-    console.log(`📝 [${timestamp}] RESTART BUTTON: Cleared pokemon-battle-count from localStorage: was ${battleCountBeforeReset || "empty"}`);
-    
-    // Additional reset of battle counter related items
-    const battleTrackingBeforeReset = localStorage.getItem('pokemon-battle-tracking');
-    localStorage.removeItem('pokemon-battle-tracking');
-    console.log(`📝 [${timestamp}] RESTART BUTTON: Cleared pokemon-battle-tracking from localStorage: was ${battleTrackingBeforeReset ? "present" : "empty"}`);
-    
-    // CRITICAL STEP: Explicitly reset battlesCompleted state in React
-if (setBattlesCompleted) {
-  setBattlesCompleted(0);
-  console.log(`📝 [${timestamp}] RESTART BUTTON: ✅ battlesCompleted explicitly reset to 0`);
-} else {
-  console.warn(`📝 [${timestamp}] RESTART BUTTON: ⚠️ setBattlesCompleted function not provided, cannot reset React state directly`);
-}
-
-if (setBattleResults) {
-  setBattleResults([]);
-  console.log(`📝 [${timestamp}] RESTART BUTTON: ✅ battleResults explicitly reset to []`);
-} else {
-  console.warn(`📝 [${timestamp}] RESTART BUTTON: ⚠️ setBattleResults not provided`);
-}
-
-    
-    // Check current state from other localStorage entries
-    console.log(`📝 [${timestamp}] RESTART BUTTON: All localStorage related to battles:`, {
-      'pokemon-battle-last-battle': localStorage.getItem('pokemon-battle-last-battle'),
-      'pokemon-ranker-battle-history': localStorage.getItem('pokemon-ranker-battle-history'),
-      'pokemon-battle-history': localStorage.getItem('pokemon-battle-history'),
-      'pokemon-battle-seen': localStorage.getItem('pokemon-battle-seen'),
-      'suggestionUsageCounts': localStorage.getItem('suggestionUsageCounts')
-    });
-    
-    // Call the original restart handler
-    console.log(`📝 [${timestamp}] RESTART BUTTON: Calling onRestartBattles callback`);
-    onRestartBattles();
-    console.log(`📝 [${timestamp}] RESTART BUTTON: onRestartBattles callback executed`);
-    
-    // Close dialog
+    // Close dialog first
     setRestartDialogOpen(false);
     console.log(`📝 [${timestamp}] RESTART BUTTON: Restart dialog closed`);
     
-    // Check state after restart
+    // Use the new centralized reset function if available
+    if (performFullBattleReset) {
+      console.log(`📝 [${timestamp}] RESTART BUTTON: Using centralized performFullBattleReset`);
+      performFullBattleReset();
+      console.log(`📝 [${timestamp}] RESTART BUTTON: Centralized reset completed`);
+    } else {
+      // Legacy fallback for backward compatibility
+      console.log(`📝 [${timestamp}] RESTART BUTTON: Using legacy reset method (fallback)`);
+      
+      // ✅ Clear suggestion arrows explicitly on restart
+      localStorage.removeItem('pokemon-active-suggestions');
+      console.log(`📝 [${timestamp}] RESTART BUTTON: Cleared pokemon-active-suggestions from localStorage`);
+      
+      // ✅ Clear battle count explicitly
+      localStorage.removeItem('pokemon-battle-count');
+      console.log(`📝 [${timestamp}] RESTART BUTTON: Cleared pokemon-battle-count from localStorage`);
+      
+      // Additional reset of battle counter related items
+      localStorage.removeItem('pokemon-battle-tracking');
+      console.log(`📝 [${timestamp}] RESTART BUTTON: Cleared pokemon-battle-tracking from localStorage`);
+      
+      // CRITICAL STEP: Explicitly reset battlesCompleted state in React
+      if (setBattlesCompleted) {
+        setBattlesCompleted(0);
+        console.log(`📝 [${timestamp}] RESTART BUTTON: ✅ battlesCompleted explicitly reset to 0`);
+      } else {
+        console.warn(`📝 [${timestamp}] RESTART BUTTON: ⚠️ setBattlesCompleted function not provided, cannot reset React state directly`);
+      }
+      
+      if (setBattleResults) {
+        setBattleResults([]);
+        console.log(`📝 [${timestamp}] RESTART BUTTON: ✅ battleResults explicitly reset to []`);
+      } else {
+        console.warn(`📝 [${timestamp}] RESTART BUTTON: ⚠️ setBattleResults not provided`);
+      }
+      
+      // Call the original restart handler
+      console.log(`📝 [${timestamp}] RESTART BUTTON: Calling onRestartBattles callback`);
+      onRestartBattles();
+      console.log(`📝 [${timestamp}] RESTART BUTTON: onRestartBattles callback executed`);
+    }
+    
+    // Check state after 200ms to see if changes persisted
     setTimeout(() => {
       console.log(`📝 [${timestamp}] RESTART BUTTON: [200ms later] Current battle count:`, localStorage.getItem('pokemon-battle-count'));
     }, 200);
-    
-    // Check state after 500ms to see if changes persisted
-    setTimeout(() => {
-      console.log(`📝 [${timestamp}] RESTART BUTTON: [500ms later] Final verification:`, {
-        'pokemon-battle-count': localStorage.getItem('pokemon-battle-count'),
-        'pokemon-active-suggestions': localStorage.getItem('pokemon-active-suggestions'),
-        'pokemon-battle-tracking': localStorage.getItem('pokemon-battle-tracking')
-      });
-    }, 500);
   };
   
   return (
