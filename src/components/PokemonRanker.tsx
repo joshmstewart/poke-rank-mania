@@ -27,7 +27,7 @@ const {
   handleGenerationChange,
   handlePageChange,
   getPageRange,
-  confidenceScores // ✅ Make sure this is here!
+  confidenceScores
 } = usePokemonRanker();
 
 
@@ -37,9 +37,9 @@ const {
   // Convert rankedPokemon to proper RankedPokemon type with defaults
   const typedRankedPokemon: RankedPokemon[] = rankedPokemon.map(pokemon => ({
     ...pokemon,
-    score: 0,      // Default score
-    count: 0,      // Default count
-    confidence: 0  // Add the missing confidence property with default value
+    score: 0,
+    count: 0,
+    confidence: 0
   }));
 
   // Initialize the ranking suggestions hook
@@ -49,19 +49,19 @@ const {
     clearAllSuggestions
   } = useRankingSuggestions(typedRankedPokemon, setRankedPokemon as any);
 
-  // REMOVED: Don't automatically clear suggestions when toggling between views
-  // This was causing suggestions to disappear unexpectedly
-  /*
-  React.useEffect(() => {
-    // Clear suggestions when component mounts
+  const handleReset = () => {
+    // ✅ Clear suggestion arrows explicitly on reset
+    localStorage.removeItem('pokemon-active-suggestions');
+    console.log("✅ Cleared pokemon-active-suggestions from localStorage");
+    
+    // Reset rankings
+    resetRankings();
+    
+    // Clear suggestions
     clearAllSuggestions();
     
-    // Return a cleanup function to clear suggestions when unmounting
-    return () => {
-      clearAllSuggestions();
-    };
-  }, [clearAllSuggestions]);
-  */
+    console.log("✅ Rankings and suggestions fully reset");
+  };
 
   return (
     <div className="container max-w-7xl mx-auto py-6">
@@ -102,11 +102,7 @@ const {
             <Button 
               variant="outline" 
               size="sm"
-              onClick={() => {
-                resetRankings();
-                // Only clear suggestions when explicitly resetting rankings
-                clearAllSuggestions();
-              }}
+              onClick={handleReset}
               className="flex items-center gap-1 h-8 text-sm"
               title={`Reset rankings for ${generationName}`}
             >
@@ -132,15 +128,13 @@ const {
         </div>
 
         {showRankings ? (
-<RankingResults
-  confidentRankedPokemon={typedRankedPokemon}
-confidenceScores={confidenceScores}
-
-  onSuggestRanking={suggestRanking}
-  onRemoveSuggestion={removeSuggestion}
-  onClearSuggestions={clearAllSuggestions}
-/>
-
+          <RankingResults
+            confidentRankedPokemon={typedRankedPokemon}
+            confidenceScores={confidenceScores}
+            onSuggestRanking={suggestRanking}
+            onRemoveSuggestion={removeSuggestion}
+            onClearSuggestions={clearAllSuggestions}
+          />
         ) : (
           <RankingUI
             isLoading={isLoading}

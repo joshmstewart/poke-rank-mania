@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useEffect, useRef } from "react";
 import { RankedPokemon, RankingSuggestion } from "@/services/pokemon";
 import { toast } from "@/hooks/use-toast";
@@ -67,6 +68,7 @@ export const useRankingSuggestions = (
     activeSuggestionsRef.current.clear();
     setPokemonList(curr => curr.map(p => ({ ...p, suggestedAdjustment: undefined })));
     localStorage.removeItem(STORAGE_KEY);
+    console.log("🧹 Cleared ALL suggestions and removed from localStorage");
   }, [setPokemonList]);
 
   const markSuggestionUsed = useCallback((pokemon: RankedPokemon) => {
@@ -95,8 +97,8 @@ export const useRankingSuggestions = (
     removeSuggestion,
     clearAllSuggestions,
     loadSavedSuggestions,
-    markSuggestionUsed,     // ✅ added
-    findNextSuggestion,     // ✅ added
+    markSuggestionUsed,     
+    findNextSuggestion,     
     activeSuggestions: activeSuggestionsRef.current
   };
 };

@@ -33,6 +33,15 @@ const BattleControls: React.FC<BattleControlsProps> = ({
   // Ensure selectedGeneration has a valid value (defaulting to 0 if undefined)
   const safeSelectedGeneration = selectedGeneration !== undefined ? selectedGeneration : 0;
   
+  const handleRestart = () => {
+    // ✅ Clear suggestion arrows explicitly on restart
+    localStorage.removeItem('pokemon-active-suggestions');
+    console.log("✅ Cleared pokemon-active-suggestions from localStorage");
+    
+    // Call the original restart handler
+    onRestartBattles();
+  };
+  
   return (
     <div className="flex items-center justify-between bg-white p-3 rounded-lg shadow border w-full">
       {/* Left side - Gen and Mode dropdowns */}
@@ -108,7 +117,7 @@ const BattleControls: React.FC<BattleControlsProps> = ({
           variant="outline"
           size="sm"
           className="flex items-center gap-1 h-8 text-sm px-4"
-          onClick={onRestartBattles}
+          onClick={handleRestart}
         >
           <RefreshCw className="h-4 w-4" /> Restart
         </Button>

@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useRef, useEffect } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
@@ -35,12 +36,17 @@ export const useBattleActions = (
     setBattleResults([]);
     setBattlesCompleted(0);
     setRankingGenerated(false);
-  console.log("🟢 setRankingGenerated explicitly set to FALSE.");
+    console.log("🟢 setRankingGenerated explicitly set to FALSE.");
 
     setBattleHistory([]);
-  console.log("🔄 setBattleHistory explicitly reset to empty array.");
+    console.log("🔄 setBattleHistory explicitly reset to empty array.");
 
     setCompletionPercentage(0);
+
+    // ✅ Regenerate rankings explicitly after clearing suggestions
+    generateRankings([]);
+    console.log("✅ Rankings regenerated explicitly after restart with empty suggestions");
+
     startNewBattle(battleType);
   }, [
     battleType,
@@ -51,6 +57,7 @@ export const useBattleActions = (
     setRankingGenerated,
     setShowingMilestone,
     startNewBattle,
+    generateRankings,
   ]);
 
   return {
