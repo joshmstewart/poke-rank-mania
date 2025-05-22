@@ -1,4 +1,5 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+
+import { useState, useCallback, useRef, useEffect } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { useBattleStarterIntegration } from "@/hooks/battle/useBattleStarterIntegration";
 import { useBattleProcessor } from "@/hooks/battle/useBattleProcessor";
@@ -131,7 +132,14 @@ export const useBattleStateCore = (
     
     // 3. Reset milestones and suggestions
     resetMilestones();
-    console.log(`🔄 [${timestamp}] CENTRALIZED RESET: ✅ milestones reset`);
+    console.log(`🔄 [${timestamp}] CENTRALIZED RESET: ✅ useCompletionTracker's milestones reset (for snapshots)`);
+    
+    if (resetBattleProgressionMilestoneTracking) {
+      resetBattleProgressionMilestoneTracking();
+      console.log(`🔄 [${timestamp}] CENTRALIZED RESET: ✅ useBattleProgression's milestone tracking reset (for triggering)`);
+    } else {
+      console.warn(`🔄 [${timestamp}] CENTRALIZED RESET: resetBattleProgressionMilestoneTracking function not available!`);
+    }
     
     clearAllSuggestions();
     console.log(`🔄 [${timestamp}] CENTRALIZED RESET: ✅ suggestions cleared`);
@@ -186,13 +194,15 @@ export const useBattleStateCore = (
     clearAllSuggestions,
     generateRankings,
     battleType,
-    startNewBattle
+    startNewBattle,
+    resetBattleProgressionMilestoneTracking // Add resetBattleProgressionMilestoneTracking to dependencies
   ]);
 
   const { 
     processBattleResult,
     isProcessingResult, 
-    resetMilestoneInProgress 
+    resetMilestoneInProgress,
+    resetBattleProgressionMilestoneTracking // Destructure the new prop
   } = useBattleProcessor(
     battleResults,
     setBattleResults,

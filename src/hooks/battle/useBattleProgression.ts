@@ -101,12 +101,13 @@ export const useBattleProgression = (
   }, [setBattlesCompleted, checkMilestone, milestones]);
 
   const resetMilestone = useCallback(() => {
-    console.log("🔄 Resetting milestone state");
+    console.log("🔄 Resetting milestone state in useBattleProgression");
     showingMilestoneRef.current = false;
     processingMilestoneRef.current = false;
     setShowingMilestone(false);
     milestoneTracker.current.clear();
     lastTriggeredMilestoneRef.current = null;
+    console.log("✅ useBattleProgression: milestone tracking state fully reset");
   }, [setShowingMilestone]);
 
   return {

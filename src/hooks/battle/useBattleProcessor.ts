@@ -27,7 +27,10 @@ export const useBattleProcessor = (
   const [isProcessingResult, setIsProcessingResult] = useState(false);
   const milestoneInProgressRef = useRef(false);
 
-  const { incrementBattlesCompleted } = useBattleProgression(
+  const { 
+    incrementBattlesCompleted,
+    resetMilestone: resetBattleProgressionMilestoneTracking // Renamed for clarity
+  } = useBattleProgression(
     battlesCompleted,
     setBattlesCompleted,
     setShowingMilestone,
@@ -189,6 +192,7 @@ export const useBattleProcessor = (
     processBattleResult: processBattle,
     isProcessingResult,
     resetMilestoneInProgress,
+    resetBattleProgressionMilestoneTracking, // Added to return the milestone tracking reset function
     setBattlesCompleted,
     setBattleResults
   };
