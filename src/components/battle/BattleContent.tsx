@@ -1,8 +1,8 @@
 import React from 'react';
-import { BattleControls } from './BattleControls';
-import { PairBattleUI } from './PairBattleUI';
-import { TripletBattleUI } from './TripletBattleUI';
-import { MilestoneDisplay } from './MilestoneDisplay';
+import BattleControls from './BattleControls';
+import PairBattleUI from './PairBattleUI';
+import TripletBattleUI from './TripletBattleUI';
+import MilestoneDisplay from './MilestoneDisplay';
 import { useBattleStateCore } from '@/hooks/battle/useBattleStateCore';
 import { BattleType } from '@/hooks/battle/types';
 
@@ -56,7 +56,7 @@ export const BattleContent = () => {
 
       {showingMilestone ? (
         <MilestoneDisplay
-          milestone={getSnapshotForMilestone(battlesCompleted)}
+          milestone={getSnapshotForMilestone()}
           battleHistory={battleHistory}
           onContinue={() => {
             handleContinueBattles();
@@ -64,14 +64,14 @@ export const BattleContent = () => {
             resetMilestoneInProgress();
           }}
         />
-      ) : battleType === 'pair' && selectedPokemon.length === 2 ? (
+      ) : battleType === BattleType.Pair && selectedPokemon.length === 2 ? (
         <PairBattleUI
           pokemon={selectedPokemon}
           onSelect={(id) => handleSelection([id])}
           onGoBack={goBack}
           disabled={isProcessingResult}
         />
-      ) : battleType === 'triplet' && selectedPokemon.length === 3 ? (
+      ) : battleType === BattleType.Triplet && selectedPokemon.length === 3 ? (
         <TripletBattleUI
           pokemon={selectedPokemon}
           onSelect={(ids) => handleTripletSelectionComplete(ids)}

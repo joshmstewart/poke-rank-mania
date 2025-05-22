@@ -1,46 +1,67 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect } from 'react';
 import { Pokemon } from '@/services/pokemon';
+import { useLocalStorage } from '../useLocalStorage';
 import { RankedPokemon } from './useRankings';
-import { useBattleSelectionState } from './useBattleSelectionState';
+import { createBattleStarter } from './createBattleStarter';
+import { BattleType } from './types';
 
 export const useBattleStarterIntegration = (
+  setCurrentBattle: (battle: Pokemon[]) => void,
   rankedPokemon: RankedPokemon[],
   allPokemon: Pokemon[],
+  battleType: BattleType,
+  setCompletionPercentage: (percentage: number) => void,
 ) => {
-  const [forceSuggestionPriority, setForceSuggestionPriority] = useState(false);
-  const [direction, setDirection] = useState<'up' | 'down'>('down');
+  const [forceSuggestionPriority, setForceSuggestionPriority] = useLocalStorage('forceSuggestionPriority', false);
+  const [battleDirection, setBattleDirection] = useLocalStorage<'up' | 'down'>('battleDirection', 'down');
 
-  const {
-    currentBattle,
-    startNewBattle,
-    resetSuggestions,
-  } = useBattleSelectionState(
+  const { startNewBattle } = createBattleStarter(
+    setCurrentBattle,
     rankedPokemon,
     forceSuggestionPriority,
-    direction,
+    battleDirection,
     allPokemon,
   );
 
-  const resetAfterMilestone = useCallback(() => {
+  const resetAfterMilestone = () => {
     setForceSuggestionPriority(true);
-    resetSuggestions();
-    startNewBattle();
-  }, [resetSuggestions, startNewBattle]);
+    setBattleDirection('down');
+  };
+
+  const disableSuggestionPriority = () => {
+    setForceSuggestionPriority(false);
+  };
+
+  const resetSuggestionPriority = () => {
+    setForceSuggestionPriority(true);
+  };
+
+  const resetSuggestionState = () => {
+    rankedPokemon.forEach((p) => {
+      if (p.suggestedAdjustment) {
+        p.suggestedAdjustment.used = false;
+      }
+    });
+  };
 
   useEffect(() => {
     if (forceSuggestionPriority) {
-      startNewBattle();
+      resetSuggestionState();
     }
-  }, [forceSuggestionPriority, rankedPokemon, direction]);
+  }, [forceSuggestionPriority]);
 
-  const disableSuggestionPriority = () => setForceSuggestionPriority(false);
-  const setBattleDirection = (dir: 'up' | 'down') => setDirection(dir);
+  useEffect(() => {
+    startNewBattle();
+    setCompletionPercentage(0);
+  }, [battleType, setCompletionPercentage]);
 
   return {
-    currentBattle,
     forceSuggestionPriority,
     resetAfterMilestone,
     disableSuggestionPriority,
     setBattleDirection,
+    startNewBattle,
+    resetSuggestionPriority,
+    resetSuggestionState,
   };
 };
