@@ -66,7 +66,8 @@ const BattleContent = ({
     suggestRanking,
     removeSuggestion,
     handleContinueBattles,
-    resetMilestoneInProgress
+    resetMilestoneInProgress,
+    performFullBattleReset // ✅ Make sure we extract this function from useBattleStateCore
 } = useBattleStateCore(
   allPokemon,
   initialBattleType,
@@ -186,6 +187,7 @@ const BattleContent = ({
   onRestartBattles={handleRestartBattles}
   setBattlesCompleted={setBattlesCompleted}
   setBattleResults={setBattleResults}
+  performFullBattleReset={performFullBattleReset} // ✅ Pass the centralized reset function
 />
 
 

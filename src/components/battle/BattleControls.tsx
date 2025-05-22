@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { List, RefreshCw, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -32,7 +33,7 @@ interface BattleControlsProps {
   onRestartBattles: () => void;
   setBattlesCompleted?: React.Dispatch<React.SetStateAction<number>>;
   setBattleResults?: React.Dispatch<React.SetStateAction<SingleBattle[]>>;
-  performFullBattleReset?: () => void; // Add the new centralized reset function
+  performFullBattleReset?: () => void; // ✅ Add the new centralized reset function prop
 }
 
 const BattleControls: React.FC<BattleControlsProps> = ({
