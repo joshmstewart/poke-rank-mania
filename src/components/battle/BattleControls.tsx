@@ -45,13 +45,24 @@ const BattleControls: React.FC<BattleControlsProps> = ({
   const safeSelectedGeneration = selectedGeneration !== undefined ? selectedGeneration : 0;
   
   const handleRestart = () => {
+    // Debug logging
+    console.log("🚨 BattleControls: handleRestart triggered");
+    console.log("🚨 Current battle state before restart:", {
+      selectedGeneration: safeSelectedGeneration,
+      battleType
+    });
+    
     // ✅ Clear suggestion arrows explicitly on restart
     localStorage.removeItem('pokemon-active-suggestions');
     console.log("✅ Cleared pokemon-active-suggestions from localStorage");
     
     // Call the original restart handler
     onRestartBattles();
+    console.log("✅ onRestartBattles callback executed");
+    
+    // Close dialog
     setRestartDialogOpen(false);
+    console.log("✅ Restart dialog closed");
   };
   
   return (
@@ -130,7 +141,10 @@ const BattleControls: React.FC<BattleControlsProps> = ({
             variant="outline"
             size="sm"
             className="flex items-center gap-1 h-8 text-sm px-4"
-            onClick={() => setRestartDialogOpen(true)}
+            onClick={() => {
+              console.log("🚨 Restart button clicked - opening confirmation dialog");
+              setRestartDialogOpen(true);
+            }}
           >
             <RefreshCw className="h-4 w-4" /> Restart
           </Button>
@@ -142,7 +156,7 @@ const BattleControls: React.FC<BattleControlsProps> = ({
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogCancel onClick={() => console.log("🚨 Restart cancelled")}>Cancel</AlertDialogCancel>
               <AlertDialogAction onClick={handleRestart} className="bg-destructive hover:bg-destructive/90">Restart</AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

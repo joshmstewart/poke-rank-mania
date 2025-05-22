@@ -46,6 +46,7 @@ export const useBattleStateActions = ({
   // Handle generation change
   const handleGenerationChange = (value: string) => {
     const genId = parseInt(value);
+    console.log("🚨 Generation change to:", genId);
     setSelectedGeneration(genId);
     localStorage.setItem("pokemon-ranker-generation", value);
     resetBattleState();
@@ -53,22 +54,27 @@ export const useBattleStateActions = ({
 
   // Handle battle type change
   const handleBattleTypeChange = (value: BattleType) => {
+    console.log("🚨 Battle type change to:", value);
     localStorage.setItem("pokemon-ranker-battle-type", value);
     resetBattleState();
   };
 
   // Reset battle state
   const resetBattleState = () => {
+    console.log("🚨 resetBattleState called - normal reset from generation/type change");
+    
     setRankingGenerated(false);
- console.log("🟢 setRankingGenerated explicitly set to FALSE.");
+    console.log("🟢 setRankingGenerated explicitly set to FALSE.");
   
     setBattleResults([]);
     setBattlesCompleted(0);
     setBattleHistory([]);
- console.log("🔄 setBattleHistory explicitly reset to empty array.");
+    console.log("🔄 setBattleHistory explicitly reset to empty array.");
 
     setShowingMilestone(false);
     setCompletionPercentage(0);
+    
+    console.log("🚨 Pokemon count before filter:", allPokemon.length);
     
     if (Array.isArray(allPokemon) && allPokemon.length > 1) {
       // Filter the Pokemon based on the current form filters
@@ -77,6 +83,7 @@ export const useBattleStateActions = ({
       
       // Only start a new battle if we have enough Pokemon after filtering
       if (filteredPokemon.length >= 2) {
+        console.log("🚨 Starting new battle after reset");
         startNewBattle(battleType);
       } else {
         console.error("❌ Not enough Pokemon after applying filters");
