@@ -1,3 +1,4 @@
+
 import { useEffect, useCallback } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { toast } from "@/hooks/use-toast";
