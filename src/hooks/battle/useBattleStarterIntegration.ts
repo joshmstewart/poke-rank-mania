@@ -1,26 +1,46 @@
-import { useEffect } from 'react';
-import { createBattleStarter } from './createBattleStarter';
+import { useEffect, useState, useCallback } from 'react';
 import { Pokemon } from '@/services/pokemon';
 import { RankedPokemon } from './useRankings';
+import { useBattleSelectionState } from './useBattleSelectionState';
 
 export const useBattleStarterIntegration = (
-  setCurrentBattle: (battle: Pokemon[]) => void,
   rankedPokemon: RankedPokemon[],
-  forceSuggestionPriority: boolean,
-  direction: 'up' | 'down',
   allPokemon: Pokemon[],
 ) => {
-  const { startNewBattle } = createBattleStarter(
-    setCurrentBattle,
+  const [forceSuggestionPriority, setForceSuggestionPriority] = useState(false);
+  const [direction, setDirection] = useState<'up' | 'down'>('down');
+
+  const {
+    currentBattle,
+    startNewBattle,
+    resetSuggestions,
+  } = useBattleSelectionState(
     rankedPokemon,
     forceSuggestionPriority,
     direction,
     allPokemon,
   );
 
-  useEffect(() => {
+  const resetAfterMilestone = useCallback(() => {
+    setForceSuggestionPriority(true);
+    resetSuggestions();
     startNewBattle();
-  }, [rankedPokemon, forceSuggestionPriority, direction]);
+  }, [resetSuggestions, startNewBattle]);
 
-  return { startNewBattle };
+  useEffect(() => {
+    if (forceSuggestionPriority) {
+      startNewBattle();
+    }
+  }, [forceSuggestionPriority, rankedPokemon, direction]);
+
+  const disableSuggestionPriority = () => setForceSuggestionPriority(false);
+  const setBattleDirection = (dir: 'up' | 'down') => setDirection(dir);
+
+  return {
+    currentBattle,
+    forceSuggestionPriority,
+    resetAfterMilestone,
+    disableSuggestionPriority,
+    setBattleDirection,
+  };
 };

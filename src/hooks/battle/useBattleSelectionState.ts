@@ -1,94 +1,33 @@
+import { useState, useEffect } from 'react';
+import { Pokemon } from '@/services/pokemon';
+import { createBattleStarter } from './createBattleStarter';
+import { RankedPokemon } from './useRankings';
 
-import { useMemo } from "react";
-import { Pokemon, RankedPokemon } from "@/services/pokemon";
-import { BattleType, SingleBattle } from "./types";
-import { useBattleTypeSelection } from "./useBattleTypeSelection";
-import { useBattleStateSelection } from "./useBattleStateSelection";
-import { useBattleResults } from "./useBattleResults";
-import { useBattleStarterIntegration } from "./useBattleStarterIntegration";
-import { useBattleOutcomeProcessor } from "./useBattleOutcomeProcessor";
-import { toast } from "@/hooks/use-toast";
+interface BattleSelectionState {
+  currentBattle: Pokemon[];
+  startNewBattle: () => Pokemon[];
+  resetSuggestions: () => void;
+}
 
-export const useBattleSelectionState = () => {
-  const { currentBattleType, setCurrentBattleType } = useBattleTypeSelection();
+export const useBattleSelectionState = (
+  rankedPokemon: RankedPokemon[],
+  forceSuggestionPriority: boolean,
+  direction: 'up' | 'down',
+  allPokemon: Pokemon[],
+): BattleSelectionState => {
+  const [currentBattle, setCurrentBattle] = useState<Pokemon[]>([]);
 
-  const {
-    currentBattle,
+  const { startNewBattle, resetSuggestionState } = createBattleStarter(
     setCurrentBattle,
+    rankedPokemon,
+    forceSuggestionPriority,
+    direction,
     allPokemon,
-    setAllPokemon,
-    selectedPokemon,
-    setSelectedPokemon,
-    battlesCompleted,
-    setBattlesCompleted,
-    battleHistory,
-    setBattleHistory
-  } = useBattleStateSelection();
-
-  const {
-    battleResults,
-    setBattleResults,
-    getCurrentRankings
-  } = useBattleResults();
-
-  // ⚠️ Ensure currentRankings always has full RankedPokemon structure
-  const currentRankings = useMemo<RankedPokemon[]>(() => {
-    try {
-      if (Array.isArray(battleResults) && battleResults.length > 0) {
-        return getCurrentRankings();
-      }
-
-      // Fallback: convert raw Pokémon into dummy RankedPokemon
-      return (allPokemon || []).map(pokemon => ({
-        ...pokemon,
-        score: 0,
-        count: 0,
-        confidence: 0
-      }));
-    } catch (error) {
-      console.error("Error generating rankings:", error);
-      toast({
-        title: "Error generating rankings",
-        description: "There was a problem processing your battle data.",
-        variant: "destructive"
-      });
-      return [];
-    }
-  }, [battleResults, allPokemon, getCurrentRankings]);
-
-  const { 
-    battleStarter, 
-    startNewBattle,
-    resetSuggestionPriority 
-  } = useBattleStarterIntegration(
-    allPokemon,
-    currentRankings,
-    setCurrentBattle,
-    setSelectedPokemon
   );
 
-  const { processBattleResult } = useBattleOutcomeProcessor(
-    setBattleResults,
-    setBattlesCompleted,
-    battleStarter
-  );
+  useEffect(() => {
+    startNewBattle();
+  }, [rankedPokemon, forceSuggestionPriority, direction]);
 
-  return {
-    currentBattle,
-    setCurrentBattle,
-    allPokemon,
-    setAllPokemon,
-    selectedPokemon,
-    setSelectedPokemon,
-    battleResults,
-    setBattleResults,
-    battlesCompleted,
-    setBattlesCompleted,
-    battleHistory,
-    setBattleHistory,
-    startNewBattle,
-    currentBattleType,
-    processBattleResult,
-    resetSuggestionPriority
-  };
+  return { currentBattle, startNewBattle, resetSuggestions: resetSuggestionState };
 };
