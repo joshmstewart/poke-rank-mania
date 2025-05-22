@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useRef, useEffect } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { useBattleStarterIntegration } from "@/hooks/battle/useBattleStarterIntegration";
@@ -101,6 +100,31 @@ export const useBattleStateCore = (
   );
   console.log("🎯 [useBattleStarterIntegration] initialized:", { battleStarter, currentBattle, filteredPokemonCount: filteredPokemon.length });
 
+  // Get battle processor functions and state
+  const { 
+    processBattleResult,
+    isProcessingResult, 
+    resetMilestoneInProgress,
+    resetBattleProgressionMilestoneTracking // This must be obtained before it's used in performFullBattleReset
+  } = useBattleProcessor(
+    battleResults,
+    setBattleResults,
+    battlesCompleted,
+    setBattlesCompleted,
+    filteredPokemon,
+    setCurrentBattle,
+    setShowingMilestone,
+    milestones,
+    generateRankings,
+    setSelectedPokemon,
+    activeTier,
+    freezePokemonForTier,
+    battleStarter,
+    markSuggestionUsed,
+    isResettingRef // Pass the reset flag to the processor
+  );
+  console.log("🎯 [useBattleProcessor] initialized with battlesCompleted:", battlesCompleted, "currentBattle:", currentBattle);
+
   // NEW: Our centralized reset function that will be called from BattleControls
   const performFullBattleReset = useCallback(() => {
     const timestamp = new Date().toISOString();
@@ -195,35 +219,8 @@ export const useBattleStateCore = (
     generateRankings,
     battleType,
     startNewBattle,
-    resetBattleProgressionMilestoneTracking // Add resetBattleProgressionMilestoneTracking to dependencies
+    resetBattleProgressionMilestoneTracking // Now this variable is defined before it's used here
   ]);
-
-  const { 
-    processBattleResult,
-    isProcessingResult, 
-    resetMilestoneInProgress,
-    resetBattleProgressionMilestoneTracking // Destructure the new prop
-  } = useBattleProcessor(
-    battleResults,
-    setBattleResults,
-    battlesCompleted,
-    setBattlesCompleted,
-    filteredPokemon,
-    setCurrentBattle,
-    setShowingMilestone,
-    milestones,
-    generateRankings,
-    setSelectedPokemon,
-    activeTier,
-    freezePokemonForTier,
-    battleStarter,
-    markSuggestionUsed,
-    isResettingRef // Pass the reset flag to the processor
-  );
-  console.log("🎯 [useBattleProcessor] initialized with battlesCompleted:", battlesCompleted, "currentBattle:", currentBattle);
-
-  // ✅ REMOVED: The useEffect that was clearing isResettingRef.current based on currentBattle changes
-  // Now this will be managed explicitly in useBattleProcessor's processBattle function
 
   // VERIFICATION: Check if suggestions exist in localStorage on mount
   useEffect(() => {
