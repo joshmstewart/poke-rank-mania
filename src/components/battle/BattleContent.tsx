@@ -31,6 +31,7 @@ const BattleContent = ({
 }: BattleContentProps) => {
 
 
+
   const battleStartedRef = useRef(false);
   const previousBattlesCompletedRef = useRef(0);
   const pokemonAnalysisLoggedRef = useRef(false);
@@ -177,14 +178,16 @@ const BattleContent = ({
   return (
     <div className="flex flex-col items-center w-full gap-4">
       <div className="w-full max-w-3xl flex flex-col gap-4">
-        <BattleControls
+<BattleControls
   selectedGeneration={selectedGeneration}
   battleType={battleType}
   onGenerationChange={handleGenerationChange}
   onBattleTypeChange={handleBattleTypeChange}
   onRestartBattles={handleRestartBattles}
+  setBattlesCompleted={setBattlesCompleted}
   setBattleResults={setBattleResults}
 />
+
 
         
         <div className="flex items-center justify-between gap-4">
