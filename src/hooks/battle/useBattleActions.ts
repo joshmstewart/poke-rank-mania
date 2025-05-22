@@ -80,7 +80,8 @@ export const useBattleActions = (
       'pokemon-active-suggestions',
       'pokemon-battle-tracking',
       'pokemon-battle-seen',
-      'suggestionUsageCounts'
+      'suggestionUsageCounts',
+      'pokemon-battle-count' // Add this key to ensure battle count is reset
     ];
     
     keysToRemove.forEach(key => {
@@ -91,21 +92,25 @@ export const useBattleActions = (
     // Dispatch custom event to notify components that we've done a complete reset
     console.log("🚨 RESTART: Dispatching force-emergency-reset event");
     const event = new CustomEvent('force-emergency-reset', {
-      detail: { source: 'restart-button' }
+      detail: { source: 'restart-button', fullReset: true }
     });
     document.dispatchEvent(event);
     
-    // Start a new battle with the current battle type
-    console.log("🚨 RESTART: Calling startNewBattle with battleType:", battleType);
-    startNewBattle(battleType);
+    // Short delay before starting a new battle to ensure reset is processed
+    setTimeout(() => {
+      // Start a new battle with the current battle type
+      console.log("🚨 RESTART: Calling startNewBattle with battleType:", battleType);
+      startNewBattle(battleType);
+      
+      toast({
+        title: "Battles Restarted",
+        description: "All battles, rankings, and suggestions have been reset.",
+        duration: 3000
+      });
+      
+      console.log("🚨 RESTART: handleNewBattleSet completed");
+    }, 100);
     
-    toast({
-      title: "Battles Restarted",
-      description: "All battles, rankings, and suggestions have been reset.",
-      duration: 3000
-    });
-    
-    console.log("🚨 RESTART: handleNewBattleSet completed");
   }, [
     battleType,
     setBattleHistory,

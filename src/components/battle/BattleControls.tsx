@@ -56,6 +56,14 @@ const BattleControls: React.FC<BattleControlsProps> = ({
     localStorage.removeItem('pokemon-active-suggestions');
     console.log("✅ Cleared pokemon-active-suggestions from localStorage");
     
+    // ✅ Clear battle count explicitly
+    localStorage.removeItem('pokemon-battle-count');
+    console.log("✅ Cleared pokemon-battle-count from localStorage");
+    
+    // Additional reset of battle counter related items
+    localStorage.removeItem('pokemon-battle-tracking');
+    console.log("✅ Cleared pokemon-battle-tracking from localStorage");
+    
     // Call the original restart handler
     onRestartBattles();
     console.log("✅ onRestartBattles callback executed");

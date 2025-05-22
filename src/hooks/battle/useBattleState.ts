@@ -14,6 +14,7 @@ export const useBattleState = () => {
   const [rankingGenerated, setRankingGenerated] = useState(false);
   const [selectedPokemon, setSelectedPokemon] = useState<number[]>([]);
   const [battleType, setBattleType] = useState<BattleType>("pairs");
+  const [forceReset, setForceReset] = useState(false);
 
   // Add debug logging on state changes
   useEffect(() => {
@@ -44,6 +45,7 @@ export const useBattleState = () => {
       setBattleHistory([]);
       setCompletionPercentage(0);
       setRankingGenerated(false);
+      setForceReset(true);
       
       console.log("🚨 Emergency reset: All battle state reset");
     };
@@ -53,6 +55,14 @@ export const useBattleState = () => {
       document.removeEventListener('force-emergency-reset', handleEmergencyReset);
     };
   }, []);
+
+  // Reset the forceReset flag after it's been used
+  useEffect(() => {
+    if (forceReset) {
+      const timer = setTimeout(() => setForceReset(false), 100);
+      return () => clearTimeout(timer);
+    }
+  }, [forceReset]);
 
   return {
     currentBattle,
@@ -74,6 +84,7 @@ export const useBattleState = () => {
     selectedPokemon,
     setSelectedPokemon,
     battleType,
-    setBattleType
+    setBattleType,
+    forceReset
   };
 };

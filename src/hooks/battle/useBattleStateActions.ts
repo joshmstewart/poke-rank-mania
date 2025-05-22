@@ -74,6 +74,10 @@ export const useBattleStateActions = ({
     setShowingMilestone(false);
     setCompletionPercentage(0);
     
+    // Remove battle count from localStorage
+    localStorage.removeItem('pokemon-battle-count');
+    console.log("✅ Cleared pokemon-battle-count from localStorage");
+    
     console.log("🚨 Pokemon count before filter:", allPokemon.length);
     
     if (Array.isArray(allPokemon) && allPokemon.length > 1) {
