@@ -184,12 +184,12 @@ export const useBattleProcessor = (
         });
       }
 
-      // Here's the fix for the TypeScript error - milestone can be a number or false
+      // Fixed type handling for milestone - can be a number or null
       const milestone = incrementBattlesCompleted(updatedResults);
-      console.log(`📝 [${timestamp}] PROCESS BATTLE: Battle completed, new count: ${battlesCompleted + 1}, Milestone hit: ${milestone !== false ? milestone : "none"}`);
+      console.log(`📝 [${timestamp}] PROCESS BATTLE: Battle completed, new count: ${battlesCompleted + 1}, Milestone hit: ${milestone !== null ? milestone : "none"}`);
       
-      // Check if milestone is a number (not false)
-      if (milestone !== false) {
+      // Check if milestone is not null - that means a milestone was hit
+      if (milestone !== null) {
         milestoneInProgressRef.current = true;
         console.log(`📝 [${timestamp}] PROCESS BATTLE: Set milestoneInProgressRef = true for milestone ${milestone}`);
         
