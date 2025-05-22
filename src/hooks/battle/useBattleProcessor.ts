@@ -102,9 +102,12 @@ export const useBattleProcessor = (
     try {
       // Check if we need to reset battle count due to reset
       if (isResettingRef?.current) {
-        console.log(`📝 [${timestamp}] PROCESS BATTLE: Reset flag detected, resetting battle count to 0`);
+        console.log(`📝 [${timestamp}] PROCESS BATTLE: Reset flag TRUE. Current battlesCompleted prop = ${battlesCompleted}. Forcing base for increment to 0 by calling setBattlesCompleted(0).`);
         setBattlesCompleted(0);
-        console.log(`📝 [${timestamp}] PROCESS BATTLE: ✅ battlesCompleted explicitly reset to 0`);
+        console.log(`📝 [${timestamp}] PROCESS BATTLE: ✅ battlesCompleted state updated to 0 via prop setter.`);
+        
+        isResettingRef.current = false; // ✅ ADD THIS LINE HERE - Clear the reset flag after using it
+        console.log(`📝 [${timestamp}] PROCESS BATTLE: Cleared isResettingRef.current to false AFTER using it.`);
       }
       
       console.log(`📝 [${timestamp}] PROCESS BATTLE: Processing battle result with selectedPokemonIds: ${selectedPokemonIds.join(', ')}`);

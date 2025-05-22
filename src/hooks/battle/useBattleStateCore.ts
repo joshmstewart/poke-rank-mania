@@ -189,14 +189,6 @@ export const useBattleStateCore = (
     startNewBattle
   ]);
 
-  // When a new battle is created after reset, clear the isResetting flag
-  useEffect(() => {
-    if (currentBattle.length > 0 && isResettingRef.current) {
-      console.log("🔄 Reset flag detected with new battle - clearing reset flag");
-      isResettingRef.current = false;
-    }
-  }, [currentBattle]);
-
   const { 
     processBattleResult,
     isProcessingResult, 
@@ -219,6 +211,9 @@ export const useBattleStateCore = (
     isResettingRef // Pass the reset flag to the processor
   );
   console.log("🎯 [useBattleProcessor] initialized with battlesCompleted:", battlesCompleted, "currentBattle:", currentBattle);
+
+  // ✅ REMOVED: The useEffect that was clearing isResettingRef.current based on currentBattle changes
+  // Now this will be managed explicitly in useBattleProcessor's processBattle function
 
   // VERIFICATION: Check if suggestions exist in localStorage on mount
   useEffect(() => {
