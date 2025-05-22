@@ -80,8 +80,17 @@ export const createBattleStarter = (
       if (rankedVersion) return rankedVersion;
       
       // Fall back to regular Pokemon
-      return allPokemonForGeneration.find(p => p.id === id)!;
-    }).filter(Boolean);
+      const basePokemon = allPokemonForGeneration.find(p => p.id === id);
+      if (!basePokemon) return null;
+      
+      // Create a minimal RankedPokemon from a Pokemon
+      return {
+        ...basePokemon,
+        score: 0,
+        count: 0,
+        confidence: 0
+      } as RankedPokemon;
+    }).filter(Boolean) as RankedPokemon[];
 
     // Get Pokémon that lost to lower tier opponents - try to get RankedPokemon versions
     const demotionCandidates = Array.from(lowerTierLosersMap.keys())
@@ -90,10 +99,18 @@ export const createBattleStarter = (
         const rankedVersion = currentFinalRankings.find(p => p.id === id);
         if (rankedVersion) return rankedVersion;
         
-        // Fall back to regular Pokemon
-        return allPokemonForGeneration.find(p => p.id === id);
+        // Fall back to regular Pokemon with minimal RankedPokemon properties
+        const basePokemon = allPokemonForGeneration.find(p => p.id === id);
+        if (!basePokemon) return null;
+        
+        return {
+          ...basePokemon,
+          score: 0,
+          count: 0,
+          confidence: 0
+        } as RankedPokemon;
       })
-      .filter(Boolean) as Pokemon[];
+      .filter(Boolean) as RankedPokemon[];
 
     // Battle selection logic
     if (randomValue < 0.4 && topCandidates.length >= battleSize) {
@@ -136,7 +153,20 @@ export const createBattleStarter = (
         sourceList = randomPool;
       }
       
-      const selectedBattle = shuffleArray(sourceList).slice(0, battleSize);
+      // Convert any Pokemon to RankedPokemon if needed
+      const rankCompatibleList = sourceList.map(pokemon => {
+        if ('score' in pokemon && 'count' in pokemon && 'confidence' in pokemon) {
+          return pokemon as RankedPokemon;
+        }
+        return {
+          ...pokemon,
+          score: 0,
+          count: 0,
+          confidence: 0
+        } as RankedPokemon;
+      });
+      
+      const selectedBattle = shuffleArray(rankCompatibleList).slice(0, battleSize);
       console.log("⚖️ Final selected battle pair IDs:", selectedBattle.map(p => p.id));
       return selectedBattle;
     }
