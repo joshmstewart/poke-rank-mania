@@ -201,6 +201,7 @@ export function createBattleStarter(
  * Explicitly forces a battle with suggested Pokémon ONLY.
  */
 function selectSuggestedPokemonForced(battleType: BattleType): Pokemon[] | null {
+  // Clearly get ALL Pokémon with pending suggestions (used or not)
   const forcedSuggestions = rankedPokemon.filter(p => 
     p.suggestedAdjustment && !p.suggestedAdjustment.used
   );
@@ -210,35 +211,48 @@ function selectSuggestedPokemonForced(battleType: BattleType): Pokemon[] | null 
   const battleSize = battleType === "triplets" ? 3 : 2;
   const result: Pokemon[] = [];
 
-  // Explicitly pick a suggested Pokémon that has appeared least recently
+  // Explicitly track suggestion usage counts (initialize if needed)
+  const suggestionUsageCounts = JSON.parse(localStorage.getItem('suggestionUsageCounts') || '{}');
+
+  // Sort suggested Pokémon explicitly by lowest usage count (default 0)
   const sortedSuggestions = forcedSuggestions.sort((a, b) => {
-    const lastUsedA = lastUsedSuggestion.get(a.id) || 0;
-    const lastUsedB = lastUsedSuggestion.get(b.id) || 0;
-    return lastUsedA - lastUsedB; // Prioritize least recently used
+    const usageA = suggestionUsageCounts[a.id] || 0;
+    const usageB = suggestionUsageCounts[b.id] || 0;
+    return usageA - usageB;
   });
 
+  // Select Pokémon with the lowest usage explicitly
   const selectedSuggestion = sortedSuggestions[0];
   const suggestedPokemon = allPokemon.find(p => p.id === selectedSuggestion.id);
   if (!suggestedPokemon) return null;
 
   result.push(suggestedPokemon);
-  lastUsedSuggestion.set(selectedSuggestion.id, battleCounter++);
 
-  // Determine rank offset clearly based on suggestion direction
+  // Explicitly update usage count
+  suggestionUsageCounts[selectedSuggestion.id] = (suggestionUsageCounts[selectedSuggestion.id] || 0) + 1;
+
+  // After a Pokémon has been explicitly used TWICE, mark suggestion as fully used
+  if (suggestionUsageCounts[selectedSuggestion.id] >= 2) {
+    selectedSuggestion.suggestedAdjustment.used = true;
+  }
+
+  // Save explicitly back to localStorage
+  localStorage.setItem('suggestionUsageCounts', JSON.stringify(suggestionUsageCounts));
+
+  // Explicitly select opponent near suggested rank
   const currentRank = rankedPokemon.findIndex(p => p.id === suggestedPokemon.id);
   const direction = selectedSuggestion.suggestedAdjustment.direction;
-  const rankOffset = direction === "up" ? -5 : 5; // clearly moving rank
+  const rankOffset = direction === "up" ? -5 : 5;
   let opponentRank = currentRank + rankOffset;
 
-  // Explicitly clamp rank to valid range
+  // Clamp explicitly to valid ranks
   opponentRank = Math.max(0, Math.min(rankedPokemon.length - 1, opponentRank));
-  
-  // Explicitly pick a suitable opponent
+
   let opponentPokemonData = rankedPokemon[opponentRank];
   let opponentPokemon = allPokemon.find(p => p.id === opponentPokemonData.id);
 
-  // Explicitly verify opponent is valid and not the suggested Pokémon itself
   if (!opponentPokemon || opponentPokemon.id === suggestedPokemon.id) {
+    // Fallback opponent explicitly random if necessary
     opponentPokemon = shuffleArray(allPokemon).find(p => p.id !== suggestedPokemon.id);
   }
 
@@ -246,7 +260,7 @@ function selectSuggestedPokemonForced(battleType: BattleType): Pokemon[] | null 
 
   result.push(opponentPokemon);
 
-  // Fill in extra slots randomly if triplet battle
+  // Fill remaining slots explicitly if needed (triplets)
   while (result.length < battleSize) {
     const randomPokemon = shuffleArray(allPokemon).find(p => 
       !result.includes(p) && !recentlyUsed.has(p.id)
@@ -255,10 +269,10 @@ function selectSuggestedPokemonForced(battleType: BattleType): Pokemon[] | null 
     result.push(randomPokemon);
   }
 
-  // Mark used recently
+  // Mark as recently used explicitly
   result.forEach(p => recentlyUsed.add(p.id));
 
-  // Clear old recently used if exceeding size explicitly
+  // Clear old recentlyUsed explicitly
   if (recentlyUsed.size > 30) {
     Array.from(recentlyUsed).slice(0, 10).forEach(id => recentlyUsed.delete(id));
   }
@@ -266,6 +280,7 @@ function selectSuggestedPokemonForced(battleType: BattleType): Pokemon[] | null 
   console.log("✅ Forced explicit suggestion battle created:", result.map(p => p.name));
   return result;
 }
+
 
 
   
