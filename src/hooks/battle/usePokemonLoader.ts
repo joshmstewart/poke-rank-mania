@@ -17,6 +17,9 @@ export const usePokemonLoader = () => {
     setLoadingError(null);
     
     try {
+      // Start with a default Pokemon array in case of failure
+      let filteredPokemon: Pokemon[] = [];
+      
       // Log that we're loading Pokémon
       console.log(`Loading Pokémon for generation ${genId}, fullRankingMode: ${fullRankingMode}`);
       
@@ -39,7 +42,7 @@ export const usePokemonLoader = () => {
       
       // Filter Pokemon according to user preferences
       // And store filtered Pokemon for potential later use
-      const filteredPokemon = pokemon.filter(p => {
+      filteredPokemon = pokemon.filter(p => {
         const include = shouldIncludePokemon(p);
         if (!include) {
           // Store filtered Pokemon in case filter is re-enabled later
@@ -50,6 +53,7 @@ export const usePokemonLoader = () => {
       
       console.log(`After filtering: ${filteredPokemon.length} Pokémon remaining`);
       
+      // Only throw an error if we have 0 Pokemon after filtering
       if (filteredPokemon.length === 0) {
         throw new Error("All Pokémon were filtered out by current filters");
       }
@@ -68,6 +72,7 @@ export const usePokemonLoader = () => {
         variant: "destructive"
       });
       
+      // CRITICAL FIX: Always set loading to false even on error
       setIsLoading(false);
       
       // Return empty array but don't crash the app
