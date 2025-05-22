@@ -1,7 +1,9 @@
+
 import { useState, useEffect } from 'react';
 import { useRankings } from './useRankings';
 import { useBattleSelectionState } from './useBattleSelectionState';
 import { Pokemon } from '@/services/pokemon';
+import { BattleType } from './types';
 
 export const useBattleStateCore = () => {
   const allPokemon: Pokemon[] = []; // ensure you populate this from your context or prop
@@ -15,7 +17,7 @@ export const useBattleStateCore = () => {
   const [battleHistory, setBattleHistory] = useState<any[]>([]);
   const [milestones, setMilestones] = useState<any[]>([]);
   const [isProcessingResult, setIsProcessingResult] = useState(false);
-  const [battleType, setBattleType] = useState<'pair' | 'triplet'>('pair');
+  const [battleType, setBattleType] = useState<BattleType>('pair');
   const [selectedPokemon, setSelectedPokemon] = useState<number[]>([]);
 
   const selectionState = useBattleSelectionState(

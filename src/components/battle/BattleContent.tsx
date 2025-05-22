@@ -1,3 +1,4 @@
+
 import React from 'react';
 import BattleControls from './BattleControls';
 import PairBattleUI from './PairBattleUI';
@@ -30,11 +31,12 @@ export const BattleContent = () => {
   } = useBattleStateCore();
 
   const handleGenerationChange = (gen: number | string) => {
-    setSelectedGeneration(gen);
-    startNewBattle(gen, battleType);
+    const parsedGen = typeof gen === 'string' ? parseInt(gen, 10) || 0 : gen;
+    setSelectedGeneration(parsedGen);
+    startNewBattle(parsedGen, battleType);
   };
 
-  const handleBattleTypeChange = (type: 'pair' | 'triplet') => {
+  const handleBattleTypeChange = (type: "pair" | "triplet") => {
     setBattleType(type);
     startNewBattle(selectedGeneration, type);
   };
@@ -89,3 +91,5 @@ export const BattleContent = () => {
     </div>
   );
 };
+
+export default BattleContent;

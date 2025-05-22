@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from "react";
-import BattleContent from "./BattleContent";
+import { BattleContent } from "./BattleContent";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "@/hooks/battle/types";
 import { Button } from "@/components/ui/button";

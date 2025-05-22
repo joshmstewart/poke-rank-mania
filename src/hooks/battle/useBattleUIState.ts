@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { BattleType } from "./types";
 
@@ -11,7 +10,7 @@ export const useBattleUIState = () => {
   const [completionPercentage, setCompletionPercentage] = useState(0);
   const [rankingGenerated, setRankingGenerated] = useState(false);
   const [battleType, setBattleType] = useState<BattleType>(
-    (storedBattleType === "triplets") ? "triplets" : "pairs"
+    (storedBattleType === "triplet") ? "triplet" : "pair"
   );
   
   // Always use full ranking mode, but keep in localStorage for compatibility
@@ -26,7 +25,7 @@ export const useBattleUIState = () => {
   useEffect(() => {
     const checkLocalStorage = () => {
       const currentValue = localStorage.getItem('pokemon-ranker-battle-type');
-      if (currentValue && (currentValue === "pairs" || currentValue === "triplets") && currentValue !== battleType) {
+      if (currentValue && (currentValue === "pair" || currentValue === "triplet") && currentValue !== battleType) {
         console.log("useBattleUIState: Detected localStorage change for battle type:", currentValue);
         setBattleType(currentValue as BattleType);
       }

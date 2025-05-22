@@ -1,7 +1,9 @@
+
 import { useState } from 'react';
 import { createBattleStarter } from './createBattleStarter';
-import { RankedPokemon, BattleType } from './types';
+import { BattleType } from './types';
 import { Pokemon } from '@/services/pokemon';
+import { RankedPokemon } from './useRankings';
 
 export const useBattleSelectionState = (
   rankedPokemon: RankedPokemon[],
@@ -18,20 +20,15 @@ export const useBattleSelectionState = (
   const battleStarter = createBattleStarter(
     setCurrentBattle,
     rankedPokemon,
-    allPokemon,
-    battleType,
     forceSuggestionPriority,
-    setForceSuggestionPriority,
     battleDirection,
-    setBattleDirection
+    allPokemon
   );
 
   const startNewBattle = (
-    selectedGeneration: number | string = "all",
-    selectedBattleType: BattleType = battleType
+    selectedGeneration: number | string = "all"
   ) => {
-    setBattleType(selectedBattleType);
-    battleStarter.startNewBattle(selectedGeneration, selectedBattleType);
+    battleStarter.startNewBattle();
   };
 
   const resetSuggestionPriority = () => {
@@ -43,7 +40,8 @@ export const useBattleSelectionState = (
   };
 
   const resetSuggestionState = () => {
-    battleStarter.resetStateAfterMilestone();
+    // Since resetStateAfterMilestone doesn't exist, we'll handle it here
+    setForceSuggestionPriority(true);
   };
 
   return {
