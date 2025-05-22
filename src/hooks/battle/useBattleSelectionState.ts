@@ -1,47 +1,38 @@
 import { useState, useCallback } from 'react';
-import { Pokemon } from '@/services/pokemon';
-import { RankedPokemon } from './useRankings';
 import { createBattleStarter } from './createBattleStarter';
+import { RankedPokemon } from './useRankings';
+import { Pokemon } from '@/services/pokemon';
 import { BattleType } from './types';
 
 export const useBattleSelectionState = (
-  rankedPokemon: RankedPokemon[],
+  finalRankings: RankedPokemon[],
   allPokemon: Pokemon[],
-  setCompletionPercentage: (percentage: number) => void,
+  setCompletionPercentage: (percent: number) => void,
   setRankingGenerated: (generated: boolean) => void,
-  battleType: BattleType
+  battleType: BattleType,
 ) => {
   const [currentBattle, setCurrentBattle] = useState<Pokemon[]>([]);
   const [forceSuggestionPriority, setForceSuggestionPriority] = useState(false);
-  const [direction, setDirection] = useState<'up' | 'down'>('up');
+  const [battleDirection, setBattleDirection] = useState<'up' | 'down'>('up');
 
-  const { startNewBattle } = createBattleStarter(
-    setCurrentBattle,
-    rankedPokemon,
-    forceSuggestionPriority,
-    direction,
+  const {
+    startNewBattle,
+    resetAfterMilestone,
+    resetSuggestionPriority,
+    resetSuggestionState,
+  } = createBattleStarter(
+    finalRankings,
     allPokemon,
+    setCurrentBattle,
+    battleType,
+    battleDirection,
+    forceSuggestionPriority,
+    setCompletionPercentage,
+    setRankingGenerated,
   );
-
-  const resetSuggestionPriority = useCallback(() => {
-    setForceSuggestionPriority(true);
-  }, []);
 
   const disableSuggestionPriority = useCallback(() => {
     setForceSuggestionPriority(false);
-  }, []);
-
-  const resetSuggestionState = useCallback(() => {
-    setForceSuggestionPriority(false);
-  }, []);
-
-  const resetAfterMilestone = useCallback(() => {
-    resetSuggestionState();
-    setDirection('up');
-  }, [resetSuggestionState]);
-
-  const setBattleDirection = useCallback((dir: 'up' | 'down') => {
-    setDirection(dir);
   }, []);
 
   return {
