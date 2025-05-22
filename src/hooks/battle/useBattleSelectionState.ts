@@ -1,57 +1,81 @@
+import { useMemo } from "react";
+import { Pokemon, RankedPokemon } from "@/services/pokemon";
+import { BattleType, SingleBattle } from "./types";
+import { useBattleTypeSelection } from "./useBattleTypeSelection";
+import { useBattleStateSelection } from "./useBattleStateSelection";
+import { useBattleResults } from "./useBattleResults";
+import { useBattleStarterIntegration } from "./useBattleStarterIntegration";
+import { useBattleOutcomeProcessor } from "./useBattleOutcomeProcessor";
 
-import { useState } from 'react';
-import { createBattleStarter } from './createBattleStarter';
-import { BattleType } from './types';
-import { Pokemon } from '@/services/pokemon';
-import { RankedPokemon } from './useRankings';
+export const useBattleSelectionState = () => {
+  const { currentBattleType, setCurrentBattleType } = useBattleTypeSelection();
 
-export const useBattleSelectionState = (
-  rankedPokemon: RankedPokemon[],
-  allPokemon: Pokemon[],
-  setCompletionPercentage: (percentage: number) => void,
-  setRankingGenerated: (generated: boolean) => void,
-  initialBattleType: BattleType
-) => {
-  const [currentBattle, setCurrentBattle] = useState<Pokemon[]>([]);
-  const [battleType, setBattleType] = useState<BattleType>(initialBattleType);
-  const [forceSuggestionPriority, setForceSuggestionPriority] = useState(false);
-  const [battleDirection, setBattleDirection] = useState<'up' | 'down'>('down');
-
-  const battleStarter = createBattleStarter(
+  const {
+    currentBattle,
     setCurrentBattle,
-    rankedPokemon,
-    forceSuggestionPriority,
-    battleDirection,
-    allPokemon
+    allPokemon,
+    setAllPokemon,
+    selectedPokemon,
+    setSelectedPokemon,
+    battlesCompleted,
+    setBattlesCompleted,
+    battleHistory,
+    setBattleHistory
+  } = useBattleStateSelection();
+
+  const {
+    battleResults,
+    setBattleResults,
+    getCurrentRankings
+  } = useBattleResults();
+
+  // ⚠️ Ensure currentRankings always has full RankedPokemon structure
+  const currentRankings = useMemo<RankedPokemon[]>(() => {
+    if (Array.isArray(battleResults) && battleResults.length > 0) {
+      return getCurrentRankings();
+    }
+
+    // Fallback: convert raw Pokémon into dummy RankedPokemon
+    return (allPokemon || []).map(pokemon => ({
+      ...pokemon,
+      score: 0,
+      count: 0,
+      confidence: 0
+    }));
+  }, [battleResults, allPokemon, getCurrentRankings]);
+
+  const { battleStarter, startNewBattle } = useBattleStarterIntegration(
+    allPokemon,
+    currentRankings,
+    setCurrentBattle,
+    setSelectedPokemon
   );
 
-  const startNewBattle = (
-    selectedGeneration: number | string = "all"
-  ) => {
-    battleStarter.startNewBattle();
+  const startNewBattleAdapter = (pokemonList: Pokemon[], battleType: BattleType): Pokemon[] => {
+    return startNewBattle(battleType);
   };
 
-  const resetSuggestionPriority = () => {
-    setForceSuggestionPriority(false);
-  };
-
-  const resetAfterMilestone = () => {
-    setForceSuggestionPriority(true);
-  };
-
-  const resetSuggestionState = () => {
-    // Since resetStateAfterMilestone doesn't exist, we'll handle it here
-    setForceSuggestionPriority(true);
-  };
+  const { processBattleResult } = useBattleOutcomeProcessor(
+    setBattleResults,
+    setBattlesCompleted,
+    battleStarter
+  );
 
   return {
     currentBattle,
-    forceSuggestionPriority,
-    resetAfterMilestone,
-    disableSuggestionPriority: () => setForceSuggestionPriority(false),
-    setBattleDirection,
+    setCurrentBattle,
+    allPokemon,
+    setAllPokemon,
+    selectedPokemon,
+    setSelectedPokemon,
+    battleResults,
+    setBattleResults,
+    battlesCompleted,
+    setBattlesCompleted,
+    battleHistory,
+    setBattleHistory,
     startNewBattle,
-    resetSuggestionPriority,
-    resetSuggestionState,
+    currentBattleType,
+    processBattleResult
   };
 };

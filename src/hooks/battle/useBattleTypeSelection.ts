@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { BattleType } from "./types";
 
@@ -6,7 +5,7 @@ export const useBattleTypeSelection = () => {
   const [currentBattleType, setCurrentBattleType] = useState<BattleType>(() => {
     // Stable initializer function to avoid repeated localStorage reads
     const storedBattleType = localStorage.getItem('pokemon-ranker-battle-type');
-    const initialBattleType = storedBattleType === "triplet" ? "triplet" : "pair";
+    const initialBattleType = storedBattleType === "triplets" ? "triplets" : "pairs";
     console.log("useBattleTypeSelection initialized with battleType:", initialBattleType);
     return initialBattleType;
   });

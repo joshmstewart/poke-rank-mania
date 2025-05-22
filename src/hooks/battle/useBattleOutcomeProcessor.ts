@@ -1,152 +1,76 @@
 
-import { useState, useCallback } from "react";
-import { Pokemon, RankedPokemon } from "@/services/pokemon";
-import { BattleType } from "./types";
-import { toast } from "@/hooks/use-toast";
-
-// Type definition for the battle starter object
-interface BattleStarter {
-  startNewBattle: (battleType: BattleType, forcePriority?: boolean) => Pokemon[];
-  // Added new reset method
-  resetStateAfterMilestone?: () => void;
-}
+import { useCallback } from "react";
+import { Pokemon } from "@/services/pokemon";
+import { BattleType, SingleBattle } from "./types";
 
 export const useBattleOutcomeProcessor = (
-  setBattleResults: React.Dispatch<React.SetStateAction<any[]>>,
+  setBattleResults: React.Dispatch<React.SetStateAction<SingleBattle[]>>,
   setBattlesCompleted: React.Dispatch<React.SetStateAction<number>>,
-  battleStarter?: BattleStarter | null,
-  markSuggestionUsed?: (pokemon: RankedPokemon) => void
+  battleStarter: { startNewBattle: (battleType: BattleType) => Pokemon[] } | null
 ) => {
-  const [isProcessingResult, setIsProcessingResult] = useState(false);
-  const [milestoneInProgress, setMilestoneInProgress] = useState(false);
-  
-  const processBattleResult = useCallback(
-    (selectedId: number[], currentBattle: Pokemon[], battleType: BattleType, generation?: number) => {
-      console.log("⚙️ Processing battle result:", { selectedId, battlePokemons: currentBattle });
-      
-      setIsProcessingResult(true);
-      
-      // For pairs battle
-      if (battleType === "pairs") {
-        const selectedPokemon = currentBattle.find((p) => p.id === selectedId[0]);
-        const otherPokemon = currentBattle.find((p) => p.id !== selectedId[0]);
-        
-        if (selectedPokemon && otherPokemon) {
-          setBattleResults((prev) => [
-            ...prev,
-            {
-              winner: selectedPokemon,
-              loser: otherPokemon,
-              timestamp: new Date().toISOString(),
-              generation: generation || 0,
-            },
-          ]);
-          
-          // ✅ Step 2: Explicitly check and mark suggestions as used
-          if (markSuggestionUsed) {
-            // Check if any of the Pokemon in battle have active suggestions
-            const selectedWithSuggestion = (selectedPokemon as RankedPokemon).suggestedAdjustment;
-            const otherWithSuggestion = (otherPokemon as RankedPokemon).suggestedAdjustment;
-            
-            if (selectedWithSuggestion && !selectedWithSuggestion.used) {
-              console.log(`🎯 Selected Pokémon #${selectedPokemon.id} has an active suggestion - marking as USED`);
-              markSuggestionUsed(selectedPokemon as RankedPokemon);
-            }
-            
-            if (otherWithSuggestion && !otherWithSuggestion.used) {
-              console.log(`🎯 Non-selected Pokémon #${otherPokemon.id} has an active suggestion - marking as USED`);
-              markSuggestionUsed(otherPokemon as RankedPokemon);
-            }
-          }
-        }
-      }
-      
-      // For triplets battle
-      if (battleType === "triplets" && selectedId.length >= 2) {
-        const firstSelected = currentBattle.find((p) => p.id === selectedId[0]);
-        const secondSelected = currentBattle.find((p) => p.id === selectedId[1]);
-        const thirdPokemon = currentBattle.find(
-          (p) => p.id !== selectedId[0] && p.id !== selectedId[1]
-        );
-        
-        if (firstSelected && secondSelected && thirdPokemon) {
-          // Add two battle results - first vs third and second vs third
-          setBattleResults((prev) => [
-            ...prev,
-            {
-              winner: firstSelected,
-              loser: thirdPokemon,
-              timestamp: new Date().toISOString(),
-              generation: generation || 0,
-            },
-            {
-              winner: secondSelected,
-              loser: thirdPokemon,
-              timestamp: new Date().toISOString(),
-              generation: generation || 0,
-            },
-          ]);
-          
-          // ✅ Step 2: Explicitly check and mark suggestions as used for triplets
-          if (markSuggestionUsed) {
-            const pokemonWithSuggestions = [
-              firstSelected,
-              secondSelected,
-              thirdPokemon
-            ].filter(p => (p as RankedPokemon).suggestedAdjustment && 
-                         !(p as RankedPokemon).suggestedAdjustment.used);
-            
-            if (pokemonWithSuggestions.length > 0) {
-              console.log(`🎯 Found ${pokemonWithSuggestions.length} Pokémon with active suggestions in triplet battle`);
-              
-              pokemonWithSuggestions.forEach(p => {
-                console.log(`🎯 Marking suggestion as USED for Pokémon #${p.id}`);
-                markSuggestionUsed(p as RankedPokemon);
-              });
-            }
-          }
-        }
-      }
-      
-      // Update battles completed count
-      setBattlesCompleted((prev) => prev + 1);
-      
-      // Start a new battle automatically, with a slight delay
-      setTimeout(() => {
-        if (battleStarter && !milestoneInProgress) {
-          battleStarter.startNewBattle(battleType);
-        }
-        setIsProcessingResult(false);
-      }, 250);
-    },
-    [setBattleResults, setBattlesCompleted, battleStarter, milestoneInProgress, markSuggestionUsed]
-  );
-  
-  // Reset milestone in progress state
-  const resetMilestoneInProgress = useCallback(() => {
-    if (milestoneInProgress) {
-      console.log("🏁 Resetting milestone in progress state");
-      setMilestoneInProgress(false);
-      
-      // ✅ Step 4: Call battle starter reset method if available
-      if (battleStarter?.resetStateAfterMilestone) {
-        battleStarter.resetStateAfterMilestone();
-        console.log("🚩 Explicitly reset battle starter state after milestone completion");
-      }
-      
-      // Dispatch milestone ended event
-      setTimeout(() => {
-        console.log("📢 Dispatching milestoneEnded event");
-        window.dispatchEvent(new Event("milestoneEnded"));
-      }, 100);
+  // Process battle result
+  const processBattleResult = useCallback((
+    selectedPokemonIds: number[],
+    currentBattlePokemon: Pokemon[],
+    battleType: BattleType
+  ) => {
+    if (!selectedPokemonIds || selectedPokemonIds.length === 0 || !currentBattlePokemon || currentBattlePokemon.length === 0) {
+      console.error("Invalid battle data:", { selectedPokemonIds, currentBattlePokemon });
+      return;
     }
-  }, [milestoneInProgress, battleStarter]);
+    
+    if (battleType === "pairs") {
+      // For pairs, we have a winner and a loser
+      const winner = currentBattlePokemon.find(p => selectedPokemonIds.includes(p.id));
+      const loser = currentBattlePokemon.find(p => !selectedPokemonIds.includes(p.id));
+      
+      if (winner && loser) {
+        console.log(`Battle result: ${winner.name} beats ${loser.name}`);
+        setBattleResults(prev => [...prev, { winner, loser }]);
+        
+        // Critical fix: Increment battles completed and start a new battle
+        setBattlesCompleted(prev => prev + 1);
+        
+        // Start a new battle after a short delay to let the UI update
+        setTimeout(() => {
+          if (battleStarter) {
+            battleStarter.startNewBattle(battleType);
+          }
+        }, 300);
+      } else {
+        console.error("Couldn't determine winner/loser:", { selectedPokemonIds, currentBattlePokemon });
+      }
+    } else {
+      // For triplets, each selected Pokemon beats each unselected one
+      const winners = currentBattlePokemon.filter(p => selectedPokemonIds.includes(p.id));
+      const losers = currentBattlePokemon.filter(p => !selectedPokemonIds.includes(p.id));
+      
+      if (winners.length > 0 && losers.length > 0) {
+        setBattleResults(prev => {
+          const newResults = [...prev];
+          winners.forEach(winner => {
+            losers.forEach(loser => {
+              console.log(`Battle result: ${winner.name} beats ${loser.name}`);
+              newResults.push({ winner, loser });
+            });
+          });
+          return newResults;
+        });
+        
+        // Critical fix: Increment battles completed and start a new battle
+        setBattlesCompleted(prev => prev + 1);
+        
+        // Start a new battle after processing
+        setTimeout(() => {
+          if (battleStarter) {
+            battleStarter.startNewBattle(battleType);
+          }
+        }, 300);
+      } else {
+        console.error("Invalid triplet selection:", { winners, losers, selectedPokemonIds });
+      }
+    }
+  }, [setBattleResults, setBattlesCompleted, battleStarter]);
 
-  return {
-    processBattleResult,
-    isProcessingResult,
-    milestoneInProgress,
-    setMilestoneInProgress,
-    resetMilestoneInProgress
-  };
+  return { processBattleResult };
 };

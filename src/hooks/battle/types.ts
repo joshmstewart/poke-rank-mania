@@ -1,14 +1,12 @@
-
 import { Pokemon } from "@/services/pokemon";
 
-// Update BattleType to use "pair"/"triplet" instead of "pairs"/"triplets"
-export type BattleType = "pair" | "triplet";
+// Keep "triplets" as the internal value for backward compatibility
+export type BattleType = "pairs" | "triplets";
 
-// Updated SingleBattle type to match actual usage
+// ✅ Represents one winner/loser pair
 export type SingleBattle = {
   winner: Pokemon;
   loser: Pokemon;
-  battleType: BattleType;
 };
 
 // ✅ Represents an array of battle results (used throughout the app)

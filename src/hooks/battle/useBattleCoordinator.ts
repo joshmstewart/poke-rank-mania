@@ -2,7 +2,6 @@
 import { useEffect } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleState, BattleType, SingleBattle } from "./types";
-import { toast } from "@/hooks/use-toast";
 
 export const useBattleCoordinator = (
   isLoading: boolean,
@@ -19,66 +18,21 @@ export const useBattleCoordinator = (
   loadPokemon: (genId?: number, fullMode?: boolean, preserveState?: boolean) => Promise<Pokemon[] | void>,
   calculateCompletionPercentage: () => void
 ) => {
-  // Load saved battle state on initial load with safety timeouts
+  // Load saved battle state on initial load
   useEffect(() => {
-    let isMounted = true;
-    const initializationTimeout = setTimeout(() => {
-      if (isMounted && isLoading) {
-        console.error("Initialization timed out - forcing state to not loading");
-        toast({
-          title: "Loading took too long",
-          description: "Resetting application state. Please try again.",
-          variant: "destructive"
-        });
-      }
-    }, 10000); // 10-second safety timeout
-    
-    const initializeApp = async () => {
-      try {
-        const savedState = loadBattleState();
-        if (savedState && isMounted) {
-          await loadPokemon(savedState.selectedGeneration, savedState.fullRankingMode, true);
-        } else if (isMounted) {
-          await loadPokemon();
-        }
-      } catch (error) {
-        console.error("Failed to initialize battle state:", error);
-        if (isMounted) {
-          toast({
-            title: "Error loading battle data",
-            description: "Please try refreshing the page.",
-            variant: "destructive"
-          });
-        }
-      }
-    };
-    
-    initializeApp();
-    
-    return () => {
-      isMounted = false;
-      clearTimeout(initializationTimeout);
-    };
+    const savedState = loadBattleState();
+    if (savedState) {
+      loadPokemon(savedState.selectedGeneration, savedState.fullRankingMode, true);
+    } else {
+      loadPokemon();
+    }
   }, []);
 
   // Reload Pokémon when generation or ranking mode changes
   useEffect(() => {
-    let isMounted = true;
-    const reloadPokemon = async () => {
-      if (!isLoading && isMounted) {
-        try {
-          await loadPokemon(selectedGeneration, fullRankingMode);
-        } catch (error) {
-          console.error("Failed to reload Pokémon data:", error);
-        }
-      }
-    };
-    
-    reloadPokemon();
-    
-    return () => {
-      isMounted = false;
-    };
+    if (!isLoading) {
+      loadPokemon(selectedGeneration, fullRankingMode);
+    }
   }, [selectedGeneration, fullRankingMode]);
 
   // Save state and recalculate progress when results change
@@ -86,7 +40,6 @@ export const useBattleCoordinator = (
     if (allPokemon.length > 0) {
       calculateCompletionPercentage();
 
-      // Only attempt to save the state when we have valid data
       saveBattleState({
         selectedGeneration,
         battleType,
