@@ -4,7 +4,6 @@ import PairBattleUI from './PairBattleUI';
 import TripletBattleUI from './TripletBattleUI';
 import MilestoneDisplay from './MilestoneDisplay';
 import { useBattleStateCore } from '@/hooks/battle/useBattleStateCore';
-import { BattleType } from '@/hooks/battle/types';
 
 export const BattleContent = () => {
   const {
@@ -15,17 +14,14 @@ export const BattleContent = () => {
     setSelectedGeneration,
     completionPercentage,
     rankingGenerated,
-    selectedPokemon,
+    currentBattle,
     battleType,
     setBattleType,
-    handlePokemonSelect,
-    handleTripletSelectionComplete,
     handleSelection,
+    handleTripletSelectionComplete,
     goBack,
     isProcessingResult,
     milestones,
-    resetMilestones,
-    calculateCompletionPercentage,
     getSnapshotForMilestone,
     battleHistory,
     handleContinueBattles,
@@ -33,14 +29,14 @@ export const BattleContent = () => {
     startNewBattle,
   } = useBattleStateCore();
 
-  const handleGenerationChange = (gen: number) => {
+  const handleGenerationChange = (gen: number | string) => {
     setSelectedGeneration(gen);
-    startNewBattle();
+    startNewBattle(gen, battleType);
   };
 
-  const handleBattleTypeChange = (type: BattleType) => {
+  const handleBattleTypeChange = (type: 'pair' | 'triplet') => {
     setBattleType(type);
-    startNewBattle();
+    startNewBattle(selectedGeneration, type);
   };
 
   return (
@@ -64,17 +60,17 @@ export const BattleContent = () => {
             resetMilestoneInProgress();
           }}
         />
-      ) : battleType === BattleType.Pair && selectedPokemon.length === 2 ? (
+      ) : battleType === 'pair' && currentBattle.length === 2 ? (
         <PairBattleUI
-          pokemon={selectedPokemon}
-          onSelect={(id) => handleSelection([id])}
+          pokemon={currentBattle}
+          onSelect={(id: number) => handleSelection([id])}
           onGoBack={goBack}
           disabled={isProcessingResult}
         />
-      ) : battleType === BattleType.Triplet && selectedPokemon.length === 3 ? (
+      ) : battleType === 'triplet' && currentBattle.length === 3 ? (
         <TripletBattleUI
-          pokemon={selectedPokemon}
-          onSelect={(ids) => handleTripletSelectionComplete(ids)}
+          pokemon={currentBattle}
+          onSelect={handleTripletSelectionComplete}
           onGoBack={goBack}
           disabled={isProcessingResult}
         />
@@ -85,7 +81,7 @@ export const BattleContent = () => {
       ) : (
         <div className="no-battle-selected">
           No battle currently available.
-          <button onClick={() => startNewBattle()}>
+          <button onClick={() => startNewBattle(selectedGeneration, battleType)}>
             Start New Battle
           </button>
         </div>

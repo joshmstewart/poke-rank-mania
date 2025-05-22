@@ -1,67 +1,41 @@
 import { useEffect } from 'react';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { Pokemon } from '@/services/pokemon';
-import { BattleSelectionState, BattleType, SingleBattle } from './types';
+import { BattleType, SingleBattle } from './types';
+import { BattleStarter } from './createBattleStarter';
 
 export const useBattleStarterIntegration = (
-  battleSelectionState: BattleSelectionState,
-  setBattleHistory: (history: SingleBattle[]) => void,
-  setSelectedPokemon: (pokemonIds: number[]) => void,
-  battleHistory: SingleBattle[],
-  allPokemon: Pokemon[],
+  currentBattle: Pokemon[],
+  selectedPokemon: number[],
+  battleType: BattleType,
+  battleStarter: BattleStarter,
+  setBattleHistory: React.Dispatch<React.SetStateAction<any[]>>,
+  processBattleResult: (battle: SingleBattle) => void,
+  setIsProcessingResult: (isProcessing: boolean) => void
 ) => {
-  const {
-    currentBattle,
-    resetAfterMilestone,
-    resetSuggestionPriority,
-    resetSuggestionState,
-    startNewBattle,
-  } = battleSelectionState;
-
-  const { saveToStorage, loadFromStorage } = useLocalStorage();
-
   useEffect(() => {
-    const savedBattleHistory = loadFromStorage<SingleBattle[]>('battleHistory');
-    if (savedBattleHistory) {
-      setBattleHistory(savedBattleHistory);
+    if (selectedPokemon.length === (battleType === 'pair' ? 1 : 3)) {
+      setIsProcessingResult(true);
+      const winner = currentBattle.find(p => selectedPokemon.includes(p.id));
+      const losers = currentBattle.filter(p => !selectedPokemon.includes(p.id));
+
+      const result: SingleBattle = {
+        winner,
+        losers,
+        battleType,
+      };
+
+      processBattleResult(result);
+
+      setBattleHistory(prev => [
+        ...prev,
+        {
+          battle: currentBattle,
+          selected: selectedPokemon,
+        },
+      ]);
+
+      setIsProcessingResult(false);
+      battleStarter.startNewBattle();
     }
-
-    const savedSuggestions = loadFromStorage<any[]>('savedSuggestions');
-    if (savedSuggestions && savedSuggestions.length) {
-      resetSuggestionState();
-    }
-
-    startNewBattle();
-  }, []);
-
-  useEffect(() => {
-    saveToStorage('battleHistory', battleHistory);
-  }, [battleHistory]);
-
-  const handleSelection = (winnerId: number, loserIds: number[], battleType: BattleType) => {
-    const newBattle: SingleBattle = {
-      winnerId,
-      loserIds,
-      battleType,
-      timestamp: Date.now(),
-    };
-
-    const updatedHistory = [...battleHistory, newBattle];
-    setBattleHistory(updatedHistory);
-    setSelectedPokemon([]);
-
-    startNewBattle();
-  };
-
-  const handleMilestoneCompletion = () => {
-    resetAfterMilestone();
-    resetSuggestionPriority();
-    resetSuggestionState();
-    startNewBattle();
-  };
-
-  return {
-    handleSelection,
-    handleMilestoneCompletion,
-  };
+  }, [selectedPokemon]);
 };

@@ -1,45 +1,56 @@
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { createBattleStarter } from './createBattleStarter';
-import { RankedPokemon } from './useRankings';
+import { RankedPokemon, BattleType } from './types';
 import { Pokemon } from '@/services/pokemon';
-import { BattleType } from './types';
 
 export const useBattleSelectionState = (
-  finalRankings: RankedPokemon[],
+  rankedPokemon: RankedPokemon[],
   allPokemon: Pokemon[],
-  setCompletionPercentage: (percent: number) => void,
+  setCompletionPercentage: (percentage: number) => void,
   setRankingGenerated: (generated: boolean) => void,
-  battleType: BattleType,
+  initialBattleType: BattleType
 ) => {
   const [currentBattle, setCurrentBattle] = useState<Pokemon[]>([]);
+  const [battleType, setBattleType] = useState<BattleType>(initialBattleType);
   const [forceSuggestionPriority, setForceSuggestionPriority] = useState(false);
-  const [battleDirection, setBattleDirection] = useState<'up' | 'down'>('up');
+  const [battleDirection, setBattleDirection] = useState<'up' | 'down'>('down');
 
-  const {
-    startNewBattle,
-    resetAfterMilestone,
-    resetSuggestionPriority,
-    resetSuggestionState,
-  } = createBattleStarter(
-    finalRankings,
-    allPokemon,
+  const battleStarter = createBattleStarter(
     setCurrentBattle,
+    rankedPokemon,
+    allPokemon,
     battleType,
-    battleDirection,
     forceSuggestionPriority,
-    setCompletionPercentage,
-    setRankingGenerated,
+    setForceSuggestionPriority,
+    battleDirection,
+    setBattleDirection
   );
 
-  const disableSuggestionPriority = useCallback(() => {
+  const startNewBattle = (
+    selectedGeneration: number | string = "all",
+    selectedBattleType: BattleType = battleType
+  ) => {
+    setBattleType(selectedBattleType);
+    battleStarter.startNewBattle(selectedGeneration, selectedBattleType);
+  };
+
+  const resetSuggestionPriority = () => {
     setForceSuggestionPriority(false);
-  }, []);
+  };
+
+  const resetAfterMilestone = () => {
+    setForceSuggestionPriority(true);
+  };
+
+  const resetSuggestionState = () => {
+    battleStarter.resetStateAfterMilestone();
+  };
 
   return {
     currentBattle,
     forceSuggestionPriority,
     resetAfterMilestone,
-    disableSuggestionPriority,
+    disableSuggestionPriority: () => setForceSuggestionPriority(false),
     setBattleDirection,
     startNewBattle,
     resetSuggestionPriority,
