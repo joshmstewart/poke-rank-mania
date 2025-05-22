@@ -54,7 +54,7 @@ export const useBattleStarterIntegration = (
       totalSuggestionsRef.current = suggestedPokemon.length;
       
       // Force high priority for next battles to ensure suggestions are used
-      forcedPriorityBattlesRef.current = Math.min(30, Math.max(10, suggestedPokemon.length * 3));
+      forcedPriorityBattlesRef.current = Math.min(50, Math.max(20, suggestedPokemon.length * 5));
       
       if (totalSuggestionsRef.current > 0) {
         toast({
@@ -91,7 +91,7 @@ export const useBattleStarterIntegration = (
       totalSuggestionsRef.current = pokemonWithSuggestions.length;
 
       // Significantly increase forced priority battles to ensure ALL suggestions get used
-      forcedPriorityBattlesRef.current = Math.max(30, pokemonWithSuggestions.length * 5);
+      forcedPriorityBattlesRef.current = Math.max(50, pokemonWithSuggestions.length * 5);
 
       console.log(`🎮 Suggestion priority reset: prioritizing for next ${forcedPriorityBattlesRef.current} battles.`);
     }
@@ -225,7 +225,7 @@ export const useBattleStarterIntegration = (
     ).length;
     
     // Set an even higher forced priority count to ensure suggestions are used
-    forcedPriorityBattlesRef.current = Math.max(30, unusedSuggestions * 5);
+    forcedPriorityBattlesRef.current = Math.max(50, unusedSuggestions * 5);
     
     lastPriorityResetTimestampRef.current = Date.now();
     console.log(`⚡ Explicitly reset and forced suggestion prioritization for next ${forcedPriorityBattlesRef.current} battles`);

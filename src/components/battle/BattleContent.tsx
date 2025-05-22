@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef } from "react";
 import { Pokemon, TopNOption } from "@/services/pokemon";
 import { useBattleStateCore } from "@/hooks/battle/useBattleStateCore";
@@ -52,7 +51,8 @@ const BattleContent = ({ allPokemon, initialBattleType, initialSelectedGeneratio
     suggestRanking,
     removeSuggestion,
     handleContinueBattles,
-    resetMilestoneInProgress
+    resetMilestoneInProgress,
+    resetSuggestionPriority
   } = useBattleStateCore(allPokemon, initialBattleType, initialSelectedGeneration);
 
   // Only call startNewBattle once when the component mounts and allPokemon is available
@@ -60,9 +60,42 @@ const BattleContent = ({ allPokemon, initialBattleType, initialSelectedGeneratio
     if (allPokemon.length > 0 && !battleStartedRef.current) {
       console.log("BattleContent: Starting new battle on initial load");
       battleStartedRef.current = true;
-      startNewBattle(initialBattleType);
+      
+      // Explicitly prioritize suggestions when starting new battles
+      if (resetSuggestionPriority) {
+        console.log("BattleContent: Resetting suggestion priority on initial load");
+        resetSuggestionPriority();
+        
+        // Dispatch event to ensure system knows to prioritize suggestions
+        setTimeout(() => {
+          window.dispatchEvent(new Event("prioritizeSuggestions"));
+          
+          // Then start the battle after a brief delay
+          setTimeout(() => startNewBattle(initialBattleType), 50);
+        }, 50);
+      } else {
+        startNewBattle(initialBattleType);
+      }
     }
-  }, [allPokemon.length, initialBattleType, startNewBattle]);
+  }, [allPokemon.length, initialBattleType, startNewBattle, resetSuggestionPriority]);
+  
+  // Track if we have active suggestions and ensure they're prioritized periodically
+  useEffect(() => {
+    const checkInterval = setInterval(() => {
+      const suggestedPokemon = finalRankings.filter(
+        p => p.suggestedAdjustment && !p.suggestedAdjustment.used
+      );
+      
+      if (suggestedPokemon.length > 0 && !showingMilestone) {
+        console.log(`🔍 Periodic check: Found ${suggestedPokemon.length} unused suggestions`);
+        
+        // Dispatch prioritization event every 30 seconds if we have suggestions
+        window.dispatchEvent(new Event("prioritizeSuggestions"));
+      }
+    }, 30000); // Check every 30 seconds
+    
+    return () => clearInterval(checkInterval);
+  }, [finalRankings, showingMilestone]);
   
   // Keep track of battles completed to prevent resetting
   useEffect(() => {
@@ -93,8 +126,22 @@ const BattleContent = ({ allPokemon, initialBattleType, initialSelectedGeneratio
 
   const handleBattleTypeChange = (newType: BattleType) => {
     setBattleType(newType);
-    startNewBattle(newType);
-    resetMilestones();
+    
+    // Reset suggestion priority first
+    if (resetSuggestionPriority) {
+      resetSuggestionPriority();
+      setTimeout(() => {
+        window.dispatchEvent(new Event("prioritizeSuggestions"));
+        setTimeout(() => {
+          startNewBattle(newType);
+          resetMilestones();
+        }, 50);
+      }, 50);
+    } else {
+      startNewBattle(newType);
+      resetMilestones();
+    }
+    
     localStorage.setItem('pokemon-ranker-battle-type', newType);
   };
 
@@ -102,22 +149,57 @@ const BattleContent = ({ allPokemon, initialBattleType, initialSelectedGeneratio
     const genId = parseInt(generation, 10);
     setSelectedGeneration(genId);
     localStorage.setItem('pokemon-ranker-generation', generation);
-    resetMilestones();
-    startNewBattle(battleType);
+    
+    // Reset suggestion priority first
+    if (resetSuggestionPriority) {
+      resetSuggestionPriority();
+      setTimeout(() => {
+        window.dispatchEvent(new Event("prioritizeSuggestions"));
+        setTimeout(() => {
+          resetMilestones();
+          startNewBattle(battleType);
+        }, 50);
+      }, 50);
+    } else {
+      resetMilestones();
+      startNewBattle(battleType);
+    }
   };
 
   const handleRestartBattles = () => {
-    resetMilestones();
-    startNewBattle(battleType);
+    // Reset suggestion priority first
+    if (resetSuggestionPriority) {
+      resetSuggestionPriority();
+      setTimeout(() => {
+        window.dispatchEvent(new Event("prioritizeSuggestions"));
+        setTimeout(() => {
+          resetMilestones();
+          startNewBattle(battleType);
+        }, 50);
+      }, 50);
+    } else {
+      resetMilestones();
+      startNewBattle(battleType);
+    }
   };
 
   const handleNewBattleSet = () => {
+    // Reset suggestion priority first
+    if (resetSuggestionPriority) {
+      resetSuggestionPriority();
+    }
+    
     resetMilestones();
     // Reset the milestone processing flag when starting a new battle set
     if (resetMilestoneInProgress) {
       resetMilestoneInProgress();
     }
-    startNewBattle(battleType);
+    
+    // Dispatch event to ensure system knows to prioritize suggestions
+    setTimeout(() => {
+      window.dispatchEvent(new Event("prioritizeSuggestions"));
+      setTimeout(() => startNewBattle(battleType), 50);
+    }, 50);
   };
 
   const handleSaveRankings = () => {
@@ -126,6 +208,14 @@ const BattleContent = ({ allPokemon, initialBattleType, initialSelectedGeneratio
     // Reset the milestone processing flag after saving rankings
     if (resetMilestoneInProgress) {
       resetMilestoneInProgress();
+    }
+    
+    // Explicitly prioritize suggestions after saving rankings
+    if (resetSuggestionPriority) {
+      resetSuggestionPriority();
+      setTimeout(() => {
+        window.dispatchEvent(new Event("prioritizeSuggestions"));
+      }, 50);
     }
   };
 

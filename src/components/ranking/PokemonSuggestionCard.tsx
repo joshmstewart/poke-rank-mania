@@ -27,16 +27,25 @@ export const PokemonSuggestionCard: React.FC<PokemonSuggestionCardProps> = ({
   onSuggestRanking,
   onRemoveSuggestion
 }) => {
-  const [activeDirection, setActiveDirection] = useState<"up" | "down" | null>(null);
-const [activeStrength, setActiveStrength] = useState<1 | 2 | 3>(1);
+  const [activeDirection, setActiveDirection] = useState<"up" | "down" | null>(
+    pokemon.suggestedAdjustment?.direction || null
+  );
+  const [activeStrength, setActiveStrength] = useState<1 | 2 | 3>(
+    pokemon.suggestedAdjustment?.strength || 1
+  );
 
-// CRITICAL FIX: Sync internal state when pokemon.suggestedAdjustment changes
-useEffect(() => {
-  setActiveDirection(pokemon.suggestedAdjustment?.direction || null);
-  setActiveStrength(pokemon.suggestedAdjustment?.strength || 1);
-}, [pokemon.suggestedAdjustment]);
+  // CRITICAL FIX: Sync internal state when pokemon.suggestedAdjustment changes
+  useEffect(() => {
+    if (pokemon.suggestedAdjustment) {
+      setActiveDirection(pokemon.suggestedAdjustment.direction);
+      setActiveStrength(pokemon.suggestedAdjustment.strength);
+      console.log(`📌 Syncing suggestion card state for ${pokemon.name}: ${pokemon.suggestedAdjustment.direction} ${pokemon.suggestedAdjustment.strength}`);
+    } else {
+      setActiveDirection(null);
+      setActiveStrength(1);
+    }
+  }, [pokemon.suggestedAdjustment, pokemon.name]);
 
-  
   const generation = getPokemonGeneration(pokemon.id);
   
   // Normalize the pokemon ID for display

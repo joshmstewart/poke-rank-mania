@@ -21,6 +21,7 @@ export const createBattleStarter = (
       return null;
     }
     
+    // Find ALL Pokemon with unused suggestions
     const unusedSuggestions = rankedPokemon.filter(
       (p) => p.suggestedAdjustment && !p.suggestedAdjustment.used,
     );
@@ -30,12 +31,18 @@ export const createBattleStarter = (
       return null;
     }
 
+    // Log the available suggestions to debug
+    console.log(`🎯 Found ${unusedSuggestions.length} Pokemon with unused suggestions to choose from`);
+    unusedSuggestions.forEach((p, i) => {
+      console.log(`🎯 Suggestion #${i+1}: ${p.name} (${p.id}) - Direction: ${p.suggestedAdjustment?.direction}`);
+    });
+
     const randomIndex = Math.floor(Math.random() * unusedSuggestions.length);
     const selectedPokemon = unusedSuggestions[randomIndex];
 
     if (selectedPokemon && selectedPokemon.suggestedAdjustment) {
-      selectedPokemon.suggestedAdjustment.used = true;
-      lastUsedSuggestion.set(selectedPokemon.id, 0);
+      // We don't mark it as used here - that happens after battle completion
+      lastUsedSuggestion.set(selectedPokemon.id, Date.now());
       
       console.log(`🎯 Selected suggestion Pokémon #${selectedPokemon.id} (${selectedPokemon.name})`);
       return selectedPokemon;
@@ -65,27 +72,29 @@ export const createBattleStarter = (
       return newBattle;
     }
     
-    if (forceSuggestionPriority) {
-      recentlyUsed.clear();
-      previousMatchups.clear();
-      lastUsedSuggestion.clear();
-
-      rankedPokemon.forEach((p) => {
-        if (p.suggestedAdjustment) {
-          p.suggestedAdjustment.used = false;
-        }
+    // Always check for suggestions before each battle
+    const suggestedPokemon = rankedPokemon.filter(p => p.suggestedAdjustment && !p.suggestedAdjustment.used);
+    const hasSuggestions = suggestedPokemon.length > 0;
+    
+    // Explicitly log whether we're forcing suggestion priority
+    console.log(`🔍 Starting new battle: forceSuggestionPriority=${forceSuggestionPriority}, hasSuggestions=${hasSuggestions}`);
+    
+    if (hasSuggestions) {
+      // Always log available suggestions for debugging
+      console.log(`🎯 Found ${suggestedPokemon.length} Pokemon with unused suggestions:`);
+      suggestedPokemon.slice(0, 5).forEach((p, i) => {
+        console.log(`🎯 Suggestion #${i+1}: ${p.name} (${p.id}) - Direction: ${p.suggestedAdjustment?.direction}`);
       });
-
-      suggested.clear();
-      rankedPokemon
-        .filter((p) => p.suggestedAdjustment)
-        .forEach((p) => suggested.set(p.id, p));
-
-      console.log('🚨 Fully reset suggestion state for forced prioritization.');
-
+    }
+    
+    if ((forceSuggestionPriority || Math.random() < 0.8) && hasSuggestions) {
+      console.log(`🚨 Using FORCED suggestion prioritization or random chance triggered`);
+      
+      // Use suggestion priority logic - more aggressive selection
       const suggestionPokemon = selectSuggestedPokemonForced();
       if (!suggestionPokemon) {
         // No suggestions available, fall back to regular battle selection
+        console.log(`⚠️ No suggestion Pokemon available, falling back to regular selection`);
         return startRegularBattle();
       }
 
@@ -93,18 +102,24 @@ export const createBattleStarter = (
         (p) => p.id === suggestionPokemon.id,
       );
 
+      // Find appropriate opponent based on direction
       const opponentIndex =
         direction === 'up'
-          ? Math.max(suggestionIndex - 1, 0)
-          : Math.min(suggestionIndex + 1, rankedPokemon.length - 1);
+          ? Math.max(suggestionIndex - 1 - Math.floor(Math.random() * 3), 0)
+          : Math.min(suggestionIndex + 1 + Math.floor(Math.random() * 3), rankedPokemon.length - 1);
 
       const opponentPokemon = rankedPokemon[opponentIndex];
 
       if (!opponentPokemon) {
         // This shouldn't happen if we have at least 2 ranked Pokémon, but handle it anyway
+        console.warn(`⚠️ Failed to find opponent for suggestion battle, using regular selection`);
         return startRegularBattle();
       }
 
+      // Log the final battle setup with suggestion
+      console.log(`🎮 Creating suggestion battle: ${suggestionPokemon.name} (#${suggestionPokemon.id}) vs ${opponentPokemon.name} (#${opponentPokemon.id})`);
+      console.log(`🎯 Suggestion battle direction: ${suggestionPokemon.suggestedAdjustment?.direction}`);
+      
       const newBattle = [suggestionPokemon, opponentPokemon];
       setCurrentBattle(newBattle);
       
@@ -122,6 +137,11 @@ export const createBattleStarter = (
       rankedPokemon
         .filter((p) => p.suggestedAdjustment && !p.suggestedAdjustment.used)
         .forEach((p) => suggested.set(p.id, p));
+    }
+
+    // Log if we have any suggestions during regular battle selection
+    if (suggested.size > 0) {
+      console.log(`ℹ️ Regular battle selection with ${suggested.size} suggestions available`);
     }
 
     let availablePokemon = [...rankedPokemon].filter(
