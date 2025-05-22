@@ -29,8 +29,11 @@ interface BattleControlsProps {
   onGenerationChange: (generation: string) => void;
   onBattleTypeChange: (type: BattleType) => void;
   onRestartBattles: () => void;
-  setBattlesCompleted?: React.Dispatch<React.SetStateAction<number>>;  // Added prop
+  setBattlesCompleted?: React.Dispatch<React.SetStateAction<number>>;  // ✅ already there
+  setBattleResults?: React.Dispatch<React.SetStateAction<SingleBattle[]>>;  // ✅ ADD THIS LINE
 }
+
+
 
 const BattleControls: React.FC<BattleControlsProps> = ({
   selectedGeneration,
@@ -38,8 +41,11 @@ const BattleControls: React.FC<BattleControlsProps> = ({
   onGenerationChange,
   onBattleTypeChange,
   onRestartBattles,
-  setBattlesCompleted  // Accept the prop
+  setBattlesCompleted,
+  setBattleResults // ✅ ADD THIS LINE
 }) => {
+
+
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [restartDialogOpen, setRestartDialogOpen] = useState(false);
   // Ensure selectedGeneration has a valid value (defaulting to 0 if undefined)
@@ -82,12 +88,20 @@ const BattleControls: React.FC<BattleControlsProps> = ({
     console.log(`📝 [${timestamp}] RESTART BUTTON: Cleared pokemon-battle-tracking from localStorage: was ${battleTrackingBeforeReset ? "present" : "empty"}`);
     
     // CRITICAL STEP: Explicitly reset battlesCompleted state in React
-    if (setBattlesCompleted) {
-      setBattlesCompleted(0);
-      console.log(`📝 [${timestamp}] RESTART BUTTON: ✅ battlesCompleted explicitly reset to 0`);
-    } else {
-      console.warn(`📝 [${timestamp}] RESTART BUTTON: ⚠️ setBattlesCompleted function not provided, cannot reset React state directly`);
-    }
+if (setBattlesCompleted) {
+  setBattlesCompleted(0);
+  console.log(`📝 [${timestamp}] RESTART BUTTON: ✅ battlesCompleted explicitly reset to 0`);
+} else {
+  console.warn(`📝 [${timestamp}] RESTART BUTTON: ⚠️ setBattlesCompleted function not provided, cannot reset React state directly`);
+}
+
+if (setBattleResults) {
+  setBattleResults([]);
+  console.log(`📝 [${timestamp}] RESTART BUTTON: ✅ battleResults explicitly reset to []`);
+} else {
+  console.warn(`📝 [${timestamp}] RESTART BUTTON: ⚠️ setBattleResults not provided`);
+}
+
     
     // Check current state from other localStorage entries
     console.log(`📝 [${timestamp}] RESTART BUTTON: All localStorage related to battles:`, {

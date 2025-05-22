@@ -13,8 +13,11 @@ import { logPokemonVariations } from "@/utils/pokemonListingLogger";
 
 interface BattleContentProps {
   allPokemon: Pokemon[];
-  initialBattleType: BattleType;
   initialSelectedGeneration: number;
+  initialBattleType: BattleType;
+  setBattlesCompleted?: React.Dispatch<React.SetStateAction<number>>;
+  setBattleResults?: React.Dispatch<React.SetStateAction<SingleBattle[]>>;
+
 }
 
 const BattleContent = ({ allPokemon, initialBattleType, initialSelectedGeneration }: BattleContentProps) => {
@@ -53,7 +56,14 @@ const BattleContent = ({ allPokemon, initialBattleType, initialSelectedGeneratio
     removeSuggestion,
     handleContinueBattles,
     resetMilestoneInProgress
-  } = useBattleStateCore(allPokemon, initialBattleType, initialSelectedGeneration);
+ } = useBattleStateCore(
+  allPokemon,
+  initialBattleType,
+  initialSelectedGeneration,
+  setBattlesCompleted,
+  setBattleResults
+);
+
 
   // Only call startNewBattle once when the component mounts and allPokemon is available
   useEffect(() => {
@@ -159,12 +169,15 @@ const BattleContent = ({ allPokemon, initialBattleType, initialSelectedGeneratio
     <div className="flex flex-col items-center w-full gap-4">
       <div className="w-full max-w-3xl flex flex-col gap-4">
         <BattleControls
-          selectedGeneration={selectedGeneration}
-          battleType={battleType}
-          onGenerationChange={handleGenerationChange}
-          onBattleTypeChange={handleBattleTypeChange}
-          onRestartBattles={handleRestartBattles}
-        />
+  selectedGeneration={selectedGeneration}
+  battleType={battleType}
+  onGenerationChange={handleGenerationChange}
+  onBattleTypeChange={handleBattleTypeChange}
+  onRestartBattles={handleRestartBattles}
+  setBattlesCompleted={setBattlesCompleted}
+  setBattleResults={setBattleResults}
+/>
+
         
         <div className="flex items-center justify-between gap-4">
           <ProgressTracker 

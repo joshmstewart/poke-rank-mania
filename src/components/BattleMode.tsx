@@ -3,9 +3,14 @@ import BattleContentContainer from "@/components/battle/BattleContentContainer";
 import { usePokemonLoader } from "@/hooks/battle/usePokemonLoader";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+import { SingleBattle } from "@/hooks/battle/types";
+
 
 const BattleMode = () => {
   const { allPokemon, isLoading, loadPokemon } = usePokemonLoader();
+    const [battlesCompleted, setBattlesCompleted] = useState(0);
+  const [battleResults, setBattleResults] = useState<SingleBattle[]>([]);
+
   const [loadingInitiated, setLoadingInitiated] = useState(false);
   const loaderInitiatedRef = useRef(false);
   const loadingFailedRef = useRef(false);
@@ -300,11 +305,14 @@ const BattleMode = () => {
         </ul>
       </div>
       
-      <BattleContentContainer
-        allPokemon={allPokemon}
-        initialBattleType="pairs"
-        initialSelectedGeneration={0}
-      />
+    <BattleContentContainer
+  allPokemon={allPokemon}
+  initialBattleType="pairs"
+  initialSelectedGeneration={0}
+  setBattlesCompleted={setBattlesCompleted}
+  setBattleResults={setBattleResults}
+/>
+
     </div>
   );
 };

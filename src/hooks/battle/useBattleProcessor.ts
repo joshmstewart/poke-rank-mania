@@ -235,9 +235,12 @@ export const useBattleProcessor = (
     console.log(`📝 [${timestamp}] MILESTONE RESET: Completed`);
   }, []);
 
-  return {
-    processBattleResult: processBattle,
-    isProcessingResult,
-    resetMilestoneInProgress
-  };
+return {
+  processBattleResult: processBattle,
+  isProcessingResult,
+  resetMilestoneInProgress,
+  setBattlesCompleted,  // explicitly add at line 243
+  setBattleResults      // explicitly add at line 244
+};
+
 };
