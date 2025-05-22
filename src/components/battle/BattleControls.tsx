@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { List, RefreshCw, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -44,33 +44,73 @@ const BattleControls: React.FC<BattleControlsProps> = ({
   // Ensure selectedGeneration has a valid value (defaulting to 0 if undefined)
   const safeSelectedGeneration = selectedGeneration !== undefined ? selectedGeneration : 0;
   
-  const handleRestart = () => {
-    // Debug logging
-    console.log("🚨 BattleControls: handleRestart triggered");
-    console.log("🚨 Current battle state before restart:", {
+  // Debug logging for initial values
+  useEffect(() => {
+    console.log("🔍 BattleControls mounted:", {
       selectedGeneration: safeSelectedGeneration,
-      battleType
+      battleType,
+      battlesCompleted: localStorage.getItem('pokemon-battle-count')
+    });
+  }, [safeSelectedGeneration, battleType]);
+  
+  const handleRestart = () => {
+    // Timestamp for tracking the entire process
+    const timestamp = new Date().toISOString();
+    
+    // Debug logging with timestamp
+    console.log(`📝 [${timestamp}] RESTART BUTTON: handleRestart triggered`);
+    console.log(`📝 [${timestamp}] RESTART BUTTON: Current battle state before restart:`, {
+      selectedGeneration: safeSelectedGeneration,
+      battleType,
+      battlesCompleted: localStorage.getItem('pokemon-battle-count')
     });
     
     // ✅ Clear suggestion arrows explicitly on restart
+    const suggestionsBeforeReset = localStorage.getItem('pokemon-active-suggestions');
     localStorage.removeItem('pokemon-active-suggestions');
-    console.log("✅ Cleared pokemon-active-suggestions from localStorage");
+    console.log(`📝 [${timestamp}] RESTART BUTTON: Cleared pokemon-active-suggestions from localStorage: was ${suggestionsBeforeReset ? "present" : "empty"}`);
     
     // ✅ Clear battle count explicitly
+    const battleCountBeforeReset = localStorage.getItem('pokemon-battle-count');
     localStorage.removeItem('pokemon-battle-count');
-    console.log("✅ Cleared pokemon-battle-count from localStorage");
+    console.log(`📝 [${timestamp}] RESTART BUTTON: Cleared pokemon-battle-count from localStorage: was ${battleCountBeforeReset || "empty"}`);
     
     // Additional reset of battle counter related items
+    const battleTrackingBeforeReset = localStorage.getItem('pokemon-battle-tracking');
     localStorage.removeItem('pokemon-battle-tracking');
-    console.log("✅ Cleared pokemon-battle-tracking from localStorage");
+    console.log(`📝 [${timestamp}] RESTART BUTTON: Cleared pokemon-battle-tracking from localStorage: was ${battleTrackingBeforeReset ? "present" : "empty"}`);
+    
+    // Check current state from other localStorage entries
+    console.log(`📝 [${timestamp}] RESTART BUTTON: All localStorage related to battles:`, {
+      'pokemon-battle-last-battle': localStorage.getItem('pokemon-battle-last-battle'),
+      'pokemon-ranker-battle-history': localStorage.getItem('pokemon-ranker-battle-history'),
+      'pokemon-battle-history': localStorage.getItem('pokemon-battle-history'),
+      'pokemon-battle-seen': localStorage.getItem('pokemon-battle-seen'),
+      'suggestionUsageCounts': localStorage.getItem('suggestionUsageCounts')
+    });
     
     // Call the original restart handler
+    console.log(`📝 [${timestamp}] RESTART BUTTON: Calling onRestartBattles callback`);
     onRestartBattles();
-    console.log("✅ onRestartBattles callback executed");
+    console.log(`📝 [${timestamp}] RESTART BUTTON: onRestartBattles callback executed`);
     
     // Close dialog
     setRestartDialogOpen(false);
-    console.log("✅ Restart dialog closed");
+    console.log(`📝 [${timestamp}] RESTART BUTTON: Restart dialog closed`);
+    
+    // Check state after restart
+    setTimeout(() => {
+      console.log(`📝 [${timestamp}] RESTART BUTTON: [200ms later] Current battle count:`, localStorage.getItem('pokemon-battle-count'));
+    }, 200);
+    
+    // Check state after 500ms to see if changes persisted
+    setTimeout(() => {
+      console.log(`📝 [${timestamp}] RESTART BUTTON: [500ms later] Final verification:`, {
+        'pokemon-battle-count': localStorage.getItem('pokemon-battle-count'),
+        'pokemon-active-suggestions': localStorage.getItem('pokemon-active-suggestions'),
+        'pokemon-battle-tracking': localStorage.getItem('pokemon-battle-tracking')
+      });
+    }, 500);
   };
   
   return (
@@ -81,7 +121,10 @@ const BattleControls: React.FC<BattleControlsProps> = ({
           <span className="text-sm font-medium whitespace-nowrap mr-2">Gen:</span>
           <Select 
             value={safeSelectedGeneration.toString()} 
-            onValueChange={onGenerationChange}
+            onValueChange={(value) => {
+              console.log("🔍 Generation dropdown changed to:", value);
+              onGenerationChange(value);
+            }}
           >
             <SelectTrigger className="w-[180px] h-8 text-sm">
               <SelectValue placeholder="Generation" />
@@ -100,7 +143,10 @@ const BattleControls: React.FC<BattleControlsProps> = ({
           <span className="text-sm font-medium whitespace-nowrap mr-2">Mode:</span>
           <Select
             value={battleType}
-            onValueChange={(value: BattleType) => onBattleTypeChange(value)}
+            onValueChange={(value: BattleType) => {
+              console.log("🔍 Battle type dropdown changed to:", value);
+              onBattleTypeChange(value);
+            }}
           >
             <SelectTrigger className="w-[100px] h-8 text-sm flex items-center">
               <SelectValue placeholder="Battle Type" className="py-0" />
@@ -131,10 +177,12 @@ const BattleControls: React.FC<BattleControlsProps> = ({
             </DialogHeader>
             <BattleSettings
               onGenerationChange={(genId) => {
+                console.log("🔍 BattleSettings: onGenerationChange called with:", genId);
                 onGenerationChange(genId.toString());
                 setSettingsOpen(false);
               }}
               onBattleTypeChange={(type) => {
+                console.log("🔍 BattleSettings: onBattleTypeChange called with:", type);
                 onBattleTypeChange(type);
                 setSettingsOpen(false);
               }}
@@ -150,7 +198,8 @@ const BattleControls: React.FC<BattleControlsProps> = ({
             size="sm"
             className="flex items-center gap-1 h-8 text-sm px-4"
             onClick={() => {
-              console.log("🚨 Restart button clicked - opening confirmation dialog");
+              console.log("🔍 Restart button clicked - opening confirmation dialog");
+              console.log("🔍 Current battle count:", localStorage.getItem('pokemon-battle-count'));
               setRestartDialogOpen(true);
             }}
           >
@@ -164,8 +213,18 @@ const BattleControls: React.FC<BattleControlsProps> = ({
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => console.log("🚨 Restart cancelled")}>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleRestart} className="bg-destructive hover:bg-destructive/90">Restart</AlertDialogAction>
+              <AlertDialogCancel onClick={() => {
+                console.log("🔍 Restart cancelled");
+              }}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  console.log("🔍 Restart confirmed through dialog");
+                  handleRestart();
+                }}
+                className="bg-destructive hover:bg-destructive/90"
+              >
+                Restart
+              </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>

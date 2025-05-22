@@ -21,57 +21,63 @@ export const useBattleActions = (
   const milestoneClosingRef = useRef(false);
 
   const handleContinueBattles = useCallback(() => {
-    if (milestoneClosingRef.current) return;
+    if (milestoneClosingRef.current) {
+      console.log("⚠️ handleContinueBattles: Already processing milestone closure, ignoring");
+      return;
+    }
     milestoneClosingRef.current = true;
+    console.log("▶️ handleContinueBattles: Starting milestone closure process");
 
-    console.log("🟤 useBattleActions: setShowingMilestone(false) triggered (continue battles)");
+    console.log("▶️ handleContinueBattles: Setting showingMilestone = false");
     setShowingMilestone(false);
+    
+    console.log("▶️ handleContinueBattles: Starting new battle with battleType =", battleType);
     startNewBattle(battleType);
+    console.log("▶️ handleContinueBattles: New battle requested");
 
     milestoneClosingRef.current = false;
+    console.log("✅ handleContinueBattles: Process completed, milestoneClosingRef reset to false");
   }, [battleType, setShowingMilestone, startNewBattle]);
 
   const handleNewBattleSet = useCallback(() => {
-    console.log("🚨 RESTART: handleNewBattleSet triggered - FULL RESTART");
-    console.log("🚨 RESTART: Current state before reset:", {
-      battleType,
-      rankingGeneratedExists: typeof setRankingGenerated === 'function',
-      battlesCompletedExists: typeof setBattlesCompleted === 'function',
-      battleHistoryExists: typeof setBattleHistory === 'function',
-    });
+    console.log("🔄 RESTART: handleNewBattleSet triggered - FULL RESTART");
+    console.log("🔄 RESTART: Current battle type =", battleType);
     
-    console.log("🟤 useBattleActions: setShowingMilestone(false) triggered (new battle set)");
+    // DEBUG: Check function references
+    console.log("🔄 RESTART: Function references check:");
+    console.log("  - setRankingGenerated:", typeof setRankingGenerated === 'function' ? "Valid function" : "NOT A FUNCTION");
+    console.log("  - setBattlesCompleted:", typeof setBattlesCompleted === 'function' ? "Valid function" : "NOT A FUNCTION");
+    console.log("  - setBattleHistory:", typeof setBattleHistory === 'function' ? "Valid function" : "NOT A FUNCTION");
+    
+    console.log("🔄 RESTART: Setting showingMilestone = false");
     setShowingMilestone(false);
     
     // Reset all battle results
-    console.log("🚨 RESTART: Clearing battle results");
+    console.log("🔄 RESTART: Clearing battle results");
     setBattleResults([]);
     
     // Critical: Reset battles completed to 0 
-    console.log("🚨 RESTART: Setting battlesCompleted explicitly to 0");
+    console.log("🔄 RESTART: Setting battlesCompleted explicitly to 0");
     setBattlesCompleted(0);
     
     // Reset ranking flag
-    console.log("🚨 RESTART: Setting rankingGenerated explicitly to FALSE");
+    console.log("🔄 RESTART: Setting rankingGenerated explicitly to FALSE");
     setRankingGenerated(false);
-    console.log("🟢 setRankingGenerated explicitly set to FALSE.");
 
     // Reset battle history
-    console.log("🚨 RESTART: Clearing battle history array");
+    console.log("🔄 RESTART: Clearing battle history array");
     setBattleHistory([]);
-    console.log("🔄 setBattleHistory explicitly reset to empty array.");
 
     // Reset completion percentage
-    console.log("🚨 RESTART: Setting completionPercentage to 0");
+    console.log("🔄 RESTART: Setting completionPercentage to 0");
     setCompletionPercentage(0);
 
-    // ✅ Regenerate rankings explicitly after clearing suggestions
-    console.log("🚨 RESTART: Generating empty rankings");
+    // Regenerate rankings explicitly after clearing suggestions
+    console.log("🔄 RESTART: Generating empty rankings");
     generateRankings([]);
-    console.log("✅ Rankings regenerated explicitly after restart with empty suggestions");
-
-    // ✅ Reset all battle-related localStorage items for complete reset
-    console.log("🚨 RESTART: Clearing all localStorage keys");
+    
+    // Clear all battle-related localStorage items for complete reset
+    console.log("🔄 RESTART: Clearing all localStorage keys");
     const keysToRemove = [
       'pokemon-battle-recently-used', 
       'pokemon-battle-last-battle',
@@ -81,25 +87,34 @@ export const useBattleActions = (
       'pokemon-battle-tracking',
       'pokemon-battle-seen',
       'suggestionUsageCounts',
-      'pokemon-battle-count' // Add this key to ensure battle count is reset
+      'pokemon-battle-count'
     ];
     
     keysToRemove.forEach(key => {
+      const beforeValue = localStorage.getItem(key);
       localStorage.removeItem(key);
-      console.log(`✅ Cleared localStorage key: ${key}`);
+      console.log(`🔄 RESTART: Cleared localStorage key "${key}": was ${beforeValue ? `"${beforeValue}"` : "empty"}`);
     });
 
     // Dispatch custom event to notify components that we've done a complete reset
-    console.log("🚨 RESTART: Dispatching force-emergency-reset event");
+    console.log("🔄 RESTART: Creating force-emergency-reset event");
     const event = new CustomEvent('force-emergency-reset', {
-      detail: { source: 'restart-button', fullReset: true }
+      detail: { 
+        source: 'restart-button', 
+        fullReset: true,
+        timestamp: new Date().toISOString() 
+      }
     });
+    
+    console.log("🔄 RESTART: Dispatching force-emergency-reset event");
     document.dispatchEvent(event);
+    console.log("🔄 RESTART: Event dispatched");
     
     // Short delay before starting a new battle to ensure reset is processed
+    console.log("🔄 RESTART: Starting 100ms timeout before starting new battle");
     setTimeout(() => {
       // Start a new battle with the current battle type
-      console.log("🚨 RESTART: Calling startNewBattle with battleType:", battleType);
+      console.log("🔄 RESTART: Timeout completed, calling startNewBattle with battleType:", battleType);
       startNewBattle(battleType);
       
       toast({
@@ -108,7 +123,7 @@ export const useBattleActions = (
         duration: 3000
       });
       
-      console.log("🚨 RESTART: handleNewBattleSet completed");
+      console.log("✅ RESTART: handleNewBattleSet completed");
     }, 100);
     
   }, [

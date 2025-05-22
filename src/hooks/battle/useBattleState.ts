@@ -16,51 +16,76 @@ export const useBattleState = () => {
   const [battleType, setBattleType] = useState<BattleType>("pairs");
   const [forceReset, setForceReset] = useState(false);
 
-  // Add debug logging on state changes
+  // Add more detailed debug logging on state changes
   useEffect(() => {
-    console.log("🚨 STATE: battlesCompleted changed to:", battlesCompleted);
+    console.log("🔍 STATE CHANGE: battlesCompleted =", battlesCompleted, "| Timestamp:", new Date().toISOString());
   }, [battlesCompleted]);
 
   useEffect(() => {
-    console.log("🚨 STATE: battleResults length changed to:", battleResults.length);
+    console.log("🔍 STATE CHANGE: battleResults.length =", battleResults.length, "| Timestamp:", new Date().toISOString());
   }, [battleResults.length]);
 
   useEffect(() => {
-    console.log("🚨 STATE: currentBattle changed to:", 
-      currentBattle.map(p => `${p.name} (${p.id})`));
+    if (currentBattle.length > 0) {
+      console.log("🔍 STATE CHANGE: currentBattle =", 
+        currentBattle.map(p => `${p.name} (${p.id})`),
+        "| Timestamp:", new Date().toISOString());
+    }
   }, [currentBattle]);
 
-  // Listen for emergency reset event
+  // Listen for emergency reset event with enhanced logging
   useEffect(() => {
     const handleEmergencyReset = (event: Event) => {
       const customEvent = event as CustomEvent;
-      console.log("🚨 useBattleState detected emergency reset event from", customEvent.detail?.source || "unknown");
+      console.log("🚨 EMERGENCY RESET EVENT RECEIVED at", new Date().toISOString());
+      console.log("🚨 EMERGENCY RESET: Source =", customEvent.detail?.source || "unknown");
+      console.log("🚨 EMERGENCY RESET: Full reset =", customEvent.detail?.fullReset ? "YES" : "NO");
+      console.log("🚨 EMERGENCY RESET: Before reset - battlesCompleted =", battlesCompleted);
       
       // Update the battlesCompleted immediately
       setBattlesCompleted(0);
-      console.log("🚨 Emergency reset: Set battlesCompleted = 0");
+      console.log("🚨 EMERGENCY RESET: Set battlesCompleted = 0");
       
       // Also clear other battle state
       setBattleResults([]);
-      setBattleHistory([]);
-      setCompletionPercentage(0);
-      setRankingGenerated(false);
-      setForceReset(true);
+      console.log("🚨 EMERGENCY RESET: Cleared battleResults");
       
-      console.log("🚨 Emergency reset: All battle state reset");
+      setBattleHistory([]);
+      console.log("🚨 EMERGENCY RESET: Cleared battleHistory");
+      
+      setCompletionPercentage(0);
+      console.log("🚨 EMERGENCY RESET: Reset completionPercentage = 0");
+      
+      setRankingGenerated(false);
+      console.log("🚨 EMERGENCY RESET: Set rankingGenerated = false");
+      
+      setForceReset(true);
+      console.log("🚨 EMERGENCY RESET: Set forceReset = true");
+      
+      console.log("🚨 EMERGENCY RESET: All battle state reset completed");
     };
     
     document.addEventListener('force-emergency-reset', handleEmergencyReset);
+    console.log("🔧 useBattleState: Emergency reset event listener registered");
+    
     return () => {
       document.removeEventListener('force-emergency-reset', handleEmergencyReset);
+      console.log("🧹 useBattleState: Emergency reset event listener removed");
     };
-  }, []);
+  }, [battlesCompleted]);
 
   // Reset the forceReset flag after it's been used
   useEffect(() => {
     if (forceReset) {
-      const timer = setTimeout(() => setForceReset(false), 100);
-      return () => clearTimeout(timer);
+      console.log("⏱️ forceReset is true, scheduling reset to false");
+      const timer = setTimeout(() => {
+        setForceReset(false);
+        console.log("⏱️ forceReset set back to false");
+      }, 100);
+      return () => {
+        clearTimeout(timer);
+        console.log("⏱️ forceReset timer cleared");
+      };
     }
   }, [forceReset]);
 

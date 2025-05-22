@@ -46,54 +46,73 @@ export const useBattleStateActions = ({
   // Handle generation change
   const handleGenerationChange = (value: string) => {
     const genId = parseInt(value);
-    console.log("🚨 Generation change to:", genId);
+    console.log("🔄 GENERATION CHANGE: Changing to generation:", genId);
+    console.log("🔄 GENERATION CHANGE: Current battlesCompleted before change:", localStorage.getItem("pokemon-battle-count"));
+    
     setSelectedGeneration(genId);
     localStorage.setItem("pokemon-ranker-generation", value);
+    console.log("🔄 GENERATION CHANGE: Saved generation", value, "to localStorage");
+    
     resetBattleState();
+    console.log("🔄 GENERATION CHANGE: Battle state reset completed");
   };
 
   // Handle battle type change
   const handleBattleTypeChange = (value: BattleType) => {
-    console.log("🚨 Battle type change to:", value);
+    console.log("🔄 BATTLE TYPE CHANGE: Changing to:", value);
+    console.log("🔄 BATTLE TYPE CHANGE: Current battlesCompleted before change:", localStorage.getItem("pokemon-battle-count"));
+    
     localStorage.setItem("pokemon-ranker-battle-type", value);
+    console.log("🔄 BATTLE TYPE CHANGE: Saved battle type", value, "to localStorage");
+    
     resetBattleState();
+    console.log("🔄 BATTLE TYPE CHANGE: Battle state reset completed");
   };
 
-  // Reset battle state
+  // Reset battle state with detailed logging
   const resetBattleState = () => {
-    console.log("🚨 resetBattleState called - normal reset from generation/type change");
+    console.log("🔄 RESET STATE: resetBattleState called - normal reset from generation/type change");
+    console.log("🔄 RESET STATE: Current localStorage 'pokemon-battle-count':", localStorage.getItem("pokemon-battle-count"));
     
     setRankingGenerated(false);
-    console.log("🟢 setRankingGenerated explicitly set to FALSE.");
+    console.log("🔄 RESET STATE: Set rankingGenerated = false");
   
     setBattleResults([]);
+    console.log("🔄 RESET STATE: Cleared battleResults");
+    
     setBattlesCompleted(0);
+    console.log("🔄 RESET STATE: Set battlesCompleted = 0");
+    
     setBattleHistory([]);
-    console.log("🔄 setBattleHistory explicitly reset to empty array.");
+    console.log("🔄 RESET STATE: Cleared battleHistory");
 
     setShowingMilestone(false);
+    console.log("🔄 RESET STATE: Set showingMilestone = false");
+    
     setCompletionPercentage(0);
+    console.log("🔄 RESET STATE: Set completionPercentage = 0");
     
     // Remove battle count from localStorage
+    const beforeValue = localStorage.getItem('pokemon-battle-count');
     localStorage.removeItem('pokemon-battle-count');
-    console.log("✅ Cleared pokemon-battle-count from localStorage");
+    console.log(`🔄 RESET STATE: Removed 'pokemon-battle-count' from localStorage: was ${beforeValue ? `"${beforeValue}"` : "empty"}`);
     
-    console.log("🚨 Pokemon count before filter:", allPokemon.length);
+    console.log("🔄 RESET STATE: Pokemon count before filter:", allPokemon.length);
     
     if (Array.isArray(allPokemon) && allPokemon.length > 1) {
       // Filter the Pokemon based on the current form filters
       const filteredPokemon = allPokemon.filter(shouldIncludePokemon);
-      console.log(`Form filters applied: ${filteredPokemon.length} of ${allPokemon.length} Pokemon included`);
+      console.log(`🔄 RESET STATE: Form filters applied: ${filteredPokemon.length} of ${allPokemon.length} Pokemon included`);
       
       // Only start a new battle if we have enough Pokemon after filtering
       if (filteredPokemon.length >= 2) {
-        console.log("🚨 Starting new battle after reset");
+        console.log("🔄 RESET STATE: Starting new battle after reset");
         startNewBattle(battleType);
       } else {
-        console.error("❌ Not enough Pokemon after applying filters");
+        console.error("🔄 RESET STATE: Not enough Pokemon after applying filters");
       }
     } else {
-      console.error("❌ Not starting new battle: invalid allPokemon", allPokemon);
+      console.error("🔄 RESET STATE: Not starting new battle: invalid allPokemon", allPokemon);
     }
   };
 
