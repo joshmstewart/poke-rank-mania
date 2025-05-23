@@ -1,4 +1,3 @@
-
 import { useMemo, useEffect, useRef, useCallback } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
@@ -193,8 +192,7 @@ export const useBattleStarterIntegration = (
     totalSuggestionsRef.current = pokemonWithSuggestions.length;
     console.log('[DEBUG useBattleStarterIntegration] Identified pokemonWithSuggestions.length:', pokemonWithSuggestions.length);
     
-    // CRUCIAL: Pass allPokemon to both allPokemon and availablePokemon parameters
-    // This ensures createBattleStarter has access to the complete Pokémon pool
+    // FIX: Pass the array of suggested Pokémon directly, not as a TopNOption parameter
     return createBattleStarter(
       allPokemon,  // Full Pokémon pool 
       allPokemon,  // Same as full pool to ensure maximum variety
@@ -210,7 +208,7 @@ export const useBattleStarterIntegration = (
         
         setCurrentBattle(pokemonList);
       },
-      pokemonWithSuggestions
+      pokemonWithSuggestions // This is correctly passing the array of suggested Pokémon
     );
   }, [allPokemon, currentRankings, setCurrentBattle]);
 
