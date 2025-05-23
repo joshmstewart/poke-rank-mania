@@ -5,6 +5,7 @@ import PokemonThumbnail from "./PokemonThumbnail";
 import RankingHeader from "./RankingHeader";
 import ShowMoreButton from "./ShowMoreButton";
 import ViewRankings from "./ViewRankings";
+import { RankingGrid } from "../ranking/RankingGrid";
 
 interface RankingDisplayProps {
   finalRankings: Pokemon[] | RankedPokemon[];
@@ -60,22 +61,22 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
     setDisplayCount(newCount);
   };
 
-  // Now we can conditionally render different UI based on props
+  // New condition to use the grid view
   if (isMilestoneView && hasRankedPokemon) {
     return (
-      <ViewRankings 
-        rankings={finalRankings as RankedPokemon[]}
-        activeTier={activeTier}
-        onSetActiveTier={onTierChange}
-        onSuggestRanking={onSuggestRanking}
-        onRemoveSuggestion={onRemoveSuggestion}
-        isMilestoneView={isMilestoneView}
-        battlesCompleted={battlesCompleted}
-        onContinueBattles={onContinueBattles}
-        onNewBattleSet={onNewBattleSet}
-        rankingGenerated={rankingGenerated}
-        onSaveRankings={onSaveRankings}
-      />
+      <div className="bg-white rounded-lg shadow p-6">
+        <RankingGrid 
+          displayRankings={finalRankings as RankedPokemon[]}
+          activeTier={activeTier}
+          isMilestoneView={isMilestoneView}
+          battlesCompleted={battlesCompleted}
+          totalCount={finalRankings.length}
+          displayCount={finalRankings.length}
+          onSuggestRanking={onSuggestRanking}
+          onRemoveSuggestion={onRemoveSuggestion}
+          onContinueBattles={onContinueBattles}
+        />
+      </div>
     );
   }
   
@@ -96,22 +97,14 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
         onSaveRankings={onSaveRankings}
       />
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-        {displayRankings.map((pokemon, index) => (
-          <PokemonThumbnail 
-            key={pokemon.id} 
-            pokemon={pokemon} 
-            index={index} 
-            onSuggestRanking={onSuggestRanking && isRankedPokemon(pokemon) ? onSuggestRanking : undefined}
-            onRemoveSuggestion={onRemoveSuggestion}
-          />
-        ))}
-      </div>
-      
-      <ShowMoreButton 
-        displayCount={displayCount} 
-        totalCount={finalRankings.length} 
-        onShowMore={handleShowMore} 
+      <RankingGrid
+        displayRankings={displayRankings as RankedPokemon[]}
+        activeTier={activeTier}
+        totalCount={finalRankings.length}
+        displayCount={displayCount}
+        onShowMore={handleShowMore}
+        onSuggestRanking={onSuggestRanking && hasRankedPokemon ? onSuggestRanking : undefined}
+        onRemoveSuggestion={onRemoveSuggestion}
       />
     </div>
   );

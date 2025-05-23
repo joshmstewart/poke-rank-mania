@@ -8,21 +8,21 @@ interface ShowMoreButtonProps {
   onShowMore: () => void;
 }
 
-const ShowMoreButton: React.FC<ShowMoreButtonProps> = ({ 
-  displayCount, 
-  totalCount, 
-  onShowMore 
+const ShowMoreButton: React.FC<ShowMoreButtonProps> = ({
+  displayCount,
+  totalCount,
+  onShowMore
 }) => {
-  if (totalCount <= displayCount) {
+  if (displayCount >= totalCount) {
     return null;
   }
   
   return (
-    <div className="mt-4 text-center">
-      <Button 
-        variant="outline" 
+    <div className="flex justify-center mt-4">
+      <Button
+        variant="outline"
         onClick={onShowMore}
-        className="px-8"
+        className="w-full max-w-xs"
       >
         Show More ({displayCount}/{totalCount})
       </Button>

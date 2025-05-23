@@ -1,9 +1,10 @@
+
 import React, { useState } from 'react';
 import { RankedPokemon, TopNOption } from "@/services/pokemon";
-import { RankingTable } from "./RankingTable";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
 import TierSelector from "@/components/battle/TierSelector";
+import { RankingGrid } from "./RankingGrid";
 
 interface RankingResultsProps {
   confidentRankedPokemon: RankedPokemon[];
@@ -58,8 +59,8 @@ export const RankingResults: React.FC<RankingResultsProps> = ({
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow">
-        <RankingTable 
+      <div className="bg-white rounded-lg shadow p-6">
+        <RankingGrid 
           displayRankings={confidentRankedPokemon} 
           activeTier={currentTier}
           onSuggestRanking={onSuggestRanking}

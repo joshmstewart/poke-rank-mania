@@ -1,9 +1,9 @@
 
 import React from "react";
 import { RankedPokemon, TopNOption } from "@/services/pokemon";
-import { RankingTable } from "@/components/ranking/RankingTable";
 import TierSelector from "./TierSelector";
 import RankingHeader from "./RankingHeader";
+import { RankingGrid } from "../ranking/RankingGrid";
 
 interface ViewRankingsProps {
   rankings: RankedPokemon[];
@@ -50,9 +50,11 @@ const ViewRankings: React.FC<ViewRankingsProps> = ({
           onSaveRankings={onSaveRankings || (() => {})}
         />
         
-        <RankingTable 
+        <RankingGrid 
           displayRankings={rankings} 
           activeTier={activeTier}
+          isMilestoneView={isMilestoneView}
+          battlesCompleted={battlesCompleted}
           onSuggestRanking={onSuggestRanking}
           onRemoveSuggestion={onRemoveSuggestion}
         />
@@ -73,7 +75,7 @@ const ViewRankings: React.FC<ViewRankingsProps> = ({
         )}
       </div>
       
-      <RankingTable 
+      <RankingGrid 
         displayRankings={rankings} 
         activeTier={activeTier}
         onSuggestRanking={onSuggestRanking}

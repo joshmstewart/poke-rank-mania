@@ -1,24 +1,14 @@
 
-import React, { useState, useEffect } from 'react';
-import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from "@/components/ui/hover-card";
-import {
-  ToggleGroup,
-  ToggleGroupItem
-} from "@/components/ui/toggle-group";
+import React from "react";
 import { RankedPokemon } from "@/services/pokemon";
-import { ArrowUp, ArrowDown } from "lucide-react";
-import { getPokemonGeneration } from "./rankingUtils";
-import { normalizePokedexNumber, capitalizeSpecialForms } from "@/utils/pokemonUtils";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+import { VotingArrows } from "./VotingArrows";
 
 interface PokemonSuggestionCardProps {
   pokemon: RankedPokemon;
   children: React.ReactNode;
-  onSuggestRanking: (pokemon: RankedPokemon, direction: "up" | "down", strength: 1 | 2 | 3) => void;
-  onRemoveSuggestion: (pokemonId: number) => void;
+  onSuggestRanking?: (pokemon: RankedPokemon, direction: "up" | "down", strength: 1 | 2 | 3) => void;
+  onRemoveSuggestion?: (pokemonId: number) => void;
 }
 
 export const PokemonSuggestionCard: React.FC<PokemonSuggestionCardProps> = ({
@@ -27,196 +17,56 @@ export const PokemonSuggestionCard: React.FC<PokemonSuggestionCardProps> = ({
   onSuggestRanking,
   onRemoveSuggestion
 }) => {
-  const [activeDirection, setActiveDirection] = useState<"up" | "down" | null>(null);
-  const [activeStrength, setActiveStrength] = useState<1 | 2 | 3>(1);
+  // If no suggestion handlers provided, just render the children
+  if (!onSuggestRanking || !onRemoveSuggestion) {
+    return <>{children}</>;
+  }
 
-  // CRITICAL FIX: Sync internal state when pokemon.suggestedAdjustment changes
-  useEffect(() => {
-    setActiveDirection(pokemon.suggestedAdjustment?.direction || null);
-    setActiveStrength(pokemon.suggestedAdjustment?.strength || 1);
-  }, [pokemon.suggestedAdjustment]);
-
-  // Get usage count from localStorage if available
-  const getUsageCount = () => {
-    try {
-      const suggestionUsageCounts = JSON.parse(localStorage.getItem('suggestionUsageCounts') || '{}');
-      return suggestionUsageCounts[pokemon.id] || 0;
-    } catch (e) {
-      return 0;
-    }
-  };
-  
-  const generation = getPokemonGeneration(pokemon.id);
-  
-  // Normalize the pokemon ID for display
-  const normalizedId = normalizePokedexNumber(pokemon.id);
-  
-  // Capitalize special forms in the name
-  const formattedName = capitalizeSpecialForms(pokemon.name);
-  
-  const handleDirectionChange = (direction: "up" | "down") => {
-    // If same direction is clicked, remove the suggestion
-    if (direction === activeDirection) {
-      setActiveDirection(null);
-      setActiveStrength(1);
-      onRemoveSuggestion(pokemon.id);
-    } else {
-      setActiveDirection(direction);
-      onSuggestRanking(pokemon, direction, activeStrength);
-    }
-  };
-  
-  const handleStrengthChange = (value: string) => {
-    if (!activeDirection) return;
-    
-    const strength = parseInt(value) as 1 | 2 | 3;
-    setActiveStrength(strength);
-    onSuggestRanking(pokemon, activeDirection, strength);
-  };
-  
   return (
-    <HoverCard openDelay={0} closeDelay={200}>
+    <HoverCard>
       <HoverCardTrigger asChild>
         <div className="relative cursor-pointer">
           {children}
-          {pokemon.suggestedAdjustment && !pokemon.suggestedAdjustment.used && (
-            <div 
-              className={`absolute -top-2 -right-2 px-1 rounded text-xs font-bold
-                ${pokemon.suggestedAdjustment.direction === "up" 
-                  ? "bg-green-100 text-green-800" 
-                  : "bg-red-100 text-red-800"
-                }`}
-            >
-              {pokemon.suggestedAdjustment.direction === "up" 
-                ? "↑".repeat(pokemon.suggestedAdjustment.strength)
-                : "↓".repeat(pokemon.suggestedAdjustment.strength)
-              }
-            </div>
-          )}
-          
-          {pokemon.suggestedAdjustment?.used && (
-            <div className="absolute -top-2 -right-2 px-1 rounded bg-gray-100 text-gray-500 text-xs font-bold">
-              ✓
-            </div>
-          )}
         </div>
       </HoverCardTrigger>
-      
-      <HoverCardContent className="w-72" align="end">
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center gap-3">
-            <img 
-              src={pokemon.image} 
-              alt={formattedName}
-              className="w-12 h-12 object-contain"
-            />
-            <div>
-              <h4 className="font-semibold">{formattedName}</h4>
-              <div className="text-xs text-muted-foreground">
-                #{normalizedId} • {generation?.name || "Unknown"}
-              </div>
-              {pokemon.types && (
-                <div className="flex gap-1 mt-1">
-                  {pokemon.types.map(type => (
-                    <span 
-                      key={type} 
-                      className="text-xs px-1.5 py-0.5 rounded bg-gray-100"
-                    >
-                      {type}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
+      <HoverCardContent className="w-64 p-4">
+        <div className="space-y-3">
+          <div className="flex justify-between items-center">
+            <h4 className="font-semibold">{pokemon.name}</h4>
+            <span className="text-sm text-muted-foreground">#{pokemon.id}</span>
           </div>
           
-          <div className="grid gap-1.5">
-            <div className="text-sm">
-              <div className="flex justify-between">
-                <span>Rating:</span>
-                <span className="font-mono">{pokemon.score?.toFixed(1)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Confidence:</span>
-                <span>{pokemon.confidence?.toFixed(0)}%</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Battles:</span>
-                <span>{pokemon.count}</span>
-              </div>
-              {pokemon.suggestedAdjustment && !pokemon.suggestedAdjustment.used && (
-                <div className="flex justify-between">
-                  <span>Suggestion uses:</span>
-                  <span>{getUsageCount()}/2</span>
+          <div className="grid grid-cols-2 gap-x-1 gap-y-1 text-sm">
+            <div className="text-muted-foreground">Rating:</div>
+            <div className="text-right font-mono">{pokemon.score?.toFixed(1) || "N/A"}</div>
+            
+            <div className="text-muted-foreground">Confidence:</div>
+            <div className="text-right">{pokemon.confidence?.toFixed(0)}%</div>
+            
+            <div className="text-muted-foreground">Battles:</div>
+            <div className="text-right">{pokemon.count || 0}</div>
+            
+            {pokemon.suggestedAdjustment && (
+              <>
+                <div className="text-muted-foreground">Suggestion:</div>
+                <div className="text-right">
+                  {pokemon.suggestedAdjustment.direction === "up" ? "↑" : "↓"}
+                  {pokemon.suggestedAdjustment.strength}
+                  {pokemon.suggestedAdjustment.used ? " (Used)" : ""}
                 </div>
-              )}
-            </div>
+              </>
+            )}
           </div>
           
           <div className="border-t pt-2">
-            <div className="text-xs font-medium mb-1">Suggest ranking adjustment:</div>
-            <div className="flex gap-2">
-              <ToggleGroup 
-                type="single" 
-                className="justify-start"
-                value={activeDirection || ""}
-              >
-                <ToggleGroupItem 
-                  value="up" 
-                  aria-label="Should rank higher"
-                  onClick={() => handleDirectionChange("up")}
-                  className={`${activeDirection === "up" ? "bg-green-100" : ""}`}
-                >
-                  <ArrowUp className="h-4 w-4" />
-                </ToggleGroupItem>
-                
-                <ToggleGroupItem
-                  value="down"
-                  aria-label="Should rank lower"
-                  onClick={() => handleDirectionChange("down")}
-                  className={`${activeDirection === "down" ? "bg-red-100" : ""}`}
-                >
-                  <ArrowDown className="h-4 w-4" />
-                </ToggleGroupItem>
-              </ToggleGroup>
-              
-              {activeDirection && (
-                <ToggleGroup
-                  type="single"
-                  value={activeStrength.toString()}
-                  onValueChange={handleStrengthChange}
-                >
-                  <ToggleGroupItem value="1">
-                    {activeDirection === "up" ? "↑" : "↓"}
-                  </ToggleGroupItem>
-                  <ToggleGroupItem value="2">
-                    {activeDirection === "up" ? "↑↑" : "↓↓"}
-                  </ToggleGroupItem>
-                  <ToggleGroupItem value="3">
-                    {activeDirection === "up" ? "↑↑↑" : "↓↓↓"}
-                  </ToggleGroupItem>
-                </ToggleGroup>
-              )}
+            <p className="text-sm font-medium mb-2">Suggest ranking adjustment:</p>
+            <div className="flex justify-center">
+              <VotingArrows 
+                pokemon={pokemon}
+                onSuggestRanking={onSuggestRanking}
+                onRemoveSuggestion={onRemoveSuggestion}
+              />
             </div>
-            
-            {activeDirection && (
-              <p className="text-xs text-muted-foreground mt-1.5">
-                This will suggest {formattedName} should be ranked 
-                <span className="font-medium"> {activeDirection === "up" ? "higher" : "lower"}</span> in the next battle.
-              </p>
-            )}
-            
-            {pokemon.suggestedAdjustment?.used && (
-              <p className="text-xs text-muted-foreground mt-1.5 italic">
-                This suggestion has already been used in battle.
-              </p>
-            )}
-            
-            {pokemon.suggestedAdjustment && !pokemon.suggestedAdjustment.used && getUsageCount() > 0 && (
-              <p className="text-xs text-muted-foreground mt-1.5">
-                This suggestion has been used in {getUsageCount()} battle(s) so far.
-              </p>
-            )}
           </div>
         </div>
       </HoverCardContent>

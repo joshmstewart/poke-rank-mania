@@ -1,3 +1,4 @@
+
 import React from "react";
 import {
   Table,
@@ -12,6 +13,7 @@ import { RankedPokemon, TopNOption } from "@/services/pokemon";
 import { getPokemonGeneration } from "./rankingUtils";
 import { PokemonSuggestionCard } from "./PokemonSuggestionCard";
 import { normalizePokedexNumber, capitalizeSpecialForms } from "@/utils/pokemonUtils";
+import { RankingGrid } from "./RankingGrid";
 
 // Get the confidence level as a string
 const getConfidenceLevel = (confidenceValue: number) => {
@@ -23,6 +25,7 @@ const getConfidenceLevel = (confidenceValue: number) => {
 interface RankingTableProps {
   displayRankings: RankedPokemon[];
   activeTier: TopNOption;
+  useGridView?: boolean;
   onSuggestRanking?: (pokemon: RankedPokemon, direction: "up" | "down", strength: 1 | 2 | 3) => void;
   onRemoveSuggestion?: (pokemonId: number) => void;
 }
@@ -30,8 +33,9 @@ interface RankingTableProps {
 export const RankingTable: React.FC<RankingTableProps> = ({ 
   displayRankings, 
   activeTier,
-  onSuggestRanking = () => {}, 
-  onRemoveSuggestion = () => {} 
+  useGridView = true, // Default to grid view as per the user's request
+  onSuggestRanking,
+  onRemoveSuggestion
 }) => {
   if (displayRankings.length === 0) {
     return (
@@ -41,7 +45,20 @@ export const RankingTable: React.FC<RankingTableProps> = ({
       </div>
     );
   }
+  
+  // Use the new grid view if requested
+  if (useGridView) {
+    return (
+      <RankingGrid
+        displayRankings={displayRankings}
+        activeTier={activeTier}
+        onSuggestRanking={onSuggestRanking}
+        onRemoveSuggestion={onRemoveSuggestion}
+      />
+    );
+  }
 
+  // Fall back to the table view if needed
   return (
     <Table>
       <TableHeader>
