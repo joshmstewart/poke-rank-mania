@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -77,8 +76,8 @@ const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
   };
   
   const handleImageError = () => {
-    // Store the current URL that just failed
-    const failedUrl = currentImageUrl;
+    // Critical: Store the current failing URL before any state changes
+    const failedUrl = currentImageUrl || initialUrl;
     
     if (retryCount === 0) {
       if (!failedUrl || failedUrl.trim() === '') {
@@ -87,6 +86,17 @@ const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
       } else {
         // Log the initial failure with the actual URL
         console.error(`🔴 Initial attempt to load '${currentImageType}' artwork for ${formattedName} (#${pokemon.id}) failed. URL: ${failedUrl}`);
+        
+        // Additional diagnostic: Check if the URL exists on server with fetch HEAD
+        fetch(failedUrl, { method: 'HEAD' })
+          .then(response => {
+            if (!response.ok) {
+              console.error(`🔴 Confirmed: URL ${failedUrl} returned ${response.status} from server`);
+            }
+          })
+          .catch(error => {
+            console.error(`🔴 Network error checking ${failedUrl}: ${error.message}`);
+          });
       }
     }
     

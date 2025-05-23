@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { getPokemonTypeColor } from "./utils/pokemonTypeColors";
@@ -33,7 +32,7 @@ const PokemonThumbnail: React.FC<PokemonThumbnailProps> = ({
   const normalizedId = normalizePokedexNumber(pokemon.id);
   const formattedName = capitalizeSpecialForms(pokemon.name);
   const generation = getPokemonGeneration(pokemon.id);
-  const [imageSrc, setImageSrc] = useState(getPreferredImageUrl(pokemon.id));
+  const [imageSrc, setImageSrc] = useState("");
   const [retryCount, setRetryCount] = useState(0);
   const [currentImageType, setCurrentImageType] = useState<PokemonImageType>(getPreferredImageType());
   const [initialUrl, setInitialUrl] = useState(""); // Store the initial URL for error reporting
@@ -81,8 +80,8 @@ const PokemonThumbnail: React.FC<PokemonThumbnailProps> = ({
   
   // Handle image load errors with improved diagnostics
   const handleImageError = () => {
-    // Store the current URL that just failed
-    const failedUrl = imageSrc;
+    // Critical: Store the current failing URL before any state changes
+    const failedUrl = imageSrc || initialUrl;
     
     if (retryCount === 0) {
       if (!failedUrl || failedUrl.trim() === '') {
@@ -91,6 +90,17 @@ const PokemonThumbnail: React.FC<PokemonThumbnailProps> = ({
       } else {
         // Log the initial failure with the actual URL
         console.error(`🔴 Initial attempt to load '${currentImageType}' artwork for ${formattedName} (#${pokemon.id}) failed. URL: ${failedUrl}`);
+        
+        // Additional diagnostic: Check if the URL exists on server with fetch HEAD
+        fetch(failedUrl, { method: 'HEAD' })
+          .then(response => {
+            if (!response.ok) {
+              console.error(`🔴 Confirmed: URL ${failedUrl} returned ${response.status} from server`);
+            }
+          })
+          .catch(error => {
+            console.error(`🔴 Network error checking ${failedUrl}: ${error.message}`);
+          });
       }
     }
     

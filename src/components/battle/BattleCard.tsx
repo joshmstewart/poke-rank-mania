@@ -1,4 +1,3 @@
-
 import React, { memo, useCallback, useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Pokemon } from "@/services/pokemon";
@@ -63,8 +62,8 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
   };
   
   const handleImageError = () => {
-    // Store the current URL that just failed
-    const failedUrl = currentImageUrl;
+    // Critical: Store the current failing URL before any state changes
+    const failedUrl = currentImageUrl || initialUrl;
     
     if (retryCount === 0) {
       if (!failedUrl || failedUrl.trim() === '') {
@@ -73,6 +72,17 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
       } else {
         // Log the initial failure with the actual URL
         console.error(`🔴 Initial attempt to load '${currentImageType}' artwork for ${formattedName} (#${pokemon.id}) failed. URL: ${failedUrl}`);
+        
+        // Additional diagnostic: Check if the URL exists on server with fetch HEAD
+        fetch(failedUrl, { method: 'HEAD' })
+          .then(response => {
+            if (!response.ok) {
+              console.error(`🔴 Confirmed: URL ${failedUrl} returned ${response.status} from server`);
+            }
+          })
+          .catch(error => {
+            console.error(`🔴 Network error checking ${failedUrl}: ${error.message}`);
+          });
       }
     }
     
