@@ -1,3 +1,4 @@
+
 export interface Pokemon {
   id: number;
   name: string;
@@ -11,6 +12,7 @@ export interface RankingSuggestion {
   direction: "up" | "down";
   strength: 1 | 2 | 3;
   used: boolean;
+  count?: number; // Add optional count property to track usage
 }
 
 export interface RankedPokemon extends Pokemon {

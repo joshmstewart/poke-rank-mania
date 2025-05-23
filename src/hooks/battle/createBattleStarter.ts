@@ -1,3 +1,4 @@
+
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { BattleType } from "./types";
 import { validateBattlePokemon } from "@/services/pokemon/api/utils";
@@ -136,6 +137,7 @@ export const createBattleStarter = (
     
     // Mark this suggestion as used
     if (selectedSuggestion.suggestedAdjustment && !selectedSuggestion.suggestedAdjustment.used) {
+      // Initialize count if it doesn't exist
       selectedSuggestion.suggestedAdjustment.count = (selectedSuggestion.suggestedAdjustment.count || 0) + 1;
       
       // Mark as fully used if we've seen it multiple times
