@@ -37,8 +37,26 @@ export const useBattleInteractions = (
     (id: number) => {
       if (currentBattle.length === 0) return;
 
-      // Get the updated selected Pokémon
-      const updatedSelected = [...selectedPokemon, id];
+      // FIX: For pair battles, we should not append to existing selections
+      // but instead set a single selection
+      let updatedSelected: number[];
+      
+      if (battleType === "pairs") {
+        // For pairs, we always set to just the newly selected Pokemon ID
+        updatedSelected = [id];
+      } else {
+        // For triplets, we accumulate selections (up to 2)
+        // If we already have 2 selections, replace the array with just this new ID
+        if (selectedPokemon.length >= 2) {
+          updatedSelected = [id];
+        } else {
+          updatedSelected = [...selectedPokemon, id];
+        }
+      }
+
+      // Update the selected Pokémon state
+      setSelectedPokemon(updatedSelected);
+      console.log(`🎮 handlePokemonSelect: Updated selection to [${updatedSelected.join(', ')}] for ${battleType} battle`);
 
       // For pairs mode, immediately process once a Pokémon is selected
       if (battleType === "pairs") {
@@ -50,13 +68,12 @@ export const useBattleInteractions = (
           { battle: currentBattleCopy, selected: updatedSelected }
         ];
         setBattleHistory(updatedHistory);
-console.log("🔄 Updating battle history explicitly. New length:", updatedHistory.length);
-
+        console.log("🔄 Updating battle history explicitly. New length:", updatedHistory.length);
         
         // Process the battle results
         setIsProcessing(true);
         try {
-          console.log("useBattleInteractions: Processing pair battle result");
+          console.log(`useBattleInteractions: Processing pair battle result with selection [${updatedSelected.join(', ')}]`);
           processBattleResult(updatedSelected, currentBattleCopy, battleType);
           console.log("useBattleInteractions: Battle processed successfully");
         } catch (e) {
@@ -65,9 +82,6 @@ console.log("🔄 Updating battle history explicitly. New length:", updatedHisto
           setIsProcessing(false);
         }
       }
-
-      // Update the selected Pokémon state
-      setSelectedPokemon(updatedSelected);
     },
     [
       battleHistory,
