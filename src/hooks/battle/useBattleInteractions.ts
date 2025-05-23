@@ -1,5 +1,5 @@
 
-import { useCallback, useState } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
 import { useBattleNavigation } from "./useBattleNavigation";
@@ -21,6 +21,7 @@ export const useBattleInteractions = (
   processBattleResult: (selectedPokemonIds: number[], currentBattlePokemon: Pokemon[], battleType: BattleType, currentSelectedGeneration?: number) => void
 ) => {
   const [isProcessing, setIsProcessing] = useState(false);
+  const [lastSelectedId, setLastSelectedId] = useState<number | null>(null);
 
   const { goBack: navigationGoBack } = useBattleNavigation(
     battleHistory,
@@ -33,24 +34,37 @@ export const useBattleInteractions = (
     setSelectedPokemon
   );
 
+  // Reset selectedPokemon when battle type changes or current battle changes
+  useEffect(() => {
+    console.log("🔄 Resetting selected pokemon due to battle change or type change");
+    setSelectedPokemon([]);
+    setLastSelectedId(null);
+  }, [battleType, setSelectedPokemon, currentBattle]);
+
   const handlePokemonSelect = useCallback(
     (id: number) => {
       if (currentBattle.length === 0) return;
+      
+      // Prevent duplicate processing of the same Pokemon
+      if (lastSelectedId === id && battleType === "pairs") {
+        console.log(`🔄 Ignoring duplicate selection of Pokemon ID: ${id}`);
+        return;
+      }
+      
       // Prevent processing if already in progress
       if (isProcessing) {
         console.log("🛑 handlePokemonSelect: Processing in progress, ignoring click");
         return;
       }
 
-      // For pair battles, we ALWAYS set to just the newly selected Pokemon ID
-      // For triplets, we may accumulate selections (up to 2)
+      // CRITICAL FIX: For pair battles, we ALWAYS set to just the newly selected Pokemon ID
+      // This must be a new array with just the single ID to prevent accumulation
       let updatedSelected: number[];
       
       if (battleType === "pairs") {
-        // For pairs, we always set to just the newly selected Pokemon ID
-        // This ensures we don't accumulate IDs from previous selections
-        updatedSelected = [id];
-        console.log(`🛠️ [FIX] pairs battle: Setting selection to a SINGLE ID: [${id}]`);
+        // For pairs, we always set to ONLY the newly selected Pokemon ID
+        updatedSelected = [id]; // <-- Critical fix: Always a new single-element array
+        console.log(`🛠️ [PAIR BATTLE FIX] Setting selection to a SINGLE ID: [${id}]`);
       } else {
         // For triplets, we accumulate selections (up to 2)
         // If we already have 2 selections, replace the array with just this new ID
@@ -61,8 +75,15 @@ export const useBattleInteractions = (
         }
       }
 
+      // Track this selection to prevent duplicates
+      setLastSelectedId(id);
+
       // Update the selected Pokémon state
+      console.log(`🔍 [BEFORE STATE UPDATE] Current selectedPokemon: [${selectedPokemon.join(', ')}]`);
+      console.log(`🔍 [STATE UPDATE] Setting selectedPokemon to: [${updatedSelected.join(', ')}]`);
       setSelectedPokemon(updatedSelected);
+      
+      // Log after state update (though this will show the previous state due to React's batching)
       console.log(`🎮 handlePokemonSelect: Updated selection to [${updatedSelected.join(', ')}] for ${battleType} battle`);
 
       // For pairs mode, immediately process once a Pokémon is selected
@@ -80,6 +101,8 @@ export const useBattleInteractions = (
         // Process the battle results
         setIsProcessing(true);
         try {
+          // CRITICAL FIX: Always use the updatedSelected array directly, not the state variable
+          // which might not have updated yet due to React's batching of state updates
           console.log(`[DEBUG useBattleInteractions] Passing to processBattleResult - selectedPokemonIds:`, updatedSelected);
           processBattleResult(updatedSelected, currentBattleCopy, battleType);
           console.log("useBattleInteractions: Battle processed successfully");
@@ -98,7 +121,8 @@ export const useBattleInteractions = (
       selectedPokemon,
       setBattleHistory,
       setSelectedPokemon,
-      isProcessing
+      isProcessing,
+      lastSelectedId
     ]
   );
 
