@@ -1,3 +1,4 @@
+
 import React, { memo, useCallback, useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Pokemon } from "@/services/pokemon";
@@ -78,6 +79,8 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
           .then(response => {
             if (!response.ok) {
               console.error(`🔴 Confirmed: URL ${failedUrl} returned ${response.status} from server`);
+            } else {
+              console.error(`❓ Unexpected: URL ${failedUrl} exists on server but image still failed to load`);
             }
           })
           .catch(error => {

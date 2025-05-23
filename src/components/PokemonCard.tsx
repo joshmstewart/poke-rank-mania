@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -92,6 +93,8 @@ const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
           .then(response => {
             if (!response.ok) {
               console.error(`🔴 Confirmed: URL ${failedUrl} returned ${response.status} from server`);
+            } else {
+              console.error(`❓ Unexpected: URL ${failedUrl} exists on server but image still failed to load`);
             }
           })
           .catch(error => {

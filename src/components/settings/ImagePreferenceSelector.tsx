@@ -88,17 +88,19 @@ export const getPreferredImageUrl = (pokemonId: number, fallbackLevel?: number):
     const fallbackIndex = Math.min(fallbackLevel - 1, fallbackTypes.length - 1);
     const fallbackType = fallbackTypes[fallbackIndex];
     
-    console.log(`🖼️ Pokémon #${pokemonId}: Original preference '${preference}' failed. Using fallback style '${fallbackType}', level: ${fallbackLevel}`);
-    return getUrlForType(fallbackType);
+    const url = getUrlForType(fallbackType);
+    console.log(`🖼️ Pokémon #${pokemonId}: Original preference '${preference}' failed. Using fallback style '${fallbackType}', level: ${fallbackLevel} - URL: ${url}`);
+    return url;
   }
   
   // No fallback specified, just use preferred type
-  // Reduce verbosity - only log when fallback is needed or during development
+  // Always log the initial URL being generated
+  const url = getUrlForType(preference);
   if (process.env.NODE_ENV === "development") {
-    console.log(`🖼️ Getting image for Pokémon #${pokemonId} with preference: ${preference}${fallbackLevel ? `, fallback: ${fallbackLevel}` : ''}`);
+    console.log(`🖼️ Getting initial image URL for Pokémon #${pokemonId} with preference: ${preference} - URL: ${url}`);
   }
   
-  return getUrlForType(preference);
+  return url;
 };
 
 // Export image options for use elsewhere

@@ -30,7 +30,7 @@ export function getPokemonImageUrl(id: number, fallbackLevel: number = 0): strin
     
     // Only log during development or if explicitly debugging
     if (process.env.NODE_ENV === "development") {
-      console.log(`🖼️ Getting image for Pokémon #${id} with preference: ${preferredType} - URL: ${url}`);
+      console.log(`🖼️ Getting initial image URL for Pokémon #${id} with preference: ${preferredType} - URL: ${url}`);
     }
     
     return url;
