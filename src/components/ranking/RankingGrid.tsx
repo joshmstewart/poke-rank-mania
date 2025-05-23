@@ -72,36 +72,43 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
           const typeColor = getPokemonTypeColor(pokemon);
           const generation = getPokemonGeneration(pokemon.id);
           const isFrozen = pokemon.isFrozenForTier && pokemon.isFrozenForTier[activeTier.toString()];
+          const hasSuggestion = pokemon.suggestedAdjustment && !pokemon.suggestedAdjustment.used;
+          const hasUsedSuggestion = pokemon.suggestedAdjustment?.used;
 
           return (
             <div 
               key={pokemon.id} 
-              className={`relative group overflow-hidden bg-white rounded-lg border ${isFrozen ? 'border-gray-200 opacity-80' : 'border-gray-200 hover:border-primary hover:shadow-md'} transition-all`}
+              className={`relative group overflow-hidden bg-white rounded-lg border ${
+                isFrozen ? 'border-gray-200 opacity-80' : 'border-gray-200 hover:border-primary hover:shadow-md'
+              } transition-all`}
             >
               {/* Rank number */}
               <div className={`absolute top-2 left-2 z-10 ${typeColor} text-white rounded-full w-8 h-8 flex items-center justify-center shadow-md font-bold`}>
                 {index + 1}
               </div>
               
-              {/* Suggestion indicator */}
-              {pokemon.suggestedAdjustment && !pokemon.suggestedAdjustment.used && (
+              {/* Stats bubble */}
+              <div className="absolute top-2 right-2 px-1.5 py-0.5 bg-gray-100 text-gray-700 rounded text-xs font-medium opacity-70 hover:opacity-100 z-10">
+                {pokemon.score?.toFixed(1) || "??"} • {pokemon.confidence?.toFixed(0) || "?"}% • {pokemon.count || 0}
+              </div>
+              
+              {/* Suggestion indicator - small permanent indicator */}
+              {hasSuggestion && (
                 <div 
-                  className={`absolute top-2 right-2 px-1.5 py-0.5 rounded text-xs font-bold z-10
+                  className={`absolute bottom-2 right-2 w-4 h-4 rounded-full z-10
                     ${pokemon.suggestedAdjustment.direction === "up" 
-                      ? "bg-green-100 text-green-800" 
-                      : "bg-red-100 text-red-800"
-                    }`}
+                      ? "bg-green-500" 
+                      : "bg-red-500"
+                    } flex items-center justify-center text-white text-xs font-bold`}
+                  title={`Suggested to rank ${pokemon.suggestedAdjustment.direction === "up" ? "higher" : "lower"} (x${pokemon.suggestedAdjustment.strength})`}
                 >
-                  {pokemon.suggestedAdjustment.direction === "up" 
-                    ? "↑".repeat(pokemon.suggestedAdjustment.strength)
-                    : "↓".repeat(pokemon.suggestedAdjustment.strength)
-                  }
+                  {pokemon.suggestedAdjustment.strength}
                 </div>
               )}
               
               {/* Used suggestion checkmark */}
-              {pokemon.suggestedAdjustment?.used && (
-                <div className="absolute top-2 right-2 px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 text-xs font-bold z-10">
+              {hasUsedSuggestion && (
+                <div className="absolute bottom-2 right-2 w-4 h-4 rounded-full bg-gray-400 flex items-center justify-center text-white text-xs font-bold z-10" title="This suggestion has been used">
                   ✓
                 </div>
               )}
@@ -110,7 +117,7 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
               <div className={`p-4 flex items-center justify-center ${typeColor} bg-opacity-10`}>
                 <img 
                   src={pokemon.image} 
-                  alt={formattedName}
+                  alt={formattedName} 
                   className={`h-24 object-contain ${isFrozen ? "opacity-70" : ""}`}
                 />
               </div>
@@ -119,23 +126,11 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
               <div className="p-3 border-t border-gray-100">
                 <div className="font-medium truncate text-center">{formattedName}</div>
                 <div className="text-sm text-center text-muted-foreground">#{normalizedId}</div>
-                
-                {/* Stats that appear on hover */}
-                <div className="mt-2 grid grid-cols-2 gap-x-2 gap-y-1 text-xs">
-                  <div className="text-muted-foreground">Rating:</div>
-                  <div className="text-right font-mono">{pokemon.score?.toFixed(1) || "N/A"}</div>
-                  
-                  <div className="text-muted-foreground">Confidence:</div>
-                  <div className="text-right">{pokemon.confidence?.toFixed(0)}%</div>
-                  
-                  <div className="text-muted-foreground">Battles:</div>
-                  <div className="text-right">{pokemon.count || 0}</div>
-                </div>
               </div>
               
-              {/* Voting arrows component - appear on hover */}
-              {onSuggestRanking && onRemoveSuggestion && (
-                <div className="absolute right-0 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+              {/* Voting arrows component - appear on hover over the entire card */}
+              {onSuggestRanking && onRemoveSuggestion && !isFrozen && (
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity">
                   <VotingArrows 
                     pokemon={pokemon} 
                     onSuggestRanking={onSuggestRanking}
