@@ -10,6 +10,9 @@ const areBattlesIdentical = (battle1: Pokemon[], previousBattleIds: Set<number>)
   return battle1.every(p => previousBattleIds.has(p.id));
 };
 
+// CRITICAL FIX: Add global cache of battle starters to avoid recreation
+const globalBattleStarterCache = new Map<string, ReturnType<typeof createBattleStarterInternal>>();
+
 export const createBattleStarter = (
   pokemonList: Pokemon[],
   allPokemonForGeneration: Pokemon[],
@@ -19,7 +22,51 @@ export const createBattleStarter = (
   isPokemonFrozenForTier?: (pokemonId: number, tier: TopNOption) => boolean
 ) => {
   console.log('[DEBUG createBattleStarter] INSTANCE: New createBattleStarter instance created.');
+  
+  // Create a cache key based on key parameters
+  const cacheKey = `${pokemonList.length}-${allPokemonForGeneration.length}-${currentFinalRankings.length}`;
+  
+  // If we have a cached instance, return it
+  if (globalBattleStarterCache.has(cacheKey)) {
+    console.log(`[DEBUG createBattleStarter] Using cached instance for key: ${cacheKey}`);
+    return globalBattleStarterCache.get(cacheKey)!;
+  }
+  
+  // Create a new instance
+  const instance = createBattleStarterInternal(
+    pokemonList,
+    allPokemonForGeneration,
+    currentFinalRankings,
+    setCurrentBattle,
+    activeTier,
+    isPokemonFrozenForTier
+  );
+  
+  // Cache the instance
+  globalBattleStarterCache.set(cacheKey, instance);
+  console.log(`[DEBUG createBattleStarter] Cached new instance with key: ${cacheKey}`);
+  console.log(`[DEBUG createBattleStarter] Cache size: ${globalBattleStarterCache.size}`);
+  
+  // Clean up cache if it gets too large
+  if (globalBattleStarterCache.size > 5) {
+    // Remove the oldest entry
+    const oldestKey = globalBattleStarterCache.keys().next().value;
+    globalBattleStarterCache.delete(oldestKey);
+    console.log(`[DEBUG createBattleStarter] Removed oldest cache entry with key: ${oldestKey}`);
+  }
+  
+  return instance;
+};
 
+// Internal implementation that creates the actual battle starter
+const createBattleStarterInternal = (
+  pokemonList: Pokemon[],
+  allPokemonForGeneration: Pokemon[],
+  currentFinalRankings: RankedPokemon[],
+  setCurrentBattle: (battle: Pokemon[]) => void,
+  activeTier: TopNOption = "All",
+  isPokemonFrozenForTier?: (pokemonId: number, tier: TopNOption) => boolean
+) => {
   // Use plain objects instead of hooks
   const recentlySeenPokemon = new Set<number>();
   const previousBattleIds = new Set<number>(); // Track IDs of previous battle for duplicate detection

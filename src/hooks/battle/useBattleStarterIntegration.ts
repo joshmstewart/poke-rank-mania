@@ -21,6 +21,8 @@ export const useBattleStarterIntegration = (
   setSelectedPokemon: React.Dispatch<React.SetStateAction<number[]>>,
   markSuggestionFullyUsed?: (pokemon: RankedPokemon, fullyUsed: boolean) => void
 ) => {
+  console.log('[DEBUG useBattleStarterIntegration] Hook called with allPokemon.length:', allPokemon.length, 'currentRankings.length:', currentRankings.length);
+  
   const processedSuggestionBattlesRef = useRef<Set<number>>(new Set());
   const suggestionBattleCountRef = useRef(0);
   const forcedPriorityBattlesRef = useRef(0);
@@ -35,6 +37,42 @@ export const useBattleStarterIntegration = (
   const battleGenerationInProgressRef = useRef(false); // Track if we're currently generating a battle
   const initializationCompleteRef = useRef(false); // Track if initialization is complete
   const initialGetBattleFiredRef = useRef(false); // Track if initial battle has been started
+  
+  // CRITICAL FIX: Create a stable reference to the current Pokemon and rankings
+  // This prevents recreating the battleStarter instance on minor ranking changes
+  const stablePokemonRef = useRef<Pokemon[]>(allPokemon);
+  const stableRankingsRef = useRef<RankedPokemon[]>(currentRankings);
+  
+  // Only update these refs when there are significant changes
+  useEffect(() => {
+    console.log('[DEBUG useBattleStarterIntegration] useEffect StablePokemonUpdate: Fired. allPokemon.length:', 
+                allPokemon.length, 'stablePokemonRef.current.length:', stablePokemonRef.current?.length || 0);
+    
+    // Only update if we have Pokemon and the length has changed significantly
+    if (allPokemon && allPokemon.length > 0 && 
+        (!stablePokemonRef.current || 
+         Math.abs(allPokemon.length - stablePokemonRef.current.length) > 5)) {
+      console.log('[DEBUG useBattleStarterIntegration] Updating stablePokemonRef from', 
+                  stablePokemonRef.current?.length || 0, 'to', allPokemon.length);
+      stablePokemonRef.current = [...allPokemon];
+    }
+  }, [allPokemon]);
+  
+  // Only update rankings ref when there are significant changes
+  useEffect(() => {
+    console.log('[DEBUG useBattleStarterIntegration] useEffect StableRankingsUpdate: Fired. currentRankings.length:', 
+                currentRankings.length, 'stableRankingsRef.current.length:', stableRankingsRef.current?.length || 0);
+    
+    // Only update if rankings changed significantly (>10% change)
+    if (currentRankings && currentRankings.length > 0 &&
+        (!stableRankingsRef.current || 
+         Math.abs(currentRankings.length - stableRankingsRef.current.length) > 
+         Math.max(10, stableRankingsRef.current.length * 0.1))) {
+      console.log('[DEBUG useBattleStarterIntegration] Updating stableRankingsRef from', 
+                  stableRankingsRef.current?.length || 0, 'to', currentRankings.length);
+      stableRankingsRef.current = [...currentRankings];
+    }
+  }, [currentRankings]);
 
   // Log initial value of forcedPriorityBattlesRef
   console.log('[DEBUG useBattleStarterIntegration] forcedPriorityBattlesRef initialized to:', forcedPriorityBattlesRef.current);
@@ -174,12 +212,25 @@ export const useBattleStarterIntegration = (
     };
   }, [currentRankings]);
 
+  // CRITICAL FIX: Use stable references in the useMemo dependency array
+  // and check inside the callback if we actually need a new instance
+  const battleStarterInstanceRef = useRef<ReturnType<typeof createBattleStarter> | null>(null);
+
+  // FIXED: The battleStarter should be created once and persisted
   const battleStarter = useMemo(() => {
     console.log('[DEBUG useBattleStarterIntegration] useMemo (battleStarterInstance): Re-evaluating. allPokemon.length:', allPokemon.length, 'currentRankings.length:', currentRankings.length);
     
     if (!allPokemon || allPokemon.length === 0) {
       console.log("[DEBUG useBattleStarterIntegration] No Pokémon available, can't create battleStarter");
       return null;
+    }
+    
+    // CRITICAL FIX: Only create a new instance if we don't have one yet
+    // or if there was a significant change in the Pokemon pool
+    if (battleStarterInstanceRef.current && stablePokemonRef.current && 
+        Math.abs(stablePokemonRef.current.length - allPokemon.length) < 10) {
+      console.log("[DEBUG useBattleStarterIntegration] Using existing battleStarter instance");
+      return battleStarterInstanceRef.current;
     }
 
     // Log detailed diagnostics about the Pokémon pools
@@ -205,8 +256,7 @@ export const useBattleStarterIntegration = (
     totalSuggestionsRef.current = pokemonWithSuggestions.length;
     console.log('[DEBUG useBattleStarterIntegration] Identified pokemonWithSuggestions.length:', pokemonWithSuggestions.length);
     
-    // Fix: Pass "All" as the activeTier parameter (5th parameter) which is of type TopNOption
-    // We cannot pass pokemonWithSuggestions directly as the 5th parameter
+    // Create battle starter with "All" as the TopNOption parameter
     const battleStarterInstance = createBattleStarter(
       allPokemon,  // Full Pokémon pool 
       allPokemon,  // Same as full pool to ensure maximum variety
@@ -234,17 +284,21 @@ export const useBattleStarterIntegration = (
     );
 
     // Store the suggestions array in a ref to access it in startNewBattle
-    // This is our workaround since we can't pass it directly to createBattleStarter
-    // as it doesn't have a parameter that accepts RankedPokemon[]
     const suggestionsRef = useRef(pokemonWithSuggestions);
     suggestionsRef.current = pokemonWithSuggestions;
     
-    // Add the ref to the battleStarterInstance object so we can access it later
-    return {
+    // Store the instance in our ref for future checks
+    battleStarterInstanceRef.current = {
       ...battleStarterInstance,
       getSuggestions: () => suggestionsRef.current
     };
-  }, [allPokemon, currentRankings, setCurrentBattle]);
+    
+    return battleStarterInstanceRef.current;
+  }, [
+    // CRITICAL FIX: Only re-evaluate when these REALLY change
+    allPokemon.length > 0 ? allPokemon.length : 0,
+    setCurrentBattle
+  ]); 
 
   const startNewBattle = useCallback((battleType: BattleType) => {
     console.log('[DEBUG useBattleStarterIntegration] startNewBattle: Called. battleType:', battleType, 
