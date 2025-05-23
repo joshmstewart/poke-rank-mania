@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { getPokemonTypeColor } from "./utils/pokemonTypeColors";
@@ -59,14 +58,25 @@ const PokemonThumbnail: React.FC<PokemonThumbnailProps> = ({
     const url = getPreferredImageUrl(pokemon.id);
     
     if (process.env.NODE_ENV === "development") {
-      console.log(`🖼️ PokemonThumbnail: Loading "${preference}" image for ${formattedName} (#${pokemon.id})`);
+      console.log(`🖼️ PokemonThumbnail: Loading "${preference}" image for ${formattedName} (#${pokemon.id}): ${url}`);
+      
+      // Check if image exists
+      fetch(url, { method: 'HEAD' })
+        .then(response => {
+          if (!response.ok) {
+            console.warn(`⚠️ Thumbnail image check: ${url} returned ${response.status}`);
+          }
+        })
+        .catch(error => {
+          console.warn(`⚠️ Thumbnail image check failed: ${error.message}`);
+        });
     }
     
     setImageSrc(url);
     setRetryCount(0);
   }, [pokemon.id, formattedName]);
   
-  // Handle image load errors with improved logging
+  // Handle image load errors with improved diagnostics
   const handleImageError = () => {
     if (retryCount < 3) {
       const nextRetry = retryCount + 1;

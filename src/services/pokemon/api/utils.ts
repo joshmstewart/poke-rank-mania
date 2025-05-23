@@ -5,15 +5,10 @@ import { PokemonImageType, getPreferredImageType, POKEMON_IMAGE_PREFERENCE_KEY, 
 export function getPokemonImageUrl(id: number, fallbackLevel: number = 0): string {
   const preferredType = getPreferredImageType();
   
-  // Log only on first attempt or when fallback is happening for diagnostic purposes
-  if (fallbackLevel > 0) {
-    console.log(`🖼️ Image for Pokémon #${id}: Using fallback level ${fallbackLevel} because preferred "${preferredType}" type failed to load`);
-  } else if (process.env.NODE_ENV === "development") {
-    // Only log initial image retrieval during development
-    console.log(`🖼️ Getting image for Pokémon #${id} with preference: ${preferredType}`);
-  }
+  // Define fallback order - default sprites first as they're most reliable
+  const fallbackOrder: PokemonImageType[] = ["default", "official", "home", "dream"];
   
-  // Generate URLs in order of preference
+  // Generate URLs for each image type
   const getImageUrl = (type: PokemonImageType): string => {
     switch(type) {
       case "official":
@@ -28,16 +23,19 @@ export function getPokemonImageUrl(id: number, fallbackLevel: number = 0): strin
     }
   };
 
-  // Define fallback order - default sprites first as they're most reliable
-  const fallbackOrder: PokemonImageType[] = ["default", "official", "home", "dream"];
-  
   // If we're at fallback level 0, use the preferred type
   if (fallbackLevel === 0) {
     const url = getImageUrl(preferredType);
+    
+    // Only log during development or if explicitly debugging
+    if (process.env.NODE_ENV === "development") {
+      console.log(`🖼️ Getting image for Pokémon #${id} with preference: ${preferredType}`);
+    }
+    
     return url;
   }
   
-  // Otherwise, use fallbacks in the defined priority order, skipping the already-tried preferred type
+  // For fallbacks, determine which style to use
   let fallbackTypes = [...fallbackOrder];
   // Remove the preferred type from the list since it was already tried
   fallbackTypes = fallbackTypes.filter(type => type !== preferredType);
@@ -50,9 +48,9 @@ export function getPokemonImageUrl(id: number, fallbackLevel: number = 0): strin
   const fallbackType = fallbackTypes[fallbackIndex];
   const url = getImageUrl(fallbackType);
   
-  if (process.env.NODE_ENV === "development") {
-    console.log(`🖼️ Pokémon #${id}: Using "${fallbackType}" style as fallback #${fallbackLevel} after "${preferredType}" failed`);
-  }
+  // Make it very clear in logs which style is being used as fallback
+  console.log(`🖼️ Pokémon #${id}: Original preference '${preferredType}' failed. Using fallback style '${fallbackType}', level: ${fallbackLevel}`);
+  
   return url;
 }
 

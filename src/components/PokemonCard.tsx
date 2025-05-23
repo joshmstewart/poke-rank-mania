@@ -41,8 +41,22 @@ const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
     const url = getPreferredImageUrl(pokemon.id);
     setCurrentImageUrl(url);
     
+    // Add debug info to help investigate why official artwork might be failing
     if (process.env.NODE_ENV === "development") {
-      console.log(`🖼️ PokemonCard: Loading "${preference}" image for ${formattedName} (#${pokemon.id})`);
+      console.log(`🖼️ PokemonCard: Loading "${preference}" image for ${formattedName} (#${pokemon.id}): ${url}`);
+      
+      // Verify if the URL actually exists with a HEAD request
+      fetch(url, { method: 'HEAD' })
+        .then(response => {
+          if (!response.ok) {
+            console.warn(`⚠️ Image URL check: ${url} returned status ${response.status} - likely to fail loading`);
+          } else {
+            console.log(`✅ Image URL check: ${url} exists on server`);
+          }
+        })
+        .catch(error => {
+          console.warn(`⚠️ Image URL check failed for ${url}: ${error.message}`);
+        });
     }
   }, [pokemon.id, formattedName]);
 
@@ -65,7 +79,8 @@ const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
       const nextRetry = retryCount + 1;
       const nextUrl = getPreferredImageUrl(pokemon.id, nextRetry);
       
-      console.log(`❌ Image load failed for ${formattedName} (#${pokemon.id}) with type "${currentImageType}" - trying fallback #${nextRetry}`);
+      // Enhanced error logging to diagnose why official artwork is failing
+      console.log(`❌ Image load failed for ${formattedName} (#${pokemon.id}) with type "${currentImageType}" - trying fallback #${nextRetry}: ${nextUrl}`);
       
       setRetryCount(nextRetry);
       setCurrentImageUrl(nextUrl);

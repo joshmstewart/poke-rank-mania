@@ -1,4 +1,3 @@
-
 import React, { memo, useCallback, useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Pokemon } from "@/services/pokemon";
@@ -32,7 +31,17 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
     setCurrentImageUrl(url);
     
     if (process.env.NODE_ENV === "development") {
-      console.log(`🖼️ BattleCard: Loading "${preference}" image for ${formattedName} (#${pokemon.id})`);
+      console.log(`🖼️ BattleCard: Loading "${preference}" image for ${formattedName} (#${pokemon.id}): ${url}`);
+      
+      fetch(url, { method: 'HEAD' })
+        .then(response => {
+          if (!response.ok) {
+            console.warn(`⚠️ BattleCard image URL check: ${url} returned status ${response.status}`);
+          }
+        })
+        .catch(error => {
+          console.warn(`⚠️ BattleCard image URL check failed for ${url}: ${error.message}`);
+        });
     }
   }, [pokemon.id, formattedName]);
 
@@ -53,10 +62,12 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
   const handleImageError = () => {
     if (retryCount < 3) {
       const nextRetry = retryCount + 1;
-      console.log(`❌ Battle image load failed for ${formattedName} with type "${currentImageType}" - trying fallback #${nextRetry}`);
+      const nextUrl = getPreferredImageUrl(pokemon.id, nextRetry);
+      
+      console.log(`❌ Battle image load failed for ${formattedName} (#${pokemon.id}) with type "${currentImageType}" - trying fallback #${nextRetry}: ${nextUrl}`);
       
       setRetryCount(nextRetry);
-      setCurrentImageUrl(getPreferredImageUrl(pokemon.id, nextRetry));
+      setCurrentImageUrl(nextUrl);
     } else {
       console.error(`⛔ All image fallbacks failed for ${formattedName} in battle`);
       setImageError(true);
