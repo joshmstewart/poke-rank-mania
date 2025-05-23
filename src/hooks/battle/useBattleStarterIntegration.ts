@@ -216,8 +216,8 @@ export const useBattleStarterIntegration = (
       } else {
         // Reset counter when we get a different battle
         identicalBattleCount.current = 0;
-        // Update our tracking
-        previousBattleIds.current = [...pokemonIds];
+        // Note: We DO NOT update previousBattleIds.current here anymore!
+        // This fixes the race condition - let setCurrentBattle do it instead
       }
       
       // Mark that we're no longer generating a battle
@@ -341,11 +341,16 @@ export const useBattleStarterIntegration = (
         const isIdenticalToPreviousRef = areBattlesIdentical(pokemonList, previousBattleIds.current);
         console.log('[DEBUG useBattleStarterIntegration] createBattleStarter.setCurrentBattle_CALLBACK: isIdenticalToPreviousRef:', isIdenticalToPreviousRef);
         
-        if (areBattlesIdentical(pokemonList, previousBattleIds.current) && previousBattleIds.current.length > 0) {
+        if (isIdenticalToPreviousRef && previousBattleIds.current.length > 0) {
           console.warn(`⚠️ Preventing setting identical battle! [${pokemonList.map(p => p.id).join(',')}]`);
           console.log('[DEBUG useBattleStarterIntegration] createBattleStarter.setCurrentBattle_CALLBACK: SKIPPING actual setCurrentBattle due to duplicate.');
           return; // Don't set the battle if it's identical to the previous one
         }
+        
+        // FIXED RACE CONDITION: Update previousBattleIds.current BEFORE calling setCurrentBattle
+        // This ensures we won't get false duplicate detection
+        previousBattleIds.current = pokemonList.map(p => p.id);
+        console.log('[DEBUG useBattleStarterIntegration] createBattleStarter.setCurrentBattle_CALLBACK: UPDATED previousBattleIds.current to:', previousBattleIds.current);
         
         console.log('[DEBUG useBattleStarterIntegration] createBattleStarter.setCurrentBattle_CALLBACK: CALLING actual setCurrentBattle (prop).');
         setCurrentBattle(pokemonList);
@@ -648,4 +653,3 @@ export const useBattleStarterIntegration = (
     performEmergencyReset
   };
 };
-
