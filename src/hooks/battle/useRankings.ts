@@ -13,7 +13,9 @@ export const useRankings = (allPokemon: Pokemon[]) => {
   });
   const [frozenPokemon, setFrozenPokemon] = useState<Record<number, { [tier: string]: boolean }>>({});
 
+  // Keep track of the previous results to prevent unnecessary regeneration
   const previousRankingsRef = useRef<RankedPokemon[]>([]);
+  const previousResultsRef = useRef<SingleBattle[]>([]);
 
   const {
     suggestRanking,
@@ -50,7 +52,26 @@ export const useRankings = (allPokemon: Pokemon[]) => {
     }
   }, [finalRankings]);
 
+  // IMPROVED: Check for substantial changes before regenerating rankings
   const generateRankings = useCallback((results: SingleBattle[]) => {
+    console.log("[EFFECT LoopCheck - generateRankings] ENTRY - Results count:", results.length);
+
+    // Check if results haven't changed substantially - avoid unnecessary regeneration
+    if (results.length === previousResultsRef.current.length && results.length > 0) {
+      const hasNewResults = results.some((result, i) => 
+        previousResultsRef.current[i]?.winner?.id !== result.winner?.id ||
+        previousResultsRef.current[i]?.loser?.id !== result.loser?.id
+      );
+      
+      if (!hasNewResults) {
+        console.log("[EFFECT LoopCheck - generateRankings] SKIPPED - Results unchanged");
+        return previousRankingsRef.current;
+      }
+    }
+    
+    // Update the previous results reference
+    previousResultsRef.current = results;
+
     const countMap = new Map<number, number>();
 
     results.forEach(result => {
@@ -83,32 +104,51 @@ export const useRankings = (allPokemon: Pokemon[]) => {
       })
       .sort((a, b) => b.score - a.score);
 
-const filteredRankings = activeTier === "All" 
-  ? allRankedPokemon 
-  : allRankedPokemon.slice(0, Number(activeTier));
+    const filteredRankings = activeTier === "All" 
+      ? allRankedPokemon 
+      : allRankedPokemon.slice(0, Number(activeTier));
 
-// Explicitly reload suggestions here:
-const savedSuggestions = loadSavedSuggestions();
-console.log("[DEBUG useRankings - generateRankings] Applying suggestions during ranking generation:", savedSuggestions.size);
-console.log("[DEBUG useRankings - generateRankings SUGGESTIONS RAW]", JSON.stringify([...savedSuggestions.entries()].map(([id, suggestion]) => ({ id, used: suggestion.used }))));
+    // Explicitly reload suggestions here:
+    const savedSuggestions = loadSavedSuggestions();
+    console.log("[DEBUG useRankings - generateRankings] Applying suggestions during ranking generation:", savedSuggestions.size);
+    
+    if (savedSuggestions.size > 0) {
+      const sampleSuggestions = [...savedSuggestions.entries()].slice(0, 3);
+      console.log("[DEBUG useRankings - generateRankings SUGGESTIONS DATA]", 
+        JSON.stringify(sampleSuggestions.map(([id, suggestion]) => ({ 
+          id, 
+          direction: suggestion.direction,
+          strength: suggestion.strength,
+          used: suggestion.used 
+        }))));
+    }
 
-const finalWithSuggestions = filteredRankings.map(pokemon => {
-  const newPokemon = {
-    ...pokemon,
-    suggestedAdjustment: savedSuggestions.get(pokemon.id) || null
-  };
-  return newPokemon;
-});
+    const finalWithSuggestions = filteredRankings.map(pokemon => {
+      const newPokemon = {
+        ...pokemon,
+        suggestedAdjustment: savedSuggestions.get(pokemon.id) || null
+      };
+      return newPokemon;
+    });
 
-console.log("[DEBUG useRankings - generateRankings FINAL] Generated rankings with suggestions. Sample from suggestions:", 
-  JSON.stringify(finalWithSuggestions
-    .filter(p => p.suggestedAdjustment)
-    .slice(0, 3)
-    .map(p => ({ id: p.id, name: p.name, used: p.suggestedAdjustment?.used })))
-);
+    // Provide more informative log about suggestions
+    const pokemonWithSuggestions = finalWithSuggestions.filter(p => p.suggestedAdjustment);
+    
+    if (pokemonWithSuggestions.length > 0) {
+      console.log("[DEBUG useRankings - generateRankings FINAL] Generated rankings with suggestions. Sample from suggestions:", 
+        JSON.stringify(pokemonWithSuggestions.slice(0, 3).map(p => ({ 
+          id: p.id, 
+          name: p.name, 
+          used: p.suggestedAdjustment?.used,
+          direction: p.suggestedAdjustment?.direction,
+          strength: p.suggestedAdjustment?.strength
+        }))));
+    } else {
+      console.log("[DEBUG useRankings - generateRankings FINAL] Generated rankings WITHOUT any suggestions applied.");
+    }
 
-setFinalRankings(finalWithSuggestions);
-console.log(`🎯 Rankings generated with suggestions: ${finalWithSuggestions.length} Pokémon`);
+    setFinalRankings(finalWithSuggestions);
+    console.log(`🎯 Rankings generated with suggestions: ${finalWithSuggestions.length} Pokémon`);
 
     const confidenceMap: Record<number, number> = {};
     allRankedPokemon.forEach(p => {

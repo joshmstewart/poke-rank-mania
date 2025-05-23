@@ -36,6 +36,11 @@ export const useBattleInteractions = (
   const handlePokemonSelect = useCallback(
     (id: number) => {
       if (currentBattle.length === 0) return;
+      // Prevent processing if already in progress
+      if (isProcessing) {
+        console.log("🛑 handlePokemonSelect: Processing in progress, ignoring click");
+        return;
+      }
 
       // For pair battles, we ALWAYS set to just the newly selected Pokemon ID
       // For triplets, we may accumulate selections (up to 2)
@@ -92,7 +97,8 @@ export const useBattleInteractions = (
       processBattleResult,
       selectedPokemon,
       setBattleHistory,
-      setSelectedPokemon
+      setSelectedPokemon,
+      isProcessing
     ]
   );
 
