@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Pokemon } from "@/services/pokemon";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
-import { getPreferredImageUrl, getPreferredImageType } from "@/components/settings/ImagePreferenceSelector";
+import { getPreferredImageUrl, getPreferredImageType, PokemonImageType } from "@/components/settings/ImagePreferenceSelector";
 import { normalizePokedexNumber, formatPokemonName } from "@/utils/pokemonUtils";
 
 interface PokemonCardProps {

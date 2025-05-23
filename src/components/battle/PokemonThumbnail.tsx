@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { getPokemonTypeColor } from "./utils/pokemonTypeColors";
-import { getPreferredImageUrl, getPreferredImageType } from "@/components/settings/ImagePreferenceSelector";
+import { getPreferredImageUrl, getPreferredImageType, PokemonImageType } from "@/components/settings/ImagePreferenceSelector";
 import { normalizePokedexNumber, capitalizeSpecialForms } from "@/utils/pokemonUtils";
 import {
   HoverCard,
