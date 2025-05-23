@@ -21,7 +21,9 @@ export const useBattleStarterIntegration = (
   const priorityModeActiveRef = useRef(false); // Ref to track if priority mode is active
   const consecutiveBattlesWithoutNewPokemonRef = useRef(0); // Track battles without introducing new Pokémon
   const lastBattleAttemptTimestampRef = useRef(0); // Track when we last tried to start a battle
-  const throttleTimeMs = 500; // Minimum time between battle generation attempts
+  const throttleTimeMs = 800; // Increased minimum time between battle generation attempts
+  const previousBattleIds = useRef<number[]>([]); // Track previous battle ids to avoid duplicates
+  const identicalBattleCount = useRef(0); // Track how many times we've seen identical battles
 
   // Log initial value of forcedPriorityBattlesRef
   console.log('[DEBUG useBattleStarterIntegration] forcedPriorityBattlesRef initialized to:', forcedPriorityBattlesRef.current);
@@ -64,14 +66,42 @@ export const useBattleStarterIntegration = (
       consecutiveBattlesWithoutNewPokemonRef.current = 0;
     };
 
+    // Handle battle created events to detect duplicate battles
+    const handleBattleCreated = (event: CustomEvent) => {
+      const { pokemonIds, timestamp } = event.detail || {};
+      if (!pokemonIds || !pokemonIds.length) return;
+      
+      // Check if this is identical to previous battle
+      const isIdentical = previousBattleIds.current.length === pokemonIds.length && 
+        pokemonIds.every(id => previousBattleIds.current.includes(id));
+      
+      if (isIdentical) {
+        identicalBattleCount.current++;
+        console.warn(`⚠️ [useBattleStarterIntegration] Identical battle detected ${identicalBattleCount.current} times`);
+        
+        // If we've seen too many identical battles, reset
+        if (identicalBattleCount.current >= 3) {
+          console.warn('⚠️ Too many identical battles detected, triggering emergency reset');
+          document.dispatchEvent(new CustomEvent('force-emergency-reset'));
+          identicalBattleCount.current = 0;
+        }
+      } else {
+        // Reset counter when we get a different battle
+        identicalBattleCount.current = 0;
+        previousBattleIds.current = [...pokemonIds];
+      }
+    };
+
     window.addEventListener("prioritizeSuggestions", handlePrioritize);
     window.addEventListener("milestoneEnded", handlePrioritize);
     window.addEventListener("milestoneReached", handleMilestoneReached);
+    document.addEventListener("battle-created", handleBattleCreated as EventListener);
 
     return () => {
       window.removeEventListener("prioritizeSuggestions", handlePrioritize);
       window.removeEventListener("milestoneEnded", handlePrioritize);
       window.removeEventListener("milestoneReached", handleMilestoneReached);
+      document.removeEventListener("battle-created", handleBattleCreated as EventListener);
     };
   }, [currentRankings]);
 
@@ -115,10 +145,15 @@ export const useBattleStarterIntegration = (
   const startNewBattle = useCallback((battleType: BattleType) => {
     if (!battleStarter) return [];
     
-    // Throttle battle generation to prevent rapid-fire attempts
+    // Improved throttling with exponential backoff for repeated requests
     const now = Date.now();
-    if (now - lastBattleAttemptTimestampRef.current < throttleTimeMs) {
-      console.log(`[DEBUG useBattleStarterIntegration] Throttling battle generation. Last attempt: ${now - lastBattleAttemptTimestampRef.current}ms ago`);
+    const timeSinceLastAttempt = now - lastBattleAttemptTimestampRef.current;
+    
+    // Base throttle time increases if we have recent identical battles
+    const adjustedThrottleTime = throttleTimeMs * Math.pow(2, Math.min(3, identicalBattleCount.current));
+    
+    if (timeSinceLastAttempt < adjustedThrottleTime) {
+      console.log(`[DEBUG useBattleStarterIntegration] Throttling battle generation. Last attempt: ${timeSinceLastAttempt}ms ago. Required interval: ${adjustedThrottleTime}ms`);
       return [];
     }
     
@@ -158,7 +193,7 @@ export const useBattleStarterIntegration = (
     priorityModeActiveRef.current = suggestedPokemon.length > 0 && forcedPriorityBattlesRef.current > 0;
     console.log('[DEBUG useBattleStarterIntegration] priorityModeActiveRef updated to:', priorityModeActiveRef.current);
 
-    let battle: Pokemon[];
+    let battle: Pokemon[] = [];
     let forceUnrankedSelection = false;
     
     // CRITICAL FIX: Force unranked selection if we've gone too many battles without new Pokémon
@@ -208,6 +243,12 @@ export const useBattleStarterIntegration = (
       // Pass the forceUnrankedSelection flag to ensure variety
       battle = battleStarter.startNewBattle(battleType, false, forceUnrankedSelection);
       console.log(`🎮 Using standard battle selection (forceUnrankedSelection: ${forceUnrankedSelection})`);
+    }
+
+    // If battle is empty (likely due to throttling), don't proceed
+    if (!battle || battle.length === 0) {
+      console.log('[DEBUG useBattleStarterIntegration] Battle generation was throttled or failed, not updating state');
+      return [];
     }
 
     // NEW: Check for suggestions marked as fully used by createBattleStarter
@@ -287,6 +328,10 @@ export const useBattleStarterIntegration = (
     
     // Reset consecutive battles without new Pokémon counter
     consecutiveBattlesWithoutNewPokemonRef.current = 0;
+
+    // Clear the identical battle detection
+    identicalBattleCount.current = 0;
+    previousBattleIds.current = [];
   };
 
   return {

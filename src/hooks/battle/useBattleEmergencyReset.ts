@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useRef } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { toast } from "@/hooks/use-toast";
 import { SingleBattle } from "./types"; // ensure correct import for SingleBattle if needed
@@ -13,8 +13,22 @@ export const useBattleEmergencyReset = (
   setSelectedPokemon?: React.Dispatch<React.SetStateAction<number[]>>
 ) => {
   // Keep track of emergency resets to avoid excessive resets
+  const resetCountRef = useRef(0);
+  const lastResetTimeRef = useRef(0);
+  
   const performEmergencyReset = useCallback(() => {
-    console.log("🚨 EMERGENCY: Performing complete battle reset");
+    // Throttle resets - don't allow more than one every 3 seconds
+    const now = Date.now();
+    if (now - lastResetTimeRef.current < 3000) {
+      console.log(`🛑 Emergency reset throttled. Last reset was ${now - lastResetTimeRef.current}ms ago.`);
+      return false;
+    }
+    
+    // Update last reset time and increment counter
+    lastResetTimeRef.current = now;
+    resetCountRef.current++;
+    
+    console.log(`🚨 EMERGENCY: Performing complete battle reset (#${resetCountRef.current})`);
 
     try {
       // First, remove critical localStorage entries that might be causing the loop
@@ -25,7 +39,10 @@ export const useBattleEmergencyReset = (
         'pokemon-battle-history',
         'pokemon-battle-tracking',
         'pokemon-battle-seen',
-        'pokemon-battle-count'
+        'pokemon-battle-count',
+        'pokemon-active-suggestions',
+        'pokemon-battle-state',
+        'pokemon-battle-cache'
       ];
       keysToRemove.forEach(key => {
         const value = localStorage.getItem(key);
@@ -62,22 +79,33 @@ export const useBattleEmergencyReset = (
         
         // Ensure we pick different Pokémon
         let shuffled = [...allPokemon].sort(() => Math.random() - 0.5);
-        let newBattle = shuffled.slice(0, 2);
+        let newBattle = shuffled.slice(0, currentBattle.length || 2); // Use current battle length or default to 2
         
-        // Check if we accidentally picked the same Pokémon again
-        if (newBattle.every(p => currentIds.includes(p.id))) {
-          console.log(`🚨 EMERGENCY: First shuffle produced same Pokémon. Trying again...`);
+        // Check if we accidentally picked the same Pokémon again - try multiple times if needed
+        let attempts = 0;
+        while (newBattle.some(p => currentIds.includes(p.id)) && attempts < 5) {
+          console.log(`🚨 EMERGENCY: Shuffle #${attempts+1} produced same Pokémon. Trying again...`);
           shuffled = [...allPokemon].sort(() => Math.random() - 0.5);
-          newBattle = shuffled.slice(0, 2);
+          newBattle = shuffled.slice(0, currentBattle.length || 2);
+          attempts++;
         }
         
         console.log(`🚨 EMERGENCY: Creating new battle with Pokémon IDs: [${newBattle.map(p => p.id).join(', ')}]`);
-        setCurrentBattle(newBattle);
+        console.log(`🚨 EMERGENCY: New battle Pokémon names: [${newBattle.map(p => p.name).join(', ')}]`);
+        
+        // Ensure we have names and images before setting
+        const validatedBattle = newBattle.map(p => ({
+          ...p,
+          name: p.name || `Unknown #${p.id}`,
+          image: p.image || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.id}.png`
+        }));
+        
+        setCurrentBattle(validatedBattle);
 
         // Dispatch an event to notify other components
         const resetEvent = new CustomEvent('emergency-battle-reset', {
           detail: { 
-            newBattle, 
+            newBattle: validatedBattle, 
             previousBattle: currentBattle,
             timestamp: Date.now()
           }
@@ -86,7 +114,7 @@ export const useBattleEmergencyReset = (
 
         toast({
           title: "Emergency Reset",
-          description: "Battle system has been fully reset with new Pokémon",
+          description: "Battle system has been reset with new Pokémon",
           duration: 5000,
         });
 
@@ -103,10 +131,22 @@ export const useBattleEmergencyReset = (
     setBattleHistory, setSelectedPokemon
   ]);
 
+  // Monitor for stuck battles
   useEffect(() => {
     if (currentBattle.length > 0) {
       const currentIds = currentBattle.map(p => p.id).join(',');
       const timestamp = Date.now();
+      
+      // Keep track of the battle in localStorage for debugging
+      try {
+        localStorage.setItem('pokemon-battle-debug-current', JSON.stringify({
+          ids: currentIds,
+          timestamp,
+          names: currentBattle.map(p => p.name)
+        }));
+      } catch (e) {
+        console.warn("Failed to store debug info:", e);
+      }
       
       // Add a unique ID to the timeout to prevent stale closures
       const timeoutId = setTimeout(() => {
@@ -118,7 +158,7 @@ export const useBattleEmergencyReset = (
           const recentlyUsed = localStorage.getItem('pokemon-battle-recently-used');
           const lastBattle = localStorage.getItem('pokemon-battle-last-battle');
 
-          if (recentlyUsed || lastBattle) {
+          if (recentlyUsed || lastBattle || resetCountRef.current < 3) {
             toast({
               title: "Battle System Stuck",
               description: "Auto-reset in progress...",
@@ -134,6 +174,7 @@ export const useBattleEmergencyReset = (
     }
   }, [currentBattle, performEmergencyReset]);
 
+  // Listen for manual reset requests
   useEffect(() => {
     const handleForceReset = () => {
       console.log("🚨 Force emergency reset requested externally");

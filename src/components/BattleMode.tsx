@@ -19,8 +19,15 @@ const BattleMode = () => {
     if (!stored) {
       localStorage.setItem('pokemon-ranker-battle-type', defaultType);
       console.log("BattleMode: Setting default battle type to:", defaultType);
+      return defaultType;
     }
-    return (stored === "triplets" ? "triplets" : defaultType);
+    // Validate the stored value
+    if (stored !== "pairs" && stored !== "triplets") {
+      localStorage.setItem('pokemon-ranker-battle-type', defaultType);
+      console.log("BattleMode: Invalid stored battle type, resetting to:", defaultType);
+      return defaultType;
+    }
+    return stored as BattleType;
   })();
 
   const [loadingInitiated, setLoadingInitiated] = useState(false);
@@ -32,6 +39,7 @@ const BattleMode = () => {
   const stuckCountRef = useRef(0); // Track consecutive identical battles
   const maxIdenticalBattles = 2; // Threshold for identical battles before intervention
   const [debugLog, setDebugLog] = useState<string[]>([]); // Store last 20 debug entries
+  const lastCleanupTimeRef = useRef(0); // Track when we last cleaned up localStorage
   
   // Debug function to add to log with timestamp
   const addDebugLog = (message: string) => {
@@ -60,7 +68,9 @@ const BattleMode = () => {
         'pokemon-battle-history',
         'pokemon-battle-tracking',
         'pokemon-battle-seen',
-        'pokemon-battle-count'
+        'pokemon-battle-count',
+        'pokemon-battle-state',
+        'pokemon-battle-cache'
       ];
       
       keysToRemove.forEach(key => {
@@ -84,7 +94,8 @@ const BattleMode = () => {
       const resetEvent = new CustomEvent('force-emergency-reset', {
         detail: { 
           source: 'initial-load',
-          timestamp: Date.now()
+          timestamp: Date.now(),
+          isStartup: true
         }
       });
       document.dispatchEvent(resetEvent);
@@ -150,6 +161,7 @@ const BattleMode = () => {
       const battleNumber = battleCountRef.current;
       const currentPokemon = event.detail?.pokemonIds || [];
       const pokemonNames = event.detail?.pokemonNames || [];
+      const timestamp = event.detail?.timestamp;
       
       addDebugLog(`Battle #${battleNumber} created with: ${pokemonNames.join(', ')} [IDs: ${currentPokemon.join(',')}]`);
       
@@ -189,6 +201,14 @@ const BattleMode = () => {
       
       // Store current Pokemon IDs for next comparison
       previousPokemonRef.current = [...currentPokemon];
+
+      // Clean up localStorage periodically to prevent memory issues
+      const now = Date.now();
+      const cleanupInterval = 60000; // 1 minute
+      if (now - lastCleanupTimeRef.current > cleanupInterval) {
+        cleanupLocalStorage();
+        lastCleanupTimeRef.current = now;
+      }
     };
 
     // Add custom event listener
@@ -198,6 +218,25 @@ const BattleMode = () => {
       document.removeEventListener('battle-created', handleBattleCreated as EventListener);
     };
   }, []);
+
+  // Clean up localStorage to prevent memory issues
+  const cleanupLocalStorage = () => {
+    addDebugLog("🧹 Performing periodic localStorage cleanup");
+    try {
+      // Clean up debug keys that might accumulate
+      const keysToClean = [
+        'pokemon-battle-debug-current',
+        'pokemon-battle-seen',
+        'pokemon-battle-tracking'
+      ];
+
+      keysToClean.forEach(key => {
+        localStorage.removeItem(key);
+      });
+    } catch (error) {
+      console.error("Error during localStorage cleanup:", error);
+    }
+  };
   
   // Force new battle and reset functions are kept but not displayed in UI
   const forceNewBattle = () => {
@@ -220,7 +259,7 @@ const BattleMode = () => {
     });
     
     const event = new CustomEvent('force-new-battle', {
-      detail: { battleType: 'pairs', source: 'manual' }
+      detail: { battleType: initialBattleType, source: 'manual' }
     });
     
     document.dispatchEvent(event);
@@ -244,7 +283,9 @@ const BattleMode = () => {
       'pokemon-battle-history',
       'pokemon-active-suggestions',
       'pokemon-battle-tracking',
-      'pokemon-battle-seen'
+      'pokemon-battle-seen',
+      'pokemon-battle-state',
+      'pokemon-battle-cache'
     ];
     
     keysToRemove.forEach(key => {

@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from "react";
+
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "@/hooks/battle/types";
 import BattleHeader from "./BattleHeader";
@@ -7,6 +8,7 @@ import BattleGrid from "./BattleGrid";
 import BattleSubmitButton from "./BattleSubmitButton";
 import { useMilestoneCalculations } from "@/hooks/battle/useMilestoneCalculations";
 import { validateBattlePokemon } from "@/services/pokemon/api/utils";
+import { toast } from "@/hooks/use-toast";
 
 interface BattleInterfaceProps {
   currentBattle: Pokemon[];
@@ -39,6 +41,8 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
   const [displayedBattlesCompleted, setDisplayedBattlesCompleted] = useState(battlesCompleted);
   const [previousBattleIds, setPreviousBattleIds] = useState<number[]>([]);
   const [battleChangeLog, setBattleChangeLog] = useState<string[]>([]);
+  const lastSelectionRef = useRef<number | null>(null);
+  const selectionTimestampRef = useRef(0);
   
   const { getNextMilestone, getMilestoneProgress } = useMilestoneCalculations(
     displayedBattlesCompleted, 
@@ -119,50 +123,50 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
   }, [battlesCompleted]);
   
   // Handle pokemon selection with debounce to prevent multiple clicks
-  const handlePokemonCardSelect = (id: number) => {
+  const handlePokemonCardSelect = useCallback((id: number) => {
     if (!isProcessing && !internalProcessing) {
+      const now = Date.now();
+      
+      // Prevent rapid double clicks (300ms threshold)
+      if (id === lastSelectionRef.current && now - selectionTimestampRef.current < 300) {
+        console.log(`⏱️ Ignoring repeated selection of Pokemon ${id} (${now - selectionTimestampRef.current}ms after previous)`);
+        return;
+      }
+      
+      // Update refs
+      lastSelectionRef.current = id;
+      selectionTimestampRef.current = now;
+      
       console.log(`🖱️ BattleInterface: Handling Pokemon selection: ${id}`);
       setInternalProcessing(true);
       onPokemonSelect(id);
       
-      // Reset internal processing state after a shorter delay (100ms)
-      setTimeout(() => setInternalProcessing(false), 100);
+      // Reset internal processing state after a shorter delay (300ms)
+      setTimeout(() => setInternalProcessing(false), 300);
     } else {
       console.log(`⏳ BattleInterface: Ignoring click while processing (isProcessing=${isProcessing}, internalProcessing=${internalProcessing})`);
     }
-  };
+  }, [isProcessing, internalProcessing, onPokemonSelect]);
 
   // Handle submission for triplets mode
-  const handleSubmit = () => {
+  const handleSubmit = useCallback(() => {
     if (!isProcessing && !internalProcessing) {
       console.log("BattleInterface: Submitting triplet selection");
       setInternalProcessing(true);
       onTripletSelectionComplete();
       
-      // Reset internal processing state after a shorter delay (100ms)
-      setTimeout(() => setInternalProcessing(false), 100);
+      // Reset internal processing state after a shorter delay (300ms)
+      setTimeout(() => setInternalProcessing(false), 300);
     }
-  };
+  }, [isProcessing, internalProcessing, onTripletSelectionComplete]);
 
   // Handle back button click
-  const handleBackClick = () => {
+  const handleBackClick = useCallback(() => {
     if (!isProcessing && !internalProcessing) {
       console.log("BattleInterface: Handling back button click");
       onGoBack();
     }
-  };
-  
-  // Debug component: Battle change history
-  const BattleChangeDebug = () => (
-    <div className="text-xs text-gray-400 mt-2 hidden">
-      <div>Recent Battle Changes:</div>
-      <ul>
-        {battleChangeLog.map((log, idx) => (
-          <li key={idx}>{log}</li>
-        ))}
-      </ul>
-    </div>
-  );
+  }, [isProcessing, internalProcessing, onGoBack]);
   
   // ADDED: Helper to validate battle configuration
   useEffect(() => {
@@ -182,6 +186,13 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
           }
         });
         document.dispatchEvent(mismatchEvent);
+
+        // Show toast notification when there's a mismatch
+        toast({
+          title: "Battle Type Mismatch",
+          description: `Expected ${expectedCount} Pokémon for ${battleType} battles, but got ${validatedBattle.length}. This will be fixed automatically.`,
+          duration: 5000,
+        });
       }
     }
   }, [validatedBattle, battleType]);

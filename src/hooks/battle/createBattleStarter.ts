@@ -19,6 +19,7 @@ export const createBattleStarter = (
   let lowerTierLosersMap = new Map<number, number>(); // Track Pokemon that lost to lower tier opponents
   let previousBattlePokemonIds = new Set<number>(); // Track the previous battle's Pokemon IDs
   let consecutiveIdenticalBattles = 0; // Track how many identical battles in a row
+  let lastBattleTimestamp = 0; // Track when the last battle was generated
 
   const shuffleArray = (array: Pokemon[]) => {
     const shuffled = [...array];
@@ -440,6 +441,16 @@ export const createBattleStarter = (
   };
 
   const startNewBattle = (battleType: BattleType, forceSuggestionPriority: boolean = false, forceUnrankedSelection: boolean = false): Pokemon[] => {
+    // Add throttling to prevent too many battles at once
+    const now = Date.now();
+    const throttleTime = 500; // ms
+    if (now - lastBattleTimestamp < throttleTime) {
+      console.log(`⚠️ Battle generation throttled. Last battle was ${now - lastBattleTimestamp}ms ago. Minimum interval: ${throttleTime}ms`);
+      // Return empty array - caller should handle this
+      return [];
+    }
+    
+    lastBattleTimestamp = now;
     battleCountRef++;
     const battleSize = battleType === "pairs" ? 2 : 3;
     let result: Pokemon[] = [];
@@ -509,7 +520,9 @@ export const createBattleStarter = (
       const battleCreatedEvent = new CustomEvent('battle-created', {
         detail: { 
           pokemonIds: validatedForcedBattle.map(p => p.id),
-          pokemonNames: validatedForcedBattle.map(p => p.name)
+          pokemonNames: validatedForcedBattle.map(p => p.name),
+          timestamp: now,
+          wasForced: true
         }
       });
       document.dispatchEvent(battleCreatedEvent);
@@ -528,7 +541,9 @@ export const createBattleStarter = (
     const battleCreatedEvent = new CustomEvent('battle-created', {
       detail: { 
         pokemonIds: validatedResult.map(p => p.id),
-        pokemonNames: validatedResult.map(p => p.name)
+        pokemonNames: validatedResult.map(p => p.name),
+        timestamp: now,
+        wasForced: false
       }
     });
     document.dispatchEvent(battleCreatedEvent);
