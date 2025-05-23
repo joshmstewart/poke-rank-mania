@@ -84,15 +84,21 @@ export const typeColorsByPokemonId: Record<number, string> = {
   533: typeColors.fighting, // Gurdurr: Fighting
   599: typeColors.steel,   // Klink: Steel
 
+  // Gen 6
+  667: typeColors.fire,    // Litleo: Fire/Normal
+  668: typeColors.fire,    // Pyroar: Fire/Normal
+  
   // Gen 7
   750: typeColors.ground,  // Mudsdale: Ground
 
-  // Specific Pokémon with special forms or missing types
-  751: typeColors.water,   // Dewpider: Water/Bug 
-  767: typeColors.bug,     // Wimpod: Bug/Water
-  824: typeColors.bug,     // Blipbug: Bug
-  893: typeColors.grass,   // Zarude: Dark/Grass
-  898: typeColors.psychic, // Calyrex: Psychic/Grass
+  // Commonly problematic Pokemon
+  523: typeColors.electric, // Zebstrika: Electric
+  499: typeColors.fire,     // Pignite: Fire/Fighting
+  751: typeColors.water,    // Dewpider: Water/Bug 
+  767: typeColors.bug,      // Wimpod: Bug/Water
+  824: typeColors.bug,      // Blipbug: Bug
+  893: typeColors.grass,    // Zarude: Dark/Grass
+  898: typeColors.psychic,  // Calyrex: Psychic/Grass
   
   // Gen 9
   934: typeColors.rock,    // Garganacl: Rock
@@ -106,29 +112,30 @@ export const getPokemonTypeColor = (pokemon: any) => {
   try {
     // First, use the type-based approach if types exist
     if (pokemon.types && pokemon.types.length) {
-      // Get primary type (first in the array)
+      // Define priority types - these types take precedence when multiple types exist
+      const priorityTypes = ['fire', 'water', 'electric', 'grass', 'ice', 'dragon', 'fairy'];
+      
+      // Convert all types to lowercase for checking
+      const lowerTypes = pokemon.types.map((t: string) => t.toLowerCase());
+      
+      // First, check for priority types
+      for (const priorityType of priorityTypes) {
+        if (lowerTypes.includes(priorityType)) {
+          return typeColors[priorityType];
+        }
+      }
+      
+      // If no priority type was found, use the primary type (first in array)
       const primaryType = pokemon.types[0];
       
-      // Check if we have this type in our map
-      if (primaryType && typeof primaryType === 'string') {
-        // Try exact match first
-        if (typeColors[primaryType]) {
-          return typeColors[primaryType];
-        }
-        
-        // Normalize type to lowercase for consistent lookup
-        const normalizedType = primaryType.toLowerCase();
-        
-        // Look up the color with normalized type
-        const color = typeColors[normalizedType];
-        
-        if (color) {
-          return color;
-        }
+      // Look up the color with normalized type (case-insensitive)
+      const normalizedType = primaryType.toLowerCase();
+      if (typeColors[normalizedType]) {
+        return typeColors[normalizedType];
       }
     }
     
-    // Fallback to ID-based color mapping if types not available
+    // Fallback to ID-based color mapping if types not available or not found
     if (typeColorsByPokemonId[pokemon.id]) {
       return typeColorsByPokemonId[pokemon.id];
     }

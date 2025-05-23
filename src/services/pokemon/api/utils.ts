@@ -37,7 +37,7 @@ export function getPokemonImageUrl(id: number, fallbackLevel: number = 0): strin
       [898, 10195, 10196, 10197, 10198, 10199, 10200].includes(originalId) ||
       // Calyrex special forms 
       originalId === 10196 || originalId === 10197 || 
-      // Specific Alolan forms exceptions
+      // Specific Alolan forms exceptions that have their own artwork
       (originalId >= 10100 && originalId <= 10154)
     ) {
       return originalId; // Keep the original ID for these special forms
@@ -140,7 +140,7 @@ export async function fetchPokemonDetails(id: number): Promise<Pokemon> {
     // Get species data for flavor text
     try {
       // For special forms, we need to get the base species (subtract 10000 and check for special cases)
-      const speciesId = isSpecialForm ? Math.floor(id % 10000) : id;
+      const speciesId = isSpecialForm ? Math.floor(id % 1000) : id;
       
       const speciesResponse = await fetch(`https://pokeapi.co/api/v2/pokemon-species/${speciesId}`);
       if (speciesResponse.ok) {
