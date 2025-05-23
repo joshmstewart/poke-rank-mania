@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,6 +18,7 @@ interface ImageTypeOption {
   name: string;
   url: (id: number) => string;
   description: string;
+  fallbackInfo: string; // Added to explain the fallback behavior
 }
 
 const imageTypeOptions: ImageTypeOption[] = [
@@ -26,25 +26,29 @@ const imageTypeOptions: ImageTypeOption[] = [
     id: "default",
     name: "Default Sprite",
     url: (id) => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`,
-    description: "Simple pixel art sprite from the games"
+    description: "Simple pixel art sprite from the games",
+    fallbackInfo: "Most reliable option, used as final fallback for all styles"
   },
   {
     id: "official",
     name: "Official Artwork",
     url: (id) => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`,
-    description: "High quality official artwork"
+    description: "High quality official artwork",
+    fallbackInfo: "Falls back to: Dream World → Home → Default Sprites"
   },
   {
     id: "home",
     name: "Home Artwork",
     url: (id) => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/home/${id}.png`,
-    description: "Modern 3D style from Pokémon Home"
+    description: "Modern 3D style from Pokémon Home",
+    fallbackInfo: "Falls back to: Official → Dream World → Default Sprites"
   },
   {
     id: "dream",
     name: "Dream World",
     url: (id) => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/dream-world/${id}.svg`,
-    description: "Vector artwork from Dream World (SVG format)"
+    description: "Vector artwork from Dream World (SVG format)",
+    fallbackInfo: "Falls back to: Official → Home → Default Sprites"
   }
 ];
 
@@ -64,58 +68,13 @@ export const getPreferredImageType = (): PokemonImageType => {
   return DEFAULT_IMAGE_PREFERENCE;
 };
 
-// Get URL for preferred image type with fallback support
+// The getPreferredImageUrl function is now imported from utils.ts, so we'll remove the duplicate implementation
 export const getPreferredImageUrl = (pokemonId: number, fallbackLevel?: number): string => {
-  const preference = getPreferredImageType();
-  
-  // Direct function to get URL for a specific type
-  const getUrlForType = (type: PokemonImageType): string => {
-    const option = imageTypeOptions.find(opt => opt.id === type);
-    if (!option) {
-      console.warn(`⚠️ No image option found for type: ${type}, using default`);
-      return imageTypeOptions[0].url(pokemonId);
-    }
-    
-    // Generate URL using the option's URL function
-    const url = option.url(pokemonId);
-    
-    // Log the URL generation for debugging
-    if (process.env.NODE_ENV === "development") {
-      console.log(`🔍 [getPreferredImageUrl] Generated URL for type "${type}", Pokemon #${pokemonId}: ${url}`);
-    }
-    
-    return url;
-  };
-  
-  // If fallbackLevel is provided, use it to determine which fallback to try
-  if (fallbackLevel !== undefined && fallbackLevel > 0) {
-    // Changed fallback order to prioritize default sprites as a reliable fallback
-    const allTypes: PokemonImageType[] = ["default", "official", "home", "dream"];
-    
-    // Remove the preferred type from the list since it was already tried
-    let fallbackTypes = allTypes.filter(type => type !== preference);
-    
-    // Add the preferred type at the end as a last resort
-    fallbackTypes.push(preference);
-    
-    // Get the appropriate fallback
-    const fallbackIndex = Math.min(fallbackLevel - 1, fallbackTypes.length - 1);
-    const fallbackType = fallbackTypes[fallbackIndex];
-    
-    const url = getUrlForType(fallbackType);
-    console.log(`🖼️ Pokémon #${pokemonId}: Original preference '${preference}' failed. Using fallback style '${fallbackType}', level: ${fallbackLevel} - URL: ${url}`);
-    return url;
-  }
-  
-  // No fallback specified, just use preferred type
-  // ALWAYS generate a URL for the preferred type - critical fix
-  const url = getUrlForType(preference);
-  
-  if (process.env.NODE_ENV === "development") {
-    console.log(`🖼️ Getting initial image URL for Pokémon #${pokemonId} with preference: ${preference} - URL: ${url}`);
-  }
-  
-  return url;
+  // Import and use the implementation from utils.ts instead of duplicating here
+  // This function now just forwards to the implementation in utils.ts
+  // Ideally this would be reorganized to avoid the circular dependency
+  const { getPokemonImageUrl } = require("../../../src/services/pokemon/api/utils");
+  return getPokemonImageUrl(pokemonId, fallbackLevel);
 };
 
 // Export image options for use elsewhere
@@ -156,7 +115,8 @@ const ImagePreferenceSelector: React.FC<ImagePreferenceSelectorProps> = ({ onClo
       <CardHeader>
         <CardTitle>Choose Preferred Pokémon Image Style</CardTitle>
         <CardDescription>
-          Select which style of Pokémon images you prefer to see throughout the app
+          Select which style of Pokémon images you prefer to see throughout the app.
+          Each style has a custom fallback chain if the preferred image isn't available.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -190,6 +150,7 @@ const ImagePreferenceSelector: React.FC<ImagePreferenceSelectorProps> = ({ onClo
               <div className="text-center">
                 <h3 className="font-medium">{option.name}</h3>
                 <p className="text-xs text-gray-500 mt-1">{option.description}</p>
+                <p className="text-xs text-blue-500 mt-1">{option.fallbackInfo}</p>
               </div>
             </Button>
           ))}

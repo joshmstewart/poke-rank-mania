@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { getPokemonTypeColor } from "./utils/pokemonTypeColors";
@@ -110,7 +111,7 @@ const PokemonThumbnail: React.FC<PokemonThumbnailProps> = ({
       }
     }
     
-    if (retryCount < 3) {
+    if (retryCount < 3) { // Keep up to 3 retries to handle the new longer fallback chain
       const nextRetry = retryCount + 1;
       const nextUrl = getPreferredImageUrl(pokemon.id, nextRetry);
       console.log(`❌ Thumbnail image load failed for ${formattedName} (#${pokemon.id}) with type "${currentImageType}" - trying fallback #${nextRetry}: ${nextUrl}`);

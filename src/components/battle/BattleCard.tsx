@@ -1,4 +1,3 @@
-
 import React, { memo, useCallback, useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Pokemon } from "@/services/pokemon";
@@ -99,7 +98,7 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
       }
     }
     
-    if (retryCount < 3) {
+    if (retryCount < 3) { // Keep up to 3 retries to handle the new longer fallback chain
       const nextRetry = retryCount + 1;
       const nextUrl = getPreferredImageUrl(pokemon.id, nextRetry);
       

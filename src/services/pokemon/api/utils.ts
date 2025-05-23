@@ -1,13 +1,31 @@
-
 import { Pokemon } from "../types";
 import { PokemonImageType, getPreferredImageType, POKEMON_IMAGE_PREFERENCE_KEY, DEFAULT_IMAGE_PREFERENCE } from "@/components/settings/ImagePreferenceSelector";
 
-// Function to get image URL based on preference with improved fallback handling
+// Function to get image URL based on preference with improved multi-step fallback handling
 export function getPokemonImageUrl(id: number, fallbackLevel: number = 0): string {
   const preferredType = getPreferredImageType();
   
-  // Define fallback order - default sprites first as they're most reliable
-  const fallbackOrder: PokemonImageType[] = ["default", "official", "home", "dream"];
+  // Define custom fallback chains based on initial preference
+  const getFallbackOrder = (initialPreference: PokemonImageType): PokemonImageType[] => {
+    switch(initialPreference) {
+      case "official":
+        // If user prefers official artwork, try Dream World next, then default
+        return ["official", "dream", "home", "default"];
+      case "dream":
+        // If user prefers Dream World, try Official next, then default
+        return ["dream", "official", "home", "default"];
+      case "home":
+        // If user prefers Home, try Official next, then dream, then default
+        return ["home", "official", "dream", "default"];
+      case "default":
+      default:
+        // If user prefers default sprites, try higher quality options next
+        return ["default", "official", "home", "dream"];
+    }
+  };
+  
+  // Get the appropriate fallback chain
+  const fallbackChain = getFallbackOrder(preferredType);
   
   // Generate URLs for each image type
   const getImageUrl = (type: PokemonImageType): string => {
@@ -47,17 +65,10 @@ export function getPokemonImageUrl(id: number, fallbackLevel: number = 0): strin
     return url;
   }
   
-  // For fallbacks, determine which style to use
-  let fallbackTypes = [...fallbackOrder];
-  // Remove the preferred type from the list since it was already tried
-  fallbackTypes = fallbackTypes.filter(type => type !== preferredType);
-  
-  // Add the preferred type at the end as a last resort
-  fallbackTypes.push(preferredType);
-  
-  // Get the appropriate fallback
-  const fallbackIndex = Math.min(fallbackLevel - 1, fallbackTypes.length - 1);
-  const fallbackType = fallbackTypes[fallbackIndex];
+  // For fallbacks, get the appropriate type from our custom fallback chain
+  // Ensure the fallback index doesn't go out of bounds
+  const fallbackIndex = Math.min(fallbackLevel, fallbackChain.length - 1);
+  const fallbackType = fallbackChain[fallbackIndex];
   const url = getImageUrl(fallbackType);
   
   // Make it very clear in logs which style is being used as fallback
