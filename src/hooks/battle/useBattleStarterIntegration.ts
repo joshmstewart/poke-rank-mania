@@ -1,3 +1,4 @@
+
 import { useMemo, useEffect, useRef, useCallback } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
@@ -32,10 +33,12 @@ export const useBattleStarterIntegration = (
   currentRankings: RankedPokemon[] = [], // CRITICAL FIX: Default empty array
   setCurrentBattle: React.Dispatch<React.SetStateAction<Pokemon[]>>,
   setSelectedPokemon: React.Dispatch<React.SetStateAction<number[]>>,
-  markSuggestionFullyUsed?: (pokemon: RankedPokemon, fullyUsed: boolean) => void
+  markSuggestionFullyUsed?: (pokemon: RankedPokemon, fullyUsed: boolean) => void,
+  currentBattle?: Pokemon[] // NEW: Added currentBattle parameter to check if a battle exists
 ) => {
   console.log('[DEBUG useBattleStarterIntegration] Hook called with allPokemon.length:', allPokemon?.length || 0, 
-              'currentRankings.length:', currentRankings?.length || 0);
+              'currentRankings.length:', currentRankings?.length || 0,
+              'currentBattle?.length:', currentBattle?.length || 0);
   
   // CRITICAL FIX: Initialize refs with appropriate default values
   const processedSuggestionBattlesRef = useRef<Set<number>>(new Set());
@@ -52,11 +55,13 @@ export const useBattleStarterIntegration = (
   const battleGenerationInProgressRef = useRef(false); // Track if we're currently generating a battle
   const initializationCompleteRef = useRef(false); // Track if initialization is complete
   const initialGetBattleFiredRef = useRef(false); // Track if initial battle has been started
+  const initializationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null); // Reference to the initialization timer
   
   // CRITICAL FIX: Create a stable reference to the current Pokemon and rankings
   // This prevents recreating the battleStarter instance on minor ranking changes
   const stablePokemonRef = useRef<Pokemon[]>(allPokemon || []);  // CRITICAL FIX: Initialize with empty array
   const stableRankingsRef = useRef<RankedPokemon[]>(currentRankings || []);  // CRITICAL FIX: Initialize with empty array
+  const startNewBattleRefFn = useRef<((type: BattleType) => Pokemon[]) | null>(null);  // NEW: Ref for startNewBattle function
   
   // Only update these refs when there are significant changes
   useEffect(() => {
@@ -99,14 +104,41 @@ export const useBattleStarterIntegration = (
     console.log('[DEBUG useBattleStarterIntegration] useEffect Initialization: Fired. allPokemonLength:', allPokemon.length);
     
     // Mark initialization complete after a delay to allow other components to initialize
-    const initTimer = setTimeout(() => {
-      initializationCompleteRef.current = true;
+    if (initializationTimerRef.current) {
+      clearTimeout(initializationTimerRef.current);
+    }
+    
+    initializationTimerRef.current = setTimeout(() => {
       console.log(`[${new Date().toISOString()}] useBattleStarterIntegration initialization complete`);
       console.log('[DEBUG useBattleStarterIntegration] InitTimer: Setting initializationCompleteRef.current = true');
+      initializationCompleteRef.current = true;
+      
+      // NEW: Auto-trigger a battle if none exists
+      if (allPokemon.length > 0 && (!currentBattle || currentBattle.length === 0)) {
+        console.log('[DEBUG] No battle exists after initialization, triggering initial battle');
+        // Use the ref function if available
+        if (startNewBattleRefFn.current) {
+          console.log('[DEBUG] Calling startNewBattle from timer via ref');
+          startNewBattleRefFn.current("pairs");
+        } else {
+          console.log('[DEBUG] startNewBattleRefFn not available, dispatching force-new-battle event');
+          // Fallback to event dispatch if function ref not available
+          document.dispatchEvent(new CustomEvent("force-new-battle", { 
+            detail: { battleType: "pairs" }
+          }));
+        }
+      } else {
+        console.log('[DEBUG] Battle already exists after initialization:', currentBattle?.length || 0);
+      }
+      
     }, 1000);
     
-    return () => clearTimeout(initTimer);
-  }, [allPokemon.length]);
+    return () => {
+      if (initializationTimerRef.current) {
+        clearTimeout(initializationTimerRef.current);
+      }
+    };
+  }, [allPokemon.length, currentBattle]);
 
   useEffect(() => {
     console.log('[DEBUG useBattleStarterIntegration] useEffect EventListeners: Fired. currentRankingsLength:', currentRankings.length);
@@ -164,6 +196,11 @@ export const useBattleStarterIntegration = (
         pokemonIds.every(id => previousBattleIds.current.includes(id));
       
       console.log('[DEBUG useBattleStarterIntegration] handleBattleCreated_EVENT: isIdentical check result:', isIdentical);
+      console.log('[DEBUG] Battle created event received:', {
+        pokemonIds,
+        willUpdateState: !isIdentical,
+        previousBattleIds: previousBattleIds.current
+      });
       
       if (isIdentical && !wasForced) {
         identicalBattleCount.current++;
@@ -351,11 +388,22 @@ export const useBattleStarterIntegration = (
     console.log('[DEBUG useBattleStarterIntegration] startNewBattle: Called. battleType:', battleType, 
                 'initComplete:', initializationCompleteRef.current, 'genInProgress:', battleGenerationInProgressRef.current);
     
+    console.log('[DEBUG] startNewBattle called:', {
+      battleType,
+      initComplete: initializationCompleteRef.current,
+      genInProgress: battleGenerationInProgressRef.current,
+      currentBattleLength: currentBattle?.length || 0,
+      timestamp: new Date().toISOString()
+    });
+    
     const timestamp = new Date().toISOString();
     console.log(`[${timestamp}] startNewBattle called with battleType: ${battleType}`);
     
     // CRITICAL FIX: Create stable battleStarter ref to use throughout the function
     const currentBattleStarter = battleStarter || createEmptyBattleStarter();
+    
+    // Store the startNewBattle function in a ref for initialization timer usage
+    startNewBattleRefFn.current = startNewBattle;
     
     // If initialization is not complete, don't start a battle yet
     if (!initializationCompleteRef.current) {
@@ -588,15 +636,7 @@ export const useBattleStarterIntegration = (
     initializationCompleteRef.current = false;
     initialGetBattleFiredRef.current = false;
     
-    // Allow initialization time to complete
-    const timer = setTimeout(() => {
-      console.log(`[${new Date().toISOString()}] useBattleStarterIntegration initialization timer completed`);
-      console.log('[DEBUG useBattleStarterIntegration] InitTimer: Setting initializationCompleteRef.current = true');
-      initializationCompleteRef.current = true;
-    }, 1500);
-    
     return () => {
-      clearTimeout(timer);
       console.log(`[${new Date().toISOString()}] useBattleStarterIntegration cleanup`);
     };
   }, []);
@@ -608,3 +648,4 @@ export const useBattleStarterIntegration = (
     performEmergencyReset
   };
 };
+

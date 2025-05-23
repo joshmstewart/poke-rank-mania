@@ -29,6 +29,8 @@ const BattleContent = ({
   const battleStartedRef = useRef(false);
   const previousBattlesCompletedRef = useRef(0);
   const pokemonAnalysisLoggedRef = useRef(false);
+  const initialBattleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isLoadingBattleRef = useRef(true); // NEW: Track loading state
   
   // ADDED: Log to verify allPokemon in BattleContent is never undefined
   console.log("[DEBUG BattleContent] allPokemon is array:", Array.isArray(allPokemon), "length:", allPokemon?.length || 0);
@@ -74,6 +76,19 @@ const BattleContent = ({
     initialSelectedGeneration
   );
 
+  // Calculate if we're currently loading a battle
+  const isLoadingBattle = !currentBattle || currentBattle.length === 0;
+  
+  // Update ref when loading state changes
+  useEffect(() => {
+    isLoadingBattleRef.current = isLoadingBattle;
+    console.log('[DEBUG] Battle loading state:', {
+      isLoadingBattle,
+      currentBattleLength: currentBattle?.length || 0,
+      hasPokemonData: allPokemon.length > 0
+    });
+  }, [isLoadingBattle, currentBattle, allPokemon.length]);
+
   // Only call startNewBattle once when the component mounts and allPokemon is available
   useEffect(() => {
     // CRITICAL FIX: Only attempt to start battle when there are actually Pokémon available
@@ -86,6 +101,38 @@ const BattleContent = ({
       localStorage.setItem('pokemon-ranker-battle-type', safeInitialBattleType);
     }
   }, [allPokemon, safeInitialBattleType, startNewBattle]);
+  
+  // NEW: Add a backup check to ensure a battle is started after initialization
+  useEffect(() => {
+    // Clear any existing timer
+    if (initialBattleTimerRef.current) {
+      clearTimeout(initialBattleTimerRef.current);
+    }
+    
+    // Wait a bit for initialization to complete
+    initialBattleTimerRef.current = setTimeout(() => {
+      if (allPokemon.length > 0 && (!currentBattle || currentBattle.length === 0) && !isProcessingResult) {
+        console.log('[DEBUG BattleContent] No battle after init delay, starting one now');
+        
+        // Trigger a force-new-battle event as a fallback
+        document.dispatchEvent(new CustomEvent("force-new-battle", { 
+          detail: { battleType }
+        }));
+        
+        // Direct call as additional backup
+        startNewBattle(battleType);
+      } else {
+        console.log('[DEBUG BattleContent] Battle exists or is processing after init delay:', 
+          currentBattle?.length || 0, 'isProcessing:', isProcessingResult);
+      }
+    }, 1500);
+    
+    return () => {
+      if (initialBattleTimerRef.current) {
+        clearTimeout(initialBattleTimerRef.current);
+      }
+    };
+  }, [allPokemon.length, currentBattle, battleType, startNewBattle, isProcessingResult]);
   
   // Keep track of battles completed to prevent resetting
   useEffect(() => {
@@ -182,6 +229,8 @@ const BattleContent = ({
   // ADDED: Debug logging to help diagnose issues
   console.log("BattleContent render - Current battle type:", battleType);
   console.log("BattleContent render - Current battle length:", currentBattle?.length);
+  console.log("BattleContent render - isLoadingBattle:", isLoadingBattle);
+  console.log("BattleContent render - isProcessingResult:", isProcessingResult);
 
   return (
     <div className="flex flex-col items-center w-full gap-4">

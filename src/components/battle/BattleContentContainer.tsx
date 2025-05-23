@@ -28,6 +28,22 @@ const BattleContentContainer: React.FC<BattleContentContainerProps> = ({
   
   // Log the initial battle type for debugging
   console.log("BattleContentContainer: Using initial battle type:", safeBattleType);
+  
+  // NEW: Force battle initialization by dispatching an event after component mounts
+  React.useEffect(() => {
+    if (allPokemon && allPokemon.length > 0) {
+      console.log("[DEBUG BattleContentContainer] Component mounted with allPokemon, scheduling battle check");
+      
+      const timer = setTimeout(() => {
+        console.log("[DEBUG BattleContentContainer] Checking if battle needs to be forced");
+        document.dispatchEvent(new CustomEvent("force-new-battle", {
+          detail: { battleType: safeBattleType }
+        }));
+      }, 2000); // Wait 2 seconds after mounting to check
+      
+      return () => clearTimeout(timer);
+    }
+  }, [allPokemon, safeBattleType]);
 
   return (
     <div className="flex flex-col w-full max-w-4xl mx-auto px-4">
