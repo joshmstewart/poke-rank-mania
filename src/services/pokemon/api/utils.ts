@@ -45,7 +45,9 @@ export function getPokemonImageUrl(id: number, fallbackLevel: number = 0): strin
     
     // For most other special forms, use the base form ID
     if (originalId >= 10000) {
-      return originalId % 1000;
+      // Always use the base form ID for image paths for special forms
+      // This ensures image always matches the ID of the Pokémon
+      return Math.floor(originalId % 10000);
     }
     
     return originalId;
@@ -76,6 +78,11 @@ export function getPokemonImageUrl(id: number, fallbackLevel: number = 0): strin
     
     return url;
   };
+
+  // Log the original and normalized IDs to help diagnose
+  if (id !== normalizedId) {
+    console.log(`🔄 Image ID normalization: Original ID ${id} → Normalized ID ${normalizedId}`);
+  }
 
   // If we're at fallback level 0, always use the preferred type and ALWAYS generate a URL
   if (fallbackLevel === 0) {

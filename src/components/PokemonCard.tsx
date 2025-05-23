@@ -30,9 +30,17 @@ const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
   const [currentImageType, setCurrentImageType] = useState<PokemonImageType>(getPreferredImageType());
   const initialUrlRef = useRef<string>(""); // Using ref to ensure it doesn't change
 
+  // Store the consistent pokemon ID
+  const pokemonId = pokemon.id;
+
   // Use formatPokemonName for proper display of regional variants
-  const normalizedId = normalizePokedexNumber(pokemon.id);
+  const normalizedId = normalizePokedexNumber(pokemonId);
   const formattedName = formatPokemonName(pokemon.name);
+
+  // Log the Pokemon data to help diagnose issues
+  useEffect(() => {
+    console.log(`🃏 PokemonCard: Rendering ${formattedName} (ID: ${pokemonId})`);
+  }, [formattedName, pokemonId]);
 
   const updateImage = useCallback(() => {
     setImageLoaded(false);
@@ -42,13 +50,13 @@ const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
     setCurrentImageType(preference);
     
     // Generate URL first, then set it to make sure we capture it
-    const url = getPreferredImageUrl(pokemon.id);
+    const url = getPreferredImageUrl(pokemonId);
     setCurrentImageUrl(url);
     initialUrlRef.current = url; // Store initial URL in ref
     
     // Log only during development or if explicitly debugging
     if (process.env.NODE_ENV === "development") {
-      console.log(`🖼️ PokemonCard: Loading "${preference}" image for ${formattedName} (#${pokemon.id}): ${url}`);
+      console.log(`🖼️ PokemonCard: Loading "${preference}" image for ${formattedName} (#${pokemonId}): ${url}`);
       
       // Verify if the URL actually exists with a HEAD request - always do this
       if (url && url.trim() !== '') {
@@ -64,10 +72,10 @@ const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
             console.warn(`⚠️ Image URL check failed for ${url}: ${error.message}`);
           });
       } else {
-        console.warn(`⚠️ PokemonCard: Empty URL generated for ${formattedName} (#${pokemon.id})`);
+        console.warn(`⚠️ PokemonCard: Empty URL generated for ${formattedName} (#${pokemonId})`);
       }
     }
-  }, [pokemon.id, formattedName]);
+  }, [pokemonId, formattedName]);
 
   useEffect(() => {
     updateImage();
@@ -90,10 +98,10 @@ const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
     if (retryCount === 0) {
       if (!failedUrl || failedUrl.trim() === '') {
         // If URL is empty or undefined
-        console.error(`🔴 Initial attempt to load '${currentImageType}' artwork for ${formattedName} (#${pokemon.id}) failed. No URL was available for the preferred style.`);
+        console.error(`🔴 Initial attempt to load '${currentImageType}' artwork for ${formattedName} (#${pokemonId}) failed. No URL was available for the preferred style.`);
       } else {
         // Log the initial failure with the actual URL
-        console.error(`🔴 Initial attempt to load '${currentImageType}' artwork for ${formattedName} (#${pokemon.id}) failed. URL: ${failedUrl}`);
+        console.error(`🔴 Initial attempt to load '${currentImageType}' artwork for ${formattedName} (#${pokemonId}) failed. URL: ${failedUrl}`);
         
         // Additional diagnostic: Check if the URL exists on server with fetch HEAD
         fetch(failedUrl, { method: 'HEAD' })
@@ -112,10 +120,10 @@ const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
     
     if (retryCount < 3) {  // Keep up to 3 retries to handle the new longer fallback chain
       const nextRetry = retryCount + 1;
-      const nextUrl = getPreferredImageUrl(pokemon.id, nextRetry);
+      const nextUrl = getPreferredImageUrl(pokemonId, nextRetry);
       
       // Enhanced error logging to diagnose why official artwork is failing
-      console.log(`❌ Image load failed for ${formattedName} (#${pokemon.id}) with type "${currentImageType}" - trying fallback #${nextRetry}: ${nextUrl}`);
+      console.log(`❌ Image load failed for ${formattedName} (#${pokemonId}) with type "${currentImageType}" - trying fallback #${nextRetry}: ${nextUrl}`);
       
       setRetryCount(nextRetry);
       setCurrentImageUrl(nextUrl);
@@ -124,7 +132,7 @@ const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
       const img = new Image();
       img.src = nextUrl;
     } else {
-      console.error(`⛔ All image fallbacks failed for ${formattedName} (#${pokemon.id})`);
+      console.error(`⛔ All image fallbacks failed for ${formattedName} (#${pokemonId})`);
       setImageError(true);
     }
   };
@@ -143,7 +151,12 @@ const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
               onLoad={handleImageLoad}
               onError={handleImageError}
             />
-            {imageError && <div className="absolute inset-0 flex justify-center items-center bg-gray-100 text-xs">{formattedName}</div>}
+            {imageError && (
+              <div className="absolute inset-0 flex flex-col justify-center items-center bg-gray-100 text-xs p-1">
+                <div className="font-medium">{formattedName}</div>
+                <div className="text-muted-foreground">#{normalizedId}</div>
+              </div>
+            )}
           </AspectRatio>
         </div>
         <div className="flex-1 min-w-0">

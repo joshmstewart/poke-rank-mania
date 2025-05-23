@@ -71,32 +71,20 @@ export const useRankingSuggestions = (
     console.log("🧹 Cleared ALL suggestions and removed from localStorage");
   }, [setPokemonList]);
 
-  const markSuggestionUsed = useCallback((pokemon: RankedPokemon, fullyUsed: boolean = false) => {
+  const markSuggestionUsed = useCallback((pokemon: RankedPokemon, fullyUsed: boolean = true) => {
     console.log(`[DEBUG useRankingSuggestions - markSuggestionUsed ENTRY] Called for ${pokemon.name} (${pokemon.id}). fullyUsed: ${fullyUsed}. Current suggestion from activeSuggestionsRef:`, JSON.stringify(activeSuggestionsRef.current.get(pokemon.id)));
     
     const suggestion = activeSuggestionsRef.current.get(pokemon.id);
     if (suggestion) {
-      // Mark as used if fullyUsed is true (complete processing)
-      if (fullyUsed) {
-        // Instead of just marking as used, remove the suggestion completely
-        // to allow for new suggestions on this Pokémon in the future
-        activeSuggestionsRef.current.delete(pokemon.id);
-        console.log(`[DEBUG useRankingSuggestions - markSuggestionUsed] 'fullyUsed' is true. REMOVING suggestion for ${pokemon.name} (${pokemon.id}) from activeSuggestionsRef.`);
-        console.log(`💾 Suggestion for ${pokemon.name} (${pokemon.id}) fully used and removed to allow new suggestions.`);
-        
-        setPokemonList(curr => curr.map(p => 
-          p.id === pokemon.id ? { ...p, suggestedAdjustment: undefined } : p
-        ));
-      } else {
-        // If not fullyUsed, ensure 'used' remains false for continued selection
-        console.log(`[DEBUG useRankingSuggestions - markSuggestionUsed] 'fullyUsed' is false. NOT setting suggestion.used = true for ${pokemon.name} (${pokemon.id}) in activeSuggestionsRef here.`);
-        console.log(`ℹ️ Suggestion for ${pokemon.name} (${pokemon.id}) participated in a battle. Usage count managed by createBattleStarter.`);
-        
-        activeSuggestionsRef.current.set(pokemon.id, { ...suggestion });
-        setPokemonList(curr => curr.map(p => 
-          p.id === pokemon.id ? { ...p, suggestedAdjustment: { ...suggestion } } : p
-        ));
-      }
+      // Always remove the suggestion completely after it's used
+      // This allows for new suggestions on this Pokémon in the future
+      activeSuggestionsRef.current.delete(pokemon.id);
+      console.log(`[DEBUG useRankingSuggestions - markSuggestionUsed] 'fullyUsed' is true. REMOVING suggestion for ${pokemon.name} (${pokemon.id}) from activeSuggestionsRef.`);
+      console.log(`💾 Suggestion for ${pokemon.name} (${pokemon.id}) fully used and removed to allow new suggestions.`);
+      
+      setPokemonList(curr => curr.map(p => 
+        p.id === pokemon.id ? { ...p, suggestedAdjustment: undefined } : p
+      ));
       
       saveSuggestions();
       
@@ -104,14 +92,14 @@ export const useRankingSuggestions = (
 
       toast({
         title: `Refined match for ${pokemon.name}`,
-        description: `${suggestion.direction === "up" ? "↑" : "↓"} Rating updated! ${fullyUsed ? "(Ready for new suggestions)" : "(Suggestion active)"}`,
+        description: `${suggestion.direction === "up" ? "↑" : "↓"} Rating updated! Ready for new suggestions.`,
         duration: 3000
       });
     }
   }, [setPokemonList, saveSuggestions]);
 
   const findNextSuggestion = useCallback(() => {
-    return pokemonList.find(p => p.suggestedAdjustment && !p.suggestedAdjustment.used);
+    return pokemonList.find(p => p.suggestedAdjustment);
   }, [pokemonList]);
 
   return {

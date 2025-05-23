@@ -1,3 +1,4 @@
+
 import React, { memo, useCallback, useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Pokemon } from "@/services/pokemon";
@@ -21,6 +22,12 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
   const initialUrlRef = useRef<string>(""); // Using ref to ensure it doesn't change
   
   const formattedName = formatPokemonName(pokemon.name);
+  const pokemonId = pokemon.id; // Ensure we use the consistent ID throughout
+
+  // Log the Pokemon data to help diagnose issues
+  useEffect(() => {
+    console.log(`🏆 BattleCard: Rendering Pokemon: ${formattedName} (ID: ${pokemonId})`);
+  }, [formattedName, pokemonId]);
 
   const updateImage = useCallback(() => {
     setImageLoaded(false);
@@ -30,13 +37,13 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
     setCurrentImageType(preference);
     
     // Generate URL first, then set it to make sure we capture it
-    const url = getPreferredImageUrl(pokemon.id);
+    const url = getPreferredImageUrl(pokemonId);
     setCurrentImageUrl(url);
     initialUrlRef.current = url; // Store initial URL in ref
     
     // Log only during development or if explicitly debugging
     if (process.env.NODE_ENV === "development") {
-      console.log(`🖼️ BattleCard: Loading "${preference}" image for ${formattedName} (#${pokemon.id}): ${url}`);
+      console.log(`🖼️ BattleCard: Loading "${preference}" image for ${formattedName} (#${pokemonId}): ${url}`);
       
       // Always verify if URL exists on server
       if (url && url.trim() !== '') {
@@ -52,17 +59,18 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
             console.warn(`⚠️ BattleCard image URL check failed for ${url}: ${error.message}`);
           });
       } else {
-        console.warn(`⚠️ BattleCard: Empty URL generated for ${formattedName} (#${pokemon.id})`);
+        console.warn(`⚠️ BattleCard: Empty URL generated for ${formattedName} (#${pokemonId})`);
       }
     }
-  }, [pokemon.id, formattedName]);
+  }, [pokemonId, formattedName]);
 
+  // Update image when Pokemon changes
   useEffect(() => {
     updateImage();
     const handlePreferenceChange = () => updateImage();
     window.addEventListener("imagePreferenceChanged", handlePreferenceChange);
     return () => window.removeEventListener("imagePreferenceChanged", handlePreferenceChange);
-  }, [updateImage]);
+  }, [updateImage, pokemon.id]);
 
   const handleImageLoad = () => {
     setImageLoaded(true);
@@ -78,10 +86,10 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
     if (retryCount === 0) {
       if (!failedUrl || failedUrl.trim() === '') {
         // If URL is empty or undefined
-        console.error(`🔴 Initial attempt to load '${currentImageType}' artwork for ${formattedName} (#${pokemon.id}) failed. No URL was available for the preferred style.`);
+        console.error(`🔴 Initial attempt to load '${currentImageType}' artwork for ${formattedName} (#${pokemonId}) failed. No URL was available for the preferred style.`);
       } else {
         // Log the initial failure with the actual URL
-        console.error(`🔴 Initial attempt to load '${currentImageType}' artwork for ${formattedName} (#${pokemon.id}) failed. URL: ${failedUrl}`);
+        console.error(`🔴 Initial attempt to load '${currentImageType}' artwork for ${formattedName} (#${pokemonId}) failed. URL: ${failedUrl}`);
         
         // Additional diagnostic: Check if the URL exists on server with fetch HEAD
         fetch(failedUrl, { method: 'HEAD' })
@@ -100,9 +108,9 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
     
     if (retryCount < 3) { // Keep up to 3 retries to handle the new longer fallback chain
       const nextRetry = retryCount + 1;
-      const nextUrl = getPreferredImageUrl(pokemon.id, nextRetry);
+      const nextUrl = getPreferredImageUrl(pokemonId, nextRetry);
       
-      console.log(`❌ Battle image load failed for ${formattedName} (#${pokemon.id}) with type "${currentImageType}" - trying fallback #${nextRetry}: ${nextUrl}`);
+      console.log(`❌ Battle image load failed for ${formattedName} (#${pokemonId}) with type "${currentImageType}" - trying fallback #${nextRetry}: ${nextUrl}`);
       
       setRetryCount(nextRetry);
       setCurrentImageUrl(nextUrl);
@@ -113,8 +121,8 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
   };
 
   const handleClick = useCallback(() => {
-    if (!isProcessing) onSelect(pokemon.id);
-  }, [pokemon.id, onSelect, isProcessing]);
+    if (!isProcessing) onSelect(pokemonId);
+  }, [pokemonId, onSelect, isProcessing]);
 
   return (
     <Card className={`cursor-pointer transition-transform ${isSelected ? "ring-4 ring-primary" : ""} ${isProcessing ? "opacity-70" : "hover:scale-105"}`} onClick={handleClick}>
@@ -128,9 +136,15 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
             onLoad={handleImageLoad}
             onError={handleImageError}
           />
-          {imageError && <div className="absolute inset-0 flex items-center justify-center bg-gray-100 text-xs">{formattedName}</div>}
+          {imageError && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-100 text-center p-1">
+              <div className="text-xs font-medium">{formattedName}</div>
+              <div className="text-xs text-muted-foreground">ID: {pokemonId}</div>
+            </div>
+          )}
         </div>
         <h3 className="mt-2 text-xl font-bold">{formattedName}</h3>
+        <div className="text-xs text-muted-foreground mt-1">#{pokemonId}</div>
       </CardContent>
     </Card>
   );

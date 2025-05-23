@@ -32,11 +32,17 @@ const PokemonThumbnail: React.FC<PokemonThumbnailProps> = ({
   // Apply proper type color handling
   const typeColor = getPokemonTypeColor(pokemon);
   
-  // Use proper name formatting
+  // Use proper name formatting and get consistent ID
   const normalizedId = normalizePokedexNumber(pokemon.id);
   const formattedName = formatPokemonName(pokemon.name);
+  const pokemonId = pokemon.id; // Ensure consistent ID usage
   
-  const generation = getPokemonGeneration(pokemon.id);
+  // Log the Pokemon data to diagnose issues
+  useEffect(() => {
+    console.log(`🔍 PokemonThumbnail: Rendering ${formattedName} (ID: ${pokemonId})`);
+  }, [formattedName, pokemonId]);
+  
+  const generation = getPokemonGeneration(pokemonId);
   const [imageSrc, setImageSrc] = useState("");
   const [retryCount, setRetryCount] = useState(0);
   const [currentImageType, setCurrentImageType] = useState<PokemonImageType>(getPreferredImageType());
@@ -63,12 +69,12 @@ const PokemonThumbnail: React.FC<PokemonThumbnailProps> = ({
     setCurrentImageType(preference);
     
     // Generate URL first, then set it to make sure we capture it
-    const url = getPreferredImageUrl(pokemon.id);
+    const url = getPreferredImageUrl(pokemonId);
     setImageSrc(url);
     initialUrlRef.current = url; // Store initial URL in ref
     
     if (process.env.NODE_ENV === "development") {
-      console.log(`🖼️ PokemonThumbnail: Loading "${preference}" image for ${formattedName} (#${pokemon.id}): ${url}`);
+      console.log(`🖼️ PokemonThumbnail: Loading "${preference}" image for ${formattedName} (#${pokemonId}): ${url}`);
       
       // Check if image exists
       fetch(url, { method: 'HEAD' })
@@ -85,7 +91,18 @@ const PokemonThumbnail: React.FC<PokemonThumbnailProps> = ({
     }
     
     setRetryCount(0);
-  }, [pokemon.id, formattedName]);
+  }, [pokemonId, formattedName]);
+  
+  // Update active state when suggestion changes
+  useEffect(() => {
+    if (rankedPokemon?.suggestedAdjustment) {
+      setActiveDirection(rankedPokemon.suggestedAdjustment.direction);
+      setActiveStrength(rankedPokemon.suggestedAdjustment.strength);
+    } else {
+      setActiveDirection(null);
+      setActiveStrength(1);
+    }
+  }, [rankedPokemon?.suggestedAdjustment]);
   
   // Handle image load errors with improved diagnostics
   const handleImageError = () => {
@@ -95,10 +112,10 @@ const PokemonThumbnail: React.FC<PokemonThumbnailProps> = ({
     if (retryCount === 0) {
       if (!failedUrl || failedUrl.trim() === '') {
         // If URL is empty or undefined
-        console.error(`🔴 Initial attempt to load '${currentImageType}' artwork for ${formattedName} (#${pokemon.id}) failed. No URL was available for the preferred style.`);
+        console.error(`🔴 Initial attempt to load '${currentImageType}' artwork for ${formattedName} (#${pokemonId}) failed. No URL was available for the preferred style.`);
       } else {
         // Log the initial failure with the actual URL
-        console.error(`🔴 Initial attempt to load '${currentImageType}' artwork for ${formattedName} (#${pokemon.id}) failed. URL: ${failedUrl}`);
+        console.error(`🔴 Initial attempt to load '${currentImageType}' artwork for ${formattedName} (#${pokemonId}) failed. URL: ${failedUrl}`);
         
         // Additional diagnostic: Check if the URL exists on server with fetch HEAD
         fetch(failedUrl, { method: 'HEAD' })
@@ -117,8 +134,8 @@ const PokemonThumbnail: React.FC<PokemonThumbnailProps> = ({
     
     if (retryCount < 3) { // Keep up to 3 retries to handle the new longer fallback chain
       const nextRetry = retryCount + 1;
-      const nextUrl = getPreferredImageUrl(pokemon.id, nextRetry);
-      console.log(`❌ Thumbnail image load failed for ${formattedName} (#${pokemon.id}) with type "${currentImageType}" - trying fallback #${nextRetry}: ${nextUrl}`);
+      const nextUrl = getPreferredImageUrl(pokemonId, nextRetry);
+      console.log(`❌ Thumbnail image load failed for ${formattedName} (#${pokemonId}) with type "${currentImageType}" - trying fallback #${nextRetry}: ${nextUrl}`);
       
       setImageSrc(nextUrl);
       setRetryCount(nextRetry);
