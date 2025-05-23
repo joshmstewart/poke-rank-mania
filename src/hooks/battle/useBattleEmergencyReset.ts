@@ -15,14 +15,34 @@ export const useBattleEmergencyReset = (
   // Keep track of emergency resets to avoid excessive resets
   const resetCountRef = useRef(0);
   const lastResetTimeRef = useRef(0);
+  const initialLoadRef = useRef(true);
+  const resetInProgressRef = useRef(false);
+  const previousBattleIdsRef = useRef<number[]>([]);
+  
+  // Helper function to check if battles are the same
+  const areBattlesIdentical = (battle1: Pokemon[], battle2: number[]) => {
+    if (battle1.length !== battle2.length) return false;
+    const battle1Ids = battle1.map(p => p.id);
+    return battle1Ids.every(id => battle2.includes(id)) && 
+           battle2.every(id => battle1Ids.includes(id));
+  };
   
   const performEmergencyReset = useCallback(() => {
-    // Throttle resets - don't allow more than one every 3 seconds
+    // Prevent concurrent resets
+    if (resetInProgressRef.current) {
+      console.log(`🛑 Emergency reset already in progress. Skipping duplicate request.`);
+      return false;
+    }
+    
+    // Throttle resets - don't allow more than one every 5 seconds
     const now = Date.now();
-    if (now - lastResetTimeRef.current < 3000) {
+    if (now - lastResetTimeRef.current < 5000) {
       console.log(`🛑 Emergency reset throttled. Last reset was ${now - lastResetTimeRef.current}ms ago.`);
       return false;
     }
+    
+    // Mark reset as in progress
+    resetInProgressRef.current = true;
     
     // Update last reset time and increment counter
     lastResetTimeRef.current = now;
@@ -44,11 +64,24 @@ export const useBattleEmergencyReset = (
         'pokemon-battle-state',
         'pokemon-battle-cache'
       ];
+      
+      console.log(`🚨 EMERGENCY: Clearing ${keysToRemove.length} localStorage items`);
       keysToRemove.forEach(key => {
-        const value = localStorage.getItem(key);
-        console.log(`🚨 EMERGENCY: Removing ${key} from localStorage. Current value: ${value?.substring(0, 50)}${value && value.length > 50 ? '...' : ''}`);
         localStorage.removeItem(key);
       });
+      
+      // Also remove any unknown keys that might be causing issues
+      try {
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith('pokemon-battle')) {
+            console.log(`🚨 EMERGENCY: Removing additional key: ${key}`);
+            localStorage.removeItem(key);
+          }
+        }
+      } catch (e) {
+        console.error("Error while cleaning additional localStorage keys:", e);
+      }
 
       // Reset all state
       if (setBattlesCompleted) {
@@ -77,21 +110,40 @@ export const useBattleEmergencyReset = (
         const currentIds = currentBattle.map(p => p.id);
         console.log(`🚨 EMERGENCY: Current battle has Pokémon IDs: [${currentIds.join(', ')}]`);
         
-        // Ensure we pick different Pokémon
+        // Ensure we pick completely different Pokémon
         let shuffled = [...allPokemon].sort(() => Math.random() - 0.5);
         let newBattle = shuffled.slice(0, currentBattle.length || 2); // Use current battle length or default to 2
         
-        // Check if we accidentally picked the same Pokémon again - try multiple times if needed
+        // Check if we accidentally picked any of the same Pokémon again - try multiple times if needed
         let attempts = 0;
-        while (newBattle.some(p => currentIds.includes(p.id)) && attempts < 5) {
+        const maxAttempts = 10;
+        
+        while (newBattle.some(p => currentIds.includes(p.id)) && attempts < maxAttempts) {
           console.log(`🚨 EMERGENCY: Shuffle #${attempts+1} produced same Pokémon. Trying again...`);
           shuffled = [...allPokemon].sort(() => Math.random() - 0.5);
           newBattle = shuffled.slice(0, currentBattle.length || 2);
           attempts++;
         }
         
+        // Final check: if still same Pokémon after all attempts, force completely different ones
+        if (newBattle.some(p => currentIds.includes(p.id))) {
+          console.log("🚨 EMERGENCY: Still got duplicate Pokémon after multiple attempts. Forcing completely new ones.");
+          // Use Pokémon far away from the current ones in the array to ensure difference
+          const midPoint = Math.floor(allPokemon.length / 2);
+          const startIndex = (currentIds[0] + midPoint) % allPokemon.length;
+          newBattle = allPokemon.slice(startIndex, startIndex + currentBattle.length);
+          
+          // If we still don't have enough, wrap around to the beginning
+          if (newBattle.length < currentBattle.length) {
+            newBattle = [...newBattle, ...allPokemon.slice(0, currentBattle.length - newBattle.length)];
+          }
+        }
+        
         console.log(`🚨 EMERGENCY: Creating new battle with Pokémon IDs: [${newBattle.map(p => p.id).join(', ')}]`);
         console.log(`🚨 EMERGENCY: New battle Pokémon names: [${newBattle.map(p => p.name).join(', ')}]`);
+        
+        // Store the new battle IDs for future comparison
+        previousBattleIdsRef.current = newBattle.map(p => p.id);
         
         // Ensure we have names and images before setting
         const validatedBattle = newBattle.map(p => ({
@@ -99,6 +151,9 @@ export const useBattleEmergencyReset = (
           name: p.name || `Unknown #${p.id}`,
           image: p.image || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.id}.png`
         }));
+        
+        // Clear any timers or automated processes before setting new battle
+        window.clearTimeout(window.setTimeout(() => {}, 0)); // Hack to clear all recent timeouts
         
         setCurrentBattle(validatedBattle);
 
@@ -118,11 +173,18 @@ export const useBattleEmergencyReset = (
           duration: 5000,
         });
 
+        // Reset is complete
+        resetInProgressRef.current = false;
         return true;
       }
+      
+      // Reset is complete
+      resetInProgressRef.current = false;
       return false;
     } catch (e) {
       console.error("Failed during emergency reset:", e);
+      // Ensure we clear the in-progress flag even on error
+      resetInProgressRef.current = false;
       return false;
     }
   }, [
@@ -133,14 +195,22 @@ export const useBattleEmergencyReset = (
 
   // Monitor for stuck battles
   useEffect(() => {
+    // Skip monitoring during initial load
+    if (initialLoadRef.current) {
+      initialLoadRef.current = false;
+      console.log("🔍 useBattleEmergencyReset: First mount, skipping stuck detection for initial load");
+      return;
+    }
+    
     if (currentBattle.length > 0) {
-      const currentIds = currentBattle.map(p => p.id).join(',');
-      const timestamp = Date.now();
+      const currentIds = currentBattle.map(p => p.id);
+      const now = Date.now();
+      const timestamp = now;
       
       // Keep track of the battle in localStorage for debugging
       try {
         localStorage.setItem('pokemon-battle-debug-current', JSON.stringify({
-          ids: currentIds,
+          ids: currentIds.join(','),
           timestamp,
           names: currentBattle.map(p => p.name)
         }));
@@ -148,11 +218,30 @@ export const useBattleEmergencyReset = (
         console.warn("Failed to store debug info:", e);
       }
       
-      // Add a unique ID to the timeout to prevent stale closures
+      // Check if this is a repeat of the last battle
+      if (previousBattleIdsRef.current.length > 0 && 
+          areBattlesIdentical(currentBattle, previousBattleIdsRef.current)) {
+        console.warn(`⚠️ DUPLICATE BATTLE DETECTED: Same Pokémon [${currentIds.join(',')}] appeared again`);
+        
+        // Check for localStorage problems that might be causing issues
+        const recentlyUsed = localStorage.getItem('pokemon-battle-recently-used');
+        const lastBattle = localStorage.getItem('pokemon-battle-last-battle');
+
+        if (recentlyUsed || lastBattle || resetCountRef.current < 3) {
+          console.log("🔄 Triggering emergency reset due to duplicate battle");
+          performEmergencyReset();
+        }
+      } else {
+        // Update our tracking of previous battle
+        previousBattleIdsRef.current = [...currentIds];
+      }
+      
+      // Still monitor for stuck battles, but with a reasonable timeout
       const timeoutId = setTimeout(() => {
         // Check if the battle is still the same after the timeout
-        if (currentBattle.map(p => p.id).join(',') === currentIds) {
-          console.warn(`⚠️ STUCK DETECTION: Same battle [${currentIds}] for 10+ seconds`);
+        // This helps detect if the UI is stuck showing the same battle for too long
+        if (currentBattle.map(p => p.id).join(',') === currentIds.join(',')) {
+          console.warn(`⚠️ STUCK DETECTION: Same battle [${currentIds.join(',')}] for 10+ seconds`);
           
           // Before doing a reset, check if there's any localStorage that might be causing issues
           const recentlyUsed = localStorage.getItem('pokemon-battle-recently-used');
@@ -168,7 +257,7 @@ export const useBattleEmergencyReset = (
             performEmergencyReset();
           }
         }
-      }, 10000);
+      }, 10000); // 10-second timeout is reasonable for detecting truly stuck battles
 
       return () => clearTimeout(timeoutId);
     }
@@ -176,8 +265,9 @@ export const useBattleEmergencyReset = (
 
   // Listen for manual reset requests
   useEffect(() => {
-    const handleForceReset = () => {
-      console.log("🚨 Force emergency reset requested externally");
+    const handleForceReset = (e: Event) => {
+      const event = e as CustomEvent;
+      console.log("🚨 Force emergency reset requested externally", event.detail || '');
       performEmergencyReset();
     };
 
