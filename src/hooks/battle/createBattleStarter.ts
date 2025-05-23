@@ -1,4 +1,3 @@
-
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
 
@@ -24,6 +23,8 @@ export function createBattleStarter(
   let battleCounter = 0;
   // Keep track of pairs that have fought before to avoid repetitive matchups
   const previousMatchups = new Set<string>();
+  // Keep track of the number of unranked Pokémon selections to ensure variety
+  let unrankedSelectionCounter = 0;
   
   // Initialize suggestion tracking
   if (suggestedPokemon.length > 0) {
@@ -342,6 +343,95 @@ function selectSuggestedPokemonForced(battleType: BattleType): Pokemon[] | null 
 }
 
   /**
+   * Explicitly selects unranked Pokémon to ensure variety in battles
+   * This is the key function to fix the milestone-related variety problem
+   */
+  function selectUnrankedPokemon(battleType: BattleType): Pokemon[] | null {
+    console.log(`[CREATE_BATTLE_STARTER] selectUnrankedPokemon: Explicitly selecting unranked Pokémon`);
+    
+    const battleSize = battleType === "triplets" ? 3 : 2;
+    const result: Pokemon[] = [];
+    
+    // CRITICAL FIX: Calculate truly unranked Pokémon (available in allPokemon but not in rankedPokemon)
+    const unrankedPokemonIds = new Set<number>();
+    allPokemon.forEach(p => {
+      if (!rankedPokemon.some(rp => rp.id === p.id)) {
+        unrankedPokemonIds.add(p.id);
+      }
+    });
+    
+    const unrankedPokemon = allPokemon.filter(p => unrankedPokemonIds.has(p.id));
+    
+    console.log(`[CREATE_BATTLE_STARTER] Found ${unrankedPokemon.length} unranked Pokémon out of ${allPokemon.length} total Pokémon. Ranked count: ${rankedPokemon.length}`);
+    
+    // If we have no unranked Pokémon, return null to try other strategies
+    if (unrankedPokemon.length === 0) {
+      console.log(`[CREATE_BATTLE_STARTER] No unranked Pokémon available. Skipping unranked selection.`);
+      return null;
+    }
+    
+    // Filter out recently used Pokémon
+    const eligibleUnranked = unrankedPokemon.filter(p => !recentlyUsed.has(p.id));
+    
+    console.log(`[CREATE_BATTLE_STARTER] Found ${eligibleUnranked.length} eligible unranked Pokémon (excluding recently used)`);
+    
+    // If we have enough eligible unranked Pokémon, select from them
+    if (eligibleUnranked.length >= battleSize) {
+      // Shuffle and select
+      const selectedUnranked = shuffleArray(eligibleUnranked).slice(0, battleSize);
+      result.push(...selectedUnranked);
+      
+      // Mark as recently used
+      result.forEach(p => recentlyUsed.add(p.id));
+      
+      console.log(`[CREATE_BATTLE_STARTER] Successfully created battle with ${battleSize} unranked Pokémon:`, result.map(p => p.name).join(", "));
+      unrankedSelectionCounter++;
+      console.log(`[CREATE_BATTLE_STARTER] Unranked selection counter: ${unrankedSelectionCounter}`);
+      return result;
+    } 
+    // If we need to mix with ranked Pokémon
+    else if (eligibleUnranked.length > 0) {
+      // Use all available eligible unranked
+      result.push(...eligibleUnranked);
+      
+      // Get the rest from ranked Pokémon
+      const neededMore = battleSize - result.length;
+      const eligibleRanked = rankedPokemon.filter(p => 
+        !recentlyUsed.has(p.id) && !result.some(selected => selected.id === p.id)
+      );
+      
+      if (eligibleRanked.length >= neededMore) {
+        result.push(...shuffleArray(eligibleRanked).slice(0, neededMore));
+      } else {
+        // Fallback to any Pokémon
+        const remainingEligible = allPokemon.filter(p => 
+          !recentlyUsed.has(p.id) && !result.some(selected => selected.id === p.id)
+        );
+        
+        if (remainingEligible.length >= neededMore) {
+          result.push(...shuffleArray(remainingEligible).slice(0, neededMore));
+        } else {
+          // Absolute fallback - just get any Pokémon not already selected
+          const anyNotSelected = allPokemon.filter(p => !result.some(selected => selected.id === p.id));
+          result.push(...shuffleArray(anyNotSelected).slice(0, neededMore));
+        }
+      }
+      
+      // Mark as recently used
+      result.forEach(p => recentlyUsed.add(p.id));
+      
+      console.log(`[CREATE_BATTLE_STARTER] Created mixed battle with ${eligibleUnranked.length} unranked and ${result.length - eligibleUnranked.length} ranked Pokémon`);
+      console.log(`[CREATE_BATTLE_STARTER] Battle Pokémon:`, result.map(p => p.name).join(", "));
+      unrankedSelectionCounter++;
+      return result;
+    }
+    
+    // If we couldn't create a battle, return null
+    console.log(`[CREATE_BATTLE_STARTER] Failed to create unranked battle`);
+    return null;
+  }
+
+  /**
    * Start a new battle using selection strategies
    */
   function startNewBattle(battleType: BattleType = "pairs", forceSuggestionPriority: boolean = false): Pokemon[] {
@@ -350,6 +440,11 @@ function selectSuggestedPokemonForced(battleType: BattleType): Pokemon[] | null 
       console.error("Not enough Pokemon available for battle");
       return [];
     }
+
+    // DETAILED DIAGNOSTIC LOGS
+    console.log(`[CREATE_BATTLE_STARTER] Called startNewBattle. rankedPokemon size: ${rankedPokemon.length}, allPokemon size: ${allPokemon.length}, availablePokemon size: ${availablePokemon.length}`);
+    console.log(`[CREATE_BATTLE_STARTER] Suggestion count: ${suggested.size}, unrankedSelectionCounter: ${unrankedSelectionCounter}`);
+    console.log(`[CREATE_BATTLE_STARTER] recentlyUsed size: ${recentlyUsed.size}, battleCounter: ${battleCounter}`);
 
     const battleSize = battleType === "triplets" ? 3 : 2;
     let selectedPokemon: Pokemon[] = [];
@@ -366,13 +461,22 @@ function selectSuggestedPokemonForced(battleType: BattleType): Pokemon[] | null 
     
     // Log the decision process for forcing suggestions
     const suggestionProbability = forceSuggestionPriority ? 1.0 : 0.85;
-    const isForcingSuggestions = (forceSuggestionPriority) || 
+    const shouldForceSuggestions = (forceSuggestionPriority) || 
                              (suggested.size > 0 && Math.random() < suggestionProbability) || 
                              (consecutiveNonSuggestionBattles >= 3 && suggested.size > 0);
-    console.log(`[DEBUG createBattleStarter - startNewBattle DECISION] forceSuggestionPriority: ${forceSuggestionPriority}, suggested.size: ${suggested.size}, Math.random() < prob: ${Math.random() < suggestionProbability}, consecutiveNonSuggestionBattles: ${consecutiveNonSuggestionBattles}. FINAL DECISION to force: ${isForcingSuggestions}`);
+    console.log(`[DEBUG createBattleStarter - startNewBattle DECISION] forceSuggestionPriority: ${forceSuggestionPriority}, suggested.size: ${suggested.size}, Math.random() < prob: ${Math.random() < suggestionProbability}, consecutiveNonSuggestionBattles: ${consecutiveNonSuggestionBattles}. FINAL DECISION to force: ${shouldForceSuggestions}`);
 
-    if (isForcingSuggestions) {
-      console.log(`[DEBUG createBattleStarter - startNewBattle] Trying selectSuggestedPokemonForced or selectSuggestedPokemon due to forcing conditions.`);
+    // CRITICAL FIX: After every 5 battles (or configured number), force selection of unranked Pokémon
+    // This ensures we continuously introduce new Pokémon into the ranking system
+    const FORCE_UNRANKED_FREQUENCY = 3; // Force unranked selection every X battles
+    const shouldForceUnranked = battleCounter % FORCE_UNRANKED_FREQUENCY === 0 || unrankedSelectionCounter < 3;
+
+    // Try different selection strategies in order of priority
+    let battleSelected = false;
+
+    // 1. HIGHEST PRIORITY: If we need to force suggestions and have suggestions available
+    if (shouldForceSuggestions && suggested.size > 0) {
+      console.log(`[CREATE_BATTLE_STARTER] Trying suggestion-focused battle selection`);
       
       // Try to create a suggestion-focused battle
       const suggestedBattle = forceSuggestionPriority 
@@ -382,6 +486,7 @@ function selectSuggestedPokemonForced(battleType: BattleType): Pokemon[] | null 
       if (suggestedBattle) {
         selectedPokemon = suggestedBattle;
         consecutiveNonSuggestionBattles = 0;
+        battleSelected = true;
         
         // Verify if the battle contains a suggestion
         const hasSuggestion = suggestedBattle.some(p => {
@@ -396,45 +501,114 @@ function selectSuggestedPokemonForced(battleType: BattleType): Pokemon[] | null 
           console.log("✅ Successfully created a battle with suggested Pokemon");
         }
       } else {
-        // If no suggestion battle could be created, create a random battle
+        console.log("⚠️ Could not create suggestion battle, will try other selection methods");
         consecutiveNonSuggestionBattles++;
-        console.log("⚠️ Could not create suggestion battle, using random selection");
-        
-        // CHANGE: Prioritize using rankedPokemon objects
-        const eligibleRankedPokemon = rankedPokemon.filter(p => !recentlyUsed.has(p.id));
-        if (eligibleRankedPokemon.length >= battleSize) {
-          selectedPokemon = shuffleArray(eligibleRankedPokemon).slice(0, battleSize);
-        } else {
-          selectedPokemon = shuffleArray(availablePokemon)
-            .filter(p => !recentlyUsed.has(p.id))
-            .slice(0, battleSize);
-          
-          // If we still don't have enough Pokemon, use any available
-          if (selectedPokemon.length < battleSize) {
-            selectedPokemon = shuffleArray(availablePokemon).slice(0, battleSize);
-          }
-        }
       }
-    } else {
-      // Otherwise, create a random battle
+    }
+    
+    // 2. SECOND PRIORITY: If we need to force unranked selection and haven't selected a battle yet
+    if (!battleSelected && shouldForceUnranked) {
+      console.log(`[CREATE_BATTLE_STARTER] Trying unranked Pokémon selection (forced variety)`);
+      
+      const unrankedBattle = selectUnrankedPokemon(battleType);
+      if (unrankedBattle) {
+        selectedPokemon = unrankedBattle;
+        battleSelected = true;
+        console.log("✅ Successfully created a battle with unranked Pokemon for variety");
+      } else {
+        console.log("⚠️ Could not create unranked battle, will try other selection methods");
+      }
+    }
+    
+    // 3. THIRD PRIORITY: If we still haven't selected a battle, use standard random selection
+    if (!battleSelected) {
+      console.log(`[CREATE_BATTLE_STARTER] Using standard random battle selection`);
       consecutiveNonSuggestionBattles++;
       
-      // CHANGE: Prefer rankedPokemon objects when available
-      const eligibleRankedPokemon = rankedPokemon.filter(p => !recentlyUsed.has(p.id));
-      if (eligibleRankedPokemon.length >= battleSize) {
-        selectedPokemon = shuffleArray(eligibleRankedPokemon).slice(0, battleSize);
+      // IMPROVED APPROACH: Balanced selection between ranked and unranked
+      const unrankedPokemonIds = new Set<number>();
+      allPokemon.forEach(p => {
+        if (!rankedPokemon.some(rp => rp.id === p.id)) {
+          unrankedPokemonIds.add(p.id);
+        }
+      });
+      
+      // If rankedPokemon is growing too large compared to unranked, prioritize unranked
+      const unrankedPercentage = (unrankedPokemonIds.size / allPokemon.length) * 100;
+      console.log(`[CREATE_BATTLE_STARTER] ${unrankedPokemonIds.size} unranked Pokémon remaining (${unrankedPercentage.toFixed(1)}% of total)`);
+      
+      // Decide whether to prioritize unranked based on their percentage
+      // The fewer unranked Pokémon remain, the more we should prioritize them
+      const prioritizeUnranked = Math.random() < (1 - (unrankedPercentage / 100));
+      
+      if (prioritizeUnranked && unrankedPokemonIds.size > 0) {
+        // Select from unranked
+        console.log(`[CREATE_BATTLE_STARTER] Prioritizing selection from unranked pool (${unrankedPokemonIds.size} Pokémon)`);
+        const unrankedPool = allPokemon.filter(p => unrankedPokemonIds.has(p.id) && !recentlyUsed.has(p.id));
+        
+        if (unrankedPool.length >= battleSize) {
+          selectedPokemon = shuffleArray(unrankedPool).slice(0, battleSize);
+          console.log(`[CREATE_BATTLE_STARTER] Selected ${battleSize} unranked Pokémon`);
+          unrankedSelectionCounter++;
+        } else if (unrankedPool.length > 0) {
+          // Select available unranked and fill with ranked
+          selectedPokemon = [...unrankedPool];
+          const neededMore = battleSize - selectedPokemon.length;
+          
+          console.log(`[CREATE_BATTLE_STARTER] Selected ${unrankedPool.length} unranked Pokémon, need ${neededMore} more`);
+          
+          // Get the rest from eligible ranked Pokémon
+          const eligibleRanked = rankedPokemon.filter(p => 
+            !recentlyUsed.has(p.id) && !selectedPokemon.some(s => s.id === p.id)
+          );
+          
+          if (eligibleRanked.length >= neededMore) {
+            const additionalPokemon = shuffleArray(eligibleRanked).slice(0, neededMore);
+            selectedPokemon.push(...additionalPokemon);
+            console.log(`[CREATE_BATTLE_STARTER] Added ${neededMore} ranked Pokémon to complete battle`);
+            unrankedSelectionCounter++;
+          } else {
+            // Fall back to any Pokémon not already selected
+            const anyRemaining = allPokemon.filter(p => 
+              !recentlyUsed.has(p.id) && !selectedPokemon.some(s => s.id === p.id)
+            );
+            
+            if (anyRemaining.length >= neededMore) {
+              const additionalPokemon = shuffleArray(anyRemaining).slice(0, neededMore);
+              selectedPokemon.push(...additionalPokemon);
+              console.log(`[CREATE_BATTLE_STARTER] Added ${neededMore} other Pokémon to complete battle`);
+            } else {
+              // Last resort - use any Pokémon not already in the battle
+              const completelyRandom = allPokemon.filter(p => !selectedPokemon.some(s => s.id === p.id));
+              const additionalPokemon = shuffleArray(completelyRandom).slice(0, neededMore);
+              selectedPokemon.push(...additionalPokemon);
+              console.log(`[CREATE_BATTLE_STARTER] Added ${additionalPokemon.length} random Pokémon to complete battle`);
+            }
+          }
+        } else {
+          // If no unranked available, fall back to random selection
+          console.log(`[CREATE_BATTLE_STARTER] No eligible unranked Pokémon available, using mixed selection`);
+          const notRecentlyUsed = allPokemon.filter(p => !recentlyUsed.has(p.id));
+          if (notRecentlyUsed.length >= battleSize) {
+            selectedPokemon = shuffleArray(notRecentlyUsed).slice(0, battleSize);
+          } else {
+            selectedPokemon = shuffleArray(allPokemon).slice(0, battleSize);
+          }
+        }
       } else {
-        // Prefer Pokemon not used recently
-        const notRecentlyUsed = availablePokemon.filter(p => !recentlyUsed.has(p.id));
+        // Standard random selection
+        console.log(`[CREATE_BATTLE_STARTER] Using mixed random selection`);
+        const notRecentlyUsed = allPokemon.filter(p => !recentlyUsed.has(p.id));
         if (notRecentlyUsed.length >= battleSize) {
           selectedPokemon = shuffleArray(notRecentlyUsed).slice(0, battleSize);
         } else {
-          selectedPokemon = shuffleArray(availablePokemon).slice(0, battleSize);
+          selectedPokemon = shuffleArray(allPokemon).slice(0, battleSize);
         }
       }
     }
     
-    // Add these Pokemon to the recently used set
+    // Increment battle counter and update recently used
+    battleCounter++;
     selectedPokemon.forEach(p => recentlyUsed.add(p.id));
     
     // Limit the size of the recently used set
@@ -443,7 +617,16 @@ function selectSuggestedPokemonForced(battleType: BattleType): Pokemon[] | null 
       idsToRemove.forEach(id => recentlyUsed.delete(id));
     }
     
-    // ADD NEW LOGGING BEFORE SETTING CURRENT BATTLE
+    // Log the types of Pokémon selected (ranked vs unranked)
+    const rankedIds = new Set(rankedPokemon.map(p => p.id));
+    const numRanked = selectedPokemon.filter(p => rankedIds.has(p.id)).length;
+    const numUnranked = selectedPokemon.length - numRanked;
+    
+    console.log(`[CREATE_BATTLE_STARTER] Final battle: ${numRanked} ranked Pokémon and ${numUnranked} unranked Pokémon`);
+    console.log(`[CREATE_BATTLE_STARTER] Selected Pokémon IDs:`, selectedPokemon.map(p => p.id).join(", "));
+    console.log(`[CREATE_BATTLE_STARTER] Selected Pokémon names:`, selectedPokemon.map(p => p.name).join(", "));
+    
+    // Log detailed info about each selected Pokémon
     console.log(`[DEBUG createBattleStarter - PRE_SET_CURRENT_BATTLE] Preparing to call setCurrentBattle. Inspecting objects in 'selectedPokemon':`);
     if (selectedPokemon && selectedPokemon.length > 0) {
       selectedPokemon.forEach(p => {
@@ -503,4 +686,3 @@ function selectSuggestedPokemonForced(battleType: BattleType): Pokemon[] | null 
 
   return { startNewBattle, selectSuggestedPokemonForced };
 }
-
