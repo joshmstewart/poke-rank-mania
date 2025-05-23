@@ -27,6 +27,7 @@ const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
   const [imageError, setImageError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [currentImageUrl, setCurrentImageUrl] = useState<string>("");
+  const [currentImageType, setCurrentImageType] = useState<PokemonImageType>(getPreferredImageType());
 
   const normalizedId = normalizePokedexNumber(pokemon.id);
   const formattedName = formatPokemonName(pokemon.name);
@@ -35,10 +36,15 @@ const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
     setImageLoaded(false);
     setImageError(false);
     setRetryCount(0);
+    const preference = getPreferredImageType();
+    setCurrentImageType(preference);
     const url = getPreferredImageUrl(pokemon.id);
     setCurrentImageUrl(url);
-    new Image().src = url;
-  }, [pokemon.id]);
+    
+    if (process.env.NODE_ENV === "development") {
+      console.log(`🖼️ PokemonCard: Loading "${preference}" image for ${formattedName} (#${pokemon.id})`);
+    }
+  }, [pokemon.id, formattedName]);
 
   useEffect(() => {
     updateImage();
@@ -47,14 +53,28 @@ const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
     return () => window.removeEventListener("imagePreferenceChanged", handlePreferenceChange);
   }, [updateImage]);
 
-  const handleImageLoad = () => setImageLoaded(true);
+  const handleImageLoad = () => {
+    setImageLoaded(true);
+    if (retryCount > 0 && process.env.NODE_ENV === "development") {
+      console.log(`✅ Successfully loaded fallback image (type: ${currentImageType}) for ${formattedName}`);
+    }
+  };
+  
   const handleImageError = () => {
     if (retryCount < 3) {
-      // Use default sprites as first fallback
-      const nextUrl = getPreferredImageUrl(pokemon.id, retryCount + 1);
-      setRetryCount(c => c + 1);
+      const nextRetry = retryCount + 1;
+      const nextUrl = getPreferredImageUrl(pokemon.id, nextRetry);
+      
+      console.log(`❌ Image load failed for ${formattedName} (#${pokemon.id}) with type "${currentImageType}" - trying fallback #${nextRetry}`);
+      
+      setRetryCount(nextRetry);
       setCurrentImageUrl(nextUrl);
+      
+      // Preload the next image
+      const img = new Image();
+      img.src = nextUrl;
     } else {
+      console.error(`⛔ All image fallbacks failed for ${formattedName} (#${pokemon.id})`);
       setImageError(true);
     }
   };

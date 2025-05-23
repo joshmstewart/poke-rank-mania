@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { getPokemonTypeColor } from "./utils/pokemonTypeColors";
-import { getPreferredImageUrl } from "@/components/settings/ImagePreferenceSelector";
+import { getPreferredImageUrl, getPreferredImageType } from "@/components/settings/ImagePreferenceSelector";
 import { normalizePokedexNumber, capitalizeSpecialForms } from "@/utils/pokemonUtils";
 import {
   HoverCard,
@@ -33,6 +33,8 @@ const PokemonThumbnail: React.FC<PokemonThumbnailProps> = ({
   const formattedName = capitalizeSpecialForms(pokemon.name);
   const generation = getPokemonGeneration(pokemon.id);
   const [imageSrc, setImageSrc] = useState(getPreferredImageUrl(pokemon.id));
+  const [retryCount, setRetryCount] = useState(0);
+  const [currentImageType, setCurrentImageType] = useState<PokemonImageType>(getPreferredImageType());
   
   // Check if the pokemon has ranking properties (is a RankedPokemon)
   const isRankedPokemon = (pokemon: Pokemon): pokemon is RankedPokemon => {
@@ -51,18 +53,30 @@ const PokemonThumbnail: React.FC<PokemonThumbnailProps> = ({
   
   // Load image on component mount and if Pokemon changes
   useEffect(() => {
+    const preference = getPreferredImageType();
+    setCurrentImageType(preference);
     const url = getPreferredImageUrl(pokemon.id);
-    console.log(`🖼️ PokemonThumbnail: Loading image for ${pokemon.name} from: ${url}`);
+    
+    if (process.env.NODE_ENV === "development") {
+      console.log(`🖼️ PokemonThumbnail: Loading "${preference}" image for ${formattedName} (#${pokemon.id})`);
+    }
+    
     setImageSrc(url);
-  }, [pokemon.id, pokemon.name]);
+    setRetryCount(0);
+  }, [pokemon.id, formattedName]);
   
-  // Handle image load errors - prioritize default sprite as first fallback
+  // Handle image load errors with improved logging
   const handleImageError = () => {
-    console.log(`❌ Image failed to load for ${pokemon.name}, trying fallback`);
-    // Try default sprite as first fallback
-    const fallbackUrl = getPreferredImageUrl(pokemon.id, 1);
-    console.log(`🖼️ Using fallback URL: ${fallbackUrl}`);
-    setImageSrc(fallbackUrl);
+    if (retryCount < 3) {
+      const nextRetry = retryCount + 1;
+      console.log(`❌ Thumbnail image load failed for ${formattedName} (#${pokemon.id}) with type "${currentImageType}" - trying fallback #${nextRetry}`);
+      
+      const fallbackUrl = getPreferredImageUrl(pokemon.id, nextRetry);
+      setImageSrc(fallbackUrl);
+      setRetryCount(nextRetry);
+    } else {
+      console.error(`⛔ All image fallbacks failed for ${formattedName} thumbnail`);
+    }
   };
   
   // Handle direction change (up/down arrows)

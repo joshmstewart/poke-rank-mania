@@ -2,7 +2,7 @@
 import React, { memo, useCallback, useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Pokemon } from "@/services/pokemon";
-import { getPreferredImageUrl } from "@/components/settings/ImagePreferenceSelector";
+import { getPreferredImageUrl, getPreferredImageType, PokemonImageType } from "@/components/settings/ImagePreferenceSelector";
 import { formatPokemonName } from "@/utils/pokemonUtils";
 
 interface BattleCardProps {
@@ -18,6 +18,7 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
   const [imageError, setImageError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [currentImageUrl, setCurrentImageUrl] = useState("");
+  const [currentImageType, setCurrentImageType] = useState<PokemonImageType>(getPreferredImageType());
 
   const formattedName = formatPokemonName(pokemon.name);
 
@@ -25,10 +26,15 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
     setImageLoaded(false);
     setImageError(false);
     setRetryCount(0);
+    const preference = getPreferredImageType();
+    setCurrentImageType(preference);
     const url = getPreferredImageUrl(pokemon.id);
     setCurrentImageUrl(url);
-    new Image().src = url;
-  }, [pokemon.id]);
+    
+    if (process.env.NODE_ENV === "development") {
+      console.log(`🖼️ BattleCard: Loading "${preference}" image for ${formattedName} (#${pokemon.id})`);
+    }
+  }, [pokemon.id, formattedName]);
 
   useEffect(() => {
     updateImage();
@@ -37,13 +43,22 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
     return () => window.removeEventListener("imagePreferenceChanged", handlePreferenceChange);
   }, [updateImage]);
 
-  const handleImageLoad = () => setImageLoaded(true);
+  const handleImageLoad = () => {
+    setImageLoaded(true);
+    if (retryCount > 0 && process.env.NODE_ENV === "development") {
+      console.log(`✅ Successfully loaded fallback image (type: ${currentImageType}) for ${formattedName} in battle`);
+    }
+  };
+  
   const handleImageError = () => {
     if (retryCount < 3) {
-      // Use default sprite as first fallback
-      setRetryCount(c => c + 1);
-      setCurrentImageUrl(getPreferredImageUrl(pokemon.id, retryCount + 1));
+      const nextRetry = retryCount + 1;
+      console.log(`❌ Battle image load failed for ${formattedName} with type "${currentImageType}" - trying fallback #${nextRetry}`);
+      
+      setRetryCount(nextRetry);
+      setCurrentImageUrl(getPreferredImageUrl(pokemon.id, nextRetry));
     } else {
+      console.error(`⛔ All image fallbacks failed for ${formattedName} in battle`);
       setImageError(true);
     }
   };
