@@ -97,7 +97,8 @@ export const useBattleStateCore = (
     filteredPokemon, 
     finalRankings, 
     setCurrentBattle,
-    setSelectedPokemon
+    setSelectedPokemon,
+    markSuggestionUsed // Pass markSuggestionUsed to useBattleStarterIntegration
   );
   console.log("🎯 [useBattleStarterIntegration] initialized:", { battleStarter, currentBattle, filteredPokemonCount: filteredPokemon.length });
 

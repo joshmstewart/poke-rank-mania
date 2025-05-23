@@ -1,4 +1,3 @@
-
 import { useMemo, useEffect, useRef, useCallback } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
@@ -10,7 +9,8 @@ export const useBattleStarterIntegration = (
   allPokemon: Pokemon[],
   currentRankings: RankedPokemon[],
   setCurrentBattle: React.Dispatch<React.SetStateAction<Pokemon[]>>,
-  setSelectedPokemon: React.Dispatch<React.SetStateAction<number[]>>
+  setSelectedPokemon: React.Dispatch<React.SetStateAction<number[]>>,
+  markSuggestionFullyUsed?: (pokemon: RankedPokemon, fullyUsed: boolean) => void
 ) => {
   const processedSuggestionBattlesRef = useRef<Set<number>>(new Set());
   const suggestionBattleCountRef = useRef(0);
@@ -197,6 +197,21 @@ export const useBattleStarterIntegration = (
       console.log(`🎮 Using standard battle selection (forceUnrankedSelection: ${forceUnrankedSelection})`);
     }
 
+    // NEW: Check for suggestions marked as fully used by createBattleStarter
+    // and persist this state using markSuggestionFullyUsed
+    if (battle && markSuggestionFullyUsed) {
+      battle.forEach(pokemonInBattle => {
+        const pk = pokemonInBattle as RankedPokemon;
+        if (pk.suggestedAdjustment && pk.suggestedAdjustment.used === true) {
+          // This 'used === true' flag was set by createBattleStarter when count >= 2.
+          // Because selectSuggestedPokemonForced filters for !used, if this Pokemon was selected
+          // as a suggestion and is now marked .used = true, it means createBattleStarter just did it.
+          console.log(`[useBattleStarterIntegration] Detected ${pk.name} was marked as fully used by createBattleStarter. Persisting this state.`);
+          markSuggestionFullyUsed(pk, true);
+        }
+      });
+    }
+
     // DIAGNOSTICS: Check if battle contains suggestions or new Pokémon
     const hasSuggestionInBattle = battle.some(pokemon => {
       const rankedPokemon = currentRankings.find(p => p.id === pokemon.id);
@@ -229,7 +244,7 @@ export const useBattleStarterIntegration = (
     console.log("📌 Updating current battle state explicitly with IDs:", battle.map(p => p.id));
 
     return battle;
-  }, [battleStarter, currentRankings, setCurrentBattle, allPokemon]);
+  }, [battleStarter, currentRankings, setCurrentBattle, allPokemon, markSuggestionFullyUsed]);
 
   const { performEmergencyReset } = useBattleEmergencyReset(
     [] as Pokemon[],
