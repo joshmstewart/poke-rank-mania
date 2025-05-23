@@ -36,6 +36,7 @@ const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
   const [currentImageUrl, setCurrentImageUrl] = useState<string>("");
   const [currentImageType, setCurrentImageType] = useState<PokemonImageType>(getPreferredImageType());
   const initialUrlRef = useRef<string>(""); // Using ref to ensure it doesn't change
+  const hasInitialLoadRef = useRef<boolean>(false); // Track if we've attempted the first load
 
   // Store the consistent pokemon ID
   const pokemonId = validatedPokemon.id;
@@ -61,6 +62,9 @@ const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
     setCurrentImageUrl(url);
     initialUrlRef.current = url; // Store initial URL in ref
     
+    // Set initial load flag
+    hasInitialLoadRef.current = true;
+    
     // Log only during development or if explicitly debugging
     if (process.env.NODE_ENV === "development") {
       console.log(`🖼️ PokemonCard: Loading "${preference}" image for ${formattedName} (#${pokemonId}): ${url}`);
@@ -71,18 +75,27 @@ const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
           .then(response => {
             if (!response.ok) {
               console.warn(`⚠️ Image URL check: ${url} returned status ${response.status} - likely to fail loading`);
+              // Pre-emptively try first fallback if HEAD request fails
+              if (!imageLoaded && !imageError && retryCount === 0) {
+                handleImageError();
+              }
             } else {
               console.log(`✅ Image URL check: ${url} exists on server`);
             }
           })
           .catch(error => {
             console.warn(`⚠️ Image URL check failed for ${url}: ${error.message}`);
+            // Pre-emptively try first fallback if HEAD request fails
+            if (!imageLoaded && !imageError && retryCount === 0) {
+              handleImageError();
+            }
           });
       } else {
         console.warn(`⚠️ PokemonCard: Empty URL generated for ${formattedName} (#${pokemonId})`);
+        handleImageError();
       }
     }
-  }, [pokemonId, formattedName]);
+  }, [pokemonId, formattedName, imageLoaded, imageError, retryCount]);
 
   useEffect(() => {
     updateImage();
@@ -90,6 +103,20 @@ const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
     window.addEventListener("imagePreferenceChanged", handlePreferenceChange);
     return () => window.removeEventListener("imagePreferenceChanged", handlePreferenceChange);
   }, [updateImage]);
+
+  // Add a safety timeout to trigger fallback if image doesn't load in a reasonable time
+  useEffect(() => {
+    if (hasInitialLoadRef.current && !imageLoaded && !imageError) {
+      const safetyTimer = setTimeout(() => {
+        if (!imageLoaded && !imageError && retryCount === 0) {
+          console.warn(`⏱️ Image load timeout for ${formattedName} - triggering fallback`);
+          handleImageError();
+        }
+      }, 2000); // 2 second timeout
+      
+      return () => clearTimeout(safetyTimer);
+    }
+  }, [imageLoaded, imageError, formattedName, retryCount]);
 
   const handleImageLoad = () => {
     setImageLoaded(true);
@@ -135,7 +162,7 @@ const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
       setRetryCount(nextRetry);
       setCurrentImageUrl(nextUrl);
       
-      // Preload the next image
+      // Preload the next image to check if it exists
       const img = new Image();
       img.src = nextUrl;
     } else {
@@ -150,14 +177,16 @@ const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
         <div className={`${compact ? "w-16 h-16" : "w-20 h-20"} bg-gray-50 rounded-md relative`}>
           <AspectRatio ratio={1}>
             {!imageLoaded && !imageError && <div className="animate-pulse bg-gray-200 absolute inset-0"></div>}
-            <img
-              src={currentImageUrl}
-              alt={formattedName}
-              className={`w-full h-full object-contain p-1 transition-opacity ${imageLoaded ? "opacity-100" : "opacity-0"}`}
-              loading="lazy"
-              onLoad={handleImageLoad}
-              onError={handleImageError}
-            />
+            {currentImageUrl && (
+              <img
+                src={currentImageUrl}
+                alt={formattedName}
+                className={`w-full h-full object-contain p-1 transition-opacity ${imageLoaded ? "opacity-100" : "opacity-0"}`}
+                loading="lazy"
+                onLoad={handleImageLoad}
+                onError={handleImageError}
+              />
+            )}
             {imageError && (
               <div className="absolute inset-0 flex flex-col justify-center items-center bg-gray-100 text-xs p-1">
                 <div className="font-medium">{formattedName}</div>

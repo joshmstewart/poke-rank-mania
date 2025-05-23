@@ -88,7 +88,7 @@ export function getPokemonImageUrl(id: number, fallbackLevel: number = 0): strin
         break;
       case "default":
       default:
-        url = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon//${normalizedId}.png`;
+        url = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${normalizedId}.png`;
         break;
     }
     
@@ -100,10 +100,15 @@ export function getPokemonImageUrl(id: number, fallbackLevel: number = 0): strin
     console.log(`🔄 Image ID normalization: Original ID ${id} → Normalized ID ${normalizedId}`);
   }
 
-  // If we're at fallback level 0, always use the preferred type and ALWAYS generate a URL
+  // If we're at fallback level 0, use the preferred type
   if (fallbackLevel === 0) {
-    const url = getImageUrl(preferredType);
-    return url;
+    // Pre-check if we should immediately use a fallback based on known problematic IDs
+    // This helps prevent the initial image load failure
+    if (preferredType === "official" && (id > 10000 || id > 898)) {
+      // For newer Pokémon or special forms, default sprite is more reliable as first attempt
+      return getImageUrl("default");
+    }
+    return getImageUrl(preferredType);
   }
   
   // For fallbacks, get the appropriate type from our custom fallback chain

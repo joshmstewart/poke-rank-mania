@@ -47,6 +47,7 @@ const PokemonThumbnail: React.FC<PokemonThumbnailProps> = ({
   const [retryCount, setRetryCount] = useState(0);
   const [currentImageType, setCurrentImageType] = useState<PokemonImageType>(getPreferredImageType());
   const initialUrlRef = useRef<string>(""); // Using ref to ensure it doesn't change
+  const hasInitialLoadRef = useRef<boolean>(false); // Track if we've attempted the first load
   
   // Check if the pokemon has ranking properties (is a RankedPokemon)
   const isRankedPokemon = (pokemon: Pokemon): pokemon is RankedPokemon => {
@@ -73,6 +74,9 @@ const PokemonThumbnail: React.FC<PokemonThumbnailProps> = ({
     setImageSrc(url);
     initialUrlRef.current = url; // Store initial URL in ref
     
+    // Set initial load flag
+    hasInitialLoadRef.current = true;
+    
     if (process.env.NODE_ENV === "development") {
       console.log(`🖼️ PokemonThumbnail: Loading "${preference}" image for ${formattedName} (#${pokemonId}): ${url}`);
       
@@ -81,17 +85,35 @@ const PokemonThumbnail: React.FC<PokemonThumbnailProps> = ({
         .then(response => {
           if (!response.ok) {
             console.warn(`⚠️ Thumbnail image check: ${url} returned ${response.status}`);
+            // Pre-emptively try first fallback
+            handleImageError();
           } else {
             console.log(`✅ Thumbnail image check: ${url} exists on server`);
           }
         })
         .catch(error => {
           console.warn(`⚠️ Thumbnail image check failed: ${error.message}`);
+          // Pre-emptively try first fallback
+          handleImageError();
         });
     }
     
     setRetryCount(0);
   }, [pokemonId, formattedName]);
+  
+  // Add a safety timeout to trigger fallback if image doesn't load in a reasonable time
+  useEffect(() => {
+    if (hasInitialLoadRef.current) {
+      const safetyTimer = setTimeout(() => {
+        if (retryCount === 0) {
+          console.warn(`⏱️ Thumbnail image load timeout for ${formattedName} - triggering fallback`);
+          handleImageError();
+        }
+      }, 2000); // 2 second timeout
+      
+      return () => clearTimeout(safetyTimer);
+    }
+  }, [formattedName, retryCount]);
   
   // Update active state when suggestion changes
   useEffect(() => {
@@ -139,8 +161,19 @@ const PokemonThumbnail: React.FC<PokemonThumbnailProps> = ({
       
       setImageSrc(nextUrl);
       setRetryCount(nextRetry);
+      
+      // Preload the next image
+      const img = new Image();
+      img.src = nextUrl;
     } else {
       console.error(`⛔ All image fallbacks failed for ${formattedName} thumbnail`);
+    }
+  };
+  
+  // Handle image load success
+  const handleImageLoad = () => {
+    if (retryCount > 0) {
+      console.log(`✅ Successfully loaded fallback image for ${formattedName} thumbnail`);
     }
   };
   
@@ -203,13 +236,15 @@ const PokemonThumbnail: React.FC<PokemonThumbnailProps> = ({
           {/* Pokemon image in center - more compact */}
           <div className={`p-1 flex items-center justify-center ${typeColor} bg-opacity-20`}>
             <div className="w-full aspect-square relative flex items-center justify-center max-h-20">
-              <img 
-                src={imageSrc} 
-                alt={formattedName} 
-                className="object-contain max-h-16 p-1"
-                onLoad={() => console.log(`🖼️ Image loaded for Pokemon: ${pokemon.name} (${imageSrc})`)}
-                onError={handleImageError}
-              />
+              {imageSrc && (
+                <img 
+                  src={imageSrc} 
+                  alt={formattedName} 
+                  className="object-contain max-h-16 p-1"
+                  onLoad={handleImageLoad}
+                  onError={handleImageError}
+                />
+              )}
             </div>
           </div>
           

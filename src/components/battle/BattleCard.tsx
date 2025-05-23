@@ -1,3 +1,4 @@
+
 import React, { memo, useCallback, useState, useEffect, useRef, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Pokemon } from "@/services/pokemon";
@@ -26,6 +27,7 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
   const [currentImageUrl, setCurrentImageUrl] = useState("");
   const [currentImageType, setCurrentImageType] = useState<PokemonImageType>(getPreferredImageType());
   const initialUrlRef = useRef<string>(""); // Using ref to ensure it doesn't change
+  const hasInitialLoadRef = useRef<boolean>(false); // Track if we've attempted the first load
   
   const formattedName = formatPokemonName(validatedPokemon.name);
   const pokemonId = validatedPokemon.id; // Ensure we use the consistent ID throughout
@@ -47,6 +49,9 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
     setCurrentImageUrl(url);
     initialUrlRef.current = url; // Store initial URL in ref
     
+    // Set initial load flag
+    hasInitialLoadRef.current = true;
+    
     // Log only during development or if explicitly debugging
     if (process.env.NODE_ENV === "development") {
       console.log(`🖼️ BattleCard: Loading "${preference}" image for ${formattedName} (#${pokemonId}): ${url}`);
@@ -57,18 +62,27 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
           .then(response => {
             if (!response.ok) {
               console.warn(`⚠️ BattleCard image URL check: ${url} returned status ${response.status}`);
+              // Pre-emptively try first fallback if HEAD request fails
+              if (!imageLoaded && !imageError && retryCount === 0) {
+                handleImageError();
+              }
             } else {
               console.log(`✅ BattleCard image URL check: ${url} exists on server`);
             }
           })
           .catch(error => {
             console.warn(`⚠️ BattleCard image URL check failed for ${url}: ${error.message}`);
+            // Pre-emptively try first fallback if HEAD request fails
+            if (!imageLoaded && !imageError && retryCount === 0) {
+              handleImageError();
+            }
           });
       } else {
         console.warn(`⚠️ BattleCard: Empty URL generated for ${formattedName} (#${pokemonId})`);
+        handleImageError();
       }
     }
-  }, [pokemonId, formattedName]);
+  }, [pokemonId, formattedName, imageLoaded, imageError, retryCount]);
 
   // Update image when Pokemon changes
   useEffect(() => {
@@ -77,6 +91,20 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
     window.addEventListener("imagePreferenceChanged", handlePreferenceChange);
     return () => window.removeEventListener("imagePreferenceChanged", handlePreferenceChange);
   }, [updateImage, validatedPokemon.id]);
+
+  // Add a safety timeout to trigger fallback if image doesn't load in a reasonable time
+  useEffect(() => {
+    if (hasInitialLoadRef.current && !imageLoaded && !imageError) {
+      const safetyTimer = setTimeout(() => {
+        if (!imageLoaded && !imageError && retryCount === 0) {
+          console.warn(`⏱️ Image load timeout for ${formattedName} - triggering fallback`);
+          handleImageError();
+        }
+      }, 2000); // 2 second timeout
+      
+      return () => clearTimeout(safetyTimer);
+    }
+  }, [imageLoaded, imageError, formattedName, retryCount]);
 
   const handleImageLoad = () => {
     setImageLoaded(true);
@@ -120,6 +148,10 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
       
       setRetryCount(nextRetry);
       setCurrentImageUrl(nextUrl);
+      
+      // Preload the next image to check if it exists
+      const img = new Image();
+      img.src = nextUrl;
     } else {
       console.error(`⛔ All image fallbacks failed for ${formattedName} in battle`);
       setImageError(true);
@@ -135,13 +167,15 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
       <CardContent className="flex flex-col items-center p-4">
         <div className="w-32 h-32 relative">
           {!imageLoaded && !imageError && <div className="absolute inset-0 bg-gray-200 animate-pulse rounded-md"></div>}
-          <img
-            src={currentImageUrl}
-            alt={formattedName}
-            className={`w-full h-full object-contain transition-opacity ${imageLoaded ? "opacity-100" : "opacity-0"}`}
-            onLoad={handleImageLoad}
-            onError={handleImageError}
-          />
+          {currentImageUrl && (
+            <img
+              src={currentImageUrl}
+              alt={formattedName}
+              className={`w-full h-full object-contain transition-opacity ${imageLoaded ? "opacity-100" : "opacity-0"}`}
+              onLoad={handleImageLoad}
+              onError={handleImageError}
+            />
+          )}
           {imageError && (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-100 text-center p-1">
               <div className="text-xs font-medium">{formattedName}</div>
