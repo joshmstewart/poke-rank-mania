@@ -77,12 +77,17 @@ const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
   };
   
   const handleImageError = () => {
-    // Fix: Store the current URL that just failed before we change it
+    // Store the current URL that just failed
     const failedUrl = currentImageUrl;
     
     if (retryCount === 0) {
-      // Log the initial failure of the preferred image type with the actual URL
-      console.error(`🔴 Initial attempt to load '${currentImageType}' artwork for ${formattedName} (#${pokemon.id}) failed. URL: ${failedUrl}`);
+      if (!failedUrl || failedUrl.trim() === '') {
+        // If URL is empty or undefined
+        console.error(`🔴 Initial attempt to load '${currentImageType}' artwork for ${formattedName} (#${pokemon.id}) failed. No URL was available for the preferred style.`);
+      } else {
+        // Log the initial failure with the actual URL
+        console.error(`🔴 Initial attempt to load '${currentImageType}' artwork for ${formattedName} (#${pokemon.id}) failed. URL: ${failedUrl}`);
+      }
     }
     
     if (retryCount < 3) {

@@ -1,3 +1,4 @@
+
 import { Pokemon } from "../types";
 import { PokemonImageType, getPreferredImageType, POKEMON_IMAGE_PREFERENCE_KEY, DEFAULT_IMAGE_PREFERENCE } from "@/components/settings/ImagePreferenceSelector";
 
@@ -29,7 +30,7 @@ export function getPokemonImageUrl(id: number, fallbackLevel: number = 0): strin
     
     // Only log during development or if explicitly debugging
     if (process.env.NODE_ENV === "development") {
-      console.log(`🖼️ Getting image for Pokémon #${id} with preference: ${preferredType}`);
+      console.log(`🖼️ Getting image for Pokémon #${id} with preference: ${preferredType} - URL: ${url}`);
     }
     
     return url;
@@ -49,7 +50,7 @@ export function getPokemonImageUrl(id: number, fallbackLevel: number = 0): strin
   const url = getImageUrl(fallbackType);
   
   // Make it very clear in logs which style is being used as fallback
-  console.log(`🖼️ Pokémon #${id}: Original preference '${preferredType}' failed. Using fallback style '${fallbackType}', level: ${fallbackLevel}`);
+  console.log(`🖼️ Pokémon #${id}: Original preference '${preferredType}' failed. Using fallback style '${fallbackType}', level: ${fallbackLevel} - URL: ${url}`);
   
   return url;
 }
