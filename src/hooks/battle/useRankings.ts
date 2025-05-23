@@ -76,6 +76,9 @@ export const useRankings = (allPokemon: Pokemon[]) => {
     // Update the previous results reference
     previousResultsRef.current = [...results];
 
+    // This call updates activeSuggestionsRef.current internally in useRankingSuggestions
+    const currentActiveSuggestions = loadSavedSuggestions(); // Use the returned Map
+
     // Perform the ranking generation synchronously
     const countMap = new Map<number, number>();
 
@@ -96,7 +99,8 @@ export const useRankings = (allPokemon: Pokemon[]) => {
         const normalizedConfidence = Math.max(0, Math.min(100, 100 * (1 - (p.rating.sigma / 8.33))));
 
         const pokemonFrozenStatus = frozenPokemon[p.id] || {};
-        const suggestedAdjustment = activeSuggestions.get(p.id);
+        // IMPORTANT: Use 'currentActiveSuggestions' (the result of loadSavedSuggestions)
+        const suggestedAdjustment = currentActiveSuggestions.get(p.id);
 
         return {
           ...p,
@@ -104,7 +108,7 @@ export const useRankings = (allPokemon: Pokemon[]) => {
           count: countMap.get(p.id) || 0,
           confidence: normalizedConfidence,
           isFrozenForTier: pokemonFrozenStatus,
-          suggestedAdjustment
+          suggestedAdjustment // Use the one derived from currentActiveSuggestions
         };
       })
       .sort((a, b) => b.score - a.score);
@@ -113,16 +117,16 @@ export const useRankings = (allPokemon: Pokemon[]) => {
       ? allRankedPokemon 
       : allRankedPokemon.slice(0, Number(activeTier));
 
-    // Explicitly reload suggestions here:
-    const savedSuggestions = loadSavedSuggestions();
-    console.log(`[DEBUG useRankings - generateRankings #${currentCount}] Applying suggestions during ranking generation:`, savedSuggestions.size);
+    // 'currentActiveSuggestions' already holds the latest from loadSavedSuggestions above.
+    // No need to call loadSavedSuggestions() again as we already have the current suggestions
+    console.log(`[DEBUG useRankings - generateRankings #${currentCount}] Applying suggestions during ranking generation:`, currentActiveSuggestions.size);
     
     const finalWithSuggestions = filteredRankings.map(pokemon => {
-      const newPokemon = {
+      // IMPORTANT: Use 'currentActiveSuggestions'
+      return {
         ...pokemon,
-        suggestedAdjustment: savedSuggestions.get(pokemon.id) || null
+        suggestedAdjustment: currentActiveSuggestions.get(pokemon.id) || null
       };
-      return newPokemon;
     });
 
     // Provide more informative log about suggestions
@@ -153,7 +157,7 @@ export const useRankings = (allPokemon: Pokemon[]) => {
     console.log(`[EFFECT LoopCheck - generateRankings #${currentCount}] COMPLETE`);
     
     return finalWithSuggestions;
-  }, [allPokemon, activeTier, frozenPokemon, activeSuggestions, loadSavedSuggestions]);
+  }, [allPokemon, activeTier, frozenPokemon, loadSavedSuggestions, setFinalRankings, setConfidenceScores]);
 
   const freezePokemonForTier = useCallback((pokemonId: number, tier: TopNOption) => {
     setFrozenPokemon(prev => ({
