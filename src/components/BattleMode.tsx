@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef } from "react";
 import BattleContentContainer from "@/components/battle/BattleContentContainer";
 import { usePokemonLoader } from "@/hooks/battle/usePokemonLoader";
@@ -9,6 +10,7 @@ const BattleMode = () => {
   const { allPokemon, isLoading, loadPokemon } = usePokemonLoader();
   const [battlesCompleted, setBattlesCompleted] = useState(0);
   const [battleResults, setBattleResults] = useState<SingleBattle[]>([]);
+  const [emergencyResetPerformed, setEmergencyResetPerformed] = useState(false);
 
   // Get the initial battle type from localStorage with fallback to "pairs"
   const initialBattleType = (() => {
@@ -41,6 +43,59 @@ const BattleMode = () => {
       return updated.slice(-20); // Keep only last 20 entries
     });
   };
+  
+  // Perform an immediate emergency reset when the component loads
+  // This will help break out of any stuck loops from previous sessions
+  useEffect(() => {
+    const performInitialReset = () => {
+      if (emergencyResetPerformed) return;
+      
+      addDebugLog("🚨 STARTUP: Performing preventative reset of battle system");
+      
+      // Remove battle-related localStorage data to ensure a fresh start
+      const keysToRemove = [
+        'pokemon-battle-recently-used',
+        'pokemon-battle-last-battle',
+        'pokemon-ranker-battle-history',
+        'pokemon-battle-history',
+        'pokemon-battle-tracking',
+        'pokemon-battle-seen',
+        'pokemon-battle-count'
+      ];
+      
+      keysToRemove.forEach(key => {
+        const value = localStorage.getItem(key);
+        if (value) {
+          addDebugLog(`🧹 STARTUP: Clearing ${key} from localStorage`);
+          localStorage.removeItem(key);
+        }
+      });
+      
+      // Reset battle state
+      setBattlesCompleted(0);
+      setBattleResults([]);
+      stuckCountRef.current = 0;
+      previousPokemonRef.current = [];
+      
+      // Mark reset as performed
+      setEmergencyResetPerformed(true);
+      
+      // Create reset event to notify other components
+      const resetEvent = new CustomEvent('force-emergency-reset', {
+        detail: { 
+          source: 'initial-load',
+          timestamp: Date.now()
+        }
+      });
+      document.dispatchEvent(resetEvent);
+      
+      addDebugLog("✅ STARTUP: Reset completed, battle system ready");
+    };
+    
+    // Delay the reset slightly to ensure components are mounted
+    const timer = setTimeout(performInitialReset, 500);
+    return () => clearTimeout(timer);
+  }, [emergencyResetPerformed]);
   
   // Improved Pokémon loading with retry mechanism
   useEffect(() => {
@@ -88,18 +143,60 @@ const BattleMode = () => {
     loadPokemonWithRetry();
   }, [loadPokemon, allPokemon.length]);
   
-  // Clear all localStorage on mount (for testing)
+  // Custom event handler for debugging battle selection and detecting identical battles
   useEffect(() => {
-    const battleStorageKeys = Object.keys(localStorage).filter(key => 
-      key.startsWith('pokemon-battle') || 
-      key.includes('battle') || 
-      key.includes('recently-used')
-    );
+    const handleBattleCreated = (event: CustomEvent) => {
+      battleCountRef.current += 1;
+      const battleNumber = battleCountRef.current;
+      const currentPokemon = event.detail?.pokemonIds || [];
+      const pokemonNames = event.detail?.pokemonNames || [];
+      
+      addDebugLog(`Battle #${battleNumber} created with: ${pokemonNames.join(', ')} [IDs: ${currentPokemon.join(',')}]`);
+      
+      // Compare with previous battle
+      const isPokemonSameAsPrevious = 
+        previousPokemonRef.current.length > 0 && 
+        currentPokemon.length === previousPokemonRef.current.length &&
+        currentPokemon.every(id => previousPokemonRef.current.includes(id));
+      
+      if (isPokemonSameAsPrevious) {
+        stuckCountRef.current += 1;
+        addDebugLog(`⚠️ CRITICAL: Identical battle detected (#${battleNumber}) - Same as previous`);
+        addDebugLog(`Previous: [${previousPokemonRef.current.join(',')}], Current: [${currentPokemon.join(',')}]`);
+        
+        // After seeing the same battle too many times, offer manual intervention
+        if (stuckCountRef.current >= maxIdenticalBattles) {
+          toast({
+            title: "Battle System Stuck",
+            description: "Same Pokémon appearing repeatedly. Click to force a new battle.",
+            action: (
+              <Button 
+                variant="destructive" 
+                size="sm" 
+                onClick={triggerEmergencyReset}
+              >
+                Reset Now
+              </Button>
+            ),
+            duration: 10000
+          });
+        }
+      } else {
+        // Reset counter when we see different Pokemon
+        stuckCountRef.current = 0;
+        addDebugLog(`✅ New unique battle (#${battleNumber})`);
+      }
+      
+      // Store current Pokemon IDs for next comparison
+      previousPokemonRef.current = [...currentPokemon];
+    };
+
+    // Add custom event listener
+    document.addEventListener('battle-created', handleBattleCreated as EventListener);
     
-    addDebugLog(`Found ${battleStorageKeys.length} battle-related localStorage keys`);
-    battleStorageKeys.forEach(key => {
-      addDebugLog(`Storage key: ${key}`);
-    });
+    return () => {
+      document.removeEventListener('battle-created', handleBattleCreated as EventListener);
+    };
   }, []);
   
   // Force new battle and reset functions are kept but not displayed in UI
@@ -169,96 +266,11 @@ const BattleMode = () => {
     // Reset the stuck counter
     stuckCountRef.current = 0;
     previousPokemonRef.current = [];
+    
+    // Also reset state
+    setBattlesCompleted(0);
+    setBattleResults([]);
   };
-  
-  const clearAllStorage = () => {
-    addDebugLog("User requested TOTAL STORAGE CLEAR");
-    
-    // Save a backup of critical non-battle data
-    const generationSetting = localStorage.getItem('pokemon-ranker-generation');
-    
-    // Clear everything
-    localStorage.clear();
-    
-    // Restore critical settings
-    if (generationSetting) {
-      localStorage.setItem('pokemon-ranker-generation', generationSetting);
-    }
-    
-    toast({
-      title: "Storage Cleared",
-      description: "All local storage has been cleared completely",
-      variant: "destructive"
-    });
-    
-    // Reset states
-    stuckCountRef.current = 0;
-    previousPokemonRef.current = [];
-    
-    // Force emergency reset
-    setTimeout(() => {
-      const event = new CustomEvent('force-emergency-reset', {
-        detail: { source: 'storage-clear' }
-      });
-      document.dispatchEvent(event);
-    }, 100);
-  };
-
-  // Custom event handler for debugging battle selection and detecting identical battles
-  useEffect(() => {
-    const handleBattleCreated = (event: CustomEvent) => {
-      battleCountRef.current += 1;
-      const battleNumber = battleCountRef.current;
-      const currentPokemon = event.detail?.pokemonIds || [];
-      const pokemonNames = event.detail?.pokemonNames || [];
-      
-      addDebugLog(`Battle #${battleNumber} created with: ${pokemonNames.join(', ')} [IDs: ${currentPokemon.join(',')}]`);
-      
-      // Compare with previous battle
-      const isPokemonSameAsPrevious = 
-        previousPokemonRef.current.length > 0 && 
-        currentPokemon.length === previousPokemonRef.current.length &&
-        currentPokemon.every(id => previousPokemonRef.current.includes(id));
-      
-      if (isPokemonSameAsPrevious) {
-        stuckCountRef.current += 1;
-        addDebugLog(`⚠️ CRITICAL: Identical battle detected (#${battleNumber}) - Same as previous`);
-        addDebugLog(`Previous: [${previousPokemonRef.current.join(',')}], Current: [${currentPokemon.join(',')}]`);
-        
-        // After seeing the same battle too many times, offer manual intervention
-        if (stuckCountRef.current >= maxIdenticalBattles) {
-          toast({
-            title: "Battle System Stuck",
-            description: "Same Pokémon appearing repeatedly. Click to force a new battle.",
-            action: (
-              <Button 
-                variant="destructive" 
-                size="sm" 
-                onClick={triggerEmergencyReset}
-              >
-                Reset Now
-              </Button>
-            ),
-            duration: 10000
-          });
-        }
-      } else {
-        // Reset counter when we see different Pokemon
-        stuckCountRef.current = 0;
-        addDebugLog(`✅ New unique battle (#${battleNumber})`);
-      }
-      
-      // Store current Pokemon IDs for next comparison
-      previousPokemonRef.current = [...currentPokemon];
-    };
-
-    // Add custom event listener
-    document.addEventListener('battle-created', handleBattleCreated as EventListener);
-    
-    return () => {
-      document.removeEventListener('battle-created', handleBattleCreated as EventListener);
-    };
-  }, []);
 
   // Listen for battle type mismatch events
   useEffect(() => {
@@ -290,12 +302,6 @@ const BattleMode = () => {
     };
   }, []);
 
-  // Log important configuration on initial load  
-  useEffect(() => {
-    addDebugLog(`Initial battle type: ${initialBattleType}`);
-    addDebugLog(`LocalStorage battle type: ${localStorage.getItem('pokemon-ranker-battle-type')}`);
-  }, [initialBattleType]);
-  
   if (isLoading || !allPokemon.length) {
     return (
       <div className="flex justify-center items-center h-64 w-full">
@@ -315,41 +321,37 @@ const BattleMode = () => {
   return (
     <div className="flex flex-col items-center w-full py-4 px-4 sm:px-6">
       {/* Admin buttons hidden from normal view, only available in dev mode */}
-      <div className="w-full flex justify-end mb-4 hidden">
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={forceNewBattle}
-          className="mr-2"
-        >
-          New Battle
-        </Button>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={triggerEmergencyReset}
-          className="mr-2"
-        >
-          Emergency Reset
-        </Button>
-        <Button 
-          variant="destructive" 
-          size="sm" 
-          onClick={clearAllStorage}
-        >
-          Clear ALL Storage
-        </Button>
-      </div>
+      {process.env.NODE_ENV === "development" && (
+        <div className="w-full flex justify-end mb-4">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={forceNewBattle}
+            className="mr-2"
+          >
+            New Battle
+          </Button>
+          <Button 
+            variant="destructive" 
+            size="sm" 
+            onClick={triggerEmergencyReset}
+          >
+            Emergency Reset
+          </Button>
+        </div>
+      )}
       
       {/* Debug Log - hidden in production but kept for diagnostic */}
-      <div className="w-full mb-4 p-2 bg-gray-50 border border-gray-200 rounded text-xs font-mono overflow-auto max-h-40 hidden">
-        <h4 className="font-semibold mb-1">Debug Log (Last 20 entries)</h4>
-        <ul>
-          {debugLog.map((entry, idx) => (
-            <li key={idx} className="whitespace-pre-wrap">{entry}</li>
-          ))}
-        </ul>
-      </div>
+      {process.env.NODE_ENV === "development" && (
+        <div className="w-full mb-4 p-2 bg-gray-50 border border-gray-200 rounded text-xs font-mono overflow-auto max-h-40">
+          <h4 className="font-semibold mb-1">Debug Log (Last 20 entries)</h4>
+          <ul>
+            {debugLog.map((entry, idx) => (
+              <li key={idx} className="whitespace-pre-wrap">{entry}</li>
+            ))}
+          </ul>
+        </div>
+      )}
       
       <BattleContentContainer
         allPokemon={allPokemon}

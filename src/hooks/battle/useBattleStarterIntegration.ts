@@ -1,3 +1,4 @@
+
 import { useMemo, useEffect, useRef, useCallback } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
@@ -19,6 +20,8 @@ export const useBattleStarterIntegration = (
   const milestoneCrossedRef = useRef(false);
   const priorityModeActiveRef = useRef(false); // Ref to track if priority mode is active
   const consecutiveBattlesWithoutNewPokemonRef = useRef(0); // Track battles without introducing new Pokémon
+  const lastBattleAttemptTimestampRef = useRef(0); // Track when we last tried to start a battle
+  const throttleTimeMs = 500; // Minimum time between battle generation attempts
 
   // Log initial value of forcedPriorityBattlesRef
   console.log('[DEBUG useBattleStarterIntegration] forcedPriorityBattlesRef initialized to:', forcedPriorityBattlesRef.current);
@@ -111,6 +114,16 @@ export const useBattleStarterIntegration = (
 
   const startNewBattle = useCallback((battleType: BattleType) => {
     if (!battleStarter) return [];
+    
+    // Throttle battle generation to prevent rapid-fire attempts
+    const now = Date.now();
+    if (now - lastBattleAttemptTimestampRef.current < throttleTimeMs) {
+      console.log(`[DEBUG useBattleStarterIntegration] Throttling battle generation. Last attempt: ${now - lastBattleAttemptTimestampRef.current}ms ago`);
+      return [];
+    }
+    
+    // Update the timestamp
+    lastBattleAttemptTimestampRef.current = now;
 
     // CRITICAL DIAGNOSTICS: Log pool sizes before starting battles
     console.log('[DEBUG useBattleStarterIntegration] Starting new battle with:');
@@ -240,16 +253,21 @@ export const useBattleStarterIntegration = (
       }
     }
 
-    setCurrentBattle(battle);
-    console.log("📌 Updating current battle state explicitly with IDs:", battle.map(p => p.id));
+    // Reset selected Pokemon when starting a new battle
+    setSelectedPokemon([]);
+    console.log("📌 Cleared selected Pokemon");
 
     return battle;
-  }, [battleStarter, currentRankings, setCurrentBattle, allPokemon, markSuggestionFullyUsed]);
+  }, [battleStarter, currentRankings, setCurrentBattle, allPokemon, markSuggestionFullyUsed, setSelectedPokemon]);
 
   const { performEmergencyReset } = useBattleEmergencyReset(
     [] as Pokemon[],
     setCurrentBattle,
-    allPokemon
+    allPokemon,
+    undefined,
+    undefined,
+    undefined,
+    setSelectedPokemon
   );
 
   const resetSuggestionPriorityExplicitly = () => {
@@ -275,5 +293,6 @@ export const useBattleStarterIntegration = (
     battleStarter,
     startNewBattle,
     resetSuggestionPriority: resetSuggestionPriorityExplicitly,
+    performEmergencyReset // Add direct access to emergency reset
   };
 };
