@@ -1,4 +1,3 @@
-
 import React from "react";
 import {
   Table,
@@ -12,7 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { RankedPokemon, TopNOption } from "@/services/pokemon";
 import { getPokemonGeneration } from "./rankingUtils";
 import { PokemonSuggestionCard } from "./PokemonSuggestionCard";
-import { normalizePokedexNumber, capitalizeSpecialForms } from "@/utils/pokemonUtils";
+import { normalizePokedexNumber, formatPokemonName } from "@/utils/pokemonUtils";
 import { RankingGrid } from "./RankingGrid";
 
 // Get the confidence level as a string
@@ -80,7 +79,7 @@ export const RankingTable: React.FC<RankingTableProps> = ({
           const confidenceLevel = getConfidenceLevel(confidence);
           const isFrozen = pokemon.isFrozenForTier && pokemon.isFrozenForTier[activeTier.toString()];
           const normalizedId = normalizePokedexNumber(pokemon.id);
-          const formattedName = capitalizeSpecialForms(pokemon.name);
+          const formattedName = formatPokemonName(pokemon.name);
           
           return (
             <TableRow 

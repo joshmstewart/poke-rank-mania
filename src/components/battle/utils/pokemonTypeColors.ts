@@ -133,9 +133,15 @@ export const getPokemonTypeColor = (pokemon: any) => {
       return typeColorsByPokemonId[pokemon.id];
     }
     
-    // Special handling for Alolan forms (ID range typically 10000-10100)
-    const isAlolanForm = pokemon.name && pokemon.name.toLowerCase().includes('alola');
-    if (isAlolanForm) {
+    // Special handling for Alolan, Hisuian, and other regional forms (ID range typically 10000+)
+    const isRegionalForm = pokemon.name && (
+      pokemon.name.toLowerCase().includes('alola') || 
+      pokemon.name.toLowerCase().includes('galar') ||
+      pokemon.name.toLowerCase().includes('hisui') ||
+      pokemon.name.toLowerCase().includes('paldea')
+    );
+    
+    if (isRegionalForm) {
       // Get the base form ID and use that for color
       const baseId = pokemon.id % 1000;
       if (typeColorsByPokemonId[baseId]) {
@@ -144,7 +150,7 @@ export const getPokemonTypeColor = (pokemon: any) => {
     }
     
     // Last resort - use ID modulo to assign a consistent color from our palette
-    const colorKeys = Object.keys(typeColors);
+    const colorKeys = Object.keys(typeColors).filter(key => key.length <= 7); // Avoid duplicates by filtering to just lowercase keys
     const colorIndex = pokemon.id % colorKeys.length;
     const fallbackType = colorKeys[colorIndex];
     return typeColors[fallbackType] || "bg-gray-200";

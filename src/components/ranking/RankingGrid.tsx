@@ -1,7 +1,7 @@
 
 import React from "react";
 import { RankedPokemon, TopNOption } from "@/services/pokemon";
-import { normalizePokedexNumber, capitalizeSpecialForms } from "@/utils/pokemonUtils";
+import { normalizePokedexNumber, formatPokemonName } from "@/utils/pokemonUtils";
 import { getPokemonTypeColor } from "@/components/battle/utils/pokemonTypeColors";
 import { VotingArrows } from "./VotingArrows";
 import { Button } from "@/components/ui/button";
@@ -68,7 +68,7 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4">
         {displayRankings.map((pokemon, index) => {
           const normalizedId = normalizePokedexNumber(pokemon.id);
-          const formattedName = capitalizeSpecialForms(pokemon.name);
+          const formattedName = formatPokemonName(pokemon.name);
           const typeColor = getPokemonTypeColor(pokemon);
           const generation = getPokemonGeneration(pokemon.id);
           const isFrozen = pokemon.isFrozenForTier && pokemon.isFrozenForTier[activeTier.toString()];

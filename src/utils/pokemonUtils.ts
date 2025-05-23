@@ -44,14 +44,24 @@ export const formatPokemonName = (name: string): string => {
   
   // Check if name contains any regional form identifiers
   for (const [region, prefix] of Object.entries(regionalForms)) {
-    if (lowerName.includes(` ${region}`) || lowerName.endsWith(`-${region}`)) {
-      // Get the base name by removing the region suffix
-      const baseName = name
-        .replace(new RegExp(` ${region}`, 'i'), '')
-        .replace(new RegExp(`-${region}`, 'i'), '')
-        .trim();
-      // Return with proper format: "Alolan Vulpix" instead of "Vulpix alola"
-      return `${prefix} ${baseName}`;
+    // Check for different formats: "Name region", "Name-region", or even "Name (region)"
+    const patterns = [
+      ` ${region}`,
+      `-${region}`,
+      `(${region})`,
+      ` ${region} form`,
+      `-${region} form`
+    ];
+    
+    for (const pattern of patterns) {
+      if (lowerName.includes(pattern)) {
+        // Get the base name by removing the region suffix
+        const baseName = name
+          .replace(new RegExp(pattern, 'i'), '')
+          .trim();
+        // Return with proper format: "Alolan Vulpix" instead of "Vulpix alola"
+        return `${prefix} ${baseName}`;
+      }
     }
   }
   
