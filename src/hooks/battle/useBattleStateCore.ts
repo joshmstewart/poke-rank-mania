@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useRef, useEffect } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { useBattleStarterIntegration } from "@/hooks/battle/useBattleStarterIntegration";
@@ -10,7 +11,7 @@ import { useBattleInteractions } from "./useBattleInteractions";
 import { toast } from "@/hooks/use-toast";
 
 export const useBattleStateCore = (
-  allPokemon: Pokemon[],
+  allPokemon: Pokemon[] = [], // Ensure default empty array
   initialBattleType: BattleType,
   initialSelectedGeneration: number
 ) => {
@@ -63,7 +64,7 @@ export const useBattleStateCore = (
   } = useProgressState();
 
   const {
-    finalRankings,
+    finalRankings = [], // CRITICAL FIX: Ensure finalRankings is never undefined
     confidenceScores,
     generateRankings,
     handleSaveRankings,
@@ -78,7 +79,7 @@ export const useBattleStateCore = (
     clearAllSuggestions,
     findNextSuggestion,
     loadSavedSuggestions
-  } = useRankings(allPokemon);
+  } = useRankings(allPokemon || []); // CRITICAL FIX: Ensure allPokemon is never undefined in useRankings
 
   const {
     resetMilestones,
@@ -94,11 +95,12 @@ export const useBattleStateCore = (
     showingMilestone,
     setShowingMilestone,
     generateRankings,
-    allPokemon
+    allPokemon || [] // CRITICAL FIX: Ensure allPokemon is never undefined
   );
 
   // Filter Pokemon by generation if a specific generation is selected
-  const filteredPokemon = allPokemon.filter(pokemon => {
+  // CRITICAL FIX: Ensure filteredPokemon is always an array, never undefined
+  const filteredPokemon = (allPokemon || []).filter(pokemon => {
     if (selectedGeneration === 0) {
       return true;
     }
@@ -113,7 +115,7 @@ export const useBattleStateCore = (
     resetSuggestionPriority 
   } = useBattleStarterIntegration(
     filteredPokemon, 
-    finalRankings, 
+    finalRankings || [], // CRITICAL FIX: Ensure finalRankings is never undefined
     setCurrentBattle,
     setSelectedPokemon,
     markSuggestionUsed // Pass markSuggestionUsed to useBattleStarterIntegration

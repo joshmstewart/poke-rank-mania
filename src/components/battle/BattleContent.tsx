@@ -20,7 +20,7 @@ interface BattleContentProps {
 }
 
 const BattleContent = ({
-  allPokemon,
+  allPokemon = [], // CRITICAL FIX: Ensure allPokemon is never undefined
   initialBattleType,
   initialSelectedGeneration,
   setBattlesCompleted,
@@ -66,14 +66,15 @@ const BattleContent = ({
     resetMilestoneInProgress,
     performFullBattleReset 
   } = useBattleStateCore(
-    allPokemon,
+    allPokemon || [], // CRITICAL FIX: Ensure allPokemon is never undefined
     safeInitialBattleType,
     initialSelectedGeneration
   );
 
   // Only call startNewBattle once when the component mounts and allPokemon is available
   useEffect(() => {
-    if (allPokemon.length > 0 && !battleStartedRef.current) {
+    // CRITICAL FIX: Only attempt to start battle when there are actually Pokémon available
+    if (allPokemon && allPokemon.length > 0 && !battleStartedRef.current) {
       console.log("BattleContent: Starting new battle on initial load with type:", safeInitialBattleType);
       battleStartedRef.current = true;
       startNewBattle(safeInitialBattleType);
@@ -81,7 +82,7 @@ const BattleContent = ({
       // ADDED: Ensure the localStorage is set correctly
       localStorage.setItem('pokemon-ranker-battle-type', safeInitialBattleType);
     }
-  }, [allPokemon.length, safeInitialBattleType, startNewBattle]);
+  }, [allPokemon, safeInitialBattleType, startNewBattle]);
   
   // Keep track of battles completed to prevent resetting
   useEffect(() => {

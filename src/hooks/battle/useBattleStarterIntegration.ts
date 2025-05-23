@@ -1,4 +1,3 @@
-
 import { useMemo, useEffect, useRef, useCallback } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
@@ -21,15 +20,23 @@ interface ExtendedBattleStarter {
   getSuggestions: () => RankedPokemon[];
 }
 
+// CRITICAL FIX: Create default empty ExtendedBattleStarter for safe initialization
+const createEmptyBattleStarter = (): ExtendedBattleStarter => ({
+  startNewBattle: () => [],
+  trackLowerTierLoss: () => {},
+  getSuggestions: () => []
+});
+
 export const useBattleStarterIntegration = (
-  allPokemon: Pokemon[],
-  currentRankings: RankedPokemon[],
+  allPokemon: Pokemon[] = [], // CRITICAL FIX: Default empty array
+  currentRankings: RankedPokemon[] = [], // CRITICAL FIX: Default empty array
   setCurrentBattle: React.Dispatch<React.SetStateAction<Pokemon[]>>,
   setSelectedPokemon: React.Dispatch<React.SetStateAction<number[]>>,
   markSuggestionFullyUsed?: (pokemon: RankedPokemon, fullyUsed: boolean) => void
 ) => {
   console.log('[DEBUG useBattleStarterIntegration] Hook called with allPokemon.length:', allPokemon.length, 'currentRankings.length:', currentRankings.length);
   
+  // CRITICAL FIX: Initialize refs with appropriate default values
   const processedSuggestionBattlesRef = useRef<Set<number>>(new Set());
   const suggestionBattleCountRef = useRef(0);
   const forcedPriorityBattlesRef = useRef(0);
@@ -47,8 +54,8 @@ export const useBattleStarterIntegration = (
   
   // CRITICAL FIX: Create a stable reference to the current Pokemon and rankings
   // This prevents recreating the battleStarter instance on minor ranking changes
-  const stablePokemonRef = useRef<Pokemon[]>(allPokemon);
-  const stableRankingsRef = useRef<RankedPokemon[]>(currentRankings);
+  const stablePokemonRef = useRef<Pokemon[]>(allPokemon || []);  // CRITICAL FIX: Initialize with empty array
+  const stableRankingsRef = useRef<RankedPokemon[]>(currentRankings || []);  // CRITICAL FIX: Initialize with empty array
   
   // Only update these refs when there are significant changes
   useEffect(() => {
@@ -224,12 +231,14 @@ export const useBattleStarterIntegration = (
   const battleStarterInstanceRef = useRef<ReturnType<typeof createBattleStarter> | null>(null);
 
   // FIXED: The battleStarter should be created once and persisted
-  const battleStarter = useMemo<ExtendedBattleStarter | null>(() => {
-    console.log('[DEBUG useBattleStarterIntegration] useMemo (battleStarterInstance): Re-evaluating. allPokemon.length:', allPokemon.length, 'currentRankings.length:', currentRankings.length);
+  const battleStarter = useMemo<ExtendedBattleStarter>(() => {
+    console.log('[DEBUG useBattleStarterIntegration] useMemo (battleStarterInstance): Re-evaluating. allPokemon.length:', 
+                allPokemon?.length || 0, 'currentRankings.length:', currentRankings?.length || 0);
     
+    // CRITICAL FIX: Always create valid instance, even with empty arrays
     if (!allPokemon || allPokemon.length === 0) {
-      console.log("[DEBUG useBattleStarterIntegration] No Pokémon available, can't create battleStarter");
-      return null;
+      console.log("[DEBUG useBattleStarterIntegration] No Pokémon available, returning empty battleStarter");
+      return createEmptyBattleStarter();
     }
     
     // CRITICAL FIX: Only create a new instance if we don't have one yet
@@ -319,8 +328,8 @@ export const useBattleStarterIntegration = (
       getSuggestions: () => suggestionsRef.current
     };
   }, [
-    // CRITICAL FIX: Only re-evaluate when these REALLY change
-    allPokemon.length > 0 ? allPokemon.length : 0,
+    // CRITICAL FIX: Only re-evaluate when these REALLY change and ensure they're never undefined
+    (allPokemon && allPokemon.length > 0) ? allPokemon.length : 0,
     setCurrentBattle
   ]); 
 
@@ -528,7 +537,7 @@ export const useBattleStarterIntegration = (
     return battle;
   }, [
     // CRITICAL FIX: Ensure all dependencies are always defined
-    battleStarter || null,
+    battleStarter || createEmptyBattleStarter(),  // UPDATED: Use empty implementation instead of null
     Array.isArray(currentRankings) ? currentRankings : [],
     setCurrentBattle,
     Array.isArray(allPokemon) ? allPokemon : [],

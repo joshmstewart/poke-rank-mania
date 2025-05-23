@@ -14,7 +14,7 @@ interface BattleContentContainerProps {
 }
 
 const BattleContentContainer: React.FC<BattleContentContainerProps> = ({
-  allPokemon,
+  allPokemon = [], // CRITICAL FIX: Ensure allPokemon is never undefined
   initialBattleType,
   initialSelectedGeneration = 0,
   setBattlesCompleted,
@@ -29,7 +29,7 @@ const BattleContentContainer: React.FC<BattleContentContainerProps> = ({
   return (
     <div className="flex flex-col w-full max-w-4xl mx-auto px-4">
       <BattleContent
-        allPokemon={allPokemon}
+        allPokemon={allPokemon || []} // CRITICAL FIX: Ensure allPokemon is never undefined
         initialBattleType={safeBattleType}
         initialSelectedGeneration={initialSelectedGeneration}
         setBattlesCompleted={setBattlesCompleted}
