@@ -1,3 +1,4 @@
+
 import React, { memo, useCallback, useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Pokemon } from "@/services/pokemon";
@@ -60,6 +61,11 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
   };
   
   const handleImageError = () => {
+    if (retryCount === 0) {
+      // Log the initial failure of the preferred image type
+      console.error(`🔴 Initial attempt to load '${currentImageType}' artwork for ${formattedName} (#${pokemon.id}) failed. URL: ${currentImageUrl}`);
+    }
+    
     if (retryCount < 3) {
       const nextRetry = retryCount + 1;
       const nextUrl = getPreferredImageUrl(pokemon.id, nextRetry);

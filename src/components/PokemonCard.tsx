@@ -75,6 +75,11 @@ const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
   };
   
   const handleImageError = () => {
+    if (retryCount === 0) {
+      // Log the initial failure of the preferred image type
+      console.error(`🔴 Initial attempt to load '${currentImageType}' artwork for ${formattedName} (#${pokemon.id}) failed. URL: ${currentImageUrl}`);
+    }
+    
     if (retryCount < 3) {
       const nextRetry = retryCount + 1;
       const nextUrl = getPreferredImageUrl(pokemon.id, nextRetry);
