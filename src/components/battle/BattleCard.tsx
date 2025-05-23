@@ -35,18 +35,26 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
     setCurrentImageUrl(url);
     initialUrlRef.current = url; // Store initial URL in ref
     
+    // Log only during development or if explicitly debugging
     if (process.env.NODE_ENV === "development") {
       console.log(`🖼️ BattleCard: Loading "${preference}" image for ${formattedName} (#${pokemon.id}): ${url}`);
       
-      fetch(url, { method: 'HEAD' })
-        .then(response => {
-          if (!response.ok) {
-            console.warn(`⚠️ BattleCard image URL check: ${url} returned status ${response.status}`);
-          }
-        })
-        .catch(error => {
-          console.warn(`⚠️ BattleCard image URL check failed for ${url}: ${error.message}`);
-        });
+      // Always verify if URL exists on server
+      if (url && url.trim() !== '') {
+        fetch(url, { method: 'HEAD' })
+          .then(response => {
+            if (!response.ok) {
+              console.warn(`⚠️ BattleCard image URL check: ${url} returned status ${response.status}`);
+            } else {
+              console.log(`✅ BattleCard image URL check: ${url} exists on server`);
+            }
+          })
+          .catch(error => {
+            console.warn(`⚠️ BattleCard image URL check failed for ${url}: ${error.message}`);
+          });
+      } else {
+        console.warn(`⚠️ BattleCard: Empty URL generated for ${formattedName} (#${pokemon.id})`);
+      }
     }
   }, [pokemon.id, formattedName]);
 

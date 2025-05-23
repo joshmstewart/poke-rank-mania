@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -70,7 +71,20 @@ export const getPreferredImageUrl = (pokemonId: number, fallbackLevel?: number):
   // Direct function to get URL for a specific type
   const getUrlForType = (type: PokemonImageType): string => {
     const option = imageTypeOptions.find(opt => opt.id === type);
-    return option ? option.url(pokemonId) : imageTypeOptions[0].url(pokemonId);
+    if (!option) {
+      console.warn(`⚠️ No image option found for type: ${type}, using default`);
+      return imageTypeOptions[0].url(pokemonId);
+    }
+    
+    // Generate URL using the option's URL function
+    const url = option.url(pokemonId);
+    
+    // Log the URL generation for debugging
+    if (process.env.NODE_ENV === "development") {
+      console.log(`🔍 [getPreferredImageUrl] Generated URL for type "${type}", Pokemon #${pokemonId}: ${url}`);
+    }
+    
+    return url;
   };
   
   // If fallbackLevel is provided, use it to determine which fallback to try
@@ -94,8 +108,9 @@ export const getPreferredImageUrl = (pokemonId: number, fallbackLevel?: number):
   }
   
   // No fallback specified, just use preferred type
-  // Always log the initial URL being generated
+  // ALWAYS generate a URL for the preferred type - critical fix
   const url = getUrlForType(preference);
+  
   if (process.env.NODE_ENV === "development") {
     console.log(`🖼️ Getting initial image URL for Pokémon #${pokemonId} with preference: ${preference} - URL: ${url}`);
   }

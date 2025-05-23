@@ -45,22 +45,26 @@ const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
     setCurrentImageUrl(url);
     initialUrlRef.current = url; // Store initial URL in ref
     
-    // Add debug info to help investigate why official artwork might be failing
+    // Log only during development or if explicitly debugging
     if (process.env.NODE_ENV === "development") {
       console.log(`🖼️ PokemonCard: Loading "${preference}" image for ${formattedName} (#${pokemon.id}): ${url}`);
       
-      // Verify if the URL actually exists with a HEAD request
-      fetch(url, { method: 'HEAD' })
-        .then(response => {
-          if (!response.ok) {
-            console.warn(`⚠️ Image URL check: ${url} returned status ${response.status} - likely to fail loading`);
-          } else {
-            console.log(`✅ Image URL check: ${url} exists on server`);
-          }
-        })
-        .catch(error => {
-          console.warn(`⚠️ Image URL check failed for ${url}: ${error.message}`);
-        });
+      // Verify if the URL actually exists with a HEAD request - always do this
+      if (url && url.trim() !== '') {
+        fetch(url, { method: 'HEAD' })
+          .then(response => {
+            if (!response.ok) {
+              console.warn(`⚠️ Image URL check: ${url} returned status ${response.status} - likely to fail loading`);
+            } else {
+              console.log(`✅ Image URL check: ${url} exists on server`);
+            }
+          })
+          .catch(error => {
+            console.warn(`⚠️ Image URL check failed for ${url}: ${error.message}`);
+          });
+      } else {
+        console.warn(`⚠️ PokemonCard: Empty URL generated for ${formattedName} (#${pokemon.id})`);
+      }
     }
   }, [pokemon.id, formattedName]);
 

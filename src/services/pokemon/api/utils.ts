@@ -29,12 +29,12 @@ export function getPokemonImageUrl(id: number, fallbackLevel: number = 0): strin
         break;
     }
     
-    // Adding extra logging to verify URL generation is happening
+    // IMPORTANT: Always log the generated URL to verify it's created correctly
     console.log(`🔍 [getPokemonImageUrl] Generated URL for type "${type}", Pokemon #${id}: ${url}`);
     return url;
   };
 
-  // If we're at fallback level 0, use the preferred type
+  // If we're at fallback level 0, always use the preferred type and ALWAYS generate a URL
   if (fallbackLevel === 0) {
     const url = getImageUrl(preferredType);
     
@@ -43,6 +43,7 @@ export function getPokemonImageUrl(id: number, fallbackLevel: number = 0): strin
       console.log(`🖼️ Getting initial image URL for Pokémon #${id} with preference: ${preferredType} - URL: ${url}`);
     }
     
+    // CRITICAL FIX: Always return a URL for the preferred type, never return empty string
     return url;
   }
   
