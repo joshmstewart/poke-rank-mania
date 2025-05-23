@@ -10,6 +10,10 @@ const SAMPLE_POKEMON_ID = 25; // Pikachu
 // Image type options
 export type PokemonImageType = "default" | "official" | "home" | "dream";
 
+// Constants for localStorage
+export const POKEMON_IMAGE_PREFERENCE_KEY = "pokemon-image-preference";
+export const DEFAULT_IMAGE_PREFERENCE: PokemonImageType = "official";
+
 interface ImageTypeOption {
   id: PokemonImageType;
   name: string;
@@ -46,24 +50,33 @@ const imageTypeOptions: ImageTypeOption[] = [
 
 // Get the preferred image type from local storage
 export const getPreferredImageType = (): PokemonImageType => {
-  const stored = localStorage.getItem("pokemon-image-preference");
-  console.log("🖼️ Getting preferred image type from localStorage:", stored);
+  const stored = localStorage.getItem(POKEMON_IMAGE_PREFERENCE_KEY);
+  
+  // Only log during development or when debugging
+  if (process.env.NODE_ENV === "development") {
+    console.log("🖼️ [DEV] Getting preferred image type:", stored);
+  }
+  
   if (stored && (stored === "default" || stored === "official" || stored === "home" || stored === "dream")) {
     return stored;
   }
-  console.log("🖼️ No valid preference found, defaulting to official");
-  return "official"; // Default to official artwork
+  
+  return DEFAULT_IMAGE_PREFERENCE;
 };
 
 // Get URL for preferred image type with fallback support
 export const getPreferredImageUrl = (pokemonId: number, fallbackLevel?: number): string => {
   const preference = getPreferredImageType();
-  console.log(`🖼️ Getting image for Pokémon #${pokemonId} with preference: ${preference}, fallback: ${fallbackLevel}`);
+  
+  // Reduce verbosity - only log when fallback is needed or during development
+  if (fallbackLevel || process.env.NODE_ENV === "development") {
+    console.log(`🖼️ Getting image for Pokémon #${pokemonId} with preference: ${preference}${fallbackLevel ? `, fallback: ${fallbackLevel}` : ''}`);
+  }
   
   // Direct function to get URL for a specific type
   const getUrlForType = (type: PokemonImageType): string => {
     const option = imageTypeOptions.find(opt => opt.id === type);
-    return option ? option.url(pokemonId) : imageTypeOptions[0].url(pokemonId); // Changed to use default (index 0)
+    return option ? option.url(pokemonId) : imageTypeOptions[0].url(pokemonId);
   };
   
   // If fallbackLevel is provided, use it to determine which fallback to try
@@ -81,12 +94,13 @@ export const getPreferredImageUrl = (pokemonId: number, fallbackLevel?: number):
     const fallbackIndex = Math.min(fallbackLevel - 1, fallbackTypes.length - 1);
     const fallbackType = fallbackTypes[fallbackIndex];
     
-    console.log(`🖼️ Using fallback #${fallbackLevel}: ${fallbackType}`);
+    if (process.env.NODE_ENV === "development") {
+      console.log(`🖼️ Using fallback #${fallbackLevel}: ${fallbackType}`);
+    }
     return getUrlForType(fallbackType);
   }
   
   // No fallback specified, just use preferred type
-  console.log(`🖼️ Using primary preference: ${preference}`);
   return getUrlForType(preference);
 };
 
@@ -110,15 +124,14 @@ const ImagePreferenceSelector: React.FC<ImagePreferenceSelectorProps> = ({ onClo
     setImageErrors(prev => ({ ...prev, [id]: true }));
   };
 
-const handleSave = () => {
-  localStorage.setItem("pokemon-image-preference", selectedImageType);
-  toast.success("Image preference saved!", {
-    description: "Your preferred Pokémon image style has been saved."
-  });
-  window.dispatchEvent(new Event("imagePreferenceChanged"));
-  if (onClose) onClose();
-};
-
+  const handleSave = () => {
+    localStorage.setItem(POKEMON_IMAGE_PREFERENCE_KEY, selectedImageType);
+    toast.success("Image preference saved!", {
+      description: "Your preferred Pokémon image style has been saved."
+    });
+    window.dispatchEvent(new Event("imagePreferenceChanged"));
+    if (onClose) onClose();
+  };
 
   const selectOption = (optionId: PokemonImageType) => {
     setSelectedImageType(optionId);
