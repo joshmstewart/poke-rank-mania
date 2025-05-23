@@ -37,13 +37,15 @@ export const useBattleInteractions = (
     (id: number) => {
       if (currentBattle.length === 0) return;
 
-      // FIX: For pair battles, we should not append to existing selections
-      // but instead set a single selection
+      // For pair battles, we ALWAYS set to just the newly selected Pokemon ID
+      // For triplets, we may accumulate selections (up to 2)
       let updatedSelected: number[];
       
       if (battleType === "pairs") {
         // For pairs, we always set to just the newly selected Pokemon ID
+        // This ensures we don't accumulate IDs from previous selections
         updatedSelected = [id];
+        console.log(`🛠️ [FIX] pairs battle: Setting selection to a SINGLE ID: [${id}]`);
       } else {
         // For triplets, we accumulate selections (up to 2)
         // If we already have 2 selections, replace the array with just this new ID
@@ -74,6 +76,7 @@ export const useBattleInteractions = (
         setIsProcessing(true);
         try {
           console.log(`useBattleInteractions: Processing pair battle result with selection [${updatedSelected.join(', ')}]`);
+          console.log(`🔍 VERIFICATION: selectedPokemonIds passed to processBattleResult: [${updatedSelected.join(', ')}]`);
           processBattleResult(updatedSelected, currentBattleCopy, battleType);
           console.log("useBattleInteractions: Battle processed successfully");
         } catch (e) {
