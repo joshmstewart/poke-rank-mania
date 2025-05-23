@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { getPokemonTypeColor } from "./utils/pokemonTypeColors";
@@ -313,7 +314,7 @@ const PokemonThumbnail: React.FC<PokemonThumbnailProps> = ({
               
               {rankedPokemon.suggestedAdjustment?.used && (
                 <p className="text-xs text-muted-foreground mt-1.5 italic">
-                  This suggestion has already been used in battle.
+                  This suggestion is being processed in battles.
                 </p>
               )}
             </div>

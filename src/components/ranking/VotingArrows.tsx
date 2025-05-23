@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { RankedPokemon } from "@/services/pokemon";
 import { ArrowUp, ArrowDown } from "lucide-react";
@@ -49,8 +48,7 @@ export const VotingArrows: React.FC<VotingArrowsProps> = ({
     const isUpvote = direction === "up";
     
     // Base styles
-    let baseClasses = `flex items-center justify-center py-2 w-full transition-colors
-                       ${pokemon.suggestedAdjustment?.used ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`;
+    let baseClasses = `flex items-center justify-center py-2 w-full transition-colors cursor-pointer`;
     
     // Direction-specific styles
     const directionClasses = isUpvote
@@ -67,9 +65,8 @@ export const VotingArrows: React.FC<VotingArrowsProps> = ({
     return (
       <button
         className={`${baseClasses} ${directionClasses}`}
-        onClick={() => !pokemon.suggestedAdjustment?.used && handleVote(direction, strength)}
-        disabled={pokemon.suggestedAdjustment?.used}
-        title={`Vote ${isUpvote ? "up" : "down"} ${strength}${pokemon.suggestedAdjustment?.used ? " (Already used)" : ""}`}
+        onClick={() => handleVote(direction, strength)}
+        title={`Vote ${isUpvote ? "up" : "down"} ${strength}`}
       >
         <div className="flex items-center gap-1">
           {arrows}
