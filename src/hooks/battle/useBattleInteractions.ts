@@ -75,8 +75,7 @@ export const useBattleInteractions = (
         // Process the battle results
         setIsProcessing(true);
         try {
-          console.log(`useBattleInteractions: Processing pair battle result with selection [${updatedSelected.join(', ')}]`);
-          console.log(`🔍 VERIFICATION: selectedPokemonIds passed to processBattleResult: [${updatedSelected.join(', ')}]`);
+          console.log(`[DEBUG useBattleInteractions] Passing to processBattleResult - selectedPokemonIds:`, updatedSelected);
           processBattleResult(updatedSelected, currentBattleCopy, battleType);
           console.log("useBattleInteractions: Battle processed successfully");
         } catch (e) {
