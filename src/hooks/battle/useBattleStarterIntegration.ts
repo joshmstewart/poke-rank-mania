@@ -1,3 +1,4 @@
+
 import { useMemo, useEffect, useRef, useCallback } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
@@ -323,6 +324,15 @@ export const useBattleStarterIntegration = (
     setCurrentBattle
   ]); 
 
+  // DEBUG: Log values before useCallback to identify any undefined dependencies
+  console.log('[DEBUG Deps] startNewBattle useCallback - Dependency check:');
+  console.log('[DEBUG Deps] battleStarter:', battleStarter ? 'defined' : 'undefined');
+  console.log('[DEBUG Deps] currentRankings:', Array.isArray(currentRankings) ? `array[${currentRankings.length}]` : 'not array');
+  console.log('[DEBUG Deps] allPokemon:', Array.isArray(allPokemon) ? `array[${allPokemon.length}]` : 'not array');
+  console.log('[DEBUG Deps] setCurrentBattle:', typeof setCurrentBattle);
+  console.log('[DEBUG Deps] markSuggestionFullyUsed:', typeof markSuggestionFullyUsed);
+  console.log('[DEBUG Deps] setSelectedPokemon:', typeof setSelectedPokemon);
+
   const startNewBattle = useCallback((battleType: BattleType) => {
     console.log('[DEBUG useBattleStarterIntegration] startNewBattle: Called. battleType:', battleType, 
                 'initComplete:', initializationCompleteRef.current, 'genInProgress:', battleGenerationInProgressRef.current);
@@ -344,6 +354,7 @@ export const useBattleStarterIntegration = (
       return [];
     }
     
+    // CRITICAL FIX: Ensure battleStarter is defined before using it
     if (!battleStarter) {
       console.log(`[${timestamp}] No battleStarter available, cannot start new battle`);
       console.log('[DEBUG useBattleStarterIntegration] startNewBattle: No battleStarter available. Returning early.');
@@ -515,7 +526,15 @@ export const useBattleStarterIntegration = (
 
     // Only return battle if it's not empty
     return battle;
-  }, [battleStarter, currentRankings, setCurrentBattle, allPokemon, markSuggestionFullyUsed, setSelectedPokemon]);
+  }, [
+    // CRITICAL FIX: Ensure all dependencies are always defined
+    battleStarter || null,
+    Array.isArray(currentRankings) ? currentRankings : [],
+    setCurrentBattle,
+    Array.isArray(allPokemon) ? allPokemon : [],
+    typeof markSuggestionFullyUsed === 'function' ? markSuggestionFullyUsed : undefined,
+    setSelectedPokemon
+  ]);
 
   const { performEmergencyReset } = useBattleEmergencyReset(
     [] as Pokemon[],
