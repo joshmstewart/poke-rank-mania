@@ -192,8 +192,9 @@ export const useBattleStarterIntegration = (
     totalSuggestionsRef.current = pokemonWithSuggestions.length;
     console.log('[DEBUG useBattleStarterIntegration] Identified pokemonWithSuggestions.length:', pokemonWithSuggestions.length);
     
-    // FIX: Pass the array of suggested Pokémon directly, not as a TopNOption parameter
-    return createBattleStarter(
+    // Fix: Pass "All" as the activeTier parameter (5th parameter) which is of type TopNOption
+    // We cannot pass pokemonWithSuggestions directly as the 5th parameter
+    const battleStarterInstance = createBattleStarter(
       allPokemon,  // Full Pokémon pool 
       allPokemon,  // Same as full pool to ensure maximum variety
       currentRankings,
@@ -208,8 +209,20 @@ export const useBattleStarterIntegration = (
         
         setCurrentBattle(pokemonList);
       },
-      pokemonWithSuggestions // This is correctly passing the array of suggested Pokémon
+      "All" // Passing a valid TopNOption value as the 5th parameter
     );
+
+    // Store the suggestions array in a ref to access it in startNewBattle
+    // This is our workaround since we can't pass it directly to createBattleStarter
+    // as it doesn't have a parameter that accepts RankedPokemon[]
+    const suggestionsRef = useRef(pokemonWithSuggestions);
+    suggestionsRef.current = pokemonWithSuggestions;
+    
+    // Add the ref to the battleStarterInstance object so we can access it later
+    return {
+      ...battleStarterInstance,
+      getSuggestions: () => suggestionsRef.current
+    };
   }, [allPokemon, currentRankings, setCurrentBattle]);
 
   const startNewBattle = useCallback((battleType: BattleType) => {
