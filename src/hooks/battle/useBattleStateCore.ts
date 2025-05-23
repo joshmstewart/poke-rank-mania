@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useRef, useEffect } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { useBattleStarterIntegration } from "@/hooks/battle/useBattleStarterIntegration";
@@ -15,6 +14,8 @@ export const useBattleStateCore = (
   initialBattleType: BattleType,
   initialSelectedGeneration: number
 ) => {
+  console.log("[DEBUG useBattleStateCore] INIT - allPokemon is array:", Array.isArray(allPokemon), "length:", allPokemon?.length || 0);
+
   // Keep track if we need to reload suggestions after milestone
   const [needsToReloadSuggestions, setNeedsToReloadSuggestions] = useState(false);
   
@@ -63,6 +64,7 @@ export const useBattleStateCore = (
     milestones
   } = useProgressState();
 
+  // Get useRankings with guaranteed non-undefined allPokemon
   const {
     finalRankings = [], // CRITICAL FIX: Ensure finalRankings is never undefined
     confidenceScores,
@@ -80,6 +82,9 @@ export const useBattleStateCore = (
     findNextSuggestion,
     loadSavedSuggestions
   } = useRankings(allPokemon || []); // CRITICAL FIX: Ensure allPokemon is never undefined in useRankings
+
+  console.log("[DEBUG useBattleStateCore] AFTER useRankings - finalRankings is array:", 
+              Array.isArray(finalRankings), "length:", finalRankings?.length || 0);
 
   const {
     resetMilestones,
@@ -107,7 +112,13 @@ export const useBattleStateCore = (
     return pokemon.hasOwnProperty('generation') && (pokemon as any).generation === selectedGeneration;
   });
 
-  console.log("🎯 [filteredPokemon] Count after filtering:", filteredPokemon.length, "Generation selected:", selectedGeneration);
+  console.log("[DEBUG useBattleStateCore] filteredPokemon is array:", Array.isArray(filteredPokemon), 
+              "length:", filteredPokemon.length, "Generation selected:", selectedGeneration);
+
+  // Log before useBattleStarterIntegration to verify props
+  console.log("[DEBUG useBattleStateCore] Before useBattleStarterIntegration - finalRankings:", 
+              Array.isArray(finalRankings), 
+              "length:", finalRankings?.length || 0);
 
   const { 
     battleStarter, 
@@ -120,7 +131,11 @@ export const useBattleStateCore = (
     setSelectedPokemon,
     markSuggestionUsed // Pass markSuggestionUsed to useBattleStarterIntegration
   );
-  console.log("🎯 [useBattleStarterIntegration] initialized:", { battleStarter, currentBattle, filteredPokemonCount: filteredPokemon.length });
+  
+  console.log("[DEBUG useBattleStateCore] After useBattleStarterIntegration - battleStarter exists:", 
+              battleStarter ? "YES" : "NO", 
+              "currentBattle length:", currentBattle?.length || 0, 
+              "filteredPokemonCount:", filteredPokemon.length);
 
   // Get battle processor functions and state - now passing the integrated startNewBattle
   const { 

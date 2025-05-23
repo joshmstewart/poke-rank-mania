@@ -30,6 +30,9 @@ const BattleContent = ({
   const previousBattlesCompletedRef = useRef(0);
   const pokemonAnalysisLoggedRef = useRef(false);
   
+  // ADDED: Log to verify allPokemon in BattleContent is never undefined
+  console.log("[DEBUG BattleContent] allPokemon is array:", Array.isArray(allPokemon), "length:", allPokemon?.length || 0);
+  
   // ADDED: Force "pairs" mode as default if none selected
   const safeInitialBattleType: BattleType = initialBattleType === "triplets" ? "triplets" : "pairs";
   

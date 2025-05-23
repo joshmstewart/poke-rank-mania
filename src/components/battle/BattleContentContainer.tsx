@@ -20,6 +20,9 @@ const BattleContentContainer: React.FC<BattleContentContainerProps> = ({
   setBattlesCompleted,
   setBattleResults
 }) => {
+  // ADDED: Log to verify allPokemon in container is never undefined
+  console.log("[DEBUG BattleContentContainer] allPokemon is array:", Array.isArray(allPokemon), "length:", allPokemon?.length || 0);
+  
   // ADDED: Ensure we always have a valid battle type with "pairs" as default
   const safeBattleType: BattleType = initialBattleType === "triplets" ? "triplets" : "pairs";
   

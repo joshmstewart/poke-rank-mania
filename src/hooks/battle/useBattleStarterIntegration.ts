@@ -34,7 +34,8 @@ export const useBattleStarterIntegration = (
   setSelectedPokemon: React.Dispatch<React.SetStateAction<number[]>>,
   markSuggestionFullyUsed?: (pokemon: RankedPokemon, fullyUsed: boolean) => void
 ) => {
-  console.log('[DEBUG useBattleStarterIntegration] Hook called with allPokemon.length:', allPokemon.length, 'currentRankings.length:', currentRankings.length);
+  console.log('[DEBUG useBattleStarterIntegration] Hook called with allPokemon.length:', allPokemon?.length || 0, 
+              'currentRankings.length:', currentRankings?.length || 0);
   
   // CRITICAL FIX: Initialize refs with appropriate default values
   const processedSuggestionBattlesRef = useRef<Set<number>>(new Set());
@@ -60,7 +61,7 @@ export const useBattleStarterIntegration = (
   // Only update these refs when there are significant changes
   useEffect(() => {
     console.log('[DEBUG useBattleStarterIntegration] useEffect StablePokemonUpdate: Fired. allPokemon.length:', 
-                allPokemon.length, 'stablePokemonRef.current.length:', stablePokemonRef.current?.length || 0);
+                allPokemon?.length || 0, 'stablePokemonRef.current.length:', stablePokemonRef.current?.length || 0);
     
     // Only update if we have Pokemon and the length has changed significantly
     if (allPokemon && allPokemon.length > 0 && 
@@ -75,7 +76,7 @@ export const useBattleStarterIntegration = (
   // Only update rankings ref when there are significant changes
   useEffect(() => {
     console.log('[DEBUG useBattleStarterIntegration] useEffect StableRankingsUpdate: Fired. currentRankings.length:', 
-                currentRankings.length, 'stableRankingsRef.current.length:', stableRankingsRef.current?.length || 0);
+                currentRankings?.length || 0, 'stableRankingsRef.current.length:', stableRankingsRef.current?.length || 0);
     
     // Only update if rankings changed significantly (>10% change)
     if (currentRankings && currentRankings.length > 0 &&
@@ -249,19 +250,20 @@ export const useBattleStarterIntegration = (
       
       // Create an extended version of the existing instance with getSuggestions
       const existingInstance = battleStarterInstanceRef.current;
-      const suggestionsRef = useRef(currentRankings.filter(
-        p => p.suggestedAdjustment && !p.suggestedAdjustment.used
-      ));
-      suggestionsRef.current = currentRankings.filter(
-        p => p.suggestedAdjustment && !p.suggestedAdjustment.used
-      );
       
-      // Return a properly typed extended instance
-      return {
+      // Important: Create a properly typed extended instance
+      const extendedInstance: ExtendedBattleStarter = {
         startNewBattle: existingInstance.startNewBattle,
         trackLowerTierLoss: existingInstance.trackLowerTierLoss,
-        getSuggestions: () => suggestionsRef.current
+        getSuggestions: () => {
+          return (currentRankings || []).filter(
+            p => p.suggestedAdjustment && !p.suggestedAdjustment.used
+          );
+        }
       };
+      
+      // Return a properly typed extended instance
+      return extendedInstance;
     }
 
     // Log detailed diagnostics about the Pokémon pools
@@ -314,22 +316,24 @@ export const useBattleStarterIntegration = (
       "All" // Passing a valid TopNOption value as the 5th parameter
     );
 
-    // Store the suggestions array in a ref to access it in startNewBattle
-    const suggestionsRef = useRef(pokemonWithSuggestions);
-    suggestionsRef.current = pokemonWithSuggestions;
-    
     // Store the instance in our ref for future checks
     battleStarterInstanceRef.current = battleStarterInstance;
     
     // Return a properly typed extended instance
-    return {
+    const extendedInstance: ExtendedBattleStarter = {
       startNewBattle: battleStarterInstance.startNewBattle,
       trackLowerTierLoss: battleStarterInstance.trackLowerTierLoss,
-      getSuggestions: () => suggestionsRef.current
+      getSuggestions: () => {
+        return (currentRankings || []).filter(
+          p => p.suggestedAdjustment && !p.suggestedAdjustment.used
+        );
+      }
     };
+    
+    return extendedInstance;
   }, [
     // CRITICAL FIX: Only re-evaluate when these REALLY change and ensure they're never undefined
-    (allPokemon && allPokemon.length > 0) ? allPokemon.length : 0,
+    allPokemon ? allPokemon.length : 0,
     setCurrentBattle
   ]); 
 
@@ -342,12 +346,16 @@ export const useBattleStarterIntegration = (
   console.log('[DEBUG Deps] markSuggestionFullyUsed:', typeof markSuggestionFullyUsed);
   console.log('[DEBUG Deps] setSelectedPokemon:', typeof setSelectedPokemon);
 
+  // CRITICAL FIX: Completely stabilized dependencies array with static or statically-derived values
   const startNewBattle = useCallback((battleType: BattleType) => {
     console.log('[DEBUG useBattleStarterIntegration] startNewBattle: Called. battleType:', battleType, 
                 'initComplete:', initializationCompleteRef.current, 'genInProgress:', battleGenerationInProgressRef.current);
     
     const timestamp = new Date().toISOString();
     console.log(`[${timestamp}] startNewBattle called with battleType: ${battleType}`);
+    
+    // CRITICAL FIX: Create stable battleStarter ref to use throughout the function
+    const currentBattleStarter = battleStarter || createEmptyBattleStarter();
     
     // If initialization is not complete, don't start a battle yet
     if (!initializationCompleteRef.current) {
@@ -360,13 +368,6 @@ export const useBattleStarterIntegration = (
     if (battleGenerationInProgressRef.current) {
       console.log(`[${timestamp}] Battle generation already in progress, ignoring startNewBattle call`);
       console.log('[DEBUG useBattleStarterIntegration] startNewBattle: Battle generation already in progress. Returning early.');
-      return [];
-    }
-    
-    // CRITICAL FIX: Ensure battleStarter is defined before using it
-    if (!battleStarter) {
-      console.log(`[${timestamp}] No battleStarter available, cannot start new battle`);
-      console.log('[DEBUG useBattleStarterIntegration] startNewBattle: No battleStarter available. Returning early.');
       return [];
     }
     
@@ -446,12 +447,12 @@ export const useBattleStarterIntegration = (
       console.log(`[${timestamp}] Forcing unranked selection for variety:`, forceUnrankedSelection);
     }
     
-    // Generate the battle
+    // Generate the battle safely using current battleStarter reference
     console.log('[DEBUG useBattleStarterIntegration] startNewBattle: About to call battleStarter.startNewBattle (from createBattleStarter instance).');
     
     if (shouldForcePriority) {
       console.log(`[${timestamp}] 🚨 Explicitly FORCING a suggestion-priority battle. forceUnrankedSelection: ${forceUnrankedSelection}`);
-      battle = battleStarter.startNewBattle(battleType, true, forceUnrankedSelection);
+      battle = currentBattleStarter.startNewBattle(battleType, true, forceUnrankedSelection);
 
       // Check if the battle includes a suggestion before decrementing the counter
       const battleIncludesSuggestion = battle.some(pokemon => {
@@ -474,7 +475,7 @@ export const useBattleStarterIntegration = (
     } else {
       // Pass the forceUnrankedSelection flag to ensure variety
       console.log(`[${timestamp}] 🎮 Using standard battle selection (forceUnrankedSelection: ${forceUnrankedSelection})`);
-      battle = battleStarter.startNewBattle(battleType, false, forceUnrankedSelection);
+      battle = currentBattleStarter.startNewBattle(battleType, false, forceUnrankedSelection);
     }
 
     console.log('[DEBUG useBattleStarterIntegration] startNewBattle: Got battle from battleStarter.startNewBattle. IDs:', battle ? battle.map(p => p.id) : 'null/empty');
@@ -536,13 +537,10 @@ export const useBattleStarterIntegration = (
     // Only return battle if it's not empty
     return battle;
   }, [
-    // CRITICAL FIX: Ensure all dependencies are always defined
-    battleStarter || createEmptyBattleStarter(),  // UPDATED: Use empty implementation instead of null
-    Array.isArray(currentRankings) ? currentRankings : [],
-    setCurrentBattle,
-    Array.isArray(allPokemon) ? allPokemon : [],
-    typeof markSuggestionFullyUsed === 'function' ? markSuggestionFullyUsed : undefined,
-    setSelectedPokemon
+    // CRITICAL FIX: Use MINIMAL dependencies to avoid React comparison issues
+    // Use the stable battleStarter object and true for static dependencies
+    true, // Static value that never changes to stabilize the dependency array
+    battleStarter // Only the battleStarter object itself, which is created via useMemo with its own stable dependency array
   ]);
 
   const { performEmergencyReset } = useBattleEmergencyReset(
