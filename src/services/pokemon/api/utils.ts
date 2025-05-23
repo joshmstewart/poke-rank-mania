@@ -1,3 +1,4 @@
+
 import { Pokemon } from "../types";
 import { PokemonImageType, getPreferredImageType, POKEMON_IMAGE_PREFERENCE_KEY, DEFAULT_IMAGE_PREFERENCE } from "@/components/settings/ImagePreferenceSelector";
 
@@ -9,10 +10,10 @@ export function getPokemonImageUrl(id: number, fallbackLevel: number = 0): strin
   const getFallbackOrder = (initialPreference: PokemonImageType): PokemonImageType[] => {
     switch(initialPreference) {
       case "official":
-        // If user prefers official artwork, try Dream World next, then default
+        // If user prefers official artwork, try Dream World next, then Home, then default
         return ["official", "dream", "home", "default"];
       case "dream":
-        // If user prefers Dream World, try Official next, then default
+        // If user prefers Dream World, try Official next, then Home, then default
         return ["dream", "official", "home", "default"];
       case "home":
         // If user prefers Home, try Official next, then dream, then default

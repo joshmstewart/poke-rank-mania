@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -68,12 +69,10 @@ export const getPreferredImageType = (): PokemonImageType => {
   return DEFAULT_IMAGE_PREFERENCE;
 };
 
-// The getPreferredImageUrl function is now imported from utils.ts, so we'll remove the duplicate implementation
+// Use direct import from utils file instead of require
+// This function now forwards to getPokemonImageUrl in utils.ts
 export const getPreferredImageUrl = (pokemonId: number, fallbackLevel?: number): string => {
-  // Import and use the implementation from utils.ts instead of duplicating here
-  // This function now just forwards to the implementation in utils.ts
-  // Ideally this would be reorganized to avoid the circular dependency
-  const { getPokemonImageUrl } = require("../../../src/services/pokemon/api/utils");
+  // Forward to utils.ts implementation via imported function (see import at bottom of file)
   return getPokemonImageUrl(pokemonId, fallbackLevel);
 };
 
@@ -171,3 +170,7 @@ const ImagePreferenceSelector: React.FC<ImagePreferenceSelectorProps> = ({ onClo
 };
 
 export default ImagePreferenceSelector;
+
+// Fix circular dependency by importing at the bottom after exports
+// This breaks the circular reference chain
+import { getPokemonImageUrl } from "@/services/pokemon/api/utils";
