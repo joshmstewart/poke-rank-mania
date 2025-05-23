@@ -558,38 +558,6 @@ export const useBattleStateCore = (
     }
   }, [finalRankings, showingMilestone, triggerSuggestionPrioritization]);
 
-  // Fixed handleContinueBattles implementation
-  const handleContinueBattles = useCallback(() => {
-    setShowingMilestone(false);
-    console.log("🎯 [Continue Battles] Milestone display turned off, continuing battles.");
-
-    if (resetMilestoneInProgress) {
-      resetMilestoneInProgress();
-    }
-    
-    // When continuing battles, explicitly prioritize any suggestions
-    if (resetSuggestionPriority) {
-      console.log("🚨 Resetting suggestion priority in handleContinueBattles");
-      resetSuggestionPriority();
-    }
-    
-    // Ensure we emit the milestoneEnded event to trigger suggestion prioritization
-    setTimeout(() => {
-      window.dispatchEvent(new Event("milestoneEnded"));
-      
-      // Start a new battle with current battle type (after event handling)
-      setTimeout(() => {
-        startNewBattle(battleType);
-      }, 100);
-    }, 0);
-  }, [
-    setShowingMilestone, 
-    resetMilestoneInProgress, 
-    resetSuggestionPriority,
-    battleType, 
-    startNewBattle
-  ]);
-
   return {
     currentBattle,
     battleResults,
