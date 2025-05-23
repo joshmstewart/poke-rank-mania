@@ -11,17 +11,27 @@ export function getPokemonImageUrl(id: number, fallbackLevel: number = 0): strin
   
   // Generate URLs for each image type
   const getImageUrl = (type: PokemonImageType): string => {
+    let url = "";
+    
     switch(type) {
       case "official":
-        return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`;
+        url = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`;
+        break;
       case "home":
-        return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/home/${id}.png`;
+        url = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/home/${id}.png`;
+        break;
       case "dream":
-        return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/dream-world/${id}.svg`;
+        url = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/dream-world/${id}.svg`;
+        break;
       case "default":
       default:
-        return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
+        url = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
+        break;
     }
+    
+    // Adding extra logging to verify URL generation is happening
+    console.log(`🔍 [getPokemonImageUrl] Generated URL for type "${type}", Pokemon #${id}: ${url}`);
+    return url;
   };
 
   // If we're at fallback level 0, use the preferred type

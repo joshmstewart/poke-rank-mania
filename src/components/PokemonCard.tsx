@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Pokemon } from "@/services/pokemon";
@@ -28,7 +28,7 @@ const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
   const [retryCount, setRetryCount] = useState(0);
   const [currentImageUrl, setCurrentImageUrl] = useState<string>("");
   const [currentImageType, setCurrentImageType] = useState<PokemonImageType>(getPreferredImageType());
-  const [initialUrl, setInitialUrl] = useState(""); // Store the initial URL for error reporting
+  const initialUrlRef = useRef<string>(""); // Using ref to ensure it doesn't change
 
   const normalizedId = normalizePokedexNumber(pokemon.id);
   const formattedName = formatPokemonName(pokemon.name);
@@ -39,9 +39,11 @@ const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
     setRetryCount(0);
     const preference = getPreferredImageType();
     setCurrentImageType(preference);
+    
+    // Generate URL first, then set it to make sure we capture it
     const url = getPreferredImageUrl(pokemon.id);
     setCurrentImageUrl(url);
-    setInitialUrl(url); // Store initial URL for error reporting
+    initialUrlRef.current = url; // Store initial URL in ref
     
     // Add debug info to help investigate why official artwork might be failing
     if (process.env.NODE_ENV === "development") {
@@ -77,8 +79,8 @@ const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
   };
   
   const handleImageError = () => {
-    // Critical: Store the current failing URL before any state changes
-    const failedUrl = currentImageUrl || initialUrl;
+    // Get the failing URL
+    const failedUrl = currentImageUrl || initialUrlRef.current;
     
     if (retryCount === 0) {
       if (!failedUrl || failedUrl.trim() === '') {

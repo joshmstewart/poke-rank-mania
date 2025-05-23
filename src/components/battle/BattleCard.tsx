@@ -1,5 +1,5 @@
 
-import React, { memo, useCallback, useState, useEffect } from "react";
+import React, { memo, useCallback, useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Pokemon } from "@/services/pokemon";
 import { getPreferredImageUrl, getPreferredImageType, PokemonImageType } from "@/components/settings/ImagePreferenceSelector";
@@ -19,8 +19,8 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
   const [retryCount, setRetryCount] = useState(0);
   const [currentImageUrl, setCurrentImageUrl] = useState("");
   const [currentImageType, setCurrentImageType] = useState<PokemonImageType>(getPreferredImageType());
-  const [initialUrl, setInitialUrl] = useState(""); // Store the initial URL for error reporting
-
+  const initialUrlRef = useRef<string>(""); // Using ref to ensure it doesn't change
+  
   const formattedName = formatPokemonName(pokemon.name);
 
   const updateImage = useCallback(() => {
@@ -29,9 +29,11 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
     setRetryCount(0);
     const preference = getPreferredImageType();
     setCurrentImageType(preference);
+    
+    // Generate URL first, then set it to make sure we capture it
     const url = getPreferredImageUrl(pokemon.id);
     setCurrentImageUrl(url);
-    setInitialUrl(url); // Store initial URL for error reporting
+    initialUrlRef.current = url; // Store initial URL in ref
     
     if (process.env.NODE_ENV === "development") {
       console.log(`🖼️ BattleCard: Loading "${preference}" image for ${formattedName} (#${pokemon.id}): ${url}`);
@@ -63,8 +65,8 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
   };
   
   const handleImageError = () => {
-    // Critical: Store the current failing URL before any state changes
-    const failedUrl = currentImageUrl || initialUrl;
+    // Get the failing URL
+    const failedUrl = currentImageUrl || initialUrlRef.current;
     
     if (retryCount === 0) {
       if (!failedUrl || failedUrl.trim() === '') {

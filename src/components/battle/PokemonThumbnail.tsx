@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { getPokemonTypeColor } from "./utils/pokemonTypeColors";
 import { getPreferredImageUrl, getPreferredImageType, PokemonImageType } from "@/components/settings/ImagePreferenceSelector";
@@ -35,7 +35,7 @@ const PokemonThumbnail: React.FC<PokemonThumbnailProps> = ({
   const [imageSrc, setImageSrc] = useState("");
   const [retryCount, setRetryCount] = useState(0);
   const [currentImageType, setCurrentImageType] = useState<PokemonImageType>(getPreferredImageType());
-  const [initialUrl, setInitialUrl] = useState(""); // Store the initial URL for error reporting
+  const initialUrlRef = useRef<string>(""); // Using ref to ensure it doesn't change
   
   // Check if the pokemon has ranking properties (is a RankedPokemon)
   const isRankedPokemon = (pokemon: Pokemon): pokemon is RankedPokemon => {
@@ -56,9 +56,11 @@ const PokemonThumbnail: React.FC<PokemonThumbnailProps> = ({
   useEffect(() => {
     const preference = getPreferredImageType();
     setCurrentImageType(preference);
+    
+    // Generate URL first, then set it to make sure we capture it
     const url = getPreferredImageUrl(pokemon.id);
     setImageSrc(url);
-    setInitialUrl(url); // Store initial URL for error reporting
+    initialUrlRef.current = url; // Store initial URL in ref
     
     if (process.env.NODE_ENV === "development") {
       console.log(`🖼️ PokemonThumbnail: Loading "${preference}" image for ${formattedName} (#${pokemon.id}): ${url}`);
@@ -68,6 +70,8 @@ const PokemonThumbnail: React.FC<PokemonThumbnailProps> = ({
         .then(response => {
           if (!response.ok) {
             console.warn(`⚠️ Thumbnail image check: ${url} returned ${response.status}`);
+          } else {
+            console.log(`✅ Thumbnail image check: ${url} exists on server`);
           }
         })
         .catch(error => {
@@ -80,8 +84,8 @@ const PokemonThumbnail: React.FC<PokemonThumbnailProps> = ({
   
   // Handle image load errors with improved diagnostics
   const handleImageError = () => {
-    // Critical: Store the current failing URL before any state changes
-    const failedUrl = imageSrc || initialUrl;
+    // Get the failing URL
+    const failedUrl = imageSrc || initialUrlRef.current;
     
     if (retryCount === 0) {
       if (!failedUrl || failedUrl.trim() === '') {
@@ -96,6 +100,8 @@ const PokemonThumbnail: React.FC<PokemonThumbnailProps> = ({
           .then(response => {
             if (!response.ok) {
               console.error(`🔴 Confirmed: URL ${failedUrl} returned ${response.status} from server`);
+            } else {
+              console.error(`❓ Unexpected: URL ${failedUrl} exists on server but image still failed to load`);
             }
           })
           .catch(error => {
