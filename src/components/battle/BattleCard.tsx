@@ -1,3 +1,4 @@
+
 import React, { memo, useCallback, useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Pokemon } from "@/services/pokemon";
@@ -18,6 +19,7 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
   const [retryCount, setRetryCount] = useState(0);
   const [currentImageUrl, setCurrentImageUrl] = useState("");
   const [currentImageType, setCurrentImageType] = useState<PokemonImageType>(getPreferredImageType());
+  const [initialUrl, setInitialUrl] = useState(""); // Store the initial URL for error reporting
 
   const formattedName = formatPokemonName(pokemon.name);
 
@@ -29,6 +31,7 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
     setCurrentImageType(preference);
     const url = getPreferredImageUrl(pokemon.id);
     setCurrentImageUrl(url);
+    setInitialUrl(url); // Store initial URL for error reporting
     
     if (process.env.NODE_ENV === "development") {
       console.log(`🖼️ BattleCard: Loading "${preference}" image for ${formattedName} (#${pokemon.id}): ${url}`);
@@ -62,7 +65,7 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
   const handleImageError = () => {
     if (retryCount === 0) {
       // Log the initial failure of the preferred image type with the actual URL
-      console.error(`🔴 Initial attempt to load '${currentImageType}' artwork for ${formattedName} (#${pokemon.id}) failed. URL: ${currentImageUrl}`);
+      console.error(`🔴 Initial attempt to load '${currentImageType}' artwork for ${formattedName} (#${pokemon.id}) failed. URL: ${initialUrl}`);
     }
     
     if (retryCount < 3) {
@@ -75,6 +78,7 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
       setCurrentImageUrl(nextUrl);
     } else {
       console.error(`⛔ All image fallbacks failed for ${formattedName} in battle`);
+      setImageError(true);
     }
   };
 

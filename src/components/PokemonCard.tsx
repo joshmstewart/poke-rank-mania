@@ -28,6 +28,7 @@ const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
   const [retryCount, setRetryCount] = useState(0);
   const [currentImageUrl, setCurrentImageUrl] = useState<string>("");
   const [currentImageType, setCurrentImageType] = useState<PokemonImageType>(getPreferredImageType());
+  const [initialUrl, setInitialUrl] = useState(""); // Store the initial URL for error reporting
 
   const normalizedId = normalizePokedexNumber(pokemon.id);
   const formattedName = formatPokemonName(pokemon.name);
@@ -40,6 +41,7 @@ const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
     setCurrentImageType(preference);
     const url = getPreferredImageUrl(pokemon.id);
     setCurrentImageUrl(url);
+    setInitialUrl(url); // Store initial URL for error reporting
     
     // Add debug info to help investigate why official artwork might be failing
     if (process.env.NODE_ENV === "development") {
@@ -77,7 +79,7 @@ const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
   const handleImageError = () => {
     if (retryCount === 0) {
       // Log the initial failure of the preferred image type with the actual URL
-      console.error(`🔴 Initial attempt to load '${currentImageType}' artwork for ${formattedName} (#${pokemon.id}) failed. URL: ${currentImageUrl}`);
+      console.error(`🔴 Initial attempt to load '${currentImageType}' artwork for ${formattedName} (#${pokemon.id}) failed. URL: ${initialUrl}`);
     }
     
     if (retryCount < 3) {

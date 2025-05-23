@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { getPokemonTypeColor } from "./utils/pokemonTypeColors";
@@ -35,6 +36,7 @@ const PokemonThumbnail: React.FC<PokemonThumbnailProps> = ({
   const [imageSrc, setImageSrc] = useState(getPreferredImageUrl(pokemon.id));
   const [retryCount, setRetryCount] = useState(0);
   const [currentImageType, setCurrentImageType] = useState<PokemonImageType>(getPreferredImageType());
+  const [initialUrl, setInitialUrl] = useState(""); // Store the initial URL for error reporting
   
   // Check if the pokemon has ranking properties (is a RankedPokemon)
   const isRankedPokemon = (pokemon: Pokemon): pokemon is RankedPokemon => {
@@ -56,6 +58,8 @@ const PokemonThumbnail: React.FC<PokemonThumbnailProps> = ({
     const preference = getPreferredImageType();
     setCurrentImageType(preference);
     const url = getPreferredImageUrl(pokemon.id);
+    setImageSrc(url);
+    setInitialUrl(url); // Store initial URL for error reporting
     
     if (process.env.NODE_ENV === "development") {
       console.log(`🖼️ PokemonThumbnail: Loading "${preference}" image for ${formattedName} (#${pokemon.id}): ${url}`);
@@ -72,7 +76,6 @@ const PokemonThumbnail: React.FC<PokemonThumbnailProps> = ({
         });
     }
     
-    setImageSrc(url);
     setRetryCount(0);
   }, [pokemon.id, formattedName]);
   
@@ -80,7 +83,7 @@ const PokemonThumbnail: React.FC<PokemonThumbnailProps> = ({
   const handleImageError = () => {
     if (retryCount === 0) {
       // Log the initial failure of the preferred image type with the actual URL
-      console.error(`🔴 Initial attempt to load '${currentImageType}' artwork for ${formattedName} (#${pokemon.id}) failed. URL: ${imageSrc}`);
+      console.error(`🔴 Initial attempt to load '${currentImageType}' artwork for ${formattedName} (#${pokemon.id}) failed. URL: ${initialUrl}`);
     }
     
     if (retryCount < 3) {
