@@ -3,12 +3,23 @@ import BattleContentContainer from "@/components/battle/BattleContentContainer";
 import { usePokemonLoader } from "@/hooks/battle/usePokemonLoader";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { SingleBattle } from "@/hooks/battle/types";
+import { SingleBattle, BattleType } from "@/hooks/battle/types";
 
 const BattleMode = () => {
   const { allPokemon, isLoading, loadPokemon } = usePokemonLoader();
   const [battlesCompleted, setBattlesCompleted] = useState(0);
   const [battleResults, setBattleResults] = useState<SingleBattle[]>([]);
+
+  // Get the initial battle type from localStorage with fallback to "pairs"
+  const initialBattleType = (() => {
+    const stored = localStorage.getItem('pokemon-ranker-battle-type') as BattleType | null;
+    const defaultType: BattleType = "pairs";
+    if (!stored) {
+      localStorage.setItem('pokemon-ranker-battle-type', defaultType);
+      console.log("BattleMode: Setting default battle type to:", defaultType);
+    }
+    return (stored === "triplets" ? "triplets" : defaultType);
+  })();
 
   const [loadingInitiated, setLoadingInitiated] = useState(false);
   const loaderInitiatedRef = useRef(false);
@@ -249,6 +260,42 @@ const BattleMode = () => {
     };
   }, []);
 
+  // Listen for battle type mismatch events
+  useEffect(() => {
+    const handleBattleTypeMismatch = (event: CustomEvent) => {
+      const { battleType, pokemonCount, expectedCount } = event.detail;
+      
+      addDebugLog(`⚠️ Battle type mismatch detected: ${battleType} with ${pokemonCount} Pokémon (expected ${expectedCount})`);
+      
+      // Force the correct type in localStorage
+      const correctType: BattleType = pokemonCount === 3 ? "triplets" : "pairs";
+      if (correctType !== battleType) {
+        addDebugLog(`Correcting battle type in localStorage from ${battleType} to ${correctType}`);
+        localStorage.setItem('pokemon-ranker-battle-type', correctType);
+        
+        // Show toast to user
+        toast({
+          title: "Battle type corrected",
+          description: `Fixed mismatch between battle mode (${battleType}) and Pokémon count (${pokemonCount})`,
+          variant: "default"
+        });
+      }
+    };
+    
+    // Add event listener
+    document.addEventListener('battle-type-mismatch', handleBattleTypeMismatch as EventListener);
+    
+    return () => {
+      document.removeEventListener('battle-type-mismatch', handleBattleTypeMismatch as EventListener);
+    };
+  }, []);
+
+  // Log important configuration on initial load  
+  useEffect(() => {
+    addDebugLog(`Initial battle type: ${initialBattleType}`);
+    addDebugLog(`LocalStorage battle type: ${localStorage.getItem('pokemon-ranker-battle-type')}`);
+  }, [initialBattleType]);
+  
   if (isLoading || !allPokemon.length) {
     return (
       <div className="flex justify-center items-center h-64 w-full">
@@ -306,7 +353,7 @@ const BattleMode = () => {
       
       <BattleContentContainer
         allPokemon={allPokemon}
-        initialBattleType="pairs"
+        initialBattleType={initialBattleType}
         initialSelectedGeneration={0}
         setBattlesCompleted={setBattlesCompleted}
         setBattleResults={setBattleResults}

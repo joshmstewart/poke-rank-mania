@@ -7,11 +7,20 @@ import { BattleType } from "./types";
  */
 export const useBattleTypeState = () => {
   // Initialize with values from localStorage if available
-  const storedBattleType = localStorage.getItem('pokemon-ranker-battle-type');
-  
-  const [battleType, setBattleType] = useState<BattleType>(
-    (storedBattleType === "triplets") ? "triplets" : "pairs"
-  );
+  const [battleType, setBattleType] = useState<BattleType>(() => {
+    const storedBattleType = localStorage.getItem('pokemon-ranker-battle-type');
+    
+    // FIXED: Ensure "pairs" is the default when localStorage is empty or invalid
+    const initialType = (storedBattleType === "triplets") ? "triplets" : "pairs";
+    
+    // ADDED: Set the localStorage value if it doesn't exist to ensure consistency
+    if (!storedBattleType) {
+      localStorage.setItem('pokemon-ranker-battle-type', initialType);
+      console.log("useBattleTypeState: Set default battle type in localStorage:", initialType);
+    }
+    
+    return initialType;
+  });
 
   // Update battleType when localStorage changes
   useEffect(() => {

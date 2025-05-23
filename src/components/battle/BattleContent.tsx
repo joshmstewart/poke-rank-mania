@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef } from "react";
 import { Pokemon, TopNOption } from "@/services/pokemon";
 import { useBattleStateCore } from "@/hooks/battle/useBattleStateCore";
@@ -12,14 +11,12 @@ import TierSelector from "./TierSelector";
 import { logPokemonVariations } from "@/utils/pokemonListingLogger";
 import { SingleBattle } from "@/hooks/battle/types";
 
-
 interface BattleContentProps {
   allPokemon: Pokemon[];
   initialSelectedGeneration: number;
   initialBattleType: BattleType;
   setBattlesCompleted?: React.Dispatch<React.SetStateAction<number>>;
   setBattleResults?: React.Dispatch<React.SetStateAction<SingleBattle[]>>;
-
 }
 
 const BattleContent = ({
@@ -29,12 +26,12 @@ const BattleContent = ({
   setBattlesCompleted,
   setBattleResults,
 }: BattleContentProps) => {
-
-
-
   const battleStartedRef = useRef(false);
   const previousBattlesCompletedRef = useRef(0);
   const pokemonAnalysisLoggedRef = useRef(false);
+  
+  // ADDED: Force "pairs" mode as default if none selected
+  const safeInitialBattleType: BattleType = initialBattleType || "pairs";
   
   const {
     currentBattle,
@@ -67,23 +64,24 @@ const BattleContent = ({
     removeSuggestion,
     handleContinueBattles,
     resetMilestoneInProgress,
-    performFullBattleReset // ✅ Make sure we extract this function from useBattleStateCore
-} = useBattleStateCore(
-  allPokemon,
-  initialBattleType,
-  initialSelectedGeneration
-);
-
-
+    performFullBattleReset 
+  } = useBattleStateCore(
+    allPokemon,
+    safeInitialBattleType,
+    initialSelectedGeneration
+  );
 
   // Only call startNewBattle once when the component mounts and allPokemon is available
   useEffect(() => {
     if (allPokemon.length > 0 && !battleStartedRef.current) {
-      console.log("BattleContent: Starting new battle on initial load");
+      console.log("BattleContent: Starting new battle on initial load with type:", safeInitialBattleType);
       battleStartedRef.current = true;
-      startNewBattle(initialBattleType);
+      startNewBattle(safeInitialBattleType);
+      
+      // ADDED: Ensure the localStorage is set correctly
+      localStorage.setItem('pokemon-ranker-battle-type', safeInitialBattleType);
     }
-  }, [allPokemon.length, initialBattleType, startNewBattle]);
+  }, [allPokemon.length, safeInitialBattleType, startNewBattle]);
   
   // Keep track of battles completed to prevent resetting
   useEffect(() => {
@@ -113,6 +111,7 @@ const BattleContent = ({
   };
 
   const handleBattleTypeChange = (newType: BattleType) => {
+    console.log("BattleContent: Changing battle type from", battleType, "to", newType);
     setBattleType(newType);
     startNewBattle(newType);
     resetMilestones();
@@ -176,21 +175,23 @@ const BattleContent = ({
     goBack();
   };
 
+  // ADDED: Debug logging to help diagnose issues
+  console.log("BattleContent render - Current battle type:", battleType);
+  console.log("BattleContent render - Current battle length:", currentBattle?.length);
+
   return (
     <div className="flex flex-col items-center w-full gap-4">
       <div className="w-full max-w-3xl flex flex-col gap-4">
-<BattleControls
-  selectedGeneration={selectedGeneration}
-  battleType={battleType}
-  onGenerationChange={handleGenerationChange}
-  onBattleTypeChange={handleBattleTypeChange}
-  onRestartBattles={handleRestartBattles}
-  setBattlesCompleted={setBattlesCompleted}
-  setBattleResults={setBattleResults}
-  performFullBattleReset={performFullBattleReset} // ✅ Pass the centralized reset function
-/>
-
-
+        <BattleControls
+          selectedGeneration={selectedGeneration}
+          battleType={battleType}
+          onGenerationChange={handleGenerationChange}
+          onBattleTypeChange={handleBattleTypeChange}
+          onRestartBattles={handleRestartBattles}
+          setBattlesCompleted={setBattlesCompleted}
+          setBattleResults={setBattleResults}
+          performFullBattleReset={performFullBattleReset}
+        />
         
         <div className="flex items-center justify-between gap-4">
           <ProgressTracker 

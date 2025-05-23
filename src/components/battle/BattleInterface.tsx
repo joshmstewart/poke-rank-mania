@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "@/hooks/battle/types";
@@ -60,6 +59,9 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
       const detailedLog = `Battle changed to [${currentIds.join(',')}] (${currentNames.join(', ')}) - Same as previous: ${isSameAsPrevious ? "YES ⚠️" : "NO ✅"}`;
       console.log(`🔄 BattleInterface: ${detailedLog}`);
       
+      // ADDED: Log battle type and expected Pokemon count
+      console.log(`🔄 BattleInterface: Battle type: ${battleType}, Expected Pokémon count: ${battleType === "triplets" ? 3 : 2}, Actual count: ${currentBattle.length}`);
+      
       // Keep a rolling log of battle changes for deeper analysis
       setBattleChangeLog(prev => {
         const updated = [...prev, detailedLog];
@@ -86,7 +88,8 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
         detail: { 
           pokemonIds: currentIds,
           pokemonNames: currentBattle.map(p => p.name),
-          isSameAsPrevious: isSameAsPrevious
+          isSameAsPrevious: isSameAsPrevious,
+          battleType
         } 
       });
       document.dispatchEvent(battleEvent);
@@ -94,7 +97,7 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
       // Store current IDs as previous for next comparison
       setPreviousBattleIds(currentIds);
     }
-  }, [currentBattle]);
+  }, [currentBattle, battleType]);
   
   // Log battle history changes
   useEffect(() => {
@@ -157,6 +160,31 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
     </div>
   );
   
+  // ADDED: Helper to validate battle configuration
+  useEffect(() => {
+    // Validate that battle type matches the number of Pokémon
+    if (currentBattle && currentBattle.length > 0) {
+      const expectedCount = battleType === "triplets" ? 3 : 2;
+      if (currentBattle.length !== expectedCount) {
+        console.warn(`⚠️ BATTLE TYPE MISMATCH: Type is ${battleType} but have ${currentBattle.length} Pokémon`);
+        
+        // Create a custom event to report this issue
+        const mismatchEvent = new CustomEvent('battle-type-mismatch', {
+          detail: {
+            battleType,
+            pokemonCount: currentBattle.length,
+            expectedCount,
+            pokemonIds: currentBattle.map(p => p.id)
+          }
+        });
+        document.dispatchEvent(mismatchEvent);
+      }
+    }
+  }, [currentBattle, battleType]);
+
+  // ADDED: Helper to ensure correct submit button display based on battle type
+  const shouldShowSubmitButton = battleType === "triplets";
+  
   // Only render if we have Pokemon to display
   if (!currentBattle || currentBattle.length === 0) {
     return (
@@ -184,7 +212,7 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
         />
         
         {/* Hidden debug component */}
-        <BattleChangeDebug />
+        {/* <BattleChangeDebug /> */}
       </div>
       
       <BattleGrid
@@ -197,7 +225,7 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
         animationKey={animationKey}
       />
       
-      {battleType === "triplets" && (
+      {shouldShowSubmitButton && (
         <BattleSubmitButton
           onSubmit={handleSubmit}
           isProcessing={isProcessing}
