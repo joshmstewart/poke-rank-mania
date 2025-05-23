@@ -17,6 +17,7 @@ export const useBattleStarterIntegration = (
   const forcedPriorityBattlesRef = useRef(0);
   const totalSuggestionsRef = useRef(0);
   const milestoneCrossedRef = useRef(false);
+  const priorityModeActiveRef = useRef(false); // New ref to track if priority mode is active
 
   // Log initial value of forcedPriorityBattlesRef
   console.log('[DEBUG useBattleStarterIntegration] forcedPriorityBattlesRef initialized to:', forcedPriorityBattlesRef.current);
@@ -33,6 +34,10 @@ export const useBattleStarterIntegration = (
       totalSuggestionsRef.current = suggestedPokemon.length;
       forcedPriorityBattlesRef.current = Math.max(20, suggestedPokemon.length * 5);
       console.log('[DEBUG useBattleStarterIntegration] forcedPriorityBattlesRef set to:', forcedPriorityBattlesRef.current, 'after prioritize trigger');
+      
+      // Set priority mode active flag
+      priorityModeActiveRef.current = suggestedPokemon.length > 0;
+      console.log('[DEBUG useBattleStarterIntegration] priorityModeActiveRef set to:', priorityModeActiveRef.current);
 
       if (totalSuggestionsRef.current > 0) {
         toast({
@@ -46,6 +51,9 @@ export const useBattleStarterIntegration = (
     const handleMilestoneReached = (event: Event) => {
       console.log('[DEBUG useBattleStarterIntegration] Milestone reached event detected');
       milestoneCrossedRef.current = true;
+      
+      // After milestone, we want to ensure focus on unranked Pokemon
+      // We'll use this flag in startNewBattle
     };
 
     window.addEventListener("prioritizeSuggestions", handlePrioritize);
@@ -112,6 +120,7 @@ export const useBattleStarterIntegration = (
     // If we've crossed a milestone, ensure we prioritize unranked Pokémon
     if (milestoneCrossedRef.current) {
       console.log('[DEBUG useBattleStarterIntegration] Post-milestone battle. Will prioritize unranked Pokémon selection.');
+      // Reset the milestone flag so it's only used for the immediate post-milestone battle
       milestoneCrossedRef.current = false;
     }
 
@@ -121,10 +130,27 @@ export const useBattleStarterIntegration = (
     console.log('[DEBUG useBattleStarterIntegration] Starting new battle. Available suggestedPokemon.length:', suggestedPokemon.length);
     console.log('[DEBUG useBattleStarterIntegration] Current forcedPriorityBattlesRef.current:', forcedPriorityBattlesRef.current);
 
+    // Only force priority if we have forced battles left AND suggestions available
     const shouldForcePriority = forcedPriorityBattlesRef.current > 0 && suggestedPokemon.length > 0;
     console.log('[DEBUG useBattleStarterIntegration] shouldForcePriority decision:', shouldForcePriority);
+    
+    // IMPORTANT: Update priorityModeActiveRef based on whether we still have suggestions
+    priorityModeActiveRef.current = suggestedPokemon.length > 0 && forcedPriorityBattlesRef.current > 0;
+    console.log('[DEBUG useBattleStarterIntegration] priorityModeActiveRef updated to:', priorityModeActiveRef.current);
 
     let battle: Pokemon[];
+    let forceUnrankedSelection = false;
+    
+    // Check if we need to force unranked Pokemon selection for variety
+    // Force unranked selection if:
+    // 1. We don't need to force suggestions, OR
+    // 2. We've just passed a milestone, OR
+    // 3. The unranked pool is large compared to the ranked pool (>90%)
+    if (!shouldForcePriority || milestoneCrossedRef.current || 
+        (unrankedPokemon.length > 0 && unrankedPokemon.length > (currentRankings.length * 9))) {
+      forceUnrankedSelection = true;
+      console.log('[DEBUG useBattleStarterIntegration] Forcing unranked selection for variety:', forceUnrankedSelection);
+    }
     
     // CORE BATTLE STARTER CALL
     // If we should force priority and have suggestions, do that
@@ -132,22 +158,32 @@ export const useBattleStarterIntegration = (
       battle = battleStarter.startNewBattle(battleType, true);
       console.log("🚨 Explicitly FORCING a suggestion-priority battle.");
 
-      forcedPriorityBattlesRef.current--;
-      console.log('[DEBUG useBattleStarterIntegration] forcedPriorityBattlesRef decremented to:', forcedPriorityBattlesRef.current);
-
-      const hasSuggestion = battle.some(pokemon => {
+      // Check if the battle includes a suggestion before decrementing the counter
+      const battleIncludesSuggestion = battle.some(pokemon => {
         const rankedPokemon = currentRankings.find(p => p.id === pokemon.id);
         return rankedPokemon?.suggestedAdjustment && !rankedPokemon.suggestedAdjustment.used;
       });
 
-      if (!hasSuggestion) {
-        forcedPriorityBattlesRef.current++;
-        console.log('[DEBUG useBattleStarterIntegration] forcedPriorityBattlesRef incremented back to:', forcedPriorityBattlesRef.current, 'as no suggestion was found');
-        console.log("❌ No suggestion Pokémon found despite forced priority; NOT decrementing counter.");
+      // FIXED: Only decrement if we successfully included a suggestion
+      if (battleIncludesSuggestion) {
+        forcedPriorityBattlesRef.current--;
+        console.log('[DEBUG useBattleStarterIntegration] forcedPriorityBattlesRef decremented to:', 
+          forcedPriorityBattlesRef.current, 'after successfully including a suggestion');
+      } else {
+        console.log('[DEBUG useBattleStarterIntegration] No suggestion included in battle despite forced priority. Counter unchanged:', forcedPriorityBattlesRef.current);
+        // IMPORTANT: Still decrement by at least 1 to avoid getting stuck
+        // This ensures we don't endlessly try to force suggestions that can't be used
+        if (forcedPriorityBattlesRef.current > 0) {
+          forcedPriorityBattlesRef.current--;
+          console.log('[DEBUG useBattleStarterIntegration] Decrementing counter anyway to prevent stalling:', forcedPriorityBattlesRef.current);
+        }
+        // Force unranked selection for the next battle if we couldn't find a suggestion
+        forceUnrankedSelection = true;
       }
     } else {
-      battle = battleStarter.startNewBattle(battleType, false);
-      console.log("🎮 Using standard battle selection (no forced suggestions).");
+      // Pass the forceUnrankedSelection flag to ensure variety
+      battle = battleStarter.startNewBattle(battleType, false, forceUnrankedSelection);
+      console.log(`🎮 Using standard battle selection (forceUnrankedSelection: ${forceUnrankedSelection})`);
     }
 
     // DIAGNOSTICS: Check if battle contains suggestions or new Pokémon
@@ -166,6 +202,8 @@ export const useBattleStarterIntegration = (
       console.log(`✅ Battle introduces ${newPokemonCount} new Pokémon that weren't previously ranked.`);
     } else {
       console.log("🚫 Battle contains no suggestions and no new Pokémon explicitly.");
+      // IMPORTANT: If we end up with no new Pokémon and no suggestions, force unranked next time
+      forceUnrankedSelection = true;
     }
 
     setCurrentBattle(battle);
@@ -190,6 +228,10 @@ export const useBattleStarterIntegration = (
     
     // Also set milestoneCrossedRef to true to ensure we prioritize unranked Pokémon
     milestoneCrossedRef.current = true;
+    
+    // Reset priority mode flag
+    priorityModeActiveRef.current = true;
+    console.log('[DEBUG useBattleStarterIntegration] priorityModeActiveRef reset to:', priorityModeActiveRef.current);
   };
 
   return {
