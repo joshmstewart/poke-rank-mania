@@ -80,16 +80,16 @@ const PokemonThumbnail: React.FC<PokemonThumbnailProps> = ({
   // Handle image load errors with improved diagnostics
   const handleImageError = () => {
     if (retryCount === 0) {
-      // Log the initial failure of the preferred image type
+      // Log the initial failure of the preferred image type with the actual URL
       console.error(`🔴 Initial attempt to load '${currentImageType}' artwork for ${formattedName} (#${pokemon.id}) failed. URL: ${imageSrc}`);
     }
     
     if (retryCount < 3) {
       const nextRetry = retryCount + 1;
-      console.log(`❌ Thumbnail image load failed for ${formattedName} (#${pokemon.id}) with type "${currentImageType}" - trying fallback #${nextRetry}`);
+      const nextUrl = getPreferredImageUrl(pokemon.id, nextRetry);
+      console.log(`❌ Thumbnail image load failed for ${formattedName} (#${pokemon.id}) with type "${currentImageType}" - trying fallback #${nextRetry}: ${nextUrl}`);
       
-      const fallbackUrl = getPreferredImageUrl(pokemon.id, nextRetry);
-      setImageSrc(fallbackUrl);
+      setImageSrc(nextUrl);
       setRetryCount(nextRetry);
     } else {
       console.error(`⛔ All image fallbacks failed for ${formattedName} thumbnail`);
