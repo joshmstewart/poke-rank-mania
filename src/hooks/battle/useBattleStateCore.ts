@@ -626,19 +626,10 @@ export const useBattleStateCore = (
   };
 };
 
-// Need to update useBattleStateCore to pass currentBattle to useBattleStarterIntegration
-// The existing implementation is in src/hooks/battle/useBattleStateCore.ts, which is readonly.
-// Since we can't modify that file directly, we need to create a new hook that will handle this functionality.
-
-import { useBattleInitializer } from './useBattleInitializer';
-import { useBattleStarterIntegration } from './useBattleStarterIntegration';
-
-// This is a wrapper function to update the reference to useBattleStarterIntegration
+// This is a wrapper function that would ideally update the reference to useBattleStarterIntegration
 // in useBattleStateCore.ts to include currentBattle
-
-// Export a dummy function to satisfy TypeScript since we can't modify the original file
 export const ensureBattleIntegration = (
-  useBattleStarterIntegration: any,
+  battleStarterIntegration: any,
   currentBattle: any[]
 ) => {
   // This function would ideally modify useBattleStateCore to include currentBattle
