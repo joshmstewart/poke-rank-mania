@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { SingleBattle } from "./types";
@@ -18,9 +17,6 @@ export const useRankings = (allPokemon: Pokemon[]) => {
   const previousRankingsRef = useRef<RankedPokemon[]>([]);
   const previousResultsRef = useRef<SingleBattle[]>([]);
   const rankingGenerationCountRef = useRef(0);
-  
-  // Debounce mechanism to prevent excessive ranking generations
-  const debounceTimerRef = useRef<number | null>(null);
 
   const {
     suggestRanking,
@@ -57,8 +53,8 @@ export const useRankings = (allPokemon: Pokemon[]) => {
     }
   }, [finalRankings]);
 
-  // IMPROVED: Check for substantial changes before regenerating rankings
-  const generateRankings = useCallback((results: SingleBattle[]) => {
+  // IMPROVED: Check for substantial changes before regenerating rankings - now fully synchronous
+  const generateRankings = useCallback((results: SingleBattle[]): RankedPokemon[] => {
     // Prevent excessive regeneration by tracking and logging call count
     rankingGenerationCountRef.current++;
     const currentCount = rankingGenerationCountRef.current;
@@ -80,93 +76,83 @@ export const useRankings = (allPokemon: Pokemon[]) => {
     // Update the previous results reference
     previousResultsRef.current = [...results];
 
-    // Clear any pending debounce timer
-    if (debounceTimerRef.current !== null) {
-      clearTimeout(debounceTimerRef.current);
-      debounceTimerRef.current = null;
+    // Perform the ranking generation synchronously
+    const countMap = new Map<number, number>();
+
+    results.forEach(result => {
+      countMap.set(result.winner.id, (countMap.get(result.winner.id) || 0) + 1);
+      countMap.set(result.loser.id, (countMap.get(result.loser.id) || 0) + 1);
+    });
+
+    const participatingPokemonIds = new Set([...countMap.keys()]);
+
+    const allRankedPokemon: RankedPokemon[] = allPokemon
+      .filter(p => participatingPokemonIds.has(p.id))
+      .map(p => {
+        if (!p.rating) p.rating = new Rating();
+        else if (!(p.rating instanceof Rating)) p.rating = new Rating(p.rating.mu, p.rating.sigma);
+
+        const conservativeEstimate = p.rating.mu - 3 * p.rating.sigma;
+        const normalizedConfidence = Math.max(0, Math.min(100, 100 * (1 - (p.rating.sigma / 8.33))));
+
+        const pokemonFrozenStatus = frozenPokemon[p.id] || {};
+        const suggestedAdjustment = activeSuggestions.get(p.id);
+
+        return {
+          ...p,
+          score: conservativeEstimate,
+          count: countMap.get(p.id) || 0,
+          confidence: normalizedConfidence,
+          isFrozenForTier: pokemonFrozenStatus,
+          suggestedAdjustment
+        };
+      })
+      .sort((a, b) => b.score - a.score);
+
+    const filteredRankings = activeTier === "All" 
+      ? allRankedPokemon 
+      : allRankedPokemon.slice(0, Number(activeTier));
+
+    // Explicitly reload suggestions here:
+    const savedSuggestions = loadSavedSuggestions();
+    console.log(`[DEBUG useRankings - generateRankings #${currentCount}] Applying suggestions during ranking generation:`, savedSuggestions.size);
+    
+    const finalWithSuggestions = filteredRankings.map(pokemon => {
+      const newPokemon = {
+        ...pokemon,
+        suggestedAdjustment: savedSuggestions.get(pokemon.id) || null
+      };
+      return newPokemon;
+    });
+
+    // Provide more informative log about suggestions
+    const pokemonWithSuggestions = finalWithSuggestions.filter(p => p.suggestedAdjustment);
+    
+    if (pokemonWithSuggestions.length > 0) {
+      console.log(`[DEBUG useRankings - generateRankings #${currentCount} FINAL] Generated rankings with suggestions. Sample from suggestions:`, 
+        JSON.stringify(pokemonWithSuggestions.slice(0, 3).map(p => ({ 
+          id: p.id, 
+          name: p.name, 
+          used: p.suggestedAdjustment?.used,
+          direction: p.suggestedAdjustment?.direction,
+          strength: p.suggestedAdjustment?.strength
+        }))));
+    } else {
+      console.log(`[DEBUG useRankings - generateRankings #${currentCount} FINAL] Generated rankings WITHOUT any suggestions applied.`);
     }
 
-    // Set a debounce timer to delay ranking generation if called again soon
-    return new Promise<RankedPokemon[]>((resolve) => {
-      debounceTimerRef.current = window.setTimeout(() => {
-        const countMap = new Map<number, number>();
+    setFinalRankings(finalWithSuggestions);
+    console.log(`🎯 Rankings generated with suggestions: ${finalWithSuggestions.length} Pokémon`);
 
-        results.forEach(result => {
-          countMap.set(result.winner.id, (countMap.get(result.winner.id) || 0) + 1);
-          countMap.set(result.loser.id, (countMap.get(result.loser.id) || 0) + 1);
-        });
-
-        const participatingPokemonIds = new Set([...countMap.keys()]);
-
-        const allRankedPokemon: RankedPokemon[] = allPokemon
-          .filter(p => participatingPokemonIds.has(p.id))
-          .map(p => {
-            if (!p.rating) p.rating = new Rating();
-            else if (!(p.rating instanceof Rating)) p.rating = new Rating(p.rating.mu, p.rating.sigma);
-
-            const conservativeEstimate = p.rating.mu - 3 * p.rating.sigma;
-            const normalizedConfidence = Math.max(0, Math.min(100, 100 * (1 - (p.rating.sigma / 8.33))));
-
-            const pokemonFrozenStatus = frozenPokemon[p.id] || {};
-            const suggestedAdjustment = activeSuggestions.get(p.id);
-
-            return {
-              ...p,
-              score: conservativeEstimate,
-              count: countMap.get(p.id) || 0,
-              confidence: normalizedConfidence,
-              isFrozenForTier: pokemonFrozenStatus,
-              suggestedAdjustment
-            };
-          })
-          .sort((a, b) => b.score - a.score);
-
-        const filteredRankings = activeTier === "All" 
-          ? allRankedPokemon 
-          : allRankedPokemon.slice(0, Number(activeTier));
-
-        // Explicitly reload suggestions here:
-        const savedSuggestions = loadSavedSuggestions();
-        console.log(`[DEBUG useRankings - generateRankings #${currentCount}] Applying suggestions during ranking generation:`, savedSuggestions.size);
-        
-        const finalWithSuggestions = filteredRankings.map(pokemon => {
-          const newPokemon = {
-            ...pokemon,
-            suggestedAdjustment: savedSuggestions.get(pokemon.id) || null
-          };
-          return newPokemon;
-        });
-
-        // Provide more informative log about suggestions
-        const pokemonWithSuggestions = finalWithSuggestions.filter(p => p.suggestedAdjustment);
-        
-        if (pokemonWithSuggestions.length > 0) {
-          console.log(`[DEBUG useRankings - generateRankings #${currentCount} FINAL] Generated rankings with suggestions. Sample from suggestions:`, 
-            JSON.stringify(pokemonWithSuggestions.slice(0, 3).map(p => ({ 
-              id: p.id, 
-              name: p.name, 
-              used: p.suggestedAdjustment?.used,
-              direction: p.suggestedAdjustment?.direction,
-              strength: p.suggestedAdjustment?.strength
-            }))));
-        } else {
-          console.log(`[DEBUG useRankings - generateRankings #${currentCount} FINAL] Generated rankings WITHOUT any suggestions applied.`);
-        }
-
-        setFinalRankings(finalWithSuggestions);
-        console.log(`🎯 Rankings generated with suggestions: ${finalWithSuggestions.length} Pokémon`);
-
-        const confidenceMap: Record<number, number> = {};
-        allRankedPokemon.forEach(p => {
-          confidenceMap[p.id] = p.confidence;
-        });
-        setConfidenceScores(confidenceMap);
-
-        console.log(`[EFFECT LoopCheck - generateRankings #${currentCount}] COMPLETE`);
-        
-        resolve(filteredRankings);
-      }, 50); // 50ms debounce
+    const confidenceMap: Record<number, number> = {};
+    allRankedPokemon.forEach(p => {
+      confidenceMap[p.id] = p.confidence;
     });
+    setConfidenceScores(confidenceMap);
+
+    console.log(`[EFFECT LoopCheck - generateRankings #${currentCount}] COMPLETE`);
+    
+    return finalWithSuggestions;
   }, [allPokemon, activeTier, frozenPokemon, activeSuggestions, loadSavedSuggestions]);
 
   const freezePokemonForTier = useCallback((pokemonId: number, tier: TopNOption) => {
