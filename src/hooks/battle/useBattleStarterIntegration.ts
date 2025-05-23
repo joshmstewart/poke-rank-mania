@@ -1,4 +1,3 @@
-
 import { useMemo, useEffect, useRef, useCallback } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
@@ -13,6 +12,13 @@ const areBattlesIdentical = (battle1: Pokemon[], battle2: number[]) => {
   return battle1Ids.every(id => battle2.includes(id)) && 
          battle2.every(id => battle1Ids.includes(id));
 };
+
+// Define extended interface for the battleStarter object that includes getSuggestions
+interface ExtendedBattleStarter {
+  startNewBattle: (battleType: BattleType, forceSuggestion?: boolean, forceUnranked?: boolean) => Pokemon[];
+  trackLowerTierLoss: (loserId: number) => void;
+  getSuggestions: () => RankedPokemon[];
+}
 
 export const useBattleStarterIntegration = (
   allPokemon: Pokemon[],
@@ -217,7 +223,7 @@ export const useBattleStarterIntegration = (
   const battleStarterInstanceRef = useRef<ReturnType<typeof createBattleStarter> | null>(null);
 
   // FIXED: The battleStarter should be created once and persisted
-  const battleStarter = useMemo(() => {
+  const battleStarter = useMemo<ExtendedBattleStarter | null>(() => {
     console.log('[DEBUG useBattleStarterIntegration] useMemo (battleStarterInstance): Re-evaluating. allPokemon.length:', allPokemon.length, 'currentRankings.length:', currentRankings.length);
     
     if (!allPokemon || allPokemon.length === 0) {
@@ -230,7 +236,22 @@ export const useBattleStarterIntegration = (
     if (battleStarterInstanceRef.current && stablePokemonRef.current && 
         Math.abs(stablePokemonRef.current.length - allPokemon.length) < 10) {
       console.log("[DEBUG useBattleStarterIntegration] Using existing battleStarter instance");
-      return battleStarterInstanceRef.current;
+      
+      // Create an extended version of the existing instance with getSuggestions
+      const existingInstance = battleStarterInstanceRef.current;
+      const suggestionsRef = useRef(currentRankings.filter(
+        p => p.suggestedAdjustment && !p.suggestedAdjustment.used
+      ));
+      suggestionsRef.current = currentRankings.filter(
+        p => p.suggestedAdjustment && !p.suggestedAdjustment.used
+      );
+      
+      // Return a properly typed extended instance
+      return {
+        startNewBattle: existingInstance.startNewBattle,
+        trackLowerTierLoss: existingInstance.trackLowerTierLoss,
+        getSuggestions: () => suggestionsRef.current
+      };
     }
 
     // Log detailed diagnostics about the Pokémon pools
@@ -288,12 +309,14 @@ export const useBattleStarterIntegration = (
     suggestionsRef.current = pokemonWithSuggestions;
     
     // Store the instance in our ref for future checks
-    battleStarterInstanceRef.current = {
-      ...battleStarterInstance,
+    battleStarterInstanceRef.current = battleStarterInstance;
+    
+    // Return a properly typed extended instance
+    return {
+      startNewBattle: battleStarterInstance.startNewBattle,
+      trackLowerTierLoss: battleStarterInstance.trackLowerTierLoss,
       getSuggestions: () => suggestionsRef.current
     };
-    
-    return battleStarterInstanceRef.current;
   }, [
     // CRITICAL FIX: Only re-evaluate when these REALLY change
     allPokemon.length > 0 ? allPokemon.length : 0,
