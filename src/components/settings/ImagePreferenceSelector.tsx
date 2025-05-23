@@ -35,7 +35,7 @@ const imageTypeOptions: ImageTypeOption[] = [
     name: "Official Artwork",
     url: (id) => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`,
     description: "High quality official artwork",
-    fallbackInfo: "Falls back to: Dream World → Home → Default Sprites"
+    fallbackInfo: "Falls back to: Dream World → Default Sprites"
   },
   {
     id: "home",
@@ -49,7 +49,7 @@ const imageTypeOptions: ImageTypeOption[] = [
     name: "Dream World",
     url: (id) => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/dream-world/${id}.svg`,
     description: "Vector artwork from Dream World (SVG format)",
-    fallbackInfo: "Falls back to: Official → Home → Default Sprites"
+    fallbackInfo: "Falls back to: Official → Default Sprites"
   }
 ];
 
