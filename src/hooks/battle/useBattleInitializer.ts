@@ -23,6 +23,9 @@ export const useBattleInitializer = (
     const savedBattleType = localStorage.getItem('pokemon-ranker-battle-type') as BattleType;
     if (savedBattleType && (savedBattleType === "pairs" || savedBattleType === "triplets")) {
       setBattleType(savedBattleType);
+    } else {
+      // Set default to "pairs" if not valid in localStorage
+      localStorage.setItem('pokemon-ranker-battle-type', "pairs");
     }
   }, []);
 
@@ -37,7 +40,7 @@ export const useBattleInitializer = (
         setBattleResults([]);
         setBattlesCompleted(0);
         setRankingGenerated(false);
-   console.log("🟢 setRankingGenerated explicitly set to FALSE.");
+        console.log("🟢 setRankingGenerated explicitly set to FALSE.");
 
         setSelectedPokemon([]);
         setBattleHistory([]);

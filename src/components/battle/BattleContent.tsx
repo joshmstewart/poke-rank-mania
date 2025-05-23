@@ -31,7 +31,7 @@ const BattleContent = ({
   const pokemonAnalysisLoggedRef = useRef(false);
   
   // ADDED: Force "pairs" mode as default if none selected
-  const safeInitialBattleType: BattleType = initialBattleType || "pairs";
+  const safeInitialBattleType: BattleType = initialBattleType === "triplets" ? "triplets" : "pairs";
   
   const {
     currentBattle,
