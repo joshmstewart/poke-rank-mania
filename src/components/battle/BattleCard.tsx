@@ -1,4 +1,3 @@
-
 import React, { memo, useCallback, useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Pokemon } from "@/services/pokemon";
@@ -76,7 +75,6 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
       setCurrentImageUrl(nextUrl);
     } else {
       console.error(`⛔ All image fallbacks failed for ${formattedName} in battle`);
-      setImageError(true);
     }
   };
 

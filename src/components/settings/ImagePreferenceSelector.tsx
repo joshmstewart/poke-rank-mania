@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -68,11 +67,6 @@ export const getPreferredImageType = (): PokemonImageType => {
 export const getPreferredImageUrl = (pokemonId: number, fallbackLevel?: number): string => {
   const preference = getPreferredImageType();
   
-  // Reduce verbosity - only log when fallback is needed or during development
-  if (fallbackLevel || process.env.NODE_ENV === "development") {
-    console.log(`🖼️ Getting image for Pokémon #${pokemonId} with preference: ${preference}${fallbackLevel ? `, fallback: ${fallbackLevel}` : ''}`);
-  }
-  
   // Direct function to get URL for a specific type
   const getUrlForType = (type: PokemonImageType): string => {
     const option = imageTypeOptions.find(opt => opt.id === type);
@@ -94,13 +88,16 @@ export const getPreferredImageUrl = (pokemonId: number, fallbackLevel?: number):
     const fallbackIndex = Math.min(fallbackLevel - 1, fallbackTypes.length - 1);
     const fallbackType = fallbackTypes[fallbackIndex];
     
-    if (process.env.NODE_ENV === "development") {
-      console.log(`🖼️ Using fallback #${fallbackLevel}: ${fallbackType}`);
-    }
+    console.log(`🖼️ Pokémon #${pokemonId}: Original preference '${preference}' failed. Using fallback style '${fallbackType}', level: ${fallbackLevel}`);
     return getUrlForType(fallbackType);
   }
   
   // No fallback specified, just use preferred type
+  // Reduce verbosity - only log when fallback is needed or during development
+  if (process.env.NODE_ENV === "development") {
+    console.log(`🖼️ Getting image for Pokémon #${pokemonId} with preference: ${preference}${fallbackLevel ? `, fallback: ${fallbackLevel}` : ''}`);
+  }
+  
   return getUrlForType(preference);
 };
 
