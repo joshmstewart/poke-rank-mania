@@ -26,6 +26,24 @@ export const useBattleStateCore = (
   const [battleType, setBattleType] = useState<BattleType>(initialBattleTypeStored);
   const [selectedPokemon, setSelectedPokemon] = useState<number[]>([]);
 
+  // Keep track of currentBattle state changes
+  useEffect(() => {
+    console.log('[DEBUG useBattleStateCore] useEffect CurrentBattle: Fired. currentBattle IDs:', 
+                currentBattle.map(p => p.id), 'currentBattle length:', currentBattle.length);
+    
+    // Wrap setCurrentBattle to add logging
+    const originalSetCurrentBattle = setCurrentBattle;
+    const wrappedSetCurrentBattle = (newBattle: React.SetStateAction<Pokemon[]>) => {
+      if (typeof newBattle !== 'function') {
+        console.log('[DEBUG useBattleStateCore] setCurrentBattle (useState): Called with battle Pokemon IDs:', 
+                    newBattle.map(p => p.id));
+      }
+      return originalSetCurrentBattle(newBattle);
+    };
+    // Note: We can't actually replace setCurrentBattle since it's from useState
+    
+  }, [currentBattle]);
+
   // Flag to track when a full reset has just happened
   const isResettingRef = useRef(false);
   // Keep track of the last time suggestions were loaded
@@ -143,6 +161,8 @@ export const useBattleStateCore = (
 
   // NEW: Our centralized reset function that will be called from BattleControls
   const performFullBattleReset = useCallback(() => {
+    console.log('[DEBUG useBattleStateCore] performFullBattleReset: Called. isResettingRef.current =', isResettingRef.current);
+    
     const timestamp = new Date().toISOString();
     console.log(`🔄 [${timestamp}] CENTRALIZED RESET: Beginning full battle reset`);
     console.log(`🔄 [${timestamp}] CENTRALIZED RESET: Current battlesCompleted before reset:`, battlesCompleted);
@@ -209,6 +229,8 @@ export const useBattleStateCore = (
     
     // 6. Start a new battle with current battle type
     console.log(`🔄 [${timestamp}] CENTRALIZED RESET: Starting new battle with type ${battleType}`);
+    console.log('[DEBUG useBattleStateCore] performFullBattleReset: About to call startNewBattle. battleType =', battleType);
+    
     setTimeout(() => {
       startNewBattle(battleType);
       console.log(`🔄 [${timestamp}] CENTRALIZED RESET: New battle started`);
@@ -238,8 +260,27 @@ export const useBattleStateCore = (
     resetBattleProgressionMilestoneTracking
   ]);
 
+  // Handle continuation of battles (could be automatically called or manually triggered)
+  const handleContinueBattles = useCallback(() => {
+    console.log('[DEBUG useBattleStateCore] handleContinueBattles: Called.');
+    
+    // Start a new battle with current battle type
+    if (battleStarter && !showingMilestone && !isProcessingResult) {
+      console.log('[DEBUG useBattleStateCore] handleContinueBattles: About to call startNewBattle. battleType =', battleType);
+      startNewBattle(battleType);
+    } else if (showingMilestone) {
+      console.log('[DEBUG useBattleStateCore] handleContinueBattles: Not starting battle - showing milestone', showingMilestone);
+    } else if (isProcessingResult) {
+      console.log('[DEBUG useBattleStateCore] handleContinueBattles: Not starting battle - processing result', isProcessingResult);
+    } else if (!battleStarter) {
+      console.log('[DEBUG useBattleStateCore] handleContinueBattles: Not starting battle - no battleStarter');
+    }
+  }, [battleStarter, battleType, showingMilestone, isProcessingResult, startNewBattle]);
+
   // FIXED: VERIFICATION check for suggestions with reduced dependencies
   useEffect(() => {
+    console.log('[DEBUG useBattleStateCore] useEffect ImagePreference: Fired.');
+    
     const preferredImageType = localStorage.getItem('preferredImageType');
     console.log("🎯 [Mount] Loaded preferredImageType from localStorage:", preferredImageType);
 
@@ -283,6 +324,9 @@ export const useBattleStateCore = (
 
   // FIXED: This effect with precise entry/exit logging and proper dependency management
   useEffect(() => {
+    console.log('[DEBUG useBattleStateCore] useEffect ShowingMilestone: Fired. showingMilestone:', showingMilestone, 
+                'needsToReloadSuggestions:', needsToReloadSuggestions);
+    
     if (!showingMilestone) return;
     
     console.log("[EFFECT LoopCheck - showingMilestone] ENTRY - showingMilestone:", showingMilestone);
@@ -299,10 +343,13 @@ export const useBattleStateCore = (
     lastSuggestionLoadTimestampRef.current = Date.now();
     
     console.log("[EFFECT LoopCheck - showingMilestone] EXIT");
-  }, [showingMilestone, loadSavedSuggestions, currentBattle]);
+  }, [showingMilestone, loadSavedSuggestions, currentBattle, needsToReloadSuggestions]);
 
   // FIXED: Enhanced effect with more controlled behavior and proper dependency management
   useEffect(() => {
+    console.log('[DEBUG useBattleStateCore] useEffect AfterMilestone: Fired. showingMilestone:', showingMilestone, 
+                'needsToReloadSuggestions:', needsToReloadSuggestions);
+    
     // Only run when milestone ends (showingMilestone changes from true to false)
     if (showingMilestone || !needsToReloadSuggestions) return;
 
@@ -345,11 +392,11 @@ export const useBattleStateCore = (
   }, [
     showingMilestone, 
     needsToReloadSuggestions, 
-    loadSavedSuggestions,
-    battleResults,
-    triggerSuggestionPrioritization,
+    loadSavedSuggestions, 
+    battleResults, 
+    debouncedGenerateRankings, 
     resetSuggestionPriority,
-    debouncedGenerateRankings
+    triggerSuggestionPrioritization
   ]);
 
   // FIXED: Enhanced milestone ended handler with controlled suggestion focus

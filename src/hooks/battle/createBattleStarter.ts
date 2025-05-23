@@ -18,6 +18,8 @@ export const createBattleStarter = (
   activeTier: TopNOption = "All",
   isPokemonFrozenForTier?: (pokemonId: number, tier: TopNOption) => boolean
 ) => {
+  console.log('[DEBUG createBattleStarter] INSTANCE: New createBattleStarter instance created.');
+
   // Use plain objects instead of hooks
   const recentlySeenPokemon = new Set<number>();
   const previousBattleIds = new Set<number>(); // Track IDs of previous battle for duplicate detection
@@ -325,6 +327,11 @@ export const createBattleStarter = (
   };
 
   const startNewBattle = (battleType: BattleType, forceSuggestion: boolean = false, forceUnranked: boolean = false): Pokemon[] => {
+    // Log at the very beginning
+    console.log('[DEBUG createBattleStarter] startNewBattle_INTERNAL: Called. Internal battleCountRef:', battleCountRef, 
+                'Internal previousBattleIds:', Array.from(previousBattleIds), 
+                'Internal recentlySeenPokemon size:', recentlySeenPokemon.size);
+    
     // Throttle battle generation to prevent rapid-fire calls
     const now = Date.now();
     const minTimeoutMs = 500; // Minimum 500ms between battle generations
@@ -363,6 +370,7 @@ export const createBattleStarter = (
 
     // IMPORTANT: Validate battle Pokemon to ensure images and names match before setting
     const validatedResult = validateBattlePokemon(result);
+    console.log('[DEBUG createBattleStarter] startNewBattle_INTERNAL: validatedResult IDs:', validatedResult.map(p => p.id));
     
     // Check if we're trying to set an identical battle to what's already in state
     if (previousBattleIds.size > 0 && areBattlesIdentical(validatedResult, previousBattleIds)) {
@@ -394,6 +402,8 @@ export const createBattleStarter = (
       });
       document.dispatchEvent(battleCreatedEvent);
       
+      console.log('[DEBUG createBattleStarter] startNewBattle_INTERNAL: About to call prop setCurrentBattle. Dispatching battle-created event with IDs:', newBattle.map(p => p.id));
+      
       setCurrentBattle(newBattle);
       return newBattle;
     }
@@ -412,6 +422,8 @@ export const createBattleStarter = (
       }
     });
     document.dispatchEvent(battleCreatedEvent);
+    
+    console.log('[DEBUG createBattleStarter] startNewBattle_INTERNAL: About to call prop setCurrentBattle. Dispatching battle-created event with IDs:', validatedResult.map(p => p.id));
     
     logWithTime(`[DEBUG createBattleStarter] About to set current battle with: ${validatedResult.map(p => `${p.name} (${p.id})`).join(', ')}`);
     setCurrentBattle(validatedResult);
