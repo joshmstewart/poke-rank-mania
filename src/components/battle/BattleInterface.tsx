@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "@/hooks/battle/types";
 import BattleHeader from "./BattleHeader";
@@ -6,6 +6,7 @@ import BattleProgress from "./BattleProgress";
 import BattleGrid from "./BattleGrid";
 import BattleSubmitButton from "./BattleSubmitButton";
 import { useMilestoneCalculations } from "@/hooks/battle/useMilestoneCalculations";
+import { validateBattlePokemon } from "@/services/pokemon/api/utils";
 
 interface BattleInterfaceProps {
   currentBattle: Pokemon[];
@@ -44,14 +45,17 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
     milestones
   );
   
+  // Validate current battle Pokemon to ensure image and name consistency
+  const validatedBattle = currentBattle ? validateBattlePokemon(currentBattle) : [];
+  
   // Update animation key when current battle changes
   useEffect(() => {
-    if (currentBattle && currentBattle.length > 0) {
+    if (validatedBattle && validatedBattle.length > 0) {
       setAnimationKey(prev => prev + 1);
       
       // Debug: Log every time current battle changes
-      const currentIds = currentBattle.map(p => p.id);
-      const currentNames = currentBattle.map(p => p.name);
+      const currentIds = validatedBattle.map(p => p.id);
+      const currentNames = validatedBattle.map(p => p.name);
       
       const isSameAsPrevious = previousBattleIds.length === currentIds.length && 
         previousBattleIds.every(id => currentIds.includes(id));
@@ -60,7 +64,7 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
       console.log(`🔄 BattleInterface: ${detailedLog}`);
       
       // ADDED: Log battle type and expected Pokemon count
-      console.log(`🔄 BattleInterface: Battle type: ${battleType}, Expected Pokémon count: ${battleType === "triplets" ? 3 : 2}, Actual count: ${currentBattle.length}`);
+      console.log(`🔄 BattleInterface: Battle type: ${battleType}, Expected Pokémon count: ${battleType === "triplets" ? 3 : 2}, Actual count: ${validatedBattle.length}`);
       
       // Keep a rolling log of battle changes for deeper analysis
       setBattleChangeLog(prev => {
@@ -75,7 +79,7 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
         console.warn(`⚠️ Previous: [${previousBattleIds.join(',')}], Current: [${currentIds.join(',')}]`);
         
         // Compare complete Pokémon objects for deeper analysis
-        const pokemonDetails = currentBattle.map(p => ({
+        const pokemonDetails = validatedBattle.map(p => ({
           id: p.id,
           name: p.name,
           hasOwnProperties: Object.getOwnPropertyNames(p).join(',')
@@ -87,7 +91,7 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
       const battleEvent = new CustomEvent('battle-created', { 
         detail: { 
           pokemonIds: currentIds,
-          pokemonNames: currentBattle.map(p => p.name),
+          pokemonNames: validatedBattle.map(p => p.name),
           isSameAsPrevious: isSameAsPrevious,
           battleType
         } 
@@ -97,7 +101,7 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
       // Store current IDs as previous for next comparison
       setPreviousBattleIds(currentIds);
     }
-  }, [currentBattle, battleType]);
+  }, [validatedBattle, battleType, previousBattleIds]);
   
   // Log battle history changes
   useEffect(() => {
@@ -163,30 +167,30 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
   // ADDED: Helper to validate battle configuration
   useEffect(() => {
     // Validate that battle type matches the number of Pokémon
-    if (currentBattle && currentBattle.length > 0) {
+    if (validatedBattle && validatedBattle.length > 0) {
       const expectedCount = battleType === "triplets" ? 3 : 2;
-      if (currentBattle.length !== expectedCount) {
-        console.warn(`⚠️ BATTLE TYPE MISMATCH: Type is ${battleType} but have ${currentBattle.length} Pokémon`);
+      if (validatedBattle.length !== expectedCount) {
+        console.warn(`⚠️ BATTLE TYPE MISMATCH: Type is ${battleType} but have ${validatedBattle.length} Pokémon`);
         
         // Create a custom event to report this issue
         const mismatchEvent = new CustomEvent('battle-type-mismatch', {
           detail: {
             battleType,
-            pokemonCount: currentBattle.length,
+            pokemonCount: validatedBattle.length,
             expectedCount,
-            pokemonIds: currentBattle.map(p => p.id)
+            pokemonIds: validatedBattle.map(p => p.id)
           }
         });
         document.dispatchEvent(mismatchEvent);
       }
     }
-  }, [currentBattle, battleType]);
+  }, [validatedBattle, battleType]);
 
   // ADDED: Helper to ensure correct submit button display based on battle type
   const shouldShowSubmitButton = battleType === "triplets";
   
   // Only render if we have Pokemon to display
-  if (!currentBattle || currentBattle.length === 0) {
+  if (!validatedBattle || validatedBattle.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow p-6 flex items-center justify-center h-64 w-full">
         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-primary"></div>
@@ -210,13 +214,10 @@ const BattleInterface: React.FC<BattleInterfaceProps> = ({
           getMilestoneProgress={getMilestoneProgress}
           getNextMilestone={getNextMilestone}
         />
-        
-        {/* Hidden debug component */}
-        {/* <BattleChangeDebug /> */}
       </div>
       
       <BattleGrid
-        currentBattle={currentBattle}
+        currentBattle={validatedBattle}
         selectedPokemon={selectedPokemon}
         onPokemonSelect={handlePokemonCardSelect}
         battleType={battleType}

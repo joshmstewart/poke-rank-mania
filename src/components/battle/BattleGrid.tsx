@@ -3,6 +3,7 @@ import React from "react";
 import BattleCard from "./BattleCard";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "@/hooks/battle/types";
+import { validateBattlePokemon } from "@/services/pokemon/api/utils";
 
 interface BattleGridProps {
   currentBattle: Pokemon[];
@@ -23,16 +24,19 @@ const BattleGrid: React.FC<BattleGridProps> = ({
   internalProcessing,
   animationKey
 }) => {
+  // Validate the Pokemon in the grid to ensure image and name consistency
+  const validatedBattle = validateBattlePokemon(currentBattle);
+  
   return (
     <div 
       key={animationKey}
       className="grid gap-4 mt-8"
       style={{ 
         display: 'grid', 
-        gridTemplateColumns: `repeat(${currentBattle.length}, 1fr)` 
+        gridTemplateColumns: `repeat(${validatedBattle.length}, 1fr)` 
       }}
     >
-      {currentBattle.map(pokemon => (
+      {validatedBattle.map(pokemon => (
         <BattleCard
           key={pokemon.id}
           pokemon={pokemon}

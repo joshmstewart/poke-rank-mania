@@ -1,5 +1,6 @@
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { BattleType } from "./types";
+import { validateBattlePokemon } from "@/services/pokemon/api/utils";
 
 export const createBattleStarter = (
   pokemonList: Pokemon[],
@@ -245,9 +246,12 @@ export const createBattleStarter = (
       oldestEntries.forEach(id => recentlySeenPokemon.delete(id));
     }
 
-    console.log("⚖️ Final selected battle pair IDs:", selectedBattle.map(p => p.id));
-    console.log("⚖️ Final selected battle names:", selectedBattle.map(p => p.name));
-    return selectedBattle;
+    // IMPORTANT: Validate battle Pokemon to ensure images and names match
+    const validatedBattle = validateBattlePokemon(selectedBattle);
+
+    console.log("⚖️ Final selected battle pair IDs:", validatedBattle.map(p => p.id));
+    console.log("⚖️ Final selected battle names:", validatedBattle.map(p => p.name));
+    return validatedBattle;
   };
 
   const trackLowerTierLoss = (loserId: number) => {
@@ -281,9 +285,12 @@ export const createBattleStarter = (
       }
     }
 
+    // IMPORTANT: Validate battle Pokemon to ensure images and names match before setting
+    const validatedResult = validateBattlePokemon(result);
+
     // Log what objects we're passing to setCurrentBattle
     console.log(`[DEBUG useBattleStarter] About to set current battle with:`, 
-      result.map(p => ({
+      validatedResult.map(p => ({
         id: p.id, 
         name: p.name
       }))
@@ -292,15 +299,15 @@ export const createBattleStarter = (
     // Create and dispatch an event with the new battle info
     const battleCreatedEvent = new CustomEvent('battle-created', {
       detail: { 
-        pokemonIds: result.map(p => p.id),
-        pokemonNames: result.map(p => p.name)
+        pokemonIds: validatedResult.map(p => p.id),
+        pokemonNames: validatedResult.map(p => p.name)
       }
     });
     document.dispatchEvent(battleCreatedEvent);
     
-    setCurrentBattle(result);
+    setCurrentBattle(validatedResult);
     console.log(`[DEBUG useBattleStarter] Current battle set.`);
-    return result;
+    return validatedResult;
   };
 
   return { 

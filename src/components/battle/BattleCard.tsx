@@ -1,9 +1,9 @@
-
-import React, { memo, useCallback, useState, useEffect, useRef } from "react";
+import React, { memo, useCallback, useState, useEffect, useRef, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Pokemon } from "@/services/pokemon";
 import { getPreferredImageUrl, getPreferredImageType, PokemonImageType } from "@/components/settings/ImagePreferenceSelector";
 import { formatPokemonName } from "@/utils/pokemonUtils";
+import { validateBattlePokemon } from "@/services/pokemon/api/utils";
 
 interface BattleCardProps {
   pokemon: Pokemon;
@@ -14,6 +14,12 @@ interface BattleCardProps {
 }
 
 const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSelect, isProcessing = false }) => {
+  // Validate the Pokemon to ensure image and name consistency
+  const validatedPokemon = useMemo(() => {
+    const [validated] = validateBattlePokemon([pokemon]);
+    return validated;
+  }, [pokemon]);
+  
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
@@ -21,8 +27,8 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
   const [currentImageType, setCurrentImageType] = useState<PokemonImageType>(getPreferredImageType());
   const initialUrlRef = useRef<string>(""); // Using ref to ensure it doesn't change
   
-  const formattedName = formatPokemonName(pokemon.name);
-  const pokemonId = pokemon.id; // Ensure we use the consistent ID throughout
+  const formattedName = formatPokemonName(validatedPokemon.name);
+  const pokemonId = validatedPokemon.id; // Ensure we use the consistent ID throughout
 
   // Log the Pokemon data to help diagnose issues
   useEffect(() => {
@@ -70,7 +76,7 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
     const handlePreferenceChange = () => updateImage();
     window.addEventListener("imagePreferenceChanged", handlePreferenceChange);
     return () => window.removeEventListener("imagePreferenceChanged", handlePreferenceChange);
-  }, [updateImage, pokemon.id]);
+  }, [updateImage, validatedPokemon.id]);
 
   const handleImageLoad = () => {
     setImageLoaded(true);

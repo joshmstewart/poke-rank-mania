@@ -31,6 +31,16 @@ export function getPokemonImageUrl(id: number, fallbackLevel: number = 0): strin
   // Handle special form IDs by creating a normalized ID for image paths
   // This helps with form variants like Alolan, Galarian, etc.
   const normalizeImageId = (originalId: number): number => {
+    // Special case for Ho-Oh, which is ID 250
+    if (originalId === 250) {
+      return 250; // Always return 250 for Ho-Oh
+    }
+    
+    // Special case for Paldean Tauros Combat Breed (ID 10250)
+    if (originalId === 10250) {
+      return 128; // Return the base Tauros ID
+    }
+    
     // Special case for certain Pokémon forms that have unique artwork
     if (
       // Crown forms, Eternal forms, special regional forms with unique art
@@ -45,9 +55,15 @@ export function getPokemonImageUrl(id: number, fallbackLevel: number = 0): strin
     
     // For most other special forms, use the base form ID
     if (originalId >= 10000) {
-      // Always use the base form ID for image paths for special forms
-      // This ensures image always matches the ID of the Pokémon
-      return Math.floor(originalId % 10000);
+      // Extract the actual Pokémon ID from the special form ID
+      const baseId = originalId % 10000;
+      
+      // Special cases for ID normalization
+      if (baseId > 1000) {
+        // For very high IDs, use modulo 1000 to get a more reasonable ID
+        return baseId % 1000;
+      }
+      return baseId;
     }
     
     return originalId;
@@ -72,7 +88,7 @@ export function getPokemonImageUrl(id: number, fallbackLevel: number = 0): strin
         break;
       case "default":
       default:
-        url = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${normalizedId}.png`;
+        url = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon//${normalizedId}.png`;
         break;
     }
     
@@ -166,6 +182,17 @@ export async function fetchPokemonDetails(id: number): Promise<Pokemon> {
     // Get preferred image URL
     const imageUrl = getPokemonImageUrl(id);
 
+    // Special case handling for Paldean Tauros Combat Breed (ID 10250)
+    if (id === 10250) {
+      return {
+        id: id,
+        name: "Paldean Tauros Combat Breed",
+        image: imageUrl,
+        types,
+        flavorText
+      };
+    }
+
     return {
       id: Number(id),
       name: name,
@@ -184,4 +211,36 @@ export async function fetchPokemonDetails(id: number): Promise<Pokemon> {
       flavorText: ""
     };
   }
+}
+
+// Function to ensure battle Pokemon IDs and images/names match correctly
+export function validateBattlePokemon(pokemon: Pokemon[]): Pokemon[] {
+  // Fix known problematic cases
+  return pokemon.map(p => {
+    // Clone to avoid mutating the original
+    const fixedPokemon = { ...p };
+    
+    // Special case for ID 10250 which should be Paldean Tauros but might have wrong image
+    if (p.id === 10250 && !p.name.toLowerCase().includes('tauros')) {
+      console.log(`📌 Fixing Paldean Tauros (ID: ${p.id}) with incorrect name: ${p.name}`);
+      fixedPokemon.name = "Paldean Tauros Combat Breed";
+      fixedPokemon.image = getPokemonImageUrl(128); // Use base Tauros image
+    }
+    
+    // Special case for Ho-Oh (ID 250) which might be showing wrong name
+    if (p.id === 250 && !p.name.toLowerCase().includes('ho-oh')) {
+      console.log(`📌 Fixing Ho-oh (ID: ${p.id}) with incorrect name: ${p.name}`);
+      fixedPokemon.name = "Ho-Oh";
+      fixedPokemon.image = getPokemonImageUrl(250);
+    }
+    
+    // Check if the image URL and ID match (basic validation)
+    const normalizedId = p.id > 10000 ? p.id % 1000 : p.id;
+    if (!fixedPokemon.image.includes(`${normalizedId}`)) {
+      console.log(`⚠️ Image URL doesn't match Pokemon ID for ${p.name} (ID: ${p.id}). URL: ${p.image}`);
+      fixedPokemon.image = getPokemonImageUrl(p.id);
+    }
+    
+    return fixedPokemon;
+  });
 }

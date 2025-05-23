@@ -6,6 +6,7 @@ import { Pokemon } from "@/services/pokemon";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { getPreferredImageUrl, getPreferredImageType, PokemonImageType } from "@/components/settings/ImagePreferenceSelector";
 import { normalizePokedexNumber, formatPokemonName } from "@/utils/pokemonUtils";
+import { validateBattlePokemon } from "@/services/pokemon/api/utils";
 
 interface PokemonCardProps {
   pokemon: Pokemon;
@@ -23,6 +24,12 @@ const typeColors: Record<string, string> = {
 };
 
 const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
+  // Validate the Pokemon to ensure image and name consistency
+  const validatedPokemon = useMemo(() => {
+    const [validated] = validateBattlePokemon([pokemon]);
+    return validated;
+  }, [pokemon]);
+
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
@@ -31,11 +38,11 @@ const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
   const initialUrlRef = useRef<string>(""); // Using ref to ensure it doesn't change
 
   // Store the consistent pokemon ID
-  const pokemonId = pokemon.id;
+  const pokemonId = validatedPokemon.id;
 
   // Use formatPokemonName for proper display of regional variants
   const normalizedId = normalizePokedexNumber(pokemonId);
-  const formattedName = formatPokemonName(pokemon.name);
+  const formattedName = formatPokemonName(validatedPokemon.name);
 
   // Log the Pokemon data to help diagnose issues
   useEffect(() => {
@@ -164,14 +171,14 @@ const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
             <span className="font-medium truncate">{formattedName}</span>
             <span className="text-xs">#{normalizedId}</span>
           </div>
-          {pokemon.types?.length && (
+          {validatedPokemon.types?.length > 0 && (
             <div className="flex gap-1 mt-1">
-              {pokemon.types.map(type => (
+              {validatedPokemon.types.map(type => (
                 <Badge key={type} className={`${typeColors[type]} text-xs px-1.5 py-0.5`}>{type}</Badge>
               ))}
             </div>
           )}
-          {!compact && pokemon.flavorText && <div className="text-xs mt-1 line-clamp-2 text-muted-foreground">{pokemon.flavorText}</div>}
+          {!compact && validatedPokemon.flavorText && <div className="text-xs mt-1 line-clamp-2 text-muted-foreground">{validatedPokemon.flavorText}</div>}
         </div>
       </div>
     </Card>
