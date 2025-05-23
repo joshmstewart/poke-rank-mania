@@ -87,6 +87,13 @@ export const typeColorsByPokemonId: Record<number, string> = {
   // Gen 7
   750: typeColors.ground,  // Mudsdale: Ground
 
+  // Specific Pokémon with special forms or missing types
+  751: typeColors.water,   // Dewpider: Water/Bug 
+  767: typeColors.bug,     // Wimpod: Bug/Water
+  824: typeColors.bug,     // Blipbug: Bug
+  893: typeColors.grass,   // Zarude: Dark/Grass
+  898: typeColors.psychic, // Calyrex: Psychic/Grass
+  
   // Gen 9
   934: typeColors.rock,    // Garganacl: Rock
   958: typeColors.steel,   // Tinkatuff: Fairy/Steel
@@ -104,24 +111,18 @@ export const getPokemonTypeColor = (pokemon: any) => {
       
       // Check if we have this type in our map
       if (primaryType && typeof primaryType === 'string') {
-        // Debug the type matching
-        console.log(`Finding color for ${pokemon.name} primary type: "${primaryType}" (typeof: ${typeof primaryType})`);
-        
         // Try exact match first
         if (typeColors[primaryType]) {
-          console.log(`✅ Found exact match for type "${primaryType}": ${typeColors[primaryType]}`);
           return typeColors[primaryType];
         }
         
         // Normalize type to lowercase for consistent lookup
         const normalizedType = primaryType.toLowerCase();
-        console.log(`Trying normalized type "${normalizedType}"`);
         
         // Look up the color with normalized type
         const color = typeColors[normalizedType];
         
         if (color) {
-          console.log(`✅ Found color using normalized type "${normalizedType}": ${color}`);
           return color;
         }
       }
@@ -129,15 +130,23 @@ export const getPokemonTypeColor = (pokemon: any) => {
     
     // Fallback to ID-based color mapping if types not available
     if (typeColorsByPokemonId[pokemon.id]) {
-      console.log(`🔄 Using ID-based fallback for ${pokemon.name} (ID: ${pokemon.id})`);
       return typeColorsByPokemonId[pokemon.id];
+    }
+    
+    // Special handling for Alolan forms (ID range typically 10000-10100)
+    const isAlolanForm = pokemon.name && pokemon.name.toLowerCase().includes('alola');
+    if (isAlolanForm) {
+      // Get the base form ID and use that for color
+      const baseId = pokemon.id % 1000;
+      if (typeColorsByPokemonId[baseId]) {
+        return typeColorsByPokemonId[baseId];
+      }
     }
     
     // Last resort - use ID modulo to assign a consistent color from our palette
     const colorKeys = Object.keys(typeColors);
     const colorIndex = pokemon.id % colorKeys.length;
     const fallbackType = colorKeys[colorIndex];
-    console.log(`⚠️ Using ID modulo fallback for ${pokemon.name}: ${fallbackType}`);
     return typeColors[fallbackType] || "bg-gray-200";
     
   } catch (err) {

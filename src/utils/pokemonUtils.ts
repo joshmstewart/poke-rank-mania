@@ -28,10 +28,15 @@ export const formatPokemonName = (name: string): string => {
   // Handle regional forms by moving them to the front with proper naming
   const regionalForms = {
     'alola': 'Alolan',
+    'alolan': 'Alolan',
     'galar': 'Galarian',
+    'galarian': 'Galarian',
     'hisui': 'Hisuian',
+    'hisuian': 'Hisuian',
     'paldea': 'Paldean',
-    'gmax': 'Gigantamax'
+    'paldean': 'Paldean',
+    'gmax': 'Gigantamax',
+    'gigantamax': 'Gigantamax'
   };
   
   // Convert name to lowercase for comparison
@@ -39,9 +44,12 @@ export const formatPokemonName = (name: string): string => {
   
   // Check if name contains any regional form identifiers
   for (const [region, prefix] of Object.entries(regionalForms)) {
-    if (lowerName.includes(` ${region}`)) {
+    if (lowerName.includes(` ${region}`) || lowerName.endsWith(`-${region}`)) {
       // Get the base name by removing the region suffix
-      const baseName = name.replace(new RegExp(` ${region}`, 'i'), '').trim();
+      const baseName = name
+        .replace(new RegExp(` ${region}`, 'i'), '')
+        .replace(new RegExp(`-${region}`, 'i'), '')
+        .trim();
       // Return with proper format: "Alolan Vulpix" instead of "Vulpix alola"
       return `${prefix} ${baseName}`;
     }
@@ -66,8 +74,8 @@ export const capitalizeSpecialForms = (name: string): string => {
     "attack", "defense", "speed", "eternamax", "crowned"
   ];
   
-  // Split the name by spaces
-  const parts = name.split(" ");
+  // Split the name by spaces and hyphens
+  const parts = name.split(/[\s-]+/);
   
   // If there's only one part, return the original name
   if (parts.length <= 1) return name;

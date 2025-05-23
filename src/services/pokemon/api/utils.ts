@@ -1,3 +1,4 @@
+
 import { Pokemon } from "../types";
 import { PokemonImageType, getPreferredImageType, POKEMON_IMAGE_PREFERENCE_KEY, DEFAULT_IMAGE_PREFERENCE } from "@/components/settings/ImagePreferenceSelector";
 
@@ -10,10 +11,10 @@ export function getPokemonImageUrl(id: number, fallbackLevel: number = 0): strin
     switch(initialPreference) {
       case "official":
         // If user prefers official artwork, try Dream World next, then default
-        return ["official", "dream", "default"];
+        return ["official", "dream", "default", "home"];
       case "dream":
         // If user prefers Dream World, try Official next, then default
-        return ["dream", "official", "default"];
+        return ["dream", "official", "default", "home"];
       case "home":
         // If user prefers Home, try Official next, then dream, then default
         return ["home", "official", "dream", "default"];
@@ -27,41 +28,58 @@ export function getPokemonImageUrl(id: number, fallbackLevel: number = 0): strin
   // Get the appropriate fallback chain
   const fallbackChain = getFallbackOrder(preferredType);
   
+  // Handle special form IDs by creating a normalized ID for image paths
+  // This helps with form variants like Alolan, Galarian, etc.
+  const normalizeImageId = (originalId: number): number => {
+    // Special case for certain Pokémon forms that have unique artwork
+    if (
+      // Crown forms, Eternal forms, special regional forms with unique art
+      [898, 10195, 10196, 10197, 10198, 10199, 10200].includes(originalId) ||
+      // Calyrex special forms 
+      originalId === 10196 || originalId === 10197 || 
+      // Specific Alolan forms exceptions
+      (originalId >= 10100 && originalId <= 10154)
+    ) {
+      return originalId; // Keep the original ID for these special forms
+    }
+    
+    // For most other special forms, use the base form ID
+    if (originalId >= 10000) {
+      return originalId % 1000;
+    }
+    
+    return originalId;
+  };
+  
+  // Use normalized ID for image paths
+  const normalizedId = normalizeImageId(id);
+  
   // Generate URLs for each image type
   const getImageUrl = (type: PokemonImageType): string => {
     let url = "";
     
     switch(type) {
       case "official":
-        url = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`;
+        url = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${normalizedId}.png`;
         break;
       case "home":
-        url = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/home/${id}.png`;
+        url = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/home/${normalizedId}.png`;
         break;
       case "dream":
-        url = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/dream-world/${id}.svg`;
+        url = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/dream-world/${normalizedId}.svg`;
         break;
       case "default":
       default:
-        url = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
+        url = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${normalizedId}.png`;
         break;
     }
     
-    // IMPORTANT: Always log the generated URL to verify it's created correctly
-    console.log(`🔍 [getPokemonImageUrl] Generated URL for type "${type}", Pokemon #${id}: ${url}`);
     return url;
   };
 
   // If we're at fallback level 0, always use the preferred type and ALWAYS generate a URL
   if (fallbackLevel === 0) {
     const url = getImageUrl(preferredType);
-    
-    // Only log during development or if explicitly debugging
-    if (process.env.NODE_ENV === "development") {
-      console.log(`🖼️ Getting initial image URL for Pokémon #${id} with preference: ${preferredType} - URL: ${url}`);
-    }
-    
-    // CRITICAL FIX: Always return a URL for the preferred type, never return empty string
     return url;
   }
   
@@ -101,10 +119,19 @@ export async function fetchPokemonDetails(id: number): Promise<Pokemon> {
       // Convert dashes to spaces in the name for better readability
       name = name.replace(/-/g, ' ');
       
-      types = detailData.types.map((type: any) => type.type.name.charAt(0).toUpperCase() + type.type.name.slice(1));
+      // Get types and ensure they're properly formatted (capitalized)
+      types = detailData.types.map((type: any) => 
+        type.type.name.charAt(0).toUpperCase() + type.type.name.slice(1)
+      );
+      
+      // Apply formatPokemonName for special forms like Alolan variants
+      if (name.toLowerCase().includes('alola') || name.toLowerCase().includes('galar') ||
+          name.toLowerCase().includes('hisui') || name.toLowerCase().includes('paldea')) {
+        // We'll handle this at the display level with formatPokemonName
+      }
       
       if (isSpecialForm) {
-        console.log(`Successfully fetched special form: ${name}`);
+        console.log(`Successfully fetched special form: ${name} with types: ${types.join(', ')}`);
       }
     } else {
       console.warn(`Failed to fetch Pokemon details for #${id}, using fallback data`);

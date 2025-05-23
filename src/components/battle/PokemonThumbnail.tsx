@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { getPokemonTypeColor } from "./utils/pokemonTypeColors";
 import { getPreferredImageUrl, getPreferredImageType, PokemonImageType } from "@/components/settings/ImagePreferenceSelector";
-import { normalizePokedexNumber, capitalizeSpecialForms } from "@/utils/pokemonUtils";
+import { normalizePokedexNumber, formatPokemonName } from "@/utils/pokemonUtils";
 import {
   HoverCard,
   HoverCardContent,
@@ -29,9 +28,13 @@ const PokemonThumbnail: React.FC<PokemonThumbnailProps> = ({
   onSuggestRanking, 
   onRemoveSuggestion 
 }) => {
+  // Apply proper type color handling
   const typeColor = getPokemonTypeColor(pokemon);
+  
+  // Use proper name formatting
   const normalizedId = normalizePokedexNumber(pokemon.id);
-  const formattedName = capitalizeSpecialForms(pokemon.name);
+  const formattedName = formatPokemonName(pokemon.name);
+  
   const generation = getPokemonGeneration(pokemon.id);
   const [imageSrc, setImageSrc] = useState("");
   const [retryCount, setRetryCount] = useState(0);

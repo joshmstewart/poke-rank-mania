@@ -30,6 +30,7 @@ const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
   const [currentImageType, setCurrentImageType] = useState<PokemonImageType>(getPreferredImageType());
   const initialUrlRef = useRef<string>(""); // Using ref to ensure it doesn't change
 
+  // Use formatPokemonName for proper display of regional variants
   const normalizedId = normalizePokedexNumber(pokemon.id);
   const formattedName = formatPokemonName(pokemon.name);
 
