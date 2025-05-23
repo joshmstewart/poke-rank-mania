@@ -63,9 +63,12 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
   };
   
   const handleImageError = () => {
+    // Fix: Store the current URL that just failed before we change it
+    const failedUrl = currentImageUrl;
+    
     if (retryCount === 0) {
       // Log the initial failure of the preferred image type with the actual URL
-      console.error(`🔴 Initial attempt to load '${currentImageType}' artwork for ${formattedName} (#${pokemon.id}) failed. URL: ${initialUrl}`);
+      console.error(`🔴 Initial attempt to load '${currentImageType}' artwork for ${formattedName} (#${pokemon.id}) failed. URL: ${failedUrl}`);
     }
     
     if (retryCount < 3) {

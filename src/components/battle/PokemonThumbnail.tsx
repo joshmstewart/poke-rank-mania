@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { getPokemonTypeColor } from "./utils/pokemonTypeColors";
@@ -81,9 +80,12 @@ const PokemonThumbnail: React.FC<PokemonThumbnailProps> = ({
   
   // Handle image load errors with improved diagnostics
   const handleImageError = () => {
+    // Fix: Store the current URL that just failed before we change it
+    const failedUrl = imageSrc;
+    
     if (retryCount === 0) {
       // Log the initial failure of the preferred image type with the actual URL
-      console.error(`🔴 Initial attempt to load '${currentImageType}' artwork for ${formattedName} (#${pokemon.id}) failed. URL: ${initialUrl}`);
+      console.error(`🔴 Initial attempt to load '${currentImageType}' artwork for ${formattedName} (#${pokemon.id}) failed. URL: ${failedUrl}`);
     }
     
     if (retryCount < 3) {
