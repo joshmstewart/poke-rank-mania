@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useRef, useEffect } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { useBattleStarterIntegration } from "@/hooks/battle/useBattleStarterIntegration";
@@ -220,7 +221,7 @@ export const useBattleStateCore = (
     generateRankings,
     battleType,
     startNewBattle,
-    resetBattleProgressionMilestoneTracking // Now this variable is defined before it's used here
+    resetBattleProgressionMilestoneTracking
   ]);
 
   // VERIFICATION: Check if suggestions exist in localStorage on mount
@@ -245,11 +246,19 @@ export const useBattleStateCore = (
         
         // Store timestamp of when suggestions were last loaded
         lastSuggestionLoadTimestampRef.current = Date.now();
+        
+        // NEW: Load the suggestions and immediately generate rankings to reflect them
+        const loadedSuggestions = loadSavedSuggestions();
+        console.log(`⭐ useBattleStateCore: Initial load: Loaded ${loadedSuggestions.size} suggestions`);
+        
+        // Ensure finalRankings reflects these loaded suggestions before any battles
+        console.log("⚙️ useBattleStateCore: Triggering initial generateRankings to apply loaded suggestions");
+        generateRankings(battleResults); // This will ensure suggestions are immediately reflected
       } catch (e) {
         console.error("Error parsing saved suggestions:", e);
       }
     }
-  }, []);
+  }, [loadSavedSuggestions, generateRankings, battleResults]);
   
   // Add explicit event to signal that we should prioritize suggestions
   const triggerSuggestionPrioritization = useCallback(() => {
@@ -273,10 +282,15 @@ export const useBattleStateCore = (
         console.log("🧮 Generating milestone rankings (preserving suggestions)");
         const loadedSuggestions = loadSavedSuggestions();
         console.log(`⭐ useBattleStateCore: Milestone shown: Loaded ${loadedSuggestions.size} suggestions`);
+        
+        // NEW: Immediately generate rankings to ensure suggestions are reflected
+        console.log("⚙️ useBattleStateCore: Triggering milestone generateRankings to apply loaded suggestions");
+        generateRankings(battleResults);
+        
         lastSuggestionLoadTimestampRef.current = Date.now();
       }, 0);
     }
-  }, [showingMilestone, loadSavedSuggestions, currentBattle]);
+  }, [showingMilestone, loadSavedSuggestions, currentBattle, generateRankings, battleResults]);
   
   // Enhanced effect to reload suggestions and trigger prioritization after milestone
   useEffect(() => {
@@ -288,8 +302,10 @@ export const useBattleStateCore = (
       console.log(`📥 Reloaded suggestions after milestone: ${loadedSuggestions.size}`);
       lastSuggestionLoadTimestampRef.current = Date.now();
 
-      // Regenerate rankings with suggestions
+      // NEW: Explicitly regenerate rankings with suggestions
+      console.log("⚙️ Explicitly regenerating rankings after milestone to reflect suggestions");
       generateRankings(battleResults);
+      
       setNeedsToReloadSuggestions(false);
       
       // Explicitly reset suggestion priority clearly and thoroughly
@@ -327,7 +343,8 @@ export const useBattleStateCore = (
     console.log(`📥 Reloaded ${loadedSuggestions.size} suggestions after milestone ended event`);
     lastSuggestionLoadTimestampRef.current = Date.now();
     
-    // Also regenerate rankings to ensure they include suggestions
+    // NEW: Also regenerate rankings to ensure they include suggestions
+    console.log("⚙️ Explicitly regenerating rankings after milestone ended event");
     generateRankings(battleResults);
     
     // Explicitly trigger suggestion prioritization
@@ -364,8 +381,12 @@ export const useBattleStateCore = (
         
         if (suggestionsWithoutRefresh > 0) {
           console.log(`⚠️ Found ${suggestionsWithoutRefresh} suggestions without refresh for ${Math.floor(timeSinceLastLoad/1000)}s`);
-          loadSavedSuggestions();
+          const loadedSuggestions = loadSavedSuggestions();
           lastSuggestionLoadTimestampRef.current = currentTime;
+          
+          // NEW: Regenerate rankings after loading suggestions
+          console.log("⚙️ Regenerating rankings after periodic suggestion refresh");
+          generateRankings(battleResults);
           
           // If not currently showing milestone, trigger prioritization
           if (!showingMilestone) {
@@ -376,7 +397,7 @@ export const useBattleStateCore = (
     }, 10000);
     
     return () => clearInterval(checkInterval);
-  }, [finalRankings, loadSavedSuggestions, showingMilestone, triggerSuggestionPrioritization]);
+  }, [finalRankings, loadSavedSuggestions, showingMilestone, triggerSuggestionPrioritization, generateRankings, battleResults]);
 
   const {
     handlePokemonSelect,
