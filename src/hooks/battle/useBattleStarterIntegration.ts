@@ -1,4 +1,3 @@
-
 import { useMemo, useEffect, useRef, useCallback } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
@@ -67,7 +66,7 @@ export const useBattleStarterIntegration = (
   const initializationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null); // Reference to the initialization timer
   
   // Store the battleStarter ref for stable access
-  const battleStarterInstanceRef = useRef<ReturnedType<typeof createBattleStarter> | null>(null);
+  const battleStarterInstanceRef = useRef<ReturnType<typeof createBattleStarter> | null>(null);
   const startNewBattleRefFn = useRef<((type: BattleType) => Pokemon[]) | null>(null);  // NEW: Ref for startNewBattle function
   
   // Log initial value of forcedPriorityBattlesRef
