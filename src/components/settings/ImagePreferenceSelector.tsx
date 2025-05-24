@@ -87,13 +87,41 @@ const ImagePreferenceSelector: React.FC<ImagePreferenceSelectorProps> = ({ onClo
   const [selectedImageType, setSelectedImageType] = useState<PokemonImageType>(getPreferredImageType());
   const [imagesLoaded, setImagesLoaded] = useState<Record<string, boolean>>({});
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
+  const [retryAttempts, setRetryAttempts] = useState<Record<string, number>>({});
 
   const handleImageLoad = (id: string) => {
     setImagesLoaded(prev => ({ ...prev, [id]: true }));
   };
 
   const handleImageError = (id: string) => {
+    // Track retry attempts
+    const currentAttempts = retryAttempts[id] || 0;
+    
+    if (currentAttempts < 2) {
+      // Try with cache busting
+      setRetryAttempts(prev => ({ ...prev, [id]: currentAttempts + 1 }));
+      
+      // Apply cache busting and retry
+      const option = imageTypeOptions.find(opt => opt.id === id);
+      if (option) {
+        const cacheBustedUrl = `${option.url(SAMPLE_POKEMON_ID)}?_cb=${Date.now()}`;
+        
+        // Wait a moment before retrying
+        setTimeout(() => {
+          const img = document.getElementById(`img-${id}`) as HTMLImageElement;
+          if (img) {
+            console.log(`🔄 Retrying image ${id} with cache busting: ${cacheBustedUrl}`);
+            img.src = cacheBustedUrl;
+          }
+        }, 500);
+        
+        return;
+      }
+    }
+    
+    // If out of retries, mark as error
     setImageErrors(prev => ({ ...prev, [id]: true }));
+    
     // Mark this image as needing cache busting for future loads
     markImageAsNeedingCacheBusting(SAMPLE_POKEMON_ID, id as PokemonImageType);
   };
@@ -114,6 +142,13 @@ const ImagePreferenceSelector: React.FC<ImagePreferenceSelectorProps> = ({ onClo
   const selectOption = (optionId: PokemonImageType) => {
     setSelectedImageType(optionId);
   };
+
+  // Reset loaded/error state if we switch to this component
+  useEffect(() => {
+    setImagesLoaded({});
+    setImageErrors({});
+    setRetryAttempts({});
+  }, []);
 
   return (
     <Card className="max-w-2xl mx-auto">
@@ -140,6 +175,7 @@ const ImagePreferenceSelector: React.FC<ImagePreferenceSelectorProps> = ({ onClo
                   </div>
                 )}
                 <img 
+                  id={`img-${option.id}`}
                   src={option.url(SAMPLE_POKEMON_ID)} 
                   alt={`${option.name} example`}
                   className={`w-full h-full object-contain ${imagesLoaded[option.id] ? 'opacity-100' : 'opacity-0'} transition-opacity duration-200`}

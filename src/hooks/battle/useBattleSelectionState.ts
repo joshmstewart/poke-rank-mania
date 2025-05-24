@@ -1,3 +1,4 @@
+
 import { useMemo } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
@@ -60,6 +61,12 @@ export const useBattleSelectionState = () => {
     setBattlesCompleted,
     battleStarter
   );
+  
+  // Add a function to force starting a new battle from milestone page
+  const forceNextBattle = () => {
+    console.log("🔄 useBattleSelectionState: Force starting next battle");
+    return startNewBattle(currentBattleType);
+  };
 
   return {
     currentBattle,
@@ -76,6 +83,7 @@ export const useBattleSelectionState = () => {
     setBattleHistory,
     startNewBattle,
     currentBattleType,
-    processBattleResult
+    processBattleResult,
+    forceNextBattle // Export the new function
   };
 };

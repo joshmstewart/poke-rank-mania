@@ -34,6 +34,7 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
   const imageLoadingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
   const isMountedRef = useRef(true);
+  const successfulCacheBustedUrlRef = useRef<string | null>(null);
   
   const formattedName = formatPokemonName(validatedPokemon.name);
   const pokemonId = validatedPokemon.id; // Ensure we use the consistent ID throughout
@@ -55,6 +56,15 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
   }, [cleanupImageLoading]);
 
   const updateImage = useCallback(() => {
+    // If we already have a successful cache-busted URL, use it directly
+    if (successfulCacheBustedUrlRef.current) {
+      console.log(`🔄 BattleCard: Reusing successful cache-busted URL for ${formattedName} (#${pokemonId}): ${successfulCacheBustedUrlRef.current}`);
+      setImageLoaded(true);
+      setImageError(false);
+      setCurrentImageUrl(successfulCacheBustedUrlRef.current);
+      return;
+    }
+    
     // Clean up any previous loading state
     cleanupImageLoading();
     
@@ -103,11 +113,11 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
             // Set a longer timeout only if the image hasn't loaded yet, giving it more time
             if (!imageLoaded && !imageError) {
               imageLoadingTimerRef.current = setTimeout(() => {
-                if (!imageLoaded && !imageError) {
+                if (!imageLoaded && !imageError && isMountedRef.current) {
                   console.warn(`⏱️ Image load timeout for ${formattedName} after successful HEAD check - triggering fallback`);
                   handleImageError();
                 }
-              }, 8000); // Increased timeout (8 seconds) for high-res images
+              }, 12000); // Increased timeout (12 seconds) for high-res images
             }
           }
         })
@@ -116,7 +126,7 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
           
           console.warn(`⚠️ BattleCard image URL check failed for ${url}: ${error.message}`);
           // Pre-emptively try first fallback if HEAD request fails
-          if (!imageLoaded && !imageError && retryCount === 0) {
+          if (!imageLoaded && !imageError && retryCount === 0 && isMountedRef.current) {
             handleImageError();
           }
         });
@@ -129,14 +139,21 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
 
   // Update image when Pokemon changes
   useEffect(() => {
+    console.log(`🏆 BattleCard: Rendering Pokemon ${formattedName} (#${pokemonId}) with isSelected=${isSelected}`);
     updateImage();
-    const handlePreferenceChange = () => updateImage();
+    
+    const handlePreferenceChange = () => {
+      // Reset the successful URL cache when preferences change
+      successfulCacheBustedUrlRef.current = null;
+      updateImage();
+    };
+    
     window.addEventListener("imagePreferenceChanged", handlePreferenceChange);
     return () => {
       window.removeEventListener("imagePreferenceChanged", handlePreferenceChange);
       cleanupImageLoading();
     };
-  }, [updateImage, validatedPokemon.id, cleanupImageLoading]);
+  }, [updateImage, validatedPokemon.id, formattedName, pokemonId, isSelected, cleanupImageLoading]);
 
   // Add a safety timeout to trigger fallback if image doesn't load in a reasonable time
   useEffect(() => {
@@ -150,7 +167,7 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
           console.warn(`⏱️ Image load timeout for ${formattedName} - triggering fallback`);
           handleImageError();
         }
-      }, 5000); // 5 second timeout (increased from 2 seconds)
+      }, 8000); // 8 second timeout (increased from 5 seconds)
       
       return () => cleanupImageLoading();
     }
@@ -167,10 +184,15 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
     cleanupImageLoading();
     setImageLoaded(true);
     
+    // If this was a cache-busted URL that loaded successfully, save it for future use
+    if (currentImageUrl && currentImageUrl.includes('_cb=')) {
+      successfulCacheBustedUrlRef.current = currentImageUrl;
+    }
+    
     if (retryCount > 0 && process.env.NODE_ENV === "development") {
       console.log(`✅ Successfully loaded fallback image (type: ${currentImageType}) for ${formattedName} in battle`);
     }
-  }, [retryCount, currentImageType, formattedName, cleanupImageLoading]);
+  }, [retryCount, currentImageType, formattedName, cleanupImageLoading, currentImageUrl]);
   
   const handleImageError = useCallback(() => {
     if (!isMountedRef.current) return;
@@ -203,7 +225,7 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
             console.error(`❓ Unexpected: URL ${failedUrl} exists on server but image still failed to load`);
             
             // Attempt to load with a fresh browser cache
-            if (retryCount === 0) {
+            if (retryCount === 0 && isMountedRef.current) {
               const cacheBustUrl = `${failedUrl}?_cb=${Date.now()}`;
               console.log(`🔄 Attempting to load with cache busting: ${cacheBustUrl}`);
               
@@ -215,6 +237,7 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
                 console.log(`✅ Cache-busted image loaded successfully: ${cacheBustUrl}`);
                 setCurrentImageUrl(cacheBustUrl);
                 setImageLoaded(true);
+                successfulCacheBustedUrlRef.current = cacheBustUrl;
               };
               tempImg.onerror = () => {
                 if (!isMountedRef.current) return;
@@ -243,6 +266,8 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
     }
     
     function proceedToNextFallback() {
+      if (!isMountedRef.current) return;
+      
       if (retryCount < 3) { // Keep up to 3 retries to handle the new longer fallback chain
         const nextRetry = retryCount + 1;
         const nextUrl = getPreferredImageUrl(pokemonId, nextRetry);
@@ -270,11 +295,22 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
   }, [pokemonId, formattedName, retryCount, currentImageUrl, currentImageType, cleanupImageLoading]);
 
   const handleClick = useCallback(() => {
-    if (!isProcessing) onSelect(pokemonId);
-  }, [pokemonId, onSelect, isProcessing]);
+    if (!isProcessing) {
+      console.log(`👆 BattleCard click: ${formattedName} (#${pokemonId}) with isProcessing=${isProcessing}`);
+      onSelect(pokemonId);
+    } else {
+      console.log(`🚫 BattleCard click ignored: ${formattedName} because isProcessing=${isProcessing}`);
+    }
+  }, [pokemonId, formattedName, onSelect, isProcessing]);
 
   return (
-    <Card className={`cursor-pointer transition-transform ${isSelected ? "ring-4 ring-primary" : ""} ${isProcessing ? "opacity-70" : "hover:scale-105"}`} onClick={handleClick}>
+    <Card 
+      className={`cursor-pointer transition-transform ${isSelected ? "ring-4 ring-primary" : ""} ${isProcessing ? "opacity-70 pointer-events-none" : "hover:scale-105"}`} 
+      onClick={handleClick}
+      data-selected={isSelected ? "true" : "false"}
+      data-processing={isProcessing ? "true" : "false"}
+      data-pokemon-id={pokemonId}
+    >
       <CardContent className="flex flex-col items-center p-4">
         <div className="w-32 h-32 relative">
           {!imageLoaded && !imageError && <div className="absolute inset-0 bg-gray-200 animate-pulse rounded-md"></div>}
@@ -283,7 +319,12 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
               ref={saveImgRef}
               src={currentImageUrl}
               alt={formattedName}
-              className={`w-full h-full object-contain transition-opacity ${imageLoaded ? "opacity-100" : "opacity-0"}`}
+              className={`w-full h-full object-contain transition-opacity duration-200 ${imageLoaded ? "opacity-100" : "opacity-0"}`}
+              style={{
+                display: "block",  // Force display block 
+                visibility: "visible", // Force visibility
+                zIndex: 5 // Ensure proper stacking
+              }}
               onLoad={handleImageLoad}
               onError={handleImageError}
               loading="eager" // Use eager loading for battle cards as they're critical UI elements

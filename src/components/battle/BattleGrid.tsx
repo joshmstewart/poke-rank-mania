@@ -24,6 +24,8 @@ const BattleGrid: React.FC<BattleGridProps> = ({
   internalProcessing,
   animationKey
 }) => {
+  console.log(`🔄 BattleGrid render - battleType: ${battleType}, currentBattle length: ${currentBattle?.length}, selectedPokemon: [${selectedPokemon.join(', ')}], isProcessing: ${isProcessing}, internalProcessing: ${internalProcessing}`);
+  
   // Validate the Pokemon in the grid to ensure image and name consistency - memoized for performance
   const validatedBattle = useMemo(() => {
     // Make sure we have a valid array to validate
@@ -32,7 +34,9 @@ const BattleGrid: React.FC<BattleGridProps> = ({
       return [];
     }
     
-    return validateBattlePokemon(currentBattle);
+    const validated = validateBattlePokemon(currentBattle);
+    console.log(`✅ BattleGrid: Validated ${validated.length} Pokémon for battle grid`);
+    return validated;
   }, [currentBattle]);
   
   // If we don't have valid battle data, show a loading state
@@ -46,13 +50,20 @@ const BattleGrid: React.FC<BattleGridProps> = ({
     );
   }
   
+  // Determine grid columns based on battle size
+  const gridCols = validatedBattle.length <= 3 ? validatedBattle.length : Math.min(validatedBattle.length, 4);
+  
   return (
     <div 
       key={animationKey}
-      className="grid gap-4 mt-8"
+      data-battletype={battleType}
+      data-processing={isProcessing || internalProcessing ? "true" : "false"}
+      className="grid gap-4 mt-8 mx-auto" 
       style={{ 
-        display: 'grid', 
-        gridTemplateColumns: `repeat(${validatedBattle.length}, 1fr)` 
+        display: 'grid',
+        gridTemplateColumns: `repeat(${gridCols}, 1fr)`,
+        width: '100%',
+        maxWidth: validatedBattle.length <= 2 ? '560px' : '100%'
       }}
     >
       {validatedBattle.map(pokemon => (

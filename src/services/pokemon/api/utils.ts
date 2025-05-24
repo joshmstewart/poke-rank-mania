@@ -1,4 +1,3 @@
-
 import { Pokemon } from "../types";
 import { PokemonImageType, getPreferredImageType, POKEMON_IMAGE_PREFERENCE_KEY, DEFAULT_IMAGE_PREFERENCE } from "@/components/settings/ImagePreferenceSelector";
 
@@ -44,6 +43,16 @@ export function getPokemonImageUrl(id: number, fallbackLevel: number = 0): strin
       return 128; // Return the base Tauros ID
     }
     
+    // Special case for Gourgeist (ID 10031) - was incorrect in logs
+    if (originalId === 10031) {
+      return 711; // Return the base Gourgeist ID
+    }
+    
+    // Special case for Sinistcha (ID 1013)
+    if (originalId === 1013) {
+      return 1013; // Keep ID as is, but ensure it's used in correct path segments
+    }
+    
     // Special case for certain Pokémon forms that have unique artwork
     if (
       // Crown forms, Eternal forms, special regional forms with unique art
@@ -77,12 +86,20 @@ export function getPokemonImageUrl(id: number, fallbackLevel: number = 0): strin
   // Use normalized ID for image paths
   const normalizedId = normalizeImageId(id);
   
+  // Log the original and normalized IDs for specific problematic Pokémon
+  const problematicIds = [1013, 10031, 10093, 680];
+  if (problematicIds.includes(id) && process.env.NODE_ENV === "development") {
+    console.log(`🔍 [Problematic ID] Image URL for #${id} normalized to #${normalizedId}`);
+  }
+  
   // Generate URLs for each image type
   const getImageUrl = (type: PokemonImageType): string => {
     let url = "";
     
     switch(type) {
       case "official":
+        // CRITICAL FIX: Always use the "other/official-artwork" path for official type
+        // Never fallback to default sprite path for "official" type
         url = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${normalizedId}.png`;
         break;
       case "home":
@@ -116,21 +133,33 @@ export function getPokemonImageUrl(id: number, fallbackLevel: number = 0): strin
     // Pre-check if we should immediately use a fallback based on known problematic IDs
     // This helps prevent the initial image load failure
     if (preferredType === "official") {
-      // For Pokémon beyond Gen 8 (ID > 898), default sprite is more reliable for first attempt
-      if (id > 898 || id > 10000) {
+      // For Pokémon beyond Gen 8 (ID > 898), official artwork might be less reliable
+      if (id > 1010 || (id > 10000 && !([10100, 10101, 10102].includes(id)))) {
         // Log this only in development
         if (process.env.NODE_ENV === "development") {
-          console.log(`ℹ️ Using default sprite first for newer Pokémon #${id} instead of official artwork`);
+          console.log(`ℹ️ Using both official artwork AND default sprite for newer Pokémon #${id} with pre-emptive cache busting`);
         }
-        return getImageUrl("default");
+        
+        // We'll still try official artwork first but with cache busting
+        const officialUrl = getImageUrl("official");
+        
+        // Mark this as needing cache busting for future loads
+        markImageAsNeedingCacheBusting(id, "official");
+        
+        return `${officialUrl}?_cb=${Date.now()}`;
       }
       
       // For Galarian forms (ID range 10155-10194), often official artwork is missing
       if (id >= 10155 && id <= 10194) {
         if (process.env.NODE_ENV === "development") {
-          console.log(`ℹ️ Using default sprite first for Galarian form #${id} instead of official artwork`);
+          console.log(`ℹ️ Using pre-emptive cache busting for Galarian form #${id} official artwork`);
         }
-        return getImageUrl("default");
+        const officialUrl = getImageUrl("official");
+        
+        // Mark this as needing cache busting for future loads
+        markImageAsNeedingCacheBusting(id, "official");
+        
+        return `${officialUrl}?_cb=${Date.now()}`;
       }
     }
     
@@ -283,9 +312,26 @@ export function validateBattlePokemon(pokemon: Pokemon[]): Pokemon[] {
       fixedPokemon.image = getPokemonImageUrl(250);
     }
     
+    // Special case for Gourgeist (ID 10031)
+    if (p.id === 10031 && !p.image.includes('711')) {
+      console.log(`📌 Fixing Gourgeist (ID: ${p.id}) with incorrect image: ${p.image}`);
+      fixedPokemon.image = getPokemonImageUrl(10031);
+    }
+    
+    // Special case for Sinistcha (ID 1013)
+    if (p.id === 1013) {
+      console.log(`📌 Ensuring Sinistcha (ID: ${p.id}) has correct image URL`);
+      fixedPokemon.image = getPokemonImageUrl(1013);
+    }
+    
     // Check if the image URL and ID match (basic validation)
     const normalizedId = p.id > 10000 ? p.id % 1000 : p.id;
-    if (!fixedPokemon.image.includes(`${normalizedId}`)) {
+    const includesId = fixedPokemon.image.includes(`${normalizedId}`) || 
+                      // Also check for special cases where the ID might be different
+                      (p.id === 10031 && fixedPokemon.image.includes('711')) ||
+                      (p.id === 10250 && fixedPokemon.image.includes('128'));
+                      
+    if (!includesId) {
       console.log(`⚠️ Image URL doesn't match Pokemon ID for ${p.name} (ID: ${p.id}). URL: ${p.image}`);
       fixedPokemon.image = getPokemonImageUrl(p.id);
     }
