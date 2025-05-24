@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from "react";
 import { RankedPokemon, TopNOption } from "@/services/pokemon";
 import { ChevronUp, ChevronDown, Sparkles } from "lucide-react";
@@ -44,38 +45,43 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
     }
   }, [onRemoveSuggestion]);
 
-  // Helper function to get Pokemon background color based on primary type
+  // CRITICAL FIX: Enhanced Pokemon background color based on primary type
   const getPokemonBackgroundColor = (pokemon: RankedPokemon): string => {
-    if (!pokemon.types || pokemon.types.length === 0) {
+    console.log(`[DEBUG Background Color] Pokemon ${pokemon.name} types:`, pokemon.types);
+    
+    if (!pokemon.types || pokemon.types.length === 0 || pokemon.types[0] === 'unknown') {
       return 'bg-gray-100'; // Default fallback
     }
     
     const primaryType = pokemon.types[0].toLowerCase();
-    const typeColor = getPokemonTypeColor(primaryType);
+    console.log(`[DEBUG Background Color] Primary type for ${pokemon.name}:`, primaryType);
     
-    // BACKGROUND COLOR FIX: Convert hex to Tailwind classes for milestone page
-    const colorMap: Record<string, string> = {
-      '#A8A878': 'bg-yellow-200',    // Normal
-      '#C03028': 'bg-red-200',       // Fighting  
-      '#A890F0': 'bg-purple-200',    // Flying
-      '#A040A0': 'bg-purple-300',    // Poison
-      '#E0C068': 'bg-yellow-300',    // Ground
-      '#B8A038': 'bg-yellow-400',    // Rock
-      '#A8B820': 'bg-green-300',     // Bug
-      '#705898': 'bg-purple-400',    // Ghost
-      '#B8B8D0': 'bg-gray-200',      // Steel
-      '#F08030': 'bg-orange-200',    // Fire
-      '#6890F0': 'bg-blue-200',      // Water
-      '#78C850': 'bg-green-200',     // Grass
-      '#F8D030': 'bg-yellow-200',    // Electric
-      '#F85888': 'bg-pink-200',      // Psychic
-      '#98D8D8': 'bg-cyan-200',      // Ice
-      '#7038F8': 'bg-indigo-200',    // Dragon
-      '#705848': 'bg-amber-300',     // Dark
-      '#EE99AC': 'bg-pink-100'       // Fairy
+    // CRITICAL TYPE COLOR MAPPING: Enhanced color mapping for milestone cards
+    const typeToColorMap: Record<string, string> = {
+      'normal': 'bg-amber-100 border-amber-200',
+      'fighting': 'bg-red-200 border-red-300',
+      'flying': 'bg-blue-100 border-blue-200',
+      'poison': 'bg-purple-200 border-purple-300',
+      'ground': 'bg-yellow-200 border-yellow-300',
+      'rock': 'bg-stone-200 border-stone-300',
+      'bug': 'bg-green-200 border-green-300',
+      'ghost': 'bg-gray-300 border-gray-400',
+      'steel': 'bg-slate-200 border-slate-300',
+      'fire': 'bg-red-100 border-red-200',
+      'water': 'bg-blue-200 border-blue-300',
+      'grass': 'bg-green-100 border-green-200',
+      'electric': 'bg-yellow-100 border-yellow-200',
+      'psychic': 'bg-pink-200 border-pink-300',
+      'ice': 'bg-cyan-100 border-cyan-200',
+      'dragon': 'bg-indigo-200 border-indigo-300',
+      'dark': 'bg-gray-400 border-gray-500',
+      'fairy': 'bg-pink-100 border-pink-200'
     };
     
-    return colorMap[typeColor] || 'bg-gray-100';
+    const colorClass = typeToColorMap[primaryType] || 'bg-gray-100 border-gray-200';
+    console.log(`[DEBUG Background Color] Final color class for ${pokemon.name}:`, colorClass);
+    
+    return colorClass;
   };
 
   if (isMilestoneView) {
@@ -103,12 +109,12 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           {displayRankings.map((pokemon, index) => {
-            const backgroundColor = getPokemonBackgroundColor(pokemon);
+            const backgroundColorClass = getPokemonBackgroundColor(pokemon);
             
             return (
               <div 
                 key={pokemon.id}
-                className={`${backgroundColor} rounded-lg p-4 border border-gray-200 transition-all duration-200 hover:shadow-lg`}
+                className={`${backgroundColorClass} rounded-lg p-4 border-2 transition-all duration-200 hover:shadow-lg transform hover:scale-105`}
                 onMouseEnter={() => setHoveredPokemon(pokemon.id)}
                 onMouseLeave={() => setHoveredPokemon(null)}
               >
@@ -117,7 +123,7 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
                     #{index + 1}
                   </div>
                   
-                  <div className="w-20 h-20 mx-auto mb-3 bg-white rounded-full flex items-center justify-center overflow-hidden">
+                  <div className="w-20 h-20 mx-auto mb-3 bg-white rounded-full flex items-center justify-center overflow-hidden shadow-sm">
                     <img 
                       src={pokemon.image} 
                       alt={pokemon.name}
@@ -133,8 +139,8 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
                     {pokemon.name}
                   </h3>
                   
-                  <div className="text-xs text-gray-600 mb-2">
-                    {pokemon.types?.join(', ') || 'Unknown'}
+                  <div className="text-xs text-gray-600 mb-2 font-medium">
+                    {pokemon.types?.join(' / ') || 'Unknown'}
                   </div>
                   
                   <div className="text-xs text-gray-500">

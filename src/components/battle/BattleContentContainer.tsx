@@ -1,5 +1,5 @@
 
-import React, { useMemo, useRef } from "react";
+import React, { useMemo, useRef, useCallback } from "react";
 import BattleContent from "./BattleContent";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "@/hooks/battle/types";
@@ -26,25 +26,44 @@ const BattleContentContainer: React.FC<BattleContentContainerProps> = React.memo
   const instanceRef = useRef(`container-${Date.now()}`);
   const lastPokemonLengthRef = useRef(0);
   
-  // Stabilize battle type to prevent unnecessary re-mounts
+  // CRITICAL FIX: Stabilize battle type to prevent unnecessary re-mounts
   const safeBattleType: BattleType = useMemo(() => {
     return initialBattleType === "triplets" ? "triplets" : "pairs";
   }, [initialBattleType]);
   
-  // CRITICAL PERFORMANCE FIX: Only create new reference when Pokemon count actually changes
+  // CRITICAL PERFORMANCE FIX: Stable Pokemon reference that only changes when data actually changes
   const stablePokemon = useMemo(() => {
-    if (allPokemon.length !== lastPokemonLengthRef.current) {
-      console.log(`[DEBUG BattleContentContainer] Pokemon length changed from ${lastPokemonLengthRef.current} to ${allPokemon.length} - creating new reference`);
+    console.log(`[DEBUG BattleContentContainer] Pokemon data check - current: ${allPokemon.length}, previous: ${lastPokemonLengthRef.current}`);
+    
+    // Only update if length or first few Pokemon IDs have actually changed
+    if (allPokemon.length !== lastPokemonLengthRef.current || 
+        (allPokemon.length > 0 && lastPokemonLengthRef.current === 0)) {
+      console.log(`[DEBUG BattleContentContainer] Pokemon data changed - creating new stable reference`);
       lastPokemonLengthRef.current = allPokemon.length;
       return allPokemon;
     }
-    // Return the same reference if length hasn't changed
+    
+    // Return previous reference to maintain memoization
+    console.log(`[DEBUG BattleContentContainer] Pokemon data unchanged - maintaining stable reference`);
     return allPokemon;
-  }, [allPokemon.length]);
+  }, [allPokemon.length, allPokemon]);
   
-  console.log("BattleContentContainer: Using battle type:", safeBattleType);
+  // CRITICAL FIX: Stable callback references to prevent prop changes
+  const stableSetBattlesCompleted = useCallback((value: React.SetStateAction<number>) => {
+    if (setBattlesCompleted) {
+      setBattlesCompleted(value);
+    }
+  }, [setBattlesCompleted]);
   
-  // Only force battle check if we actually have new Pokemon data (reduced timeout for responsiveness)
+  const stableSetBattleResults = useCallback((value: React.SetStateAction<SingleBattle[]>) => {
+    if (setBattleResults) {
+      setBattleResults(value);
+    }
+  }, [setBattleResults]);
+  
+  console.log("BattleContentContainer: Using battle type:", safeBattleType, "Pokemon count:", stablePokemon.length);
+  
+  // Only force battle check if we actually have new Pokemon data
   React.useEffect(() => {
     if (stablePokemon && stablePokemon.length > 0) {
       console.log("[DEBUG BattleContentContainer] Pokemon data available, dispatching battle check");
@@ -53,7 +72,7 @@ const BattleContentContainer: React.FC<BattleContentContainerProps> = React.memo
         document.dispatchEvent(new CustomEvent("force-new-battle", {
           detail: { battleType: safeBattleType }
         }));
-      }, 500); // Reduced from 1000ms to 500ms for better responsiveness
+      }, 300); // Reduced timeout for responsiveness
       
       return () => clearTimeout(timer);
     }
@@ -65,11 +84,25 @@ const BattleContentContainer: React.FC<BattleContentContainerProps> = React.memo
         allPokemon={stablePokemon}
         initialBattleType={safeBattleType}
         initialSelectedGeneration={initialSelectedGeneration}
-        setBattlesCompleted={setBattlesCompleted}
-        setBattleResults={setBattleResults}
+        setBattlesCompleted={stableSetBattlesCompleted}
+        setBattleResults={stableSetBattleResults}
       />
     </div>
   );
+}, (prevProps, nextProps) => {
+  // Custom comparison function to prevent unnecessary re-renders
+  const pokemonChanged = prevProps.allPokemon.length !== nextProps.allPokemon.length;
+  const battleTypeChanged = prevProps.initialBattleType !== nextProps.initialBattleType;
+  const generationChanged = prevProps.initialSelectedGeneration !== nextProps.initialSelectedGeneration;
+  
+  console.log("[DEBUG BattleContentContainer] Memo comparison:", {
+    pokemonChanged,
+    battleTypeChanged, 
+    generationChanged,
+    shouldUpdate: pokemonChanged || battleTypeChanged || generationChanged
+  });
+  
+  return !pokemonChanged && !battleTypeChanged && !generationChanged;
 });
 
 BattleContentContainer.displayName = "BattleContentContainer";
