@@ -43,6 +43,11 @@ const BattleGrid: React.FC<BattleGridProps> = ({
       console.warn(`⚠️ BattleGrid: Expected ${expectedCount} Pokémon for ${battleType} battle, but got ${validated.length}`);
     }
     
+    // ENHANCED: Log the validated Pokemon details for debugging
+    validated.forEach(pokemon => {
+      console.log(`🔍 BattleGrid validated: ${pokemon.name} (#${pokemon.id}) - image: ${pokemon.image?.substring(0, 80)}...`);
+    });
+    
     return validated;
   }, [currentBattle, battleType]);
   
@@ -60,6 +65,9 @@ const BattleGrid: React.FC<BattleGridProps> = ({
   // Determine grid columns based on battle size
   const gridCols = validatedBattle.length <= 3 ? validatedBattle.length : Math.min(validatedBattle.length, 4);
   
+  // FIXED: Ensure proper visibility of the battle grid
+  console.log(`🎮 BattleGrid rendering ${validatedBattle.length} Pokémon cards with gridCols=${gridCols}, animationKey=${animationKey}`);
+  
   return (
     <div 
       key={animationKey}
@@ -70,7 +78,8 @@ const BattleGrid: React.FC<BattleGridProps> = ({
         display: 'grid',
         gridTemplateColumns: `repeat(${gridCols}, 1fr)`,
         width: '100%',
-        maxWidth: validatedBattle.length <= 2 ? '560px' : '100%'
+        maxWidth: validatedBattle.length <= 2 ? '560px' : '100%',
+        visibility: 'visible'  // Ensure the grid is visible
       }}
     >
       {validatedBattle.map(pokemon => (

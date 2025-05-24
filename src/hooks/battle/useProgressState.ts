@@ -26,11 +26,14 @@ export const useProgressState = () => {
     if (show) {
       setMilestoneInProgress(true);
     } else {
-      // When hiding milestone, reset milestone in progress after a delay 
-      // to allow for any pending operations to complete
-      setTimeout(() => {
-        setMilestoneInProgress(false);
-      }, 500);
+      // When hiding milestone, reset milestone in progress immediately
+      // FIXED: Removed the delay to ensure state is updated immediately
+      setMilestoneInProgress(false);
+      
+      // Add explicit logging for milestone dismissal
+      if (show === false) {
+        console.log("🏆 useProgressState: Milestone dismissed, continuing battles");
+      }
     }
   }, []);
   

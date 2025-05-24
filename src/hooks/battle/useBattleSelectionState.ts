@@ -63,11 +63,20 @@ export const useBattleSelectionState = () => {
     battleStarter
   );
   
-  // Enhanced forceNextBattle with error handling and user feedback
+  // Enhanced forceNextBattle with error handling, user feedback, and milestone handling
   const forceNextBattle = useCallback(() => {
     console.log("🔄 useBattleSelectionState: Force starting next battle");
     
     try {
+      // FIXED: Check if we're in a milestone view and needs to explicitly reset that state
+      // This needs to happen before the battle starts
+      
+      // Custom milestone dismissal event to ensure all components know to hide milestones
+      const dismissMilestoneEvent = new CustomEvent('dismiss-milestone', {
+        detail: { forced: true }
+      });
+      document.dispatchEvent(dismissMilestoneEvent);
+      
       // Try to start a new battle
       const result = startNewBattle(currentBattleType);
       
@@ -76,11 +85,16 @@ export const useBattleSelectionState = () => {
         toast.success("Starting new battle", {
           description: `New ${currentBattleType} battle ready`
         });
+        
+        console.log("✅ forceNextBattle: Successfully started new battle with", 
+          result.map(p => p.name).join(', '));
+        
         return result;
       } else {
         toast.error("Error starting battle", {
           description: "Could not create new battle. Please try again."
         });
+        console.error("❌ forceNextBattle: Failed to start new battle - empty result");
         return [];
       }
     } catch (error) {

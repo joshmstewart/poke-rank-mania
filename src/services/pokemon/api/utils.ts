@@ -1,4 +1,3 @@
-
 import { Pokemon } from "../types";
 import { PokemonImageType, getPreferredImageType, POKEMON_IMAGE_PREFERENCE_KEY, DEFAULT_IMAGE_PREFERENCE } from "@/components/settings/ImagePreferenceSelector";
 
@@ -34,29 +33,36 @@ export function getPokemonImageUrl(id: number, fallbackLevel: number = 0): strin
   // Handle special form IDs by creating a normalized ID for image paths
   // This helps with form variants like Alolan, Galarian, etc.
   const normalizeImageId = (originalId: number): number => {
+    // FIXED: Special form ID mapping for correct artwork paths
+    // Define explicit special form mappings for commonly problematic Pokémon
+    const specialFormMappings: Record<number, number> = {
+      // Keldeo Resolute Form
+      10024: 647, // Keldeo resolute (#10024) should map to Keldeo's base ID (#647)
+      
+      // Hisuian Avalugg form
+      10243: 713, // Hisuian Avalugg (#10243) should map to Avalugg's base ID (#713)
+      
+      // Ho-Oh special case
+      250: 250,
+      
+      // Paldean Tauros Combat Breed
+      10250: 128,
+      
+      // Gourgeist
+      10031: 711,
+      
+      // Sinistcha
+      1013: 1013
+    };
+    
+    // Check if we have an explicit mapping for this Pokémon ID
+    if (specialFormMappings[originalId] !== undefined) {
+      return specialFormMappings[originalId];
+    }
+    
     // Special case for Ho-Oh, which is ID 250
     if (originalId === 250) {
       return 250; // Always return 250 for Ho-Oh
-    }
-    
-    // Special case for Paldean Tauros Combat Breed (ID 10250)
-    if (originalId === 10250) {
-      return 128; // Return the base Tauros ID
-    }
-    
-    // Special case for Gourgeist (ID 10031) - was incorrect in logs
-    if (originalId === 10031) {
-      return 711; // Return the base Gourgeist ID
-    }
-    
-    // Special case for Sinistcha (ID 1013)
-    if (originalId === 1013) {
-      return 1013; // Keep ID as is, but ensure it's used in correct path segments
-    }
-    
-    // Special case for Hisuian Avalugg (ID 10243)
-    if (originalId === 10243) {
-      return 713; // Return the base Avalugg ID (713), not Raikou (243)
     }
     
     // Special case for certain Pokémon forms that have unique artwork
@@ -73,15 +79,32 @@ export function getPokemonImageUrl(id: number, fallbackLevel: number = 0): strin
       return originalId; // Keep the original ID for these special forms
     }
     
-    // For most other special forms, use the base form ID
+    // FIXED: For other special forms with 10xxx IDs, extract the base ID properly
     if (originalId >= 10000) {
-      // Extract the actual Pokémon ID from the special form ID
-      // IMPROVED: Handle Hisuian forms more carefully to avoid ID confusion
+      // Most form IDs follow the convention 10xxx where xxx is the species number
+      // However, some have different patterns
+      
+      // Handle Hisuian forms (typically 102xx range)
       if (originalId >= 10200 && originalId < 10300) {
-        // For Hisuian forms (typically in 102xx range), use division to get proper base ID
-        return Math.floor(originalId / 100);
+        // Get the base species ID (subtract 10200 to get true ID)
+        // For example: 10243 (Hisuian Avalugg) -> 43 is not correct 
+        // We need a lookup table for these exceptions
+        const hisuianBase = originalId - 10200;
+        
+        // Common Hisuian form mappings
+        const hisuianMap: Record<number, number> = {
+          28: 157,  // H-Typhlosion -> Typhlosion (157)
+          37: 503,  // H-Samurott -> Samurott (503)
+          43: 713,  // H-Avalugg -> Avalugg (713)
+          58: 628,  // H-Braviary -> Braviary (628)
+          // Add more mappings as needed
+        };
+        
+        return hisuianMap[hisuianBase] || originalId % 1000;
       }
       
+      // For other special forms (Alolan, Galarian, etc.)
+      // Most IDs are in format 10xxx where xxx is the National Dex number
       const baseId = originalId % 10000;
       
       // Special cases for ID normalization
@@ -89,6 +112,7 @@ export function getPokemonImageUrl(id: number, fallbackLevel: number = 0): strin
         // For very high IDs, use modulo 1000 to get a more reasonable ID
         return baseId % 1000;
       }
+      
       return baseId;
     }
     
@@ -99,7 +123,7 @@ export function getPokemonImageUrl(id: number, fallbackLevel: number = 0): strin
   const normalizedId = normalizeImageId(id);
   
   // Log the original and normalized IDs for specific problematic Pokémon
-  const problematicIds = [1013, 10031, 10093, 680, 10243];
+  const problematicIds = [1013, 10024, 10031, 10093, 680, 10243];
   if (problematicIds.includes(id) && process.env.NODE_ENV === "development") {
     console.log(`🔍 [Problematic ID] Image URL for #${id} normalized to #${normalizedId}`);
   }

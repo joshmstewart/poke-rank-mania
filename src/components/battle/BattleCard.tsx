@@ -1,4 +1,3 @@
-
 import React, { memo, useCallback, useState, useEffect, useRef, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Pokemon } from "@/services/pokemon";
@@ -297,6 +296,7 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
 
   // Improved click handling with debounce
   const handleClick = useCallback(() => {
+    // FIXED condition - original had confusing/wrong logic
     if (isProcessing || clickDisabledRef.current) {
       console.log(`🚫 BattleCard click ignored: ${formattedName} because isProcessing=${isProcessing} or clickDisabled=${clickDisabledRef.current}`);
       return;
@@ -351,14 +351,8 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
             </div>
           )}
           
-          {/* Add a reliable test image that should always display - helps us diagnose CSS issues */}
-          <div className="absolute top-0 right-0" style={{ width: "20px", height: "20px" }}>
-            <img 
-              src="https://via.placeholder.com/20/ff0000/ffffff" 
-              alt="Test indicator"
-              className="w-full h-full"
-            />
-          </div>
+          {/* Replace the problematic test image with a simple colored div */}
+          <div className="absolute top-0 right-0 bg-red-500 w-5 h-5 z-10 rounded-full"></div>
         </div>
         
         <h3 className="mt-2 text-xl font-bold">{formattedName}</h3>

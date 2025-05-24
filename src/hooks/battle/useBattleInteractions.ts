@@ -62,6 +62,30 @@ export const useBattleInteractions = (
     }
   }, [battleType, setSelectedPokemon, currentBattle]);
 
+  // Listen for milestone dismiss events - improved coordination between components
+  useEffect(() => {
+    const handleDismissMilestone = (event: CustomEvent) => {
+      console.log("📣 useBattleInteractions: Received dismiss-milestone event");
+      
+      // Reset processing state when milestone is dismissed
+      setIsProcessing(false);
+      processingStateRef.current = false;
+      
+      // Clear any existing timeout
+      if (processingTimeoutRef.current) {
+        clearTimeout(processingTimeoutRef.current);
+        processingTimeoutRef.current = null;
+      }
+    };
+    
+    // Add event listener with type assertion
+    document.addEventListener('dismiss-milestone', handleDismissMilestone as EventListener);
+    
+    return () => {
+      document.removeEventListener('dismiss-milestone', handleDismissMilestone as EventListener);
+    };
+  }, []);
+
   const handlePokemonSelect = useCallback(
     (id: number) => {
       // Guard against empty battles
@@ -156,6 +180,15 @@ export const useBattleInteractions = (
             // CRITICAL FIX: Always use the updatedSelected array directly, not the state variable
             // which might not have updated yet due to React's batching of state updates
             console.log(`[DEBUG useBattleInteractions] Passing to processBattleResult - selectedPokemonIds:`, updatedSelected);
+            
+            // ENHANCED: Add visual feedback that processing is happening
+            const selectedPokemon = currentBattleCopy.find(p => p.id === id);
+            if (selectedPokemon) {
+              toast.success(`Selected ${selectedPokemon.name}`, {
+                duration: 700  // Short duration
+              });
+            }
+            
             processBattleResult(updatedSelected, currentBattleCopy, battleType);
             console.log("✅ useBattleInteractions: Battle processed successfully");
           } catch (e) {
@@ -213,6 +246,13 @@ export const useBattleInteractions = (
       });
       return;
     }
+    
+    // FIXED: First explicitly dismiss milestone state
+    // Create custom event to ensure other components know milestone is dismissed
+    const dismissMilestoneEvent = new CustomEvent('dismiss-milestone', {
+      detail: { forced: true, source: 'handleForceNextBattle' }
+    });
+    document.dispatchEvent(dismissMilestoneEvent);
     
     // Force reset any processing state
     setIsProcessing(true);
