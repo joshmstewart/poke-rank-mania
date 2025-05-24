@@ -62,7 +62,7 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
     }
   }, [finalRankings]);
 
-  // CRITICAL TYPE PRESERVATION FIX: Enhanced ranking generation with proper type handling
+  // CRITICAL TYPE PRESERVATION FIX: Enhanced ranking generation with safe type handling
   const generateRankings = useCallback((results: SingleBattle[]): RankedPokemon[] => {
     console.log("[DEBUG useRankings] generateRankings - results is array:", Array.isArray(results), "length:", results?.length || 0);
     
@@ -114,21 +114,24 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
         const pokemonFrozenStatus = frozenPokemon[p.id] || {};
         const suggestedAdjustment = currentActiveSuggestions.get(p.id);
 
-        // CRITICAL TYPE PRESERVATION: Ensure types are correctly preserved from source data
+        // CRITICAL TYPE PRESERVATION: Safe type handling with proper type guards
         let pokemonTypes: string[] = [];
         
-        if (p.types && Array.isArray(p.types)) {
-          // Handle both simplified and complex type structures
+        console.log(`[DEBUG Type Preservation] Pokemon ${p.name} (${p.id}) original types:`, p.types);
+        
+        if (p.types && Array.isArray(p.types) && p.types.length > 0) {
+          // Handle both simplified and complex type structures with safe access
           pokemonTypes = p.types.map(typeData => {
             if (typeof typeData === 'string') {
               return typeData;
             } else if (typeData && typeof typeData === 'object') {
+              // FIXED: Safe access with proper type guards
               // Handle nested structure like {type: {name: 'grass'}}
-              if (typeData.type && typeData.type.name) {
+              if (typeData.type && typeof typeData.type === 'object' && typeData.type.name) {
                 return typeData.type.name;
               }
               // Handle direct structure like {name: 'grass'}
-              if (typeData.name) {
+              if (typeData.name && typeof typeData.name === 'string') {
                 return typeData.name;
               }
             }
@@ -136,12 +139,17 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
           }).filter(type => type !== 'unknown');
         }
         
-        console.log(`[DEBUG Type Preservation Enhanced] Pokemon ${p.name} (${p.id}) - Original types:`, p.types, "Processed types:", pokemonTypes);
+        // Fallback to 'unknown' if no valid types found
+        if (pokemonTypes.length === 0) {
+          pokemonTypes = ['unknown'];
+        }
+        
+        console.log(`[DEBUG Type Preservation Final] Pokemon ${p.name} final types:`, pokemonTypes);
 
         return {
           ...p,
           // CRITICAL: Preserve the correctly processed types array
-          types: pokemonTypes.length > 0 ? pokemonTypes : ['unknown'],
+          types: pokemonTypes,
           score: conservativeEstimate,
           count: countMap.get(p.id) || 0,
           confidence: normalizedConfidence,
@@ -158,7 +166,9 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
     const finalWithSuggestions = filteredRankings.map(pokemon => {
       // CRITICAL TYPE PRESERVATION: Ensure types are maintained in final output
       const preservedTypes = pokemon.types || ['unknown'];
-      console.log(`[DEBUG Type Preservation Final Enhanced] Pokemon ${pokemon.name} final types:`, preservedTypes);
+      console.log(`[DEBUG Type Verification] ${pokemon.name} (ID: ${pokemon.id}) - Types:`, 
+        Array.isArray(preservedTypes) ? preservedTypes : 'not array', 
+        preservedTypes?.length || 0, 'entries');
       
       return {
         ...pokemon,
@@ -172,19 +182,6 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
     const safeFinalRankings = finalWithSuggestions || [];
     setFinalRankings(safeFinalRankings);
     console.log(`🎯 Rankings generated with suggestions: ${safeFinalRankings.length} Pokémon`);
-
-    // Debug: Verify type information is preserved in final rankings
-    if (safeFinalRankings.length > 0) {
-      const firstPokemon = safeFinalRankings[0];
-      console.log(`[DEBUG Type Preservation Final Check Enhanced] First Pokemon: ${firstPokemon.name}, Types:`, firstPokemon.types);
-      
-      // Log a few Pokemon with their types to verify preservation
-      safeFinalRankings.slice(0, 3).forEach((pokemon, index) => {
-        console.log(`[DEBUG Type Verification Enhanced] ${index + 1}. ${pokemon.name} (ID: ${pokemon.id}) - Types:`, 
-          Array.isArray(pokemon.types) ? pokemon.types : 'not array', 
-          pokemon.types?.length || 0, 'entries');
-      });
-    }
 
     const confidenceMap: Record<number, number> = {};
     allRankedPokemon.forEach(p => {
