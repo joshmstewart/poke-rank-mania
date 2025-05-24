@@ -1,5 +1,5 @@
 
-import { useMemo, useCallback } from "react";
+import { useMemo, useCallback, useEffect } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
 import { useBattleTypeSelection } from "./useBattleTypeSelection";
@@ -31,7 +31,7 @@ export const useBattleSelectionState = () => {
     getCurrentRankings
   } = useBattleResults();
 
-  // ⚠️ Ensure currentRankings always has full RankedPokemon structure
+  // Ensure currentRankings always has full RankedPokemon structure
   const currentRankings = useMemo<RankedPokemon[]>(() => {
     if (Array.isArray(battleResults) && battleResults.length > 0) {
       return getCurrentRankings();
@@ -53,34 +53,29 @@ export const useBattleSelectionState = () => {
     setSelectedPokemon
   );
 
-  const startNewBattleAdapter = useCallback((pokemonList: Pokemon[], battleType: BattleType): Pokemon[] => {
-    return startNewBattle(battleType);
-  }, [startNewBattle]);
-
   const { processBattleResult } = useBattleOutcomeProcessor(
     setBattleResults,
     setBattlesCompleted,
     battleStarter
   );
   
-  // Enhanced forceNextBattle with error handling, user feedback, and milestone handling
+  // Enhanced forceNextBattle with proper milestone handling
   const forceNextBattle = useCallback(() => {
     console.log("🔄 useBattleSelectionState: Force starting next battle");
     
     try {
-      // FIXED: Check if we're in a milestone view and needs to explicitly reset that state
-      // This needs to happen before the battle starts
-      
-      // Custom milestone dismissal event to ensure all components know to hide milestones
-      const dismissMilestoneEvent = new CustomEvent('dismiss-milestone', {
-        detail: { forced: true }
+      // Dispatch milestone dismissal event first
+      const dismissMilestoneEvent = new CustomEvent('milestone-dismissed', {
+        detail: { forced: true, source: 'forceNextBattle' }
       });
       document.dispatchEvent(dismissMilestoneEvent);
       
-      // Try to start a new battle
+      // Clear any existing selections
+      setSelectedPokemon([]);
+      
+      // Start new battle
       const result = startNewBattle(currentBattleType);
       
-      // Provide feedback to user
       if (result && result.length > 0) {
         toast.success("Starting new battle", {
           description: `New ${currentBattleType} battle ready`
@@ -104,7 +99,23 @@ export const useBattleSelectionState = () => {
       });
       return [];
     }
-  }, [currentBattleType, startNewBattle]);
+  }, [currentBattleType, startNewBattle, setSelectedPokemon]);
+
+  // Listen for milestone dismissal events
+  useEffect(() => {
+    const handleMilestoneDismissed = (event: CustomEvent) => {
+      console.log("📣 useBattleSelectionState: Received milestone-dismissed event");
+      
+      // Reset any relevant state when milestone is dismissed
+      setSelectedPokemon([]);
+    };
+    
+    document.addEventListener('milestone-dismissed', handleMilestoneDismissed as EventListener);
+    
+    return () => {
+      document.removeEventListener('milestone-dismissed', handleMilestoneDismissed as EventListener);
+    };
+  }, [setSelectedPokemon]);
 
   return {
     currentBattle,
@@ -122,6 +133,6 @@ export const useBattleSelectionState = () => {
     startNewBattle,
     currentBattleType,
     processBattleResult,
-    forceNextBattle // Export the enhanced function
+    forceNextBattle
   };
 };
