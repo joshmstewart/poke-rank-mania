@@ -88,7 +88,8 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
     for (let i = 0; i < pokemon.types.length; i++) {
       const typeSlot = pokemon.types[i];
       
-      if (typeSlot && typeof typeSlot === 'object') {
+      // FIXED: Add explicit null check before accessing properties
+      if (typeSlot !== null && typeSlot !== undefined && typeof typeSlot === 'object') {
         // Handle string types directly
         if (typeof typeSlot === 'string') {
           extractedTypes.push(typeSlot);
@@ -96,7 +97,7 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
         }
 
         // Handle nested type structure: { slot: 1, type: { name: 'grass' } }
-        if ('type' in typeSlot && typeSlot.type && typeof typeSlot.type === 'object') {
+        if ('type' in typeSlot && typeSlot.type !== null && typeSlot.type !== undefined && typeof typeSlot.type === 'object') {
           const typeInfo = typeSlot.type as PokemonTypeInfo;
           if ('name' in typeInfo && typeof typeInfo.name === 'string') {
             extractedTypes.push(typeInfo.name);
@@ -215,7 +216,7 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
     });
     setConfidenceScores(confidenceMap);
 
-    console.log(`[EFFECT LoopCheck - generateRankings #${currentCount}] COMPLETE - Returning finalWithSuggestions array, length:`, 
+    console.log(`[EFFECT LoopCheck - generateRankings #${rankingGenerationCountRef.current}] COMPLETE - Returning finalWithSuggestions array, length:`, 
                  finalWithSuggestions.length);
     
     return safeFinalRankings;
@@ -248,11 +249,23 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
     finalRankings,
     confidenceScores,
     generateRankings,
-    handleSaveRankings,
+    handleSaveRankings: useCallback(() => {
+      localStorage.setItem("pokemon-frozen-pokemon", JSON.stringify(frozenPokemon));
+    }, [frozenPokemon]),
     activeTier,
     setActiveTier,
-    freezePokemonForTier,
-    isPokemonFrozenForTier,
+    freezePokemonForTier: useCallback((pokemonId: number, tier: TopNOption) => {
+      setFrozenPokemon(prev => ({
+        ...prev,
+        [pokemonId]: {
+          ...(prev[pokemonId] || {}),
+          [tier.toString()]: true
+        }
+      }));
+    }, []),
+    isPokemonFrozenForTier: useCallback((pokemonId: number, tier: TopNOption): boolean => {
+      return Boolean(frozenPokemon[pokemonId]?.[tier.toString()]);
+    }, [frozenPokemon]),
     allRankedPokemon: finalRankings,
     suggestRanking,
     removeSuggestion,
