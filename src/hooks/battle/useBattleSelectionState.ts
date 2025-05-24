@@ -59,39 +59,41 @@ export const useBattleSelectionState = () => {
     battleStarter
   );
   
-  // Enhanced forceNextBattle with proper milestone handling
+  // FIXED: Enhanced forceNextBattle with better milestone handling
   const forceNextBattle = useCallback(() => {
     console.log("🔄 useBattleSelectionState: Force starting next battle");
     
     try {
-      // Dispatch milestone dismissal event first
+      // CRITICAL FIX: Dispatch milestone dismissal event with immediate state clear
       const dismissMilestoneEvent = new CustomEvent('milestone-dismissed', {
-        detail: { forced: true, source: 'forceNextBattle' }
+        detail: { forced: true, source: 'forceNextBattle', immediate: true }
       });
       document.dispatchEvent(dismissMilestoneEvent);
       
-      // Clear any existing selections
+      // Clear any existing selections immediately
       setSelectedPokemon([]);
       
-      // Start new battle
-      const result = startNewBattle(currentBattleType);
-      
-      if (result && result.length > 0) {
-        toast.success("Starting new battle", {
-          description: `New ${currentBattleType} battle ready`
-        });
+      // Start new battle with a small delay to ensure state is cleared
+      setTimeout(() => {
+        const result = startNewBattle(currentBattleType);
         
-        console.log("✅ forceNextBattle: Successfully started new battle with", 
-          result.map(p => p.name).join(', '));
-        
-        return result;
-      } else {
-        toast.error("Error starting battle", {
-          description: "Could not create new battle. Please try again."
-        });
-        console.error("❌ forceNextBattle: Failed to start new battle - empty result");
-        return [];
-      }
+        if (result && result.length > 0) {
+          toast.success("Starting new battle", {
+            description: `New ${currentBattleType} battle ready`
+          });
+          
+          console.log("✅ forceNextBattle: Successfully started new battle with", 
+            result.map(p => p.name).join(', '));
+          
+          return result;
+        } else {
+          toast.error("Error starting battle", {
+            description: "Could not create new battle. Please try again."
+          });
+          console.error("❌ forceNextBattle: Failed to start new battle - empty result");
+          return [];
+        }
+      }, 100);
     } catch (error) {
       console.error("Error in forceNextBattle:", error);
       toast.error("Failed to start battle", {
@@ -101,13 +103,21 @@ export const useBattleSelectionState = () => {
     }
   }, [currentBattleType, startNewBattle, setSelectedPokemon]);
 
-  // Listen for milestone dismissal events
+  // FIXED: Improved milestone dismissal event handling
   useEffect(() => {
     const handleMilestoneDismissed = (event: CustomEvent) => {
-      console.log("📣 useBattleSelectionState: Received milestone-dismissed event");
+      console.log("📣 useBattleSelectionState: Received milestone-dismissed event", event.detail);
       
       // Reset any relevant state when milestone is dismissed
       setSelectedPokemon([]);
+      
+      // If this was an immediate dismissal, trigger a new battle
+      if (event.detail?.immediate) {
+        console.log("🚀 useBattleSelectionState: Immediate milestone dismissal - starting new battle");
+        setTimeout(() => {
+          startNewBattle(currentBattleType);
+        }, 50);
+      }
     };
     
     document.addEventListener('milestone-dismissed', handleMilestoneDismissed as EventListener);
@@ -115,7 +125,7 @@ export const useBattleSelectionState = () => {
     return () => {
       document.removeEventListener('milestone-dismissed', handleMilestoneDismissed as EventListener);
     };
-  }, [setSelectedPokemon]);
+  }, [setSelectedPokemon, startNewBattle, currentBattleType]);
 
   return {
     currentBattle,

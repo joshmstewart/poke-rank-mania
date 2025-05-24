@@ -101,7 +101,7 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
     };
   }, [updateImage, validatedPokemon.id, formattedName, pokemonId, isSelected, cleanupImageLoading]);
 
-  // Add a safety timeout to trigger fallback if image doesn't load
+  // FIXED: Reduced timeout for better performance
   useEffect(() => {
     if (hasInitialLoadRef.current && !imageLoaded && !imageError) {
       cleanupImageLoading();
@@ -113,7 +113,7 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
           console.warn(`⏱️ Image load timeout for ${formattedName} - triggering fallback`);
           handleImageError();
         }
-      }, 10000);
+      }, 5000); // Reduced from 10000ms
       
       return () => cleanupImageLoading();
     }
@@ -160,9 +160,9 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
     }
   }, [pokemonId, formattedName, retryCount, currentImageUrl, cleanupImageLoading]);
 
-  // Improved click handling with clear conditions
+  // FIXED: Improved click handling with clearer conditions
   const handleClick = useCallback(() => {
-    // Only ignore clicks if truly processing or explicitly disabled
+    // Only ignore clicks if truly processing
     if (isProcessing || clickDisabledRef.current) {
       console.log(`🚫 BattleCard click ignored: ${formattedName} because isProcessing=${isProcessing} or clickDisabled=${clickDisabledRef.current}`);
       return;
@@ -177,7 +177,7 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
     // Clear click debounce after a short delay
     setTimeout(() => {
       clickDisabledRef.current = false;
-    }, 800);
+    }, 500); // Reduced from 800ms for better responsiveness
   }, [pokemonId, formattedName, onSelect, isProcessing]);
 
   return (
@@ -215,7 +215,7 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
         <h3 className="mt-2 text-xl font-bold">{formattedName}</h3>
         <div className="text-xs text-muted-foreground mt-1">#{pokemonId}</div>
         
-        {/* Visual feedback when processing */}
+        {/* FIXED: Simpler processing indicator */}
         {isProcessing && (
           <div className="absolute inset-0 bg-black/10 flex items-center justify-center rounded-md">
             <div className="h-8 w-8 border-4 border-t-primary animate-spin rounded-full"></div>

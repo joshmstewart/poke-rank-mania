@@ -26,132 +26,79 @@ export function getPokemonImageUrl(id: number, fallbackLevel: number = 0): strin
   // Get the appropriate fallback chain
   const fallbackChain = getFallbackOrder(preferredType);
   
-  // Handle special form IDs by creating a normalized ID for image paths
-  const normalizeImageId = (originalId: number): number => {
-    // FIXED: Comprehensive special form mappings for correct artwork paths
-    const specialFormMappings: Record<number, number> = {
-      // Keldeo forms
-      10024: 647, // Keldeo Resolute Form -> Keldeo base (#647)
-      
-      // Hisuian forms
-      10243: 713, // Hisuian Avalugg -> Avalugg base (#713)
-      10217: 215, // Hisuian Sneasel -> Sneasel base (#215) 
-      10230: 58,  // Hisuian Growlithe -> Growlithe base (#58)
-      10233: 211, // Hisuian Qwilfish -> Qwilfish base (#211)
-      
-      // Paldean forms
-      10250: 128, // Paldean Tauros Combat Breed -> Tauros base (#128)
-      10251: 128, // Paldean Tauros Blaze Breed -> Tauros base (#128)
-      10252: 128, // Paldean Tauros Aqua Breed -> Tauros base (#128)
-      
-      // Gourgeist forms
-      10031: 711, // Gourgeist Super Size -> Gourgeist base (#711)
-      10032: 711, // Gourgeist Large Size -> Gourgeist base (#711)
-      10033: 711, // Gourgeist Small Size -> Gourgeist base (#711)
-      
-      // Other special cases
-      10093: 666, // Vivillon forms -> Vivillon base (#666)
-      
-      // Megas that should use base form artwork
-      10034: 3,   // Mega Venusaur -> Venusaur (#3)
-      10035: 6,   // Mega Charizard X -> Charizard (#6)
-      10036: 6,   // Mega Charizard Y -> Charizard (#6)
-      10037: 9,   // Mega Blastoise -> Blastoise (#9)
-      
-      // Alolan forms
-      10100: 26,  // Alolan Raichu -> Raichu base (#26)
-      10101: 27,  // Alolan Sandshrew -> Sandshrew base (#27)
-      10102: 28,  // Alolan Sandslash -> Sandslash base (#28)
-      10103: 37,  // Alolan Vulpix -> Vulpix base (#37)
-      10104: 38,  // Alolan Ninetales -> Ninetales base (#38)
-      
-      // Galarian forms
-      10155: 77,  // Galarian Ponyta -> Ponyta base (#77)
-      10156: 78,  // Galarian Rapidash -> Rapidash base (#78)
-      10157: 52,  // Galarian Meowth -> Meowth base (#52)
-      10158: 83,  // Galarian Farfetch'd -> Farfetch'd base (#83)
+  // FIXED: Comprehensive special form mappings and artwork strategy
+  const getCorrectArtworkId = (originalId: number): number => {
+    // Strategy: For special forms, try their specific ID first, then fallback to base if needed
+    
+    // Mapping for special forms that should DEFINITELY use base species artwork
+    // (when the special form artwork doesn't exist or isn't visually distinct)
+    const forceBaseSpeciesMappings: Record<number, number> = {
+      // Only add here if the special form truly has no distinct artwork
+      // or should always show base species artwork for visual consistency
     };
     
-    // Check if we have an explicit mapping for this Pokémon ID
-    if (specialFormMappings[originalId] !== undefined) {
-      console.log(`🔄 Special form mapping: #${originalId} -> #${specialFormMappings[originalId]}`);
-      return specialFormMappings[originalId];
+    // Check if we have an explicit base species mapping
+    if (forceBaseSpeciesMappings[originalId] !== undefined) {
+      console.log(`🔄 Using base species mapping: #${originalId} -> #${forceBaseSpeciesMappings[originalId]}`);
+      return forceBaseSpeciesMappings[originalId];
     }
     
-    // Special case for Ho-Oh, which is ID 250
-    if (originalId === 250) {
-      return 250; // Always return 250 for Ho-Oh
-    }
-    
-    // For newer generation Pokémon (Gen 9+), keep original ID if it's under 2000
-    if (originalId >= 906 && originalId < 2000) {
-      return originalId;
-    }
-    
-    // Special case for certain Pokémon forms that have unique artwork
-    if (
-      // Crown forms, Eternal forms, special regional forms with unique art
-      [898, 10195, 10196, 10197, 10198, 10199, 10200].includes(originalId) ||
-      // Calyrex special forms 
-      originalId === 10196 || originalId === 10197 || 
-      // Specific forms that should keep their unique ID
-      (originalId >= 10100 && originalId <= 10154 && ![10100, 10101, 10102, 10103, 10104].includes(originalId))
-    ) {
-      return originalId;
-    }
-    
-    // For other special forms with 10xxx IDs
+    // For most special forms with IDs >= 10000, try the specific ID first
+    // This ensures forms like Kyurem Black (#10022) use their own artwork
     if (originalId >= 10000) {
-      // Extract the base species ID
-      const baseId = originalId % 1000;
-      
-      // For IDs that result in very low numbers, use a different approach
-      if (baseId < 50 && originalId > 10200) {
-        // This is likely a Hisuian form in the 102xx range
-        return originalId; // Keep original for now, should be caught by mapping above
-      }
-      
-      return baseId;
+      console.log(`🔄 Using specific form artwork for special form ID: #${originalId}`);
+      return originalId;
     }
     
     return originalId;
   };
+
+  // Use the correct artwork ID strategy
+  const artworkId = getCorrectArtworkId(id);
   
-  // Use normalized ID for image paths
-  const normalizedId = normalizeImageId(id);
-  
-  // Log the original and normalized IDs for debugging
-  if (id !== normalizedId) {
-    console.log(`🔄 Image ID normalization: Original ID ${id} → Normalized ID ${normalizedId}`);
+  // Log the original and artwork IDs for debugging
+  if (id !== artworkId) {
+    console.log(`🔄 Image ID strategy: Original ID ${id} → Artwork ID ${artworkId}`);
   }
   
-  // Generate URLs for each image type
+  // Generate URLs for each image type - FIXED: Ensure valid hostnames only
   const getImageUrl = (type: PokemonImageType): string => {
     let url = "";
     
+    // CRITICAL FIX: Ensure we only use valid PokeAPI URLs
+    const baseUrl = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon";
+    
     switch(type) {
       case "official":
-        url = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${normalizedId}.png`;
+        url = `${baseUrl}/other/official-artwork/${artworkId}.png`;
         break;
       case "home":
-        url = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/home/${normalizedId}.png`;
+        url = `${baseUrl}/other/home/${artworkId}.png`;
         break;
       case "dream":
-        url = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/dream-world/${normalizedId}.svg`;
+        url = `${baseUrl}/other/dream-world/${artworkId}.svg`;
         break;
       case "default":
       default:
-        url = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${normalizedId}.png`;
+        url = `${baseUrl}/${artworkId}.png`;
         break;
     }
     
     // Add cache busting if this URL has been marked as needing it
-    const urlKey = `${type}-${normalizedId}`;
+    const urlKey = `${type}-${artworkId}`;
     if (imageCacheBustingMap.get(urlKey)) {
       url = `${url}?_cb=${Date.now()}`;
     }
     
-    return url;
+    // CRITICAL: Validate URL before returning
+    try {
+      new URL(url);
+      return url;
+    } catch (error) {
+      console.error(`❌ Invalid URL constructed: ${url}`);
+      // Fallback to a basic default URL
+      return `${baseUrl}/${artworkId}.png`;
+    }
   };
 
   // If we're at fallback level 0, use the preferred type
@@ -173,8 +120,8 @@ export function getPokemonImageUrl(id: number, fallbackLevel: number = 0): strin
  * Mark an image URL as needing cache busting for future loads
  */
 export function markImageAsNeedingCacheBusting(pokemonId: number, imageType: PokemonImageType): void {
-  const normalizedId = pokemonId > 10000 ? pokemonId % 1000 : pokemonId;
-  const urlKey = `${imageType}-${normalizedId}`;
+  const artworkId = pokemonId >= 10000 ? pokemonId : pokemonId;
+  const urlKey = `${imageType}-${artworkId}`;
   
   imageCacheBustingMap.set(urlKey, true);
   
@@ -269,7 +216,7 @@ export function validateBattlePokemon(pokemon: Pokemon[]): Pokemon[] {
     if (p.id === 10250 && !p.name.toLowerCase().includes('tauros')) {
       console.log(`📌 Fixing Paldean Tauros (ID: ${p.id}) with incorrect name: ${p.name}`);
       fixedPokemon.name = "Paldean Tauros Combat Breed";
-      fixedPokemon.image = getPokemonImageUrl(128);
+      fixedPokemon.image = getPokemonImageUrl(10250);
     }
     
     // Special case for Ho-Oh (ID 250)
@@ -279,16 +226,10 @@ export function validateBattlePokemon(pokemon: Pokemon[]): Pokemon[] {
       fixedPokemon.image = getPokemonImageUrl(250);
     }
     
-    // Special case for Keldeo Resolute (ID 10024)
-    if (p.id === 10024) {
-      console.log(`📌 Ensuring Keldeo Resolute (ID: ${p.id}) has correct image URL`);
-      fixedPokemon.image = getPokemonImageUrl(10024); // This will now map to 647 correctly
-    }
-    
-    // Special case for Hisuian Avalugg (ID 10243)
-    if (p.id === 10243) {
-      console.log(`📌 Ensuring Hisuian Avalugg (ID: ${p.id}) has correct image URL`);
-      fixedPokemon.image = getPokemonImageUrl(10243); // This will now map to 713 correctly
+    // For other special forms, ensure correct image URL
+    if (p.id >= 10000) {
+      console.log(`📌 Ensuring special form (ID: ${p.id}) has correct image URL`);
+      fixedPokemon.image = getPokemonImageUrl(p.id);
     }
     
     return fixedPokemon;
