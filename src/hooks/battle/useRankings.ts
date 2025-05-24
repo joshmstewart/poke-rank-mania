@@ -38,6 +38,20 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
   const previousResultsRef = useRef<SingleBattle[]>([]);
   const rankingGenerationCountRef = useRef(0);
 
+  // CRITICAL FIX: Create a stable lookup map for Pokemon data to preserve types
+  const pokemonLookupMap = useMemo(() => {
+    const map = new Map<number, Pokemon>();
+    allPokemon.forEach(pokemon => {
+      // Ensure we preserve the complete Pokemon object including types
+      map.set(pokemon.id, {
+        ...pokemon,
+        types: pokemon.types || [] // Ensure types array exists
+      });
+    });
+    console.log(`[DEBUG useRankings] Created Pokemon lookup map with ${map.size} entries`);
+    return map;
+  }, [allPokemon]);
+
   const {
     suggestRanking,
     removeSuggestion,
@@ -87,7 +101,7 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
     for (let i = 0; i < pokemon.types.length; i++) {
       const typeSlot = pokemon.types[i];
       
-      // FIXED: Early continue for null/undefined values
+      // Early continue for null/undefined values
       if (!typeSlot) {
         continue;
       }
@@ -120,7 +134,7 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
     return finalTypes;
   }, []);
 
-  // CRITICAL TYPE PRESERVATION FIX: Enhanced ranking generation with safe type handling
+  // CRITICAL TYPE PRESERVATION FIX: Enhanced ranking generation with proper Pokemon lookup
   const generateRankings = useCallback((results: SingleBattle[]): RankedPokemon[] => {
     console.log("[DEBUG useRankings] generateRankings - results is array:", Array.isArray(results), "length:", results?.length || 0);
     
@@ -160,32 +174,43 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
 
     const participatingPokemonIds = new Set([...countMap.keys()]);
 
-    const allRankedPokemon: RankedPokemon[] = (allPokemon || [])
-      .filter(p => participatingPokemonIds.has(p.id))
-      .map(p => {
-        if (!p.rating) p.rating = new Rating();
-        else if (!(p.rating instanceof Rating)) p.rating = new Rating(p.rating.mu, p.rating.sigma);
+    // CRITICAL FIX: Use the lookup map to get complete Pokemon data with preserved types
+    const allRankedPokemon: RankedPokemon[] = Array.from(participatingPokemonIds)
+      .map(pokemonId => {
+        // Get the complete Pokemon data from our lookup map
+        const completePokemon = pokemonLookupMap.get(pokemonId);
+        if (!completePokemon) {
+          console.warn(`[DEBUG useRankings] Pokemon ID ${pokemonId} not found in lookup map`);
+          return null;
+        }
 
-        const conservativeEstimate = p.rating.mu - 3 * p.rating.sigma;
-        const normalizedConfidence = Math.max(0, Math.min(100, 100 * (1 - (p.rating.sigma / 8.33))));
+        // Ensure rating exists
+        if (!completePokemon.rating) completePokemon.rating = new Rating();
+        else if (!(completePokemon.rating instanceof Rating)) completePokemon.rating = new Rating(completePokemon.rating.mu, completePokemon.rating.sigma);
 
-        const pokemonFrozenStatus = frozenPokemon[p.id] || {};
-        const suggestedAdjustment = currentActiveSuggestions.get(p.id);
+        const conservativeEstimate = completePokemon.rating.mu - 3 * completePokemon.rating.sigma;
+        const normalizedConfidence = Math.max(0, Math.min(100, 100 * (1 - (completePokemon.rating.sigma / 8.33))));
 
-        // CRITICAL TYPE PRESERVATION: Safe type handling with proper type guards
-        const pokemonTypes = extractPokemonTypes(p);
+        const pokemonFrozenStatus = frozenPokemon[completePokemon.id] || {};
+        const suggestedAdjustment = currentActiveSuggestions.get(completePokemon.id);
+
+        // CRITICAL TYPE PRESERVATION: Use the complete Pokemon data which preserves types
+        const pokemonTypes = extractPokemonTypes(completePokemon);
+
+        console.log(`[DEBUG Type Preservation] ${completePokemon.name} (${completePokemon.id}) - Original types:`, completePokemon.types, "Extracted:", pokemonTypes);
 
         return {
-          ...p,
+          ...completePokemon,
           // CRITICAL: Preserve the correctly processed types array
           types: pokemonTypes,
           score: conservativeEstimate,
-          count: countMap.get(p.id) || 0,
+          count: countMap.get(completePokemon.id) || 0,
           confidence: normalizedConfidence,
           isFrozenForTier: pokemonFrozenStatus,
           suggestedAdjustment
         };
       })
+      .filter(Boolean) as RankedPokemon[]
       .sort((a, b) => b.score - a.score);
 
     const filteredRankings = activeTier === "All" 
@@ -222,7 +247,7 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
                  finalWithSuggestions.length);
     
     return safeFinalRankings;
-  }, [allPokemon.length, activeTier, frozenPokemon, loadSavedSuggestions, setFinalRankings, setConfidenceScores, extractPokemonTypes]);
+  }, [pokemonLookupMap, activeTier, frozenPokemon, loadSavedSuggestions, setFinalRankings, setConfidenceScores, extractPokemonTypes]);
 
   const freezePokemonForTier = useCallback((pokemonId: number, tier: TopNOption) => {
     setFrozenPokemon(prev => ({
