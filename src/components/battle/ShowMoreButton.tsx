@@ -6,14 +6,19 @@ interface ShowMoreButtonProps {
   displayCount: number;
   totalCount: number;
   onShowMore: () => void;
+  currentCount?: number; // Add this optional prop to match usage
 }
 
 const ShowMoreButton: React.FC<ShowMoreButtonProps> = ({
   displayCount,
   totalCount,
-  onShowMore
+  onShowMore,
+  currentCount
 }) => {
-  if (displayCount >= totalCount) {
+  // Use currentCount if provided, otherwise fall back to displayCount
+  const count = currentCount !== undefined ? currentCount : displayCount;
+  
+  if (count >= totalCount) {
     return null;
   }
   
@@ -24,7 +29,7 @@ const ShowMoreButton: React.FC<ShowMoreButtonProps> = ({
         onClick={onShowMore}
         className="w-full max-w-xs"
       >
-        Show More ({displayCount}/{totalCount})
+        Show More ({count}/{totalCount})
       </Button>
     </div>
   );

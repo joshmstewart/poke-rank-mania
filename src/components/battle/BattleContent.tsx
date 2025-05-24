@@ -1,5 +1,4 @@
-
-import React, { useEffect, useRef, useMemo } from "react";
+import React, { useEffect, useRef, useMemo, useCallback } from "react";
 import { Pokemon, TopNOption } from "@/services/pokemon";
 import { useBattleStateCore } from "@/hooks/battle/useBattleStateCore";
 import BattleInterface from "./BattleInterface";

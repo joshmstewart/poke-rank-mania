@@ -1,3 +1,4 @@
+
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
 
@@ -7,6 +8,8 @@ export interface BattleStarter {
     onMarkSuggestionUsed?: (pokemonId: number) => void
   ) => Pokemon[];
   resetSuggestionPriority: () => void;
+  startNewBattle: (battleType: BattleType, forceSuggestion?: boolean, forceUnranked?: boolean) => Pokemon[];
+  trackLowerTierLoss: (loserId: number) => void;
 }
 
 export function createBattleStarter(
@@ -193,6 +196,11 @@ export function createBattleStarter(
 
   return {
     createBattle,
-    resetSuggestionPriority
+    resetSuggestionPriority,
+    startNewBattle: createBattle, // Map to the existing createBattle function
+    trackLowerTierLoss: (loserId: number) => {
+      // Implementation for tracking lower tier losses
+      console.log(`Tracking lower tier loss for Pokemon ID: ${loserId}`);
+    }
   };
 }
