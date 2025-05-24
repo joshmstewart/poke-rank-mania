@@ -26,6 +26,10 @@ const BattleContent = ({
   setBattlesCompleted,
   setBattleResults,
 }: BattleContentProps) => {
+  // Track component instances for debugging remounts
+  const instanceIdRef = useRef(`content-${Date.now()}`);
+  console.log(`[DEBUG BattleContent] Instance: ${instanceIdRef.current} running`);
+
   const battleStartedRef = useRef(false);
   const previousBattlesCompletedRef = useRef(0);
   const pokemonAnalysisLoggedRef = useRef(false);
@@ -33,7 +37,7 @@ const BattleContent = ({
   const isLoadingBattleRef = useRef(true); // NEW: Track loading state
   
   // ADDED: Log to verify allPokemon in BattleContent is never undefined
-  console.log("[DEBUG BattleContent] allPokemon is array:", Array.isArray(allPokemon), "length:", allPokemon?.length || 0);
+  console.log("[DEBUG BattleContent] MOUNT - allPokemon is array:", Array.isArray(allPokemon), "length:", allPokemon?.length || 0);
   
   // ADDED: Force "pairs" mode as default if none selected
   const safeInitialBattleType: BattleType = initialBattleType === "triplets" ? "triplets" : "pairs";

@@ -21,7 +21,11 @@ const BattleContentContainer: React.FC<BattleContentContainerProps> = ({
   setBattleResults
 }) => {
   // ADDED: Log to verify allPokemon in container is never undefined
-  console.log("[DEBUG BattleContentContainer] allPokemon is array:", Array.isArray(allPokemon), "length:", allPokemon?.length || 0);
+  console.log("[DEBUG BattleContentContainer] MOUNT - allPokemon is array:", Array.isArray(allPokemon), "length:", allPokemon?.length || 0);
+  
+  // Log instanceId to detect remounts
+  const instanceIdRef = React.useRef(`container-${Date.now()}`);
+  console.log(`[DEBUG BattleContentContainer] Instance: ${instanceIdRef.current} running`);
   
   // ADDED: Ensure we always have a valid battle type with "pairs" as default
   const safeBattleType: BattleType = initialBattleType === "triplets" ? "triplets" : "pairs";

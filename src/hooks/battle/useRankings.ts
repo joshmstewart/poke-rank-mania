@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { SingleBattle } from "./types";
@@ -7,7 +8,14 @@ import { useRankingSuggestions } from "./useRankingSuggestions";
 export const useRankings = (allPokemon: Pokemon[] = []) => { // Ensure default empty array
   console.log("[DEBUG useRankings] INIT - allPokemon is array:", Array.isArray(allPokemon), "length:", allPokemon?.length || 0);
 
+  // Track component instances for debugging remounts
+  const instanceIdRef = useRef(`rankings-${Date.now()}`);
+  console.log(`[DEBUG useRankings] Instance: ${instanceIdRef.current} running`);
+  
   const [finalRankings, setFinalRankings] = useState<RankedPokemon[]>([]);
+  console.log("[DEBUG useRankings] finalRankings useState initialized:", 
+              Array.isArray(finalRankings) ? `array[${finalRankings.length}]` : 'not array');
+              
   const [confidenceScores, setConfidenceScores] = useState<Record<number, number>>({});
   const [activeTier, setActiveTier] = useState<TopNOption>(() => {
     const storedTier = localStorage.getItem("pokemon-active-tier");
@@ -130,8 +138,6 @@ export const useRankings = (allPokemon: Pokemon[] = []) => { // Ensure default e
         suggestedAdjustment: currentActiveSuggestions.get(pokemon.id) || null
       };
     });
-
-    // ... keep existing code (logging)
 
     // CRITICAL: Always set finalRankings to an array, never undefined
     const safeFinalRankings = finalWithSuggestions || [];

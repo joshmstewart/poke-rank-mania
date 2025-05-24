@@ -116,9 +116,15 @@ export const useBattleStateCore = (
               "length:", filteredPokemon.length, "Generation selected:", selectedGeneration);
 
   // Log before useBattleStarterIntegration to verify props
-  console.log("[DEBUG useBattleStateCore] Before useBattleStarterIntegration - finalRankings:", 
+  console.log("[DEBUG useBattleStateCore PROPS_OUT] finalRankings is array:", 
               Array.isArray(finalRankings), 
-              "length:", finalRankings?.length || 0);
+              "length:", finalRankings?.length || 0,
+              "Value:", finalRankings);
+
+  console.log("[DEBUG useBattleStateCore PROPS_OUT] filteredPokemon is array:", 
+              Array.isArray(filteredPokemon), 
+              "length:", filteredPokemon?.length || 0,
+              "Value:", filteredPokemon);
 
   const { 
     battleStarter, 
@@ -129,7 +135,8 @@ export const useBattleStateCore = (
     finalRankings || [], // CRITICAL FIX: Ensure finalRankings is never undefined
     setCurrentBattle,
     setSelectedPokemon,
-    markSuggestionUsed // Pass markSuggestionUsed to useBattleStarterIntegration
+    markSuggestionUsed, // Pass markSuggestionUsed to useBattleStarterIntegration
+    currentBattle // Pass currentBattle to help detect existing battles
   );
   
   console.log("[DEBUG useBattleStateCore] After useBattleStarterIntegration - battleStarter exists:", 
