@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { SingleBattle } from "./types";
@@ -115,11 +114,14 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
         const pokemonFrozenStatus = frozenPokemon[p.id] || {};
         const suggestedAdjustment = currentActiveSuggestions.get(p.id);
 
-        // CRITICAL FIX: Ensure type information is preserved
+        // CRITICAL FIX: Ensure type information is preserved with explicit structure
+        const pokemonTypes = p.types || [];
+        console.log(`[DEBUG Type Preservation] Pokemon ${p.name} (${p.id}) original types:`, pokemonTypes);
+
         return {
           ...p,
-          // Preserve the types array structure from the original Pokemon data
-          types: p.types || [], // Ensure types is always an array
+          // CRITICAL: Explicitly preserve the types array structure
+          types: Array.isArray(pokemonTypes) ? pokemonTypes : [],
           score: conservativeEstimate,
           count: countMap.get(p.id) || 0,
           confidence: normalizedConfidence,
@@ -134,10 +136,14 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
       : allRankedPokemon.slice(0, Number(activeTier));
     
     const finalWithSuggestions = filteredRankings.map(pokemon => {
+      // CRITICAL FIX: Ensure types are preserved in final mapping with detailed logging
+      const preservedTypes = pokemon.types || [];
+      console.log(`[DEBUG Type Preservation Final] Pokemon ${pokemon.name} final types:`, preservedTypes);
+      
       return {
         ...pokemon,
-        // CRITICAL FIX: Ensure types are preserved in final mapping
-        types: pokemon.types || [],
+        // CRITICAL: Ensure types are always an array and properly preserved
+        types: Array.isArray(preservedTypes) ? preservedTypes : [],
         suggestedAdjustment: currentActiveSuggestions.get(pokemon.id) || null
       };
     });
@@ -147,10 +153,17 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
     setFinalRankings(safeFinalRankings);
     console.log(`🎯 Rankings generated with suggestions: ${safeFinalRankings.length} Pokémon`);
 
-    // Debug: Verify type information is preserved
+    // Debug: Verify type information is preserved in final rankings
     if (safeFinalRankings.length > 0) {
       const firstPokemon = safeFinalRankings[0];
-      console.log(`[DEBUG Type Preservation] First Pokemon: ${firstPokemon.name}, Types:`, firstPokemon.types);
+      console.log(`[DEBUG Type Preservation Final Check] First Pokemon: ${firstPokemon.name}, Types:`, firstPokemon.types);
+      
+      // Log a few Pokemon with their types to verify preservation
+      safeFinalRankings.slice(0, 3).forEach((pokemon, index) => {
+        console.log(`[DEBUG Type Verification] ${index + 1}. ${pokemon.name} (ID: ${pokemon.id}) - Types:`, 
+          Array.isArray(pokemon.types) ? pokemon.types : 'not array', 
+          pokemon.types?.length || 0, 'entries');
+      });
     }
 
     const confidenceMap: Record<number, number> = {};
@@ -163,7 +176,7 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
                  finalWithSuggestions.length);
     
     return safeFinalRankings;
-  }, [allPokemon.length, activeTier, frozenPokemon, loadSavedSuggestions, setFinalRankings, setConfidenceScores]); // Optimized dependencies
+  }, [allPokemon.length, activeTier, frozenPokemon, loadSavedSuggestions, setFinalRankings, setConfidenceScores]);
 
   const freezePokemonForTier = useCallback((pokemonId: number, tier: TopNOption) => {
     setFrozenPokemon(prev => ({

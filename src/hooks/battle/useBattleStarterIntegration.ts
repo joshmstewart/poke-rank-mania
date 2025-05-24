@@ -1,3 +1,4 @@
+
 import { useMemo, useEffect, useRef, useCallback } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
@@ -51,7 +52,7 @@ export const useBattleStarterIntegration = (
   const priorityModeActiveRef = useRef(false);
   const consecutiveBattlesWithoutNewPokemonRef = useRef(0);
   const lastBattleAttemptTimestampRef = useRef(0);
-  const throttleTimeMs = 500; // Reduced from 800ms to 500ms for better responsiveness
+  const throttleTimeMs = 500;
   const previousBattleIds = useRef<number[]>([]);
   const identicalBattleCount = useRef(0);
   const battleGenerationInProgressRef = useRef(false);
@@ -103,7 +104,7 @@ export const useBattleStarterIntegration = (
         console.log('[BATTLE_TRANSITION_DEBUG] Battle already exists after initialization:', currentBattle?.length || 0);
       }
       
-    }, 800); // Reduced from 1000ms to 800ms
+    }, 300); // Reduced from 800ms to 300ms for better responsiveness
     
     return () => {
       if (initializationTimerRef.current) {
@@ -152,7 +153,7 @@ export const useBattleStarterIntegration = (
   }, [
     allPokemon.length, // Only depend on length to avoid recreation on every ranking change
     currentRankings.length
-  ]); // Removed setCurrentBattle dependency as it's not needed
+  ]);
 
   const startNewBattle = useCallback((battleType: BattleType) => {
     // CRITICAL: Increment battle transition counter for debugging
@@ -366,18 +367,9 @@ export const useBattleStarterIntegration = (
         // Reset identical battle counter on success
         identicalBattleCount.current = 0;
         
-        // Dispatch battle-created event
-        const battleEvent = new CustomEvent('battle-created', {
-          detail: {
-            pokemonIds: battleIds,
-            pokemonNames: battle.map(p => p.name),
-            timestamp: Date.now(),
-            wasForced: false,
-            transitionId: transitionId
-          }
-        });
-        document.dispatchEvent(battleEvent);
-        console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] ✅ Dispatched battle-created event`);
+        // NOTE: Removed battle-created event dispatch to eliminate redundant processing
+        // The event handler was causing misleading "identical battle" warnings
+        console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] ✅ Battle state updated successfully (no event dispatch)`);
       } else {
         console.warn(`[BATTLE_TRANSITION_DEBUG #${transitionId}] ⚠️ IDENTICAL BATTLE DETECTED - Not updating state`);
         console.warn(`[BATTLE_TRANSITION_DEBUG #${transitionId}] - isIdenticalToPrevious: ${isIdenticalToPrevious}`);
@@ -413,7 +405,7 @@ export const useBattleStarterIntegration = (
     battleStarter,
     setSelectedPokemon,
     markSuggestionFullyUsed
-  ]); // Removed setCurrentBattle dependency
+  ]);
 
   // Update the ref whenever startNewBattle changes
   useEffect(() => {
@@ -421,7 +413,7 @@ export const useBattleStarterIntegration = (
     console.log('[DEBUG useBattleStarterIntegration] Updated startNewBattleCallbackRef with new function');
   }, [startNewBattle]);
 
-  // OPTIMIZED: Event listeners with better duplicate detection
+  // OPTIMIZED: Event listeners with reduced redundancy
   useEffect(() => {
     console.log('[DEBUG useBattleStarterIntegration] Setting up event listeners');
     
@@ -455,44 +447,6 @@ export const useBattleStarterIntegration = (
       consecutiveBattlesWithoutNewPokemonRef.current = 0;
     };
 
-    const handleBattleCreated = (event: CustomEvent) => {
-      const { pokemonIds, timestamp, wasForced, transitionId } = event.detail || {};
-      if (!pokemonIds || !pokemonIds.length) return;
-      
-      console.log(`[BATTLE_TRANSITION_DEBUG] handleBattleCreated_EVENT: Received event for transition #${transitionId}. pokemonIds: [${pokemonIds.join(', ')}], wasForced: ${wasForced}`);
-      
-      // IMPROVED: Compare against what we actually last set, not what was previously in the ref
-      const isIdentical = lastSetBattleIdsRef.current.length > 0 && 
-        pokemonIds.length === lastSetBattleIdsRef.current.length &&
-        pokemonIds.every(id => lastSetBattleIdsRef.current.includes(id)) &&
-        lastSetBattleIdsRef.current.every(id => pokemonIds.includes(id));
-      
-      console.log(`[BATTLE_TRANSITION_DEBUG] handleBattleCreated_EVENT: isIdentical check result: ${isIdentical}`);
-      console.log(`[BATTLE_TRANSITION_DEBUG] handleBattleCreated_EVENT: lastSetBattleIdsRef.current: [${lastSetBattleIdsRef.current.join(', ')}]`);
-      
-      if (isIdentical && !wasForced) {
-        identicalBattleCount.current++;
-        console.warn(`⚠️ [useBattleStarterIntegration] Identical battle detected ${identicalBattleCount.current} times for transition #${transitionId}`);
-        
-        if (identicalBattleCount.current >= 3) { // Increased threshold from 2 to 3
-          console.warn(`⚠️ Too many identical battles detected for transition #${transitionId}, triggering emergency reset`);
-          document.dispatchEvent(new CustomEvent('force-emergency-reset'));
-          identicalBattleCount.current = 0;
-          return;
-        }
-      } else {
-        identicalBattleCount.current = 0;
-        console.log(`[BATTLE_TRANSITION_DEBUG] handleBattleCreated_EVENT: Reset identical battle count for transition #${transitionId}`);
-      }
-      
-      // Mark that we're no longer generating a battle
-      setTimeout(() => {
-        console.log(`[BATTLE_TRANSITION_DEBUG] handleBattleCreated_EVENT: Setting battleGenerationInProgressRef.current = false for transition #${transitionId}`);
-        battleGenerationInProgressRef.current = false;
-        console.log(`[${new Date().toISOString()}] Battle generation marked as complete for transition #${transitionId}`);
-      }, 100);
-    };
-
     const handleForceNewBattle = (e: Event) => {
       const event = e as CustomEvent;
       const battleType = event.detail?.battleType || "pairs";
@@ -518,17 +472,15 @@ export const useBattleStarterIntegration = (
     window.addEventListener("prioritizeSuggestions", handlePrioritize);
     window.addEventListener("milestoneEnded", handlePrioritize);
     window.addEventListener("milestoneReached", handleMilestoneReached);
-    document.addEventListener("battle-created", handleBattleCreated as EventListener);
     document.addEventListener("force-new-battle", handleForceNewBattle as EventListener);
 
     return () => {
       window.removeEventListener("prioritizeSuggestions", handlePrioritize);
       window.removeEventListener("milestoneEnded", handlePrioritize);
       window.removeEventListener("milestoneReached", handleMilestoneReached);
-      document.removeEventListener("battle-created", handleBattleCreated as EventListener);
       document.removeEventListener("force-new-battle", handleForceNewBattle as EventListener);
     };
-  }, [currentRankings.length]); // Only depend on rankings length, not entire array
+  }, [currentRankings.length]);
 
   const { performEmergencyReset } = useBattleEmergencyReset(
     [] as Pokemon[],
@@ -565,7 +517,7 @@ export const useBattleStarterIntegration = (
     return () => {
       console.log(`[${new Date().toISOString()}] useBattleStarterIntegration cleanup`);
     };
-  }, []); // Empty dependency array
+  }, []);
 
   return {
     battleStarter,
