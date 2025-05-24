@@ -331,13 +331,12 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
               ref={saveImgRef}
               src={currentImageUrl}
               alt={formattedName}
-              className={`w-full h-full object-contain transition-opacity duration-200 ${imageLoaded ? "opacity-100" : "opacity-0"}`}
+              className={`w-full h-full object-contain transition-opacity duration-200 ${imageLoaded ? "opacity-100" : "opacity-0"} force-visible`}
               style={{
-                display: "block !important",  // Force display block 
-                visibility: "visible !important", // Force visibility
-                zIndex: 5, // Ensure proper stacking
+                display: "block", 
                 width: "100%",
-                height: "100%"
+                height: "100%",
+                zIndex: 5
               }}
               onLoad={handleImageLoad}
               onError={handleImageError}

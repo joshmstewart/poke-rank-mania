@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -109,4 +108,10 @@
 
 .animate-fade-in {
   animation: fadeIn 0.5s ease-out forwards;
+}
+
+/* Force visibility for images that need it */
+.force-visible {
+  visibility: visible !important;
+  display: block !important;
 }
