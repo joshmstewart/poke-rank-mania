@@ -1,4 +1,5 @@
-import React, { useEffect, useRef } from "react";
+
+import React, { useEffect, useRef, useMemo } from "react";
 import { Pokemon, TopNOption } from "@/services/pokemon";
 import { useBattleStateCore } from "@/hooks/battle/useBattleStateCore";
 import BattleInterface from "./BattleInterface";
@@ -20,28 +21,27 @@ interface BattleContentProps {
 }
 
 const BattleContent = ({
-  allPokemon = [], // CRITICAL FIX: Ensure allPokemon is never undefined
+  allPokemon = [],
   initialBattleType,
   initialSelectedGeneration,
   setBattlesCompleted,
   setBattleResults,
 }: BattleContentProps) => {
-  // Track component instances for debugging remounts
+  // PERFORMANCE FIX: Track component instances and prevent unnecessary re-mounts
   const instanceIdRef = useRef(`content-${Date.now()}`);
-  console.log(`[DEBUG BattleContent] Instance: ${instanceIdRef.current} running`);
-
   const battleStartedRef = useRef(false);
-  const previousBattlesCompletedRef = useRef(0);
   const pokemonAnalysisLoggedRef = useRef(false);
-  const initialBattleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isLoadingBattleRef = useRef(true); // NEW: Track loading state
   
-  // ADDED: Log to verify allPokemon in BattleContent is never undefined
-  console.log("[DEBUG BattleContent] MOUNT - allPokemon is array:", Array.isArray(allPokemon), "length:", allPokemon?.length || 0);
+  console.log(`[DEBUG BattleContent] Instance: ${instanceIdRef.current} render - allPokemon: ${allPokemon.length}`);
   
-  // ADDED: Force "pairs" mode as default if none selected
-  const safeInitialBattleType: BattleType = initialBattleType === "triplets" ? "triplets" : "pairs";
+  // PERFORMANCE FIX: Memoize initial battle type to prevent changes triggering re-mounts
+  const stableInitialBattleType = useMemo(() => {
+    return initialBattleType === "triplets" ? "triplets" : "pairs";
+  }, [initialBattleType]);
   
+  // PERFORMANCE FIX: Stable reference to allPokemon to prevent hook re-initialization
+  const stablePokemon = useMemo(() => allPokemon, [allPokemon.length]);
+
   const {
     currentBattle,
     battlesCompleted,
@@ -75,166 +75,96 @@ const BattleContent = ({
     resetMilestoneInProgress,
     performFullBattleReset 
   } = useBattleStateCore(
-    allPokemon || [], // CRITICAL FIX: Ensure allPokemon is never undefined
-    safeInitialBattleType,
+    stablePokemon,
+    stableInitialBattleType,
     initialSelectedGeneration
   );
 
-  // Calculate if we're currently loading a battle
-  const isLoadingBattle = !currentBattle || currentBattle.length === 0;
-  
-  // Update ref when loading state changes
+  // Only start battle once when component mounts and Pokemon are available
   useEffect(() => {
-    isLoadingBattleRef.current = isLoadingBattle;
-    console.log('[DEBUG] Battle loading state:', {
-      isLoadingBattle,
-      currentBattleLength: currentBattle?.length || 0,
-      hasPokemonData: allPokemon.length > 0
-    });
-  }, [isLoadingBattle, currentBattle, allPokemon.length]);
-
-  // Only call startNewBattle once when the component mounts and allPokemon is available
-  useEffect(() => {
-    // CRITICAL FIX: Only attempt to start battle when there are actually Pokémon available
-    if (allPokemon && allPokemon.length > 0 && !battleStartedRef.current) {
-      console.log("BattleContent: Starting new battle on initial load with type:", safeInitialBattleType);
+    if (stablePokemon.length > 0 && !battleStartedRef.current) {
+      console.log("BattleContent: Starting initial battle");
       battleStartedRef.current = true;
-      startNewBattle(safeInitialBattleType);
-      
-      // ADDED: Ensure the localStorage is set correctly
-      localStorage.setItem('pokemon-ranker-battle-type', safeInitialBattleType);
+      startNewBattle(stableInitialBattleType);
+      localStorage.setItem('pokemon-ranker-battle-type', stableInitialBattleType);
     }
-  }, [allPokemon, safeInitialBattleType, startNewBattle]);
+  }, [stablePokemon.length, startNewBattle, stableInitialBattleType]);
   
-  // NEW: Add a backup check to ensure a battle is started after initialization
+  // Log Pokemon variations once
   useEffect(() => {
-    // Clear any existing timer
-    if (initialBattleTimerRef.current) {
-      clearTimeout(initialBattleTimerRef.current);
-    }
-    
-    // Wait a bit for initialization to complete
-    initialBattleTimerRef.current = setTimeout(() => {
-      if (allPokemon.length > 0 && (!currentBattle || currentBattle.length === 0) && !isProcessingResult) {
-        console.log('[DEBUG BattleContent] No battle after init delay, starting one now');
-        
-        // Trigger a force-new-battle event as a fallback
-        document.dispatchEvent(new CustomEvent("force-new-battle", { 
-          detail: { battleType }
-        }));
-        
-        // Direct call as additional backup
-        startNewBattle(battleType);
-      } else {
-        console.log('[DEBUG BattleContent] Battle exists or is processing after init delay:', 
-          currentBattle?.length || 0, 'isProcessing:', isProcessingResult);
-      }
-    }, 1500);
-    
-    return () => {
-      if (initialBattleTimerRef.current) {
-        clearTimeout(initialBattleTimerRef.current);
-      }
-    };
-  }, [allPokemon.length, currentBattle, battleType, startNewBattle, isProcessingResult]);
-  
-  // Keep track of battles completed to prevent resetting
-  useEffect(() => {
-    previousBattlesCompletedRef.current = battlesCompleted;
-  }, [battlesCompleted]);
-
-  // Log Pokemon variations once when data is available
-  useEffect(() => {
-    if (allPokemon.length > 0 && !pokemonAnalysisLoggedRef.current) {
-      // Log Pokemon variation analysis
-      logPokemonVariations(allPokemon);
+    if (stablePokemon.length > 0 && !pokemonAnalysisLoggedRef.current) {
+      logPokemonVariations(stablePokemon);
       pokemonAnalysisLoggedRef.current = true;
     }
-  }, [allPokemon]);
+  }, [stablePokemon.length]);
 
-  // Calculate remaining battles based on the active tier
+  // Calculate remaining battles
   const getBattlesRemaining = () => {
-    // Use a logarithmic model, but focus only on the top N Pokémon
-    const pokemonCount = activeTier === "All" ? allPokemon.length : typeof activeTier === "number" ? Math.min(activeTier, allPokemon.length) : allPokemon.length;
-    
-    // Using a logarithmic model: n * log(n) battles are needed for a good ranking
-    // For top tiers, we need fewer battles
+    const pokemonCount = activeTier === "All" ? stablePokemon.length : typeof activeTier === "number" ? Math.min(activeTier, stablePokemon.length) : stablePokemon.length;
     const totalBattlesNeeded = Math.floor(pokemonCount * Math.log2(pokemonCount)) * 1.2;
-    
-    // Return remaining battles (minimum of 0)
     return Math.max(0, Math.ceil(totalBattlesNeeded - battlesCompleted));
   };
 
-  const handleBattleTypeChange = (newType: BattleType) => {
+  // PERFORMANCE FIX: Stable handlers to prevent unnecessary re-renders
+  const handleBattleTypeChange = useCallback((newType: BattleType) => {
     console.log("BattleContent: Changing battle type from", battleType, "to", newType);
     setBattleType(newType);
     startNewBattle(newType);
     resetMilestones();
     localStorage.setItem('pokemon-ranker-battle-type', newType);
-  };
+  }, [battleType, setBattleType, startNewBattle, resetMilestones]);
 
-  const handleGenerationChange = (generation: string) => {
+  const handleGenerationChange = useCallback((generation: string) => {
     const genId = parseInt(generation, 10);
     setSelectedGeneration(genId);
     localStorage.setItem('pokemon-ranker-generation', generation);
     resetMilestones();
     startNewBattle(battleType);
-  };
+  }, [setSelectedGeneration, resetMilestones, startNewBattle, battleType]);
 
-  const handleRestartBattles = () => {
+  const handleRestartBattles = useCallback(() => {
     resetMilestones();
     startNewBattle(battleType);
-  };
+  }, [resetMilestones, startNewBattle, battleType]);
 
-  const handleNewBattleSet = () => {
+  const handleNewBattleSet = useCallback(() => {
     resetMilestones();
-    // Reset the milestone processing flag when starting a new battle set
     if (resetMilestoneInProgress) {
       resetMilestoneInProgress();
     }
     startNewBattle(battleType);
-  };
+  }, [resetMilestones, resetMilestoneInProgress, startNewBattle, battleType]);
 
-  const handleSaveRankings = () => {
+  const handleSaveRankings = useCallback(() => {
     console.log("Rankings saved!");
     setShowingMilestone(false);
-    // Reset the milestone processing flag after saving rankings
     if (resetMilestoneInProgress) {
       resetMilestoneInProgress();
     }
-  };
+  }, [setShowingMilestone, resetMilestoneInProgress]);
 
-  const handleTierChange = (tier: TopNOption) => {
+  const handleTierChange = useCallback((tier: TopNOption) => {
     console.log("Changing tier to:", tier);
     setActiveTier(tier);
-    // No need to restart battles, just keep going with new tier focus
-  };
+  }, [setActiveTier]);
 
   // Calculate completion percentage
   useEffect(() => {
     calculateCompletionPercentage();
   }, [battlesCompleted, calculateCompletionPercentage]);
 
-  if (!allPokemon.length) {
+  if (!stablePokemon.length) {
     return <div className="flex justify-center items-center h-64">Loading Pokémon...</div>;
   }
 
-  // Create a wrapper function for handleTripletSelectionComplete that doesn't take arguments
   const handleTripletSelectionWrapper = () => {
     handleTripletSelectionComplete();
   };
 
-  // Handle going back in battle history
   const handleGoBack = () => {
-    console.log("BattleContent: Handling go back from BattleContent");
+    console.log("BattleContent: Handling go back");
     goBack();
   };
-
-  // ADDED: Debug logging to help diagnose issues
-  console.log("BattleContent render - Current battle type:", battleType);
-  console.log("BattleContent render - Current battle length:", currentBattle?.length);
-  console.log("BattleContent render - isLoadingBattle:", isLoadingBattle);
-  console.log("BattleContent render - isProcessingResult:", isProcessingResult);
 
   return (
     <div className="flex flex-col items-center w-full gap-4">
@@ -264,10 +194,9 @@ const BattleContent = ({
         </div>
       </div>
       
-      {/* FIXED: Changed conditional rendering to CSS visibility control to prevent remounting */}
+      {/* PERFORMANCE FIX: Use conditional rendering instead of CSS visibility */}
       <div className="w-full max-w-4xl">
-        {/* Milestone view - always rendered but conditionally displayed */}
-        <div style={{ display: showingMilestone ? 'block' : 'none' }}>
+        {showingMilestone ? (
           <RankingDisplay
             finalRankings={finalRankings}
             battlesCompleted={battlesCompleted}
@@ -281,10 +210,7 @@ const BattleContent = ({
             onSuggestRanking={suggestRanking}
             onRemoveSuggestion={removeSuggestion}
           />
-        </div>
-        
-        {/* Battle interface - always rendered but conditionally displayed */}
-        <div style={{ display: showingMilestone ? 'none' : 'block' }}>
+        ) : (
           <BattleInterface
             currentBattle={currentBattle}
             selectedPokemon={selectedPokemon}
@@ -297,7 +223,7 @@ const BattleContent = ({
             battleHistory={battleHistory || []}
             milestones={milestones}
           />
-        </div>
+        )}
       </div>
       
       <BattleFooterNote battlesCompleted={battlesCompleted} />
