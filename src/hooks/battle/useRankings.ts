@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { SingleBattle } from "./types";
@@ -88,8 +87,8 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
     for (let i = 0; i < pokemon.types.length; i++) {
       const typeSlot = pokemon.types[i];
       
-      // FIXED: More comprehensive null/undefined check
-      if (!typeSlot || typeSlot === null || typeSlot === undefined) {
+      // FIXED: Early continue for null/undefined values
+      if (!typeSlot) {
         continue;
       }
 
@@ -99,20 +98,18 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
         continue;
       }
 
-      // Handle nested type structure: { slot: 1, type: { name: 'grass' } }
-      if (typeof typeSlot === 'object' && 'type' in typeSlot && typeSlot.type) {
-        const typeInfo = typeSlot.type as PokemonTypeInfo;
-        if (typeInfo && 'name' in typeInfo && typeof typeInfo.name === 'string') {
-          extractedTypes.push(typeInfo.name);
+      // Handle object types with explicit type assertions
+      if (typeof typeSlot === 'object') {
+        // Handle nested type structure: { slot: 1, type: { name: 'grass' } }
+        const slotAsAny = typeSlot as any;
+        if (slotAsAny.type && typeof slotAsAny.type === 'object' && typeof slotAsAny.type.name === 'string') {
+          extractedTypes.push(slotAsAny.type.name);
           continue;
         }
-      }
 
-      // Handle direct name structure: { name: 'grass' }
-      if (typeof typeSlot === 'object' && 'name' in typeSlot) {
-        const directName = (typeSlot as any).name;
-        if (typeof directName === 'string') {
-          extractedTypes.push(directName);
+        // Handle direct name structure: { name: 'grass' }
+        if (typeof slotAsAny.name === 'string') {
+          extractedTypes.push(slotAsAny.name);
           continue;
         }
       }
