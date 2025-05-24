@@ -25,6 +25,7 @@ export const useBattleInteractions = (
   const [lastSelectedId, setLastSelectedId] = useState<number | null>(null);
   const processingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const clickDebounceRef = useRef<boolean>(false);
+  const processingStateRef = useRef<boolean>(false);
 
   const { goBack: navigationGoBack } = useBattleNavigation(
     battleHistory,
@@ -52,6 +53,7 @@ export const useBattleInteractions = (
     setSelectedPokemon([]);
     setLastSelectedId(null);
     setIsProcessing(false);
+    processingStateRef.current = false;
     
     // Also clear any processing timeout
     if (processingTimeoutRef.current) {
@@ -63,8 +65,19 @@ export const useBattleInteractions = (
   const handlePokemonSelect = useCallback(
     (id: number) => {
       // Guard against empty battles
-      if (currentBattle.length === 0) {
+      if (!currentBattle || currentBattle.length === 0) {
         console.warn("🚫 handlePokemonSelect called with empty battle");
+        return;
+      }
+      
+      // Check both refs and state for processing status
+      const isCurrentlyProcessing = isProcessing || processingStateRef.current;
+      
+      if (isCurrentlyProcessing) {
+        console.log("🛑 handlePokemonSelect: Processing in progress, ignoring click");
+        toast.info("Please wait...", {
+          description: "Processing current selection"
+        });
         return;
       }
       
@@ -78,7 +91,7 @@ export const useBattleInteractions = (
       clickDebounceRef.current = true;
       setTimeout(() => {
         clickDebounceRef.current = false;
-      }, 500); // 500ms debounce
+      }, 800); // 800ms debounce (increased from 500ms)
       
       // Prevent duplicate processing of the same Pokemon
       if (lastSelectedId === id && battleType === "pairs") {
@@ -86,20 +99,14 @@ export const useBattleInteractions = (
         return;
       }
       
-      // Prevent processing if already in progress
-      if (isProcessing) {
-        console.log("🛑 handlePokemonSelect: Processing in progress, ignoring click");
-        toast.info("Please wait...", {
-          description: "Processing current selection"
-        });
-        return;
-      }
-
       console.log(`👆 handlePokemonSelect: Selected Pokemon ID: ${id} for ${battleType} battle`);
       
+      // CRITICAL FIX: Set both state and ref to prevent race conditions
+      setIsProcessing(true);
+      processingStateRef.current = true;
+      
       // CRITICAL FIX: For pair battles, we ALWAYS set to just the newly selected Pokemon ID
-      // This must be a new array with just the single ID to prevent accumulation
-      let updatedSelected: number[];
+      let updatedSelected: number[] = [];
       
       if (battleType === "pairs") {
         // For pairs, we always set to ONLY the newly selected Pokemon ID
@@ -138,10 +145,12 @@ export const useBattleInteractions = (
         setBattleHistory(updatedHistory);
         console.log("🔄 Updating battle history explicitly. New length:", updatedHistory.length);
         
-        // Process the battle results
-        setIsProcessing(true);
+        // Clear any existing timeout
+        if (processingTimeoutRef.current) {
+          clearTimeout(processingTimeoutRef.current);
+        }
         
-        // Add a minimum visible processing time to avoid UI flashing
+        // Process the battle results with a minimum visible delay
         processingTimeoutRef.current = setTimeout(() => {
           try {
             // CRITICAL FIX: Always use the updatedSelected array directly, not the state variable
@@ -151,10 +160,15 @@ export const useBattleInteractions = (
             console.log("✅ useBattleInteractions: Battle processed successfully");
           } catch (e) {
             console.error("❌ Error processing battle:", e);
+            // Ensure processing state is reset even when errors occur
             setIsProcessing(false);
+            processingStateRef.current = false;
             toast.error("Battle processing error", {
               description: "There was a problem processing your selection"
             });
+          } finally {
+            // Clear the timeout ref since it's completed
+            processingTimeoutRef.current = null;
           }
         }, 800); // Show processing state for at least 800ms for better UX
       }
@@ -176,6 +190,8 @@ export const useBattleInteractions = (
     
     // Clear any processing state
     setIsProcessing(false);
+    processingStateRef.current = false;
+    
     if (processingTimeoutRef.current) {
       clearTimeout(processingTimeoutRef.current);
       processingTimeoutRef.current = null;
@@ -189,30 +205,53 @@ export const useBattleInteractions = (
   const handleForceNextBattle = useCallback(() => {
     console.log("🔄 useBattleInteractions: Force next battle requested from milestone page");
     
+    // Prevent multiple concurrent requests
+    if (isProcessing || processingStateRef.current) {
+      console.log("🚫 handleForceNextBattle: Processing in progress, ignoring request");
+      toast.info("Please wait...", {
+        description: "Processing current request"
+      });
+      return;
+    }
+    
     // Force reset any processing state
-    setIsProcessing(false);
+    setIsProcessing(true);
+    processingStateRef.current = true;
     setSelectedPokemon([]);
     
     // Clear any pending timeouts
     if (processingTimeoutRef.current) {
       clearTimeout(processingTimeoutRef.current);
-      processingTimeoutRef.current = null;
     }
     
-    // Trigger battle completion callback with empty selection
-    // This will effectively move to the next battle
-    onBattleComplete(battleType, currentBattle);
-    
-    // Give explicit feedback to the user
-    toast.success("Starting new battle", { 
-      description: "Moving on to the next battle" 
-    });
-  }, [battleType, currentBattle, onBattleComplete]);
+    // Trigger battle completion callback with empty selection after a short delay
+    processingTimeoutRef.current = setTimeout(() => {
+      try {
+        // This will effectively move to the next battle
+        onBattleComplete(battleType, currentBattle);
+        
+        // Give explicit feedback to the user
+        toast.success("Starting new battle", { 
+          description: "Moving on to the next battle" 
+        });
+      } catch (e) {
+        console.error("❌ Error starting next battle:", e);
+        toast.error("Error starting battle", {
+          description: "There was a problem starting the next battle"
+        });
+      } finally {
+        // Always reset processing state and clear timeout
+        setIsProcessing(false);
+        processingStateRef.current = false;
+        processingTimeoutRef.current = null;
+      }
+    }, 300);
+  }, [battleType, currentBattle, onBattleComplete, isProcessing]);
 
   return {
     handlePokemonSelect,
     handleGoBack,
     isProcessing,
-    handleForceNextBattle  // New function to handle milestone page "Next Battle" button
+    handleForceNextBattle  // Function to handle milestone page "Next Battle" button
   };
 };

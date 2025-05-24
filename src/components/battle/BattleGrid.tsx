@@ -24,7 +24,7 @@ const BattleGrid: React.FC<BattleGridProps> = ({
   internalProcessing,
   animationKey
 }) => {
-  console.log(`🔄 BattleGrid render - battleType: ${battleType}, currentBattle length: ${currentBattle?.length}, selectedPokemon: [${selectedPokemon.join(', ')}], isProcessing: ${isProcessing}, internalProcessing: ${internalProcessing}`);
+  console.log(`🔄 BattleGrid render - battleType: ${battleType}, currentBattle length: ${currentBattle?.length || 0}, selectedPokemon: [${selectedPokemon.join(', ')}], isProcessing: ${isProcessing}, internalProcessing: ${internalProcessing}, animationKey: ${animationKey}`);
   
   // Validate the Pokemon in the grid to ensure image and name consistency - memoized for performance
   const validatedBattle = useMemo(() => {
@@ -36,8 +36,15 @@ const BattleGrid: React.FC<BattleGridProps> = ({
     
     const validated = validateBattlePokemon(currentBattle);
     console.log(`✅ BattleGrid: Validated ${validated.length} Pokémon for battle grid`);
+    
+    // Double check that we have the right number of pokemon for the battle type
+    const expectedCount = battleType === 'pairs' ? 2 : 3;
+    if (validated.length !== expectedCount) {
+      console.warn(`⚠️ BattleGrid: Expected ${expectedCount} Pokémon for ${battleType} battle, but got ${validated.length}`);
+    }
+    
     return validated;
-  }, [currentBattle]);
+  }, [currentBattle, battleType]);
   
   // If we don't have valid battle data, show a loading state
   if (!validatedBattle.length) {
@@ -68,7 +75,7 @@ const BattleGrid: React.FC<BattleGridProps> = ({
     >
       {validatedBattle.map(pokemon => (
         <BattleCard
-          key={pokemon.id}
+          key={`${pokemon.id}-${animationKey}`}
           pokemon={pokemon}
           isSelected={selectedPokemon.includes(pokemon.id)}
           battleType={battleType}

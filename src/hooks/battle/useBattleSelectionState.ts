@@ -1,5 +1,5 @@
 
-import { useMemo } from "react";
+import { useMemo, useCallback } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
 import { useBattleTypeSelection } from "./useBattleTypeSelection";
@@ -7,6 +7,7 @@ import { useBattleStateSelection } from "./useBattleStateSelection";
 import { useBattleResults } from "./useBattleResults";
 import { useBattleStarterIntegration } from "./useBattleStarterIntegration";
 import { useBattleOutcomeProcessor } from "./useBattleOutcomeProcessor";
+import { toast } from "sonner";
 
 export const useBattleSelectionState = () => {
   const { currentBattleType, setCurrentBattleType } = useBattleTypeSelection();
@@ -52,9 +53,9 @@ export const useBattleSelectionState = () => {
     setSelectedPokemon
   );
 
-  const startNewBattleAdapter = (pokemonList: Pokemon[], battleType: BattleType): Pokemon[] => {
+  const startNewBattleAdapter = useCallback((pokemonList: Pokemon[], battleType: BattleType): Pokemon[] => {
     return startNewBattle(battleType);
-  };
+  }, [startNewBattle]);
 
   const { processBattleResult } = useBattleOutcomeProcessor(
     setBattleResults,
@@ -62,11 +63,34 @@ export const useBattleSelectionState = () => {
     battleStarter
   );
   
-  // Add a function to force starting a new battle from milestone page
-  const forceNextBattle = () => {
+  // Enhanced forceNextBattle with error handling and user feedback
+  const forceNextBattle = useCallback(() => {
     console.log("🔄 useBattleSelectionState: Force starting next battle");
-    return startNewBattle(currentBattleType);
-  };
+    
+    try {
+      // Try to start a new battle
+      const result = startNewBattle(currentBattleType);
+      
+      // Provide feedback to user
+      if (result && result.length > 0) {
+        toast.success("Starting new battle", {
+          description: `New ${currentBattleType} battle ready`
+        });
+        return result;
+      } else {
+        toast.error("Error starting battle", {
+          description: "Could not create new battle. Please try again."
+        });
+        return [];
+      }
+    } catch (error) {
+      console.error("Error in forceNextBattle:", error);
+      toast.error("Failed to start battle", {
+        description: "An unexpected error occurred."
+      });
+      return [];
+    }
+  }, [currentBattleType, startNewBattle]);
 
   return {
     currentBattle,
@@ -84,6 +108,6 @@ export const useBattleSelectionState = () => {
     startNewBattle,
     currentBattleType,
     processBattleResult,
-    forceNextBattle // Export the new function
+    forceNextBattle // Export the enhanced function
   };
 };

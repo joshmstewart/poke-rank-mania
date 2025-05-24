@@ -35,6 +35,7 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
   const imgRef = useRef<HTMLImageElement | null>(null);
   const isMountedRef = useRef(true);
   const successfulCacheBustedUrlRef = useRef<string | null>(null);
+  const clickDisabledRef = useRef(false);
   
   const formattedName = formatPokemonName(validatedPokemon.name);
   const pokemonId = validatedPokemon.id; // Ensure we use the consistent ID throughout
@@ -117,7 +118,7 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
                   console.warn(`⏱️ Image load timeout for ${formattedName} after successful HEAD check - triggering fallback`);
                   handleImageError();
                 }
-              }, 12000); // Increased timeout (12 seconds) for high-res images
+              }, 15000); // Increased timeout (15 seconds) for high-res images
             }
           }
         })
@@ -167,7 +168,7 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
           console.warn(`⏱️ Image load timeout for ${formattedName} - triggering fallback`);
           handleImageError();
         }
-      }, 8000); // 8 second timeout (increased from 5 seconds)
+      }, 10000); // 10 second timeout (increased from 8 seconds)
       
       return () => cleanupImageLoading();
     }
@@ -294,13 +295,23 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
     }
   }, [pokemonId, formattedName, retryCount, currentImageUrl, currentImageType, cleanupImageLoading]);
 
+  // Improved click handling with debounce
   const handleClick = useCallback(() => {
-    if (!isProcessing) {
-      console.log(`👆 BattleCard click: ${formattedName} (#${pokemonId}) with isProcessing=${isProcessing}`);
-      onSelect(pokemonId);
-    } else {
-      console.log(`🚫 BattleCard click ignored: ${formattedName} because isProcessing=${isProcessing}`);
+    if (isProcessing || clickDisabledRef.current) {
+      console.log(`🚫 BattleCard click ignored: ${formattedName} because isProcessing=${isProcessing} or clickDisabled=${clickDisabledRef.current}`);
+      return;
     }
+    
+    // Set click debounce flag to prevent rapid multi-clicks
+    clickDisabledRef.current = true;
+    
+    console.log(`👆 BattleCard click: ${formattedName} (#${pokemonId})`);
+    onSelect(pokemonId);
+    
+    // Clear click debounce after a short delay
+    setTimeout(() => {
+      clickDisabledRef.current = false;
+    }, 800); // 800ms debounce for clicks
   }, [pokemonId, formattedName, onSelect, isProcessing]);
 
   return (
@@ -310,9 +321,10 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
       data-selected={isSelected ? "true" : "false"}
       data-processing={isProcessing ? "true" : "false"}
       data-pokemon-id={pokemonId}
+      aria-disabled={isProcessing}
     >
       <CardContent className="flex flex-col items-center p-4">
-        <div className="w-32 h-32 relative">
+        <div className="w-32 h-32 relative bg-gray-100 rounded-md">
           {!imageLoaded && !imageError && <div className="absolute inset-0 bg-gray-200 animate-pulse rounded-md"></div>}
           {currentImageUrl && (
             <img
@@ -321,9 +333,11 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
               alt={formattedName}
               className={`w-full h-full object-contain transition-opacity duration-200 ${imageLoaded ? "opacity-100" : "opacity-0"}`}
               style={{
-                display: "block",  // Force display block 
-                visibility: "visible", // Force visibility
-                zIndex: 5 // Ensure proper stacking
+                display: "block !important",  // Force display block 
+                visibility: "visible !important", // Force visibility
+                zIndex: 5, // Ensure proper stacking
+                width: "100%",
+                height: "100%"
               }}
               onLoad={handleImageLoad}
               onError={handleImageError}
@@ -337,9 +351,26 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
               <div className="text-xs text-muted-foreground">ID: {pokemonId}</div>
             </div>
           )}
+          
+          {/* Add a reliable test image that should always display - helps us diagnose CSS issues */}
+          <div className="absolute top-0 right-0" style={{ width: "20px", height: "20px" }}>
+            <img 
+              src="https://via.placeholder.com/20/ff0000/ffffff" 
+              alt="Test indicator"
+              className="w-full h-full"
+            />
+          </div>
         </div>
+        
         <h3 className="mt-2 text-xl font-bold">{formattedName}</h3>
         <div className="text-xs text-muted-foreground mt-1">#{pokemonId}</div>
+        
+        {/* Visual feedback when processing */}
+        {isProcessing && (
+          <div className="absolute inset-0 bg-black/10 flex items-center justify-center rounded-md">
+            <div className="h-8 w-8 border-4 border-t-primary animate-spin rounded-full"></div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

@@ -1,3 +1,4 @@
+
 import { Pokemon } from "../types";
 import { PokemonImageType, getPreferredImageType, POKEMON_IMAGE_PREFERENCE_KEY, DEFAULT_IMAGE_PREFERENCE } from "@/components/settings/ImagePreferenceSelector";
 
@@ -53,6 +54,11 @@ export function getPokemonImageUrl(id: number, fallbackLevel: number = 0): strin
       return 1013; // Keep ID as is, but ensure it's used in correct path segments
     }
     
+    // Special case for Hisuian Avalugg (ID 10243)
+    if (originalId === 10243) {
+      return 713; // Return the base Avalugg ID (713), not Raikou (243)
+    }
+    
     // Special case for certain Pokémon forms that have unique artwork
     if (
       // Crown forms, Eternal forms, special regional forms with unique art
@@ -70,6 +76,12 @@ export function getPokemonImageUrl(id: number, fallbackLevel: number = 0): strin
     // For most other special forms, use the base form ID
     if (originalId >= 10000) {
       // Extract the actual Pokémon ID from the special form ID
+      // IMPROVED: Handle Hisuian forms more carefully to avoid ID confusion
+      if (originalId >= 10200 && originalId < 10300) {
+        // For Hisuian forms (typically in 102xx range), use division to get proper base ID
+        return Math.floor(originalId / 100);
+      }
+      
       const baseId = originalId % 10000;
       
       // Special cases for ID normalization
@@ -87,7 +99,7 @@ export function getPokemonImageUrl(id: number, fallbackLevel: number = 0): strin
   const normalizedId = normalizeImageId(id);
   
   // Log the original and normalized IDs for specific problematic Pokémon
-  const problematicIds = [1013, 10031, 10093, 680];
+  const problematicIds = [1013, 10031, 10093, 680, 10243];
   if (problematicIds.includes(id) && process.env.NODE_ENV === "development") {
     console.log(`🔍 [Problematic ID] Image URL for #${id} normalized to #${normalizedId}`);
   }
@@ -137,7 +149,7 @@ export function getPokemonImageUrl(id: number, fallbackLevel: number = 0): strin
       if (id > 1010 || (id > 10000 && !([10100, 10101, 10102].includes(id)))) {
         // Log this only in development
         if (process.env.NODE_ENV === "development") {
-          console.log(`ℹ️ Using both official artwork AND default sprite for newer Pokémon #${id} with pre-emptive cache busting`);
+          console.log(`ℹ️ Using cache busting for newer Pokémon #${id} with pre-emptive cache busting`);
         }
         
         // We'll still try official artwork first but with cache busting
@@ -153,6 +165,19 @@ export function getPokemonImageUrl(id: number, fallbackLevel: number = 0): strin
       if (id >= 10155 && id <= 10194) {
         if (process.env.NODE_ENV === "development") {
           console.log(`ℹ️ Using pre-emptive cache busting for Galarian form #${id} official artwork`);
+        }
+        const officialUrl = getImageUrl("official");
+        
+        // Mark this as needing cache busting for future loads
+        markImageAsNeedingCacheBusting(id, "official");
+        
+        return `${officialUrl}?_cb=${Date.now()}`;
+      }
+      
+      // For Hisuian forms (ID range 10200-10299), often need special handling
+      if (id >= 10200 && id <= 10299) {
+        if (process.env.NODE_ENV === "development") {
+          console.log(`ℹ️ Using pre-emptive cache busting for Hisuian form #${id} official artwork`);
         }
         const officialUrl = getImageUrl("official");
         
@@ -186,7 +211,14 @@ export function getPokemonImageUrl(id: number, fallbackLevel: number = 0): strin
  * This helps with GitHub's raw content CDN sometimes serving stale images
  */
 export function markImageAsNeedingCacheBusting(pokemonId: number, imageType: PokemonImageType): void {
-  const normalizedId = pokemonId > 10000 ? pokemonId % 1000 : pokemonId;
+  // Special case for Hisuian forms (10200-10299)
+  let normalizedId;
+  if (pokemonId >= 10200 && pokemonId < 10300) {
+    normalizedId = Math.floor(pokemonId / 100);
+  } else {
+    normalizedId = pokemonId > 10000 ? pokemonId % 1000 : pokemonId;
+  }
+  
   const urlKey = `${imageType}-${normalizedId}`;
   
   imageCacheBustingMap.set(urlKey, true);
