@@ -187,7 +187,7 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
           <div className="text-center pt-6">
             <ShowMoreButton 
               onShowMore={onShowMore}
-              currentCount={displayCount}
+              displayCount={displayCount}
               totalCount={totalCount}
             />
           </div>
