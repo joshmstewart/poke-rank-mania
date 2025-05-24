@@ -1,8 +1,20 @@
+
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { SingleBattle } from "./types";
 import { Rating } from "ts-trueskill";
 import { useRankingSuggestions } from "./useRankingSuggestions";
+
+// Type definitions for Pokemon type structure
+interface PokemonTypeInfo {
+  name: string;
+  url?: string;
+}
+
+interface PokemonTypeSlot {
+  slot: number;
+  type: PokemonTypeInfo;
+}
 
 export const useRankings = (allPokemon: Pokemon[] = []) => {
   console.log("[DEBUG useRankings] INIT - allPokemon is array:", Array.isArray(allPokemon), "length:", allPokemon?.length || 0);
@@ -62,6 +74,49 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
     }
   }, [finalRankings]);
 
+  // Helper function to safely extract type names from Pokemon data
+  const extractPokemonTypes = useCallback((pokemon: Pokemon): string[] => {
+    console.log(`[DEBUG Type Extraction] Pokemon ${pokemon.name} (${pokemon.id}) raw types:`, pokemon.types);
+    
+    if (!pokemon.types || !Array.isArray(pokemon.types) || pokemon.types.length === 0) {
+      console.log(`[DEBUG Type Extraction] No valid types found for ${pokemon.name}`);
+      return ['unknown'];
+    }
+
+    const extractedTypes: string[] = [];
+
+    for (let i = 0; i < pokemon.types.length; i++) {
+      const typeSlot = pokemon.types[i];
+      
+      if (typeSlot && typeof typeSlot === 'object') {
+        // Handle string types directly
+        if (typeof typeSlot === 'string') {
+          extractedTypes.push(typeSlot);
+          continue;
+        }
+
+        // Handle nested type structure: { slot: 1, type: { name: 'grass' } }
+        if ('type' in typeSlot && typeSlot.type && typeof typeSlot.type === 'object') {
+          const typeInfo = typeSlot.type as PokemonTypeInfo;
+          if ('name' in typeInfo && typeof typeInfo.name === 'string') {
+            extractedTypes.push(typeInfo.name);
+            continue;
+          }
+        }
+
+        // Handle direct name structure: { name: 'grass' }
+        if ('name' in typeSlot && typeof (typeSlot as any).name === 'string') {
+          extractedTypes.push((typeSlot as any).name);
+          continue;
+        }
+      }
+    }
+
+    const finalTypes = extractedTypes.length > 0 ? extractedTypes : ['unknown'];
+    console.log(`[DEBUG Type Extraction] Final types for ${pokemon.name}:`, finalTypes);
+    return finalTypes;
+  }, []);
+
   // CRITICAL TYPE PRESERVATION FIX: Enhanced ranking generation with safe type handling
   const generateRankings = useCallback((results: SingleBattle[]): RankedPokemon[] => {
     console.log("[DEBUG useRankings] generateRankings - results is array:", Array.isArray(results), "length:", results?.length || 0);
@@ -115,36 +170,7 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
         const suggestedAdjustment = currentActiveSuggestions.get(p.id);
 
         // CRITICAL TYPE PRESERVATION: Safe type handling with proper type guards
-        let pokemonTypes: string[] = [];
-        
-        console.log(`[DEBUG Type Preservation] Pokemon ${p.name} (${p.id}) original types:`, p.types);
-        
-        if (p.types && Array.isArray(p.types) && p.types.length > 0) {
-          // Handle both simplified and complex type structures with safe access
-          pokemonTypes = p.types.map(typeData => {
-            if (typeof typeData === 'string') {
-              return typeData;
-            } else if (typeData && typeof typeData === 'object') {
-              // FIXED: Safe access with proper type guards
-              // Handle nested structure like {type: {name: 'grass'}}
-              if (typeData.type && typeof typeData.type === 'object' && typeData.type.name) {
-                return typeData.type.name;
-              }
-              // Handle direct structure like {name: 'grass'}
-              if (typeData.name && typeof typeData.name === 'string') {
-                return typeData.name;
-              }
-            }
-            return 'unknown';
-          }).filter(type => type !== 'unknown');
-        }
-        
-        // Fallback to 'unknown' if no valid types found
-        if (pokemonTypes.length === 0) {
-          pokemonTypes = ['unknown'];
-        }
-        
-        console.log(`[DEBUG Type Preservation Final] Pokemon ${p.name} final types:`, pokemonTypes);
+        const pokemonTypes = extractPokemonTypes(p);
 
         return {
           ...p,
@@ -193,7 +219,7 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
                  finalWithSuggestions.length);
     
     return safeFinalRankings;
-  }, [allPokemon.length, activeTier, frozenPokemon, loadSavedSuggestions, setFinalRankings, setConfidenceScores]);
+  }, [allPokemon.length, activeTier, frozenPokemon, loadSavedSuggestions, setFinalRankings, setConfidenceScores, extractPokemonTypes]);
 
   const freezePokemonForTier = useCallback((pokemonId: number, tier: TopNOption) => {
     setFrozenPokemon(prev => ({
