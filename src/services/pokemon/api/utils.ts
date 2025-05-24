@@ -2,6 +2,9 @@
 import { Pokemon } from "../types";
 import { PokemonImageType, getPreferredImageType, POKEMON_IMAGE_PREFERENCE_KEY, DEFAULT_IMAGE_PREFERENCE } from "@/components/settings/ImagePreferenceSelector";
 
+// Image styles to cache busting map to track which ones needed cache busting
+const imageCacheBustingMap = new Map<string, boolean>();
+
 // Function to get image URL based on preference with improved multi-step fallback handling
 export function getPokemonImageUrl(id: number, fallbackLevel: number = 0): string {
   const preferredType = getPreferredImageType();
@@ -10,11 +13,11 @@ export function getPokemonImageUrl(id: number, fallbackLevel: number = 0): strin
   const getFallbackOrder = (initialPreference: PokemonImageType): PokemonImageType[] => {
     switch(initialPreference) {
       case "official":
-        // If user prefers official artwork, try Dream World next, then default
-        return ["official", "dream", "default", "home"];
+        // If user prefers official artwork, try Dream World next, then Home, then default
+        return ["official", "dream", "home", "default"];
       case "dream":
-        // If user prefers Dream World, try Official next, then default
-        return ["dream", "official", "default", "home"];
+        // If user prefers Dream World, try Official next, then Home, then default
+        return ["dream", "official", "home", "default"];
       case "home":
         // If user prefers Home, try Official next, then dream, then default
         return ["home", "official", "dream", "default"];
@@ -48,7 +51,9 @@ export function getPokemonImageUrl(id: number, fallbackLevel: number = 0): strin
       // Calyrex special forms 
       originalId === 10196 || originalId === 10197 || 
       // Specific Alolan forms exceptions that have their own artwork
-      (originalId >= 10100 && originalId <= 10154)
+      (originalId >= 10100 && originalId <= 10154) ||
+      // Galarian forms that have their own artwork in the API (special range)
+      (originalId >= 10155 && originalId <= 10194)
     ) {
       return originalId; // Keep the original ID for these special forms
     }
@@ -92,11 +97,17 @@ export function getPokemonImageUrl(id: number, fallbackLevel: number = 0): strin
         break;
     }
     
+    // Add cache busting if this URL has been marked as needing it
+    const urlKey = `${type}-${normalizedId}`;
+    if (imageCacheBustingMap.get(urlKey)) {
+      url = `${url}?_cb=${Date.now()}`;
+    }
+    
     return url;
   };
 
   // Log the original and normalized IDs to help diagnose
-  if (id !== normalizedId) {
+  if (id !== normalizedId && process.env.NODE_ENV === "development") {
     console.log(`🔄 Image ID normalization: Original ID ${id} → Normalized ID ${normalizedId}`);
   }
 
@@ -104,10 +115,26 @@ export function getPokemonImageUrl(id: number, fallbackLevel: number = 0): strin
   if (fallbackLevel === 0) {
     // Pre-check if we should immediately use a fallback based on known problematic IDs
     // This helps prevent the initial image load failure
-    if (preferredType === "official" && (id > 10000 || id > 898)) {
-      // For newer Pokémon or special forms, default sprite is more reliable as first attempt
-      return getImageUrl("default");
+    if (preferredType === "official") {
+      // For Pokémon beyond Gen 8 (ID > 898), default sprite is more reliable for first attempt
+      if (id > 898 || id > 10000) {
+        // Log this only in development
+        if (process.env.NODE_ENV === "development") {
+          console.log(`ℹ️ Using default sprite first for newer Pokémon #${id} instead of official artwork`);
+        }
+        return getImageUrl("default");
+      }
+      
+      // For Galarian forms (ID range 10155-10194), often official artwork is missing
+      if (id >= 10155 && id <= 10194) {
+        if (process.env.NODE_ENV === "development") {
+          console.log(`ℹ️ Using default sprite first for Galarian form #${id} instead of official artwork`);
+        }
+        return getImageUrl("default");
+      }
     }
+    
+    // For most Pokémon, use the preferred style
     return getImageUrl(preferredType);
   }
   
@@ -118,9 +145,26 @@ export function getPokemonImageUrl(id: number, fallbackLevel: number = 0): strin
   const url = getImageUrl(fallbackType);
   
   // Make it very clear in logs which style is being used as fallback
-  console.log(`🖼️ Pokémon #${id}: Original preference '${preferredType}' failed. Using fallback style '${fallbackType}', level: ${fallbackLevel} - URL: ${url}`);
+  if (process.env.NODE_ENV === "development") {
+    console.log(`🖼️ Pokémon #${id}: Original preference '${preferredType}' failed. Using fallback style '${fallbackType}', level: ${fallbackLevel} - URL: ${url}`);
+  }
   
   return url;
+}
+
+/**
+ * Mark an image URL as needing cache busting for future loads
+ * This helps with GitHub's raw content CDN sometimes serving stale images
+ */
+export function markImageAsNeedingCacheBusting(pokemonId: number, imageType: PokemonImageType): void {
+  const normalizedId = pokemonId > 10000 ? pokemonId % 1000 : pokemonId;
+  const urlKey = `${imageType}-${normalizedId}`;
+  
+  imageCacheBustingMap.set(urlKey, true);
+  
+  if (process.env.NODE_ENV === "development") {
+    console.log(`🧹 Marked image as needing cache busting: ${urlKey}`);
+  }
 }
 
 // Function to fetch detailed Pokemon information

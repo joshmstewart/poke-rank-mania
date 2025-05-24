@@ -35,7 +35,7 @@ const imageTypeOptions: ImageTypeOption[] = [
     name: "Official Artwork",
     url: (id) => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`,
     description: "High quality official artwork",
-    fallbackInfo: "Falls back to: Dream World → Default Sprites"
+    fallbackInfo: "Falls back to: Dream World → Home → Default Sprites"
   },
   {
     id: "home",
@@ -49,7 +49,7 @@ const imageTypeOptions: ImageTypeOption[] = [
     name: "Dream World",
     url: (id) => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/dream-world/${id}.svg`,
     description: "Vector artwork from Dream World (SVG format)",
-    fallbackInfo: "Falls back to: Official → Default Sprites"
+    fallbackInfo: "Falls back to: Official → Home → Default Sprites"
   }
 ];
 
@@ -94,6 +94,8 @@ const ImagePreferenceSelector: React.FC<ImagePreferenceSelectorProps> = ({ onClo
 
   const handleImageError = (id: string) => {
     setImageErrors(prev => ({ ...prev, [id]: true }));
+    // Mark this image as needing cache busting for future loads
+    markImageAsNeedingCacheBusting(SAMPLE_POKEMON_ID, id as PokemonImageType);
   };
 
   const handleSave = () => {
@@ -101,7 +103,11 @@ const ImagePreferenceSelector: React.FC<ImagePreferenceSelectorProps> = ({ onClo
     toast.success("Image preference saved!", {
       description: "Your preferred Pokémon image style has been saved."
     });
-    window.dispatchEvent(new Event("imagePreferenceChanged"));
+    
+    // Dispatch event to inform components of the change
+    const event = new Event("imagePreferenceChanged");
+    window.dispatchEvent(event);
+    
     if (onClose) onClose();
   };
 
@@ -139,6 +145,7 @@ const ImagePreferenceSelector: React.FC<ImagePreferenceSelectorProps> = ({ onClo
                   className={`w-full h-full object-contain ${imagesLoaded[option.id] ? 'opacity-100' : 'opacity-0'} transition-opacity duration-200`}
                   onLoad={() => handleImageLoad(option.id)}
                   onError={() => handleImageError(option.id)}
+                  crossOrigin="anonymous"
                 />
                 {imageErrors[option.id] && (
                   <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
@@ -173,4 +180,4 @@ export default ImagePreferenceSelector;
 
 // Fix circular dependency by importing at the bottom after exports
 // This breaks the circular reference chain
-import { getPokemonImageUrl } from "@/services/pokemon/api/utils";
+import { getPokemonImageUrl, markImageAsNeedingCacheBusting } from "@/services/pokemon/api/utils";

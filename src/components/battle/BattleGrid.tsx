@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useMemo } from "react";
 import BattleCard from "./BattleCard";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "@/hooks/battle/types";
@@ -24,8 +24,27 @@ const BattleGrid: React.FC<BattleGridProps> = ({
   internalProcessing,
   animationKey
 }) => {
-  // Validate the Pokemon in the grid to ensure image and name consistency
-  const validatedBattle = validateBattlePokemon(currentBattle);
+  // Validate the Pokemon in the grid to ensure image and name consistency - memoized for performance
+  const validatedBattle = useMemo(() => {
+    // Make sure we have a valid array to validate
+    if (!currentBattle || !Array.isArray(currentBattle) || currentBattle.length === 0) {
+      console.warn('BattleGrid received empty or invalid currentBattle data');
+      return [];
+    }
+    
+    return validateBattlePokemon(currentBattle);
+  }, [currentBattle]);
+  
+  // If we don't have valid battle data, show a loading state
+  if (!validatedBattle.length) {
+    return (
+      <div className="grid gap-4 mt-8 grid-cols-2 md:grid-cols-3">
+        {[1, 2, 3].map((placeholder) => (
+          <div key={`placeholder-${placeholder}`} className="w-full h-[200px] bg-gray-100 animate-pulse rounded-md"></div>
+        ))}
+      </div>
+    );
+  }
   
   return (
     <div 
