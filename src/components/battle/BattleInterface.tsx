@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useRef, memo } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "@/hooks/battle/types";
@@ -35,12 +36,11 @@ const BattleInterface: React.FC<BattleInterfaceProps> = memo(({
   milestones,
   isProcessing = false
 }) => {
-  // Component state
+  // Component state - optimized for performance
   const [animationKey, setAnimationKey] = useState(0);
   const [internalProcessing, setInternalProcessing] = useState(false);
   const [displayedBattlesCompleted, setDisplayedBattlesCompleted] = useState(battlesCompleted);
   const [previousBattleIds, setPreviousBattleIds] = useState<number[]>([]);
-  const [battleChangeLog, setBattleChangeLog] = useState<string[]>([]);
   const lastSelectionRef = useRef<number | null>(null);
   const selectionTimestampRef = useRef(0);
   const lastProcessedBattleRef = useRef<number[]>([]);
@@ -53,7 +53,7 @@ const BattleInterface: React.FC<BattleInterfaceProps> = memo(({
   // Validate current battle Pokemon to ensure image and name consistency
   const validatedBattle = currentBattle ? validateBattlePokemon(currentBattle) : [];
   
-  // OPTIMIZATION: Only update animation key and logs when battle actually changes in meaningful way
+  // OPTIMIZATION: Only update animation key and logs when battle actually changes
   useEffect(() => {
     if (!validatedBattle || validatedBattle.length === 0) return;
     
@@ -87,25 +87,10 @@ const BattleInterface: React.FC<BattleInterfaceProps> = memo(({
     // Log battle type and expected Pokemon count
     console.log(`🔄 BattleInterface: Battle type: ${battleType}, Expected Pokémon count: ${battleType === "triplets" ? 3 : 2}, Actual count: ${validatedBattle.length}`);
     
-    // Keep a rolling log of battle changes for deeper analysis
-    setBattleChangeLog(prev => {
-      const updated = [...prev, detailedLog];
-      // Keep only most recent 10 changes
-      return updated.slice(-10);
-    });
-    
     // When detecting repeated battle, log more details
     if (isSameAsPrevious) {
       console.warn(`⚠️ REPEAT BATTLE: Same Pokemon IDs detected in BattleInterface!`);
       console.warn(`⚠️ Previous: [${previousBattleIds.join(',')}], Current: [${currentIds.join(',')}]`);
-      
-      // Compare complete Pokémon objects for deeper analysis
-      const pokemonDetails = validatedBattle.map(p => ({
-        id: p.id,
-        name: p.name,
-        hasOwnProperties: Object.getOwnPropertyNames(p).join(',')
-      }));
-      console.warn(`🔍 DEEP INSPECTION: Current battle Pokémon details:`, pokemonDetails);
     }
     
     // Create a custom event for monitoring battles
@@ -121,16 +106,7 @@ const BattleInterface: React.FC<BattleInterfaceProps> = memo(({
     
     // Store current IDs as previous for next comparison
     setPreviousBattleIds(currentIds);
-  }, [validatedBattle, battleType, previousBattleIds]);
-  
-  // Log battle history changes
-  useEffect(() => {
-    console.log(`📚 Battle history updated: ${battleHistory.length} entries`);
-    if (battleHistory.length > 0) {
-      const lastBattle = battleHistory[battleHistory.length - 1];
-      console.log(`📚 Last battle in history: Pokemon [${lastBattle.battle.map(p => p.id).join(',')}], Selected [${lastBattle.selected.join(',')}]`);
-    }
-  }, [battleHistory.length]);
+  }, [validatedBattle.map(p => p.id).join(','), battleType]); // Only depend on ID string, not entire objects
   
   // Update displayed battles completed for smoother UI
   useEffect(() => {
@@ -138,13 +114,13 @@ const BattleInterface: React.FC<BattleInterfaceProps> = memo(({
     console.log(`🔢 Battles completed updated to: ${battlesCompleted}`);
   }, [battlesCompleted]);
   
-  // Handle pokemon selection with debounce to prevent multiple clicks
+  // Handle pokemon selection with optimized debounce
   const handlePokemonCardSelect = useCallback((id: number) => {
     if (!isProcessing && !internalProcessing) {
       const now = Date.now();
       
-      // Prevent rapid double clicks (300ms threshold)
-      if (id === lastSelectionRef.current && now - selectionTimestampRef.current < 300) {
+      // Prevent rapid double clicks (reduced to 200ms for better responsiveness)
+      if (id === lastSelectionRef.current && now - selectionTimestampRef.current < 200) {
         console.log(`⏱️ Ignoring repeated selection of Pokemon ${id} (${now - selectionTimestampRef.current}ms after previous)`);
         return;
       }
@@ -157,8 +133,8 @@ const BattleInterface: React.FC<BattleInterfaceProps> = memo(({
       setInternalProcessing(true);
       onPokemonSelect(id);
       
-      // Reset internal processing state after a shorter delay (300ms)
-      setTimeout(() => setInternalProcessing(false), 300);
+      // Reset internal processing state after a shorter delay (reduced to 200ms)
+      setTimeout(() => setInternalProcessing(false), 200);
     } else {
       console.log(`⏳ BattleInterface: Ignoring click while processing (isProcessing=${isProcessing}, internalProcessing=${internalProcessing})`);
     }
@@ -171,8 +147,8 @@ const BattleInterface: React.FC<BattleInterfaceProps> = memo(({
       setInternalProcessing(true);
       onTripletSelectionComplete();
       
-      // Reset internal processing state after a shorter delay (300ms)
-      setTimeout(() => setInternalProcessing(false), 300);
+      // Reset internal processing state after a shorter delay
+      setTimeout(() => setInternalProcessing(false), 200);
     }
   }, [isProcessing, internalProcessing, onTripletSelectionComplete]);
 
@@ -184,7 +160,7 @@ const BattleInterface: React.FC<BattleInterfaceProps> = memo(({
     }
   }, [isProcessing, internalProcessing, onGoBack]);
   
-  // ADDED: Helper to validate battle configuration
+  // OPTIMIZED: Helper to validate battle configuration
   useEffect(() => {
     // Skip if no battle
     if (!validatedBattle || validatedBattle.length === 0) return;
@@ -209,12 +185,12 @@ const BattleInterface: React.FC<BattleInterfaceProps> = memo(({
       toast({
         title: "Battle Type Mismatch",
         description: `Expected ${expectedCount} Pokémon for ${battleType} battles, but got ${validatedBattle.length}. This will be fixed automatically.`,
-        duration: 5000,
+        duration: 3000, // Reduced from 5000ms to 3000ms
       });
     }
-  }, [validatedBattle, battleType]);
+  }, [validatedBattle.length, battleType]); // Only depend on length and type, not entire battle array
 
-  // ADDED: Helper to ensure correct submit button display based on battle type
+  // Helper to ensure correct submit button display based on battle type
   const shouldShowSubmitButton = battleType === "triplets";
   
   // Only render if we have Pokemon to display

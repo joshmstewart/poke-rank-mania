@@ -1,3 +1,4 @@
+
 import { useMemo, useEffect, useRef, useCallback } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
@@ -31,76 +32,67 @@ const createEmptyBattleStarter = (): ExtendedBattleStarter => ({
 });
 
 export const useBattleStarterIntegration = (
-  allPokemon: Pokemon[] = [], // CRITICAL FIX: Default empty array
-  currentRankings: RankedPokemon[] = [], // CRITICAL FIX: Default empty array
+  allPokemon: Pokemon[] = [],
+  currentRankings: RankedPokemon[] = [],
   setCurrentBattle: React.Dispatch<React.SetStateAction<Pokemon[]>>,
   setSelectedPokemon: React.Dispatch<React.SetStateAction<number[]>>,
   markSuggestionFullyUsed?: (pokemon: RankedPokemon, fullyUsed: boolean) => void,
-  currentBattle?: Pokemon[] // NEW: Added currentBattle parameter to check if a battle exists
+  currentBattle?: Pokemon[]
 ) => {
-  // Add a timestamp to track if this hook instance is being recreated
-  console.log('[DEBUG useBattleStarterIntegration] INSTANCE RUNNING/RE-CREATED - Timestamp:', Date.now());
+  // Stabilize component instance tracking
+  const instanceIdRef = useRef(`battleStarter-${Date.now()}`);
+  console.log('[DEBUG useBattleStarterIntegration] Instance:', instanceIdRef.current, 'allPokemon length:', allPokemon?.length || 0);
   
-  console.log('[DEBUG useBattleStarterIntegration] Hook called with allPokemon:', 
-              Array.isArray(allPokemon) ? `array[${allPokemon?.length || 0}]` : 'not array', 
-              'currentRankings:', 
-              Array.isArray(currentRankings) ? `array[${currentRankings?.length || 0}]` : 'not array',
-              'currentBattle:', 
-              Array.isArray(currentBattle) ? `array[${currentBattle?.length || 0}]` : 'not array');
-  
-  // CRITICAL FIX: Initialize refs with appropriate default values
+  // Initialize refs with appropriate default values
   const processedSuggestionBattlesRef = useRef<Set<number>>(new Set());
   const suggestionBattleCountRef = useRef(0);
   const forcedPriorityBattlesRef = useRef(0);
   const totalSuggestionsRef = useRef(0);
   const milestoneCrossedRef = useRef(false);
-  const priorityModeActiveRef = useRef(false); // Ref to track if priority mode is active
-  const consecutiveBattlesWithoutNewPokemonRef = useRef(0); // Track battles without introducing new Pokémon
-  const lastBattleAttemptTimestampRef = useRef(0); // Track when we last tried to start a battle
-  const throttleTimeMs = 800; // Minimum time between battle generation attempts
-  const previousBattleIds = useRef<number[]>([]); // Track previous battle ids to avoid duplicates
-  const identicalBattleCount = useRef(0); // Track how many times we've seen identical battles
-  const battleGenerationInProgressRef = useRef(false); // Track if we're currently generating a battle
-  const initializationCompleteRef = useRef(false); // Track if initialization is complete
-  const initialGetBattleFiredRef = useRef(false); // Track if initial battle has been started
-  const initializationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null); // Reference to the initialization timer
+  const priorityModeActiveRef = useRef(false);
+  const consecutiveBattlesWithoutNewPokemonRef = useRef(0);
+  const lastBattleAttemptTimestampRef = useRef(0);
+  const throttleTimeMs = 500; // Reduced from 800ms to 500ms for better responsiveness
+  const previousBattleIds = useRef<number[]>([]);
+  const identicalBattleCount = useRef(0);
+  const battleGenerationInProgressRef = useRef(false);
+  const initializationCompleteRef = useRef(false);
+  const initialGetBattleFiredRef = useRef(false);
+  const initializationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   // Store the battleStarter ref for stable access
   const battleStarterInstanceRef = useRef<ReturnType<typeof createBattleStarter> | null>(null);
-  const startNewBattleRefFn = useRef<((type: BattleType) => Pokemon[]) | null>(null);  // NEW: Ref for startNewBattle function
+  const startNewBattleRefFn = useRef<((type: BattleType) => Pokemon[]) | null>(null);
   
-  // NEW: Add ref to hold the latest startNewBattle callback
+  // Add ref to hold the latest startNewBattle callback
   const startNewBattleCallbackRef = useRef<((battleType: BattleType) => Pokemon[]) | null>(null);
   
-  // Log initial value of forcedPriorityBattlesRef
+  // NEW: Add a ref to track the last successfully set battle to avoid duplicate event handling
+  const lastSetBattleIdsRef = useRef<number[]>([]);
+  
   console.log('[DEBUG useBattleStarterIntegration] forcedPriorityBattlesRef initialized to:', forcedPriorityBattlesRef.current);
   
-  // Initialize component state tracking
+  // Initialize component state tracking - MEMOIZED to prevent re-runs
   useEffect(() => {
     const timestamp = new Date().toISOString();
     console.log(`[${timestamp}] useBattleStarterIntegration initialized with ${allPokemon?.length || 0} Pokémon`);
-    console.log('[DEBUG useBattleStarterIntegration] useEffect Initialization: Fired. allPokemonLength:', allPokemon?.length || 0);
     
-    // Mark initialization complete after a delay to allow other components to initialize
     if (initializationTimerRef.current) {
       clearTimeout(initializationTimerRef.current);
     }
     
     initializationTimerRef.current = setTimeout(() => {
       console.log(`[${new Date().toISOString()}] useBattleStarterIntegration initialization complete`);
-      console.log('[DEBUG useBattleStarterIntegration] InitTimer: Setting initializationCompleteRef.current = true');
       initializationCompleteRef.current = true;
       
-      // NEW: Auto-trigger a battle if none exists and we have Pokemon data
+      // Auto-trigger a battle if none exists and we have Pokemon data
       if (allPokemon && allPokemon.length > 0 && (!currentBattle || currentBattle.length === 0)) {
         console.log('[DEBUG] No battle exists after initialization, triggering initial battle');
-        // Use the ref function if available
         if (startNewBattleCallbackRef.current) {
           console.log('[DEBUG] Calling startNewBattle from timer via ref');
           startNewBattleCallbackRef.current("pairs");
         } else {
           console.log('[DEBUG] startNewBattleCallbackRef not available, dispatching force-new-battle event');
-          // Fallback to event dispatch if function ref not available
           document.dispatchEvent(new CustomEvent("force-new-battle", { 
             detail: { battleType: "pairs" }
           }));
@@ -109,27 +101,22 @@ export const useBattleStarterIntegration = (
         console.log('[DEBUG] Battle already exists after initialization:', currentBattle?.length || 0);
       }
       
-    }, 1000);
+    }, 800); // Reduced from 1000ms to 800ms
     
     return () => {
       if (initializationTimerRef.current) {
         clearTimeout(initializationTimerRef.current);
       }
     };
-  }, [allPokemon, currentBattle]);
+  }, [allPokemon.length]); // Only depend on length, not entire array
 
-  // CRITICAL FIX: Only create battleStarter when we have Pokemon data
+  // OPTIMIZED: Only create battleStarter when we have Pokemon data
   const battleStarter = useMemo<ExtendedBattleStarter>(() => {
-    console.log('[DEBUG battleStarterInstance useMemo] Evaluating with:');
-    console.log('[DEBUG battleStarterInstance useMemo] allPokemon prop length:', allPokemon?.length || 0);
-    console.log('[DEBUG battleStarterInstance useMemo] currentRankings prop length:', currentRankings?.length || 0);
+    console.log('[DEBUG battleStarterInstance useMemo] Evaluating with allPokemon length:', allPokemon?.length || 0);
     
-    // CRITICAL FIX: Only create battleStarter if we have Pokemon data
     if (!allPokemon || allPokemon.length === 0) {
       console.log("[DEBUG battleStarterInstance useMemo] No Pokémon data available, returning empty battleStarter");
-      const emptyInstance = createEmptyBattleStarter();
-      console.log("[DEBUG battleStarterInstance useMemo] Created empty battleStarter:", emptyInstance ? "SUCCESS" : "FAILED");
-      return emptyInstance;
+      return createEmptyBattleStarter();
     }
 
     console.log(`[DEBUG battleStarterInstance useMemo] Creating battleStarter with ${allPokemon.length} Pokémon and ${currentRankings.length} rankings`);
@@ -139,14 +126,12 @@ export const useBattleStarterIntegration = (
     );
 
     totalSuggestionsRef.current = pokemonWithSuggestions.length;
-    console.log('[DEBUG battleStarterInstance useMemo] Identified pokemonWithSuggestions.length:', pokemonWithSuggestions.length);
     
     const battleStarterInstance = createBattleStarter(
       allPokemon,
       currentRankings
     );
 
-    // Store the instance in our ref for future checks
     battleStarterInstanceRef.current = battleStarterInstance;
     
     const extendedInstance: ExtendedBattleStarter = {
@@ -159,24 +144,15 @@ export const useBattleStarterIntegration = (
       }
     };
     
-    console.log("[DEBUG battleStarterInstance useMemo] Created and returning new extended battleStarter:", 
-                extendedInstance ? "SUCCESS" : "FAILED");
+    console.log("[DEBUG battleStarterInstance useMemo] Created and returning new extended battleStarter");
     
     return extendedInstance;
   }, [
     allPokemon.length, // Only depend on length to avoid recreation on every ranking change
-    currentRankings.length,
-    setCurrentBattle
-  ]);
-  
-  console.log('[DEBUG useBattleStarterIntegration] After useMemo - battleStarter exists:', 
-              battleStarter ? "YES" : "NO", 
-              'battleStarterRef exists:', battleStarterInstanceRef.current ? "YES" : "NO");
+    currentRankings.length
+  ]); // Removed setCurrentBattle dependency as it's not needed
 
   const startNewBattle = useCallback((battleType: BattleType) => {
-    console.log('[DEBUG useBattleStarterIntegration] startNewBattle: Called. battleType:', battleType, 
-                'initComplete:', initializationCompleteRef.current, 'genInProgress:', battleGenerationInProgressRef.current);
-    
     console.log('[DEBUG] startNewBattle called:', {
       battleType,
       initComplete: initializationCompleteRef.current,
@@ -186,17 +162,11 @@ export const useBattleStarterIntegration = (
       timestamp: new Date().toISOString()
     });
     
-    console.log('[DEBUG startNewBattle] Current battleStarter value:', 
-                battleStarter ? 'DEFINED' : 'UNDEFINED', 
-                typeof battleStarter);
-    
     const timestamp = new Date().toISOString();
     console.log(`[${timestamp}] startNewBattle called with battleType: ${battleType}`);
     
-    // CRITICAL FIX: Ensure we have Pokemon data before proceeding
     if (!allPokemon || allPokemon.length === 0) {
-      console.log(`[${timestamp}] No Pokemon data available, cannot start battle. Condition: (!allPokemon || allPokemon.length === 0). allPokemon?.length at this moment: ${allPokemon?.length}`);
-      console.log('[DEBUG useBattleStarterIntegration] startNewBattle: No Pokemon data. Returning early.');
+      console.log(`[${timestamp}] No Pokemon data available, cannot start battle. allPokemon?.length: ${allPokemon?.length}`);
       return [];
     }
     
@@ -207,13 +177,11 @@ export const useBattleStarterIntegration = (
     
     if (!initializationCompleteRef.current) {
       console.log(`[${timestamp}] Skipping battle generation - initialization not complete`);
-      console.log('[DEBUG useBattleStarterIntegration] startNewBattle: Initialization not complete. Returning early.');
       return [];
     }
     
     if (battleGenerationInProgressRef.current) {
       console.log(`[${timestamp}] Battle generation already in progress, ignoring startNewBattle call`);
-      console.log('[DEBUG useBattleStarterIntegration] startNewBattle: Battle generation already in progress. Returning early.');
       return [];
     }
     
@@ -232,17 +200,13 @@ export const useBattleStarterIntegration = (
     
     if (timeSinceLastAttempt < adjustedThrottleTime) {
       console.log(`[${timestamp}] Throttling battle generation. Last attempt: ${timeSinceLastAttempt}ms ago. Required interval: ${adjustedThrottleTime}ms`);
-      console.log('[DEBUG useBattleStarterIntegration] startNewBattle: Throttled. Returning early.');
-      // Reset the flag since we're returning early
       battleGenerationInProgressRef.current = false;
       return [];
     }
     
     lastBattleAttemptTimestampRef.current = now;
 
-    console.log(`[${timestamp}] Starting new battle with:`);
-    console.log(`[${timestamp}] - allPokemon size: ${allPokemon.length}`);
-    console.log(`[${timestamp}] - currentRankings size: ${currentRankings.length}`);
+    console.log(`[${timestamp}] Starting new battle with allPokemon size: ${allPokemon.length}, currentRankings size: ${currentRankings.length}`);
     
     const rankedIds = new Set(currentRankings.map(p => p.id));
     const unrankedPokemon = allPokemon.filter(p => !rankedIds.has(p.id));
@@ -257,14 +221,12 @@ export const useBattleStarterIntegration = (
     const suggestedPokemon = currentRankings.filter(
       p => p.suggestedAdjustment && !p.suggestedAdjustment.used
     );
-    console.log(`[${timestamp}] Starting new battle. Available suggestedPokemon.length:`, suggestedPokemon.length);
-    console.log(`[${timestamp}] Current forcedPriorityBattlesRef.current:`, forcedPriorityBattlesRef.current);
+    console.log(`[${timestamp}] Available suggestedPokemon.length:`, suggestedPokemon.length);
 
     const shouldForcePriority = forcedPriorityBattlesRef.current > 0 && suggestedPokemon.length > 0;
     console.log(`[${timestamp}] shouldForcePriority decision:`, shouldForcePriority);
     
     priorityModeActiveRef.current = suggestedPokemon.length > 0 && forcedPriorityBattlesRef.current > 0;
-    console.log(`[${timestamp}] priorityModeActiveRef updated to:`, priorityModeActiveRef.current);
 
     let battle: Pokemon[] = [];
     let forceUnrankedSelection = false;
@@ -280,11 +242,6 @@ export const useBattleStarterIntegration = (
       forceUnrankedSelection = true;
       console.log(`[${timestamp}] Forcing unranked selection for variety:`, forceUnrankedSelection);
     }
-    
-    console.log('[DEBUG useBattleStarterIntegration] startNewBattle: About to call battleStarter.startNewBattle (from createBattleStarter instance).');
-    console.log('[DEBUG] Double-check battleStarter before calling startNewBattle:', 
-                'currentBattleStarter exists:', currentBattleStarter ? 'YES' : 'NO',
-                'has startNewBattle function:', typeof currentBattleStarter.startNewBattle === 'function' ? 'YES' : 'NO');
     
     try {
       if (shouldForcePriority) {
@@ -311,8 +268,6 @@ export const useBattleStarterIntegration = (
         console.log(`[${timestamp}] 🎮 Using standard battle selection (forceUnrankedSelection: ${forceUnrankedSelection})`);
         battle = currentBattleStarter.startNewBattle(battleType, false, forceUnrankedSelection);
       }
-
-      console.log('[DEBUG useBattleStarterIntegration] startNewBattle: Got battle from battleStarter.startNewBattle. IDs:', battle ? battle.map(p => p.id) : 'null/empty');
 
       if (!battle || battle.length === 0) {
         console.log(`[${timestamp}] Battle generation was throttled or failed, not updating state`);
@@ -360,6 +315,7 @@ export const useBattleStarterIntegration = (
       
       if (!isIdentical) {
         previousBattleIds.current = battleIds;
+        lastSetBattleIdsRef.current = battleIds; // NEW: Track what we actually set
         setCurrentBattle(battle);
         console.log(`[${timestamp}] ✅ setCurrentBattle called with [${battleIds.join(', ')}]`);
         
@@ -390,21 +346,22 @@ export const useBattleStarterIntegration = (
       }, 50);
     }
   }, [
-    allPokemon,
-    currentRankings,
+    allPokemon.length, // Only depend on length, not entire array
+    currentRankings.length, // Only depend on length, not entire array
     battleStarter,
     setSelectedPokemon,
     markSuggestionFullyUsed
-  ]);
+  ]); // Removed setCurrentBattle dependency
 
-  // NEW: Update the ref whenever startNewBattle changes
+  // Update the ref whenever startNewBattle changes
   useEffect(() => {
     startNewBattleCallbackRef.current = startNewBattle;
     console.log('[DEBUG useBattleStarterIntegration] Updated startNewBattleCallbackRef with new function');
   }, [startNewBattle]);
 
+  // OPTIMIZED: Event listeners with better duplicate detection
   useEffect(() => {
-    console.log('[DEBUG useBattleStarterIntegration] useEffect EventListeners: Fired. currentRankingsLength:', currentRankings.length);
+    console.log('[DEBUG useBattleStarterIntegration] Setting up event listeners');
     
     const handlePrioritize = () => {
       suggestionBattleCountRef.current = 0;
@@ -419,8 +376,6 @@ export const useBattleStarterIntegration = (
       console.log('[DEBUG useBattleStarterIntegration] forcedPriorityBattlesRef set to:', forcedPriorityBattlesRef.current, 'after prioritize trigger');
       
       priorityModeActiveRef.current = suggestedPokemon.length > 0;
-      console.log('[DEBUG useBattleStarterIntegration] priorityModeActiveRef set to:', priorityModeActiveRef.current);
-
       consecutiveBattlesWithoutNewPokemonRef.current = 0;
 
       if (totalSuggestionsRef.current > 0) {
@@ -443,26 +398,25 @@ export const useBattleStarterIntegration = (
       if (!pokemonIds || !pokemonIds.length) return;
       
       console.log('[DEBUG useBattleStarterIntegration] handleBattleCreated_EVENT: Received event. pokemonIds:', pokemonIds, 'wasForced:', wasForced);
-      console.log('[DEBUG useBattleStarterIntegration] handleBattleCreated_EVENT: previousBattleIds.current (useRef) before update:', previousBattleIds.current);
       
-      console.log(`[${new Date().toISOString()}] Battle created event received. PokemonIds: [${pokemonIds.join(',')}], wasForced: ${wasForced}`);
-      
-      const isIdentical = previousBattleIds.current.length > 0 && 
-        pokemonIds.length === previousBattleIds.current.length &&
-        pokemonIds.every(id => previousBattleIds.current.includes(id));
+      // IMPROVED: Compare against what we actually last set, not what was previously in the ref
+      const isIdentical = lastSetBattleIdsRef.current.length > 0 && 
+        pokemonIds.length === lastSetBattleIdsRef.current.length &&
+        pokemonIds.every(id => lastSetBattleIdsRef.current.includes(id)) &&
+        lastSetBattleIdsRef.current.every(id => pokemonIds.includes(id));
       
       console.log('[DEBUG useBattleStarterIntegration] handleBattleCreated_EVENT: isIdentical check result:', isIdentical);
       console.log('[DEBUG] Battle created event received:', {
         pokemonIds,
         willUpdateState: !isIdentical,
-        previousBattleIds: previousBattleIds.current
+        lastSetBattleIds: lastSetBattleIdsRef.current
       });
       
       if (isIdentical && !wasForced) {
         identicalBattleCount.current++;
         console.warn(`⚠️ [useBattleStarterIntegration] Identical battle detected ${identicalBattleCount.current} times`);
         
-        if (identicalBattleCount.current >= 2) {
+        if (identicalBattleCount.current >= 3) { // Increased threshold from 2 to 3
           console.warn('⚠️ Too many identical battles detected, triggering emergency reset');
           document.dispatchEvent(new CustomEvent('force-emergency-reset'));
           identicalBattleCount.current = 0;
@@ -515,7 +469,7 @@ export const useBattleStarterIntegration = (
       document.removeEventListener("battle-created", handleBattleCreated as EventListener);
       document.removeEventListener("force-new-battle", handleForceNewBattle as EventListener);
     };
-  }, []); // Empty dependency array since we're using the ref pattern
+  }, [currentRankings.length]); // Only depend on rankings length, not entire array
 
   const { performEmergencyReset } = useBattleEmergencyReset(
     [] as Pokemon[],
@@ -534,24 +488,17 @@ export const useBattleStarterIntegration = (
     const prevValue = forcedPriorityBattlesRef.current;
     forcedPriorityBattlesRef.current = Math.max(20, totalSuggestionsRef.current * 5);
     console.log(`[${timestamp}] forcedPriorityBattlesRef reset from ${prevValue} to: ${forcedPriorityBattlesRef.current}`);
-    console.log(`[${timestamp}] ⚡ Explicitly reset and forced suggestion prioritization for next battles`);
     
     milestoneCrossedRef.current = true;
-    
     priorityModeActiveRef.current = true;
-    console.log(`[${timestamp}] priorityModeActiveRef reset to: ${priorityModeActiveRef.current}`);
-    
     consecutiveBattlesWithoutNewPokemonRef.current = 0;
-
     identicalBattleCount.current = 0;
     previousBattleIds.current = [];
   };
 
+  // OPTIMIZED: Initialization effect
   useEffect(() => {
-    console.log('[DEBUG useBattleStarterIntegration] useEffect InitialLoad: Fired.');
-    
-    const timestamp = new Date().toISOString();
-    console.log(`[${timestamp}] useBattleStarterIntegration initial effect running`);
+    console.log('[DEBUG useBattleStarterIntegration] Initial setup complete');
     
     initializationCompleteRef.current = false;
     initialGetBattleFiredRef.current = false;
@@ -559,7 +506,7 @@ export const useBattleStarterIntegration = (
     return () => {
       console.log(`[${new Date().toISOString()}] useBattleStarterIntegration cleanup`);
     };
-  }, []);
+  }, []); // Empty dependency array
 
   return {
     battleStarter,

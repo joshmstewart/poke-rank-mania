@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useMemo } from "react";
 import BattleContent from "./BattleContent";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "@/hooks/battle/types";
@@ -13,46 +13,44 @@ interface BattleContentContainerProps {
   setBattleResults?: React.Dispatch<React.SetStateAction<SingleBattle[]>>;
 }
 
-const BattleContentContainer: React.FC<BattleContentContainerProps> = ({
-  allPokemon = [], // CRITICAL FIX: Ensure allPokemon is never undefined
+const BattleContentContainer: React.FC<BattleContentContainerProps> = React.memo(({
+  allPokemon = [],
   initialBattleType,
   initialSelectedGeneration = 0,
   setBattlesCompleted,
   setBattleResults
 }) => {
-  // ADDED: Log to verify allPokemon in container is never undefined
-  console.log("[DEBUG BattleContentContainer] MOUNT - allPokemon is array:", Array.isArray(allPokemon), "length:", allPokemon?.length || 0);
+  console.log("[DEBUG BattleContentContainer] RENDER - allPokemon length:", allPokemon?.length || 0);
   
-  // Log instanceId to detect remounts
-  const instanceIdRef = React.useRef(`container-${Date.now()}`);
-  console.log(`[DEBUG BattleContentContainer] Instance: ${instanceIdRef.current} running`);
+  // Stabilize battle type to prevent unnecessary re-mounts
+  const safeBattleType: BattleType = useMemo(() => {
+    return initialBattleType === "triplets" ? "triplets" : "pairs";
+  }, [initialBattleType]);
   
-  // ADDED: Ensure we always have a valid battle type with "pairs" as default
-  const safeBattleType: BattleType = initialBattleType === "triplets" ? "triplets" : "pairs";
+  // Stabilize Pokemon array reference to prevent re-mounts when length hasn't changed
+  const stablePokemon = useMemo(() => allPokemon, [allPokemon.length]);
   
-  // Log the initial battle type for debugging
-  console.log("BattleContentContainer: Using initial battle type:", safeBattleType);
+  console.log("BattleContentContainer: Using battle type:", safeBattleType);
   
-  // NEW: Force battle initialization by dispatching an event after component mounts
+  // Only force battle check if we actually have new Pokemon data
   React.useEffect(() => {
-    if (allPokemon && allPokemon.length > 0) {
-      console.log("[DEBUG BattleContentContainer] Component mounted with allPokemon, scheduling battle check");
+    if (stablePokemon && stablePokemon.length > 0) {
+      console.log("[DEBUG BattleContentContainer] Pokemon data available, dispatching battle check");
       
       const timer = setTimeout(() => {
-        console.log("[DEBUG BattleContentContainer] Checking if battle needs to be forced");
         document.dispatchEvent(new CustomEvent("force-new-battle", {
           detail: { battleType: safeBattleType }
         }));
-      }, 2000); // Wait 2 seconds after mounting to check
+      }, 1000); // Reduced from 2000ms to 1000ms
       
       return () => clearTimeout(timer);
     }
-  }, [allPokemon, safeBattleType]);
+  }, [stablePokemon.length, safeBattleType]); // Only depend on length, not the entire array
 
   return (
     <div className="flex flex-col w-full max-w-4xl mx-auto px-4">
       <BattleContent
-        allPokemon={allPokemon || []} // CRITICAL FIX: Ensure allPokemon is never undefined
+        allPokemon={stablePokemon}
         initialBattleType={safeBattleType}
         initialSelectedGeneration={initialSelectedGeneration}
         setBattlesCompleted={setBattlesCompleted}
@@ -60,6 +58,8 @@ const BattleContentContainer: React.FC<BattleContentContainerProps> = ({
       />
     </div>
   );
-};
+});
+
+BattleContentContainer.displayName = "BattleContentContainer";
 
 export default BattleContentContainer;

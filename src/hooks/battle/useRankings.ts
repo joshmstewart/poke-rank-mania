@@ -5,7 +5,7 @@ import { SingleBattle } from "./types";
 import { Rating } from "ts-trueskill";
 import { useRankingSuggestions } from "./useRankingSuggestions";
 
-export const useRankings = (allPokemon: Pokemon[] = []) => { // Ensure default empty array
+export const useRankings = (allPokemon: Pokemon[] = []) => {
   console.log("[DEBUG useRankings] INIT - allPokemon is array:", Array.isArray(allPokemon), "length:", allPokemon?.length || 0);
 
   // Track component instances for debugging remounts
@@ -63,7 +63,7 @@ export const useRankings = (allPokemon: Pokemon[] = []) => { // Ensure default e
     }
   }, [finalRankings]);
 
-  // IMPROVED: Check for substantial changes before regenerating rankings - now fully synchronous
+  // IMPROVED: Check for substantial changes before regenerating rankings - optimized and with type preservation
   const generateRankings = useCallback((results: SingleBattle[]): RankedPokemon[] => {
     console.log("[DEBUG useRankings] generateRankings - results is array:", Array.isArray(results), "length:", results?.length || 0);
     
@@ -89,7 +89,7 @@ export const useRankings = (allPokemon: Pokemon[] = []) => { // Ensure default e
     previousResultsRef.current = [...results];
 
     // This call updates activeSuggestionsRef.current internally in useRankingSuggestions
-    const currentActiveSuggestions = loadSavedSuggestions(); // Use the returned Map
+    const currentActiveSuggestions = loadSavedSuggestions();
 
     // Perform the ranking generation synchronously
     const countMap = new Map<number, number>();
@@ -113,16 +113,18 @@ export const useRankings = (allPokemon: Pokemon[] = []) => { // Ensure default e
         const normalizedConfidence = Math.max(0, Math.min(100, 100 * (1 - (p.rating.sigma / 8.33))));
 
         const pokemonFrozenStatus = frozenPokemon[p.id] || {};
-        // IMPORTANT: Use 'currentActiveSuggestions' (the result of loadSavedSuggestions)
         const suggestedAdjustment = currentActiveSuggestions.get(p.id);
 
+        // CRITICAL FIX: Ensure type information is preserved
         return {
           ...p,
+          // Preserve the types array structure from the original Pokemon data
+          types: p.types || [], // Ensure types is always an array
           score: conservativeEstimate,
           count: countMap.get(p.id) || 0,
           confidence: normalizedConfidence,
           isFrozenForTier: pokemonFrozenStatus,
-          suggestedAdjustment // Use the one derived from currentActiveSuggestions
+          suggestedAdjustment
         };
       })
       .sort((a, b) => b.score - a.score);
@@ -132,9 +134,10 @@ export const useRankings = (allPokemon: Pokemon[] = []) => { // Ensure default e
       : allRankedPokemon.slice(0, Number(activeTier));
     
     const finalWithSuggestions = filteredRankings.map(pokemon => {
-      // IMPORTANT: Use 'currentActiveSuggestions'
       return {
         ...pokemon,
+        // CRITICAL FIX: Ensure types are preserved in final mapping
+        types: pokemon.types || [],
         suggestedAdjustment: currentActiveSuggestions.get(pokemon.id) || null
       };
     });
@@ -143,6 +146,12 @@ export const useRankings = (allPokemon: Pokemon[] = []) => { // Ensure default e
     const safeFinalRankings = finalWithSuggestions || [];
     setFinalRankings(safeFinalRankings);
     console.log(`🎯 Rankings generated with suggestions: ${safeFinalRankings.length} Pokémon`);
+
+    // Debug: Verify type information is preserved
+    if (safeFinalRankings.length > 0) {
+      const firstPokemon = safeFinalRankings[0];
+      console.log(`[DEBUG Type Preservation] First Pokemon: ${firstPokemon.name}, Types:`, firstPokemon.types);
+    }
 
     const confidenceMap: Record<number, number> = {};
     allRankedPokemon.forEach(p => {
@@ -154,7 +163,7 @@ export const useRankings = (allPokemon: Pokemon[] = []) => { // Ensure default e
                  finalWithSuggestions.length);
     
     return safeFinalRankings;
-  }, [allPokemon, activeTier, frozenPokemon, loadSavedSuggestions, setFinalRankings, setConfidenceScores]);
+  }, [allPokemon.length, activeTier, frozenPokemon, loadSavedSuggestions, setFinalRankings, setConfidenceScores]); // Optimized dependencies
 
   const freezePokemonForTier = useCallback((pokemonId: number, tier: TopNOption) => {
     setFrozenPokemon(prev => ({
