@@ -88,26 +88,31 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
     for (let i = 0; i < pokemon.types.length; i++) {
       const typeSlot = pokemon.types[i];
       
-      // FIXED: Add explicit null check before accessing properties
-      if (typeSlot !== null && typeSlot !== undefined && typeof typeSlot === 'object') {
-        // Handle string types directly
-        if (typeof typeSlot === 'string') {
-          extractedTypes.push(typeSlot);
+      // FIXED: More comprehensive null/undefined check
+      if (!typeSlot || typeSlot === null || typeSlot === undefined) {
+        continue;
+      }
+
+      // Handle string types directly
+      if (typeof typeSlot === 'string') {
+        extractedTypes.push(typeSlot);
+        continue;
+      }
+
+      // Handle nested type structure: { slot: 1, type: { name: 'grass' } }
+      if (typeof typeSlot === 'object' && 'type' in typeSlot && typeSlot.type) {
+        const typeInfo = typeSlot.type as PokemonTypeInfo;
+        if (typeInfo && 'name' in typeInfo && typeof typeInfo.name === 'string') {
+          extractedTypes.push(typeInfo.name);
           continue;
         }
+      }
 
-        // Handle nested type structure: { slot: 1, type: { name: 'grass' } }
-        if ('type' in typeSlot && typeSlot.type !== null && typeSlot.type !== undefined && typeof typeSlot.type === 'object') {
-          const typeInfo = typeSlot.type as PokemonTypeInfo;
-          if ('name' in typeInfo && typeof typeInfo.name === 'string') {
-            extractedTypes.push(typeInfo.name);
-            continue;
-          }
-        }
-
-        // Handle direct name structure: { name: 'grass' }
-        if ('name' in typeSlot && typeof (typeSlot as any).name === 'string') {
-          extractedTypes.push((typeSlot as any).name);
+      // Handle direct name structure: { name: 'grass' }
+      if (typeof typeSlot === 'object' && 'name' in typeSlot) {
+        const directName = (typeSlot as any).name;
+        if (typeof directName === 'string') {
+          extractedTypes.push(directName);
           continue;
         }
       }
