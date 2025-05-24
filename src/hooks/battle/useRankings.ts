@@ -116,13 +116,13 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
       if (typeof typeSlot === 'object') {
         // Handle nested type structure: { slot: 1, type: { name: 'grass' } }
         const slotAsAny = typeSlot as any;
-        if (slotAsAny.type && typeof slotAsAny.type === 'object' && typeof slotAsAny.type.name === 'string') {
+        if (slotAsAny && slotAsAny.type && typeof slotAsAny.type === 'object' && typeof slotAsAny.type.name === 'string') {
           extractedTypes.push(slotAsAny.type.name);
           continue;
         }
 
         // Handle direct name structure: { name: 'grass' }
-        if (typeof slotAsAny.name === 'string') {
+        if (slotAsAny && typeof slotAsAny.name === 'string') {
           extractedTypes.push(slotAsAny.name);
           continue;
         }
@@ -276,23 +276,11 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
     finalRankings,
     confidenceScores,
     generateRankings,
-    handleSaveRankings: useCallback(() => {
-      localStorage.setItem("pokemon-frozen-pokemon", JSON.stringify(frozenPokemon));
-    }, [frozenPokemon]),
+    handleSaveRankings,
     activeTier,
     setActiveTier,
-    freezePokemonForTier: useCallback((pokemonId: number, tier: TopNOption) => {
-      setFrozenPokemon(prev => ({
-        ...prev,
-        [pokemonId]: {
-          ...(prev[pokemonId] || {}),
-          [tier.toString()]: true
-        }
-      }));
-    }, []),
-    isPokemonFrozenForTier: useCallback((pokemonId: number, tier: TopNOption): boolean => {
-      return Boolean(frozenPokemon[pokemonId]?.[tier.toString()]);
-    }, [frozenPokemon]),
+    freezePokemonForTier,
+    isPokemonFrozenForTier,
     allRankedPokemon: finalRankings,
     suggestRanking,
     removeSuggestion,
