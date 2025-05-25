@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import BattleContentContainer from "@/components/battle/BattleContentContainer";
 import { usePokemonLoader } from "@/hooks/battle/usePokemonLoader";
@@ -18,7 +17,7 @@ const BattleMode = () => {
   const [emergencyResetPerformed, setEmergencyResetPerformed] = useState(false);
 
   // CRITICAL FIX: Ultra-stable battle type - never changes reference
-  const initialBattleType = useRef<BattleType>(() => {
+  const getInitialBattleType = (): BattleType => {
     const stored = localStorage.getItem('pokemon-ranker-battle-type') as BattleType | null;
     const defaultType: BattleType = "pairs";
     if (!stored || (stored !== "pairs" && stored !== "triplets")) {
@@ -26,7 +25,9 @@ const BattleMode = () => {
       return defaultType;
     }
     return stored;
-  });
+  };
+  
+  const initialBattleType = useRef<BattleType>(getInitialBattleType());
 
   // CRITICAL FIX: Ultra-stable callback references - never change
   const stableSetBattlesCompleted = useRef(setBattlesCompleted);
