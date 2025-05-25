@@ -15,24 +15,39 @@ interface PokemonProviderProps {
 }
 
 export const PokemonProvider: React.FC<PokemonProviderProps> = ({ children, allPokemon }) => {
-  // PERFORMANCE FIX: Stable memoized lookup map
+  // CRITICAL FIX: Ensure lookup map preserves complete Pokemon data including full types
   const pokemonLookupMap = useMemo(() => {
+    console.log('[DEBUG PokemonContext] Creating lookup map with', allPokemon.length, 'Pokemon');
+    
     const map = new Map<number, Pokemon>();
-    allPokemon.forEach(pokemon => {
-      // Preserve complete Pokemon data including types
-      map.set(pokemon.id, {
+    allPokemon.forEach((pokemon, index) => {
+      // CRITICAL: Preserve complete Pokemon data including types structure
+      const completePokemon = {
         ...pokemon,
         types: pokemon.types || []
-      });
+      };
+      
+      // Verify type data for first few Pokemon
+      if (index < 3) {
+        console.log(`[DEBUG PokemonContext] Pokemon ${pokemon.name} (${pokemon.id}) types in map:`, JSON.stringify(pokemon.types));
+      }
+      
+      map.set(pokemon.id, completePokemon);
     });
+    
+    console.log('[DEBUG PokemonContext] Lookup map created with', map.size, 'entries');
     return map;
   }, [allPokemon.length]); // Only re-create when length changes
 
-  // PERFORMANCE FIX: Memoize context value
-  const contextValue = useMemo(() => ({
-    allPokemon,
-    pokemonLookupMap
-  }), [allPokemon, pokemonLookupMap]);
+  // CRITICAL FIX: Ultra-stable context value
+  const contextValue = useMemo(() => {
+    const value = {
+      allPokemon,
+      pokemonLookupMap
+    };
+    console.log('[DEBUG PokemonContext] Context value created/updated');
+    return value;
+  }, [allPokemon, pokemonLookupMap]);
 
   return (
     <PokemonContext.Provider value={contextValue}>

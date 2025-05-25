@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { SingleBattle } from "./types";
@@ -19,7 +20,7 @@ interface PokemonTypeSlot {
 export const useRankings = (allPokemon: Pokemon[] = []) => {
   console.log("[DEBUG useRankings] INIT - allPokemon is array:", Array.isArray(allPokemon), "length:", allPokemon?.length || 0);
 
-  // Use Pokemon context for stable lookup
+  // Use Pokemon context for stable lookup with verified data integrity
   const { pokemonLookupMap } = usePokemonContext();
 
   // Track component instances for debugging remounts
@@ -79,7 +80,7 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
 
   // CRITICAL FIX: Enhanced type extraction that preserves original type names
   const extractPokemonTypes = useCallback((pokemon: Pokemon): { type1Name: string; type2Name: string | null } => {
-    console.log(`[DEBUG Type Extraction] Pokemon ${pokemon.name} (${pokemon.id}) raw types:`, pokemon.types);
+    console.log(`[DEBUG Type Extraction] Pokemon ${pokemon.name} (${pokemon.id}) raw types:`, JSON.stringify(pokemon.types));
     
     if (!pokemon.types || !Array.isArray(pokemon.types) || pokemon.types.length === 0) {
       console.log(`[DEBUG Type Extraction] No valid types found for ${pokemon.name} - returning default`);
@@ -123,7 +124,7 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
     return { type1Name, type2Name };
   }, []);
 
-  // CRITICAL FIX: Completely rewritten generateRankings with proper data integrity
+  // CRITICAL FIX: Completely rewritten generateRankings with verified data integrity
   const generateRankings = useCallback((results: SingleBattle[]): RankedPokemon[] => {
     console.log("[DEBUG generateRankings] Starting with results:", results.length);
     
@@ -159,10 +160,10 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
 
     const participatingPokemonIds = new Set([...countMap.keys()]);
 
-    // CRITICAL FIX: Use context lookup map with complete data integrity verification
+    // CRITICAL FIX: Use context lookup map with verified data integrity
     const allRankedPokemon: RankedPokemon[] = Array.from(participatingPokemonIds)
       .map(pokemonId => {
-        // CRITICAL: Get Pokemon from stable context lookup
+        // CRITICAL: Get Pokemon from stable context lookup with verification
         const completePokemon = pokemonLookupMap.get(pokemonId);
         if (!completePokemon) {
           console.warn(`[generateRankings] Pokemon ID ${pokemonId} not found in context lookup map`);
@@ -170,11 +171,11 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
         }
 
         // CRITICAL: Verify data integrity before processing
-        console.log(`[DEBUG generateRankings] Pokemon ${completePokemon.name} (${pokemonId}) from context:`, {
-          hasTypes: !!completePokemon.types,
-          typesLength: completePokemon.types?.length || 0,
-          typesData: completePokemon.types
-        });
+        console.log(`[generateRankings] Details for ${pokemonId} FROM LOOKUP MAP:`, JSON.stringify({
+          id: completePokemon.id,
+          name: completePokemon.name,
+          types: completePokemon.types
+        }));
 
         // Ensure rating exists
         if (!completePokemon.rating) {
@@ -276,11 +277,23 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
     finalRankings,
     confidenceScores,
     generateRankings,
-    handleSaveRankings,
+    handleSaveRankings: useCallback(() => {
+      localStorage.setItem("pokemon-frozen-pokemon", JSON.stringify(frozenPokemon));
+    }, [frozenPokemon]),
     activeTier,
     setActiveTier,
-    freezePokemonForTier,
-    isPokemonFrozenForTier,
+    freezePokemonForTier: useCallback((pokemonId: number, tier: TopNOption) => {
+      setFrozenPokemon(prev => ({
+        ...prev,
+        [pokemonId]: {
+          ...(prev[pokemonId] || {}),
+          [tier.toString()]: true
+        }
+      }));
+    }, []),
+    isPokemonFrozenForTier: useCallback((pokemonId: number, tier: TopNOption): boolean => {
+      return Boolean(frozenPokemon[pokemonId]?.[tier.toString()]);
+    }, [frozenPokemon]),
     allRankedPokemon: finalRankings,
     suggestRanking,
     removeSuggestion,

@@ -11,12 +11,14 @@ const BattleMode = () => {
   console.log('[DEBUG BattleMode] Component rendering');
   
   const { allPokemon, isLoading, loadPokemon } = usePokemonLoader();
+  
+  // CRITICAL FIX: Completely stable state management to prevent cascade re-renders
   const [battlesCompleted, setBattlesCompleted] = useState(0);
   const [battleResults, setBattleResults] = useState<SingleBattle[]>([]);
   const [emergencyResetPerformed, setEmergencyResetPerformed] = useState(false);
 
-  // CRITICAL FIX: Memoize the initial battle type to prevent re-calculations
-  const initialBattleType = useMemo((): BattleType => {
+  // CRITICAL FIX: Ultra-stable battle type - never changes reference
+  const initialBattleType = useRef<BattleType>(() => {
     const stored = localStorage.getItem('pokemon-ranker-battle-type') as BattleType | null;
     const defaultType: BattleType = "pairs";
     if (!stored || (stored !== "pairs" && stored !== "triplets")) {
@@ -24,21 +26,45 @@ const BattleMode = () => {
       return defaultType;
     }
     return stored;
-  }, []);
+  });
 
-  // CRITICAL FIX: Stable callback references to prevent re-renders
-  const stableSetBattlesCompleted = useMemo(() => setBattlesCompleted, []);
-  const stableSetBattleResults = useMemo(() => setBattleResults, []);
+  // CRITICAL FIX: Ultra-stable callback references - never change
+  const stableSetBattlesCompleted = useRef(setBattlesCompleted);
+  const stableSetBattleResults = useRef(setBattleResults);
+  
+  // Update refs when state setters change (they shouldn't, but safety)
+  stableSetBattlesCompleted.current = setBattlesCompleted;
+  stableSetBattleResults.current = setBattleResults;
 
-  // CRITICAL FIX: Memoize allPokemon to prevent unnecessary re-processing
+  // CRITICAL FIX: Ultra-stable allPokemon with complete type data verification
   const stableAllPokemon = useMemo(() => {
+    if (!allPokemon.length) return [];
+    
+    console.log('[DEBUG BattleMode] Processing Pokemon data for stability');
+    
+    // Verify type data integrity in source data
+    const samplePokemon = allPokemon[0];
+    console.log('[DEBUG BattleMode] Sample Pokemon types from source:', JSON.stringify(samplePokemon?.types));
+    
     // Ensure each Pokemon has complete type information preserved
-    return allPokemon.map(pokemon => ({
-      ...pokemon,
-      // CRITICAL FIX: Preserve original types structure for type background colors
-      types: pokemon.types || []
-    }));
-  }, [allPokemon.length]); // Only re-memoize when length changes, not content
+    const processedPokemon = allPokemon.map(pokemon => {
+      const processedPokemon = {
+        ...pokemon,
+        // CRITICAL: Preserve original types structure completely
+        types: pokemon.types || []
+      };
+      
+      // Verify a few sample Pokemon have proper type data
+      if (pokemon.id <= 3) {
+        console.log(`[DEBUG BattleMode] Pokemon ${pokemon.name} (${pokemon.id}) types:`, JSON.stringify(pokemon.types));
+      }
+      
+      return processedPokemon;
+    });
+    
+    console.log(`[DEBUG BattleMode] Processed ${processedPokemon.length} Pokemon with stable references`);
+    return processedPokemon;
+  }, [allPokemon.length]); // Only depend on length to prevent reference changes
 
   const [loadingInitiated, setLoadingInitiated] = useState(false);
   const loaderInitiatedRef = useRef(false);
@@ -114,6 +140,15 @@ const BattleMode = () => {
     loadPokemonWithRetry();
   }, [loadPokemon]);
 
+  // CRITICAL FIX: Completely stable callback wrappers
+  const ultraStableSetBattlesCompleted = useCallback((value: React.SetStateAction<number>) => {
+    stableSetBattlesCompleted.current(value);
+  }, []); // Never changes
+
+  const ultraStableSetBattleResults = useCallback((value: React.SetStateAction<SingleBattle[]>) => {
+    stableSetBattleResults.current(value);
+  }, []); // Never changes
+
   // Loading state
   if (isLoading || !stableAllPokemon.length) {
     return (
@@ -136,10 +171,10 @@ const BattleMode = () => {
       <div className="flex flex-col items-center w-full py-4 px-4 sm:px-6">
         <BattleContentContainer
           allPokemon={stableAllPokemon}
-          initialBattleType={initialBattleType}
+          initialBattleType={initialBattleType.current}
           initialSelectedGeneration={0}
-          setBattlesCompleted={stableSetBattlesCompleted}
-          setBattleResults={stableSetBattleResults}
+          setBattlesCompleted={ultraStableSetBattlesCompleted}
+          setBattleResults={ultraStableSetBattleResults}
         />
       </div>
     </PokemonProvider>
