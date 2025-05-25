@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { useBattleStarterIntegration } from "@/hooks/battle/useBattleStarterIntegration";
@@ -15,14 +16,19 @@ export const useBattleStateCore = (
   initialBattleType: BattleType,
   initialSelectedGeneration: number
 ) => {
-  console.log("[DEBUG useBattleStateCore] INIT - Using context for Pokemon data");
-
-  // CRITICAL FIX: Use Pokemon context for stable data
+  // CRITICAL FIX: Use Pokemon context for stable data and prevent re-initialization
   const { allPokemon: contextPokemon } = usePokemonContext();
   
+  // CRITICAL FIX: Only log INIT once by tracking initialization
+  const initializationRef = useRef(false);
+  if (!initializationRef.current) {
+    console.log("[DEBUG useBattleStateCore] INIT - Using context for Pokemon data");
+    initializationRef.current = true;
+  }
+  
   // CRITICAL FIX: Use stable memoized references to prevent re-initialization
-  const stableInitialBattleType = useMemo(() => initialBattleType, []);
-  const stableInitialGeneration = useMemo(() => initialSelectedGeneration, []);
+  const stableInitialBattleType = useMemo(() => initialBattleType, [initialBattleType]);
+  const stableInitialGeneration = useMemo(() => initialSelectedGeneration, [initialSelectedGeneration]);
   
   // Track if we need to reload suggestions after milestone
   const [needsToReloadSuggestions, setNeedsToReloadSuggestions] = useState(false);
@@ -37,8 +43,13 @@ export const useBattleStateCore = (
   const [selectedPokemon, setSelectedPokemon] = useState<number[]>([]);
 
   // CRITICAL FIX: Stable callback references to prevent hook re-initialization
-  const stableSetCurrentBattle = useMemo(() => setCurrentBattle, []);
-  const stableSetSelectedPokemon = useMemo(() => setSelectedPokemon, []);
+  const stableSetCurrentBattle = useCallback((battle: Pokemon[]) => {
+    setCurrentBattle(battle);
+  }, []);
+  
+  const stableSetSelectedPokemon = useCallback((pokemon: number[]) => {
+    setSelectedPokemon(pokemon);
+  }, []);
 
   // Flag to track when a full reset has just happened
   const isResettingRef = useRef(false);
@@ -57,7 +68,7 @@ export const useBattleStateCore = (
     forceDismissMilestone
   } = useProgressState();
 
-  // CRITICAL FIX: Use context Pokemon with stable reference
+  // CRITICAL FIX: Use stable context Pokemon reference
   const {
     finalRankings = [],
     confidenceScores,

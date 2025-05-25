@@ -17,7 +17,7 @@ const BattleMode = () => {
   const [battleResults, setBattleResults] = useState<SingleBattle[]>([]);
   const [emergencyResetPerformed, setEmergencyResetPerformed] = useState(false);
 
-  // CRITICAL FIX: Ultra-stable battle type - never changes reference
+  // CRITICAL FIX: Store battle type in ref to prevent re-renders
   const getInitialBattleType = (): BattleType => {
     const stored = localStorage.getItem('pokemon-ranker-battle-type') as BattleType | null;
     const defaultType: BattleType = "pairs";
@@ -28,33 +28,35 @@ const BattleMode = () => {
     return stored;
   };
   
-  const initialBattleType = useRef<BattleType>(getInitialBattleType());
+  const initialBattleType = getInitialBattleType();
 
-  // CRITICAL FIX: Ultra-stable Pokemon data with complete preservation
+  // CRITICAL FIX: Memoize Pokemon data with stable reference
   const stableAllPokemon = useMemo(() => {
     if (!allPokemon.length) return [];
     
-    console.log('[DEBUG BattleMode] Processing Pokemon data - preserving original structure');
+    console.log('[DEBUG BattleMode] Stabilizing Pokemon data - length:', allPokemon.length);
     
-    // Log sample Pokemon types to verify data integrity
-    const samplePokemon = allPokemon[0];
+    // Log original data to verify types
+    const samplePokemon = allPokemon.find(p => p.id === 60) || allPokemon[0];
     if (samplePokemon) {
-      console.log('[DEBUG BattleMode] Sample Pokemon types from source:', JSON.stringify(samplePokemon.types));
+      console.log('[DEBUG BattleMode] Sample Pokemon from source:', JSON.stringify({
+        id: samplePokemon.id,
+        name: samplePokemon.name,
+        types: samplePokemon.types
+      }));
     }
     
-    // Return the original array without any processing to preserve all data
-    console.log(`[DEBUG BattleMode] Returning ${allPokemon.length} Pokemon with preserved data`);
     return allPokemon;
-  }, [allPokemon]); // Depend on the actual array reference
+  }, [allPokemon]);
 
-  // CRITICAL FIX: Ultra-stable callback references
+  // CRITICAL FIX: Ultra-stable callback references that never change
   const stableSetBattlesCompleted = useCallback((value: React.SetStateAction<number>) => {
     setBattlesCompleted(value);
-  }, []); // Never changes
+  }, []);
 
   const stableSetBattleResults = useCallback((value: React.SetStateAction<SingleBattle[]>) => {
     setBattleResults(value);
-  }, []); // Never changes
+  }, []);
 
   const [loadingInitiated, setLoadingInitiated] = useState(false);
   const loaderInitiatedRef = useRef(false);
@@ -131,7 +133,7 @@ const BattleMode = () => {
     );
   }
 
-  // CRITICAL FIX: Stable component key to prevent unmounting
+  // CRITICAL FIX: Static component key to prevent unmounting - use data length only
   const containerKey = `battle-container-${stableAllPokemon.length}`;
 
   return (
@@ -140,7 +142,7 @@ const BattleMode = () => {
         <BattleContentContainer
           key={containerKey}
           allPokemon={stableAllPokemon}
-          initialBattleType={initialBattleType.current}
+          initialBattleType={initialBattleType}
           initialSelectedGeneration={0}
           setBattlesCompleted={stableSetBattlesCompleted}
           setBattleResults={stableSetBattleResults}

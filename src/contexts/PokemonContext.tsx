@@ -17,43 +17,48 @@ interface PokemonProviderProps {
 export const PokemonProvider: React.FC<PokemonProviderProps> = ({ children, allPokemon }) => {
   console.log('[DEBUG PokemonContext] Provider rendering with', allPokemon.length, 'Pokemon');
   
-  // CRITICAL FIX: Preserve complete Pokemon data including full types
+  // CRITICAL FIX: Log the original Pokemon data to verify types are present
+  if (allPokemon.length > 0) {
+    const samplePokemon = allPokemon.find(p => p.id === 60) || allPokemon[0]; // Try to find Poliwag or use first
+    console.log('[DEBUG PokemonContext] Original Pokemon data sample:', JSON.stringify({
+      id: samplePokemon.id,
+      name: samplePokemon.name,
+      types: samplePokemon.types
+    }));
+  }
+  
+  // CRITICAL FIX: Create lookup map that preserves ALL original Pokemon data
   const pokemonLookupMap = useMemo(() => {
     console.log('[DEBUG PokemonContext] Creating lookup map with', allPokemon.length, 'Pokemon');
     
     const map = new Map<number, Pokemon>();
-    allPokemon.forEach((pokemon, index) => {
-      // CRITICAL: Store the COMPLETE original Pokemon object without modification
-      // This preserves the original types array structure exactly as fetched
-      const completePokemon = pokemon; // No spread operator to avoid losing properties
-      
-      // Verify type data for first few Pokemon
-      if (index < 3) {
-        console.log(`[DEBUG PokemonContext] Pokemon ${pokemon.name} (${pokemon.id}) original types:`, JSON.stringify(pokemon.types));
-        console.log(`[DEBUG PokemonContext] Pokemon ${pokemon.name} stored types:`, JSON.stringify(completePokemon.types));
-      }
-      
-      map.set(pokemon.id, completePokemon);
+    allPokemon.forEach((pokemon) => {
+      // Store the COMPLETE original Pokemon object without any modification
+      map.set(pokemon.id, pokemon);
     });
     
     console.log('[DEBUG PokemonContext] Lookup map created with', map.size, 'entries');
     
-    // Verify a specific Pokemon from the map
-    const samplePokemon = map.get(1); // Bulbasaur
-    if (samplePokemon) {
-      console.log('[DEBUG PokemonContext] Sample from map - Bulbasaur types:', JSON.stringify(samplePokemon.types));
+    // Verify the lookup map contains correct data
+    const sampleFromMap = map.get(60); // Try to get Poliwag
+    if (sampleFromMap) {
+      console.log('[DEBUG PokemonContext] Sample from map - Poliwag data:', JSON.stringify({
+        id: sampleFromMap.id,
+        name: sampleFromMap.name,
+        types: sampleFromMap.types
+      }));
     }
     
     return map;
-  }, [allPokemon]); // Depend on the actual array, not just length
+  }, [allPokemon]); // Only depend on the allPokemon array reference
 
-  // CRITICAL FIX: Ultra-stable context value with proper memoization
+  // CRITICAL FIX: Ultra-stable context value to prevent consumer re-renders
   const contextValue = useMemo(() => {
     const value = {
       allPokemon,
       pokemonLookupMap
     };
-    console.log('[DEBUG PokemonContext] Context value created - allPokemon length:', allPokemon.length, 'map size:', pokemonLookupMap.size);
+    console.log('[DEBUG PokemonContext] Context value memoized - allPokemon length:', allPokemon.length, 'map size:', pokemonLookupMap.size);
     return value;
   }, [allPokemon, pokemonLookupMap]);
 

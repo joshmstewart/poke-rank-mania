@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { SingleBattle } from "./types";
@@ -6,14 +7,15 @@ import { useRankingSuggestions } from "./useRankingSuggestions";
 import { usePokemonContext } from "@/contexts/PokemonContext";
 
 export const useRankings = (allPokemon: Pokemon[] = []) => {
-  console.log("[DEBUG useRankings] INIT - Using context for Pokemon data");
-
-  // Use Pokemon context for stable lookup with verified data integrity
+  // CRITICAL FIX: Use Pokemon context for stable lookup with verified data integrity
   const { pokemonLookupMap } = usePokemonContext();
 
-  // Track component instances for debugging remounts
-  const instanceIdRef = useRef(`rankings-${Date.now()}`);
-  console.log(`[DEBUG useRankings] Instance: ${instanceIdRef.current} running`);
+  // CRITICAL FIX: Only log INIT once by tracking initialization
+  const initializationRef = useRef(false);
+  if (!initializationRef.current) {
+    console.log("[DEBUG useRankings] INIT - Using context for Pokemon data");
+    initializationRef.current = true;
+  }
   
   const [finalRankings, setFinalRankings] = useState<RankedPokemon[]>([]);
   const [confidenceScores, setConfidenceScores] = useState<Record<number, number>>({});
