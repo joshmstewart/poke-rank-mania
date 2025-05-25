@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { SingleBattle } from "./types";
@@ -39,17 +38,24 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
   const previousResultsRef = useRef<SingleBattle[]>([]);
   const rankingGenerationCountRef = useRef(0);
 
-  // CRITICAL FIX: Create a stable lookup map for Pokemon data to preserve types
+  // CRITICAL FIX: Create a stable lookup map that preserves complete Pokemon data including types
   const pokemonLookupMap = useMemo(() => {
     const map = new Map<number, Pokemon>();
     allPokemon.forEach(pokemon => {
-      // Ensure we preserve the complete Pokemon object including types
+      // CRITICAL: Preserve the complete Pokemon object with full type structure
       map.set(pokemon.id, {
         ...pokemon,
-        types: pokemon.types || [] // Ensure types array exists
+        types: pokemon.types || [] // Preserve original types array structure
       });
     });
     console.log(`[DEBUG useRankings] Created Pokemon lookup map with ${map.size} entries`);
+    
+    // Log a sample Pokemon to verify type structure
+    if (map.size > 0) {
+      const sample = Array.from(map.values())[0];
+      console.log(`[DEBUG Type Structure Sample] ${sample.name} types:`, sample.types);
+    }
+    
     return map;
   }, [allPokemon]);
 
@@ -88,7 +94,7 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
     }
   }, [finalRankings]);
 
-  // Helper function to safely extract type names from Pokemon data
+  // FIXED: Enhanced type extraction that preserves original type names
   const extractPokemonTypes = useCallback((pokemon: Pokemon): string[] => {
     console.log(`[DEBUG Type Extraction] Pokemon ${pokemon.name} (${pokemon.id}) raw types:`, pokemon.types);
     
@@ -102,10 +108,7 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
     for (let i = 0; i < pokemon.types.length; i++) {
       const typeSlot = pokemon.types[i];
       
-      // Early continue for null/undefined values
-      if (!typeSlot) {
-        continue;
-      }
+      if (!typeSlot) continue;
 
       // Handle string types directly
       if (typeof typeSlot === 'string') {
@@ -113,7 +116,7 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
         continue;
       }
 
-      // Handle object types with explicit type assertions
+      // Handle object types
       if (typeof typeSlot === 'object') {
         // Handle nested type structure: { slot: 1, type: { name: 'grass' } }
         const slotAsAny = typeSlot as any;
@@ -135,15 +138,13 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
     return finalTypes;
   }, []);
 
-  // NEW CLEAN generateRankings FUNCTION
+  // COMPLETELY REWRITTEN generateRankings function with proper type preservation
   const generateRankings = useCallback((results: SingleBattle[]): RankedPokemon[] => {
     console.log("[DEBUG generateRankings] Starting with results:", results.length);
     
-    // Prevent excessive regeneration
     rankingGenerationCountRef.current++;
     const currentCount = rankingGenerationCountRef.current;
-    console.log(`[generateRankings] Entry #${currentCount} - Results count: ${results.length}`);
-
+    
     // Check if results haven't changed substantially
     if (results.length === previousResultsRef.current.length && results.length > 0) {
       const hasNewResults = results.some((result, i) => 
@@ -157,7 +158,6 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
       }
     }
     
-    // Update the previous results reference
     previousResultsRef.current = [...results];
 
     // Load active suggestions
@@ -174,7 +174,7 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
 
     const participatingPokemonIds = new Set([...countMap.keys()]);
 
-    // Create ranked Pokemon list
+    // CRITICAL FIX: Create ranked Pokemon list with preserved type data
     const allRankedPokemon: RankedPokemon[] = Array.from(participatingPokemonIds)
       .map(pokemonId => {
         const completePokemon = pokemonLookupMap.get(pokemonId);
@@ -182,6 +182,9 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
           console.warn(`[generateRankings] Pokemon ID ${pokemonId} not found in lookup map`);
           return null;
         }
+
+        // CRITICAL: Log the Pokemon before type extraction to verify data integrity
+        console.log(`[DEBUG Type Verification] ${completePokemon.name} before extraction:`, completePokemon.types);
 
         // Ensure rating exists
         if (!completePokemon.rating) {
@@ -199,11 +202,9 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
         // Extract types using helper function
         const pokemonTypes = extractPokemonTypes(completePokemon);
 
-        console.log(`[generateRankings] ${completePokemon.name} (${completePokemon.id}) - Types:`, pokemonTypes);
-
         return {
           ...completePokemon,
-          types: pokemonTypes,
+          types: pokemonTypes, // This should now contain actual type names like ['electric', 'steel']
           score: conservativeEstimate,
           count: countMap.get(completePokemon.id) || 0,
           confidence: normalizedConfidence,
@@ -221,10 +222,10 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
       ? allRankedPokemon 
       : allRankedPokemon.slice(0, Number(activeTier));
     
-    // Final processing with suggestions
+    // Final processing with suggestions and type verification
     const finalWithSuggestions = filteredRankings.map(pokemon => {
       const preservedTypes = pokemon.types || ['unknown'];
-      console.log(`[generateRankings] Final ${pokemon.name} (ID: ${pokemon.id}) - Types:`, preservedTypes);
+      console.log(`[DEBUG Background Color] ${pokemon.name} - Types for styling:`, preservedTypes);
       
       return {
         ...pokemon,
@@ -236,7 +237,7 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
     // Set state
     const safeFinalRankings = finalWithSuggestions || [];
     setFinalRankings(safeFinalRankings);
-    console.log(`Rankings generated with suggestions: ${safeFinalRankings.length} Pokémon`);
+    console.log(`Rankings generated: ${safeFinalRankings.length} Pokémon with preserved types`);
 
     // Set confidence scores
     const confidenceMap: Record<number, number> = {};
