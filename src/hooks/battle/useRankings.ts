@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { SingleBattle } from "./types";
@@ -134,16 +135,16 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
     return finalTypes;
   }, []);
 
-  // CRITICAL TYPE PRESERVATION FIX: Enhanced ranking generation with proper Pokemon lookup
+  // NEW CLEAN generateRankings FUNCTION
   const generateRankings = useCallback((results: SingleBattle[]): RankedPokemon[] => {
-    console.log("[DEBUG useRankings] generateRankings - results is array:", Array.isArray(results), "length:", results?.length || 0);
+    console.log("[DEBUG generateRankings] Starting with results:", results.length);
     
-    // Prevent excessive regeneration by tracking and logging call count
+    // Prevent excessive regeneration
     rankingGenerationCountRef.current++;
     const currentCount = rankingGenerationCountRef.current;
-    console.log(`[EFFECT LoopCheck - generateRankings] ENTRY #${currentCount} - Results count: ${results.length}`);
+    console.log(`[generateRankings] Entry #${currentCount} - Results count: ${results.length}`);
 
-    // Check if results haven't changed substantially - avoid unnecessary regeneration
+    // Check if results haven't changed substantially
     if (results.length === previousResultsRef.current.length && results.length > 0) {
       const hasNewResults = results.some((result, i) => 
         previousResultsRef.current[i]?.winner?.id !== result.winner?.id ||
@@ -151,7 +152,7 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
       );
       
       if (!hasNewResults) {
-        console.log(`[EFFECT LoopCheck - generateRankings #${currentCount}] SKIPPED - Results unchanged`);
+        console.log(`[generateRankings #${currentCount}] SKIPPED - Results unchanged`);
         return previousRankingsRef.current;
       }
     }
@@ -159,12 +160,11 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
     // Update the previous results reference
     previousResultsRef.current = [...results];
 
-    // This call updates activeSuggestionsRef.current internally in useRankingSuggestions
+    // Load active suggestions
     const currentActiveSuggestions = loadSavedSuggestions();
 
-    // Perform the ranking generation synchronously
+    // Build count map from battle results
     const countMap = new Map<number, number>();
-
     results.forEach(result => {
       if (result && result.winner && result.loser) {
         countMap.set(result.winner.id, (countMap.get(result.winner.id) || 0) + 1);
@@ -174,19 +174,21 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
 
     const participatingPokemonIds = new Set([...countMap.keys()]);
 
-    // CRITICAL FIX: Use the lookup map to get complete Pokemon data with preserved types
+    // Create ranked Pokemon list
     const allRankedPokemon: RankedPokemon[] = Array.from(participatingPokemonIds)
       .map(pokemonId => {
-        // Get the complete Pokemon data from our lookup map
         const completePokemon = pokemonLookupMap.get(pokemonId);
         if (!completePokemon) {
-          console.warn(`[DEBUG useRankings] Pokemon ID ${pokemonId} not found in lookup map`);
+          console.warn(`[generateRankings] Pokemon ID ${pokemonId} not found in lookup map`);
           return null;
         }
 
         // Ensure rating exists
-        if (!completePokemon.rating) completePokemon.rating = new Rating();
-        else if (!(completePokemon.rating instanceof Rating)) completePokemon.rating = new Rating(completePokemon.rating.mu, completePokemon.rating.sigma);
+        if (!completePokemon.rating) {
+          completePokemon.rating = new Rating();
+        } else if (!(completePokemon.rating instanceof Rating)) {
+          completePokemon.rating = new Rating(completePokemon.rating.mu, completePokemon.rating.sigma);
+        }
 
         const conservativeEstimate = completePokemon.rating.mu - 3 * completePokemon.rating.sigma;
         const normalizedConfidence = Math.max(0, Math.min(100, 100 * (1 - (completePokemon.rating.sigma / 8.33))));
@@ -194,14 +196,13 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
         const pokemonFrozenStatus = frozenPokemon[completePokemon.id] || {};
         const suggestedAdjustment = currentActiveSuggestions.get(completePokemon.id);
 
-        // CRITICAL TYPE PRESERVATION: Use the complete Pokemon data which preserves types
+        // Extract types using helper function
         const pokemonTypes = extractPokemonTypes(completePokemon);
 
-        console.log(`[DEBUG Type Preservation] ${completePokemon.name} (${completePokemon.id}) - Original types:`, completePokemon.types, "Extracted:", pokemonTypes);
+        console.log(`[generateRankings] ${completePokemon.name} (${completePokemon.id}) - Types:`, pokemonTypes);
 
         return {
           ...completePokemon,
-          // CRITICAL: Preserve the correctly processed types array
           types: pokemonTypes,
           score: conservativeEstimate,
           count: countMap.get(completePokemon.id) || 0,
@@ -210,41 +211,41 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
           suggestedAdjustment
         };
       })
-      .filter(Boolean) as RankedPokemon[]
-      .sort((a, b) => b.score - a.score);
+      .filter(Boolean) as RankedPokemon[];
 
+    // Sort by score
+    allRankedPokemon.sort((a, b) => b.score - a.score);
+
+    // Apply tier filtering
     const filteredRankings = activeTier === "All" 
       ? allRankedPokemon 
       : allRankedPokemon.slice(0, Number(activeTier));
     
+    // Final processing with suggestions
     const finalWithSuggestions = filteredRankings.map(pokemon => {
-      // CRITICAL TYPE PRESERVATION: Ensure types are maintained in final output
       const preservedTypes = pokemon.types || ['unknown'];
-      console.log(`[DEBUG Type Verification] ${pokemon.name} (ID: ${pokemon.id}) - Types:`, 
-        Array.isArray(preservedTypes) ? preservedTypes : 'not array', 
-        preservedTypes?.length || 0, 'entries');
+      console.log(`[generateRankings] Final ${pokemon.name} (ID: ${pokemon.id}) - Types:`, preservedTypes);
       
       return {
         ...pokemon,
-        // CRITICAL: Ensure types are always properly preserved
         types: Array.isArray(preservedTypes) ? preservedTypes : ['unknown'],
         suggestedAdjustment: currentActiveSuggestions.get(pokemon.id) || null
       };
     });
 
-    // CRITICAL: Always set finalRankings to an array, never undefined
+    // Set state
     const safeFinalRankings = finalWithSuggestions || [];
     setFinalRankings(safeFinalRankings);
-    console.log(`🎯 Rankings generated with suggestions: ${safeFinalRankings.length} Pokémon`);
+    console.log(`Rankings generated with suggestions: ${safeFinalRankings.length} Pokémon`);
 
+    // Set confidence scores
     const confidenceMap: Record<number, number> = {};
     allRankedPokemon.forEach(p => {
       confidenceMap[p.id] = p.confidence;
     });
     setConfidenceScores(confidenceMap);
 
-    console.log(`[EFFECT LoopCheck - generateRankings #${rankingGenerationCountRef.current}] COMPLETE - Returning finalWithSuggestions array, length:`, 
-                 finalWithSuggestions.length);
+    console.log(`[generateRankings #${currentCount}] COMPLETE - Returning array length:`, safeFinalRankings.length);
     
     return safeFinalRankings;
   }, [pokemonLookupMap, activeTier, frozenPokemon, loadSavedSuggestions, setFinalRankings, setConfidenceScores, extractPokemonTypes]);
