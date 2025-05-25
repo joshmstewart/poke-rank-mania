@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { SingleBattle } from "./types";
@@ -6,19 +5,8 @@ import { Rating } from "ts-trueskill";
 import { useRankingSuggestions } from "./useRankingSuggestions";
 import { usePokemonContext } from "@/contexts/PokemonContext";
 
-// Type definitions for Pokemon type structure
-interface PokemonTypeInfo {
-  name: string;
-  url?: string;
-}
-
-interface PokemonTypeSlot {
-  slot: number;
-  type: PokemonTypeInfo;
-}
-
 export const useRankings = (allPokemon: Pokemon[] = []) => {
-  console.log("[DEBUG useRankings] INIT - allPokemon is array:", Array.isArray(allPokemon), "length:", allPokemon?.length || 0);
+  console.log("[DEBUG useRankings] INIT - Using context for Pokemon data");
 
   // Use Pokemon context for stable lookup with verified data integrity
   const { pokemonLookupMap } = usePokemonContext();
@@ -28,9 +16,6 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
   console.log(`[DEBUG useRankings] Instance: ${instanceIdRef.current} running`);
   
   const [finalRankings, setFinalRankings] = useState<RankedPokemon[]>([]);
-  console.log("[DEBUG useRankings] finalRankings useState initialized:", 
-              Array.isArray(finalRankings) ? `array[${finalRankings.length}]` : 'not array');
-              
   const [confidenceScores, setConfidenceScores] = useState<Record<number, number>>({});
   const [activeTier, setActiveTier] = useState<TopNOption>(() => {
     const storedTier = localStorage.getItem("pokemon-active-tier");
@@ -78,13 +63,13 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
     }
   }, [finalRankings]);
 
-  // CRITICAL FIX: Enhanced type extraction that preserves original type names
-  const extractPokemonTypes = useCallback((pokemon: Pokemon): { type1Name: string; type2Name: string | null } => {
-    console.log(`[DEBUG Type Extraction] Pokemon ${pokemon.name} (${pokemon.id}) raw types:`, JSON.stringify(pokemon.types));
+  // CRITICAL FIX: Enhanced type extraction that preserves original type structure
+  const extractPokemonTypes = useCallback((pokemon: Pokemon): { type1: string; type2: string | null } => {
+    console.log(`[DEBUG Type Extraction] Pokemon ${pokemon.name} (${pokemon.id}) original types:`, JSON.stringify(pokemon.types));
     
     if (!pokemon.types || !Array.isArray(pokemon.types) || pokemon.types.length === 0) {
       console.log(`[DEBUG Type Extraction] No valid types found for ${pokemon.name} - returning default`);
-      return { type1Name: 'unknown', type2Name: null };
+      return { type1: 'unknown', type2: null };
     }
 
     const extractedTypes: string[] = [];
@@ -100,9 +85,8 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
         continue;
       }
 
-      // Handle object types
+      // Handle object types with nested structure: { slot: 1, type: { name: 'grass' } }
       if (typeof typeSlot === 'object') {
-        // Handle nested type structure: { slot: 1, type: { name: 'grass' } }
         const slotAsAny = typeSlot as any;
         if (slotAsAny && slotAsAny.type && typeof slotAsAny.type === 'object' && typeof slotAsAny.type.name === 'string') {
           extractedTypes.push(slotAsAny.type.name);
@@ -117,11 +101,11 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
       }
     }
 
-    const type1Name = extractedTypes.length > 0 ? extractedTypes[0] : 'unknown';
-    const type2Name = extractedTypes.length > 1 ? extractedTypes[1] : null;
+    const type1 = extractedTypes.length > 0 ? extractedTypes[0] : 'unknown';
+    const type2 = extractedTypes.length > 1 ? extractedTypes[1] : null;
     
-    console.log(`[DEBUG Type Extraction] Final types for ${pokemon.name}: type1=${type1Name}, type2=${type2Name}`);
-    return { type1Name, type2Name };
+    console.log(`[DEBUG Type Extraction] Final types for ${pokemon.name}: type1=${type1}, type2=${type2}`);
+    return { type1, type2 };
   }, []);
 
   // CRITICAL FIX: Completely rewritten generateRankings with verified data integrity
@@ -170,7 +154,7 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
           return null;
         }
 
-        // CRITICAL: Verify data integrity before processing
+        // CRITICAL: Log the exact data from lookup map for debugging
         console.log(`[generateRankings] Details for ${pokemonId} FROM LOOKUP MAP:`, JSON.stringify({
           id: completePokemon.id,
           name: completePokemon.name,
@@ -191,16 +175,16 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
         const suggestedAdjustment = currentActiveSuggestions.get(completePokemon.id);
 
         // Extract types using helper function with complete Pokemon data
-        const { type1Name, type2Name } = extractPokemonTypes(completePokemon);
+        const { type1, type2 } = extractPokemonTypes(completePokemon);
 
         // CRITICAL: Create RankedPokemon with proper type structure for display
         const rankedPokemon: RankedPokemon = {
           ...completePokemon,
-          // Ensure types array is preserved in original format for any other consumers
+          // Preserve original types array for other consumers
           types: completePokemon.types || [],
           // Add explicit type names for styling
-          type1: type1Name,
-          type2: type2Name,
+          type1,
+          type2,
           score: conservativeEstimate,
           count: countMap.get(completePokemon.id) || 0,
           confidence: normalizedConfidence,
@@ -267,11 +251,6 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
   const handleSaveRankings = useCallback(() => {
     localStorage.setItem("pokemon-frozen-pokemon", JSON.stringify(frozenPokemon));
   }, [frozenPokemon]);
-
-  // Log out finalRankings before returning
-  console.log("[DEBUG useRankings] RETURN - finalRankings is array:", 
-              Array.isArray(finalRankings), 
-              "length:", finalRankings?.length || 0);
 
   return {
     finalRankings,

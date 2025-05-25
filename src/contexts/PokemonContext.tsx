@@ -15,37 +15,45 @@ interface PokemonProviderProps {
 }
 
 export const PokemonProvider: React.FC<PokemonProviderProps> = ({ children, allPokemon }) => {
-  // CRITICAL FIX: Ensure lookup map preserves complete Pokemon data including full types
+  console.log('[DEBUG PokemonContext] Provider rendering with', allPokemon.length, 'Pokemon');
+  
+  // CRITICAL FIX: Preserve complete Pokemon data including full types
   const pokemonLookupMap = useMemo(() => {
     console.log('[DEBUG PokemonContext] Creating lookup map with', allPokemon.length, 'Pokemon');
     
     const map = new Map<number, Pokemon>();
     allPokemon.forEach((pokemon, index) => {
-      // CRITICAL: Preserve complete Pokemon data including types structure
-      const completePokemon = {
-        ...pokemon,
-        types: pokemon.types || []
-      };
+      // CRITICAL: Store the COMPLETE original Pokemon object without modification
+      // This preserves the original types array structure exactly as fetched
+      const completePokemon = pokemon; // No spread operator to avoid losing properties
       
       // Verify type data for first few Pokemon
       if (index < 3) {
-        console.log(`[DEBUG PokemonContext] Pokemon ${pokemon.name} (${pokemon.id}) types in map:`, JSON.stringify(pokemon.types));
+        console.log(`[DEBUG PokemonContext] Pokemon ${pokemon.name} (${pokemon.id}) original types:`, JSON.stringify(pokemon.types));
+        console.log(`[DEBUG PokemonContext] Pokemon ${pokemon.name} stored types:`, JSON.stringify(completePokemon.types));
       }
       
       map.set(pokemon.id, completePokemon);
     });
     
     console.log('[DEBUG PokemonContext] Lookup map created with', map.size, 'entries');
+    
+    // Verify a specific Pokemon from the map
+    const samplePokemon = map.get(1); // Bulbasaur
+    if (samplePokemon) {
+      console.log('[DEBUG PokemonContext] Sample from map - Bulbasaur types:', JSON.stringify(samplePokemon.types));
+    }
+    
     return map;
-  }, [allPokemon.length]); // Only re-create when length changes
+  }, [allPokemon]); // Depend on the actual array, not just length
 
-  // CRITICAL FIX: Ultra-stable context value
+  // CRITICAL FIX: Ultra-stable context value with proper memoization
   const contextValue = useMemo(() => {
     const value = {
       allPokemon,
       pokemonLookupMap
     };
-    console.log('[DEBUG PokemonContext] Context value created/updated');
+    console.log('[DEBUG PokemonContext] Context value created - allPokemon length:', allPokemon.length, 'map size:', pokemonLookupMap.size);
     return value;
   }, [allPokemon, pokemonLookupMap]);
 
