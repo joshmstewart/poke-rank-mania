@@ -5,6 +5,7 @@ import { usePokemonLoader } from "@/hooks/battle/usePokemonLoader";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { SingleBattle, BattleType } from "@/hooks/battle/types";
+import { PokemonProvider } from "@/contexts/PokemonContext";
 
 const BattleMode = () => {
   console.log('[DEBUG BattleMode] Component rendering');
@@ -14,7 +15,7 @@ const BattleMode = () => {
   const [battleResults, setBattleResults] = useState<SingleBattle[]>([]);
   const [emergencyResetPerformed, setEmergencyResetPerformed] = useState(false);
 
-  // PERFORMANCE FIX: Memoize the initial battle type to prevent re-calculations
+  // CRITICAL FIX: Memoize the initial battle type to prevent re-calculations
   const initialBattleType = useMemo((): BattleType => {
     const stored = localStorage.getItem('pokemon-ranker-battle-type') as BattleType | null;
     const defaultType: BattleType = "pairs";
@@ -25,29 +26,11 @@ const BattleMode = () => {
     return stored;
   }, []);
 
-  // PERFORMANCE FIX: Stable references to prevent unnecessary re-renders
-  const stableBattlesCompleted = useRef(battlesCompleted);
-  const stableBattleResults = useRef(battleResults);
-  
-  // Update refs when state changes
-  useEffect(() => {
-    stableBattlesCompleted.current = battlesCompleted;
-  }, [battlesCompleted]);
-  
-  useEffect(() => {
-    stableBattleResults.current = battleResults;
-  }, [battleResults]);
+  // CRITICAL FIX: Stable callback references to prevent re-renders
+  const stableSetBattlesCompleted = useMemo(() => setBattlesCompleted, []);
+  const stableSetBattleResults = useMemo(() => setBattleResults, []);
 
-  // PERFORMANCE FIX: Memoized stable callback references
-  const stableSetBattlesCompleted = useCallback((value: React.SetStateAction<number>) => {
-    setBattlesCompleted(value);
-  }, []);
-
-  const stableSetBattleResults = useCallback((value: React.SetStateAction<SingleBattle[]>) => {
-    setBattleResults(value);
-  }, []);
-
-  // PERFORMANCE FIX: Memoize allPokemon to prevent unnecessary re-processing
+  // CRITICAL FIX: Memoize allPokemon to prevent unnecessary re-processing
   const stableAllPokemon = useMemo(() => {
     // Ensure each Pokemon has complete type information preserved
     return allPokemon.map(pokemon => ({
@@ -67,6 +50,17 @@ const BattleMode = () => {
     if (emergencyResetPerformed) return;
     
     const performInitialReset = () => {
+      const keysToRemember = [
+        'pokemon-ranker-battle-type',
+        'pokemon-active-tier',
+        'pokemon-frozen-pokemon'
+      ];
+      
+      const rememberedValues: Record<string, string | null> = {};
+      keysToRemember.forEach(key => {
+        rememberedValues[key] = localStorage.getItem(key);
+      });
+      
       const keysToRemove = [
         'pokemon-battle-recently-used',
         'pokemon-battle-last-battle',
@@ -78,6 +72,13 @@ const BattleMode = () => {
       ];
       
       keysToRemove.forEach(key => localStorage.removeItem(key));
+      
+      // Restore remembered values
+      Object.entries(rememberedValues).forEach(([key, value]) => {
+        if (value !== null) {
+          localStorage.setItem(key, value);
+        }
+      });
       
       setEmergencyResetPerformed(true);
       console.log('[DEBUG BattleMode] Emergency reset completed');
@@ -131,15 +132,17 @@ const BattleMode = () => {
   }
 
   return (
-    <div className="flex flex-col items-center w-full py-4 px-4 sm:px-6">
-      <BattleContentContainer
-        allPokemon={stableAllPokemon}
-        initialBattleType={initialBattleType}
-        initialSelectedGeneration={0}
-        setBattlesCompleted={stableSetBattlesCompleted}
-        setBattleResults={stableSetBattleResults}
-      />
-    </div>
+    <PokemonProvider allPokemon={stableAllPokemon}>
+      <div className="flex flex-col items-center w-full py-4 px-4 sm:px-6">
+        <BattleContentContainer
+          allPokemon={stableAllPokemon}
+          initialBattleType={initialBattleType}
+          initialSelectedGeneration={0}
+          setBattlesCompleted={stableSetBattlesCompleted}
+          setBattleResults={stableSetBattleResults}
+        />
+      </div>
+    </PokemonProvider>
   );
 };
 

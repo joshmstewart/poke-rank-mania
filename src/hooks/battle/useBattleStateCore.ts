@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { useBattleStarterIntegration } from "@/hooks/battle/useBattleStarterIntegration";
 import { useBattleProcessor } from "@/hooks/battle/useBattleProcessor";
@@ -8,46 +8,37 @@ import { BattleType } from "./types";
 import { useRankings } from "./useRankings";
 import { useBattleInteractions } from "./useBattleInteractions"; 
 import { toast } from "@/hooks/use-toast";
+import { usePokemonContext } from "@/contexts/PokemonContext";
 
 export const useBattleStateCore = (
-  allPokemon: Pokemon[] = [], // Ensure default empty array
+  allPokemon: Pokemon[] = [], // This will be overridden by context
   initialBattleType: BattleType,
   initialSelectedGeneration: number
 ) => {
-  console.log("[DEBUG useBattleStateCore] INIT - allPokemon is array:", Array.isArray(allPokemon), "length:", allPokemon?.length || 0);
+  console.log("[DEBUG useBattleStateCore] INIT - Using context for Pokemon data");
 
-  // PERFORMANCE FIX: Use stable references to prevent unnecessary re-renders
-  const stableAllPokemonRef = useRef(allPokemon);
-  const stableInitialTypeRef = useRef(initialBattleType);
-  const stableInitialGenerationRef = useRef(initialSelectedGeneration);
+  // CRITICAL FIX: Use Pokemon context for stable data
+  const { allPokemon: contextPokemon } = usePokemonContext();
   
-  // Only update refs if the actual data has changed
-  useEffect(() => {
-    if (allPokemon !== stableAllPokemonRef.current && allPokemon.length > 0) {
-      stableAllPokemonRef.current = allPokemon;
-    }
-  }, [allPokemon]);
-
-  // Keep track if we need to reload suggestions after milestone
+  // CRITICAL FIX: Use stable memoized references to prevent re-initialization
+  const stableInitialBattleType = useMemo(() => initialBattleType, []);
+  const stableInitialGeneration = useMemo(() => initialSelectedGeneration, []);
+  
+  // Track if we need to reload suggestions after milestone
   const [needsToReloadSuggestions, setNeedsToReloadSuggestions] = useState(false);
   
   const [currentBattle, setCurrentBattle] = useState<Pokemon[]>([]);
   const [battleResults, setBattleResults] = useState<any[]>([]);
   const [battlesCompleted, setBattlesCompleted] = useState(0);
   const [battleHistory, setBattleHistory] = useState<{ battle: Pokemon[], selected: number[] }[]>([]);
-  const [selectedGeneration, setSelectedGeneration] = useState(stableInitialGenerationRef.current);
-  const initialBattleTypeStored = localStorage.getItem('pokemon-ranker-battle-type') as BattleType || stableInitialTypeRef.current;
+  const [selectedGeneration, setSelectedGeneration] = useState(stableInitialGeneration);
+  const initialBattleTypeStored = localStorage.getItem('pokemon-ranker-battle-type') as BattleType || stableInitialBattleType;
   const [battleType, setBattleType] = useState<BattleType>(initialBattleTypeStored);
   const [selectedPokemon, setSelectedPokemon] = useState<number[]>([]);
 
-  // PERFORMANCE FIX: Stable setCurrentBattle wrapper to prevent re-renders
-  const stableSetCurrentBattle = useCallback((newBattle: React.SetStateAction<Pokemon[]>) => {
-    setCurrentBattle(newBattle);
-  }, []);
-
-  const stableSetSelectedPokemon = useCallback((newSelection: React.SetStateAction<number[]>) => {
-    setSelectedPokemon(newSelection);
-  }, []);
+  // CRITICAL FIX: Stable callback references to prevent hook re-initialization
+  const stableSetCurrentBattle = useMemo(() => setCurrentBattle, []);
+  const stableSetSelectedPokemon = useMemo(() => setSelectedPokemon, []);
 
   // Flag to track when a full reset has just happened
   const isResettingRef = useRef(false);
@@ -66,9 +57,9 @@ export const useBattleStateCore = (
     forceDismissMilestone
   } = useProgressState();
 
-  // Get useRankings with guaranteed non-undefined allPokemon
+  // CRITICAL FIX: Use context Pokemon with stable reference
   const {
-    finalRankings = [], // CRITICAL FIX: Ensure finalRankings is never undefined
+    finalRankings = [],
     confidenceScores,
     generateRankings,
     handleSaveRankings,
@@ -83,7 +74,7 @@ export const useBattleStateCore = (
     clearAllSuggestions,
     findNextSuggestion,
     loadSavedSuggestions
-  } = useRankings(stableAllPokemonRef.current);
+  } = useRankings(contextPokemon);
 
   const {
     resetMilestones,
@@ -99,33 +90,25 @@ export const useBattleStateCore = (
     showingMilestone,
     setShowingMilestone,
     generateRankings,
-    stableAllPokemonRef.current
+    contextPokemon
   );
 
-  // PERFORMANCE FIX: Stable filtered Pokemon with better memoization
-  const filteredPokemon = useRef<Pokemon[]>([]);
-  
-  useEffect(() => {
-    const newFiltered = (stableAllPokemonRef.current || []).filter(pokemon => {
+  // CRITICAL FIX: Stable filtered Pokemon with proper memoization
+  const filteredPokemon = useMemo(() => {
+    return (contextPokemon || []).filter(pokemon => {
       if (selectedGeneration === 0) {
         return true;
       }
       return pokemon.hasOwnProperty('generation') && (pokemon as any).generation === selectedGeneration;
     });
-    
-    // Only update if actually different
-    if (newFiltered.length !== filteredPokemon.current.length || 
-        newFiltered.some((p, i) => p.id !== filteredPokemon.current[i]?.id)) {
-      filteredPokemon.current = newFiltered;
-    }
-  }, [selectedGeneration, stableAllPokemonRef.current]);
+  }, [contextPokemon, selectedGeneration]);
 
   const { 
     battleStarter, 
     startNewBattle,
     resetSuggestionPriority 
   } = useBattleStarterIntegration(
-    filteredPokemon.current, 
+    filteredPokemon, 
     finalRankings || [],
     stableSetCurrentBattle,
     stableSetSelectedPokemon,
@@ -144,7 +127,7 @@ export const useBattleStateCore = (
     setBattleResults,
     battlesCompleted,
     setBattlesCompleted,
-    filteredPokemon.current,
+    filteredPokemon,
     stableSetCurrentBattle,
     setShowingMilestone,
     milestones,
@@ -179,17 +162,19 @@ export const useBattleStateCore = (
     }
   }, [showingMilestone, battleStarter, battleType, isProcessingResult, startNewBattle, forceDismissMilestone]);
 
-  // PERFORMANCE FIX: Debounced rankings generation
-  const debouncedGenerateRankings = useCallback((results: any[]) => {
-    if (rankingsGenerationDelayRef.current) {
-      clearTimeout(rankingsGenerationDelayRef.current);
-    }
-    
-    rankingsGenerationDelayRef.current = setTimeout(() => {
-      console.log("[DEBOUNCED] Generating rankings after delay");
-      generateRankings(results);
-      rankingsGenerationDelayRef.current = null;
-    }, 150); // Reduced delay for better responsiveness
+  // CRITICAL FIX: Stable debounced rankings generation
+  const debouncedGenerateRankings = useMemo(() => {
+    return (results: any[]) => {
+      if (rankingsGenerationDelayRef.current) {
+        clearTimeout(rankingsGenerationDelayRef.current);
+      }
+      
+      rankingsGenerationDelayRef.current = setTimeout(() => {
+        console.log("[DEBOUNCED] Generating rankings after delay");
+        generateRankings(results);
+        rankingsGenerationDelayRef.current = null;
+      }, 150);
+    };
   }, [generateRankings]);
 
   // RESET FUNCTION: Enhanced with better state management

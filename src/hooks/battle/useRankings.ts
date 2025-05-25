@@ -3,6 +3,7 @@ import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { SingleBattle } from "./types";
 import { Rating } from "ts-trueskill";
 import { useRankingSuggestions } from "./useRankingSuggestions";
+import { usePokemonContext } from "@/contexts/PokemonContext";
 
 // Type definitions for Pokemon type structure
 interface PokemonTypeInfo {
@@ -17,6 +18,9 @@ interface PokemonTypeSlot {
 
 export const useRankings = (allPokemon: Pokemon[] = []) => {
   console.log("[DEBUG useRankings] INIT - allPokemon is array:", Array.isArray(allPokemon), "length:", allPokemon?.length || 0);
+
+  // Use Pokemon context for stable lookup
+  const { pokemonLookupMap } = usePokemonContext();
 
   // Track component instances for debugging remounts
   const instanceIdRef = useRef(`rankings-${Date.now()}`);
@@ -37,27 +41,6 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
   const previousRankingsRef = useRef<RankedPokemon[]>([]);
   const previousResultsRef = useRef<SingleBattle[]>([]);
   const rankingGenerationCountRef = useRef(0);
-
-  // CRITICAL FIX: Create a stable lookup map that preserves complete Pokemon data including types
-  const pokemonLookupMap = useMemo(() => {
-    const map = new Map<number, Pokemon>();
-    allPokemon.forEach(pokemon => {
-      // CRITICAL: Preserve the complete Pokemon object with full type structure
-      map.set(pokemon.id, {
-        ...pokemon,
-        types: pokemon.types || [] // Preserve original types array structure
-      });
-    });
-    console.log(`[DEBUG useRankings] Created Pokemon lookup map with ${map.size} entries`);
-    
-    // Log a sample Pokemon to verify type structure
-    if (map.size > 0) {
-      const sample = Array.from(map.values())[0];
-      console.log(`[DEBUG Type Structure Sample] ${sample.name} types:`, sample.types);
-    }
-    
-    return map;
-  }, [allPokemon]);
 
   const {
     suggestRanking,
@@ -94,13 +77,13 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
     }
   }, [finalRankings]);
 
-  // FIXED: Enhanced type extraction that preserves original type names
-  const extractPokemonTypes = useCallback((pokemon: Pokemon): string[] => {
+  // CRITICAL FIX: Enhanced type extraction that preserves original type names
+  const extractPokemonTypes = useCallback((pokemon: Pokemon): { type1Name: string; type2Name: string | null } => {
     console.log(`[DEBUG Type Extraction] Pokemon ${pokemon.name} (${pokemon.id}) raw types:`, pokemon.types);
     
     if (!pokemon.types || !Array.isArray(pokemon.types) || pokemon.types.length === 0) {
-      console.log(`[DEBUG Type Extraction] No valid types found for ${pokemon.name}`);
-      return ['unknown'];
+      console.log(`[DEBUG Type Extraction] No valid types found for ${pokemon.name} - returning default`);
+      return { type1Name: 'unknown', type2Name: null };
     }
 
     const extractedTypes: string[] = [];
@@ -133,12 +116,14 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
       }
     }
 
-    const finalTypes = extractedTypes.length > 0 ? extractedTypes : ['unknown'];
-    console.log(`[DEBUG Type Extraction] Final types for ${pokemon.name}:`, finalTypes);
-    return finalTypes;
+    const type1Name = extractedTypes.length > 0 ? extractedTypes[0] : 'unknown';
+    const type2Name = extractedTypes.length > 1 ? extractedTypes[1] : null;
+    
+    console.log(`[DEBUG Type Extraction] Final types for ${pokemon.name}: type1=${type1Name}, type2=${type2Name}`);
+    return { type1Name, type2Name };
   }, []);
 
-  // COMPLETELY REWRITTEN generateRankings function with proper type preservation
+  // CRITICAL FIX: Completely rewritten generateRankings with proper data integrity
   const generateRankings = useCallback((results: SingleBattle[]): RankedPokemon[] => {
     console.log("[DEBUG generateRankings] Starting with results:", results.length);
     
@@ -174,17 +159,22 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
 
     const participatingPokemonIds = new Set([...countMap.keys()]);
 
-    // CRITICAL FIX: Create ranked Pokemon list with preserved type data
+    // CRITICAL FIX: Use context lookup map with complete data integrity verification
     const allRankedPokemon: RankedPokemon[] = Array.from(participatingPokemonIds)
       .map(pokemonId => {
+        // CRITICAL: Get Pokemon from stable context lookup
         const completePokemon = pokemonLookupMap.get(pokemonId);
         if (!completePokemon) {
-          console.warn(`[generateRankings] Pokemon ID ${pokemonId} not found in lookup map`);
+          console.warn(`[generateRankings] Pokemon ID ${pokemonId} not found in context lookup map`);
           return null;
         }
 
-        // CRITICAL: Log the Pokemon before type extraction to verify data integrity
-        console.log(`[DEBUG Type Verification] ${completePokemon.name} before extraction:`, completePokemon.types);
+        // CRITICAL: Verify data integrity before processing
+        console.log(`[DEBUG generateRankings] Pokemon ${completePokemon.name} (${pokemonId}) from context:`, {
+          hasTypes: !!completePokemon.types,
+          typesLength: completePokemon.types?.length || 0,
+          typesData: completePokemon.types
+        });
 
         // Ensure rating exists
         if (!completePokemon.rating) {
@@ -199,18 +189,32 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
         const pokemonFrozenStatus = frozenPokemon[completePokemon.id] || {};
         const suggestedAdjustment = currentActiveSuggestions.get(completePokemon.id);
 
-        // Extract types using helper function
-        const pokemonTypes = extractPokemonTypes(completePokemon);
+        // Extract types using helper function with complete Pokemon data
+        const { type1Name, type2Name } = extractPokemonTypes(completePokemon);
 
-        return {
+        // CRITICAL: Create RankedPokemon with proper type structure for display
+        const rankedPokemon: RankedPokemon = {
           ...completePokemon,
-          types: pokemonTypes, // This should now contain actual type names like ['electric', 'steel']
+          // Ensure types array is preserved in original format for any other consumers
+          types: completePokemon.types || [],
+          // Add explicit type names for styling
+          type1: type1Name,
+          type2: type2Name,
           score: conservativeEstimate,
           count: countMap.get(completePokemon.id) || 0,
           confidence: normalizedConfidence,
           isFrozenForTier: pokemonFrozenStatus,
           suggestedAdjustment
         };
+
+        console.log(`[DEBUG generateRankings] Created RankedPokemon for ${completePokemon.name}:`, {
+          type1: rankedPokemon.type1,
+          type2: rankedPokemon.type2,
+          hasTypes: !!rankedPokemon.types,
+          typesLength: rankedPokemon.types?.length || 0
+        });
+
+        return rankedPokemon;
       })
       .filter(Boolean) as RankedPokemon[];
 
@@ -222,22 +226,16 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
       ? allRankedPokemon 
       : allRankedPokemon.slice(0, Number(activeTier));
     
-    // Final processing with suggestions and type verification
-    const finalWithSuggestions = filteredRankings.map(pokemon => {
-      const preservedTypes = pokemon.types || ['unknown'];
-      console.log(`[DEBUG Background Color] ${pokemon.name} - Types for styling:`, preservedTypes);
-      
-      return {
-        ...pokemon,
-        types: Array.isArray(preservedTypes) ? preservedTypes : ['unknown'],
-        suggestedAdjustment: currentActiveSuggestions.get(pokemon.id) || null
-      };
-    });
+    // Final processing with suggestions
+    const finalWithSuggestions = filteredRankings.map(pokemon => ({
+      ...pokemon,
+      suggestedAdjustment: currentActiveSuggestions.get(pokemon.id) || null
+    }));
 
     // Set state
     const safeFinalRankings = finalWithSuggestions || [];
     setFinalRankings(safeFinalRankings);
-    console.log(`Rankings generated: ${safeFinalRankings.length} Pokémon with preserved types`);
+    console.log(`[generateRankings #${currentCount}] Generated ${safeFinalRankings.length} rankings with types preserved`);
 
     // Set confidence scores
     const confidenceMap: Record<number, number> = {};
