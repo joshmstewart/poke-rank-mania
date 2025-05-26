@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from "react";
 import { RankedPokemon, TopNOption } from "@/services/pokemon";
 import { ChevronUp, ChevronDown, Sparkles } from "lucide-react";
@@ -43,10 +44,10 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
     }
   }, [onRemoveSuggestion]);
 
-  // Get Pokemon background color based on primary type
+  // Enhanced Pokemon background color based on primary type - matching the reference images
   const getPokemonBackgroundColor = (pokemon: RankedPokemon): string => {
     if (!pokemon.types || pokemon.types.length === 0) {
-      return 'bg-gray-300';
+      return 'bg-gray-200';
     }
     
     let primaryType = 'unknown';
@@ -62,28 +63,29 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
       }
     }
     
+    // Vibrant type colors matching the reference images
     const typeToColorMap: Record<string, string> = {
-      'normal': 'bg-gray-300',
-      'fighting': 'bg-red-300',
-      'flying': 'bg-blue-300',
-      'poison': 'bg-purple-300',
-      'ground': 'bg-yellow-300',
-      'rock': 'bg-stone-300',
-      'bug': 'bg-green-300',
-      'ghost': 'bg-purple-400',
-      'steel': 'bg-slate-300',
-      'fire': 'bg-red-300',
-      'water': 'bg-blue-300',
-      'grass': 'bg-green-300',
-      'electric': 'bg-yellow-300',
-      'psychic': 'bg-pink-300',
-      'ice': 'bg-cyan-300',
-      'dragon': 'bg-indigo-300',
+      'normal': 'bg-gray-200',
+      'fighting': 'bg-red-200',
+      'flying': 'bg-blue-200',
+      'poison': 'bg-purple-200',
+      'ground': 'bg-yellow-200',
+      'rock': 'bg-yellow-300',
+      'bug': 'bg-green-200',
+      'ghost': 'bg-purple-300',
+      'steel': 'bg-gray-300',
+      'fire': 'bg-red-200',
+      'water': 'bg-blue-200',
+      'grass': 'bg-green-200',
+      'electric': 'bg-yellow-200',
+      'psychic': 'bg-pink-200',
+      'ice': 'bg-cyan-200',
+      'dragon': 'bg-indigo-200',
       'dark': 'bg-gray-400',
-      'fairy': 'bg-pink-300'
+      'fairy': 'bg-pink-200'
     };
     
-    return typeToColorMap[primaryType] || 'bg-gray-300';
+    return typeToColorMap[primaryType] || 'bg-gray-200';
   };
 
   if (isMilestoneView) {
@@ -111,7 +113,7 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
           )}
         </div>
 
-        {/* Grid Layout - exactly like the reference image */}
+        {/* Grid Layout - 5 columns with type-based background colors */}
         <div className="grid grid-cols-5 gap-4">
           {displayRankings.map((pokemon, index) => {
             const backgroundColorClass = getPokemonBackgroundColor(pokemon);
@@ -119,17 +121,17 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
             return (
               <div 
                 key={pokemon.id}
-                className={`${backgroundColorClass} rounded-lg border border-gray-400 relative overflow-hidden transition-all duration-200 hover:shadow-md aspect-square flex flex-col`}
+                className={`${backgroundColorClass} rounded-lg border border-gray-300 relative overflow-hidden transition-all duration-200 hover:shadow-md aspect-[4/5] flex flex-col`}
                 onMouseEnter={() => setHoveredPokemon(pokemon.id)}
                 onMouseLeave={() => setHoveredPokemon(null)}
               >
-                {/* Ranking number - large dark circle in top left */}
-                <div className="absolute top-3 left-3 w-8 h-8 bg-gray-700 text-white rounded-full flex items-center justify-center text-lg font-bold z-10">
+                {/* Ranking number - dark circle in top left */}
+                <div className="absolute top-3 left-3 w-8 h-8 bg-gray-700 text-white rounded-full flex items-center justify-center text-sm font-bold z-10">
                   {index + 1}
                 </div>
                 
                 {/* Pokemon image - centered in upper portion */}
-                <div className="flex-1 flex justify-center items-center pt-6 pb-2">
+                <div className="flex-1 flex justify-center items-center pt-8 pb-2">
                   <img 
                     src={pokemon.image} 
                     alt={pokemon.name}
@@ -141,12 +143,12 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
                   />
                 </div>
                 
-                {/* Pokemon info - bottom section */}
-                <div className="text-center pb-4 px-2">
-                  <h3 className="font-bold text-gray-800 text-base leading-tight mb-1">
+                {/* Pokemon info - bottom section with proper spacing */}
+                <div className="text-center pb-4 px-3">
+                  <h3 className="font-bold text-gray-800 text-sm leading-tight mb-1">
                     {pokemon.name}
                   </h3>
-                  <div className="text-sm text-gray-600">
+                  <div className="text-xs text-gray-600">
                     #{pokemon.id}
                   </div>
                 </div>
