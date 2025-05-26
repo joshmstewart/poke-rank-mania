@@ -1,4 +1,3 @@
-
 import { toast } from "@/hooks/use-toast";
 import { Pokemon } from "../types";
 import { generations } from "../data";
@@ -142,23 +141,34 @@ export async function fetchAllPokemon(generationId: number = 1, fullRankingMode:
             
             const data = await response.json();
             
-            // Process each Pokemon in the batch
-            const batchPromises = data.results.map(async (pokemon: { name: string; url: string }) => {
-              const pokemonId = pokemon.url.split('/').filter(Boolean).pop();
-              
-              return {
-                id: Number(pokemonId),
-                name: pokemon.name.charAt(0).toUpperCase() + pokemon.name.slice(1),
-                image: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemonId}.png`,
-                // We don't fetch detailed data for all Pokemon to improve performance
-                types: [],
-                flavorText: ""
-              };
+            // Process each Pokemon in the batch - FIXED: Now fetch complete details
+            const batchPromises = data.results.map(async (pokemonRef: { name: string; url: string }) => {
+              const pokemonIdString = pokemonRef.url.split('/').filter(Boolean).pop();
+              if (!pokemonIdString) {
+                console.warn(`Could not parse ID from URL: ${pokemonRef.url}`);
+                return null; // Skip if ID can't be parsed
+              }
+              const pokemonId = Number(pokemonIdString);
+              try {
+                // Fetch full details for each Pokemon to get types
+                const detailedPokemon = await fetchPokemonDetails(pokemonId);
+                return detailedPokemon; // This object should include the types array
+              } catch (error) {
+                console.warn(`Failed to fetch details for Pokémon #${pokemonId} (${pokemonRef.name}):`, error);
+                // Fallback to a basic object if detail fetch fails, but types will be missing
+                return {
+                  id: pokemonId,
+                  name: pokemonRef.name.charAt(0).toUpperCase() + pokemonRef.name.slice(1),
+                  image: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemonId}.png`,
+                  types: [], // Indicate types are missing due to fetch error
+                  flavorText: ""
+                };
+              }
             });
             
-            const batchResults = await Promise.all(batchPromises);
+            const batchPokemonObjects = (await Promise.all(batchPromises)).filter(p => p !== null) as Pokemon[];
             // Filter and add Pokemon based on form preferences
-            allPokemon.push(...batchResults.filter(shouldIncludePokemon));
+            allPokemon.push(...batchPokemonObjects.filter(shouldIncludePokemon));
             
             // Update progress
             toast({
