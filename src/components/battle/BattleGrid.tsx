@@ -1,4 +1,3 @@
-
 import React, { useMemo } from "react";
 import BattleCard from "./BattleCard";
 import { Pokemon } from "@/services/pokemon";
@@ -24,16 +23,26 @@ const BattleGrid: React.FC<BattleGridProps> = ({
   internalProcessing,
   animationKey
 }) => {
-  console.log(`🔄 [LOADING DEBUG] BattleGrid render:`, {
+  const combinedProcessing = isProcessing || internalProcessing;
+  
+  console.log(`🔄 [LOADING CIRCLES DEBUG] BattleGrid render:`, {
     battleType,
     currentBattleLength: currentBattle?.length || 0,
     selectedPokemon: selectedPokemon.join(', '),
     isProcessing,
     internalProcessing,
-    combinedProcessing: isProcessing || internalProcessing,
+    combinedProcessing,
     animationKey,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    componentState: 'BattleGrid-Active'
   });
+  
+  // Log when loading circles should be visible
+  if (combinedProcessing) {
+    console.log(`🟡 [LOADING CIRCLES] BattleGrid SHOWING loading circles - isProcessing: ${isProcessing}, internalProcessing: ${internalProcessing}`);
+  } else {
+    console.log(`🟢 [LOADING CIRCLES] BattleGrid NOT showing loading circles - both states false`);
+  }
   
   // Validate the Pokemon in the grid to ensure image and name consistency - memoized for performance
   const validatedBattle = useMemo(() => {
@@ -62,7 +71,7 @@ const BattleGrid: React.FC<BattleGridProps> = ({
   
   // If we don't have valid battle data, show a loading state
   if (!validatedBattle.length) {
-    console.log(`🔄 [LOADING DEBUG] BattleGrid showing placeholder loading state`);
+    console.log(`🔄 [LOADING CIRCLES DEBUG] BattleGrid showing placeholder loading state`);
     return (
       <div className="grid gap-4 mt-8 grid-cols-2 md:grid-cols-3">
         {[1, 2, 3].map((placeholder) => (
@@ -75,33 +84,36 @@ const BattleGrid: React.FC<BattleGridProps> = ({
   // Determine grid columns based on battle size
   const gridCols = validatedBattle.length <= 3 ? validatedBattle.length : Math.min(validatedBattle.length, 4);
   
-  // FIXED: Ensure proper visibility of the battle grid
-  console.log(`🎮 [LOADING DEBUG] BattleGrid rendering ${validatedBattle.length} Pokémon cards with processing=${isProcessing || internalProcessing}`);
+  console.log(`🎮 [LOADING CIRCLES DEBUG] BattleGrid rendering ${validatedBattle.length} Pokémon cards with processing=${combinedProcessing}`);
   
   return (
     <div 
       key={animationKey}
       data-battletype={battleType}
-      data-processing={isProcessing || internalProcessing ? "true" : "false"}
+      data-processing={combinedProcessing ? "true" : "false"}
+      data-loading-circles={combinedProcessing ? "visible" : "hidden"}
       className="grid gap-4 mt-8 mx-auto" 
       style={{ 
         display: 'grid',
         gridTemplateColumns: `repeat(${gridCols}, 1fr)`,
         width: '100%',
         maxWidth: validatedBattle.length <= 2 ? '560px' : '100%',
-        visibility: 'visible'  // Ensure the grid is visible
+        visibility: 'visible'
       }}
     >
-      {validatedBattle.map(pokemon => (
-        <BattleCard
-          key={`${pokemon.id}-${animationKey}`}
-          pokemon={pokemon}
-          isSelected={selectedPokemon.includes(pokemon.id)}
-          battleType={battleType}
-          onSelect={onPokemonSelect}
-          isProcessing={isProcessing || internalProcessing}
-        />
-      ))}
+      {validatedBattle.map(pokemon => {
+        console.log(`🎯 [LOADING CIRCLES] BattleCard for ${pokemon.name} - processing: ${combinedProcessing}`);
+        return (
+          <BattleCard
+            key={`${pokemon.id}-${animationKey}`}
+            pokemon={pokemon}
+            isSelected={selectedPokemon.includes(pokemon.id)}
+            battleType={battleType}
+            onSelect={onPokemonSelect}
+            isProcessing={combinedProcessing}
+          />
+        );
+      })}
     </div>
   );
 };

@@ -1,4 +1,3 @@
-
 import React, { memo, useCallback, useState, useEffect, useRef, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Pokemon } from "@/services/pokemon";
@@ -38,6 +37,16 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
   
   const formattedName = formatPokemonName(validatedPokemon.name);
   const pokemonId = validatedPokemon.id;
+
+  // LOADING CIRCLES DEBUG: Log when BattleCard receives processing state
+  useEffect(() => {
+    console.log(`🎯 [LOADING CIRCLES] BattleCard ${formattedName} received isProcessing: ${isProcessing}`);
+    if (isProcessing) {
+      console.log(`🟡 [LOADING CIRCLES] BattleCard ${formattedName} SHOWING loading state`);
+    } else {
+      console.log(`🟢 [LOADING CIRCLES] BattleCard ${formattedName} NOT showing loading state`);
+    }
+  }, [isProcessing, formattedName]);
 
   // Cleanup function for timers and refs
   const cleanupImageLoading = useCallback(() => {
@@ -171,12 +180,13 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
     // Set click debounce flag to prevent rapid multi-clicks
     clickDisabledRef.current = true;
     
-    console.log(`👆 BattleCard click: ${formattedName} (#${pokemonId})`);
+    console.log(`👆 [LOADING CIRCLES] BattleCard ${formattedName} clicked - isProcessing: ${isProcessing}, clickDisabled: ${clickDisabledRef.current}`);
     onSelect(pokemonId);
     
     // Clear click debounce after a short delay
     setTimeout(() => {
       clickDisabledRef.current = false;
+      console.log(`🔓 [LOADING CIRCLES] BattleCard ${formattedName} click debounce cleared`);
     }, 500); // Reduced from 800ms for better responsiveness
   }, [pokemonId, formattedName, onSelect, isProcessing]);
 
@@ -187,6 +197,7 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
       data-selected={isSelected ? "true" : "false"}
       data-processing={isProcessing ? "true" : "false"}
       data-pokemon-id={pokemonId}
+      data-loading-circles={isProcessing ? "active" : "inactive"}
       aria-disabled={isProcessing}
     >
       <CardContent className="flex flex-col items-center p-4">
@@ -219,6 +230,7 @@ const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSel
         {isProcessing && (
           <div className="absolute inset-0 bg-black/10 flex items-center justify-center rounded-md">
             <div className="h-8 w-8 border-4 border-t-primary animate-spin rounded-full"></div>
+            <div className="sr-only">Loading...</div>
           </div>
         )}
       </CardContent>

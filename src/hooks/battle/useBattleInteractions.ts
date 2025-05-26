@@ -27,13 +27,20 @@ export const useBattleInteractions = (
   const clickDebounceRef = useRef<boolean>(false);
   const processingStateRef = useRef<boolean>(false);
 
-  // LOADING STATE DEBUG: Log isProcessing changes
+  // LOADING CIRCLES DEBUG: Enhanced logging for useBattleInteractions
   useEffect(() => {
-    console.log(`🔄 [LOADING DEBUG] useBattleInteractions isProcessing changed:`, {
+    console.log(`🔄 [LOADING CIRCLES DEBUG] useBattleInteractions isProcessing changed:`, {
       isProcessing,
       processingStateRef: processingStateRef.current,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      source: 'useBattleInteractions'
     });
+    
+    if (isProcessing) {
+      console.log(`🟡 [LOADING CIRCLES] useBattleInteractions CONTRIBUTING to loading circles - isProcessing: true`);
+    } else {
+      console.log(`🟢 [LOADING CIRCLES] useBattleInteractions NOT contributing to loading circles - isProcessing: false`);
+    }
   }, [isProcessing]);
 
   const { goBack: navigationGoBack } = useBattleNavigation(
@@ -47,41 +54,40 @@ export const useBattleInteractions = (
     setSelectedPokemon
   );
 
-  // Clear any timeouts on unmount
   useEffect(() => {
     return () => {
       if (processingTimeoutRef.current) {
+        console.log(`🧹 [LOADING CIRCLES] useBattleInteractions: Clearing processing timeout on cleanup`);
         clearTimeout(processingTimeoutRef.current);
       }
     };
   }, []);
 
-  // Reset selectedPokemon when battle type changes or current battle changes
   useEffect(() => {
     console.log("🔄 Resetting selected pokemon due to battle change or type change");
     setSelectedPokemon([]);
     setLastSelectedId(null);
-    console.log(`🔄 [LOADING DEBUG] useBattleInteractions: Resetting processing states`);
+    console.log(`🔄 [LOADING CIRCLES] useBattleInteractions: Resetting processing states due to battle/type change`);
     setIsProcessing(false);
     processingStateRef.current = false;
     
     if (processingTimeoutRef.current) {
+      console.log(`🧹 [LOADING CIRCLES] useBattleInteractions: Clearing processing timeout due to battle/type change`);
       clearTimeout(processingTimeoutRef.current);
       processingTimeoutRef.current = null;
     }
   }, [battleType, setSelectedPokemon, currentBattle]);
 
-  // Listen for milestone dismiss events
   useEffect(() => {
     const handleMilestoneDismissed = () => {
       console.log("📣 useBattleInteractions: Received milestone-dismissed event");
       
-      // Reset processing state when milestone is dismissed
-      console.log(`🔄 [LOADING DEBUG] useBattleInteractions: Milestone dismissed - resetting processing states`);
+      console.log(`🔄 [LOADING CIRCLES] useBattleInteractions: Milestone dismissed - resetting processing states`);
       setIsProcessing(false);
       processingStateRef.current = false;
       
       if (processingTimeoutRef.current) {
+        console.log(`🧹 [LOADING CIRCLES] useBattleInteractions: Clearing processing timeout due to milestone dismiss`);
         clearTimeout(processingTimeoutRef.current);
         processingTimeoutRef.current = null;
       }
@@ -96,7 +102,7 @@ export const useBattleInteractions = (
 
   const handlePokemonSelect = useCallback(
     (id: number) => {
-      console.log(`🖱️ [LOADING DEBUG] handlePokemonSelect called:`, {
+      console.log(`🖱️ [LOADING CIRCLES DEBUG] useBattleInteractions handlePokemonSelect called:`, {
         id,
         isProcessing,
         processingStateRef: processingStateRef.current,
@@ -104,34 +110,29 @@ export const useBattleInteractions = (
         timestamp: new Date().toISOString()
       });
       
-      // Guard against empty battles
       if (!currentBattle || currentBattle.length === 0) {
         console.warn("🚫 handlePokemonSelect called with empty battle");
         return;
       }
       
-      // Check processing status - only ignore if actually processing
       if (isProcessing || processingStateRef.current) {
-        console.log("🛑 handlePokemonSelect: Processing in progress, ignoring click");
+        console.log("🛑 [LOADING CIRCLES] useBattleInteractions: Processing in progress, ignoring click");
         toast.info("Please wait...", {
           description: "Processing current selection"
         });
         return;
       }
       
-      // Debounce rapid clicks
       if (clickDebounceRef.current) {
         console.log(`🛑 Ignoring rapid click on Pokemon ID: ${id} (debounce active)`);
         return;
       }
       
-      // Set debounce flag
       clickDebounceRef.current = true;
       setTimeout(() => {
         clickDebounceRef.current = false;
       }, 800);
       
-      // Prevent duplicate processing of the same Pokemon
       if (lastSelectedId === id && battleType === "pairs") {
         console.log(`🔄 Ignoring duplicate selection of Pokemon ID: ${id}`);
         return;
@@ -139,19 +140,16 @@ export const useBattleInteractions = (
       
       console.log(`👆 handlePokemonSelect: Selected Pokemon ID: ${id} for ${battleType} battle`);
       
-      // Set both state and ref to prevent race conditions
-      console.log(`🔄 [LOADING DEBUG] handlePokemonSelect: Setting processing states to true`);
+      console.log(`🔄 [LOADING CIRCLES] useBattleInteractions: Setting processing states to true for selection ${id}`);
       setIsProcessing(true);
       processingStateRef.current = true;
       
-      // For pair battles, always set to just the newly selected Pokemon ID
       let updatedSelected: number[] = [];
       
       if (battleType === "pairs") {
         updatedSelected = [id];
         console.log(`🛠️ [PAIR BATTLE] Setting selection to: [${id}]`);
       } else {
-        // For triplets, accumulate selections (up to 2)
         if (selectedPokemon.length >= 2) {
           updatedSelected = [id];
         } else {
@@ -164,11 +162,9 @@ export const useBattleInteractions = (
       
       console.log(`🎮 handlePokemonSelect: Updated selection to [${updatedSelected.join(', ')}] for ${battleType} battle`);
 
-      // For pairs mode, immediately process once a Pokémon is selected
       if (battleType === "pairs") {
         const currentBattleCopy = [...currentBattle];
         
-        // Save to history before processing
         const updatedHistory = [
           ...battleHistory,
           { battle: currentBattleCopy, selected: updatedSelected }
@@ -177,15 +173,14 @@ export const useBattleInteractions = (
         console.log("🔄 Updating battle history. New length:", updatedHistory.length);
         
         if (processingTimeoutRef.current) {
+          console.log(`🧹 [LOADING CIRCLES] useBattleInteractions: Clearing existing processing timeout`);
           clearTimeout(processingTimeoutRef.current);
         }
         
-        // Process the battle results with visual feedback
         processingTimeoutRef.current = setTimeout(() => {
           try {
             console.log(`[DEBUG useBattleInteractions] Processing battle result for:`, updatedSelected);
             
-            // Show selection feedback
             const selectedPokemon = currentBattleCopy.find(p => p.id === id);
             if (selectedPokemon) {
               toast.success(`Selected ${selectedPokemon.name}`, {
@@ -197,7 +192,7 @@ export const useBattleInteractions = (
             console.log("✅ useBattleInteractions: Battle processed successfully");
           } catch (e) {
             console.error("❌ Error processing battle:", e);
-            console.log(`🔄 [LOADING DEBUG] handlePokemonSelect: Error - resetting processing states`);
+            console.log(`🔄 [LOADING CIRCLES] useBattleInteractions: Error - resetting processing states`);
             setIsProcessing(false);
             processingStateRef.current = false;
             toast.error("Battle processing error", {
@@ -206,7 +201,7 @@ export const useBattleInteractions = (
           } finally {
             processingTimeoutRef.current = null;
           }
-        }, 600); // Reduced timeout for better responsiveness
+        }, 600);
       }
     },
     [
@@ -225,12 +220,12 @@ export const useBattleInteractions = (
   const handleGoBack = useCallback(() => {
     console.log("useBattleInteractions: Handling go back");
     
-    // Clear any processing state
-    console.log(`🔄 [LOADING DEBUG] handleGoBack: Clearing processing states`);
+    console.log(`🔄 [LOADING CIRCLES] useBattleInteractions handleGoBack: Clearing processing states`);
     setIsProcessing(false);
     processingStateRef.current = false;
     
     if (processingTimeoutRef.current) {
+      console.log(`🧹 [LOADING CIRCLES] useBattleInteractions handleGoBack: Clearing processing timeout`);
       clearTimeout(processingTimeoutRef.current);
       processingTimeoutRef.current = null;
     }
@@ -239,7 +234,6 @@ export const useBattleInteractions = (
     onGoBack();
   }, [navigationGoBack, onGoBack, setCurrentBattle, battleType]);
 
-  // Function to handle force next battle for milestone page
   const handleForceNextBattle = useCallback(() => {
     console.log("🔄 useBattleInteractions: Force next battle requested");
     
@@ -248,23 +242,21 @@ export const useBattleInteractions = (
       return;
     }
     
-    // Force dismiss milestone first
     const dismissEvent = new CustomEvent('milestone-dismissed', {
       detail: { forced: true, source: 'handleForceNextBattle' }
     });
     document.dispatchEvent(dismissEvent);
     
-    // Set processing state
-    console.log(`🔄 [LOADING DEBUG] handleForceNextBattle: Setting processing states`);
+    console.log(`🔄 [LOADING CIRCLES] useBattleInteractions handleForceNextBattle: Setting processing states`);
     setIsProcessing(true);
     processingStateRef.current = true;
     setSelectedPokemon([]);
     
     if (processingTimeoutRef.current) {
+      console.log(`🧹 [LOADING CIRCLES] useBattleInteractions handleForceNextBattle: Clearing processing timeout`);
       clearTimeout(processingTimeoutRef.current);
     }
     
-    // Trigger battle completion after brief delay
     processingTimeoutRef.current = setTimeout(() => {
       try {
         onBattleComplete(battleType, currentBattle);
@@ -278,12 +270,12 @@ export const useBattleInteractions = (
           description: "There was a problem starting the next battle"
         });
       } finally {
-        console.log(`🔄 [LOADING DEBUG] handleForceNextBattle: Resetting processing states`);
+        console.log(`🔄 [LOADING CIRCLES] useBattleInteractions handleForceNextBattle: Resetting processing states`);
         setIsProcessing(false);
         processingStateRef.current = false;
         processingTimeoutRef.current = null;
       }
-    }, 200); // Reduced delay for better responsiveness
+    }, 200);
   }, [battleType, currentBattle, onBattleComplete, isProcessing]);
 
   return {

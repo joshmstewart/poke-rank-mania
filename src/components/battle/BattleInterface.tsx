@@ -43,15 +43,23 @@ const BattleInterface: React.FC<BattleInterfaceProps> = memo(({
   const lastSelectionRef = useRef<number | null>(null);
   const selectionTimestampRef = useRef(0);
   const lastProcessedBattleRef = useRef<number[]>([]);
+  const internalProcessingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
-  // LOADING STATE DEBUG: Log all processing state changes
+  // LOADING CIRCLES DEBUG: Log all processing state changes with detailed tracking
   useEffect(() => {
-    console.log(`🔄 [LOADING DEBUG] BattleInterface processing states:`, {
+    console.log(`🔄 [LOADING CIRCLES DEBUG] BattleInterface processing states changed:`, {
       isProcessing,
       internalProcessing,
       combined: isProcessing || internalProcessing,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      source: 'BattleInterface-useEffect'
     });
+    
+    if (isProcessing || internalProcessing) {
+      console.log(`🟡 [LOADING CIRCLES] BattleInterface CONTRIBUTING to loading circles - isProcessing: ${isProcessing}, internalProcessing: ${internalProcessing}`);
+    } else {
+      console.log(`🟢 [LOADING CIRCLES] BattleInterface NOT contributing to loading circles - both states false`);
+    }
   }, [isProcessing, internalProcessing]);
   
   const { getNextMilestone, getMilestoneProgress } = useMilestoneCalculations(
@@ -123,9 +131,20 @@ const BattleInterface: React.FC<BattleInterfaceProps> = memo(({
     console.log(`🔢 Battles completed updated to: ${battlesCompleted}`);
   }, [battlesCompleted]);
   
+  // Clear timeout when component unmounts or when processing states change
+  useEffect(() => {
+    return () => {
+      if (internalProcessingTimeoutRef.current) {
+        console.log(`🧹 [LOADING CIRCLES] BattleInterface clearing internalProcessing timeout on cleanup`);
+        clearTimeout(internalProcessingTimeoutRef.current);
+        internalProcessingTimeoutRef.current = null;
+      }
+    };
+  }, []);
+  
   // Handle pokemon selection with optimized debounce
   const handlePokemonCardSelect = useCallback((id: number) => {
-    console.log(`🖱️ [LOADING DEBUG] handlePokemonCardSelect called:`, {
+    console.log(`🖱️ [LOADING CIRCLES DEBUG] handlePokemonCardSelect called:`, {
       id,
       isProcessing,
       internalProcessing,
@@ -147,23 +166,30 @@ const BattleInterface: React.FC<BattleInterfaceProps> = memo(({
       selectionTimestampRef.current = now;
       
       console.log(`🖱️ BattleInterface: Handling Pokemon selection: ${id}`);
-      console.log(`🔄 [LOADING DEBUG] Setting internalProcessing = true`);
+      console.log(`🔄 [LOADING CIRCLES] BattleInterface: Setting internalProcessing = true for selection ${id}`);
       setInternalProcessing(true);
       onPokemonSelect(id);
       
-      // Reset internal processing state after a shorter delay (reduced to 200ms)
-      setTimeout(() => {
-        console.log(`🔄 [LOADING DEBUG] Setting internalProcessing = false (after timeout)`);
+      // Clear any existing timeout
+      if (internalProcessingTimeoutRef.current) {
+        console.log(`🧹 [LOADING CIRCLES] BattleInterface: Clearing existing internalProcessing timeout`);
+        clearTimeout(internalProcessingTimeoutRef.current);
+      }
+      
+      // Set new timeout with tracking
+      internalProcessingTimeoutRef.current = setTimeout(() => {
+        console.log(`🔄 [LOADING CIRCLES] BattleInterface: Setting internalProcessing = false (after 200ms timeout for selection ${id})`);
         setInternalProcessing(false);
+        internalProcessingTimeoutRef.current = null;
       }, 200);
     } else {
-      console.log(`⏳ BattleInterface: Ignoring click while processing (isProcessing=${isProcessing}, internalProcessing=${internalProcessing})`);
+      console.log(`⏳ [LOADING CIRCLES] BattleInterface: Ignoring click while processing (isProcessing=${isProcessing}, internalProcessing=${internalProcessing})`);
     }
   }, [isProcessing, internalProcessing, onPokemonSelect]);
 
   // Handle submission for triplets mode
   const handleSubmit = useCallback(() => {
-    console.log(`🔄 [LOADING DEBUG] handleSubmit called:`, {
+    console.log(`🔄 [LOADING CIRCLES DEBUG] handleSubmit called:`, {
       isProcessing,
       internalProcessing,
       willIgnore: isProcessing || internalProcessing,
@@ -172,21 +198,28 @@ const BattleInterface: React.FC<BattleInterfaceProps> = memo(({
     
     if (!isProcessing && !internalProcessing) {
       console.log("BattleInterface: Submitting triplet selection");
-      console.log(`🔄 [LOADING DEBUG] Setting internalProcessing = true (submit)`);
+      console.log(`🔄 [LOADING CIRCLES] BattleInterface: Setting internalProcessing = true for submit`);
       setInternalProcessing(true);
       onTripletSelectionComplete();
       
-      // Reset internal processing state after a shorter delay
-      setTimeout(() => {
-        console.log(`🔄 [LOADING DEBUG] Setting internalProcessing = false (after submit timeout)`);
+      // Clear any existing timeout
+      if (internalProcessingTimeoutRef.current) {
+        console.log(`🧹 [LOADING CIRCLES] BattleInterface: Clearing existing internalProcessing timeout for submit`);
+        clearTimeout(internalProcessingTimeoutRef.current);
+      }
+      
+      // Set new timeout with tracking
+      internalProcessingTimeoutRef.current = setTimeout(() => {
+        console.log(`🔄 [LOADING CIRCLES] BattleInterface: Setting internalProcessing = false (after submit timeout)`);
         setInternalProcessing(false);
+        internalProcessingTimeoutRef.current = null;
       }, 200);
     }
   }, [isProcessing, internalProcessing, onTripletSelectionComplete]);
 
   // Handle back button click
   const handleBackClick = useCallback(() => {
-    console.log(`🔄 [LOADING DEBUG] handleBackClick called:`, {
+    console.log(`🔄 [LOADING CIRCLES DEBUG] handleBackClick called:`, {
       isProcessing,
       internalProcessing,
       willIgnore: isProcessing || internalProcessing,
@@ -234,7 +267,7 @@ const BattleInterface: React.FC<BattleInterfaceProps> = memo(({
   
   // Only render if we have Pokemon to display
   if (!validatedBattle || validatedBattle.length === 0) {
-    console.log(`🔄 [LOADING DEBUG] BattleInterface showing loading spinner (no battle data)`);
+    console.log(`🔄 [LOADING CIRCLES DEBUG] BattleInterface showing loading spinner (no battle data)`);
     return (
       <div className="bg-white rounded-lg shadow p-6 flex items-center justify-center h-64 w-full">
         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-primary"></div>
@@ -242,10 +275,11 @@ const BattleInterface: React.FC<BattleInterfaceProps> = memo(({
     );
   }
   
-  console.log(`🔄 [LOADING DEBUG] BattleInterface rendering with processing states:`, {
+  console.log(`🔄 [LOADING CIRCLES DEBUG] BattleInterface rendering with processing states:`, {
     isProcessing,
     internalProcessing,
-    showingSpinner: isProcessing || internalProcessing
+    showingLoadingCircles: isProcessing || internalProcessing,
+    timestamp: new Date().toISOString()
   });
   
   return (
