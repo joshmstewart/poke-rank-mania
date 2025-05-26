@@ -31,7 +31,7 @@ const BattleMode = () => {
   // CRITICAL FIX: Call the function and store the result, not the function itself
   const initialBattleType = useMemo(() => getInitialBattleType(), []);
 
-  // CRITICAL FIX: Memoize Pokemon data with ultra-stable reference
+  // CRITICAL FIX: Memoize Pokemon data with ultra-stable reference and validate types
   const stableAllPokemon = useMemo(() => {
     if (!allPokemon.length) return [];
     
@@ -45,12 +45,28 @@ const BattleMode = () => {
         name: samplePokemon.name,
         types: samplePokemon.types,
         typesIsArray: Array.isArray(samplePokemon.types),
-        typesLength: samplePokemon.types?.length || 0
+        typesLength: samplePokemon.types?.length || 0,
+        firstType: samplePokemon.types?.[0],
+        rawTypesStructure: samplePokemon.types
       }));
+      
+      // CRITICAL: If types are missing, this is where we need to fix it
+      if (!samplePokemon.types || samplePokemon.types.length === 0) {
+        console.error('[CRITICAL ERROR] BattleMode received Pokemon data without types! Source data issue detected.');
+      }
     }
     
-    return allPokemon;
-  }, [allPokemon.length]); // Only depend on length, not entire array
+    // Ensure all Pokemon have valid types structure
+    const validatedPokemon = allPokemon.map(pokemon => {
+      if (!pokemon.types || pokemon.types.length === 0) {
+        console.warn(`[DATA VALIDATION] Pokemon ${pokemon.name} (${pokemon.id}) missing types, using empty array`);
+        return { ...pokemon, types: [] };
+      }
+      return pokemon;
+    });
+    
+    return validatedPokemon;
+  }, [allPokemon.length, allPokemon]); // Depend on both length and the array for data changes
 
   // CRITICAL FIX: Ultra-stable callback references that never change
   const stableSetBattlesCompleted = useCallback((value: React.SetStateAction<number>) => {

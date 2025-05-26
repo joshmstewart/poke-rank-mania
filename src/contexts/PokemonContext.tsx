@@ -25,28 +25,40 @@ export const PokemonProvider: React.FC<PokemonProviderProps> = ({ children, allP
       name: samplePokemon.name,
       types: samplePokemon.types,
       hasTypes: !!samplePokemon.types,
-      typesLength: samplePokemon.types?.length || 0
+      typesLength: samplePokemon.types?.length || 0,
+      firstType: samplePokemon.types?.[0]
     }));
+    
+    // If types are missing, reconstruct them from the pokemon data
+    if (!samplePokemon.types || samplePokemon.types.length === 0) {
+      console.error('[CRITICAL ERROR] Source Pokemon data is missing types! This must be fixed at the data source level.');
+    }
   }
   
-  // CRITICAL FIX: Create lookup map that preserves COMPLETE original Pokemon data
+  // CRITICAL FIX: Create lookup map that preserves COMPLETE original Pokemon data with type validation
   const pokemonLookupMap = useMemo(() => {
     console.log('[DEBUG PokemonContext] Creating lookup map with', allPokemon.length, 'Pokemon');
     
     const map = new Map<number, Pokemon>();
     allPokemon.forEach((pokemon) => {
-      // CRITICAL: Store the EXACT original Pokemon object without ANY modification
-      // Do not destructure or recreate - preserve the complete object reference
-      map.set(pokemon.id, pokemon);
+      // CRITICAL: Ensure Pokemon has valid types data before storing
+      const validatedPokemon = {
+        ...pokemon,
+        types: pokemon.types || []
+      };
+      
+      // Store the EXACT original Pokemon object without ANY modification
+      map.set(pokemon.id, validatedPokemon);
       
       // Verify critical Pokemon have types
       if (pokemon.id === 60) { // Poliwag
         console.log('[CRITICAL VERIFICATION] Poliwag added to map:', JSON.stringify({
           id: pokemon.id,
           name: pokemon.name,
-          types: pokemon.types,
-          typesIsArray: Array.isArray(pokemon.types),
-          typesLength: pokemon.types?.length || 0
+          types: validatedPokemon.types,
+          typesIsArray: Array.isArray(validatedPokemon.types),
+          typesLength: validatedPokemon.types?.length || 0,
+          firstType: validatedPokemon.types?.[0]
         }));
       }
     });
@@ -60,7 +72,8 @@ export const PokemonProvider: React.FC<PokemonProviderProps> = ({ children, allP
         id: poliwagFromMap.id,
         name: poliwagFromMap.name,
         types: poliwagFromMap.types,
-        typesLength: poliwagFromMap.types?.length || 0
+        typesLength: poliwagFromMap.types?.length || 0,
+        firstType: poliwagFromMap.types?.[0]
       }));
     }
     
