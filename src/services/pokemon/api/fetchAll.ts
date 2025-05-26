@@ -5,13 +5,11 @@ import { fetchPokemonDetails } from "./utils";
 
 // Helper function to check if a Pokemon should be included based on current form filters
 const shouldIncludePokemon = (pokemon: { name: string, id: number }) => {
-  // Try to get the stored filters from localStorage
   try {
     const storedFilters = localStorage.getItem('pokemon-form-filters');
     if (storedFilters) {
       const filters = JSON.parse(storedFilters);
       
-      // If all filters are enabled, include all Pokemon
       if (filters.megaGmax && filters.regional && filters.gender && filters.forms && 
           filters.originPrimal && filters.costumes) {
         return true;
@@ -19,7 +17,6 @@ const shouldIncludePokemon = (pokemon: { name: string, id: number }) => {
       
       const name = pokemon.name.toLowerCase();
 
-      // Check for costume forms (Pikachu variants) - check this FIRST
       if ((name.includes("pikachu") && (
           name.includes("cap") || name.includes("phd") || name.includes("cosplay") || 
           name.includes("belle") || name.includes("libre") || name.includes("pop-star") || 
@@ -27,29 +24,24 @@ const shouldIncludePokemon = (pokemon: { name: string, id: number }) => {
         return false;
       }
       
-      // Check for Origin and Primal forms
       if ((name.includes("origin") || name.includes("primal")) && !filters.originPrimal) {
         return false;
       }
       
-      // Check for mega evolutions and gigantamax
       if ((name.includes("mega") || name.includes("gmax")) && !filters.megaGmax) {
         return false;
       }
       
-      // Check for regional variants - expanded to include paldean
       if ((name.includes("alolan") || name.includes("galarian") || 
            name.includes("hisuian") || name.includes("paldean")) && !filters.regional) {
         return false;
       }
       
-      // Check for gender differences - expanded to include -f, -m notation
       if ((name.includes("female") || name.includes("male") || 
            name.includes("-f") || name.includes("-m")) && !filters.gender) {
         return false;
       }
       
-      // Check for special forms - expanded to include more form types
       if ((name.includes("form") || name.includes("style") || name.includes("mode") || 
            name.includes("size") || name.includes("cloak") || name.includes("rotom-") ||
            name.includes("forme") || name.includes("unbound") || name.includes("gorging") ||
@@ -62,40 +54,29 @@ const shouldIncludePokemon = (pokemon: { name: string, id: number }) => {
     console.error("Error applying Pokemon form filters:", e);
   }
   
-  // Default to including the Pokemon if there was an error or no filters
   return true;
 };
 
-// Keep the original function for backward compatibility and specific generations
 export async function fetchAllPokemon(generationId: number = 1, fullRankingMode: boolean = false): Promise<Pokemon[]> {
   try {
-    // For battle mode, when selecting "All Generations"
     if (generationId === 0) {
       if (!fullRankingMode) {
-        // For quick battle mode, select random samples from different generations
-        // This gives a diverse but manageable set
-        const sampleSize = 500; // Keep 500 Pokémon sample size
+        const sampleSize = 500;
         
         toast({
           title: "Loading sample",
           description: `Loading a selection of ${sampleSize} Pokémon from all generations for battling.`
         });
         
-        // Create an array representing all Pokemon IDs, including special forms (10000+)
-        // IMPORTANT: We now include IDs beyond 898 up to ~10250 to include special forms
         const regularPokemonIds = Array.from({ length: generations[0].end }, (_, i) => i + 1);
         const specialFormIds = Array.from({ length: 250 }, (_, i) => i + 10001);
         const allPokemonIds = [...regularPokemonIds, ...specialFormIds];
         
-        // Shuffle the array
         const shuffledIds = allPokemonIds.sort(() => Math.random() - 0.5);
-        
-        // Take the first 'sampleSize' Pokemon
         const selectedIds = shuffledIds.slice(0, sampleSize);
         
         console.log(`Selected ${selectedIds.length} Pokémon IDs including special forms`);
         
-        // Fetch details for each selected Pokemon
         const pokemonList = await Promise.all(
           selectedIds.map(async (id) => {
             try {
@@ -108,28 +89,24 @@ export async function fetchAllPokemon(generationId: number = 1, fullRankingMode:
           })
         );
         
-        // Filter out failed fetches and apply form filters
         const validPokemon = pokemonList.filter(p => p !== null) as Pokemon[];
         console.log(`Successfully fetched ${validPokemon.length} Pokémon`);
         
-        // Apply form filters - but only if they're disabled (include by default)
         const filteredList = validPokemon.filter(shouldIncludePokemon);
         console.log(`After filtering: ${filteredList.length} Pokémon`);
         
         return filteredList;
       } else {
-        // For full ranking mode, we need to fetch all Pokemon in batches
+        // REVERTED: Use basic objects for performance, types will be fetched when needed
         toast({
           title: "Loading all Pokémon",
           description: "This may take a moment as we load all Pokémon for a complete ranking."
         });
         
-        // Batch size for API requests
         const BATCH_SIZE = 100;
         const allPokemon: Pokemon[] = [];
         const totalPokemon = generations[0].end;
         
-        // Fetch in batches to avoid overwhelming the API
         for (let offset = 0; offset < totalPokemon; offset += BATCH_SIZE) {
           const limit = Math.min(BATCH_SIZE, totalPokemon - offset);
           
@@ -141,36 +118,20 @@ export async function fetchAllPokemon(generationId: number = 1, fullRankingMode:
             
             const data = await response.json();
             
-            // Process each Pokemon in the batch - FIXED: Now fetch complete details
-            const batchPromises = data.results.map(async (pokemonRef: { name: string; url: string }) => {
-              const pokemonIdString = pokemonRef.url.split('/').filter(Boolean).pop();
-              if (!pokemonIdString) {
-                console.warn(`Could not parse ID from URL: ${pokemonRef.url}`);
-                return null; // Skip if ID can't be parsed
-              }
-              const pokemonId = Number(pokemonIdString);
-              try {
-                // Fetch full details for each Pokemon to get types
-                const detailedPokemon = await fetchPokemonDetails(pokemonId);
-                return detailedPokemon; // This object should include the types array
-              } catch (error) {
-                console.warn(`Failed to fetch details for Pokémon #${pokemonId} (${pokemonRef.name}):`, error);
-                // Fallback to a basic object if detail fetch fails, but types will be missing
-                return {
-                  id: pokemonId,
-                  name: pokemonRef.name.charAt(0).toUpperCase() + pokemonRef.name.slice(1),
-                  image: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemonId}.png`,
-                  types: [], // Indicate types are missing due to fetch error
-                  flavorText: ""
-                };
-              }
+            // REVERTED: Use basic Pokemon objects for better performance
+            const batchResults = data.results.map((pokemon: { name: string; url: string }) => {
+              const pokemonId = pokemon.url.split('/').filter(Boolean).pop();
+              return {
+                id: Number(pokemonId),
+                name: pokemon.name.charAt(0).toUpperCase() + pokemon.name.slice(1),
+                image: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemonId}.png`,
+                types: [], // Will be populated when needed for type colors
+                flavorText: ""
+              };
             });
             
-            const batchPokemonObjects = (await Promise.all(batchPromises)).filter(p => p !== null) as Pokemon[];
-            // Filter and add Pokemon based on form preferences
-            allPokemon.push(...batchPokemonObjects.filter(shouldIncludePokemon));
+            allPokemon.push(...batchResults.filter(shouldIncludePokemon));
             
-            // Update progress
             toast({
               title: "Loading progress",
               description: `Loaded ${Math.min(offset + BATCH_SIZE, totalPokemon)} of ${totalPokemon} Pokémon...`
@@ -185,9 +146,7 @@ export async function fetchAllPokemon(generationId: number = 1, fullRankingMode:
           }
         }
         
-        // IMPORTANT: Now also fetch special forms (10000+)
         try {
-          // Fetch a selection of special forms (Megas, regional forms, etc.)
           const specialFormIds = Array.from({ length: 250 }, (_, i) => i + 10001);
           
           const specialFormPromises = specialFormIds.map(async (id) => {
@@ -202,7 +161,6 @@ export async function fetchAllPokemon(generationId: number = 1, fullRankingMode:
           const specialForms = (await Promise.all(specialFormPromises)).filter(p => p !== null) as Pokemon[];
           console.log(`Loaded ${specialForms.length} special form Pokémon`);
           
-          // Add special forms to the Pokemon list, filtering based on preferences
           allPokemon.push(...specialForms.filter(shouldIncludePokemon));
         } catch (error) {
           console.error("Error fetching special forms:", error);
@@ -230,11 +188,10 @@ export async function fetchAllPokemon(generationId: number = 1, fullRankingMode:
       })
     );
     
-    // IMPORTANT: Also fetch special forms for this generation (if any)
     const specialForms: Pokemon[] = [];
     
-    if (generationId === 6) {  // X & Y (Mega evolutions)
-      const megaIds = Array.from({ length: 30 }, (_, i) => i + 10025); // Approximate IDs for megas
+    if (generationId === 6) {
+      const megaIds = Array.from({ length: 30 }, (_, i) => i + 10025);
       
       const megaPokemon = await Promise.all(
         megaIds.map(async (id) => {
@@ -247,8 +204,8 @@ export async function fetchAllPokemon(generationId: number = 1, fullRankingMode:
       );
       
       specialForms.push(...megaPokemon.filter(p => p !== null) as Pokemon[]);
-    } else if (generationId === 7) {  // Sun & Moon (Alolan forms)
-      const alolanIds = Array.from({ length: 20 }, (_, i) => i + 10100); // Approximate IDs for Alolan forms
+    } else if (generationId === 7) {
+      const alolanIds = Array.from({ length: 20 }, (_, i) => i + 10100);
       
       const alolanPokemon = await Promise.all(
         alolanIds.map(async (id) => {
@@ -261,8 +218,8 @@ export async function fetchAllPokemon(generationId: number = 1, fullRankingMode:
       );
       
       specialForms.push(...alolanPokemon.filter(p => p !== null) as Pokemon[]);
-    } else if (generationId === 8) {  // Sword & Shield (Galarian forms, G-Max)
-      const galarianIds = Array.from({ length: 30 }, (_, i) => i + 10150); // Approximate IDs for Galarian forms
+    } else if (generationId === 8) {
+      const galarianIds = Array.from({ length: 30 }, (_, i) => i + 10150);
       
       const galarianPokemon = await Promise.all(
         galarianIds.map(async (id) => {
@@ -277,10 +234,8 @@ export async function fetchAllPokemon(generationId: number = 1, fullRankingMode:
       specialForms.push(...galarianPokemon.filter(p => p !== null) as Pokemon[]);
     }
     
-    // Add special forms to the Pokemon list
     pokemonList.push(...specialForms);
     
-    // Apply form filters and return
     return pokemonList.filter(shouldIncludePokemon);
   } catch (error) {
     console.error('Error fetching Pokemon:', error);
