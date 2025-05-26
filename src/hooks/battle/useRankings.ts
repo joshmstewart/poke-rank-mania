@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { SingleBattle } from "./types";
@@ -6,14 +5,17 @@ import { Rating } from "ts-trueskill";
 import { useRankingSuggestions } from "./useRankingSuggestions";
 import { usePokemonContext } from "@/contexts/PokemonContext";
 
-export const useRankings = (allPokemon: Pokemon[] = []) => {
+export const useRankings = () => {
   // CRITICAL FIX: Use Pokemon context for stable lookup with verified data integrity
   const { pokemonLookupMap } = usePokemonContext();
 
-  // CRITICAL FIX: Only log INIT once by tracking initialization
+  // CRITICAL FIX: Track initialization to prevent repeated INIT logs
   const initializationRef = useRef(false);
+  const hookInstanceRef = useRef(`rankings-${Date.now()}`);
+  
+  // Only log INIT once per instance
   if (!initializationRef.current) {
-    console.log("[DEBUG useRankings] INIT - Using context for Pokemon data");
+    console.log(`[DEBUG useRankings] INIT - Instance: ${hookInstanceRef.current} - Using context for Pokemon data`);
     initializationRef.current = true;
   }
   
@@ -67,7 +69,7 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
 
   // CRITICAL FIX: Enhanced type extraction that preserves original type structure
   const extractPokemonTypes = useCallback((pokemon: Pokemon): { type1: string; type2: string | null } => {
-    console.log(`[DEBUG Type Extraction] Pokemon ${pokemon.name} (${pokemon.id}) original types:`, JSON.stringify(pokemon.types));
+    console.log(`[DEBUG Type Extraction] Pokemon ${pokemon.name} (${pokemon.id}) raw types:`, JSON.stringify(pokemon.types));
     
     if (!pokemon.types || !Array.isArray(pokemon.types) || pokemon.types.length === 0) {
       console.log(`[DEBUG Type Extraction] No valid types found for ${pokemon.name} - returning default`);
@@ -160,7 +162,9 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
         console.log(`[generateRankings] Details for ${pokemonId} FROM LOOKUP MAP:`, JSON.stringify({
           id: completePokemon.id,
           name: completePokemon.name,
-          types: completePokemon.types
+          types: completePokemon.types,
+          typesIsArray: Array.isArray(completePokemon.types),
+          typesLength: completePokemon.types?.length || 0
         }));
 
         // Ensure rating exists
@@ -258,23 +262,11 @@ export const useRankings = (allPokemon: Pokemon[] = []) => {
     finalRankings,
     confidenceScores,
     generateRankings,
-    handleSaveRankings: useCallback(() => {
-      localStorage.setItem("pokemon-frozen-pokemon", JSON.stringify(frozenPokemon));
-    }, [frozenPokemon]),
+    handleSaveRankings,
     activeTier,
     setActiveTier,
-    freezePokemonForTier: useCallback((pokemonId: number, tier: TopNOption) => {
-      setFrozenPokemon(prev => ({
-        ...prev,
-        [pokemonId]: {
-          ...(prev[pokemonId] || {}),
-          [tier.toString()]: true
-        }
-      }));
-    }, []),
-    isPokemonFrozenForTier: useCallback((pokemonId: number, tier: TopNOption): boolean => {
-      return Boolean(frozenPokemon[pokemonId]?.[tier.toString()]);
-    }, [frozenPokemon]),
+    freezePokemonForTier,
+    isPokemonFrozenForTier,
     allRankedPokemon: finalRankings,
     suggestRanking,
     removeSuggestion,

@@ -17,48 +17,70 @@ interface PokemonProviderProps {
 export const PokemonProvider: React.FC<PokemonProviderProps> = ({ children, allPokemon }) => {
   console.log('[DEBUG PokemonContext] Provider rendering with', allPokemon.length, 'Pokemon');
   
-  // CRITICAL FIX: Log the original Pokemon data to verify types are present
+  // CRITICAL: Verify the source data has types before creating the map
   if (allPokemon.length > 0) {
-    const samplePokemon = allPokemon.find(p => p.id === 60) || allPokemon[0]; // Try to find Poliwag or use first
-    console.log('[DEBUG PokemonContext] Original Pokemon data sample:', JSON.stringify({
+    const samplePokemon = allPokemon.find(p => p.id === 60) || allPokemon[0]; // Poliwag or first
+    console.log('[CRITICAL DEBUG] Source allPokemon - Sample Pokemon types:', JSON.stringify({
       id: samplePokemon.id,
       name: samplePokemon.name,
-      types: samplePokemon.types
+      types: samplePokemon.types,
+      hasTypes: !!samplePokemon.types,
+      typesLength: samplePokemon.types?.length || 0
     }));
   }
   
-  // CRITICAL FIX: Create lookup map that preserves ALL original Pokemon data
+  // CRITICAL FIX: Create lookup map that preserves COMPLETE original Pokemon data
   const pokemonLookupMap = useMemo(() => {
     console.log('[DEBUG PokemonContext] Creating lookup map with', allPokemon.length, 'Pokemon');
     
     const map = new Map<number, Pokemon>();
     allPokemon.forEach((pokemon) => {
-      // Store the COMPLETE original Pokemon object without any modification
+      // CRITICAL: Store the EXACT original Pokemon object without ANY modification
+      // Do not destructure or recreate - preserve the complete object reference
       map.set(pokemon.id, pokemon);
+      
+      // Verify critical Pokemon have types
+      if (pokemon.id === 60) { // Poliwag
+        console.log('[CRITICAL VERIFICATION] Poliwag added to map:', JSON.stringify({
+          id: pokemon.id,
+          name: pokemon.name,
+          types: pokemon.types,
+          typesIsArray: Array.isArray(pokemon.types),
+          typesLength: pokemon.types?.length || 0
+        }));
+      }
     });
     
     console.log('[DEBUG PokemonContext] Lookup map created with', map.size, 'entries');
     
-    // Verify the lookup map contains correct data
-    const sampleFromMap = map.get(60); // Try to get Poliwag
-    if (sampleFromMap) {
-      console.log('[DEBUG PokemonContext] Sample from map - Poliwag data:', JSON.stringify({
-        id: sampleFromMap.id,
-        name: sampleFromMap.name,
-        types: sampleFromMap.types
+    // CRITICAL: Verify the map contains correct data after creation
+    const poliwagFromMap = map.get(60);
+    if (poliwagFromMap) {
+      console.log('[CRITICAL VERIFICATION] Poliwag retrieved from CREATED map:', JSON.stringify({
+        id: poliwagFromMap.id,
+        name: poliwagFromMap.name,
+        types: poliwagFromMap.types,
+        typesLength: poliwagFromMap.types?.length || 0
       }));
     }
     
     return map;
-  }, [allPokemon]); // Only depend on the allPokemon array reference
+  }, [allPokemon]); // Only depend on allPokemon array reference
 
-  // CRITICAL FIX: Ultra-stable context value to prevent consumer re-renders
+  // CRITICAL FIX: Ultra-stable context value that never changes reference unnecessarily
   const contextValue = useMemo(() => {
     const value = {
       allPokemon,
       pokemonLookupMap
     };
-    console.log('[DEBUG PokemonContext] Context value memoized - allPokemon length:', allPokemon.length, 'map size:', pokemonLookupMap.size);
+    
+    // Log when context value is recreated to track unnecessary re-renders
+    console.log('[CRITICAL DEBUG] PokemonContext value memoized:', {
+      allPokemonLength: allPokemon.length,
+      mapSize: pokemonLookupMap.size,
+      timestamp: Date.now()
+    });
+    
     return value;
   }, [allPokemon, pokemonLookupMap]);
 

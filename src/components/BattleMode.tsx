@@ -17,7 +17,7 @@ const BattleMode = () => {
   const [battleResults, setBattleResults] = useState<SingleBattle[]>([]);
   const [emergencyResetPerformed, setEmergencyResetPerformed] = useState(false);
 
-  // CRITICAL FIX: Store battle type in ref to prevent re-renders
+  // CRITICAL FIX: Store battle type in ref to prevent re-renders and use stable initial value
   const getInitialBattleType = (): BattleType => {
     const stored = localStorage.getItem('pokemon-ranker-battle-type') as BattleType | null;
     const defaultType: BattleType = "pairs";
@@ -28,26 +28,29 @@ const BattleMode = () => {
     return stored;
   };
   
-  const initialBattleType = getInitialBattleType();
+  // CRITICAL FIX: Call the function and store the result, not the function itself
+  const initialBattleType = useMemo(() => getInitialBattleType(), []);
 
-  // CRITICAL FIX: Memoize Pokemon data with stable reference
+  // CRITICAL FIX: Memoize Pokemon data with ultra-stable reference
   const stableAllPokemon = useMemo(() => {
     if (!allPokemon.length) return [];
     
     console.log('[DEBUG BattleMode] Stabilizing Pokemon data - length:', allPokemon.length);
     
-    // Log original data to verify types
-    const samplePokemon = allPokemon.find(p => p.id === 60) || allPokemon[0];
+    // CRITICAL: Log sample Pokemon to verify types in source data
+    const samplePokemon = allPokemon.find(p => p.id === 60) || allPokemon[0]; // Poliwag
     if (samplePokemon) {
-      console.log('[DEBUG BattleMode] Sample Pokemon from source:', JSON.stringify({
+      console.log('[CRITICAL DEBUG] BattleMode source Pokemon sample:', JSON.stringify({
         id: samplePokemon.id,
         name: samplePokemon.name,
-        types: samplePokemon.types
+        types: samplePokemon.types,
+        typesIsArray: Array.isArray(samplePokemon.types),
+        typesLength: samplePokemon.types?.length || 0
       }));
     }
     
     return allPokemon;
-  }, [allPokemon]);
+  }, [allPokemon.length]); // Only depend on length, not entire array
 
   // CRITICAL FIX: Ultra-stable callback references that never change
   const stableSetBattlesCompleted = useCallback((value: React.SetStateAction<number>) => {

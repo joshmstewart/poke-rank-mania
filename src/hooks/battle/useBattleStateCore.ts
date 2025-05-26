@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { useBattleStarterIntegration } from "@/hooks/battle/useBattleStarterIntegration";
@@ -19,16 +18,19 @@ export const useBattleStateCore = (
   // CRITICAL FIX: Use Pokemon context for stable data and prevent re-initialization
   const { allPokemon: contextPokemon } = usePokemonContext();
   
-  // CRITICAL FIX: Only log INIT once by tracking initialization
+  // CRITICAL FIX: Track initialization to prevent repeated INIT logs and logic
   const initializationRef = useRef(false);
+  const hookInstanceRef = useRef(`core-${Date.now()}`);
+  
+  // Only log INIT once per instance
   if (!initializationRef.current) {
-    console.log("[DEBUG useBattleStateCore] INIT - Using context for Pokemon data");
+    console.log(`[DEBUG useBattleStateCore] INIT - Instance: ${hookInstanceRef.current} - Using context for Pokemon data`);
     initializationRef.current = true;
   }
   
-  // CRITICAL FIX: Use stable memoized references to prevent re-initialization
-  const stableInitialBattleType = useMemo(() => initialBattleType, [initialBattleType]);
-  const stableInitialGeneration = useMemo(() => initialSelectedGeneration, [initialSelectedGeneration]);
+  // CRITICAL FIX: Ultra-stable initial values to prevent re-initialization triggers
+  const stableInitialBattleType = useMemo(() => initialBattleType, []);
+  const stableInitialGeneration = useMemo(() => initialSelectedGeneration, []);
   
   // Track if we need to reload suggestions after milestone
   const [needsToReloadSuggestions, setNeedsToReloadSuggestions] = useState(false);
@@ -42,14 +44,14 @@ export const useBattleStateCore = (
   const [battleType, setBattleType] = useState<BattleType>(initialBattleTypeStored);
   const [selectedPokemon, setSelectedPokemon] = useState<number[]>([]);
 
-  // CRITICAL FIX: Stable callback references to prevent hook re-initialization
+  // CRITICAL FIX: Completely stable callback references that NEVER change
   const stableSetCurrentBattle = useCallback((battle: Pokemon[]) => {
     setCurrentBattle(battle);
-  }, []);
+  }, []); // NO dependencies - truly stable
   
   const stableSetSelectedPokemon = useCallback((pokemon: number[]) => {
     setSelectedPokemon(pokemon);
-  }, []);
+  }, []); // NO dependencies - truly stable
 
   // Flag to track when a full reset has just happened
   const isResettingRef = useRef(false);
@@ -68,7 +70,7 @@ export const useBattleStateCore = (
     forceDismissMilestone
   } = useProgressState();
 
-  // CRITICAL FIX: Use stable context Pokemon reference
+  // CRITICAL FIX: Use stable context Pokemon reference with proper memoization
   const {
     finalRankings = [],
     confidenceScores,
@@ -85,7 +87,7 @@ export const useBattleStateCore = (
     clearAllSuggestions,
     findNextSuggestion,
     loadSavedSuggestions
-  } = useRankings(contextPokemon);
+  } = useRankings(); // No parameters - will use context internally
 
   const {
     resetMilestones,
@@ -104,14 +106,17 @@ export const useBattleStateCore = (
     contextPokemon
   );
 
-  // CRITICAL FIX: Stable filtered Pokemon with proper memoization
+  // CRITICAL FIX: Stable filtered Pokemon with ultra-stable memoization
   const filteredPokemon = useMemo(() => {
-    return (contextPokemon || []).filter(pokemon => {
+    const filtered = (contextPokemon || []).filter(pokemon => {
       if (selectedGeneration === 0) {
         return true;
       }
       return pokemon.hasOwnProperty('generation') && (pokemon as any).generation === selectedGeneration;
     });
+    
+    console.log(`[DEBUG useBattleStateCore] Filtered Pokemon: ${filtered.length} for generation ${selectedGeneration}`);
+    return filtered;
   }, [contextPokemon, selectedGeneration]);
 
   const { 
@@ -152,7 +157,7 @@ export const useBattleStateCore = (
     startNewBattle
   );
 
-  // MILESTONE FIX: Enhanced milestone continue handler
+  // MILESTONE FIX: Ultra-stable milestone continue handler
   const handleContinueBattles = useCallback(() => {
     console.log('[DEBUG useBattleStateCore] handleContinueBattles: Called with showingMilestone:', showingMilestone);
     
@@ -173,7 +178,7 @@ export const useBattleStateCore = (
     }
   }, [showingMilestone, battleStarter, battleType, isProcessingResult, startNewBattle, forceDismissMilestone]);
 
-  // CRITICAL FIX: Stable debounced rankings generation
+  // CRITICAL FIX: Completely stable debounced rankings generation
   const debouncedGenerateRankings = useMemo(() => {
     return (results: any[]) => {
       if (rankingsGenerationDelayRef.current) {
@@ -232,28 +237,10 @@ export const useBattleStateCore = (
         duration: 3000
       });
     }, 100);
-  }, [
-    setBattlesCompleted, setBattleResults, setBattleHistory, setSelectedPokemon,
-    setCompletionPercentage, setRankingGenerated, resetMilestones,
-    clearAllSuggestions, generateRankings, battleType, startNewBattle,
-    resetBattleProgressionMilestoneTracking
-  ]);
+  }, []); // Ultra-stable - no dependencies
 
-  // PERFORMANCE FIX: Optimized suggestion loading
+  // CRITICAL FIX: Minimal effect with stable dependencies
   useEffect(() => {
-    if (!showingMilestone && needsToReloadSuggestions) {
-      setNeedsToReloadSuggestions(false);
-      const loadedSuggestions = loadSavedSuggestions();
-      if (loadedSuggestions.size > 0 && battleResults.length > 0) {
-        debouncedGenerateRankings(battleResults);
-      }
-    }
-  }, [showingMilestone, needsToReloadSuggestions, loadSavedSuggestions, battleResults, debouncedGenerateRankings]);
-
-  // VERIFICATION check for suggestions with reduced dependencies
-  useEffect(() => {
-    console.log('[DEBUG useBattleStateCore] useEffect ImagePreference: Fired.');
-    
     const preferredImageType = localStorage.getItem('preferredImageType');
     console.log("🎯 [Mount] Loaded preferredImageType from localStorage:", preferredImageType);
 
@@ -264,20 +251,17 @@ export const useBattleStateCore = (
 
     const savedSuggestions = localStorage.getItem('pokemon-active-suggestions');
     console.log("🔍 MOUNT VERIFICATION: Suggestions in localStorage:", savedSuggestions ? "YES" : "NO");
+    
     if (savedSuggestions) {
       try {
         const parsed = JSON.parse(savedSuggestions);
         const count = Object.keys(parsed).length;
         console.log(`🔢 Found ${count} suggestions in localStorage`);
-        
-        // Store timestamp of when suggestions were last loaded
         lastSuggestionLoadTimestampRef.current = Date.now();
         
-        // NEW: Load the suggestions and immediately generate rankings to reflect them
         const loadedSuggestions = loadSavedSuggestions();
         console.log(`⭐ useBattleStateCore: Initial load: Loaded ${loadedSuggestions.size} suggestions`);
         
-        // Only trigger initial generation if we have battle results
         if (battleResults.length > 0) {
           console.log("⚙️ useBattleStateCore: Triggering initial generateRankings to apply loaded suggestions");
           debouncedGenerateRankings(battleResults);
@@ -286,15 +270,8 @@ export const useBattleStateCore = (
         console.error("Error parsing saved suggestions:", e);
       }
     }
-  // Critical fix: Remove generateRankings from this effect's dependencies!
-  }, [loadSavedSuggestions, battleResults, debouncedGenerateRankings]);
+  }, []); // NO dependencies - only run once on mount
   
-  // Add explicit event to signal that we should prioritize suggestions
-  const triggerSuggestionPrioritization = useCallback(() => {
-    console.log("🔥 Dispatching prioritizeSuggestions event");
-    window.dispatchEvent(new CustomEvent("prioritizeSuggestions"));
-  }, []);
-
   // FIXED: This effect with precise entry/exit logging and proper dependency management
   useEffect(() => {
     console.log('[DEBUG useBattleStateCore] useEffect ShowingMilestone: Fired. showingMilestone:', showingMilestone, 
