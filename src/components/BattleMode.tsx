@@ -28,7 +28,6 @@ const BattleMode = () => {
     return stored;
   };
   
-  // CRITICAL FIX: Call the function and store the result, not the function itself
   const initialBattleType = useMemo(() => getInitialBattleType(), []);
 
   // CRITICAL FIX: Memoize Pokemon data with ultra-stable reference and validate types
@@ -37,36 +36,35 @@ const BattleMode = () => {
     
     console.log('[DEBUG BattleMode] Stabilizing Pokemon data - length:', allPokemon.length);
     
-    // CRITICAL: Log sample Pokemon to verify types in source data
+    // CRITICAL: Log sample Pokemon to verify types in source data BEFORE any processing
     const samplePokemon = allPokemon.find(p => p.id === 60) || allPokemon[0]; // Poliwag
     if (samplePokemon) {
-      console.log('[CRITICAL DEBUG] BattleMode source Pokemon sample:', JSON.stringify({
+      console.log('[CRITICAL DEBUG] BattleMode source Pokemon sample (BEFORE processing):', JSON.stringify({
         id: samplePokemon.id,
         name: samplePokemon.name,
         types: samplePokemon.types,
         typesIsArray: Array.isArray(samplePokemon.types),
         typesLength: samplePokemon.types?.length || 0,
         firstType: samplePokemon.types?.[0],
-        rawTypesStructure: samplePokemon.types
+        rawTypesStructure: samplePokemon.types,
+        fullSample: {
+          id: samplePokemon.id,
+          name: samplePokemon.name,
+          types: samplePokemon.types
+        }
       }));
       
-      // CRITICAL: If types are missing, this is where we need to fix it
+      // CRITICAL: If types are missing at the source, this is the root problem
       if (!samplePokemon.types || samplePokemon.types.length === 0) {
         console.error('[CRITICAL ERROR] BattleMode received Pokemon data without types! Source data issue detected.');
+        console.error('[CRITICAL ERROR] Sample Pokemon object:', JSON.stringify(samplePokemon));
       }
     }
     
-    // Ensure all Pokemon have valid types structure
-    const validatedPokemon = allPokemon.map(pokemon => {
-      if (!pokemon.types || pokemon.types.length === 0) {
-        console.warn(`[DATA VALIDATION] Pokemon ${pokemon.name} (${pokemon.id}) missing types, using empty array`);
-        return { ...pokemon, types: [] };
-      }
-      return pokemon;
-    });
-    
-    return validatedPokemon;
-  }, [allPokemon.length, allPokemon]); // Depend on both length and the array for data changes
+    // Return the EXACT original allPokemon array - no modifications whatsoever
+    console.log('[CRITICAL DEBUG] BattleMode returning unmodified allPokemon array');
+    return allPokemon;
+  }, [allPokemon]);
 
   // CRITICAL FIX: Ultra-stable callback references that never change
   const stableSetBattlesCompleted = useCallback((value: React.SetStateAction<number>) => {
