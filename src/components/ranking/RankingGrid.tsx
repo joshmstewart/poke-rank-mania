@@ -43,13 +43,12 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
     }
   }, [onRemoveSuggestion]);
 
-  // Get ranking number color based on pokemon's primary type
-  const getRankingNumberColor = (pokemon: RankedPokemon): string => {
+  // Get Pokemon background color based on primary type
+  const getPokemonBackgroundColor = (pokemon: RankedPokemon): string => {
     if (!pokemon.types || pokemon.types.length === 0) {
-      return 'bg-gray-500 text-white'; // Default fallback
+      return 'bg-gray-200';
     }
     
-    // Extract the primary type name
     let primaryType = 'unknown';
     
     if (typeof pokemon.types[0] === 'string') {
@@ -63,11 +62,53 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
       }
     }
     
-    // Type color mapping for ranking numbers
+    const typeToColorMap: Record<string, string> = {
+      'normal': 'bg-gray-200',
+      'fighting': 'bg-red-200',
+      'flying': 'bg-blue-200',
+      'poison': 'bg-purple-200',
+      'ground': 'bg-yellow-200',
+      'rock': 'bg-stone-200',
+      'bug': 'bg-green-200',
+      'ghost': 'bg-purple-300',
+      'steel': 'bg-slate-200',
+      'fire': 'bg-red-200',
+      'water': 'bg-blue-200',
+      'grass': 'bg-green-200',
+      'electric': 'bg-yellow-200',
+      'psychic': 'bg-pink-200',
+      'ice': 'bg-cyan-200',
+      'dragon': 'bg-indigo-200',
+      'dark': 'bg-gray-300',
+      'fairy': 'bg-pink-200'
+    };
+    
+    return typeToColorMap[primaryType] || 'bg-gray-200';
+  };
+
+  // Get ranking number color based on pokemon's primary type
+  const getRankingNumberColor = (pokemon: RankedPokemon): string => {
+    if (!pokemon.types || pokemon.types.length === 0) {
+      return 'bg-gray-500 text-white';
+    }
+    
+    let primaryType = 'unknown';
+    
+    if (typeof pokemon.types[0] === 'string') {
+      primaryType = pokemon.types[0].toLowerCase();
+    } else if (pokemon.types[0] && typeof pokemon.types[0] === 'object') {
+      const typeObj = pokemon.types[0] as any;
+      if (typeObj.type && typeObj.type.name) {
+        primaryType = typeObj.type.name.toLowerCase();
+      } else if (typeObj.name) {
+        primaryType = typeObj.name.toLowerCase();
+      }
+    }
+    
     const typeToColorMap: Record<string, string> = {
       'normal': 'bg-gray-500 text-white',
       'fighting': 'bg-red-600 text-white',
-      'flying': 'bg-blue-400 text-white',
+      'flying': 'bg-blue-500 text-white',
       'poison': 'bg-purple-600 text-white',
       'ground': 'bg-yellow-600 text-white',
       'rock': 'bg-stone-600 text-white',
@@ -88,76 +129,33 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
     return typeToColorMap[primaryType] || 'bg-gray-500 text-white';
   };
 
-  // Enhanced Pokemon background color based on primary type
-  const getPokemonBackgroundColor = (pokemon: RankedPokemon): string => {
-    if (!pokemon.types || pokemon.types.length === 0) {
-      return 'bg-gray-100 border-gray-300';
-    }
-    
-    let primaryType = 'unknown';
-    
-    if (typeof pokemon.types[0] === 'string') {
-      primaryType = pokemon.types[0].toLowerCase();
-    } else if (pokemon.types[0] && typeof pokemon.types[0] === 'object') {
-      const typeObj = pokemon.types[0] as any;
-      if (typeObj.type && typeObj.type.name) {
-        primaryType = typeObj.type.name.toLowerCase();
-      } else if (typeObj.name) {
-        primaryType = typeObj.name.toLowerCase();
-      }
-    }
-    
-    const typeToColorMap: Record<string, string> = {
-      'normal': 'bg-gray-100 border-gray-300',
-      'fighting': 'bg-red-100 border-red-300',
-      'flying': 'bg-blue-100 border-blue-300',
-      'poison': 'bg-purple-100 border-purple-300',
-      'ground': 'bg-yellow-100 border-yellow-300',
-      'rock': 'bg-stone-100 border-stone-300',
-      'bug': 'bg-green-100 border-green-300',
-      'ghost': 'bg-purple-200 border-purple-400',
-      'steel': 'bg-slate-100 border-slate-300',
-      'fire': 'bg-red-100 border-red-300',
-      'water': 'bg-blue-100 border-blue-300',
-      'grass': 'bg-green-100 border-green-300',
-      'electric': 'bg-yellow-100 border-yellow-300',
-      'psychic': 'bg-pink-100 border-pink-300',
-      'ice': 'bg-cyan-100 border-cyan-300',
-      'dragon': 'bg-indigo-100 border-indigo-300',
-      'dark': 'bg-gray-200 border-gray-400',
-      'fairy': 'bg-pink-100 border-pink-300'
-    };
-    
-    return typeToColorMap[primaryType] || 'bg-gray-100 border-gray-300';
-  };
-
   if (isMilestoneView) {
     return (
       <div className="space-y-6">
-        <div className="text-center py-6">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <div className="text-3xl">🏆</div>
-            <h2 className="text-2xl font-bold text-gray-800">
+        {/* Milestone Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="text-2xl">🏆</div>
+            <h2 className="text-xl font-bold text-gray-800">
               Milestone: {battlesCompleted} Battles
             </h2>
+            <span className="text-sm text-gray-600">
+              (Showing {Math.min(displayCount || displayRankings.length, displayRankings.length)} of {activeTier === "All" ? displayRankings.length : activeTier})
+            </span>
           </div>
-          <p className="text-gray-600 mb-2">
-            (Showing {Math.min(displayCount || displayRankings.length, displayRankings.length)} of {activeTier === "All" ? displayRankings.length : activeTier})
-          </p>
           
           {onContinueBattles && (
             <Button 
               onClick={onContinueBattles}
-              size="lg"
-              className="bg-gray-800 hover:bg-gray-900 text-white px-6 py-2 rounded-lg"
+              className="bg-gray-800 hover:bg-gray-900 text-white px-4 py-2 rounded-lg"
             >
               Continue Battles
             </Button>
           )}
         </div>
 
-        {/* Horizontal cards layout like in the original image */}
-        <div className="space-y-2">
+        {/* Compact Grid Layout */}
+        <div className="grid grid-cols-5 gap-3">
           {displayRankings.map((pokemon, index) => {
             const backgroundColorClass = getPokemonBackgroundColor(pokemon);
             const rankingNumberColor = getRankingNumberColor(pokemon);
@@ -165,67 +163,68 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
             return (
               <div 
                 key={pokemon.id}
-                className={`${backgroundColorClass} rounded-lg p-3 border-2 transition-all duration-200 hover:shadow-lg relative flex items-center gap-4`}
+                className={`${backgroundColorClass} rounded-lg border border-gray-300 relative overflow-hidden transition-all duration-200 hover:shadow-md`}
                 onMouseEnter={() => setHoveredPokemon(pokemon.id)}
                 onMouseLeave={() => setHoveredPokemon(null)}
               >
                 {/* Ranking number circle */}
-                <div className={`w-10 h-10 ${rankingNumberColor} rounded-full flex items-center justify-center text-sm font-bold shadow-lg flex-shrink-0`}>
+                <div className={`absolute top-2 left-2 w-6 h-6 ${rankingNumberColor} rounded-full flex items-center justify-center text-xs font-bold z-10`}>
                   {index + 1}
                 </div>
                 
-                {/* Pokemon image */}
-                <div className="w-16 h-16 bg-white/70 rounded-lg flex items-center justify-center overflow-hidden shadow-sm flex-shrink-0">
-                  <img 
-                    src={pokemon.image} 
-                    alt={pokemon.name}
-                    className="w-14 h-14 object-contain"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.style.display = 'none';
-                    }}
-                  />
-                </div>
-                
-                {/* Pokemon info */}
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-bold text-gray-800 text-lg truncate">
-                    {pokemon.name}
-                  </h3>
-                  <div className="text-sm text-gray-600">
-                    #{pokemon.id}
+                {/* Pokemon image area */}
+                <div className="pt-8 pb-2 px-3 flex flex-col items-center">
+                  <div className="w-16 h-16 flex items-center justify-center mb-2">
+                    <img 
+                      src={pokemon.image} 
+                      alt={pokemon.name}
+                      className="w-full h-full object-contain"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                      }}
+                    />
+                  </div>
+                  
+                  {/* Pokemon info */}
+                  <div className="text-center">
+                    <h3 className="font-semibold text-gray-800 text-sm leading-tight mb-1">
+                      {pokemon.name}
+                    </h3>
+                    <div className="text-xs text-gray-600">
+                      #{pokemon.id}
+                    </div>
                   </div>
                 </div>
-                
+
                 {pokemon.suggestedAdjustment && !pokemon.suggestedAdjustment.used && (
-                  <div className="flex items-center gap-1 text-yellow-600">
-                    <Sparkles className="w-4 h-4" />
-                    <span className="text-sm">Suggested</span>
+                  <div className="absolute top-2 right-2 text-yellow-600">
+                    <Sparkles className="w-3 h-3" />
                   </div>
                 )}
 
                 {hoveredPokemon === pokemon.id && onSuggestRanking && (
-                  <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex gap-1">
+                  <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center gap-1 rounded-lg">
                     <button
                       onClick={() => handleSuggestion(pokemon, "up")}
-                      className="p-2 bg-green-100 hover:bg-green-200 rounded transition-colors shadow-sm"
+                      className="p-1 bg-green-100 hover:bg-green-200 rounded transition-colors"
                       title="Suggest ranking higher"
                     >
-                      <ChevronUp className="w-4 h-4 text-green-600" />
+                      <ChevronUp className="w-3 h-3 text-green-600" />
                     </button>
                     
                     <button
                       onClick={() => handleSuggestion(pokemon, "down")}
-                      className="p-2 bg-red-100 hover:bg-red-200 rounded transition-colors shadow-sm"
+                      className="p-1 bg-red-100 hover:bg-red-200 rounded transition-colors"
                       title="Suggest ranking lower"
                     >
-                      <ChevronDown className="w-4 h-4 text-red-600" />
+                      <ChevronDown className="w-3 h-3 text-red-600" />
                     </button>
                     
                     {pokemon.suggestedAdjustment && (
                       <button
                         onClick={() => handleRemoveSuggestion(pokemon.id)}
-                        className="p-2 bg-gray-100 hover:bg-gray-200 rounded transition-colors shadow-sm"
+                        className="p-1 bg-gray-100 hover:bg-gray-200 rounded transition-colors text-xs"
                         title="Remove suggestion"
                       >
                         ×
@@ -239,7 +238,7 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
         </div>
 
         {onShowMore && totalCount && displayCount && displayCount < totalCount && (
-          <div className="text-center pt-6">
+          <div className="text-center pt-4">
             <ShowMoreButton 
               onShowMore={onShowMore}
               displayCount={displayCount}
