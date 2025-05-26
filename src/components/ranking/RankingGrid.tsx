@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from "react";
 import { RankedPokemon, TopNOption } from "@/services/pokemon";
 import { ChevronUp, ChevronDown, Sparkles } from "lucide-react";
@@ -131,7 +132,7 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
 
   if (isMilestoneView) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-6">
         {/* Milestone Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -154,8 +155,8 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
           )}
         </div>
 
-        {/* Compact Horizontal Grid Layout - EXACTLY like the image */}
-        <div className="grid grid-cols-8 gap-2">
+        {/* Grid Layout - 5 columns like in the image */}
+        <div className="grid grid-cols-5 gap-4">
           {displayRankings.map((pokemon, index) => {
             const backgroundColorClass = getPokemonBackgroundColor(pokemon);
             const rankingNumberColor = getRankingNumberColor(pokemon);
@@ -163,21 +164,21 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
             return (
               <div 
                 key={pokemon.id}
-                className={`${backgroundColorClass} rounded-lg border border-gray-300 relative overflow-hidden transition-all duration-200 hover:shadow-md h-16 flex items-center`}
+                className={`${backgroundColorClass} rounded-lg border border-gray-300 relative overflow-hidden transition-all duration-200 hover:shadow-md p-4`}
                 onMouseEnter={() => setHoveredPokemon(pokemon.id)}
                 onMouseLeave={() => setHoveredPokemon(null)}
               >
                 {/* Ranking number circle */}
-                <div className={`absolute top-1 left-1 w-4 h-4 ${rankingNumberColor} rounded-full flex items-center justify-center text-xs font-bold z-10`}>
+                <div className={`absolute top-2 left-2 w-6 h-6 ${rankingNumberColor} rounded-full flex items-center justify-center text-sm font-bold z-10`}>
                   {index + 1}
                 </div>
                 
-                {/* Pokemon image - small and left side */}
-                <div className="w-12 h-12 flex items-center justify-center ml-1">
+                {/* Pokemon image - centered and large */}
+                <div className="flex justify-center items-center h-24 mb-3 pt-4">
                   <img 
                     src={pokemon.image} 
                     alt={pokemon.name}
-                    className="w-10 h-10 object-contain"
+                    className="w-20 h-20 object-contain"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
                       target.style.display = 'none';
@@ -185,9 +186,9 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
                   />
                 </div>
                 
-                {/* Pokemon info - right side */}
-                <div className="flex-1 px-1">
-                  <h3 className="font-semibold text-gray-800 text-xs leading-tight truncate">
+                {/* Pokemon info - centered below image */}
+                <div className="text-center">
+                  <h3 className="font-semibold text-gray-800 text-sm leading-tight mb-1">
                     {pokemon.name}
                   </h3>
                   <div className="text-xs text-gray-600">
@@ -196,33 +197,33 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
                 </div>
 
                 {pokemon.suggestedAdjustment && !pokemon.suggestedAdjustment.used && (
-                  <div className="absolute top-1 right-1 text-yellow-600">
+                  <div className="absolute top-2 right-2 text-yellow-600">
                     <Sparkles className="w-3 h-3" />
                   </div>
                 )}
 
                 {hoveredPokemon === pokemon.id && onSuggestRanking && (
-                  <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center gap-1 rounded-lg">
+                  <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center gap-2 rounded-lg">
                     <button
                       onClick={() => handleSuggestion(pokemon, "up")}
-                      className="p-1 bg-green-100 hover:bg-green-200 rounded transition-colors"
+                      className="p-2 bg-green-100 hover:bg-green-200 rounded transition-colors"
                       title="Suggest ranking higher"
                     >
-                      <ChevronUp className="w-3 h-3 text-green-600" />
+                      <ChevronUp className="w-4 h-4 text-green-600" />
                     </button>
                     
                     <button
                       onClick={() => handleSuggestion(pokemon, "down")}
-                      className="p-1 bg-red-100 hover:bg-red-200 rounded transition-colors"
+                      className="p-2 bg-red-100 hover:bg-red-200 rounded transition-colors"
                       title="Suggest ranking lower"
                     >
-                      <ChevronDown className="w-3 h-3 text-red-600" />
+                      <ChevronDown className="w-4 h-4 text-red-600" />
                     </button>
                     
                     {pokemon.suggestedAdjustment && (
                       <button
                         onClick={() => handleRemoveSuggestion(pokemon.id)}
-                        className="p-1 bg-gray-100 hover:bg-gray-200 rounded transition-colors text-xs"
+                        className="p-2 bg-gray-100 hover:bg-gray-200 rounded transition-colors text-sm"
                         title="Remove suggestion"
                       >
                         ×
