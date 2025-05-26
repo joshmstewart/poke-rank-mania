@@ -131,7 +131,7 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
 
   if (isMilestoneView) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4">
         {/* Milestone Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -154,8 +154,8 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
           )}
         </div>
 
-        {/* Compact Grid Layout */}
-        <div className="grid grid-cols-5 gap-3">
+        {/* Compact Horizontal Grid Layout - EXACTLY like the image */}
+        <div className="grid grid-cols-8 gap-2">
           {displayRankings.map((pokemon, index) => {
             const backgroundColorClass = getPokemonBackgroundColor(pokemon);
             const rankingNumberColor = getRankingNumberColor(pokemon);
@@ -163,42 +163,40 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
             return (
               <div 
                 key={pokemon.id}
-                className={`${backgroundColorClass} rounded-lg border border-gray-300 relative overflow-hidden transition-all duration-200 hover:shadow-md`}
+                className={`${backgroundColorClass} rounded-lg border border-gray-300 relative overflow-hidden transition-all duration-200 hover:shadow-md h-16 flex items-center`}
                 onMouseEnter={() => setHoveredPokemon(pokemon.id)}
                 onMouseLeave={() => setHoveredPokemon(null)}
               >
                 {/* Ranking number circle */}
-                <div className={`absolute top-2 left-2 w-6 h-6 ${rankingNumberColor} rounded-full flex items-center justify-center text-xs font-bold z-10`}>
+                <div className={`absolute top-1 left-1 w-4 h-4 ${rankingNumberColor} rounded-full flex items-center justify-center text-xs font-bold z-10`}>
                   {index + 1}
                 </div>
                 
-                {/* Pokemon image area */}
-                <div className="pt-8 pb-2 px-3 flex flex-col items-center">
-                  <div className="w-16 h-16 flex items-center justify-center mb-2">
-                    <img 
-                      src={pokemon.image} 
-                      alt={pokemon.name}
-                      className="w-full h-full object-contain"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.style.display = 'none';
-                      }}
-                    />
-                  </div>
-                  
-                  {/* Pokemon info */}
-                  <div className="text-center">
-                    <h3 className="font-semibold text-gray-800 text-sm leading-tight mb-1">
-                      {pokemon.name}
-                    </h3>
-                    <div className="text-xs text-gray-600">
-                      #{pokemon.id}
-                    </div>
+                {/* Pokemon image - small and left side */}
+                <div className="w-12 h-12 flex items-center justify-center ml-1">
+                  <img 
+                    src={pokemon.image} 
+                    alt={pokemon.name}
+                    className="w-10 h-10 object-contain"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                    }}
+                  />
+                </div>
+                
+                {/* Pokemon info - right side */}
+                <div className="flex-1 px-1">
+                  <h3 className="font-semibold text-gray-800 text-xs leading-tight truncate">
+                    {pokemon.name}
+                  </h3>
+                  <div className="text-xs text-gray-600">
+                    #{pokemon.id}
                   </div>
                 </div>
 
                 {pokemon.suggestedAdjustment && !pokemon.suggestedAdjustment.used && (
-                  <div className="absolute top-2 right-2 text-yellow-600">
+                  <div className="absolute top-1 right-1 text-yellow-600">
                     <Sparkles className="w-3 h-3" />
                   </div>
                 )}
