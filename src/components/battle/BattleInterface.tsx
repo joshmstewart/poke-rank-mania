@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef, memo } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "@/hooks/battle/types";
@@ -45,6 +44,16 @@ const BattleInterface: React.FC<BattleInterfaceProps> = memo(({
   const selectionTimestampRef = useRef(0);
   const lastProcessedBattleRef = useRef<number[]>([]);
   
+  // LOADING STATE DEBUG: Log all processing state changes
+  useEffect(() => {
+    console.log(`🔄 [LOADING DEBUG] BattleInterface processing states:`, {
+      isProcessing,
+      internalProcessing,
+      combined: isProcessing || internalProcessing,
+      timestamp: new Date().toISOString()
+    });
+  }, [isProcessing, internalProcessing]);
+  
   const { getNextMilestone, getMilestoneProgress } = useMilestoneCalculations(
     displayedBattlesCompleted, 
     milestones
@@ -52,7 +61,7 @@ const BattleInterface: React.FC<BattleInterfaceProps> = memo(({
   
   // Validate current battle Pokemon to ensure image and name consistency
   const validatedBattle = currentBattle ? validateBattlePokemon(currentBattle) : [];
-  
+
   // OPTIMIZATION: Only update animation key and logs when battle actually changes
   useEffect(() => {
     if (!validatedBattle || validatedBattle.length === 0) return;
@@ -116,6 +125,14 @@ const BattleInterface: React.FC<BattleInterfaceProps> = memo(({
   
   // Handle pokemon selection with optimized debounce
   const handlePokemonCardSelect = useCallback((id: number) => {
+    console.log(`🖱️ [LOADING DEBUG] handlePokemonCardSelect called:`, {
+      id,
+      isProcessing,
+      internalProcessing,
+      willIgnore: isProcessing || internalProcessing,
+      timestamp: new Date().toISOString()
+    });
+    
     if (!isProcessing && !internalProcessing) {
       const now = Date.now();
       
@@ -130,11 +147,15 @@ const BattleInterface: React.FC<BattleInterfaceProps> = memo(({
       selectionTimestampRef.current = now;
       
       console.log(`🖱️ BattleInterface: Handling Pokemon selection: ${id}`);
+      console.log(`🔄 [LOADING DEBUG] Setting internalProcessing = true`);
       setInternalProcessing(true);
       onPokemonSelect(id);
       
       // Reset internal processing state after a shorter delay (reduced to 200ms)
-      setTimeout(() => setInternalProcessing(false), 200);
+      setTimeout(() => {
+        console.log(`🔄 [LOADING DEBUG] Setting internalProcessing = false (after timeout)`);
+        setInternalProcessing(false);
+      }, 200);
     } else {
       console.log(`⏳ BattleInterface: Ignoring click while processing (isProcessing=${isProcessing}, internalProcessing=${internalProcessing})`);
     }
@@ -142,24 +163,42 @@ const BattleInterface: React.FC<BattleInterfaceProps> = memo(({
 
   // Handle submission for triplets mode
   const handleSubmit = useCallback(() => {
+    console.log(`🔄 [LOADING DEBUG] handleSubmit called:`, {
+      isProcessing,
+      internalProcessing,
+      willIgnore: isProcessing || internalProcessing,
+      timestamp: new Date().toISOString()
+    });
+    
     if (!isProcessing && !internalProcessing) {
       console.log("BattleInterface: Submitting triplet selection");
+      console.log(`🔄 [LOADING DEBUG] Setting internalProcessing = true (submit)`);
       setInternalProcessing(true);
       onTripletSelectionComplete();
       
       // Reset internal processing state after a shorter delay
-      setTimeout(() => setInternalProcessing(false), 200);
+      setTimeout(() => {
+        console.log(`🔄 [LOADING DEBUG] Setting internalProcessing = false (after submit timeout)`);
+        setInternalProcessing(false);
+      }, 200);
     }
   }, [isProcessing, internalProcessing, onTripletSelectionComplete]);
 
   // Handle back button click
   const handleBackClick = useCallback(() => {
+    console.log(`🔄 [LOADING DEBUG] handleBackClick called:`, {
+      isProcessing,
+      internalProcessing,
+      willIgnore: isProcessing || internalProcessing,
+      timestamp: new Date().toISOString()
+    });
+    
     if (!isProcessing && !internalProcessing) {
       console.log("BattleInterface: Handling back button click");
       onGoBack();
     }
   }, [isProcessing, internalProcessing, onGoBack]);
-  
+
   // OPTIMIZED: Helper to validate battle configuration
   useEffect(() => {
     // Skip if no battle
@@ -195,12 +234,19 @@ const BattleInterface: React.FC<BattleInterfaceProps> = memo(({
   
   // Only render if we have Pokemon to display
   if (!validatedBattle || validatedBattle.length === 0) {
+    console.log(`🔄 [LOADING DEBUG] BattleInterface showing loading spinner (no battle data)`);
     return (
       <div className="bg-white rounded-lg shadow p-6 flex items-center justify-center h-64 w-full">
         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-primary"></div>
       </div>
     );
   }
+  
+  console.log(`🔄 [LOADING DEBUG] BattleInterface rendering with processing states:`, {
+    isProcessing,
+    internalProcessing,
+    showingSpinner: isProcessing || internalProcessing
+  });
   
   return (
     <div className="bg-white rounded-lg shadow p-6 w-full">

@@ -28,6 +28,14 @@ export const useBattleProcessor = (
   const [isProcessingResult, setIsProcessingResult] = useState(false);
   const milestoneInProgressRef = useRef(false);
 
+  // LOADING STATE DEBUG: Log isProcessingResult changes
+  useEffect(() => {
+    console.log(`🔄 [LOADING DEBUG] useBattleProcessor isProcessingResult changed:`, {
+      isProcessingResult,
+      timestamp: new Date().toISOString()
+    });
+  }, [isProcessingResult]);
+
   const { 
     incrementBattlesCompleted,
     resetMilestone: resetBattleProgressionMilestoneTracking
@@ -86,24 +94,15 @@ export const useBattleProcessor = (
     currentSelectedGeneration: number = 0
   ) => {
     const timestamp = new Date().toISOString();
-    console.log(`📝 [${timestamp}] PROCESS BATTLE: Called with:`, {
-      selectedPokemonIds,
-      currentBattleIds: currentBattlePokemon.map(p => p.id),
-      battleType,
-      currentSelectedGeneration,
-      isProcessing: isProcessingResult,
-      milestoneInProgress: milestoneInProgressRef.current,
-      battlesCompleted: battlesCompleted,
-      isResetting: isResettingRef?.current
-    });
+    console.log(`📝 [${timestamp}] [LOADING DEBUG] PROCESS BATTLE: Called with isProcessingResult=${isProcessingResult}`);
     
     if (isProcessingResult || milestoneInProgressRef.current) {
-      console.log(`📝 [${timestamp}] PROCESS BATTLE: Skipping processBattle (already in progress)`);
+      console.log(`📝 [${timestamp}] [LOADING DEBUG] PROCESS BATTLE: Skipping processBattle (already in progress)`);
       return;
     }
 
+    console.log(`📝 [${timestamp}] [LOADING DEBUG] PROCESS BATTLE: Setting isProcessingResult = true`);
     setIsProcessingResult(true);
-    console.log(`📝 [${timestamp}] PROCESS BATTLE: Set isProcessingResult = true`);
     
     try {
       // Check if we need to reset battle count due to reset
@@ -121,6 +120,7 @@ export const useBattleProcessor = (
 
       if (!newResults || newResults.length === 0) {
         console.warn(`📝 [${timestamp}] PROCESS BATTLE: No battle results returned`);
+        console.log(`📝 [${timestamp}] [LOADING DEBUG] PROCESS BATTLE: Setting isProcessingResult = false (no results)`);
         setIsProcessingResult(false);
         return;
       }
@@ -171,12 +171,12 @@ export const useBattleProcessor = (
       await setupNextBattle(battleType);
       console.log(`📝 [${timestamp}] PROCESS BATTLE: Next battle setup completed`);
       
+      console.log(`📝 [${timestamp}] [LOADING DEBUG] PROCESS BATTLE: Setting isProcessingResult = false (success)`);
       setIsProcessingResult(false);
-      console.log(`📝 [${timestamp}] PROCESS BATTLE: Set isProcessingResult = false`);
     } catch (e) {
       console.error(`📝 [${timestamp}] PROCESS BATTLE: Error:`, e);
+      console.log(`📝 [${timestamp}] [LOADING DEBUG] PROCESS BATTLE: Setting isProcessingResult = false (after error)`);
       setIsProcessingResult(false);
-      console.log(`📝 [${timestamp}] PROCESS BATTLE: Set isProcessingResult = false (after error)`);
     }
   }, [
     battleResults,
@@ -197,7 +197,7 @@ export const useBattleProcessor = (
 
   const resetMilestoneInProgress = useCallback(() => {
     const timestamp = new Date().toISOString();
-    console.log(`📝 [${timestamp}] MILESTONE RESET: Setting milestoneInProgressRef to false`);
+    console.log(`📝 [${timestamp}] [LOADING DEBUG] MILESTONE RESET: Setting milestoneInProgressRef to false`);
     milestoneInProgressRef.current = false;
     console.log(`📝 [${timestamp}] MILESTONE RESET: Completed`);
   }, []);

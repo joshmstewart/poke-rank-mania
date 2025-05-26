@@ -24,7 +24,16 @@ const BattleGrid: React.FC<BattleGridProps> = ({
   internalProcessing,
   animationKey
 }) => {
-  console.log(`🔄 BattleGrid render - battleType: ${battleType}, currentBattle length: ${currentBattle?.length || 0}, selectedPokemon: [${selectedPokemon.join(', ')}], isProcessing: ${isProcessing}, internalProcessing: ${internalProcessing}, animationKey: ${animationKey}`);
+  console.log(`🔄 [LOADING DEBUG] BattleGrid render:`, {
+    battleType,
+    currentBattleLength: currentBattle?.length || 0,
+    selectedPokemon: selectedPokemon.join(', '),
+    isProcessing,
+    internalProcessing,
+    combinedProcessing: isProcessing || internalProcessing,
+    animationKey,
+    timestamp: new Date().toISOString()
+  });
   
   // Validate the Pokemon in the grid to ensure image and name consistency - memoized for performance
   const validatedBattle = useMemo(() => {
@@ -53,6 +62,7 @@ const BattleGrid: React.FC<BattleGridProps> = ({
   
   // If we don't have valid battle data, show a loading state
   if (!validatedBattle.length) {
+    console.log(`🔄 [LOADING DEBUG] BattleGrid showing placeholder loading state`);
     return (
       <div className="grid gap-4 mt-8 grid-cols-2 md:grid-cols-3">
         {[1, 2, 3].map((placeholder) => (
@@ -66,7 +76,7 @@ const BattleGrid: React.FC<BattleGridProps> = ({
   const gridCols = validatedBattle.length <= 3 ? validatedBattle.length : Math.min(validatedBattle.length, 4);
   
   // FIXED: Ensure proper visibility of the battle grid
-  console.log(`🎮 BattleGrid rendering ${validatedBattle.length} Pokémon cards with gridCols=${gridCols}, animationKey=${animationKey}`);
+  console.log(`🎮 [LOADING DEBUG] BattleGrid rendering ${validatedBattle.length} Pokémon cards with processing=${isProcessing || internalProcessing}`);
   
   return (
     <div 

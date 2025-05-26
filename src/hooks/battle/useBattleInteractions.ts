@@ -27,6 +27,15 @@ export const useBattleInteractions = (
   const clickDebounceRef = useRef<boolean>(false);
   const processingStateRef = useRef<boolean>(false);
 
+  // LOADING STATE DEBUG: Log isProcessing changes
+  useEffect(() => {
+    console.log(`🔄 [LOADING DEBUG] useBattleInteractions isProcessing changed:`, {
+      isProcessing,
+      processingStateRef: processingStateRef.current,
+      timestamp: new Date().toISOString()
+    });
+  }, [isProcessing]);
+
   const { goBack: navigationGoBack } = useBattleNavigation(
     battleHistory,
     setBattleHistory,
@@ -52,6 +61,7 @@ export const useBattleInteractions = (
     console.log("🔄 Resetting selected pokemon due to battle change or type change");
     setSelectedPokemon([]);
     setLastSelectedId(null);
+    console.log(`🔄 [LOADING DEBUG] useBattleInteractions: Resetting processing states`);
     setIsProcessing(false);
     processingStateRef.current = false;
     
@@ -67,6 +77,7 @@ export const useBattleInteractions = (
       console.log("📣 useBattleInteractions: Received milestone-dismissed event");
       
       // Reset processing state when milestone is dismissed
+      console.log(`🔄 [LOADING DEBUG] useBattleInteractions: Milestone dismissed - resetting processing states`);
       setIsProcessing(false);
       processingStateRef.current = false;
       
@@ -85,6 +96,14 @@ export const useBattleInteractions = (
 
   const handlePokemonSelect = useCallback(
     (id: number) => {
+      console.log(`🖱️ [LOADING DEBUG] handlePokemonSelect called:`, {
+        id,
+        isProcessing,
+        processingStateRef: processingStateRef.current,
+        clickDebounce: clickDebounceRef.current,
+        timestamp: new Date().toISOString()
+      });
+      
       // Guard against empty battles
       if (!currentBattle || currentBattle.length === 0) {
         console.warn("🚫 handlePokemonSelect called with empty battle");
@@ -121,6 +140,7 @@ export const useBattleInteractions = (
       console.log(`👆 handlePokemonSelect: Selected Pokemon ID: ${id} for ${battleType} battle`);
       
       // Set both state and ref to prevent race conditions
+      console.log(`🔄 [LOADING DEBUG] handlePokemonSelect: Setting processing states to true`);
       setIsProcessing(true);
       processingStateRef.current = true;
       
@@ -177,6 +197,7 @@ export const useBattleInteractions = (
             console.log("✅ useBattleInteractions: Battle processed successfully");
           } catch (e) {
             console.error("❌ Error processing battle:", e);
+            console.log(`🔄 [LOADING DEBUG] handlePokemonSelect: Error - resetting processing states`);
             setIsProcessing(false);
             processingStateRef.current = false;
             toast.error("Battle processing error", {
@@ -205,6 +226,7 @@ export const useBattleInteractions = (
     console.log("useBattleInteractions: Handling go back");
     
     // Clear any processing state
+    console.log(`🔄 [LOADING DEBUG] handleGoBack: Clearing processing states`);
     setIsProcessing(false);
     processingStateRef.current = false;
     
@@ -233,6 +255,7 @@ export const useBattleInteractions = (
     document.dispatchEvent(dismissEvent);
     
     // Set processing state
+    console.log(`🔄 [LOADING DEBUG] handleForceNextBattle: Setting processing states`);
     setIsProcessing(true);
     processingStateRef.current = true;
     setSelectedPokemon([]);
@@ -255,6 +278,7 @@ export const useBattleInteractions = (
           description: "There was a problem starting the next battle"
         });
       } finally {
+        console.log(`🔄 [LOADING DEBUG] handleForceNextBattle: Resetting processing states`);
         setIsProcessing(false);
         processingStateRef.current = false;
         processingTimeoutRef.current = null;
