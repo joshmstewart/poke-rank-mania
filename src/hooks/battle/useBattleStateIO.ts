@@ -46,8 +46,8 @@ export const useBattleStateIO = ({
   // Local storage management
   const { saveBattleState, loadBattleState } = useLocalStorage();
 
-  // Rankings generation and management
-  const { finalRankings, generateRankings, handleSaveRankings } = useRankings(allPokemon);
+  // Rankings generation and management - FIXED: useRankings expects no arguments
+  const { finalRankings, generateRankings, handleSaveRankings } = useRankings();
 
   // Simple calculation for battles remaining
   const getBattlesRemaining = () => {
