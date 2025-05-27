@@ -47,6 +47,20 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
     if (displayRankings.length > 0) {
       displayRankings.slice(0, Math.min(5, displayRankings.length)).forEach((pokemon, index) => {
         console.log(`${index + 1}. ${pokemon.name} (ID: ${pokemon.id}) - Types: ${pokemon.types?.join(', ') || 'unknown'}`);
+        
+        // ENHANCED DEBUGGING: Log the complete structure of the first Pokemon
+        if (index === 0) {
+          console.log("🔍 COMPLETE POKEMON STRUCTURE for", pokemon.name, ":");
+          console.log("- Raw types property:", JSON.stringify(pokemon.types));
+          console.log("- Types is array:", Array.isArray(pokemon.types));
+          console.log("- Types length:", pokemon.types?.length || 0);
+          console.log("- First type element:", pokemon.types?.[0]);
+          console.log("- Type of first element:", typeof pokemon.types?.[0]);
+          if (pokemon.types?.[0] && typeof pokemon.types[0] === 'object') {
+            console.log("- First type object keys:", Object.keys(pokemon.types[0]));
+            console.log("- First type object structure:", JSON.stringify(pokemon.types[0]));
+          }
+        }
       });
     }
   }, [finalRankings, displayCount]);
@@ -61,7 +75,14 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
 
   // Enhanced Pokemon background color based on primary type - matching the reference images exactly
   const getPokemonBackgroundColor = (pokemon: RankedPokemon | Pokemon): string => {
+    console.log(`🎨 COLOR DEBUG for ${pokemon.name}:`, {
+      hasTypes: !!pokemon.types,
+      typesArray: pokemon.types,
+      typesLength: pokemon.types?.length || 0
+    });
+
     if (!pokemon.types || pokemon.types.length === 0) {
+      console.log(`❌ ${pokemon.name}: No types found, using gray-300`);
       return 'bg-gray-300';
     }
     
@@ -69,13 +90,20 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
     
     if (typeof pokemon.types[0] === 'string') {
       primaryType = pokemon.types[0].toLowerCase();
+      console.log(`✅ ${pokemon.name}: Direct string type: ${primaryType}`);
     } else if (pokemon.types[0] && typeof pokemon.types[0] === 'object') {
       const typeObj = pokemon.types[0] as any;
       if (typeObj.type && typeObj.type.name) {
         primaryType = typeObj.type.name.toLowerCase();
+        console.log(`✅ ${pokemon.name}: Nested type.name: ${primaryType}`);
       } else if (typeObj.name) {
         primaryType = typeObj.name.toLowerCase();
+        console.log(`✅ ${pokemon.name}: Direct name: ${primaryType}`);
+      } else {
+        console.log(`❌ ${pokemon.name}: Object type but no recognizable structure:`, typeObj);
       }
+    } else {
+      console.log(`❌ ${pokemon.name}: Unrecognized type structure:`, pokemon.types[0]);
     }
     
     // Vibrant type colors matching the reference image exactly
@@ -100,7 +128,9 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
       'fairy': 'bg-pink-300'
     };
     
-    return typeToColorMap[primaryType] || 'bg-gray-300';
+    const finalColor = typeToColorMap[primaryType] || 'bg-gray-300';
+    console.log(`🎨 ${pokemon.name}: Final color for type '${primaryType}': ${finalColor}`);
+    return finalColor;
   };
 
   // Milestone view - EXACTLY like the reference image
@@ -137,7 +167,7 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
             return (
               <div 
                 key={pokemon.id}
-                className={`${backgroundColorClass} rounded-lg border border-gray-300 relative overflow-hidden h-48 flex flex-col`}
+                className={`${backgroundColorClass} rounded-lg border border-gray-300 relative overflow-hidden h-40 flex flex-col`}
               >
                 {/* Ranking number - white circle with black text in top left exactly like image */}
                 <div className="absolute top-2 left-2 w-7 h-7 bg-white rounded-full flex items-center justify-center text-sm font-bold z-10 shadow-sm">
@@ -145,7 +175,7 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
                 </div>
                 
                 {/* Pokemon image - larger and taking up more space */}
-                <div className="flex-1 flex justify-center items-center px-2 pt-8 pb-2">
+                <div className="flex-1 flex justify-center items-center px-2 pt-6 pb-1">
                   <img 
                     src={pokemon.image} 
                     alt={pokemon.name}
@@ -158,7 +188,7 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
                 </div>
                 
                 {/* Pokemon info - white section at bottom exactly like image */}
-                <div className="bg-white text-center py-3 px-2 mt-auto">
+                <div className="bg-white text-center py-2 px-2 mt-auto">
                   <h3 className="font-bold text-gray-800 text-sm leading-tight mb-1">
                     {pokemon.name}
                   </h3>
