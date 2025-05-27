@@ -21,9 +21,6 @@ export const useBattleStateCore = (
   const hookInstanceRef = useRef(`core-${Date.now()}`);
   const continueBattlesRef = useRef(false);
   
-  // CRITICAL FIX: Simplified state management - remove complex clearing logic
-  const [isTransitioning, setIsTransitioning] = useState(false);
-  
   if (!initializationRef.current) {
     console.log(`[DEBUG useBattleStateCore] INIT - Instance: ${hookInstanceRef.current} - Using context for Pokemon data`);
     initializationRef.current = true;
@@ -43,18 +40,9 @@ export const useBattleStateCore = (
   const [battleType, setBattleType] = useState<BattleType>(initialBattleTypeStored);
   const [selectedPokemon, setSelectedPokemon] = useState<number[]>([]);
 
-  // CRITICAL FIX: Simplified battle setter that immediately clears transition states
   const stableSetCurrentBattle = useCallback((battle: Pokemon[]) => {
     console.log(`🔄 [FLASH_FIX] stableSetCurrentBattle called with ${battle.length} Pokemon`);
-    
-    if (battle.length > 0) {
-      console.log(`✅ [FLASH_FIX] Setting new battle and clearing all transition states: ${battle.map(p => p.name).join(', ')}`);
-      setCurrentBattle(battle);
-      setIsTransitioning(false); // CRITICAL: Clear transition state immediately when new battle is set
-    } else {
-      console.log(`⚠️ [FLASH_FIX] Clearing battle array`);
-      setCurrentBattle([]);
-    }
+    setCurrentBattle(battle);
   }, []);
   
   const stableSetSelectedPokemon = useCallback((pokemon: number[]) => {
@@ -128,7 +116,6 @@ export const useBattleStateCore = (
     return filtered;
   }, [contextPokemon, selectedGeneration]);
 
-  // CRITICAL FIX: Simplified battle starter that immediately updates state
   const enhancedStartNewBattle = useCallback((battleType: BattleType) => {
     console.log(`🔄 [FLASH_FIX] enhancedStartNewBattle called for ${battleType}`);
     
@@ -136,11 +123,9 @@ export const useBattleStateCore = (
     
     if (result && result.length > 0) {
       console.log(`✅ [FLASH_FIX] New battle generated, setting immediately: ${result.map(p => p.name).join(', ')}`);
-      // Battle will be set via stableSetCurrentBattle which will clear transition states
       return result;
     } else {
       console.log(`⚠️ [FLASH_FIX] Failed to generate new battle`);
-      setIsTransitioning(false); // Clear transition state on failure
     }
     
     return result;
@@ -183,7 +168,6 @@ export const useBattleStateCore = (
     enhancedStartNewBattle
   );
 
-  // CRITICAL FIX: Simplified goBack without complex state management
   const goBack = useCallback(() => {
     console.log(`🔄 [BACK_FIX] goBack called`);
     
@@ -194,8 +178,6 @@ export const useBattleStateCore = (
       });
       return;
     }
-
-    setIsTransitioning(true);
 
     const newHistory = [...battleHistory];
     const lastBattle = newHistory.pop();
@@ -215,14 +197,13 @@ export const useBattleStateCore = (
 
     if (lastBattle) {
       console.log(`🔄 [BACK_FIX] Restoring previous battle: ${lastBattle.battle.map(p => p.name).join(', ')}`);
-      stableSetCurrentBattle(lastBattle.battle); // This will clear transition state
+      stableSetCurrentBattle(lastBattle.battle);
       setSelectedPokemon([]);
     }
 
     setShowingMilestone(false);
   }, [battleHistory, battleResults, battleType, setBattleHistory, setBattleResults, setBattlesCompleted, setSelectedPokemon, setShowingMilestone, stableSetCurrentBattle]);
 
-  // CRITICAL FIX: Greatly simplified handleContinueBattles
   const handleContinueBattles = useCallback(() => {
     console.log('[FLASH_FIX] handleContinueBattles: Called');
     
@@ -236,10 +217,12 @@ export const useBattleStateCore = (
     if (showingMilestone) {
       console.log('[FLASH_FIX] handleContinueBattles: Dismissing milestone and starting new battle');
       
+      setCurrentBattle([]);
+      setSelectedPokemon([]);
+      
       forceDismissMilestone();
       resetMilestoneInProgress();
       
-      // Generate new battle immediately - stableSetCurrentBattle will handle state clearing
       setTimeout(() => {
         enhancedStartNewBattle("pairs");
         continueBattlesRef.current = false;
@@ -249,9 +232,7 @@ export const useBattleStateCore = (
       enhancedStartNewBattle("pairs");
       continueBattlesRef.current = false;
     }
-  }, [showingMilestone, forceDismissMilestone, enhancedStartNewBattle, resetMilestoneInProgress]);
-
-  // CRITICAL FIX: Remove milestone dismissed event listener - handle immediately instead
+  }, [showingMilestone, forceDismissMilestone, enhancedStartNewBattle, resetMilestoneInProgress, setCurrentBattle, setSelectedPokemon]);
 
   const debouncedGenerateRankings = useMemo(() => {
     return (results: any[]) => {
@@ -369,14 +350,12 @@ export const useBattleStateCore = (
     processBattleResult
   );
 
-  // CRITICAL FIX: Simplified processing check
   const isAnyProcessing = isProcessingResult;
   
   console.log(`🔄 [PROCESSOR_FIX] useBattleStateCore processing states:`, {
     isProcessingResult,
     isProcessing,
     isAnyProcessing,
-    isTransitioning,
     timestamp: new Date().toISOString()
   });
 
@@ -398,7 +377,7 @@ export const useBattleStateCore = (
     battleHistory,
     activeTier,
     setActiveTier,
-    isBattleTransitioning: isTransitioning, // CRITICAL FIX: Simplified transition state
+    isBattleTransitioning: false, // Simplified - no complex transition logic
     isAnyProcessing,
     handlePokemonSelect: (id: number) => {
       handlePokemonSelect(id);
@@ -442,7 +421,6 @@ export const useBattleStateCore = (
     confidenceScores,
     battleHistory,
     activeTier,
-    isTransitioning,
     isAnyProcessing,
     handlePokemonSelect,
     goBack,
