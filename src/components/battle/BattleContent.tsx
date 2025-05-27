@@ -1,45 +1,32 @@
-import React, { useEffect, useRef, useMemo, useCallback } from "react";
-import { Pokemon, TopNOption } from "@/services/pokemon";
-import { useBattleStateCore } from "@/hooks/battle/useBattleStateCore";
+
+import React, { useEffect, useRef } from "react";
 import BattleInterface from "./BattleInterface";
-import BattleControls from "./BattleControls";
-import BattleFooterNote from "./BattleFooterNote";
-import { BattleType } from "@/hooks/battle/types";
-import RankingDisplay from "./RankingDisplay";
-import ProgressTracker from "./ProgressTracker";
-import TierSelector from "./TierSelector";
-import { logPokemonVariations } from "@/utils/pokemonListingLogger";
-import { SingleBattle } from "@/hooks/battle/types";
+import MilestoneModal from "./MilestoneModal";
+import { Pokemon } from "@/services/pokemon";
+import { BattleType, SingleBattle } from "@/hooks/battle/types";
+import { useBattleStateCore } from "@/hooks/battle/useBattleStateCore";
 
 interface BattleContentProps {
   allPokemon: Pokemon[];
-  initialSelectedGeneration: number;
   initialBattleType: BattleType;
+  initialSelectedGeneration: number;
   setBattlesCompleted?: React.Dispatch<React.SetStateAction<number>>;
   setBattleResults?: React.Dispatch<React.SetStateAction<SingleBattle[]>>;
 }
 
-const BattleContent = ({
-  allPokemon = [],
+const BattleContent: React.FC<BattleContentProps> = ({
+  allPokemon,
   initialBattleType,
-  initialSelectedGeneration,
+  initialSelectedGeneration = 0,
   setBattlesCompleted,
-  setBattleResults,
-}: BattleContentProps) => {
-  const instanceIdRef = useRef(`content-${Date.now()}`);
-  const battleStartedRef = useRef(false);
-  const pokemonAnalysisLoggedRef = useRef(false);
-  
-  console.log(`[DEBUG BattleContent] Instance: ${instanceIdRef.current} render - allPokemon: ${allPokemon.length}`);
-  
-  const stableInitialBattleType = useMemo(() => {
-    return initialBattleType === "triplets" ? "triplets" : "pairs";
-  }, [initialBattleType]);
-  
-  const stablePokemon = useMemo(() => allPokemon, [allPokemon.length]);
+  setBattleResults
+}) => {
+  const instanceRef = useRef(`content-${Date.now()}`);
+  console.log(`[DEBUG BattleContent] Instance: ${instanceRef.current} render - allPokemon: ${allPokemon?.length || 0}`);
 
   const {
     currentBattle,
+    battleResults,
     battlesCompleted,
     showingMilestone,
     setShowingMilestone,
@@ -51,195 +38,130 @@ const BattleContent = ({
     battleType,
     setBattleType,
     finalRankings,
+    confidenceScores,
+    battleHistory,
+    activeTier,
+    setActiveTier,
+    isBattleTransitioning,
+    isAnyProcessing,
     handlePokemonSelect,
     handleTripletSelectionComplete,
-    handleSelection,
     goBack,
     isProcessingResult,
-    startNewBattle,
     milestones,
     resetMilestones,
     calculateCompletionPercentage,
     getSnapshotForMilestone,
     generateRankings,
-    battleHistory,
-    activeTier,
-    setActiveTier,
+    handleSaveRankings,
+    freezePokemonForTier,
+    isPokemonFrozenForTier,
     suggestRanking,
     removeSuggestion,
+    clearAllSuggestions,
     handleContinueBattles,
     resetMilestoneInProgress,
-    performFullBattleReset 
-  } = useBattleStateCore(
-    stablePokemon,
-    stableInitialBattleType,
-    initialSelectedGeneration
-  );
+    performFullBattleReset
+  } = useBattleStateCore(allPokemon, initialBattleType, initialSelectedGeneration);
 
-  // Log showing milestone state changes - this might be causing gray screen
-  useEffect(() => {
-    console.log(`🔄 [GRAY SCREEN DEBUG] BattleContent showingMilestone changed:`, {
-      showingMilestone,
-      currentBattleLength: currentBattle?.length || 0,
-      isProcessingResult,
-      timestamp: new Date().toISOString()
-    });
-  }, [showingMilestone, currentBattle?.length, isProcessingResult]);
-
-  // Start battle once when component mounts
-  useEffect(() => {
-    if (stablePokemon.length > 0 && !battleStartedRef.current) {
-      console.log("[GRAY SCREEN DEBUG] BattleContent: Starting initial battle");
-      battleStartedRef.current = true;
-      startNewBattle(stableInitialBattleType);
-      localStorage.setItem('pokemon-ranker-battle-type', stableInitialBattleType);
-    }
-  }, [stablePokemon.length, startNewBattle, stableInitialBattleType]);
-  
-  // Log Pokemon variations once
-  useEffect(() => {
-    if (stablePokemon.length > 0 && !pokemonAnalysisLoggedRef.current) {
-      logPokemonVariations(stablePokemon);
-      pokemonAnalysisLoggedRef.current = true;
-    }
-  }, [stablePokemon.length]);
-
-  // Calculate remaining battles
-  const getBattlesRemaining = () => {
-    const pokemonCount = activeTier === "All" ? stablePokemon.length : typeof activeTier === "number" ? Math.min(activeTier, stablePokemon.length) : stablePokemon.length;
-    const totalBattlesNeeded = Math.floor(pokemonCount * Math.log2(pokemonCount)) * 1.2;
-    return Math.max(0, Math.ceil(totalBattlesNeeded - battlesCompleted));
-  };
-
-  const handleBattleTypeChange = useCallback((newType: BattleType) => {
-    console.log("[GRAY SCREEN DEBUG] BattleContent: Changing battle type from", battleType, "to", newType);
-    setBattleType(newType);
-    startNewBattle(newType);
-    resetMilestones();
-    localStorage.setItem('pokemon-ranker-battle-type', newType);
-  }, [battleType, setBattleType, startNewBattle, resetMilestones]);
-
-  const handleGenerationChange = useCallback((generation: string) => {
-    const genId = parseInt(generation, 10);
-    setSelectedGeneration(genId);
-    localStorage.setItem('pokemon-ranker-generation', generation);
-    resetMilestones();
-    startNewBattle(battleType);
-  }, [setSelectedGeneration, resetMilestones, startNewBattle, battleType]);
-
-  const handleRestartBattles = useCallback(() => {
-    resetMilestones();
-    startNewBattle(battleType);
-  }, [resetMilestones, startNewBattle, battleType]);
-
-  const handleNewBattleSet = useCallback(() => {
-    resetMilestones();
-    if (resetMilestoneInProgress) {
-      resetMilestoneInProgress();
-    }
-    startNewBattle(battleType);
-  }, [resetMilestones, resetMilestoneInProgress, startNewBattle, battleType]);
-
-  const handleSaveRankings = useCallback(() => {
-    console.log("[GRAY SCREEN DEBUG] Rankings saved!");
-    setShowingMilestone(false);
-    if (resetMilestoneInProgress) {
-      resetMilestoneInProgress();
-    }
-  }, [setShowingMilestone, resetMilestoneInProgress]);
-
-  const handleTierChange = useCallback((tier: TopNOption) => {
-    console.log("[GRAY SCREEN DEBUG] Changing tier to:", tier);
-    setActiveTier(tier);
-  }, [setActiveTier]);
-
-  // Calculate completion percentage
-  useEffect(() => {
-    calculateCompletionPercentage();
-  }, [battlesCompleted, calculateCompletionPercentage]);
-
-  if (!stablePokemon.length) {
-    console.log(`🔄 [GRAY SCREEN DEBUG] BattleContent showing Pokemon loading - this could be gray screen source`);
-    return <div className="flex justify-center items-center h-64">Loading Pokémon...</div>;
-  }
-
-  const handleTripletSelectionWrapper = () => {
-    console.log("[GRAY SCREEN DEBUG] BattleContent: handleTripletSelectionWrapper called");
-    handleTripletSelectionComplete();
-  };
-
-  const handleGoBack = () => {
-    console.log("[GRAY SCREEN DEBUG] BattleContent: Handling go back");
-    goBack();
-  };
-
-  console.log(`🔄 [GRAY SCREEN DEBUG] BattleContent rendering main content:`, {
+  console.log(`🔄 [LOADING_STATE_DEBUG] BattleContent render states:`, {
     showingMilestone,
     currentBattleLength: currentBattle?.length || 0,
     isProcessingResult,
+    isBattleTransitioning,
+    isAnyProcessing,
     timestamp: new Date().toISOString()
   });
 
+  // Update parent state when local state changes
+  useEffect(() => {
+    setBattlesCompleted?.(battlesCompleted);
+  }, [battlesCompleted, setBattlesCompleted]);
+
+  useEffect(() => {
+    setBattleResults?.(battleResults);
+  }, [battleResults, setBattleResults]);
+
+  // CRITICAL FIX: Don't show skeleton when we have a valid battle but are just processing
+  const shouldShowMainContent = currentBattle && currentBattle.length > 0;
+  const shouldShowMilestone = showingMilestone && rankingGenerated;
+
+  console.log(`🔄 [LOADING_STATE_DEBUG] BattleContent display decisions:`, {
+    shouldShowMainContent,
+    shouldShowMilestone,
+    hasCurrentBattle: !!currentBattle,
+    battleLength: currentBattle?.length || 0,
+    timestamp: new Date().toISOString()
+  });
+
+  if (shouldShowMilestone) {
+    console.log(`🏆 [LOADING_STATE_DEBUG] BattleContent showing milestone modal`);
+    
+    return (
+      <MilestoneModal
+        battlesCompleted={battlesCompleted}
+        completionPercentage={completionPercentage}
+        onContinue={handleContinueBattles}
+        onViewRankings={() => {
+          console.log("View rankings clicked from milestone");
+        }}
+        rankings={finalRankings}
+        confidenceScores={confidenceScores}
+        onDismiss={() => {
+          console.log("Milestone dismissed");
+          resetMilestoneInProgress();
+          setShowingMilestone(false);
+        }}
+        isVisible={showingMilestone}
+        milestones={milestones}
+        resetMilestones={resetMilestones}
+        getSnapshotForMilestone={getSnapshotForMilestone}
+        selectedGeneration={selectedGeneration}
+        setSelectedGeneration={setSelectedGeneration}
+        allPokemon={allPokemon}
+        activeTier={activeTier}
+        setActiveTier={setActiveTier}
+        battleType={battleType}
+        setBattleType={setBattleType}
+        generateRankings={generateRankings}
+        handleSaveRankings={handleSaveRankings}
+        freezePokemonForTier={freezePokemonForTier}
+        isPokemonFrozenForTier={isPokemonFrozenForTier}
+        suggestRanking={suggestRanking}
+        removeSuggestion={removeSuggestion}
+        clearAllSuggestions={clearAllSuggestions}
+        performFullBattleReset={performFullBattleReset}
+      />
+    );
+  }
+
+  if (shouldShowMainContent) {
+    console.log(`🔄 [LOADING_STATE_DEBUG] BattleContent rendering main interface with ${currentBattle.length} Pokemon`);
+    
+    return (
+      <BattleInterface
+        currentBattle={currentBattle}
+        selectedPokemon={selectedPokemon}
+        battlesCompleted={battlesCompleted}
+        battleType={battleType}
+        battleHistory={battleHistory}
+        onPokemonSelect={handlePokemonSelect}
+        onTripletSelectionComplete={handleTripletSelectionComplete}
+        onGoBack={goBack}
+        milestones={milestones}
+        isProcessing={isAnyProcessing}
+      />
+    );
+  }
+
+  // CRITICAL FIX: Minimal loading state - no skeleton, just a simple message
+  console.log(`⏳ [LOADING_STATE_DEBUG] BattleContent showing minimal loading state`);
   return (
-    <div className="flex flex-col items-center w-full gap-4">
-      <div className="w-full max-w-3xl flex flex-col gap-4">
-        <BattleControls
-          selectedGeneration={selectedGeneration}
-          battleType={battleType}
-          onGenerationChange={handleGenerationChange}
-          onBattleTypeChange={handleBattleTypeChange}
-          onRestartBattles={handleRestartBattles}
-          setBattlesCompleted={setBattlesCompleted}
-          setBattleResults={setBattleResults}
-          performFullBattleReset={performFullBattleReset}
-        />
-        
-        <div className="flex items-center justify-between gap-4">
-          <ProgressTracker 
-            completionPercentage={completionPercentage}
-            battlesCompleted={battlesCompleted}
-            getBattlesRemaining={getBattlesRemaining}
-          />
-          
-          <TierSelector 
-            activeTier={activeTier}
-            onTierChange={handleTierChange}
-          />
-        </div>
+    <div className="flex justify-center items-center h-64 w-full">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-4 border-primary border-t-transparent mb-4 mx-auto"></div>
+        <p className="text-sm text-gray-600">Preparing next battle...</p>
       </div>
-      
-      <div className="w-full max-w-4xl">
-        {showingMilestone ? (
-          <RankingDisplay
-            finalRankings={finalRankings}
-            battlesCompleted={battlesCompleted}
-            onContinueBattles={handleContinueBattles}
-            onNewBattleSet={handleNewBattleSet}
-            rankingGenerated={true}
-            onSaveRankings={handleSaveRankings}
-            isMilestoneView={true}
-            activeTier={activeTier}
-            onTierChange={handleTierChange}
-            onSuggestRanking={suggestRanking}
-            onRemoveSuggestion={removeSuggestion}
-          />
-        ) : (
-          <BattleInterface
-            currentBattle={currentBattle}
-            selectedPokemon={selectedPokemon}
-            onPokemonSelect={handlePokemonSelect}
-            onTripletSelectionComplete={handleTripletSelectionWrapper}
-            isProcessing={isProcessingResult}
-            battleType={battleType}
-            onGoBack={handleGoBack}
-            battlesCompleted={battlesCompleted}
-            battleHistory={battleHistory || []}
-            milestones={milestones}
-          />
-        )}
-      </div>
-      
-      <BattleFooterNote battlesCompleted={battlesCompleted} />
     </div>
   );
 };
