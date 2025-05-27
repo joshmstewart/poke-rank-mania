@@ -49,12 +49,11 @@ export const getPokemonFormCategory = (pokemon: Pokemon): PokemonFormType | null
     return "regional";
   }
   
-  // Check for gender differences (updated to standardize naming)
-  // Looking for female or male indicators in the name
-  if (name.includes("female") || 
-      name.includes("male") || 
-      name.includes("-f") || 
-      name.includes("-m")) {
+  // FIXED: More specific gender differences check - exclude Pokemon with their own Pokedex numbers
+  // Only treat as gender variants if they explicitly have gender indicators AND are likely alternate forms
+  if ((name.includes("female") || name.includes("male")) && 
+      (name.includes("-f") || name.includes("-m")) && 
+      pokemon.id > 10000) { // Only special form IDs (>10000) should be treated as gender variants
     console.log(`⚧️ [FORM_FILTER_DEBUG] ${pokemon.name} (${pokemon.id}) categorized as GENDER`);
     return "gender";
   }
