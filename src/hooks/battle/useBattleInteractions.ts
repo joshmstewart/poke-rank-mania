@@ -37,6 +37,13 @@ export const useBattleInteractions = (
     }
   }, [currentBattle.map(p => p.id).join(',')]);
 
+  // CRITICAL FIX: Reset processing state when battles completed changes (indicates battle finished)
+  useEffect(() => {
+    console.log(`🔄 [PROCESSING_RESET] Battles completed changed to ${battlesCompleted}, resetting processing state`);
+    processingStateRef.current = false;
+    setIsProcessing(false);
+  }, [battlesCompleted]);
+
   // CRITICAL FIX: Reset processing state on initial load
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -73,6 +80,13 @@ export const useBattleInteractions = (
         
         // Add to history
         setBattleHistory(prev => [...prev, { battle: currentBattle, selected: [id] }]);
+        
+        // CRITICAL FIX: Reset processing state immediately after calling processBattleResult
+        setTimeout(() => {
+          console.log(`🔄 [PROCESSING_RESET] Resetting processing state after pairs battle`);
+          processingStateRef.current = false;
+          setIsProcessing(false);
+        }, 100);
       } else {
         // For triplets, just update selection
         console.log(`🔄 [TRIPLETS] Updating selection for triplets`);
