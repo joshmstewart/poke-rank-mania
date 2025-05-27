@@ -28,15 +28,19 @@ export const useBattleOutcomeProcessor = (
         console.log(`Battle result: ${winner.name} beats ${loser.name}`);
         setBattleResults(prev => [...prev, { winner, loser }]);
         
-        // Critical fix: Increment battles completed and start a new battle
+        // Increment battles completed
         setBattlesCompleted(prev => prev + 1);
         
-        // Start a new battle after a short delay to let the UI update
-        setTimeout(() => {
-          if (battleStarter) {
-            battleStarter.startNewBattle(battleType);
+        // CRITICAL FIX: Start new battle immediately without delay to prevent empty state
+        if (battleStarter) {
+          console.log("🔄 [GRAY SCREEN FIX] Starting new battle immediately to prevent empty state");
+          const newBattle = battleStarter.startNewBattle(battleType);
+          if (!newBattle || newBattle.length === 0) {
+            console.error("❌ [GRAY SCREEN FIX] Failed to get new battle, this will cause gray screen");
+          } else {
+            console.log("✅ [GRAY SCREEN FIX] New battle created successfully:", newBattle.map(p => p.name));
           }
-        }, 300);
+        }
       } else {
         console.error("Couldn't determine winner/loser:", { selectedPokemonIds, currentBattlePokemon });
       }
@@ -57,15 +61,19 @@ export const useBattleOutcomeProcessor = (
           return newResults;
         });
         
-        // Critical fix: Increment battles completed and start a new battle
+        // Increment battles completed
         setBattlesCompleted(prev => prev + 1);
         
-        // Start a new battle after processing
-        setTimeout(() => {
-          if (battleStarter) {
-            battleStarter.startNewBattle(battleType);
+        // CRITICAL FIX: Start new battle immediately without delay to prevent empty state
+        if (battleStarter) {
+          console.log("🔄 [GRAY SCREEN FIX] Starting new triplet battle immediately to prevent empty state");
+          const newBattle = battleStarter.startNewBattle(battleType);
+          if (!newBattle || newBattle.length === 0) {
+            console.error("❌ [GRAY SCREEN FIX] Failed to get new triplet battle, this will cause gray screen");
+          } else {
+            console.log("✅ [GRAY SCREEN FIX] New triplet battle created successfully:", newBattle.map(p => p.name));
           }
-        }, 300);
+        }
       } else {
         console.error("Invalid triplet selection:", { winners, losers, selectedPokemonIds });
       }
