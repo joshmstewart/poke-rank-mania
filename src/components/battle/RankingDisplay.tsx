@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Pokemon, TopNOption, RankedPokemon } from "@/services/pokemon";
 import PokemonThumbnail from "./PokemonThumbnail";
@@ -127,7 +126,7 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
     setDisplayCount(newCount);
   };
 
-  // Enhanced Pokemon background color based on primary type - matching the reference images exactly
+  // UPDATED: Much softer Pokemon background colors matching the reference image
   const getPokemonBackgroundColor = (pokemon: RankedPokemon | Pokemon): string => {
     console.log(`🎨 COLOR DEBUG for ${pokemon.name}:`, {
       hasTypes: !!pokemon.types,
@@ -136,8 +135,8 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
     });
 
     if (!pokemon.types || pokemon.types.length === 0) {
-      console.log(`❌ ${pokemon.name}: No types found, using gray-300`);
-      return 'bg-gray-300';
+      console.log(`❌ ${pokemon.name}: No types found, using gray-50`);
+      return 'bg-gray-50';
     }
     
     let primaryType = 'unknown';
@@ -160,34 +159,34 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
       console.log(`❌ ${pokemon.name}: Unrecognized type structure:`, pokemon.types[0]);
     }
     
-    // Vibrant type colors matching the reference image exactly
+    // UPDATED: Much softer, more subtle colors like in the reference image
     const typeToColorMap: Record<string, string> = {
-      'normal': 'bg-yellow-100',
-      'fighting': 'bg-red-300',
-      'flying': 'bg-blue-300', 
-      'poison': 'bg-purple-300',
-      'ground': 'bg-yellow-300',
-      'rock': 'bg-yellow-400',
-      'bug': 'bg-green-300',
-      'ghost': 'bg-purple-400',
-      'steel': 'bg-gray-400',
-      'fire': 'bg-red-300',
-      'water': 'bg-blue-300',
-      'grass': 'bg-green-300',
-      'electric': 'bg-yellow-300',
-      'psychic': 'bg-pink-300',
-      'ice': 'bg-cyan-300',
-      'dragon': 'bg-indigo-300',
-      'dark': 'bg-gray-500',
-      'fairy': 'bg-pink-300'
+      'normal': 'bg-gray-50',
+      'fighting': 'bg-red-50',
+      'flying': 'bg-blue-50', 
+      'poison': 'bg-purple-50',
+      'ground': 'bg-yellow-50',
+      'rock': 'bg-amber-50',
+      'bug': 'bg-green-50',
+      'ghost': 'bg-purple-50',
+      'steel': 'bg-slate-50',
+      'fire': 'bg-red-50',
+      'water': 'bg-blue-50',
+      'grass': 'bg-green-50',
+      'electric': 'bg-yellow-50',
+      'psychic': 'bg-pink-50',
+      'ice': 'bg-cyan-50',
+      'dragon': 'bg-indigo-50',
+      'dark': 'bg-gray-100',
+      'fairy': 'bg-pink-50'
     };
     
-    const finalColor = typeToColorMap[primaryType] || 'bg-gray-300';
+    const finalColor = typeToColorMap[primaryType] || 'bg-gray-50';
     console.log(`🎨 ${pokemon.name}: Final color for type '${primaryType}': ${finalColor}`);
     return finalColor;
   };
 
-  // Milestone view - EXACTLY like the reference image with infinite scroll
+  // Milestone view - EXACTLY like the reference image with softer colors
   if (isMilestoneView) {
     const maxItems = getMaxItemsForTier();
     const displayRankings = finalRankings.slice(0, Math.min(milestoneDisplayCount, maxItems));
@@ -215,7 +214,7 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
           </Button>
         </div>
 
-        {/* Grid Layout - exactly 5 columns like the reference with proper proportions */}
+        {/* Grid Layout - exactly 5 columns like the reference with softer colors */}
         <div className="grid grid-cols-5 gap-4 mb-6">
           {displayRankings.map((pokemon, index) => {
             const backgroundColorClass = getPokemonBackgroundColor(pokemon);
@@ -223,10 +222,10 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
             return (
               <div 
                 key={pokemon.id}
-                className={`${backgroundColorClass} rounded-lg border border-gray-300 relative overflow-hidden h-40 flex flex-col`}
+                className={`${backgroundColorClass} rounded-lg border border-gray-200 relative overflow-hidden h-40 flex flex-col`}
               >
                 {/* Ranking number - white circle with black text in top left exactly like image */}
-                <div className="absolute top-2 left-2 w-7 h-7 bg-white rounded-full flex items-center justify-center text-sm font-bold z-10 shadow-sm">
+                <div className="absolute top-2 left-2 w-7 h-7 bg-white rounded-full flex items-center justify-center text-sm font-bold z-10 shadow-sm border border-gray-200">
                   <span className="text-black">{index + 1}</span>
                 </div>
                 
@@ -244,7 +243,7 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
                 </div>
                 
                 {/* Pokemon info - white section at bottom exactly like image */}
-                <div className="bg-white text-center py-2 px-2 mt-auto">
+                <div className="bg-white text-center py-2 px-2 mt-auto border-t border-gray-100">
                   <h3 className="font-bold text-gray-800 text-sm leading-tight mb-1">
                     {pokemon.name}
                   </h3>
