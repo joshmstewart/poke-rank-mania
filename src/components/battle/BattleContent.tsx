@@ -77,7 +77,7 @@ const BattleContent: React.FC<BattleContentProps> = ({
     performFullBattleReset
   } = useBattleStateCore(allPokemon, initialBattleType, initialSelectedGeneration);
 
-  console.log(`🔄 [FLASH_FIX] BattleContent render states:`, {
+  console.log(`🔄 [FINAL_FIX] BattleContent render states:`, {
     showingMilestone,
     isBattleTransitioning,
     currentBattleLength: currentBattle?.length || 0,
@@ -100,7 +100,7 @@ const BattleContent: React.FC<BattleContentProps> = ({
 
   // Show milestone screen
   if (showingMilestone) {
-    console.log(`🏆 [FLASH_FIX] DISPLAYING MILESTONE RANKINGS SCREEN for ${battlesCompleted} battles`);
+    console.log(`🏆 [FINAL_FIX] DISPLAYING MILESTONE RANKINGS SCREEN for ${battlesCompleted} battles`);
     
     const milestoneSnapshot = getSnapshotForMilestone(battlesCompleted);
     const rankingsToShow = milestoneSnapshot.length > 0 ? milestoneSnapshot : finalRankings;
@@ -110,7 +110,7 @@ const BattleContent: React.FC<BattleContentProps> = ({
         finalRankings={rankingsToShow}
         battlesCompleted={battlesCompleted}
         onContinueBattles={() => {
-          console.log(`🔄 [FLASH_FIX] Continue battles clicked from milestone screen`);
+          console.log(`🔄 [FINAL_FIX] Continue battles clicked from milestone screen`);
           setShowingMilestone(false);
           resetMilestoneInProgress();
           setTimeout(() => {
@@ -129,23 +129,21 @@ const BattleContent: React.FC<BattleContentProps> = ({
     );
   }
 
-  // CRITICAL FIX: Show loading during transitions OR when we have no valid battle data
-  if (isBattleTransitioning || !currentBattle || currentBattle.length === 0) {
-    console.log(`⏳ [FLASH_FIX] Showing loading state - isBattleTransitioning: ${isBattleTransitioning}, currentBattle: ${currentBattle?.length || 0}`);
+  // CRITICAL FIX: Only show loading when we actually don't have battle data
+  if (!currentBattle || currentBattle.length === 0) {
+    console.log(`⏳ [FINAL_FIX] Showing loading state - no battle data available`);
     return (
       <div className="flex justify-center items-center h-64 w-full">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-4 border-primary border-t-transparent mb-4 mx-auto"></div>
-          <p className="text-sm text-gray-600">
-            {isBattleTransitioning ? "Starting next battle..." : "Initializing battles..."}
-          </p>
+          <p className="text-sm text-gray-600">Initializing battles...</p>
         </div>
       </div>
     );
   }
 
-  // Only show interface if we have valid battle data AND not transitioning
-  console.log(`🔄 [FLASH_FIX] BattleContent rendering interface with ${currentBattle.length} Pokemon`);
+  // Show interface immediately when we have valid battle data
+  console.log(`✅ [FINAL_FIX] BattleContent rendering interface with ${currentBattle.length} Pokemon`);
   
   return (
     <div className="w-full">
