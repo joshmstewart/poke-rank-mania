@@ -1,6 +1,6 @@
 
 import { useState, useCallback, useRef, useMemo } from "react";
-import { Pokemon } from "@/services/pokemon";
+import { Pokemon, TopNOption } from "@/services/pokemon";
 import { BattleType } from "./types";
 import { useBattleState } from "./useBattleState";
 
@@ -17,6 +17,12 @@ export const useBattleStateManager = (
   }
   
   const [needsToReloadSuggestions, setNeedsToReloadSuggestions] = useState(false);
+  
+  // Add activeTier state here to avoid circular dependency
+  const [activeTier, setActiveTier] = useState<TopNOption>(() => {
+    const storedTier = localStorage.getItem("pokemon-active-tier");
+    return storedTier ? (storedTier === "All" ? "All" : Number(storedTier) as TopNOption) : 25;
+  });
   
   // Use the extracted battle state hook
   const battleStateData = useBattleState(stableInitialBattleType, stableInitialGeneration);
@@ -48,6 +54,8 @@ export const useBattleStateManager = (
     setNeedsToReloadSuggestions,
     triggerSuggestionPrioritization,
     lastSuggestionLoadTimestampRef,
-    debouncedGenerateRankings
+    debouncedGenerateRankings,
+    activeTier,
+    setActiveTier
   };
 };
