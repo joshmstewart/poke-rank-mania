@@ -1,4 +1,3 @@
-
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
 
@@ -38,6 +37,13 @@ export function createBattleStarter(
 
   const storedPairs = JSON.parse(localStorage.getItem('pokemon-recent-pairs') || '[]');
   storedPairs.forEach((pair: string) => lastBattlePairs.add(pair));
+
+  // CRITICAL FIX: Clear previous battle state completely to prevent repeats
+  const clearPreviousBattleState = () => {
+    localStorage.removeItem('pokemon-battle-last-battle');
+    localStorage.removeItem('pokemon-battle-recently-used');
+    console.log("🧹 [BATTLE_STATE_CLEAR] Cleared previous battle state");
+  };
 
   const saveRecentlySeenToStorage = () => {
     const recentArray = Array.from(recentlySeenPokemon).slice(-RECENT_MEMORY_SIZE);
@@ -102,6 +108,9 @@ export function createBattleStarter(
     battleType: BattleType,
     onMarkSuggestionUsed?: (pokemonId: number) => void
   ): Pokemon[] => {
+    // CRITICAL FIX: Clear previous battle state before creating new battle
+    clearPreviousBattleState();
+    
     const battleSize = battleType === "triplets" ? 3 : 2;
     const availablePokemon = allPokemon;
     

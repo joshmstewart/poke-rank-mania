@@ -13,9 +13,9 @@ const shouldIncludePokemon = (pokemon: { name: string, id: number }) => {
       return false;
     }
     
-    // CRITICAL FIX: Filter out Cramorant Gorging form
-    if (name.includes('cramorant') && name.includes('gorging')) {
-      console.log(`🚫 [CRAMORANT_FILTER] Filtering out Cramorant Gorging form: ${pokemon.name} (ID: ${pokemon.id})`);
+    // CRITICAL FIX: Filter out ALL Cramorant forms (gulping, gorging, etc.)
+    if (name.includes('cramorant') && (name.includes('gorging') || name.includes('gulping'))) {
+      console.log(`🚫 [CRAMORANT_FILTER] Filtering out Cramorant form: ${pokemon.name} (ID: ${pokemon.id})`);
       return false;
     }
     
@@ -58,7 +58,7 @@ const shouldIncludePokemon = (pokemon: { name: string, id: number }) => {
       if ((name.includes("form") || name.includes("style") || name.includes("mode") || 
            name.includes("size") || name.includes("cloak") || name.includes("rotom-") ||
            name.includes("forme") || name.includes("unbound") || name.includes("gorging") ||
-           name.includes("eternamax") || name.includes("-theme")) && 
+           name.includes("gulping") || name.includes("eternamax") || name.includes("-theme")) && 
           !filters.forms) {
         return false;
       }
