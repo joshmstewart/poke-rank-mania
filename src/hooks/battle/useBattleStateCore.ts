@@ -44,22 +44,17 @@ export const useBattleStateCore = (
   const [battleType, setBattleType] = useState<BattleType>(initialBattleTypeStored);
   const [selectedPokemon, setSelectedPokemon] = useState<number[]>([]);
 
-  // CRITICAL FIX: Keep current battle visible during transitions - only update when new battle is ready
-  const [nextBattle, setNextBattle] = useState<Pokemon[]>([]);
+  // CRITICAL FIX: Remove nextBattle state - handle transitions immediately
   
-  // CRITICAL FIX: Enhanced battle setter that keeps current battle until new one is ready
+  // CRITICAL FIX: Simplified battle setter that updates immediately
   const stableSetCurrentBattle = useCallback((battle: Pokemon[]) => {
-    console.log(`🔄 [BATTLE_TRANSITION_FIX] stableSetCurrentBattle called with ${battle.length} Pokemon`);
+    console.log(`🔄 [MILESTONE_TRANSITION_FIX] stableSetCurrentBattle called with ${battle.length} Pokemon`);
     
     if (battle.length > 0) {
-      // Only update current battle when we have a valid new battle
       setCurrentBattle(battle);
-      setNextBattle([]); // Clear next battle since we've set the current one
-      console.log(`✅ [BATTLE_TRANSITION_FIX] Current battle updated to ${battle.length} Pokemon`);
+      console.log(`✅ [MILESTONE_TRANSITION_FIX] Current battle updated immediately to: ${battle.map(p => p.name).join(', ')}`);
     } else {
-      // Store as next battle if empty current battle
-      setNextBattle(battle);
-      console.log(`⚠️ [BATTLE_TRANSITION_FIX] Stored as next battle, keeping current visible`);
+      console.log(`⚠️ [MILESTONE_TRANSITION_FIX] Empty battle array, keeping current visible`);
     }
   }, []);
   
@@ -136,22 +131,18 @@ export const useBattleStateCore = (
 
   // CRITICAL FIX: Enhanced battle starter that coordinates with controlled transitions
   const enhancedStartNewBattle = useCallback((battleType: BattleType) => {
-    console.log(`🔄 [CONTROLLED_BATTLE_FIX] enhancedStartNewBattle called for ${battleType}`);
-    console.log(`🔄 [CONTROLLED_BATTLE_FIX] controlledTransitionActiveRef.current: ${controlledTransitionActiveRef.current}`);
+    console.log(`🔄 [MILESTONE_TRANSITION_FIX] enhancedStartNewBattle called for ${battleType}`);
+    console.log(`🔄 [MILESTONE_TRANSITION_FIX] controlledTransitionActiveRef.current: ${controlledTransitionActiveRef.current}`);
     
-    // CRITICAL FIX: Respect controlled transition state
-    if (controlledTransitionActiveRef.current) {
-      console.log(`🔄 [CONTROLLED_BATTLE_FIX] Controlled transition active - deferring battle generation`);
-      return [];
-    }
-    
+    // CRITICAL FIX: Generate battle immediately during milestone transitions
     const result = startNewBattle(battleType);
     
-    // Don't clear current battle until new one is ready
     if (result && result.length > 0) {
-      console.log(`✅ [CONTROLLED_BATTLE_FIX] New battle ready, will update display`);
+      console.log(`✅ [MILESTONE_TRANSITION_FIX] New battle generated: ${result.map(p => p.name).join(', ')}`);
+      // CRITICAL FIX: Set battle immediately, no delays
+      stableSetCurrentBattle(result);
     } else {
-      console.log(`⚠️ [CONTROLLED_BATTLE_FIX] New battle not ready, keeping current visible`);
+      console.log(`⚠️ [MILESTONE_TRANSITION_FIX] Failed to generate new battle`);
     }
     
     return result;
@@ -194,69 +185,36 @@ export const useBattleStateCore = (
     enhancedStartNewBattle
   );
 
-  // CRITICAL FIX: Enhanced handleContinueBattles that coordinates with controlled transitions
+  // CRITICAL FIX: Simplified handleContinueBattles with immediate battle generation
   const handleContinueBattles = useCallback(() => {
-    console.log('[CONTROLLED_BATTLE_FIX] handleContinueBattles: Called');
+    console.log('[MILESTONE_TRANSITION_FIX] handleContinueBattles: Called');
     
     // Prevent rapid successive calls
     if (continueBattlesRef.current) {
-      console.log('[CONTROLLED_BATTLE_FIX] handleContinueBattles: Already processing, ignoring');
+      console.log('[MILESTONE_TRANSITION_FIX] handleContinueBattles: Already processing, ignoring');
       return;
     }
     
     continueBattlesRef.current = true;
     
     if (showingMilestone) {
-      console.log('[CONTROLLED_BATTLE_FIX] handleContinueBattles: Dismissing milestone first');
+      console.log('[MILESTONE_TRANSITION_FIX] handleContinueBattles: Dismissing milestone and generating battle immediately');
       
-      // CRITICAL FIX: Set controlled transition flag to prevent race conditions
-      controlledTransitionActiveRef.current = true;
-      console.log('[CONTROLLED_BATTLE_FIX] Set controlledTransitionActiveRef.current = true');
-      
+      // CRITICAL FIX: Dismiss milestone and generate battle in one action
       forceDismissMilestone();
       
-      // CRITICAL FIX: Coordinate with milestone dismissal events
-      setTimeout(() => {
-        console.log('[CONTROLLED_BATTLE_FIX] Starting battle after milestone dismissal coordination');
-        
-        // Clear controlled transition flag first
-        controlledTransitionActiveRef.current = false;
-        console.log('[CONTROLLED_BATTLE_FIX] Set controlledTransitionActiveRef.current = false');
-        
-        // Now start the battle
-        enhancedStartNewBattle("pairs");
-        continueBattlesRef.current = false;
-      }, 1500); // Longer delay to ensure milestone is fully dismissed
+      // CRITICAL FIX: Generate new battle immediately, no delays
+      const newBattle = enhancedStartNewBattle("pairs");
+      
+      continueBattlesRef.current = false;
     } else {
-      console.log('[CONTROLLED_BATTLE_FIX] handleContinueBattles: Starting new battle directly');
+      console.log('[MILESTONE_TRANSITION_FIX] handleContinueBattles: Starting new battle directly');
       enhancedStartNewBattle("pairs");
       continueBattlesRef.current = false;
     }
   }, [showingMilestone, forceDismissMilestone, enhancedStartNewBattle]);
 
-  // CRITICAL FIX: Listen for milestone dismissed events to coordinate controlled transitions
-  useEffect(() => {
-    const handleMilestoneDismissed = (event: CustomEvent) => {
-      console.log('[CONTROLLED_BATTLE_FIX] Milestone dismissed event received', event.detail);
-      
-      // Only handle if this is our controlled transition
-      if (controlledTransitionActiveRef.current) {
-        console.log('[CONTROLLED_BATTLE_FIX] Our controlled transition - coordinating battle generation');
-        
-        // Small delay to ensure milestone UI is fully cleared
-        setTimeout(() => {
-          controlledTransitionActiveRef.current = false;
-          console.log('[CONTROLLED_BATTLE_FIX] Controlled transition cleared after milestone dismissal');
-        }, 100);
-      }
-    };
-    
-    document.addEventListener('milestone-dismissed', handleMilestoneDismissed as EventListener);
-    
-    return () => {
-      document.removeEventListener('milestone-dismissed', handleMilestoneDismissed as EventListener);
-    };
-  }, []);
+  // CRITICAL FIX: Remove milestone dismissed event listener - handle immediately instead
 
   const debouncedGenerateRankings = useMemo(() => {
     return (results: any[]) => {
@@ -283,7 +241,6 @@ export const useBattleStateCore = (
     setSelectedPokemon([]);
     setCompletionPercentage(0);
     setRankingGenerated(false);
-    setNextBattle([]);
     
     resetMilestones();
     if (resetBattleProgressionMilestoneTracking) {
