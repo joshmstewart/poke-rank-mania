@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Pokemon, TopNOption, RankedPokemon } from "@/services/pokemon";
 import PokemonThumbnail from "./PokemonThumbnail";
 import RankingHeader from "./RankingHeader";
@@ -36,11 +36,22 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
 }) => {
   console.log("🟣 RankingDisplay component rendered with", finalRankings.length, "Pokémon");
   const [displayCount, setDisplayCount] = useState(20);
+  const [milestoneDisplayCount, setMilestoneDisplayCount] = useState(50);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const loadingRef = useRef<HTMLDivElement | null>(null);
   
   // Handle the case where we're displaying milestone view with ranked pokemon
   const hasRankedPokemon = finalRankings.length > 0 && 'score' in finalRankings[0];
   
-  // Add debugging to show Pokemon with their types - this must be called unconditionally
+  // Calculate how many items to show for milestone view based on tier
+  const getMaxItemsForTier = useCallback(() => {
+    if (activeTier === "All") {
+      return finalRankings.length;
+    }
+    return Math.min(Number(activeTier), finalRankings.length);
+  }, [activeTier, finalRankings.length]);
+
+  // Add debugging to show Pokemon with types - this must be called unconditionally
   useEffect(() => {
     const displayRankings = finalRankings.slice(0, displayCount);
     console.log("Pokemon list with types:");
@@ -64,6 +75,49 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
       });
     }
   }, [finalRankings, displayCount]);
+
+  // Setup infinite scroll observer for milestone view
+  useEffect(() => {
+    if (!isMilestoneView) return;
+
+    const maxItems = getMaxItemsForTier();
+    
+    // Clean up previous observer
+    if (observerRef.current && loadingRef.current) {
+      observerRef.current.unobserve(loadingRef.current);
+      observerRef.current = null;
+    }
+
+    // Only set up observer if we haven't loaded all items yet
+    if (milestoneDisplayCount < maxItems) {
+      observerRef.current = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting) {
+          console.log(`Loading more milestone items: ${milestoneDisplayCount} -> ${Math.min(milestoneDisplayCount + 50, maxItems)}`);
+          setMilestoneDisplayCount(prev => Math.min(prev + 50, maxItems));
+        }
+      }, { 
+        rootMargin: '200px',
+        threshold: 0.1 
+      });
+      
+      if (loadingRef.current) {
+        observerRef.current.observe(loadingRef.current);
+      }
+    }
+
+    return () => {
+      if (observerRef.current && loadingRef.current) {
+        observerRef.current.unobserve(loadingRef.current);
+      }
+    };
+  }, [isMilestoneView, milestoneDisplayCount, getMaxItemsForTier]);
+
+  // Reset milestone display count when tier changes
+  useEffect(() => {
+    if (isMilestoneView) {
+      setMilestoneDisplayCount(50);
+    }
+  }, [activeTier, isMilestoneView]);
   
   // Handler for the "Show More" button
   const handleShowMore = () => {
@@ -133,9 +187,11 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
     return finalColor;
   };
 
-  // Milestone view - EXACTLY like the reference image
+  // Milestone view - EXACTLY like the reference image with infinite scroll
   if (isMilestoneView) {
-    const displayRankings = finalRankings.slice(0, displayCount);
+    const maxItems = getMaxItemsForTier();
+    const displayRankings = finalRankings.slice(0, Math.min(milestoneDisplayCount, maxItems));
+    const hasMoreToLoad = milestoneDisplayCount < maxItems;
     
     return (
       <div className="bg-white p-6 w-full max-w-7xl mx-auto">
@@ -147,7 +203,7 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
               Milestone: {battlesCompleted} Battles
             </h1>
             <span className="text-gray-500 text-sm">
-              (Showing {Math.min(displayCount, displayRankings.length)} of {activeTier === "All" ? displayRankings.length : activeTier})
+              (Showing {displayRankings.length} of {activeTier === "All" ? maxItems : Math.min(Number(activeTier), maxItems)})
             </span>
           </div>
           
@@ -201,15 +257,24 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
           })}
         </div>
 
-        {/* Show More button - exactly like the image */}
-        {displayCount < finalRankings.length && (
-          <div className="text-center">
-            <button
-              onClick={handleShowMore}
-              className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-medium transition-colors"
-            >
-              Show More ({displayCount}/{finalRankings.length})
-            </button>
+        {/* Infinite scroll loading indicator */}
+        {hasMoreToLoad && (
+          <div 
+            ref={loadingRef}
+            className="text-center py-4"
+          >
+            <div className="text-sm text-gray-500">
+              Loading more Pokémon... ({displayRankings.length}/{maxItems})
+            </div>
+          </div>
+        )}
+
+        {/* End message when all loaded */}
+        {!hasMoreToLoad && (
+          <div className="text-center py-4">
+            <div className="text-sm text-gray-500">
+              All {displayRankings.length} Pokémon loaded
+            </div>
           </div>
         )}
       </div>
