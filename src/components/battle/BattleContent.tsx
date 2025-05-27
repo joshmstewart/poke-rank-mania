@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef } from "react";
 import BattleInterface from "./BattleInterface";
 import { Pokemon } from "@/services/pokemon";
@@ -62,12 +63,13 @@ const BattleContent: React.FC<BattleContentProps> = ({
     performFullBattleReset
   } = useBattleStateCore(allPokemon, initialBattleType, initialSelectedGeneration);
 
-  console.log(`🔄 [LOADING_STATE_DEBUG] BattleContent render states:`, {
+  console.log(`🔄 [GRAY_SCREEN_FIX] BattleContent render states:`, {
     showingMilestone,
     currentBattleLength: currentBattle?.length || 0,
     isProcessingResult,
     isBattleTransitioning,
     isAnyProcessing,
+    hasBattle: !!currentBattle && currentBattle.length > 0,
     timestamp: new Date().toISOString()
   });
 
@@ -80,28 +82,23 @@ const BattleContent: React.FC<BattleContentProps> = ({
     setBattleResults?.(battleResults);
   }, [battleResults, setBattleResults]);
 
-  // CRITICAL FIX: Always show main content if we have any battle data - no transitions needed
-  const shouldShowMainContent = currentBattle && currentBattle.length > 0;
+  // CRITICAL FIX: Always show interface if we have battle data - no loading states
+  const shouldShowInterface = currentBattle && currentBattle.length > 0;
 
-  console.log(`🔄 [LOADING_STATE_DEBUG] BattleContent display decisions:`, {
-    shouldShowMainContent,
-    hasCurrentBattle: !!currentBattle,
-    battleLength: currentBattle?.length || 0,
-    timestamp: new Date().toISOString()
-  });
+  console.log(`🔄 [GRAY_SCREEN_FIX] BattleContent shouldShowInterface:`, shouldShowInterface);
 
   // TEMPORARY: Skip milestone modal until it's available
   if (showingMilestone) {
-    console.log(`🏆 [LOADING_STATE_DEBUG] BattleContent would show milestone modal but component not available`);
+    console.log(`🏆 [GRAY_SCREEN_FIX] BattleContent would show milestone modal but component not available`);
     // Auto-continue battles instead of showing milestone
     setTimeout(() => {
       handleContinueBattles();
     }, 100);
   }
 
-  // CRITICAL FIX: Only show interface if we have valid battle data
-  if (shouldShowMainContent) {
-    console.log(`🔄 [LOADING_STATE_DEBUG] BattleContent rendering main interface with ${currentBattle.length} Pokemon`);
+  // CRITICAL FIX: Only show interface, never show loading during normal operation
+  if (shouldShowInterface) {
+    console.log(`🔄 [GRAY_SCREEN_FIX] BattleContent rendering interface with ${currentBattle.length} Pokemon`);
     
     return (
       <BattleInterface
@@ -119,13 +116,13 @@ const BattleContent: React.FC<BattleContentProps> = ({
     );
   }
 
-  // Show minimal loading only when we truly have no battle data
-  console.log(`⏳ [LOADING_STATE_DEBUG] BattleContent showing loading state - no battle data available`);
+  // CRITICAL FIX: Only show loading on initial load when we truly have no data
+  console.log(`⏳ [GRAY_SCREEN_FIX] BattleContent showing initial loading - no battle data available yet`);
   return (
     <div className="flex justify-center items-center h-64 w-full">
       <div className="text-center">
         <div className="animate-spin rounded-full h-8 w-8 border-4 border-primary border-t-transparent mb-4 mx-auto"></div>
-        <p className="text-sm text-gray-600">Preparing next battle...</p>
+        <p className="text-sm text-gray-600">Initializing battles...</p>
       </div>
     </div>
   );

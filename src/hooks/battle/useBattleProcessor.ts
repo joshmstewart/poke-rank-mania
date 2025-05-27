@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useRef, useEffect } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
@@ -52,35 +53,36 @@ export const useBattleProcessor = (
     generateRankings
   );
 
+  // CRITICAL FIX: Enhanced next battle handler that prepares battle BEFORE clearing current one
   const { setupNextBattle } = useNextBattleHandler(
     allPokemon,
-    integratedStartNewBattle || ((battleType: BattleType) => {
+    (battleType: BattleType) => {
       const timestamp = new Date().toISOString();
-      console.log(`📝 [${timestamp}] FALLBACK NEXT BATTLE: setupNextBattle callback executing with battleType: ${battleType}`);
-      console.log(`📝 [${timestamp}] FALLBACK NEXT BATTLE: Current allPokemon length: ${allPokemon.length}`);
-      console.log(`📝 [${timestamp}] FALLBACK NEXT BATTLE: isResetting = ${isResettingRef?.current}`);
+      console.log(`📝 [${timestamp}] ENHANCED NEXT BATTLE: Preparing new battle BEFORE clearing current`);
       
-      // If reset was triggered, ensure battle count is reset
-      if (isResettingRef?.current) {
-        console.log(`📝 [${timestamp}] FALLBACK NEXT BATTLE: Reset was active, ensuring battlesCompleted is 0`);
-        setBattlesCompleted(0);
-        console.log(`📝 [${timestamp}] FALLBACK NEXT BATTLE: ✅ battlesCompleted explicitly reset to 0`);
+      // Generate new battle first
+      let newBattle: Pokemon[] = [];
+      
+      if (integratedStartNewBattle) {
+        console.log(`📝 [${timestamp}] ENHANCED NEXT BATTLE: Using integrated starter`);
+        newBattle = integratedStartNewBattle(battleType);
+      } else {
+        console.log(`📝 [${timestamp}] ENHANCED NEXT BATTLE: Using fallback generation`);
+        const shuffled = [...allPokemon].sort(() => Math.random() - 0.5);
+        const battleSize = battleType === "triplets" ? 3 : 2;
+        newBattle = shuffled.slice(0, battleSize);
       }
       
-      const shuffled = [...allPokemon].sort(() => Math.random() - 0.5);
-      const battleSize = battleType === "triplets" ? 3 : 2;
-      const newBattle = shuffled.slice(0, battleSize);
-      
-      console.log(`📝 [${timestamp}] FALLBACK NEXT BATTLE: Creating new ${battleType} battle with ${newBattle.length} Pokémon: ${newBattle.map(p => `${p.name} (${p.id})`).join(', ')}`);
-        
-      setCurrentBattle(newBattle);
-      console.log(`📝 [${timestamp}] FALLBACK NEXT BATTLE: Updated current battle state explicitly with IDs: ${newBattle.map(p => p.id).join(', ')}`);
-
-      setSelectedPokemon([]);
-      console.log(`📝 [${timestamp}] FALLBACK NEXT BATTLE: Reset selectedPokemon to empty array`);
-      
-      return newBattle;
-    }),
+      if (newBattle && newBattle.length > 0) {
+        console.log(`📝 [${timestamp}] ENHANCED NEXT BATTLE: Setting new battle immediately: ${newBattle.map(p => p.name).join(', ')}`);
+        setCurrentBattle(newBattle);
+        setSelectedPokemon([]);
+        return newBattle;
+      } else {
+        console.error(`📝 [${timestamp}] ENHANCED NEXT BATTLE: Failed to generate new battle`);
+        return [];
+      }
+    },
     setSelectedPokemon
   );
 
@@ -175,14 +177,16 @@ export const useBattleProcessor = (
         console.log(`📝 [${timestamp}] PROCESS BATTLE: Rankings generated`);
       }
 
+      // CRITICAL FIX: Setup next battle IMMEDIATELY to prevent empty state
+      console.log(`📝 [${timestamp}] GRAY SCREEN FIX: Setting up next battle immediately`);
       await setupNextBattle(battleType);
       
-      // FIXED: Add delay before clearing processing state to ensure smooth transitions
+      // CRITICAL FIX: Minimal delay to ensure smooth transition
       processingTimeoutRef.current = setTimeout(() => {
-        console.log(`📝 [${timestamp}] [LOADING DEBUG] PROCESS BATTLE: Setting isProcessingResult = false (delayed clear)`);
+        console.log(`📝 [${timestamp}] [LOADING DEBUG] PROCESS BATTLE: Setting isProcessingResult = false (after immediate transition)`);
         setIsProcessingResult(false);
         processingTimeoutRef.current = null;
-      }, 500); // Give time for new battle to load
+      }, 100); // Reduced from 500ms to 100ms for faster transitions
       
     } catch (e) {
       console.error(`📝 [${timestamp}] PROCESS BATTLE: Error:`, e);
