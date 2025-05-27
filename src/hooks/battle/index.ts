@@ -1,3 +1,4 @@
+
 export * from "./useBattleState";
 export * from "./useBattleUIState";
 export * from "./useBattleSelectionState";
@@ -38,9 +39,12 @@ export * from "./useBattleOutcomeProcessor";
 export * from "./useBattleStarterIntegration";
 export * from "./useBattleEmergencyReset";
 export * from "./useRankingSuggestions";
-export * from "./useBattleHandlers"; // Export the new handlers hook
-export * from "./useBattleReset"; // Export the new reset hook
+export * from "./useBattleHandlers";
+export * from "./useBattleReset";
 export * from "./useTypeExtraction";
 export * from "./useRankingState";
 export * from "./useRankingTiers";
 export * from "./useRankingCalculator";
+export * from "./useBattleStateManager"; // New hook
+export * from "./useBattleCoordination"; // New hook
+export * from "./useBattleActionsManager"; // New hook

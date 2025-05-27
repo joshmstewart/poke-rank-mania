@@ -1,25 +1,17 @@
 
-import { useState, useCallback, useRef, useEffect, useMemo } from "react";
-import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
-import { useBattleStarterIntegration } from "@/hooks/battle/useBattleStarterIntegration";
-import { useBattleProcessor } from "@/hooks/battle/useBattleProcessor";
-import { useProgressState } from "@/hooks/battle/useProgressState";
-import { useCompletionTracker } from "@/hooks/battle/useCompletionTracker";
+import { useCallback, useRef, useEffect, useMemo } from "react";
+import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
 import { useRankings } from "./useRankings";
-import { useBattleInteractions } from "./useBattleInteractions";
-import { useBattleState } from "./useBattleState";
-import { useBattleHandlers } from "./useBattleHandlers";
-import { useBattleReset } from "./useBattleReset";
-import { usePokemonContext } from "@/contexts/PokemonContext";
+import { useBattleStateManager } from "./useBattleStateManager";
+import { useBattleCoordination } from "./useBattleCoordination";
+import { useBattleActionsManager } from "./useBattleActionsManager";
 
 export const useBattleStateCore = (
   allPokemon: Pokemon[] = [],
   initialBattleType: BattleType,
   initialSelectedGeneration: number
 ) => {
-  const { allPokemon: contextPokemon } = usePokemonContext();
-  
   const initializationRef = useRef(false);
   const hookInstanceRef = useRef(`core-${Date.now()}`);
   
@@ -31,9 +23,7 @@ export const useBattleStateCore = (
   const stableInitialBattleType = useMemo(() => initialBattleType, []);
   const stableInitialGeneration = useMemo(() => initialSelectedGeneration, []);
   
-  const [needsToReloadSuggestions, setNeedsToReloadSuggestions] = useState(false);
-  
-  // Use the extracted battle state hook
+  // Use the state manager hook
   const {
     currentBattle,
     setCurrentBattle,
@@ -52,17 +42,28 @@ export const useBattleStateCore = (
     isTransitioning,
     setIsTransitioning,
     stableSetCurrentBattle,
-    stableSetSelectedPokemon
-  } = useBattleState(stableInitialBattleType, stableInitialGeneration);
-
-  const triggerSuggestionPrioritization = useCallback(() => {
-    console.log('[DEBUG] Basic suggestion prioritization triggered');
-  }, []);
-
-  const lastSuggestionLoadTimestampRef = useRef<number>(Date.now());
-  const rankingsGenerationDelayRef = useRef<NodeJS.Timeout | null>(null);
+    stableSetSelectedPokemon,
+    needsToReloadSuggestions,
+    setNeedsToReloadSuggestions,
+    triggerSuggestionPrioritization,
+    lastSuggestionLoadTimestampRef,
+    debouncedGenerateRankings
+  } = useBattleStateManager(stableInitialBattleType, stableInitialGeneration);
 
   const {
+    finalRankings = [],
+    confidenceScores,
+    activeTier,
+    setActiveTier,
+    freezePokemonForTier,
+    isPokemonFrozenForTier,
+    allRankedPokemon
+  } = useRankings();
+
+  // Use the coordination hook
+  const {
+    contextPokemon,
+    filteredPokemon,
     showingMilestone,
     setShowingMilestone,
     completionPercentage,
@@ -71,55 +72,34 @@ export const useBattleStateCore = (
     setRankingGenerated,
     fullRankingMode,
     milestones,
-    forceDismissMilestone
-  } = useProgressState();
-
-  const {
-    finalRankings = [],
-    confidenceScores,
+    forceDismissMilestone,
     generateRankings,
     handleSaveRankings,
-    activeTier,
-    setActiveTier,
-    freezePokemonForTier,
-    isPokemonFrozenForTier,
-    allRankedPokemon,
     suggestRanking,
     removeSuggestion,
     markSuggestionUsed,
     clearAllSuggestions,
     findNextSuggestion,
-    loadSavedSuggestions
-  } = useRankings();
-
-  const {
+    loadSavedSuggestions,
     resetMilestones,
     resetMilestoneRankings,
     calculateCompletionPercentage,
     getSnapshotForMilestone,
     milestoneRankings,
     hitMilestones,
-  } = useCompletionTracker(
+    battleStarter,
+    startNewBattle,
+    resetSuggestionPriority
+  } = useBattleCoordination(
+    selectedGeneration,
     battleResults,
-    setRankingGenerated,
-    setCompletionPercentage,
-    showingMilestone,
-    setShowingMilestone,
-    generateRankings,
-    contextPokemon
+    finalRankings,
+    currentBattle,
+    stableSetCurrentBattle,
+    stableSetSelectedPokemon,
+    activeTier,
+    freezePokemonForTier
   );
-
-  const filteredPokemon = useMemo(() => {
-    const filtered = (contextPokemon || []).filter(pokemon => {
-      if (selectedGeneration === 0) {
-        return true;
-      }
-      return pokemon.hasOwnProperty('generation') && (pokemon as any).generation === selectedGeneration;
-    });
-    
-    console.log(`[DEBUG useBattleStateCore] Filtered Pokemon: ${filtered.length} for generation ${selectedGeneration}`);
-    return filtered;
-  }, [contextPokemon, selectedGeneration]);
 
   const enhancedStartNewBattle = useCallback((battleType: BattleType) => {
     console.log(`🔄 [FLASH_FIX] enhancedStartNewBattle called for ${battleType}`);
@@ -134,47 +114,20 @@ export const useBattleStateCore = (
     }
     
     return result;
-  }, []);
+  }, [startNewBattle]);
 
-  const { 
-    battleStarter, 
-    startNewBattle,
-    resetSuggestionPriority 
-  } = useBattleStarterIntegration(
-    filteredPokemon, 
-    finalRankings || [],
-    stableSetCurrentBattle,
-    stableSetSelectedPokemon,
-    markSuggestionUsed,
-    currentBattle
-  );
-  
-  const { 
+  // Use the actions manager hook
+  const {
     processBattleResult,
-    isProcessingResult, 
+    isProcessingResult,
     resetMilestoneInProgress,
-    resetBattleProgressionMilestoneTracking
-  } = useBattleProcessor(
-    battleResults,
-    setBattleResults,
-    battlesCompleted,
-    setBattlesCompleted,
-    filteredPokemon,
-    stableSetCurrentBattle,
-    setShowingMilestone,
-    milestones,
-    generateRankings,
-    stableSetSelectedPokemon,
-    activeTier,
-    freezePokemonForTier,
-    battleStarter,
-    markSuggestionUsed,
-    undefined, // isResettingRef will be handled in reset hook
-    enhancedStartNewBattle
-  );
-
-  // Use the extracted battle handlers hook
-  const { goBack, handleContinueBattles } = useBattleHandlers(
+    resetBattleProgressionMilestoneTracking,
+    goBack,
+    handleContinueBattles,
+    performFullBattleReset,
+    handlePokemonSelect,
+    isProcessing
+  } = useBattleActionsManager(
     battleHistory,
     setBattleHistory,
     battleResults,
@@ -185,41 +138,24 @@ export const useBattleStateCore = (
     stableSetCurrentBattle,
     setSelectedPokemon,
     setShowingMilestone,
-    enhancedStartNewBattle,
-    forceDismissMilestone,
-    resetMilestoneInProgress,
-    setCurrentBattle,
-    setIsTransitioning
-  );
-
-  // Use the extracted reset hook
-  const { performFullBattleReset } = useBattleReset(
-    setBattlesCompleted,
-    setBattleResults,
-    setBattleHistory,
-    setSelectedPokemon,
     setCompletionPercentage,
     setRankingGenerated,
-    resetMilestones,
-    resetBattleProgressionMilestoneTracking,
-    clearAllSuggestions,
+    currentBattle,
+    selectedPokemon,
+    setCurrentBattle,
+    setIsTransitioning,
+    filteredPokemon,
+    milestones,
     generateRankings,
+    activeTier,
+    freezePokemonForTier,
+    battleStarter,
+    markSuggestionUsed,
+    forceDismissMilestone,
+    resetMilestones,
+    clearAllSuggestions,
     enhancedStartNewBattle
   );
-
-  const debouncedGenerateRankings = useMemo(() => {
-    return (results: any[]) => {
-      if (rankingsGenerationDelayRef.current) {
-        clearTimeout(rankingsGenerationDelayRef.current);
-      }
-      
-      rankingsGenerationDelayRef.current = setTimeout(() => {
-        console.log("[DEBOUNCED] Generating rankings after delay");
-        generateRankings(results);
-        rankingsGenerationDelayRef.current = null;
-      }, 150);
-    };
-  }, [generateRankings]);
 
   useEffect(() => {
     const preferredImageType = localStorage.getItem('preferredImageType');
@@ -245,41 +181,13 @@ export const useBattleStateCore = (
         
         if (battleResults.length > 0) {
           console.log("⚙️ useBattleStateCore: Triggering initial generateRankings to apply loaded suggestions");
-          debouncedGenerateRankings(battleResults);
+          debouncedGenerateRankings(generateRankings, battleResults);
         }
       } catch (e) {
         console.error("Error parsing saved suggestions:", e);
       }
     }
-  }, [loadSavedSuggestions, debouncedGenerateRankings, battleResults.length]);
-
-  const {
-    handlePokemonSelect,
-    handleGoBack: goBackHelper,
-    isProcessing
-  } = useBattleInteractions(
-    currentBattle,
-    stableSetCurrentBattle,
-    selectedPokemon,
-    stableSetSelectedPokemon,
-    battleResults,
-    setBattleResults,
-    battlesCompleted,
-    setBattlesCompleted,
-    battleHistory,
-    setBattleHistory,
-    (battleType: BattleType, currentBattle: Pokemon[]) => {
-      if (battleType === "triplets") {
-        processBattleResult(selectedPokemon, currentBattle, battleType, selectedGeneration);
-      }
-    },
-    () => {
-      console.log("Going back in battle navigation");
-      goBack();
-    },
-    battleType,
-    processBattleResult
-  );
+  }, [loadSavedSuggestions, debouncedGenerateRankings, battleResults.length, generateRankings]);
 
   const isAnyProcessing = isProcessingResult;
   
