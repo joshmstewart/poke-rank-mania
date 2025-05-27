@@ -1,4 +1,3 @@
-
 import { Pokemon } from "../types";
 import { formatPokemonName } from "@/utils/pokemon";
 import { getPreferredImageType, PokemonImageType } from "@/components/settings/ImagePreferenceSelector";
@@ -12,16 +11,17 @@ export const validateBattlePokemon = (pokemon: Pokemon[]): Pokemon[] => {
   const validated = pokemon.map((p, index) => {
     console.log(`🔍 [VALIDATE_BATTLE_POKEMON] Input #${index}: "${p.name}" (ID: ${p.id})`);
     
-    // CRITICAL FIX: DO NOT modify the name - use it exactly as provided from the API
+    // CRITICAL FIX: Preserve the already-formatted name instead of overriding it
     const validatedPokemon = {
       ...p,
-      // Keep the name exactly as it was formatted by the API
-      name: p.name,
+      // Keep the name exactly as it was already formatted (don't re-format or override)
+      name: p.name, // This should already be formatted by the API layer
       // Ensure image exists
       image: p.image || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${p.id}.png`
     };
     
     console.log(`🔍 [VALIDATE_BATTLE_POKEMON] Output #${index}: "${validatedPokemon.name}" (ID: ${validatedPokemon.id})`);
+    console.log(`🔍 [VALIDATE_BATTLE_POKEMON] Name preserved from input: ${p.name === validatedPokemon.name ? 'YES' : 'NO'}`);
     
     return validatedPokemon;
   });
