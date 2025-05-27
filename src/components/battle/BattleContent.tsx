@@ -21,8 +21,7 @@ const BattleContent: React.FC<BattleContentProps> = ({
   setBattleResults
 }) => {
   const instanceRef = useRef(`content-${Date.now()}`);
-  const milestoneHandledRef = useRef(false);
-  const lastMilestoneTimeRef = useRef(0);
+  const milestoneDisplayTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   console.log(`[DEBUG BattleContent] Instance: ${instanceRef.current} render - allPokemon: ${allPokemon?.length || 0}`);
 
@@ -74,7 +73,6 @@ const BattleContent: React.FC<BattleContentProps> = ({
     isAnyProcessing,
     hasBattle: !!currentBattle && currentBattle.length > 0,
     battlesCompleted,
-    milestoneHandled: milestoneHandledRef.current,
     timestamp: new Date().toISOString()
   });
 
@@ -87,40 +85,60 @@ const BattleContent: React.FC<BattleContentProps> = ({
     setBattleResults?.(battleResults);
   }, [battleResults, setBattleResults]);
 
-  // CRITICAL FIX: Handle milestone with proper state reset and debouncing
+  // CRITICAL FIX: Proper milestone handling with visual display
   useEffect(() => {
-    if (showingMilestone && !milestoneHandledRef.current) {
-      const now = Date.now();
+    if (showingMilestone) {
+      console.log(`🏆 [MILESTONE_FIX] MILESTONE REACHED: ${battlesCompleted} battles completed!`);
       
-      // Debounce milestone handling to prevent rapid cycling
-      if (now - lastMilestoneTimeRef.current < 1000) {
-        console.log(`🔄 [MILESTONE_FIX] Debouncing milestone handling - too soon since last one`);
-        return;
+      // Clear any existing timeout
+      if (milestoneDisplayTimeoutRef.current) {
+        clearTimeout(milestoneDisplayTimeoutRef.current);
       }
       
-      console.log(`🏆 [MILESTONE_FIX] Handling milestone at ${battlesCompleted} battles`);
-      milestoneHandledRef.current = true;
-      lastMilestoneTimeRef.current = now;
-      
-      // First, properly reset the milestone state
-      setShowingMilestone(false);
-      resetMilestoneInProgress();
-      
-      // Then start a new battle after a longer delay to ensure state is clean
-      setTimeout(() => {
-        console.log(`🔄 [MILESTONE_FIX] Starting new battle after milestone cleanup`);
-        handleContinueBattles();
-        milestoneHandledRef.current = false; // Reset for next milestone
-      }, 500);
+      // Show milestone message for 3 seconds
+      milestoneDisplayTimeoutRef.current = setTimeout(() => {
+        console.log(`🔄 [MILESTONE_FIX] Dismissing milestone after display time`);
+        setShowingMilestone(false);
+        resetMilestoneInProgress();
+        
+        // Continue battles after milestone is dismissed
+        setTimeout(() => {
+          handleContinueBattles();
+        }, 300);
+      }, 3000);
     }
+    
+    return () => {
+      if (milestoneDisplayTimeoutRef.current) {
+        clearTimeout(milestoneDisplayTimeoutRef.current);
+      }
+    };
   }, [showingMilestone, battlesCompleted, setShowingMilestone, resetMilestoneInProgress, handleContinueBattles]);
 
-  // CRITICAL FIX: Always show interface if we have battle data - no loading states
+  // CRITICAL FIX: Show milestone display when milestone is active
+  if (showingMilestone) {
+    console.log(`🏆 [MILESTONE_FIX] Displaying milestone for ${battlesCompleted} battles`);
+    return (
+      <div className="flex justify-center items-center h-64 w-full">
+        <div className="text-center bg-white rounded-lg shadow-lg p-8 max-w-md">
+          <div className="text-6xl mb-4">🏆</div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Milestone Reached!</h2>
+          <p className="text-lg text-gray-600 mb-4">
+            You've completed <span className="font-semibold text-blue-600">{battlesCompleted}</span> battles!
+          </p>
+          <div className="text-sm text-gray-500">
+            Rankings have been updated...
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show interface if we have battle data
   const shouldShowInterface = currentBattle && currentBattle.length > 0;
 
   console.log(`🔄 [MILESTONE_FIX] BattleContent shouldShowInterface:`, shouldShowInterface);
 
-  // CRITICAL FIX: Only show interface, never show loading during normal operation
   if (shouldShowInterface) {
     console.log(`🔄 [MILESTONE_FIX] BattleContent rendering interface with ${currentBattle.length} Pokemon`);
     
@@ -140,7 +158,7 @@ const BattleContent: React.FC<BattleContentProps> = ({
     );
   }
 
-  // CRITICAL FIX: Only show loading on initial load when we truly have no data
+  // Show loading on initial load when we truly have no data
   console.log(`⏳ [MILESTONE_FIX] BattleContent showing initial loading - no battle data available yet`);
   return (
     <div className="flex justify-center items-center h-64 w-full">
