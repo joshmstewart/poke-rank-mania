@@ -2,9 +2,20 @@
 import React, { useEffect, useRef } from "react";
 import BattleInterface from "./BattleInterface";
 import RankingDisplay from "./RankingDisplay";
+import BattleSettings from "./BattleSettings";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "@/hooks/battle/types";
 import { useBattleStateCore } from "@/hooks/battle/useBattleStateCore";
+import { Button } from "@/components/ui/button";
+import { Settings } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 interface BattleContentProps {
   allPokemon: Pokemon[];
@@ -126,18 +137,53 @@ const BattleContent: React.FC<BattleContentProps> = ({
     console.log(`🔄 [MILESTONE_FIX] BattleContent rendering interface with ${currentBattle.length} Pokemon`);
     
     return (
-      <BattleInterface
-        currentBattle={currentBattle}
-        selectedPokemon={selectedPokemon}
-        battlesCompleted={battlesCompleted}
-        battleType={battleType}
-        battleHistory={battleHistory}
-        onPokemonSelect={handlePokemonSelect}
-        onTripletSelectionComplete={handleTripletSelectionComplete}
-        onGoBack={goBack}
-        milestones={milestones}
-        isProcessing={isAnyProcessing}
-      />
+      <div className="w-full">
+        {/* Battle Settings Header */}
+        <div className="flex justify-between items-center mb-4 px-4">
+          <div className="flex items-center gap-4">
+            <h2 className="text-lg font-semibold">Battle Mode</h2>
+            <span className="text-sm text-gray-600">
+              Battles: {battlesCompleted} | Type: {battleType}
+            </span>
+          </div>
+          
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Settings className="h-4 w-4 mr-2" />
+                Settings
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Battle Settings</DialogTitle>
+                <DialogDescription>
+                  Configure your battle preferences and filters
+                </DialogDescription>
+              </DialogHeader>
+              <BattleSettings
+                onGenerationChange={setSelectedGeneration}
+                onBattleTypeChange={setBattleType}
+                selectedGeneration={selectedGeneration}
+                battleType={battleType}
+              />
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        <BattleInterface
+          currentBattle={currentBattle}
+          selectedPokemon={selectedPokemon}
+          battlesCompleted={battlesCompleted}
+          battleType={battleType}
+          battleHistory={battleHistory}
+          onPokemonSelect={handlePokemonSelect}
+          onTripletSelectionComplete={handleTripletSelectionComplete}
+          onGoBack={goBack}
+          milestones={milestones}
+          isProcessing={isAnyProcessing}
+        />
+      </div>
     );
   }
 

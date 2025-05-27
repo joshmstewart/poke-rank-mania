@@ -1,3 +1,4 @@
+
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { BattleType } from "./types";
 import { validateBattlePokemon } from "@/services/pokemon/api/utils";
@@ -13,8 +14,10 @@ export const createBattleStarter = (
   // Use plain objects instead of hooks
   const recentlySeenPokemon = new Set<number>();
   let battleCountRef = 0;
-  let initialSubsetRef: Pokemon[] | null = null;
-  let lowerTierLosersMap = new Map<number, number>(); // Track Pokemon that lost to lower tier opponents
+  let lowerTierLosersMap = new Map<number, number>();
+
+  console.log(`🎯 [POKEMON_RANGE_FIX] createBattleStarter initialized with ${allPokemonForGeneration.length} total Pokemon`);
+  console.log(`🎯 [POKEMON_RANGE_FIX] Pokemon ID range: ${Math.min(...allPokemonForGeneration.map(p => p.id))} to ${Math.max(...allPokemonForGeneration.map(p => p.id))}`);
 
   const shuffleArray = (array: Pokemon[]) => {
     const shuffled = [...array];
@@ -26,23 +29,16 @@ export const createBattleStarter = (
   };
 
   const pickDistinctPair = (pool: Pokemon[], seen: Set<number>, size: number) => {
-    // First try to pick from Pokemon that haven't been seen recently
     const filteredPool = pool.filter(p => !seen.has(p.id));
     
-    // If we have enough unseen Pokemon, use those
     if (filteredPool.length >= size) {
       return shuffleArray(filteredPool).slice(0, size);
     }
     
-    // Otherwise, shuffle the entire pool to ensure some randomness
-    // This ensures we don't keep seeing the same Pokemon over and over
     const shuffledPool = shuffleArray(pool);
-    
-    // Make sure we prioritize Pokemon we haven't seen recently
     const result = [];
     const tempSeen = new Set([...seen]);
     
-    // First add any unseen Pokemon
     for (const pokemon of shuffledPool) {
       if (!tempSeen.has(pokemon.id) && result.length < size) {
         result.push(pokemon);
@@ -52,7 +48,6 @@ export const createBattleStarter = (
       if (result.length >= size) break;
     }
     
-    // If we still need more, add from any Pokemon
     if (result.length < size) {
       for (const pokemon of shuffledPool) {
         if (!result.some(p => p.id === pokemon.id) && result.length < size) {
@@ -66,7 +61,6 @@ export const createBattleStarter = (
     return result;
   };
 
-  // Helper function to convert Pokemon to RankedPokemon
   const ensureRankedPokemon = (pokemon: Pokemon): RankedPokemon => {
     if ('score' in pokemon && 'count' in pokemon && 'confidence' in pokemon) {
       return pokemon as RankedPokemon;
@@ -79,7 +73,6 @@ export const createBattleStarter = (
     } as RankedPokemon;
   };
 
-  // Helper function to convert array of Pokemon to array of RankedPokemon
   const ensureRankedPokemonArray = (pokemonArray: Pokemon[]): RankedPokemon[] => {
     return pokemonArray.map(ensureRankedPokemon);
   };
@@ -90,6 +83,12 @@ export const createBattleStarter = (
 
     const battleSize = battleType === "pairs" ? 2 : 3;
     console.log("🎯 [useBattleStarter] battleSize determined:", battleSize, "battleType:", battleType);
+
+    // CRITICAL FIX: Always use full Pokemon pool, no early battle subset
+    const allAvailablePokemon = allPokemonForGeneration.filter(p => !recentlySeenPokemon.has(p.id));
+    
+    console.log(`🎯 [POKEMON_RANGE_FIX] Using FULL Pokemon pool of ${allAvailablePokemon.length} Pokemon`);
+    console.log(`🎯 [POKEMON_RANGE_FIX] Full range IDs available: ${Math.min(...allAvailablePokemon.map(p => p.id))} to ${Math.max(...allAvailablePokemon.map(p => p.id))}`);
 
     // Different strategy based on tier
     const tierSize = activeTier === "All" ? 
@@ -115,7 +114,7 @@ export const createBattleStarter = (
       .filter(p => !isPokemonFrozenForTier || !isPokemonFrozenForTier(p.id, activeTier))
       .filter(p => !recentlySeenPokemon.has(p.id));
 
-    // Get Pokémon with few battles (discovery pool)
+    // Get Pokémon with few battles (discovery pool) - FROM FULL RANGE
     const unrankedPokemonIds = allPokemonForGeneration
       .filter(p => {
         const rankedData = currentFinalRankings.find(rp => rp.id === p.id);
@@ -124,18 +123,14 @@ export const createBattleStarter = (
       .filter(p => !recentlySeenPokemon.has(p.id))
       .map(p => p.id);
     
-    // Create a mix of RankedPokemon objects and regular Pokemon objects as needed
     const unrankedCandidates: RankedPokemon[] = unrankedPokemonIds
       .map(id => {
-        // Try to find in rankings first to preserve RankedPokemon properties
         const rankedVersion = currentFinalRankings.find(rp => rp.id === id);
         if (rankedVersion) return rankedVersion;
         
-        // Fall back to regular Pokemon
         const basePokemon = allPokemonForGeneration.find(p => p.id === id);
         if (!basePokemon) return null;
         
-        // Create a minimal RankedPokemon from a Pokemon
         return {
           ...basePokemon,
           score: 0,
@@ -145,15 +140,13 @@ export const createBattleStarter = (
       })
       .filter(Boolean) as RankedPokemon[];
 
-    // Get Pokémon that lost to lower tier opponents - try to get RankedPokemon versions
+    // Get Pokémon that lost to lower tier opponents
     const demotionCandidates = Array.from(lowerTierLosersMap.keys())
       .filter(id => !recentlySeenPokemon.has(id))
       .map(id => {
-        // Try to find in rankings first
         const rankedVersion = currentFinalRankings.find(p => p.id === id);
         if (rankedVersion) return rankedVersion;
         
-        // Fall back to regular Pokemon with minimal RankedPokemon properties
         const basePokemon = allPokemonForGeneration.find(p => p.id === id);
         if (!basePokemon) return null;
         
@@ -166,23 +159,18 @@ export const createBattleStarter = (
       })
       .filter(Boolean) as RankedPokemon[];
 
-    // Generate a completely random value to determine battle selection strategy
     const randomValue = Math.random();
     console.log("🎲 Random strategy selection value:", randomValue.toFixed(2));
 
-    // Battle selection logic with improved variety
     let selectedBattle: Pokemon[] = [];
     
-    // Log candidate pool sizes
     console.log(`📊 Candidate pools: Top=${topCandidates.length}, Near=${nearCandidates.length}, Lower=${lowerTierCandidates.length}, Unranked=${unrankedCandidates.length}, Demotion=${demotionCandidates.length}`);
 
     if (randomValue < 0.3 && topCandidates.length >= battleSize) {
-      // Top tier battle
       selectedBattle = shuffleArray(topCandidates as unknown as Pokemon[]).slice(0, battleSize);
       console.log("⚖️ Selected battle strategy: Top tier");
     } 
     else if (randomValue < 0.55 && topCandidates.length > 0 && nearCandidates.length > 0) {
-      // Top vs Challenger battle
       const result = [
         topCandidates[Math.floor(Math.random() * topCandidates.length)] as unknown as Pokemon
       ];
@@ -192,7 +180,6 @@ export const createBattleStarter = (
       console.log("⚖️ Selected battle strategy: Top vs Challenger");
     } 
     else if (randomValue < 0.7 && demotionCandidates.length > 0 && lowerTierCandidates.length > 0) {
-      // Demotion candidate test
       const demotionCandidate = shuffleArray(demotionCandidates as unknown as Pokemon[])[0];
       const result = [demotionCandidate];
       const neededMore = battleSize - result.length;
@@ -201,12 +188,10 @@ export const createBattleStarter = (
       selectedBattle = result;
     } 
     else if (randomValue < 0.85 && unrankedCandidates.length > 0) {
-      // Discovery battle - completely unranked or low count Pokemon
       selectedBattle = shuffleArray(unrankedCandidates as unknown as Pokemon[]).slice(0, battleSize);
       console.log("⚖️ Selected battle strategy: Discovery (unranked Pokemon)");
     } 
     else if (randomValue < 0.95 && topCandidates.length > 0 && unrankedCandidates.length > 0) {
-      // Top vs Unranked
       const result = [
         topCandidates[Math.floor(Math.random() * topCandidates.length)] as unknown as Pokemon
       ];
@@ -217,40 +202,40 @@ export const createBattleStarter = (
       console.log("⚖️ Selected battle strategy: Top vs Unranked");
     } 
     else {
-      // Completely random battle from all available Pokemon
-      // Prioritize Pokemon that haven't been seen recently
-      const filteredPool = allPokemonForGeneration.filter(p => !recentlySeenPokemon.has(p.id));
-      
-      if (filteredPool.length >= battleSize) {
-        selectedBattle = shuffleArray(filteredPool).slice(0, battleSize);
-      } else {
-        selectedBattle = shuffleArray(allPokemonForGeneration).slice(0, battleSize);
-      }
-      console.log("⚖️ Selected battle strategy: Completely random");
+      // CRITICAL FIX: Use full Pokemon range for completely random battles
+      selectedBattle = shuffleArray(allPokemonForGeneration).slice(0, battleSize);
+      console.log("⚖️ Selected battle strategy: Completely random from FULL range");
     }
 
-    // If we somehow failed to select enough Pokemon, fall back to a completely random selection
     if (selectedBattle.length < battleSize) {
-      console.log("⚠️ Failed to select enough Pokemon with strategy, using fallback random selection");
+      console.log("⚠️ Failed to select enough Pokemon with strategy, using fallback random selection from FULL range");
       selectedBattle = shuffleArray(allPokemonForGeneration).slice(0, battleSize);
     }
 
-    // Ensure all selected Pokemon IDs are tracked as recently seen
     selectedBattle.forEach(p => {
       recentlySeenPokemon.add(p.id);
     });
 
-    // Maintain a maximum size for the recently seen set to eventually allow Pokemon to be reselected
-    if (recentlySeenPokemon.size > Math.min(50, Math.floor(allPokemonForGeneration.length * 0.3))) {
-      const oldestEntries = Array.from(recentlySeenPokemon).slice(0, 10);
+    if (recentlySeenPokemon.size > Math.min(100, Math.floor(allPokemonForGeneration.length * 0.1))) {
+      const oldestEntries = Array.from(recentlySeenPokemon).slice(0, 20);
       oldestEntries.forEach(id => recentlySeenPokemon.delete(id));
     }
 
-    // IMPORTANT: Validate battle Pokemon to ensure images and names match
     const validatedBattle = validateBattlePokemon(selectedBattle);
 
     console.log("⚖️ Final selected battle pair IDs:", validatedBattle.map(p => p.id));
     console.log("⚖️ Final selected battle names:", validatedBattle.map(p => p.name));
+    
+    // CRITICAL: Log type data for color debugging
+    validatedBattle.forEach((pokemon, index) => {
+      console.log(`🎯 [TYPE_DEBUG] Final battle Pokemon ${index + 1}: ${pokemon.name} (ID: ${pokemon.id})`);
+      console.log(`🎯 [TYPE_DEBUG] - Raw types:`, pokemon.types);
+      console.log(`🎯 [TYPE_DEBUG] - Types length:`, pokemon.types?.length || 0);
+      if (!pokemon.types || pokemon.types.length === 0) {
+        console.error(`🚨 [TYPE_DEBUG] - NO TYPES for ${pokemon.name}! This will cause color issues.`);
+      }
+    });
+    
     return validatedBattle;
   };
 
@@ -268,27 +253,17 @@ export const createBattleStarter = (
     const battleSize = battleType === "pairs" ? 2 : 3;
     let result: Pokemon[] = [];
 
-    // For the first 25 battles, use a small subset to establish initial rankings
-    if (battleCountRef <= 25) {
-      const INITIAL_SUBSET_SIZE = 15;
-      if (!initialSubsetRef) {
-        initialSubsetRef = shuffleArray(pokemonList).slice(0, INITIAL_SUBSET_SIZE);
-        console.log("🏁 Created initial subset of", INITIAL_SUBSET_SIZE, "Pokemon for early battles");
-      }
-      result = pickDistinctPair(initialSubsetRef, recentlySeenPokemon, battleSize);
-      console.log("🔄 Early battle using initial subset:", result.map(p => p.name).join(", "));
-    } else {
-      result = getTierBattlePair(battleType);
-      if (result.length < battleSize) {
-        console.log("⚠️ getTierBattlePair returned insufficient Pokemon, using fallback random selection");
-        result = shuffleArray(pokemonList).slice(0, battleSize);
-      }
+    // CRITICAL FIX: Remove early battle subset limitation - always use full range
+    console.log(`🎯 [POKEMON_RANGE_FIX] Battle ${battleCountRef}: Using FULL Pokemon range (no subset)`);
+    result = getTierBattlePair(battleType);
+    
+    if (result.length < battleSize) {
+      console.log("⚠️ getTierBattlePair returned insufficient Pokemon, using fallback random selection from FULL range");
+      result = shuffleArray(allPokemonForGeneration).slice(0, battleSize);
     }
 
-    // IMPORTANT: Validate battle Pokemon to ensure images and names match before setting
     const validatedResult = validateBattlePokemon(result);
 
-    // Log what objects we're passing to setCurrentBattle
     console.log(`[DEBUG useBattleStarter] About to set current battle with:`, 
       validatedResult.map(p => ({
         id: p.id, 
@@ -296,7 +271,6 @@ export const createBattleStarter = (
       }))
     );
 
-    // Create and dispatch an event with the new battle info
     const battleCreatedEvent = new CustomEvent('battle-created', {
       detail: { 
         pokemonIds: validatedResult.map(p => p.id),
