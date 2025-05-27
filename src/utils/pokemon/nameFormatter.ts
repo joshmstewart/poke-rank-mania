@@ -1,3 +1,4 @@
+
 import { capitalizeFirstLetter, capitalizeWords } from './helpers';
 
 /**
@@ -46,6 +47,49 @@ export const formatPokemonName = (name: string): string => {
     const baseName = name.substring(0, name.toLowerCase().indexOf('-paldea'));
     const result = `Paldean ${capitalizeFirstLetter(baseName)}`;
     console.log(`🔧 [FORMAT_PALDEA_RESULT] "${name}" → "${result}"`);
+    return result;
+  }
+  
+  // Handle specific Paldea breed forms like "tauros-paldea-blaze-breed"
+  if (lowerName.includes('-paldea-') && (lowerName.includes('-breed') || lowerName.includes('-form'))) {
+    console.log(`🔧 [FORMAT_PALDEA_BREED_DETECTED] Processing Paldean breed form: "${name}"`);
+    const parts = name.toLowerCase().split('-');
+    if (parts.length >= 4) {
+      const baseName = parts[0];
+      const breedType = parts[2]; // "blaze", "aqua", "combat"
+      const result = `${capitalizeFirstLetter(baseName)} (Paldean ${capitalizeFirstLetter(breedType)})`;
+      console.log(`🔧 [FORMAT_PALDEA_BREED_RESULT] "${name}" → "${result}"`);
+      return result;
+    }
+  }
+  
+  // Handle Pikachu special forms like "pikachu-pop-star"
+  if (lowerName.startsWith('pikachu-') && !lowerName.includes('cap')) {
+    console.log(`🔧 [FORMAT_PIKACHU_SPECIAL_DETECTED] Processing special Pikachu form: "${name}"`);
+    const formPart = name.substring(8); // Remove "pikachu-"
+    const formattedForm = capitalizeWords(formPart.replace(/-/g, ' '));
+    const result = `Pikachu (${formattedForm})`;
+    console.log(`🔧 [FORMAT_PIKACHU_SPECIAL_RESULT] "${name}" → "${result}"`);
+    return result;
+  }
+  
+  // Handle Lycanroc forms like "lycanroc-dusk"
+  if (lowerName.startsWith('lycanroc-')) {
+    console.log(`🔧 [FORMAT_LYCANROC_DETECTED] Processing Lycanroc form: "${name}"`);
+    const formPart = name.substring(9); // Remove "lycanroc-"
+    const result = `${capitalizeFirstLetter(formPart)} Lycanroc`;
+    console.log(`🔧 [FORMAT_LYCANROC_RESULT] "${name}" → "${result}"`);
+    return result;
+  }
+  
+  // Handle Indeedee gender forms like "indeedee-female"
+  if (lowerName.includes('-female') || lowerName.includes('-male')) {
+    console.log(`🔧 [FORMAT_GENDER_DETECTED] Processing gender form: "${name}"`);
+    const parts = name.split('-');
+    const baseName = parts[0];
+    const gender = parts[1];
+    const result = `${capitalizeFirstLetter(baseName)} (${capitalizeFirstLetter(gender)})`;
+    console.log(`🔧 [FORMAT_GENDER_RESULT] "${name}" → "${result}"`);
     return result;
   }
   
