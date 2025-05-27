@@ -1,4 +1,3 @@
-
 /**
  * Normalize Pokedex numbers - converts special form IDs back to their base form
  * For example: 10117 (Ash-Greninja) -> 658 (Greninja)
@@ -157,7 +156,7 @@ export const formatPokemonName = (name: string): string => {
   if (lowerName.includes(' gmax')) {
     const baseName = name.substring(0, name.toLowerCase().indexOf(' gmax'));
     const result = `G-Max ${baseName}`;
-    console.log(`✅ [SPACE_GMAX] "${name}" -> "${result)"`);
+    console.log(`✅ [SPACE_GMAX] "${name}" -> "${result}"`);
     return result;
   }
   
