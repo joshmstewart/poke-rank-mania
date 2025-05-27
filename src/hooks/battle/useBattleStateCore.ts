@@ -103,7 +103,7 @@ export const useBattleStateCore = (
 
   const enhancedStartNewBattle = useCallback((battleType: BattleType) => {
     const currentBattleCount = parseInt(localStorage.getItem('pokemon-battle-count') || '0', 10);
-    console.log(`🔄 [FLASH_FIX] enhancedStartNewBattle called for ${battleType} - Battle ${currentBattleCount.toString()}`);
+    console.log(`🔄 [FLASH_FIX] enhancedStartNewBattle called for ${battleType} - Battle ${String(currentBattleCount)}`);
     
     const result = startNewBattle(battleType);
     
@@ -174,11 +174,11 @@ export const useBattleStateCore = (
       try {
         const parsed = JSON.parse(savedSuggestions);
         const count = Object.keys(parsed).length;
-        console.log(`🔢 Found ${count.toString()} suggestions in localStorage`);
+        console.log(`🔢 Found ${String(count)} suggestions in localStorage`);
         lastSuggestionLoadTimestampRef.current = Date.now();
         
         const loadedSuggestions = loadSavedSuggestions();
-        console.log(`⭐ useBattleStateCore: Initial load: Loaded ${loadedSuggestions.size.toString()} suggestions`);
+        console.log(`⭐ useBattleStateCore: Initial load: Loaded ${String(loadedSuggestions.size)} suggestions`);
         
         if (battleResults.length > 0) {
           console.log("⚙️ useBattleStateCore: Triggering initial generateRankings to apply loaded suggestions");
@@ -193,7 +193,7 @@ export const useBattleStateCore = (
   const isAnyProcessing = isProcessingResult;
   
   const currentBattleCount = parseInt(localStorage.getItem('pokemon-battle-count') || '0', 10);
-  console.log(`🔄 [PROCESSOR_FIX] useBattleStateCore processing states - Battle ${currentBattleCount.toString()}:`, {
+  console.log(`🔄 [PROCESSOR_FIX] useBattleStateCore processing states - Battle ${String(currentBattleCount)}:`, {
     isProcessingResult,
     isProcessing,
     isAnyProcessing,
