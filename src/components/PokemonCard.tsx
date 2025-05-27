@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Pokemon } from "@/services/pokemon";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { getPreferredImageUrl, getPreferredImageType, PokemonImageType } from "@/components/settings/ImagePreferenceSelector";
-import { normalizePokedexNumber, formatPokemonName } from "@/utils/pokemonUtils";
+import { normalizePokedexNumber } from "@/utils/pokemonUtils";
 import { validateBattlePokemon } from "@/services/pokemon/api/utils";
 
 interface PokemonCardProps {
@@ -45,15 +45,12 @@ const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
   // Store the consistent pokemon ID
   const pokemonId = validatedPokemon.id;
 
-  // Use formatPokemonName for proper display of regional variants
+  // CRITICAL FIX: Use the name as-is from validatedPokemon - it should already be properly formatted
   const normalizedId = normalizePokedexNumber(pokemonId);
-  const rawName = validatedPokemon.name;
-  const formattedName = formatPokemonName(rawName);
+  const displayName = validatedPokemon.name; // Don't re-format here
   
-  // Add debugging for Pokemon name formatting in PokemonCard
-  console.log(`🎮 [POKEMON_CARD_NAME_DEBUG] Pokemon ID: ${pokemonId}`);
-  console.log(`🎮 [POKEMON_CARD_NAME_DEBUG] Raw name: "${rawName}"`);
-  console.log(`🎮 [POKEMON_CARD_NAME_DEBUG] Formatted name: "${formattedName}"`);
+  // Add debugging for Pokemon name in PokemonCard
+  console.log(`🎮 [POKEMON_CARD_NAME_DEBUG] Pokemon ID: ${pokemonId}, Display name: "${displayName}"`);
 
   // Cleanup function for timers and refs
   const cleanupImageLoading = useCallback(() => {
@@ -94,7 +91,7 @@ const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
     
     // Log only during development or if explicitly debugging
     if (process.env.NODE_ENV === "development") {
-      console.log(`🖼️ PokemonCard: Loading "${preference}" image for ${formattedName} (#${pokemonId}): ${url}`);
+      console.log(`🖼️ PokemonCard: Loading "${preference}" image for ${displayName} (#${pokemonId}): ${url}`);
       
       // Verify if the URL actually exists with a HEAD request - always do this
       if (url && url.trim() !== '') {
@@ -119,7 +116,7 @@ const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
             if (!imageLoaded && !imageError) {
               imageLoadingTimerRef.current = setTimeout(() => {
                 if (!imageLoaded && !imageError) {
-                  console.warn(`⏱️ Image load timeout for ${formattedName} after successful HEAD check - triggering fallback`);
+                  console.warn(`⏱️ Image load timeout for ${displayName} after successful HEAD check - triggering fallback`);
                   handleImageError();
                 }
               }, 8000); // Increased timeout (8 seconds) for high-res images
@@ -136,11 +133,11 @@ const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
           }
         });
       } else {
-        console.warn(`⚠️ PokemonCard: Empty URL generated for ${formattedName} (#${pokemonId})`);
+        console.warn(`⚠️ PokemonCard: Empty URL generated for ${displayName} (#${pokemonId})`);
         handleImageError();
       }
     }
-  }, [pokemonId, formattedName, imageLoaded, imageError, retryCount, cleanupImageLoading]);
+  }, [pokemonId, displayName, imageLoaded, imageError, retryCount, cleanupImageLoading]);
 
   useEffect(() => {
     updateImage();
@@ -161,14 +158,14 @@ const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
         if (!isMountedRef.current) return;
         
         if (!imageLoaded && !imageError && retryCount === 0) {
-          console.warn(`⏱️ Image load timeout for ${formattedName} - triggering fallback`);
+          console.warn(`⏱️ Image load timeout for ${displayName} - triggering fallback`);
           handleImageError();
         }
       }, 5000); // 5 second timeout (increased from 2 seconds)
       
       return () => cleanupImageLoading();
     }
-  }, [imageLoaded, imageError, formattedName, retryCount, cleanupImageLoading]);
+  }, [imageLoaded, imageError, displayName, retryCount, cleanupImageLoading]);
 
   // Save a reference to the img element
   const saveImgRef = useCallback((node: HTMLImageElement | null) => {
@@ -182,9 +179,9 @@ const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
     setImageLoaded(true);
     
     if (retryCount > 0 && process.env.NODE_ENV === "development") {
-      console.log(`✅ Successfully loaded fallback image (type: ${currentImageType}) for ${formattedName}`);
+      console.log(`✅ Successfully loaded fallback image (type: ${currentImageType}) for ${displayName}`);
     }
-  }, [retryCount, currentImageType, formattedName, cleanupImageLoading]);
+  }, [retryCount, currentImageType, displayName, cleanupImageLoading]);
   
   const handleImageError = useCallback(() => {
     if (!isMountedRef.current) return;
@@ -197,10 +194,10 @@ const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
     if (retryCount === 0) {
       if (!failedUrl || failedUrl.trim() === '') {
         // If URL is empty or undefined
-        console.error(`🔴 Initial attempt to load '${currentImageType}' artwork for ${formattedName} (#${pokemonId}) failed. No URL was available for the preferred style.`);
+        console.error(`🔴 Initial attempt to load '${currentImageType}' artwork for ${displayName} (#${pokemonId}) failed. No URL was available for the preferred style.`);
       } else {
         // Log the initial failure with the actual URL
-        console.error(`🔴 Initial attempt to load '${currentImageType}' artwork for ${formattedName} (#${pokemonId}) failed. URL: ${failedUrl}`);
+        console.error(`🔴 Initial attempt to load '${currentImageType}' artwork for ${displayName} (#${pokemonId}) failed. URL: ${failedUrl}`);
         
         // Additional diagnostic: Check if the URL exists on server with fetch HEAD
         fetch(failedUrl, { 
@@ -262,7 +259,7 @@ const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
         const nextUrl = getPreferredImageUrl(pokemonId, nextRetry);
         
         // Enhanced error logging to diagnose why official artwork is failing
-        console.log(`❌ Image load failed for ${formattedName} (#${pokemonId}) with type "${currentImageType}" - trying fallback #${nextRetry}: ${nextUrl}`);
+        console.log(`❌ Image load failed for ${displayName} (#${pokemonId}) with type "${currentImageType}" - trying fallback #${nextRetry}: ${nextUrl}`);
         
         setRetryCount(nextRetry);
         setCurrentImageUrl(nextUrl);
@@ -271,11 +268,11 @@ const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
         const img = new Image();
         img.src = nextUrl;
       } else {
-        console.error(`⛔ All image fallbacks failed for ${formattedName} (#${pokemonId})`);
+        console.error(`⛔ All image fallbacks failed for ${displayName} (#${pokemonId})`);
         setImageError(true);
       }
     }
-  }, [pokemonId, formattedName, retryCount, currentImageUrl, currentImageType, cleanupImageLoading]);
+  }, [pokemonId, displayName, retryCount, currentImageUrl, currentImageType, cleanupImageLoading]);
 
   return (
     <Card className={`w-full overflow-hidden ${isDragging ? "opacity-50" : ""}`}>
@@ -287,17 +284,17 @@ const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
               <img
                 ref={saveImgRef}
                 src={currentImageUrl}
-                alt={formattedName}
+                alt={displayName}
                 className={`w-full h-full object-contain p-1 transition-opacity ${imageLoaded ? "opacity-100" : "opacity-0"}`}
                 loading="lazy"
                 onLoad={handleImageLoad}
                 onError={handleImageError}
-                crossOrigin="anonymous" // Add cross-origin attribute to help with CORS issues
+                crossOrigin="anonymous"
               />
             )}
             {imageError && (
               <div className="absolute inset-0 flex flex-col justify-center items-center bg-gray-100 text-xs p-1">
-                <div className="font-medium">{formattedName}</div>
+                <div className="font-medium">{displayName}</div>
                 <div className="text-muted-foreground">#{normalizedId}</div>
               </div>
             )}
@@ -305,7 +302,7 @@ const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
         </div>
         <div className="flex-1 min-w-0">
           <div className={`flex justify-between ${compact ? "text-sm" : "text-base"}`}>
-            <span className="font-medium truncate">{formattedName}</span>
+            <span className="font-medium truncate">{displayName}</span>
             <span className="text-xs">#{normalizedId}</span>
           </div>
           {validatedPokemon.types?.length > 0 && (

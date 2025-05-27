@@ -1,5 +1,6 @@
 import { Pokemon } from "../types";
 import { PokemonImageType, getPreferredImageType, POKEMON_IMAGE_PREFERENCE_KEY, DEFAULT_IMAGE_PREFERENCE } from "@/components/settings/ImagePreferenceSelector";
+import { formatPokemonName } from "@/utils/pokemonUtils";
 
 // Image styles to cache busting map to track which ones needed cache busting
 const imageCacheBustingMap = new Map<string, boolean>();
@@ -144,8 +145,10 @@ export async function fetchPokemonDetails(id: number): Promise<Pokemon> {
     const detailResponse = await fetch(`https://pokeapi.co/api/v2/pokemon/${id}`);
     if (detailResponse.ok) {
       const detailData = await detailResponse.json();
-      name = detailData.name.charAt(0).toUpperCase() + detailData.name.slice(1);
-      name = name.replace(/-/g, ' ');
+      // CRITICAL FIX: Apply formatPokemonName immediately to the raw API name
+      const rawApiName = detailData.name.charAt(0).toUpperCase() + detailData.name.slice(1).replace(/-/g, ' ');
+      name = formatPokemonName(rawApiName);
+      console.log(`🔧 [NAME_TRANSFORM_FIX] Raw API: "${detailData.name}" → Capitalized: "${rawApiName}" → Final: "${name}"`);
       
       types = detailData.types.map((type: any) => 
         type.type.name.charAt(0).toUpperCase() + type.type.name.slice(1)
@@ -181,7 +184,7 @@ export async function fetchPokemonDetails(id: number): Promise<Pokemon> {
     if (id === 10250) {
       return {
         id: id,
-        name: "Paldean Tauros Combat Breed",
+        name: "Paldean Tauros (Combat Breed)",
         image: imageUrl,
         types,
         flavorText
@@ -212,10 +215,13 @@ export function validateBattlePokemon(pokemon: Pokemon[]): Pokemon[] {
   return pokemon.map(p => {
     const fixedPokemon = { ...p };
     
+    // CRITICAL FIX: DO NOT re-transform names here - they should already be correctly formatted
+    // Only handle very specific edge cases that need manual correction
+    
     // Special case for ID 10250 which should be Paldean Tauros
     if (p.id === 10250 && !p.name.toLowerCase().includes('tauros')) {
       console.log(`📌 Fixing Paldean Tauros (ID: ${p.id}) with incorrect name: ${p.name}`);
-      fixedPokemon.name = "Paldean Tauros Combat Breed";
+      fixedPokemon.name = "Paldean Tauros (Combat Breed)";
       fixedPokemon.image = getPokemonImageUrl(10250);
     }
     
@@ -226,9 +232,9 @@ export function validateBattlePokemon(pokemon: Pokemon[]): Pokemon[] {
       fixedPokemon.image = getPokemonImageUrl(250);
     }
     
-    // For other special forms, ensure correct image URL
+    // For other special forms, ensure correct image URL but DON'T change the name
     if (p.id >= 10000) {
-      console.log(`📌 Ensuring special form (ID: ${p.id}) has correct image URL`);
+      console.log(`📌 Ensuring special form (ID: ${p.id}) "${p.name}" has correct image URL`);
       fixedPokemon.image = getPokemonImageUrl(p.id);
     }
     
