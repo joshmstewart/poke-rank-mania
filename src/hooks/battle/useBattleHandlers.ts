@@ -63,42 +63,35 @@ export const useBattleHandlers = (
   const handleContinueBattles = useCallback(() => {
     const currentBattleCount = parseInt(localStorage.getItem('pokemon-battle-count') || '0', 10);
     
-    console.error(`🔥 [FLASH_FIX_V3] Battle #${currentBattleCount + 1}: handleContinueBattles called`);
+    console.error(`🔥 [FLASH_FIX_V4] Battle #${currentBattleCount + 1}: handleContinueBattles called`);
     
     if (continueBattlesRef.current) {
-      console.error(`🔥 [FLASH_FIX_V3] Battle #${currentBattleCount + 1}: Already processing, ignoring`);
+      console.error(`🔥 [FLASH_FIX_V4] Battle #${currentBattleCount + 1}: Already processing, ignoring`);
       return;
     }
     
     continueBattlesRef.current = true;
     
-    // CRITICAL FIX: Only clear battle state if this is coming from a milestone
-    // Don't clear during initial load
-    if (battlesCompleted > 0) {
-      console.error(`🔥 [FLASH_FIX_V3] Battle #${currentBattleCount + 1}: Clearing previous battle from milestone`);
-      setCurrentBattle([]);
-      setSelectedPokemon([]);
-      setIsTransitioning(true);
-    }
-    
     forceDismissMilestone();
     resetMilestoneInProgress();
     
-    // Generate new battle
-    console.error(`🔥 [FLASH_FIX_V3] Battle #${currentBattleCount + 1}: Generating new battle`);
+    // CRITICAL FIX: Generate new battle FIRST, then replace current battle directly
+    console.error(`🔥 [FLASH_FIX_V4] Battle #${currentBattleCount + 1}: Generating new battle`);
     const newBattle = enhancedStartNewBattle("pairs");
     
     if (newBattle && newBattle.length > 0) {
-      console.error(`🔥 [FLASH_FIX_V3] Battle #${currentBattleCount + 1}: Setting new battle: ${newBattle.map(p => p.name).join(' vs ')}`);
+      console.error(`🔥 [FLASH_FIX_V4] Battle #${currentBattleCount + 1}: Directly replacing with new battle: ${newBattle.map(p => p.name).join(' vs ')}`);
+      // CRITICAL: Directly set new battle without clearing first
       setCurrentBattle(newBattle);
+      setSelectedPokemon([]);
       setIsTransitioning(false);
     } else {
-      console.error(`🔥 [FLASH_FIX_V3] Battle #${currentBattleCount + 1}: Failed to generate new battle`);
+      console.error(`🔥 [FLASH_FIX_V4] Battle #${currentBattleCount + 1}: Failed to generate new battle`);
       setIsTransitioning(false);
     }
     
     continueBattlesRef.current = false;
-  }, [forceDismissMilestone, enhancedStartNewBattle, resetMilestoneInProgress, setCurrentBattle, setSelectedPokemon, setIsTransitioning, battlesCompleted]);
+  }, [forceDismissMilestone, enhancedStartNewBattle, resetMilestoneInProgress, setCurrentBattle, setSelectedPokemon, setIsTransitioning]);
 
   return {
     goBack,
