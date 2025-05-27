@@ -1,4 +1,3 @@
-
 export * from "./useBattleState";
 export * from "./useBattleUIState";
 export * from "./useBattleSelectionState";
@@ -41,3 +40,7 @@ export * from "./useBattleEmergencyReset";
 export * from "./useRankingSuggestions";
 export * from "./useBattleHandlers"; // Export the new handlers hook
 export * from "./useBattleReset"; // Export the new reset hook
+export * from "./useTypeExtraction";
+export * from "./useRankingState";
+export * from "./useRankingTiers";
+export * from "./useRankingCalculator";
