@@ -1,3 +1,4 @@
+
 import { useCallback, useRef } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
@@ -62,41 +63,42 @@ export const useBattleHandlers = (
   const handleContinueBattles = useCallback(() => {
     const currentBattleCount = parseInt(localStorage.getItem('pokemon-battle-count') || '0', 10);
     
-    console.error(`🔥 [ULTIMATE_FIX] Battle #${currentBattleCount + 1}: handleContinueBattles called`);
+    console.error(`🔥 [TIMING_FIX] Battle #${currentBattleCount + 1}: handleContinueBattles called`);
     
     if (continueBattlesRef.current) {
-      console.error(`🔥 [ULTIMATE_FIX] Battle #${currentBattleCount + 1}: Already processing, ignoring`);
+      console.error(`🔥 [TIMING_FIX] Battle #${currentBattleCount + 1}: Already processing, ignoring`);
       return;
     }
     
     continueBattlesRef.current = true;
     
-    // ULTIMATE FIX: Set transition state AND clear battle data SIMULTANEOUSLY
-    console.error(`🔥 [ULTIMATE_FIX] Battle #${currentBattleCount + 1}: Setting transition AND clearing battle IMMEDIATELY`);
-    setIsTransitioning(true);
-    setCurrentBattle([]); // Clear immediately
-    setSelectedPokemon([]);
+    // CRITICAL FIX: Generate new battle FIRST, then update UI
+    console.error(`🔥 [TIMING_FIX] Battle #${currentBattleCount + 1}: Generating new battle BEFORE any UI changes`);
+    const newBattle = enhancedStartNewBattle("pairs");
     
-    // Dismiss milestone immediately
-    forceDismissMilestone();
-    resetMilestoneInProgress();
+    if (newBattle && newBattle.length > 0) {
+      console.error(`🔥 [TIMING_FIX] Battle #${currentBattleCount + 1}: New battle ready: ${newBattle.map(p => p.name).join(' vs ')}`);
+      
+      // Dismiss milestone first
+      forceDismissMilestone();
+      resetMilestoneInProgress();
+      setSelectedPokemon([]);
+      
+      // Set transition state and immediately set the new battle
+      setIsTransitioning(true);
+      setCurrentBattle(newBattle);
+      
+      // Clear transition state after a minimal delay to ensure React has processed the new battle
+      setTimeout(() => {
+        setIsTransitioning(false);
+        console.error(`🔥 [TIMING_FIX] Battle #${currentBattleCount + 1}: Transition complete`);
+      }, 50); // Minimal delay just for React to process the state update
+      
+    } else {
+      console.error(`🔥 [TIMING_FIX] Battle #${currentBattleCount + 1}: Failed to generate new battle`);
+    }
     
-    // Generate new battle with minimal delay
-    setTimeout(() => {
-      console.error(`🔥 [ULTIMATE_FIX] Battle #${currentBattleCount + 1}: Generating new battle`);
-      const newBattle = enhancedStartNewBattle("pairs");
-      
-      if (newBattle && newBattle.length > 0) {
-        console.error(`🔥 [ULTIMATE_FIX] Battle #${currentBattleCount + 1}: Setting new battle: ${newBattle.map(p => p.name).join(' vs ')}`);
-        setCurrentBattle(newBattle);
-        setIsTransitioning(false);
-      } else {
-        console.error(`🔥 [ULTIMATE_FIX] Battle #${currentBattleCount + 1}: Failed to generate new battle`);
-        setIsTransitioning(false);
-      }
-      
-      continueBattlesRef.current = false;
-    }, 10); // Minimal delay just to ensure state updates are processed
+    continueBattlesRef.current = false;
     
   }, [forceDismissMilestone, enhancedStartNewBattle, resetMilestoneInProgress, setCurrentBattle, setSelectedPokemon, setIsTransitioning]);
 
