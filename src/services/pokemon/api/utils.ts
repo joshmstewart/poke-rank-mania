@@ -1,4 +1,6 @@
+
 import { Pokemon } from "../types";
+import { formatPokemonName } from "@/utils/pokemon";
 import { getPreferredImageType, PokemonImageType } from "@/components/settings/ImagePreferenceSelector";
 
 /**
