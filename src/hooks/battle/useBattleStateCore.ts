@@ -43,16 +43,17 @@ export const useBattleStateCore = (
   const [battleType, setBattleType] = useState<BattleType>(initialBattleTypeStored);
   const [selectedPokemon, setSelectedPokemon] = useState<number[]>([]);
 
-  // CRITICAL FIX: Enhanced battle setter that manages transition state
+  // CRITICAL FIX: Enhanced battle setter that manages transition state and clears old battles
   const stableSetCurrentBattle = useCallback((battle: Pokemon[]) => {
-    console.log(`🔄 [TRANSITION_FIX] stableSetCurrentBattle called with ${battle.length} Pokemon`);
+    console.log(`🔄 [BATTLE_CLEAR_FIX] stableSetCurrentBattle called with ${battle.length} Pokemon`);
     
     if (battle.length > 0) {
-      console.log(`✅ [TRANSITION_FIX] Setting new battle and clearing transition state: ${battle.map(p => p.name).join(', ')}`);
+      console.log(`✅ [BATTLE_CLEAR_FIX] Setting new battle and clearing transition state: ${battle.map(p => p.name).join(', ')}`);
       setCurrentBattle(battle);
       setIsTransitioning(false); // Clear transition when new battle is set
     } else {
-      console.log(`⚠️ [TRANSITION_FIX] Empty battle array received`);
+      console.log(`⚠️ [BATTLE_CLEAR_FIX] Clearing battle array`);
+      setCurrentBattle([]);
     }
   }, []);
   
@@ -129,20 +130,20 @@ export const useBattleStateCore = (
 
   // CRITICAL FIX: Enhanced battle starter with immediate synchronous state update
   const enhancedStartNewBattle = useCallback((battleType: BattleType) => {
-    console.log(`🔄 [TRANSITION_FIX] enhancedStartNewBattle called for ${battleType}`);
+    console.log(`🔄 [BATTLE_CLEAR_FIX] enhancedStartNewBattle called for ${battleType}`);
     
     // Generate battle immediately
     const result = startNewBattle(battleType);
     
     if (result && result.length > 0) {
-      console.log(`✅ [TRANSITION_FIX] New battle generated: ${result.map(p => p.name).join(', ')}`);
+      console.log(`✅ [BATTLE_CLEAR_FIX] New battle generated: ${result.map(p => p.name).join(', ')}`);
       // CRITICAL FIX: Set battle state SYNCHRONOUSLY - no React.unstable_batchedUpdates needed
       stableSetCurrentBattle(result);
       
       // Force a re-render immediately to ensure the new battle shows
       return result;
     } else {
-      console.log(`⚠️ [TRANSITION_FIX] Failed to generate new battle`);
+      console.log(`⚠️ [BATTLE_CLEAR_FIX] Failed to generate new battle`);
     }
     
     return result;
@@ -185,43 +186,89 @@ export const useBattleStateCore = (
     enhancedStartNewBattle
   );
 
-  // CRITICAL FIX: Completely rewritten handleContinueBattles with transition state
+  // CRITICAL FIX: Properly handle going back with battle clearing
+  const goBack = useCallback(() => {
+    console.log(`🔄 [BACK_FIX] goBack called`);
+    
+    if (battleHistory.length === 0) {
+      toast({
+        title: "No previous battles",
+        description: "There are no previous battles to return to."
+      });
+      return;
+    }
+
+    // Clear current battle immediately to prevent flashing
+    console.log(`🔄 [BACK_FIX] Clearing current battle before going back`);
+    setCurrentBattle([]);
+    setIsTransitioning(true);
+
+    // Process the back navigation
+    const newHistory = [...battleHistory];
+    const lastBattle = newHistory.pop();
+    setBattleHistory(newHistory);
+    console.log("🔄 [BACK_FIX] Updated battle history. New length:", newHistory.length);
+
+    const newResults = [...battleResults];
+    let resultsToRemove = 1;
+    if (battleType === "triplets" && lastBattle) {
+      const selectedCount = lastBattle.selected.length;
+      const unselectedCount = lastBattle.battle.length - selectedCount;
+      resultsToRemove = selectedCount * unselectedCount;
+    }
+
+    newResults.splice(newResults.length - resultsToRemove, resultsToRemove);
+    setBattleResults(newResults);
+    setBattlesCompleted(prev => Math.max(0, prev - 1));
+
+    if (lastBattle) {
+      console.log(`🔄 [BACK_FIX] Restoring previous battle: ${lastBattle.battle.map(p => p.name).join(', ')}`);
+      setCurrentBattle(lastBattle.battle);
+      setSelectedPokemon([]);
+      setIsTransitioning(false);
+    }
+
+    setShowingMilestone(false);
+  }, [battleHistory, battleResults, battleType, setBattleHistory, setBattleResults, setBattlesCompleted, setSelectedPokemon, setShowingMilestone]);
+
+  // CRITICAL FIX: Enhanced handleContinueBattles with proper battle clearing
   const handleContinueBattles = useCallback(() => {
-    console.log('[TRANSITION_FIX] handleContinueBattles: Called');
+    console.log('[BATTLE_CLEAR_FIX] handleContinueBattles: Called');
     
     // Prevent rapid successive calls
     if (continueBattlesRef.current) {
-      console.log('[TRANSITION_FIX] handleContinueBattles: Already processing, ignoring');
+      console.log('[BATTLE_CLEAR_FIX] handleContinueBattles: Already processing, ignoring');
       return;
     }
     
     continueBattlesRef.current = true;
     
     if (showingMilestone) {
-      console.log('[TRANSITION_FIX] handleContinueBattles: Setting transition state and generating new battle');
+      console.log('[BATTLE_CLEAR_FIX] handleContinueBattles: Clearing old battle and generating new one');
       
-      // CRITICAL FIX: Set transition state BEFORE dismissing milestone
+      // CRITICAL FIX: Clear old battle IMMEDIATELY
+      setCurrentBattle([]);
       setIsTransitioning(true);
       
       // Generate new battle immediately
       const newBattle = enhancedStartNewBattle("pairs");
       
       if (newBattle && newBattle.length > 0) {
-        console.log(`✅ [TRANSITION_FIX] New battle ready: ${newBattle.map(p => p.name).join(', ')}`);
+        console.log(`✅ [BATTLE_CLEAR_FIX] New battle ready: ${newBattle.map(p => p.name).join(', ')}`);
         
         // Dismiss milestone - transition state will be cleared when battle is set
         forceDismissMilestone();
         resetMilestoneInProgress();
         
-        console.log('✅ [TRANSITION_FIX] Milestone dismissed with new battle ready');
+        console.log('✅ [BATTLE_CLEAR_FIX] Milestone dismissed with new battle ready');
       } else {
-        console.log('⚠️ [TRANSITION_FIX] Failed to generate new battle, clearing transition state');
+        console.log('⚠️ [BATTLE_CLEAR_FIX] Failed to generate new battle, clearing transition state');
         setIsTransitioning(false);
         forceDismissMilestone();
         resetMilestoneInProgress();
       }
     } else {
-      console.log('[TRANSITION_FIX] handleContinueBattles: Starting new battle directly');
+      console.log('[BATTLE_CLEAR_FIX] handleContinueBattles: Starting new battle directly');
       enhancedStartNewBattle("pairs");
     }
     
@@ -340,6 +387,7 @@ export const useBattleStateCore = (
     },
     () => {
       console.log("Going back in battle navigation");
+      goBack(); // Use our enhanced goBack function
     },
     battleType,
     processBattleResult
@@ -387,9 +435,7 @@ export const useBattleStateCore = (
     handleSelection: (id: number) => {
       handlePokemonSelect(id);
     },
-    goBack: () => {
-      goBackHelper();
-    },
+    goBack,
     isProcessingResult,
     startNewBattle: enhancedStartNewBattle,
     milestones,
@@ -423,7 +469,7 @@ export const useBattleStateCore = (
     isTransitioning,
     isAnyProcessing,
     handlePokemonSelect,
-    goBackHelper,
+    goBack,
     isProcessingResult,
     enhancedStartNewBattle,
     milestones,
