@@ -1,7 +1,7 @@
 
 import { useCallback, useRef } from "react";
-import { RankedPokemon } from "@/services/pokemon";
-import { SingleBattle, TopNOption } from "./types";
+import { RankedPokemon, TopNOption } from "@/services/pokemon";
+import { SingleBattle } from "./types";
 import { Rating } from "ts-trueskill";
 import { usePokemonContext } from "@/contexts/PokemonContext";
 import { useTypeExtraction } from "./useTypeExtraction";
