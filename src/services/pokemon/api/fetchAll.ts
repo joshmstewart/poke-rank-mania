@@ -1,4 +1,3 @@
-
 import { toast } from "@/hooks/use-toast";
 import { Pokemon } from "../types";
 import { generations } from "../data";
@@ -11,6 +10,12 @@ const shouldIncludePokemon = (pokemon: { name: string, id: number }) => {
     const name = pokemon.name.toLowerCase();
     if (name.includes('starter')) {
       console.log(`🚫 [STARTER_FILTER] Filtering out duplicate starter Pokemon: ${pokemon.name} (ID: ${pokemon.id})`);
+      return false;
+    }
+    
+    // CRITICAL FIX: Filter out Cramorant Gorging form
+    if (name.includes('cramorant') && name.includes('gorging')) {
+      console.log(`🚫 [CRAMORANT_FILTER] Filtering out Cramorant Gorging form: ${pokemon.name} (ID: ${pokemon.id})`);
       return false;
     }
     
@@ -136,10 +141,14 @@ export async function fetchAllPokemon(generationId: number = 1, fullRankingMode:
           console.log(`🐩 [FURFROU_DEBUG] - Survived filtering: ${furfrou.name} (ID: ${furfrou.id})`);
         });
         
-        // CRITICAL FIX: Log starter filtering results
+        // CRITICAL FIX: Log starter and Cramorant filtering results
         const starterCount = validPokemon.filter(p => p.name.toLowerCase().includes('starter')).length;
         const filteredStarterCount = filteredList.filter(p => p.name.toLowerCase().includes('starter')).length;
         console.log(`🚫 [STARTER_FILTER] Filtered out ${starterCount - filteredStarterCount} starter Pokemon duplicates`);
+        
+        const cramorantGorgingCount = validPokemon.filter(p => p.name.toLowerCase().includes('cramorant') && p.name.toLowerCase().includes('gorging')).length;
+        const filteredCramorantGorgingCount = filteredList.filter(p => p.name.toLowerCase().includes('cramorant') && p.name.toLowerCase().includes('gorging')).length;
+        console.log(`🚫 [CRAMORANT_FILTER] Filtered out ${cramorantGorgingCount - filteredCramorantGorgingCount} Cramorant Gorging forms`);
         
         console.log(`After filtering: ${filteredList.length} Pokémon`);
         

@@ -14,7 +14,6 @@ export const useBattleProgression = (
   const milestoneTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const milestoneTracker = useRef<Set<number>>(new Set());
   const lastTriggeredMilestoneRef = useRef<number | null>(null);
-  const lastProcessedBattleCountRef = useRef<number>(0); // Track the last processed count
 
   useEffect(() => {
     return () => {
@@ -30,29 +29,21 @@ export const useBattleProgression = (
       return false;
     }
 
-    // CRITICAL FIX: Check for ANY skipped milestones between last processed and current
-    const lastProcessedCount = lastProcessedBattleCountRef.current;
-    const skippedMilestones = milestones.filter(m => 
-      m > lastProcessedCount && 
-      m <= newBattlesCompleted && 
-      !milestoneTracker.current.has(m)
+    // CRITICAL FIX: Simple milestone detection - check if we hit any milestone
+    const hitMilestone = milestones.find(milestone => 
+      milestone === newBattlesCompleted && !milestoneTracker.current.has(milestone)
     );
     
-    console.log(`📊 [MILESTONE_SKIP_FIX] Last processed: ${lastProcessedCount}, Current: ${newBattlesCompleted}`);
-    console.log(`📊 [MILESTONE_SKIP_FIX] Found milestones to process: ${skippedMilestones.join(', ')}`);
-    
-    if (skippedMilestones.length > 0) {
-      // Process the earliest milestone that was skipped
-      const milestoneToProcess = Math.min(...skippedMilestones);
-      console.log(`🎯 [MILESTONE_SKIP_FIX] Processing milestone: ${milestoneToProcess}`);
+    if (hitMilestone) {
+      console.log(`🎯 MILESTONE HIT: Battle ${newBattlesCompleted} reached milestone ${hitMilestone}`);
       
-      milestoneTracker.current.add(milestoneToProcess);
+      milestoneTracker.current.add(hitMilestone);
       processingMilestoneRef.current = true;
       showingMilestoneRef.current = true;
-      lastTriggeredMilestoneRef.current = milestoneToProcess;
+      lastTriggeredMilestoneRef.current = hitMilestone;
       
       try {
-        console.log(`🔵 useBattleProgression: Generating rankings for milestone ${milestoneToProcess}`);
+        console.log(`🔵 useBattleProgression: Generating rankings for milestone ${hitMilestone}`);
         generateRankings(battleResults);
         setShowingMilestone(true);
         return true;
@@ -81,12 +72,7 @@ export const useBattleProgression = (
     setBattlesCompleted(newBattleCount);
     console.log(`✅ setBattlesCompleted called with: ${newBattleCount}`);
     
-    // CRITICAL FIX: Update last processed count BEFORE checking milestones
-    const previousCount = lastProcessedBattleCountRef.current;
-    lastProcessedBattleCountRef.current = newBattleCount;
-    
-    // Check for milestones with the previous count context
-    console.log(`🔍 MILESTONE CHECK: Previous processed: ${previousCount}, New: ${newBattleCount}`);
+    // CRITICAL FIX: Check milestone BEFORE clearing processing flag
     const milestoneTriggered = checkMilestone(newBattleCount, battleResults);
     
     if (milestoneTriggered) {
