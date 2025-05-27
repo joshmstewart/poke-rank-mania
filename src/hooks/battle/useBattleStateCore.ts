@@ -102,7 +102,8 @@ export const useBattleStateCore = (
   );
 
   const enhancedStartNewBattle = useCallback((battleType: BattleType) => {
-    console.log(`🔄 [FLASH_FIX] enhancedStartNewBattle called for ${battleType}`);
+    const currentBattleCount = parseInt(localStorage.getItem('pokemon-battle-count') || '0', 10);
+    console.log(`🔄 [FLASH_FIX] enhancedStartNewBattle called for ${battleType} - Battle ${currentBattleCount.toString()}`);
     
     const result = startNewBattle(battleType);
     
@@ -191,7 +192,8 @@ export const useBattleStateCore = (
 
   const isAnyProcessing = isProcessingResult;
   
-  console.log(`🔄 [PROCESSOR_FIX] useBattleStateCore processing states:`, {
+  const currentBattleCount = parseInt(localStorage.getItem('pokemon-battle-count') || '0', 10);
+  console.log(`🔄 [PROCESSOR_FIX] useBattleStateCore processing states - Battle ${currentBattleCount.toString()}:`, {
     isProcessingResult,
     isProcessing,
     isAnyProcessing,
