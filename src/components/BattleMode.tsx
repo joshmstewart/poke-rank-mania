@@ -30,23 +30,58 @@ const BattleMode = () => {
   
   const initialBattleType = useMemo(() => getInitialBattleType(), []);
 
+  // CRITICAL: Track ALL Pokemon count changes for refresh debugging
+  const previousPokemonCountRef = useRef(0);
+  const pokemonCountChangesRef = useRef(0);
+  const lastRefreshTriggerRef = useRef<string>('');
+
   // CRITICAL FIX: Add detailed logging to track Pokemon loading milestones
   const stableAllPokemon = useMemo(() => {
-    if (!allPokemon.length) return [];
+    const currentCount = allPokemon?.length || 0;
+    const previousCount = previousPokemonCountRef.current;
+    
+    // CRITICAL: Log EVERY count change
+    if (currentCount !== previousCount) {
+      pokemonCountChangesRef.current++;
+      const changeDetails = {
+        changeNumber: pokemonCountChangesRef.current,
+        previousCount,
+        currentCount,
+        difference: currentCount - previousCount,
+        timestamp: new Date().toISOString(),
+        stackTrace: new Error().stack?.split('\n').slice(1, 6) // First 5 stack frames
+      };
+      
+      console.log(`🚨 [REFRESH_TRIGGER_DEBUG] Pokemon count change #${pokemonCountChangesRef.current}:`, changeDetails);
+      
+      // CRITICAL: Track potential refresh triggers
+      if (currentCount === 1271) {
+        console.error(`🔥 [REFRESH_TRIGGER_DEBUG] HIT 1271 MILESTONE - THIS IS A REFRESH TRIGGER!`);
+        lastRefreshTriggerRef.current = `1271_milestone_${Date.now()}`;
+      }
+      if (currentCount === 1025) {
+        console.error(`🔥 [REFRESH_TRIGGER_DEBUG] HIT 1025 MILESTONE - THIS IS A REFRESH TRIGGER!`);
+        lastRefreshTriggerRef.current = `1025_milestone_${Date.now()}`;
+      }
+      
+      // CRITICAL: Log what triggered this count change
+      if (currentCount > previousCount) {
+        console.log(`📈 [REFRESH_TRIGGER_DEBUG] Pokemon count INCREASED by ${currentCount - previousCount}`);
+      } else if (currentCount < previousCount) {
+        console.log(`📉 [REFRESH_TRIGGER_DEBUG] Pokemon count DECREASED by ${previousCount - currentCount} - POSSIBLE REFRESH!`);
+      }
+      
+      previousPokemonCountRef.current = currentCount;
+    }
+    
+    if (!currentCount) return [];
     
     console.log(`🎯 [LOADING_MILESTONE_DEBUG] BattleMode stabilizing Pokemon data:`, {
-      length: allPokemon.length,
+      length: currentCount,
       timestamp: new Date().toISOString(),
-      isStable: true
+      isStable: true,
+      lastRefreshTrigger: lastRefreshTriggerRef.current
     });
-    
-    // CRITICAL: Track the two milestone numbers the user mentioned
-    if (allPokemon.length === 1271) {
-      console.log(`🚨 [LOADING_MILESTONE_DEBUG] HIT 1271 MILESTONE - This might trigger refresh!`);
-    }
-    if (allPokemon.length === 1025) {
-      console.log(`🚨 [LOADING_MILESTONE_DEBUG] HIT 1025 MILESTONE - This might trigger refresh!`);
-    }
     
     // CRITICAL: Log sample Pokemon to verify types in source data BEFORE any processing
     const samplePokemon = allPokemon.find(p => p.id === 60) || allPokemon[0]; // Poliwag
@@ -153,6 +188,15 @@ const BattleMode = () => {
 
     loadPokemonOnce();
   }, [loadPokemon]);
+
+  // CRITICAL: Add logging for component re-renders and unmounts
+  useEffect(() => {
+    console.log(`🔄 [REFRESH_TRIGGER_DEBUG] BattleMode mounted/updated - Pokemon count: ${stableAllPokemon.length}`);
+    
+    return () => {
+      console.log(`🔄 [REFRESH_TRIGGER_DEBUG] BattleMode unmounting - THIS IS A REFRESH!`);
+    };
+  }, [stableAllPokemon.length]);
 
   // Loading state
   if (isLoading || !stableAllPokemon.length) {

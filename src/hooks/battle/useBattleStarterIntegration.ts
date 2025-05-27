@@ -70,6 +70,14 @@ export const useBattleStarterIntegration = (
   // NEW: Add battle transition debugging counter
   const battleTransitionCountRef = useRef(0);
 
+  // CRITICAL: Add detailed logging for battle 10-11 flashing issue
+  const battleSetHistoryRef = useRef<Array<{
+    battleNumber: number;
+    pokemonIds: number[];
+    timestamp: string;
+    action: string;
+  }>>([]);
+
   // CRITICAL FIX: Create battleStarter exactly ONCE and store it permanently
   const battleStarter = useMemo<ExtendedBattleStarter>(() => {
     console.log('[CRITICAL FIX] battleStarter useMemo - battleStarterCreatedRef.current:', battleStarterCreatedRef.current);
@@ -168,9 +176,27 @@ export const useBattleStarterIntegration = (
   }, []); // CRITICAL FIX: Empty dependency array - only run once
 
   const startNewBattle = useCallback((battleType: BattleType) => {
+    // CRITICAL: Get current battle count for flashing debug
+    const currentBattleCount = parseInt(localStorage.getItem('pokemon-battle-count') || '0', 10);
+    
+    // CRITICAL: Log battle 10-11 transition specifically
+    if (currentBattleCount === 10) {
+      console.error(`🔥 [BATTLE_FLASH_DEBUG] BATTLE 10->11 TRANSITION STARTING - THIS IS WHERE FLASHING HAPPENS!`);
+      console.error(`🔥 [BATTLE_FLASH_DEBUG] About to clear current battle and generate battle 11`);
+    }
+    
     // CRITICAL FIX: Clear previous battle IMMEDIATELY to prevent flashing
+    console.log(`🔄 [BATTLE_FLASH_DEBUG] Clearing current battle immediately - Battle #${currentBattleCount + 1}`);
     setCurrentBattle([]);
     setSelectedPokemon([]);
+    
+    // Log the clear action
+    battleSetHistoryRef.current.push({
+      battleNumber: currentBattleCount + 1,
+      pokemonIds: [],
+      timestamp: new Date().toISOString(),
+      action: 'CLEARED_BATTLE'
+    });
     
     const isInitialBattle = !initialBattleStartedRef.current || (!currentBattle || currentBattle.length === 0);
     
@@ -211,6 +237,27 @@ export const useBattleStarterIntegration = (
         return [];
       }
 
+      // CRITICAL: Log the new battle being set
+      const battleIds = battle.map(p => p.id);
+      console.log(`🔄 [BATTLE_FLASH_DEBUG] Setting new battle immediately - Battle #${currentBattleCount + 1}: [${battleIds.join(', ')}]`);
+      
+      if (currentBattleCount === 10) {
+        console.error(`🔥 [BATTLE_FLASH_DEBUG] SETTING BATTLE 11 NOW: ${battle.map(p => p.name).join(' vs ')}`);
+      }
+      
+      // Log the set action
+      battleSetHistoryRef.current.push({
+        battleNumber: currentBattleCount + 1,
+        pokemonIds: battleIds,
+        timestamp: new Date().toISOString(),
+        action: 'SET_NEW_BATTLE'
+      });
+      
+      // Keep only last 20 battle history entries
+      if (battleSetHistoryRef.current.length > 20) {
+        battleSetHistoryRef.current = battleSetHistoryRef.current.slice(-20);
+      }
+      
       // Set the new battle immediately - no delay
       setCurrentBattle(battle);
       console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] ✅ SUCCESS: Battle set immediately`);

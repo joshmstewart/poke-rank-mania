@@ -1,349 +1,151 @@
-import { toast } from "@/hooks/use-toast";
-import { Pokemon } from "../types";
-import { generations } from "../data";
-import { fetchPokemonDetails } from "./utils";
+import { Pokemon, PokemonAPIResponse } from "../types";
+import { getPreferredImageUrl } from "@/utils/imageUtils";
 
-// Helper function to check if a Pokemon should be included based on current form filters
-const shouldIncludePokemon = (pokemon: { name: string, id: number }) => {
-  try {
-    // CRITICAL FIX: Filter out "starter" Pokemon duplicates
-    const name = pokemon.name.toLowerCase();
-    if (name.includes('starter')) {
-      console.log(`🚫 [STARTER_FILTER] Filtering out duplicate starter Pokemon: ${pokemon.name} (ID: ${pokemon.id})`);
-      return false;
-    }
-    
-    // CRITICAL FIX: Filter out ONLY the specific problematic Cramorant forms
-    if ((name.includes('cramorant-gulping')) || (name.includes('cramorant-gorging'))) {
-      console.log(`🚫 [CRAMORANT_FILTER] Filtering out problematic Cramorant form: ${pokemon.name} (ID: ${pokemon.id})`);
-      return false;
-    }
-    
-    const storedFilters = localStorage.getItem('pokemon-form-filters');
-    if (storedFilters) {
-      const filters = JSON.parse(storedFilters);
-      
-      if (filters.megaGmax && filters.regional && filters.gender && filters.forms && 
-          filters.originPrimal && filters.costumes) {
-        return true;
-      }
-      
-      const name = pokemon.name.toLowerCase();
+const POKEMON_API_BASE = "https://pokeapi.co/api/v2";
 
-      if ((name.includes("pikachu") && (
-          name.includes("cap") || name.includes("phd") || name.includes("cosplay") || 
-          name.includes("belle") || name.includes("libre") || name.includes("pop-star") || 
-          name.includes("rock-star"))) && !filters.costumes) {
-        return false;
-      }
-      
-      if ((name.includes("origin") || name.includes("primal")) && !filters.originPrimal) {
-        return false;
-      }
-      
-      if ((name.includes("mega") || name.includes("gmax")) && !filters.megaGmax) {
-        return false;
-      }
-      
-      if ((name.includes("alolan") || name.includes("galarian") || 
-           name.includes("hisuian") || name.includes("paldean")) && !filters.regional) {
-        return false;
-      }
-      
-      if ((name.includes("female") || name.includes("male") || 
-           name.includes("-f") || name.includes("-m")) && !filters.gender) {
-        return false;
-      }
-      
-      if ((name.includes("form") || name.includes("style") || name.includes("mode") || 
-           name.includes("size") || name.includes("cloak") || name.includes("rotom-") ||
-           name.includes("forme") || name.includes("unbound") || name.includes("eternamax") || name.includes("-theme")) && 
-          !filters.forms) {
-        return false;
-      }
-    }
-  } catch (e) {
-    console.error("Error applying Pokemon form filters:", e);
-  }
+// More specific filter for Cramorant forms - only exclude the ones the user mentioned
+const isCramorantFormToExclude = (pokemon: any): boolean => {
+  if (pokemon.id !== 845) return false; // Not Cramorant at all
   
-  return true;
+  // Keep base Cramorant (regular form)
+  if (!pokemon.name.includes('-')) return false;
+  
+  // Only exclude these specific forms the user mentioned
+  const formsToExclude = ['cramorant-gulping', 'cramorant-gorging'];
+  return formsToExclude.includes(pokemon.name);
 };
 
-export async function fetchAllPokemon(
-  generationId: number = 1, 
-  fullRankingMode: boolean = false, 
-  isInitialBatch: boolean = false, 
-  batchSize: number = 150
-): Promise<Pokemon[]> {
+// CRITICAL: Add logging for refresh detection
+let lastFetchCallCount = 0;
+let fetchCallTimestamps: string[] = [];
+
+export const fetchAllPokemon = async (
+  generationId = 0,
+  fullRankingMode = true,
+  initialBatchOnly = false,
+  batchSize = 150
+): Promise<Pokemon[]> => {
+  lastFetchCallCount++;
+  const currentCallId = lastFetchCallCount;
+  const timestamp = new Date().toISOString();
+  
+  fetchCallTimestamps.push(timestamp);
+  // Keep only last 10 timestamps
+  if (fetchCallTimestamps.length > 10) {
+    fetchCallTimestamps = fetchCallTimestamps.slice(-10);
+  }
+  
+  console.log(`🚨 [REFRESH_DETECTION] fetchAllPokemon call #${currentCallId} at ${timestamp}`);
+  console.log(`🚨 [REFRESH_DETECTION] Recent fetch calls:`, fetchCallTimestamps);
+  
+  // CRITICAL: Detect rapid successive calls (possible refresh)
+  if (fetchCallTimestamps.length >= 2) {
+    const lastTwo = fetchCallTimestamps.slice(-2);
+    const timeDiff = new Date(lastTwo[1]).getTime() - new Date(lastTwo[0]).getTime();
+    if (timeDiff < 1000) { // Less than 1 second apart
+      console.error(`🔥 [REFRESH_DETECTION] RAPID FETCH CALLS DETECTED! Time diff: ${timeDiff}ms - POSSIBLE REFRESH!`);
+    }
+  }
+  
+  console.log(`🔍 [REFRESH_DETECTION] fetchAllPokemon parameters:`, {
+    callId: currentCallId,
+    generationId,
+    fullRankingMode,
+    initialBatchOnly,
+    batchSize,
+    timestamp
+  });
+
   try {
-    console.log(`🔍 [LOADING_MILESTONE_DEBUG] fetchAllPokemon called with:`, {
-      generationId,
-      fullRankingMode,
-      isInitialBatch,
-      batchSize,
-      timestamp: new Date().toISOString()
+    let limit = fullRankingMode ? 2000 : 1025;
+    
+    // CRITICAL: Log different batch modes
+    if (initialBatchOnly) {
+      limit = batchSize;
+      console.log(`📦 [REFRESH_DETECTION] Call #${currentCallId}: INITIAL BATCH MODE - limit: ${limit}`);
+    } else {
+      console.log(`📦 [REFRESH_DETECTION] Call #${currentCallId}: FULL LOAD MODE - limit: ${limit}`);
+    }
+
+    console.log(`🌐 [REFRESH_DETECTION] Call #${currentCallId}: Fetching from API with limit ${limit}`);
+    
+    const response = await fetch(`${POKEMON_API_BASE}/pokemon?limit=${limit}&offset=0`);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data: PokemonAPIResponse = await response.json();
+    console.log(`📥 [REFRESH_DETECTION] Call #${currentCallId}: API returned ${data.results.length} Pokemon`);
+    
+    // CRITICAL: Track processing milestones
+    const startProcessingTime = Date.now();
+    console.log(`⚙️ [REFRESH_DETECTION] Call #${currentCallId}: Starting Pokemon processing at ${new Date(startProcessingTime).toISOString()}`);
+
+    const pokemonPromises = data.results.map(async (pokemonInfo, index) => {
+      try {
+        const response = await fetch(pokemonInfo.url);
+        const pokemonData = await response.json();
+
+        // CRITICAL: Log milestone numbers specifically
+        if (index === 1024) {
+          console.error(`🔥 [REFRESH_DETECTION] Call #${currentCallId}: PROCESSED 1025th POKEMON (index 1024) - MILESTONE HIT!`);
+        }
+        if (index === 1270) {
+          console.error(`🔥 [REFRESH_DETECTION] Call #${currentCallId}: PROCESSED 1271st POKEMON (index 1270) - MILESTONE HIT!`);
+        }
+
+        // Filter out specific Cramorant forms only
+        if (isCramorantFormToExclude(pokemonData)) {
+          console.log(`🦅 [REFRESH_DETECTION] Call #${currentCallId}: Filtering out Cramorant form: ${pokemonData.name}`);
+          return null;
+        }
+
+        // CRITICAL: Verify types are properly extracted
+        const types = pokemonData.types?.map((type: any) => type.type.name) || [];
+        if (types.length === 0) {
+          console.error(`🚨 [TYPE_ERROR] Call #${currentCallId}: Pokemon ${pokemonData.name} has NO TYPES!`, pokemonData);
+        }
+
+        const pokemon: Pokemon = {
+          id: pokemonData.id,
+          name: pokemonData.name.charAt(0).toUpperCase() + pokemonData.name.slice(1),
+          image: getPreferredImageUrl(pokemonData.id),
+          types: types,
+          height: pokemonData.height,
+          weight: pokemonData.weight,
+          stats: pokemonData.stats.reduce((acc: any, stat: any) => {
+            acc[stat.stat.name] = stat.base_stat;
+            return acc;
+          }, {}),
+          generation: Math.ceil(pokemonData.id / 151) || 1
+        };
+
+        return pokemon;
+      } catch (error) {
+        console.error(`❌ [REFRESH_DETECTION] Call #${currentCallId}: Error fetching pokemon ${pokemonInfo.name}:`, error);
+        return null;
+      }
     });
 
-    if (generationId === 0) {
-      if (!fullRankingMode || isInitialBatch) {
-        const sampleSize = isInitialBatch ? batchSize : 500;
-        
-        console.log(`🎯 [LOADING_MILESTONE_DEBUG] Processing initial/sample batch - sampleSize: ${sampleSize}`);
-        
-        if (isInitialBatch) {
-          toast({
-            title: "Quick start",
-            description: `Loading ${sampleSize} Pokémon to start battles immediately...`
-          });
-        } else {
-          toast({
-            title: "Loading sample",
-            description: `Loading a selection of ${sampleSize} Pokémon from all generations for battling.`
-          });
-        }
-        
-        const regularPokemonIds = Array.from({ length: generations[0].end }, (_, i) => i + 1);
-        
-        // FURFROU DEBUG: Explicitly include known Furfrou form IDs
-        const furfrouFormIds = [
-          10126, 10127, 10128, 10129, 10130, 10131, 10132, 10133, 10134
-        ];
-        
-        const specialFormIds = Array.from({ length: 250 }, (_, i) => i + 10001);
-        const allPokemonIds = [...regularPokemonIds, ...specialFormIds, ...furfrouFormIds];
-        
-        console.log(`🐩 [FURFROU_DEBUG] Explicitly including Furfrou form IDs: ${furfrouFormIds.join(', ')}`);
-        
-        const shuffledIds = allPokemonIds.sort(() => Math.random() - 0.5);
-        const selectedIds = shuffledIds.slice(0, sampleSize);
-        
-        console.log(`🎯 [LOADING_MILESTONE_DEBUG] Selected ${selectedIds.length} Pokemon IDs for fetching`);
-        
-        // FURFROU DEBUG: Check if any Furfrou forms were selected
-        const selectedFurfrouIds = selectedIds.filter(id => furfrouFormIds.includes(id));
-        console.log(`🐩 [FURFROU_DEBUG] Selected Furfrou form IDs: ${selectedFurfrouIds.join(', ')}`);
-        
-        const pokemonList = await Promise.all(
-          selectedIds.map(async (id) => {
-            try {
-              const pokemon = await fetchPokemonDetails(id);
-              return pokemon;
-            } catch (error) {
-              console.warn(`Failed to fetch Pokémon #${id}:`, error);
-              return null;
-            }
-          })
-        );
-        
-        const validPokemon = pokemonList.filter(p => p !== null) as Pokemon[];
-        console.log(`🎯 [LOADING_MILESTONE_DEBUG] Successfully fetched ${validPokemon.length} valid Pokemon`);
-        
-        // FURFROU DEBUG: Check how many Furfrou forms were actually fetched
-        const fetchedFurfrou = validPokemon.filter(p => p.name.toLowerCase().includes('furfrou'));
-        console.log(`🐩 [FURFROU_DEBUG] Successfully fetched ${fetchedFurfrou.length} Furfrou forms:`);
-        fetchedFurfrou.forEach(furfrou => {
-          console.log(`🐩 [FURFROU_DEBUG] - Fetched: ${furfrou.name} (ID: ${furfrou.id})`);
-        });
-        
-        const filteredList = validPokemon.filter(shouldIncludePokemon);
-        
-        console.log(`🎯 [LOADING_MILESTONE_DEBUG] After filtering: ${filteredList.length} Pokemon remain`);
-        
-        // CRITICAL: Log specific Cramorant filtering results
-        const originalCramorantCount = validPokemon.filter(p => p.name.toLowerCase().includes('cramorant')).length;
-        const filteredCramorantCount = filteredList.filter(p => p.name.toLowerCase().includes('cramorant')).length;
-        console.log(`🐦 [CRAMORANT_SPECIFIC_DEBUG] Original: ${originalCramorantCount}, Filtered: ${filteredCramorantCount}`);
-        
-        validPokemon.forEach(p => {
-          if (p.name.toLowerCase().includes('cramorant')) {
-            console.log(`🐦 [CRAMORANT_SPECIFIC_DEBUG] Found: ${p.name} (ID: ${p.id})`);
-          }
-        });
-        
-        filteredList.forEach(p => {
-          if (p.name.toLowerCase().includes('cramorant')) {
-            console.log(`🐦 [CRAMORANT_SPECIFIC_DEBUG] Kept after filtering: ${p.name} (ID: ${p.id})`);
-          }
-        });
-        
-        // FURFROU DEBUG: Check how many survived filtering
-        const filteredFurfrou = filteredList.filter(p => p.name.toLowerCase().includes('furfrou'));
-        console.log(`🐩 [FURFROU_DEBUG] After filtering: ${filteredFurfrou.length} Furfrou forms survived`);
-        filteredFurfrou.forEach(furfrou => {
-          console.log(`🐩 [FURFROU_DEBUG] - Survived filtering: ${furfrou.name} (ID: ${furfrou.id})`);
-        });
-        
-        // CRITICAL FIX: Log starter and Cramorant filtering results
-        const starterCount = validPokemon.filter(p => p.name.toLowerCase().includes('starter')).length;
-        const filteredStarterCount = filteredList.filter(p => p.name.toLowerCase().includes('starter')).length;
-        console.log(`🚫 [STARTER_FILTER] Filtered out ${starterCount - filteredStarterCount} starter Pokemon duplicates`);
-        
-        console.log(`🎯 [LOADING_MILESTONE_DEBUG] FINAL RESULT: Returning ${filteredList.length} Pokemon`);
-        
-        return filteredList;
-      } else {
-        console.log(`🎯 [LOADING_MILESTONE_DEBUG] Processing FULL RANKING MODE - loading ALL Pokemon`);
-        
-        // CRITICAL FIX: Always use fetchPokemonDetails to get complete type data
-        toast({
-          title: "Loading all Pokémon",
-          description: "This may take a moment as we load all Pokémon for a complete ranking."
-        });
-        
-        const BATCH_SIZE = 50; // Reduced batch size since we're now fetching full details
-        const allPokemon: Pokemon[] = [];
-        const totalPokemon = generations[0].end;
-        
-        console.log(`🎯 [LOADING_MILESTONE_DEBUG] Starting full load - ${totalPokemon} total Pokemon expected`);
-        
-        for (let offset = 0; offset < totalPokemon; offset += BATCH_SIZE) {
-          const limit = Math.min(BATCH_SIZE, totalPokemon - offset);
-          
-          try {
-            const response = await fetch(`https://pokeapi.co/api/v2/pokemon?offset=${offset}&limit=${limit}`);
-            if (!response.ok) {
-              throw new Error(`Failed to fetch batch at offset ${offset}`);
-            }
-            
-            const data = await response.json();
-            
-            // CRITICAL FIX: Fetch full Pokemon details instead of basic objects
-            const batchPromises = data.results.map(async (pokemon: { name: string; url: string }) => {
-              const pokemonId = pokemon.url.split('/').filter(Boolean).pop();
-              try {
-                return await fetchPokemonDetails(Number(pokemonId));
-              } catch (error) {
-                console.warn(`Failed to fetch details for Pokemon #${pokemonId}:`, error);
-                return null;
-              }
-            });
-            
-            const batchResults = (await Promise.all(batchPromises)).filter(p => p !== null) as Pokemon[];
-            allPokemon.push(...batchResults.filter(shouldIncludePokemon));
-            
-            console.log(`🎯 [LOADING_MILESTONE_DEBUG] Batch ${Math.floor(offset/BATCH_SIZE) + 1}: Loaded ${Math.min(offset + BATCH_SIZE, totalPokemon)} of ${totalPokemon} Pokemon - Current total: ${allPokemon.length}`);
-            
-            toast({
-              title: "Loading progress",
-              description: `Loaded ${Math.min(offset + BATCH_SIZE, totalPokemon)} of ${totalPokemon} Pokémon...`
-            });
-          } catch (error) {
-            console.error(`Error fetching batch at offset ${offset}:`, error);
-            toast({
-              title: "Error",
-              description: `Failed to fetch some Pokémon. Your ranking might be incomplete.`,
-              variant: "destructive"
-            });
-          }
-        }
-        
-        console.log(`🎯 [LOADING_MILESTONE_DEBUG] Finished regular Pokemon - loaded ${allPokemon.length} so far`);
-        
-        try {
-          const specialFormIds = Array.from({ length: 250 }, (_, i) => i + 10001);
-          
-          console.log(`🎯 [LOADING_MILESTONE_DEBUG] Starting special forms load - ${specialFormIds.length} forms to process`);
-          
-          const specialFormPromises = specialFormIds.map(async (id) => {
-            try {
-              return await fetchPokemonDetails(id);
-            } catch (error) {
-              console.warn(`Failed to fetch special form #${id}:`, error);
-              return null;
-            }
-          });
-          
-          const specialForms = (await Promise.all(specialFormPromises)).filter(p => p !== null) as Pokemon[];
-          console.log(`🎯 [LOADING_MILESTONE_DEBUG] Loaded ${specialForms.length} special form Pokémon`);
-          
-          const filteredSpecialForms = specialForms.filter(shouldIncludePokemon);
-          allPokemon.push(...filteredSpecialForms);
-          
-          console.log(`🎯 [LOADING_MILESTONE_DEBUG] After adding special forms: ${allPokemon.length} total Pokemon`);
-        } catch (error) {
-          console.error("Error fetching special forms:", error);
-        }
-        
-        console.log(`🎯 [LOADING_MILESTONE_DEBUG] FINAL FULL RANKING RESULT: Returning ${allPokemon.length} Pokemon`);
-        
-        return allPokemon;
-      }
+    const pokemonList = await Promise.all(pokemonPromises);
+    const filteredList = pokemonList.filter((p): p is Pokemon => p !== null);
+    
+    const processingTime = Date.now() - startProcessingTime;
+    console.log(`✅ [REFRESH_DETECTION] Call #${currentCallId}: Processing completed in ${processingTime}ms`);
+    console.log(`📊 [REFRESH_DETECTION] Call #${currentCallId}: Final result: ${filteredList.length} Pokemon (filtered from ${pokemonList.length})`);
+    
+    // CRITICAL: Log final count milestones
+    if (filteredList.length === 1025) {
+      console.error(`🔥 [REFRESH_DETECTION] Call #${currentCallId}: RETURNING EXACTLY 1025 POKEMON - MILESTONE!`);
     }
-    
-    const selectedGeneration = generations.find(gen => gen.id === generationId) || generations[1];
-    const limit = selectedGeneration.end - selectedGeneration.start + 1;
-    const offset = selectedGeneration.start - 1;
-    
-    const response = await fetch(`https://pokeapi.co/api/v2/pokemon?offset=${offset}&limit=${limit}`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch Pokemon');
+    if (filteredList.length === 1271) {
+      console.error(`🔥 [REFRESH_DETECTION] Call #${currentCallId}: RETURNING EXACTLY 1271 POKEMON - MILESTONE!`);
     }
-    
-    const data = await response.json();
-    
-    const pokemonList = await Promise.all(
-      data.results.map(async (pokemon: { name: string; url: string }) => {
-        const pokemonId = pokemon.url.split('/').filter(Boolean).pop();
-        return fetchPokemonDetails(Number(pokemonId));
-      })
-    );
-    
-    const specialForms: Pokemon[] = [];
-    
-    if (generationId === 6) {
-      const megaIds = Array.from({ length: 30 }, (_, i) => i + 10025);
-      
-      const megaPokemon = await Promise.all(
-        megaIds.map(async (id) => {
-          try {
-            return await fetchPokemonDetails(id);
-          } catch {
-            return null;
-          }
-        })
-      );
-      
-      specialForms.push(...megaPokemon.filter(p => p !== null) as Pokemon[]);
-    } else if (generationId === 7) {
-      const alolanIds = Array.from({ length: 20 }, (_, i) => i + 10100);
-      
-      const alolanPokemon = await Promise.all(
-        alolanIds.map(async (id) => {
-          try {
-            return await fetchPokemonDetails(id);
-          } catch {
-            return null;
-          }
-        })
-      );
-      
-      specialForms.push(...alolanPokemon.filter(p => p !== null) as Pokemon[]);
-    } else if (generationId === 8) {
-      const galarianIds = Array.from({ length: 30 }, (_, i) => i + 10150);
-      
-      const galarianPokemon = await Promise.all(
-        galarianIds.map(async (id) => {
-          try {
-            return await fetchPokemonDetails(id);
-          } catch {
-            return null;
-          }
-        })
-      );
-      
-      specialForms.push(...galarianPokemon.filter(p => p !== null) as Pokemon[]);
-    }
-    
-    pokemonList.push(...specialForms);
-    
-    return pokemonList.filter(shouldIncludePokemon);
+
+    return filteredList;
   } catch (error) {
-    console.error('Error fetching Pokemon:', error);
-    toast({
-      title: "Error",
-      description: "Failed to fetch Pokemon. Please try again.",
-      variant: "destructive"
-    });
-    return [];
+    console.error(`❌ [REFRESH_DETECTION] Call #${currentCallId}: fetchAllPokemon failed:`, error);
+    throw error;
   }
-}
+};
