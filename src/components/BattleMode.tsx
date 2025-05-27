@@ -10,7 +10,7 @@ import { PokemonProvider } from "@/contexts/PokemonContext";
 const BattleMode = () => {
   console.log('[DEBUG BattleMode] Component rendering');
   
-  const { allPokemon, isLoading, loadPokemon } = usePokemonLoader();
+  const { allPokemon, isLoading, isBackgroundLoading, loadPokemon } = usePokemonLoader();
   
   // CRITICAL FIX: Completely stable state management
   const [battlesCompleted, setBattlesCompleted] = useState(0);
@@ -144,7 +144,12 @@ const BattleMode = () => {
       <div className="flex justify-center items-center h-64 w-full">
         <div className="flex flex-col items-center">
           <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent mb-4"></div>
-          <p>Loading Pokémon data...</p>
+          <p>Loading initial Pokémon for battles...</p>
+          {isBackgroundLoading && (
+            <p className="text-sm text-gray-600 mt-2">
+              Loading more Pokémon in the background...
+            </p>
+          )}
         </div>
       </div>
     );
@@ -156,6 +161,13 @@ const BattleMode = () => {
   return (
     <PokemonProvider allPokemon={stableAllPokemon}>
       <div className="flex flex-col items-center w-full py-4 px-4 sm:px-6">
+        {isBackgroundLoading && (
+          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-700">
+              🔄 Loading more Pokémon in the background... ({stableAllPokemon.length} loaded so far)
+            </p>
+          </div>
+        )}
         <BattleContentContainer
           key={containerKey}
           allPokemon={stableAllPokemon}

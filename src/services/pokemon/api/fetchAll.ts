@@ -70,30 +70,34 @@ const shouldIncludePokemon = (pokemon: { name: string, id: number }) => {
   return true;
 };
 
-export async function fetchAllPokemon(generationId: number = 1, fullRankingMode: boolean = false): Promise<Pokemon[]> {
+export async function fetchAllPokemon(
+  generationId: number = 1, 
+  fullRankingMode: boolean = false, 
+  isInitialBatch: boolean = false, 
+  batchSize: number = 150
+): Promise<Pokemon[]> {
   try {
     if (generationId === 0) {
-      if (!fullRankingMode) {
-        const sampleSize = 500;
+      if (!fullRankingMode || isInitialBatch) {
+        const sampleSize = isInitialBatch ? batchSize : 500;
         
-        toast({
-          title: "Loading sample",
-          description: `Loading a selection of ${sampleSize} Pokémon from all generations for battling.`
-        });
+        if (isInitialBatch) {
+          toast({
+            title: "Quick start",
+            description: `Loading ${sampleSize} Pokémon to start battles immediately...`
+          });
+        } else {
+          toast({
+            title: "Loading sample",
+            description: `Loading a selection of ${sampleSize} Pokémon from all generations for battling.`
+          });
+        }
         
         const regularPokemonIds = Array.from({ length: generations[0].end }, (_, i) => i + 1);
         
         // FURFROU DEBUG: Explicitly include known Furfrou form IDs
         const furfrouFormIds = [
-          10126, // Furfrou Heart Trim
-          10127, // Furfrou Star Trim  
-          10128, // Furfrou Diamond Trim
-          10129, // Furfrou Debutante Trim
-          10130, // Furfrou Matron Trim
-          10131, // Furfrou Dandy Trim
-          10132, // Furfrou La Reine Trim
-          10133, // Furfrou Kabuki Trim
-          10134, // Furfrou Pharaoh Trim
+          10126, 10127, 10128, 10129, 10130, 10131, 10132, 10133, 10134
         ];
         
         const specialFormIds = Array.from({ length: 250 }, (_, i) => i + 10001);
