@@ -1,6 +1,4 @@
-
 import { Pokemon } from "../types";
-import { formatPokemonName } from "@/utils/pokemon";
 import { getPreferredImageType, PokemonImageType } from "@/components/settings/ImagePreferenceSelector";
 
 /**
@@ -8,43 +6,20 @@ import { getPreferredImageType, PokemonImageType } from "@/components/settings/I
  */
 export const validateBattlePokemon = (pokemon: Pokemon[]): Pokemon[] => {
   console.log(`🔍 [VALIDATE_BATTLE_POKEMON] Input Pokemon count: ${pokemon.length}`);
-  console.log(`🔍 [VALIDATE_BATTLE_POKEMON] DETAILED INPUT ANALYSIS:`);
+  console.log(`🔍 [VALIDATE_BATTLE_POKEMON] SIMPLIFIED VALIDATION - NO NAME FORMATTING`);
   
   pokemon.forEach((p, index) => {
-    console.log(`🔍 [VALIDATE_BATTLE_POKEMON] Input #${index}:`);
-    console.log(`   - Raw name: "${p.name}"`);
-    console.log(`   - ID: ${p.id}`);
-    console.log(`   - Name contains hyphen: ${p.name.includes('-')}`);
-    console.log(`   - Name is lowercase: ${p.name === p.name.toLowerCase()}`);
+    console.log(`🔍 [VALIDATE_BATTLE_POKEMON] Input #${index}: "${p.name}" (ID: ${p.id})`);
   });
   
   const validated = pokemon.map((p, index) => {
     console.log(`🔍 [VALIDATE_BATTLE_POKEMON] Processing #${index}: "${p.name}" (ID: ${p.id})`);
     
-    // CRITICAL FIX: More accurate detection of raw API names
-    // Raw API names are ALL lowercase AND contain hyphens AND start with lowercase letter
-    const isAllLowercase = p.name === p.name.toLowerCase();
-    const containsHyphen = p.name.includes('-');
-    const startsWithLowercase = p.name.charAt(0) === p.name.charAt(0).toLowerCase();
-    const looksLikeRawName = isAllLowercase && containsHyphen && startsWithLowercase;
+    // CRITICAL FIX: DO NOT FORMAT NAMES HERE - USE EXACTLY AS PROVIDED
+    // Names should already be formatted from the API fetch stage
+    const finalName = p.name; // Use name exactly as provided - NO FORMATTING
     
-    console.log(`🔍 [VALIDATE_BATTLE_POKEMON] Name "${p.name}" analysis:`, {
-      isAllLowercase,
-      containsHyphen,
-      startsWithLowercase,
-      looksLikeRawName
-    });
-    
-    let finalName;
-    if (looksLikeRawName) {
-      // This name appears to be unformatted - apply formatting
-      finalName = formatPokemonName(p.name);
-      console.log(`🔍 [VALIDATE_BATTLE_POKEMON] FORMATTING APPLIED: "${p.name}" → "${finalName}"`);
-    } else {
-      // This name appears to already be formatted - preserve it
-      finalName = p.name;
-      console.log(`🔍 [VALIDATE_BATTLE_POKEMON] NAME PRESERVED (already formatted): "${finalName}"`);
-    }
+    console.log(`🔍 [VALIDATE_BATTLE_POKEMON] NAME PRESERVED (no formatting applied): "${finalName}"`);
     
     const validatedPokemon = {
       ...p,
@@ -54,12 +29,11 @@ export const validateBattlePokemon = (pokemon: Pokemon[]): Pokemon[] => {
     };
     
     console.log(`🔍 [VALIDATE_BATTLE_POKEMON] Output #${index}: "${validatedPokemon.name}" (ID: ${validatedPokemon.id})`);
-    console.log(`🔍 [VALIDATE_BATTLE_POKEMON] Final name change: "${p.name}" → "${validatedPokemon.name}"`);
     
     return validatedPokemon;
   });
   
-  console.log(`✅ [VALIDATE_BATTLE_POKEMON] Validated ${validated.length} Pokemon with improved name detection`);
+  console.log(`✅ [VALIDATE_BATTLE_POKEMON] Validated ${validated.length} Pokemon with NO name formatting`);
   return validated;
 };
 
