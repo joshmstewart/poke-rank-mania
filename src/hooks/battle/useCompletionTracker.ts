@@ -1,4 +1,3 @@
-
 import { useEffect, useRef, useState, useCallback } from "react";
 import { SingleBattle } from "./types";
 import { RankedPokemon } from "@/services/pokemon";
@@ -22,20 +21,26 @@ export const useCompletionTracker = (
   const snapshotGenerationInProgressRef = useRef<Record<number, boolean>>({});
   const lastCalculatedPercentageRef = useRef<number>(0);
 
+  // Define milestones array locally to ensure consistency
+  const milestones = [10, 25, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 600, 700, 800, 900, 1000];
+
   useEffect(() => {
     showingMilestoneRef.current = showingMilestone;
   }, [showingMilestone]);
 
   const checkForMilestones = useCallback(() => {
+    const battleCount = battleResults.length;
+    
     console.log("🔎 Checking milestones", {
-      battleResultsLength: battleResults.length,
+      battleResultsLength: battleCount,
       previousCount: previousBattleCountRef.current,
       showingMilestone: showingMilestoneRef.current,
       processingMilestone: isMilestoneProcessingRef.current,
+      milestones,
+      hitMilestones: Array.from(hitMilestones.current)
     });
 
-    const battleCount = battleResults.length;
-
+    // Check if we've increased the battle count and haven't already hit this milestone
     if (previousBattleCountRef.current === battleCount ||
         showingMilestoneRef.current || 
         isMilestoneProcessingRef.current) {
@@ -43,8 +48,40 @@ export const useCompletionTracker = (
       return;
     }
 
+    // Check if this battle count is a milestone
+    const isMilestone = milestones.includes(battleCount);
+    
+    if (isMilestone && !hitMilestones.current.has(battleCount)) {
+      console.log(`🎉 MILESTONE HIT: ${battleCount} battles!`);
+      
+      // Mark this milestone as hit
+      hitMilestones.current.add(battleCount);
+      isMilestoneProcessingRef.current = true;
+      
+      // Generate rankings for this milestone
+      console.log("🔵 useCompletionTracker: generating milestone rankings");
+      const rankingsSnapshot = generateRankings(battleResults);
+      
+      if (rankingsSnapshot.length > 0) {
+        snapshotCacheRef.current[battleCount] = rankingsSnapshot;
+        setMilestoneRankings(prev => ({
+          ...prev,
+          [battleCount]: rankingsSnapshot
+        }));
+      }
+      
+      // Show the milestone
+      console.log("🔴 useCompletionTracker: setShowingMilestone(true) triggered for milestone", battleCount);
+      setShowingMilestone(true);
+      
+      // Reset processing flag after a delay
+      setTimeout(() => {
+        isMilestoneProcessingRef.current = false;
+      }, 500);
+    }
+
     previousBattleCountRef.current = battleCount;
-  }, [battleResults.length]);
+  }, [battleResults, milestones, generateRankings, setShowingMilestone]);
 
   useEffect(() => {
     checkForMilestones();
@@ -72,17 +109,11 @@ export const useCompletionTracker = (
     percentageCalculationInProgressRef.current = true;
 
     try {
-      // Use a logarithmic formula to determine how many battles are needed for a good ranking
-      // The more Pokemon, the more battles we need, but it grows slower than linear
       const totalBattlesNeeded = Math.floor(allPokemon.length * Math.log2(allPokemon.length));
-      
-      // Calculate percentage with a small minimum to show progress from the start
-      // Only show percentage > 0 if there are actual battles completed
       const calculatedPercentage = battleResults.length === 0 ? 0 : Math.min(100, Math.max(1, 
         Math.floor((battleResults.length / totalBattlesNeeded) * 100)
       ));
       
-      // Only update if the percentage has actually changed
       if (calculatedPercentage !== lastCalculatedPercentageRef.current) {
         console.log(`📈 Completion percentage updated: ${calculatedPercentage}%`);
         lastCalculatedPercentageRef.current = calculatedPercentage;
@@ -153,18 +184,16 @@ export const useCompletionTracker = (
     return [];
   }, [battleResults, generateRankings]);
 
-  // Force an initial calculation of completion percentage when the tracker mounts
   useEffect(() => {
     calculateCompletionPercentage();
   }, [calculateCompletionPercentage]);
 
-return {
-  resetMilestones,
-  resetMilestoneRankings,
-  calculateCompletionPercentage,
-  getSnapshotForMilestone,
-  milestoneRankings, // explicitly add these if needed elsewhere
-  hitMilestones,     // explicitly add these if needed elsewhere
-};
-
+  return {
+    resetMilestones,
+    resetMilestoneRankings,
+    calculateCompletionPercentage,
+    getSnapshotForMilestone,
+    milestoneRankings,
+    hitMilestones,
+  };
 };

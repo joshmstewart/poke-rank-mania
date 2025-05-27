@@ -22,14 +22,16 @@ export const useBattleProgression = (
   }, []);
 
   const checkMilestone = useCallback((newBattlesCompleted: number, battleResults: any[]): boolean => {
+    console.log(`🔍 checkMilestone called with ${newBattlesCompleted} battles`);
+    
     if (processingMilestoneRef.current) {
       console.log("🚫 Milestone already processing, skipping");
       return false;
     }
 
     // Check if this is a milestone battle count
-    const isMilestone = milestones.includes(newBattlesCompleted) || 
-                        (newBattlesCompleted >= 100 && newBattlesCompleted % 50 === 0);
+    const isMilestone = milestones.includes(newBattlesCompleted);
+    console.log(`🎯 Battle ${newBattlesCompleted} is milestone: ${isMilestone}`);
     
     // Check if we've already triggered this milestone
     if (isMilestone && !milestoneTracker.current.has(newBattlesCompleted)) {
@@ -47,11 +49,12 @@ export const useBattleProgression = (
 
       try {
         // Generate rankings based on the battle results
+        console.log(`🔵 useBattleProgression: Generating rankings for milestone ${newBattlesCompleted}`);
         generateRankings(battleResults);
         
         // Show the milestone view
+        console.log(`🔴 useBattleProgression: setShowingMilestone(true) triggered for milestone ${newBattlesCompleted}`);
         setShowingMilestone(true);
-        console.log("🔴 useBattleProgression: setShowingMilestone(true) triggered");
         
         // Reset the processing flag after a short delay
         setTimeout(() => {
@@ -70,7 +73,6 @@ export const useBattleProgression = (
     return false;
   }, [milestones, generateRankings, setShowingMilestone]);
 
-  // FIXED: Updated to ensure we return the milestone number or null
   const incrementBattlesCompleted = useCallback((battleResults: any[]): number | null => {
     if (incrementInProgressRef.current) {
       console.log("⏳ Increment already in progress, skipping");
@@ -82,22 +84,27 @@ export const useBattleProgression = (
     
     setBattlesCompleted(prev => {
       updatedBattleCount = prev + 1;
+      console.log(`📈 incrementBattlesCompleted: Updated battle count to ${updatedBattleCount}`);
       return updatedBattleCount;
     });
     
-    // Check if this is a milestone
-    milestoneTimeoutRef.current = setTimeout(() => {
-      checkMilestone(updatedBattleCount, battleResults);
-      incrementInProgressRef.current = false;
-    }, 100);
+    // Check if this is a milestone immediately after updating
+    const isMilestone = milestones.includes(updatedBattleCount);
+    console.log(`🎯 Battle ${updatedBattleCount} milestone check: ${isMilestone}`);
     
-    // Return the updated battle count if it's a milestone
-    if (milestones.includes(updatedBattleCount) || 
-        (updatedBattleCount >= 100 && updatedBattleCount % 50 === 0)) {
+    if (isMilestone) {
+      console.log(`🚀 Triggering milestone check for battle ${updatedBattleCount}`);
+      // Trigger milestone check immediately
+      setTimeout(() => {
+        checkMilestone(updatedBattleCount, battleResults);
+        incrementInProgressRef.current = false;
+      }, 50);
+      
       return updatedBattleCount;
+    } else {
+      incrementInProgressRef.current = false;
+      return null;
     }
-    
-    return null;
   }, [setBattlesCompleted, checkMilestone, milestones]);
 
   const resetMilestone = useCallback(() => {
