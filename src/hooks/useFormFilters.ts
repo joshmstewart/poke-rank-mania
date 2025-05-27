@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { PokemonFormType } from "@/components/settings/FormFiltersSelector";
 import { Pokemon } from "@/services/pokemon";
@@ -67,12 +66,17 @@ export const useFormFilters = () => {
     setFilters(updated);
   };
   
+  // Check if a Pokemon is a starter and should be completely excluded
+  const isStarterPokemon = (pokemon: Pokemon): boolean => {
+    const name = pokemon.name.toLowerCase();
+    return name.includes("starter");
+  };
+  
   // Check if a Pokemon belongs to a specific form category
   const getPokemonFormCategory = (pokemon: Pokemon): PokemonFormType | null => {
     const name = pokemon.name.toLowerCase();
     
     // Check for costumes (Pikachu caps and cosplay forms) - check this FIRST
-    // CRITICAL FIX: Add "starter" to catch Pikachu-starter
     if ((name.includes("pikachu") && (
         name.includes("cap") || 
         name.includes("phd") || 
@@ -81,8 +85,7 @@ export const useFormFilters = () => {
         name.includes("libre") || 
         name.includes("pop-star") || 
         name.includes("rock-star") ||
-        name.includes("partner") ||
-        name.includes("starter"))) || 
+        name.includes("partner"))) || 
         name.includes("crowned")) {
       console.log(`🎭 [FORM_FILTER_DEBUG] ${pokemon.name} (${pokemon.id}) categorized as COSTUME`);
       return "costumes";
@@ -141,7 +144,13 @@ export const useFormFilters = () => {
   
   // Check if a Pokemon should be included based on current filters
   const shouldIncludePokemon = (pokemon: Pokemon): boolean => {
-    // If all filters are enabled, include all Pokemon
+    // FIRST: Always exclude starter Pokemon regardless of filters
+    if (isStarterPokemon(pokemon)) {
+      console.log(`🚫 [FORM_FILTER_DEBUG] ${pokemon.name} (${pokemon.id}) EXCLUDED - STARTER POKEMON (always filtered)`);
+      return false;
+    }
+    
+    // If all filters are enabled, include all Pokemon (except starters)
     if (isAllEnabled) {
       console.log(`🟢 [FORM_FILTER_DEBUG] ${pokemon.name} (${pokemon.id}) INCLUDED - all filters enabled`);
       return true;
