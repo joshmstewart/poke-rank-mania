@@ -65,8 +65,8 @@ export const useBattleStarterIntegration = (
   const autoTriggerDisabledRef = useRef(false);
   const initialBattleStartedRef = useRef(false);
   
-  // Store the battleStarter ref for stable access
-  const battleStarterInstanceRef = useRef<ReturnType<typeof createBattleStarter> | null>(null);
+  // Store the battleStarter ref for stable access - CRITICAL FIX: Store the extended version
+  const battleStarterInstanceRef = useRef<ExtendedBattleStarter | null>(null);
   const startNewBattleRefFn = useRef<((type: BattleType) => Pokemon[]) | null>(null);
   
   // Add ref to hold the latest startNewBattle callback
@@ -169,7 +169,8 @@ export const useBattleStarterIntegration = (
     // CRITICAL FIX: Only create battleStarter once, even if more Pokemon are loaded later
     if (battleStarterCreatedRef.current && stablePokemonLengthRef.current > 0) {
       console.log(`[DEBUG battleStarterInstance useMemo] BattleStarter already created with ${stablePokemonLengthRef.current} Pokemon - not recreating for ${allPokemon.length} Pokemon`);
-      return battleStarterInstanceRef.current as ExtendedBattleStarter || createEmptyBattleStarter();
+      // CRITICAL FIX: Return the stored extended battleStarter, not the raw one
+      return battleStarterInstanceRef.current || createEmptyBattleStarter();
     }
 
     console.log(`[DEBUG battleStarterInstance useMemo] Creating battleStarter with ${allPokemon.length} Pokémon and ${currentRankings.length} rankings`);
@@ -184,8 +185,6 @@ export const useBattleStarterIntegration = (
       allPokemon,
       currentRankings
     );
-
-    battleStarterInstanceRef.current = battleStarterInstance;
     
     const extendedInstance: ExtendedBattleStarter = {
       startNewBattle: battleStarterInstance.startNewBattle,
@@ -196,6 +195,9 @@ export const useBattleStarterIntegration = (
         );
       }
     };
+
+    // CRITICAL FIX: Store the extended instance, not the raw one
+    battleStarterInstanceRef.current = extendedInstance;
     
     // Mark as created and store the length
     battleStarterCreatedRef.current = true;
