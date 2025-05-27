@@ -27,17 +27,31 @@ export const formatPokemonName = (name: string): string => {
   
   console.log(`🚀 [FORMAT_POKEMON_NAME] Input: "${name}"`);
   
-  // DEEP DEBUG: Let's see exactly what characters we have
-  console.log(`🔍 [DEEP_DEBUG] String length: ${name.length}`);
-  console.log(`🔍 [DEEP_DEBUG] Character codes:`, name.split('').map((char, i) => `${i}:'${char}'(${char.charCodeAt(0)})`));
+  // CRITICAL DEBUG: Let's see exactly what we're working with
+  console.log(`🔍 [CRITICAL_DEBUG] String: "${name}"`);
+  console.log(`🔍 [CRITICAL_DEBUG] String length: ${name.length}`);
+  console.log(`🔍 [CRITICAL_DEBUG] Type: ${typeof name}`);
+  console.log(`🔍 [CRITICAL_DEBUG] Character codes:`, name.split('').map((char, i) => `${i}:'${char}'(${char.charCodeAt(0)})`));
+  
+  // Test exact string we're looking for
+  const testString = "venusaur-mega";
+  console.log(`🔍 [CRITICAL_DEBUG] Test comparison with "${testString}": ${name === testString}`);
+  console.log(`🔍 [CRITICAL_DEBUG] Test comparison lowercase: ${name.toLowerCase() === testString}`);
   
   const lowerName = name.toLowerCase();
-  console.log(`🔍 [DEEP_DEBUG] Lowercase: "${lowerName}"`);
-  console.log(`🔍 [DEEP_DEBUG] Contains '-mega': ${lowerName.includes('-mega')}`);
-  console.log(`🔍 [DEEP_DEBUG] IndexOf '-mega': ${lowerName.indexOf('-mega')}`);
+  console.log(`🔍 [CRITICAL_DEBUG] Lowercase result: "${lowerName}"`);
+  console.log(`🔍 [CRITICAL_DEBUG] Contains '-mega': ${lowerName.includes('-mega')}`);
+  console.log(`🔍 [CRITICAL_DEBUG] IndexOf '-mega': ${lowerName.indexOf('-mega')}`);
+  
+  // Let's test with explicit string matching
+  if (lowerName === "venusaur-mega") {
+    console.log(`🎯 [EXPLICIT_TEST] FOUND EXACT MATCH: venusaur-mega`);
+    return "Mega Venusaur";
+  }
   
   // Handle Mega evolutions - check for exact patterns
   if (lowerName.includes('-mega-x')) {
+    console.log(`🎯 [MEGA_X_MATCH] Found -mega-x in "${name}"`);
     const baseName = name.substring(0, name.toLowerCase().indexOf('-mega-x'));
     const result = `Mega ${baseName} X`;
     console.log(`✅ [MEGA_X] "${name}" -> "${result}"`);
@@ -45,6 +59,7 @@ export const formatPokemonName = (name: string): string => {
   }
   
   if (lowerName.includes('-mega-y')) {
+    console.log(`🎯 [MEGA_Y_MATCH] Found -mega-y in "${name}"`);
     const baseName = name.substring(0, name.toLowerCase().indexOf('-mega-y'));
     const result = `Mega ${baseName} Y`;
     console.log(`✅ [MEGA_Y] "${name}" -> "${result}"`);
@@ -64,6 +79,7 @@ export const formatPokemonName = (name: string): string => {
   
   // Handle Gigantamax forms
   if (lowerName.includes('-gmax')) {
+    console.log(`🎯 [GMAX_MATCH] Found -gmax in "${name}"`);
     const baseName = name.substring(0, name.toLowerCase().indexOf('-gmax'));
     const result = `G-Max ${baseName}`;
     console.log(`✅ [GMAX] "${name}" -> "${result}"`);
