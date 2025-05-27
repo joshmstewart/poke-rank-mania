@@ -1,3 +1,4 @@
+
 import { useMemo, useEffect, useRef, useCallback } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
@@ -42,10 +43,10 @@ export const useBattleStarterIntegration = (
   const instanceIdRef = useRef(`battleStarter-${Date.now()}`);
   console.log('[DEBUG useBattleStarterIntegration] Instance:', instanceIdRef.current, 'allPokemon length:', allPokemon?.length || 0);
   
-  // CRITICAL FIX: Track when initial battle has been started to prevent multiple starts
-  const initialBattleStartedRef = useRef(false);
+  // CRITICAL FIX: Once battleStarter is created, NEVER recreate it regardless of Pokemon count changes
   const battleStarterCreatedRef = useRef(false);
-  const stablePokemonLengthRef = useRef(0);
+  const battleStarterInstanceRef = useRef<ExtendedBattleStarter | null>(null);
+  const initialBattleStartedRef = useRef(false);
   
   // Initialize refs with appropriate default values
   const processedSuggestionBattlesRef = useRef<Set<number>>(new Set());
@@ -64,10 +65,6 @@ export const useBattleStarterIntegration = (
   
   // CRITICAL FIX: Enhanced auto-trigger control with milestone coordination
   const autoTriggerDisabledRef = useRef(false);
-  
-  // Store the battleStarter ref for stable access - CRITICAL FIX: Store the extended version
-  const battleStarterInstanceRef = useRef<ExtendedBattleStarter | null>(null);
-  const startNewBattleRefFn = useRef<((type: BattleType) => Pokemon[]) | null>(null);
   
   // Add ref to hold the latest startNewBattle callback
   const startNewBattleCallbackRef = useRef<((battleType: BattleType) => Pokemon[]) | null>(null);
@@ -110,6 +107,54 @@ export const useBattleStarterIntegration = (
       document.removeEventListener('milestone-dismissed', handleMilestoneDismissed as EventListener);
     };
   }, []);
+
+  // CRITICAL FIX: Create battleStarter ONLY ONCE when first Pokemon are available - NEVER recreate
+  const battleStarter = useMemo<ExtendedBattleStarter>(() => {
+    console.log('[DEBUG battleStarterInstance useMemo] Evaluating with allPokemon length:', allPokemon?.length || 0);
+    console.log('[DEBUG battleStarterInstance useMemo] battleStarterCreatedRef.current:', battleStarterCreatedRef.current);
+    
+    // If we already created a battleStarter, return the existing one regardless of Pokemon count changes
+    if (battleStarterCreatedRef.current && battleStarterInstanceRef.current) {
+      console.log(`[DEBUG battleStarterInstance useMemo] RETURNING EXISTING battleStarter - ignoring Pokemon count change from any value to ${allPokemon.length}`);
+      return battleStarterInstanceRef.current;
+    }
+
+    if (!allPokemon || allPokemon.length === 0) {
+      console.log("[DEBUG battleStarterInstance useMemo] No Pokémon data available, returning empty battleStarter");
+      return createEmptyBattleStarter();
+    }
+
+    console.log(`[DEBUG battleStarterInstance useMemo] Creating battleStarter ONCE with ${allPokemon.length} Pokémon and ${currentRankings.length} rankings`);
+    
+    const pokemonWithSuggestions = currentRankings.filter(
+      p => p.suggestedAdjustment && !p.suggestedAdjustment.used
+    );
+
+    totalSuggestionsRef.current = pokemonWithSuggestions.length;
+    
+    const battleStarterInstance = createBattleStarter(
+      allPokemon,
+      currentRankings
+    );
+    
+    const extendedInstance: ExtendedBattleStarter = {
+      startNewBattle: battleStarterInstance.startNewBattle,
+      trackLowerTierLoss: battleStarterInstance.trackLowerTierLoss,
+      getSuggestions: () => {
+        return (currentRankings || []).filter(
+          p => p.suggestedAdjustment && !p.suggestedAdjustment.used
+        );
+      }
+    };
+
+    // CRITICAL FIX: Store the instance and mark as created
+    battleStarterInstanceRef.current = extendedInstance;
+    battleStarterCreatedRef.current = true;
+    
+    console.log("[DEBUG battleStarterInstance useMemo] Created and stored battleStarter - will NEVER recreate");
+    
+    return extendedInstance;
+  }, [allPokemon.length > 0 ? 1 : 0]); // CRITICAL FIX: Only depend on WHETHER we have Pokemon, not the count
 
   // CRITICAL FIX: Start initial battle when Pokemon data is available - but only once
   useEffect(() => {
@@ -161,61 +206,6 @@ export const useBattleStarterIntegration = (
     };
   }, []); // CRITICAL FIX: Empty dependency array - only run once
 
-  // CRITICAL FIX: Only create battleStarter ONCE when we first have Pokemon data - COMPLETELY STABLE
-  const battleStarter = useMemo<ExtendedBattleStarter>(() => {
-    console.log('[DEBUG battleStarterInstance useMemo] Evaluating with allPokemon length:', allPokemon?.length || 0);
-    console.log('[DEBUG battleStarterInstance useMemo] battleStarterCreatedRef.current:', battleStarterCreatedRef.current);
-    
-    if (!allPokemon || allPokemon.length === 0) {
-      console.log("[DEBUG battleStarterInstance useMemo] No Pokémon data available, returning empty battleStarter");
-      return createEmptyBattleStarter();
-    }
-
-    // CRITICAL FIX: Only create battleStarter once, even if more Pokemon are loaded later
-    if (battleStarterCreatedRef.current && stablePokemonLengthRef.current > 0) {
-      console.log(`[DEBUG battleStarterInstance useMemo] BattleStarter already created with ${stablePokemonLengthRef.current} Pokemon - not recreating for ${allPokemon.length} Pokemon`);
-      // CRITICAL FIX: Return the stored extended battleStarter, not the raw one
-      return battleStarterInstanceRef.current || createEmptyBattleStarter();
-    }
-
-    console.log(`[DEBUG battleStarterInstance useMemo] Creating battleStarter with ${allPokemon.length} Pokémon and ${currentRankings.length} rankings`);
-    
-    const pokemonWithSuggestions = currentRankings.filter(
-      p => p.suggestedAdjustment && !p.suggestedAdjustment.used
-    );
-
-    totalSuggestionsRef.current = pokemonWithSuggestions.length;
-    
-    const battleStarterInstance = createBattleStarter(
-      allPokemon,
-      currentRankings
-    );
-    
-    const extendedInstance: ExtendedBattleStarter = {
-      startNewBattle: battleStarterInstance.startNewBattle,
-      trackLowerTierLoss: battleStarterInstance.trackLowerTierLoss,
-      getSuggestions: () => {
-        return (currentRankings || []).filter(
-          p => p.suggestedAdjustment && !p.suggestedAdjustment.used
-        );
-      }
-    };
-
-    // CRITICAL FIX: Store the extended instance, not the raw one
-    battleStarterInstanceRef.current = extendedInstance;
-    
-    // Mark as created and store the length
-    battleStarterCreatedRef.current = true;
-    stablePokemonLengthRef.current = allPokemon.length;
-    
-    console.log("[DEBUG battleStarterInstance useMemo] Created and returning new extended battleStarter - will NOT recreate");
-    
-    return extendedInstance;
-  }, [
-    // CRITICAL FIX: COMPLETELY REMOVE allPokemon.length dependency to prevent recreation
-    currentRankings.length > 0 ? currentRankings.length : 0 // Only recreate if rankings change significantly
-  ]);
-
   const startNewBattle = useCallback((battleType: BattleType) => {
     // CRITICAL FIX: Allow initial battles but block unwanted auto-replacements
     const isInitialBattle = !initialBattleStartedRef.current || (!currentBattle || currentBattle.length === 0);
@@ -244,8 +234,6 @@ export const useBattleStarterIntegration = (
     
     const currentBattleStarter = battleStarter || createEmptyBattleStarter();
     console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] Using ${currentBattleStarter === battleStarter ? 'original' : 'fallback empty'} battleStarter`);
-    
-    startNewBattleRefFn.current = startNewBattle;
     
     if (!initializationCompleteRef.current) {
       console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] ❌ FAILED: Initialization not complete`);
@@ -282,12 +270,11 @@ export const useBattleStarterIntegration = (
       battleGenerationInProgressRef.current = false;
     }
   }, [
-    currentRankings.length,
     battleStarter,
     setSelectedPokemon,
     markSuggestionFullyUsed,
     currentBattle?.length
-  ]);
+  ]); // CRITICAL FIX: Removed currentRankings.length dependency that was causing resets
 
   // Update the ref whenever startNewBattle changes
   useEffect(() => {

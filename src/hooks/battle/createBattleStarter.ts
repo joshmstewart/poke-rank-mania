@@ -16,8 +16,9 @@ export function createBattleStarter(
   allPokemon: Pokemon[],
   currentRankings: RankedPokemon[] = []
 ): BattleStarter {
-  // CRITICAL FIX: Remove early battle subset limitation
+  // CRITICAL FIX: Enhanced battle history tracking to prevent repeats
   const recentlySeenPokemon = new Set<number>();
+  const lastBattlePairs = new Set<string>(); // Track recent battle combinations
   const battlesCount = parseInt(localStorage.getItem('pokemon-battle-count') || '0', 10);
   const battleTracking = JSON.parse(localStorage.getItem('pokemon-battle-tracking') || '{}');
   const battleSeenIds = new Set<number>(JSON.parse(localStorage.getItem('pokemon-battle-seen') || '[]'));
@@ -26,26 +27,30 @@ export function createBattleStarter(
   
   // CRITICAL FIX: Use full Pokemon range, not just subset
   const RECENT_MEMORY_SIZE = Math.min(100, Math.floor(allPokemon.length * 0.1)); // 10% of available Pokemon
+  const RECENT_PAIRS_MEMORY = 50; // Remember last 50 battle pairs
   
   console.log(`🎯 [POKEMON_RANGE_FIX] Battle starter created with ${allPokemon.length} total Pokemon`);
   console.log(`🎯 [POKEMON_RANGE_FIX] Pokemon ID range: ${Math.min(...allPokemon.map(p => p.id))} to ${Math.max(...allPokemon.map(p => p.id))}`);
 
-  // FURFROU DEBUG: Check if Furfrou forms are in the allPokemon array
-  const furfrouForms = allPokemon.filter(p => p.name.toLowerCase().includes('furfrou'));
-  console.log(`🐩 [FURFROU_DEBUG] Found ${furfrouForms.length} Furfrou forms in Pokemon pool:`);
-  furfrouForms.forEach(furfrou => {
-    console.log(`🐩 [FURFROU_DEBUG] - ${furfrou.name} (ID: ${furfrou.id})`);
-  });
-
-  // Load recently seen Pokemon from storage
+  // Load recently seen Pokemon and battle pairs from storage
   const storedRecent = JSON.parse(localStorage.getItem('pokemon-recent-seen') || '[]');
   storedRecent.forEach((id: number) => recentlySeenPokemon.add(id));
+
+  const storedPairs = JSON.parse(localStorage.getItem('pokemon-recent-pairs') || '[]');
+  storedPairs.forEach((pair: string) => lastBattlePairs.add(pair));
 
   const saveRecentlySeenToStorage = () => {
     const recentArray = Array.from(recentlySeenPokemon).slice(-RECENT_MEMORY_SIZE);
     localStorage.setItem('pokemon-recent-seen', JSON.stringify(recentArray));
     recentlySeenPokemon.clear();
     recentArray.forEach(id => recentlySeenPokemon.add(id));
+  };
+
+  const saveRecentPairsToStorage = () => {
+    const pairsArray = Array.from(lastBattlePairs).slice(-RECENT_PAIRS_MEMORY);
+    localStorage.setItem('pokemon-recent-pairs', JSON.stringify(pairsArray));
+    lastBattlePairs.clear();
+    pairsArray.forEach(pair => lastBattlePairs.add(pair));
   };
 
   const addToRecentlySeen = (pokemonId: number) => {
@@ -62,6 +67,28 @@ export function createBattleStarter(
     localStorage.setItem('pokemon-battle-seen', JSON.stringify(Array.from(battleSeenIds)));
   };
 
+  const addBattlePair = (pokemonIds: number[]) => {
+    // Create a consistent pair key (sorted IDs)
+    const sortedIds = [...pokemonIds].sort((a, b) => a - b);
+    const pairKey = sortedIds.join('-');
+    
+    lastBattlePairs.add(pairKey);
+    
+    if (lastBattlePairs.size > RECENT_PAIRS_MEMORY) {
+      const pairsArray = Array.from(lastBattlePairs);
+      const toRemove = pairsArray.slice(0, pairsArray.length - RECENT_PAIRS_MEMORY);
+      toRemove.forEach(pair => lastBattlePairs.delete(pair));
+    }
+    
+    saveRecentPairsToStorage();
+  };
+
+  const isPairRecent = (pokemonIds: number[]): boolean => {
+    const sortedIds = [...pokemonIds].sort((a, b) => a - b);
+    const pairKey = sortedIds.join('-');
+    return lastBattlePairs.has(pairKey);
+  };
+
   const resetSuggestionPriority = () => {
     shouldPrioritizeSuggestions = true;
     console.log("🚨 Battle starter: Suggestion priority reset - will prioritize suggestions");
@@ -76,18 +103,9 @@ export function createBattleStarter(
     onMarkSuggestionUsed?: (pokemonId: number) => void
   ): Pokemon[] => {
     const battleSize = battleType === "triplets" ? 3 : 2;
-    // CRITICAL FIX: Always use full Pokemon list, no early battle subset
     const availablePokemon = allPokemon;
     
-    console.log(`🎮 [POKEMON_RANGE_FIX] Creating ${battleType} battle #${battlesCount + 1} from FULL pool of ${availablePokemon.length} Pokemon`);
-    console.log(`🎮 [POKEMON_RANGE_FIX] Available Pokemon ID range: ${Math.min(...availablePokemon.map(p => p.id))} to ${Math.max(...availablePokemon.map(p => p.id))}`);
-    
-    // FURFROU DEBUG: Check available Furfrou forms for this battle
-    const availableFurfrou = availablePokemon.filter(p => p.name.toLowerCase().includes('furfrou') && !recentlySeenPokemon.has(p.id));
-    console.log(`🐩 [FURFROU_DEBUG] Available Furfrou forms for battle (not recently seen): ${availableFurfrou.length}`);
-    availableFurfrou.forEach(furfrou => {
-      console.log(`🐩 [FURFROU_DEBUG] - Available: ${furfrou.name} (ID: ${furfrou.id})`);
-    });
+    console.log(`🎮 [BATTLE_REPEAT_FIX] Creating ${battleType} battle #${battlesCount + 1} from FULL pool of ${availablePokemon.length} Pokemon`);
     
     // Better filtering to avoid recent Pokemon
     let candidatePokemon = availablePokemon.filter(p => !recentlySeenPokemon.has(p.id));
@@ -112,87 +130,96 @@ export function createBattleStarter(
       .filter(p => candidatePokemon.some(cp => cp.id === p.id));
 
     let battlePokemon: Pokemon[] = [];
+    let attempts = 0;
+    const maxAttempts = 10;
 
-    if (shouldPrioritizeSuggestions && suggestedPokemon.length >= 1) {
-      console.log(`⭐ Prioritizing suggestions: Found ${suggestedPokemon.length} suggested Pokemon`);
+    // CRITICAL FIX: Try multiple times to avoid repeated battle pairs
+    while (attempts < maxAttempts) {
+      battlePokemon = [];
       
-      const selectedSuggestion = suggestedPokemon[Math.floor(Math.random() * suggestedPokemon.length)];
-      battlePokemon.push(selectedSuggestion);
-      
-      if (onMarkSuggestionUsed) {
-        onMarkSuggestionUsed(selectedSuggestion.id);
-        console.log(`✅ Marked suggestion as used: ${selectedSuggestion.name}`);
-      }
-      
-      const nonSuggestedCandidates = candidatePokemon.filter(
-        p => !suggestedPokemon.some(sp => sp.id === p.id) && 
-            !battlePokemon.some(bp => bp.id === p.id)
-      );
-      
-      const remainingSlots = battleSize - 1;
-      const shuffled = nonSuggestedCandidates.sort(() => Math.random() - 0.5);
-      battlePokemon.push(...shuffled.slice(0, remainingSlots));
-      
-      shouldPrioritizeSuggestions = false;
-    } else {
-      // Better randomization with weighted selection
-      const weightedCandidates = candidatePokemon.map(pokemon => {
-        let weight = 1.0;
+      if (shouldPrioritizeSuggestions && suggestedPokemon.length >= 1) {
+        console.log(`⭐ Prioritizing suggestions: Found ${suggestedPokemon.length} suggested Pokemon`);
         
-        if (recentlySeenPokemon.has(pokemon.id)) {
-          weight *= 0.3;
+        const selectedSuggestion = suggestedPokemon[Math.floor(Math.random() * suggestedPokemon.length)];
+        battlePokemon.push(selectedSuggestion);
+        
+        if (onMarkSuggestionUsed) {
+          onMarkSuggestionUsed(selectedSuggestion.id);
+          console.log(`✅ Marked suggestion as used: ${selectedSuggestion.name}`);
         }
         
-        const timesSeenInBattles = battleTracking[pokemon.id] || 0;
-        if (timesSeenInBattles === 0) {
-          weight *= 1.5;
-        } else if (timesSeenInBattles < 3) {
-          weight *= 1.2;
-        }
+        const nonSuggestedCandidates = candidatePokemon.filter(
+          p => !suggestedPokemon.some(sp => sp.id === p.id) && 
+              !battlePokemon.some(bp => bp.id === p.id)
+        );
         
-        // FURFROU DEBUG: Give Furfrou forms higher weight for testing
-        if (pokemon.name.toLowerCase().includes('furfrou')) {
-          weight *= 5.0; // Significantly increase Furfrou appearance chance
-          console.log(`🐩 [FURFROU_DEBUG] Boosting weight for ${pokemon.name} (ID: ${pokemon.id}) - weight: ${weight}`);
-        }
+        const remainingSlots = battleSize - 1;
+        const shuffled = nonSuggestedCandidates.sort(() => Math.random() - 0.5);
+        battlePokemon.push(...shuffled.slice(0, remainingSlots));
         
-        return { pokemon, weight };
-      });
-      
-      // Weighted random selection
-      for (let i = 0; i < battleSize; i++) {
-        if (weightedCandidates.length === 0) break;
-        
-        const totalWeight = weightedCandidates.reduce((sum, item) => sum + item.weight, 0);
-        let random = Math.random() * totalWeight;
-        
-        let selectedIndex = 0;
-        for (let j = 0; j < weightedCandidates.length; j++) {
-          random -= weightedCandidates[j].weight;
-          if (random <= 0) {
-            selectedIndex = j;
-            break;
+        shouldPrioritizeSuggestions = false;
+      } else {
+        // Better randomization with weighted selection
+        const weightedCandidates = candidatePokemon.map(pokemon => {
+          let weight = 1.0;
+          
+          if (recentlySeenPokemon.has(pokemon.id)) {
+            weight *= 0.3;
           }
-        }
+          
+          const timesSeenInBattles = battleTracking[pokemon.id] || 0;
+          if (timesSeenInBattles === 0) {
+            weight *= 1.5;
+          } else if (timesSeenInBattles < 3) {
+            weight *= 1.2;
+          }
+          
+          return { pokemon, weight };
+        });
         
-        const selected = weightedCandidates[selectedIndex];
-        battlePokemon.push(selected.pokemon);
-        weightedCandidates.splice(selectedIndex, 1);
+        // Weighted random selection
+        for (let i = 0; i < battleSize; i++) {
+          if (weightedCandidates.length === 0) break;
+          
+          const totalWeight = weightedCandidates.reduce((sum, item) => sum + item.weight, 0);
+          let random = Math.random() * totalWeight;
+          
+          let selectedIndex = 0;
+          for (let j = 0; j < weightedCandidates.length; j++) {
+            random -= weightedCandidates[j].weight;
+            if (random <= 0) {
+              selectedIndex = j;
+              break;
+            }
+          }
+          
+          const selected = weightedCandidates[selectedIndex];
+          battlePokemon.push(selected.pokemon);
+          weightedCandidates.splice(selectedIndex, 1);
+        }
+      }
+
+      // CRITICAL FIX: Check if this battle combination was recent
+      const battleIds = battlePokemon.map(p => p.id);
+      if (!isPairRecent(battleIds) || attempts >= maxAttempts - 1) {
+        console.log(`🎮 [BATTLE_REPEAT_FIX] Battle pair ${battleIds.join('-')} is ${isPairRecent(battleIds) ? 'RECENT but using anyway (max attempts)' : 'FRESH'}`);
+        break;
+      } else {
+        console.log(`🔄 [BATTLE_REPEAT_FIX] Battle pair ${battleIds.join('-')} was recent, trying again (attempt ${attempts + 1})`);
+        attempts++;
       }
     }
 
-    // FURFROU DEBUG: Check if any Furfrou forms were selected
-    const selectedFurfrou = battlePokemon.filter(p => p.name.toLowerCase().includes('furfrou'));
-    if (selectedFurfrou.length > 0) {
-      console.log(`🐩 [FURFROU_DEBUG] FURFROU SELECTED FOR BATTLE!`);
-      selectedFurfrou.forEach(furfrou => {
-        console.log(`🐩 [FURFROU_DEBUG] - Selected: ${furfrou.name} (ID: ${furfrou.id})`);
-      });
-    }
-
-    // CRITICAL FIX: Log Pokemon type data to debug color issue
-    battlePokemon.forEach((pokemon, index) => {
-      console.log(`🎯 [TYPE_DEBUG] Battle Pokemon ${index + 1}: ${pokemon.name} (ID: ${pokemon.id})`);
+    // Track battle participation and pair
+    const battleIds = battlePokemon.map(p => p.id);
+    addBattlePair(battleIds);
+    
+    battlePokemon.forEach(pokemon => {
+      addToRecentlySeen(pokemon.id);
+      battleTracking[pokemon.id] = (battleTracking[pokemon.id] || 0) + 1;
+      
+      // CRITICAL FIX: Log Pokemon type data to debug color issue
+      console.log(`🎯 [TYPE_DEBUG] Battle Pokemon: ${pokemon.name} (ID: ${pokemon.id})`);
       console.log(`🎯 [TYPE_DEBUG] - Raw types:`, pokemon.types);
       console.log(`🎯 [TYPE_DEBUG] - Types is array:`, Array.isArray(pokemon.types));
       console.log(`🎯 [TYPE_DEBUG] - Types length:`, pokemon.types?.length || 0);
@@ -204,17 +231,11 @@ export function createBattleStarter(
       }
     });
 
-    // Track battle participation
-    battlePokemon.forEach(pokemon => {
-      addToRecentlySeen(pokemon.id);
-      battleTracking[pokemon.id] = (battleTracking[pokemon.id] || 0) + 1;
-    });
-
     localStorage.setItem('pokemon-battle-tracking', JSON.stringify(battleTracking));
     localStorage.setItem('pokemon-battle-count', (battlesCount + 1).toString());
 
-    console.log(`✅ [POKEMON_RANGE_FIX] Created battle with Pokemon IDs: [${battlePokemon.map(p => p.id).join(', ')}]`);
-    console.log(`✅ [POKEMON_RANGE_FIX] Pokemon names: [${battlePokemon.map(p => p.name).join(', ')}]`);
+    console.log(`✅ [BATTLE_REPEAT_FIX] Created battle with Pokemon IDs: [${battleIds.join(', ')}] after ${attempts + 1} attempts`);
+    console.log(`✅ [BATTLE_REPEAT_FIX] Pokemon names: [${battlePokemon.map(p => p.name).join(', ')}]`);
     return battlePokemon;
   };
 
