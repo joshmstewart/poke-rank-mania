@@ -1,3 +1,4 @@
+
 import { toast } from "@/hooks/use-toast";
 import { Pokemon } from "../types";
 import { generations } from "../data";
@@ -13,9 +14,9 @@ const shouldIncludePokemon = (pokemon: { name: string, id: number }) => {
       return false;
     }
     
-    // CRITICAL FIX: Filter out ALL Cramorant forms (gulping, gorging, etc.)
-    if (name.includes('cramorant') && (name.includes('gorging') || name.includes('gulping'))) {
-      console.log(`🚫 [CRAMORANT_FILTER] Filtering out Cramorant form: ${pokemon.name} (ID: ${pokemon.id})`);
+    // CRITICAL FIX: Filter out ALL Cramorant forms (gulping, gorging, etc.) - more comprehensive
+    if (name.includes('cramorant') && name !== 'cramorant') {
+      console.log(`🚫 [CRAMORANT_FILTER] Filtering out ALL Cramorant forms: ${pokemon.name} (ID: ${pokemon.id})`);
       return false;
     }
     

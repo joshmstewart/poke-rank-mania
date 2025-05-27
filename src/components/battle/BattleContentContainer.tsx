@@ -22,31 +22,30 @@ const BattleContentContainer: React.FC<BattleContentContainerProps> = React.memo
 }) => {
   console.log("[DEBUG BattleContentContainer] RENDER - allPokemon length:", allPokemon?.length || 0);
   
-  // PERFORMANCE FIX: Use stable reference tracking to prevent unnecessary re-mounts
-  const instanceRef = useRef(`container-${Date.now()}`);
-  const pokemonStableRef = useRef<Pokemon[]>([]);
-  const pokemonSetOnceRef = useRef(false);
+  // CRITICAL FIX: Lock Pokemon reference PERMANENTLY once we have enough data
+  const pokemonLockedRef = useRef(false);
+  const lockedPokemonRef = useRef<Pokemon[]>([]);
   
-  // CRITICAL PERFORMANCE FIX: Only update Pokemon reference ONCE when we first get meaningful data
+  // CRITICAL FIX: Lock Pokemon data once we have sufficient data - NEVER change after that
   const stablePokemon = useMemo(() => {
-    // If we've already set Pokemon once and have a battle going, DON'T change the reference
-    if (pokemonSetOnceRef.current && pokemonStableRef.current.length > 0) {
-      console.log(`[DEBUG BattleContentContainer] Pokemon reference locked - ignoring length change from ${pokemonStableRef.current.length} to ${allPokemon.length}`);
-      return pokemonStableRef.current;
+    // If Pokemon are already locked, NEVER change them
+    if (pokemonLockedRef.current) {
+      console.log(`[CRITICAL FIX] Pokemon LOCKED - ignoring count change from any value to ${allPokemon.length}`);
+      return lockedPokemonRef.current;
     }
     
-    // Only set Pokemon if we have a meaningful amount (first batch)
-    if (allPokemon.length >= 150 && !pokemonSetOnceRef.current) {
-      console.log(`[DEBUG BattleContentContainer] Pokemon data set ONCE - length ${allPokemon.length}`);
-      pokemonStableRef.current = allPokemon;
-      pokemonSetOnceRef.current = true;
+    // Only lock when we have enough Pokemon for battles
+    if (allPokemon.length >= 150) {
+      console.log(`[CRITICAL FIX] LOCKING Pokemon permanently at ${allPokemon.length} Pokemon`);
+      lockedPokemonRef.current = allPokemon;
+      pokemonLockedRef.current = true;
       return allPokemon;
     }
     
-    // Return existing reference to maintain memoization
-    console.log(`[DEBUG BattleContentContainer] Pokemon data unchanged - maintaining stable reference`);
-    return pokemonStableRef.current;
-  }, [allPokemon.length >= 150 ? 1 : 0]); // Only change when we cross the threshold
+    // Return empty array until we have enough
+    console.log(`[CRITICAL FIX] Waiting for sufficient Pokemon - current: ${allPokemon.length}`);
+    return [];
+  }, [allPokemon.length >= 150 ? 'LOCKED' : allPokemon.length]); // CRITICAL: Only change dependency when locking
   
   // CRITICAL FIX: Stable battle type to prevent unnecessary re-mounts
   const safeBattleType: BattleType = useMemo(() => {
@@ -63,21 +62,6 @@ const BattleContentContainer: React.FC<BattleContentContainerProps> = React.memo
   }, [setBattleResults]);
   
   console.log("BattleContentContainer: Using battle type:", safeBattleType, "Pokemon count:", stablePokemon.length);
-  
-  // Only force battle check if we actually have new Pokemon data AND haven't set it before
-  React.useEffect(() => {
-    if (stablePokemon && stablePokemon.length > 0 && !pokemonSetOnceRef.current) {
-      console.log("[DEBUG BattleContentContainer] Pokemon data available for first time, dispatching battle check");
-      
-      const timer = setTimeout(() => {
-        document.dispatchEvent(new CustomEvent("force-new-battle", {
-          detail: { battleType: safeBattleType }
-        }));
-      }, 300);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [stablePokemon.length > 0 ? 1 : 0, safeBattleType]); // Only trigger on first meaningful data
 
   return (
     <div className="flex flex-col w-full max-w-4xl mx-auto px-4">
@@ -91,16 +75,14 @@ const BattleContentContainer: React.FC<BattleContentContainerProps> = React.memo
     </div>
   );
 }, (prevProps, nextProps) => {
-  // PERFORMANCE FIX: Enhanced comparison function to prevent unnecessary re-renders
-  const pokemonChanged = prevProps.allPokemon.length !== nextProps.allPokemon.length;
+  // CRITICAL FIX: Only re-render for meaningful changes
   const battleTypeChanged = prevProps.initialBattleType !== nextProps.initialBattleType;
   const generationChanged = prevProps.initialSelectedGeneration !== nextProps.initialSelectedGeneration;
   
-  // Only re-render if meaningful props actually changed AND we haven't locked Pokemon yet
-  const shouldUpdate = (pokemonChanged && nextProps.allPokemon.length >= 150) || battleTypeChanged || generationChanged;
+  // NEVER re-render for Pokemon count changes once we have enough
+  const shouldUpdate = battleTypeChanged || generationChanged;
   
   console.log("[DEBUG BattleContentContainer] Memo comparison:", {
-    pokemonChanged,
     battleTypeChanged, 
     generationChanged,
     shouldUpdate,
