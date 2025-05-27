@@ -1,3 +1,4 @@
+
 /**
  * Normalize Pokedex numbers - converts special form IDs back to their base form
  * For example: 10117 (Ash-Greninja) -> 658 (Greninja)
@@ -24,30 +25,39 @@ export const normalizePokedexNumber = (id: number): number => {
 export const formatPokemonName = (name: string): string => {
   if (!name) return '';
   
-  console.log(`🔧 [FORMAT_POKEMON_NAME_FIXED] INPUT: "${name}"`);
+  console.log(`🚀 [FORMAT_START] INPUT: "${name}"`);
+  console.log(`🚀 [FORMAT_START] Type of input: ${typeof name}`);
+  console.log(`🚀 [FORMAT_START] Length: ${name.length}`);
   
   // Convert to lowercase for easier matching
   const lowerName = name.toLowerCase();
+  console.log(`🔍 [FORMAT_LOWER] Lowercase: "${lowerName}"`);
+  
+  // Test all the endsWith conditions
+  console.log(`🧪 [FORMAT_TEST] endsWith('-mega-x'): ${lowerName.endsWith('-mega-x')}`);
+  console.log(`🧪 [FORMAT_TEST] endsWith('-mega-y'): ${lowerName.endsWith('-mega-y')}`);
+  console.log(`🧪 [FORMAT_TEST] endsWith('-mega'): ${lowerName.endsWith('-mega')}`);
+  console.log(`🧪 [FORMAT_TEST] endsWith('-gmax'): ${lowerName.endsWith('-gmax')}`);
   
   // Handle Mega evolutions FIRST - check for exact endings
   if (lowerName.endsWith('-mega-x')) {
     const baseName = name.substring(0, name.length - 8); // Remove "-mega-x"
     const result = `Mega ${baseName} X`;
-    console.log(`✅ [MEGA_X_FIXED] "${name}" -> "${result}"`);
+    console.log(`✅ [MEGA_X_TRANSFORM] "${name}" -> "${result}"`);
     return result;
   }
   
   if (lowerName.endsWith('-mega-y')) {
     const baseName = name.substring(0, name.length - 8); // Remove "-mega-y"
     const result = `Mega ${baseName} Y`;
-    console.log(`✅ [MEGA_Y_FIXED] "${name}" -> "${result}"`);
+    console.log(`✅ [MEGA_Y_TRANSFORM] "${name}" -> "${result}"`);
     return result;
   }
   
   if (lowerName.endsWith('-mega')) {
     const baseName = name.substring(0, name.length - 5); // Remove "-mega"
     const result = `Mega ${baseName}`;
-    console.log(`✅ [MEGA_FIXED] "${name}" -> "${result}"`);
+    console.log(`✅ [MEGA_TRANSFORM] "${name}" -> "${result}"`);
     return result;
   }
   
@@ -55,7 +65,7 @@ export const formatPokemonName = (name: string): string => {
   if (lowerName.endsWith('-gmax')) {
     const baseName = name.substring(0, name.length - 5); // Remove "-gmax"
     const result = `G-Max ${baseName}`;
-    console.log(`✅ [GMAX_FIXED] "${name}" -> "${result}"`);
+    console.log(`✅ [GMAX_TRANSFORM] "${name}" -> "${result}"`);
     return result;
   }
   
@@ -63,28 +73,28 @@ export const formatPokemonName = (name: string): string => {
   if (lowerName.endsWith(' mega x')) {
     const baseName = name.substring(0, name.length - 7); // Remove " mega x"
     const result = `Mega ${baseName} X`;
-    console.log(`✅ [SPACE_MEGA_X_FIXED] "${name}" -> "${result}"`);
+    console.log(`✅ [SPACE_MEGA_X_TRANSFORM] "${name}" -> "${result}"`);
     return result;
   }
   
   if (lowerName.endsWith(' mega y')) {
     const baseName = name.substring(0, name.length - 7); // Remove " mega y"
     const result = `Mega ${baseName} Y`;
-    console.log(`✅ [SPACE_MEGA_Y_FIXED] "${name}" -> "${result}"`);
+    console.log(`✅ [SPACE_MEGA_Y_TRANSFORM] "${name}" -> "${result}"`);
     return result;
   }
   
   if (lowerName.endsWith(' mega')) {
     const baseName = name.substring(0, name.length - 5); // Remove " mega"
     const result = `Mega ${baseName}`;
-    console.log(`✅ [SPACE_MEGA_FIXED] "${name}" -> "${result}"`);
+    console.log(`✅ [SPACE_MEGA_TRANSFORM] "${name}" -> "${result}"`);
     return result;
   }
   
   if (lowerName.endsWith(' gmax')) {
     const baseName = name.substring(0, name.length - 5); // Remove " gmax"
     const result = `G-Max ${baseName}`;
-    console.log(`✅ [SPACE_GMAX_FIXED] "${name}" -> "${result}"`);
+    console.log(`✅ [SPACE_GMAX_TRANSFORM] "${name}" -> "${result}"`);
     return result;
   }
   
@@ -147,14 +157,16 @@ export const formatPokemonName = (name: string): string => {
           .replace(new RegExp(pattern, 'i'), '')
           .trim();
         // Return with proper format: "Alolan Vulpix" instead of "Vulpix alola"
-        return `${prefix} ${baseName}`;
+        const result = `${prefix} ${baseName}`;
+        console.log(`🌍 [REGIONAL_TRANSFORM] "${name}" -> "${result}"`);
+        return result;
       }
     }
   }
   
   // If no special form is found, use the capitalizeSpecialForms function
   const result = capitalizeSpecialForms(name);
-  console.log(`🏷️ [NO_SPECIAL_FORM_FIXED] "${name}" -> "${result}" (no special formatting applied)`);
+  console.log(`🏷️ [NO_TRANSFORM] "${name}" -> "${result}" (no special formatting applied)`);
   return result;
 };
 
