@@ -182,21 +182,8 @@ export const useBattleStarterIntegration = (
     // CRITICAL: Log battle 10-11 transition specifically
     if (currentBattleCount === 10) {
       console.error(`🔥 [BATTLE_FLASH_DEBUG] BATTLE 10->11 TRANSITION STARTING - THIS IS WHERE FLASHING HAPPENS!`);
-      console.error(`🔥 [BATTLE_FLASH_DEBUG] About to clear current battle and generate battle 11`);
+      console.error(`🔥 [BATTLE_FLASH_DEBUG] About to generate battle 11 WITHOUT clearing current battle first`);
     }
-    
-    // CRITICAL FIX: Clear previous battle IMMEDIATELY to prevent flashing
-    console.log(`🔄 [BATTLE_FLASH_DEBUG] Clearing current battle immediately - Battle #${currentBattleCount + 1}`);
-    setCurrentBattle([]);
-    setSelectedPokemon([]);
-    
-    // Log the clear action
-    battleSetHistoryRef.current.push({
-      battleNumber: currentBattleCount + 1,
-      pokemonIds: [],
-      timestamp: new Date().toISOString(),
-      action: 'CLEARED_BATTLE'
-    });
     
     const isInitialBattle = !initialBattleStartedRef.current || (!currentBattle || currentBattle.length === 0);
     
@@ -208,7 +195,7 @@ export const useBattleStarterIntegration = (
     battleTransitionCountRef.current++;
     const transitionId = battleTransitionCountRef.current;
     
-    console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] Starting battle with immediate clear`);
+    console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] Starting battle generation WITHOUT clearing current battle`);
     
     if (!allPokemon || allPokemon.length === 0) {
       console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] ❌ FAILED: No Pokemon data available`);
@@ -230,6 +217,7 @@ export const useBattleStarterIntegration = (
     battleGenerationInProgressRef.current = true;
     
     try {
+      // CRITICAL FIX: Generate new battle FIRST, don't clear current battle
       const battle = currentBattleStarter.startNewBattle(battleType, false, false);
       
       if (!battle || battle.length === 0) {
@@ -239,10 +227,10 @@ export const useBattleStarterIntegration = (
 
       // CRITICAL: Log the new battle being set
       const battleIds = battle.map(p => p.id);
-      console.log(`🔄 [BATTLE_FLASH_DEBUG] Setting new battle immediately - Battle #${currentBattleCount + 1}: [${battleIds.join(', ')}]`);
+      console.log(`🔄 [BATTLE_FLASH_DEBUG] Setting new battle directly - Battle #${currentBattleCount + 1}: [${battleIds.join(', ')}]`);
       
       if (currentBattleCount === 10) {
-        console.error(`🔥 [BATTLE_FLASH_DEBUG] SETTING BATTLE 11 NOW: ${battle.map(p => p.name).join(' vs ')}`);
+        console.error(`🔥 [BATTLE_FLASH_DEBUG] SETTING BATTLE 11 DIRECTLY: ${battle.map(p => p.name).join(' vs ')}`);
       }
       
       // Log the set action
@@ -250,7 +238,7 @@ export const useBattleStarterIntegration = (
         battleNumber: currentBattleCount + 1,
         pokemonIds: battleIds,
         timestamp: new Date().toISOString(),
-        action: 'SET_NEW_BATTLE'
+        action: 'SET_NEW_BATTLE_DIRECT'
       });
       
       // Keep only last 20 battle history entries
@@ -258,9 +246,11 @@ export const useBattleStarterIntegration = (
         battleSetHistoryRef.current = battleSetHistoryRef.current.slice(-20);
       }
       
-      // Set the new battle immediately - no delay
+      // CRITICAL FIX: Set new battle directly without clearing first
       setCurrentBattle(battle);
-      console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] ✅ SUCCESS: Battle set immediately`);
+      // Clear selections AFTER setting new battle
+      setSelectedPokemon([]);
+      console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] ✅ SUCCESS: Battle set directly without clearing`);
       
       return battle;
 

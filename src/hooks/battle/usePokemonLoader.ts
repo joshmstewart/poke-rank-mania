@@ -9,11 +9,19 @@ export const usePokemonLoader = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isBackgroundLoading, setIsBackgroundLoading] = useState(false);
   const backgroundLoadingRef = useRef(false);
+  const pokemonLockedRef = useRef(false); // CRITICAL FIX: Lock Pokemon once sufficient data is loaded
   
   // Get form filters
   const { shouldIncludePokemon, storePokemon } = useFormFilters();
 
   const loadInitialBatch = useCallback(async (genId = 0, fullRankingMode = true) => {
+    // CRITICAL FIX: If Pokemon are already locked, don't reload
+    if (pokemonLockedRef.current) {
+      console.log(`🔒 [REFRESH_FIX] Pokemon already locked at ${allPokemon.length} - ignoring reload request`);
+      setIsLoading(false);
+      return allPokemon;
+    }
+
     setIsLoading(true);
     try {
       console.log(`Loading initial batch for generation ${genId}, fullRankingMode: ${fullRankingMode}`);
@@ -36,8 +44,14 @@ export const usePokemonLoader = () => {
       setAllPokemon(filteredBatch);
       setIsLoading(false);
       
+      // CRITICAL FIX: Lock Pokemon after initial batch to prevent refresh cascades
+      if (filteredBatch.length >= 100) {
+        console.log(`🔒 [REFRESH_FIX] Locking Pokemon at ${filteredBatch.length} to prevent refresh cascades`);
+        pokemonLockedRef.current = true;
+      }
+      
       // Start background loading of remaining Pokemon
-      if (!backgroundLoadingRef.current) {
+      if (!backgroundLoadingRef.current && !pokemonLockedRef.current) {
         backgroundLoadingRef.current = true;
         setIsBackgroundLoading(true);
         loadRemainingPokemon(genId, fullRankingMode, filteredBatch);
@@ -54,7 +68,7 @@ export const usePokemonLoader = () => {
       setIsLoading(false);
       return [];
     }
-  }, [shouldIncludePokemon, storePokemon]);
+  }, [shouldIncludePokemon, storePokemon, allPokemon.length]);
 
   const loadRemainingPokemon = useCallback(async (genId: number, fullRankingMode: boolean, initialBatch: Pokemon[]) => {
     try {
@@ -78,8 +92,19 @@ export const usePokemonLoader = () => {
       
       console.log(`Background loading complete: ${remainingPokemon.length} additional Pokémon`);
       
-      // Merge with existing Pokemon - do this silently without triggering battle refresh
-      setAllPokemon(prev => [...prev, ...remainingPokemon]);
+      // CRITICAL FIX: DON'T update allPokemon if locked to prevent refresh cascades
+      if (!pokemonLockedRef.current) {
+        setAllPokemon(prev => [...prev, ...remainingPokemon]);
+        
+        // Lock Pokemon after background load completes
+        if ((initialBatch.length + remainingPokemon.length) >= 200) {
+          console.log(`🔒 [REFRESH_FIX] Locking Pokemon after background load at ${initialBatch.length + remainingPokemon.length}`);
+          pokemonLockedRef.current = true;
+        }
+      } else {
+        console.log(`🔒 [REFRESH_FIX] Skipping Pokemon update - already locked to prevent refresh`);
+      }
+      
       setIsBackgroundLoading(false);
       
       // Show completion toast but don't trigger any battle events
@@ -103,6 +128,10 @@ export const usePokemonLoader = () => {
   const loadPokemon = useCallback(async (genId = 0, fullRankingMode = true) => {
     // Reset background loading state for new loads
     backgroundLoadingRef.current = false;
+    // CRITICAL FIX: Don't reset lock for generation changes - only for true reloads
+    if (genId !== 0) {
+      pokemonLockedRef.current = false;
+    }
     return loadInitialBatch(genId, fullRankingMode);
   }, [loadInitialBatch]);
 

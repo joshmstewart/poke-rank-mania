@@ -30,88 +30,15 @@ const BattleMode = () => {
   
   const initialBattleType = useMemo(() => getInitialBattleType(), []);
 
-  // CRITICAL: Track ALL Pokemon count changes for refresh debugging
-  const previousPokemonCountRef = useRef(0);
-  const pokemonCountChangesRef = useRef(0);
-  const lastRefreshTriggerRef = useRef<string>('');
-
-  // CRITICAL FIX: Add detailed logging to track Pokemon loading milestones
-  const stableAllPokemon = useMemo(() => {
-    const currentCount = allPokemon?.length || 0;
-    const previousCount = previousPokemonCountRef.current;
-    
-    // CRITICAL: Log EVERY count change
-    if (currentCount !== previousCount) {
-      pokemonCountChangesRef.current++;
-      const changeDetails = {
-        changeNumber: pokemonCountChangesRef.current,
-        previousCount,
-        currentCount,
-        difference: currentCount - previousCount,
-        timestamp: new Date().toISOString(),
-        stackTrace: new Error().stack?.split('\n').slice(1, 6) // First 5 stack frames
-      };
-      
-      console.log(`🚨 [REFRESH_TRIGGER_DEBUG] Pokemon count change #${pokemonCountChangesRef.current}:`, changeDetails);
-      
-      // CRITICAL: Track potential refresh triggers
-      if (currentCount === 1271) {
-        console.error(`🔥 [REFRESH_TRIGGER_DEBUG] HIT 1271 MILESTONE - THIS IS A REFRESH TRIGGER!`);
-        lastRefreshTriggerRef.current = `1271_milestone_${Date.now()}`;
-      }
-      if (currentCount === 1025) {
-        console.error(`🔥 [REFRESH_TRIGGER_DEBUG] HIT 1025 MILESTONE - THIS IS A REFRESH TRIGGER!`);
-        lastRefreshTriggerRef.current = `1025_milestone_${Date.now()}`;
-      }
-      
-      // CRITICAL: Log what triggered this count change
-      if (currentCount > previousCount) {
-        console.log(`📈 [REFRESH_TRIGGER_DEBUG] Pokemon count INCREASED by ${currentCount - previousCount}`);
-      } else if (currentCount < previousCount) {
-        console.log(`📉 [REFRESH_TRIGGER_DEBUG] Pokemon count DECREASED by ${previousCount - currentCount} - POSSIBLE REFRESH!`);
-      }
-      
-      previousPokemonCountRef.current = currentCount;
+  // CRITICAL FIX: Use stable Pokemon reference that NEVER changes once loaded
+  const stablePokemon = useMemo(() => {
+    if (!allPokemon || allPokemon.length === 0) {
+      return [];
     }
     
-    if (!currentCount) return [];
-    
-    console.log(`🎯 [LOADING_MILESTONE_DEBUG] BattleMode stabilizing Pokemon data:`, {
-      length: currentCount,
-      timestamp: new Date().toISOString(),
-      isStable: true,
-      lastRefreshTrigger: lastRefreshTriggerRef.current
-    });
-    
-    // CRITICAL: Log sample Pokemon to verify types in source data BEFORE any processing
-    const samplePokemon = allPokemon.find(p => p.id === 60) || allPokemon[0]; // Poliwag
-    if (samplePokemon) {
-      console.log('[CRITICAL DEBUG] BattleMode source Pokemon sample (BEFORE processing):', JSON.stringify({
-        id: samplePokemon.id,
-        name: samplePokemon.name,
-        types: samplePokemon.types,
-        typesIsArray: Array.isArray(samplePokemon.types),
-        typesLength: samplePokemon.types?.length || 0,
-        firstType: samplePokemon.types?.[0],
-        rawTypesStructure: samplePokemon.types,
-        fullSample: {
-          id: samplePokemon.id,
-          name: samplePokemon.name,
-          types: samplePokemon.types
-        }
-      }));
-      
-      // CRITICAL: If types are missing at the source, this is the root problem
-      if (!samplePokemon.types || samplePokemon.types.length === 0) {
-        console.error('[CRITICAL ERROR] BattleMode received Pokemon data without types! Source data issue detected.');
-        console.error('[CRITICAL ERROR] Sample Pokemon object:', JSON.stringify(samplePokemon));
-      }
-    }
-    
-    // Return the EXACT original allPokemon array - no modifications whatsoever
-    console.log('[CRITICAL DEBUG] BattleMode returning unmodified allPokemon array');
+    console.log(`🔒 [REFRESH_FIX] BattleMode using stable Pokemon: ${allPokemon.length}`);
     return allPokemon;
-  }, [allPokemon]);
+  }, [allPokemon.length > 0 ? 'HAS_POKEMON' : 'NO_POKEMON']); // CRITICAL: Only change when we go from no Pokemon to having Pokemon
 
   // CRITICAL FIX: Ultra-stable callback references that never change
   const stableSetBattlesCompleted = useCallback((value: React.SetStateAction<number>) => {
@@ -130,7 +57,7 @@ const BattleMode = () => {
     if (emergencyResetPerformed) return;
     
     const performInitialReset = () => {
-      console.log(`🧹 [LOADING_MILESTONE_DEBUG] Performing initial reset`);
+      console.log(`🧹 [REFRESH_FIX] Performing initial reset`);
       
       const keysToRemember = [
         'pokemon-ranker-battle-type',
@@ -170,16 +97,16 @@ const BattleMode = () => {
     return () => clearTimeout(timer);
   }, [emergencyResetPerformed]);
   
-  // Simplified Pokemon loading with detailed milestone tracking
+  // CRITICAL FIX: Pokemon loading ONLY happens once
   useEffect(() => {
     const loadPokemonOnce = async () => {
       if (!loaderInitiatedRef.current) {
         try {
-          console.log(`🎯 [LOADING_MILESTONE_DEBUG] BattleMode initiating Pokemon load`);
+          console.log(`🔒 [REFRESH_FIX] BattleMode initiating ONE-TIME Pokemon load`);
           loaderInitiatedRef.current = true;
           setLoadingInitiated(true);
           await loadPokemon(0, true);
-          console.log(`🎯 [LOADING_MILESTONE_DEBUG] BattleMode Pokemon load completed`);
+          console.log(`🔒 [REFRESH_FIX] BattleMode Pokemon load completed - WILL NOT RELOAD AGAIN`);
         } catch (error) {
           console.error("❌ Failed to load Pokémon:", error);
         }
@@ -187,20 +114,11 @@ const BattleMode = () => {
     };
 
     loadPokemonOnce();
-  }, [loadPokemon]);
-
-  // CRITICAL: Add logging for component re-renders and unmounts
-  useEffect(() => {
-    console.log(`🔄 [REFRESH_TRIGGER_DEBUG] BattleMode mounted/updated - Pokemon count: ${stableAllPokemon.length}`);
-    
-    return () => {
-      console.log(`🔄 [REFRESH_TRIGGER_DEBUG] BattleMode unmounting - THIS IS A REFRESH!`);
-    };
-  }, [stableAllPokemon.length]);
+  }, []); // CRITICAL FIX: Empty dependency array - only load once ever
 
   // Loading state
-  if (isLoading || !stableAllPokemon.length) {
-    console.log(`🎯 [LOADING_MILESTONE_DEBUG] BattleMode showing loading state - isLoading: ${isLoading}, Pokemon count: ${stableAllPokemon.length}`);
+  if (isLoading || !stablePokemon.length) {
+    console.log(`🔒 [REFRESH_FIX] BattleMode showing loading state - isLoading: ${isLoading}, Pokemon count: ${stablePokemon.length}`);
     
     return (
       <div className="flex justify-center items-center h-64 w-full">
@@ -217,24 +135,24 @@ const BattleMode = () => {
     );
   }
 
-  // CRITICAL FIX: Static component key to prevent unmounting - use data length only
-  const containerKey = `battle-container-${stableAllPokemon.length}`;
+  // CRITICAL FIX: Static component key that NEVER changes once Pokemon are loaded
+  const containerKey = `battle-container-stable`;
   
-  console.log(`🎯 [LOADING_MILESTONE_DEBUG] BattleMode rendering with containerKey: ${containerKey}, Pokemon count: ${stableAllPokemon.length}`);
+  console.log(`🔒 [REFRESH_FIX] BattleMode rendering with STABLE containerKey: ${containerKey}, Pokemon count: ${stablePokemon.length}`);
 
   return (
-    <PokemonProvider allPokemon={stableAllPokemon}>
+    <PokemonProvider allPokemon={stablePokemon}>
       <div className="flex flex-col items-center w-full py-4 px-4 sm:px-6">
         {isBackgroundLoading && (
           <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
             <p className="text-sm text-blue-700">
-              🔄 Loading more Pokémon in the background... ({stableAllPokemon.length} loaded so far)
+              🔄 Loading more Pokémon in the background... ({stablePokemon.length} loaded so far)
             </p>
           </div>
         )}
         <BattleContentContainer
           key={containerKey}
-          allPokemon={stableAllPokemon}
+          allPokemon={stablePokemon}
           initialBattleType={initialBattleType}
           initialSelectedGeneration={0}
           setBattlesCompleted={stableSetBattlesCompleted}
