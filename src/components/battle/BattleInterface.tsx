@@ -9,6 +9,7 @@ import BattleSubmitButton from "./BattleSubmitButton";
 import { useMilestoneCalculations } from "@/hooks/battle/useMilestoneCalculations";
 import { validateBattlePokemon } from "@/services/pokemon/api/utils";
 import { toast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface BattleInterfaceProps {
   currentBattle: Pokemon[];
@@ -42,11 +43,12 @@ const BattleInterface: React.FC<BattleInterfaceProps> = memo(({
   const selectionTimestampRef = useRef(0);
   const lastProcessedBattleRef = useRef<number[]>([]);
   
-  console.log(`🔄 [GRAY SCREEN DEBUG] BattleInterface render state:`, {
+  console.log(`🔄 [GRAY SCREEN FIX] BattleInterface render state:`, {
     isProcessing,
     currentBattleLength: currentBattle?.length || 0,
     currentBattleIds: currentBattle?.map(p => p.id) || [],
     hasValidBattle: currentBattle && currentBattle.length > 0,
+    shouldShowGrayScreen: !currentBattle || currentBattle.length === 0,
     timestamp: new Date().toISOString(),
     source: 'BattleInterface-main'
   });
@@ -59,10 +61,19 @@ const BattleInterface: React.FC<BattleInterfaceProps> = memo(({
   // Validate current battle Pokemon
   const validatedBattle = currentBattle ? validateBattlePokemon(currentBattle) : [];
 
+  console.log(`🔄 [GRAY SCREEN FIX] Battle validation:`, {
+    originalLength: currentBattle?.length || 0,
+    validatedLength: validatedBattle?.length || 0,
+    willShowGrayScreen: !validatedBattle || validatedBattle.length === 0,
+    timestamp: new Date().toISOString()
+  });
+
   // Log when battle data changes
   useEffect(() => {
     if (!validatedBattle || validatedBattle.length === 0) {
-      console.log(`🔄 [GRAY SCREEN DEBUG] BattleInterface: No validated battle data - this might cause gray screen`);
+      console.log(`🔄 [GRAY SCREEN FIX] BattleInterface: No validated battle data - this will cause gray screen`);
+      console.log(`🔄 [GRAY SCREEN FIX] Raw currentBattle:`, currentBattle);
+      console.log(`🔄 [GRAY SCREEN FIX] Validated result:`, validatedBattle);
       return;
     }
     
@@ -74,7 +85,7 @@ const BattleInterface: React.FC<BattleInterfaceProps> = memo(({
       currentIds.every(id => lastProcessedBattleRef.current.includes(id));
       
     if (isSameAsPreviousProcessed) {
-      console.log("🔍 [GRAY SCREEN DEBUG] BattleInterface: Same battle as processed, skipping animation update");
+      console.log("🔍 [GRAY SCREEN FIX] BattleInterface: Same battle as processed, skipping animation update");
       return;
     }
     
@@ -86,10 +97,10 @@ const BattleInterface: React.FC<BattleInterfaceProps> = memo(({
     const isSameAsPrevious = previousBattleIds.length === currentIds.length && 
       previousBattleIds.every(id => currentIds.includes(id));
     
-    console.log(`🔄 [GRAY SCREEN DEBUG] BattleInterface battle change: [${currentIds.join(',')}] (${currentNames.join(', ')}) - Same as previous: ${isSameAsPrevious ? "YES ⚠️" : "NO ✅"}`);
+    console.log(`🔄 [GRAY SCREEN FIX] BattleInterface battle change: [${currentIds.join(',')}] (${currentNames.join(', ')}) - Same as previous: ${isSameAsPrevious ? "YES ⚠️" : "NO ✅"}`);
     
     if (isSameAsPrevious) {
-      console.warn(`⚠️ [GRAY SCREEN DEBUG] REPEAT BATTLE detected in BattleInterface!`);
+      console.warn(`⚠️ [GRAY SCREEN FIX] REPEAT BATTLE detected in BattleInterface!`);
     }
     
     setPreviousBattleIds(currentIds);
@@ -98,12 +109,12 @@ const BattleInterface: React.FC<BattleInterfaceProps> = memo(({
   // Update battles completed
   useEffect(() => {
     setDisplayedBattlesCompleted(battlesCompleted);
-    console.log(`🔢 [GRAY SCREEN DEBUG] Battles completed updated to: ${battlesCompleted}`);
+    console.log(`🔢 [GRAY SCREEN FIX] Battles completed updated to: ${battlesCompleted}`);
   }, [battlesCompleted]);
   
   // Click handlers
   const handlePokemonCardSelect = useCallback((id: number) => {
-    console.log(`🖱️ [GRAY SCREEN DEBUG] handlePokemonCardSelect:`, {
+    console.log(`🖱️ [GRAY SCREEN FIX] handlePokemonCardSelect:`, {
       id,
       isProcessing,
       willIgnore: isProcessing,
@@ -114,42 +125,42 @@ const BattleInterface: React.FC<BattleInterfaceProps> = memo(({
       const now = Date.now();
       
       if (id === lastSelectionRef.current && now - selectionTimestampRef.current < 300) {
-        console.log(`⏱️ [GRAY SCREEN DEBUG] Ignoring repeated selection of Pokemon ${id}`);
+        console.log(`⏱️ [GRAY SCREEN FIX] Ignoring repeated selection of Pokemon ${id}`);
         return;
       }
       
       lastSelectionRef.current = id;
       selectionTimestampRef.current = now;
       
-      console.log(`🖱️ [GRAY SCREEN DEBUG] Processing Pokemon selection: ${id}`);
+      console.log(`🖱️ [GRAY SCREEN FIX] Processing Pokemon selection: ${id}`);
       onPokemonSelect(id);
     } else {
-      console.log(`⏳ [GRAY SCREEN DEBUG] Ignoring click while processing`);
+      console.log(`⏳ [GRAY SCREEN FIX] Ignoring click while processing`);
     }
   }, [isProcessing, onPokemonSelect]);
 
   const handleSubmit = useCallback(() => {
-    console.log(`🔄 [GRAY SCREEN DEBUG] handleSubmit:`, {
+    console.log(`🔄 [GRAY SCREEN FIX] handleSubmit:`, {
       isProcessing,
       willIgnore: isProcessing,
       timestamp: new Date().toISOString()
     });
     
     if (!isProcessing) {
-      console.log("[GRAY SCREEN DEBUG] Submitting triplet selection");
+      console.log("[GRAY SCREEN FIX] Submitting triplet selection");
       onTripletSelectionComplete();
     }
   }, [isProcessing, onTripletSelectionComplete]);
 
   const handleBackClick = useCallback(() => {
-    console.log(`🔄 [GRAY SCREEN DEBUG] handleBackClick:`, {
+    console.log(`🔄 [GRAY SCREEN FIX] handleBackClick:`, {
       isProcessing,
       willIgnore: isProcessing,
       timestamp: new Date().toISOString()
     });
     
     if (!isProcessing) {
-      console.log("[GRAY SCREEN DEBUG] Handling back button click");
+      console.log("[GRAY SCREEN FIX] Handling back button click");
       onGoBack();
     }
   }, [isProcessing, onGoBack]);
@@ -160,7 +171,7 @@ const BattleInterface: React.FC<BattleInterfaceProps> = memo(({
     
     const expectedCount = battleType === "triplets" ? 3 : 2;
     if (validatedBattle.length !== expectedCount) {
-      console.warn(`⚠️ [GRAY SCREEN DEBUG] BATTLE TYPE MISMATCH: Type is ${battleType} but have ${validatedBattle.length} Pokémon`);
+      console.warn(`⚠️ [GRAY SCREEN FIX] BATTLE TYPE MISMATCH: Type is ${battleType} but have ${validatedBattle.length} Pokémon`);
       
       toast({
         title: "Battle Type Mismatch",
@@ -172,10 +183,10 @@ const BattleInterface: React.FC<BattleInterfaceProps> = memo(({
 
   const shouldShowSubmitButton = battleType === "triplets";
   
-  // CRITICAL: Check for the gray screen condition
+  // CRITICAL FIX: Instead of showing gray loading spinner, show skeleton placeholders
   if (!validatedBattle || validatedBattle.length === 0) {
-    console.log(`🔄 [GRAY SCREEN DEBUG] BattleInterface showing loading spinner - THIS MIGHT BE THE GRAY SCREEN SOURCE`);
-    console.log(`🔄 [GRAY SCREEN DEBUG] Spinner details:`, {
+    console.log(`🔄 [GRAY SCREEN FIX] BattleInterface showing skeleton instead of gray screen`);
+    console.log(`🔄 [GRAY SCREEN FIX] Skeleton details:`, {
       currentBattle: currentBattle?.length || 0,
       validatedBattle: validatedBattle?.length || 0,
       isProcessing,
@@ -183,13 +194,31 @@ const BattleInterface: React.FC<BattleInterfaceProps> = memo(({
     });
     
     return (
-      <div className="bg-white rounded-lg shadow p-6 flex items-center justify-center h-64 w-full">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-primary"></div>
+      <div className="bg-white rounded-lg shadow p-6 w-full">
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-4">
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-10 w-24" />
+          </div>
+          <Skeleton className="h-2 w-full mb-2" />
+          <Skeleton className="h-4 w-32" />
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <Skeleton className="h-64 w-full rounded-lg" />
+          <Skeleton className="h-64 w-full rounded-lg" />
+        </div>
+        
+        {shouldShowSubmitButton && (
+          <div className="flex justify-center">
+            <Skeleton className="h-12 w-32" />
+          </div>
+        )}
       </div>
     );
   }
   
-  console.log(`🔄 [GRAY SCREEN DEBUG] BattleInterface rendering normally:`, {
+  console.log(`🔄 [GRAY SCREEN FIX] BattleInterface rendering normally:`, {
     isProcessing,
     validatedBattleLength: validatedBattle.length,
     timestamp: new Date().toISOString()
