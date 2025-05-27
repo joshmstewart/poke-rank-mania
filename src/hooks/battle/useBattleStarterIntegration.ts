@@ -1,3 +1,4 @@
+
 import { useMemo, useEffect, useRef, useCallback } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
@@ -111,37 +112,13 @@ export const useBattleStarterIntegration = (
     };
   }, []);
 
-  // CRITICAL FIX: Start initial battle when Pokemon data is available - but only once - FIXED VERSION
-  useEffect(() => {
-    const timestamp = new Date().toISOString();
-    console.log(`[${timestamp}] useBattleStarterIntegration Pokemon data check: ${allPokemon?.length || 0} Pokemon available`);
-    
-    // CRITICAL FIX: Only start initial battle if we have Pokemon AND haven't started yet AND no current battle exists
-    if (allPokemon && allPokemon.length > 0 && !initialBattleStartedRef.current && (!currentBattle || currentBattle.length === 0)) {
-      console.log(`[${timestamp}] Starting initial battle with ${allPokemon.length} Pokemon`);
-      initialBattleStartedRef.current = true;
-      
-      // Start initial battle after short delay to ensure all systems are ready
-      setTimeout(() => {
-        if (!autoTriggerDisabledRef.current && (!currentBattle || currentBattle.length === 0)) {
-          console.log(`[${timestamp}] Triggering initial battle start`);
-          const initialBattle = startNewBattle("pairs");
-          if (initialBattle && initialBattle.length > 0) {
-            console.log(`✅ [INITIAL_BATTLE] Started with Pokemon: ${initialBattle.map(p => p.name).join(', ')}`);
-          }
-        } else {
-          console.log(`[${timestamp}] Skipping initial battle - auto-triggers disabled or battle already exists`);
-        }
-      }, 500);
-    } else {
-      console.log(`[${timestamp}] Skipping initial battle trigger - initialBattleStartedRef.current: ${initialBattleStartedRef.current}, currentBattle.length: ${currentBattle?.length || 0}`);
-    }
-  }, [allPokemon.length > 0 ? 1 : 0]); // CRITICAL FIX: Only depend on whether we HAVE Pokemon, not the exact count
+  // CRITICAL FIX: REMOVE AUTOMATIC BATTLE STARTING - Let parent components handle this explicitly
+  // This was the source of the auto-refresh problem - Pokemon loading should NOT auto-start battles
 
   // CRITICAL FIX: Simplified initialization - NO auto-trigger on init
   useEffect(() => {
     const timestamp = new Date().toISOString();
-    console.log(`[${timestamp}] useBattleStarterIntegration initialized with ${allPokemon?.length || 0} Pokémon`);
+    console.log(`[${timestamp}] useBattleStarterIntegration initialized - NO AUTO-BATTLE TRIGGERS`);
     
     if (initializationTimerRef.current) {
       clearTimeout(initializationTimerRef.current);
@@ -215,13 +192,8 @@ export const useBattleStarterIntegration = (
   ]);
 
   const startNewBattle = useCallback((battleType: BattleType) => {
-    // CRITICAL FIX: Allow initial battles but block unwanted auto-replacements
-    const isInitialBattle = !initialBattleStartedRef.current || (!currentBattle || currentBattle.length === 0);
-    
-    if (autoTriggerDisabledRef.current && !isInitialBattle) {
-      console.log('[AUTO_TRIGGER_PREVENTION] Auto-trigger disabled - ignoring non-initial battle request');
-      return [];
-    }
+    // CRITICAL FIX: Log that this is an EXPLICIT battle start, not auto-triggered
+    console.log(`[EXPLICIT_BATTLE_START] Manual battle start requested - battleType: ${battleType}`);
     
     // CRITICAL: Increment battle transition counter for debugging
     battleTransitionCountRef.current++;
@@ -230,7 +202,6 @@ export const useBattleStarterIntegration = (
     console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] ===== Starting Battle Transition Analysis =====`);
     console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] Requested battleType: ${battleType}`);
     console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] autoTriggerDisabledRef.current: ${autoTriggerDisabledRef.current}`);
-    console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] isInitialBattle: ${isInitialBattle}`);
     
     const timestamp = new Date().toISOString();
     console.log(`[${timestamp}] startNewBattle called with battleType: ${battleType}`);
@@ -496,7 +467,7 @@ export const useBattleStarterIntegration = (
 
   // OPTIMIZED: Initialization effect
   useEffect(() => {
-    console.log('[DEBUG useBattleStarterIntegration] Initial setup complete');
+    console.log('[DEBUG useBattleStarterIntegration] Initial setup complete - NO AUTO-BATTLE TRIGGERS');
     
     initializationCompleteRef.current = false;
     initialGetBattleFiredRef.current = false;
