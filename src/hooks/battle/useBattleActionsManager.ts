@@ -46,6 +46,12 @@ export const useBattleActionsManager = (
   // Convert string activeTier back to TopNOption for useBattleProcessor
   const activeTierAsTopNOption: TopNOption = activeTier === "All" ? "All" : Number(activeTier) as TopNOption;
   
+  // Create a wrapper function that converts TopNOption back to string for the actual freezePokemonForTier function
+  const freezePokemonForTierWrapper = useCallback((pokemonId: number, tier: TopNOption) => {
+    const tierAsString = tier === "All" ? "All" : String(tier);
+    freezePokemonForTier(pokemonId, tierAsString);
+  }, [freezePokemonForTier]);
+  
   const { 
     processBattleResult,
     isProcessingResult, 
@@ -63,7 +69,7 @@ export const useBattleActionsManager = (
     generateRankings,
     setSelectedPokemon, // Fix: This should be setSelectedPokemon, not activeTier
     activeTierAsTopNOption, // Fix: Convert string back to TopNOption
-    freezePokemonForTier,
+    freezePokemonForTierWrapper, // Fix: Use wrapper that accepts TopNOption
     battleStarter,
     markSuggestionUsed,
     undefined, // isResettingRef will be handled in reset hook
