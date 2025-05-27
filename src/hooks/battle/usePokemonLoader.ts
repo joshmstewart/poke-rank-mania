@@ -9,7 +9,7 @@ export const usePokemonLoader = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isBackgroundLoading, setIsBackgroundLoading] = useState(false);
   const backgroundLoadingRef = useRef(false);
-  const pokemonLockedRef = useRef(false); // CRITICAL FIX: Lock Pokemon once sufficient data is loaded
+  const pokemonLockedRef = useRef(false);
   
   // Get form filters
   const { shouldIncludePokemon, storePokemon } = useFormFilters();
@@ -26,12 +26,12 @@ export const usePokemonLoader = () => {
     try {
       console.log(`Loading initial batch for generation ${genId}, fullRankingMode: ${fullRankingMode}`);
       
-      // Load initial small batch (150 Pokemon) for quick battle start
-      const initialBatch = await fetchAllPokemon(genId, fullRankingMode, true, 150);
-      console.log(`Loaded initial batch of ${initialBatch.length} Pokémon from API`);
+      // CRITICAL FIX: Load ALL Pokemon initially to ensure proper cross-generation distribution
+      const allPokemonData = await fetchAllPokemon(genId, fullRankingMode, false);
+      console.log(`Loaded complete dataset of ${allPokemonData.length} Pokémon from API`);
       
       // Filter Pokemon according to user preferences
-      const filteredBatch = initialBatch.filter(p => {
+      const filteredPokemon = allPokemonData.filter(p => {
         const include = shouldIncludePokemon(p);
         if (!include) {
           storePokemon(p);
@@ -39,25 +39,43 @@ export const usePokemonLoader = () => {
         return include;
       });
       
-      console.log(`After filtering initial batch: ${filteredBatch.length} Pokémon remaining`);
+      console.log(`After filtering: ${filteredPokemon.length} Pokémon remaining`);
       
-      setAllPokemon(filteredBatch);
+      // CRITICAL FIX: Shuffle the filtered Pokemon to ensure random distribution across generations
+      const shuffledPokemon = [...filteredPokemon].sort(() => Math.random() - 0.5);
+      console.log(`🎲 [GENERATION_FIX] Shuffled ${shuffledPokemon.length} Pokemon for random distribution`);
+      
+      // Log generation distribution for debugging
+      const generationCounts = new Map<number, number>();
+      shuffledPokemon.forEach(p => {
+        let gen = 1;
+        if (p.id <= 151) gen = 1;
+        else if (p.id <= 251) gen = 2;
+        else if (p.id <= 386) gen = 3;
+        else if (p.id <= 493) gen = 4;
+        else if (p.id <= 649) gen = 5;
+        else if (p.id <= 721) gen = 6;
+        else if (p.id <= 809) gen = 7;
+        else if (p.id <= 905) gen = 8;
+        else gen = 9;
+        
+        generationCounts.set(gen, (generationCounts.get(gen) || 0) + 1);
+      });
+      
+      console.log(`🎯 [GENERATION_FIX] Pokemon distribution by generation:`, 
+        Array.from(generationCounts.entries()).map(([gen, count]) => `Gen ${gen}: ${count}`).join(', ')
+      );
+      
+      setAllPokemon(shuffledPokemon);
       setIsLoading(false);
       
-      // CRITICAL FIX: Lock Pokemon after initial batch to prevent refresh cascades
-      if (filteredBatch.length >= 100) {
-        console.log(`🔒 [REFRESH_FIX] Locking Pokemon at ${filteredBatch.length} to prevent refresh cascades`);
+      // CRITICAL FIX: Lock Pokemon after loading to prevent refresh cascades
+      if (shuffledPokemon.length >= 100) {
+        console.log(`🔒 [REFRESH_FIX] Locking Pokemon at ${shuffledPokemon.length} to prevent refresh cascades`);
         pokemonLockedRef.current = true;
       }
       
-      // Start background loading of remaining Pokemon
-      if (!backgroundLoadingRef.current && !pokemonLockedRef.current) {
-        backgroundLoadingRef.current = true;
-        setIsBackgroundLoading(true);
-        loadRemainingPokemon(genId, fullRankingMode, filteredBatch);
-      }
-      
-      return filteredBatch;
+      return shuffledPokemon;
     } catch (error) {
       console.error("Error loading initial Pokemon batch:", error);
       toast({
@@ -69,61 +87,6 @@ export const usePokemonLoader = () => {
       return [];
     }
   }, [shouldIncludePokemon, storePokemon, allPokemon.length]);
-
-  const loadRemainingPokemon = useCallback(async (genId: number, fullRankingMode: boolean, initialBatch: Pokemon[]) => {
-    try {
-      console.log("Starting background load of remaining Pokémon...");
-      
-      // Load all Pokemon
-      const allPokemonData = await fetchAllPokemon(genId, fullRankingMode, false);
-      console.log(`Background loaded ${allPokemonData.length} total Pokémon`);
-      
-      // Filter and get only the new ones not in initial batch
-      const initialIds = new Set(initialBatch.map(p => p.id));
-      const remainingPokemon = allPokemonData.filter(p => {
-        if (initialIds.has(p.id)) return false; // Skip already loaded
-        
-        const include = shouldIncludePokemon(p);
-        if (!include) {
-          storePokemon(p);
-        }
-        return include;
-      });
-      
-      console.log(`Background loading complete: ${remainingPokemon.length} additional Pokémon`);
-      
-      // CRITICAL FIX: DON'T update allPokemon if locked to prevent refresh cascades
-      if (!pokemonLockedRef.current) {
-        setAllPokemon(prev => [...prev, ...remainingPokemon]);
-        
-        // Lock Pokemon after background load completes
-        if ((initialBatch.length + remainingPokemon.length) >= 200) {
-          console.log(`🔒 [REFRESH_FIX] Locking Pokemon after background load at ${initialBatch.length + remainingPokemon.length}`);
-          pokemonLockedRef.current = true;
-        }
-      } else {
-        console.log(`🔒 [REFRESH_FIX] Skipping Pokemon update - already locked to prevent refresh`);
-      }
-      
-      setIsBackgroundLoading(false);
-      
-      // Show completion toast but don't trigger any battle events
-      toast({
-        title: "Loading complete",
-        description: `${initialBatch.length + remainingPokemon.length} total Pokémon loaded. Current battle will continue.`,
-        duration: 3000
-      });
-      
-    } catch (error) {
-      console.error("Error loading remaining Pokemon:", error);
-      setIsBackgroundLoading(false);
-      toast({
-        title: "Background loading failed", 
-        description: "Some Pokémon couldn't be loaded in the background.",
-        variant: "destructive"
-      });
-    }
-  }, [shouldIncludePokemon, storePokemon]);
 
   const loadPokemon = useCallback(async (genId = 0, fullRankingMode = true) => {
     // Reset background loading state for new loads

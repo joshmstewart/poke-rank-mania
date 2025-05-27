@@ -1,4 +1,3 @@
-
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { BattleType } from "./types";
 import { validateBattlePokemon } from "@/services/pokemon/api/utils";
@@ -19,6 +18,27 @@ export const createBattleStarter = (
   console.log(`🎯 [POKEMON_RANGE_FIX] createBattleStarter initialized with ${allPokemonForGeneration.length} total Pokemon`);
   console.log(`🎯 [POKEMON_RANGE_FIX] Pokemon ID range: ${Math.min(...allPokemonForGeneration.map(p => p.id))} to ${Math.max(...allPokemonForGeneration.map(p => p.id))}`);
 
+  // Log generation distribution
+  const generationCounts = new Map<number, number>();
+  allPokemonForGeneration.forEach(p => {
+    let gen = 1;
+    if (p.id <= 151) gen = 1;
+    else if (p.id <= 251) gen = 2;
+    else if (p.id <= 386) gen = 3;
+    else if (p.id <= 493) gen = 4;
+    else if (p.id <= 649) gen = 5;
+    else if (p.id <= 721) gen = 6;
+    else if (p.id <= 809) gen = 7;
+    else if (p.id <= 905) gen = 8;
+    else gen = 9;
+    
+    generationCounts.set(gen, (generationCounts.get(gen) || 0) + 1);
+  });
+  
+  console.log(`🎯 [GENERATION_DISTRIBUTION] Available Pokemon by generation:`, 
+    Array.from(generationCounts.entries()).map(([gen, count]) => `Gen ${gen}: ${count}`).join(', ')
+  );
+
   const shuffleArray = (array: Pokemon[]) => {
     const shuffled = [...array];
     for (let i = shuffled.length - 1; i > 0; i--) {
@@ -26,6 +46,69 @@ export const createBattleStarter = (
       [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
     }
     return shuffled;
+  };
+
+  // CRITICAL FIX: Ensure cross-generation selection
+  const getRandomCrossGenerationPokemon = (pool: Pokemon[], count: number, excludeIds: Set<number>): Pokemon[] => {
+    // Group Pokemon by generation
+    const pokemonByGeneration = new Map<number, Pokemon[]>();
+    pool.forEach(p => {
+      if (excludeIds.has(p.id)) return;
+      
+      let gen = 1;
+      if (p.id <= 151) gen = 1;
+      else if (p.id <= 251) gen = 2;
+      else if (p.id <= 386) gen = 3;
+      else if (p.id <= 493) gen = 4;
+      else if (p.id <= 649) gen = 5;
+      else if (p.id <= 721) gen = 6;
+      else if (p.id <= 809) gen = 7;
+      else if (p.id <= 905) gen = 8;
+      else gen = 9;
+      
+      if (!pokemonByGeneration.has(gen)) {
+        pokemonByGeneration.set(gen, []);
+      }
+      pokemonByGeneration.get(gen)!.push(p);
+    });
+
+    const result: Pokemon[] = [];
+    const availableGenerations = Array.from(pokemonByGeneration.keys()).filter(gen => 
+      pokemonByGeneration.get(gen)!.length > 0
+    );
+    
+    // Try to pick from different generations when possible
+    for (let i = 0; i < count && result.length < count; i++) {
+      if (availableGenerations.length === 0) break;
+      
+      const randomGen = availableGenerations[Math.floor(Math.random() * availableGenerations.length)];
+      const genPokemon = pokemonByGeneration.get(randomGen)!;
+      
+      if (genPokemon.length > 0) {
+        const randomIndex = Math.floor(Math.random() * genPokemon.length);
+        const selectedPokemon = genPokemon.splice(randomIndex, 1)[0];
+        result.push(selectedPokemon);
+        
+        console.log(`🎯 [CROSS_GEN] Selected ${selectedPokemon.name} from Generation ${randomGen}`);
+        
+        // Remove generation from available if empty
+        if (genPokemon.length === 0) {
+          const genIndex = availableGenerations.indexOf(randomGen);
+          availableGenerations.splice(genIndex, 1);
+        }
+      }
+    }
+    
+    // If we still need more Pokemon, fill from any available
+    if (result.length < count) {
+      const remaining = pool.filter(p => 
+        !excludeIds.has(p.id) && !result.some(r => r.id === p.id)
+      );
+      const shuffledRemaining = shuffleArray(remaining);
+      result.push(...shuffledRemaining.slice(0, count - result.length));
+    }
+    
+    return result;
   };
 
   const pickDistinctPair = (pool: Pokemon[], seen: Set<number>, size: number) => {
@@ -84,131 +167,44 @@ export const createBattleStarter = (
     const battleSize = battleType === "pairs" ? 2 : 3;
     console.log("🎯 [useBattleStarter] battleSize determined:", battleSize, "battleType:", battleType);
 
-    // CRITICAL FIX: Always use full Pokemon pool, no early battle subset
-    const allAvailablePokemon = allPokemonForGeneration.filter(p => !recentlySeenPokemon.has(p.id));
-    
-    console.log(`🎯 [POKEMON_RANGE_FIX] Using FULL Pokemon pool of ${allAvailablePokemon.length} Pokemon`);
-    console.log(`🎯 [POKEMON_RANGE_FIX] Full range IDs available: ${Math.min(...allAvailablePokemon.map(p => p.id))} to ${Math.max(...allAvailablePokemon.map(p => p.id))}`);
-
-    // Different strategy based on tier
-    const tierSize = activeTier === "All" ? 
-      currentFinalRankings.length : 
-      Math.min(Number(activeTier), currentFinalRankings.length);
-
-    // Get the current top N Pokémon based on the tier
-    const topCandidates = currentFinalRankings
-      .slice(0, tierSize)
-      .filter(p => !isPokemonFrozenForTier || !isPokemonFrozenForTier(p.id, activeTier))
-      .filter(p => !recentlySeenPokemon.has(p.id));
-
-    // Get Pokémon just below the cutoff (challenger pool)
-    const nearCandidates = currentFinalRankings
-      .slice(tierSize, tierSize + 25)
-      .filter(p => !isPokemonFrozenForTier || !isPokemonFrozenForTier(p.id, activeTier))
-      .filter(p => !recentlySeenPokemon.has(p.id));
-
-    // Get lower-tier candidates (50% lower than cutoff)
-    const lowerTierIndex = Math.floor(tierSize + (tierSize * 0.5));
-    const lowerTierCandidates = currentFinalRankings
-      .slice(lowerTierIndex, lowerTierIndex + 30)
-      .filter(p => !isPokemonFrozenForTier || !isPokemonFrozenForTier(p.id, activeTier))
-      .filter(p => !recentlySeenPokemon.has(p.id));
-
-    // Get Pokémon with few battles (discovery pool) - FROM FULL RANGE
-    const unrankedPokemonIds = allPokemonForGeneration
-      .filter(p => {
-        const rankedData = currentFinalRankings.find(rp => rp.id === p.id);
-        return !rankedData || rankedData.count < 3;
-      })
-      .filter(p => !recentlySeenPokemon.has(p.id))
-      .map(p => p.id);
-    
-    const unrankedCandidates: RankedPokemon[] = unrankedPokemonIds
-      .map(id => {
-        const rankedVersion = currentFinalRankings.find(rp => rp.id === id);
-        if (rankedVersion) return rankedVersion;
-        
-        const basePokemon = allPokemonForGeneration.find(p => p.id === id);
-        if (!basePokemon) return null;
-        
-        return {
-          ...basePokemon,
-          score: 0,
-          count: 0,
-          confidence: 0
-        } as RankedPokemon;
-      })
-      .filter(Boolean) as RankedPokemon[];
-
-    // Get Pokémon that lost to lower tier opponents
-    const demotionCandidates = Array.from(lowerTierLosersMap.keys())
-      .filter(id => !recentlySeenPokemon.has(id))
-      .map(id => {
-        const rankedVersion = currentFinalRankings.find(p => p.id === id);
-        if (rankedVersion) return rankedVersion;
-        
-        const basePokemon = allPokemonForGeneration.find(p => p.id === id);
-        if (!basePokemon) return null;
-        
-        return {
-          ...basePokemon,
-          score: 0,
-          count: 0,
-          confidence: 0
-        } as RankedPokemon;
-      })
-      .filter(Boolean) as RankedPokemon[];
-
+    // CRITICAL FIX: Use cross-generation selection strategy
     const randomValue = Math.random();
     console.log("🎲 Random strategy selection value:", randomValue.toFixed(2));
 
     let selectedBattle: Pokemon[] = [];
-    
-    console.log(`📊 Candidate pools: Top=${topCandidates.length}, Near=${nearCandidates.length}, Lower=${lowerTierCandidates.length}, Unranked=${unrankedCandidates.length}, Demotion=${demotionCandidates.length}`);
 
-    if (randomValue < 0.3 && topCandidates.length >= battleSize) {
-      selectedBattle = shuffleArray(topCandidates as unknown as Pokemon[]).slice(0, battleSize);
-      console.log("⚖️ Selected battle strategy: Top tier");
-    } 
-    else if (randomValue < 0.55 && topCandidates.length > 0 && nearCandidates.length > 0) {
-      const result = [
-        topCandidates[Math.floor(Math.random() * topCandidates.length)] as unknown as Pokemon
-      ];
-      const neededMore = battleSize - result.length;
-      result.push(...shuffleArray(nearCandidates as unknown as Pokemon[]).slice(0, neededMore));
-      selectedBattle = result;
-      console.log("⚖️ Selected battle strategy: Top vs Challenger");
-    } 
-    else if (randomValue < 0.7 && demotionCandidates.length > 0 && lowerTierCandidates.length > 0) {
-      const demotionCandidate = shuffleArray(demotionCandidates as unknown as Pokemon[])[0];
-      const result = [demotionCandidate];
-      const neededMore = battleSize - result.length;
-      result.push(...shuffleArray(lowerTierCandidates as unknown as Pokemon[]).slice(0, neededMore));
-      console.log(`⚖️ Selected battle strategy: Testing ${demotionCandidate.name} for demotion`);
-      selectedBattle = result;
-    } 
-    else if (randomValue < 0.85 && unrankedCandidates.length > 0) {
-      selectedBattle = shuffleArray(unrankedCandidates as unknown as Pokemon[]).slice(0, battleSize);
-      console.log("⚖️ Selected battle strategy: Discovery (unranked Pokemon)");
-    } 
-    else if (randomValue < 0.95 && topCandidates.length > 0 && unrankedCandidates.length > 0) {
-      const result = [
-        topCandidates[Math.floor(Math.random() * topCandidates.length)] as unknown as Pokemon
-      ];
-      const neededMore = battleSize - result.length;
-      const shuffledUnrankedSlice = shuffleArray(unrankedCandidates as unknown as Pokemon[]).slice(0, neededMore);
-      result.push(...shuffledUnrankedSlice);
-      selectedBattle = result;
-      console.log("⚖️ Selected battle strategy: Top vs Unranked");
-    } 
+    // 60% chance for completely random cross-generation battle
+    if (randomValue < 0.6) {
+      selectedBattle = getRandomCrossGenerationPokemon(allPokemonForGeneration, battleSize, recentlySeenPokemon);
+      console.log("⚖️ Selected battle strategy: Cross-generation random");
+    }
+    // 40% chance for ranking-based battle (if we have rankings)
+    else if (currentFinalRankings.length > 0) {
+      const tierSize = activeTier === "All" ? 
+        currentFinalRankings.length : 
+        Math.min(Number(activeTier), currentFinalRankings.length);
+
+      const topCandidates = currentFinalRankings
+        .slice(0, tierSize)
+        .filter(p => !isPokemonFrozenForTier || !isPokemonFrozenForTier(p.id, activeTier))
+        .filter(p => !recentlySeenPokemon.has(p.id));
+
+      if (topCandidates.length >= battleSize) {
+        selectedBattle = shuffleArray(topCandidates as unknown as Pokemon[]).slice(0, battleSize);
+        console.log("⚖️ Selected battle strategy: Top tier ranking-based");
+      } else {
+        selectedBattle = getRandomCrossGenerationPokemon(allPokemonForGeneration, battleSize, recentlySeenPokemon);
+        console.log("⚖️ Selected battle strategy: Fallback cross-generation random");
+      }
+    }
+    // Fallback to cross-generation random
     else {
-      // CRITICAL FIX: Use full Pokemon range for completely random battles
-      selectedBattle = shuffleArray(allPokemonForGeneration).slice(0, battleSize);
-      console.log("⚖️ Selected battle strategy: Completely random from FULL range");
+      selectedBattle = getRandomCrossGenerationPokemon(allPokemonForGeneration, battleSize, recentlySeenPokemon);
+      console.log("⚖️ Selected battle strategy: Fallback cross-generation random");
     }
 
     if (selectedBattle.length < battleSize) {
-      console.log("⚠️ Failed to select enough Pokemon with strategy, using fallback random selection from FULL range");
+      console.log("⚠️ Failed to select enough Pokemon with strategy, using simple random selection");
       selectedBattle = shuffleArray(allPokemonForGeneration).slice(0, battleSize);
     }
 
@@ -226,9 +222,20 @@ export const createBattleStarter = (
     console.log("⚖️ Final selected battle pair IDs:", validatedBattle.map(p => p.id));
     console.log("⚖️ Final selected battle names:", validatedBattle.map(p => p.name));
     
-    // CRITICAL: Log type data for color debugging
+    // Log generation info for selected Pokemon
     validatedBattle.forEach((pokemon, index) => {
-      console.log(`🎯 [TYPE_DEBUG] Final battle Pokemon ${index + 1}: ${pokemon.name} (ID: ${pokemon.id})`);
+      let gen = 1;
+      if (pokemon.id <= 151) gen = 1;
+      else if (pokemon.id <= 251) gen = 2;
+      else if (pokemon.id <= 386) gen = 3;
+      else if (pokemon.id <= 493) gen = 4;
+      else if (pokemon.id <= 649) gen = 5;
+      else if (pokemon.id <= 721) gen = 6;
+      else if (pokemon.id <= 809) gen = 7;
+      else if (pokemon.id <= 905) gen = 8;
+      else gen = 9;
+      
+      console.log(`🎯 [GENERATION_DEBUG] Battle Pokemon ${index + 1}: ${pokemon.name} (ID: ${pokemon.id}, Gen: ${gen})`);
       console.log(`🎯 [TYPE_DEBUG] - Raw types:`, pokemon.types);
       console.log(`🎯 [TYPE_DEBUG] - Types length:`, pokemon.types?.length || 0);
       if (!pokemon.types || pokemon.types.length === 0) {
@@ -253,13 +260,12 @@ export const createBattleStarter = (
     const battleSize = battleType === "pairs" ? 2 : 3;
     let result: Pokemon[] = [];
 
-    // CRITICAL FIX: Remove early battle subset limitation - always use full range
-    console.log(`🎯 [POKEMON_RANGE_FIX] Battle ${battleCountRef}: Using FULL Pokemon range (no subset)`);
+    console.log(`🎯 [POKEMON_RANGE_FIX] Battle ${battleCountRef}: Using FULL Pokemon range with cross-generation strategy`);
     result = getTierBattlePair(battleType);
     
     if (result.length < battleSize) {
-      console.log("⚠️ getTierBattlePair returned insufficient Pokemon, using fallback random selection from FULL range");
-      result = shuffleArray(allPokemonForGeneration).slice(0, battleSize);
+      console.log("⚠️ getTierBattlePair returned insufficient Pokemon, using fallback cross-generation selection");
+      result = getRandomCrossGenerationPokemon(allPokemonForGeneration, battleSize, new Set());
     }
 
     const validatedResult = validateBattlePokemon(result);
