@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Pokemon } from "@/services/pokemon";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { getPreferredImageUrl, getPreferredImageType, PokemonImageType } from "@/components/settings/ImagePreferenceSelector";
-import { normalizePokedexNumber } from "@/utils/pokemonUtils";
+import { normalizePokedexNumber } from "@/utils/pokemon";
 import { validateBattlePokemon } from "@/services/pokemon/api/utils";
 
 interface PokemonCardProps {
