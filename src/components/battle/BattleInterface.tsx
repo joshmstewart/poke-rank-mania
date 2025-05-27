@@ -55,7 +55,8 @@ const BattleInterface: React.FC<BattleInterfaceProps> = memo(({
     milestones
   );
   
-  const validatedBattle = currentBattle ? validateBattlePokemon(currentBattle) : [];
+  // CRITICAL FIX: Handle empty battle during transitions
+  const validatedBattle = currentBattle && currentBattle.length > 0 ? validateBattlePokemon(currentBattle) : [];
 
   console.log(`🔄 [BATTLE_INTERFACE_DEBUG] Battle validation:`, {
     originalLength: currentBattle?.length || 0,
@@ -166,10 +167,35 @@ const BattleInterface: React.FC<BattleInterfaceProps> = memo(({
 
   const shouldShowSubmitButton = battleType === "triplets";
   
-  // CRITICAL FIX: Always render interface if we have valid battle data
+  // CRITICAL FIX: Show interface even with empty battle during transitions, but with placeholder
   if (!validatedBattle || validatedBattle.length === 0) {
-    console.log(`⚠️ [BATTLE_INTERFACE_DEBUG] No battle data - component should not render`);
-    return null;
+    console.log(`⚠️ [BATTLE_INTERFACE_DEBUG] No battle data - showing transition placeholder`);
+    return (
+      <div className="bg-white rounded-lg shadow p-6 w-full">
+        <div className="mb-4">
+          <BattleHeader
+            battlesCompleted={displayedBattlesCompleted}
+            onGoBack={handleBackClick}
+            hasHistory={battleHistory.length > 0}
+            isProcessing={true}
+            internalProcessing={false}
+          />
+          
+          <BattleProgress
+            battlesCompleted={displayedBattlesCompleted}
+            getMilestoneProgress={getMilestoneProgress}
+            getNextMilestone={getNextMilestone}
+          />
+        </div>
+        
+        {/* Transition placeholder */}
+        <div className="grid gap-4 mt-8 grid-cols-2">
+          {[1, 2].map((placeholder) => (
+            <div key={`transition-placeholder-${placeholder}`} className="w-full h-[200px] bg-gray-100 animate-pulse rounded-md"></div>
+          ))}
+        </div>
+      </div>
+    );
   }
   
   console.log(`✅ [BATTLE_INTERFACE_DEBUG] Rendering interface with ${validatedBattle.length} Pokemon`);

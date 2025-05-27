@@ -81,13 +81,14 @@ const BattleContent: React.FC<BattleContentProps> = ({
     setBattleResults?.(battleResults);
   }, [battleResults, setBattleResults]);
 
-  // CRITICAL FIX: Don't show skeleton when we have a valid battle but are just processing
-  const shouldShowMainContent = currentBattle && currentBattle.length > 0;
+  // CRITICAL FIX: Show main content if we have a battle OR if we're transitioning (to prevent loading screen)
+  const shouldShowMainContent = (currentBattle && currentBattle.length > 0) || isBattleTransitioning;
 
   console.log(`🔄 [LOADING_STATE_DEBUG] BattleContent display decisions:`, {
     shouldShowMainContent,
     hasCurrentBattle: !!currentBattle,
     battleLength: currentBattle?.length || 0,
+    isBattleTransitioning,
     timestamp: new Date().toISOString()
   });
 
@@ -100,12 +101,13 @@ const BattleContent: React.FC<BattleContentProps> = ({
     }, 100);
   }
 
+  // CRITICAL FIX: Always show the interface if we have battle data OR are transitioning
   if (shouldShowMainContent) {
-    console.log(`🔄 [LOADING_STATE_DEBUG] BattleContent rendering main interface with ${currentBattle.length} Pokemon`);
+    console.log(`🔄 [LOADING_STATE_DEBUG] BattleContent rendering main interface - battle: ${currentBattle?.length || 0}, transitioning: ${isBattleTransitioning}`);
     
     return (
       <BattleInterface
-        currentBattle={currentBattle}
+        currentBattle={currentBattle || []} // Provide empty array as fallback during transition
         selectedPokemon={selectedPokemon}
         battlesCompleted={battlesCompleted}
         battleType={battleType}
@@ -119,8 +121,8 @@ const BattleContent: React.FC<BattleContentProps> = ({
     );
   }
 
-  // CRITICAL FIX: Minimal loading state - no skeleton, just a simple message
-  console.log(`⏳ [LOADING_STATE_DEBUG] BattleContent showing minimal loading state`);
+  // Only show loading if we truly have no data and aren't transitioning
+  console.log(`⏳ [LOADING_STATE_DEBUG] BattleContent showing loading state - no battle and not transitioning`);
   return (
     <div className="flex justify-center items-center h-64 w-full">
       <div className="text-center">
