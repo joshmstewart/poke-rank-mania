@@ -35,6 +35,7 @@ const BattleContent: React.FC<BattleContentProps> = ({
 }) => {
   const instanceRef = useRef(`content-${Date.now()}`);
   const lastMilestoneRef = useRef<number | null>(null);
+  const lastBattleIdsRef = useRef<string>('');
   
   console.log(`[DEBUG BattleContent] Instance: ${instanceRef.current} render - allPokemon: ${allPokemon?.length || 0}`);
 
@@ -93,11 +94,23 @@ const BattleContent: React.FC<BattleContentProps> = ({
     }
   }, [showingMilestone, battlesCompleted]);
 
-  // Clear transition state only when new battle is actually ready
+  // CRITICAL FIX: Track battle changes and clear transition state appropriately
   useEffect(() => {
-    if (!showingMilestone && currentBattle && currentBattle.length > 0 && isTransitioningFromMilestone.current) {
-      console.log(`✅ [FLASH_FIX] New battle ready after milestone - clearing transition state`);
-      isTransitioningFromMilestone.current = false;
+    const currentBattleIds = currentBattle?.map(p => p.id).join(',') || '';
+    
+    if (!showingMilestone && currentBattle && currentBattle.length > 0) {
+      // Check if this is actually a NEW battle (different IDs)
+      if (currentBattleIds !== lastBattleIdsRef.current) {
+        console.log(`✅ [FLASH_FIX] NEW battle detected: ${currentBattleIds} (was: ${lastBattleIdsRef.current})`);
+        lastBattleIdsRef.current = currentBattleIds;
+        
+        if (isTransitioningFromMilestone.current) {
+          console.log(`✅ [FLASH_FIX] New battle ready after milestone - clearing transition state`);
+          isTransitioningFromMilestone.current = false;
+        }
+      } else if (isTransitioningFromMilestone.current) {
+        console.log(`⚠️ [FLASH_FIX] Same battle IDs during transition - keeping transition state`);
+      }
     }
   }, [showingMilestone, currentBattle]);
 
@@ -106,6 +119,8 @@ const BattleContent: React.FC<BattleContentProps> = ({
     isBattleTransitioning,
     isTransitioningFromMilestone: isTransitioningFromMilestone.current,
     currentBattleLength: currentBattle?.length || 0,
+    currentBattleIds: currentBattle?.map(p => p.id).join(',') || '',
+    lastBattleIds: lastBattleIdsRef.current,
     isProcessingResult,
     isAnyProcessing,
     hasBattle: !!currentBattle && currentBattle.length > 0,
@@ -154,7 +169,7 @@ const BattleContent: React.FC<BattleContentProps> = ({
     );
   }
 
-  // CRITICAL FIX: Show loading during any transition to prevent flash
+  // CRITICAL FIX: Show loading during ANY transition to prevent flash
   if (isBattleTransitioning || isTransitioningFromMilestone.current) {
     console.log(`⏳ [FLASH_FIX] Showing transition loading state - isBattleTransitioning: ${isBattleTransitioning}, isTransitioningFromMilestone: ${isTransitioningFromMilestone.current}`);
     return (
@@ -167,7 +182,7 @@ const BattleContent: React.FC<BattleContentProps> = ({
     );
   }
 
-  // Show interface if we have battle data
+  // Show interface if we have battle data AND we're not transitioning
   const shouldShowInterface = currentBattle && currentBattle.length > 0;
 
   console.log(`🔄 [FLASH_FIX] BattleContent shouldShowInterface:`, shouldShowInterface);
