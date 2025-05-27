@@ -5,6 +5,10 @@ export interface Pokemon {
   types?: string[];
   flavorText?: string;
   rating?: any; // We'll use this to store the TrueSkill Rating object
+  height?: number;
+  weight?: number;
+  stats?: Record<string, number>;
+  generation?: number;
 }
 
 export interface RankingSuggestion {
