@@ -1,11 +1,13 @@
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
 import { useBattleProgression } from "./useBattleProgression";
 import { useNextBattleHandler } from "./useNextBattleHandler";
 import { useBattleResultProcessor } from "./useBattleResultProcessor";
-import { saveRankings } from "@/services/pokemon";
+import { useBattleProcessorMilestone } from "./useBattleProcessorMilestone";
+import { useBattleProcessorCore } from "./useBattleProcessorCore";
+import { useBattleProcessorGeneration } from "./useBattleProcessorGeneration";
 
 export const useBattleProcessor = (
   battleResults: SingleBattle[],
@@ -26,7 +28,6 @@ export const useBattleProcessor = (
   integratedStartNewBattle?: (battleType: BattleType) => Pokemon[]
 ) => {
   const [isProcessingResult, setIsProcessingResult] = useState(false);
-  const milestoneInProgressRef = useRef(false);
 
   console.log(`🔄 [PROCESSOR_FIX] useBattleProcessor isProcessingResult:`, {
     isProcessingResult,
@@ -52,12 +53,10 @@ export const useBattleProcessor = (
     generateRankings
   );
 
-  // CRITICAL FIX: Use the outcome processor with setCurrentBattle for immediate battle generation
   const { setupNextBattle } = useNextBattleHandler(
     allPokemon,
     (battleType: BattleType) => {
       console.log(`📝 [PROCESSOR_FIX] setupNextBattle called - delegating to outcome processor`);
-      // Don't generate here, let outcome processor handle it
       return [];
     },
     setSelectedPokemon
@@ -69,6 +68,29 @@ export const useBattleProcessor = (
     activeTier,
     freezePokemonForTier,
     battleStarter?.trackLowerTierLoss
+  );
+
+  const { 
+    milestoneInProgressRef,
+    handleMilestone,
+    resetMilestoneInProgress
+  } = useBattleProcessorMilestone(
+    setShowingMilestone,
+    generateRankings,
+    allPokemon
+  );
+
+  const { processBattleCore } = useBattleProcessorCore(
+    battleResults,
+    setBattleResults,
+    setSelectedPokemon,
+    markSuggestionUsed
+  );
+
+  const { generateNewBattle } = useBattleProcessorGeneration(
+    battleStarter,
+    integratedStartNewBattle,
+    setCurrentBattle
   );
 
   const processBattle = useCallback(async (
@@ -95,84 +117,33 @@ export const useBattleProcessor = (
         setBattlesCompleted(0);
         console.log(`📝 [${timestamp}] PROCESS BATTLE: ✅ battlesCompleted state updated to 0 via prop setter.`);
         
-        isResettingRef.current = false; // Clear the reset flag after using it
+        isResettingRef.current = false;
         console.log(`📝 [${timestamp}] PROCESS BATTLE: Cleared isResettingRef.current to false AFTER using it.`);
       }
       
-      console.log(`📝 [${timestamp}] PROCESS BATTLE: Processing battle result with selectedPokemonIds: ${selectedPokemonIds.join(', ')}`);
-      const newResults = processResult(selectedPokemonIds, battleType, currentBattlePokemon);
+      const updatedResults = processBattleCore(
+        selectedPokemonIds,
+        currentBattlePokemon,
+        processResult,
+        battleType,
+        timestamp
+      );
 
-      if (!newResults || newResults.length === 0) {
-        console.warn(`📝 [${timestamp}] PROCESS BATTLE: No battle results returned`);
+      if (!updatedResults) {
         console.log(`📝 [${timestamp}] [PROCESSOR_FIX] PROCESS BATTLE: Setting isProcessingResult = false (no results)`);
         setIsProcessingResult(false);
         return;
       }
 
-      const updatedResults = [...battleResults, ...newResults];
-      setBattleResults(updatedResults);
-      setSelectedPokemon([]);
-
-      // Before the markSuggestionUsed check, add new debug logs
-      console.log(`[DEBUG useBattleProcessor] Timestamp: ${timestamp}. Iterating currentBattlePokemon for markSuggestionUsed.`);
-      currentBattlePokemon.forEach(p => {
-        const ranked = p as RankedPokemon;
-        const suggestionDetails = ranked.suggestedAdjustment 
-          ? `Suggestion Exists - Used: ${ranked.suggestedAdjustment.used}, Direction: ${ranked.suggestedAdjustment.direction}` 
-          : 'No Suggestion Present';
-        console.log(`[DEBUG useBattleProcessor] Pokemon: ${ranked.name} (${ranked.id}). ${suggestionDetails}`);
-      });
-
-      if (markSuggestionUsed) {
-        currentBattlePokemon.forEach(p => {
-          const ranked = p as RankedPokemon;
-          if (ranked.suggestedAdjustment && !ranked.suggestedAdjustment.used) {
-            markSuggestionUsed(ranked, false); // Pass false to indicate not fully used yet
-            console.log(`📝 [${timestamp}] PROCESS BATTLE: Notified markSuggestionUsed for ${ranked.name} (${ranked.id}). fullyUsed=false`);
-          }
-        });
-      }
-
-      // Fixed type handling for milestone - can be a number or null
       const milestone = incrementBattlesCompleted(updatedResults);
       console.log(`📝 [${timestamp}] PROCESS BATTLE: Battle completed, new count: ${battlesCompleted + 1}, Milestone hit: ${milestone !== null ? milestone : "none"}`);
       
-      // Check if milestone is not null - that means a milestone was hit
       if (milestone !== null) {
-        milestoneInProgressRef.current = true;
-        console.log(`📝 [${timestamp}] PROCESS BATTLE: Set milestoneInProgressRef = true for milestone ${milestone}`);
-        
-        // CRITICAL FIX: Disable auto-triggers immediately when milestone is hit
-        const disableAutoTriggerEvent = new CustomEvent('milestone-blocking', {
-          detail: { 
-            milestone, 
-            timestamp: Date.now(),
-            source: 'useBattleProcessor'
-          }
-        });
-        document.dispatchEvent(disableAutoTriggerEvent);
-        console.log(`📝 [${timestamp}] PROCESS BATTLE: Dispatched milestone-blocking event`);
-        
-        saveRankings(allPokemon, currentSelectedGeneration, "battle");
-        console.log(`📝 [${timestamp}] PROCESS BATTLE: Rankings saved for generation ${currentSelectedGeneration}`);
-        
-        generateRankings(updatedResults);
-        console.log(`📝 [${timestamp}] PROCESS BATTLE: Rankings generated`);
+        handleMilestone(milestone, updatedResults, currentSelectedGeneration, timestamp);
       } else {
-        // CRITICAL FIX: If no milestone, immediately generate new battle
-        console.log(`📝 [${timestamp}] [BATTLE_OUTCOME_FIX] No milestone hit - generating new battle immediately`);
-        if (battleStarter && integratedStartNewBattle) {
-          const newBattle = integratedStartNewBattle(battleType);
-          if (newBattle && newBattle.length > 0) {
-            console.log(`✅ [BATTLE_OUTCOME_FIX] New battle generated after processing: ${newBattle.map(p => p.name)}`);
-            setCurrentBattle(newBattle);
-          } else {
-            console.error(`❌ [BATTLE_OUTCOME_FIX] Failed to generate new battle after processing`);
-          }
-        }
+        generateNewBattle(battleType, timestamp);
       }
 
-      // CRITICAL: Clear processing state SYNCHRONOUSLY
       console.log(`📝 [${timestamp}] [PROCESSOR_FIX] Clearing isProcessingResult`);
       setIsProcessingResult(false);
       
@@ -196,14 +167,12 @@ export const useBattleProcessor = (
     isResettingRef,
     battleStarter,
     integratedStartNewBattle,
-    setCurrentBattle
+    setCurrentBattle,
+    milestoneInProgressRef,
+    handleMilestone,
+    processBattleCore,
+    generateNewBattle
   ]);
-
-  const resetMilestoneInProgress = useCallback(() => {
-    const timestamp = new Date().toISOString();
-    console.log(`📝 [${timestamp}] [PROCESSOR_FIX] MILESTONE RESET: Setting milestoneInProgressRef to false`);
-    milestoneInProgressRef.current = false;
-  }, []);
 
   return {
     processBattleResult: processBattle,
