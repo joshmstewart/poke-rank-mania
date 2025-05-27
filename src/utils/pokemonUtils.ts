@@ -30,28 +30,20 @@ export const formatPokemonName = (name: string): string => {
   const lowerName = name.toLowerCase();
   console.log(`🔍 [EXECUTION_STEP_1] Lowercase conversion: "${lowerName}"`);
   
-  // Handle Origin forms FIRST (before other transformations)
-  if (lowerName.includes('-origin')) {
-    console.log(`🎯 [ORIGIN_FORM] Found -origin pattern in "${name}"`);
-    const baseName = name.substring(0, name.toLowerCase().indexOf('-origin'));
-    const result = `${baseName} (Origin Forme)`;
-    console.log(`✅ [ORIGIN] "${name}" -> "${result}"`);
-    return result;
-  }
+  // CRITICAL FIX: Handle all the hyphenated forms we see in console logs
   
-  // Handle Primal forms
-  if (lowerName.includes('-primal')) {
-    console.log(`🎯 [PRIMAL_FORM] Found -primal pattern in "${name}"`);
-    const baseName = name.substring(0, name.toLowerCase().indexOf('-primal'));
-    const result = `Primal ${baseName}`;
-    console.log(`✅ [PRIMAL] "${name}" -> "${result}"`);
+  // Handle Gigantamax forms FIRST - check for exact patterns from console logs
+  if (lowerName.includes('-gmax') || lowerName.includes('gmax')) {
+    console.log(`🎯 [GMAX_PATTERN] Found gmax pattern in "${name}"`);
+    let baseName;
+    if (lowerName.includes('-gmax')) {
+      baseName = name.substring(0, name.toLowerCase().indexOf('-gmax'));
+    } else {
+      baseName = name.substring(0, name.toLowerCase().indexOf('gmax')).replace(/[-\s]*$/, '');
+    }
+    const result = `G-Max ${baseName}`;
+    console.log(`✅ [GMAX] "${name}" -> "${result}"`);
     return result;
-  }
-  
-  // Test the specific case we're having trouble with
-  if (lowerName === "venusaur-mega") {
-    console.log(`🎯 [EXPLICIT_VENUSAUR] EXPLICIT VENUSAUR-MEGA MATCH - RETURNING MEGA VENUSAUR`);
-    return "Mega Venusaur";
   }
   
   // Handle Mega evolutions - check for exact patterns
@@ -82,19 +74,62 @@ export const formatPokemonName = (name: string): string => {
     return result;
   }
   
-  // Handle Gigantamax forms - ENHANCED to catch more variants
-  if (lowerName.includes('-gmax') || lowerName.includes('gmax')) {
-    console.log(`🎯 [GMAX_PATTERN] Found gmax pattern in "${name}"`);
-    const indexOfGmax = name.toLowerCase().indexOf('gmax');
-    let baseName;
-    if (lowerName.includes('-gmax')) {
-      baseName = name.substring(0, name.toLowerCase().indexOf('-gmax'));
-    } else {
-      baseName = name.substring(0, indexOfGmax).replace(/[-\s]*$/, '');
-    }
-    const result = `G-Max ${baseName}`;
-    console.log(`✅ [GMAX] "${name}" -> "${result}"`);
+  // Handle Origin forms (before other transformations)
+  if (lowerName.includes('-origin')) {
+    console.log(`🎯 [ORIGIN_FORM] Found -origin pattern in "${name}"`);
+    const baseName = name.substring(0, name.toLowerCase().indexOf('-origin'));
+    const result = `${baseName} (Origin Forme)`;
+    console.log(`✅ [ORIGIN] "${name}" -> "${result}"`);
     return result;
+  }
+  
+  // Handle Primal forms
+  if (lowerName.includes('-primal')) {
+    console.log(`🎯 [PRIMAL_FORM] Found -primal pattern in "${name}"`);
+    const baseName = name.substring(0, name.toLowerCase().indexOf('-primal'));
+    const result = `Primal ${baseName}`;
+    console.log(`✅ [PRIMAL] "${name}" -> "${result}"`);
+    return result;
+  }
+  
+  // CRITICAL FIX: Handle totem forms from console logs like "Mimikyu-totem-busted"
+  if (lowerName.includes('-totem')) {
+    console.log(`🎯 [TOTEM_FORM] Found -totem pattern in "${name}"`);
+    const baseName = name.substring(0, name.toLowerCase().indexOf('-totem'));
+    // Get the rest after totem for additional info
+    const totemPart = name.substring(name.toLowerCase().indexOf('-totem') + 1);
+    const result = `${baseName} (${totemPart.charAt(0).toUpperCase() + totemPart.slice(1).replace(/-/g, ' ')})`;
+    console.log(`✅ [TOTEM] "${name}" -> "${result}"`);
+    return result;
+  }
+  
+  // Handle Pikachu cap variants with proper formatting - CRITICAL for console log examples
+  if (lowerName.includes('pikachu') && lowerName.includes('cap')) {
+    console.log(`🏷️ [PIKACHU_CAP] Detected Pikachu cap variant: ${name}`);
+    if (lowerName.includes('original-cap')) {
+      return 'Pikachu (Original Cap)';
+    }
+    if (lowerName.includes('hoenn-cap')) {
+      return 'Pikachu (Hoenn Cap)';
+    }
+    if (lowerName.includes('sinnoh-cap')) {
+      return 'Pikachu (Sinnoh Cap)';
+    }
+    if (lowerName.includes('unova-cap')) {
+      return 'Pikachu (Unova Cap)';
+    }
+    if (lowerName.includes('kalos-cap')) {
+      return 'Pikachu (Kalos Cap)';
+    }
+    if (lowerName.includes('alola-cap')) {
+      return 'Pikachu (Alolan Cap)';
+    }
+    if (lowerName.includes('partner-cap')) {
+      return 'Pikachu (Partner Cap)';
+    }
+    if (lowerName.includes('world-cap')) {
+      return 'Pikachu (World Cap)';
+    }
   }
   
   // Handle space-separated forms as well
@@ -122,37 +157,8 @@ export const formatPokemonName = (name: string): string => {
   if (lowerName.includes(' gmax')) {
     const baseName = name.substring(0, name.toLowerCase().indexOf(' gmax'));
     const result = `G-Max ${baseName}`;
-    console.log(`✅ [SPACE_GMAX] "${name}" -> "${result}"`);
+    console.log(`✅ [SPACE_GMAX] "${name}" -> "${result)"`);
     return result;
-  }
-  
-  // Handle Pikachu cap variants with proper formatting
-  if (lowerName.includes('pikachu') && lowerName.includes('cap')) {
-    console.log(`🏷️ [PIKACHU_CAP] Detected Pikachu cap variant: ${name}`);
-    if (lowerName.includes('original-cap')) {
-      return 'Pikachu (Original Cap)';
-    }
-    if (lowerName.includes('hoenn-cap')) {
-      return 'Pikachu (Hoenn Cap)';
-    }
-    if (lowerName.includes('sinnoh-cap')) {
-      return 'Pikachu (Sinnoh Cap)';
-    }
-    if (lowerName.includes('unova-cap')) {
-      return 'Pikachu (Unova Cap)';
-    }
-    if (lowerName.includes('kalos-cap')) {
-      return 'Pikachu (Kalos Cap)';
-    }
-    if (lowerName.includes('alola-cap')) {
-      return 'Pikachu (Alolan Cap)';
-    }
-    if (lowerName.includes('partner-cap')) {
-      return 'Pikachu (Partner Cap)';
-    }
-    if (lowerName.includes('world-cap')) {
-      return 'Pikachu (World Cap)';
-    }
   }
   
   // Handle regional forms by moving them to the front with proper naming
