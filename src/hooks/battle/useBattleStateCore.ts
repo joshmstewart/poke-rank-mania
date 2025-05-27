@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { useBattleStarterIntegration } from "@/hooks/battle/useBattleStarterIntegration";
@@ -6,8 +7,10 @@ import { useProgressState } from "@/hooks/battle/useProgressState";
 import { useCompletionTracker } from "@/hooks/battle/useCompletionTracker";
 import { BattleType } from "./types";
 import { useRankings } from "./useRankings";
-import { useBattleInteractions } from "./useBattleInteractions"; 
-import { toast } from "@/hooks/use-toast";
+import { useBattleInteractions } from "./useBattleInteractions";
+import { useBattleState } from "./useBattleState";
+import { useBattleHandlers } from "./useBattleHandlers";
+import { useBattleReset } from "./useBattleReset";
 import { usePokemonContext } from "@/contexts/PokemonContext";
 
 export const useBattleStateCore = (
@@ -19,7 +22,6 @@ export const useBattleStateCore = (
   
   const initializationRef = useRef(false);
   const hookInstanceRef = useRef(`core-${Date.now()}`);
-  const continueBattlesRef = useRef(false);
   
   if (!initializationRef.current) {
     console.log(`[DEBUG useBattleStateCore] INIT - Instance: ${hookInstanceRef.current} - Using context for Pokemon data`);
@@ -31,36 +33,32 @@ export const useBattleStateCore = (
   
   const [needsToReloadSuggestions, setNeedsToReloadSuggestions] = useState(false);
   
-  const [currentBattle, setCurrentBattle] = useState<Pokemon[]>([]);
-  const [battleResults, setBattleResults] = useState<any[]>([]);
-  const [battlesCompleted, setBattlesCompleted] = useState(0);
-  const [battleHistory, setBattleHistory] = useState<{ battle: Pokemon[], selected: number[] }[]>([]);
-  const [selectedGeneration, setSelectedGeneration] = useState(stableInitialGeneration);
-  const initialBattleTypeStored = localStorage.getItem('pokemon-ranker-battle-type') as BattleType || stableInitialBattleType;
-  const [battleType, setBattleType] = useState<BattleType>(initialBattleTypeStored);
-  const [selectedPokemon, setSelectedPokemon] = useState<number[]>([]);
-  
-  // CRITICAL FIX: Add state to track when we're transitioning between battles
-  const [isTransitioning, setIsTransitioning] = useState(false);
-
-  const stableSetCurrentBattle = useCallback((battle: Pokemon[]) => {
-    console.log(`🔄 [FLASH_FIX] stableSetCurrentBattle called with ${battle.length} Pokemon`);
-    setCurrentBattle(battle);
-    // Clear transitioning state when new battle arrives
-    if (battle.length > 0) {
-      setIsTransitioning(false);
-    }
-  }, []);
-  
-  const stableSetSelectedPokemon = useCallback((pokemon: number[]) => {
-    setSelectedPokemon(pokemon);
-  }, []);
+  // Use the extracted battle state hook
+  const {
+    currentBattle,
+    setCurrentBattle,
+    battleResults,
+    setBattleResults,
+    battlesCompleted,
+    setBattlesCompleted,
+    battleHistory,
+    setBattleHistory,
+    selectedGeneration,
+    setSelectedGeneration,
+    battleType,
+    setBattleType,
+    selectedPokemon,
+    setSelectedPokemon,
+    isTransitioning,
+    setIsTransitioning,
+    stableSetCurrentBattle,
+    stableSetSelectedPokemon
+  } = useBattleState(stableInitialBattleType, stableInitialGeneration);
 
   const triggerSuggestionPrioritization = useCallback(() => {
     console.log('[DEBUG] Basic suggestion prioritization triggered');
   }, []);
 
-  const isResettingRef = useRef(false);
   const lastSuggestionLoadTimestampRef = useRef<number>(Date.now());
   const rankingsGenerationDelayRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -171,82 +169,43 @@ export const useBattleStateCore = (
     freezePokemonForTier,
     battleStarter,
     markSuggestionUsed,
-    isResettingRef,
+    undefined, // isResettingRef will be handled in reset hook
     enhancedStartNewBattle
   );
 
-  const goBack = useCallback(() => {
-    console.log(`🔄 [BACK_FIX] goBack called`);
-    
-    if (battleHistory.length === 0) {
-      toast({
-        title: "No previous battles",
-        description: "There are no previous battles to return to."
-      });
-      return;
-    }
+  // Use the extracted battle handlers hook
+  const { goBack, handleContinueBattles } = useBattleHandlers(
+    battleHistory,
+    setBattleHistory,
+    battleResults,
+    setBattleResults,
+    battlesCompleted,
+    setBattlesCompleted,
+    battleType,
+    stableSetCurrentBattle,
+    setSelectedPokemon,
+    setShowingMilestone,
+    enhancedStartNewBattle,
+    forceDismissMilestone,
+    resetMilestoneInProgress,
+    setCurrentBattle,
+    setIsTransitioning
+  );
 
-    const newHistory = [...battleHistory];
-    const lastBattle = newHistory.pop();
-    setBattleHistory(newHistory);
-
-    const newResults = [...battleResults];
-    let resultsToRemove = 1;
-    if (battleType === "triplets" && lastBattle) {
-      const selectedCount = lastBattle.selected.length;
-      const unselectedCount = lastBattle.battle.length - selectedCount;
-      resultsToRemove = selectedCount * unselectedCount;
-    }
-
-    newResults.splice(newResults.length - resultsToRemove, resultsToRemove);
-    setBattleResults(newResults);
-    setBattlesCompleted(prev => Math.max(0, prev - 1));
-
-    if (lastBattle) {
-      console.log(`🔄 [BACK_FIX] Restoring previous battle: ${lastBattle.battle.map(p => p.name).join(', ')}`);
-      stableSetCurrentBattle(lastBattle.battle);
-      setSelectedPokemon([]);
-    }
-
-    setShowingMilestone(false);
-  }, [battleHistory, battleResults, battleType, setBattleHistory, setBattleResults, setBattlesCompleted, setSelectedPokemon, setShowingMilestone, stableSetCurrentBattle]);
-
-  const handleContinueBattles = useCallback(() => {
-    console.log('[FLASH_FIX] handleContinueBattles: Called');
-    
-    if (continueBattlesRef.current) {
-      console.log('[FLASH_FIX] handleContinueBattles: Already processing, ignoring');
-      return;
-    }
-    
-    continueBattlesRef.current = true;
-    
-    // CRITICAL FIX: Immediately set transitioning state and clear battle
-    console.log('[FLASH_FIX] Setting transitioning state and clearing battle immediately');
-    setIsTransitioning(true);
-    setCurrentBattle([]);
-    setSelectedPokemon([]);
-    
-    if (showingMilestone) {
-      console.log('[FLASH_FIX] handleContinueBattles: Dismissing milestone and starting new battle');
-      forceDismissMilestone();
-      resetMilestoneInProgress();
-    }
-    
-    // Generate new battle after a small delay to ensure state is cleared
-    setTimeout(() => {
-      const newBattle = enhancedStartNewBattle("pairs");
-      if (newBattle && newBattle.length > 0) {
-        console.log('[FLASH_FIX] New battle generated successfully');
-        setCurrentBattle(newBattle);
-        setIsTransitioning(false);
-      } else {
-        console.error('[FLASH_FIX] Failed to generate new battle');
-        setIsTransitioning(false);
-      }
-      continueBattlesRef.current = false;
-    }, 50);
-  }, [showingMilestone, forceDismissMilestone, enhancedStartNewBattle, resetMilestoneInProgress, setCurrentBattle, setSelectedPokemon]);
+  // Use the extracted reset hook
+  const { performFullBattleReset } = useBattleReset(
+    setBattlesCompleted,
+    setBattleResults,
+    setBattleHistory,
+    setSelectedPokemon,
+    setCompletionPercentage,
+    setRankingGenerated,
+    resetMilestones,
+    resetBattleProgressionMilestoneTracking,
+    clearAllSuggestions,
+    generateRankings,
+    enhancedStartNewBattle
+  );
 
   const debouncedGenerateRankings = useMemo(() => {
     return (results: any[]) => {
@@ -260,49 +219,7 @@ export const useBattleStateCore = (
         rankingsGenerationDelayRef.current = null;
       }, 150);
     };
-  }, []);
-
-  const performFullBattleReset = useCallback(() => {
-    console.log('🔄 CENTRALIZED RESET: Beginning full battle reset');
-    
-    isResettingRef.current = true;
-    
-    setBattlesCompleted(0);
-    setBattleResults([]);
-    setBattleHistory([]);
-    setSelectedPokemon([]);
-    setCompletionPercentage(0);
-    setRankingGenerated(false);
-    
-    resetMilestones();
-    if (resetBattleProgressionMilestoneTracking) {
-      resetBattleProgressionMilestoneTracking();
-    }
-    clearAllSuggestions();
-    
-    const keysToRemove = [
-      'pokemon-battle-count',
-      'pokemon-battle-results', 
-      'pokemon-battle-history',
-      'pokemon-active-suggestions',
-      'pokemon-battle-tracking',
-      'pokemon-battle-seen',
-      'suggestionUsageCounts'
-    ];
-    
-    keysToRemove.forEach(key => localStorage.removeItem(key));
-    
-    generateRankings([]);
-    
-    setTimeout(() => {
-      enhancedStartNewBattle("pairs");
-      toast({
-        title: "Battles Restarted",
-        description: "All battles have been reset. You're starting fresh!",
-        duration: 3000
-      });
-    }, 100);
-  }, []);
+  }, [generateRankings]);
 
   useEffect(() => {
     const preferredImageType = localStorage.getItem('preferredImageType');
@@ -334,7 +251,7 @@ export const useBattleStateCore = (
         console.error("Error parsing saved suggestions:", e);
       }
     }
-  }, []);
+  }, [loadSavedSuggestions, debouncedGenerateRankings, battleResults.length]);
 
   const {
     handlePokemonSelect,
@@ -392,7 +309,7 @@ export const useBattleStateCore = (
     battleHistory,
     activeTier,
     setActiveTier,
-    isBattleTransitioning: isTransitioning, // CRITICAL FIX: Use the actual transitioning state
+    isBattleTransitioning: isTransitioning,
     isAnyProcessing,
     handlePokemonSelect: (id: number) => {
       handlePokemonSelect(id);
@@ -436,7 +353,7 @@ export const useBattleStateCore = (
     confidenceScores,
     battleHistory,
     activeTier,
-    isTransitioning, // Include transitioning state in dependencies
+    isTransitioning,
     isAnyProcessing,
     handlePokemonSelect,
     goBack,

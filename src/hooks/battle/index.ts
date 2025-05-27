@@ -37,5 +37,7 @@ export * from "./useBattleStateSelection";
 export * from "./useBattleResults";
 export * from "./useBattleOutcomeProcessor";
 export * from "./useBattleStarterIntegration";
-export * from "./useBattleEmergencyReset"; // Explicitly export the hook
-export * from "./useRankingSuggestions"; // Export the suggestion hook
+export * from "./useBattleEmergencyReset";
+export * from "./useRankingSuggestions";
+export * from "./useBattleHandlers"; // Export the new handlers hook
+export * from "./useBattleReset"; // Export the new reset hook
