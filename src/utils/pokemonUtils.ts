@@ -1,3 +1,4 @@
+
 /**
  * Normalize Pokedex numbers - converts special form IDs back to their base form
  * For example: 10117 (Ash-Greninja) -> 658 (Greninja)
@@ -17,7 +18,7 @@ export const normalizePokedexNumber = (id: number): number => {
 
 /**
  * Format Pokémon names to properly display regional forms
- * For example: "Vulpix alola" -> "Alolan Vulpix"
+ * For example: "graveler-alola" -> "Alolan Graveler"
  * @param name The Pokémon name to format
  * @returns Formatted name with proper regional forms
  */
@@ -29,178 +30,151 @@ export const formatPokemonName = (name: string): string => {
   const lowerName = name.toLowerCase();
   console.log(`🔍 [EXECUTION_STEP_1] Lowercase conversion: "${lowerName}"`);
   
-  // CRITICAL FIX: Handle all the hyphenated forms we see in console logs
+  // Handle regional forms FIRST - these are the most common in the logs
+  if (lowerName.includes('-alola')) {
+    const baseName = name.substring(0, name.toLowerCase().indexOf('-alola'));
+    const result = `Alolan ${capitalizeFirstLetter(baseName)}`;
+    console.log(`🌍 [REGIONAL_ALOLAN] "${name}" -> "${result}"`);
+    return result;
+  }
   
-  // Handle Gigantamax forms FIRST - check for exact patterns from console logs
-  if (lowerName.includes('-gmax') || lowerName.includes('gmax')) {
-    console.log(`🎯 [GMAX_PATTERN] Found gmax pattern in "${name}"`);
-    let baseName;
-    if (lowerName.includes('-gmax')) {
-      baseName = name.substring(0, name.toLowerCase().indexOf('-gmax'));
-    } else {
-      baseName = name.substring(0, name.toLowerCase().indexOf('gmax')).replace(/[-\s]*$/, '');
-    }
-    const result = `G-Max ${baseName}`;
+  if (lowerName.includes('-galar')) {
+    const baseName = name.substring(0, name.toLowerCase().indexOf('-galar'));
+    const result = `Galarian ${capitalizeFirstLetter(baseName)}`;
+    console.log(`🌍 [REGIONAL_GALARIAN] "${name}" -> "${result}"`);
+    return result;
+  }
+  
+  if (lowerName.includes('-hisui')) {
+    const baseName = name.substring(0, name.toLowerCase().indexOf('-hisui'));
+    const result = `Hisuian ${capitalizeFirstLetter(baseName)}`;
+    console.log(`🌍 [REGIONAL_HISUIAN] "${name}" -> "${result}"`);
+    return result;
+  }
+  
+  if (lowerName.includes('-paldea')) {
+    const baseName = name.substring(0, name.toLowerCase().indexOf('-paldea'));
+    const result = `Paldean ${capitalizeFirstLetter(baseName)}`;
+    console.log(`🌍 [REGIONAL_PALDEAN] "${name}" -> "${result}"`);
+    return result;
+  }
+  
+  // Handle Gigantamax forms
+  if (lowerName.includes('-gmax')) {
+    const baseName = name.substring(0, name.toLowerCase().indexOf('-gmax'));
+    const result = `G-Max ${capitalizeFirstLetter(baseName)}`;
     console.log(`✅ [GMAX] "${name}" -> "${result}"`);
     return result;
   }
   
-  // Handle Mega evolutions - check for exact patterns
+  // Handle Mega evolutions
   if (lowerName.includes('-mega-x')) {
-    console.log(`🎯 [MEGA_X_PATTERN] Found -mega-x pattern`);
     const baseName = name.substring(0, name.toLowerCase().indexOf('-mega-x'));
-    const result = `Mega ${baseName} X`;
+    const result = `Mega ${capitalizeFirstLetter(baseName)} X`;
     console.log(`✅ [MEGA_X] "${name}" -> "${result}"`);
     return result;
   }
   
   if (lowerName.includes('-mega-y')) {
-    console.log(`🎯 [MEGA_Y_PATTERN] Found -mega-y pattern`);
     const baseName = name.substring(0, name.toLowerCase().indexOf('-mega-y'));
-    const result = `Mega ${baseName} Y`;
+    const result = `Mega ${capitalizeFirstLetter(baseName)} Y`;
     console.log(`✅ [MEGA_Y] "${name}" -> "${result}"`);
     return result;
   }
   
   if (lowerName.includes('-mega')) {
-    console.log(`🎯 [MEGA_PATTERN] Found -mega pattern in "${name}"`);
-    const indexOfMega = name.toLowerCase().indexOf('-mega');
-    console.log(`🎯 [MEGA_INDEX] Index of -mega: ${indexOfMega}`);
-    const baseName = name.substring(0, indexOfMega);
-    console.log(`🎯 [MEGA_BASE] Base name extracted: "${baseName}"`);
-    const result = `Mega ${baseName}`;
-    console.log(`✅ [MEGA_FINAL] TRANSFORMATION: "${name}" -> "${result}"`);
-    return result;
-  }
-  
-  // Handle Origin forms (before other transformations)
-  if (lowerName.includes('-origin')) {
-    console.log(`🎯 [ORIGIN_FORM] Found -origin pattern in "${name}"`);
-    const baseName = name.substring(0, name.toLowerCase().indexOf('-origin'));
-    const result = `${baseName} (Origin Forme)`;
-    console.log(`✅ [ORIGIN] "${name}" -> "${result}"`);
+    const baseName = name.substring(0, name.toLowerCase().indexOf('-mega'));
+    const result = `Mega ${capitalizeFirstLetter(baseName)}`;
+    console.log(`✅ [MEGA] "${name}" -> "${result}"`);
     return result;
   }
   
   // Handle Primal forms
   if (lowerName.includes('-primal')) {
-    console.log(`🎯 [PRIMAL_FORM] Found -primal pattern in "${name}"`);
     const baseName = name.substring(0, name.toLowerCase().indexOf('-primal'));
-    const result = `Primal ${baseName}`;
+    const result = `Primal ${capitalizeFirstLetter(baseName)}`;
     console.log(`✅ [PRIMAL] "${name}" -> "${result}"`);
     return result;
   }
   
-  // CRITICAL FIX: Handle totem forms from console logs like "Mimikyu-totem-busted"
+  // Handle Origin forms
+  if (lowerName.includes('-origin')) {
+    const baseName = name.substring(0, name.toLowerCase().indexOf('-origin'));
+    const result = `${capitalizeFirstLetter(baseName)} (Origin Forme)`;
+    console.log(`✅ [ORIGIN] "${name}" -> "${result}"`);
+    return result;
+  }
+  
+  // Handle totem forms like "mimikyu-totem-busted"
   if (lowerName.includes('-totem')) {
-    console.log(`🎯 [TOTEM_FORM] Found -totem pattern in "${name}"`);
     const baseName = name.substring(0, name.toLowerCase().indexOf('-totem'));
-    // Get the rest after totem for additional info
     const totemPart = name.substring(name.toLowerCase().indexOf('-totem') + 1);
-    const result = `${baseName} (${totemPart.charAt(0).toUpperCase() + totemPart.slice(1).replace(/-/g, ' ')})`;
+    const result = `${capitalizeFirstLetter(baseName)} (${capitalizeWords(totemPart.replace(/-/g, ' '))})`;
     console.log(`✅ [TOTEM] "${name}" -> "${result}"`);
     return result;
   }
   
-  // Handle Pikachu cap variants with proper formatting - CRITICAL for console log examples
+  // Handle special forms like "palafin-hero", "minior-orange-meteor"
+  if (lowerName.includes('-hero')) {
+    const baseName = name.substring(0, name.toLowerCase().indexOf('-hero'));
+    const result = `${capitalizeFirstLetter(baseName)} (Hero)`;
+    console.log(`✅ [HERO_FORM] "${name}" -> "${result}"`);
+    return result;
+  }
+  
+  if (lowerName.includes('-orange-meteor')) {
+    const baseName = name.substring(0, name.toLowerCase().indexOf('-orange-meteor'));
+    const result = `${capitalizeFirstLetter(baseName)} (Orange Meteor)`;
+    console.log(`✅ [METEOR_FORM] "${name}" -> "${result}"`);
+    return result;
+  }
+  
+  if (lowerName.includes('-large')) {
+    const baseName = name.substring(0, name.toLowerCase().indexOf('-large'));
+    const result = `${capitalizeFirstLetter(baseName)} (Large)`;
+    console.log(`✅ [SIZE_FORM] "${name}" -> "${result}"`);
+    return result;
+  }
+  
+  if (lowerName.includes('-dada')) {
+    const baseName = name.substring(0, name.toLowerCase().indexOf('-dada'));
+    const result = `${capitalizeFirstLetter(baseName)} (Dada)`;
+    console.log(`✅ [DADA_FORM] "${name}" -> "${result}"`);
+    return result;
+  }
+  
+  // Handle Pikachu cap variants
   if (lowerName.includes('pikachu') && lowerName.includes('cap')) {
-    console.log(`🏷️ [PIKACHU_CAP] Detected Pikachu cap variant: ${name}`);
-    if (lowerName.includes('original-cap')) {
-      return 'Pikachu (Original Cap)';
-    }
-    if (lowerName.includes('hoenn-cap')) {
-      return 'Pikachu (Hoenn Cap)';
-    }
-    if (lowerName.includes('sinnoh-cap')) {
-      return 'Pikachu (Sinnoh Cap)';
-    }
-    if (lowerName.includes('unova-cap')) {
-      return 'Pikachu (Unova Cap)';
-    }
-    if (lowerName.includes('kalos-cap')) {
-      return 'Pikachu (Kalos Cap)';
-    }
-    if (lowerName.includes('alola-cap')) {
-      return 'Pikachu (Alolan Cap)';
-    }
-    if (lowerName.includes('partner-cap')) {
-      return 'Pikachu (Partner Cap)';
-    }
-    if (lowerName.includes('world-cap')) {
-      return 'Pikachu (World Cap)';
-    }
+    if (lowerName.includes('original-cap')) return 'Pikachu (Original Cap)';
+    if (lowerName.includes('hoenn-cap')) return 'Pikachu (Hoenn Cap)';
+    if (lowerName.includes('sinnoh-cap')) return 'Pikachu (Sinnoh Cap)';
+    if (lowerName.includes('unova-cap')) return 'Pikachu (Unova Cap)';
+    if (lowerName.includes('kalos-cap')) return 'Pikachu (Kalos Cap)';
+    if (lowerName.includes('alola-cap')) return 'Pikachu (Alolan Cap)';
+    if (lowerName.includes('partner-cap')) return 'Pikachu (Partner Cap)';
+    if (lowerName.includes('world-cap')) return 'Pikachu (World Cap)';
   }
   
-  // Handle space-separated forms as well
-  if (lowerName.includes(' mega x')) {
-    const baseName = name.substring(0, name.toLowerCase().indexOf(' mega x'));
-    const result = `Mega ${baseName} X`;
-    console.log(`✅ [SPACE_MEGA_X] "${name}" -> "${result}"`);
-    return result;
-  }
-  
-  if (lowerName.includes(' mega y')) {
-    const baseName = name.substring(0, name.toLowerCase().indexOf(' mega y'));
-    const result = `Mega ${baseName} Y`;
-    console.log(`✅ [SPACE_MEGA_Y] "${name}" -> "${result}"`);
-    return result;
-  }
-  
-  if (lowerName.includes(' mega')) {
-    const baseName = name.substring(0, name.toLowerCase().indexOf(' mega'));
-    const result = `Mega ${baseName}`;
-    console.log(`✅ [SPACE_MEGA] "${name}" -> "${result}"`);
-    return result;
-  }
-  
-  if (lowerName.includes(' gmax')) {
-    const baseName = name.substring(0, name.toLowerCase().indexOf(' gmax'));
-    const result = `G-Max ${baseName}`;
-    console.log(`✅ [SPACE_GMAX] "${name}" -> "${result}"`);
-    return result;
-  }
-  
-  // Handle regional forms by moving them to the front with proper naming
-  const regionalForms = {
-    'alola': 'Alolan',
-    'alolan': 'Alolan',
-    'galar': 'Galarian',
-    'galarian': 'Galarian',
-    'hisui': 'Hisuian',
-    'hisuian': 'Hisuian',
-    'paldea': 'Paldean',
-    'paldean': 'Paldean'
-  };
-  
-  // Check if name contains any regional form identifiers
-  for (const [region, prefix] of Object.entries(regionalForms)) {
-    // Check for different formats: "Name region", "Name-region", or even "Name (region)"
-    const patterns = [
-      ` ${region}`,
-      `-${region}`,
-      `(${region})`,
-      ` ${region} form`,
-      `-${region} form`
-    ];
-    
-    for (const pattern of patterns) {
-      if (lowerName.includes(pattern)) {
-        // Get the base name by removing the region suffix
-        const baseName = name
-          .replace(new RegExp(pattern, 'i'), '')
-          .trim();
-        // Return with proper format: "Alolan Vulpix" instead of "Vulpix alola"
-        const result = `${prefix} ${baseName}`;
-        console.log(`🌍 [REGIONAL] "${name}" -> "${result}"`);
-        return result;
-      }
-    }
-  }
-  
-  // If no special form is found, use the capitalizeSpecialForms function
-  const result = capitalizeSpecialForms(name);
+  // If no special patterns found, just capitalize the first letter
+  const result = capitalizeFirstLetter(name);
   console.log(`🏷️ [NO_TRANSFORM] No transformation patterns matched, returning capitalized: "${name}" -> "${result}"`);
   return result;
+};
+
+/**
+ * Helper function to capitalize the first letter of a string
+ */
+const capitalizeFirstLetter = (str: string): string => {
+  if (!str) return '';
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+};
+
+/**
+ * Helper function to capitalize each word in a string
+ */
+const capitalizeWords = (str: string): string => {
+  if (!str) return '';
+  return str.split(' ').map(word => capitalizeFirstLetter(word)).join(' ');
 };
 
 /**
