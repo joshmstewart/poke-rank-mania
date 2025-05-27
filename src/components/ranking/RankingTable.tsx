@@ -1,3 +1,4 @@
+
 import React from "react";
 import {
   Table,
@@ -11,7 +12,7 @@ import { Progress } from "@/components/ui/progress";
 import { RankedPokemon, TopNOption } from "@/services/pokemon";
 import { getPokemonGeneration } from "./rankingUtils";
 import { PokemonSuggestionCard } from "./PokemonSuggestionCard";
-import { normalizePokedexNumber, formatPokemonName } from "@/utils/pokemonUtils";
+import { normalizePokedexNumber, formatPokemonName } from "@/utils/pokemon";
 import { RankingGrid } from "./RankingGrid";
 
 // Get the confidence level as a string

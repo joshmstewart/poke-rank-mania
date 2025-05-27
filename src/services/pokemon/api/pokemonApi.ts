@@ -1,6 +1,5 @@
-
 import { Pokemon } from "../types";
-import { formatPokemonName } from "@/utils/pokemonUtils";
+import { formatPokemonName } from "@/utils/pokemon";
 
 const API_BASE = "https://pokeapi.co/api/v2";
 
