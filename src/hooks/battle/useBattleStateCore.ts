@@ -21,8 +21,8 @@ export const useBattleStateCore = (
   const hookInstanceRef = useRef(`core-${Date.now()}`);
   const continueBattlesRef = useRef(false);
   
-  // CRITICAL FIX: Add ref to track controlled transitions
-  const controlledTransitionActiveRef = useRef(false);
+  // CRITICAL FIX: Add transition state to prevent showing stale battles
+  const [isTransitioning, setIsTransitioning] = useState(false);
   
   if (!initializationRef.current) {
     console.log(`[DEBUG useBattleStateCore] INIT - Instance: ${hookInstanceRef.current} - Using context for Pokemon data`);
@@ -43,16 +43,16 @@ export const useBattleStateCore = (
   const [battleType, setBattleType] = useState<BattleType>(initialBattleTypeStored);
   const [selectedPokemon, setSelectedPokemon] = useState<number[]>([]);
 
-  // CRITICAL FIX: Enhanced battle setter that updates immediately and synchronously
+  // CRITICAL FIX: Enhanced battle setter that manages transition state
   const stableSetCurrentBattle = useCallback((battle: Pokemon[]) => {
-    console.log(`🔄 [SYNC_BATTLE_FIX] stableSetCurrentBattle called with ${battle.length} Pokemon`);
+    console.log(`🔄 [TRANSITION_FIX] stableSetCurrentBattle called with ${battle.length} Pokemon`);
     
     if (battle.length > 0) {
-      // CRITICAL FIX: Synchronous state update to prevent flash of old content
+      console.log(`✅ [TRANSITION_FIX] Setting new battle and clearing transition state: ${battle.map(p => p.name).join(', ')}`);
       setCurrentBattle(battle);
-      console.log(`✅ [SYNC_BATTLE_FIX] Battle updated synchronously: ${battle.map(p => p.name).join(', ')}`);
+      setIsTransitioning(false); // Clear transition when new battle is set
     } else {
-      console.log(`⚠️ [SYNC_BATTLE_FIX] Empty battle array received`);
+      console.log(`⚠️ [TRANSITION_FIX] Empty battle array received`);
     }
   }, []);
   
@@ -129,20 +129,20 @@ export const useBattleStateCore = (
 
   // CRITICAL FIX: Enhanced battle starter with immediate synchronous state update
   const enhancedStartNewBattle = useCallback((battleType: BattleType) => {
-    console.log(`🔄 [SYNC_BATTLE_FIX] enhancedStartNewBattle called for ${battleType}`);
+    console.log(`🔄 [TRANSITION_FIX] enhancedStartNewBattle called for ${battleType}`);
     
     // Generate battle immediately
     const result = startNewBattle(battleType);
     
     if (result && result.length > 0) {
-      console.log(`✅ [SYNC_BATTLE_FIX] New battle generated: ${result.map(p => p.name).join(', ')}`);
+      console.log(`✅ [TRANSITION_FIX] New battle generated: ${result.map(p => p.name).join(', ')}`);
       // CRITICAL FIX: Set battle state SYNCHRONOUSLY - no React.unstable_batchedUpdates needed
       stableSetCurrentBattle(result);
       
       // Force a re-render immediately to ensure the new battle shows
       return result;
     } else {
-      console.log(`⚠️ [SYNC_BATTLE_FIX] Failed to generate new battle`);
+      console.log(`⚠️ [TRANSITION_FIX] Failed to generate new battle`);
     }
     
     return result;
@@ -185,39 +185,43 @@ export const useBattleStateCore = (
     enhancedStartNewBattle
   );
 
-  // CRITICAL FIX: Completely rewritten handleContinueBattles for immediate transition
+  // CRITICAL FIX: Completely rewritten handleContinueBattles with transition state
   const handleContinueBattles = useCallback(() => {
-    console.log('[SYNC_BATTLE_FIX] handleContinueBattles: Called');
+    console.log('[TRANSITION_FIX] handleContinueBattles: Called');
     
     // Prevent rapid successive calls
     if (continueBattlesRef.current) {
-      console.log('[SYNC_BATTLE_FIX] handleContinueBattles: Already processing, ignoring');
+      console.log('[TRANSITION_FIX] handleContinueBattles: Already processing, ignoring');
       return;
     }
     
     continueBattlesRef.current = true;
     
     if (showingMilestone) {
-      console.log('[SYNC_BATTLE_FIX] handleContinueBattles: Milestone active - generating battle and dismissing immediately');
+      console.log('[TRANSITION_FIX] handleContinueBattles: Setting transition state and generating new battle');
       
-      // CRITICAL FIX: Generate new battle SYNCHRONOUSLY
+      // CRITICAL FIX: Set transition state BEFORE dismissing milestone
+      setIsTransitioning(true);
+      
+      // Generate new battle immediately
       const newBattle = enhancedStartNewBattle("pairs");
       
       if (newBattle && newBattle.length > 0) {
-        console.log(`✅ [SYNC_BATTLE_FIX] New battle ready immediately: ${newBattle.map(p => p.name).join(', ')}`);
+        console.log(`✅ [TRANSITION_FIX] New battle ready: ${newBattle.map(p => p.name).join(', ')}`);
         
-        // CRITICAL FIX: Dismiss milestone immediately - no delays
+        // Dismiss milestone - transition state will be cleared when battle is set
         forceDismissMilestone();
         resetMilestoneInProgress();
         
-        console.log('✅ [SYNC_BATTLE_FIX] Milestone dismissed immediately with new battle already set');
+        console.log('✅ [TRANSITION_FIX] Milestone dismissed with new battle ready');
       } else {
-        console.log('⚠️ [SYNC_BATTLE_FIX] Failed to generate new battle, dismissing milestone anyway');
+        console.log('⚠️ [TRANSITION_FIX] Failed to generate new battle, clearing transition state');
+        setIsTransitioning(false);
         forceDismissMilestone();
         resetMilestoneInProgress();
       }
     } else {
-      console.log('[SYNC_BATTLE_FIX] handleContinueBattles: Starting new battle directly');
+      console.log('[TRANSITION_FIX] handleContinueBattles: Starting new battle directly');
       enhancedStartNewBattle("pairs");
     }
     
@@ -348,6 +352,7 @@ export const useBattleStateCore = (
     isProcessingResult,
     isProcessing,
     isAnyProcessing,
+    isTransitioning,
     timestamp: new Date().toISOString()
   });
 
@@ -369,7 +374,7 @@ export const useBattleStateCore = (
     battleHistory,
     activeTier,
     setActiveTier,
-    isBattleTransitioning: false, // CRITICAL FIX: Always false to prevent gray screens
+    isBattleTransitioning: isTransitioning, // CRITICAL FIX: Use actual transition state
     isAnyProcessing,
     handlePokemonSelect: (id: number) => {
       handlePokemonSelect(id);
@@ -415,6 +420,7 @@ export const useBattleStateCore = (
     confidenceScores,
     battleHistory,
     activeTier,
+    isTransitioning,
     isAnyProcessing,
     handlePokemonSelect,
     goBackHelper,

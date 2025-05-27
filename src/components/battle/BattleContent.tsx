@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef } from "react";
 import BattleInterface from "./BattleInterface";
 import RankingDisplay from "./RankingDisplay";
@@ -77,11 +76,11 @@ const BattleContent: React.FC<BattleContentProps> = ({
     performFullBattleReset
   } = useBattleStateCore(allPokemon, initialBattleType, initialSelectedGeneration);
 
-  console.log(`🔄 [MILESTONE_FIX] BattleContent render states:`, {
+  console.log(`🔄 [TRANSITION_FIX] BattleContent render states:`, {
     showingMilestone,
+    isBattleTransitioning,
     currentBattleLength: currentBattle?.length || 0,
     isProcessingResult,
-    isBattleTransitioning,
     isAnyProcessing,
     hasBattle: !!currentBattle && currentBattle.length > 0,
     battlesCompleted,
@@ -97,11 +96,10 @@ const BattleContent: React.FC<BattleContentProps> = ({
     setBattleResults?.(battleResults);
   }, [battleResults, setBattleResults]);
 
-  // FIXED: Show the proper milestone screen with rankings
+  // Show milestone screen
   if (showingMilestone) {
-    console.log(`🏆 [MILESTONE_FIX] DISPLAYING MILESTONE RANKINGS SCREEN for ${battlesCompleted} battles`);
+    console.log(`🏆 [TRANSITION_FIX] DISPLAYING MILESTONE RANKINGS SCREEN for ${battlesCompleted} battles`);
     
-    // Get the snapshot for this milestone
     const milestoneSnapshot = getSnapshotForMilestone(battlesCompleted);
     const rankingsToShow = milestoneSnapshot.length > 0 ? milestoneSnapshot : finalRankings;
     
@@ -110,7 +108,7 @@ const BattleContent: React.FC<BattleContentProps> = ({
         finalRankings={rankingsToShow}
         battlesCompleted={battlesCompleted}
         onContinueBattles={() => {
-          console.log(`🔄 [MILESTONE_FIX] Continue battles clicked from milestone screen`);
+          console.log(`🔄 [TRANSITION_FIX] Continue battles clicked from milestone screen`);
           setShowingMilestone(false);
           resetMilestoneInProgress();
           setTimeout(() => {
@@ -129,17 +127,29 @@ const BattleContent: React.FC<BattleContentProps> = ({
     );
   }
 
+  // CRITICAL FIX: Show loading during transition to prevent showing stale battle
+  if (isBattleTransitioning) {
+    console.log(`⏳ [TRANSITION_FIX] Showing transition loading state`);
+    return (
+      <div className="flex justify-center items-center h-64 w-full">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-4 border-primary border-t-transparent mb-4 mx-auto"></div>
+          <p className="text-sm text-gray-600">Starting next battle...</p>
+        </div>
+      </div>
+    );
+  }
+
   // Show interface if we have battle data
   const shouldShowInterface = currentBattle && currentBattle.length > 0;
 
-  console.log(`🔄 [MILESTONE_FIX] BattleContent shouldShowInterface:`, shouldShowInterface);
+  console.log(`🔄 [TRANSITION_FIX] BattleContent shouldShowInterface:`, shouldShowInterface);
 
   if (shouldShowInterface) {
-    console.log(`🔄 [MILESTONE_FIX] BattleContent rendering interface with ${currentBattle.length} Pokemon`);
+    console.log(`🔄 [TRANSITION_FIX] BattleContent rendering interface with ${currentBattle.length} Pokemon`);
     
     return (
       <div className="w-full">
-        {/* Restore the full Battle Controls Bar */}
         <BattleControls
           selectedGeneration={selectedGeneration}
           battleType={battleType}
@@ -168,7 +178,7 @@ const BattleContent: React.FC<BattleContentProps> = ({
   }
 
   // Show loading on initial load when we truly have no data
-  console.log(`⏳ [MILESTONE_FIX] BattleContent showing initial loading - no battle data available yet`);
+  console.log(`⏳ [TRANSITION_FIX] BattleContent showing initial loading - no battle data available yet`);
   return (
     <div className="flex justify-center items-center h-64 w-full">
       <div className="text-center">
