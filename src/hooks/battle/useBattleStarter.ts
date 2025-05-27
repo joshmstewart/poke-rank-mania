@@ -15,29 +15,12 @@ export const createBattleStarter = (
   let battleCountRef = 0;
   let lowerTierLosersMap = new Map<number, number>();
 
-  console.log(`🎯 [POKEMON_RANGE_FIX] createBattleStarter initialized with ${allPokemonForGeneration.length} total Pokemon`);
-  console.log(`🎯 [POKEMON_RANGE_FIX] Pokemon ID range: ${Math.min(...allPokemonForGeneration.map(p => p.id))} to ${Math.max(...allPokemonForGeneration.map(p => p.id))}`);
+  console.log(`⚡ [SPEED_FIX] createBattleStarter initialized with ${allPokemonForGeneration.length} total Pokemon`);
 
-  // Log generation distribution
-  const generationCounts = new Map<number, number>();
-  allPokemonForGeneration.forEach(p => {
-    let gen = 1;
-    if (p.id <= 151) gen = 1;
-    else if (p.id <= 251) gen = 2;
-    else if (p.id <= 386) gen = 3;
-    else if (p.id <= 493) gen = 4;
-    else if (p.id <= 649) gen = 5;
-    else if (p.id <= 721) gen = 6;
-    else if (p.id <= 809) gen = 7;
-    else if (p.id <= 905) gen = 8;
-    else gen = 9;
-    
-    generationCounts.set(gen, (generationCounts.get(gen) || 0) + 1);
-  });
-  
-  console.log(`🎯 [GENERATION_DISTRIBUTION] Available Pokemon by generation:`, 
-    Array.from(generationCounts.entries()).map(([gen, count]) => `Gen ${gen}: ${count}`).join(', ')
-  );
+  // SPEED FIX: Simplified generation analysis - only log if we have time
+  if (allPokemonForGeneration.length > 500) {
+    console.log(`🎯 [POKEMON_RANGE_FIX] Pokemon ID range: ${Math.min(...allPokemonForGeneration.map(p => p.id))} to ${Math.max(...allPokemonForGeneration.map(p => p.id))}`);
+  }
 
   const shuffleArray = (array: Pokemon[]) => {
     const shuffled = [...array];
@@ -48,9 +31,15 @@ export const createBattleStarter = (
     return shuffled;
   };
 
-  // CRITICAL FIX: Ensure cross-generation selection
+  // SPEED FIX: Simplified cross-generation selection for faster initial battles
   const getRandomCrossGenerationPokemon = (pool: Pokemon[], count: number, excludeIds: Set<number>): Pokemon[] => {
-    // Group Pokemon by generation
+    // For small pools or initial battles, use simple random selection
+    if (pool.length < 100) {
+      const available = pool.filter(p => !excludeIds.has(p.id));
+      return shuffleArray(available).slice(0, count);
+    }
+
+    // For larger pools, use the full cross-generation logic
     const pokemonByGeneration = new Map<number, Pokemon[]>();
     pool.forEach(p => {
       if (excludeIds.has(p.id)) return;
@@ -88,8 +77,6 @@ export const createBattleStarter = (
         const randomIndex = Math.floor(Math.random() * genPokemon.length);
         const selectedPokemon = genPokemon.splice(randomIndex, 1)[0];
         result.push(selectedPokemon);
-        
-        console.log(`🎯 [CROSS_GEN] Selected ${selectedPokemon.name} from Generation ${randomGen}`);
         
         // Remove generation from available if empty
         if (genPokemon.length === 0) {
@@ -161,87 +148,30 @@ export const createBattleStarter = (
   };
 
   const getTierBattlePair = (battleType: BattleType): Pokemon[] => {
-    console.log("🌟 Battle generation started. Battle type:", battleType);
-    console.log("📋 All Pokémon count:", allPokemonForGeneration.length, "Ranked Pokémon count:", currentFinalRankings.length);
-
+    console.log("⚡ [SPEED_FIX] Fast battle generation started. Battle type:", battleType);
+    
     const battleSize = battleType === "pairs" ? 2 : 3;
-    console.log("🎯 [useBattleStarter] battleSize determined:", battleSize, "battleType:", battleType);
 
-    // CRITICAL FIX: Use cross-generation selection strategy
-    const randomValue = Math.random();
-    console.log("🎲 Random strategy selection value:", randomValue.toFixed(2));
-
-    let selectedBattle: Pokemon[] = [];
-
-    // 60% chance for completely random cross-generation battle
-    if (randomValue < 0.6) {
-      selectedBattle = getRandomCrossGenerationPokemon(allPokemonForGeneration, battleSize, recentlySeenPokemon);
-      console.log("⚖️ Selected battle strategy: Cross-generation random");
-    }
-    // 40% chance for ranking-based battle (if we have rankings)
-    else if (currentFinalRankings.length > 0) {
-      const tierSize = activeTier === "All" ? 
-        currentFinalRankings.length : 
-        Math.min(Number(activeTier), currentFinalRankings.length);
-
-      const topCandidates = currentFinalRankings
-        .slice(0, tierSize)
-        .filter(p => !isPokemonFrozenForTier || !isPokemonFrozenForTier(p.id, activeTier))
-        .filter(p => !recentlySeenPokemon.has(p.id));
-
-      if (topCandidates.length >= battleSize) {
-        selectedBattle = shuffleArray(topCandidates as unknown as Pokemon[]).slice(0, battleSize);
-        console.log("⚖️ Selected battle strategy: Top tier ranking-based");
-      } else {
-        selectedBattle = getRandomCrossGenerationPokemon(allPokemonForGeneration, battleSize, recentlySeenPokemon);
-        console.log("⚖️ Selected battle strategy: Fallback cross-generation random");
-      }
-    }
-    // Fallback to cross-generation random
-    else {
-      selectedBattle = getRandomCrossGenerationPokemon(allPokemonForGeneration, battleSize, recentlySeenPokemon);
-      console.log("⚖️ Selected battle strategy: Fallback cross-generation random");
-    }
-
+    // SPEED FIX: For initial battles, use simple random selection
+    const selectedBattle = getRandomCrossGenerationPokemon(allPokemonForGeneration, battleSize, recentlySeenPokemon);
+    
     if (selectedBattle.length < battleSize) {
       console.log("⚠️ Failed to select enough Pokemon with strategy, using simple random selection");
-      selectedBattle = shuffleArray(allPokemonForGeneration).slice(0, battleSize);
+      const fallback = shuffleArray(allPokemonForGeneration).slice(0, battleSize);
+      return fallback;
     }
 
     selectedBattle.forEach(p => {
       recentlySeenPokemon.add(p.id);
     });
 
-    if (recentlySeenPokemon.size > Math.min(100, Math.floor(allPokemonForGeneration.length * 0.1))) {
-      const oldestEntries = Array.from(recentlySeenPokemon).slice(0, 20);
+    if (recentlySeenPokemon.size > Math.min(50, Math.floor(allPokemonForGeneration.length * 0.1))) {
+      const oldestEntries = Array.from(recentlySeenPokemon).slice(0, 10);
       oldestEntries.forEach(id => recentlySeenPokemon.delete(id));
     }
 
     const validatedBattle = validateBattlePokemon(selectedBattle);
-
-    console.log("⚖️ Final selected battle pair IDs:", validatedBattle.map(p => p.id));
-    console.log("⚖️ Final selected battle names:", validatedBattle.map(p => p.name));
-    
-    // Log generation info for selected Pokemon
-    validatedBattle.forEach((pokemon, index) => {
-      let gen = 1;
-      if (pokemon.id <= 151) gen = 1;
-      else if (pokemon.id <= 251) gen = 2;
-      else if (pokemon.id <= 386) gen = 3;
-      else if (pokemon.id <= 493) gen = 4;
-      else if (pokemon.id <= 649) gen = 5;
-      else if (pokemon.id <= 721) gen = 6;
-      else if (pokemon.id <= 809) gen = 7;
-      else if (pokemon.id <= 905) gen = 8;
-      else gen = 9;
-      
-      console.log(`🎯 [GENERATION_DEBUG] Battle Pokemon ${index + 1}: ${pokemon.name} (ID: ${pokemon.id}, Gen: ${gen})`);
-      console.log(`🎯 [TYPE_DEBUG] - Raw types:`, pokemon.types);
-      console.log(`🎯 [TYPE_DEBUG] - Types length:`, pokemon.types?.length || 0);
-      if (!pokemon.types || pokemon.types.length === 0) {
-        console.error(`🚨 [TYPE_DEBUG] - NO TYPES for ${pokemon.name}! This will cause color issues.`);
-      }
-    });
+    console.log("⚡ [SPEED_FIX] Fast battle created:", validatedBattle.map(p => p.name));
     
     return validatedBattle;
   };
@@ -260,22 +190,15 @@ export const createBattleStarter = (
     const battleSize = battleType === "pairs" ? 2 : 3;
     let result: Pokemon[] = [];
 
-    console.log(`🎯 [POKEMON_RANGE_FIX] Battle ${battleCountRef}: Using FULL Pokemon range with cross-generation strategy`);
+    console.log(`⚡ [SPEED_FIX] Battle ${battleCountRef}: Fast battle generation`);
     result = getTierBattlePair(battleType);
     
     if (result.length < battleSize) {
-      console.log("⚠️ getTierBattlePair returned insufficient Pokemon, using fallback cross-generation selection");
-      result = getRandomCrossGenerationPokemon(allPokemonForGeneration, battleSize, new Set());
+      console.log("⚠️ getTierBattlePair returned insufficient Pokemon, using simple fallback");
+      result = shuffleArray(allPokemonForGeneration).slice(0, battleSize);
     }
 
     const validatedResult = validateBattlePokemon(result);
-
-    console.log(`[DEBUG useBattleStarter] About to set current battle with:`, 
-      validatedResult.map(p => ({
-        id: p.id, 
-        name: p.name
-      }))
-    );
 
     const battleCreatedEvent = new CustomEvent('battle-created', {
       detail: { 
@@ -286,7 +209,6 @@ export const createBattleStarter = (
     document.dispatchEvent(battleCreatedEvent);
     
     setCurrentBattle(validatedResult);
-    console.log(`[DEBUG useBattleStarter] Current battle set.`);
     return validatedResult;
   };
 
