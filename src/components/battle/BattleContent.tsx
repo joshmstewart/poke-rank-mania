@@ -1,7 +1,6 @@
 
 import React, { useEffect, useRef } from "react";
 import BattleInterface from "./BattleInterface";
-import MilestoneModal from "./MilestoneModal";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "@/hooks/battle/types";
 import { useBattleStateCore } from "@/hooks/battle/useBattleStateCore";
@@ -84,55 +83,21 @@ const BattleContent: React.FC<BattleContentProps> = ({
 
   // CRITICAL FIX: Don't show skeleton when we have a valid battle but are just processing
   const shouldShowMainContent = currentBattle && currentBattle.length > 0;
-  const shouldShowMilestone = showingMilestone && rankingGenerated;
 
   console.log(`🔄 [LOADING_STATE_DEBUG] BattleContent display decisions:`, {
     shouldShowMainContent,
-    shouldShowMilestone,
     hasCurrentBattle: !!currentBattle,
     battleLength: currentBattle?.length || 0,
     timestamp: new Date().toISOString()
   });
 
-  if (shouldShowMilestone) {
-    console.log(`🏆 [LOADING_STATE_DEBUG] BattleContent showing milestone modal`);
-    
-    return (
-      <MilestoneModal
-        battlesCompleted={battlesCompleted}
-        completionPercentage={completionPercentage}
-        onContinue={handleContinueBattles}
-        onViewRankings={() => {
-          console.log("View rankings clicked from milestone");
-        }}
-        rankings={finalRankings}
-        confidenceScores={confidenceScores}
-        onDismiss={() => {
-          console.log("Milestone dismissed");
-          resetMilestoneInProgress();
-          setShowingMilestone(false);
-        }}
-        isVisible={showingMilestone}
-        milestones={milestones}
-        resetMilestones={resetMilestones}
-        getSnapshotForMilestone={getSnapshotForMilestone}
-        selectedGeneration={selectedGeneration}
-        setSelectedGeneration={setSelectedGeneration}
-        allPokemon={allPokemon}
-        activeTier={activeTier}
-        setActiveTier={setActiveTier}
-        battleType={battleType}
-        setBattleType={setBattleType}
-        generateRankings={generateRankings}
-        handleSaveRankings={handleSaveRankings}
-        freezePokemonForTier={freezePokemonForTier}
-        isPokemonFrozenForTier={isPokemonFrozenForTier}
-        suggestRanking={suggestRanking}
-        removeSuggestion={removeSuggestion}
-        clearAllSuggestions={clearAllSuggestions}
-        performFullBattleReset={performFullBattleReset}
-      />
-    );
+  // TEMPORARY: Skip milestone modal until it's available
+  if (showingMilestone) {
+    console.log(`🏆 [LOADING_STATE_DEBUG] BattleContent would show milestone modal but component not available`);
+    // Auto-continue battles instead of showing milestone
+    setTimeout(() => {
+      handleContinueBattles();
+    }, 100);
   }
 
   if (shouldShowMainContent) {
