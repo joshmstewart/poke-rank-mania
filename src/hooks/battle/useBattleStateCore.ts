@@ -1,3 +1,4 @@
+
 import { useCallback, useRef, useEffect, useMemo } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
@@ -63,6 +64,13 @@ export const useBattleStateCore = (
   console.log('[DEBUG useBattleStateCore] Type check - activeTier:', typeof activeTier, activeTier);
   console.log('[DEBUG useBattleStateCore] Type check - currentBattleCount before String():', typeof parseInt(localStorage.getItem('pokemon-battle-count') || '0', 10));
 
+  // Create string-compatible wrapper for freezePokemonForTier
+  const freezePokemonForTierStringWrapper = useCallback((pokemonId: number, tier: string) => {
+    // Convert string back to TopNOption for the original function
+    const topNTier = tier === "All" ? "All" : Number(tier);
+    freezePokemonForTier(pokemonId, topNTier as any);
+  }, [freezePokemonForTier]);
+
   // Use the coordination hook
   const {
     contextPokemon,
@@ -101,7 +109,7 @@ export const useBattleStateCore = (
     stableSetCurrentBattle,
     stableSetSelectedPokemon,
     typeof activeTier === 'string' ? activeTier : String(activeTier), // Line 99 - Ensure string type
-    freezePokemonForTier
+    freezePokemonForTierStringWrapper // Use wrapper that accepts string
   );
 
   const enhancedStartNewBattle = useCallback((battleType: BattleType) => {
@@ -119,6 +127,13 @@ export const useBattleStateCore = (
     
     return result;
   }, [startNewBattle]);
+
+  // Create generateRankings wrapper that returns array
+  const generateRankingsWrapper = useCallback((results: any[]) => {
+    const rankings = generateRankings(results);
+    // If generateRankings returns void, return empty array or finalRankings
+    return rankings || finalRankings || [];
+  }, [generateRankings, finalRankings]);
 
   // Use the actions manager hook
   const {
@@ -150,9 +165,9 @@ export const useBattleStateCore = (
     setIsTransitioning,
     filteredPokemon,
     milestones,
-    generateRankings,
+    generateRankingsWrapper, // Use wrapper that returns array
     typeof activeTier === 'string' ? activeTier : String(activeTier), // Line 151 - Ensure string type, not TopNOption
-    freezePokemonForTier,
+    freezePokemonForTierStringWrapper, // Use wrapper that accepts string
     battleStarter,
     markSuggestionUsed,
     forceDismissMilestone,

@@ -28,7 +28,7 @@ export const useBattleActionsManager = (
   // Coordination dependencies
   filteredPokemon: Pokemon[],
   milestones: number[],
-  generateRankings: (results: any[]) => void,
+  generateRankings: (results: any[]) => any[], // Fix: Ensure this returns any[]
   activeTier: string,
   freezePokemonForTier: (pokemonId: number, tier: string) => void,
   battleStarter: any,
@@ -58,7 +58,8 @@ export const useBattleActionsManager = (
     setShowingMilestone,
     milestones,
     generateRankings,
-    activeTier, // Line 57 - This should be a string, let's log it
+    setSelectedPokemon, // Fix: This should be setSelectedPokemon, not activeTier
+    activeTier, // Fix: Move activeTier to correct position
     freezePokemonForTier,
     battleStarter,
     markSuggestionUsed,
@@ -96,7 +97,7 @@ export const useBattleActionsManager = (
     resetMilestones,
     resetBattleProgressionMilestoneTracking,
     clearAllSuggestions,
-    generateRankings, // Line 95 - This should return any[], let's check what we're passing
+    generateRankings, // This should now match the expected signature
     enhancedStartNewBattle
   );
 
