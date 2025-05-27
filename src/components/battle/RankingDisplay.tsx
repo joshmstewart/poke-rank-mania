@@ -126,7 +126,7 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
     setDisplayCount(newCount);
   };
 
-  // UPDATED: Much softer Pokemon background colors matching the reference image
+  // UPDATED: Medium saturation Pokemon background colors - middle ground between soft and vibrant
   const getPokemonBackgroundColor = (pokemon: RankedPokemon | Pokemon): string => {
     console.log(`🎨 COLOR DEBUG for ${pokemon.name}:`, {
       hasTypes: !!pokemon.types,
@@ -135,8 +135,8 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
     });
 
     if (!pokemon.types || pokemon.types.length === 0) {
-      console.log(`❌ ${pokemon.name}: No types found, using gray-50`);
-      return 'bg-gray-50';
+      console.log(`❌ ${pokemon.name}: No types found, using gray-100`);
+      return 'bg-gray-100';
     }
     
     let primaryType = 'unknown';
@@ -159,29 +159,29 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
       console.log(`❌ ${pokemon.name}: Unrecognized type structure:`, pokemon.types[0]);
     }
     
-    // UPDATED: Much softer, more subtle colors like in the reference image
+    // UPDATED: Medium saturation colors - more visible than -50 but not overwhelming
     const typeToColorMap: Record<string, string> = {
-      'normal': 'bg-gray-50',
-      'fighting': 'bg-red-50',
-      'flying': 'bg-blue-50', 
-      'poison': 'bg-purple-50',
-      'ground': 'bg-yellow-50',
-      'rock': 'bg-amber-50',
-      'bug': 'bg-green-50',
-      'ghost': 'bg-purple-50',
-      'steel': 'bg-slate-50',
-      'fire': 'bg-red-50',
-      'water': 'bg-blue-50',
-      'grass': 'bg-green-50',
-      'electric': 'bg-yellow-50',
-      'psychic': 'bg-pink-50',
-      'ice': 'bg-cyan-50',
-      'dragon': 'bg-indigo-50',
-      'dark': 'bg-gray-100',
-      'fairy': 'bg-pink-50'
+      'normal': 'bg-gray-100',
+      'fighting': 'bg-red-100',
+      'flying': 'bg-blue-100', 
+      'poison': 'bg-purple-100',
+      'ground': 'bg-yellow-100',
+      'rock': 'bg-amber-100',
+      'bug': 'bg-green-100',
+      'ghost': 'bg-purple-100',
+      'steel': 'bg-slate-100',
+      'fire': 'bg-red-100',
+      'water': 'bg-blue-100',
+      'grass': 'bg-green-100',
+      'electric': 'bg-yellow-100',
+      'psychic': 'bg-pink-100',
+      'ice': 'bg-cyan-100',
+      'dragon': 'bg-indigo-100',
+      'dark': 'bg-gray-200',
+      'fairy': 'bg-pink-100'
     };
     
-    const finalColor = typeToColorMap[primaryType] || 'bg-gray-50';
+    const finalColor = typeToColorMap[primaryType] || 'bg-gray-100';
     console.log(`🎨 ${pokemon.name}: Final color for type '${primaryType}': ${finalColor}`);
     return finalColor;
   };

@@ -17,7 +17,7 @@ export const useProgressState = () => {
     setMilestoneInProgress(false);
   }, []);
   
-  // CRITICAL FIX: Enhanced milestone state setter with longer coordination delay
+  // CRITICAL FIX: Enhanced milestone state setter with much longer coordination delay
   const setShowingMilestoneEnhanced = useCallback((show: boolean) => {
     console.log(`🔄 useProgressState: Setting showingMilestone to ${show}`);
     setShowingMilestone(show);
@@ -26,14 +26,14 @@ export const useProgressState = () => {
       setMilestoneInProgress(true);
       console.log("🚫 MILESTONE: Blocking new battle generation during milestone display");
     } else {
-      // CRITICAL FIX: Extended delay to prevent flash
-      console.log("🔄 MILESTONE: Preparing to dismiss milestone with extended coordination delay");
+      // CRITICAL FIX: Much longer delay to prevent flash
+      console.log("🔄 MILESTONE: Preparing to dismiss milestone with EXTENDED coordination delay");
       
       setTimeout(() => {
         setMilestoneInProgress(false);
         console.log("✅ MILESTONE: Milestone dismissed, coordinating with battle system");
         
-        // CRITICAL FIX: Enhanced dismissal event with longer delay
+        // CRITICAL FIX: Enhanced dismissal event with much longer delay
         const dismissEvent = new CustomEvent('milestone-dismissed', {
           detail: { 
             timestamp: Date.now(), 
@@ -45,7 +45,7 @@ export const useProgressState = () => {
         document.dispatchEvent(dismissEvent);
         
         console.log("🏆 useProgressState: Milestone dismissed with battle system coordination");
-      }, 500); // Increased delay from 100ms to 500ms
+      }, 1200); // Increased delay from 500ms to 1200ms for better coordination
     }
   }, []);
   

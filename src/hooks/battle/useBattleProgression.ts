@@ -1,3 +1,4 @@
+
 import { useCallback, useRef, useEffect } from "react";
 
 export const useBattleProgression = (
@@ -20,7 +21,7 @@ export const useBattleProgression = (
     };
   }, []);
 
-  // CRITICAL FIX: Enhanced milestone detection with extended battle generation blocking
+  // CRITICAL FIX: Enhanced milestone detection with much longer battle generation blocking
   const checkMilestone = useCallback((newBattlesCompleted: number, battleResults: any[]): boolean => {
     console.log(`🔍 MILESTONE CHECK: Checking ${newBattlesCompleted} battles against milestones: ${milestones.join(', ')}`);
     console.log(`🔍 MILESTONE CHECK: Already tracked milestones: ${Array.from(milestoneTracker.current).join(', ')}`);
@@ -33,7 +34,7 @@ export const useBattleProgression = (
     if (isExactMilestone && notYetTracked) {
       console.log(`🎯 MILESTONE HIT: Battle ${newBattlesCompleted} reached milestone!`);
       
-      // CRITICAL FIX: Block battle generation for extended period during milestone transition
+      // CRITICAL FIX: Block battle generation for much longer period during milestone transition
       battleGenerationBlockedRef.current = true;
       
       // Immediately mark as tracked to prevent duplicates
@@ -46,7 +47,7 @@ export const useBattleProgression = (
         generateRankings(battleResults);
         setShowingMilestone(true);
         
-        console.log(`🚫 MILESTONE: Battle generation BLOCKED during milestone ${newBattlesCompleted} (extended period)`);
+        console.log(`🚫 MILESTONE: Battle generation BLOCKED during milestone ${newBattlesCompleted} (EXTENDED period)`);
         return true;
       } catch (err) {
         console.error("Error generating rankings at milestone:", err);
@@ -87,24 +88,24 @@ export const useBattleProgression = (
     return null;
   }, [setBattlesCompleted, checkMilestone, battlesCompleted]);
 
-  // CRITICAL FIX: Enhanced reset that unblocks battle generation with longer delay
+  // CRITICAL FIX: Enhanced reset that unblocks battle generation with much longer delay
   const resetMilestone = useCallback(() => {
     console.log("🔄 Resetting milestone state in useBattleProgression");
     showingMilestoneRef.current = false;
     setShowingMilestone(false);
     lastTriggeredMilestoneRef.current = null;
     
-    // CRITICAL FIX: Extended delay to prevent flash after milestone dismissal
+    // CRITICAL FIX: Much longer delay to prevent flash after milestone dismissal
     setTimeout(() => {
       battleGenerationBlockedRef.current = false;
-      console.log("✅ MILESTONE: Battle generation UNBLOCKED after milestone dismissal (extended delay)");
+      console.log("✅ MILESTONE: Battle generation UNBLOCKED after milestone dismissal (EXTENDED delay)");
       
       // Dispatch event to signal it's safe to generate new battles
       const unblockEvent = new CustomEvent('milestone-unblocked', {
         detail: { timestamp: Date.now() }
       });
       document.dispatchEvent(unblockEvent);
-    }, 800); // Increased delay from 300ms to 800ms
+    }, 1500); // Increased delay from 800ms to 1500ms for better coordination
     
     console.log("✅ useBattleProgression: milestone tracking state reset");
   }, [setShowingMilestone]);
