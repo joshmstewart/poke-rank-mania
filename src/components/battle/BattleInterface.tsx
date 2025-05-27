@@ -35,32 +35,20 @@ const BattleInterface: React.FC<BattleInterfaceProps> = memo(({
   milestones,
   isProcessing = false
 }) => {
-  // Component state - optimized for performance
+  // Component state - simplified without internalProcessing
   const [animationKey, setAnimationKey] = useState(0);
-  const [internalProcessing, setInternalProcessing] = useState(false);
   const [displayedBattlesCompleted, setDisplayedBattlesCompleted] = useState(battlesCompleted);
   const [previousBattleIds, setPreviousBattleIds] = useState<number[]>([]);
   const lastSelectionRef = useRef<number | null>(null);
   const selectionTimestampRef = useRef(0);
   const lastProcessedBattleRef = useRef<number[]>([]);
-  const internalProcessingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
-  // LOADING CIRCLES DEBUG: Log all processing state changes with detailed tracking
-  useEffect(() => {
-    console.log(`🔄 [LOADING CIRCLES DEBUG] BattleInterface processing states changed:`, {
-      isProcessing,
-      internalProcessing,
-      combined: isProcessing || internalProcessing,
-      timestamp: new Date().toISOString(),
-      source: 'BattleInterface-useEffect'
-    });
-    
-    if (isProcessing || internalProcessing) {
-      console.log(`🟡 [LOADING CIRCLES] BattleInterface CONTRIBUTING to loading circles - isProcessing: ${isProcessing}, internalProcessing: ${internalProcessing}`);
-    } else {
-      console.log(`🟢 [LOADING CIRCLES] BattleInterface NOT contributing to loading circles - both states false`);
-    }
-  }, [isProcessing, internalProcessing]);
+  // FIXED: Removed internalProcessing state and timeout management
+  console.log(`🔄 [LOADING CIRCLES DEBUG] BattleInterface simplified - only using isProcessing:`, {
+    isProcessing,
+    timestamp: new Date().toISOString(),
+    source: 'BattleInterface-simplified'
+  });
   
   const { getNextMilestone, getMilestoneProgress } = useMilestoneCalculations(
     displayedBattlesCompleted, 
@@ -131,33 +119,21 @@ const BattleInterface: React.FC<BattleInterfaceProps> = memo(({
     console.log(`🔢 Battles completed updated to: ${battlesCompleted}`);
   }, [battlesCompleted]);
   
-  // Clear timeout when component unmounts or when processing states change
-  useEffect(() => {
-    return () => {
-      if (internalProcessingTimeoutRef.current) {
-        console.log(`🧹 [LOADING CIRCLES] BattleInterface clearing internalProcessing timeout on cleanup`);
-        clearTimeout(internalProcessingTimeoutRef.current);
-        internalProcessingTimeoutRef.current = null;
-      }
-    };
-  }, []);
-  
-  // Handle pokemon selection with optimized debounce
+  // FIXED: Simplified click handler without internalProcessing
   const handlePokemonCardSelect = useCallback((id: number) => {
     console.log(`🖱️ [LOADING CIRCLES DEBUG] handlePokemonCardSelect called:`, {
       id,
       isProcessing,
-      internalProcessing,
-      willIgnore: isProcessing || internalProcessing,
+      willIgnore: isProcessing,
       timestamp: new Date().toISOString()
     });
     
-    if (!isProcessing && !internalProcessing) {
+    if (!isProcessing) {
       const now = Date.now();
       
-      // Prevent rapid double clicks (reduced to 200ms for better responsiveness)
-      if (id === lastSelectionRef.current && now - selectionTimestampRef.current < 200) {
-        console.log(`⏱️ Ignoring repeated selection of Pokemon ${id} (${now - selectionTimestampRef.current}ms after previous)`);
+      // Prevent rapid double clicks
+      if (id === lastSelectionRef.current && now - selectionTimestampRef.current < 300) {
+        console.log(`⏱️ Ignoring repeated selection of Pokemon ${id}`);
         return;
       }
       
@@ -166,71 +142,39 @@ const BattleInterface: React.FC<BattleInterfaceProps> = memo(({
       selectionTimestampRef.current = now;
       
       console.log(`🖱️ BattleInterface: Handling Pokemon selection: ${id}`);
-      console.log(`🔄 [LOADING CIRCLES] BattleInterface: Setting internalProcessing = true for selection ${id}`);
-      setInternalProcessing(true);
       onPokemonSelect(id);
-      
-      // Clear any existing timeout
-      if (internalProcessingTimeoutRef.current) {
-        console.log(`🧹 [LOADING CIRCLES] BattleInterface: Clearing existing internalProcessing timeout`);
-        clearTimeout(internalProcessingTimeoutRef.current);
-      }
-      
-      // Set new timeout with tracking
-      internalProcessingTimeoutRef.current = setTimeout(() => {
-        console.log(`🔄 [LOADING CIRCLES] BattleInterface: Setting internalProcessing = false (after 200ms timeout for selection ${id})`);
-        setInternalProcessing(false);
-        internalProcessingTimeoutRef.current = null;
-      }, 200);
     } else {
-      console.log(`⏳ [LOADING CIRCLES] BattleInterface: Ignoring click while processing (isProcessing=${isProcessing}, internalProcessing=${internalProcessing})`);
+      console.log(`⏳ [LOADING CIRCLES] BattleInterface: Ignoring click while processing`);
     }
-  }, [isProcessing, internalProcessing, onPokemonSelect]);
+  }, [isProcessing, onPokemonSelect]);
 
-  // Handle submission for triplets mode
+  // FIXED: Simplified submit handler without internalProcessing
   const handleSubmit = useCallback(() => {
     console.log(`🔄 [LOADING CIRCLES DEBUG] handleSubmit called:`, {
       isProcessing,
-      internalProcessing,
-      willIgnore: isProcessing || internalProcessing,
+      willIgnore: isProcessing,
       timestamp: new Date().toISOString()
     });
     
-    if (!isProcessing && !internalProcessing) {
+    if (!isProcessing) {
       console.log("BattleInterface: Submitting triplet selection");
-      console.log(`🔄 [LOADING CIRCLES] BattleInterface: Setting internalProcessing = true for submit`);
-      setInternalProcessing(true);
       onTripletSelectionComplete();
-      
-      // Clear any existing timeout
-      if (internalProcessingTimeoutRef.current) {
-        console.log(`🧹 [LOADING CIRCLES] BattleInterface: Clearing existing internalProcessing timeout for submit`);
-        clearTimeout(internalProcessingTimeoutRef.current);
-      }
-      
-      // Set new timeout with tracking
-      internalProcessingTimeoutRef.current = setTimeout(() => {
-        console.log(`🔄 [LOADING CIRCLES] BattleInterface: Setting internalProcessing = false (after submit timeout)`);
-        setInternalProcessing(false);
-        internalProcessingTimeoutRef.current = null;
-      }, 200);
     }
-  }, [isProcessing, internalProcessing, onTripletSelectionComplete]);
+  }, [isProcessing, onTripletSelectionComplete]);
 
-  // Handle back button click
+  // FIXED: Simplified back handler without internalProcessing
   const handleBackClick = useCallback(() => {
     console.log(`🔄 [LOADING CIRCLES DEBUG] handleBackClick called:`, {
       isProcessing,
-      internalProcessing,
-      willIgnore: isProcessing || internalProcessing,
+      willIgnore: isProcessing,
       timestamp: new Date().toISOString()
     });
     
-    if (!isProcessing && !internalProcessing) {
+    if (!isProcessing) {
       console.log("BattleInterface: Handling back button click");
       onGoBack();
     }
-  }, [isProcessing, internalProcessing, onGoBack]);
+  }, [isProcessing, onGoBack]);
 
   // OPTIMIZED: Helper to validate battle configuration
   useEffect(() => {
@@ -275,10 +219,9 @@ const BattleInterface: React.FC<BattleInterfaceProps> = memo(({
     );
   }
   
-  console.log(`🔄 [LOADING CIRCLES DEBUG] BattleInterface rendering with processing states:`, {
+  console.log(`🔄 [LOADING CIRCLES DEBUG] BattleInterface rendering with simplified processing:`, {
     isProcessing,
-    internalProcessing,
-    showingLoadingCircles: isProcessing || internalProcessing,
+    showingLoadingCircles: isProcessing,
     timestamp: new Date().toISOString()
   });
   
@@ -290,7 +233,7 @@ const BattleInterface: React.FC<BattleInterfaceProps> = memo(({
           onGoBack={handleBackClick}
           hasHistory={battleHistory.length > 0}
           isProcessing={isProcessing}
-          internalProcessing={internalProcessing}
+          internalProcessing={false}
         />
         
         <BattleProgress
@@ -306,7 +249,7 @@ const BattleInterface: React.FC<BattleInterfaceProps> = memo(({
         onPokemonSelect={handlePokemonCardSelect}
         battleType={battleType}
         isProcessing={isProcessing}
-        internalProcessing={internalProcessing}
+        internalProcessing={false}
         animationKey={animationKey}
       />
       
@@ -314,7 +257,7 @@ const BattleInterface: React.FC<BattleInterfaceProps> = memo(({
         <BattleSubmitButton
           onSubmit={handleSubmit}
           isProcessing={isProcessing}
-          internalProcessing={internalProcessing}
+          internalProcessing={false}
           hasSelections={selectedPokemon.length > 0}
         />
       )}

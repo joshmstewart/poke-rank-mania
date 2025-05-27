@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useRef, useEffect } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
@@ -27,6 +26,12 @@ export const useBattleProcessor = (
 ) => {
   const [isProcessingResult, setIsProcessingResult] = useState(false);
   const milestoneInProgressRef = useRef(false);
+  const processingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  console.log(`🔄 [LOADING DEBUG] useBattleProcessor isProcessingResult:`, {
+    isProcessingResult,
+    timestamp: new Date().toISOString()
+  });
 
   // LOADING STATE DEBUG: Log isProcessingResult changes
   useEffect(() => {
@@ -97,12 +102,17 @@ export const useBattleProcessor = (
     console.log(`📝 [${timestamp}] [LOADING DEBUG] PROCESS BATTLE: Called with isProcessingResult=${isProcessingResult}`);
     
     if (isProcessingResult || milestoneInProgressRef.current) {
-      console.log(`📝 [${timestamp}] [LOADING DEBUG] PROCESS BATTLE: Skipping processBattle (already in progress)`);
+      console.log(`📝 [${timestamp}] [LOADING DEBUG] PROCESS BATTLE: Skipping (already in progress)`);
       return;
     }
 
     console.log(`📝 [${timestamp}] [LOADING DEBUG] PROCESS BATTLE: Setting isProcessingResult = true`);
     setIsProcessingResult(true);
+    
+    // FIXED: Clear any existing timeout
+    if (processingTimeoutRef.current) {
+      clearTimeout(processingTimeoutRef.current);
+    }
     
     try {
       // Check if we need to reset battle count due to reset
@@ -126,11 +136,8 @@ export const useBattleProcessor = (
       }
 
       const updatedResults = [...battleResults, ...newResults];
-      console.log(`📝 [${timestamp}] PROCESS BATTLE: Updating battle results: ${battleResults.length} + ${newResults.length} = ${updatedResults.length}`);
       setBattleResults(updatedResults);
-      
       setSelectedPokemon([]);
-      console.log(`📝 [${timestamp}] PROCESS BATTLE: Reset selectedPokemon to empty array`);
 
       // Before the markSuggestionUsed check, add new debug logs
       console.log(`[DEBUG useBattleProcessor] Timestamp: ${timestamp}. Iterating currentBattlePokemon for markSuggestionUsed.`);
@@ -169,10 +176,14 @@ export const useBattleProcessor = (
       }
 
       await setupNextBattle(battleType);
-      console.log(`📝 [${timestamp}] PROCESS BATTLE: Next battle setup completed`);
       
-      console.log(`📝 [${timestamp}] [LOADING DEBUG] PROCESS BATTLE: Setting isProcessingResult = false (success)`);
-      setIsProcessingResult(false);
+      // FIXED: Add delay before clearing processing state to ensure smooth transitions
+      processingTimeoutRef.current = setTimeout(() => {
+        console.log(`📝 [${timestamp}] [LOADING DEBUG] PROCESS BATTLE: Setting isProcessingResult = false (delayed clear)`);
+        setIsProcessingResult(false);
+        processingTimeoutRef.current = null;
+      }, 500); // Give time for new battle to load
+      
     } catch (e) {
       console.error(`📝 [${timestamp}] PROCESS BATTLE: Error:`, e);
       console.log(`📝 [${timestamp}] [LOADING DEBUG] PROCESS BATTLE: Setting isProcessingResult = false (after error)`);
@@ -192,14 +203,23 @@ export const useBattleProcessor = (
     setBattlesCompleted,
     setBattleResults,
     isResettingRef,
-    integratedStartNewBattle  // Add the new prop to the dependency array
+    integratedStartNewBattle
   ]);
 
   const resetMilestoneInProgress = useCallback(() => {
     const timestamp = new Date().toISOString();
     console.log(`📝 [${timestamp}] [LOADING DEBUG] MILESTONE RESET: Setting milestoneInProgressRef to false`);
     milestoneInProgressRef.current = false;
-    console.log(`📝 [${timestamp}] MILESTONE RESET: Completed`);
+  }, []);
+
+  // FIXED: Clear timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (processingTimeoutRef.current) {
+        console.log(`🧹 [LOADING DEBUG] useBattleProcessor: Clearing timeout on cleanup`);
+        clearTimeout(processingTimeoutRef.current);
+      }
+    };
   }, []);
 
   return {
