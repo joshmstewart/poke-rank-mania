@@ -26,59 +26,69 @@ export const formatPokemonName = (name: string): string => {
   
   console.log(`🚀 [FORMAT_POKEMON_NAME] Input: "${name}"`);
   
-  // EXECUTION TRACKING: Add step-by-step execution tracking
-  console.log(`🔍 [EXECUTION_STEP_1] Starting formatPokemonName with: "${name}"`);
-  
   const lowerName = name.toLowerCase();
-  console.log(`🔍 [EXECUTION_STEP_2] Lowercase conversion: "${lowerName}"`);
+  console.log(`🔍 [EXECUTION_STEP_1] Lowercase conversion: "${lowerName}"`);
+  
+  // Handle Origin forms FIRST (before other transformations)
+  if (lowerName.includes('-origin')) {
+    console.log(`🎯 [ORIGIN_FORM] Found -origin pattern in "${name}"`);
+    const baseName = name.substring(0, name.toLowerCase().indexOf('-origin'));
+    const result = `${baseName} (Origin Forme)`;
+    console.log(`✅ [ORIGIN] "${name}" -> "${result}"`);
+    return result;
+  }
+  
+  // Handle Primal forms
+  if (lowerName.includes('-primal')) {
+    console.log(`🎯 [PRIMAL_FORM] Found -primal pattern in "${name}"`);
+    const baseName = name.substring(0, name.toLowerCase().indexOf('-primal'));
+    const result = `Primal ${baseName}`;
+    console.log(`✅ [PRIMAL] "${name}" -> "${result}"`);
+    return result;
+  }
   
   // Test the specific case we're having trouble with
   if (lowerName === "venusaur-mega") {
-    console.log(`🎯 [EXECUTION_STEP_3A] EXPLICIT VENUSAUR-MEGA MATCH - RETURNING MEGA VENUSAUR`);
+    console.log(`🎯 [EXPLICIT_VENUSAUR] EXPLICIT VENUSAUR-MEGA MATCH - RETURNING MEGA VENUSAUR`);
     return "Mega Venusaur";
   }
-  console.log(`🔍 [EXECUTION_STEP_3B] Not exact venusaur-mega match, continuing...`);
   
   // Handle Mega evolutions - check for exact patterns
   if (lowerName.includes('-mega-x')) {
-    console.log(`🎯 [EXECUTION_STEP_4A] Found -mega-x pattern`);
+    console.log(`🎯 [MEGA_X_PATTERN] Found -mega-x pattern`);
     const baseName = name.substring(0, name.toLowerCase().indexOf('-mega-x'));
     const result = `Mega ${baseName} X`;
     console.log(`✅ [MEGA_X] "${name}" -> "${result}"`);
     return result;
   }
-  console.log(`🔍 [EXECUTION_STEP_4B] No -mega-x pattern, continuing...`);
   
   if (lowerName.includes('-mega-y')) {
-    console.log(`🎯 [EXECUTION_STEP_5A] Found -mega-y pattern`);
+    console.log(`🎯 [MEGA_Y_PATTERN] Found -mega-y pattern`);
     const baseName = name.substring(0, name.toLowerCase().indexOf('-mega-y'));
     const result = `Mega ${baseName} Y`;
     console.log(`✅ [MEGA_Y] "${name}" -> "${result}"`);
     return result;
   }
-  console.log(`🔍 [EXECUTION_STEP_5B] No -mega-y pattern, continuing...`);
   
   if (lowerName.includes('-mega')) {
-    console.log(`🎯 [EXECUTION_STEP_6A] Found -mega pattern in "${name}"`);
+    console.log(`🎯 [MEGA_PATTERN] Found -mega pattern in "${name}"`);
     const indexOfMega = name.toLowerCase().indexOf('-mega');
-    console.log(`🎯 [EXECUTION_STEP_6B] Index of -mega: ${indexOfMega}`);
+    console.log(`🎯 [MEGA_INDEX] Index of -mega: ${indexOfMega}`);
     const baseName = name.substring(0, indexOfMega);
-    console.log(`🎯 [EXECUTION_STEP_6C] Base name extracted: "${baseName}"`);
+    console.log(`🎯 [MEGA_BASE] Base name extracted: "${baseName}"`);
     const result = `Mega ${baseName}`;
-    console.log(`✅ [EXECUTION_STEP_6D] FINAL TRANSFORMATION: "${name}" -> "${result}"`);
+    console.log(`✅ [MEGA_FINAL] TRANSFORMATION: "${name}" -> "${result}"`);
     return result;
   }
-  console.log(`🔍 [EXECUTION_STEP_6E] No -mega pattern found, continuing...`);
   
   // Handle Gigantamax forms
   if (lowerName.includes('-gmax')) {
-    console.log(`🎯 [EXECUTION_STEP_7A] Found -gmax pattern`);
+    console.log(`🎯 [GMAX_PATTERN] Found -gmax pattern`);
     const baseName = name.substring(0, name.toLowerCase().indexOf('-gmax'));
     const result = `G-Max ${baseName}`;
     console.log(`✅ [GMAX] "${name}" -> "${result}"`);
     return result;
   }
-  console.log(`🔍 [EXECUTION_STEP_7B] No -gmax pattern, continuing...`);
   
   // Handle space-separated forms as well
   if (lowerName.includes(' mega x')) {
@@ -177,7 +187,7 @@ export const formatPokemonName = (name: string): string => {
   
   // If no special form is found, use the capitalizeSpecialForms function
   const result = capitalizeSpecialForms(name);
-  console.log(`🏷️ [EXECUTION_FINAL] No transformation patterns matched, returning capitalized: "${name}" -> "${result}"`);
+  console.log(`🏷️ [NO_TRANSFORM] No transformation patterns matched, returning capitalized: "${name}" -> "${result}"`);
   return result;
 };
 
