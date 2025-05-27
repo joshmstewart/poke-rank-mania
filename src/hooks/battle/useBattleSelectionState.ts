@@ -1,4 +1,3 @@
-
 import { useMemo, useCallback, useEffect } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
@@ -59,25 +58,26 @@ export const useBattleSelectionState = () => {
     battleStarter
   );
   
-  // FIXED: Enhanced forceNextBattle with better milestone handling
+  // CRITICAL FIX: Enhanced forceNextBattle with proper sequencing to prevent flashing
   const forceNextBattle = useCallback(() => {
     console.log("🔄 useBattleSelectionState: Force starting next battle");
     
     try {
-      // CRITICAL FIX: Dispatch milestone dismissal event with immediate state clear
+      // CRITICAL FIX: Don't clear current battle immediately - wait for new one to be ready
       const dismissMilestoneEvent = new CustomEvent('milestone-dismissed', {
-        detail: { forced: true, source: 'forceNextBattle', immediate: true }
+        detail: { forced: true, source: 'forceNextBattle', immediate: false }
       });
       document.dispatchEvent(dismissMilestoneEvent);
       
-      // Clear any existing selections immediately
+      // Clear selections but keep current battle visible
       setSelectedPokemon([]);
       
-      // Start new battle with a small delay to ensure state is cleared
+      // CRITICAL FIX: Delay battle generation to prevent flashing
       setTimeout(() => {
         const result = startNewBattle(currentBattleType);
         
         if (result && result.length > 0) {
+          // Only update battle after new one is ready
           toast.success("Starting new battle", {
             description: `New ${currentBattleType} battle ready`
           });
@@ -93,7 +93,7 @@ export const useBattleSelectionState = () => {
           console.error("❌ forceNextBattle: Failed to start new battle - empty result");
           return [];
         }
-      }, 100);
+      }, 500); // CRITICAL FIX: Increased delay to prevent flashing
     } catch (error) {
       console.error("Error in forceNextBattle:", error);
       toast.error("Failed to start battle", {
@@ -103,20 +103,23 @@ export const useBattleSelectionState = () => {
     }
   }, [currentBattleType, startNewBattle, setSelectedPokemon]);
 
-  // FIXED: Improved milestone dismissal event handling
+  // CRITICAL FIX: Enhanced milestone dismissal event handling with proper sequencing
   useEffect(() => {
     const handleMilestoneDismissed = (event: CustomEvent) => {
       console.log("📣 useBattleSelectionState: Received milestone-dismissed event", event.detail);
       
-      // Reset any relevant state when milestone is dismissed
+      // Reset selections immediately
       setSelectedPokemon([]);
       
-      // If this was an immediate dismissal, trigger a new battle
-      if (event.detail?.immediate) {
-        console.log("🚀 useBattleSelectionState: Immediate milestone dismissal - starting new battle");
+      // CRITICAL FIX: Only start new battle if it's NOT an immediate dismissal to prevent flashing
+      if (event.detail?.immediate === false) {
+        console.log("🚀 useBattleSelectionState: Non-immediate dismissal - waiting before starting new battle");
+        // The new battle will be started by forceNextBattle's setTimeout
+      } else if (event.detail?.immediate === true) {
+        console.log("🚀 useBattleSelectionState: Immediate dismissal - starting new battle with delay");
         setTimeout(() => {
           startNewBattle(currentBattleType);
-        }, 50);
+        }, 300); // Shorter delay for immediate dismissals
       }
     };
     

@@ -17,7 +17,7 @@ export const useProgressState = () => {
     setMilestoneInProgress(false);
   }, []);
   
-  // MILESTONE FIX: Enhanced milestone state setter with better event handling
+  // CRITICAL FIX: Enhanced milestone state setter with proper sequencing
   const setShowingMilestoneEnhanced = useCallback((show: boolean) => {
     console.log(`🔄 useProgressState: Setting showingMilestone to ${show}`);
     setShowingMilestone(show);
@@ -25,34 +25,36 @@ export const useProgressState = () => {
     if (show) {
       setMilestoneInProgress(true);
     } else {
-      // When hiding milestone, immediately clear all milestone-related state
-      setMilestoneInProgress(false);
-      
-      // Dispatch immediate event for milestone dismissal
-      const dismissEvent = new CustomEvent('milestone-dismissed', {
-        detail: { timestamp: Date.now(), forced: false }
-      });
-      document.dispatchEvent(dismissEvent);
-      
-      console.log("🏆 useProgressState: Milestone dismissed, event dispatched");
+      // CRITICAL FIX: Delay clearing milestone state to prevent battle flashing
+      setTimeout(() => {
+        setMilestoneInProgress(false);
+        
+        // Dispatch event with proper sequencing info
+        const dismissEvent = new CustomEvent('milestone-dismissed', {
+          detail: { timestamp: Date.now(), forced: false, immediate: false }
+        });
+        document.dispatchEvent(dismissEvent);
+        
+        console.log("🏆 useProgressState: Milestone dismissed with proper sequencing");
+      }, 200); // Small delay to ensure UI updates properly
     }
   }, []);
   
-  // MILESTONE FIX: Improved force dismiss with immediate state clearing
+  // CRITICAL FIX: Force dismiss with immediate flag for urgent dismissals
   const forceDismissMilestone = useCallback(() => {
     console.log("🔄 useProgressState: Force dismissing milestone immediately");
     
-    // Clear state synchronously
+    // Clear state synchronously for immediate dismissals
     setShowingMilestone(false);
     setMilestoneInProgress(false);
     
-    // Dispatch force dismissal event
+    // Dispatch immediate dismissal event
     const dismissEvent = new CustomEvent('milestone-dismissed', {
-      detail: { forced: true, timestamp: Date.now() }
+      detail: { forced: true, timestamp: Date.now(), immediate: true }
     });
     document.dispatchEvent(dismissEvent);
     
-    console.log("🏆 useProgressState: Milestone force dismissed");
+    console.log("🏆 useProgressState: Milestone force dismissed immediately");
   }, []);
   
   return {

@@ -21,34 +21,40 @@ export const useBattleProgression = (
     };
   }, []);
 
+  // CRITICAL FIX: More robust milestone detection
   const checkMilestone = useCallback((newBattlesCompleted: number, battleResults: any[]): boolean => {
     console.log(`🔍 MILESTONE CHECK: Checking ${newBattlesCompleted} battles against milestones: ${milestones.join(', ')}`);
+    console.log(`🔍 MILESTONE CHECK: Already tracked milestones: ${Array.from(milestoneTracker.current).join(', ')}`);
     
     if (processingMilestoneRef.current) {
       console.log("🚫 Milestone already processing, skipping");
       return false;
     }
 
-    // CRITICAL FIX: Simple milestone detection - check if we hit any milestone
-    const hitMilestone = milestones.find(milestone => 
-      milestone === newBattlesCompleted && !milestoneTracker.current.has(milestone)
-    );
+    // CRITICAL FIX: Check if this exact battle count is a milestone AND hasn't been tracked yet
+    const isExactMilestone = milestones.includes(newBattlesCompleted);
+    const notYetTracked = !milestoneTracker.current.has(newBattlesCompleted);
     
-    if (hitMilestone) {
-      console.log(`🎯 MILESTONE HIT: Battle ${newBattlesCompleted} reached milestone ${hitMilestone}`);
+    console.log(`🔍 MILESTONE CHECK: Battle ${newBattlesCompleted} - isExactMilestone: ${isExactMilestone}, notYetTracked: ${notYetTracked}`);
+    
+    if (isExactMilestone && notYetTracked) {
+      console.log(`🎯 MILESTONE HIT: Battle ${newBattlesCompleted} reached milestone!`);
       
-      milestoneTracker.current.add(hitMilestone);
+      // Immediately mark as tracked to prevent duplicates
+      milestoneTracker.current.add(newBattlesCompleted);
       processingMilestoneRef.current = true;
       showingMilestoneRef.current = true;
-      lastTriggeredMilestoneRef.current = hitMilestone;
+      lastTriggeredMilestoneRef.current = newBattlesCompleted;
       
       try {
-        console.log(`🔵 useBattleProgression: Generating rankings for milestone ${hitMilestone}`);
+        console.log(`🔵 useBattleProgression: Generating rankings for milestone ${newBattlesCompleted}`);
         generateRankings(battleResults);
         setShowingMilestone(true);
         return true;
       } catch (err) {
         console.error("Error generating rankings at milestone:", err);
+        // Reset flags on error
+        milestoneTracker.current.delete(newBattlesCompleted);
         processingMilestoneRef.current = false;
         showingMilestoneRef.current = false;
         return false;
