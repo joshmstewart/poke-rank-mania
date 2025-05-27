@@ -1,4 +1,3 @@
-
 import { capitalizeFirstLetter, capitalizeWords } from './helpers';
 
 /**
@@ -15,9 +14,26 @@ export const formatPokemonName = (name: string): string => {
   const lowerName = name.toLowerCase();
   console.log(`🔧 [FORMAT_STEP_1] Lowercase conversion: "${lowerName}"`);
   
-  // DETAILED LOGGING: Check each transformation condition
+  // CRITICAL FIX: Handle Miraidon and Koraidon forms FIRST
+  if (lowerName.includes('miraidon-')) {
+    console.log(`🔧 [FORMAT_MIRAIDON_DETECTED] Processing Miraidon form: "${name}"`);
+    const formPart = name.substring(9); // Remove "miraidon-"
+    const formattedForm = capitalizeWords(formPart.replace(/-/g, ' '));
+    const result = `Miraidon (${formattedForm})`;
+    console.log(`🔧 [FORMAT_MIRAIDON_RESULT] "${name}" → "${result}"`);
+    return result;
+  }
   
-  // Handle regional forms FIRST - these are the most common in the logs
+  if (lowerName.includes('koraidon-')) {
+    console.log(`🔧 [FORMAT_KORAIDON_DETECTED] Processing Koraidon form: "${name}"`);
+    const formPart = name.substring(9); // Remove "koraidon-"
+    const formattedForm = capitalizeWords(formPart.replace(/-/g, ' '));
+    const result = `Koraidon (${formattedForm})`;
+    console.log(`🔧 [FORMAT_KORAIDON_RESULT] "${name}" → "${result}"`);
+    return result;
+  }
+  
+  // Handle regional forms NEXT - these are the most common in the logs
   if (lowerName.includes('-alola')) {
     console.log(`🔧 [FORMAT_ALOLA_DETECTED] Processing Alolan form: "${name}"`);
     const baseName = name.substring(0, name.toLowerCase().indexOf('-alola'));
