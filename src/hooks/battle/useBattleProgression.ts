@@ -46,15 +46,11 @@ export const useBattleProgression = (
         console.log(`🔵 useBattleProgression: Generating rankings for milestone ${newBattlesCompleted}`);
         generateRankings(battleResults);
         
-        // Show the milestone view
-        console.log(`🔴 useBattleProgression: setShowingMilestone(true) triggered for milestone ${newBattlesCompleted}`);
+        // CRITICAL FIX: Show the milestone immediately and prevent it from being cleared
+        console.log(`🔴 useBattleProgression: FORCING milestone display for ${newBattlesCompleted}`);
         setShowingMilestone(true);
         
-        // Reset the processing flag after a short delay
-        setTimeout(() => {
-          processingMilestoneRef.current = false;
-        }, 500);
-        
+        // Don't reset processing flag immediately - let the display handle it
         return true;
       } catch (err) {
         console.error("Error generating rankings at milestone:", err);
@@ -109,15 +105,22 @@ export const useBattleProgression = (
     showingMilestoneRef.current = false;
     processingMilestoneRef.current = false;
     setShowingMilestone(false);
-    milestoneTracker.current.clear();
+    // DON'T clear the tracker - we want to remember which milestones we've hit
     lastTriggeredMilestoneRef.current = null;
-    console.log("✅ useBattleProgression: milestone tracking state fully reset");
+    console.log("✅ useBattleProgression: milestone tracking state reset");
   }, [setShowingMilestone]);
+
+  const clearMilestoneProcessing = useCallback(() => {
+    console.log("🧹 Clearing milestone processing flags");
+    processingMilestoneRef.current = false;
+    incrementInProgressRef.current = false;
+  }, []);
 
   return {
     checkMilestone,
     incrementBattlesCompleted,
     isShowingMilestone: showingMilestoneRef.current,
-    resetMilestone
+    resetMilestone,
+    clearMilestoneProcessing
   };
 };

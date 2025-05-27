@@ -22,6 +22,7 @@ const BattleContent: React.FC<BattleContentProps> = ({
 }) => {
   const instanceRef = useRef(`content-${Date.now()}`);
   const milestoneDisplayTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const milestoneDisplayedRef = useRef(false);
   
   console.log(`[DEBUG BattleContent] Instance: ${instanceRef.current} render - allPokemon: ${allPokemon?.length || 0}`);
 
@@ -73,6 +74,7 @@ const BattleContent: React.FC<BattleContentProps> = ({
     isAnyProcessing,
     hasBattle: !!currentBattle && currentBattle.length > 0,
     battlesCompleted,
+    milestoneDisplayed: milestoneDisplayedRef.current,
     timestamp: new Date().toISOString()
   });
 
@@ -85,27 +87,31 @@ const BattleContent: React.FC<BattleContentProps> = ({
     setBattleResults?.(battleResults);
   }, [battleResults, setBattleResults]);
 
-  // CRITICAL FIX: Proper milestone handling with visual display
+  // CRITICAL FIX: Enhanced milestone handling that FORCES display
   useEffect(() => {
-    if (showingMilestone) {
-      console.log(`🏆 [MILESTONE_FIX] MILESTONE REACHED: ${battlesCompleted} battles completed!`);
+    if (showingMilestone && !milestoneDisplayedRef.current) {
+      console.log(`🏆 [MILESTONE_FIX] MILESTONE REACHED: ${battlesCompleted} battles completed! FORCING DISPLAY`);
+      
+      // Mark that we're displaying this milestone
+      milestoneDisplayedRef.current = true;
       
       // Clear any existing timeout
       if (milestoneDisplayTimeoutRef.current) {
         clearTimeout(milestoneDisplayTimeoutRef.current);
       }
       
-      // Show milestone message for 3 seconds
+      // Show milestone message for 4 seconds (longer to ensure visibility)
       milestoneDisplayTimeoutRef.current = setTimeout(() => {
         console.log(`🔄 [MILESTONE_FIX] Dismissing milestone after display time`);
+        milestoneDisplayedRef.current = false;
         setShowingMilestone(false);
         resetMilestoneInProgress();
         
         // Continue battles after milestone is dismissed
         setTimeout(() => {
           handleContinueBattles();
-        }, 300);
-      }, 3000);
+        }, 500);
+      }, 4000);
     }
     
     return () => {
@@ -115,19 +121,22 @@ const BattleContent: React.FC<BattleContentProps> = ({
     };
   }, [showingMilestone, battlesCompleted, setShowingMilestone, resetMilestoneInProgress, handleContinueBattles]);
 
-  // CRITICAL FIX: Show milestone display when milestone is active
+  // CRITICAL FIX: ALWAYS show milestone display when milestone is active - highest priority
   if (showingMilestone) {
-    console.log(`🏆 [MILESTONE_FIX] Displaying milestone for ${battlesCompleted} battles`);
+    console.log(`🏆 [MILESTONE_FIX] DISPLAYING MILESTONE SCREEN for ${battlesCompleted} battles`);
     return (
       <div className="flex justify-center items-center h-64 w-full">
-        <div className="text-center bg-white rounded-lg shadow-lg p-8 max-w-md">
+        <div className="text-center bg-white rounded-lg shadow-lg p-8 max-w-md mx-4">
           <div className="text-6xl mb-4">🏆</div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Milestone Reached!</h2>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Milestone: {battlesCompleted} Battles</h2>
           <p className="text-lg text-gray-600 mb-4">
             You've completed <span className="font-semibold text-blue-600">{battlesCompleted}</span> battles!
           </p>
-          <div className="text-sm text-gray-500">
+          <div className="text-sm text-gray-500 mb-4">
             Rankings have been updated...
+          </div>
+          <div className="text-xs text-gray-400">
+            Showing milestone for 4 seconds
           </div>
         </div>
       </div>
