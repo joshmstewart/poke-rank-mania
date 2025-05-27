@@ -6,6 +6,13 @@ import { fetchPokemonDetails } from "./utils";
 // Helper function to check if a Pokemon should be included based on current form filters
 const shouldIncludePokemon = (pokemon: { name: string, id: number }) => {
   try {
+    // CRITICAL FIX: Filter out "starter" Pokemon duplicates
+    const name = pokemon.name.toLowerCase();
+    if (name.includes('starter')) {
+      console.log(`🚫 [STARTER_FILTER] Filtering out duplicate starter Pokemon: ${pokemon.name} (ID: ${pokemon.id})`);
+      return false;
+    }
+    
     const storedFilters = localStorage.getItem('pokemon-form-filters');
     if (storedFilters) {
       const filters = JSON.parse(storedFilters);
@@ -127,6 +134,11 @@ export async function fetchAllPokemon(generationId: number = 1, fullRankingMode:
         filteredFurfrou.forEach(furfrou => {
           console.log(`🐩 [FURFROU_DEBUG] - Survived filtering: ${furfrou.name} (ID: ${furfrou.id})`);
         });
+        
+        // CRITICAL FIX: Log starter filtering results
+        const starterCount = validPokemon.filter(p => p.name.toLowerCase().includes('starter')).length;
+        const filteredStarterCount = filteredList.filter(p => p.name.toLowerCase().includes('starter')).length;
+        console.log(`🚫 [STARTER_FILTER] Filtered out ${starterCount - filteredStarterCount} starter Pokemon duplicates`);
         
         console.log(`After filtering: ${filteredList.length} Pokémon`);
         
