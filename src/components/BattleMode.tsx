@@ -10,7 +10,7 @@ import { PokemonProvider } from "@/contexts/PokemonContext";
 const BattleMode = () => {
   console.log('[DEBUG BattleMode] Component rendering');
   
-  const { allPokemon, isLoading, isBackgroundLoading, loadPokemon } = usePokemonLoader();
+  const { allPokemon, isLoading, loadPokemon } = usePokemonLoader();
   
   // CRITICAL FIX: Completely stable state management
   const [battlesCompleted, setBattlesCompleted] = useState(0);
@@ -36,7 +36,7 @@ const BattleMode = () => {
       return [];
     }
     
-    console.log(`🔒 [REFRESH_FIX] BattleMode using stable Pokemon: ${allPokemon.length}`);
+    console.log(`🔒 [POKEMON_LOADING_FIX] BattleMode using complete Pokemon dataset: ${allPokemon.length}`);
     return allPokemon;
   }, [allPokemon.length > 0 ? 'HAS_POKEMON' : 'NO_POKEMON']); // CRITICAL: Only change when we go from no Pokemon to having Pokemon
 
@@ -102,11 +102,11 @@ const BattleMode = () => {
     const loadPokemonOnce = async () => {
       if (!loaderInitiatedRef.current) {
         try {
-          console.log(`🔒 [REFRESH_FIX] BattleMode initiating ONE-TIME Pokemon load`);
+          console.log(`🔒 [POKEMON_LOADING_FIX] BattleMode initiating ONE-TIME complete Pokemon load`);
           loaderInitiatedRef.current = true;
           setLoadingInitiated(true);
           await loadPokemon(0, true);
-          console.log(`🔒 [REFRESH_FIX] BattleMode Pokemon load completed - WILL NOT RELOAD AGAIN`);
+          console.log(`🔒 [POKEMON_LOADING_FIX] BattleMode complete Pokemon load finished - WILL NOT RELOAD AGAIN`);
         } catch (error) {
           console.error("❌ Failed to load Pokémon:", error);
         }
@@ -118,18 +118,13 @@ const BattleMode = () => {
 
   // Loading state
   if (isLoading || !stablePokemon.length) {
-    console.log(`🔒 [REFRESH_FIX] BattleMode showing loading state - isLoading: ${isLoading}, Pokemon count: ${stablePokemon.length}`);
+    console.log(`🔒 [POKEMON_LOADING_FIX] BattleMode showing loading state - isLoading: ${isLoading}, Pokemon count: ${stablePokemon.length}`);
     
     return (
       <div className="flex justify-center items-center h-64 w-full">
         <div className="flex flex-col items-center">
           <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent mb-4"></div>
-          <p>Loading initial Pokémon for battles...</p>
-          {isBackgroundLoading && (
-            <p className="text-sm text-gray-600 mt-2">
-              Loading more Pokémon in the background...
-            </p>
-          )}
+          <p>Loading complete Pokémon dataset for battles...</p>
         </div>
       </div>
     );
@@ -138,18 +133,11 @@ const BattleMode = () => {
   // CRITICAL FIX: Static component key that NEVER changes once Pokemon are loaded
   const containerKey = `battle-container-stable`;
   
-  console.log(`🔒 [REFRESH_FIX] BattleMode rendering with STABLE containerKey: ${containerKey}, Pokemon count: ${stablePokemon.length}`);
+  console.log(`🔒 [POKEMON_LOADING_FIX] BattleMode rendering with STABLE containerKey: ${containerKey}, Pokemon count: ${stablePokemon.length}`);
 
   return (
     <PokemonProvider allPokemon={stablePokemon}>
       <div className="flex flex-col items-center w-full py-4 px-4 sm:px-6">
-        {isBackgroundLoading && (
-          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-sm text-blue-700">
-              🔄 Loading more Pokémon in the background... ({stablePokemon.length} loaded so far)
-            </p>
-          </div>
-        )}
         <BattleContentContainer
           key={containerKey}
           allPokemon={stablePokemon}

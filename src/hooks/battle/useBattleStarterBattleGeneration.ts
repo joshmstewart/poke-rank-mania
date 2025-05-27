@@ -11,23 +11,33 @@ export const createBattleGenerator = (
   const recentlySeenPokemon = new Set<number>();
   let battleCountRef = 0;
 
-  console.log(`⚡ [SPEED_FIX] createBattleGenerator initialized with ${allPokemonForGeneration.length} total Pokemon`);
+  console.log(`⚡ [POKEMON_LOADING_FIX] createBattleGenerator initialized with ${allPokemonForGeneration.length} total Pokemon`);
 
-  // SPEED FIX: Simplified generation analysis - only log if we have time
-  if (allPokemonForGeneration.length > 500) {
-    console.log(`🎯 [POKEMON_RANGE_FIX] Pokemon ID range: ${Math.min(...allPokemonForGeneration.map(p => p.id))} to ${Math.max(...allPokemonForGeneration.map(p => p.id))}`);
+  // CRITICAL FIX: Log Pokemon ID range to verify we have the full dataset
+  if (allPokemonForGeneration.length > 0) {
+    const pokemonIds = allPokemonForGeneration.map(p => p.id);
+    const minId = Math.min(...pokemonIds);
+    const maxId = Math.max(...pokemonIds);
+    console.log(`🎯 [POKEMON_RANGE_FIX] Pokemon ID range: ${minId} to ${maxId} (${allPokemonForGeneration.length} total)`);
+    
+    // Log some high-numbered Pokemon to verify we have them
+    const highNumberedPokemon = allPokemonForGeneration.filter(p => p.id > 800);
+    console.log(`🎯 [POKEMON_RANGE_FIX] High-numbered Pokemon (>800): ${highNumberedPokemon.length} found`);
+    if (highNumberedPokemon.length > 0) {
+      console.log(`🎯 [POKEMON_RANGE_FIX] Sample high-numbered Pokemon: ${highNumberedPokemon.slice(0, 5).map(p => `${p.name} (${p.id})`).join(', ')}`);
+    }
   }
 
   const getTierBattlePair = (battleType: BattleType): Pokemon[] => {
-    console.log("⚡ [SPEED_FIX] Fast battle generation started. Battle type:", battleType);
+    console.log("⚡ [POKEMON_LOADING_FIX] Battle generation using full dataset. Battle type:", battleType);
     
     const battleSize = battleType === "pairs" ? 2 : 3;
 
-    // SPEED FIX: For initial battles, use simple random selection
+    // Use the complete Pokemon dataset for battle generation
     const selectedBattle = getRandomCrossGenerationPokemon(allPokemonForGeneration, battleSize, recentlySeenPokemon);
     
     if (selectedBattle.length < battleSize) {
-      console.log("⚠️ Failed to select enough Pokemon with strategy, using simple random selection");
+      console.log("⚠️ Failed to select enough Pokemon with strategy, using simple random selection from full dataset");
       const fallback = shuffleArray(allPokemonForGeneration).slice(0, battleSize);
       return fallback;
     }
@@ -42,7 +52,7 @@ export const createBattleGenerator = (
     }
 
     const validatedBattle = validateBattlePokemon(selectedBattle);
-    console.log("⚡ [SPEED_FIX] Fast battle created:", validatedBattle.map(p => p.name));
+    console.log("⚡ [POKEMON_LOADING_FIX] Battle created from full dataset:", validatedBattle.map(p => `${p.name} (${p.id})`).join(', '));
     
     return validatedBattle;
   };
@@ -52,11 +62,11 @@ export const createBattleGenerator = (
     const battleSize = battleType === "pairs" ? 2 : 3;
     let result: Pokemon[] = [];
 
-    console.log(`⚡ [SPEED_FIX] Battle ${battleCountRef}: Fast battle generation`);
+    console.log(`⚡ [POKEMON_LOADING_FIX] Battle ${battleCountRef}: Using full dataset of ${allPokemonForGeneration.length} Pokemon`);
     result = getTierBattlePair(battleType);
     
     if (result.length < battleSize) {
-      console.log("⚠️ getTierBattlePair returned insufficient Pokemon, using simple fallback");
+      console.log("⚠️ getTierBattlePair returned insufficient Pokemon, using simple fallback from full dataset");
       result = shuffleArray(allPokemonForGeneration).slice(0, battleSize);
     }
 

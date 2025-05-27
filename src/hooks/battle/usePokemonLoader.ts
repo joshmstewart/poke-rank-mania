@@ -24,18 +24,14 @@ export const usePokemonLoader = () => {
 
     setIsLoading(true);
     try {
-      console.log(`⚡ [SPEED_FIX] Loading initial quick batch for first battle`);
+      console.log(`📦 [POKEMON_LOADING_FIX] Loading complete dataset for battles`);
       
-      // SPEED FIX: Load a smaller initial batch first for immediate battle creation
+      // CRITICAL FIX: Load ALL Pokemon at once instead of batching
       const allPokemonData = await fetchAllPokemon(genId, fullRankingMode, false);
-      console.log(`📦 [SPEED_FIX] Loaded complete dataset of ${allPokemonData.length} Pokémon from API`);
+      console.log(`📦 [POKEMON_LOADING_FIX] Loaded complete dataset of ${allPokemonData.length} Pokémon from API`);
       
-      // SPEED FIX: Take first 200 Pokemon for immediate use, then shuffle the rest in background
-      const quickBatch = allPokemonData.slice(0, 200);
-      const remainingPokemon = allPokemonData.slice(200);
-      
-      // Filter the quick batch
-      const filteredQuickBatch = quickBatch.filter(p => {
+      // Filter all Pokemon at once
+      const filteredPokemon = allPokemonData.filter(p => {
         const include = shouldIncludePokemon(p);
         if (!include) {
           storePokemon(p);
@@ -43,64 +39,26 @@ export const usePokemonLoader = () => {
         return include;
       });
       
-      // SPEED FIX: Shuffle only the quick batch initially
-      const shuffledQuickBatch = [...filteredQuickBatch].sort(() => Math.random() - 0.5);
-      console.log(`⚡ [SPEED_FIX] Quick batch ready: ${shuffledQuickBatch.length} Pokemon shuffled`);
+      // Shuffle the complete filtered dataset
+      const shuffledPokemon = [...filteredPokemon].sort(() => Math.random() - 0.5);
+      console.log(`✅ [POKEMON_LOADING_FIX] Complete dataset ready: ${shuffledPokemon.length} Pokemon shuffled and available for battles`);
       
-      // Set the quick batch immediately so battles can start
-      setAllPokemon(shuffledQuickBatch);
+      // Set the complete dataset immediately
+      setAllPokemon(shuffledPokemon);
       setIsLoading(false);
       
-      // SPEED FIX: Process the remaining Pokemon in the background
-      if (remainingPokemon.length > 0) {
-        console.log(`🔄 [SPEED_FIX] Processing remaining ${remainingPokemon.length} Pokemon in background`);
-        setIsBackgroundLoading(true);
-        
-        setTimeout(async () => {
-          try {
-            // Filter remaining Pokemon
-            const filteredRemaining = remainingPokemon.filter(p => {
-              const include = shouldIncludePokemon(p);
-              if (!include) {
-                storePokemon(p);
-              }
-              return include;
-            });
-            
-            // Shuffle remaining and combine with quick batch
-            const shuffledRemaining = [...filteredRemaining].sort(() => Math.random() - 0.5);
-            const fullShuffledList = [...shuffledQuickBatch, ...shuffledRemaining].sort(() => Math.random() - 0.5);
-            
-            console.log(`✅ [SPEED_FIX] Background loading complete: ${fullShuffledList.length} total Pokemon`);
-            
-            // Update with full list
-            setAllPokemon(fullShuffledList);
-            setIsBackgroundLoading(false);
-            
-            // Lock Pokemon after full loading
-            if (fullShuffledList.length >= 100) {
-              console.log(`🔒 [REFRESH_FIX] Locking Pokemon at ${fullShuffledList.length} to prevent refresh cascades`);
-              pokemonLockedRef.current = true;
-            }
-          } catch (error) {
-            console.error("❌ Background loading failed:", error);
-            setIsBackgroundLoading(false);
-          }
-        }, 100); // Very short delay to let UI update
-      } else {
-        // If no remaining Pokemon, lock immediately
-        if (shuffledQuickBatch.length >= 100) {
-          console.log(`🔒 [REFRESH_FIX] Locking Pokemon at ${shuffledQuickBatch.length} to prevent refresh cascades`);
-          pokemonLockedRef.current = true;
-        }
+      // Lock Pokemon after full loading
+      if (shuffledPokemon.length >= 100) {
+        console.log(`🔒 [REFRESH_FIX] Locking Pokemon at ${shuffledPokemon.length} to prevent refresh cascades`);
+        pokemonLockedRef.current = true;
       }
       
-      return shuffledQuickBatch;
+      return shuffledPokemon;
     } catch (error) {
-      console.error("Error loading initial Pokemon batch:", error);
+      console.error("Error loading Pokemon:", error);
       toast({
         title: "Error loading Pokémon",
-        description: "Could not load initial Pokémon data. Please try again.",
+        description: "Could not load Pokémon data. Please try again.",
         variant: "destructive"
       });
       setIsLoading(false);
@@ -121,7 +79,7 @@ export const usePokemonLoader = () => {
   return {
     allPokemon,
     isLoading,
-    isBackgroundLoading,
+    isBackgroundLoading: false, // No more background loading needed
     loadPokemon
   };
 };
