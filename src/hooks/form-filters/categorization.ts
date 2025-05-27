@@ -36,7 +36,7 @@ export const getPokemonFormCategory = (pokemon: Pokemon): PokemonFormType | null
     return "originPrimal";
   }
   
-  // Check for mega evolutions and gigantamax forms - ENHANCED detection
+  // ENHANCED: Check for mega evolutions and gigantamax forms with better detection
   if (name.includes("mega") || name.includes("g-max") || name.includes("gmax") || name.includes("eternamax")) {
     console.log(`💥 [FORM_FILTER_DEBUG] ${pokemon.name} (${pokemon.id}) categorized as MEGA/GMAX`);
     return "megaGmax";
@@ -76,8 +76,8 @@ export const getPokemonFormCategory = (pokemon: Pokemon): PokemonFormType | null
   }
   
   // ENHANCED: Stricter normal Pokemon identification
-  // A Pokemon is normal if it has a standard Pokedex number (1-1000) AND no special form indicators
-  if (pokemon.id <= 1000 && 
+  // A Pokemon is normal if it has a standard Pokedex number (1-1010) AND no special form indicators
+  if (pokemon.id <= 1010 && 
       !name.includes("mega") && 
       !name.includes("gmax") && 
       !name.includes("g-max") &&
@@ -96,8 +96,8 @@ export const getPokemonFormCategory = (pokemon: Pokemon): PokemonFormType | null
     return "normal";
   }
   
-  // If Pokemon has ID > 1000, it's likely a special form
-  if (pokemon.id > 1000) {
+  // If Pokemon has ID > 1010, it's likely a special form
+  if (pokemon.id > 1010) {
     console.log(`🔄 [FORM_FILTER_DEBUG] ${pokemon.name} (${pokemon.id}) categorized as FORMS (high ID number)`);
     return "forms";
   }

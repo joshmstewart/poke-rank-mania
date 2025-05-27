@@ -1,6 +1,6 @@
+
 import { Pokemon } from "../types";
 import { PokemonImageType, getPreferredImageType, POKEMON_IMAGE_PREFERENCE_KEY, DEFAULT_IMAGE_PREFERENCE } from "@/components/settings/ImagePreferenceSelector";
-import { formatPokemonName } from "@/utils/pokemonUtils";
 
 // Image styles to cache busting map to track which ones needed cache busting
 const imageCacheBustingMap = new Map<string, boolean>();
@@ -145,9 +145,10 @@ export async function fetchPokemonDetails(id: number): Promise<Pokemon> {
     const detailResponse = await fetch(`https://pokeapi.co/api/v2/pokemon/${id}`);
     if (detailResponse.ok) {
       const detailData = await detailResponse.json();
-      // CRITICAL FIX: Apply formatPokemonName ONLY to raw API names
-      name = formatPokemonName(detailData.name);
-      console.log(`🔧 [UTILS_NAME_TRANSFORM] Raw API: "${detailData.name}" → Final: "${name}"`);
+      // CRITICAL FIX: DO NOT format the name here - use it as-is from API
+      // The formatting should ONLY happen in pokemonApi.ts
+      name = detailData.name;
+      console.log(`🔧 [UTILS_NO_FORMAT] Using raw API name: "${detailData.name}"`);
       
       types = detailData.types.map((type: any) => 
         type.type.name.charAt(0).toUpperCase() + type.type.name.slice(1)
@@ -180,6 +181,7 @@ export async function fetchPokemonDetails(id: number): Promise<Pokemon> {
   
     const imageUrl = getPokemonImageUrl(id);
 
+    // Special case handling for specific IDs
     if (id === 10250) {
       return {
         id: id,
@@ -192,10 +194,10 @@ export async function fetchPokemonDetails(id: number): Promise<Pokemon> {
 
     return {
       id: Number(id),
-      name: name,
+      name: name, // Use the raw name - formatting happens elsewhere
       image: imageUrl,
       types,
-      flavorText
+      flavorText: ""
     };
   } catch (error) {
     console.error(`Error fetching details for Pokemon #${id}:`, error);

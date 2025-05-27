@@ -39,7 +39,7 @@ export const fetchPokemonData = async (generations: number[]): Promise<Pokemon[]
         // CRITICAL FIX: Apply formatPokemonName to the raw API name ONCE AND ONLY ONCE
         const formattedName = formatPokemonName(pokemonData.name);
         
-        console.log(`🔧 [API_NAME_FINAL] RAW API: "${pokemonData.name}" → FINAL: "${formattedName}"`);
+        console.log(`🔧 [API_NAME_FORMATTING] RAW: "${pokemonData.name}" → FORMATTED: "${formattedName}"`);
 
         return {
           id: pokemonData.id,
