@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { useBattleStarterIntegration } from "@/hooks/battle/useBattleStarterIntegration";
@@ -185,7 +184,7 @@ export const useBattleStateCore = (
     enhancedStartNewBattle
   );
 
-  // CRITICAL FIX: Simplified handleContinueBattles with immediate battle generation
+  // CRITICAL FIX: Enhanced handleContinueBattles with seamless transition
   const handleContinueBattles = useCallback(() => {
     console.log('[MILESTONE_TRANSITION_FIX] handleContinueBattles: Called');
     
@@ -198,21 +197,33 @@ export const useBattleStateCore = (
     continueBattlesRef.current = true;
     
     if (showingMilestone) {
-      console.log('[MILESTONE_TRANSITION_FIX] handleContinueBattles: Dismissing milestone and generating battle immediately');
+      console.log('[MILESTONE_TRANSITION_FIX] handleContinueBattles: Generating new battle BEFORE dismissing milestone');
       
-      // CRITICAL FIX: Dismiss milestone and generate battle in one action
-      forceDismissMilestone();
-      
-      // CRITICAL FIX: Generate new battle immediately, no delays
+      // CRITICAL FIX: Generate new battle FIRST, then dismiss milestone
       const newBattle = enhancedStartNewBattle("pairs");
       
-      continueBattlesRef.current = false;
+      if (newBattle && newBattle.length > 0) {
+        console.log(`✅ [MILESTONE_TRANSITION_FIX] New battle ready: ${newBattle.map(p => p.name).join(', ')}`);
+        
+        // CRITICAL FIX: Only dismiss milestone AFTER new battle is ready
+        setTimeout(() => {
+          forceDismissMilestone();
+          resetMilestoneInProgress();
+          continueBattlesRef.current = false;
+          console.log('✅ [MILESTONE_TRANSITION_FIX] Milestone dismissed after new battle was set');
+        }, 50); // Minimal delay to ensure battle is rendered
+      } else {
+        console.log('⚠️ [MILESTONE_TRANSITION_FIX] Failed to generate new battle, dismissing milestone anyway');
+        forceDismissMilestone();
+        resetMilestoneInProgress();
+        continueBattlesRef.current = false;
+      }
     } else {
       console.log('[MILESTONE_TRANSITION_FIX] handleContinueBattles: Starting new battle directly');
       enhancedStartNewBattle("pairs");
       continueBattlesRef.current = false;
     }
-  }, [showingMilestone, forceDismissMilestone, enhancedStartNewBattle]);
+  }, [showingMilestone, forceDismissMilestone, enhancedStartNewBattle, resetMilestoneInProgress]);
 
   // CRITICAL FIX: Remove milestone dismissed event listener - handle immediately instead
 
