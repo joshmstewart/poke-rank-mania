@@ -1,6 +1,6 @@
 
 import { useCallback } from "react";
-import { Pokemon } from "@/services/pokemon";
+import { Pokemon, TopNOption } from "@/services/pokemon";
 import { BattleType } from "./types";
 import { useBattleProcessor } from "./useBattleProcessor";
 import { useBattleHandlers } from "./useBattleHandlers";
@@ -43,6 +43,9 @@ export const useBattleActionsManager = (
   console.log('[DEBUG useBattleActionsManager] Type check - generateRankings:', typeof generateRankings);
   console.log('[DEBUG useBattleActionsManager] Type check - freezePokemonForTier:', typeof freezePokemonForTier);
   
+  // Convert string activeTier back to TopNOption for useBattleProcessor
+  const activeTierAsTopNOption: TopNOption = activeTier === "All" ? "All" : Number(activeTier) as TopNOption;
+  
   const { 
     processBattleResult,
     isProcessingResult, 
@@ -59,7 +62,7 @@ export const useBattleActionsManager = (
     milestones,
     generateRankings,
     setSelectedPokemon, // Fix: This should be setSelectedPokemon, not activeTier
-    activeTier, // Fix: Move activeTier to correct position
+    activeTierAsTopNOption, // Fix: Convert string back to TopNOption
     freezePokemonForTier,
     battleStarter,
     markSuggestionUsed,
