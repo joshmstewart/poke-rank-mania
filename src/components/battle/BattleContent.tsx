@@ -3,6 +3,7 @@ import React, { useEffect, useRef } from "react";
 import BattleInterface from "./BattleInterface";
 import RankingDisplay from "./RankingDisplay";
 import BattleSettings from "./BattleSettings";
+import BattleControls from "./BattleControls";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "@/hooks/battle/types";
 import { useBattleStateCore } from "@/hooks/battle/useBattleStateCore";
@@ -138,38 +139,17 @@ const BattleContent: React.FC<BattleContentProps> = ({
     
     return (
       <div className="w-full">
-        {/* Battle Settings Header */}
-        <div className="flex justify-between items-center mb-4 px-4">
-          <div className="flex items-center gap-4">
-            <h2 className="text-lg font-semibold">Battle Mode</h2>
-            <span className="text-sm text-gray-600">
-              Battles: {battlesCompleted} | Type: {battleType}
-            </span>
-          </div>
-          
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Settings className="h-4 w-4 mr-2" />
-                Settings
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-md">
-              <DialogHeader>
-                <DialogTitle>Battle Settings</DialogTitle>
-                <DialogDescription>
-                  Configure your battle preferences and filters
-                </DialogDescription>
-              </DialogHeader>
-              <BattleSettings
-                onGenerationChange={setSelectedGeneration}
-                onBattleTypeChange={setBattleType}
-                selectedGeneration={selectedGeneration}
-                battleType={battleType}
-              />
-            </DialogContent>
-          </Dialog>
-        </div>
+        {/* Restore the full Battle Controls Bar */}
+        <BattleControls
+          selectedGeneration={selectedGeneration}
+          battleType={battleType}
+          onGenerationChange={(gen) => setSelectedGeneration(Number(gen))}
+          onBattleTypeChange={setBattleType}
+          onRestartBattles={performFullBattleReset}
+          setBattlesCompleted={setBattlesCompleted}
+          setBattleResults={setBattleResults}
+          performFullBattleReset={performFullBattleReset}
+        />
 
         <BattleInterface
           currentBattle={currentBattle}
