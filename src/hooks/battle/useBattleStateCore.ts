@@ -39,21 +39,22 @@ export const useBattleStateCore = (
   const [battleType, setBattleType] = useState<BattleType>(initialBattleTypeStored);
   const [selectedPokemon, setSelectedPokemon] = useState<number[]>([]);
 
-  // CRITICAL FIX: Add battle transition state to prevent loading gaps
-  const [isBattleTransitioning, setIsBattleTransitioning] = useState(false);
-  const battleTransitionRef = useRef(false);
+  // CRITICAL FIX: Remove battle transition state since it's causing the gray screen
+  // We'll manage transitions by keeping the current battle until new one is ready
+  const [isPreparingNextBattle, setIsPreparingNextBattle] = useState(false);
 
+  // CRITICAL FIX: Enhanced battle setter that prevents clearing current battle until new one is ready
   const stableSetCurrentBattle = useCallback((battle: Pokemon[]) => {
     console.log(`🔄 [BATTLE_TRANSITION] stableSetCurrentBattle called with ${battle.length} Pokemon`);
     
-    // Clear transition state when setting new battle
+    // Only update if we have a valid new battle
     if (battle.length > 0) {
-      setIsBattleTransitioning(false);
-      battleTransitionRef.current = false;
-      console.log(`✅ [BATTLE_TRANSITION] Cleared transition state - new battle ready`);
+      setCurrentBattle(battle);
+      setIsPreparingNextBattle(false);
+      console.log(`✅ [BATTLE_TRANSITION] New battle set successfully with ${battle.length} Pokemon`);
+    } else {
+      console.log(`⚠️ [BATTLE_TRANSITION] Ignoring empty battle to prevent gray screen`);
     }
-    
-    setCurrentBattle(battle);
   }, []);
   
   const stableSetSelectedPokemon = useCallback((pokemon: number[]) => {
@@ -127,26 +128,16 @@ export const useBattleStateCore = (
     return filtered;
   }, [contextPokemon, selectedGeneration]);
 
-  // CRITICAL FIX: Enhanced battle starter with transition management
+  // CRITICAL FIX: Enhanced battle starter that signals preparation without clearing current battle
   const enhancedStartNewBattle = useCallback((battleType: BattleType) => {
     console.log(`🔄 [BATTLE_TRANSITION] enhancedStartNewBattle called for ${battleType}`);
     
-    // Set transition state immediately to prevent loading gaps
-    setIsBattleTransitioning(true);
-    battleTransitionRef.current = true;
-    console.log(`⏳ [BATTLE_TRANSITION] Set transition state to true`);
+    // Signal that we're preparing the next battle but don't clear current one yet
+    setIsPreparingNextBattle(true);
     
     const result = startNewBattle(battleType);
     
-    // Clear transition state immediately if we got a valid battle
-    if (result && result.length > 0) {
-      setTimeout(() => {
-        setIsBattleTransitioning(false);
-        battleTransitionRef.current = false;
-        console.log(`✅ [BATTLE_TRANSITION] Cleared transition state after successful battle creation`);
-      }, 50); // Very short delay to ensure state propagation
-    }
-    
+    // The new battle will be set via stableSetCurrentBattle when ready
     return result;
   }, []);
 
@@ -228,8 +219,7 @@ export const useBattleStateCore = (
     setSelectedPokemon([]);
     setCompletionPercentage(0);
     setRankingGenerated(false);
-    setIsBattleTransitioning(false);
-    battleTransitionRef.current = false;
+    setIsPreparingNextBattle(false);
     
     resetMilestones();
     if (resetBattleProgressionMilestoneTracking) {
@@ -320,8 +310,8 @@ export const useBattleStateCore = (
     processBattleResult
   );
 
-  // CRITICAL FIX: Combined processing state that accounts for all loading states
-  const isAnyProcessing = isProcessingResult || isProcessing || isBattleTransitioning;
+  // CRITICAL FIX: Simplified processing state - removed isBattleTransitioning
+  const isAnyProcessing = isProcessingResult || isProcessing || isPreparingNextBattle;
 
   return useMemo(() => ({
     currentBattle,
@@ -341,7 +331,7 @@ export const useBattleStateCore = (
     battleHistory,
     activeTier,
     setActiveTier,
-    isBattleTransitioning,
+    isBattleTransitioning: isPreparingNextBattle, // Renamed for consistency
     isAnyProcessing,
     handlePokemonSelect: (id: number) => {
       handlePokemonSelect(id);
@@ -387,7 +377,7 @@ export const useBattleStateCore = (
     confidenceScores,
     battleHistory,
     activeTier,
-    isBattleTransitioning,
+    isPreparingNextBattle,
     isAnyProcessing,
     handlePokemonSelect,
     goBackHelper,
