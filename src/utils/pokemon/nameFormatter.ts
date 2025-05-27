@@ -1,4 +1,3 @@
-
 import { capitalizeFirstLetter, capitalizeWords } from './helpers';
 
 /**
@@ -214,7 +213,7 @@ export const formatPokemonName = (name: string): string => {
     console.log(`🔧 [FORMAT_DADA_DETECTED] Processing Dada form: "${name}"`);
     const baseName = name.substring(0, name.toLowerCase().indexOf('-dada'));
     const result = `${capitalizeFirstLetter(baseName)} (Dada)`;
-    console.log(`🔧 [FORMAT_DADA_RESULT] "${name}" → "${result)"`);
+    console.log(`🔧 [FORMAT_DADA_RESULT] "${name}" → "${result}"`);
     return result;
   }
   
