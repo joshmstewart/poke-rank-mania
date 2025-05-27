@@ -53,7 +53,7 @@ export const useBattleActionsManager = (
     stableSetCurrentBattle,
     setShowingMilestone,
     milestones,
-    generateRankings,
+    (results: any[]) => { generateRankings(results); return results; }, // Return results instead of void
     activeTier,
     freezePokemonForTier,
     battleStarter,
@@ -92,7 +92,7 @@ export const useBattleActionsManager = (
     resetMilestones,
     resetBattleProgressionMilestoneTracking,
     clearAllSuggestions,
-    generateRankings,
+    (results: any[]) => { generateRankings(results); return results; }, // Return results instead of void
     enhancedStartNewBattle
   );
 
