@@ -19,35 +19,33 @@ const PokemonThumbnail: React.FC<PokemonThumbnailProps> = ({
   showName = true,
   disabled = false
 }) => {
-  // ULTRA-DETAILED DEBUGGING: Track every step of name handling
-  console.log(`🎯 [THUMBNAIL_ULTRA_DEBUG] ===== POKEMON THUMBNAIL RENDER START =====`);
-  console.log(`🎯 [THUMBNAIL_ULTRA_DEBUG] Pokemon ID: ${pokemon.id}`);
-  console.log(`🎯 [THUMBNAIL_ULTRA_DEBUG] Received pokemon object:`, pokemon);
-  console.log(`🎯 [THUMBNAIL_ULTRA_DEBUG] Pokemon name property:`, pokemon.name);
-  console.log(`🎯 [THUMBNAIL_ULTRA_DEBUG] Pokemon name type:`, typeof pokemon.name);
-  console.log(`🎯 [THUMBNAIL_ULTRA_DEBUG] Pokemon name length:`, pokemon.name.length);
-  console.log(`🎯 [THUMBNAIL_ULTRA_DEBUG] Pokemon name chars: [${pokemon.name.split('').join(', ')}]`);
-  console.log(`🎯 [THUMBNAIL_ULTRA_DEBUG] Pokemon name contains hyphen:`, pokemon.name.includes('-'));
-  console.log(`🎯 [THUMBNAIL_ULTRA_DEBUG] Pokemon name is mega form:`, pokemon.name.toLowerCase().includes('-mega'));
-  console.log(`🎯 [THUMBNAIL_ULTRA_DEBUG] Pokemon name is alolan form:`, pokemon.name.toLowerCase().includes('-alola'));
+  // CRITICAL: Track exactly where names are coming from
+  console.log(`🎯 [THUMBNAIL_CRITICAL] ===== POKEMON THUMBNAIL FOR ${pokemon.id} =====`);
+  console.log(`🎯 [THUMBNAIL_CRITICAL] Raw pokemon object received:`, pokemon);
+  console.log(`🎯 [THUMBNAIL_CRITICAL] pokemon.name property: "${pokemon.name}"`);
+  console.log(`🎯 [THUMBNAIL_CRITICAL] pokemon.name is formatted: ${!pokemon.name.includes('-') || pokemon.name.includes('(') || pokemon.name.includes('Mega ') || pokemon.name.includes('Alolan ')}`);
   
-  // Use the name EXACTLY as provided - NO MORE RE-FORMATTING
-  const displayName = pokemon.name;
+  // Check if this is an unformatted name that should have been formatted
+  const shouldBeFormatted = pokemon.name.includes('-') && !pokemon.name.includes('(') && !pokemon.name.includes('Mega ') && !pokemon.name.includes('Alolan ') && !pokemon.name.includes('Galarian ') && !pokemon.name.includes('Hisuian ');
   
-  console.log(`🎯 [THUMBNAIL_ULTRA_DEBUG] displayName assignment: "${displayName}"`);
-  console.log(`🎯 [THUMBNAIL_ULTRA_DEBUG] displayName === pokemon.name: ${displayName === pokemon.name}`);
-  console.log(`🎯 [THUMBNAIL_ULTRA_DEBUG] displayName type: ${typeof displayName}`);
-  console.log(`🎯 [THUMBNAIL_ULTRA_DEBUG] displayName chars: [${displayName.split('').join(', ')}]`);
-  
-  // Check for any unexpected transformations
-  if (displayName !== pokemon.name) {
-    console.error(`🚨 [THUMBNAIL_ULTRA_DEBUG] CRITICAL: displayName differs from pokemon.name!`);
-    console.error(`🚨 [THUMBNAIL_ULTRA_DEBUG] Original: "${pokemon.name}"`);
-    console.error(`🚨 [THUMBNAIL_ULTRA_DEBUG] Display: "${displayName}"`);
+  if (shouldBeFormatted) {
+    console.error(`🚨 [THUMBNAIL_CRITICAL] UNFORMATTED NAME DETECTED: "${pokemon.name}" (ID: ${pokemon.id})`);
+    console.error(`🚨 [THUMBNAIL_CRITICAL] This name should have been formatted but wasn't!`);
+    console.error(`🚨 [THUMBNAIL_CRITICAL] Pokemon object source analysis:`, {
+      hasId: !!pokemon.id,
+      hasName: !!pokemon.name,
+      hasImage: !!pokemon.image,
+      hasTypes: !!pokemon.types,
+      objectKeys: Object.keys(pokemon),
+      nameContainsHyphen: pokemon.name.includes('-'),
+      nameStartsWithLowercase: pokemon.name[0] === pokemon.name[0].toLowerCase()
+    });
   }
   
-  console.log(`🎯 [THUMBNAIL_ULTRA_DEBUG] About to render with displayName: "${displayName}"`);
-  console.log(`🎯 [THUMBNAIL_ULTRA_DEBUG] ===== POKEMON THUMBNAIL RENDER END =====`);
+  const displayName = pokemon.name;
+  
+  console.log(`🎯 [THUMBNAIL_CRITICAL] Final displayName for render: "${displayName}"`);
+  console.log(`🎯 [THUMBNAIL_CRITICAL] ===== END THUMBNAIL ${pokemon.id} =====`);
 
   return (
     <div

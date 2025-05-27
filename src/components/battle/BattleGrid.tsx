@@ -26,47 +26,21 @@ const BattleGrid: React.FC<BattleGridProps> = ({
 }) => {
   const combinedProcessing = isProcessing || internalProcessing;
   
-  // ENHANCED: Add battle count context to all logs
   const currentBattleCount = parseInt(localStorage.getItem('pokemon-battle-count') || '0', 10);
   
-  console.log(`🔄 [LOADING_CIRCLES_ENHANCED] BattleGrid render - Battle #${currentBattleCount + 1}:`, {
-    battleType,
-    currentBattleLength: currentBattle?.length || 0,
-    currentBattleIds: currentBattle?.map(p => p.id).join(',') || '',
-    selectedPokemon: selectedPokemon.join(', '),
-    isProcessing,
-    internalProcessing,
-    combinedProcessing,
-    animationKey,
-    timestamp: new Date().toISOString(),
-    componentState: 'BattleGrid-Active',
-    battleCount: currentBattleCount
-  });
+  console.log(`🔄 [BATTLE_GRID_CRITICAL] ===== BattleGrid render - Battle #${currentBattleCount + 1} =====`);
+  console.log(`🔄 [BATTLE_GRID_CRITICAL] Raw currentBattle received:`, currentBattle);
   
-  // ENHANCED: Specific logging for battles 10-11 transition
-  if (currentBattleCount === 10 || currentBattleCount === 11) {
-    console.error(`🔥 [BATTLE_10_11_DEBUG] BattleGrid render for CRITICAL battle ${currentBattleCount + 1}:`, {
-      hasCurrentBattle: !!currentBattle && currentBattle.length > 0,
-      battleIds: currentBattle?.map(p => p.id) || [],
-      pokemonNames: currentBattle?.map(p => p.name) || [],
-      isProcessing,
-      internalProcessing,
-      combinedProcessing,
-      animationKey
+  // CRITICAL: Log each Pokemon in the current battle before validation
+  if (currentBattle && currentBattle.length > 0) {
+    currentBattle.forEach((pokemon, index) => {
+      console.log(`🔄 [BATTLE_GRID_CRITICAL] Raw Pokemon #${index}: "${pokemon.name}" (ID: ${pokemon.id})`);
+      
+      const isUnformatted = pokemon.name.includes('-') && !pokemon.name.includes('(') && !pokemon.name.includes('Mega ') && !pokemon.name.includes('Alolan ');
+      if (isUnformatted) {
+        console.error(`🚨 [BATTLE_GRID_CRITICAL] UNFORMATTED NAME IN CURRENT BATTLE: "${pokemon.name}" (ID: ${pokemon.id})`);
+      }
     });
-  }
-  
-  // ENHANCED: Log when loading circles should be visible with more context
-  if (combinedProcessing) {
-    console.error(`🟡 [LOADING_CIRCLES_CRITICAL] BattleGrid SHOWING loading circles - Battle #${currentBattleCount + 1}:`, {
-      isProcessing,
-      internalProcessing,
-      reason: isProcessing ? 'isProcessing=true' : 'internalProcessing=true',
-      battleHasPokemon: !!currentBattle && currentBattle.length > 0,
-      timestamp: new Date().toISOString()
-    });
-  } else {
-    console.log(`🟢 [LOADING_CIRCLES] BattleGrid NOT showing loading circles - Battle #${currentBattleCount + 1} - both states false`);
   }
   
   // Validate the Pokemon in the grid to ensure image and name consistency - memoized for performance
@@ -77,24 +51,29 @@ const BattleGrid: React.FC<BattleGridProps> = ({
       return [];
     }
     
+    console.log(`🔄 [BATTLE_GRID_CRITICAL] About to validate battle Pokemon - BEFORE validation:`, currentBattle.map(p => ({ id: p.id, name: p.name })));
+    
     const validated = validateBattlePokemon(currentBattle);
-    console.log(`✅ [BATTLE_VALIDATION] Battle #${currentBattleCount + 1}: Validated ${validated.length} Pokémon for battle grid`);
     
-    // Double check that we have the right number of pokemon for the battle type
-    const expectedCount = battleType === 'pairs' ? 2 : 3;
-    if (validated.length !== expectedCount) {
-      console.error(`⚠️ [BATTLE_VALIDATION] Battle #${currentBattleCount + 1}: Expected ${expectedCount} Pokémon for ${battleType} battle, but got ${validated.length}`);
-    }
+    console.log(`🔄 [BATTLE_GRID_CRITICAL] Validation complete - AFTER validation:`, validated.map(p => ({ id: p.id, name: p.name })));
     
-    // ENHANCED: Log the validated Pokemon details for debugging
-    validated.forEach(pokemon => {
-      console.log(`🔍 [BATTLE_VALIDATION] Battle #${currentBattleCount + 1} validated: ${pokemon.name} (#${pokemon.id}) - image: ${pokemon.image?.substring(0, 80)}...`);
+    // CRITICAL: Check if validation changed any names
+    currentBattle.forEach((original, index) => {
+      const validatedPokemon = validated[index];
+      if (validatedPokemon && original.name !== validatedPokemon.name) {
+        console.error(`🚨 [BATTLE_GRID_CRITICAL] VALIDATION CHANGED NAME: "${original.name}" → "${validatedPokemon.name}" (ID: ${original.id})`);
+      }
     });
+    
+    console.log(`✅ [BATTLE_VALIDATION] Battle #${currentBattleCount + 1}: Validated ${validated.length} Pokémon for battle grid`);
     
     return validated;
   }, [currentBattle, battleType, currentBattleCount]);
   
-  // ENHANCED: Add more context to loading state logging
+  // CRITICAL: Log the final validated battle Pokemon
+  console.log(`🔄 [BATTLE_GRID_CRITICAL] Final validatedBattle being passed to BattleCards:`, validatedBattle.map(p => ({ id: p.id, name: p.name })));
+  console.log(`🔄 [BATTLE_GRID_CRITICAL] ===== END BattleGrid Battle #${currentBattleCount + 1} =====`);
+  
   if (!validatedBattle.length) {
     console.error(`🔄 [LOADING_PLACEHOLDER] Battle #${currentBattleCount + 1}: BattleGrid showing placeholder loading state - NO VALIDATED BATTLE DATA`);
     return (
@@ -108,18 +87,6 @@ const BattleGrid: React.FC<BattleGridProps> = ({
   
   // Determine grid columns based on battle size
   const gridCols = validatedBattle.length <= 3 ? validatedBattle.length : Math.min(validatedBattle.length, 4);
-  
-  console.log(`🎮 [BATTLE_GRID_RENDER] Battle #${currentBattleCount + 1}: Rendering ${validatedBattle.length} Pokémon cards with processing=${combinedProcessing}`);
-  
-  // ENHANCED: Log battles 10-11 specifically
-  if (currentBattleCount === 10 || currentBattleCount === 11) {
-    console.error(`🔥 [BATTLE_10_11_RENDER] Battle ${currentBattleCount + 1} final render:`, {
-      pokemonCount: validatedBattle.length,
-      pokemonNames: validatedBattle.map(p => p.name),
-      showingLoadingCircles: combinedProcessing,
-      gridVisible: 'YES'
-    });
-  }
   
   return (
     <div 
@@ -138,7 +105,7 @@ const BattleGrid: React.FC<BattleGridProps> = ({
       }}
     >
       {validatedBattle.map(pokemon => {
-        console.log(`🎯 [BATTLE_CARD_RENDER] Battle #${currentBattleCount + 1} BattleCard for ${pokemon.name} - processing: ${combinedProcessing}`);
+        console.log(`🎯 [BATTLE_CARD_RENDER_CRITICAL] Battle #${currentBattleCount + 1} BattleCard for "${pokemon.name}" (ID: ${pokemon.id})`);
         return (
           <BattleCard
             key={`${pokemon.id}-${animationKey}`}
