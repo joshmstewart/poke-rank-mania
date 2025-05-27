@@ -19,12 +19,16 @@ const PokemonThumbnail: React.FC<PokemonThumbnailProps> = ({
   showName = true,
   disabled = false
 }) => {
-  // CRITICAL FIX: Use the name EXACTLY as provided - NO MORE RE-FORMATTING
+  // CRITICAL DEBUGGING: Use the name EXACTLY as provided - NO MORE RE-FORMATTING
   const displayName = pokemon.name;
   
-  // Enhanced debugging for Pokemon name in PokemonThumbnail
-  console.log(`🎯 [THUMBNAIL_NAME_FINAL] Pokemon ID: ${pokemon.id}`);
-  console.log(`🎯 [THUMBNAIL_NAME_FINAL] Name used as-is: "${displayName}" (NO FORMATTING APPLIED)`);
+  // CRITICAL DEBUGGING: Log exactly what name we're receiving and displaying
+  console.log(`🎯 [THUMBNAIL_CRITICAL_DEBUG] Pokemon ID: ${pokemon.id}`);
+  console.log(`🎯 [THUMBNAIL_CRITICAL_DEBUG] Raw pokemon.name received: "${pokemon.name}"`);
+  console.log(`🎯 [THUMBNAIL_CRITICAL_DEBUG] Final displayName (NO FORMATTING): "${displayName}"`);
+  console.log(`🎯 [THUMBNAIL_CRITICAL_DEBUG] Name contains hyphen: ${displayName.includes('-')}`);
+  console.log(`🎯 [THUMBNAIL_CRITICAL_DEBUG] Name is mega form: ${displayName.toLowerCase().includes('-mega')}`);
+  console.log(`🎯 [THUMBNAIL_CRITICAL_DEBUG] Expected format for mega: Should be "Mega [Name]" not "[Name]-mega"`);
 
   return (
     <div

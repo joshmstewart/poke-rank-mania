@@ -1,6 +1,4 @@
-
 import { Pokemon } from "../types";
-import { formatPokemonName } from "@/utils/pokemon";
 import { getPreferredImageType, PokemonImageType } from "@/components/settings/ImagePreferenceSelector";
 
 /**
@@ -8,20 +6,19 @@ import { getPreferredImageType, PokemonImageType } from "@/components/settings/I
  */
 export const validateBattlePokemon = (pokemon: Pokemon[]): Pokemon[] => {
   console.log(`🔍 [VALIDATE_BATTLE_POKEMON] Input Pokemon count: ${pokemon.length}`);
-  console.log(`🔍 [VALIDATE_BATTLE_POKEMON] SIMPLIFIED VALIDATION - NO NAME FORMATTING`);
+  console.log(`🔍 [VALIDATE_BATTLE_POKEMON] CRITICAL FIX - PRESERVING NAMES EXACTLY AS PROVIDED`);
   
   pokemon.forEach((p, index) => {
-    console.log(`🔍 [VALIDATE_BATTLE_POKEMON] Input #${index}: "${p.name}" (ID: ${p.id})`);
+    console.log(`🔍 [VALIDATE_BATTLE_POKEMON] Input #${index}: "${p.name}" (ID: ${p.id}) - WILL BE PRESERVED EXACTLY`);
   });
   
   const validated = pokemon.map((p, index) => {
     console.log(`🔍 [VALIDATE_BATTLE_POKEMON] Processing #${index}: "${p.name}" (ID: ${p.id})`);
     
-    // CRITICAL FIX: DO NOT FORMAT NAMES HERE - USE EXACTLY AS PROVIDED
-    // Names should already be formatted from the API fetch stage
-    const finalName = p.name; // Use name exactly as provided - NO FORMATTING
+    // CRITICAL FIX: ABSOLUTELY NO NAME FORMATTING - USE EXACTLY AS PROVIDED
+    const finalName = p.name; // Use name exactly as provided - NO CHANGES WHATSOEVER
     
-    console.log(`🔍 [VALIDATE_BATTLE_POKEMON] NAME PRESERVED (no formatting applied): "${finalName}"`);
+    console.log(`🔍 [VALIDATE_BATTLE_POKEMON] NAME PRESERVED EXACTLY: "${finalName}" (NO PROCESSING APPLIED)`);
     
     const validatedPokemon = {
       ...p,
@@ -30,12 +27,12 @@ export const validateBattlePokemon = (pokemon: Pokemon[]): Pokemon[] => {
       image: p.image || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${p.id}.png`
     };
     
-    console.log(`🔍 [VALIDATE_BATTLE_POKEMON] Output #${index}: "${validatedPokemon.name}" (ID: ${validatedPokemon.id})`);
+    console.log(`🔍 [VALIDATE_BATTLE_POKEMON] Output #${index}: "${validatedPokemon.name}" (ID: ${validatedPokemon.id}) - EXACTLY PRESERVED`);
     
     return validatedPokemon;
   });
   
-  console.log(`✅ [VALIDATE_BATTLE_POKEMON] Validated ${validated.length} Pokemon with NO name formatting`);
+  console.log(`✅ [VALIDATE_BATTLE_POKEMON] Validated ${validated.length} Pokemon with ZERO name changes`);
   return validated;
 };
 
