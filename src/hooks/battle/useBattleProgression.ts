@@ -9,7 +9,6 @@ export const useBattleProgression = (
   generateRankings: (results: any[]) => void
 ) => {
   const showingMilestoneRef = useRef(false);
-  const processingMilestoneRef = useRef(false);
   const incrementInProgressRef = useRef(false);
   const milestoneTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const milestoneTracker = useRef<Set<number>>(new Set());
@@ -21,16 +20,11 @@ export const useBattleProgression = (
     };
   }, []);
 
-  // CRITICAL FIX: More robust milestone detection
+  // CRITICAL FIX: Simplified milestone detection without processing flags that block detection
   const checkMilestone = useCallback((newBattlesCompleted: number, battleResults: any[]): boolean => {
     console.log(`🔍 MILESTONE CHECK: Checking ${newBattlesCompleted} battles against milestones: ${milestones.join(', ')}`);
     console.log(`🔍 MILESTONE CHECK: Already tracked milestones: ${Array.from(milestoneTracker.current).join(', ')}`);
     
-    if (processingMilestoneRef.current) {
-      console.log("🚫 Milestone already processing, skipping");
-      return false;
-    }
-
     // CRITICAL FIX: Check if this exact battle count is a milestone AND hasn't been tracked yet
     const isExactMilestone = milestones.includes(newBattlesCompleted);
     const notYetTracked = !milestoneTracker.current.has(newBattlesCompleted);
@@ -42,7 +36,6 @@ export const useBattleProgression = (
       
       // Immediately mark as tracked to prevent duplicates
       milestoneTracker.current.add(newBattlesCompleted);
-      processingMilestoneRef.current = true;
       showingMilestoneRef.current = true;
       lastTriggeredMilestoneRef.current = newBattlesCompleted;
       
@@ -55,7 +48,6 @@ export const useBattleProgression = (
         console.error("Error generating rankings at milestone:", err);
         // Reset flags on error
         milestoneTracker.current.delete(newBattlesCompleted);
-        processingMilestoneRef.current = false;
         showingMilestoneRef.current = false;
         return false;
       }
@@ -94,7 +86,6 @@ export const useBattleProgression = (
   const resetMilestone = useCallback(() => {
     console.log("🔄 Resetting milestone state in useBattleProgression");
     showingMilestoneRef.current = false;
-    processingMilestoneRef.current = false;
     setShowingMilestone(false);
     lastTriggeredMilestoneRef.current = null;
     console.log("✅ useBattleProgression: milestone tracking state reset");
@@ -102,7 +93,6 @@ export const useBattleProgression = (
 
   const clearMilestoneProcessing = useCallback(() => {
     console.log("🧹 Clearing milestone processing flags");
-    processingMilestoneRef.current = false;
     incrementInProgressRef.current = false;
   }, []);
 

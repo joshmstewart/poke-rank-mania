@@ -19,7 +19,7 @@ export const useBattleStateCore = (
   
   const initializationRef = useRef(false);
   const hookInstanceRef = useRef(`core-${Date.now()}`);
-  const continueBattlesRef = useRef(false); // Add debounce ref
+  const continueBattlesRef = useRef(false);
   
   if (!initializationRef.current) {
     console.log(`[DEBUG useBattleStateCore] INIT - Instance: ${hookInstanceRef.current} - Using context for Pokemon data`);
@@ -40,21 +40,22 @@ export const useBattleStateCore = (
   const [battleType, setBattleType] = useState<BattleType>(initialBattleTypeStored);
   const [selectedPokemon, setSelectedPokemon] = useState<number[]>([]);
 
-  // CRITICAL FIX: Remove battle transition state since it's causing the gray screen
-  // We'll manage transitions by keeping the current battle until new one is ready
-  const [isPreparingNextBattle, setIsPreparingNextBattle] = useState(false);
-
-  // CRITICAL FIX: Enhanced battle setter that prevents clearing current battle until new one is ready
+  // CRITICAL FIX: Keep current battle visible during transitions - only update when new battle is ready
+  const [nextBattle, setNextBattle] = useState<Pokemon[]>([]);
+  
+  // CRITICAL FIX: Enhanced battle setter that keeps current battle until new one is ready
   const stableSetCurrentBattle = useCallback((battle: Pokemon[]) => {
-    console.log(`🔄 [BATTLE_TRANSITION] stableSetCurrentBattle called with ${battle.length} Pokemon`);
+    console.log(`🔄 [BATTLE_TRANSITION_FIX] stableSetCurrentBattle called with ${battle.length} Pokemon`);
     
-    // Only update if we have a valid new battle
     if (battle.length > 0) {
+      // Only update current battle when we have a valid new battle
       setCurrentBattle(battle);
-      setIsPreparingNextBattle(false);
-      console.log(`✅ [BATTLE_TRANSITION] New battle set successfully with ${battle.length} Pokemon`);
+      setNextBattle([]); // Clear next battle since we've set the current one
+      console.log(`✅ [BATTLE_TRANSITION_FIX] Current battle updated to ${battle.length} Pokemon`);
     } else {
-      console.log(`⚠️ [BATTLE_TRANSITION] Ignoring empty battle to prevent gray screen`);
+      // Store as next battle if empty current battle
+      setNextBattle(battle);
+      console.log(`⚠️ [BATTLE_TRANSITION_FIX] Stored as next battle, keeping current visible`);
     }
   }, []);
   
@@ -129,16 +130,19 @@ export const useBattleStateCore = (
     return filtered;
   }, [contextPokemon, selectedGeneration]);
 
-  // CRITICAL FIX: Enhanced battle starter that signals preparation without clearing current battle
+  // CRITICAL FIX: Enhanced battle starter that prepares battles without disrupting current display
   const enhancedStartNewBattle = useCallback((battleType: BattleType) => {
-    console.log(`🔄 [BATTLE_TRANSITION] enhancedStartNewBattle called for ${battleType}`);
-    
-    // Signal that we're preparing the next battle but don't clear current one yet
-    setIsPreparingNextBattle(true);
+    console.log(`🔄 [BATTLE_TRANSITION_FIX] enhancedStartNewBattle called for ${battleType}`);
     
     const result = startNewBattle(battleType);
     
-    // The new battle will be set via stableSetCurrentBattle when ready
+    // Don't clear current battle until new one is ready
+    if (result && result.length > 0) {
+      console.log(`✅ [BATTLE_TRANSITION_FIX] New battle ready, will update display`);
+    } else {
+      console.log(`⚠️ [BATTLE_TRANSITION_FIX] New battle not ready, keeping current visible`);
+    }
+    
     return result;
   }, []);
 
@@ -231,7 +235,7 @@ export const useBattleStateCore = (
     setSelectedPokemon([]);
     setCompletionPercentage(0);
     setRankingGenerated(false);
-    setIsPreparingNextBattle(false);
+    setNextBattle([]);
     
     resetMilestones();
     if (resetBattleProgressionMilestoneTracking) {
@@ -322,13 +326,12 @@ export const useBattleStateCore = (
     processBattleResult
   );
 
-  // CRITICAL FIX: Simplified processing state - only use the primary processing flag
+  // CRITICAL FIX: Only consider processing result for any processing state
   const isAnyProcessing = isProcessingResult;
   
   console.log(`🔄 [PROCESSOR_FIX] useBattleStateCore processing states:`, {
     isProcessingResult,
     isProcessing,
-    isPreparingNextBattle,
     isAnyProcessing,
     timestamp: new Date().toISOString()
   });
@@ -351,7 +354,7 @@ export const useBattleStateCore = (
     battleHistory,
     activeTier,
     setActiveTier,
-    isBattleTransitioning: isPreparingNextBattle, // Renamed for consistency
+    isBattleTransitioning: false, // CRITICAL FIX: Always false to prevent gray screens
     isAnyProcessing,
     handlePokemonSelect: (id: number) => {
       handlePokemonSelect(id);
@@ -397,7 +400,6 @@ export const useBattleStateCore = (
     confidenceScores,
     battleHistory,
     activeTier,
-    isPreparingNextBattle,
     isAnyProcessing,
     handlePokemonSelect,
     goBackHelper,

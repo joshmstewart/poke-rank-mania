@@ -1,242 +1,200 @@
-import React, { memo, useCallback, useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useCallback, memo, useRef, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Pokemon } from "@/services/pokemon";
-import { getPreferredImageUrl, getPreferredImageType, PokemonImageType } from "@/components/settings/ImagePreferenceSelector";
-import { formatPokemonName } from "@/utils/pokemonUtils";
-import { validateBattlePokemon } from "@/services/pokemon/api/utils";
+import { BattleType } from "@/hooks/battle/types";
+import { getPreferredImage, ImageType } from "@/utils/imageUtils";
+import { Loader2 } from "lucide-react";
 
 interface BattleCardProps {
   pokemon: Pokemon;
   isSelected: boolean;
-  battleType: "pairs" | "triplets";
+  battleType: BattleType;
   onSelect: (id: number) => void;
   isProcessing?: boolean;
 }
 
-const BattleCard: React.FC<BattleCardProps> = memo(({ pokemon, isSelected, onSelect, isProcessing = false }) => {
-  // Validate the Pokemon to ensure image and name consistency
-  const validatedPokemon = useMemo(() => {
-    const [validated] = validateBattlePokemon([pokemon]);
-    return validated;
-  }, [pokemon]);
-  
+const BattleCard: React.FC<BattleCardProps> = memo(({
+  pokemon,
+  isSelected,
+  battleType,
+  onSelect,
+  isProcessing = false
+}) => {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
-  const [retryCount, setRetryCount] = useState(0);
-  const [currentImageUrl, setCurrentImageUrl] = useState("");
-  const [currentImageType, setCurrentImageType] = useState<PokemonImageType>(getPreferredImageType());
+  const [localImageLoading, setLocalImageLoading] = useState(true);
+  const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastClickTimeRef = useRef(0);
+
+  console.log(`🎯 [LOADING CIRCLES] BattleCard ${pokemon.name} received isProcessing: ${isProcessing}`);
   
-  // Use refs to track image loading state across renders
-  const initialUrlRef = useRef<string>(""); 
-  const hasInitialLoadRef = useRef<boolean>(false);
-  const imageLoadingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const imgRef = useRef<HTMLImageElement | null>(null);
-  const isMountedRef = useRef(true);
-  const successfulCacheBustedUrlRef = useRef<string | null>(null);
-  const clickDisabledRef = useRef(false);
-  
-  const formattedName = formatPokemonName(validatedPokemon.name);
-  const pokemonId = validatedPokemon.id;
+  // CRITICAL FIX: Don't hide Pokemon during processing - show loading overlay instead
+  if (isProcessing) {
+    console.log(`🟡 [LOADING CIRCLES] BattleCard ${pokemon.name} SHOWING loading state`);
+  } else {
+    console.log(`🟢 [LOADING CIRCLES] BattleCard ${pokemon.name} NOT showing loading state`);
+  }
 
-  // LOADING CIRCLES DEBUG: Log when BattleCard receives processing state
-  useEffect(() => {
-    console.log(`🎯 [LOADING CIRCLES] BattleCard ${formattedName} received isProcessing: ${isProcessing}`);
-    if (isProcessing) {
-      console.log(`🟡 [LOADING CIRCLES] BattleCard ${formattedName} SHOWING loading state`);
-    } else {
-      console.log(`🟢 [LOADING CIRCLES] BattleCard ${formattedName} NOT showing loading state`);
-    }
-  }, [isProcessing, formattedName]);
-
-  // Cleanup function for timers and refs
-  const cleanupImageLoading = useCallback(() => {
-    if (imageLoadingTimerRef.current) {
-      clearTimeout(imageLoadingTimerRef.current);
-      imageLoadingTimerRef.current = null;
-    }
-  }, []);
-
-  // Handle component unmount
   useEffect(() => {
     return () => {
-      isMountedRef.current = false;
-      cleanupImageLoading();
+      if (clickTimeoutRef.current) {
+        clearTimeout(clickTimeoutRef.current);
+      }
     };
-  }, [cleanupImageLoading]);
-
-  const updateImage = useCallback(() => {
-    // If we already have a successful cache-busted URL, use it directly
-    if (successfulCacheBustedUrlRef.current) {
-      console.log(`🔄 BattleCard: Reusing successful cache-busted URL for ${formattedName} (#${pokemonId}): ${successfulCacheBustedUrlRef.current}`);
-      setImageLoaded(true);
-      setImageError(false);
-      setCurrentImageUrl(successfulCacheBustedUrlRef.current);
-      return;
-    }
-    
-    cleanupImageLoading();
-    
-    if (!isMountedRef.current) return;
-    
-    setImageLoaded(false);
-    setImageError(false);
-    setRetryCount(0);
-    
-    const preference = getPreferredImageType();
-    setCurrentImageType(preference);
-    
-    const url = getPreferredImageUrl(pokemonId);
-    setCurrentImageUrl(url);
-    initialUrlRef.current = url;
-    hasInitialLoadRef.current = true;
-    
-    console.log(`🖼️ BattleCard: Loading "${preference}" image for ${formattedName} (#${pokemonId}): ${url}`);
-  }, [pokemonId, formattedName, cleanupImageLoading]);
-
-  // Update image when Pokemon changes
-  useEffect(() => {
-    console.log(`🏆 BattleCard: Rendering Pokemon ${formattedName} (#${pokemonId}) with isSelected=${isSelected}`);
-    updateImage();
-    
-    const handlePreferenceChange = () => {
-      successfulCacheBustedUrlRef.current = null;
-      updateImage();
-    };
-    
-    window.addEventListener("imagePreferenceChanged", handlePreferenceChange);
-    return () => {
-      window.removeEventListener("imagePreferenceChanged", handlePreferenceChange);
-      cleanupImageLoading();
-    };
-  }, [updateImage, validatedPokemon.id, formattedName, pokemonId, isSelected, cleanupImageLoading]);
-
-  // FIXED: Reduced timeout for better performance
-  useEffect(() => {
-    if (hasInitialLoadRef.current && !imageLoaded && !imageError) {
-      cleanupImageLoading();
-      
-      imageLoadingTimerRef.current = setTimeout(() => {
-        if (!isMountedRef.current) return;
-        
-        if (!imageLoaded && !imageError && retryCount === 0) {
-          console.warn(`⏱️ Image load timeout for ${formattedName} - triggering fallback`);
-          handleImageError();
-        }
-      }, 5000); // Reduced from 10000ms
-      
-      return () => cleanupImageLoading();
-    }
-  }, [imageLoaded, imageError, formattedName, retryCount, cleanupImageLoading]);
-
-  const saveImgRef = useCallback((node: HTMLImageElement | null) => {
-    imgRef.current = node;
   }, []);
 
   const handleImageLoad = useCallback(() => {
-    if (!isMountedRef.current) return;
-    
-    cleanupImageLoading();
     setImageLoaded(true);
-    
-    // If this was a cache-busted URL that loaded successfully, save it for future use
-    if (currentImageUrl && currentImageUrl.includes('_cb=')) {
-      successfulCacheBustedUrlRef.current = currentImageUrl;
-    }
-    
-    if (retryCount > 0) {
-      console.log(`✅ Successfully loaded fallback image (type: ${currentImageType}) for ${formattedName} in battle`);
-    }
-  }, [retryCount, currentImageType, formattedName, cleanupImageLoading, currentImageUrl]);
-  
-  const handleImageError = useCallback(() => {
-    if (!isMountedRef.current) return;
-    
-    cleanupImageLoading();
-    
-    const failedUrl = currentImageUrl || initialUrlRef.current;
-    
-    if (retryCount < 3) {
-      const nextRetry = retryCount + 1;
-      const nextUrl = getPreferredImageUrl(pokemonId, nextRetry);
-      
-      console.log(`❌ Battle image load failed for ${formattedName} (#${pokemonId}) - trying fallback #${nextRetry}: ${nextUrl}`);
-      
-      setRetryCount(nextRetry);
-      setCurrentImageUrl(nextUrl);
-    } else {
-      console.error(`⛔ All image fallbacks failed for ${formattedName} in battle`);
-      setImageError(true);
-    }
-  }, [pokemonId, formattedName, retryCount, currentImageUrl, cleanupImageLoading]);
+    setLocalImageLoading(false);
+    setImageError(false);
+  }, []);
 
-  // FIXED: Improved click handling with clearer conditions
+  const handleImageError = useCallback(() => {
+    setImageError(true);
+    setLocalImageLoading(false);
+    console.error(`Failed to load image for ${pokemon.name}`);
+  }, [pokemon.name]);
+
   const handleClick = useCallback(() => {
-    // Only ignore clicks if truly processing
-    if (isProcessing || clickDisabledRef.current) {
-      console.log(`🚫 BattleCard click ignored: ${formattedName} because isProcessing=${isProcessing} or clickDisabled=${clickDisabledRef.current}`);
+    const now = Date.now();
+    
+    // Prevent rapid double-clicks
+    if (now - lastClickTimeRef.current < 300) {
+      console.log(`🚫 BattleCard: Ignoring rapid click on ${pokemon.name}`);
       return;
     }
     
-    // Set click debounce flag to prevent rapid multi-clicks
-    clickDisabledRef.current = true;
+    lastClickTimeRef.current = now;
     
-    console.log(`👆 [LOADING CIRCLES] BattleCard ${formattedName} clicked - isProcessing: ${isProcessing}, clickDisabled: ${clickDisabledRef.current}`);
-    onSelect(pokemonId);
+    // CRITICAL FIX: Don't block clicks during processing - let parent handle
+    console.log(`🖱️ BattleCard: Click on ${pokemon.name} (${pokemon.id}) - processing: ${isProcessing}`);
     
-    // Clear click debounce after a short delay
-    setTimeout(() => {
-      clickDisabledRef.current = false;
-      console.log(`🔓 [LOADING CIRCLES] BattleCard ${formattedName} click debounce cleared`);
-    }, 500); // Reduced from 800ms for better responsiveness
-  }, [pokemonId, formattedName, onSelect, isProcessing]);
+    if (clickTimeoutRef.current) {
+      clearTimeout(clickTimeoutRef.current);
+    }
+    
+    clickTimeoutRef.current = setTimeout(() => {
+      onSelect(pokemon.id);
+      clickTimeoutRef.current = null;
+    }, 50);
+  }, [pokemon.id, pokemon.name, onSelect, isProcessing]);
+
+  const preferredImageType: ImageType = 
+    (localStorage.getItem('preferredImageType') as ImageType) || 'official';
+  
+  console.log(`🖼️ [DEV] Getting preferred image type: ${preferredImageType}`);
+  
+  const imageUrl = getPreferredImage(pokemon, preferredImageType);
+  
+  console.log(`🏆 BattleCard: Rendering Pokemon ${pokemon.name} (#${pokemon.id}) with isSelected=${isSelected}`);
+  console.log(`🖼️ BattleCard: Loading "${preferredImageType}" image for ${pokemon.name} (#${pokemon.id}): ${imageUrl}`);
+
+  const cardClasses = `
+    relative cursor-pointer transition-all duration-200 transform hover:scale-105 
+    ${isSelected ? 'ring-4 ring-blue-500 bg-blue-50' : 'hover:shadow-lg'}
+    ${isProcessing ? 'pointer-events-none' : ''}
+  `.trim();
 
   return (
     <Card 
-      className={`cursor-pointer transition-transform ${isSelected ? "ring-4 ring-primary" : ""} ${isProcessing ? "opacity-70 pointer-events-none" : "hover:scale-105"}`} 
+      className={cardClasses}
       onClick={handleClick}
-      data-selected={isSelected ? "true" : "false"}
+      data-pokemon-id={pokemon.id}
+      data-pokemon-name={pokemon.name}
       data-processing={isProcessing ? "true" : "false"}
-      data-pokemon-id={pokemonId}
-      data-loading-circles={isProcessing ? "active" : "inactive"}
-      aria-disabled={isProcessing}
     >
-      <CardContent className="flex flex-col items-center p-4">
-        <div className="w-32 h-32 relative bg-gray-100 rounded-md">
-          {!imageLoaded && !imageError && <div className="absolute inset-0 bg-gray-200 animate-pulse rounded-md"></div>}
-          {currentImageUrl && (
+      <CardContent className="p-4 text-center relative">
+        {/* CRITICAL FIX: Keep Pokemon visible, add loading overlay instead */}
+        <div className="relative">
+          {/* Pokemon Image */}
+          <div className="relative w-32 h-32 mx-auto mb-3">
+            {!imageLoaded && !imageError && (
+              <div className="absolute inset-0 flex items-center justify-center bg-gray-100 rounded-lg">
+                <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+              </div>
+            )}
+            
+            {imageError && (
+              <div className="absolute inset-0 flex items-center justify-center bg-gray-100 rounded-lg">
+                <span className="text-gray-400 text-sm">No Image</span>
+              </div>
+            )}
+            
             <img
-              ref={saveImgRef}
-              src={currentImageUrl}
-              alt={formattedName}
-              className={`w-full h-full object-contain transition-opacity duration-200 force-visible ${imageLoaded ? "opacity-100" : "opacity-0"}`}
+              src={imageUrl}
+              alt={pokemon.name}
+              className={`w-full h-full object-contain rounded-lg transition-opacity duration-200 ${
+                imageLoaded ? 'opacity-100' : 'opacity-0'
+              }`}
               onLoad={handleImageLoad}
               onError={handleImageError}
               loading="eager"
-              crossOrigin="anonymous"
             />
-          )}
-          {imageError && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-100 text-center p-1">
-              <div className="text-xs font-medium">{formattedName}</div>
-              <div className="text-xs text-muted-foreground">ID: {pokemonId}</div>
+          </div>
+
+          {/* Pokemon Info */}
+          <div className="space-y-1">
+            <h3 className="font-semibold text-lg text-gray-800">{pokemon.name}</h3>
+            <p className="text-sm text-gray-600">#{pokemon.id}</p>
+            
+            {pokemon.types && pokemon.types.length > 0 && (
+              <div className="flex justify-center gap-1 mt-2">
+                {pokemon.types.map((type, index) => (
+                  <span
+                    key={index}
+                    className={`px-2 py-1 rounded-full text-xs font-medium text-white type-${type.toLowerCase()}`}
+                    style={{
+                      backgroundColor: getTypeColor(type)
+                    }}
+                  >
+                    {type}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* CRITICAL FIX: Loading overlay that keeps Pokemon visible */}
+          {isProcessing && (
+            <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center rounded-lg">
+              <div className="text-center">
+                <Loader2 className="h-8 w-8 animate-spin text-blue-500 mx-auto mb-2" />
+                <span className="text-sm text-gray-600">Processing...</span>
+              </div>
             </div>
           )}
         </div>
-        
-        <h3 className="mt-2 text-xl font-bold">{formattedName}</h3>
-        <div className="text-xs text-muted-foreground mt-1">#{pokemonId}</div>
-        
-        {/* FIXED: Simpler processing indicator */}
-        {isProcessing && (
-          <div className="absolute inset-0 bg-black/10 flex items-center justify-center rounded-md">
-            <div className="h-8 w-8 border-4 border-t-primary animate-spin rounded-full"></div>
-            <div className="sr-only">Loading...</div>
-          </div>
-        )}
       </CardContent>
     </Card>
   );
 });
 
+// Helper function to get type colors
+const getTypeColor = (type: string): string => {
+  const typeColors: Record<string, string> = {
+    normal: '#A8A878',
+    fire: '#F08030',
+    water: '#6890F0',
+    electric: '#F8D030',
+    grass: '#78C850',
+    ice: '#98D8D8',
+    fighting: '#C03028',
+    poison: '#A040A0',
+    ground: '#E0C068',
+    flying: '#A890F0',
+    psychic: '#F85888',
+    bug: '#A8B820',
+    rock: '#B8A038',
+    ghost: '#705898',
+    dragon: '#7038F8',
+    dark: '#705848',
+    steel: '#B8B8D0',
+    fairy: '#EE99AC',
+  };
+  
+  return typeColors[type.toLowerCase()] || '#68A090';
+};
+
 BattleCard.displayName = "BattleCard";
+
 export default BattleCard;
