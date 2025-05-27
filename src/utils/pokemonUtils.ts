@@ -1,5 +1,3 @@
-
-
 /**
  * Normalize Pokedex numbers - converts special form IDs back to their base form
  * For example: 10117 (Ash-Greninja) -> 658 (Greninja)
@@ -28,27 +26,41 @@ export const formatPokemonName = (name: string): string => {
   
   const lowerName = name.toLowerCase();
   
+  // Add debugging to see what names we're processing
+  console.log(`🏷️ [NAME_FORMAT_DEBUG] Processing name: "${name}" (lowercase: "${lowerName}")`);
+  
   // Handle Mega evolutions - put "Mega" at the front
   if (lowerName.includes('mega')) {
+    console.log(`🏷️ [NAME_FORMAT_DEBUG] Detected mega in: ${name}`);
     const baseName = name.replace(/[-\s]*mega[-\s]*/i, '').trim();
     // Handle Mega X and Mega Y variants
     if (lowerName.includes('mega-x') || lowerName.includes('mega x')) {
-      return `Mega ${baseName} X`;
+      const result = `Mega ${baseName} X`;
+      console.log(`🏷️ [NAME_FORMAT_DEBUG] Mega X formatted: ${name} -> ${result}`);
+      return result;
     }
     if (lowerName.includes('mega-y') || lowerName.includes('mega y')) {
-      return `Mega ${baseName} Y`;
+      const result = `Mega ${baseName} Y`;
+      console.log(`🏷️ [NAME_FORMAT_DEBUG] Mega Y formatted: ${name} -> ${result}`);
+      return result;
     }
-    return `Mega ${baseName}`;
+    const result = `Mega ${baseName}`;
+    console.log(`🏷️ [NAME_FORMAT_DEBUG] Mega formatted: ${name} -> ${result}`);
+    return result;
   }
   
   // Handle Gigantamax forms - put "G-Max" at the front
   if (lowerName.includes('gmax')) {
+    console.log(`🏷️ [NAME_FORMAT_DEBUG] Detected gmax in: ${name}`);
     const baseName = name.replace(/[-\s]*gmax[-\s]*/i, '').trim();
-    return `G-Max ${baseName}`;
+    const result = `G-Max ${baseName}`;
+    console.log(`🏷️ [NAME_FORMAT_DEBUG] G-Max formatted: ${name} -> ${result}`);
+    return result;
   }
   
   // Handle Pikachu cap variants with proper formatting
   if (lowerName.includes('pikachu') && lowerName.includes('cap')) {
+    console.log(`🏷️ [NAME_FORMAT_DEBUG] Detected Pikachu cap variant: ${name}`);
     if (lowerName.includes('original-cap')) {
       return 'Pikachu (Original Cap)';
     }
@@ -111,7 +123,9 @@ export const formatPokemonName = (name: string): string => {
   }
   
   // If no special form is found, use the capitalizeSpecialForms function
-  return capitalizeSpecialForms(name);
+  const result = capitalizeSpecialForms(name);
+  console.log(`🏷️ [NAME_FORMAT_DEBUG] No special form detected, using capitalizeSpecialForms: ${name} -> ${result}`);
+  return result;
 };
 
 /**
