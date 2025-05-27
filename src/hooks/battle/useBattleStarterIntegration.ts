@@ -1,4 +1,3 @@
-
 import { useMemo, useEffect, useRef, useCallback } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
@@ -42,6 +41,10 @@ export const useBattleStarterIntegration = (
   // Stabilize component instance tracking
   const instanceIdRef = useRef(`battleStarter-${Date.now()}`);
   console.log('[DEBUG useBattleStarterIntegration] Instance:', instanceIdRef.current, 'allPokemon length:', allPokemon?.length || 0);
+  
+  // CRITICAL FIX: Track when battleStarter was first created to prevent recreation
+  const battleStarterCreatedRef = useRef(false);
+  const stablePokemonLengthRef = useRef(0);
   
   // Initialize refs with appropriate default values
   const processedSuggestionBattlesRef = useRef<Set<number>>(new Set());
@@ -153,13 +156,20 @@ export const useBattleStarterIntegration = (
     };
   }, [allPokemon.length]);
 
-  // OPTIMIZED: Only create battleStarter when we have Pokemon data
+  // CRITICAL FIX: Only create battleStarter ONCE when we first have Pokemon data - never recreate it
   const battleStarter = useMemo<ExtendedBattleStarter>(() => {
     console.log('[DEBUG battleStarterInstance useMemo] Evaluating with allPokemon length:', allPokemon?.length || 0);
+    console.log('[DEBUG battleStarterInstance useMemo] battleStarterCreatedRef.current:', battleStarterCreatedRef.current);
     
     if (!allPokemon || allPokemon.length === 0) {
       console.log("[DEBUG battleStarterInstance useMemo] No Pokémon data available, returning empty battleStarter");
       return createEmptyBattleStarter();
+    }
+
+    // CRITICAL FIX: Only create battleStarter once, even if more Pokemon are loaded later
+    if (battleStarterCreatedRef.current && stablePokemonLengthRef.current > 0) {
+      console.log(`[DEBUG battleStarterInstance useMemo] BattleStarter already created with ${stablePokemonLengthRef.current} Pokemon - not recreating for ${allPokemon.length} Pokemon`);
+      return battleStarterInstanceRef.current as ExtendedBattleStarter || createEmptyBattleStarter();
     }
 
     console.log(`[DEBUG battleStarterInstance useMemo] Creating battleStarter with ${allPokemon.length} Pokémon and ${currentRankings.length} rankings`);
@@ -187,12 +197,17 @@ export const useBattleStarterIntegration = (
       }
     };
     
-    console.log("[DEBUG battleStarterInstance useMemo] Created and returning new extended battleStarter");
+    // Mark as created and store the length
+    battleStarterCreatedRef.current = true;
+    stablePokemonLengthRef.current = allPokemon.length;
+    
+    console.log("[DEBUG battleStarterInstance useMemo] Created and returning new extended battleStarter - will NOT recreate");
     
     return extendedInstance;
   }, [
-    allPokemon.length, // Only depend on length to avoid recreation on every ranking change
+    // CRITICAL FIX: Only depend on currentRankings length to avoid recreation when Pokemon are added
     currentRankings.length
+    // Removed allPokemon.length dependency to prevent recreation when background loading completes
   ]);
 
   const startNewBattle = useCallback((battleType: BattleType) => {
@@ -215,8 +230,6 @@ export const useBattleStarterIntegration = (
     
     const timestamp = new Date().toISOString();
     console.log(`[${timestamp}] startNewBattle called with battleType: ${battleType}`);
-    
-    // ... keep existing code (current state check and validation)
     
     if (!allPokemon || allPokemon.length === 0) {
       console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] ❌ FAILED: No Pokemon data available. allPokemon?.length: ${allPokemon?.length}`);
@@ -324,8 +337,6 @@ export const useBattleStarterIntegration = (
         console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] ❌ FAILED: Battle generation failed, not updating state`);
         return [];
       }
-
-      // ... keep existing code (suggestion handling, battle validation, state updates)
 
       if (battle && markSuggestionFullyUsed) {
         battle.forEach(pokemonInBattle => {
@@ -440,7 +451,7 @@ export const useBattleStarterIntegration = (
       battleGenerationInProgressRef.current = false;
     }
   }, [
-    allPokemon.length, // Only depend on length, not entire array
+    // CRITICAL FIX: Remove allPokemon.length dependency to prevent recreation when background loading completes
     currentRankings.length, // Only depend on length, not entire array
     battleStarter,
     setSelectedPokemon,
