@@ -1,3 +1,4 @@
+
 import { toast } from "@/hooks/use-toast";
 import { Pokemon } from "../types";
 import { generations } from "../data";
@@ -144,13 +145,13 @@ export async function fetchAllPokemon(generationId: number = 1, fullRankingMode:
         
         return filteredList;
       } else {
-        // REVERTED: Use basic objects for performance, types will be fetched when needed
+        // CRITICAL FIX: Always use fetchPokemonDetails to get complete type data
         toast({
           title: "Loading all Pokémon",
           description: "This may take a moment as we load all Pokémon for a complete ranking."
         });
         
-        const BATCH_SIZE = 100;
+        const BATCH_SIZE = 50; // Reduced batch size since we're now fetching full details
         const allPokemon: Pokemon[] = [];
         const totalPokemon = generations[0].end;
         
@@ -165,18 +166,18 @@ export async function fetchAllPokemon(generationId: number = 1, fullRankingMode:
             
             const data = await response.json();
             
-            // REVERTED: Use basic Pokemon objects for better performance
-            const batchResults = data.results.map((pokemon: { name: string; url: string }) => {
+            // CRITICAL FIX: Fetch full Pokemon details instead of basic objects
+            const batchPromises = data.results.map(async (pokemon: { name: string; url: string }) => {
               const pokemonId = pokemon.url.split('/').filter(Boolean).pop();
-              return {
-                id: Number(pokemonId),
-                name: pokemon.name.charAt(0).toUpperCase() + pokemon.name.slice(1),
-                image: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemonId}.png`,
-                types: [], // Will be populated when needed for type colors
-                flavorText: ""
-              };
+              try {
+                return await fetchPokemonDetails(Number(pokemonId));
+              } catch (error) {
+                console.warn(`Failed to fetch details for Pokemon #${pokemonId}:`, error);
+                return null;
+              }
             });
             
+            const batchResults = (await Promise.all(batchPromises)).filter(p => p !== null) as Pokemon[];
             allPokemon.push(...batchResults.filter(shouldIncludePokemon));
             
             toast({
