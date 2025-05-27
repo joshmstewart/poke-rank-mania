@@ -19,16 +19,35 @@ const PokemonThumbnail: React.FC<PokemonThumbnailProps> = ({
   showName = true,
   disabled = false
 }) => {
-  // CRITICAL DEBUGGING: Use the name EXACTLY as provided - NO MORE RE-FORMATTING
+  // ULTRA-DETAILED DEBUGGING: Track every step of name handling
+  console.log(`🎯 [THUMBNAIL_ULTRA_DEBUG] ===== POKEMON THUMBNAIL RENDER START =====`);
+  console.log(`🎯 [THUMBNAIL_ULTRA_DEBUG] Pokemon ID: ${pokemon.id}`);
+  console.log(`🎯 [THUMBNAIL_ULTRA_DEBUG] Received pokemon object:`, pokemon);
+  console.log(`🎯 [THUMBNAIL_ULTRA_DEBUG] Pokemon name property:`, pokemon.name);
+  console.log(`🎯 [THUMBNAIL_ULTRA_DEBUG] Pokemon name type:`, typeof pokemon.name);
+  console.log(`🎯 [THUMBNAIL_ULTRA_DEBUG] Pokemon name length:`, pokemon.name.length);
+  console.log(`🎯 [THUMBNAIL_ULTRA_DEBUG] Pokemon name chars: [${pokemon.name.split('').join(', ')}]`);
+  console.log(`🎯 [THUMBNAIL_ULTRA_DEBUG] Pokemon name contains hyphen:`, pokemon.name.includes('-'));
+  console.log(`🎯 [THUMBNAIL_ULTRA_DEBUG] Pokemon name is mega form:`, pokemon.name.toLowerCase().includes('-mega'));
+  console.log(`🎯 [THUMBNAIL_ULTRA_DEBUG] Pokemon name is alolan form:`, pokemon.name.toLowerCase().includes('-alola'));
+  
+  // Use the name EXACTLY as provided - NO MORE RE-FORMATTING
   const displayName = pokemon.name;
   
-  // CRITICAL DEBUGGING: Log exactly what name we're receiving and displaying
-  console.log(`🎯 [THUMBNAIL_CRITICAL_DEBUG] Pokemon ID: ${pokemon.id}`);
-  console.log(`🎯 [THUMBNAIL_CRITICAL_DEBUG] Raw pokemon.name received: "${pokemon.name}"`);
-  console.log(`🎯 [THUMBNAIL_CRITICAL_DEBUG] Final displayName (NO FORMATTING): "${displayName}"`);
-  console.log(`🎯 [THUMBNAIL_CRITICAL_DEBUG] Name contains hyphen: ${displayName.includes('-')}`);
-  console.log(`🎯 [THUMBNAIL_CRITICAL_DEBUG] Name is mega form: ${displayName.toLowerCase().includes('-mega')}`);
-  console.log(`🎯 [THUMBNAIL_CRITICAL_DEBUG] Expected format for mega: Should be "Mega [Name]" not "[Name]-mega"`);
+  console.log(`🎯 [THUMBNAIL_ULTRA_DEBUG] displayName assignment: "${displayName}"`);
+  console.log(`🎯 [THUMBNAIL_ULTRA_DEBUG] displayName === pokemon.name: ${displayName === pokemon.name}`);
+  console.log(`🎯 [THUMBNAIL_ULTRA_DEBUG] displayName type: ${typeof displayName}`);
+  console.log(`🎯 [THUMBNAIL_ULTRA_DEBUG] displayName chars: [${displayName.split('').join(', ')}]`);
+  
+  // Check for any unexpected transformations
+  if (displayName !== pokemon.name) {
+    console.error(`🚨 [THUMBNAIL_ULTRA_DEBUG] CRITICAL: displayName differs from pokemon.name!`);
+    console.error(`🚨 [THUMBNAIL_ULTRA_DEBUG] Original: "${pokemon.name}"`);
+    console.error(`🚨 [THUMBNAIL_ULTRA_DEBUG] Display: "${displayName}"`);
+  }
+  
+  console.log(`🎯 [THUMBNAIL_ULTRA_DEBUG] About to render with displayName: "${displayName}"`);
+  console.log(`🎯 [THUMBNAIL_ULTRA_DEBUG] ===== POKEMON THUMBNAIL RENDER END =====`);
 
   return (
     <div

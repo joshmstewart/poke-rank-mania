@@ -23,9 +23,21 @@ const typeColors: Record<string, string> = {
 };
 
 const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
+  // ULTRA-DETAILED NAME DEBUGGING FOR POKEMON CARD
+  console.log(`🎮 [CARD_ULTRA_DEBUG] ===== POKEMON CARD RENDER START =====`);
+  console.log(`🎮 [CARD_ULTRA_DEBUG] Pokemon ID: ${pokemon.id}`);
+  console.log(`🎮 [CARD_ULTRA_DEBUG] Received pokemon:`, pokemon);
+  console.log(`🎮 [CARD_ULTRA_DEBUG] Original pokemon.name: "${pokemon.name}"`);
+  console.log(`🎮 [CARD_ULTRA_DEBUG] Original name type: ${typeof pokemon.name}`);
+  console.log(`🎮 [CARD_ULTRA_DEBUG] Original name length: ${pokemon.name.length}`);
+  console.log(`🎮 [CARD_ULTRA_DEBUG] Original name chars: [${pokemon.name.split('').join(', ')}]`);
+
   // Validate the Pokemon to ensure image and name consistency
   const validatedPokemon = useMemo(() => {
+    console.log(`🎮 [CARD_ULTRA_DEBUG] About to validate Pokemon:`, pokemon);
     const [validated] = validateBattlePokemon([pokemon]);
+    console.log(`🎮 [CARD_ULTRA_DEBUG] Validated result:`, validated);
+    console.log(`🎮 [CARD_ULTRA_DEBUG] Validated name: "${validated.name}"`);
     return validated;
   }, [pokemon]);
 
@@ -45,16 +57,26 @@ const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
   // Store the consistent pokemon ID
   const pokemonId = validatedPokemon.id;
 
-  // ENHANCED DEBUGGING: Use the name EXACTLY as-is from validatedPokemon
+  // ULTRA-DETAILED NAME DEBUGGING FOR DISPLAY
   const normalizedId = normalizePokedexNumber(pokemonId);
   const displayName = validatedPokemon.name; // Use name exactly as provided
   
-  // ENHANCED DEBUGGING: Log exactly what name we're displaying and where it came from
-  console.log(`🎮 [POKEMON_CARD_NAME_TRACE] Pokemon ID: ${pokemonId}`);
-  console.log(`🎮 [POKEMON_CARD_NAME_TRACE] Original pokemon.name: "${pokemon.name}"`);
-  console.log(`🎮 [POKEMON_CARD_NAME_TRACE] validatedPokemon.name: "${validatedPokemon.name}"`);
-  console.log(`🎮 [POKEMON_CARD_NAME_TRACE] Final displayName: "${displayName}"`);
-  console.log(`🎮 [POKEMON_CARD_NAME_TRACE] Names are same as original: ${pokemon.name === displayName}`);
+  console.log(`🎮 [CARD_ULTRA_DEBUG] validatedPokemon.name: "${validatedPokemon.name}"`);
+  console.log(`🎮 [CARD_ULTRA_DEBUG] Final displayName: "${displayName}"`);
+  console.log(`🎮 [CARD_ULTRA_DEBUG] displayName type: ${typeof displayName}`);
+  console.log(`🎮 [CARD_ULTRA_DEBUG] displayName chars: [${displayName.split('').join(', ')}]`);
+  console.log(`🎮 [CARD_ULTRA_DEBUG] Names are same as original: ${pokemon.name === displayName}`);
+  console.log(`🎮 [CARD_ULTRA_DEBUG] validatedPokemon === original: ${validatedPokemon.name === pokemon.name}`);
+  
+  // Check for any unexpected name changes
+  if (pokemon.name !== displayName) {
+    console.error(`🚨 [CARD_ULTRA_DEBUG] NAME CHANGED IN POKEMON CARD!`);
+    console.error(`🚨 [CARD_ULTRA_DEBUG] Original: "${pokemon.name}"`);
+    console.error(`🚨 [CARD_ULTRA_DEBUG] Display: "${displayName}"`);
+    console.error(`🚨 [CARD_ULTRA_DEBUG] Validated: "${validatedPokemon.name}"`);
+  }
+  
+  console.log(`🎮 [CARD_ULTRA_DEBUG] ===== POKEMON CARD RENDER END =====`);
 
   // Cleanup function for timers and refs
   const cleanupImageLoading = useCallback(() => {

@@ -7,20 +7,24 @@ import { getPreferredImageType, PokemonImageType } from "@/components/settings/I
  * Validates and ensures Pokemon have consistent image URLs and names for battle display
  */
 export const validateBattlePokemon = (pokemon: Pokemon[]): Pokemon[] => {
-  console.log(`🔍 [VALIDATE_BATTLE_POKEMON] Input Pokemon count: ${pokemon.length}`);
-  console.log(`🔍 [VALIDATE_BATTLE_POKEMON] CRITICAL FIX - PRESERVING NAMES EXACTLY AS PROVIDED`);
+  console.log(`🔍 [VALIDATE_ULTRA_DEBUG] ===== VALIDATE BATTLE POKEMON START =====`);
+  console.log(`🔍 [VALIDATE_ULTRA_DEBUG] Input Pokemon count: ${pokemon.length}`);
   
   pokemon.forEach((p, index) => {
-    console.log(`🔍 [VALIDATE_BATTLE_POKEMON] Input #${index}: "${p.name}" (ID: ${p.id}) - WILL BE PRESERVED EXACTLY`);
+    console.log(`🔍 [VALIDATE_ULTRA_DEBUG] Input #${index}: "${p.name}" (ID: ${p.id}) - type: ${typeof p.name}`);
+    console.log(`🔍 [VALIDATE_ULTRA_DEBUG] Input #${index} name chars: [${p.name.split('').join(', ')}]`);
   });
   
   const validated = pokemon.map((p, index) => {
-    console.log(`🔍 [VALIDATE_BATTLE_POKEMON] Processing #${index}: "${p.name}" (ID: ${p.id})`);
+    console.log(`🔍 [VALIDATE_ULTRA_DEBUG] Processing Pokemon #${index}: "${p.name}" (ID: ${p.id})`);
     
     // CRITICAL FIX: ABSOLUTELY NO NAME FORMATTING - USE EXACTLY AS PROVIDED
     const finalName = p.name; // Use name exactly as provided - NO CHANGES WHATSOEVER
     
-    console.log(`🔍 [VALIDATE_BATTLE_POKEMON] NAME PRESERVED EXACTLY: "${finalName}" (NO PROCESSING APPLIED)`);
+    console.log(`🔍 [VALIDATE_ULTRA_DEBUG] BEFORE: "${p.name}"`);
+    console.log(`🔍 [VALIDATE_ULTRA_DEBUG] AFTER: "${finalName}"`);
+    console.log(`🔍 [VALIDATE_ULTRA_DEBUG] Names identical: ${p.name === finalName}`);
+    console.log(`🔍 [VALIDATE_ULTRA_DEBUG] Final name type: ${typeof finalName}`);
     
     const validatedPokemon = {
       ...p,
@@ -29,12 +33,15 @@ export const validateBattlePokemon = (pokemon: Pokemon[]): Pokemon[] => {
       image: p.image || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${p.id}.png`
     };
     
-    console.log(`🔍 [VALIDATE_BATTLE_POKEMON] Output #${index}: "${validatedPokemon.name}" (ID: ${validatedPokemon.id}) - EXACTLY PRESERVED`);
+    console.log(`🔍 [VALIDATE_ULTRA_DEBUG] Output #${index}: "${validatedPokemon.name}" (ID: ${validatedPokemon.id})`);
+    console.log(`🔍 [VALIDATE_ULTRA_DEBUG] Output #${index} object keys: ${Object.keys(validatedPokemon).join(', ')}`);
+    console.log(`🔍 [VALIDATE_ULTRA_DEBUG] Output #${index} name property: ${validatedPokemon.name}`);
     
     return validatedPokemon;
   });
   
-  console.log(`✅ [VALIDATE_BATTLE_POKEMON] Validated ${validated.length} Pokemon with ZERO name changes`);
+  console.log(`✅ [VALIDATE_ULTRA_DEBUG] Validated ${validated.length} Pokemon - ALL NAMES PRESERVED EXACTLY`);
+  console.log(`🔍 [VALIDATE_ULTRA_DEBUG] ===== VALIDATE BATTLE POKEMON END =====`);
   return validated;
 };
 
