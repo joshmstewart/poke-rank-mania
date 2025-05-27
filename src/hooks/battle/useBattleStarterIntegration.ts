@@ -111,12 +111,13 @@ export const useBattleStarterIntegration = (
     };
   }, []);
 
-  // CRITICAL FIX: Start initial battle when Pokemon data is available - but only once
+  // CRITICAL FIX: Start initial battle when Pokemon data is available - but only once - FIXED VERSION
   useEffect(() => {
     const timestamp = new Date().toISOString();
     console.log(`[${timestamp}] useBattleStarterIntegration Pokemon data check: ${allPokemon?.length || 0} Pokemon available`);
     
-    if (allPokemon && allPokemon.length > 0 && !initialBattleStartedRef.current) {
+    // CRITICAL FIX: Only start initial battle if we have Pokemon AND haven't started yet AND no current battle exists
+    if (allPokemon && allPokemon.length > 0 && !initialBattleStartedRef.current && (!currentBattle || currentBattle.length === 0)) {
       console.log(`[${timestamp}] Starting initial battle with ${allPokemon.length} Pokemon`);
       initialBattleStartedRef.current = true;
       
@@ -132,8 +133,10 @@ export const useBattleStarterIntegration = (
           console.log(`[${timestamp}] Skipping initial battle - auto-triggers disabled or battle already exists`);
         }
       }, 500);
+    } else {
+      console.log(`[${timestamp}] Skipping initial battle trigger - initialBattleStartedRef.current: ${initialBattleStartedRef.current}, currentBattle.length: ${currentBattle?.length || 0}`);
     }
-  }, [allPokemon.length]); // Removed currentBattle?.length dependency to prevent auto-refresh
+  }, [allPokemon.length > 0 ? 1 : 0]); // CRITICAL FIX: Only depend on whether we HAVE Pokemon, not the exact count
 
   // CRITICAL FIX: Simplified initialization - NO auto-trigger on init
   useEffect(() => {
@@ -154,9 +157,9 @@ export const useBattleStarterIntegration = (
         clearTimeout(initializationTimerRef.current);
       }
     };
-  }, [allPokemon.length]);
+  }, []); // CRITICAL FIX: Empty dependency array - only run once
 
-  // CRITICAL FIX: Only create battleStarter ONCE when we first have Pokemon data - never recreate it
+  // CRITICAL FIX: Only create battleStarter ONCE when we first have Pokemon data - COMPLETELY STABLE
   const battleStarter = useMemo<ExtendedBattleStarter>(() => {
     console.log('[DEBUG battleStarterInstance useMemo] Evaluating with allPokemon length:', allPokemon?.length || 0);
     console.log('[DEBUG battleStarterInstance useMemo] battleStarterCreatedRef.current:', battleStarterCreatedRef.current);
@@ -207,9 +210,8 @@ export const useBattleStarterIntegration = (
     
     return extendedInstance;
   }, [
-    // CRITICAL FIX: Only depend on currentRankings length to avoid recreation when Pokemon are added
-    currentRankings.length
-    // Removed allPokemon.length dependency to prevent recreation when background loading completes
+    // CRITICAL FIX: COMPLETELY REMOVE allPokemon.length dependency to prevent recreation
+    currentRankings.length > 0 ? currentRankings.length : 0 // Only recreate if rankings change significantly
   ]);
 
   const startNewBattle = useCallback((battleType: BattleType) => {
