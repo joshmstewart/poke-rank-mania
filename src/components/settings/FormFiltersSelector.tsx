@@ -7,6 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "@/hooks/use-toast";
 
 export type PokemonFormType = 
+  | "normal"
   | "megaGmax" 
   | "regional" 
   | "gender" 
@@ -16,6 +17,7 @@ export type PokemonFormType =
 
 // Image URLs for different form types
 const formExampleImages = {
+  normal: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png", // Pikachu
   regional: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10091.png", // Alolan Muk
   gender: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/female/593.png", // Female Jellicent
   forms: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10120.png", // Hoopa Unbound
@@ -62,6 +64,7 @@ export function FormFiltersSelector() {
   // Helper to get friendly filter name
   const getFilterName = (filter: PokemonFormType): string => {
     switch (filter) {
+      case "normal": return "Normal Pokémon";
       case "megaGmax": return "Mega & Gigantamax Forms";
       case "regional": return "Regional Variants";
       case "gender": return "Gender Differences";
@@ -88,7 +91,22 @@ export function FormFiltersSelector() {
       <Separator />
       
       <div className="space-y-4">
-        {/* Regional Variants - MOVED TO TOP */}
+        {/* Normal Pokémon - NEW ADDITION AT TOP */}
+        <div className="flex items-center space-x-3">
+          <div className="h-10 w-10 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden">
+            <img src={formExampleImages.normal} alt="Normal Pokémon" className="h-8 w-8 object-contain" />
+          </div>
+          <div className="flex flex-1 items-center justify-between">
+            <Label htmlFor="normal" className="text-sm">Normal Pokémon</Label>
+            <Switch 
+              id="normal" 
+              checked={filters.normal}
+              onCheckedChange={() => handleToggleFilter("normal")} 
+            />
+          </div>
+        </div>
+        
+        {/* Regional Variants */}
         <div className="flex items-center space-x-3">
           <div className="h-10 w-10 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden">
             <img src={formExampleImages.regional} alt="Regional Form" className="h-8 w-8 object-contain" />
@@ -103,7 +121,7 @@ export function FormFiltersSelector() {
           </div>
         </div>
         
-        {/* Gender Differences - MOVED UP */}
+        {/* Gender Differences */}
         <div className="flex items-center space-x-3">
           <div className="h-10 w-10 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden">
             <img src={formExampleImages.gender} alt="Gender Form" className="h-8 w-8 object-contain" />
@@ -118,7 +136,7 @@ export function FormFiltersSelector() {
           </div>
         </div>
         
-        {/* Special Forms - MOVED UP */}
+        {/* Special Forms */}
         <div className="flex items-center space-x-3">
           <div className="h-10 w-10 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden">
             <img src={formExampleImages.forms} alt="Special Form" className="h-8 w-8 object-contain" />

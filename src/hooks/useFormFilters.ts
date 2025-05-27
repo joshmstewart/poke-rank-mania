@@ -1,8 +1,10 @@
+
 import { useState, useEffect } from "react";
 import { PokemonFormType } from "@/components/settings/FormFiltersSelector";
 import { Pokemon } from "@/services/pokemon";
 
 interface FormFilters {
+  normal: boolean;
   megaGmax: boolean;
   regional: boolean;
   gender: boolean;
@@ -25,8 +27,9 @@ const getStoredFilters = (): FormFilters => {
     }
   }
   
-  // Default to mega/gmax evolutions disabled, others enabled
+  // Default to mega/gmax evolutions disabled, others enabled (including normal)
   return {
+    normal: true,
     megaGmax: false,
     regional: true,
     gender: true,
@@ -55,6 +58,7 @@ export const useFormFilters = () => {
   const toggleAll = () => {
     const newValue = !isAllEnabled;
     const updated = {
+      normal: newValue,
       megaGmax: newValue,
       regional: newValue,
       gender: newValue,
@@ -138,8 +142,9 @@ export const useFormFilters = () => {
       return "forms";
     }
     
-    console.log(`✅ [FORM_FILTER_DEBUG] ${pokemon.name} (${pokemon.id}) is STANDARD (no special form)`);
-    return null;
+    // If none of the above categories match, it's a normal Pokemon
+    console.log(`✅ [FORM_FILTER_DEBUG] ${pokemon.name} (${pokemon.id}) is NORMAL (standard form)`);
+    return "normal";
   };
   
   // Check if a Pokemon should be included based on current filters
@@ -158,15 +163,12 @@ export const useFormFilters = () => {
     
     const formCategory = getPokemonFormCategory(pokemon);
     
-    // If it's a standard Pokemon (not in any special form category)
-    if (!formCategory) {
-      console.log(`🟢 [FORM_FILTER_DEBUG] ${pokemon.name} (${pokemon.id}) INCLUDED - standard Pokemon`);
-      return true;
-    }
+    // If no form category is determined, default to normal
+    const categoryToCheck = formCategory || "normal";
     
     // Return true if the filter for this category is enabled
-    const shouldInclude = filters[formCategory];
-    console.log(`${shouldInclude ? '🟢' : '🔴'} [FORM_FILTER_DEBUG] ${pokemon.name} (${pokemon.id}) ${shouldInclude ? 'INCLUDED' : 'EXCLUDED'} - ${formCategory} filter is ${shouldInclude ? 'enabled' : 'disabled'}`);
+    const shouldInclude = filters[categoryToCheck];
+    console.log(`${shouldInclude ? '🟢' : '🔴'} [FORM_FILTER_DEBUG] ${pokemon.name} (${pokemon.id}) ${shouldInclude ? 'INCLUDED' : 'EXCLUDED'} - ${categoryToCheck} filter is ${shouldInclude ? 'enabled' : 'disabled'}`);
     return shouldInclude;
   };
   
