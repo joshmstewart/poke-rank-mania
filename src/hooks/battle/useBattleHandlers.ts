@@ -24,7 +24,8 @@ export const useBattleHandlers = (
   const continueBattlesRef = useRef(false);
 
   const goBack = useCallback(() => {
-    console.log(`🔄 [BACK_FIX] goBack called`);
+    const currentBattleCount = parseInt(localStorage.getItem('pokemon-battle-count') || '0', 10);
+    console.log(`🔄 [BACK_FIX_ENHANCED] Battle #${currentBattleCount}: goBack called`);
     
     if (battleHistory.length === 0) {
       toast({
@@ -51,7 +52,7 @@ export const useBattleHandlers = (
     setBattlesCompleted(prev => Math.max(0, prev - 1));
 
     if (lastBattle) {
-      console.log(`🔄 [BACK_FIX] Restoring previous battle: ${lastBattle.battle.map(p => p.name).join(', ')}`);
+      console.log(`🔄 [BACK_FIX_ENHANCED] Battle #${currentBattleCount}: Restoring previous battle: ${lastBattle.battle.map(p => p.name).join(', ')}`);
       stableSetCurrentBattle(lastBattle.battle);
       setSelectedPokemon([]);
     }
@@ -60,16 +61,23 @@ export const useBattleHandlers = (
   }, [battleHistory, battleResults, battleType, setBattleHistory, setBattleResults, setBattlesCompleted, setSelectedPokemon, setShowingMilestone, stableSetCurrentBattle]);
 
   const handleContinueBattles = useCallback(() => {
-    console.log('[FLASH_FIX] handleContinueBattles: Called');
+    const currentBattleCount = parseInt(localStorage.getItem('pokemon-battle-count') || '0', 10);
+    
+    console.error(`🔥 [CONTINUE_BATTLES_ENHANCED] Battle #${currentBattleCount + 1}: handleContinueBattles called`);
+    
+    // ENHANCED: Log battles 10-11 specifically
+    if (currentBattleCount === 10) {
+      console.error(`🔥 [BATTLE_10_11_CONTINUE] CRITICAL: Continue from battle 10 to 11 - THIS IS WHERE FLASHING HAPPENS!`);
+    }
     
     if (continueBattlesRef.current) {
-      console.log('[FLASH_FIX] handleContinueBattles: Already processing, ignoring');
+      console.error(`🔥 [CONTINUE_BATTLES_ENHANCED] Battle #${currentBattleCount + 1}: Already processing, ignoring`);
       return;
     }
     
     continueBattlesRef.current = true;
     
-    console.log('[FLASH_FIX] Setting transitioning state and clearing battle immediately');
+    console.error(`🔥 [FLASH_FIX_ENHANCED] Battle #${currentBattleCount + 1}: Setting transitioning state and clearing battle immediately`);
     setIsTransitioning(true);
     setCurrentBattle([]);
     setSelectedPokemon([]);
@@ -78,13 +86,14 @@ export const useBattleHandlers = (
     resetMilestoneInProgress();
     
     setTimeout(() => {
+      console.error(`🔥 [BATTLE_GENERATION_ENHANCED] Battle #${currentBattleCount + 1}: Generating new battle after delay`);
       const newBattle = enhancedStartNewBattle("pairs");
       if (newBattle && newBattle.length > 0) {
-        console.log('[FLASH_FIX] New battle generated successfully');
+        console.error(`🔥 [BATTLE_SUCCESS_ENHANCED] Battle #${currentBattleCount + 1}: New battle generated successfully: ${newBattle.map(p => p.name).join(' vs ')}`);
         setCurrentBattle(newBattle);
         setIsTransitioning(false);
       } else {
-        console.error('[FLASH_FIX] Failed to generate new battle');
+        console.error(`🔥 [BATTLE_FAILURE_ENHANCED] Battle #${currentBattleCount + 1}: Failed to generate new battle`);
         setIsTransitioning(false);
       }
       continueBattlesRef.current = false;
