@@ -78,13 +78,14 @@ export const usePokemonLoader = () => {
       
       console.log(`Background loading complete: ${remainingPokemon.length} additional Pokémon`);
       
-      // Merge with existing Pokemon
+      // Merge with existing Pokemon - do this silently without triggering battle refresh
       setAllPokemon(prev => [...prev, ...remainingPokemon]);
       setIsBackgroundLoading(false);
       
+      // Show completion toast but don't trigger any battle events
       toast({
         title: "Loading complete",
-        description: `Loaded ${initialBatch.length + remainingPokemon.length} total Pokémon for battles.`,
+        description: `${initialBatch.length + remainingPokemon.length} total Pokémon loaded. Current battle will continue.`,
         duration: 3000
       });
       

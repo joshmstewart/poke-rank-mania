@@ -1,3 +1,4 @@
+
 import { useMemo, useEffect, useRef, useCallback } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
@@ -107,7 +108,7 @@ export const useBattleStarterIntegration = (
     };
   }, []);
 
-  // CRITICAL FIX: Start initial battle when Pokemon data is available
+  // CRITICAL FIX: Start initial battle when Pokemon data is available - but only once
   useEffect(() => {
     const timestamp = new Date().toISOString();
     console.log(`[${timestamp}] useBattleStarterIntegration Pokemon data check: ${allPokemon?.length || 0} Pokemon available`);
@@ -129,7 +130,7 @@ export const useBattleStarterIntegration = (
         }
       }, 500);
     }
-  }, [allPokemon.length, currentBattle?.length]);
+  }, [allPokemon.length]); // Removed currentBattle?.length dependency to prevent auto-refresh
 
   // CRITICAL FIX: Simplified initialization - NO auto-trigger on init
   useEffect(() => {
@@ -443,8 +444,8 @@ export const useBattleStarterIntegration = (
     currentRankings.length, // Only depend on length, not entire array
     battleStarter,
     setSelectedPokemon,
-    markSuggestionFullyUsed,
-    currentBattle?.length
+    markSuggestionFullyUsed
+    // Removed currentBattle?.length dependency to prevent auto-refresh
   ]);
 
   // Update the ref whenever startNewBattle changes
