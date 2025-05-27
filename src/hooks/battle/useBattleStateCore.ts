@@ -310,8 +310,16 @@ export const useBattleStateCore = (
     processBattleResult
   );
 
-  // CRITICAL FIX: Simplified processing state - removed isBattleTransitioning
-  const isAnyProcessing = isProcessingResult || isProcessing || isPreparingNextBattle;
+  // CRITICAL FIX: Simplified processing state - only use the primary processing flag
+  const isAnyProcessing = isProcessingResult;
+  
+  console.log(`🔄 [PROCESSOR_FIX] useBattleStateCore processing states:`, {
+    isProcessingResult,
+    isProcessing,
+    isPreparingNextBattle,
+    isAnyProcessing,
+    timestamp: new Date().toISOString()
+  });
 
   return useMemo(() => ({
     currentBattle,
