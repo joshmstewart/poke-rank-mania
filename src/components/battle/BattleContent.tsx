@@ -129,64 +129,49 @@ const BattleContent: React.FC<BattleContentProps> = ({
     );
   }
 
-  // CRITICAL FIX: Show loading only during actual transitions
-  if (isBattleTransitioning) {
-    console.log(`⏳ [FLASH_FIX] Showing transition loading state - isBattleTransitioning: ${isBattleTransitioning}`);
+  // CRITICAL FIX: Show loading during transitions OR when we have no valid battle data
+  if (isBattleTransitioning || !currentBattle || currentBattle.length === 0) {
+    console.log(`⏳ [FLASH_FIX] Showing loading state - isBattleTransitioning: ${isBattleTransitioning}, currentBattle: ${currentBattle?.length || 0}`);
     return (
       <div className="flex justify-center items-center h-64 w-full">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-4 border-primary border-t-transparent mb-4 mx-auto"></div>
-          <p className="text-sm text-gray-600">Starting next battle...</p>
+          <p className="text-sm text-gray-600">
+            {isBattleTransitioning ? "Starting next battle..." : "Initializing battles..."}
+          </p>
         </div>
       </div>
     );
   }
 
-  // Show interface if we have battle data
-  const shouldShowInterface = currentBattle && currentBattle.length > 0;
-
-  console.log(`🔄 [FLASH_FIX] BattleContent shouldShowInterface:`, shouldShowInterface);
-
-  if (shouldShowInterface) {
-    console.log(`🔄 [FLASH_FIX] BattleContent rendering interface with ${currentBattle.length} Pokemon`);
-    
-    return (
-      <div className="w-full">
-        <BattleControls
-          selectedGeneration={selectedGeneration}
-          battleType={battleType}
-          onGenerationChange={(gen) => setSelectedGeneration(Number(gen))}
-          onBattleTypeChange={setBattleType}
-          onRestartBattles={performFullBattleReset}
-          setBattlesCompleted={setBattlesCompleted}
-          setBattleResults={setBattleResults}
-          performFullBattleReset={performFullBattleReset}
-        />
-
-        <BattleInterface
-          currentBattle={currentBattle}
-          selectedPokemon={selectedPokemon}
-          battlesCompleted={battlesCompleted}
-          battleType={battleType}
-          battleHistory={battleHistory}
-          onPokemonSelect={handlePokemonSelect}
-          onTripletSelectionComplete={handleTripletSelectionComplete}
-          onGoBack={goBack}
-          milestones={milestones}
-          isProcessing={isAnyProcessing}
-        />
-      </div>
-    );
-  }
-
-  // Show loading on initial load when we truly have no data
-  console.log(`⏳ [FLASH_FIX] BattleContent showing initial loading - no battle data available yet`);
+  // Only show interface if we have valid battle data AND not transitioning
+  console.log(`🔄 [FLASH_FIX] BattleContent rendering interface with ${currentBattle.length} Pokemon`);
+  
   return (
-    <div className="flex justify-center items-center h-64 w-full">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-4 border-primary border-t-transparent mb-4 mx-auto"></div>
-        <p className="text-sm text-gray-600">Initializing battles...</p>
-      </div>
+    <div className="w-full">
+      <BattleControls
+        selectedGeneration={selectedGeneration}
+        battleType={battleType}
+        onGenerationChange={(gen) => setSelectedGeneration(Number(gen))}
+        onBattleTypeChange={setBattleType}
+        onRestartBattles={performFullBattleReset}
+        setBattlesCompleted={setBattlesCompleted}
+        setBattleResults={setBattleResults}
+        performFullBattleReset={performFullBattleReset}
+      />
+
+      <BattleInterface
+        currentBattle={currentBattle}
+        selectedPokemon={selectedPokemon}
+        battlesCompleted={battlesCompleted}
+        battleType={battleType}
+        battleHistory={battleHistory}
+        onPokemonSelect={handlePokemonSelect}
+        onTripletSelectionComplete={handleTripletSelectionComplete}
+        onGoBack={goBack}
+        milestones={milestones}
+        isProcessing={isAnyProcessing}
+      />
     </div>
   );
 };
