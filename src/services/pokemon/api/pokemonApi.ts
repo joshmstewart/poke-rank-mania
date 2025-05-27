@@ -27,9 +27,9 @@ export const fetchPokemonData = async (generations: number[]): Promise<Pokemon[]
         const pokemonResponse = await fetch(`${API_BASE}/pokemon/${pokemonId}`);
         const pokemonData = await pokemonResponse.json();
         
-        // CRITICAL FIX: Filter out all Cramorant forms (gorging and gulping)
-        const isCramorantForm = pokemonData.name.includes('cramorant-') && 
-          (pokemonData.name.includes('gorging') || pokemonData.name.includes('gulping'));
+        // CRITICAL FIX: Filter out all Cramorant forms (all variants)
+        const isCramorantForm = pokemonData.name.toLowerCase().includes('cramorant') && 
+          pokemonData.name !== 'cramorant';
         
         if (isCramorantForm) {
           console.log(`🚫 Filtering out Cramorant form: ${pokemonData.name}`);
@@ -43,8 +43,7 @@ export const fetchPokemonData = async (generations: number[]): Promise<Pokemon[]
                  pokemonData.sprites.front_default,
           types: pokemonData.types.map((type: any) => 
             type.type.name.charAt(0).toUpperCase() + type.type.name.slice(1)
-          ),
-          generation: getGenerationFromId(pokemonData.id)
+          )
         };
       } catch (error) {
         console.error(`Error fetching Pokemon ${species.name}:`, error);
@@ -64,19 +63,6 @@ export const fetchPokemonData = async (generations: number[]): Promise<Pokemon[]
     console.error("Error fetching Pokemon data:", error);
     throw error;
   }
-};
-
-// Helper function to determine generation from Pokemon ID
-const getGenerationFromId = (id: number): number => {
-  if (id <= 151) return 1;
-  if (id <= 251) return 2;
-  if (id <= 386) return 3;
-  if (id <= 493) return 4;
-  if (id <= 649) return 5;
-  if (id <= 721) return 6;
-  if (id <= 809) return 7;
-  if (id <= 905) return 8;
-  return 9;
 };
 
 export const fetchAllPokemon = async (): Promise<Pokemon[]> => {
