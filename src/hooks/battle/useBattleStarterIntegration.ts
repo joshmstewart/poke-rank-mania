@@ -57,9 +57,10 @@ export const useBattleStarterIntegration = (
   const initialGetBattleFiredRef = useRef(false);
   const initializationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
-  // CRITICAL FIX: Add milestone coordination refs
+  // CRITICAL FIX: Add refs to prevent auto-trigger during controlled transitions
   const milestoneBlockedRef = useRef(false);
   const pendingBattleRequestRef = useRef<BattleType | null>(null);
+  const controlledTransitionRef = useRef(false);
   
   // Store the battleStarter ref for stable access
   const battleStarterInstanceRef = useRef<ReturnType<typeof createBattleStarter> | null>(null);
@@ -76,7 +77,7 @@ export const useBattleStarterIntegration = (
   
   console.log('[DEBUG useBattleStarterIntegration] forcedPriorityBattlesRef initialized to:', forcedPriorityBattlesRef.current);
   
-  // CRITICAL FIX: Add milestone event listeners
+  // CRITICAL FIX: Enhanced milestone event listeners
   useEffect(() => {
     const handleMilestoneUnblocked = () => {
       console.log('[MILESTONE_COORD] Milestone unblocked event received');
@@ -95,13 +96,69 @@ export const useBattleStarterIntegration = (
         }, 100);
       }
     };
+
+    const handleMilestoneDismissed = () => {
+      console.log('[CONTROLLED_TRANSITION] Milestone dismissed - setting controlled transition flag');
+      controlledTransitionRef.current = true;
+      
+      // Clear the flag after a delay to allow controlled battle generation
+      setTimeout(() => {
+        controlledTransitionRef.current = false;
+        console.log('[CONTROLLED_TRANSITION] Controlled transition flag cleared');
+      }, 2000);
+    };
     
     document.addEventListener('milestone-unblocked', handleMilestoneUnblocked);
+    document.addEventListener('milestone-dismissed', handleMilestoneDismissed);
     
     return () => {
       document.removeEventListener('milestone-unblocked', handleMilestoneUnblocked);
+      document.removeEventListener('milestone-dismissed', handleMilestoneDismissed);
     };
   }, []);
+
+  // CRITICAL FIX: Modified initialization with controlled transition check
+  useEffect(() => {
+    const timestamp = new Date().toISOString();
+    console.log(`[${timestamp}] useBattleStarterIntegration initialized with ${allPokemon?.length || 0} Pokémon`);
+    
+    if (initializationTimerRef.current) {
+      clearTimeout(initializationTimerRef.current);
+    }
+    
+    initializationTimerRef.current = setTimeout(() => {
+      console.log(`[${new Date().toISOString()}] useBattleStarterIntegration initialization complete`);
+      initializationCompleteRef.current = true;
+      
+      // CRITICAL FIX: Only auto-trigger if NOT in controlled transition
+      if (allPokemon && allPokemon.length > 0 && (!currentBattle || currentBattle.length === 0)) {
+        if (controlledTransitionRef.current) {
+          console.log('[CONTROLLED_TRANSITION] Skipping auto-trigger during controlled transition');
+          return;
+        }
+        
+        console.log('[BATTLE_TRANSITION_DEBUG] No battle exists after initialization, triggering initial battle');
+        if (startNewBattleCallbackRef.current) {
+          console.log('[BATTLE_TRANSITION_DEBUG] Calling startNewBattle from timer via ref');
+          startNewBattleCallbackRef.current("pairs");
+        } else {
+          console.log('[BATTLE_TRANSITION_DEBUG] startNewBattleCallbackRef not available, dispatching force-new-battle event');
+          document.dispatchEvent(new CustomEvent("force-new-battle", { 
+            detail: { battleType: "pairs" }
+          }));
+        }
+      } else {
+        console.log('[BATTLE_TRANSITION_DEBUG] Battle already exists after initialization:', currentBattle?.length || 0);
+      }
+      
+    }, 100);
+    
+    return () => {
+      if (initializationTimerRef.current) {
+        clearTimeout(initializationTimerRef.current);
+      }
+    };
+  }, [allPokemon.length]);
 
   // Initialize component state tracking - MEMOIZED to prevent re-runs
   useEffect(() => {
@@ -190,6 +247,7 @@ export const useBattleStarterIntegration = (
     
     console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] ===== Starting Battle Transition Analysis =====`);
     console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] Requested battleType: ${battleType}`);
+    console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] controlledTransitionRef.current: ${controlledTransitionRef.current}`);
     
     // CRITICAL FIX: Check if milestone is blocking battle generation
     if (milestoneBlockedRef.current) {

@@ -17,7 +17,7 @@ export const useProgressState = () => {
     setMilestoneInProgress(false);
   }, []);
   
-  // CRITICAL FIX: Enhanced milestone state setter with much longer coordination delay
+  // CRITICAL FIX: Reduced coordination delay to prevent multiple battle generation
   const setShowingMilestoneEnhanced = useCallback((show: boolean) => {
     console.log(`🔄 useProgressState: Setting showingMilestone to ${show}`);
     setShowingMilestone(show);
@@ -26,14 +26,14 @@ export const useProgressState = () => {
       setMilestoneInProgress(true);
       console.log("🚫 MILESTONE: Blocking new battle generation during milestone display");
     } else {
-      // CRITICAL FIX: Much longer delay to prevent flash
-      console.log("🔄 MILESTONE: Preparing to dismiss milestone with EXTENDED coordination delay");
+      // CRITICAL FIX: Much shorter delay to prevent auto-trigger conflicts
+      console.log("🔄 MILESTONE: Preparing to dismiss milestone with REDUCED coordination delay");
       
       setTimeout(() => {
         setMilestoneInProgress(false);
         console.log("✅ MILESTONE: Milestone dismissed, coordinating with battle system");
         
-        // CRITICAL FIX: Enhanced dismissal event with much longer delay
+        // CRITICAL FIX: Enhanced dismissal event
         const dismissEvent = new CustomEvent('milestone-dismissed', {
           detail: { 
             timestamp: Date.now(), 
@@ -45,19 +45,19 @@ export const useProgressState = () => {
         document.dispatchEvent(dismissEvent);
         
         console.log("🏆 useProgressState: Milestone dismissed with battle system coordination");
-      }, 1200); // Increased delay from 500ms to 1200ms for better coordination
+      }, 300); // Reduced from 1200ms to 300ms
     }
   }, []);
   
-  // CRITICAL FIX: Force dismiss with enhanced coordination
+  // CRITICAL FIX: Force dismiss with immediate coordination
   const forceDismissMilestone = useCallback(() => {
-    console.log("🔄 useProgressState: Force dismissing milestone with enhanced coordination");
+    console.log("🔄 useProgressState: Force dismissing milestone with immediate coordination");
     
     // Clear state immediately for urgent dismissals
     setShowingMilestone(false);
     setMilestoneInProgress(false);
     
-    // CRITICAL FIX: Enhanced immediate dismissal with coordination
+    // CRITICAL FIX: Immediate dismissal with coordination
     const dismissEvent = new CustomEvent('milestone-dismissed', {
       detail: { 
         forced: true, 

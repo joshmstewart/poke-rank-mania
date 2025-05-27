@@ -1,4 +1,3 @@
-
 import { useCallback, useRef, useEffect } from "react";
 
 export const useBattleProgression = (
@@ -21,7 +20,7 @@ export const useBattleProgression = (
     };
   }, []);
 
-  // CRITICAL FIX: Enhanced milestone detection with much longer battle generation blocking
+  // CRITICAL FIX: Reduced battle generation blocking period
   const checkMilestone = useCallback((newBattlesCompleted: number, battleResults: any[]): boolean => {
     console.log(`🔍 MILESTONE CHECK: Checking ${newBattlesCompleted} battles against milestones: ${milestones.join(', ')}`);
     console.log(`🔍 MILESTONE CHECK: Already tracked milestones: ${Array.from(milestoneTracker.current).join(', ')}`);
@@ -34,7 +33,7 @@ export const useBattleProgression = (
     if (isExactMilestone && notYetTracked) {
       console.log(`🎯 MILESTONE HIT: Battle ${newBattlesCompleted} reached milestone!`);
       
-      // CRITICAL FIX: Block battle generation for much longer period during milestone transition
+      // CRITICAL FIX: Shorter blocking period to prevent conflicts
       battleGenerationBlockedRef.current = true;
       
       // Immediately mark as tracked to prevent duplicates
@@ -47,7 +46,7 @@ export const useBattleProgression = (
         generateRankings(battleResults);
         setShowingMilestone(true);
         
-        console.log(`🚫 MILESTONE: Battle generation BLOCKED during milestone ${newBattlesCompleted} (EXTENDED period)`);
+        console.log(`🚫 MILESTONE: Battle generation BLOCKED during milestone ${newBattlesCompleted} (REDUCED period)`);
         return true;
       } catch (err) {
         console.error("Error generating rankings at milestone:", err);
@@ -88,24 +87,24 @@ export const useBattleProgression = (
     return null;
   }, [setBattlesCompleted, checkMilestone, battlesCompleted]);
 
-  // CRITICAL FIX: Enhanced reset that unblocks battle generation with much longer delay
+  // CRITICAL FIX: Reduced delay to prevent auto-trigger conflicts
   const resetMilestone = useCallback(() => {
     console.log("🔄 Resetting milestone state in useBattleProgression");
     showingMilestoneRef.current = false;
     setShowingMilestone(false);
     lastTriggeredMilestoneRef.current = null;
     
-    // CRITICAL FIX: Much longer delay to prevent flash after milestone dismissal
+    // CRITICAL FIX: Much shorter delay to prevent auto-trigger conflicts
     setTimeout(() => {
       battleGenerationBlockedRef.current = false;
-      console.log("✅ MILESTONE: Battle generation UNBLOCKED after milestone dismissal (EXTENDED delay)");
+      console.log("✅ MILESTONE: Battle generation UNBLOCKED after milestone dismissal (REDUCED delay)");
       
       // Dispatch event to signal it's safe to generate new battles
       const unblockEvent = new CustomEvent('milestone-unblocked', {
         detail: { timestamp: Date.now() }
       });
       document.dispatchEvent(unblockEvent);
-    }, 1500); // Increased delay from 800ms to 1500ms for better coordination
+    }, 400); // Reduced from 1500ms to 400ms
     
     console.log("✅ useBattleProgression: milestone tracking state reset");
   }, [setShowingMilestone]);
