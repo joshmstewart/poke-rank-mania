@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useRef, useEffect } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
@@ -109,11 +110,6 @@ export const useBattleProcessor = (
     console.log(`📝 [${timestamp}] [PROCESSOR_FIX] PROCESS BATTLE: Setting isProcessingResult = true`);
     setIsProcessingResult(true);
     
-    // FIXED: Clear any existing timeout
-    if (processingTimeoutRef.current) {
-      clearTimeout(processingTimeoutRef.current);
-    }
-    
     try {
       // Check if we need to reset battle count due to reset
       if (isResettingRef?.current) {
@@ -209,16 +205,6 @@ export const useBattleProcessor = (
     const timestamp = new Date().toISOString();
     console.log(`📝 [${timestamp}] [PROCESSOR_FIX] MILESTONE RESET: Setting milestoneInProgressRef to false`);
     milestoneInProgressRef.current = false;
-  }, []);
-
-  // FIXED: Clear timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (processingTimeoutRef.current) {
-        console.log(`🧹 [LOADING DEBUG] useBattleProcessor: Clearing timeout on cleanup`);
-        clearTimeout(processingTimeoutRef.current);
-      }
-    };
   }, []);
 
   return {
