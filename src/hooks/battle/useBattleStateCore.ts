@@ -2,10 +2,10 @@
 import { useCallback, useRef, useEffect, useMemo } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
-import { useRankings } from "./useRankings";
 import { useBattleStateManager } from "./useBattleStateManager";
-import { useBattleCoordination } from "./useBattleCoordination";
-import { useBattleActionsManager } from "./useBattleActionsManager";
+import { useBattleStateProviders } from "./useBattleStateProviders";
+import { useBattleStateActions } from "./useBattleStateActions";
+import { useBattleStateEffects } from "./useBattleStateEffects";
 
 export const useBattleStateCore = (
   allPokemon: Pokemon[] = [],
@@ -24,99 +24,23 @@ export const useBattleStateCore = (
   const stableInitialGeneration = useMemo(() => initialSelectedGeneration, []);
   
   // Use the state manager hook
-  const {
-    currentBattle,
-    setCurrentBattle,
-    battleResults,
-    setBattleResults,
-    battlesCompleted,
-    setBattlesCompleted,
-    battleHistory,
-    setBattleHistory,
-    selectedGeneration,
-    setSelectedGeneration,
-    battleType,
-    setBattleType,
-    selectedPokemon,
-    setSelectedPokemon,
-    isTransitioning,
-    setIsTransitioning,
-    stableSetCurrentBattle,
-    stableSetSelectedPokemon,
-    needsToReloadSuggestions,
-    setNeedsToReloadSuggestions,
-    triggerSuggestionPrioritization,
-    lastSuggestionLoadTimestampRef,
-    debouncedGenerateRankings
-  } = useBattleStateManager(stableInitialBattleType, stableInitialGeneration);
+  const stateManagerData = useBattleStateManager(stableInitialBattleType, stableInitialGeneration);
 
-  const {
-    finalRankings = [],
-    confidenceScores,
-    activeTier,
-    setActiveTier,
-    freezePokemonForTier,
-    isPokemonFrozenForTier,
-    allRankedPokemon
-  } = useRankings();
-
-  // Debug logging for type checking
-  console.log('[DEBUG useBattleStateCore] Type check - activeTier:', typeof activeTier, activeTier);
-  console.log('[DEBUG useBattleStateCore] Type check - currentBattleCount before String():', typeof parseInt(localStorage.getItem('pokemon-battle-count') || '0', 10));
-
-  // Create string-compatible wrapper for freezePokemonForTier
-  const freezePokemonForTierStringWrapper = useCallback((pokemonId: number, tier: string) => {
-    // Convert string back to TopNOption for the original function
-    const topNTier = tier === "All" ? "All" : Number(tier);
-    freezePokemonForTier(pokemonId, topNTier as any);
-  }, [freezePokemonForTier]);
-
-  // Use the coordination hook
-  const {
-    contextPokemon,
-    filteredPokemon,
-    showingMilestone,
-    setShowingMilestone,
-    completionPercentage,
-    setCompletionPercentage,
-    rankingGenerated,
-    setRankingGenerated,
-    fullRankingMode,
-    milestones,
-    forceDismissMilestone,
-    generateRankings,
-    handleSaveRankings,
-    suggestRanking,
-    removeSuggestion,
-    markSuggestionUsed,
-    clearAllSuggestions,
-    findNextSuggestion,
-    loadSavedSuggestions,
-    resetMilestones,
-    resetMilestoneRankings,
-    calculateCompletionPercentage,
-    getSnapshotForMilestone,
-    milestoneRankings,
-    hitMilestones,
-    battleStarter,
-    startNewBattle,
-    resetSuggestionPriority
-  } = useBattleCoordination(
-    selectedGeneration,
-    battleResults,
-    finalRankings,
-    currentBattle,
-    stableSetCurrentBattle,
-    stableSetSelectedPokemon,
-    typeof activeTier === 'string' ? activeTier : String(activeTier), // Line 99 - Ensure string type
-    freezePokemonForTierStringWrapper // Use wrapper that accepts string
+  // Use the providers hook
+  const providersData = useBattleStateProviders(
+    stateManagerData.selectedGeneration,
+    stateManagerData.battleResults,
+    stateManagerData.currentBattle,
+    stateManagerData.stableSetCurrentBattle,
+    stateManagerData.stableSetSelectedPokemon,
+    typeof stateManagerData.activeTier === 'string' ? stateManagerData.activeTier : String(stateManagerData.activeTier)
   );
 
   const enhancedStartNewBattle = useCallback((battleType: BattleType) => {
     const currentBattleCount = parseInt(localStorage.getItem('pokemon-battle-count') || '0', 10);
     console.log(`🔄 [FLASH_FIX] enhancedStartNewBattle called for ${battleType} - Battle ${String(currentBattleCount)}`);
     
-    const result = startNewBattle(battleType);
+    const result = providersData.startNewBattle(battleType);
     
     if (result && result.length > 0) {
       console.log(`✅ [FLASH_FIX] New battle generated, setting immediately: ${result.map(p => p.name).join(', ')}`);
@@ -126,182 +50,120 @@ export const useBattleStateCore = (
     }
     
     return result;
-  }, [startNewBattle]);
+  }, [providersData.startNewBattle]);
 
   // Create generateRankings wrapper that returns array
   const generateRankingsWrapper = useCallback((results: any[]) => {
-    const rankings = generateRankings(results);
+    const rankings = providersData.generateRankings(results);
     // If generateRankings returns void, return empty array or finalRankings
-    return rankings || finalRankings || [];
-  }, [generateRankings, finalRankings]);
+    return rankings || providersData.finalRankings || [];
+  }, [providersData.generateRankings, providersData.finalRankings]);
 
-  // Use the actions manager hook
-  const {
-    processBattleResult,
-    isProcessingResult,
-    resetMilestoneInProgress,
-    resetBattleProgressionMilestoneTracking,
-    goBack,
-    handleContinueBattles,
-    performFullBattleReset,
-    handlePokemonSelect,
-    isProcessing
-  } = useBattleActionsManager(
-    battleHistory,
-    setBattleHistory,
-    battleResults,
-    setBattleResults,
-    battlesCompleted,
-    setBattlesCompleted,
-    battleType,
-    stableSetCurrentBattle,
-    setSelectedPokemon,
-    setShowingMilestone,
-    setCompletionPercentage,
-    setRankingGenerated,
-    currentBattle,
-    selectedPokemon,
-    setCurrentBattle,
-    setIsTransitioning,
-    filteredPokemon,
-    milestones,
-    generateRankingsWrapper, // Use wrapper that returns array
-    typeof activeTier === 'string' ? activeTier : String(activeTier), // Line 151 - Ensure string type, not TopNOption
-    freezePokemonForTierStringWrapper, // Use wrapper that accepts string
-    battleStarter,
-    markSuggestionUsed,
-    forceDismissMilestone,
-    resetMilestones,
-    clearAllSuggestions,
+  // Use the actions hook
+  const actionsData = useBattleStateActions(
+    stateManagerData.battleHistory,
+    stateManagerData.setBattleHistory,
+    stateManagerData.battleResults,
+    stateManagerData.setBattleResults,
+    stateManagerData.battlesCompleted,
+    stateManagerData.setBattlesCompleted,
+    stateManagerData.battleType,
+    stateManagerData.stableSetCurrentBattle,
+    stateManagerData.setSelectedPokemon,
+    providersData.setShowingMilestone,
+    stateManagerData.setCompletionPercentage,
+    stateManagerData.setRankingGenerated,
+    stateManagerData.currentBattle,
+    stateManagerData.selectedPokemon,
+    stateManagerData.setCurrentBattle,
+    stateManagerData.setIsTransitioning,
+    providersData.filteredPokemon,
+    providersData.milestones,
+    generateRankingsWrapper,
+    typeof providersData.activeTier === 'string' ? providersData.activeTier : String(providersData.activeTier),
+    providersData.freezePokemonForTierStringWrapper,
+    providersData.battleStarter,
+    providersData.markSuggestionUsed,
+    providersData.forceDismissMilestone,
+    providersData.resetMilestones,
+    providersData.clearAllSuggestions,
     enhancedStartNewBattle
   );
 
-  useEffect(() => {
-    const preferredImageType = localStorage.getItem('preferredImageType');
-    console.log("🎯 [Mount] Loaded preferredImageType from localStorage:", preferredImageType);
+  // Use the effects hook
+  useBattleStateEffects(
+    providersData.loadSavedSuggestions,
+    stateManagerData.debouncedGenerateRankings,
+    stateManagerData.battleResults,
+    providersData.generateRankings,
+    stateManagerData.lastSuggestionLoadTimestampRef
+  );
 
-    if (!preferredImageType) {
-      localStorage.setItem('preferredImageType', 'official');
-      console.log("✅ Set default image preference to 'official'");
-    }
-
-    const savedSuggestions = localStorage.getItem('pokemon-active-suggestions');
-    console.log("🔍 MOUNT VERIFICATION: Suggestions in localStorage:", savedSuggestions ? "YES" : "NO");
-    
-    if (savedSuggestions) {
-      try {
-        const parsed = JSON.parse(savedSuggestions);
-        const count = Object.keys(parsed).length;
-        console.log(`🔢 Found ${String(count)} suggestions in localStorage`);
-        lastSuggestionLoadTimestampRef.current = Date.now();
-        
-        const loadedSuggestions = loadSavedSuggestions();
-        console.log(`⭐ useBattleStateCore: Initial load: Loaded ${String(loadedSuggestions.size)} suggestions`);
-        
-        if (battleResults.length > 0) {
-          console.log("⚙️ useBattleStateCore: Triggering initial generateRankings to apply loaded suggestions");
-          debouncedGenerateRankings(generateRankings, battleResults);
-        }
-      } catch (e) {
-        console.error("Error parsing saved suggestions:", e);
-      }
-    }
-  }, [loadSavedSuggestions, debouncedGenerateRankings, battleResults.length, generateRankings]);
-
-  const isAnyProcessing = isProcessingResult;
+  const isAnyProcessing = actionsData.isProcessingResult;
   
   const currentBattleCount = parseInt(localStorage.getItem('pokemon-battle-count') || '0', 10);
   console.log(`🔄 [PROCESSOR_FIX] useBattleStateCore processing states - Battle ${String(currentBattleCount)}:`, {
-    isProcessingResult,
-    isProcessing,
+    isProcessingResult: actionsData.isProcessingResult,
+    isProcessing: actionsData.isProcessing,
     isAnyProcessing,
-    isTransitioning,
+    isTransitioning: stateManagerData.isTransitioning,
     timestamp: new Date().toISOString()
   });
 
   return useMemo(() => ({
-    currentBattle,
-    battleResults,
-    battlesCompleted,
-    showingMilestone,
-    setShowingMilestone,
-    selectedGeneration,
-    setSelectedGeneration,
-    completionPercentage,
-    rankingGenerated,
-    selectedPokemon,
-    battleType,
-    setBattleType,
-    finalRankings,
-    confidenceScores,
-    battleHistory,
-    activeTier,
-    setActiveTier,
-    isBattleTransitioning: isTransitioning,
+    currentBattle: stateManagerData.currentBattle,
+    battleResults: stateManagerData.battleResults,
+    battlesCompleted: stateManagerData.battlesCompleted,
+    showingMilestone: providersData.showingMilestone,
+    setShowingMilestone: providersData.setShowingMilestone,
+    selectedGeneration: stateManagerData.selectedGeneration,
+    setSelectedGeneration: stateManagerData.setSelectedGeneration,
+    completionPercentage: providersData.completionPercentage,
+    rankingGenerated: providersData.rankingGenerated,
+    selectedPokemon: stateManagerData.selectedPokemon,
+    battleType: stateManagerData.battleType,
+    setBattleType: stateManagerData.setBattleType,
+    finalRankings: providersData.finalRankings,
+    confidenceScores: providersData.confidenceScores,
+    battleHistory: stateManagerData.battleHistory,
+    activeTier: providersData.activeTier,
+    setActiveTier: providersData.setActiveTier,
+    isBattleTransitioning: stateManagerData.isTransitioning,
     isAnyProcessing,
     handlePokemonSelect: (id: number) => {
-      handlePokemonSelect(id);
+      actionsData.handlePokemonSelect(id);
     },
     handleTripletSelectionComplete: () => {
-      if (battleType === "triplets") {
-        processBattleResult(selectedPokemon, currentBattle, battleType, selectedGeneration);
+      if (stateManagerData.battleType === "triplets") {
+        actionsData.processBattleResult(stateManagerData.selectedPokemon, stateManagerData.currentBattle, stateManagerData.battleType, stateManagerData.selectedGeneration);
       }
     },
     handleSelection: (id: number) => {
-      handlePokemonSelect(id);
+      actionsData.handlePokemonSelect(id);
     },
-    goBack,
-    isProcessingResult,
+    goBack: actionsData.goBack,
+    isProcessingResult: actionsData.isProcessingResult,
     startNewBattle: enhancedStartNewBattle,
-    milestones,
-    resetMilestones,
-    calculateCompletionPercentage,
-    getSnapshotForMilestone,
-    generateRankings,
-    handleSaveRankings,
-    freezePokemonForTier,
-    isPokemonFrozenForTier,
-    suggestRanking,
-    removeSuggestion,
-    clearAllSuggestions,
-    handleContinueBattles,
-    resetMilestoneInProgress,
-    performFullBattleReset
+    milestones: providersData.milestones,
+    resetMilestones: providersData.resetMilestones,
+    calculateCompletionPercentage: providersData.calculateCompletionPercentage,
+    getSnapshotForMilestone: providersData.getSnapshotForMilestone,
+    generateRankings: providersData.generateRankings,
+    handleSaveRankings: providersData.handleSaveRankings,
+    freezePokemonForTier: providersData.freezePokemonForTier,
+    isPokemonFrozenForTier: providersData.isPokemonFrozenForTier,
+    suggestRanking: providersData.suggestRanking,
+    removeSuggestion: providersData.removeSuggestion,
+    clearAllSuggestions: providersData.clearAllSuggestions,
+    handleContinueBattles: actionsData.handleContinueBattles,
+    resetMilestoneInProgress: actionsData.resetMilestoneInProgress,
+    performFullBattleReset: actionsData.performFullBattleReset
   }), [
-    currentBattle,
-    battleResults,
-    battlesCompleted,
-    showingMilestone,
-    selectedGeneration,
-    completionPercentage,
-    rankingGenerated,
-    selectedPokemon,
-    battleType,
-    finalRankings,
-    confidenceScores,
-    battleHistory,
-    activeTier,
-    isTransitioning,
+    stateManagerData,
+    providersData,
+    actionsData,
     isAnyProcessing,
-    handlePokemonSelect,
-    goBack,
-    isProcessingResult,
-    enhancedStartNewBattle,
-    milestones,
-    resetMilestones,
-    calculateCompletionPercentage,
-    getSnapshotForMilestone,
-    generateRankings,
-    handleSaveRankings,
-    freezePokemonForTier,
-    isPokemonFrozenForTier,
-    suggestRanking,
-    removeSuggestion,
-    clearAllSuggestions,
-    handleContinueBattles,
-    resetMilestoneInProgress,
-    performFullBattleReset,
-    processBattleResult
+    enhancedStartNewBattle
   ]);
 };
 
