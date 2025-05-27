@@ -16,15 +16,24 @@ export const validateBattlePokemon = (pokemon: Pokemon[]): Pokemon[] => {
     console.log(`   - ID: ${p.id}`);
     console.log(`   - Name contains hyphen: ${p.name.includes('-')}`);
     console.log(`   - Name is lowercase: ${p.name === p.name.toLowerCase()}`);
-    console.log(`   - Looks like raw API name: ${p.name.includes('-') && p.name === p.name.toLowerCase()}`);
   });
   
   const validated = pokemon.map((p, index) => {
     console.log(`🔍 [VALIDATE_BATTLE_POKEMON] Processing #${index}: "${p.name}" (ID: ${p.id})`);
     
-    // CRITICAL ANALYSIS: Check if this name looks like it needs formatting
-    const looksLikeRawName = p.name.includes('-') && p.name === p.name.toLowerCase();
-    console.log(`🔍 [VALIDATE_BATTLE_POKEMON] Name "${p.name}" looks like raw API name: ${looksLikeRawName}`);
+    // CRITICAL FIX: More accurate detection of raw API names
+    // Raw API names are ALL lowercase AND contain hyphens AND start with lowercase letter
+    const isAllLowercase = p.name === p.name.toLowerCase();
+    const containsHyphen = p.name.includes('-');
+    const startsWithLowercase = p.name.charAt(0) === p.name.charAt(0).toLowerCase();
+    const looksLikeRawName = isAllLowercase && containsHyphen && startsWithLowercase;
+    
+    console.log(`🔍 [VALIDATE_BATTLE_POKEMON] Name "${p.name}" analysis:`, {
+      isAllLowercase,
+      containsHyphen,
+      startsWithLowercase,
+      looksLikeRawName
+    });
     
     let finalName;
     if (looksLikeRawName) {
@@ -50,7 +59,7 @@ export const validateBattlePokemon = (pokemon: Pokemon[]): Pokemon[] => {
     return validatedPokemon;
   });
   
-  console.log(`✅ [VALIDATE_BATTLE_POKEMON] Validated ${validated.length} Pokemon with smart name handling`);
+  console.log(`✅ [VALIDATE_BATTLE_POKEMON] Validated ${validated.length} Pokemon with improved name detection`);
   return validated;
 };
 
