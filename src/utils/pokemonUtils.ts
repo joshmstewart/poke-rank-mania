@@ -25,70 +25,70 @@ export const normalizePokedexNumber = (id: number): number => {
 export const formatPokemonName = (name: string): string => {
   if (!name) return '';
   
-  console.log(`🚀 [FORMAT_START] INPUT: "${name}"`);
+  console.log(`🚀 [FORMAT_POKEMON_NAME] Input: "${name}"`);
   
-  // Handle Mega evolutions FIRST - be very explicit about this
-  if (name.toLowerCase().includes('-mega-x')) {
-    const baseName = name.replace(/-mega-x$/i, '');
+  // Handle Mega evolutions - check for exact patterns
+  if (name.includes('-mega-x')) {
+    const baseName = name.replace('-mega-x', '');
     const result = `Mega ${baseName} X`;
-    console.log(`✅ [MEGA_X_TRANSFORM] "${name}" -> "${result}"`);
+    console.log(`✅ [MEGA_X] "${name}" -> "${result}"`);
     return result;
   }
   
-  if (name.toLowerCase().includes('-mega-y')) {
-    const baseName = name.replace(/-mega-y$/i, '');
+  if (name.includes('-mega-y')) {
+    const baseName = name.replace('-mega-y', '');
     const result = `Mega ${baseName} Y`;
-    console.log(`✅ [MEGA_Y_TRANSFORM] "${name}" -> "${result}"`);
+    console.log(`✅ [MEGA_Y] "${name}" -> "${result}"`);
     return result;
   }
   
-  if (name.toLowerCase().includes('-mega')) {
-    const baseName = name.replace(/-mega$/i, '');
+  if (name.includes('-mega')) {
+    const baseName = name.replace('-mega', '');
     const result = `Mega ${baseName}`;
-    console.log(`✅ [MEGA_TRANSFORM] "${name}" -> "${result}"`);
+    console.log(`✅ [MEGA] "${name}" -> "${result}"`);
     return result;
   }
   
   // Handle Gigantamax forms
-  if (name.toLowerCase().includes('-gmax')) {
-    const baseName = name.replace(/-gmax$/i, '');
+  if (name.includes('-gmax')) {
+    const baseName = name.replace('-gmax', '');
     const result = `G-Max ${baseName}`;
-    console.log(`✅ [GMAX_TRANSFORM] "${name}" -> "${result}"`);
+    console.log(`✅ [GMAX] "${name}" -> "${result}"`);
     return result;
   }
   
   // Handle space-separated forms as well
-  if (name.toLowerCase().includes(' mega x')) {
-    const baseName = name.replace(/ mega x$/i, '');
+  if (name.includes(' mega x')) {
+    const baseName = name.replace(' mega x', '');
     const result = `Mega ${baseName} X`;
-    console.log(`✅ [SPACE_MEGA_X_TRANSFORM] "${name}" -> "${result}"`);
+    console.log(`✅ [SPACE_MEGA_X] "${name}" -> "${result}"`);
     return result;
   }
   
-  if (name.toLowerCase().includes(' mega y')) {
-    const baseName = name.replace(/ mega y$/i, '');
+  if (name.includes(' mega y')) {
+    const baseName = name.replace(' mega y', '');
     const result = `Mega ${baseName} Y`;
-    console.log(`✅ [SPACE_MEGA_Y_TRANSFORM] "${name}" -> "${result}"`);
+    console.log(`✅ [SPACE_MEGA_Y] "${name}" -> "${result}"`);
     return result;
   }
   
-  if (name.toLowerCase().includes(' mega')) {
-    const baseName = name.replace(/ mega$/i, '');
+  if (name.includes(' mega')) {
+    const baseName = name.replace(' mega', '');
     const result = `Mega ${baseName}`;
-    console.log(`✅ [SPACE_MEGA_TRANSFORM] "${name}" -> "${result}"`);
+    console.log(`✅ [SPACE_MEGA] "${name}" -> "${result}"`);
     return result;
   }
   
-  if (name.toLowerCase().includes(' gmax')) {
-    const baseName = name.replace(/ gmax$/i, '');
+  if (name.includes(' gmax')) {
+    const baseName = name.replace(' gmax', '');
     const result = `G-Max ${baseName}`;
-    console.log(`✅ [SPACE_GMAX_TRANSFORM] "${name}" -> "${result}"`);
+    console.log(`✅ [SPACE_GMAX] "${name}" -> "${result}"`);
     return result;
   }
   
   // Handle Pikachu cap variants with proper formatting
   if (name.toLowerCase().includes('pikachu') && name.toLowerCase().includes('cap')) {
-    console.log(`🏷️ [PIKACHU_CAP_DEBUG] Detected Pikachu cap variant: ${name}`);
+    console.log(`🏷️ [PIKACHU_CAP] Detected Pikachu cap variant: ${name}`);
     if (name.toLowerCase().includes('original-cap')) {
       return 'Pikachu (Original Cap)';
     }
@@ -146,7 +146,7 @@ export const formatPokemonName = (name: string): string => {
           .trim();
         // Return with proper format: "Alolan Vulpix" instead of "Vulpix alola"
         const result = `${prefix} ${baseName}`;
-        console.log(`🌍 [REGIONAL_TRANSFORM] "${name}" -> "${result}"`);
+        console.log(`🌍 [REGIONAL] "${name}" -> "${result}"`);
         return result;
       }
     }
@@ -154,7 +154,7 @@ export const formatPokemonName = (name: string): string => {
   
   // If no special form is found, use the capitalizeSpecialForms function
   const result = capitalizeSpecialForms(name);
-  console.log(`🏷️ [NO_TRANSFORM] "${name}" -> "${result}" (no special formatting applied)`);
+  console.log(`🏷️ [NO_TRANSFORM] "${name}" -> "${result}"`);
   return result;
 };
 
