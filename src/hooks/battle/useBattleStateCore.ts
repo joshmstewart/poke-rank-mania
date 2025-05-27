@@ -19,6 +19,7 @@ export const useBattleStateCore = (
   
   const initializationRef = useRef(false);
   const hookInstanceRef = useRef(`core-${Date.now()}`);
+  const continueBattlesRef = useRef(false); // Add debounce ref
   
   if (!initializationRef.current) {
     console.log(`[DEBUG useBattleStateCore] INIT - Instance: ${hookInstanceRef.current} - Using context for Pokemon data`);
@@ -178,8 +179,17 @@ export const useBattleStateCore = (
     enhancedStartNewBattle
   );
 
+  // CRITICAL FIX: Debounced continue battles function to prevent rapid cycling
   const handleContinueBattles = useCallback(() => {
     console.log('[DEBUG useBattleStateCore] handleContinueBattles: Called');
+    
+    // Prevent rapid successive calls
+    if (continueBattlesRef.current) {
+      console.log('[DEBUG useBattleStateCore] handleContinueBattles: Already processing, ignoring');
+      return;
+    }
+    
+    continueBattlesRef.current = true;
     
     if (showingMilestone) {
       console.log('[DEBUG useBattleStateCore] handleContinueBattles: Dismissing milestone first');
@@ -187,12 +197,14 @@ export const useBattleStateCore = (
       
       setTimeout(() => {
         enhancedStartNewBattle("pairs");
-      }, 100);
+        continueBattlesRef.current = false;
+      }, 300);
     } else {
       console.log('[DEBUG useBattleStateCore] handleContinueBattles: Starting new battle directly');
       enhancedStartNewBattle("pairs");
+      continueBattlesRef.current = false;
     }
-  }, []);
+  }, [showingMilestone, forceDismissMilestone, enhancedStartNewBattle]);
 
   const debouncedGenerateRankings = useMemo(() => {
     return (results: any[]) => {
