@@ -1,6 +1,7 @@
 
 import React, { useEffect, useRef } from "react";
 import BattleInterface from "./BattleInterface";
+import RankingDisplay from "./RankingDisplay";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "@/hooks/battle/types";
 import { useBattleStateCore } from "@/hooks/battle/useBattleStateCore";
@@ -21,8 +22,6 @@ const BattleContent: React.FC<BattleContentProps> = ({
   setBattleResults
 }) => {
   const instanceRef = useRef(`content-${Date.now()}`);
-  const milestoneDisplayTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const milestoneDisplayedRef = useRef(false);
   
   console.log(`[DEBUG BattleContent] Instance: ${instanceRef.current} render - allPokemon: ${allPokemon?.length || 0}`);
 
@@ -74,7 +73,6 @@ const BattleContent: React.FC<BattleContentProps> = ({
     isAnyProcessing,
     hasBattle: !!currentBattle && currentBattle.length > 0,
     battlesCompleted,
-    milestoneDisplayed: milestoneDisplayedRef.current,
     timestamp: new Date().toISOString()
   });
 
@@ -87,59 +85,35 @@ const BattleContent: React.FC<BattleContentProps> = ({
     setBattleResults?.(battleResults);
   }, [battleResults, setBattleResults]);
 
-  // CRITICAL FIX: Enhanced milestone handling that FORCES display
-  useEffect(() => {
-    if (showingMilestone && !milestoneDisplayedRef.current) {
-      console.log(`🏆 [MILESTONE_FIX] MILESTONE REACHED: ${battlesCompleted} battles completed! FORCING DISPLAY`);
-      
-      // Mark that we're displaying this milestone
-      milestoneDisplayedRef.current = true;
-      
-      // Clear any existing timeout
-      if (milestoneDisplayTimeoutRef.current) {
-        clearTimeout(milestoneDisplayTimeoutRef.current);
-      }
-      
-      // Show milestone message for 4 seconds (longer to ensure visibility)
-      milestoneDisplayTimeoutRef.current = setTimeout(() => {
-        console.log(`🔄 [MILESTONE_FIX] Dismissing milestone after display time`);
-        milestoneDisplayedRef.current = false;
-        setShowingMilestone(false);
-        resetMilestoneInProgress();
-        
-        // Continue battles after milestone is dismissed
-        setTimeout(() => {
-          handleContinueBattles();
-        }, 500);
-      }, 4000);
-    }
-    
-    return () => {
-      if (milestoneDisplayTimeoutRef.current) {
-        clearTimeout(milestoneDisplayTimeoutRef.current);
-      }
-    };
-  }, [showingMilestone, battlesCompleted, setShowingMilestone, resetMilestoneInProgress, handleContinueBattles]);
-
-  // CRITICAL FIX: ALWAYS show milestone display when milestone is active - highest priority
+  // FIXED: Show the proper milestone screen with rankings
   if (showingMilestone) {
-    console.log(`🏆 [MILESTONE_FIX] DISPLAYING MILESTONE SCREEN for ${battlesCompleted} battles`);
+    console.log(`🏆 [MILESTONE_FIX] DISPLAYING MILESTONE RANKINGS SCREEN for ${battlesCompleted} battles`);
+    
+    // Get the snapshot for this milestone
+    const milestoneSnapshot = getSnapshotForMilestone(battlesCompleted);
+    const rankingsToShow = milestoneSnapshot.length > 0 ? milestoneSnapshot : finalRankings;
+    
     return (
-      <div className="flex justify-center items-center h-64 w-full">
-        <div className="text-center bg-white rounded-lg shadow-lg p-8 max-w-md mx-4">
-          <div className="text-6xl mb-4">🏆</div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Milestone: {battlesCompleted} Battles</h2>
-          <p className="text-lg text-gray-600 mb-4">
-            You've completed <span className="font-semibold text-blue-600">{battlesCompleted}</span> battles!
-          </p>
-          <div className="text-sm text-gray-500 mb-4">
-            Rankings have been updated...
-          </div>
-          <div className="text-xs text-gray-400">
-            Showing milestone for 4 seconds
-          </div>
-        </div>
-      </div>
+      <RankingDisplay
+        finalRankings={rankingsToShow}
+        battlesCompleted={battlesCompleted}
+        onContinueBattles={() => {
+          console.log(`🔄 [MILESTONE_FIX] Continue battles clicked from milestone screen`);
+          setShowingMilestone(false);
+          resetMilestoneInProgress();
+          setTimeout(() => {
+            handleContinueBattles();
+          }, 300);
+        }}
+        onNewBattleSet={performFullBattleReset}
+        rankingGenerated={rankingGenerated}
+        onSaveRankings={handleSaveRankings}
+        isMilestoneView={true}
+        activeTier={activeTier}
+        onTierChange={setActiveTier}
+        onSuggestRanking={suggestRanking}
+        onRemoveSuggestion={removeSuggestion}
+      />
     );
   }
 
