@@ -1,4 +1,3 @@
-
 import { capitalizeFirstLetter, capitalizeWords } from './helpers';
 
 /**
@@ -72,7 +71,7 @@ export const formatPokemonName = (name: string): string => {
     console.log(`🔧 [FORMAT_MEGA_Y_DETECTED] Processing Mega Y form: "${name}"`);
     const baseName = name.substring(0, name.toLowerCase().indexOf('-mega-y'));
     const result = `Mega ${capitalizeFirstLetter(baseName)} Y`;
-    console.log(`🔧 [FORMAT_MEGA_Y_RESULT] "${name}" → "${result)"`);
+    console.log(`🔧 [FORMAT_MEGA_Y_RESULT] "${name}" → "${result}"`);
     return result;
   }
   
