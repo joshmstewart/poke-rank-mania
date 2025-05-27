@@ -12,6 +12,8 @@ export const isStarterPokemon = (pokemon: Pokemon): boolean => {
 export const getPokemonFormCategory = (pokemon: Pokemon): PokemonFormType | null => {
   const name = pokemon.name.toLowerCase();
   
+  console.log(`🔍 [FORM_CATEGORIZATION] Analyzing: "${pokemon.name}" (ID: ${pokemon.id})`);
+  
   // Check for costumes (Pikachu caps and cosplay forms) - check this FIRST
   if ((name.includes("pikachu") && (
       name.includes("cap") || 
@@ -73,7 +75,8 @@ export const getPokemonFormCategory = (pokemon: Pokemon): PokemonFormType | null
     return "forms";
   }
   
-  // If none of the above categories match, it's a normal Pokemon
-  console.log(`✅ [FORM_FILTER_DEBUG] ${pokemon.name} (${pokemon.id}) is NORMAL (standard form)`);
+  // ENHANCED: Ensure normal Pokemon are properly identified
+  // If none of the above categories match, it's definitely a normal Pokemon
+  console.log(`✅ [FORM_FILTER_DEBUG] ${pokemon.name} (${pokemon.id}) is NORMAL (standard form) - NO special patterns detected`);
   return "normal";
 };

@@ -45,7 +45,13 @@ export const useFormFilters = () => {
       return false;
     }
     
-    // If all filters are enabled, include all Pokemon (except starters)
+    // ENHANCED: Additional Cramorant filtering at the form filter level
+    if (pokemon.name.toLowerCase().includes('cramorant')) {
+      console.log(`🚫 [FORM_FILTER_DEBUG] ${pokemon.name} (${pokemon.id}) EXCLUDED - CRAMORANT FORM (always filtered)`);
+      return false;
+    }
+    
+    // If all filters are enabled, include all Pokemon (except starters and Cramorant)
     if (isAllEnabled) {
       console.log(`🟢 [FORM_FILTER_DEBUG] ${pokemon.name} (${pokemon.id}) INCLUDED - all filters enabled`);
       return true;
@@ -58,6 +64,9 @@ export const useFormFilters = () => {
     
     // Return true if the filter for this category is enabled
     const shouldInclude = filters[categoryToCheck];
+    
+    // ENHANCED LOGGING: Show current filter states
+    console.log(`🎛️ [FORM_FILTER_STATES] Current filters:`, filters);
     console.log(`${shouldInclude ? '🟢' : '🔴'} [FORM_FILTER_DEBUG] ${pokemon.name} (${pokemon.id}) ${shouldInclude ? 'INCLUDED' : 'EXCLUDED'} - ${categoryToCheck} filter is ${shouldInclude ? 'enabled' : 'disabled'}`);
     return shouldInclude;
   };

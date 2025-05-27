@@ -27,12 +27,11 @@ export const fetchPokemonData = async (generations: number[]): Promise<Pokemon[]
         const pokemonResponse = await fetch(`${API_BASE}/pokemon/${pokemonId}`);
         const pokemonData = await pokemonResponse.json();
         
-        // CRITICAL FIX: Filter out all Cramorant forms (all variants)
-        const isCramorantForm = pokemonData.name.toLowerCase().includes('cramorant') && 
-          pokemonData.name !== 'cramorant';
+        // ENHANCED CRAMORANT FILTERING: Filter out ALL Cramorant forms completely
+        const isCramorantForm = pokemonData.name.toLowerCase().includes('cramorant');
         
         if (isCramorantForm) {
-          console.log(`🚫 Filtering out Cramorant form: ${pokemonData.name}`);
+          console.log(`🚫 [CRAMORANT_FILTER] Filtering out ALL Cramorant forms: ${pokemonData.name}`);
           return null;
         }
 
@@ -52,10 +51,9 @@ export const fetchPokemonData = async (generations: number[]): Promise<Pokemon[]
     });
 
     const pokemonResults = await Promise.all(pokemonPromises);
-    // CRITICAL FIX: Remove type predicate and just filter null values
     const validPokemon = pokemonResults.filter(pokemon => pokemon !== null);
 
-    console.log(`✅ Successfully loaded ${validPokemon.length} Pokemon (filtered out Cramorant forms)`);
+    console.log(`✅ Successfully loaded ${validPokemon.length} Pokemon (filtered out ALL Cramorant forms)`);
     return validPokemon;
 
   } catch (error) {
