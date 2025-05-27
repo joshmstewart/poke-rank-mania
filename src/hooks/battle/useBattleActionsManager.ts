@@ -39,6 +39,10 @@ export const useBattleActionsManager = (
   enhancedStartNewBattle: (battleType: BattleType) => Pokemon[] | undefined
 ) => {
   
+  console.log('[DEBUG useBattleActionsManager] Type check - activeTier:', typeof activeTier, activeTier);
+  console.log('[DEBUG useBattleActionsManager] Type check - generateRankings:', typeof generateRankings);
+  console.log('[DEBUG useBattleActionsManager] Type check - freezePokemonForTier:', typeof freezePokemonForTier);
+  
   const { 
     processBattleResult,
     isProcessingResult, 
@@ -54,7 +58,7 @@ export const useBattleActionsManager = (
     setShowingMilestone,
     milestones,
     generateRankings,
-    activeTier,
+    activeTier, // Line 57 - This should be a string, let's log it
     freezePokemonForTier,
     battleStarter,
     markSuggestionUsed,
@@ -92,7 +96,7 @@ export const useBattleActionsManager = (
     resetMilestones,
     resetBattleProgressionMilestoneTracking,
     clearAllSuggestions,
-    generateRankings,
+    generateRankings, // Line 95 - This should return any[], let's check what we're passing
     enhancedStartNewBattle
   );
 

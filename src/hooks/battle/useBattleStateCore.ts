@@ -59,6 +59,10 @@ export const useBattleStateCore = (
     allRankedPokemon
   } = useRankings();
 
+  // Debug logging for type checking
+  console.log('[DEBUG useBattleStateCore] Type check - activeTier:', typeof activeTier, activeTier);
+  console.log('[DEBUG useBattleStateCore] Type check - currentBattleCount before String():', typeof parseInt(localStorage.getItem('pokemon-battle-count') || '0', 10));
+
   // Use the coordination hook
   const {
     contextPokemon,
@@ -96,7 +100,7 @@ export const useBattleStateCore = (
     currentBattle,
     stableSetCurrentBattle,
     stableSetSelectedPokemon,
-    activeTier,
+    typeof activeTier === 'string' ? activeTier : String(activeTier), // Line 99 - Ensure string type
     freezePokemonForTier
   );
 
@@ -147,7 +151,7 @@ export const useBattleStateCore = (
     filteredPokemon,
     milestones,
     generateRankings,
-    String(activeTier),
+    typeof activeTier === 'string' ? activeTier : String(activeTier), // Line 151 - Ensure string type, not TopNOption
     freezePokemonForTier,
     battleStarter,
     markSuggestionUsed,
