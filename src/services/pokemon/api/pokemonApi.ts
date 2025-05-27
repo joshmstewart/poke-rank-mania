@@ -36,12 +36,15 @@ export const fetchPokemonData = async (generations: number[]): Promise<Pokemon[]
           return null;
         }
 
+        // CRITICAL DEBUG: Log the EXACT raw name from API before any processing
+        console.log(`🔧 [API_RAW_NAME_DEBUG] Pokemon ID ${pokemonData.id}: Raw API name = "${pokemonData.name}"`);
+        
         // CRITICAL FIX: Apply formatPokemonName to the raw API name ONCE AND ONLY ONCE
         const formattedName = formatPokemonName(pokemonData.name);
         
-        console.log(`🔧 [API_NAME_FORMATTING] RAW: "${pokemonData.name}" → FORMATTED: "${formattedName}"`);
+        console.log(`🔧 [API_NAME_FORMATTING_DEBUG] ID ${pokemonData.id}: RAW "${pokemonData.name}" → FORMATTED "${formattedName}"`);
 
-        return {
+        const pokemon = {
           id: pokemonData.id,
           name: formattedName, // Use the formatted name directly
           image: pokemonData.sprites.other['official-artwork'].front_default || 
@@ -50,6 +53,11 @@ export const fetchPokemonData = async (generations: number[]): Promise<Pokemon[]
             type.type.name.charAt(0).toUpperCase() + type.type.name.slice(1)
           )
         };
+
+        // Additional debug logging to confirm what we're returning
+        console.log(`✅ [API_FINAL_POKEMON_DEBUG] ID ${pokemon.id}: Final Pokemon object name = "${pokemon.name}"`);
+        
+        return pokemon;
       } catch (error) {
         console.error(`Error fetching Pokemon ${species.name}:`, error);
         return null;
