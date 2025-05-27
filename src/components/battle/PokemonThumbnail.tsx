@@ -1,379 +1,69 @@
 
-import React, { useState, useEffect, useRef } from "react";
-import { Pokemon, RankedPokemon } from "@/services/pokemon";
-import { getPokemonTypeColor } from "./utils/pokemonTypeColors";
-import { getPreferredImageUrl, getPreferredImageType, PokemonImageType } from "@/components/settings/ImagePreferenceSelector";
-import { normalizePokedexNumber, formatPokemonName } from "@/utils/pokemonUtils";
-import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from "@/components/ui/hover-card";
-import { getPokemonGeneration } from "@/components/ranking/rankingUtils";
-import {
-  ToggleGroup,
-  ToggleGroupItem
-} from "@/components/ui/toggle-group";
-import { ArrowUp, ArrowDown } from "lucide-react";
+import React from "react";
+import { Pokemon } from "@/services/pokemon";
+import { formatPokemonName } from "@/utils/pokemonUtils";
 
 interface PokemonThumbnailProps {
   pokemon: Pokemon;
-  index: number;
-  onSuggestRanking?: (pokemon: RankedPokemon, direction: "up" | "down", strength: 1 | 2 | 3) => void;
-  onRemoveSuggestion?: (pokemonId: number) => void;
+  isSelected?: boolean;
+  onClick?: () => void;
+  className?: string;
+  showName?: boolean;
+  disabled?: boolean;
 }
 
-const PokemonThumbnail: React.FC<PokemonThumbnailProps> = ({ 
-  pokemon, 
-  index, 
-  onSuggestRanking, 
-  onRemoveSuggestion 
+const PokemonThumbnail: React.FC<PokemonThumbnailProps> = ({
+  pokemon,
+  isSelected = false,
+  onClick,
+  className = "",
+  showName = true,
+  disabled = false
 }) => {
-  // Apply proper type color handling
-  const typeColor = getPokemonTypeColor(pokemon);
-  
-  // Use proper name formatting and get consistent ID
-  const normalizedId = normalizePokedexNumber(pokemon.id);
   const formattedName = formatPokemonName(pokemon.name);
-  const pokemonId = pokemon.id; // Ensure consistent ID usage
   
-  // Log the Pokemon data to diagnose issues
-  useEffect(() => {
-    console.log(`🔍 PokemonThumbnail: Rendering ${formattedName} (ID: ${pokemonId})`);
-  }, [formattedName, pokemonId]);
-  
-  const generation = getPokemonGeneration(pokemonId);
-  const [imageSrc, setImageSrc] = useState("");
-  const [retryCount, setRetryCount] = useState(0);
-  const [currentImageType, setCurrentImageType] = useState<PokemonImageType>(getPreferredImageType());
-  const initialUrlRef = useRef<string>(""); // Using ref to ensure it doesn't change
-  const hasInitialLoadRef = useRef<boolean>(false); // Track if we've attempted the first load
-  
-  // Check if the pokemon has ranking properties (is a RankedPokemon)
-  const isRankedPokemon = (pokemon: Pokemon): pokemon is RankedPokemon => {
-    return 'score' in pokemon && 'count' in pokemon;
-  };
-  
-  const rankedPokemon = isRankedPokemon(pokemon) ? pokemon : undefined;
-  
-  // State for the suggestion UI
-  const [activeDirection, setActiveDirection] = useState<"up" | "down" | null>(
-    rankedPokemon?.suggestedAdjustment?.direction || null
-  );
-  const [activeStrength, setActiveStrength] = useState<1 | 2 | 3>(
-    rankedPokemon?.suggestedAdjustment?.strength || 1
-  );
-  
-  // Load image on component mount and if Pokemon changes
-  useEffect(() => {
-    const preference = getPreferredImageType();
-    setCurrentImageType(preference);
-    
-    // Generate URL first, then set it to make sure we capture it
-    const url = getPreferredImageUrl(pokemonId);
-    setImageSrc(url);
-    initialUrlRef.current = url; // Store initial URL in ref
-    
-    // Set initial load flag
-    hasInitialLoadRef.current = true;
-    
-    if (process.env.NODE_ENV === "development") {
-      console.log(`🖼️ PokemonThumbnail: Loading "${preference}" image for ${formattedName} (#${pokemonId}): ${url}`);
-      
-      // Check if image exists
-      fetch(url, { method: 'HEAD' })
-        .then(response => {
-          if (!response.ok) {
-            console.warn(`⚠️ Thumbnail image check: ${url} returned ${response.status}`);
-            // Pre-emptively try first fallback
-            handleImageError();
-          } else {
-            console.log(`✅ Thumbnail image check: ${url} exists on server`);
-          }
-        })
-        .catch(error => {
-          console.warn(`⚠️ Thumbnail image check failed: ${error.message}`);
-          // Pre-emptively try first fallback
-          handleImageError();
-        });
-    }
-    
-    setRetryCount(0);
-  }, [pokemonId, formattedName]);
-  
-  // Add a safety timeout to trigger fallback if image doesn't load in a reasonable time
-  useEffect(() => {
-    if (hasInitialLoadRef.current) {
-      const safetyTimer = setTimeout(() => {
-        if (retryCount === 0) {
-          console.warn(`⏱️ Thumbnail image load timeout for ${formattedName} - triggering fallback`);
-          handleImageError();
-        }
-      }, 2000); // 2 second timeout
-      
-      return () => clearTimeout(safetyTimer);
-    }
-  }, [formattedName, retryCount]);
-  
-  // Update active state when suggestion changes
-  useEffect(() => {
-    if (rankedPokemon?.suggestedAdjustment) {
-      setActiveDirection(rankedPokemon.suggestedAdjustment.direction);
-      setActiveStrength(rankedPokemon.suggestedAdjustment.strength);
-    } else {
-      setActiveDirection(null);
-      setActiveStrength(1);
-    }
-  }, [rankedPokemon?.suggestedAdjustment]);
-  
-  // Handle image load errors with improved diagnostics
-  const handleImageError = () => {
-    // Get the failing URL
-    const failedUrl = imageSrc || initialUrlRef.current;
-    
-    if (retryCount === 0) {
-      if (!failedUrl || failedUrl.trim() === '') {
-        // If URL is empty or undefined
-        console.error(`🔴 Initial attempt to load '${currentImageType}' artwork for ${formattedName} (#${pokemonId}) failed. No URL was available for the preferred style.`);
-      } else {
-        // Log the initial failure with the actual URL
-        console.error(`🔴 Initial attempt to load '${currentImageType}' artwork for ${formattedName} (#${pokemonId}) failed. URL: ${failedUrl}`);
-        
-        // Additional diagnostic: Check if the URL exists on server with fetch HEAD
-        fetch(failedUrl, { method: 'HEAD' })
-          .then(response => {
-            if (!response.ok) {
-              console.error(`🔴 Confirmed: URL ${failedUrl} returned ${response.status} from server`);
-            } else {
-              console.error(`❓ Unexpected: URL ${failedUrl} exists on server but image still failed to load`);
-            }
-          })
-          .catch(error => {
-            console.error(`🔴 Network error checking ${failedUrl}: ${error.message}`);
-          });
-      }
-    }
-    
-    if (retryCount < 3) { // Keep up to 3 retries to handle the new longer fallback chain
-      const nextRetry = retryCount + 1;
-      const nextUrl = getPreferredImageUrl(pokemonId, nextRetry);
-      console.log(`❌ Thumbnail image load failed for ${formattedName} (#${pokemonId}) with type "${currentImageType}" - trying fallback #${nextRetry}: ${nextUrl}`);
-      
-      setImageSrc(nextUrl);
-      setRetryCount(nextRetry);
-      
-      // Preload the next image
-      const img = new Image();
-      img.src = nextUrl;
-    } else {
-      console.error(`⛔ All image fallbacks failed for ${formattedName} thumbnail`);
-    }
-  };
-  
-  // Handle image load success
-  const handleImageLoad = () => {
-    if (retryCount > 0) {
-      console.log(`✅ Successfully loaded fallback image for ${formattedName} thumbnail`);
-    }
-  };
-  
-  // Handle direction change (up/down arrows)
-  const handleDirectionChange = (direction: "up" | "down") => {
-    if (!rankedPokemon || !onSuggestRanking || !onRemoveSuggestion) return;
-    
-    // If same direction is clicked, remove the suggestion
-    if (direction === activeDirection) {
-      setActiveDirection(null);
-      setActiveStrength(1);
-      onRemoveSuggestion(rankedPokemon.id);
-    } else {
-      setActiveDirection(direction);
-      onSuggestRanking(rankedPokemon, direction, activeStrength);
-    }
-  };
-  
-  // Handle strength change (1/2/3 arrows)
-  const handleStrengthChange = (value: string) => {
-    if (!activeDirection || !rankedPokemon || !onSuggestRanking) return;
-    
-    const strength = parseInt(value) as 1 | 2 | 3;
-    setActiveStrength(strength);
-    onSuggestRanking(rankedPokemon, activeDirection, strength);
-  };
-  
+  // Add debugging for Pokemon name formatting in PokemonThumbnail
+  console.log(`🎯 [THUMBNAIL_NAME_DEBUG] Pokemon ID: ${pokemon.id}`);
+  console.log(`🎯 [THUMBNAIL_NAME_DEBUG] Raw name: "${pokemon.name}"`);
+  console.log(`🎯 [THUMBNAIL_NAME_DEBUG] Formatted name: "${formattedName}"`);
+
   return (
-    <HoverCard openDelay={0} closeDelay={200}>
-      <HoverCardTrigger asChild>
-        <div className="relative flex flex-col overflow-hidden bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer">
-          {/* Rank number with type-colored background */}
-          <div className={`absolute top-2 left-2 z-10 ${typeColor} text-white rounded-full w-8 h-8 flex items-center justify-center shadow-md`}>
-            <span className="text-sm font-bold">{index + 1}</span>
-          </div>
-          
-          {/* Show suggestion indicator if this pokemon has a suggestion */}
-          {rankedPokemon?.suggestedAdjustment && !rankedPokemon.suggestedAdjustment.used && (
-            <div 
-              className={`absolute -top-2 -right-2 px-1 rounded text-xs font-bold
-                ${rankedPokemon.suggestedAdjustment.direction === "up" 
-                  ? "bg-green-100 text-green-800" 
-                  : "bg-red-100 text-red-800"
-                }`}
-            >
-              {rankedPokemon.suggestedAdjustment.direction === "up" 
-                ? "↑".repeat(rankedPokemon.suggestedAdjustment.strength)
-                : "↓".repeat(rankedPokemon.suggestedAdjustment.strength)
-              }
-            </div>
-          )}
-          
-          {/* Show checkmark if suggestion was used */}
-          {rankedPokemon?.suggestedAdjustment?.used && (
-            <div className="absolute -top-2 -right-2 px-1 rounded bg-gray-100 text-gray-500 text-xs font-bold">
-              ✓
-            </div>
-          )}
-          
-          {/* Pokemon image in center - more compact */}
-          <div className={`p-1 flex items-center justify-center ${typeColor} bg-opacity-20`}>
-            <div className="w-full aspect-square relative flex items-center justify-center max-h-20">
-              {imageSrc && (
-                <img 
-                  src={imageSrc} 
-                  alt={formattedName} 
-                  className="object-contain max-h-16 p-1"
-                  onLoad={handleImageLoad}
-                  onError={handleImageError}
-                />
-              )}
-            </div>
-          </div>
-          
-          {/* Pokemon info at bottom */}
-          <div className="py-1 px-2 text-center border-t border-gray-100">
-            <div className="font-medium text-xs truncate">{formattedName}</div>
-            <div className="text-xs text-muted-foreground">#{normalizedId}</div>
-          </div>
-        </div>
-      </HoverCardTrigger>
+    <div
+      className={`
+        relative cursor-pointer transition-all duration-200 
+        ${isSelected ? 'ring-4 ring-blue-500 bg-blue-50' : 'hover:bg-gray-50'} 
+        ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
+        ${className}
+      `}
+      onClick={disabled ? undefined : onClick}
+    >
+      <div className="aspect-square bg-white rounded-lg border-2 border-gray-200 overflow-hidden">
+        <img
+          src={pokemon.image}
+          alt={formattedName}
+          className="w-full h-full object-contain p-2"
+          loading="lazy"
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            target.style.display = 'none';
+          }}
+        />
+      </div>
       
-      <HoverCardContent className="w-64" align="center">
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center gap-3">
-            <img 
-              src={pokemon.image} 
-              alt={formattedName}
-              className="w-12 h-12 object-contain"
-            />
-            <div>
-              <h4 className="font-semibold">{formattedName}</h4>
-              <div className="text-xs text-muted-foreground">
-                #{normalizedId} • {generation?.name || "Unknown"}
-              </div>
-              {pokemon.types && (
-                <div className="flex gap-1 mt-1">
-                  {pokemon.types.map(type => (
-                    <span 
-                      key={type} 
-                      className="text-xs px-1.5 py-0.5 rounded bg-gray-100"
-                    >
-                      {type}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-          
-          <div className="grid gap-1.5">
-            <div className="text-sm">
-              {rankedPokemon && (
-                <>
-                  <div className="flex justify-between">
-                    <span>Battles:</span>
-                    <span>{rankedPokemon.count || "N/A"}</span>
-                  </div>
-                  {rankedPokemon.score !== undefined && (
-                    <div className="flex justify-between">
-                      <span>Rating:</span>
-                      <span className="font-mono">{rankedPokemon.score.toFixed(1)}</span>
-                    </div>
-                  )}
-                  {rankedPokemon.confidence !== undefined && (
-                    <div className="flex justify-between">
-                      <span>Confidence:</span>
-                      <span>{rankedPokemon.confidence.toFixed(0)}%</span>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
-          
-          {/* Only show voting UI if we have the callback props */}
-          {onSuggestRanking && onRemoveSuggestion && rankedPokemon && (
-            <div className="border-t pt-2">
-              <div className="text-xs font-medium mb-1">Suggest ranking adjustment:</div>
-              <div className="flex gap-2">
-                <ToggleGroup 
-                  type="single" 
-                  className="justify-start"
-                  value={activeDirection || ""}
-                >
-                  <ToggleGroupItem 
-                    value="up" 
-                    aria-label="Should rank higher"
-                    onClick={() => handleDirectionChange("up")}
-                    className={`${activeDirection === "up" ? "bg-green-100" : ""}`}
-                  >
-                    <ArrowUp className="h-4 w-4" />
-                  </ToggleGroupItem>
-                  
-                  <ToggleGroupItem
-                    value="down"
-                    aria-label="Should rank lower"
-                    onClick={() => handleDirectionChange("down")}
-                    className={`${activeDirection === "down" ? "bg-red-100" : ""}`}
-                  >
-                    <ArrowDown className="h-4 w-4" />
-                  </ToggleGroupItem>
-                </ToggleGroup>
-                
-                {activeDirection && (
-                  <ToggleGroup
-                    type="single"
-                    value={activeStrength.toString()}
-                    onValueChange={handleStrengthChange}
-                  >
-                    <ToggleGroupItem value="1">
-                      {activeDirection === "up" ? "↑" : "↓"}
-                    </ToggleGroupItem>
-                    <ToggleGroupItem value="2">
-                      {activeDirection === "up" ? "↑↑" : "↓↓"}
-                    </ToggleGroupItem>
-                    <ToggleGroupItem value="3">
-                      {activeDirection === "up" ? "↑↑↑" : "↓↓↓"}
-                    </ToggleGroupItem>
-                  </ToggleGroup>
-                )}
-              </div>
-              
-              {activeDirection && (
-                <p className="text-xs text-muted-foreground mt-1.5">
-                  This will suggest {formattedName} should be ranked 
-                  <span className="font-medium"> {activeDirection === "up" ? "higher" : "lower"}</span> in the next battle.
-                </p>
-              )}
-              
-              {rankedPokemon.suggestedAdjustment?.used && (
-                <p className="text-xs text-muted-foreground mt-1.5 italic">
-                  This suggestion is being processed in battles.
-                </p>
-              )}
-            </div>
-          )}
+      {showName && (
+        <div className="text-center mt-1">
+          <h3 className="text-xs font-medium text-gray-800 line-clamp-2">
+            {formattedName}
+          </h3>
         </div>
-      </HoverCardContent>
-    </HoverCard>
+      )}
+      
+      {isSelected && (
+        <div className="absolute -top-1 -right-1 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+          <span className="text-white text-xs font-bold">✓</span>
+        </div>
+      )}
+    </div>
   );
 };
 

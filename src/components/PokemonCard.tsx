@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -48,7 +47,13 @@ const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
 
   // Use formatPokemonName for proper display of regional variants
   const normalizedId = normalizePokedexNumber(pokemonId);
-  const formattedName = formatPokemonName(validatedPokemon.name);
+  const rawName = validatedPokemon.name;
+  const formattedName = formatPokemonName(rawName);
+  
+  // Add debugging for Pokemon name formatting in PokemonCard
+  console.log(`🎮 [POKEMON_CARD_NAME_DEBUG] Pokemon ID: ${pokemonId}`);
+  console.log(`🎮 [POKEMON_CARD_NAME_DEBUG] Raw name: "${rawName}"`);
+  console.log(`🎮 [POKEMON_CARD_NAME_DEBUG] Formatted name: "${formattedName}"`);
 
   // Cleanup function for timers and refs
   const cleanupImageLoading = useCallback(() => {
