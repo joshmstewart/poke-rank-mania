@@ -1,4 +1,3 @@
-
 import { toast } from "@/hooks/use-toast";
 import { Pokemon } from "../types";
 import { generations } from "../data";
@@ -14,9 +13,9 @@ const shouldIncludePokemon = (pokemon: { name: string, id: number }) => {
       return false;
     }
     
-    // CRITICAL FIX: Filter out ALL Cramorant forms (gulping, gorging, etc.) - more comprehensive
-    if (name.includes('cramorant') && name !== 'cramorant') {
-      console.log(`🚫 [CRAMORANT_FILTER] Filtering out ALL Cramorant forms: ${pokemon.name} (ID: ${pokemon.id})`);
+    // CRITICAL FIX: Filter out ONLY the specific problematic Cramorant forms
+    if ((name.includes('cramorant-gulping')) || (name.includes('cramorant-gorging'))) {
+      console.log(`🚫 [CRAMORANT_FILTER] Filtering out problematic Cramorant form: ${pokemon.name} (ID: ${pokemon.id})`);
       return false;
     }
     
@@ -58,8 +57,7 @@ const shouldIncludePokemon = (pokemon: { name: string, id: number }) => {
       
       if ((name.includes("form") || name.includes("style") || name.includes("mode") || 
            name.includes("size") || name.includes("cloak") || name.includes("rotom-") ||
-           name.includes("forme") || name.includes("unbound") || name.includes("gorging") ||
-           name.includes("gulping") || name.includes("eternamax") || name.includes("-theme")) && 
+           name.includes("forme") || name.includes("unbound") || name.includes("eternamax") || name.includes("-theme")) && 
           !filters.forms) {
         return false;
       }
@@ -78,9 +76,19 @@ export async function fetchAllPokemon(
   batchSize: number = 150
 ): Promise<Pokemon[]> {
   try {
+    console.log(`🔍 [LOADING_MILESTONE_DEBUG] fetchAllPokemon called with:`, {
+      generationId,
+      fullRankingMode,
+      isInitialBatch,
+      batchSize,
+      timestamp: new Date().toISOString()
+    });
+
     if (generationId === 0) {
       if (!fullRankingMode || isInitialBatch) {
         const sampleSize = isInitialBatch ? batchSize : 500;
+        
+        console.log(`🎯 [LOADING_MILESTONE_DEBUG] Processing initial/sample batch - sampleSize: ${sampleSize}`);
         
         if (isInitialBatch) {
           toast({
@@ -109,11 +117,11 @@ export async function fetchAllPokemon(
         const shuffledIds = allPokemonIds.sort(() => Math.random() - 0.5);
         const selectedIds = shuffledIds.slice(0, sampleSize);
         
+        console.log(`🎯 [LOADING_MILESTONE_DEBUG] Selected ${selectedIds.length} Pokemon IDs for fetching`);
+        
         // FURFROU DEBUG: Check if any Furfrou forms were selected
         const selectedFurfrouIds = selectedIds.filter(id => furfrouFormIds.includes(id));
         console.log(`🐩 [FURFROU_DEBUG] Selected Furfrou form IDs: ${selectedFurfrouIds.join(', ')}`);
-        
-        console.log(`Selected ${selectedIds.length} Pokémon IDs including special forms`);
         
         const pokemonList = await Promise.all(
           selectedIds.map(async (id) => {
@@ -128,7 +136,7 @@ export async function fetchAllPokemon(
         );
         
         const validPokemon = pokemonList.filter(p => p !== null) as Pokemon[];
-        console.log(`Successfully fetched ${validPokemon.length} Pokémon`);
+        console.log(`🎯 [LOADING_MILESTONE_DEBUG] Successfully fetched ${validPokemon.length} valid Pokemon`);
         
         // FURFROU DEBUG: Check how many Furfrou forms were actually fetched
         const fetchedFurfrou = validPokemon.filter(p => p.name.toLowerCase().includes('furfrou'));
@@ -138,6 +146,25 @@ export async function fetchAllPokemon(
         });
         
         const filteredList = validPokemon.filter(shouldIncludePokemon);
+        
+        console.log(`🎯 [LOADING_MILESTONE_DEBUG] After filtering: ${filteredList.length} Pokemon remain`);
+        
+        // CRITICAL: Log specific Cramorant filtering results
+        const originalCramorantCount = validPokemon.filter(p => p.name.toLowerCase().includes('cramorant')).length;
+        const filteredCramorantCount = filteredList.filter(p => p.name.toLowerCase().includes('cramorant')).length;
+        console.log(`🐦 [CRAMORANT_SPECIFIC_DEBUG] Original: ${originalCramorantCount}, Filtered: ${filteredCramorantCount}`);
+        
+        validPokemon.forEach(p => {
+          if (p.name.toLowerCase().includes('cramorant')) {
+            console.log(`🐦 [CRAMORANT_SPECIFIC_DEBUG] Found: ${p.name} (ID: ${p.id})`);
+          }
+        });
+        
+        filteredList.forEach(p => {
+          if (p.name.toLowerCase().includes('cramorant')) {
+            console.log(`🐦 [CRAMORANT_SPECIFIC_DEBUG] Kept after filtering: ${p.name} (ID: ${p.id})`);
+          }
+        });
         
         // FURFROU DEBUG: Check how many survived filtering
         const filteredFurfrou = filteredList.filter(p => p.name.toLowerCase().includes('furfrou'));
@@ -151,14 +178,12 @@ export async function fetchAllPokemon(
         const filteredStarterCount = filteredList.filter(p => p.name.toLowerCase().includes('starter')).length;
         console.log(`🚫 [STARTER_FILTER] Filtered out ${starterCount - filteredStarterCount} starter Pokemon duplicates`);
         
-        const cramorantGorgingCount = validPokemon.filter(p => p.name.toLowerCase().includes('cramorant') && p.name.toLowerCase().includes('gorging')).length;
-        const filteredCramorantGorgingCount = filteredList.filter(p => p.name.toLowerCase().includes('cramorant') && p.name.toLowerCase().includes('gorging')).length;
-        console.log(`🚫 [CRAMORANT_FILTER] Filtered out ${cramorantGorgingCount - filteredCramorantGorgingCount} Cramorant Gorging forms`);
-        
-        console.log(`After filtering: ${filteredList.length} Pokémon`);
+        console.log(`🎯 [LOADING_MILESTONE_DEBUG] FINAL RESULT: Returning ${filteredList.length} Pokemon`);
         
         return filteredList;
       } else {
+        console.log(`🎯 [LOADING_MILESTONE_DEBUG] Processing FULL RANKING MODE - loading ALL Pokemon`);
+        
         // CRITICAL FIX: Always use fetchPokemonDetails to get complete type data
         toast({
           title: "Loading all Pokémon",
@@ -168,6 +193,8 @@ export async function fetchAllPokemon(
         const BATCH_SIZE = 50; // Reduced batch size since we're now fetching full details
         const allPokemon: Pokemon[] = [];
         const totalPokemon = generations[0].end;
+        
+        console.log(`🎯 [LOADING_MILESTONE_DEBUG] Starting full load - ${totalPokemon} total Pokemon expected`);
         
         for (let offset = 0; offset < totalPokemon; offset += BATCH_SIZE) {
           const limit = Math.min(BATCH_SIZE, totalPokemon - offset);
@@ -194,6 +221,8 @@ export async function fetchAllPokemon(
             const batchResults = (await Promise.all(batchPromises)).filter(p => p !== null) as Pokemon[];
             allPokemon.push(...batchResults.filter(shouldIncludePokemon));
             
+            console.log(`🎯 [LOADING_MILESTONE_DEBUG] Batch ${Math.floor(offset/BATCH_SIZE) + 1}: Loaded ${Math.min(offset + BATCH_SIZE, totalPokemon)} of ${totalPokemon} Pokemon - Current total: ${allPokemon.length}`);
+            
             toast({
               title: "Loading progress",
               description: `Loaded ${Math.min(offset + BATCH_SIZE, totalPokemon)} of ${totalPokemon} Pokémon...`
@@ -208,8 +237,12 @@ export async function fetchAllPokemon(
           }
         }
         
+        console.log(`🎯 [LOADING_MILESTONE_DEBUG] Finished regular Pokemon - loaded ${allPokemon.length} so far`);
+        
         try {
           const specialFormIds = Array.from({ length: 250 }, (_, i) => i + 10001);
+          
+          console.log(`🎯 [LOADING_MILESTONE_DEBUG] Starting special forms load - ${specialFormIds.length} forms to process`);
           
           const specialFormPromises = specialFormIds.map(async (id) => {
             try {
@@ -221,12 +254,17 @@ export async function fetchAllPokemon(
           });
           
           const specialForms = (await Promise.all(specialFormPromises)).filter(p => p !== null) as Pokemon[];
-          console.log(`Loaded ${specialForms.length} special form Pokémon`);
+          console.log(`🎯 [LOADING_MILESTONE_DEBUG] Loaded ${specialForms.length} special form Pokémon`);
           
-          allPokemon.push(...specialForms.filter(shouldIncludePokemon));
+          const filteredSpecialForms = specialForms.filter(shouldIncludePokemon);
+          allPokemon.push(...filteredSpecialForms);
+          
+          console.log(`🎯 [LOADING_MILESTONE_DEBUG] After adding special forms: ${allPokemon.length} total Pokemon`);
         } catch (error) {
           console.error("Error fetching special forms:", error);
         }
+        
+        console.log(`🎯 [LOADING_MILESTONE_DEBUG] FINAL FULL RANKING RESULT: Returning ${allPokemon.length} Pokemon`);
         
         return allPokemon;
       }

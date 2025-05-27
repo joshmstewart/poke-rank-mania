@@ -20,30 +20,45 @@ const BattleContentContainer: React.FC<BattleContentContainerProps> = React.memo
   setBattlesCompleted,
   setBattleResults
 }) => {
-  console.log("[DEBUG BattleContentContainer] RENDER - allPokemon length:", allPokemon?.length || 0);
+  console.log(`🎯 [REFRESH_DEBUG] BattleContentContainer RENDER - allPokemon length: ${allPokemon?.length || 0}`);
+  
+  // CRITICAL: Track loading milestones that cause refreshes
+  if (allPokemon.length === 1271) {
+    console.log(`🚨 [REFRESH_DEBUG] BattleContentContainer hit 1271 milestone - POTENTIAL REFRESH TRIGGER!`);
+  }
+  if (allPokemon.length === 1025) {
+    console.log(`🚨 [REFRESH_DEBUG] BattleContentContainer hit 1025 milestone - POTENTIAL REFRESH TRIGGER!`);
+  }
   
   // CRITICAL FIX: Lock Pokemon reference PERMANENTLY once we have enough data
   const pokemonLockedRef = useRef(false);
   const lockedPokemonRef = useRef<Pokemon[]>([]);
+  const lastPokemonCountRef = useRef(0);
   
   // CRITICAL FIX: Lock Pokemon data once we have sufficient data - NEVER change after that
   const stablePokemon = useMemo(() => {
+    console.log(`🎯 [REFRESH_DEBUG] stablePokemon useMemo - current: ${allPokemon.length}, locked: ${pokemonLockedRef.current}, lastCount: ${lastPokemonCountRef.current}`);
+    
     // If Pokemon are already locked, NEVER change them
     if (pokemonLockedRef.current) {
-      console.log(`[CRITICAL FIX] Pokemon LOCKED - ignoring count change from any value to ${allPokemon.length}`);
+      console.log(`🔒 [REFRESH_DEBUG] Pokemon LOCKED - ignoring count change from ${lastPokemonCountRef.current} to ${allPokemon.length}`);
       return lockedPokemonRef.current;
     }
     
     // Only lock when we have enough Pokemon for battles
     if (allPokemon.length >= 150) {
-      console.log(`[CRITICAL FIX] LOCKING Pokemon permanently at ${allPokemon.length} Pokemon`);
+      console.log(`🔒 [REFRESH_DEBUG] LOCKING Pokemon permanently at ${allPokemon.length} Pokemon - NEVER CHANGING AGAIN`);
       lockedPokemonRef.current = allPokemon;
       pokemonLockedRef.current = true;
+      lastPokemonCountRef.current = allPokemon.length;
       return allPokemon;
     }
     
+    // Update last count but don't lock yet
+    lastPokemonCountRef.current = allPokemon.length;
+    
     // Return empty array until we have enough
-    console.log(`[CRITICAL FIX] Waiting for sufficient Pokemon - current: ${allPokemon.length}`);
+    console.log(`⏳ [REFRESH_DEBUG] Waiting for sufficient Pokemon - current: ${allPokemon.length}, need: 150`);
     return [];
   }, [allPokemon.length >= 150 ? 'LOCKED' : allPokemon.length]); // CRITICAL: Only change dependency when locking
   
@@ -61,7 +76,7 @@ const BattleContentContainer: React.FC<BattleContentContainerProps> = React.memo
     setBattleResults?.(value);
   }, [setBattleResults]);
   
-  console.log("BattleContentContainer: Using battle type:", safeBattleType, "Pokemon count:", stablePokemon.length);
+  console.log(`🎯 [REFRESH_DEBUG] BattleContentContainer: Using battle type: ${safeBattleType}, Pokemon count: ${stablePokemon.length}, locked: ${pokemonLockedRef.current}`);
 
   return (
     <div className="flex flex-col w-full max-w-4xl mx-auto px-4">
@@ -79,15 +94,32 @@ const BattleContentContainer: React.FC<BattleContentContainerProps> = React.memo
   const battleTypeChanged = prevProps.initialBattleType !== nextProps.initialBattleType;
   const generationChanged = prevProps.initialSelectedGeneration !== nextProps.initialSelectedGeneration;
   
+  // CRITICAL: Detailed logging about Pokemon count changes and decisions
+  const prevCount = prevProps.allPokemon.length;
+  const nextCount = nextProps.allPokemon.length;
+  const pokemonCountChanged = prevCount !== nextCount;
+  
+  console.log(`🎯 [REFRESH_DEBUG] BattleContentContainer memo comparison:`, {
+    battleTypeChanged, 
+    generationChanged,
+    pokemonCountChanged,
+    prevCount,
+    nextCount,
+    willUpdate: battleTypeChanged || generationChanged
+  });
+  
+  // Log milestone hits during memo comparison
+  if (nextCount === 1271) {
+    console.log(`🚨 [REFRESH_DEBUG] MEMO: Next count is 1271 milestone!`);
+  }
+  if (nextCount === 1025) {
+    console.log(`🚨 [REFRESH_DEBUG] MEMO: Next count is 1025 milestone!`);
+  }
+  
   // NEVER re-render for Pokemon count changes once we have enough
   const shouldUpdate = battleTypeChanged || generationChanged;
   
-  console.log("[DEBUG BattleContentContainer] Memo comparison:", {
-    battleTypeChanged, 
-    generationChanged,
-    shouldUpdate,
-    nextPokemonLength: nextProps.allPokemon.length
-  });
+  console.log(`🎯 [REFRESH_DEBUG] BattleContentContainer memo decision: shouldUpdate = ${shouldUpdate}`);
   
   return !shouldUpdate;
 });

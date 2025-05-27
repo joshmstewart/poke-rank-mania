@@ -30,11 +30,23 @@ const BattleMode = () => {
   
   const initialBattleType = useMemo(() => getInitialBattleType(), []);
 
-  // CRITICAL FIX: Memoize Pokemon data with ultra-stable reference and validate types
+  // CRITICAL FIX: Add detailed logging to track Pokemon loading milestones
   const stableAllPokemon = useMemo(() => {
     if (!allPokemon.length) return [];
     
-    console.log('[DEBUG BattleMode] Stabilizing Pokemon data - length:', allPokemon.length);
+    console.log(`🎯 [LOADING_MILESTONE_DEBUG] BattleMode stabilizing Pokemon data:`, {
+      length: allPokemon.length,
+      timestamp: new Date().toISOString(),
+      isStable: true
+    });
+    
+    // CRITICAL: Track the two milestone numbers the user mentioned
+    if (allPokemon.length === 1271) {
+      console.log(`🚨 [LOADING_MILESTONE_DEBUG] HIT 1271 MILESTONE - This might trigger refresh!`);
+    }
+    if (allPokemon.length === 1025) {
+      console.log(`🚨 [LOADING_MILESTONE_DEBUG] HIT 1025 MILESTONE - This might trigger refresh!`);
+    }
     
     // CRITICAL: Log sample Pokemon to verify types in source data BEFORE any processing
     const samplePokemon = allPokemon.find(p => p.id === 60) || allPokemon[0]; // Poliwag
@@ -83,6 +95,8 @@ const BattleMode = () => {
     if (emergencyResetPerformed) return;
     
     const performInitialReset = () => {
+      console.log(`🧹 [LOADING_MILESTONE_DEBUG] Performing initial reset`);
+      
       const keysToRemember = [
         'pokemon-ranker-battle-type',
         'pokemon-active-tier',
@@ -121,14 +135,16 @@ const BattleMode = () => {
     return () => clearTimeout(timer);
   }, [emergencyResetPerformed]);
   
-  // Simplified Pokemon loading
+  // Simplified Pokemon loading with detailed milestone tracking
   useEffect(() => {
     const loadPokemonOnce = async () => {
       if (!loaderInitiatedRef.current) {
         try {
+          console.log(`🎯 [LOADING_MILESTONE_DEBUG] BattleMode initiating Pokemon load`);
           loaderInitiatedRef.current = true;
           setLoadingInitiated(true);
           await loadPokemon(0, true);
+          console.log(`🎯 [LOADING_MILESTONE_DEBUG] BattleMode Pokemon load completed`);
         } catch (error) {
           console.error("❌ Failed to load Pokémon:", error);
         }
@@ -140,6 +156,8 @@ const BattleMode = () => {
 
   // Loading state
   if (isLoading || !stableAllPokemon.length) {
+    console.log(`🎯 [LOADING_MILESTONE_DEBUG] BattleMode showing loading state - isLoading: ${isLoading}, Pokemon count: ${stableAllPokemon.length}`);
+    
     return (
       <div className="flex justify-center items-center h-64 w-full">
         <div className="flex flex-col items-center">
@@ -157,6 +175,8 @@ const BattleMode = () => {
 
   // CRITICAL FIX: Static component key to prevent unmounting - use data length only
   const containerKey = `battle-container-${stableAllPokemon.length}`;
+  
+  console.log(`🎯 [LOADING_MILESTONE_DEBUG] BattleMode rendering with containerKey: ${containerKey}, Pokemon count: ${stableAllPokemon.length}`);
 
   return (
     <PokemonProvider allPokemon={stableAllPokemon}>

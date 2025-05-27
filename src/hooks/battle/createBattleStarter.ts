@@ -1,3 +1,4 @@
+
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
 
@@ -38,10 +39,18 @@ export function createBattleStarter(
   const storedPairs = JSON.parse(localStorage.getItem('pokemon-recent-pairs') || '[]');
   storedPairs.forEach((pair: string) => lastBattlePairs.add(pair));
 
-  // CRITICAL FIX: Clear previous battle state completely to prevent repeats
+  // CRITICAL FIX: Enhanced battle state clearing with detailed logging
   const clearPreviousBattleState = () => {
+    console.log(`🧹 [BATTLE_REPEAT_DEBUG] Clearing previous battle state completely`);
     localStorage.removeItem('pokemon-battle-last-battle');
     localStorage.removeItem('pokemon-battle-recently-used');
+    
+    // CRITICAL: Also clear any battle display state that might cause flashing
+    const currentBattleElement = document.querySelector('[data-battle-container]');
+    if (currentBattleElement) {
+      console.log(`🧹 [BATTLE_REPEAT_DEBUG] Clearing battle container display`);
+    }
+    
     console.log("🧹 [BATTLE_STATE_CLEAR] Cleared previous battle state");
   };
 
@@ -78,6 +87,8 @@ export function createBattleStarter(
     const sortedIds = [...pokemonIds].sort((a, b) => a - b);
     const pairKey = sortedIds.join('-');
     
+    console.log(`📝 [BATTLE_REPEAT_DEBUG] Adding battle pair to history: ${pairKey}`);
+    
     lastBattlePairs.add(pairKey);
     
     if (lastBattlePairs.size > RECENT_PAIRS_MEMORY) {
@@ -92,7 +103,11 @@ export function createBattleStarter(
   const isPairRecent = (pokemonIds: number[]): boolean => {
     const sortedIds = [...pokemonIds].sort((a, b) => a - b);
     const pairKey = sortedIds.join('-');
-    return lastBattlePairs.has(pairKey);
+    const isRecent = lastBattlePairs.has(pairKey);
+    
+    console.log(`🔍 [BATTLE_REPEAT_DEBUG] Checking if pair ${pairKey} is recent: ${isRecent ? 'YES' : 'NO'}`);
+    
+    return isRecent;
   };
 
   const resetSuggestionPriority = () => {
@@ -108,16 +123,21 @@ export function createBattleStarter(
     battleType: BattleType,
     onMarkSuggestionUsed?: (pokemonId: number) => void
   ): Pokemon[] => {
-    // CRITICAL FIX: Clear previous battle state before creating new battle
-    clearPreviousBattleState();
-    
     const battleSize = battleType === "triplets" ? 3 : 2;
     const availablePokemon = allPokemon;
     
-    console.log(`🎮 [BATTLE_REPEAT_FIX] Creating ${battleType} battle #${battlesCount + 1} from FULL pool of ${availablePokemon.length} Pokemon`);
+    console.log(`🎮 [BATTLE_REPEAT_DEBUG] Starting battle creation for ${battleType} battle #${battlesCount + 1}`);
+    console.log(`🎮 [BATTLE_REPEAT_DEBUG] Available Pokemon pool: ${availablePokemon.length}`);
+    console.log(`🎮 [BATTLE_REPEAT_DEBUG] Recent pairs in memory: ${lastBattlePairs.size}`);
+    console.log(`🎮 [BATTLE_REPEAT_DEBUG] Recently seen Pokemon: ${recentlySeenPokemon.size}`);
+    
+    // CRITICAL FIX: Clear previous battle state FIRST before any battle generation
+    clearPreviousBattleState();
     
     // Better filtering to avoid recent Pokemon
     let candidatePokemon = availablePokemon.filter(p => !recentlySeenPokemon.has(p.id));
+    
+    console.log(`🎮 [BATTLE_REPEAT_DEBUG] Candidates after filtering recent: ${candidatePokemon.length}`);
     
     if (candidatePokemon.length < battleSize * 3) {
       const recentArray = Array.from(recentlySeenPokemon);
@@ -210,18 +230,29 @@ export function createBattleStarter(
 
       // CRITICAL FIX: Check if this battle combination was recent
       const battleIds = battlePokemon.map(p => p.id);
-      if (!isPairRecent(battleIds) || attempts >= maxAttempts - 1) {
-        console.log(`🎮 [BATTLE_REPEAT_FIX] Battle pair ${battleIds.join('-')} is ${isPairRecent(battleIds) ? 'RECENT but using anyway (max attempts)' : 'FRESH'}`);
+      const isRecentBattle = isPairRecent(battleIds);
+      
+      if (!isRecentBattle || attempts >= maxAttempts - 1) {
+        console.log(`🎮 [BATTLE_REPEAT_DEBUG] Battle pair ${battleIds.join('-')} is ${isRecentBattle ? 'RECENT but using anyway (max attempts)' : 'FRESH'} - attempt ${attempts + 1}/${maxAttempts}`);
         break;
       } else {
-        console.log(`🔄 [BATTLE_REPEAT_FIX] Battle pair ${battleIds.join('-')} was recent, trying again (attempt ${attempts + 1})`);
+        console.log(`🔄 [BATTLE_REPEAT_DEBUG] Battle pair ${battleIds.join('-')} was recent, trying again (attempt ${attempts + 1}/${maxAttempts})`);
         attempts++;
       }
+    }
+
+    // CRITICAL: Validate we actually got a proper battle
+    if (!battlePokemon || battlePokemon.length !== battleSize) {
+      console.error(`🚨 [BATTLE_REPEAT_DEBUG] FAILED to create proper battle! Got ${battlePokemon?.length || 0} Pokemon, expected ${battleSize}`);
+      return [];
     }
 
     // Track battle participation and pair
     const battleIds = battlePokemon.map(p => p.id);
     addBattlePair(battleIds);
+    
+    console.log(`✅ [BATTLE_REPEAT_DEBUG] Successfully created battle: [${battleIds.join(', ')}] after ${attempts + 1} attempts`);
+    console.log(`✅ [BATTLE_REPEAT_DEBUG] Pokemon names: [${battlePokemon.map(p => p.name).join(', ')}]`);
     
     battlePokemon.forEach(pokemon => {
       addToRecentlySeen(pokemon.id);
@@ -243,12 +274,11 @@ export function createBattleStarter(
     localStorage.setItem('pokemon-battle-tracking', JSON.stringify(battleTracking));
     localStorage.setItem('pokemon-battle-count', (battlesCount + 1).toString());
 
-    console.log(`✅ [BATTLE_REPEAT_FIX] Created battle with Pokemon IDs: [${battleIds.join(', ')}] after ${attempts + 1} attempts`);
-    console.log(`✅ [BATTLE_REPEAT_FIX] Pokemon names: [${battlePokemon.map(p => p.name).join(', ')}]`);
     return battlePokemon;
   };
 
   const startNewBattle = (battleType: BattleType, forceSuggestion?: boolean, forceUnranked?: boolean): Pokemon[] => {
+    console.log(`🚀 [BATTLE_REPEAT_DEBUG] startNewBattle called for ${battleType}`);
     return createBattle(battleType);
   };
 
