@@ -52,6 +52,7 @@ export const fetchPokemonData = async (generations: number[]): Promise<Pokemon[]
     });
 
     const pokemonResults = await Promise.all(pokemonPromises);
+    // CRITICAL FIX: Simplify the filter to just check for null values
     const validPokemon = pokemonResults.filter((pokemon): pokemon is Pokemon => 
       pokemon !== null
     );
