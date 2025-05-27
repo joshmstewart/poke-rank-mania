@@ -181,12 +181,9 @@ export const useBattleProcessor = (
       console.log(`📝 [${timestamp}] GRAY SCREEN FIX: Setting up next battle immediately`);
       await setupNextBattle(battleType);
       
-      // CRITICAL FIX: Minimal delay to ensure smooth transition
-      processingTimeoutRef.current = setTimeout(() => {
-        console.log(`📝 [${timestamp}] [LOADING DEBUG] PROCESS BATTLE: Setting isProcessingResult = false (after immediate transition)`);
-        setIsProcessingResult(false);
-        processingTimeoutRef.current = null;
-      }, 100); // Reduced from 500ms to 100ms for faster transitions
+      // CRITICAL FIX: Clear processing state IMMEDIATELY - no delay
+      console.log(`📝 [${timestamp}] [LOADING DEBUG] PROCESS BATTLE: Setting isProcessingResult = false (immediate)`);
+      setIsProcessingResult(false);
       
     } catch (e) {
       console.error(`📝 [${timestamp}] PROCESS BATTLE: Error:`, e);
