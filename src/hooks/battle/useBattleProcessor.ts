@@ -52,12 +52,12 @@ export const useBattleProcessor = (
     generateRankings
   );
 
-  // CRITICAL FIX: Disable next battle handler to prevent automatic replacement
+  // CRITICAL FIX: Use the outcome processor with setCurrentBattle for immediate battle generation
   const { setupNextBattle } = useNextBattleHandler(
     allPokemon,
     (battleType: BattleType) => {
-      console.log(`📝 [PROCESSOR_FIX] setupNextBattle called but DISABLED to prevent auto-replacement`);
-      // CRITICAL: Don't automatically generate new battles - let the auto-trigger system handle it
+      console.log(`📝 [PROCESSOR_FIX] setupNextBattle called - delegating to outcome processor`);
+      // Don't generate here, let outcome processor handle it
       return [];
     },
     setSelectedPokemon
@@ -158,13 +158,22 @@ export const useBattleProcessor = (
         
         generateRankings(updatedResults);
         console.log(`📝 [${timestamp}] PROCESS BATTLE: Rankings generated`);
+      } else {
+        // CRITICAL FIX: If no milestone, immediately generate new battle
+        console.log(`📝 [${timestamp}] [BATTLE_OUTCOME_FIX] No milestone hit - generating new battle immediately`);
+        if (battleStarter && integratedStartNewBattle) {
+          const newBattle = integratedStartNewBattle(battleType);
+          if (newBattle && newBattle.length > 0) {
+            console.log(`✅ [BATTLE_OUTCOME_FIX] New battle generated after processing: ${newBattle.map(p => p.name)}`);
+            setCurrentBattle(newBattle);
+          } else {
+            console.error(`❌ [BATTLE_OUTCOME_FIX] Failed to generate new battle after processing`);
+          }
+        }
       }
 
-      // CRITICAL FIX: Don't call setupNextBattle - let auto-trigger system handle it
-      console.log(`📝 [${timestamp}] [PROCESSOR_FIX] NOT calling setupNextBattle to prevent auto-replacement`);
-      
-      // CRITICAL: Clear processing state SYNCHRONOUSLY but don't trigger new battle
-      console.log(`📝 [${timestamp}] [PROCESSOR_FIX] Clearing isProcessingResult without triggering new battle`);
+      // CRITICAL: Clear processing state SYNCHRONOUSLY
+      console.log(`📝 [${timestamp}] [PROCESSOR_FIX] Clearing isProcessingResult`);
       setIsProcessingResult(false);
       
     } catch (e) {
@@ -184,7 +193,10 @@ export const useBattleProcessor = (
     isProcessingResult,
     setBattlesCompleted,
     setBattleResults,
-    isResettingRef
+    isResettingRef,
+    battleStarter,
+    integratedStartNewBattle,
+    setCurrentBattle
   ]);
 
   const resetMilestoneInProgress = useCallback(() => {

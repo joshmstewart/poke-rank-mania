@@ -6,7 +6,8 @@ import { BattleType, SingleBattle } from "./types";
 export const useBattleOutcomeProcessor = (
   setBattleResults: React.Dispatch<React.SetStateAction<SingleBattle[]>>,
   setBattlesCompleted: React.Dispatch<React.SetStateAction<number>>,
-  battleStarter: { startNewBattle: (battleType: BattleType) => Pokemon[] } | null
+  battleStarter: { startNewBattle: (battleType: BattleType) => Pokemon[] } | null,
+  setCurrentBattle?: React.Dispatch<React.SetStateAction<Pokemon[]>>
 ) => {
   // Process battle result
   const processBattleResult = useCallback((
@@ -31,15 +32,18 @@ export const useBattleOutcomeProcessor = (
         // Increment battles completed
         setBattlesCompleted(prev => prev + 1);
         
-        // CRITICAL FIX: Start new battle immediately without delay to prevent empty state
-        if (battleStarter) {
-          console.log("🔄 [GRAY SCREEN FIX] Starting new battle immediately to prevent empty state");
+        // CRITICAL FIX: Generate and set new battle immediately
+        if (battleStarter && setCurrentBattle) {
+          console.log("🔄 [BATTLE_OUTCOME_FIX] Generating new battle immediately after result processing");
           const newBattle = battleStarter.startNewBattle(battleType);
-          if (!newBattle || newBattle.length === 0) {
-            console.error("❌ [GRAY SCREEN FIX] Failed to get new battle, this will cause gray screen");
+          if (newBattle && newBattle.length > 0) {
+            console.log("✅ [BATTLE_OUTCOME_FIX] New battle generated successfully:", newBattle.map(p => p.name));
+            setCurrentBattle(newBattle);
           } else {
-            console.log("✅ [GRAY SCREEN FIX] New battle created successfully:", newBattle.map(p => p.name));
+            console.error("❌ [BATTLE_OUTCOME_FIX] Failed to generate new battle");
           }
+        } else {
+          console.warn("⚠️ [BATTLE_OUTCOME_FIX] Missing battleStarter or setCurrentBattle");
         }
       } else {
         console.error("Couldn't determine winner/loser:", { selectedPokemonIds, currentBattlePokemon });
@@ -64,21 +68,22 @@ export const useBattleOutcomeProcessor = (
         // Increment battles completed
         setBattlesCompleted(prev => prev + 1);
         
-        // CRITICAL FIX: Start new battle immediately without delay to prevent empty state
-        if (battleStarter) {
-          console.log("🔄 [GRAY SCREEN FIX] Starting new triplet battle immediately to prevent empty state");
+        // CRITICAL FIX: Generate and set new battle immediately
+        if (battleStarter && setCurrentBattle) {
+          console.log("🔄 [BATTLE_OUTCOME_FIX] Generating new triplet battle immediately after result processing");
           const newBattle = battleStarter.startNewBattle(battleType);
-          if (!newBattle || newBattle.length === 0) {
-            console.error("❌ [GRAY SCREEN FIX] Failed to get new triplet battle, this will cause gray screen");
+          if (newBattle && newBattle.length > 0) {
+            console.log("✅ [BATTLE_OUTCOME_FIX] New triplet battle generated successfully:", newBattle.map(p => p.name));
+            setCurrentBattle(newBattle);
           } else {
-            console.log("✅ [GRAY SCREEN FIX] New triplet battle created successfully:", newBattle.map(p => p.name));
+            console.error("❌ [BATTLE_OUTCOME_FIX] Failed to generate new triplet battle");
           }
         }
       } else {
         console.error("Invalid triplet selection:", { winners, losers, selectedPokemonIds });
       }
     }
-  }, [setBattleResults, setBattlesCompleted, battleStarter]);
+  }, [setBattleResults, setBattlesCompleted, battleStarter, setCurrentBattle]);
 
   return { processBattleResult };
 };
