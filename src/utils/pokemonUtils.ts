@@ -26,103 +26,91 @@ export const formatPokemonName = (name: string): string => {
   if (!name) return '';
   
   console.log(`🚀 [FORMAT_START] INPUT: "${name}"`);
-  console.log(`🚀 [FORMAT_START] Type of input: ${typeof name}`);
-  console.log(`🚀 [FORMAT_START] Length: ${name.length}`);
   
-  // Convert to lowercase for easier matching
-  const lowerName = name.toLowerCase();
-  console.log(`🔍 [FORMAT_LOWER] Lowercase: "${lowerName}"`);
-  
-  // Test all the endsWith conditions
-  console.log(`🧪 [FORMAT_TEST] endsWith('-mega-x'): ${lowerName.endsWith('-mega-x')}`);
-  console.log(`🧪 [FORMAT_TEST] endsWith('-mega-y'): ${lowerName.endsWith('-mega-y')}`);
-  console.log(`🧪 [FORMAT_TEST] endsWith('-mega'): ${lowerName.endsWith('-mega')}`);
-  console.log(`🧪 [FORMAT_TEST] endsWith('-gmax'): ${lowerName.endsWith('-gmax')}`);
-  
-  // Handle Mega evolutions FIRST - check for exact endings
-  if (lowerName.endsWith('-mega-x')) {
-    const baseName = name.substring(0, name.length - 8); // Remove "-mega-x"
+  // Handle Mega evolutions FIRST - be very explicit about this
+  if (name.toLowerCase().includes('-mega-x')) {
+    const baseName = name.replace(/-mega-x$/i, '');
     const result = `Mega ${baseName} X`;
     console.log(`✅ [MEGA_X_TRANSFORM] "${name}" -> "${result}"`);
     return result;
   }
   
-  if (lowerName.endsWith('-mega-y')) {
-    const baseName = name.substring(0, name.length - 8); // Remove "-mega-y"
+  if (name.toLowerCase().includes('-mega-y')) {
+    const baseName = name.replace(/-mega-y$/i, '');
     const result = `Mega ${baseName} Y`;
     console.log(`✅ [MEGA_Y_TRANSFORM] "${name}" -> "${result}"`);
     return result;
   }
   
-  if (lowerName.endsWith('-mega')) {
-    const baseName = name.substring(0, name.length - 5); // Remove "-mega"
+  if (name.toLowerCase().includes('-mega')) {
+    const baseName = name.replace(/-mega$/i, '');
     const result = `Mega ${baseName}`;
     console.log(`✅ [MEGA_TRANSFORM] "${name}" -> "${result}"`);
     return result;
   }
   
   // Handle Gigantamax forms
-  if (lowerName.endsWith('-gmax')) {
-    const baseName = name.substring(0, name.length - 5); // Remove "-gmax"
+  if (name.toLowerCase().includes('-gmax')) {
+    const baseName = name.replace(/-gmax$/i, '');
     const result = `G-Max ${baseName}`;
     console.log(`✅ [GMAX_TRANSFORM] "${name}" -> "${result}"`);
     return result;
   }
   
   // Handle space-separated forms as well
-  if (lowerName.endsWith(' mega x')) {
-    const baseName = name.substring(0, name.length - 7); // Remove " mega x"
+  if (name.toLowerCase().includes(' mega x')) {
+    const baseName = name.replace(/ mega x$/i, '');
     const result = `Mega ${baseName} X`;
     console.log(`✅ [SPACE_MEGA_X_TRANSFORM] "${name}" -> "${result}"`);
     return result;
   }
   
-  if (lowerName.endsWith(' mega y')) {
-    const baseName = name.substring(0, name.length - 7); // Remove " mega y"
+  if (name.toLowerCase().includes(' mega y')) {
+    const baseName = name.replace(/ mega y$/i, '');
     const result = `Mega ${baseName} Y`;
     console.log(`✅ [SPACE_MEGA_Y_TRANSFORM] "${name}" -> "${result}"`);
     return result;
   }
   
-  if (lowerName.endsWith(' mega')) {
-    const baseName = name.substring(0, name.length - 5); // Remove " mega"
+  if (name.toLowerCase().includes(' mega')) {
+    const baseName = name.replace(/ mega$/i, '');
     const result = `Mega ${baseName}`;
     console.log(`✅ [SPACE_MEGA_TRANSFORM] "${name}" -> "${result}"`);
     return result;
   }
   
-  if (lowerName.endsWith(' gmax')) {
-    const baseName = name.substring(0, name.length - 5); // Remove " gmax"
+  if (name.toLowerCase().includes(' gmax')) {
+    const baseName = name.replace(/ gmax$/i, '');
     const result = `G-Max ${baseName}`;
     console.log(`✅ [SPACE_GMAX_TRANSFORM] "${name}" -> "${result}"`);
     return result;
   }
   
   // Handle Pikachu cap variants with proper formatting
-  if (lowerName.includes('pikachu') && lowerName.includes('cap')) {
+  if (name.toLowerCase().includes('pikachu') && name.toLowerCase().includes('cap')) {
     console.log(`🏷️ [PIKACHU_CAP_DEBUG] Detected Pikachu cap variant: ${name}`);
-    if (lowerName.includes('original-cap')) {
+    if (name.toLowerCase().includes('original-cap')) {
       return 'Pikachu (Original Cap)';
     }
-    if (lowerName.includes('hoenn-cap')) {
+    if (name.toLowerCase().includes('hoenn-cap')) {
       return 'Pikachu (Hoenn Cap)';
     }
-    if (lowerName.includes('sinnoh-cap')) {
+    if (name.toLowerCase().includes('sinnoh-cap')) {
       return 'Pikachu (Sinnoh Cap)';
     }
-    if (lowerName.includes('unova-cap')) {
+    if (name.toLowerCase().includes('unova-cap')) {
       return 'Pikachu (Unova Cap)';
     }
-    if (lowerName.includes('kalos-cap')) {
+    if (name.toLowerCase().includes('kalos-cap')) {
       return 'Pikachu (Kalos Cap)';
     }
-    if (lowerName.includes('alola-cap')) {
+    if (name.toLowerCase().includes('alola-cap')) {
       return 'Pikachu (Alolan Cap)';
     }
-    if (lowerName.includes('partner-cap')) {
+    if (name.toLowerCase().includes('partner-cap')) {
       return 'Pikachu (Partner Cap)';
     }
-    if (lowerName.includes('world-cap')) {
+    if (name.toLowerCase().includes('world-cap')) {
       return 'Pikachu (World Cap)';
     }
   }
@@ -151,7 +139,7 @@ export const formatPokemonName = (name: string): string => {
     ];
     
     for (const pattern of patterns) {
-      if (lowerName.includes(pattern)) {
+      if (name.toLowerCase().includes(pattern)) {
         // Get the base name by removing the region suffix
         const baseName = name
           .replace(new RegExp(pattern, 'i'), '')
