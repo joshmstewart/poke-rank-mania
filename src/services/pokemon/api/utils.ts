@@ -1,3 +1,4 @@
+
 import { Pokemon } from "../types";
 import { formatPokemonName } from "@/utils/pokemon";
 import { getPreferredImageType, PokemonImageType } from "@/components/settings/ImagePreferenceSelector";
@@ -7,26 +8,49 @@ import { getPreferredImageType, PokemonImageType } from "@/components/settings/I
  */
 export const validateBattlePokemon = (pokemon: Pokemon[]): Pokemon[] => {
   console.log(`🔍 [VALIDATE_BATTLE_POKEMON] Input Pokemon count: ${pokemon.length}`);
+  console.log(`🔍 [VALIDATE_BATTLE_POKEMON] DETAILED INPUT ANALYSIS:`);
+  
+  pokemon.forEach((p, index) => {
+    console.log(`🔍 [VALIDATE_BATTLE_POKEMON] Input #${index}:`);
+    console.log(`   - Raw name: "${p.name}"`);
+    console.log(`   - ID: ${p.id}`);
+    console.log(`   - Name contains hyphen: ${p.name.includes('-')}`);
+    console.log(`   - Name is lowercase: ${p.name === p.name.toLowerCase()}`);
+    console.log(`   - Looks like raw API name: ${p.name.includes('-') && p.name === p.name.toLowerCase()}`);
+  });
   
   const validated = pokemon.map((p, index) => {
-    console.log(`🔍 [VALIDATE_BATTLE_POKEMON] Input #${index}: "${p.name}" (ID: ${p.id})`);
+    console.log(`🔍 [VALIDATE_BATTLE_POKEMON] Processing #${index}: "${p.name}" (ID: ${p.id})`);
     
-    // CRITICAL FIX: Preserve the already-formatted name instead of overriding it
+    // CRITICAL ANALYSIS: Check if this name looks like it needs formatting
+    const looksLikeRawName = p.name.includes('-') && p.name === p.name.toLowerCase();
+    console.log(`🔍 [VALIDATE_BATTLE_POKEMON] Name "${p.name}" looks like raw API name: ${looksLikeRawName}`);
+    
+    let finalName;
+    if (looksLikeRawName) {
+      // This name appears to be unformatted - apply formatting
+      finalName = formatPokemonName(p.name);
+      console.log(`🔍 [VALIDATE_BATTLE_POKEMON] FORMATTING APPLIED: "${p.name}" → "${finalName}"`);
+    } else {
+      // This name appears to already be formatted - preserve it
+      finalName = p.name;
+      console.log(`🔍 [VALIDATE_BATTLE_POKEMON] NAME PRESERVED (already formatted): "${finalName}"`);
+    }
+    
     const validatedPokemon = {
       ...p,
-      // Keep the name exactly as it was already formatted (don't re-format or override)
-      name: p.name, // This should already be formatted by the API layer
+      name: finalName,
       // Ensure image exists
       image: p.image || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${p.id}.png`
     };
     
     console.log(`🔍 [VALIDATE_BATTLE_POKEMON] Output #${index}: "${validatedPokemon.name}" (ID: ${validatedPokemon.id})`);
-    console.log(`🔍 [VALIDATE_BATTLE_POKEMON] Name preserved from input: ${p.name === validatedPokemon.name ? 'YES' : 'NO'}`);
+    console.log(`🔍 [VALIDATE_BATTLE_POKEMON] Final name change: "${p.name}" → "${validatedPokemon.name}"`);
     
     return validatedPokemon;
   });
   
-  console.log(`✅ [VALIDATE_BATTLE_POKEMON] Validated ${validated.length} Pokemon - names preserved exactly as input`);
+  console.log(`✅ [VALIDATE_BATTLE_POKEMON] Validated ${validated.length} Pokemon with smart name handling`);
   return validated;
 };
 
