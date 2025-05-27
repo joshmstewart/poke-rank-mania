@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -46,12 +45,16 @@ const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
   // Store the consistent pokemon ID
   const pokemonId = validatedPokemon.id;
 
-  // CRITICAL FIX: Use the name EXACTLY as-is from validatedPokemon - NO MORE FORMATTING
+  // ENHANCED DEBUGGING: Use the name EXACTLY as-is from validatedPokemon
   const normalizedId = normalizePokedexNumber(pokemonId);
   const displayName = validatedPokemon.name; // Use name exactly as provided
   
-  // Enhanced debugging for Pokemon name in PokemonCard
-  console.log(`🎮 [POKEMON_CARD_NAME_FINAL] Pokemon ID: ${pokemonId}, Display name: "${displayName}" (NO FORMATTING APPLIED)`);
+  // ENHANCED DEBUGGING: Log exactly what name we're displaying and where it came from
+  console.log(`🎮 [POKEMON_CARD_NAME_TRACE] Pokemon ID: ${pokemonId}`);
+  console.log(`🎮 [POKEMON_CARD_NAME_TRACE] Original pokemon.name: "${pokemon.name}"`);
+  console.log(`🎮 [POKEMON_CARD_NAME_TRACE] validatedPokemon.name: "${validatedPokemon.name}"`);
+  console.log(`🎮 [POKEMON_CARD_NAME_TRACE] Final displayName: "${displayName}"`);
+  console.log(`🎮 [POKEMON_CARD_NAME_TRACE] Names are same as original: ${pokemon.name === displayName}`);
 
   // Cleanup function for timers and refs
   const cleanupImageLoading = useCallback(() => {

@@ -1,3 +1,4 @@
+
 import { Pokemon } from "../types";
 import { formatPokemonName } from "@/utils/pokemon";
 
@@ -35,13 +36,16 @@ export const fetchPokemonData = async (generations: number[]): Promise<Pokemon[]
           return null;
         }
 
-        // CRITICAL DEBUG: Log the EXACT raw name from API before any processing
-        console.log(`🔧 [API_RAW_NAME_DEBUG] Pokemon ID ${pokemonData.id}: Raw API name = "${pokemonData.name}"`);
+        // STEP 1: Log the exact raw name from the API
+        console.log(`🔧 [STEP_1_RAW_API] Pokemon ID ${pokemonData.id}: Raw API name = "${pokemonData.name}"`);
         
-        // CRITICAL FIX: Apply formatPokemonName to the raw API name ONCE AND ONLY ONCE
+        // STEP 2: Apply formatPokemonName and log the result
         const formattedName = formatPokemonName(pokemonData.name);
+        console.log(`🔧 [STEP_2_FORMATTED] ID ${pokemonData.id}: "${pokemonData.name}" → "${formattedName}"`);
         
-        console.log(`🔧 [API_NAME_FORMATTING_DEBUG] ID ${pokemonData.id}: RAW "${pokemonData.name}" → FORMATTED "${formattedName}"`);
+        // STEP 3: Check if formatting actually changed anything
+        const nameChanged = pokemonData.name !== formattedName;
+        console.log(`🔧 [STEP_3_CHANGE_CHECK] ID ${pokemonData.id}: Name changed = ${nameChanged}`);
 
         const pokemon = {
           id: pokemonData.id,
@@ -53,8 +57,8 @@ export const fetchPokemonData = async (generations: number[]): Promise<Pokemon[]
           )
         };
 
-        // Additional debug logging to confirm what we're returning
-        console.log(`✅ [API_FINAL_POKEMON_DEBUG] ID ${pokemon.id}: Final Pokemon object name = "${pokemon.name}"`);
+        // STEP 4: Log the final Pokemon object that will be returned
+        console.log(`🔧 [STEP_4_FINAL_OBJECT] ID ${pokemon.id}: Final Pokemon name = "${pokemon.name}"`);
         
         return pokemon;
       } catch (error) {
@@ -67,6 +71,12 @@ export const fetchPokemonData = async (generations: number[]): Promise<Pokemon[]
     const validPokemon = pokemonResults.filter(pokemon => pokemon !== null);
 
     console.log(`✅ Successfully loaded ${validPokemon.length} Pokemon (filtered out ALL Cramorant forms)`);
+    
+    // STEP 5: Log a sample of the final results to see what we're actually returning
+    const samplePokemon = validPokemon.slice(0, 5);
+    console.log(`🔧 [STEP_5_FINAL_SAMPLE] Sample of first 5 Pokemon names in final result:`, 
+      samplePokemon.map(p => `"${p.name}" (ID: ${p.id})`));
+    
     return validPokemon;
 
   } catch (error) {
