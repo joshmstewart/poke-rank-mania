@@ -57,7 +57,7 @@ export const useBattleStarterIntegration = (
   const initialGetBattleFiredRef = useRef(false);
   const initializationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
-  // CRITICAL FIX: Simplified auto-trigger control
+  // CRITICAL FIX: Enhanced auto-trigger control with milestone coordination
   const autoTriggerDisabledRef = useRef(false);
   
   // Store the battleStarter ref for stable access
@@ -75,8 +75,14 @@ export const useBattleStarterIntegration = (
   
   console.log('[DEBUG useBattleStarterIntegration] forcedPriorityBattlesRef initialized to:', forcedPriorityBattlesRef.current);
   
-  // CRITICAL FIX: Simplified milestone event listeners
+  // CRITICAL FIX: Enhanced milestone event listeners with immediate blocking
   useEffect(() => {
+    const handleMilestoneBlocking = (event: CustomEvent) => {
+      console.log('[MILESTONE_BLOCKING] Milestone blocking event received:', event.detail);
+      autoTriggerDisabledRef.current = true; // Immediately disable auto-triggers
+      console.log('[MILESTONE_BLOCKING] Auto-triggers DISABLED for milestone');
+    };
+
     const handleMilestoneUnblocked = (event: CustomEvent) => {
       console.log('[MILESTONE_COORD] Milestone unblocked event received:', event.detail);
       autoTriggerDisabledRef.current = false; // Re-enable auto-triggers immediately
@@ -89,16 +95,18 @@ export const useBattleStarterIntegration = (
       console.log('[CONTROLLED_TRANSITION] Auto-triggers re-enabled after dismissal');
     };
     
+    document.addEventListener('milestone-blocking', handleMilestoneBlocking as EventListener);
     document.addEventListener('milestone-unblocked', handleMilestoneUnblocked as EventListener);
     document.addEventListener('milestone-dismissed', handleMilestoneDismissed as EventListener);
     
     return () => {
+      document.removeEventListener('milestone-blocking', handleMilestoneBlocking as EventListener);
       document.removeEventListener('milestone-unblocked', handleMilestoneUnblocked as EventListener);
       document.removeEventListener('milestone-dismissed', handleMilestoneDismissed as EventListener);
     };
   }, []);
 
-  // CRITICAL FIX: Modified initialization with simplified auto-trigger prevention
+  // CRITICAL FIX: Simplified initialization - NO auto-trigger on init
   useEffect(() => {
     const timestamp = new Date().toISOString();
     console.log(`[${timestamp}] useBattleStarterIntegration initialized with ${allPokemon?.length || 0} Pokémon`);
@@ -111,27 +119,8 @@ export const useBattleStarterIntegration = (
       console.log(`[${new Date().toISOString()}] useBattleStarterIntegration initialization complete`);
       initializationCompleteRef.current = true;
       
-      // CRITICAL FIX: Only check if auto-trigger is disabled for milestone reasons
-      if (autoTriggerDisabledRef.current) {
-        console.log('[AUTO_TRIGGER_PREVENTION] Auto-trigger disabled - skipping initial battle');
-        return;
-      }
-      
-      // Auto-trigger initial battle if needed
-      if (allPokemon && allPokemon.length > 0 && (!currentBattle || currentBattle.length === 0)) {
-        console.log('[BATTLE_TRANSITION_DEBUG] No battle exists after initialization, triggering initial battle');
-        if (startNewBattleCallbackRef.current) {
-          console.log('[BATTLE_TRANSITION_DEBUG] Calling startNewBattle from timer via ref');
-          startNewBattleCallbackRef.current("pairs");
-        } else {
-          console.log('[BATTLE_TRANSITION_DEBUG] startNewBattleCallbackRef not available, dispatching force-new-battle event');
-          document.dispatchEvent(new CustomEvent("force-new-battle", { 
-            detail: { battleType: "pairs" }
-          }));
-        }
-      } else {
-        console.log('[BATTLE_TRANSITION_DEBUG] Battle already exists after initialization:', currentBattle?.length || 0);
-      }
+      // CRITICAL FIX: NO automatic battle trigger on initialization
+      console.log('[INIT_FIX] Initialization complete - NOT auto-triggering battle to prevent replacement');
       
     }, 100);
     

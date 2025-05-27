@@ -52,35 +52,13 @@ export const useBattleProcessor = (
     generateRankings
   );
 
-  // CRITICAL FIX: Enhanced next battle handler that prepares battle BEFORE clearing current one
+  // CRITICAL FIX: Disable next battle handler to prevent automatic replacement
   const { setupNextBattle } = useNextBattleHandler(
     allPokemon,
     (battleType: BattleType) => {
-      const timestamp = new Date().toISOString();
-      console.log(`📝 [${timestamp}] ENHANCED NEXT BATTLE: Preparing new battle BEFORE clearing current`);
-      
-      // Generate new battle first
-      let newBattle: Pokemon[] = [];
-      
-      if (integratedStartNewBattle) {
-        console.log(`📝 [${timestamp}] ENHANCED NEXT BATTLE: Using integrated starter`);
-        newBattle = integratedStartNewBattle(battleType);
-      } else {
-        console.log(`📝 [${timestamp}] ENHANCED NEXT BATTLE: Using fallback generation`);
-        const shuffled = [...allPokemon].sort(() => Math.random() - 0.5);
-        const battleSize = battleType === "triplets" ? 3 : 2;
-        newBattle = shuffled.slice(0, battleSize);
-      }
-      
-      if (newBattle && newBattle.length > 0) {
-        console.log(`📝 [${timestamp}] ENHANCED NEXT BATTLE: Setting new battle immediately: ${newBattle.map(p => p.name).join(', ')}`);
-        setCurrentBattle(newBattle);
-        setSelectedPokemon([]);
-        return newBattle;
-      } else {
-        console.error(`📝 [${timestamp}] ENHANCED NEXT BATTLE: Failed to generate new battle`);
-        return [];
-      }
+      console.log(`📝 [PROCESSOR_FIX] setupNextBattle called but DISABLED to prevent auto-replacement`);
+      // CRITICAL: Don't automatically generate new battles - let the auto-trigger system handle it
+      return [];
     },
     setSelectedPokemon
   );
@@ -164,6 +142,17 @@ export const useBattleProcessor = (
         milestoneInProgressRef.current = true;
         console.log(`📝 [${timestamp}] PROCESS BATTLE: Set milestoneInProgressRef = true for milestone ${milestone}`);
         
+        // CRITICAL FIX: Disable auto-triggers immediately when milestone is hit
+        const disableAutoTriggerEvent = new CustomEvent('milestone-blocking', {
+          detail: { 
+            milestone, 
+            timestamp: Date.now(),
+            source: 'useBattleProcessor'
+          }
+        });
+        document.dispatchEvent(disableAutoTriggerEvent);
+        console.log(`📝 [${timestamp}] PROCESS BATTLE: Dispatched milestone-blocking event`);
+        
         saveRankings(allPokemon, currentSelectedGeneration, "battle");
         console.log(`📝 [${timestamp}] PROCESS BATTLE: Rankings saved for generation ${currentSelectedGeneration}`);
         
@@ -171,12 +160,11 @@ export const useBattleProcessor = (
         console.log(`📝 [${timestamp}] PROCESS BATTLE: Rankings generated`);
       }
 
-      // CRITICAL FIX: Setup next battle AND clear processing state together
-      console.log(`📝 [${timestamp}] [PROCESSOR_FIX] Setting up next battle and clearing processing`);
-      await setupNextBattle(battleType);
+      // CRITICAL FIX: Don't call setupNextBattle - let auto-trigger system handle it
+      console.log(`📝 [${timestamp}] [PROCESSOR_FIX] NOT calling setupNextBattle to prevent auto-replacement`);
       
-      // CRITICAL: Clear processing state SYNCHRONOUSLY
-      console.log(`📝 [${timestamp}] [PROCESSOR_FIX] Clearing isProcessingResult immediately`);
+      // CRITICAL: Clear processing state SYNCHRONOUSLY but don't trigger new battle
+      console.log(`📝 [${timestamp}] [PROCESSOR_FIX] Clearing isProcessingResult without triggering new battle`);
       setIsProcessingResult(false);
       
     } catch (e) {
@@ -189,7 +177,6 @@ export const useBattleProcessor = (
     processResult,
     incrementBattlesCompleted,
     generateRankings,
-    setupNextBattle,
     setSelectedPokemon,
     allPokemon,
     markSuggestionUsed,
@@ -197,8 +184,7 @@ export const useBattleProcessor = (
     isProcessingResult,
     setBattlesCompleted,
     setBattleResults,
-    isResettingRef,
-    integratedStartNewBattle
+    isResettingRef
   ]);
 
   const resetMilestoneInProgress = useCallback(() => {
