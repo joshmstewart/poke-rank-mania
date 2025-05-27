@@ -38,29 +38,49 @@ export const formatPokemonName = (name: string): string => {
   }
   
   // Handle Mega evolutions - put "Mega" at the front
-  if (lowerName.includes('mega')) {
+  // Updated to handle hyphenated format like "Gyarados-mega"
+  if (lowerName.includes('-mega') || lowerName.includes(' mega')) {
     console.log(`🏷️ [NAME_FORMAT_DEBUG] Detected mega in: ${name}`);
-    const baseName = name.replace(/[-\s]*mega[-\s]*/i, '').trim();
-    // Handle Mega X and Mega Y variants
-    if (lowerName.includes('mega-x') || lowerName.includes('mega x')) {
+    
+    // Handle different mega formats
+    let baseName = '';
+    if (lowerName.includes('-mega-x')) {
+      baseName = name.replace(/-mega-x/i, '').trim();
       const result = `Mega ${baseName} X`;
       console.log(`🏷️ [NAME_FORMAT_DEBUG] Mega X formatted: ${name} -> ${result}`);
       return result;
     }
-    if (lowerName.includes('mega-y') || lowerName.includes('mega y')) {
+    if (lowerName.includes('-mega-y')) {
+      baseName = name.replace(/-mega-y/i, '').trim();
       const result = `Mega ${baseName} Y`;
       console.log(`🏷️ [NAME_FORMAT_DEBUG] Mega Y formatted: ${name} -> ${result}`);
       return result;
     }
-    const result = `Mega ${baseName}`;
-    console.log(`🏷️ [NAME_FORMAT_DEBUG] Mega formatted: ${name} -> ${result}`);
-    return result;
+    if (lowerName.includes('-mega')) {
+      baseName = name.replace(/-mega/i, '').trim();
+      const result = `Mega ${baseName}`;
+      console.log(`🏷️ [NAME_FORMAT_DEBUG] Mega formatted: ${name} -> ${result}`);
+      return result;
+    }
+    if (lowerName.includes(' mega')) {
+      baseName = name.replace(/\s+mega/i, '').trim();
+      const result = `Mega ${baseName}`;
+      console.log(`🏷️ [NAME_FORMAT_DEBUG] Mega formatted: ${name} -> ${result}`);
+      return result;
+    }
   }
   
   // Handle Gigantamax forms - put "G-Max" at the front
-  if (lowerName.includes('gmax')) {
+  // Updated to handle hyphenated format like "Corviknight-gmax"
+  if (lowerName.includes('-gmax') || lowerName.includes(' gmax')) {
     console.log(`🏷️ [NAME_FORMAT_DEBUG] Detected gmax in: ${name}`);
-    const baseName = name.replace(/[-\s]*gmax[-\s]*/i, '').trim();
+    
+    let baseName = '';
+    if (lowerName.includes('-gmax')) {
+      baseName = name.replace(/-gmax/i, '').trim();
+    } else {
+      baseName = name.replace(/\s+gmax/i, '').trim();
+    }
     const result = `G-Max ${baseName}`;
     console.log(`🏷️ [NAME_FORMAT_DEBUG] G-Max formatted: ${name} -> ${result}`);
     return result;
