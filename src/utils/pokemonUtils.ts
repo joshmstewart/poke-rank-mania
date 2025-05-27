@@ -1,3 +1,4 @@
+
 /**
  * Normalize Pokedex numbers - converts special form IDs back to their base form
  * For example: 10117 (Ash-Greninja) -> 658 (Greninja)
@@ -26,7 +27,14 @@ export const formatPokemonName = (name: string): string => {
   
   console.log(`🚀 [FORMAT_POKEMON_NAME] Input: "${name}"`);
   
+  // DEEP DEBUG: Let's see exactly what characters we have
+  console.log(`🔍 [DEEP_DEBUG] String length: ${name.length}`);
+  console.log(`🔍 [DEEP_DEBUG] Character codes:`, name.split('').map((char, i) => `${i}:'${char}'(${char.charCodeAt(0)})`));
+  
   const lowerName = name.toLowerCase();
+  console.log(`🔍 [DEEP_DEBUG] Lowercase: "${lowerName}"`);
+  console.log(`🔍 [DEEP_DEBUG] Contains '-mega': ${lowerName.includes('-mega')}`);
+  console.log(`🔍 [DEEP_DEBUG] IndexOf '-mega': ${lowerName.indexOf('-mega')}`);
   
   // Handle Mega evolutions - check for exact patterns
   if (lowerName.includes('-mega-x')) {
@@ -44,7 +52,11 @@ export const formatPokemonName = (name: string): string => {
   }
   
   if (lowerName.includes('-mega')) {
-    const baseName = name.substring(0, name.toLowerCase().indexOf('-mega'));
+    console.log(`🎯 [MEGA_MATCH] Found -mega in "${name}"`);
+    const indexOfMega = name.toLowerCase().indexOf('-mega');
+    console.log(`🎯 [MEGA_MATCH] Index of -mega: ${indexOfMega}`);
+    const baseName = name.substring(0, indexOfMega);
+    console.log(`🎯 [MEGA_MATCH] Base name extracted: "${baseName}"`);
     const result = `Mega ${baseName}`;
     console.log(`✅ [MEGA] "${name}" -> "${result}"`);
     return result;
