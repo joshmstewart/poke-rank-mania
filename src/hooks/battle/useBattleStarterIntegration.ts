@@ -57,11 +57,8 @@ export const useBattleStarterIntegration = (
   const initialGetBattleFiredRef = useRef(false);
   const initializationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
-  // CRITICAL FIX: Enhanced controlled transition coordination
-  const milestoneBlockedRef = useRef(false);
-  const pendingBattleRequestRef = useRef<BattleType | null>(null);
-  const controlledTransitionRef = useRef(false);
-  const autoTriggerDisabledRef = useRef(false); // NEW: Disable all auto-triggers
+  // CRITICAL FIX: Simplified auto-trigger control
+  const autoTriggerDisabledRef = useRef(false);
   
   // Store the battleStarter ref for stable access
   const battleStarterInstanceRef = useRef<ReturnType<typeof createBattleStarter> | null>(null);
@@ -78,56 +75,30 @@ export const useBattleStarterIntegration = (
   
   console.log('[DEBUG useBattleStarterIntegration] forcedPriorityBattlesRef initialized to:', forcedPriorityBattlesRef.current);
   
-  // CRITICAL FIX: Enhanced milestone event listeners with auto-trigger disabling
+  // CRITICAL FIX: Simplified milestone event listeners
   useEffect(() => {
-    const handleMilestoneUnblocked = () => {
-      console.log('[MILESTONE_COORD] Milestone unblocked event received');
-      milestoneBlockedRef.current = false;
-      autoTriggerDisabledRef.current = false; // Re-enable auto-triggers
-      
-      // Process any pending battle request
-      if (pendingBattleRequestRef.current) {
-        const pendingType = pendingBattleRequestRef.current;
-        pendingBattleRequestRef.current = null;
-        
-        console.log(`[MILESTONE_COORD] Processing pending battle request: ${pendingType}`);
-        setTimeout(() => {
-          if (startNewBattleCallbackRef.current) {
-            startNewBattleCallbackRef.current(pendingType);
-          }
-        }, 100);
-      }
+    const handleMilestoneUnblocked = (event: CustomEvent) => {
+      console.log('[MILESTONE_COORD] Milestone unblocked event received:', event.detail);
+      autoTriggerDisabledRef.current = false; // Re-enable auto-triggers immediately
+      console.log('[MILESTONE_COORD] Auto-triggers re-enabled');
     };
 
     const handleMilestoneDismissed = (event: CustomEvent) => {
-      console.log('[CONTROLLED_TRANSITION] Milestone dismissed - analyzing event:', event.detail);
-      
-      // CRITICAL FIX: Only set controlled transition for coordinated dismissals
-      if (event.detail?.coordinateWithBattleSystem) {
-        console.log('[CONTROLLED_TRANSITION] Coordinated dismissal - disabling auto-triggers');
-        controlledTransitionRef.current = true;
-        autoTriggerDisabledRef.current = true; // CRITICAL: Disable ALL auto-triggers
-        
-        // Clear the flag after a delay to allow controlled battle generation
-        setTimeout(() => {
-          controlledTransitionRef.current = false;
-          console.log('[CONTROLLED_TRANSITION] Controlled transition flag cleared');
-        }, 2000);
-      } else {
-        console.log('[CONTROLLED_TRANSITION] Non-coordinated dismissal - keeping auto-triggers enabled');
-      }
+      console.log('[CONTROLLED_TRANSITION] Milestone dismissed - re-enabling auto-triggers:', event.detail);
+      autoTriggerDisabledRef.current = false; // Always re-enable on dismissal
+      console.log('[CONTROLLED_TRANSITION] Auto-triggers re-enabled after dismissal');
     };
     
-    document.addEventListener('milestone-unblocked', handleMilestoneUnblocked);
+    document.addEventListener('milestone-unblocked', handleMilestoneUnblocked as EventListener);
     document.addEventListener('milestone-dismissed', handleMilestoneDismissed as EventListener);
     
     return () => {
-      document.removeEventListener('milestone-unblocked', handleMilestoneUnblocked);
+      document.removeEventListener('milestone-unblocked', handleMilestoneUnblocked as EventListener);
       document.removeEventListener('milestone-dismissed', handleMilestoneDismissed as EventListener);
     };
   }, []);
 
-  // CRITICAL FIX: Modified initialization with auto-trigger prevention
+  // CRITICAL FIX: Modified initialization with simplified auto-trigger prevention
   useEffect(() => {
     const timestamp = new Date().toISOString();
     console.log(`[${timestamp}] useBattleStarterIntegration initialized with ${allPokemon?.length || 0} Pokémon`);
@@ -140,19 +111,14 @@ export const useBattleStarterIntegration = (
       console.log(`[${new Date().toISOString()}] useBattleStarterIntegration initialization complete`);
       initializationCompleteRef.current = true;
       
-      // CRITICAL FIX: Check auto-trigger disabled flag
+      // CRITICAL FIX: Only check if auto-trigger is disabled for milestone reasons
       if (autoTriggerDisabledRef.current) {
         console.log('[AUTO_TRIGGER_PREVENTION] Auto-trigger disabled - skipping initial battle');
         return;
       }
       
-      // CRITICAL FIX: Only auto-trigger if NOT in controlled transition
+      // Auto-trigger initial battle if needed
       if (allPokemon && allPokemon.length > 0 && (!currentBattle || currentBattle.length === 0)) {
-        if (controlledTransitionRef.current) {
-          console.log('[CONTROLLED_TRANSITION] Skipping auto-trigger during controlled transition');
-          return;
-        }
-        
         console.log('[BATTLE_TRANSITION_DEBUG] No battle exists after initialization, triggering initial battle');
         if (startNewBattleCallbackRef.current) {
           console.log('[BATTLE_TRANSITION_DEBUG] Calling startNewBattle from timer via ref');
@@ -231,15 +197,7 @@ export const useBattleStarterIntegration = (
     
     console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] ===== Starting Battle Transition Analysis =====`);
     console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] Requested battleType: ${battleType}`);
-    console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] controlledTransitionRef.current: ${controlledTransitionRef.current}`);
     console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] autoTriggerDisabledRef.current: ${autoTriggerDisabledRef.current}`);
-    
-    // CRITICAL FIX: Check if milestone is blocking battle generation
-    if (milestoneBlockedRef.current) {
-      console.log(`[MILESTONE_COORD] Battle generation blocked by milestone, queuing request: ${battleType}`);
-      pendingBattleRequestRef.current = battleType;
-      return [];
-    }
     
     const timestamp = new Date().toISOString();
     console.log(`[${timestamp}] startNewBattle called with battleType: ${battleType}`);
@@ -250,7 +208,6 @@ export const useBattleStarterIntegration = (
     console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] - currentRankings.length: ${currentRankings.length}`);
     console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] - initializationCompleteRef.current: ${initializationCompleteRef.current}`);
     console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] - battleGenerationInProgressRef.current: ${battleGenerationInProgressRef.current}`);
-    console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] - milestoneBlockedRef.current: ${milestoneBlockedRef.current}`);
     
     if (!allPokemon || allPokemon.length === 0) {
       console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] ❌ FAILED: No Pokemon data available. allPokemon?.length: ${allPokemon?.length}`);

@@ -17,7 +17,7 @@ export const useProgressState = () => {
     setMilestoneInProgress(false);
   }, []);
   
-  // CRITICAL FIX: Enhanced milestone dismissal with proper coordination
+  // CRITICAL FIX: Enhanced milestone dismissal with immediate auto-trigger re-enablement
   const setShowingMilestoneEnhanced = useCallback((show: boolean) => {
     console.log(`🔄 useProgressState: Setting showingMilestone to ${show}`);
     setShowingMilestone(show);
@@ -26,48 +26,43 @@ export const useProgressState = () => {
       setMilestoneInProgress(true);
       console.log("🚫 MILESTONE: Blocking new battle generation during milestone display");
     } else {
-      console.log("🔄 MILESTONE: Preparing to dismiss milestone with coordination");
+      console.log("🔄 MILESTONE: Dismissing milestone and immediately re-enabling auto-triggers");
+      
+      // CRITICAL FIX: Immediately send re-enablement event
+      const reenableEvent = new CustomEvent('milestone-unblocked', {
+        detail: { 
+          timestamp: Date.now(),
+          immediate: true
+        }
+      });
+      document.dispatchEvent(reenableEvent);
       
       setTimeout(() => {
         setMilestoneInProgress(false);
-        console.log("✅ MILESTONE: Milestone dismissed, coordinating with battle system");
-        
-        // CRITICAL FIX: Send coordinated dismissal event
-        const dismissEvent = new CustomEvent('milestone-dismissed', {
-          detail: { 
-            timestamp: Date.now(), 
-            forced: false, 
-            immediate: false,
-            coordinateWithBattleSystem: true // CRITICAL: This triggers auto-trigger prevention
-          }
-        });
-        document.dispatchEvent(dismissEvent);
-        
-        console.log("🏆 useProgressState: Milestone dismissed with battle system coordination");
-      }, 300);
+        console.log("✅ MILESTONE: Milestone dismissed, system ready for new battles");
+      }, 100);
     }
   }, []);
   
-  // CRITICAL FIX: Force dismiss with immediate coordination but still prevent auto-triggers
+  // CRITICAL FIX: Force dismiss with immediate re-enablement
   const forceDismissMilestone = useCallback(() => {
-    console.log("🔄 useProgressState: Force dismissing milestone with immediate coordination");
+    console.log("🔄 useProgressState: Force dismissing milestone with immediate re-enablement");
     
-    // Clear state immediately for urgent dismissals
+    // Clear state immediately
     setShowingMilestone(false);
     setMilestoneInProgress(false);
     
-    // CRITICAL FIX: Immediate dismissal with coordination - STILL prevents auto-triggers
-    const dismissEvent = new CustomEvent('milestone-dismissed', {
+    // CRITICAL FIX: Immediately re-enable auto-triggers
+    const reenableEvent = new CustomEvent('milestone-unblocked', {
       detail: { 
         forced: true, 
         timestamp: Date.now(), 
-        immediate: true,
-        coordinateWithBattleSystem: true // CRITICAL: Still coordinate to prevent auto-triggers
+        immediate: true
       }
     });
-    document.dispatchEvent(dismissEvent);
+    document.dispatchEvent(reenableEvent);
     
-    console.log("🏆 useProgressState: Milestone force dismissed with coordination");
+    console.log("🏆 useProgressState: Milestone force dismissed with immediate re-enablement");
   }, []);
   
   return {
