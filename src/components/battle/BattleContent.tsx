@@ -34,8 +34,6 @@ const BattleContent: React.FC<BattleContentProps> = ({
   setBattleResults
 }) => {
   const instanceRef = useRef(`content-${Date.now()}`);
-  const lastMilestoneRef = useRef<number | null>(null);
-  const lastBattleIdsRef = useRef<string>('');
   
   console.log(`[DEBUG BattleContent] Instance: ${instanceRef.current} render - allPokemon: ${allPokemon?.length || 0}`);
 
@@ -79,53 +77,15 @@ const BattleContent: React.FC<BattleContentProps> = ({
     performFullBattleReset
   } = useBattleStateCore(allPokemon, initialBattleType, initialSelectedGeneration);
 
-  // CRITICAL FIX: Track when we're transitioning from milestone to prevent flash
-  const isTransitioningFromMilestone = useRef(false);
-  
-  // Track milestone transitions to prevent showing stale battles
-  useEffect(() => {
-    if (showingMilestone && lastMilestoneRef.current !== battlesCompleted) {
-      console.log(`🏆 [FLASH_FIX] Milestone ${battlesCompleted} showing - marking transition state`);
-      lastMilestoneRef.current = battlesCompleted;
-      isTransitioningFromMilestone.current = true;
-    } else if (!showingMilestone && isTransitioningFromMilestone.current) {
-      console.log(`🔄 [FLASH_FIX] Milestone dismissed - staying in transition until new battle ready`);
-      // Don't clear transition state yet - wait for new battle
-    }
-  }, [showingMilestone, battlesCompleted]);
-
-  // CRITICAL FIX: Track battle changes and clear transition state appropriately
-  useEffect(() => {
-    const currentBattleIds = currentBattle?.map(p => p.id).join(',') || '';
-    
-    if (!showingMilestone && currentBattle && currentBattle.length > 0) {
-      // Check if this is actually a NEW battle (different IDs)
-      if (currentBattleIds !== lastBattleIdsRef.current) {
-        console.log(`✅ [FLASH_FIX] NEW battle detected: ${currentBattleIds} (was: ${lastBattleIdsRef.current})`);
-        lastBattleIdsRef.current = currentBattleIds;
-        
-        if (isTransitioningFromMilestone.current) {
-          console.log(`✅ [FLASH_FIX] New battle ready after milestone - clearing transition state`);
-          isTransitioningFromMilestone.current = false;
-        }
-      } else if (isTransitioningFromMilestone.current) {
-        console.log(`⚠️ [FLASH_FIX] Same battle IDs during transition - keeping transition state`);
-      }
-    }
-  }, [showingMilestone, currentBattle]);
-
   console.log(`🔄 [FLASH_FIX] BattleContent render states:`, {
     showingMilestone,
     isBattleTransitioning,
-    isTransitioningFromMilestone: isTransitioningFromMilestone.current,
     currentBattleLength: currentBattle?.length || 0,
     currentBattleIds: currentBattle?.map(p => p.id).join(',') || '',
-    lastBattleIds: lastBattleIdsRef.current,
     isProcessingResult,
     isAnyProcessing,
     hasBattle: !!currentBattle && currentBattle.length > 0,
     battlesCompleted,
-    lastMilestone: lastMilestoneRef.current,
     timestamp: new Date().toISOString()
   });
 
@@ -169,9 +129,9 @@ const BattleContent: React.FC<BattleContentProps> = ({
     );
   }
 
-  // CRITICAL FIX: Show loading during ANY transition to prevent flash
-  if (isBattleTransitioning || isTransitioningFromMilestone.current) {
-    console.log(`⏳ [FLASH_FIX] Showing transition loading state - isBattleTransitioning: ${isBattleTransitioning}, isTransitioningFromMilestone: ${isTransitioningFromMilestone.current}`);
+  // CRITICAL FIX: Show loading only during actual transitions
+  if (isBattleTransitioning) {
+    console.log(`⏳ [FLASH_FIX] Showing transition loading state - isBattleTransitioning: ${isBattleTransitioning}`);
     return (
       <div className="flex justify-center items-center h-64 w-full">
         <div className="text-center">
@@ -182,7 +142,7 @@ const BattleContent: React.FC<BattleContentProps> = ({
     );
   }
 
-  // Show interface if we have battle data AND we're not transitioning
+  // Show interface if we have battle data
   const shouldShowInterface = currentBattle && currentBattle.length > 0;
 
   console.log(`🔄 [FLASH_FIX] BattleContent shouldShowInterface:`, shouldShowInterface);
