@@ -1,5 +1,5 @@
 import { Pokemon, PokemonAPIResponse } from "../types";
-import { getPreferredImageUrl } from "@/utils/imageUtils";
+import { getPokemonImageUrl } from "./utils";
 
 const POKEMON_API_BASE = "https://pokeapi.co/api/v2";
 
@@ -110,7 +110,7 @@ export const fetchAllPokemon = async (
         const pokemon: Pokemon = {
           id: pokemonData.id,
           name: pokemonData.name.charAt(0).toUpperCase() + pokemonData.name.slice(1),
-          image: getPreferredImageUrl(pokemonData.id),
+          image: getPokemonImageUrl(pokemonData.id),
           types: types,
           height: pokemonData.height,
           weight: pokemonData.weight,

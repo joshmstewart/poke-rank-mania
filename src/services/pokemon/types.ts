@@ -1,4 +1,3 @@
-
 export interface Pokemon {
   id: number;
   name: string;
@@ -46,3 +45,13 @@ export interface UnifiedSessionData {
 
 // Settings constants
 export const ITEMS_PER_PAGE = 50;
+
+export interface PokemonAPIResponse {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: Array<{
+    name: string;
+    url: string;
+  }>;
+}
