@@ -1,4 +1,3 @@
-
 import { useCallback, useRef, useEffect, useMemo } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
@@ -148,7 +147,7 @@ export const useBattleStateCore = (
     filteredPokemon,
     milestones,
     generateRankings,
-    activeTier,
+    String(activeTier),
     freezePokemonForTier,
     battleStarter,
     markSuggestionUsed,
