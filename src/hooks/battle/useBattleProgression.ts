@@ -73,35 +73,36 @@ export const useBattleProgression = (
       return null;
     }
 
-    let updatedBattleCount: number = 0;
     incrementInProgressRef.current = true;
     
-    setBattlesCompleted(prev => {
-      updatedBattleCount = prev + 1;
-      console.log(`📈 BATTLE COUNT UPDATED: ${prev} -> ${updatedBattleCount}`);
-      return updatedBattleCount;
-    });
+    // CRITICAL FIX: Calculate the new battle count first, then use it consistently
+    const newBattleCount = battlesCompleted + 1;
+    console.log(`📈 BATTLE COUNT CALCULATION: ${battlesCompleted} -> ${newBattleCount}`);
     
-    // CRITICAL FIX: Check milestone immediately after setting battle count
-    console.log(`🔍 IMMEDIATE MILESTONE CHECK: Checking ${updatedBattleCount} against milestones`);
-    const isMilestone = milestones.includes(updatedBattleCount);
+    // Update the state with the calculated value
+    setBattlesCompleted(newBattleCount);
+    console.log(`✅ setBattlesCompleted called with: ${newBattleCount}`);
+    
+    // CRITICAL FIX: Use the calculated newBattleCount for milestone check instead of state
+    console.log(`🔍 MILESTONE CHECK WITH CALCULATED VALUE: Checking ${newBattleCount} against milestones`);
+    const isMilestone = milestones.includes(newBattleCount);
     
     if (isMilestone) {
-      console.log(`🚀 MILESTONE DETECTED: ${updatedBattleCount} - triggering milestone display`);
+      console.log(`🚀 MILESTONE DETECTED: ${newBattleCount} - triggering milestone display`);
       
-      // Trigger milestone check immediately without delay
-      const milestoneTriggered = checkMilestone(updatedBattleCount, battleResults);
+      // Trigger milestone check with the calculated value
+      const milestoneTriggered = checkMilestone(newBattleCount, battleResults);
       
       if (milestoneTriggered) {
-        console.log(`✅ MILESTONE SUCCESSFULLY TRIGGERED: ${updatedBattleCount}`);
+        console.log(`✅ MILESTONE SUCCESSFULLY TRIGGERED: ${newBattleCount}`);
         incrementInProgressRef.current = false;
-        return updatedBattleCount;
+        return newBattleCount;
       }
     }
     
     incrementInProgressRef.current = false;
     return null;
-  }, [setBattlesCompleted, checkMilestone, milestones]);
+  }, [setBattlesCompleted, checkMilestone, milestones, battlesCompleted]);
 
   const resetMilestone = useCallback(() => {
     console.log("🔄 Resetting milestone state in useBattleProgression");
