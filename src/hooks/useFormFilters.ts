@@ -72,7 +72,7 @@ export const useFormFilters = () => {
     const name = pokemon.name.toLowerCase();
     
     // Check for costumes (Pikachu caps and cosplay forms) - check this FIRST
-    // Expanded pattern to catch all costume Pikachu variants and crowned forms
+    // CRITICAL FIX: Add "starter" to catch Pikachu-starter
     if ((name.includes("pikachu") && (
         name.includes("cap") || 
         name.includes("phd") || 
@@ -81,19 +81,23 @@ export const useFormFilters = () => {
         name.includes("libre") || 
         name.includes("pop-star") || 
         name.includes("rock-star") ||
-        name.includes("partner"))) || 
+        name.includes("partner") ||
+        name.includes("starter"))) || 
         name.includes("crowned")) {
+      console.log(`🎭 [FORM_FILTER_DEBUG] ${pokemon.name} (${pokemon.id}) categorized as COSTUME`);
       return "costumes";
     }
     
     // Check for Origin and Primal forms (AFTER costumes) - make more strict
     if ((name.includes("origin") && !name.includes("pikachu")) || 
         (name.includes("primal") && !name.includes("pikachu"))) {
+      console.log(`🔥 [FORM_FILTER_DEBUG] ${pokemon.name} (${pokemon.id}) categorized as ORIGIN/PRIMAL`);
       return "originPrimal";
     }
     
     // Check for mega evolutions, gigantamax forms and eternamax forms (combined)
     if (name.includes("mega") || name.includes("gmax") || name.includes("eternamax")) {
+      console.log(`💥 [FORM_FILTER_DEBUG] ${pokemon.name} (${pokemon.id}) categorized as MEGA/GMAX`);
       return "megaGmax";
     }
     
@@ -102,6 +106,7 @@ export const useFormFilters = () => {
         name.includes("galarian") || 
         name.includes("hisuian") || 
         name.includes("paldean")) {
+      console.log(`🌍 [FORM_FILTER_DEBUG] ${pokemon.name} (${pokemon.id}) categorized as REGIONAL`);
       return "regional";
     }
     
@@ -111,6 +116,7 @@ export const useFormFilters = () => {
         name.includes("male") || 
         name.includes("-f") || 
         name.includes("-m")) {
+      console.log(`⚧️ [FORM_FILTER_DEBUG] ${pokemon.name} (${pokemon.id}) categorized as GENDER`);
       return "gender";
     }
     
@@ -125,24 +131,34 @@ export const useFormFilters = () => {
         name.includes("unbound") ||
         name.includes("gorging") ||
         name.includes("-theme")) {
+      console.log(`🔄 [FORM_FILTER_DEBUG] ${pokemon.name} (${pokemon.id}) categorized as FORMS`);
       return "forms";
     }
     
+    console.log(`✅ [FORM_FILTER_DEBUG] ${pokemon.name} (${pokemon.id}) is STANDARD (no special form)`);
     return null;
   };
   
   // Check if a Pokemon should be included based on current filters
   const shouldIncludePokemon = (pokemon: Pokemon): boolean => {
     // If all filters are enabled, include all Pokemon
-    if (isAllEnabled) return true;
+    if (isAllEnabled) {
+      console.log(`🟢 [FORM_FILTER_DEBUG] ${pokemon.name} (${pokemon.id}) INCLUDED - all filters enabled`);
+      return true;
+    }
     
     const formCategory = getPokemonFormCategory(pokemon);
     
     // If it's a standard Pokemon (not in any special form category)
-    if (!formCategory) return true;
+    if (!formCategory) {
+      console.log(`🟢 [FORM_FILTER_DEBUG] ${pokemon.name} (${pokemon.id}) INCLUDED - standard Pokemon`);
+      return true;
+    }
     
     // Return true if the filter for this category is enabled
-    return filters[formCategory];
+    const shouldInclude = filters[formCategory];
+    console.log(`${shouldInclude ? '🟢' : '🔴'} [FORM_FILTER_DEBUG] ${pokemon.name} (${pokemon.id}) ${shouldInclude ? 'INCLUDED' : 'EXCLUDED'} - ${formCategory} filter is ${shouldInclude ? 'enabled' : 'disabled'}`);
+    return shouldInclude;
   };
   
   // Store a Pokemon that gets filtered out (for later re-inclusion)
