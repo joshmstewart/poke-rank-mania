@@ -1,3 +1,4 @@
+
 /**
  * Normalize Pokedex numbers - converts special form IDs back to their base form
  * For example: 10117 (Ash-Greninja) -> 658 (Greninja)
@@ -29,6 +30,13 @@ export const formatPokemonName = (name: string): string => {
   // Add debugging to see what names we're processing
   console.log(`🏷️ [NAME_FORMAT_DEBUG] Processing name: "${name}" (lowercase: "${lowerName}")`);
   
+  // Special debugging for the specific Pokemon mentioned by user
+  if (name.includes('Mega') || name.includes('mega') || 
+      name.includes('Gmax') || name.includes('gmax') ||
+      (name.includes('Pikachu') && name.includes('cap'))) {
+    console.log(`🎯 [SPECIAL_POKEMON_DEBUG] Found special Pokemon: ${name}`);
+  }
+  
   // Handle Mega evolutions - put "Mega" at the front
   if (lowerName.includes('mega')) {
     console.log(`🏷️ [NAME_FORMAT_DEBUG] Detected mega in: ${name}`);
@@ -58,7 +66,7 @@ export const formatPokemonName = (name: string): string => {
     return result;
   }
   
-  // Handle Pikachu cap variants with proper formatting
+  // Handle Pikachu cap variants with proper formatting - check for specific IDs
   if (lowerName.includes('pikachu') && lowerName.includes('cap')) {
     console.log(`🏷️ [NAME_FORMAT_DEBUG] Detected Pikachu cap variant: ${name}`);
     if (lowerName.includes('original-cap')) {
@@ -85,6 +93,13 @@ export const formatPokemonName = (name: string): string => {
     if (lowerName.includes('world-cap')) {
       return 'Pikachu (World Cap)';
     }
+  }
+  
+  // Add specific ID-based debugging for Pikachu variants
+  if (lowerName.includes('pikachu')) {
+    console.log(`🎯 [PIKACHU_DEBUG] Found Pikachu variant: ${name}`);
+    console.log(`🎯 [PIKACHU_DEBUG] Contains 'cap': ${lowerName.includes('cap')}`);
+    console.log(`🎯 [PIKACHU_DEBUG] Original name: "${name}"`);
   }
   
   // Handle regional forms by moving them to the front with proper naming
