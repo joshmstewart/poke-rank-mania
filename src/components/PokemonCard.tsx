@@ -45,12 +45,12 @@ const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
   // Store the consistent pokemon ID
   const pokemonId = validatedPokemon.id;
 
-  // CRITICAL FIX: Use the name as-is from validatedPokemon - it should already be properly formatted
+  // CRITICAL FIX: Use the name EXACTLY as-is from validatedPokemon - NO MORE FORMATTING
   const normalizedId = normalizePokedexNumber(pokemonId);
-  const displayName = validatedPokemon.name; // Don't re-format here
+  const displayName = validatedPokemon.name; // Use name exactly as provided
   
-  // Add debugging for Pokemon name in PokemonCard
-  console.log(`🎮 [POKEMON_CARD_NAME_DEBUG] Pokemon ID: ${pokemonId}, Display name: "${displayName}"`);
+  // Enhanced debugging for Pokemon name in PokemonCard
+  console.log(`🎮 [POKEMON_CARD_NAME_FINAL] Pokemon ID: ${pokemonId}, Display name: "${displayName}" (NO FORMATTING APPLIED)`);
 
   // Cleanup function for timers and refs
   const cleanupImageLoading = useCallback(() => {

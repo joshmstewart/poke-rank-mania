@@ -145,10 +145,9 @@ export async function fetchPokemonDetails(id: number): Promise<Pokemon> {
     const detailResponse = await fetch(`https://pokeapi.co/api/v2/pokemon/${id}`);
     if (detailResponse.ok) {
       const detailData = await detailResponse.json();
-      // CRITICAL FIX: Apply formatPokemonName immediately to the raw API name
-      const rawApiName = detailData.name.charAt(0).toUpperCase() + detailData.name.slice(1).replace(/-/g, ' ');
-      name = formatPokemonName(rawApiName);
-      console.log(`🔧 [NAME_TRANSFORM_FIX] Raw API: "${detailData.name}" → Capitalized: "${rawApiName}" → Final: "${name}"`);
+      // CRITICAL FIX: Apply formatPokemonName ONLY to raw API names
+      name = formatPokemonName(detailData.name);
+      console.log(`🔧 [UTILS_NAME_TRANSFORM] Raw API: "${detailData.name}" → Final: "${name}"`);
       
       types = detailData.types.map((type: any) => 
         type.type.name.charAt(0).toUpperCase() + type.type.name.slice(1)
@@ -215,7 +214,7 @@ export function validateBattlePokemon(pokemon: Pokemon[]): Pokemon[] {
   return pokemon.map(p => {
     const fixedPokemon = { ...p };
     
-    // CRITICAL FIX: DO NOT re-transform names here - they should already be correctly formatted
+    // CRITICAL FIX: DO NOT re-transform names - they should already be correctly formatted from API
     // Only handle very specific edge cases that need manual correction
     
     // Special case for ID 10250 which should be Paldean Tauros
@@ -238,6 +237,7 @@ export function validateBattlePokemon(pokemon: Pokemon[]): Pokemon[] {
       fixedPokemon.image = getPokemonImageUrl(p.id);
     }
     
+    console.log(`✅ [VALIDATE_NO_TRANSFORM] Keeping name as-is: "${fixedPokemon.name}" (ID: ${fixedPokemon.id})`);
     return fixedPokemon;
   });
 }

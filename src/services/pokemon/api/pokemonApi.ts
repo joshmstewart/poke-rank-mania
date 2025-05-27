@@ -36,15 +36,14 @@ export const fetchPokemonData = async (generations: number[]): Promise<Pokemon[]
           return null;
         }
 
-        // CRITICAL FIX: Apply proper name formatting from the start
-        const rawApiName = pokemonData.name.charAt(0).toUpperCase() + pokemonData.name.slice(1).replace('-', ' ');
-        const formattedName = formatPokemonName(rawApiName);
+        // CRITICAL FIX: Apply formatPokemonName to the raw API name ONCE AND ONLY ONCE
+        const formattedName = formatPokemonName(pokemonData.name);
         
-        console.log(`🔧 [API_NAME_TRANSFORM] "${pokemonData.name}" → "${rawApiName}" → "${formattedName}"`);
+        console.log(`🔧 [API_NAME_FINAL] RAW API: "${pokemonData.name}" → FINAL: "${formattedName}"`);
 
         return {
           id: pokemonData.id,
-          name: formattedName,
+          name: formattedName, // Use the formatted name directly
           image: pokemonData.sprites.other['official-artwork'].front_default || 
                  pokemonData.sprites.front_default,
           types: pokemonData.types.map((type: any) => 

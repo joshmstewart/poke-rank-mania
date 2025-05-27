@@ -12,7 +12,7 @@ export const isStarterPokemon = (pokemon: Pokemon): boolean => {
 export const getPokemonFormCategory = (pokemon: Pokemon): PokemonFormType | null => {
   const name = pokemon.name.toLowerCase();
   
-  console.log(`🔍 [FORM_CATEGORIZATION] Analyzing: "${pokemon.name}" (ID: ${pokemon.id})`);
+  console.log(`🔍 [FORM_CATEGORIZATION_ENHANCED] Analyzing: "${pokemon.name}" (ID: ${pokemon.id})`);
   
   // Check for costumes (Pikachu caps and cosplay forms) - check this FIRST
   if ((name.includes("pikachu") && (
@@ -36,8 +36,8 @@ export const getPokemonFormCategory = (pokemon: Pokemon): PokemonFormType | null
     return "originPrimal";
   }
   
-  // Check for mega evolutions, gigantamax forms and eternamax forms (combined)
-  if (name.includes("mega") || name.includes("gmax") || name.includes("eternamax")) {
+  // Check for mega evolutions and gigantamax forms - ENHANCED detection
+  if (name.includes("mega") || name.includes("g-max") || name.includes("gmax") || name.includes("eternamax")) {
     console.log(`💥 [FORM_FILTER_DEBUG] ${pokemon.name} (${pokemon.id}) categorized as MEGA/GMAX`);
     return "megaGmax";
   }
@@ -75,8 +75,34 @@ export const getPokemonFormCategory = (pokemon: Pokemon): PokemonFormType | null
     return "forms";
   }
   
-  // ENHANCED: Ensure normal Pokemon are properly identified
-  // If none of the above categories match, it's definitely a normal Pokemon
-  console.log(`✅ [FORM_FILTER_DEBUG] ${pokemon.name} (${pokemon.id}) is NORMAL (standard form) - NO special patterns detected`);
+  // ENHANCED: Stricter normal Pokemon identification
+  // A Pokemon is normal if it has a standard Pokedex number (1-1000) AND no special form indicators
+  if (pokemon.id <= 1000 && 
+      !name.includes("mega") && 
+      !name.includes("gmax") && 
+      !name.includes("g-max") &&
+      !name.includes("alolan") && 
+      !name.includes("galarian") && 
+      !name.includes("hisuian") && 
+      !name.includes("paldean") &&
+      !name.includes("origin") &&
+      !name.includes("primal") &&
+      !name.includes("cap") &&
+      !name.includes("form") &&
+      !name.includes("style") &&
+      !name.includes("mode") &&
+      !name.includes("crowned")) {
+    console.log(`✅ [FORM_FILTER_DEBUG] ${pokemon.name} (${pokemon.id}) is NORMAL (standard form) - standard Pokedex number and no special indicators`);
+    return "normal";
+  }
+  
+  // If Pokemon has ID > 1000, it's likely a special form
+  if (pokemon.id > 1000) {
+    console.log(`🔄 [FORM_FILTER_DEBUG] ${pokemon.name} (${pokemon.id}) categorized as FORMS (high ID number)`);
+    return "forms";
+  }
+  
+  // Default to normal for any edge cases
+  console.log(`✅ [FORM_FILTER_DEBUG] ${pokemon.name} (${pokemon.id}) defaulting to NORMAL`);
   return "normal";
 };

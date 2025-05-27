@@ -1,7 +1,6 @@
 
 import React from "react";
 import { Pokemon } from "@/services/pokemon";
-import { formatPokemonName } from "@/utils/pokemonUtils";
 
 interface PokemonThumbnailProps {
   pokemon: Pokemon;
@@ -20,12 +19,12 @@ const PokemonThumbnail: React.FC<PokemonThumbnailProps> = ({
   showName = true,
   disabled = false
 }) => {
-  const formattedName = formatPokemonName(pokemon.name);
+  // CRITICAL FIX: Use the name EXACTLY as provided - NO MORE RE-FORMATTING
+  const displayName = pokemon.name;
   
-  // Add debugging for Pokemon name formatting in PokemonThumbnail
-  console.log(`🎯 [THUMBNAIL_NAME_DEBUG] Pokemon ID: ${pokemon.id}`);
-  console.log(`🎯 [THUMBNAIL_NAME_DEBUG] Raw name: "${pokemon.name}"`);
-  console.log(`🎯 [THUMBNAIL_NAME_DEBUG] Formatted name: "${formattedName}"`);
+  // Enhanced debugging for Pokemon name in PokemonThumbnail
+  console.log(`🎯 [THUMBNAIL_NAME_FINAL] Pokemon ID: ${pokemon.id}`);
+  console.log(`🎯 [THUMBNAIL_NAME_FINAL] Name used as-is: "${displayName}" (NO FORMATTING APPLIED)`);
 
   return (
     <div
@@ -40,7 +39,7 @@ const PokemonThumbnail: React.FC<PokemonThumbnailProps> = ({
       <div className="aspect-square bg-white rounded-lg border-2 border-gray-200 overflow-hidden">
         <img
           src={pokemon.image}
-          alt={formattedName}
+          alt={displayName}
           className="w-full h-full object-contain p-2"
           loading="lazy"
           onError={(e) => {
@@ -53,7 +52,7 @@ const PokemonThumbnail: React.FC<PokemonThumbnailProps> = ({
       {showName && (
         <div className="text-center mt-1">
           <h3 className="text-xs font-medium text-gray-800 line-clamp-2">
-            {formattedName}
+            {displayName}
           </h3>
         </div>
       )}
