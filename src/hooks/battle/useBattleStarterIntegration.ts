@@ -142,7 +142,10 @@ export const useBattleStarterIntegration = (
           if (startNewBattleCallbackRef.current) {
             const initialBattle = startNewBattleCallbackRef.current("pairs");
             if (initialBattle && initialBattle.length > 0) {
-              console.log(`✅ [INITIAL_BATTLE] Started with Pokemon: ${initialBattle.map(p => p.name).join(', ')}`);
+              console.log(`✅ [INITIAL_BATTLE] Generated battle: ${initialBattle.map(p => p.name).join(', ')}`);
+              // CRITICAL FIX: Set the battle immediately
+              setCurrentBattle(initialBattle);
+              setSelectedPokemon([]);
             }
           }
         } else {
@@ -152,7 +155,7 @@ export const useBattleStarterIntegration = (
     } else {
       console.log(`[${timestamp}] Skipping initial battle trigger - initialBattleStartedRef.current: ${initialBattleStartedRef.current}, currentBattle.length: ${currentBattle?.length || 0}`);
     }
-  }, [allPokemon.length > 0 ? 1 : 0, currentBattle?.length]); // CRITICAL FIX: Only depend on whether we HAVE Pokemon, not the exact count
+  }, [allPokemon.length > 0 ? 1 : 0, currentBattle?.length, setCurrentBattle, setSelectedPokemon]); // CRITICAL FIX: Only depend on whether we HAVE Pokemon, not the exact count
 
   // CRITICAL FIX: Simplified initialization
   useEffect(() => {
