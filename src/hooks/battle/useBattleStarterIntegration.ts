@@ -176,13 +176,12 @@ export const useBattleStarterIntegration = (
   }, []); // CRITICAL FIX: Empty dependency array - only run once
 
   const startNewBattle = useCallback((battleType: BattleType) => {
-    // CRITICAL: Get current battle count for flashing debug
+    // CRITICAL FIX: Enhanced logging for battle 10-11 transition
     const currentBattleCount = parseInt(localStorage.getItem('pokemon-battle-count') || '0', 10);
     
-    // CRITICAL: Log battle 10-11 transition specifically
     if (currentBattleCount === 10) {
-      console.error(`🔥 [BATTLE_FLASH_DEBUG] BATTLE 10->11 TRANSITION STARTING - THIS IS WHERE FLASHING HAPPENS!`);
-      console.error(`🔥 [BATTLE_FLASH_DEBUG] About to generate battle 11 WITHOUT clearing current battle first`);
+      console.error(`🔥 [BATTLE_10_11_FIX] CRITICAL: Battle 10->11 transition starting`);
+      console.error(`🔥 [BATTLE_10_11_FIX] Current battle before clearing: ${currentBattle?.map(p => p.name).join(' vs ') || 'none'}`);
     }
     
     const isInitialBattle = !initialBattleStartedRef.current || (!currentBattle || currentBattle.length === 0);
@@ -195,7 +194,7 @@ export const useBattleStarterIntegration = (
     battleTransitionCountRef.current++;
     const transitionId = battleTransitionCountRef.current;
     
-    console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] Starting battle generation WITHOUT clearing current battle`);
+    console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] Starting battle generation`);
     
     if (!allPokemon || allPokemon.length === 0) {
       console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] ❌ FAILED: No Pokemon data available`);
@@ -217,7 +216,7 @@ export const useBattleStarterIntegration = (
     battleGenerationInProgressRef.current = true;
     
     try {
-      // CRITICAL FIX: Generate new battle FIRST, don't clear current battle
+      // Generate new battle
       const battle = currentBattleStarter.startNewBattle(battleType, false, false);
       
       if (!battle || battle.length === 0) {
@@ -225,32 +224,16 @@ export const useBattleStarterIntegration = (
         return [];
       }
 
-      // CRITICAL: Log the new battle being set
       const battleIds = battle.map(p => p.id);
-      console.log(`🔄 [BATTLE_FLASH_DEBUG] Setting new battle directly - Battle #${currentBattleCount + 1}: [${battleIds.join(', ')}]`);
       
       if (currentBattleCount === 10) {
-        console.error(`🔥 [BATTLE_FLASH_DEBUG] SETTING BATTLE 11 DIRECTLY: ${battle.map(p => p.name).join(' vs ')}`);
+        console.error(`🔥 [BATTLE_10_11_FIX] Generated battle 11: ${battle.map(p => p.name).join(' vs ')}`);
+        console.error(`🔥 [BATTLE_10_11_FIX] Battle IDs: [${battleIds.join(', ')}]`);
       }
       
-      // Log the set action
-      battleSetHistoryRef.current.push({
-        battleNumber: currentBattleCount + 1,
-        pokemonIds: battleIds,
-        timestamp: new Date().toISOString(),
-        action: 'SET_NEW_BATTLE_DIRECT'
-      });
-      
-      // Keep only last 20 battle history entries
-      if (battleSetHistoryRef.current.length > 20) {
-        battleSetHistoryRef.current = battleSetHistoryRef.current.slice(-20);
-      }
-      
-      // CRITICAL FIX: Set new battle directly without clearing first
-      setCurrentBattle(battle);
-      // Clear selections AFTER setting new battle
-      setSelectedPokemon([]);
-      console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] ✅ SUCCESS: Battle set directly without clearing`);
+      // CRITICAL FIX: Return battle immediately without setting it here
+      // Let the caller handle setting the battle to prevent race conditions
+      console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] ✅ SUCCESS: Battle generated, returning to caller`);
       
       return battle;
 
@@ -262,10 +245,9 @@ export const useBattleStarterIntegration = (
     }
   }, [
     battleStarter,
-    setSelectedPokemon,
-    setCurrentBattle,
-    allPokemon.length
-  ]); // CRITICAL FIX: Removed currentRankings dependency
+    allPokemon.length,
+    currentBattle?.length
+  ]);
 
   // Update the ref whenever startNewBattle changes
   useEffect(() => {
