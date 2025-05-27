@@ -26,19 +26,16 @@ const BattleContent = ({
   setBattlesCompleted,
   setBattleResults,
 }: BattleContentProps) => {
-  // PERFORMANCE FIX: Track component instances and prevent unnecessary re-mounts
   const instanceIdRef = useRef(`content-${Date.now()}`);
   const battleStartedRef = useRef(false);
   const pokemonAnalysisLoggedRef = useRef(false);
   
   console.log(`[DEBUG BattleContent] Instance: ${instanceIdRef.current} render - allPokemon: ${allPokemon.length}`);
   
-  // PERFORMANCE FIX: Memoize initial battle type to prevent changes triggering re-mounts
   const stableInitialBattleType = useMemo(() => {
     return initialBattleType === "triplets" ? "triplets" : "pairs";
   }, [initialBattleType]);
   
-  // PERFORMANCE FIX: Stable reference to allPokemon to prevent hook re-initialization
   const stablePokemon = useMemo(() => allPokemon, [allPokemon.length]);
 
   const {
@@ -79,10 +76,20 @@ const BattleContent = ({
     initialSelectedGeneration
   );
 
-  // Only start battle once when component mounts and Pokemon are available
+  // Log showing milestone state changes - this might be causing gray screen
+  useEffect(() => {
+    console.log(`🔄 [GRAY SCREEN DEBUG] BattleContent showingMilestone changed:`, {
+      showingMilestone,
+      currentBattleLength: currentBattle?.length || 0,
+      isProcessingResult,
+      timestamp: new Date().toISOString()
+    });
+  }, [showingMilestone, currentBattle?.length, isProcessingResult]);
+
+  // Start battle once when component mounts
   useEffect(() => {
     if (stablePokemon.length > 0 && !battleStartedRef.current) {
-      console.log("BattleContent: Starting initial battle");
+      console.log("[GRAY SCREEN DEBUG] BattleContent: Starting initial battle");
       battleStartedRef.current = true;
       startNewBattle(stableInitialBattleType);
       localStorage.setItem('pokemon-ranker-battle-type', stableInitialBattleType);
@@ -104,9 +111,8 @@ const BattleContent = ({
     return Math.max(0, Math.ceil(totalBattlesNeeded - battlesCompleted));
   };
 
-  // PERFORMANCE FIX: Stable handlers to prevent unnecessary re-renders
   const handleBattleTypeChange = useCallback((newType: BattleType) => {
-    console.log("BattleContent: Changing battle type from", battleType, "to", newType);
+    console.log("[GRAY SCREEN DEBUG] BattleContent: Changing battle type from", battleType, "to", newType);
     setBattleType(newType);
     startNewBattle(newType);
     resetMilestones();
@@ -135,7 +141,7 @@ const BattleContent = ({
   }, [resetMilestones, resetMilestoneInProgress, startNewBattle, battleType]);
 
   const handleSaveRankings = useCallback(() => {
-    console.log("Rankings saved!");
+    console.log("[GRAY SCREEN DEBUG] Rankings saved!");
     setShowingMilestone(false);
     if (resetMilestoneInProgress) {
       resetMilestoneInProgress();
@@ -143,7 +149,7 @@ const BattleContent = ({
   }, [setShowingMilestone, resetMilestoneInProgress]);
 
   const handleTierChange = useCallback((tier: TopNOption) => {
-    console.log("Changing tier to:", tier);
+    console.log("[GRAY SCREEN DEBUG] Changing tier to:", tier);
     setActiveTier(tier);
   }, [setActiveTier]);
 
@@ -153,17 +159,26 @@ const BattleContent = ({
   }, [battlesCompleted, calculateCompletionPercentage]);
 
   if (!stablePokemon.length) {
+    console.log(`🔄 [GRAY SCREEN DEBUG] BattleContent showing Pokemon loading - this could be gray screen source`);
     return <div className="flex justify-center items-center h-64">Loading Pokémon...</div>;
   }
 
   const handleTripletSelectionWrapper = () => {
+    console.log("[GRAY SCREEN DEBUG] BattleContent: handleTripletSelectionWrapper called");
     handleTripletSelectionComplete();
   };
 
   const handleGoBack = () => {
-    console.log("BattleContent: Handling go back");
+    console.log("[GRAY SCREEN DEBUG] BattleContent: Handling go back");
     goBack();
   };
+
+  console.log(`🔄 [GRAY SCREEN DEBUG] BattleContent rendering main content:`, {
+    showingMilestone,
+    currentBattleLength: currentBattle?.length || 0,
+    isProcessingResult,
+    timestamp: new Date().toISOString()
+  });
 
   return (
     <div className="flex flex-col items-center w-full gap-4">
@@ -193,7 +208,6 @@ const BattleContent = ({
         </div>
       </div>
       
-      {/* PERFORMANCE FIX: Use conditional rendering instead of CSS visibility */}
       <div className="w-full max-w-4xl">
         {showingMilestone ? (
           <RankingDisplay

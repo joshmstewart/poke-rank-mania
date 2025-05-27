@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useRef, memo } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "@/hooks/battle/types";
@@ -22,7 +23,6 @@ interface BattleInterfaceProps {
   isProcessing?: boolean;
 }
 
-// Optimization: Memoize the most expensive components and stabilize props
 const BattleInterface: React.FC<BattleInterfaceProps> = memo(({
   currentBattle,
   selectedPokemon,
@@ -35,7 +35,6 @@ const BattleInterface: React.FC<BattleInterfaceProps> = memo(({
   milestones,
   isProcessing = false
 }) => {
-  // Component state - simplified without internalProcessing
   const [animationKey, setAnimationKey] = useState(0);
   const [displayedBattlesCompleted, setDisplayedBattlesCompleted] = useState(battlesCompleted);
   const [previousBattleIds, setPreviousBattleIds] = useState<number[]>([]);
@@ -43,11 +42,13 @@ const BattleInterface: React.FC<BattleInterfaceProps> = memo(({
   const selectionTimestampRef = useRef(0);
   const lastProcessedBattleRef = useRef<number[]>([]);
   
-  // FIXED: Removed internalProcessing state and timeout management
-  console.log(`🔄 [LOADING CIRCLES DEBUG] BattleInterface simplified - only using isProcessing:`, {
+  console.log(`🔄 [GRAY SCREEN DEBUG] BattleInterface render state:`, {
     isProcessing,
+    currentBattleLength: currentBattle?.length || 0,
+    currentBattleIds: currentBattle?.map(p => p.id) || [],
+    hasValidBattle: currentBattle && currentBattle.length > 0,
     timestamp: new Date().toISOString(),
-    source: 'BattleInterface-simplified'
+    source: 'BattleInterface-main'
   });
   
   const { getNextMilestone, getMilestoneProgress } = useMilestoneCalculations(
@@ -55,73 +56,54 @@ const BattleInterface: React.FC<BattleInterfaceProps> = memo(({
     milestones
   );
   
-  // Validate current battle Pokemon to ensure image and name consistency
+  // Validate current battle Pokemon
   const validatedBattle = currentBattle ? validateBattlePokemon(currentBattle) : [];
 
-  // OPTIMIZATION: Only update animation key and logs when battle actually changes
+  // Log when battle data changes
   useEffect(() => {
-    if (!validatedBattle || validatedBattle.length === 0) return;
+    if (!validatedBattle || validatedBattle.length === 0) {
+      console.log(`🔄 [GRAY SCREEN DEBUG] BattleInterface: No validated battle data - this might cause gray screen`);
+      return;
+    }
     
     const currentIds = validatedBattle.map(p => p.id);
     
-    // Check if this is actually a new battle compared to what we last processed
+    // Check if this is actually a new battle
     const isSameAsPreviousProcessed = lastProcessedBattleRef.current.length === currentIds.length && 
       lastProcessedBattleRef.current.every(id => currentIds.includes(id)) &&
       currentIds.every(id => lastProcessedBattleRef.current.includes(id));
       
     if (isSameAsPreviousProcessed) {
-      console.log("🔍 BattleInterface: Received same battle as already processed, skipping animation update");
+      console.log("🔍 [GRAY SCREEN DEBUG] BattleInterface: Same battle as processed, skipping animation update");
       return;
     }
     
-    // Update our reference to the last processed battle
+    // Update references
     lastProcessedBattleRef.current = currentIds;
-    
-    // Increment animation key for fresh animations
     setAnimationKey(prev => prev + 1);
       
-    // Debug: Log every time current battle changes
     const currentNames = validatedBattle.map(p => p.name);
-    
     const isSameAsPrevious = previousBattleIds.length === currentIds.length && 
       previousBattleIds.every(id => currentIds.includes(id));
     
-    const detailedLog = `Battle changed to [${currentIds.join(',')}] (${currentNames.join(', ')}) - Same as previous: ${isSameAsPrevious ? "YES ⚠️" : "NO ✅"}`;
-    console.log(`🔄 BattleInterface: ${detailedLog}`);
+    console.log(`🔄 [GRAY SCREEN DEBUG] BattleInterface battle change: [${currentIds.join(',')}] (${currentNames.join(', ')}) - Same as previous: ${isSameAsPrevious ? "YES ⚠️" : "NO ✅"}`);
     
-    // Log battle type and expected Pokemon count
-    console.log(`🔄 BattleInterface: Battle type: ${battleType}, Expected Pokémon count: ${battleType === "triplets" ? 3 : 2}, Actual count: ${validatedBattle.length}`);
-    
-    // When detecting repeated battle, log more details
     if (isSameAsPrevious) {
-      console.warn(`⚠️ REPEAT BATTLE: Same Pokemon IDs detected in BattleInterface!`);
-      console.warn(`⚠️ Previous: [${previousBattleIds.join(',')}], Current: [${currentIds.join(',')}]`);
+      console.warn(`⚠️ [GRAY SCREEN DEBUG] REPEAT BATTLE detected in BattleInterface!`);
     }
     
-    // Create a custom event for monitoring battles
-    const battleEvent = new CustomEvent('battle-displayed', { 
-      detail: { 
-        pokemonIds: currentIds,
-        pokemonNames: validatedBattle.map(p => p.name),
-        isSameAsPrevious: isSameAsPrevious,
-        battleType
-      } 
-    });
-    document.dispatchEvent(battleEvent);
-    
-    // Store current IDs as previous for next comparison
     setPreviousBattleIds(currentIds);
-  }, [validatedBattle.map(p => p.id).join(','), battleType]); // Only depend on ID string, not entire objects
+  }, [validatedBattle.map(p => p.id).join(','), battleType]);
   
-  // Update displayed battles completed for smoother UI
+  // Update battles completed
   useEffect(() => {
     setDisplayedBattlesCompleted(battlesCompleted);
-    console.log(`🔢 Battles completed updated to: ${battlesCompleted}`);
+    console.log(`🔢 [GRAY SCREEN DEBUG] Battles completed updated to: ${battlesCompleted}`);
   }, [battlesCompleted]);
   
-  // FIXED: Simplified click handler without internalProcessing
+  // Click handlers
   const handlePokemonCardSelect = useCallback((id: number) => {
-    console.log(`🖱️ [LOADING CIRCLES DEBUG] handlePokemonCardSelect called:`, {
+    console.log(`🖱️ [GRAY SCREEN DEBUG] handlePokemonCardSelect:`, {
       id,
       isProcessing,
       willIgnore: isProcessing,
@@ -131,87 +113,75 @@ const BattleInterface: React.FC<BattleInterfaceProps> = memo(({
     if (!isProcessing) {
       const now = Date.now();
       
-      // Prevent rapid double clicks
       if (id === lastSelectionRef.current && now - selectionTimestampRef.current < 300) {
-        console.log(`⏱️ Ignoring repeated selection of Pokemon ${id}`);
+        console.log(`⏱️ [GRAY SCREEN DEBUG] Ignoring repeated selection of Pokemon ${id}`);
         return;
       }
       
-      // Update refs
       lastSelectionRef.current = id;
       selectionTimestampRef.current = now;
       
-      console.log(`🖱️ BattleInterface: Handling Pokemon selection: ${id}`);
+      console.log(`🖱️ [GRAY SCREEN DEBUG] Processing Pokemon selection: ${id}`);
       onPokemonSelect(id);
     } else {
-      console.log(`⏳ [LOADING CIRCLES] BattleInterface: Ignoring click while processing`);
+      console.log(`⏳ [GRAY SCREEN DEBUG] Ignoring click while processing`);
     }
   }, [isProcessing, onPokemonSelect]);
 
-  // FIXED: Simplified submit handler without internalProcessing
   const handleSubmit = useCallback(() => {
-    console.log(`🔄 [LOADING CIRCLES DEBUG] handleSubmit called:`, {
+    console.log(`🔄 [GRAY SCREEN DEBUG] handleSubmit:`, {
       isProcessing,
       willIgnore: isProcessing,
       timestamp: new Date().toISOString()
     });
     
     if (!isProcessing) {
-      console.log("BattleInterface: Submitting triplet selection");
+      console.log("[GRAY SCREEN DEBUG] Submitting triplet selection");
       onTripletSelectionComplete();
     }
   }, [isProcessing, onTripletSelectionComplete]);
 
-  // FIXED: Simplified back handler without internalProcessing
   const handleBackClick = useCallback(() => {
-    console.log(`🔄 [LOADING CIRCLES DEBUG] handleBackClick called:`, {
+    console.log(`🔄 [GRAY SCREEN DEBUG] handleBackClick:`, {
       isProcessing,
       willIgnore: isProcessing,
       timestamp: new Date().toISOString()
     });
     
     if (!isProcessing) {
-      console.log("BattleInterface: Handling back button click");
+      console.log("[GRAY SCREEN DEBUG] Handling back button click");
       onGoBack();
     }
   }, [isProcessing, onGoBack]);
 
-  // OPTIMIZED: Helper to validate battle configuration
+  // Battle type validation
   useEffect(() => {
-    // Skip if no battle
     if (!validatedBattle || validatedBattle.length === 0) return;
     
-    // Validate that battle type matches the number of Pokémon
     const expectedCount = battleType === "triplets" ? 3 : 2;
     if (validatedBattle.length !== expectedCount) {
-      console.warn(`⚠️ BATTLE TYPE MISMATCH: Type is ${battleType} but have ${validatedBattle.length} Pokémon`);
+      console.warn(`⚠️ [GRAY SCREEN DEBUG] BATTLE TYPE MISMATCH: Type is ${battleType} but have ${validatedBattle.length} Pokémon`);
       
-      // Create a custom event to report this issue
-      const mismatchEvent = new CustomEvent('battle-type-mismatch', {
-        detail: {
-          battleType,
-          pokemonCount: validatedBattle.length,
-          expectedCount,
-          pokemonIds: validatedBattle.map(p => p.id)
-        }
-      });
-      document.dispatchEvent(mismatchEvent);
-
-      // Show toast notification when there's a mismatch
       toast({
         title: "Battle Type Mismatch",
         description: `Expected ${expectedCount} Pokémon for ${battleType} battles, but got ${validatedBattle.length}. This will be fixed automatically.`,
-        duration: 3000, // Reduced from 5000ms to 3000ms
+        duration: 3000,
       });
     }
-  }, [validatedBattle.length, battleType]); // Only depend on length and type, not entire battle array
+  }, [validatedBattle.length, battleType]);
 
-  // Helper to ensure correct submit button display based on battle type
   const shouldShowSubmitButton = battleType === "triplets";
   
-  // Only render if we have Pokemon to display
+  // CRITICAL: Check for the gray screen condition
   if (!validatedBattle || validatedBattle.length === 0) {
-    console.log(`🔄 [LOADING CIRCLES DEBUG] BattleInterface showing loading spinner (no battle data)`);
+    console.log(`🔄 [GRAY SCREEN DEBUG] BattleInterface showing loading spinner - THIS MIGHT BE THE GRAY SCREEN SOURCE`);
+    console.log(`🔄 [GRAY SCREEN DEBUG] Spinner details:`, {
+      currentBattle: currentBattle?.length || 0,
+      validatedBattle: validatedBattle?.length || 0,
+      isProcessing,
+      timestamp: new Date().toISOString()
+    });
+    
     return (
       <div className="bg-white rounded-lg shadow p-6 flex items-center justify-center h-64 w-full">
         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-primary"></div>
@@ -219,9 +189,9 @@ const BattleInterface: React.FC<BattleInterfaceProps> = memo(({
     );
   }
   
-  console.log(`🔄 [LOADING CIRCLES DEBUG] BattleInterface rendering with simplified processing:`, {
+  console.log(`🔄 [GRAY SCREEN DEBUG] BattleInterface rendering normally:`, {
     isProcessing,
-    showingLoadingCircles: isProcessing,
+    validatedBattleLength: validatedBattle.length,
     timestamp: new Date().toISOString()
   });
   
@@ -265,7 +235,6 @@ const BattleInterface: React.FC<BattleInterfaceProps> = memo(({
   );
 });
 
-// Add display name for easier debugging
 BattleInterface.displayName = "BattleInterface";
 
 export default BattleInterface;
