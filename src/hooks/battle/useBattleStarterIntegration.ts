@@ -57,6 +57,10 @@ export const useBattleStarterIntegration = (
   const initialGetBattleFiredRef = useRef(false);
   const initializationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
+  // CRITICAL FIX: Add milestone coordination refs
+  const milestoneBlockedRef = useRef(false);
+  const pendingBattleRequestRef = useRef<BattleType | null>(null);
+  
   // Store the battleStarter ref for stable access
   const battleStarterInstanceRef = useRef<ReturnType<typeof createBattleStarter> | null>(null);
   const startNewBattleRefFn = useRef<((type: BattleType) => Pokemon[]) | null>(null);
@@ -72,6 +76,33 @@ export const useBattleStarterIntegration = (
   
   console.log('[DEBUG useBattleStarterIntegration] forcedPriorityBattlesRef initialized to:', forcedPriorityBattlesRef.current);
   
+  // CRITICAL FIX: Add milestone event listeners
+  useEffect(() => {
+    const handleMilestoneUnblocked = () => {
+      console.log('[MILESTONE_COORD] Milestone unblocked event received');
+      milestoneBlockedRef.current = false;
+      
+      // Process any pending battle request
+      if (pendingBattleRequestRef.current) {
+        const pendingType = pendingBattleRequestRef.current;
+        pendingBattleRequestRef.current = null;
+        
+        console.log(`[MILESTONE_COORD] Processing pending battle request: ${pendingType}`);
+        setTimeout(() => {
+          if (startNewBattleCallbackRef.current) {
+            startNewBattleCallbackRef.current(pendingType);
+          }
+        }, 100);
+      }
+    };
+    
+    document.addEventListener('milestone-unblocked', handleMilestoneUnblocked);
+    
+    return () => {
+      document.removeEventListener('milestone-unblocked', handleMilestoneUnblocked);
+    };
+  }, []);
+
   // Initialize component state tracking - MEMOIZED to prevent re-runs
   useEffect(() => {
     const timestamp = new Date().toISOString();
@@ -160,6 +191,13 @@ export const useBattleStarterIntegration = (
     console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] ===== Starting Battle Transition Analysis =====`);
     console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] Requested battleType: ${battleType}`);
     
+    // CRITICAL FIX: Check if milestone is blocking battle generation
+    if (milestoneBlockedRef.current) {
+      console.log(`[MILESTONE_COORD] Battle generation blocked by milestone, queuing request: ${battleType}`);
+      pendingBattleRequestRef.current = battleType;
+      return [];
+    }
+    
     const timestamp = new Date().toISOString();
     console.log(`[${timestamp}] startNewBattle called with battleType: ${battleType}`);
     
@@ -169,8 +207,7 @@ export const useBattleStarterIntegration = (
     console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] - currentRankings.length: ${currentRankings.length}`);
     console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] - initializationCompleteRef.current: ${initializationCompleteRef.current}`);
     console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] - battleGenerationInProgressRef.current: ${battleGenerationInProgressRef.current}`);
-    console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] - previousBattleIds.current: [${previousBattleIds.current.join(', ')}]`);
-    console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] - lastSetBattleIdsRef.current: [${lastSetBattleIdsRef.current.join(', ')}]`);
+    console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] - milestoneBlockedRef.current: ${milestoneBlockedRef.current}`);
     
     if (!allPokemon || allPokemon.length === 0) {
       console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] ❌ FAILED: No Pokemon data available. allPokemon?.length: ${allPokemon?.length}`);
@@ -196,14 +233,6 @@ export const useBattleStarterIntegration = (
     console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] Setting battleGenerationInProgressRef.current = true`);
     battleGenerationInProgressRef.current = true;
     
-    if (!initialGetBattleFiredRef.current) {
-      initialGetBattleFiredRef.current = true;
-      console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] This is the initial startNewBattle call`);
-    } else {
-      console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] This is a subsequent startNewBattle call (transition to next battle)`);
-    }
-    
-    // CRITICAL FIX: Remove throttling during battle transitions to prevent loading gaps
     const now = Date.now();
     
     console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] ✅ PASSED: Throttling disabled for seamless transitions`);
@@ -413,9 +442,7 @@ export const useBattleStarterIntegration = (
     console.log('[DEBUG useBattleStarterIntegration] Updated startNewBattleCallbackRef with new function');
   }, [startNewBattle]);
 
-  // ... keep existing code (event listeners setup)
-
-  const { performEmergencyReset } = useBattleEmergencyReset(
+  const performEmergencyReset = useBattleEmergencyReset(
     [] as Pokemon[],
     setCurrentBattle,
     allPokemon,

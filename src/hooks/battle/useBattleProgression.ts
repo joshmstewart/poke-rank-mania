@@ -13,6 +13,7 @@ export const useBattleProgression = (
   const milestoneTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const milestoneTracker = useRef<Set<number>>(new Set());
   const lastTriggeredMilestoneRef = useRef<number | null>(null);
+  const battleGenerationBlockedRef = useRef(false);
 
   useEffect(() => {
     return () => {
@@ -20,12 +21,11 @@ export const useBattleProgression = (
     };
   }, []);
 
-  // CRITICAL FIX: Simplified milestone detection without processing flags that block detection
+  // CRITICAL FIX: Enhanced milestone detection with battle generation blocking
   const checkMilestone = useCallback((newBattlesCompleted: number, battleResults: any[]): boolean => {
     console.log(`🔍 MILESTONE CHECK: Checking ${newBattlesCompleted} battles against milestones: ${milestones.join(', ')}`);
     console.log(`🔍 MILESTONE CHECK: Already tracked milestones: ${Array.from(milestoneTracker.current).join(', ')}`);
     
-    // CRITICAL FIX: Check if this exact battle count is a milestone AND hasn't been tracked yet
     const isExactMilestone = milestones.includes(newBattlesCompleted);
     const notYetTracked = !milestoneTracker.current.has(newBattlesCompleted);
     
@@ -33,6 +33,9 @@ export const useBattleProgression = (
     
     if (isExactMilestone && notYetTracked) {
       console.log(`🎯 MILESTONE HIT: Battle ${newBattlesCompleted} reached milestone!`);
+      
+      // CRITICAL FIX: Block battle generation during milestone transition
+      battleGenerationBlockedRef.current = true;
       
       // Immediately mark as tracked to prevent duplicates
       milestoneTracker.current.add(newBattlesCompleted);
@@ -43,12 +46,15 @@ export const useBattleProgression = (
         console.log(`🔵 useBattleProgression: Generating rankings for milestone ${newBattlesCompleted}`);
         generateRankings(battleResults);
         setShowingMilestone(true);
+        
+        console.log(`🚫 MILESTONE: Battle generation BLOCKED during milestone ${newBattlesCompleted}`);
         return true;
       } catch (err) {
         console.error("Error generating rankings at milestone:", err);
         // Reset flags on error
         milestoneTracker.current.delete(newBattlesCompleted);
         showingMilestoneRef.current = false;
+        battleGenerationBlockedRef.current = false;
         return false;
       }
     }
@@ -70,7 +76,6 @@ export const useBattleProgression = (
     setBattlesCompleted(newBattleCount);
     console.log(`✅ setBattlesCompleted called with: ${newBattleCount}`);
     
-    // CRITICAL FIX: Check milestone BEFORE clearing processing flag
     const milestoneTriggered = checkMilestone(newBattleCount, battleResults);
     
     if (milestoneTriggered) {
@@ -83,11 +88,25 @@ export const useBattleProgression = (
     return null;
   }, [setBattlesCompleted, checkMilestone, battlesCompleted]);
 
+  // CRITICAL FIX: Enhanced reset that unblocks battle generation
   const resetMilestone = useCallback(() => {
     console.log("🔄 Resetting milestone state in useBattleProgression");
     showingMilestoneRef.current = false;
     setShowingMilestone(false);
     lastTriggeredMilestoneRef.current = null;
+    
+    // CRITICAL FIX: Unblock battle generation when milestone is properly dismissed
+    setTimeout(() => {
+      battleGenerationBlockedRef.current = false;
+      console.log("✅ MILESTONE: Battle generation UNBLOCKED after milestone dismissal");
+      
+      // Dispatch event to signal it's safe to generate new battles
+      const unblockEvent = new CustomEvent('milestone-unblocked', {
+        detail: { timestamp: Date.now() }
+      });
+      document.dispatchEvent(unblockEvent);
+    }, 300); // Delay to ensure UI updates are complete
+    
     console.log("✅ useBattleProgression: milestone tracking state reset");
   }, [setShowingMilestone]);
 
@@ -96,11 +115,17 @@ export const useBattleProgression = (
     incrementInProgressRef.current = false;
   }, []);
 
+  // CRITICAL FIX: Check if battle generation is blocked
+  const isBattleGenerationBlocked = useCallback(() => {
+    return battleGenerationBlockedRef.current;
+  }, []);
+
   return {
     checkMilestone,
     incrementBattlesCompleted,
     isShowingMilestone: showingMilestoneRef.current,
     resetMilestone,
-    clearMilestoneProcessing
+    clearMilestoneProcessing,
+    isBattleGenerationBlocked
   };
 };
