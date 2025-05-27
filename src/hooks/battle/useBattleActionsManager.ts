@@ -105,7 +105,7 @@ export const useBattleActionsManager = (
     currentBattle,
     stableSetCurrentBattle,
     selectedPokemon,
-    stableSetCurrentBattle,
+    setSelectedPokemon,
     battleResults,
     setBattleResults,
     battlesCompleted,

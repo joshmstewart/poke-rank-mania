@@ -173,11 +173,11 @@ export const useBattleStateCore = (
       try {
         const parsed = JSON.parse(savedSuggestions);
         const count = Object.keys(parsed).length;
-        console.log(`🔢 Found ${count} suggestions in localStorage`);
+        console.log(`🔢 Found ${count.toString()} suggestions in localStorage`);
         lastSuggestionLoadTimestampRef.current = Date.now();
         
         const loadedSuggestions = loadSavedSuggestions();
-        console.log(`⭐ useBattleStateCore: Initial load: Loaded ${loadedSuggestions.size} suggestions`);
+        console.log(`⭐ useBattleStateCore: Initial load: Loaded ${loadedSuggestions.size.toString()} suggestions`);
         
         if (battleResults.length > 0) {
           console.log("⚙️ useBattleStateCore: Triggering initial generateRankings to apply loaded suggestions");
