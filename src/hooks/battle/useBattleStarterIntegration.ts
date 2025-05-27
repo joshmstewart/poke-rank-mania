@@ -1,4 +1,3 @@
-
 import { useMemo, useEffect, useRef, useCallback } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
@@ -43,7 +42,8 @@ export const useBattleStarterIntegration = (
   const instanceIdRef = useRef(`battleStarter-${Date.now()}`);
   console.log('[DEBUG useBattleStarterIntegration] Instance:', instanceIdRef.current, 'allPokemon length:', allPokemon?.length || 0);
   
-  // CRITICAL FIX: Track when battleStarter was first created to prevent recreation
+  // CRITICAL FIX: Track when initial battle has been started to prevent multiple starts
+  const initialBattleStartedRef = useRef(false);
   const battleStarterCreatedRef = useRef(false);
   const stablePokemonLengthRef = useRef(0);
   
@@ -64,7 +64,6 @@ export const useBattleStarterIntegration = (
   
   // CRITICAL FIX: Enhanced auto-trigger control with milestone coordination
   const autoTriggerDisabledRef = useRef(false);
-  const initialBattleStartedRef = useRef(false);
   
   // Store the battleStarter ref for stable access - CRITICAL FIX: Store the extended version
   const battleStarterInstanceRef = useRef<ExtendedBattleStarter | null>(null);
@@ -112,13 +111,39 @@ export const useBattleStarterIntegration = (
     };
   }, []);
 
-  // CRITICAL FIX: REMOVE AUTOMATIC BATTLE STARTING - Let parent components handle this explicitly
-  // This was the source of the auto-refresh problem - Pokemon loading should NOT auto-start battles
-
-  // CRITICAL FIX: Simplified initialization - NO auto-trigger on init
+  // CRITICAL FIX: Start initial battle when Pokemon data is available - but only once
   useEffect(() => {
     const timestamp = new Date().toISOString();
-    console.log(`[${timestamp}] useBattleStarterIntegration initialized - NO AUTO-BATTLE TRIGGERS`);
+    console.log(`[${timestamp}] useBattleStarterIntegration Pokemon data check: ${allPokemon?.length || 0} Pokemon available`);
+    
+    // CRITICAL FIX: Only start initial battle if we have Pokemon AND haven't started yet AND no current battle exists
+    if (allPokemon && allPokemon.length > 0 && !initialBattleStartedRef.current && (!currentBattle || currentBattle.length === 0)) {
+      console.log(`[${timestamp}] Starting initial battle with ${allPokemon.length} Pokemon`);
+      initialBattleStartedRef.current = true;
+      
+      // Start initial battle after short delay to ensure all systems are ready
+      setTimeout(() => {
+        if (!autoTriggerDisabledRef.current && (!currentBattle || currentBattle.length === 0)) {
+          console.log(`[${timestamp}] Triggering initial battle start`);
+          if (startNewBattleCallbackRef.current) {
+            const initialBattle = startNewBattleCallbackRef.current("pairs");
+            if (initialBattle && initialBattle.length > 0) {
+              console.log(`✅ [INITIAL_BATTLE] Started with Pokemon: ${initialBattle.map(p => p.name).join(', ')}`);
+            }
+          }
+        } else {
+          console.log(`[${timestamp}] Skipping initial battle - auto-triggers disabled or battle already exists`);
+        }
+      }, 500);
+    } else {
+      console.log(`[${timestamp}] Skipping initial battle trigger - initialBattleStartedRef.current: ${initialBattleStartedRef.current}, currentBattle.length: ${currentBattle?.length || 0}`);
+    }
+  }, [allPokemon.length > 0 ? 1 : 0, currentBattle?.length]); // CRITICAL FIX: Only depend on whether we HAVE Pokemon, not the exact count
+
+  // CRITICAL FIX: Simplified initialization
+  useEffect(() => {
+    const timestamp = new Date().toISOString();
+    console.log(`[${timestamp}] useBattleStarterIntegration initialized with ${allPokemon?.length || 0} Pokémon`);
     
     if (initializationTimerRef.current) {
       clearTimeout(initializationTimerRef.current);
@@ -192,8 +217,13 @@ export const useBattleStarterIntegration = (
   ]);
 
   const startNewBattle = useCallback((battleType: BattleType) => {
-    // CRITICAL FIX: Log that this is an EXPLICIT battle start, not auto-triggered
-    console.log(`[EXPLICIT_BATTLE_START] Manual battle start requested - battleType: ${battleType}`);
+    // CRITICAL FIX: Allow initial battles but block unwanted auto-replacements
+    const isInitialBattle = !initialBattleStartedRef.current || (!currentBattle || currentBattle.length === 0);
+    
+    if (autoTriggerDisabledRef.current && !isInitialBattle) {
+      console.log('[AUTO_TRIGGER_PREVENTION] Auto-trigger disabled - ignoring non-initial battle request');
+      return [];
+    }
     
     // CRITICAL: Increment battle transition counter for debugging
     battleTransitionCountRef.current++;
@@ -202,6 +232,7 @@ export const useBattleStarterIntegration = (
     console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] ===== Starting Battle Transition Analysis =====`);
     console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] Requested battleType: ${battleType}`);
     console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] autoTriggerDisabledRef.current: ${autoTriggerDisabledRef.current}`);
+    console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] isInitialBattle: ${isInitialBattle}`);
     
     const timestamp = new Date().toISOString();
     console.log(`[${timestamp}] startNewBattle called with battleType: ${battleType}`);
@@ -230,208 +261,32 @@ export const useBattleStarterIntegration = (
     console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] Setting battleGenerationInProgressRef.current = true`);
     battleGenerationInProgressRef.current = true;
     
-    const now = Date.now();
-    
-    console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] ✅ PASSED: Throttling disabled for seamless transitions`);
-    console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] Starting new battle with allPokemon size: ${allPokemon.length}, currentRankings size: ${currentRankings.length}`);
-    
-    const rankedIds = new Set(currentRankings.map(p => p.id));
-    const unrankedPokemon = allPokemon.filter(p => !rankedIds.has(p.id));
-    console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] - unranked Pokémon count: ${unrankedPokemon.length}`);
-    
-    if (milestoneCrossedRef.current) {
-      console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] Post-milestone battle. Will prioritize unranked Pokémon selection.`);
-      milestoneCrossedRef.current = false;
-      consecutiveBattlesWithoutNewPokemonRef.current = 0;
-    }
-
-    const suggestedPokemon = currentRankings.filter(
-      p => p.suggestedAdjustment && !p.suggestedAdjustment.used
-    );
-    console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] Available suggestedPokemon.length:`, suggestedPokemon.length);
-
-    const shouldForcePriority = forcedPriorityBattlesRef.current > 0 && suggestedPokemon.length > 0;
-    console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] shouldForcePriority decision:`, shouldForcePriority);
-    
-    priorityModeActiveRef.current = suggestedPokemon.length > 0 && forcedPriorityBattlesRef.current > 0;
-
-    let battle: Pokemon[] = [];
-    let forceUnrankedSelection = false;
-    
-    const MAX_BATTLES_WITHOUT_NEW_POKEMON = 3;
-    if (consecutiveBattlesWithoutNewPokemonRef.current >= MAX_BATTLES_WITHOUT_NEW_POKEMON) {
-      forceUnrankedSelection = true;
-      console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] FORCING unranked selection after ${consecutiveBattlesWithoutNewPokemonRef.current} battles without new Pokémon`);
-    }
-    
-    if (milestoneCrossedRef.current || 
-        (unrankedPokemon.length > 0 && unrankedPokemon.length > (currentRankings.length * 9))) {
-      forceUnrankedSelection = true;
-      console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] Forcing unranked selection for variety:`, forceUnrankedSelection);
-    }
-    
     try {
-      console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] ===== Calling battleStarter.startNewBattle =====`);
-      console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] Parameters: battleType=${battleType}, forceSuggestion=${shouldForcePriority}, forceUnranked=${forceUnrankedSelection}`);
+      const battle = currentBattleStarter.startNewBattle(battleType, false, false);
       
-      if (shouldForcePriority) {
-        console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] 🚨 Explicitly FORCING a suggestion-priority battle. forceUnrankedSelection: ${forceUnrankedSelection}`);
-        battle = currentBattleStarter.startNewBattle(battleType, true, forceUnrankedSelection);
-
-        const battleIncludesSuggestion = battle.some(pokemon => {
-          const rankedPokemon = currentRankings.find(p => p.id === pokemon.id);
-          return rankedPokemon?.suggestedAdjustment && !rankedPokemon.suggestedAdjustment.used;
-        });
-
-        if (battleIncludesSuggestion) {
-          forcedPriorityBattlesRef.current--;
-          console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] forcedPriorityBattlesRef decremented to:`, 
-            forcedPriorityBattlesRef.current, 'after successfully including a suggestion');
-        } else {
-          console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] No suggestion included in battle despite forced priority. Counter unchanged:`, forcedPriorityBattlesRef.current);
-          if (forcedPriorityBattlesRef.current > 0) {
-            forcedPriorityBattlesRef.current--;
-            console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] Decrementing counter anyway to prevent stalling:`, forcedPriorityBattlesRef.current);
-          }
-        }
-      } else {
-        console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] 🎮 Using standard battle selection (forceUnrankedSelection: ${forceUnrankedSelection})`);
-        battle = currentBattleStarter.startNewBattle(battleType, false, forceUnrankedSelection);
-      }
-
-      console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] ===== battleStarter.startNewBattle returned =====`);
-      console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] Returned battle length: ${battle?.length || 0}`);
-      if (battle && battle.length > 0) {
-        const battleIds = battle.map(p => p.id);
-        const battleNames = battle.map(p => p.name);
-        console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] Returned battle IDs: [${battleIds.join(', ')}]`);
-        console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] Returned battle names: [${battleNames.join(', ')}]`);
-      }
-
       if (!battle || battle.length === 0) {
         console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] ❌ FAILED: Battle generation failed, not updating state`);
         return [];
       }
 
-      if (battle && markSuggestionFullyUsed) {
-        battle.forEach(pokemonInBattle => {
-          const pk = pokemonInBattle as RankedPokemon;
-          if (pk.suggestedAdjustment && pk.suggestedAdjustment.used === true) {
-            console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] Detected ${pk.name} was marked as fully used by createBattleStarter. Persisting this state.`);
-            markSuggestionFullyUsed(pk, true);
-          }
-        });
-      }
-
-      const hasSuggestionInBattle = battle.some(pokemon => {
-        const rankedPokemon = currentRankings.find(p => p.id === pokemon.id);
-        return rankedPokemon?.suggestedAdjustment && !rankedPokemon.suggestedAdjustment.used;
-      });
-
-      const newPokemonCount = battle.filter(pokemon => !currentRankings.some(rp => rp.id === pokemon.id)).length;
-
-      if (hasSuggestionInBattle) {
-        suggestionBattleCountRef.current++;
-        console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] ✅ Battle explicitly contains suggestion (#${suggestionBattleCountRef.current} since milestone).`);
-      } else if (newPokemonCount > 0) {
-        console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] ✅ Battle introduces ${newPokemonCount} new Pokémon that weren't previously ranked.`);
-        consecutiveBattlesWithoutNewPokemonRef.current = 0;
-      } else {
-        console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] 🚫 Battle contains no suggestions and no new Pokémon explicitly.`);
-        consecutiveBattlesWithoutNewPokemonRef.current++;
-        console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] ⚠️ Consecutive battles without new Pokémon: ${consecutiveBattlesWithoutNewPokemonRef.current}`);
-        if (consecutiveBattlesWithoutNewPokemonRef.current >= MAX_BATTLES_WITHOUT_NEW_POKEMON) {
-          console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] ⚠️ Will force unranked selection next battle to ensure variety`);
-        }
-      }
-
       setSelectedPokemon([]);
-      console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] 📌 Cleared selected Pokemon`);
-
-      // CRITICAL: Enhanced identical battle checking with detailed logging
-      const battleIds = battle.map(p => p.id);
-      console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] ===== Checking for Identical Battle =====`);
-      console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] Current battle IDs: [${battleIds.join(', ')}]`);
-      console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] previousBattleIds.current: [${previousBattleIds.current.join(', ')}]`);
-      console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] lastSetBattleIdsRef.current: [${lastSetBattleIdsRef.current.join(', ')}]`);
+      setCurrentBattle(battle);
       
-      const isIdenticalToPrevious = areBattlesIdentical(battle, previousBattleIds.current);
-      const isIdenticalToLastSet = lastSetBattleIdsRef.current.length > 0 && 
-        battleIds.length === lastSetBattleIdsRef.current.length &&
-        battleIds.every(id => lastSetBattleIdsRef.current.includes(id)) &&
-        lastSetBattleIdsRef.current.every(id => battleIds.includes(id));
-      
-      console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] isIdenticalToPrevious: ${isIdenticalToPrevious}`);
-      console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] isIdenticalToLastSet: ${isIdenticalToLastSet}`);
-      
-      if (!isIdenticalToPrevious && !isIdenticalToLastSet) {
-        console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] ✅ NEW UNIQUE BATTLE - Proceeding with state update`);
-        
-        // Update our tracking BEFORE setting state
-        previousBattleIds.current = battleIds;
-        lastSetBattleIdsRef.current = battleIds;
-        
-        console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] Updated previousBattleIds.current to: [${previousBattleIds.current.join(', ')}]`);
-        console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] Updated lastSetBattleIdsRef.current to: [${lastSetBattleIdsRef.current.join(', ')}]`);
-        
-        setCurrentBattle(battle);
-        console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] ✅ setCurrentBattle called with [${battleIds.join(', ')}]`);
-        
-        // Reset identical battle counter on success
-        identicalBattleCount.current = 0;
-        
-        console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] ✅ Battle state updated successfully`);
-      } else {
-        console.warn(`[BATTLE_TRANSITION_DEBUG #${transitionId}] ⚠️ IDENTICAL BATTLE DETECTED - Generating new battle`);
-        
-        identicalBattleCount.current++;
-        console.warn(`[BATTLE_TRANSITION_DEBUG #${transitionId}] Identical battle count: ${identicalBattleCount.current}`);
-        
-        if (identicalBattleCount.current >= 3) {
-          console.error(`[BATTLE_TRANSITION_DEBUG #${transitionId}] ❌ TOO MANY IDENTICAL BATTLES - Triggering emergency reset`);
-          document.dispatchEvent(new CustomEvent('force-emergency-reset'));
-          identicalBattleCount.current = 0;
-          return [];
-        }
-        
-        // CRITICAL FIX: Try again with forced variety to break identical pattern
-        console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] 🔄 Attempting new battle with forced variety`);
-        const retryBattle = currentBattleStarter.startNewBattle(battleType, false, true);
-        if (retryBattle && retryBattle.length > 0) {
-          const retryIds = retryBattle.map(p => p.id);
-          const isRetryIdentical = retryIds.length === battleIds.length &&
-            retryIds.every(id => battleIds.includes(id)) &&
-            battleIds.every(id => retryIds.includes(id));
-            
-          if (!isRetryIdentical) {
-            console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] ✅ Retry successful with different battle: [${retryIds.join(', ')}]`);
-            previousBattleIds.current = retryIds;
-            lastSetBattleIdsRef.current = retryIds;
-            setCurrentBattle(retryBattle);
-            identicalBattleCount.current = 0;
-            return retryBattle;
-          }
-        }
-      }
-
-      console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] ===== Battle Transition Analysis Complete =====`);
       return battle;
 
     } catch (error) {
       console.error(`[BATTLE_TRANSITION_DEBUG #${transitionId}] ❌ ERROR in battleStarter.startNewBattle:`, error);
       return [];
     } finally {
-      // CRITICAL FIX: Immediately reset the flag to allow rapid successive calls
       console.log(`[BATTLE_TRANSITION_DEBUG #${transitionId}] Setting battleGenerationInProgressRef.current = false (immediate)`);
       battleGenerationInProgressRef.current = false;
     }
   }, [
-    // CRITICAL FIX: Remove allPokemon.length dependency to prevent recreation when background loading completes
-    currentRankings.length, // Only depend on length, not entire array
+    currentRankings.length,
     battleStarter,
     setSelectedPokemon,
-    markSuggestionFullyUsed
-    // Removed currentBattle?.length dependency to prevent auto-refresh
+    markSuggestionFullyUsed,
+    currentBattle?.length
   ]);
 
   // Update the ref whenever startNewBattle changes
@@ -467,7 +322,7 @@ export const useBattleStarterIntegration = (
 
   // OPTIMIZED: Initialization effect
   useEffect(() => {
-    console.log('[DEBUG useBattleStarterIntegration] Initial setup complete - NO AUTO-BATTLE TRIGGERS');
+    console.log('[DEBUG useBattleStarterIntegration] Initial setup complete');
     
     initializationCompleteRef.current = false;
     initialGetBattleFiredRef.current = false;
