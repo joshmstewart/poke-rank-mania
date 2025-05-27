@@ -26,6 +26,55 @@ export const normalizePokedexNumber = (id: number): number => {
 export const formatPokemonName = (name: string): string => {
   if (!name) return '';
   
+  const lowerName = name.toLowerCase();
+  
+  // Handle Mega evolutions - put "Mega" at the front
+  if (lowerName.includes('mega')) {
+    const baseName = name.replace(/[-\s]*mega[-\s]*/i, '').trim();
+    // Handle Mega X and Mega Y variants
+    if (lowerName.includes('mega-x') || lowerName.includes('mega x')) {
+      return `Mega ${baseName} X`;
+    }
+    if (lowerName.includes('mega-y') || lowerName.includes('mega y')) {
+      return `Mega ${baseName} Y`;
+    }
+    return `Mega ${baseName}`;
+  }
+  
+  // Handle Gigantamax forms - put "G-Max" at the front
+  if (lowerName.includes('gmax')) {
+    const baseName = name.replace(/[-\s]*gmax[-\s]*/i, '').trim();
+    return `G-Max ${baseName}`;
+  }
+  
+  // Handle Pikachu cap variants with proper formatting
+  if (lowerName.includes('pikachu') && lowerName.includes('cap')) {
+    if (lowerName.includes('original-cap')) {
+      return 'Pikachu (Original Cap)';
+    }
+    if (lowerName.includes('hoenn-cap')) {
+      return 'Pikachu (Hoenn Cap)';
+    }
+    if (lowerName.includes('sinnoh-cap')) {
+      return 'Pikachu (Sinnoh Cap)';
+    }
+    if (lowerName.includes('unova-cap')) {
+      return 'Pikachu (Unova Cap)';
+    }
+    if (lowerName.includes('kalos-cap')) {
+      return 'Pikachu (Kalos Cap)';
+    }
+    if (lowerName.includes('alola-cap')) {
+      return 'Pikachu (Alolan Cap)';
+    }
+    if (lowerName.includes('partner-cap')) {
+      return 'Pikachu (Partner Cap)';
+    }
+    if (lowerName.includes('world-cap')) {
+      return 'Pikachu (World Cap)';
+    }
+  }
+  
   // Handle regional forms by moving them to the front with proper naming
   const regionalForms = {
     'alola': 'Alolan',
@@ -35,13 +84,8 @@ export const formatPokemonName = (name: string): string => {
     'hisui': 'Hisuian',
     'hisuian': 'Hisuian',
     'paldea': 'Paldean',
-    'paldean': 'Paldean',
-    'gmax': 'Gigantamax',
-    'gigantamax': 'Gigantamax'
+    'paldean': 'Paldean'
   };
-  
-  // Convert name to lowercase for comparison
-  const lowerName = name.toLowerCase();
   
   // Check if name contains any regional form identifiers
   for (const [region, prefix] of Object.entries(regionalForms)) {
@@ -66,7 +110,7 @@ export const formatPokemonName = (name: string): string => {
     }
   }
   
-  // If no regional form is found, use the capitalizeSpecialForms function
+  // If no special form is found, use the capitalizeSpecialForms function
   return capitalizeSpecialForms(name);
 };
 
