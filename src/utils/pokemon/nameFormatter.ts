@@ -1,3 +1,4 @@
+
 import { capitalizeFirstLetter, capitalizeWords } from './helpers';
 
 /**
@@ -14,7 +15,28 @@ export const formatPokemonName = (name: string): string => {
   const lowerName = name.toLowerCase();
   console.log(`🔧 [FORMAT_STEP_1] Lowercase conversion: "${lowerName}"`);
   
-  // CRITICAL FIX: Handle Miraidon and Koraidon forms FIRST
+  // CRITICAL DEBUG: Test the exact condition that should match "diglett-alola"
+  const includesAlola = lowerName.includes('-alola');
+  console.log(`🔧 [FORMAT_ALOLA_CHECK] Does "${lowerName}" include '-alola'? ${includesAlola}`);
+  
+  if (includesAlola) {
+    console.log(`🔧 [FORMAT_ALOLA_DETECTED] Processing Alolan form: "${name}"`);
+    const alolaSuffixIndex = name.toLowerCase().indexOf('-alola');
+    console.log(`🔧 [FORMAT_ALOLA_INDEX] Index of '-alola' in "${name}": ${alolaSuffixIndex}`);
+    
+    const baseName = name.substring(0, alolaSuffixIndex);
+    console.log(`🔧 [FORMAT_ALOLA_BASE] Base name extracted: "${baseName}"`);
+    
+    const capitalizedBase = capitalizeFirstLetter(baseName);
+    console.log(`🔧 [FORMAT_ALOLA_CAPITALIZED] Capitalized base: "${capitalizedBase}"`);
+    
+    const result = `Alolan ${capitalizedBase}`;
+    console.log(`🔧 [FORMAT_ALOLA_RESULT] Final result: "${result}"`);
+    console.log(`🔧 [FORMAT_ALOLA_SUCCESS] "${name}" → "${result}"`);
+    return result;
+  }
+  
+  // CRITICAL FIX: Handle Miraidon and Koraidon forms NEXT
   if (lowerName.includes('miraidon-')) {
     console.log(`🔧 [FORMAT_MIRAIDON_DETECTED] Processing Miraidon form: "${name}"`);
     const formPart = name.substring(9); // Remove "miraidon-"
@@ -34,14 +56,6 @@ export const formatPokemonName = (name: string): string => {
   }
   
   // Handle regional forms NEXT - these are the most common in the logs
-  if (lowerName.includes('-alola')) {
-    console.log(`🔧 [FORMAT_ALOLA_DETECTED] Processing Alolan form: "${name}"`);
-    const baseName = name.substring(0, name.toLowerCase().indexOf('-alola'));
-    const result = `Alolan ${capitalizeFirstLetter(baseName)}`;
-    console.log(`🔧 [FORMAT_ALOLA_RESULT] "${name}" → "${result}"`);
-    return result;
-  }
-  
   if (lowerName.includes('-galar')) {
     console.log(`🔧 [FORMAT_GALAR_DETECTED] Processing Galarian form: "${name}"`);
     const baseName = name.substring(0, name.toLowerCase().indexOf('-galar'));
@@ -200,7 +214,7 @@ export const formatPokemonName = (name: string): string => {
     console.log(`🔧 [FORMAT_DADA_DETECTED] Processing Dada form: "${name}"`);
     const baseName = name.substring(0, name.toLowerCase().indexOf('-dada'));
     const result = `${capitalizeFirstLetter(baseName)} (Dada)`;
-    console.log(`🔧 [FORMAT_DADA_RESULT] "${name}" → "${result}"`);
+    console.log(`🔧 [FORMAT_DADA_RESULT] "${name}" → "${result)"`);
     return result;
   }
   
