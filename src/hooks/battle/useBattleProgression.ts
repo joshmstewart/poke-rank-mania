@@ -22,7 +22,7 @@ export const useBattleProgression = (
   }, []);
 
   const checkMilestone = useCallback((newBattlesCompleted: number, battleResults: any[]): boolean => {
-    console.log(`🔍 checkMilestone called with ${newBattlesCompleted} battles`);
+    console.log(`🔍 MILESTONE CHECK: Checking ${newBattlesCompleted} battles against milestones: ${milestones.join(', ')}`);
     
     if (processingMilestoneRef.current) {
       console.log("🚫 Milestone already processing, skipping");
@@ -35,17 +35,11 @@ export const useBattleProgression = (
     
     // Check if we've already triggered this milestone
     if (isMilestone && !milestoneTracker.current.has(newBattlesCompleted)) {
-      // Avoid duplicate triggers
-      if (lastTriggeredMilestoneRef.current === newBattlesCompleted) {
-        console.log(`🔄 Milestone ${newBattlesCompleted} was just triggered, ignoring duplicate`);
-        return false;
-      }
-      
       milestoneTracker.current.add(newBattlesCompleted);
       processingMilestoneRef.current = true;
       showingMilestoneRef.current = true;
       lastTriggeredMilestoneRef.current = newBattlesCompleted;
-      console.log(`🎉 Milestone reached: ${newBattlesCompleted} battles`);
+      console.log(`🎉 MILESTONE TRIGGERED: ${newBattlesCompleted} battles - showing milestone!`);
 
       try {
         // Generate rankings based on the battle results
@@ -84,27 +78,29 @@ export const useBattleProgression = (
     
     setBattlesCompleted(prev => {
       updatedBattleCount = prev + 1;
-      console.log(`📈 incrementBattlesCompleted: Updated battle count to ${updatedBattleCount}`);
+      console.log(`📈 BATTLE COUNT UPDATED: ${prev} -> ${updatedBattleCount}`);
       return updatedBattleCount;
     });
     
-    // Check if this is a milestone immediately after updating
+    // CRITICAL FIX: Check milestone immediately after setting battle count
+    console.log(`🔍 IMMEDIATE MILESTONE CHECK: Checking ${updatedBattleCount} against milestones`);
     const isMilestone = milestones.includes(updatedBattleCount);
-    console.log(`🎯 Battle ${updatedBattleCount} milestone check: ${isMilestone}`);
     
     if (isMilestone) {
-      console.log(`🚀 Triggering milestone check for battle ${updatedBattleCount}`);
-      // Trigger milestone check immediately
-      setTimeout(() => {
-        checkMilestone(updatedBattleCount, battleResults);
-        incrementInProgressRef.current = false;
-      }, 50);
+      console.log(`🚀 MILESTONE DETECTED: ${updatedBattleCount} - triggering milestone display`);
       
-      return updatedBattleCount;
-    } else {
-      incrementInProgressRef.current = false;
-      return null;
+      // Trigger milestone check immediately without delay
+      const milestoneTriggered = checkMilestone(updatedBattleCount, battleResults);
+      
+      if (milestoneTriggered) {
+        console.log(`✅ MILESTONE SUCCESSFULLY TRIGGERED: ${updatedBattleCount}`);
+        incrementInProgressRef.current = false;
+        return updatedBattleCount;
+      }
     }
+    
+    incrementInProgressRef.current = false;
+    return null;
   }, [setBattlesCompleted, checkMilestone, milestones]);
 
   const resetMilestone = useCallback(() => {

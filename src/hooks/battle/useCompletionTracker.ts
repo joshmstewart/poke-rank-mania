@@ -1,3 +1,4 @@
+
 import { useEffect, useRef, useState, useCallback } from "react";
 import { SingleBattle } from "./types";
 import { RankedPokemon } from "@/services/pokemon";
@@ -28,63 +29,15 @@ export const useCompletionTracker = (
     showingMilestoneRef.current = showingMilestone;
   }, [showingMilestone]);
 
+  // DISABLED: This hook was interfering with the main milestone detection
+  // The milestone detection is now handled entirely by useBattleProgression
   const checkForMilestones = useCallback(() => {
-    const battleCount = battleResults.length;
-    
-    console.log("🔎 Checking milestones", {
-      battleResultsLength: battleCount,
-      previousCount: previousBattleCountRef.current,
-      showingMilestone: showingMilestoneRef.current,
-      processingMilestone: isMilestoneProcessingRef.current,
-      milestones,
-      hitMilestones: Array.from(hitMilestones.current)
-    });
-
-    // Check if we've increased the battle count and haven't already hit this milestone
-    if (previousBattleCountRef.current === battleCount ||
-        showingMilestoneRef.current || 
-        isMilestoneProcessingRef.current) {
-      console.log("🚫 Skipped milestone check (no change or already processing)");
-      return;
-    }
-
-    // Check if this battle count is a milestone
-    const isMilestone = milestones.includes(battleCount);
-    
-    if (isMilestone && !hitMilestones.current.has(battleCount)) {
-      console.log(`🎉 MILESTONE HIT: ${battleCount} battles!`);
-      
-      // Mark this milestone as hit
-      hitMilestones.current.add(battleCount);
-      isMilestoneProcessingRef.current = true;
-      
-      // Generate rankings for this milestone
-      console.log("🔵 useCompletionTracker: generating milestone rankings");
-      const rankingsSnapshot = generateRankings(battleResults);
-      
-      if (rankingsSnapshot.length > 0) {
-        snapshotCacheRef.current[battleCount] = rankingsSnapshot;
-        setMilestoneRankings(prev => ({
-          ...prev,
-          [battleCount]: rankingsSnapshot
-        }));
-      }
-      
-      // Show the milestone
-      console.log("🔴 useCompletionTracker: setShowingMilestone(true) triggered for milestone", battleCount);
-      setShowingMilestone(true);
-      
-      // Reset processing flag after a delay
-      setTimeout(() => {
-        isMilestoneProcessingRef.current = false;
-      }, 500);
-    }
-
-    previousBattleCountRef.current = battleCount;
-  }, [battleResults, milestones, generateRankings, setShowingMilestone]);
+    console.log("🔕 useCompletionTracker: Milestone checking disabled - handled by useBattleProgression");
+  }, []);
 
   useEffect(() => {
-    checkForMilestones();
+    // Milestone checking is now disabled in this hook
+    // All milestone detection is handled by useBattleProgression
   }, [battleResults.length, checkForMilestones]);
 
   const resetMilestones = useCallback(() => {
