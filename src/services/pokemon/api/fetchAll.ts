@@ -69,11 +69,31 @@ export async function fetchAllPokemon(generationId: number = 1, fullRankingMode:
         });
         
         const regularPokemonIds = Array.from({ length: generations[0].end }, (_, i) => i + 1);
+        
+        // FURFROU DEBUG: Explicitly include known Furfrou form IDs
+        const furfrouFormIds = [
+          10126, // Furfrou Heart Trim
+          10127, // Furfrou Star Trim  
+          10128, // Furfrou Diamond Trim
+          10129, // Furfrou Debutante Trim
+          10130, // Furfrou Matron Trim
+          10131, // Furfrou Dandy Trim
+          10132, // Furfrou La Reine Trim
+          10133, // Furfrou Kabuki Trim
+          10134, // Furfrou Pharaoh Trim
+        ];
+        
         const specialFormIds = Array.from({ length: 250 }, (_, i) => i + 10001);
-        const allPokemonIds = [...regularPokemonIds, ...specialFormIds];
+        const allPokemonIds = [...regularPokemonIds, ...specialFormIds, ...furfrouFormIds];
+        
+        console.log(`🐩 [FURFROU_DEBUG] Explicitly including Furfrou form IDs: ${furfrouFormIds.join(', ')}`);
         
         const shuffledIds = allPokemonIds.sort(() => Math.random() - 0.5);
         const selectedIds = shuffledIds.slice(0, sampleSize);
+        
+        // FURFROU DEBUG: Check if any Furfrou forms were selected
+        const selectedFurfrouIds = selectedIds.filter(id => furfrouFormIds.includes(id));
+        console.log(`🐩 [FURFROU_DEBUG] Selected Furfrou form IDs: ${selectedFurfrouIds.join(', ')}`);
         
         console.log(`Selected ${selectedIds.length} Pokémon IDs including special forms`);
         
@@ -92,7 +112,22 @@ export async function fetchAllPokemon(generationId: number = 1, fullRankingMode:
         const validPokemon = pokemonList.filter(p => p !== null) as Pokemon[];
         console.log(`Successfully fetched ${validPokemon.length} Pokémon`);
         
+        // FURFROU DEBUG: Check how many Furfrou forms were actually fetched
+        const fetchedFurfrou = validPokemon.filter(p => p.name.toLowerCase().includes('furfrou'));
+        console.log(`🐩 [FURFROU_DEBUG] Successfully fetched ${fetchedFurfrou.length} Furfrou forms:`);
+        fetchedFurfrou.forEach(furfrou => {
+          console.log(`🐩 [FURFROU_DEBUG] - Fetched: ${furfrou.name} (ID: ${furfrou.id})`);
+        });
+        
         const filteredList = validPokemon.filter(shouldIncludePokemon);
+        
+        // FURFROU DEBUG: Check how many survived filtering
+        const filteredFurfrou = filteredList.filter(p => p.name.toLowerCase().includes('furfrou'));
+        console.log(`🐩 [FURFROU_DEBUG] After filtering: ${filteredFurfrou.length} Furfrou forms survived`);
+        filteredFurfrou.forEach(furfrou => {
+          console.log(`🐩 [FURFROU_DEBUG] - Survived filtering: ${furfrou.name} (ID: ${furfrou.id})`);
+        });
+        
         console.log(`After filtering: ${filteredList.length} Pokémon`);
         
         return filteredList;

@@ -30,6 +30,13 @@ export function createBattleStarter(
   console.log(`🎯 [POKEMON_RANGE_FIX] Battle starter created with ${allPokemon.length} total Pokemon`);
   console.log(`🎯 [POKEMON_RANGE_FIX] Pokemon ID range: ${Math.min(...allPokemon.map(p => p.id))} to ${Math.max(...allPokemon.map(p => p.id))}`);
 
+  // FURFROU DEBUG: Check if Furfrou forms are in the allPokemon array
+  const furfrouForms = allPokemon.filter(p => p.name.toLowerCase().includes('furfrou'));
+  console.log(`🐩 [FURFROU_DEBUG] Found ${furfrouForms.length} Furfrou forms in Pokemon pool:`);
+  furfrouForms.forEach(furfrou => {
+    console.log(`🐩 [FURFROU_DEBUG] - ${furfrou.name} (ID: ${furfrou.id})`);
+  });
+
   // Load recently seen Pokemon from storage
   const storedRecent = JSON.parse(localStorage.getItem('pokemon-recent-seen') || '[]');
   storedRecent.forEach((id: number) => recentlySeenPokemon.add(id));
@@ -74,6 +81,13 @@ export function createBattleStarter(
     
     console.log(`🎮 [POKEMON_RANGE_FIX] Creating ${battleType} battle #${battlesCount + 1} from FULL pool of ${availablePokemon.length} Pokemon`);
     console.log(`🎮 [POKEMON_RANGE_FIX] Available Pokemon ID range: ${Math.min(...availablePokemon.map(p => p.id))} to ${Math.max(...availablePokemon.map(p => p.id))}`);
+    
+    // FURFROU DEBUG: Check available Furfrou forms for this battle
+    const availableFurfrou = availablePokemon.filter(p => p.name.toLowerCase().includes('furfrou') && !recentlySeenPokemon.has(p.id));
+    console.log(`🐩 [FURFROU_DEBUG] Available Furfrou forms for battle (not recently seen): ${availableFurfrou.length}`);
+    availableFurfrou.forEach(furfrou => {
+      console.log(`🐩 [FURFROU_DEBUG] - Available: ${furfrou.name} (ID: ${furfrou.id})`);
+    });
     
     // Better filtering to avoid recent Pokemon
     let candidatePokemon = availablePokemon.filter(p => !recentlySeenPokemon.has(p.id));
@@ -136,6 +150,12 @@ export function createBattleStarter(
           weight *= 1.2;
         }
         
+        // FURFROU DEBUG: Give Furfrou forms higher weight for testing
+        if (pokemon.name.toLowerCase().includes('furfrou')) {
+          weight *= 5.0; // Significantly increase Furfrou appearance chance
+          console.log(`🐩 [FURFROU_DEBUG] Boosting weight for ${pokemon.name} (ID: ${pokemon.id}) - weight: ${weight}`);
+        }
+        
         return { pokemon, weight };
       });
       
@@ -159,6 +179,15 @@ export function createBattleStarter(
         battlePokemon.push(selected.pokemon);
         weightedCandidates.splice(selectedIndex, 1);
       }
+    }
+
+    // FURFROU DEBUG: Check if any Furfrou forms were selected
+    const selectedFurfrou = battlePokemon.filter(p => p.name.toLowerCase().includes('furfrou'));
+    if (selectedFurfrou.length > 0) {
+      console.log(`🐩 [FURFROU_DEBUG] FURFROU SELECTED FOR BATTLE!`);
+      selectedFurfrou.forEach(furfrou => {
+        console.log(`🐩 [FURFROU_DEBUG] - Selected: ${furfrou.name} (ID: ${furfrou.id})`);
+      });
     }
 
     // CRITICAL FIX: Log Pokemon type data to debug color issue
