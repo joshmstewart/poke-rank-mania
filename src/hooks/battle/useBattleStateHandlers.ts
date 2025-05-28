@@ -1,4 +1,3 @@
-
 import { useCallback, useRef } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
@@ -12,6 +11,17 @@ export const useBattleStateHandlers = (
   // Use the shared refinement queue
   const refinementQueue = useSharedRefinementQueue();
   
+  // CRITICAL DEBUGGING: Add call tracking
+  const callCounterRef = useRef(0);
+  const callHistoryRef = useRef<Array<{
+    callNumber: number;
+    timestamp: string;
+    draggedPokemonId: number;
+    sourceIndex: number;
+    destinationIndex: number;
+    stackTrace: string;
+  }>>([]);
+
   // CRITICAL FIX: Add guard to prevent multiple calls for same reorder operation
   const lastReorderOperationRef = useRef<string | null>(null);
   const reorderTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -22,6 +32,54 @@ export const useBattleStateHandlers = (
     sourceIndex: number, 
     destinationIndex: number
   ) => {
+    callCounterRef.current++;
+    const callNumber = callCounterRef.current;
+    const timestamp = new Date().toISOString();
+    const stackTrace = new Error().stack || 'No stack trace';
+    
+    // CRITICAL DEBUGGING: Record this call
+    const callRecord = {
+      callNumber,
+      timestamp,
+      draggedPokemonId,
+      sourceIndex,
+      destinationIndex,
+      stackTrace: stackTrace.split('\n').slice(0, 10).join('\n') // First 10 lines
+    };
+    
+    callHistoryRef.current.push(callRecord);
+    
+    console.log(`🚨🚨🚨 [CALL_TRACKING] ===== MANUAL REORDER CALL #${callNumber} =====`);
+    console.log(`🚨🚨🚨 [CALL_TRACKING] Timestamp: ${timestamp}`);
+    console.log(`🚨🚨🚨 [CALL_TRACKING] Pokemon: ${draggedPokemonId}, ${sourceIndex} → ${destinationIndex}`);
+    console.log(`🚨🚨🚨 [CALL_TRACKING] Stack trace:`);
+    console.log(stackTrace.split('\n').slice(0, 8).join('\n'));
+    console.log(`🚨🚨🚨 [CALL_TRACKING] Total calls so far: ${callCounterRef.current}`);
+    console.log(`🚨🚨🚨 [CALL_TRACKING] Call history:`, callHistoryRef.current.map(c => 
+      `#${c.callNumber}: ${c.draggedPokemonId} (${c.sourceIndex}→${c.destinationIndex}) at ${c.timestamp}`
+    ));
+    
+    // Check if this is a duplicate call
+    const recentCalls = callHistoryRef.current.filter(c => 
+      Date.now() - new Date(c.timestamp).getTime() < 2000 // Last 2 seconds
+    );
+    
+    const duplicateCalls = recentCalls.filter(c => 
+      c.draggedPokemonId === draggedPokemonId &&
+      c.sourceIndex === sourceIndex &&
+      c.destinationIndex === destinationIndex &&
+      c.callNumber !== callNumber
+    );
+    
+    if (duplicateCalls.length > 0) {
+      console.log(`🚨🚨🚨 [CALL_TRACKING] ❌ DUPLICATE CALL DETECTED!`);
+      console.log(`🚨🚨🚨 [CALL_TRACKING] Previous identical calls:`, duplicateCalls);
+      console.log(`🚨🚨🚨 [CALL_TRACKING] IGNORING DUPLICATE CALL #${callNumber}`);
+      return;
+    }
+    
+    console.log(`🚨🚨🚨 [CALL_TRACKING] ✅ PROCEEDING WITH CALL #${callNumber}`);
+    
     console.log(`🔄 [MANUAL_REORDER_ULTRA_TRACE] ===== MANUAL REORDER START =====`);
     console.log(`🔄 [MANUAL_REORDER_ULTRA_TRACE] Raw draggedPokemonId:`, draggedPokemonId, typeof draggedPokemonId);
     console.log(`🔄 [MANUAL_REORDER_ULTRA_TRACE] Pokemon moved from ${sourceIndex} to ${destinationIndex}`);
@@ -110,6 +168,10 @@ export const useBattleStateHandlers = (
       return;
     }
     
+    // CRITICAL DEBUGGING: Check queue state BEFORE queueing
+    console.log(`🚨🚨🚨 [QUEUE_STATE_BEFORE] Queue size before queueing: ${refinementQueue.refinementBattleCount}`);
+    console.log(`🚨🚨🚨 [QUEUE_STATE_BEFORE] Queue contents before:`, refinementQueue.refinementQueue.map(r => `${r.primaryPokemonId} vs ${r.opponentPokemonId}`));
+    
     // Queue refinement battles for this manual reorder
     try {
       console.log(`🔄 [MANUAL_REORDER_ULTRA_TRACE] CALLING queueBattlesForReorder with:`, {
@@ -125,6 +187,26 @@ export const useBattleStateHandlers = (
         neighborIds,
         destinationIndex
       );
+      
+      // CRITICAL DEBUGGING: Check queue state IMMEDIATELY AFTER queueing
+      console.log(`🚨🚨🚨 [QUEUE_STATE_AFTER] Queue size IMMEDIATELY after queueing: ${refinementQueue.refinementBattleCount}`);
+      console.log(`🚨🚨🚨 [QUEUE_STATE_AFTER] Queue contents IMMEDIATELY after:`, refinementQueue.refinementQueue.map(r => `${r.primaryPokemonId} vs ${r.opponentPokemonId}`));
+      
+      // Check for duplicates in the queue
+      const queueBattles = refinementQueue.refinementQueue;
+      const duplicates = queueBattles.filter((battle, index) => {
+        const isDuplicate = queueBattles.findIndex(other => 
+          (other.primaryPokemonId === battle.primaryPokemonId && other.opponentPokemonId === battle.opponentPokemonId) ||
+          (other.primaryPokemonId === battle.opponentPokemonId && other.opponentPokemonId === battle.primaryPokemonId)
+        ) !== index;
+        return isDuplicate;
+      });
+      
+      if (duplicates.length > 0) {
+        console.log(`🚨🚨🚨 [DUPLICATE_DETECTION] ❌ DUPLICATES FOUND IN QUEUE:`, duplicates);
+      } else {
+        console.log(`🚨🚨🚨 [DUPLICATE_DETECTION] ✅ No duplicates found in queue`);
+      }
       
       console.log(`🔄 [MANUAL_REORDER_ULTRA_TRACE] IMMEDIATE QUEUE CHECK - Queue size: ${refinementQueue.refinementBattleCount}`);
       console.log(`🔄 [MANUAL_REORDER_ULTRA_TRACE] IMMEDIATE QUEUE CHECK - Queue contents:`, refinementQueue.refinementQueue);
@@ -156,6 +238,7 @@ export const useBattleStateHandlers = (
     }
     
     console.log(`🔄 [MANUAL_REORDER_ULTRA_TRACE] ===== MANUAL REORDER END =====`);
+    console.log(`🚨🚨🚨 [CALL_TRACKING] ===== END CALL #${callNumber} =====`);
   }, [refinementQueue, finalRankings]);
 
   // CRITICAL FIX: Enhanced battle completion with proper battle history tracking
