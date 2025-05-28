@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Pokemon, TopNOption, RankedPokemon } from "@/services/pokemon";
 import { formatPokemonName } from "@/utils/pokemon";
 import MilestoneView from "./MilestoneView";
+import DraggableMilestoneView from "./DraggableMilestoneView";
 import StandardRankingView from "./StandardRankingView";
 
 interface RankingDisplayProps {
@@ -17,6 +18,9 @@ interface RankingDisplayProps {
   onTierChange?: (tier: TopNOption) => void;
   onSuggestRanking?: (pokemon: RankedPokemon, direction: "up" | "down", strength: 1 | 2 | 3) => void;
   onRemoveSuggestion?: (pokemonId: number) => void;
+  onManualReorder?: (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => void;
+  pendingRefinements?: Set<number>;
+  enableDragAndDrop?: boolean;
 }
 
 const RankingDisplay: React.FC<RankingDisplayProps> = ({
@@ -30,7 +34,10 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
   activeTier = 25,
   onTierChange,
   onSuggestRanking,
-  onRemoveSuggestion
+  onRemoveSuggestion,
+  onManualReorder,
+  pendingRefinements = new Set(),
+  enableDragAndDrop = true
 }) => {
   console.log("🟣 RankingDisplay component rendered with", finalRankings.length, "Pokémon");
   
@@ -119,6 +126,15 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
     setMilestoneDisplayCount(prev => Math.min(prev + 50, maxItems));
   };
 
+  // Handle manual reordering
+  const handleManualReorder = (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => {
+    console.log(`🔄 [MANUAL_REORDER] Pokemon ${draggedPokemonId} moved from ${sourceIndex} to ${destinationIndex}`);
+    
+    if (onManualReorder) {
+      onManualReorder(draggedPokemonId, sourceIndex, destinationIndex);
+    }
+  };
+
   // ULTRA-DETAILED MILESTONE NAME LOGGING
   if (isMilestoneView) {
     console.log(`🏆 [MILESTONE_ULTRA_DEBUG] ===== MILESTONE VIEW RENDERING =====`);
@@ -145,17 +161,35 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
   }
 
   if (isMilestoneView) {
-    return (
-      <MilestoneView
-        formattedRankings={formattedRankings}
-        battlesCompleted={battlesCompleted}
-        activeTier={activeTier}
-        milestoneDisplayCount={milestoneDisplayCount}
-        onContinueBattles={onContinueBattles}
-        onLoadMore={handleMilestoneLoadMore}
-        getMaxItemsForTier={getMaxItemsForTier}
-      />
-    );
+    // Use draggable milestone view if drag-and-drop is enabled
+    if (enableDragAndDrop) {
+      return (
+        <DraggableMilestoneView
+          formattedRankings={formattedRankings}
+          battlesCompleted={battlesCompleted}
+          activeTier={activeTier}
+          milestoneDisplayCount={milestoneDisplayCount}
+          onContinueBattles={onContinueBattles}
+          onLoadMore={handleMilestoneLoadMore}
+          getMaxItemsForTier={getMaxItemsForTier}
+          onManualReorder={handleManualReorder}
+          pendingRefinements={pendingRefinements}
+        />
+      );
+    } else {
+      // Fallback to original milestone view
+      return (
+        <MilestoneView
+          formattedRankings={formattedRankings}
+          battlesCompleted={battlesCompleted}
+          activeTier={activeTier}
+          milestoneDisplayCount={milestoneDisplayCount}
+          onContinueBattles={onContinueBattles}
+          onLoadMore={handleMilestoneLoadMore}
+          getMaxItemsForTier={getMaxItemsForTier}
+        />
+      );
+    }
   }
 
   return (
