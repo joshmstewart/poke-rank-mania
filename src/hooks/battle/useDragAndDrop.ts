@@ -17,7 +17,7 @@ export const useDragAndDrop = ({ displayRankings, onManualReorder, onLocalReorde
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8, // Require 8px movement to start drag
+        distance: 3, // Small distance to start drag
       },
     }),
     useSensor(KeyboardSensor, {

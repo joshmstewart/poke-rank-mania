@@ -46,7 +46,7 @@ const DraggablePokemonCard: React.FC<DraggablePokemonCardProps> = ({
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition: isDragging ? undefined : transition,
+    transition: isDragging ? 'none' : transition,
   };
 
   const backgroundColorClass = getPokemonBackgroundColor(pokemon);
@@ -57,11 +57,11 @@ const DraggablePokemonCard: React.FC<DraggablePokemonCardProps> = ({
     <div
       ref={setNodeRef}
       style={style}
+      className={`${backgroundColorClass} rounded-lg border border-gray-200 relative overflow-hidden h-40 flex flex-col select-none ${
+        isDragging ? 'opacity-60 z-50 scale-105 shadow-2xl cursor-grabbing' : 'cursor-grab transition-transform duration-150'
+      } ${isPending ? 'ring-2 ring-yellow-400 ring-opacity-50' : ''}`}
       {...attributes}
       {...listeners}
-      className={`${backgroundColorClass} rounded-lg border border-gray-200 relative overflow-hidden h-40 flex flex-col cursor-grab active:cursor-grabbing ${
-        isDragging ? 'opacity-60 z-50 scale-105 shadow-2xl' : 'transition-transform duration-150'
-      } ${isPending ? 'ring-2 ring-yellow-400 ring-opacity-50' : ''}`}
     >
       {/* Pending indicator */}
       {isPending && (
@@ -70,9 +70,10 @@ const DraggablePokemonCard: React.FC<DraggablePokemonCardProps> = ({
         </div>
       )}
 
-      {/* Info Button - Completely isolated from drag events */}
+      {/* Info Button - Prevent drag on this element */}
       <div 
-        className="absolute top-1 right-1 z-30 pointer-events-auto"
+        className="absolute top-1 right-1 z-30"
+        {...attributes}
         onPointerDown={(e) => {
           console.log(`🎯 [INFO_BUTTON_DEBUG] Info button area pointer down - stopping propagation`);
           e.stopPropagation();
@@ -111,7 +112,7 @@ const DraggablePokemonCard: React.FC<DraggablePokemonCardProps> = ({
         <img 
           src={pokemon.image} 
           alt={pokemon.name}
-          className="w-20 h-20 object-contain"
+          className="w-20 h-20 object-contain pointer-events-none"
           onError={(e) => {
             const target = e.target as HTMLImageElement;
             target.style.display = 'none';
@@ -120,7 +121,7 @@ const DraggablePokemonCard: React.FC<DraggablePokemonCardProps> = ({
       </div>
       
       {/* Pokemon info */}
-      <div className="bg-white text-center py-2 px-2 mt-auto border-t border-gray-100">
+      <div className="bg-white text-center py-2 px-2 mt-auto border-t border-gray-100 pointer-events-none">
         <h3 className="font-bold text-gray-800 text-sm leading-tight mb-1">
           {pokemon.name}
         </h3>
