@@ -20,18 +20,20 @@ export const useRefinementQueue = () => {
       console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] Current queue size before operation: ${prev.length}`);
       console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] Current queue contents BEFORE:`, prev);
       
-      // CRITICAL FIX: Clear any existing refinement battles for this Pokemon first
+      // CRITICAL FIX: Only remove existing battles for THIS specific Pokemon, don't touch other Pokemon's battles
       const filtered = prev.filter(b => {
-        const shouldKeep = b.primaryPokemonId !== primaryId && b.opponentPokemonId !== primaryId;
+        const shouldKeep = b.primaryPokemonId !== primaryId;
         if (!shouldKeep) {
-          console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] REMOVING existing battle: ${b.primaryPokemonId} vs ${b.opponentPokemonId} (reason: ${b.reason})`);
+          console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] REMOVING existing battle for Pokemon ${primaryId}: ${b.primaryPokemonId} vs ${b.opponentPokemonId} (reason: ${b.reason})`);
+        } else {
+          console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] KEEPING battle for different Pokemon: ${b.primaryPokemonId} vs ${b.opponentPokemonId}`);
         }
         return shouldKeep;
       });
       
-      console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] Queue size after filtering out existing battles: ${filtered.length}`);
+      console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] Queue size after filtering out existing battles for Pokemon ${primaryId}: ${filtered.length}`);
       
-      // CRITICAL FIX: Create only ONE validation battle with the most relevant neighbor
+      // CRITICAL FIX: Create validation battle with the most relevant neighbor
       const validNeighbors = neighbors.filter(opponentId => opponentId && opponentId !== primaryId);
       
       if (validNeighbors.length === 0) {
