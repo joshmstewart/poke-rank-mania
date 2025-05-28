@@ -3,6 +3,8 @@ import React, { useState } from "react";
 import {
   DndContext,
   closestCenter,
+  DragStartEvent,
+  DragOverEvent,
 } from '@dnd-kit/core';
 import {
   SortableContext,
@@ -37,14 +39,17 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
   onManualReorder,
   pendingRefinements = new Set()
 }) => {
+  console.log(`🎯 [DRAGGABLE_MILESTONE_DEBUG] ===== COMPONENT RENDER =====`);
+  console.log(`🎯 [DRAGGABLE_MILESTONE_DEBUG] onManualReorder prop:`, typeof onManualReorder, !!onManualReorder);
+  console.log(`🎯 [DRAGGABLE_MILESTONE_DEBUG] onManualReorder function exists:`, typeof onManualReorder === 'function');
+
   const [localRankings, setLocalRankings] = useState(formattedRankings);
   const maxItems = getMaxItemsForTier();
   const displayRankings = localRankings.slice(0, Math.min(milestoneDisplayCount, maxItems));
   const hasMoreToLoad = milestoneDisplayCount < maxItems;
 
-  console.log(`🎯 [DRAGGABLE_MILESTONE_DEBUG] ===== COMPONENT RENDER =====`);
-  console.log(`🎯 [DRAGGABLE_MILESTONE_DEBUG] onManualReorder prop:`, typeof onManualReorder, !!onManualReorder);
-  console.log(`🎯 [DRAGGABLE_MILESTONE_DEBUG] onManualReorder function exists:`, typeof onManualReorder === 'function');
+  console.log(`🎯 [DRAGGABLE_MILESTONE_DEBUG] Display rankings count: ${displayRankings.length}`);
+  console.log(`🎯 [DRAGGABLE_MILESTONE_DEBUG] Display rankings IDs: ${displayRankings.map(p => p.id).join(', ')}`);
 
   // Update local rankings when formattedRankings changes
   React.useEffect(() => {
@@ -77,7 +82,19 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
     onLocalReorder: setLocalRankings
   });
 
+  // Add drag start and drag over logging
+  const handleDragStart = (event: DragStartEvent) => {
+    console.log(`🎯 [DRAG_START_DEBUG] ===== DRAG STARTED =====`);
+    console.log(`🎯 [DRAG_START_DEBUG] Active ID: ${event.active.id}`);
+    console.log(`🎯 [DRAG_START_DEBUG] Active element:`, event.active);
+  };
+
+  const handleDragOver = (event: DragOverEvent) => {
+    console.log(`🎯 [DRAG_OVER_DEBUG] Dragging over: ${event.over?.id || 'none'}`);
+  };
+
   console.log(`🏆 [MILESTONE_RENDER_ULTRA_DEBUG] About to render ${displayRankings.length} Pokemon in draggable milestone view`);
+  console.log(`🏆 [MILESTONE_RENDER_ULTRA_DEBUG] handleDragEnd function:`, typeof handleDragEnd);
   
   return (
     <div className="bg-white p-6 w-full max-w-7xl mx-auto">
@@ -94,6 +111,8 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
       >
         <SortableContext 
@@ -101,14 +120,17 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
           strategy={rectSortingStrategy}
         >
           <div className="grid grid-cols-5 gap-4 mb-6">
-            {displayRankings.map((pokemon, index) => (
-              <DraggablePokemonCard
-                key={pokemon.id}
-                pokemon={pokemon}
-                index={index}
-                isPending={pendingRefinements.has(pokemon.id)}
-              />
-            ))}
+            {displayRankings.map((pokemon, index) => {
+              console.log(`🏆 [MILESTONE_RENDER_CARD_DEBUG] Rendering card ${index}: ${pokemon.name} (ID: ${pokemon.id})`);
+              return (
+                <DraggablePokemonCard
+                  key={pokemon.id}
+                  pokemon={pokemon}
+                  index={index}
+                  isPending={pendingRefinements.has(pokemon.id)}
+                />
+              );
+            })}
           </div>
         </SortableContext>
       </DndContext>
