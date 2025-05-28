@@ -1,6 +1,6 @@
 
-import { Pokemon } from "@/services/pokemon";
-import { BattleType, TopNOption } from "./types";
+import { Pokemon, TopNOption } from "@/services/pokemon";
+import { BattleType } from "./types";
 import { useBattleProcessor } from "./useBattleProcessor";
 
 export const useBattleActionProcessing = (
