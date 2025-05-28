@@ -17,9 +17,26 @@ const DraggablePokemonCard: React.FC<DraggablePokemonCardProps> = ({
   index, 
   isPending = false 
 }) => {
-  console.log(`🎯 [CARD_RENDER_DEBUG] ===== RENDERING CARD =====`);
-  console.log(`🎯 [CARD_RENDER_DEBUG] Pokemon: ${pokemon.name} (${pokemon.id})`);
-  console.log(`🎯 [CARD_RENDER_DEBUG] Index: ${index}`);
+  console.log(`🚨 [CARD_CRITICAL_DEBUG] ===== RENDERING CARD ${pokemon.name} =====`);
+  console.log(`🚨 [CARD_CRITICAL_DEBUG] useSortable imported:`, typeof useSortable);
+  console.log(`🚨 [CARD_CRITICAL_DEBUG] CSS imported:`, typeof CSS);
+
+  const sortableResult = useSortable({ 
+    id: pokemon.id,
+    data: {
+      pokemon,
+      index
+    }
+  });
+
+  console.log(`🚨 [CARD_CRITICAL_DEBUG] useSortable result for ${pokemon.name}:`, {
+    id: pokemon.id,
+    isDragging: sortableResult.isDragging,
+    hasListeners: !!sortableResult.listeners,
+    hasAttributes: !!sortableResult.attributes,
+    hasTransform: !!sortableResult.transform,
+    setNodeRef: typeof sortableResult.setNodeRef
+  });
 
   const {
     attributes,
@@ -28,23 +45,17 @@ const DraggablePokemonCard: React.FC<DraggablePokemonCardProps> = ({
     transform,
     transition,
     isDragging,
-  } = useSortable({ 
-    id: pokemon.id,
-    data: {
-      pokemon,
-      index
-    }
-  });
+  } = sortableResult;
 
-  console.log(`🎯 [CARD_SORTABLE_DEBUG] useSortable result for ${pokemon.name}:`, {
-    id: pokemon.id,
-    isDragging,
-    hasListeners: !!listeners,
-    hasAttributes: !!attributes,
-    hasTransform: !!transform,
-    listenerKeys: listeners ? Object.keys(listeners) : [],
-    attributeKeys: attributes ? Object.keys(attributes) : []
-  });
+  // Critical debugging for drag handlers
+  console.log(`🚨 [CARD_CRITICAL_DEBUG] Listeners object:`, listeners);
+  console.log(`🚨 [CARD_CRITICAL_DEBUG] Attributes object:`, attributes);
+  
+  if (listeners) {
+    Object.keys(listeners).forEach(key => {
+      console.log(`🚨 [CARD_CRITICAL_DEBUG] Listener ${key}:`, typeof listeners[key]);
+    });
+  }
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -53,22 +64,38 @@ const DraggablePokemonCard: React.FC<DraggablePokemonCardProps> = ({
 
   const backgroundColorClass = getPokemonBackgroundColor(pokemon);
 
-  console.log(`🎯 [CARD_DRAG_DEBUG] ${pokemon.name} about to render with drag handlers attached`);
+  const handlePointerDown = (e: React.PointerEvent) => {
+    console.log(`🚨 [CARD_CRITICAL_DEBUG] ${pokemon.name} POINTER DOWN:`, e.type, e.button);
+    console.log(`🚨 [CARD_CRITICAL_DEBUG] Target:`, e.target);
+    console.log(`🚨 [CARD_CRITICAL_DEBUG] CurrentTarget:`, e.currentTarget);
+    
+    // Call the dnd-kit listener if it exists
+    if (listeners?.onPointerDown) {
+      console.log(`🚨 [CARD_CRITICAL_DEBUG] Calling dnd-kit onPointerDown`);
+      listeners.onPointerDown(e);
+    }
+  };
 
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className={`${backgroundColorClass} rounded-lg border border-gray-200 relative overflow-hidden h-40 flex flex-col select-none cursor-grab ${
-        isDragging ? 'opacity-60 z-50 scale-105 shadow-2xl cursor-grabbing' : 'hover:shadow-lg transition-all duration-200'
+      className={`${backgroundColorClass} rounded-lg border border-gray-200 relative overflow-hidden h-40 flex flex-col select-none touch-none ${
+        isDragging ? 'opacity-60 z-50 scale-105 shadow-2xl' : 'hover:shadow-lg transition-all duration-200'
       } ${isPending ? 'ring-2 ring-yellow-400 ring-opacity-50' : ''}`}
       {...attributes}
-      {...listeners}
-      onPointerDown={(e) => {
-        console.log(`🎯 [POINTER_DEBUG] ${pokemon.name} onPointerDown triggered`, e);
+      onPointerDown={handlePointerDown}
+      onMouseDown={(e) => {
+        console.log(`🚨 [CARD_CRITICAL_DEBUG] ${pokemon.name} MOUSE DOWN:`, e.button);
+        if (listeners?.onMouseDown) {
+          listeners.onMouseDown(e);
+        }
       }}
-      onDragStart={(e) => {
-        console.log(`🎯 [DRAG_DEBUG] ${pokemon.name} onDragStart triggered`, e);
+      onTouchStart={(e) => {
+        console.log(`🚨 [CARD_CRITICAL_DEBUG] ${pokemon.name} TOUCH START:`, e.touches.length);
+        if (listeners?.onTouchStart) {
+          listeners.onTouchStart(e);
+        }
       }}
     >
       {/* Pending indicator */}
@@ -78,31 +105,19 @@ const DraggablePokemonCard: React.FC<DraggablePokemonCardProps> = ({
         </div>
       )}
 
-      {/* Info Button - Prevent drag on this element */}
+      {/* Info Button */}
       <div 
-        className="absolute top-1 right-1 z-30"
-        onPointerDown={(e) => {
-          console.log(`🎯 [INFO_BUTTON_DEBUG] Info button area pointer down - stopping propagation`);
-          e.stopPropagation();
-        }}
-        onClick={(e) => {
-          console.log(`🎯 [INFO_BUTTON_DEBUG] Info button area clicked - stopping propagation`);
-          e.stopPropagation();
-        }}
+        className="absolute top-1 right-1 z-30 pointer-events-auto"
+        onPointerDown={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
+        onTouchStart={(e) => e.stopPropagation()}
       >
         <PokemonInfoModal pokemon={pokemon}>
           <button 
-            className="w-5 h-5 rounded-full bg-white/30 hover:bg-white/50 border border-gray-300/60 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200 backdrop-blur-sm pointer-events-auto"
-            onPointerDown={(e) => {
-              e.stopPropagation();
-            }}
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-            }}
-            onMouseDown={(e) => {
-              e.stopPropagation();
-            }}
+            className="w-5 h-5 rounded-full bg-white/30 hover:bg-white/50 border border-gray-300/60 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200 backdrop-blur-sm"
+            onPointerDown={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
           >
             i
           </button>
@@ -129,10 +144,10 @@ const DraggablePokemonCard: React.FC<DraggablePokemonCardProps> = ({
       
       {/* Pokemon info */}
       <div className="bg-white text-center py-2 px-2 mt-auto border-t border-gray-100 pointer-events-none">
-        <h3 className="font-bold text-gray-800 text-sm leading-tight mb-1">
+        <h3 className="font-bold text-gray-800 text-sm leading-tight mb-1 pointer-events-none">
           {pokemon.name}
         </h3>
-        <div className="text-xs text-gray-600">
+        <div className="text-xs text-gray-600 pointer-events-none">
           #{pokemon.id}
         </div>
       </div>
