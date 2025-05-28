@@ -39,29 +39,39 @@ export const useBattleStarterCore = (
   ): Pokemon[] => {
     const battleCount = parseInt(localStorage.getItem('pokemon-battle-count') || '0', 10);
     
+    // IMMEDIATE DIAGNOSTIC: Check stored battle sequence for repetition pattern
+    const storedSequence = JSON.parse(localStorage.getItem('pokemon-battle-sequence') || '[]');
+    console.log(`🔍 [REPETITION_DIAGNOSTIC] Battle #${battleCount + 1} - Stored sequence:`, storedSequence);
+    
+    if (storedSequence.length >= 10) {
+      const battle10 = storedSequence.find(b => b.battleNumber === 10);
+      const battle11 = storedSequence.find(b => b.battleNumber === 11);
+      const battle12 = storedSequence.find(b => b.battleNumber === 12);
+      const battle13 = storedSequence.find(b => b.battleNumber === 13);
+      const battle14 = storedSequence.find(b => b.battleNumber === 14);
+      
+      console.log(`🚨 [REPETITION_DIAGNOSTIC] Battle 10: ${battle10?.pokemonNames} (${battle10?.battleKey})`);
+      console.log(`🚨 [REPETITION_DIAGNOSTIC] Battle 11: ${battle11?.pokemonNames} (${battle11?.battleKey})`);
+      console.log(`🚨 [REPETITION_DIAGNOSTIC] Battle 12: ${battle12?.pokemonNames} (${battle12?.battleKey})`);
+      console.log(`🚨 [REPETITION_DIAGNOSTIC] Battle 13: ${battle13?.pokemonNames} (${battle13?.battleKey})`);
+      console.log(`🚨 [REPETITION_DIAGNOSTIC] Battle 14: ${battle14?.pokemonNames} (${battle14?.battleKey})`);
+      
+      // Check for exact repetition
+      if (battle11 && battle12 && battle11.battleKey === battle12.battleKey) {
+        console.log(`🚨🚨🚨 [REPETITION_FOUND] Battle 11 and 12 are IDENTICAL: ${battle11.battleKey}`);
+      }
+      if (battle12 && battle13 && battle12.battleKey === battle13.battleKey) {
+        console.log(`🚨🚨🚨 [REPETITION_FOUND] Battle 12 and 13 are IDENTICAL: ${battle12.battleKey}`);
+      }
+      if (battle13 && battle14 && battle13.battleKey === battle14.battleKey) {
+        console.log(`🚨🚨🚨 [REPETITION_FOUND] Battle 13 and 14 are IDENTICAL: ${battle13.battleKey}`);
+      }
+    }
+    
     console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] ===== BATTLE #${battleCount + 1} GENERATION =====`);
     console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] Battle type: ${battleType}`);
     console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] Available Pokemon count: ${availablePokemon.length}`);
     console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] Recently used entries: ${recentlyUsed.length}`);
-    
-    // CRITICAL: Log the FULL recently used list for debugging
-    console.log(`🎯🎯🎯 [FULL_RECENTLY_USED_LIST] Battle #${battleCount + 1} Recently used: [${recentlyUsed.join(', ')}]`);
-    
-    // SUPER CRITICAL: Log detailed battle sequence for battles 8-16 to catch milestone issues
-    if (battleCount >= 7 && battleCount <= 15) {
-      console.log(`🔥🔥🔥 [MILESTONE_SEQUENCE_CRITICAL] ===== BATTLE ${battleCount + 1} DETAILED ANALYSIS =====`);
-      console.log(`🔥🔥🔥 [MILESTONE_SEQUENCE_CRITICAL] This is battle #${battleCount + 1} - ${battleCount < 10 ? 'PRE-MILESTONE' : 'POST-MILESTONE'}`);
-      console.log(`🔥🔥🔥 [MILESTONE_SEQUENCE_CRITICAL] Recently used full list: [${recentlyUsed.join(', ')}]`);
-      
-      // Log the last 5 battles in detail
-      const lastFiveBattles = recentlyUsed.slice(-5).map(key => {
-        const [id1, id2] = key.split('-').map(Number);
-        const p1 = availablePokemon.find(p => p.id === id1);
-        const p2 = availablePokemon.find(p => p.id === id2);
-        return `${p1?.name || id1}(${id1}) vs ${p2?.name || id2}(${id2}) = ${key}`;
-      });
-      console.log(`🔥🔥🔥 [MILESTONE_SEQUENCE_CRITICAL] Last 5 battles in detail: ${lastFiveBattles.join(' | ')}`);
-    }
     
     if (battleType === "pairs") {
       // Get all possible pairs
@@ -77,52 +87,35 @@ export const useBattleStarterCore = (
       
       console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] Total possible pairs: ${allPairs.length}`);
       
-      // Filter unused pairs
-      let unusedPairs = allPairs.filter(pair => !recentlyUsed.includes(pair.key));
-      console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] Unused pairs: ${unusedPairs.length}`);
-      
-      // CRITICAL: Log first few unused pairs for pattern analysis
-      console.log(`🎯🎯🎯 [UNUSED_PAIRS_DEBUG] First 10 unused pairs:`, 
-        unusedPairs.slice(0, 10).map(p => `${p.pokemon1.name}(${p.pokemon1.id}) vs ${p.pokemon2.name}(${p.pokemon2.id}) = ${p.key}`));
-      
-      // CRITICAL: Log recently used pairs for pattern analysis
-      const recentPairDetails = recentlyUsed.slice(-10).map(key => {
-        const [id1, id2] = key.split('-').map(Number);
-        const p1 = availablePokemon.find(p => p.id === id1);
-        const p2 = availablePokemon.find(p => p.id === id2);
-        return `${p1?.name || id1}(${id1}) vs ${p2?.name || id2}(${id2}) = ${key}`;
-      });
-      console.log(`🎯🎯🎯 [RECENT_PAIRS_DEBUG] Last 10 recently used pairs:`, recentPairDetails);
+      // CRITICAL FIX: Filter out the last 5 battles from recently used to prevent immediate repetition
+      const lastFiveBattles = recentlyUsed.slice(-5);
+      let unusedPairs = allPairs.filter(pair => !lastFiveBattles.includes(pair.key));
+      console.log(`🔧 [REPETITION_FIX] Excluding last 5 battles: [${lastFiveBattles.join(', ')}]`);
+      console.log(`🔧 [REPETITION_FIX] Pairs after excluding last 5: ${unusedPairs.length}`);
       
       if (unusedPairs.length === 0) {
-        console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] ❌ NO UNUSED PAIRS! Implementing better distribution`);
+        console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] ❌ NO UNUSED PAIRS after excluding last 5! Using last 10 exclusion`);
         
-        // Remove only the oldest 50% of entries
-        const halfSize = Math.floor(recentlyUsed.length / 2);
-        const remainingUsed = recentlyUsed.slice(halfSize);
+        // Exclude last 10 battles instead
+        const lastTenBattles = recentlyUsed.slice(-10);
+        unusedPairs = allPairs.filter(pair => !lastTenBattles.includes(pair.key));
+        console.log(`🔧 [REPETITION_FIX] Excluding last 10 battles: [${lastTenBattles.join(', ')}]`);
+        console.log(`🔧 [REPETITION_FIX] Pairs after excluding last 10: ${unusedPairs.length}`);
         
-        console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] Removing ${halfSize} oldest entries, keeping ${remainingUsed.length}`);
-        console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] Removed entries: [${recentlyUsed.slice(0, halfSize).join(', ')}]`);
-        console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] Keeping entries: [${remainingUsed.join(', ')}]`);
-        
-        localStorage.setItem('pokemon-battle-recently-used', JSON.stringify(remainingUsed));
-        
-        // Now get unused pairs with the reduced recently used list
-        unusedPairs = allPairs.filter(pair => !remainingUsed.includes(pair.key));
-        console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] After partial clear - unused pairs: ${unusedPairs.length}`);
-        
-        // If still no unused pairs, pick the least recently used
         if (unusedPairs.length === 0) {
-          console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] Still no unused pairs - picking least recently used`);
+          console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] Still no unused pairs - clearing half of recently used`);
           
-          // Find pairs that were used earliest (not in the recent half)
-          const oldestUsedPairs = recentlyUsed.slice(0, halfSize);
-          unusedPairs = allPairs.filter(pair => oldestUsedPairs.includes(pair.key));
+          const halfSize = Math.floor(recentlyUsed.length / 2);
+          const remainingUsed = recentlyUsed.slice(halfSize);
+          localStorage.setItem('pokemon-battle-recently-used', JSON.stringify(remainingUsed));
+          
+          unusedPairs = allPairs.filter(pair => !remainingUsed.includes(pair.key));
+          console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] After partial clear - unused pairs: ${unusedPairs.length}`);
           
           if (unusedPairs.length === 0) {
-            // Last resort: pick any pair
+            // Last resort: pick random pair
             unusedPairs = [allPairs[Math.floor(Math.random() * allPairs.length)]];
-            console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] Last resort - picking random pair`);
+            console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] Last resort - random pair selected`);
           }
         }
       }
@@ -135,39 +128,7 @@ export const useBattleStarterCore = (
       console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] ===== BATTLE #${battleCount + 1} SELECTED =====`);
       console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] Selected: ${result[0].name} (${result[0].id}) vs ${result[1].name} (${result[1].id})`);
       console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] Selected key: ${selectedPair.key}`);
-      console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] Was this pair recently used? ${recentlyUsed.includes(selectedPair.key)}`);
-      console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] Random index chosen: ${randomIndex} of ${unusedPairs.length} unused pairs`);
-      
-      // CRITICAL: Check if this battle is an immediate repeat of the last battle
-      const lastBattleKey = recentlyUsed[recentlyUsed.length - 1];
-      if (lastBattleKey === selectedPair.key) {
-        console.log(`🚨🚨🚨 [IMMEDIATE_REPEAT_DETECTED] BATTLE #${battleCount + 1} IS IMMEDIATE REPEAT OF LAST BATTLE!`);
-        console.log(`🚨🚨🚨 [IMMEDIATE_REPEAT_DETECTED] Last battle key: ${lastBattleKey}`);
-        console.log(`🚨🚨🚨 [IMMEDIATE_REPEAT_DETECTED] Selected key: ${selectedPair.key}`);
-        console.log(`🚨🚨🚨 [IMMEDIATE_REPEAT_DETECTED] This should NOT happen! Bug in recently used logic!`);
-      }
-      
-      // SUPER CRITICAL: Additional logging for milestone battles 11-14
-      if (battleCount >= 10 && battleCount <= 13) {
-        console.log(`🔥🔥🔥 [POST_MILESTONE_BATTLE_${battleCount + 1}] ===== DETAILED SELECTION ANALYSIS =====`);
-        console.log(`🔥🔥🔥 [POST_MILESTONE_BATTLE_${battleCount + 1}] Selected Pokemon: ${result[0].name} (${result[0].id}) vs ${result[1].name} (${result[1].id})`);
-        console.log(`🔥🔥🔥 [POST_MILESTONE_BATTLE_${battleCount + 1}] Battle key: ${selectedPair.key}`);
-        console.log(`🔥🔥🔥 [POST_MILESTONE_BATTLE_${battleCount + 1}] Last battle key: ${lastBattleKey}`);
-        console.log(`🔥🔥🔥 [POST_MILESTONE_BATTLE_${battleCount + 1}] Is immediate repeat? ${lastBattleKey === selectedPair.key}`);
-        
-        // Check if this same pair appeared in any of the last 3 battles
-        const lastThreeBattles = recentlyUsed.slice(-3);
-        const appearedRecently = lastThreeBattles.includes(selectedPair.key);
-        console.log(`🔥🔥🔥 [POST_MILESTONE_BATTLE_${battleCount + 1}] Appeared in last 3 battles? ${appearedRecently}`);
-        console.log(`🔥🔥🔥 [POST_MILESTONE_BATTLE_${battleCount + 1}] Last 3 battles: [${lastThreeBattles.join(', ')}]`);
-        
-        if (appearedRecently) {
-          console.log(`🚨🚨🚨 [POST_MILESTONE_DUPLICATE_${battleCount + 1}] DUPLICATE DETECTED IN POST-MILESTONE BATTLES!`);
-          console.log(`🚨🚨🚨 [POST_MILESTONE_DUPLICATE_${battleCount + 1}] This pair ${selectedPair.key} appeared recently in: [${lastThreeBattles.join(', ')}]`);
-        }
-      }
-      
-      console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] ===== END BATTLE #${battleCount + 1} GENERATION =====`);
+      console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] Was this pair in last 5 battles? ${lastFiveBattles.includes(selectedPair.key)}`);
       
       return result;
     }
