@@ -1,3 +1,4 @@
+
 import { useCallback } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
@@ -183,11 +184,21 @@ export const useBattleStateHandlers = (
     startNewBattleWrapper();
   }, [startNewBattleWrapper, clearAllSuggestions, clearRefinementQueue, setBattlesCompleted, setBattleResults, setBattleHistory, setRankingGenerated, setShowingMilestone, setMilestoneInProgress]);
 
+  const handleManualReorder = useCallback((draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => {
+    console.log(`Manual reorder: ${draggedPokemonId} from ${sourceIndex} to ${destinationIndex}`);
+    // Implementation would go here
+  }, []);
+
   return {
     handlePokemonSelect,
     originalProcessBattleResult,
     startNewBattleWrapper,
     goBack,
-    performFullBattleReset
+    performFullBattleReset,
+    processBattleResultWithRefinement,
+    handleManualReorder,
+    pendingRefinements: refinementQueue.refinementQueue ? new Set(refinementQueue.refinementQueue.map(r => r.primaryPokemonId)) : new Set<number>(),
+    refinementBattleCount: refinementQueue.refinementBattleCount || 0,
+    clearRefinementQueue
   };
 };
