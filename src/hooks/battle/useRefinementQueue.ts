@@ -18,7 +18,7 @@ export const useRefinementQueue = () => {
     
     setRefinementQueue(prev => {
       console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] Current queue size before operation: ${prev.length}`);
-      console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] Current queue contents BEFORE:`, prev);
+      console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] Current queue contents BEFORE:`, prev.map(b => `${b.primaryPokemonId} vs ${b.opponentPokemonId}`));
       
       // CRITICAL FIX: Only remove existing battles for THIS specific Pokemon, don't touch other Pokemon's battles
       const filtered = prev.filter(b => {
@@ -32,6 +32,7 @@ export const useRefinementQueue = () => {
       });
       
       console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] Queue size after filtering out existing battles for Pokemon ${primaryId}: ${filtered.length}`);
+      console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] Filtered queue contents:`, filtered.map(b => `${b.primaryPokemonId} vs ${b.opponentPokemonId}`));
       
       // CRITICAL FIX: Create validation battle with the most relevant neighbor
       const validNeighbors = neighbors.filter(opponentId => opponentId && opponentId !== primaryId);
@@ -49,12 +50,13 @@ export const useRefinementQueue = () => {
         reason: `Position validation for manual reorder to position ${newPosition} (dragged from milestone)`
       };
       
+      // CRITICAL FIX: Always add to the END of the queue to maintain order
       const newQueue = [...filtered, battle];
       
       console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] ✅ CREATED validation battle: ${primaryId} vs ${opponentId}`);
       console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] ✅ Reason: ${battle.reason}`);
       console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] ✅ Total refinement battles in NEW queue: ${newQueue.length}`);
-      console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] ✅ NEW queue contents:`, newQueue);
+      console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] ✅ NEW queue contents:`, newQueue.map(b => `${b.primaryPokemonId} vs ${b.opponentPokemonId} (${b.reason.substring(0, 30)}...)`));
       console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] ===== QUEUEING VALIDATION BATTLES END =====`);
       
       return newQueue;
@@ -65,7 +67,7 @@ export const useRefinementQueue = () => {
     const next = refinementQueue.length > 0 ? refinementQueue[0] : null;
     console.log(`⚔️ [REFINEMENT_QUEUE_ULTRA_DEBUG] getNextRefinementBattle called`);
     console.log(`⚔️ [REFINEMENT_QUEUE_ULTRA_DEBUG] Current queue size: ${refinementQueue.length}`);
-    console.log(`⚔️ [REFINEMENT_QUEUE_ULTRA_DEBUG] Current queue:`, refinementQueue);
+    console.log(`⚔️ [REFINEMENT_QUEUE_ULTRA_DEBUG] Current queue:`, refinementQueue.map(b => `${b.primaryPokemonId} vs ${b.opponentPokemonId}`));
     
     if (next) {
       console.log(`⚔️ [REFINEMENT_QUEUE_ULTRA_DEBUG] ✅ Next battle IS refinement: ${next.primaryPokemonId} vs ${next.opponentPokemonId}`);
@@ -81,7 +83,7 @@ export const useRefinementQueue = () => {
     
     setRefinementQueue(prev => {
       console.log(`⚔️ [REFINEMENT_QUEUE_ULTRA_DEBUG] Current queue size BEFORE pop: ${prev.length}`);
-      console.log(`⚔️ [REFINEMENT_QUEUE_ULTRA_DEBUG] Current queue BEFORE pop:`, prev);
+      console.log(`⚔️ [REFINEMENT_QUEUE_ULTRA_DEBUG] Current queue BEFORE pop:`, prev.map(b => `${b.primaryPokemonId} vs ${b.opponentPokemonId}`));
       
       if (prev.length > 0) {
         const completed = prev[0];
@@ -91,7 +93,7 @@ export const useRefinementQueue = () => {
         console.log(`⚔️ [REFINEMENT_QUEUE_ULTRA_DEBUG] ✅ POPPED completed refinement battle: ${completed.primaryPokemonId} vs ${completed.opponentPokemonId}`);
         console.log(`⚔️ [REFINEMENT_QUEUE_ULTRA_DEBUG] ✅ Completed battle reason: ${completed.reason}`);
         console.log(`⚔️ [REFINEMENT_QUEUE_ULTRA_DEBUG] ✅ Remaining battles in queue: ${remaining}`);
-        console.log(`⚔️ [REFINEMENT_QUEUE_ULTRA_DEBUG] ✅ NEW queue contents:`, newQueue);
+        console.log(`⚔️ [REFINEMENT_QUEUE_ULTRA_DEBUG] ✅ NEW queue contents:`, newQueue.map(b => `${b.primaryPokemonId} vs ${b.opponentPokemonId}`));
         
         if (remaining > 0) {
           console.log(`⚔️ [REFINEMENT_QUEUE_ULTRA_DEBUG] ✅ Next refinement battle will be: ${newQueue[0].primaryPokemonId} vs ${newQueue[0].opponentPokemonId}`);
@@ -129,7 +131,7 @@ export const useRefinementQueue = () => {
     getNextRefinementBattle,
     popRefinementBattle,
     clearRefinementQueue,
-    hasRefinementBattles,
+    hasRefinementBattles: refinementQueue.length > 0,
     refinementBattleCount: refinementQueue.length
   };
 };
