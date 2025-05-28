@@ -1,3 +1,4 @@
+
 import { Pokemon } from "../types";
 import { formatPokemonName } from "@/utils/pokemon";
 import { getPreferredImageType, PokemonImageType } from "@/components/settings/ImagePreferenceSelector";
@@ -6,42 +7,45 @@ import { getPreferredImageType, PokemonImageType } from "@/components/settings/I
  * Validates and ensures Pokemon have consistent image URLs and names for battle display
  */
 export const validateBattlePokemon = (pokemon: Pokemon[]): Pokemon[] => {
-  console.log(`🔍 [VALIDATE_ULTRA_DEBUG] ===== VALIDATE BATTLE POKEMON START =====`);
-  console.log(`🔍 [VALIDATE_ULTRA_DEBUG] Input Pokemon count: ${pokemon.length}`);
+  console.log(`🔍 [VALIDATE_BATTLE_CRITICAL] ===== VALIDATE BATTLE POKEMON START =====`);
+  console.log(`🔍 [VALIDATE_BATTLE_CRITICAL] Input Pokemon count: ${pokemon.length}`);
   
   pokemon.forEach((p, index) => {
-    console.log(`🔍 [VALIDATE_ULTRA_DEBUG] Input #${index}: "${p.name}" (ID: ${p.id}) - type: ${typeof p.name}`);
-    console.log(`🔍 [VALIDATE_ULTRA_DEBUG] Input #${index} name chars: [${p.name.split('').join(', ')}]`);
+    console.log(`🔍 [VALIDATE_BATTLE_CRITICAL] Input #${index}: "${p.name}" (ID: ${p.id})`);
   });
   
   const validated = pokemon.map((p, index) => {
-    console.log(`🔍 [VALIDATE_ULTRA_DEBUG] Processing Pokemon #${index}: "${p.name}" (ID: ${p.id})`);
+    console.log(`🔍 [VALIDATE_BATTLE_CRITICAL] Processing Pokemon #${index}: "${p.name}" (ID: ${p.id})`);
     
     // CRITICAL FIX: Always use formatPokemonName to ensure consistent formatting
-    // This ensures that even if the Pokemon comes with an unformatted name, it gets properly formatted
     const formattedName = formatPokemonName(p.name);
     
-    console.log(`🔍 [VALIDATE_ULTRA_DEBUG] BEFORE: "${p.name}"`);
-    console.log(`🔍 [VALIDATE_ULTRA_DEBUG] AFTER: "${formattedName}"`);
-    console.log(`🔍 [VALIDATE_ULTRA_DEBUG] Names identical: ${p.name === formattedName}`);
-    console.log(`🔍 [VALIDATE_ULTRA_DEBUG] Final name type: ${typeof formattedName}`);
+    console.log(`🔍 [VALIDATE_BATTLE_CRITICAL] "${p.name}" → "${formattedName}"`);
+    console.log(`🔍 [VALIDATE_BATTLE_CRITICAL] Formatting changed name: ${p.name !== formattedName}`);
     
-    const validatedPokemon = {
-      ...p,
-      name: formattedName,
-      // Ensure image exists
-      image: p.image || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${p.id}.png`
+    // CRITICAL: Create a completely new object to ensure the name change is applied
+    const validatedPokemon: Pokemon = {
+      id: p.id,
+      name: formattedName, // Use the formatted name
+      image: p.image || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${p.id}.png`,
+      types: p.types,
+      height: p.height,
+      weight: p.weight,
+      stats: p.stats,
+      generation: p.generation
     };
     
-    console.log(`🔍 [VALIDATE_ULTRA_DEBUG] Output #${index}: "${validatedPokemon.name}" (ID: ${validatedPokemon.id})`);
-    console.log(`🔍 [VALIDATE_ULTRA_DEBUG] Output #${index} object keys: ${Object.keys(validatedPokemon).join(', ')}`);
-    console.log(`🔍 [VALIDATE_ULTRA_DEBUG] Output #${index} name property: ${validatedPokemon.name}`);
+    console.log(`🔍 [VALIDATE_BATTLE_CRITICAL] Output #${index}: "${validatedPokemon.name}" (ID: ${validatedPokemon.id})`);
     
     return validatedPokemon;
   });
   
-  console.log(`✅ [VALIDATE_ULTRA_DEBUG] Validated ${validated.length} Pokemon - ALL NAMES FORMATTED CONSISTENTLY`);
-  console.log(`🔍 [VALIDATE_ULTRA_DEBUG] ===== VALIDATE BATTLE POKEMON END =====`);
+  console.log(`✅ [VALIDATE_BATTLE_CRITICAL] Validation complete - ${validated.length} Pokemon with formatted names`);
+  validated.forEach((p, index) => {
+    console.log(`✅ [VALIDATE_BATTLE_CRITICAL] Final #${index}: "${p.name}" (ID: ${p.id})`);
+  });
+  console.log(`🔍 [VALIDATE_BATTLE_CRITICAL] ===== VALIDATE BATTLE POKEMON END =====`);
+  
   return validated;
 };
 
