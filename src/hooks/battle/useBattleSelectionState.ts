@@ -7,6 +7,7 @@ import { useBattleStateSelection } from "./useBattleStateSelection";
 import { useBattleResults } from "./useBattleResults";
 import { useBattleStarterIntegration } from "./useBattleStarterIntegration";
 import { useBattleOutcomeProcessor } from "./useBattleOutcomeProcessor";
+import { useSharedRefinementQueue } from "./useSharedRefinementQueue";
 import { toast } from "sonner";
 
 export const useBattleSelectionState = () => {
@@ -31,6 +32,9 @@ export const useBattleSelectionState = () => {
     getCurrentRankings
   } = useBattleResults();
 
+  // Get refinement queue directly in this hook
+  const refinementQueue = useSharedRefinementQueue();
+
   // Ensure currentRankings always has full RankedPokemon structure
   const currentRankings = useMemo<RankedPokemon[]>(() => {
     if (Array.isArray(battleResults) && battleResults.length > 0) {
@@ -46,23 +50,46 @@ export const useBattleSelectionState = () => {
     }));
   }, [battleResults, allPokemon, getCurrentRankings]);
 
-  const { battleStarter, startNewBattle, refinementQueue } = useBattleStarterIntegration(
+  const { battleStarter, startNewBattle: originalStartNewBattle } = useBattleStarterIntegration(
     allPokemon,
     currentRankings,
     setCurrentBattle,
     setSelectedPokemon
   );
 
-  // CRITICAL DEBUG: Verify the startNewBattle function has refinement queue access
-  console.log("🚨 [CRITICAL_CONNECTION_DEBUG] useBattleSelectionState hook initialization:");
-  console.log("🚨 [CRITICAL_CONNECTION_DEBUG] startNewBattle function exists:", typeof startNewBattle === 'function');
-  console.log("🚨 [CRITICAL_CONNECTION_DEBUG] refinementQueue exists:", !!refinementQueue);
-  console.log("🚨 [CRITICAL_CONNECTION_DEBUG] refinementQueue methods:", refinementQueue ? Object.keys(refinementQueue) : 'none');
-  
-  // CRITICAL DEBUG: Test the function directly to see if it has refinement queue access
-  console.log("🚨 [CRITICAL_CONNECTION_DEBUG] Testing startNewBattle function signature:");
-  console.log("🚨 [CRITICAL_CONNECTION_DEBUG] Function name:", startNewBattle.name);
-  console.log("🚨 [CRITICAL_CONNECTION_DEBUG] Function length (params):", startNewBattle.length);
+  // Create our own startNewBattle that has direct access to refinement queue
+  const startNewBattle = useCallback((battleType: BattleType) => {
+    console.log(`🚀 [FIXED_BATTLE_START] Starting battle with refinement queue access`);
+    console.log(`🚀 [FIXED_BATTLE_START] Queue size: ${refinementQueue.refinementBattleCount}`);
+    console.log(`🚀 [FIXED_BATTLE_START] Has battles: ${refinementQueue.hasRefinementBattles}`);
+    
+    // Check for refinement battles first
+    const nextRefinement = refinementQueue.getNextRefinementBattle();
+    if (nextRefinement) {
+      console.log(`🚀 [FIXED_BATTLE_START] Found refinement battle: ${nextRefinement.primaryPokemonId} vs ${nextRefinement.opponentPokemonId}`);
+      
+      const primary = allPokemon.find(p => p.id === nextRefinement.primaryPokemonId);
+      const opponent = allPokemon.find(p => p.id === nextRefinement.opponentPokemonId);
+      
+      if (primary && opponent) {
+        const refinementBattle = [primary, opponent];
+        console.log(`🚀 [FIXED_BATTLE_START] Creating refinement battle: ${primary.name} vs ${opponent.name}`);
+        
+        setCurrentBattle(refinementBattle);
+        setSelectedPokemon([]);
+        
+        return refinementBattle;
+      } else {
+        console.error(`🚀 [FIXED_BATTLE_START] Missing Pokemon, popping invalid battle`);
+        refinementQueue.popRefinementBattle();
+        return startNewBattle(battleType); // Retry
+      }
+    }
+    
+    // No refinement battles, use original function
+    console.log(`🚀 [FIXED_BATTLE_START] No refinement battles, using original startNewBattle`);
+    return originalStartNewBattle(battleType);
+  }, [refinementQueue, allPokemon, setCurrentBattle, setSelectedPokemon, originalStartNewBattle]);
 
   const { processBattleResult } = useBattleOutcomeProcessor(
     setBattleResults,
@@ -70,26 +97,21 @@ export const useBattleSelectionState = () => {
     battleStarter
   );
   
-  // CRITICAL FIX: Enhanced forceNextBattle with proper sequencing to prevent flashing
   const forceNextBattle = useCallback(() => {
     console.log("🔄 useBattleSelectionState: Force starting next battle");
     
     try {
-      // CRITICAL FIX: Don't clear current battle immediately - wait for new one to be ready
       const dismissMilestoneEvent = new CustomEvent('milestone-dismissed', {
         detail: { forced: true, source: 'forceNextBattle', immediate: false }
       });
       document.dispatchEvent(dismissMilestoneEvent);
       
-      // Clear selections but keep current battle visible
       setSelectedPokemon([]);
       
-      // CRITICAL FIX: Delay battle generation to prevent flashing
       setTimeout(() => {
         const result = startNewBattle(currentBattleType);
         
         if (result && result.length > 0) {
-          // Only update battle after new one is ready
           toast.success("Starting new battle", {
             description: `New ${currentBattleType} battle ready`
           });
@@ -105,7 +127,7 @@ export const useBattleSelectionState = () => {
           console.error("❌ forceNextBattle: Failed to start new battle - empty result");
           return [];
         }
-      }, 500); // CRITICAL FIX: Increased delay to prevent flashing
+      }, 500);
     } catch (error) {
       console.error("Error in forceNextBattle:", error);
       toast.error("Failed to start battle", {
@@ -115,108 +137,53 @@ export const useBattleSelectionState = () => {
     }
   }, [currentBattleType, startNewBattle, setSelectedPokemon]);
 
-  // CRITICAL DEBUG: Create a wrapper function that adds extensive logging
-  const trackedStartNewBattle = useCallback((battleType: BattleType) => {
-    console.log("🚨 [TRACKED_BATTLE_START] ===== TRACKED BATTLE GENERATION START =====");
-    console.log("🚨 [TRACKED_BATTLE_START] Called with battle type:", battleType);
-    console.log("🚨 [TRACKED_BATTLE_START] refinementQueue available:", !!refinementQueue);
-    console.log("🚨 [TRACKED_BATTLE_START] refinementQueue size:", refinementQueue?.refinementBattleCount || 'N/A');
-    console.log("🚨 [TRACKED_BATTLE_START] refinementQueue queue:", refinementQueue?.refinementQueue || 'N/A');
-    
-    // Call the original function
-    console.log("🚨 [TRACKED_BATTLE_START] Calling original startNewBattle...");
-    const result = startNewBattle(battleType);
-    
-    console.log("🚨 [TRACKED_BATTLE_START] Original startNewBattle returned:", result ? result.map(p => `${p.name}(${p.id})`).join(', ') : 'null/empty');
-    console.log("🚨 [TRACKED_BATTLE_START] ===== TRACKED BATTLE GENERATION END =====");
-    
-    return result;
-  }, [startNewBattle, refinementQueue, currentBattleType]);
-
-  // CRITICAL FIX: Enhanced milestone dismissal event handling with immediate battle start for force events
+  // Handle events with the fixed startNewBattle function
   useEffect(() => {
     const handleMilestoneDismissed = (event: CustomEvent) => {
       console.log("📣 useBattleSelectionState: Received milestone-dismissed event", event.detail);
       
-      // Reset selections immediately
       setSelectedPokemon([]);
       
-      // CRITICAL FIX: Only start new battle if it's NOT an immediate dismissal to prevent flashing
       if (event.detail?.immediate === false) {
         console.log("🚀 useBattleSelectionState: Non-immediate dismissal - waiting before starting new battle");
-        // The new battle will be started by forceNextBattle's setTimeout
       } else if (event.detail?.immediate === true) {
         console.log("🚀 useBattleSelectionState: Immediate dismissal - starting new battle with delay");
         setTimeout(() => {
-          trackedStartNewBattle(currentBattleType);
-        }, 300); // Shorter delay for immediate dismissals
+          startNewBattle(currentBattleType);
+        }, 300);
       }
     };
     
     const handleForceNextBattle = (event: CustomEvent) => {
-      console.log("🚀 [BATTLE_SELECTION_STATE_TRACE] ===== FORCE NEXT BATTLE EVENT RECEIVED =====");
-      console.log("🚀 [BATTLE_SELECTION_STATE_TRACE] Event timestamp:", event.detail?.timestamp);
-      console.log("🚀 [BATTLE_SELECTION_STATE_TRACE] Event queue size:", event.detail?.queueSize);
-      console.log("🚀 [BATTLE_SELECTION_STATE_TRACE] Event Pokemon:", event.detail?.pokemonName);
-      console.log("🚀 [BATTLE_SELECTION_STATE_TRACE] Event Pokemon ID:", event.detail?.pokemonId);
-      console.log("🚀 [BATTLE_SELECTION_STATE_TRACE] startNewBattle function exists:", typeof startNewBattle);
-      console.log("🚀 [BATTLE_SELECTION_STATE_TRACE] Current battle type:", currentBattleType);
+      console.log("🚀 [FORCE_BATTLE_EVENT] Received force-next-battle event");
+      console.log("🚀 [FORCE_BATTLE_EVENT] Event details:", event.detail);
       
-      // CRITICAL DEBUG: Test if our startNewBattle has refinement queue access
-      console.log("🚨 [CRITICAL_CONNECTION_DEBUG] ===== TESTING startNewBattle FUNCTION =====");
-      console.log("🚨 [CRITICAL_CONNECTION_DEBUG] Function source preview:", startNewBattle.toString().slice(0, 300));
-      console.log("🚨 [CRITICAL_CONNECTION_DEBUG] refinementQueue object:", refinementQueue);
-      console.log("🚨 [CRITICAL_CONNECTION_DEBUG] refinementQueue.refinementBattleCount:", refinementQueue?.refinementBattleCount);
-      console.log("🚨 [CRITICAL_CONNECTION_DEBUG] refinementQueue.hasRefinementBattles:", refinementQueue?.hasRefinementBattles);
-      console.log("🚨 [CRITICAL_CONNECTION_DEBUG] refinementQueue.getNextRefinementBattle:", typeof refinementQueue?.getNextRefinementBattle);
-      
-      // Clear selections immediately
       setSelectedPokemon([]);
       
-      // CRITICAL TRACE: Log exactly which battle generation function we're calling
-      console.log("🚀 [BATTLE_SELECTION_STATE_TRACE] About to call trackedStartNewBattle - this should use refinement queue");
-      
-      // CRITICAL DEBUG: Check refinement queue state right before the call
-      console.log("🚨 [PRE_CALL_DEBUG] Refinement queue state before trackedStartNewBattle:");
-      console.log("🚨 [PRE_CALL_DEBUG] - Queue size:", refinementQueue?.refinementBattleCount || 'undefined');
-      console.log("🚨 [PRE_CALL_DEBUG] - Has battles:", refinementQueue?.hasRefinementBattles || 'undefined');
-      console.log("🚨 [PRE_CALL_DEBUG] - Next battle:", refinementQueue?.getNextRefinementBattle ? refinementQueue.getNextRefinementBattle() : 'method missing');
-      
-      // CRITICAL FIX: Use the tracked function instead of the direct one
-      console.log("🚀 [BATTLE_SELECTION_STATE_TRACE] CALLING trackedStartNewBattle IMMEDIATELY");
-      
-      const result = trackedStartNewBattle(currentBattleType);
-      
-      console.log("🚀 [BATTLE_SELECTION_STATE_TRACE] trackedStartNewBattle returned:", result ? result.map(p => `${p.name}(${p.id})`).join(', ') : 'null/empty');
+      // Call our fixed startNewBattle function immediately
+      const result = startNewBattle(currentBattleType);
       
       if (result && result.length > 0) {
-        console.log("✅ [BATTLE_SELECTION_STATE_TRACE] Successfully started refinement battle with", 
-          result.map(p => p.name).join(', '));
+        console.log("✅ [FORCE_BATTLE_EVENT] Successfully started battle:", result.map(p => p.name).join(' vs '));
         
-        // Check if the result includes the dragged Pokemon
         const draggedPokemonId = event.detail?.pokemonId;
         if (draggedPokemonId && result.some(p => p.id === draggedPokemonId)) {
-          console.log("🎯 [BATTLE_SELECTION_STATE_TRACE] SUCCESS! Dragged Pokemon IS in the new battle!");
+          console.log("🎯 [FORCE_BATTLE_EVENT] SUCCESS! Dragged Pokemon IS in the new battle!");
           toast.success("Validation battle started", {
             description: `Testing position for ${event.detail?.pokemonName || 'dragged Pokemon'}`
           });
         } else {
-          console.log("❌ [BATTLE_SELECTION_STATE_TRACE] FAILURE! Dragged Pokemon is NOT in the new battle");
-          console.log("❌ [BATTLE_SELECTION_STATE_TRACE] Expected Pokemon ID:", draggedPokemonId);
-          console.log("❌ [BATTLE_SELECTION_STATE_TRACE] Battle Pokemon IDs:", result.map(p => p.id));
-          console.log("❌ [BATTLE_SELECTION_STATE_TRACE] This means refinement queue is not being used properly");
+          console.log("❌ [FORCE_BATTLE_EVENT] Dragged Pokemon not in battle - queue may be empty");
           toast.warning("Regular battle started", {
-            description: "Refinement queue may be empty or not working"
+            description: "No validation battles were queued"
           });
         }
       } else {
-        console.error("❌ [BATTLE_SELECTION_STATE_TRACE] Failed to start refinement battle - empty result");
+        console.error("❌ [FORCE_BATTLE_EVENT] Failed to start battle");
         toast.error("Failed to start battle", {
-          description: "Could not create validation battle"
+          description: "Could not create battle"
         });
       }
-      
-      console.log("🚀 [BATTLE_SELECTION_STATE_TRACE] ===== FORCE NEXT BATTLE EVENT COMPLETE =====");
     };
     
     document.addEventListener('milestone-dismissed', handleMilestoneDismissed as EventListener);
@@ -226,7 +193,7 @@ export const useBattleSelectionState = () => {
       document.removeEventListener('milestone-dismissed', handleMilestoneDismissed as EventListener);
       document.removeEventListener('force-next-battle', handleForceNextBattle as EventListener);
     };
-  }, [setSelectedPokemon, trackedStartNewBattle, currentBattleType, refinementQueue]);
+  }, [setSelectedPokemon, startNewBattle, currentBattleType]);
 
   return {
     currentBattle,
