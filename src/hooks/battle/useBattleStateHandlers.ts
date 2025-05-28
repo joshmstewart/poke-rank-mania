@@ -32,18 +32,23 @@ export const useBattleStateHandlers = (
       return;
     }
     
+    // Get the dragged Pokemon info
+    const draggedPokemon = finalRankings.find(p => p.id === pokemonId);
+    if (!draggedPokemon) {
+      console.error(`🔄 [MANUAL_REORDER_HANDLER] Could not find dragged Pokemon ${pokemonId} in rankings`);
+      return;
+    }
+    
+    console.log(`🔄 [MANUAL_REORDER_HANDLER] Found dragged Pokemon: ${draggedPokemon.name} (${draggedPokemon.id})`);
+    
     // Get neighboring Pokemon IDs around the NEW position for validation battles
-    // We need to simulate where the Pokemon would be after the move
     const neighborIds: number[] = [];
     
     console.log(`🔄 [MANUAL_REORDER_HANDLER] Looking for neighbors around destination index ${destinationIndex}`);
-    console.log(`🔄 [MANUAL_REORDER_HANDLER] Final rankings sample:`, finalRankings.slice(Math.max(0, destinationIndex - 2), destinationIndex + 3).map(p => ({ id: p?.id, name: p?.name })));
     
     // Add Pokemon that will be before the new position (if it exists)
     if (destinationIndex > 0) {
-      // If we're moving down, the "before" position is at destinationIndex - 1
-      // If we're moving up, we need to account for the shift
-      const beforeIndex = sourceIndex < destinationIndex ? destinationIndex - 1 : destinationIndex - 1;
+      const beforeIndex = destinationIndex - 1;
       const beforePokemon = finalRankings[beforeIndex];
       
       console.log(`🔄 [MANUAL_REORDER_HANDLER] Checking before position at index ${beforeIndex}:`, beforePokemon?.name, beforePokemon?.id);
@@ -56,9 +61,7 @@ export const useBattleStateHandlers = (
     
     // Add Pokemon that will be after the new position (if it exists)
     if (destinationIndex < finalRankings.length - 1) {
-      // If we're moving up, the "after" position is at destinationIndex + 1
-      // If we're moving down, we need to account for the shift
-      const afterIndex = sourceIndex < destinationIndex ? destinationIndex + 1 : destinationIndex + 1;
+      const afterIndex = destinationIndex + 1;
       const afterPokemon = finalRankings[afterIndex];
       
       console.log(`🔄 [MANUAL_REORDER_HANDLER] Checking after position at index ${afterIndex}:`, afterPokemon?.name, afterPokemon?.id);
@@ -77,32 +80,33 @@ export const useBattleStateHandlers = (
       return;
     }
     
-    // Ensure all parameters are the correct types
-    const validNeighbors = neighborIds.filter(id => typeof id === 'number' && !isNaN(id));
-    
-    console.log(`🔄 [MANUAL_REORDER_HANDLER] Final call parameters:`, {
-      pokemonId,
-      validNeighbors,
-      destinationIndex,
-      refinementQueueExists: !!refinementQueue,
-      queueBattlesForReorderExists: typeof refinementQueue.queueBattlesForReorder === 'function'
-    });
-    
-    if (validNeighbors.length === 0) {
-      console.warn(`🔄 [MANUAL_REORDER_HANDLER] No valid neighbors after filtering`);
-      return;
-    }
-    
     // Queue refinement battles for this manual reorder
     try {
+      console.log(`🔄 [MANUAL_REORDER_HANDLER] About to queue battles - refinement queue exists:`, !!refinementQueue);
+      console.log(`🔄 [MANUAL_REORDER_HANDLER] queueBattlesForReorder function exists:`, typeof refinementQueue.queueBattlesForReorder);
+      
       refinementQueue.queueBattlesForReorder(
         pokemonId,
-        validNeighbors,
+        neighborIds,
         destinationIndex
       );
       
-      console.log(`✅ [MANUAL_REORDER_HANDLER] Successfully queued refinement battles for Pokemon ${pokemonId}`);
+      console.log(`✅ [MANUAL_REORDER_HANDLER] Successfully queued refinement battles for Pokemon ${pokemonId} (${draggedPokemon.name})`);
       console.log(`📊 [MANUAL_REORDER_HANDLER] Total refinement battles in queue: ${refinementQueue.refinementBattleCount}`);
+      console.log(`🎯 [MANUAL_REORDER_HANDLER] Next battle should be a refinement battle involving ${draggedPokemon.name}`);
+      
+      // Force next battle to check refinement queue
+      console.log(`🚀 [MANUAL_REORDER_HANDLER] Triggering force next battle to use refinement queue`);
+      const forceNextBattleEvent = new CustomEvent('force-next-battle', {
+        detail: { 
+          reason: 'manual_reorder',
+          pokemonId: pokemonId,
+          pokemonName: draggedPokemon.name,
+          immediate: true 
+        }
+      });
+      document.dispatchEvent(forceNextBattleEvent);
+      
     } catch (error) {
       console.error(`❌ [MANUAL_REORDER_HANDLER] Error queueing refinement battles:`, error);
     }

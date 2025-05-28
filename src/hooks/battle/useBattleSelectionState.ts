@@ -1,3 +1,4 @@
+
 import { useMemo, useCallback, useEffect } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
@@ -123,10 +124,33 @@ export const useBattleSelectionState = () => {
       }
     };
     
+    const handleForceNextBattle = (event: CustomEvent) => {
+      console.log("🚀 useBattleSelectionState: Received force-next-battle event", event.detail);
+      
+      // Clear selections immediately
+      setSelectedPokemon([]);
+      
+      // Start new battle immediately to use refinement queue
+      const result = startNewBattle(currentBattleType);
+      
+      if (result && result.length > 0) {
+        toast.success("Starting refinement battle", {
+          description: `Validating position for ${event.detail?.pokemonName || 'dragged Pokemon'}`
+        });
+        
+        console.log("✅ handleForceNextBattle: Successfully started refinement battle with", 
+          result.map(p => p.name).join(', '));
+      } else {
+        console.error("❌ handleForceNextBattle: Failed to start refinement battle");
+      }
+    };
+    
     document.addEventListener('milestone-dismissed', handleMilestoneDismissed as EventListener);
+    document.addEventListener('force-next-battle', handleForceNextBattle as EventListener);
     
     return () => {
       document.removeEventListener('milestone-dismissed', handleMilestoneDismissed as EventListener);
+      document.removeEventListener('force-next-battle', handleForceNextBattle as EventListener);
     };
   }, [setSelectedPokemon, startNewBattle, currentBattleType]);
 
