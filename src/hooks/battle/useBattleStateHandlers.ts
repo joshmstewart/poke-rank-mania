@@ -1,4 +1,5 @@
-import { useCallback } from "react";
+
+import { useCallback, useRef } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
 import { useSharedRefinementQueue } from "./useSharedRefinementQueue";
@@ -10,6 +11,10 @@ export const useBattleStateHandlers = (
 ) => {
   // Use the shared refinement queue
   const refinementQueue = useSharedRefinementQueue();
+  
+  // CRITICAL FIX: Add guard to prevent multiple calls for same reorder operation
+  const lastReorderOperationRef = useRef<string | null>(null);
+  const reorderTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Handle manual reordering by generating refinement battles
   const handleManualReorder = useCallback((
@@ -21,12 +26,44 @@ export const useBattleStateHandlers = (
     console.log(`🔄 [MANUAL_REORDER_ULTRA_TRACE] Raw draggedPokemonId:`, draggedPokemonId, typeof draggedPokemonId);
     console.log(`🔄 [MANUAL_REORDER_ULTRA_TRACE] Pokemon moved from ${sourceIndex} to ${destinationIndex}`);
     
+    // CRITICAL FIX: Create unique operation ID and prevent duplicates
+    const operationId = `${draggedPokemonId}-${sourceIndex}-${destinationIndex}-${Date.now()}`;
+    const operationKey = `${draggedPokemonId}-${sourceIndex}-${destinationIndex}`;
+    
+    console.log(`🚨 [DUPLICATE_PREVENTION] Operation ID: ${operationId}`);
+    console.log(`🚨 [DUPLICATE_PREVENTION] Operation Key: ${operationKey}`);
+    console.log(`🚨 [DUPLICATE_PREVENTION] Last operation: ${lastReorderOperationRef.current}`);
+    
+    // Clear any existing timeout
+    if (reorderTimeoutRef.current) {
+      clearTimeout(reorderTimeoutRef.current);
+      console.log(`🚨 [DUPLICATE_PREVENTION] Cleared existing timeout`);
+    }
+    
+    // Check if this is a duplicate call within a short time window
+    if (lastReorderOperationRef.current === operationKey) {
+      console.log(`🚨 [DUPLICATE_PREVENTION] ❌ DUPLICATE CALL DETECTED - ignoring`);
+      console.log(`🚨 [DUPLICATE_PREVENTION] This is likely a React re-render or double event`);
+      return;
+    }
+    
+    // Mark this operation as in progress
+    lastReorderOperationRef.current = operationKey;
+    console.log(`🚨 [DUPLICATE_PREVENTION] ✅ New operation marked: ${operationKey}`);
+    
+    // Set timeout to clear the guard after a reasonable time
+    reorderTimeoutRef.current = setTimeout(() => {
+      lastReorderOperationRef.current = null;
+      console.log(`🚨 [DUPLICATE_PREVENTION] Guard cleared after timeout`);
+    }, 1000); // 1 second guard
+    
     // Convert to proper number type
     const pokemonId = typeof draggedPokemonId === 'string' ? parseInt(draggedPokemonId, 10) : Number(draggedPokemonId);
     console.log(`🔄 [MANUAL_REORDER_ULTRA_TRACE] Converted Pokemon ID: ${pokemonId} (type: ${typeof pokemonId})`);
     
     if (isNaN(pokemonId)) {
       console.error(`🔄 [MANUAL_REORDER_ULTRA_TRACE] Invalid Pokemon ID: ${draggedPokemonId}`);
+      lastReorderOperationRef.current = null; // Clear guard on error
       return;
     }
     
@@ -34,6 +71,7 @@ export const useBattleStateHandlers = (
     const draggedPokemon = finalRankings.find(p => p.id === pokemonId);
     if (!draggedPokemon) {
       console.error(`🔄 [MANUAL_REORDER_ULTRA_TRACE] Could not find dragged Pokemon ${pokemonId} in rankings`);
+      lastReorderOperationRef.current = null; // Clear guard on error
       return;
     }
     
@@ -68,6 +106,7 @@ export const useBattleStateHandlers = (
     
     if (neighborIds.length === 0) {
       console.warn(`🔄 [MANUAL_REORDER_ULTRA_TRACE] No valid neighbors found for validation battles`);
+      lastReorderOperationRef.current = null; // Clear guard when no work to do
       return;
     }
     
@@ -77,7 +116,8 @@ export const useBattleStateHandlers = (
         pokemonId,
         neighborIds,
         destinationIndex,
-        queueSizeBefore: refinementQueue.refinementBattleCount
+        queueSizeBefore: refinementQueue.refinementBattleCount,
+        operationId
       });
       
       refinementQueue.queueBattlesForReorder(
@@ -102,15 +142,17 @@ export const useBattleStateHandlers = (
           timestamp: Date.now(),
           expectedInBattle: true,
           neighbors: neighborIds,
-          destinationIndex: destinationIndex
+          destinationIndex: destinationIndex,
+          operationId: operationId
         }
       });
       
       document.dispatchEvent(forceNextBattleEvent);
-      console.log(`🚀 [MANUAL_REORDER_ULTRA_TRACE] ✅ Event dispatched successfully`);
+      console.log(`🚀 [MANUAL_REORDER_ULTRA_TRACE] ✅ Event dispatched successfully with operation ID: ${operationId}`);
       
     } catch (error) {
       console.error(`❌ [MANUAL_REORDER_ULTRA_TRACE] Error queueing refinement battles:`, error);
+      lastReorderOperationRef.current = null; // Clear guard on error
     }
     
     console.log(`🔄 [MANUAL_REORDER_ULTRA_TRACE] ===== MANUAL REORDER END =====`);
