@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
@@ -105,6 +106,12 @@ export const useBattleStateCore = (
     battleType: BattleType,
     selectedGeneration: number
   ) => {
+    console.log(`🔄 [BATTLE_PROCESSING] Processing battle result:`, {
+      selectedIds: selectedPokemonIds,
+      battlePokemon: currentBattlePokemon.map(p => p.name),
+      battleType
+    });
+
     setIsProcessingResult(true);
     setIsAnyProcessing(true);
 
@@ -135,6 +142,7 @@ export const useBattleStateCore = (
         setSelectedPokemon([]);
         setIsProcessingResult(false);
         setIsAnyProcessing(false);
+        console.log(`✅ [BATTLE_PROCESSING] Battle result processed successfully`);
         resolve();
       }, 500);
     });
@@ -153,11 +161,20 @@ export const useBattleStateCore = (
   );
 
   const handleTripletSelectionComplete = useCallback(async () => {
-    if (selectedPokemon.length !== (battleType === "pairs" ? 1 : 2)) {
-      console.warn("Incorrect number of Pokémon selected");
+    const expectedCount = battleType === "pairs" ? 1 : 2;
+    console.log(`🔄 [SELECTION_COMPLETE] handleTripletSelectionComplete called:`, {
+      selectedCount: selectedPokemon.length,
+      expectedCount,
+      battleType,
+      selectedPokemon
+    });
+
+    if (selectedPokemon.length !== expectedCount) {
+      console.warn(`❌ [SELECTION_COMPLETE] Incorrect number of Pokémon selected: ${selectedPokemon.length}, expected: ${expectedCount}`);
       return;
     }
 
+    console.log(`✅ [SELECTION_COMPLETE] Starting battle processing...`);
     setIsBattleTransitioning(true);
     setIsAnyProcessing(true);
 
@@ -169,13 +186,14 @@ export const useBattleStateCore = (
         selectedGeneration
       );
 
+      console.log(`✅ [SELECTION_COMPLETE] Battle processed, starting new battle...`);
       setTimeout(() => {
         setIsBattleTransitioning(false);
         setIsAnyProcessing(false);
         startNewBattle();
       }, 500);
     } catch (error) {
-      console.error("Error processing battle result:", error);
+      console.error("❌ [SELECTION_COMPLETE] Error processing battle result:", error);
       setIsBattleTransitioning(false);
       setIsAnyProcessing(false);
     }
@@ -210,6 +228,7 @@ export const useBattleStateCore = (
       if (newBattle && newBattle.length > 0) {
         setCurrentBattle(newBattle);
         setSelectedPokemon([]);
+        console.log(`✅ [START_NEW_BATTLE] New battle set successfully`);
       } else {
         console.error(`❌ [START_NEW_BATTLE] Failed to generate battle`);
       }
