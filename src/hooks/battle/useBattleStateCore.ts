@@ -26,7 +26,7 @@ export const useBattleStateCore = (
   const [rankingGenerated, setRankingGenerated] = useState(false);
   const [selectedPokemon, setSelectedPokemon] = useState<number[]>([]);
   const [battleType, setBattleType] = useState<BattleType>(initialBattleType);
-  const [finalRankings, setFinalRankings] = useState<Pokemon[]>([]);
+  const [finalRankings, setFinalRankings] = useState<RankedPokemon[]>([]);
   const [confidenceScores, setConfidenceScores] = useState<{ [pokemonId: number]: number }>({});
   const [battleHistory, setBattleHistory] = useState<{ battle: Pokemon[], selected: number[] }[]>([]);
   const [activeTier, setActiveTier] = useState<TopNOption>("All");
@@ -40,7 +40,7 @@ export const useBattleStateCore = (
   console.log(`🔧 [BATTLE_STATE_CORE_ULTRA_DEBUG] Hook state initialized, calling battleStarter and refinementQueue hooks`);
 
   // CRITICAL FIX: Pass a function that returns the current rankings instead of the array directly
-  const getCurrentRankings = useCallback(() => finalRankings as RankedPokemon[], [finalRankings]);
+  const getCurrentRankings = useCallback(() => finalRankings, [finalRankings]);
   const { startNewBattle } = useBattleStarterCore(allPokemon, getCurrentRankings);
   const refinementQueue = useSharedRefinementQueue();
 
@@ -49,7 +49,149 @@ export const useBattleStateCore = (
     setMilestones([]);
   }, []);
 
-  // Use extracted hooks
+  // Original process battle result function
+  const originalProcessBattleResult = useCallback((
+    selectedPokemonIds: number[],
+    currentBattlePokemon: Pokemon[],
+    battleType: BattleType,
+    selectedGeneration: number
+  ) => {
+    console.log(`🔄 [BATTLE_PROCESSING_ULTRA_DEBUG] Processing battle result`);
+
+    const selected = selectedPokemonIds.sort((a, b) => a - b);
+    setBattleHistory(prev => [...prev, { battle: currentBattlePokemon, selected }]);
+
+    const newBattlesCompleted = battlesCompleted + 1;
+    setBattlesCompleted(newBattlesCompleted);
+    localStorage.setItem('pokemon-battle-count', String(newBattlesCompleted));
+
+    const newBattleResult: SingleBattle = {
+      battleType,
+      generation: selectedGeneration,
+      pokemonIds: currentBattlePokemon.map(p => p.id),
+      selectedPokemonIds: selectedPokemonIds,
+      timestamp: new Date().toISOString()
+    };
+
+    setBattleResults(prev => [...prev, newBattleResult]);
+
+    // Check if new battles completed hits a milestone
+    const isAtMilestone = milestones.includes(newBattlesCompleted);
+    console.log(`🎯 [MILESTONE_CHECK_ULTRA_DEBUG] Battle ${newBattlesCompleted} completed. Is milestone? ${isAtMilestone}`);
+    
+    if (isAtMilestone) {
+      console.log(`🏆 [MILESTONE_HIT_ULTRA_DEBUG] Milestone ${newBattlesCompleted} reached!`);
+      setMilestoneInProgress(true);
+      setShowingMilestone(true);
+      setRankingGenerated(true);
+    }
+
+    setSelectedPokemon([]);
+    return Promise.resolve();
+  }, [battlesCompleted, milestones, setBattleHistory, setBattlesCompleted, setBattleResults, setSelectedPokemon, setMilestoneInProgress, setShowingMilestone, setRankingGenerated]);
+
+  // Battle state handlers
+  const handlers = useBattleStateHandlers(
+    allPokemon,
+    originalProcessBattleResult,
+    finalRankings
+  );
+
+  // Override handlers with actual implementations
+  const enhancedHandlers = {
+    ...handlers,
+    handlePokemonSelect: useCallback((id: number) => {
+      console.log(`🎯 [POKEMON_SELECT_ULTRA_DEBUG] Pokemon ${id} selected. Current selections:`, selectedPokemon);
+      
+      setSelectedPokemon(prev => {
+        if (prev.includes(id)) {
+          console.log(`🎯 [POKEMON_SELECT_ULTRA_DEBUG] Deselecting Pokemon ${id}`);
+          return prev.filter(pokemonId => pokemonId !== id);
+        } else {
+          const newSelection = [...prev, id];
+          console.log(`🎯 [POKEMON_SELECT_ULTRA_DEBUG] Adding Pokemon ${id}. New selection:`, newSelection);
+          return newSelection;
+        }
+      });
+    }, [selectedPokemon]),
+
+    startNewBattleWrapper: useCallback(() => {
+      console.log(`🚀 [START_NEW_BATTLE_ULTRA_DEBUG] Starting new battle`);
+      
+      if (!startNewBattle) {
+        console.error(`❌ [START_NEW_BATTLE_ULTRA_DEBUG] startNewBattle not available`);
+        return;
+      }
+      
+      const config = {
+        allPokemon,
+        currentRankings: getCurrentRankings(),
+        battleType,
+        selectedGeneration,
+        freezeList: frozenPokemon
+      };
+      const newBattle = startNewBattle(config);
+      
+      if (newBattle && newBattle.length > 0) {
+        setCurrentBattle(newBattle);
+        setSelectedPokemon([]);
+        console.log(`✅ [START_NEW_BATTLE_ULTRA_DEBUG] New battle set successfully`);
+      }
+    }, [battleType, startNewBattle, allPokemon, getCurrentRankings, selectedGeneration, frozenPokemon]),
+
+    goBack: useCallback(() => {
+      if (battleHistory.length > 0) {
+        const lastBattle = battleHistory[battleHistory.length - 1];
+        setCurrentBattle(lastBattle.battle);
+        setSelectedPokemon(lastBattle.selected);
+        setBattleHistory(prev => prev.slice(0, -1));
+        setBattlesCompleted(prev => prev - 1);
+        setBattleResults(prev => prev.slice(0, -1));
+      }
+    }, [battleHistory]),
+
+    performFullBattleReset: useCallback(() => {
+      localStorage.removeItem('pokemon-battle-count');
+      setBattlesCompleted(0);
+      setBattleResults([]);
+      setBattleHistory([]);
+      setRankingGenerated(false);
+      setShowingMilestone(false);
+      setMilestoneInProgress(false);
+      refinementQueue.clearRefinementQueue();
+    }, [refinementQueue]),
+
+    pendingRefinements: refinementQueue.refinementQueue ? new Set(refinementQueue.refinementQueue.map(r => r.primaryPokemonId)) : new Set<number>(),
+    refinementBattleCount: refinementQueue.refinementBattleCount || 0,
+    clearRefinementQueue: refinementQueue.clearRefinementQueue
+  };
+
+  const milestoneHandlers = useBattleStateMilestones(
+    finalRankings,
+    battleHistory,
+    battlesCompleted,
+    completionPercentage,
+    setShowingMilestone,
+    setMilestoneInProgress,
+    setRankingGenerated,
+    setFinalRankings,
+    enhancedHandlers.startNewBattleWrapper
+  );
+
+  const processingHandlers = useBattleStateProcessing(
+    selectedPokemon,
+    currentBattle,
+    battleType,
+    selectedGeneration,
+    isAnyProcessing,
+    isProcessingResult,
+    handlers.processBattleResultWithRefinement,
+    setIsBattleTransitioning,
+    setIsAnyProcessing,
+    enhancedHandlers.startNewBattleWrapper
+  );
+
+  // Use extracted effects hook
   const { processingRef } = useBattleStateEffects(
     allPokemon,
     battleType,
@@ -63,75 +205,8 @@ export const useBattleStateCore = (
     getCurrentRankings,
     setCurrentBattle,
     setSelectedPokemon,
-    () => {}, // handleTripletSelectionComplete - will be set up below
+    processingHandlers.handleTripletSelectionComplete,
     setFinalRankings
-  );
-
-  // Battle state handlers with refinement processing placeholder
-  const {
-    processBattleResultWithRefinement,
-    handleManualReorder: actualManualReorder,
-    pendingRefinements,
-    refinementBattleCount,
-    clearRefinementQueue
-  } = useBattleStateHandlers(
-    allPokemon,
-    () => Promise.resolve(), // originalProcessBattleResult placeholder
-    finalRankings
-  );
-
-  const handlers = useBattleStateHandlers(
-    allPokemon,
-    currentBattle,
-    selectedPokemon,
-    battleType,
-    selectedGeneration,
-    battlesCompleted,
-    milestones,
-    finalRankings,
-    frozenPokemon,
-    battleHistory,
-    startNewBattle,
-    getCurrentRankings,
-    refinementQueue,
-    setBattleHistory,
-    setBattlesCompleted,
-    setBattleResults,
-    setSelectedPokemon,
-    setCurrentBattle,
-    setMilestoneInProgress,
-    setShowingMilestone,
-    setRankingGenerated,
-    setIsBattleTransitioning,
-    setIsAnyProcessing,
-    processBattleResultWithRefinement,
-    () => {}, // clearAllSuggestions placeholder
-    clearRefinementQueue
-  );
-
-  const milestoneHandlers = useBattleStateMilestones(
-    finalRankings,
-    battleHistory,
-    battlesCompleted,
-    completionPercentage,
-    setShowingMilestone,
-    setMilestoneInProgress,
-    setRankingGenerated,
-    setFinalRankings,
-    handlers.startNewBattleWrapper
-  );
-
-  const processingHandlers = useBattleStateProcessing(
-    selectedPokemon,
-    currentBattle,
-    battleType,
-    selectedGeneration,
-    isAnyProcessing,
-    isProcessingResult,
-    processBattleResultWithRefinement,
-    setIsBattleTransitioning,
-    setIsAnyProcessing,
-    handlers.startNewBattleWrapper
   );
 
   // Completion percentage effect
@@ -167,9 +242,9 @@ export const useBattleStateCore = (
     resetMilestones,
     calculateCompletionPercentage: milestoneHandlers.calculateCompletionPercentage,
     getSnapshotForMilestone: milestoneHandlers.getSnapshotForMilestone,
-    handlePokemonSelect: handlers.handlePokemonSelect,
+    handlePokemonSelect: enhancedHandlers.handlePokemonSelect,
     handleTripletSelectionComplete: processingHandlers.handleTripletSelectionComplete,
-    goBack: handlers.goBack,
+    goBack: enhancedHandlers.goBack,
     generateRankings: milestoneHandlers.generateRankings,
     handleSaveRankings: milestoneHandlers.handleSaveRankings,
     freezePokemonForTier: milestoneHandlers.freezePokemonForTier,
@@ -179,11 +254,11 @@ export const useBattleStateCore = (
     clearAllSuggestions: milestoneHandlers.clearAllSuggestions,
     handleContinueBattles: milestoneHandlers.handleContinueBattles,
     resetMilestoneInProgress: milestoneHandlers.resetMilestoneInProgress,
-    performFullBattleReset: handlers.performFullBattleReset,
-    handleManualReorder: actualManualReorder,
-    pendingRefinements,
-    refinementBattleCount,
-    clearRefinementQueue,
-    startNewBattle: handlers.startNewBattleWrapper
+    performFullBattleReset: enhancedHandlers.performFullBattleReset,
+    handleManualReorder: enhancedHandlers.handleManualReorder,
+    pendingRefinements: enhancedHandlers.pendingRefinements,
+    refinementBattleCount: enhancedHandlers.refinementBattleCount,
+    clearRefinementQueue: enhancedHandlers.clearRefinementQueue,
+    startNewBattle: enhancedHandlers.startNewBattleWrapper
   };
 };
