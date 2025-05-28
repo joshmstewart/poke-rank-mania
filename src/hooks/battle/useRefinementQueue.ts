@@ -1,4 +1,5 @@
-import { useState, useCallback } from "react";
+
+import { useState, useCallback, useRef } from "react";
 
 export interface RefinementBattle {
   primaryPokemonId: number;
@@ -8,6 +9,9 @@ export interface RefinementBattle {
 
 export const useRefinementQueue = () => {
   const [refinementQueue, setRefinementQueue] = useState<RefinementBattle[]>([]);
+  
+  // CRITICAL FIX: Use a ref to maintain the current queue state for immediate access
+  const currentQueueRef = useRef<RefinementBattle[]>([]);
 
   // CRITICAL FIX: Global duplicate detection function
   const isDuplicateBattleGlobally = useCallback((pokemon1: number, pokemon2: number, existingQueue: RefinementBattle[]) => {
@@ -79,6 +83,9 @@ export const useRefinementQueue = () => {
       // Add new battles to the end of the queue
       const newQueue = [...prev, ...battlesToAdd];
       
+      // CRITICAL FIX: Update the ref immediately
+      currentQueueRef.current = newQueue;
+      
       console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] ✅ Added ${battlesToAdd.length} new battles`);
       console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] ✅ Total refinement battles in NEW queue: ${newQueue.length}`);
       console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] ✅ NEW queue contents:`, newQueue.map(b => `${b.primaryPokemonId} vs ${b.opponentPokemonId}`));
@@ -88,50 +95,58 @@ export const useRefinementQueue = () => {
     });
   }, [isDuplicateBattleGlobally]);
 
+  // CRITICAL FIX: Use ref for immediate access to current state
   const getNextRefinementBattle = useCallback((): RefinementBattle | null => {
-    const next = refinementQueue.length > 0 ? refinementQueue[0] : null;
-    console.log(`⚔️ [REFINEMENT_QUEUE_ULTRA_DEBUG] getNextRefinementBattle called`);
-    console.log(`⚔️ [REFINEMENT_QUEUE_ULTRA_DEBUG] Current queue size: ${refinementQueue.length}`);
-    console.log(`⚔️ [REFINEMENT_QUEUE_ULTRA_DEBUG] Current queue:`, refinementQueue.map(b => `${b.primaryPokemonId} vs ${b.opponentPokemonId}`));
+    const currentQueue = currentQueueRef.current;
+    const next = currentQueue.length > 0 ? currentQueue[0] : null;
+    
+    console.log(`⚔️ [REFINEMENT_QUEUE_FIX] getNextRefinementBattle called with CURRENT queue`);
+    console.log(`⚔️ [REFINEMENT_QUEUE_FIX] Current queue size from REF: ${currentQueue.length}`);
+    console.log(`⚔️ [REFINEMENT_QUEUE_FIX] Current queue from REF:`, currentQueue.map(b => `${b.primaryPokemonId} vs ${b.opponentPokemonId}`));
     
     if (next) {
-      console.log(`⚔️ [REFINEMENT_QUEUE_ULTRA_DEBUG] ✅ Next battle IS refinement: ${next.primaryPokemonId} vs ${next.opponentPokemonId}`);
-      console.log(`⚔️ [REFINEMENT_QUEUE_ULTRA_DEBUG] ✅ Reason: ${next.reason}`);
+      console.log(`⚔️ [REFINEMENT_QUEUE_FIX] ✅ Next battle IS refinement: ${next.primaryPokemonId} vs ${next.opponentPokemonId}`);
+      console.log(`⚔️ [REFINEMENT_QUEUE_FIX] ✅ Reason: ${next.reason}`);
     } else {
-      console.log(`⚔️ [REFINEMENT_QUEUE_ULTRA_DEBUG] ❌ No refinement battles in queue`);
+      console.log(`⚔️ [REFINEMENT_QUEUE_FIX] ❌ No refinement battles in queue`);
     }
     return next;
-  }, [refinementQueue]);
+  }, []);
 
   const popRefinementBattle = useCallback(() => {
-    console.log(`⚔️ [REFINEMENT_QUEUE_ULTRA_DEBUG] ===== POP REFINEMENT BATTLE START =====`);
+    console.log(`⚔️ [REFINEMENT_QUEUE_FIX] ===== POP REFINEMENT BATTLE START =====`);
     
     setRefinementQueue(prev => {
-      console.log(`⚔️ [REFINEMENT_QUEUE_ULTRA_DEBUG] Current queue size BEFORE pop: ${prev.length}`);
-      console.log(`⚔️ [REFINEMENT_QUEUE_ULTRA_DEBUG] Current queue BEFORE pop:`, prev.map(b => `${b.primaryPokemonId} vs ${b.opponentPokemonId}`));
+      console.log(`⚔️ [REFINEMENT_QUEUE_FIX] Current queue size BEFORE pop: ${prev.length}`);
+      console.log(`⚔️ [REFINEMENT_QUEUE_FIX] Current queue BEFORE pop:`, prev.map(b => `${b.primaryPokemonId} vs ${b.opponentPokemonId}`));
       
       if (prev.length > 0) {
         const completed = prev[0];
         const newQueue = prev.slice(1);
+        
+        // CRITICAL FIX: Update the ref IMMEDIATELY before returning
+        currentQueueRef.current = newQueue;
+        
         const remaining = newQueue.length;
         
-        console.log(`⚔️ [REFINEMENT_QUEUE_ULTRA_DEBUG] ✅ POPPED completed refinement battle: ${completed.primaryPokemonId} vs ${completed.opponentPokemonId}`);
-        console.log(`⚔️ [REFINEMENT_QUEUE_ULTRA_DEBUG] ✅ Completed battle reason: ${completed.reason}`);
-        console.log(`⚔️ [REFINEMENT_QUEUE_ULTRA_DEBUG] ✅ Remaining battles in queue: ${remaining}`);
-        console.log(`⚔️ [REFINEMENT_QUEUE_ULTRA_DEBUG] ✅ NEW queue contents:`, newQueue.map(b => `${b.primaryPokemonId} vs ${b.opponentPokemonId}`));
+        console.log(`⚔️ [REFINEMENT_QUEUE_FIX] ✅ POPPED completed refinement battle: ${completed.primaryPokemonId} vs ${completed.opponentPokemonId}`);
+        console.log(`⚔️ [REFINEMENT_QUEUE_FIX] ✅ Completed battle reason: ${completed.reason}`);
+        console.log(`⚔️ [REFINEMENT_QUEUE_FIX] ✅ Remaining battles in queue: ${remaining}`);
+        console.log(`⚔️ [REFINEMENT_QUEUE_FIX] ✅ NEW queue contents:`, newQueue.map(b => `${b.primaryPokemonId} vs ${b.opponentPokemonId}`));
+        console.log(`⚔️ [REFINEMENT_QUEUE_FIX] ✅ REF UPDATED IMMEDIATELY with new queue size: ${currentQueueRef.current.length}`);
         
         if (remaining > 0) {
-          console.log(`⚔️ [REFINEMENT_QUEUE_ULTRA_DEBUG] ✅ Next refinement battle will be: ${newQueue[0].primaryPokemonId} vs ${newQueue[0].opponentPokemonId}`);
-          console.log(`⚔️ [REFINEMENT_QUEUE_ULTRA_DEBUG] ✅ Next battle reason: ${newQueue[0].reason}`);
+          console.log(`⚔️ [REFINEMENT_QUEUE_FIX] ✅ Next refinement battle will be: ${newQueue[0].primaryPokemonId} vs ${newQueue[0].opponentPokemonId}`);
+          console.log(`⚔️ [REFINEMENT_QUEUE_FIX] ✅ Next battle reason: ${newQueue[0].reason}`);
         } else {
-          console.log(`⚔️ [REFINEMENT_QUEUE_ULTRA_DEBUG] ✅ All refinement battles completed, returning to regular battle generation`);
+          console.log(`⚔️ [REFINEMENT_QUEUE_FIX] ✅ All refinement battles completed, returning to regular battle generation`);
         }
         
-        console.log(`⚔️ [REFINEMENT_QUEUE_ULTRA_DEBUG] ===== POP REFINEMENT BATTLE END =====`);
+        console.log(`⚔️ [REFINEMENT_QUEUE_FIX] ===== POP REFINEMENT BATTLE END =====`);
         return newQueue;
       } else {
-        console.log(`⚔️ [REFINEMENT_QUEUE_ULTRA_DEBUG] ⚠️ Attempted to pop from EMPTY queue - no changes made`);
-        console.log(`⚔️ [REFINEMENT_QUEUE_ULTRA_DEBUG] ===== POP REFINEMENT BATTLE END (NO-OP) =====`);
+        console.log(`⚔️ [REFINEMENT_QUEUE_FIX] ⚠️ Attempted to pop from EMPTY queue - no changes made`);
+        console.log(`⚔️ [REFINEMENT_QUEUE_FIX] ===== POP REFINEMENT BATTLE END (NO-OP) =====`);
         return prev;
       }
     });
@@ -141,14 +156,22 @@ export const useRefinementQueue = () => {
     console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] ===== CLEARING REFINEMENT QUEUE =====`);
     console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] Clearing ${refinementQueue.length} refinement battles`);
     console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] Queue contents being cleared:`, refinementQueue);
+    
     setRefinementQueue([]);
+    currentQueueRef.current = []; // CRITICAL FIX: Clear ref too
+    
     console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] ✅ Queue cleared successfully`);
   }, [refinementQueue]);
 
-  const hasRefinementBattles = refinementQueue.length > 0;
+  // CRITICAL FIX: Sync ref whenever state changes
+  useState(() => {
+    currentQueueRef.current = refinementQueue;
+  });
+
+  const hasRefinementBattles = currentQueueRef.current.length > 0;
 
   // Add comprehensive logging for queue state
-  console.log(`🔧 [REFINEMENT_QUEUE_STATE] Queue state: ${refinementQueue.length} battles, hasRefinementBattles: ${hasRefinementBattles}`);
+  console.log(`🔧 [REFINEMENT_QUEUE_STATE] Queue state: ${currentQueueRef.current.length} battles, hasRefinementBattles: ${hasRefinementBattles}`);
 
   return {
     refinementQueue,
@@ -156,7 +179,7 @@ export const useRefinementQueue = () => {
     getNextRefinementBattle,
     popRefinementBattle,
     clearRefinementQueue,
-    hasRefinementBattles: refinementQueue.length > 0,
-    refinementBattleCount: refinementQueue.length
+    hasRefinementBattles,
+    refinementBattleCount: currentQueueRef.current.length
   };
 };
