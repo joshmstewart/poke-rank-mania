@@ -1,4 +1,3 @@
-
 import { useSensors, useSensor, PointerSensor, KeyboardSensor, DragEndEvent } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { useCallback } from 'react';
@@ -13,13 +12,11 @@ interface UseDragAndDropProps {
 export const useDragAndDrop = ({ displayRankings, onManualReorder, onLocalReorder }: UseDragAndDropProps) => {
   console.log(`🎯 [DRAG_SETUP_DEBUG] useDragAndDrop hook initialized`);
   console.log(`🎯 [DRAG_SETUP_DEBUG] displayRankings count:`, displayRankings.length);
-  console.log(`🎯 [DRAG_SETUP_DEBUG] onManualReorder function type:`, typeof onManualReorder);
-  console.log(`🎯 [DRAG_SETUP_DEBUG] onManualReorder exists:`, !!onManualReorder);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 1, // Minimal distance to start drag
+        distance: 0, // Allow immediate drag start
       },
     }),
     useSensor(KeyboardSensor, {
@@ -31,12 +28,7 @@ export const useDragAndDrop = ({ displayRankings, onManualReorder, onLocalReorde
 
   const handleDragEnd = useCallback((event: DragEndEvent) => {
     console.log(`🎯 [DRAG_END_ENTRY] ===== DRAG END EVENT TRIGGERED =====`);
-    console.log(`🎯 [DRAG_END_ENTRY] Event object:`, event);
-    console.log(`🎯 [DRAG_END_ENTRY] Event type:`, typeof event);
-    console.log(`🎯 [DRAG_END_ENTRY] Event active:`, event.active);
-    console.log(`🎯 [DRAG_END_ENTRY] Event over:`, event.over);
-    console.log(`🎯 [DRAG_END_ENTRY] Event active ID type:`, typeof event.active?.id);
-    console.log(`🎯 [DRAG_END_ENTRY] Event over ID type:`, typeof event.over?.id);
+    console.log(`🎯 [DRAG_END_ENTRY] Event:`, event);
 
     const { active, over } = event;
 
