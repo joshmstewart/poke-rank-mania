@@ -1,4 +1,3 @@
-
 import { useMemo, useCallback, useEffect } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
@@ -104,7 +103,7 @@ export const useBattleSelectionState = () => {
     }
   }, [currentBattleType, startNewBattle, setSelectedPokemon]);
 
-  // CRITICAL FIX: Enhanced milestone dismissal event handling with proper sequencing
+  // CRITICAL FIX: Enhanced milestone dismissal event handling with immediate battle start for force events
   useEffect(() => {
     const handleMilestoneDismissed = (event: CustomEvent) => {
       console.log("📣 useBattleSelectionState: Received milestone-dismissed event", event.detail);
@@ -133,40 +132,36 @@ export const useBattleSelectionState = () => {
       // Clear selections immediately
       setSelectedPokemon([]);
       
-      // CRITICAL: Add delay to ensure refinement queue state has propagated
-      console.log("🚀 [EVENT_TRACE] Waiting 200ms for queue state to propagate...");
-      setTimeout(() => {
-        console.log("🚀 [EVENT_TRACE] Starting new battle after queue propagation delay");
+      // CRITICAL FIX: No delay - start battle immediately to ensure refinement queue is used
+      console.log("🚀 [EVENT_TRACE] Starting battle IMMEDIATELY - no delay for refinement queue");
+      
+      const result = startNewBattle(currentBattleType);
+      
+      if (result && result.length > 0) {
+        console.log("✅ handleForceNextBattle: Successfully started refinement battle with", 
+          result.map(p => p.name).join(', '));
         
-        // Start new battle immediately to use refinement queue
-        const result = startNewBattle(currentBattleType);
-        
-        if (result && result.length > 0) {
-          console.log("✅ handleForceNextBattle: Successfully started refinement battle with", 
-            result.map(p => p.name).join(', '));
-          
-          // Check if the result includes the dragged Pokemon
-          const draggedPokemonId = event.detail?.pokemonId;
-          if (draggedPokemonId && result.some(p => p.id === draggedPokemonId)) {
-            console.log("🎯 [SUCCESS] Dragged Pokemon IS in the new battle!");
-            toast.success("Validation battle started", {
-              description: `Testing position for ${event.detail?.pokemonName || 'dragged Pokemon'}`
-            });
-          } else {
-            console.log("❌ [FAILURE] Dragged Pokemon is NOT in the new battle");
-            console.log("❌ [FAILURE] Expected Pokemon ID:", draggedPokemonId);
-            console.log("❌ [FAILURE] Battle Pokemon IDs:", result.map(p => p.id));
-            toast.warning("Regular battle started", {
-              description: "Refinement queue may be empty or not working"
-            });
-          }
+        // Check if the result includes the dragged Pokemon
+        const draggedPokemonId = event.detail?.pokemonId;
+        if (draggedPokemonId && result.some(p => p.id === draggedPokemonId)) {
+          console.log("🎯 [SUCCESS] Dragged Pokemon IS in the new battle!");
+          toast.success("Validation battle started", {
+            description: `Testing position for ${event.detail?.pokemonName || 'dragged Pokemon'}`
+          });
         } else {
-          console.error("❌ handleForceNextBattle: Failed to start refinement battle");
-          toast.error("Failed to start battle", {
-            description: "Could not create validation battle"
+          console.log("❌ [FAILURE] Dragged Pokemon is NOT in the new battle");
+          console.log("❌ [FAILURE] Expected Pokemon ID:", draggedPokemonId);
+          console.log("❌ [FAILURE] Battle Pokemon IDs:", result.map(p => p.id));
+          toast.warning("Regular battle started", {
+            description: "Refinement queue may be empty or not working"
           });
         }
-      }, 200); // Give time for refinement queue state to update
+      } else {
+        console.error("❌ handleForceNextBattle: Failed to start refinement battle");
+        toast.error("Failed to start battle", {
+          description: "Could not create validation battle"
+        });
+      }
     };
     
     document.addEventListener('milestone-dismissed', handleMilestoneDismissed as EventListener);

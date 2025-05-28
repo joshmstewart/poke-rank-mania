@@ -94,31 +94,31 @@ export const useBattleStateHandlers = (
         destinationIndex
       );
       
-      // CRITICAL: Wait a bit for queue to update, then check
-      setTimeout(() => {
-        console.log(`🔄 [MANUAL_REORDER_HANDLER] AFTER QUEUEING - Queue size: ${refinementQueue.refinementBattleCount}`);
-        console.log(`🔄 [MANUAL_REORDER_HANDLER] AFTER QUEUEING - Queue contents:`, refinementQueue.refinementQueue);
-        console.log(`🔄 [MANUAL_REORDER_HANDLER] AFTER QUEUEING - Has refinement battles: ${refinementQueue.hasRefinementBattles}`);
-        console.log(`🔄 [MANUAL_REORDER_HANDLER] AFTER QUEUEING - Next battle:`, refinementQueue.getNextRefinementBattle());
-        
-        console.log(`✅ [MANUAL_REORDER_HANDLER] Successfully queued refinement battles for Pokemon ${pokemonId} (${draggedPokemon.name})`);
-        console.log(`📊 [MANUAL_REORDER_HANDLER] Total refinement battles in queue: ${refinementQueue.refinementBattleCount}`);
-        console.log(`🎯 [MANUAL_REORDER_HANDLER] Next battle should be a refinement battle involving ${draggedPokemon.name}`);
-        
-        // Force next battle to check refinement queue
-        console.log(`🚀 [MANUAL_REORDER_HANDLER] Triggering force next battle to use refinement queue`);
-        const forceNextBattleEvent = new CustomEvent('force-next-battle', {
-          detail: { 
-            reason: 'manual_reorder',
-            pokemonId: pokemonId,
-            pokemonName: draggedPokemon.name,
-            immediate: true,
-            queueSize: refinementQueue.refinementBattleCount,
-            timestamp: Date.now()
-          }
-        });
-        document.dispatchEvent(forceNextBattleEvent);
-      }, 100); // Small delay to ensure state updates
+      console.log(`🔄 [MANUAL_REORDER_HANDLER] IMMEDIATELY AFTER QUEUEING - Queue size: ${refinementQueue.refinementBattleCount}`);
+      console.log(`🔄 [MANUAL_REORDER_HANDLER] IMMEDIATELY AFTER QUEUEING - Queue contents:`, refinementQueue.refinementQueue);
+      console.log(`🔄 [MANUAL_REORDER_HANDLER] IMMEDIATELY AFTER QUEUEING - Has refinement battles: ${refinementQueue.hasRefinementBattles}`);
+      console.log(`🔄 [MANUAL_REORDER_HANDLER] IMMEDIATELY AFTER QUEUEING - Next battle:`, refinementQueue.getNextRefinementBattle());
+      
+      console.log(`✅ [MANUAL_REORDER_HANDLER] Successfully queued refinement battles for Pokemon ${pokemonId} (${draggedPokemon.name})`);
+      console.log(`📊 [MANUAL_REORDER_HANDLER] Total refinement battles in queue: ${refinementQueue.refinementBattleCount}`);
+      console.log(`🎯 [MANUAL_REORDER_HANDLER] Next battle should be a refinement battle involving ${draggedPokemon.name}`);
+      
+      // CRITICAL FIX: Use synchronous event dispatch without setTimeout to ensure immediate processing
+      console.log(`🚀 [MANUAL_REORDER_HANDLER] Triggering force next battle IMMEDIATELY to use refinement queue`);
+      const forceNextBattleEvent = new CustomEvent('force-next-battle', {
+        detail: { 
+          reason: 'manual_reorder',
+          pokemonId: pokemonId,
+          pokemonName: draggedPokemon.name,
+          immediate: true,
+          queueSize: refinementQueue.refinementBattleCount,
+          timestamp: Date.now()
+        }
+      });
+      
+      // CRITICAL: Dispatch immediately without any delay
+      document.dispatchEvent(forceNextBattleEvent);
+      console.log(`🚀 [MANUAL_REORDER_HANDLER] Event dispatched immediately - no setTimeout delay`);
       
     } catch (error) {
       console.error(`❌ [MANUAL_REORDER_HANDLER] Error queueing refinement battles:`, error);
