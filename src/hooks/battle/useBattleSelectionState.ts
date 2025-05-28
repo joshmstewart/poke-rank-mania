@@ -140,6 +140,8 @@ export const useBattleSelectionState = () => {
       console.log("🚀 [BATTLE_SELECTION_STATE_TRACE] About to call startNewBattle - this should use refinement queue");
       console.log("🚀 [BATTLE_SELECTION_STATE_TRACE] startNewBattle source:", startNewBattle.toString().slice(0, 200));
       
+      // CRITICAL FIX: Call startNewBattle directly and immediately to ensure refinement queue is checked
+      console.log("🚀 [BATTLE_SELECTION_STATE_TRACE] CALLING startNewBattle IMMEDIATELY");
       const result = startNewBattle(currentBattleType);
       
       console.log("🚀 [BATTLE_SELECTION_STATE_TRACE] startNewBattle returned:", result ? result.map(p => `${p.name}(${p.id})`).join(', ') : 'null/empty');
