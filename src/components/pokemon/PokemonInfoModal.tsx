@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Pokemon } from "@/services/pokemon";
 import {
   Dialog,
@@ -30,6 +30,7 @@ const PokemonInfoModal: React.FC<PokemonInfoModalProps> = ({
   pokemon,
   children
 }) => {
+  const [isOpen, setIsOpen] = useState(false);
   const normalizedId = normalizePokedexNumber(pokemon.id);
   
   const handleInfoClick = (e: React.MouseEvent) => {
@@ -45,6 +46,8 @@ const PokemonInfoModal: React.FC<PokemonInfoModalProps> = ({
 
   const handleDialogOpen = (open: boolean) => {
     console.log(`🔘 [INFO_BUTTON_DEBUG] PokemonInfoModal: Dialog ${open ? 'opened' : 'closed'} for ${pokemon.name}`);
+    console.log(`🔘 [INFO_BUTTON_DEBUG] PokemonInfoModal: Modal state changed to: ${open}`);
+    setIsOpen(open);
   };
 
   const statNames: Record<string, string> = {
@@ -57,7 +60,7 @@ const PokemonInfoModal: React.FC<PokemonInfoModalProps> = ({
   };
   
   return (
-    <Dialog onOpenChange={handleDialogOpen}>
+    <Dialog open={isOpen} onOpenChange={handleDialogOpen}>
       <DialogTrigger asChild onClick={handleInfoClick}>
         {children || (
           <Button 
@@ -71,9 +74,10 @@ const PokemonInfoModal: React.FC<PokemonInfoModalProps> = ({
         )}
       </DialogTrigger>
       <DialogContent 
-        className="max-w-2xl z-[100]" 
+        className="max-w-2xl z-[9999]" 
         onClick={handleDialogClick}
         data-radix-dialog-content="true"
+        style={{ zIndex: 9999 }}
       >
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-center">
