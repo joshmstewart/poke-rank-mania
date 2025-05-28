@@ -26,11 +26,9 @@ export const useDragAndDrop = ({ displayRankings, onManualReorder, onLocalReorde
     const { active, over } = event;
 
     console.log(`🎯 [DRAG_ULTRA_DEBUG] ===== DRAG OPERATION START =====`);
-    console.log(`🎯 [DRAG_ULTRA_DEBUG] Active ID: ${active.id}`);
-    console.log(`🎯 [DRAG_ULTRA_DEBUG] Over ID: ${over?.id || 'none'}`);
+    console.log(`🎯 [DRAG_ULTRA_DEBUG] Active ID: ${active.id} (type: ${typeof active.id})`);
+    console.log(`🎯 [DRAG_ULTRA_DEBUG] Over ID: ${over?.id || 'none'} (type: ${typeof over?.id})`);
     console.log(`🎯 [DRAG_ULTRA_DEBUG] Display rankings length: ${displayRankings.length}`);
-    console.log(`🎯 [DRAG_ULTRA_DEBUG] onManualReorder function type: ${typeof onManualReorder}`);
-    console.log(`🎯 [DRAG_ULTRA_DEBUG] onManualReorder function exists: ${!!onManualReorder}`);
 
     if (over && active.id !== over.id) {
       const oldIndex = displayRankings.findIndex(pokemon => pokemon.id === active.id);
@@ -38,51 +36,51 @@ export const useDragAndDrop = ({ displayRankings, onManualReorder, onLocalReorde
 
       console.log(`🎯 [DRAG_ULTRA_DEBUG] Old index: ${oldIndex}`);
       console.log(`🎯 [DRAG_ULTRA_DEBUG] New index: ${newIndex}`);
-      console.log(`🎯 [DRAG_ULTRA_DEBUG] Old index valid: ${oldIndex !== -1}`);
-      console.log(`🎯 [DRAG_ULTRA_DEBUG] New index valid: ${newIndex !== -1}`);
 
       if (oldIndex !== -1 && newIndex !== -1) {
         const draggedPokemon = displayRankings[oldIndex];
-        console.log(`🎯 [DRAG_ULTRA_DEBUG] Dragged Pokemon: ${draggedPokemon.name} (ID: ${draggedPokemon.id})`);
-        console.log(`🎯 [DRAG_ULTRA_DEBUG] Moving from position ${oldIndex + 1} to ${newIndex + 1}`);
+        console.log(`🎯 [DRAG_ULTRA_DEBUG] Dragged Pokemon: ${draggedPokemon.name} (ID: ${draggedPokemon.id}, type: ${typeof draggedPokemon.id})`);
         
         // Update local rankings immediately for visual feedback
-        console.log(`🎯 [DRAG_ULTRA_DEBUG] Updating local rankings for visual feedback...`);
         onLocalReorder(current => {
           const newRankings = [...current];
           const [removed] = newRankings.splice(oldIndex, 1);
           newRankings.splice(newIndex, 0, removed);
-          console.log(`🎯 [DRAG_ULTRA_DEBUG] Local reorder complete`);
           return newRankings;
         });
 
-        // CRITICAL: This should trigger refinement battles
+        // Convert active.id to number properly
+        let pokemonId: number;
+        if (typeof active.id === 'string') {
+          pokemonId = parseInt(active.id, 10);
+          console.log(`🎯 [DRAG_ULTRA_DEBUG] Converted string ID "${active.id}" to number ${pokemonId}`);
+        } else if (typeof active.id === 'number') {
+          pokemonId = active.id;
+          console.log(`🎯 [DRAG_ULTRA_DEBUG] Using number ID ${pokemonId}`);
+        } else {
+          console.error(`🎯 [DRAG_ULTRA_DEBUG] Invalid active.id type:`, typeof active.id, active.id);
+          return;
+        }
+
+        if (isNaN(pokemonId)) {
+          console.error(`🎯 [DRAG_ULTRA_DEBUG] Failed to convert ID to valid number:`, active.id);
+          return;
+        }
+
         console.log(`🎯 [DRAG_ULTRA_DEBUG] ===== CALLING onManualReorder =====`);
-        console.log(`🎯 [DRAG_ULTRA_DEBUG] Parameters: Pokemon ID ${active.id}, oldIndex ${oldIndex}, newIndex ${newIndex}`);
-        console.log(`🎯 [DRAG_ULTRA_DEBUG] onManualReorder function exists: ${typeof onManualReorder === 'function'}`);
-        console.log(`🎯 [DRAG_ULTRA_DEBUG] About to call onManualReorder with parameters:`, {
-          pokemonId: active.id,
-          oldIndex,
-          newIndex
-        });
+        console.log(`🎯 [DRAG_ULTRA_DEBUG] Parameters: pokemonId=${pokemonId}, oldIndex=${oldIndex}, newIndex=${newIndex}`);
         
         try {
-          console.log(`🎯 [DRAG_ULTRA_DEBUG] CALLING onManualReorder NOW...`);
-          onManualReorder(active.id as number, oldIndex, newIndex);
+          onManualReorder(pokemonId, oldIndex, newIndex);
           console.log(`🎯 [DRAG_ULTRA_DEBUG] ✅ onManualReorder called successfully`);
         } catch (error) {
           console.error(`🎯 [DRAG_ULTRA_DEBUG] ❌ Error calling onManualReorder:`, error);
-          console.error(`🎯 [DRAG_ULTRA_DEBUG] Error stack:`, error.stack);
         }
-        
-        console.log(`🎯 [DRAG_ULTRA_DEBUG] ===== END CALLING onManualReorder =====`);
       } else {
         console.error(`🎯 [DRAG_ULTRA_DEBUG] ❌ Invalid indices - oldIndex: ${oldIndex}, newIndex: ${newIndex}`);
       }
     } else {
       console.log(`🎯 [DRAG_ULTRA_DEBUG] ❌ Drag cancelled or same position`);
-      console.log(`🎯 [DRAG_ULTRA_DEBUG] Over exists: ${!!over}`);
-      console.log(`🎯 [DRAG_ULTRA_DEBUG] IDs different: ${active.id !== over?.id}`);
     }
     
     console.log(`🎯 [DRAG_ULTRA_DEBUG] ===== DRAG OPERATION END =====`);

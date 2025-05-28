@@ -18,27 +18,52 @@ export const useBattleStateHandlers = (
     sourceIndex: number, 
     destinationIndex: number
   ) => {
-    console.log(`🔄 [MANUAL_REORDER_HANDLER] Pokemon ${draggedPokemonId} moved from ${sourceIndex} to ${destinationIndex}`);
+    console.log(`🔄 [MANUAL_REORDER_HANDLER] ===== MANUAL REORDER START =====`);
+    console.log(`🔄 [MANUAL_REORDER_HANDLER] Raw draggedPokemonId:`, draggedPokemonId, typeof draggedPokemonId);
+    console.log(`🔄 [MANUAL_REORDER_HANDLER] Pokemon moved from ${sourceIndex} to ${destinationIndex}`);
     console.log(`🔄 [MANUAL_REORDER_HANDLER] Final rankings length: ${finalRankings.length}`);
-    console.log(`🔄 [MANUAL_REORDER_HANDLER] Final rankings at destination-1: ${finalRankings[destinationIndex - 1]?.name || 'none'}`);
-    console.log(`🔄 [MANUAL_REORDER_HANDLER] Final rankings at destination+1: ${finalRankings[destinationIndex + 1]?.name || 'none'}`);
     
-    // Get neighboring Pokemon IDs around the new position for validation battles
+    // Convert to proper number type
+    const pokemonId = typeof draggedPokemonId === 'string' ? parseInt(draggedPokemonId, 10) : Number(draggedPokemonId);
+    console.log(`🔄 [MANUAL_REORDER_HANDLER] Converted Pokemon ID: ${pokemonId} (type: ${typeof pokemonId})`);
+    
+    if (isNaN(pokemonId)) {
+      console.error(`🔄 [MANUAL_REORDER_HANDLER] Invalid Pokemon ID: ${draggedPokemonId}`);
+      return;
+    }
+    
+    // Get neighboring Pokemon IDs around the NEW position for validation battles
+    // We need to simulate where the Pokemon would be after the move
     const neighborIds: number[] = [];
     
-    // Add Pokemon before the new position (if it exists)
+    console.log(`🔄 [MANUAL_REORDER_HANDLER] Looking for neighbors around destination index ${destinationIndex}`);
+    console.log(`🔄 [MANUAL_REORDER_HANDLER] Final rankings sample:`, finalRankings.slice(Math.max(0, destinationIndex - 2), destinationIndex + 3).map(p => ({ id: p?.id, name: p?.name })));
+    
+    // Add Pokemon that will be before the new position (if it exists)
     if (destinationIndex > 0) {
-      const beforePokemon = finalRankings[destinationIndex - 1];
-      if (beforePokemon && typeof beforePokemon.id === 'number') {
+      // If we're moving down, the "before" position is at destinationIndex - 1
+      // If we're moving up, we need to account for the shift
+      const beforeIndex = sourceIndex < destinationIndex ? destinationIndex - 1 : destinationIndex - 1;
+      const beforePokemon = finalRankings[beforeIndex];
+      
+      console.log(`🔄 [MANUAL_REORDER_HANDLER] Checking before position at index ${beforeIndex}:`, beforePokemon?.name, beforePokemon?.id);
+      
+      if (beforePokemon && typeof beforePokemon.id === 'number' && beforePokemon.id !== pokemonId) {
         neighborIds.push(beforePokemon.id);
         console.log(`🔄 [MANUAL_REORDER_HANDLER] Added neighbor before: ${beforePokemon.name} (${beforePokemon.id})`);
       }
     }
     
-    // Add Pokemon after the new position (if it exists)
+    // Add Pokemon that will be after the new position (if it exists)
     if (destinationIndex < finalRankings.length - 1) {
-      const afterPokemon = finalRankings[destinationIndex + 1];
-      if (afterPokemon && typeof afterPokemon.id === 'number') {
+      // If we're moving up, the "after" position is at destinationIndex + 1
+      // If we're moving down, we need to account for the shift
+      const afterIndex = sourceIndex < destinationIndex ? destinationIndex + 1 : destinationIndex + 1;
+      const afterPokemon = finalRankings[afterIndex];
+      
+      console.log(`🔄 [MANUAL_REORDER_HANDLER] Checking after position at index ${afterIndex}:`, afterPokemon?.name, afterPokemon?.id);
+      
+      if (afterPokemon && typeof afterPokemon.id === 'number' && afterPokemon.id !== pokemonId) {
         neighborIds.push(afterPokemon.id);
         console.log(`🔄 [MANUAL_REORDER_HANDLER] Added neighbor after: ${afterPokemon.name} (${afterPokemon.id})`);
       }
@@ -52,32 +77,37 @@ export const useBattleStateHandlers = (
       return;
     }
     
-    // Queue refinement battles for this manual reorder with correct parameters
-    console.log(`🔄 [MANUAL_REORDER_HANDLER] Calling queueBattlesForReorder with:`, {
-      draggedPokemonId,
-      neighborIds,
-      destinationIndex
-    });
-    
     // Ensure all parameters are the correct types
-    const primaryId = Number(draggedPokemonId);
-    const neighbors = neighborIds.filter(id => typeof id === 'number' && !isNaN(id));
-    const newPosition = Number(destinationIndex);
+    const validNeighbors = neighborIds.filter(id => typeof id === 'number' && !isNaN(id));
     
-    console.log(`🔄 [MANUAL_REORDER_HANDLER] Type-safe parameters:`, {
-      primaryId,
-      neighbors,
-      newPosition
+    console.log(`🔄 [MANUAL_REORDER_HANDLER] Final call parameters:`, {
+      pokemonId,
+      validNeighbors,
+      destinationIndex,
+      refinementQueueExists: !!refinementQueue,
+      queueBattlesForReorderExists: typeof refinementQueue.queueBattlesForReorder === 'function'
     });
     
-    refinementQueue.queueBattlesForReorder(
-      primaryId,
-      neighbors,
-      newPosition
-    );
+    if (validNeighbors.length === 0) {
+      console.warn(`🔄 [MANUAL_REORDER_HANDLER] No valid neighbors after filtering`);
+      return;
+    }
     
-    console.log(`✅ [MANUAL_REORDER_HANDLER] Queued refinement battles for Pokemon ${draggedPokemonId}`);
-    console.log(`📊 [MANUAL_REORDER_HANDLER] Total refinement battles in queue: ${refinementQueue.refinementBattleCount}`);
+    // Queue refinement battles for this manual reorder
+    try {
+      refinementQueue.queueBattlesForReorder(
+        pokemonId,
+        validNeighbors,
+        destinationIndex
+      );
+      
+      console.log(`✅ [MANUAL_REORDER_HANDLER] Successfully queued refinement battles for Pokemon ${pokemonId}`);
+      console.log(`📊 [MANUAL_REORDER_HANDLER] Total refinement battles in queue: ${refinementQueue.refinementBattleCount}`);
+    } catch (error) {
+      console.error(`❌ [MANUAL_REORDER_HANDLER] Error queueing refinement battles:`, error);
+    }
+    
+    console.log(`🔄 [MANUAL_REORDER_HANDLER] ===== MANUAL REORDER END =====`);
   }, [refinementQueue, finalRankings]);
 
   // Handle battle completion - enhanced with refinement processing
