@@ -7,7 +7,6 @@ import { useBattleStateSelection } from "./useBattleStateSelection";
 import { useBattleResults } from "./useBattleResults";
 import { useBattleStarterIntegration } from "./useBattleStarterIntegration";
 import { useBattleOutcomeProcessor } from "./useBattleOutcomeProcessor";
-import { useSharedRefinementQueue } from "./useSharedRefinementQueue";
 import { toast } from "sonner";
 
 export const useBattleSelectionState = () => {
@@ -32,8 +31,6 @@ export const useBattleSelectionState = () => {
     getCurrentRankings
   } = useBattleResults();
 
-  const refinementQueue = useSharedRefinementQueue();
-
   // Ensure currentRankings always has full RankedPokemon structure
   const currentRankings = useMemo<RankedPokemon[]>(() => {
     if (Array.isArray(battleResults) && battleResults.length > 0) {
@@ -49,50 +46,18 @@ export const useBattleSelectionState = () => {
     }));
   }, [battleResults, allPokemon, getCurrentRankings]);
 
-  const { battleStarter, startNewBattle: originalStartNewBattle } = useBattleStarterIntegration(
+  // CRITICAL FIX: Use the refinement-aware startNewBattle from useBattleStarterIntegration
+  const { startNewBattle } = useBattleStarterIntegration(
     allPokemon,
     currentRankings,
     setCurrentBattle,
     setSelectedPokemon
   );
 
-  // FIXED: Create the correct startNewBattle that checks refinement queue
-  const startNewBattle = useCallback((battleType: BattleType) => {
-    console.log(`🚀 [FIXED_BATTLE_START] Starting battle with refinement queue access`);
-    console.log(`🚀 [FIXED_BATTLE_START] Queue size: ${refinementQueue.refinementBattleCount}`);
-    
-    // Check for refinement battles first
-    const nextRefinement = refinementQueue.getNextRefinementBattle();
-    if (nextRefinement) {
-      console.log(`🚀 [FIXED_BATTLE_START] Found refinement battle: ${nextRefinement.primaryPokemonId} vs ${nextRefinement.opponentPokemonId}`);
-      
-      const primary = allPokemon.find(p => p.id === nextRefinement.primaryPokemonId);
-      const opponent = allPokemon.find(p => p.id === nextRefinement.opponentPokemonId);
-      
-      if (primary && opponent) {
-        const refinementBattle = [primary, opponent];
-        console.log(`🚀 [FIXED_BATTLE_START] Creating refinement battle: ${primary.name} vs ${opponent.name}`);
-        
-        setCurrentBattle(refinementBattle);
-        setSelectedPokemon([]);
-        
-        return refinementBattle;
-      } else {
-        console.error(`🚀 [FIXED_BATTLE_START] Missing Pokemon, popping invalid battle`);
-        refinementQueue.popRefinementBattle();
-        return startNewBattle(battleType); // Retry
-      }
-    }
-    
-    // No refinement battles, use original function
-    console.log(`🚀 [FIXED_BATTLE_START] No refinement battles, using original startNewBattle`);
-    return originalStartNewBattle(battleType);
-  }, [refinementQueue, allPokemon, setCurrentBattle, setSelectedPokemon, originalStartNewBattle]);
-
   const { processBattleResult } = useBattleOutcomeProcessor(
     setBattleResults,
     setBattlesCompleted,
-    battleStarter
+    null // battleStarter not needed here
   );
   
   const forceNextBattle = useCallback(() => {
@@ -135,7 +100,7 @@ export const useBattleSelectionState = () => {
     }
   }, [currentBattleType, startNewBattle, setSelectedPokemon]);
 
-  // FIXED: Use the correct startNewBattle function in event handlers
+  // CRITICAL FIX: Use the refinement-aware startNewBattle in event handlers
   useEffect(() => {
     const handleMilestoneDismissed = (event: CustomEvent) => {
       console.log("📣 useBattleSelectionState: Received milestone-dismissed event", event.detail);
@@ -158,7 +123,7 @@ export const useBattleSelectionState = () => {
       
       setSelectedPokemon([]);
       
-      // FIXED: Call our local startNewBattle function that checks refinement queue
+      // CRITICAL FIX: Use the refinement-aware startNewBattle directly
       const result = startNewBattle(currentBattleType);
       
       if (result && result.length > 0) {
