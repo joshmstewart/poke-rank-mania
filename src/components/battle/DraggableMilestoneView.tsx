@@ -69,7 +69,7 @@ const DraggablePokemonCard: React.FC<DraggablePokemonCardProps> = ({
         </div>
       )}
 
-      {/* Info Button */}
+      {/* Info Button - Subtle styling */}
       <div className="absolute top-1 right-1 z-30">
         <PokemonInfoModal pokemon={pokemon}>
           <button 
