@@ -20,43 +20,56 @@ export const useRefinementQueue = () => {
       console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] Current queue size before operation: ${prev.length}`);
       console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] Current queue contents BEFORE:`, prev.map(b => `${b.primaryPokemonId} vs ${b.opponentPokemonId}`));
       
-      // CRITICAL FIX: Only remove existing battles for THIS specific Pokemon, don't touch other Pokemon's battles
-      const filtered = prev.filter(b => {
-        const shouldKeep = b.primaryPokemonId !== primaryId;
-        if (!shouldKeep) {
-          console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] REMOVING existing battle for Pokemon ${primaryId}: ${b.primaryPokemonId} vs ${b.opponentPokemonId} (reason: ${b.reason})`);
-        } else {
-          console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] KEEPING battle for different Pokemon: ${b.primaryPokemonId} vs ${b.opponentPokemonId}`);
-        }
-        return shouldKeep;
-      });
+      // CRITICAL FIX: Don't remove existing battles, just add new unique ones
+      const currentQueue = [...prev];
       
-      console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] Queue size after filtering out existing battles for Pokemon ${primaryId}: ${filtered.length}`);
-      console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] Filtered queue contents:`, filtered.map(b => `${b.primaryPokemonId} vs ${b.opponentPokemonId}`));
-      
-      // CRITICAL FIX: Create validation battle with the most relevant neighbor
+      // Get valid neighbors
       const validNeighbors = neighbors.filter(opponentId => opponentId && opponentId !== primaryId);
       
       if (validNeighbors.length === 0) {
-        console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] ❌ No valid neighbors for validation - returning filtered queue`);
-        return filtered;
+        console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] ❌ No valid neighbors for validation - returning existing queue`);
+        return prev;
       }
       
-      // Use the first neighbor for validation (most relevant)
-      const opponentId = validNeighbors[0];
-      const battle = {
-        primaryPokemonId: primaryId,
-        opponentPokemonId: opponentId,
-        reason: `Position validation for manual reorder to position ${newPosition} (dragged from milestone)`
+      // CRITICAL FIX: Check for duplicate battles (same Pokemon pair regardless of order)
+      const isDuplicateBattle = (pokemon1: number, pokemon2: number, existingBattles: RefinementBattle[]) => {
+        return existingBattles.some(battle => 
+          (battle.primaryPokemonId === pokemon1 && battle.opponentPokemonId === pokemon2) ||
+          (battle.primaryPokemonId === pokemon2 && battle.opponentPokemonId === pokemon1)
+        );
       };
       
-      // CRITICAL FIX: Always add to the END of the queue to maintain order
-      const newQueue = [...filtered, battle];
+      // Add battles for each valid neighbor, but only if not duplicate
+      const battlesToAdd: RefinementBattle[] = [];
       
-      console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] ✅ CREATED validation battle: ${primaryId} vs ${opponentId}`);
-      console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] ✅ Reason: ${battle.reason}`);
+      validNeighbors.forEach(opponentId => {
+        if (!isDuplicateBattle(primaryId, opponentId, currentQueue) && 
+            !isDuplicateBattle(primaryId, opponentId, battlesToAdd)) {
+          
+          const battle = {
+            primaryPokemonId: primaryId,
+            opponentPokemonId: opponentId,
+            reason: `Position validation for manual reorder to position ${newPosition} (primary: ${primaryId} vs neighbor: ${opponentId})`
+          };
+          
+          battlesToAdd.push(battle);
+          console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] ✅ QUEUED NEW battle: ${primaryId} vs ${opponentId}`);
+        } else {
+          console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] ⚠️ SKIPPED duplicate battle: ${primaryId} vs ${opponentId}`);
+        }
+      });
+      
+      if (battlesToAdd.length === 0) {
+        console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] ❌ No new unique battles to add`);
+        return prev;
+      }
+      
+      // Add new battles to the end of the queue
+      const newQueue = [...currentQueue, ...battlesToAdd];
+      
+      console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] ✅ Added ${battlesToAdd.length} new battles`);
       console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] ✅ Total refinement battles in NEW queue: ${newQueue.length}`);
-      console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] ✅ NEW queue contents:`, newQueue.map(b => `${b.primaryPokemonId} vs ${b.opponentPokemonId} (${b.reason.substring(0, 30)}...)`));
+      console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] ✅ NEW queue contents:`, newQueue.map(b => `${b.primaryPokemonId} vs ${b.opponentPokemonId}`));
       console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] ===== QUEUEING VALIDATION BATTLES END =====`);
       
       return newQueue;

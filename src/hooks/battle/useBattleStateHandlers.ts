@@ -198,8 +198,17 @@ export const useBattleStateHandlers = (
         // Pop immediately, no setTimeout
         refinementQueue.popRefinementBattle();
         
-        console.log(`⚔️ [REFINEMENT_BATTLE_COMPLETED] Queue size AFTER pop: ${refinementQueue.refinementBattleCount}`);
-        console.log(`⚔️ [REFINEMENT_BATTLE_COMPLETED] Remaining queue contents:`, refinementQueue.refinementQueue);
+        // CRITICAL DEBUG: Log state immediately after pop
+        console.log(`⚔️ [REFINEMENT_BATTLE_COMPLETED] Queue size IMMEDIATELY AFTER pop: ${refinementQueue.refinementBattleCount}`);
+        console.log(`⚔️ [REFINEMENT_BATTLE_COMPLETED] Remaining queue contents IMMEDIATELY AFTER pop:`, refinementQueue.refinementQueue);
+        
+        // CRITICAL DEBUG: Check if more battles exist
+        const nextAfterPop = refinementQueue.getNextRefinementBattle();
+        if (nextAfterPop) {
+          console.log(`⚔️ [REFINEMENT_BATTLE_COMPLETED] ✅ MORE battles exist after pop: ${nextAfterPop.primaryPokemonId} vs ${nextAfterPop.opponentPokemonId}`);
+        } else {
+          console.log(`⚔️ [REFINEMENT_BATTLE_COMPLETED] ❌ NO MORE battles after pop - queue is empty`);
+        }
         
       } else {
         console.log(`⚔️ [BATTLE_RESULT_ULTRA_DEBUG] Current battle does NOT match pending refinement`);
