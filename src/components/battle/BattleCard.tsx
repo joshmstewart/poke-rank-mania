@@ -3,7 +3,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "@/hooks/battle/types";
 import { getPreferredImage, ImageType } from "@/utils/imageUtils";
-import { Loader2 } from "lucide-react";
+import PokemonImage from "./PokemonImage";
+import PokemonInfo from "./PokemonInfo";
+import LoadingOverlay from "./LoadingOverlay";
 
 interface BattleCardProps {
   pokemon: Pokemon;
@@ -20,9 +22,6 @@ const BattleCard: React.FC<BattleCardProps> = memo(({
   onSelect,
   isProcessing = false
 }) => {
-  const [imageLoaded, setImageLoaded] = useState(false);
-  const [imageError, setImageError] = useState(false);
-  const [localImageLoading, setLocalImageLoading] = useState(true);
   const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastClickTimeRef = useRef(0);
 
@@ -46,18 +45,6 @@ const BattleCard: React.FC<BattleCardProps> = memo(({
       }
     };
   }, []);
-
-  const handleImageLoad = useCallback(() => {
-    setImageLoaded(true);
-    setLocalImageLoading(false);
-    setImageError(false);
-  }, []);
-
-  const handleImageError = useCallback(() => {
-    setImageError(true);
-    setLocalImageLoading(false);
-    console.error(`Failed to load image for ${displayName}`);
-  }, [displayName]);
 
   const handleClick = useCallback(() => {
     const now = Date.now();
@@ -111,93 +98,26 @@ const BattleCard: React.FC<BattleCardProps> = memo(({
         {/* CRITICAL FIX: Keep Pokemon visible, add loading overlay instead */}
         <div className="relative">
           {/* Pokemon Image */}
-          <div className="relative w-32 h-32 mx-auto mb-3">
-            {!imageLoaded && !imageError && (
-              <div className="absolute inset-0 flex items-center justify-center bg-gray-100 rounded-lg">
-                <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-              </div>
-            )}
-            
-            {imageError && (
-              <div className="absolute inset-0 flex items-center justify-center bg-gray-100 rounded-lg">
-                <span className="text-gray-400 text-sm">No Image</span>
-              </div>
-            )}
-            
-            <img
-              src={imageUrl}
-              alt={displayName}
-              className={`w-full h-full object-contain rounded-lg transition-opacity duration-200 ${
-                imageLoaded ? 'opacity-100' : 'opacity-0'
-              }`}
-              onLoad={handleImageLoad}
-              onError={handleImageError}
-              loading="eager"
-            />
-          </div>
+          <PokemonImage 
+            imageUrl={imageUrl}
+            displayName={displayName}
+            pokemonId={pokemon.id}
+          />
 
           {/* Pokemon Info */}
-          <div className="space-y-1">
-            <h3 className="font-semibold text-lg text-gray-800">{displayName}</h3>
-            <p className="text-sm text-gray-600">#{pokemon.id}</p>
-            
-            {pokemon.types && pokemon.types.length > 0 && (
-              <div className="flex justify-center gap-1 mt-2">
-                {pokemon.types.map((type, index) => (
-                  <span
-                    key={index}
-                    className={`px-2 py-1 rounded-full text-xs font-medium text-white type-${type.toLowerCase()}`}
-                    style={{
-                      backgroundColor: getTypeColor(type)
-                    }}
-                  >
-                    {type}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
+          <PokemonInfo 
+            displayName={displayName}
+            pokemonId={pokemon.id}
+            types={pokemon.types}
+          />
 
           {/* CRITICAL FIX: Loading overlay that keeps Pokemon visible */}
-          {isProcessing && (
-            <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center rounded-lg">
-              <div className="text-center">
-                <Loader2 className="h-8 w-8 animate-spin text-blue-500 mx-auto mb-2" />
-                <span className="text-sm text-gray-600">Processing...</span>
-              </div>
-            </div>
-          )}
+          <LoadingOverlay isVisible={isProcessing} />
         </div>
       </CardContent>
     </Card>
   );
 });
-
-// Helper function to get type colors
-const getTypeColor = (type: string): string => {
-  const typeColors: Record<string, string> = {
-    normal: '#A8A878',
-    fire: '#F08030',
-    water: '#6890F0',
-    electric: '#F8D030',
-    grass: '#78C850',
-    ice: '#98D8D8',
-    fighting: '#C03028',
-    poison: '#A040A0',
-    ground: '#E0C068',
-    flying: '#A890F0',
-    psychic: '#F85888',
-    bug: '#A8B820',
-    rock: '#B8A038',
-    ghost: '#705898',
-    dragon: '#7038F8',
-    dark: '#705848',
-    steel: '#B8B8D0',
-    fairy: '#EE99AC',
-  };
-  
-  return typeColors[type.toLowerCase()] || '#68A090';
-};
 
 BattleCard.displayName = "BattleCard";
 
