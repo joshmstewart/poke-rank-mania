@@ -20,17 +20,16 @@ export const useBattleStateHandlers = (
   ) => {
     console.log(`🔄 [MANUAL_REORDER_HANDLER] Pokemon ${draggedPokemonId} moved from ${sourceIndex} to ${destinationIndex}`);
     
-    // Queue refinement battles for this manual reorder
+    // Queue refinement battles for this manual reorder - fix argument count
     refinementQueue.queueBattlesForReorder(
       draggedPokemonId,
       sourceIndex,
-      destinationIndex,
-      finalRankings
+      destinationIndex
     );
     
     console.log(`✅ [MANUAL_REORDER_HANDLER] Queued refinement battles for Pokemon ${draggedPokemonId}`);
     console.log(`📊 [MANUAL_REORDER_HANDLER] Total refinement battles in queue: ${refinementQueue.refinementBattleCount}`);
-  }, [refinementQueue, finalRankings]);
+  }, [refinementQueue]);
 
   // Handle battle completion - enhanced with refinement processing
   const processBattleResultWithRefinement = useCallback((
