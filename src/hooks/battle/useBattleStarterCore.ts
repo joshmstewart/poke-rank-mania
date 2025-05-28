@@ -1,3 +1,4 @@
+
 import { useCallback } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
@@ -45,6 +46,22 @@ export const useBattleStarterCore = (
     
     // CRITICAL: Log the FULL recently used list for debugging
     console.log(`🎯🎯🎯 [FULL_RECENTLY_USED_LIST] Battle #${battleCount + 1} Recently used: [${recentlyUsed.join(', ')}]`);
+    
+    // SUPER CRITICAL: Log detailed battle sequence for battles 8-16 to catch milestone issues
+    if (battleCount >= 7 && battleCount <= 15) {
+      console.log(`🔥🔥🔥 [MILESTONE_SEQUENCE_CRITICAL] ===== BATTLE ${battleCount + 1} DETAILED ANALYSIS =====`);
+      console.log(`🔥🔥🔥 [MILESTONE_SEQUENCE_CRITICAL] This is battle #${battleCount + 1} - ${battleCount < 10 ? 'PRE-MILESTONE' : 'POST-MILESTONE'}`);
+      console.log(`🔥🔥🔥 [MILESTONE_SEQUENCE_CRITICAL] Recently used full list: [${recentlyUsed.join(', ')}]`);
+      
+      // Log the last 5 battles in detail
+      const lastFiveBattles = recentlyUsed.slice(-5).map(key => {
+        const [id1, id2] = key.split('-').map(Number);
+        const p1 = availablePokemon.find(p => p.id === id1);
+        const p2 = availablePokemon.find(p => p.id === id2);
+        return `${p1?.name || id1}(${id1}) vs ${p2?.name || id2}(${id2}) = ${key}`;
+      });
+      console.log(`🔥🔥🔥 [MILESTONE_SEQUENCE_CRITICAL] Last 5 battles in detail: ${lastFiveBattles.join(' | ')}`);
+    }
     
     if (battleType === "pairs") {
       // Get all possible pairs
@@ -128,6 +145,26 @@ export const useBattleStarterCore = (
         console.log(`🚨🚨🚨 [IMMEDIATE_REPEAT_DETECTED] Last battle key: ${lastBattleKey}`);
         console.log(`🚨🚨🚨 [IMMEDIATE_REPEAT_DETECTED] Selected key: ${selectedPair.key}`);
         console.log(`🚨🚨🚨 [IMMEDIATE_REPEAT_DETECTED] This should NOT happen! Bug in recently used logic!`);
+      }
+      
+      // SUPER CRITICAL: Additional logging for milestone battles 11-14
+      if (battleCount >= 10 && battleCount <= 13) {
+        console.log(`🔥🔥🔥 [POST_MILESTONE_BATTLE_${battleCount + 1}] ===== DETAILED SELECTION ANALYSIS =====`);
+        console.log(`🔥🔥🔥 [POST_MILESTONE_BATTLE_${battleCount + 1}] Selected Pokemon: ${result[0].name} (${result[0].id}) vs ${result[1].name} (${result[1].id})`);
+        console.log(`🔥🔥🔥 [POST_MILESTONE_BATTLE_${battleCount + 1}] Battle key: ${selectedPair.key}`);
+        console.log(`🔥🔥🔥 [POST_MILESTONE_BATTLE_${battleCount + 1}] Last battle key: ${lastBattleKey}`);
+        console.log(`🔥🔥🔥 [POST_MILESTONE_BATTLE_${battleCount + 1}] Is immediate repeat? ${lastBattleKey === selectedPair.key}`);
+        
+        // Check if this same pair appeared in any of the last 3 battles
+        const lastThreeBattles = recentlyUsed.slice(-3);
+        const appearedRecently = lastThreeBattles.includes(selectedPair.key);
+        console.log(`🔥🔥🔥 [POST_MILESTONE_BATTLE_${battleCount + 1}] Appeared in last 3 battles? ${appearedRecently}`);
+        console.log(`🔥🔥🔥 [POST_MILESTONE_BATTLE_${battleCount + 1}] Last 3 battles: [${lastThreeBattles.join(', ')}]`);
+        
+        if (appearedRecently) {
+          console.log(`🚨🚨🚨 [POST_MILESTONE_DUPLICATE_${battleCount + 1}] DUPLICATE DETECTED IN POST-MILESTONE BATTLES!`);
+          console.log(`🚨🚨🚨 [POST_MILESTONE_DUPLICATE_${battleCount + 1}] This pair ${selectedPair.key} appeared recently in: [${lastThreeBattles.join(', ')}]`);
+        }
       }
       
       console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] ===== END BATTLE #${battleCount + 1} GENERATION =====`);

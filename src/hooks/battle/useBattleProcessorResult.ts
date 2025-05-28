@@ -1,3 +1,4 @@
+
 import { useCallback } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
@@ -41,6 +42,26 @@ export const useBattleProcessorResult = (
       const lastFewEntries = recentlyUsed.slice(-5);
       console.log(`🔥🔥🔥 [LAST_FEW_BATTLES] Last 5 battles before adding current: [${lastFewEntries.join(', ')}]`);
       
+      // SUPER CRITICAL: Detailed logging for battles around milestone (8-15)
+      if (battleCount >= 7 && battleCount <= 14) {
+        console.log(`🔥🔥🔥 [MILESTONE_COMPLETION_${battleCount + 1}] ===== MILESTONE AREA BATTLE COMPLETION =====`);
+        console.log(`🔥🔥🔥 [MILESTONE_COMPLETION_${battleCount + 1}] Completing battle: ${currentBattlePokemon.map(p => p.name).join(' vs ')}`);
+        console.log(`🔥🔥🔥 [MILESTONE_COMPLETION_${battleCount + 1}] Battle key: ${battleKey}`);
+        console.log(`🔥🔥🔥 [MILESTONE_COMPLETION_${battleCount + 1}] Recently used before adding: [${recentlyUsed.join(', ')}]`);
+        
+        // Store detailed sequence for analysis
+        const detailedSequence = {
+          battleNumber: battleCount + 1,
+          battleKey,
+          pokemonNames: currentBattlePokemon.map(p => p.name),
+          pokemonIds: currentBattlePokemon.map(p => p.id),
+          recentlyUsedBefore: [...recentlyUsed],
+          timestamp: new Date().toISOString()
+        };
+        
+        console.log(`🔥🔥🔥 [MILESTONE_COMPLETION_${battleCount + 1}] Detailed completion data:`, JSON.stringify(detailedSequence, null, 2));
+      }
+      
       if (!recentlyUsed.includes(battleKey)) {
         recentlyUsed.push(battleKey);
         
@@ -79,6 +100,23 @@ export const useBattleProcessorResult = (
         console.log(`🔥🔥🔥 [BATTLE_SEQUENCE_STORAGE] Stored battle sequence #${battleCount + 1}`);
         console.log(`🔥🔥🔥 [FULL_BATTLE_SEQUENCE] Last 10 battles:`, 
           existingSequence.slice(-10).map(b => `#${b.battleNumber}: ${b.pokemonNames} (${b.battleKey})`));
+        
+        // SUPER CRITICAL: Log complete sequence for battles 8-15 to catch duplicates
+        if (battleCount >= 7 && battleCount <= 14) {
+          console.log(`🔥🔥🔥 [CRITICAL_SEQUENCE_${battleCount + 1}] ===== COMPLETE BATTLE SEQUENCE ANALYSIS =====`);
+          console.log(`🔥🔥🔥 [CRITICAL_SEQUENCE_${battleCount + 1}] Full sequence (last 15):`, 
+            existingSequence.slice(-15).map(b => `Battle #${b.battleNumber}: ${b.pokemonNames} (key: ${b.battleKey})`).join('\n'));
+          
+          // Check for any duplicates in the last 5 battles
+          const lastFiveBattleKeys = existingSequence.slice(-5).map(b => b.battleKey);
+          const duplicates = lastFiveBattleKeys.filter((key, index, array) => array.indexOf(key) !== index);
+          
+          if (duplicates.length > 0) {
+            console.log(`🚨🚨🚨 [CRITICAL_SEQUENCE_${battleCount + 1}] DUPLICATES FOUND IN LAST 5 BATTLES!`);
+            console.log(`🚨🚨🚨 [CRITICAL_SEQUENCE_${battleCount + 1}] Duplicate keys: [${duplicates.join(', ')}]`);
+            console.log(`🚨🚨🚨 [CRITICAL_SEQUENCE_${battleCount + 1}] Last 5 battle keys: [${lastFiveBattleKeys.join(', ')}]`);
+          }
+        }
         
       } else {
         console.log(`🔥🔥🔥 [BATTLE_COMPLETION_TRACKER] ⚠️ Battle key ${battleKey} was already in recently used list!`);
