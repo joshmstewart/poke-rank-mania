@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { Button } from "@/components/ui/button";
@@ -70,11 +69,11 @@ const MilestoneView: React.FC<MilestoneViewProps> = ({
               key={pokemon.id}
               className={`${backgroundColorClass} rounded-lg border border-gray-200 relative overflow-hidden h-40 flex flex-col`}
             >
-              {/* Info Button - positioned in top right */}
+              {/* Info Button - more subtle design */}
               <div className="absolute top-1 right-1 z-30">
                 <PokemonInfoModal pokemon={pokemon}>
                   <button 
-                    className="w-6 h-6 rounded-full bg-blue-500 hover:bg-blue-600 text-white flex items-center justify-center text-xs font-bold shadow-md transition-all duration-200"
+                    className="w-5 h-5 rounded-full bg-white/80 hover:bg-white border border-gray-300 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200 backdrop-blur-sm"
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();

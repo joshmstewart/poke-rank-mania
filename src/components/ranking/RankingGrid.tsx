@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { Badge } from "@/components/ui/badge";
@@ -63,16 +62,9 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
 
         return (
           <div key={pokemon.id} className="relative group">
-            {/* Info Button - ALWAYS VISIBLE DEBUG VERSION */}
+            {/* Info Button - more subtle design */}
             <div 
-              className="absolute top-1 right-1 z-30 bg-red-500 rounded-full p-1"
-              style={{ 
-                backgroundColor: 'red', // Force red background for debugging
-                borderRadius: '50%',
-                padding: '4px',
-                visibility: 'visible',
-                display: 'block'
-              }}
+              className="absolute top-1 right-1 z-30"
               onClick={(e) => {
                 console.log(`🔘 [RANKING_GRID_DEBUG] Info button container clicked for ${pokemon.name}`);
                 handleInfoButtonClick(pokemon, e);
@@ -80,21 +72,11 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
             >
               <PokemonInfoModal pokemon={pokemon}>
                 <button 
-                  className="w-6 h-6 rounded-full bg-blue-500 hover:bg-blue-600 text-white flex items-center justify-center text-xs font-bold shadow-md"
+                  className="w-5 h-5 rounded-full bg-white/80 hover:bg-white border border-gray-300 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200 backdrop-blur-sm"
                   onClick={(e) => {
                     console.log(`🔘 [RANKING_GRID_DEBUG] RankingGrid: Inner button clicked for ${pokemon.name}`);
                     e.preventDefault();
                     e.stopPropagation();
-                  }}
-                  style={{
-                    backgroundColor: 'blue',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '50%',
-                    width: '24px',
-                    height: '24px',
-                    fontSize: '12px',
-                    fontWeight: 'bold'
                   }}
                 >
                   i
