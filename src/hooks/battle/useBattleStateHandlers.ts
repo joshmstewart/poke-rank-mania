@@ -123,7 +123,7 @@ export const useBattleStateHandlers = (
     console.log(`⚔️ [BATTLE_RESULT_PROCESSING] Current battle Pokemon: ${currentBattlePokemon.map(p => `${p.name} (${p.id})`).join(', ')}`);
     console.log(`⚔️ [BATTLE_RESULT_PROCESSING] Queue size before processing: ${refinementQueue.refinementBattleCount}`);
     
-    // CRITICAL FIX: Check if this was a refinement battle and pop it
+    // CRITICAL FIX: Check if this was a refinement battle and pop it FIRST
     const nextRefinement = refinementQueue.getNextRefinementBattle();
     let wasRefinementBattle = false;
     
@@ -140,11 +140,7 @@ export const useBattleStateHandlers = (
         console.log(`⚔️ [REFINEMENT_BATTLE_COMPLETED] Reason: ${nextRefinement.reason}`);
         console.log(`⚔️ [REFINEMENT_BATTLE_COMPLETED] Winner(s): ${selectedPokemonIds.join(', ')}`);
         
-        // Pop the completed refinement battle
-        refinementQueue.popRefinementBattle();
         wasRefinementBattle = true;
-        
-        console.log(`⚔️ [REFINEMENT_BATTLE_COMPLETED] Queue size after popping: ${refinementQueue.refinementBattleCount}`);
         
         // CRITICAL FIX: Apply ranking adjustments based on validation battle results
         if (nextRefinement.reason.includes('manual reorder')) {
@@ -168,6 +164,12 @@ export const useBattleStateHandlers = (
           
           console.log(`🏆 [RANKING_VALIDATION] Validation result dispatched:`, validationResult);
         }
+        
+        // Pop the completed refinement battle AFTER processing the result
+        console.log(`⚔️ [REFINEMENT_BATTLE_COMPLETED] Popping completed battle from queue...`);
+        refinementQueue.popRefinementBattle();
+        console.log(`⚔️ [REFINEMENT_BATTLE_COMPLETED] Queue size after popping: ${refinementQueue.refinementBattleCount}`);
+        
       } else {
         console.log(`⚔️ [BATTLE_RESULT_PROCESSING] Current battle does not match pending refinement`);
         console.log(`⚔️ [BATTLE_RESULT_PROCESSING] Battle IDs: ${battleIds.join(', ')}, Refinement IDs: ${refinementIds.join(', ')}`);

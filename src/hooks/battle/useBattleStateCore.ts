@@ -37,6 +37,52 @@ export const useBattleStateCore = (
   const { battleStarter, areBattlesIdentical } = useBattleStarterCore(allPokemon, finalRankings as RankedPokemon[]);
   const refinementQueue = useSharedRefinementQueue();
 
+  // CRITICAL FIX: Listen for validation battle results and update rankings
+  useEffect(() => {
+    const handleValidationBattleCompleted = (event: CustomEvent) => {
+      const { primaryPokemonId, opponentPokemonId, primaryWon } = event.detail;
+      console.log(`🏆 [VALIDATION_HANDLER] Processing validation result: ${primaryPokemonId} vs ${opponentPokemonId}, primaryWon: ${primaryWon}`);
+      
+      setFinalRankings(prev => {
+        const currentRankings = [...prev];
+        const primaryIndex = currentRankings.findIndex(p => p.id === primaryPokemonId);
+        const opponentIndex = currentRankings.findIndex(p => p.id === opponentPokemonId);
+        
+        if (primaryIndex === -1 || opponentIndex === -1) {
+          console.warn(`🏆 [VALIDATION_HANDLER] Could not find Pokemon in rankings: primary=${primaryIndex}, opponent=${opponentIndex}`);
+          return prev;
+        }
+        
+        console.log(`🏆 [VALIDATION_HANDLER] Current positions - Primary: ${primaryIndex + 1}, Opponent: ${opponentIndex + 1}`);
+        
+        // If the primary Pokemon won and it's ranked lower (higher index), swap them
+        if (primaryWon && primaryIndex > opponentIndex) {
+          console.log(`🏆 [VALIDATION_HANDLER] Primary won and was ranked lower - promoting from ${primaryIndex + 1} to ${opponentIndex + 1}`);
+          const temp = currentRankings[primaryIndex];
+          currentRankings[primaryIndex] = currentRankings[opponentIndex];
+          currentRankings[opponentIndex] = temp;
+        }
+        // If the primary Pokemon lost and it's ranked higher (lower index), swap them  
+        else if (!primaryWon && primaryIndex < opponentIndex) {
+          console.log(`🏆 [VALIDATION_HANDLER] Primary lost and was ranked higher - demoting from ${primaryIndex + 1} to ${opponentIndex + 1}`);
+          const temp = currentRankings[primaryIndex];
+          currentRankings[primaryIndex] = currentRankings[opponentIndex];
+          currentRankings[opponentIndex] = temp;
+        } else {
+          console.log(`🏆 [VALIDATION_HANDLER] No ranking change needed - result confirms current positions`);
+        }
+        
+        return currentRankings;
+      });
+    };
+    
+    document.addEventListener('validation-battle-completed', handleValidationBattleCompleted as EventListener);
+    
+    return () => {
+      document.removeEventListener('validation-battle-completed', handleValidationBattleCompleted as EventListener);
+    };
+  }, []);
+
   // CRITICAL FIX: Start initial battle when Pokemon are available - with stable dependencies
   useEffect(() => {
     console.log(`🚀 [BATTLE_INIT] Pokemon data check: ${allPokemon?.length || 0} Pokemon available, currentBattle: ${currentBattle?.length || 0}, initialStarted: ${initialBattleStartedRef.current}`);
