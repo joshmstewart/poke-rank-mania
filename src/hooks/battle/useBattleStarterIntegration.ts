@@ -43,68 +43,71 @@ export const useBattleStarterIntegration = (
   const refinementQueue = useSharedRefinementQueue();
 
   const startNewBattle = (battleType: any) => {
-    console.log(`🚨 [BATTLE_STARTER_INTEGRATION_FIX] ===== BATTLE GENERATION START =====`);
-    console.log(`🚨 [BATTLE_STARTER_INTEGRATION_FIX] Battle type: ${battleType}`);
-    console.log(`🚨 [BATTLE_STARTER_INTEGRATION_FIX] battleStarter exists: ${!!battleStarter}`);
-    console.log(`🚨 [BATTLE_STARTER_INTEGRATION_FIX] refinementQueue exists: ${!!refinementQueue}`);
+    console.log(`🚨 [BATTLE_STARTER_FINAL_FIX] ===== BATTLE GENERATION START =====`);
+    console.log(`🚨 [BATTLE_STARTER_FINAL_FIX] Battle type: ${battleType}`);
+    console.log(`🚨 [BATTLE_STARTER_FINAL_FIX] battleStarter exists: ${!!battleStarter}`);
+    console.log(`🚨 [BATTLE_STARTER_FINAL_FIX] refinementQueue exists: ${!!refinementQueue}`);
+    console.log(`🚨 [BATTLE_STARTER_FINAL_FIX] refinementQueue.hasRefinementBattles: ${refinementQueue?.hasRefinementBattles}`);
+    console.log(`🚨 [BATTLE_STARTER_FINAL_FIX] refinementQueue.refinementBattleCount: ${refinementQueue?.refinementBattleCount}`);
     
     if (!battleStarter) {
-      console.error(`🚨 [BATTLE_STARTER_INTEGRATION_FIX] ❌ NO BATTLE STARTER - returning empty array`);
+      console.error(`🚨 [BATTLE_STARTER_FINAL_FIX] ❌ NO BATTLE STARTER - returning empty array`);
       return [];
     }
     
-    // CRITICAL FIX: Actually check the refinement queue FIRST
-    console.log(`🚨 [BATTLE_STARTER_INTEGRATION_FIX] ===== CHECKING REFINEMENT QUEUE =====`);
-    console.log(`🚨 [BATTLE_STARTER_INTEGRATION_FIX] Queue size: ${refinementQueue.refinementBattleCount}`);
-    console.log(`🚨 [BATTLE_STARTER_INTEGRATION_FIX] Has battles: ${refinementQueue.hasRefinementBattles}`);
-    
-    const nextRefinement = refinementQueue.getNextRefinementBattle();
-    console.log(`🚨 [BATTLE_STARTER_INTEGRATION_FIX] Next refinement:`, nextRefinement);
-    
-    if (nextRefinement) {
-      console.log(`🚨 [BATTLE_STARTER_INTEGRATION_FIX] ✅ FOUND REFINEMENT BATTLE!`);
-      console.log(`🚨 [BATTLE_STARTER_INTEGRATION_FIX] Primary: ${nextRefinement.primaryPokemonId}, Opponent: ${nextRefinement.opponentPokemonId}`);
+    // CRITICAL FIX: Check refinement queue FIRST and ACTUALLY USE IT
+    if (refinementQueue && refinementQueue.hasRefinementBattles) {
+      console.log(`🚨 [BATTLE_STARTER_FINAL_FIX] ✅ REFINEMENT QUEUE HAS BATTLES!`);
+      const nextRefinement = refinementQueue.getNextRefinementBattle();
+      console.log(`🚨 [BATTLE_STARTER_FINAL_FIX] Next refinement:`, nextRefinement);
       
-      const primary = allPokemon.find(p => p.id === nextRefinement.primaryPokemonId);
-      const opponent = allPokemon.find(p => p.id === nextRefinement.opponentPokemonId);
-      
-      console.log(`🚨 [BATTLE_STARTER_INTEGRATION_FIX] Primary found: ${!!primary}`);
-      console.log(`🚨 [BATTLE_STARTER_INTEGRATION_FIX] Opponent found: ${!!opponent}`);
+      if (nextRefinement) {
+        console.log(`🚨 [BATTLE_STARTER_FINAL_FIX] ✅ CREATING REFINEMENT BATTLE!`);
+        console.log(`🚨 [BATTLE_STARTER_FINAL_FIX] Primary: ${nextRefinement.primaryPokemonId}, Opponent: ${nextRefinement.opponentPokemonId}`);
+        
+        const primary = allPokemon.find(p => p.id === nextRefinement.primaryPokemonId);
+        const opponent = allPokemon.find(p => p.id === nextRefinement.opponentPokemonId);
+        
+        console.log(`🚨 [BATTLE_STARTER_FINAL_FIX] Primary found: ${!!primary} (${primary?.name})`);
+        console.log(`🚨 [BATTLE_STARTER_FINAL_FIX] Opponent found: ${!!opponent} (${opponent?.name})`);
 
-      if (primary && opponent) {
-        const refinementBattle = [primary, opponent];
-        
-        console.log(`🚨 [BATTLE_STARTER_INTEGRATION_FIX] ✅ CREATING REFINEMENT BATTLE: ${primary.name} vs ${opponent.name}`);
-        
-        setCurrentBattle(refinementBattle);
-        setSelectedPokemon([]);
-        
-        console.log(`🚨 [BATTLE_STARTER_INTEGRATION_FIX] ✅ REFINEMENT BATTLE SET SUCCESSFULLY`);
-        return refinementBattle;
-      } else {
-        console.error(`🚨 [BATTLE_STARTER_INTEGRATION_FIX] ❌ MISSING POKEMON - popping invalid battle`);
-        refinementQueue.popRefinementBattle();
-        // Try again recursively
-        return startNewBattle(battleType);
+        if (primary && opponent) {
+          const refinementBattle = [primary, opponent];
+          
+          console.log(`🚨 [BATTLE_STARTER_FINAL_FIX] ✅ SETTING REFINEMENT BATTLE: ${primary.name} vs ${opponent.name}`);
+          
+          setCurrentBattle(refinementBattle);
+          setSelectedPokemon([]);
+          
+          console.log(`🚨 [BATTLE_STARTER_FINAL_FIX] ✅ REFINEMENT BATTLE SET - RETURNING IT`);
+          return refinementBattle;
+        } else {
+          console.error(`🚨 [BATTLE_STARTER_FINAL_FIX] ❌ MISSING POKEMON - popping invalid battle`);
+          refinementQueue.popRefinementBattle();
+          // Try again recursively
+          return startNewBattle(battleType);
+        }
       }
+    } else {
+      console.log(`🚨 [BATTLE_STARTER_FINAL_FIX] ❌ No refinement queue or no battles in queue`);
     }
     
     // No refinement battles - proceed with regular generation
-    console.log(`🚨 [BATTLE_STARTER_INTEGRATION_FIX] ===== NO REFINEMENT BATTLES - REGULAR GENERATION =====`);
+    console.log(`🚨 [BATTLE_STARTER_FINAL_FIX] ===== NO REFINEMENT BATTLES - REGULAR GENERATION =====`);
     
     const result = battleStarter.startNewBattle(battleType);
     
-    console.log(`🚨 [BATTLE_STARTER_INTEGRATION_FIX] Regular battle result:`, result ? result.map(p => `${p.name}(${p.id})`).join(' vs ') : 'null/empty');
+    console.log(`🚨 [BATTLE_STARTER_FINAL_FIX] Regular battle result:`, result ? result.map(p => `${p.name}(${p.id})`).join(' vs ') : 'null/empty');
     
     if (result && result.length > 0) {
       setCurrentBattle(result);
       setSelectedPokemon([]);
-      console.log(`🚨 [BATTLE_STARTER_INTEGRATION_FIX] ✅ Regular battle set successfully`);
+      console.log(`🚨 [BATTLE_STARTER_FINAL_FIX] ✅ Regular battle set successfully`);
     } else {
-      console.error(`🚨 [BATTLE_STARTER_INTEGRATION_FIX] ❌ No regular battle generated`);
+      console.error(`🚨 [BATTLE_STARTER_FINAL_FIX] ❌ No regular battle generated`);
     }
     
-    return result;
+    return result || [];
   };
 
   const resetSuggestionPriority = () => {
