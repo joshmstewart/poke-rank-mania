@@ -1,3 +1,4 @@
+
 import { useCallback } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
@@ -59,24 +60,37 @@ export const useBattleStarterCore = (
       
       console.log(`🚨🚨🚨 [BATTLE_GENERATION_DEBUG] Total possible pairs: ${allPairs.length}`);
       
-      // Filter out recently used pairs
-      const unusedPairs = allPairs.filter(pair => !recentlyUsed.includes(pair.key));
+      // CRITICAL FIX: Instead of clearing recently used when empty, implement better distribution
+      let unusedPairs = allPairs.filter(pair => !recentlyUsed.includes(pair.key));
       console.log(`🚨🚨🚨 [BATTLE_GENERATION_DEBUG] Unused pairs: ${unusedPairs.length}`);
       
       if (unusedPairs.length === 0) {
-        console.log(`🚨🚨🚨 [BATTLE_GENERATION_DEBUG] ❌ NO UNUSED PAIRS! All pairs have been used recently`);
-        console.log(`🚨🚨🚨 [BATTLE_GENERATION_DEBUG] This should trigger a reset of recently used pairs`);
+        console.log(`🚨🚨🚨 [BATTLE_GENERATION_DEBUG] ❌ NO UNUSED PAIRS! Implementing better distribution`);
         
-        // Clear recently used and try again
-        localStorage.removeItem('pokemon-battle-recently-used');
-        const randomPair = allPairs[Math.floor(Math.random() * allPairs.length)];
-        const selectedPair = [randomPair.pokemon1, randomPair.pokemon2];
+        // CRITICAL FIX: Instead of clearing all, remove only the oldest 50% of entries
+        const halfSize = Math.floor(recentlyUsed.length / 2);
+        const remainingUsed = recentlyUsed.slice(halfSize);
         
-        console.log(`🚨🚨🚨 [BATTLE_GENERATION_DEBUG] ✅ SELECTED (after reset): ${selectedPair[0].name} vs ${selectedPair[1].name}`);
-        console.log(`🚨🚨🚨 [BATTLE_GENERATION_DEBUG] ✅ SELECTED IDs: ${selectedPair[0].id} vs ${selectedPair[1].id}`);
-        console.log(`🚨🚨🚨 [BATTLE_GENERATION_DEBUG] ✅ SELECTED key: ${randomPair.key}`);
+        console.log(`🚨🚨🚨 [BATTLE_GENERATION_DEBUG] Removing ${halfSize} oldest entries, keeping ${remainingUsed.length}`);
+        localStorage.setItem('pokemon-battle-recently-used', JSON.stringify(remainingUsed));
         
-        return selectedPair;
+        // Now get unused pairs with the reduced recently used list
+        unusedPairs = allPairs.filter(pair => !remainingUsed.includes(pair.key));
+        console.log(`🚨🚨🚨 [BATTLE_GENERATION_DEBUG] After partial clear - unused pairs: ${unusedPairs.length}`);
+        
+        // If still no unused pairs, pick the least recently used
+        if (unusedPairs.length === 0) {
+          console.log(`🚨🚨🚨 [BATTLE_GENERATION_DEBUG] Still no unused pairs - picking least recently used`);
+          
+          // Find pairs that were used earliest (not in the recent half)
+          const oldestUsedPairs = recentlyUsed.slice(0, halfSize);
+          unusedPairs = allPairs.filter(pair => oldestUsedPairs.includes(pair.key));
+          
+          if (unusedPairs.length === 0) {
+            // Last resort: pick any pair
+            unusedPairs = [allPairs[Math.floor(Math.random() * allPairs.length)]];
+          }
+        }
       }
       
       // Select random unused pair
