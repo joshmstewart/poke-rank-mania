@@ -19,27 +19,37 @@ export const useBattleStateHandlers = (
     const neighbors: number[] = [];
     const rankings = finalRankings || [];
     
-    // Add Pokemon above and below the new position
-    if (destinationIndex > 0 && rankings[destinationIndex - 1]) {
-      neighbors.push(rankings[destinationIndex - 1].id);
-    }
-    if (destinationIndex < rankings.length - 1 && rankings[destinationIndex + 1]) {
-      neighbors.push(rankings[destinationIndex + 1].id);
+    // Add Pokemon above and below the new position for thorough validation
+    const positions = [
+      destinationIndex - 2, // Two above
+      destinationIndex - 1, // One above
+      destinationIndex + 1, // One below
+      destinationIndex + 2  // Two below
+    ];
+    
+    positions.forEach(pos => {
+      if (pos >= 0 && pos < rankings.length && rankings[pos] && rankings[pos].id !== draggedPokemonId) {
+        neighbors.push(rankings[pos].id);
+      }
+    });
+    
+    // Ensure we have at least some validation battles
+    if (neighbors.length === 0 && rankings.length > 1) {
+      // Fallback: add some nearby Pokemon
+      for (let i = Math.max(0, destinationIndex - 3); i <= Math.min(rankings.length - 1, destinationIndex + 3); i++) {
+        if (rankings[i] && rankings[i].id !== draggedPokemonId && neighbors.length < 3) {
+          neighbors.push(rankings[i].id);
+        }
+      }
     }
     
-    // Also add a few more nearby Pokemon for more thorough validation
-    if (destinationIndex > 1 && rankings[destinationIndex - 2]) {
-      neighbors.push(rankings[destinationIndex - 2].id);
-    }
-    if (destinationIndex < rankings.length - 2 && rankings[destinationIndex + 2]) {
-      neighbors.push(rankings[destinationIndex + 2].id);
-    }
+    console.log(`🔄 [MANUAL_REORDER] Queueing validation battles for Pokemon ${draggedPokemonId} with neighbors: ${neighbors.join(', ')}`);
     
     // Queue refinement battles - this is where the drag action creates future battles
     refinementQueue.queueBattlesForReorder(draggedPokemonId, neighbors, destinationIndex + 1);
     
-    console.log(`🔄 [MANUAL_REORDER] Queued validation battles with neighbors: ${neighbors.join(', ')}`);
-    console.log(`🔄 [MANUAL_REORDER] Next battle will prioritize these validation battles`);
+    console.log(`🔄 [MANUAL_REORDER] Successfully queued ${neighbors.length} validation battles`);
+    console.log(`🔄 [MANUAL_REORDER] Total refinement battles in queue: ${refinementQueue.refinementBattleCount + neighbors.length}`);
   }, [finalRankings, refinementQueue]);
 
   // Handle battle completion to pop refinement battles from queue
