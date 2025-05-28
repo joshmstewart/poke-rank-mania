@@ -29,9 +29,39 @@ export const useBattleStateCore = (
   const [milestoneInProgress, setMilestoneInProgress] = useState(false);
   const [isAnyProcessing, setIsAnyProcessing] = useState(false);
   const [frozenPokemon, setFrozenPokemon] = useState<number[]>([]);
+  
+  // Add initialization ref to prevent multiple battle starts
+  const initialBattleStartedRef = useRef(false);
 
   const { battleStarter, areBattlesIdentical } = useBattleStarterCore(allPokemon, finalRankings as RankedPokemon[]);
   const refinementQueue = useSharedRefinementQueue();
+
+  // CRITICAL FIX: Start initial battle when Pokemon are available
+  useEffect(() => {
+    console.log(`🚀 [BATTLE_INIT] Pokemon data check: ${allPokemon?.length || 0} Pokemon available, currentBattle: ${currentBattle?.length || 0}, initialStarted: ${initialBattleStartedRef.current}`);
+    
+    if (allPokemon && allPokemon.length > 0 && !initialBattleStartedRef.current && (!currentBattle || currentBattle.length === 0)) {
+      console.log(`🚀 [BATTLE_INIT] Starting initial battle with ${allPokemon.length} Pokemon`);
+      initialBattleStartedRef.current = true;
+      
+      // Start initial battle
+      setTimeout(() => {
+        if (battleStarter && battleStarter.startNewBattle) {
+          console.log(`🚀 [BATTLE_INIT] Calling battleStarter.startNewBattle`);
+          const initialBattle = battleStarter.startNewBattle(battleType);
+          if (initialBattle && initialBattle.length > 0) {
+            console.log(`✅ [BATTLE_INIT] Initial battle created:`, initialBattle.map(p => p.name).join(' vs '));
+            setCurrentBattle(initialBattle);
+            setSelectedPokemon([]);
+          } else {
+            console.error(`❌ [BATTLE_INIT] Failed to create initial battle`);
+          }
+        } else {
+          console.error(`❌ [BATTLE_INIT] battleStarter not available`);
+        }
+      }, 100);
+    }
+  }, [allPokemon.length > 0 ? 1 : 0, battleStarter, battleType]); // Only depend on whether we HAVE Pokemon
 
   const calculateCompletionPercentage = useCallback(() => {
     const completed = battlesCompleted;
@@ -123,7 +153,7 @@ export const useBattleStateCore = (
   );
 
   const handleTripletSelectionComplete = useCallback(async () => {
-    if (selectedPokemon.length !== (battleType === "pairs" ? 2 : 3)) {
+    if (selectedPokemon.length !== (battleType === "pairs" ? 1 : 2)) {
       console.warn("Incorrect number of Pokémon selected");
       return;
     }
@@ -163,13 +193,27 @@ export const useBattleStateCore = (
   }, [battleHistory]);
 
   const startNewBattle = useCallback(() => {
+    console.log(`🚀 [START_NEW_BATTLE] Called with battleStarter available: ${!!battleStarter}`);
+    
+    if (!battleStarter || !battleStarter.startNewBattle) {
+      console.error(`❌ [START_NEW_BATTLE] battleStarter not available`);
+      return;
+    }
+    
     setIsBattleTransitioning(true);
     setIsAnyProcessing(true);
 
     setTimeout(() => {
       const newBattle = battleStarter.startNewBattle(battleType);
-      setCurrentBattle(newBattle);
-      setSelectedPokemon([]);
+      console.log(`🚀 [START_NEW_BATTLE] Generated battle:`, newBattle?.map(p => p.name).join(' vs ') || 'None');
+      
+      if (newBattle && newBattle.length > 0) {
+        setCurrentBattle(newBattle);
+        setSelectedPokemon([]);
+      } else {
+        console.error(`❌ [START_NEW_BATTLE] Failed to generate battle`);
+      }
+      
       setIsBattleTransitioning(false);
       setIsAnyProcessing(false);
     }, 300);
@@ -246,6 +290,7 @@ export const useBattleStateCore = (
     setMilestoneInProgress(false);
     clearAllSuggestions();
     clearRefinementQueue();
+    initialBattleStartedRef.current = false; // Reset so new battle can start
     startNewBattle();
   }, [startNewBattle, clearAllSuggestions, clearRefinementQueue]);
 
