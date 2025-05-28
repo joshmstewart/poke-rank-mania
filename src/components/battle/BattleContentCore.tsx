@@ -25,17 +25,32 @@ const BattleContentCore: React.FC<BattleContentCoreProps> = ({
 }) => {
   const instanceRef = useRef(`content-${Date.now()}`);
   
-  console.log(`[DEBUG BattleContentCore] Instance: ${instanceRef.current} render - allPokemon: ${allPokemon?.length || 0}`);
-  console.log(`🔄 [REFINEMENT_PROVIDER_REMOVE] BattleContentCore no longer wrapping with RefinementQueueProvider - using top-level one`);
+  console.log(`🔧 [HOOK_ORDER_FIX] BattleContentCore render - Instance: ${instanceRef.current}`);
+  console.log(`🔧 [HOOK_ORDER_FIX] allPokemon: ${allPokemon?.length || 0}, initialBattleType: ${initialBattleType}`);
 
-  // CRITICAL FIX: Always call useBattleStateCore with stable parameters
+  // CRITICAL FIX: Always call useBattleStateCore unconditionally to prevent hook order issues
   const stateHook = useBattleStateCore(
     allPokemon || [], 
     initialBattleType, 
     initialSelectedGeneration
   );
 
-  // Destructure after the hook call to ensure consistent hook ordering
+  // CRITICAL FIX: Always call useEffect hooks in the same order, unconditionally
+  useEffect(() => {
+    console.log(`🔧 [HOOK_ORDER_FIX] setBattlesCompleted useEffect - battlesCompleted: ${stateHook.battlesCompleted}`);
+    if (setBattlesCompleted) {
+      setBattlesCompleted(stateHook.battlesCompleted);
+    }
+  }, [stateHook.battlesCompleted, setBattlesCompleted]);
+
+  useEffect(() => {
+    console.log(`🔧 [HOOK_ORDER_FIX] setBattleResults useEffect - battleResults length: ${stateHook.battleResults.length}`);
+    if (setBattleResults) {
+      setBattleResults(stateHook.battleResults);
+    }
+  }, [stateHook.battleResults, setBattleResults]);
+
+  // Destructure after all hooks to ensure consistent hook ordering
   const {
     currentBattle,
     battleResults,
@@ -78,7 +93,8 @@ const BattleContentCore: React.FC<BattleContentCoreProps> = ({
     pendingRefinements
   } = stateHook;
 
-  console.log(`🔄 [FINAL_FIX] BattleContentCore render states:`, {
+  console.log(`🔧 [HOOK_ORDER_FIX] All hooks called successfully, proceeding with render logic`);
+  console.log(`🔧 [HOOK_ORDER_FIX] Render states:`, {
     showingMilestone,
     isBattleTransitioning,
     currentBattleLength: currentBattle?.length || 0,
@@ -90,21 +106,9 @@ const BattleContentCore: React.FC<BattleContentCoreProps> = ({
     timestamp: new Date().toISOString()
   });
 
-  // CRITICAL FIX: Always call useEffect hooks in the same order
-  useEffect(() => {
-    if (setBattlesCompleted) {
-      setBattlesCompleted(battlesCompleted);
-    }
-  }, [battlesCompleted, setBattlesCompleted]);
-
-  useEffect(() => {
-    if (setBattleResults) {
-      setBattleResults(battleResults);
-    }
-  }, [battleResults, setBattleResults]);
-
   // Show milestone screen
   if (showingMilestone) {
+    console.log(`🔧 [HOOK_ORDER_FIX] Rendering milestone screen`);
     return (
       <BattleContentMilestone
         finalRankings={finalRankings}
@@ -128,11 +132,12 @@ const BattleContentCore: React.FC<BattleContentCoreProps> = ({
 
   // Show loading when no battle data
   if (!currentBattle || currentBattle.length === 0) {
+    console.log(`🔧 [HOOK_ORDER_FIX] Rendering loading screen - no battle data`);
     return <BattleContentLoading />;
   }
 
   // Show main interface
-  console.log(`✅ [FINAL_FIX] BattleContentCore rendering interface with ${currentBattle.length} Pokemon`);
+  console.log(`🔧 [HOOK_ORDER_FIX] Rendering main interface with ${currentBattle.length} Pokemon`);
   
   return (
     <div className="w-full">
