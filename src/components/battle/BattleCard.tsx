@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, memo, useRef, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Pokemon } from "@/services/pokemon";
@@ -120,21 +119,11 @@ const BattleCard: React.FC<BattleCardProps> = memo(({
       data-processing={isProcessing ? "true" : "false"}
     >
       <CardContent className="p-4 text-center relative">
-        {/* Info Button - positioned absolutely with higher z-index and better event handling */}
-        <div 
-          data-info-button="true" 
-          className="absolute top-1 right-1 z-50 opacity-70 hover:opacity-100 transition-opacity"
-          onClick={handleInfoButtonClick}
-          style={{ 
-            visibility: infoButtonVisible ? 'visible' : 'hidden',
-            backgroundColor: 'rgba(255, 255, 255, 0.9)',
-            borderRadius: '50%',
-            padding: '2px'
-          }}
-        >
+        {/* Info Button - Subtle styling */}
+        <div className="absolute top-1 right-1 z-30">
           <PokemonInfoModal pokemon={pokemon}>
             <button 
-              className="w-6 h-6 rounded-full bg-blue-500 hover:bg-blue-600 text-white flex items-center justify-center text-xs font-bold shadow-md"
+              className="w-5 h-5 rounded-full bg-white/80 hover:bg-white border border-gray-300 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200 backdrop-blur-sm"
               onClick={(e) => {
                 console.log(`🔘 [INFO_BUTTON_DEBUG] BattleCard ${displayName}: Inner button clicked`);
                 e.preventDefault();

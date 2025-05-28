@@ -13,7 +13,7 @@ import {
   arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
+  rectSortingStrategy,
 } from '@dnd-kit/sortable';
 import {
   useSortable,
@@ -58,8 +58,8 @@ const DraggablePokemonCard: React.FC<DraggablePokemonCardProps> = ({
       style={style}
       {...attributes}
       {...listeners}
-      className={`${backgroundColorClass} rounded-lg border border-gray-200 relative overflow-hidden h-40 flex flex-col cursor-grab active:cursor-grabbing ${
-        isDragging ? 'opacity-50 z-50' : ''
+      className={`${backgroundColorClass} rounded-lg border border-gray-200 relative overflow-hidden h-40 flex flex-col cursor-grab active:cursor-grabbing transition-transform duration-200 ${
+        isDragging ? 'opacity-50 z-50 scale-105 shadow-lg' : ''
       } ${isPending ? 'ring-2 ring-yellow-400 ring-opacity-50' : ''}`}
     >
       {/* Pending indicator */}
@@ -144,7 +144,11 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
   const hasMoreToLoad = milestoneDisplayCount < maxItems;
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
@@ -216,7 +220,7 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
       >
         <SortableContext 
           items={displayRankings.map(p => p.id)} 
-          strategy={verticalListSortingStrategy}
+          strategy={rectSortingStrategy}
         >
           <div className="grid grid-cols-5 gap-4 mb-6">
             {displayRankings.map((pokemon, index) => (
