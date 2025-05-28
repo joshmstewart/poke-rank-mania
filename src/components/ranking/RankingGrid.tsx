@@ -1,10 +1,9 @@
-
 import React, { useState } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { Badge } from "@/components/ui/badge";
 import { normalizePokedexNumber } from "@/utils/pokemon";
 import PokemonInfoModal from "@/components/pokemon/PokemonInfoModal";
-import VotingArrows from "./VotingArrows";
+import { VotingArrows } from "./VotingArrows";
 
 interface RankingGridProps {
   displayRankings: (Pokemon | RankedPokemon)[];
