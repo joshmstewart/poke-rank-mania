@@ -1,4 +1,3 @@
-
 import { useCallback } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
@@ -7,15 +6,15 @@ import { useBattleStateActions } from "./useBattleStateActions";
 import { useBattleStateEffects } from "./useBattleStateEffects";
 import { useBattleStateOrchestration } from "./useBattleStateOrchestration";
 import { useBattleStateInterface } from "./useBattleStateInterface";
-import { useRefinementQueue } from "./useRefinementQueue";
+import { useSharedRefinementQueue } from "./useSharedRefinementQueue";
 
 export const useBattleStateCore = (
   allPokemon: Pokemon[] = [],
   initialBattleType: BattleType,
   initialSelectedGeneration: number
 ) => {
-  // Initialize refinement queue
-  const refinementQueue = useRefinementQueue();
+  // Use shared refinement queue instead of creating a new instance
+  const refinementQueue = useSharedRefinementQueue();
 
   // Initialize all core state and providers
   const {

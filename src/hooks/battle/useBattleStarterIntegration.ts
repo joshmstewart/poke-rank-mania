@@ -2,7 +2,7 @@
 import { useMemo } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { createBattleStarter } from "./createBattleStarter";
-import { useRefinementQueue, RefinementBattle } from "./useRefinementQueue";
+import { useSharedRefinementQueue } from "./useSharedRefinementQueue";
 
 export const useBattleStarterIntegration = (
   allPokemon: Pokemon[],
@@ -18,7 +18,8 @@ export const useBattleStarterIntegration = (
     return createBattleStarter(allPokemon, currentRankings);
   }, [allPokemon, currentRankings]);
 
-  const refinementQueue = useRefinementQueue();
+  // Use shared refinement queue instead of creating a new instance
+  const refinementQueue = useSharedRefinementQueue();
 
   const startNewBattle = (battleType: any) => {
     if (!battleStarter) return [];

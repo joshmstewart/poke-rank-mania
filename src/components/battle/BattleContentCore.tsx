@@ -3,6 +3,7 @@ import React, { useEffect, useRef } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "@/hooks/battle/types";
 import { useBattleStateCore } from "@/hooks/battle/useBattleStateCore";
+import { RefinementQueueProvider } from "./RefinementQueueProvider";
 import BattleContentHeader from "./BattleContentHeader";
 import BattleContentMain from "./BattleContentMain";
 import BattleContentMilestone from "./BattleContentMilestone";
@@ -16,7 +17,7 @@ interface BattleContentCoreProps {
   setBattleResults?: React.Dispatch<React.SetStateAction<SingleBattle[]>>;
 }
 
-const BattleContentCore: React.FC<BattleContentCoreProps> = ({
+const BattleContentCoreInner: React.FC<BattleContentCoreProps> = ({
   allPokemon,
   initialBattleType,
   initialSelectedGeneration = 0,
@@ -143,6 +144,14 @@ const BattleContentCore: React.FC<BattleContentCoreProps> = ({
         isAnyProcessing={isAnyProcessing}
       />
     </div>
+  );
+};
+
+const BattleContentCore: React.FC<BattleContentCoreProps> = (props) => {
+  return (
+    <RefinementQueueProvider>
+      <BattleContentCoreInner {...props} />
+    </RefinementQueueProvider>
   );
 };
 
