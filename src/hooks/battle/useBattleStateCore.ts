@@ -25,7 +25,7 @@ export const useBattleStateCore = (
   const [activeTier, setActiveTier] = useState<TopNOption>("All");
   const [isBattleTransitioning, setIsBattleTransitioning] = useState(false);
   const [isProcessingResult, setIsProcessingResult] = useState(false);
-  const [milestones, setMilestones] = useState<any[]>([]);
+  const [milestones, setMilestones] = useState<number[]>([10, 25, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 600, 700, 800, 900, 1000]);
   const [milestoneInProgress, setMilestoneInProgress] = useState(false);
   const [isAnyProcessing, setIsAnyProcessing] = useState(false);
   const [frozenPokemon, setFrozenPokemon] = useState<number[]>([]);
@@ -134,8 +134,9 @@ export const useBattleStateCore = (
     const selected = selectedPokemonIds.sort((a, b) => a - b);
     setBattleHistory(prev => [...prev, { battle: currentBattlePokemon, selected }]);
 
-    setBattlesCompleted(prev => prev + 1);
-    localStorage.setItem('pokemon-battle-count', String(battlesCompleted + 1));
+    const newBattlesCompleted = battlesCompleted + 1;
+    setBattlesCompleted(newBattlesCompleted);
+    localStorage.setItem('pokemon-battle-count', String(newBattlesCompleted));
 
     const newBattleResult: SingleBattle = {
       battleType,
@@ -147,8 +148,12 @@ export const useBattleStateCore = (
 
     setBattleResults(prev => [...prev, newBattleResult]);
 
-    const milestoneCheck = (battlesCompleted + 1) % 100 === 0;
-    if (milestoneCheck) {
+    // CRITICAL FIX: Check if new battles completed hits a milestone from the milestones array
+    const isAtMilestone = milestones.includes(newBattlesCompleted);
+    console.log(`🎯 [MILESTONE_CHECK] Battle ${newBattlesCompleted} completed. Is milestone? ${isAtMilestone}. Milestones: ${milestones.join(', ')}`);
+    
+    if (isAtMilestone) {
+      console.log(`🏆 [MILESTONE_HIT] Milestone ${newBattlesCompleted} reached!`);
       setMilestoneInProgress(true);
       setShowingMilestone(true);
     }
@@ -156,7 +161,7 @@ export const useBattleStateCore = (
     setSelectedPokemon([]);
     console.log(`✅ [BATTLE_PROCESSING] Battle result processed successfully`);
     return Promise.resolve();
-  }, [battlesCompleted]);
+  }, [battlesCompleted, milestones]);
 
   const {
     processBattleResultWithRefinement,
