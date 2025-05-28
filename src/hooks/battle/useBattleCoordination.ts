@@ -6,6 +6,7 @@ import { useProgressState } from "./useProgressState";
 import { useRankings } from "./useRankings";
 import { useCompletionTracker } from "./useCompletionTracker";
 import { useBattleStarterIntegration } from "./useBattleStarterIntegration";
+import { useBattleStarterEvents } from "./useBattleStarterEvents";
 
 export const useBattleCoordination = (
   selectedGeneration: number,
@@ -82,6 +83,20 @@ export const useBattleCoordination = (
     stableSetSelectedPokemon,
     markSuggestionUsed,
     currentBattle
+  );
+
+  // CRITICAL: Initialize battle starter events to handle auto-battle generation
+  useBattleStarterEvents(
+    filteredPokemon,
+    currentBattle,
+    // Initialize refs for battle starter events
+    { current: false }, // initialBattleStartedRef
+    { current: false }, // autoTriggerDisabledRef
+    { current: startNewBattle }, // startNewBattleCallbackRef
+    { current: null }, // initializationTimerRef
+    { current: false }, // initializationCompleteRef
+    stableSetCurrentBattle,
+    stableSetSelectedPokemon
   );
 
   return {

@@ -1,5 +1,5 @@
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Pokemon } from "@/services/pokemon";
 
 export const useBattleStarterEvents = (
@@ -16,7 +16,7 @@ export const useBattleStarterEvents = (
   // CRITICAL FIX: Start initial battle when Pokemon data is available - but only once
   useEffect(() => {
     const timestamp = new Date().toISOString();
-    console.log(`[${timestamp}] useBattleStarterIntegration Pokemon data check: ${allPokemon?.length || 0} Pokemon available`);
+    console.log(`[${timestamp}] useBattleStarterEvents Pokemon data check: ${allPokemon?.length || 0} Pokemon available`);
     
     // CRITICAL FIX: Only start initial battle if we have Pokemon AND haven't started yet AND no current battle exists
     if (allPokemon && allPokemon.length > 0 && !initialBattleStartedRef.current && (!currentBattle || currentBattle.length === 0)) {
@@ -48,14 +48,14 @@ export const useBattleStarterEvents = (
   // CRITICAL FIX: Simplified initialization
   useEffect(() => {
     const timestamp = new Date().toISOString();
-    console.log(`[${timestamp}] useBattleStarterIntegration initialized with ${allPokemon?.length || 0} Pokémon`);
+    console.log(`[${timestamp}] useBattleStarterEvents initialized with ${allPokemon?.length || 0} Pokémon`);
     
     if (initializationTimerRef.current) {
       clearTimeout(initializationTimerRef.current);
     }
     
     initializationTimerRef.current = setTimeout(() => {
-      console.log(`[${new Date().toISOString()}] useBattleStarterIntegration initialization complete`);
+      console.log(`[${new Date().toISOString()}] useBattleStarterEvents initialization complete`);
       initializationCompleteRef.current = true;
     }, 100);
     
