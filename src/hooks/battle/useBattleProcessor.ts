@@ -1,10 +1,10 @@
 
-import { useState, useCallback, useEffect } from "react";
+import { useCallback } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
-import { useBattleProgression } from "./useBattleProgression";
-import { useNextBattleHandler } from "./useNextBattleHandler";
-import { useBattleResultProcessor } from "./useBattleResultProcessor";
+import { useBattleProcessorState } from "./useBattleProcessorState";
+import { useBattleProcessorResult } from "./useBattleProcessorResult";
+import { useBattleProcessorCoordinator } from "./useBattleProcessorCoordinator";
 import { useBattleProcessorMilestone } from "./useBattleProcessorMilestone";
 import { useBattleProcessorCore } from "./useBattleProcessorCore";
 import { useBattleProcessorGeneration } from "./useBattleProcessorGeneration";
@@ -27,47 +27,35 @@ export const useBattleProcessor = (
   isResettingRef?: React.MutableRefObject<boolean>,
   integratedStartNewBattle?: (battleType: BattleType) => Pokemon[]
 ) => {
-  const [isProcessingResult, setIsProcessingResult] = useState(false);
+  const { isProcessingResult, setIsProcessingResult } = useBattleProcessorState();
 
-  console.log(`🔄 [PROCESSOR_FIX] useBattleProcessor isProcessingResult:`, {
-    isProcessingResult,
-    timestamp: new Date().toISOString()
-  });
-
-  // LOADING STATE DEBUG: Log isProcessingResult changes
-  useEffect(() => {
-    console.log(`🔄 [LOADING DEBUG] useBattleProcessor isProcessingResult changed:`, {
-      isProcessingResult,
-      timestamp: new Date().toISOString()
-    });
-  }, [isProcessingResult]);
-
-  const { 
+  const {
     incrementBattlesCompleted,
-    resetMilestone: resetBattleProgressionMilestoneTracking
-  } = useBattleProgression(
-    battlesCompleted,
-    setBattlesCompleted,
-    setShowingMilestone,
-    milestones,
-    generateRankings
-  );
-
-  const { setupNextBattle } = useNextBattleHandler(
-    allPokemon,
-    (battleType: BattleType) => {
-      console.log(`📝 [PROCESSOR_FIX] setupNextBattle called - delegating to outcome processor`);
-      return [];
-    },
-    setSelectedPokemon
-  );
-
-  const { processResult } = useBattleResultProcessor(
+    resetBattleProgressionMilestoneTracking,
+    processResult
+  } = useBattleProcessorCoordinator(
     battleResults,
     setBattleResults,
+    battlesCompleted,
+    setBattlesCompleted,
+    allPokemon,
+    setCurrentBattle,
+    setShowingMilestone,
+    milestones,
+    generateRankings,
+    setSelectedPokemon,
     activeTier,
     freezePokemonForTier,
-    battleStarter?.trackLowerTierLoss
+    battleStarter
+  );
+
+  const { processResultLogic } = useBattleProcessorResult(
+    battleResults,
+    setBattleResults,
+    battlesCompleted,
+    setBattlesCompleted,
+    setSelectedPokemon,
+    markSuggestionUsed
   );
 
   const { 
@@ -111,22 +99,13 @@ export const useBattleProcessor = (
     setIsProcessingResult(true);
     
     try {
-      // Check if we need to reset battle count due to reset
-      if (isResettingRef?.current) {
-        console.log(`📝 [${timestamp}] PROCESS BATTLE: Reset flag TRUE. Current battlesCompleted prop = ${battlesCompleted}. Forcing base for increment to 0 by calling setBattlesCompleted(0).`);
-        setBattlesCompleted(0);
-        console.log(`📝 [${timestamp}] PROCESS BATTLE: ✅ battlesCompleted state updated to 0 via prop setter.`);
-        
-        isResettingRef.current = false;
-        console.log(`📝 [${timestamp}] PROCESS BATTLE: Cleared isResettingRef.current to false AFTER using it.`);
-      }
-      
-      const updatedResults = processBattleCore(
+      const updatedResults = processResultLogic(
         selectedPokemonIds,
         currentBattlePokemon,
         processResult,
         battleType,
-        timestamp
+        timestamp,
+        isResettingRef
       );
 
       if (!updatedResults) {
@@ -153,24 +132,14 @@ export const useBattleProcessor = (
       setIsProcessingResult(false);
     }
   }, [
-    battleResults,
+    isProcessingResult,
+    milestoneInProgressRef,
+    setIsProcessingResult,
+    processResultLogic,
     processResult,
     incrementBattlesCompleted,
-    generateRankings,
-    setSelectedPokemon,
-    allPokemon,
-    markSuggestionUsed,
     battlesCompleted,
-    isProcessingResult,
-    setBattlesCompleted,
-    setBattleResults,
-    isResettingRef,
-    battleStarter,
-    integratedStartNewBattle,
-    setCurrentBattle,
-    milestoneInProgressRef,
     handleMilestone,
-    processBattleCore,
     generateNewBattle
   ]);
 
