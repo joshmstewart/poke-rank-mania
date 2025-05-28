@@ -1,11 +1,10 @@
 
-import { useCallback } from "react";
-import { Pokemon, TopNOption } from "@/services/pokemon";
+import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
-import { useBattleProcessor } from "./useBattleProcessor";
-import { useBattleHandlers } from "./useBattleHandlers";
-import { useBattleReset } from "./useBattleReset";
 import { useBattleInteractions } from "./useBattleInteractions";
+import { useBattleActionCoordination } from "./useBattleActionCoordination";
+import { useBattleActionProcessing } from "./useBattleActionProcessing";
+import { useBattleActionHandlers } from "./useBattleActionHandlers";
 
 export const useBattleActionsManager = (
   // State dependencies
@@ -28,9 +27,9 @@ export const useBattleActionsManager = (
   // Coordination dependencies
   filteredPokemon: Pokemon[],
   milestones: number[],
-  generateRankings: (results: any[]) => any[], // Fix: Ensure this returns any[]
+  generateRankingsWrapper: (results: any[]) => any[],
   activeTier: string,
-  freezePokemonForTier: (pokemonId: number, tier: string) => void,
+  freezePokemonForTierStringWrapper: (pokemonId: number, tier: string) => void,
   battleStarter: any,
   markSuggestionUsed: (suggestion: any) => void,
   forceDismissMilestone: () => void,
@@ -39,25 +38,19 @@ export const useBattleActionsManager = (
   enhancedStartNewBattle: (battleType: BattleType) => Pokemon[] | undefined
 ) => {
   
-  console.log('[DEBUG useBattleActionsManager] Type check - activeTier:', typeof activeTier, activeTier);
-  console.log('[DEBUG useBattleActionsManager] Type check - generateRankings:', typeof generateRankings);
-  console.log('[DEBUG useBattleActionsManager] Type check - freezePokemonForTier:', typeof freezePokemonForTier);
+  // Use coordination hook for type conversions
+  const { activeTierAsTopNOption, freezePokemonForTierWrapper } = useBattleActionCoordination(
+    activeTier,
+    freezePokemonForTierStringWrapper
+  );
   
-  // Convert string activeTier back to TopNOption for useBattleProcessor
-  const activeTierAsTopNOption: TopNOption = activeTier === "All" ? "All" : Number(activeTier) as TopNOption;
-  
-  // Create a wrapper function that converts TopNOption back to string for the actual freezePokemonForTier function
-  const freezePokemonForTierWrapper = useCallback((pokemonId: number, tier: TopNOption) => {
-    const tierAsString = tier === "All" ? "All" : String(tier);
-    freezePokemonForTier(pokemonId, tierAsString);
-  }, [freezePokemonForTier]);
-  
-  const { 
+  // Use processing hook for battle result processing
+  const {
     processBattleResult,
-    isProcessingResult, 
+    isProcessingResult,
     resetMilestoneInProgress,
     resetBattleProgressionMilestoneTracking
-  } = useBattleProcessor(
+  } = useBattleActionProcessing(
     battleResults,
     setBattleResults,
     battlesCompleted,
@@ -66,18 +59,21 @@ export const useBattleActionsManager = (
     stableSetCurrentBattle,
     setShowingMilestone,
     milestones,
-    generateRankings,
-    setSelectedPokemon, // Fix: This should be setSelectedPokemon, not activeTier
-    activeTierAsTopNOption, // Fix: Convert string back to TopNOption
-    freezePokemonForTierWrapper, // Fix: Use wrapper that accepts TopNOption
+    generateRankingsWrapper,
+    setSelectedPokemon,
+    activeTierAsTopNOption,
+    freezePokemonForTierWrapper,
     battleStarter,
     markSuggestionUsed,
-    undefined, // isResettingRef will be handled in reset hook
     enhancedStartNewBattle
   );
 
-  // Use the extracted battle handlers hook
-  const { goBack, handleContinueBattles } = useBattleHandlers(
+  // Use handlers hook for user actions
+  const {
+    goBack,
+    handleContinueBattles,
+    performFullBattleReset
+  } = useBattleActionHandlers(
     battleHistory,
     setBattleHistory,
     battleResults,
@@ -92,24 +88,16 @@ export const useBattleActionsManager = (
     forceDismissMilestone,
     resetMilestoneInProgress,
     setCurrentBattle,
-    setIsTransitioning
-  );
-
-  // Use the extracted reset hook
-  const { performFullBattleReset } = useBattleReset(
-    setBattlesCompleted,
-    setBattleResults,
-    setBattleHistory,
-    setSelectedPokemon,
+    setIsTransitioning,
     setCompletionPercentage,
     setRankingGenerated,
     resetMilestones,
     resetBattleProgressionMilestoneTracking,
     clearAllSuggestions,
-    generateRankings, // This should now match the expected signature
-    enhancedStartNewBattle
+    generateRankingsWrapper
   );
 
+  // Use interactions hook for Pokemon selection handling
   const {
     handlePokemonSelect,
     handleGoBack: goBackHelper,
