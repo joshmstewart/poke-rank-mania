@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from "react";
 
 export interface RefinementBattle {
@@ -15,6 +14,7 @@ export const useRefinementQueue = () => {
     console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] Primary Pokemon ID: ${primaryId}`);
     console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] New position: ${newPosition}`);
     console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] Neighbors to battle: ${neighbors.join(', ')}`);
+    console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] CALL STACK:`, new Error().stack?.split('\n').slice(0, 5).join('\n'));
     
     setRefinementQueue(prev => {
       console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] Current queue size before operation: ${prev.length}`);
@@ -31,21 +31,33 @@ export const useRefinementQueue = () => {
         return prev;
       }
       
-      // CRITICAL FIX: Check for duplicate battles (same Pokemon pair regardless of order)
+      // CRITICAL DEBUG: Check for duplicate battles (same Pokemon pair regardless of order)
       const isDuplicateBattle = (pokemon1: number, pokemon2: number, existingBattles: RefinementBattle[]) => {
-        return existingBattles.some(battle => 
+        const foundDuplicate = existingBattles.some(battle => 
           (battle.primaryPokemonId === pokemon1 && battle.opponentPokemonId === pokemon2) ||
           (battle.primaryPokemonId === pokemon2 && battle.opponentPokemonId === pokemon1)
         );
+        
+        if (foundDuplicate) {
+          console.log(`🚨 [DUPLICATE_DETECTION] FOUND DUPLICATE: ${pokemon1} vs ${pokemon2} already exists in queue`);
+          console.log(`🚨 [DUPLICATE_DETECTION] Existing battles:`, existingBattles.map(b => `${b.primaryPokemonId} vs ${b.opponentPokemonId}`));
+        }
+        
+        return foundDuplicate;
       };
       
       // Add battles for each valid neighbor, but only if not duplicate
       const battlesToAdd: RefinementBattle[] = [];
       
       validNeighbors.forEach(opponentId => {
-        if (!isDuplicateBattle(primaryId, opponentId, currentQueue) && 
-            !isDuplicateBattle(primaryId, opponentId, battlesToAdd)) {
-          
+        console.log(`🔍 [DUPLICATE_CHECK] Checking if ${primaryId} vs ${opponentId} is duplicate...`);
+        
+        const isDuplicateInQueue = isDuplicateBattle(primaryId, opponentId, currentQueue);
+        const isDuplicateInNewBattles = isDuplicateBattle(primaryId, opponentId, battlesToAdd);
+        
+        console.log(`🔍 [DUPLICATE_CHECK] ${primaryId} vs ${opponentId}: duplicateInQueue=${isDuplicateInQueue}, duplicateInNewBattles=${isDuplicateInNewBattles}`);
+        
+        if (!isDuplicateInQueue && !isDuplicateInNewBattles) {
           const battle = {
             primaryPokemonId: primaryId,
             opponentPokemonId: opponentId,
@@ -61,6 +73,7 @@ export const useRefinementQueue = () => {
       
       if (battlesToAdd.length === 0) {
         console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] ❌ No new unique battles to add`);
+        console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] This means all requested battles already exist in queue`);
         return prev;
       }
       
