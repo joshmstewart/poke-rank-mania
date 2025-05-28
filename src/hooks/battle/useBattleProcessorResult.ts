@@ -23,25 +23,15 @@ export const useBattleProcessorResult = (
     console.log(`🚨🚨🚨 [BATTLE_RESULT_DEBUG] Selected winners: ${selectedPokemonIds.join(', ')}`);
     console.log(`🚨🚨🚨 [BATTLE_RESULT_DEBUG] Battle type: ${battleType}`);
     
-    // Check recently used BEFORE processing
-    const recentlyUsedBefore = JSON.parse(localStorage.getItem('pokemon-battle-recently-used') || '[]');
-    console.log(`🚨🚨🚨 [BATTLE_RESULT_DEBUG] Recently used BEFORE processing: ${recentlyUsedBefore.join(', ')}`);
-    
-    if (isResettingRef?.current) {
-      console.log(`📝 [${timestamp}] [PROCESSOR_FIX] PROCESS RESULT: Resetting in progress, skipping`);
-      return null;
-    }
-
-    const updatedResults = processResult(selectedPokemonIds, currentBattlePokemon, battleType);
-    console.log(`📝 [${timestamp}] PROCESS RESULT: Updated results count: ${updatedResults.length}`);
-    
-    // Add battle pair to recently used list
+    // CRITICAL FIX: Add battle pair to recently used list FIRST, before processing
     if (battleType === "pairs" && currentBattlePokemon.length === 2) {
       const battleKey = currentBattlePokemon.map(p => p.id).sort((a, b) => a - b).join('-');
       const recentlyUsed = JSON.parse(localStorage.getItem('pokemon-battle-recently-used') || '[]');
       
-      console.log(`🚨🚨🚨 [BATTLE_RESULT_DEBUG] Adding battle key to recently used: ${battleKey}`);
+      console.log(`🚨🚨🚨 [BATTLE_RESULT_DEBUG] ===== UPDATING RECENTLY USED IMMEDIATELY =====`);
+      console.log(`🚨🚨🚨 [BATTLE_RESULT_DEBUG] Battle key to add: ${battleKey}`);
       console.log(`🚨🚨🚨 [BATTLE_RESULT_DEBUG] Recently used list size before: ${recentlyUsed.length}`);
+      console.log(`🚨🚨🚨 [BATTLE_RESULT_DEBUG] Recently used list before: ${recentlyUsed.join(', ')}`);
       
       if (!recentlyUsed.includes(battleKey)) {
         recentlyUsed.push(battleKey);
@@ -53,7 +43,7 @@ export const useBattleProcessorResult = (
         }
         
         localStorage.setItem('pokemon-battle-recently-used', JSON.stringify(recentlyUsed));
-        console.log(`🚨🚨🚨 [BATTLE_RESULT_DEBUG] ✅ Added battle key: ${battleKey}`);
+        console.log(`🚨🚨🚨 [BATTLE_RESULT_DEBUG] ✅ IMMEDIATELY ADDED battle key: ${battleKey}`);
         console.log(`🚨🚨🚨 [BATTLE_RESULT_DEBUG] ✅ Recently used list size after: ${recentlyUsed.length}`);
         console.log(`🚨🚨🚨 [BATTLE_RESULT_DEBUG] ✅ Updated recently used: ${recentlyUsed.join(', ')}`);
       } else {
@@ -61,6 +51,14 @@ export const useBattleProcessorResult = (
       }
     }
 
+    if (isResettingRef?.current) {
+      console.log(`📝 [${timestamp}] [PROCESSOR_FIX] PROCESS RESULT: Resetting in progress, skipping`);
+      return null;
+    }
+
+    const updatedResults = processResult(selectedPokemonIds, currentBattlePokemon, battleType);
+    console.log(`📝 [${timestamp}] PROCESS RESULT: Updated results count: ${updatedResults.length}`);
+    
     setBattleResults(updatedResults);
     setSelectedPokemon([]);
 
