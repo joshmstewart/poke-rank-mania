@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
@@ -64,6 +63,24 @@ export const useBattleStateCore = (
     }
   }, [allPokemon.length, battleType]); // FIXED: Remove battleStarter from dependencies to prevent re-renders
 
+  // CRITICAL FIX: Auto-complete pairs battles when 1 Pokemon is selected
+  useEffect(() => {
+    console.log(`🎯 [AUTO_COMPLETE] Selection changed:`, {
+      selectedPokemon,
+      selectedCount: selectedPokemon.length,
+      battleType,
+      isProcessing: isAnyProcessing || isProcessingResult
+    });
+
+    if (battleType === "pairs" && selectedPokemon.length === 1 && !isAnyProcessing && !isProcessingResult) {
+      console.log(`🎯 [AUTO_COMPLETE] Auto-completing pairs battle with selection:`, selectedPokemon[0]);
+      // Small delay to ensure state is stable
+      setTimeout(() => {
+        handleTripletSelectionComplete();
+      }, 100);
+    }
+  }, [selectedPokemon, battleType, isAnyProcessing, isProcessingResult]);
+
   const calculateCompletionPercentage = useCallback(() => {
     const completed = battlesCompleted;
     const totalPossible = 800;
@@ -91,14 +108,19 @@ export const useBattleStateCore = (
   }, []);
 
   const handlePokemonSelect = useCallback((id: number) => {
+    console.log(`🎯 [POKEMON_SELECT] Pokemon ${id} selected. Current selections:`, selectedPokemon);
+    
     setSelectedPokemon(prev => {
       if (prev.includes(id)) {
+        console.log(`🎯 [POKEMON_SELECT] Deselecting Pokemon ${id}`);
         return prev.filter(pokemonId => pokemonId !== id);
       } else {
-        return [...prev, id];
+        const newSelection = [...prev, id];
+        console.log(`🎯 [POKEMON_SELECT] Adding Pokemon ${id}. New selection:`, newSelection);
+        return newSelection;
       }
     });
-  }, []);
+  }, [selectedPokemon]);
 
   const originalProcessBattleResult = useCallback((
     selectedPokemonIds: number[],
@@ -166,11 +188,18 @@ export const useBattleStateCore = (
       selectedCount: selectedPokemon.length,
       expectedCount,
       battleType,
-      selectedPokemon
+      selectedPokemon,
+      isProcessing: isAnyProcessing,
+      isProcessingResult
     });
 
     if (selectedPokemon.length !== expectedCount) {
       console.warn(`❌ [SELECTION_COMPLETE] Incorrect number of Pokémon selected: ${selectedPokemon.length}, expected: ${expectedCount}`);
+      return;
+    }
+
+    if (isAnyProcessing || isProcessingResult) {
+      console.warn(`❌ [SELECTION_COMPLETE] Already processing, ignoring duplicate call`);
       return;
     }
 
@@ -197,7 +226,7 @@ export const useBattleStateCore = (
       setIsBattleTransitioning(false);
       setIsAnyProcessing(false);
     }
-  }, [selectedPokemon, currentBattle, battleType, selectedGeneration, processBattleResultWithRefinement]);
+  }, [selectedPokemon, currentBattle, battleType, selectedGeneration, processBattleResultWithRefinement, isAnyProcessing, isProcessingResult]);
 
   const goBack = useCallback(() => {
     if (battleHistory.length > 0) {
