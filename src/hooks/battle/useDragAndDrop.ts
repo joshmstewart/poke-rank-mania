@@ -1,3 +1,4 @@
+
 import { useSensors, useSensor, PointerSensor, KeyboardSensor, DragEndEvent } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { useCallback } from 'react';
@@ -16,7 +17,7 @@ export const useDragAndDrop = ({ displayRankings, onManualReorder, onLocalReorde
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 0, // Allow immediate drag start
+        distance: 8, // Require 8px movement to start drag
       },
     }),
     useSensor(KeyboardSensor, {

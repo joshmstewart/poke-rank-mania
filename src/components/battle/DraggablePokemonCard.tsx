@@ -62,9 +62,6 @@ const DraggablePokemonCard: React.FC<DraggablePokemonCardProps> = ({
       className={`${backgroundColorClass} rounded-lg border border-gray-200 relative overflow-hidden h-40 flex flex-col cursor-grab active:cursor-grabbing ${
         isDragging ? 'opacity-60 z-50 scale-105 shadow-2xl' : 'transition-transform duration-150'
       } ${isPending ? 'ring-2 ring-yellow-400 ring-opacity-50' : ''}`}
-      onPointerDown={(e) => {
-        console.log(`🎯 [CARD_POINTER_DEBUG] Card pointer down: ${pokemon.name}`);
-      }}
     >
       {/* Pending indicator */}
       {isPending && (
@@ -75,7 +72,7 @@ const DraggablePokemonCard: React.FC<DraggablePokemonCardProps> = ({
 
       {/* Info Button - Completely isolated from drag events */}
       <div 
-        className="absolute top-1 right-1 z-30"
+        className="absolute top-1 right-1 z-30 pointer-events-auto"
         onPointerDown={(e) => {
           console.log(`🎯 [INFO_BUTTON_DEBUG] Info button area pointer down - stopping propagation`);
           e.stopPropagation();
