@@ -1,4 +1,3 @@
-
 import { useCallback } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
@@ -13,32 +12,43 @@ export const useBattleStateHandlers = (
 
   // Handle manual reordering
   const handleManualReorder = useCallback((draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => {
-    console.log(`🔄 [MANUAL_REORDER_HANDLER_DEBUG] ===== HANDLE MANUAL REORDER CALLED =====`);
-    console.log(`🔄 [MANUAL_REORDER_HANDLER_DEBUG] Function called with parameters:`);
-    console.log(`🔄 [MANUAL_REORDER_HANDLER_DEBUG] - draggedPokemonId: ${draggedPokemonId}`);
-    console.log(`🔄 [MANUAL_REORDER_HANDLER_DEBUG] - sourceIndex: ${sourceIndex}`);
-    console.log(`🔄 [MANUAL_REORDER_HANDLER_DEBUG] - destinationIndex: ${destinationIndex}`);
-    console.log(`🔄 [MANUAL_REORDER_HANDLER_DEBUG] - finalRankings length: ${finalRankings.length}`);
-    console.log(`🔄 [MANUAL_REORDER_HANDLER_DEBUG] - allPokemon length: ${allPokemon.length}`);
-    console.log(`🔄 [MANUAL_REORDER_HANDLER_DEBUG] - refinementQueue instance:`, refinementQueue);
-    console.log(`🔄 [MANUAL_REORDER_HANDLER_DEBUG] - refinementQueue exists: ${!!refinementQueue}`);
-    console.log(`🔄 [MANUAL_REORDER_HANDLER_DEBUG] - refinementQueue.queueBattlesForReorder exists: ${typeof refinementQueue?.queueBattlesForReorder === 'function'}`);
+    console.log(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_DEBUG] ===== HANDLE MANUAL REORDER CALLED =====`);
+    console.log(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_DEBUG] Function called with parameters:`);
+    console.log(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_DEBUG] - draggedPokemonId: ${draggedPokemonId}`);
+    console.log(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_DEBUG] - sourceIndex: ${sourceIndex}`);
+    console.log(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_DEBUG] - destinationIndex: ${destinationIndex}`);
+    console.log(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_DEBUG] - finalRankings length: ${finalRankings.length}`);
+    console.log(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_DEBUG] - allPokemon length: ${allPokemon.length}`);
+    console.log(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_DEBUG] - refinementQueue type: ${typeof refinementQueue}`);
+    console.log(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_DEBUG] - refinementQueue is null: ${refinementQueue === null}`);
+    console.log(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_DEBUG] - refinementQueue is undefined: ${refinementQueue === undefined}`);
+    console.log(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_DEBUG] - refinementQueue exists: ${!!refinementQueue}`);
+    console.log(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_DEBUG] - refinementQueue properties:`, Object.keys(refinementQueue || {}));
+    console.log(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_DEBUG] - refinementQueue.queueBattlesForReorder type: ${typeof refinementQueue?.queueBattlesForReorder}`);
+    console.log(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_DEBUG] - refinementQueue.queueBattlesForReorder exists: ${typeof refinementQueue?.queueBattlesForReorder === 'function'}`);
+    console.log(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_DEBUG] - Call stack:`, new Error().stack);
     
     // Check if refinement queue is properly initialized
     if (!refinementQueue || typeof refinementQueue.queueBattlesForReorder !== 'function') {
-      console.error(`🚨 [MANUAL_REORDER_HANDLER_DEBUG] CRITICAL ERROR: refinementQueue is not properly initialized!`);
-      console.error(`🚨 [MANUAL_REORDER_HANDLER_DEBUG] refinementQueue:`, refinementQueue);
-      console.error(`🚨 [MANUAL_REORDER_HANDLER_DEBUG] This indicates the component is not wrapped in RefinementQueueProvider!`);
+      console.error(`🚨 [MANUAL_REORDER_HANDLER_ULTRA_DEBUG] CRITICAL ERROR: refinementQueue is not properly initialized!`);
+      console.error(`🚨 [MANUAL_REORDER_HANDLER_ULTRA_DEBUG] refinementQueue:`, refinementQueue);
+      console.error(`🚨 [MANUAL_REORDER_HANDLER_ULTRA_DEBUG] This indicates the component is not wrapped in RefinementQueueProvider!`);
+      console.error(`🚨 [MANUAL_REORDER_HANDLER_ULTRA_DEBUG] Component tree issue - checking if we're in a fallback context`);
+      
+      if (refinementQueue && Object.keys(refinementQueue).length > 0) {
+        console.error(`🚨 [MANUAL_REORDER_HANDLER_ULTRA_DEBUG] Refinement queue has properties but queueBattlesForReorder is not a function`);
+        console.error(`🚨 [MANUAL_REORDER_HANDLER_ULTRA_DEBUG] This suggests a context or hook implementation issue`);
+      }
       return;
     }
     
     // Find the dragged Pokemon to log its name
     const draggedPokemon = finalRankings.find(p => p.id === draggedPokemonId);
     if (draggedPokemon) {
-      console.log(`🔄 [MANUAL_REORDER_HANDLER_DEBUG] Dragged Pokemon: ${draggedPokemon.name}`);
+      console.log(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_DEBUG] Dragged Pokemon: ${draggedPokemon.name}`);
     } else {
-      console.error(`🚨 [MANUAL_REORDER_HANDLER_DEBUG] Could not find dragged Pokemon ${draggedPokemonId} in finalRankings!`);
-      console.log(`🔄 [MANUAL_REORDER_HANDLER_DEBUG] finalRankings sample:`, finalRankings.slice(0, 5).map(p => ({ id: p.id, name: p.name })));
+      console.error(`🚨 [MANUAL_REORDER_HANDLER_ULTRA_DEBUG] Could not find dragged Pokemon ${draggedPokemonId} in finalRankings!`);
+      console.log(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_DEBUG] finalRankings sample:`, finalRankings.slice(0, 5).map(p => ({ id: p.id, name: p.name })));
       return; // Exit early if Pokemon not found
     }
     
@@ -46,7 +56,7 @@ export const useBattleStateHandlers = (
     const neighbors: number[] = [];
     const rankings = finalRankings || [];
     
-    console.log(`🔄 [MANUAL_REORDER_HANDLER_DEBUG] Calculating neighbors for position ${destinationIndex + 1}...`);
+    console.log(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_DEBUG] Calculating neighbors for position ${destinationIndex + 1}...`);
     
     // Add Pokemon above and below the new position for thorough validation
     const positions = [
@@ -56,58 +66,61 @@ export const useBattleStateHandlers = (
       destinationIndex + 2  // Two below
     ];
     
-    console.log(`🔄 [MANUAL_REORDER_HANDLER_DEBUG] Checking positions: ${positions.join(', ')}`);
+    console.log(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_DEBUG] Checking positions: ${positions.join(', ')}`);
     
     positions.forEach(pos => {
       if (pos >= 0 && pos < rankings.length && rankings[pos] && rankings[pos].id !== draggedPokemonId) {
         neighbors.push(rankings[pos].id);
-        console.log(`🔄 [MANUAL_REORDER_HANDLER_DEBUG] Added neighbor at position ${pos + 1}: ${rankings[pos].name} (${rankings[pos].id})`);
+        console.log(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_DEBUG] Added neighbor at position ${pos + 1}: ${rankings[pos].name} (${rankings[pos].id})`);
       } else {
         const reason = pos < 0 ? 'negative position' : 
                      pos >= rankings.length ? 'out of bounds' : 
                      !rankings[pos] ? 'no Pokemon at position' :
                      rankings[pos].id === draggedPokemonId ? 'same as dragged Pokemon' : 'unknown';
-        console.log(`🔄 [MANUAL_REORDER_HANDLER_DEBUG] Skipped position ${pos + 1}: ${reason}`);
+        console.log(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_DEBUG] Skipped position ${pos + 1}: ${reason}`);
       }
     });
     
     // Ensure we have at least some validation battles
     if (neighbors.length === 0 && rankings.length > 1) {
-      console.log(`🔄 [MANUAL_REORDER_HANDLER_DEBUG] No neighbors found, adding fallback neighbors...`);
+      console.log(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_DEBUG] No neighbors found, adding fallback neighbors...`);
       for (let i = Math.max(0, destinationIndex - 3); i <= Math.min(rankings.length - 1, destinationIndex + 3); i++) {
         if (rankings[i] && rankings[i].id !== draggedPokemonId && neighbors.length < 3) {
           neighbors.push(rankings[i].id);
-          console.log(`🔄 [MANUAL_REORDER_HANDLER_DEBUG] Added fallback neighbor: ${rankings[i].name} (${rankings[i].id})`);
+          console.log(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_DEBUG] Added fallback neighbor: ${rankings[i].name} (${rankings[i].id})`);
         }
       }
     }
     
-    console.log(`🔄 [MANUAL_REORDER_HANDLER_DEBUG] Final neighbors list: [${neighbors.join(', ')}]`);
-    console.log(`🔄 [MANUAL_REORDER_HANDLER_DEBUG] Total neighbors: ${neighbors.length}`);
+    console.log(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_DEBUG] Final neighbors list: [${neighbors.join(', ')}]`);
+    console.log(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_DEBUG] Total neighbors: ${neighbors.length}`);
     
     if (neighbors.length === 0) {
-      console.warn(`🔄 [MANUAL_REORDER_HANDLER_DEBUG] ⚠️ No neighbors found for validation battles!`);
+      console.warn(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_DEBUG] ⚠️ No neighbors found for validation battles!`);
       return;
     }
     
     // Queue refinement battles - THIS IS THE CRITICAL STEP
-    console.log(`🔄 [MANUAL_REORDER_HANDLER_DEBUG] ===== QUEUEING REFINEMENT BATTLES =====`);
-    console.log(`🔄 [MANUAL_REORDER_HANDLER_DEBUG] About to call queueBattlesForReorder with:`);
-    console.log(`🔄 [MANUAL_REORDER_HANDLER_DEBUG] - Primary Pokemon ID: ${draggedPokemonId}`);
-    console.log(`🔄 [MANUAL_REORDER_HANDLER_DEBUG] - Neighbors: [${neighbors.join(', ')}]`);
-    console.log(`🔄 [MANUAL_REORDER_HANDLER_DEBUG] - New position: ${destinationIndex + 1}`);
-    console.log(`🔄 [MANUAL_REORDER_HANDLER_DEBUG] Current refinement queue before queueing: ${refinementQueue.refinementBattleCount} battles`);
+    console.log(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_DEBUG] ===== QUEUEING REFINEMENT BATTLES =====`);
+    console.log(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_DEBUG] About to call queueBattlesForReorder with:`);
+    console.log(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_DEBUG] - Primary Pokemon ID: ${draggedPokemonId}`);
+    console.log(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_DEBUG] - Neighbors: [${neighbors.join(', ')}]`);
+    console.log(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_DEBUG] - New position: ${destinationIndex + 1}`);
+    console.log(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_DEBUG] Current refinement queue before queueing: ${refinementQueue.refinementBattleCount} battles`);
     
     try {
+      console.log(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_DEBUG] CALLING queueBattlesForReorder NOW...`);
       refinementQueue.queueBattlesForReorder(draggedPokemonId, neighbors, destinationIndex + 1);
-      console.log(`🔄 [MANUAL_REORDER_HANDLER_DEBUG] ✅ queueBattlesForReorder called successfully`);
-      console.log(`🔄 [MANUAL_REORDER_HANDLER_DEBUG] Refinement queue after queueing: ${refinementQueue.refinementBattleCount} battles`);
+      console.log(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_DEBUG] ✅ queueBattlesForReorder called successfully`);
+      console.log(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_DEBUG] Refinement queue after queueing: ${refinementQueue.refinementBattleCount} battles`);
+      console.log(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_DEBUG] New queue state:`, refinementQueue.refinementQueue);
     } catch (error) {
-      console.error(`🔄 [MANUAL_REORDER_HANDLER_DEBUG] ❌ Error calling queueBattlesForReorder:`, error);
+      console.error(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_DEBUG] ❌ Error calling queueBattlesForReorder:`, error);
+      console.error(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_DEBUG] Error stack:`, error.stack);
     }
     
-    console.log(`🔄 [MANUAL_REORDER_HANDLER_DEBUG] ===== END QUEUEING REFINEMENT BATTLES =====`);
-    console.log(`🔄 [MANUAL_REORDER_HANDLER_DEBUG] ===== END HANDLE MANUAL REORDER =====`);
+    console.log(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_DEBUG] ===== END QUEUEING REFINEMENT BATTLES =====`);
+    console.log(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_DEBUG] ===== END HANDLE MANUAL REORDER =====`);
   }, [finalRankings, refinementQueue]);
 
   // Handle battle completion to pop refinement battles from queue

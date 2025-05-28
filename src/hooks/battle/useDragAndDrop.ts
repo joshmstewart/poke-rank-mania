@@ -29,6 +29,8 @@ export const useDragAndDrop = ({ displayRankings, onManualReorder, onLocalReorde
     console.log(`🎯 [DRAG_ULTRA_DEBUG] Active ID: ${active.id}`);
     console.log(`🎯 [DRAG_ULTRA_DEBUG] Over ID: ${over?.id || 'none'}`);
     console.log(`🎯 [DRAG_ULTRA_DEBUG] Display rankings length: ${displayRankings.length}`);
+    console.log(`🎯 [DRAG_ULTRA_DEBUG] onManualReorder function type: ${typeof onManualReorder}`);
+    console.log(`🎯 [DRAG_ULTRA_DEBUG] onManualReorder function exists: ${!!onManualReorder}`);
 
     if (over && active.id !== over.id) {
       const oldIndex = displayRankings.findIndex(pokemon => pokemon.id === active.id);
@@ -58,12 +60,19 @@ export const useDragAndDrop = ({ displayRankings, onManualReorder, onLocalReorde
         console.log(`🎯 [DRAG_ULTRA_DEBUG] ===== CALLING onManualReorder =====`);
         console.log(`🎯 [DRAG_ULTRA_DEBUG] Parameters: Pokemon ID ${active.id}, oldIndex ${oldIndex}, newIndex ${newIndex}`);
         console.log(`🎯 [DRAG_ULTRA_DEBUG] onManualReorder function exists: ${typeof onManualReorder === 'function'}`);
+        console.log(`🎯 [DRAG_ULTRA_DEBUG] About to call onManualReorder with parameters:`, {
+          pokemonId: active.id,
+          oldIndex,
+          newIndex
+        });
         
         try {
+          console.log(`🎯 [DRAG_ULTRA_DEBUG] CALLING onManualReorder NOW...`);
           onManualReorder(active.id as number, oldIndex, newIndex);
           console.log(`🎯 [DRAG_ULTRA_DEBUG] ✅ onManualReorder called successfully`);
         } catch (error) {
           console.error(`🎯 [DRAG_ULTRA_DEBUG] ❌ Error calling onManualReorder:`, error);
+          console.error(`🎯 [DRAG_ULTRA_DEBUG] Error stack:`, error.stack);
         }
         
         console.log(`🎯 [DRAG_ULTRA_DEBUG] ===== END CALLING onManualReorder =====`);
