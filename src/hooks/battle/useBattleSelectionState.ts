@@ -32,7 +32,6 @@ export const useBattleSelectionState = () => {
     getCurrentRankings
   } = useBattleResults();
 
-  // Get refinement queue directly in this hook
   const refinementQueue = useSharedRefinementQueue();
 
   // Ensure currentRankings always has full RankedPokemon structure
@@ -57,11 +56,10 @@ export const useBattleSelectionState = () => {
     setSelectedPokemon
   );
 
-  // Create our own startNewBattle that has direct access to refinement queue
+  // FIXED: Create the correct startNewBattle that checks refinement queue
   const startNewBattle = useCallback((battleType: BattleType) => {
     console.log(`🚀 [FIXED_BATTLE_START] Starting battle with refinement queue access`);
     console.log(`🚀 [FIXED_BATTLE_START] Queue size: ${refinementQueue.refinementBattleCount}`);
-    console.log(`🚀 [FIXED_BATTLE_START] Has battles: ${refinementQueue.hasRefinementBattles}`);
     
     // Check for refinement battles first
     const nextRefinement = refinementQueue.getNextRefinementBattle();
@@ -137,7 +135,7 @@ export const useBattleSelectionState = () => {
     }
   }, [currentBattleType, startNewBattle, setSelectedPokemon]);
 
-  // Handle events with the fixed startNewBattle function
+  // FIXED: Use the correct startNewBattle function in event handlers
   useEffect(() => {
     const handleMilestoneDismissed = (event: CustomEvent) => {
       console.log("📣 useBattleSelectionState: Received milestone-dismissed event", event.detail);
@@ -160,7 +158,7 @@ export const useBattleSelectionState = () => {
       
       setSelectedPokemon([]);
       
-      // Call our fixed startNewBattle function immediately
+      // FIXED: Call our local startNewBattle function that checks refinement queue
       const result = startNewBattle(currentBattleType);
       
       if (result && result.length > 0) {
