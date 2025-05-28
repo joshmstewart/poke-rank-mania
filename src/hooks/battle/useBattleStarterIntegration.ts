@@ -61,40 +61,23 @@ export const useBattleStarterIntegration = (
       console.log(`⚔️ [REFINEMENT_PRIORITY_CONTEXT_DEBUG] Opponent Pokemon ID: ${nextRefinement.opponentPokemonId}`);
       console.log(`⚔️ [REFINEMENT_PRIORITY_CONTEXT_DEBUG] Reason: ${nextRefinement.reason}`);
       
-      // ENHANCED LOGGING: Check if Pokemon exist in filtered list
-      const primary = filteredPokemon.find(p => p.id === nextRefinement.primaryPokemonId);
-      const opponent = filteredPokemon.find(p => p.id === nextRefinement.opponentPokemonId);
+      // CRITICAL FIX: Use allPokemon (unfiltered) for refinement battles to bypass form filters
+      console.log(`🔧 [REFINEMENT_BYPASS_FILTER] Using unfiltered allPokemon list for refinement battle`);
+      const primary = allPokemon.find(p => p.id === nextRefinement.primaryPokemonId);
+      const opponent = allPokemon.find(p => p.id === nextRefinement.opponentPokemonId);
       
       console.log(`🔍 [REFINEMENT_POKEMON_CHECK_CONTEXT_DEBUG] Primary Pokemon found: ${!!primary}`);
       if (primary) {
         console.log(`🔍 [REFINEMENT_POKEMON_CHECK_CONTEXT_DEBUG] Primary: ${primary.name} (${primary.id})`);
       } else {
-        console.error(`🚨 [REFINEMENT_POKEMON_CHECK_CONTEXT_DEBUG] Primary Pokemon ${nextRefinement.primaryPokemonId} NOT FOUND in filtered list`);
-        console.log(`🔍 [REFINEMENT_POKEMON_CHECK_CONTEXT_DEBUG] Checking if it exists in allPokemon...`);
-        const primaryInAll = allPokemon.find(p => p.id === nextRefinement.primaryPokemonId);
-        if (primaryInAll) {
-          console.error(`🚨 [REFINEMENT_POKEMON_CHECK_CONTEXT_DEBUG] Primary ${primaryInAll.name} exists in allPokemon but was FILTERED OUT`);
-          console.log(`🚨 [REFINEMENT_POKEMON_CHECK_CONTEXT_DEBUG] Checking why it was filtered...`);
-          const shouldInclude = shouldIncludePokemon(primaryInAll);
-          console.log(`🚨 [REFINEMENT_POKEMON_CHECK_CONTEXT_DEBUG] shouldIncludePokemon result: ${shouldInclude}`);
-        } else {
-          console.error(`🚨 [REFINEMENT_POKEMON_CHECK_CONTEXT_DEBUG] Primary Pokemon ${nextRefinement.primaryPokemonId} does NOT exist in allPokemon at all!`);
-        }
+        console.error(`🚨 [REFINEMENT_POKEMON_CHECK_CONTEXT_DEBUG] Primary Pokemon ${nextRefinement.primaryPokemonId} NOT FOUND in allPokemon`);
       }
       
       console.log(`🔍 [REFINEMENT_POKEMON_CHECK_CONTEXT_DEBUG] Opponent Pokemon found: ${!!opponent}`);
       if (opponent) {
         console.log(`🔍 [REFINEMENT_POKEMON_CHECK_CONTEXT_DEBUG] Opponent: ${opponent.name} (${opponent.id})`);
       } else {
-        console.error(`🚨 [REFINEMENT_POKEMON_CHECK_CONTEXT_DEBUG] Opponent Pokemon ${nextRefinement.opponentPokemonId} NOT FOUND in filtered list`);
-        const opponentInAll = allPokemon.find(p => p.id === nextRefinement.opponentPokemonId);
-        if (opponentInAll) {
-          console.error(`🚨 [REFINEMENT_POKEMON_CHECK_CONTEXT_DEBUG] Opponent ${opponentInAll.name} exists in allPokemon but was FILTERED OUT`);
-          const shouldInclude = shouldIncludePokemon(opponentInAll);
-          console.log(`🚨 [REFINEMENT_POKEMON_CHECK_CONTEXT_DEBUG] shouldIncludePokemon result: ${shouldInclude}`);
-        } else {
-          console.error(`🚨 [REFINEMENT_POKEMON_CHECK_CONTEXT_DEBUG] Opponent Pokemon ${nextRefinement.opponentPokemonId} does NOT exist in allPokemon at all!`);
-        }
+        console.error(`🚨 [REFINEMENT_POKEMON_CHECK_CONTEXT_DEBUG] Opponent Pokemon ${nextRefinement.opponentPokemonId} NOT FOUND in allPokemon`);
       }
 
       if (primary && opponent) {
@@ -106,7 +89,7 @@ export const useBattleStarterIntegration = (
         console.log(`🔄 [REFINEMENT_FLOW_CONTEXT_DEBUG] ===== Refinement battle created =====`);
         return refinementBattle;
       } else {
-        console.warn(`⚔️ [REFINEMENT_PRIORITY_CONTEXT_DEBUG] ❌ Could not find Pokemon for refinement battle (may have been filtered out):`, nextRefinement);
+        console.warn(`⚔️ [REFINEMENT_PRIORITY_CONTEXT_DEBUG] ❌ Could not find Pokemon for refinement battle:`, nextRefinement);
         console.log(`🔄 [REFINEMENT_FLOW_CONTEXT_DEBUG] Popping invalid battle and trying again...`);
         // Pop the invalid battle and try again
         refinementQueue.popRefinementBattle();
