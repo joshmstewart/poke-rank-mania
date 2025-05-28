@@ -188,55 +188,6 @@ export const useBattleStateHandlers = (
     // Implementation would go here
   }, []);
 
-  const originalProcessBattleResult = useCallback((
-    selectedPokemonIds: number[],
-    currentBattlePokemon: Pokemon[],
-    battleType: BattleType,
-    selectedGeneration: number
-  ) => {
-    console.log(`🔄 [BATTLE_PROCESSING_ULTRA_DEBUG] Processing battle result:`, {
-      selectedIds: selectedPokemonIds,
-      battlePokemon: currentBattlePokemon.map(p => p.name),
-      battleType
-    });
-
-    // SPEED FIX: Process immediately without delays
-    const selected = selectedPokemonIds.sort((a, b) => a - b);
-    setBattleHistory(prev => [...prev, { battle: currentBattlePokemon, selected }]);
-
-    const newBattlesCompleted = battlesCompleted + 1;
-    setBattlesCompleted(newBattlesCompleted);
-    localStorage.setItem('pokemon-battle-count', String(newBattlesCompleted));
-
-    const newBattleResult: SingleBattle = {
-      battleType,
-      generation: selectedGeneration,
-      pokemonIds: currentBattlePokemon.map(p => p.id),
-      selectedPokemonIds: selectedPokemonIds,
-      timestamp: new Date().toISOString()
-    };
-
-    setBattleResults(prev => [...prev, newBattleResult]);
-
-    // CRITICAL FIX: Check if new battles completed hits a milestone from the milestones array
-    const isAtMilestone = milestones.includes(newBattlesCompleted);
-    console.log(`🎯 [MILESTONE_CHECK_ULTRA_DEBUG] Battle ${newBattlesCompleted} completed. Is milestone? ${isAtMilestone}. Milestones: ${milestones.join(', ')}`);
-    
-    if (isAtMilestone) {
-      console.log(`🏆 [MILESTONE_HIT_ULTRA_DEBUG] Milestone ${newBattlesCompleted} reached!`);
-      
-      // UPDATED: Trigger the proper ranking generation system instead of basic rankings
-      // This will be handled by the external ranking system that uses TrueSkill
-      setMilestoneInProgress(true);
-      setShowingMilestone(true);
-      setRankingGenerated(true); // Mark that rankings should be generated
-    }
-
-    setSelectedPokemon([]);
-    console.log(`✅ [BATTLE_PROCESSING_ULTRA_DEBUG] Battle result processed successfully`);
-    return Promise.resolve();
-  }, [battlesCompleted, milestones, setBattleHistory, setBattlesCompleted, setBattleResults, setSelectedPokemon, setMilestoneInProgress, setShowingMilestone, setRankingGenerated]);
-
   // CRITICAL FIX: Properly type the pendingRefinements Set
   const pendingRefinements: Set<number> = new Set(
     refinementQueue.refinementQueue 
