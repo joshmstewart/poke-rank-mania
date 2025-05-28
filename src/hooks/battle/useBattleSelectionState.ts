@@ -1,3 +1,4 @@
+
 import { useMemo, useCallback, useEffect } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
@@ -124,44 +125,53 @@ export const useBattleSelectionState = () => {
     };
     
     const handleForceNextBattle = (event: CustomEvent) => {
-      console.log("🚀 useBattleSelectionState: Received force-next-battle event", event.detail);
-      console.log("🚀 [EVENT_TRACE] Event timestamp:", event.detail?.timestamp);
-      console.log("🚀 [EVENT_TRACE] Event queue size:", event.detail?.queueSize);
-      console.log("🚀 [EVENT_TRACE] Event Pokemon:", event.detail?.pokemonName);
+      console.log("🚀 [BATTLE_SELECTION_STATE_TRACE] ===== FORCE NEXT BATTLE EVENT RECEIVED =====");
+      console.log("🚀 [BATTLE_SELECTION_STATE_TRACE] Event timestamp:", event.detail?.timestamp);
+      console.log("🚀 [BATTLE_SELECTION_STATE_TRACE] Event queue size:", event.detail?.queueSize);
+      console.log("🚀 [BATTLE_SELECTION_STATE_TRACE] Event Pokemon:", event.detail?.pokemonName);
+      console.log("🚀 [BATTLE_SELECTION_STATE_TRACE] Event Pokemon ID:", event.detail?.pokemonId);
+      console.log("🚀 [BATTLE_SELECTION_STATE_TRACE] startNewBattle function exists:", typeof startNewBattle);
+      console.log("🚀 [BATTLE_SELECTION_STATE_TRACE] Current battle type:", currentBattleType);
       
       // Clear selections immediately
       setSelectedPokemon([]);
       
-      // CRITICAL FIX: No delay - start battle immediately to ensure refinement queue is used
-      console.log("🚀 [EVENT_TRACE] Starting battle IMMEDIATELY - no delay for refinement queue");
+      // CRITICAL TRACE: Log exactly which battle generation function we're calling
+      console.log("🚀 [BATTLE_SELECTION_STATE_TRACE] About to call startNewBattle - this should use refinement queue");
+      console.log("🚀 [BATTLE_SELECTION_STATE_TRACE] startNewBattle source:", startNewBattle.toString().slice(0, 200));
       
       const result = startNewBattle(currentBattleType);
       
+      console.log("🚀 [BATTLE_SELECTION_STATE_TRACE] startNewBattle returned:", result ? result.map(p => `${p.name}(${p.id})`).join(', ') : 'null/empty');
+      
       if (result && result.length > 0) {
-        console.log("✅ handleForceNextBattle: Successfully started refinement battle with", 
+        console.log("✅ [BATTLE_SELECTION_STATE_TRACE] Successfully started refinement battle with", 
           result.map(p => p.name).join(', '));
         
         // Check if the result includes the dragged Pokemon
         const draggedPokemonId = event.detail?.pokemonId;
         if (draggedPokemonId && result.some(p => p.id === draggedPokemonId)) {
-          console.log("🎯 [SUCCESS] Dragged Pokemon IS in the new battle!");
+          console.log("🎯 [BATTLE_SELECTION_STATE_TRACE] SUCCESS! Dragged Pokemon IS in the new battle!");
           toast.success("Validation battle started", {
             description: `Testing position for ${event.detail?.pokemonName || 'dragged Pokemon'}`
           });
         } else {
-          console.log("❌ [FAILURE] Dragged Pokemon is NOT in the new battle");
-          console.log("❌ [FAILURE] Expected Pokemon ID:", draggedPokemonId);
-          console.log("❌ [FAILURE] Battle Pokemon IDs:", result.map(p => p.id));
+          console.log("❌ [BATTLE_SELECTION_STATE_TRACE] FAILURE! Dragged Pokemon is NOT in the new battle");
+          console.log("❌ [BATTLE_SELECTION_STATE_TRACE] Expected Pokemon ID:", draggedPokemonId);
+          console.log("❌ [BATTLE_SELECTION_STATE_TRACE] Battle Pokemon IDs:", result.map(p => p.id));
+          console.log("❌ [BATTLE_SELECTION_STATE_TRACE] This means refinement queue is not being used properly");
           toast.warning("Regular battle started", {
             description: "Refinement queue may be empty or not working"
           });
         }
       } else {
-        console.error("❌ handleForceNextBattle: Failed to start refinement battle");
+        console.error("❌ [BATTLE_SELECTION_STATE_TRACE] Failed to start refinement battle - empty result");
         toast.error("Failed to start battle", {
           description: "Could not create validation battle"
         });
       }
+      
+      console.log("🚀 [BATTLE_SELECTION_STATE_TRACE] ===== FORCE NEXT BATTLE EVENT COMPLETE =====");
     };
     
     document.addEventListener('milestone-dismissed', handleMilestoneDismissed as EventListener);
