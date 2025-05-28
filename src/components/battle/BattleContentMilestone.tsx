@@ -1,24 +1,23 @@
-
 import React from "react";
-import RankingDisplay from "./RankingDisplay";
-import { RankedPokemon, TopNOption } from "@/services/pokemon";
+import { Pokemon, TopNOption, RankedPokemon } from "@/services/pokemon";
+import RankingDisplayContainer from "./RankingDisplayContainer";
 
 interface BattleContentMilestoneProps {
-  finalRankings: RankedPokemon[];
+  finalRankings: Pokemon[] | RankedPokemon[];
   battlesCompleted: number;
   rankingGenerated: boolean;
   activeTier: TopNOption;
-  getSnapshotForMilestone: (battles: number) => RankedPokemon[];
+  getSnapshotForMilestone: () => string;
   onContinueBattles: () => void;
   performFullBattleReset: () => void;
   handleSaveRankings: () => void;
   setActiveTier: (tier: TopNOption) => void;
-  suggestRanking: (pokemon: RankedPokemon, direction: "up" | "down", strength: 1 | 2 | 3) => void;
-  removeSuggestion: (pokemonId: number) => void;
-  setShowingMilestone: (show: boolean) => void;
+  suggestRanking?: (pokemon: RankedPokemon, direction: "up" | "down", strength: 1 | 2 | 3) => void;
+  removeSuggestion?: (pokemonId: number) => void;
+  setShowingMilestone: React.Dispatch<React.SetStateAction<boolean>>;
   resetMilestoneInProgress: () => void;
-  handleContinueBattles: () => void;
-  onManualReorder?: (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => void;
+  handleManualReorder?: (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => void;
+  pendingRefinements?: Set<number>;
 }
 
 const BattleContentMilestone: React.FC<BattleContentMilestoneProps> = ({
@@ -35,38 +34,33 @@ const BattleContentMilestone: React.FC<BattleContentMilestoneProps> = ({
   removeSuggestion,
   setShowingMilestone,
   resetMilestoneInProgress,
-  handleContinueBattles,
-  onManualReorder
+  handleManualReorder,
+  pendingRefinements
 }) => {
-  console.log(`🏆 [FINAL_FIX] DISPLAYING MILESTONE RANKINGS SCREEN for ${battlesCompleted} battles`);
-  console.log(`🎯 [MILESTONE_DRAG_DEBUG] onManualReorder prop exists:`, !!onManualReorder);
-  
-  const milestoneSnapshot = getSnapshotForMilestone(battlesCompleted);
-  const rankingsToShow = milestoneSnapshot.length > 0 ? milestoneSnapshot : finalRankings;
-  
   return (
-    <RankingDisplay
-      finalRankings={rankingsToShow}
-      battlesCompleted={battlesCompleted}
-      onContinueBattles={() => {
-        console.log(`🔄 [FINAL_FIX] Continue battles clicked from milestone screen`);
-        setShowingMilestone(false);
-        resetMilestoneInProgress();
-        setTimeout(() => {
-          handleContinueBattles();
-        }, 300);
-      }}
-      onNewBattleSet={performFullBattleReset}
-      rankingGenerated={rankingGenerated}
-      onSaveRankings={handleSaveRankings}
-      isMilestoneView={true}
-      activeTier={activeTier}
-      onTierChange={setActiveTier}
-      onSuggestRanking={suggestRanking}
-      onRemoveSuggestion={removeSuggestion}
-      onManualReorder={onManualReorder}
-      enableDragAndDrop={true}
-    />
+    <div className="w-full max-w-6xl mx-auto p-6">
+      <h2 className="text-2xl font-bold mb-4">Milestone Reached!</h2>
+      <p className="mb-4">
+        Congratulations! You've completed {battlesCompleted} battles.
+      </p>
+
+      <RankingDisplayContainer
+        finalRankings={finalRankings}
+        battlesCompleted={battlesCompleted}
+        onContinueBattles={onContinueBattles}
+        onNewBattleSet={() => {
+          setShowingMilestone(false);
+          resetMilestoneInProgress();
+        }}
+        rankingGenerated={rankingGenerated}
+        onSaveRankings={handleSaveRankings}
+        isMilestoneView={true}
+        activeTier={activeTier}
+        onManualReorder={handleManualReorder}
+        pendingRefinements={pendingRefinements}
+        enableDragAndDrop={true}
+      />
+    </div>
   );
 };
 

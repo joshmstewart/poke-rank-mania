@@ -64,7 +64,9 @@ const BattleContentCore: React.FC<BattleContentCoreProps> = ({
     clearAllSuggestions,
     handleContinueBattles,
     resetMilestoneInProgress,
-    performFullBattleReset
+    performFullBattleReset,
+    handleManualReorder,
+    pendingRefinements
   } = useBattleStateCore(allPokemon, initialBattleType, initialSelectedGeneration);
 
   console.log(`🔄 [FINAL_FIX] BattleContentCore render states:`, {
@@ -106,6 +108,8 @@ const BattleContentCore: React.FC<BattleContentCoreProps> = ({
         setShowingMilestone={setShowingMilestone}
         resetMilestoneInProgress={resetMilestoneInProgress}
         handleContinueBattles={handleContinueBattles}
+        handleManualReorder={handleManualReorder}
+        pendingRefinements={pendingRefinements}
       />
     );
   }
