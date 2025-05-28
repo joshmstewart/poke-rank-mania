@@ -33,13 +33,18 @@ const PokemonInfoModal: React.FC<PokemonInfoModalProps> = ({
   const normalizedId = normalizePokedexNumber(pokemon.id);
   
   const handleInfoClick = (e: React.MouseEvent) => {
+    console.log(`🔘 [INFO_BUTTON_DEBUG] PokemonInfoModal: Trigger clicked for ${pokemon.name}`);
     e.stopPropagation();
     e.preventDefault();
-    console.log(`ℹ️ Info button clicked for ${pokemon.name}`);
   };
 
   const handleDialogClick = (e: React.MouseEvent) => {
+    console.log(`🔘 [INFO_BUTTON_DEBUG] PokemonInfoModal: Dialog clicked for ${pokemon.name}`);
     e.stopPropagation();
+  };
+
+  const handleDialogOpen = (open: boolean) => {
+    console.log(`🔘 [INFO_BUTTON_DEBUG] PokemonInfoModal: Dialog ${open ? 'opened' : 'closed'} for ${pokemon.name}`);
   };
 
   const statNames: Record<string, string> = {
@@ -52,7 +57,7 @@ const PokemonInfoModal: React.FC<PokemonInfoModalProps> = ({
   };
   
   return (
-    <Dialog>
+    <Dialog onOpenChange={handleDialogOpen}>
       <DialogTrigger asChild onClick={handleInfoClick}>
         {children || (
           <Button 

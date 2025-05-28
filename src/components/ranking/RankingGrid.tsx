@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { Badge } from "@/components/ui/badge";
@@ -32,12 +33,21 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
 }) => {
   const [loadedImages, setLoadedImages] = useState<Set<number>>(new Set());
 
+  console.log(`🔘 [INFO_BUTTON_DEBUG] RankingGrid: Rendering ${displayRankings.length} Pokemon`);
+  console.log(`🔘 [INFO_BUTTON_DEBUG] RankingGrid: isMilestoneView=${isMilestoneView}, activeTier=${activeTier}`);
+
   const handleImageLoad = (pokemonId: number) => {
     setLoadedImages(prev => new Set(prev).add(pokemonId));
   };
 
   const handleImageError = (pokemonId: number) => {
     console.warn(`Failed to load image for Pokemon ${pokemonId}`);
+  };
+
+  const handleInfoButtonClick = (pokemon: Pokemon | RankedPokemon, e: React.MouseEvent) => {
+    console.log(`🔘 [INFO_BUTTON_DEBUG] RankingGrid: Info button clicked for ${pokemon.name} (${pokemon.id})`);
+    e.preventDefault();
+    e.stopPropagation();
   };
 
   return (
@@ -47,11 +57,32 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
         const isRankedPokemon = 'score' in pokemon;
         const isImageLoaded = loadedImages.has(pokemon.id);
 
+        console.log(`🔘 [INFO_BUTTON_DEBUG] RankingGrid: Rendering Pokemon ${pokemon.name} (${pokemon.id}) at rank ${index + 1}`);
+
         return (
           <div key={pokemon.id} className="relative group">
             {/* Info Button - positioned absolutely with high z-index */}
-            <div className="absolute top-1 right-1 z-30 opacity-0 group-hover:opacity-100 transition-opacity">
-              <PokemonInfoModal pokemon={pokemon} />
+            <div 
+              className="absolute top-1 right-1 z-30 opacity-70 group-hover:opacity-100 transition-opacity"
+              style={{ 
+                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                borderRadius: '50%',
+                padding: '2px'
+              }}
+              onClick={(e) => handleInfoButtonClick(pokemon, e)}
+            >
+              <PokemonInfoModal pokemon={pokemon}>
+                <button 
+                  className="w-6 h-6 rounded-full bg-blue-500 hover:bg-blue-600 text-white flex items-center justify-center text-xs font-bold shadow-md"
+                  onClick={(e) => {
+                    console.log(`🔘 [INFO_BUTTON_DEBUG] RankingGrid: Inner button clicked for ${pokemon.name}`);
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                >
+                  i
+                </button>
+              </PokemonInfoModal>
             </div>
 
             {/* Voting arrows for ranked Pokemon */}

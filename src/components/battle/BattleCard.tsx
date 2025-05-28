@@ -26,12 +26,14 @@ const BattleCard: React.FC<BattleCardProps> = memo(({
 }) => {
   const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastClickTimeRef = useRef(0);
+  const [infoButtonVisible, setInfoButtonVisible] = useState(true);
 
   // CRITICAL FIX: Use the Pokemon name directly (it should already be formatted by validateBattlePokemon)
   const displayName = pokemon.name;
   
   console.log(`🎯 [BATTLE_CARD_CRITICAL] Pokemon ${pokemon.id}: using name "${displayName}"`);
   console.log(`🎯 [LOADING_CIRCLES] BattleCard ${displayName} received isProcessing: ${isProcessing}`);
+  console.log(`🔘 [INFO_BUTTON_DEBUG] BattleCard ${displayName}: Info button should be visible: ${infoButtonVisible}`);
   
   // CRITICAL FIX: Don't hide Pokemon during processing - show loading overlay instead
   if (isProcessing) {
@@ -41,21 +43,26 @@ const BattleCard: React.FC<BattleCardProps> = memo(({
   }
 
   useEffect(() => {
+    console.log(`🔘 [INFO_BUTTON_DEBUG] BattleCard ${displayName}: Component mounted/updated`);
     return () => {
       if (clickTimeoutRef.current) {
         clearTimeout(clickTimeoutRef.current);
       }
     };
-  }, []);
+  }, [displayName]);
 
   const handleClick = useCallback((e: React.MouseEvent) => {
+    console.log(`🖱️ [INFO_BUTTON_DEBUG] BattleCard ${displayName}: Card clicked`);
+    
     // Enhanced check for info button clicks - check for dialog elements too
     const target = e.target as HTMLElement;
-    if (target.closest('[data-info-button]') || 
+    const isInfoButtonClick = target.closest('[data-info-button]') || 
         target.closest('[role="dialog"]') || 
         target.closest('[data-radix-dialog-content]') ||
-        target.closest('[data-radix-dialog-overlay]')) {
-      console.log(`ℹ️ BattleCard: Info dialog interaction for ${displayName}, preventing card selection`);
+        target.closest('[data-radix-dialog-overlay]');
+    
+    if (isInfoButtonClick) {
+      console.log(`ℹ️ [INFO_BUTTON_DEBUG] BattleCard: Info dialog interaction for ${displayName}, preventing card selection`);
       return;
     }
 
@@ -81,6 +88,12 @@ const BattleCard: React.FC<BattleCardProps> = memo(({
       clickTimeoutRef.current = null;
     }, 50);
   }, [pokemon.id, displayName, onSelect, isProcessing]);
+
+  const handleInfoButtonClick = useCallback((e: React.MouseEvent) => {
+    console.log(`🔘 [INFO_BUTTON_DEBUG] BattleCard ${displayName}: Info button clicked directly`);
+    e.preventDefault();
+    e.stopPropagation();
+  }, [displayName]);
 
   const preferredImageType: ImageType = 
     (localStorage.getItem('preferredImageType') as ImageType) || 'official';
@@ -111,13 +124,26 @@ const BattleCard: React.FC<BattleCardProps> = memo(({
         <div 
           data-info-button="true" 
           className="absolute top-1 right-1 z-50 opacity-70 hover:opacity-100 transition-opacity"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log(`ℹ️ Info button clicked for ${displayName}`);
+          onClick={handleInfoButtonClick}
+          style={{ 
+            visibility: infoButtonVisible ? 'visible' : 'hidden',
+            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+            borderRadius: '50%',
+            padding: '2px'
           }}
         >
-          <PokemonInfoModal pokemon={pokemon} />
+          <PokemonInfoModal pokemon={pokemon}>
+            <button 
+              className="w-6 h-6 rounded-full bg-blue-500 hover:bg-blue-600 text-white flex items-center justify-center text-xs font-bold shadow-md"
+              onClick={(e) => {
+                console.log(`🔘 [INFO_BUTTON_DEBUG] BattleCard ${displayName}: Inner button clicked`);
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+            >
+              i
+            </button>
+          </PokemonInfoModal>
         </div>
 
         {/* CRITICAL FIX: Keep Pokemon visible, add loading overlay instead */}
