@@ -13,6 +13,12 @@ export const usePokemonFlavorText = (pokemonId: number, isOpen: boolean) => {
     return pokemonId;
   };
 
+  // Reset flavor text when Pokemon changes
+  useEffect(() => {
+    setFlavorText("");
+    setIsLoadingFlavor(false);
+  }, [pokemonId]);
+
   useEffect(() => {
     if (isOpen && !flavorText && !isLoadingFlavor) {
       setIsLoadingFlavor(true);
