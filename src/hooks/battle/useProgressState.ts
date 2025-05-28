@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from "react";
 
 export const useProgressState = () => {
@@ -8,8 +7,10 @@ export const useProgressState = () => {
   const [fullRankingMode, setFullRankingMode] = useState(false);
   const [milestoneInProgress, setMilestoneInProgress] = useState(false);
   
-  // More frequent early milestones, spaced out later
+  // CRITICAL FIX: Ensure milestones start with 10 and 25
   const milestones = [10, 25, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 600, 700, 800, 900, 1000];
+  
+  console.log("🎯 [MILESTONE_CONFIG] Milestones configured:", milestones);
   
   // Function to reset milestone in progress state
   const resetMilestoneInProgress = useCallback(() => {

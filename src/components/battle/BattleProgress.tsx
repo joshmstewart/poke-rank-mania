@@ -13,8 +13,16 @@ const BattleProgress: React.FC<BattleProgressProps> = ({
   getNextMilestone
 }) => {
   // Calculate battles remaining until next milestone
-  const battlesUntilNextMilestone = getNextMilestone() - battlesCompleted;
+  const nextMilestone = getNextMilestone();
+  const battlesUntilNextMilestone = Math.max(0, nextMilestone - battlesCompleted);
   const progressPercentage = getMilestoneProgress();
+  
+  console.log(`🎯 [BATTLE_PROGRESS] Display values:`, {
+    battlesCompleted,
+    nextMilestone,
+    battlesUntilNextMilestone,
+    progressPercentage
+  });
   
   return (
     <div>
