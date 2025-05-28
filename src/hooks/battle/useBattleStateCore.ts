@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
@@ -200,53 +201,6 @@ export const useBattleStateCore = (
     });
   }, [selectedPokemon]);
 
-  // CRITICAL FIX: Generate basic rankings when milestone is hit
-  const generateBasicRankings = useCallback(() => {
-    console.log(`🏆 [MILESTONE_RANKINGS_ULTRA_DEBUG] Generating basic rankings for milestone display`);
-    
-    // Calculate basic rankings based on battle results
-    const pokemonScores: { [id: number]: { wins: number, total: number, pokemon: Pokemon } } = {};
-    
-    // Initialize all Pokemon with 0 scores
-    allPokemon.forEach(pokemon => {
-      pokemonScores[pokemon.id] = { wins: 0, total: 0, pokemon };
-    });
-    
-    // Calculate scores from battle results
-    battleResults.forEach(result => {
-      result.pokemonIds.forEach(pokemonId => {
-        if (pokemonScores[pokemonId]) {
-          pokemonScores[pokemonId].total++;
-          if (result.selectedPokemonIds.includes(pokemonId)) {
-            pokemonScores[pokemonId].wins++;
-          }
-        }
-      });
-    });
-    
-    // Convert to ranked list
-    const rankings = Object.values(pokemonScores)
-      .filter(score => score.total > 0) // Only include Pokemon that have been in battles
-      .map(score => ({
-        ...score.pokemon,
-        winRate: score.total > 0 ? score.wins / score.total : 0,
-        battleCount: score.total
-      }))
-      .sort((a, b) => {
-        // Sort by win rate, then by battle count
-        if (b.winRate !== a.winRate) return b.winRate - a.winRate;
-        return b.battleCount - a.battleCount;
-      });
-    
-    console.log(`🏆 [MILESTONE_RANKINGS_ULTRA_DEBUG] Generated ${rankings.length} rankings`);
-    console.log(`🏆 [MILESTONE_RANKINGS_ULTRA_DEBUG] Top 5:`, rankings.slice(0, 5).map(p => `${p.name} (${(p.winRate * 100).toFixed(1)}%)`));
-    
-    setFinalRankings(rankings);
-    setRankingGenerated(true);
-    
-    return rankings;
-  }, [allPokemon, battleResults]);
-
   const originalProcessBattleResult = useCallback((
     selectedPokemonIds: number[],
     currentBattlePokemon: Pokemon[],
@@ -284,17 +238,17 @@ export const useBattleStateCore = (
     if (isAtMilestone) {
       console.log(`🏆 [MILESTONE_HIT_ULTRA_DEBUG] Milestone ${newBattlesCompleted} reached!`);
       
-      // CRITICAL FIX: Generate rankings when milestone is hit
-      generateBasicRankings();
-      
+      // UPDATED: Trigger the proper ranking generation system instead of basic rankings
+      // This will be handled by the external ranking system that uses TrueSkill
       setMilestoneInProgress(true);
       setShowingMilestone(true);
+      setRankingGenerated(true); // Mark that rankings should be generated
     }
 
     setSelectedPokemon([]);
     console.log(`✅ [BATTLE_PROCESSING_ULTRA_DEBUG] Battle result processed successfully`);
     return Promise.resolve();
-  }, [battlesCompleted, milestones, generateBasicRankings]);
+  }, [battlesCompleted, milestones]);
 
   const {
     processBattleResultWithRefinement,
@@ -434,9 +388,11 @@ export const useBattleStateCore = (
     console.log(`🚀 [START_NEW_BATTLE_ULTRA_DEBUG] ===== END =====`);
   }, [battleType, startNewBattle, refinementQueue, allPokemon, getCurrentRankings, selectedGeneration, frozenPokemon]);
 
+  // UPDATED: Remove the basic ranking generation - let the external TrueSkill system handle all rankings
   const generateRankings = useCallback(() => {
-    generateBasicRankings();
-  }, [generateBasicRankings]);
+    console.log(`🏆 [MILESTONE_RANKINGS_ULTRA_DEBUG] Setting ranking generated flag - external TrueSkill system will handle ranking generation`);
+    setRankingGenerated(true);
+  }, []);
 
   const handleSaveRankings = useCallback(() => {
     setShowingMilestone(false);
