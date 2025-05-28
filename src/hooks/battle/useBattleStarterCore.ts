@@ -1,85 +1,149 @@
-
-import { useMemo, useRef } from "react";
+import { useCallback } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
-import { createBattleStarter } from "./createBattleStarter";
 
-// Helper to compare battles
-const areBattlesIdentical = (battle1: Pokemon[], battle2: number[]) => {
-  if (!battle1 || !battle2 || battle1.length !== battle2.length) return false;
-  const battle1Ids = battle1.map(p => p.id);
-  return battle1Ids.every(id => battle2.includes(id)) && 
-         battle2.every(id => battle1Ids.includes(id));
-};
-
-// Define extended interface for the battleStarter object that includes getSuggestions
-interface ExtendedBattleStarter {
-  startNewBattle: (battleType: BattleType, forceSuggestion?: boolean, forceUnranked?: boolean) => Pokemon[];
-  trackLowerTierLoss: (loserId: number) => void;
-  getSuggestions: () => RankedPokemon[];
+interface BattleStarterConfig {
+  allPokemon: Pokemon[];
+  currentRankings: RankedPokemon[];
+  battleType: BattleType;
+  selectedGeneration: number;
+  freezeList: number[];
 }
 
-// CRITICAL FIX: Create default empty ExtendedBattleStarter for safe initialization
-const createEmptyBattleStarter = (): ExtendedBattleStarter => ({
-  startNewBattle: () => {
-    console.warn('[BattleStarter NO_DATA] startNewBattle called but no Pokémon data was available on creation.');
-    return [];
-  },
-  trackLowerTierLoss: () => {},
-  getSuggestions: () => []
-});
-
 export const useBattleStarterCore = (
-  allPokemon: Pokemon[] = [],
-  currentRankings: RankedPokemon[] = []
+  allPokemon: Pokemon[],
+  getCurrentRankings: () => RankedPokemon[]
 ) => {
-  // CRITICAL FIX: Single global battleStarter instance - NEVER recreate
-  const battleStarterInstanceRef = useRef<ExtendedBattleStarter | null>(null);
-  const battleStarterCreatedRef = useRef(false);
-
-  // CRITICAL FIX: Create battleStarter exactly ONCE and store it permanently
-  const battleStarter = useMemo<ExtendedBattleStarter>(() => {
-    console.log('[CRITICAL FIX] battleStarter useMemo - battleStarterCreatedRef.current:', battleStarterCreatedRef.current);
-    
-    // If battleStarter already exists, return it immediately - NEVER recreate
-    if (battleStarterCreatedRef.current && battleStarterInstanceRef.current) {
-      console.log('[CRITICAL FIX] Returning existing battleStarter instance - Pokemon count changes will NOT recreate');
-      return battleStarterInstanceRef.current;
+  const filterPokemonByGeneration = useCallback((
+    pokemonList: Pokemon[],
+    generation: number
+  ): Pokemon[] => {
+    if (generation === 0) {
+      return pokemonList;
     }
+    return pokemonList.filter(pokemon => pokemon.generation === generation);
+  }, []);
 
-    if (!allPokemon || allPokemon.length === 0) {
-      console.log("[CRITICAL FIX] No Pokémon data available, returning empty battleStarter");
-      return createEmptyBattleStarter();
-    }
+  const filterOutFrozenPokemon = useCallback((
+    pokemonList: Pokemon[],
+    freezeList: number[]
+  ): Pokemon[] => {
+    return pokemonList.filter(pokemon => !freezeList.includes(pokemon.id));
+  }, []);
 
-    console.log(`[CRITICAL FIX] Creating battleStarter PERMANENTLY with ${allPokemon.length} Pokémon`);
+  const selectBattlePokemon = useCallback((
+    battleType: BattleType,
+    availablePokemon: Pokemon[],
+    recentlyUsed: string[]
+  ): Pokemon[] => {
+    console.log(`🚨🚨🚨 [BATTLE_GENERATION_DEBUG] ===== SELECTING BATTLE POKEMON =====`);
+    console.log(`🚨🚨🚨 [BATTLE_GENERATION_DEBUG] Battle type: ${battleType}`);
+    console.log(`🚨🚨🚨 [BATTLE_GENERATION_DEBUG] Available Pokemon count: ${availablePokemon.length}`);
+    console.log(`🚨🚨🚨 [BATTLE_GENERATION_DEBUG] Recently used entries: ${recentlyUsed.length}`);
+    console.log(`🚨🚨🚨 [BATTLE_GENERATION_DEBUG] Recently used: ${recentlyUsed.join(', ')}`);
     
-    const battleStarterInstance = createBattleStarter(
-      allPokemon,
-      currentRankings
-    );
-    
-    const extendedInstance: ExtendedBattleStarter = {
-      startNewBattle: battleStarterInstance.startNewBattle,
-      trackLowerTierLoss: battleStarterInstance.trackLowerTierLoss,
-      getSuggestions: () => {
-        return (currentRankings || []).filter(
-          p => p.suggestedAdjustment && !p.suggestedAdjustment.used
-        );
+    if (battleType === "pairs") {
+      const battleCount = parseInt(localStorage.getItem('pokemon-battle-count') || '0', 10);
+      console.log(`🚨🚨🚨 [BATTLE_GENERATION_DEBUG] Current battle count: ${battleCount}`);
+      
+      // Get all possible pairs
+      const allPairs: Array<{pokemon1: Pokemon, pokemon2: Pokemon, key: string}> = [];
+      for (let i = 0; i < availablePokemon.length; i++) {
+        for (let j = i + 1; j < availablePokemon.length; j++) {
+          const pokemon1 = availablePokemon[i];
+          const pokemon2 = availablePokemon[j];
+          const key = [pokemon1.id, pokemon2.id].sort((a, b) => a - b).join('-');
+          allPairs.push({ pokemon1, pokemon2, key });
+        }
       }
-    };
-
-    // CRITICAL FIX: Store the instance permanently and mark as created
-    battleStarterInstanceRef.current = extendedInstance;
-    battleStarterCreatedRef.current = true;
+      
+      console.log(`🚨🚨🚨 [BATTLE_GENERATION_DEBUG] Total possible pairs: ${allPairs.length}`);
+      
+      // Filter out recently used pairs
+      const unusedPairs = allPairs.filter(pair => !recentlyUsed.includes(pair.key));
+      console.log(`🚨🚨🚨 [BATTLE_GENERATION_DEBUG] Unused pairs: ${unusedPairs.length}`);
+      
+      if (unusedPairs.length === 0) {
+        console.log(`🚨🚨🚨 [BATTLE_GENERATION_DEBUG] ❌ NO UNUSED PAIRS! All pairs have been used recently`);
+        console.log(`🚨🚨🚨 [BATTLE_GENERATION_DEBUG] This should trigger a reset of recently used pairs`);
+        
+        // Clear recently used and try again
+        localStorage.removeItem('pokemon-battle-recently-used');
+        const randomPair = allPairs[Math.floor(Math.random() * allPairs.length)];
+        const selectedPair = [randomPair.pokemon1, randomPair.pokemon2];
+        
+        console.log(`🚨🚨🚨 [BATTLE_GENERATION_DEBUG] ✅ SELECTED (after reset): ${selectedPair[0].name} vs ${selectedPair[1].name}`);
+        console.log(`🚨🚨🚨 [BATTLE_GENERATION_DEBUG] ✅ SELECTED IDs: ${selectedPair[0].id} vs ${selectedPair[1].id}`);
+        console.log(`🚨🚨🚨 [BATTLE_GENERATION_DEBUG] ✅ SELECTED key: ${randomPair.key}`);
+        
+        return selectedPair;
+      }
+      
+      // Select random unused pair
+      const randomIndex = Math.floor(Math.random() * unusedPairs.length);
+      const selectedPair = unusedPairs[randomIndex];
+      const result = [selectedPair.pokemon1, selectedPair.pokemon2];
+      
+      console.log(`🚨🚨🚨 [BATTLE_GENERATION_DEBUG] ✅ SELECTED: ${result[0].name} vs ${result[1].name}`);
+      console.log(`🚨🚨🚨 [BATTLE_GENERATION_DEBUG] ✅ SELECTED IDs: ${result[0].id} vs ${result[1].id}`);
+      console.log(`🚨🚨🚨 [BATTLE_GENERATION_DEBUG] ✅ SELECTED key: ${selectedPair.key}`);
+      console.log(`🚨🚨🚨 [BATTLE_GENERATION_DEBUG] ✅ Was this pair recently used? ${recentlyUsed.includes(selectedPair.key)}`);
+      
+      return result;
+    }
     
-    console.log("[CRITICAL FIX] BattleStarter created PERMANENTLY - will NEVER be recreated");
-    
-    return extendedInstance;
-  }, [allPokemon.length > 0 ? 'HAS_POKEMON' : 'NO_POKEMON']); // CRITICAL: Only depend on whether we have Pokemon at all
+    if (battleType === "triplets") {
+      if (availablePokemon.length < 3) {
+        console.warn("Not enough Pokémon available for a triplets battle.  Returning empty array.");
+        return [];
+      }
 
-  return {
-    battleStarter,
-    areBattlesIdentical
-  };
+      const selected: Pokemon[] = [];
+      const availableIndices = Array.from({ length: availablePokemon.length }, (_, i) => i);
+
+      while (selected.length < 3 && availableIndices.length > 0) {
+        const randomIndex = Math.floor(Math.random() * availableIndices.length);
+        const pokemonIndex = availableIndices[randomIndex];
+        selected.push(availablePokemon[pokemonIndex]);
+        availableIndices.splice(randomIndex, 1);
+      }
+
+      console.log(`Selected triplets: ${selected.map(p => p.name).join(', ')}`);
+      return selected;
+    }
+
+    return [];
+  }, []);
+
+  const startNewBattle = useCallback((
+    config: BattleStarterConfig
+  ): Pokemon[] => {
+    const {
+      allPokemon,
+      currentRankings,
+      battleType,
+      selectedGeneration,
+      freezeList
+    } = config;
+
+    // 1. Filter by generation
+    const generationFilteredPokemon = filterPokemonByGeneration(allPokemon, selectedGeneration);
+    console.log(`Generation filter: ${generationFilteredPokemon.length} Pokemon of generation ${selectedGeneration}`);
+
+    // 2. Filter out frozen Pokemon
+    const availablePokemon = filterOutFrozenPokemon(generationFilteredPokemon, freezeList);
+    console.log(`Freeze filter: ${availablePokemon.length} available Pokemon after removing frozen`);
+
+    // 3. Get recently used battles
+    const recentlyUsed = JSON.parse(localStorage.getItem('pokemon-battle-recently-used') || '[]');
+    console.log(`Recently used battles: ${recentlyUsed.length} entries`);
+
+    // 4. Select battle Pokemon
+    const battlePokemon = selectBattlePokemon(battleType, availablePokemon, recentlyUsed);
+    console.log(`Selected battle: ${battlePokemon.length} Pokemon for a ${battleType} battle`);
+
+    return battlePokemon;
+  }, [filterPokemonByGeneration, filterOutFrozenPokemon, selectBattlePokemon]);
+
+  return { startNewBattle };
 };

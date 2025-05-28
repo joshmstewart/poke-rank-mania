@@ -1,4 +1,3 @@
-
 import { useCallback } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
@@ -14,56 +13,59 @@ export const useBattleProcessorResult = (
   const processResultLogic = useCallback((
     selectedPokemonIds: number[],
     currentBattlePokemon: Pokemon[],
-    processResult: (selectedPokemonIds: number[], battleType: BattleType, currentBattlePokemon: Pokemon[]) => SingleBattle[] | null,
+    processResult: any,
     battleType: BattleType,
     timestamp: string,
     isResettingRef?: React.MutableRefObject<boolean>
   ) => {
-    console.log(`📝 [${timestamp}] PROCESS BATTLE: Processing battle result with selectedPokemonIds: ${selectedPokemonIds.join(', ')}`);
+    console.log(`🚨🚨🚨 [BATTLE_RESULT_DEBUG] ===== PROCESSING BATTLE RESULT =====`);
+    console.log(`🚨🚨🚨 [BATTLE_RESULT_DEBUG] Current battle Pokemon: ${currentBattlePokemon.map(p => `${p.name} (${p.id})`).join(' vs ')}`);
+    console.log(`🚨🚨🚨 [BATTLE_RESULT_DEBUG] Selected winners: ${selectedPokemonIds.join(', ')}`);
+    console.log(`🚨🚨🚨 [BATTLE_RESULT_DEBUG] Battle type: ${battleType}`);
     
-    // Check if we need to reset battle count due to reset
+    // Check recently used BEFORE processing
+    const recentlyUsedBefore = JSON.parse(localStorage.getItem('pokemon-battle-recently-used') || '[]');
+    console.log(`🚨🚨🚨 [BATTLE_RESULT_DEBUG] Recently used BEFORE processing: ${recentlyUsedBefore.join(', ')}`);
+    
     if (isResettingRef?.current) {
-      console.log(`📝 [${timestamp}] PROCESS BATTLE: Reset flag TRUE. Current battlesCompleted prop = ${battlesCompleted}. Forcing base for increment to 0 by calling setBattlesCompleted(0).`);
-      setBattlesCompleted(0);
-      console.log(`📝 [${timestamp}] PROCESS BATTLE: ✅ battlesCompleted state updated to 0 via prop setter.`);
-      
-      isResettingRef.current = false;
-      console.log(`📝 [${timestamp}] PROCESS BATTLE: Cleared isResettingRef.current to false AFTER using it.`);
-    }
-    
-    const newResults = processResult(selectedPokemonIds, battleType, currentBattlePokemon);
-
-    if (!newResults || newResults.length === 0) {
-      console.warn(`📝 [${timestamp}] PROCESS BATTLE: No battle results returned`);
+      console.log(`📝 [${timestamp}] [PROCESSOR_FIX] PROCESS RESULT: Resetting in progress, skipping`);
       return null;
     }
 
-    const updatedResults = [...battleResults, ...newResults];
+    const updatedResults = processResult(selectedPokemonIds, currentBattlePokemon, battleType);
+    console.log(`📝 [${timestamp}] PROCESS RESULT: Updated results count: ${updatedResults.length}`);
+    
+    // Add battle pair to recently used list
+    if (battleType === "pairs" && currentBattlePokemon.length === 2) {
+      const battleKey = currentBattlePokemon.map(p => p.id).sort((a, b) => a - b).join('-');
+      const recentlyUsed = JSON.parse(localStorage.getItem('pokemon-battle-recently-used') || '[]');
+      
+      console.log(`🚨🚨🚨 [BATTLE_RESULT_DEBUG] Adding battle key to recently used: ${battleKey}`);
+      console.log(`🚨🚨🚨 [BATTLE_RESULT_DEBUG] Recently used list size before: ${recentlyUsed.length}`);
+      
+      if (!recentlyUsed.includes(battleKey)) {
+        recentlyUsed.push(battleKey);
+        
+        // Keep only recent battles (last 100)
+        if (recentlyUsed.length > 100) {
+          const removed = recentlyUsed.splice(0, recentlyUsed.length - 100);
+          console.log(`🚨🚨🚨 [BATTLE_RESULT_DEBUG] Removed ${removed.length} old entries: ${removed.join(', ')}`);
+        }
+        
+        localStorage.setItem('pokemon-battle-recently-used', JSON.stringify(recentlyUsed));
+        console.log(`🚨🚨🚨 [BATTLE_RESULT_DEBUG] ✅ Added battle key: ${battleKey}`);
+        console.log(`🚨🚨🚨 [BATTLE_RESULT_DEBUG] ✅ Recently used list size after: ${recentlyUsed.length}`);
+        console.log(`🚨🚨🚨 [BATTLE_RESULT_DEBUG] ✅ Updated recently used: ${recentlyUsed.join(', ')}`);
+      } else {
+        console.log(`🚨🚨🚨 [BATTLE_RESULT_DEBUG] ⚠️ Battle key ${battleKey} was already in recently used list!`);
+      }
+    }
+
     setBattleResults(updatedResults);
     setSelectedPokemon([]);
 
-    // Handle suggestion marking
-    console.log(`[DEBUG useBattleProcessor] Timestamp: ${timestamp}. Iterating currentBattlePokemon for markSuggestionUsed.`);
-    currentBattlePokemon.forEach(p => {
-      const ranked = p as RankedPokemon;
-      const suggestionDetails = ranked.suggestedAdjustment 
-        ? `Suggestion Exists - Used: ${ranked.suggestedAdjustment.used}, Direction: ${ranked.suggestedAdjustment.direction}` 
-        : 'No Suggestion Present';
-      console.log(`[DEBUG useBattleProcessor] Pokemon: ${ranked.name} (${ranked.id}). ${suggestionDetails}`);
-    });
-
-    if (markSuggestionUsed) {
-      currentBattlePokemon.forEach(p => {
-        const ranked = p as RankedPokemon;
-        if (ranked.suggestedAdjustment && !ranked.suggestedAdjustment.used) {
-          markSuggestionUsed(ranked, false); // Pass false to indicate not fully used yet
-          console.log(`📝 [${timestamp}] PROCESS BATTLE: Notified markSuggestionUsed for ${ranked.name} (${ranked.id}). fullyUsed=false`);
-        }
-      });
-    }
-
     return updatedResults;
-  }, [battleResults, setBattleResults, setSelectedPokemon, markSuggestionUsed, battlesCompleted, setBattlesCompleted]);
+  }, [setBattleResults, setSelectedPokemon]);
 
   return { processResultLogic };
 };
