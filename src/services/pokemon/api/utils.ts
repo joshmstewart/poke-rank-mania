@@ -17,38 +17,18 @@ export const validateBattlePokemon = (pokemon: Pokemon[]): Pokemon[] => {
   const validated = pokemon.map((p, index) => {
     console.log(`🔍 [VALIDATE_ULTRA_DEBUG] Processing Pokemon #${index}: "${p.name}" (ID: ${p.id})`);
     
-    // CRITICAL FIX: Keep the name exactly as it comes in - it's already been formatted by formatPokemonName in the API
-    // DO NOT re-format or change the name here - just preserve what was already correctly formatted
-    const finalName = p.name; // This should already be formatted from the API layer
+    // CRITICAL FIX: Always use formatPokemonName to ensure consistent formatting
+    // This ensures that even if the Pokemon comes with an unformatted name, it gets properly formatted
+    const formattedName = formatPokemonName(p.name);
     
     console.log(`🔍 [VALIDATE_ULTRA_DEBUG] BEFORE: "${p.name}"`);
-    console.log(`🔍 [VALIDATE_ULTRA_DEBUG] AFTER: "${finalName}"`);
-    console.log(`🔍 [VALIDATE_ULTRA_DEBUG] Names identical: ${p.name === finalName}`);
-    console.log(`🔍 [VALIDATE_ULTRA_DEBUG] Final name type: ${typeof finalName}`);
-    
-    // Check if the name is properly formatted (should NOT contain unformatted hyphens)
-    const isUnformatted = finalName.includes('-') && !finalName.includes('(') && !finalName.includes('Mega ') && !finalName.includes('Alolan ') && !finalName.includes('Galarian ') && !finalName.includes('Hisuian ');
-    
-    if (isUnformatted) {
-      console.error(`🚨 [VALIDATE_ULTRA_DEBUG] CRITICAL: Pokemon "${finalName}" (ID: ${p.id}) has unformatted name in validation - this should have been formatted by the API!`);
-      // If we receive an unformatted name, format it here as a fallback
-      const reformattedName = formatPokemonName(finalName);
-      console.error(`🚨 [VALIDATE_ULTRA_DEBUG] FALLBACK: Reformatting "${finalName}" → "${reformattedName}"`);
-      
-      const validatedPokemon = {
-        ...p,
-        name: reformattedName,
-        // Ensure image exists
-        image: p.image || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${p.id}.png`
-      };
-      
-      console.log(`🔍 [VALIDATE_ULTRA_DEBUG] Output #${index} (REFORMATTED): "${validatedPokemon.name}" (ID: ${validatedPokemon.id})`);
-      return validatedPokemon;
-    }
+    console.log(`🔍 [VALIDATE_ULTRA_DEBUG] AFTER: "${formattedName}"`);
+    console.log(`🔍 [VALIDATE_ULTRA_DEBUG] Names identical: ${p.name === formattedName}`);
+    console.log(`🔍 [VALIDATE_ULTRA_DEBUG] Final name type: ${typeof formattedName}`);
     
     const validatedPokemon = {
       ...p,
-      name: finalName,
+      name: formattedName,
       // Ensure image exists
       image: p.image || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${p.id}.png`
     };
@@ -60,7 +40,7 @@ export const validateBattlePokemon = (pokemon: Pokemon[]): Pokemon[] => {
     return validatedPokemon;
   });
   
-  console.log(`✅ [VALIDATE_ULTRA_DEBUG] Validated ${validated.length} Pokemon - NAMES PRESERVED OR REFORMATTED AS NEEDED`);
+  console.log(`✅ [VALIDATE_ULTRA_DEBUG] Validated ${validated.length} Pokemon - ALL NAMES FORMATTED CONSISTENTLY`);
   console.log(`🔍 [VALIDATE_ULTRA_DEBUG] ===== VALIDATE BATTLE POKEMON END =====`);
   return validated;
 };

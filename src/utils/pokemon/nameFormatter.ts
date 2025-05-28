@@ -127,7 +127,8 @@ export const formatPokemonName = (name: string): string => {
   if (lowerName.includes('-gmax')) {
     console.log(`🔧 [FORMAT_GMAX_DETECTED] Processing G-Max form: "${name}"`);
     const baseName = name.substring(0, name.toLowerCase().indexOf('-gmax'));
-    const result = `G-Max ${capitalizeFirstLetter(baseName)}`;
+    const capitalizedBaseName = capitalizeFirstLetter(baseName);
+    const result = `G-Max ${capitalizedBaseName}`;
     console.log(`🔧 [FORMAT_GMAX_RESULT] "${name}" → "${result}"`);
     return result;
   }
