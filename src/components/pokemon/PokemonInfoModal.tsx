@@ -18,6 +18,14 @@ interface PokemonInfoModalProps {
   children?: React.ReactNode;
 }
 
+const typeColors: Record<string, string> = {
+  Normal: "bg-gray-400", Fire: "bg-red-500", Water: "bg-blue-500", Electric: "bg-yellow-400",
+  Grass: "bg-green-500", Ice: "bg-blue-200", Fighting: "bg-red-700", Poison: "bg-purple-600",
+  Ground: "bg-yellow-700", Flying: "bg-indigo-300", Psychic: "bg-pink-500", Bug: "bg-lime-500",
+  Rock: "bg-stone-500", Ghost: "bg-purple-700", Dragon: "bg-indigo-600", Dark: "bg-stone-800 text-white",
+  Steel: "bg-slate-400", Fairy: "bg-pink-300",
+};
+
 const PokemonInfoModal: React.FC<PokemonInfoModalProps> = ({
   pokemon,
   children
@@ -26,110 +34,143 @@ const PokemonInfoModal: React.FC<PokemonInfoModalProps> = ({
   
   const handleInfoClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    e.preventDefault();
     console.log(`ℹ️ Info button clicked for ${pokemon.name}`);
+  };
+
+  const handleDialogClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
+
+  const statNames: Record<string, string> = {
+    hp: "HP",
+    attack: "Attack", 
+    defense: "Defense",
+    "special-attack": "Sp. Atk",
+    "special-defense": "Sp. Def",
+    speed: "Speed"
   };
   
   return (
     <Dialog>
-      <DialogTrigger asChild>
+      <DialogTrigger asChild onClick={handleInfoClick}>
         {children || (
           <Button 
             variant="ghost" 
             size="sm" 
             className="absolute top-2 right-2 w-6 h-6 p-0 opacity-70 hover:opacity-100 z-10"
-            onClick={handleInfoClick}
           >
             <Info className="w-4 h-4" />
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-2xl" onClick={handleDialogClick}>
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <img 
-              src={pokemon.image} 
-              alt={pokemon.name}
-              className="w-8 h-8 object-contain"
-            />
+          <DialogTitle className="text-2xl font-bold text-center">
             {pokemon.name}
           </DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-4">
-          {/* Basic Info */}
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <span className="text-muted-foreground">Pokédex #:</span>
-              <div className="font-mono">#{normalizedId}</div>
+        {/* Game-inspired layout */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Left side - Pokemon image and basic info */}
+          <div className="space-y-4">
+            {/* Pokemon image with border like the game */}
+            <div className="bg-gray-100 border-4 border-gray-400 rounded p-4 text-center">
+              <img 
+                src={pokemon.image} 
+                alt={pokemon.name}
+                className="w-32 h-32 mx-auto object-contain"
+              />
             </div>
-            <div>
-              <span className="text-muted-foreground">Generation:</span>
-              <div>{pokemon.generation || "Unknown"}</div>
+            
+            {/* Basic info section */}
+            <div className="bg-gray-200 border-2 border-gray-400 rounded p-3 space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="font-bold">No.</span>
+                <span className="font-mono">#{normalizedId}</span>
+              </div>
+              
+              {pokemon.types && pokemon.types.length > 0 && (
+                <div className="flex justify-between items-center">
+                  <span className="font-bold">Type:</span>
+                  <div className="flex gap-1">
+                    {pokemon.types.map(type => (
+                      <Badge key={type} className={`${typeColors[type]} text-white text-xs px-2 py-0.5`}>
+                        {type}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {pokemon.height && (
+                <div className="flex justify-between items-center">
+                  <span className="font-bold">Height:</span>
+                  <span>{(pokemon.height / 10).toFixed(1)} m</span>
+                </div>
+              )}
+
+              {pokemon.weight && (
+                <div className="flex justify-between items-center">
+                  <span className="font-bold">Weight:</span>
+                  <span>{(pokemon.weight / 10).toFixed(1)} kg</span>
+                </div>
+              )}
+
+              {pokemon.generation && (
+                <div className="flex justify-between items-center">
+                  <span className="font-bold">Generation:</span>
+                  <span>{pokemon.generation}</span>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Types */}
-          {pokemon.types && pokemon.types.length > 0 && (
-            <div>
-              <span className="text-muted-foreground text-sm">Types:</span>
-              <div className="flex gap-1 mt-1">
-                {pokemon.types.map(type => (
-                  <Badge key={type} variant="secondary" className="text-xs">
-                    {type}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Physical Attributes */}
-          {(pokemon.height || pokemon.weight) && (
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              {pokemon.height && (
-                <div>
-                  <span className="text-muted-foreground">Height:</span>
-                  <div>{(pokemon.height / 10).toFixed(1)} m</div>
+          {/* Right side - Stats in game style */}
+          <div className="space-y-4">
+            {pokemon.stats && Object.keys(pokemon.stats).length > 0 && (
+              <div className="bg-green-600 border-4 border-green-800 rounded overflow-hidden">
+                <div className="bg-green-700 text-white text-center py-2 font-bold text-lg">
+                  STATS
                 </div>
-              )}
-              {pokemon.weight && (
-                <div>
-                  <span className="text-muted-foreground">Weight:</span>
-                  <div>{(pokemon.weight / 10).toFixed(1)} kg</div>
+                <div className="bg-gray-300 p-4 space-y-2">
+                  {Object.entries(pokemon.stats).map(([stat, value]) => {
+                    const displayName = statNames[stat] || stat.replace('-', ' ');
+                    const maxStat = 255;
+                    const percentage = Math.min((value / maxStat) * 100, 100);
+                    
+                    return (
+                      <div key={stat} className="flex items-center justify-between">
+                        <span className="font-bold text-sm w-20">{displayName}</span>
+                        <div className="flex items-center gap-2 flex-1">
+                          <div className="flex-1 bg-white border border-gray-400 h-4 rounded overflow-hidden">
+                            <div 
+                              className={`h-full transition-all ${
+                                value >= 100 ? 'bg-orange-500' : 
+                                value >= 80 ? 'bg-yellow-500' : 
+                                value >= 60 ? 'bg-blue-500' : 'bg-gray-500'
+                              }`}
+                              style={{ width: `${percentage}%` }}
+                            />
+                          </div>
+                          <span className="font-mono text-sm w-8 text-right">{value}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              )}
-            </div>
-          )}
-
-          {/* Base Stats */}
-          {pokemon.stats && Object.keys(pokemon.stats).length > 0 && (
-            <div>
-              <span className="text-muted-foreground text-sm">Base Stats:</span>
-              <div className="mt-2 space-y-2">
-                {Object.entries(pokemon.stats).map(([stat, value]) => (
-                  <div key={stat} className="flex items-center gap-2">
-                    <span className="text-xs font-medium w-16 capitalize">
-                      {stat.replace('-', ' ')}:
-                    </span>
-                    <div className="flex-1 bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-blue-500 h-2 rounded-full transition-all"
-                        style={{ width: `${Math.min((value / 255) * 100, 100)}%` }}
-                      />
-                    </div>
-                    <span className="text-xs font-mono w-8 text-right">{value}</span>
-                  </div>
-                ))}
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Flavor Text */}
-          {pokemon.flavorText && (
-            <div>
-              <span className="text-muted-foreground text-sm">Description:</span>
-              <p className="text-sm mt-1 leading-relaxed">{pokemon.flavorText}</p>
-            </div>
-          )}
+            {/* Description section */}
+            {pokemon.flavorText && (
+              <div className="bg-gray-200 border-2 border-gray-400 rounded p-4">
+                <h3 className="font-bold mb-2">Description:</h3>
+                <p className="text-sm leading-relaxed">{pokemon.flavorText}</p>
+              </div>
+            )}
+          </div>
         </div>
       </DialogContent>
     </Dialog>

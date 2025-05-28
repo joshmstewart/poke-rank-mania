@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -304,8 +303,10 @@ const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
 
   return (
     <Card className={`w-full overflow-hidden relative ${isDragging ? "opacity-50" : ""}`}>
-      {/* Info Button */}
-      <PokemonInfoModal pokemon={validatedPokemon} />
+      {/* Info Button - ensure it's visible and properly positioned */}
+      <div className="absolute top-2 right-2 z-10">
+        <PokemonInfoModal pokemon={validatedPokemon} />
+      </div>
       
       <div className="flex items-start p-3 gap-3">
         <div className={`${compact ? "w-16 h-16" : "w-20 h-20"} bg-gray-50 rounded-md relative`}>

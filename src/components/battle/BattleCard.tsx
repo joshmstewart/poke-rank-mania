@@ -48,10 +48,12 @@ const BattleCard: React.FC<BattleCardProps> = memo(({
   }, []);
 
   const handleClick = useCallback((e: React.MouseEvent) => {
-    // Check if the click is on the info button or its children
+    // Enhanced check for info button clicks - check for dialog elements too
     const target = e.target as HTMLElement;
-    if (target.closest('[data-info-button]')) {
-      console.log(`ℹ️ BattleCard: Info button clicked for ${displayName}, preventing card selection`);
+    if (target.closest('[data-info-button]') || 
+        target.closest('[role="dialog"]') || 
+        target.closest('[data-radix-dialog-content]')) {
+      console.log(`ℹ️ BattleCard: Info dialog interaction for ${displayName}, preventing card selection`);
       return;
     }
 
@@ -103,8 +105,12 @@ const BattleCard: React.FC<BattleCardProps> = memo(({
       data-processing={isProcessing ? "true" : "false"}
     >
       <CardContent className="p-4 text-center relative">
-        {/* Info Button - add data attribute to prevent click bubbling */}
-        <div data-info-button="true">
+        {/* Info Button - positioned absolutely to avoid click conflicts */}
+        <div 
+          data-info-button="true" 
+          className="absolute top-2 right-2 z-20"
+          onClick={(e) => e.stopPropagation()}
+        >
           <PokemonInfoModal pokemon={pokemon} />
         </div>
 
