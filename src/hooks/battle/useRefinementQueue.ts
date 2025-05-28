@@ -11,25 +11,49 @@ export const useRefinementQueue = () => {
   const [refinementQueue, setRefinementQueue] = useState<RefinementBattle[]>([]);
 
   const queueBattlesForReorder = useCallback((primaryId: number, neighbors: number[], newPosition: number) => {
-    console.log(`🔄 [REFINEMENT_QUEUE] Queueing validation battles for Pokemon ${primaryId} at new position ${newPosition}`);
-    console.log(`🔄 [REFINEMENT_QUEUE] Neighbors to battle against: ${neighbors.join(', ')}`);
+    console.log(`🔄 [REFINEMENT_QUEUE] ===== QUEUEING VALIDATION BATTLES =====`);
+    console.log(`🔄 [REFINEMENT_QUEUE] Primary Pokemon ID: ${primaryId}`);
+    console.log(`🔄 [REFINEMENT_QUEUE] New position: ${newPosition}`);
+    console.log(`🔄 [REFINEMENT_QUEUE] Neighbors to battle: ${neighbors.join(', ')}`);
+    console.log(`🔄 [REFINEMENT_QUEUE] Neighbors count: ${neighbors.length}`);
     
     // Filter out any existing refinement battles for this Pokemon
     setRefinementQueue(prev => {
-      const filtered = prev.filter(b => b.primaryPokemonId !== primaryId && b.opponentPokemonId !== primaryId);
+      console.log(`🔄 [REFINEMENT_QUEUE] Current queue size before filtering: ${prev.length}`);
+      
+      const filtered = prev.filter(b => {
+        const shouldKeep = b.primaryPokemonId !== primaryId && b.opponentPokemonId !== primaryId;
+        if (!shouldKeep) {
+          console.log(`🔄 [REFINEMENT_QUEUE] Removing existing battle: ${b.primaryPokemonId} vs ${b.opponentPokemonId}`);
+        }
+        return shouldKeep;
+      });
+      
+      console.log(`🔄 [REFINEMENT_QUEUE] Queue size after filtering: ${filtered.length}`);
       
       // Create new refinement battles with valid neighbors
       const newBattles = neighbors
-        .filter(opponentId => opponentId && opponentId !== primaryId)
+        .filter(opponentId => {
+          const isValid = opponentId && opponentId !== primaryId;
+          if (!isValid) {
+            console.log(`🔄 [REFINEMENT_QUEUE] Skipping invalid opponent: ${opponentId} (${!opponentId ? 'falsy' : 'same as primary'})`);
+          }
+          return isValid;
+        })
         .slice(0, 5) // Increase to 5 battles max for better validation
-        .map(opponentId => ({
-          primaryPokemonId: primaryId,
-          opponentPokemonId: opponentId,
-          reason: `Position validation for manual reorder to position ${newPosition} (dragged from milestone)`
-        }));
+        .map((opponentId, index) => {
+          const battle = {
+            primaryPokemonId: primaryId,
+            opponentPokemonId: opponentId,
+            reason: `Position validation for manual reorder to position ${newPosition} (dragged from milestone)`
+          };
+          console.log(`🔄 [REFINEMENT_QUEUE] Creating battle ${index + 1}: ${primaryId} vs ${opponentId}`);
+          return battle;
+        });
       
       const totalBattles = [...filtered, ...newBattles];
-      console.log(`🔄 [REFINEMENT_QUEUE] ✅ Added ${newBattles.length} refinement battles for Pokemon ${primaryId}`);
+      
+      console.log(`🔄 [REFINEMENT_QUEUE] ✅ Created ${newBattles.length} new refinement battles`);
       console.log(`🔄 [REFINEMENT_QUEUE] ✅ Total refinement battles queued: ${totalBattles.length}`);
       console.log(`🔄 [REFINEMENT_QUEUE] ✅ Next ${Math.min(newBattles.length, totalBattles.length)} battles will be validation battles`);
       
@@ -38,6 +62,8 @@ export const useRefinementQueue = () => {
         console.log(`🔄 [REFINEMENT_QUEUE] Battle ${index + 1}: Pokemon ${battle.primaryPokemonId} vs ${battle.opponentPokemonId}`);
       });
       
+      console.log(`🔄 [REFINEMENT_QUEUE] ===== END QUEUEING VALIDATION BATTLES =====`);
+      
       return totalBattles;
     });
   }, []);
@@ -45,10 +71,8 @@ export const useRefinementQueue = () => {
   const getNextRefinementBattle = useCallback((): RefinementBattle | null => {
     const next = refinementQueue.length > 0 ? refinementQueue[0] : null;
     if (next) {
-      console.log(`⚔️ [REFINEMENT_QUEUE] ✅ Next battle will be refinement: ${next.primaryPokemonId} vs ${next.opponentPokemonId}`);
+      console.log(`⚔️ [REFINEMENT_QUEUE] ✅ Next battle is refinement: ${next.primaryPokemonId} vs ${next.opponentPokemonId}`);
       console.log(`⚔️ [REFINEMENT_QUEUE] ✅ Reason: ${next.reason}`);
-    } else {
-      console.log(`⚔️ [REFINEMENT_QUEUE] ❌ No refinement battles in queue`);
     }
     return next;
   }, [refinementQueue]);
