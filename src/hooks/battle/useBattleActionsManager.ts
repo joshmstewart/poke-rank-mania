@@ -1,10 +1,10 @@
 
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
-import { useBattleInteractions } from "./useBattleInteractions";
-import { useBattleActionCoordination } from "./useBattleActionCoordination";
-import { useBattleActionProcessing } from "./useBattleActionProcessing";
-import { useBattleActionHandlers } from "./useBattleActionHandlers";
+import { useBattleActionsCoordination } from "./useBattleActionsCoordination";
+import { useBattleActionsProcessing } from "./useBattleActionsProcessing";
+import { useBattleActionsHandlers } from "./useBattleActionsHandlers";
+import { useBattleActionsInteractions } from "./useBattleActionsInteractions";
 
 export const useBattleActionsManager = (
   // State dependencies
@@ -39,7 +39,7 @@ export const useBattleActionsManager = (
 ) => {
   
   // Use coordination hook for type conversions
-  const { activeTierAsTopNOption, freezePokemonForTierWrapper } = useBattleActionCoordination(
+  const { activeTierAsTopNOption, freezePokemonForTierWrapper } = useBattleActionsCoordination(
     activeTier,
     freezePokemonForTierStringWrapper
   );
@@ -50,7 +50,7 @@ export const useBattleActionsManager = (
     isProcessingResult,
     resetMilestoneInProgress,
     resetBattleProgressionMilestoneTracking
-  } = useBattleActionProcessing(
+  } = useBattleActionsProcessing(
     battleResults,
     setBattleResults,
     battlesCompleted,
@@ -73,7 +73,7 @@ export const useBattleActionsManager = (
     goBack,
     handleContinueBattles,
     performFullBattleReset
-  } = useBattleActionHandlers(
+  } = useBattleActionsHandlers(
     battleHistory,
     setBattleHistory,
     battleResults,
@@ -100,9 +100,8 @@ export const useBattleActionsManager = (
   // Use interactions hook for Pokemon selection handling
   const {
     handlePokemonSelect,
-    handleGoBack: goBackHelper,
     isProcessing
-  } = useBattleInteractions(
+  } = useBattleActionsInteractions(
     currentBattle,
     stableSetCurrentBattle,
     selectedPokemon,
@@ -113,17 +112,9 @@ export const useBattleActionsManager = (
     setBattlesCompleted,
     battleHistory,
     setBattleHistory,
-    (battleType: BattleType, currentBattle: Pokemon[]) => {
-      if (battleType === "triplets") {
-        processBattleResult(selectedPokemon, currentBattle, battleType, 0);
-      }
-    },
-    () => {
-      console.log("Going back in battle navigation");
-      goBack();
-    },
     battleType,
-    processBattleResult
+    processBattleResult,
+    goBack
   );
 
   return {
