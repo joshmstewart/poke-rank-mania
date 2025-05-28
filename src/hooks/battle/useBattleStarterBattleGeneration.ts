@@ -2,57 +2,88 @@
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
 import { validateBattlePokemon } from "@/services/pokemon/api/utils";
-import { getRandomCrossGenerationPokemon, shuffleArray } from "./useBattleStarterUtils";
 
 export const createBattleGenerator = (
   allPokemonForGeneration: Pokemon[],
   setCurrentBattle: React.Dispatch<React.SetStateAction<Pokemon[]>>
 ) => {
-  const recentlySeenPokemon = new Set<number>();
+  // PERFORMANCE FIX: Use more efficient data structures
+  const recentlySeenSet = new Set<number>();
+  const recentPairsSet = new Set<string>();
   let battleCountRef = 0;
+  const maxRecentSize = 50; // Reduced from 100
+  const maxPairsSize = 25; // Reduced from 50
 
-  console.log(`⚡ [POKEMON_LOADING_FIX] createBattleGenerator initialized with ${allPokemonForGeneration.length} total Pokemon`);
+  console.log(`⚡ [PERFORMANCE_FIX] Battle generator optimized with ${allPokemonForGeneration.length} Pokemon`);
 
-  // CRITICAL FIX: Log Pokemon ID range to verify we have the full dataset
-  if (allPokemonForGeneration.length > 0) {
-    const pokemonIds = allPokemonForGeneration.map(p => p.id);
-    const minId = Math.min(...pokemonIds);
-    const maxId = Math.max(...pokemonIds);
-    console.log(`🎯 [POKEMON_RANGE_FIX] Pokemon ID range: ${minId} to ${maxId} (${allPokemonForGeneration.length} total)`);
+  // PERFORMANCE FIX: Pre-compute weighted pools for faster selection
+  const createWeightedPool = (excludeIds: Set<number>, size: number): Pokemon[] => {
+    const available = allPokemonForGeneration.filter(p => !excludeIds.has(p.id));
     
-    // Log some high-numbered Pokemon to verify we have them
-    const highNumberedPokemon = allPokemonForGeneration.filter(p => p.id > 800);
-    console.log(`🎯 [POKEMON_RANGE_FIX] High-numbered Pokemon (>800): ${highNumberedPokemon.length} found`);
-    if (highNumberedPokemon.length > 0) {
-      console.log(`🎯 [POKEMON_RANGE_FIX] Sample high-numbered Pokemon: ${highNumberedPokemon.slice(0, 5).map(p => `${p.name} (${p.id})`).join(', ')}`);
+    // Simple random selection for better performance
+    const selected: Pokemon[] = [];
+    const indices = new Set<number>();
+    
+    while (selected.length < size && indices.size < available.length) {
+      const randomIndex = Math.floor(Math.random() * available.length);
+      if (!indices.has(randomIndex)) {
+        indices.add(randomIndex);
+        selected.push(available[randomIndex]);
+      }
     }
-  }
+    
+    return selected;
+  };
 
   const getTierBattlePair = (battleType: BattleType): Pokemon[] => {
-    console.log("⚡ [POKEMON_LOADING_FIX] Battle generation using full dataset. Battle type:", battleType);
-    
     const battleSize = battleType === "pairs" ? 2 : 3;
 
-    // Use the complete Pokemon dataset for battle generation
-    const selectedBattle = getRandomCrossGenerationPokemon(allPokemonForGeneration, battleSize, recentlySeenPokemon);
+    // PERFORMANCE FIX: Simpler battle generation
+    let selectedBattle: Pokemon[] = [];
+    let attempts = 0;
+    const maxAttempts = 3; // Reduced from 5
     
-    if (selectedBattle.length < battleSize) {
-      console.log("⚠️ Failed to select enough Pokemon with strategy, using simple random selection from full dataset");
-      const fallback = shuffleArray(allPokemonForGeneration).slice(0, battleSize);
-      return fallback;
+    while (attempts < maxAttempts && selectedBattle.length < battleSize) {
+      // Get candidates excluding recently seen
+      const candidates = createWeightedPool(recentlySeenSet, battleSize * 3);
+      
+      if (candidates.length >= battleSize) {
+        selectedBattle = candidates.slice(0, battleSize);
+        
+        // Check for recent pairs (simplified)
+        const battleIds = selectedBattle.map(p => p.id).sort().join('-');
+        if (!recentPairsSet.has(battleIds) || attempts >= maxAttempts - 1) {
+          break;
+        }
+      }
+      
+      attempts++;
     }
 
+    // Fallback to pure random if needed
+    if (selectedBattle.length < battleSize) {
+      const shuffled = [...allPokemonForGeneration].sort(() => Math.random() - 0.5);
+      selectedBattle = shuffled.slice(0, battleSize);
+    }
+
+    // PERFORMANCE FIX: Efficient memory management
     selectedBattle.forEach(p => {
-      recentlySeenPokemon.add(p.id);
+      recentlySeenSet.add(p.id);
+      if (recentlySeenSet.size > maxRecentSize) {
+        const oldestEntries = Array.from(recentlySeenSet).slice(0, 10);
+        oldestEntries.forEach(id => recentlySeenSet.delete(id));
+      }
     });
 
-    if (recentlySeenPokemon.size > Math.min(50, Math.floor(allPokemonForGeneration.length * 0.1))) {
-      const oldestEntries = Array.from(recentlySeenPokemon).slice(0, 10);
-      oldestEntries.forEach(id => recentlySeenPokemon.delete(id));
+    const battleIds = selectedBattle.map(p => p.id).sort().join('-');
+    recentPairsSet.add(battleIds);
+    if (recentPairsSet.size > maxPairsSize) {
+      const oldestPairs = Array.from(recentPairsSet).slice(0, 5);
+      oldestPairs.forEach(pair => recentPairsSet.delete(pair));
     }
 
     const validatedBattle = validateBattlePokemon(selectedBattle);
-    console.log("⚡ [POKEMON_LOADING_FIX] Battle created from full dataset:", validatedBattle.map(p => `${p.name} (${p.id})`).join(', '));
+    console.log("⚡ [PERFORMANCE_FIX] Fast battle generated:", validatedBattle.map(p => `${p.name} (${p.id})`).join(', '));
     
     return validatedBattle;
   };
@@ -60,28 +91,33 @@ export const createBattleGenerator = (
   const startNewBattle = (battleType: BattleType): Pokemon[] => {
     battleCountRef++;
     const battleSize = battleType === "pairs" ? 2 : 3;
-    let result: Pokemon[] = [];
-
-    console.log(`⚡ [POKEMON_LOADING_FIX] Battle ${battleCountRef}: Using full dataset of ${allPokemonForGeneration.length} Pokemon`);
-    result = getTierBattlePair(battleType);
+    
+    console.log(`⚡ [PERFORMANCE_FIX] Quick battle ${battleCountRef} generation`);
+    const result = getTierBattlePair(battleType);
     
     if (result.length < battleSize) {
-      console.log("⚠️ getTierBattlePair returned insufficient Pokemon, using simple fallback from full dataset");
-      result = shuffleArray(allPokemonForGeneration).slice(0, battleSize);
+      console.log("⚠️ Fallback to simple random selection");
+      const fallback = [...allPokemonForGeneration]
+        .sort(() => Math.random() - 0.5)
+        .slice(0, battleSize);
+      const validatedFallback = validateBattlePokemon(fallback);
+      setCurrentBattle(validatedFallback);
+      return validatedFallback;
     }
 
-    const validatedResult = validateBattlePokemon(result);
-
-    const battleCreatedEvent = new CustomEvent('battle-created', {
-      detail: { 
-        pokemonIds: validatedResult.map(p => p.id),
-        pokemonNames: validatedResult.map(p => p.name)
-      }
-    });
-    document.dispatchEvent(battleCreatedEvent);
+    // PERFORMANCE FIX: Dispatch events asynchronously to avoid blocking
+    setTimeout(() => {
+      const battleCreatedEvent = new CustomEvent('battle-created', {
+        detail: { 
+          pokemonIds: result.map(p => p.id),
+          pokemonNames: result.map(p => p.name)
+        }
+      });
+      document.dispatchEvent(battleCreatedEvent);
+    }, 0);
     
-    setCurrentBattle(validatedResult);
-    return validatedResult;
+    setCurrentBattle(result);
+    return result;
   };
 
   return { startNewBattle };

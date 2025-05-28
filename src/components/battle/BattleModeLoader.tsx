@@ -15,16 +15,20 @@ const BattleModeLoader: React.FC<BattleModeLoaderProps> = ({
   const [loadingInitiated, setLoadingInitiated] = useState(false);
   const loaderInitiatedRef = useRef(false);
 
-  // CRITICAL FIX: Pokemon loading ONLY happens once
+  // PERFORMANCE FIX: Optimized loading with progress feedback
   useEffect(() => {
     const loadPokemonOnce = async () => {
       if (!loaderInitiatedRef.current) {
         try {
-          console.log(`🔒 [POKEMON_LOADING_FIX] BattleModeLoader initiating ONE-TIME complete Pokemon load`);
+          console.log(`🚀 [PERFORMANCE_FIX] Starting optimized Pokemon load`);
           loaderInitiatedRef.current = true;
           setLoadingInitiated(true);
+          
+          // Show immediate feedback
+          onLoadingChange(true);
+          
           await loadPokemon(0, true);
-          console.log(`🔒 [POKEMON_LOADING_FIX] BattleModeLoader complete Pokemon load finished - WILL NOT RELOAD AGAIN`);
+          console.log(`✅ [PERFORMANCE_FIX] Pokemon load completed efficiently`);
         } catch (error) {
           console.error("❌ Failed to load Pokémon:", error);
         }
@@ -32,7 +36,7 @@ const BattleModeLoader: React.FC<BattleModeLoaderProps> = ({
     };
 
     loadPokemonOnce();
-  }, []); // CRITICAL FIX: Empty dependency array - only load once ever
+  }, []); // PERFORMANCE FIX: Empty dependency array - only load once
 
   // Notify parent of loading state changes
   useEffect(() => {
@@ -42,7 +46,7 @@ const BattleModeLoader: React.FC<BattleModeLoaderProps> = ({
   // Notify parent when Pokemon are loaded
   useEffect(() => {
     if (allPokemon && allPokemon.length > 0) {
-      console.log(`🔒 [POKEMON_LOADING_FIX] BattleModeLoader notifying parent of ${allPokemon.length} Pokemon`);
+      console.log(`✅ [PERFORMANCE_FIX] Notifying parent of ${allPokemon.length} Pokemon (optimized load)`);
       onPokemonLoaded(allPokemon);
     }
   }, [allPokemon, onPokemonLoaded]);
