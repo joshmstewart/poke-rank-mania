@@ -37,16 +37,15 @@ export const useBattleStarterCore = (
     availablePokemon: Pokemon[],
     recentlyUsed: string[]
   ): Pokemon[] => {
-    console.log(`🚨🚨🚨 [BATTLE_GENERATION_DEBUG] ===== SELECTING BATTLE POKEMON =====`);
-    console.log(`🚨🚨🚨 [BATTLE_GENERATION_DEBUG] Battle type: ${battleType}`);
-    console.log(`🚨🚨🚨 [BATTLE_GENERATION_DEBUG] Available Pokemon count: ${availablePokemon.length}`);
-    console.log(`🚨🚨🚨 [BATTLE_GENERATION_DEBUG] Recently used entries: ${recentlyUsed.length}`);
-    console.log(`🚨🚨🚨 [BATTLE_GENERATION_DEBUG] Recently used: ${recentlyUsed.join(', ')}`);
+    const battleCount = parseInt(localStorage.getItem('pokemon-battle-count') || '0', 10);
+    
+    console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] ===== BATTLE #${battleCount + 1} GENERATION =====`);
+    console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] Battle type: ${battleType}`);
+    console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] Available Pokemon count: ${availablePokemon.length}`);
+    console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] Recently used entries: ${recentlyUsed.length}`);
+    console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] Recently used list: [${recentlyUsed.join(', ')}]`);
     
     if (battleType === "pairs") {
-      const battleCount = parseInt(localStorage.getItem('pokemon-battle-count') || '0', 10);
-      console.log(`🚨🚨🚨 [BATTLE_GENERATION_DEBUG] Current battle count: ${battleCount}`);
-      
       // Get all possible pairs
       const allPairs: Array<{pokemon1: Pokemon, pokemon2: Pokemon, key: string}> = [];
       for (let i = 0; i < availablePokemon.length; i++) {
@@ -58,29 +57,36 @@ export const useBattleStarterCore = (
         }
       }
       
-      console.log(`🚨🚨🚨 [BATTLE_GENERATION_DEBUG] Total possible pairs: ${allPairs.length}`);
+      console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] Total possible pairs: ${allPairs.length}`);
       
-      // CRITICAL FIX: Instead of clearing recently used when empty, implement better distribution
+      // Filter unused pairs
       let unusedPairs = allPairs.filter(pair => !recentlyUsed.includes(pair.key));
-      console.log(`🚨🚨🚨 [BATTLE_GENERATION_DEBUG] Unused pairs: ${unusedPairs.length}`);
+      console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] Unused pairs: ${unusedPairs.length}`);
+      
+      // Log first few unused pairs for debugging
+      console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] First 5 unused pairs:`, 
+        unusedPairs.slice(0, 5).map(p => `${p.pokemon1.name} vs ${p.pokemon2.name} (${p.key})`));
       
       if (unusedPairs.length === 0) {
-        console.log(`🚨🚨🚨 [BATTLE_GENERATION_DEBUG] ❌ NO UNUSED PAIRS! Implementing better distribution`);
+        console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] ❌ NO UNUSED PAIRS! Implementing better distribution`);
         
-        // CRITICAL FIX: Instead of clearing all, remove only the oldest 50% of entries
+        // Remove only the oldest 50% of entries
         const halfSize = Math.floor(recentlyUsed.length / 2);
         const remainingUsed = recentlyUsed.slice(halfSize);
         
-        console.log(`🚨🚨🚨 [BATTLE_GENERATION_DEBUG] Removing ${halfSize} oldest entries, keeping ${remainingUsed.length}`);
+        console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] Removing ${halfSize} oldest entries, keeping ${remainingUsed.length}`);
+        console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] Removed entries: [${recentlyUsed.slice(0, halfSize).join(', ')}]`);
+        console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] Keeping entries: [${remainingUsed.join(', ')}]`);
+        
         localStorage.setItem('pokemon-battle-recently-used', JSON.stringify(remainingUsed));
         
         // Now get unused pairs with the reduced recently used list
         unusedPairs = allPairs.filter(pair => !remainingUsed.includes(pair.key));
-        console.log(`🚨🚨🚨 [BATTLE_GENERATION_DEBUG] After partial clear - unused pairs: ${unusedPairs.length}`);
+        console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] After partial clear - unused pairs: ${unusedPairs.length}`);
         
         // If still no unused pairs, pick the least recently used
         if (unusedPairs.length === 0) {
-          console.log(`🚨🚨🚨 [BATTLE_GENERATION_DEBUG] Still no unused pairs - picking least recently used`);
+          console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] Still no unused pairs - picking least recently used`);
           
           // Find pairs that were used earliest (not in the recent half)
           const oldestUsedPairs = recentlyUsed.slice(0, halfSize);
@@ -89,6 +95,7 @@ export const useBattleStarterCore = (
           if (unusedPairs.length === 0) {
             // Last resort: pick any pair
             unusedPairs = [allPairs[Math.floor(Math.random() * allPairs.length)]];
+            console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] Last resort - picking random pair`);
           }
         }
       }
@@ -98,10 +105,12 @@ export const useBattleStarterCore = (
       const selectedPair = unusedPairs[randomIndex];
       const result = [selectedPair.pokemon1, selectedPair.pokemon2];
       
-      console.log(`🚨🚨🚨 [BATTLE_GENERATION_DEBUG] ✅ SELECTED: ${result[0].name} vs ${result[1].name}`);
-      console.log(`🚨🚨🚨 [BATTLE_GENERATION_DEBUG] ✅ SELECTED IDs: ${result[0].id} vs ${result[1].id}`);
-      console.log(`🚨🚨🚨 [BATTLE_GENERATION_DEBUG] ✅ SELECTED key: ${selectedPair.key}`);
-      console.log(`🚨🚨🚨 [BATTLE_GENERATION_DEBUG] ✅ Was this pair recently used? ${recentlyUsed.includes(selectedPair.key)}`);
+      console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] ===== BATTLE #${battleCount + 1} SELECTED =====`);
+      console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] Selected: ${result[0].name} (${result[0].id}) vs ${result[1].name} (${result[1].id})`);
+      console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] Selected key: ${selectedPair.key}`);
+      console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] Was this pair recently used? ${recentlyUsed.includes(selectedPair.key)}`);
+      console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] Random index chosen: ${randomIndex} of ${unusedPairs.length} unused pairs`);
+      console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] ===== END BATTLE #${battleCount + 1} GENERATION =====`);
       
       return result;
     }
@@ -122,7 +131,7 @@ export const useBattleStarterCore = (
         availableIndices.splice(randomIndex, 1);
       }
 
-      console.log(`Selected triplets: ${selected.map(p => p.name).join(', ')}`);
+      console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] Selected triplets: ${selected.map(p => p.name).join(', ')}`);
       return selected;
     }
 
