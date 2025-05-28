@@ -1,4 +1,3 @@
-
 import { capitalizeFirstLetter, capitalizeWords } from './helpers';
 
 /**
@@ -10,151 +9,126 @@ import { capitalizeFirstLetter, capitalizeWords } from './helpers';
 export const formatPokemonName = (name: string): string => {
   if (!name) return '';
   
-  console.log(`🔧 [FORMAT_ENTRY] formatPokemonName called with: "${name}"`);
+  console.log(`🔧 [FORMAT_ULTRA_DEBUG] ===== formatPokemonName ENTRY =====`);
+  console.log(`🔧 [FORMAT_ULTRA_DEBUG] Input name: "${name}"`);
+  console.log(`🔧 [FORMAT_ULTRA_DEBUG] Input type: ${typeof name}`);
+  console.log(`🔧 [FORMAT_ULTRA_DEBUG] Input length: ${name.length}`);
+  console.log(`🔧 [FORMAT_ULTRA_DEBUG] Input chars: [${name.split('').join(', ')}]`);
   
   const lowerName = name.toLowerCase();
-  console.log(`🔧 [FORMAT_STEP_1] Lowercase conversion: "${lowerName}"`);
+  console.log(`🔧 [FORMAT_ULTRA_DEBUG] Lowercase: "${lowerName}"`);
   
-  // CRITICAL DEBUG: Test the exact condition that should match "diglett-alola"
-  const includesAlola = lowerName.includes('-alola');
-  console.log(`🔧 [FORMAT_ALOLA_CHECK] Does "${lowerName}" include '-alola'? ${includesAlola}`);
+  // CRITICAL GMAX CHECK WITH ULTRA LOGGING
+  const containsGmax = lowerName.includes('-gmax');
+  console.log(`🎯 [GMAX_ULTRA_DEBUG] Contains '-gmax': ${containsGmax}`);
+  console.log(`🎯 [GMAX_ULTRA_DEBUG] Exact match check: "${lowerName}" includes "-gmax": ${lowerName.includes('-gmax')}`);
   
-  if (includesAlola) {
-    console.log(`🔧 [FORMAT_ALOLA_DETECTED] Processing Alolan form: "${name}"`);
-    const alolaSuffixIndex = name.toLowerCase().indexOf('-alola');
-    console.log(`🔧 [FORMAT_ALOLA_INDEX] Index of '-alola' in "${name}": ${alolaSuffixIndex}`);
+  if (containsGmax) {
+    console.log(`🎯 [GMAX_ULTRA_DEBUG] GMAX DETECTED! Processing: "${name}"`);
     
-    const baseName = name.substring(0, alolaSuffixIndex);
-    console.log(`🔧 [FORMAT_ALOLA_BASE] Base name extracted: "${baseName}"`);
+    const gmaxIndex = lowerName.indexOf('-gmax');
+    console.log(`🎯 [GMAX_ULTRA_DEBUG] GMAX index: ${gmaxIndex}`);
+    
+    const baseName = name.substring(0, gmaxIndex);
+    console.log(`🎯 [GMAX_ULTRA_DEBUG] Base name extracted: "${baseName}"`);
     
     const capitalizedBase = capitalizeFirstLetter(baseName);
-    console.log(`🔧 [FORMAT_ALOLA_CAPITALIZED] Capitalized base: "${capitalizedBase}"`);
+    console.log(`🎯 [GMAX_ULTRA_DEBUG] Capitalized base: "${capitalizedBase}"`);
     
-    const result = `Alolan ${capitalizedBase}`;
-    console.log(`🔧 [FORMAT_ALOLA_RESULT] Final result: "${result}"`);
-    console.log(`🔧 [FORMAT_ALOLA_SUCCESS] "${name}" → "${result}"`);
+    const result = `G-Max ${capitalizedBase}`;
+    console.log(`🎯 [GMAX_ULTRA_DEBUG] FINAL GMAX RESULT: "${result}"`);
+    console.log(`🎯 [GMAX_ULTRA_DEBUG] Result contains 'G-Max': ${result.includes('G-Max')}`);
+    console.log(`🔧 [FORMAT_ULTRA_DEBUG] ===== formatPokemonName EXIT (GMAX) =====`);
     return result;
   }
   
-  // CRITICAL FIX: Handle Miraidon and Koraidon forms NEXT
+  // Check for Alolan forms
+  const includesAlola = lowerName.includes('-alola');
+  console.log(`🔧 [FORMAT_ULTRA_DEBUG] Contains '-alola': ${includesAlola}`);
+  
+  if (includesAlola) {
+    console.log(`🔧 [FORMAT_ALOLA_DEBUG] Processing Alolan form: "${name}"`);
+    const alolaSuffixIndex = name.toLowerCase().indexOf('-alola');
+    const baseName = name.substring(0, alolaSuffixIndex);
+    const capitalizedBase = capitalizeFirstLetter(baseName);
+    const result = `Alolan ${capitalizedBase}`;
+    console.log(`🔧 [FORMAT_ALOLA_DEBUG] Alolan result: "${result}"`);
+    console.log(`🔧 [FORMAT_ULTRA_DEBUG] ===== formatPokemonName EXIT (ALOLAN) =====`);
+    return result;
+  }
+  
+  // Handle Miraidon and Koraidon forms
   if (lowerName.includes('miraidon-')) {
-    console.log(`🔧 [FORMAT_MIRAIDON_DETECTED] Processing Miraidon form: "${name}"`);
+    console.log(`🔧 [FORMAT_DEBUG] Processing Miraidon form: "${name}"`);
     const formPart = name.substring(9); // Remove "miraidon-"
     const formattedForm = capitalizeWords(formPart.replace(/-/g, ' '));
     const result = `Miraidon (${formattedForm})`;
-    console.log(`🔧 [FORMAT_MIRAIDON_RESULT] "${name}" → "${result}"`);
+    console.log(`🔧 [FORMAT_DEBUG] Miraidon result: "${result}"`);
     return result;
   }
   
   if (lowerName.includes('koraidon-')) {
-    console.log(`🔧 [FORMAT_KORAIDON_DETECTED] Processing Koraidon form: "${name}"`);
+    console.log(`🔧 [FORMAT_DEBUG] Processing Koraidon form: "${name}"`);
     const formPart = name.substring(9); // Remove "koraidon-"
     const formattedForm = capitalizeWords(formPart.replace(/-/g, ' '));
     const result = `Koraidon (${formattedForm})`;
-    console.log(`🔧 [FORMAT_KORAIDON_RESULT] "${name}" → "${result}"`);
+    console.log(`🔧 [FORMAT_DEBUG] Koraidon result: "${result}"`);
     return result;
   }
   
-  // Handle regional forms NEXT - these are the most common in the logs
+  // Handle other regional forms
   if (lowerName.includes('-galar')) {
-    console.log(`🔧 [FORMAT_GALAR_DETECTED] Processing Galarian form: "${name}"`);
     const baseName = name.substring(0, name.toLowerCase().indexOf('-galar'));
     const result = `Galarian ${capitalizeFirstLetter(baseName)}`;
-    console.log(`🔧 [FORMAT_GALAR_RESULT] "${name}" → "${result}"`);
+    console.log(`🔧 [FORMAT_DEBUG] Galar result: "${result}"`);
     return result;
   }
   
   if (lowerName.includes('-hisui')) {
-    console.log(`🔧 [FORMAT_HISUI_DETECTED] Processing Hisuian form: "${name}"`);
     const baseName = name.substring(0, name.toLowerCase().indexOf('-hisui'));
     const result = `Hisuian ${capitalizeFirstLetter(baseName)}`;
-    console.log(`🔧 [FORMAT_HISUI_RESULT] "${name}" → "${result}"`);
+    console.log(`🔧 [FORMAT_DEBUG] Hisui result: "${result}"`);
     return result;
   }
   
   if (lowerName.includes('-paldea')) {
-    console.log(`🔧 [FORMAT_PALDEA_DETECTED] Processing Paldean form: "${name}"`);
     const baseName = name.substring(0, name.toLowerCase().indexOf('-paldea'));
     const result = `Paldean ${capitalizeFirstLetter(baseName)}`;
-    console.log(`🔧 [FORMAT_PALDEA_RESULT] "${name}" → "${result}"`);
+    console.log(`🔧 [FORMAT_DEBUG] Paldea result: "${result}"`);
     return result;
   }
   
   // Handle specific Paldea breed forms like "tauros-paldea-blaze-breed"
   if (lowerName.includes('-paldea-') && (lowerName.includes('-breed') || lowerName.includes('-form'))) {
-    console.log(`🔧 [FORMAT_PALDEA_BREED_DETECTED] Processing Paldean breed form: "${name}"`);
     const parts = name.toLowerCase().split('-');
     if (parts.length >= 4) {
       const baseName = parts[0];
       const breedType = parts[2]; // "blaze", "aqua", "combat"
       const result = `${capitalizeFirstLetter(baseName)} (Paldean ${capitalizeFirstLetter(breedType)})`;
-      console.log(`🔧 [FORMAT_PALDEA_BREED_RESULT] "${name}" → "${result}"`);
+      console.log(`🔧 [FORMAT_DEBUG] Paldea breed result: "${result}"`);
       return result;
     }
   }
   
-  // Handle Pikachu special forms like "pikachu-pop-star"
-  if (lowerName.startsWith('pikachu-') && !lowerName.includes('cap')) {
-    console.log(`🔧 [FORMAT_PIKACHU_SPECIAL_DETECTED] Processing special Pikachu form: "${name}"`);
-    const formPart = name.substring(8); // Remove "pikachu-"
-    const formattedForm = capitalizeWords(formPart.replace(/-/g, ' '));
-    const result = `Pikachu (${formattedForm})`;
-    console.log(`🔧 [FORMAT_PIKACHU_SPECIAL_RESULT] "${name}" → "${result}"`);
-    return result;
-  }
-  
-  // Handle Lycanroc forms like "lycanroc-dusk"
-  if (lowerName.startsWith('lycanroc-')) {
-    console.log(`🔧 [FORMAT_LYCANROC_DETECTED] Processing Lycanroc form: "${name}"`);
-    const formPart = name.substring(9); // Remove "lycanroc-"
-    const result = `${capitalizeFirstLetter(formPart)} Lycanroc`;
-    console.log(`🔧 [FORMAT_LYCANROC_RESULT] "${name}" → "${result}"`);
-    return result;
-  }
-  
-  // Handle Indeedee gender forms like "indeedee-female"
-  if (lowerName.includes('-female') || lowerName.includes('-male')) {
-    console.log(`🔧 [FORMAT_GENDER_DETECTED] Processing gender form: "${name}"`);
-    const parts = name.split('-');
-    const baseName = parts[0];
-    const gender = parts[1];
-    const result = `${capitalizeFirstLetter(baseName)} (${capitalizeFirstLetter(gender)})`;
-    console.log(`🔧 [FORMAT_GENDER_RESULT] "${name}" → "${result}"`);
-    return result;
-  }
-  
-  // CRITICAL FIX: Handle Gigantamax forms - this is the main issue
-  if (lowerName.includes('-gmax')) {
-    console.log(`🔧 [FORMAT_GMAX_DETECTED] Processing G-Max form: "${name}"`);
-    const baseName = name.substring(0, name.toLowerCase().indexOf('-gmax'));
-    const capitalizedBaseName = capitalizeFirstLetter(baseName);
-    const result = `G-Max ${capitalizedBaseName}`;
-    console.log(`🔧 [FORMAT_GMAX_RESULT] "${name}" → "${result}"`);
-    return result;
-  }
-  
-  // Handle Mega evolutions - CRITICAL: Must come AFTER G-Max check
+  // Handle Mega evolutions
   if (lowerName.includes('-mega-x')) {
-    console.log(`🔧 [FORMAT_MEGA_X_DETECTED] Processing Mega X form: "${name}"`);
     const baseName = name.substring(0, name.toLowerCase().indexOf('-mega-x'));
     const result = `Mega ${capitalizeFirstLetter(baseName)} X`;
-    console.log(`🔧 [FORMAT_MEGA_X_RESULT] "${name}" → "${result}"`);
+    console.log(`🔧 [FORMAT_DEBUG] Mega X result: "${result}"`);
     return result;
   }
   
   if (lowerName.includes('-mega-y')) {
-    console.log(`🔧 [FORMAT_MEGA_Y_DETECTED] Processing Mega Y form: "${name}"`);
     const baseName = name.substring(0, name.toLowerCase().indexOf('-mega-y'));
     const result = `Mega ${capitalizeFirstLetter(baseName)} Y`;
-    console.log(`🔧 [FORMAT_MEGA_Y_RESULT] "${name}" → "${result}"`);
+    console.log(`🔧 [FORMAT_DEBUG] Mega Y result: "${result}"`);
     return result;
   }
   
   if (lowerName.includes('-mega')) {
-    console.log(`🔧 [FORMAT_MEGA_DETECTED] Processing Mega form: "${name}"`);
     const baseName = name.substring(0, name.toLowerCase().indexOf('-mega'));
     const result = `Mega ${capitalizeFirstLetter(baseName)}`;
-    console.log(`🔧 [FORMAT_MEGA_RESULT] "${name}" → "${result}"`);
+    console.log(`🔧 [FORMAT_DEBUG] Mega result: "${result}"`);
     return result;
   }
   
@@ -233,8 +207,9 @@ export const formatPokemonName = (name: string): string => {
   }
   
   // If no special patterns found, just capitalize the first letter
-  console.log(`🔧 [FORMAT_NO_MATCH] No transformation patterns matched for: "${name}"`);
+  console.log(`🔧 [FORMAT_ULTRA_DEBUG] No patterns matched for: "${name}"`);
   const result = capitalizeFirstLetter(name);
-  console.log(`🔧 [FORMAT_DEFAULT_RESULT] Returning capitalized: "${name}" → "${result}"`);
+  console.log(`🔧 [FORMAT_ULTRA_DEBUG] Default capitalization result: "${result}"`);
+  console.log(`🔧 [FORMAT_ULTRA_DEBUG] ===== formatPokemonName EXIT (DEFAULT) =====`);
   return result;
 };

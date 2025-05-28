@@ -35,6 +35,32 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
   onRemoveSuggestion
 }) => {
   console.log("🟣 RankingDisplay component rendered with", finalRankings.length, "Pokémon");
+  
+  // ULTRA-DETAILED MILESTONE NAME LOGGING
+  if (isMilestoneView) {
+    console.log(`🏆 [MILESTONE_ULTRA_DEBUG] ===== MILESTONE VIEW RENDERING =====`);
+    console.log(`🏆 [MILESTONE_ULTRA_DEBUG] Total Pokemon in finalRankings: ${finalRankings.length}`);
+    
+    // Log first 5 Pokemon names in detail
+    finalRankings.slice(0, 5).forEach((pokemon, index) => {
+      console.log(`🏆 [MILESTONE_ULTRA_DEBUG] Pokemon #${index + 1}:`);
+      console.log(`🏆 [MILESTONE_ULTRA_DEBUG]   ID: ${pokemon.id}`);
+      console.log(`🏆 [MILESTONE_ULTRA_DEBUG]   Name: "${pokemon.name}"`);
+      console.log(`🏆 [MILESTONE_ULTRA_DEBUG]   Name type: ${typeof pokemon.name}`);
+      console.log(`🏆 [MILESTONE_ULTRA_DEBUG]   Name length: ${pokemon.name.length}`);
+      console.log(`🏆 [MILESTONE_ULTRA_DEBUG]   Contains hyphen: ${pokemon.name.includes('-')}`);
+      console.log(`🏆 [MILESTONE_ULTRA_DEBUG]   Is formatted: ${!pokemon.name.includes('-') || pokemon.name.includes('(') || pokemon.name.includes('Mega ') || pokemon.name.includes('Alolan ') || pokemon.name.includes('G-Max ')}`);
+      
+      // Special check for G-Max
+      if (pokemon.name.toLowerCase().includes('gmax') || pokemon.name.includes('G-Max')) {
+        console.log(`🎯 [MILESTONE_GMAX_DEBUG] GMAX Pokemon in milestone: "${pokemon.name}"`);
+        console.log(`🎯 [MILESTONE_GMAX_DEBUG]   Contains 'G-Max': ${pokemon.name.includes('G-Max')}`);
+        console.log(`🎯 [MILESTONE_GMAX_DEBUG]   Contains 'gmax': ${pokemon.name.toLowerCase().includes('gmax')}`);
+      }
+    });
+    console.log(`🏆 [MILESTONE_ULTRA_DEBUG] ===== END MILESTONE DEBUG =====`);
+  }
+  
   const [displayCount, setDisplayCount] = useState(20);
   const [milestoneDisplayCount, setMilestoneDisplayCount] = useState(50);
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -193,10 +219,7 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
     const displayRankings = finalRankings.slice(0, Math.min(milestoneDisplayCount, maxItems));
     const hasMoreToLoad = milestoneDisplayCount < maxItems;
     
-    console.log(`🏆 [MILESTONE_NAME_DEBUG] Displaying ${displayRankings.length} Pokemon in milestone view`);
-    displayRankings.slice(0, 3).forEach((pokemon, index) => {
-      console.log(`🏆 [MILESTONE_NAME_DEBUG] #${index + 1}: "${pokemon.name}" (ID: ${pokemon.id})`);
-    });
+    console.log(`🏆 [MILESTONE_RENDER_ULTRA_DEBUG] About to render ${displayRankings.length} Pokemon in milestone view`);
     
     return (
       <div className="bg-white p-6 w-full max-w-7xl mx-auto">
@@ -225,8 +248,12 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
           {displayRankings.map((pokemon, index) => {
             const backgroundColorClass = getPokemonBackgroundColor(pokemon);
             
-            // CRITICAL: Log each Pokemon name being displayed in milestone
-            console.log(`🏆 [MILESTONE_RENDER_DEBUG] Pokemon #${index + 1}: "${pokemon.name}" (ID: ${pokemon.id})`);
+            // ULTRA-DETAILED LOGGING FOR EACH RENDERED POKEMON
+            console.log(`🏆 [MILESTONE_RENDER_ULTRA_DEBUG] Rendering Pokemon #${index + 1}:`);
+            console.log(`🏆 [MILESTONE_RENDER_ULTRA_DEBUG]   Name being displayed: "${pokemon.name}"`);
+            console.log(`🏆 [MILESTONE_RENDER_ULTRA_DEBUG]   Name type: ${typeof pokemon.name}`);
+            console.log(`🏆 [MILESTONE_RENDER_ULTRA_DEBUG]   ID: ${pokemon.id}`);
+            console.log(`🏆 [MILESTONE_RENDER_ULTRA_DEBUG]   Background class: ${backgroundColorClass}`);
             
             return (
               <div 
