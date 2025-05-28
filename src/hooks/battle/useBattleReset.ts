@@ -21,8 +21,14 @@ export const useBattleReset = (
   const performFullBattleReset = useCallback(() => {
     console.log('🔄 CENTRALIZED RESET: Beginning full battle reset');
     
+    if (isResettingRef.current) {
+      console.log('🔄 CENTRALIZED RESET: Already resetting, skipping');
+      return;
+    }
+    
     isResettingRef.current = true;
     
+    // Reset all state
     setBattlesCompleted(0);
     setBattleResults([]);
     setBattleHistory([]);
@@ -30,12 +36,16 @@ export const useBattleReset = (
     setCompletionPercentage(0);
     setRankingGenerated(false);
     
+    // Reset milestone tracking
     resetMilestones();
     if (resetBattleProgressionMilestoneTracking) {
       resetBattleProgressionMilestoneTracking();
     }
+    
+    // Clear suggestions
     clearAllSuggestions();
     
+    // Clear localStorage
     const keysToRemove = [
       'pokemon-battle-count',
       'pokemon-battle-results', 
@@ -48,17 +58,33 @@ export const useBattleReset = (
     
     keysToRemove.forEach(key => localStorage.removeItem(key));
     
+    // Generate empty rankings
     generateRankings([]);
     
+    // Start new battle after short delay
     setTimeout(() => {
       enhancedStartNewBattle("pairs");
+      isResettingRef.current = false;
+      
       toast({
         title: "Battles Restarted",
         description: "All battles have been reset. You're starting fresh!",
         duration: 3000
       });
     }, 100);
-  }, [setBattlesCompleted, setBattleResults, setBattleHistory, setSelectedPokemon, setCompletionPercentage, setRankingGenerated, resetMilestones, resetBattleProgressionMilestoneTracking, clearAllSuggestions, generateRankings, enhancedStartNewBattle]);
+  }, [
+    setBattlesCompleted,
+    setBattleResults,
+    setBattleHistory,
+    setSelectedPokemon,
+    setCompletionPercentage,
+    setRankingGenerated,
+    resetMilestones,
+    resetBattleProgressionMilestoneTracking,
+    clearAllSuggestions,
+    generateRankings,
+    enhancedStartNewBattle
+  ]);
 
   return {
     performFullBattleReset,
