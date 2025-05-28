@@ -17,6 +17,10 @@ const DraggablePokemonCard: React.FC<DraggablePokemonCardProps> = ({
   index, 
   isPending = false 
 }) => {
+  console.log(`🎯 [CARD_RENDER_DEBUG] ===== RENDERING CARD =====`);
+  console.log(`🎯 [CARD_RENDER_DEBUG] Pokemon: ${pokemon.name} (${pokemon.id})`);
+  console.log(`🎯 [CARD_RENDER_DEBUG] Index: ${index}`);
+
   const {
     attributes,
     listeners,
@@ -24,7 +28,23 @@ const DraggablePokemonCard: React.FC<DraggablePokemonCardProps> = ({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: pokemon.id });
+  } = useSortable({ 
+    id: pokemon.id,
+    data: {
+      pokemon,
+      index
+    }
+  });
+
+  console.log(`🎯 [CARD_SORTABLE_DEBUG] useSortable result:`, {
+    id: pokemon.id,
+    attributes: !!attributes,
+    listeners: !!listeners,
+    transform: !!transform,
+    transition: !!transition,
+    isDragging,
+    setNodeRef: !!setNodeRef
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -33,10 +53,14 @@ const DraggablePokemonCard: React.FC<DraggablePokemonCardProps> = ({
 
   const backgroundColorClass = getPokemonBackgroundColor(pokemon);
 
-  console.log(`🎯 [CARD_DRAG_DEBUG] Rendering card for ${pokemon.name} (${pokemon.id})`);
-  console.log(`🎯 [CARD_DRAG_DEBUG] isDragging: ${isDragging}`);
-  console.log(`🎯 [CARD_DRAG_DEBUG] Listeners:`, !!listeners);
-  console.log(`🎯 [CARD_DRAG_DEBUG] Attributes:`, !!attributes);
+  console.log(`🎯 [CARD_DRAG_DEBUG] Final render state:`, {
+    pokemonName: pokemon.name,
+    pokemonId: pokemon.id,
+    isDragging,
+    hasListeners: !!listeners,
+    hasAttributes: !!attributes,
+    style
+  });
 
   return (
     <div
@@ -47,6 +71,16 @@ const DraggablePokemonCard: React.FC<DraggablePokemonCardProps> = ({
       className={`${backgroundColorClass} rounded-lg border border-gray-200 relative overflow-hidden h-40 flex flex-col cursor-grab active:cursor-grabbing ${
         isDragging ? 'opacity-60 z-50 scale-105 shadow-2xl' : 'transition-transform duration-150'
       } ${isPending ? 'ring-2 ring-yellow-400 ring-opacity-50' : ''}`}
+      onPointerDown={(e) => {
+        console.log(`🎯 [CARD_POINTER_DEBUG] Card pointer down: ${pokemon.name} (${pokemon.id})`);
+        console.log(`🎯 [CARD_POINTER_DEBUG] Event:`, e);
+        console.log(`🎯 [CARD_POINTER_DEBUG] Target:`, e.target);
+        console.log(`🎯 [CARD_POINTER_DEBUG] Current target:`, e.currentTarget);
+      }}
+      onDragStart={(e) => {
+        console.log(`🎯 [CARD_DRAG_START_DEBUG] Card drag start: ${pokemon.name} (${pokemon.id})`);
+        console.log(`🎯 [CARD_DRAG_START_DEBUG] Event:`, e);
+      }}
     >
       {/* Pending indicator */}
       {isPending && (

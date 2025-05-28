@@ -82,19 +82,28 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
     onLocalReorder: setLocalRankings
   });
 
-  // Add drag start and drag over logging
+  // ENHANCED drag start and drag over logging
   const handleDragStart = (event: DragStartEvent) => {
     console.log(`🎯 [DRAG_START_DEBUG] ===== DRAG STARTED =====`);
     console.log(`🎯 [DRAG_START_DEBUG] Active ID: ${event.active.id}`);
     console.log(`🎯 [DRAG_START_DEBUG] Active element:`, event.active);
+    console.log(`🎯 [DRAG_START_DEBUG] Event:`, event);
   };
 
   const handleDragOver = (event: DragOverEvent) => {
     console.log(`🎯 [DRAG_OVER_DEBUG] Dragging over: ${event.over?.id || 'none'}`);
+    console.log(`🎯 [DRAG_OVER_DEBUG] Event:`, event);
   };
 
   console.log(`🏆 [MILESTONE_RENDER_ULTRA_DEBUG] About to render ${displayRankings.length} Pokemon in draggable milestone view`);
   console.log(`🏆 [MILESTONE_RENDER_ULTRA_DEBUG] handleDragEnd function:`, typeof handleDragEnd);
+  console.log(`🏆 [MILESTONE_RENDER_ULTRA_DEBUG] Sensors:`, sensors);
+  console.log(`🏆 [MILESTONE_RENDER_ULTRA_DEBUG] DndContext about to be rendered with:`, {
+    sensors: !!sensors,
+    handleDragStart: !!handleDragStart,
+    handleDragOver: !!handleDragOver,
+    handleDragEnd: !!handleDragEnd
+  });
   
   return (
     <div className="bg-white p-6 w-full max-w-7xl mx-auto">
@@ -107,7 +116,7 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
         onContinueBattles={onContinueBattles}
       />
 
-      {/* Draggable Grid Layout */}
+      {/* Enhanced Draggable Grid Layout with more debugging */}
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -122,6 +131,7 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
           <div className="grid grid-cols-5 gap-4 mb-6">
             {displayRankings.map((pokemon, index) => {
               console.log(`🏆 [MILESTONE_RENDER_CARD_DEBUG] Rendering card ${index}: ${pokemon.name} (ID: ${pokemon.id})`);
+              console.log(`🏆 [MILESTONE_RENDER_CARD_DEBUG] Pokemon ID type:`, typeof pokemon.id);
               return (
                 <DraggablePokemonCard
                   key={pokemon.id}
