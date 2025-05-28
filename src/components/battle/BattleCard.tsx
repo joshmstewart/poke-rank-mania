@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, memo, useRef, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Pokemon } from "@/services/pokemon";
@@ -52,7 +53,8 @@ const BattleCard: React.FC<BattleCardProps> = memo(({
     const target = e.target as HTMLElement;
     if (target.closest('[data-info-button]') || 
         target.closest('[role="dialog"]') || 
-        target.closest('[data-radix-dialog-content]')) {
+        target.closest('[data-radix-dialog-content]') ||
+        target.closest('[data-radix-dialog-overlay]')) {
       console.log(`ℹ️ BattleCard: Info dialog interaction for ${displayName}, preventing card selection`);
       return;
     }
@@ -105,11 +107,15 @@ const BattleCard: React.FC<BattleCardProps> = memo(({
       data-processing={isProcessing ? "true" : "false"}
     >
       <CardContent className="p-4 text-center relative">
-        {/* Info Button - positioned absolutely to avoid click conflicts */}
+        {/* Info Button - positioned absolutely with higher z-index and better event handling */}
         <div 
           data-info-button="true" 
-          className="absolute top-2 right-2 z-20"
-          onClick={(e) => e.stopPropagation()}
+          className="absolute top-1 right-1 z-50 opacity-70 hover:opacity-100 transition-opacity"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log(`ℹ️ Info button clicked for ${displayName}`);
+          }}
         >
           <PokemonInfoModal pokemon={pokemon} />
         </div>

@@ -58,13 +58,18 @@ const PokemonInfoModal: React.FC<PokemonInfoModalProps> = ({
           <Button 
             variant="ghost" 
             size="sm" 
-            className="absolute top-2 right-2 w-6 h-6 p-0 opacity-70 hover:opacity-100 z-10"
+            className="w-6 h-6 p-0 rounded-full bg-white/90 hover:bg-white shadow-sm border"
+            data-info-button="true"
           >
-            <Info className="w-4 h-4" />
+            <Info className="w-3 h-3 text-blue-600" />
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="max-w-2xl" onClick={handleDialogClick}>
+      <DialogContent 
+        className="max-w-2xl z-[100]" 
+        onClick={handleDialogClick}
+        data-radix-dialog-content="true"
+      >
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-center">
             {pokemon.name}
