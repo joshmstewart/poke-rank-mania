@@ -289,13 +289,38 @@ export const useBattleStateCore = (
 
   const startNewBattle = useCallback(() => {
     console.log(`🚀 [START_NEW_BATTLE] Called with battleStarter available: ${!!battleStarter}`);
+    console.log(`🚀 [START_NEW_BATTLE] Refinement queue size: ${refinementQueue.refinementBattleCount}`);
     
     if (!battleStarter || !battleStarter.startNewBattle) {
       console.error(`❌ [START_NEW_BATTLE] battleStarter not available`);
       return;
     }
     
-    // SPEED FIX: Generate battle immediately without delays
+    // CRITICAL FIX: Check for refinement battles first
+    const nextRefinement = refinementQueue.getNextRefinementBattle();
+    
+    if (nextRefinement) {
+      console.log(`⚔️ [REFINEMENT_BATTLE] Found pending refinement battle: ${nextRefinement.primaryPokemonId} vs ${nextRefinement.opponentPokemonId}`);
+      console.log(`⚔️ [REFINEMENT_BATTLE] Reason: ${nextRefinement.reason}`);
+      
+      const primary = allPokemon.find(p => p.id === nextRefinement.primaryPokemonId);
+      const opponent = allPokemon.find(p => p.id === nextRefinement.opponentPokemonId);
+
+      if (primary && opponent) {
+        const refinementBattle = [primary, opponent];
+        console.log(`⚔️ [REFINEMENT_BATTLE] Successfully created refinement battle: ${primary.name} vs ${opponent.name}`);
+        setCurrentBattle(refinementBattle);
+        setSelectedPokemon([]);
+        return;
+      } else {
+        console.warn(`⚔️ [REFINEMENT_BATTLE] Could not find Pokemon for refinement battle:`, nextRefinement);
+        // Pop the invalid battle and continue with regular generation
+        refinementQueue.popRefinementBattle();
+      }
+    }
+    
+    // No refinement battles or invalid battle, proceed with normal generation
+    console.log(`🎮 [START_NEW_BATTLE] No valid refinement battles, proceeding with regular generation`);
     const newBattle = battleStarter.startNewBattle(battleType);
     console.log(`🚀 [START_NEW_BATTLE] Generated battle:`, newBattle?.map(p => p.name).join(' vs ') || 'None');
     
@@ -306,7 +331,7 @@ export const useBattleStateCore = (
     } else {
       console.error(`❌ [START_NEW_BATTLE] Failed to generate battle`);
     }
-  }, [battleType, battleStarter]);
+  }, [battleType, battleStarter, refinementQueue, allPokemon]);
 
   const generateRankings = useCallback(() => {
     generateBasicRankings();
