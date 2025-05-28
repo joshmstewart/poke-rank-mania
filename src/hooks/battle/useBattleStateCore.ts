@@ -36,7 +36,7 @@ export const useBattleStateCore = (
   const { battleStarter, areBattlesIdentical } = useBattleStarterCore(allPokemon, finalRankings as RankedPokemon[]);
   const refinementQueue = useSharedRefinementQueue();
 
-  // CRITICAL FIX: Start initial battle when Pokemon are available
+  // CRITICAL FIX: Start initial battle when Pokemon are available - with stable dependencies
   useEffect(() => {
     console.log(`🚀 [BATTLE_INIT] Pokemon data check: ${allPokemon?.length || 0} Pokemon available, currentBattle: ${currentBattle?.length || 0}, initialStarted: ${initialBattleStartedRef.current}`);
     
@@ -61,7 +61,7 @@ export const useBattleStateCore = (
         }
       }, 100);
     }
-  }, [allPokemon.length > 0 ? 1 : 0, battleStarter, battleType]); // Only depend on whether we HAVE Pokemon
+  }, [allPokemon.length, battleType]); // FIXED: Remove battleStarter from dependencies to prevent re-renders
 
   const calculateCompletionPercentage = useCallback(() => {
     const completed = battlesCompleted;
