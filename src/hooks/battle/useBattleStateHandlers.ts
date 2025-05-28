@@ -29,7 +29,7 @@ export const useBattleStateHandlers = (
     // Add Pokemon before the new position (if it exists)
     if (destinationIndex > 0) {
       const beforePokemon = finalRankings[destinationIndex - 1];
-      if (beforePokemon && beforePokemon.id) {
+      if (beforePokemon && typeof beforePokemon.id === 'number') {
         neighborIds.push(beforePokemon.id);
         console.log(`🔄 [MANUAL_REORDER_HANDLER] Added neighbor before: ${beforePokemon.name} (${beforePokemon.id})`);
       }
@@ -38,7 +38,7 @@ export const useBattleStateHandlers = (
     // Add Pokemon after the new position (if it exists)
     if (destinationIndex < finalRankings.length - 1) {
       const afterPokemon = finalRankings[destinationIndex + 1];
-      if (afterPokemon && afterPokemon.id) {
+      if (afterPokemon && typeof afterPokemon.id === 'number') {
         neighborIds.push(afterPokemon.id);
         console.log(`🔄 [MANUAL_REORDER_HANDLER] Added neighbor after: ${afterPokemon.name} (${afterPokemon.id})`);
       }
@@ -59,10 +59,21 @@ export const useBattleStateHandlers = (
       destinationIndex
     });
     
+    // Ensure all parameters are the correct types
+    const primaryId = Number(draggedPokemonId);
+    const neighbors = neighborIds.filter(id => typeof id === 'number' && !isNaN(id));
+    const newPosition = Number(destinationIndex);
+    
+    console.log(`🔄 [MANUAL_REORDER_HANDLER] Type-safe parameters:`, {
+      primaryId,
+      neighbors,
+      newPosition
+    });
+    
     refinementQueue.queueBattlesForReorder(
-      draggedPokemonId,
-      neighborIds,
-      destinationIndex
+      primaryId,
+      neighbors,
+      newPosition
     );
     
     console.log(`✅ [MANUAL_REORDER_HANDLER] Queued refinement battles for Pokemon ${draggedPokemonId}`);
