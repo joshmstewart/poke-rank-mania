@@ -1,3 +1,4 @@
+
 import { capitalizeFirstLetter, capitalizeWords } from './helpers';
 
 /**
@@ -110,25 +111,31 @@ export const formatPokemonName = (name: string): string => {
     }
   }
   
-  // Handle Mega evolutions
+  // FIXED: Handle Mega evolutions - properly capitalize the Pokemon name
   if (lowerName.includes('-mega-x')) {
+    console.log(`🔧 [MEGA_DEBUG] Processing Mega X form: "${name}"`);
     const baseName = name.substring(0, name.toLowerCase().indexOf('-mega-x'));
-    const result = `Mega ${capitalizeFirstLetter(baseName)} X`;
-    console.log(`🔧 [FORMAT_DEBUG] Mega X result: "${result}"`);
+    const capitalizedBase = capitalizeFirstLetter(baseName);
+    const result = `Mega ${capitalizedBase} X`;
+    console.log(`🔧 [MEGA_DEBUG] Mega X result: "${result}"`);
     return result;
   }
   
   if (lowerName.includes('-mega-y')) {
+    console.log(`🔧 [MEGA_DEBUG] Processing Mega Y form: "${name}"`);
     const baseName = name.substring(0, name.toLowerCase().indexOf('-mega-y'));
-    const result = `Mega ${capitalizeFirstLetter(baseName)} Y`;
-    console.log(`🔧 [FORMAT_DEBUG] Mega Y result: "${result}"`);
+    const capitalizedBase = capitalizeFirstLetter(baseName);
+    const result = `Mega ${capitalizedBase} Y`;
+    console.log(`🔧 [MEGA_DEBUG] Mega Y result: "${result}"`);
     return result;
   }
   
   if (lowerName.includes('-mega')) {
+    console.log(`🔧 [MEGA_DEBUG] Processing Mega form: "${name}"`);
     const baseName = name.substring(0, name.toLowerCase().indexOf('-mega'));
-    const result = `Mega ${capitalizeFirstLetter(baseName)}`;
-    console.log(`🔧 [FORMAT_DEBUG] Mega result: "${result}"`);
+    const capitalizedBase = capitalizeFirstLetter(baseName);
+    const result = `Mega ${capitalizedBase}`;
+    console.log(`🔧 [MEGA_DEBUG] Mega result: "${result}"`);
     return result;
   }
   
@@ -136,7 +143,8 @@ export const formatPokemonName = (name: string): string => {
   if (lowerName.includes('-primal')) {
     console.log(`🔧 [FORMAT_PRIMAL_DETECTED] Processing Primal form: "${name}"`);
     const baseName = name.substring(0, name.toLowerCase().indexOf('-primal'));
-    const result = `Primal ${capitalizeFirstLetter(baseName)}`;
+    const capitalizedBase = capitalizeFirstLetter(baseName);
+    const result = `Primal ${capitalizedBase}`;
     console.log(`🔧 [FORMAT_PRIMAL_RESULT] "${name}" → "${result}"`);
     return result;
   }
@@ -145,7 +153,8 @@ export const formatPokemonName = (name: string): string => {
   if (lowerName.includes('-origin')) {
     console.log(`🔧 [FORMAT_ORIGIN_DETECTED] Processing Origin form: "${name}"`);
     const baseName = name.substring(0, name.toLowerCase().indexOf('-origin'));
-    const result = `${capitalizeFirstLetter(baseName)} (Origin Forme)`;
+    const capitalizedBase = capitalizeFirstLetter(baseName);
+    const result = `${capitalizedBase} (Origin Forme)`;
     console.log(`🔧 [FORMAT_ORIGIN_RESULT] "${name}" → "${result}"`);
     return result;
   }
@@ -155,7 +164,8 @@ export const formatPokemonName = (name: string): string => {
     console.log(`🔧 [FORMAT_TOTEM_DETECTED] Processing Totem form: "${name}"`);
     const baseName = name.substring(0, name.toLowerCase().indexOf('-totem'));
     const totemPart = name.substring(name.toLowerCase().indexOf('-totem') + 1);
-    const result = `${capitalizeFirstLetter(baseName)} (${capitalizeWords(totemPart.replace(/-/g, ' '))})`;
+    const capitalizedBase = capitalizeFirstLetter(baseName);
+    const result = `${capitalizedBase} (${capitalizeWords(totemPart.replace(/-/g, ' '))})`;
     console.log(`🔧 [FORMAT_TOTEM_RESULT] "${name}" → "${result}"`);
     return result;
   }
@@ -164,7 +174,8 @@ export const formatPokemonName = (name: string): string => {
   if (lowerName.includes('-hero')) {
     console.log(`🔧 [FORMAT_HERO_DETECTED] Processing Hero form: "${name}"`);
     const baseName = name.substring(0, name.toLowerCase().indexOf('-hero'));
-    const result = `${capitalizeFirstLetter(baseName)} (Hero)`;
+    const capitalizedBase = capitalizeFirstLetter(baseName);
+    const result = `${capitalizedBase} (Hero)`;
     console.log(`🔧 [FORMAT_HERO_RESULT] "${name}" → "${result}"`);
     return result;
   }
@@ -172,7 +183,8 @@ export const formatPokemonName = (name: string): string => {
   if (lowerName.includes('-orange-meteor')) {
     console.log(`🔧 [FORMAT_METEOR_DETECTED] Processing Orange Meteor form: "${name}"`);
     const baseName = name.substring(0, name.toLowerCase().indexOf('-orange-meteor'));
-    const result = `${capitalizeFirstLetter(baseName)} (Orange Meteor)`;
+    const capitalizedBase = capitalizeFirstLetter(baseName);
+    const result = `${capitalizedBase} (Orange Meteor)`;
     console.log(`🔧 [FORMAT_METEOR_RESULT] "${name}" → "${result}"`);
     return result;
   }
@@ -180,7 +192,8 @@ export const formatPokemonName = (name: string): string => {
   if (lowerName.includes('-large')) {
     console.log(`🔧 [FORMAT_LARGE_DETECTED] Processing Large form: "${name}"`);
     const baseName = name.substring(0, name.toLowerCase().indexOf('-large'));
-    const result = `${capitalizeFirstLetter(baseName)} (Large)`;
+    const capitalizedBase = capitalizeFirstLetter(baseName);
+    const result = `${capitalizedBase} (Large)`;
     console.log(`🔧 [FORMAT_LARGE_RESULT] "${name}" → "${result}"`);
     return result;
   }
@@ -188,7 +201,8 @@ export const formatPokemonName = (name: string): string => {
   if (lowerName.includes('-dada')) {
     console.log(`🔧 [FORMAT_DADA_DETECTED] Processing Dada form: "${name}"`);
     const baseName = name.substring(0, name.toLowerCase().indexOf('-dada'));
-    const result = `${capitalizeFirstLetter(baseName)} (Dada)`;
+    const capitalizedBase = capitalizeFirstLetter(baseName);
+    const result = `${capitalizedBase} (Dada)`;
     console.log(`🔧 [FORMAT_DADA_RESULT] "${name}" → "${result}"`);
     return result;
   }
