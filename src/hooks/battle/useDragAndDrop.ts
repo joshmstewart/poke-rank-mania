@@ -38,7 +38,6 @@ export const useDragAndDrop = ({ displayRankings, onManualReorder, onLocalReorde
     console.log(`🚨 [DRAG_HOOK_DEBUG] Event object:`, event);
     console.log(`🚨 [DRAG_HOOK_DEBUG] Active ID:`, event.active.id);
     console.log(`🚨 [DRAG_HOOK_DEBUG] Over ID:`, event.over?.id);
-    console.log(`🚨 [DRAG_HOOK_DEBUG] Event type:`, event.type);
 
     const { active, over } = event;
 

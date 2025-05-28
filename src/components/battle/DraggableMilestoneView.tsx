@@ -75,7 +75,6 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
     console.log(`🚨 [DND_SETUP_DEBUG] ===== DRAG STARTED =====`);
     console.log(`🚨 [DND_SETUP_DEBUG] Active ID:`, event.active.id);
     console.log(`🚨 [DND_SETUP_DEBUG] Active data:`, event.active.data);
-    console.log(`🚨 [DND_SETUP_DEBUG] Event type:`, event.type);
     console.log(`🚨 [DND_SETUP_DEBUG] This proves @dnd-kit is working!`);
   };
 
