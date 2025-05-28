@@ -118,6 +118,53 @@ export const useBattleStateCore = (
     });
   }, [selectedPokemon]);
 
+  // CRITICAL FIX: Generate basic rankings when milestone is hit
+  const generateBasicRankings = useCallback(() => {
+    console.log(`🏆 [MILESTONE_RANKINGS] Generating basic rankings for milestone display`);
+    
+    // Calculate basic rankings based on battle results
+    const pokemonScores: { [id: number]: { wins: number, total: number, pokemon: Pokemon } } = {};
+    
+    // Initialize all Pokemon with 0 scores
+    allPokemon.forEach(pokemon => {
+      pokemonScores[pokemon.id] = { wins: 0, total: 0, pokemon };
+    });
+    
+    // Calculate scores from battle results
+    battleResults.forEach(result => {
+      result.pokemonIds.forEach(pokemonId => {
+        if (pokemonScores[pokemonId]) {
+          pokemonScores[pokemonId].total++;
+          if (result.selectedPokemonIds.includes(pokemonId)) {
+            pokemonScores[pokemonId].wins++;
+          }
+        }
+      });
+    });
+    
+    // Convert to ranked list
+    const rankings = Object.values(pokemonScores)
+      .filter(score => score.total > 0) // Only include Pokemon that have been in battles
+      .map(score => ({
+        ...score.pokemon,
+        winRate: score.total > 0 ? score.wins / score.total : 0,
+        battleCount: score.total
+      }))
+      .sort((a, b) => {
+        // Sort by win rate, then by battle count
+        if (b.winRate !== a.winRate) return b.winRate - a.winRate;
+        return b.battleCount - a.battleCount;
+      });
+    
+    console.log(`🏆 [MILESTONE_RANKINGS] Generated ${rankings.length} rankings`);
+    console.log(`🏆 [MILESTONE_RANKINGS] Top 5:`, rankings.slice(0, 5).map(p => `${p.name} (${(p.winRate * 100).toFixed(1)}%)`));
+    
+    setFinalRankings(rankings);
+    setRankingGenerated(true);
+    
+    return rankings;
+  }, [allPokemon, battleResults]);
+
   const originalProcessBattleResult = useCallback((
     selectedPokemonIds: number[],
     currentBattlePokemon: Pokemon[],
@@ -154,6 +201,10 @@ export const useBattleStateCore = (
     
     if (isAtMilestone) {
       console.log(`🏆 [MILESTONE_HIT] Milestone ${newBattlesCompleted} reached!`);
+      
+      // CRITICAL FIX: Generate rankings when milestone is hit
+      generateBasicRankings();
+      
       setMilestoneInProgress(true);
       setShowingMilestone(true);
     }
@@ -161,7 +212,7 @@ export const useBattleStateCore = (
     setSelectedPokemon([]);
     console.log(`✅ [BATTLE_PROCESSING] Battle result processed successfully`);
     return Promise.resolve();
-  }, [battlesCompleted, milestones]);
+  }, [battlesCompleted, milestones, generateBasicRankings]);
 
   const {
     processBattleResultWithRefinement,
@@ -258,9 +309,8 @@ export const useBattleStateCore = (
   }, [battleType, battleStarter]);
 
   const generateRankings = useCallback(() => {
-    setRankingGenerated(true);
-    setFinalRankings(currentBattle);
-  }, [currentBattle]);
+    generateBasicRankings();
+  }, [generateBasicRankings]);
 
   const handleSaveRankings = useCallback(() => {
     setShowingMilestone(false);
