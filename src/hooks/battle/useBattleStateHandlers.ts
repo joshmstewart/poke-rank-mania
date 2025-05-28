@@ -21,7 +21,16 @@ export const useBattleStateHandlers = (
     console.log(`🔄 [MANUAL_REORDER_HANDLER_DEBUG] - finalRankings length: ${finalRankings.length}`);
     console.log(`🔄 [MANUAL_REORDER_HANDLER_DEBUG] - allPokemon length: ${allPokemon.length}`);
     console.log(`🔄 [MANUAL_REORDER_HANDLER_DEBUG] - refinementQueue instance:`, refinementQueue);
-    console.log(`🔄 [MANUAL_REORDER_HANDLER_DEBUG] - refinementQueue.queueBattlesForReorder exists: ${typeof refinementQueue.queueBattlesForReorder === 'function'}`);
+    console.log(`🔄 [MANUAL_REORDER_HANDLER_DEBUG] - refinementQueue exists: ${!!refinementQueue}`);
+    console.log(`🔄 [MANUAL_REORDER_HANDLER_DEBUG] - refinementQueue.queueBattlesForReorder exists: ${typeof refinementQueue?.queueBattlesForReorder === 'function'}`);
+    
+    // Check if refinement queue is properly initialized
+    if (!refinementQueue || typeof refinementQueue.queueBattlesForReorder !== 'function') {
+      console.error(`🚨 [MANUAL_REORDER_HANDLER_DEBUG] CRITICAL ERROR: refinementQueue is not properly initialized!`);
+      console.error(`🚨 [MANUAL_REORDER_HANDLER_DEBUG] refinementQueue:`, refinementQueue);
+      console.error(`🚨 [MANUAL_REORDER_HANDLER_DEBUG] This indicates the component is not wrapped in RefinementQueueProvider!`);
+      return;
+    }
     
     // Find the dragged Pokemon to log its name
     const draggedPokemon = finalRankings.find(p => p.id === draggedPokemonId);
@@ -113,12 +122,12 @@ export const useBattleStateHandlers = (
     console.log(`⚔️ [REFINEMENT_COMPLETION_CONTEXT_DEBUG] Current battle Pokemon: ${currentBattlePokemon.map(p => `${p.name} (${p.id})`).join(', ')}`);
     console.log(`⚔️ [REFINEMENT_COMPLETION_CONTEXT_DEBUG] Battle type: ${battleType}`);
     console.log(`⚔️ [REFINEMENT_COMPLETION_CONTEXT_DEBUG] Refinement queue instance:`, refinementQueue);
-    console.log(`⚔️ [REFINEMENT_COMPLETION_CONTEXT_DEBUG] Has refinement battles: ${refinementQueue.hasRefinementBattles}`);
-    console.log(`⚔️ [REFINEMENT_COMPLETION_CONTEXT_DEBUG] Refinement queue count: ${refinementQueue.refinementBattleCount}`);
-    console.log(`⚔️ [REFINEMENT_COMPLETION_CONTEXT_DEBUG] Current refinement queue:`, refinementQueue.refinementQueue);
+    console.log(`⚔️ [REFINEMENT_COMPLETION_CONTEXT_DEBUG] Has refinement battles: ${refinementQueue?.hasRefinementBattles}`);
+    console.log(`⚔️ [REFINEMENT_COMPLETION_CONTEXT_DEBUG] Refinement queue count: ${refinementQueue?.refinementBattleCount}`);
+    console.log(`⚔️ [REFINEMENT_COMPLETION_CONTEXT_DEBUG] Current refinement queue:`, refinementQueue?.refinementQueue);
     
     // Check if this was a refinement battle before processing
-    if (refinementQueue.hasRefinementBattles && currentBattlePokemon.length === 2) {
+    if (refinementQueue?.hasRefinementBattles && currentBattlePokemon.length === 2) {
       const currentRefinement = refinementQueue.getNextRefinementBattle();
       
       if (currentRefinement) {
@@ -145,7 +154,7 @@ export const useBattleStateHandlers = (
       }
     } else {
       console.log(`⚔️ [REFINEMENT_COMPLETION_CONTEXT_DEBUG] ❌ Not a refinement battle`);
-      console.log(`⚔️ [REFINEMENT_COMPLETION_CONTEXT_DEBUG] - Has refinements: ${refinementQueue.hasRefinementBattles}`);
+      console.log(`⚔️ [REFINEMENT_COMPLETION_CONTEXT_DEBUG] - Has refinements: ${refinementQueue?.hasRefinementBattles}`);
       console.log(`⚔️ [REFINEMENT_COMPLETION_CONTEXT_DEBUG] - Battle length: ${currentBattlePokemon.length} (expected 2 for refinement)`);
     }
     
@@ -158,8 +167,8 @@ export const useBattleStateHandlers = (
   return {
     handleManualReorder,
     processBattleResultWithRefinement,
-    pendingRefinements: new Set(refinementQueue.refinementQueue.map(b => b.primaryPokemonId)),
-    refinementBattleCount: refinementQueue.refinementBattleCount,
-    clearRefinementQueue: refinementQueue.clearRefinementQueue
+    pendingRefinements: new Set(refinementQueue?.refinementQueue?.map(b => b.primaryPokemonId) || []),
+    refinementBattleCount: refinementQueue?.refinementBattleCount || 0,
+    clearRefinementQueue: refinementQueue?.clearRefinementQueue || (() => {})
   };
 };
