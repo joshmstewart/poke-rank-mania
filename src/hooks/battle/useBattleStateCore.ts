@@ -38,10 +38,12 @@ export const useBattleStateCore = (
 
   console.log(`🔧 [BATTLE_STATE_CORE_ULTRA_DEBUG] Hook state initialized, calling battleStarter and refinementQueue hooks`);
 
-  const { battleStarter, areBattlesIdentical } = useBattleStarterCore(allPokemon, finalRankings as RankedPokemon[]);
+  // CRITICAL FIX: Pass a function that returns the current rankings instead of the array directly
+  const getCurrentRankings = useCallback(() => finalRankings as RankedPokemon[], [finalRankings]);
+  const { startNewBattle } = useBattleStarterCore(allPokemon, getCurrentRankings);
   const refinementQueue = useSharedRefinementQueue();
 
-  console.log(`🔧 [BATTLE_STATE_CORE_ULTRA_DEBUG] battleStarter exists: ${!!battleStarter}, refinementQueue exists: ${!!refinementQueue}`);
+  console.log(`🔧 [BATTLE_STATE_CORE_ULTRA_DEBUG] battleStarter exists: ${!!startNewBattle}, refinementQueue exists: ${!!refinementQueue}`);
   console.log(`🔧 [BATTLE_STATE_CORE_ULTRA_DEBUG] refinementQueue.refinementBattleCount: ${refinementQueue.refinementBattleCount}`);
 
   // CRITICAL FIX: Listen for validation battle results and update rankings
@@ -119,9 +121,16 @@ export const useBattleStateCore = (
       initialBattleStartedRef.current = true;
       
       // Start initial battle immediately without delay
-      if (battleStarter && battleStarter.startNewBattle) {
-        console.log(`🚀 [BATTLE_INIT_ULTRA_DEBUG] Calling battleStarter.startNewBattle`);
-        const initialBattle = battleStarter.startNewBattle(battleType);
+      if (startNewBattle) {
+        console.log(`🚀 [BATTLE_INIT_ULTRA_DEBUG] Calling startNewBattle`);
+        const config = {
+          allPokemon,
+          currentRankings: getCurrentRankings(),
+          battleType,
+          selectedGeneration,
+          freezeList: frozenPokemon
+        };
+        const initialBattle = startNewBattle(config);
         if (initialBattle && initialBattle.length > 0) {
           console.log(`✅ [BATTLE_INIT_ULTRA_DEBUG] Initial battle created:`, initialBattle.map(p => p.name).join(' vs '));
           setCurrentBattle(initialBattle);
@@ -130,10 +139,10 @@ export const useBattleStateCore = (
           console.error(`❌ [BATTLE_INIT_ULTRA_DEBUG] Failed to create initial battle`);
         }
       } else {
-        console.error(`❌ [BATTLE_INIT_ULTRA_DEBUG] battleStarter not available`);
+        console.error(`❌ [BATTLE_INIT_ULTRA_DEBUG] startNewBattle not available`);
       }
     }
-  }, [allPokemon.length, battleType]);
+  }, [allPokemon.length, battleType, startNewBattle, getCurrentRankings, selectedGeneration, frozenPokemon]);
 
   // CRITICAL FIX: Auto-complete pairs battles when 1 Pokemon is selected
   useEffect(() => {
@@ -340,7 +349,7 @@ export const useBattleStateCore = (
       processingRef.current = false;
       setIsBattleTransitioning(false);
       setIsAnyProcessing(false);
-      startNewBattle();
+      startNewBattleWrapper();
     } catch (error) {
       console.error("❌ [SELECTION_COMPLETE_ULTRA_DEBUG] Error processing battle result:", error);
       processingRef.current = false;
@@ -360,14 +369,14 @@ export const useBattleStateCore = (
     }
   }, [battleHistory]);
 
-  const startNewBattle = useCallback(() => {
+  const startNewBattleWrapper = useCallback(() => {
     console.log(`🚀 [START_NEW_BATTLE_ULTRA_DEBUG] ===== START NEW BATTLE =====`);
-    console.log(`🚀 [START_NEW_BATTLE_ULTRA_DEBUG] Called with battleStarter available: ${!!battleStarter}`);
+    console.log(`🚀 [START_NEW_BATTLE_ULTRA_DEBUG] Called with startNewBattle available: ${!!startNewBattle}`);
     console.log(`🚀 [START_NEW_BATTLE_ULTRA_DEBUG] Refinement queue size: ${refinementQueue.refinementBattleCount}`);
     console.log(`🚀 [START_NEW_BATTLE_ULTRA_DEBUG] Refinement queue contents:`, refinementQueue.refinementQueue);
     
-    if (!battleStarter || !battleStarter.startNewBattle) {
-      console.error(`❌ [START_NEW_BATTLE_ULTRA_DEBUG] battleStarter not available`);
+    if (!startNewBattle) {
+      console.error(`❌ [START_NEW_BATTLE_ULTRA_DEBUG] startNewBattle not available`);
       return;
     }
     
@@ -404,7 +413,14 @@ export const useBattleStateCore = (
     
     // No refinement battles or invalid battle, proceed with normal generation
     console.log(`🎮 [START_NEW_BATTLE_ULTRA_DEBUG] No valid refinement battles, proceeding with regular generation`);
-    const newBattle = battleStarter.startNewBattle(battleType);
+    const config = {
+      allPokemon,
+      currentRankings: getCurrentRankings(),
+      battleType,
+      selectedGeneration,
+      freezeList: frozenPokemon
+    };
+    const newBattle = startNewBattle(config);
     console.log(`🚀 [START_NEW_BATTLE_ULTRA_DEBUG] Generated regular battle:`, newBattle?.map(p => p.name).join(' vs ') || 'None');
     
     if (newBattle && newBattle.length > 0) {
@@ -416,7 +432,7 @@ export const useBattleStateCore = (
     }
     
     console.log(`🚀 [START_NEW_BATTLE_ULTRA_DEBUG] ===== END =====`);
-  }, [battleType, battleStarter, refinementQueue, allPokemon]);
+  }, [battleType, startNewBattle, refinementQueue, allPokemon, getCurrentRankings, selectedGeneration, frozenPokemon]);
 
   const generateRankings = useCallback(() => {
     generateBasicRankings();
@@ -470,8 +486,8 @@ export const useBattleStateCore = (
   const handleContinueBattles = useCallback(() => {
     setShowingMilestone(false);
     setMilestoneInProgress(false);
-    startNewBattle();
-  }, [startNewBattle]);
+    startNewBattleWrapper();
+  }, [startNewBattleWrapper]);
 
   const resetMilestoneInProgress = useCallback(() => {
     setMilestoneInProgress(false);
@@ -490,8 +506,8 @@ export const useBattleStateCore = (
     clearRefinementQueue();
     initialBattleStartedRef.current = false;
     processingRef.current = false;
-    startNewBattle();
-  }, [startNewBattle, clearAllSuggestions, clearRefinementQueue]);
+    startNewBattleWrapper();
+  }, [startNewBattleWrapper, clearAllSuggestions, clearRefinementQueue]);
 
   console.log(`🔧 [BATTLE_STATE_CORE_ULTRA_DEBUG] useBattleStateCore returning state object`);
 
@@ -536,6 +552,7 @@ export const useBattleStateCore = (
     handleManualReorder: actualManualReorder,
     pendingRefinements,
     refinementBattleCount,
-    clearRefinementQueue
+    clearRefinementQueue,
+    startNewBattle: startNewBattleWrapper
   };
 };
