@@ -126,23 +126,47 @@ export const useBattleSelectionState = () => {
     
     const handleForceNextBattle = (event: CustomEvent) => {
       console.log("🚀 useBattleSelectionState: Received force-next-battle event", event.detail);
+      console.log("🚀 [EVENT_TRACE] Event timestamp:", event.detail?.timestamp);
+      console.log("🚀 [EVENT_TRACE] Event queue size:", event.detail?.queueSize);
+      console.log("🚀 [EVENT_TRACE] Event Pokemon:", event.detail?.pokemonName);
       
       // Clear selections immediately
       setSelectedPokemon([]);
       
-      // Start new battle immediately to use refinement queue
-      const result = startNewBattle(currentBattleType);
-      
-      if (result && result.length > 0) {
-        toast.success("Starting refinement battle", {
-          description: `Validating position for ${event.detail?.pokemonName || 'dragged Pokemon'}`
-        });
+      // CRITICAL: Add delay to ensure refinement queue state has propagated
+      console.log("🚀 [EVENT_TRACE] Waiting 200ms for queue state to propagate...");
+      setTimeout(() => {
+        console.log("🚀 [EVENT_TRACE] Starting new battle after queue propagation delay");
         
-        console.log("✅ handleForceNextBattle: Successfully started refinement battle with", 
-          result.map(p => p.name).join(', '));
-      } else {
-        console.error("❌ handleForceNextBattle: Failed to start refinement battle");
-      }
+        // Start new battle immediately to use refinement queue
+        const result = startNewBattle(currentBattleType);
+        
+        if (result && result.length > 0) {
+          console.log("✅ handleForceNextBattle: Successfully started refinement battle with", 
+            result.map(p => p.name).join(', '));
+          
+          // Check if the result includes the dragged Pokemon
+          const draggedPokemonId = event.detail?.pokemonId;
+          if (draggedPokemonId && result.some(p => p.id === draggedPokemonId)) {
+            console.log("🎯 [SUCCESS] Dragged Pokemon IS in the new battle!");
+            toast.success("Validation battle started", {
+              description: `Testing position for ${event.detail?.pokemonName || 'dragged Pokemon'}`
+            });
+          } else {
+            console.log("❌ [FAILURE] Dragged Pokemon is NOT in the new battle");
+            console.log("❌ [FAILURE] Expected Pokemon ID:", draggedPokemonId);
+            console.log("❌ [FAILURE] Battle Pokemon IDs:", result.map(p => p.id));
+            toast.warning("Regular battle started", {
+              description: "Refinement queue may be empty or not working"
+            });
+          }
+        } else {
+          console.error("❌ handleForceNextBattle: Failed to start refinement battle");
+          toast.error("Failed to start battle", {
+            description: "Could not create validation battle"
+          });
+        }
+      }, 200); // Give time for refinement queue state to update
     };
     
     document.addEventListener('milestone-dismissed', handleMilestoneDismissed as EventListener);

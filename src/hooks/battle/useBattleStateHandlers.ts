@@ -85,27 +85,40 @@ export const useBattleStateHandlers = (
       console.log(`🔄 [MANUAL_REORDER_HANDLER] About to queue battles - refinement queue exists:`, !!refinementQueue);
       console.log(`🔄 [MANUAL_REORDER_HANDLER] queueBattlesForReorder function exists:`, typeof refinementQueue.queueBattlesForReorder);
       
+      console.log(`🔄 [MANUAL_REORDER_HANDLER] BEFORE QUEUEING - Current queue size: ${refinementQueue.refinementBattleCount}`);
+      console.log(`🔄 [MANUAL_REORDER_HANDLER] BEFORE QUEUEING - Current queue:`, refinementQueue.refinementQueue);
+      
       refinementQueue.queueBattlesForReorder(
         pokemonId,
         neighborIds,
         destinationIndex
       );
       
-      console.log(`✅ [MANUAL_REORDER_HANDLER] Successfully queued refinement battles for Pokemon ${pokemonId} (${draggedPokemon.name})`);
-      console.log(`📊 [MANUAL_REORDER_HANDLER] Total refinement battles in queue: ${refinementQueue.refinementBattleCount}`);
-      console.log(`🎯 [MANUAL_REORDER_HANDLER] Next battle should be a refinement battle involving ${draggedPokemon.name}`);
-      
-      // Force next battle to check refinement queue
-      console.log(`🚀 [MANUAL_REORDER_HANDLER] Triggering force next battle to use refinement queue`);
-      const forceNextBattleEvent = new CustomEvent('force-next-battle', {
-        detail: { 
-          reason: 'manual_reorder',
-          pokemonId: pokemonId,
-          pokemonName: draggedPokemon.name,
-          immediate: true 
-        }
-      });
-      document.dispatchEvent(forceNextBattleEvent);
+      // CRITICAL: Wait a bit for queue to update, then check
+      setTimeout(() => {
+        console.log(`🔄 [MANUAL_REORDER_HANDLER] AFTER QUEUEING - Queue size: ${refinementQueue.refinementBattleCount}`);
+        console.log(`🔄 [MANUAL_REORDER_HANDLER] AFTER QUEUEING - Queue contents:`, refinementQueue.refinementQueue);
+        console.log(`🔄 [MANUAL_REORDER_HANDLER] AFTER QUEUEING - Has refinement battles: ${refinementQueue.hasRefinementBattles}`);
+        console.log(`🔄 [MANUAL_REORDER_HANDLER] AFTER QUEUEING - Next battle:`, refinementQueue.getNextRefinementBattle());
+        
+        console.log(`✅ [MANUAL_REORDER_HANDLER] Successfully queued refinement battles for Pokemon ${pokemonId} (${draggedPokemon.name})`);
+        console.log(`📊 [MANUAL_REORDER_HANDLER] Total refinement battles in queue: ${refinementQueue.refinementBattleCount}`);
+        console.log(`🎯 [MANUAL_REORDER_HANDLER] Next battle should be a refinement battle involving ${draggedPokemon.name}`);
+        
+        // Force next battle to check refinement queue
+        console.log(`🚀 [MANUAL_REORDER_HANDLER] Triggering force next battle to use refinement queue`);
+        const forceNextBattleEvent = new CustomEvent('force-next-battle', {
+          detail: { 
+            reason: 'manual_reorder',
+            pokemonId: pokemonId,
+            pokemonName: draggedPokemon.name,
+            immediate: true,
+            queueSize: refinementQueue.refinementBattleCount,
+            timestamp: Date.now()
+          }
+        });
+        document.dispatchEvent(forceNextBattleEvent);
+      }, 100); // Small delay to ensure state updates
       
     } catch (error) {
       console.error(`❌ [MANUAL_REORDER_HANDLER] Error queueing refinement battles:`, error);
@@ -125,6 +138,7 @@ export const useBattleStateHandlers = (
     console.log(`⚔️ [BATTLE_RESULT_PROCESSING] Selected Pokemon IDs: ${selectedPokemonIds.join(', ')}`);
     console.log(`⚔️ [BATTLE_RESULT_PROCESSING] Current battle Pokemon: ${currentBattlePokemon.map(p => `${p.name} (${p.id})`).join(', ')}`);
     console.log(`⚔️ [BATTLE_RESULT_PROCESSING] Battle type: ${battleType}`);
+    console.log(`⚔️ [BATTLE_RESULT_PROCESSING] Queue size before processing: ${refinementQueue.refinementBattleCount}`);
     
     // Check if this was a refinement battle
     const nextRefinement = refinementQueue.getNextRefinementBattle();
@@ -132,8 +146,15 @@ export const useBattleStateHandlers = (
         currentBattlePokemon.some(p => p.id === nextRefinement.primaryPokemonId) &&
         currentBattlePokemon.some(p => p.id === nextRefinement.opponentPokemonId)) {
       console.log(`⚔️ [REFINEMENT_BATTLE_COMPLETED] Completed refinement battle for Pokemon ${nextRefinement.primaryPokemonId} vs ${nextRefinement.opponentPokemonId}`);
+      console.log(`⚔️ [REFINEMENT_BATTLE_COMPLETED] Reason: ${nextRefinement.reason}`);
       // Pop the completed refinement battle
       refinementQueue.popRefinementBattle();
+      console.log(`⚔️ [REFINEMENT_BATTLE_COMPLETED] Queue size after popping: ${refinementQueue.refinementBattleCount}`);
+    } else {
+      console.log(`⚔️ [BATTLE_RESULT_PROCESSING] This was NOT a refinement battle`);
+      if (nextRefinement) {
+        console.log(`⚔️ [BATTLE_RESULT_PROCESSING] Next refinement exists but doesn't match current battle:`, nextRefinement);
+      }
     }
     
     console.log(`⚔️ [BATTLE_RESULT_PROCESSING] ===== END BATTLE RESULT PROCESSING =====`);
