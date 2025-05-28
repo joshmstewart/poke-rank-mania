@@ -89,8 +89,8 @@ const DraggablePokemonCard: React.FC<DraggablePokemonCardProps> = ({
         </div>
       )}
 
-      {/* Info Button - Fixed to not interfere with drag */}
-      <div className="absolute top-1 right-1 z-30 pointer-events-auto">
+      {/* Info Button - Non-interactive for drag purposes */}
+      <div className="absolute top-1 right-1 z-30">
         <PokemonInfoModal pokemon={pokemon}>
           <button 
             className="w-5 h-5 rounded-full bg-white/30 hover:bg-white/50 border border-gray-300/60 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200 backdrop-blur-sm"
@@ -101,6 +101,10 @@ const DraggablePokemonCard: React.FC<DraggablePokemonCardProps> = ({
             onClick={(e) => {
               console.log(`🎯 [INFO_BUTTON_DEBUG] Info button clicked - stopping propagation`);
               e.preventDefault();
+              e.stopPropagation();
+            }}
+            onMouseDown={(e) => {
+              console.log(`🎯 [INFO_BUTTON_DEBUG] Info button mouse down - stopping propagation`);
               e.stopPropagation();
             }}
           >
@@ -129,10 +133,10 @@ const DraggablePokemonCard: React.FC<DraggablePokemonCardProps> = ({
       
       {/* Pokemon info */}
       <div className="bg-white text-center py-2 px-2 mt-auto border-t border-gray-100 pointer-events-none">
-        <h3 className="font-bold text-gray-800 text-sm leading-tight mb-1">
+        <h3 className="font-bold text-gray-800 text-sm leading-tight mb-1 pointer-events-none">
           {pokemon.name}
         </h3>
-        <div className="text-xs text-gray-600">
+        <div className="text-xs text-gray-600 pointer-events-none">
           #{pokemon.id}
         </div>
       </div>
