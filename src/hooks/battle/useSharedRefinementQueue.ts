@@ -33,6 +33,8 @@ export const useSharedRefinementQueue = () => {
   }
   console.log('✅ [REFINEMENT_QUEUE_CONTEXT] Using shared refinement queue from context');
   console.log('✅ [REFINEMENT_QUEUE_CONTEXT] Context queueBattlesForReorder exists:', typeof context.queueBattlesForReorder === 'function');
+  console.log('✅ [REFINEMENT_QUEUE_CONTEXT] Current queue size:', context.refinementBattleCount);
+  console.log('✅ [REFINEMENT_QUEUE_CONTEXT] Queue contents:', context.refinementQueue);
   return context;
 };
 

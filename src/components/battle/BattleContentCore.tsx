@@ -1,9 +1,7 @@
-
 import React, { useEffect, useRef } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "@/hooks/battle/types";
 import { useBattleStateCore } from "@/hooks/battle/useBattleStateCore";
-import { RefinementQueueProvider } from "./RefinementQueueProvider";
 import BattleContentHeader from "./BattleContentHeader";
 import BattleContentMain from "./BattleContentMain";
 import BattleContentMilestone from "./BattleContentMilestone";
@@ -17,7 +15,7 @@ interface BattleContentCoreProps {
   setBattleResults?: React.Dispatch<React.SetStateAction<SingleBattle[]>>;
 }
 
-const BattleContentCoreInner: React.FC<BattleContentCoreProps> = ({
+const BattleContentCore: React.FC<BattleContentCoreProps> = ({
   allPokemon,
   initialBattleType,
   initialSelectedGeneration = 0,
@@ -27,7 +25,7 @@ const BattleContentCoreInner: React.FC<BattleContentCoreProps> = ({
   const instanceRef = useRef(`content-${Date.now()}`);
   
   console.log(`[DEBUG BattleContentCore] Instance: ${instanceRef.current} render - allPokemon: ${allPokemon?.length || 0}`);
-  console.log(`🔄 [REFINEMENT_PROVIDER_WRAP] BattleContentCore wrapped with RefinementQueueProvider`);
+  console.log(`🔄 [REFINEMENT_PROVIDER_REMOVE] BattleContentCore no longer wrapping with RefinementQueueProvider - using top-level one`);
 
   const {
     currentBattle,
@@ -145,15 +143,6 @@ const BattleContentCoreInner: React.FC<BattleContentCoreProps> = ({
         isAnyProcessing={isAnyProcessing}
       />
     </div>
-  );
-};
-
-const BattleContentCore: React.FC<BattleContentCoreProps> = (props) => {
-  console.log(`🔄 [REFINEMENT_PROVIDER_OUTER] Wrapping BattleContentCore with RefinementQueueProvider`);
-  return (
-    <RefinementQueueProvider>
-      <BattleContentCoreInner {...props} />
-    </RefinementQueueProvider>
   );
 };
 

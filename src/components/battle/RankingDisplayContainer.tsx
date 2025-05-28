@@ -1,7 +1,6 @@
 
 import React from "react";
 import { Pokemon, TopNOption, RankedPokemon } from "@/services/pokemon";
-import { RefinementQueueProvider } from "./RefinementQueueProvider";
 import MilestoneView from "./MilestoneView";
 import DraggableMilestoneView from "./DraggableMilestoneView";
 import StandardRankingView from "./StandardRankingView";
@@ -24,7 +23,7 @@ interface RankingDisplayContainerProps {
   enableDragAndDrop?: boolean;
 }
 
-const RankingDisplayContainerInner: React.FC<RankingDisplayContainerProps> = ({
+const RankingDisplayContainer: React.FC<RankingDisplayContainerProps> = ({
   finalRankings,
   battlesCompleted,
   onContinueBattles,
@@ -99,15 +98,6 @@ const RankingDisplayContainerInner: React.FC<RankingDisplayContainerProps> = ({
       onSaveRankings={onSaveRankings}
       onShowMore={handleShowMore}
     />
-  );
-};
-
-const RankingDisplayContainer: React.FC<RankingDisplayContainerProps> = (props) => {
-  console.log(`🔄 [REFINEMENT_PROVIDER_RANKING] Wrapping RankingDisplayContainer with RefinementQueueProvider`);
-  return (
-    <RefinementQueueProvider>
-      <RankingDisplayContainerInner {...props} />
-    </RefinementQueueProvider>
   );
 };
 
