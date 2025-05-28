@@ -10,14 +10,11 @@ export const useSharedRefinementQueue = () => {
   const context = useContext(RefinementQueueContext);
   if (!context) {
     console.error('🚨 [REFINEMENT_QUEUE_CONTEXT] useSharedRefinementQueue called outside of provider!');
-    console.error('🚨 [REFINEMENT_QUEUE_CONTEXT] This is the main bug - component not wrapped in RefinementQueueProvider');
+    console.error('🚨 [REFINEMENT_QUEUE_CONTEXT] This means the component is not wrapped in RefinementQueueProvider');
     console.error('🚨 [REFINEMENT_QUEUE_CONTEXT] Stack trace:', new Error().stack);
     
-    // Return a proper fallback that matches the expected interface
-    const fallback = useRefinementQueue();
-    console.error('🚨 [REFINEMENT_QUEUE_CONTEXT] Returning fallback instance:', fallback);
-    console.error('🚨 [REFINEMENT_QUEUE_CONTEXT] Fallback queueBattlesForReorder exists:', typeof fallback.queueBattlesForReorder === 'function');
-    return fallback;
+    // CRITICAL FIX: Instead of creating a fallback, throw an error to force proper wrapping
+    throw new Error('useSharedRefinementQueue must be used within a RefinementQueueProvider');
   }
   console.log('✅ [REFINEMENT_QUEUE_CONTEXT] Using shared refinement queue from context');
   console.log('✅ [REFINEMENT_QUEUE_CONTEXT] Context queueBattlesForReorder exists:', typeof context.queueBattlesForReorder === 'function');
