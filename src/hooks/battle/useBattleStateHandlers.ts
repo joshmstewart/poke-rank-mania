@@ -20,16 +20,29 @@ export const useBattleStateHandlers = (
   ) => {
     console.log(`🔄 [MANUAL_REORDER_HANDLER] Pokemon ${draggedPokemonId} moved from ${sourceIndex} to ${destinationIndex}`);
     
-    // Queue refinement battles for this manual reorder - fix argument count
+    // Get neighboring Pokemon IDs around the new position for validation battles
+    const neighborIds: number[] = [];
+    
+    // Add Pokemon before the new position
+    if (destinationIndex > 0 && finalRankings[destinationIndex - 1]) {
+      neighborIds.push(finalRankings[destinationIndex - 1].id);
+    }
+    
+    // Add Pokemon after the new position
+    if (destinationIndex < finalRankings.length - 1 && finalRankings[destinationIndex + 1]) {
+      neighborIds.push(finalRankings[destinationIndex + 1].id);
+    }
+    
+    // Queue refinement battles for this manual reorder with correct parameters
     refinementQueue.queueBattlesForReorder(
       draggedPokemonId,
-      sourceIndex,
+      neighborIds,
       destinationIndex
     );
     
     console.log(`✅ [MANUAL_REORDER_HANDLER] Queued refinement battles for Pokemon ${draggedPokemonId}`);
     console.log(`📊 [MANUAL_REORDER_HANDLER] Total refinement battles in queue: ${refinementQueue.refinementBattleCount}`);
-  }, [refinementQueue]);
+  }, [refinementQueue, finalRankings]);
 
   // Handle battle completion - enhanced with refinement processing
   const processBattleResultWithRefinement = useCallback((
