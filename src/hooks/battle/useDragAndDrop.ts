@@ -33,7 +33,7 @@ export const useDragAndDrop = ({ displayRankings, onManualReorder, onLocalReorde
   console.log(`🚨 [DRAG_HOOK_DEBUG] First sensor type:`, sensors?.[0]?.constructor?.name);
   console.log(`🚨 [DRAG_HOOK_DEBUG] Sensor configurations:`, sensors?.map(s => ({
     name: s.constructor?.name,
-    props: s.props || 'no props'
+    hasOptions: !!s
   })));
 
   const handleDragEnd = useCallback((event: DragEndEvent) => {
