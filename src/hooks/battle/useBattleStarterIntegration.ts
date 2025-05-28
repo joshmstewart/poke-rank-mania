@@ -43,76 +43,98 @@ export const useBattleStarterIntegration = (
   const refinementQueue = useSharedRefinementQueue();
 
   const startNewBattle = (battleType: any) => {
-    if (!battleStarter) return [];
+    console.log(`🚨 [CRITICAL_BATTLE_DEBUG] ===== BATTLE GENERATION ENTRY POINT =====`);
+    console.log(`🚨 [CRITICAL_BATTLE_DEBUG] Battle type: ${battleType}`);
+    console.log(`🚨 [CRITICAL_BATTLE_DEBUG] battleStarter exists: ${!!battleStarter}`);
+    console.log(`🚨 [CRITICAL_BATTLE_DEBUG] refinementQueue exists: ${!!refinementQueue}`);
+    console.log(`🚨 [CRITICAL_BATTLE_DEBUG] allPokemon count: ${allPokemon.length}`);
+    console.log(`🚨 [CRITICAL_BATTLE_DEBUG] filteredPokemon count: ${filteredPokemon.length}`);
     
-    console.log(`🔄 [REFINEMENT_FLOW_INTEGRATION] ===== Starting new battle =====`);
-    console.log(`🔄 [REFINEMENT_FLOW_INTEGRATION] Battle type: ${battleType}`);
-    console.log(`🔄 [REFINEMENT_FLOW_INTEGRATION] Refinement queue instance exists:`, !!refinementQueue);
-    console.log(`🔄 [REFINEMENT_FLOW_INTEGRATION] Refinement queue count: ${refinementQueue.refinementBattleCount}`);
-    console.log(`🔄 [REFINEMENT_FLOW_INTEGRATION] Has refinement battles: ${refinementQueue.hasRefinementBattles}`);
-    console.log(`🔄 [REFINEMENT_FLOW_INTEGRATION] Current refinement queue:`, refinementQueue.refinementQueue);
+    if (!battleStarter) {
+      console.error(`🚨 [CRITICAL_BATTLE_DEBUG] ❌ NO BATTLE STARTER - returning empty array`);
+      return [];
+    }
     
-    // CRITICAL FIX: Always check refinement queue first, before any other battle generation
+    console.log(`🚨 [CRITICAL_BATTLE_DEBUG] ===== REFINEMENT QUEUE CHECK =====`);
+    console.log(`🚨 [CRITICAL_BATTLE_DEBUG] refinementQueue.refinementBattleCount: ${refinementQueue.refinementBattleCount}`);
+    console.log(`🚨 [CRITICAL_BATTLE_DEBUG] refinementQueue.hasRefinementBattles: ${refinementQueue.hasRefinementBattles}`);
+    console.log(`🚨 [CRITICAL_BATTLE_DEBUG] refinementQueue.refinementQueue: ${JSON.stringify(refinementQueue.refinementQueue, null, 2)}`);
+    
+    // CRITICAL: Check queue IMMEDIATELY
     const nextRefinement = refinementQueue.getNextRefinementBattle();
+    console.log(`🚨 [CRITICAL_BATTLE_DEBUG] getNextRefinementBattle result: ${JSON.stringify(nextRefinement, null, 2)}`);
     
     if (nextRefinement) {
-      console.log(`⚔️ [REFINEMENT_PRIORITY_INTEGRATION] ✅ Found refinement battle to process`);
-      console.log(`⚔️ [REFINEMENT_PRIORITY_INTEGRATION] Primary Pokemon ID: ${nextRefinement.primaryPokemonId}`);
-      console.log(`⚔️ [REFINEMENT_PRIORITY_INTEGRATION] Opponent Pokemon ID: ${nextRefinement.opponentPokemonId}`);
-      console.log(`⚔️ [REFINEMENT_PRIORITY_INTEGRATION] Reason: ${nextRefinement.reason}`);
+      console.log(`🚨 [CRITICAL_BATTLE_DEBUG] ✅ FOUND REFINEMENT BATTLE!`);
+      console.log(`🚨 [CRITICAL_BATTLE_DEBUG] Primary Pokemon ID: ${nextRefinement.primaryPokemonId}`);
+      console.log(`🚨 [CRITICAL_BATTLE_DEBUG] Opponent Pokemon ID: ${nextRefinement.opponentPokemonId}`);
+      console.log(`🚨 [CRITICAL_BATTLE_DEBUG] Reason: ${nextRefinement.reason}`);
       
-      // CRITICAL FIX: Use allPokemon (unfiltered) for refinement battles to bypass form filters
-      console.log(`🔧 [REFINEMENT_BYPASS_FILTER] Using unfiltered allPokemon list for refinement battle`);
+      console.log(`🚨 [CRITICAL_BATTLE_DEBUG] ===== POKEMON LOOKUP =====`);
+      console.log(`🚨 [CRITICAL_BATTLE_DEBUG] Searching in ${allPokemon.length} total Pokemon`);
+      
       const primary = allPokemon.find(p => p.id === nextRefinement.primaryPokemonId);
       const opponent = allPokemon.find(p => p.id === nextRefinement.opponentPokemonId);
       
-      console.log(`🔍 [REFINEMENT_POKEMON_CHECK_INTEGRATION] Primary Pokemon search in ${allPokemon.length} total Pokemon`);
-      console.log(`🔍 [REFINEMENT_POKEMON_CHECK_INTEGRATION] Primary Pokemon found: ${!!primary}`);
+      console.log(`🚨 [CRITICAL_BATTLE_DEBUG] Primary Pokemon found: ${!!primary}`);
       if (primary) {
-        console.log(`🔍 [REFINEMENT_POKEMON_CHECK_INTEGRATION] Primary: ${primary.name} (${primary.id})`);
+        console.log(`🚨 [CRITICAL_BATTLE_DEBUG] Primary: ${primary.name} (${primary.id})`);
       } else {
-        console.error(`🚨 [REFINEMENT_POKEMON_CHECK_INTEGRATION] Primary Pokemon ${nextRefinement.primaryPokemonId} NOT FOUND in allPokemon`);
-        console.error(`🚨 [REFINEMENT_POKEMON_CHECK_INTEGRATION] Available Pokemon IDs:`, allPokemon.slice(0, 10).map(p => p.id));
+        console.error(`🚨 [CRITICAL_BATTLE_DEBUG] ❌ PRIMARY NOT FOUND: ${nextRefinement.primaryPokemonId}`);
+        const firstTenIds = allPokemon.slice(0, 10).map(p => `${p.name}(${p.id})`);
+        console.log(`🚨 [CRITICAL_BATTLE_DEBUG] First 10 Pokemon IDs: ${firstTenIds.join(', ')}`);
       }
       
-      console.log(`🔍 [REFINEMENT_POKEMON_CHECK_INTEGRATION] Opponent Pokemon found: ${!!opponent}`);
+      console.log(`🚨 [CRITICAL_BATTLE_DEBUG] Opponent Pokemon found: ${!!opponent}`);
       if (opponent) {
-        console.log(`🔍 [REFINEMENT_POKEMON_CHECK_INTEGRATION] Opponent: ${opponent.name} (${opponent.id})`);
+        console.log(`🚨 [CRITICAL_BATTLE_DEBUG] Opponent: ${opponent.name} (${opponent.id})`);
       } else {
-        console.error(`🚨 [REFINEMENT_POKEMON_CHECK_INTEGRATION] Opponent Pokemon ${nextRefinement.opponentPokemonId} NOT FOUND in allPokemon`);
+        console.error(`🚨 [CRITICAL_BATTLE_DEBUG] ❌ OPPONENT NOT FOUND: ${nextRefinement.opponentPokemonId}`);
       }
 
       if (primary && opponent) {
         const refinementBattle = [primary, opponent];
+        
+        console.log(`🚨 [CRITICAL_BATTLE_DEBUG] ===== SETTING REFINEMENT BATTLE =====`);
+        console.log(`🚨 [CRITICAL_BATTLE_DEBUG] ✅ Creating refinement battle: ${primary.name} vs ${opponent.name}`);
+        console.log(`🚨 [CRITICAL_BATTLE_DEBUG] Setting current battle to: [${refinementBattle.map(p => `${p.name}(${p.id})`).join(', ')}]`);
+        
         setCurrentBattle(refinementBattle);
         setSelectedPokemon([]);
         
-        console.log(`⚔️ [REFINEMENT_PRIORITY_INTEGRATION] ✅ Successfully created validation battle: ${primary.name} vs ${opponent.name}`);
-        console.log(`🔄 [REFINEMENT_FLOW_INTEGRATION] ===== Refinement battle created =====`);
-        
-        // CRITICAL: Don't pop the battle here - let the result processor handle it
-        console.log(`⚔️ [REFINEMENT_PRIORITY_INTEGRATION] Battle ready - will be popped when result is processed`);
+        console.log(`🚨 [CRITICAL_BATTLE_DEBUG] ✅ REFINEMENT BATTLE SUCCESSFULLY CREATED AND SET`);
+        console.log(`🚨 [CRITICAL_BATTLE_DEBUG] This should show the dragged Pokemon in the next battle!`);
         
         return refinementBattle;
       } else {
-        console.warn(`⚔️ [REFINEMENT_PRIORITY_INTEGRATION] ❌ Could not find Pokemon for refinement battle:`, nextRefinement);
-        console.log(`🔄 [REFINEMENT_FLOW_INTEGRATION] Popping invalid battle and trying again...`);
-        // Pop the invalid battle and try again
+        console.error(`🚨 [CRITICAL_BATTLE_DEBUG] ❌ MISSING POKEMON - popping invalid battle`);
         refinementQueue.popRefinementBattle();
+        
+        // Try again recursively
+        console.log(`🚨 [CRITICAL_BATTLE_DEBUG] Trying battle generation again...`);
         return startNewBattle(battleType);
       }
     }
     
-    // No refinement battles pending, proceed with normal battle generation
-    console.log(`🎮 [BATTLE_GENERATION_INTEGRATION] No refinement battles pending, generating regular battle with ${filteredPokemon.length} Pokemon`);
-    console.log(`🔄 [REFINEMENT_FLOW_INTEGRATION] ===== Regular battle generation =====`);
+    // No refinement battles pending
+    console.log(`🚨 [CRITICAL_BATTLE_DEBUG] ===== NO REFINEMENT BATTLES - REGULAR GENERATION =====`);
+    console.log(`🚨 [CRITICAL_BATTLE_DEBUG] Proceeding with normal battle generation`);
+    console.log(`🚨 [CRITICAL_BATTLE_DEBUG] Using ${filteredPokemon.length} filtered Pokemon`);
+    
     const result = battleStarter.startNewBattle(battleType);
+    
+    console.log(`🚨 [CRITICAL_BATTLE_DEBUG] ===== REGULAR BATTLE RESULT =====`);
+    console.log(`🚨 [CRITICAL_BATTLE_DEBUG] Generated battle: ${result ? result.map(p => `${p.name}(${p.id})`).join(' vs ') : 'null/empty'}`);
+    
     if (result && result.length > 0) {
       setCurrentBattle(result);
       setSelectedPokemon([]);
-      console.log(`🎮 [BATTLE_GENERATION_INTEGRATION] ✅ Created regular battle: ${result.map(p => p.name).join(' vs ')}`);
+      console.log(`🚨 [CRITICAL_BATTLE_DEBUG] ✅ Regular battle set successfully`);
+    } else {
+      console.error(`🚨 [CRITICAL_BATTLE_DEBUG] ❌ No regular battle generated`);
     }
-    console.log(`🔄 [REFINEMENT_FLOW_INTEGRATION] ===== Battle generation complete =====`);
+    
+    console.log(`🚨 [CRITICAL_BATTLE_DEBUG] ===== BATTLE GENERATION COMPLETE =====`);
     return result;
   };
 
