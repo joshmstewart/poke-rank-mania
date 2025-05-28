@@ -1,4 +1,3 @@
-
 import { useCallback } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
@@ -43,7 +42,9 @@ export const useBattleStarterCore = (
     console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] Battle type: ${battleType}`);
     console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] Available Pokemon count: ${availablePokemon.length}`);
     console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] Recently used entries: ${recentlyUsed.length}`);
-    console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] Recently used list: [${recentlyUsed.join(', ')}]`);
+    
+    // CRITICAL: Log the FULL recently used list for debugging
+    console.log(`🎯🎯🎯 [FULL_RECENTLY_USED_LIST] Battle #${battleCount + 1} Recently used: [${recentlyUsed.join(', ')}]`);
     
     if (battleType === "pairs") {
       // Get all possible pairs
@@ -63,9 +64,18 @@ export const useBattleStarterCore = (
       let unusedPairs = allPairs.filter(pair => !recentlyUsed.includes(pair.key));
       console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] Unused pairs: ${unusedPairs.length}`);
       
-      // Log first few unused pairs for debugging
-      console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] First 5 unused pairs:`, 
-        unusedPairs.slice(0, 5).map(p => `${p.pokemon1.name} vs ${p.pokemon2.name} (${p.key})`));
+      // CRITICAL: Log first few unused pairs for pattern analysis
+      console.log(`🎯🎯🎯 [UNUSED_PAIRS_DEBUG] First 10 unused pairs:`, 
+        unusedPairs.slice(0, 10).map(p => `${p.pokemon1.name}(${p.pokemon1.id}) vs ${p.pokemon2.name}(${p.pokemon2.id}) = ${p.key}`));
+      
+      // CRITICAL: Log recently used pairs for pattern analysis
+      const recentPairDetails = recentlyUsed.slice(-10).map(key => {
+        const [id1, id2] = key.split('-').map(Number);
+        const p1 = availablePokemon.find(p => p.id === id1);
+        const p2 = availablePokemon.find(p => p.id === id2);
+        return `${p1?.name || id1}(${id1}) vs ${p2?.name || id2}(${id2}) = ${key}`;
+      });
+      console.log(`🎯🎯🎯 [RECENT_PAIRS_DEBUG] Last 10 recently used pairs:`, recentPairDetails);
       
       if (unusedPairs.length === 0) {
         console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] ❌ NO UNUSED PAIRS! Implementing better distribution`);
@@ -110,6 +120,16 @@ export const useBattleStarterCore = (
       console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] Selected key: ${selectedPair.key}`);
       console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] Was this pair recently used? ${recentlyUsed.includes(selectedPair.key)}`);
       console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] Random index chosen: ${randomIndex} of ${unusedPairs.length} unused pairs`);
+      
+      // CRITICAL: Check if this battle is an immediate repeat of the last battle
+      const lastBattleKey = recentlyUsed[recentlyUsed.length - 1];
+      if (lastBattleKey === selectedPair.key) {
+        console.log(`🚨🚨🚨 [IMMEDIATE_REPEAT_DETECTED] BATTLE #${battleCount + 1} IS IMMEDIATE REPEAT OF LAST BATTLE!`);
+        console.log(`🚨🚨🚨 [IMMEDIATE_REPEAT_DETECTED] Last battle key: ${lastBattleKey}`);
+        console.log(`🚨🚨🚨 [IMMEDIATE_REPEAT_DETECTED] Selected key: ${selectedPair.key}`);
+        console.log(`🚨🚨🚨 [IMMEDIATE_REPEAT_DETECTED] This should NOT happen! Bug in recently used logic!`);
+      }
+      
       console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] ===== END BATTLE #${battleCount + 1} GENERATION =====`);
       
       return result;
