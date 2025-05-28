@@ -19,21 +19,46 @@ export const useBattleStateHandlers = (
     destinationIndex: number
   ) => {
     console.log(`🔄 [MANUAL_REORDER_HANDLER] Pokemon ${draggedPokemonId} moved from ${sourceIndex} to ${destinationIndex}`);
+    console.log(`🔄 [MANUAL_REORDER_HANDLER] Final rankings length: ${finalRankings.length}`);
+    console.log(`🔄 [MANUAL_REORDER_HANDLER] Final rankings at destination-1: ${finalRankings[destinationIndex - 1]?.name || 'none'}`);
+    console.log(`🔄 [MANUAL_REORDER_HANDLER] Final rankings at destination+1: ${finalRankings[destinationIndex + 1]?.name || 'none'}`);
     
     // Get neighboring Pokemon IDs around the new position for validation battles
     const neighborIds: number[] = [];
     
-    // Add Pokemon before the new position
-    if (destinationIndex > 0 && finalRankings[destinationIndex - 1]) {
-      neighborIds.push(finalRankings[destinationIndex - 1].id);
+    // Add Pokemon before the new position (if it exists)
+    if (destinationIndex > 0) {
+      const beforePokemon = finalRankings[destinationIndex - 1];
+      if (beforePokemon && beforePokemon.id) {
+        neighborIds.push(beforePokemon.id);
+        console.log(`🔄 [MANUAL_REORDER_HANDLER] Added neighbor before: ${beforePokemon.name} (${beforePokemon.id})`);
+      }
     }
     
-    // Add Pokemon after the new position
-    if (destinationIndex < finalRankings.length - 1 && finalRankings[destinationIndex + 1]) {
-      neighborIds.push(finalRankings[destinationIndex + 1].id);
+    // Add Pokemon after the new position (if it exists)
+    if (destinationIndex < finalRankings.length - 1) {
+      const afterPokemon = finalRankings[destinationIndex + 1];
+      if (afterPokemon && afterPokemon.id) {
+        neighborIds.push(afterPokemon.id);
+        console.log(`🔄 [MANUAL_REORDER_HANDLER] Added neighbor after: ${afterPokemon.name} (${afterPokemon.id})`);
+      }
+    }
+    
+    console.log(`🔄 [MANUAL_REORDER_HANDLER] Total neighbors found: ${neighborIds.length}`);
+    console.log(`🔄 [MANUAL_REORDER_HANDLER] Neighbor IDs: ${neighborIds.join(', ')}`);
+    
+    if (neighborIds.length === 0) {
+      console.warn(`🔄 [MANUAL_REORDER_HANDLER] No valid neighbors found for validation battles`);
+      return;
     }
     
     // Queue refinement battles for this manual reorder with correct parameters
+    console.log(`🔄 [MANUAL_REORDER_HANDLER] Calling queueBattlesForReorder with:`, {
+      draggedPokemonId,
+      neighborIds,
+      destinationIndex
+    });
+    
     refinementQueue.queueBattlesForReorder(
       draggedPokemonId,
       neighborIds,
