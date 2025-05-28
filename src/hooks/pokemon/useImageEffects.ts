@@ -9,9 +9,9 @@ export const useImageEffects = (
   imageLoaded: boolean,
   imageError: boolean,
   retryCount: number,
-  hasInitialLoadRef: React.RefObject<boolean>,
-  imageLoadingTimerRef: React.RefObject<ReturnType<typeof setTimeout> | null>,
-  isMountedRef: React.RefObject<boolean>,
+  hasInitialLoadRef: React.MutableRefObject<boolean>,
+  imageLoadingTimerRef: React.MutableRefObject<ReturnType<typeof setTimeout> | null>,
+  isMountedRef: React.MutableRefObject<boolean>,
   initializeImage: () => void,
   handleImageError: () => void
 ) => {

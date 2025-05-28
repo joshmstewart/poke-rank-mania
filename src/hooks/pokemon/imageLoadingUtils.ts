@@ -32,7 +32,7 @@ export const attemptCacheBustedLoad = (
   displayName: string,
   onSuccess: (cacheBustUrl: string) => void,
   onFailure: () => void,
-  isMountedRef: React.RefObject<boolean>
+  isMountedRef: React.MutableRefObject<boolean>
 ) => {
   const cacheBustUrl = `${url}?_cb=${Date.now()}`;
   console.log(`🔄 Attempting to load with cache busting: ${cacheBustUrl}`);
