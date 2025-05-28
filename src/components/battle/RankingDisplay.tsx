@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Pokemon, TopNOption, RankedPokemon } from "@/services/pokemon";
 import PokemonThumbnail from "./PokemonThumbnail";
@@ -192,6 +193,11 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
     const displayRankings = finalRankings.slice(0, Math.min(milestoneDisplayCount, maxItems));
     const hasMoreToLoad = milestoneDisplayCount < maxItems;
     
+    console.log(`🏆 [MILESTONE_NAME_DEBUG] Displaying ${displayRankings.length} Pokemon in milestone view`);
+    displayRankings.slice(0, 3).forEach((pokemon, index) => {
+      console.log(`🏆 [MILESTONE_NAME_DEBUG] #${index + 1}: "${pokemon.name}" (ID: ${pokemon.id})`);
+    });
+    
     return (
       <div className="bg-white p-6 w-full max-w-7xl mx-auto">
         {/* Header - exactly matching the image */}
@@ -218,6 +224,9 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
         <div className="grid grid-cols-5 gap-4 mb-6">
           {displayRankings.map((pokemon, index) => {
             const backgroundColorClass = getPokemonBackgroundColor(pokemon);
+            
+            // CRITICAL: Log each Pokemon name being displayed in milestone
+            console.log(`🏆 [MILESTONE_RENDER_DEBUG] Pokemon #${index + 1}: "${pokemon.name}" (ID: ${pokemon.id})`);
             
             return (
               <div 

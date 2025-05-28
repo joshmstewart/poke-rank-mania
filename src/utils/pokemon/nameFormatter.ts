@@ -123,7 +123,7 @@ export const formatPokemonName = (name: string): string => {
     return result;
   }
   
-  // Handle Gigantamax forms - FIXED: Use "G-Max" with capital M
+  // Handle Gigantamax forms - FIXED: Use "G-Max" with capital M and capitalize Pokemon name
   if (lowerName.includes('-gmax')) {
     console.log(`🔧 [FORMAT_GMAX_DETECTED] Processing G-Max form: "${name}"`);
     const baseName = name.substring(0, name.toLowerCase().indexOf('-gmax'));
