@@ -21,9 +21,6 @@ export const useBattleStateHandlers = (
     console.log(`🔄 [MANUAL_REORDER_ULTRA_TRACE] ===== MANUAL REORDER START =====`);
     console.log(`🔄 [MANUAL_REORDER_ULTRA_TRACE] Raw draggedPokemonId:`, draggedPokemonId, typeof draggedPokemonId);
     console.log(`🔄 [MANUAL_REORDER_ULTRA_TRACE] Pokemon moved from ${sourceIndex} to ${destinationIndex}`);
-    console.log(`🔄 [MANUAL_REORDER_ULTRA_TRACE] Final rankings length: ${finalRankings.length}`);
-    console.log(`🔄 [MANUAL_REORDER_ULTRA_TRACE] Current queue size BEFORE queueing: ${refinementQueue.refinementBattleCount}`);
-    console.log(`🔄 [MANUAL_REORDER_ULTRA_TRACE] Current queue contents BEFORE:`, refinementQueue.refinementQueue);
     
     // Convert to proper number type
     const pokemonId = typeof draggedPokemonId === 'string' ? parseInt(draggedPokemonId, 10) : Number(draggedPokemonId);
@@ -131,7 +128,7 @@ export const useBattleStateHandlers = (
     console.log(`⚔️ [BATTLE_RESULT_ULTRA_DEBUG] Selected Pokemon IDs: ${selectedPokemonIds.join(', ')}`);
     console.log(`⚔️ [BATTLE_RESULT_ULTRA_DEBUG] Current battle Pokemon: ${currentBattlePokemon.map(p => `${p.name} (${p.id})`).join(', ')}`);
     console.log(`⚔️ [BATTLE_RESULT_ULTRA_DEBUG] Queue size before processing: ${refinementQueue.refinementBattleCount}`);
-    console.log(`⚔️ [BATTLE_RESULT_ULTRA_DEBUG] Queue contents before:`, refinementQueue.refinementQueue);
+    console.log(`⚔️ [BATTLE_RESULT_ULTRA_DEBUG] Queue contents before:`, refinementQueue.refinementQueue.map(r => `${r.primaryPokemonId} vs ${r.opponentPokemonId}`));
     
     // CRITICAL FIX: Check if this was a refinement battle and handle it properly
     const nextRefinement = refinementQueue.getNextRefinementBattle();
@@ -191,23 +188,42 @@ export const useBattleStateHandlers = (
           console.log(`🏆 [RANKING_VALIDATION_ULTRA_DEBUG] ✅ Validation result event dispatched successfully`);
         }
         
-        // CRITICAL FIX: Pop the completed refinement battle IMMEDIATELY and SYNCHRONOUSLY
-        console.log(`⚔️ [REFINEMENT_BATTLE_COMPLETED] Popping completed battle from queue IMMEDIATELY...`);
+        // CRITICAL FIX: Pop the completed refinement battle and immediately trigger next battle generation
+        console.log(`⚔️ [REFINEMENT_BATTLE_COMPLETED] Popping completed battle from queue...`);
         console.log(`⚔️ [REFINEMENT_BATTLE_COMPLETED] Queue size BEFORE pop: ${refinementQueue.refinementBattleCount}`);
         
-        // Pop immediately, no setTimeout
+        // Pop the completed battle
         refinementQueue.popRefinementBattle();
         
         // CRITICAL DEBUG: Log state immediately after pop
         console.log(`⚔️ [REFINEMENT_BATTLE_COMPLETED] Queue size IMMEDIATELY AFTER pop: ${refinementQueue.refinementBattleCount}`);
-        console.log(`⚔️ [REFINEMENT_BATTLE_COMPLETED] Remaining queue contents IMMEDIATELY AFTER pop:`, refinementQueue.refinementQueue);
+        console.log(`⚔️ [REFINEMENT_BATTLE_COMPLETED] Remaining queue contents IMMEDIATELY AFTER pop:`, refinementQueue.refinementQueue.map(r => `${r.primaryPokemonId} vs ${r.opponentPokemonId}`));
         
-        // CRITICAL DEBUG: Check if more battles exist
+        // CRITICAL FIX: Check if more battles exist and force immediate generation
         const nextAfterPop = refinementQueue.getNextRefinementBattle();
         if (nextAfterPop) {
           console.log(`⚔️ [REFINEMENT_BATTLE_COMPLETED] ✅ MORE battles exist after pop: ${nextAfterPop.primaryPokemonId} vs ${nextAfterPop.opponentPokemonId}`);
+          
+          // CRITICAL FIX: Immediately trigger the next refinement battle
+          setTimeout(() => {
+            console.log(`🚀 [NEXT_REFINEMENT_TRIGGER] Triggering next refinement battle: ${nextAfterPop.primaryPokemonId} vs ${nextAfterPop.opponentPokemonId}`);
+            
+            const forceNextBattleEvent = new CustomEvent('force-next-battle', {
+              detail: { 
+                reason: 'next_refinement_battle',
+                pokemonId: nextAfterPop.primaryPokemonId,
+                immediate: true,
+                queueSize: refinementQueue.refinementBattleCount,
+                timestamp: Date.now(),
+                nextRefinement: nextAfterPop
+              }
+            });
+            
+            document.dispatchEvent(forceNextBattleEvent);
+            console.log(`🚀 [NEXT_REFINEMENT_TRIGGER] ✅ Next refinement battle event dispatched`);
+          }, 100);
         } else {
-          console.log(`⚔️ [REFINEMENT_BATTLE_COMPLETED] ❌ NO MORE battles after pop - queue is empty`);
+          console.log(`⚔️ [REFINEMENT_BATTLE_COMPLETED] ❌ NO MORE battles after pop - queue is empty, returning to regular battles`);
         }
         
       } else {
