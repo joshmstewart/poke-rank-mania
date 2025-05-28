@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Pokemon } from "@/services/pokemon";
 import {
@@ -32,16 +31,66 @@ const PokemonInfoModal: React.FC<PokemonInfoModalProps> = ({
   children
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [flavorText, setFlavorText] = useState<string>("");
+  const [isLoadingFlavor, setIsLoadingFlavor] = useState(false);
   const normalizedId = normalizePokedexNumber(pokemon.id);
   
-  // Get generation name from number
-  const getGenerationName = (genNumber?: number) => {
-    if (!genNumber) return null;
-    const generation = generations.find(gen => gen.id === genNumber);
-    return generation ? generation.name : `Generation ${genNumber}`;
+  // Get base Pokemon ID for variant forms
+  const getBasePokemonId = (pokemonId: number) => {
+    // For variant forms, we need to find the base form
+    if (pokemonId > 1025) {
+      // This is likely a variant form, try to map it to a base form
+      // For now, we'll use a simple approach - in a real app you'd have a mapping
+      return Math.min(pokemonId, 1025);
+    }
+    return pokemonId;
   };
 
-  const generationName = getGenerationName(pokemon.generation);
+  // Get generation name from Pokemon ID
+  const getGenerationName = (pokemonId: number) => {
+    const baseId = getBasePokemonId(pokemonId);
+    const generation = generations.find(gen => 
+      gen.id !== 0 && baseId >= gen.start && baseId <= gen.end
+    );
+    return generation ? generation.name : "Unknown Generation";
+  };
+
+  const generationName = getGenerationName(pokemon.id);
+  
+  // Fetch flavor text when modal opens
+  useEffect(() => {
+    if (isOpen && !flavorText && !isLoadingFlavor) {
+      setIsLoadingFlavor(true);
+      const baseId = getBasePokemonId(pokemon.id);
+      
+      fetch(`https://pokeapi.co/api/v2/pokemon-species/${baseId}`)
+        .then(res => res.json())
+        .then(data => {
+          // Get English flavor text from the most recent game
+          const englishEntries = data.flavor_text_entries?.filter(
+            (entry: any) => entry.language.name === 'en'
+          );
+          
+          if (englishEntries && englishEntries.length > 0) {
+            // Get the most recent entry (usually the last one)
+            const latestEntry = englishEntries[englishEntries.length - 1];
+            const cleanText = latestEntry.flavor_text
+              .replace(/\f/g, ' ')
+              .replace(/\n/g, ' ')
+              .replace(/\s+/g, ' ')
+              .trim();
+            setFlavorText(cleanText);
+          }
+        })
+        .catch(error => {
+          console.error('Failed to fetch flavor text:', error);
+          setFlavorText("Description not available.");
+        })
+        .finally(() => {
+          setIsLoadingFlavor(false);
+        });
+    }
+  }, [isOpen, pokemon.id, flavorText, isLoadingFlavor]);
   
   useEffect(() => {
     console.log(`🔘 [MODAL_DEBUG] PokemonInfoModal for ${pokemon.name} mounted, isOpen: ${isOpen}`);
@@ -181,12 +230,10 @@ const PokemonInfoModal: React.FC<PokemonInfoModalProps> = ({
                 </div>
               )}
 
-              {generationName && (
-                <div className="flex justify-between items-center">
-                  <span className="font-bold">Generation:</span>
-                  <span>{generationName}</span>
-                </div>
-              )}
+              <div className="flex justify-between items-center">
+                <span className="font-bold">Generation:</span>
+                <span>{generationName}</span>
+              </div>
             </div>
           </div>
 
@@ -227,12 +274,16 @@ const PokemonInfoModal: React.FC<PokemonInfoModalProps> = ({
             )}
 
             {/* Description section */}
-            {pokemon.flavorText && (
-              <div className="bg-gray-200 border-2 border-gray-400 rounded p-4">
-                <h3 className="font-bold mb-2">Description:</h3>
-                <p className="text-sm leading-relaxed">{pokemon.flavorText}</p>
-              </div>
-            )}
+            <div className="bg-gray-200 border-2 border-gray-400 rounded p-4">
+              <h3 className="font-bold mb-2">Description:</h3>
+              {isLoadingFlavor ? (
+                <div className="flex items-center justify-center py-4">
+                  <div className="w-4 h-4 border-2 border-gray-400 border-t-blue-500 rounded-full animate-spin"></div>
+                </div>
+              ) : (
+                <p className="text-sm leading-relaxed">{flavorText || "Loading description..."}</p>
+              )}
+            </div>
           </div>
         </div>
       </DialogContent>
