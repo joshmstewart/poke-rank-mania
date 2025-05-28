@@ -95,15 +95,15 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
     console.log(`🎯 [DRAG_OVER_DEBUG] Event:`, event);
   };
 
-  console.log(`🏆 [MILESTONE_RENDER_ULTRA_DEBUG] About to render ${displayRankings.length} Pokemon in draggable milestone view`);
-  console.log(`🏆 [MILESTONE_RENDER_ULTRA_DEBUG] handleDragEnd function:`, typeof handleDragEnd);
-  console.log(`🏆 [MILESTONE_RENDER_ULTRA_DEBUG] Sensors:`, sensors);
-  console.log(`🏆 [MILESTONE_RENDER_ULTRA_DEBUG] DndContext about to be rendered with:`, {
-    sensors: !!sensors,
-    handleDragStart: !!handleDragStart,
-    handleDragOver: !!handleDragOver,
-    handleDragEnd: !!handleDragEnd
-  });
+  // Log detailed DndContext setup
+  console.log(`🏆 [DND_CONTEXT_ULTRA_DEBUG] ===== DndContext Setup =====`);
+  console.log(`🏆 [DND_CONTEXT_ULTRA_DEBUG] Sensors initialized:`, !!sensors);
+  console.log(`🏆 [DND_CONTEXT_ULTRA_DEBUG] Sensors count:`, sensors?.length || 0);
+  console.log(`🏆 [DND_CONTEXT_ULTRA_DEBUG] handleDragEnd function:`, typeof handleDragEnd);
+  console.log(`🏆 [DND_CONTEXT_ULTRA_DEBUG] collisionDetection:`, typeof closestCenter);
+  console.log(`🏆 [DND_CONTEXT_ULTRA_DEBUG] displayRankings for SortableContext:`, displayRankings.map(p => ({ id: p.id, name: p.name })));
+  console.log(`🏆 [DND_CONTEXT_ULTRA_DEBUG] SortableContext items:`, displayRankings.map(p => p.id));
+  console.log(`🏆 [DND_CONTEXT_ULTRA_DEBUG] Strategy:`, typeof rectSortingStrategy);
   
   return (
     <div className="bg-white p-6 w-full max-w-7xl mx-auto">

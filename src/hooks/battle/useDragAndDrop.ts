@@ -11,13 +11,15 @@ interface UseDragAndDropProps {
 }
 
 export const useDragAndDrop = ({ displayRankings, onManualReorder, onLocalReorder }: UseDragAndDropProps) => {
-  console.log(`🎯 [DRAG_SETUP_DEBUG] useDragAndDrop hook initialized`);
+  console.log(`🎯 [DRAG_SETUP_DEBUG] ===== useDragAndDrop hook initialized =====`);
   console.log(`🎯 [DRAG_SETUP_DEBUG] displayRankings count:`, displayRankings.length);
+  console.log(`🎯 [DRAG_SETUP_DEBUG] onManualReorder type:`, typeof onManualReorder);
+  console.log(`🎯 [DRAG_SETUP_DEBUG] onLocalReorder type:`, typeof onLocalReorder);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 3, // Small distance to start drag
+        distance: 0, // Start drag immediately
       },
     }),
     useSensor(KeyboardSensor, {
@@ -26,6 +28,8 @@ export const useDragAndDrop = ({ displayRankings, onManualReorder, onLocalReorde
   );
 
   console.log(`🎯 [DRAG_SETUP_DEBUG] Sensors configured:`, sensors.length);
+  console.log(`🎯 [DRAG_SETUP_DEBUG] PointerSensor configured with distance: 0`);
+  console.log(`🎯 [DRAG_SETUP_DEBUG] KeyboardSensor configured`);
 
   const handleDragEnd = useCallback((event: DragEndEvent) => {
     console.log(`🎯 [DRAG_END_ENTRY] ===== DRAG END EVENT TRIGGERED =====`);
@@ -123,6 +127,7 @@ export const useDragAndDrop = ({ displayRankings, onManualReorder, onLocalReorde
   }, [displayRankings, onManualReorder, onLocalReorder]);
 
   console.log(`🎯 [DRAG_SETUP_DEBUG] handleDragEnd function created:`, typeof handleDragEnd);
+  console.log(`🎯 [DRAG_SETUP_DEBUG] ===== useDragAndDrop hook setup complete =====`);
 
   return {
     sensors,

@@ -36,13 +36,28 @@ const DraggablePokemonCard: React.FC<DraggablePokemonCardProps> = ({
     }
   });
 
-  console.log(`🎯 [CARD_SORTABLE_DEBUG] useSortable result:`, {
+  console.log(`🎯 [CARD_SORTABLE_DEBUG] useSortable result for ${pokemon.name}:`, {
     id: pokemon.id,
     isDragging,
     hasListeners: !!listeners,
     hasAttributes: !!attributes,
-    hasTransform: !!transform
+    hasTransform: !!transform,
+    listenerKeys: listeners ? Object.keys(listeners) : [],
+    attributeKeys: attributes ? Object.keys(attributes) : []
   });
+
+  // Log if listeners exist and what they contain
+  if (listeners) {
+    console.log(`🎯 [LISTENERS_DEBUG] ${pokemon.name} listeners:`, listeners);
+  } else {
+    console.error(`🎯 [LISTENERS_DEBUG] ❌ ${pokemon.name} has NO listeners!`);
+  }
+
+  if (attributes) {
+    console.log(`🎯 [ATTRIBUTES_DEBUG] ${pokemon.name} attributes:`, attributes);
+  } else {
+    console.error(`🎯 [ATTRIBUTES_DEBUG] ❌ ${pokemon.name} has NO attributes!`);
+  }
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -51,7 +66,7 @@ const DraggablePokemonCard: React.FC<DraggablePokemonCardProps> = ({
 
   const backgroundColorClass = getPokemonBackgroundColor(pokemon);
 
-  console.log(`🎯 [CARD_DRAG_DEBUG] About to render with drag handlers attached`);
+  console.log(`🎯 [CARD_DRAG_DEBUG] ${pokemon.name} about to render with drag handlers attached`);
 
   return (
     <div
@@ -62,6 +77,15 @@ const DraggablePokemonCard: React.FC<DraggablePokemonCardProps> = ({
       } ${isPending ? 'ring-2 ring-yellow-400 ring-opacity-50' : ''}`}
       {...attributes}
       {...listeners}
+      onMouseDown={(e) => {
+        console.log(`🎯 [MOUSE_DEBUG] ${pokemon.name} onMouseDown triggered`, e);
+      }}
+      onPointerDown={(e) => {
+        console.log(`🎯 [POINTER_DEBUG] ${pokemon.name} onPointerDown triggered`, e);
+      }}
+      onDragStart={(e) => {
+        console.log(`🎯 [DRAG_DEBUG] ${pokemon.name} onDragStart triggered`, e);
+      }}
     >
       {/* Pending indicator */}
       {isPending && (
@@ -73,7 +97,6 @@ const DraggablePokemonCard: React.FC<DraggablePokemonCardProps> = ({
       {/* Info Button - Prevent drag on this element */}
       <div 
         className="absolute top-1 right-1 z-30"
-        {...attributes}
         onPointerDown={(e) => {
           console.log(`🎯 [INFO_BUTTON_DEBUG] Info button area pointer down - stopping propagation`);
           e.stopPropagation();
