@@ -119,11 +119,11 @@ const BattleCard: React.FC<BattleCardProps> = memo(({
       data-processing={isProcessing ? "true" : "false"}
     >
       <CardContent className="p-4 text-center relative">
-        {/* Info Button - Subtle styling */}
+        {/* Info Button - Even more subtle */}
         <div className="absolute top-1 right-1 z-30">
           <PokemonInfoModal pokemon={pokemon}>
             <button 
-              className="w-5 h-5 rounded-full bg-white/80 hover:bg-white border border-gray-300 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200 backdrop-blur-sm"
+              className="w-5 h-5 rounded-full bg-white/60 hover:bg-white/80 border border-gray-300/60 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200 backdrop-blur-sm"
               onClick={(e) => {
                 console.log(`🔘 [INFO_BUTTON_DEBUG] BattleCard ${displayName}: Inner button clicked`);
                 e.preventDefault();

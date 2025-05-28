@@ -47,7 +47,7 @@ const DraggablePokemonCard: React.FC<DraggablePokemonCardProps> = ({
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition,
+    transition: isDragging ? undefined : transition, // Remove transition during drag for better performance
   };
 
   const backgroundColorClass = getPokemonBackgroundColor(pokemon);
@@ -58,8 +58,8 @@ const DraggablePokemonCard: React.FC<DraggablePokemonCardProps> = ({
       style={style}
       {...attributes}
       {...listeners}
-      className={`${backgroundColorClass} rounded-lg border border-gray-200 relative overflow-hidden h-40 flex flex-col cursor-grab active:cursor-grabbing transition-transform duration-200 ${
-        isDragging ? 'opacity-50 z-50 scale-105 shadow-lg' : ''
+      className={`${backgroundColorClass} rounded-lg border border-gray-200 relative overflow-hidden h-40 flex flex-col cursor-grab active:cursor-grabbing ${
+        isDragging ? 'opacity-60 z-50 scale-105 shadow-2xl' : 'transition-transform duration-150'
       } ${isPending ? 'ring-2 ring-yellow-400 ring-opacity-50' : ''}`}
     >
       {/* Pending indicator */}
@@ -69,11 +69,11 @@ const DraggablePokemonCard: React.FC<DraggablePokemonCardProps> = ({
         </div>
       )}
 
-      {/* Info Button - Subtle styling */}
+      {/* Info Button - Even more subtle */}
       <div className="absolute top-1 right-1 z-30">
         <PokemonInfoModal pokemon={pokemon}>
           <button 
-            className="w-5 h-5 rounded-full bg-white/80 hover:bg-white border border-gray-300 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200 backdrop-blur-sm"
+            className="w-5 h-5 rounded-full bg-white/60 hover:bg-white/80 border border-gray-300/60 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200 backdrop-blur-sm"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -146,7 +146,7 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8,
+        distance: 5, // Reduced from 8 for more responsive drag
       },
     }),
     useSensor(KeyboardSensor, {
