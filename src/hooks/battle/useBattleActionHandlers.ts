@@ -27,7 +27,7 @@ export const useBattleActionHandlers = (
   clearAllSuggestions: () => void,
   generateRankings: (results: any[]) => any[]
 ) => {
-  // Use the extracted battle handlers hook
+  // Use the battle handlers hook for navigation and continuation
   const { goBack, handleContinueBattles } = useBattleHandlers(
     battleHistory,
     setBattleHistory,
@@ -46,7 +46,7 @@ export const useBattleActionHandlers = (
     setIsTransitioning
   );
 
-  // Use the extracted reset hook
+  // Use the reset hook for full battle reset functionality
   const { performFullBattleReset } = useBattleReset(
     setBattlesCompleted,
     setBattleResults,
