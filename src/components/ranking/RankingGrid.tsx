@@ -33,8 +33,9 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
 }) => {
   const [loadedImages, setLoadedImages] = useState<Set<number>>(new Set());
 
-  console.log(`🔘 [INFO_BUTTON_DEBUG] RankingGrid: Rendering ${displayRankings.length} Pokemon`);
-  console.log(`🔘 [INFO_BUTTON_DEBUG] RankingGrid: isMilestoneView=${isMilestoneView}, activeTier=${activeTier}`);
+  console.log(`🔘 [RANKING_GRID_DEBUG] RankingGrid: Rendering ${displayRankings.length} Pokemon`);
+  console.log(`🔘 [RANKING_GRID_DEBUG] RankingGrid: isMilestoneView=${isMilestoneView}, activeTier=${activeTier}`);
+  console.log(`🔘 [RANKING_GRID_DEBUG] RankingGrid: battlesCompleted=${battlesCompleted}`);
 
   const handleImageLoad = (pokemonId: number) => {
     setLoadedImages(prev => new Set(prev).add(pokemonId));
@@ -45,7 +46,7 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
   };
 
   const handleInfoButtonClick = (pokemon: Pokemon | RankedPokemon, e: React.MouseEvent) => {
-    console.log(`🔘 [INFO_BUTTON_DEBUG] RankingGrid: Info button clicked for ${pokemon.name} (${pokemon.id})`);
+    console.log(`🔘 [RANKING_GRID_DEBUG] RankingGrid: Info button clicked for ${pokemon.name} (${pokemon.id})`);
     e.preventDefault();
     e.stopPropagation();
   };
@@ -57,27 +58,43 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
         const isRankedPokemon = 'score' in pokemon;
         const isImageLoaded = loadedImages.has(pokemon.id);
 
-        console.log(`🔘 [INFO_BUTTON_DEBUG] RankingGrid: Rendering Pokemon ${pokemon.name} (${pokemon.id}) at rank ${index + 1}`);
+        console.log(`🔘 [RANKING_GRID_DEBUG] RankingGrid: Rendering Pokemon ${pokemon.name} (${pokemon.id}) at rank ${index + 1}`);
+        console.log(`🔘 [RANKING_GRID_DEBUG] About to show info button for ${pokemon.name}`);
 
         return (
           <div key={pokemon.id} className="relative group">
-            {/* Info Button - positioned absolutely with high z-index */}
+            {/* Info Button - ALWAYS VISIBLE DEBUG VERSION */}
             <div 
-              className="absolute top-1 right-1 z-30 opacity-70 group-hover:opacity-100 transition-opacity"
+              className="absolute top-1 right-1 z-30 bg-red-500 rounded-full p-1"
               style={{ 
-                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                backgroundColor: 'red', // Force red background for debugging
                 borderRadius: '50%',
-                padding: '2px'
+                padding: '4px',
+                visibility: 'visible',
+                display: 'block'
               }}
-              onClick={(e) => handleInfoButtonClick(pokemon, e)}
+              onClick={(e) => {
+                console.log(`🔘 [RANKING_GRID_DEBUG] Info button container clicked for ${pokemon.name}`);
+                handleInfoButtonClick(pokemon, e);
+              }}
             >
               <PokemonInfoModal pokemon={pokemon}>
                 <button 
                   className="w-6 h-6 rounded-full bg-blue-500 hover:bg-blue-600 text-white flex items-center justify-center text-xs font-bold shadow-md"
                   onClick={(e) => {
-                    console.log(`🔘 [INFO_BUTTON_DEBUG] RankingGrid: Inner button clicked for ${pokemon.name}`);
+                    console.log(`🔘 [RANKING_GRID_DEBUG] RankingGrid: Inner button clicked for ${pokemon.name}`);
                     e.preventDefault();
                     e.stopPropagation();
+                  }}
+                  style={{
+                    backgroundColor: 'blue',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '50%',
+                    width: '24px',
+                    height: '24px',
+                    fontSize: '12px',
+                    fontWeight: 'bold'
                   }}
                 >
                   i
