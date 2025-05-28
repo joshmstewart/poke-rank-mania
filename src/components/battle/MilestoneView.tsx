@@ -4,6 +4,7 @@ import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { Button } from "@/components/ui/button";
 import { getPokemonBackgroundColor } from "./utils/PokemonColorUtils";
 import InfiniteScrollHandler from "./InfiniteScrollHandler";
+import PokemonInfoModal from "@/components/pokemon/PokemonInfoModal";
 
 interface MilestoneViewProps {
   formattedRankings: (Pokemon | RankedPokemon)[];
@@ -69,6 +70,21 @@ const MilestoneView: React.FC<MilestoneViewProps> = ({
               key={pokemon.id}
               className={`${backgroundColorClass} rounded-lg border border-gray-200 relative overflow-hidden h-40 flex flex-col`}
             >
+              {/* Info Button - positioned in top right */}
+              <div className="absolute top-1 right-1 z-30">
+                <PokemonInfoModal pokemon={pokemon}>
+                  <button 
+                    className="w-6 h-6 rounded-full bg-blue-500 hover:bg-blue-600 text-white flex items-center justify-center text-xs font-bold shadow-md transition-all duration-200"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                  >
+                    i
+                  </button>
+                </PokemonInfoModal>
+              </div>
+
               {/* Ranking number - white circle with black text in top left exactly like image */}
               <div className="absolute top-2 left-2 w-7 h-7 bg-white rounded-full flex items-center justify-center text-sm font-bold z-10 shadow-sm border border-gray-200">
                 <span className="text-black">{index + 1}</span>
