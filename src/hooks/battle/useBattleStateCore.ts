@@ -46,12 +46,13 @@ export const useBattleStateCore = (
   }, [battlesCompleted, calculateCompletionPercentage]);
 
   const getSnapshotForMilestone = useCallback(() => {
-    return {
+    const snapshot = {
       rankings: [...finalRankings],
       battleHistory: [...battleHistory],
       battlesCompleted,
       completionPercentage
     };
+    return JSON.stringify(snapshot);
   }, [finalRankings, battleHistory, battlesCompleted, completionPercentage]);
 
   const resetMilestones = useCallback(() => {

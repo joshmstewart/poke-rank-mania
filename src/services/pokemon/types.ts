@@ -9,6 +9,7 @@ export interface Pokemon {
   weight?: number;
   stats?: Record<string, number>;
   generation?: number;
+  suggestedAdjustment?: RankingSuggestion;
 }
 
 export interface RankingSuggestion {
