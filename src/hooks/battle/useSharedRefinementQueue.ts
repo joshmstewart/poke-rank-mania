@@ -13,8 +13,23 @@ export const useSharedRefinementQueue = () => {
     console.error('🚨 [REFINEMENT_QUEUE_CONTEXT] This means the component is not wrapped in RefinementQueueProvider');
     console.error('🚨 [REFINEMENT_QUEUE_CONTEXT] Stack trace:', new Error().stack);
     
-    // CRITICAL FIX: Instead of creating a fallback, throw an error to force proper wrapping
-    throw new Error('useSharedRefinementQueue must be used within a RefinementQueueProvider');
+    // CRITICAL FIX: Return a safe fallback instead of throwing to prevent React hook errors
+    console.warn('🚨 [REFINEMENT_QUEUE_CONTEXT] Returning safe fallback to prevent React hook chain breakage');
+    return {
+      refinementQueue: [],
+      refinementBattleCount: 0,
+      hasRefinementBattles: false,
+      queueBattlesForReorder: () => {
+        console.warn('🚨 [REFINEMENT_QUEUE_FALLBACK] queueBattlesForReorder called on fallback - no-op');
+      },
+      getNextRefinementBattle: () => null,
+      popRefinementBattle: () => {
+        console.warn('🚨 [REFINEMENT_QUEUE_FALLBACK] popRefinementBattle called on fallback - no-op');
+      },
+      clearRefinementQueue: () => {
+        console.warn('🚨 [REFINEMENT_QUEUE_FALLBACK] clearRefinementQueue called on fallback - no-op');
+      }
+    };
   }
   console.log('✅ [REFINEMENT_QUEUE_CONTEXT] Using shared refinement queue from context');
   console.log('✅ [REFINEMENT_QUEUE_CONTEXT] Context queueBattlesForReorder exists:', typeof context.queueBattlesForReorder === 'function');

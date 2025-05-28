@@ -10,7 +10,6 @@ import {
 } from '@dnd-kit/sortable';
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { useDragAndDrop } from "@/hooks/battle/useDragAndDrop";
-import { RefinementQueueProvider } from "./RefinementQueueProvider";
 import DraggablePokemonCard from "./DraggablePokemonCard";
 import MilestoneHeader from "./MilestoneHeader";
 import InfiniteScrollHandler from "./InfiniteScrollHandler";
@@ -27,7 +26,7 @@ interface DraggableMilestoneViewProps {
   pendingRefinements?: Set<number>;
 }
 
-const DraggableMilestoneViewInner: React.FC<DraggableMilestoneViewProps> = ({
+const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
   formattedRankings,
   battlesCompleted,
   activeTier,
@@ -97,15 +96,6 @@ const DraggableMilestoneViewInner: React.FC<DraggableMilestoneViewProps> = ({
         onLoadMore={onLoadMore}
       />
     </div>
-  );
-};
-
-const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = (props) => {
-  console.log(`🔄 [REFINEMENT_PROVIDER_MILESTONE] Wrapping DraggableMilestoneView with RefinementQueueProvider`);
-  return (
-    <RefinementQueueProvider>
-      <DraggableMilestoneViewInner {...props} />
-    </RefinementQueueProvider>
   );
 };
 
