@@ -39,27 +39,27 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
   onManualReorder,
   pendingRefinements = new Set()
 }) => {
-  console.log(`🚨 [DND_CRITICAL_DEBUG] ===== DraggableMilestoneView RENDER =====`);
-  console.log(`🚨 [DND_CRITICAL_DEBUG] @dnd-kit/core imported:`, typeof DndContext);
-  console.log(`🚨 [DND_CRITICAL_DEBUG] @dnd-kit/sortable imported:`, typeof SortableContext);
-  console.log(`🚨 [DND_CRITICAL_DEBUG] Pokemon count:`, formattedRankings.length);
+  console.log(`🚨 [DND_SETUP_DEBUG] ===== DraggableMilestoneView RENDER =====`);
+  console.log(`🚨 [DND_SETUP_DEBUG] @dnd-kit/core version check:`, typeof DndContext);
+  console.log(`🚨 [DND_SETUP_DEBUG] @dnd-kit/sortable version check:`, typeof SortableContext);
+  console.log(`🚨 [DND_SETUP_DEBUG] Pokemon count:`, formattedRankings.length);
+  console.log(`🚨 [DND_SETUP_DEBUG] onManualReorder exists:`, typeof onManualReorder === 'function');
 
   const [localRankings, setLocalRankings] = useState(formattedRankings);
   const maxItems = getMaxItemsForTier();
   const displayRankings = localRankings.slice(0, Math.min(milestoneDisplayCount, maxItems));
   const hasMoreToLoad = milestoneDisplayCount < maxItems;
 
-  console.log(`🚨 [DND_CRITICAL_DEBUG] Display rankings IDs:`, displayRankings.map(p => p.id));
-  console.log(`🚨 [DND_CRITICAL_DEBUG] onManualReorder function:`, typeof onManualReorder);
+  console.log(`🚨 [DND_SETUP_DEBUG] Display rankings IDs:`, displayRankings.map(p => p.id));
 
   // Update local rankings when formattedRankings changes
   React.useEffect(() => {
-    console.log(`🚨 [DND_CRITICAL_DEBUG] Updating local rankings from props`);
+    console.log(`🚨 [DND_SETUP_DEBUG] Updating local rankings from props`);
     setLocalRankings(formattedRankings);
   }, [formattedRankings]);
 
   const handleManualReorderWrapper = React.useCallback((draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => {
-    console.log(`🚨 [DND_CRITICAL_DEBUG] Manual reorder wrapper called:`, draggedPokemonId, sourceIndex, destinationIndex);
+    console.log(`🚨 [DND_SETUP_DEBUG] Manual reorder wrapper called:`, draggedPokemonId, sourceIndex, destinationIndex);
     if (typeof onManualReorder === 'function') {
       onManualReorder(draggedPokemonId, sourceIndex, destinationIndex);
     }
@@ -72,22 +72,24 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
   });
 
   const handleDragStart = (event: DragStartEvent) => {
-    console.log(`🚨 [DND_CRITICAL_DEBUG] ===== DRAG STARTED =====`);
-    console.log(`🚨 [DND_CRITICAL_DEBUG] Active ID:`, event.active.id);
-    console.log(`🚨 [DND_CRITICAL_DEBUG] Active data:`, event.active.data);
+    console.log(`🚨 [DND_SETUP_DEBUG] ===== DRAG STARTED =====`);
+    console.log(`🚨 [DND_SETUP_DEBUG] Active ID:`, event.active.id);
+    console.log(`🚨 [DND_SETUP_DEBUG] Active data:`, event.active.data);
+    console.log(`🚨 [DND_SETUP_DEBUG] Event type:`, event.type);
+    console.log(`🚨 [DND_SETUP_DEBUG] This proves @dnd-kit is working!`);
   };
 
   const handleDragOver = (event: DragOverEvent) => {
-    console.log(`🚨 [DND_CRITICAL_DEBUG] Dragging over:`, event.over?.id || 'none');
+    console.log(`🚨 [DND_SETUP_DEBUG] Dragging over:`, event.over?.id || 'none');
   };
 
-  // Critical check: ensure we have required dependencies
-  console.log(`🚨 [DND_CRITICAL_DEBUG] DndContext type:`, typeof DndContext);
-  console.log(`🚨 [DND_CRITICAL_DEBUG] SortableContext type:`, typeof SortableContext);
-  console.log(`🚨 [DND_CRITICAL_DEBUG] rectSortingStrategy type:`, typeof rectSortingStrategy);
-  console.log(`🚨 [DND_CRITICAL_DEBUG] closestCenter type:`, typeof closestCenter);
-  console.log(`🚨 [DND_CRITICAL_DEBUG] sensors:`, sensors?.length);
-  console.log(`🚨 [DND_CRITICAL_DEBUG] handleDragEnd:`, typeof handleDragEnd);
+  // Critical debugging for @dnd-kit setup
+  console.log(`🚨 [DND_SETUP_DEBUG] DndContext available:`, typeof DndContext === 'function');
+  console.log(`🚨 [DND_SETUP_DEBUG] SortableContext available:`, typeof SortableContext === 'function');
+  console.log(`🚨 [DND_SETUP_DEBUG] closestCenter available:`, typeof closestCenter === 'function');
+  console.log(`🚨 [DND_SETUP_DEBUG] rectSortingStrategy available:`, typeof rectSortingStrategy === 'function');
+  console.log(`🚨 [DND_SETUP_DEBUG] sensors:`, sensors?.length);
+  console.log(`🚨 [DND_SETUP_DEBUG] handleDragEnd:`, typeof handleDragEnd);
 
   return (
     <div className="bg-white p-6 w-full max-w-7xl mx-auto">
@@ -100,12 +102,7 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
         onContinueBattles={onContinueBattles}
       />
 
-      <div 
-        className="mb-6" 
-        onPointerDown={(e) => {
-          console.log(`🚨 [DND_CRITICAL_DEBUG] Container pointer down:`, e.target);
-        }}
-      >
+      <div className="mb-6">
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -119,7 +116,7 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
           >
             <div className="grid grid-cols-5 gap-4">
               {displayRankings.map((pokemon, index) => {
-                console.log(`🚨 [DND_CRITICAL_DEBUG] Rendering card ${index}: ${pokemon.name} (ID: ${pokemon.id})`);
+                console.log(`🚨 [DND_SETUP_DEBUG] Rendering card ${index}: ${pokemon.name} (ID: ${pokemon.id})`);
                 return (
                   <DraggablePokemonCard
                     key={pokemon.id}

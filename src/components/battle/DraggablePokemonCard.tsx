@@ -17,9 +17,9 @@ const DraggablePokemonCard: React.FC<DraggablePokemonCardProps> = ({
   index, 
   isPending = false 
 }) => {
-  console.log(`🚨 [CARD_CRITICAL_DEBUG] ===== RENDERING CARD ${pokemon.name} =====`);
-  console.log(`🚨 [CARD_CRITICAL_DEBUG] useSortable imported:`, typeof useSortable);
-  console.log(`🚨 [CARD_CRITICAL_DEBUG] CSS imported:`, typeof CSS);
+  console.log(`🚨 [CARD_SETUP_DEBUG] ===== RENDERING CARD ${pokemon.name} =====`);
+  console.log(`🚨 [CARD_SETUP_DEBUG] useSortable imported:`, typeof useSortable);
+  console.log(`🚨 [CARD_SETUP_DEBUG] CSS imported:`, typeof CSS);
 
   const sortableResult = useSortable({ 
     id: pokemon.id,
@@ -29,7 +29,7 @@ const DraggablePokemonCard: React.FC<DraggablePokemonCardProps> = ({
     }
   });
 
-  console.log(`🚨 [CARD_CRITICAL_DEBUG] useSortable result for ${pokemon.name}:`, {
+  console.log(`🚨 [CARD_SETUP_DEBUG] useSortable result for ${pokemon.name}:`, {
     id: pokemon.id,
     isDragging: sortableResult.isDragging,
     hasListeners: !!sortableResult.listeners,
@@ -48,12 +48,12 @@ const DraggablePokemonCard: React.FC<DraggablePokemonCardProps> = ({
   } = sortableResult;
 
   // Critical debugging for drag handlers
-  console.log(`🚨 [CARD_CRITICAL_DEBUG] Listeners object:`, listeners);
-  console.log(`🚨 [CARD_CRITICAL_DEBUG] Attributes object:`, attributes);
+  console.log(`🚨 [CARD_SETUP_DEBUG] Listeners object for ${pokemon.name}:`, listeners);
+  console.log(`🚨 [CARD_SETUP_DEBUG] Attributes object for ${pokemon.name}:`, attributes);
   
   if (listeners) {
     Object.keys(listeners).forEach(key => {
-      console.log(`🚨 [CARD_CRITICAL_DEBUG] Listener ${key}:`, typeof listeners[key]);
+      console.log(`🚨 [CARD_SETUP_DEBUG] Listener ${key} for ${pokemon.name}:`, typeof listeners[key]);
     });
   }
 
@@ -65,14 +65,40 @@ const DraggablePokemonCard: React.FC<DraggablePokemonCardProps> = ({
   const backgroundColorClass = getPokemonBackgroundColor(pokemon);
 
   const handlePointerDown = (e: React.PointerEvent) => {
-    console.log(`🚨 [CARD_CRITICAL_DEBUG] ${pokemon.name} POINTER DOWN:`, e.type, e.button);
-    console.log(`🚨 [CARD_CRITICAL_DEBUG] Target:`, e.target);
-    console.log(`🚨 [CARD_CRITICAL_DEBUG] CurrentTarget:`, e.currentTarget);
+    console.log(`🚨 [CARD_SETUP_DEBUG] ${pokemon.name} POINTER DOWN - Event details:`, {
+      type: e.type,
+      button: e.button,
+      isPrimary: e.isPrimary,
+      pressure: e.pressure,
+      target: e.target?.constructor?.name,
+      currentTarget: e.currentTarget?.constructor?.name
+    });
+    
+    // CRITICAL: Stop event propagation for drag to work
+    e.stopPropagation();
     
     // Call the dnd-kit listener if it exists
     if (listeners?.onPointerDown) {
-      console.log(`🚨 [CARD_CRITICAL_DEBUG] Calling dnd-kit onPointerDown`);
+      console.log(`🚨 [CARD_SETUP_DEBUG] Calling dnd-kit onPointerDown for ${pokemon.name}`);
       listeners.onPointerDown(e);
+    } else {
+      console.error(`🚨 [CARD_SETUP_DEBUG] NO onPointerDown listener for ${pokemon.name}!`);
+    }
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    console.log(`🚨 [CARD_SETUP_DEBUG] ${pokemon.name} MOUSE DOWN:`, e.button);
+    e.stopPropagation();
+    if (listeners?.onMouseDown) {
+      listeners.onMouseDown(e);
+    }
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    console.log(`🚨 [CARD_SETUP_DEBUG] ${pokemon.name} TOUCH START:`, e.touches.length);
+    e.stopPropagation();
+    if (listeners?.onTouchStart) {
+      listeners.onTouchStart(e);
     }
   };
 
@@ -80,23 +106,13 @@ const DraggablePokemonCard: React.FC<DraggablePokemonCardProps> = ({
     <div
       ref={setNodeRef}
       style={style}
-      className={`${backgroundColorClass} rounded-lg border border-gray-200 relative overflow-hidden h-40 flex flex-col select-none touch-none ${
+      className={`${backgroundColorClass} rounded-lg border border-gray-200 relative overflow-hidden h-40 flex flex-col select-none touch-none cursor-grab active:cursor-grabbing ${
         isDragging ? 'opacity-60 z-50 scale-105 shadow-2xl' : 'hover:shadow-lg transition-all duration-200'
       } ${isPending ? 'ring-2 ring-yellow-400 ring-opacity-50' : ''}`}
       {...attributes}
       onPointerDown={handlePointerDown}
-      onMouseDown={(e) => {
-        console.log(`🚨 [CARD_CRITICAL_DEBUG] ${pokemon.name} MOUSE DOWN:`, e.button);
-        if (listeners?.onMouseDown) {
-          listeners.onMouseDown(e);
-        }
-      }}
-      onTouchStart={(e) => {
-        console.log(`🚨 [CARD_CRITICAL_DEBUG] ${pokemon.name} TOUCH START:`, e.touches.length);
-        if (listeners?.onTouchStart) {
-          listeners.onTouchStart(e);
-        }
-      }}
+      onMouseDown={handleMouseDown}
+      onTouchStart={handleTouchStart}
     >
       {/* Pending indicator */}
       {isPending && (
@@ -105,12 +121,21 @@ const DraggablePokemonCard: React.FC<DraggablePokemonCardProps> = ({
         </div>
       )}
 
-      {/* Info Button */}
+      {/* Info Button - CRITICAL: Must prevent drag events */}
       <div 
         className="absolute top-1 right-1 z-30 pointer-events-auto"
-        onPointerDown={(e) => e.stopPropagation()}
-        onMouseDown={(e) => e.stopPropagation()}
-        onTouchStart={(e) => e.stopPropagation()}
+        onPointerDown={(e) => {
+          console.log(`🚨 [CARD_SETUP_DEBUG] Info button pointer down for ${pokemon.name} - STOPPING PROPAGATION`);
+          e.stopPropagation();
+        }}
+        onMouseDown={(e) => {
+          console.log(`🚨 [CARD_SETUP_DEBUG] Info button mouse down for ${pokemon.name} - STOPPING PROPAGATION`);
+          e.stopPropagation();
+        }}
+        onTouchStart={(e) => {
+          console.log(`🚨 [CARD_SETUP_DEBUG] Info button touch start for ${pokemon.name} - STOPPING PROPAGATION`);
+          e.stopPropagation();
+        }}
       >
         <PokemonInfoModal pokemon={pokemon}>
           <button 
