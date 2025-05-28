@@ -1,4 +1,3 @@
-
 import { useCallback } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
@@ -117,7 +116,7 @@ export const useBattleStateHandlers = (
     console.log(`🔄 [MANUAL_REORDER_ULTRA_TRACE] ===== MANUAL REORDER END =====`);
   }, [refinementQueue, finalRankings]);
 
-  // CRITICAL FIX: Enhanced battle completion with proper queue management and comprehensive logging
+  // CRITICAL FIX: Enhanced battle completion with proper battle history tracking
   const processBattleResultWithRefinement = useCallback((
     selectedPokemonIds: number[],
     currentBattlePokemon: Pokemon[],
@@ -158,6 +157,20 @@ export const useBattleStateHandlers = (
         wasRefinementBattle = true;
         refinementBattleInfo = { ...nextRefinement };
         
+        // CRITICAL FIX: Mark these Pokemon as recently battled to prevent immediate re-pairing
+        const battleKey = battleIds.join('-');
+        const recentBattles = JSON.parse(localStorage.getItem('pokemon-battle-recently-used') || '[]');
+        recentBattles.push(battleKey);
+        
+        // Keep only recent battles (last 50)
+        if (recentBattles.length > 50) {
+          recentBattles.splice(0, recentBattles.length - 50);
+        }
+        
+        localStorage.setItem('pokemon-battle-recently-used', JSON.stringify(recentBattles));
+        console.log(`🔄 [BATTLE_HISTORY_FIX] ✅ Added battle ${battleKey} to recent battle history`);
+        console.log(`🔄 [BATTLE_HISTORY_FIX] Recent battles now: ${recentBattles.length} entries`);
+        
         // CRITICAL FIX: Apply ranking adjustments based on validation battle results
         if (nextRefinement.reason.includes('manual reorder')) {
           console.log(`🏆 [RANKING_VALIDATION_ULTRA_DEBUG] Processing validation battle result for manual reorder`);
@@ -188,7 +201,7 @@ export const useBattleStateHandlers = (
           console.log(`🏆 [RANKING_VALIDATION_ULTRA_DEBUG] ✅ Validation result event dispatched successfully`);
         }
         
-        // CRITICAL FIX: Pop the completed refinement battle and immediately handle next steps
+        // CRITICAL FIX: Pop the completed refinement battle and handle next steps
         console.log(`⚔️ [REFINEMENT_BATTLE_COMPLETED] Processing completed refinement battle...`);
         console.log(`⚔️ [REFINEMENT_BATTLE_COMPLETED] Queue size BEFORE pop: ${refinementQueue.refinementBattleCount}`);
         
