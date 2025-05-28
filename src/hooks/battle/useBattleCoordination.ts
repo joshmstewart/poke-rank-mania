@@ -6,7 +6,6 @@ import { useProgressState } from "./useProgressState";
 import { useRankings } from "./useRankings";
 import { useCompletionTracker } from "./useCompletionTracker";
 import { useBattleStarterIntegration } from "./useBattleStarterIntegration";
-import { useBattleProcessor } from "./useBattleProcessor";
 
 export const useBattleCoordination = (
   selectedGeneration: number,

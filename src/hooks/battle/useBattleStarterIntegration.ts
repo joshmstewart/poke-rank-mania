@@ -7,7 +7,9 @@ export const useBattleStarterIntegration = (
   allPokemon: Pokemon[],
   currentRankings: RankedPokemon[],
   setCurrentBattle: React.Dispatch<React.SetStateAction<Pokemon[]>>,
-  setSelectedPokemon: React.Dispatch<React.SetStateAction<number[]>>
+  setSelectedPokemon: React.Dispatch<React.SetStateAction<number[]>>,
+  markSuggestionUsed?: (suggestion: any) => void,
+  currentBattle?: Pokemon[]
 ) => {
   const battleStarter = useMemo(() => {
     if (!allPokemon || allPokemon.length === 0) return null;
@@ -26,8 +28,15 @@ export const useBattleStarterIntegration = (
     return result;
   };
 
+  const resetSuggestionPriority = () => {
+    if (battleStarter) {
+      battleStarter.resetSuggestionPriority();
+    }
+  };
+
   return {
     battleStarter,
-    startNewBattle
+    startNewBattle,
+    resetSuggestionPriority
   };
 };

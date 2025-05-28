@@ -28,15 +28,14 @@ export const useBattleOutcomeProcessor = (
       if (winner && loser) {
         const newResult: SingleBattle = {
           winner,
-          loser,
-          battleType: "pairs"
+          loser
         };
 
         setBattleResults(prev => [...prev, newResult]);
         setBattlesCompleted(prev => prev + 1);
 
         if (battleStarter) {
-          battleStarter.updateBattleTracking(winnerId, [winnerId, loser.id]);
+          battleStarter.updateBattleTracking?.(winnerId, [winnerId, loser.id]);
         }
 
         console.log("✅ useBattleOutcomeProcessor: Battle result processed", {
