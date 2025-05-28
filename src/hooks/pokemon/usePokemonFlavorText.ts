@@ -1,17 +1,10 @@
 
 import { useState, useEffect } from "react";
+import { getBasePokemonId } from "@/utils/pokemon/pokemonGenerationUtils";
 
 export const usePokemonFlavorText = (pokemonId: number, isOpen: boolean) => {
   const [flavorText, setFlavorText] = useState<string>("");
   const [isLoadingFlavor, setIsLoadingFlavor] = useState(false);
-
-  // Get base Pokemon ID for variant forms
-  const getBasePokemonId = (pokemonId: number) => {
-    if (pokemonId > 1025) {
-      return Math.min(pokemonId, 1025);
-    }
-    return pokemonId;
-  };
 
   // Reset flavor text when Pokemon changes - this must run every time
   useEffect(() => {
@@ -26,6 +19,7 @@ export const usePokemonFlavorText = (pokemonId: number, isOpen: boolean) => {
       console.log(`🔄 [FLAVOR_TEXT_DEBUG] Starting to fetch flavor text for Pokemon ID: ${pokemonId}`);
       setIsLoadingFlavor(true);
       const baseId = getBasePokemonId(pokemonId);
+      console.log(`🔄 [FLAVOR_TEXT_DEBUG] Using base ID: ${baseId} for Pokemon ID: ${pokemonId}`);
       
       fetch(`https://pokeapi.co/api/v2/pokemon-species/${baseId}`)
         .then(res => res.json())
