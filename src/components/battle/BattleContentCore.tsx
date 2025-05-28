@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "@/hooks/battle/types";
@@ -27,6 +28,14 @@ const BattleContentCore: React.FC<BattleContentCoreProps> = ({
   console.log(`[DEBUG BattleContentCore] Instance: ${instanceRef.current} render - allPokemon: ${allPokemon?.length || 0}`);
   console.log(`🔄 [REFINEMENT_PROVIDER_REMOVE] BattleContentCore no longer wrapping with RefinementQueueProvider - using top-level one`);
 
+  // CRITICAL FIX: Always call useBattleStateCore with stable parameters
+  const stateHook = useBattleStateCore(
+    allPokemon || [], 
+    initialBattleType, 
+    initialSelectedGeneration
+  );
+
+  // Destructure after the hook call to ensure consistent hook ordering
   const {
     currentBattle,
     battleResults,
@@ -67,7 +76,7 @@ const BattleContentCore: React.FC<BattleContentCoreProps> = ({
     performFullBattleReset,
     handleManualReorder,
     pendingRefinements
-  } = useBattleStateCore(allPokemon, initialBattleType, initialSelectedGeneration);
+  } = stateHook;
 
   console.log(`🔄 [FINAL_FIX] BattleContentCore render states:`, {
     showingMilestone,
@@ -81,13 +90,17 @@ const BattleContentCore: React.FC<BattleContentCoreProps> = ({
     timestamp: new Date().toISOString()
   });
 
-  // Update parent state when local state changes
+  // CRITICAL FIX: Always call useEffect hooks in the same order
   useEffect(() => {
-    setBattlesCompleted?.(battlesCompleted);
+    if (setBattlesCompleted) {
+      setBattlesCompleted(battlesCompleted);
+    }
   }, [battlesCompleted, setBattlesCompleted]);
 
   useEffect(() => {
-    setBattleResults?.(battleResults);
+    if (setBattleResults) {
+      setBattleResults(battleResults);
+    }
   }, [battleResults, setBattleResults]);
 
   // Show milestone screen
