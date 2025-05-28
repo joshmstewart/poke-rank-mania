@@ -1,8 +1,10 @@
+
 import React, { useState, useCallback, memo, useRef, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "@/hooks/battle/types";
 import { getPreferredImage, ImageType } from "@/utils/imageUtils";
+import { formatPokemonName } from "@/utils/pokemon";
 import { Loader2 } from "lucide-react";
 
 interface BattleCardProps {
@@ -26,13 +28,17 @@ const BattleCard: React.FC<BattleCardProps> = memo(({
   const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastClickTimeRef = useRef(0);
 
-  console.log(`🎯 [LOADING CIRCLES] BattleCard ${pokemon.name} received isProcessing: ${isProcessing}`);
+  // CRITICAL FIX: Format the Pokemon name for display in battles
+  const formattedName = formatPokemonName(pokemon.name);
+  
+  console.log(`🎯 [BATTLE_CARD_NAME_FIX] Pokemon ${pokemon.id}: "${pokemon.name}" → "${formattedName}"`);
+  console.log(`🎯 [LOADING CIRCLES] BattleCard ${formattedName} received isProcessing: ${isProcessing}`);
   
   // CRITICAL FIX: Don't hide Pokemon during processing - show loading overlay instead
   if (isProcessing) {
-    console.log(`🟡 [LOADING CIRCLES] BattleCard ${pokemon.name} SHOWING loading state`);
+    console.log(`🟡 [LOADING CIRCLES] BattleCard ${formattedName} SHOWING loading state`);
   } else {
-    console.log(`🟢 [LOADING CIRCLES] BattleCard ${pokemon.name} NOT showing loading state`);
+    console.log(`🟢 [LOADING CIRCLES] BattleCard ${formattedName} NOT showing loading state`);
   }
 
   useEffect(() => {
@@ -52,22 +58,22 @@ const BattleCard: React.FC<BattleCardProps> = memo(({
   const handleImageError = useCallback(() => {
     setImageError(true);
     setLocalImageLoading(false);
-    console.error(`Failed to load image for ${pokemon.name}`);
-  }, [pokemon.name]);
+    console.error(`Failed to load image for ${formattedName}`);
+  }, [formattedName]);
 
   const handleClick = useCallback(() => {
     const now = Date.now();
     
     // Prevent rapid double-clicks
     if (now - lastClickTimeRef.current < 300) {
-      console.log(`🚫 BattleCard: Ignoring rapid click on ${pokemon.name}`);
+      console.log(`🚫 BattleCard: Ignoring rapid click on ${formattedName}`);
       return;
     }
     
     lastClickTimeRef.current = now;
     
     // CRITICAL FIX: Don't block clicks during processing - let parent handle
-    console.log(`🖱️ BattleCard: Click on ${pokemon.name} (${pokemon.id}) - processing: ${isProcessing}`);
+    console.log(`🖱️ BattleCard: Click on ${formattedName} (${pokemon.id}) - processing: ${isProcessing}`);
     
     if (clickTimeoutRef.current) {
       clearTimeout(clickTimeoutRef.current);
@@ -77,7 +83,7 @@ const BattleCard: React.FC<BattleCardProps> = memo(({
       onSelect(pokemon.id);
       clickTimeoutRef.current = null;
     }, 50);
-  }, [pokemon.id, pokemon.name, onSelect, isProcessing]);
+  }, [pokemon.id, formattedName, onSelect, isProcessing]);
 
   const preferredImageType: ImageType = 
     (localStorage.getItem('preferredImageType') as ImageType) || 'official';
@@ -86,8 +92,8 @@ const BattleCard: React.FC<BattleCardProps> = memo(({
   
   const imageUrl = getPreferredImage(pokemon, preferredImageType);
   
-  console.log(`🏆 BattleCard: Rendering Pokemon ${pokemon.name} (#${pokemon.id}) with isSelected=${isSelected}`);
-  console.log(`🖼️ BattleCard: Loading "${preferredImageType}" image for ${pokemon.name} (#${pokemon.id}): ${imageUrl}`);
+  console.log(`🏆 BattleCard: Rendering Pokemon ${formattedName} (#${pokemon.id}) with isSelected=${isSelected}`);
+  console.log(`🖼️ BattleCard: Loading "${preferredImageType}" image for ${formattedName} (#${pokemon.id}): ${imageUrl}`);
 
   const cardClasses = `
     relative cursor-pointer transition-all duration-200 transform hover:scale-105 
@@ -100,7 +106,7 @@ const BattleCard: React.FC<BattleCardProps> = memo(({
       className={cardClasses}
       onClick={handleClick}
       data-pokemon-id={pokemon.id}
-      data-pokemon-name={pokemon.name}
+      data-pokemon-name={formattedName}
       data-processing={isProcessing ? "true" : "false"}
     >
       <CardContent className="p-4 text-center relative">
@@ -122,7 +128,7 @@ const BattleCard: React.FC<BattleCardProps> = memo(({
             
             <img
               src={imageUrl}
-              alt={pokemon.name}
+              alt={formattedName}
               className={`w-full h-full object-contain rounded-lg transition-opacity duration-200 ${
                 imageLoaded ? 'opacity-100' : 'opacity-0'
               }`}
@@ -134,7 +140,7 @@ const BattleCard: React.FC<BattleCardProps> = memo(({
 
           {/* Pokemon Info */}
           <div className="space-y-1">
-            <h3 className="font-semibold text-lg text-gray-800">{pokemon.name}</h3>
+            <h3 className="font-semibold text-lg text-gray-800">{formattedName}</h3>
             <p className="text-sm text-gray-600">#{pokemon.id}</p>
             
             {pokemon.types && pokemon.types.length > 0 && (
