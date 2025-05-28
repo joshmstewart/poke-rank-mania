@@ -107,7 +107,6 @@ const BattleContentCore: React.FC<BattleContentCoreProps> = ({
         removeSuggestion={removeSuggestion}
         setShowingMilestone={setShowingMilestone}
         resetMilestoneInProgress={resetMilestoneInProgress}
-        handleContinueBattles={handleContinueBattles}
         handleManualReorder={handleManualReorder}
         pendingRefinements={pendingRefinements}
       />

@@ -70,8 +70,8 @@ export const useBattleResultProcessor = (
           console.log(`Updated ratings: ${winner.name} (μ=${newWinnerRating.mu.toFixed(2)}, σ=${newWinnerRating.sigma.toFixed(2)}) | ${loser.name} (μ=${newLoserRating.mu.toFixed(2)}, σ=${newLoserRating.sigma.toFixed(2)})`);
           
           // Find if winner or loser are from different tiers to track upsets
-          const winnerRank = battleResults.filter(r => r.winner.id === winner.id || r.loser.id === winner.id).length;
-          const loserRank = battleResults.filter(r => r.winner.id === loser.id || r.loser.id === loser.id).length;
+          const winnerRank = battleResults.filter(r => r.winner?.id === winner.id || r.loser?.id === winner.id).length;
+          const loserRank = battleResults.filter(r => r.winner?.id === loser.id || r.loser?.id === loser.id).length;
           
           // If winner has a much lower ranking than loser, this is an upset
           // We use this to identify potential demotions
@@ -88,7 +88,7 @@ export const useBattleResultProcessor = (
             
             // Count battles for this pokemon
             const battles = battleResults.filter(
-              result => result.winner.id === loser.id || result.loser.id === loser.id
+              result => result.winner?.id === loser.id || result.loser?.id === loser.id
             ).length;
             
             // Only freeze if:
@@ -101,7 +101,17 @@ export const useBattleResultProcessor = (
             }
           }
           
-          newResults.push({ winner, loser });
+          const newResult: SingleBattle = {
+            battleType,
+            generation: 0, // Default generation
+            pokemonIds: currentBattle.map(p => p.id),
+            selectedPokemonIds: selections,
+            timestamp: new Date().toISOString(),
+            winner,
+            loser
+          };
+          
+          newResults.push(newResult);
           setIsProcessing(false);
           return newResults;
         } else {
@@ -139,7 +149,7 @@ export const useBattleResultProcessor = (
                 
                 // Count battles for this pokemon
                 const battles = battleResults.filter(
-                  result => result.winner.id === loser.id || result.loser.id === loser.id
+                  result => result.winner?.id === loser.id || result.loser?.id === loser.id
                 ).length;
                 
                 if (battles >= 5 && loserConfidence > 60 && loserScore < 0) {
@@ -148,7 +158,17 @@ export const useBattleResultProcessor = (
                 }
               }
               
-              newResults.push({ winner, loser });
+              const newResult: SingleBattle = {
+                battleType,
+                generation: 0, // Default generation
+                pokemonIds: currentBattle.map(p => p.id),
+                selectedPokemonIds: selections,
+                timestamp: new Date().toISOString(),
+                winner,
+                loser
+              };
+              
+              newResults.push(newResult);
             });
           });
 

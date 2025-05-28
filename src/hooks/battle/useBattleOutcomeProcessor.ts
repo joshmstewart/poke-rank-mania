@@ -27,6 +27,11 @@ export const useBattleOutcomeProcessor = (
 
       if (winner && loser) {
         const newResult: SingleBattle = {
+          battleType,
+          generation: selectedGeneration || 0,
+          pokemonIds: currentBattlePokemon.map(p => p.id),
+          selectedPokemonIds: selectedPokemonIds,
+          timestamp: new Date().toISOString(),
           winner,
           loser
         };
