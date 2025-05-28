@@ -47,7 +47,14 @@ const BattleCard: React.FC<BattleCardProps> = memo(({
     };
   }, []);
 
-  const handleClick = useCallback(() => {
+  const handleClick = useCallback((e: React.MouseEvent) => {
+    // Check if the click is on the info button or its children
+    const target = e.target as HTMLElement;
+    if (target.closest('[data-info-button]')) {
+      console.log(`ℹ️ BattleCard: Info button clicked for ${displayName}, preventing card selection`);
+      return;
+    }
+
     const now = Date.now();
     
     // Prevent rapid double-clicks
@@ -96,8 +103,10 @@ const BattleCard: React.FC<BattleCardProps> = memo(({
       data-processing={isProcessing ? "true" : "false"}
     >
       <CardContent className="p-4 text-center relative">
-        {/* Info Button */}
-        <PokemonInfoModal pokemon={pokemon} />
+        {/* Info Button - add data attribute to prevent click bubbling */}
+        <div data-info-button="true">
+          <PokemonInfoModal pokemon={pokemon} />
+        </div>
 
         {/* CRITICAL FIX: Keep Pokemon visible, add loading overlay instead */}
         <div className="relative">

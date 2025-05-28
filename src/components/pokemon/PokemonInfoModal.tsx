@@ -24,11 +24,21 @@ const PokemonInfoModal: React.FC<PokemonInfoModalProps> = ({
 }) => {
   const normalizedId = normalizePokedexNumber(pokemon.id);
   
+  const handleInfoClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    console.log(`ℹ️ Info button clicked for ${pokemon.name}`);
+  };
+  
   return (
     <Dialog>
       <DialogTrigger asChild>
         {children || (
-          <Button variant="ghost" size="sm" className="absolute top-2 right-2 w-6 h-6 p-0 opacity-70 hover:opacity-100">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="absolute top-2 right-2 w-6 h-6 p-0 opacity-70 hover:opacity-100 z-10"
+            onClick={handleInfoClick}
+          >
             <Info className="w-4 h-4" />
           </Button>
         )}
