@@ -1,4 +1,3 @@
-
 import { Pokemon } from "../types";
 import { formatPokemonName } from "@/utils/pokemon";
 
@@ -36,46 +35,23 @@ export const fetchPokemonData = async (generations: number[]): Promise<Pokemon[]
           return null;
         }
 
-        // ULTRA-DETAILED NAME PROCESSING LOGS
-        console.log(`🔧 [ULTRA_NAME_DEBUG] ===== POKEMON ID ${pokemonData.id} COMPLETE PROCESSING =====`);
-        console.log(`🔧 [ULTRA_NAME_DEBUG] Step 1A - Raw API response name:`, pokemonData.name);
-        console.log(`🔧 [ULTRA_NAME_DEBUG] Step 1B - Raw name type:`, typeof pokemonData.name);
-        console.log(`🔧 [ULTRA_NAME_DEBUG] Step 1C - Raw name length:`, pokemonData.name.length);
-        console.log(`🔧 [ULTRA_NAME_DEBUG] Step 1D - Raw name contains hyphen:`, pokemonData.name.includes('-'));
-        console.log(`🔧 [ULTRA_NAME_DEBUG] Step 1E - Raw name starts with mega:`, pokemonData.name.toLowerCase().startsWith('mega'));
-        console.log(`🔧 [ULTRA_NAME_DEBUG] Step 1F - Raw name contains alola:`, pokemonData.name.toLowerCase().includes('alola'));
+        // CRITICAL FIX: Ensure formatting is applied immediately and consistently
+        console.log(`🔧 [API_FORMAT_DEBUG] Raw API name: "${pokemonData.name}"`);
         
-        // STEP 2: Call formatPokemonName and capture EXACT result
-        console.log(`🔧 [ULTRA_NAME_DEBUG] Step 2A - About to call formatPokemonName("${pokemonData.name}")`);
+        // Format the name immediately
         const formattedName = formatPokemonName(pokemonData.name);
-        console.log(`🔧 [ULTRA_NAME_DEBUG] Step 2B - formatPokemonName returned:`, formattedName);
-        console.log(`🔧 [ULTRA_NAME_DEBUG] Step 2C - Formatted name type:`, typeof formattedName);
-        console.log(`🔧 [ULTRA_NAME_DEBUG] Step 2D - Formatted name length:`, formattedName.length);
-        console.log(`🔧 [ULTRA_NAME_DEBUG] Step 2E - Names are identical:`, pokemonData.name === formattedName);
-        console.log(`🔧 [ULTRA_NAME_DEBUG] Step 2F - Names are similar (case insensitive):`, pokemonData.name.toLowerCase() === formattedName.toLowerCase());
+        console.log(`🔧 [API_FORMAT_DEBUG] Formatted name: "${formattedName}"`);
         
-        // STEP 3: Character-by-character comparison if they're different
-        if (pokemonData.name !== formattedName) {
-          console.log(`🔧 [ULTRA_NAME_DEBUG] Step 3A - NAMES DIFFER! Character comparison:`);
-          console.log(`🔧 [ULTRA_NAME_DEBUG] Step 3B - Original: [${pokemonData.name.split('').join(', ')}]`);
-          console.log(`🔧 [ULTRA_NAME_DEBUG] Step 3C - Formatted: [${formattedName.split('').join(', ')}]`);
-          
-          for (let i = 0; i < Math.max(pokemonData.name.length, formattedName.length); i++) {
-            const origChar = pokemonData.name[i] || '(undefined)';
-            const formChar = formattedName[i] || '(undefined)';
-            if (origChar !== formChar) {
-              console.log(`🔧 [ULTRA_NAME_DEBUG] Step 3D - Difference at position ${i}: "${origChar}" vs "${formChar}"`);
-            }
-          }
+        // VERIFICATION: Check if formatting worked
+        if (pokemonData.name === formattedName && pokemonData.name.includes('-')) {
+          console.error(`🚨 [API_FORMAT_ERROR] Formatting failed for "${pokemonData.name}" - still contains hyphens`);
         } else {
-          console.error(`🚨 [ULTRA_NAME_DEBUG] Step 3E - CRITICAL: formatPokemonName did NOT change "${pokemonData.name}" - this should have been formatted!`);
+          console.log(`✅ [API_FORMAT_SUCCESS] Successfully formatted "${pokemonData.name}" → "${formattedName}"`);
         }
 
-        // STEP 4: Create the Pokemon object
-        console.log(`🔧 [ULTRA_NAME_DEBUG] Step 4A - Creating Pokemon object with name:`, formattedName);
         const pokemon = {
           id: pokemonData.id,
-          name: formattedName, // Use the formatted name directly
+          name: formattedName, // Use the formatted name
           image: pokemonData.sprites.other['official-artwork'].front_default || 
                  pokemonData.sprites.front_default,
           types: pokemonData.types.map((type: any) => 
@@ -83,17 +59,7 @@ export const fetchPokemonData = async (generations: number[]): Promise<Pokemon[]
           )
         };
 
-        // STEP 5: Verify the Pokemon object
-        console.log(`🔧 [ULTRA_NAME_DEBUG] Step 5A - Final Pokemon object name property:`, pokemon.name);
-        console.log(`🔧 [ULTRA_NAME_DEBUG] Step 5B - Pokemon object name is string:`, typeof pokemon.name === 'string');
-        console.log(`🔧 [ULTRA_NAME_DEBUG] Step 5C - Pokemon object name length:`, pokemon.name.length);
-        console.log(`🔧 [ULTRA_NAME_DEBUG] Step 5D - Object property enumeration:`, Object.keys(pokemon));
-        console.log(`🔧 [ULTRA_NAME_DEBUG] Step 5E - Name property descriptor:`, Object.getOwnPropertyDescriptor(pokemon, 'name'));
-        
-        // STEP 6: Final verification before return
-        console.log(`🔧 [ULTRA_NAME_DEBUG] Step 6A - About to return Pokemon object for ID ${pokemonData.id}`);
-        console.log(`🔧 [ULTRA_NAME_DEBUG] Step 6B - Return value name:`, pokemon.name);
-        console.log(`🔧 [ULTRA_NAME_DEBUG] ===== END PROCESSING FOR ID ${pokemonData.id} =====`);
+        console.log(`🔧 [API_FINAL_DEBUG] Final Pokemon object name: "${pokemon.name}"`);
         
         return pokemon;
       } catch (error) {
@@ -105,29 +71,17 @@ export const fetchPokemonData = async (generations: number[]): Promise<Pokemon[]
     const pokemonResults = await Promise.all(pokemonPromises);
     const validPokemon = pokemonResults.filter(pokemon => pokemon !== null);
 
-    console.log(`✅ Successfully loaded ${validPokemon.length} Pokemon (filtered out ALL Cramorant forms)`);
+    console.log(`✅ Successfully loaded ${validPokemon.length} Pokemon with formatted names`);
     
-    // ULTRA-DETAILED FINAL RESULT VERIFICATION
-    console.log(`🔧 [ULTRA_NAME_DEBUG] ===== FINAL API RESULT VERIFICATION =====`);
-    const samplePokemon = validPokemon.slice(0, 10);
-    samplePokemon.forEach((pokemon, index) => {
-      console.log(`🔧 [ULTRA_NAME_DEBUG] Final result #${index}: ID=${pokemon.id}, name="${pokemon.name}", nameType=${typeof pokemon.name}`);
-      if (pokemon.name.includes('-') && !pokemon.name.includes('(') && !pokemon.name.includes('Mega ') && !pokemon.name.includes('Alolan ')) {
-        console.error(`🚨 [ULTRA_NAME_DEBUG] UNFORMATTED NAME DETECTED IN FINAL RESULT: "${pokemon.name}" (ID: ${pokemon.id})`);
-      }
-    });
+    // VERIFICATION: Check final result for unformatted names
+    const unformattedCount = validPokemon.filter(p => 
+      p.name.includes('-') && !p.name.includes('(') && !p.name.includes('Mega ') && !p.name.includes('Alolan ') && !p.name.includes('G-Max ')
+    ).length;
     
-    // CRITICAL: Check if any Pokemon still have unformatted names in the final result
-    const unformattedPokemon = validPokemon.filter(p => 
-      p.name.includes('-') && !p.name.includes('(') && !p.name.includes('Mega ') && !p.name.includes('Alolan ')
-    );
-    
-    console.log(`🔧 [ULTRA_NAME_DEBUG] Total unformatted Pokemon in final result: ${unformattedPokemon.length}`);
-    if (unformattedPokemon.length > 0) {
-      console.error(`🚨 [ULTRA_NAME_DEBUG] CRITICAL: ${unformattedPokemon.length} Pokemon still have unformatted names in final result!`);
-      unformattedPokemon.slice(0, 5).forEach(p => {
-        console.error(`🚨 [ULTRA_NAME_DEBUG] Unformatted: "${p.name}" (ID: ${p.id})`);
-      });
+    if (unformattedCount > 0) {
+      console.error(`🚨 [API_FINAL_ERROR] ${unformattedCount} Pokemon still have unformatted names!`);
+    } else {
+      console.log(`✅ [API_FINAL_SUCCESS] All Pokemon names properly formatted`);
     }
     
     return validPokemon;
