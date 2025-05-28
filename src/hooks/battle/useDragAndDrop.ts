@@ -19,7 +19,7 @@ export const useDragAndDrop = ({ displayRankings, onManualReorder, onLocalReorde
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 5, // Reduced from 8 for more responsive drag
+        distance: 3, // Further reduced for more responsive drag
       },
     }),
     useSensor(KeyboardSensor, {
@@ -35,6 +35,8 @@ export const useDragAndDrop = ({ displayRankings, onManualReorder, onLocalReorde
     console.log(`🎯 [DRAG_END_ENTRY] Event type:`, typeof event);
     console.log(`🎯 [DRAG_END_ENTRY] Event active:`, event.active);
     console.log(`🎯 [DRAG_END_ENTRY] Event over:`, event.over);
+    console.log(`🎯 [DRAG_END_ENTRY] Event active ID type:`, typeof event.active?.id);
+    console.log(`🎯 [DRAG_END_ENTRY] Event over ID type:`, typeof event.over?.id);
 
     const { active, over } = event;
 

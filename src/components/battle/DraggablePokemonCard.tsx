@@ -28,10 +28,15 @@ const DraggablePokemonCard: React.FC<DraggablePokemonCardProps> = ({
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition: isDragging ? undefined : transition, // Remove transition during drag for better performance
+    transition: isDragging ? undefined : transition,
   };
 
   const backgroundColorClass = getPokemonBackgroundColor(pokemon);
+
+  console.log(`🎯 [CARD_DRAG_DEBUG] Rendering card for ${pokemon.name} (${pokemon.id})`);
+  console.log(`🎯 [CARD_DRAG_DEBUG] isDragging: ${isDragging}`);
+  console.log(`🎯 [CARD_DRAG_DEBUG] Listeners:`, !!listeners);
+  console.log(`🎯 [CARD_DRAG_DEBUG] Attributes:`, !!attributes);
 
   return (
     <div
@@ -45,17 +50,22 @@ const DraggablePokemonCard: React.FC<DraggablePokemonCardProps> = ({
     >
       {/* Pending indicator */}
       {isPending && (
-        <div className="absolute top-0 left-0 right-0 bg-yellow-400 text-yellow-900 text-xs px-2 py-1 text-center font-medium">
+        <div className="absolute top-0 left-0 right-0 bg-yellow-400 text-yellow-900 text-xs px-2 py-1 text-center font-medium pointer-events-none">
           Position pending validation
         </div>
       )}
 
-      {/* Info Button - Even more subtle */}
-      <div className="absolute top-1 right-1 z-30">
+      {/* Info Button - Fixed to not interfere with drag */}
+      <div className="absolute top-1 right-1 z-30 pointer-events-auto">
         <PokemonInfoModal pokemon={pokemon}>
           <button 
             className="w-5 h-5 rounded-full bg-white/30 hover:bg-white/50 border border-gray-300/60 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200 backdrop-blur-sm"
+            onPointerDown={(e) => {
+              console.log(`🎯 [INFO_BUTTON_DEBUG] Info button pointer down - stopping propagation`);
+              e.stopPropagation();
+            }}
             onClick={(e) => {
+              console.log(`🎯 [INFO_BUTTON_DEBUG] Info button clicked - stopping propagation`);
               e.preventDefault();
               e.stopPropagation();
             }}
@@ -66,16 +76,16 @@ const DraggablePokemonCard: React.FC<DraggablePokemonCardProps> = ({
       </div>
 
       {/* Ranking number */}
-      <div className={`absolute top-2 left-2 w-7 h-7 bg-white rounded-full flex items-center justify-center text-sm font-bold z-10 shadow-sm border border-gray-200 ${isPending ? 'mt-6' : ''}`}>
+      <div className={`absolute top-2 left-2 w-7 h-7 bg-white rounded-full flex items-center justify-center text-sm font-bold z-10 shadow-sm border border-gray-200 pointer-events-none ${isPending ? 'mt-6' : ''}`}>
         <span className="text-black">{index + 1}</span>
       </div>
       
       {/* Pokemon image */}
-      <div className={`flex-1 flex justify-center items-center px-2 pb-1 ${isPending ? 'pt-8' : 'pt-6'}`}>
+      <div className={`flex-1 flex justify-center items-center px-2 pb-1 pointer-events-none ${isPending ? 'pt-8' : 'pt-6'}`}>
         <img 
           src={pokemon.image} 
           alt={pokemon.name}
-          className="w-20 h-20 object-contain"
+          className="w-20 h-20 object-contain pointer-events-none"
           onError={(e) => {
             const target = e.target as HTMLImageElement;
             target.style.display = 'none';
@@ -84,7 +94,7 @@ const DraggablePokemonCard: React.FC<DraggablePokemonCardProps> = ({
       </div>
       
       {/* Pokemon info */}
-      <div className="bg-white text-center py-2 px-2 mt-auto border-t border-gray-100">
+      <div className="bg-white text-center py-2 px-2 mt-auto border-t border-gray-100 pointer-events-none">
         <h3 className="font-bold text-gray-800 text-sm leading-tight mb-1">
           {pokemon.name}
         </h3>
