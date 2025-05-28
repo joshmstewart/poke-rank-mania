@@ -27,19 +27,33 @@ export const useRefinementQueue = () => {
           reason: `Position validation for manual reorder to position ${newPosition}`
         }));
       
+      const totalBattles = [...filtered, ...newBattles];
       console.log(`🔄 [REFINEMENT_QUEUE] Added ${newBattles.length} refinement battles for Pokemon ${primaryId}`);
-      return [...filtered, ...newBattles];
+      console.log(`🔄 [REFINEMENT_QUEUE] Total refinement battles queued: ${totalBattles.length}`);
+      console.log(`🔄 [REFINEMENT_QUEUE] Next ${Math.min(3, totalBattles.length)} battles will be validation battles`);
+      
+      return totalBattles;
     });
   }, []);
 
   const getNextRefinementBattle = useCallback((): RefinementBattle | null => {
-    return refinementQueue.length > 0 ? refinementQueue[0] : null;
+    const next = refinementQueue.length > 0 ? refinementQueue[0] : null;
+    if (next) {
+      console.log(`⚔️ [REFINEMENT_QUEUE] Next battle will be refinement: ${next.primaryPokemonId} vs ${next.opponentPokemonId}`);
+    }
+    return next;
   }, [refinementQueue]);
 
   const popRefinementBattle = useCallback(() => {
     setRefinementQueue(prev => {
       if (prev.length > 0) {
-        console.log(`⚔️ [REFINEMENT_QUEUE] Completed refinement battle, ${prev.length - 1} remaining`);
+        const remaining = prev.length - 1;
+        console.log(`⚔️ [REFINEMENT_QUEUE] Completed refinement battle, ${remaining} remaining`);
+        if (remaining > 0) {
+          console.log(`⚔️ [REFINEMENT_QUEUE] Next refinement battle: ${prev[1].primaryPokemonId} vs ${prev[1].opponentPokemonId}`);
+        } else {
+          console.log(`⚔️ [REFINEMENT_QUEUE] All refinement battles completed, returning to regular battle generation`);
+        }
         return prev.slice(1);
       }
       return prev;
@@ -47,9 +61,9 @@ export const useRefinementQueue = () => {
   }, []);
 
   const clearRefinementQueue = useCallback(() => {
-    console.log(`🔄 [REFINEMENT_QUEUE] Clearing all refinement battles`);
+    console.log(`🔄 [REFINEMENT_QUEUE] Clearing all ${refinementQueue.length} refinement battles`);
     setRefinementQueue([]);
-  }, []);
+  }, [refinementQueue.length]);
 
   const hasRefinementBattles = refinementQueue.length > 0;
 

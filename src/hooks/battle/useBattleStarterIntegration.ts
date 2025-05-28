@@ -23,12 +23,13 @@ export const useBattleStarterIntegration = (
   const startNewBattle = (battleType: any) => {
     if (!battleStarter) return [];
     
-    // First, check if we have any refinement battles waiting
+    // CRITICAL FIX: Always check refinement queue first, before any other battle generation
     const nextRefinement = refinementQueue.getNextRefinementBattle();
     
     if (nextRefinement) {
-      console.log(`⚔️ [REFINEMENT_BATTLE] Starting refinement battle: ${nextRefinement.primaryPokemonId} vs ${nextRefinement.opponentPokemonId}`);
-      console.log(`⚔️ [REFINEMENT_BATTLE] Reason: ${nextRefinement.reason}`);
+      console.log(`⚔️ [REFINEMENT_PRIORITY] Prioritizing refinement battle over regular generation`);
+      console.log(`⚔️ [REFINEMENT_PRIORITY] Battle: ${nextRefinement.primaryPokemonId} vs ${nextRefinement.opponentPokemonId}`);
+      console.log(`⚔️ [REFINEMENT_PRIORITY] Reason: ${nextRefinement.reason}`);
       
       const primary = allPokemon.find(p => p.id === nextRefinement.primaryPokemonId);
       const opponent = allPokemon.find(p => p.id === nextRefinement.opponentPokemonId);
@@ -38,18 +39,18 @@ export const useBattleStarterIntegration = (
         setCurrentBattle(refinementBattle);
         setSelectedPokemon([]);
         
-        // Mark this refinement battle as started (it will be popped when battle completes)
-        console.log(`⚔️ [REFINEMENT_BATTLE] Successfully started: ${primary.name} vs ${opponent.name}`);
+        console.log(`⚔️ [REFINEMENT_PRIORITY] Successfully created validation battle: ${primary.name} vs ${opponent.name}`);
         return refinementBattle;
       } else {
-        console.warn(`⚔️ [REFINEMENT_BATTLE] Could not find Pokemon for refinement battle:`, nextRefinement);
+        console.warn(`⚔️ [REFINEMENT_PRIORITY] Could not find Pokemon for refinement battle:`, nextRefinement);
         // Pop the invalid battle and try again
         refinementQueue.popRefinementBattle();
         return startNewBattle(battleType);
       }
     }
     
-    // No refinement battles, proceed with normal battle generation
+    // No refinement battles pending, proceed with normal battle generation
+    console.log(`🎮 [BATTLE_GENERATION] No refinement battles pending, generating regular battle`);
     const result = battleStarter.startNewBattle(battleType);
     if (result && result.length > 0) {
       setCurrentBattle(result);

@@ -1,4 +1,3 @@
-
 import { useCallback } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
@@ -35,11 +34,11 @@ export const useBattleStateCore = (
   const enhancedStartNewBattleWithRefinement = useCallback((battleType: BattleType) => {
     console.log(`🔄 [REFINEMENT_INTEGRATION] Starting new battle, checking refinement queue first`);
     
-    // Check for refinement battles first
+    // Check for refinement battles first - this is the key integration point
     const nextRefinement = refinementQueue.getNextRefinementBattle();
     
     if (nextRefinement) {
-      console.log(`⚔️ [REFINEMENT_INTEGRATION] Prioritizing refinement battle: ${nextRefinement.primaryPokemonId} vs ${nextRefinement.opponentPokemonId}`);
+      console.log(`⚔️ [REFINEMENT_INTEGRATION] Found pending refinement battle: ${nextRefinement.primaryPokemonId} vs ${nextRefinement.opponentPokemonId}`);
       
       const primary = allPokemon.find(p => p.id === nextRefinement.primaryPokemonId);
       const opponent = allPokemon.find(p => p.id === nextRefinement.opponentPokemonId);
@@ -56,6 +55,7 @@ export const useBattleStateCore = (
     }
     
     // No refinement battles or invalid battle, proceed with normal generation
+    console.log(`🎮 [REFINEMENT_INTEGRATION] No valid refinement battles, proceeding with regular generation`);
     return enhancedStartNewBattle(battleType);
   }, [allPokemon, refinementQueue, enhancedStartNewBattle]);
 
@@ -106,13 +106,14 @@ export const useBattleStateCore = (
       neighbors.push(rankings[destinationIndex + 1].id);
     }
     
-    // Queue refinement battles
+    // Queue refinement battles - this is where the drag action creates future battles
     refinementQueue.queueBattlesForReorder(draggedPokemonId, neighbors, destinationIndex + 1);
     
     console.log(`🔄 [MANUAL_REORDER] Queued ${neighbors.length} validation battles for Pokemon ${draggedPokemonId}`);
+    console.log(`🔄 [MANUAL_REORDER] Next battle will prioritize these validation battles`);
   }, [providersData.finalRankings, refinementQueue]);
 
-  // Handle battle completion to pop refinement battles
+  // CRITICAL FIX: Handle battle completion to pop refinement battles from queue
   const originalProcessBattleResult = actionsData.processBattleResult;
   const processBattleResultWithRefinement = useCallback((
     selectedPokemonIds: number[],
@@ -120,16 +121,24 @@ export const useBattleStateCore = (
     battleType: BattleType,
     selectedGeneration: number
   ) => {
-    // Call original battle processing with proper parameters
-    const result = originalProcessBattleResult(selectedPokemonIds, currentBattlePokemon, battleType, selectedGeneration);
+    // Check if this was a refinement battle before processing
+    const wasRefinementBattle = refinementQueue.hasRefinementBattles && currentBattlePokemon.length === 2;
+    const currentRefinement = refinementQueue.getNextRefinementBattle();
     
-    // Pop completed refinement battle if any
-    if (refinementQueue.hasRefinementBattles) {
-      console.log(`⚔️ [REFINEMENT_INTEGRATION] Battle completed, popping refinement battle from queue`);
-      refinementQueue.popRefinementBattle();
+    if (wasRefinementBattle && currentRefinement) {
+      const battlePokemonIds = currentBattlePokemon.map(p => p.id).sort();
+      const refinementIds = [currentRefinement.primaryPokemonId, currentRefinement.opponentPokemonId].sort();
+      
+      // Check if this battle matches the current refinement battle
+      if (battlePokemonIds[0] === refinementIds[0] && battlePokemonIds[1] === refinementIds[1]) {
+        console.log(`⚔️ [REFINEMENT_COMPLETION] Completing refinement battle: ${currentRefinement.primaryPokemonId} vs ${currentRefinement.opponentPokemonId}`);
+        refinementQueue.popRefinementBattle();
+        console.log(`⚔️ [REFINEMENT_COMPLETION] Remaining refinement battles: ${refinementQueue.refinementBattleCount - 1}`);
+      }
     }
     
-    return result;
+    // Call original battle processing
+    return originalProcessBattleResult(selectedPokemonIds, currentBattlePokemon, battleType, selectedGeneration);
   }, [originalProcessBattleResult, refinementQueue]);
 
   // Use the effects hook
