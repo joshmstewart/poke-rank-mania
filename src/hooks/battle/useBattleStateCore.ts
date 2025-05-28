@@ -101,7 +101,8 @@ export const useBattleStateCore = (
 
   return {
     ...interfaceData,
-    // Add refinement-specific functionality (but not handleManualReorder since it's only for milestone view)
+    // Add refinement-specific functionality including manual reorder for milestone view
+    handleManualReorder: handlersData.handleManualReorder,
     pendingRefinements: handlersData.pendingRefinements,
     refinementBattleCount: handlersData.refinementBattleCount,
     clearRefinementQueue: handlersData.clearRefinementQueue
