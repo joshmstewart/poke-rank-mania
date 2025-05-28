@@ -41,6 +41,9 @@ const RankingDisplayContainerInner: React.FC<RankingDisplayContainerProps> = ({
   enableDragAndDrop = true
 }) => {
   console.log("🟣 RankingDisplayContainer component rendered with", finalRankings.length, "Pokémon");
+  console.log("🎯 [DRAG_ENABLE_DEBUG] isMilestoneView:", isMilestoneView);
+  console.log("🎯 [DRAG_ENABLE_DEBUG] enableDragAndDrop:", enableDragAndDrop);
+  console.log("🎯 [DRAG_ENABLE_DEBUG] onManualReorder exists:", !!onManualReorder);
   
   const {
     formattedRankings,
@@ -65,35 +68,24 @@ const RankingDisplayContainerInner: React.FC<RankingDisplayContainerProps> = ({
   };
 
   if (isMilestoneView) {
-    // Use draggable milestone view if drag-and-drop is enabled
-    if (enableDragAndDrop) {
-      return (
-        <DraggableMilestoneView
-          formattedRankings={formattedRankings}
-          battlesCompleted={battlesCompleted}
-          activeTier={activeTier}
-          milestoneDisplayCount={milestoneDisplayCount}
-          onContinueBattles={onContinueBattles}
-          onLoadMore={handleMilestoneLoadMore}
-          getMaxItemsForTier={getMaxItemsForTier}
-          onManualReorder={handleManualReorder}
-          pendingRefinements={pendingRefinements}
-        />
-      );
-    } else {
-      // Fallback to original milestone view
-      return (
-        <MilestoneView
-          formattedRankings={formattedRankings}
-          battlesCompleted={battlesCompleted}
-          activeTier={activeTier}
-          milestoneDisplayCount={milestoneDisplayCount}
-          onContinueBattles={onContinueBattles}
-          onLoadMore={handleMilestoneLoadMore}
-          getMaxItemsForTier={getMaxItemsForTier}
-        />
-      );
-    }
+    console.log("🎯 [DRAG_ENABLE_DEBUG] ===== MILESTONE VIEW LOGIC =====");
+    console.log("🎯 [DRAG_ENABLE_DEBUG] Should use draggable:", enableDragAndDrop);
+    console.log("🎯 [DRAG_ENABLE_DEBUG] Manual reorder handler:", !!handleManualReorder);
+    
+    // ALWAYS use draggable milestone view in milestone mode
+    return (
+      <DraggableMilestoneView
+        formattedRankings={formattedRankings}
+        battlesCompleted={battlesCompleted}
+        activeTier={activeTier}
+        milestoneDisplayCount={milestoneDisplayCount}
+        onContinueBattles={onContinueBattles}
+        onLoadMore={handleMilestoneLoadMore}
+        getMaxItemsForTier={getMaxItemsForTier}
+        onManualReorder={handleManualReorder}
+        pendingRefinements={pendingRefinements}
+      />
+    );
   }
 
   return (

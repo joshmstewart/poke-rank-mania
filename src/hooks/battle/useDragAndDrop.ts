@@ -19,7 +19,7 @@ export const useDragAndDrop = ({ displayRankings, onManualReorder, onLocalReorde
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 0, // Start drag immediately
+        distance: 5, // Small distance to allow for click vs drag
       },
     }),
     useSensor(KeyboardSensor, {
@@ -28,7 +28,7 @@ export const useDragAndDrop = ({ displayRankings, onManualReorder, onLocalReorde
   );
 
   console.log(`🎯 [DRAG_SETUP_DEBUG] Sensors configured:`, sensors.length);
-  console.log(`🎯 [DRAG_SETUP_DEBUG] PointerSensor configured with distance: 0`);
+  console.log(`🎯 [DRAG_SETUP_DEBUG] PointerSensor configured with distance: 5`);
   console.log(`🎯 [DRAG_SETUP_DEBUG] KeyboardSensor configured`);
 
   const handleDragEnd = useCallback((event: DragEndEvent) => {

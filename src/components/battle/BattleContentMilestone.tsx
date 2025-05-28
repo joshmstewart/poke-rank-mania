@@ -18,6 +18,7 @@ interface BattleContentMilestoneProps {
   setShowingMilestone: (show: boolean) => void;
   resetMilestoneInProgress: () => void;
   handleContinueBattles: () => void;
+  onManualReorder?: (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => void;
 }
 
 const BattleContentMilestone: React.FC<BattleContentMilestoneProps> = ({
@@ -34,9 +35,11 @@ const BattleContentMilestone: React.FC<BattleContentMilestoneProps> = ({
   removeSuggestion,
   setShowingMilestone,
   resetMilestoneInProgress,
-  handleContinueBattles
+  handleContinueBattles,
+  onManualReorder
 }) => {
   console.log(`🏆 [FINAL_FIX] DISPLAYING MILESTONE RANKINGS SCREEN for ${battlesCompleted} battles`);
+  console.log(`🎯 [MILESTONE_DRAG_DEBUG] onManualReorder prop exists:`, !!onManualReorder);
   
   const milestoneSnapshot = getSnapshotForMilestone(battlesCompleted);
   const rankingsToShow = milestoneSnapshot.length > 0 ? milestoneSnapshot : finalRankings;
@@ -61,6 +64,8 @@ const BattleContentMilestone: React.FC<BattleContentMilestoneProps> = ({
       onTierChange={setActiveTier}
       onSuggestRanking={suggestRanking}
       onRemoveSuggestion={removeSuggestion}
+      onManualReorder={onManualReorder}
+      enableDragAndDrop={true}
     />
   );
 };
