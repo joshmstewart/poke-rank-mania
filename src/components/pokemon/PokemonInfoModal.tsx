@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { normalizePokedexNumber } from "@/utils/pokemon";
+import { generations } from "@/services/pokemon";
 
 interface PokemonInfoModalProps {
   pokemon: Pokemon;
@@ -32,6 +33,15 @@ const PokemonInfoModal: React.FC<PokemonInfoModalProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const normalizedId = normalizePokedexNumber(pokemon.id);
+  
+  // Get generation name from number
+  const getGenerationName = (genNumber?: number) => {
+    if (!genNumber) return null;
+    const generation = generations.find(gen => gen.id === genNumber);
+    return generation ? generation.name : `Generation ${genNumber}`;
+  };
+
+  const generationName = getGenerationName(pokemon.generation);
   
   useEffect(() => {
     console.log(`🔘 [MODAL_DEBUG] PokemonInfoModal for ${pokemon.name} mounted, isOpen: ${isOpen}`);
@@ -115,21 +125,14 @@ const PokemonInfoModal: React.FC<PokemonInfoModalProps> = ({
           top: '50%',
           left: '50%',
           transform: 'translate(-50%, -50%)',
-          backgroundColor: 'white',
-          border: '2px solid red'  // Temporary red border to make it visible
+          backgroundColor: 'white'
         }}
       >
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-center">
-            {pokemon.name} - DEBUG MODAL
+            {pokemon.name}
           </DialogTitle>
         </DialogHeader>
-        
-        <div className="p-4 bg-yellow-100">
-          <p>DEBUG: If you can see this, the modal is working!</p>
-          <p>Pokemon: {pokemon.name}</p>
-          <p>ID: {pokemon.id}</p>
-        </div>
 
         {/* Game-inspired layout */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -178,16 +181,16 @@ const PokemonInfoModal: React.FC<PokemonInfoModalProps> = ({
                 </div>
               )}
 
-              {pokemon.generation && (
+              {generationName && (
                 <div className="flex justify-between items-center">
                   <span className="font-bold">Generation:</span>
-                  <span>{pokemon.generation}</span>
+                  <span>{generationName}</span>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Right side - Stats in game style */}
+          {/* Right side - Stats and description */}
           <div className="space-y-4">
             {pokemon.stats && Object.keys(pokemon.stats).length > 0 && (
               <div className="bg-green-600 border-4 border-green-800 rounded overflow-hidden">
