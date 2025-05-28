@@ -22,8 +22,6 @@ export const useBattleStateHandlers = (
     console.log(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_TRACE] Raw draggedPokemonId:`, draggedPokemonId, typeof draggedPokemonId);
     console.log(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_TRACE] Pokemon moved from ${sourceIndex} to ${destinationIndex}`);
     console.log(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_TRACE] Final rankings length: ${finalRankings.length}`);
-    console.log(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_TRACE] Refinement queue exists:`, !!refinementQueue);
-    console.log(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_TRACE] queueBattlesForReorder exists:`, typeof refinementQueue?.queueBattlesForReorder);
     
     // Convert to proper number type
     const pokemonId = typeof draggedPokemonId === 'string' ? parseInt(draggedPokemonId, 10) : Number(draggedPokemonId);
@@ -46,14 +44,10 @@ export const useBattleStateHandlers = (
     // Get neighboring Pokemon IDs around the NEW position for validation battles
     const neighborIds: number[] = [];
     
-    console.log(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_TRACE] Looking for neighbors around destination index ${destinationIndex}`);
-    
     // Add Pokemon that will be before the new position (if it exists)
     if (destinationIndex > 0) {
       const beforeIndex = destinationIndex - 1;
       const beforePokemon = finalRankings[beforeIndex];
-      
-      console.log(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_TRACE] Checking before position at index ${beforeIndex}:`, beforePokemon?.name, beforePokemon?.id);
       
       if (beforePokemon && typeof beforePokemon.id === 'number' && beforePokemon.id !== pokemonId) {
         neighborIds.push(beforePokemon.id);
@@ -66,8 +60,6 @@ export const useBattleStateHandlers = (
       const afterIndex = destinationIndex + 1;
       const afterPokemon = finalRankings[afterIndex];
       
-      console.log(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_TRACE] Checking after position at index ${afterIndex}:`, afterPokemon?.name, afterPokemon?.id);
-      
       if (afterPokemon && typeof afterPokemon.id === 'number' && afterPokemon.id !== pokemonId) {
         neighborIds.push(afterPokemon.id);
         console.log(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_TRACE] Added neighbor after: ${afterPokemon.name} (${afterPokemon.id})`);
@@ -75,7 +67,6 @@ export const useBattleStateHandlers = (
     }
     
     console.log(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_TRACE] Total neighbors found: ${neighborIds.length}`);
-    console.log(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_TRACE] Neighbor IDs: ${neighborIds.join(', ')}`);
     
     if (neighborIds.length === 0) {
       console.warn(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_TRACE] No valid neighbors found for validation battles`);
@@ -85,7 +76,6 @@ export const useBattleStateHandlers = (
     // Queue refinement battles for this manual reorder
     try {
       console.log(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_TRACE] BEFORE QUEUEING - Current queue size: ${refinementQueue.refinementBattleCount}`);
-      console.log(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_TRACE] BEFORE QUEUEING - Current queue:`, refinementQueue.refinementQueue);
       
       refinementQueue.queueBattlesForReorder(
         pokemonId,
@@ -94,21 +84,9 @@ export const useBattleStateHandlers = (
       );
       
       console.log(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_TRACE] IMMEDIATELY AFTER QUEUEING - Queue size: ${refinementQueue.refinementBattleCount}`);
-      console.log(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_TRACE] IMMEDIATELY AFTER QUEUEING - Queue contents:`, refinementQueue.refinementQueue);
-      console.log(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_TRACE] IMMEDIATELY AFTER QUEUEING - Has refinement battles: ${refinementQueue.hasRefinementBattles}`);
-      console.log(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_TRACE] IMMEDIATELY AFTER QUEUEING - Next battle:`, refinementQueue.getNextRefinementBattle());
-      
       console.log(`✅ [MANUAL_REORDER_HANDLER_ULTRA_TRACE] Successfully queued refinement battles for Pokemon ${pokemonId} (${draggedPokemon.name})`);
-      console.log(`📊 [MANUAL_REORDER_HANDLER_ULTRA_TRACE] Total refinement battles in queue: ${refinementQueue.refinementBattleCount}`);
-      console.log(`🎯 [MANUAL_REORDER_HANDLER_ULTRA_TRACE] Next battle should be a refinement battle involving ${draggedPokemon.name}`);
       
-      // CRITICAL TRACE: Add comprehensive event dispatching logs
-      console.log(`🚀 [MANUAL_REORDER_HANDLER_ULTRA_TRACE] ===== DISPATCHING FORCE NEXT BATTLE EVENT =====`);
-      console.log(`🚀 [MANUAL_REORDER_HANDLER_ULTRA_TRACE] Pokemon ID for event: ${pokemonId}`);
-      console.log(`🚀 [MANUAL_REORDER_HANDLER_ULTRA_TRACE] Pokemon name for event: ${draggedPokemon.name}`);
-      console.log(`🚀 [MANUAL_REORDER_HANDLER_ULTRA_TRACE] Queue size for event: ${refinementQueue.refinementBattleCount}`);
-      console.log(`🚀 [MANUAL_REORDER_HANDLER_ULTRA_TRACE] Timestamp for event: ${Date.now()}`);
-      
+      // CRITICAL FIX: Dispatch event to force next battle immediately
       const forceNextBattleEvent = new CustomEvent('force-next-battle', {
         detail: { 
           reason: 'manual_reorder',
@@ -123,15 +101,8 @@ export const useBattleStateHandlers = (
         }
       });
       
-      console.log(`🚀 [MANUAL_REORDER_HANDLER_ULTRA_TRACE] Event detail object:`, forceNextBattleEvent.detail);
-      console.log(`🚀 [MANUAL_REORDER_HANDLER_ULTRA_TRACE] About to dispatch event...`);
-      
-      // CRITICAL: Dispatch immediately without any delay
       document.dispatchEvent(forceNextBattleEvent);
-      
       console.log(`🚀 [MANUAL_REORDER_HANDLER_ULTRA_TRACE] ✅ Event dispatched successfully`);
-      console.log(`🚀 [MANUAL_REORDER_HANDLER_ULTRA_TRACE] Event should be handled by useBattleSelectionState`);
-      console.log(`🚀 [MANUAL_REORDER_HANDLER_ULTRA_TRACE] Next battle should feature ${draggedPokemon.name} vs one of: ${neighborIds.map(id => finalRankings.find(p => p.id === id)?.name || id).join(', ')}`);
       
     } catch (error) {
       console.error(`❌ [MANUAL_REORDER_HANDLER_ULTRA_TRACE] Error queueing refinement battles:`, error);
@@ -140,7 +111,7 @@ export const useBattleStateHandlers = (
     console.log(`🔄 [MANUAL_REORDER_HANDLER_ULTRA_TRACE] ===== MANUAL REORDER END =====`);
   }, [refinementQueue, finalRankings]);
 
-  // Handle battle completion - enhanced with refinement processing
+  // CRITICAL FIX: Enhanced battle completion with proper queue management
   const processBattleResultWithRefinement = useCallback((
     selectedPokemonIds: number[],
     currentBattlePokemon: Pokemon[],
@@ -150,27 +121,66 @@ export const useBattleStateHandlers = (
     console.log(`⚔️ [BATTLE_RESULT_PROCESSING] ===== BATTLE RESULT PROCESSING =====`);
     console.log(`⚔️ [BATTLE_RESULT_PROCESSING] Selected Pokemon IDs: ${selectedPokemonIds.join(', ')}`);
     console.log(`⚔️ [BATTLE_RESULT_PROCESSING] Current battle Pokemon: ${currentBattlePokemon.map(p => `${p.name} (${p.id})`).join(', ')}`);
-    console.log(`⚔️ [BATTLE_RESULT_PROCESSING] Battle type: ${battleType}`);
     console.log(`⚔️ [BATTLE_RESULT_PROCESSING] Queue size before processing: ${refinementQueue.refinementBattleCount}`);
     
-    // Check if this was a refinement battle
+    // CRITICAL FIX: Check if this was a refinement battle and pop it
     const nextRefinement = refinementQueue.getNextRefinementBattle();
-    if (nextRefinement && 
-        currentBattlePokemon.some(p => p.id === nextRefinement.primaryPokemonId) &&
-        currentBattlePokemon.some(p => p.id === nextRefinement.opponentPokemonId)) {
-      console.log(`⚔️ [REFINEMENT_BATTLE_COMPLETED] Completed refinement battle for Pokemon ${nextRefinement.primaryPokemonId} vs ${nextRefinement.opponentPokemonId}`);
-      console.log(`⚔️ [REFINEMENT_BATTLE_COMPLETED] Reason: ${nextRefinement.reason}`);
-      // Pop the completed refinement battle
-      refinementQueue.popRefinementBattle();
-      console.log(`⚔️ [REFINEMENT_BATTLE_COMPLETED] Queue size after popping: ${refinementQueue.refinementBattleCount}`);
-    } else {
-      console.log(`⚔️ [BATTLE_RESULT_PROCESSING] This was NOT a refinement battle`);
-      if (nextRefinement) {
-        console.log(`⚔️ [BATTLE_RESULT_PROCESSING] Next refinement exists but doesn't match current battle:`, nextRefinement);
+    let wasRefinementBattle = false;
+    
+    if (nextRefinement) {
+      // Check if current battle matches the pending refinement
+      const battleIds = currentBattlePokemon.map(p => p.id).sort((a, b) => a - b);
+      const refinementIds = [nextRefinement.primaryPokemonId, nextRefinement.opponentPokemonId].sort((a, b) => a - b);
+      
+      const isMatch = battleIds.length === refinementIds.length && 
+                     battleIds.every((id, index) => id === refinementIds[index]);
+      
+      if (isMatch) {
+        console.log(`⚔️ [REFINEMENT_BATTLE_COMPLETED] ✅ Confirmed refinement battle completed: ${nextRefinement.primaryPokemonId} vs ${nextRefinement.opponentPokemonId}`);
+        console.log(`⚔️ [REFINEMENT_BATTLE_COMPLETED] Reason: ${nextRefinement.reason}`);
+        console.log(`⚔️ [REFINEMENT_BATTLE_COMPLETED] Winner(s): ${selectedPokemonIds.join(', ')}`);
+        
+        // Pop the completed refinement battle
+        refinementQueue.popRefinementBattle();
+        wasRefinementBattle = true;
+        
+        console.log(`⚔️ [REFINEMENT_BATTLE_COMPLETED] Queue size after popping: ${refinementQueue.refinementBattleCount}`);
+        
+        // CRITICAL FIX: Apply ranking adjustments based on validation battle results
+        if (nextRefinement.reason.includes('manual reorder')) {
+          console.log(`🏆 [RANKING_VALIDATION] Processing validation battle result for manual reorder`);
+          console.log(`🏆 [RANKING_VALIDATION] Primary Pokemon: ${nextRefinement.primaryPokemonId}, Won: ${selectedPokemonIds.includes(nextRefinement.primaryPokemonId)}`);
+          console.log(`🏆 [RANKING_VALIDATION] Opponent Pokemon: ${nextRefinement.opponentPokemonId}, Won: ${selectedPokemonIds.includes(nextRefinement.opponentPokemonId)}`);
+          
+          // Store validation result for ranking system to use
+          const validationResult = {
+            primaryPokemonId: nextRefinement.primaryPokemonId,
+            opponentPokemonId: nextRefinement.opponentPokemonId,
+            primaryWon: selectedPokemonIds.includes(nextRefinement.primaryPokemonId),
+            timestamp: Date.now()
+          };
+          
+          // Dispatch validation result event
+          const validationEvent = new CustomEvent('validation-battle-completed', {
+            detail: validationResult
+          });
+          document.dispatchEvent(validationEvent);
+          
+          console.log(`🏆 [RANKING_VALIDATION] Validation result dispatched:`, validationResult);
+        }
+      } else {
+        console.log(`⚔️ [BATTLE_RESULT_PROCESSING] Current battle does not match pending refinement`);
+        console.log(`⚔️ [BATTLE_RESULT_PROCESSING] Battle IDs: ${battleIds.join(', ')}, Refinement IDs: ${refinementIds.join(', ')}`);
       }
+    } else {
+      console.log(`⚔️ [BATTLE_RESULT_PROCESSING] No pending refinement battles`);
     }
     
-    console.log(`⚔️ [BATTLE_RESULT_PROCESSING] ===== END BATTLE RESULT PROCESSING =====`);
+    if (wasRefinementBattle) {
+      console.log(`⚔️ [REFINEMENT_BATTLE_COMPLETED] ✅ Refinement battle processing complete`);
+    } else {
+      console.log(`⚔️ [BATTLE_RESULT_PROCESSING] ✅ Regular battle processing`);
+    }
     
     // Call original battle processing
     return originalProcessBattleResult(selectedPokemonIds, currentBattlePokemon, battleType, selectedGeneration);

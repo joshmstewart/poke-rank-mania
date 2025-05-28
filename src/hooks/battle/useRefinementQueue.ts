@@ -15,12 +15,10 @@ export const useRefinementQueue = () => {
     console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] Primary Pokemon ID: ${primaryId}`);
     console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] New position: ${newPosition}`);
     console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] Neighbors to battle: ${neighbors.join(', ')}`);
-    console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] Neighbors count: ${neighbors.length}`);
     
-    // Filter out any existing refinement battles for this Pokemon
+    // CRITICAL FIX: Clear any existing refinement battles for this Pokemon first
     setRefinementQueue(prev => {
       console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] Current queue size before filtering: ${prev.length}`);
-      console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] Current queue before filtering:`, prev);
       
       const filtered = prev.filter(b => {
         const shouldKeep = b.primaryPokemonId !== primaryId && b.opponentPokemonId !== primaryId;
@@ -31,40 +29,27 @@ export const useRefinementQueue = () => {
       });
       
       console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] Queue size after filtering: ${filtered.length}`);
-      console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] Queue after filtering:`, filtered);
       
-      // Create new refinement battles with valid neighbors
-      const newBattles = neighbors
-        .filter(opponentId => {
-          const isValid = opponentId && opponentId !== primaryId;
-          if (!isValid) {
-            console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] Skipping invalid opponent: ${opponentId} (${!opponentId ? 'falsy' : 'same as primary'})`);
-          }
-          return isValid;
-        })
-        .slice(0, 5) // Increase to 5 battles max for better validation
-        .map((opponentId, index) => {
-          const battle = {
-            primaryPokemonId: primaryId,
-            opponentPokemonId: opponentId,
-            reason: `Position validation for manual reorder to position ${newPosition} (dragged from milestone)`
-          };
-          console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] Creating battle ${index + 1}: ${primaryId} vs ${opponentId}`);
-          return battle;
-        });
+      // CRITICAL FIX: Create only ONE validation battle with the most relevant neighbor
+      const validNeighbors = neighbors.filter(opponentId => opponentId && opponentId !== primaryId);
       
-      const totalBattles = [...filtered, ...newBattles];
+      if (validNeighbors.length === 0) {
+        console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] No valid neighbors for validation`);
+        return filtered;
+      }
       
-      console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] ✅ Created ${newBattles.length} new refinement battles`);
+      // Use the first neighbor for validation (most relevant)
+      const opponentId = validNeighbors[0];
+      const battle = {
+        primaryPokemonId: primaryId,
+        opponentPokemonId: opponentId,
+        reason: `Position validation for manual reorder to position ${newPosition} (dragged from milestone)`
+      };
+      
+      const totalBattles = [...filtered, battle];
+      
+      console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] ✅ Created 1 validation battle: ${primaryId} vs ${opponentId}`);
       console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] ✅ Total refinement battles queued: ${totalBattles.length}`);
-      console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] ✅ Final queue:`, totalBattles);
-      console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] ✅ Next ${Math.min(newBattles.length, totalBattles.length)} battles will be validation battles`);
-      
-      // Log each battle for debugging
-      newBattles.forEach((battle, index) => {
-        console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] Battle ${index + 1}: Pokemon ${battle.primaryPokemonId} vs ${battle.opponentPokemonId}`);
-      });
-      
       console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] ===== END QUEUEING VALIDATION BATTLES =====`);
       
       return totalBattles;
@@ -92,7 +77,6 @@ export const useRefinementQueue = () => {
         console.log(`⚔️ [REFINEMENT_QUEUE_ULTRA_DEBUG] ✅ ${remaining} battles remaining in queue`);
         
         const newQueue = prev.slice(1);
-        console.log(`⚔️ [REFINEMENT_QUEUE_ULTRA_DEBUG] New queue after pop:`, newQueue);
         
         if (remaining > 0) {
           console.log(`⚔️ [REFINEMENT_QUEUE_ULTRA_DEBUG] ✅ Next refinement battle: ${newQueue[0].primaryPokemonId} vs ${newQueue[0].opponentPokemonId}`);
