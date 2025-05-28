@@ -64,42 +64,91 @@ const DraggablePokemonCard: React.FC<DraggablePokemonCardProps> = ({
 
   const backgroundColorClass = getPokemonBackgroundColor(pokemon);
 
+  // CRITICAL: Add comprehensive event debugging
   const handlePointerDown = (e: React.PointerEvent) => {
-    console.log(`🚨 [CARD_SETUP_DEBUG] ${pokemon.name} POINTER DOWN - Event details:`, {
+    console.log(`🚨 [EVENT_FLOW_DEBUG] ===== ${pokemon.name} POINTER DOWN START =====`);
+    console.log(`🚨 [EVENT_FLOW_DEBUG] Event details:`, {
       type: e.type,
       button: e.button,
       isPrimary: e.isPrimary,
       pressure: e.pressure,
+      pointerId: e.pointerId,
+      pointerType: e.pointerType,
+      clientX: e.clientX,
+      clientY: e.clientY,
       target: e.target?.constructor?.name,
-      currentTarget: e.currentTarget?.constructor?.name
+      currentTarget: e.currentTarget?.constructor?.name,
+      bubbles: e.bubbles,
+      cancelable: e.cancelable,
+      defaultPrevented: e.defaultPrevented
     });
-    
-    // CRITICAL: Stop event propagation for drag to work
-    e.stopPropagation();
-    
-    // Call the dnd-kit listener if it exists
+
+    // Check if dnd-kit listener exists and is callable
     if (listeners?.onPointerDown) {
-      console.log(`🚨 [CARD_SETUP_DEBUG] Calling dnd-kit onPointerDown for ${pokemon.name}`);
-      listeners.onPointerDown(e);
+      console.log(`🚨 [EVENT_FLOW_DEBUG] ✅ dnd-kit onPointerDown exists for ${pokemon.name}`);
+      console.log(`🚨 [EVENT_FLOW_DEBUG] Listener type:`, typeof listeners.onPointerDown);
+      
+      try {
+        console.log(`🚨 [EVENT_FLOW_DEBUG] 🚀 CALLING dnd-kit onPointerDown...`);
+        listeners.onPointerDown(e);
+        console.log(`🚨 [EVENT_FLOW_DEBUG] ✅ dnd-kit onPointerDown called successfully`);
+      } catch (error) {
+        console.error(`🚨 [EVENT_FLOW_DEBUG] ❌ Error calling dnd-kit onPointerDown:`, error);
+      }
     } else {
-      console.error(`🚨 [CARD_SETUP_DEBUG] NO onPointerDown listener for ${pokemon.name}!`);
+      console.error(`🚨 [EVENT_FLOW_DEBUG] ❌ NO onPointerDown listener for ${pokemon.name}!`);
+      console.error(`🚨 [EVENT_FLOW_DEBUG] Available listeners:`, Object.keys(listeners || {}));
     }
+
+    console.log(`🚨 [EVENT_FLOW_DEBUG] Event after dnd-kit processing:`, {
+      defaultPrevented: e.defaultPrevented,
+      propagationStopped: e.isPropagationStopped?.() || 'unknown'
+    });
+
+    console.log(`🚨 [EVENT_FLOW_DEBUG] ===== ${pokemon.name} POINTER DOWN END =====`);
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    console.log(`🚨 [CARD_SETUP_DEBUG] ${pokemon.name} MOUSE DOWN:`, e.button);
-    e.stopPropagation();
+    console.log(`🚨 [EVENT_FLOW_DEBUG] ${pokemon.name} MOUSE DOWN:`, {
+      button: e.button,
+      buttons: e.buttons,
+      detail: e.detail,
+      clientX: e.clientX,
+      clientY: e.clientY
+    });
+    
     if (listeners?.onMouseDown) {
+      console.log(`🚨 [EVENT_FLOW_DEBUG] Calling dnd-kit onMouseDown for ${pokemon.name}`);
       listeners.onMouseDown(e);
+    } else {
+      console.error(`🚨 [EVENT_FLOW_DEBUG] No onMouseDown listener for ${pokemon.name}`);
     }
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
-    console.log(`🚨 [CARD_SETUP_DEBUG] ${pokemon.name} TOUCH START:`, e.touches.length);
-    e.stopPropagation();
+    console.log(`🚨 [EVENT_FLOW_DEBUG] ${pokemon.name} TOUCH START:`, {
+      touches: e.touches.length,
+      changedTouches: e.changedTouches.length,
+      targetTouches: e.targetTouches.length
+    });
+    
     if (listeners?.onTouchStart) {
+      console.log(`🚨 [EVENT_FLOW_DEBUG] Calling dnd-kit onTouchStart for ${pokemon.name}`);
       listeners.onTouchStart(e);
+    } else {
+      console.error(`🚨 [EVENT_FLOW_DEBUG] No onTouchStart listener for ${pokemon.name}`);
     }
+  };
+
+  // Add click debugging
+  const handleClick = (e: React.MouseEvent) => {
+    console.log(`🚨 [EVENT_FLOW_DEBUG] ${pokemon.name} CLICK:`, {
+      button: e.button,
+      detail: e.detail,
+      clientX: e.clientX,
+      clientY: e.clientY,
+      defaultPrevented: e.defaultPrevented
+    });
   };
 
   return (
@@ -113,6 +162,7 @@ const DraggablePokemonCard: React.FC<DraggablePokemonCardProps> = ({
       onPointerDown={handlePointerDown}
       onMouseDown={handleMouseDown}
       onTouchStart={handleTouchStart}
+      onClick={handleClick}
     >
       {/* Pending indicator */}
       {isPending && (
@@ -125,24 +175,49 @@ const DraggablePokemonCard: React.FC<DraggablePokemonCardProps> = ({
       <div 
         className="absolute top-1 right-1 z-30 pointer-events-auto"
         onPointerDown={(e) => {
-          console.log(`🚨 [CARD_SETUP_DEBUG] Info button pointer down for ${pokemon.name} - STOPPING PROPAGATION`);
+          console.log(`🚨 [EVENT_FLOW_DEBUG] Info button pointer down for ${pokemon.name} - STOPPING PROPAGATION`);
           e.stopPropagation();
+          e.preventDefault();
         }}
         onMouseDown={(e) => {
-          console.log(`🚨 [CARD_SETUP_DEBUG] Info button mouse down for ${pokemon.name} - STOPPING PROPAGATION`);
+          console.log(`🚨 [EVENT_FLOW_DEBUG] Info button mouse down for ${pokemon.name} - STOPPING PROPAGATION`);
           e.stopPropagation();
+          e.preventDefault();
         }}
         onTouchStart={(e) => {
-          console.log(`🚨 [CARD_SETUP_DEBUG] Info button touch start for ${pokemon.name} - STOPPING PROPAGATION`);
+          console.log(`🚨 [EVENT_FLOW_DEBUG] Info button touch start for ${pokemon.name} - STOPPING PROPAGATION`);
           e.stopPropagation();
+          e.preventDefault();
+        }}
+        onClick={(e) => {
+          console.log(`🚨 [EVENT_FLOW_DEBUG] Info button click for ${pokemon.name} - STOPPING PROPAGATION`);
+          e.stopPropagation();
+          e.preventDefault();
         }}
       >
         <PokemonInfoModal pokemon={pokemon}>
           <button 
             className="w-5 h-5 rounded-full bg-white/30 hover:bg-white/50 border border-gray-300/60 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200 backdrop-blur-sm"
-            onPointerDown={(e) => e.stopPropagation()}
-            onMouseDown={(e) => e.stopPropagation()}
-            onTouchStart={(e) => e.stopPropagation()}
+            onPointerDown={(e) => {
+              console.log(`🚨 [EVENT_FLOW_DEBUG] Info button inner button pointer down - STOPPING ALL`);
+              e.stopPropagation();
+              e.preventDefault();
+            }}
+            onMouseDown={(e) => {
+              console.log(`🚨 [EVENT_FLOW_DEBUG] Info button inner button mouse down - STOPPING ALL`);
+              e.stopPropagation();
+              e.preventDefault();
+            }}
+            onTouchStart={(e) => {
+              console.log(`🚨 [EVENT_FLOW_DEBUG] Info button inner button touch start - STOPPING ALL`);
+              e.stopPropagation();
+              e.preventDefault();
+            }}
+            onClick={(e) => {
+              console.log(`🚨 [EVENT_FLOW_DEBUG] Info button inner button click - STOPPING ALL`);
+              e.stopPropagation();
+              e.preventDefault();
+            }}
           >
             i
           </button>

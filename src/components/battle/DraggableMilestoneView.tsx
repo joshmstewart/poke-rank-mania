@@ -72,14 +72,18 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
   });
 
   const handleDragStart = (event: DragStartEvent) => {
-    console.log(`🚨 [DND_SETUP_DEBUG] ===== DRAG STARTED =====`);
-    console.log(`🚨 [DND_SETUP_DEBUG] Active ID:`, event.active.id);
-    console.log(`🚨 [DND_SETUP_DEBUG] Active data:`, event.active.data);
-    console.log(`🚨 [DND_SETUP_DEBUG] This proves @dnd-kit is working!`);
+    console.log(`🚨 [DND_CONTEXT_DEBUG] ===== DRAG STARTED SUCCESSFULLY =====`);
+    console.log(`🚨 [DND_CONTEXT_DEBUG] ✅ @dnd-kit DndContext is working!`);
+    console.log(`🚨 [DND_CONTEXT_DEBUG] Active ID:`, event.active.id);
+    console.log(`🚨 [DND_CONTEXT_DEBUG] Active data:`, event.active.data);
+    console.log(`🚨 [DND_CONTEXT_DEBUG] Event object:`, event);
+    console.log(`🚨 [DND_CONTEXT_DEBUG] This proves drag detection is working!`);
   };
 
   const handleDragOver = (event: DragOverEvent) => {
-    console.log(`🚨 [DND_SETUP_DEBUG] Dragging over:`, event.over?.id || 'none');
+    console.log(`🚨 [DND_CONTEXT_DEBUG] ===== DRAGGING OVER =====`);
+    console.log(`🚨 [DND_CONTEXT_DEBUG] Over ID:`, event.over?.id || 'none');
+    console.log(`🚨 [DND_CONTEXT_DEBUG] Active ID:`, event.active.id);
   };
 
   // Critical debugging for @dnd-kit setup
@@ -89,6 +93,25 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
   console.log(`🚨 [DND_SETUP_DEBUG] rectSortingStrategy available:`, typeof rectSortingStrategy === 'function');
   console.log(`🚨 [DND_SETUP_DEBUG] sensors:`, sensors?.length);
   console.log(`🚨 [DND_SETUP_DEBUG] handleDragEnd:`, typeof handleDragEnd);
+  console.log(`🚨 [DND_SETUP_DEBUG] SortableContext items:`, displayRankings.map(p => p.id));
+
+  // Add debugging for the grid container
+  const handleGridPointerDown = (e: React.PointerEvent) => {
+    console.log(`🚨 [GRID_DEBUG] Grid container pointer down:`, {
+      target: e.target?.constructor?.name,
+      currentTarget: e.currentTarget?.constructor?.name,
+      clientX: e.clientX,
+      clientY: e.clientY
+    });
+  };
+
+  const handleGridMouseDown = (e: React.MouseEvent) => {
+    console.log(`🚨 [GRID_DEBUG] Grid container mouse down:`, {
+      target: e.target?.constructor?.name,
+      currentTarget: e.currentTarget?.constructor?.name,
+      button: e.button
+    });
+  };
 
   return (
     <div className="bg-white p-6 w-full max-w-7xl mx-auto">
@@ -113,7 +136,11 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
             items={displayRankings.map(p => p.id)} 
             strategy={rectSortingStrategy}
           >
-            <div className="grid grid-cols-5 gap-4">
+            <div 
+              className="grid grid-cols-5 gap-4"
+              onPointerDown={handleGridPointerDown}
+              onMouseDown={handleGridMouseDown}
+            >
               {displayRankings.map((pokemon, index) => {
                 console.log(`🚨 [DND_SETUP_DEBUG] Rendering card ${index}: ${pokemon.name} (ID: ${pokemon.id})`);
                 return (

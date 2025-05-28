@@ -21,7 +21,7 @@ export const useDragAndDrop = ({ displayRankings, onManualReorder, onLocalReorde
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 0, // Immediate activation
+        distance: 0, // Immediate activation - no distance threshold
       },
     }),
     useSensor(KeyboardSensor, {
@@ -31,10 +31,14 @@ export const useDragAndDrop = ({ displayRankings, onManualReorder, onLocalReorde
 
   console.log(`🚨 [DRAG_HOOK_DEBUG] Sensors created:`, sensors?.length);
   console.log(`🚨 [DRAG_HOOK_DEBUG] First sensor type:`, sensors?.[0]?.constructor?.name);
+  console.log(`🚨 [DRAG_HOOK_DEBUG] Sensor configurations:`, sensors?.map(s => ({
+    name: s.constructor?.name,
+    props: s.props || 'no props'
+  })));
 
   const handleDragEnd = useCallback((event: DragEndEvent) => {
     console.log(`🚨 [DRAG_HOOK_DEBUG] ===== DRAG END EVENT TRIGGERED =====`);
-    console.log(`🚨 [DRAG_HOOK_DEBUG] ✅ This proves @dnd-kit drag and drop is working!`);
+    console.log(`🚨 [DRAG_HOOK_DEBUG] ✅ SUCCESS! @dnd-kit drag and drop is working!`);
     console.log(`🚨 [DRAG_HOOK_DEBUG] Event object:`, event);
     console.log(`🚨 [DRAG_HOOK_DEBUG] Active ID:`, event.active.id);
     console.log(`🚨 [DRAG_HOOK_DEBUG] Over ID:`, event.over?.id);
