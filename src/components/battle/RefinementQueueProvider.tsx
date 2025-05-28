@@ -11,6 +11,7 @@ export const RefinementQueueProvider: React.FC<RefinementQueueProviderProps> = (
   const refinementQueue = useRefinementQueue();
   
   console.log(`🔄 [REFINEMENT_PROVIDER] Provider initialized with ${refinementQueue.refinementBattleCount} battles in queue`);
+  console.log(`🔄 [REFINEMENT_PROVIDER] Provider instance created at:`, new Date().toISOString());
   
   return (
     <RefinementQueueContext.Provider value={refinementQueue}>

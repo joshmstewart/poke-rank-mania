@@ -27,6 +27,7 @@ const BattleContentCoreInner: React.FC<BattleContentCoreProps> = ({
   const instanceRef = useRef(`content-${Date.now()}`);
   
   console.log(`[DEBUG BattleContentCore] Instance: ${instanceRef.current} render - allPokemon: ${allPokemon?.length || 0}`);
+  console.log(`🔄 [REFINEMENT_PROVIDER_WRAP] BattleContentCore wrapped with RefinementQueueProvider`);
 
   const {
     currentBattle,
@@ -148,6 +149,7 @@ const BattleContentCoreInner: React.FC<BattleContentCoreProps> = ({
 };
 
 const BattleContentCore: React.FC<BattleContentCoreProps> = (props) => {
+  console.log(`🔄 [REFINEMENT_PROVIDER_OUTER] Wrapping BattleContentCore with RefinementQueueProvider`);
   return (
     <RefinementQueueProvider>
       <BattleContentCoreInner {...props} />
