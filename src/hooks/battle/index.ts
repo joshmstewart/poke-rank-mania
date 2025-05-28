@@ -50,3 +50,5 @@ export * from "./useBattleActionsManager"; // New hook
 export * from "./useBattleStateOrchestration";
 export * from "./useBattleStateInterface";
 export * from "./useBattleStateInitialization";
+export * from "./useBattleStateRefinement";
+export * from "./useBattleStateHandlers";
