@@ -1,4 +1,3 @@
-
 import { useCallback } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
@@ -39,39 +38,61 @@ export const useBattleStarterCore = (
   ): Pokemon[] => {
     const battleCount = parseInt(localStorage.getItem('pokemon-battle-count') || '0', 10);
     
-    // IMMEDIATE DIAGNOSTIC: Check stored battle sequence for repetition pattern
+    // IMMEDIATE ANALYSIS: Extract and display the exact stored battle sequence
     const storedSequence = JSON.parse(localStorage.getItem('pokemon-battle-sequence') || '[]');
-    console.log(`🔍 [REPETITION_DIAGNOSTIC] Battle #${battleCount + 1} - Stored sequence:`, storedSequence);
+    console.log(`🚨🚨🚨 [SEQUENCE_ANALYSIS] ===== COMPLETE BATTLE SEQUENCE ANALYSIS =====`);
+    console.log(`🚨🚨🚨 [SEQUENCE_ANALYSIS] Total battles in sequence: ${storedSequence.length}`);
+    console.log(`🚨🚨🚨 [SEQUENCE_ANALYSIS] Current battle count: ${battleCount + 1}`);
     
-    if (storedSequence.length >= 10) {
-      const battle10 = storedSequence.find(b => b.battleNumber === 10);
-      const battle11 = storedSequence.find(b => b.battleNumber === 11);
-      const battle12 = storedSequence.find(b => b.battleNumber === 12);
-      const battle13 = storedSequence.find(b => b.battleNumber === 13);
-      const battle14 = storedSequence.find(b => b.battleNumber === 14);
-      
-      console.log(`🚨 [REPETITION_DIAGNOSTIC] Battle 10: ${battle10?.pokemonNames} (${battle10?.battleKey})`);
-      console.log(`🚨 [REPETITION_DIAGNOSTIC] Battle 11: ${battle11?.pokemonNames} (${battle11?.battleKey})`);
-      console.log(`🚨 [REPETITION_DIAGNOSTIC] Battle 12: ${battle12?.pokemonNames} (${battle12?.battleKey})`);
-      console.log(`🚨 [REPETITION_DIAGNOSTIC] Battle 13: ${battle13?.pokemonNames} (${battle13?.battleKey})`);
-      console.log(`🚨 [REPETITION_DIAGNOSTIC] Battle 14: ${battle14?.pokemonNames} (${battle14?.battleKey})`);
-      
-      // Check for exact repetition
-      if (battle11 && battle12 && battle11.battleKey === battle12.battleKey) {
-        console.log(`🚨🚨🚨 [REPETITION_FOUND] Battle 11 and 12 are IDENTICAL: ${battle11.battleKey}`);
-      }
-      if (battle12 && battle13 && battle12.battleKey === battle13.battleKey) {
-        console.log(`🚨🚨🚨 [REPETITION_FOUND] Battle 12 and 13 are IDENTICAL: ${battle12.battleKey}`);
-      }
-      if (battle13 && battle14 && battle13.battleKey === battle14.battleKey) {
-        console.log(`🚨🚨🚨 [REPETITION_FOUND] Battle 13 and 14 are IDENTICAL: ${battle13.battleKey}`);
+    // Display ALL battles with their numbers and keys
+    storedSequence.forEach((battle, index) => {
+      console.log(`🚨🚨🚨 [SEQUENCE_ANALYSIS] Battle #${battle.battleNumber}: ${battle.pokemonNames} (Key: ${battle.battleKey})`);
+    });
+    
+    // Check for ANY duplicates in the sequence
+    const battleKeys = storedSequence.map(b => b.battleKey);
+    const duplicates = [];
+    for (let i = 0; i < battleKeys.length; i++) {
+      for (let j = i + 1; j < battleKeys.length; j++) {
+        if (battleKeys[i] === battleKeys[j]) {
+          duplicates.push({
+            key: battleKeys[i],
+            battle1: storedSequence[i].battleNumber,
+            battle2: storedSequence[j].battleNumber,
+            names: storedSequence[i].pokemonNames
+          });
+        }
       }
     }
     
-    console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] ===== BATTLE #${battleCount + 1} GENERATION =====`);
-    console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] Battle type: ${battleType}`);
-    console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] Available Pokemon count: ${availablePokemon.length}`);
-    console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] Recently used entries: ${recentlyUsed.length}`);
+    if (duplicates.length > 0) {
+      console.log(`🚨🚨🚨 [SEQUENCE_ANALYSIS] ===== DUPLICATES FOUND =====`);
+      duplicates.forEach(dup => {
+        console.log(`🚨🚨🚨 [SEQUENCE_ANALYSIS] DUPLICATE: Battle #${dup.battle1} and #${dup.battle2} both used "${dup.names}" (Key: ${dup.key})`);
+      });
+    } else {
+      console.log(`🚨🚨🚨 [SEQUENCE_ANALYSIS] No duplicates found in stored sequence`);
+    }
+    
+    // Specifically check battles 10-14
+    const criticalBattles = storedSequence.filter(b => b.battleNumber >= 10 && b.battleNumber <= 14);
+    console.log(`🚨🚨🚨 [SEQUENCE_ANALYSIS] ===== BATTLES 10-14 ANALYSIS =====`);
+    criticalBattles.forEach(battle => {
+      console.log(`🚨🚨🚨 [SEQUENCE_ANALYSIS] Battle #${battle.battleNumber}: ${battle.pokemonNames} (Key: ${battle.battleKey})`);
+    });
+    
+    // Check for consecutive duplicates in 10-14 range
+    for (let i = 0; i < criticalBattles.length - 1; i++) {
+      const current = criticalBattles[i];
+      const next = criticalBattles[i + 1];
+      if (current.battleKey === next.battleKey) {
+        console.log(`🚨🚨🚨 [SEQUENCE_ANALYSIS] CONSECUTIVE DUPLICATE FOUND: Battle #${current.battleNumber} and #${next.battleNumber} are identical!`);
+        console.log(`🚨🚨🚨 [SEQUENCE_ANALYSIS] Repeated pair: ${current.pokemonNames} (Key: ${current.battleKey})`);
+      }
+    }
+    
+    console.log(`🚨🚨🚨 [SEQUENCE_ANALYSIS] ===== END SEQUENCE ANALYSIS =====`);
+    
     
     if (battleType === "pairs") {
       // Get all possible pairs
