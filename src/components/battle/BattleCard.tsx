@@ -6,6 +6,7 @@ import { getPreferredImage, ImageType } from "@/utils/imageUtils";
 import PokemonImage from "./PokemonImage";
 import PokemonInfo from "./PokemonInfo";
 import LoadingOverlay from "./LoadingOverlay";
+import PokemonInfoModal from "@/components/pokemon/PokemonInfoModal";
 
 interface BattleCardProps {
   pokemon: Pokemon;
@@ -95,6 +96,9 @@ const BattleCard: React.FC<BattleCardProps> = memo(({
       data-processing={isProcessing ? "true" : "false"}
     >
       <CardContent className="p-4 text-center relative">
+        {/* Info Button */}
+        <PokemonInfoModal pokemon={pokemon} />
+
         {/* CRITICAL FIX: Keep Pokemon visible, add loading overlay instead */}
         <div className="relative">
           {/* Pokemon Image */}

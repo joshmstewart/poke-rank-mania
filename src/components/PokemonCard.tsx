@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,6 +7,7 @@ import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { getPreferredImageUrl, getPreferredImageType, PokemonImageType } from "@/components/settings/ImagePreferenceSelector";
 import { normalizePokedexNumber } from "@/utils/pokemon";
 import { validateBattlePokemon } from "@/services/pokemon/api/utils";
+import PokemonInfoModal from "@/components/pokemon/PokemonInfoModal";
 
 interface PokemonCardProps {
   pokemon: Pokemon;
@@ -301,7 +303,10 @@ const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
   }, [pokemonId, displayName, retryCount, currentImageUrl, currentImageType, cleanupImageLoading]);
 
   return (
-    <Card className={`w-full overflow-hidden ${isDragging ? "opacity-50" : ""}`}>
+    <Card className={`w-full overflow-hidden relative ${isDragging ? "opacity-50" : ""}`}>
+      {/* Info Button */}
+      <PokemonInfoModal pokemon={validatedPokemon} />
+      
       <div className="flex items-start p-3 gap-3">
         <div className={`${compact ? "w-16 h-16" : "w-20 h-20"} bg-gray-50 rounded-md relative`}>
           <AspectRatio ratio={1}>
