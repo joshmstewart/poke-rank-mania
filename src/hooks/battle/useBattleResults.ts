@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { SingleBattle } from "./types";
