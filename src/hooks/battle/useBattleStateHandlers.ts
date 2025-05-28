@@ -34,16 +34,15 @@ export const useBattleStateHandlers = (
   const handlePokemonSelect = useCallback((id: number) => {
     console.log(`🎯 [POKEMON_SELECT_ULTRA_DEBUG] Pokemon ${id} selected. Current selections:`, selectedPokemon);
     
-    setSelectedPokemon(prev => {
-      if (prev.includes(id)) {
-        console.log(`🎯 [POKEMON_SELECT_ULTRA_DEBUG] Deselecting Pokemon ${id}`);
-        return prev.filter(pokemonId => pokemonId !== id);
-      } else {
-        const newSelection = [...prev, id];
-        console.log(`🎯 [POKEMON_SELECT_ULTRA_DEBUG] Adding Pokemon ${id}. New selection:`, newSelection);
-        return newSelection;
-      }
-    });
+    if (selectedPokemon.includes(id)) {
+      console.log(`🎯 [POKEMON_SELECT_ULTRA_DEBUG] Deselecting Pokemon ${id}`);
+      const newSelection = selectedPokemon.filter(pokemonId => pokemonId !== id);
+      setSelectedPokemon(newSelection);
+    } else {
+      const newSelection = [...selectedPokemon, id];
+      console.log(`🎯 [POKEMON_SELECT_ULTRA_DEBUG] Adding Pokemon ${id}. New selection:`, newSelection);
+      setSelectedPokemon(newSelection);
+    }
   }, [selectedPokemon, setSelectedPokemon]);
 
   const originalProcessBattleResult = useCallback((
@@ -166,10 +165,10 @@ export const useBattleStateHandlers = (
       setCurrentBattle(lastBattle.battle);
       setSelectedPokemon(lastBattle.selected);
       setBattleHistory(prev => prev.slice(0, -1));
-      setBattlesCompleted(prev => prev - 1);
+      setBattlesCompleted(battlesCompleted - 1);
       setBattleResults(prev => prev.slice(0, -1));
     }
-  }, [battleHistory, setCurrentBattle, setSelectedPokemon, setBattleHistory, setBattlesCompleted, setBattleResults]);
+  }, [battleHistory, setCurrentBattle, setSelectedPokemon, setBattleHistory, setBattlesCompleted, setBattleResults, battlesCompleted]);
 
   const performFullBattleReset = useCallback(() => {
     localStorage.removeItem('pokemon-battle-count');
@@ -189,6 +188,62 @@ export const useBattleStateHandlers = (
     // Implementation would go here
   }, []);
 
+  const originalProcessBattleResult = useCallback((
+    selectedPokemonIds: number[],
+    currentBattlePokemon: Pokemon[],
+    battleType: BattleType,
+    selectedGeneration: number
+  ) => {
+    console.log(`🔄 [BATTLE_PROCESSING_ULTRA_DEBUG] Processing battle result:`, {
+      selectedIds: selectedPokemonIds,
+      battlePokemon: currentBattlePokemon.map(p => p.name),
+      battleType
+    });
+
+    // SPEED FIX: Process immediately without delays
+    const selected = selectedPokemonIds.sort((a, b) => a - b);
+    setBattleHistory(prev => [...prev, { battle: currentBattlePokemon, selected }]);
+
+    const newBattlesCompleted = battlesCompleted + 1;
+    setBattlesCompleted(newBattlesCompleted);
+    localStorage.setItem('pokemon-battle-count', String(newBattlesCompleted));
+
+    const newBattleResult: SingleBattle = {
+      battleType,
+      generation: selectedGeneration,
+      pokemonIds: currentBattlePokemon.map(p => p.id),
+      selectedPokemonIds: selectedPokemonIds,
+      timestamp: new Date().toISOString()
+    };
+
+    setBattleResults(prev => [...prev, newBattleResult]);
+
+    // CRITICAL FIX: Check if new battles completed hits a milestone from the milestones array
+    const isAtMilestone = milestones.includes(newBattlesCompleted);
+    console.log(`🎯 [MILESTONE_CHECK_ULTRA_DEBUG] Battle ${newBattlesCompleted} completed. Is milestone? ${isAtMilestone}. Milestones: ${milestones.join(', ')}`);
+    
+    if (isAtMilestone) {
+      console.log(`🏆 [MILESTONE_HIT_ULTRA_DEBUG] Milestone ${newBattlesCompleted} reached!`);
+      
+      // UPDATED: Trigger the proper ranking generation system instead of basic rankings
+      // This will be handled by the external ranking system that uses TrueSkill
+      setMilestoneInProgress(true);
+      setShowingMilestone(true);
+      setRankingGenerated(true); // Mark that rankings should be generated
+    }
+
+    setSelectedPokemon([]);
+    console.log(`✅ [BATTLE_PROCESSING_ULTRA_DEBUG] Battle result processed successfully`);
+    return Promise.resolve();
+  }, [battlesCompleted, milestones, setBattleHistory, setBattlesCompleted, setBattleResults, setSelectedPokemon, setMilestoneInProgress, setShowingMilestone, setRankingGenerated]);
+
+  // CRITICAL FIX: Properly type the pendingRefinements Set
+  const pendingRefinements: Set<number> = new Set(
+    refinementQueue.refinementQueue 
+      ? refinementQueue.refinementQueue.map((r: any) => r.primaryPokemonId as number)
+      : []
+  );
+
   return {
     handlePokemonSelect,
     originalProcessBattleResult,
@@ -197,7 +252,7 @@ export const useBattleStateHandlers = (
     performFullBattleReset,
     processBattleResultWithRefinement,
     handleManualReorder,
-    pendingRefinements: refinementQueue.refinementQueue ? new Set(refinementQueue.refinementQueue.map(r => r.primaryPokemonId)) : new Set<number>(),
+    pendingRefinements,
     refinementBattleCount: refinementQueue.refinementBattleCount || 0,
     clearRefinementQueue
   };
