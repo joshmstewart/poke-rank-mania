@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Pokemon, TopNOption, RankedPokemon } from "@/services/pokemon";
 import PokemonThumbnail from "./PokemonThumbnail";
@@ -6,6 +5,7 @@ import RankingHeader from "./RankingHeader";
 import ShowMoreButton from "./ShowMoreButton";
 import ViewRankings from "./ViewRankings";
 import { Button } from "@/components/ui/button";
+import { formatPokemonName } from "@/utils/pokemon";
 
 interface RankingDisplayProps {
   finalRankings: Pokemon[] | RankedPokemon[];
@@ -36,13 +36,42 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
 }) => {
   console.log("🟣 RankingDisplay component rendered with", finalRankings.length, "Pokémon");
   
+  // CRITICAL FIX: Format all Pokemon names before displaying
+  const formattedRankings = React.useMemo(() => {
+    console.log(`🔧 [MILESTONE_NAME_FIX] ===== FORMATTING ALL POKEMON NAMES =====`);
+    
+    const formatted = finalRankings.map((pokemon, index) => {
+      const originalName = pokemon.name;
+      const formattedName = formatPokemonName(originalName);
+      
+      console.log(`🔧 [MILESTONE_NAME_FIX] #${index + 1}: "${originalName}" → "${formattedName}"`);
+      console.log(`🔧 [MILESTONE_NAME_FIX] Name changed: ${originalName !== formattedName}`);
+      
+      // Special logging for G-Max
+      if (originalName.toLowerCase().includes('gmax')) {
+        console.log(`🎯 [MILESTONE_GMAX_FIX] GMAX Pokemon detected: "${originalName}"`);
+        console.log(`🎯 [MILESTONE_GMAX_FIX] Formatted to: "${formattedName}"`);
+        console.log(`🎯 [MILESTONE_GMAX_FIX] Contains 'G-Max': ${formattedName.includes('G-Max')}`);
+      }
+      
+      return {
+        ...pokemon,
+        name: formattedName
+      };
+    });
+    
+    console.log(`✅ [MILESTONE_NAME_FIX] Formatted ${formatted.length} Pokemon names for display`);
+    console.log(`🔧 [MILESTONE_NAME_FIX] ===== END FORMATTING =====`);
+    return formatted;
+  }, [finalRankings]);
+  
   // ULTRA-DETAILED MILESTONE NAME LOGGING
   if (isMilestoneView) {
     console.log(`🏆 [MILESTONE_ULTRA_DEBUG] ===== MILESTONE VIEW RENDERING =====`);
-    console.log(`🏆 [MILESTONE_ULTRA_DEBUG] Total Pokemon in finalRankings: ${finalRankings.length}`);
+    console.log(`🏆 [MILESTONE_ULTRA_DEBUG] Total Pokemon in formattedRankings: ${formattedRankings.length}`);
     
     // Log first 5 Pokemon names in detail
-    finalRankings.slice(0, 5).forEach((pokemon, index) => {
+    formattedRankings.slice(0, 5).forEach((pokemon, index) => {
       console.log(`🏆 [MILESTONE_ULTRA_DEBUG] Pokemon #${index + 1}:`);
       console.log(`🏆 [MILESTONE_ULTRA_DEBUG]   ID: ${pokemon.id}`);
       console.log(`🏆 [MILESTONE_ULTRA_DEBUG]   Name: "${pokemon.name}"`);
@@ -67,19 +96,19 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
   const loadingRef = useRef<HTMLDivElement | null>(null);
   
   // Handle the case where we're displaying milestone view with ranked pokemon
-  const hasRankedPokemon = finalRankings.length > 0 && 'score' in finalRankings[0];
+  const hasRankedPokemon = formattedRankings.length > 0 && 'score' in formattedRankings[0];
   
   // Calculate how many items to show for milestone view based on tier
   const getMaxItemsForTier = useCallback(() => {
     if (activeTier === "All") {
-      return finalRankings.length;
+      return formattedRankings.length;
     }
-    return Math.min(Number(activeTier), finalRankings.length);
-  }, [activeTier, finalRankings.length]);
+    return Math.min(Number(activeTier), formattedRankings.length);
+  }, [activeTier, formattedRankings.length]);
 
   // Add debugging to show Pokemon with types - this must be called unconditionally
   useEffect(() => {
-    const displayRankings = finalRankings.slice(0, displayCount);
+    const displayRankings = formattedRankings.slice(0, displayCount);
     console.log("Pokemon list with types:");
     if (displayRankings.length > 0) {
       displayRankings.slice(0, Math.min(5, displayRankings.length)).forEach((pokemon, index) => {
@@ -100,7 +129,7 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
         }
       });
     }
-  }, [finalRankings, displayCount]);
+  }, [formattedRankings, displayCount]);
 
   // Setup infinite scroll observer for milestone view
   useEffect(() => {
@@ -148,8 +177,8 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
   // Handler for the "Show More" button
   const handleShowMore = () => {
     const increment = 50;
-    const newCount = Math.min(displayCount + increment, finalRankings.length);
-    console.log(`Increasing display count from ${displayCount} to ${newCount} of ${finalRankings.length} total`);
+    const newCount = Math.min(displayCount + increment, formattedRankings.length);
+    console.log(`Increasing display count from ${displayCount} to ${newCount} of ${formattedRankings.length} total`);
     setDisplayCount(newCount);
   };
 
@@ -216,7 +245,7 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
   // Milestone view - EXACTLY like the reference image with softer colors
   if (isMilestoneView) {
     const maxItems = getMaxItemsForTier();
-    const displayRankings = finalRankings.slice(0, Math.min(milestoneDisplayCount, maxItems));
+    const displayRankings = formattedRankings.slice(0, Math.min(milestoneDisplayCount, maxItems));
     const hasMoreToLoad = milestoneDisplayCount < maxItems;
     
     console.log(`🏆 [MILESTONE_RENDER_ULTRA_DEBUG] About to render ${displayRankings.length} Pokemon in milestone view`);
@@ -317,14 +346,14 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
   }
   
   // Take the top rankings to display for non-milestone view
-  const displayRankings = finalRankings.slice(0, displayCount);
+  const displayRankings = formattedRankings.slice(0, displayCount);
 
   return (
     <div className="bg-white rounded-lg shadow p-6">
       <RankingHeader 
         title="Current Rankings"
         displayCount={displayCount}
-        totalCount={finalRankings.length}
+        totalCount={formattedRankings.length}
         isMilestoneView={isMilestoneView}
         battlesCompleted={battlesCompleted}
         rankingGenerated={rankingGenerated}
@@ -371,12 +400,12 @@ const RankingDisplay: React.FC<RankingDisplayProps> = ({
         ))}
       </div>
 
-      {displayCount < finalRankings.length && (
+      {displayCount < formattedRankings.length && (
         <div className="text-center pt-4">
           <ShowMoreButton 
             onShowMore={handleShowMore}
             displayCount={displayCount}
-            totalCount={finalRankings.length}
+            totalCount={formattedRankings.length}
           />
         </div>
       )}
