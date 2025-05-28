@@ -114,15 +114,22 @@ export const useBattleStateCore = (
 
   // Handle battle completion to pop refinement battles
   const originalProcessBattleResult = actionsData.processBattleResult;
-  const processBattleResultWithRefinement = useCallback(async (...args: any[]) => {
-    // Call original battle processing
-    await originalProcessBattleResult(...args);
+  const processBattleResultWithRefinement = useCallback((
+    selectedPokemonIds: number[],
+    currentBattlePokemon: Pokemon[],
+    battleType: BattleType,
+    selectedGeneration: number
+  ) => {
+    // Call original battle processing with proper parameters
+    const result = originalProcessBattleResult(selectedPokemonIds, currentBattlePokemon, battleType, selectedGeneration);
     
     // Pop completed refinement battle if any
     if (refinementQueue.hasRefinementBattles) {
       console.log(`⚔️ [REFINEMENT_INTEGRATION] Battle completed, popping refinement battle from queue`);
       refinementQueue.popRefinementBattle();
     }
+    
+    return result;
   }, [originalProcessBattleResult, refinementQueue]);
 
   // Use the effects hook
