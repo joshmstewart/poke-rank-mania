@@ -42,14 +42,38 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
   const displayRankings = localRankings.slice(0, Math.min(milestoneDisplayCount, maxItems));
   const hasMoreToLoad = milestoneDisplayCount < maxItems;
 
+  console.log(`🎯 [DRAGGABLE_MILESTONE_DEBUG] ===== COMPONENT RENDER =====`);
+  console.log(`🎯 [DRAGGABLE_MILESTONE_DEBUG] onManualReorder prop:`, typeof onManualReorder, !!onManualReorder);
+  console.log(`🎯 [DRAGGABLE_MILESTONE_DEBUG] onManualReorder function exists:`, typeof onManualReorder === 'function');
+
   // Update local rankings when formattedRankings changes
   React.useEffect(() => {
     setLocalRankings(formattedRankings);
   }, [formattedRankings]);
 
+  // CRITICAL FIX: Create a wrapper function to ensure the manual reorder is called correctly
+  const handleManualReorderWrapper = React.useCallback((draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => {
+    console.log(`🎯 [DRAGGABLE_MILESTONE_WRAPPER] ===== MANUAL REORDER WRAPPER CALLED =====`);
+    console.log(`🎯 [DRAGGABLE_MILESTONE_WRAPPER] Parameters: draggedPokemonId=${draggedPokemonId}, sourceIndex=${sourceIndex}, destinationIndex=${destinationIndex}`);
+    console.log(`🎯 [DRAGGABLE_MILESTONE_WRAPPER] onManualReorder function exists:`, typeof onManualReorder === 'function');
+    
+    if (typeof onManualReorder === 'function') {
+      console.log(`🎯 [DRAGGABLE_MILESTONE_WRAPPER] ✅ Calling onManualReorder`);
+      try {
+        onManualReorder(draggedPokemonId, sourceIndex, destinationIndex);
+        console.log(`🎯 [DRAGGABLE_MILESTONE_WRAPPER] ✅ onManualReorder called successfully`);
+      } catch (error) {
+        console.error(`🎯 [DRAGGABLE_MILESTONE_WRAPPER] ❌ Error calling onManualReorder:`, error);
+      }
+    } else {
+      console.error(`🎯 [DRAGGABLE_MILESTONE_WRAPPER] ❌ onManualReorder is not a function:`, typeof onManualReorder);
+    }
+    console.log(`🎯 [DRAGGABLE_MILESTONE_WRAPPER] ===== END MANUAL REORDER WRAPPER =====`);
+  }, [onManualReorder]);
+
   const { sensors, handleDragEnd } = useDragAndDrop({
     displayRankings,
-    onManualReorder,
+    onManualReorder: handleManualReorderWrapper,
     onLocalReorder: setLocalRankings
   });
 
