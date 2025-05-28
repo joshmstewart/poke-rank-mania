@@ -9,19 +9,30 @@ export interface RefinementBattle {
 export const useRefinementQueue = () => {
   const [refinementQueue, setRefinementQueue] = useState<RefinementBattle[]>([]);
 
+  // CRITICAL FIX: Global duplicate detection function
+  const isDuplicateBattleGlobally = useCallback((pokemon1: number, pokemon2: number, existingQueue: RefinementBattle[]) => {
+    const foundDuplicate = existingQueue.some(battle => 
+      (battle.primaryPokemonId === pokemon1 && battle.opponentPokemonId === pokemon2) ||
+      (battle.primaryPokemonId === pokemon2 && battle.opponentPokemonId === pokemon1)
+    );
+    
+    if (foundDuplicate) {
+      console.log(`🚨 [GLOBAL_DUPLICATE_DETECTION] FOUND DUPLICATE: ${pokemon1} vs ${pokemon2} already exists in global queue`);
+      console.log(`🚨 [GLOBAL_DUPLICATE_DETECTION] Existing queue:`, existingQueue.map(b => `${b.primaryPokemonId} vs ${b.opponentPokemonId}`));
+    }
+    
+    return foundDuplicate;
+  }, []);
+
   const queueBattlesForReorder = useCallback((primaryId: number, neighbors: number[], newPosition: number) => {
     console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] ===== QUEUEING VALIDATION BATTLES START =====`);
     console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] Primary Pokemon ID: ${primaryId}`);
     console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] New position: ${newPosition}`);
     console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] Neighbors to battle: ${neighbors.join(', ')}`);
-    console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] CALL STACK:`, new Error().stack?.split('\n').slice(0, 5).join('\n'));
     
     setRefinementQueue(prev => {
       console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] Current queue size before operation: ${prev.length}`);
       console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] Current queue contents BEFORE:`, prev.map(b => `${b.primaryPokemonId} vs ${b.opponentPokemonId}`));
-      
-      // CRITICAL FIX: Don't remove existing battles, just add new unique ones
-      const currentQueue = [...prev];
       
       // Get valid neighbors
       const validNeighbors = neighbors.filter(opponentId => opponentId && opponentId !== primaryId);
@@ -31,33 +42,21 @@ export const useRefinementQueue = () => {
         return prev;
       }
       
-      // CRITICAL DEBUG: Check for duplicate battles (same Pokemon pair regardless of order)
-      const isDuplicateBattle = (pokemon1: number, pokemon2: number, existingBattles: RefinementBattle[]) => {
-        const foundDuplicate = existingBattles.some(battle => 
-          (battle.primaryPokemonId === pokemon1 && battle.opponentPokemonId === pokemon2) ||
-          (battle.primaryPokemonId === pokemon2 && battle.opponentPokemonId === pokemon1)
-        );
-        
-        if (foundDuplicate) {
-          console.log(`🚨 [DUPLICATE_DETECTION] FOUND DUPLICATE: ${pokemon1} vs ${pokemon2} already exists in queue`);
-          console.log(`🚨 [DUPLICATE_DETECTION] Existing battles:`, existingBattles.map(b => `${b.primaryPokemonId} vs ${b.opponentPokemonId}`));
-        }
-        
-        return foundDuplicate;
-      };
-      
-      // Add battles for each valid neighbor, but only if not duplicate
+      // CRITICAL FIX: Check for duplicates against the ENTIRE existing queue
       const battlesToAdd: RefinementBattle[] = [];
       
       validNeighbors.forEach(opponentId => {
-        console.log(`🔍 [DUPLICATE_CHECK] Checking if ${primaryId} vs ${opponentId} is duplicate...`);
+        console.log(`🔍 [GLOBAL_DUPLICATE_CHECK] Checking if ${primaryId} vs ${opponentId} is duplicate in GLOBAL queue...`);
         
-        const isDuplicateInQueue = isDuplicateBattle(primaryId, opponentId, currentQueue);
-        const isDuplicateInNewBattles = isDuplicateBattle(primaryId, opponentId, battlesToAdd);
+        const isDuplicateGlobally = isDuplicateBattleGlobally(primaryId, opponentId, prev);
+        const isDuplicateInNewBattles = battlesToAdd.some(battle => 
+          (battle.primaryPokemonId === primaryId && battle.opponentPokemonId === opponentId) ||
+          (battle.primaryPokemonId === opponentId && battle.opponentPokemonId === primaryId)
+        );
         
-        console.log(`🔍 [DUPLICATE_CHECK] ${primaryId} vs ${opponentId}: duplicateInQueue=${isDuplicateInQueue}, duplicateInNewBattles=${isDuplicateInNewBattles}`);
+        console.log(`🔍 [GLOBAL_DUPLICATE_CHECK] ${primaryId} vs ${opponentId}: duplicateGlobally=${isDuplicateGlobally}, duplicateInNewBattles=${isDuplicateInNewBattles}`);
         
-        if (!isDuplicateInQueue && !isDuplicateInNewBattles) {
+        if (!isDuplicateGlobally && !isDuplicateInNewBattles) {
           const battle = {
             primaryPokemonId: primaryId,
             opponentPokemonId: opponentId,
@@ -67,18 +66,18 @@ export const useRefinementQueue = () => {
           battlesToAdd.push(battle);
           console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] ✅ QUEUED NEW battle: ${primaryId} vs ${opponentId}`);
         } else {
-          console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] ⚠️ SKIPPED duplicate battle: ${primaryId} vs ${opponentId}`);
+          console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] ⚠️ SKIPPED GLOBAL duplicate battle: ${primaryId} vs ${opponentId}`);
         }
       });
       
       if (battlesToAdd.length === 0) {
-        console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] ❌ No new unique battles to add`);
-        console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] This means all requested battles already exist in queue`);
+        console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] ❌ No new unique battles to add - all were duplicates`);
+        console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] This means all requested battles already exist in the global queue`);
         return prev;
       }
       
       // Add new battles to the end of the queue
-      const newQueue = [...currentQueue, ...battlesToAdd];
+      const newQueue = [...prev, ...battlesToAdd];
       
       console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] ✅ Added ${battlesToAdd.length} new battles`);
       console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] ✅ Total refinement battles in NEW queue: ${newQueue.length}`);
@@ -87,7 +86,7 @@ export const useRefinementQueue = () => {
       
       return newQueue;
     });
-  }, []);
+  }, [isDuplicateBattleGlobally]);
 
   const getNextRefinementBattle = useCallback((): RefinementBattle | null => {
     const next = refinementQueue.length > 0 ? refinementQueue[0] : null;
