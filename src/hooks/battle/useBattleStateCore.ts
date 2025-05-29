@@ -173,7 +173,7 @@ export const useBattleStateCore = (
       return newResults;
     });
 
-    // ENHANCED: Ultra-detailed milestone checking
+    // ENHANCED: Ultra-detailed milestone checking with ACTUAL ranking generation
     const isAtMilestone = milestones.includes(newBattlesCompleted);
     console.log(`🚨🚨🚨 [CORE_MILESTONE_CHECK_MEGA_DEBUG] ===== CORE MILESTONE CHECK START =====`);
     console.log(`🚨🚨🚨 [CORE_MILESTONE_CHECK_MEGA_DEBUG] Battle ${newBattlesCompleted} completed`);
@@ -183,12 +183,29 @@ export const useBattleStateCore = (
     
     if (isAtMilestone) {
       console.log(`🚨🚨🚨 [CORE_MILESTONE_HIT_MEGA_DEBUG] ===== CORE MILESTONE ${newBattlesCompleted} REACHED! =====`);
-      console.log(`🚨🚨🚨 [CORE_MILESTONE_HIT_MEGA_DEBUG] About to set milestone flags...`);
+      console.log(`🚨🚨🚨 [CORE_MILESTONE_HIT_MEGA_DEBUG] About to set milestone flags AND generate rankings...`);
       console.log(`🚨🚨🚨 [CORE_MILESTONE_HIT_MEGA_DEBUG] BEFORE: milestoneInProgress=${milestoneInProgress}, showingMilestone=${showingMilestone}, rankingGenerated=${rankingGenerated}`);
       
       setMilestoneInProgress(true);
       setShowingMilestone(true);
       setRankingGenerated(true);
+      
+      // CRITICAL FIX: Actually generate the rankings when milestone is hit
+      console.log(`🚨🚨🚨 [CORE_MILESTONE_HIT_MEGA_DEBUG] 🔥 CALLING GENERATE RANKINGS FOR MILESTONE 🔥`);
+      console.log(`🚨🚨🚨 [CORE_MILESTONE_HIT_MEGA_DEBUG] Current battle history length: ${battleHistory.length + 1}`); // +1 because we just added one
+      
+      // Use setTimeout to ensure state updates are processed first
+      setTimeout(() => {
+        console.log(`🚨🚨🚨 [CORE_MILESTONE_GENERATION] Generating rankings with updated battle history...`);
+        // The milestoneHandlers.generateRankings will be called after hooks are set up
+        const generateRankingsEvent = new CustomEvent('generate-milestone-rankings', {
+          detail: { 
+            milestone: newBattlesCompleted,
+            timestamp: Date.now()
+          }
+        });
+        document.dispatchEvent(generateRankingsEvent);
+      }, 100);
       
       console.log(`🚨🚨🚨 [CORE_MILESTONE_HIT_MEGA_DEBUG] AFTER setting flags - these should be true in the next render`);
       console.log(`🚨🚨🚨 [CORE_MILESTONE_HIT_MEGA_DEBUG] Current finalRankings length: ${finalRankings.length}`);
@@ -202,7 +219,7 @@ export const useBattleStateCore = (
     setSelectedPokemon([]);
     console.log(`🚨🚨🚨 [CORE_BATTLE_PROCESSING_MEGA_DEBUG] ===== CORE PROCESSING BATTLE RESULT END =====`);
     return Promise.resolve();
-  }, [battlesCompleted, milestones, finalRankings, milestoneInProgress, showingMilestone, rankingGenerated, setBattleHistory, setBattlesCompleted, setBattleResults, setSelectedPokemon, setMilestoneInProgress, setShowingMilestone, setRankingGenerated]);
+  }, [battlesCompleted, milestones, finalRankings, milestoneInProgress, showingMilestone, rankingGenerated, battleHistory, setBattleHistory, setBattlesCompleted, setBattleResults, setSelectedPokemon, setMilestoneInProgress, setShowingMilestone, setRankingGenerated]);
 
   // Add placeholder for processBattleResultWithRefinement
   const processBattleResultWithRefinement = useCallback(async (
@@ -339,6 +356,28 @@ export const useBattleStateCore = (
   useEffect(() => {
     console.log(`🚨🚨🚨 [STATE_DEBUG] battlesCompleted effect triggered - value: ${battlesCompleted}`);
   }, [battlesCompleted]);
+
+  // CRITICAL FIX: Add event listener for milestone ranking generation
+  useEffect(() => {
+    const handleGenerateMilestoneRankings = (event: CustomEvent) => {
+      console.log(`🔥 [MILESTONE_RANKING_EVENT] Received generate-milestone-rankings event:`, event.detail);
+      console.log(`🔥 [MILESTONE_RANKING_EVENT] Current battle history length: ${battleHistory.length}`);
+      console.log(`🔥 [MILESTONE_RANKING_EVENT] Calling milestoneHandlers.generateRankings...`);
+      
+      try {
+        milestoneHandlers.generateRankings();
+        console.log(`🔥 [MILESTONE_RANKING_EVENT] ✅ generateRankings called successfully`);
+      } catch (error) {
+        console.error(`🔥 [MILESTONE_RANKING_EVENT] ❌ Error calling generateRankings:`, error);
+      }
+    };
+
+    document.addEventListener('generate-milestone-rankings', handleGenerateMilestoneRankings as EventListener);
+    
+    return () => {
+      document.removeEventListener('generate-milestone-rankings', handleGenerateMilestoneRankings as EventListener);
+    };
+  }, [milestoneHandlers, battleHistory]);
 
   console.log(`🚨🚨🚨 [BATTLE_STATE_CORE_MEGA_DEBUG] All hooks completed, preparing return object...`);
   console.log(`🚨🚨🚨 [BATTLE_STATE_CORE_MEGA_DEBUG] Final state summary:`);
