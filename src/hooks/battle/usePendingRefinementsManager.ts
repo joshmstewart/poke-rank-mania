@@ -66,7 +66,27 @@ export const usePendingRefinementsManager = (initialPendingRefinements: Set<numb
 
       setPendingBattleCounts(prev => {
         const newMap = new Map(prev);
-        newMap.set(pokemonId, 2); // Set expected battle count
+        newMap.set(pokemonId, 3); // Set higher count for drag operations
+        return newMap;
+      });
+    };
+
+    // CRITICAL FIX: Handle additional persistence events
+    const handleEnsurePersistence = (event: CustomEvent) => {
+      console.log(`🔄 [ENSURE_PERSISTENCE] Ensuring persistence for:`, event.detail);
+      const { pokemonId } = event.detail;
+      
+      setLocalPendingRefinements(prev => {
+        const newSet = new Set(prev);
+        newSet.add(pokemonId);
+        console.log(`🔄 [ENSURE_PERSISTENCE] Ensured ${pokemonId} stays pending`);
+        return newSet;
+      });
+
+      setPendingBattleCounts(prev => {
+        const newMap = new Map(prev);
+        const currentCount = newMap.get(pokemonId) || 0;
+        newMap.set(pokemonId, Math.max(currentCount, 2)); // Ensure minimum count
         return newMap;
       });
     };
@@ -109,12 +129,14 @@ export const usePendingRefinementsManager = (initialPendingRefinements: Set<numb
     document.addEventListener('refinement-queue-updated', handleRefinementQueueUpdate as EventListener);
     document.addEventListener('persist-pending-state', handlePersistPendingState as EventListener);
     document.addEventListener('drag-start-pending', handleDragStart as EventListener);
+    document.addEventListener('ensure-pending-persistence', handleEnsurePersistence as EventListener);
     document.addEventListener('actual-battle-completed', handleActualBattleComplete as EventListener);
     
     return () => {
       document.removeEventListener('refinement-queue-updated', handleRefinementQueueUpdate as EventListener);
       document.removeEventListener('persist-pending-state', handlePersistPendingState as EventListener);
       document.removeEventListener('drag-start-pending', handleDragStart as EventListener);
+      document.removeEventListener('ensure-pending-persistence', handleEnsurePersistence as EventListener);
       document.removeEventListener('actual-battle-completed', handleActualBattleComplete as EventListener);
     };
   }, []);
@@ -130,7 +152,7 @@ export const usePendingRefinementsManager = (initialPendingRefinements: Set<numb
 
     setPendingBattleCounts(prev => {
       const newMap = new Map(prev);
-      newMap.set(pokemonId, 2); // Default battle count
+      newMap.set(pokemonId, 3); // Higher default for manual marks
       return newMap;
     });
   }, []);

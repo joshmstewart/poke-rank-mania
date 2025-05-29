@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { usePendingRefinementsManager } from "@/hooks/battle/usePendingRefinementsManager";
 import DragDropGrid from "./DragDropGrid";
@@ -41,20 +41,39 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
     updateFromProps
   } = usePendingRefinementsManager(pendingRefinements);
   
+  console.log(`🚨 [DND_PENDING_FIX] Local pending refinements in milestone view:`, Array.from(localPendingRefinements));
+  
   const maxItems = getMaxItemsForTier();
   const displayRankings = localRankings.slice(0, Math.min(milestoneDisplayCount, maxItems));
   const hasMoreToLoad = milestoneDisplayCount < maxItems;
 
   // Update local state when props change
-  React.useEffect(() => {
+  useEffect(() => {
     console.log(`🚨 [DND_SETUP_DEBUG] Updating local rankings from props`);
     setLocalRankings(formattedRankings);
   }, [formattedRankings]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     console.log(`🚨 [DND_SETUP_DEBUG] Updating local pending refinements from props`);
     updateFromProps(pendingRefinements);
   }, [pendingRefinements, updateFromProps]);
+
+  // CRITICAL FIX: Enhanced manual reorder handler that ensures pending state persists
+  const handleManualReorderWithPersistence = (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => {
+    console.log(`🚨 [DND_PENDING_FIX] Manual reorder with persistence for Pokemon ${draggedPokemonId}`);
+    
+    // Ensure the Pokemon stays pending
+    markAsPending(draggedPokemonId);
+    
+    // Call the original handler
+    onManualReorder(draggedPokemonId, sourceIndex, destinationIndex);
+    
+    // Dispatch additional persistence event
+    const persistEvent = new CustomEvent('ensure-pending-persistence', {
+      detail: { pokemonId: draggedPokemonId, timestamp: Date.now() }
+    });
+    document.dispatchEvent(persistEvent);
+  };
 
   return (
     <div className="bg-white p-6 w-full max-w-7xl mx-auto">
@@ -72,7 +91,7 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
           displayRankings={displayRankings}
           localPendingRefinements={localPendingRefinements}
           pendingBattleCounts={pendingBattleCounts}
-          onManualReorder={onManualReorder}
+          onManualReorder={handleManualReorderWithPersistence}
           onLocalReorder={setLocalRankings}
           onMarkAsPending={markAsPending}
         />
