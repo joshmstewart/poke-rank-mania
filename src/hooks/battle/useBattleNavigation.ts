@@ -1,57 +1,44 @@
 
+import { useCallback } from "react";
 import { Pokemon } from "@/services/pokemon";
-import { BattleType, SingleBattle } from "./types";
-import { toast } from "@/hooks/use-toast";
+import { BattleType } from "./types";
 
 export const useBattleNavigation = (
   battleHistory: { battle: Pokemon[], selected: number[] }[],
-  setBattleHistory: React.Dispatch<React.SetStateAction<{ battle: Pokemon[], selected: number[] }[]>>,
-  battleResults: SingleBattle[],
-  setBattleResults: React.Dispatch<React.SetStateAction<SingleBattle[]>>,
-  battlesCompleted: number,
-  setBattlesCompleted: React.Dispatch<React.SetStateAction<number>>,
-  setShowingMilestone: React.Dispatch<React.SetStateAction<boolean>>,
-  setSelectedPokemon: React.Dispatch<React.SetStateAction<number[]>>
+  setBattleHistory: any,
+  setCurrentBattle: any,
+  setSelectedPokemon: any,
+  setBattlesCompleted: any,
+  startNewBattle: (battleType: BattleType) => Pokemon[]
 ) => {
-  const goBack = (
-    setCurrentBattle: React.Dispatch<React.SetStateAction<Pokemon[]>>,
-    battleType: BattleType
-  ) => {
-    if (battleHistory.length === 0) {
-      toast({
-        title: "No previous battles",
-        description: "There are no previous battles to return to."
-      });
-      return;
-    }
+  const goBack = useCallback(() => {
+    if (battleHistory.length === 0) return;
 
     const newHistory = [...battleHistory];
     const lastBattle = newHistory.pop();
     setBattleHistory(newHistory);
-console.log("🔄 Updating battle history explicitly. New length:", newHistory.length);
-
-    
-    const newResults = [...battleResults];
-
-    let resultsToRemove = 1;
-    if (battleType === "triplets" && lastBattle) {
-      const selectedCount = lastBattle.selected.length;
-      const unselectedCount = lastBattle.battle.length - selectedCount;
-      resultsToRemove = selectedCount * unselectedCount;
-    }
-
-    newResults.splice(newResults.length - resultsToRemove, resultsToRemove);
-    setBattleResults(newResults);
-
-    setBattlesCompleted(battlesCompleted - 1);
 
     if (lastBattle) {
       setCurrentBattle(lastBattle.battle);
       setSelectedPokemon([]);
     }
 
-    setShowingMilestone(false);
-  };
+    setBattlesCompleted((prev: number) => Math.max(0, prev - 1));
+  }, [battleHistory, setBattleHistory, setCurrentBattle, setSelectedPokemon, setBattlesCompleted]);
 
-  return { goBack };
+  const startNewBattleWrapper = useCallback((battleType: BattleType) => {
+    console.log(`🚀🚀🚀 [START_NEW_BATTLE_TRACE] startNewBattleWrapper called`);
+    console.log(`🚀🚀🚀 [START_NEW_BATTLE_TRACE] Timestamp: ${new Date().toISOString()}`);
+    console.log(`🚀🚀🚀 [START_NEW_BATTLE_TRACE] Call stack:`, new Error().stack?.split('\n').slice(1, 5));
+    console.log(`🚀🚀🚀 [START_NEW_BATTLE_TRACE] battleType: ${battleType}`);
+    
+    const result = startNewBattle(battleType);
+    
+    console.log(`🚀🚀🚀 [START_NEW_BATTLE_TRACE] Result:`, result?.map(p => `${p.name}(${p.id})`).join(' vs ') || 'null');
+    console.log(`🚀🚀🚀 [START_NEW_BATTLE_TRACE] Result length: ${result?.length || 0}`);
+    
+    return result;
+  }, [startNewBattle]);
+
+  return { goBack, startNewBattleWrapper };
 };
