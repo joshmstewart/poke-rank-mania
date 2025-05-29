@@ -1,4 +1,3 @@
-
 import { useEffect, useMemo } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { usePokemonContext } from "@/contexts/PokemonContext";
@@ -75,7 +74,8 @@ export const useBattleCoordination = (
   const { 
     battleStarter, 
     startNewBattle,
-    resetSuggestionPriority 
+    resetSuggestionPriority,
+    refinementQueue // CRITICAL FIX: Extract refinement queue from integration
   } = useBattleStarterIntegration(
     filteredPokemon, 
     finalRankings || [],
@@ -127,6 +127,7 @@ export const useBattleCoordination = (
     hitMilestones,
     battleStarter,
     startNewBattle,
-    resetSuggestionPriority
+    resetSuggestionPriority,
+    refinementQueue // CRITICAL FIX: Include refinement queue in return object
   };
 };
