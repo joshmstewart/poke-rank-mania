@@ -1,145 +1,140 @@
-
-import { useSensors, useSensor, PointerSensor, KeyboardSensor, DragEndEvent } from '@dnd-kit/core';
-import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
-import { useCallback } from 'react';
-import { Pokemon, RankedPokemon } from "@/services/pokemon";
+import { useSensors } from '@dnd-kit/core';
+import {
+  useSensor,
+  PointerSensor,
+  KeyboardSensor,
+} from '@dnd-kit/core';
+import {
+  sortableKeyboardCoordinates,
+} from '@dnd-kit/sortable';
+import { arrayMove } from '@dnd-kit/sortable';
+import { DragEndEvent } from '@dnd-kit/core';
+import { useSharedRefinementQueue } from './useSharedRefinementQueue';
 
 interface UseDragAndDropProps {
-  displayRankings: (Pokemon | RankedPokemon)[];
+  displayRankings: any[];
   onManualReorder: (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => void;
-  onLocalReorder: (callback: (current: (Pokemon | RankedPokemon)[]) => (Pokemon | RankedPokemon)[]) => void;
+  onLocalReorder: (newRankings: any[]) => void;
 }
 
 export const useDragAndDrop = ({ displayRankings, onManualReorder, onLocalReorder }: UseDragAndDropProps) => {
-  console.log(`🚨 [DRAG_HOOK_DEBUG] ===== useDragAndDrop hook initialization =====`);
-  console.log(`🚨 [DRAG_HOOK_DEBUG] PointerSensor imported:`, typeof PointerSensor);
-  console.log(`🚨 [DRAG_HOOK_DEBUG] KeyboardSensor imported:`, typeof KeyboardSensor);
-  console.log(`🚨 [DRAG_HOOK_DEBUG] useSensors imported:`, typeof useSensors);
-  console.log(`🚨 [DRAG_HOOK_DEBUG] displayRankings count:`, displayRankings.length);
-  console.log(`🚨 [DRAG_HOOK_DEBUG] onManualReorder type:`, typeof onManualReorder);
+  console.log(`🚨🚨🚨 [DRAG_DROP_ULTRA_TRACE] ===== useDragAndDrop INITIALIZATION =====`);
+  
+  const refinementQueue = useSharedRefinementQueue();
+  
+  console.log(`🚨🚨🚨 [DRAG_DROP_ULTRA_TRACE] Refinement queue in useDragAndDrop:`, {
+    exists: !!refinementQueue,
+    hasRefinementBattles: refinementQueue?.hasRefinementBattles,
+    refinementBattleCount: refinementQueue?.refinementBattleCount,
+    queueLength: refinementQueue?.queue?.length || 0
+  });
 
   const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 0, // Immediate activation - no distance threshold
-      },
-    }),
+    useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
 
-  console.log(`🚨 [DRAG_HOOK_DEBUG] Sensors created:`, sensors?.length);
-  console.log(`🚨 [DRAG_HOOK_DEBUG] First sensor type:`, sensors?.[0]?.constructor?.name);
-  console.log(`🚨 [DRAG_HOOK_DEBUG] Sensor configurations:`, sensors?.map(s => ({
-    name: s.constructor?.name,
-    hasOptions: !!s
-  })));
-
-  const handleDragEnd = useCallback((event: DragEndEvent) => {
-    console.log(`🚨 [DRAG_END_MEGA_DEBUG] ===== DRAG END EVENT TRIGGERED =====`);
-    console.log(`🚨 [DRAG_END_MEGA_DEBUG] ✅ SUCCESS! @dnd-kit drag and drop is working!`);
-    console.log(`🚨 [DRAG_END_MEGA_DEBUG] Event object:`, event);
-    console.log(`🚨 [DRAG_END_MEGA_DEBUG] Active ID:`, event.active.id);
-    console.log(`🚨 [DRAG_END_MEGA_DEBUG] Over ID:`, event.over?.id);
-    console.log(`🚨 [DRAG_END_MEGA_DEBUG] Active data:`, event.active.data);
-    console.log(`🚨 [DRAG_END_MEGA_DEBUG] Over data:`, event.over?.data);
-
+  const handleDragEnd = (event: DragEndEvent) => {
+    console.log(`🚨🚨🚨 [DRAG_DROP_ULTRA_TRACE] ===== DRAG END START =====`);
+    console.log(`🚨🚨🚨 [DRAG_DROP_ULTRA_TRACE] Event:`, event);
+    
     const { active, over } = event;
 
-    if (!over) {
-      console.log(`🚨 [DRAG_END_MEGA_DEBUG] ❌ No drop target - drag cancelled`);
+    if (!over || active.id === over.id) {
+      console.log(`🚨🚨🚨 [DRAG_DROP_ULTRA_TRACE] ❌ No drop target or same position - exiting`);
       return;
     }
 
-    if (active.id === over.id) {
-      console.log(`🚨 [DRAG_END_MEGA_DEBUG] ❌ Same position drop - no change needed`);
-      return;
-    }
-
-    const oldIndex = displayRankings.findIndex(pokemon => pokemon.id === active.id);
-    const newIndex = displayRankings.findIndex(pokemon => pokemon.id === over.id);
-
-    console.log(`🚨 [DRAG_END_MEGA_DEBUG] Old index:`, oldIndex);
-    console.log(`🚨 [DRAG_END_MEGA_DEBUG] New index:`, newIndex);
-    console.log(`🚨 [DRAG_END_MEGA_DEBUG] displayRankings IDs:`, displayRankings.map(p => p.id));
-    console.log(`🚨 [DRAG_END_MEGA_DEBUG] displayRankings length:`, displayRankings.length);
-
-    if (oldIndex === -1 || newIndex === -1) {
-      console.error(`🚨 [DRAG_END_MEGA_DEBUG] ❌ Invalid indices - oldIndex: ${oldIndex}, newIndex: ${newIndex}`);
-      console.error(`🚨 [DRAG_END_MEGA_DEBUG] Active ID type:`, typeof active.id);
-      console.error(`🚨 [DRAG_END_MEGA_DEBUG] Over ID type:`, typeof over.id);
-      console.error(`🚨 [DRAG_END_MEGA_DEBUG] Available Pokemon IDs:`, displayRankings.map(p => ({ id: p.id, type: typeof p.id })));
-      return;
-    }
-
-    const draggedPokemon = displayRankings[oldIndex];
-    console.log(`🚨 [DRAG_END_MEGA_DEBUG] ✅ Dragged Pokemon:`, draggedPokemon.name, `(ID: ${draggedPokemon.id})`);
-    console.log(`🚨 [DRAG_END_MEGA_DEBUG] ✅ Target Pokemon:`, displayRankings[newIndex].name, `(ID: ${displayRankings[newIndex].id})`);
-
-    // Update local rankings immediately for UI feedback
-    console.log(`🚨 [DRAG_END_MEGA_DEBUG] About to update local rankings...`);
-    console.log(`🚨 [DRAG_END_MEGA_DEBUG] onLocalReorder function type:`, typeof onLocalReorder);
+    const activeIndex = displayRankings.findIndex(pokemon => pokemon.id === active.id);
+    const overIndex = displayRankings.findIndex(pokemon => pokemon.id === over.id);
     
-    if (typeof onLocalReorder === 'function') {
-      console.log(`🚨 [DRAG_END_MEGA_DEBUG] ✅ Calling onLocalReorder...`);
-      onLocalReorder(current => {
-        console.log(`🚨 [DRAG_END_MEGA_DEBUG] Inside onLocalReorder callback`);
-        console.log(`🚨 [DRAG_END_MEGA_DEBUG] Current array length:`, current.length);
-        const newRankings = [...current];
-        const [removed] = newRankings.splice(oldIndex, 1);
-        newRankings.splice(newIndex, 0, removed);
-        console.log(`🚨 [DRAG_END_MEGA_DEBUG] ✅ Local rankings updated - moved ${removed.name} from ${oldIndex} to ${newIndex}`);
-        return newRankings;
-      });
-      console.log(`🚨 [DRAG_END_MEGA_DEBUG] ✅ onLocalReorder completed`);
-    } else {
-      console.error(`🚨 [DRAG_END_MEGA_DEBUG] ❌ onLocalReorder is not a function:`, typeof onLocalReorder);
+    console.log(`🚨🚨🚨 [DRAG_DROP_ULTRA_TRACE] Drag details:`);
+    console.log(`🚨🚨🚨 [DRAG_DROP_ULTRA_TRACE] - Active Pokemon ID: ${active.id}`);
+    console.log(`🚨🚨🚨 [DRAG_DROP_ULTRA_TRACE] - Over Pokemon ID: ${over.id}`);
+    console.log(`🚨🚨🚨 [DRAG_DROP_ULTRA_TRACE] - Active Index: ${activeIndex}`);
+    console.log(`🚨🚨🚨 [DRAG_DROP_ULTRA_TRACE] - Over Index: ${overIndex}`);
+
+    if (activeIndex === -1 || overIndex === -1) {
+      console.error(`🚨🚨🚨 [DRAG_DROP_ULTRA_TRACE] ❌ Invalid indices - activeIndex: ${activeIndex}, overIndex: ${overIndex}`);
+      return;
     }
 
-    // Convert ID to number if needed
-    let pokemonId: number;
-    if (typeof active.id === 'string') {
-      pokemonId = parseInt(active.id, 10);
-      console.log(`🚨 [DRAG_END_MEGA_DEBUG] Converted string ID "${active.id}" to number ${pokemonId}`);
-    } else {
-      pokemonId = active.id as number;
-      console.log(`🚨 [DRAG_END_MEGA_DEBUG] Using numeric ID:`, pokemonId);
+    const draggedPokemon = displayRankings[activeIndex];
+    console.log(`🚨🚨🚨 [DRAG_DROP_ULTRA_TRACE] Dragged Pokemon: ${draggedPokemon.name} (${draggedPokemon.id})`);
+
+    // Update local rankings for immediate UI feedback
+    if (onLocalReorder) {
+      console.log(`🚨🚨🚨 [DRAG_DROP_ULTRA_TRACE] Calling onLocalReorder...`);
+      const newRankings = arrayMove(displayRankings, activeIndex, overIndex);
+      onLocalReorder(newRankings);
     }
 
-    console.log(`🚨 [DRAG_END_MEGA_DEBUG] ✅ About to call onManualReorder:`, {
-      pokemonId,
-      oldIndex,
-      newIndex,
-      pokemonName: draggedPokemon.name
-    });
-
-    if (typeof onManualReorder === 'function') {
-      console.log(`🚨 [DRAG_END_MEGA_DEBUG] ✅ Calling onManualReorder function...`);
-      console.log(`🚨 [DRAG_END_MEGA_DEBUG] Parameters: pokemonId=${pokemonId}, sourceIndex=${oldIndex}, destinationIndex=${newIndex}`);
+    // CRITICAL: Add refinement battles to queue
+    if (refinementQueue && refinementQueue.queueBattlesForReorder) {
+      console.log(`🚨🚨🚨 [DRAG_DROP_ULTRA_TRACE] ===== QUEUEING REFINEMENT BATTLES =====`);
+      
+      // Get neighbors around the new position
+      const neighbors: number[] = [];
+      if (overIndex > 0) {
+        neighbors.push(displayRankings[overIndex - 1].id);
+        console.log(`🚨🚨🚨 [DRAG_DROP_ULTRA_TRACE] Added neighbor above: ${displayRankings[overIndex - 1].name} (${displayRankings[overIndex - 1].id})`);
+      }
+      if (overIndex < displayRankings.length - 1) {
+        neighbors.push(displayRankings[overIndex + 1].id);
+        console.log(`🚨🚨🚨 [DRAG_DROP_ULTRA_TRACE] Added neighbor below: ${displayRankings[overIndex + 1].name} (${displayRankings[overIndex + 1].id})`);
+      }
+      
+      console.log(`🚨🚨🚨 [DRAG_DROP_ULTRA_TRACE] All neighbors for validation: ${neighbors}`);
+      console.log(`🚨🚨🚨 [DRAG_DROP_ULTRA_TRACE] About to call queueBattlesForReorder...`);
       
       try {
-        onManualReorder(pokemonId, oldIndex, newIndex);
-        console.log(`🚨 [DRAG_END_MEGA_DEBUG] ✅ onManualReorder called successfully!`);
-        console.log(`🚨 [DRAG_END_MEGA_DEBUG] This should have triggered the refinement queue...`);
+        refinementQueue.queueBattlesForReorder(draggedPokemon.id, neighbors, overIndex);
+        console.log(`🚨🚨🚨 [DRAG_DROP_ULTRA_TRACE] ✅ queueBattlesForReorder called successfully`);
+        
+        // Check queue state after adding
+        console.log(`🚨🚨🚨 [DRAG_DROP_ULTRA_TRACE] Queue state after adding:`);
+        console.log(`🚨🚨🚨 [DRAG_DROP_ULTRA_TRACE] - hasRefinementBattles: ${refinementQueue.hasRefinementBattles}`);
+        console.log(`🚨🚨🚨 [DRAG_DROP_ULTRA_TRACE] - refinementBattleCount: ${refinementQueue.refinementBattleCount}`);
+        console.log(`🚨🚨🚨 [DRAG_DROP_ULTRA_TRACE] - queue contents: ${JSON.stringify(refinementQueue.queue || refinementQueue.refinementQueue)}`);
+        
       } catch (error) {
-        console.error(`🚨 [DRAG_END_MEGA_DEBUG] ❌ Error calling onManualReorder:`, error);
-        console.error(`🚨 [DRAG_END_MEGA_DEBUG] Error details:`, {
-          message: error.message,
-          stack: error.stack
-        });
+        console.error(`🚨🚨🚨 [DRAG_DROP_ULTRA_TRACE] ❌ Error calling queueBattlesForReorder:`, error);
       }
+      
+      // Dispatch events to notify other components
+      const refinementEvent = new CustomEvent('refinement-queue-updated', {
+        detail: { pokemonId: draggedPokemon.id, neighbors, newPosition: overIndex }
+      });
+      document.dispatchEvent(refinementEvent);
+      
+      console.log(`🚨🚨🚨 [DRAG_DROP_ULTRA_TRACE] Dispatching force-next-battle event...`);
+      const forceEvent = new CustomEvent('force-next-battle', {
+        detail: { 
+          pokemonId: draggedPokemon.id, 
+          pokemonName: draggedPokemon.name,
+          source: 'drag-drop',
+          timestamp: new Date().toISOString()
+        }
+      });
+      document.dispatchEvent(forceEvent);
+      console.log(`🚨🚨🚨 [DRAG_DROP_ULTRA_TRACE] ✅ force-next-battle event dispatched`);
+      
     } else {
-      console.error(`🚨 [DRAG_END_MEGA_DEBUG] ❌ onManualReorder is not a function:`, typeof onManualReorder);
+      console.error(`🚨🚨🚨 [DRAG_DROP_ULTRA_TRACE] ❌ NO REFINEMENT QUEUE OR queueBattlesForReorder METHOD!`);
+      console.error(`🚨🚨🚨 [DRAG_DROP_ULTRA_TRACE] refinementQueue:`, refinementQueue);
+      console.error(`🚨🚨🚨 [DRAG_DROP_ULTRA_TRACE] queueBattlesForReorder:`, refinementQueue?.queueBattlesForReorder);
     }
 
-    console.log(`🚨 [DRAG_END_MEGA_DEBUG] ===== DRAG END PROCESSING COMPLETE =====`);
-  }, [displayRankings, onManualReorder, onLocalReorder]);
-
-  console.log(`🚨 [DRAG_HOOK_DEBUG] handleDragEnd created:`, typeof handleDragEnd);
-
-  return {
-    sensors,
-    handleDragEnd
+    // Call the manual reorder callback
+    if (onManualReorder) {
+      console.log(`🚨🚨🚨 [DRAG_DROP_ULTRA_TRACE] Calling onManualReorder...`);
+      onManualReorder(draggedPokemon.id, activeIndex, overIndex);
+    }
+    
+    console.log(`🚨🚨🚨 [DRAG_DROP_ULTRA_TRACE] ===== DRAG END COMPLETE =====`);
   };
+
+  return { sensors, handleDragEnd };
 };
