@@ -118,28 +118,23 @@ const BattleContentCore: React.FC<BattleContentCoreProps> = ({
     console.log(`🔧 [RENDER_DECISION_MEGA_DEBUG] - showingMilestone flag is TRUE, about to render BattleContentMilestone`);
     
     return (
-      <div>
-        <div style={{ backgroundColor: 'red', color: 'white', padding: '10px', margin: '10px' }}>
-          DEBUG: MILESTONE COMPONENT RENDERED! battlesCompleted={battlesCompleted}, finalRankings.length={finalRankings?.length || 0}
-        </div>
-        <BattleContentMilestone
-          finalRankings={finalRankings}
-          battlesCompleted={battlesCompleted}
-          rankingGenerated={rankingGenerated}
-          activeTier={activeTier}
-          getSnapshotForMilestone={getSnapshotForMilestone}
-          onContinueBattles={handleContinueBattles}
-          performFullBattleReset={performFullBattleReset}
-          handleSaveRankings={handleSaveRankings}
-          setActiveTier={setActiveTier}
-          suggestRanking={suggestRanking}
-          removeSuggestion={removeSuggestion}
-          setShowingMilestone={setShowingMilestone}
-          resetMilestoneInProgress={resetMilestoneInProgress}
-          handleManualReorder={handleManualReorder}
-          pendingRefinements={pendingRefinements}
-        />
-      </div>
+      <BattleContentMilestone
+        finalRankings={finalRankings}
+        battlesCompleted={battlesCompleted}
+        rankingGenerated={rankingGenerated}
+        activeTier={activeTier}
+        getSnapshotForMilestone={getSnapshotForMilestone}
+        onContinueBattles={handleContinueBattles}
+        performFullBattleReset={performFullBattleReset}
+        handleSaveRankings={handleSaveRankings}
+        setActiveTier={setActiveTier}
+        suggestRanking={suggestRanking}
+        removeSuggestion={removeSuggestion}
+        setShowingMilestone={setShowingMilestone}
+        resetMilestoneInProgress={resetMilestoneInProgress}
+        handleManualReorder={handleManualReorder}
+        pendingRefinements={pendingRefinements}
+      />
     );
   }
 
