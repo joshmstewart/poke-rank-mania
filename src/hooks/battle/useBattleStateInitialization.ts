@@ -39,8 +39,7 @@ export const useBattleStateInitialization = (
   const refinementQueue = useSharedRefinementQueue();
 
   const enhancedStartNewBattle = useCallback((battleType: BattleType) => {
-    console.log("🧪 [ENHANCED_START] enhancedStartNewBattle function called!");
-    console.log("🧪 [ENHANCED_START] Checking for refinement battle...");
+    console.log("🧪 [ENHANCED_START] enhancedStartNewBattle function is initialized and ready.");
     
     const currentBattleCount = parseInt(localStorage.getItem('pokemon-battle-count') || '0', 10);
     console.log(`🔄 [FLASH_FIX] enhancedStartNewBattle called for ${battleType} - Battle ${String(currentBattleCount)}`);
@@ -51,6 +50,7 @@ export const useBattleStateInitialization = (
     console.log(`🧪 [ENHANCED_START] refinementQueue hasRefinementBattles: ${refinementQueue?.hasRefinementBattles}`);
     console.log(`🧪 [ENHANCED_START] refinementQueue count: ${refinementQueue?.refinementBattleCount}`);
     
+    console.log("🧪 [ENHANCED_START] Checking for refinement battle...");
     const refinementBattle = refinementQueue?.getNextRefinementBattle?.();
     console.log(`🧪 [ENHANCED_START] refinementBattle result:`, refinementBattle);
 
@@ -84,8 +84,6 @@ export const useBattleStateInitialization = (
       return [];
     }
   }, [allPokemon, providersData]);
-
-  console.log("🧪 [ENHANCED_START] enhancedStartNewBattle function is initialized and ready.");
 
   return {
     stateManagerData,
