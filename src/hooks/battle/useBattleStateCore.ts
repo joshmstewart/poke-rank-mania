@@ -17,7 +17,7 @@ export const useBattleStateCore = (
 ) => {
   console.log(`🔧 [BATTLE_STATE_CORE_ULTRA_DEBUG] useBattleStateCore called with ${allPokemon.length} Pokemon`);
   
-  // Core state
+  // CRITICAL FIX: All state hooks must be called unconditionally and in the same order
   const [currentBattle, setCurrentBattleRaw] = useState<Pokemon[]>([]);
   const [battleResults, setBattleResults] = useState<SingleBattle[]>([]);
   const [battlesCompleted, setBattlesCompleted] = useState(0);
@@ -55,13 +55,14 @@ export const useBattleStateCore = (
 
   console.log(`🔧 [BATTLE_STATE_CORE_ULTRA_DEBUG] Hook state initialized, calling battleStarter and refinementQueue hooks`);
 
-  // CRITICAL FIX: Pass a function that returns the current rankings instead of the array directly
+  // CRITICAL FIX: getCurrentRankings must be defined before other hooks that use it
   const getCurrentRankings = useCallback(() => {
     console.log(`🔧 [RANKINGS_DEBUG] getCurrentRankings called - finalRankings length: ${finalRankings.length}`);
     console.log(`🔧 [RANKINGS_DEBUG] Sample rankings:`, finalRankings.slice(0, 3).map(p => `${p.name} (${p.id})`));
     return finalRankings;
   }, [finalRankings]);
   
+  // CRITICAL FIX: All custom hooks must be called in the same order every time
   const { startNewBattle } = useBattleStarterCore(allPokemon, getCurrentRankings);
   const refinementQueue = useSharedRefinementQueue();
 
@@ -164,7 +165,7 @@ export const useBattleStateCore = (
     console.log('🔄 [SUGGESTIONS_DEBUG] Clearing all suggestions');
   }, []);
 
-  // Battle state handlers with all required parameters
+  // CRITICAL FIX: All custom hooks that depend on state must be called after state is defined
   const handlers = useBattleStateHandlers(
     allPokemon,
     currentBattle,
@@ -219,7 +220,7 @@ export const useBattleStateCore = (
     handlers.startNewBattleWrapper
   );
 
-  // Use extracted effects hook
+  // CRITICAL FIX: All useEffect hooks must be called in the same order every time
   const { processingRef } = useBattleStateEffects(
     allPokemon,
     battleType,
@@ -237,14 +238,13 @@ export const useBattleStateCore = (
     setFinalRankings
   );
 
-  // ENHANCED: Completion percentage effect with logging
+  // CRITICAL FIX: All useEffect hooks must be called unconditionally
   useEffect(() => {
     const percentage = milestoneHandlers.calculateCompletionPercentage();
     console.log(`🔧 [COMPLETION_DEBUG] Calculated completion percentage: ${percentage}% for ${battlesCompleted} battles`);
     setCompletionPercentage(percentage);
   }, [battlesCompleted, milestoneHandlers.calculateCompletionPercentage]);
 
-  // ENHANCED: Log state changes for debugging
   useEffect(() => {
     console.log(`🔧 [STATE_DEBUG] showingMilestone changed to: ${showingMilestone}`);
     if (showingMilestone) {
