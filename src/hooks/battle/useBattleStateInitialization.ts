@@ -38,6 +38,28 @@ export const useBattleStateInitialization = (
   // CRITICAL FIX: Access refinement queue directly
   const refinementQueue = useSharedRefinementQueue();
 
+  // CRITICAL FIX: Create a proper random battle generator that uses the full Pokemon list
+  const generateRandomBattle = useCallback((battleType: BattleType): Pokemon[] => {
+    const battleSize = battleType === "pairs" ? 2 : 3;
+    
+    console.log(`🎲 [RANDOM_BATTLE_FIX] Generating truly random battle with ${allPokemon.length} Pokemon`);
+    
+    if (!allPokemon || allPokemon.length === 0) {
+      console.error(`🎲 [RANDOM_BATTLE_FIX] No Pokemon available for battle generation`);
+      return [];
+    }
+    
+    // Create a copy of the Pokemon array and shuffle it
+    const shuffledPokemon = [...allPokemon].sort(() => Math.random() - 0.5);
+    
+    // Take the first battleSize Pokemon from the shuffled array
+    const selectedPokemon = shuffledPokemon.slice(0, battleSize);
+    
+    console.log(`🎲 [RANDOM_BATTLE_FIX] Generated random battle: ${selectedPokemon.map(p => p.name).join(' vs ')}`);
+    
+    return selectedPokemon;
+  }, [allPokemon]);
+
   const enhancedStartNewBattle = useCallback((battleType: BattleType) => {
     console.log("🧪 [ENHANCED_START] enhancedStartNewBattle function is initialized and ready.");
     
@@ -73,17 +95,17 @@ export const useBattleStateInitialization = (
       console.log(`🧪 [ENHANCED_START] No refinement battle available, falling back to random`);
     }
 
-    // 🧠 Fallback to random
-    console.log(`🧪 [ENHANCED_START] Calling providersData.startNewBattle for fallback...`);
-    const result = providersData.startNewBattle(battleType);
+    // 🧠 CRITICAL FIX: Use our new random battle generator instead of providersData.startNewBattle
+    console.log(`🧪 [ENHANCED_START] Calling generateRandomBattle for truly random selection...`);
+    const result = generateRandomBattle(battleType);
     if (result && result.length > 0) {
-      console.log(`✅ [FLASH_FIX] New battle generated, setting immediately: ${result.map(p => p.name).join(', ')}`);
+      console.log(`✅ [FLASH_FIX] New random battle generated: ${result.map(p => p.name).join(', ')}`);
       return result;
     } else {
       console.warn(`❌ [FLASH_FIX] No battle generated, result is:`, result);
       return [];
     }
-  }, [allPokemon, providersData]);
+  }, [allPokemon, providersData, generateRandomBattle]);
 
   return {
     stateManagerData,
