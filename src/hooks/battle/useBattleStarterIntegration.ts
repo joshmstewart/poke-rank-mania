@@ -54,9 +54,14 @@ export const useBattleStarterIntegration = (
     console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] - refinementQueue exists: ${!!refinementQueue}`);
     
     if (refinementQueue) {
-      console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] - refinementQueue.hasRefinementBattles: ${refinementQueue.hasRefinementBattles}`);
-      console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] - refinementQueue.refinementBattleCount: ${refinementQueue.refinementBattleCount}`);
-      console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] - refinementQueue.queue: ${JSON.stringify(refinementQueue.queue || refinementQueue.refinementQueue || [])}`);
+      // CRITICAL FIX: Use the actual queue arrays directly instead of computed properties
+      const actualQueue = refinementQueue.queue || refinementQueue.refinementQueue || [];
+      const actualCount = actualQueue.length;
+      
+      console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] - actual queue array: ${JSON.stringify(actualQueue)}`);
+      console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] - actual queue length: ${actualCount}`);
+      console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] - hasRefinementBattles (computed): ${refinementQueue.hasRefinementBattles}`);
+      console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] - refinementBattleCount (computed): ${refinementQueue.refinementBattleCount}`);
     }
     
     if (!battleStarter) {
@@ -64,18 +69,19 @@ export const useBattleStarterIntegration = (
       return [];
     }
     
-    // TRACE: Check refinement queue with EXTREME detail
-    console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] ===== CHECKING REFINEMENT QUEUE =====`);
-    const hasQueue = refinementQueue && refinementQueue.hasRefinementBattles;
-    const hasCount = refinementQueue && refinementQueue.refinementBattleCount > 0;
+    // CRITICAL FIX: Check refinement queue using actual queue array length
+    console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] ===== CHECKING REFINEMENT QUEUE (FIXED) =====`);
     
-    console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] Refinement checks:`);
-    console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] - hasQueue: ${hasQueue}`);
-    console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] - hasCount: ${hasCount}`);
-    console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] - Both true: ${hasQueue && hasCount}`);
+    const actualQueue = refinementQueue?.queue || refinementQueue?.refinementQueue || [];
+    const hasActualBattles = actualQueue.length > 0;
     
-    if (hasQueue && hasCount) {
-      console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] ✅ REFINEMENT QUEUE HAS ${refinementQueue.refinementBattleCount} BATTLES!`);
+    console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] FIXED Refinement checks:`);
+    console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] - actualQueue: ${JSON.stringify(actualQueue)}`);
+    console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] - actualQueue.length: ${actualQueue.length}`);
+    console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] - hasActualBattles: ${hasActualBattles}`);
+    
+    if (hasActualBattles) {
+      console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] ✅ REFINEMENT QUEUE HAS ${actualQueue.length} BATTLES!`);
       
       // TRACE: Get next refinement
       const nextRefinement = refinementQueue.getNextRefinementBattle();
@@ -130,8 +136,8 @@ export const useBattleStarterIntegration = (
     } else {
       console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] ❌ No refinement queue or no battles in queue`);
       console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] - refinementQueue exists: ${!!refinementQueue}`);
-      console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] - hasRefinementBattles: ${refinementQueue?.hasRefinementBattles}`);
-      console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] - refinementBattleCount: ${refinementQueue?.refinementBattleCount}`);
+      console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] - actualQueue: ${JSON.stringify(actualQueue)}`);
+      console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] - actualQueue.length: ${actualQueue.length}`);
     }
     
     // No refinement battles - proceed with regular generation
