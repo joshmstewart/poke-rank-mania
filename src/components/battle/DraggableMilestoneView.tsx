@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import {
   DndContext,
@@ -44,6 +45,9 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
   const [localRankings, setLocalRankings] = useState(formattedRankings);
   const [localPendingRefinements, setLocalPendingRefinements] = useState(pendingRefinements);
   
+  // CRITICAL FIX: Track pending counts per Pokemon to only clear when ALL battles are done
+  const [pendingBattleCounts, setPendingBattleCounts] = useState<Map<number, number>>(new Map());
+  
   const maxItems = getMaxItemsForTier();
   const displayRankings = localRankings.slice(0, Math.min(milestoneDisplayCount, maxItems));
   const hasMoreToLoad = milestoneDisplayCount < maxItems;
@@ -53,7 +57,8 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
     const handleRefinementQueueUpdate = (event: CustomEvent) => {
       console.log(`🔄 [PENDING_UPDATE] Received refinement queue update:`, event.detail);
       
-      const { pokemonId } = event.detail;
+      const { pokemonId, neighbors } = event.detail;
+      const battleCount = neighbors ? neighbors.length : 1;
       
       setLocalPendingRefinements(prev => {
         const newSet = new Set(prev);
@@ -61,9 +66,16 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
         console.log(`🔄 [PENDING_UPDATE] Updated local pending refinements:`, Array.from(newSet));
         return newSet;
       });
+
+      // CRITICAL FIX: Track how many battles this Pokemon needs to complete
+      setPendingBattleCounts(prev => {
+        const newMap = new Map(prev);
+        newMap.set(pokemonId, battleCount);
+        console.log(`🔄 [PENDING_COUNT] Set ${pokemonId} to ${battleCount} pending battles`);
+        return newMap;
+      });
     };
 
-    // CRITICAL FIX: Handle persistent pending state
     const handlePersistPendingState = (event: CustomEvent) => {
       console.log(`🔄 [PERSIST_PENDING] Persisting pending state for:`, event.detail);
       const { pokemonId } = event.detail;
@@ -77,20 +89,41 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
     };
     
     const handleBattleComplete = (event: CustomEvent) => {
-      console.log(`🔄 [PENDING_CLEAR] Battle completed, clearing pending states`);
+      console.log(`🔄 [PENDING_CLEAR] Battle completed event:`, event.detail);
       const { pokemonIds } = event.detail;
       
       if (pokemonIds && Array.isArray(pokemonIds)) {
-        setLocalPendingRefinements(prev => {
-          const newSet = new Set(prev);
-          pokemonIds.forEach((id: number) => newSet.delete(id));
-          console.log(`🔄 [PENDING_CLEAR] Removed completed Pokemon:`, pokemonIds);
-          return newSet;
+        pokemonIds.forEach((pokemonId: number) => {
+          setPendingBattleCounts(prev => {
+            const newMap = new Map(prev);
+            const currentCount = newMap.get(pokemonId) || 0;
+            const newCount = Math.max(0, currentCount - 1);
+            
+            console.log(`🔄 [PENDING_COUNT] Pokemon ${pokemonId}: ${currentCount} -> ${newCount} battles remaining`);
+            
+            if (newCount === 0) {
+              console.log(`🔄 [PENDING_CLEAR] All battles complete for ${pokemonId}, removing from pending`);
+              newMap.delete(pokemonId);
+              
+              setLocalPendingRefinements(prevPending => {
+                const newPendingSet = new Set(prevPending);
+                newPendingSet.delete(pokemonId);
+                console.log(`🔄 [PENDING_CLEAR] Removed ${pokemonId} from pending set`);
+                return newPendingSet;
+              });
+            } else {
+              newMap.set(pokemonId, newCount);
+              console.log(`🔄 [PENDING_COUNT] Pokemon ${pokemonId} still has ${newCount} battles pending`);
+            }
+            
+            return newMap;
+          });
         });
       } else {
         // If no specific Pokemon IDs, clear all pending
         console.log(`🔄 [PENDING_CLEAR] No specific Pokemon IDs, clearing all pending`);
         setLocalPendingRefinements(new Set());
+        setPendingBattleCounts(new Map());
       }
     };
     
@@ -209,14 +242,11 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
             items={displayRankings.map(p => p.id)} 
             strategy={rectSortingStrategy}
           >
-            <div 
-              className="grid grid-cols-5 gap-4"
-              onPointerDown={handleGridPointerDown}
-              onMouseDown={handleGridMouseDown}
-            >
+            <div className="grid grid-cols-5 gap-4">
               {displayRankings.map((pokemon, index) => {
                 const isPending = localPendingRefinements.has(pokemon.id);
-                console.log(`🚨 [DND_SETUP_DEBUG] Rendering card ${index}: ${pokemon.name} (ID: ${pokemon.id}) - Pending: ${isPending}`);
+                const pendingCount = pendingBattleCounts.get(pokemon.id) || 0;
+                console.log(`🚨 [DND_SETUP_DEBUG] Rendering card ${index}: ${pokemon.name} (ID: ${pokemon.id}) - Pending: ${isPending}, Count: ${pendingCount}`);
                 
                 return (
                   <DraggablePokemonCard

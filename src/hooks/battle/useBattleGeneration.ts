@@ -38,10 +38,17 @@ export const useBattleGeneration = (allPokemon: Pokemon[]) => {
           console.log(`🎯 [REFINEMENT_PRIORITY] ✅ RETURNING REFINEMENT BATTLE: ${validated.map(p => p.name).join(' vs ')}`);
           console.log(`🎯 [REFINEMENT_PRIORITY] Reason: ${nextRefinement.reason}`);
           
-          // CRITICAL FIX: Mark this refinement as consumed immediately
+          // CRITICAL FIX: Mark this refinement as consumed and dispatch completion event
           setTimeout(() => {
-            console.log(`🎯 [REFINEMENT_CONSUMPTION] Consuming refinement battle after return`);
+            console.log(`🎯 [REFINEMENT_CONSUMPTION] Consuming refinement battle and dispatching completion`);
             refinementQueue.popRefinementBattle();
+            
+            // Dispatch completion event with the Pokemon involved
+            const completionEvent = new CustomEvent('refinement-battle-completed', {
+              detail: { pokemonIds: [primary.id, opponent.id] }
+            });
+            document.dispatchEvent(completionEvent);
+            console.log(`🎯 [REFINEMENT_COMPLETION] Dispatched completion event for Pokemon: [${primary.id}, ${opponent.id}]`);
           }, 100);
           
           return validated;
