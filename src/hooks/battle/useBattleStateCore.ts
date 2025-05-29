@@ -1,4 +1,3 @@
-
 import { useCallback, useMemo, useEffect } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
@@ -49,11 +48,17 @@ export const useBattleStateCore = (
   const { startNewBattle: startNewBattleCore } = useBattleStarterCore(allPokemon, getCurrentRankings);
   const refinementQueue = useSharedRefinementQueue();
 
-  // Create a simple wrapper for startNewBattle that matches the expected signature
+  // Create a wrapper for startNewBattle that matches the expected signature and passes the correct config
   const startNewBattle = useCallback((battleType: BattleType) => {
     console.log(`🚀 [START_NEW_BATTLE_FIX] Creating new battle for type: ${battleType}`);
-    return startNewBattleCore(battleType);
-  }, [startNewBattleCore]);
+    return startNewBattleCore({
+      allPokemon,
+      currentRankings: getCurrentRankings(),
+      battleType,
+      selectedGeneration: stateData.selectedGeneration,
+      freezeList: stateData.frozenPokemon
+    });
+  }, [startNewBattleCore, allPokemon, getCurrentRankings, stateData.selectedGeneration, stateData.frozenPokemon]);
 
   // Enhanced setFinalRankings wrapper with detailed logging
   const setFinalRankingsWithLogging = useCallback((rankings: any) => {
