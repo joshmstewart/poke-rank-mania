@@ -46,13 +46,13 @@ const PokemonCardContent: React.FC<PokemonCardContentProps> = ({
         </PokemonInfoModal>
       </div>
 
-      {/* Ranking number */}
-      <div className={`absolute top-2 left-2 w-7 h-7 bg-white rounded-full flex items-center justify-center text-sm font-bold z-10 shadow-sm border border-gray-200 pointer-events-none ${isPending ? 'mt-7' : ''}`}>
+      {/* Ranking number - stays in same position regardless of pending state */}
+      <div className="absolute top-2 left-2 w-7 h-7 bg-white rounded-full flex items-center justify-center text-sm font-bold z-10 shadow-sm border border-gray-200 pointer-events-none">
         <span className="text-black">{index + 1}</span>
       </div>
       
-      {/* Pokemon image */}
-      <div className={`flex-1 flex justify-center items-center px-2 pb-1 pointer-events-none ${isPending ? 'pt-9' : 'pt-6'}`}>
+      {/* Pokemon image - stays in same position */}
+      <div className="flex-1 flex justify-center items-center px-2 pb-1 pt-6 pointer-events-none">
         <img 
           src={pokemon.image} 
           alt={pokemon.name}
@@ -64,7 +64,7 @@ const PokemonCardContent: React.FC<PokemonCardContentProps> = ({
         />
       </div>
       
-      {/* Pokemon info */}
+      {/* Pokemon info - stays in same position */}
       <div className="bg-white text-center py-2 px-2 mt-auto border-t border-gray-100 pointer-events-none">
         <h3 className="font-bold text-gray-800 text-sm leading-tight mb-1 pointer-events-none">
           {pokemon.name}
