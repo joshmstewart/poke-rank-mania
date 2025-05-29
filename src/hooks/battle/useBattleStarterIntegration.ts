@@ -44,6 +44,7 @@ export const useBattleStarterIntegration = (
 
   const startNewBattle = (battleType: any) => {
     console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] ===== startNewBattle CALLED =====`);
+    console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] THIS IS THE ACTUAL startNewBattle FUNCTION BEING CALLED`);
     console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] Battle type: ${battleType}`);
     console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] Timestamp: ${new Date().toISOString()}`);
     console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] Call stack:`, new Error().stack?.split('\n').slice(1, 5));
@@ -53,24 +54,70 @@ export const useBattleStarterIntegration = (
     console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] - battleStarter exists: ${!!battleStarter}`);
     console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] - refinementQueue exists: ${!!refinementQueue}`);
     
+    // CRITICAL FIX: Check refinement queue FIRST ALWAYS
+    console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] ===== REFINEMENT QUEUE CHECK (TOP PRIORITY) =====`);
+    
     if (refinementQueue) {
-      // CRITICAL DEBUG: Log the EXACT refinement queue state
       console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] REFINEMENT QUEUE DEEP INSPECTION:`);
-      console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] - refinementQueue object keys:`, Object.keys(refinementQueue));
-      console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] - refinementQueue.queue:`, refinementQueue.queue);
-      console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] - refinementQueue.refinementQueue:`, refinementQueue.refinementQueue);
-      console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] - typeof refinementQueue.getNextRefinementBattle:`, typeof refinementQueue.getNextRefinementBattle);
       console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] - refinementQueue.hasRefinementBattles:`, refinementQueue.hasRefinementBattles);
       console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] - refinementQueue.refinementBattleCount:`, refinementQueue.refinementBattleCount);
       
       // CRITICAL FIX: Use the actual queue arrays directly instead of computed properties
       const actualQueue = refinementQueue.queue || refinementQueue.refinementQueue || [];
-      const actualCount = actualQueue.length;
-      
       console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] - actual queue array: ${JSON.stringify(actualQueue)}`);
-      console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] - actual queue length: ${actualCount}`);
-      console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] - hasRefinementBattles (computed): ${refinementQueue.hasRefinementBattles}`);
-      console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] - refinementBattleCount (computed): ${refinementQueue.refinementBattleCount}`);
+      console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] - actual queue length: ${actualQueue.length}`);
+      
+      // CRITICAL FIX: ALWAYS check the refinement queue first
+      if (actualQueue.length > 0) {
+        console.log(`🎯 [REFINEMENT_QUEUE_PROCESSING] ✅ REFINEMENT QUEUE HAS ${actualQueue.length} BATTLES - USING QUEUE!`);
+        
+        const nextRefinement = refinementQueue.getNextRefinementBattle();
+        console.log(`🎯 [REFINEMENT_QUEUE_PROCESSING] Next refinement battle:`, nextRefinement);
+        
+        if (nextRefinement) {
+          console.log(`🎯 [REFINEMENT_QUEUE_PROCESSING] ✅ CREATING REFINEMENT BATTLE!`);
+          console.log(`🎯 [REFINEMENT_QUEUE_PROCESSING] Primary: ${nextRefinement.primaryPokemonId}, Opponent: ${nextRefinement.opponentPokemonId}`);
+          console.log(`🎯 [REFINEMENT_QUEUE_PROCESSING] Reason: ${nextRefinement.reason}`);
+          
+          // TRACE: Get available Pokemon
+          const availablePokemon = battleStarter?.getAllPokemon() || [];
+          console.log(`🎯 [REFINEMENT_QUEUE_PROCESSING] Available Pokemon count: ${availablePokemon.length}`);
+          
+          // TRACE: Find specific Pokemon
+          const primary = availablePokemon.find(p => p.id === nextRefinement.primaryPokemonId);
+          const opponent = availablePokemon.find(p => p.id === nextRefinement.opponentPokemonId);
+          
+          console.log(`🎯 [REFINEMENT_QUEUE_PROCESSING] Primary found: ${!!primary} (${primary?.name})`);
+          console.log(`🎯 [REFINEMENT_QUEUE_PROCESSING] Opponent found: ${!!opponent} (${opponent?.name})`);
+
+          if (primary && opponent) {
+            const refinementBattle = [primary, opponent];
+            
+            console.log(`🎯 [REFINEMENT_QUEUE_PROCESSING] ✅ SETTING REFINEMENT BATTLE: ${primary.name} vs ${opponent.name}`);
+            console.log(`🎯 [REFINEMENT_QUEUE_PROCESSING] About to call setCurrentBattle with:`, refinementBattle.map(p => p.name));
+            
+            setCurrentBattle(refinementBattle);
+            setSelectedPokemon([]);
+            
+            console.log(`🎯 [REFINEMENT_QUEUE_PROCESSING] ✅ REFINEMENT BATTLE SET - RETURNING IT`);
+            return refinementBattle;
+          } else {
+            console.error(`🎯 [REFINEMENT_QUEUE_PROCESSING] ❌ POKEMON NOT FOUND IN FILTERED LIST`);
+            console.error(`🎯 [REFINEMENT_QUEUE_PROCESSING] Primary ${nextRefinement.primaryPokemonId} found: ${!!primary}`);
+            console.error(`🎯 [REFINEMENT_QUEUE_PROCESSING] Opponent ${nextRefinement.opponentPokemonId} found: ${!!opponent}`);
+            
+            refinementQueue.popRefinementBattle();
+            // Try again recursively
+            return startNewBattle(battleType);
+          }
+        } else {
+          console.log(`🎯 [REFINEMENT_QUEUE_PROCESSING] ❌ getNextRefinementBattle returned null despite queue having battles`);
+        }
+      } else {
+        console.log(`🎯 [REFINEMENT_QUEUE_PROCESSING] ❌ No refinement queue or no battles in queue`);
+        console.log(`🎯 [REFINEMENT_QUEUE_PROCESSING] - actualQueue: ${JSON.stringify(actualQueue)}`);
+        console.log(`🎯 [REFINEMENT_QUEUE_PROCESSING] - actualQueue.length: ${actualQueue.length}`);
+      }
     }
     
     if (!battleStarter) {
@@ -78,88 +125,9 @@ export const useBattleStarterIntegration = (
       return [];
     }
     
-    // CRITICAL FIX: Check refinement queue using actual queue array length
-    console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] ===== CHECKING REFINEMENT QUEUE (FIXED) =====`);
-    
-    const actualQueue = refinementQueue?.queue || refinementQueue?.refinementQueue || [];
-    const hasActualBattles = actualQueue.length > 0;
-    
-    console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] FIXED Refinement checks:`);
-    console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] - actualQueue: ${JSON.stringify(actualQueue)}`);
-    console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] - actualQueue.length: ${actualQueue.length}`);
-    console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] - hasActualBattles: ${hasActualBattles}`);
-    
-    // CRITICAL DEBUG: Try calling getNextRefinementBattle regardless and see what happens
-    console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] DEBUGGING: Calling getNextRefinementBattle regardless of queue state...`);
-    let nextRefinement = null;
-    try {
-      nextRefinement = refinementQueue.getNextRefinementBattle();
-      console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] DEBUGGING: getNextRefinementBattle returned:`, nextRefinement);
-    } catch (error) {
-      console.error(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] DEBUGGING: getNextRefinementBattle threw error:`, error);
-    }
-    
-    if (hasActualBattles) {
-      console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] ✅ REFINEMENT QUEUE HAS ${actualQueue.length} BATTLES!`);
-      
-      if (nextRefinement) {
-        console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] ✅ CREATING REFINEMENT BATTLE!`);
-        console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] Primary: ${nextRefinement.primaryPokemonId}, Opponent: ${nextRefinement.opponentPokemonId}`);
-        console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] Reason: ${nextRefinement.reason}`);
-        
-        // TRACE: Get available Pokemon
-        const availablePokemon = battleStarter.getAllPokemon();
-        console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] Available Pokemon count: ${availablePokemon.length}`);
-        console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] Available Pokemon IDs (first 20):`, availablePokemon.slice(0, 20).map(p => p.id));
-        
-        // TRACE: Find specific Pokemon
-        console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] Looking for Pokemon ${nextRefinement.primaryPokemonId} and ${nextRefinement.opponentPokemonId}`);
-        
-        const primary = availablePokemon.find(p => p.id === nextRefinement.primaryPokemonId);
-        const opponent = availablePokemon.find(p => p.id === nextRefinement.opponentPokemonId);
-        
-        console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] Primary found: ${!!primary} (${primary?.name})`);
-        console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] Opponent found: ${!!opponent} (${opponent?.name})`);
-
-        if (primary && opponent) {
-          const refinementBattle = [primary, opponent];
-          
-          console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] ✅ SETTING REFINEMENT BATTLE: ${primary.name} vs ${opponent.name}`);
-          console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] About to call setCurrentBattle with:`, refinementBattle.map(p => p.name));
-          
-          setCurrentBattle(refinementBattle);
-          setSelectedPokemon([]);
-          
-          console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] ✅ REFINEMENT BATTLE SET - RETURNING IT`);
-          return refinementBattle;
-        } else {
-          console.error(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] ❌ POKEMON NOT FOUND IN FILTERED LIST`);
-          console.error(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] Primary ${nextRefinement.primaryPokemonId} found: ${!!primary}`);
-          console.error(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] Opponent ${nextRefinement.opponentPokemonId} found: ${!!opponent}`);
-          console.error(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] This means the Pokemon are filtered out - popping invalid battle`);
-          
-          // TRACE: Log the available IDs for debugging
-          console.error(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] All available Pokemon IDs:`, availablePokemon.map(p => p.id).sort((a, b) => a - b));
-          
-          refinementQueue.popRefinementBattle();
-          // Try again recursively
-          return startNewBattle(battleType);
-        }
-      } else {
-        console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] ❌ getNextRefinementBattle returned null/undefined despite queue having battles`);
-        console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] This indicates a problem with the getNextRefinementBattle method`);
-      }
-    } else {
-      console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] ❌ No refinement queue or no battles in queue`);
-      console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] - refinementQueue exists: ${!!refinementQueue}`);
-      console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] - actualQueue: ${JSON.stringify(actualQueue)}`);
-      console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] - actualQueue.length: ${actualQueue.length}`);
-    }
-    
     // CRITICAL DEBUG: Add logs when falling back to regular generation
     console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] ===== FALLING BACK TO REGULAR GENERATION =====`);
     console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] Reason: No valid refinement battles found`);
-    console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] This means either: 1) No queue, 2) Empty queue, 3) Invalid Pokemon in queue`);
     
     // No refinement battles - proceed with regular generation
     console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] ===== NO REFINEMENT BATTLES - REGULAR GENERATION =====`);
