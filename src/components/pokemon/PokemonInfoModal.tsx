@@ -11,9 +11,11 @@ import {
 import { Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePokemonFlavorText } from "@/hooks/pokemon/usePokemonFlavorText";
+import { usePokemonTCGCard } from "@/hooks/pokemon/usePokemonTCGCard";
 import PokemonBasicInfo from "./PokemonBasicInfo";
 import PokemonStats from "./PokemonStats";
 import PokemonDescription from "./PokemonDescription";
+import PokemonTCGCardDisplay from "./PokemonTCGCardDisplay";
 
 interface PokemonInfoModalProps {
   pokemon: Pokemon;
@@ -26,6 +28,7 @@ const PokemonInfoModal: React.FC<PokemonInfoModalProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const { flavorText, isLoadingFlavor } = usePokemonFlavorText(pokemon.id, isOpen);
+  const { tcgCard, isLoading: isLoadingTCG, error: tcgError, hasTcgCard } = usePokemonTCGCard(pokemon.name, isOpen);
   
   useEffect(() => {
     console.log(`🔘 [MODAL_DEBUG] PokemonInfoModal for ${pokemon.name} mounted, isOpen: ${isOpen}`);
@@ -75,6 +78,7 @@ const PokemonInfoModal: React.FC<PokemonInfoModalProps> = ({
   };
   
   console.log(`🔘 [MODAL_DEBUG] Rendering PokemonInfoModal for ${pokemon.name}, isOpen: ${isOpen}`);
+  console.log(`🃏 [TCG_DEBUG] TCG card state for ${pokemon.name}:`, { hasTcgCard, isLoadingTCG, tcgError });
   
   return (
     <Dialog open={isOpen} onOpenChange={handleDialogOpen}>
@@ -91,7 +95,7 @@ const PokemonInfoModal: React.FC<PokemonInfoModalProps> = ({
         )}
       </DialogTrigger>
       <DialogContent 
-        className="max-w-2xl" 
+        className="max-w-4xl max-h-[90vh] overflow-y-auto" 
         onClick={handleDialogClick}
         data-radix-dialog-content="true"
         style={{ 
@@ -107,19 +111,29 @@ const PokemonInfoModal: React.FC<PokemonInfoModalProps> = ({
           <DialogTitle className="text-2xl font-bold text-center">
             {pokemon.name}
           </DialogTitle>
+          {isLoadingTCG && (
+            <p className="text-sm text-gray-500 text-center">Loading TCG card...</p>
+          )}
+          {tcgError && (
+            <p className="text-sm text-red-500 text-center">TCG card unavailable</p>
+          )}
         </DialogHeader>
 
-        {/* Game-inspired layout */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Left side - Pokemon image and basic info */}
-          <PokemonBasicInfo pokemon={pokemon} />
+        {/* Display TCG card if available, otherwise fallback to original layout */}
+        {hasTcgCard && tcgCard ? (
+          <PokemonTCGCardDisplay tcgCard={tcgCard} />
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Left side - Pokemon image and basic info */}
+            <PokemonBasicInfo pokemon={pokemon} />
 
-          {/* Right side - Stats and description */}
-          <div className="space-y-4">
-            <PokemonStats pokemon={pokemon} />
-            <PokemonDescription flavorText={flavorText} isLoadingFlavor={isLoadingFlavor} />
+            {/* Right side - Stats and description */}
+            <div className="space-y-4">
+              <PokemonStats pokemon={pokemon} />
+              <PokemonDescription flavorText={flavorText} isLoadingFlavor={isLoadingFlavor} />
+            </div>
           </div>
-        </div>
+        )}
       </DialogContent>
     </Dialog>
   );
