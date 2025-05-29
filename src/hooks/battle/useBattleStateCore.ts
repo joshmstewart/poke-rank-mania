@@ -1,7 +1,9 @@
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
-import { validateBattlePokemon } from "@/services/pokemon/api/utils";
+import { useBattleGeneration } from "./useBattleGeneration";
+import { useBattleRankings } from "./useBattleRankings";
+import { useBattleMilestones } from "./useBattleMilestones";
 
 export const useBattleStateCore = (
   allPokemon: Pokemon[],
@@ -28,78 +30,15 @@ export const useBattleStateCore = (
   const [isProcessingResult, setIsProcessingResult] = useState(false);
   const [completionPercentage, setCompletionPercentage] = useState(0);
 
-  // CRITICAL FIX: Track recently used Pokemon with proper management
-  const [recentlyUsedPokemon, setRecentlyUsedPokemon] = useState<Set<number>>(new Set());
-
-  // Milestones
-  const milestones = useMemo(() => [10, 25, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 600, 700, 800, 900, 1000], []);
-
-  // CRITICAL FIX: Completely new battle generation with proper repetition prevention
-  const generateNewBattle = useCallback((battleType: BattleType): Pokemon[] => {
-    const battleSize = battleType === "pairs" ? 2 : 3;
-    const battleNumber = battlesCompleted + 1;
-    
-    console.log(`🎲🎲🎲 [ANTI_REPEAT_GENERATION] ===== Battle #${battleNumber} Generation =====`);
-    console.log(`🎲🎲🎲 [ANTI_REPEAT_GENERATION] Battle size: ${battleSize}`);
-    console.log(`🎲🎲🎲 [ANTI_REPEAT_GENERATION] Total Pokemon: ${allPokemon.length}`);
-    console.log(`🎲🎲🎲 [ANTI_REPEAT_GENERATION] Recently used Pokemon count: ${recentlyUsedPokemon.size}`);
-    console.log(`🎲🎲🎲 [ANTI_REPEAT_GENERATION] Recently used IDs: [${Array.from(recentlyUsedPokemon).join(', ')}]`);
-    
-    if (!allPokemon || allPokemon.length < battleSize) {
-      console.error(`🎲🎲🎲 [ANTI_REPEAT_GENERATION] Not enough Pokemon: need ${battleSize}, have ${allPokemon.length}`);
-      return [];
-    }
-    
-    // Step 1: Filter out recently used Pokemon FIRST
-    let availablePokemon = allPokemon.filter(pokemon => !recentlyUsedPokemon.has(pokemon.id));
-    console.log(`🎲🎲🎲 [ANTI_REPEAT_GENERATION] Available after filtering recent: ${availablePokemon.length}`);
-    
-    // Step 2: If not enough available, reduce the recent list size
-    if (availablePokemon.length < battleSize) {
-      console.log(`🎲🎲🎲 [ANTI_REPEAT_GENERATION] Not enough non-recent Pokemon, reducing recent list`);
-      
-      // Keep only the last 10 instead of 20
-      const recentArray = Array.from(recentlyUsedPokemon);
-      const reducedRecent = new Set(recentArray.slice(-10));
-      setRecentlyUsedPokemon(reducedRecent);
-      
-      availablePokemon = allPokemon.filter(pokemon => !reducedRecent.has(pokemon.id));
-      console.log(`🎲🎲🎲 [ANTI_REPEAT_GENERATION] Available after reducing recent list: ${availablePokemon.length}`);
-      
-      // If still not enough, clear recent list completely
-      if (availablePokemon.length < battleSize) {
-        console.log(`🎲🎲🎲 [ANTI_REPEAT_GENERATION] Still not enough, clearing recent list completely`);
-        setRecentlyUsedPokemon(new Set());
-        availablePokemon = [...allPokemon];
-      }
-    }
-    
-    // Step 3: Use crypto random for true randomness
-    const selected: Pokemon[] = [];
-    const availableCopy = [...availablePokemon];
-    
-    // Fisher-Yates shuffle with crypto random
-    for (let i = availableCopy.length - 1; i > 0; i--) {
-      const randomArray = new Uint32Array(1);
-      crypto.getRandomValues(randomArray);
-      const j = Math.floor((randomArray[0] / (0xFFFFFFFF + 1)) * (i + 1));
-      [availableCopy[i], availableCopy[j]] = [availableCopy[j], availableCopy[i]];
-    }
-    
-    // Take the first battleSize Pokemon from shuffled array
-    const result = availableCopy.slice(0, battleSize);
-    const validated = validateBattlePokemon(result);
-    
-    console.log(`🎲🎲🎲 [ANTI_REPEAT_GENERATION] Selected Pokemon: ${validated.map(p => `${p.name}(${p.id})`).join(' vs ')}`);
-    console.log(`🎲🎲🎲 [ANTI_REPEAT_GENERATION] ===== Generation Complete =====`);
-    
-    return validated;
-  }, [allPokemon, battlesCompleted, recentlyUsedPokemon]);
+  // Use smaller hooks
+  const { generateNewBattle, addToRecentlyUsed, resetRecentlyUsed } = useBattleGeneration(allPokemon);
+  const { generateRankingsFromBattleHistory } = useBattleRankings();
+  const { milestones, checkForMilestone } = useBattleMilestones();
 
   // Start new battle
   const startNewBattle = useCallback(() => {
     console.log(`🚀 [START_NEW_BATTLE] Starting new ${battleType} battle`);
-    const newBattle = generateNewBattle(battleType);
+    const newBattle = generateNewBattle(battleType, battlesCompleted);
     if (newBattle.length > 0) {
       setCurrentBattle(newBattle);
       setSelectedPokemon([]);
@@ -107,96 +46,7 @@ export const useBattleStateCore = (
     } else {
       console.error(`🚀 [START_NEW_BATTLE] Failed to generate battle`);
     }
-  }, [battleType, generateNewBattle]);
-
-  // CRITICAL FIX: Generate rankings from actual battle history only
-  const generateRankingsFromBattleHistory = useCallback(() => {
-    console.log(`🏆 [RANKING_GENERATION] ===== Generating rankings from battle history =====`);
-    console.log(`🏆 [RANKING_GENERATION] Battle history length: ${battleHistory.length}`);
-    
-    if (battleHistory.length === 0) {
-      console.log(`🏆 [RANKING_GENERATION] No battle history, setting empty rankings`);
-      setFinalRankings([]);
-      return;
-    }
-
-    // Track Pokemon that have actually participated in battles
-    const pokemonStats = new Map<number, { pokemon: Pokemon, wins: number, losses: number, battles: number }>();
-    
-    battleHistory.forEach((battleRecord, index) => {
-      console.log(`🏆 [RANKING_GENERATION] Processing battle ${index + 1}: ${battleRecord.battle.map(p => p.name).join(' vs ')}`);
-      console.log(`🏆 [RANKING_GENERATION] Selected in this battle: [${battleRecord.selected.join(', ')}]`);
-      
-      battleRecord.battle.forEach((pokemon: Pokemon) => {
-        if (!pokemonStats.has(pokemon.id)) {
-          pokemonStats.set(pokemon.id, {
-            pokemon,
-            wins: 0,
-            losses: 0,
-            battles: 0
-          });
-        }
-        
-        const stats = pokemonStats.get(pokemon.id)!;
-        stats.battles++;
-        
-        if (battleRecord.selected.includes(pokemon.id)) {
-          stats.wins++;
-          console.log(`🏆 [RANKING_GENERATION] ${pokemon.name} WON (${stats.wins}W/${stats.losses}L)`);
-        } else {
-          stats.losses++;
-          console.log(`🏆 [RANKING_GENERATION] ${pokemon.name} LOST (${stats.wins}W/${stats.losses}L)`);
-        }
-      });
-    });
-
-    // Convert to ranked Pokemon with proper scoring
-    const rankedPokemon = Array.from(pokemonStats.values())
-      .map(({ pokemon, wins, losses, battles }) => {
-        const winRate = battles > 0 ? wins / battles : 0;
-        const score = winRate * 100 + (wins * 2); // Win rate percentage + bonus for total wins
-        
-        return {
-          ...pokemon,
-          score,
-          count: battles,
-          confidence: Math.min(battles * 20, 100), // Confidence based on battle count
-          wins,
-          losses,
-          winRate: winRate * 100
-        };
-      })
-      .sort((a, b) => b.score - a.score); // Sort by score descending
-
-    console.log(`🏆 [RANKING_GENERATION] Generated rankings for ${rankedPokemon.length} Pokemon who actually battled`);
-    console.log(`🏆 [RANKING_GENERATION] Top 5: ${rankedPokemon.slice(0, 5).map(p => `${p.name} (${p.score.toFixed(1)})`).join(', ')}`);
-    
-    setFinalRankings(rankedPokemon);
-    setRankingGenerated(true);
-  }, [battleHistory]);
-
-  // CRITICAL FIX: Enhanced milestone detection with proper ranking generation
-  const checkForMilestone = useCallback((newBattlesCompleted: number) => {
-    console.log(`🏆🏆🏆 [MILESTONE_DETECTION] ===== Checking Milestone =====`);
-    console.log(`🏆🏆🏆 [MILESTONE_DETECTION] Battle number: ${newBattlesCompleted}`);
-    console.log(`🏆🏆🏆 [MILESTONE_DETECTION] Available milestones: ${milestones.join(', ')}`);
-    
-    const isMilestone = milestones.includes(newBattlesCompleted);
-    console.log(`🏆🏆🏆 [MILESTONE_DETECTION] Is milestone? ${isMilestone}`);
-    
-    if (isMilestone) {
-      console.log(`🏆🏆🏆 [MILESTONE_HIT] ===== MILESTONE ${newBattlesCompleted} REACHED! =====`);
-      setShowingMilestone(true);
-      
-      // Generate rankings from actual battle history
-      generateRankingsFromBattleHistory();
-      
-      console.log(`🏆🏆🏆 [MILESTONE_HIT] Milestone setup complete - showing milestone screen`);
-      return true;
-    }
-    
-    return false;
-  }, [milestones, generateRankingsFromBattleHistory]);
+  }, [battleType, generateNewBattle, battlesCompleted]);
 
   // Pokemon selection handler with proper recent tracking
   const handlePokemonSelect = useCallback((pokemonId: number) => {
@@ -218,25 +68,8 @@ export const useBattleStateCore = (
       const newBattlesCompleted = battlesCompleted + 1;
       console.log(`🎯🎯🎯 [POKEMON_SELECT] New battles completed: ${newBattlesCompleted}`);
       
-      // CRITICAL FIX: Add current battle Pokemon to recently used IMMEDIATELY
-      setRecentlyUsedPokemon(prev => {
-        const newRecent = new Set(prev);
-        currentBattle.forEach(pokemon => {
-          newRecent.add(pokemon.id);
-          console.log(`📝 [RECENT_TRACKING] Added ${pokemon.name}(${pokemon.id}) to recent list`);
-        });
-        
-        // Keep only the last 20 Pokemon
-        if (newRecent.size > 20) {
-          const recentArray = Array.from(newRecent);
-          const toKeep = recentArray.slice(-20);
-          console.log(`📝 [RECENT_TRACKING] Trimmed recent list to last 20: [${toKeep.join(', ')}]`);
-          return new Set(toKeep);
-        }
-        
-        console.log(`📝 [RECENT_TRACKING] Recent list now has ${newRecent.size} Pokemon: [${Array.from(newRecent).join(', ')}]`);
-        return newRecent;
-      });
+      // Add current battle Pokemon to recently used IMMEDIATELY
+      addToRecentlyUsed(currentBattle);
       
       // Process battle result
       setBattleResults(prev => [...prev, { battle: currentBattle, selected: newSelection }]);
@@ -247,16 +80,23 @@ export const useBattleStateCore = (
       // Check for milestone BEFORE starting next battle
       const hitMilestone = checkForMilestone(newBattlesCompleted);
       
-      if (!hitMilestone) {
+      if (hitMilestone) {
+        console.log(`🎯🎯🎯 [POKEMON_SELECT] Milestone hit, showing milestone screen`);
+        setShowingMilestone(true);
+        
+        // Generate rankings from actual battle history
+        const newBattleHistory = [...battleHistory, { battle: currentBattle, selected: newSelection }];
+        const rankings = generateRankingsFromBattleHistory(newBattleHistory);
+        setFinalRankings(rankings);
+        setRankingGenerated(true);
+      } else {
         console.log(`🎯🎯🎯 [POKEMON_SELECT] No milestone hit, starting next battle`);
         setTimeout(() => {
           startNewBattle();
         }, 100);
-      } else {
-        console.log(`🎯🎯🎯 [POKEMON_SELECT] Milestone hit, showing milestone screen`);
       }
     }
-  }, [selectedPokemon, battleType, currentBattle, isProcessingResult, battlesCompleted, checkForMilestone, startNewBattle]);
+  }, [selectedPokemon, battleType, currentBattle, isProcessingResult, battlesCompleted, checkForMilestone, startNewBattle, addToRecentlyUsed, battleHistory, generateRankingsFromBattleHistory]);
 
   // Triplet selection handler
   const handleTripletSelectionComplete = useCallback(() => {
@@ -265,18 +105,7 @@ export const useBattleStateCore = (
       
       const newBattlesCompleted = battlesCompleted + 1;
       
-      setRecentlyUsedPokemon(prev => {
-        const newRecent = new Set(prev);
-        currentBattle.forEach(pokemon => newRecent.add(pokemon.id));
-        
-        if (newRecent.size > 20) {
-          const recentArray = Array.from(newRecent);
-          const toKeep = recentArray.slice(-20);
-          return new Set(toKeep);
-        }
-        
-        return newRecent;
-      });
+      addToRecentlyUsed(currentBattle);
       
       setBattleResults(prev => [...prev, { battle: currentBattle, selected: selectedPokemon }]);
       setBattleHistory(prev => [...prev, { battle: currentBattle, selected: selectedPokemon }]);
@@ -285,13 +114,19 @@ export const useBattleStateCore = (
       
       const hitMilestone = checkForMilestone(newBattlesCompleted);
       
-      if (!hitMilestone) {
+      if (hitMilestone) {
+        setShowingMilestone(true);
+        const newBattleHistory = [...battleHistory, { battle: currentBattle, selected: selectedPokemon }];
+        const rankings = generateRankingsFromBattleHistory(newBattleHistory);
+        setFinalRankings(rankings);
+        setRankingGenerated(true);
+      } else {
         setTimeout(() => {
           startNewBattle();
         }, 100);
       }
     }
-  }, [battleType, selectedPokemon, currentBattle, battlesCompleted, checkForMilestone, startNewBattle]);
+  }, [battleType, selectedPokemon, currentBattle, battlesCompleted, checkForMilestone, startNewBattle, addToRecentlyUsed, battleHistory, generateRankingsFromBattleHistory]);
 
   // Initialize first battle when Pokemon are available
   useEffect(() => {
@@ -330,9 +165,22 @@ export const useBattleStateCore = (
 
   const generateRankings = useCallback(() => {
     console.log(`📊 [GENERATE_RANKINGS] Generating rankings from ${battleResults.length} results`);
-    generateRankingsFromBattleHistory();
-  }, [generateRankingsFromBattleHistory]);
+    const rankings = generateRankingsFromBattleHistory(battleHistory);
+    setFinalRankings(rankings);
+    setRankingGenerated(true);
+  }, [generateRankingsFromBattleHistory, battleHistory]);
 
+  const performFullBattleReset = useCallback(() => {
+    setBattlesCompleted(0);
+    setBattleResults([]);
+    setBattleHistory([]);
+    setCurrentBattle([]);
+    setSelectedPokemon([]);
+    resetRecentlyUsed();
+    startNewBattle();
+  }, [startNewBattle, resetRecentlyUsed]);
+
+  // ... keep existing code (stub functions for compatibility)
   const handleSaveRankings = useCallback(() => {
     console.log(`💾 [SAVE_RANKINGS] Saving rankings`);
   }, []);
@@ -347,15 +195,6 @@ export const useBattleStateCore = (
     startNewBattle();
   }, [startNewBattle]);
   const resetMilestoneInProgress = useCallback(() => {}, []);
-  const performFullBattleReset = useCallback(() => {
-    setBattlesCompleted(0);
-    setBattleResults([]);
-    setBattleHistory([]);
-    setCurrentBattle([]);
-    setSelectedPokemon([]);
-    setRecentlyUsedPokemon(new Set());
-    startNewBattle();
-  }, [startNewBattle]);
   const handleManualReorder = useCallback(() => {}, []);
 
   return {
