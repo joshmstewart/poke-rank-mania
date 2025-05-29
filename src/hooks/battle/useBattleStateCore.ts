@@ -1,4 +1,3 @@
-
 import { useCallback, useMemo, useEffect } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
@@ -123,7 +122,7 @@ export const useBattleStateCore = (
     setBattleResults: stateData.setBattleResults
   });
 
-  // Add processBattleResultWithRefinement function with improved next battle handling
+  // Add processBattleResultWithRefinement function with SPEED IMPROVEMENT
   const processBattleResultWithRefinement = useCallback(async (
     selectedPokemonIds: number[],
     currentBattlePokemon: Pokemon[],
@@ -135,11 +134,9 @@ export const useBattleStateCore = (
     // Process the battle result
     const result = await milestoneEvents.originalProcessBattleResult(selectedPokemonIds, currentBattlePokemon, battleType, selectedGeneration);
     
-    // CRITICAL FIX: Immediately start next battle after processing
-    console.log(`🔄 [REFINEMENT_PROCESSING_DEBUG] Battle processed, starting next battle...`);
-    setTimeout(() => {
-      startNewBattleWrapper();
-    }, 100); // Small delay to ensure state updates are complete
+    // SPEED FIX: Start next battle immediately without delay
+    console.log(`🔄 [REFINEMENT_PROCESSING_DEBUG] Battle processed, starting next battle immediately...`);
+    startNewBattleWrapper();
     
     return result;
   }, [milestoneEvents.originalProcessBattleResult, startNewBattleWrapper]);

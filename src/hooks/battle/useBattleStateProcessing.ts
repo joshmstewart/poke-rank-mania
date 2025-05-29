@@ -52,20 +52,19 @@ export const useBattleStateProcessing = (
         selectedGeneration
       );
 
-      console.log(`✅ [SELECTION_COMPLETE_ULTRA_DEBUG] Battle processed, starting new battle...`);
+      console.log(`✅ [SELECTION_COMPLETE_ULTRA_DEBUG] Battle processed successfully`);
       
-      // SPEED FIX: Start new battle immediately without delay
+      // SPEED FIX: Reset processing state immediately
       processingRef.current = false;
       setIsBattleTransitioning(false);
       setIsAnyProcessing(false);
-      startNewBattleWrapper();
     } catch (error) {
       console.error("❌ [SELECTION_COMPLETE_ULTRA_DEBUG] Error processing battle result:", error);
       processingRef.current = false;
       setIsBattleTransitioning(false);
       setIsAnyProcessing(false);
     }
-  }, [selectedPokemon, currentBattle, battleType, selectedGeneration, processBattleResultWithRefinement, isAnyProcessing, isProcessingResult, setIsBattleTransitioning, setIsAnyProcessing, startNewBattleWrapper]);
+  }, [selectedPokemon, currentBattle, battleType, selectedGeneration, processBattleResultWithRefinement, isAnyProcessing, isProcessingResult, setIsBattleTransitioning, setIsAnyProcessing]);
 
   return {
     handleTripletSelectionComplete,

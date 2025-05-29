@@ -19,9 +19,13 @@ export const useSharedRefinementQueue = () => {
     
     // CRITICAL FIX: Always return a consistent object structure to prevent hook order issues
     const fallbackQueue = {
+      queue: [],
       refinementQueue: [],
       refinementBattleCount: 0,
       hasRefinementBattles: false,
+      addValidationBattle: (primaryId: number, pokemonName: string, sourceIndex: number, destinationIndex: number) => {
+        console.warn('🚨 [QUEUE_CONTEXT_FALLBACK] addValidationBattle called on fallback - no-op');
+      },
       queueBattlesForReorder: (primaryId: number, neighbors: number[], newPosition: number) => {
         console.warn('🚨 [QUEUE_CONTEXT_FALLBACK] queueBattlesForReorder called on fallback - no-op');
       },
