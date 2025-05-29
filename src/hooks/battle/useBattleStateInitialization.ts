@@ -4,6 +4,7 @@ import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
 import { useBattleStateManager } from "./useBattleStateManager";
 import { useBattleStateProviders } from "./useBattleStateProviders";
+import { useSharedRefinementQueue } from "./useSharedRefinementQueue";
 
 export const useBattleStateInitialization = (
   allPokemon: Pokemon[] = [],
@@ -34,13 +35,16 @@ export const useBattleStateInitialization = (
     typeof stateManagerData.activeTier === 'string' ? stateManagerData.activeTier : String(stateManagerData.activeTier)
   );
 
+  // CRITICAL FIX: Access refinement queue directly
+  const refinementQueue = useSharedRefinementQueue();
+
   const enhancedStartNewBattle = useCallback((battleType: BattleType) => {
     const currentBattleCount = parseInt(localStorage.getItem('pokemon-battle-count') || '0', 10);
     console.log(`🔄 [FLASH_FIX] enhancedStartNewBattle called for ${battleType} - Battle ${String(currentBattleCount)}`);
 
     // ✅ CRITICAL FIX: Check refinement queue FIRST before generating random battles
     console.log(`🔍 [REFINEMENT_PRIORITY] Checking refinement queue before random generation...`);
-    const refinementBattle = providersData.refinementQueue?.getNextRefinementBattle?.();
+    const refinementBattle = refinementQueue?.getNextRefinementBattle?.();
     
     if (refinementBattle) {
       console.log(`🎯 [REFINEMENT_PRIORITY] Found refinement battle:`, refinementBattle);
@@ -52,10 +56,10 @@ export const useBattleStateInitialization = (
 
       if (primary && opponent) {
         console.log(`✅ [REFINEMENT_USE] Using refinement battle: ${primary.name} vs ${opponent.name}`);
-        console.log(`✅ [REFINEMENT_USE] Reason: ${refinement.reason}`);
+        console.log(`✅ [REFINEMENT_USE] Reason: ${refinementBattle.reason}`);
         
         // Remove the battle from the queue
-        providersData.refinementQueue?.popRefinementBattle?.();
+        refinementQueue?.popRefinementBattle?.();
         console.log(`✅ [REFINEMENT_USE] Battle removed from queue`);
         
         const refinementResult = [primary, opponent];
@@ -64,7 +68,7 @@ export const useBattleStateInitialization = (
       } else {
         console.warn(`❌ [REFINEMENT_USE] Refinement battle referenced missing Pokémon:`, refinementBattle);
         console.warn(`❌ [REFINEMENT_USE] Removing invalid battle from queue...`);
-        providersData.refinementQueue?.popRefinementBattle?.();
+        refinementQueue?.popRefinementBattle?.();
         // Fall through to normal battle generation
       }
     } else {
@@ -83,7 +87,7 @@ export const useBattleStateInitialization = (
     }
     
     return result || [];
-  }, [allPokemon, providersData]);
+  }, [allPokemon, providersData, refinementQueue]);
 
   return {
     stateManagerData,
