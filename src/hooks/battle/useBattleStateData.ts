@@ -1,6 +1,6 @@
 
 import { useState, useCallback } from "react";
-import { Pokemon, RankedPokemon } from "@/services/pokemon";
+import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
 import { formatPokemonName } from "@/utils/pokemon";
 
@@ -21,7 +21,7 @@ export const useBattleStateData = (
   const [finalRankings, setFinalRankings] = useState<RankedPokemon[]>([]);
   const [confidenceScores, setConfidenceScores] = useState<{ [pokemonId: number]: number }>({});
   const [battleHistory, setBattleHistory] = useState<{ battle: Pokemon[], selected: number[] }[]>([]);
-  const [activeTier, setActiveTier] = useState<"All" | "Top10" | "Top25" | "Top50" | "Top100">("All");
+  const [activeTier, setActiveTier] = useState<TopNOption>("All");
   const [isBattleTransitioning, setIsBattleTransitioning] = useState(false);
   const [isProcessingResult, setIsProcessingResult] = useState(false);
   const [milestones, setMilestones] = useState<number[]>([10, 25, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 600, 700, 800, 900, 1000]);
