@@ -121,31 +121,42 @@ export const useBattleSelectionState = () => {
     };
     
     const handleForceNextBattle = (event: CustomEvent) => {
-      console.log("🚀 [FORCE_BATTLE_EVENT] Received force-next-battle event");
-      console.log("🚀 [FORCE_BATTLE_EVENT] Event details:", event.detail);
+      console.log("🚀🚀🚀 [FORCE_BATTLE_EVENT_TRACE] Received force-next-battle event");
+      console.log("🚀🚀🚀 [FORCE_BATTLE_EVENT_TRACE] Event details:", event.detail);
+      console.log("🚀🚀🚀 [FORCE_BATTLE_EVENT_TRACE] Timestamp: ${new Date().toISOString()}");
+      console.log("🚀🚀🚀 [FORCE_BATTLE_EVENT_TRACE] currentBattleType: ${currentBattleType}");
       
       setSelectedPokemon([]);
       
-      // CRITICAL FIX: Use the refinement-aware startNewBattle directly
+      // CRITICAL TRACE: Call the startNewBattle and trace everything
+      console.log("🚀🚀🚀 [FORCE_BATTLE_EVENT_TRACE] About to call startNewBattle...");
       const result = startNewBattle(currentBattleType);
       
+      console.log("🚀🚀🚀 [FORCE_BATTLE_EVENT_TRACE] startNewBattle result:", result);
+      console.log("🚀🚀🚀 [FORCE_BATTLE_EVENT_TRACE] Result type:", typeof result);
+      console.log("🚀🚀🚀 [FORCE_BATTLE_EVENT_TRACE] Result length:", result?.length || 0);
+      
       if (result && result.length > 0) {
-        console.log("✅ [FORCE_BATTLE_EVENT] Successfully started battle:", result.map(p => p.name).join(' vs '));
+        console.log("🚀🚀🚀 [FORCE_BATTLE_EVENT_TRACE] ✅ Successfully started battle:", result.map(p => `${p.name}(${p.id})`).join(' vs '));
         
         const draggedPokemonId = event.detail?.pokemonId;
+        console.log("🚀🚀🚀 [FORCE_BATTLE_EVENT_TRACE] Checking if dragged Pokemon ${draggedPokemonId} is in battle...");
+        
         if (draggedPokemonId && result.some(p => p.id === draggedPokemonId)) {
-          console.log("🎯 [FORCE_BATTLE_EVENT] SUCCESS! Dragged Pokemon IS in the new battle!");
+          console.log("🚀🚀🚀 [FORCE_BATTLE_EVENT_TRACE] 🎯 SUCCESS! Dragged Pokemon IS in the new battle!");
           toast.success("Validation battle started", {
             description: `Testing position for ${event.detail?.pokemonName || 'dragged Pokemon'}`
           });
         } else {
-          console.log("❌ [FORCE_BATTLE_EVENT] Dragged Pokemon not in battle - queue may be empty");
+          console.log("🚀🚀🚀 [FORCE_BATTLE_EVENT_TRACE] ❌ Dragged Pokemon not in battle - queue may be empty");
+          console.log("🚀🚀🚀 [FORCE_BATTLE_EVENT_TRACE] Battle Pokemon IDs:", result.map(p => p.id));
+          console.log("🚀🚀🚀 [FORCE_BATTLE_EVENT_TRACE] Expected Pokemon ID:", draggedPokemonId);
           toast.warning("Regular battle started", {
             description: "No validation battles were queued"
           });
         }
       } else {
-        console.error("❌ [FORCE_BATTLE_EVENT] Failed to start battle");
+        console.error("🚀🚀🚀 [FORCE_BATTLE_EVENT_TRACE] ❌ Failed to start battle - empty/null result");
         toast.error("Failed to start battle", {
           description: "Could not create battle"
         });

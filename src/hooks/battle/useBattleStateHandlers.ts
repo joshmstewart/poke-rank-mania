@@ -1,3 +1,4 @@
+
 import { useCallback, useState, useMemo } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
@@ -105,9 +106,16 @@ export const useBattleStateHandlers = (
   }, [battleHistory, setBattleHistory, setCurrentBattle, setSelectedPokemon, setBattlesCompleted]);
 
   const startNewBattleWrapper = useCallback(() => {
-    console.log(`🚀 [START_NEW_BATTLE] startNewBattleWrapper called`);
+    console.log(`🚀🚀🚀 [START_NEW_BATTLE_TRACE] startNewBattleWrapper called`);
+    console.log(`🚀🚀🚀 [START_NEW_BATTLE_TRACE] Timestamp: ${new Date().toISOString()}`);
+    console.log(`🚀🚀🚀 [START_NEW_BATTLE_TRACE] Call stack:`, new Error().stack?.split('\n').slice(1, 5));
+    console.log(`🚀🚀🚀 [START_NEW_BATTLE_TRACE] battleType: ${battleType}`);
+    
     const result = startNewBattle(battleType);
-    console.log(`🚀 [START_NEW_BATTLE] Result:`, result?.map(p => p.name) || 'null');
+    
+    console.log(`🚀🚀🚀 [START_NEW_BATTLE_TRACE] Result:`, result?.map(p => `${p.name}(${p.id})`).join(' vs ') || 'null');
+    console.log(`🚀🚀🚀 [START_NEW_BATTLE_TRACE] Result length: ${result?.length || 0}`);
+    
     return result;
   }, [startNewBattle, battleType]);
 
@@ -145,118 +153,116 @@ export const useBattleStateHandlers = (
   ]);
 
   const handleManualReorder = useCallback((draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => {
-    console.log(`🔄 [MANUAL_REORDER_MEGA_TRACE] ===== MANUAL REORDER STARTED =====`);
-    console.log(`🔄 [MANUAL_REORDER_MEGA_TRACE] Step 1: Input validation`);
-    console.log(`🔄 [MANUAL_REORDER_MEGA_TRACE] - draggedPokemonId: ${draggedPokemonId} (type: ${typeof draggedPokemonId})`);
-    console.log(`🔄 [MANUAL_REORDER_MEGA_TRACE] - sourceIndex: ${sourceIndex} (type: ${typeof sourceIndex})`);
-    console.log(`🔄 [MANUAL_REORDER_MEGA_TRACE] - destinationIndex: ${destinationIndex} (type: ${typeof destinationIndex})`);
-    console.log(`🔄 [MANUAL_REORDER_MEGA_TRACE] - finalRankings length: ${finalRankings?.length || 0}`);
+    console.log(`🔄🔄🔄 [MANUAL_REORDER_ULTRA_TRACE] ===== MANUAL REORDER STARTED =====`);
+    console.log(`🔄🔄🔄 [MANUAL_REORDER_ULTRA_TRACE] Timestamp: ${new Date().toISOString()}`);
+    console.log(`🔄🔄🔄 [MANUAL_REORDER_ULTRA_TRACE] draggedPokemonId: ${draggedPokemonId} (type: ${typeof draggedPokemonId})`);
+    console.log(`🔄🔄🔄 [MANUAL_REORDER_ULTRA_TRACE] sourceIndex: ${sourceIndex} (type: ${typeof sourceIndex})`);
+    console.log(`🔄🔄🔄 [MANUAL_REORDER_ULTRA_TRACE] destinationIndex: ${destinationIndex} (type: ${typeof destinationIndex})`);
+    console.log(`🔄🔄🔄 [MANUAL_REORDER_ULTRA_TRACE] finalRankings length: ${finalRankings?.length || 0}`);
+    console.log(`🔄🔄🔄 [MANUAL_REORDER_ULTRA_TRACE] Call stack:`, new Error().stack?.split('\n').slice(1, 5));
     
-    console.log(`🔄 [MANUAL_REORDER_MEGA_TRACE] Step 2: RefinementQueue validation`);
-    console.log(`🔄 [MANUAL_REORDER_MEGA_TRACE] - refinementQueue exists: ${!!refinementQueue}`);
-    console.log(`🔄 [MANUAL_REORDER_MEGA_TRACE] - refinementQueue type: ${typeof refinementQueue}`);
+    console.log(`🔄🔄🔄 [MANUAL_REORDER_ULTRA_TRACE] RefinementQueue validation:`);
+    console.log(`🔄🔄🔄 [MANUAL_REORDER_ULTRA_TRACE] - refinementQueue exists: ${!!refinementQueue}`);
+    console.log(`🔄🔄🔄 [MANUAL_REORDER_ULTRA_TRACE] - refinementQueue type: ${typeof refinementQueue}`);
     
     if (refinementQueue) {
-      console.log(`🔄 [MANUAL_REORDER_MEGA_TRACE] - refinementQueue keys:`, Object.keys(refinementQueue));
-      console.log(`🔄 [MANUAL_REORDER_MEGA_TRACE] - addValidationBattle exists: ${!!refinementQueue.addValidationBattle}`);
-      console.log(`🔄 [MANUAL_REORDER_MEGA_TRACE] - addValidationBattle type: ${typeof refinementQueue.addValidationBattle}`);
-      console.log(`🔄 [MANUAL_REORDER_MEGA_TRACE] - current queue size: ${refinementQueue.refinementBattleCount || 0}`);
-      console.log(`🔄 [MANUAL_REORDER_MEGA_TRACE] - current queue contents:`, refinementQueue.queue || refinementQueue.refinementQueue || []);
+      console.log(`🔄🔄🔄 [MANUAL_REORDER_ULTRA_TRACE] - refinementQueue keys:`, Object.keys(refinementQueue));
+      console.log(`🔄🔄🔄 [MANUAL_REORDER_ULTRA_TRACE] - addValidationBattle exists: ${!!refinementQueue.addValidationBattle}`);
+      console.log(`🔄🔄🔄 [MANUAL_REORDER_ULTRA_TRACE] - addValidationBattle type: ${typeof refinementQueue.addValidationBattle}`);
+      console.log(`🔄🔄🔄 [MANUAL_REORDER_ULTRA_TRACE] - current queue size: ${refinementQueue.refinementBattleCount || 0}`);
+      console.log(`🔄🔄🔄 [MANUAL_REORDER_ULTRA_TRACE] - current queue contents:`, refinementQueue.queue || refinementQueue.refinementQueue || []);
     }
     
-    console.log(`🔄 [MANUAL_REORDER_MEGA_TRACE] Step 3: Pokemon lookup`);
+    console.log(`🔄🔄🔄 [MANUAL_REORDER_ULTRA_TRACE] Pokemon lookup:`);
     const draggedPokemon = finalRankings.find(p => p.id === draggedPokemonId);
-    console.log(`🔄 [MANUAL_REORDER_MEGA_TRACE] - draggedPokemon found: ${!!draggedPokemon}`);
+    console.log(`🔄🔄🔄 [MANUAL_REORDER_ULTRA_TRACE] - draggedPokemon found: ${!!draggedPokemon}`);
     
     if (draggedPokemon) {
-      console.log(`🔄 [MANUAL_REORDER_MEGA_TRACE] - draggedPokemon details:`, {
+      console.log(`🔄🔄🔄 [MANUAL_REORDER_ULTRA_TRACE] - draggedPokemon details:`, {
         id: draggedPokemon.id,
         name: draggedPokemon.name,
         score: draggedPokemon.score
       });
     } else {
-      console.error(`🔄 [MANUAL_REORDER_MEGA_TRACE] ❌ Pokemon ${draggedPokemonId} not found in finalRankings`);
-      console.error(`🔄 [MANUAL_REORDER_MEGA_TRACE] Available rankings:`, finalRankings.slice(0, 10).map(p => ({ id: p.id, name: p.name })));
+      console.error(`🔄🔄🔄 [MANUAL_REORDER_ULTRA_TRACE] ❌ Pokemon ${draggedPokemonId} not found in finalRankings`);
+      console.error(`🔄🔄🔄 [MANUAL_REORDER_ULTRA_TRACE] Available rankings (first 20):`, finalRankings.slice(0, 20).map(p => ({ id: p.id, name: p.name })));
       
       // Try to find with string conversion
       const draggedPokemonString = finalRankings.find(p => String(p.id) === String(draggedPokemonId));
-      console.error(`🔄 [MANUAL_REORDER_MEGA_TRACE] String conversion search result:`, !!draggedPokemonString);
+      console.error(`🔄🔄🔄 [MANUAL_REORDER_ULTRA_TRACE] String conversion search result:`, !!draggedPokemonString);
       
       if (draggedPokemonString) {
-        console.log(`🔄 [MANUAL_REORDER_MEGA_TRACE] ✅ Found via string conversion - using this Pokemon`);
+        console.log(`🔄🔄🔄 [MANUAL_REORDER_ULTRA_TRACE] ✅ Found via string conversion - using this Pokemon`);
         
-        // Use the found Pokemon
-        const correctedPokemon = draggedPokemonString;
-        
-        console.log(`🔄 [MANUAL_REORDER_MEGA_TRACE] Step 4: Calling addValidationBattle with corrected Pokemon`);
         if (refinementQueue && typeof refinementQueue.addValidationBattle === 'function') {
-          console.log(`🔄 [MANUAL_REORDER_MEGA_TRACE] ✅ About to call addValidationBattle...`);
+          console.log(`🔄🔄🔄 [MANUAL_REORDER_ULTRA_TRACE] ✅ About to call addValidationBattle...`);
           
           try {
-            console.log(`🔄 [MANUAL_REORDER_MEGA_TRACE] 🚀 CALLING addValidationBattle(${correctedPokemon.id}, "${correctedPokemon.name}", ${sourceIndex}, ${destinationIndex})`);
-            refinementQueue.addValidationBattle(correctedPokemon.id, correctedPokemon.name, sourceIndex, destinationIndex);
-            console.log(`🔄 [MANUAL_REORDER_MEGA_TRACE] ✅ addValidationBattle completed successfully`);
+            console.log(`🔄🔄🔄 [MANUAL_REORDER_ULTRA_TRACE] 🚀 CALLING addValidationBattle(${draggedPokemonString.id}, "${draggedPokemonString.name}", ${sourceIndex}, ${destinationIndex})`);
+            refinementQueue.addValidationBattle(draggedPokemonString.id, draggedPokemonString.name, sourceIndex, destinationIndex);
+            console.log(`🔄🔄🔄 [MANUAL_REORDER_ULTRA_TRACE] ✅ addValidationBattle completed successfully`);
             
-            // CRITICAL FIX: Force UI update by triggering a state change that components can observe
+            // Force UI update
             setTimeout(() => {
-              console.log(`🔄 [MANUAL_REORDER_MEGA_TRACE] 🔄 FORCING UI UPDATE for pending refinements`);
+              console.log(`🔄🔄🔄 [MANUAL_REORDER_ULTRA_TRACE] 🔄 FORCING UI UPDATE for pending refinements`);
               
-              // Dispatch a custom event to force components to re-render with updated pending state
               const updateEvent = new CustomEvent('refinement-queue-updated', {
                 detail: { 
-                  pokemonId: correctedPokemon.id,
-                  pokemonName: correctedPokemon.name,
+                  pokemonId: draggedPokemonString.id,
+                  pokemonName: draggedPokemonString.name,
                   queueSize: refinementQueue.refinementBattleCount || 0
                 }
               });
               document.dispatchEvent(updateEvent);
               
-              console.log(`🔄 [MANUAL_REORDER_MEGA_TRACE] ✅ UI update event dispatched`);
+              console.log(`🔄🔄🔄 [MANUAL_REORDER_ULTRA_TRACE] ✅ UI update event dispatched`);
             }, 100);
             
           } catch (error) {
-            console.error(`🔄 [MANUAL_REORDER_MEGA_TRACE] ❌ Error calling addValidationBattle:`, error);
+            console.error(`🔄🔄🔄 [MANUAL_REORDER_ULTRA_TRACE] ❌ Error calling addValidationBattle:`, error);
             return;
           }
         } else {
-          console.error(`🔄 [MANUAL_REORDER_MEGA_TRACE] ❌ addValidationBattle is not available`);
+          console.error(`🔄🔄🔄 [MANUAL_REORDER_ULTRA_TRACE] ❌ addValidationBattle is not available`);
           return;
         }
         
-        toast.info(`Validation queued for ${correctedPokemon.name}`, {
+        toast.info(`Validation queued for ${draggedPokemonString.name}`, {
           description: `Position will be tested in upcoming battles`
         });
 
+        console.log(`🔄🔄🔄 [MANUAL_REORDER_ULTRA_TRACE] 🚀 DISPATCHING FORCE-NEXT-BATTLE EVENT`);
         const forceNextBattleEvent = new CustomEvent('force-next-battle', {
           detail: { 
-            pokemonId: correctedPokemon.id,
-            pokemonName: correctedPokemon.name,
+            pokemonId: draggedPokemonString.id,
+            pokemonName: draggedPokemonString.name,
             source: 'manual-reorder'
           }
         });
         
         document.dispatchEvent(forceNextBattleEvent);
+        console.log(`🔄🔄🔄 [MANUAL_REORDER_ULTRA_TRACE] ✅ force-next-battle event dispatched`);
         
-        console.log(`🔄 [MANUAL_REORDER_MEGA_TRACE] ===== MANUAL REORDER COMPLETED =====`);
+        console.log(`🔄🔄🔄 [MANUAL_REORDER_ULTRA_TRACE] ===== MANUAL REORDER COMPLETED (STRING CONVERSION) =====`);
         return;
       }
       
-      console.error(`🔄 [MANUAL_REORDER_MEGA_TRACE] ❌ Could not find Pokemon even with string conversion - aborting`);
+      console.error(`🔄🔄🔄 [MANUAL_REORDER_ULTRA_TRACE] ❌ Could not find Pokemon even with string conversion - aborting`);
       return;
     }
 
-    console.log(`🔄 [MANUAL_REORDER_MEGA_TRACE] Step 4: Calling addValidationBattle`);
+    console.log(`🔄🔄🔄 [MANUAL_REORDER_ULTRA_TRACE] Calling addValidationBattle with found Pokemon`);
     if (refinementQueue && typeof refinementQueue.addValidationBattle === 'function') {
-      console.log(`🔄 [MANUAL_REORDER_MEGA_TRACE] ✅ About to call addValidationBattle...`);
+      console.log(`🔄🔄🔄 [MANUAL_REORDER_ULTRA_TRACE] ✅ About to call addValidationBattle...`);
       
       try {
-        console.log(`🔄 [MANUAL_REORDER_MEGA_TRACE] 🚀 CALLING addValidationBattle(${draggedPokemonId}, "${draggedPokemon.name}", ${sourceIndex}, ${destinationIndex})`);
+        console.log(`🔄🔄🔄 [MANUAL_REORDER_ULTRA_TRACE] 🚀 CALLING addValidationBattle(${draggedPokemonId}, "${draggedPokemon.name}", ${sourceIndex}, ${destinationIndex})`);
         refinementQueue.addValidationBattle(draggedPokemonId, draggedPokemon.name, sourceIndex, destinationIndex);
-        console.log(`🔄 [MANUAL_REORDER_MEGA_TRACE] ✅ addValidationBattle completed successfully`);
+        console.log(`🔄🔄🔄 [MANUAL_REORDER_ULTRA_TRACE] ✅ addValidationBattle completed successfully`);
         
-        // CRITICAL FIX: Force UI update
+        // Force UI update
         setTimeout(() => {
-          console.log(`🔄 [MANUAL_REORDER_MEGA_TRACE] 🔄 FORCING UI UPDATE for pending refinements`);
+          console.log(`🔄🔄🔄 [MANUAL_REORDER_ULTRA_TRACE] 🔄 FORCING UI UPDATE for pending refinements`);
           
           const updateEvent = new CustomEvent('refinement-queue-updated', {
             detail: { 
@@ -267,15 +273,15 @@ export const useBattleStateHandlers = (
           });
           document.dispatchEvent(updateEvent);
           
-          console.log(`🔄 [MANUAL_REORDER_MEGA_TRACE] ✅ UI update event dispatched`);
+          console.log(`🔄🔄🔄 [MANUAL_REORDER_ULTRA_TRACE] ✅ UI update event dispatched`);
         }, 100);
         
       } catch (error) {
-        console.error(`🔄 [MANUAL_REORDER_MEGA_TRACE] ❌ Error calling addValidationBattle:`, error);
+        console.error(`🔄🔄🔄 [MANUAL_REORDER_ULTRA_TRACE] ❌ Error calling addValidationBattle:`, error);
         return;
       }
     } else {
-      console.error(`🔄 [MANUAL_REORDER_MEGA_TRACE] ❌ addValidationBattle is not available`);
+      console.error(`🔄🔄🔄 [MANUAL_REORDER_ULTRA_TRACE] ❌ addValidationBattle is not available`);
       return;
     }
     
@@ -283,6 +289,7 @@ export const useBattleStateHandlers = (
       description: `Position will be tested in upcoming battles`
     });
 
+    console.log(`🔄🔄🔄 [MANUAL_REORDER_ULTRA_TRACE] 🚀 DISPATCHING FORCE-NEXT-BATTLE EVENT`);
     const forceNextBattleEvent = new CustomEvent('force-next-battle', {
       detail: { 
         pokemonId: draggedPokemonId,
@@ -292,8 +299,9 @@ export const useBattleStateHandlers = (
     });
     
     document.dispatchEvent(forceNextBattleEvent);
+    console.log(`🔄🔄🔄 [MANUAL_REORDER_ULTRA_TRACE] ✅ force-next-battle event dispatched`);
     
-    console.log(`🔄 [MANUAL_REORDER_MEGA_TRACE] ===== MANUAL REORDER COMPLETED =====`);
+    console.log(`🔄🔄🔄 [MANUAL_REORDER_ULTRA_TRACE] ===== MANUAL REORDER COMPLETED =====`);
   }, [finalRankings, refinementQueue]);
 
   return {
