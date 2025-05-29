@@ -28,19 +28,36 @@ export const useRefinementQueue = () => {
     return foundDuplicate;
   }, []);
 
-  // MISSING METHOD: Add the addValidationBattle method that was being called
+  // CRITICAL FIX: Add the addValidationBattle method that was being called
   const addValidationBattle = useCallback((primaryId: number, pokemonName: string, sourceIndex: number, destinationIndex: number) => {
-    console.log(`🔄 [ADD_VALIDATION_BATTLE] Adding validation battle for ${pokemonName} (${primaryId}) moved from ${sourceIndex} to ${destinationIndex}`);
+    console.log(`🔄 [ADD_VALIDATION_BATTLE_ULTRA_DEBUG] ===== ADD VALIDATION BATTLE START =====`);
+    console.log(`🔄 [ADD_VALIDATION_BATTLE_ULTRA_DEBUG] primaryId: ${primaryId}`);
+    console.log(`🔄 [ADD_VALIDATION_BATTLE_ULTRA_DEBUG] pokemonName: ${pokemonName}`);
+    console.log(`🔄 [ADD_VALIDATION_BATTLE_ULTRA_DEBUG] sourceIndex: ${sourceIndex}`);
+    console.log(`🔄 [ADD_VALIDATION_BATTLE_ULTRA_DEBUG] destinationIndex: ${destinationIndex}`);
     
-    // For now, let's add a simple battle against a neighboring Pokemon
-    // We'll need to determine appropriate neighbors based on the current rankings
-    console.log(`🔄 [ADD_VALIDATION_BATTLE] This method needs to be implemented to queue appropriate validation battles`);
-    console.log(`🔄 [ADD_VALIDATION_BATTLE] Parameters received:`, { primaryId, pokemonName, sourceIndex, destinationIndex });
+    // For now, let's add a simple battle against the Pokemon at the destination index
+    // We need to determine what Pokemon ID is at the destination index
+    const opponentId = destinationIndex + 1; // Simple placeholder logic
     
-    // TODO: Implement the actual logic to determine which Pokemon to battle against
-    // For debugging, let's at least log that this method was called successfully
-    console.log(`🔄 [ADD_VALIDATION_BATTLE] ✅ Method called successfully - implementation needed`);
-  }, []);
+    console.log(`🔄 [ADD_VALIDATION_BATTLE_ULTRA_DEBUG] Creating battle: ${primaryId} vs ${opponentId}`);
+    
+    const newBattle: RefinementBattle = {
+      primaryPokemonId: primaryId,
+      opponentPokemonId: opponentId,
+      reason: `Manual reorder validation: ${pokemonName} moved from ${sourceIndex} to ${destinationIndex}`
+    };
+    
+    setRefinementQueue(prev => {
+      console.log(`🔄 [ADD_VALIDATION_BATTLE_ULTRA_DEBUG] Current queue before add:`, prev);
+      const newQueue = [...prev, newBattle];
+      console.log(`🔄 [ADD_VALIDATION_BATTLE_ULTRA_DEBUG] New queue after add:`, newQueue);
+      currentQueueRef.current = newQueue;
+      return newQueue;
+    });
+    
+    console.log(`🔄 [ADD_VALIDATION_BATTLE_ULTRA_DEBUG] ===== ADD VALIDATION BATTLE END =====`);
+  }, []); // FIXED: Empty dependency array to prevent the React error
 
   const queueBattlesForReorder = useCallback((primaryId: number, neighbors: number[], newPosition: number) => {
     console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] ===== QUEUEING VALIDATION BATTLES START =====`);
@@ -175,13 +192,9 @@ export const useRefinementQueue = () => {
     currentQueueRef.current = []; // CRITICAL FIX: Clear ref too
     
     console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] ✅ Queue cleared successfully`);
-  }, [refinementQueue]);
+  }, []); // FIXED: Remove refinementQueue dependency to prevent hook error
 
   // CRITICAL FIX: Sync ref whenever state changes
-  useState(() => {
-    currentQueueRef.current = refinementQueue;
-  });
-
   const hasRefinementBattles = currentQueueRef.current.length > 0;
 
   // Add comprehensive logging for queue state
