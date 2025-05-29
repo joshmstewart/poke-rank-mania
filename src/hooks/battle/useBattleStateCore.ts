@@ -28,60 +28,70 @@ export const useBattleStateCore = (
   const [isProcessingResult, setIsProcessingResult] = useState(false);
   const [completionPercentage, setCompletionPercentage] = useState(0);
 
-  // CRITICAL FIX: Add recently used Pokemon tracking
+  // CRITICAL FIX: Track recently used Pokemon with proper management
   const [recentlyUsedPokemon, setRecentlyUsedPokemon] = useState<Set<number>>(new Set());
 
   // Milestones
   const milestones = useMemo(() => [10, 25, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 600, 700, 800, 900, 1000], []);
 
-  // CRITICAL FIX: Enhanced battle generation with anti-repetition
+  // CRITICAL FIX: Completely new battle generation with proper repetition prevention
   const generateNewBattle = useCallback((battleType: BattleType): Pokemon[] => {
     const battleSize = battleType === "pairs" ? 2 : 3;
-    const timestamp = Date.now();
+    const battleNumber = battlesCompleted + 1;
     
-    console.log(`🎲 [ANTI_REPEAT_BATTLE_GEN] ===== Generating battle #${battlesCompleted + 1} =====`);
-    console.log(`🎲 [ANTI_REPEAT_BATTLE_GEN] Battle size: ${battleSize}`);
-    console.log(`🎲 [ANTI_REPEAT_BATTLE_GEN] Available Pokemon: ${allPokemon.length}`);
-    console.log(`🎲 [ANTI_REPEAT_BATTLE_GEN] Recently used Pokemon: ${recentlyUsedPokemon.size}`);
+    console.log(`🎲🎲🎲 [ANTI_REPEAT_GENERATION] ===== Battle #${battleNumber} Generation =====`);
+    console.log(`🎲🎲🎲 [ANTI_REPEAT_GENERATION] Battle size: ${battleSize}`);
+    console.log(`🎲🎲🎲 [ANTI_REPEAT_GENERATION] Total Pokemon: ${allPokemon.length}`);
+    console.log(`🎲🎲🎲 [ANTI_REPEAT_GENERATION] Recently used Pokemon count: ${recentlyUsedPokemon.size}`);
+    console.log(`🎲🎲🎲 [ANTI_REPEAT_GENERATION] Recently used IDs: [${Array.from(recentlyUsedPokemon).join(', ')}]`);
     
     if (!allPokemon || allPokemon.length < battleSize) {
-      console.error(`🎲 [ANTI_REPEAT_BATTLE_GEN] Not enough Pokemon: need ${battleSize}, have ${allPokemon.length}`);
+      console.error(`🎲🎲🎲 [ANTI_REPEAT_GENERATION] Not enough Pokemon: need ${battleSize}, have ${allPokemon.length}`);
       return [];
     }
     
-    // CRITICAL FIX: Filter out recently used Pokemon first
-    const availablePokemon = allPokemon.filter(pokemon => !recentlyUsedPokemon.has(pokemon.id));
+    // Step 1: Filter out recently used Pokemon FIRST
+    let availablePokemon = allPokemon.filter(pokemon => !recentlyUsedPokemon.has(pokemon.id));
+    console.log(`🎲🎲🎲 [ANTI_REPEAT_GENERATION] Available after filtering recent: ${availablePokemon.length}`);
     
-    console.log(`🎲 [ANTI_REPEAT_BATTLE_GEN] Available after filtering recent: ${availablePokemon.length}`);
-    
-    // If we don't have enough non-recent Pokemon, clear some of the recent list
+    // Step 2: If not enough available, reduce the recent list size
     if (availablePokemon.length < battleSize) {
-      console.log(`🎲 [ANTI_REPEAT_BATTLE_GEN] Not enough non-recent Pokemon, clearing recent list`);
-      setRecentlyUsedPokemon(new Set());
-      // Use all Pokemon if we had to clear the recent list
-      const shuffled = [...allPokemon];
-      for (let i = shuffled.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      console.log(`🎲🎲🎲 [ANTI_REPEAT_GENERATION] Not enough non-recent Pokemon, reducing recent list`);
+      
+      // Keep only the last 10 instead of 20
+      const recentArray = Array.from(recentlyUsedPokemon);
+      const reducedRecent = new Set(recentArray.slice(-10));
+      setRecentlyUsedPokemon(reducedRecent);
+      
+      availablePokemon = allPokemon.filter(pokemon => !reducedRecent.has(pokemon.id));
+      console.log(`🎲🎲🎲 [ANTI_REPEAT_GENERATION] Available after reducing recent list: ${availablePokemon.length}`);
+      
+      // If still not enough, clear recent list completely
+      if (availablePokemon.length < battleSize) {
+        console.log(`🎲🎲🎲 [ANTI_REPEAT_GENERATION] Still not enough, clearing recent list completely`);
+        setRecentlyUsedPokemon(new Set());
+        availablePokemon = [...allPokemon];
       }
-      const selected = shuffled.slice(0, battleSize);
-      const validated = validateBattlePokemon(selected);
-      console.log(`🎲 [ANTI_REPEAT_BATTLE_GEN] Generated after clearing recent: ${validated.map(p => p.name).join(' vs ')}`);
-      return validated;
     }
     
-    // Use truly random selection from available Pokemon
-    const shuffled = [...availablePokemon];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const randomValue = (timestamp * (i + 1) + Math.random() * 1000000) % shuffled.length;
-      const j = Math.floor(randomValue);
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    // Step 3: Use crypto random for true randomness
+    const selected: Pokemon[] = [];
+    const availableCopy = [...availablePokemon];
+    
+    // Fisher-Yates shuffle with crypto random
+    for (let i = availableCopy.length - 1; i > 0; i--) {
+      const randomArray = new Uint32Array(1);
+      crypto.getRandomValues(randomArray);
+      const j = Math.floor((randomArray[0] / (0xFFFFFFFF + 1)) * (i + 1));
+      [availableCopy[i], availableCopy[j]] = [availableCopy[j], availableCopy[i]];
     }
     
-    const selected = shuffled.slice(0, battleSize);
-    const validated = validateBattlePokemon(selected);
+    // Take the first battleSize Pokemon from shuffled array
+    const result = availableCopy.slice(0, battleSize);
+    const validated = validateBattlePokemon(result);
     
-    console.log(`🎲 [ANTI_REPEAT_BATTLE_GEN] Generated: ${validated.map(p => p.name).join(' vs ')}`);
+    console.log(`🎲🎲🎲 [ANTI_REPEAT_GENERATION] Selected Pokemon: ${validated.map(p => `${p.name}(${p.id})`).join(' vs ')}`);
+    console.log(`🎲🎲🎲 [ANTI_REPEAT_GENERATION] ===== Generation Complete =====`);
     
     return validated;
   }, [allPokemon, battlesCompleted, recentlyUsedPokemon]);
@@ -99,16 +109,17 @@ export const useBattleStateCore = (
     }
   }, [battleType, generateNewBattle]);
 
-  // CRITICAL FIX: Enhanced milestone detection
+  // CRITICAL FIX: Enhanced milestone detection with proper logging
   const checkForMilestone = useCallback((newBattlesCompleted: number) => {
-    console.log(`🏆 [MILESTONE_CHECK] Checking milestone for battle ${newBattlesCompleted}`);
-    console.log(`🏆 [MILESTONE_CHECK] Available milestones: ${milestones.join(', ')}`);
+    console.log(`🏆🏆🏆 [MILESTONE_DETECTION] ===== Checking Milestone =====`);
+    console.log(`🏆🏆🏆 [MILESTONE_DETECTION] Battle number: ${newBattlesCompleted}`);
+    console.log(`🏆🏆🏆 [MILESTONE_DETECTION] Available milestones: ${milestones.join(', ')}`);
     
     const isMilestone = milestones.includes(newBattlesCompleted);
-    console.log(`🏆 [MILESTONE_CHECK] Is battle ${newBattlesCompleted} a milestone? ${isMilestone}`);
+    console.log(`🏆🏆🏆 [MILESTONE_DETECTION] Is milestone? ${isMilestone}`);
     
     if (isMilestone) {
-      console.log(`🏆 [MILESTONE_HIT] MILESTONE ${newBattlesCompleted} REACHED!`);
+      console.log(`🏆🏆🏆 [MILESTONE_HIT] ===== MILESTONE ${newBattlesCompleted} REACHED! =====`);
       setShowingMilestone(true);
       setRankingGenerated(true);
       
@@ -116,60 +127,69 @@ export const useBattleStateCore = (
       const ranking = allPokemon.slice(0, 50);
       setFinalRankings(ranking);
       
-      console.log(`🏆 [MILESTONE_HIT] Milestone ${newBattlesCompleted} setup complete`);
+      console.log(`🏆🏆🏆 [MILESTONE_HIT] Milestone setup complete - showing milestone screen`);
       return true;
     }
     
     return false;
   }, [milestones, allPokemon]);
 
-  // Pokemon selection handler
+  // Pokemon selection handler with proper recent tracking
   const handlePokemonSelect = useCallback((pokemonId: number) => {
-    console.log(`🎯 [POKEMON_SELECT] Pokemon ${pokemonId} selected`);
+    console.log(`🎯🎯🎯 [POKEMON_SELECT] ===== Pokemon Selection =====`);
+    console.log(`🎯🎯🎯 [POKEMON_SELECT] Pokemon ${pokemonId} selected`);
+    console.log(`🎯🎯🎯 [POKEMON_SELECT] Current battle: ${currentBattle.map(p => `${p.name}(${p.id})`).join(' vs ')}`);
     
     if (isProcessingResult) {
-      console.log(`🎯 [POKEMON_SELECT] Already processing, ignoring selection`);
+      console.log(`🎯🎯🎯 [POKEMON_SELECT] Already processing, ignoring selection`);
       return;
     }
 
     const newSelection = [...selectedPokemon, pokemonId];
     setSelectedPokemon(newSelection);
 
-    // CRITICAL FIX: Add selected Pokemon to recently used list
-    setRecentlyUsedPokemon(prev => {
-      const newRecent = new Set(prev);
-      currentBattle.forEach(pokemon => newRecent.add(pokemon.id));
-      
-      // Keep only the last 20 Pokemon to prevent the list from growing too large
-      if (newRecent.size > 20) {
-        const recentArray = Array.from(newRecent);
-        const toKeep = recentArray.slice(-20);
-        return new Set(toKeep);
-      }
-      
-      return newRecent;
-    });
-
     if (battleType === "pairs" && newSelection.length === 1) {
-      console.log(`🎯 [POKEMON_SELECT] Pairs battle completed, processing result`);
+      console.log(`🎯🎯🎯 [POKEMON_SELECT] Pairs battle completed`);
       
       const newBattlesCompleted = battlesCompleted + 1;
-      console.log(`🎯 [POKEMON_SELECT] New battles completed: ${newBattlesCompleted}`);
+      console.log(`🎯🎯🎯 [POKEMON_SELECT] New battles completed: ${newBattlesCompleted}`);
       
-      // Simple result processing
+      // CRITICAL FIX: Add current battle Pokemon to recently used IMMEDIATELY
+      setRecentlyUsedPokemon(prev => {
+        const newRecent = new Set(prev);
+        currentBattle.forEach(pokemon => {
+          newRecent.add(pokemon.id);
+          console.log(`📝 [RECENT_TRACKING] Added ${pokemon.name}(${pokemon.id}) to recent list`);
+        });
+        
+        // Keep only the last 20 Pokemon
+        if (newRecent.size > 20) {
+          const recentArray = Array.from(newRecent);
+          const toKeep = recentArray.slice(-20);
+          console.log(`📝 [RECENT_TRACKING] Trimmed recent list to last 20: [${toKeep.join(', ')}]`);
+          return new Set(toKeep);
+        }
+        
+        console.log(`📝 [RECENT_TRACKING] Recent list now has ${newRecent.size} Pokemon: [${Array.from(newRecent).join(', ')}]`);
+        return newRecent;
+      });
+      
+      // Process battle result
       setBattleResults(prev => [...prev, { battle: currentBattle, selected: newSelection }]);
       setBattleHistory(prev => [...prev, { battle: currentBattle, selected: newSelection }]);
       setBattlesCompleted(newBattlesCompleted);
       setSelectedPokemon([]);
       
-      // CRITICAL FIX: Check for milestone BEFORE starting next battle
+      // Check for milestone BEFORE starting next battle
       const hitMilestone = checkForMilestone(newBattlesCompleted);
       
       if (!hitMilestone) {
-        // Only start next battle if we didn't hit a milestone
+        console.log(`🎯🎯🎯 [POKEMON_SELECT] No milestone hit, starting next battle`);
         setTimeout(() => {
           startNewBattle();
         }, 100);
+      } else {
+        console.log(`🎯🎯🎯 [POKEMON_SELECT] Milestone hit, showing milestone screen`);
       }
     }
   }, [selectedPokemon, battleType, currentBattle, isProcessingResult, battlesCompleted, checkForMilestone, startNewBattle]);
@@ -180,9 +200,7 @@ export const useBattleStateCore = (
       console.log(`🎯 [TRIPLET_SELECT] Triplet battle completed, processing result`);
       
       const newBattlesCompleted = battlesCompleted + 1;
-      console.log(`🎯 [TRIPLET_SELECT] New battles completed: ${newBattlesCompleted}`);
       
-      // Add selected Pokemon to recently used list
       setRecentlyUsedPokemon(prev => {
         const newRecent = new Set(prev);
         currentBattle.forEach(pokemon => newRecent.add(pokemon.id));
@@ -201,7 +219,6 @@ export const useBattleStateCore = (
       setBattlesCompleted(newBattlesCompleted);
       setSelectedPokemon([]);
       
-      // Check for milestone BEFORE starting next battle
       const hitMilestone = checkForMilestone(newBattlesCompleted);
       
       if (!hitMilestone) {
