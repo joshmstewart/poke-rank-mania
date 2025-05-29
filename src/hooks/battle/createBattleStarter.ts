@@ -2,6 +2,7 @@
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
 import { validateBattlePokemon } from "@/services/pokemon/api/utils";
+import { useSharedRefinementQueue } from "./useSharedRefinementQueue";
 
 export const createBattleStarter = (allPokemon: Pokemon[], currentRankings: RankedPokemon[]) => {
   console.log(`🚀 [BATTLE_STARTER] Creating battle starter with ${allPokemon.length} Pokemon (already filtered)`);
@@ -40,11 +41,57 @@ export const createBattleStarter = (allPokemon: Pokemon[], currentRankings: Rank
     return recentBattleHistory.has(battleKey);
   };
 
-  const startNewBattle = (battleType: BattleType): Pokemon[] => {
+  const startNewBattle = (battleType: BattleType, refinementQueue?: any): Pokemon[] => {
     battleCount++;
-    const battleSize = battleType === "pairs" ? 2 : 3;
-    
     console.log(`🎮 [BATTLE_GENERATION] Starting battle ${battleCount} with ${availablePokemon.length} available Pokemon`);
+    
+    // CRITICAL FIX: Check refinement queue FIRST before generating random battles
+    if (refinementQueue) {
+      console.log(`🔍 [REFINEMENT_CHECK] Checking refinement queue...`);
+      console.log(`🔍 [REFINEMENT_CHECK] - hasRefinementBattles: ${refinementQueue.hasRefinementBattles}`);
+      console.log(`🔍 [REFINEMENT_CHECK] - refinementBattleCount: ${refinementQueue.refinementBattleCount}`);
+      
+      const refinementBattle = refinementQueue.getNextRefinementBattle?.();
+      console.log(`🔍 [REFINEMENT_CHECK] - getNextRefinementBattle result:`, refinementBattle);
+      
+      if (refinementBattle) {
+        const primary = availablePokemon.find(p => p.id === refinementBattle.primaryPokemonId);
+        const opponent = availablePokemon.find(p => p.id === refinementBattle.opponentPokemonId);
+        
+        console.log(`🔍 [REFINEMENT_CHECK] - Primary Pokemon found: ${!!primary} (${primary?.name})`);
+        console.log(`🔍 [REFINEMENT_CHECK] - Opponent Pokemon found: ${!!opponent} (${opponent?.name})`);
+
+        if (primary && opponent) {
+          console.log(`✅ [REFINEMENT_BATTLE] Using refinement battle: ${primary.name} vs ${opponent.name}`);
+          console.log(`✅ [REFINEMENT_BATTLE] Reason: ${refinementBattle.reason}`);
+          
+          // Remove the battle from the queue
+          refinementQueue.popRefinementBattle?.();
+          console.log(`✅ [REFINEMENT_BATTLE] Battle removed from queue`);
+          
+          // Add to history and validate
+          const refinementResult = [primary, opponent];
+          addToHistory(refinementResult.map(p => p.id));
+          const validatedBattle = validateBattlePokemon(refinementResult);
+          
+          console.log(`✅ [REFINEMENT_BATTLE] Returning refinement battle: ${validatedBattle.map(p => `${p.name} (${p.id})`).join(', ')}`);
+          return validatedBattle;
+        } else {
+          console.warn(`❌ [REFINEMENT_BATTLE] Refinement battle had missing Pokémon:`, refinementBattle);
+          console.warn(`❌ [REFINEMENT_BATTLE] Removing invalid battle from queue...`);
+          refinementQueue.popRefinementBattle?.();
+          // Fall through to normal battle generation
+        }
+      } else {
+        console.log(`🔍 [REFINEMENT_CHECK] No refinement battles available, proceeding with normal generation`);
+      }
+    } else {
+      console.log(`🔍 [REFINEMENT_CHECK] No refinement queue provided`);
+    }
+
+    // NORMAL BATTLE GENERATION (only if no refinement battle was used)
+    const battleSize = battleType === "pairs" ? 2 : 3;
+    console.log(`🎮 [NORMAL_BATTLE] Generating normal ${battleType} battle`);
     
     let selectedBattle: Pokemon[] = [];
     let attempts = 0;
@@ -78,7 +125,7 @@ export const createBattleStarter = (allPokemon: Pokemon[], currentRankings: Rank
     addToHistory(selectedBattle.map(p => p.id));
     const validatedBattle = validateBattlePokemon(selectedBattle);
     
-    console.log(`✅ [BATTLE_GENERATION] Generated battle: ${validatedBattle.map(p => `${p.name} (${p.id})`).join(', ')}`);
+    console.log(`✅ [NORMAL_BATTLE] Generated normal battle: ${validatedBattle.map(p => `${p.name} (${p.id})`).join(', ')}`);
     
     return validatedBattle;
   };
