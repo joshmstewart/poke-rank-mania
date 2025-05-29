@@ -6,20 +6,32 @@ import { BattleType } from "./types";
 export const useBattleStateEventHandlers = (
   allPokemon: Pokemon[],
   stateData: any,
-  startNewBattle: (battleType: BattleType) => Pokemon[],
+  startNewBattle: (battleType: BattleType) => Promise<Pokemon[]> | Pokemon[],
   milestoneHandlers: any,
   setFinalRankingsWithLogging: (rankings: any) => void
 ) => {
-  // Create a parameterless wrapper for milestone handlers (they expect () => void)
-  const startNewBattleWrapper = useCallback(() => {
+  // Create a parameterless wrapper for milestone handlers with proper async handling
+  const startNewBattleWrapper = useCallback(async () => {
     console.log(`🚀 [START_NEW_BATTLE_WRAPPER] Parameterless wrapper called`);
-    const result = startNewBattle(stateData.battleType);
-    if (result && result.length > 0) {
-      console.log(`🚀 [START_NEW_BATTLE_WRAPPER] Setting new battle:`, result.map(p => p.name).join(' vs '));
-      stateData.setCurrentBattle(result);
-      stateData.setSelectedPokemon([]);
-    } else {
-      console.error(`🚀 [START_NEW_BATTLE_WRAPPER] Failed to create new battle`);
+    console.log(`🚀 [START_NEW_BATTLE_WRAPPER] Current battle type: ${stateData.battleType}`);
+    
+    try {
+      const result = await startNewBattle(stateData.battleType);
+      
+      if (result && result.length > 0) {
+        console.log(`🚀 [START_NEW_BATTLE_WRAPPER] Setting new battle:`, result.map(p => p.name).join(' vs '));
+        stateData.setCurrentBattle(result);
+        stateData.setSelectedPokemon([]);
+        console.log(`✅ [START_NEW_BATTLE_WRAPPER] New battle set successfully`);
+      } else {
+        console.error(`🚀 [START_NEW_BATTLE_WRAPPER] Failed to create new battle - empty result`);
+        // Fallback: try again after a short delay
+        setTimeout(() => {
+          startNewBattleWrapper();
+        }, 100);
+      }
+    } catch (error) {
+      console.error(`🚀 [START_NEW_BATTLE_WRAPPER] Error creating new battle:`, error);
     }
   }, [startNewBattle, stateData.battleType, stateData.setCurrentBattle, stateData.setSelectedPokemon]);
 
@@ -52,25 +64,19 @@ export const useBattleStateEventHandlers = (
     };
   }, [milestoneHandlers, stateData.battleHistory]);
 
-  // ADDED: Force initial battle start when component mounts with Pokemon data
+  // CRITICAL FIX: Force initial battle start with proper async handling
   useEffect(() => {
     console.log(`🚀 [INITIAL_BATTLE_DEBUG] Effect triggered - Pokemon: ${allPokemon.length}, currentBattle: ${stateData.currentBattle.length}`);
     
     if (allPokemon.length > 0 && stateData.currentBattle.length === 0) {
       console.log(`🚀 [INITIAL_BATTLE_DEBUG] Starting initial battle...`);
       
+      // Use async wrapper for consistent behavior
       setTimeout(() => {
-        const initialBattle = startNewBattle(stateData.battleType);
-        if (initialBattle && initialBattle.length > 0) {
-          console.log(`✅ [INITIAL_BATTLE_DEBUG] Initial battle created:`, initialBattle.map(p => p.name).join(' vs '));
-          stateData.setCurrentBattle(initialBattle);
-          stateData.setSelectedPokemon([]);
-        } else {
-          console.error(`❌ [INITIAL_BATTLE_DEBUG] Failed to create initial battle`);
-        }
+        startNewBattleWrapper();
       }, 100);
     }
-  }, [allPokemon.length, stateData.currentBattle.length, startNewBattle, stateData.battleType, stateData.setCurrentBattle, stateData.setSelectedPokemon]);
+  }, [allPokemon.length, stateData.currentBattle.length, startNewBattleWrapper]);
 
   return {
     startNewBattleWrapper

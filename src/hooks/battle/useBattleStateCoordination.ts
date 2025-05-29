@@ -30,14 +30,23 @@ export const useBattleStateCoordination = (
     return finalRankings;
   }, [finalRankings]);
   
-  // Initialize battle starter
+  // Initialize battle starter for fallback
   const { startNewBattle: startNewBattleCore } = useBattleStarterCore(allPokemon, getCurrentRankings);
   const refinementQueue = useSharedRefinementQueue();
 
-  // CRITICAL FIX: Use enhancedStartNewBattle instead of creating our own wrapper
+  // CRITICAL FIX: Always use enhancedStartNewBattle as the primary battle starter
   const startNewBattle = useCallback((battleType: BattleType) => {
     console.log(`🚀 [ENHANCED_START_WIRING] Using enhancedStartNewBattle for type: ${battleType}`);
-    return enhancedStartNewBattle(battleType);
+    console.log(`🚀 [BATTLE_GENERATION_TRACE] Timestamp: ${new Date().toISOString()}`);
+    
+    // Force a small delay to ensure state updates are processed
+    return new Promise<Pokemon[]>((resolve) => {
+      setTimeout(() => {
+        const result = enhancedStartNewBattle(battleType);
+        console.log(`🚀 [BATTLE_GENERATION_TRACE] Enhanced battle result:`, result?.map(p => `${p.name}(${p.id})`).join(' vs ') || 'empty');
+        resolve(result || []);
+      }, 10);
+    });
   }, [enhancedStartNewBattle]);
 
   return {

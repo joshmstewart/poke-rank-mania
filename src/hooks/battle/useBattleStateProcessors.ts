@@ -6,7 +6,7 @@ import { BattleType } from "./types";
 export const useBattleStateProcessors = (
   stateData: any,
   milestoneEvents: any,
-  startNewBattleWrapper: () => void
+  startNewBattleWrapper: () => Promise<void> | void
 ) => {
   // Enhanced setFinalRankings wrapper with detailed logging
   const setFinalRankingsWithLogging = useCallback((rankings: any) => {
@@ -31,7 +31,7 @@ export const useBattleStateProcessors = (
     console.log(`🚨🚨🚨 [SET_FINAL_RANKINGS_MEGA_DEBUG] ===== setFinalRankings call end =====`);
   }, [stateData.setFinalRankings]);
 
-  // Add processBattleResultWithRefinement function with SPEED IMPROVEMENT
+  // CRITICAL FIX: Improved battle result processing with proper async handling
   const processBattleResultWithRefinement = useCallback(async (
     selectedPokemonIds: number[],
     currentBattlePokemon: Pokemon[],
@@ -43,9 +43,18 @@ export const useBattleStateProcessors = (
     // Process the battle result
     const result = await milestoneEvents.originalProcessBattleResult(selectedPokemonIds, currentBattlePokemon, battleType, selectedGeneration);
     
-    // SPEED FIX: Start next battle immediately without delay
-    console.log(`🔄 [REFINEMENT_PROCESSING_DEBUG] Battle processed, starting next battle immediately...`);
-    startNewBattleWrapper();
+    // CRITICAL FIX: Ensure proper async handling for next battle
+    console.log(`🔄 [REFINEMENT_PROCESSING_DEBUG] Battle processed, starting next battle with proper async handling...`);
+    
+    // Use setTimeout to ensure state updates complete before starting new battle
+    setTimeout(async () => {
+      try {
+        await startNewBattleWrapper();
+        console.log(`🔄 [REFINEMENT_PROCESSING_DEBUG] ✅ Next battle started successfully`);
+      } catch (error) {
+        console.error(`🔄 [REFINEMENT_PROCESSING_DEBUG] ❌ Error starting next battle:`, error);
+      }
+    }, 50);
     
     return result;
   }, [milestoneEvents.originalProcessBattleResult, startNewBattleWrapper]);
