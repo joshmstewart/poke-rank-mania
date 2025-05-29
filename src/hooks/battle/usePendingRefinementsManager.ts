@@ -31,13 +31,43 @@ export const usePendingRefinementsManager = (initialPendingRefinements: Set<numb
 
     const handlePersistPendingState = (event: CustomEvent) => {
       console.log(`🔄 [PERSIST_PENDING] Persisting pending state for:`, event.detail);
-      const { pokemonId } = event.detail;
+      const { pokemonId, pokemonName } = event.detail;
       
       setLocalPendingRefinements(prev => {
         const newSet = new Set(prev);
         newSet.add(pokemonId);
-        console.log(`🔄 [PERSIST_PENDING] Persisted pending state for ${pokemonId}`);
+        console.log(`🔄 [PERSIST_PENDING] Persisted pending state for ${pokemonId} (${pokemonName})`);
+        console.log(`🔄 [PERSIST_PENDING] Full pending set:`, Array.from(newSet));
         return newSet;
+      });
+
+      // CRITICAL FIX: Also set a count to ensure it stays pending
+      setPendingBattleCounts(prev => {
+        const newMap = new Map(prev);
+        if (!newMap.has(pokemonId)) {
+          newMap.set(pokemonId, 2); // Default to 2 battles for manual reorder
+          console.log(`🔄 [PERSIST_PENDING] Set default battle count for ${pokemonId}`);
+        }
+        return newMap;
+      });
+    };
+
+    // CRITICAL FIX: Listen for drag start to immediately mark as pending
+    const handleDragStart = (event: CustomEvent) => {
+      console.log(`🔄 [DRAG_START_PENDING] Drag started for:`, event.detail);
+      const { pokemonId, pokemonName } = event.detail;
+      
+      setLocalPendingRefinements(prev => {
+        const newSet = new Set(prev);
+        newSet.add(pokemonId);
+        console.log(`🔄 [DRAG_START_PENDING] Marked ${pokemonId} (${pokemonName}) as pending on drag start`);
+        return newSet;
+      });
+
+      setPendingBattleCounts(prev => {
+        const newMap = new Map(prev);
+        newMap.set(pokemonId, 2); // Set expected battle count
+        return newMap;
       });
     };
     
@@ -78,24 +108,35 @@ export const usePendingRefinementsManager = (initialPendingRefinements: Set<numb
     
     document.addEventListener('refinement-queue-updated', handleRefinementQueueUpdate as EventListener);
     document.addEventListener('persist-pending-state', handlePersistPendingState as EventListener);
+    document.addEventListener('drag-start-pending', handleDragStart as EventListener);
     document.addEventListener('actual-battle-completed', handleActualBattleComplete as EventListener);
     
     return () => {
       document.removeEventListener('refinement-queue-updated', handleRefinementQueueUpdate as EventListener);
       document.removeEventListener('persist-pending-state', handlePersistPendingState as EventListener);
+      document.removeEventListener('drag-start-pending', handleDragStart as EventListener);
       document.removeEventListener('actual-battle-completed', handleActualBattleComplete as EventListener);
     };
   }, []);
 
   const markAsPending = useCallback((pokemonId: number) => {
+    console.log(`🔄 [MARK_PENDING] Manually marking ${pokemonId} as pending`);
     setLocalPendingRefinements(prev => {
       const newSet = new Set(prev);
       newSet.add(pokemonId);
+      console.log(`🔄 [MARK_PENDING] Pending set after manual mark:`, Array.from(newSet));
       return newSet;
+    });
+
+    setPendingBattleCounts(prev => {
+      const newMap = new Map(prev);
+      newMap.set(pokemonId, 2); // Default battle count
+      return newMap;
     });
   }, []);
 
   const updateFromProps = useCallback((pendingRefinements: Set<number>) => {
+    console.log(`🔄 [UPDATE_FROM_PROPS] Updating from props:`, Array.from(pendingRefinements));
     setLocalPendingRefinements(pendingRefinements);
   }, []);
 

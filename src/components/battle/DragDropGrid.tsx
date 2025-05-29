@@ -1,3 +1,4 @@
+
 import React from "react";
 import {
   DndContext,
@@ -56,7 +57,21 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
     
     // CRITICAL FIX: Show pending immediately when drag starts and persist it
     const draggedPokemonId = Number(event.active.id);
+    const draggedPokemon = displayRankings.find(p => p.id === draggedPokemonId);
+    
+    // Mark as pending through callback
     onMarkAsPending(draggedPokemonId);
+    
+    // CRITICAL FIX: Dispatch drag start event for global listening
+    const dragStartEvent = new CustomEvent('drag-start-pending', {
+      detail: { 
+        pokemonId: draggedPokemonId, 
+        pokemonName: draggedPokemon?.name || 'Unknown',
+        timestamp: new Date().toISOString()
+      }
+    });
+    document.dispatchEvent(dragStartEvent);
+    console.log(`🚨 [DND_CONTEXT_DEBUG] Dispatched drag-start-pending event for ${draggedPokemon?.name}`);
   };
 
   const handleDragOver = (event: DragOverEvent) => {
