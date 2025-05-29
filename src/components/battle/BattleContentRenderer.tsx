@@ -1,6 +1,6 @@
 
 import React from "react";
-import { Pokemon } from "@/services/pokemon";
+import { Pokemon, TopNOption } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "@/hooks/battle/types";
 import BattleContentHeader from "./BattleContentHeader";
 import BattleContentMain from "./BattleContentMain";
@@ -75,6 +75,15 @@ const BattleContentRenderer: React.FC<BattleContentRendererProps> = ({
 }) => {
   console.log(`🔧 [BATTLE_CONTENT_RENDERER] Render decision - showingMilestone: ${showingMilestone}, currentBattle: ${currentBattle?.length || 0}`);
 
+  // Convert string activeTier to TopNOption for BattleContentMilestone
+  const activeTierAsTopNOption: TopNOption = activeTier === "All" ? "All" : Number(activeTier) as TopNOption;
+  
+  // Create wrapper function to convert TopNOption back to string for setActiveTier
+  const handleSetActiveTier = (tier: TopNOption) => {
+    const tierAsString = tier === "All" ? "All" : String(tier);
+    setActiveTier(tierAsString);
+  };
+
   // Show milestone screen
   if (showingMilestone) {
     return (
@@ -82,12 +91,12 @@ const BattleContentRenderer: React.FC<BattleContentRendererProps> = ({
         finalRankings={finalRankings}
         battlesCompleted={battlesCompleted}
         rankingGenerated={rankingGenerated}
-        activeTier={activeTier}
+        activeTier={activeTierAsTopNOption}
         getSnapshotForMilestone={() => JSON.stringify({ battlesCompleted, finalRankings })}
         onContinueBattles={handleContinueBattles}
         performFullBattleReset={performFullBattleReset}
         handleSaveRankings={handleSaveRankings}
-        setActiveTier={setActiveTier}
+        setActiveTier={handleSetActiveTier}
         suggestRanking={suggestRanking}
         removeSuggestion={removeSuggestion}
         setShowingMilestone={setShowingMilestone}
