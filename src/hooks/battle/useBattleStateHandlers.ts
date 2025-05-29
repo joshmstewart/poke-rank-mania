@@ -28,7 +28,8 @@ export const useBattleStateHandlers = (
   setIsAnyProcessing: (processing: boolean) => void,
   processBattleResultWithRefinement: any,
   clearAllSuggestions: () => void,
-  clearRefinementQueue: () => void
+  clearRefinementQueue: () => void,
+  generateRankings: () => void
 ) => {
   const handlePokemonSelect = useCallback((id: number) => {
     console.log(`🎯 [POKEMON_SELECT_ULTRA_DEBUG] Pokemon ${id} selected. Current selections:`, selectedPokemon);
@@ -100,8 +101,11 @@ export const useBattleStateHandlers = (
       console.log(`🏆 [HANDLERS_MILESTONE_HIT_MEGA_DEBUG] ===== HANDLERS MILESTONE ${newBattlesCompleted} REACHED! =====`);
       console.log(`🏆 [HANDLERS_MILESTONE_HIT_MEGA_DEBUG] About to set milestone flags via handlers...`);
       
-      // CRITICAL FIX: Use setTimeout to ensure state updates are processed
+      // CRITICAL FIX: Generate rankings FIRST, then set milestone flags
       setTimeout(() => {
+        console.log(`🏆 [HANDLERS_MILESTONE_TRIGGER] Generating rankings for milestone ${newBattlesCompleted}`);
+        generateRankings(); // CRITICAL: Generate the actual rankings
+        
         console.log(`🏆 [HANDLERS_MILESTONE_TRIGGER] Setting milestone flags NOW for battle ${newBattlesCompleted}`);
         setMilestoneInProgress(true);
         setShowingMilestone(true);
@@ -120,7 +124,7 @@ export const useBattleStateHandlers = (
     setSelectedPokemon([]);
     console.log(`✅ [HANDLERS_BATTLE_PROCESSING_MEGA_DEBUG] Battle result processed successfully via handlers`);
     return Promise.resolve();
-  }, [battlesCompleted, milestones, setBattleHistory, setBattlesCompleted, setBattleResults, setSelectedPokemon, setMilestoneInProgress, setShowingMilestone, setRankingGenerated]);
+  }, [battlesCompleted, milestones, setBattleHistory, setBattlesCompleted, setBattleResults, setSelectedPokemon, setMilestoneInProgress, setShowingMilestone, setRankingGenerated, generateRankings]);
 
   const startNewBattleWrapper = useCallback(() => {
     console.log(`🚀 [START_NEW_BATTLE_ULTRA_DEBUG] ===== START NEW BATTLE =====`);

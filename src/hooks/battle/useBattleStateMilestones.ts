@@ -1,4 +1,3 @@
-
 import { useCallback } from "react";
 import { RankedPokemon, TopNOption } from "@/services/pokemon";
 
@@ -32,25 +31,77 @@ export const useBattleStateMilestones = (
     return JSON.stringify(snapshot);
   }, [finalRankings, battleHistory, battlesCompleted, completionPercentage]);
 
-  // ENHANCED: Detailed logging for ranking generation
+  // CRITICAL FIX: Actually generate rankings from battle history
   const generateRankings = useCallback(() => {
     console.log(`🏆 [MILESTONE_RANKINGS_ULTRA_DEBUG] ===== GENERATING RANKINGS =====`);
     console.log(`🏆 [MILESTONE_RANKINGS_ULTRA_DEBUG] Current finalRankings length: ${finalRankings.length}`);
     console.log(`🏆 [MILESTONE_RANKINGS_ULTRA_DEBUG] battleHistory length: ${battleHistory.length}`);
     console.log(`🏆 [MILESTONE_RANKINGS_ULTRA_DEBUG] battlesCompleted: ${battlesCompleted}`);
     
-    if (finalRankings.length > 0) {
-      console.log(`🏆 [MILESTONE_RANKINGS_ULTRA_DEBUG] Sample existing rankings:`, finalRankings.slice(0, 5).map(p => `${p.name} (${p.id}) - score: ${p.score}`));
-    } else {
-      console.log(`🚨 [MILESTONE_RANKINGS_ULTRA_DEBUG] WARNING: finalRankings is EMPTY - this may be why Pokemon aren't showing!`);
-      console.log(`🚨 [MILESTONE_RANKINGS_ULTRA_DEBUG] This suggests the TrueSkill ranking system hasn't populated finalRankings yet`);
+    if (battleHistory.length === 0) {
+      console.log(`🚨 [MILESTONE_RANKINGS_ULTRA_DEBUG] No battle history available to generate rankings from!`);
+      return;
     }
+
+    // CRITICAL FIX: Generate simple rankings from battle history
+    const pokemonStats = new Map<number, { pokemon: any, wins: number, losses: number, battles: number }>();
     
-    console.log(`🏆 [MILESTONE_RANKINGS_ULTRA_DEBUG] Setting ranking generated flag - external TrueSkill system should handle ranking generation`);
+    // Process battle history to count wins/losses
+    battleHistory.forEach(({ battle, selected }) => {
+      console.log(`🔧 [RANKING_GENERATION] Processing battle: ${battle.map(p => p.name).join(' vs ')}, selected: ${selected}`);
+      
+      battle.forEach(pokemon => {
+        if (!pokemonStats.has(pokemon.id)) {
+          pokemonStats.set(pokemon.id, {
+            pokemon,
+            wins: 0,
+            losses: 0,
+            battles: 0
+          });
+        }
+        
+        const stats = pokemonStats.get(pokemon.id)!;
+        stats.battles++;
+        
+        if (selected.includes(pokemon.id)) {
+          stats.wins++;
+          console.log(`🏆 [RANKING_GENERATION] ${pokemon.name} won this battle`);
+        } else {
+          stats.losses++;
+          console.log(`💔 [RANKING_GENERATION] ${pokemon.name} lost this battle`);
+        }
+      });
+    });
+
+    // Convert to ranked pokemon with scores
+    const rankedPokemon: RankedPokemon[] = Array.from(pokemonStats.values())
+      .map(({ pokemon, wins, losses, battles }) => {
+        const winRate = battles > 0 ? wins / battles : 0;
+        const score = winRate * 100 + (wins * 5); // Simple scoring system
+        
+        console.log(`🔧 [RANKING_GENERATION] ${pokemon.name}: ${wins}W/${losses}L (${(winRate * 100).toFixed(1)}% win rate), score: ${score.toFixed(1)}`);
+        
+        return {
+          ...pokemon,
+          score,
+          count: battles,
+          confidence: Math.min(battles * 10, 100), // Confidence increases with more battles
+          wins,
+          losses,
+          winRate
+        };
+      })
+      .sort((a, b) => b.score - a.score); // Sort by score descending
+
+    console.log(`🏆 [MILESTONE_RANKINGS_ULTRA_DEBUG] Generated ${rankedPokemon.length} rankings`);
+    console.log(`🏆 [MILESTONE_RANKINGS_ULTRA_DEBUG] Top 5 Pokemon:`, rankedPokemon.slice(0, 5).map(p => `${p.name} (score: ${p.score.toFixed(1)})`));
+    
+    // CRITICAL FIX: Actually set the rankings!
+    setFinalRankings(rankedPokemon);
     setRankingGenerated(true);
     
     console.log(`🏆 [MILESTONE_RANKINGS_ULTRA_DEBUG] ===== END RANKING GENERATION =====`);
-  }, [finalRankings, battleHistory, battlesCompleted, setRankingGenerated]);
+  }, [finalRankings, battleHistory, battlesCompleted, setRankingGenerated, setFinalRankings]);
 
   const handleSaveRankings = useCallback(() => {
     console.log(`🔧 [MILESTONE_SAVE_DEBUG] Saving rankings and hiding milestone`);

@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
@@ -193,6 +192,19 @@ export const useBattleStateCore = (
   }, []);
 
   // CRITICAL FIX: All custom hooks that depend on state must be called after state is defined
+  const milestoneHandlers = useBattleStateMilestones(
+    finalRankings,
+    battleHistory,
+    battlesCompleted,
+    completionPercentage,
+    setShowingMilestone,
+    setMilestoneInProgress,
+    setRankingGenerated,
+    setFinalRankings,
+    handlers.startNewBattleWrapper
+  );
+
+  // CRITICAL FIX: Pass generateRankings to handlers
   const handlers = useBattleStateHandlers(
     allPokemon,
     currentBattle,
@@ -219,19 +231,8 @@ export const useBattleStateCore = (
     setIsAnyProcessing,
     processBattleResultWithRefinement,
     clearAllSuggestions,
-    refinementQueue.clearRefinementQueue
-  );
-
-  const milestoneHandlers = useBattleStateMilestones(
-    finalRankings,
-    battleHistory,
-    battlesCompleted,
-    completionPercentage,
-    setShowingMilestone,
-    setMilestoneInProgress,
-    setRankingGenerated,
-    setFinalRankings,
-    handlers.startNewBattleWrapper
+    refinementQueue.clearRefinementQueue,
+    milestoneHandlers.generateRankings  // CRITICAL: Pass the generateRankings function
   );
 
   const processingHandlers = useBattleStateProcessing(
