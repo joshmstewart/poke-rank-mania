@@ -30,12 +30,15 @@ const PokemonRanker = () => {
   const [showRankings, setShowRankings] = React.useState(false);
   const [resetDialogOpen, setResetDialogOpen] = React.useState(false);
 
-  // Convert rankedPokemon to proper RankedPokemon type with defaults
+  // Convert rankedPokemon to proper RankedPokemon type with defaults including new required properties
   const typedRankedPokemon: RankedPokemon[] = rankedPokemon.map(pokemon => ({
     ...pokemon,
     score: 0,
     count: 0,
-    confidence: 0
+    confidence: 0,
+    wins: 0,
+    losses: 0,
+    winRate: 0
   }));
 
   // Initialize the ranking suggestions hook

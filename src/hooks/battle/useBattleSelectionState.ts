@@ -31,18 +31,21 @@ export const useBattleSelectionState = () => {
     getCurrentRankings
   } = useBattleResults();
 
-  // Ensure currentRankings always has full RankedPokemon structure
+  // Ensure currentRankings always has full RankedPokemon structure including new required properties
   const currentRankings = useMemo<RankedPokemon[]>(() => {
     if (Array.isArray(battleResults) && battleResults.length > 0) {
       return getCurrentRankings();
     }
 
-    // Fallback: convert raw Pokémon into dummy RankedPokemon
+    // Fallback: convert raw Pokémon into dummy RankedPokemon with all required properties
     return (allPokemon || []).map(pokemon => ({
       ...pokemon,
       score: 0,
       count: 0,
-      confidence: 0
+      confidence: 0,
+      wins: 0,
+      losses: 0,
+      winRate: 0
     }));
   }, [battleResults, allPokemon, getCurrentRankings]);
 

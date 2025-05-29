@@ -46,10 +46,18 @@ export const useRankingCalculator = (
 
     // Build count map from battle results
     const countMap = new Map<number, number>();
+    const winsMap = new Map<number, number>();
+    const lossesMap = new Map<number, number>();
+    
     results.forEach(result => {
       if (result && result.winner && result.loser) {
+        // Update total counts
         countMap.set(result.winner.id, (countMap.get(result.winner.id) || 0) + 1);
         countMap.set(result.loser.id, (countMap.get(result.loser.id) || 0) + 1);
+        
+        // Update wins and losses
+        winsMap.set(result.winner.id, (winsMap.get(result.winner.id) || 0) + 1);
+        lossesMap.set(result.loser.id, (lossesMap.get(result.loser.id) || 0) + 1);
       }
     });
 
@@ -88,14 +96,23 @@ export const useRankingCalculator = (
         // Extract types using helper function
         const { type1, type2 } = extractPokemonTypes(completePokemon);
 
+        // Calculate wins, losses, and win rate
+        const wins = winsMap.get(completePokemon.id) || 0;
+        const losses = lossesMap.get(completePokemon.id) || 0;
+        const totalBattles = countMap.get(completePokemon.id) || 0;
+        const winRate = totalBattles > 0 ? (wins / totalBattles) * 100 : 0;
+
         const rankedPokemon: RankedPokemon = {
           ...completePokemon,
           types: completePokemon.types || [],
           type1,
           type2,
           score: conservativeEstimate,
-          count: countMap.get(completePokemon.id) || 0,
+          count: totalBattles,
           confidence: normalizedConfidence,
+          wins,
+          losses,
+          winRate,
           isFrozenForTier: pokemonFrozenStatus,
           suggestedAdjustment
         };
@@ -104,7 +121,10 @@ export const useRankingCalculator = (
           type1: rankedPokemon.type1,
           type2: rankedPokemon.type2,
           hasTypes: !!rankedPokemon.types,
-          typesLength: rankedPokemon.types?.length || 0
+          typesLength: rankedPokemon.types?.length || 0,
+          wins: rankedPokemon.wins,
+          losses: rankedPokemon.losses,
+          winRate: rankedPokemon.winRate
         });
 
         return rankedPokemon;
