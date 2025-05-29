@@ -143,7 +143,8 @@ export const useBattleStarterIntegration = (
             setSelectedPokemon([]);
             
             console.log(`🎯 [REFINEMENT_QUEUE_MEGA_PROCESSING] ✅✅✅ REFINEMENT BATTLE SET SUCCESSFULLY!`);
-            console.log(`🎯 [REFINEMENT_QUEUE_MEGA_PROCESSING] Returning refinement battle result`);
+            console.log(`🎯 [REFINEMENT_QUEUE_MEGA_PROCESSING] ⚠️ CRITICAL: RETURNING EARLY TO PREVENT OVERWRITE`);
+            console.log(`🎯 [REFINEMENT_QUEUE_MEGA_PROCESSING] ===== REFINEMENT BATTLE COMPLETE - EARLY RETURN =====`);
             return refinementBattle;
           } else {
             console.error(`🎯 [REFINEMENT_QUEUE_MEGA_PROCESSING] ❌ POKEMON NOT FOUND!`);
