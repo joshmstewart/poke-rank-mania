@@ -1,12 +1,9 @@
 
-import React, { useEffect, useRef } from "react";
+import React from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "@/hooks/battle/types";
-import { useBattleStateCore } from "@/hooks/battle/useBattleStateCore";
-import BattleContentHeader from "./BattleContentHeader";
-import BattleContentMain from "./BattleContentMain";
-import BattleContentMilestone from "./BattleContentMilestone";
-import BattleContentLoading from "./BattleContentLoading";
+import { useBattleContentState } from "@/hooks/battle/useBattleContentState";
+import BattleContentRenderer from "./BattleContentRenderer";
 
 interface BattleContentCoreProps {
   allPokemon: Pokemon[];
@@ -23,32 +20,16 @@ const BattleContentCore: React.FC<BattleContentCoreProps> = ({
   setBattlesCompleted,
   setBattleResults
 }) => {
-  const instanceRef = useRef(`content-${Date.now()}`);
-  
-  console.log(`🔧 [BATTLE_CONTENT_CORE] Render - Instance: ${instanceRef.current}`);
-  console.log(`🔧 [BATTLE_CONTENT_CORE] allPokemon: ${allPokemon?.length || 0}, initialBattleType: ${initialBattleType}`);
-
-  // Use the simplified core hook
-  const stateHook = useBattleStateCore(
-    allPokemon || [], 
-    initialBattleType, 
-    initialSelectedGeneration
+  const stateData = useBattleContentState(
+    allPokemon,
+    initialBattleType,
+    initialSelectedGeneration,
+    setBattlesCompleted,
+    setBattleResults
   );
 
-  // Update parent state when needed
-  useEffect(() => {
-    if (setBattlesCompleted) {
-      setBattlesCompleted(stateHook.battlesCompleted);
-    }
-  }, [stateHook.battlesCompleted, setBattlesCompleted]);
-
-  useEffect(() => {
-    if (setBattleResults) {
-      setBattleResults(stateHook.battleResults);
-    }
-  }, [stateHook.battleResults, setBattleResults]);
-
   const {
+    instanceRef,
     currentBattle,
     battleResults,
     battlesCompleted,
@@ -88,67 +69,42 @@ const BattleContentCore: React.FC<BattleContentCoreProps> = ({
     performFullBattleReset,
     handleManualReorder,
     pendingRefinements
-  } = stateHook;
+  } = stateData;
 
-  console.log(`🔧 [BATTLE_CONTENT_CORE] Render decision - showingMilestone: ${showingMilestone}, currentBattle: ${currentBattle?.length || 0}`);
+  console.log(`🔧 [BATTLE_CONTENT_CORE] Render - Instance: ${instanceRef.current}`);
+  console.log(`🔧 [BATTLE_CONTENT_CORE] allPokemon: ${allPokemon?.length || 0}, initialBattleType: ${initialBattleType}`);
 
-  // Show milestone screen
-  if (showingMilestone) {
-    return (
-      <BattleContentMilestone
-        finalRankings={finalRankings}
-        battlesCompleted={battlesCompleted}
-        rankingGenerated={rankingGenerated}
-        activeTier={activeTier}
-        getSnapshotForMilestone={() => JSON.stringify({ battlesCompleted, battleResults, finalRankings })}
-        onContinueBattles={handleContinueBattles}
-        performFullBattleReset={performFullBattleReset}
-        handleSaveRankings={handleSaveRankings}
-        setActiveTier={setActiveTier}
-        suggestRanking={suggestRanking}
-        removeSuggestion={removeSuggestion}
-        setShowingMilestone={setShowingMilestone}
-        resetMilestoneInProgress={resetMilestoneInProgress}
-        handleManualReorder={handleManualReorder}
-        pendingRefinements={new Set<number>()}
-      />
-    );
-  }
-
-  // Show loading when no battle data
-  if (!currentBattle || currentBattle.length === 0) {
-    console.log(`🔧 [BATTLE_CONTENT_CORE] Showing loading - no battle data`);
-    return <BattleContentLoading />;
-  }
-
-  // Show main interface
-  console.log(`🔧 [BATTLE_CONTENT_CORE] Showing main interface with ${currentBattle.length} Pokemon`);
-  
   return (
-    <div className="w-full">
-      <BattleContentHeader
-        selectedGeneration={selectedGeneration}
-        battleType={battleType}
-        onGenerationChange={setSelectedGeneration}
-        setBattleType={setBattleType}
-        performFullBattleReset={performFullBattleReset}
-        setBattlesCompleted={setBattlesCompleted}
-        setBattleResults={setBattleResults}
-      />
-
-      <BattleContentMain
-        currentBattle={currentBattle}
-        selectedPokemon={selectedPokemon}
-        battlesCompleted={battlesCompleted}
-        battleType={battleType}
-        battleHistory={battleHistory}
-        onPokemonSelect={handlePokemonSelect}
-        onTripletSelectionComplete={handleTripletSelectionComplete}
-        onGoBack={goBack}
-        milestones={milestones}
-        isAnyProcessing={isAnyProcessing}
-      />
-    </div>
+    <BattleContentRenderer
+      showingMilestone={showingMilestone}
+      currentBattle={currentBattle}
+      selectedPokemon={selectedPokemon}
+      battlesCompleted={battlesCompleted}
+      battleType={battleType}
+      battleHistory={battleHistory}
+      selectedGeneration={selectedGeneration}
+      finalRankings={finalRankings}
+      activeTier={activeTier}
+      milestones={milestones}
+      rankingGenerated={rankingGenerated}
+      isAnyProcessing={isAnyProcessing}
+      setSelectedGeneration={setSelectedGeneration}
+      setBattleType={setBattleType}
+      setShowingMilestone={setShowingMilestone}
+      setActiveTier={setActiveTier}
+      handlePokemonSelect={handlePokemonSelect}
+      handleTripletSelectionComplete={handleTripletSelectionComplete}
+      goBack={goBack}
+      handleContinueBattles={handleContinueBattles}
+      performFullBattleReset={performFullBattleReset}
+      handleSaveRankings={handleSaveRankings}
+      suggestRanking={suggestRanking}
+      removeSuggestion={removeSuggestion}
+      resetMilestoneInProgress={resetMilestoneInProgress}
+      handleManualReorder={handleManualReorder}
+      setBattlesCompleted={setBattlesCompleted}
+      setBattleResults={setBattleResults}
+    />
   );
 };
 
