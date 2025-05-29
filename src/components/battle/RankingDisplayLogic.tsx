@@ -17,9 +17,20 @@ export const useRankingDisplayLogic = ({
   const [displayCount, setDisplayCount] = useState(20);
   const [milestoneDisplayCount, setMilestoneDisplayCount] = useState(50);
   
+  console.log(`🔧 [RANKING_DISPLAY_LOGIC_DEBUG] ===== useRankingDisplayLogic called =====`);
+  console.log(`🔧 [RANKING_DISPLAY_LOGIC_DEBUG] Input finalRankings length: ${finalRankings?.length || 0}`);
+  console.log(`🔧 [RANKING_DISPLAY_LOGIC_DEBUG] isMilestoneView: ${isMilestoneView}`);
+  console.log(`🔧 [RANKING_DISPLAY_LOGIC_DEBUG] activeTier: ${activeTier}`);
+  
   // CRITICAL FIX: Format all Pokemon names before displaying
   const formattedRankings = React.useMemo(() => {
     console.log(`🔧 [MILESTONE_NAME_FIX] ===== FORMATTING ALL POKEMON NAMES =====`);
+    console.log(`🔧 [MILESTONE_NAME_FIX] Input rankings length: ${finalRankings?.length || 0}`);
+    
+    if (!finalRankings || finalRankings.length === 0) {
+      console.log(`🚨 [MILESTONE_NAME_FIX] No rankings to format - returning empty array`);
+      return [];
+    }
     
     const formatted = finalRankings.map((pokemon, index) => {
       const originalName = pokemon.name;
@@ -42,22 +53,28 @@ export const useRankingDisplayLogic = ({
     });
     
     console.log(`✅ [MILESTONE_NAME_FIX] Formatted ${formatted.length} Pokemon names for display`);
+    console.log(`🔧 [MILESTONE_NAME_FIX] Sample formatted names:`, formatted.slice(0, 3).map(p => `${p.name} (${p.id})`));
     console.log(`🔧 [MILESTONE_NAME_FIX] ===== END FORMATTING =====`);
     return formatted;
   }, [finalRankings]);
   
+  console.log(`🔧 [RANKING_DISPLAY_LOGIC_DEBUG] Formatted rankings length: ${formattedRankings.length}`);
+  
   // Calculate how many items to show for milestone view based on tier
   const getMaxItemsForTier = useCallback(() => {
     if (activeTier === "All") {
+      console.log(`🔧 [RANKING_DISPLAY_LOGIC_DEBUG] Tier 'All' - returning all ${formattedRankings.length} items`);
       return formattedRankings.length;
     }
-    return Math.min(Number(activeTier), formattedRankings.length);
+    const maxItems = Math.min(Number(activeTier), formattedRankings.length);
+    console.log(`🔧 [RANKING_DISPLAY_LOGIC_DEBUG] Tier '${activeTier}' - returning ${maxItems} items`);
+    return maxItems;
   }, [activeTier, formattedRankings.length]);
 
   // Add debugging to show Pokemon with types - this must be called unconditionally
   useEffect(() => {
     const displayRankings = formattedRankings.slice(0, displayCount);
-    console.log("Pokemon list with types:");
+    console.log(`🔧 [RANKING_DISPLAY_LOGIC_DEBUG] Pokemon list with types (first 5):`);
     if (displayRankings.length > 0) {
       displayRankings.slice(0, Math.min(5, displayRankings.length)).forEach((pokemon, index) => {
         console.log(`${index + 1}. ${pokemon.name} (ID: ${pokemon.id}) - Types: ${pokemon.types?.join(', ') || 'unknown'}`);
@@ -76,12 +93,15 @@ export const useRankingDisplayLogic = ({
           }
         }
       });
+    } else {
+      console.log(`🚨 [RANKING_DISPLAY_LOGIC_DEBUG] No display rankings available`);
     }
   }, [formattedRankings, displayCount]);
 
   // Reset milestone display count when tier changes
   useEffect(() => {
     if (isMilestoneView) {
+      console.log(`🔧 [RANKING_DISPLAY_LOGIC_DEBUG] Resetting milestone display count for tier change`);
       setMilestoneDisplayCount(50);
     }
   }, [activeTier, isMilestoneView]);
@@ -90,13 +110,15 @@ export const useRankingDisplayLogic = ({
   const handleShowMore = () => {
     const increment = 50;
     const newCount = Math.min(displayCount + increment, formattedRankings.length);
-    console.log(`Increasing display count from ${displayCount} to ${newCount} of ${formattedRankings.length} total`);
+    console.log(`🔧 [RANKING_DISPLAY_LOGIC_DEBUG] Increasing display count from ${displayCount} to ${newCount} of ${formattedRankings.length} total`);
     setDisplayCount(newCount);
   };
 
   const handleMilestoneLoadMore = () => {
     const maxItems = getMaxItemsForTier();
-    setMilestoneDisplayCount(prev => Math.min(prev + 50, maxItems));
+    const newCount = Math.min(milestoneDisplayCount + 50, maxItems);
+    console.log(`🔧 [RANKING_DISPLAY_LOGIC_DEBUG] Milestone load more: ${milestoneDisplayCount} → ${newCount} (max: ${maxItems})`);
+    setMilestoneDisplayCount(newCount);
   };
 
   // ULTRA-DETAILED MILESTONE NAME LOGGING
@@ -104,23 +126,29 @@ export const useRankingDisplayLogic = ({
     console.log(`🏆 [MILESTONE_ULTRA_DEBUG] ===== MILESTONE VIEW RENDERING =====`);
     console.log(`🏆 [MILESTONE_ULTRA_DEBUG] Total Pokemon in formattedRankings: ${formattedRankings.length}`);
     
-    // Log first 5 Pokemon names in detail
-    formattedRankings.slice(0, 5).forEach((pokemon, index) => {
-      console.log(`🏆 [MILESTONE_ULTRA_DEBUG] Pokemon #${index + 1}:`);
-      console.log(`🏆 [MILESTONE_ULTRA_DEBUG]   ID: ${pokemon.id}`);
-      console.log(`🏆 [MILESTONE_ULTRA_DEBUG]   Name: "${pokemon.name}"`);
-      console.log(`🏆 [MILESTONE_ULTRA_DEBUG]   Name type: ${typeof pokemon.name}`);
-      console.log(`🏆 [MILESTONE_ULTRA_DEBUG]   Name length: ${pokemon.name.length}`);
-      console.log(`🏆 [MILESTONE_ULTRA_DEBUG]   Contains hyphen: ${pokemon.name.includes('-')}`);
-      console.log(`🏆 [MILESTONE_ULTRA_DEBUG]   Is formatted: ${!pokemon.name.includes('-') || pokemon.name.includes('(') || pokemon.name.includes('Mega ') || pokemon.name.includes('Alolan ') || pokemon.name.includes('G-Max ')}`);
-      
-      // Special check for G-Max
-      if (pokemon.name.toLowerCase().includes('gmax') || pokemon.name.includes('G-Max')) {
-        console.log(`🎯 [MILESTONE_GMAX_DEBUG] GMAX Pokemon in milestone: "${pokemon.name}"`);
-        console.log(`🎯 [MILESTONE_GMAX_DEBUG]   Contains 'G-Max': ${pokemon.name.includes('G-Max')}`);
-        console.log(`🎯 [MILESTONE_GMAX_DEBUG]   Contains 'gmax': ${pokemon.name.toLowerCase().includes('gmax')}`);
-      }
-    });
+    if (formattedRankings.length === 0) {
+      console.log(`🚨 [MILESTONE_ULTRA_DEBUG] CRITICAL: formattedRankings is EMPTY!`);
+      console.log(`🚨 [MILESTONE_ULTRA_DEBUG] This is why no Pokemon are showing in the milestone view`);
+      console.log(`🚨 [MILESTONE_ULTRA_DEBUG] Original finalRankings:`, finalRankings);
+    } else {
+      // Log first 5 Pokemon names in detail
+      formattedRankings.slice(0, 5).forEach((pokemon, index) => {
+        console.log(`🏆 [MILESTONE_ULTRA_DEBUG] Pokemon #${index + 1}:`);
+        console.log(`🏆 [MILESTONE_ULTRA_DEBUG]   ID: ${pokemon.id}`);
+        console.log(`🏆 [MILESTONE_ULTRA_DEBUG]   Name: "${pokemon.name}"`);
+        console.log(`🏆 [MILESTONE_ULTRA_DEBUG]   Name type: ${typeof pokemon.name}`);
+        console.log(`🏆 [MILESTONE_ULTRA_DEBUG]   Name length: ${pokemon.name.length}`);
+        console.log(`🏆 [MILESTONE_ULTRA_DEBUG]   Contains hyphen: ${pokemon.name.includes('-')}`);
+        console.log(`🏆 [MILESTONE_ULTRA_DEBUG]   Is formatted: ${!pokemon.name.includes('-') || pokemon.name.includes('(') || pokemon.name.includes('Mega ') || pokemon.name.includes('Alolan ') || pokemon.name.includes('G-Max ')}`);
+        
+        // Special check for G-Max
+        if (pokemon.name.toLowerCase().includes('gmax') || pokemon.name.includes('G-Max')) {
+          console.log(`🎯 [MILESTONE_GMAX_DEBUG] GMAX Pokemon in milestone: "${pokemon.name}"`);
+          console.log(`🎯 [MILESTONE_GMAX_DEBUG]   Contains 'G-Max': ${pokemon.name.includes('G-Max')}`);
+          console.log(`🎯 [MILESTONE_GMAX_DEBUG]   Contains 'gmax': ${pokemon.name.toLowerCase().includes('gmax')}`);
+        }
+      });
+    }
     console.log(`🏆 [MILESTONE_ULTRA_DEBUG] ===== END MILESTONE DEBUG =====`);
   }
 

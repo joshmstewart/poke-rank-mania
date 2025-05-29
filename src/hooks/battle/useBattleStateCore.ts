@@ -56,28 +56,43 @@ export const useBattleStateCore = (
   console.log(`🔧 [BATTLE_STATE_CORE_ULTRA_DEBUG] Hook state initialized, calling battleStarter and refinementQueue hooks`);
 
   // CRITICAL FIX: Pass a function that returns the current rankings instead of the array directly
-  const getCurrentRankings = useCallback(() => finalRankings, [finalRankings]);
+  const getCurrentRankings = useCallback(() => {
+    console.log(`🔧 [RANKINGS_DEBUG] getCurrentRankings called - finalRankings length: ${finalRankings.length}`);
+    console.log(`🔧 [RANKINGS_DEBUG] Sample rankings:`, finalRankings.slice(0, 3).map(p => `${p.name} (${p.id})`));
+    return finalRankings;
+  }, [finalRankings]);
+  
   const { startNewBattle } = useBattleStarterCore(allPokemon, getCurrentRankings);
   const refinementQueue = useSharedRefinementQueue();
 
   // Reset milestones function
   const resetMilestones = useCallback(() => {
+    console.log(`🔧 [MILESTONE_DEBUG] Resetting milestones`);
     setMilestones([]);
   }, []);
 
-  // Original process battle result function
+  // ENHANCED: Original process battle result function with extensive logging
   const originalProcessBattleResult = useCallback((
     selectedPokemonIds: number[],
     currentBattlePokemon: Pokemon[],
     battleType: BattleType,
     selectedGeneration: number
   ) => {
-    console.log(`🔄 [BATTLE_PROCESSING_ULTRA_DEBUG] Processing battle result`);
+    console.log(`🔄 [BATTLE_PROCESSING_ULTRA_DEBUG] ===== PROCESSING BATTLE RESULT =====`);
+    console.log(`🔄 [BATTLE_PROCESSING_ULTRA_DEBUG] Selected Pokemon IDs:`, selectedPokemonIds);
+    console.log(`🔄 [BATTLE_PROCESSING_ULTRA_DEBUG] Current battle Pokemon:`, currentBattlePokemon.map(p => `${p.name} (${p.id})`));
+    console.log(`🔄 [BATTLE_PROCESSING_ULTRA_DEBUG] Battle type: ${battleType}`);
+    console.log(`🔄 [BATTLE_PROCESSING_ULTRA_DEBUG] Current battles completed: ${battlesCompleted}`);
 
     const selected = selectedPokemonIds.sort((a, b) => a - b);
-    setBattleHistory(prev => [...prev, { battle: currentBattlePokemon, selected }]);
+    setBattleHistory(prev => {
+      const newHistory = [...prev, { battle: currentBattlePokemon, selected }];
+      console.log(`🔄 [BATTLE_PROCESSING_ULTRA_DEBUG] Updated battle history length: ${newHistory.length}`);
+      return newHistory;
+    });
 
     const newBattlesCompleted = battlesCompleted + 1;
+    console.log(`🔄 [BATTLE_PROCESSING_ULTRA_DEBUG] New battles completed: ${newBattlesCompleted}`);
     setBattlesCompleted(newBattlesCompleted);
     localStorage.setItem('pokemon-battle-count', String(newBattlesCompleted));
 
@@ -89,22 +104,49 @@ export const useBattleStateCore = (
       timestamp: new Date().toISOString()
     };
 
-    setBattleResults(prev => [...prev, newBattleResult]);
+    setBattleResults(prev => {
+      const newResults = [...prev, newBattleResult];
+      console.log(`🔄 [BATTLE_PROCESSING_ULTRA_DEBUG] Updated battle results length: ${newResults.length}`);
+      console.log(`🔄 [BATTLE_PROCESSING_ULTRA_DEBUG] Latest battle result:`, newBattleResult);
+      return newResults;
+    });
 
-    // Check if new battles completed hits a milestone
+    // ENHANCED: Check if new battles completed hits a milestone with detailed logging
     const isAtMilestone = milestones.includes(newBattlesCompleted);
-    console.log(`🎯 [MILESTONE_CHECK_ULTRA_DEBUG] Battle ${newBattlesCompleted} completed. Is milestone? ${isAtMilestone}`);
+    console.log(`🎯 [MILESTONE_CHECK_ULTRA_DEBUG] ===== MILESTONE CHECK =====`);
+    console.log(`🎯 [MILESTONE_CHECK_ULTRA_DEBUG] Battle ${newBattlesCompleted} completed`);
+    console.log(`🎯 [MILESTONE_CHECK_ULTRA_DEBUG] Available milestones:`, milestones);
+    console.log(`🎯 [MILESTONE_CHECK_ULTRA_DEBUG] Is at milestone? ${isAtMilestone}`);
     
     if (isAtMilestone) {
-      console.log(`🏆 [MILESTONE_HIT_ULTRA_DEBUG] Milestone ${newBattlesCompleted} reached!`);
+      console.log(`🏆 [MILESTONE_HIT_ULTRA_DEBUG] ===== MILESTONE ${newBattlesCompleted} REACHED! =====`);
+      console.log(`🏆 [MILESTONE_HIT_ULTRA_DEBUG] Setting milestone flags...`);
+      
       setMilestoneInProgress(true);
       setShowingMilestone(true);
       setRankingGenerated(true);
+      
+      console.log(`🏆 [MILESTONE_HIT_ULTRA_DEBUG] Milestone flags set - milestoneInProgress: true, showingMilestone: true, rankingGenerated: true`);
+      console.log(`🏆 [MILESTONE_HIT_ULTRA_DEBUG] Current finalRankings length: ${finalRankings.length}`);
+      
+      // Log the current state that will be passed to milestone view
+      console.log(`🏆 [MILESTONE_STATE_DEBUG] State for milestone view:`);
+      console.log(`🏆 [MILESTONE_STATE_DEBUG] - battlesCompleted: ${newBattlesCompleted}`);
+      console.log(`🏆 [MILESTONE_STATE_DEBUG] - rankingGenerated: true`);
+      console.log(`🏆 [MILESTONE_STATE_DEBUG] - showingMilestone: true`);
+      console.log(`🏆 [MILESTONE_STATE_DEBUG] - finalRankings length: ${finalRankings.length}`);
+      
+      if (finalRankings.length > 0) {
+        console.log(`🏆 [MILESTONE_STATE_DEBUG] - Sample finalRankings:`, finalRankings.slice(0, 5).map(p => `${p.name} (${p.id})`));
+      } else {
+        console.log(`🚨 [MILESTONE_STATE_DEBUG] - WARNING: finalRankings is EMPTY!`);
+      }
     }
 
     setSelectedPokemon([]);
+    console.log(`✅ [BATTLE_PROCESSING_ULTRA_DEBUG] Battle processing completed successfully`);
     return Promise.resolve();
-  }, [battlesCompleted, milestones, setBattleHistory, setBattlesCompleted, setBattleResults, setSelectedPokemon, setMilestoneInProgress, setShowingMilestone, setRankingGenerated]);
+  }, [battlesCompleted, milestones, finalRankings, setBattleHistory, setBattlesCompleted, setBattleResults, setSelectedPokemon, setMilestoneInProgress, setShowingMilestone, setRankingGenerated]);
 
   // Add placeholder for processBattleResultWithRefinement
   const processBattleResultWithRefinement = useCallback(async (
@@ -113,12 +155,13 @@ export const useBattleStateCore = (
     battleType: BattleType,
     selectedGeneration: number
   ) => {
+    console.log(`🔄 [REFINEMENT_PROCESSING_DEBUG] Processing battle with refinement support`);
     return originalProcessBattleResult(selectedPokemonIds, currentBattlePokemon, battleType, selectedGeneration);
   }, [originalProcessBattleResult]);
 
   // Add clearAllSuggestions placeholder
   const clearAllSuggestions = useCallback(() => {
-    console.log('Clearing all suggestions');
+    console.log('🔄 [SUGGESTIONS_DEBUG] Clearing all suggestions');
   }, []);
 
   // Battle state handlers with all required parameters
@@ -194,13 +237,41 @@ export const useBattleStateCore = (
     setFinalRankings
   );
 
-  // Completion percentage effect
+  // ENHANCED: Completion percentage effect with logging
   useEffect(() => {
     const percentage = milestoneHandlers.calculateCompletionPercentage();
+    console.log(`🔧 [COMPLETION_DEBUG] Calculated completion percentage: ${percentage}% for ${battlesCompleted} battles`);
     setCompletionPercentage(percentage);
   }, [battlesCompleted, milestoneHandlers.calculateCompletionPercentage]);
 
+  // ENHANCED: Log state changes for debugging
+  useEffect(() => {
+    console.log(`🔧 [STATE_DEBUG] showingMilestone changed to: ${showingMilestone}`);
+    if (showingMilestone) {
+      console.log(`🔧 [STATE_DEBUG] Milestone is showing - finalRankings length: ${finalRankings.length}`);
+      if (finalRankings.length > 0) {
+        console.log(`🔧 [STATE_DEBUG] Sample rankings:`, finalRankings.slice(0, 3).map(p => `${p.name} (${p.id})`));
+      }
+    }
+  }, [showingMilestone, finalRankings]);
+
+  useEffect(() => {
+    console.log(`🔧 [STATE_DEBUG] finalRankings changed - length: ${finalRankings.length}`);
+    if (finalRankings.length > 0) {
+      console.log(`🔧 [STATE_DEBUG] Top 5 rankings:`, finalRankings.slice(0, 5).map(p => `${p.name} (${p.id}) - score: ${p.score}`));
+    }
+  }, [finalRankings]);
+
+  useEffect(() => {
+    console.log(`🔧 [STATE_DEBUG] battlesCompleted changed to: ${battlesCompleted}`);
+  }, [battlesCompleted]);
+
   console.log(`🔧 [BATTLE_STATE_CORE_ULTRA_DEBUG] useBattleStateCore returning state object`);
+  console.log(`🔧 [BATTLE_STATE_CORE_ULTRA_DEBUG] Final state summary:`);
+  console.log(`🔧 [BATTLE_STATE_CORE_ULTRA_DEBUG] - currentBattle length: ${currentBattle.length}`);
+  console.log(`🔧 [BATTLE_STATE_CORE_ULTRA_DEBUG] - battlesCompleted: ${battlesCompleted}`);
+  console.log(`🔧 [BATTLE_STATE_CORE_ULTRA_DEBUG] - showingMilestone: ${showingMilestone}`);
+  console.log(`🔧 [BATTLE_STATE_CORE_ULTRA_DEBUG] - finalRankings length: ${finalRankings.length}`);
 
   return {
     currentBattle,
