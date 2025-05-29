@@ -49,19 +49,35 @@ export const useBattleStateCore = (
   const { startNewBattle: startNewBattleCore } = useBattleStarterCore(allPokemon, getCurrentRankings);
   const refinementQueue = useSharedRefinementQueue();
 
-  // FIXED: Create a proper wrapper that calls startNewBattleCore correctly
+  // FIXED: Create a proper wrapper that calls startNewBattleCore with correct config object
   const startNewBattle = useCallback((battleType: BattleType) => {
     console.log(`🚀 [START_NEW_BATTLE_FIX] Creating new battle for type: ${battleType}`);
     console.log(`🚀 [START_NEW_BATTLE_FIX] Available Pokemon: ${allPokemon.length}`);
     console.log(`🚀 [START_NEW_BATTLE_FIX] Current rankings: ${getCurrentRankings().length}`);
     
-    // Call startNewBattleCore with the battleType directly - it will handle the rest internally
-    const result = startNewBattleCore(battleType);
+    // Call startNewBattleCore with the proper config object
+    const result = startNewBattleCore({
+      allPokemon,
+      currentRankings: getCurrentRankings(),
+      battleType,
+      selectedGeneration: stateData.selectedGeneration,
+      freezeList: stateData.frozenPokemon
+    });
     
     console.log(`🚀 [START_NEW_BATTLE_FIX] Battle result:`, result ? result.map(p => p.name).join(' vs ') : 'null');
     
     return result;
-  }, [startNewBattleCore, allPokemon.length, getCurrentRankings]);
+  }, [startNewBattleCore, allPokemon, getCurrentRankings, stateData.selectedGeneration, stateData.frozenPokemon]);
+
+  // Create a parameterless wrapper for milestone handlers (they expect () => void)
+  const startNewBattleWrapper = useCallback(() => {
+    console.log(`🚀 [START_NEW_BATTLE_WRAPPER] Parameterless wrapper called`);
+    const result = startNewBattle(stateData.battleType);
+    if (result && result.length > 0) {
+      stateData.setCurrentBattle(result);
+      stateData.setSelectedPokemon([]);
+    }
+  }, [startNewBattle, stateData.battleType, stateData.setCurrentBattle, stateData.setSelectedPokemon]);
 
   // Enhanced setFinalRankings wrapper with detailed logging
   const setFinalRankingsWithLogging = useCallback((rankings: any) => {
@@ -132,7 +148,7 @@ export const useBattleStateCore = (
     stateData.setMilestoneInProgress,
     stateData.setRankingGenerated,
     setFinalRankingsWithLogging,
-    startNewBattle // Pass the corrected startNewBattle function
+    startNewBattleWrapper // Pass the parameterless wrapper function
   );
 
   console.log(`🚨🚨🚨 [BATTLE_STATE_CORE_MEGA_DEBUG] milestoneHandlers created, about to call handlers...`);
@@ -180,7 +196,7 @@ export const useBattleStateCore = (
     processBattleResultWithRefinement,
     stateData.setIsBattleTransitioning,
     stateData.setIsAnyProcessing,
-    handlers.startNewBattleWrapper
+    startNewBattleWrapper
   );
 
   console.log(`🚨🚨🚨 [BATTLE_STATE_CORE_MEGA_DEBUG] processingHandlers created, about to call effects...`);
