@@ -42,8 +42,10 @@ export const useBattleStateInitialization = (
     const currentBattleCount = parseInt(localStorage.getItem('pokemon-battle-count') || '0', 10);
     console.log(`🔄 [FLASH_FIX] enhancedStartNewBattle called for ${battleType} - Battle ${String(currentBattleCount)}`);
 
-    // ✅ Use refinement queue if available
+    // ✅ Correctly use refinementQueue from providersData
+    const refinementQueue = providersData.refinementQueue;
     const refinementBattle = refinementQueue?.getNextRefinementBattle?.();
+
     if (refinementBattle) {
       const primary = allPokemon.find(p => p.id === refinementBattle.primaryPokemonId);
       const opponent = allPokemon.find(p => p.id === refinementBattle.opponentPokemonId);
@@ -54,13 +56,12 @@ export const useBattleStateInitialization = (
         return [primary, opponent];
       } else {
         console.warn(`❌ [REFINEMENT_USE] Refinement battle referenced missing Pokémon:`, refinementBattle);
-        refinementQueue?.popRefinementBattle?.(); // Remove invalid battle
+        refinementQueue?.popRefinementBattle?.(); // Remove broken entry to avoid infinite skip
       }
     }
 
-    // Fallback to normal random battle
+    // 🧠 Fallback to random
     const result = providersData.startNewBattle(battleType);
-
     if (result && result.length > 0) {
       console.log(`✅ [FLASH_FIX] New battle generated, setting immediately: ${result.map(p => p.name).join(', ')}`);
       return result;
@@ -68,7 +69,7 @@ export const useBattleStateInitialization = (
       console.warn(`❌ [FLASH_FIX] No battle generated, result is:`, result);
       return [];
     }
-  }, [allPokemon, providersData, refinementQueue]);
+  }, [allPokemon, providersData]);
 
   return {
     stateManagerData,
