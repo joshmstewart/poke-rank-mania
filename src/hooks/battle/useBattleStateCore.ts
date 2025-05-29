@@ -46,8 +46,19 @@ export const useBattleStateCore = (
   }, [stateData.finalRankings]);
   
   // Initialize other hooks
-  const { startNewBattle } = useBattleStarterCore(allPokemon, getCurrentRankings);
+  const { startNewBattle: startNewBattleCore } = useBattleStarterCore(allPokemon, getCurrentRankings);
   const refinementQueue = useSharedRefinementQueue();
+
+  // Create a wrapper for startNewBattle that matches the expected signature
+  const startNewBattle = useCallback((battleType: BattleType) => {
+    return startNewBattleCore({
+      allPokemon,
+      currentRankings: getCurrentRankings(),
+      battleType,
+      selectedGeneration: stateData.selectedGeneration,
+      freezeList: stateData.frozenPokemon
+    });
+  }, [startNewBattleCore, allPokemon, getCurrentRankings, stateData.selectedGeneration, stateData.frozenPokemon]);
 
   // Enhanced setFinalRankings wrapper with detailed logging
   const setFinalRankingsWithLogging = useCallback((rankings: any) => {
@@ -90,7 +101,7 @@ export const useBattleStateCore = (
     setBattleResults: stateData.setBattleResults
   });
 
-  // Add placeholder for processBattleResultWithRefinement
+  // Add processBattleResultWithRefinement function
   const processBattleResultWithRefinement = useCallback(async (
     selectedPokemonIds: number[],
     currentBattlePokemon: Pokemon[],
@@ -168,7 +179,7 @@ export const useBattleStateCore = (
     stateData.selectedGeneration,
     stateData.isAnyProcessing,
     stateData.isProcessingResult,
-    handlers.processBattleResultWithRefinement,
+    processBattleResultWithRefinement,
     stateData.setIsBattleTransitioning,
     stateData.setIsAnyProcessing,
     handlers.startNewBattleWrapper
