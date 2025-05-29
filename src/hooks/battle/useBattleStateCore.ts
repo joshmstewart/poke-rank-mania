@@ -1,3 +1,4 @@
+
 import { useCallback, useMemo, useEffect } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
@@ -44,21 +45,23 @@ export const useBattleStateCore = (
     return stateData.finalRankings;
   }, [stateData.finalRankings]);
   
-  // Initialize other hooks
+  // Initialize battle starter
   const { startNewBattle: startNewBattleCore } = useBattleStarterCore(allPokemon, getCurrentRankings);
   const refinementQueue = useSharedRefinementQueue();
 
-  // Create a wrapper for startNewBattle that matches the expected signature and passes the correct config
+  // FIXED: Create a proper wrapper that calls startNewBattleCore correctly
   const startNewBattle = useCallback((battleType: BattleType) => {
     console.log(`🚀 [START_NEW_BATTLE_FIX] Creating new battle for type: ${battleType}`);
-    return startNewBattleCore({
-      allPokemon,
-      currentRankings: getCurrentRankings(),
-      battleType,
-      selectedGeneration: stateData.selectedGeneration,
-      freezeList: stateData.frozenPokemon
-    });
-  }, [startNewBattleCore, allPokemon, getCurrentRankings, stateData.selectedGeneration, stateData.frozenPokemon]);
+    console.log(`🚀 [START_NEW_BATTLE_FIX] Available Pokemon: ${allPokemon.length}`);
+    console.log(`🚀 [START_NEW_BATTLE_FIX] Current rankings: ${getCurrentRankings().length}`);
+    
+    // Call startNewBattleCore with the battleType directly - it will handle the rest internally
+    const result = startNewBattleCore(battleType);
+    
+    console.log(`🚀 [START_NEW_BATTLE_FIX] Battle result:`, result ? result.map(p => p.name).join(' vs ') : 'null');
+    
+    return result;
+  }, [startNewBattleCore, allPokemon.length, getCurrentRankings]);
 
   // Enhanced setFinalRankings wrapper with detailed logging
   const setFinalRankingsWithLogging = useCallback((rankings: any) => {
@@ -117,11 +120,6 @@ export const useBattleStateCore = (
     console.log('🔄 [SUGGESTIONS_DEBUG] Clearing all suggestions');
   }, []);
 
-  // Create a temporary startNewBattleWrapper for milestoneHandlers
-  const tempStartNewBattleWrapper = useCallback(() => {
-    console.log(`🚀 [TEMP_START_NEW_BATTLE] Temporary wrapper called - this should be replaced`);
-  }, []);
-
   console.log(`🚨🚨🚨 [BATTLE_STATE_CORE_MEGA_DEBUG] About to call milestoneHandlers...`);
 
   // Initialize milestone handlers
@@ -134,7 +132,7 @@ export const useBattleStateCore = (
     stateData.setMilestoneInProgress,
     stateData.setRankingGenerated,
     setFinalRankingsWithLogging,
-    tempStartNewBattleWrapper
+    startNewBattle // Pass the corrected startNewBattle function
   );
 
   console.log(`🚨🚨🚨 [BATTLE_STATE_CORE_MEGA_DEBUG] milestoneHandlers created, about to call handlers...`);
@@ -235,6 +233,26 @@ export const useBattleStateCore = (
       document.removeEventListener('generate-milestone-rankings', handleGenerateMilestoneRankings as EventListener);
     };
   }, [milestoneHandlers, stateData.battleHistory]);
+
+  // ADDED: Force initial battle start when component mounts with Pokemon data
+  useEffect(() => {
+    console.log(`🚀 [INITIAL_BATTLE_DEBUG] Effect triggered - Pokemon: ${allPokemon.length}, currentBattle: ${stateData.currentBattle.length}`);
+    
+    if (allPokemon.length > 0 && stateData.currentBattle.length === 0) {
+      console.log(`🚀 [INITIAL_BATTLE_DEBUG] Starting initial battle...`);
+      
+      setTimeout(() => {
+        const initialBattle = startNewBattle(stateData.battleType);
+        if (initialBattle && initialBattle.length > 0) {
+          console.log(`✅ [INITIAL_BATTLE_DEBUG] Initial battle created:`, initialBattle.map(p => p.name).join(' vs '));
+          stateData.setCurrentBattle(initialBattle);
+          stateData.setSelectedPokemon([]);
+        } else {
+          console.error(`❌ [INITIAL_BATTLE_DEBUG] Failed to create initial battle`);
+        }
+      }, 100);
+    }
+  }, [allPokemon.length, stateData.currentBattle.length, startNewBattle, stateData.battleType, stateData.setCurrentBattle, stateData.setSelectedPokemon]);
 
   console.log(`🚨🚨🚨 [BATTLE_STATE_CORE_MEGA_DEBUG] All hooks completed, preparing return object...`);
   console.log(`🚨🚨🚨 [BATTLE_STATE_CORE_MEGA_DEBUG] Final state summary:`);
