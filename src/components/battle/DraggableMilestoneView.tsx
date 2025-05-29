@@ -53,10 +53,6 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
     setLocalRankings(formattedRankings);
   }, [formattedRankings]);
 
-  useEffect(() => {
-    console.log(`🚨 [DND_SETUP_DEBUG] Updating local pending refinements from props`);
-    updateFromProps(pendingRefinements);
-  }, [pendingRefinements, updateFromProps]);
 
   // CRITICAL FIX: Enhanced manual reorder handler that ensures pending state persists
   const handleManualReorderWithPersistence = (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => {
