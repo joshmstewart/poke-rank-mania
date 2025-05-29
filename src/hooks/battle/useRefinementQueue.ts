@@ -8,10 +8,14 @@ export interface RefinementBattle {
 }
 
 export const useRefinementQueue = () => {
+  console.log(`🔧 [QUEUE_INIT_TRACE] ===== useRefinementQueue INITIALIZATION =====`);
+  
   const [refinementQueue, setRefinementQueue] = useState<RefinementBattle[]>([]);
   
   // CRITICAL FIX: Use a ref to maintain the current queue state for immediate access
   const currentQueueRef = useRef<RefinementBattle[]>([]);
+
+  console.log(`🔧 [QUEUE_INIT_TRACE] Initial state set, queue length: ${refinementQueue.length}`);
 
   // CRITICAL FIX: Global duplicate detection function
   const isDuplicateBattleGlobally = useCallback((pokemon1: number, pokemon2: number, existingQueue: RefinementBattle[]) => {
@@ -30,17 +34,24 @@ export const useRefinementQueue = () => {
 
   // CRITICAL FIX: Add the addValidationBattle method that was being called
   const addValidationBattle = useCallback((primaryId: number, pokemonName: string, sourceIndex: number, destinationIndex: number) => {
-    console.log(`🔄 [ADD_VALIDATION_BATTLE_ULTRA_DEBUG] ===== ADD VALIDATION BATTLE START =====`);
-    console.log(`🔄 [ADD_VALIDATION_BATTLE_ULTRA_DEBUG] primaryId: ${primaryId}`);
-    console.log(`🔄 [ADD_VALIDATION_BATTLE_ULTRA_DEBUG] pokemonName: ${pokemonName}`);
-    console.log(`🔄 [ADD_VALIDATION_BATTLE_ULTRA_DEBUG] sourceIndex: ${sourceIndex}`);
-    console.log(`🔄 [ADD_VALIDATION_BATTLE_ULTRA_DEBUG] destinationIndex: ${destinationIndex}`);
+    console.log(`🔄 [ADD_VALIDATION_TRACE] ===== ADD VALIDATION BATTLE START =====`);
+    console.log(`🔄 [ADD_VALIDATION_TRACE] Function called with:`);
+    console.log(`🔄 [ADD_VALIDATION_TRACE] - primaryId: ${primaryId}`);
+    console.log(`🔄 [ADD_VALIDATION_TRACE] - pokemonName: ${pokemonName}`);
+    console.log(`🔄 [ADD_VALIDATION_TRACE] - sourceIndex: ${sourceIndex}`);
+    console.log(`🔄 [ADD_VALIDATION_TRACE] - destinationIndex: ${destinationIndex}`);
+    
+    console.log(`🔄 [ADD_VALIDATION_TRACE] Current state before adding:`);
+    console.log(`🔄 [ADD_VALIDATION_TRACE] - refinementQueue length: ${refinementQueue.length}`);
+    console.log(`🔄 [ADD_VALIDATION_TRACE] - currentQueueRef length: ${currentQueueRef.current.length}`);
+    console.log(`🔄 [ADD_VALIDATION_TRACE] - existing queue:`, refinementQueue.map(b => `${b.primaryPokemonId} vs ${b.opponentPokemonId}`));
     
     // For now, let's add a simple battle against the Pokemon at the destination index
     // We need to determine what Pokemon ID is at the destination index
-    const opponentId = destinationIndex + 1; // Simple placeholder logic
+    const opponentId = destinationIndex + 1; // Simple placeholder logic - this needs improvement
     
-    console.log(`🔄 [ADD_VALIDATION_BATTLE_ULTRA_DEBUG] Creating battle: ${primaryId} vs ${opponentId}`);
+    console.log(`🔄 [ADD_VALIDATION_TRACE] Creating battle: ${primaryId} vs ${opponentId}`);
+    console.log(`🔄 [ADD_VALIDATION_TRACE] Battle reason: Manual reorder validation`);
     
     const newBattle: RefinementBattle = {
       primaryPokemonId: primaryId,
@@ -48,15 +59,27 @@ export const useRefinementQueue = () => {
       reason: `Manual reorder validation: ${pokemonName} moved from ${sourceIndex} to ${destinationIndex}`
     };
     
+    console.log(`🔄 [ADD_VALIDATION_TRACE] New battle object created:`, newBattle);
+    
+    console.log(`🔄 [ADD_VALIDATION_TRACE] About to call setRefinementQueue...`);
     setRefinementQueue(prev => {
-      console.log(`🔄 [ADD_VALIDATION_BATTLE_ULTRA_DEBUG] Current queue before add:`, prev);
+      console.log(`🔄 [ADD_VALIDATION_TRACE] Inside setRefinementQueue callback:`);
+      console.log(`🔄 [ADD_VALIDATION_TRACE] - prev length: ${prev.length}`);
+      console.log(`🔄 [ADD_VALIDATION_TRACE] - prev contents:`, prev.map(b => `${b.primaryPokemonId} vs ${b.opponentPokemonId}`));
+      
       const newQueue = [...prev, newBattle];
-      console.log(`🔄 [ADD_VALIDATION_BATTLE_ULTRA_DEBUG] New queue after add:`, newQueue);
+      console.log(`🔄 [ADD_VALIDATION_TRACE] - new queue length: ${newQueue.length}`);
+      console.log(`🔄 [ADD_VALIDATION_TRACE] - new queue contents:`, newQueue.map(b => `${b.primaryPokemonId} vs ${b.opponentPokemonId}`));
+      
+      console.log(`🔄 [ADD_VALIDATION_TRACE] Updating currentQueueRef...`);
       currentQueueRef.current = newQueue;
+      console.log(`🔄 [ADD_VALIDATION_TRACE] currentQueueRef updated, length: ${currentQueueRef.current.length}`);
+      
       return newQueue;
     });
     
-    console.log(`🔄 [ADD_VALIDATION_BATTLE_ULTRA_DEBUG] ===== ADD VALIDATION BATTLE END =====`);
+    console.log(`🔄 [ADD_VALIDATION_TRACE] setRefinementQueue call completed`);
+    console.log(`🔄 [ADD_VALIDATION_TRACE] ===== ADD VALIDATION BATTLE END =====`);
   }, []); // FIXED: Empty dependency array to prevent the React error
 
   const queueBattlesForReorder = useCallback((primaryId: number, neighbors: number[], newPosition: number) => {
@@ -198,7 +221,11 @@ export const useRefinementQueue = () => {
   const hasRefinementBattles = currentQueueRef.current.length > 0;
 
   // Add comprehensive logging for queue state
-  console.log(`🔧 [REFINEMENT_QUEUE_STATE] Queue state: ${currentQueueRef.current.length} battles, hasRefinementBattles: ${hasRefinementBattles}`);
+  console.log(`🔧 [REFINEMENT_QUEUE_STATE] Current hook state:`);
+  console.log(`🔧 [REFINEMENT_QUEUE_STATE] - refinementQueue.length: ${refinementQueue.length}`);
+  console.log(`🔧 [REFINEMENT_QUEUE_STATE] - currentQueueRef.current.length: ${currentQueueRef.current.length}`);
+  console.log(`🔧 [REFINEMENT_QUEUE_STATE] - hasRefinementBattles: ${hasRefinementBattles}`);
+  console.log(`🔧 [REFINEMENT_QUEUE_STATE] - addValidationBattle function exists: ${!!addValidationBattle}`);
 
   return {
     queue: refinementQueue, // Add this for compatibility
