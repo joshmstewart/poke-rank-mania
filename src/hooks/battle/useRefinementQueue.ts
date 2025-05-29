@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useRef } from "react";
 
 export interface RefinementBattle {
@@ -34,24 +33,24 @@ export const useRefinementQueue = () => {
 
   // CRITICAL FIX: Add the addValidationBattle method that was being called
   const addValidationBattle = useCallback((primaryId: number, pokemonName: string, sourceIndex: number, destinationIndex: number) => {
-    console.log(`🔄 [ADD_VALIDATION_TRACE] ===== ADD VALIDATION BATTLE START =====`);
-    console.log(`🔄 [ADD_VALIDATION_TRACE] Function called with:`);
-    console.log(`🔄 [ADD_VALIDATION_TRACE] - primaryId: ${primaryId}`);
-    console.log(`🔄 [ADD_VALIDATION_TRACE] - pokemonName: ${pokemonName}`);
-    console.log(`🔄 [ADD_VALIDATION_TRACE] - sourceIndex: ${sourceIndex}`);
-    console.log(`🔄 [ADD_VALIDATION_TRACE] - destinationIndex: ${destinationIndex}`);
+    console.log(`🔄 [ADD_VALIDATION_MEGA_TRACE] ===== ADD VALIDATION BATTLE START =====`);
+    console.log(`🔄 [ADD_VALIDATION_MEGA_TRACE] Function called with:`);
+    console.log(`🔄 [ADD_VALIDATION_MEGA_TRACE] - primaryId: ${primaryId}`);
+    console.log(`🔄 [ADD_VALIDATION_MEGA_TRACE] - pokemonName: ${pokemonName}`);
+    console.log(`🔄 [ADD_VALIDATION_MEGA_TRACE] - sourceIndex: ${sourceIndex}`);
+    console.log(`🔄 [ADD_VALIDATION_MEGA_TRACE] - destinationIndex: ${destinationIndex}`);
     
-    console.log(`🔄 [ADD_VALIDATION_TRACE] Current state before adding:`);
-    console.log(`🔄 [ADD_VALIDATION_TRACE] - refinementQueue length: ${refinementQueue.length}`);
-    console.log(`🔄 [ADD_VALIDATION_TRACE] - currentQueueRef length: ${currentQueueRef.current.length}`);
-    console.log(`🔄 [ADD_VALIDATION_TRACE] - existing queue:`, refinementQueue.map(b => `${b.primaryPokemonId} vs ${b.opponentPokemonId}`));
+    console.log(`🔄 [ADD_VALIDATION_MEGA_TRACE] Current state before adding:`);
+    console.log(`🔄 [ADD_VALIDATION_MEGA_TRACE] - refinementQueue length: ${refinementQueue.length}`);
+    console.log(`🔄 [ADD_VALIDATION_MEGA_TRACE] - currentQueueRef length: ${currentQueueRef.current.length}`);
+    console.log(`🔄 [ADD_VALIDATION_MEGA_TRACE] - existing queue:`, refinementQueue.map(b => `${b.primaryPokemonId} vs ${b.opponentPokemonId}`));
     
     // For now, let's add a simple battle against the Pokemon at the destination index
     // We need to determine what Pokemon ID is at the destination index
     const opponentId = destinationIndex + 1; // Simple placeholder logic - this needs improvement
     
-    console.log(`🔄 [ADD_VALIDATION_TRACE] Creating battle: ${primaryId} vs ${opponentId}`);
-    console.log(`🔄 [ADD_VALIDATION_TRACE] Battle reason: Manual reorder validation`);
+    console.log(`🔄 [ADD_VALIDATION_MEGA_TRACE] Creating battle: ${primaryId} vs ${opponentId}`);
+    console.log(`🔄 [ADD_VALIDATION_MEGA_TRACE] Battle reason: Manual reorder validation`);
     
     const newBattle: RefinementBattle = {
       primaryPokemonId: primaryId,
@@ -59,27 +58,34 @@ export const useRefinementQueue = () => {
       reason: `Manual reorder validation: ${pokemonName} moved from ${sourceIndex} to ${destinationIndex}`
     };
     
-    console.log(`🔄 [ADD_VALIDATION_TRACE] New battle object created:`, newBattle);
+    console.log(`🔄 [ADD_VALIDATION_MEGA_TRACE] New battle object created:`, newBattle);
     
-    console.log(`🔄 [ADD_VALIDATION_TRACE] About to call setRefinementQueue...`);
+    console.log(`🔄 [ADD_VALIDATION_MEGA_TRACE] About to call setRefinementQueue...`);
     setRefinementQueue(prev => {
-      console.log(`🔄 [ADD_VALIDATION_TRACE] Inside setRefinementQueue callback:`);
-      console.log(`🔄 [ADD_VALIDATION_TRACE] - prev length: ${prev.length}`);
-      console.log(`🔄 [ADD_VALIDATION_TRACE] - prev contents:`, prev.map(b => `${b.primaryPokemonId} vs ${b.opponentPokemonId}`));
+      console.log(`🔄 [ADD_VALIDATION_MEGA_TRACE] Inside setRefinementQueue callback:`);
+      console.log(`🔄 [ADD_VALIDATION_MEGA_TRACE] - prev length: ${prev.length}`);
+      console.log(`🔄 [ADD_VALIDATION_MEGA_TRACE] - prev contents:`, prev.map(b => `${b.primaryPokemonId} vs ${b.opponentPokemonId}`));
       
       const newQueue = [...prev, newBattle];
-      console.log(`🔄 [ADD_VALIDATION_TRACE] - new queue length: ${newQueue.length}`);
-      console.log(`🔄 [ADD_VALIDATION_TRACE] - new queue contents:`, newQueue.map(b => `${b.primaryPokemonId} vs ${b.opponentPokemonId}`));
+      console.log(`🔄 [ADD_VALIDATION_MEGA_TRACE] - new queue length: ${newQueue.length}`);
+      console.log(`🔄 [ADD_VALIDATION_MEGA_TRACE] - new queue contents:`, newQueue.map(b => `${b.primaryPokemonId} vs ${b.opponentPokemonId}`));
       
-      console.log(`🔄 [ADD_VALIDATION_TRACE] Updating currentQueueRef...`);
+      console.log(`🔄 [ADD_VALIDATION_MEGA_TRACE] Updating currentQueueRef...`);
       currentQueueRef.current = newQueue;
-      console.log(`🔄 [ADD_VALIDATION_TRACE] currentQueueRef updated, length: ${currentQueueRef.current.length}`);
+      console.log(`🔄 [ADD_VALIDATION_MEGA_TRACE] currentQueueRef updated, length: ${currentQueueRef.current.length}`);
+      
+      // MEGA DEBUG: Log the exact state after update
+      console.log(`🔄 [ADD_VALIDATION_MEGA_TRACE] ===== POST-UPDATE STATE =====`);
+      console.log(`🔄 [ADD_VALIDATION_MEGA_TRACE] currentQueueRef.current:`, currentQueueRef.current);
+      console.log(`🔄 [ADD_VALIDATION_MEGA_TRACE] newQueue:`, newQueue);
+      console.log(`🔄 [ADD_VALIDATION_MEGA_TRACE] newQueue === currentQueueRef.current:`, newQueue === currentQueueRef.current);
+      console.log(`🔄 [ADD_VALIDATION_MEGA_TRACE] ===== END POST-UPDATE STATE =====`);
       
       return newQueue;
     });
     
-    console.log(`🔄 [ADD_VALIDATION_TRACE] setRefinementQueue call completed`);
-    console.log(`🔄 [ADD_VALIDATION_TRACE] ===== ADD VALIDATION BATTLE END =====`);
+    console.log(`🔄 [ADD_VALIDATION_MEGA_TRACE] setRefinementQueue call completed`);
+    console.log(`🔄 [ADD_VALIDATION_MEGA_TRACE] ===== ADD VALIDATION BATTLE END =====`);
   }, []); // FIXED: Empty dependency array to prevent the React error
 
   const queueBattlesForReorder = useCallback((primaryId: number, neighbors: number[], newPosition: number) => {
