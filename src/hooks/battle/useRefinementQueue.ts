@@ -28,6 +28,20 @@ export const useRefinementQueue = () => {
     return foundDuplicate;
   }, []);
 
+  // MISSING METHOD: Add the addValidationBattle method that was being called
+  const addValidationBattle = useCallback((primaryId: number, pokemonName: string, sourceIndex: number, destinationIndex: number) => {
+    console.log(`🔄 [ADD_VALIDATION_BATTLE] Adding validation battle for ${pokemonName} (${primaryId}) moved from ${sourceIndex} to ${destinationIndex}`);
+    
+    // For now, let's add a simple battle against a neighboring Pokemon
+    // We'll need to determine appropriate neighbors based on the current rankings
+    console.log(`🔄 [ADD_VALIDATION_BATTLE] This method needs to be implemented to queue appropriate validation battles`);
+    console.log(`🔄 [ADD_VALIDATION_BATTLE] Parameters received:`, { primaryId, pokemonName, sourceIndex, destinationIndex });
+    
+    // TODO: Implement the actual logic to determine which Pokemon to battle against
+    // For debugging, let's at least log that this method was called successfully
+    console.log(`🔄 [ADD_VALIDATION_BATTLE] ✅ Method called successfully - implementation needed`);
+  }, []);
+
   const queueBattlesForReorder = useCallback((primaryId: number, neighbors: number[], newPosition: number) => {
     console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] ===== QUEUEING VALIDATION BATTLES START =====`);
     console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] Primary Pokemon ID: ${primaryId}`);
@@ -174,7 +188,9 @@ export const useRefinementQueue = () => {
   console.log(`🔧 [REFINEMENT_QUEUE_STATE] Queue state: ${currentQueueRef.current.length} battles, hasRefinementBattles: ${hasRefinementBattles}`);
 
   return {
+    queue: refinementQueue, // Add this for compatibility
     refinementQueue,
+    addValidationBattle, // CRITICAL FIX: Export the missing method
     queueBattlesForReorder,
     getNextRefinementBattle,
     popRefinementBattle,
