@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
@@ -17,7 +16,7 @@ export const useBattleGeneration = (allPokemon: Pokemon[]) => {
     console.log(`🎲🎲🎲 [ANTI_REPEAT_GENERATION] Recently used Pokemon count: ${recentlyUsedPokemon.size}`);
     console.log(`🎲🎲🎲 [ANTI_REPEAT_GENERATION] Recently used IDs: [${Array.from(recentlyUsedPokemon).join(', ')}]`);
     
-    // CRITICAL FIX: Check for refinement battles FIRST
+    // CRITICAL FIX: Check for refinement battles FIRST and consume them properly
     if (refinementQueue && refinementQueue.hasRefinementBattles && refinementQueue.refinementBattleCount > 0) {
       console.log(`🎯 [REFINEMENT_PRIORITY] ===== REFINEMENT BATTLE DETECTED =====`);
       console.log(`🎯 [REFINEMENT_PRIORITY] Refinement queue has ${refinementQueue.refinementBattleCount} battles`);
@@ -38,6 +37,12 @@ export const useBattleGeneration = (allPokemon: Pokemon[]) => {
           
           console.log(`🎯 [REFINEMENT_PRIORITY] ✅ RETURNING REFINEMENT BATTLE: ${validated.map(p => p.name).join(' vs ')}`);
           console.log(`🎯 [REFINEMENT_PRIORITY] Reason: ${nextRefinement.reason}`);
+          
+          // CRITICAL FIX: Mark this refinement as consumed immediately
+          setTimeout(() => {
+            console.log(`🎯 [REFINEMENT_CONSUMPTION] Consuming refinement battle after return`);
+            refinementQueue.popRefinementBattle();
+          }, 100);
           
           return validated;
         } else {
