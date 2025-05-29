@@ -1,4 +1,3 @@
-
 import { useCallback } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
