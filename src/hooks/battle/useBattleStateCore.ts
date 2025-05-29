@@ -4,6 +4,7 @@ import { BattleType } from "./types";
 import { useBattleGeneration } from "./useBattleGeneration";
 import { useBattleRankings } from "./useBattleRankings";
 import { useBattleMilestones } from "./useBattleMilestones";
+import { useSharedRefinementQueue } from "./useSharedRefinementQueue";
 
 export const useBattleStateCore = (
   allPokemon: Pokemon[],
@@ -34,11 +35,20 @@ export const useBattleStateCore = (
   const { generateNewBattle, addToRecentlyUsed, resetRecentlyUsed } = useBattleGeneration(allPokemon);
   const { generateRankingsFromBattleHistory } = useBattleRankings();
   const { milestones, checkForMilestone } = useBattleMilestones();
+  
+  // CRITICAL FIX: Get shared refinement queue
+  const refinementQueue = useSharedRefinementQueue();
 
-  // Start new battle
+  // Start new battle with refinement queue support
   const startNewBattle = useCallback(() => {
     console.log(`🚀 [START_NEW_BATTLE] Starting new ${battleType} battle`);
-    const newBattle = generateNewBattle(battleType, battlesCompleted);
+    console.log(`🚀 [START_NEW_BATTLE] Checking refinement queue...`);
+    
+    if (refinementQueue) {
+      console.log(`🚀 [START_NEW_BATTLE] Refinement queue state: hasRefinementBattles=${refinementQueue.hasRefinementBattles}, count=${refinementQueue.refinementBattleCount}`);
+    }
+    
+    const newBattle = generateNewBattle(battleType, battlesCompleted, refinementQueue);
     if (newBattle.length > 0) {
       setCurrentBattle(newBattle);
       setSelectedPokemon([]);
@@ -46,7 +56,7 @@ export const useBattleStateCore = (
     } else {
       console.error(`🚀 [START_NEW_BATTLE] Failed to generate battle`);
     }
-  }, [battleType, generateNewBattle, battlesCompleted]);
+  }, [battleType, generateNewBattle, battlesCompleted, refinementQueue]);
 
   // Pokemon selection handler with proper recent tracking
   const handlePokemonSelect = useCallback((pokemonId: number) => {
@@ -127,6 +137,39 @@ export const useBattleStateCore = (
       }
     }
   }, [battleType, selectedPokemon, currentBattle, battlesCompleted, checkForMilestone, startNewBattle, addToRecentlyUsed, battleHistory, generateRankingsFromBattleHistory]);
+
+  // CRITICAL FIX: Listen for refinement queue updates and force new battles
+  useEffect(() => {
+    const handleRefinementQueueUpdate = (event: CustomEvent) => {
+      console.log(`🔄 [REFINEMENT_QUEUE_LISTENER] Received refinement queue update:`, event.detail);
+      
+      // Small delay to ensure the queue is properly updated
+      setTimeout(() => {
+        console.log(`🔄 [REFINEMENT_QUEUE_LISTENER] Starting new battle after refinement queue update`);
+        startNewBattle();
+      }, 100);
+    };
+    
+    const handleForceNextBattle = (event: CustomEvent) => {
+      console.log(`🔄 [FORCE_BATTLE_LISTENER] Received force-next-battle event:`, event.detail);
+      
+      // Clear any existing battle selections
+      setSelectedPokemon([]);
+      
+      // Start new battle immediately
+      setTimeout(() => {
+        startNewBattle();
+      }, 50);
+    };
+    
+    document.addEventListener('refinement-queue-updated', handleRefinementQueueUpdate as EventListener);
+    document.addEventListener('force-next-battle', handleForceNextBattle as EventListener);
+    
+    return () => {
+      document.removeEventListener('refinement-queue-updated', handleRefinementQueueUpdate as EventListener);
+      document.removeEventListener('force-next-battle', handleForceNextBattle as EventListener);
+    };
+  }, [startNewBattle]);
 
   // Initialize first battle when Pokemon are available
   useEffect(() => {

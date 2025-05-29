@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
@@ -6,7 +7,7 @@ import { validateBattlePokemon } from "@/services/pokemon/api/utils";
 export const useBattleGeneration = (allPokemon: Pokemon[]) => {
   const [recentlyUsedPokemon, setRecentlyUsedPokemon] = useState<Set<number>>(new Set());
 
-  const generateNewBattle = useCallback((battleType: BattleType, battlesCompleted: number): Pokemon[] => {
+  const generateNewBattle = useCallback((battleType: BattleType, battlesCompleted: number, refinementQueue?: any): Pokemon[] => {
     const battleSize = battleType === "pairs" ? 2 : 3;
     const battleNumber = battlesCompleted + 1;
     
@@ -15,6 +16,43 @@ export const useBattleGeneration = (allPokemon: Pokemon[]) => {
     console.log(`🎲🎲🎲 [ANTI_REPEAT_GENERATION] Total Pokemon: ${allPokemon.length}`);
     console.log(`🎲🎲🎲 [ANTI_REPEAT_GENERATION] Recently used Pokemon count: ${recentlyUsedPokemon.size}`);
     console.log(`🎲🎲🎲 [ANTI_REPEAT_GENERATION] Recently used IDs: [${Array.from(recentlyUsedPokemon).join(', ')}]`);
+    
+    // CRITICAL FIX: Check for refinement battles FIRST
+    if (refinementQueue && refinementQueue.hasRefinementBattles && refinementQueue.refinementBattleCount > 0) {
+      console.log(`🎯 [REFINEMENT_PRIORITY] ===== REFINEMENT BATTLE DETECTED =====`);
+      console.log(`🎯 [REFINEMENT_PRIORITY] Refinement queue has ${refinementQueue.refinementBattleCount} battles`);
+      
+      const nextRefinement = refinementQueue.getNextRefinementBattle();
+      console.log(`🎯 [REFINEMENT_PRIORITY] Next refinement:`, nextRefinement);
+      
+      if (nextRefinement) {
+        const primary = allPokemon.find(p => p.id === nextRefinement.primaryPokemonId);
+        const opponent = allPokemon.find(p => p.id === nextRefinement.opponentPokemonId);
+        
+        console.log(`🎯 [REFINEMENT_PRIORITY] Primary Pokemon: ${primary?.name} (${primary?.id})`);
+        console.log(`🎯 [REFINEMENT_PRIORITY] Opponent Pokemon: ${opponent?.name} (${opponent?.id})`);
+        
+        if (primary && opponent) {
+          const refinementBattle = [primary, opponent];
+          const validated = validateBattlePokemon(refinementBattle);
+          
+          console.log(`🎯 [REFINEMENT_PRIORITY] ✅ RETURNING REFINEMENT BATTLE: ${validated.map(p => p.name).join(' vs ')}`);
+          console.log(`🎯 [REFINEMENT_PRIORITY] Reason: ${nextRefinement.reason}`);
+          
+          return validated;
+        } else {
+          console.error(`🎯 [REFINEMENT_PRIORITY] ❌ Could not find Pokemon for refinement - removing from queue`);
+          refinementQueue.popRefinementBattle();
+          // Try again recursively
+          return generateNewBattle(battleType, battlesCompleted, refinementQueue);
+        }
+      }
+    } else {
+      console.log(`🎯 [REFINEMENT_PRIORITY] No refinement battles available - proceeding with regular generation`);
+      if (refinementQueue) {
+        console.log(`🎯 [REFINEMENT_PRIORITY] Queue state: hasRefinementBattles=${refinementQueue.hasRefinementBattles}, count=${refinementQueue.refinementBattleCount}`);
+      }
+    }
     
     if (!allPokemon || allPokemon.length < battleSize) {
       console.error(`🎲🎲🎲 [ANTI_REPEAT_GENERATION] Not enough Pokemon: need ${battleSize}, have ${allPokemon.length}`);
