@@ -17,7 +17,7 @@ export const useBattleStateCore = (
 ) => {
   console.log(`🔧 [BATTLE_STATE_CORE_ULTRA_DEBUG] useBattleStateCore called with ${allPokemon.length} Pokemon`);
   
-  // CRITICAL FIX: All state hooks must be called unconditionally and in the same order
+  // CRITICAL FIX: All state hooks must be called unconditionally and in the same order every time
   const [currentBattle, setCurrentBattleRaw] = useState<Pokemon[]>([]);
   const [battleResults, setBattleResults] = useState<SingleBattle[]>([]);
   const [battlesCompleted, setBattlesCompleted] = useState(0);
@@ -38,7 +38,7 @@ export const useBattleStateCore = (
   const [isAnyProcessing, setIsAnyProcessing] = useState(false);
   const [frozenPokemon, setFrozenPokemon] = useState<number[]>([]);
 
-  // Log every state change
+  // CRITICAL FIX: All useEffect hooks must be called unconditionally and in the same order
   useEffect(() => {
     console.log(`🔧 [STATE_CHANGE_ULTRA_DEBUG] battlesCompleted changed to: ${battlesCompleted}`);
     console.log(`🔧 [STATE_CHANGE_ULTRA_DEBUG] Available milestones: ${milestones.join(', ')}`);
@@ -84,7 +84,7 @@ export const useBattleStateCore = (
     return finalRankings;
   }, [finalRankings]);
   
-  // CRITICAL FIX: All custom hooks must be called in the same order every time
+  // CRITICAL FIX: All custom hooks must be called unconditionally and in the same order every time
   const { startNewBattle } = useBattleStarterCore(allPokemon, getCurrentRankings);
   const refinementQueue = useSharedRefinementQueue();
 
@@ -270,10 +270,10 @@ export const useBattleStateCore = (
     const percentage = milestoneHandlers.calculateCompletionPercentage();
     console.log(`🔧 [COMPLETION_DEBUG] Calculated completion percentage: ${percentage}% for ${battlesCompleted} battles`);
     setCompletionPercentage(percentage);
-  }, [battlesCompleted, milestoneHandlers.calculateCompletionPercentage]);
+  }, [battlesCompleted, milestoneHandlers]);
 
   useEffect(() => {
-    console.log(`🔧 [STATE_DEBUG] showingMilestone changed to: ${showingMilestone}`);
+    console.log(`🔧 [STATE_DEBUG] showingMilestone effect triggered - value: ${showingMilestone}`);
     if (showingMilestone) {
       console.log(`🔧 [STATE_DEBUG] Milestone is showing - finalRankings length: ${finalRankings.length}`);
       if (finalRankings.length > 0) {
@@ -283,14 +283,14 @@ export const useBattleStateCore = (
   }, [showingMilestone, finalRankings]);
 
   useEffect(() => {
-    console.log(`🔧 [STATE_DEBUG] finalRankings changed - length: ${finalRankings.length}`);
+    console.log(`🔧 [STATE_DEBUG] finalRankings effect triggered - length: ${finalRankings.length}`);
     if (finalRankings.length > 0) {
       console.log(`🔧 [STATE_DEBUG] Top 5 rankings:`, finalRankings.slice(0, 5).map(p => `${p.name} (${p.id}) - score: ${p.score}`));
     }
   }, [finalRankings]);
 
   useEffect(() => {
-    console.log(`🔧 [STATE_DEBUG] battlesCompleted changed to: ${battlesCompleted}`);
+    console.log(`🔧 [STATE_DEBUG] battlesCompleted effect triggered - value: ${battlesCompleted}`);
   }, [battlesCompleted]);
 
   console.log(`🔧 [BATTLE_STATE_CORE_ULTRA_DEBUG] useBattleStateCore returning state object`);
