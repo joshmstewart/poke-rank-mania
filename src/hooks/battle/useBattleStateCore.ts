@@ -191,6 +191,12 @@ export const useBattleStateCore = (
     console.log('🔄 [SUGGESTIONS_DEBUG] Clearing all suggestions');
   }, []);
 
+  // CRITICAL FIX: Create a temporary startNewBattleWrapper for milestoneHandlers
+  const startNewBattleWrapper = useCallback(() => {
+    console.log(`🚀 [TEMP_START_NEW_BATTLE] Temporary wrapper called`);
+    // This will be replaced by handlers.startNewBattleWrapper
+  }, []);
+
   // CRITICAL FIX: All custom hooks that depend on state must be called after state is defined
   const milestoneHandlers = useBattleStateMilestones(
     finalRankings,
@@ -201,10 +207,10 @@ export const useBattleStateCore = (
     setMilestoneInProgress,
     setRankingGenerated,
     setFinalRankings,
-    handlers.startNewBattleWrapper
+    startNewBattleWrapper  // Use temporary wrapper for now
   );
 
-  // CRITICAL FIX: Pass generateRankings to handlers
+  // CRITICAL FIX: Now create handlers with proper generateRankings
   const handlers = useBattleStateHandlers(
     allPokemon,
     currentBattle,
