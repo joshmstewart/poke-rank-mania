@@ -8,6 +8,7 @@ import { useSharedRefinementQueue } from "./useSharedRefinementQueue";
 import { useBattleStateEffects } from "./useBattleStateEffects";
 import { useBattleStateMilestones } from "./useBattleStateMilestones";
 import { useBattleStateProcessing } from "./useBattleStateProcessing";
+import { formatPokemonName } from "@/utils/pokemon";
 
 export const useBattleStateCore = (
   allPokemon: Pokemon[],
@@ -17,7 +18,7 @@ export const useBattleStateCore = (
   console.log(`🔧 [BATTLE_STATE_CORE_ULTRA_DEBUG] useBattleStateCore called with ${allPokemon.length} Pokemon`);
   
   // Core state
-  const [currentBattle, setCurrentBattle] = useState<Pokemon[]>([]);
+  const [currentBattle, setCurrentBattleRaw] = useState<Pokemon[]>([]);
   const [battleResults, setBattleResults] = useState<SingleBattle[]>([]);
   const [battlesCompleted, setBattlesCompleted] = useState(0);
   const [showingMilestone, setShowingMilestone] = useState(false);
@@ -36,6 +37,21 @@ export const useBattleStateCore = (
   const [milestoneInProgress, setMilestoneInProgress] = useState(false);
   const [isAnyProcessing, setIsAnyProcessing] = useState(false);
   const [frozenPokemon, setFrozenPokemon] = useState<number[]>([]);
+
+  // CRITICAL FIX: Wrapper for setCurrentBattle that formats Pokemon names
+  const setCurrentBattle = useCallback((battle: Pokemon[]) => {
+    console.log(`🔧 [NAME_FORMAT_FIX] Formatting names for ${battle.length} Pokemon in current battle`);
+    const formattedBattle = battle.map(pokemon => ({
+      ...pokemon,
+      name: formatPokemonName(pokemon.name)
+    }));
+    
+    formattedBattle.forEach((pokemon, index) => {
+      console.log(`🔧 [NAME_FORMAT_FIX] Pokemon #${index + 1}: "${battle[index].name}" → "${pokemon.name}"`);
+    });
+    
+    setCurrentBattleRaw(formattedBattle);
+  }, []);
 
   console.log(`🔧 [BATTLE_STATE_CORE_ULTRA_DEBUG] Hook state initialized, calling battleStarter and refinementQueue hooks`);
 
