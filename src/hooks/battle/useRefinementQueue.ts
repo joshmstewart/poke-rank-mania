@@ -79,15 +79,12 @@ export const useRefinementQueue = () => {
         return prev;
       }
       
-      // CRITICAL FIX: Create multiple battles to ensure testing twice
+      // CRITICAL FIX: Create battles to ensure testing twice - use ALL valid neighbors
       const battlesToAdd: RefinementBattle[] = [];
       
-      // Take first two neighbors for testing twice requirement
-      const neighborsToTest = validNeighbors.slice(0, 2);
-      console.log(`🔄 [TEST_TWICE_FIX] Testing ${primaryId} against first 2 neighbors: ${neighborsToTest.join(', ')}`);
-      
-      neighborsToTest.forEach((opponentId, index) => {
-        console.log(`🔍 [GLOBAL_DUPLICATE_CHECK] Checking if ${primaryId} vs ${opponentId} is duplicate in GLOBAL queue...`);
+      // Test against ALL neighbors, ensuring at least 2 battles for "testing twice"
+      validNeighbors.forEach((opponentId, index) => {
+        console.log(`🔍 [TESTING_TWICE_FIX] Creating battle ${index + 1} for ${primaryId} vs ${opponentId}`);
         
         const isDuplicateGlobally = isDuplicateBattleGlobally(primaryId, opponentId, prev);
         const isDuplicateInNewBattles = battlesToAdd.some(battle => 
@@ -101,11 +98,11 @@ export const useRefinementQueue = () => {
           const battle = {
             primaryPokemonId: primaryId,
             opponentPokemonId: opponentId,
-            reason: `Position validation ${index + 1}/2 for manual reorder to position ${newPosition} (primary: ${primaryId} vs neighbor: ${opponentId})`
+            reason: `Position validation ${index + 1}/${validNeighbors.length} for manual reorder to position ${newPosition} (primary: ${primaryId} vs neighbor: ${opponentId})`
           };
           
           battlesToAdd.push(battle);
-          console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] ✅ QUEUED NEW battle ${index + 1}/2: ${primaryId} vs ${opponentId}`);
+          console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] ✅ QUEUED NEW battle ${index + 1}/${validNeighbors.length}: ${primaryId} vs ${opponentId}`);
         } else {
           console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] ⚠️ SKIPPED GLOBAL duplicate battle: ${primaryId} vs ${opponentId}`);
         }
@@ -116,6 +113,26 @@ export const useRefinementQueue = () => {
         return prev;
       }
       
+      // CRITICAL FIX: Ensure at least 2 battles if possible for "testing twice"
+      if (battlesToAdd.length === 1 && validNeighbors.length > 1) {
+        console.log(`🔄 [TESTING_TWICE_FIX] Only 1 battle queued but more neighbors available - checking for additional battles`);
+        
+        // Try to add one more battle if possible
+        const additionalNeighbor = validNeighbors.find(opponentId => 
+          !battlesToAdd.some(battle => battle.opponentPokemonId === opponentId)
+        );
+        
+        if (additionalNeighbor) {
+          const additionalBattle = {
+            primaryPokemonId: primaryId,
+            opponentPokemonId: additionalNeighbor,
+            reason: `Additional test 2/2 for manual reorder to position ${newPosition} (primary: ${primaryId} vs neighbor: ${additionalNeighbor})`
+          };
+          battlesToAdd.push(additionalBattle);
+          console.log(`🔄 [TESTING_TWICE_FIX] ✅ Added second battle for testing twice: ${primaryId} vs ${additionalNeighbor}`);
+        }
+      }
+      
       // Add new battles to the end of the queue
       const newQueue = [...prev, ...battlesToAdd];
       
@@ -124,7 +141,7 @@ export const useRefinementQueue = () => {
       
       console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] ✅ Added ${battlesToAdd.length} new battles for testing`);
       console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] ✅ Total refinement battles in NEW queue: ${newQueue.length}`);
-      console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] ✅ NEW queue contents:`, newQueue.map(b => `${b.primaryPokemonId} vs ${b.opponentPokemonId} (${b.reason.includes('1/2') ? '1st test' : '2nd test'})`));
+      console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] ✅ NEW queue contents:`, newQueue.map(b => `${b.primaryPokemonId} vs ${b.opponentPokemonId} (${b.reason.includes('1/') ? '1st test' : b.reason.includes('2/') ? '2nd test' : 'test'})`));
       console.log(`🔄 [REFINEMENT_QUEUE_ULTRA_DEBUG] ===== QUEUEING VALIDATION BATTLES END =====`);
       
       return newQueue;

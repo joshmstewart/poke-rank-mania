@@ -138,6 +138,12 @@ export const useDragAndDrop = ({ displayRankings, onManualReorder, onLocalReorde
         console.error(`🚨🚨🚨 [DRAG_DROP_ULTRA_TRACE] ❌ Error calling queueBattlesForReorder:`, error);
       }
       
+      // CRITICAL FIX: Persist pending state by dispatching an event that will be handled
+      const persistPendingEvent = new CustomEvent('persist-pending-state', {
+        detail: { pokemonId: draggedPokemon.id, pokemonName: draggedPokemon.name }
+      });
+      document.dispatchEvent(persistPendingEvent);
+      
       // Dispatch events to notify other components
       const refinementEvent = new CustomEvent('refinement-queue-updated', {
         detail: { pokemonId: draggedPokemon.id, neighbors, newPosition: overIndex }

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import {
   DndContext,
@@ -63,6 +62,19 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
         return newSet;
       });
     };
+
+    // CRITICAL FIX: Handle persistent pending state
+    const handlePersistPendingState = (event: CustomEvent) => {
+      console.log(`🔄 [PERSIST_PENDING] Persisting pending state for:`, event.detail);
+      const { pokemonId } = event.detail;
+      
+      setLocalPendingRefinements(prev => {
+        const newSet = new Set(prev);
+        newSet.add(pokemonId);
+        console.log(`🔄 [PERSIST_PENDING] Persisted pending state for ${pokemonId}`);
+        return newSet;
+      });
+    };
     
     const handleBattleComplete = (event: CustomEvent) => {
       console.log(`🔄 [PENDING_CLEAR] Battle completed, clearing pending states`);
@@ -83,10 +95,12 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
     };
     
     document.addEventListener('refinement-queue-updated', handleRefinementQueueUpdate as EventListener);
+    document.addEventListener('persist-pending-state', handlePersistPendingState as EventListener);
     document.addEventListener('refinement-battle-completed', handleBattleComplete as EventListener);
     
     return () => {
       document.removeEventListener('refinement-queue-updated', handleRefinementQueueUpdate as EventListener);
+      document.removeEventListener('persist-pending-state', handlePersistPendingState as EventListener);
       document.removeEventListener('refinement-battle-completed', handleBattleComplete as EventListener);
     };
   }, []);
@@ -105,11 +119,11 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
   const handleManualReorderWrapper = React.useCallback((draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => {
     console.log(`🚨 [DND_SETUP_DEBUG] Manual reorder wrapper called:`, draggedPokemonId, sourceIndex, destinationIndex);
     
-    // CRITICAL FIX: Immediately show as pending
+    // CRITICAL FIX: Immediately show as pending and keep it persistent
     setLocalPendingRefinements(prev => {
       const newSet = new Set(prev);
       newSet.add(draggedPokemonId);
-      console.log(`🔄 [IMMEDIATE_PENDING] Immediately marking ${draggedPokemonId} as pending`);
+      console.log(`🔄 [IMMEDIATE_PENDING] Immediately marking ${draggedPokemonId} as pending (persistent)`);
       return newSet;
     });
     
@@ -129,12 +143,12 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
     console.log(`🚨 [DND_CONTEXT_DEBUG] ✅ @dnd-kit DndContext is working!`);
     console.log(`🚨 [DND_CONTEXT_DEBUG] Active ID:`, event.active.id);
     
-    // CRITICAL FIX: Show pending immediately when drag starts
+    // CRITICAL FIX: Show pending immediately when drag starts and persist it
     const draggedPokemonId = Number(event.active.id);
     setLocalPendingRefinements(prev => {
       const newSet = new Set(prev);
       newSet.add(draggedPokemonId);
-      console.log(`🔄 [DRAG_START_PENDING] Marking ${draggedPokemonId} as pending on drag start`);
+      console.log(`🔄 [DRAG_START_PENDING] Marking ${draggedPokemonId} as pending on drag start (will persist)`);
       return newSet;
     });
   };
