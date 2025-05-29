@@ -1,5 +1,4 @@
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   DndContext,
   closestCenter,
@@ -43,20 +42,47 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
   console.log(`🚨 [DND_SETUP_DEBUG] @dnd-kit/core version check:`, typeof DndContext);
   console.log(`🚨 [DND_SETUP_DEBUG] @dnd-kit/sortable version check:`, typeof SortableContext);
   console.log(`🚨 [DND_SETUP_DEBUG] Pokemon count:`, formattedRankings.length);
-  console.log(`🚨 [DND_SETUP_DEBUG] onManualReorder exists:`, typeof onManualReorder === 'function');
+  console.log(`🚨 [DND_SETUP_DEBUG] Initial pending refinements:`, Array.from(pendingRefinements));
 
   const [localRankings, setLocalRankings] = useState(formattedRankings);
+  const [localPendingRefinements, setLocalPendingRefinements] = useState(pendingRefinements);
+  
   const maxItems = getMaxItemsForTier();
   const displayRankings = localRankings.slice(0, Math.min(milestoneDisplayCount, maxItems));
   const hasMoreToLoad = milestoneDisplayCount < maxItems;
 
-  console.log(`🚨 [DND_SETUP_DEBUG] Display rankings IDs:`, displayRankings.map(p => p.id));
+  // CRITICAL FIX: Listen for refinement queue updates to update pending state
+  useEffect(() => {
+    const handleRefinementQueueUpdate = (event: CustomEvent) => {
+      console.log(`🔄 [PENDING_UPDATE] Received refinement queue update:`, event.detail);
+      
+      const { pokemonId } = event.detail;
+      
+      setLocalPendingRefinements(prev => {
+        const newSet = new Set(prev);
+        newSet.add(pokemonId);
+        console.log(`🔄 [PENDING_UPDATE] Updated local pending refinements:`, Array.from(newSet));
+        return newSet;
+      });
+    };
+    
+    document.addEventListener('refinement-queue-updated', handleRefinementQueueUpdate as EventListener);
+    
+    return () => {
+      document.removeEventListener('refinement-queue-updated', handleRefinementQueueUpdate as EventListener);
+    };
+  }, []);
 
-  // Update local rankings when formattedRankings changes
+  // Update local state when props change
   React.useEffect(() => {
     console.log(`🚨 [DND_SETUP_DEBUG] Updating local rankings from props`);
     setLocalRankings(formattedRankings);
   }, [formattedRankings]);
+
+  React.useEffect(() => {
+    console.log(`🚨 [DND_SETUP_DEBUG] Updating local pending refinements from props`);
+    setLocalPendingRefinements(pendingRefinements);
+  }, [pendingRefinements]);
 
   const handleManualReorderWrapper = React.useCallback((draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => {
     console.log(`🚨 [DND_SETUP_DEBUG] Manual reorder wrapper called:`, draggedPokemonId, sourceIndex, destinationIndex);
@@ -120,7 +146,7 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
         displayCount={displayRankings.length}
         activeTier={activeTier}
         maxItems={maxItems}
-        pendingRefinementsCount={pendingRefinements.size}
+        pendingRefinementsCount={localPendingRefinements.size}
         onContinueBattles={onContinueBattles}
       />
 
@@ -142,13 +168,15 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
               onMouseDown={handleGridMouseDown}
             >
               {displayRankings.map((pokemon, index) => {
-                console.log(`🚨 [DND_SETUP_DEBUG] Rendering card ${index}: ${pokemon.name} (ID: ${pokemon.id})`);
+                const isPending = localPendingRefinements.has(pokemon.id);
+                console.log(`🚨 [DND_SETUP_DEBUG] Rendering card ${index}: ${pokemon.name} (ID: ${pokemon.id}) - Pending: ${isPending}`);
+                
                 return (
                   <DraggablePokemonCard
                     key={pokemon.id}
                     pokemon={pokemon}
                     index={index}
-                    isPending={pendingRefinements.has(pokemon.id)}
+                    isPending={isPending}
                   />
                 );
               })}
