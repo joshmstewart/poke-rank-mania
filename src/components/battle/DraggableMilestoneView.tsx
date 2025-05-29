@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import {
   DndContext,
@@ -88,8 +87,9 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
       });
     };
     
-    const handleBattleComplete = (event: CustomEvent) => {
-      console.log(`🔄 [PENDING_CLEAR] Battle completed event:`, event.detail);
+    // CRITICAL FIX: Listen for ACTUAL battle completion, not queue consumption
+    const handleActualBattleComplete = (event: CustomEvent) => {
+      console.log(`🔄 [ACTUAL_BATTLE_COMPLETE] Actual battle completed:`, event.detail);
       const { pokemonIds } = event.detail;
       
       if (pokemonIds && Array.isArray(pokemonIds)) {
@@ -119,22 +119,17 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
             return newMap;
           });
         });
-      } else {
-        // If no specific Pokemon IDs, clear all pending
-        console.log(`🔄 [PENDING_CLEAR] No specific Pokemon IDs, clearing all pending`);
-        setLocalPendingRefinements(new Set());
-        setPendingBattleCounts(new Map());
       }
     };
     
     document.addEventListener('refinement-queue-updated', handleRefinementQueueUpdate as EventListener);
     document.addEventListener('persist-pending-state', handlePersistPendingState as EventListener);
-    document.addEventListener('refinement-battle-completed', handleBattleComplete as EventListener);
+    document.addEventListener('actual-battle-completed', handleActualBattleComplete as EventListener);
     
     return () => {
       document.removeEventListener('refinement-queue-updated', handleRefinementQueueUpdate as EventListener);
       document.removeEventListener('persist-pending-state', handlePersistPendingState as EventListener);
-      document.removeEventListener('refinement-battle-completed', handleBattleComplete as EventListener);
+      document.removeEventListener('actual-battle-completed', handleActualBattleComplete as EventListener);
     };
   }, []);
 

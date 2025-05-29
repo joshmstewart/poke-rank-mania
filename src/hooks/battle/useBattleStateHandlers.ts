@@ -1,8 +1,8 @@
-
 import { useCallback, useState, useMemo } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
 import { toast } from "sonner";
+import { useBattleCompletionTracking } from "./useBattleCompletionTracking";
 
 export const useBattleStateHandlers = (
   allPokemon: Pokemon[],
@@ -34,6 +34,8 @@ export const useBattleStateHandlers = (
   generateRankings: any
 ) => {
   console.log(`🔧 [HANDLERS_DEBUG] useBattleStateHandlers called`);
+
+  const { handleBattleCompleted } = useBattleCompletionTracking();
 
   // CRITICAL FIX: Create pending refinements set from the refinement queue with proper reactivity
   const pendingRefinements = useMemo(() => {
@@ -84,11 +86,14 @@ export const useBattleStateHandlers = (
     
     setSelectedPokemon(newSelection);
 
+    // CRITICAL FIX: Track that this battle was actually completed by the user
+    handleBattleCompleted(newSelection, currentBattle);
+
     if (battleType === "pairs" && newSelection.length === 1) {
       console.log(`🎯 [POKEMON_SELECT_ULTRA_DEBUG] Pairs battle completed with selection: ${newSelection}`);
       processBattleResultWithRefinement(newSelection, currentBattle, battleType, selectedGeneration);
     }
-  }, [selectedPokemon, setSelectedPokemon, battleType, currentBattle, selectedGeneration, processBattleResultWithRefinement]);
+  }, [selectedPokemon, setSelectedPokemon, battleType, currentBattle, selectedGeneration, processBattleResultWithRefinement, handleBattleCompleted]);
 
   const goBack = useCallback(() => {
     if (battleHistory.length === 0) return;
