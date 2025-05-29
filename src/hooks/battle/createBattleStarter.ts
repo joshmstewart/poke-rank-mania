@@ -1,3 +1,4 @@
+
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
 import { validateBattlePokemon } from "@/services/pokemon/api/utils";
@@ -90,9 +91,15 @@ export const createBattleStarter = (allPokemon: Pokemon[], currentRankings: Rank
     // Implementation for resetting suggestion priority
   };
 
+  // CRITICAL FIX: Add getAllPokemon method for refinement queue access
+  const getAllPokemon = () => {
+    return availablePokemon;
+  };
+
   return {
     startNewBattle,
     trackLowerTierLoss,
-    resetSuggestionPriority
+    resetSuggestionPriority,
+    getAllPokemon
   };
 };
