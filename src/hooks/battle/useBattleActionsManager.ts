@@ -45,27 +45,12 @@ export const useBattleActionsManager = (
   );
   
   // Use processing hook for battle result processing
-  const {
-    processBattleResult,
-    isProcessingResult,
-    resetMilestoneInProgress,
-    resetBattleProgressionMilestoneTracking
-  } = useBattleProcessorResult(
+  const { processResultLogic } = useBattleProcessorResult(
     battleResults,
     setBattleResults,
     battlesCompleted,
     setBattlesCompleted,
-    filteredPokemon,
-    stableSetCurrentBattle,
-    setShowingMilestone,
-    milestones,
-    generateRankingsWrapper,
-    setSelectedPokemon,
-    activeTierAsTopNOption,
-    freezePokemonForTierWrapper,
-    battleStarter,
-    markSuggestionUsed,
-    enhancedStartNewBattle
+    setSelectedPokemon
   );
 
   // Use handlers hook for user actions
@@ -86,13 +71,13 @@ export const useBattleActionsManager = (
     setShowingMilestone,
     enhancedStartNewBattle,
     forceDismissMilestone,
-    resetMilestoneInProgress,
+    () => {}, // resetMilestoneInProgress placeholder
     setCurrentBattle,
     setIsTransitioning,
     setCompletionPercentage,
     setRankingGenerated,
     resetMilestones,
-    resetBattleProgressionMilestoneTracking,
+    () => {}, // resetBattleProgressionMilestoneTracking placeholder
     clearAllSuggestions,
     generateRankingsWrapper
   );
@@ -113,15 +98,35 @@ export const useBattleActionsManager = (
     battleHistory,
     setBattleHistory,
     battleType,
-    processBattleResult,
+    (selectedPokemonIds: number[], currentBattlePokemon: Pokemon[], battleType: BattleType, selectedGeneration?: number) => {
+      // Create a simplified processBattleResult function using processResultLogic
+      processResultLogic(
+        selectedPokemonIds,
+        currentBattlePokemon,
+        (ids: number[], pokemon: Pokemon[], type: BattleType) => {
+          // Simple battle result processing
+          return battleResults;
+        },
+        battleType,
+        new Date().toISOString()
+      );
+    },
     goBack
   );
 
   return {
-    processBattleResult,
-    isProcessingResult,
-    resetMilestoneInProgress,
-    resetBattleProgressionMilestoneTracking,
+    processBattleResult: (selectedPokemonIds: number[], currentBattlePokemon: Pokemon[], battleType: BattleType, selectedGeneration?: number) => {
+      processResultLogic(
+        selectedPokemonIds,
+        currentBattlePokemon,
+        (ids: number[], pokemon: Pokemon[], type: BattleType) => battleResults,
+        battleType,
+        new Date().toISOString()
+      );
+    },
+    isProcessingResult: isProcessing,
+    resetMilestoneInProgress: () => {}, // placeholder
+    resetBattleProgressionMilestoneTracking: () => {}, // placeholder
     goBack,
     handleContinueBattles,
     performFullBattleReset,
