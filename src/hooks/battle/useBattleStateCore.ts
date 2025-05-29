@@ -109,7 +109,73 @@ export const useBattleStateCore = (
     }
   }, [battleType, generateNewBattle]);
 
-  // CRITICAL FIX: Enhanced milestone detection with proper logging
+  // CRITICAL FIX: Generate rankings from actual battle history only
+  const generateRankingsFromBattleHistory = useCallback(() => {
+    console.log(`🏆 [RANKING_GENERATION] ===== Generating rankings from battle history =====`);
+    console.log(`🏆 [RANKING_GENERATION] Battle history length: ${battleHistory.length}`);
+    
+    if (battleHistory.length === 0) {
+      console.log(`🏆 [RANKING_GENERATION] No battle history, setting empty rankings`);
+      setFinalRankings([]);
+      return;
+    }
+
+    // Track Pokemon that have actually participated in battles
+    const pokemonStats = new Map<number, { pokemon: Pokemon, wins: number, losses: number, battles: number }>();
+    
+    battleHistory.forEach((battleRecord, index) => {
+      console.log(`🏆 [RANKING_GENERATION] Processing battle ${index + 1}: ${battleRecord.battle.map(p => p.name).join(' vs ')}`);
+      console.log(`🏆 [RANKING_GENERATION] Selected in this battle: [${battleRecord.selected.join(', ')}]`);
+      
+      battleRecord.battle.forEach((pokemon: Pokemon) => {
+        if (!pokemonStats.has(pokemon.id)) {
+          pokemonStats.set(pokemon.id, {
+            pokemon,
+            wins: 0,
+            losses: 0,
+            battles: 0
+          });
+        }
+        
+        const stats = pokemonStats.get(pokemon.id)!;
+        stats.battles++;
+        
+        if (battleRecord.selected.includes(pokemon.id)) {
+          stats.wins++;
+          console.log(`🏆 [RANKING_GENERATION] ${pokemon.name} WON (${stats.wins}W/${stats.losses}L)`);
+        } else {
+          stats.losses++;
+          console.log(`🏆 [RANKING_GENERATION] ${pokemon.name} LOST (${stats.wins}W/${stats.losses}L)`);
+        }
+      });
+    });
+
+    // Convert to ranked Pokemon with proper scoring
+    const rankedPokemon = Array.from(pokemonStats.values())
+      .map(({ pokemon, wins, losses, battles }) => {
+        const winRate = battles > 0 ? wins / battles : 0;
+        const score = winRate * 100 + (wins * 2); // Win rate percentage + bonus for total wins
+        
+        return {
+          ...pokemon,
+          score,
+          count: battles,
+          confidence: Math.min(battles * 20, 100), // Confidence based on battle count
+          wins,
+          losses,
+          winRate: winRate * 100
+        };
+      })
+      .sort((a, b) => b.score - a.score); // Sort by score descending
+
+    console.log(`🏆 [RANKING_GENERATION] Generated rankings for ${rankedPokemon.length} Pokemon who actually battled`);
+    console.log(`🏆 [RANKING_GENERATION] Top 5: ${rankedPokemon.slice(0, 5).map(p => `${p.name} (${p.score.toFixed(1)})`).join(', ')}`);
+    
+    setFinalRankings(rankedPokemon);
+    setRankingGenerated(true);
+  }, [battleHistory]);
+
+  // CRITICAL FIX: Enhanced milestone detection with proper ranking generation
   const checkForMilestone = useCallback((newBattlesCompleted: number) => {
     console.log(`🏆🏆🏆 [MILESTONE_DETECTION] ===== Checking Milestone =====`);
     console.log(`🏆🏆🏆 [MILESTONE_DETECTION] Battle number: ${newBattlesCompleted}`);
@@ -121,18 +187,16 @@ export const useBattleStateCore = (
     if (isMilestone) {
       console.log(`🏆🏆🏆 [MILESTONE_HIT] ===== MILESTONE ${newBattlesCompleted} REACHED! =====`);
       setShowingMilestone(true);
-      setRankingGenerated(true);
       
-      // Generate simple ranking for milestone
-      const ranking = allPokemon.slice(0, 50);
-      setFinalRankings(ranking);
+      // Generate rankings from actual battle history
+      generateRankingsFromBattleHistory();
       
       console.log(`🏆🏆🏆 [MILESTONE_HIT] Milestone setup complete - showing milestone screen`);
       return true;
     }
     
     return false;
-  }, [milestones, allPokemon]);
+  }, [milestones, generateRankingsFromBattleHistory]);
 
   // Pokemon selection handler with proper recent tracking
   const handlePokemonSelect = useCallback((pokemonId: number) => {
@@ -266,9 +330,8 @@ export const useBattleStateCore = (
 
   const generateRankings = useCallback(() => {
     console.log(`📊 [GENERATE_RANKINGS] Generating rankings from ${battleResults.length} results`);
-    setFinalRankings(allPokemon.slice(0, 50)); // Simple ranking for now
-    setRankingGenerated(true);
-  }, [battleResults, allPokemon]);
+    generateRankingsFromBattleHistory();
+  }, [generateRankingsFromBattleHistory]);
 
   const handleSaveRankings = useCallback(() => {
     console.log(`💾 [SAVE_RANKINGS] Saving rankings`);
