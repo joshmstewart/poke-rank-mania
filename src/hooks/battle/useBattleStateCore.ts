@@ -1,3 +1,4 @@
+
 import { useCallback, useMemo, useEffect } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
@@ -10,6 +11,7 @@ import { useBattleStateProcessing } from "./useBattleStateProcessing";
 import { useBattleStateData } from "./useBattleStateData";
 import { useBattleStateMilestoneEvents } from "./useBattleStateMilestoneEvents";
 import { useBattleStateLogging } from "./useBattleStateLogging";
+import { useBattleStateInitialization } from "./useBattleStateInitialization";
 
 export const useBattleStateCore = (
   allPokemon: Pokemon[],
@@ -25,7 +27,15 @@ export const useBattleStateCore = (
   // Use the state data management hook
   const stateData = useBattleStateData(initialBattleType, initialSelectedGeneration);
   
+  // CRITICAL FIX: Use the initialization hook that provides enhancedStartNewBattle
+  const { enhancedStartNewBattle } = useBattleStateInitialization(
+    allPokemon,
+    initialBattleType,
+    initialSelectedGeneration
+  );
+  
   console.log(`🚨🚨🚨 [BATTLE_STATE_CORE_MEGA_DEBUG] All state hooks initialized`);
+  console.log(`🚨🚨🚨 [ENHANCED_START_WIRING] enhancedStartNewBattle available: ${!!enhancedStartNewBattle}`);
   
   // Use logging hook
   useBattleStateLogging({
@@ -48,25 +58,11 @@ export const useBattleStateCore = (
   const { startNewBattle: startNewBattleCore } = useBattleStarterCore(allPokemon, getCurrentRankings);
   const refinementQueue = useSharedRefinementQueue();
 
-  // FIXED: Create a proper wrapper that calls startNewBattleCore with correct config object
+  // CRITICAL FIX: Use enhancedStartNewBattle instead of creating our own wrapper
   const startNewBattle = useCallback((battleType: BattleType) => {
-    console.log(`🚀 [START_NEW_BATTLE_FIX] Creating new battle for type: ${battleType}`);
-    console.log(`🚀 [START_NEW_BATTLE_FIX] Available Pokemon: ${allPokemon.length}`);
-    console.log(`🚀 [START_NEW_BATTLE_FIX] Current rankings: ${getCurrentRankings().length}`);
-    
-    // Call startNewBattleCore with the proper config object
-    const result = startNewBattleCore({
-      allPokemon,
-      currentRankings: getCurrentRankings(),
-      battleType,
-      selectedGeneration: stateData.selectedGeneration,
-      freezeList: stateData.frozenPokemon
-    });
-    
-    console.log(`🚀 [START_NEW_BATTLE_FIX] Battle result:`, result ? result.map(p => p.name).join(' vs ') : 'null');
-    
-    return result;
-  }, [startNewBattleCore, allPokemon, getCurrentRankings, stateData.selectedGeneration, stateData.frozenPokemon]);
+    console.log(`🚀 [ENHANCED_START_WIRING] Using enhancedStartNewBattle for type: ${battleType}`);
+    return enhancedStartNewBattle(battleType);
+  }, [enhancedStartNewBattle]);
 
   // Create a parameterless wrapper for milestone handlers (they expect () => void)
   const startNewBattleWrapper = useCallback(() => {
