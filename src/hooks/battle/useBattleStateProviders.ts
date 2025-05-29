@@ -51,6 +51,7 @@ export const useBattleStateProviders = (
     isPokemonFrozenForTier,
     allRankedPokemon,
     freezePokemonForTierStringWrapper,
+    refinementQueue: coordinationData.refinementQueue, // Add refinement queue to return object
     ...coordinationData
   };
 };
