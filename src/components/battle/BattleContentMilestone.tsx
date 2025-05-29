@@ -72,27 +72,22 @@ const BattleContentMilestone: React.FC<BattleContentMilestoneProps> = ({
       </p>
 
       {finalRankings && finalRankings.length > 0 ? (
-        <>
-          <p className="mb-4 text-green-600">
-            ✅ Displaying {finalRankings.length} Pokemon rankings
-          </p>
-          <RankingDisplayContainer
-            finalRankings={finalRankings}
-            battlesCompleted={battlesCompleted}
-            onContinueBattles={onContinueBattles}
-            onNewBattleSet={() => {
-              setShowingMilestone(false);
-              resetMilestoneInProgress();
-            }}
-            rankingGenerated={rankingGenerated}
-            onSaveRankings={handleSaveRankings}
-            isMilestoneView={true}
-            activeTier={activeTier}
-            onManualReorder={handleManualReorder}
-            pendingRefinements={pendingRefinements}
-            enableDragAndDrop={true}
-          />
-        </>
+        <RankingDisplayContainer
+          finalRankings={finalRankings}
+          battlesCompleted={battlesCompleted}
+          onContinueBattles={onContinueBattles}
+          onNewBattleSet={() => {
+            setShowingMilestone(false);
+            resetMilestoneInProgress();
+          }}
+          rankingGenerated={rankingGenerated}
+          onSaveRankings={handleSaveRankings}
+          isMilestoneView={true}
+          activeTier={activeTier}
+          onManualReorder={handleManualReorder}
+          pendingRefinements={pendingRefinements}
+          enableDragAndDrop={true}
+        />
       ) : (
         <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded mb-4">
           <h3 className="font-bold">⚠️ No Pokemon Rankings Available</h3>

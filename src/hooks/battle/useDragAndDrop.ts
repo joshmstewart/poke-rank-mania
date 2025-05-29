@@ -144,7 +144,7 @@ export const useDragAndDrop = ({ displayRankings, onManualReorder, onLocalReorde
       });
       document.dispatchEvent(persistPendingEvent);
       
-      // Dispatch events to notify other components
+      // CRITICAL FIX: Also dispatch with number of battles needed for proper count tracking
       const refinementEvent = new CustomEvent('refinement-queue-updated', {
         detail: { pokemonId: draggedPokemon.id, neighbors, newPosition: overIndex }
       });
