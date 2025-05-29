@@ -41,8 +41,20 @@ export const useBattleStateRefinement = (
     return enhancedStartNewBattle(battleType);
   }, [allPokemon, refinementQueue, enhancedStartNewBattle]);
 
+  // CRITICAL FIX: Add function to mark refinement battle as completed
+  const completeRefinementBattle = useCallback((primaryPokemonId: number, opponentPokemonId: number, primaryWon: boolean) => {
+    console.log(`⚔️ [REFINEMENT_COMPLETION] Completing refinement battle: ${primaryPokemonId} vs ${opponentPokemonId}, primaryWon: ${primaryWon}`);
+    
+    // Remove the completed battle from the queue
+    refinementQueue.popRefinementBattle();
+    
+    console.log(`⚔️ [REFINEMENT_COMPLETION] Refinement battle completed and removed from queue`);
+    console.log(`⚔️ [REFINEMENT_COMPLETION] Remaining battles in queue: ${refinementQueue.refinementBattleCount}`);
+  }, [refinementQueue]);
+
   return {
     refinementQueue,
-    enhancedStartNewBattleWithRefinement
+    enhancedStartNewBattleWithRefinement,
+    completeRefinementBattle
   };
 };
