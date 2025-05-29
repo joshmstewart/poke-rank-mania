@@ -1,3 +1,4 @@
+
 export interface Pokemon {
   id: number;
   name: string;
@@ -23,6 +24,9 @@ export interface RankedPokemon extends Pokemon {
   score: number;      // Will be used for the conservative TrueSkill estimate (μ - 3σ)
   count: number;      // Number of battles the Pokémon has participated in
   confidence: number; // Will be derived from sigma (lower sigma = higher confidence)
+  wins: number;       // Number of wins
+  losses: number;     // Number of losses
+  winRate: number;    // Win rate percentage
   type1?: string;     // First type name (e.g., "grass")
   type2?: string;     // Second type name (e.g., "poison"), optional
   isFrozenForTier?: {
