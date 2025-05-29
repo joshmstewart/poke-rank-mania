@@ -90,18 +90,18 @@ export const useBattleStateCoreRefactored = (
     () => {} // Will be set later
   );
 
-  // Use event handlers hook
+  // Use event handlers hook - CRITICAL FIX: pass startNewBattleAsync instead of startNewBattle
   const eventHandlers = useBattleStateEventHandlers(
     allPokemon,
     stateData,
-    coordination.startNewBattle,
+    coordination.startNewBattleAsync,
     milestoneHandlers,
     processors.setFinalRankingsWithLogging
   );
 
   console.log(`🚨🚨🚨 [BATTLE_STATE_CORE_REFACTORED] milestoneHandlers created, about to call handlers...`);
 
-  // Create handlers with proper generateRankings
+  // Create handlers with proper generateRankings - CRITICAL FIX: use synchronous startNewBattle
   const handlers = useBattleStateHandlers(
     allPokemon,
     stateData.currentBattle,
@@ -113,7 +113,7 @@ export const useBattleStateCoreRefactored = (
     stateData.finalRankings,
     stateData.frozenPokemon,
     stateData.battleHistory,
-    coordination.startNewBattle,
+    coordination.startNewBattle, // synchronous version
     coordination.getCurrentRankings,
     refinementQueue,
     stateData.setBattleHistory,
@@ -149,7 +149,7 @@ export const useBattleStateCoreRefactored = (
 
   console.log(`🚨🚨🚨 [BATTLE_STATE_CORE_REFACTORED] processingHandlers created, about to call effects...`);
 
-  // Initialize effects
+  // Initialize effects - CRITICAL FIX: use synchronous startNewBattle
   const { processingRef } = useBattleStateEffects(
     allPokemon,
     stateData.battleType,
@@ -159,7 +159,7 @@ export const useBattleStateCoreRefactored = (
     stateData.selectedPokemon,
     stateData.isAnyProcessing,
     stateData.isProcessingResult,
-    coordination.startNewBattle,
+    coordination.startNewBattle, // synchronous version
     coordination.getCurrentRankings,
     stateData.setCurrentBattle,
     stateData.setSelectedPokemon,

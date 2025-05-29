@@ -1,4 +1,3 @@
-
 import { useCallback, useEffect } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
@@ -6,7 +5,7 @@ import { BattleType } from "./types";
 export const useBattleStateEventHandlers = (
   allPokemon: Pokemon[],
   stateData: any,
-  startNewBattle: (battleType: BattleType) => Promise<Pokemon[]> | Pokemon[],
+  startNewBattleAsync: (battleType: BattleType) => Promise<Pokemon[]>,
   milestoneHandlers: any,
   setFinalRankingsWithLogging: (rankings: any) => void
 ) => {
@@ -16,7 +15,7 @@ export const useBattleStateEventHandlers = (
     console.log(`🚀 [START_NEW_BATTLE_WRAPPER] Current battle type: ${stateData.battleType}`);
     
     try {
-      const result = await startNewBattle(stateData.battleType);
+      const result = await startNewBattleAsync(stateData.battleType);
       
       if (result && result.length > 0) {
         console.log(`🚀 [START_NEW_BATTLE_WRAPPER] Setting new battle:`, result.map(p => p.name).join(' vs '));
@@ -33,7 +32,7 @@ export const useBattleStateEventHandlers = (
     } catch (error) {
       console.error(`🚀 [START_NEW_BATTLE_WRAPPER] Error creating new battle:`, error);
     }
-  }, [startNewBattle, stateData.battleType, stateData.setCurrentBattle, stateData.setSelectedPokemon]);
+  }, [startNewBattleAsync, stateData.battleType, stateData.setCurrentBattle, stateData.setSelectedPokemon]);
 
   // Completion percentage calculation
   useEffect(() => {

@@ -34,16 +34,27 @@ export const useBattleStateCoordination = (
   const { startNewBattle: startNewBattleCore } = useBattleStarterCore(allPokemon, getCurrentRankings);
   const refinementQueue = useSharedRefinementQueue();
 
-  // CRITICAL FIX: Always use enhancedStartNewBattle as the primary battle starter
-  const startNewBattle = useCallback((battleType: BattleType) => {
+  // CRITICAL FIX: Make startNewBattle synchronous by handling the Promise internally
+  const startNewBattle = useCallback((battleType: BattleType): Pokemon[] => {
     console.log(`🚀 [ENHANCED_START_WIRING] Using enhancedStartNewBattle for type: ${battleType}`);
     console.log(`🚀 [BATTLE_GENERATION_TRACE] Timestamp: ${new Date().toISOString()}`);
+    
+    // Call enhancedStartNewBattle synchronously - it should return Pokemon[] directly
+    const result = enhancedStartNewBattle(battleType);
+    console.log(`🚀 [BATTLE_GENERATION_TRACE] Enhanced battle result:`, result?.map(p => `${p.name}(${p.id})`).join(' vs ') || 'empty');
+    return result || [];
+  }, [enhancedStartNewBattle]);
+
+  // CRITICAL FIX: Create async version for use in event handlers
+  const startNewBattleAsync = useCallback(async (battleType: BattleType): Promise<Pokemon[]> => {
+    console.log(`🚀 [ENHANCED_START_WIRING_ASYNC] Using enhancedStartNewBattle for type: ${battleType}`);
+    console.log(`🚀 [BATTLE_GENERATION_TRACE_ASYNC] Timestamp: ${new Date().toISOString()}`);
     
     // Force a small delay to ensure state updates are processed
     return new Promise<Pokemon[]>((resolve) => {
       setTimeout(() => {
         const result = enhancedStartNewBattle(battleType);
-        console.log(`🚀 [BATTLE_GENERATION_TRACE] Enhanced battle result:`, result?.map(p => `${p.name}(${p.id})`).join(' vs ') || 'empty');
+        console.log(`🚀 [BATTLE_GENERATION_TRACE_ASYNC] Enhanced battle result:`, result?.map(p => `${p.name}(${p.id})`).join(' vs ') || 'empty');
         resolve(result || []);
       }, 10);
     });
@@ -51,6 +62,7 @@ export const useBattleStateCoordination = (
 
   return {
     startNewBattle,
+    startNewBattleAsync,
     getCurrentRankings,
     refinementQueue,
     enhancedStartNewBattle
