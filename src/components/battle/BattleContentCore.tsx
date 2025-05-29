@@ -94,21 +94,28 @@ const BattleContentCore: React.FC<BattleContentCoreProps> = ({
   } = stateHook;
 
   console.log(`🔧 [HOOK_ORDER_FIX] All hooks called successfully, proceeding with render logic`);
-  console.log(`🔧 [HOOK_ORDER_FIX] Render states:`, {
-    showingMilestone,
-    isBattleTransitioning,
-    currentBattleLength: currentBattle?.length || 0,
-    currentBattleIds: currentBattle?.map(p => p.id).join(',') || '',
-    isProcessingResult,
-    isAnyProcessing,
-    hasBattle: !!currentBattle && currentBattle.length > 0,
-    battlesCompleted,
-    timestamp: new Date().toISOString()
-  });
+  console.log(`🔧 [RENDER_DECISION_MEGA_DEBUG] ===== RENDER DECISION LOGIC =====`);
+  console.log(`🔧 [RENDER_DECISION_MEGA_DEBUG] Render states:`);
+  console.log(`🔧 [RENDER_DECISION_MEGA_DEBUG] - showingMilestone: ${showingMilestone}`);
+  console.log(`🔧 [RENDER_DECISION_MEGA_DEBUG] - rankingGenerated: ${rankingGenerated}`);
+  console.log(`🔧 [RENDER_DECISION_MEGA_DEBUG] - isBattleTransitioning: ${isBattleTransitioning}`);
+  console.log(`🔧 [RENDER_DECISION_MEGA_DEBUG] - currentBattleLength: ${currentBattle?.length || 0}`);
+  console.log(`🔧 [RENDER_DECISION_MEGA_DEBUG] - currentBattleIds: ${currentBattle?.map(p => p.id).join(',') || ''}`);
+  console.log(`🔧 [RENDER_DECISION_MEGA_DEBUG] - isProcessingResult: ${isProcessingResult}`);
+  console.log(`🔧 [RENDER_DECISION_MEGA_DEBUG] - isAnyProcessing: ${isAnyProcessing}`);
+  console.log(`🔧 [RENDER_DECISION_MEGA_DEBUG] - hasBattle: ${!!currentBattle && currentBattle.length > 0}`);
+  console.log(`🔧 [RENDER_DECISION_MEGA_DEBUG] - battlesCompleted: ${battlesCompleted}`);
+  console.log(`🔧 [RENDER_DECISION_MEGA_DEBUG] - finalRankings length: ${finalRankings?.length || 0}`);
+  console.log(`🔧 [RENDER_DECISION_MEGA_DEBUG] - timestamp: ${new Date().toISOString()}`);
 
   // Show milestone screen
   if (showingMilestone) {
-    console.log(`🔧 [HOOK_ORDER_FIX] Rendering milestone screen`);
+    console.log(`🔧 [RENDER_DECISION_MEGA_DEBUG] ===== RENDERING MILESTONE SCREEN =====`);
+    console.log(`🔧 [RENDER_DECISION_MEGA_DEBUG] Milestone screen will receive:`);
+    console.log(`🔧 [RENDER_DECISION_MEGA_DEBUG] - finalRankings length: ${finalRankings?.length || 0}`);
+    console.log(`🔧 [RENDER_DECISION_MEGA_DEBUG] - battlesCompleted: ${battlesCompleted}`);
+    console.log(`🔧 [RENDER_DECISION_MEGA_DEBUG] - rankingGenerated: ${rankingGenerated}`);
+    
     return (
       <BattleContentMilestone
         finalRankings={finalRankings}
@@ -132,12 +139,14 @@ const BattleContentCore: React.FC<BattleContentCoreProps> = ({
 
   // Show loading when no battle data
   if (!currentBattle || currentBattle.length === 0) {
-    console.log(`🔧 [HOOK_ORDER_FIX] Rendering loading screen - no battle data`);
+    console.log(`🔧 [RENDER_DECISION_MEGA_DEBUG] ===== RENDERING LOADING SCREEN =====`);
+    console.log(`🔧 [RENDER_DECISION_MEGA_DEBUG] No battle data available`);
     return <BattleContentLoading />;
   }
 
   // Show main interface
-  console.log(`🔧 [HOOK_ORDER_FIX] Rendering main interface with ${currentBattle.length} Pokemon`);
+  console.log(`🔧 [RENDER_DECISION_MEGA_DEBUG] ===== RENDERING MAIN INTERFACE =====`);
+  console.log(`🔧 [RENDER_DECISION_MEGA_DEBUG] Main interface with ${currentBattle.length} Pokemon`);
   
   return (
     <div className="w-full">
