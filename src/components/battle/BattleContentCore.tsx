@@ -100,7 +100,7 @@ const BattleContentCore: React.FC<BattleContentCoreProps> = ({
         battlesCompleted={battlesCompleted}
         rankingGenerated={rankingGenerated}
         activeTier={activeTier}
-        getSnapshotForMilestone={getSnapshotForMilestone}
+        getSnapshotForMilestone={() => JSON.stringify({ battlesCompleted, battleResults, finalRankings })}
         onContinueBattles={handleContinueBattles}
         performFullBattleReset={performFullBattleReset}
         handleSaveRankings={handleSaveRankings}
@@ -110,7 +110,7 @@ const BattleContentCore: React.FC<BattleContentCoreProps> = ({
         setShowingMilestone={setShowingMilestone}
         resetMilestoneInProgress={resetMilestoneInProgress}
         handleManualReorder={handleManualReorder}
-        pendingRefinements={pendingRefinements}
+        pendingRefinements={new Set<number>()}
       />
     );
   }
