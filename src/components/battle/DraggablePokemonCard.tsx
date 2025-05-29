@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -18,8 +17,7 @@ const DraggablePokemonCard: React.FC<DraggablePokemonCardProps> = ({
   isPending = false 
 }) => {
   console.log(`🚨 [CARD_SETUP_DEBUG] ===== RENDERING CARD ${pokemon.name} =====`);
-  console.log(`🚨 [CARD_SETUP_DEBUG] useSortable imported:`, typeof useSortable);
-  console.log(`🚨 [CARD_SETUP_DEBUG] CSS imported:`, typeof CSS);
+  console.log(`🚨 [CARD_SETUP_DEBUG] isPending: ${isPending}`);
 
   const sortableResult = useSortable({ 
     id: pokemon.id,
@@ -27,15 +25,6 @@ const DraggablePokemonCard: React.FC<DraggablePokemonCardProps> = ({
       pokemon,
       index
     }
-  });
-
-  console.log(`🚨 [CARD_SETUP_DEBUG] useSortable result for ${pokemon.name}:`, {
-    id: pokemon.id,
-    isDragging: sortableResult.isDragging,
-    hasListeners: !!sortableResult.listeners,
-    hasAttributes: !!sortableResult.attributes,
-    hasTransform: !!sortableResult.transform,
-    setNodeRef: typeof sortableResult.setNodeRef
   });
 
   const {
@@ -47,16 +36,6 @@ const DraggablePokemonCard: React.FC<DraggablePokemonCardProps> = ({
     isDragging,
   } = sortableResult;
 
-  // Critical debugging for drag handlers
-  console.log(`🚨 [CARD_SETUP_DEBUG] Listeners object for ${pokemon.name}:`, listeners);
-  console.log(`🚨 [CARD_SETUP_DEBUG] Attributes object for ${pokemon.name}:`, attributes);
-  
-  if (listeners) {
-    Object.keys(listeners).forEach(key => {
-      console.log(`🚨 [CARD_SETUP_DEBUG] Listener ${key} for ${pokemon.name}:`, typeof listeners[key]);
-    });
-  }
-
   const style = {
     transform: CSS.Transform.toString(transform),
     transition: isDragging ? 'none' : transition,
@@ -64,7 +43,6 @@ const DraggablePokemonCard: React.FC<DraggablePokemonCardProps> = ({
 
   const backgroundColorClass = getPokemonBackgroundColor(pokemon);
 
-  // CRITICAL: Add comprehensive event debugging
   const handlePointerDown = (e: React.PointerEvent) => {
     console.log(`🚨 [EVENT_FLOW_DEBUG] ===== ${pokemon.name} POINTER DOWN START =====`);
     console.log(`🚨 [EVENT_FLOW_DEBUG] Event details:`, {
@@ -157,17 +135,21 @@ const DraggablePokemonCard: React.FC<DraggablePokemonCardProps> = ({
       style={style}
       className={`${backgroundColorClass} rounded-lg border border-gray-200 relative overflow-hidden h-40 flex flex-col select-none touch-none cursor-grab active:cursor-grabbing ${
         isDragging ? 'opacity-60 z-50 scale-105 shadow-2xl' : 'hover:shadow-lg transition-all duration-200'
-      } ${isPending ? 'ring-2 ring-yellow-400 ring-opacity-50' : ''}`}
+      } ${isPending ? 'ring-2 ring-blue-400 ring-opacity-50' : ''}`}
       {...attributes}
       onPointerDown={handlePointerDown}
       onMouseDown={handleMouseDown}
       onTouchStart={handleTouchStart}
       onClick={handleClick}
     >
-      {/* Pending indicator */}
+      {/* Prettier Pending Banner */}
       {isPending && (
-        <div className="absolute top-0 left-0 right-0 bg-yellow-400 text-yellow-900 text-xs px-2 py-1 text-center font-medium pointer-events-none">
-          Position pending validation
+        <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-xs px-3 py-1.5 text-center font-semibold pointer-events-none shadow-sm z-20">
+          <div className="flex items-center justify-center gap-1">
+            <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></div>
+            <span>Pending</span>
+            <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" style={{ animationDelay: '0.5s' }}></div>
+          </div>
         </div>
       )}
 
@@ -225,12 +207,12 @@ const DraggablePokemonCard: React.FC<DraggablePokemonCardProps> = ({
       </div>
 
       {/* Ranking number */}
-      <div className={`absolute top-2 left-2 w-7 h-7 bg-white rounded-full flex items-center justify-center text-sm font-bold z-10 shadow-sm border border-gray-200 pointer-events-none ${isPending ? 'mt-6' : ''}`}>
+      <div className={`absolute top-2 left-2 w-7 h-7 bg-white rounded-full flex items-center justify-center text-sm font-bold z-10 shadow-sm border border-gray-200 pointer-events-none ${isPending ? 'mt-7' : ''}`}>
         <span className="text-black">{index + 1}</span>
       </div>
       
       {/* Pokemon image */}
-      <div className={`flex-1 flex justify-center items-center px-2 pb-1 pointer-events-none ${isPending ? 'pt-8' : 'pt-6'}`}>
+      <div className={`flex-1 flex justify-center items-center px-2 pb-1 pointer-events-none ${isPending ? 'pt-9' : 'pt-6'}`}>
         <img 
           src={pokemon.image} 
           alt={pokemon.name}

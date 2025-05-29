@@ -39,9 +39,6 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
   pendingRefinements = new Set()
 }) => {
   console.log(`🚨 [DND_SETUP_DEBUG] ===== DraggableMilestoneView RENDER =====`);
-  console.log(`🚨 [DND_SETUP_DEBUG] @dnd-kit/core version check:`, typeof DndContext);
-  console.log(`🚨 [DND_SETUP_DEBUG] @dnd-kit/sortable version check:`, typeof SortableContext);
-  console.log(`🚨 [DND_SETUP_DEBUG] Pokemon count:`, formattedRankings.length);
   console.log(`🚨 [DND_SETUP_DEBUG] Initial pending refinements:`, Array.from(pendingRefinements));
 
   const [localRankings, setLocalRankings] = useState(formattedRankings);
@@ -51,7 +48,7 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
   const displayRankings = localRankings.slice(0, Math.min(milestoneDisplayCount, maxItems));
   const hasMoreToLoad = milestoneDisplayCount < maxItems;
 
-  // CRITICAL FIX: More aggressive pending state updates
+  // CRITICAL FIX: More responsive pending state updates
   useEffect(() => {
     const handleRefinementQueueUpdate = (event: CustomEvent) => {
       console.log(`🔄 [PENDING_UPDATE] Received refinement queue update:`, event.detail);
@@ -64,11 +61,6 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
         console.log(`🔄 [PENDING_UPDATE] Updated local pending refinements:`, Array.from(newSet));
         return newSet;
       });
-      
-      // Force a re-render to show the pending state immediately
-      setTimeout(() => {
-        setLocalPendingRefinements(prev => new Set(prev));
-      }, 50);
     };
     
     const handleBattleComplete = (event: CustomEvent) => {
@@ -82,6 +74,10 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
           console.log(`🔄 [PENDING_CLEAR] Removed completed Pokemon:`, pokemonIds);
           return newSet;
         });
+      } else {
+        // If no specific Pokemon IDs, clear all pending
+        console.log(`🔄 [PENDING_CLEAR] No specific Pokemon IDs, clearing all pending`);
+        setLocalPendingRefinements(new Set());
       }
     };
     
@@ -108,13 +104,18 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
   const handleManualReorderWrapper = React.useCallback((draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => {
     console.log(`🚨 [DND_SETUP_DEBUG] Manual reorder wrapper called:`, draggedPokemonId, sourceIndex, destinationIndex);
     
-    // CRITICAL FIX: Immediately show as pending
+    // CRITICAL FIX: Immediately show as pending with force update
     setLocalPendingRefinements(prev => {
       const newSet = new Set(prev);
       newSet.add(draggedPokemonId);
       console.log(`🔄 [IMMEDIATE_PENDING] Immediately marking ${draggedPokemonId} as pending`);
       return newSet;
     });
+    
+    // Force a re-render after a short delay to ensure the pending state is visible
+    setTimeout(() => {
+      setLocalPendingRefinements(prev => new Set([...prev, draggedPokemonId]));
+    }, 10);
     
     if (typeof onManualReorder === 'function') {
       onManualReorder(draggedPokemonId, sourceIndex, destinationIndex);
