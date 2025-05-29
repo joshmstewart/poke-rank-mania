@@ -55,7 +55,7 @@ export const useBattleStarterIntegration = (
       return [];
     }
     
-    // CRITICAL FIX: Actually check and USE the refinement queue
+    // CRITICAL FIX: Check refinement queue FIRST and use battleStarter.getAllPokemon() for proper filtering
     if (refinementQueue && refinementQueue.hasRefinementBattles && refinementQueue.refinementBattleCount > 0) {
       console.log(`🚨 [BATTLE_STARTER_CRITICAL_FIX] ✅ REFINEMENT QUEUE HAS ${refinementQueue.refinementBattleCount} BATTLES!`);
       const nextRefinement = refinementQueue.getNextRefinementBattle();
@@ -65,8 +65,12 @@ export const useBattleStarterIntegration = (
         console.log(`🚨 [BATTLE_STARTER_CRITICAL_FIX] ✅ CREATING REFINEMENT BATTLE!`);
         console.log(`🚨 [BATTLE_STARTER_CRITICAL_FIX] Primary: ${nextRefinement.primaryPokemonId}, Opponent: ${nextRefinement.opponentPokemonId}`);
         
-        const primary = allPokemon.find(p => p.id === nextRefinement.primaryPokemonId);
-        const opponent = allPokemon.find(p => p.id === nextRefinement.opponentPokemonId);
+        // CRITICAL FIX: Use battleStarter.getAllPokemon() to get the FILTERED Pokemon list
+        const availablePokemon = battleStarter.getAllPokemon();
+        console.log(`🚨 [BATTLE_STARTER_CRITICAL_FIX] Available Pokemon count: ${availablePokemon.length}`);
+        
+        const primary = availablePokemon.find(p => p.id === nextRefinement.primaryPokemonId);
+        const opponent = availablePokemon.find(p => p.id === nextRefinement.opponentPokemonId);
         
         console.log(`🚨 [BATTLE_STARTER_CRITICAL_FIX] Primary found: ${!!primary} (${primary?.name})`);
         console.log(`🚨 [BATTLE_STARTER_CRITICAL_FIX] Opponent found: ${!!opponent} (${opponent?.name})`);
@@ -82,7 +86,10 @@ export const useBattleStarterIntegration = (
           console.log(`🚨 [BATTLE_STARTER_CRITICAL_FIX] ✅ REFINEMENT BATTLE SET - RETURNING IT`);
           return refinementBattle;
         } else {
-          console.error(`🚨 [BATTLE_STARTER_CRITICAL_FIX] ❌ MISSING POKEMON - popping invalid battle`);
+          console.error(`🚨 [BATTLE_STARTER_CRITICAL_FIX] ❌ POKEMON NOT FOUND IN FILTERED LIST`);
+          console.error(`🚨 [BATTLE_STARTER_CRITICAL_FIX] Primary ${nextRefinement.primaryPokemonId} found: ${!!primary}`);
+          console.error(`🚨 [BATTLE_STARTER_CRITICAL_FIX] Opponent ${nextRefinement.opponentPokemonId} found: ${!!opponent}`);
+          console.error(`🚨 [BATTLE_STARTER_CRITICAL_FIX] This means the Pokemon are filtered out - popping invalid battle`);
           refinementQueue.popRefinementBattle();
           // Try again recursively
           return startNewBattle(battleType);
@@ -90,8 +97,6 @@ export const useBattleStarterIntegration = (
       }
     } else {
       console.log(`🚨 [BATTLE_STARTER_CRITICAL_FIX] ❌ No refinement queue or no battles in queue`);
-      console.log(`🚨 [BATTLE_STARTER_CRITICAL_FIX] hasRefinementBattles: ${refinementQueue?.hasRefinementBattles}`);
-      console.log(`🚨 [BATTLE_STARTER_CRITICAL_FIX] refinementBattleCount: ${refinementQueue?.refinementBattleCount}`);
     }
     
     // No refinement battles - proceed with regular generation
