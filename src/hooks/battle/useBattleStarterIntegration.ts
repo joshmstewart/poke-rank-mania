@@ -54,6 +54,15 @@ export const useBattleStarterIntegration = (
     console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] - refinementQueue exists: ${!!refinementQueue}`);
     
     if (refinementQueue) {
+      // CRITICAL DEBUG: Log the EXACT refinement queue state
+      console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] REFINEMENT QUEUE DEEP INSPECTION:`);
+      console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] - refinementQueue object keys:`, Object.keys(refinementQueue));
+      console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] - refinementQueue.queue:`, refinementQueue.queue);
+      console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] - refinementQueue.refinementQueue:`, refinementQueue.refinementQueue);
+      console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] - typeof refinementQueue.getNextRefinementBattle:`, typeof refinementQueue.getNextRefinementBattle);
+      console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] - refinementQueue.hasRefinementBattles:`, refinementQueue.hasRefinementBattles);
+      console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] - refinementQueue.refinementBattleCount:`, refinementQueue.refinementBattleCount);
+      
       // CRITICAL FIX: Use the actual queue arrays directly instead of computed properties
       const actualQueue = refinementQueue.queue || refinementQueue.refinementQueue || [];
       const actualCount = actualQueue.length;
@@ -80,12 +89,18 @@ export const useBattleStarterIntegration = (
     console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] - actualQueue.length: ${actualQueue.length}`);
     console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] - hasActualBattles: ${hasActualBattles}`);
     
+    // CRITICAL DEBUG: Try calling getNextRefinementBattle regardless and see what happens
+    console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] DEBUGGING: Calling getNextRefinementBattle regardless of queue state...`);
+    let nextRefinement = null;
+    try {
+      nextRefinement = refinementQueue.getNextRefinementBattle();
+      console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] DEBUGGING: getNextRefinementBattle returned:`, nextRefinement);
+    } catch (error) {
+      console.error(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] DEBUGGING: getNextRefinementBattle threw error:`, error);
+    }
+    
     if (hasActualBattles) {
       console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] ✅ REFINEMENT QUEUE HAS ${actualQueue.length} BATTLES!`);
-      
-      // TRACE: Get next refinement
-      const nextRefinement = refinementQueue.getNextRefinementBattle();
-      console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] getNextRefinementBattle result:`, nextRefinement);
       
       if (nextRefinement) {
         console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] ✅ CREATING REFINEMENT BATTLE!`);
@@ -131,7 +146,8 @@ export const useBattleStarterIntegration = (
           return startNewBattle(battleType);
         }
       } else {
-        console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] ❌ getNextRefinementBattle returned null/undefined`);
+        console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] ❌ getNextRefinementBattle returned null/undefined despite queue having battles`);
+        console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] This indicates a problem with the getNextRefinementBattle method`);
       }
     } else {
       console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] ❌ No refinement queue or no battles in queue`);
@@ -139,6 +155,11 @@ export const useBattleStarterIntegration = (
       console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] - actualQueue: ${JSON.stringify(actualQueue)}`);
       console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] - actualQueue.length: ${actualQueue.length}`);
     }
+    
+    // CRITICAL DEBUG: Add logs when falling back to regular generation
+    console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] ===== FALLING BACK TO REGULAR GENERATION =====`);
+    console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] Reason: No valid refinement battles found`);
+    console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] This means either: 1) No queue, 2) Empty queue, 3) Invalid Pokemon in queue`);
     
     // No refinement battles - proceed with regular generation
     console.log(`🚨🚨🚨 [BATTLE_STARTER_ULTRA_TRACE] ===== NO REFINEMENT BATTLES - REGULAR GENERATION =====`);
