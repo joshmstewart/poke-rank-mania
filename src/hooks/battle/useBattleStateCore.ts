@@ -49,16 +49,11 @@ export const useBattleStateCore = (
   const { startNewBattle: startNewBattleCore } = useBattleStarterCore(allPokemon, getCurrentRankings);
   const refinementQueue = useSharedRefinementQueue();
 
-  // Create a wrapper for startNewBattle that matches the expected signature
+  // Create a simple wrapper for startNewBattle that matches the expected signature
   const startNewBattle = useCallback((battleType: BattleType) => {
-    return startNewBattleCore({
-      allPokemon,
-      currentRankings: getCurrentRankings(),
-      battleType,
-      selectedGeneration: stateData.selectedGeneration,
-      freezeList: stateData.frozenPokemon
-    });
-  }, [startNewBattleCore, allPokemon, getCurrentRankings, stateData.selectedGeneration, stateData.frozenPokemon]);
+    console.log(`🚀 [START_NEW_BATTLE_FIX] Creating new battle for type: ${battleType}`);
+    return startNewBattleCore(battleType);
+  }, [startNewBattleCore]);
 
   // Enhanced setFinalRankings wrapper with detailed logging
   const setFinalRankingsWithLogging = useCallback((rankings: any) => {
