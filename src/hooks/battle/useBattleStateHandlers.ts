@@ -70,6 +70,7 @@ export const useBattleStateHandlers = (
     console.log(`🔄 [HANDLERS_BATTLE_PROCESSING_MEGA_DEBUG] NEW battles completed: ${newBattlesCompleted}`);
     console.log(`🔄 [HANDLERS_BATTLE_PROCESSING_MEGA_DEBUG] Available milestones: ${milestones.join(', ')}`);
     
+    // CRITICAL FIX: Update battles completed FIRST
     setBattlesCompleted(newBattlesCompleted);
     localStorage.setItem('pokemon-battle-count', String(newBattlesCompleted));
 
@@ -87,7 +88,7 @@ export const useBattleStateHandlers = (
       return newResults;
     });
 
-    // CRITICAL FIX: Enhanced milestone checking with mega debug logging
+    // CRITICAL FIX: Enhanced milestone checking with immediate trigger
     const isAtMilestone = milestones.includes(newBattlesCompleted);
     console.log(`🎯 [HANDLERS_MILESTONE_CHECK_MEGA_DEBUG] ===== HANDLERS MILESTONE CHECK =====`);
     console.log(`🎯 [HANDLERS_MILESTONE_CHECK_MEGA_DEBUG] Battle ${newBattlesCompleted} completed`);
@@ -99,16 +100,18 @@ export const useBattleStateHandlers = (
       console.log(`🏆 [HANDLERS_MILESTONE_HIT_MEGA_DEBUG] ===== HANDLERS MILESTONE ${newBattlesCompleted} REACHED! =====`);
       console.log(`🏆 [HANDLERS_MILESTONE_HIT_MEGA_DEBUG] About to set milestone flags via handlers...`);
       
-      // UPDATED: Trigger the proper ranking generation system instead of basic rankings
-      // This will be handled by the external ranking system that uses TrueSkill
-      setMilestoneInProgress(true);
-      setShowingMilestone(true);
-      setRankingGenerated(true); // Mark that rankings should be generated
-      
-      console.log(`🏆 [HANDLERS_MILESTONE_HIT_MEGA_DEBUG] Milestone flags set via handlers`);
-      console.log(`🏆 [HANDLERS_MILESTONE_HIT_MEGA_DEBUG] - setMilestoneInProgress(true) called`);
-      console.log(`🏆 [HANDLERS_MILESTONE_HIT_MEGA_DEBUG] - setShowingMilestone(true) called`);
-      console.log(`🏆 [HANDLERS_MILESTONE_HIT_MEGA_DEBUG] - setRankingGenerated(true) called`);
+      // CRITICAL FIX: Use setTimeout to ensure state updates are processed
+      setTimeout(() => {
+        console.log(`🏆 [HANDLERS_MILESTONE_TRIGGER] Setting milestone flags NOW for battle ${newBattlesCompleted}`);
+        setMilestoneInProgress(true);
+        setShowingMilestone(true);
+        setRankingGenerated(true);
+        
+        console.log(`🏆 [HANDLERS_MILESTONE_TRIGGER] Milestone flags set:
+          - milestoneInProgress: true
+          - showingMilestone: true
+          - rankingGenerated: true`);
+      }, 50);
       
     } else {
       console.log(`🎯 [HANDLERS_MILESTONE_CHECK_MEGA_DEBUG] No milestone hit for battle ${newBattlesCompleted}`);
