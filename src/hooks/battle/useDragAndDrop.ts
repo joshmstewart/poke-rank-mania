@@ -65,29 +65,45 @@ export const useDragAndDrop = ({ displayRankings, onManualReorder, onLocalReorde
     const draggedPokemon = displayRankings[activeIndex];
     console.log(`🚨🚨🚨 [DRAG_DROP_ULTRA_TRACE] Dragged Pokemon: ${draggedPokemon.name} (${draggedPokemon.id})`);
 
-    // CRITICAL FIX: Calculate the new rankings FIRST to determine correct neighbors
+    // Calculate the new rankings to determine correct neighbors
     const newRankings = arrayMove(displayRankings, activeIndex, overIndex);
     console.log(`🚨🚨🚨 [DRAG_DROP_FIX] ===== NEIGHBOR CALCULATION FIX =====`);
     console.log(`🚨🚨🚨 [DRAG_DROP_FIX] Original rankings:`, displayRankings.map(p => `${p.name}(${p.id})`));
     console.log(`🚨🚨🚨 [DRAG_DROP_FIX] New rankings after move:`, newRankings.map(p => `${p.name}(${p.id})`));
     console.log(`🚨🚨🚨 [DRAG_DROP_FIX] Dragged Pokemon ${draggedPokemon.name} moved to position ${overIndex}`);
 
-    // CRITICAL FIX: Use the NEW rankings to find neighbors at the destination position
+    // CRITICAL FIX: Get up to 4 neighbors for testing twice requirement
     const neighbors: number[] = [];
 
+    // Get neighbors above (up to 2)
     if (overIndex > 0) {
-      const above = newRankings[overIndex - 1];
-      if (above && above.id !== active.id) {
-        neighbors.push(above.id);
-        console.log(`🚨🚨🚨 [DRAG_DROP_FIX] Added neighbor ABOVE: ${above.name} (${above.id}) at position ${overIndex - 1}`);
+      const above1 = newRankings[overIndex - 1];
+      if (above1 && above1.id !== active.id) {
+        neighbors.push(above1.id);
+        console.log(`🚨🚨🚨 [DRAG_DROP_FIX] Added neighbor ABOVE-1: ${above1.name} (${above1.id})`);
+      }
+    }
+    if (overIndex > 1) {
+      const above2 = newRankings[overIndex - 2];
+      if (above2 && above2.id !== active.id) {
+        neighbors.push(above2.id);
+        console.log(`🚨🚨🚨 [DRAG_DROP_FIX] Added neighbor ABOVE-2: ${above2.name} (${above2.id})`);
       }
     }
 
+    // Get neighbors below (up to 2)
     if (overIndex < newRankings.length - 1) {
-      const below = newRankings[overIndex + 1];
-      if (below && below.id !== active.id) {
-        neighbors.push(below.id);
-        console.log(`🚨🚨🚨 [DRAG_DROP_FIX] Added neighbor BELOW: ${below.name} (${below.id}) at position ${overIndex + 1}`);
+      const below1 = newRankings[overIndex + 1];
+      if (below1 && below1.id !== active.id) {
+        neighbors.push(below1.id);
+        console.log(`🚨🚨🚨 [DRAG_DROP_FIX] Added neighbor BELOW-1: ${below1.name} (${below1.id})`);
+      }
+    }
+    if (overIndex < newRankings.length - 2) {
+      const below2 = newRankings[overIndex + 2];
+      if (below2 && below2.id !== active.id) {
+        neighbors.push(below2.id);
+        console.log(`🚨🚨🚨 [DRAG_DROP_FIX] Added neighbor BELOW-2: ${below2.name} (${below2.id})`);
       }
     }
 
@@ -100,7 +116,7 @@ export const useDragAndDrop = ({ displayRankings, onManualReorder, onLocalReorde
       onLocalReorder(newRankings);
     }
 
-    // CRITICAL FIX: Add refinement battles to queue with CORRECT neighbors
+    // Add refinement battles to queue with CORRECT neighbors
     if (refinementQueue && refinementQueue.queueBattlesForReorder) {
       console.log(`🚨🚨🚨 [DRAG_DROP_ULTRA_TRACE] ===== QUEUEING REFINEMENT BATTLES =====`);
       console.log(`🚨🚨🚨 [DRAG_DROP_FIX] Calling queueBattlesForReorder with:`);
@@ -142,8 +158,6 @@ export const useDragAndDrop = ({ displayRankings, onManualReorder, onLocalReorde
       
     } else {
       console.error(`🚨🚨🚨 [DRAG_DROP_ULTRA_TRACE] ❌ NO REFINEMENT QUEUE OR queueBattlesForReorder METHOD!`);
-      console.error(`🚨🚨🚨 [DRAG_DROP_ULTRA_TRACE] refinementQueue:`, refinementQueue);
-      console.error(`🚨🚨🚨 [DRAG_DROP_ULTRA_TRACE] queueBattlesForReorder:`, refinementQueue?.queueBattlesForReorder);
     }
 
     // Call the manual reorder callback

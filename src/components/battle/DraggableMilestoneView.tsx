@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import {
   DndContext,
@@ -48,7 +49,7 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
   const displayRankings = localRankings.slice(0, Math.min(milestoneDisplayCount, maxItems));
   const hasMoreToLoad = milestoneDisplayCount < maxItems;
 
-  // CRITICAL FIX: More responsive pending state updates
+  // Enhanced pending state management
   useEffect(() => {
     const handleRefinementQueueUpdate = (event: CustomEvent) => {
       console.log(`🔄 [PENDING_UPDATE] Received refinement queue update:`, event.detail);
@@ -104,18 +105,13 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
   const handleManualReorderWrapper = React.useCallback((draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => {
     console.log(`🚨 [DND_SETUP_DEBUG] Manual reorder wrapper called:`, draggedPokemonId, sourceIndex, destinationIndex);
     
-    // CRITICAL FIX: Immediately show as pending with force update
+    // CRITICAL FIX: Immediately show as pending
     setLocalPendingRefinements(prev => {
       const newSet = new Set(prev);
       newSet.add(draggedPokemonId);
       console.log(`🔄 [IMMEDIATE_PENDING] Immediately marking ${draggedPokemonId} as pending`);
       return newSet;
     });
-    
-    // Force a re-render after a short delay to ensure the pending state is visible
-    setTimeout(() => {
-      setLocalPendingRefinements(prev => new Set([...prev, draggedPokemonId]));
-    }, 10);
     
     if (typeof onManualReorder === 'function') {
       onManualReorder(draggedPokemonId, sourceIndex, destinationIndex);
@@ -132,9 +128,15 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
     console.log(`🚨 [DND_CONTEXT_DEBUG] ===== DRAG STARTED SUCCESSFULLY =====`);
     console.log(`🚨 [DND_CONTEXT_DEBUG] ✅ @dnd-kit DndContext is working!`);
     console.log(`🚨 [DND_CONTEXT_DEBUG] Active ID:`, event.active.id);
-    console.log(`🚨 [DND_CONTEXT_DEBUG] Active data:`, event.active.data);
-    console.log(`🚨 [DND_CONTEXT_DEBUG] Event object:`, event);
-    console.log(`🚨 [DND_CONTEXT_DEBUG] This proves drag detection is working!`);
+    
+    // CRITICAL FIX: Show pending immediately when drag starts
+    const draggedPokemonId = Number(event.active.id);
+    setLocalPendingRefinements(prev => {
+      const newSet = new Set(prev);
+      newSet.add(draggedPokemonId);
+      console.log(`🔄 [DRAG_START_PENDING] Marking ${draggedPokemonId} as pending on drag start`);
+      return newSet;
+    });
   };
 
   const handleDragOver = (event: DragOverEvent) => {
