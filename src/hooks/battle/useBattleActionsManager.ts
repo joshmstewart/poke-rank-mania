@@ -2,7 +2,7 @@
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
 import { useBattleActionsCoordination } from "./useBattleActionsCoordination";
-import { useBattleActionsProcessing } from "./useBattleActionsProcessing";
+import { useBattleProcessorResult } from "./useBattleProcessorResult";
 import { useBattleActionsHandlers } from "./useBattleActionsHandlers";
 import { useBattleActionsInteractions } from "./useBattleActionsInteractions";
 
@@ -50,7 +50,7 @@ export const useBattleActionsManager = (
     isProcessingResult,
     resetMilestoneInProgress,
     resetBattleProgressionMilestoneTracking
-  } = useBattleActionsProcessing(
+  } = useBattleProcessorResult(
     battleResults,
     setBattleResults,
     battlesCompleted,
