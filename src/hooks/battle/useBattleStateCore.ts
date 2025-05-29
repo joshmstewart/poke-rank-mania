@@ -74,8 +74,11 @@ export const useBattleStateCore = (
     console.log(`🚀 [START_NEW_BATTLE_WRAPPER] Parameterless wrapper called`);
     const result = startNewBattle(stateData.battleType);
     if (result && result.length > 0) {
+      console.log(`🚀 [START_NEW_BATTLE_WRAPPER] Setting new battle:`, result.map(p => p.name).join(' vs '));
       stateData.setCurrentBattle(result);
       stateData.setSelectedPokemon([]);
+    } else {
+      console.error(`🚀 [START_NEW_BATTLE_WRAPPER] Failed to create new battle`);
     }
   }, [startNewBattle, stateData.battleType, stateData.setCurrentBattle, stateData.setSelectedPokemon]);
 
@@ -120,7 +123,7 @@ export const useBattleStateCore = (
     setBattleResults: stateData.setBattleResults
   });
 
-  // Add processBattleResultWithRefinement function
+  // Add processBattleResultWithRefinement function with improved next battle handling
   const processBattleResultWithRefinement = useCallback(async (
     selectedPokemonIds: number[],
     currentBattlePokemon: Pokemon[],
@@ -128,8 +131,18 @@ export const useBattleStateCore = (
     selectedGeneration: number
   ) => {
     console.log(`🔄 [REFINEMENT_PROCESSING_DEBUG] Processing battle with refinement support`);
-    return milestoneEvents.originalProcessBattleResult(selectedPokemonIds, currentBattlePokemon, battleType, selectedGeneration);
-  }, [milestoneEvents.originalProcessBattleResult]);
+    
+    // Process the battle result
+    const result = await milestoneEvents.originalProcessBattleResult(selectedPokemonIds, currentBattlePokemon, battleType, selectedGeneration);
+    
+    // CRITICAL FIX: Immediately start next battle after processing
+    console.log(`🔄 [REFINEMENT_PROCESSING_DEBUG] Battle processed, starting next battle...`);
+    setTimeout(() => {
+      startNewBattleWrapper();
+    }, 100); // Small delay to ensure state updates are complete
+    
+    return result;
+  }, [milestoneEvents.originalProcessBattleResult, startNewBattleWrapper]);
 
   // Add clearAllSuggestions placeholder
   const clearAllSuggestions = useCallback(() => {
