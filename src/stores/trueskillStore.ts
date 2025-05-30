@@ -127,18 +127,18 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           
           console.log('[TRUESKILL_CLOUD] Starting cloud sync...');
           
-          // Prepare sync data
+          // Prepare sync data with proper type casting
           const syncData = {
             session_id: state.sessionId,
             user_id: user?.id || null,
-            ratings_data: state.ratings,
+            ratings_data: state.ratings as any, // Cast to any for JSONB compatibility
             last_updated: new Date().toISOString()
           };
           
-          // Use upsert to handle both insert and update cases
+          // Use upsert with array input and handle both insert and update cases
           const { error } = await supabase
             .from('trueskill_sessions')
-            .upsert(syncData, {
+            .upsert([syncData], {
               onConflict: user?.id ? 'user_id' : 'session_id'
             });
           
@@ -182,9 +182,12 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           }
           
           if (data?.ratings_data) {
-            console.log(`[TRUESKILL_CLOUD] Loaded ${Object.keys(data.ratings_data).length} ratings from cloud`);
+            // Safe type casting from Json to our Record type
+            const loadedRatings = data.ratings_data as unknown as Record<number, TrueSkillRating>;
+            
+            console.log(`[TRUESKILL_CLOUD] Loaded ${Object.keys(loadedRatings).length} ratings from cloud`);
             set({ 
-              ratings: data.ratings_data,
+              ratings: loadedRatings,
               lastSyncedAt: data.last_updated,
               isLoading: false
             });
@@ -192,7 +195,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
             // Dispatch load event
             setTimeout(() => {
               const loadEvent = new CustomEvent('trueskill-store-loaded', {
-                detail: { ratingsCount: Object.keys(data.ratings_data).length }
+                detail: { ratingsCount: Object.keys(loadedRatings).length }
               });
               document.dispatchEvent(loadEvent);
             }, 50);
