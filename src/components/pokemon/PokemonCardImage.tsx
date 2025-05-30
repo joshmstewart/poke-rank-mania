@@ -1,7 +1,6 @@
 
-import React from "react";
+import React, { useState, useCallback } from "react";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
-import { useImageLoader } from "@/hooks/pokemon/useImageLoader";
 import { normalizePokedexNumber } from "@/utils/pokemon";
 
 interface PokemonCardImageProps {
@@ -17,65 +16,49 @@ const PokemonCardImage: React.FC<PokemonCardImageProps> = ({
   compact = false,
   imageUrl
 }) => {
-  console.log(`🖼️ [IMAGE_DEBUG] ===== PokemonCardImage START =====`);
-  console.log(`🖼️ [IMAGE_DEBUG] Pokemon: ${displayName} (#${pokemonId})`);
-  console.log(`🖼️ [IMAGE_DEBUG] Received imageUrl prop:`, imageUrl);
-  console.log(`🖼️ [IMAGE_DEBUG] ImageUrl type:`, typeof imageUrl);
-  console.log(`🖼️ [IMAGE_DEBUG] ImageUrl length:`, imageUrl?.length);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
   
-  const {
-    imageLoaded,
-    imageError,
-    currentImageUrl,
-    handleImageLoad,
-    handleImageError,
-    saveImgRef
-  } = useImageLoader({ pokemonId, displayName });
-
-  console.log(`🖼️ [IMAGE_DEBUG] Hook returned:`, {
-    imageLoaded,
-    imageError,
-    currentImageUrl,
-    currentImageUrlType: typeof currentImageUrl,
-    currentImageUrlLength: currentImageUrl?.length
-  });
+  console.log(`🖼️ [SIMPLE_IMAGE_DEBUG] ${displayName}: imageUrl=${imageUrl}, loaded=${imageLoaded}, error=${imageError}`);
 
   const normalizedId = normalizePokedexNumber(pokemonId);
 
-  // If we have an imageUrl prop and no currentImageUrl from hook, use the prop
-  let finalImageUrl = currentImageUrl;
-  if (!currentImageUrl && imageUrl) {
-    console.log(`🖼️ [IMAGE_DEBUG] Using imageUrl prop as fallback:`, imageUrl);
-    finalImageUrl = imageUrl;
-  }
+  const handleImageLoad = useCallback(() => {
+    console.log(`✅ [SIMPLE_IMAGE_DEBUG] Image loaded for ${displayName}`);
+    setImageLoaded(true);
+    setImageError(false);
+  }, [displayName]);
 
-  console.log(`🖼️ [IMAGE_DEBUG] Final URL for ${displayName}:`, finalImageUrl);
-  console.log(`🖼️ [IMAGE_DEBUG] ===== PokemonCardImage END =====`);
+  const handleImageError = useCallback(() => {
+    console.log(`❌ [SIMPLE_IMAGE_DEBUG] Image failed for ${displayName}`);
+    setImageLoaded(false);
+    setImageError(true);
+  }, [displayName]);
+
+  // Reset states when imageUrl changes
+  React.useEffect(() => {
+    if (imageUrl) {
+      setImageLoaded(false);
+      setImageError(false);
+    }
+  }, [imageUrl]);
 
   return (
     <div className={`${compact ? "w-16 h-16" : "w-20 h-20"} bg-gray-50 rounded-md relative`}>
       <AspectRatio ratio={1}>
-        {!imageLoaded && !imageError && (
+        {!imageLoaded && !imageError && imageUrl && (
           <div className="animate-pulse bg-gray-200 absolute inset-0 flex items-center justify-center">
             <span className="text-xs text-gray-500">Loading...</span>
           </div>
         )}
-        {finalImageUrl && (
+        {imageUrl && (
           <img
-            ref={saveImgRef}
-            src={finalImageUrl}
+            src={imageUrl}
             alt={displayName}
             className={`w-full h-full object-contain p-1 transition-opacity ${imageLoaded ? "opacity-100" : "opacity-0"}`}
             loading="lazy"
-            onLoad={() => {
-              console.log(`✅ [IMAGE_DEBUG] Image loaded successfully for ${displayName}:`, finalImageUrl);
-              handleImageLoad();
-            }}
-            onError={(e) => {
-              console.error(`❌ [IMAGE_DEBUG] Image failed to load for ${displayName}:`, finalImageUrl);
-              console.error(`❌ [IMAGE_DEBUG] Error event:`, e);
-              handleImageError();
-            }}
+            onLoad={handleImageLoad}
+            onError={handleImageError}
             crossOrigin="anonymous"
           />
         )}
@@ -86,7 +69,7 @@ const PokemonCardImage: React.FC<PokemonCardImageProps> = ({
             <div className="text-red-400 text-center">Error</div>
           </div>
         )}
-        {!finalImageUrl && (
+        {!imageUrl && (
           <div className="absolute inset-0 flex flex-col justify-center items-center bg-red-100 text-xs p-1">
             <div className="font-medium text-red-600">NO URL</div>
             <div className="text-red-500">#{normalizedId}</div>
