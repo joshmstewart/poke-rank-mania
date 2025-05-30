@@ -5,6 +5,7 @@ import { SingleBattle } from "./types";
 import { Rating } from "ts-trueskill";
 import { usePokemonContext } from "@/contexts/PokemonContext";
 import { useTypeExtraction } from "./useTypeExtraction";
+import { useTrueSkillStore } from "@/stores/trueskillStore";
 
 export const useRankingCalculator = (
   activeTier: TopNOption,
@@ -15,36 +16,35 @@ export const useRankingCalculator = (
 ) => {
   const { pokemonLookupMap } = usePokemonContext();
   const { extractPokemonTypes } = useTypeExtraction();
+  const { getAllRatings, getRating } = useTrueSkillStore();
   
   const previousRankingsRef = useRef<RankedPokemon[]>([]);
   const previousResultsRef = useRef<SingleBattle[]>([]);
   const rankingGenerationCountRef = useRef(0);
 
   const generateRankings = useCallback((results: SingleBattle[]): RankedPokemon[] => {
-    console.log("[DEBUG generateRankings] Starting with results:", results.length);
+    console.log("[DEBUG generateRankings] Starting with centralized TrueSkill store");
     
     rankingGenerationCountRef.current++;
     const currentCount = rankingGenerationCountRef.current;
     
-    // Check if results haven't changed substantially
-    if (results.length === previousResultsRef.current.length && results.length > 0) {
-      const hasNewResults = results.some((result, i) => 
-        previousResultsRef.current[i]?.winner?.id !== result.winner?.id ||
-        previousResultsRef.current[i]?.loser?.id !== result.loser?.id
-      );
-      
-      if (!hasNewResults) {
-        console.log(`[generateRankings #${currentCount}] SKIPPED - Results unchanged`);
-        return previousRankingsRef.current;
-      }
-    }
+    // Get all Pokemon with TrueSkill ratings from the centralized store
+    const allRatings = getAllRatings();
+    const ratedPokemonIds = Object.keys(allRatings).map(Number);
     
-    previousResultsRef.current = [...results];
+    console.log(`[generateRankings #${currentCount}] Found ${ratedPokemonIds.length} Pokemon with TrueSkill ratings`);
+    
+    if (ratedPokemonIds.length === 0) {
+      console.log(`[generateRankings #${currentCount}] No Pokemon with TrueSkill ratings found`);
+      setFinalRankings([]);
+      setConfidenceScores({});
+      return [];
+    }
 
     // Load active suggestions
     const currentActiveSuggestions = loadSavedSuggestions();
 
-    // Build count map from battle results
+    // Build count map from battle results for battle statistics
     const countMap = new Map<number, number>();
     const winsMap = new Map<number, number>();
     const lossesMap = new Map<number, number>();
@@ -61,10 +61,8 @@ export const useRankingCalculator = (
       }
     });
 
-    const participatingPokemonIds = new Set([...countMap.keys()]);
-
-    // Use context lookup map with verified data integrity
-    const allRankedPokemon: RankedPokemon[] = Array.from(participatingPokemonIds)
+    // Create ranked Pokemon using centralized TrueSkill ratings
+    const allRankedPokemon: RankedPokemon[] = ratedPokemonIds
       .map(pokemonId => {
         const completePokemon = pokemonLookupMap.get(pokemonId);
         if (!completePokemon) {
@@ -72,23 +70,15 @@ export const useRankingCalculator = (
           return null;
         }
 
-        console.log(`[generateRankings] Details for ${pokemonId} FROM LOOKUP MAP:`, JSON.stringify({
-          id: completePokemon.id,
-          name: completePokemon.name,
-          types: completePokemon.types,
-          typesIsArray: Array.isArray(completePokemon.types),
-          typesLength: completePokemon.types?.length || 0
-        }));
+        // Get TrueSkill rating from centralized store
+        const trueskillRating = getRating(pokemonId);
+        const trueskillData = allRatings[pokemonId];
+        
+        console.log(`[generateRankings] ${completePokemon.name} TrueSkill: μ=${trueskillRating.mu.toFixed(2)}, σ=${trueskillRating.sigma.toFixed(2)}, battles=${trueskillData.battleCount}`);
 
-        // Ensure rating exists
-        if (!completePokemon.rating) {
-          completePokemon.rating = new Rating();
-        } else if (!(completePokemon.rating instanceof Rating)) {
-          completePokemon.rating = new Rating(completePokemon.rating.mu, completePokemon.rating.sigma);
-        }
-
-        const conservativeEstimate = completePokemon.rating.mu - 3 * completePokemon.rating.sigma;
-        const normalizedConfidence = Math.max(0, Math.min(100, 100 * (1 - (completePokemon.rating.sigma / 8.33))));
+        // Calculate conservative score (mu - 3 * sigma)
+        const conservativeEstimate = trueskillRating.mu - 3 * trueskillRating.sigma;
+        const normalizedConfidence = Math.max(0, Math.min(100, 100 * (1 - (trueskillRating.sigma / 8.33))));
 
         const pokemonFrozenStatus = frozenPokemon[completePokemon.id] || {};
         const suggestedAdjustment = currentActiveSuggestions.get(completePokemon.id);
@@ -96,10 +86,10 @@ export const useRankingCalculator = (
         // Extract types using helper function
         const { type1, type2 } = extractPokemonTypes(completePokemon);
 
-        // Calculate wins, losses, and win rate
+        // Calculate wins, losses, and win rate from battle results
         const wins = winsMap.get(completePokemon.id) || 0;
         const losses = lossesMap.get(completePokemon.id) || 0;
-        const totalBattles = countMap.get(completePokemon.id) || 0;
+        const totalBattles = countMap.get(completePokemon.id) || trueskillData.battleCount || 0;
         const winRate = totalBattles > 0 ? (wins / totalBattles) * 100 : 0;
 
         const rankedPokemon: RankedPokemon = {
@@ -113,25 +103,25 @@ export const useRankingCalculator = (
           wins,
           losses,
           winRate,
+          rating: trueskillRating, // Include the TrueSkill rating
           isFrozenForTier: pokemonFrozenStatus,
           suggestedAdjustment
         };
 
         console.log(`[DEBUG generateRankings] Created RankedPokemon for ${completePokemon.name}:`, {
-          type1: rankedPokemon.type1,
-          type2: rankedPokemon.type2,
-          hasTypes: !!rankedPokemon.types,
-          typesLength: rankedPokemon.types?.length || 0,
+          score: rankedPokemon.score.toFixed(2),
+          confidence: rankedPokemon.confidence.toFixed(1),
+          battles: rankedPokemon.count,
           wins: rankedPokemon.wins,
           losses: rankedPokemon.losses,
-          winRate: rankedPokemon.winRate
+          winRate: rankedPokemon.winRate.toFixed(1)
         });
 
         return rankedPokemon;
       })
       .filter(Boolean) as RankedPokemon[];
 
-    // Sort by score
+    // Sort by conservative score (highest first)
     allRankedPokemon.sort((a, b) => b.score - a.score);
 
     // Apply tier filtering
@@ -147,7 +137,7 @@ export const useRankingCalculator = (
 
     const safeFinalRankings = finalWithSuggestions || [];
     setFinalRankings(safeFinalRankings);
-    console.log(`[generateRankings #${currentCount}] Generated ${safeFinalRankings.length} rankings with types preserved`);
+    console.log(`[generateRankings #${currentCount}] Generated ${safeFinalRankings.length} rankings from centralized TrueSkill store`);
 
     // Set confidence scores
     const confidenceMap: Record<number, number> = {};
@@ -156,13 +146,13 @@ export const useRankingCalculator = (
     });
     setConfidenceScores(confidenceMap);
 
-    console.log(`[generateRankings #${currentCount}] COMPLETE - Returning array length:`, safeFinalRankings.length);
+    console.log(`[generateRankings #${currentCount}] COMPLETE - Rankings now unified with Manual Mode`);
     
     // Update previous rankings ref
     previousRankingsRef.current = safeFinalRankings;
     
     return safeFinalRankings;
-  }, [pokemonLookupMap, activeTier, frozenPokemon, loadSavedSuggestions, setFinalRankings, setConfidenceScores, extractPokemonTypes]);
+  }, [pokemonLookupMap, activeTier, frozenPokemon, loadSavedSuggestions, setFinalRankings, setConfidenceScores, extractPokemonTypes, getAllRatings, getRating]);
 
   return { generateRankings };
 };

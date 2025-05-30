@@ -1,5 +1,8 @@
 import { useCallback } from "react";
 import { RankedPokemon, TopNOption } from "@/services/pokemon";
+import { useTrueSkillStore } from "@/stores/trueskillStore";
+import { usePokemonContext } from "@/contexts/PokemonContext";
+import { useTypeExtraction } from "./useTypeExtraction";
 
 export const useBattleStateMilestones = (
   finalRankings: RankedPokemon[],
@@ -12,6 +15,10 @@ export const useBattleStateMilestones = (
   setFinalRankings: (rankings: any) => void,
   startNewBattleWrapper: () => void
 ) => {
+  const { getAllRatings, getRating } = useTrueSkillStore();
+  const { pokemonLookupMap } = usePokemonContext();
+  const { extractPokemonTypes } = useTypeExtraction();
+
   const calculateCompletionPercentage = useCallback(() => {
     const completed = battlesCompleted;
     const totalPossible = 800;
@@ -31,146 +38,104 @@ export const useBattleStateMilestones = (
     return JSON.stringify(snapshot);
   }, [finalRankings, battleHistory, battlesCompleted, completionPercentage]);
 
-  // ENHANCED: Generate rankings with ULTRA detailed logging
+  // ENHANCED: Generate rankings from centralized TrueSkill store (unified with Manual Mode)
   const generateRankings = useCallback(() => {
-    console.log(`🚨🚨🚨 [RANKING_GENERATION_MEGA_DEBUG] ===== STARTING RANKING GENERATION =====`);
-    console.log(`🚨🚨🚨 [RANKING_GENERATION_MEGA_DEBUG] Function called with:`);
-    console.log(`🚨🚨🚨 [RANKING_GENERATION_MEGA_DEBUG] - battleHistory.length: ${battleHistory.length}`);
-    console.log(`🚨🚨🚨 [RANKING_GENERATION_MEGA_DEBUG] - battlesCompleted: ${battlesCompleted}`);
-    console.log(`🚨🚨🚨 [RANKING_GENERATION_MEGA_DEBUG] - current finalRankings.length: ${finalRankings.length}`);
-    console.log(`🚨🚨🚨 [RANKING_GENERATION_MEGA_DEBUG] - setFinalRankings function type: ${typeof setFinalRankings}`);
-    console.log(`🚨🚨🚨 [RANKING_GENERATION_MEGA_DEBUG] - setFinalRankings function exists: ${!!setFinalRankings}`);
+    console.log(`🚨🚨🚨 [RANKING_GENERATION_UNIFIED] ===== UNIFIED RANKING GENERATION START =====`);
+    console.log(`🚨🚨🚨 [RANKING_GENERATION_UNIFIED] Using centralized TrueSkill store for consistency with Manual Mode`);
     
-    if (battleHistory.length === 0) {
-      console.log(`🚨🚨🚨 [RANKING_GENERATION_MEGA_DEBUG] ❌ CRITICAL ERROR: No battle history available!`);
-      console.log(`🚨🚨🚨 [RANKING_GENERATION_MEGA_DEBUG] This is why rankings can't be generated`);
+    // Get all Pokemon with TrueSkill ratings from the centralized store
+    const allRatings = getAllRatings();
+    const ratedPokemonIds = Object.keys(allRatings).map(Number);
+    
+    console.log(`🚨🚨🚨 [RANKING_GENERATION_UNIFIED] Found ${ratedPokemonIds.length} Pokemon with TrueSkill ratings`);
+    
+    if (ratedPokemonIds.length === 0) {
+      console.log(`🚨🚨🚨 [RANKING_GENERATION_UNIFIED] ❌ No Pokemon with TrueSkill ratings found`);
+      setFinalRankings([]);
       return;
     }
 
-    console.log(`🚨🚨🚨 [RANKING_GENERATION_MEGA_DEBUG] Processing ${battleHistory.length} battles...`);
-    
-    // Log each battle in history with extreme detail
-    battleHistory.forEach((battleRecord, index) => {
-      console.log(`🚨🚨🚨 [RANKING_GENERATION_MEGA_DEBUG] Battle #${index + 1}:`);
-      console.log(`🚨🚨🚨 [RANKING_GENERATION_MEGA_DEBUG]   Pokemon: ${battleRecord.battle.map(p => `${p.name} (${p.id})`).join(' vs ')}`);
-      console.log(`🚨🚨🚨 [RANKING_GENERATION_MEGA_DEBUG]   Selected IDs: [${battleRecord.selected.join(', ')}]`);
-      console.log(`🚨🚨🚨 [RANKING_GENERATION_MEGA_DEBUG]   Battle object type: ${typeof battleRecord.battle}`);
-      console.log(`🚨🚨🚨 [RANKING_GENERATION_MEGA_DEBUG]   Battle is array: ${Array.isArray(battleRecord.battle)}`);
-      console.log(`🚨🚨🚨 [RANKING_GENERATION_MEGA_DEBUG]   Selected object type: ${typeof battleRecord.selected}`);
-      console.log(`🚨🚨🚨 [RANKING_GENERATION_MEGA_DEBUG]   Selected is array: ${Array.isArray(battleRecord.selected)}`);
-    });
-
-    // Create Pokemon stats map with detailed logging
-    const pokemonStats = new Map<number, { pokemon: any, wins: number, losses: number, battles: number }>();
-    
-    console.log(`🚨🚨🚨 [RANKING_GENERATION_MEGA_DEBUG] Starting battle processing...`);
-    
-    battleHistory.forEach((battleRecord, battleIndex) => {
-      const { battle, selected } = battleRecord;
-      console.log(`🚨🚨🚨 [RANKING_GENERATION_MEGA_DEBUG] Processing battle #${battleIndex + 1}: ${battle.map(p => p.name).join(' vs ')}`);
-      console.log(`🚨🚨🚨 [RANKING_GENERATION_MEGA_DEBUG] Selected in this battle: [${selected.join(', ')}]`);
-      
-      battle.forEach((pokemon, pokemonIndex) => {
-        console.log(`🚨🚨🚨 [RANKING_GENERATION_MEGA_DEBUG]   Processing Pokemon #${pokemonIndex + 1}: ${pokemon.name} (ID: ${pokemon.id})`);
-        
-        if (!pokemonStats.has(pokemon.id)) {
-          console.log(`🚨🚨🚨 [RANKING_GENERATION_MEGA_DEBUG]     First time seeing ${pokemon.name} - initializing stats`);
-          pokemonStats.set(pokemon.id, {
-            pokemon,
-            wins: 0,
-            losses: 0,
-            battles: 0
-          });
+    // Create ranked Pokemon using centralized TrueSkill ratings
+    const rankedPokemon: RankedPokemon[] = ratedPokemonIds
+      .map(pokemonId => {
+        const completePokemon = pokemonLookupMap.get(pokemonId);
+        if (!completePokemon) {
+          console.warn(`[RANKING_GENERATION_UNIFIED] Pokemon ID ${pokemonId} not found in lookup map`);
+          return null;
         }
+
+        // Get TrueSkill rating from centralized store
+        const trueskillRating = getRating(pokemonId);
+        const trueskillData = allRatings[pokemonId];
         
-        const stats = pokemonStats.get(pokemon.id)!;
-        stats.battles++;
-        
-        const wasSelected = selected.includes(pokemon.id);
-        console.log(`🚨🚨🚨 [RANKING_GENERATION_MEGA_DEBUG]     Was ${pokemon.name} selected? ${wasSelected}`);
-        
-        if (wasSelected) {
-          stats.wins++;
-          console.log(`🚨🚨🚨 [RANKING_GENERATION_MEGA_DEBUG]     ✅ ${pokemon.name} WON this battle (wins: ${stats.wins})`);
-        } else {
-          stats.losses++;
-          console.log(`🚨🚨🚨 [RANKING_GENERATION_MEGA_DEBUG]     ❌ ${pokemon.name} LOST this battle (losses: ${stats.losses})`);
+        console.log(`🚨🚨🚨 [RANKING_GENERATION_UNIFIED] ${completePokemon.name}: μ=${trueskillRating.mu.toFixed(2)}, σ=${trueskillRating.sigma.toFixed(2)}, battles=${trueskillData.battleCount}`);
+
+        // Calculate conservative score (mu - 3 * sigma) - same as Manual Mode
+        const conservativeEstimate = trueskillRating.mu - 3 * trueskillRating.sigma;
+        const normalizedConfidence = Math.max(0, Math.min(100, 100 * (1 - (trueskillRating.sigma / 8.33))));
+
+        // Extract types using helper function
+        const { type1, type2 } = extractPokemonTypes(completePokemon);
+
+        // Calculate battle statistics from battle history
+        let wins = 0;
+        let losses = 0;
+        let totalBattles = 0;
+
+        battleHistory.forEach(battleRecord => {
+          const { battle, selected } = battleRecord;
+          const pokemonInBattle = battle.find(p => p.id === pokemonId);
+          if (pokemonInBattle) {
+            totalBattles++;
+            if (selected.includes(pokemonId)) {
+              wins++;
+            } else {
+              losses++;
+            }
+          }
+        });
+
+        // Use TrueSkill battle count if no battle history available
+        if (totalBattles === 0) {
+          totalBattles = trueskillData.battleCount || 0;
         }
-        
-        console.log(`🚨🚨🚨 [RANKING_GENERATION_MEGA_DEBUG]     ${pokemon.name} total stats: ${stats.wins}W/${stats.losses}L (${stats.battles} battles)`);
-      });
-    });
 
-    console.log(`🚨🚨🚨 [RANKING_GENERATION_MEGA_DEBUG] Stats collection complete. Pokemon in stats map: ${pokemonStats.size}`);
-    
-    if (pokemonStats.size === 0) {
-      console.log(`🚨🚨🚨 [RANKING_GENERATION_MEGA_DEBUG] ❌ CRITICAL ERROR: No Pokemon stats generated!`);
-      return;
-    }
+        const winRate = totalBattles > 0 ? (wins / totalBattles) * 100 : 0;
 
-    // Convert to ranked pokemon with extreme logging
-    console.log(`🚨🚨🚨 [RANKING_GENERATION_MEGA_DEBUG] Converting stats to ranked Pokemon...`);
-    const rankedPokemon: RankedPokemon[] = Array.from(pokemonStats.values())
-      .map(({ pokemon, wins, losses, battles }, index) => {
-        const winRate = battles > 0 ? wins / battles : 0;
-        const score = winRate * 100 + (wins * 5); // Simple scoring system
-        
-        console.log(`🚨🚨🚨 [RANKING_GENERATION_MEGA_DEBUG] Ranking #${index + 1}: ${pokemon.name}`);
-        console.log(`🚨🚨🚨 [RANKING_GENERATION_MEGA_DEBUG]   Wins: ${wins}, Losses: ${losses}, Battles: ${battles}`);
-        console.log(`🚨🚨🚨 [RANKING_GENERATION_MEGA_DEBUG]   Win rate: ${(winRate * 100).toFixed(1)}%`);
-        console.log(`🚨🚨🚨 [RANKING_GENERATION_MEGA_DEBUG]   Calculated score: ${score.toFixed(1)}`);
-        
         const rankedPokemon: RankedPokemon = {
-          ...pokemon,
-          score,
-          count: battles,
-          confidence: Math.min(battles * 10, 100), // Confidence increases with more battles
+          ...completePokemon,
+          types: completePokemon.types || [],
+          type1,
+          type2,
+          score: conservativeEstimate,
+          count: totalBattles,
+          confidence: normalizedConfidence,
           wins,
           losses,
-          winRate
+          winRate,
+          rating: trueskillRating // Include the TrueSkill rating
         };
-        
-        console.log(`🚨🚨🚨 [RANKING_GENERATION_MEGA_DEBUG]   Final ranking object:`, {
-          id: rankedPokemon.id,
-          name: rankedPokemon.name,
-          score: rankedPokemon.score,
-          wins: rankedPokemon.wins,
-          losses: rankedPokemon.losses
-        });
-        
+
+        console.log(`🚨🚨🚨 [RANKING_GENERATION_UNIFIED] Created ranking for ${completePokemon.name}: score=${conservativeEstimate.toFixed(2)}, confidence=${normalizedConfidence.toFixed(1)}%`);
+
         return rankedPokemon;
       })
-      .sort((a, b) => {
-        console.log(`🚨🚨🚨 [RANKING_GENERATION_MEGA_DEBUG] Sorting: ${a.name} (${a.score.toFixed(1)}) vs ${b.name} (${b.score.toFixed(1)})`);
-        return b.score - a.score;
-      }); // Sort by score descending
+      .filter(Boolean) as RankedPokemon[];
 
-    console.log(`🚨🚨🚨 [RANKING_GENERATION_MEGA_DEBUG] Ranking conversion complete!`);
-    console.log(`🚨🚨🚨 [RANKING_GENERATION_MEGA_DEBUG] Generated ${rankedPokemon.length} ranked Pokemon`);
-    console.log(`🚨🚨🚨 [RANKING_GENERATION_MEGA_DEBUG] Top 5 Pokemon:`, rankedPokemon.slice(0, 5).map(p => `${p.name} (score: ${p.score.toFixed(1)})`));
+    // Sort by conservative score (highest first) - same as Manual Mode
+    rankedPokemon.sort((a, b) => b.score - a.score);
+
+    console.log(`🚨🚨🚨 [RANKING_GENERATION_UNIFIED] Generated ${rankedPokemon.length} unified rankings`);
+    console.log(`🚨🚨🚨 [RANKING_GENERATION_UNIFIED] Top 5 Pokemon:`, rankedPokemon.slice(0, 5).map(p => `${p.name} (score: ${p.score.toFixed(1)})`));
     
-    console.log(`🚨🚨🚨 [RANKING_GENERATION_MEGA_DEBUG] About to call setFinalRankings with ${rankedPokemon.length} Pokemon...`);
-    console.log(`🚨🚨🚨 [RANKING_GENERATION_MEGA_DEBUG] setFinalRankings function:`, setFinalRankings);
+    console.log(`🚨🚨🚨 [RANKING_GENERATION_UNIFIED] Setting final rankings...`);
+    setFinalRankings(rankedPokemon);
     
-    // CRITICAL: Actually set the rankings with immediate verification
-    try {
-      setFinalRankings(rankedPokemon);
-      console.log(`🚨🚨🚨 [RANKING_GENERATION_MEGA_DEBUG] ✅ setFinalRankings called successfully`);
-      
-      // Verify the call worked with a timeout
-      setTimeout(() => {
-        console.log(`🚨🚨🚨 [RANKING_GENERATION_MEGA_DEBUG] Verification check - current finalRankings length should be ${rankedPokemon.length}`);
-      }, 50);
-      
-    } catch (error) {
-      console.error(`🚨🚨🚨 [RANKING_GENERATION_MEGA_DEBUG] ❌ ERROR calling setFinalRankings:`, error);
-    }
-    
-    console.log(`🚨🚨🚨 [RANKING_GENERATION_MEGA_DEBUG] Setting ranking generated flag...`);
+    console.log(`🚨🚨🚨 [RANKING_GENERATION_UNIFIED] Setting ranking generated flag...`);
     setRankingGenerated(true);
     
-    console.log(`🚨🚨🚨 [RANKING_GENERATION_MEGA_DEBUG] ===== RANKING GENERATION COMPLETE =====`);
-  }, [battleHistory, battlesCompleted, setFinalRankings, setRankingGenerated]);
+    console.log(`🚨🚨🚨 [RANKING_GENERATION_UNIFIED] ===== UNIFIED RANKING GENERATION COMPLETE =====`);
+  }, [battleHistory, getAllRatings, getRating, pokemonLookupMap, extractPokemonTypes, setFinalRankings, setRankingGenerated]);
 
   const handleSaveRankings = useCallback(() => {
     console.log(`🔧 [MILESTONE_SAVE_DEBUG] Saving rankings and hiding milestone`);
