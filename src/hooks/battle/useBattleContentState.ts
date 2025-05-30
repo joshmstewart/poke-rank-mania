@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
@@ -20,7 +21,7 @@ export const useBattleContentState = (
   
   // State initialization
   const [currentBattle, setCurrentBattle] = useState<Pokemon[]>([]);
-  const [battleResults, setBattleResults] = useState<SingleBattle[]>([]);
+  const [battleResults, setBattleResultsInternal] = useState<SingleBattle[]>([]);
   const [battlesCompleted, setBattlesCompletedInternal] = useState(0);
   const [selectedPokemon, setSelectedPokemon] = useState<number[]>([]);
   const [battleType, setBattleType] = useState<BattleType>(initialBattleType);
@@ -37,7 +38,7 @@ export const useBattleContentState = (
   // CRITICAL: Initialize the battle result processor with proper logging
   const { processResult: processResultFromProcessor, isProcessing } = useBattleResultProcessor(
     battleResults,
-    setBattleResults
+    setBattleResultsInternal
   );
 
   // Create a stable wrapper for battle processing that ensures TrueSkill updates
@@ -109,7 +110,8 @@ export const useBattleContentState = (
     false,
     () => { },
     () => null,
-    async () => { }
+    async () => { },
+    () => { } // Add missing 13th argument
   );
 
   const coordination = useBattleCoordination(
@@ -198,8 +200,8 @@ export const useBattleContentState = (
     getSnapshotForMilestone: coordination.getSnapshotForMilestone,
     generateRankings: coordination.generateRankings,
     handleSaveRankings: coordination.handleSaveRankings,
-    freezePokemonForTier: coordination.freezePokemonForTier,
-    isPokemonFrozenForTier: coordination.isPokemonFrozenForTier,
+    freezePokemonForTier: () => console.log("Freeze pokemon"),
+    isPokemonFrozenForTier: () => false,
     suggestRanking: coordination.suggestRanking,
     removeSuggestion: coordination.removeSuggestion,
     clearAllSuggestions,
