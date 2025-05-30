@@ -32,6 +32,7 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
   console.log(`🔍 [MILESTONE_VIEW_DEBUG] ===== DraggableMilestoneView RENDER =====`);
   console.log(`🔍 [MILESTONE_VIEW_DEBUG] onManualReorder received:`, !!onManualReorder);
   console.log(`🔍 [MILESTONE_VIEW_DEBUG] onManualReorder type:`, typeof onManualReorder);
+  console.log(`🔍 [MILESTONE_VIEW_DEBUG] formattedRankings length:`, formattedRankings.length);
 
   const [localRankings, setLocalRankings] = useState(formattedRankings);
   
@@ -58,6 +59,7 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
     console.log(`🔍 [MILESTONE_VIEW_DEBUG] Pokemon ID: ${draggedPokemonId}`);
     console.log(`🔍 [MILESTONE_VIEW_DEBUG] Source: ${sourceIndex} → Destination: ${destinationIndex}`);
     console.log(`🔍 [MILESTONE_VIEW_DEBUG] onManualReorder function available:`, !!onManualReorder);
+    console.log(`🔍 [MILESTONE_VIEW_DEBUG] onManualReorder function type:`, typeof onManualReorder);
     
     // Mark as pending immediately
     markAsPending(draggedPokemonId);
@@ -66,11 +68,14 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
     // CRITICAL: Test if the function exists and call it
     if (typeof onManualReorder === 'function') {
       console.log(`🔍 [MILESTONE_VIEW_DEBUG] ===== CALLING ENHANCED MANUAL REORDER =====`);
+      console.log(`🔍 [MILESTONE_VIEW_DEBUG] About to call onManualReorder(${draggedPokemonId}, ${sourceIndex}, ${destinationIndex})`);
       try {
-        onManualReorder(draggedPokemonId, sourceIndex, destinationIndex);
+        const result = onManualReorder(draggedPokemonId, sourceIndex, destinationIndex);
         console.log(`🔍 [MILESTONE_VIEW_DEBUG] ✅ Enhanced manual reorder call completed successfully`);
+        console.log(`🔍 [MILESTONE_VIEW_DEBUG] ✅ Function call result:`, result);
       } catch (error) {
         console.error(`🔍 [MILESTONE_VIEW_DEBUG] ❌ Error calling enhanced manual reorder:`, error);
+        console.error(`🔍 [MILESTONE_VIEW_DEBUG] ❌ Error stack:`, error.stack);
       }
     } else {
       console.error(`🔍 [MILESTONE_VIEW_DEBUG] ❌ onManualReorder is not a function! Type:`, typeof onManualReorder);
