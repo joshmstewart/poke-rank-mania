@@ -68,7 +68,6 @@ const PokemonList = ({
       />
       
       <PokemonListContent
-        droppableId={droppableId}
         items={groupedAndFilteredPokemon.items}
         showGenerationHeaders={groupedAndFilteredPokemon.showGenerationHeaders}
         viewMode={viewMode}
