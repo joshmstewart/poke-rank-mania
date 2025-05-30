@@ -29,9 +29,9 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
   onManualReorder,
   pendingRefinements = new Set()
 }) => {
-  console.log(`🚨 [DND_SETUP_DEBUG] ===== DraggableMilestoneView RENDER =====`);
-  console.log(`🚨 [DND_SETUP_DEBUG] Initial pending refinements:`, Array.from(pendingRefinements));
-  console.log(`🚨 [DND_ENHANCED_FIX] onManualReorder function:`, !!onManualReorder);
+  console.log(`🔍 [MILESTONE_VIEW_DEBUG] ===== DraggableMilestoneView RENDER =====`);
+  console.log(`🔍 [MILESTONE_VIEW_DEBUG] onManualReorder received:`, !!onManualReorder);
+  console.log(`🔍 [MILESTONE_VIEW_DEBUG] onManualReorder type:`, typeof onManualReorder);
 
   const [localRankings, setLocalRankings] = useState(formattedRankings);
   
@@ -42,36 +42,42 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
     updateFromProps
   } = usePendingRefinementsManager(pendingRefinements);
   
-  console.log(`🚨 [DND_PENDING_FIX] Local pending refinements in milestone view:`, Array.from(localPendingRefinements));
-  
   const maxItems = getMaxItemsForTier();
   const displayRankings = localRankings.slice(0, Math.min(milestoneDisplayCount, maxItems));
   const hasMoreToLoad = milestoneDisplayCount < maxItems;
 
   // Update local state when props change
   useEffect(() => {
-    console.log(`🚨 [DND_SETUP_DEBUG] Updating local rankings from props`);
+    console.log(`🔍 [MILESTONE_VIEW_DEBUG] Updating local rankings from props`);
     setLocalRankings(formattedRankings);
   }, [formattedRankings]);
 
-  // ENHANCED FIX: Direct manual reorder handler that properly calls the enhanced logic
-  const handleManualReorderDirect = (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => {
-    console.log(`🚨 [DND_ENHANCED_FIX] ===== DIRECT MANUAL REORDER CALLED =====`);
-    console.log(`🚨 [DND_ENHANCED_FIX] Pokemon ID: ${draggedPokemonId}`);
-    console.log(`🚨 [DND_ENHANCED_FIX] Source: ${sourceIndex} → Destination: ${destinationIndex}`);
+  // CRITICAL DEBUG: Enhanced manual reorder handler with comprehensive logging
+  const handleManualReorderWithLogging = (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => {
+    console.log(`🔍 [MILESTONE_VIEW_DEBUG] ===== MANUAL REORDER HANDLER CALLED =====`);
+    console.log(`🔍 [MILESTONE_VIEW_DEBUG] Pokemon ID: ${draggedPokemonId}`);
+    console.log(`🔍 [MILESTONE_VIEW_DEBUG] Source: ${sourceIndex} → Destination: ${destinationIndex}`);
+    console.log(`🔍 [MILESTONE_VIEW_DEBUG] onManualReorder function available:`, !!onManualReorder);
     
-    // Ensure the Pokemon stays pending
+    // Mark as pending immediately
     markAsPending(draggedPokemonId);
+    console.log(`🔍 [MILESTONE_VIEW_DEBUG] Marked Pokemon ${draggedPokemonId} as pending`);
     
-    // CRITICAL FIX: Call the enhanced reorder logic directly
-    if (onManualReorder) {
-      console.log(`🚨 [DND_ENHANCED_FIX] Calling onManualReorder with enhanced logic...`);
-      onManualReorder(draggedPokemonId, sourceIndex, destinationIndex);
+    // CRITICAL: Test if the function exists and call it
+    if (typeof onManualReorder === 'function') {
+      console.log(`🔍 [MILESTONE_VIEW_DEBUG] ===== CALLING ENHANCED MANUAL REORDER =====`);
+      try {
+        onManualReorder(draggedPokemonId, sourceIndex, destinationIndex);
+        console.log(`🔍 [MILESTONE_VIEW_DEBUG] ✅ Enhanced manual reorder call completed successfully`);
+      } catch (error) {
+        console.error(`🔍 [MILESTONE_VIEW_DEBUG] ❌ Error calling enhanced manual reorder:`, error);
+      }
     } else {
-      console.error(`🚨 [DND_ENHANCED_FIX] ❌ onManualReorder is not available!`);
+      console.error(`🔍 [MILESTONE_VIEW_DEBUG] ❌ onManualReorder is not a function! Type:`, typeof onManualReorder);
+      console.error(`🔍 [MILESTONE_VIEW_DEBUG] ❌ onManualReorder value:`, onManualReorder);
     }
     
-    console.log(`🚨 [DND_ENHANCED_FIX] ===== DIRECT MANUAL REORDER COMPLETE =====`);
+    console.log(`🔍 [MILESTONE_VIEW_DEBUG] ===== MANUAL REORDER HANDLER COMPLETE =====`);
   };
 
   return (
@@ -90,7 +96,7 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
           displayRankings={displayRankings}
           localPendingRefinements={localPendingRefinements}
           pendingBattleCounts={pendingBattleCounts}
-          onManualReorder={handleManualReorderDirect}
+          onManualReorder={handleManualReorderWithLogging}
           onLocalReorder={setLocalRankings}
           onMarkAsPending={markAsPending}
         />

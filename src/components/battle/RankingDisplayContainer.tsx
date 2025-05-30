@@ -39,10 +39,11 @@ const RankingDisplayContainer: React.FC<RankingDisplayContainerProps> = ({
   pendingRefinements = new Set(),
   enableDragAndDrop = true
 }) => {
-  console.log("🟣 RankingDisplayContainer component rendered with", finalRankings.length, "Pokémon");
-  console.log("🎯 [DRAG_ENABLE_DEBUG] isMilestoneView:", isMilestoneView);
-  console.log("🎯 [DRAG_ENABLE_DEBUG] enableDragAndDrop:", enableDragAndDrop);
-  console.log("🎯 [DRAG_ENABLE_DEBUG] onManualReorder exists:", !!onManualReorder);
+  console.log("🔍 [CONTAINER_DEBUG] RankingDisplayContainer rendered");
+  console.log("🔍 [CONTAINER_DEBUG] isMilestoneView:", isMilestoneView);
+  console.log("🔍 [CONTAINER_DEBUG] enableDragAndDrop:", enableDragAndDrop);
+  console.log("🔍 [CONTAINER_DEBUG] onManualReorder exists:", !!onManualReorder);
+  console.log("🔍 [CONTAINER_DEBUG] onManualReorder type:", typeof onManualReorder);
   
   const {
     formattedRankings,
@@ -57,25 +58,32 @@ const RankingDisplayContainer: React.FC<RankingDisplayContainerProps> = ({
     activeTier
   });
 
-  // ENHANCED FIX: Wrapper that ensures the enhanced logic is called
-  const handleManualReorderWrapper = (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => {
-    console.log(`🔄 [ENHANCED_WRAPPER] ===== MANUAL REORDER WRAPPER =====`);
-    console.log(`🔄 [ENHANCED_WRAPPER] Pokemon ${draggedPokemonId} moved from ${sourceIndex} to ${destinationIndex}`);
+  // DEBUG: Enhanced wrapper with comprehensive logging
+  const handleManualReorderWithDebug = (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => {
+    console.log(`🔍 [CONTAINER_DEBUG] ===== MANUAL REORDER WRAPPER CALLED =====`);
+    console.log(`🔍 [CONTAINER_DEBUG] Pokemon ${draggedPokemonId} moved from ${sourceIndex} to ${destinationIndex}`);
+    console.log(`🔍 [CONTAINER_DEBUG] onManualReorder function available:`, !!onManualReorder);
+    console.log(`🔍 [CONTAINER_DEBUG] onManualReorder type:`, typeof onManualReorder);
     
-    if (onManualReorder) {
-      console.log(`🔄 [ENHANCED_WRAPPER] Calling enhanced manual reorder logic...`);
-      onManualReorder(draggedPokemonId, sourceIndex, destinationIndex);
+    if (onManualReorder && typeof onManualReorder === 'function') {
+      console.log(`🔍 [CONTAINER_DEBUG] ===== CALLING ENHANCED LOGIC =====`);
+      try {
+        onManualReorder(draggedPokemonId, sourceIndex, destinationIndex);
+        console.log(`🔍 [CONTAINER_DEBUG] ✅ Enhanced logic call completed`);
+      } catch (error) {
+        console.error(`🔍 [CONTAINER_DEBUG] ❌ Error in enhanced logic:`, error);
+      }
     } else {
-      console.error(`🔄 [ENHANCED_WRAPPER] ❌ No manual reorder handler available!`);
+      console.error(`🔍 [CONTAINER_DEBUG] ❌ No manual reorder handler available or not a function!`);
+      console.error(`🔍 [CONTAINER_DEBUG] ❌ Value:`, onManualReorder);
     }
     
-    console.log(`🔄 [ENHANCED_WRAPPER] ===== WRAPPER COMPLETE =====`);
+    console.log(`🔍 [CONTAINER_DEBUG] ===== WRAPPER COMPLETE =====`);
   };
 
   if (isMilestoneView) {
-    console.log("🎯 [DRAG_ENABLE_DEBUG] ===== MILESTONE VIEW LOGIC =====");
-    console.log("🎯 [DRAG_ENABLE_DEBUG] Should use draggable:", enableDragAndDrop);
-    console.log("🎯 [DRAG_ENABLE_DEBUG] Manual reorder handler:", !!handleManualReorderWrapper);
+    console.log("🔍 [CONTAINER_DEBUG] ===== MILESTONE VIEW SELECTED =====");
+    console.log("🔍 [CONTAINER_DEBUG] Passing enhanced handler to DraggableMilestoneView");
     
     return (
       <DraggableMilestoneView
@@ -86,7 +94,7 @@ const RankingDisplayContainer: React.FC<RankingDisplayContainerProps> = ({
         onContinueBattles={onContinueBattles}
         onLoadMore={handleMilestoneLoadMore}
         getMaxItemsForTier={getMaxItemsForTier}
-        onManualReorder={handleManualReorderWrapper}
+        onManualReorder={handleManualReorderWithDebug}
         pendingRefinements={pendingRefinements}
       />
     );
