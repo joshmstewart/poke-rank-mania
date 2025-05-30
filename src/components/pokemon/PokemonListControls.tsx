@@ -31,18 +31,18 @@ const PokemonListControls: React.FC<PokemonListControlsProps> = ({
   hideSearch = false
 }) => {
   return (
-    <div className="space-y-4 mb-6">
+    <div className="space-y-3 mb-4">
       {/* Section Header */}
-      <div className="border-b border-gray-200 pb-2">
-        <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
+      <div className="border-b border-gray-200 pb-1">
+        <h2 className="text-xl font-bold text-gray-900">{title}</h2>
       </div>
       
       {/* Controls Row */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+      <div className="bg-white rounded-lg border border-gray-200 p-3 shadow-sm">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1">
-              <span className="text-sm font-medium text-gray-700 mr-2">View:</span>
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-medium text-gray-700">View:</span>
               <ToggleGroup 
                 type="single" 
                 value={viewMode} 
@@ -52,36 +52,36 @@ const PokemonListControls: React.FC<PokemonListControlsProps> = ({
                 <ToggleGroupItem 
                   value="list" 
                   aria-label="List view"
-                  className="data-[state=on]:bg-blue-500 data-[state=on]:text-white"
+                  className="h-7 w-7 p-0 data-[state=on]:bg-blue-500 data-[state=on]:text-white"
                 >
-                  <List className="h-4 w-4" />
+                  <List className="h-3.5 w-3.5" />
                 </ToggleGroupItem>
                 <ToggleGroupItem 
                   value="grid" 
                   aria-label="Grid view"
-                  className="data-[state=on]:bg-blue-500 data-[state=on]:text-white"
+                  className="h-7 w-7 p-0 data-[state=on]:bg-blue-500 data-[state=on]:text-white"
                 >
-                  <Grid className="h-4 w-4" />
+                  <Grid className="h-3.5 w-3.5" />
                 </ToggleGroupItem>
               </ToggleGroup>
             </div>
             
             {showCollapseAll && (
-              <div className="border-l border-gray-200 pl-3 ml-3">
+              <div>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={allExpanded ? onCollapseAll : onExpandAll}
-                  className="flex items-center gap-2 hover:bg-gray-50"
+                  className="h-7 px-2 text-xs flex items-center gap-1 hover:bg-gray-50"
                 >
                   {allExpanded ? (
                     <>
-                      <ChevronUp className="h-4 w-4" />
+                      <ChevronUp className="h-3.5 w-3.5" />
                       Collapse All
                     </>
                   ) : (
                     <>
-                      <ChevronDown className="h-4 w-4" />
+                      <ChevronDown className="h-3.5 w-3.5" />
                       Expand All
                     </>
                   )}
@@ -91,11 +91,11 @@ const PokemonListControls: React.FC<PokemonListControlsProps> = ({
           </div>
           
           {!hideSearch && (
-            <div className="relative w-full max-w-xs">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <div className="relative w-full max-w-[200px]">
+              <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
               <Input
                 placeholder="Search Pokémon..."
-                className="pl-10 bg-gray-50 border-gray-200 focus:bg-white transition-colors"
+                className="h-7 pl-8 text-xs py-1 bg-gray-50 border-gray-200 focus:bg-white transition-colors"
                 value={searchTerm}
                 onChange={(e) => onSearchChange(e.target.value)}
               />
