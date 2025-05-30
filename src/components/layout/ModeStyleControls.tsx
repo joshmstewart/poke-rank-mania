@@ -30,6 +30,7 @@ const ModeStyleControls: React.FC<ModeStyleControlsProps> = ({
   const [imageSettingsOpen, setImageSettingsOpen] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState<string>("");
   const [previewLoaded, setPreviewLoaded] = useState(false);
+  const [previewError, setPreviewError] = useState(false);
   const [currentImageMode, setCurrentImageMode] = useState<'pokemon' | 'tcg'>('pokemon');
 
   // Load preview image and current mode when component mounts or when settings change
@@ -49,6 +50,7 @@ const ModeStyleControls: React.FC<ModeStyleControlsProps> = ({
       
       setPreviewImageUrl(newUrl);
       setPreviewLoaded(false); // Reset loaded state when URL changes
+      setPreviewError(false); // Reset error state when URL changes
     };
 
     updatePreviewImage();
@@ -84,6 +86,7 @@ const ModeStyleControls: React.FC<ModeStyleControlsProps> = ({
         
         setPreviewImageUrl(newUrl);
         setPreviewLoaded(false);
+        setPreviewError(false);
       }, 100);
     }
   }, [imageSettingsOpen]);
@@ -126,7 +129,7 @@ const ModeStyleControls: React.FC<ModeStyleControlsProps> = ({
               <DialogTrigger asChild>
                 <Button variant="ghost" size="sm" className="flex gap-2 items-center h-9 px-4 hover:bg-white/70 transition-colors">
                   <div className="flex items-center justify-center w-5 h-5 relative">
-                    {previewImageUrl && (
+                    {previewImageUrl && !previewError && (
                       <img 
                         src={previewImageUrl}
                         alt="Current style preview"
@@ -136,11 +139,11 @@ const ModeStyleControls: React.FC<ModeStyleControlsProps> = ({
                         onLoad={() => setPreviewLoaded(true)}
                         onError={() => {
                           console.error('Failed to load preview image:', previewImageUrl);
-                          setPreviewLoaded(false);
+                          setPreviewError(true);
                         }}
                       />
                     )}
-                    {(!previewImageUrl || !previewLoaded) && (
+                    {(!previewImageUrl || previewError || !previewLoaded) && (
                       <CurrentIcon className="w-4 h-4 text-gray-600" />
                     )}
                   </div>
