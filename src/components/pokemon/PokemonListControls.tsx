@@ -31,16 +31,16 @@ const PokemonListControls: React.FC<PokemonListControlsProps> = ({
   hideSearch = false
 }) => {
   return (
-    <div className="space-y-3 mb-4">
+    <div className="space-y-2 mb-3">
       {/* Section Header */}
       <div className="border-b border-gray-200 pb-1">
-        <h2 className="text-xl font-bold text-gray-900">{title}</h2>
+        <h2 className="text-lg font-bold text-gray-900">{title}</h2>
       </div>
       
       {/* Controls Row */}
-      <div className="bg-white rounded-lg border border-gray-200 p-3 shadow-sm">
+      <div className="bg-white rounded-lg border border-gray-200 p-2.5 shadow-sm">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-3">
             <div className="flex items-center gap-1.5">
               <span className="text-xs font-medium text-gray-700">View:</span>
               <ToggleGroup 
@@ -52,16 +52,16 @@ const PokemonListControls: React.FC<PokemonListControlsProps> = ({
                 <ToggleGroupItem 
                   value="list" 
                   aria-label="List view"
-                  className="h-7 w-7 p-0 data-[state=on]:bg-blue-500 data-[state=on]:text-white"
+                  className="h-6 w-6 p-0 data-[state=on]:bg-blue-500 data-[state=on]:text-white"
                 >
-                  <List className="h-3.5 w-3.5" />
+                  <List className="h-3 w-3" />
                 </ToggleGroupItem>
                 <ToggleGroupItem 
                   value="grid" 
                   aria-label="Grid view"
-                  className="h-7 w-7 p-0 data-[state=on]:bg-blue-500 data-[state=on]:text-white"
+                  className="h-6 w-6 p-0 data-[state=on]:bg-blue-500 data-[state=on]:text-white"
                 >
-                  <Grid className="h-3.5 w-3.5" />
+                  <Grid className="h-3 w-3" />
                 </ToggleGroupItem>
               </ToggleGroup>
             </div>
@@ -72,16 +72,16 @@ const PokemonListControls: React.FC<PokemonListControlsProps> = ({
                   variant="outline"
                   size="sm"
                   onClick={allExpanded ? onCollapseAll : onExpandAll}
-                  className="h-7 px-2 text-xs flex items-center gap-1 hover:bg-gray-50"
+                  className="h-6 px-2 text-xs flex items-center gap-1 hover:bg-gray-50"
                 >
                   {allExpanded ? (
                     <>
-                      <ChevronUp className="h-3.5 w-3.5" />
+                      <ChevronUp className="h-3 w-3" />
                       Collapse All
                     </>
                   ) : (
                     <>
-                      <ChevronDown className="h-3.5 w-3.5" />
+                      <ChevronDown className="h-3 w-3" />
                       Expand All
                     </>
                   )}
@@ -91,11 +91,11 @@ const PokemonListControls: React.FC<PokemonListControlsProps> = ({
           </div>
           
           {!hideSearch && (
-            <div className="relative w-full max-w-[200px]">
-              <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+            <div className="relative w-20">
+              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-gray-400" />
               <Input
                 placeholder="Search"
-                className="h-7 pl-8 text-xs py-1 bg-gray-50 border-gray-200 focus:bg-white transition-colors"
+                className="h-6 pl-6 text-xs py-1 bg-gray-50 border-gray-200 focus:bg-white transition-colors"
                 value={searchTerm}
                 onChange={(e) => onSearchChange(e.target.value)}
               />
