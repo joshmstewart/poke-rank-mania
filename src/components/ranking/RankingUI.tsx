@@ -44,8 +44,17 @@ export const RankingUI: React.FC<RankingUIProps> = ({
   // Get TrueSkill-based rankings from Battle Mode system
   const { finalRankings: battleModeRankings } = useRankings();
   
+  // DEBUG: Log what we're getting from the Battle Mode system
+  console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] battleModeRankings length: ${battleModeRankings.length}`);
+  console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] battleModeRankings:`, battleModeRankings);
+  console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] rankedPokemon length: ${rankedPokemon.length}`);
+  console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] rankedPokemon:`, rankedPokemon);
+  
   // Use Battle Mode rankings for the right panel instead of manual rankings
   const displayRankings = battleModeRankings.length > 0 ? battleModeRankings : rankedPokemon;
+  
+  console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] displayRankings length: ${displayRankings.length}`);
+  console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] displayRankings sample:`, displayRankings.slice(0, 3));
   
   // Infinite scroll state for ranked Pokemon
   const [displayedRankedCount, setDisplayedRankedCount] = useState(50);
@@ -98,10 +107,14 @@ export const RankingUI: React.FC<RankingUIProps> = ({
   // Reset displayed count when ranked Pokemon list changes
   useEffect(() => {
     setDisplayedRankedCount(Math.min(50, displayRankings.length));
+    console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] Reset displayedRankedCount to: ${Math.min(50, displayRankings.length)}`);
   }, [displayRankings.length]);
 
   // Get the currently displayed ranked Pokemon
   const displayedRankedPokemon = displayRankings.slice(0, displayedRankedCount);
+  
+  console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] displayedRankedPokemon length: ${displayedRankedPokemon.length}`);
+  console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] displayedRankedPokemon sample:`, displayedRankedPokemon.slice(0, 2));
 
   if (isLoading && availablePokemon.length === 0) {
     return (
