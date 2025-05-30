@@ -96,11 +96,13 @@ const AppSessionManager = () => {
         // Load the existing session data
         const sessionData = loadUnifiedSessionData();
         
-        // Update with the new session ID and cloud data (with null check)
+        // Update with the new session ID and cloud data
+        // Ensure cloudSessionData is a valid object before spreading
         const updatedSessionData = {
           ...sessionData,
-          ...(cloudSessionData || {}),
-          sessionId: sessionIdToLoad
+          sessionId: sessionIdToLoad,
+          // Only spread if cloudSessionData is a plain object
+          ...(cloudSessionData && typeof cloudSessionData === 'object' && !Array.isArray(cloudSessionData) ? cloudSessionData : {})
         };
         
         saveUnifiedSessionData(updatedSessionData);
