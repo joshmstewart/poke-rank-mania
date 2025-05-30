@@ -8,14 +8,14 @@ interface PokemonCardImageProps {
   pokemonId: number;
   displayName: string;
   compact?: boolean;
-  imageUrl?: string; // Add optional imageUrl prop
+  imageUrl?: string;
 }
 
 const PokemonCardImage: React.FC<PokemonCardImageProps> = ({
   pokemonId,
   displayName,
   compact = false,
-  imageUrl // Use provided imageUrl if available
+  imageUrl
 }) => {
   const {
     imageLoaded,
@@ -28,8 +28,9 @@ const PokemonCardImage: React.FC<PokemonCardImageProps> = ({
 
   const normalizedId = normalizePokedexNumber(pokemonId);
 
-  // Use provided imageUrl if available, otherwise use the loader's URL
-  const finalImageUrl = imageUrl || currentImageUrl;
+  // Use the hook's currentImageUrl which handles fallbacks properly
+  // The imageUrl prop is now just for reference but we let the hook manage loading
+  const finalImageUrl = currentImageUrl;
 
   return (
     <div className={`${compact ? "w-16 h-16" : "w-20 h-20"} bg-gray-50 rounded-md relative`}>

@@ -68,7 +68,6 @@ const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
           pokemonId={pokemonId}
           displayName={displayName}
           compact={compact}
-          imageUrl={validatedPokemon.image}
         />
         <PokemonCardInfo 
           pokemonId={pokemonId}
