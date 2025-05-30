@@ -167,34 +167,53 @@ const PokemonRanker = () => {
     console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_CRITICAL] ===== SYNC PROCESS COMPLETE =====`);
   }, [getAllRatings, getRating, pokemonLookupMap, allPokemon, setRankedPokemon, setAvailablePokemon]);
 
-  // CRITICAL FIX: This effect must depend on BOTH the map AND its size to ensure it re-runs
+  // CRITICAL FIX: This effect must depend on BOTH the map object AND individual properties to ensure proper re-triggering
   useEffect(() => {
-    console.log(`🔥🔥🔥 [MANUAL_PRIMARY_SYNC] ===== PRIMARY SYNC EFFECT TRIGGERED =====`);
-    console.log(`🔥🔥🔥 [MANUAL_PRIMARY_SYNC] pokemonLookupMap object reference changed: ${!!pokemonLookupMap}`);
-    console.log(`🔥🔥🔥 [MANUAL_PRIMARY_SYNC] Context size: ${pokemonLookupMap.size}`);
-    console.log(`🔥🔥🔥 [MANUAL_PRIMARY_SYNC] AllPokemon length: ${allPokemon.length}`);
+    const effectRunId = Date.now();
+    console.log(`🔥🔥🔥 [MANUAL_SYNC_DETAIL] ===== EFFECT RUN #${effectRunId} START =====`);
+    console.log(`🔥🔥🔥 [MANUAL_SYNC_DETAIL] Effect trigger timestamp: ${new Date().toISOString()}`);
+    console.log(`🔥🔥🔥 [MANUAL_SYNC_DETAIL] pokemonLookupMap object reference: ${!!pokemonLookupMap}`);
+    console.log(`🔥🔥🔥 [MANUAL_SYNC_DETAIL] pokemonLookupMap.size: ${pokemonLookupMap.size}`);
+    console.log(`🔥🔥🔥 [MANUAL_SYNC_DETAIL] allPokemon.length: ${allPokemon.length}`);
+    console.log(`🔥🔥🔥 [MANUAL_SYNC_DETAIL] allPokemon array reference: ${!!allPokemon}`);
     
     const ratings = getAllRatings();
     const ratingsCount = Object.keys(ratings).length;
-    console.log(`🔥🔥🔥 [MANUAL_PRIMARY_SYNC] Ratings count: ${ratingsCount}`);
+    console.log(`🔥🔥🔥 [MANUAL_SYNC_DETAIL] Ratings count: ${ratingsCount}`);
     
-    // CRITICAL: Only proceed if BOTH context is ready AND we have data to work with
-    if (pokemonLookupMap.size > 0 && allPokemon.length > 0) {
-      console.log(`🔥🔥🔥 [MANUAL_PRIMARY_SYNC] ✅ Context ready with ${pokemonLookupMap.size} Pokemon`);
-      
-      if (ratingsCount > 0) {
-        console.log(`🔥🔥🔥 [MANUAL_PRIMARY_SYNC] ✅ Ratings available: ${ratingsCount} - TRIGGERING FULL SYNC`);
-        syncWithTrueSkillStore();
-      } else {
-        console.log(`🔥🔥🔥 [MANUAL_PRIMARY_SYNC] No ratings available - clearing display`);
-        setRankedPokemon([]);
-        setAvailablePokemon([]);
-      }
+    // CRITICAL: Enhanced condition checking with detailed logging
+    const contextReady = pokemonLookupMap.size > 0 && allPokemon.length > 0;
+    const hasRatings = ratingsCount > 0;
+    
+    console.log(`🔥🔥🔥 [MANUAL_SYNC_DETAIL] Context ready: ${contextReady} (map size: ${pokemonLookupMap.size}, array length: ${allPokemon.length})`);
+    console.log(`🔥🔥🔥 [MANUAL_SYNC_DETAIL] Has ratings: ${hasRatings} (${ratingsCount} ratings)`);
+    
+    if (contextReady && hasRatings) {
+      console.log(`🔥🔥🔥 [MANUAL_SYNC_DETAIL] ✅ BOTH CONDITIONS MET - TRIGGERING FULL SYNC`);
+      console.log(`🔥🔥🔥 [MANUAL_SYNC_DETAIL] About to call syncWithTrueSkillStore()`);
+      syncWithTrueSkillStore();
+    } else if (contextReady && !hasRatings) {
+      console.log(`🔥🔥🔥 [MANUAL_SYNC_DETAIL] Context ready but no ratings - clearing display`);
+      setRankedPokemon([]);
+      setAvailablePokemon([]);
+    } else if (!contextReady && hasRatings) {
+      console.log(`🔥🔥🔥 [MANUAL_SYNC_DETAIL] Ratings available but context not ready yet`);
+      console.log(`🔥🔥🔥 [MANUAL_SYNC_DETAIL] Waiting for context to load (map size: ${pokemonLookupMap.size}, array length: ${allPokemon.length})`);
     } else {
-      console.log(`🔥🔥🔥 [MANUAL_PRIMARY_SYNC] Context not ready yet - pokemonLookupMap.size: ${pokemonLookupMap.size}, allPokemon.length: ${allPokemon.length}`);
-      console.log(`🔥🔥🔥 [MANUAL_PRIMARY_SYNC] Effect will re-run when context becomes ready`);
+      console.log(`🔥🔥🔥 [MANUAL_SYNC_DETAIL] Neither context nor ratings ready - waiting for both`);
     }
-  }, [pokemonLookupMap, allPokemon.length, getAllRatings, syncWithTrueSkillStore, setRankedPokemon, setAvailablePokemon]);
+    
+    console.log(`🔥🔥🔥 [MANUAL_SYNC_DETAIL] ===== EFFECT RUN #${effectRunId} COMPLETE =====`);
+  }, [
+    pokemonLookupMap, // The map object itself
+    pokemonLookupMap.size, // Explicit size dependency
+    allPokemon, // The array object itself  
+    allPokemon.length, // Explicit length dependency
+    getAllRatings, 
+    syncWithTrueSkillStore, 
+    setRankedPokemon, 
+    setAvailablePokemon
+  ]);
 
   // Enhanced event listeners for TrueSkill updates
   useEffect(() => {
