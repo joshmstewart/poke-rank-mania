@@ -1,6 +1,6 @@
 
-import { useEffect, useRef } from "react";
-import { Pokemon } from "@/services/pokemon";
+import { useEffect, useRef, useCallback } from "react";
+import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "@/hooks/battle/types";
 import { useBattleStateCore } from "@/hooks/battle/useBattleStateCore";
 
@@ -23,6 +23,14 @@ export const useBattleContentState = (
     initialSelectedGeneration
   );
 
+  // Create onRankingsUpdate function to handle ranking updates
+  const onRankingsUpdate = useCallback((updatedRankings: RankedPokemon[]) => {
+    console.log(`🔧 [BATTLE_CONTENT_STATE] onRankingsUpdate called with ${updatedRankings.length} rankings`);
+    // This function receives updated rankings from manual reordering
+    // The rankings are already updated by the enhanced manual reorder hook
+    // We just need to log this for debugging purposes
+  }, []);
+
   // Update parent state when needed
   useEffect(() => {
     if (setBattlesCompleted) {
@@ -38,6 +46,7 @@ export const useBattleContentState = (
 
   return {
     instanceRef,
+    onRankingsUpdate,
     ...stateHook
   };
 };
