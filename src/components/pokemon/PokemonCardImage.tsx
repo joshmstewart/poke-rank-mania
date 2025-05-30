@@ -8,13 +8,15 @@ interface PokemonCardImageProps {
   displayName: string;
   compact?: boolean;
   imageUrl?: string;
+  className?: string;
 }
 
 const PokemonCardImage: React.FC<PokemonCardImageProps> = ({
   pokemonId,
   displayName,
   compact = false,
-  imageUrl
+  imageUrl,
+  className
 }) => {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
@@ -44,7 +46,7 @@ const PokemonCardImage: React.FC<PokemonCardImageProps> = ({
   }, [imageUrl]);
 
   return (
-    <div className={`${compact ? "w-16 h-16" : "w-20 h-20"} bg-gray-50 rounded-md relative`}>
+    <div className={`${compact ? "w-16 h-16" : "w-20 h-20"} bg-gray-50 rounded-md relative ${className || ""}`}>
       <AspectRatio ratio={1}>
         {!imageLoaded && !imageError && imageUrl && (
           <div className="animate-pulse bg-gray-200 absolute inset-0 flex items-center justify-center">

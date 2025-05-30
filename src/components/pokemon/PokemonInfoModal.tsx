@@ -28,12 +28,6 @@ const PokemonInfoModal: React.FC<PokemonInfoModalProps> = ({
   const { flavorText, isLoadingFlavor } = usePokemonFlavorText(pokemon.id, isOpen);
   const { tcgCard, secondTcgCard, isLoading: isLoadingTCG, error: tcgError, hasTcgCard } = usePokemonTCGCard(pokemon.name, isOpen);
   
-  const handleInfoClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
-    setIsOpen(true);
-  };
-
   const handleDialogClick = (e: React.MouseEvent) => {
     e.stopPropagation();
   };
@@ -53,7 +47,7 @@ const PokemonInfoModal: React.FC<PokemonInfoModalProps> = ({
   
   return (
     <Dialog open={isOpen} onOpenChange={handleDialogOpen}>
-      <PokemonModalTrigger onTriggerClick={handleInfoClick}>
+      <PokemonModalTrigger pokemon={pokemon}>
         {children}
       </PokemonModalTrigger>
       
