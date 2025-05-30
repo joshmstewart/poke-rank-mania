@@ -15,46 +15,42 @@ interface PokemonCardProps {
 }
 
 const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
-  // ULTRA-DETAILED NAME DEBUGGING FOR POKEMON CARD
-  console.log(`🎮 [CARD_ULTRA_DEBUG] ===== POKEMON CARD RENDER START =====`);
-  console.log(`🎮 [CARD_ULTRA_DEBUG] Pokemon ID: ${pokemon.id}`);
-  console.log(`🎮 [CARD_ULTRA_DEBUG] Received pokemon:`, pokemon);
-  console.log(`🎮 [CARD_ULTRA_DEBUG] Original pokemon.name: "${pokemon.name}"`);
-  console.log(`🎮 [CARD_ULTRA_DEBUG] Original name type: ${typeof pokemon.name}`);
-  console.log(`🎮 [CARD_ULTRA_DEBUG] Original name length: ${pokemon.name.length}`);
-  console.log(`🎮 [CARD_ULTRA_DEBUG] Original name chars: [${pokemon.name.split('').join(', ')}]`);
+  console.log(`🎮 [MANUAL_MODE_DEBUG] ===== POKEMON CARD RENDER START =====`);
+  console.log(`🎮 [MANUAL_MODE_DEBUG] Pokemon ID: ${pokemon.id}, Name: ${pokemon.name}`);
+  console.log(`🎮 [MANUAL_MODE_DEBUG] Pokemon object:`, {
+    id: pokemon.id,
+    name: pokemon.name,
+    image: pokemon.image,
+    hasImage: !!pokemon.image,
+    imageLength: pokemon.image?.length || 0
+  });
 
   // Validate the Pokemon to ensure image and name consistency
   const validatedPokemon = useMemo(() => {
-    console.log(`🎮 [CARD_ULTRA_DEBUG] About to validate Pokemon:`, pokemon);
+    console.log(`🎮 [MANUAL_MODE_DEBUG] Validating Pokemon:`, pokemon);
     const [validated] = validateBattlePokemon([pokemon]);
-    console.log(`🎮 [CARD_ULTRA_DEBUG] Validated result:`, validated);
-    console.log(`🎮 [CARD_ULTRA_DEBUG] Validated name: "${validated.name}"`);
+    console.log(`🎮 [MANUAL_MODE_DEBUG] Validated result:`, {
+      id: validated.id,
+      name: validated.name,
+      image: validated.image,
+      hasImage: !!validated.image
+    });
     return validated;
   }, [pokemon]);
 
   // Store the consistent pokemon ID
   const pokemonId = validatedPokemon.id;
 
-  // ULTRA-DETAILED NAME DEBUGGING FOR DISPLAY
-  const displayName = validatedPokemon.name; // Use name exactly as provided
+  // Use name exactly as provided
+  const displayName = validatedPokemon.name;
   
-  console.log(`🎮 [CARD_ULTRA_DEBUG] validatedPokemon.name: "${validatedPokemon.name}"`);
-  console.log(`🎮 [CARD_ULTRA_DEBUG] Final displayName: "${displayName}"`);
-  console.log(`🎮 [CARD_ULTRA_DEBUG] displayName type: ${typeof displayName}`);
-  console.log(`🎮 [CARD_ULTRA_DEBUG] displayName chars: [${displayName.split('').join(', ')}]`);
-  console.log(`🎮 [CARD_ULTRA_DEBUG] Names are same as original: ${pokemon.name === displayName}`);
-  console.log(`🎮 [CARD_ULTRA_DEBUG] validatedPokemon === original: ${validatedPokemon.name === pokemon.name}`);
+  console.log(`🎮 [MANUAL_MODE_DEBUG] Final values:`, {
+    pokemonId,
+    displayName,
+    validatedImage: validatedPokemon.image
+  });
   
-  // Check for any unexpected name changes
-  if (pokemon.name !== displayName) {
-    console.error(`🚨 [CARD_ULTRA_DEBUG] NAME CHANGED IN POKEMON CARD!`);
-    console.error(`🚨 [CARD_ULTRA_DEBUG] Original: "${pokemon.name}"`);
-    console.error(`🚨 [CARD_ULTRA_DEBUG] Display: "${displayName}"`);
-    console.error(`🚨 [CARD_ULTRA_DEBUG] Validated: "${validatedPokemon.name}"`);
-  }
-  
-  console.log(`🎮 [CARD_ULTRA_DEBUG] ===== POKEMON CARD RENDER END =====`);
+  console.log(`🎮 [MANUAL_MODE_DEBUG] ===== POKEMON CARD RENDER END =====`);
 
   return (
     <Card className={`w-full overflow-hidden relative ${isDragging ? "opacity-50" : ""}`}>

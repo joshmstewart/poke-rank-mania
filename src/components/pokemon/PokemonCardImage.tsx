@@ -17,6 +17,9 @@ const PokemonCardImage: React.FC<PokemonCardImageProps> = ({
   compact = false,
   imageUrl
 }) => {
+  console.log(`🖼️ [MANUAL_MODE_DEBUG] PokemonCardImage for ${displayName} (#${pokemonId})`);
+  console.log(`🖼️ [MANUAL_MODE_DEBUG] Received imageUrl prop:`, imageUrl);
+  
   const {
     imageLoaded,
     imageError,
@@ -26,11 +29,20 @@ const PokemonCardImage: React.FC<PokemonCardImageProps> = ({
     saveImgRef
   } = useImageLoader({ pokemonId, displayName });
 
+  console.log(`🖼️ [MANUAL_MODE_DEBUG] Hook state for ${displayName}:`, {
+    imageLoaded,
+    imageError,
+    currentImageUrl,
+    hookWorking: !!currentImageUrl
+  });
+
   const normalizedId = normalizePokedexNumber(pokemonId);
 
   // Use the hook's currentImageUrl which handles fallbacks properly
   // The imageUrl prop is now just for reference but we let the hook manage loading
   const finalImageUrl = currentImageUrl;
+
+  console.log(`🖼️ [MANUAL_MODE_DEBUG] Final URL for ${displayName}:`, finalImageUrl);
 
   return (
     <div className={`${compact ? "w-16 h-16" : "w-20 h-20"} bg-gray-50 rounded-md relative`}>
@@ -52,6 +64,12 @@ const PokemonCardImage: React.FC<PokemonCardImageProps> = ({
           <div className="absolute inset-0 flex flex-col justify-center items-center bg-gray-100 text-xs p-1">
             <div className="font-medium">{displayName}</div>
             <div className="text-muted-foreground">#{normalizedId}</div>
+          </div>
+        )}
+        {!finalImageUrl && (
+          <div className="absolute inset-0 flex flex-col justify-center items-center bg-red-100 text-xs p-1">
+            <div className="font-medium text-red-600">NO URL</div>
+            <div className="text-red-500">#{normalizedId}</div>
           </div>
         )}
       </AspectRatio>
