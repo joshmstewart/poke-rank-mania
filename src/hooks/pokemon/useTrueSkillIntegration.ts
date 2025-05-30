@@ -284,7 +284,7 @@ export const useTrueSkillIntegration = ({
 
     return () => {
       document.removeEventListener('trueskill-store-updated', handleStoreUpdate as EventListener);
-      document.removeEventListener('trueskill-store-loaded', handleStoreEvent as EventListener);
+      document.removeEventListener('trueskill-store-loaded', handleStoreUpdate as EventListener);
     };
   }, [getAllRatings, getRating, isLoading, storeIsLoading, pokemonLookupMap.size, availablePokemon.length, rankedPokemon.length, setRankedPokemon, setAvailablePokemon, setConfidenceScores]);
 
