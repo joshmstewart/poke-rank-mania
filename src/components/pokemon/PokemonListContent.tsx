@@ -2,7 +2,7 @@
 import React from "react";
 import { Pokemon } from "@/services/pokemon";
 import { Card } from "@/components/ui/card";
-import PokemonModalTrigger from "./PokemonModalTrigger";
+import PokemonInfoModal from "./PokemonInfoModal";
 import PokemonCardImage from "./PokemonCardImage";
 import PokemonCardInfo from "./PokemonCardInfo";
 import { VotingArrows } from "@/components/ranking/VotingArrows";
@@ -56,12 +56,13 @@ export const PokemonListContent: React.FC<PokemonListContentProps> = ({
             key={`pokemon-${pokemonItem.id}-${isRankingArea ? 'ranked' : 'available'}-${index}`}
             className="relative group hover:shadow-lg transition-shadow bg-white border border-gray-200"
           >
-            <PokemonModalTrigger pokemon={pokemonItem}>
+            <PokemonInfoModal pokemon={pokemonItem}>
               <div className="p-4 cursor-pointer">
                 <PokemonCardImage 
                   pokemonId={pokemonItem.id}
                   displayName={pokemonItem.name}
                   imageUrl={pokemonItem.image}
+                  className=""
                 />
                 <PokemonCardInfo 
                   pokemonId={pokemonItem.id}
@@ -70,7 +71,7 @@ export const PokemonListContent: React.FC<PokemonListContentProps> = ({
                   flavorText={pokemonItem.flavorText}
                 />
               </div>
-            </PokemonModalTrigger>
+            </PokemonInfoModal>
             
             {isRankingArea && 'score' in pokemonItem && (
               <>
