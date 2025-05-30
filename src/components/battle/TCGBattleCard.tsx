@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, memo, useRef, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Pokemon } from "@/services/pokemon";
@@ -132,7 +133,7 @@ const TCGBattleCard: React.FC<TCGBattleCardProps> = memo(({
             <div className="space-y-3">
               <div className="relative">
                 <img 
-                  src={tcgCard.images.large} 
+                  src={tcgCard.images.small} 
                   alt={tcgCard.name}
                   className={`w-full max-w-[200px] mx-auto rounded-lg shadow-md transition-opacity duration-300 ${
                     cardImageLoaded ? 'opacity-100' : 'opacity-0'

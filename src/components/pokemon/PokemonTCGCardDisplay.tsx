@@ -39,7 +39,7 @@ const PokemonTCGCardDisplay: React.FC<PokemonTCGCardDisplayProps> = ({ tcgCard, 
     <div className="flex flex-col items-center space-y-4">
       <div className="relative">
         <img 
-          src={card.images.large} 
+          src={card.images.small} 
           alt={card.name}
           className="w-full max-w-sm rounded-lg shadow-lg"
           onError={(e) => {
