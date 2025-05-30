@@ -51,10 +51,6 @@ export const RankingUI: React.FC<RankingUIProps> = ({
   const displayRankings = localRankings.length > 0 ? localRankings 
     : battleModeRankings.length > 0 ? battleModeRankings 
     : rankedPokemon;
-  
-  console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] localRankings: ${localRankings.length}, battleModeRankings: ${battleModeRankings.length}, rankedPokemon: ${rankedPokemon.length}`);
-  console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] displayRankings length: ${displayRankings.length}`);
-  console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] displayRankings sample:`, displayRankings.slice(0, 3));
 
   const { handleDragEnd } = useDragHandler(
     availablePokemon,
@@ -66,7 +62,6 @@ export const RankingUI: React.FC<RankingUIProps> = ({
   // Temporarily disable drag-and-drop for Manual Mode TrueSkill integration
   const handleDisabledDragEnd = () => {
     console.log("[TRUESKILL_MANUAL] Drag-and-drop temporarily disabled in Manual Mode");
-    // Do nothing - drag is disabled
   };
 
   if (isLoading && availablePokemon.length === 0) {
@@ -81,24 +76,26 @@ export const RankingUI: React.FC<RankingUIProps> = ({
   }
 
   return (
-    <DragDropContext onDragEnd={handleDisabledDragEnd}>
-      <div className="grid md:grid-cols-2 gap-6 h-full">
-        {/* Left side - Available Pokemon (unrated) with independent scroll */}
-        <AvailablePokemonSection
-          availablePokemon={availablePokemon}
-          isLoading={isLoading}
-          selectedGeneration={selectedGeneration}
-          loadingType={loadingType}
-          currentPage={currentPage}
-          totalPages={totalPages}
-          loadingRef={loadingRef}
-          handlePageChange={handlePageChange}
-          getPageRange={getPageRange}
-        />
-        
-        {/* Right side - Rankings (TrueSkill ordered) with infinite scroll */}
-        <RankingsSection displayRankings={displayRankings} />
-      </div>
-    </DragDropContext>
+    <div className="container max-w-7xl mx-auto space-y-6">
+      <DragDropContext onDragEnd={handleDisabledDragEnd}>
+        <div className="grid lg:grid-cols-2 gap-6">
+          {/* Left side - Available Pokemon */}
+          <AvailablePokemonSection
+            availablePokemon={availablePokemon}
+            isLoading={isLoading}
+            selectedGeneration={selectedGeneration}
+            loadingType={loadingType}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            loadingRef={loadingRef}
+            handlePageChange={handlePageChange}
+            getPageRange={getPageRange}
+          />
+          
+          {/* Right side - Rankings */}
+          <RankingsSection displayRankings={displayRankings} />
+        </div>
+      </DragDropContext>
+    </div>
   );
 };
