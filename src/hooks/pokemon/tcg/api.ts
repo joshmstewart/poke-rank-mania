@@ -1,3 +1,4 @@
+
 import { TCGApiResponse, TCGCard } from './types';
 import { selectDiverseCards } from './sorting';
 
@@ -8,6 +9,14 @@ export const fetchTCGCards = async (pokemonName: string): Promise<{ firstCard: T
     .replace(/-/g, ' ')
     .replace(/[^a-z0-9\s]/g, '')
     .trim();
+
+  // Special handling for Mega Pokemon - search for M version instead
+  if (searchName.includes('mega ')) {
+    // Extract the base Pokemon name (everything after 'mega ')
+    const baseName = searchName.replace(/mega\s+/, '').trim();
+    searchName = `M ${baseName}-EX`;
+    console.log(`🔥 [TCG_MEGA] Detected Mega Pokemon, searching for M version: "${searchName}"`);
+  }
 
   // Special handling for G-Max Pokemon - search for VMAX version instead
   if (searchName.includes('g max') || searchName.includes('gmax')) {
