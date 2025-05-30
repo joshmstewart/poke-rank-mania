@@ -85,6 +85,7 @@ const PokemonListContent: React.FC<PokemonListContentProps> = ({
                           {...provided.draggableProps}
                           {...provided.dragHandleProps}
                           className="relative z-10"
+                          data-pokemon-id={pokemon.id}
                         >
                           <PokemonCard
                             pokemon={pokemon}
