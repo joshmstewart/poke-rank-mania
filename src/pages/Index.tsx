@@ -14,7 +14,7 @@ import {
   DialogTrigger
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Image, Trophy, DraftingCompass, CreditCard } from "lucide-react";
+import { Image, Trophy, DraftingCompass } from "lucide-react";
 import ImagePreferenceSelector, { getPreferredImageUrl, getCurrentImageMode } from "@/components/settings/ImagePreferenceSelector";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -48,15 +48,10 @@ const Index = () => {
       const imageMode = getCurrentImageMode();
       setCurrentImageMode(imageMode);
       
-      // Only load preview image if in pokemon mode
-      if (imageMode === 'pokemon') {
-        const url = getPreferredImageUrl(PIKACHU_ID);
-        setPreviewImageUrl(url);
-        setPreviewLoaded(false);
-      } else {
-        setPreviewImageUrl("");
-        setPreviewLoaded(false);
-      }
+      // Always load Pikachu preview image regardless of mode
+      const url = getPreferredImageUrl(PIKACHU_ID);
+      setPreviewImageUrl(url);
+      setPreviewLoaded(false);
     };
 
     updatePreviewImage();
@@ -94,23 +89,17 @@ const Index = () => {
                     <DialogTrigger asChild>
                       <Button variant="outline" size="sm" className="flex gap-2 items-center h-9">
                         <div className="flex items-center justify-center w-5 h-5 relative">
-                          {currentImageMode === 'tcg' ? (
-                            <CreditCard className="w-4 h-4 text-gray-600" />
-                          ) : (
-                            <>
-                              {!previewLoaded && (
-                                <Image className="w-4 h-4 text-gray-400" />
-                              )}
-                              {previewImageUrl && currentImageMode === 'pokemon' && (
-                                <img 
-                                  src={previewImageUrl}
-                                  alt="Current style"
-                                  className={`w-full h-full object-contain ${previewLoaded ? 'opacity-100' : 'opacity-0'}`}
-                                  onLoad={() => setPreviewLoaded(true)}
-                                  onError={() => { /* Keep showing icon on error */ }}
-                                />
-                              )}
-                            </>
+                          {!previewLoaded && (
+                            <Image className="w-4 h-4 text-gray-400" />
+                          )}
+                          {previewImageUrl && (
+                            <img 
+                              src={previewImageUrl}
+                              alt="Current style"
+                              className={`w-full h-full object-contain ${previewLoaded ? 'opacity-100' : 'opacity-0'}`}
+                              onLoad={() => setPreviewLoaded(true)}
+                              onError={() => { /* Keep showing icon on error */ }}
+                            />
                           )}
                         </div>
                         <span className="hidden sm:inline">Battle Style</span>
@@ -133,13 +122,9 @@ const Index = () => {
                       const imageMode = getCurrentImageMode();
                       setCurrentImageMode(imageMode);
                       
-                      if (imageMode === 'pokemon') {
-                        setPreviewImageUrl(getPreferredImageUrl(PIKACHU_ID));
-                        setPreviewLoaded(false);
-                      } else {
-                        setPreviewImageUrl("");
-                        setPreviewLoaded(false);
-                      }
+                      // Always load Pikachu preview regardless of mode
+                      setPreviewImageUrl(getPreferredImageUrl(PIKACHU_ID));
+                      setPreviewLoaded(false);
                     }} />
                   </DialogContent>
                 </Dialog>
