@@ -24,36 +24,24 @@ const BattleCard: React.FC<BattleCardProps> = memo(({
 }) => {
   const [currentImageMode, setCurrentImageMode] = useState<'pokemon' | 'tcg'>(() => getCurrentImageMode());
   
-  // Listen for image mode changes
+  // Listen for image mode changes - but only when modal is closed (Done button clicked)
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
+      // Only respond to the pokemon-image-mode key change, which happens when Done is clicked
       if (e.key === "pokemon-image-mode") {
         const newMode = getCurrentImageMode();
-        console.log(`🎯 [BATTLE_CARD] Image mode changed to: ${newMode}`);
+        console.log(`🎯 [BATTLE_CARD] Image mode changed to: ${newMode} (Done clicked)`);
         setCurrentImageMode(newMode);
       }
     };
 
-    const checkImageMode = () => {
-      const newMode = getCurrentImageMode();
-      if (newMode !== currentImageMode) {
-        console.log(`🎯 [BATTLE_CARD] Image mode updated to: ${newMode}`);
-        setCurrentImageMode(newMode);
-      }
-    };
-
-    // Check immediately and set up listeners
-    checkImageMode();
+    // Set up storage listener for cross-tab changes
     window.addEventListener('storage', handleStorageChange);
-    
-    // Also check periodically as a fallback
-    const interval = setInterval(checkImageMode, 1000);
     
     return () => {
       window.removeEventListener('storage', handleStorageChange);
-      clearInterval(interval);
     };
-  }, [currentImageMode]);
+  }, []);
   
   console.log(`🎯 [BATTLE_CARD] Pokemon ${pokemon.id}: Image mode is ${currentImageMode}`);
   
