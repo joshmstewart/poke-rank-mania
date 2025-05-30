@@ -7,6 +7,7 @@ import {
   TooltipProvider,
   TooltipTrigger 
 } from "@/components/ui/tooltip";
+import { useTrueSkillStore } from "@/stores/trueskillStore";
 
 interface ModeSwitcherProps {
   currentMode: "rank" | "battle";
@@ -14,9 +15,36 @@ interface ModeSwitcherProps {
 }
 
 const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ currentMode, onModeChange }) => {
+  const { getAllRatings } = useTrueSkillStore();
+
   const handleModeChange = (mode: "rank" | "battle") => {
-    console.log(`[MODE_SWITCH] Switching from ${currentMode} to ${mode}`);
+    const ratingsBefore = getAllRatings();
+    const ratingsCountBefore = Object.keys(ratingsBefore).length;
+    
+    console.log(`🔍 [MODE_SWITCH_DEBUG] ===== MODE SWITCH STARTING =====`);
+    console.log(`🔍 [MODE_SWITCH_DEBUG] From: ${currentMode} → To: ${mode}`);
+    console.log(`🔍 [MODE_SWITCH_DEBUG] Ratings BEFORE switch: ${ratingsCountBefore}`);
+    console.log(`🔍 [MODE_SWITCH_DEBUG] Store state BEFORE:`, ratingsBefore);
+    
+    // Call the mode change
     onModeChange(mode);
+    
+    // Check ratings after mode change (with delay to allow state updates)
+    setTimeout(() => {
+      const ratingsAfter = getAllRatings();
+      const ratingsCountAfter = Object.keys(ratingsAfter).length;
+      
+      console.log(`🔍 [MODE_SWITCH_DEBUG] Ratings AFTER switch: ${ratingsCountAfter}`);
+      console.log(`🔍 [MODE_SWITCH_DEBUG] Store state AFTER:`, ratingsAfter);
+      
+      if (ratingsCountBefore !== ratingsCountAfter) {
+        console.log(`🚨 [MODE_SWITCH_DEBUG] ❌ RATING COUNT CHANGED! ${ratingsCountBefore} → ${ratingsCountAfter}`);
+        console.log(`🚨 [MODE_SWITCH_DEBUG] This indicates data loss during mode switch!`);
+      } else {
+        console.log(`🔍 [MODE_SWITCH_DEBUG] ✅ Rating count preserved during mode switch`);
+      }
+      console.log(`🔍 [MODE_SWITCH_DEBUG] ===== MODE SWITCH COMPLETE =====`);
+    }, 100);
   };
 
   return (

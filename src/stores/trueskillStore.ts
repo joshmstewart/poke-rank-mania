@@ -57,6 +57,8 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
             }
           };
           
+          console.log(`[TRUESKILL_STORE_DEBUG] After update - Total ratings: ${Object.keys(newRatings).length}`);
+          
           // Trigger events and cloud sync after state update
           setTimeout(() => {
             get().syncToCloud();
@@ -94,11 +96,16 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
       },
       
       getAllRatings: () => {
-        return get().ratings;
+        const ratings = get().ratings;
+        console.log(`[TRUESKILL_STORE_DEBUG] getAllRatings called - returning ${Object.keys(ratings).length} ratings`);
+        return ratings;
       },
       
       clearAllRatings: () => {
-        console.log(`[TRUESKILL_CLEAR] Clearing all ratings`);
+        // ADD CALL STACK LOGGING
+        console.log(`[TRUESKILL_CLEAR] ===== CLEARING ALL RATINGS =====`);
+        console.log(`[TRUESKILL_CLEAR] Call stack:`, new Error().stack);
+        console.log(`[TRUESKILL_CLEAR] Current ratings count before clear:`, Object.keys(get().ratings).length);
         
         set({ ratings: {}, lastSyncedAt: null });
         
@@ -119,7 +126,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
         }, 100);
       },
       
-      // FIXED: Robust cloud sync with proper error handling and defensive programming
+      // FIXED: Anonymous session handling and robust error handling
       syncToCloud: async () => {
         const state = get();
         
@@ -143,36 +150,47 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
             return;
           }
           
-          // Prepare sync data with explicit type casting for JSONB
-          const syncData = {
-            session_id: user?.id ? null : state.sessionId, // Only set session_id for anonymous users
-            user_id: user?.id || null, // Only set user_id for authenticated users
-            ratings_data: state.ratings as any, // Cast to any for JSONB compatibility
-            last_updated: new Date().toISOString()
-          };
-          
-          console.log('[TRUESKILL_CLOUD] Sync data prepared:', {
-            hasUserId: !!syncData.user_id,
-            hasSessionId: !!syncData.session_id,
-            ratingsCount: Object.keys(state.ratings).length
-          });
-          
-          // Use upsert to handle both insert and update cases
-          const { error: upsertError } = await supabase
-            .from('trueskill_sessions')
-            .upsert([syncData], {
-              onConflict: user?.id ? 'user_id' : 'session_id',
-              ignoreDuplicates: false
-            });
-          
-          if (upsertError) {
-            console.log('[TRUESKILL_CLOUD] Upsert error (keeping local data):', {
-              code: upsertError.code,
-              message: upsertError.message,
-              details: upsertError.details,
-              hint: upsertError.hint
-            });
-            return;
+          // FIXED: Proper anonymous session handling
+          if (user?.id) {
+            // Authenticated user - use user_id, clear session_id
+            console.log('[TRUESKILL_CLOUD] Syncing for authenticated user:', user.id);
+            
+            const { error: upsertError } = await supabase
+              .from('trueskill_sessions')
+              .upsert([{
+                user_id: user.id,
+                session_id: null, // Clear session_id for authenticated users
+                ratings_data: state.ratings as any,
+                last_updated: new Date().toISOString()
+              }], {
+                onConflict: 'user_id',
+                ignoreDuplicates: false
+              });
+            
+            if (upsertError) {
+              console.log('[TRUESKILL_CLOUD] Authenticated user upsert error (keeping local data):', upsertError);
+              return;
+            }
+          } else {
+            // Anonymous user - use session_id, ensure user_id is null
+            console.log('[TRUESKILL_CLOUD] Syncing for anonymous session:', state.sessionId.substring(0, 8) + '...');
+            
+            const { error: upsertError } = await supabase
+              .from('trueskill_sessions')
+              .upsert([{
+                session_id: state.sessionId,
+                user_id: null, // Explicitly null for anonymous users
+                ratings_data: state.ratings as any,
+                last_updated: new Date().toISOString()
+              }], {
+                onConflict: 'session_id',
+                ignoreDuplicates: false
+              });
+            
+            if (upsertError) {
+              console.log('[TRUESKILL_CLOUD] Anonymous session upsert error (keeping local data):', upsertError);
+              return;
+            }
           }
           
           console.log('[TRUESKILL_CLOUD] ✅ Successfully synced to cloud');
@@ -184,7 +202,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
         }
       },
       
-      // FIXED: Robust cloud loading with proper error handling and type guards
+      // FIXED: Proper anonymous session loading
       loadFromCloud: async () => {
         const state = get();
         const localRatingsCount = Object.keys(state.ratings).length;
@@ -206,28 +224,37 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
             return;
           }
           
-          // Build query based on authentication status
-          let query = supabase.from('trueskill_sessions').select('*');
+          let data = null;
+          let selectError = null;
           
           if (user?.id) {
-            // Authenticated user - look for their user_id
-            query = query.eq('user_id', user.id);
-            console.log('[TRUESKILL_CLOUD] Querying for authenticated user:', user.id);
+            // Authenticated user - query by user_id
+            console.log('[TRUESKILL_CLOUD] Loading for authenticated user:', user.id);
+            const result = await supabase
+              .from('trueskill_sessions')
+              .select('*')
+              .eq('user_id', user.id)
+              .is('session_id', null) // Ensure session_id is null for authenticated users
+              .maybeSingle();
+            
+            data = result.data;
+            selectError = result.error;
           } else {
-            // Anonymous user - look for their session_id
-            query = query.eq('session_id', state.sessionId).is('user_id', null);
-            console.log('[TRUESKILL_CLOUD] Querying for anonymous session:', state.sessionId.substring(0, 8) + '...');
+            // Anonymous user - query by session_id
+            console.log('[TRUESKILL_CLOUD] Loading for anonymous session:', state.sessionId.substring(0, 8) + '...');
+            const result = await supabase
+              .from('trueskill_sessions')
+              .select('*')
+              .eq('session_id', state.sessionId)
+              .is('user_id', null) // Ensure user_id is null for anonymous users
+              .maybeSingle();
+            
+            data = result.data;
+            selectError = result.error;
           }
           
-          const { data, error: selectError } = await query.maybeSingle();
-          
           if (selectError) {
-            console.log('[TRUESKILL_CLOUD] Select error (keeping local data):', {
-              code: selectError.code,
-              message: selectError.message,
-              details: selectError.details,
-              hint: selectError.hint
-            });
+            console.log('[TRUESKILL_CLOUD] Select error (keeping local data):', selectError);
             set({ isLoading: false });
             return;
           }
