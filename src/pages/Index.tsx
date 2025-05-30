@@ -77,32 +77,41 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Compact Header Bar */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="container max-w-7xl mx-auto px-4 py-2">
+      {/* Application Header */}
+      <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
+        <div className="container max-w-7xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Logo />
-              <div className="flex items-center gap-3">
+            {/* Left side - Logo and current mode info */}
+            <div className="flex items-center gap-6">
+              <div className="h-12">
+                <img 
+                  src="/lovable-uploads/008c1959-1f2a-4416-9d73-9f706e384331.png" 
+                  alt="PokeRank Mania" 
+                  className="h-full w-auto object-contain"
+                />
+              </div>
+              
+              <div className="hidden sm:flex items-center gap-3 pl-6 border-l border-gray-200">
                 {mode === "battle" ? (
-                  <Trophy className="h-5 w-5 text-primary" />
+                  <Trophy className="h-5 w-5 text-blue-600" />
                 ) : (
-                  <DraftingCompass className="h-5 w-5 text-primary" />
+                  <DraftingCompass className="h-5 w-5 text-green-600" />
                 )}
                 <div>
-                  <h1 className="text-lg font-bold leading-none">
+                  <h1 className="text-lg font-semibold text-gray-900 leading-none">
                     {mode === "battle" ? "Battle Mode" : "Manual Ranking"}
                   </h1>
-                  <p className="text-xs text-muted-foreground mt-0.5">
+                  <p className="text-sm text-gray-600 mt-0.5">
                     {mode === "battle" 
-                      ? "Compare Pokémon head-to-head to build your ranking" 
-                      : "Drag and drop to manually create your ranking"}
+                      ? "Compare Pokémon head-to-head" 
+                      : "Drag and drop to rank"}
                   </p>
                 </div>
               </div>
             </div>
             
-            <div className="flex items-center gap-2">
+            {/* Right side - Controls */}
+            <div className="flex items-center gap-3">
               {/* Mode Switcher */}
               <ModeSwitcher currentMode={mode} onModeChange={handleModeChange} />
               
@@ -112,7 +121,7 @@ const Index = () => {
                   <Dialog open={imageSettingsOpen} onOpenChange={setImageSettingsOpen}>
                     <TooltipTrigger asChild>
                       <DialogTrigger asChild>
-                        <Button variant="outline" size="sm" className="flex gap-2 items-center h-8">
+                        <Button variant="outline" size="sm" className="flex gap-2 items-center h-9">
                           <div className="flex items-center justify-center w-4 h-4 relative">
                             {!previewLoaded && (
                               <Image className="w-3 h-3 text-gray-400" />
@@ -127,12 +136,12 @@ const Index = () => {
                               />
                             )}
                           </div>
-                          <span className="hidden sm:inline text-xs">{getCurrentModeText()}</span>
+                          <span className="hidden sm:inline text-sm">{getCurrentModeText()}</span>
                         </Button>
                       </DialogTrigger>
                     </TooltipTrigger>
                     <TooltipContent>
-                      Choose between Pokémon images or TCG cards for battles
+                      Choose between Pokémon images or TCG cards
                     </TooltipContent>
                     <DialogContent className="max-w-2xl">
                       <DialogHeader>
@@ -156,17 +165,17 @@ const Index = () => {
                 </Tooltip>
               </TooltipProvider>
               
-              {/* Combined Save Progress / Session Manager */}
+              {/* Save Progress */}
               <AppSessionManager />
             </div>
           </div>
         </div>
-      </div>
+      </header>
 
       {/* Main Content */}
-      <div className="container max-w-7xl mx-auto py-4">
+      <main className="container max-w-7xl mx-auto py-6">
         {mode === "rank" ? <PokemonRanker /> : <BattleMode />}
-      </div>
+      </main>
     </div>
   );
 };
