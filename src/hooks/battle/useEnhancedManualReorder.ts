@@ -16,8 +16,9 @@ export const useEnhancedManualReorder = (
     sourceIndex: number, 
     destinationIndex: number
   ) => {
-    console.log(`🔧 [ENHANCED_REORDER] Starting enhanced manual reorder for Pokemon ${draggedPokemonId}`);
-    console.log(`🔧 [ENHANCED_REORDER] Moving from index ${sourceIndex} to ${destinationIndex}`);
+    console.log(`🔧🔧🔧 [ENHANCED_REORDER_TRACE] ===== STARTING ENHANCED MANUAL REORDER =====`);
+    console.log(`🔧🔧🔧 [ENHANCED_REORDER_TRACE] Pokemon ID: ${draggedPokemonId}`);
+    console.log(`🔧🔧🔧 [ENHANCED_REORDER_TRACE] Source Index: ${sourceIndex} → Destination Index: ${destinationIndex}`);
 
     // Create a working copy of the rankings
     const workingRankings = [...finalRankings];
@@ -25,9 +26,11 @@ export const useEnhancedManualReorder = (
     // Find the dragged Pokemon in the current rankings
     const draggedPokemon = workingRankings.find(p => p.id === draggedPokemonId);
     if (!draggedPokemon) {
-      console.error(`🔧 [ENHANCED_REORDER] Pokemon ${draggedPokemonId} not found in rankings`);
+      console.error(`🔧🔧🔧 [ENHANCED_REORDER_ERROR] Pokemon ${draggedPokemonId} not found in rankings`);
       return;
     }
+
+    console.log(`🔧🔧🔧 [ENHANCED_REORDER_TRACE] Found dragged Pokemon: ${draggedPokemon.name}`);
 
     // Physically move the Pokemon to the new position
     const [movedPokemon] = workingRankings.splice(sourceIndex, 1);
@@ -36,13 +39,15 @@ export const useEnhancedManualReorder = (
     const new_index = destinationIndex;
     const N = workingRankings.length;
 
-    console.log(`🔧 [ENHANCED_REORDER] New position: ${new_index} out of ${N} total Pokemon`);
+    console.log(`🔧🔧🔧 [ENHANCED_REORDER_TRACE] New position: ${new_index} out of ${N} total Pokemon`);
 
     // Ensure the dragged Pokemon has a valid TrueSkill rating
     if (!draggedPokemon.rating) {
       draggedPokemon.rating = new Rating();
+      console.log(`🔧🔧🔧 [ENHANCED_REORDER_TRACE] Created new Rating for ${draggedPokemon.name}`);
     } else if (!(draggedPokemon.rating instanceof Rating)) {
       draggedPokemon.rating = new Rating(draggedPokemon.rating.mu, draggedPokemon.rating.sigma);
+      console.log(`🔧🔧🔧 [ENHANCED_REORDER_TRACE] Converted rating object to Rating instance for ${draggedPokemon.name}`);
     }
 
     // Identify opponents and process implied battles
@@ -51,6 +56,8 @@ export const useEnhancedManualReorder = (
       draggedWins: boolean;
       battleType: string;
     }> = [];
+
+    console.log(`🔧🔧🔧 [ENHANCED_REORDER_TRACE] ===== IDENTIFYING IMPLIED BATTLES =====`);
 
     // P_above_1: Pokemon at new_index - 1 (dragged loses)
     if (new_index > 0) {
@@ -61,6 +68,7 @@ export const useEnhancedManualReorder = (
           draggedWins: false,
           battleType: "P_above_1"
         });
+        console.log(`🔧🔧🔧 [ENHANCED_REORDER_TRACE] Added P_above_1 battle: ${draggedPokemon.name} LOSES to ${p_above_1.name}`);
       }
     }
 
@@ -73,6 +81,7 @@ export const useEnhancedManualReorder = (
           draggedWins: false,
           battleType: "P_above_2"
         });
+        console.log(`🔧🔧🔧 [ENHANCED_REORDER_TRACE] Added P_above_2 battle: ${draggedPokemon.name} LOSES to ${p_above_2.name}`);
       }
     }
 
@@ -85,6 +94,7 @@ export const useEnhancedManualReorder = (
           draggedWins: true,
           battleType: "P_below_1"
         });
+        console.log(`🔧🔧🔧 [ENHANCED_REORDER_TRACE] Added P_below_1 battle: ${draggedPokemon.name} WINS against ${p_below_1.name}`);
       }
     }
 
@@ -97,23 +107,28 @@ export const useEnhancedManualReorder = (
           draggedWins: true,
           battleType: "P_below_2"
         });
+        console.log(`🔧🔧🔧 [ENHANCED_REORDER_TRACE] Added P_below_2 battle: ${draggedPokemon.name} WINS against ${p_below_2.name}`);
       }
     }
 
-    console.log(`🔧 [ENHANCED_REORDER] Processing ${impliedBattles.length} implied battles:`);
+    console.log(`🔧🔧🔧 [ENHANCED_REORDER_TRACE] ===== PROCESSING ${impliedBattles.length} IMPLIED BATTLES =====`);
 
     // Process each implied battle with TrueSkill updates
-    impliedBattles.forEach(({ opponent, draggedWins, battleType }) => {
+    impliedBattles.forEach(({ opponent, draggedWins, battleType }, index) => {
+      console.log(`🔧🔧🔧 [ENHANCED_REORDER_TRACE] --- Battle ${index + 1}/${impliedBattles.length}: ${battleType} ---`);
+      
       // Ensure opponent has a valid TrueSkill rating
       if (!opponent.rating) {
         opponent.rating = new Rating();
+        console.log(`🔧🔧🔧 [ENHANCED_REORDER_TRACE] Created new Rating for opponent ${opponent.name}`);
       } else if (!(opponent.rating instanceof Rating)) {
         opponent.rating = new Rating(opponent.rating.mu, opponent.rating.sigma);
+        console.log(`🔧🔧🔧 [ENHANCED_REORDER_TRACE] Converted rating object to Rating instance for opponent ${opponent.name}`);
       }
 
-      console.log(`🔧 [ENHANCED_REORDER] ${battleType}: ${draggedPokemon.name} vs ${opponent.name} - ${draggedWins ? 'dragged wins' : 'opponent wins'}`);
-      console.log(`🔧 [ENHANCED_REORDER] Before: ${draggedPokemon.name} μ=${draggedPokemon.rating.mu.toFixed(2)} σ=${draggedPokemon.rating.sigma.toFixed(2)}`);
-      console.log(`🔧 [ENHANCED_REORDER] Before: ${opponent.name} μ=${opponent.rating.mu.toFixed(2)} σ=${opponent.rating.sigma.toFixed(2)}`);
+      console.log(`🔧🔧🔧 [ENHANCED_REORDER_TRACE] Battle: ${draggedPokemon.name} vs ${opponent.name} - ${draggedWins ? 'dragged wins' : 'opponent wins'}`);
+      console.log(`🔧🔧🔧 [ENHANCED_REORDER_TRACE] BEFORE - ${draggedPokemon.name}: μ=${draggedPokemon.rating.mu.toFixed(3)} σ=${draggedPokemon.rating.sigma.toFixed(3)}`);
+      console.log(`🔧🔧🔧 [ENHANCED_REORDER_TRACE] BEFORE - ${opponent.name}: μ=${opponent.rating.mu.toFixed(3)} σ=${opponent.rating.sigma.toFixed(3)}`);
 
       // Apply TrueSkill rating update
       let newDraggedRating: Rating;
@@ -129,23 +144,37 @@ export const useEnhancedManualReorder = (
       draggedPokemon.rating = newDraggedRating;
       opponent.rating = newOpponentRating;
 
-      console.log(`🔧 [ENHANCED_REORDER] After: ${draggedPokemon.name} μ=${draggedPokemon.rating.mu.toFixed(2)} σ=${draggedPokemon.rating.sigma.toFixed(2)}`);
-      console.log(`🔧 [ENHANCED_REORDER] After: ${opponent.name} μ=${opponent.rating.mu.toFixed(2)} σ=${opponent.rating.sigma.toFixed(2)}`);
+      console.log(`🔧🔧🔧 [ENHANCED_REORDER_TRACE] AFTER  - ${draggedPokemon.name}: μ=${draggedPokemon.rating.mu.toFixed(3)} σ=${draggedPokemon.rating.sigma.toFixed(3)}`);
+      console.log(`🔧🔧🔧 [ENHANCED_REORDER_TRACE] AFTER  - ${opponent.name}: μ=${opponent.rating.mu.toFixed(3)} σ=${opponent.rating.sigma.toFixed(3)}`);
+      
+      const draggedChange = newDraggedRating.mu - (index === 0 ? (draggedPokemon.rating === newDraggedRating ? 25 : draggedPokemon.rating.mu) : 25);
+      const opponentChange = newOpponentRating.mu - (opponent.rating === newOpponentRating ? 25 : opponent.rating.mu);
+      console.log(`🔧🔧🔧 [ENHANCED_REORDER_TRACE] μ CHANGES - ${draggedPokemon.name}: ${draggedChange > 0 ? '+' : ''}${draggedChange.toFixed(3)}, ${opponent.name}: ${opponentChange > 0 ? '+' : ''}${opponentChange.toFixed(3)}`);
     });
+
+    console.log(`🔧🔧🔧 [ENHANCED_REORDER_TRACE] ===== RECALCULATING SCORES =====`);
 
     // Recalculate scores based on updated ratings
     workingRankings.forEach(pokemon => {
       if (pokemon.rating) {
+        const oldScore = pokemon.score;
         const conservativeEstimate = pokemon.rating.mu - 3 * pokemon.rating.sigma;
         pokemon.score = conservativeEstimate;
         pokemon.confidence = Math.max(0, Math.min(100, 100 * (1 - (pokemon.rating.sigma / 8.33))));
+        
+        if (pokemon.id === draggedPokemonId || impliedBattles.some(b => b.opponent.id === pokemon.id)) {
+          console.log(`🔧🔧🔧 [ENHANCED_REORDER_TRACE] Score update - ${pokemon.name}: ${oldScore?.toFixed(3)} → ${pokemon.score.toFixed(3)} (confidence: ${pokemon.confidence.toFixed(1)}%)`);
+        }
       }
     });
+
+    console.log(`🔧🔧🔧 [ENHANCED_REORDER_TRACE] ===== RE-SORTING RANKINGS =====`);
 
     // Re-sort the rankings based on updated scores
     workingRankings.sort((a, b) => b.score - a.score);
 
-    console.log(`🔧 [ENHANCED_REORDER] Completed ${impliedBattles.length} TrueSkill updates for ${draggedPokemon.name}`);
+    console.log(`🔧🔧🔧 [ENHANCED_REORDER_TRACE] ===== ENHANCED REORDER COMPLETE =====`);
+    console.log(`🔧🔧🔧 [ENHANCED_REORDER_TRACE] Successfully processed ${impliedBattles.length} TrueSkill updates for ${draggedPokemon.name}`);
 
     // Update the rankings
     onRankingsUpdate(workingRankings);

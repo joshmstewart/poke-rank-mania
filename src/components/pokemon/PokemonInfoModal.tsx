@@ -108,11 +108,11 @@ const PokemonInfoModal: React.FC<PokemonInfoModalProps> = ({
         )}
       </DialogTrigger>
       <DialogContent 
-        className="max-w-4xl max-h-[90vh] overflow-y-auto z-[100]" 
+        className="max-w-4xl max-h-[90vh] overflow-y-auto"
         onClick={handleDialogClick}
         data-radix-dialog-content="true"
         style={{ 
-          zIndex: 100,
+          zIndex: 9999,
           position: 'fixed',
           top: '50%',
           left: '50%',

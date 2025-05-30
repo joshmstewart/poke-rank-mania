@@ -14,10 +14,13 @@ const TCGCardInteractions: React.FC<TCGCardInteractionsProps> = ({
   isProcessing,
   showFallback = false
 }) => {
+  // Only show hover feedback if we're NOT in fallback mode and all other conditions are met
+  const shouldShowHoverFeedback = isHovered && !isSelected && !isProcessing && !showFallback;
+
   return (
     <>
-      {/* Selection feedback overlay - don't show for fallback cards */}
-      {isHovered && !isSelected && !isProcessing && !showFallback && (
+      {/* Selection feedback overlay - only show if not in fallback mode */}
+      {shouldShowHoverFeedback && (
         <div className="absolute inset-0 bg-blue-500 bg-opacity-10 rounded-lg flex items-center justify-center">
           <div className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-medium shadow-lg">
             Choose this Pokémon
