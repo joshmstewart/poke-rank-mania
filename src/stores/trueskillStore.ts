@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Rating } from 'ts-trueskill';
@@ -94,23 +95,38 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
       },
       
       getRating: (pokemonId: number) => {
-        const storedRating = get().ratings[pokemonId];
+        const state = get();
+        console.log(`🔍 [TRUESKILL_GET_RATING] Getting rating for Pokemon ${pokemonId} - store has ${Object.keys(state.ratings).length} total ratings`);
+        const storedRating = state.ratings[pokemonId];
         if (storedRating) {
+          console.log(`✅ [TRUESKILL_GET_RATING] Found rating for Pokemon ${pokemonId}: μ=${storedRating.mu.toFixed(2)}, σ=${storedRating.sigma.toFixed(2)}`);
           return new Rating(storedRating.mu, storedRating.sigma);
         }
+        console.log(`❌ [TRUESKILL_GET_RATING] No rating found for Pokemon ${pokemonId}`);
         return new Rating();
       },
       
       hasRating: (pokemonId: number) => {
-        return pokemonId in get().ratings;
+        const hasIt = pokemonId in get().ratings;
+        console.log(`🔍 [TRUESKILL_HAS_RATING] Pokemon ${pokemonId} has rating: ${hasIt}`);
+        return hasIt;
       },
       
       getAllRatings: () => {
-        return get().ratings;
+        const ratings = get().ratings;
+        console.log(`🔍 [TRUESKILL_GET_ALL] Returning ${Object.keys(ratings).length} ratings`);
+        return ratings;
       },
       
       clearAllRatings: () => {
-        console.log('[TRUESKILL_LOCAL] Clearing all ratings');
+        // CRITICAL DEBUG: Log who is calling clearAllRatings
+        console.error(`🚨🚨🚨 [TRUESKILL_CLEAR_DEBUG] clearAllRatings() called!`);
+        console.error(`🚨 [TRUESKILL_CLEAR_DEBUG] Call stack:`, new Error().stack);
+        
+        const currentRatings = get().ratings;
+        const ratingsCount = Object.keys(currentRatings).length;
+        console.error(`🚨 [TRUESKILL_CLEAR_DEBUG] About to clear ${ratingsCount} ratings`);
+        
         set({ ratings: {}, lastSyncedAt: null });
         
         // CRITICAL FIX: Dispatch clear events for synchronization

@@ -25,17 +25,6 @@ const Index = () => {
     console.log(`🔍 [INDEX_MODE_DEBUG] Store has ${Object.keys(ratings).length} ratings after mode change to ${mode}`);
   }, [mode, getAllRatings]);
 
-  // Monitor store state continuously
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const ratings = getAllRatings();
-      const ratingsCount = Object.keys(ratings).length;
-      console.log(`🔍 [INDEX_MONITOR] TrueSkill store has ${ratingsCount} ratings (current mode: ${mode})`);
-    }, 3000);
-    
-    return () => clearInterval(interval);
-  }, [getAllRatings, mode]);
-
   // Handle mode change
   const handleModeChange = (newMode: "rank" | "battle") => {
     console.log(`🔄 [INDEX_DEBUG] handleModeChange called: ${mode} -> ${newMode}`);
@@ -53,6 +42,11 @@ const Index = () => {
       const ratingsAfterChange = getAllRatings();
       console.log(`🔍 [INDEX_DEBUG] Store has ${Object.keys(ratingsAfterChange).length} ratings AFTER mode change`);
       console.error(`🚨 [INDEX_DEBUG] Mode change completed - checking if store was cleared`);
+      
+      if (Object.keys(ratingsBeforeChange).length !== Object.keys(ratingsAfterChange).length) {
+        console.error(`🚨🚨🚨 [INDEX_DEBUG] RATINGS LOST DURING MODE CHANGE!`);
+        console.error(`🚨 [INDEX_DEBUG] Before: ${Object.keys(ratingsBeforeChange).length}, After: ${Object.keys(ratingsAfterChange).length}`);
+      }
     }, 100);
   };
 

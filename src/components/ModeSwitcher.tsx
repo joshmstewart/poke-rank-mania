@@ -7,6 +7,7 @@ import {
   TooltipProvider,
   TooltipTrigger 
 } from "@/components/ui/tooltip";
+import { useTrueSkillStore } from "@/stores/trueskillStore";
 
 interface ModeSwitcherProps {
   currentMode: "rank" | "battle";
@@ -14,11 +15,28 @@ interface ModeSwitcherProps {
 }
 
 const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ currentMode, onModeChange }) => {
+  const { getAllRatings } = useTrueSkillStore();
+
   const handleModeChange = (mode: "rank" | "battle") => {
     console.log(`🔄 [MODE_SWITCH_DEBUG] Switching from ${currentMode} to ${mode}`);
-    console.error(`🚨 [MODE_SWITCH_DEBUG] Mode change from ${currentMode} to ${mode} - checking if this triggers rating clear`);
-    console.error(`🚨 [MODE_SWITCH_DEBUG] Stack trace:`, new Error().stack);
+    
+    // CRITICAL DEBUG: Check store before mode change
+    const ratingsBeforeSwitch = getAllRatings();
+    console.error(`🚨 [MODE_SWITCH_CRITICAL] BEFORE switch to ${mode}: Store has ${Object.keys(ratingsBeforeSwitch).length} ratings`);
+    console.error(`🚨 [MODE_SWITCH_CRITICAL] Call stack at mode switch:`, new Error().stack);
+    
     onModeChange(mode);
+    
+    // CRITICAL DEBUG: Check store after mode change (with delay)
+    setTimeout(() => {
+      const ratingsAfterSwitch = getAllRatings();
+      console.error(`🚨 [MODE_SWITCH_CRITICAL] AFTER switch to ${mode}: Store has ${Object.keys(ratingsAfterSwitch).length} ratings`);
+      
+      if (Object.keys(ratingsBeforeSwitch).length !== Object.keys(ratingsAfterSwitch).length) {
+        console.error(`🚨🚨🚨 [MODE_SWITCH_CRITICAL] RATING COUNT CHANGED DURING MODE SWITCH!`);
+        console.error(`🚨 [MODE_SWITCH_CRITICAL] Before: ${Object.keys(ratingsBeforeSwitch).length}, After: ${Object.keys(ratingsAfterSwitch).length}`);
+      }
+    }, 100);
   };
 
   return (

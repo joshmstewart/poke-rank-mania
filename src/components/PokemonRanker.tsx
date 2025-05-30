@@ -1,3 +1,4 @@
+
 import React, { useEffect } from "react";
 import { usePokemonRanker } from "@/hooks/usePokemonRanker";
 import { RankedPokemon } from "@/services/pokemon";
@@ -38,68 +39,79 @@ const PokemonRanker = () => {
   const { clearAllRatings, getAllRatings, getRating } = useTrueSkillStore();
   const { pokemonLookupMap } = usePokemonContext();
 
-  // SIMPLIFIED SYNC: Direct approach to load TrueSkill data when switching to Manual mode
+  // DEFENSIVE SYNC: More robust approach to loading TrueSkill data
   const syncWithTrueSkillStore = React.useCallback(async () => {
-    console.log(`🔄 [MANUAL_SYNC_DIRECT] ===== STARTING SIMPLIFIED SYNC =====`);
+    console.log(`🔄 [MANUAL_SYNC_ENHANCED] ===== STARTING ENHANCED SYNC =====`);
     
-    // Get all TrueSkill ratings
+    // Get all TrueSkill ratings with extensive logging
     const allRatings = getAllRatings();
     const ratedPokemonIds = Object.keys(allRatings).map(Number);
     
-    console.log(`🔄 [MANUAL_SYNC_DIRECT] Found ${ratedPokemonIds.length} Pokemon with TrueSkill ratings`);
+    console.log(`🔄 [MANUAL_SYNC_ENHANCED] TrueSkill store accessed`);
+    console.log(`🔄 [MANUAL_SYNC_ENHANCED] Raw ratings object:`, allRatings);
+    console.log(`🔄 [MANUAL_SYNC_ENHANCED] Found ${ratedPokemonIds.length} Pokemon with TrueSkill ratings:`, ratedPokemonIds);
     
     if (ratedPokemonIds.length === 0) {
-      console.log(`🔄 [MANUAL_SYNC_DIRECT] No TrueSkill ratings found - clearing Manual mode lists`);
+      console.log(`🔄 [MANUAL_SYNC_ENHANCED] No TrueSkill ratings found - clearing Manual mode lists`);
       setRankedPokemon([]);
-      // Keep existing available Pokemon if any, otherwise load will handle it
       return;
     }
 
-    // Get Pokemon data - try context first, then current Manual mode data
+    // Get Pokemon data - prioritize context, fallback to current Manual mode data
     let allAvailablePokemon = Array.from(pokemonLookupMap.values());
     
     if (allAvailablePokemon.length === 0) {
-      // Fallback: use current Manual mode Pokemon data
+      console.log(`🔄 [MANUAL_SYNC_ENHANCED] Context empty - using Manual mode fallback`);
       const currentPokemon = [...availablePokemon, ...rankedPokemon];
       const pokemonMap = new Map();
       currentPokemon.forEach(pokemon => pokemonMap.set(pokemon.id, pokemon));
       allAvailablePokemon = Array.from(pokemonMap.values());
-      console.log(`🔄 [MANUAL_SYNC_DIRECT] Using Manual mode fallback: ${allAvailablePokemon.length} Pokemon`);
+      console.log(`🔄 [MANUAL_SYNC_ENHANCED] Manual mode fallback: ${allAvailablePokemon.length} Pokemon`);
     } else {
-      console.log(`🔄 [MANUAL_SYNC_DIRECT] Using context data: ${allAvailablePokemon.length} Pokemon`);
+      console.log(`🔄 [MANUAL_SYNC_ENHANCED] Using context data: ${allAvailablePokemon.length} Pokemon`);
     }
 
     if (allAvailablePokemon.length === 0) {
-      console.log(`🔄 [MANUAL_SYNC_DIRECT] No Pokemon data available - sync will retry when data loads`);
+      console.log(`🔄 [MANUAL_SYNC_ENHANCED] No Pokemon data available - will retry when data loads`);
       return;
     }
 
-    // Separate Pokemon into rated and unrated
+    // Convert TrueSkill ratings to RankedPokemon with detailed logging
     const convertedRankings: RankedPokemon[] = [];
     const unratedPokemon: RankedPokemon[] = [];
 
+    console.log(`🔄 [MANUAL_SYNC_ENHANCED] Starting conversion for ${allAvailablePokemon.length} total Pokemon`);
+
     allAvailablePokemon.forEach(pokemon => {
       if (ratedPokemonIds.includes(pokemon.id)) {
-        const trueskillRating = getRating(pokemon.id);
-        const trueskillData = allRatings[pokemon.id];
-        
-        // Calculate conservative score and confidence
-        const conservativeEstimate = trueskillRating.mu - 3 * trueskillRating.sigma;
-        const normalizedConfidence = Math.max(0, Math.min(100, 100 * (1 - (trueskillRating.sigma / 8.33))));
+        try {
+          const trueskillRating = getRating(pokemon.id);
+          const trueskillData = allRatings[pokemon.id];
+          
+          console.log(`🔄 [MANUAL_SYNC_ENHANCED] Processing rated Pokemon ${pokemon.id} (${pokemon.name})`);
+          console.log(`🔄 [MANUAL_SYNC_ENHANCED] TrueSkill data:`, trueskillData);
+          console.log(`🔄 [MANUAL_SYNC_ENHANCED] TrueSkill rating: μ=${trueskillRating.mu}, σ=${trueskillRating.sigma}`);
+          
+          // Calculate conservative score and confidence
+          const conservativeEstimate = trueskillRating.mu - 3 * trueskillRating.sigma;
+          const normalizedConfidence = Math.max(0, Math.min(100, 100 * (1 - (trueskillRating.sigma / 8.33))));
 
-        const rankedPokemon: RankedPokemon = {
-          ...pokemon,
-          score: conservativeEstimate,
-          count: trueskillData.battleCount || 0,
-          confidence: normalizedConfidence,
-          wins: 0, // Manual mode doesn't track individual wins/losses
-          losses: 0,
-          winRate: 0,
-          rating: trueskillRating
-        };
+          const rankedPokemon: RankedPokemon = {
+            ...pokemon,
+            score: conservativeEstimate,
+            count: trueskillData.battleCount || 0,
+            confidence: normalizedConfidence,
+            wins: 0, // Manual mode doesn't track individual wins/losses
+            losses: 0,
+            winRate: 0,
+            rating: trueskillRating
+          };
 
-        convertedRankings.push(rankedPokemon);
-        console.log(`🔄 [MANUAL_SYNC_DIRECT] ✅ ${pokemon.name}: score=${conservativeEstimate.toFixed(2)}, confidence=${normalizedConfidence.toFixed(1)}%`);
+          convertedRankings.push(rankedPokemon);
+          console.log(`🔄 [MANUAL_SYNC_ENHANCED] ✅ Converted ${pokemon.name}: score=${conservativeEstimate.toFixed(2)}, confidence=${normalizedConfidence.toFixed(1)}%, battles=${trueskillData.battleCount}`);
+        } catch (error) {
+          console.error(`🔄 [MANUAL_SYNC_ENHANCED] ❌ Error processing Pokemon ${pokemon.id}:`, error);
+        }
       } else {
         const unratedRanked: RankedPokemon = {
           ...pokemon,
@@ -117,42 +129,78 @@ const PokemonRanker = () => {
     // Sort ranked Pokemon by score descending
     convertedRankings.sort((a, b) => b.score - a.score);
 
-    console.log(`🔄 [MANUAL_SYNC_DIRECT] ✅ Final result: ${convertedRankings.length} ranked, ${unratedPokemon.length} unrated`);
+    console.log(`🔄 [MANUAL_SYNC_ENHANCED] ✅ Conversion complete:`);
+    console.log(`🔄 [MANUAL_SYNC_ENHANCED] - ${convertedRankings.length} ranked Pokemon`);
+    console.log(`🔄 [MANUAL_SYNC_ENHANCED] - ${unratedPokemon.length} unrated Pokemon`);
+    console.log(`🔄 [MANUAL_SYNC_ENHANCED] Top 5 ranked:`, convertedRankings.slice(0, 5).map(p => `${p.name}(${p.score.toFixed(2)})`));
     
     // Update Manual mode state
     setRankedPokemon(convertedRankings);
     setAvailablePokemon(unratedPokemon);
+    
+    console.log(`🔄 [MANUAL_SYNC_ENHANCED] State updated successfully`);
   }, [getAllRatings, getRating, pokemonLookupMap, availablePokemon, rankedPokemon, setRankedPokemon, setAvailablePokemon]);
 
-  // CRITICAL: Sync when component mounts (user switches to Manual mode)
+  // CRITICAL: Enhanced mount effect with more defensive checks
   useEffect(() => {
-    console.log(`🔄 [MANUAL_SYNC_DIRECT] Component mounted - checking for TrueSkill data`);
-    const ratings = getAllRatings();
-    if (Object.keys(ratings).length > 0) {
-      console.log(`🔄 [MANUAL_SYNC_DIRECT] Found ${Object.keys(ratings).length} ratings on mount - syncing immediately`);
-      syncWithTrueSkillStore();
-    } else {
-      console.log(`🔄 [MANUAL_SYNC_DIRECT] No ratings found on mount`);
-    }
+    console.log(`🔄 [MANUAL_MOUNT_ENHANCED] PokemonRanker mounted - performing enhanced sync check`);
+    
+    // Multiple sync attempts with delays to handle timing issues
+    const performMountSync = async () => {
+      console.log(`🔄 [MANUAL_MOUNT_ENHANCED] Attempt 1: Immediate sync`);
+      await syncWithTrueSkillStore();
+      
+      // Second attempt after short delay in case store is still loading
+      setTimeout(async () => {
+        console.log(`🔄 [MANUAL_MOUNT_ENHANCED] Attempt 2: Delayed sync`);
+        const ratings = getAllRatings();
+        if (Object.keys(ratings).length > 0) {
+          console.log(`🔄 [MANUAL_MOUNT_ENHANCED] Found ${Object.keys(ratings).length} ratings on delayed check`);
+          await syncWithTrueSkillStore();
+        } else {
+          console.log(`🔄 [MANUAL_MOUNT_ENHANCED] Still no ratings on delayed check`);
+        }
+      }, 500);
+      
+      // Third attempt after longer delay
+      setTimeout(async () => {
+        console.log(`🔄 [MANUAL_MOUNT_ENHANCED] Attempt 3: Extended delay sync`);
+        const ratings = getAllRatings();
+        if (Object.keys(ratings).length > 0) {
+          console.log(`🔄 [MANUAL_MOUNT_ENHANCED] Found ${Object.keys(ratings).length} ratings on extended check`);
+          await syncWithTrueSkillStore();
+        } else {
+          console.log(`🔄 [MANUAL_MOUNT_ENHANCED] No ratings found after extended delay`);
+        }
+      }, 1000);
+    };
+    
+    performMountSync();
   }, []); // Only run on mount
 
-  // CRITICAL: Sync when TrueSkill store updates (Battle mode completed)
+  // CRITICAL: Enhanced event listeners for TrueSkill updates
   useEffect(() => {
-    const handleTrueSkillUpdate = (event: CustomEvent) => {
-      console.log(`🔄 [MANUAL_SYNC_DIRECT] TrueSkill store updated - event: ${event.type}`);
-      // Small delay to ensure store is fully updated
-      setTimeout(() => {
-        syncWithTrueSkillStore();
-      }, 100);
+    const handleTrueSkillUpdate = async (event: CustomEvent) => {
+      console.log(`🔄 [MANUAL_EVENT_ENHANCED] TrueSkill update event: ${event.type}`, event.detail);
+      
+      // Wait a bit to ensure store is fully updated
+      setTimeout(async () => {
+        const ratings = getAllRatings();
+        console.log(`🔄 [MANUAL_EVENT_ENHANCED] Store check after event: ${Object.keys(ratings).length} ratings`);
+        if (Object.keys(ratings).length > 0) {
+          await syncWithTrueSkillStore();
+        } else {
+          console.log(`🔄 [MANUAL_EVENT_ENHANCED] No ratings found after event - possible clearing`);
+        }
+      }, 150);
     };
 
     const handleTrueSkillCleared = () => {
-      console.log(`🔄 [MANUAL_SYNC_DIRECT] TrueSkill store cleared - resetting Manual mode`);
+      console.log(`🔄 [MANUAL_EVENT_ENHANCED] TrueSkill store cleared - resetting Manual mode`);
       setRankedPokemon([]);
-      // Don't clear available Pokemon - let normal loading handle this
     };
 
-    // Listen for TrueSkill events
+    // Listen for all TrueSkill events
     document.addEventListener('trueskill-updated', handleTrueSkillUpdate as EventListener);
     document.addEventListener('trueskill-store-updated', handleTrueSkillUpdate as EventListener);
     document.addEventListener('trueskill-store-loaded', handleTrueSkillUpdate as EventListener);
@@ -164,7 +212,7 @@ const PokemonRanker = () => {
       document.removeEventListener('trueskill-store-loaded', handleTrueSkillUpdate as EventListener);
       document.removeEventListener('trueskill-store-cleared', handleTrueSkillCleared);
     };
-  }, [syncWithTrueSkillStore]);
+  }, [syncWithTrueSkillStore, getAllRatings]);
 
   // Convert rankedPokemon to ensure proper RankedPokemon type
   const typedRankedPokemon: RankedPokemon[] = rankedPokemon.map(pokemon => {
