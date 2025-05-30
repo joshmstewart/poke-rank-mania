@@ -37,34 +37,33 @@ export const useBattleStateMilestoneEvents = ({
   setBattleResults
 }: MilestoneEventHookProps) => {
 
-  // Enhanced process battle result function with milestone handling
+  // Simplified process battle result function - no local rating calculations
   const originalProcessBattleResult = useCallback((
     selectedPokemonIds: number[],
     currentBattlePokemon: Pokemon[],
     battleType: BattleType,
     selectedGeneration: number
   ) => {
-    console.log(`🚨🚨🚨 [CORE_BATTLE_PROCESSING_MEGA_DEBUG] ===== CORE PROCESSING BATTLE RESULT START =====`);
-    console.log(`🚨🚨🚨 [CORE_BATTLE_PROCESSING_MEGA_DEBUG] Input data:`);
-    console.log(`🚨🚨🚨 [CORE_BATTLE_PROCESSING_MEGA_DEBUG] - selectedPokemonIds:`, selectedPokemonIds);
-    console.log(`🚨🚨🚨 [CORE_BATTLE_PROCESSING_MEGA_DEBUG] - currentBattlePokemon:`, currentBattlePokemon.map(p => `${p.name} (${p.id})`));
-    console.log(`🚨🚨🚨 [CORE_BATTLE_PROCESSING_MEGA_DEBUG] - battleType: ${battleType}`);
-    console.log(`🚨🚨🚨 [CORE_BATTLE_PROCESSING_MEGA_DEBUG] - CURRENT battles completed BEFORE increment: ${battlesCompleted}`);
+    console.log(`[CENTRALIZED_MILESTONE] Processing battle result - all ratings handled by centralized store`);
+    console.log(`[CENTRALIZED_MILESTONE] Selected Pokemon: ${selectedPokemonIds}`);
+    console.log(`[CENTRALIZED_MILESTONE] Current battles completed: ${battlesCompleted}`);
 
+    // Store battle history for UI display (not for rating calculations)
     const selected = selectedPokemonIds.sort((a, b) => a - b);
     setBattleHistory(prev => {
       const newHistory = [...prev, { battle: currentBattlePokemon, selected }];
-      console.log(`🚨🚨🚨 [CORE_BATTLE_PROCESSING_MEGA_DEBUG] Updated battle history length: ${newHistory.length}`);
+      console.log(`[CENTRALIZED_MILESTONE] Updated battle history length: ${newHistory.length}`);
       return newHistory;
     });
 
+    // Increment battle counter
     const newBattlesCompleted = battlesCompleted + 1;
-    console.log(`🚨🚨🚨 [CORE_BATTLE_PROCESSING_MEGA_DEBUG] NEW battles completed AFTER increment: ${newBattlesCompleted}`);
-    console.log(`🚨🚨🚨 [CORE_BATTLE_PROCESSING_MEGA_DEBUG] Available milestones for checking: ${milestones.join(', ')}`);
+    console.log(`[CENTRALIZED_MILESTONE] New battles completed: ${newBattlesCompleted}`);
     
     setBattlesCompleted(newBattlesCompleted);
     localStorage.setItem('pokemon-battle-count', String(newBattlesCompleted));
 
+    // Create battle result record for UI display
     const newBattleResult: SingleBattle = {
       battleType,
       generation: selectedGeneration,
@@ -75,33 +74,25 @@ export const useBattleStateMilestoneEvents = ({
 
     setBattleResults(prev => {
       const newResults = [...prev, newBattleResult];
-      console.log(`🚨🚨🚨 [CORE_BATTLE_PROCESSING_MEGA_DEBUG] Updated battle results length: ${newResults.length}`);
+      console.log(`[CENTRALIZED_MILESTONE] Updated battle results length: ${newResults.length}`);
       return newResults;
     });
 
-    // Enhanced milestone checking with actual ranking generation
+    // Check for milestone
     const isAtMilestone = milestones.includes(newBattlesCompleted);
-    console.log(`🚨🚨🚨 [CORE_MILESTONE_CHECK_MEGA_DEBUG] ===== CORE MILESTONE CHECK START =====`);
-    console.log(`🚨🚨🚨 [CORE_MILESTONE_CHECK_MEGA_DEBUG] Battle ${newBattlesCompleted} completed`);
-    console.log(`🚨🚨🚨 [CORE_MILESTONE_CHECK_MEGA_DEBUG] Available milestones array:`, milestones);
-    console.log(`🚨🚨🚨 [CORE_MILESTONE_CHECK_MEGA_DEBUG] Checking if ${newBattlesCompleted} is in milestones array...`);
-    console.log(`🚨🚨🚨 [CORE_MILESTONE_CHECK_MEGA_DEBUG] milestones.includes(${newBattlesCompleted}) = ${isAtMilestone}`);
+    console.log(`[CENTRALIZED_MILESTONE] Checking milestone for battle ${newBattlesCompleted}: ${isAtMilestone}`);
     
     if (isAtMilestone) {
-      console.log(`🚨🚨🚨 [CORE_MILESTONE_HIT_MEGA_DEBUG] ===== CORE MILESTONE ${newBattlesCompleted} REACHED! =====`);
-      console.log(`🚨🚨🚨 [CORE_MILESTONE_HIT_MEGA_DEBUG] About to set milestone flags AND generate rankings...`);
-      console.log(`🚨🚨🚨 [CORE_MILESTONE_HIT_MEGA_DEBUG] BEFORE: milestoneInProgress=${milestoneInProgress}, showingMilestone=${showingMilestone}, rankingGenerated=${rankingGenerated}`);
+      console.log(`[CENTRALIZED_MILESTONE] ===== MILESTONE ${newBattlesCompleted} REACHED! =====`);
+      console.log(`[CENTRALIZED_MILESTONE] Setting milestone flags and triggering ranking generation from centralized store`);
       
       setMilestoneInProgress(true);
       setShowingMilestone(true);
       setRankingGenerated(true);
       
-      // Generate ranking event for milestone
-      console.log(`🚨🚨🚨 [CORE_MILESTONE_HIT_MEGA_DEBUG] 🔥 CALLING GENERATE RANKINGS FOR MILESTONE 🔥`);
-      console.log(`🚨🚨🚨 [CORE_MILESTONE_HIT_MEGA_DEBUG] Current battle history length: ${battleHistory.length + 1}`);
-      
+      // Trigger ranking generation from centralized TrueSkill store
       setTimeout(() => {
-        console.log(`🚨🚨🚨 [CORE_MILESTONE_GENERATION] Generating rankings with updated battle history...`);
+        console.log(`[CENTRALIZED_MILESTONE] Generating rankings from centralized TrueSkill store...`);
         const generateRankingsEvent = new CustomEvent('generate-milestone-rankings', {
           detail: { 
             milestone: newBattlesCompleted,
@@ -110,20 +101,12 @@ export const useBattleStateMilestoneEvents = ({
         });
         document.dispatchEvent(generateRankingsEvent);
       }, 100);
-      
-      console.log(`🚨🚨🚨 [CORE_MILESTONE_HIT_MEGA_DEBUG] AFTER setting flags - these should be true in the next render`);
-      console.log(`🚨🚨🚨 [CORE_MILESTONE_HIT_MEGA_DEBUG] Current finalRankings length: ${finalRankings.length}`);
-      
-    } else {
-      console.log(`🚨🚨🚨 [CORE_MILESTONE_CHECK_MEGA_DEBUG] No milestone hit for battle ${newBattlesCompleted}`);
     }
-    
-    console.log(`🚨🚨🚨 [CORE_MILESTONE_CHECK_MEGA_DEBUG] ===== CORE MILESTONE CHECK END =====`);
 
     setSelectedPokemon([]);
-    console.log(`🚨🚨🚨 [CORE_BATTLE_PROCESSING_MEGA_DEBUG] ===== CORE PROCESSING BATTLE RESULT END =====`);
+    console.log(`[CENTRALIZED_MILESTONE] Battle processing complete`);
     return Promise.resolve();
-  }, [battlesCompleted, milestones, finalRankings, milestoneInProgress, showingMilestone, rankingGenerated, battleHistory, setBattleHistory, setBattlesCompleted, setBattleResults, setSelectedPokemon, setMilestoneInProgress, setShowingMilestone, setRankingGenerated]);
+  }, [battlesCompleted, milestones, battleHistory, setMilestoneInProgress, setShowingMilestone, setRankingGenerated, setSelectedPokemon, setBattleHistory, setBattlesCompleted, setBattleResults]);
 
   return {
     originalProcessBattleResult

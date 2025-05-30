@@ -10,58 +10,53 @@ export const useBattleStateProcessors = (
 ) => {
   // Enhanced setFinalRankings wrapper with detailed logging
   const setFinalRankingsWithLogging = useCallback((rankings: any) => {
-    console.log(`🚨🚨🚨 [SET_FINAL_RANKINGS_MEGA_DEBUG] ===== setFinalRankings called =====`);
-    console.log(`🚨🚨🚨 [SET_FINAL_RANKINGS_MEGA_DEBUG] Input type: ${typeof rankings}`);
-    console.log(`🚨🚨🚨 [SET_FINAL_RANKINGS_MEGA_DEBUG] Input is array: ${Array.isArray(rankings)}`);
-    console.log(`🚨🚨🚨 [SET_FINAL_RANKINGS_MEGA_DEBUG] Input length: ${rankings?.length || 'no length property'}`);
+    console.log(`[CENTRALIZED_RANKINGS] Setting final rankings from centralized TrueSkill store`);
+    console.log(`[CENTRALIZED_RANKINGS] Input type: ${typeof rankings}`);
+    console.log(`[CENTRALIZED_RANKINGS] Input is array: ${Array.isArray(rankings)}`);
+    console.log(`[CENTRALIZED_RANKINGS] Input length: ${rankings?.length || 'no length property'}`);
     
     if (Array.isArray(rankings) && rankings.length > 0) {
-      console.log(`🚨🚨🚨 [SET_FINAL_RANKINGS_MEGA_DEBUG] First 3 Pokemon being set:`, rankings.slice(0, 3).map(p => `${p.name} (${p.id}) - score: ${p.score?.toFixed(1) || 'no score'}`));
+      console.log(`[CENTRALIZED_RANKINGS] First 3 Pokemon being set:`, rankings.slice(0, 3).map(p => `${p.name} (${p.id}) - score: ${p.score?.toFixed(1) || 'no score'}`));
     }
-    
-    console.log(`🚨🚨🚨 [SET_FINAL_RANKINGS_MEGA_DEBUG] About to call actual setFinalRankings...`);
     
     try {
       stateData.setFinalRankings(rankings);
-      console.log(`🚨🚨🚨 [SET_FINAL_RANKINGS_MEGA_DEBUG] ✅ setFinalRankings call completed successfully`);
+      console.log(`[CENTRALIZED_RANKINGS] ✅ Rankings set successfully from centralized store`);
     } catch (error) {
-      console.error(`🚨🚨🚨 [SET_FINAL_RANKINGS_MEGA_DEBUG] ❌ Error in setFinalRankings:`, error);
+      console.error(`[CENTRALIZED_RANKINGS] ❌ Error setting rankings:`, error);
     }
-    
-    console.log(`🚨🚨🚨 [SET_FINAL_RANKINGS_MEGA_DEBUG] ===== setFinalRankings call end =====`);
   }, [stateData.setFinalRankings]);
 
-  // CRITICAL FIX: Improved battle result processing with proper async handling
+  // Improved battle result processing with centralized store integration
   const processBattleResultWithRefinement = useCallback(async (
     selectedPokemonIds: number[],
     currentBattlePokemon: Pokemon[],
     battleType: BattleType,
     selectedGeneration: number
   ) => {
-    console.log(`🔄 [REFINEMENT_PROCESSING_DEBUG] Processing battle with refinement support`);
+    console.log(`[CENTRALIZED_PROCESSING] Processing battle with centralized TrueSkill store`);
     
-    // Process the battle result
+    // Process the battle result - ratings will be handled by centralized store
     const result = await milestoneEvents.originalProcessBattleResult(selectedPokemonIds, currentBattlePokemon, battleType, selectedGeneration);
     
-    // CRITICAL FIX: Ensure proper async handling for next battle
-    console.log(`🔄 [REFINEMENT_PROCESSING_DEBUG] Battle processed, starting next battle with proper async handling...`);
+    console.log(`[CENTRALIZED_PROCESSING] Battle processed, all ratings stored in centralized store`);
     
-    // Use setTimeout to ensure state updates complete before starting new battle
+    // Start next battle with proper async handling
     setTimeout(async () => {
       try {
         await startNewBattleWrapper();
-        console.log(`🔄 [REFINEMENT_PROCESSING_DEBUG] ✅ Next battle started successfully`);
+        console.log(`[CENTRALIZED_PROCESSING] ✅ Next battle started successfully`);
       } catch (error) {
-        console.error(`🔄 [REFINEMENT_PROCESSING_DEBUG] ❌ Error starting next battle:`, error);
+        console.error(`[CENTRALIZED_PROCESSING] ❌ Error starting next battle:`, error);
       }
     }, 50);
     
     return result;
   }, [milestoneEvents.originalProcessBattleResult, startNewBattleWrapper]);
 
-  // Add clearAllSuggestions placeholder
+  // Placeholder for suggestions management
   const clearAllSuggestions = useCallback(() => {
-    console.log('🔄 [SUGGESTIONS_DEBUG] Clearing all suggestions');
+    console.log('[CENTRALIZED_SUGGESTIONS] Clearing all suggestions');
   }, []);
 
   return {
