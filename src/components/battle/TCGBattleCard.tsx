@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, memo, useRef, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Pokemon } from "@/services/pokemon";
@@ -34,6 +33,14 @@ const TCGBattleCard: React.FC<TCGBattleCardProps> = memo(({
   const displayName = pokemon.name;
   
   console.log(`🃏 [TCG_BATTLE_CARD] ${displayName}: TCG loading=${isLoadingTCG}, hasTcgCard=${hasTcgCard}, isProcessing=${isProcessing}`);
+
+  // Log the image URL being used
+  useEffect(() => {
+    if (tcgCard) {
+      console.log(`📷 [TCG_BATTLE_CARD] ${displayName}: Using SMALL image URL: ${tcgCard.images.small}`);
+      console.log(`📷 [TCG_BATTLE_CARD] ${displayName}: Large image URL (NOT USED): ${tcgCard.images.large}`);
+    }
+  }, [tcgCard, displayName]);
 
   useEffect(() => {
     console.log(`🃏 [TCG_BATTLE_CARD] ${displayName}: Component mounted/updated`);
@@ -138,9 +145,12 @@ const TCGBattleCard: React.FC<TCGBattleCardProps> = memo(({
                   className={`w-full max-w-[200px] mx-auto rounded-lg shadow-md transition-opacity duration-300 ${
                     cardImageLoaded ? 'opacity-100' : 'opacity-0'
                   }`}
-                  onLoad={() => setCardImageLoaded(true)}
+                  onLoad={() => {
+                    console.log(`✅ [TCG_BATTLE_CARD] ${displayName}: Small TCG image loaded successfully from: ${tcgCard.images.small}`);
+                    setCardImageLoaded(true);
+                  }}
                   onError={(e) => {
-                    console.error(`🃏 [TCG_BATTLE_CARD] Failed to load TCG card image for ${displayName}`);
+                    console.error(`🃏 [TCG_BATTLE_CARD] Failed to load TCG card SMALL image for ${displayName} from: ${tcgCard.images.small}`);
                     const target = e.target as HTMLImageElement;
                     target.style.display = 'none';
                   }}
