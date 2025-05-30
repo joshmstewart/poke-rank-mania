@@ -42,25 +42,6 @@ const BattleControlsDropdowns: React.FC<BattleControlsDropdownsProps> = ({
           </SelectContent>
         </Select>
       </div>
-      
-      <div className="flex items-center">
-        <span className="text-sm font-medium whitespace-nowrap mr-2">Mode:</span>
-        <Select
-          value={battleType}
-          onValueChange={(value: BattleType) => {
-            console.log("🔍 Battle type dropdown changed to:", value);
-            onBattleTypeChange(value);
-          }}
-        >
-          <SelectTrigger className="w-[100px] h-8 text-sm flex items-center">
-            <SelectValue placeholder="Battle Type" className="py-0" />
-          </SelectTrigger>
-          <SelectContent align="start">
-            <SelectItem value="pairs">Pairs</SelectItem>
-            <SelectItem value="triplets">Trios</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
     </div>
   );
 };
