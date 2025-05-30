@@ -69,14 +69,139 @@ export const useEnhancedManualReorder = (
 
     console.log(`🔥 [ENHANCED_REORDER] Found dragged Pokemon: ${draggedPokemon.name}`);
 
-    // Physically move the Pokemon to the new position
-    const [movedPokemon] = workingRankings.splice(sourceIndex, 1);
-    workingRankings.splice(destinationIndex, 0, movedPokemon);
-
     const new_index = destinationIndex;
     const N = workingRankings.length;
 
-    console.log(`🔥 [ENHANCED_REORDER] New position: ${new_index} out of ${N} total Pokemon`);
+    console.log(`🔥 [ENHANCED_REORDER] Target position: ${new_index} out of ${N} total Pokemon`);
+
+    // CRITICAL FIX: Identify opponents BEFORE moving the Pokemon using original positions
+    const impliedBattles: Array<{
+      opponent: RankedPokemon;
+      draggedWins: boolean;
+      battleType: string;
+      frequency: number;
+    }> = [];
+
+    console.log(`🔥 [ENHANCED_REORDER] ===== IDENTIFYING OPPONENTS USING ORIGINAL POSITIONS =====`);
+    console.log(`🔥 [ENHANCED_REORDER] Original rankings before move:`);
+    workingRankings.forEach((p, idx) => {
+      console.log(`🔥 [ENHANCED_REORDER] Position ${idx}: ${p.name} (${p.id})`);
+    });
+
+    // P_above_1: Pokemon that will be at new_index - 1 after the move (dragged loses) - IMMEDIATE NEIGHBOR: 2 updates
+    if (new_index > 0) {
+      // We need to find what Pokemon will be at position new_index - 1 AFTER the move
+      let targetPositionAfterMove = new_index - 1;
+      
+      // If we're moving forward (destination > source), the Pokemon currently at targetPositionAfterMove will stay there
+      // If we're moving backward (destination < source), we need to account for the shift
+      let originalPositionToCheck;
+      if (destinationIndex > sourceIndex) {
+        // Moving forward: Pokemon at target position will be shifted down by 1, so check target position
+        originalPositionToCheck = targetPositionAfterMove;
+      } else {
+        // Moving backward: Pokemon at target position will be shifted up by 1, so check target + 1
+        originalPositionToCheck = targetPositionAfterMove + 1;
+      }
+
+      if (originalPositionToCheck >= 0 && originalPositionToCheck < workingRankings.length) {
+        const p_above_1 = workingRankings[originalPositionToCheck];
+        if (p_above_1 && p_above_1.id !== draggedPokemonId) {
+          impliedBattles.push({
+            opponent: p_above_1,
+            draggedWins: false,
+            battleType: "P_above_1",
+            frequency: 2
+          });
+          console.log(`🔥 [ENHANCED_REORDER] Added P_above_1 battle: ${draggedPokemon.name} LOSES to ${p_above_1.name} (FREQUENCY: 2)`);
+          console.log(`🔥 [ENHANCED_REORDER] P_above_1 found at original position ${originalPositionToCheck}, will be at position ${targetPositionAfterMove} after move`);
+        }
+      }
+    }
+
+    // P_above_2: Pokemon that will be at new_index - 2 after the move (dragged loses) - SECONDARY NEIGHBOR: 1 update
+    if (new_index > 1) {
+      let targetPositionAfterMove = new_index - 2;
+      let originalPositionToCheck;
+      if (destinationIndex > sourceIndex) {
+        originalPositionToCheck = targetPositionAfterMove;
+      } else {
+        originalPositionToCheck = targetPositionAfterMove + 1;
+      }
+
+      if (originalPositionToCheck >= 0 && originalPositionToCheck < workingRankings.length) {
+        const p_above_2 = workingRankings[originalPositionToCheck];
+        if (p_above_2 && p_above_2.id !== draggedPokemonId) {
+          impliedBattles.push({
+            opponent: p_above_2,
+            draggedWins: false,
+            battleType: "P_above_2",
+            frequency: 1
+          });
+          console.log(`🔥 [ENHANCED_REORDER] Added P_above_2 battle: ${draggedPokemon.name} LOSES to ${p_above_2.name} (FREQUENCY: 1)`);
+          console.log(`🔥 [ENHANCED_REORDER] P_above_2 found at original position ${originalPositionToCheck}, will be at position ${targetPositionAfterMove} after move`);
+        }
+      }
+    }
+
+    // P_below_1: Pokemon that will be at new_index + 1 after the move (dragged wins) - IMMEDIATE NEIGHBOR: 2 updates
+    if (new_index < N - 1) {
+      let targetPositionAfterMove = new_index + 1;
+      let originalPositionToCheck;
+      if (destinationIndex > sourceIndex) {
+        originalPositionToCheck = targetPositionAfterMove - 1;
+      } else {
+        originalPositionToCheck = targetPositionAfterMove;
+      }
+
+      if (originalPositionToCheck >= 0 && originalPositionToCheck < workingRankings.length) {
+        const p_below_1 = workingRankings[originalPositionToCheck];
+        if (p_below_1 && p_below_1.id !== draggedPokemonId) {
+          impliedBattles.push({
+            opponent: p_below_1,
+            draggedWins: true,
+            battleType: "P_below_1",
+            frequency: 2
+          });
+          console.log(`🔥 [ENHANCED_REORDER] Added P_below_1 battle: ${draggedPokemon.name} WINS against ${p_below_1.name} (FREQUENCY: 2)`);
+          console.log(`🔥 [ENHANCED_REORDER] P_below_1 found at original position ${originalPositionToCheck}, will be at position ${targetPositionAfterMove} after move`);
+        }
+      }
+    }
+
+    // P_below_2: Pokemon that will be at new_index + 2 after the move (dragged wins) - SECONDARY NEIGHBOR: 1 update
+    if (new_index < N - 2) {
+      let targetPositionAfterMove = new_index + 2;
+      let originalPositionToCheck;
+      if (destinationIndex > sourceIndex) {
+        originalPositionToCheck = targetPositionAfterMove - 1;
+      } else {
+        originalPositionToCheck = targetPositionAfterMove;
+      }
+
+      if (originalPositionToCheck >= 0 && originalPositionToCheck < workingRankings.length) {
+        const p_below_2 = workingRankings[originalPositionToCheck];
+        if (p_below_2 && p_below_2.id !== draggedPokemonId) {
+          impliedBattles.push({
+            opponent: p_below_2,
+            draggedWins: true,
+            battleType: "P_below_2",
+            frequency: 1
+          });
+          console.log(`🔥 [ENHANCED_REORDER] Added P_below_2 battle: ${draggedPokemon.name} WINS against ${p_below_2.name} (FREQUENCY: 1)`);
+          console.log(`🔥 [ENHANCED_REORDER] P_below_2 found at original position ${originalPositionToCheck}, will be at position ${targetPositionAfterMove} after move`);
+        }
+      }
+    }
+
+    // NOW physically move the Pokemon to the new position
+    const [movedPokemon] = workingRankings.splice(sourceIndex, 1);
+    workingRankings.splice(destinationIndex, 0, movedPokemon);
+
+    console.log(`🔥 [ENHANCED_REORDER] ===== RANKINGS AFTER MOVE =====`);
+    workingRankings.forEach((p, idx) => {
+      console.log(`🔥 [ENHANCED_REORDER] Position ${idx}: ${p.name} (${p.id})`);
+    });
 
     // Ensure the dragged Pokemon has a valid TrueSkill rating
     if (!draggedPokemon.rating) {
@@ -85,72 +210,6 @@ export const useEnhancedManualReorder = (
     } else if (!(draggedPokemon.rating instanceof Rating)) {
       draggedPokemon.rating = new Rating(draggedPokemon.rating.mu, draggedPokemon.rating.sigma);
       console.log(`🔥 [ENHANCED_REORDER] Converted rating object to Rating instance for ${draggedPokemon.name}`);
-    }
-
-    // Identify opponents and process implied battles with new frequency rules
-    const impliedBattles: Array<{
-      opponent: RankedPokemon;
-      draggedWins: boolean;
-      battleType: string;
-      frequency: number; // NEW: How many times to process this battle
-    }> = [];
-
-    console.log(`🔥 [ENHANCED_REORDER] ===== IDENTIFYING IMPLIED BATTLES WITH NEW FREQUENCY RULES =====`);
-
-    // P_above_1: Pokemon at new_index - 1 (dragged loses) - IMMEDIATE NEIGHBOR: 2 updates
-    if (new_index > 0) {
-      const p_above_1 = workingRankings[new_index - 1];
-      if (p_above_1 && p_above_1.id !== draggedPokemonId) {
-        impliedBattles.push({
-          opponent: p_above_1,
-          draggedWins: false,
-          battleType: "P_above_1",
-          frequency: 2 // IMMEDIATE NEIGHBOR: Process twice
-        });
-        console.log(`🔥 [ENHANCED_REORDER] Added P_above_1 battle: ${draggedPokemon.name} LOSES to ${p_above_1.name} (FREQUENCY: 2)`);
-      }
-    }
-
-    // P_above_2: Pokemon at new_index - 2 (dragged loses) - SECONDARY NEIGHBOR: 1 update
-    if (new_index > 1) {
-      const p_above_2 = workingRankings[new_index - 2];
-      if (p_above_2 && p_above_2.id !== draggedPokemonId) {
-        impliedBattles.push({
-          opponent: p_above_2,
-          draggedWins: false,
-          battleType: "P_above_2",
-          frequency: 1 // SECONDARY NEIGHBOR: Process once
-        });
-        console.log(`🔥 [ENHANCED_REORDER] Added P_above_2 battle: ${draggedPokemon.name} LOSES to ${p_above_2.name} (FREQUENCY: 1)`);
-      }
-    }
-
-    // P_below_1: Pokemon at new_index + 1 (dragged wins) - IMMEDIATE NEIGHBOR: 2 updates
-    if (new_index < N - 1) {
-      const p_below_1 = workingRankings[new_index + 1];
-      if (p_below_1 && p_below_1.id !== draggedPokemonId) {
-        impliedBattles.push({
-          opponent: p_below_1,
-          draggedWins: true,
-          battleType: "P_below_1",
-          frequency: 2 // IMMEDIATE NEIGHBOR: Process twice
-        });
-        console.log(`🔥 [ENHANCED_REORDER] Added P_below_1 battle: ${draggedPokemon.name} WINS against ${p_below_1.name} (FREQUENCY: 2)`);
-      }
-    }
-
-    // P_below_2: Pokemon at new_index + 2 (dragged wins) - SECONDARY NEIGHBOR: 1 update
-    if (new_index < N - 2) {
-      const p_below_2 = workingRankings[new_index + 2];
-      if (p_below_2 && p_below_2.id !== draggedPokemonId) {
-        impliedBattles.push({
-          opponent: p_below_2,
-          draggedWins: true,
-          battleType: "P_below_2",
-          frequency: 1 // SECONDARY NEIGHBOR: Process once
-        });
-        console.log(`🔥 [ENHANCED_REORDER] Added P_below_2 battle: ${draggedPokemon.name} WINS against ${p_below_2.name} (FREQUENCY: 1)`);
-      }
     }
 
     const totalUpdates = impliedBattles.reduce((sum, battle) => sum + battle.frequency, 0);
