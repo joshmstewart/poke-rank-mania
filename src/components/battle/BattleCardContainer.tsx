@@ -42,9 +42,8 @@ const BattleCardContainer: React.FC<BattleCardContainerProps> = ({
   // Reset hover state when modal opens or closes
   useEffect(() => {
     console.log(`🔘 [HOVER_DEBUG] BattleCardContainer ${displayName}: Modal state changed to ${modalOpen}`);
-    if (modalOpen) {
-      setIsHovered(false);
-    }
+    // Always reset hover state when modal state changes
+    setIsHovered(false);
   }, [modalOpen, displayName]);
 
   const handleClick = useCallback((e: React.MouseEvent) => {
@@ -86,6 +85,7 @@ const BattleCardContainer: React.FC<BattleCardContainerProps> = ({
 
   const handleMouseEnter = useCallback(() => {
     console.log(`🔘 [HOVER_DEBUG] BattleCardContainer ${displayName}: Mouse enter - modalOpen: ${modalOpen}, isProcessing: ${isProcessing}`);
+    // Only allow hover state if modal is closed and not processing
     if (!isProcessing && !modalOpen) {
       setIsHovered(true);
     }
@@ -101,23 +101,25 @@ const BattleCardContainer: React.FC<BattleCardContainerProps> = ({
     e.preventDefault();
     e.stopPropagation();
     
-    // Force reset hover state when info button is interacted with
+    // Immediately clear hover state when info button is clicked
     setIsHovered(false);
   }, [displayName]);
 
   const handleModalStateChange = useCallback((open: boolean) => {
     console.log(`🔘 [MODAL_DEBUG] BattleCardContainer ${displayName}: Modal state changing to ${open}`);
     setModalOpen(open);
-    if (open) {
-      setIsHovered(false);
-    }
+    // Force clear hover state regardless of modal state
+    setIsHovered(false);
   }, [displayName]);
+
+  // Ensure hover state is only applied when appropriate
+  const shouldShowHover = isHovered && !isSelected && !modalOpen && !isProcessing;
 
   const cardClasses = `
     relative cursor-pointer transition-all duration-200 transform
     ${isSelected ? 'ring-4 ring-blue-500 bg-blue-50 scale-105 shadow-xl' : 'hover:scale-105 hover:shadow-lg'}
     ${isProcessing ? 'pointer-events-none' : ''}
-    ${isHovered && !isSelected && !modalOpen ? 'ring-2 ring-blue-300 ring-opacity-50' : ''}
+    ${shouldShowHover ? 'ring-2 ring-blue-300 ring-opacity-50' : ''}
   `.trim();
 
   return (
@@ -129,6 +131,8 @@ const BattleCardContainer: React.FC<BattleCardContainerProps> = ({
       data-pokemon-id={pokemon.id}
       data-pokemon-name={displayName}
       data-processing={isProcessing ? "true" : "false"}
+      data-modal-open={modalOpen ? "true" : "false"}
+      data-hovered={shouldShowHover ? "true" : "false"}
     >
       <CardContent className="p-4 text-center relative">
         {/* Info Button */}
@@ -150,7 +154,7 @@ const BattleCardContainer: React.FC<BattleCardContainerProps> = ({
 
         {/* Interactive elements */}
         <BattleCardInteractions 
-          isHovered={isHovered}
+          isHovered={shouldShowHover}
           isSelected={isSelected}
           isProcessing={isProcessing}
         />
