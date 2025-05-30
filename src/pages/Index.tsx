@@ -95,7 +95,7 @@ const Index = () => {
           <div className="flex items-center justify-between h-24">
             {/* Left side - Logo */}
             <div className="flex items-center">
-              <div className="h-16 flex items-center py-4 px-4">
+              <div className="h-20 flex items-center py-4 px-4">
                 <img 
                   src="/lovable-uploads/008c1959-1f2a-4416-9d73-9f706e384331.png" 
                   alt="PokeRank Mania" 
