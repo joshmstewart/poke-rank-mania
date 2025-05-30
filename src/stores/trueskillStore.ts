@@ -65,12 +65,12 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
             document.dispatchEvent(updateEvent);
           }, 10);
           
-          // Try to sync to cloud if user is authenticated (non-blocking)
+          // Sync to cloud using session ID (non-blocking)
           setTimeout(async () => {
             try {
               await get().syncToCloud();
             } catch (error) {
-              console.log('[TRUESKILL_LOCAL] Cloud sync failed, continuing with local storage');
+              console.log('[TRUESKILL_CLOUD] Cloud sync failed, continuing with local storage');
             }
           }, 1000);
           
@@ -107,35 +107,30 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           document.dispatchEvent(clearEvent);
         }, 10);
         
-        // Try to sync to cloud if user is authenticated (non-blocking)
+        // Sync cleared state to cloud using session ID (non-blocking)
         setTimeout(async () => {
           try {
             await get().syncToCloud();
           } catch (error) {
-            console.log('[TRUESKILL_LOCAL] Cloud sync failed, continuing with local storage');
+            console.log('[TRUESKILL_CLOUD] Cloud sync failed, continuing with local storage');
           }
         }, 100);
       },
       
       syncToCloud: async () => {
         try {
-          const { data: { user } } = await supabase.auth.getUser();
-          if (!user) {
-            console.log('[TRUESKILL_LOCAL] No authenticated user, using local storage only');
-            return;
-          }
-          
           const state = get();
-          console.log('[TRUESKILL_CLOUD] Syncing ratings to cloud...', Object.keys(state.ratings).length, 'Pokemon');
+          console.log('[TRUESKILL_CLOUD] Syncing ratings to cloud using session ID...', Object.keys(state.ratings).length, 'Pokemon');
           
           // Convert ratings to JSON-compatible format
           const ratingsAsJson = JSON.parse(JSON.stringify(state.ratings));
           
+          // Use session ID as user_id and a special generation (-1) to indicate session-based storage
           const { error } = await supabase
             .from('user_rankings')
             .upsert({
-              user_id: user.id,
-              generation: 0, // Use generation 0 for TrueSkill store
+              user_id: state.sessionId, // Use session ID instead of authenticated user ID
+              generation: -1, // Special generation to indicate session-based storage
               pokemon_rankings: [],
               battle_results: ratingsAsJson,
               completion_percentage: 0,
@@ -149,29 +144,23 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           }
           
           set({ lastSyncedAt: new Date().toISOString() });
-          console.log('[TRUESKILL_CLOUD] ✅ Successfully synced to cloud');
+          console.log('[TRUESKILL_CLOUD] ✅ Successfully synced to cloud using session ID');
         } catch (error) {
-          console.log('[TRUESKILL_LOCAL] Cloud sync failed, continuing with local storage:', error);
+          console.log('[TRUESKILL_CLOUD] Cloud sync failed:', error);
         }
       },
       
       loadFromCloud: async () => {
         try {
           set({ isLoading: true });
-          const { data: { user } } = await supabase.auth.getUser();
-          if (!user) {
-            console.log('[TRUESKILL_LOCAL] No authenticated user, using local storage only');
-            set({ isLoading: false });
-            return;
-          }
-          
-          console.log('[TRUESKILL_CLOUD] Loading ratings from cloud...');
+          const state = get();
+          console.log('[TRUESKILL_CLOUD] Loading ratings from cloud using session ID...');
           
           const { data, error } = await supabase
             .from('user_rankings')
             .select('*')
-            .eq('user_id', user.id)
-            .eq('generation', 0)
+            .eq('user_id', state.sessionId) // Use session ID instead of authenticated user ID
+            .eq('generation', -1) // Special generation for session-based storage
             .maybeSingle();
           
           if (error) {
@@ -203,7 +192,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
               }
             });
             
-            console.log('[TRUESKILL_CLOUD] ✅ Loaded ratings from cloud:', Object.keys(convertedRatings).length, 'Pokemon');
+            console.log('[TRUESKILL_CLOUD] ✅ Loaded ratings from cloud using session ID:', Object.keys(convertedRatings).length, 'Pokemon');
             
             set({ 
               ratings: convertedRatings,
@@ -219,11 +208,11 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
               document.dispatchEvent(loadEvent);
             }, 10);
           } else {
-            console.log('[TRUESKILL_CLOUD] No cloud data found, using local storage');
+            console.log('[TRUESKILL_CLOUD] No cloud data found for session ID, using local storage');
             set({ isLoading: false });
           }
         } catch (error) {
-          console.log('[TRUESKILL_LOCAL] Cloud load failed, continuing with local storage:', error);
+          console.log('[TRUESKILL_CLOUD] Cloud load failed, continuing with local storage:', error);
           set({ isLoading: false });
         }
       }
