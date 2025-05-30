@@ -8,6 +8,7 @@ import { useBattleProcessor } from "./useBattleProcessor";
 import { useBattleResultProcessor } from "./useBattleResultProcessor";
 import { useBattleStateProcessors } from "./useBattleStateProcessors";
 import { usePokemonContext } from "@/contexts/PokemonContext";
+import { useBattleMilestones } from "./useBattleMilestones";
 
 export const useBattleContentState = (
   allPokemon: Pokemon[],
@@ -35,6 +36,9 @@ export const useBattleContentState = (
 
   console.log(`🔧 [BATTLE_CONTENT_STATE] Instance: ${instanceRef.current}`);
 
+  // Get milestone functionality
+  const { milestones, checkForMilestone } = useBattleMilestones();
+
   // CRITICAL: Initialize the battle result processor with proper logging
   const { processResult: processResultFromProcessor, isProcessing } = useBattleResultProcessor(
     battleResults,
@@ -52,7 +56,7 @@ export const useBattleContentState = (
     setSelectedPokemon(pokemon);
   }, []);
 
-  // CRITICAL: Create the main battle processing function
+  // CRITICAL: Create the main battle processing function with milestone detection
   const processBattleResult = useCallback(async (
     selectedPokemonIds: number[],
     currentBattlePokemon: Pokemon[],
@@ -75,6 +79,18 @@ export const useBattleContentState = (
         setBattlesCompletedInternal(prev => {
           const newCount = prev + 1;
           console.log(`🚨🚨🚨 [BATTLE_STATE_CRITICAL] ✅ Battles completed: ${newCount}`);
+          
+          // CRITICAL: Check for milestone after updating count
+          const isMilestone = checkForMilestone(newCount);
+          if (isMilestone) {
+            console.log(`🏆🏆🏆 [MILESTONE_HIT] ===== MILESTONE ${newCount} REACHED! =====`);
+            // Trigger milestone view
+            setTimeout(() => {
+              coordination.setShowingMilestone(true);
+              console.log(`🏆🏆🏆 [MILESTONE_HIT] Showing milestone view for battle ${newCount}`);
+            }, 100);
+          }
+          
           return newCount;
         });
 
@@ -95,7 +111,7 @@ export const useBattleContentState = (
       console.error(`🚨🚨🚨 [BATTLE_STATE_CRITICAL] ❌ Error in battle processing:`, error);
       return null;
     }
-  }, [processResultFromProcessor, setBattlesCompleted]);
+  }, [processResultFromProcessor, setBattlesCompleted, checkForMilestone]);
 
   // CRITICAL FIX: Create a proper battle generation function
   const generateNewBattle = useCallback((battleType: BattleType): Pokemon[] => {
@@ -257,7 +273,7 @@ export const useBattleContentState = (
     handleTripletSelectionComplete,
     goBack: () => console.log("Go back"),
     isProcessingResult: isProcessing,
-    milestones: coordination.milestones,
+    milestones,
     resetMilestones: coordination.resetMilestones,
     calculateCompletionPercentage: coordination.calculateCompletionPercentage,
     getSnapshotForMilestone: coordination.getSnapshotForMilestone,
