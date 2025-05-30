@@ -143,11 +143,11 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
             return;
           }
           
-          // Prepare sync data with explicit type casting
+          // Prepare sync data with explicit type casting for JSONB
           const syncData = {
             session_id: user?.id ? null : state.sessionId, // Only set session_id for anonymous users
             user_id: user?.id || null, // Only set user_id for authenticated users
-            ratings_data: state.ratings,
+            ratings_data: state.ratings as any, // Cast to any for JSONB compatibility
             last_updated: new Date().toISOString()
           };
           
@@ -184,7 +184,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
         }
       },
       
-      // FIXED: Robust cloud loading with proper error handling
+      // FIXED: Robust cloud loading with proper error handling and type guards
       loadFromCloud: async () => {
         const state = get();
         const localRatingsCount = Object.keys(state.ratings).length;
@@ -232,9 +232,33 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
             return;
           }
           
-          if (data?.ratings_data && typeof data.ratings_data === 'object') {
-            // Safely cast the cloud data
-            const cloudRatings = data.ratings_data as Record<number, TrueSkillRating>;
+          // FIXED: Robust type guard for ratings_data
+          if (data?.ratings_data) {
+            let cloudRatings: Record<number, TrueSkillRating> = {};
+            
+            // Type guard to ensure we have a valid object and not an array
+            if (typeof data.ratings_data === 'object' && 
+                !Array.isArray(data.ratings_data) && 
+                data.ratings_data !== null) {
+              try {
+                cloudRatings = data.ratings_data as unknown as Record<number, TrueSkillRating>;
+              } catch (castError) {
+                console.log('[TRUESKILL_CLOUD] Type casting error, using empty ratings:', castError);
+                cloudRatings = {};
+              }
+            } else if (Array.isArray(data.ratings_data) && data.ratings_data.length === 0) {
+              // Handle case where DB might return empty array
+              console.log('[TRUESKILL_CLOUD] Empty array received, initializing as empty object');
+              cloudRatings = {};
+            } else if (data.ratings_data === null) {
+              // Handle null case
+              console.log('[TRUESKILL_CLOUD] Null ratings_data received, initializing as empty object');
+              cloudRatings = {};
+            } else {
+              console.log('[TRUESKILL_CLOUD] Unexpected ratings_data type:', typeof data.ratings_data, 'using empty ratings');
+              cloudRatings = {};
+            }
+            
             const cloudRatingsCount = Object.keys(cloudRatings).length;
             
             console.log('[TRUESKILL_CLOUD] Cloud data found:', {
