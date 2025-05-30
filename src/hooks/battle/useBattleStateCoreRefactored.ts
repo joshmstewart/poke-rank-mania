@@ -101,7 +101,7 @@ export const useBattleStateCoreRefactored = (
 
   console.log(`🚨🚨🚨 [BATTLE_STATE_CORE_REFACTORED] milestoneHandlers created, about to call handlers...`);
 
-  // Create handlers with proper generateRankings - CRITICAL FIX: use synchronous startNewBattle
+  // Create handlers with proper generateRankings - CRITICAL FIX: use synchronous startNewBattle and add setFinalRankings
   const handlers = useBattleStateHandlers(
     allPokemon,
     stateData.currentBattle,
@@ -129,7 +129,8 @@ export const useBattleStateCoreRefactored = (
     processors.processBattleResultWithRefinement,
     processors.clearAllSuggestions,
     refinementQueue.clearRefinementQueue,
-    milestoneHandlers.generateRankings
+    milestoneHandlers.generateRankings,
+    stateData.setFinalRankings
   );
 
   console.log(`🚨🚨🚨 [BATTLE_STATE_CORE_REFACTORED] handlers created, about to call processingHandlers...`);
