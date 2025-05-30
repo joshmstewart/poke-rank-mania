@@ -29,8 +29,10 @@ const BattleContentHeader: React.FC<BattleContentHeaderProps> = ({
       battleType={battleType}
       onGenerationChange={(gen) => onGenerationChange(Number(gen))}
       onBattleTypeChange={setBattleType}
-      onReset={performFullBattleReset}
-      battleHistory={[]}
+      onRestartBattles={performFullBattleReset}
+      setBattlesCompleted={setBattlesCompleted}
+      setBattleResults={setBattleResults}
+      performFullBattleReset={performFullBattleReset}
     />
   );
 };
