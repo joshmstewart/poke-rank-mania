@@ -1,5 +1,5 @@
 
-import React, { memo } from "react";
+import React, { memo, useEffect, useState } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "@/hooks/battle/types";
 import { getPreferredImage, ImageType } from "@/utils/imageUtils";
@@ -22,7 +22,38 @@ const BattleCard: React.FC<BattleCardProps> = memo(({
   onSelect,
   isProcessing = false
 }) => {
-  const currentImageMode = getCurrentImageMode();
+  const [currentImageMode, setCurrentImageMode] = useState<'pokemon' | 'tcg'>(() => getCurrentImageMode());
+  
+  // Listen for image mode changes
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "pokemon-image-mode") {
+        const newMode = getCurrentImageMode();
+        console.log(`🎯 [BATTLE_CARD] Image mode changed to: ${newMode}`);
+        setCurrentImageMode(newMode);
+      }
+    };
+
+    const checkImageMode = () => {
+      const newMode = getCurrentImageMode();
+      if (newMode !== currentImageMode) {
+        console.log(`🎯 [BATTLE_CARD] Image mode updated to: ${newMode}`);
+        setCurrentImageMode(newMode);
+      }
+    };
+
+    // Check immediately and set up listeners
+    checkImageMode();
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Also check periodically as a fallback
+    const interval = setInterval(checkImageMode, 1000);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
+  }, [currentImageMode]);
   
   console.log(`🎯 [BATTLE_CARD] Pokemon ${pokemon.id}: Image mode is ${currentImageMode}`);
   
