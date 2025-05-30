@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, memo, useRef, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Pokemon } from "@/services/pokemon";
@@ -171,6 +170,7 @@ const TCGBattleCard: React.FC<TCGBattleCardProps> = memo(({
           isHovered={shouldShowHover}
           isSelected={isSelected}
           isProcessing={isProcessing}
+          showFallback={showFallback}
         />
 
         <div className="relative">

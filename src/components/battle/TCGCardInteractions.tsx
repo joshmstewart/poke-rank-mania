@@ -5,17 +5,19 @@ interface TCGCardInteractionsProps {
   isHovered: boolean;
   isSelected: boolean;
   isProcessing: boolean;
+  showFallback?: boolean;
 }
 
 const TCGCardInteractions: React.FC<TCGCardInteractionsProps> = ({
   isHovered,
   isSelected,
-  isProcessing
+  isProcessing,
+  showFallback = false
 }) => {
   return (
     <>
-      {/* Selection feedback overlay */}
-      {isHovered && !isSelected && !isProcessing && (
+      {/* Selection feedback overlay - don't show for fallback cards */}
+      {isHovered && !isSelected && !isProcessing && !showFallback && (
         <div className="absolute inset-0 bg-blue-500 bg-opacity-10 rounded-lg flex items-center justify-center">
           <div className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-medium shadow-lg">
             Choose this Pokémon
