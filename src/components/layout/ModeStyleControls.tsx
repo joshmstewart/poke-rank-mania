@@ -41,8 +41,8 @@ const ModeStyleControls: React.FC<ModeStyleControlsProps> = ({
       
       let newUrl = '';
       if (imageMode === 'tcg') {
-        // Use a Pikachu TCG card image for TCG mode
-        newUrl = 'https://images.pokemontcg.io/base1/58_hires.png';
+        // Use a reliable Pikachu TCG card image - Base Set Pikachu
+        newUrl = 'https://images.pokemontcg.io/base1/58.png';
       } else {
         // Use regular Pikachu artwork for Pokemon mode
         newUrl = getPreferredImageUrl(PIKACHU_ID);
@@ -79,7 +79,7 @@ const ModeStyleControls: React.FC<ModeStyleControlsProps> = ({
         
         let newUrl = '';
         if (imageMode === 'tcg') {
-          newUrl = 'https://images.pokemontcg.io/base1/58_hires.png';
+          newUrl = 'https://images.pokemontcg.io/base1/58.png';
         } else {
           newUrl = getPreferredImageUrl(PIKACHU_ID);
         }
@@ -136,7 +136,10 @@ const ModeStyleControls: React.FC<ModeStyleControlsProps> = ({
                         className={`w-full h-full object-contain rounded-sm transition-opacity duration-300 ${
                           previewLoaded ? 'opacity-100' : 'opacity-0'
                         }`}
-                        onLoad={() => setPreviewLoaded(true)}
+                        onLoad={() => {
+                          console.log('Preview image loaded successfully:', previewImageUrl);
+                          setPreviewLoaded(true);
+                        }}
                         onError={() => {
                           console.error('Failed to load preview image:', previewImageUrl);
                           setPreviewError(true);
