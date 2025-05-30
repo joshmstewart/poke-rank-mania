@@ -36,7 +36,8 @@ export const useBattleStateHandlers = (
   processBattleResultWithRefinement: any,
   clearAllSuggestions: any,
   clearRefinementQueue: any,
-  generateRankings: any
+  generateRankings: any,
+  setFinalRankings: React.Dispatch<React.SetStateAction<RankedPokemon[]>>
 ) => {
   console.log(`🔧 [HANDLERS_DEBUG] useBattleStateHandlers called`);
 
@@ -76,9 +77,10 @@ export const useBattleStateHandlers = (
     () => startNewBattleWrapper(battleType)
   );
 
+  // Enhanced manual reorder with automatic TrueSkill updates
   const { handleManualReorder } = useBattleManualReorder(
     finalRankings,
-    refinementQueue
+    setFinalRankings
   );
 
   const { pendingRefinements, refinementBattleCount } = useBattlePendingState(

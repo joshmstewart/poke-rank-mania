@@ -25,7 +25,8 @@ export const useBattleProcessor = (
   battleStarter?: any,
   markSuggestionUsed?: (pokemon: RankedPokemon, fullyUsed?: boolean) => void,
   isResettingRef?: React.MutableRefObject<boolean>,
-  integratedStartNewBattle?: (battleType: BattleType) => Pokemon[]
+  integratedStartNewBattle?: (battleType: BattleType) => Pokemon[],
+  setFinalRankings?: React.Dispatch<React.SetStateAction<RankedPokemon[]>>
 ) => {
   const { isProcessingResult, setIsProcessingResult } = useBattleProcessorState();
 
