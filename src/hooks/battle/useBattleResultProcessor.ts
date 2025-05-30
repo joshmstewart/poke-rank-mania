@@ -1,4 +1,3 @@
-
 import { useCallback, useState } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
@@ -29,24 +28,24 @@ export const useBattleResultProcessor = (
     currentBattle: Pokemon[]
   ): SingleBattle[] | null => {
     setIsProcessing(true);
-    console.log(`[CENTRALIZED_TRUESKILL] ===== PROCESSING BATTLE RESULT =====`);
-    console.log(`[CENTRALIZED_TRUESKILL] Battle type: ${battleType}`);
-    console.log(`[CENTRALIZED_TRUESKILL] Selections: ${selections}`);
-    console.log(`[CENTRALIZED_TRUESKILL] Current battle: ${currentBattle.map(p => p.name)}`);
+    console.log(`🚨🚨🚨 [BATTLE_PROCESSOR_CRITICAL] ===== PROCESSING BATTLE RESULT =====`);
+    console.log(`🚨🚨🚨 [BATTLE_PROCESSOR_CRITICAL] Battle type: ${battleType}`);
+    console.log(`🚨🚨🚨 [BATTLE_PROCESSOR_CRITICAL] Selections: ${selections}`);
+    console.log(`🚨🚨🚨 [BATTLE_PROCESSOR_CRITICAL] Current battle: ${currentBattle.map(p => p.name)}`);
 
     // Check current store state before processing
     const currentRatings = getAllRatings();
-    console.log(`[CENTRALIZED_TRUESKILL] Store has ${Object.keys(currentRatings).length} ratings before processing`);
+    console.log(`🚨🚨🚨 [BATTLE_PROCESSOR_CRITICAL] Store has ${Object.keys(currentRatings).length} ratings before processing`);
 
     try {
       if (!currentBattle || currentBattle.length === 0) {
-        console.error("[CENTRALIZED_TRUESKILL] No current battle data");
+        console.error("🚨🚨🚨 [BATTLE_PROCESSOR_CRITICAL] No current battle data");
         setIsProcessing(false);
         return null;
       }
 
       if (!selections || selections.length === 0) {
-        console.error("[CENTRALIZED_TRUESKILL] No selections provided");
+        console.error("🚨🚨🚨 [BATTLE_PROCESSOR_CRITICAL] No selections provided");
         setIsProcessing(false);
         return null;
       }
@@ -58,22 +57,22 @@ export const useBattleResultProcessor = (
         const loser = currentBattle.find(p => p.id !== selections[0]);
 
         if (winner && loser) {
-          console.log(`[CENTRALIZED_TRUESKILL] Processing pair: ${winner.name} (${winner.id}) beats ${loser.name} (${loser.id})`);
+          console.log(`🚨🚨🚨 [BATTLE_PROCESSOR_CRITICAL] Processing pair: ${winner.name} (${winner.id}) beats ${loser.name} (${loser.id})`);
           
           // Get ratings from centralized store ONLY
           const winnerRating = getRating(winner.id);
           const loserRating = getRating(loser.id);
           
-          console.log(`[CENTRALIZED_TRUESKILL] Before battle - ${winner.name}: μ=${winnerRating.mu.toFixed(2)}, σ=${winnerRating.sigma.toFixed(2)}`);
-          console.log(`[CENTRALIZED_TRUESKILL] Before battle - ${loser.name}: μ=${loserRating.mu.toFixed(2)}, σ=${loserRating.sigma.toFixed(2)}`);
+          console.log(`🚨🚨🚨 [BATTLE_PROCESSOR_CRITICAL] Before battle - ${winner.name}: μ=${winnerRating.mu.toFixed(2)}, σ=${winnerRating.sigma.toFixed(2)}`);
+          console.log(`🚨🚨🚨 [BATTLE_PROCESSOR_CRITICAL] Before battle - ${loser.name}: μ=${loserRating.mu.toFixed(2)}, σ=${loserRating.sigma.toFixed(2)}`);
           
           // Update ratings using TrueSkill algorithm
           const [newWinnerRating, newLoserRating] = rate_1vs1(winnerRating, loserRating);
           
           // Store updated ratings in centralized store - SINGLE SOURCE OF TRUTH
-          console.log(`[CENTRALIZED_TRUESKILL] ✅ Updating ratings in centralized store:`);
-          console.log(`[CENTRALIZED_TRUESKILL] ✅ Winner ${winner.name} (${winner.id}): μ=${newWinnerRating.mu.toFixed(2)}, σ=${newWinnerRating.sigma.toFixed(2)}`);
-          console.log(`[CENTRALIZED_TRUESKILL] ✅ Loser ${loser.name} (${loser.id}): μ=${newLoserRating.mu.toFixed(2)}, σ=${newLoserRating.sigma.toFixed(2)}`);
+          console.log(`🚨🚨🚨 [BATTLE_PROCESSOR_CRITICAL] ✅ Updating ratings in centralized store:`);
+          console.log(`🚨🚨🚨 [BATTLE_PROCESSOR_CRITICAL] ✅ Winner ${winner.name} (${winner.id}): μ=${newWinnerRating.mu.toFixed(2)}, σ=${newWinnerRating.sigma.toFixed(2)}`);
+          console.log(`🚨🚨🚨 [BATTLE_PROCESSOR_CRITICAL] ✅ Loser ${loser.name} (${loser.id}): μ=${newLoserRating.mu.toFixed(2)}, σ=${newLoserRating.sigma.toFixed(2)}`);
           
           updateRating(winner.id, newWinnerRating);
           updateRating(loser.id, newLoserRating);
@@ -81,17 +80,17 @@ export const useBattleResultProcessor = (
           // Verify the ratings were stored
           const verifyWinner = getRating(winner.id);
           const verifyLoser = getRating(loser.id);
-          console.log(`[CENTRALIZED_TRUESKILL] ✅ VERIFICATION - ${winner.name}: μ=${verifyWinner.mu.toFixed(2)}, σ=${verifyWinner.sigma.toFixed(2)}`);
-          console.log(`[CENTRALIZED_TRUESKILL] ✅ VERIFICATION - ${loser.name}: μ=${verifyLoser.mu.toFixed(2)}, σ=${verifyLoser.sigma.toFixed(2)}`);
+          console.log(`🚨🚨🚨 [BATTLE_PROCESSOR_CRITICAL] ✅ VERIFICATION - ${winner.name}: μ=${verifyWinner.mu.toFixed(2)}, σ=${verifyWinner.sigma.toFixed(2)}`);
+          console.log(`🚨🚨🚨 [BATTLE_PROCESSOR_CRITICAL] ✅ VERIFICATION - ${loser.name}: μ=${verifyLoser.mu.toFixed(2)}, σ=${verifyLoser.sigma.toFixed(2)}`);
           
           // Check store state after processing
           const afterRatings = getAllRatings();
-          console.log(`[CENTRALIZED_TRUESKILL] ✅ Store now has ${Object.keys(afterRatings).length} ratings after processing`);
+          console.log(`🚨🚨🚨 [BATTLE_PROCESSOR_CRITICAL] ✅ Store now has ${Object.keys(afterRatings).length} ratings after processing`);
           
           // ENHANCED: Save battle count for persistence
           const newBattleCount = battleResults.length + 1;
           saveBattleCount(newBattleCount);
-          console.log(`[CENTRALIZED_TRUESKILL] ✅ Saved battle count: ${newBattleCount}`);
+          console.log(`🚨🚨🚨 [BATTLE_PROCESSOR_CRITICAL] ✅ Saved battle count: ${newBattleCount}`);
           
           // Handle tier-specific logic using centralized ratings
           if (activeTier && activeTier !== "All" && freezePokemonForTier) {
@@ -102,7 +101,7 @@ export const useBattleResultProcessor = (
             const battleCount = useTrueSkillStore.getState().ratings[loser.id]?.battleCount || 0;
             
             if (battleCount >= 5 && loserConfidence > 60 && loserScore < 0) {
-              console.log(`[CENTRALIZED_TRUESKILL] Freezing ${loser.name} for Tier ${activeTier} (confidence: ${loserConfidence.toFixed(1)}%, score: ${loserScore.toFixed(2)})`);
+              console.log(`🚨🚨🚨 [BATTLE_PROCESSOR_CRITICAL] Freezing ${loser.name} for Tier ${activeTier} (confidence: ${loserConfidence.toFixed(1)}%, score: ${loserScore.toFixed(2)})`);
               freezePokemonForTier(loser.id, activeTier);
             }
           }
@@ -119,11 +118,11 @@ export const useBattleResultProcessor = (
           };
           
           newResults.push(newResult);
-          console.log(`[CENTRALIZED_TRUESKILL] ✅ Created battle result record`);
+          console.log(`🚨🚨🚨 [BATTLE_PROCESSOR_CRITICAL] ✅ Created battle result record`);
           setIsProcessing(false);
           return newResults;
         } else {
-          console.error("[CENTRALIZED_TRUESKILL] Invalid selection for pair battle");
+          console.error("🚨🚨🚨 [BATTLE_PROCESSOR_CRITICAL] Invalid selection for pair battle");
           setIsProcessing(false);
           return null;
         }
@@ -133,7 +132,7 @@ export const useBattleResultProcessor = (
         const losers = currentBattle.filter(p => !selections.includes(p.id));
 
         if (winners.length > 0 && losers.length > 0) {
-          console.log(`[CENTRALIZED_TRUESKILL] Processing triplet: ${winners.length} winners vs ${losers.length} losers`);
+          console.log(`🚨🚨🚨 [BATTLE_PROCESSOR_CRITICAL] Processing triplet: ${winners.length} winners vs ${losers.length} losers`);
           
           winners.forEach(winner => {
             losers.forEach(loser => {
@@ -145,7 +144,7 @@ export const useBattleResultProcessor = (
               const [newWinnerRating, newLoserRating] = rate_1vs1(winnerRating, loserRating);
               
               // Store updated ratings in centralized store - SINGLE SOURCE OF TRUTH
-              console.log(`[CENTRALIZED_TRUESKILL] ✅ Triplet update - ${winner.name} (${winner.id}): μ=${newWinnerRating.mu.toFixed(2)}, ${loser.name} (${loser.id}): μ=${newLoserRating.mu.toFixed(2)}`);
+              console.log(`🚨🚨🚨 [BATTLE_PROCESSOR_CRITICAL] ✅ Triplet update - ${winner.name} (${winner.id}): μ=${newWinnerRating.mu.toFixed(2)}, ${loser.name} (${loser.id}): μ=${newLoserRating.mu.toFixed(2)}`);
               updateRating(winner.id, newWinnerRating);
               updateRating(loser.id, newLoserRating);
               
@@ -158,7 +157,7 @@ export const useBattleResultProcessor = (
                 const battleCount = useTrueSkillStore.getState().ratings[loser.id]?.battleCount || 0;
                 
                 if (battleCount >= 5 && loserConfidence > 60 && loserScore < 0) {
-                  console.log(`[CENTRALIZED_TRUESKILL] Freezing ${loser.name} for Tier ${activeTier}`);
+                  console.log(`🚨🚨🚨 [BATTLE_PROCESSOR_CRITICAL] Freezing ${loser.name} for Tier ${activeTier}`);
                   freezePokemonForTier(loser.id, activeTier);
                 }
               }
@@ -180,31 +179,55 @@ export const useBattleResultProcessor = (
 
           // Check store state after all triplet processing
           const afterTripletRatings = getAllRatings();
-          console.log(`[CENTRALIZED_TRUESKILL] ✅ Store now has ${Object.keys(afterTripletRatings).length} ratings after triplet processing`);
+          console.log(`🚨🚨🚨 [BATTLE_PROCESSOR_CRITICAL] ✅ Store now has ${Object.keys(afterTripletRatings).length} ratings after triplet processing`);
 
           // ENHANCED: Save battle count for triplets too
           const newBattleCount = battleResults.length + newResults.length;
           saveBattleCount(newBattleCount);
-          console.log(`[CENTRALIZED_TRUESKILL] ✅ Saved battle count: ${newBattleCount}`);
+          console.log(`🚨🚨🚨 [BATTLE_PROCESSOR_CRITICAL] ✅ Saved battle count: ${newBattleCount}`);
 
           setIsProcessing(false);
           return newResults;
         } else {
-          console.error("[CENTRALIZED_TRUESKILL] Invalid selection for triplet battle");
+          console.error("🚨🚨🚨 [BATTLE_PROCESSOR_CRITICAL] Invalid selection for triplet battle");
           setIsProcessing(false);
           return null;
         }
       }
     } catch (error) {
-      console.error("[CENTRALIZED_TRUESKILL] Error processing result:", error);
+      console.error("🚨🚨🚨 [BATTLE_PROCESSOR_CRITICAL] Error processing result:", error);
       setIsProcessing(false);
       return null;
     }
   }, [activeTier, freezePokemonForTier, trackLowerTierLoss, updateRating, getRating, getAllRatings, battleResults.length, saveBattleCount]);
 
+  // CRITICAL: Create a wrapper that ensures battle results are properly saved to the battle results array
+  const processBattleAndUpdateResults = useCallback((
+    selections: number[],
+    battleType: BattleType,
+    currentBattle: Pokemon[]
+  ) => {
+    console.log(`🚨🚨🚨 [BATTLE_PROCESSOR_CRITICAL] ===== WRAPPER CALLED =====`);
+    
+    const newResults = processResult(selections, battleType, currentBattle);
+    
+    if (newResults && newResults.length > 0) {
+      console.log(`🚨🚨🚨 [BATTLE_PROCESSOR_CRITICAL] ✅ Adding ${newResults.length} results to battle results array`);
+      setBattleResults(prev => {
+        const updated = [...prev, ...newResults];
+        console.log(`🚨🚨🚨 [BATTLE_PROCESSOR_CRITICAL] ✅ Battle results array now has ${updated.length} total results`);
+        return updated;
+      });
+      return newResults;
+    } else {
+      console.error(`🚨🚨🚨 [BATTLE_PROCESSOR_CRITICAL] ❌ No results to add`);
+      return null;
+    }
+  }, [processResult, setBattleResults]);
+
   return {
-    processResult,
+    processResult: processBattleAndUpdateResults,
     isProcessing,
-    addResult: processResult
+    addResult: processBattleAndUpdateResults
   };
 };
