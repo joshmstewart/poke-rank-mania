@@ -3,7 +3,6 @@ import React from "react";
 import { BattleType } from "@/hooks/battle/types";
 import { RankingMode } from "@/components/ranking/RankingModeSelector";
 import BattleControlsDropdowns from "./BattleControlsDropdowns";
-import BattleHistory from "./BattleHistory";
 
 interface BattleControlsProps {
   selectedGeneration: number;
@@ -38,10 +37,14 @@ const BattleControls: React.FC<BattleControlsProps> = ({
           onRankingModeChange={onRankingModeChange}
         />
         
-        <BattleHistory 
-          battleHistory={battleHistory}
-          onReset={onReset}
-        />
+        <div className="flex gap-2">
+          <button
+            onClick={onReset}
+            className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded text-sm"
+          >
+            Reset
+          </button>
+        </div>
       </div>
     </div>
   );

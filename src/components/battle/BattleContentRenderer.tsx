@@ -6,8 +6,6 @@ import { RankingMode } from "@/components/ranking/RankingModeSelector";
 import { useUnifiedTrueSkillRankings } from "@/hooks/ranking/useUnifiedTrueSkillRankings";
 import { usePendingRefinementsManager } from "@/hooks/battle/usePendingRefinementsManager";
 import BattleControls from "./BattleControls";
-import BattleView from "./BattleView";
-import MilestoneView from "./MilestoneView";
 import ManualRankingMode from "@/components/ranking/ManualRankingMode";
 import ImpliedBattleValidator from "./ImpliedBattleValidator";
 
@@ -165,28 +163,49 @@ const BattleContentRenderer: React.FC<BattleContentRendererProps> = ({
     );
   }
 
-  // Battle mode (existing logic)
+  // For battle mode, show existing battle interface or milestone
   if (showingMilestone) {
     return (
       <div className="space-y-4">
         <ImpliedBattleValidator />
         
-        <MilestoneView
-          finalRankings={finalRankings}
-          battlesCompleted={battlesCompleted}
-          onContinueBattles={handleContinueBattles}
-          onNewBattleSet={performFullBattleReset}
-          rankingGenerated={rankingGenerated}
-          onSaveRankings={handleSaveRankings}
-          isMilestoneView={true}
-          activeTier={activeTier}
-          onTierChange={setActiveTier}
-          onSuggestRanking={suggestRanking}
-          onRemoveSuggestion={removeSuggestion}
-          onManualReorder={handleUnifiedManualReorder}
-          pendingRefinements={localPendingRefinements}
-          enableDragAndDrop={true}
-        />
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h2 className="text-2xl font-bold mb-4">Milestone Reached!</h2>
+          <p className="mb-4">
+            Congratulations! You've completed {battlesCompleted} battles.
+          </p>
+          
+          <div className="space-y-4">
+            <div className="flex gap-4">
+              <button 
+                onClick={handleContinueBattles}
+                className="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded"
+              >
+                Continue Battles
+              </button>
+              <button 
+                onClick={performFullBattleReset}
+                className="px-6 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded"
+              >
+                Start New Battle Set
+              </button>
+            </div>
+
+            {finalRankings.length > 0 && (
+              <div className="space-y-2">
+                <h3 className="text-lg font-semibold">Current Rankings</h3>
+                {finalRankings.slice(0, 10).map((pokemon, index) => (
+                  <div key={pokemon.id} className="flex items-center space-x-4 p-2 border rounded">
+                    <span className="font-bold">#{index + 1}</span>
+                    <img src={pokemon.image} alt={pokemon.name} className="w-8 h-8" />
+                    <span>{pokemon.name}</span>
+                    <span className="text-sm text-gray-500">Score: {pokemon.score.toFixed(1)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     );
   }
@@ -206,17 +225,39 @@ const BattleContentRenderer: React.FC<BattleContentRendererProps> = ({
         battleHistory={battleHistory}
       />
 
-      <BattleView
-        currentBattle={currentBattle}
-        selectedPokemon={selectedPokemon}
-        battleType={battleType}
-        isAnyProcessing={isAnyProcessing}
-        onPokemonSelect={handlePokemonSelect}
-        onTripletSelectionComplete={handleTripletSelectionComplete}
-        onGoBack={goBack}
-        battlesCompleted={battlesCompleted}
-        milestones={milestones}
-      />
+      <div className="bg-white p-6 rounded-lg shadow">
+        <h2 className="text-xl font-bold mb-4">Battle Mode</h2>
+        
+        {currentBattle.length > 0 ? (
+          <div className="grid grid-cols-2 gap-4">
+            {currentBattle.map((pokemon, index) => (
+              <div 
+                key={pokemon.id}
+                className={`p-4 border rounded-lg cursor-pointer transition-all ${
+                  selectedPokemon.includes(pokemon.id) ? 'border-blue-500 bg-blue-50' : 'hover:border-gray-400'
+                }`}
+                onClick={() => handlePokemonSelect(pokemon.id)}
+              >
+                <img src={pokemon.image} alt={pokemon.name} className="w-16 h-16 mx-auto mb-2" />
+                <h3 className="text-center font-medium">{pokemon.name}</h3>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-gray-500 text-center">Loading battle...</p>
+        )}
+        
+        {selectedPokemon.length === 2 && (
+          <div className="mt-4 text-center">
+            <button 
+              onClick={handleTripletSelectionComplete}
+              className="px-6 py-2 bg-green-500 hover:bg-green-600 text-white rounded"
+            >
+              Submit Battle Result
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

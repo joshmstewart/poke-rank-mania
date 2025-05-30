@@ -1,7 +1,8 @@
 
 import React from "react";
 import { RankedPokemon } from "@/services/pokemon";
-import { useSortable, useDroppable } from '@dnd-kit/core';
+import { useSortable } from '@dnd-kit/sortable';
+import { useDroppable } from '@dnd-kit/core';
 import { formatPokemonName } from "@/utils/pokemon";
 
 interface SortableRankedPokemonCardProps {
