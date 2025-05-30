@@ -1,7 +1,7 @@
 
 import React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "sonner";
 import PokemonRanker from "./components/PokemonRanker";
@@ -17,13 +17,22 @@ const queryClient = new QueryClient();
 
 const AppContent: React.FC = () => {
   const { impliedBattles } = useImpliedBattleTracker();
+  const location = useLocation();
+  const currentMode = location.pathname === '/battle' ? 'battle' : 'ranking';
+
+  const handleModeChange = (mode: 'ranking' | 'battle') => {
+    // Mode switching is handled by routing, no additional logic needed
+  };
 
   return (
     <div className="min-h-screen bg-background">
       {/* Site Header */}
       <header className="bg-white border-b border-gray-200 px-4 py-3">
         <div className="max-w-7xl mx-auto">
-          <ModeSwitcher />
+          <ModeSwitcher 
+            currentMode={currentMode}
+            onModeChange={handleModeChange}
+          />
         </div>
       </header>
 
@@ -49,7 +58,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <Router>
         <ImpliedBattleProvider>
-          <PokemonProvider>
+          <PokemonProvider allPokemon={[]}>
             <AppSessionManager />
             <AppContent />
           </PokemonProvider>

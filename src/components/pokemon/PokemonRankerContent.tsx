@@ -2,9 +2,9 @@ import React from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { arrayMove } from "@/utils/arrayMove";
 import { DragEndEvent, DndContext } from "@dnd-kit/core";
-import { SortableContext, verticalListStrategy } from "@dnd-kit/sortable";
+import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { SortableItem } from "./SortableItem";
-import { PokemonCard } from "./PokemonCard";
+import PokemonCard from "@/components/PokemonCard";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -101,7 +101,7 @@ export const PokemonRankerContent: React.FC<PokemonRankerContentProps> = ({
         <DndContext onDragEnd={handleDragEnd}>
           <SortableContext
             items={typedRankedPokemon.map((pokemon) => pokemon.id.toString())}
-            strategy={verticalListStrategy}
+            strategy={verticalListSortingStrategy}
           >
             <div className="space-y-2">
               {isLoading ? (
@@ -119,10 +119,6 @@ export const PokemonRankerContent: React.FC<PokemonRankerContentProps> = ({
                   <SortableItem key={pokemon.id} id={pokemon.id.toString()}>
                     <PokemonCard
                       pokemon={pokemon}
-                      confidence={confidenceScores[pokemon.id]}
-                      showRankings={showRankings}
-                      suggestRanking={suggestRanking}
-                      removeSuggestion={removeSuggestion}
                     />
                   </SortableItem>
                 ))

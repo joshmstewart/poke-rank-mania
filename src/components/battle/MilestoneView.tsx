@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { getPokemonBackgroundColor } from "./utils/PokemonColorUtils";
 import InfiniteScrollHandler from "./InfiniteScrollHandler";
 import PokemonInfoModal from "@/components/pokemon/PokemonInfoModal";
+import { useEnhancedManualReorder } from "@/hooks/battle/useEnhancedManualReorder";
 
 interface MilestoneViewProps {
   formattedRankings: (Pokemon | RankedPokemon)[];
