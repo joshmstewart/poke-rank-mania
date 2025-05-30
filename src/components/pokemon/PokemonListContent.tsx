@@ -3,6 +3,7 @@ import React from "react";
 import { Droppable, Draggable } from "react-beautiful-dnd";
 import PokemonCard from "@/components/PokemonCard";
 import GenerationHeader from "./GenerationHeader";
+import { useAutoScroll } from "@/hooks/pokemon/useAutoScroll";
 
 interface PokemonListContentProps {
   droppableId: string;
@@ -23,8 +24,14 @@ const PokemonListContent: React.FC<PokemonListContentProps> = ({
   isGenerationExpanded,
   onToggleGeneration
 }) => {
+  const pokemonCount = items.filter(item => item.type === 'pokemon').length;
+  const { containerRef } = useAutoScroll(pokemonCount, isRankingArea);
+
   return (
-    <div className={`flex-1 overflow-auto bg-gray-50 rounded-lg p-2 min-h-[400px] ${isRankingArea ? 'z-20 relative' : 'z-10 relative'}`}>
+    <div 
+      ref={containerRef}
+      className={`flex-1 overflow-auto bg-gray-50 rounded-lg p-2 min-h-[400px] ${isRankingArea ? 'z-20 relative' : 'z-10 relative'}`}
+    >
       <Droppable droppableId={droppableId}>
         {(provided, snapshot) => (
           <div

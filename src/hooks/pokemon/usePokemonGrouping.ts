@@ -44,7 +44,8 @@ export const usePokemonGrouping = (
         lastGeneration = generation.id;
       }
       
-      // Only add the Pokemon if its generation is expanded (or if no expansion function provided)
+      // OPTIMIZATION: Only add Pokemon if its generation is expanded
+      // This prevents loading Pokemon from collapsed generations
       if (!isGenerationExpanded || isGenerationExpanded(generation?.id || 0)) {
         result.push({ type: 'pokemon', data: pokemon });
       }
