@@ -54,8 +54,8 @@ const PokemonRanker = () => {
         return;
       }
 
-      // Convert TrueSkill ratings to Manual mode format
-      const convertedRankings = ratedPokemonIds
+      // Convert TrueSkill ratings to Manual mode format - FIXED: Create proper RankedPokemon objects
+      const convertedRankings: RankedPokemon[] = ratedPokemonIds
         .map(pokemonId => {
           const pokemon = pokemonLookupMap.get(pokemonId);
           if (!pokemon) {
@@ -72,8 +72,9 @@ const PokemonRanker = () => {
 
           console.log(`🔄 [MANUAL_SYNC_FIX] Converting ${pokemon.name}: score=${conservativeEstimate.toFixed(2)}, confidence=${normalizedConfidence.toFixed(1)}%, battles=${trueskillData.battleCount}`);
 
-          return {
-            ...pokemon,
+          // FIXED: Create a proper RankedPokemon object with all required properties
+          const rankedPokemon: RankedPokemon = {
+            ...pokemon, // Spread all Pokemon properties
             score: conservativeEstimate,
             count: trueskillData.battleCount || 0,
             confidence: normalizedConfidence,
@@ -82,8 +83,10 @@ const PokemonRanker = () => {
             winRate: 0,
             rating: trueskillRating
           };
+
+          return rankedPokemon;
         })
-        .filter(Boolean)
+        .filter((pokemon): pokemon is RankedPokemon => pokemon !== null)
         .sort((a, b) => b.score - a.score); // Sort by score descending
 
       console.log(`🔄 [MANUAL_SYNC_FIX] ✅ Converted ${convertedRankings.length} Pokemon to Manual format`);
