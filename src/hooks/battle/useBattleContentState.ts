@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
@@ -120,9 +119,16 @@ export const useBattleContentState = (
             const resultArray = Array.isArray(result) ? result : [result];
             const updatedResults = [...battleResults, ...resultArray];
             
-            // Generate rankings using the coordination system
+            // CRITICAL FIX: Generate rankings and set them in state immediately
             const generatedRankings = coordination.generateRankings(updatedResults);
             console.log(`🏆🏆🏆 [MILESTONE_FIX] Generated ${generatedRankings?.length || 0} rankings for milestone`);
+            
+            if (generatedRankings && generatedRankings.length > 0) {
+              console.log(`🏆🏆🏆 [MILESTONE_FIX] Setting finalRankings with ${generatedRankings.length} Pokemon`);
+              setFinalRankings(generatedRankings);
+            } else {
+              console.error(`🏆🏆🏆 [MILESTONE_FIX] ❌ No rankings generated!`);
+            }
             
             // Trigger milestone view
             setTimeout(() => {
@@ -151,7 +157,7 @@ export const useBattleContentState = (
       console.error(`🚨🚨🚨 [BATTLE_STATE_CRITICAL] ❌ Error in battle processing:`, error);
       return null;
     }
-  }, [processResultFromProcessor, setBattlesCompleted, checkForMilestone, battleResults, coordination]);
+  }, [processResultFromProcessor, setBattlesCompleted, checkForMilestone, battleResults, coordination, setFinalRankings]);
 
   // CRITICAL FIX: Create a proper battle generation function
   const generateNewBattle = useCallback((battleType: BattleType): Pokemon[] => {
