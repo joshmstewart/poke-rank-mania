@@ -1,4 +1,3 @@
-
 import { TCGApiResponse, TCGCard } from './types';
 import { selectDiverseCards } from './sorting';
 
@@ -29,10 +28,20 @@ export const fetchTCGCards = async (pokemonName: string): Promise<{ firstCard: T
   const data: TCGApiResponse = await response.json();
   console.log(`🃏 [TCG_API] Raw API response for ${pokemonName}:`, data);
 
-  // Special detailed logging for Charizard and Mewtwo to analyze name forms
-  if (searchName.toLowerCase().includes('charizard') || searchName.toLowerCase().includes('mewtwo')) {
-    const pokemonType = searchName.toLowerCase().includes('charizard') ? 'CHARIZARD' : 'MEWTWO';
-    const emoji = searchName.toLowerCase().includes('charizard') ? '🔥' : '🧬';
+  // Special detailed logging for specific Pokemon to analyze name forms
+  const specialPokemon = ['charizard', 'mewtwo', 'pikachu', 'squirtle', 'charmander'];
+  const matchedPokemon = specialPokemon.find(p => searchName.toLowerCase().includes(p));
+  
+  if (matchedPokemon) {
+    const pokemonType = matchedPokemon.toUpperCase();
+    const emojiMap: { [key: string]: string } = {
+      'charizard': '🔥',
+      'mewtwo': '🧬',
+      'pikachu': '⚡',
+      'squirtle': '💧',
+      'charmander': '🦎'
+    };
+    const emoji = emojiMap[matchedPokemon];
     
     console.log(`${emoji} [${pokemonType}_TCG_ANALYSIS] Found ${data.data.length} ${pokemonType} cards:`);
     data.data.forEach((card, index) => {
