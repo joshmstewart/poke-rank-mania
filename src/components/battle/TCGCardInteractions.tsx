@@ -6,20 +6,22 @@ interface TCGCardInteractionsProps {
   isSelected: boolean;
   isProcessing: boolean;
   showFallback?: boolean;
+  isLoading?: boolean;
 }
 
 const TCGCardInteractions: React.FC<TCGCardInteractionsProps> = ({
   isHovered,
   isSelected,
   isProcessing,
-  showFallback = false
+  showFallback = false,
+  isLoading = false
 }) => {
-  // Only show hover feedback if we're NOT in fallback mode and all other conditions are met
-  const shouldShowHoverFeedback = isHovered && !isSelected && !isProcessing && !showFallback;
+  // Only show hover feedback if we're NOT in fallback mode, NOT loading, and all other conditions are met
+  const shouldShowHoverFeedback = isHovered && !isSelected && !isProcessing && !showFallback && !isLoading;
 
   return (
     <>
-      {/* Selection feedback overlay - only show if not in fallback mode */}
+      {/* Selection feedback overlay - only show if not in fallback mode and not loading */}
       {shouldShowHoverFeedback && (
         <div className="absolute inset-0 bg-blue-500 bg-opacity-10 rounded-lg flex items-center justify-center">
           <div className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-medium shadow-lg">

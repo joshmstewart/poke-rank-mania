@@ -120,8 +120,8 @@ const TCGBattleCard: React.FC<TCGBattleCardProps> = memo(({
     setIsHovered(false);
   }, [displayName]);
 
-  // Ensure hover state is only applied when appropriate
-  const shouldShowHover = isHovered && !isSelected && !modalOpen && !isProcessing;
+  // Ensure hover state is only applied when appropriate - now includes loading check
+  const shouldShowHover = isHovered && !isSelected && !modalOpen && !isProcessing && !isLoadingTCG;
 
   const cardClasses = `
     relative cursor-pointer transition-all duration-200 transform
@@ -165,12 +165,13 @@ const TCGBattleCard: React.FC<TCGBattleCardProps> = memo(({
           </PokemonInfoModal>
         </div>
 
-        {/* Interactive elements */}
+        {/* Interactive elements - now passes loading state */}
         <TCGCardInteractions 
           isHovered={shouldShowHover}
           isSelected={isSelected}
           isProcessing={isProcessing}
           showFallback={showFallback}
+          isLoading={isLoadingTCG}
         />
 
         <div className="relative">
