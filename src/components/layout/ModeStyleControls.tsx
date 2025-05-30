@@ -98,6 +98,10 @@ const ModeStyleControls: React.FC<ModeStyleControlsProps> = ({
   const currentImageState = imageStates[previewImageUrl];
   const imageLoaded = currentImageState?.loaded || false;
   const imageError = currentImageState?.error || false;
+  
+  // Determine if we should show the preview image or fallback icon
+  const shouldShowPreviewImage = previewImageUrl && !imageError && imageLoaded;
+  const shouldShowFallbackIcon = !previewImageUrl || imageError || !imageLoaded;
 
   return (
     <div className="flex items-center gap-4 bg-gray-100 rounded-xl p-2 shadow-md border-2 border-gray-400">
@@ -126,13 +130,11 @@ const ModeStyleControls: React.FC<ModeStyleControlsProps> = ({
               <DialogTrigger asChild>
                 <Button variant="ghost" size="sm" className="flex gap-2 items-center h-9 px-4 hover:bg-white/70 transition-colors">
                   <div className="flex items-center justify-center w-5 h-5 relative">
-                    {previewImageUrl && !imageError && (
+                    {shouldShowPreviewImage && (
                       <img 
                         src={previewImageUrl}
                         alt="Current style preview"
-                        className={`w-full h-full object-contain rounded-sm transition-opacity duration-200 ${
-                          imageLoaded ? 'opacity-100' : 'opacity-0'
-                        }`}
+                        className="w-full h-full object-contain rounded-sm"
                         onLoad={() => {
                           console.log('✅ [MODE_CONTROLS] Preview image loaded successfully:', previewImageUrl);
                           updateImageState(previewImageUrl, true, false);
@@ -143,7 +145,7 @@ const ModeStyleControls: React.FC<ModeStyleControlsProps> = ({
                         }}
                       />
                     )}
-                    {(isLoading || !imageLoaded || imageError || !previewImageUrl) && (
+                    {shouldShowFallbackIcon && (
                       <CurrentIcon className="w-4 h-4 text-gray-600" />
                     )}
                   </div>
