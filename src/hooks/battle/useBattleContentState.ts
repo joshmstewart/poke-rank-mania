@@ -97,6 +97,50 @@ export const useBattleContentState = (
     }
   }, [processResultFromProcessor, setBattlesCompleted]);
 
+  // CRITICAL FIX: Create a proper battle generation function
+  const generateNewBattle = useCallback((battleType: BattleType): Pokemon[] => {
+    const battleSize = battleType === "pairs" ? 2 : 3;
+    console.log(`🎲🎲🎲 [BATTLE_GENERATION_FIX] ===== generateNewBattle CALLED =====`);
+    console.log(`🎲🎲🎲 [BATTLE_GENERATION_FIX] Battle type: ${battleType}, size: ${battleSize}`);
+    console.log(`🎲🎲🎲 [BATTLE_GENERATION_FIX] Available Pokemon: ${allPokemon.length}`);
+    
+    if (!allPokemon || allPokemon.length < battleSize) {
+      console.error(`🎲🎲🎲 [BATTLE_GENERATION_FIX] ❌ Not enough Pokemon available`);
+      return [];
+    }
+    
+    // Simple random selection to fix the repetition issue
+    const availablePokemon = [...allPokemon];
+    const selectedPokemon: Pokemon[] = [];
+    
+    // Fisher-Yates shuffle for true randomness
+    for (let i = availablePokemon.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [availablePokemon[i], availablePokemon[j]] = [availablePokemon[j], availablePokemon[i]];
+    }
+    
+    // Take the first battleSize Pokemon
+    const result = availablePokemon.slice(0, battleSize);
+    
+    console.log(`🎲🎲🎲 [BATTLE_GENERATION_FIX] ✅ Generated battle: ${result.map(p => p.name).join(' vs ')}`);
+    
+    return result;
+  }, [allPokemon]);
+
+  // CRITICAL FIX: Create a startNewBattle function that actually generates new battles
+  const startNewBattle = useCallback((battleType: BattleType): void => {
+    console.log(`🚀 [START_NEW_BATTLE_FIX] ===== startNewBattle CALLED =====`);
+    console.log(`🚀 [START_NEW_BATTLE_FIX] Battle type: ${battleType}`);
+    
+    const newBattle = generateNewBattle(battleType);
+    if (newBattle && newBattle.length > 0) {
+      console.log(`🚀 [START_NEW_BATTLE_FIX] ✅ Setting new battle: ${newBattle.map(p => p.name).join(' vs ')}`);
+      stableSetCurrentBattle(newBattle);
+    } else {
+      console.error(`🚀 [START_NEW_BATTLE_FIX] ❌ Failed to generate new battle`);
+    }
+  }, [generateNewBattle, stableSetCurrentBattle]);
+
   // Coordinator state
   useBattleCoordinatorState(
     false,
@@ -133,10 +177,18 @@ export const useBattleContentState = (
     { setFinalRankings },
     milestoneEvents,
     () => { 
-      // Wrap startNewBattle to ensure it returns void
-      coordination.startNewBattle(battleType);
+      // Use our new startNewBattle function
+      startNewBattle(battleType);
     }
   );
+
+  // CRITICAL FIX: Initialize first battle on mount
+  useEffect(() => {
+    if (currentBattle.length === 0 && allPokemon.length > 0) {
+      console.log(`🏁 [INITIAL_BATTLE] Generating first battle`);
+      startNewBattle(battleType);
+    }
+  }, [allPokemon.length, currentBattle.length, battleType, startNewBattle]);
 
   // Event handlers
   const handlePokemonSelect = useCallback((id: number) => {
@@ -148,20 +200,28 @@ export const useBattleContentState = (
       // For pairs, immediately process the battle
       const currentBattlePokemon = currentBattle;
       if (currentBattlePokemon.length === 2) {
-        processBattleResult([id], currentBattlePokemon, battleType, selectedGeneration);
+        processBattleResult([id], currentBattlePokemon, battleType, selectedGeneration).then(() => {
+          // After processing, start a new battle
+          console.log(`🔄 [BATTLE_FLOW_FIX] Starting new battle after processing`);
+          startNewBattle(battleType);
+        });
       }
     } else {
       // For triplets, add to selection
       setSelectedPokemon(prev => [...prev, id]);
     }
-  }, [battleType, currentBattle, processBattleResult, selectedGeneration]);
+  }, [battleType, currentBattle, processBattleResult, selectedGeneration, startNewBattle]);
 
   const handleTripletSelectionComplete = useCallback(() => {
     if (selectedPokemon.length > 0 && currentBattle.length > 0) {
       console.log(`🚨🚨🚨 [BATTLE_STATE_CRITICAL] Triplet selection complete: ${selectedPokemon}`);
-      processBattleResult(selectedPokemon, currentBattle, battleType, selectedGeneration);
+      processBattleResult(selectedPokemon, currentBattle, battleType, selectedGeneration).then(() => {
+        // After processing, start a new battle
+        console.log(`🔄 [BATTLE_FLOW_FIX] Starting new battle after triplet processing`);
+        startNewBattle(battleType);
+      });
     }
-  }, [selectedPokemon, currentBattle, battleType, selectedGeneration, processBattleResult]);
+  }, [selectedPokemon, currentBattle, battleType, selectedGeneration, processBattleResult, startNewBattle]);
 
   const goBack = useCallback(() => {
     if (battleHistory.length > 0) {
@@ -210,7 +270,7 @@ export const useBattleContentState = (
     clearAllSuggestions,
     handleContinueBattles: () => {
       coordination.setShowingMilestone(false);
-      coordination.startNewBattle(battleType);
+      startNewBattle(battleType);
     },
     resetMilestoneInProgress: () => console.log("Reset milestone"),
     performFullBattleReset: () => console.log("Full reset"),
