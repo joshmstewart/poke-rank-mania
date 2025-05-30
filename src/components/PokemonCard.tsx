@@ -32,11 +32,11 @@ const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
 
   return (
     <Card className={`w-full overflow-hidden relative ${isDragging ? "opacity-50" : ""}`}>
-      <div className="absolute top-2 right-2 z-10">
+      <div className="absolute top-1 right-1 z-10">
         <PokemonInfoModal pokemon={validatedPokemon} />
       </div>
       
-      <div className="flex items-start p-3 gap-3">
+      <div className="flex items-start p-3 gap-3 pr-8">
         <PokemonCardImage 
           pokemonId={pokemonId}
           displayName={displayName}

@@ -23,9 +23,9 @@ const PokemonCardInfo: React.FC<PokemonCardInfoProps> = ({
 
   return (
     <div className="flex-1 min-w-0">
-      <div className={`flex justify-between ${compact ? "text-sm" : "text-base"}`}>
-        <span className="font-medium truncate">{displayName}</span>
-        <span className="text-xs">#{normalizedId}</span>
+      <div className={`flex justify-between items-start ${compact ? "text-sm" : "text-base"}`}>
+        <span className="font-medium truncate pr-2">{displayName}</span>
+        <span className="text-xs text-right whitespace-nowrap ml-2">#{normalizedId}</span>
       </div>
       {types?.length > 0 && (
         <div className="flex gap-1 mt-1">
