@@ -9,6 +9,7 @@ import BattleMode from "./components/BattleMode";
 import ModeSwitcher from "./components/ModeSwitcher";
 import AppSessionManager from "./components/AppSessionManager";
 import { PokemonProvider } from "./contexts/PokemonContext";
+import { AuthProvider } from "./contexts/AuthContext";
 import { ImpliedBattleProvider, useImpliedBattleTracker } from "./contexts/ImpliedBattleTracker";
 import ImpliedBattleTracker from "./components/validation/ImpliedBattleTracker";
 import "./App.css";
@@ -57,12 +58,14 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <Router>
-        <ImpliedBattleProvider>
-          <PokemonProvider allPokemon={[]}>
-            <AppSessionManager />
-            <AppContent />
-          </PokemonProvider>
-        </ImpliedBattleProvider>
+        <AuthProvider>
+          <ImpliedBattleProvider>
+            <PokemonProvider allPokemon={[]}>
+              <AppSessionManager />
+              <AppContent />
+            </PokemonProvider>
+          </ImpliedBattleProvider>
+        </AuthProvider>
       </Router>
     </QueryClientProvider>
   );
