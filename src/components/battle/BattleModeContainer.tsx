@@ -81,8 +81,35 @@ const BattleModeContainer: React.FC<BattleModeContainerProps> = ({
         />
 
         <BattleContentRenderer
-          battleState={battleState}
-          allPokemon={allPokemon}
+          showingMilestone={battleState.showingMilestone}
+          currentBattle={battleState.currentBattle}
+          selectedPokemon={battleState.selectedPokemon}
+          battlesCompleted={battleState.battlesCompleted}
+          battleType={battleState.battleType}
+          battleHistory={battleState.battleHistory}
+          selectedGeneration={selectedGeneration}
+          finalRankings={battleState.finalRankings}
+          activeTier={battleState.activeTier}
+          milestones={battleState.milestones}
+          rankingGenerated={battleState.rankingGenerated}
+          isAnyProcessing={battleState.isAnyProcessing}
+          setSelectedGeneration={setSelectedGeneration}
+          setBattleType={battleState.setBattleType}
+          setShowingMilestone={battleState.setShowingMilestone}
+          setActiveTier={battleState.setActiveTier}
+          handlePokemonSelect={battleState.handlePokemonSelect}
+          handleTripletSelectionComplete={battleState.handleTripletSelectionComplete}
+          goBack={battleState.goBack}
+          handleContinueBattles={battleState.handleContinueBattles}
+          performFullBattleReset={battleState.performFullBattleReset}
+          handleSaveRankings={battleState.handleSaveRankings}
+          suggestRanking={battleState.suggestRanking}
+          removeSuggestion={battleState.removeSuggestion}
+          resetMilestoneInProgress={battleState.resetMilestoneInProgress}
+          handleManualReorder={battleState.handleManualReorder}
+          onRankingsUpdate={() => {}}
+          setBattlesCompleted={setBattlesCompleted}
+          setBattleResults={setBattleResults}
         />
       </div>
     </div>
