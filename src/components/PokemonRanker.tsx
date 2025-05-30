@@ -1,3 +1,4 @@
+
 import React, { useEffect } from "react";
 import { usePokemonRanker } from "@/hooks/usePokemonRanker";
 import { RankedPokemon } from "@/services/pokemon";
@@ -168,13 +169,51 @@ const PokemonRanker = () => {
     console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_CRITICAL] ===== SYNC PROCESS COMPLETE =====`);
   }, [getAllRatings, getRating, pokemonLookupMap, allPokemon, setRankedPokemon, setAvailablePokemon]);
 
-  // DIAGNOSTIC: Manual sync trigger button
+  // ENHANCED: Manual sync trigger button with comprehensive diagnostics
   const handleManualSync = () => {
-    console.log(`🔥🔥🔥 [MANUAL_TRIGGER_DIAGNOSTIC] Manual sync button clicked`);
-    console.log(`🔥🔥🔥 [MANUAL_TRIGGER_DIAGNOSTIC] Current context state: map size=${pokemonLookupMap.size}, array length=${allPokemon.length}`);
+    console.log(`🔥🔥🔥 [MANUAL_TRIGGER_DIAGNOSTIC] ===== MANUAL SYNC BUTTON CLICKED =====`);
+    console.log(`🔥🔥🔥 [MANUAL_TRIGGER_DIAGNOSTIC] Timestamp: ${new Date().toISOString()}`);
+    console.log(`🔥🔥🔥 [MANUAL_TRIGGER_DIAGNOSTIC] Current context state:`);
+    console.log(`🔥🔥🔥 [MANUAL_TRIGGER_DIAGNOSTIC]   - pokemonLookupMap.size: ${pokemonLookupMap.size}`);
+    console.log(`🔥🔥🔥 [MANUAL_TRIGGER_DIAGNOSTIC]   - allPokemon.length: ${allPokemon.length}`);
+    console.log(`🔥🔥🔥 [MANUAL_TRIGGER_DIAGNOSTIC]   - pokemonLookupMap object: ${!!pokemonLookupMap}`);
+    console.log(`🔥🔥🔥 [MANUAL_TRIGGER_DIAGNOSTIC]   - allPokemon array: ${!!allPokemon}`);
+    
     const ratings = getAllRatings();
-    console.log(`🔥🔥🔥 [MANUAL_TRIGGER_DIAGNOSTIC] Current ratings count: ${Object.keys(ratings).length}`);
+    const ratingsCount = Object.keys(ratings).length;
+    console.log(`🔥🔥🔥 [MANUAL_TRIGGER_DIAGNOSTIC] Current ratings count: ${ratingsCount}`);
+    
+    // Log current state before sync
+    console.log(`🔥🔥🔥 [MANUAL_TRIGGER_DIAGNOSTIC] Current rankedPokemon.length: ${rankedPokemon.length}`);
+    console.log(`🔥🔥🔥 [MANUAL_TRIGGER_DIAGNOSTIC] Current availablePokemon.length: ${availablePokemon.length}`);
+    
+    // Sample some Pokemon from context if available
+    if (pokemonLookupMap.size > 0) {
+      const sampleIds = [1, 4, 7, 25, 150]; // Sample well-known Pokemon IDs
+      console.log(`🔥🔥🔥 [MANUAL_TRIGGER_DIAGNOSTIC] Sample Pokemon from context:`);
+      sampleIds.forEach(id => {
+        const pokemon = pokemonLookupMap.get(id);
+        if (pokemon) {
+          console.log(`🔥🔥🔥 [MANUAL_TRIGGER_DIAGNOSTIC]   - ${pokemon.name} (${pokemon.id}): ${pokemon.types?.join('/')}`);
+        }
+      });
+    }
+    
+    // Check specific dependencies that the useEffect watches
+    console.log(`🔥🔥🔥 [MANUAL_TRIGGER_DIAGNOSTIC] useEffect dependencies check:`);
+    console.log(`🔥🔥🔥 [MANUAL_TRIGGER_DIAGNOSTIC]   - pokemonLookupMap.size primitive: ${pokemonLookupMap.size}`);
+    console.log(`🔥🔥🔥 [MANUAL_TRIGGER_DIAGNOSTIC]   - allPokemon.length primitive: ${allPokemon.length}`);
+    console.log(`🔥🔥🔥 [MANUAL_TRIGGER_DIAGNOSTIC]   - Should useEffect trigger? ${pokemonLookupMap.size > 0 && ratingsCount > 0}`);
+    
+    console.log(`🔥🔥🔥 [MANUAL_TRIGGER_DIAGNOSTIC] About to call syncWithTrueSkillStore()...`);
     syncWithTrueSkillStore();
+    
+    // Post-sync immediate check (before React state updates are reflected)
+    setTimeout(() => {
+      console.log(`🔥🔥🔥 [MANUAL_TRIGGER_DIAGNOSTIC] ===== POST-SYNC IMMEDIATE CHECK =====`);
+      console.log(`🔥🔥🔥 [MANUAL_TRIGGER_DIAGNOSTIC] rankedPokemon.length after sync call: ${rankedPokemon.length}`);
+      console.log(`🔥🔥🔥 [MANUAL_TRIGGER_DIAGNOSTIC] availablePokemon.length after sync call: ${availablePokemon.length}`);
+    }, 100);
   };
 
   // CRITICAL FIX: Enhanced useEffect with ultra-detailed logging and simplified dependencies
@@ -335,15 +374,19 @@ const PokemonRanker = () => {
           onReset={handleReset}
         />
 
-        {/* DIAGNOSTIC: Manual sync button for testing */}
-        <div className="flex justify-center">
+        {/* ENHANCED: Manual sync button with comprehensive diagnostics */}
+        <div className="flex flex-col items-center gap-2">
           <Button 
             onClick={handleManualSync}
             variant="outline"
             className="bg-yellow-100 border-yellow-400 text-yellow-800 hover:bg-yellow-200"
           >
-            🔍 Debug: Manual Sync (Context: {pokemonLookupMap.size}, Ratings: {Object.keys(getAllRatings()).length})
+            🔍 Debug: Manual Sync
           </Button>
+          <div className="text-xs text-gray-600 text-center">
+            Context: {pokemonLookupMap.size} | Ratings: {Object.keys(getAllRatings()).length} | 
+            Ranked: {rankedPokemon.length} | Available: {availablePokemon.length}
+          </div>
         </div>
 
         <PokemonRankerContent

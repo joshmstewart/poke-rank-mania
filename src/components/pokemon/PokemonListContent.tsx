@@ -1,114 +1,69 @@
 
 import React from "react";
-import { Droppable, Draggable } from "react-beautiful-dnd";
-import PokemonCard from "@/components/PokemonCard";
-import GenerationHeader from "./GenerationHeader";
-import { useAutoScroll } from "@/hooks/pokemon/useAutoScroll";
+import { Pokemon } from "@/services/pokemon";
+import { Card } from "@/components/ui/card";
+import { PokemonModalTrigger } from "./PokemonModalTrigger";
+import { PokemonCardImage } from "./PokemonCardImage";
+import { PokemonCardInfo } from "./PokemonCardInfo";
+import { VotingArrows } from "@/components/ranking/VotingArrows";
 
 interface PokemonListContentProps {
-  droppableId: string;
-  items: Array<{ type: 'header' | 'pokemon'; data: any; generationId?: number }>;
-  showGenerationHeaders: boolean;
-  viewMode: "list" | "grid";
-  isRankingArea: boolean;
-  isGenerationExpanded?: (genId: number) => boolean;
-  onToggleGeneration?: (genId: number) => void;
+  pokemon: Pokemon[];
+  isRanked: boolean;
+  onSuggestRanking?: (pokemon: Pokemon, direction: "up" | "down", strength: 1 | 2 | 3) => void;
+  onRemoveSuggestion?: (pokemonId: number) => void;
 }
 
-const PokemonListContent: React.FC<PokemonListContentProps> = ({
-  droppableId,
-  items,
-  showGenerationHeaders,
-  viewMode,
-  isRankingArea,
-  isGenerationExpanded,
-  onToggleGeneration
+export const PokemonListContent: React.FC<PokemonListContentProps> = ({
+  pokemon,
+  isRanked,
+  onSuggestRanking,
+  onRemoveSuggestion
 }) => {
-  const pokemonCount = items.filter(item => item.type === 'pokemon').length;
-  const { containerRef } = useAutoScroll(pokemonCount, isRankingArea);
+  console.log(`🔍 [AUTO_SCROLL_DEBUG] PokemonListContent rendering with itemCount: ${pokemon.length}`);
+
+  if (pokemon.length === 0) {
+    return (
+      <div className="text-center py-8 text-gray-500">
+        {isRanked ? "No ranked Pokémon yet" : "No available Pokémon"}
+      </div>
+    );
+  }
 
   return (
-    <div 
-      ref={containerRef}
-      className={`flex-1 bg-gray-50 rounded-lg p-2 ${isRankingArea ? 'overflow-y-auto max-h-[calc(100vh-12rem)] z-20 relative' : 'overflow-auto min-h-[400px] max-h-[calc(100vh-12rem)] z-10 relative'}`}
-    >
-      <Droppable droppableId={droppableId}>
-        {(provided, snapshot) => (
-          <div
-            {...provided.droppableProps}
-            ref={provided.innerRef}
-            className={`
-              ${viewMode === "grid" ? "grid grid-cols-2 md:grid-cols-3 gap-2" : "space-y-2"} 
-              ${isRankingArea ? 'min-h-full' : 'h-full'} ${snapshot.isDraggingOver && isRankingArea ? 'bg-green-50 border-2 border-dashed border-green-500 rounded' : ''}
-            `}
-          >
-            {items.length > 0 ? (
-              items.map((item, index) => {
-                if (item.type === 'header') {
-                  // Render generation header
-                  const isExpanded = isGenerationExpanded ? isGenerationExpanded(item.generationId!) : true;
-                  return (
-                    <GenerationHeader
-                      key={`header-${item.generationId}`}
-                      generationId={item.generationId!}
-                      name={item.data.name}
-                      region={item.data.region}
-                      games={item.data.games}
-                      viewMode={viewMode}
-                      isExpanded={isExpanded}
-                      onToggle={() => onToggleGeneration && onToggleGeneration(item.generationId!)}
-                    />
-                  );
-                } else {
-                  // Render Pokemon card
-                  const pokemon = item.data;
-                  let draggableIndex = index;
-                  
-                  // If showing generation headers, we need to adjust the draggable index
-                  // to account for the non-draggable headers
-                  if (showGenerationHeaders) {
-                    draggableIndex = items
-                      .slice(0, index)
-                      .filter(i => i.type === 'pokemon')
-                      .length;
-                  }
-                  
-                  return (
-                    <Draggable
-                      key={`${pokemon.id}-${droppableId}`}
-                      draggableId={`${pokemon.id}-${droppableId}`}
-                      index={draggableIndex}
-                    >
-                      {(provided, snapshot) => (
-                        <div
-                          ref={provided.innerRef}
-                          {...provided.draggableProps}
-                          {...provided.dragHandleProps}
-                          className="relative z-10"
-                          data-pokemon-id={pokemon.id}
-                        >
-                          <PokemonCard
-                            pokemon={pokemon}
-                            isDragging={snapshot.isDragging}
-                            viewMode={viewMode}
-                          />
-                        </div>
-                      )}
-                    </Draggable>
-                  );
-                }
-              })
-            ) : (
-              <div className={`flex items-center justify-center ${viewMode === "grid" ? "col-span-full" : ""} h-32 text-muted-foreground`}>
-                No Pokemon found
-              </div>
-            )}
-            {provided.placeholder}
-          </div>
-        )}
-      </Droppable>
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+      {pokemon.map((pokemon, index) => (
+        <Card 
+          key={`pokemon-${pokemon.id}-${isRanked ? 'ranked' : 'available'}`} // Fixed: Unique keys
+          className="relative group hover:shadow-lg transition-shadow bg-white border border-gray-200"
+        >
+          <PokemonModalTrigger pokemon={pokemon}>
+            <div className="p-4 cursor-pointer">
+              <PokemonCardImage 
+                pokemon={pokemon} 
+                className="w-full h-32 object-contain mx-auto mb-2"
+              />
+              <PokemonCardInfo pokemon={pokemon} />
+            </div>
+          </PokemonModalTrigger>
+          
+          {isRanked && onSuggestRanking && onRemoveSuggestion && (
+            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <VotingArrows
+                pokemon={pokemon}
+                onSuggestRanking={onSuggestRanking}
+                onRemoveSuggestion={onRemoveSuggestion}
+              />
+            </div>
+          )}
+          
+          {isRanked && 'score' in pokemon && (
+            <div className="absolute top-2 left-2 bg-blue-500 text-white text-xs px-2 py-1 rounded">
+              #{index + 1}
+            </div>
+          )}
+        </Card>
+      ))}
     </div>
   );
 };
-
-export default PokemonListContent;
