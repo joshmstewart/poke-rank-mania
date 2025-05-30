@@ -69,21 +69,26 @@ export const useEnhancedManualReorder = (
 
     console.log(`🔥 [ENHANCED_REORDER] Found dragged Pokemon: ${draggedPokemon.name}`);
 
-    // FIRST: Physically move the Pokemon to simulate the final state
-    const [movedPokemon] = workingRankings.splice(sourceIndex, 1);
-    workingRankings.splice(destinationIndex, 0, movedPokemon);
-
-    console.log(`🔥 [ENHANCED_REORDER] ===== RANKINGS AFTER MOVE (FINAL STATE) =====`);
+    console.log(`🔥 [ENHANCED_REORDER] ===== BEFORE MOVE POSITIONS =====`);
     workingRankings.forEach((p, idx) => {
       console.log(`🔥 [ENHANCED_REORDER] Position ${idx}: ${p.name} (${p.id})`);
     });
 
-    const new_index = destinationIndex;
+    // STEP 1: Perform the physical move to get final positions
+    const [movedPokemon] = workingRankings.splice(sourceIndex, 1);
+    workingRankings.splice(destinationIndex, 0, movedPokemon);
+
+    console.log(`🔥 [ENHANCED_REORDER] ===== AFTER MOVE - FINAL POSITIONS =====`);
+    workingRankings.forEach((p, idx) => {
+      console.log(`🔥 [ENHANCED_REORDER] Position ${idx}: ${p.name} (${p.id})`);
+    });
+
+    const draggedFinalIndex = destinationIndex;
     const N = workingRankings.length;
 
-    console.log(`🔥 [ENHANCED_REORDER] Target position: ${new_index} out of ${N} total Pokemon`);
+    console.log(`🔥 [ENHANCED_REORDER] Dragged Pokemon final position: ${draggedFinalIndex} out of ${N} total Pokemon`);
 
-    // NOW identify opponents using the FINAL positions after the move
+    // STEP 2: NOW identify opponents using the FINAL positions after ALL movements
     const impliedBattles: Array<{
       opponent: RankedPokemon;
       draggedWins: boolean;
@@ -93,9 +98,9 @@ export const useEnhancedManualReorder = (
 
     console.log(`🔥 [ENHANCED_REORDER] ===== IDENTIFYING OPPONENTS USING FINAL POSITIONS =====`);
 
-    // P_above_1: Pokemon at new_index - 1 (dragged loses) - IMMEDIATE NEIGHBOR: 2 updates
-    if (new_index > 0) {
-      const p_above_1 = workingRankings[new_index - 1];
+    // P_above_1: Pokemon at draggedFinalIndex - 1 (dragged loses) - IMMEDIATE NEIGHBOR: 2 updates
+    if (draggedFinalIndex > 0) {
+      const p_above_1 = workingRankings[draggedFinalIndex - 1];
       if (p_above_1 && p_above_1.id !== draggedPokemonId) {
         impliedBattles.push({
           opponent: p_above_1,
@@ -104,13 +109,13 @@ export const useEnhancedManualReorder = (
           frequency: 2
         });
         console.log(`🔥 [ENHANCED_REORDER] Added P_above_1 battle: ${draggedPokemon.name} LOSES to ${p_above_1.name} (FREQUENCY: 2)`);
-        console.log(`🔥 [ENHANCED_REORDER] P_above_1 is at final position ${new_index - 1}`);
+        console.log(`🔥 [ENHANCED_REORDER] P_above_1 is at final position ${draggedFinalIndex - 1}`);
       }
     }
 
-    // P_above_2: Pokemon at new_index - 2 (dragged loses) - SECONDARY NEIGHBOR: 1 update
-    if (new_index > 1) {
-      const p_above_2 = workingRankings[new_index - 2];
+    // P_above_2: Pokemon at draggedFinalIndex - 2 (dragged loses) - SECONDARY NEIGHBOR: 1 update
+    if (draggedFinalIndex > 1) {
+      const p_above_2 = workingRankings[draggedFinalIndex - 2];
       if (p_above_2 && p_above_2.id !== draggedPokemonId) {
         impliedBattles.push({
           opponent: p_above_2,
@@ -119,13 +124,13 @@ export const useEnhancedManualReorder = (
           frequency: 1
         });
         console.log(`🔥 [ENHANCED_REORDER] Added P_above_2 battle: ${draggedPokemon.name} LOSES to ${p_above_2.name} (FREQUENCY: 1)`);
-        console.log(`🔥 [ENHANCED_REORDER] P_above_2 is at final position ${new_index - 2}`);
+        console.log(`🔥 [ENHANCED_REORDER] P_above_2 is at final position ${draggedFinalIndex - 2}`);
       }
     }
 
-    // P_below_1: Pokemon at new_index + 1 (dragged wins) - IMMEDIATE NEIGHBOR: 2 updates
-    if (new_index < N - 1) {
-      const p_below_1 = workingRankings[new_index + 1];
+    // P_below_1: Pokemon at draggedFinalIndex + 1 (dragged wins) - IMMEDIATE NEIGHBOR: 2 updates
+    if (draggedFinalIndex < N - 1) {
+      const p_below_1 = workingRankings[draggedFinalIndex + 1];
       if (p_below_1 && p_below_1.id !== draggedPokemonId) {
         impliedBattles.push({
           opponent: p_below_1,
@@ -134,13 +139,13 @@ export const useEnhancedManualReorder = (
           frequency: 2
         });
         console.log(`🔥 [ENHANCED_REORDER] Added P_below_1 battle: ${draggedPokemon.name} WINS against ${p_below_1.name} (FREQUENCY: 2)`);
-        console.log(`🔥 [ENHANCED_REORDER] P_below_1 is at final position ${new_index + 1}`);
+        console.log(`🔥 [ENHANCED_REORDER] P_below_1 is at final position ${draggedFinalIndex + 1}`);
       }
     }
 
-    // P_below_2: Pokemon at new_index + 2 (dragged wins) - SECONDARY NEIGHBOR: 1 update
-    if (new_index < N - 2) {
-      const p_below_2 = workingRankings[new_index + 2];
+    // P_below_2: Pokemon at draggedFinalIndex + 2 (dragged wins) - SECONDARY NEIGHBOR: 1 update
+    if (draggedFinalIndex < N - 2) {
+      const p_below_2 = workingRankings[draggedFinalIndex + 2];
       if (p_below_2 && p_below_2.id !== draggedPokemonId) {
         impliedBattles.push({
           opponent: p_below_2,
@@ -149,7 +154,7 @@ export const useEnhancedManualReorder = (
           frequency: 1
         });
         console.log(`🔥 [ENHANCED_REORDER] Added P_below_2 battle: ${draggedPokemon.name} WINS against ${p_below_2.name} (FREQUENCY: 1)`);
-        console.log(`🔥 [ENHANCED_REORDER] P_below_2 is at final position ${new_index + 2}`);
+        console.log(`🔥 [ENHANCED_REORDER] P_below_2 is at final position ${draggedFinalIndex + 2}`);
       }
     }
 
