@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Rating } from 'ts-trueskill';
@@ -45,6 +44,14 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
             }
           };
           
+          // ENHANCED: Dispatch event to notify Manual mode of updates
+          setTimeout(() => {
+            const updateEvent = new CustomEvent('trueskill-store-updated', {
+              detail: { pokemonId, rating: newRatings[pokemonId] }
+            });
+            document.dispatchEvent(updateEvent);
+          }, 10);
+          
           // Auto-sync to cloud after rating update
           setTimeout(() => {
             get().syncToCloud();
@@ -76,6 +83,13 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
       clearAllRatings: () => {
         console.log('[TRUESKILL_CLOUD] Clearing all ratings and syncing to cloud');
         set({ ratings: {}, lastSyncedAt: null });
+        
+        // ENHANCED: Dispatch clear event
+        setTimeout(() => {
+          const clearEvent = new CustomEvent('trueskill-store-cleared');
+          document.dispatchEvent(clearEvent);
+        }, 10);
+        
         // Sync empty state to cloud
         setTimeout(() => {
           get().syncToCloud();
@@ -174,6 +188,14 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
               lastSyncedAt: data.updated_at,
               isLoading: false 
             });
+            
+            // ENHANCED: Dispatch load complete event
+            setTimeout(() => {
+              const loadEvent = new CustomEvent('trueskill-store-loaded', {
+                detail: { ratingsCount: Object.keys(convertedRatings).length }
+              });
+              document.dispatchEvent(loadEvent);
+            }, 10);
           } else {
             console.log('[TRUESKILL_CLOUD] No cloud data found, starting fresh');
             set({ isLoading: false });

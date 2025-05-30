@@ -4,10 +4,11 @@ import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
 import { Rating, rate_1vs1 } from "ts-trueskill";
 import { useTrueSkillStore } from "@/stores/trueskillStore";
+import { useBattleStatePersistence } from "@/hooks/useBattleStatePersistence";
 
 /**
  * Hook for processing battle winners and losers
- * Now fully integrated with centralized TrueSkill store
+ * Now fully integrated with centralized TrueSkill store and battle persistence
  */
 export const useBattleResultProcessor = (
   battleResults: SingleBattle[],
@@ -17,6 +18,7 @@ export const useBattleResultProcessor = (
   trackLowerTierLoss?: (pokemonId: number) => void
 ) => {
   const [isProcessing, setIsProcessing] = useState(false);
+  const { saveBattleCount } = useBattleStatePersistence();
   
   // Get the centralized TrueSkill store functions - SINGLE SOURCE OF TRUTH
   const { updateRating, getRating, hasRating } = useTrueSkillStore();
@@ -67,6 +69,11 @@ export const useBattleResultProcessor = (
           
           console.log(`[CENTRALIZED_TRUESKILL] After battle - ${winner.name}: μ=${newWinnerRating.mu.toFixed(2)}, σ=${newWinnerRating.sigma.toFixed(2)}`);
           console.log(`[CENTRALIZED_TRUESKILL] After battle - ${loser.name}: μ=${newLoserRating.mu.toFixed(2)}, σ=${newLoserRating.sigma.toFixed(2)}`);
+          
+          // ENHANCED: Save battle count for persistence
+          const newBattleCount = battleResults.length + 1;
+          saveBattleCount(newBattleCount);
+          console.log(`[CENTRALIZED_TRUESKILL] Saved battle count: ${newBattleCount}`);
           
           // Handle tier-specific logic using centralized ratings
           if (activeTier && activeTier !== "All" && freezePokemonForTier) {
@@ -153,6 +160,11 @@ export const useBattleResultProcessor = (
             });
           });
 
+          // ENHANCED: Save battle count for triplets too
+          const newBattleCount = battleResults.length + newResults.length;
+          saveBattleCount(newBattleCount);
+          console.log(`[CENTRALIZED_TRUESKILL] Saved battle count: ${newBattleCount}`);
+
           setIsProcessing(false);
           return newResults;
         } else {
@@ -166,7 +178,7 @@ export const useBattleResultProcessor = (
       setIsProcessing(false);
       return null;
     }
-  }, [activeTier, freezePokemonForTier, trackLowerTierLoss, updateRating, getRating]);
+  }, [activeTier, freezePokemonForTier, trackLowerTierLoss, updateRating, getRating, battleResults.length, saveBattleCount]);
 
   return {
     processResult,

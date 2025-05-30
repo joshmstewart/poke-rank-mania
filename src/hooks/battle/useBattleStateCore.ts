@@ -5,6 +5,7 @@ import { useBattleGeneration } from "./useBattleGeneration";
 import { useBattleRankings } from "./useBattleRankings";
 import { useBattleMilestones } from "./useBattleMilestones";
 import { useSharedRefinementQueue } from "./useSharedRefinementQueue";
+import { useBattleStatePersistence } from "@/hooks/useBattleStatePersistence";
 
 export const useBattleStateCore = (
   allPokemon: Pokemon[],
@@ -13,12 +14,20 @@ export const useBattleStateCore = (
 ) => {
   console.log(`🔧 [BATTLE_STATE_CORE] Initializing with ${allPokemon.length} Pokemon`);
   
+  const { loadBattleCount, saveBattleCount, loadBattleState, saveBattleState } = useBattleStatePersistence();
+  
+  // ENHANCED: Load battle count from persistence
+  const [battlesCompleted, setBattlesCompleted] = useState(() => {
+    const savedCount = loadBattleCount();
+    console.log(`🔧 [BATTLE_STATE_CORE] Loaded saved battle count: ${savedCount}`);
+    return savedCount;
+  });
+
   // Basic state
   const [currentBattle, setCurrentBattle] = useState<Pokemon[]>([]);
   const [selectedPokemon, setSelectedPokemon] = useState<number[]>([]);
   const [battleType, setBattleType] = useState<BattleType>(initialBattleType);
   const [selectedGeneration, setSelectedGeneration] = useState(initialSelectedGeneration);
-  const [battlesCompleted, setBattlesCompleted] = useState(0);
   const [battleResults, setBattleResults] = useState<any[]>([]);
   const [showingMilestone, setShowingMilestone] = useState(false);
   const [rankingGenerated, setRankingGenerated] = useState(false);
@@ -39,6 +48,25 @@ export const useBattleStateCore = (
   // CRITICAL FIX: Get shared refinement queue
   const refinementQueue = useSharedRefinementQueue();
 
+  // ENHANCED: Save battle count whenever it changes
+  useEffect(() => {
+    saveBattleCount(battlesCompleted);
+    console.log(`🔧 [BATTLE_STATE_CORE] Saved battle count: ${battlesCompleted}`);
+  }, [battlesCompleted, saveBattleCount]);
+
+  // ENHANCED: Load battle state on mount
+  useEffect(() => {
+    const savedState = loadBattleState();
+    if (savedState) {
+      console.log(`🔧 [BATTLE_STATE_CORE] Loading saved battle state`);
+      setCurrentBattle(savedState.currentBattle || []);
+      setSelectedPokemon(savedState.selectedPokemon || []);
+      setBattleHistory(savedState.battleHistory || []);
+      setBattleResults(savedState.battleResults || []);
+      console.log(`🔧 [BATTLE_STATE_CORE] Restored battle state with ${savedState.battleHistory?.length || 0} history items`);
+    }
+  }, [loadBattleState]);
+
   // Start new battle with refinement queue support
   const startNewBattle = useCallback(() => {
     console.log(`🚀 [START_NEW_BATTLE] Starting new ${battleType} battle`);
@@ -53,10 +81,21 @@ export const useBattleStateCore = (
       setCurrentBattle(newBattle);
       setSelectedPokemon([]);
       console.log(`🚀 [START_NEW_BATTLE] New battle set: ${newBattle.map(p => p.name).join(' vs ')}`);
+      
+      // ENHANCED: Save battle state including current battle
+      const stateToSave = {
+        battlesCompleted,
+        currentBattle: newBattle,
+        selectedPokemon: [],
+        battleHistory,
+        battleResults,
+        lastBattleTimestamp: new Date().toISOString()
+      };
+      saveBattleState(stateToSave);
     } else {
       console.error(`🚀 [START_NEW_BATTLE] Failed to generate battle`);
     }
-  }, [battleType, generateNewBattle, battlesCompleted, refinementQueue]);
+  }, [battleType, generateNewBattle, battlesCompleted, refinementQueue, battleHistory, battleResults, saveBattleState]);
 
   // Pokemon selection handler with proper recent tracking
   const handlePokemonSelect = useCallback((pokemonId: number) => {
@@ -220,8 +259,10 @@ export const useBattleStateCore = (
     setCurrentBattle([]);
     setSelectedPokemon([]);
     resetRecentlyUsed();
+    // ENHANCED: Clear saved state
+    saveBattleCount(0);
     startNewBattle();
-  }, [startNewBattle, resetRecentlyUsed]);
+  }, [startNewBattle, resetRecentlyUsed, saveBattleCount]);
 
   // ... keep existing code (stub functions for compatibility)
   const handleSaveRankings = useCallback(() => {

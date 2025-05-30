@@ -23,7 +23,7 @@ export const useTrueSkillIntegration = ({
   setAvailablePokemon,
   setConfidenceScores
 }: UseTrueSkillIntegrationProps) => {
-  const { getAllRatings, getRating, loadFromCloud } = useTrueSkillStore();
+  const { getAllRatings, getRating, loadFromCloud, isLoading: storeIsLoading } = useTrueSkillStore();
   
   // Load data from cloud on startup
   useEffect(() => {
@@ -35,7 +35,7 @@ export const useTrueSkillIntegration = ({
     initializeFromCloud();
   }, [loadFromCloud]);
   
-  // Effect to populate ranked Pokemon from TrueSkill store
+  // Effect to populate ranked Pokemon from TrueSkill store - ENHANCED with immediate sync
   useEffect(() => {
     const updateRankingsFromTrueSkill = () => {
       console.log("[TRUESKILL_MANUAL_CLOUD] Updating Manual Mode rankings from cloud TrueSkill store");
@@ -99,13 +99,37 @@ export const useTrueSkillIntegration = ({
       console.log("[TRUESKILL_MANUAL_CLOUD] Updated Manual Mode from cloud - Ranked:", ratedPokemon.length, "Available:", unratedPokemon.length);
     };
     
-    // Only update if we have data loaded and store is not loading
-    if (!isLoading && !storeLoading && (availablePokemon.length > 0 || rankedPokemon.length > 0)) {
+    // ENHANCED: Update immediately when store loads AND when Pokemon data changes
+    if (!isLoading && !storeIsLoading && (availablePokemon.length > 0 || rankedPokemon.length > 0)) {
       updateRankingsFromTrueSkill();
     }
-  }, [isLoading, storeLoading, getAllRatings, getRating, availablePokemon, rankedPokemon, setRankedPokemon, setAvailablePokemon, setConfidenceScores]);
+  }, [isLoading, storeIsLoading, getAllRatings, getRating, availablePokemon.length, rankedPokemon.length, setRankedPokemon, setAvailablePokemon, setConfidenceScores]);
+
+  // ENHANCED: Listen for TrueSkill store updates from Battle mode
+  useEffect(() => {
+    const handleStoreUpdate = () => {
+      console.log("[TRUESKILL_MANUAL_CLOUD] Received TrueSkill store update, refreshing rankings");
+      // Small delay to ensure store is updated
+      setTimeout(() => {
+        const allRatings = getAllRatings();
+        if (Object.keys(allRatings).length > 0) {
+          // Trigger a re-sync by updating dependencies
+          const event = new CustomEvent('trueskill-store-updated');
+          document.dispatchEvent(event);
+        }
+      }, 100);
+    };
+
+    // Listen for store updates
+    const handleCustomEvent = () => handleStoreUpdate();
+    document.addEventListener('trueskill-store-updated', handleCustomEvent);
+
+    return () => {
+      document.removeEventListener('trueskill-store-updated', handleCustomEvent);
+    };
+  }, [getAllRatings]);
 
   return {
-    isStoreLoading: storeLoading
+    isStoreLoading: storeIsLoading
   };
 };
