@@ -67,48 +67,6 @@ export const useBattleStateCore = (
     }
   }, [loadBattleState]);
 
-  // CRITICAL FIX: Listen for restart events and reset all state
-  useEffect(() => {
-    const handleBattleSystemReset = (event: CustomEvent) => {
-      console.log(`🔄 [BATTLE_RESET_LISTENER] Received battle-system-reset event:`, event.detail);
-      
-      // Reset all state immediately
-      setBattlesCompleted(0);
-      setBattleResults([]);
-      setBattleHistory([]);
-      setCurrentBattle([]);
-      setSelectedPokemon([]);
-      setShowingMilestone(false);
-      setRankingGenerated(false);
-      setFinalRankings([]);
-      setConfidenceScores([]);
-      setCompletionPercentage(0);
-      setIsProcessingResult(false);
-      setIsBattleTransitioning(false);
-      setIsAnyProcessing(false);
-      
-      // Reset recently used Pokemon
-      resetRecentlyUsed();
-      
-      // Clear persistence
-      saveBattleCount(0);
-      
-      console.log(`🔄 [BATTLE_RESET_LISTENER] All battle state reset to initial values`);
-      
-      // Start a new battle after a short delay
-      setTimeout(() => {
-        console.log(`🔄 [BATTLE_RESET_LISTENER] Starting new battle after reset`);
-        startNewBattle();
-      }, 100);
-    };
-
-    document.addEventListener('battle-system-reset', handleBattleSystemReset as EventListener);
-    
-    return () => {
-      document.removeEventListener('battle-system-reset', handleBattleSystemReset as EventListener);
-    };
-  }, [resetRecentlyUsed, saveBattleCount]);
-
   // Start new battle with refinement queue support
   const startNewBattle = useCallback(() => {
     console.log(`🚀 [START_NEW_BATTLE] Starting new ${battleType} battle`);
@@ -138,6 +96,54 @@ export const useBattleStateCore = (
       console.error(`🚀 [START_NEW_BATTLE] Failed to generate battle`);
     }
   }, [battleType, generateNewBattle, battlesCompleted, refinementQueue, battleHistory, battleResults, saveBattleState]);
+
+  // CRITICAL FIX: Complete reset function that resets everything
+  const performCompleteReset = useCallback(() => {
+    console.log(`🔄 [COMPLETE_RESET] Starting complete reset of all battle state`);
+    
+    // Reset all state immediately
+    setBattlesCompleted(0);
+    setBattleResults([]);
+    setBattleHistory([]);
+    setCurrentBattle([]);
+    setSelectedPokemon([]);
+    setShowingMilestone(false);
+    setRankingGenerated(false);
+    setFinalRankings([]);
+    setConfidenceScores([]);
+    setCompletionPercentage(0);
+    setIsProcessingResult(false);
+    setIsBattleTransitioning(false);
+    setIsAnyProcessing(false);
+    
+    // Reset recently used Pokemon
+    resetRecentlyUsed();
+    
+    // Clear persistence
+    saveBattleCount(0);
+    
+    console.log(`🔄 [COMPLETE_RESET] All battle state reset to initial values`);
+    
+    // Start a new battle after a short delay
+    setTimeout(() => {
+      console.log(`🔄 [COMPLETE_RESET] Starting new battle after reset`);
+      startNewBattle();
+    }, 100);
+  }, [resetRecentlyUsed, saveBattleCount, startNewBattle]);
+
+  // CRITICAL FIX: Listen for restart events and reset all state
+  useEffect(() => {
+    const handleBattleSystemReset = (event: CustomEvent) => {
+      console.log(`🔄 [BATTLE_RESET_LISTENER] Received battle-system-reset event:`, event.detail);
+      performCompleteReset();
+    };
+
+    document.addEventListener('battle-system-reset', handleBattleSystemReset as EventListener);
+    
+    return () => {
+      document.removeEventListener('battle-system-reset', handleBattleSystemReset as EventListener);
+    };
+  }, [performCompleteReset]);
 
   // Pokemon selection handler with proper recent tracking
   const handlePokemonSelect = useCallback((pokemonId: number) => {
@@ -262,7 +268,7 @@ export const useBattleStateCore = (
     }
   }, [allPokemon.length, currentBattle.length, startNewBattle]);
 
-  // Stub functions for compatibility
+  // ... keep existing code (stub functions for compatibility)
   const goBack = useCallback(() => {
     if (battleHistory.length > 0) {
       const lastBattle = battleHistory[battleHistory.length - 1];
@@ -295,18 +301,9 @@ export const useBattleStateCore = (
   }, [generateRankingsFromBattleHistory, battleHistory]);
 
   const performFullBattleReset = useCallback(() => {
-    setBattlesCompleted(0);
-    setBattleResults([]);
-    setBattleHistory([]);
-    setCurrentBattle([]);
-    setSelectedPokemon([]);
-    resetRecentlyUsed();
-    // ENHANCED: Clear saved state
-    saveBattleCount(0);
-    startNewBattle();
-  }, [startNewBattle, resetRecentlyUsed, saveBattleCount]);
+    performCompleteReset();
+  }, [performCompleteReset]);
 
-  // ... keep existing code (stub functions for compatibility)
   const handleSaveRankings = useCallback(() => {
     console.log(`💾 [SAVE_RANKINGS] Saving rankings`);
   }, []);
