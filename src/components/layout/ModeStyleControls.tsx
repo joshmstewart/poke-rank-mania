@@ -32,20 +32,22 @@ const ModeStyleControls: React.FC<ModeStyleControlsProps> = ({
   const [previewLoaded, setPreviewLoaded] = useState(false);
   const [currentImageMode, setCurrentImageMode] = useState<'pokemon' | 'tcg'>('pokemon');
 
-  // Load preview image and current mode when component mounts
+  // Load preview image and current mode when component mounts or dialog closes
   useEffect(() => {
     const updatePreviewImage = () => {
       const imageMode = getCurrentImageMode();
       setCurrentImageMode(imageMode);
       
+      let newUrl = '';
       if (imageMode === 'tcg') {
         // Use a Pikachu TCG card image for TCG mode
-        setPreviewImageUrl('https://images.pokemontcg.io/base1/58_hires.png');
+        newUrl = 'https://images.pokemontcg.io/base1/58_hires.png';
       } else {
         // Use regular Pikachu artwork for Pokemon mode
-        const url = getPreferredImageUrl(PIKACHU_ID);
-        setPreviewImageUrl(url);
+        newUrl = getPreferredImageUrl(PIKACHU_ID);
       }
+      
+      setPreviewImageUrl(newUrl);
       setPreviewLoaded(false); // Reset loaded state when URL changes
     };
 
@@ -63,7 +65,7 @@ const ModeStyleControls: React.FC<ModeStyleControlsProps> = ({
     return () => {
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, []);
+  }, [imageSettingsOpen]); // Add imageSettingsOpen as dependency
 
   // Get current mode display text and icon
   const getCurrentModeText = () => {
@@ -138,19 +140,6 @@ const ModeStyleControls: React.FC<ModeStyleControlsProps> = ({
               </DialogHeader>
               <ImagePreferenceSelector onClose={() => {
                 setImageSettingsOpen(false);
-                // Update preview after closing
-                const imageMode = getCurrentImageMode();
-                setCurrentImageMode(imageMode);
-                
-                let newUrl = '';
-                if (imageMode === 'tcg') {
-                  newUrl = 'https://images.pokemontcg.io/base1/58_hires.png';
-                } else {
-                  newUrl = getPreferredImageUrl(PIKACHU_ID);
-                }
-                
-                setPreviewImageUrl(newUrl);
-                setPreviewLoaded(false); // Reset loaded state
               }} />
             </DialogContent>
           </Dialog>
