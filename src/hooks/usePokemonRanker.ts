@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { 
   Pokemon, 
@@ -6,7 +5,7 @@ import {
   loadUnifiedSessionData,
   saveUnifiedSessionData,
   ITEMS_PER_PAGE,
-  RankedPokemon // make sure this import exists
+  RankedPokemon
 } from "@/services/pokemon";
 import { toast } from "@/hooks/use-toast";
 import { LoadingType, RankingState, RankingActions } from "./pokemon/types";
@@ -32,7 +31,17 @@ export const usePokemonRanker = (): RankingState & RankingActions & { loadingRef
   const [loadingType, setLoadingType] = useState<LoadingType>("infinite");
   
   // Get TrueSkill store functions
-  const { getAllRatings, getRating } = useTrueSkillStore();
+  const { getAllRatings, getRating, loadFromCloud, isLoading: storeLoading } = useTrueSkillStore();
+  
+  // Load data from cloud on startup
+  useEffect(() => {
+    const initializeFromCloud = async () => {
+      console.log("[POKEMON_RANKER_CLOUD] Loading data from cloud...");
+      await loadFromCloud();
+    };
+    
+    initializeFromCloud();
+  }, [loadFromCloud]);
   
   const { loadData } = useDataLoader(
     selectedGeneration,
@@ -55,21 +64,21 @@ export const usePokemonRanker = (): RankingState & RankingActions & { loadingRef
   
   const { getPageRange } = usePagination(currentPage, totalPages);
   
-  // Auto-save functionality
+  // Auto-save functionality - now cloud-only
   useAutoSave(rankedPokemon, selectedGeneration);
   
   // Effect to populate ranked Pokemon from TrueSkill store
   useEffect(() => {
     const updateRankingsFromTrueSkill = () => {
-      console.log("[TRUESKILL_MANUAL] Updating Manual Mode rankings from TrueSkill store");
+      console.log("[TRUESKILL_MANUAL_CLOUD] Updating Manual Mode rankings from cloud TrueSkill store");
       
       const allRatings = getAllRatings();
       const ratedPokemonIds = Object.keys(allRatings).map(Number);
       
-      console.log("[TRUESKILL_MANUAL] Found TrueSkill ratings for Pokemon IDs:", ratedPokemonIds);
+      console.log("[TRUESKILL_MANUAL_CLOUD] Found TrueSkill ratings for Pokemon IDs:", ratedPokemonIds);
       
       if (ratedPokemonIds.length === 0) {
-        console.log("[TRUESKILL_MANUAL] No TrueSkill ratings found, keeping current state");
+        console.log("[TRUESKILL_MANUAL_CLOUD] No TrueSkill ratings found, keeping current state");
         return;
       }
       
@@ -82,7 +91,6 @@ export const usePokemonRanker = (): RankingState & RankingActions & { loadingRef
       
       allCurrentPokemon.forEach(pokemon => {
         if (ratedPokemonIds.includes(pokemon.id)) {
-          // Add TrueSkill rating to the Pokemon object
           const rating = getRating(pokemon.id);
           const pokemonWithRating = {
             ...pokemon,
@@ -98,10 +106,10 @@ export const usePokemonRanker = (): RankingState & RankingActions & { loadingRef
       ratedPokemon.sort((a, b) => {
         const scoreA = a.rating ? (a.rating.mu - 3 * a.rating.sigma) : 0;
         const scoreB = b.rating ? (b.rating.mu - 3 * b.rating.sigma) : 0;
-        return scoreB - scoreA; // Higher scores first
+        return scoreB - scoreA;
       });
       
-      console.log("[TRUESKILL_MANUAL] Sorted rated Pokemon:", ratedPokemon.map(p => ({
+      console.log("[TRUESKILL_MANUAL_CLOUD] Sorted rated Pokemon:", ratedPokemon.map(p => ({
         name: p.name,
         id: p.id,
         score: p.rating ? (p.rating.mu - 3 * p.rating.sigma).toFixed(2) : 'N/A'
@@ -120,14 +128,14 @@ export const usePokemonRanker = (): RankingState & RankingActions & { loadingRef
       setAvailablePokemon(unratedPokemon);
       setConfidenceScores(newConfidenceScores);
       
-      console.log("[TRUESKILL_MANUAL] Updated Manual Mode - Ranked:", ratedPokemon.length, "Available:", unratedPokemon.length);
+      console.log("[TRUESKILL_MANUAL_CLOUD] Updated Manual Mode from cloud - Ranked:", ratedPokemon.length, "Available:", unratedPokemon.length);
     };
     
-    // Only update if we have data loaded
-    if (!isLoading && (availablePokemon.length > 0 || rankedPokemon.length > 0)) {
+    // Only update if we have data loaded and store is not loading
+    if (!isLoading && !storeLoading && (availablePokemon.length > 0 || rankedPokemon.length > 0)) {
       updateRankingsFromTrueSkill();
     }
-  }, [isLoading, getAllRatings, getRating]); // Remove availablePokemon and rankedPokemon from deps to avoid infinite loop
+  }, [isLoading, storeLoading, getAllRatings, getRating]);
 
   useEffect(() => {
     loadData();
@@ -137,20 +145,15 @@ export const usePokemonRanker = (): RankingState & RankingActions & { loadingRef
     const allPokemon = [...availablePokemon, ...rankedPokemon].sort((a, b) => a.id - b.id);
     setAvailablePokemon(allPokemon);
     setRankedPokemon([]);
-    setConfidenceScores({}); // Reset confidence scores as well
+    setConfidenceScores({});
     
-    localStorage.removeItem(`pokemon-rankings-gen-${selectedGeneration}`);
+    // Clear from cloud storage instead of localStorage
+    console.log("[POKEMON_RANKER_CLOUD] Resetting rankings in cloud storage");
     
     toast({
       title: "Rankings Reset",
-      description: "Your rankings have been cleared."
+      description: "Your rankings have been cleared from cloud storage."
     });
-    
-    const sessionData = loadUnifiedSessionData();
-    if (sessionData.rankings) {
-      delete sessionData.rankings[`gen-${selectedGeneration}`];
-      saveUnifiedSessionData(sessionData);
-    }
   };
 
   const handleGenerationChange = (value: string) => {
@@ -177,10 +180,10 @@ export const usePokemonRanker = (): RankingState & RankingActions & { loadingRef
   };
 
   return {
-    isLoading,
+    isLoading: isLoading || storeLoading,
     availablePokemon,
     rankedPokemon,
-    confidenceScores, // ✅ Added to resolve your error
+    confidenceScores,
     selectedGeneration,
     currentPage,
     totalPages,

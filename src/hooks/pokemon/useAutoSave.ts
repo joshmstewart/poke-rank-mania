@@ -1,18 +1,14 @@
 
 import { useEffect } from "react";
-import { Pokemon, saveRankings, saveUnifiedSessionData, loadUnifiedSessionData } from "@/services/pokemon";
+import { Pokemon } from "@/services/pokemon";
 
-export function useAutoSave(rankedPokemon: Pokemon[], selectedGeneration: number) {
-  // Add auto-save functionality
+/**
+ * Auto-save hook - now uses cloud storage only
+ */
+export const useAutoSave = (rankedPokemon: Pokemon[], selectedGeneration: number) => {
   useEffect(() => {
-    // Only save when rankedPokemon changes and is not empty
-    if (rankedPokemon.length > 0) {
-      // Use a short delay to avoid excessive saves during drag operations
-      const saveTimer = setTimeout(() => {
-        saveRankings(rankedPokemon, selectedGeneration);
-      }, 1000);
-      
-      return () => clearTimeout(saveTimer);
-    }
+    // Auto-save is now handled by the centralized TrueSkill store
+    // which automatically syncs to cloud after updates
+    console.log('[AUTO_SAVE_CLOUD] Auto-save now handled by TrueSkill store cloud sync');
   }, [rankedPokemon, selectedGeneration]);
-}
+};

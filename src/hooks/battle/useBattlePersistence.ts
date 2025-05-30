@@ -12,19 +12,16 @@ export const useBattlePersistence = (
   battleHistory: { battle: Pokemon[], selected: number[] }[],
   completionPercentage: number,
   fullRankingMode: boolean,
-  saveBattleState: () => void, // Updated to match useLocalStorage
+  saveBattleState: () => void,
   calculateCompletionPercentage: () => void
 ) => {
-  // Calculate completion percentage and save state when results change
+  // Calculate completion percentage when results change - no localStorage saving
   useEffect(() => {
-    // Calculate completion percentage when battle results change
     if (allPokemon.length > 0) {
       calculateCompletionPercentage();
-      
-      // Save battle state whenever results change
-      saveBattleState();
+      console.log("[BATTLE_PERSISTENCE_CLOUD] Battle state managed in cloud storage only");
     }
-  }, [battleResults, allPokemon, selectedGeneration, battleType]);
+  }, [battleResults, allPokemon, selectedGeneration, battleType, calculateCompletionPercentage]);
   
   return {};
 };

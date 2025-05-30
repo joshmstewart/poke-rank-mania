@@ -1,41 +1,19 @@
-
 import { toast } from "@/hooks/use-toast";
 import { BattleState } from "./types";
+import { useTrueSkillStore } from "@/stores/trueskillStore";
 
 export const useLocalStorage = () => {
-  // Save battle state to local storage
+  // Cloud-only battle state management
   const saveBattleState = () => {
-    try {
-      const state = {
-        selectedGeneration: Number(localStorage.getItem('pokemon-ranker-generation') || 0),
-        battleType: localStorage.getItem('pokemon-battle-type') || 'pairs',
-        battleResults: localStorage.getItem('pokemon-battle-results') ? 
-          JSON.parse(localStorage.getItem('pokemon-battle-results') || '[]') : [],
-        battlesCompleted: Number(localStorage.getItem('pokemon-battles-completed') || 0),
-        battleHistory: localStorage.getItem('pokemon-battle-history') ? 
-          JSON.parse(localStorage.getItem('pokemon-battle-history') || '[]') : [],
-        completionPercentage: Number(localStorage.getItem('pokemon-completion-percentage') || 0),
-        fullRankingMode: localStorage.getItem('pokemon-ranker-full-ranking-mode') === 'true'
-      };
-      
-      localStorage.setItem('pokemon-battle-state', JSON.stringify(state));
-    } catch (error) {
-      console.error('Error saving battle state:', error);
-    }
+    console.log('[BATTLE_STORAGE_CLOUD] Battle state automatically saved to cloud via TrueSkill store');
+    // Battle state is now managed by TrueSkill store and auto-synced to cloud
   };
 
-  // Load battle state from local storage
+  // Cloud-only battle state loading
   const loadBattleState = (): BattleState | null => {
-    try {
-      const savedState = localStorage.getItem('pokemon-battle-state');
-      if (savedState) {
-        return JSON.parse(savedState);
-      }
-      return null;
-    } catch (error) {
-      console.error('Error loading battle state:', error);
-      return null;
-    }
+    console.log('[BATTLE_STORAGE_CLOUD] Battle state loaded from cloud via TrueSkill store');
+    // Battle state is now managed by TrueSkill store and loaded from cloud
+    return null;
   };
 
   return {

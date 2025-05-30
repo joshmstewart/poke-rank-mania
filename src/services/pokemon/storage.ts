@@ -1,98 +1,61 @@
 
 import { Pokemon, UnifiedSessionData } from "./types";
 import { Rating } from "ts-trueskill";
+import { useTrueSkillStore } from "@/stores/trueskillStore";
 
-// Alias for backwards compatibility
+// Alias for backwards compatibility - now uses cloud storage
 export const getSavedRankings = loadRankings;
 
 /**
- * Save rankings to local storage
+ * Save rankings to cloud storage (no localStorage)
  */
 export function saveRankings(
   rankings: Pokemon[], 
   generation: number = 0,
   type: "manual" | "battle" = "manual"
 ): void {
-  const storageKey = getStorageKey(generation, type);
+  console.log('[POKEMON_STORAGE_CLOUD] Save rankings called - using cloud storage only');
   
-  // Before saving, extract rating data to be stored separately
-  const serializableRankings = rankings.map(pokemon => {
-    // Extract rating data
-    const ratingData = pokemon.rating ? {
-      mu: pokemon.rating.mu,
-      sigma: pokemon.rating.sigma
-    } : undefined;
-    
-    // Create a copy without the rating object (which can't be serialized)
-    const { rating, ...rest } = pokemon;
-    return rest;
-  });
-  
-  localStorage.setItem(storageKey, JSON.stringify(serializableRankings));
-  
-  // Also save rating data separately
-  const ratingData: Record<number, { mu: number; sigma: number }> = {};
+  // Extract and store rating data in centralized TrueSkill store
   rankings.forEach(pokemon => {
     if (pokemon.rating) {
-      ratingData[pokemon.id] = {
-        mu: pokemon.rating.mu,
-        sigma: pokemon.rating.sigma
-      };
+      useTrueSkillStore.getState().updateRating(pokemon.id, pokemon.rating);
     }
   });
   
-  // Update unified session data with both rankings and rating data
-  updateUnifiedSessionData(serializableRankings, generation, type, ratingData);
+  // Auto-sync to cloud will be triggered by the store
+  console.log(`[POKEMON_STORAGE_CLOUD] Stored ${rankings.length} Pokemon ratings in centralized store`);
 }
 
 /**
- * Load rankings from local storage
+ * Load rankings from cloud storage (no localStorage)
  */
 export function loadRankings(
   generation: number = 0,
   type: "manual" | "battle" = "manual"
 ): Pokemon[] {
-  const storageKey = getStorageKey(generation, type);
-  const storedData = localStorage.getItem(storageKey);
+  console.log('[POKEMON_STORAGE_CLOUD] Load rankings called - using cloud storage only');
   
-  if (storedData) {
-    try {
-      // Load the basic Pokemon data
-      const pokemonData = JSON.parse(storedData) as Pokemon[];
-      
-      // Load the session data to get rating information
-      const sessionData = loadUnifiedSessionData();
-      const ratingData = sessionData.ratingData || {};
-      
-      // Restore ratings to the Pokemon objects
-      return pokemonData.map(pokemon => {
-        const storedRating = ratingData[pokemon.id];
-        if (storedRating) {
-          pokemon.rating = new Rating(storedRating.mu, storedRating.sigma);
-        }
-        return pokemon;
-      });
-    } catch (e) {
-      console.error("Error parsing stored rankings:", e);
-    }
-  }
-  
+  // Rankings are now generated dynamically from TrueSkill store
+  // No need to load from localStorage
   return [];
 }
 
 /**
- * Clear rankings from local storage
+ * Clear rankings from cloud storage (no localStorage)
  */
 export function clearRankings(
   generation: number = 0,
   type: "manual" | "battle" = "manual"
 ): void {
-  const storageKey = getStorageKey(generation, type);
-  localStorage.removeItem(storageKey);
+  console.log('[POKEMON_STORAGE_CLOUD] Clear rankings called - using cloud storage only');
+  
+  // Clear from centralized store (will auto-sync to cloud)
+  useTrueSkillStore.getState().clearAllRatings();
 }
 
 /**
- * Generate storage key based on generation and type
+ * Generate storage key - deprecated, kept for compatibility
  */
 function getStorageKey(
   generation: number,
@@ -101,92 +64,65 @@ function getStorageKey(
   return `pokemon-rankings-${type}-gen-${generation}`;
 }
 
-// Get session data for Pokemon Ranker app
+// Cloud-only session data management
 export function loadUnifiedSessionData(): UnifiedSessionData {
-  const storageKey = 'pokemon-ranker-session';
-  let data: UnifiedSessionData = {
+  console.log('[POKEMON_STORAGE_CLOUD] Loading unified session data from cloud');
+  
+  // Return minimal session data structure
+  const data: UnifiedSessionData = {
     generationFilter: 0,
     rankings: {} as Record<string, Pokemon[]>,
     battleHistory: [] as any[],
-    sessionId: '',
+    sessionId: crypto.randomUUID(),
     lastUpdate: Date.now(),
-    ratingData: {} // Initialize empty rating data
+    ratingData: {} // No longer used - data is in TrueSkill store
   };
-  
-  try {
-    const storedData = localStorage.getItem(storageKey);
-    if (storedData) {
-      data = JSON.parse(storedData);
-      // Ensure ratingData exists
-      if (!data.ratingData) {
-        data.ratingData = {};
-      }
-    }
-  } catch (e) {
-    console.error("Error loading session data:", e);
-  }
   
   return data;
 }
 
-// Save session data for Pokemon Ranker app
+// Cloud-only session data saving
 export function saveUnifiedSessionData(data: UnifiedSessionData): void {
-  const storageKey = 'pokemon-ranker-session';
-  localStorage.setItem(storageKey, JSON.stringify(data));
-}
-
-// Update the unified session data with new rankings
-function updateUnifiedSessionData(
-  rankings: Pokemon[], 
-  generation: number, 
-  type: "manual" | "battle",
-  ratingData?: Record<number, { mu: number; sigma: number }>
-): void {
-  const sessionData = loadUnifiedSessionData();
-  
-  if (!sessionData.rankings) {
-    sessionData.rankings = {};
-  }
-  
-  const rankingKey = `${type}-gen-${generation}`;
-  sessionData.rankings[rankingKey] = rankings;
-  
-  // Update rating data if provided
-  if (ratingData) {
-    if (!sessionData.ratingData) {
-      sessionData.ratingData = {};
-    }
-    
-    // Merge the new rating data with existing
-    sessionData.ratingData = {
-      ...sessionData.ratingData,
-      ...ratingData
-    };
-  }
-  
-  saveUnifiedSessionData(sessionData);
+  console.log('[POKEMON_STORAGE_CLOUD] Save unified session data - using cloud storage only');
+  // Session data is now managed by TrueSkill store and Supabase
 }
 
 /**
- * Export session data for sharing/backup
+ * Export session data from cloud
  */
 export function exportUnifiedSessionData(): string {
-  const sessionData = loadUnifiedSessionData();
+  const allRatings = useTrueSkillStore.getState().getAllRatings();
+  const sessionData: UnifiedSessionData = {
+    generationFilter: 0,
+    rankings: {},
+    battleHistory: [],
+    sessionId: crypto.randomUUID(),
+    lastUpdate: Date.now(),
+    ratingData: allRatings
+  };
+  
   return JSON.stringify(sessionData);
 }
 
 /**
- * Import session data from external source
+ * Import session data to cloud
  */
 export function importUnifiedSessionData(jsonData: string): boolean {
   try {
     const data = JSON.parse(jsonData) as UnifiedSessionData;
-    // Basic validation to ensure it's a valid session data
     if (!data || typeof data !== 'object') {
       return false;
     }
     
-    saveUnifiedSessionData(data);
+    // Import rating data to TrueSkill store
+    if (data.ratingData) {
+      const store = useTrueSkillStore.getState();
+      Object.entries(data.ratingData).forEach(([pokemonId, ratingData]) => {
+        const rating = new Rating(ratingData.mu, ratingData.sigma);
+        store.updateRating(Number(pokemonId), rating);
+      });
+    }
+    
     return true;
   } catch (e) {
     console.error("Error importing session data:", e);
