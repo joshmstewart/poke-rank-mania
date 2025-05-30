@@ -8,7 +8,8 @@ import { useImpliedBattleTracker } from "@/contexts/ImpliedBattleTracker";
 
 export const useEnhancedManualReorder = (
   finalRankings: RankedPokemon[],
-  onRankingsUpdate: (updatedRankings: RankedPokemon[]) => void
+  onRankingsUpdate: (updatedRankings: RankedPokemon[]) => void,
+  preventAutoResorting: boolean = false // NEW: Flag to prevent auto-resorting
 ) => {
   const { pokemonLookupMap } = usePokemonContext();
   const { addImpliedBattle } = useImpliedBattleTracker();
@@ -16,6 +17,7 @@ export const useEnhancedManualReorder = (
   console.log(`🔥 [ENHANCED_REORDER_HOOK_INIT] ===== HOOK INITIALIZATION =====`);
   console.log(`🔥 [ENHANCED_REORDER_HOOK_INIT] finalRankings length: ${finalRankings?.length || 0}`);
   console.log(`🔥 [ENHANCED_REORDER_HOOK_INIT] onRankingsUpdate exists: ${!!onRankingsUpdate}`);
+  console.log(`🔥 [ENHANCED_REORDER_HOOK_INIT] preventAutoResorting: ${preventAutoResorting}`);
   console.log(`🔥 [ENHANCED_REORDER_HOOK_INIT] addImpliedBattle exists: ${!!addImpliedBattle}`);
   console.log(`🔥 [ENHANCED_REORDER_HOOK_INIT] pokemonLookupMap size: ${pokemonLookupMap?.size || 0}`);
 
@@ -29,6 +31,7 @@ export const useEnhancedManualReorder = (
     console.log(`🔥 [ENHANCED_REORDER] - draggedPokemonId: ${draggedPokemonId}`);
     console.log(`🔥 [ENHANCED_REORDER] - sourceIndex: ${sourceIndex}`);
     console.log(`🔥 [ENHANCED_REORDER] - destinationIndex: ${destinationIndex}`);
+    console.log(`🔥 [ENHANCED_REORDER] - preventAutoResorting: ${preventAutoResorting}`);
     console.log(`🔥 [ENHANCED_REORDER] - finalRankings available: ${!!finalRankings}`);
     console.log(`🔥 [ENHANCED_REORDER] - finalRankings length: ${finalRankings?.length || 0}`);
     console.log(`🔥 [ENHANCED_REORDER] - onRankingsUpdate available: ${!!onRankingsUpdate}`);
@@ -244,10 +247,15 @@ export const useEnhancedManualReorder = (
       }
     });
 
-    console.log(`🔥 [ENHANCED_REORDER] ===== RE-SORTING RANKINGS =====`);
-
-    // Re-sort the rankings based on updated scores
-    workingRankings.sort((a, b) => b.score - a.score);
+    // CRITICAL FIX: Skip re-sorting if preventAutoResorting is true
+    if (preventAutoResorting) {
+      console.log(`🔥 [ENHANCED_REORDER] ===== SKIPPING RE-SORTING (preventAutoResorting = true) =====`);
+      console.log(`🔥 [ENHANCED_REORDER] Maintaining manual order to preserve user experience`);
+    } else {
+      console.log(`🔥 [ENHANCED_REORDER] ===== RE-SORTING RANKINGS =====`);
+      // Re-sort the rankings based on updated scores
+      workingRankings.sort((a, b) => b.score - a.score);
+    }
 
     console.log(`🔥 [ENHANCED_REORDER] ===== ENHANCED REORDER COMPLETE =====`);
     console.log(`🔥 [ENHANCED_REORDER] Successfully processed ${totalUpdates} TrueSkill updates for ${draggedPokemon.name} (${impliedBattles.length} battle types)`);
@@ -261,14 +269,23 @@ export const useEnhancedManualReorder = (
     }
 
     // Show user feedback with updated information
-    toast.success(`Enhanced ranking update for ${draggedPokemon.name}`, {
-      description: `Applied ${totalUpdates} TrueSkill adjustments (immediate neighbors weighted 2x)`
+    const feedbackMessage = preventAutoResorting 
+      ? `Manual reorder for ${draggedPokemon.name}` 
+      : `Enhanced ranking update for ${draggedPokemon.name}`;
+    
+    const feedbackDescription = preventAutoResorting
+      ? `Position updated, TrueSkill adjusted (${totalUpdates} updates)`
+      : `Applied ${totalUpdates} TrueSkill adjustments (immediate neighbors weighted 2x)`;
+
+    toast.success(feedbackMessage, {
+      description: feedbackDescription
     });
 
-  }, [finalRankings, pokemonLookupMap, onRankingsUpdate, addImpliedBattle]);
+  }, [finalRankings, pokemonLookupMap, onRankingsUpdate, addImpliedBattle, preventAutoResorting]);
 
   console.log(`🔥 [ENHANCED_REORDER_HOOK] Hook created with ${finalRankings?.length || 0} rankings`);
   console.log(`🔥 [ENHANCED_REORDER_HOOK] onRankingsUpdate exists: ${!!onRankingsUpdate}`);
+  console.log(`🔥 [ENHANCED_REORDER_HOOK] preventAutoResorting: ${preventAutoResorting}`);
   console.log(`🔥 [ENHANCED_REORDER_HOOK] addImpliedBattle exists: ${!!addImpliedBattle}`);
   console.log(`🔥 [ENHANCED_REORDER_HOOK] Returning function: ${handleEnhancedManualReorder.name || 'anonymous'}`);
 

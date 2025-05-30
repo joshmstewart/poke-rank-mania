@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Pokemon, TopNOption, RankedPokemon } from "@/services/pokemon";
 import RankingDisplayContainer from "./RankingDisplayContainer";
@@ -40,55 +41,57 @@ const BattleContentMilestone: React.FC<BattleContentMilestoneProps> = ({
   pendingRefinements,
   onRankingsUpdate
 }) => {
-  console.log(`🏆 [MILESTONE_COMPONENT_ULTRA_DEBUG] ===== BattleContentMilestone RENDER =====`);
-  console.log(`🏆 [MILESTONE_COMPONENT_ULTRA_DEBUG] Props received:`);
-  console.log(`🏆 [MILESTONE_COMPONENT_ULTRA_DEBUG] - finalRankings type: ${Array.isArray(finalRankings) ? 'array' : typeof finalRankings}`);
-  console.log(`🏆 [MILESTONE_COMPONENT_ULTRA_DEBUG] - finalRankings length: ${finalRankings?.length || 0}`);
-  console.log(`🏆 [MILESTONE_COMPONENT_ULTRA_DEBUG] - battlesCompleted: ${battlesCompleted}`);
-  console.log(`🏆 [MILESTONE_COMPONENT_ULTRA_DEBUG] - rankingGenerated: ${rankingGenerated}`);
-  console.log(`🏆 [MILESTONE_COMPONENT_ULTRA_DEBUG] - activeTier: ${activeTier}`);
-  console.log(`🏆 [MILESTONE_COMPONENT_ULTRA_DEBUG] - onRankingsUpdate available: ${!!onRankingsUpdate}`);
+  console.log(`🏆 [MILESTONE_COMPONENT_UX_FIX] ===== BattleContentMilestone RENDER =====`);
+  console.log(`🏆 [MILESTONE_COMPONENT_UX_FIX] Props received:`);
+  console.log(`🏆 [MILESTONE_COMPONENT_UX_FIX] - finalRankings type: ${Array.isArray(finalRankings) ? 'array' : typeof finalRankings}`);
+  console.log(`🏆 [MILESTONE_COMPONENT_UX_FIX] - finalRankings length: ${finalRankings?.length || 0}`);
+  console.log(`🏆 [MILESTONE_COMPONENT_UX_FIX] - battlesCompleted: ${battlesCompleted}`);
+  console.log(`🏆 [MILESTONE_COMPONENT_UX_FIX] - rankingGenerated: ${rankingGenerated}`);
+  console.log(`🏆 [MILESTONE_COMPONENT_UX_FIX] - activeTier: ${activeTier}`);
+  console.log(`🏆 [MILESTONE_COMPONENT_UX_FIX] - onRankingsUpdate available: ${!!onRankingsUpdate}`);
 
-  // CRITICAL: Use the enhanced manual reorder hook directly in this component
-  const { handleManualReorder: enhancedHandleManualReorder } = useBattleManualReorder(
+  // CRITICAL FIX: Use the milestone-specific manual reorder hook that prevents auto-resorting
+  const { handleManualReorder: milestoneHandleManualReorder } = useBattleManualReorder(
     finalRankings as RankedPokemon[],
-    onRankingsUpdate
+    onRankingsUpdate,
+    true // isMilestoneView = true to prevent auto-resorting
   );
 
-  console.log(`🚨 [MILESTONE_ENHANCED_DEBUG] ===== ENHANCED HOOK SETUP =====`);
-  console.log(`🚨 [MILESTONE_ENHANCED_DEBUG] enhancedHandleManualReorder exists: ${!!enhancedHandleManualReorder}`);
-  console.log(`🚨 [MILESTONE_ENHANCED_DEBUG] enhancedHandleManualReorder type: ${typeof enhancedHandleManualReorder}`);
+  console.log(`🎯 [MILESTONE_UX_FIX] ===== MILESTONE REORDER SETUP =====`);
+  console.log(`🎯 [MILESTONE_UX_FIX] milestoneHandleManualReorder exists: ${!!milestoneHandleManualReorder}`);
+  console.log(`🎯 [MILESTONE_UX_FIX] milestoneHandleManualReorder type: ${typeof milestoneHandleManualReorder}`);
   
-  // CRITICAL: Create a wrapper that logs every step and uses the enhanced hook
-  const handleManualReorderWithFullDebug = (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => {
-    console.log(`🚨 [MILESTONE_WRAPPER_DEBUG] ===== MILESTONE WRAPPER CALLED =====`);
-    console.log(`🚨 [MILESTONE_WRAPPER_DEBUG] draggedPokemonId: ${draggedPokemonId}`);
-    console.log(`🚨 [MILESTONE_WRAPPER_DEBUG] sourceIndex: ${sourceIndex}`);
-    console.log(`🚨 [MILESTONE_WRAPPER_DEBUG] destinationIndex: ${destinationIndex}`);
-    console.log(`🚨 [MILESTONE_WRAPPER_DEBUG] enhancedHandleManualReorder available: ${!!enhancedHandleManualReorder}`);
-    console.log(`🚨 [MILESTONE_WRAPPER_DEBUG] enhancedHandleManualReorder type: ${typeof enhancedHandleManualReorder}`);
+  // CRITICAL FIX: Create a wrapper specifically for milestone UX
+  const handleMilestoneManualReorder = (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => {
+    console.log(`🎯 [MILESTONE_UX_FIX] ===== MILESTONE MANUAL REORDER WRAPPER =====`);
+    console.log(`🎯 [MILESTONE_UX_FIX] This will prevent auto-resorting to maintain good UX`);
+    console.log(`🎯 [MILESTONE_UX_FIX] draggedPokemonId: ${draggedPokemonId}`);
+    console.log(`🎯 [MILESTONE_UX_FIX] sourceIndex: ${sourceIndex}`);
+    console.log(`🎯 [MILESTONE_UX_FIX] destinationIndex: ${destinationIndex}`);
+    console.log(`🎯 [MILESTONE_UX_FIX] milestoneHandleManualReorder available: ${!!milestoneHandleManualReorder}`);
     
-    if (enhancedHandleManualReorder && typeof enhancedHandleManualReorder === 'function') {
-      console.log(`🚨 [MILESTONE_WRAPPER_DEBUG] ===== CALLING ENHANCED HANDLER =====`);
+    if (milestoneHandleManualReorder && typeof milestoneHandleManualReorder === 'function') {
+      console.log(`🎯 [MILESTONE_UX_FIX] ===== CALLING MILESTONE REORDER =====`);
+      console.log(`🎯 [MILESTONE_UX_FIX] This should update TrueSkill but NOT auto-resort the list`);
       try {
-        console.log(`🚨 [MILESTONE_WRAPPER_DEBUG] About to call enhancedHandleManualReorder(${draggedPokemonId}, ${sourceIndex}, ${destinationIndex})`);
-        const result = enhancedHandleManualReorder(draggedPokemonId, sourceIndex, destinationIndex);
-        console.log(`🚨 [MILESTONE_WRAPPER_DEBUG] ✅ Enhanced handler call completed`);
-        console.log(`🚨 [MILESTONE_WRAPPER_DEBUG] ✅ Result: ${result}`);
+        console.log(`🎯 [MILESTONE_UX_FIX] About to call milestoneHandleManualReorder(${draggedPokemonId}, ${sourceIndex}, ${destinationIndex})`);
+        const result = milestoneHandleManualReorder(draggedPokemonId, sourceIndex, destinationIndex);
+        console.log(`🎯 [MILESTONE_UX_FIX] ✅ Milestone reorder call completed`);
+        console.log(`🎯 [MILESTONE_UX_FIX] ✅ Result: ${result}`);
       } catch (error) {
-        console.error(`🚨 [MILESTONE_WRAPPER_DEBUG] ❌ Error calling enhanced handler:`, error);
-        console.error(`🚨 [MILESTONE_WRAPPER_DEBUG] ❌ Error stack:`, error.stack);
+        console.error(`🎯 [MILESTONE_UX_FIX] ❌ Error calling milestone reorder:`, error);
+        console.error(`🎯 [MILESTONE_UX_FIX] ❌ Error stack:`, error.stack);
       }
     } else {
-      console.error(`🚨 [MILESTONE_WRAPPER_DEBUG] ❌ No valid enhanced handler available!`);
-      console.error(`🚨 [MILESTONE_WRAPPER_DEBUG] ❌ enhancedHandleManualReorder value:`, enhancedHandleManualReorder);
+      console.error(`🎯 [MILESTONE_UX_FIX] ❌ No valid milestone reorder handler available!`);
+      console.error(`🎯 [MILESTONE_UX_FIX] ❌ milestoneHandleManualReorder value:`, milestoneHandleManualReorder);
     }
     
-    console.log(`🚨 [MILESTONE_WRAPPER_DEBUG] ===== MILESTONE WRAPPER COMPLETE =====`);
+    console.log(`🎯 [MILESTONE_UX_FIX] ===== MILESTONE WRAPPER COMPLETE =====`);
   };
 
   if (finalRankings && finalRankings.length > 0) {
-    console.log(`🏆 [MILESTONE_COMPONENT_ULTRA_DEBUG] Sample rankings:`, finalRankings.slice(0, 5).map(p => `${p.name} (${p.id})`));
+    console.log(`🏆 [MILESTONE_COMPONENT_UX_FIX] Sample rankings:`, finalRankings.slice(0, 5).map(p => `${p.name} (${p.id})`));
     
     // Check for name formatting issues
     finalRankings.slice(0, 10).forEach((pokemon, index) => {
@@ -98,12 +101,12 @@ const BattleContentMilestone: React.FC<BattleContentMilestoneProps> = ({
       }
     });
   } else {
-    console.log(`🚨 [MILESTONE_COMPONENT_ULTRA_DEBUG] WARNING: finalRankings is empty or undefined!`);
-    console.log(`🚨 [MILESTONE_COMPONENT_ULTRA_DEBUG] This is likely why no Pokemon are showing at the milestone`);
-    console.log(`🚨 [MILESTONE_COMPONENT_ULTRA_DEBUG] Raw finalRankings value:`, finalRankings);
+    console.log(`🚨 [MILESTONE_COMPONENT_UX_FIX] WARNING: finalRankings is empty or undefined!`);
+    console.log(`🚨 [MILESTONE_COMPONENT_UX_FIX] This is likely why no Pokemon are showing at the milestone`);
+    console.log(`🚨 [MILESTONE_COMPONENT_UX_FIX] Raw finalRankings value:`, finalRankings);
   }
   
-  console.log(`🏆 [MILESTONE_COMPONENT_ULTRA_DEBUG] ===== END PROPS LOGGING =====`);
+  console.log(`🏆 [MILESTONE_COMPONENT_UX_FIX] ===== END PROPS LOGGING =====`);
 
   return (
     <div className="w-full max-w-6xl mx-auto p-6">
@@ -125,7 +128,7 @@ const BattleContentMilestone: React.FC<BattleContentMilestoneProps> = ({
           onSaveRankings={handleSaveRankings}
           isMilestoneView={true}
           activeTier={activeTier}
-          onManualReorder={handleManualReorderWithFullDebug}
+          onManualReorder={handleMilestoneManualReorder}
           pendingRefinements={pendingRefinements}
           enableDragAndDrop={true}
         />
