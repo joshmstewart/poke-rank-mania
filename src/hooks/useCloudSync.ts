@@ -96,7 +96,7 @@ export const useCloudSync = () => {
       return {
         selectedGeneration: data.generation,
         battleType: "pairs" as const, // Default, will be overridden
-        battleResults: data.battle_results || [],
+        battleResults: Array.isArray(data.battle_results) ? data.battle_results : [],
         battlesCompleted: data.battles_completed || 0,
         battleHistory: historyData?.map(h => ({
           battle: [], // Would need to reconstruct Pokemon objects
@@ -140,10 +140,61 @@ export const useCloudSync = () => {
     }
   }, [user, session]);
 
+  // Save session data to cloud (for cross-device session sharing)
+  const saveSessionToCloud = useCallback(async (sessionId: string, sessionData: any) => {
+    try {
+      const { error } = await supabase
+        .from('user_rankings')
+        .upsert({
+          user_id: sessionId, // Use session ID as user ID for anonymous sessions
+          generation: 0, // Use generation 0 for session data
+          pokemon_rankings: [],
+          battle_results: sessionData,
+          completion_percentage: 0,
+          battles_completed: 0,
+          updated_at: new Date().toISOString()
+        });
+
+      if (error) {
+        console.error('Error saving session to cloud:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error saving session to cloud:', error);
+      return false;
+    }
+  }, []);
+
+  // Load session data from cloud
+  const loadSessionFromCloud = useCallback(async (sessionId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('user_rankings')
+        .select('*')
+        .eq('user_id', sessionId)
+        .eq('generation', 0)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error loading session from cloud:', error);
+        return null;
+      }
+
+      return data?.battle_results || null;
+    } catch (error) {
+      console.error('Error loading session from cloud:', error);
+      return null;
+    }
+  }, []);
+
   return {
     saveBattleToCloud,
     loadBattleFromCloud,
     saveRankingsToCloud,
+    saveSessionToCloud,
+    loadSessionFromCloud,
     isAuthenticated: !!user
   };
 };
