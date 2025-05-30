@@ -40,21 +40,68 @@ const PokemonInfoModal: React.FC<PokemonInfoModalProps> = ({
   useEffect(() => {
     console.log(`🔘 [MODAL_DEBUG] Modal state effect - isOpen changed to: ${isOpen} for ${pokemon.name}`);
     
-    // Check if modal is actually in DOM
-    setTimeout(() => {
-      const modal = document.querySelector('[data-radix-dialog-content="true"]');
-      const overlay = document.querySelector('[data-radix-dialog-overlay]');
-      console.log(`🔘 [MODAL_DEBUG] DOM check - Modal element found: ${!!modal}, Overlay found: ${!!overlay}`);
-      if (modal) {
-        const modalStyle = window.getComputedStyle(modal);
-        console.log(`🔘 [MODAL_DEBUG] Modal computed styles:`, {
-          display: modalStyle.display,
-          visibility: modalStyle.visibility,
-          zIndex: modalStyle.zIndex,
-          opacity: modalStyle.opacity
-        });
-      }
-    }, 100);
+    if (isOpen) {
+      // Add more comprehensive DOM inspection when modal opens
+      setTimeout(() => {
+        const modal = document.querySelector('[data-radix-dialog-content="true"]');
+        const overlay = document.querySelector('[data-radix-dialog-overlay]');
+        
+        console.log(`🔘 [MODAL_DEBUG] DOM check - Modal element found: ${!!modal}, Overlay found: ${!!overlay}`);
+        
+        if (modal) {
+          const modalStyle = window.getComputedStyle(modal);
+          const modalRect = modal.getBoundingClientRect();
+          console.log(`🔘 [MODAL_DEBUG] Modal computed styles:`, {
+            display: modalStyle.display,
+            visibility: modalStyle.visibility,
+            zIndex: modalStyle.zIndex,
+            opacity: modalStyle.opacity,
+            position: modalStyle.position,
+            transform: modalStyle.transform
+          });
+          console.log(`🔘 [MODAL_DEBUG] Modal bounding rect:`, modalRect);
+        }
+        
+        if (overlay) {
+          const overlayStyle = window.getComputedStyle(overlay);
+          const overlayRect = overlay.getBoundingClientRect();
+          console.log(`🔘 [MODAL_DEBUG] Overlay computed styles:`, {
+            display: overlayStyle.display,
+            visibility: overlayStyle.visibility,
+            zIndex: overlayStyle.zIndex,
+            opacity: overlayStyle.opacity,
+            position: overlayStyle.position
+          });
+          console.log(`🔘 [MODAL_DEBUG] Overlay bounding rect:`, overlayRect);
+          
+          // Check if overlay is covering the modal
+          if (modal && overlay) {
+            const modalZ = parseInt(modalStyle.zIndex);
+            const overlayZ = parseInt(overlayStyle.zIndex);
+            console.log(`🔘 [MODAL_DEBUG] Z-index comparison: Modal=${modalZ}, Overlay=${overlayZ}`);
+            console.log(`🔘 [MODAL_DEBUG] Modal should be on top: ${modalZ > overlayZ}`);
+          }
+        }
+
+        // Check for any parent elements that might be interfering
+        if (modal) {
+          let parent = modal.parentElement;
+          let level = 0;
+          while (parent && level < 5) {
+            const parentStyle = window.getComputedStyle(parent);
+            console.log(`🔘 [MODAL_DEBUG] Parent level ${level}:`, {
+              tagName: parent.tagName,
+              className: parent.className,
+              zIndex: parentStyle.zIndex,
+              position: parentStyle.position,
+              transform: parentStyle.transform
+            });
+            parent = parent.parentElement;
+            level++;
+          }
+        }
+      }, 200);
+    }
   }, [isOpen, pokemon.name]);
   
   const handleInfoClick = (e: React.MouseEvent) => {
