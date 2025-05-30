@@ -1,43 +1,30 @@
 
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { Toaster } from "@/components/ui/toaster";
-import { PokemonProvider } from "./contexts/PokemonContext";
-import { ImpliedBattleTrackerProvider } from "./contexts/ImpliedBattleTracker";
-import MainPage from "./components/MainPage";
-import PokemonRanker from "./components/PokemonRanker";
-import "./App.css";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/contexts/AuthContext";
+import Index from "./pages/Index";
+import NotFound from "./pages/NotFound";
 
-// Create a client
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 10 * 60 * 1000, // 10 minutes (renamed from cacheTime)
-    },
-  },
-});
+const queryClient = new QueryClient();
 
-function App() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <PokemonProvider allPokemon={[]}>
-        <ImpliedBattleTrackerProvider>
-          <Router>
-            <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-              <Routes>
-                <Route path="/" element={<MainPage />} />
-                <Route path="/ranker" element={<PokemonRanker />} />
-              </Routes>
-              <Toaster />
-              <ReactQueryDevtools initialIsOpen={false} />
-            </div>
-          </Router>
-        </ImpliedBattleTrackerProvider>
-      </PokemonProvider>
-    </QueryClientProvider>
-  );
-}
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </AuthProvider>
+  </QueryClientProvider>
+);
 
 export default App;
