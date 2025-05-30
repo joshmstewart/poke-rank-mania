@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, memo, useRef, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Pokemon } from "@/services/pokemon";
@@ -31,7 +32,7 @@ const TCGBattleCard: React.FC<TCGBattleCardProps> = memo(({
   const lastClickTimeRef = useRef(0);
   const [isHovered, setIsHovered] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
-  const [currentImageMode, setCurrentImageMode] = useState<'pokemon' | 'tcg>(() => getCurrentImageMode());
+  const [currentImageMode, setCurrentImageMode] = useState<'pokemon' | 'tcg'>(() => getCurrentImageMode());
 
   // Always try to load TCG card data
   const { tcgCard, isLoading: isLoadingTCG, hasTcgCard } = usePokemonTCGCard(pokemon.name, true);
