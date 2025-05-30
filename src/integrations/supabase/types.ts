@@ -39,6 +39,39 @@ export type Database = {
         }
         Relationships: []
       }
+      preview_image_cache: {
+        Row: {
+          cache_key: string
+          cached_at: string
+          content_type: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          image_data: string | null
+          image_url: string
+        }
+        Insert: {
+          cache_key: string
+          cached_at?: string
+          content_type?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          image_data?: string | null
+          image_url: string
+        }
+        Update: {
+          cache_key?: string
+          cached_at?: string
+          content_type?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          image_data?: string | null
+          image_url?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -134,7 +167,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      cleanup_expired_preview_cache: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

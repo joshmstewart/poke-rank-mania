@@ -3,11 +3,15 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface CachedPreviewImage {
-  url: string;
-  timestamp: number;
+  id: string;
+  cache_key: string;
+  image_url: string;
+  image_data: Uint8Array | null;
+  content_type: string;
+  cached_at: string;
+  expires_at: string;
 }
 
-const CACHE_EXPIRY_HOURS = 24;
 const PIKACHU_TCG_URL = 'https://images.pokemontcg.io/base1/58.png';
 const PIKACHU_POKEMON_URL = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png';
 
@@ -23,23 +27,33 @@ export const usePreviewImageCache = () => {
       
       // Check memory cache first
       if (cachedImages[cacheKey]) {
+        console.log(`🖼️ [CLOUD_CACHE] Using memory cached ${mode} image`);
         return cachedImages[cacheKey];
       }
 
-      // Check localStorage cache
-      const cached = localStorage.getItem(`pokemon_preview_${mode}`);
-      if (cached) {
-        const parsedCache: CachedPreviewImage = JSON.parse(cached);
-        const now = Date.now();
-        const expiryTime = parsedCache.timestamp + (CACHE_EXPIRY_HOURS * 60 * 60 * 1000);
-        
-        if (now < expiryTime) {
-          setCachedImages(prev => ({ ...prev, [cacheKey]: parsedCache.url }));
-          return parsedCache.url;
-        } else {
-          // Cache expired, remove it
-          localStorage.removeItem(`pokemon_preview_${mode}`);
+      // Check cloud cache
+      const { data, error } = await supabase
+        .from('preview_image_cache')
+        .select('*')
+        .eq('cache_key', cacheKey)
+        .gt('expires_at', new Date().toISOString())
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          // No cached image found
+          console.log(`🖼️ [CLOUD_CACHE] No cached ${mode} image found`);
+          return null;
         }
+        console.error('Error getting cached image:', error);
+        return null;
+      }
+
+      if (data && data.image_url) {
+        console.log(`🖼️ [CLOUD_CACHE] Found cached ${mode} image in cloud`);
+        // Store in memory cache for faster access
+        setCachedImages(prev => ({ ...prev, [cacheKey]: data.image_url }));
+        return data.image_url;
       }
 
       return null;
@@ -52,18 +66,30 @@ export const usePreviewImageCache = () => {
   const cacheImage = async (mode: 'tcg' | 'pokemon', imageUrl: string) => {
     try {
       const cacheKey = getCacheKey(mode);
-      const cacheData: CachedPreviewImage = {
-        url: imageUrl,
-        timestamp: Date.now()
-      };
-
-      // Store in localStorage
-      localStorage.setItem(`pokemon_preview_${mode}`, JSON.stringify(cacheData));
       
-      // Store in memory
+      // Store in cloud cache
+      const { error } = await supabase
+        .from('preview_image_cache')
+        .upsert([
+          {
+            cache_key: cacheKey,
+            image_url: imageUrl,
+            content_type: 'image/png',
+            expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days
+          }
+        ], {
+          onConflict: 'cache_key'
+        });
+
+      if (error) {
+        console.error('Error caching image:', error);
+        return;
+      }
+
+      // Store in memory cache
       setCachedImages(prev => ({ ...prev, [cacheKey]: imageUrl }));
       
-      console.log(`🖼️ [PREVIEW_CACHE] Cached ${mode} preview image`);
+      console.log(`🖼️ [CLOUD_CACHE] Cached ${mode} preview image in cloud for 30 days`);
     } catch (error) {
       console.error('Error caching image:', error);
     }
@@ -76,7 +102,6 @@ export const usePreviewImageCache = () => {
       // Try to get from cache first
       const cachedUrl = await getCachedImage(mode);
       if (cachedUrl) {
-        console.log(`🖼️ [PREVIEW_CACHE] Using cached ${mode} image`);
         setIsLoading(false);
         return cachedUrl;
       }
@@ -90,14 +115,14 @@ export const usePreviewImageCache = () => {
       
       return new Promise((resolve) => {
         img.onload = () => {
-          console.log(`🖼️ [PREVIEW_CACHE] Successfully loaded and caching ${mode} image`);
+          console.log(`🖼️ [CLOUD_CACHE] Successfully loaded and caching ${mode} image in cloud`);
           cacheImage(mode, imageUrl);
           setIsLoading(false);
           resolve(imageUrl);
         };
         
         img.onerror = () => {
-          console.error(`🖼️ [PREVIEW_CACHE] Failed to load ${mode} image, using fallback`);
+          console.error(`🖼️ [CLOUD_CACHE] Failed to load ${mode} image, using fallback`);
           setIsLoading(false);
           resolve(imageUrl); // Still return the URL even if it failed to load
         };
@@ -110,6 +135,19 @@ export const usePreviewImageCache = () => {
       return mode === 'tcg' ? PIKACHU_TCG_URL : PIKACHU_POKEMON_URL;
     }
   };
+
+  // Clean up expired cache entries on component mount
+  useEffect(() => {
+    const cleanupExpiredCache = async () => {
+      try {
+        await supabase.rpc('cleanup_expired_preview_cache');
+      } catch (error) {
+        console.error('Error cleaning up expired cache:', error);
+      }
+    };
+
+    cleanupExpiredCache();
+  }, []);
 
   return {
     getPreviewImage,
