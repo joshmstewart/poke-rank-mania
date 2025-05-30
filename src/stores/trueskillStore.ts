@@ -1,6 +1,8 @@
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Rating } from 'ts-trueskill';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface TrueSkillRating {
   mu: number;
@@ -55,8 +57,10 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
             }
           };
           
-          // Trigger events after state update
+          // Trigger events and cloud sync after state update
           setTimeout(() => {
+            get().syncToCloud();
+            
             const updateEvent = new CustomEvent('trueskill-store-updated', {
               detail: { pokemonId, rating: newRatings[pokemonId] }
             });
@@ -98,8 +102,10 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
         
         set({ ratings: {}, lastSyncedAt: null });
         
-        // Trigger events
+        // Sync clear to cloud and trigger events
         setTimeout(() => {
+          get().syncToCloud();
+          
           const clearEvent = new CustomEvent('trueskill-store-cleared');
           document.dispatchEvent(clearEvent);
           
@@ -113,16 +119,92 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
         }, 100);
       },
       
-      // Placeholder cloud sync functions - will be implemented after SQL migration
+      // Cloud sync that works for both authenticated and session-based users
       syncToCloud: async () => {
-        console.log('[TRUESKILL_CLOUD] Cloud sync temporarily disabled - waiting for table creation');
-        // TODO: Implement after trueskill_sessions table is created
+        try {
+          const state = get();
+          const { data: { user } } = await supabase.auth.getUser();
+          
+          console.log('[TRUESKILL_CLOUD] Starting cloud sync...');
+          
+          // Prepare sync data
+          const syncData = {
+            session_id: state.sessionId,
+            user_id: user?.id || null,
+            ratings_data: state.ratings,
+            last_updated: new Date().toISOString()
+          };
+          
+          // Use upsert to handle both insert and update cases
+          const { error } = await supabase
+            .from('trueskill_sessions')
+            .upsert(syncData, {
+              onConflict: user?.id ? 'user_id' : 'session_id'
+            });
+          
+          if (error) {
+            console.log('[TRUESKILL_CLOUD] Sync error (will retry later):', error.message);
+            return;
+          }
+          
+          console.log('[TRUESKILL_CLOUD] Successfully synced to cloud');
+          set({ lastSyncedAt: new Date().toISOString() });
+          
+        } catch (error) {
+          console.log('[TRUESKILL_CLOUD] Sync failed (will retry later):', error);
+        }
       },
       
+      // Cloud loading that works for both authenticated and session-based users
       loadFromCloud: async () => {
-        console.log('[TRUESKILL_CLOUD] Cloud load temporarily disabled - waiting for table creation');
-        // TODO: Implement after trueskill_sessions table is created
-        set({ isLoading: false });
+        try {
+          set({ isLoading: true });
+          const state = get();
+          const { data: { user } } = await supabase.auth.getUser();
+          
+          console.log('[TRUESKILL_CLOUD] Loading from cloud...');
+          
+          let query = supabase.from('trueskill_sessions').select('*');
+          
+          // If user is authenticated, prioritize user_id, otherwise use session_id
+          if (user?.id) {
+            query = query.eq('user_id', user.id);
+          } else {
+            query = query.eq('session_id', state.sessionId);
+          }
+          
+          const { data, error } = await query.maybeSingle();
+          
+          if (error) {
+            console.log('[TRUESKILL_CLOUD] Load error:', error.message);
+            set({ isLoading: false });
+            return;
+          }
+          
+          if (data?.ratings_data) {
+            console.log(`[TRUESKILL_CLOUD] Loaded ${Object.keys(data.ratings_data).length} ratings from cloud`);
+            set({ 
+              ratings: data.ratings_data,
+              lastSyncedAt: data.last_updated,
+              isLoading: false
+            });
+            
+            // Dispatch load event
+            setTimeout(() => {
+              const loadEvent = new CustomEvent('trueskill-store-loaded', {
+                detail: { ratingsCount: Object.keys(data.ratings_data).length }
+              });
+              document.dispatchEvent(loadEvent);
+            }, 50);
+          } else {
+            console.log('[TRUESKILL_CLOUD] No cloud data found for this session/user');
+            set({ isLoading: false });
+          }
+          
+        } catch (error) {
+          console.log('[TRUESKILL_CLOUD] Load failed, using local storage:', error);
+          set({ isLoading: false });
+        }
       }
     }),
     {

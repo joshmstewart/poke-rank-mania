@@ -126,6 +126,33 @@ export type Database = {
         }
         Relationships: []
       }
+      trueskill_sessions: {
+        Row: {
+          created_at: string
+          id: string
+          last_updated: string
+          ratings_data: Json
+          session_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_updated?: string
+          ratings_data?: Json
+          session_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_updated?: string
+          ratings_data?: Json
+          session_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       user_rankings: {
         Row: {
           battle_results: Json
