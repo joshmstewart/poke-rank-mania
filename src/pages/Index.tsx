@@ -5,6 +5,7 @@ import BattleMode from "@/components/BattleMode";
 import AppSessionManager from "@/components/AppSessionManager";
 import Logo from "@/components/ui/Logo";
 import ModeSwitcher from "@/components/ModeSwitcher";
+import { CloudSyncButton } from "@/components/auth/CloudSyncButton";
 import { 
   Dialog,
   DialogContent, 
@@ -83,6 +84,9 @@ const Index = () => {
             <Logo />
           </div>
           <div className="flex items-center gap-4">
+            {/* Cloud Sync Button */}
+            <CloudSyncButton />
+            
             {/* Mode Switcher */}
             <ModeSwitcher currentMode={mode} onModeChange={handleModeChange} />
             

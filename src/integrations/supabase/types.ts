@@ -9,7 +9,99 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      battle_history: {
+        Row: {
+          battle_type: string
+          created_at: string
+          generation: number
+          id: string
+          pokemon_ids: number[]
+          selected_pokemon_ids: number[]
+          user_id: string
+        }
+        Insert: {
+          battle_type: string
+          created_at?: string
+          generation: number
+          id?: string
+          pokemon_ids: number[]
+          selected_pokemon_ids: number[]
+          user_id: string
+        }
+        Update: {
+          battle_type?: string
+          created_at?: string
+          generation?: number
+          id?: string
+          pokemon_ids?: number[]
+          selected_pokemon_ids?: number[]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          email: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_rankings: {
+        Row: {
+          battle_results: Json
+          battles_completed: number | null
+          completion_percentage: number | null
+          created_at: string
+          generation: number
+          id: string
+          pokemon_rankings: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          battle_results: Json
+          battles_completed?: number | null
+          completion_percentage?: number | null
+          created_at?: string
+          generation: number
+          id?: string
+          pokemon_rankings: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          battle_results?: Json
+          battles_completed?: number | null
+          completion_percentage?: number | null
+          created_at?: string
+          generation?: number
+          id?: string
+          pokemon_rankings?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
