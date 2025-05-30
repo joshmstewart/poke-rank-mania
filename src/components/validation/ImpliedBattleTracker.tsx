@@ -8,6 +8,7 @@ interface ImpliedBattle {
   winner: string;
   battleType: string;
   timestamp: string;
+  sequence?: number;
 }
 
 interface ImpliedBattleTrackerProps {

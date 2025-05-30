@@ -18,9 +18,9 @@ const queryClient = new QueryClient();
 const AppContent: React.FC = () => {
   const { impliedBattles } = useImpliedBattleTracker();
   const location = useLocation();
-  const currentMode = location.pathname === '/battle' ? 'battle' : 'ranking';
+  const currentMode = location.pathname === '/battle' ? 'battle' : 'rank';
 
-  const handleModeChange = (mode: 'ranking' | 'battle') => {
+  const handleModeChange = (mode: 'battle' | 'rank') => {
     // Mode switching is handled by routing, no additional logic needed
   };
 
