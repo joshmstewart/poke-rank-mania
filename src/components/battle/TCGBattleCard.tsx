@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, memo, useRef, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Pokemon } from "@/services/pokemon";
@@ -184,18 +185,20 @@ const TCGBattleCard: React.FC<TCGBattleCardProps> = memo(({
                 )}
               </div>
               
-              {/* Pokemon Name and Type info below card - CONSISTENT TYPE DISPLAY */}
+              {/* Pokemon Name and Type info below card - FIXED: Remove the 0 line */}
               <div className="space-y-1">
                 <h3 className="font-bold text-lg text-gray-800">{displayName}</h3>
                 <p className="text-sm text-gray-600">#{pokemon.id}</p>
                 
                 {/* Always show type tags for consistency */}
                 {pokemon.types && pokemon.types.length > 0 && (
-                  <PokemonInfo 
-                    displayName=""
-                    pokemonId={0}
-                    types={pokemon.types}
-                  />
+                  <div className="flex justify-center gap-1 mt-2">
+                    {pokemon.types.map((type, index) => (
+                      <span key={index} className="bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs font-medium">
+                        {type}
+                      </span>
+                    ))}
+                  </div>
                 )}
               </div>
             </div>

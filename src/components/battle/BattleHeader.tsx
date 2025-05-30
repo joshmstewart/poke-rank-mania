@@ -22,14 +22,14 @@ const BattleHeader: React.FC<BattleHeaderProps> = ({
   const combinedProcessing = isProcessing || internalProcessing;
 
   return (
-    <div className="flex items-center justify-between mb-4">
-      {/* Left side - Current battle info */}
-      <div className="flex flex-col">
-        <div className="text-2xl font-bold text-gray-800 mb-1">
+    <div className="flex items-center justify-between mb-2">
+      {/* Left side - Current battle info - more compact */}
+      <div className="flex items-center gap-4">
+        <div className="text-xl font-bold text-gray-800">
           Battle {currentBattle}
         </div>
         <div className="text-sm text-gray-600">
-          Battles completed: {battlesCompleted}
+          Completed: {battlesCompleted}
         </div>
       </div>
 
