@@ -94,14 +94,16 @@ const ModeStyleControls: React.FC<ModeStyleControlsProps> = ({
 
   const CurrentIcon = getCurrentModeIcon();
 
-  // Get image state for current preview
+  // Get image state for current preview - with proper defaults
   const currentImageState = imageStates[previewImageUrl];
-  const imageLoaded = currentImageState?.loaded || false;
-  const imageError = currentImageState?.error || false;
+  const imageLoaded = currentImageState?.loaded ?? false;
+  const imageError = currentImageState?.error ?? false;
   
   // Determine if we should show the preview image or fallback icon
-  const shouldShowPreviewImage = previewImageUrl && !imageError && imageLoaded;
-  const shouldShowFallbackIcon = !previewImageUrl || imageError || !imageLoaded;
+  // If we have a URL and no error state is recorded, try to show the image
+  const hasValidUrl = previewImageUrl && previewImageUrl.length > 0;
+  const shouldShowPreviewImage = hasValidUrl && !imageError;
+  const shouldShowFallbackIcon = !hasValidUrl || imageError;
 
   return (
     <div className="flex items-center gap-4 bg-gray-100 rounded-xl p-2 shadow-md border-2 border-gray-400">
@@ -134,7 +136,9 @@ const ModeStyleControls: React.FC<ModeStyleControlsProps> = ({
                       <img 
                         src={previewImageUrl}
                         alt="Current style preview"
-                        className="w-full h-full object-contain rounded-sm"
+                        className={`w-full h-full object-contain rounded-sm transition-opacity duration-200 ${
+                          imageLoaded ? 'opacity-100' : 'opacity-0'
+                        }`}
                         onLoad={() => {
                           console.log('✅ [MODE_CONTROLS] Preview image loaded successfully:', previewImageUrl);
                           updateImageState(previewImageUrl, true, false);
