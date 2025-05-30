@@ -31,11 +31,11 @@ export const useAutoScroll = (itemCount: number, isRankingArea: boolean) => {
     // Check if the last card is positioned at or near the top of the container
     const cardTopRelativeToContainer = lastCardRect.top - containerRect.top;
     
-    // More generous threshold - allow up to one card height
+    // Much more generous threshold - if we can see the last card near the top, consider it "last card only"
     const cardHeight = lastCardRect.height;
-    const threshold = Math.min(cardHeight * 0.8, 150); // 80% of card height or 150px max
+    const threshold = cardHeight * 1.5; // Allow 1.5x card height from top
     
-    const isAtLastCardOnly = cardTopRelativeToContainer <= threshold && cardTopRelativeToContainer >= -50;
+    const isAtLastCardOnly = cardTopRelativeToContainer <= threshold && cardTopRelativeToContainer >= -100;
     
     console.log(`🔍 [AUTO_SCROLL_DEBUG] checkIfAtLastCardOnly - cardTopRelativeToContainer: ${cardTopRelativeToContainer}, cardHeight: ${cardHeight}, threshold: ${threshold}, result: ${isAtLastCardOnly}`);
     
