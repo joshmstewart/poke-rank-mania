@@ -1,16 +1,14 @@
 
-import React, { useState, useRef, useCallback, useEffect } from "react";
+import React from "react";
 import { DragDropContext } from "react-beautiful-dnd";
-import { ITEMS_PER_PAGE } from "@/services/pokemon";
-import PokemonList from "@/components/PokemonList";
 import { LoadingState } from "./LoadingState";
-import { PaginationControls } from "./PaginationControls";
-import { InfiniteScrollLoader } from "./InfiniteScrollLoader";
+import { AvailablePokemonSection } from "./AvailablePokemonSection";
+import { RankingsSection } from "./RankingsSection";
 import { useDragHandler } from "./useDragHandler";
-import { LoadingType } from "@/hooks/usePokemonRanker";
+import { useTrueSkillSync } from "@/hooks/ranking/useTrueSkillSync";
 import { useRankings } from "@/hooks/battle/useRankings";
-import { useTrueSkillStore } from "@/stores/trueskillStore";
-import { usePokemonContext } from "@/contexts/PokemonContext";
+import { LoadingType } from "@/hooks/usePokemonRanker";
+import { ITEMS_PER_PAGE } from "@/services/pokemon";
 
 interface RankingUIProps {
   isLoading: boolean;
@@ -44,53 +42,10 @@ export const RankingUI: React.FC<RankingUIProps> = ({
   getPageRange
 }) => {
   // Get TrueSkill-based rankings from Battle Mode system
-  const { finalRankings: battleModeRankings, generateRankings } = useRankings();
-  const { getAllRatings } = useTrueSkillStore();
-  const { pokemonLookupMap } = usePokemonContext();
+  const { finalRankings: battleModeRankings } = useRankings();
   
-  // CRITICAL FIX: Generate rankings directly from TrueSkill store when needed
-  const [localRankings, setLocalRankings] = useState<any[]>([]);
-  
-  useEffect(() => {
-    const syncTrueSkillRankings = () => {
-      const allRatings = getAllRatings();
-      const ratedPokemonIds = Object.keys(allRatings).map(Number);
-      
-      console.log(`🔍🔍🔍 [RANKING_UI_DIRECT] Found ${ratedPokemonIds.length} Pokemon with TrueSkill ratings`);
-      
-      if (ratedPokemonIds.length === 0) {
-        setLocalRankings([]);
-        return;
-      }
-
-      // Generate rankings directly using the Battle Mode system
-      const emptyBattleResults: any[] = [];
-      const generatedRankings = generateRankings(emptyBattleResults);
-      
-      console.log(`🔍🔍🔍 [RANKING_UI_DIRECT] Generated ${generatedRankings.length} rankings directly`);
-      setLocalRankings(generatedRankings);
-    };
-
-    // Sync immediately if we have data
-    if (pokemonLookupMap.size > 0 && Object.keys(getAllRatings()).length > 0) {
-      syncTrueSkillRankings();
-    }
-
-    // Also listen for TrueSkill updates
-    const handleTrueSkillUpdate = () => {
-      setTimeout(syncTrueSkillRankings, 100);
-    };
-
-    document.addEventListener('trueskill-updated', handleTrueSkillUpdate);
-    document.addEventListener('trueskill-store-updated', handleTrueSkillUpdate);
-    document.addEventListener('trueskill-store-loaded', handleTrueSkillUpdate);
-
-    return () => {
-      document.removeEventListener('trueskill-updated', handleTrueSkillUpdate);
-      document.removeEventListener('trueskill-store-updated', handleTrueSkillUpdate);
-      document.removeEventListener('trueskill-store-loaded', handleTrueSkillUpdate);
-    };
-  }, [getAllRatings, pokemonLookupMap.size, generateRankings]);
+  // Get local rankings from TrueSkill sync
+  const { localRankings } = useTrueSkillSync();
   
   // Use local rankings if available, otherwise fall back to battle mode rankings, then manual rankings
   const displayRankings = localRankings.length > 0 ? localRankings 
@@ -100,10 +55,6 @@ export const RankingUI: React.FC<RankingUIProps> = ({
   console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] localRankings: ${localRankings.length}, battleModeRankings: ${battleModeRankings.length}, rankedPokemon: ${rankedPokemon.length}`);
   console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] displayRankings length: ${displayRankings.length}`);
   console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] displayRankings sample:`, displayRankings.slice(0, 3));
-  
-  // Infinite scroll state for ranked Pokemon
-  const [displayedRankedCount, setDisplayedRankedCount] = useState(50);
-  const rankedScrollRef = useRef<HTMLDivElement>(null);
 
   const { handleDragEnd } = useDragHandler(
     availablePokemon,
@@ -117,49 +68,6 @@ export const RankingUI: React.FC<RankingUIProps> = ({
     console.log("[TRUESKILL_MANUAL] Drag-and-drop temporarily disabled in Manual Mode");
     // Do nothing - drag is disabled
   };
-
-  // Load more ranked Pokemon when scrolling
-  const loadMoreRanked = useCallback(() => {
-    if (displayedRankedCount < displayRankings.length) {
-      setDisplayedRankedCount(prev => Math.min(prev + 50, displayRankings.length));
-      console.log(`[RANKED_INFINITE_SCROLL] Loading more ranked Pokemon: ${displayedRankedCount} -> ${Math.min(displayedRankedCount + 50, displayRankings.length)}`);
-    }
-  }, [displayedRankedCount, displayRankings.length]);
-
-  // Set up intersection observer for ranked Pokemon infinite scroll
-  useEffect(() => {
-    const currentRef = rankedScrollRef.current;
-    if (!currentRef) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && displayedRankedCount < displayRankings.length) {
-          loadMoreRanked();
-        }
-      },
-      { rootMargin: '200px', threshold: 0.1 }
-    );
-
-    observer.observe(currentRef);
-
-    return () => {
-      if (currentRef) {
-        observer.unobserve(currentRef);
-      }
-    };
-  }, [displayedRankedCount, displayRankings.length, loadMoreRanked]);
-
-  // Reset displayed count when ranked Pokemon list changes
-  useEffect(() => {
-    setDisplayedRankedCount(Math.min(50, displayRankings.length));
-    console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] Reset displayedRankedCount to: ${Math.min(50, displayRankings.length)}`);
-  }, [displayRankings.length]);
-
-  // Get the currently displayed ranked Pokemon
-  const displayedRankedPokemon = displayRankings.slice(0, displayedRankedCount);
-  
-  console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] displayedRankedPokemon length: ${displayedRankedPokemon.length}`);
-  console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] displayedRankedPokemon sample:`, displayedRankedPokemon.slice(0, 2));
 
   if (isLoading && availablePokemon.length === 0) {
     return (
@@ -176,75 +84,20 @@ export const RankingUI: React.FC<RankingUIProps> = ({
     <DragDropContext onDragEnd={handleDisabledDragEnd}>
       <div className="grid md:grid-cols-2 gap-6 h-full">
         {/* Left side - Available Pokemon (unrated) with independent scroll */}
-        <div className="flex flex-col h-full max-h-[calc(100vh-12rem)] overflow-hidden">
-          <PokemonList
-            title="Available Pokémon (Unrated)"
-            pokemonList={availablePokemon}
-            droppableId="available"
-          />
-          
-          {/* Infinite scroll loading indicator */}
-          {loadingType === "infinite" && (
-            <InfiniteScrollLoader
-              isLoading={isLoading}
-              currentPage={currentPage}
-              totalPages={totalPages}
-              loadingRef={loadingRef}
-            />
-          )}
-          
-          {/* Pagination controls */}
-          {selectedGeneration === 0 && loadingType === "pagination" && totalPages > 1 && (
-            <PaginationControls
-              currentPage={currentPage}
-              totalPages={totalPages}
-              pageRange={getPageRange()}
-              onPageChange={handlePageChange}
-              itemsPerPage={ITEMS_PER_PAGE}
-            />
-          )}
-          
-          {/* Single load info */}
-          {loadingType === "single" && (
-            <div className="text-center text-sm text-muted-foreground mt-2">
-              Loaded {availablePokemon.length} Pokémon
-            </div>
-          )}
-        </div>
+        <AvailablePokemonSection
+          availablePokemon={availablePokemon}
+          isLoading={isLoading}
+          selectedGeneration={selectedGeneration}
+          loadingType={loadingType}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          loadingRef={loadingRef}
+          handlePageChange={handlePageChange}
+          getPageRange={getPageRange}
+        />
         
         {/* Right side - Rankings (TrueSkill ordered) with infinite scroll */}
-        <div className="flex flex-col h-full max-h-[calc(100vh-12rem)] overflow-hidden">
-          <PokemonList
-            title={`Your Rankings (TrueSkill Ordered) - ${displayedRankedCount} of ${displayRankings.length}`}
-            pokemonList={displayedRankedPokemon}
-            droppableId="ranked"
-            isRankingArea={true}
-          />
-          
-          {/* Infinite scroll loading for ranked Pokemon */}
-          {displayedRankedCount < displayRankings.length && (
-            <div 
-              ref={rankedScrollRef}
-              className="text-center py-4 text-sm text-muted-foreground"
-            >
-              Loading more ranked Pokémon... ({displayedRankedCount}/{displayRankings.length})
-            </div>
-          )}
-          
-          {/* Show completion message when all ranked Pokemon are loaded */}
-          {displayedRankedCount >= displayRankings.length && displayRankings.length > 0 && (
-            <div className="text-center text-xs text-muted-foreground mt-1 p-2 bg-green-50 rounded">
-              All {displayRankings.length} ranked Pokémon loaded. Rankings based on TrueSkill ratings from Battle Mode.
-            </div>
-          )}
-          
-          {/* Show message when no ranked Pokemon */}
-          {displayRankings.length === 0 && (
-            <div className="text-center text-xs text-muted-foreground mt-1 p-2 bg-blue-50 rounded">
-              No ranked Pokémon yet. Complete some battles in Battle Mode to see rankings here.
-            </div>
-          )}
-        </div>
+        <RankingsSection displayRankings={displayRankings} />
       </div>
     </DragDropContext>
   );
