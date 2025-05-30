@@ -42,7 +42,7 @@ export const useAutoScroll = (itemCount: number, isRankingArea: boolean) => {
     return isAtLastCardOnly;
   };
 
-  // Check if user is scrolled to the very bottom
+  // Check if user is scrolled to the very bottom - MUCH MORE STRICT
   const checkIfScrolledToBottom = () => {
     if (!containerRef.current) {
       console.log(`🔍 [AUTO_SCROLL_DEBUG] checkIfScrolledToBottom - no container`);
@@ -50,12 +50,12 @@ export const useAutoScroll = (itemCount: number, isRankingArea: boolean) => {
     }
     
     const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
-    const threshold = 10; // 10px threshold for "close enough" to bottom
     
-    const isAtBottom = scrollTop + clientHeight >= scrollHeight - threshold;
+    // MUCH STRICTER: Only consider "at bottom" if we're within 1px of the absolute bottom
+    const isAtBottom = Math.abs((scrollTop + clientHeight) - scrollHeight) <= 1;
     
-    console.log(`🔍 [AUTO_SCROLL_DEBUG] checkIfScrolledToBottom - scrollTop: ${scrollTop}, clientHeight: ${clientHeight}, scrollHeight: ${scrollHeight}, threshold: ${threshold}`);
-    console.log(`🔍 [SCROLL_LIMIT_DEBUG] Calculation: ${scrollTop} + ${clientHeight} = ${scrollTop + clientHeight} >= ${scrollHeight - threshold} = ${isAtBottom}`);
+    console.log(`🔍 [AUTO_SCROLL_DEBUG] checkIfScrolledToBottom - scrollTop: ${scrollTop}, clientHeight: ${clientHeight}, scrollHeight: ${scrollHeight}`);
+    console.log(`🔍 [SCROLL_LIMIT_DEBUG] Strict calculation: |${scrollTop + clientHeight} - ${scrollHeight}| = ${Math.abs((scrollTop + clientHeight) - scrollHeight)} <= 1 = ${isAtBottom}`);
     console.log(`🔍 [SCROLL_LIMIT_DEBUG] Distance from bottom: ${scrollHeight - (scrollTop + clientHeight)}px`);
     console.log(`🔍 [SCROLL_LIMIT_DEBUG] Max possible scroll: ${scrollHeight - clientHeight}px, current scroll: ${scrollTop}px`);
     
@@ -160,10 +160,10 @@ export const useAutoScroll = (itemCount: number, isRankingArea: boolean) => {
       
       console.log(`🔍 [AUTO_SCROLL_DEBUG] handleScroll - atBottom: ${atBottom}, atLastCardOnly: ${atLastCardOnly}`);
       
-      // Enable auto-adjust mode when user reaches bottom or last-card-only position
+      // Enable auto-adjust mode ONLY when user reaches the VERY bottom or last-card-only position
       if ((atBottom || atLastCardOnly) && !autoAdjustModeRef.current) {
         autoAdjustModeRef.current = true;
-        console.log("🚀 Auto-adjust mode enabled - at bottom or last card only");
+        console.log("🚀 Auto-adjust mode enabled - at absolute bottom or last card only");
       }
       
       // Update refs
