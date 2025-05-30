@@ -19,6 +19,11 @@ const AppSessionManager = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { saveSessionToCloud, loadSessionFromCloud } = useCloudSync();
   
+  // Check if we're in the Lovable editor environment
+  const isInEditor = window.location.hostname === 'localhost' || 
+                    window.location.hostname.includes('lovable.app') ||
+                    window.location.hostname.includes('lovable.dev');
+  
   // Generate a random session ID if not already generated or load from storage
   useEffect(() => {
     const sessionData = loadUnifiedSessionData();
@@ -38,8 +43,14 @@ const AppSessionManager = () => {
     }
   }, []);
 
-  // Auto-save to cloud when session data changes
+  // Auto-save to cloud when session data changes (only if not in editor)
   useEffect(() => {
+    // Skip cloud saving if we're in the editor environment
+    if (isInEditor) {
+      console.log("Cloud saving disabled in editor environment");
+      return;
+    }
+
     const saveToCloud = async () => {
       if (!sessionId) return;
       
@@ -56,13 +67,19 @@ const AppSessionManager = () => {
     // Debounce the save operation
     const timeoutId = setTimeout(saveToCloud, 2000);
     return () => clearTimeout(timeoutId);
-  }, [sessionId, saveSessionToCloud]);
+  }, [sessionId, saveSessionToCloud, isInEditor]);
   
   const handleCopySessionId = () => {
     navigator.clipboard.writeText(sessionId);
-    toast("Session ID copied", {
-      description: "Your session ID has been copied to clipboard and is saved in the cloud"
-    });
+    if (isInEditor) {
+      toast("Session ID copied", {
+        description: "Your session ID has been copied to clipboard (cloud saving disabled in editor)"
+      });
+    } else {
+      toast("Session ID copied", {
+        description: "Your session ID has been copied to clipboard and is saved in the cloud"
+      });
+    }
   };
   
   const handleImport = async () => {
@@ -89,8 +106,11 @@ const AppSessionManager = () => {
         // Not valid JSON, assume it's just a session ID
       }
       
-      // Load session data from cloud
-      const cloudSessionData = await loadSessionFromCloud(sessionIdToLoad);
+      // Load session data from cloud (only if not in editor)
+      let cloudSessionData = null;
+      if (!isInEditor) {
+        cloudSessionData = await loadSessionFromCloud(sessionIdToLoad);
+      }
       
       if (cloudSessionData) {
         // Load the existing session data
@@ -123,8 +143,12 @@ const AppSessionManager = () => {
         saveUnifiedSessionData(sessionData);
         setSessionId(sessionIdToLoad);
         
+        const description = isInEditor 
+          ? "Session ID updated (cloud features disabled in editor)"
+          : "Session ID updated. Note: No cloud data found for this ID.";
+        
         toast("Session ID updated", {
-          description: "Session ID updated. Note: No cloud data found for this ID."
+          description
         });
         
         window.location.reload();
@@ -149,7 +173,7 @@ const AppSessionManager = () => {
           >
             <div className="relative">
               <Save className="h-4 w-4" />
-              {isUploading && (
+              {!isInEditor && isUploading && (
                 <Cloud className="h-2 w-2 absolute -top-1 -right-1 text-blue-500 animate-pulse" />
               )}
             </div>
@@ -160,15 +184,17 @@ const AppSessionManager = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Cloud className="h-5 w-5" />
-              Your Cloud Session
+              Your {isInEditor ? "Local" : "Cloud"} Session
             </DialogTitle>
           </DialogHeader>
           
           <div className="space-y-6 mt-4">
             <div>
               <div className="text-sm text-muted-foreground mb-2">
-                Your session is automatically saved to the cloud as you make progress. 
-                Use your Session ID to access your data from any device:
+                {isInEditor 
+                  ? "Your session is stored locally in the editor. Cloud saving is disabled to prevent test data from being saved."
+                  : "Your session is automatically saved to the cloud as you make progress. Use your Session ID to access your data from any device:"
+                }
               </div>
               
               <div className="flex items-center gap-2">
@@ -186,15 +212,26 @@ const AppSessionManager = () => {
                 </Button>
               </div>
               
-              <div className="text-xs text-green-600 mt-1 flex items-center gap-1">
-                <Cloud className="h-3 w-3" />
-                {isUploading ? "Saving to cloud..." : "Saved to cloud"}
+              <div className="text-xs mt-1 flex items-center gap-1">
+                {isInEditor ? (
+                  <span className="text-orange-600">Local session (editor mode)</span>
+                ) : (
+                  <>
+                    <Cloud className="h-3 w-3 text-green-600" />
+                    <span className="text-green-600">
+                      {isUploading ? "Saving to cloud..." : "Saved to cloud"}
+                    </span>
+                  </>
+                )}
               </div>
             </div>
             
             <div className="border-t pt-4">
               <div className="text-sm text-muted-foreground mb-2">
-                To access your session from another device, enter your Session ID:
+                {isInEditor 
+                  ? "To load a session from the cloud (when deployed), enter your Session ID:"
+                  : "To access your session from another device, enter your Session ID:"
+                }
               </div>
               
               <div className="flex items-center gap-2">
