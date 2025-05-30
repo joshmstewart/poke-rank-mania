@@ -116,8 +116,9 @@ export const useBattleContentState = (
             // CRITICAL FIX: Generate rankings immediately when milestone is hit
             console.log(`🏆🏆🏆 [MILESTONE_FIX] Generating rankings for milestone ${newCount}`);
             
-            // Get the updated battle results including the current one
-            const updatedResults = [...battleResults, result];
+            // FIXED: Ensure result is always flattened to SingleBattle[]
+            const resultArray = Array.isArray(result) ? result : [result];
+            const updatedResults = [...battleResults, ...resultArray];
             
             // Generate rankings using the coordination system
             const generatedRankings = coordination.generateRankings(updatedResults);
