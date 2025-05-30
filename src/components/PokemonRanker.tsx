@@ -45,27 +45,26 @@ const PokemonRanker = () => {
     console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_CRITICAL] Timestamp: ${new Date().toISOString()}`);
     console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_CRITICAL] Trigger source: ${new Error().stack?.split('\n')[2]?.trim()}`);
     
-    // Get all TrueSkill ratings - LOG IMMEDIATELY
+    // CRITICAL: Check context readiness FIRST before any other operations
+    console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_CRITICAL] ===== CONTEXT READINESS CHECK =====`);
+    console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_CRITICAL] PokemonContext lookup map size: ${pokemonLookupMap.size}`);
+    
+    if (pokemonLookupMap.size === 0) {
+      console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_CRITICAL] ⚠️ CONTEXT NOT READY - Pokémon lookup map is empty`);
+      console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_CRITICAL] ❌ DEFERRING SYNC - Will wait for context to be populated`);
+      console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_CRITICAL] This is expected on initial load, sync will re-run when context is ready`);
+      return; // Exit early, don't process anything without context
+    }
+
+    console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_CRITICAL] ✅ CONTEXT IS READY - Proceeding with full sync`);
+    
+    // Get all TrueSkill ratings - only after context is confirmed ready
     const allRatings = getAllRatings();
     const ratedPokemonIds = Object.keys(allRatings).map(Number);
     
     console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_CRITICAL] ===== TRUESKILL STORE STATE =====`);
     console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_CRITICAL] TrueSkill ratings found: ${ratedPokemonIds.length}`);
     console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_CRITICAL] Rating IDs: ${ratedPokemonIds.slice(0, 15).join(', ')}${ratedPokemonIds.length > 15 ? '...' : ''}`);
-    
-    console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_CRITICAL] ===== POKEMON CONTEXT STATE =====`);
-    console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_CRITICAL] PokemonContext lookup map size: ${pokemonLookupMap.size}`);
-    console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_CRITICAL] Available Pokemon count: ${availablePokemon.length}`);
-    console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_CRITICAL] Ranked Pokemon count: ${rankedPokemon.length}`);
-    
-    // CRITICAL: Check if context is ready FIRST
-    if (pokemonLookupMap.size === 0) {
-      console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_CRITICAL] ⚠️ CONTEXT NOT READY - ratings found: ${ratedPokemonIds.length}. Will wait for context update.`);
-      console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_CRITICAL] ❌ NOT PROCEEDING with sync until context is loaded`);
-      return; // Exit early, don't clear anything
-    }
-
-    console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_CRITICAL] ✅ CONTEXT READY - proceeding with sync`);
     
     // If no TrueSkill ratings, clear and exit
     if (ratedPokemonIds.length === 0) {
@@ -166,50 +165,34 @@ const PokemonRanker = () => {
     
     console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_CRITICAL] ✅ React state update calls completed`);
     console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_CRITICAL] ===== SYNC PROCESS COMPLETE =====`);
-  }, [getAllRatings, getRating, pokemonLookupMap, availablePokemon, rankedPokemon, setRankedPokemon, setAvailablePokemon]);
+  }, [getAllRatings, getRating, pokemonLookupMap, setRankedPokemon, setAvailablePokemon]);
 
-  // FIXED: Context readiness effect - this will trigger when context becomes available
+  // FIXED: Primary effect that only runs when BOTH conditions are met
   useEffect(() => {
-    console.log(`🔥🔥🔥 [MANUAL_CONTEXT_ULTRA_CRITICAL] Context dependency changed - size: ${pokemonLookupMap.size}`);
-    
-    // Only proceed if context is ready
-    if (pokemonLookupMap.size > 0) {
-      console.log(`🔥🔥🔥 [MANUAL_CONTEXT_ULTRA_CRITICAL] ✅ Context ready with ${pokemonLookupMap.size} Pokemon`);
-      
-      // Check if we have ratings that need to be processed
-      const ratings = getAllRatings();
-      const ratingsCount = Object.keys(ratings).length;
-      
-      console.log(`🔥🔥🔥 [MANUAL_CONTEXT_ULTRA_CRITICAL] Current state: ${ratingsCount} ratings, ${rankedPokemon.length} ranked Pokemon`);
-      
-      if (ratingsCount > 0) {
-        console.log(`🔥🔥🔥 [MANUAL_CONTEXT_ULTRA_CRITICAL] ✅ Triggering sync: ${ratingsCount} ratings available and context ready`);
-        syncWithTrueSkillStore();
-      } else {
-        console.log(`🔥🔥🔥 [MANUAL_CONTEXT_ULTRA_CRITICAL] No ratings available - no sync needed`);
-      }
-    } else {
-      console.log(`🔥🔥🔥 [MANUAL_CONTEXT_ULTRA_CRITICAL] Context not ready yet - waiting for size > 0`);
-    }
-  }, [pokemonLookupMap.size, getAllRatings, syncWithTrueSkillStore]);
-
-  // FIXED: Mount effect - only log, don't try to sync until context is ready
-  useEffect(() => {
-    console.log(`🔥🔥🔥 [MANUAL_MOUNT_ULTRA_CRITICAL] PokemonRanker mounted`);
+    console.log(`🔥🔥🔥 [MANUAL_PRIMARY_SYNC] ===== PRIMARY SYNC EFFECT TRIGGERED =====`);
+    console.log(`🔥🔥🔥 [MANUAL_PRIMARY_SYNC] Context size: ${pokemonLookupMap.size}`);
     
     const ratings = getAllRatings();
     const ratingsCount = Object.keys(ratings).length;
+    console.log(`🔥🔥🔥 [MANUAL_PRIMARY_SYNC] Ratings count: ${ratingsCount}`);
     
-    console.log(`🔥🔥🔥 [MANUAL_MOUNT_ULTRA_CRITICAL] At mount: ${ratingsCount} ratings, context size: ${pokemonLookupMap.size}`);
-    
-    // Don't sync on mount - let the context effect handle it when context is ready
-    if (pokemonLookupMap.size > 0 && ratingsCount > 0) {
-      console.log(`🔥🔥🔥 [MANUAL_MOUNT_ULTRA_CRITICAL] Context and ratings both ready at mount - triggering sync`);
-      syncWithTrueSkillStore();
+    // CRITICAL: Only proceed if BOTH context is ready AND we have data to work with
+    if (pokemonLookupMap.size > 0) {
+      console.log(`🔥🔥🔥 [MANUAL_PRIMARY_SYNC] ✅ Context ready with ${pokemonLookupMap.size} Pokemon`);
+      
+      if (ratingsCount > 0) {
+        console.log(`🔥🔥🔥 [MANUAL_PRIMARY_SYNC] ✅ Ratings available: ${ratingsCount} - TRIGGERING FULL SYNC`);
+        syncWithTrueSkillStore();
+      } else {
+        console.log(`🔥🔥🔥 [MANUAL_PRIMARY_SYNC] No ratings available - clearing display`);
+        setRankedPokemon([]);
+        setAvailablePokemon([]);
+      }
     } else {
-      console.log(`🔥🔥🔥 [MANUAL_MOUNT_ULTRA_CRITICAL] Will wait for context and/or ratings to be ready`);
+      console.log(`🔥🔥🔥 [MANUAL_PRIMARY_SYNC] Context not ready yet - will wait for context to load`);
+      console.log(`🔥🔥🔥 [MANUAL_PRIMARY_SYNC] Effect will re-run when pokemonLookupMap.size changes`);
     }
-  }, []); // Only run on mount
+  }, [pokemonLookupMap.size, getAllRatings, syncWithTrueSkillStore, setRankedPokemon, setAvailablePokemon]);
 
   // Enhanced event listeners for TrueSkill updates
   useEffect(() => {
@@ -220,13 +203,14 @@ const PokemonRanker = () => {
       setTimeout(async () => {
         const ratings = getAllRatings();
         console.log(`🔥🔥🔥 [MANUAL_EVENT_ULTRA_CRITICAL] Store after event: ${Object.keys(ratings).length} ratings`);
+        console.log(`🔥🔥🔥 [MANUAL_EVENT_ULTRA_CRITICAL] Context size: ${pokemonLookupMap.size}`);
         
-        // Only sync if we have context data ready
-        if (pokemonLookupMap.size > 0) {
-          console.log(`🔥🔥🔥 [MANUAL_EVENT_ULTRA_CRITICAL] Context ready - triggering sync after event`);
+        // Only sync if we have BOTH context data ready AND ratings
+        if (pokemonLookupMap.size > 0 && Object.keys(ratings).length > 0) {
+          console.log(`🔥🔥🔥 [MANUAL_EVENT_ULTRA_CRITICAL] Both context and ratings ready - triggering sync after event`);
           await syncWithTrueSkillStore();
         } else {
-          console.log(`🔥🔥🔥 [MANUAL_EVENT_ULTRA_CRITICAL] Context not ready - will sync when context loads`);
+          console.log(`🔥🔥🔥 [MANUAL_EVENT_ULTRA_CRITICAL] Waiting for both context (${pokemonLookupMap.size}) and ratings (${Object.keys(ratings).length}) to be ready`);
         }
       }, 150);
     };
@@ -249,7 +233,7 @@ const PokemonRanker = () => {
       document.removeEventListener('trueskill-store-loaded', handleTrueSkillUpdate as EventListener);
       document.removeEventListener('trueskill-store-cleared', handleTrueSkillCleared);
     };
-  }, [syncWithTrueSkillStore, getAllRatings, pokemonLookupMap.size]);
+  }, [syncWithTrueSkillStore, getAllRatings, pokemonLookupMap.size, setRankedPokemon, setAvailablePokemon]);
 
   // Convert rankedPokemon to ensure proper RankedPokemon type
   const typedRankedPokemon: RankedPokemon[] = rankedPokemon.map(pokemon => {
