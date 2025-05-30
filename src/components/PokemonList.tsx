@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { DropResult } from "react-beautiful-dnd";
 import { Pokemon } from "@/services/pokemon";
 import PokemonListControls from "./pokemon/PokemonListControls";
-import PokemonListContent from "./pokemon/PokemonListContent";
+import { PokemonListContent } from "./pokemon/PokemonListContent";
 import PokemonListOverlay from "./pokemon/PokemonListOverlay";
 import { usePokemonGrouping } from "@/hooks/pokemon/usePokemonGrouping";
 import { useGenerationExpansion } from "@/hooks/pokemon/useGenerationExpansion";

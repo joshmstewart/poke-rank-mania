@@ -3,18 +3,24 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { DialogTrigger } from "@/components/ui/dialog";
 import { Info } from "lucide-react";
+import { Pokemon } from "@/services/pokemon";
 
 interface PokemonModalTriggerProps {
   children?: React.ReactNode;
-  onTriggerClick: (e: React.MouseEvent) => void;
+  pokemon: Pokemon;
 }
 
 const PokemonModalTrigger: React.FC<PokemonModalTriggerProps> = ({
   children,
-  onTriggerClick
+  pokemon
 }) => {
+  const handleTriggerClick = (e: React.MouseEvent) => {
+    // Prevent event bubbling if needed
+    e.stopPropagation();
+  };
+
   return (
-    <DialogTrigger asChild onClick={onTriggerClick}>
+    <DialogTrigger asChild onClick={handleTriggerClick}>
       {children || (
         <Button 
           variant="ghost" 
