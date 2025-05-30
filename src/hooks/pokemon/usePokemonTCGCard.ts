@@ -1,7 +1,6 @@
 
 import { useState, useEffect } from 'react';
 import { TCGCard } from './tcg/types';
-import { getCachedCard, setCachedCard } from './tcg/cache';
 import { fetchTCGCards } from './tcg/api';
 
 export const usePokemonTCGCard = (pokemonName: string, isModalOpen: boolean) => {
@@ -14,13 +13,6 @@ export const usePokemonTCGCard = (pokemonName: string, isModalOpen: boolean) => 
     if (!isModalOpen || !pokemonName) return;
 
     const fetchTCGCard = async () => {
-      // Check persistent cache first
-      const cachedCard = getCachedCard(pokemonName);
-      if (cachedCard !== null) {
-        setTcgCard(cachedCard);
-        return;
-      }
-
       setIsLoading(true);
       setError(null);
 
@@ -29,14 +21,12 @@ export const usePokemonTCGCard = (pokemonName: string, isModalOpen: boolean) => 
         
         setTcgCard(firstCard);
         setSecondTcgCard(secondCard);
-        setCachedCard(pokemonName, firstCard);
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Unknown error';
         console.error(`🃏 [TCG_ERROR] Failed to fetch TCG card for ${pokemonName}:`, errorMessage);
         setError(errorMessage);
         setTcgCard(null);
         setSecondTcgCard(null);
-        setCachedCard(pokemonName, null);
       } finally {
         setIsLoading(false);
       }

@@ -1,6 +1,6 @@
-
 import { TCGApiResponse, TCGCard } from './types';
 import { selectDiverseCards } from './sorting';
+import { getCachedCards, setCachedCard } from './cache';
 
 // Blocklist of specific card IDs that show card backs or are problematic
 const BLOCKED_CARD_IDS = new Set([
@@ -39,6 +39,13 @@ const isCardBack = (card: TCGCard): boolean => {
 };
 
 export const fetchTCGCards = async (pokemonName: string): Promise<{ firstCard: TCGCard | null; secondCard: TCGCard | null }> => {
+  // Check database cache first
+  const cachedResult = await getCachedCards(pokemonName);
+  if (cachedResult.firstCard !== null) {
+    console.log(`🃏 [TCG_CACHE] Using cached cards for ${pokemonName}`);
+    return cachedResult;
+  }
+
   // Clean the Pokemon name for API search (remove hyphens, special characters)
   let searchName = pokemonName
     .toLowerCase()
@@ -194,9 +201,16 @@ export const fetchTCGCards = async (pokemonName: string): Promise<{ firstCard: T
       attacksCount: firstCard.attacks?.length || 0
     });
 
+    // Cache the results in the database
+    await setCachedCard(pokemonName, firstCard, secondCard);
+
     return { firstCard, secondCard };
   }
 
   console.log(`🃏 [TCG_API] No valid TCG cards found for ${pokemonName} after all search strategies, using fallback`);
+  
+  // Cache the negative result to avoid repeated API calls
+  await setCachedCard(pokemonName, null, null);
+  
   return { firstCard: null, secondCard: null };
 };

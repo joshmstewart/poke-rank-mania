@@ -66,6 +66,33 @@ export type Database = {
         }
         Relationships: []
       }
+      tcg_cards_cache: {
+        Row: {
+          card_data: Json
+          created_at: string
+          id: string
+          pokemon_name: string
+          second_card_data: Json | null
+          updated_at: string
+        }
+        Insert: {
+          card_data: Json
+          created_at?: string
+          id?: string
+          pokemon_name: string
+          second_card_data?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          card_data?: Json
+          created_at?: string
+          id?: string
+          pokemon_name?: string
+          second_card_data?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_rankings: {
         Row: {
           battle_results: Json
