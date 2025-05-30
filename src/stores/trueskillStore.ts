@@ -125,18 +125,22 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
         }, 100);
       },
       
-      // FIXED: Proper anonymous session handling for cloud sync
+      // ENHANCED: Detailed cloud sync logging
       syncToCloud: async () => {
         const state = get();
         
+        console.log(`🌐 [CLOUD_SYNC_DETAILED] ===== STARTING CLOUD SYNC =====`);
+        console.log(`🌐 [CLOUD_SYNC_DETAILED] Local ratings count before sync: ${Object.keys(state.ratings).length}`);
+        console.log(`🌐 [CLOUD_SYNC_DETAILED] Session ID: ${state.sessionId.substring(0, 8)}...`);
+        
         // Skip sync if no ratings to sync
         if (Object.keys(state.ratings).length === 0) {
-          console.log('[TRUESKILL_CLOUD_FIXED] No ratings to sync, skipping cloud sync');
+          console.log('🌐 [CLOUD_SYNC_DETAILED] No ratings to sync, skipping cloud sync');
           return;
         }
         
         try {
-          console.log('[TRUESKILL_CLOUD_FIXED] Starting cloud sync...', {
+          console.log('🌐 [CLOUD_SYNC_DETAILED] Starting cloud sync...', {
             ratingsCount: Object.keys(state.ratings).length,
             sessionId: state.sessionId.substring(0, 8) + '...'
           });
@@ -145,12 +149,12 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           const { data: { user }, error: userError } = await supabase.auth.getUser();
           
           if (userError) {
-            console.log('[TRUESKILL_CLOUD_FIXED] Auth check error (continuing with anonymous):', userError.message);
+            console.log('🌐 [CLOUD_SYNC_DETAILED] Auth check error (continuing with anonymous):', userError.message);
           }
           
           if (user?.id) {
             // Authenticated user - use user_id
-            console.log('[TRUESKILL_CLOUD_FIXED] Syncing for authenticated user:', user.id);
+            console.log('🌐 [CLOUD_SYNC_DETAILED] Syncing for authenticated user:', user.id);
             
             const { error: upsertError } = await supabase
               .from('trueskill_sessions')
@@ -165,12 +169,12 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
               });
             
             if (upsertError) {
-              console.log('[TRUESKILL_CLOUD_FIXED] Authenticated user upsert error (keeping local data):', upsertError);
+              console.log('🌐 [CLOUD_SYNC_DETAILED] Authenticated user upsert error (keeping local data):', upsertError);
               return;
             }
           } else {
-            // FIXED: Anonymous user - use direct upsert without auth dependency
-            console.log('[TRUESKILL_CLOUD_FIXED] Syncing for anonymous session:', state.sessionId.substring(0, 8) + '...');
+            // Anonymous user - use direct upsert without auth dependency
+            console.log('🌐 [CLOUD_SYNC_DETAILED] Syncing for anonymous session:', state.sessionId.substring(0, 8) + '...');
             
             // For anonymous users, we need to handle the upsert differently
             // First try to find existing record
@@ -182,7 +186,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
               .maybeSingle();
             
             if (selectError) {
-              console.log('[TRUESKILL_CLOUD_FIXED] Error checking for existing anonymous session:', selectError);
+              console.log('🌐 [CLOUD_SYNC_DETAILED] Error checking for existing anonymous session:', selectError);
             }
             
             if (existingData) {
@@ -196,7 +200,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
                 .eq('id', existingData.id);
               
               if (updateError) {
-                console.log('[TRUESKILL_CLOUD_FIXED] Anonymous session update error (keeping local data):', updateError);
+                console.log('🌐 [CLOUD_SYNC_DETAILED] Anonymous session update error (keeping local data):', updateError);
                 return;
               }
             } else {
@@ -211,29 +215,39 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
                 }]);
               
               if (insertError) {
-                console.log('[TRUESKILL_CLOUD_FIXED] Anonymous session insert error (keeping local data):', insertError);
+                console.log('🌐 [CLOUD_SYNC_DETAILED] Anonymous session insert error (keeping local data):', insertError);
                 return;
               }
             }
           }
           
-          console.log('[TRUESKILL_CLOUD_FIXED] ✅ Successfully synced to cloud');
+          console.log('🌐 [CLOUD_SYNC_DETAILED] ✅ Successfully synced to cloud');
           set({ lastSyncedAt: new Date().toISOString() });
           
         } catch (error) {
-          console.log('[TRUESKILL_CLOUD_FIXED] Unexpected sync error (keeping local data):', error);
+          console.log('🌐 [CLOUD_SYNC_DETAILED] Unexpected sync error (keeping local data):', error);
         }
       },
       
-      // FIXED: Proper anonymous session loading
+      // ENHANCED: Detailed cloud loading with merge tracking
       loadFromCloud: async () => {
         const state = get();
         const localRatingsCount = Object.keys(state.ratings).length;
         
+        console.log(`🌐 [CLOUD_LOAD_DETAILED] ===== STARTING CLOUD LOAD =====`);
+        console.log(`🌐 [CLOUD_LOAD_DETAILED] Local ratings count BEFORE load: ${localRatingsCount}`);
+        console.log(`🌐 [CLOUD_LOAD_DETAILED] Session ID: ${state.sessionId.substring(0, 8)}...`);
+        
+        // Log detailed local state before any cloud interaction
+        if (localRatingsCount > 0) {
+          const localIds = Object.keys(state.ratings).slice(0, 10); // First 10 IDs
+          console.log(`🌐 [CLOUD_LOAD_DETAILED] Local rating IDs (first 10): ${localIds.join(', ')}`);
+        }
+        
         try {
           set({ isLoading: true });
           
-          console.log('[TRUESKILL_CLOUD_FIXED] Loading from cloud...', {
+          console.log('🌐 [CLOUD_LOAD_DETAILED] Loading from cloud...', {
             localRatingsCount,
             sessionId: state.sessionId.substring(0, 8) + '...'
           });
@@ -242,7 +256,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           const { data: { user }, error: userError } = await supabase.auth.getUser();
           
           if (userError) {
-            console.log('[TRUESKILL_CLOUD_FIXED] Auth check error during load (continuing with anonymous):', userError.message);
+            console.log('🌐 [CLOUD_LOAD_DETAILED] Auth check error during load (continuing with anonymous):', userError.message);
           }
           
           let data = null;
@@ -250,7 +264,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           
           if (user?.id) {
             // Authenticated user - query by user_id
-            console.log('[TRUESKILL_CLOUD_FIXED] Loading for authenticated user:', user.id);
+            console.log('🌐 [CLOUD_LOAD_DETAILED] Loading for authenticated user:', user.id);
             const result = await supabase
               .from('trueskill_sessions')
               .select('*')
@@ -262,7 +276,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
             selectError = result.error;
           } else {
             // Anonymous user - query by session_id
-            console.log('[TRUESKILL_CLOUD_FIXED] Loading for anonymous session:', state.sessionId.substring(0, 8) + '...');
+            console.log('🌐 [CLOUD_LOAD_DETAILED] Loading for anonymous session:', state.sessionId.substring(0, 8) + '...');
             const result = await supabase
               .from('trueskill_sessions')
               .select('*')
@@ -275,14 +289,19 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           }
           
           if (selectError) {
-            console.log('[TRUESKILL_CLOUD_FIXED] Select error (keeping local data):', selectError);
+            console.log('🌐 [CLOUD_LOAD_DETAILED] Select error (keeping local data):', selectError);
             set({ isLoading: false });
             return;
           }
           
-          // FIXED: Robust type guard for ratings_data
+          // ENHANCED: Detailed cloud data analysis
           if (data?.ratings_data) {
             let cloudRatings: Record<number, TrueSkillRating> = {};
+            
+            console.log(`🌐 [CLOUD_LOAD_DETAILED] ===== CLOUD DATA FOUND =====`);
+            console.log(`🌐 [CLOUD_LOAD_DETAILED] Raw cloud data type: ${typeof data.ratings_data}`);
+            console.log(`🌐 [CLOUD_LOAD_DETAILED] Is array: ${Array.isArray(data.ratings_data)}`);
+            console.log(`🌐 [CLOUD_LOAD_DETAILED] Last updated: ${data.last_updated}`);
             
             // Type guard to ensure we have a valid object and not an array
             if (typeof data.ratings_data === 'object' && 
@@ -290,37 +309,59 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
                 data.ratings_data !== null) {
               try {
                 cloudRatings = data.ratings_data as unknown as Record<number, TrueSkillRating>;
+                
+                const cloudRatingsCount = Object.keys(cloudRatings).length;
+                const cloudIds = Object.keys(cloudRatings).slice(0, 10); // First 10 IDs
+                
+                console.log(`🌐 [CLOUD_LOAD_DETAILED] ===== CLOUD DATA PROCESSED =====`);
+                console.log(`🌐 [CLOUD_LOAD_DETAILED] Cloud ratings count: ${cloudRatingsCount}`);
+                console.log(`🌐 [CLOUD_LOAD_DETAILED] Cloud rating IDs (first 10): ${cloudIds.join(', ')}`);
+                console.log(`🌐 [CLOUD_LOAD_DETAILED] Comparison: Local ${localRatingsCount} vs Cloud ${cloudRatingsCount}`);
+                
               } catch (castError) {
-                console.log('[TRUESKILL_CLOUD_FIXED] Type casting error, using empty ratings:', castError);
+                console.log('🌐 [CLOUD_LOAD_DETAILED] Type casting error, using empty ratings:', castError);
                 cloudRatings = {};
               }
             } else if (Array.isArray(data.ratings_data) && data.ratings_data.length === 0) {
-              console.log('[TRUESKILL_CLOUD_FIXED] Empty array received, initializing as empty object');
+              console.log('🌐 [CLOUD_LOAD_DETAILED] Empty array received, initializing as empty object');
               cloudRatings = {};
             } else if (data.ratings_data === null) {
-              console.log('[TRUESKILL_CLOUD_FIXED] Null ratings_data received, initializing as empty object');
+              console.log('🌐 [CLOUD_LOAD_DETAILED] Null ratings_data received, initializing as empty object');
               cloudRatings = {};
             } else {
-              console.log('[TRUESKILL_CLOUD_FIXED] Unexpected ratings_data type:', typeof data.ratings_data, 'using empty ratings');
+              console.log('🌐 [CLOUD_LOAD_DETAILED] Unexpected ratings_data type:', typeof data.ratings_data, 'using empty ratings');
               cloudRatings = {};
             }
             
             const cloudRatingsCount = Object.keys(cloudRatings).length;
             
-            console.log('[TRUESKILL_CLOUD_FIXED] Cloud data found:', {
-              cloudRatingsCount,
-              localRatingsCount,
-              lastUpdated: data.last_updated
-            });
+            console.log(`🌐 [CLOUD_LOAD_DETAILED] ===== MERGE DECISION LOGIC =====`);
+            console.log(`🌐 [CLOUD_LOAD_DETAILED] Cloud count: ${cloudRatingsCount}`);
+            console.log(`🌐 [CLOUD_LOAD_DETAILED] Local count: ${localRatingsCount}`);
+            console.log(`🌐 [CLOUD_LOAD_DETAILED] Cloud has more data: ${cloudRatingsCount > localRatingsCount}`);
+            console.log(`🌐 [CLOUD_LOAD_DETAILED] Local is empty: ${localRatingsCount === 0}`);
             
             // Only update if cloud has more data than local, or if local is empty
             if (cloudRatingsCount > localRatingsCount || localRatingsCount === 0) {
-              console.log(`[TRUESKILL_CLOUD_FIXED] ✅ Loading ${cloudRatingsCount} ratings from cloud`);
+              console.log(`🌐 [CLOUD_LOAD_DETAILED] ✅ DECISION: Loading ${cloudRatingsCount} ratings from cloud (replacing ${localRatingsCount} local ratings)`);
+              
+              // Log the state change details
+              const oldRatings = get().ratings;
+              const oldCount = Object.keys(oldRatings).length;
+              
               set({ 
                 ratings: cloudRatings,
                 lastSyncedAt: data.last_updated,
                 isLoading: false
               });
+              
+              // Verify the update happened
+              const newState = get();
+              const newCount = Object.keys(newState.ratings).length;
+              
+              console.log(`🌐 [CLOUD_LOAD_DETAILED] ===== MERGE COMPLETED =====`);
+              console.log(`🌐 [CLOUD_LOAD_DETAILED] State change: ${oldCount} → ${newCount} ratings`);
+              console.log(`🌐 [CLOUD_LOAD_DETAILED] Expected: ${cloudRatingsCount}, Actual: ${newCount}`);
               
               // Dispatch load event
               setTimeout(() => {
@@ -330,16 +371,16 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
                 document.dispatchEvent(loadEvent);
               }, 50);
             } else {
-              console.log('[TRUESKILL_CLOUD_FIXED] Local data is more recent, keeping local ratings');
+              console.log(`🌐 [CLOUD_LOAD_DETAILED] ✅ DECISION: Local data is more recent or equal, keeping ${localRatingsCount} local ratings (cloud had ${cloudRatingsCount})`);
               set({ isLoading: false });
             }
           } else {
-            console.log('[TRUESKILL_CLOUD_FIXED] No cloud data found, keeping local data');
+            console.log('🌐 [CLOUD_LOAD_DETAILED] No cloud data found, keeping local data');
             set({ isLoading: false });
           }
           
         } catch (error) {
-          console.log('[TRUESKILL_CLOUD_FIXED] Unexpected load error, keeping local data:', error);
+          console.log('🌐 [CLOUD_LOAD_DETAILED] Unexpected load error, keeping local data:', error);
           set({ isLoading: false });
         }
       }
