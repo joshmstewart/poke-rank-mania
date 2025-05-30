@@ -64,6 +64,7 @@ const PokemonList = ({
         allExpanded={allExpanded}
         onExpandAll={expandAll}
         onCollapseAll={collapseAll}
+        hideSearch={isRankingArea}
       />
       
       <PokemonListContent

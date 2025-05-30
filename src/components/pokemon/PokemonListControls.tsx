@@ -15,6 +15,7 @@ interface PokemonListControlsProps {
   allExpanded?: boolean;
   onExpandAll?: () => void;
   onCollapseAll?: () => void;
+  hideSearch?: boolean;
 }
 
 const PokemonListControls: React.FC<PokemonListControlsProps> = ({
@@ -26,7 +27,8 @@ const PokemonListControls: React.FC<PokemonListControlsProps> = ({
   showCollapseAll = false,
   allExpanded = false,
   onExpandAll,
-  onCollapseAll
+  onCollapseAll,
+  hideSearch = false
 }) => {
   return (
     <div className="flex items-center justify-between mb-4">
@@ -66,15 +68,17 @@ const PokemonListControls: React.FC<PokemonListControlsProps> = ({
           </Button>
         )}
       </div>
-      <div className="relative w-full max-w-xs">
-        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Search Pokemon..."
-          className="pl-8"
-          value={searchTerm}
-          onChange={(e) => onSearchChange(e.target.value)}
-        />
-      </div>
+      {!hideSearch && (
+        <div className="relative w-full max-w-xs">
+          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search Pokemon..."
+            className="pl-8"
+            value={searchTerm}
+            onChange={(e) => onSearchChange(e.target.value)}
+          />
+        </div>
+      )}
     </div>
   );
 };
