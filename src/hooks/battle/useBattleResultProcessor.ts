@@ -3,11 +3,14 @@ import { useCallback, useState } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
 import { Rating, rate_1vs1 } from "ts-trueskill";
+import { useTrueSkillStore } from "@/stores/trueskillStore";
 
 // Initialize a new Rating for Pokémon without ratings
-const getOrCreateRating = (pokemon: Pokemon): Rating => {
+const getOrCreateRating = (pokemon: Pokemon, getRating: (pokemonId: number) => Rating): Rating => {
   if (!pokemon.rating) {
-    pokemon.rating = new Rating(); // Default μ=25, σ≈8.33
+    // Get rating from central store first
+    const centralRating = getRating(pokemon.id);
+    pokemon.rating = centralRating;
   } else if (!(pokemon.rating instanceof Rating)) {
     // Convert from stored format if needed
     pokemon.rating = new Rating(pokemon.rating.mu, pokemon.rating.sigma);
@@ -26,6 +29,9 @@ export const useBattleResultProcessor = (
   trackLowerTierLoss?: (pokemonId: number) => void // Add this param to track losses
 ) => {
   const [isProcessing, setIsProcessing] = useState(false);
+  
+  // Get the centralized TrueSkill store functions
+  const { updateRating, getRating } = useTrueSkillStore();
 
   const processResult = useCallback((
     selections: number[],
@@ -56,18 +62,22 @@ export const useBattleResultProcessor = (
         if (winner && loser) {
           console.log(`Processing pair battle result: ${winner.name} beats ${loser.name}`);
           
-          // Apply TrueSkill rating update
-          const winnerRating = getOrCreateRating(winner);
-          const loserRating = getOrCreateRating(loser);
+          // Apply TrueSkill rating update using centralized store
+          const winnerRating = getOrCreateRating(winner, getRating);
+          const loserRating = getOrCreateRating(loser, getRating);
           
           // Update ratings using TrueSkill
           const [newWinnerRating, newLoserRating] = rate_1vs1(winnerRating, loserRating);
           
-          // Store the updated ratings
+          // CRITICAL: Store the updated ratings in the centralized store
+          updateRating(winner.id, newWinnerRating);
+          updateRating(loser.id, newLoserRating);
+          
+          // Also update the pokemon objects for immediate use
           winner.rating = newWinnerRating;
           loser.rating = newLoserRating;
           
-          console.log(`Updated ratings: ${winner.name} (μ=${newWinnerRating.mu.toFixed(2)}, σ=${newWinnerRating.sigma.toFixed(2)}) | ${loser.name} (μ=${newLoserRating.mu.toFixed(2)}, σ=${newLoserRating.sigma.toFixed(2)})`);
+          console.log(`Updated ratings via central store: ${winner.name} (μ=${newWinnerRating.mu.toFixed(2)}, σ=${newWinnerRating.sigma.toFixed(2)}) | ${loser.name} (μ=${newLoserRating.mu.toFixed(2)}, σ=${newLoserRating.sigma.toFixed(2)})`);
           
           // Find if winner or loser are from different tiers to track upsets
           const winnerRank = battleResults.filter(r => r.winner?.id === winner.id || r.loser?.id === winner.id).length;
@@ -128,19 +138,23 @@ export const useBattleResultProcessor = (
           console.log(`Processing triplet battle with ${winners.length} winners and ${losers.length} losers`);
           
           winners.forEach(winner => {
-            const winnerRating = getOrCreateRating(winner);
+            const winnerRating = getOrCreateRating(winner, getRating);
             
             losers.forEach(loser => {
-              const loserRating = getOrCreateRating(loser);
+              const loserRating = getOrCreateRating(loser, getRating);
               
               // Update ratings using TrueSkill
               const [newWinnerRating, newLoserRating] = rate_1vs1(winnerRating, loserRating);
               
-              // Store the updated ratings
+              // CRITICAL: Store the updated ratings in the centralized store
+              updateRating(winner.id, newWinnerRating);
+              updateRating(loser.id, newLoserRating);
+              
+              // Also update the pokemon objects for immediate use
               winner.rating = newWinnerRating;
               loser.rating = newLoserRating;
               
-              console.log(`Updated ratings: ${winner.name} (μ=${newWinnerRating.mu.toFixed(2)}, σ=${newWinnerRating.sigma.toFixed(2)}) | ${loser.name} (μ=${newLoserRating.mu.toFixed(2)}, σ=${newLoserRating.sigma.toFixed(2)})`);
+              console.log(`Updated ratings via central store: ${winner.name} (μ=${newWinnerRating.mu.toFixed(2)}, σ=${newWinnerRating.sigma.toFixed(2)}) | ${loser.name} (μ=${newLoserRating.mu.toFixed(2)}, σ=${newLoserRating.sigma.toFixed(2)})`);
               
               // Check freezing criteria for losers in triplet mode
               if (activeTier && activeTier !== "All" && freezePokemonForTier) {
@@ -185,7 +199,7 @@ export const useBattleResultProcessor = (
       setIsProcessing(false);
       return null;
     }
-  }, [battleResults, activeTier, freezePokemonForTier, trackLowerTierLoss]);
+  }, [battleResults, activeTier, freezePokemonForTier, trackLowerTierLoss, updateRating, getRating]);
 
   return {
     processResult,
