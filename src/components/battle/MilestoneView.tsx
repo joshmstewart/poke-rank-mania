@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { getPokemonBackgroundColor } from "./utils/PokemonColorUtils";
 import InfiniteScrollHandler from "./InfiniteScrollHandler";
 import PokemonInfoModal from "@/components/pokemon/PokemonInfoModal";
-import { useEnhancedManualReorder } from "@/hooks/battle/useEnhancedManualReorder";
 
 interface MilestoneViewProps {
   formattedRankings: (Pokemon | RankedPokemon)[];
@@ -14,7 +13,6 @@ interface MilestoneViewProps {
   onContinueBattles: () => void;
   onLoadMore: () => void;
   getMaxItemsForTier: () => number;
-  onRankingsUpdate?: (updatedRankings: RankedPokemon[]) => void;
 }
 
 const MilestoneView: React.FC<MilestoneViewProps> = ({
@@ -24,18 +22,11 @@ const MilestoneView: React.FC<MilestoneViewProps> = ({
   milestoneDisplayCount,
   onContinueBattles,
   onLoadMore,
-  getMaxItemsForTier,
-  onRankingsUpdate
+  getMaxItemsForTier
 }) => {
   const maxItems = getMaxItemsForTier();
   const displayRankings = formattedRankings.slice(0, Math.min(milestoneDisplayCount, maxItems));
   const hasMoreToLoad = milestoneDisplayCount < maxItems;
-  
-  // Initialize enhanced manual reorder for milestone views if onRankingsUpdate is available
-  const { handleEnhancedManualReorder } = useEnhancedManualReorder(
-    displayRankings as RankedPokemon[],
-    onRankingsUpdate || (() => {})
-  );
   
   console.log(`🏆 [MILESTONE_RENDER_ULTRA_DEBUG] About to render ${displayRankings.length} Pokemon in milestone view`);
   

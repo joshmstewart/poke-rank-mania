@@ -1,74 +1,44 @@
 
-import React from "react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
-import { Toaster as SonnerToaster } from "sonner";
-import PokemonRanker from "./components/PokemonRanker";
-import BattleMode from "./components/BattleMode";
-import ModeSwitcher from "./components/ModeSwitcher";
-import AppSessionManager from "./components/AppSessionManager";
-import { PokemonProvider } from "./contexts/PokemonContext";
-import { AuthProvider } from "./contexts/AuthContext";
-import { ImpliedBattleProvider, useImpliedBattleTracker } from "./contexts/ImpliedBattleTracker";
-import ImpliedBattleTracker from "./components/validation/ImpliedBattleTracker";
-import "./App.css";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { PokemonProvider } from "@/contexts/PokemonContext";
+import { ImpliedBattleTrackerProvider } from "@/contexts/ImpliedBattleTracker";
+import ImpliedBattleValidator from "@/components/battle/ImpliedBattleValidator";
+import Index from "./pages/Index";
+import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const AppContent: React.FC = () => {
-  const { impliedBattles } = useImpliedBattleTracker();
-  const location = useLocation();
-  const currentMode = location.pathname === '/battle' ? 'battle' : 'rank';
-
-  const handleModeChange = (mode: 'battle' | 'rank') => {
-    // Mode switching is handled by routing, no additional logic needed
-  };
-
-  return (
-    <div className="min-h-screen bg-background">
-      {/* Site Header */}
-      <header className="bg-white border-b border-gray-200 px-4 py-3">
-        <div className="max-w-7xl mx-auto">
-          <ModeSwitcher 
-            currentMode={currentMode}
-            onModeChange={handleModeChange}
-          />
-        </div>
-      </header>
-
-      {/* Implied Battle Validation Component - positioned below header, above battle settings */}
-      <ImpliedBattleTracker battles={impliedBattles} />
-
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto">
-        <Routes>
-          <Route path="/" element={<PokemonRanker />} />
-          <Route path="/battle" element={<BattleMode />} />
-        </Routes>
-      </main>
-
-      <Toaster />
-      <SonnerToaster />
-    </div>
-  );
-};
-
-function App() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <Router>
-        <AuthProvider>
-          <ImpliedBattleProvider>
-            <PokemonProvider allPokemon={[]}>
-              <AppSessionManager />
-              <AppContent />
-            </PokemonProvider>
-          </ImpliedBattleProvider>
-        </AuthProvider>
-      </Router>
-    </QueryClientProvider>
-  );
-}
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <AuthProvider>
+      <PokemonProvider allPokemon={[]}>
+        <ImpliedBattleTrackerProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <div className="min-h-screen">
+                <Routes>
+                  <Route path="/" element={
+                    <>
+                      <ImpliedBattleValidator />
+                      <Index />
+                    </>
+                  } />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </div>
+            </BrowserRouter>
+          </TooltipProvider>
+        </ImpliedBattleTrackerProvider>
+      </PokemonProvider>
+    </AuthProvider>
+  </QueryClientProvider>
+);
 
 export default App;
