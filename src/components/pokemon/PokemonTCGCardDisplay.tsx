@@ -1,5 +1,4 @@
 
-
 import React from 'react';
 import { Card } from '@/components/ui/card';
 
@@ -37,21 +36,21 @@ interface PokemonTCGCardDisplayProps {
 
 const PokemonTCGCardDisplay: React.FC<PokemonTCGCardDisplayProps> = ({ tcgCard, secondCard }) => {
   const CardDisplay = ({ card }: { card: TCGCard }) => {
-    console.log(`📷 [TCG_CARD_DISPLAY] ${card.name}: Using SMALL image URL: ${card.images.small}`);
-    console.log(`📷 [TCG_CARD_DISPLAY] ${card.name}: Large image URL (NOT USED): ${card.images.large}`);
+    console.log(`📷 [TCG_CARD_DISPLAY] ${card.name}: Using LARGE image URL: ${card.images.large}`);
+    console.log(`📷 [TCG_CARD_DISPLAY] ${card.name}: Small image URL (NOT USED): ${card.images.small}`);
     
     return (
       <div className="flex flex-col items-center space-y-4">
         <div className="relative">
           <img 
-            src={card.images.small} 
+            src={card.images.large} 
             alt={card.name}
             className="w-full max-w-sm rounded-lg shadow-lg"
             onLoad={() => {
-              console.log(`✅ [TCG_CARD_DISPLAY] ${card.name}: Small TCG image loaded successfully from: ${card.images.small}`);
+              console.log(`✅ [TCG_CARD_DISPLAY] ${card.name}: Large TCG image loaded successfully from: ${card.images.large}`);
             }}
             onError={(e) => {
-              console.error(`❌ [TCG_CARD_DISPLAY] Failed to load TCG card SMALL image for ${card.name} from: ${card.images.small}`);
+              console.error(`❌ [TCG_CARD_DISPLAY] Failed to load TCG card LARGE image for ${card.name} from: ${card.images.large}`);
               const target = e.target as HTMLImageElement;
               target.style.display = 'none';
             }}
@@ -90,4 +89,3 @@ const PokemonTCGCardDisplay: React.FC<PokemonTCGCardDisplayProps> = ({ tcgCard, 
 };
 
 export default PokemonTCGCardDisplay;
-
