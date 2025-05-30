@@ -12,11 +12,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { ChevronDown, Image, CreditCard } from "lucide-react";
 import ImagePreferenceSelector from "@/components/settings/ImagePreferenceSelector";
-import { getPreferredImageUrl, getCurrentImageMode } from "@/components/settings/imagePreferenceHelpers";
+import { getCurrentImageMode } from "@/components/settings/imagePreferenceHelpers";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-
-// Pikachu ID for preview
-const PIKACHU_ID = 25;
+import { usePreviewImageCache } from "@/hooks/usePreviewImageCache";
 
 interface ModeStyleControlsProps {
   mode: "rank" | "battle";
@@ -32,25 +30,27 @@ const ModeStyleControls: React.FC<ModeStyleControlsProps> = ({
   const [previewLoaded, setPreviewLoaded] = useState(false);
   const [previewError, setPreviewError] = useState(false);
   const [currentImageMode, setCurrentImageMode] = useState<'pokemon' | 'tcg'>('pokemon');
+  
+  const { getPreviewImage, isLoading } = usePreviewImageCache();
 
   // Load preview image and current mode when component mounts or when settings change
   useEffect(() => {
-    const updatePreviewImage = () => {
+    const updatePreviewImage = async () => {
       const imageMode = getCurrentImageMode();
       setCurrentImageMode(imageMode);
       
-      let newUrl = '';
-      if (imageMode === 'tcg') {
-        // Use a reliable Pikachu TCG card image - Base Set Pikachu
-        newUrl = 'https://images.pokemontcg.io/base1/58.png';
-      } else {
-        // Use regular Pikachu artwork for Pokemon mode
-        newUrl = getPreferredImageUrl(PIKACHU_ID);
-      }
+      console.log(`🖼️ [MODE_CONTROLS] Updating preview image for mode: ${imageMode}`);
       
-      setPreviewImageUrl(newUrl);
-      setPreviewLoaded(false); // Reset loaded state when URL changes
-      setPreviewError(false); // Reset error state when URL changes
+      try {
+        const newUrl = await getPreviewImage(imageMode);
+        setPreviewImageUrl(newUrl);
+        setPreviewLoaded(false); // Reset loaded state when URL changes
+        setPreviewError(false); // Reset error state when URL changes
+        console.log(`🖼️ [MODE_CONTROLS] Set preview URL: ${newUrl}`);
+      } catch (error) {
+        console.error('Failed to get preview image:', error);
+        setPreviewError(true);
+      }
     };
 
     updatePreviewImage();
@@ -67,29 +67,28 @@ const ModeStyleControls: React.FC<ModeStyleControlsProps> = ({
     return () => {
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, []);
+  }, [getPreviewImage]);
 
   // Listen for changes when dialog closes
   useEffect(() => {
     if (!imageSettingsOpen) {
       // Small delay to ensure localStorage has been updated
-      setTimeout(() => {
+      setTimeout(async () => {
         const imageMode = getCurrentImageMode();
         setCurrentImageMode(imageMode);
         
-        let newUrl = '';
-        if (imageMode === 'tcg') {
-          newUrl = 'https://images.pokemontcg.io/base1/58.png';
-        } else {
-          newUrl = getPreferredImageUrl(PIKACHU_ID);
+        try {
+          const newUrl = await getPreviewImage(imageMode);
+          setPreviewImageUrl(newUrl);
+          setPreviewLoaded(false);
+          setPreviewError(false);
+          console.log(`🖼️ [MODE_CONTROLS] Dialog closed, updated preview URL: ${newUrl}`);
+        } catch (error) {
+          console.error('Failed to update preview image after dialog close:', error);
         }
-        
-        setPreviewImageUrl(newUrl);
-        setPreviewLoaded(false);
-        setPreviewError(false);
       }, 100);
     }
-  }, [imageSettingsOpen]);
+  }, [imageSettingsOpen, getPreviewImage]);
 
   // Get current mode display text and icon
   const getCurrentModeText = () => {
@@ -137,16 +136,16 @@ const ModeStyleControls: React.FC<ModeStyleControlsProps> = ({
                           previewLoaded ? 'opacity-100' : 'opacity-0'
                         }`}
                         onLoad={() => {
-                          console.log('Preview image loaded successfully:', previewImageUrl);
+                          console.log('✅ [MODE_CONTROLS] Preview image loaded successfully:', previewImageUrl);
                           setPreviewLoaded(true);
                         }}
                         onError={() => {
-                          console.error('Failed to load preview image:', previewImageUrl);
+                          console.error('❌ [MODE_CONTROLS] Failed to load preview image:', previewImageUrl);
                           setPreviewError(true);
                         }}
                       />
                     )}
-                    {(!previewImageUrl || previewError || !previewLoaded) && (
+                    {(isLoading || !previewLoaded || previewError || !previewImageUrl) && (
                       <CurrentIcon className="w-4 h-4 text-gray-600" />
                     )}
                   </div>
