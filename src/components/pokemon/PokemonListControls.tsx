@@ -31,59 +31,77 @@ const PokemonListControls: React.FC<PokemonListControlsProps> = ({
   hideSearch = false
 }) => {
   return (
-    <div className="space-y-3">
+    <div className="space-y-4 mb-6">
       {/* Section Header */}
-      <h2 className="text-2xl font-bold text-gray-800">{title}</h2>
+      <div className="border-b border-gray-200 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
+      </div>
       
       {/* Controls Row */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <ToggleGroup 
-            type="single" 
-            value={viewMode} 
-            onValueChange={(value) => value && onViewModeChange(value as "list" | "grid")}
-          >
-            <ToggleGroupItem value="list" aria-label="List view">
-              <List className="h-4 w-4" />
-            </ToggleGroupItem>
-            <ToggleGroupItem value="grid" aria-label="Grid view">
-              <Grid className="h-4 w-4" />
-            </ToggleGroupItem>
-          </ToggleGroup>
+      <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1">
+              <span className="text-sm font-medium text-gray-700 mr-2">View:</span>
+              <ToggleGroup 
+                type="single" 
+                value={viewMode} 
+                onValueChange={(value) => value && onViewModeChange(value as "list" | "grid")}
+                className="border border-gray-200"
+              >
+                <ToggleGroupItem 
+                  value="list" 
+                  aria-label="List view"
+                  className="data-[state=on]:bg-blue-500 data-[state=on]:text-white"
+                >
+                  <List className="h-4 w-4" />
+                </ToggleGroupItem>
+                <ToggleGroupItem 
+                  value="grid" 
+                  aria-label="Grid view"
+                  className="data-[state=on]:bg-blue-500 data-[state=on]:text-white"
+                >
+                  <Grid className="h-4 w-4" />
+                </ToggleGroupItem>
+              </ToggleGroup>
+            </div>
+            
+            {showCollapseAll && (
+              <div className="border-l border-gray-200 pl-3 ml-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={allExpanded ? onCollapseAll : onExpandAll}
+                  className="flex items-center gap-2 hover:bg-gray-50"
+                >
+                  {allExpanded ? (
+                    <>
+                      <ChevronUp className="h-4 w-4" />
+                      Collapse All
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="h-4 w-4" />
+                      Expand All
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
+          </div>
           
-          {showCollapseAll && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={allExpanded ? onCollapseAll : onExpandAll}
-              className="flex items-center gap-1"
-            >
-              {allExpanded ? (
-                <>
-                  <ChevronUp className="h-3 w-3" />
-                  Collapse All
-                </>
-              ) : (
-                <>
-                  <ChevronDown className="h-3 w-3" />
-                  Expand All
-                </>
-              )}
-            </Button>
+          {!hideSearch && (
+            <div className="relative w-full max-w-xs">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Search Pokémon..."
+                className="pl-10 bg-gray-50 border-gray-200 focus:bg-white transition-colors"
+                value={searchTerm}
+                onChange={(e) => onSearchChange(e.target.value)}
+              />
+            </div>
           )}
         </div>
-        
-        {!hideSearch && (
-          <div className="relative w-full max-w-xs">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search Pokemon..."
-              className="pl-8"
-              value={searchTerm}
-              onChange={(e) => onSearchChange(e.target.value)}
-            />
-          </div>
-        )}
       </div>
     </div>
   );
