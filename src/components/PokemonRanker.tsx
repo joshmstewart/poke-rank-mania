@@ -1,3 +1,4 @@
+
 import React, { useEffect } from "react";
 import { usePokemonRanker } from "@/hooks/usePokemonRanker";
 import { RankedPokemon } from "@/services/pokemon";
@@ -38,9 +39,8 @@ const PokemonRanker = () => {
   const { clearAllRatings, getAllRatings, getRating } = useTrueSkillStore();
   const { pokemonLookupMap } = usePokemonContext();
 
-  // ULTRA-ENHANCED: Sync function with guaranteed console output
+  // FIXED: Enhanced sync function that properly waits for context
   const syncWithTrueSkillStore = React.useCallback(async () => {
-    // Force console output with critical priority logging
     console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_CRITICAL] ===== SYNC FUNCTION ENTRY =====`);
     console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_CRITICAL] Timestamp: ${new Date().toISOString()}`);
     console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_CRITICAL] Trigger source: ${new Error().stack?.split('\n')[2]?.trim()}`);
@@ -53,19 +53,19 @@ const PokemonRanker = () => {
     console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_CRITICAL] TrueSkill ratings found: ${ratedPokemonIds.length}`);
     console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_CRITICAL] Rating IDs: ${ratedPokemonIds.slice(0, 15).join(', ')}${ratedPokemonIds.length > 15 ? '...' : ''}`);
     
-    // Sample a few ratings for verification
-    if (ratedPokemonIds.length > 0) {
-      const sampleIds = ratedPokemonIds.slice(0, 3);
-      sampleIds.forEach(id => {
-        const rating = allRatings[id];
-        console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_CRITICAL] Sample rating (ID ${id}): μ=${rating.mu.toFixed(2)}, σ=${rating.sigma.toFixed(2)}, battles=${rating.battleCount}`);
-      });
-    }
-    
     console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_CRITICAL] ===== POKEMON CONTEXT STATE =====`);
     console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_CRITICAL] PokemonContext lookup map size: ${pokemonLookupMap.size}`);
     console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_CRITICAL] Available Pokemon count: ${availablePokemon.length}`);
     console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_CRITICAL] Ranked Pokemon count: ${rankedPokemon.length}`);
+    
+    // CRITICAL: Check if context is ready FIRST
+    if (pokemonLookupMap.size === 0) {
+      console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_CRITICAL] ⚠️ CONTEXT NOT READY - ratings found: ${ratedPokemonIds.length}. Will wait for context update.`);
+      console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_CRITICAL] ❌ NOT PROCEEDING with sync until context is loaded`);
+      return; // Exit early, don't clear anything
+    }
+
+    console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_CRITICAL] ✅ CONTEXT READY - proceeding with sync`);
     
     // If no TrueSkill ratings, clear and exit
     if (ratedPokemonIds.length === 0) {
@@ -75,41 +75,18 @@ const PokemonRanker = () => {
       return;
     }
 
-    // CRITICAL CHECK: PokemonContext data readiness
-    let allAvailablePokemon = Array.from(pokemonLookupMap.values());
+    // Get Pokemon data from context
+    const allAvailablePokemon = Array.from(pokemonLookupMap.values());
     
-    console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_CRITICAL] ===== POKEMON DATA AVAILABILITY =====`);
+    console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_CRITICAL] ===== POKEMON DATA PROCESSING =====`);
     console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_CRITICAL] Pokemon from context: ${allAvailablePokemon.length}`);
-    
-    // If context is not ready, try fallback methods
-    if (allAvailablePokemon.length === 0) {
-      console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_CRITICAL] ⚠️ PokemonContext not ready - using fallback`);
-      
-      // Try current Manual mode data
-      const currentPokemon = [...availablePokemon, ...rankedPokemon];
-      const pokemonMap = new Map();
-      currentPokemon.forEach(pokemon => pokemonMap.set(pokemon.id, pokemon));
-      allAvailablePokemon = Array.from(pokemonMap.values());
-      
-      console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_CRITICAL] Fallback data: ${allAvailablePokemon.length} Pokemon`);
-      
-      if (allAvailablePokemon.length === 0) {
-        console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_CRITICAL] ❌ NO DATA AVAILABLE - exiting sync`);
-        return;
-      }
-    } else {
-      console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_CRITICAL] ✅ Using PokemonContext data: ${allAvailablePokemon.length} Pokemon`);
-    }
-
-    console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_CRITICAL] ===== POKEMON MAPPING PROCESS =====`);
-    console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_CRITICAL] Will map ${ratedPokemonIds.length} ratings to ${allAvailablePokemon.length} Pokemon`);
+    console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_CRITICAL] Will map ${ratedPokemonIds.length} ratings to Pokemon`);
 
     // Convert TrueSkill ratings to RankedPokemon
     const convertedRankings: RankedPokemon[] = [];
     const unratedPokemon: RankedPokemon[] = [];
     let mappingSuccessCount = 0;
     let mappingFailureCount = 0;
-    let contextMissCount = 0;
 
     allAvailablePokemon.forEach(pokemon => {
       if (ratedPokemonIds.includes(pokemon.id)) {
@@ -164,24 +141,12 @@ const PokemonRanker = () => {
       }
     });
 
-    // Check for ratings that couldn't find Pokemon in context
-    ratedPokemonIds.forEach(ratingId => {
-      const foundInContext = allAvailablePokemon.find(p => p.id === ratingId);
-      if (!foundInContext) {
-        contextMissCount++;
-        if (contextMissCount <= 5) {
-          console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_CRITICAL] ⚠️ Rating ID ${ratingId} not found in Pokemon context`);
-        }
-      }
-    });
-
     // Sort ranked Pokemon by score descending
     convertedRankings.sort((a, b) => b.score - a.score);
 
     console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_CRITICAL] ===== MAPPING RESULTS =====`);
     console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_CRITICAL] Successfully mapped: ${mappingSuccessCount} Pokemon`);
     console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_CRITICAL] Mapping failures: ${mappingFailureCount} Pokemon`);
-    console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_CRITICAL] Context misses: ${contextMissCount} ratings`);
     console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_CRITICAL] Total ranked Pokemon: ${convertedRankings.length}`);
     console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_CRITICAL] Total unrated Pokemon: ${unratedPokemon.length}`);
     
@@ -203,43 +168,48 @@ const PokemonRanker = () => {
     console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_CRITICAL] ===== SYNC PROCESS COMPLETE =====`);
   }, [getAllRatings, getRating, pokemonLookupMap, availablePokemon, rankedPokemon, setRankedPokemon, setAvailablePokemon]);
 
-  // Mount effect with logging
-  useEffect(() => {
-    console.log(`🔥🔥🔥 [MANUAL_MOUNT_ULTRA_CRITICAL] PokemonRanker mounted - triggering initial sync`);
-    
-    const performSync = async () => {
-      console.log(`🔥🔥🔥 [MANUAL_MOUNT_ULTRA_CRITICAL] Mount triggered sync starting`);
-      await syncWithTrueSkillStore();
-    };
-    
-    performSync();
-  }, []); // Only run on mount
-
-  // Context readiness effect
+  // FIXED: Context readiness effect - this will trigger when context becomes available
   useEffect(() => {
     console.log(`🔥🔥🔥 [MANUAL_CONTEXT_ULTRA_CRITICAL] Context dependency changed - size: ${pokemonLookupMap.size}`);
     
+    // Only proceed if context is ready
     if (pokemonLookupMap.size > 0) {
-      console.log(`🔥🔥🔥 [MANUAL_CONTEXT_ULTRA_CRITICAL] Context ready with ${pokemonLookupMap.size} Pokemon`);
+      console.log(`🔥🔥🔥 [MANUAL_CONTEXT_ULTRA_CRITICAL] ✅ Context ready with ${pokemonLookupMap.size} Pokemon`);
       
-      // Check if we have ratings but no ranked Pokemon
+      // Check if we have ratings that need to be processed
       const ratings = getAllRatings();
       const ratingsCount = Object.keys(ratings).length;
       
       console.log(`🔥🔥🔥 [MANUAL_CONTEXT_ULTRA_CRITICAL] Current state: ${ratingsCount} ratings, ${rankedPokemon.length} ranked Pokemon`);
       
-      if (ratingsCount > 0 && rankedPokemon.length === 0) {
-        console.log(`🔥🔥🔥 [MANUAL_CONTEXT_ULTRA_CRITICAL] ✅ Sync needed: ${ratingsCount} ratings but 0 ranked Pokemon`);
+      if (ratingsCount > 0) {
+        console.log(`🔥🔥🔥 [MANUAL_CONTEXT_ULTRA_CRITICAL] ✅ Triggering sync: ${ratingsCount} ratings available and context ready`);
         syncWithTrueSkillStore();
-      } else if (ratingsCount > 0 && rankedPokemon.length > 0) {
-        console.log(`🔥🔥🔥 [MANUAL_CONTEXT_ULTRA_CRITICAL] Already synced: ${ratingsCount} ratings, ${rankedPokemon.length} ranked Pokemon`);
-      } else if (ratingsCount === 0) {
+      } else {
         console.log(`🔥🔥🔥 [MANUAL_CONTEXT_ULTRA_CRITICAL] No ratings available - no sync needed`);
       }
     } else {
-      console.log(`🔥🔥🔥 [MANUAL_CONTEXT_ULTRA_CRITICAL] Context not ready yet - waiting`);
+      console.log(`🔥🔥🔥 [MANUAL_CONTEXT_ULTRA_CRITICAL] Context not ready yet - waiting for size > 0`);
     }
-  }, [pokemonLookupMap.size, getAllRatings, rankedPokemon.length, syncWithTrueSkillStore]);
+  }, [pokemonLookupMap.size, getAllRatings, syncWithTrueSkillStore]);
+
+  // FIXED: Mount effect - only log, don't try to sync until context is ready
+  useEffect(() => {
+    console.log(`🔥🔥🔥 [MANUAL_MOUNT_ULTRA_CRITICAL] PokemonRanker mounted`);
+    
+    const ratings = getAllRatings();
+    const ratingsCount = Object.keys(ratings).length;
+    
+    console.log(`🔥🔥🔥 [MANUAL_MOUNT_ULTRA_CRITICAL] At mount: ${ratingsCount} ratings, context size: ${pokemonLookupMap.size}`);
+    
+    // Don't sync on mount - let the context effect handle it when context is ready
+    if (pokemonLookupMap.size > 0 && ratingsCount > 0) {
+      console.log(`🔥🔥🔥 [MANUAL_MOUNT_ULTRA_CRITICAL] Context and ratings both ready at mount - triggering sync`);
+      syncWithTrueSkillStore();
+    } else {
+      console.log(`🔥🔥🔥 [MANUAL_MOUNT_ULTRA_CRITICAL] Will wait for context and/or ratings to be ready`);
+    }
+  }, []); // Only run on mount
 
   // Enhanced event listeners for TrueSkill updates
   useEffect(() => {
