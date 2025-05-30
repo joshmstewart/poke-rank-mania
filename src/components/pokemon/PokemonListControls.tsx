@@ -94,7 +94,7 @@ const PokemonListControls: React.FC<PokemonListControlsProps> = ({
             <div className="relative w-full max-w-[200px]">
               <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
               <Input
-                placeholder="Search Pokémon..."
+                placeholder="Search"
                 className="h-7 pl-8 text-xs py-1 bg-gray-50 border-gray-200 focus:bg-white transition-colors"
                 value={searchTerm}
                 onChange={(e) => onSearchChange(e.target.value)}
