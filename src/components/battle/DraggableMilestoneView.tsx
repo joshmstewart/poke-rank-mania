@@ -31,6 +31,7 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
 }) => {
   console.log(`🚨 [DND_SETUP_DEBUG] ===== DraggableMilestoneView RENDER =====`);
   console.log(`🚨 [DND_SETUP_DEBUG] Initial pending refinements:`, Array.from(pendingRefinements));
+  console.log(`🚨 [DND_ENHANCED_FIX] onManualReorder function:`, !!onManualReorder);
 
   const [localRankings, setLocalRankings] = useState(formattedRankings);
   
@@ -53,22 +54,24 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
     setLocalRankings(formattedRankings);
   }, [formattedRankings]);
 
-
-  // CRITICAL FIX: Enhanced manual reorder handler that ensures pending state persists
-  const handleManualReorderWithPersistence = (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => {
-    console.log(`🚨 [DND_PENDING_FIX] Manual reorder with persistence for Pokemon ${draggedPokemonId}`);
+  // ENHANCED FIX: Direct manual reorder handler that properly calls the enhanced logic
+  const handleManualReorderDirect = (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => {
+    console.log(`🚨 [DND_ENHANCED_FIX] ===== DIRECT MANUAL REORDER CALLED =====`);
+    console.log(`🚨 [DND_ENHANCED_FIX] Pokemon ID: ${draggedPokemonId}`);
+    console.log(`🚨 [DND_ENHANCED_FIX] Source: ${sourceIndex} → Destination: ${destinationIndex}`);
     
     // Ensure the Pokemon stays pending
     markAsPending(draggedPokemonId);
     
-    // Call the original handler
-    onManualReorder(draggedPokemonId, sourceIndex, destinationIndex);
+    // CRITICAL FIX: Call the enhanced reorder logic directly
+    if (onManualReorder) {
+      console.log(`🚨 [DND_ENHANCED_FIX] Calling onManualReorder with enhanced logic...`);
+      onManualReorder(draggedPokemonId, sourceIndex, destinationIndex);
+    } else {
+      console.error(`🚨 [DND_ENHANCED_FIX] ❌ onManualReorder is not available!`);
+    }
     
-    // Dispatch additional persistence event
-    const persistEvent = new CustomEvent('ensure-pending-persistence', {
-      detail: { pokemonId: draggedPokemonId, timestamp: Date.now() }
-    });
-    document.dispatchEvent(persistEvent);
+    console.log(`🚨 [DND_ENHANCED_FIX] ===== DIRECT MANUAL REORDER COMPLETE =====`);
   };
 
   return (
@@ -87,7 +90,7 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
           displayRankings={displayRankings}
           localPendingRefinements={localPendingRefinements}
           pendingBattleCounts={pendingBattleCounts}
-          onManualReorder={handleManualReorderWithPersistence}
+          onManualReorder={handleManualReorderDirect}
           onLocalReorder={setLocalRankings}
           onMarkAsPending={markAsPending}
         />

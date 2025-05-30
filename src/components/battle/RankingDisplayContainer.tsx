@@ -57,21 +57,26 @@ const RankingDisplayContainer: React.FC<RankingDisplayContainerProps> = ({
     activeTier
   });
 
-  // Handle manual reordering
-  const handleManualReorder = (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => {
-    console.log(`🔄 [MANUAL_REORDER] Pokemon ${draggedPokemonId} moved from ${sourceIndex} to ${destinationIndex}`);
+  // ENHANCED FIX: Wrapper that ensures the enhanced logic is called
+  const handleManualReorderWrapper = (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => {
+    console.log(`🔄 [ENHANCED_WRAPPER] ===== MANUAL REORDER WRAPPER =====`);
+    console.log(`🔄 [ENHANCED_WRAPPER] Pokemon ${draggedPokemonId} moved from ${sourceIndex} to ${destinationIndex}`);
     
     if (onManualReorder) {
+      console.log(`🔄 [ENHANCED_WRAPPER] Calling enhanced manual reorder logic...`);
       onManualReorder(draggedPokemonId, sourceIndex, destinationIndex);
+    } else {
+      console.error(`🔄 [ENHANCED_WRAPPER] ❌ No manual reorder handler available!`);
     }
+    
+    console.log(`🔄 [ENHANCED_WRAPPER] ===== WRAPPER COMPLETE =====`);
   };
 
   if (isMilestoneView) {
     console.log("🎯 [DRAG_ENABLE_DEBUG] ===== MILESTONE VIEW LOGIC =====");
     console.log("🎯 [DRAG_ENABLE_DEBUG] Should use draggable:", enableDragAndDrop);
-    console.log("🎯 [DRAG_ENABLE_DEBUG] Manual reorder handler:", !!handleManualReorder);
+    console.log("🎯 [DRAG_ENABLE_DEBUG] Manual reorder handler:", !!handleManualReorderWrapper);
     
-    // ALWAYS use draggable milestone view in milestone mode
     return (
       <DraggableMilestoneView
         formattedRankings={formattedRankings}
@@ -81,7 +86,7 @@ const RankingDisplayContainer: React.FC<RankingDisplayContainerProps> = ({
         onContinueBattles={onContinueBattles}
         onLoadMore={handleMilestoneLoadMore}
         getMaxItemsForTier={getMaxItemsForTier}
-        onManualReorder={handleManualReorder}
+        onManualReorder={handleManualReorderWrapper}
         pendingRefinements={pendingRefinements}
       />
     );

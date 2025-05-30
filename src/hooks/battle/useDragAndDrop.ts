@@ -63,11 +63,18 @@ export const useDragAndDrop = ({ displayRankings, onManualReorder, onLocalReorde
       onLocalReorder(newRankings);
     }
 
-    // Call the enhanced manual reorder handler
+    // CRITICAL FIX: Ensure the enhanced manual reorder handler is called properly
     if (onManualReorder) {
-      console.log(`🚨🚨🚨 [DRAG_DROP_ENHANCED] Calling enhanced manual reorder...`);
-      console.log(`🚨🚨🚨 [DRAG_DROP_ENHANCED] This will automatically apply TrueSkill updates`);
+      console.log(`🚨🚨🚨 [DRAG_DROP_ENHANCED] ===== CALLING ENHANCED MANUAL REORDER =====`);
+      console.log(`🚨🚨🚨 [DRAG_DROP_ENHANCED] This should trigger TrueSkill updates automatically`);
+      console.log(`🚨🚨🚨 [DRAG_DROP_ENHANCED] Calling: onManualReorder(${draggedPokemon.id}, ${activeIndex}, ${overIndex})`);
+      
+      // Call the enhanced manual reorder logic
       onManualReorder(draggedPokemon.id, activeIndex, overIndex);
+      
+      console.log(`🚨🚨🚨 [DRAG_DROP_ENHANCED] Enhanced manual reorder call completed`);
+    } else {
+      console.error(`🚨🚨🚨 [DRAG_DROP_ENHANCED] ❌ onManualReorder is not available!`);
     }
     
     console.log(`🚨🚨🚨 [DRAG_DROP_ENHANCED] ===== DRAG END COMPLETE =====`);
