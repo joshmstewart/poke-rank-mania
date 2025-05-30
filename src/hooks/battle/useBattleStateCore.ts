@@ -67,6 +67,48 @@ export const useBattleStateCore = (
     }
   }, [loadBattleState]);
 
+  // CRITICAL FIX: Listen for restart events and reset all state
+  useEffect(() => {
+    const handleBattleSystemReset = (event: CustomEvent) => {
+      console.log(`🔄 [BATTLE_RESET_LISTENER] Received battle-system-reset event:`, event.detail);
+      
+      // Reset all state immediately
+      setBattlesCompleted(0);
+      setBattleResults([]);
+      setBattleHistory([]);
+      setCurrentBattle([]);
+      setSelectedPokemon([]);
+      setShowingMilestone(false);
+      setRankingGenerated(false);
+      setFinalRankings([]);
+      setConfidenceScores([]);
+      setCompletionPercentage(0);
+      setIsProcessingResult(false);
+      setIsBattleTransitioning(false);
+      setIsAnyProcessing(false);
+      
+      // Reset recently used Pokemon
+      resetRecentlyUsed();
+      
+      // Clear persistence
+      saveBattleCount(0);
+      
+      console.log(`🔄 [BATTLE_RESET_LISTENER] All battle state reset to initial values`);
+      
+      // Start a new battle after a short delay
+      setTimeout(() => {
+        console.log(`🔄 [BATTLE_RESET_LISTENER] Starting new battle after reset`);
+        startNewBattle();
+      }, 100);
+    };
+
+    document.addEventListener('battle-system-reset', handleBattleSystemReset as EventListener);
+    
+    return () => {
+      document.removeEventListener('battle-system-reset', handleBattleSystemReset as EventListener);
+    };
+  }, [resetRecentlyUsed, saveBattleCount]);
+
   // Start new battle with refinement queue support
   const startNewBattle = useCallback(() => {
     console.log(`🚀 [START_NEW_BATTLE] Starting new ${battleType} battle`);
