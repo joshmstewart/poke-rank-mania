@@ -15,7 +15,8 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, Image, CreditCard } from "lucide-react";
-import ImagePreferenceSelector, { getPreferredImageUrl, getCurrentImageMode } from "@/components/settings/ImagePreferenceSelector";
+import ImagePreferenceSelector from "@/components/settings/ImagePreferenceSelector";
+import { getPreferredImageUrl, getCurrentImageMode } from "@/components/settings/imagePreferenceHelpers";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 // Pikachu ID for preview

@@ -1,6 +1,6 @@
-
 import { useState, useRef } from "react";
-import { getPreferredImageUrl, getPreferredImageType, PokemonImageType } from "@/components/settings/ImagePreferenceSelector";
+import { getPreferredImageUrl, getPreferredImageType } from "@/components/settings/imagePreferenceHelpers";
+import { PokemonImageType } from "@/components/settings/types";
 
 export const useImageState = (pokemonId: number) => {
   const [imageLoaded, setImageLoaded] = useState(false);

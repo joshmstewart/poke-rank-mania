@@ -1,9 +1,10 @@
+
 import React, { useState, useCallback, memo, useRef, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "@/hooks/battle/types";
 import { getPreferredImage, ImageType } from "@/utils/imageUtils";
-import { getCurrentImageMode } from "@/components/settings/ImagePreferenceSelector";
+import { getCurrentImageMode } from "@/components/settings/imagePreferenceHelpers";
 import PokemonImage from "./PokemonImage";
 import PokemonInfo from "./PokemonInfo";
 import LoadingOverlay from "./LoadingOverlay";

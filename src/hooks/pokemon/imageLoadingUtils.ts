@@ -1,5 +1,4 @@
-
-import { getPreferredImageUrl } from "@/components/settings/ImagePreferenceSelector";
+import { getPreferredImageUrl } from "@/components/settings/imagePreferenceHelpers";
 
 export const validateImageUrl = async (url: string, displayName: string, pokemonId: number) => {
   if (!url || url.trim() === '') {

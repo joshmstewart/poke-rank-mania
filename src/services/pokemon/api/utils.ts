@@ -1,7 +1,7 @@
-
 import { Pokemon } from "../types";
 import { formatPokemonName } from "@/utils/pokemon";
-import { getPreferredImageType, PokemonImageType } from "@/components/settings/ImagePreferenceSelector";
+import { getPreferredImageType } from "@/components/settings/imagePreferenceHelpers";
+import { PokemonImageType } from "@/components/settings/types";
 
 /**
  * Validates and ensures Pokemon have consistent image URLs and names for battle display

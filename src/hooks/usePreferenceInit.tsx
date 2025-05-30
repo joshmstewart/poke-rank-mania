@@ -1,6 +1,5 @@
-
 import { useEffect } from "react";
-import { PokemonImageType } from "@/components/settings/ImagePreferenceSelector";
+import { PokemonImageType } from "@/components/settings/types";
 
 /**
  * Hook to initialize user preferences early in the application lifecycle
