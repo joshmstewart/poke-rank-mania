@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Rating } from 'ts-trueskill';
@@ -23,6 +22,10 @@ interface TrueSkillStore {
   syncToCloud: () => Promise<void>;
   loadFromCloud: () => Promise<void>;
 }
+
+// Debug store creation
+console.log(`🏪 [STORE_INIT_DEBUG] TrueSkill store being created`);
+console.error(`🚨 [STORE_INIT_DEBUG] Store initialization - Stack trace:`, new Error().stack);
 
 export const useTrueSkillStore = create<TrueSkillStore>()(
   persist(
@@ -228,7 +231,21 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
     }),
     {
       name: 'trueskill-ratings-store',
-      version: 1
+      version: 1,
+      onRehydrateStorage: () => {
+        console.log(`🏪 [STORE_REHYDRATE_DEBUG] Store rehydration starting`);
+        return (state, error) => {
+          if (error) {
+            console.error(`🚨 [STORE_REHYDRATE_DEBUG] Store rehydration failed:`, error);
+          } else {
+            const ratingsCount = state?.ratings ? Object.keys(state.ratings).length : 0;
+            console.log(`🏪 [STORE_REHYDRATE_DEBUG] Store rehydrated with ${ratingsCount} ratings`);
+          }
+        };
+      }
     }
   )
 );
+
+// Debug store creation complete
+console.log(`🏪 [STORE_INIT_DEBUG] TrueSkill store creation completed`);
