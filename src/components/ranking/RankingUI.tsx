@@ -47,6 +47,12 @@ export const RankingUI: React.FC<RankingUIProps> = ({
     setRankedPokemon
   );
 
+  // Temporarily disable drag-and-drop for Manual Mode TrueSkill integration
+  const handleDisabledDragEnd = () => {
+    console.log("[TRUESKILL_MANUAL] Drag-and-drop temporarily disabled in Manual Mode");
+    // Do nothing - drag is disabled
+  };
+
   if (isLoading && availablePokemon.length === 0) {
     return (
       <LoadingState 
@@ -59,12 +65,12 @@ export const RankingUI: React.FC<RankingUIProps> = ({
   }
 
   return (
-    <DragDropContext onDragEnd={handleDragEnd}>
+    <DragDropContext onDragEnd={handleDisabledDragEnd}>
       <div className="grid md:grid-cols-2 gap-6 h-full">
-        {/* Left side - Available Pokemon with independent scroll */}
+        {/* Left side - Available Pokemon (unrated) with independent scroll */}
         <div className="flex flex-col h-full max-h-[calc(100vh-12rem)] overflow-hidden">
           <PokemonList
-            title="Available Pokémon"
+            title="Available Pokémon (Unrated)"
             pokemonList={availablePokemon}
             droppableId="available"
           />
@@ -98,14 +104,21 @@ export const RankingUI: React.FC<RankingUIProps> = ({
           )}
         </div>
         
-        {/* Right side - Rankings with independent scroll */}
+        {/* Right side - Rankings (TrueSkill ordered) with independent scroll */}
         <div className="flex flex-col h-full max-h-[calc(100vh-12rem)] overflow-hidden">
           <PokemonList
-            title="Your Rankings"
+            title="Your Rankings (TrueSkill Ordered)"
             pokemonList={rankedPokemon}
             droppableId="ranked"
             isRankingArea={true}
           />
+          
+          {/* Temporary notice about disabled drag-and-drop */}
+          {rankedPokemon.length > 0 && (
+            <div className="text-center text-xs text-muted-foreground mt-1 p-2 bg-yellow-50 rounded">
+              Drag-and-drop temporarily disabled. Rankings based on TrueSkill ratings from Battle Mode.
+            </div>
+          )}
         </div>
       </div>
     </DragDropContext>
