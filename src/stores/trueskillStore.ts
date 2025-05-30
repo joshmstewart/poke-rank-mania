@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Rating } from 'ts-trueskill';
@@ -57,12 +56,25 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
             }
           };
           
-          // Dispatch event to notify Manual mode of updates
+          // CRITICAL FIX: Dispatch multiple events for better synchronization
           setTimeout(() => {
+            // Event for Manual mode synchronization
             const updateEvent = new CustomEvent('trueskill-store-updated', {
               detail: { pokemonId, rating: newRatings[pokemonId] }
             });
             document.dispatchEvent(updateEvent);
+            
+            // Event for general TrueSkill updates (backwards compatibility)
+            const syncEvent = new CustomEvent('trueskill-updated', {
+              detail: { 
+                source: 'store-update',
+                pokemonId,
+                timestamp: Date.now()
+              }
+            });
+            document.dispatchEvent(syncEvent);
+            
+            console.log(`[TRUESKILL_SYNC_EVENTS] Dispatched update events for Pokemon ${pokemonId}`);
           }, 10);
           
           // Sync to cloud using session ID (non-blocking)
@@ -101,10 +113,20 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
         console.log('[TRUESKILL_LOCAL] Clearing all ratings');
         set({ ratings: {}, lastSyncedAt: null });
         
-        // Dispatch clear event
+        // CRITICAL FIX: Dispatch clear events for synchronization
         setTimeout(() => {
           const clearEvent = new CustomEvent('trueskill-store-cleared');
           document.dispatchEvent(clearEvent);
+          
+          const syncEvent = new CustomEvent('trueskill-updated', {
+            detail: { 
+              source: 'store-cleared',
+              timestamp: Date.now()
+            }
+          });
+          document.dispatchEvent(syncEvent);
+          
+          console.log(`[TRUESKILL_SYNC_EVENTS] Dispatched clear events`);
         }, 10);
         
         // Sync cleared state to cloud using session ID (non-blocking)
@@ -200,12 +222,23 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
               isLoading: false 
             });
             
-            // Dispatch load complete event
+            // CRITICAL FIX: Dispatch load complete event for synchronization
             setTimeout(() => {
               const loadEvent = new CustomEvent('trueskill-store-loaded', {
                 detail: { ratingsCount: Object.keys(convertedRatings).length }
               });
               document.dispatchEvent(loadEvent);
+              
+              const syncEvent = new CustomEvent('trueskill-updated', {
+                detail: { 
+                  source: 'store-loaded',
+                  ratingsCount: Object.keys(convertedRatings).length,
+                  timestamp: Date.now()
+                }
+              });
+              document.dispatchEvent(syncEvent);
+              
+              console.log(`[TRUESKILL_SYNC_EVENTS] Dispatched load events for ${Object.keys(convertedRatings).length} Pokemon`);
             }, 10);
           } else {
             console.log('[TRUESKILL_CLOUD] No cloud data found for session ID, using local storage');
