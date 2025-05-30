@@ -4,12 +4,14 @@ import { RankedPokemon } from "@/services/pokemon";
 import { Rating, rate_1vs1 } from "ts-trueskill";
 import { toast } from "sonner";
 import { usePokemonContext } from "@/contexts/PokemonContext";
+import { useImpliedBattleTracker } from "@/contexts/ImpliedBattleTracker";
 
 export const useEnhancedManualReorder = (
   finalRankings: RankedPokemon[],
   onRankingsUpdate: (updatedRankings: RankedPokemon[]) => void
 ) => {
   const { pokemonLookupMap } = usePokemonContext();
+  const { addImpliedBattle } = useImpliedBattleTracker();
 
   const handleEnhancedManualReorder = useCallback((
     draggedPokemonId: number, 
@@ -150,6 +152,14 @@ export const useEnhancedManualReorder = (
       const draggedChange = newDraggedRating.mu - (index === 0 ? (draggedPokemon.rating === newDraggedRating ? 25 : draggedPokemon.rating.mu) : 25);
       const opponentChange = newOpponentRating.mu - (opponent.rating === newOpponentRating ? 25 : opponent.rating.mu);
       console.log(`🔧🔧🔧 [ENHANCED_REORDER_TRACE] μ CHANGES - ${draggedPokemon.name}: ${draggedChange > 0 ? '+' : ''}${draggedChange.toFixed(3)}, ${opponent.name}: ${opponentChange > 0 ? '+' : ''}${opponentChange.toFixed(3)}`);
+
+      // Add to implied battle tracker for validation
+      addImpliedBattle({
+        draggedPokemon: draggedPokemon.name,
+        opponent: opponent.name,
+        winner: draggedWins ? draggedPokemon.name : opponent.name,
+        battleType: `${battleType} (manual rank)`
+      });
     });
 
     console.log(`🔧🔧🔧 [ENHANCED_REORDER_TRACE] ===== RECALCULATING SCORES =====`);
@@ -184,7 +194,7 @@ export const useEnhancedManualReorder = (
       description: `Applied ${impliedBattles.length} TrueSkill adjustments based on new position`
     });
 
-  }, [finalRankings, pokemonLookupMap, onRankingsUpdate]);
+  }, [finalRankings, pokemonLookupMap, onRankingsUpdate, addImpliedBattle]);
 
   return { handleEnhancedManualReorder };
 };
