@@ -1,6 +1,7 @@
 
 import { useCallback } from "react";
 import { toast } from "sonner";
+import { useTrueSkillStore } from "@/stores/trueskillStore";
 
 export const useBattleResetActions = (
   setBattlesCompleted: any,
@@ -16,8 +17,11 @@ export const useBattleResetActions = (
   clearRefinementQueue: any,
   startNewBattleWrapper: () => any
 ) => {
+  // Get clearAllRatings from TrueSkill store
+  const { clearAllRatings } = useTrueSkillStore();
+
   const performFullBattleReset = useCallback(() => {
-    console.log(`🔄 [RESET_DEBUG] Performing full battle reset`);
+    console.log(`🔄 [BATTLE_RESET] Performing full battle reset including centralized TrueSkill store`);
     
     setBattlesCompleted(0);
     setBattleResults([]);
@@ -31,6 +35,10 @@ export const useBattleResetActions = (
     
     clearAllSuggestions();
     clearRefinementQueue();
+    
+    // Clear centralized TrueSkill store
+    clearAllRatings();
+    console.log(`✅ [BATTLE_RESET] Cleared centralized TrueSkill store`);
     
     localStorage.removeItem('pokemon-battle-count');
     localStorage.removeItem('pokemon-battle-results');
@@ -46,7 +54,7 @@ export const useBattleResetActions = (
     setBattlesCompleted, setBattleResults, setBattleHistory, setSelectedPokemon,
     setMilestoneInProgress, setShowingMilestone, setRankingGenerated,
     setIsBattleTransitioning, setIsAnyProcessing, clearAllSuggestions, 
-    clearRefinementQueue, startNewBattleWrapper
+    clearRefinementQueue, startNewBattleWrapper, clearAllRatings
   ]);
 
   return { performFullBattleReset };

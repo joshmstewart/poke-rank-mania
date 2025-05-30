@@ -3,6 +3,7 @@ import React from "react";
 import { usePokemonRanker } from "@/hooks/usePokemonRanker";
 import { RankedPokemon } from "@/services/pokemon";
 import { useRankingSuggestions } from "@/hooks/battle/useRankingSuggestions";
+import { useTrueSkillStore } from "@/stores/trueskillStore";
 import { toast } from "@/hooks/use-toast";
 import { PokemonRankerHeader } from "./pokemon/PokemonRankerHeader";
 import { PokemonRankerContent } from "./pokemon/PokemonRankerContent";
@@ -30,6 +31,9 @@ const PokemonRanker = () => {
   const [showRankings, setShowRankings] = React.useState(false);
   const [resetDialogOpen, setResetDialogOpen] = React.useState(false);
 
+  // Get clearAllRatings from TrueSkill store
+  const { clearAllRatings } = useTrueSkillStore();
+
   // Convert rankedPokemon to proper RankedPokemon type with defaults including new required properties
   const typedRankedPokemon: RankedPokemon[] = rankedPokemon.map(pokemon => ({
     ...pokemon,
@@ -49,9 +53,15 @@ const PokemonRanker = () => {
   } = useRankingSuggestions(typedRankedPokemon, setRankedPokemon as any);
 
   const handleReset = () => {
+    console.log("🔄 [MANUAL_RESET] Starting complete reset of Manual Mode");
+    
     // Clear suggestion arrows explicitly on reset
     localStorage.removeItem('pokemon-active-suggestions');
-    console.log("✅ Cleared pokemon-active-suggestions from localStorage");
+    console.log("✅ [MANUAL_RESET] Cleared pokemon-active-suggestions from localStorage");
+    
+    // Clear centralized TrueSkill store
+    clearAllRatings();
+    console.log("✅ [MANUAL_RESET] Cleared centralized TrueSkill store");
     
     // Reset rankings
     resetRankings();
@@ -59,7 +69,7 @@ const PokemonRanker = () => {
     // Clear suggestions
     clearAllSuggestions();
     
-    console.log("✅ Rankings and suggestions fully reset");
+    console.log("✅ [MANUAL_RESET] Manual Mode rankings and suggestions fully reset");
     
     toast({
       title: "Rankings Reset",

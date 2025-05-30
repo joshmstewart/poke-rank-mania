@@ -2,6 +2,7 @@
 import { useCallback, useRef } from "react";
 import { toast } from "@/hooks/use-toast";
 import { BattleType } from "./types";
+import { useTrueSkillStore } from "@/stores/trueskillStore";
 
 export const useBattleReset = (
   setBattlesCompleted: React.Dispatch<React.SetStateAction<number>>,
@@ -17,9 +18,12 @@ export const useBattleReset = (
   enhancedStartNewBattle: (battleType: BattleType) => any[] | undefined
 ) => {
   const isResettingRef = useRef(false);
+  
+  // Get clearAllRatings from TrueSkill store
+  const { clearAllRatings } = useTrueSkillStore();
 
   const performFullBattleReset = useCallback(() => {
-    console.log('🔄 CENTRALIZED RESET: Beginning full battle reset');
+    console.log('🔄 CENTRALIZED RESET: Beginning full battle reset including TrueSkill store');
     
     if (isResettingRef.current) {
       console.log('🔄 CENTRALIZED RESET: Already resetting, skipping');
@@ -44,6 +48,10 @@ export const useBattleReset = (
     
     // Clear suggestions
     clearAllSuggestions();
+    
+    // Clear centralized TrueSkill store
+    clearAllRatings();
+    console.log('✅ CENTRALIZED RESET: Cleared centralized TrueSkill store');
     
     // Clear localStorage
     const keysToRemove = [
@@ -83,7 +91,8 @@ export const useBattleReset = (
     resetBattleProgressionMilestoneTracking,
     clearAllSuggestions,
     generateRankings,
-    enhancedStartNewBattle
+    enhancedStartNewBattle,
+    clearAllRatings
   ]);
 
   return {
