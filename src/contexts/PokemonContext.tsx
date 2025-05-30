@@ -54,6 +54,12 @@ export const PokemonProvider: React.FC<PokemonProviderProps> = ({ children, allP
     
     console.log('[DEBUG PokemonContext] Lookup map created with', map.size, 'entries');
     
+    // NEW: Critical logging for context readiness tracking
+    console.log(`🌟🌟🌟 [CONTEXT_READINESS_CRITICAL] PokemonContext lookup map FINALIZED with ${map.size} entries`);
+    if (map.size > 0) {
+      console.log(`🌟🌟🌟 [CONTEXT_READINESS_CRITICAL] ✅ CONTEXT IS NOW READY - Should trigger dependent effects`);
+    }
+    
     // CRITICAL: Verify the map contains correct data after creation
     const poliwagFromMap = map.get(60);
     if (poliwagFromMap) {
@@ -70,10 +76,17 @@ export const PokemonProvider: React.FC<PokemonProviderProps> = ({ children, allP
   }, [allPokemon]);
 
   // CRITICAL FIX: Ultra-stable context value that never changes reference unnecessarily
-  const contextValue = useMemo(() => ({
-    allPokemon,
-    pokemonLookupMap
-  }), [allPokemon, pokemonLookupMap]);
+  const contextValue = useMemo(() => {
+    const value = {
+      allPokemon,
+      pokemonLookupMap
+    };
+    
+    // NEW: Log whenever context value changes to track re-renders
+    console.log(`🌟🌟🌟 [CONTEXT_VALUE_CRITICAL] Context value updated - map size: ${pokemonLookupMap.size}, allPokemon length: ${allPokemon.length}`);
+    
+    return value;
+  }, [allPokemon, pokemonLookupMap]);
 
   return (
     <PokemonContext.Provider value={contextValue}>
