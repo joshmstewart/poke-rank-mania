@@ -60,9 +60,28 @@ const PokemonInfoModal: React.FC<PokemonInfoModalProps> = ({
             transform: modalStyle.transform
           });
           console.log(`🔘 [MODAL_DEBUG] Modal bounding rect:`, modalRect);
+          
+          if (overlay) {
+            const overlayStyle = window.getComputedStyle(overlay);
+            const overlayRect = overlay.getBoundingClientRect();
+            console.log(`🔘 [MODAL_DEBUG] Overlay computed styles:`, {
+              display: overlayStyle.display,
+              visibility: overlayStyle.visibility,
+              zIndex: overlayStyle.zIndex,
+              opacity: overlayStyle.opacity,
+              position: overlayStyle.position
+            });
+            console.log(`🔘 [MODAL_DEBUG] Overlay bounding rect:`, overlayRect);
+            
+            // Check if overlay is covering the modal
+            const modalZ = parseInt(modalStyle.zIndex);
+            const overlayZ = parseInt(overlayStyle.zIndex);
+            console.log(`🔘 [MODAL_DEBUG] Z-index comparison: Modal=${modalZ}, Overlay=${overlayZ}`);
+            console.log(`🔘 [MODAL_DEBUG] Modal should be on top: ${modalZ > overlayZ}`);
+          }
         }
         
-        if (overlay) {
+        if (overlay && !modal) {
           const overlayStyle = window.getComputedStyle(overlay);
           const overlayRect = overlay.getBoundingClientRect();
           console.log(`🔘 [MODAL_DEBUG] Overlay computed styles:`, {
@@ -73,14 +92,6 @@ const PokemonInfoModal: React.FC<PokemonInfoModalProps> = ({
             position: overlayStyle.position
           });
           console.log(`🔘 [MODAL_DEBUG] Overlay bounding rect:`, overlayRect);
-          
-          // Check if overlay is covering the modal
-          if (modal && overlay) {
-            const modalZ = parseInt(modalStyle.zIndex);
-            const overlayZ = parseInt(overlayStyle.zIndex);
-            console.log(`🔘 [MODAL_DEBUG] Z-index comparison: Modal=${modalZ}, Overlay=${overlayZ}`);
-            console.log(`🔘 [MODAL_DEBUG] Modal should be on top: ${modalZ > overlayZ}`);
-          }
         }
 
         // Check for any parent elements that might be interfering
@@ -147,7 +158,7 @@ const PokemonInfoModal: React.FC<PokemonInfoModalProps> = ({
           <Button 
             variant="ghost" 
             size="sm" 
-            className="w-6 h-6 p-0 rounded-full bg-white/90 hover:bg-white shadow-sm border z-30 relative"
+            className="w-6 h-6 p-0 rounded-full bg-white/90 hover:bg-white shadow-sm border relative"
             data-info-button="true"
           >
             <Info className="w-3 h-3 text-blue-600" />
