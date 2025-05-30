@@ -65,7 +65,7 @@ const ModeStyleControls: React.FC<ModeStyleControlsProps> = ({
     return () => {
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, []); // Remove imageSettingsOpen from dependency array
+  }, []);
 
   // Listen for changes when dialog closes
   useEffect(() => {
@@ -126,11 +126,13 @@ const ModeStyleControls: React.FC<ModeStyleControlsProps> = ({
               <DialogTrigger asChild>
                 <Button variant="ghost" size="sm" className="flex gap-2 items-center h-9 px-4 hover:bg-white/70 transition-colors">
                   <div className="flex items-center justify-center w-5 h-5 relative">
-                    {previewImageUrl && previewLoaded && (
+                    {previewImageUrl && (
                       <img 
                         src={previewImageUrl}
                         alt="Current style preview"
-                        className="w-full h-full object-contain rounded-sm"
+                        className={`w-full h-full object-contain rounded-sm transition-opacity duration-300 ${
+                          previewLoaded ? 'opacity-100' : 'opacity-0'
+                        }`}
                         onLoad={() => setPreviewLoaded(true)}
                         onError={() => {
                           console.error('Failed to load preview image:', previewImageUrl);
