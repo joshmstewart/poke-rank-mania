@@ -54,7 +54,10 @@ export const useAutoScroll = (itemCount: number, isRankingArea: boolean) => {
     
     const isAtBottom = scrollTop + clientHeight >= scrollHeight - threshold;
     
-    console.log(`🔍 [AUTO_SCROLL_DEBUG] checkIfScrolledToBottom - scrollTop: ${scrollTop}, clientHeight: ${clientHeight}, scrollHeight: ${scrollHeight}, isAtBottom: ${isAtBottom}`);
+    console.log(`🔍 [AUTO_SCROLL_DEBUG] checkIfScrolledToBottom - scrollTop: ${scrollTop}, clientHeight: ${clientHeight}, scrollHeight: ${scrollHeight}, threshold: ${threshold}`);
+    console.log(`🔍 [SCROLL_LIMIT_DEBUG] Calculation: ${scrollTop} + ${clientHeight} = ${scrollTop + clientHeight} >= ${scrollHeight - threshold} = ${isAtBottom}`);
+    console.log(`🔍 [SCROLL_LIMIT_DEBUG] Distance from bottom: ${scrollHeight - (scrollTop + clientHeight)}px`);
+    console.log(`🔍 [SCROLL_LIMIT_DEBUG] Max possible scroll: ${scrollHeight - clientHeight}px, current scroll: ${scrollTop}px`);
     
     return isAtBottom;
   };
@@ -135,6 +138,15 @@ export const useAutoScroll = (itemCount: number, isRankingArea: boolean) => {
       const isScrollingUp = currentScrollTop < lastScrollTopRef.current;
       
       console.log(`🔍 [AUTO_SCROLL_DEBUG] handleScroll - currentScrollTop: ${currentScrollTop}, lastScrollTop: ${lastScrollTopRef.current}, isScrollingUp: ${isScrollingUp}, autoAdjustMode: ${autoAdjustModeRef.current}`);
+      
+      // DETAILED SCROLL CONTAINER ANALYSIS
+      console.log(`🔍 [SCROLL_ANALYSIS] Container scroll properties:`);
+      console.log(`🔍 [SCROLL_ANALYSIS]   scrollTop: ${container.scrollTop}px`);
+      console.log(`🔍 [SCROLL_ANALYSIS]   scrollHeight: ${container.scrollHeight}px`);
+      console.log(`🔍 [SCROLL_ANALYSIS]   clientHeight: ${container.clientHeight}px`);
+      console.log(`🔍 [SCROLL_ANALYSIS]   offsetHeight: ${container.offsetHeight}px`);
+      console.log(`🔍 [SCROLL_ANALYSIS]   maxScrollTop: ${container.scrollHeight - container.clientHeight}px`);
+      console.log(`🔍 [SCROLL_ANALYSIS]   canScrollMore: ${container.scrollTop < (container.scrollHeight - container.clientHeight)}px`);
       
       // If user scrolls up, immediately disable auto-adjust mode
       if (isScrollingUp && autoAdjustModeRef.current) {
