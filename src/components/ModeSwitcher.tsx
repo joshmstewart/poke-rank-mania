@@ -24,12 +24,12 @@ const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ currentMode, onModeChange }
                 onClick={() => onModeChange("battle")}
                 className={`flex items-center justify-center gap-2 px-4 py-2 rounded-md transition-all duration-200 font-medium text-sm ${
                   currentMode === "battle"
-                    ? "bg-blue-800 text-white shadow-sm"
+                    ? "bg-blue-900 text-white shadow-sm"
                     : "hover:bg-gray-50 text-gray-600 hover:text-gray-800"
                 }`}
                 aria-label="Battle Mode"
               >
-                <Trophy className={`h-4 w-4 ${currentMode === "battle" ? "text-white" : "text-blue-800"}`} />
+                <Trophy className={`h-4 w-4 ${currentMode === "battle" ? "text-white" : "text-blue-900"}`} />
                 <span>Battle</span>
               </button>
             </TooltipTrigger>
@@ -44,12 +44,12 @@ const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ currentMode, onModeChange }
                 onClick={() => onModeChange("rank")}
                 className={`flex items-center justify-center gap-2 px-4 py-2 rounded-md transition-all duration-200 font-medium text-sm ${
                   currentMode === "rank"
-                    ? "bg-blue-800 text-white shadow-sm"
+                    ? "bg-blue-900 text-white shadow-sm"
                     : "hover:bg-gray-50 text-gray-600 hover:text-gray-800"
                 }`}
                 aria-label="Manual Mode"
               >
-                <DraftingCompass className={`h-4 w-4 ${currentMode === "rank" ? "text-white" : "text-blue-800"}`} />
+                <DraftingCompass className={`h-4 w-4 ${currentMode === "rank" ? "text-white" : "text-blue-900"}`} />
                 <span>Manual</span>
               </button>
             </TooltipTrigger>
