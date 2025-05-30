@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Pokemon } from "@/services/pokemon";
 import {
@@ -28,7 +27,7 @@ const PokemonInfoModal: React.FC<PokemonInfoModalProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const { flavorText, isLoadingFlavor } = usePokemonFlavorText(pokemon.id, isOpen);
-  const { tcgCard, isLoading: isLoadingTCG, error: tcgError, hasTcgCard } = usePokemonTCGCard(pokemon.name, isOpen);
+  const { tcgCard, secondTcgCard, isLoading: isLoadingTCG, error: tcgError, hasTcgCard } = usePokemonTCGCard(pokemon.name, isOpen);
   
   useEffect(() => {
     console.log(`🔘 [MODAL_DEBUG] PokemonInfoModal for ${pokemon.name} mounted, isOpen: ${isOpen}`);
@@ -121,7 +120,7 @@ const PokemonInfoModal: React.FC<PokemonInfoModalProps> = ({
 
         {/* Display TCG card if available, otherwise fallback to original layout */}
         {hasTcgCard && tcgCard ? (
-          <PokemonTCGCardDisplay tcgCard={tcgCard} />
+          <PokemonTCGCardDisplay tcgCard={tcgCard} secondCard={secondTcgCard} />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Left side - Pokemon image and basic info */}

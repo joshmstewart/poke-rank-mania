@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 
 interface TCGCard {
@@ -112,6 +111,7 @@ const sortCardsByRarity = (cards: TCGCard[]): TCGCard[] => {
 
 export const usePokemonTCGCard = (pokemonName: string, isModalOpen: boolean) => {
   const [tcgCard, setTcgCard] = useState<TCGCard | null>(null);
+  const [secondTcgCard, setSecondTcgCard] = useState<TCGCard | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -153,13 +153,17 @@ export const usePokemonTCGCard = (pokemonName: string, isModalOpen: boolean) => 
           const sortedCards = sortCardsByRarity(data.data);
           const selectedCard = sortedCards[0];
           
+          // Select second card if available (different from first)
+          const secondCard = sortedCards.length > 1 ? sortedCards[1] : null;
+          
           console.log(`🃏 [TCG_RARITY] Available rarities for ${pokemonName}:`, 
             data.data.map(card => card.rarity).filter(Boolean)
           );
-          console.log(`🃏 [TCG_SELECTION] Selected card with rarity: ${selectedCard.rarity}`);
+          console.log(`🃏 [TCG_SELECTION] Selected first card with rarity: ${selectedCard.rarity}`);
+          console.log(`🃏 [TCG_SELECTION] Selected second card with rarity: ${secondCard?.rarity || 'none'}`);
           
           // Log metadata for decision-making
-          console.log(`🃏 [TCG_METADATA] Card metadata for ${pokemonName}:`, {
+          console.log(`🃏 [TCG_METADATA] First card metadata for ${pokemonName}:`, {
             id: selectedCard.id,
             name: selectedCard.name,
             setName: selectedCard.set.name,
@@ -176,10 +180,12 @@ export const usePokemonTCGCard = (pokemonName: string, isModalOpen: boolean) => 
           });
 
           setTcgCard(selectedCard);
+          setSecondTcgCard(secondCard);
           setCachedCard(pokemonName, selectedCard);
         } else {
           console.log(`🃏 [TCG_API] No TCG cards found for ${pokemonName}, using fallback`);
           setTcgCard(null);
+          setSecondTcgCard(null);
           setCachedCard(pokemonName, null);
         }
       } catch (err) {
@@ -187,6 +193,7 @@ export const usePokemonTCGCard = (pokemonName: string, isModalOpen: boolean) => 
         console.error(`🃏 [TCG_ERROR] Failed to fetch TCG card for ${pokemonName}:`, errorMessage);
         setError(errorMessage);
         setTcgCard(null);
+        setSecondTcgCard(null);
         setCachedCard(pokemonName, null);
       } finally {
         setIsLoading(false);
@@ -198,6 +205,7 @@ export const usePokemonTCGCard = (pokemonName: string, isModalOpen: boolean) => 
 
   return {
     tcgCard,
+    secondTcgCard,
     isLoading,
     error,
     hasTcgCard: tcgCard !== null
