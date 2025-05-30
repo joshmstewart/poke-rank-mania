@@ -99,8 +99,8 @@ const Index = () => {
                 <img 
                   src="/lovable-uploads/008c1959-1f2a-4416-9d73-9f706e384331.png" 
                   alt="PokeRank Mania" 
-                  className="h-16 w-auto object-contain"
-                  style={{ height: '64px', width: 'auto' }}
+                  className="w-auto object-contain"
+                  style={{ height: '100px', width: 'auto' }}
                 />
               </div>
             </div>
