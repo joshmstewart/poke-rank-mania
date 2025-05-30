@@ -21,10 +21,10 @@ const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ currentMode, onModeChange }
     const ratingsBefore = getAllRatings();
     const ratingsCountBefore = Object.keys(ratingsBefore).length;
     
-    console.log(`🔍 [MODE_SWITCH_DEBUG] ===== MODE SWITCH STARTING =====`);
-    console.log(`🔍 [MODE_SWITCH_DEBUG] From: ${currentMode} → To: ${mode}`);
-    console.log(`🔍 [MODE_SWITCH_DEBUG] Ratings BEFORE switch: ${ratingsCountBefore}`);
-    console.log(`🔍 [MODE_SWITCH_DEBUG] Store state BEFORE:`, ratingsBefore);
+    console.log(`🚨 [MODE_SWITCHER_CRITICAL] ===== MODE SWITCHER BUTTON CLICKED =====`);
+    console.log(`🚨 [MODE_SWITCHER_CRITICAL] From: ${currentMode} → To: ${mode}`);
+    console.log(`🚨 [MODE_SWITCHER_CRITICAL] Store state BEFORE switcher action: ${ratingsCountBefore} ratings`);
+    console.log(`🚨 [MODE_SWITCHER_CRITICAL] Rating IDs: ${Object.keys(ratingsBefore).slice(0, 10).join(', ')}${Object.keys(ratingsBefore).length > 10 ? '...' : ''}`);
     
     // Call the mode change
     onModeChange(mode);
@@ -34,16 +34,15 @@ const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ currentMode, onModeChange }
       const ratingsAfter = getAllRatings();
       const ratingsCountAfter = Object.keys(ratingsAfter).length;
       
-      console.log(`🔍 [MODE_SWITCH_DEBUG] Ratings AFTER switch: ${ratingsCountAfter}`);
-      console.log(`🔍 [MODE_SWITCH_DEBUG] Store state AFTER:`, ratingsAfter);
+      console.log(`🚨 [MODE_SWITCHER_CRITICAL] Store state AFTER switcher action: ${ratingsCountAfter} ratings`);
       
       if (ratingsCountBefore !== ratingsCountAfter) {
-        console.log(`🚨 [MODE_SWITCH_DEBUG] ❌ RATING COUNT CHANGED! ${ratingsCountBefore} → ${ratingsCountAfter}`);
-        console.log(`🚨 [MODE_SWITCH_DEBUG] This indicates data loss during mode switch!`);
+        console.log(`🚨 [MODE_SWITCHER_CRITICAL] ❌ RATING COUNT CHANGED! ${ratingsCountBefore} → ${ratingsCountAfter}`);
+        console.log(`🚨 [MODE_SWITCHER_CRITICAL] This indicates data loss during mode switch!`);
       } else {
-        console.log(`🔍 [MODE_SWITCH_DEBUG] ✅ Rating count preserved during mode switch`);
+        console.log(`🚨 [MODE_SWITCHER_CRITICAL] ✅ Rating count preserved during mode switch`);
       }
-      console.log(`🔍 [MODE_SWITCH_DEBUG] ===== MODE SWITCH COMPLETE =====`);
+      console.log(`🚨 [MODE_SWITCHER_CRITICAL] ===== MODE SWITCHER ACTION COMPLETE =====`);
     }, 100);
   };
 

@@ -30,11 +30,30 @@ const Index = () => {
     const ratings = getAllRatings();
     const ratingsCount = Object.keys(ratings).length;
     
-    console.log(`🔍 [INDEX_DEBUG] ===== INDEX MODE CHANGE =====`);
-    console.log(`🔍 [INDEX_DEBUG] Store has ${ratingsCount} ratings BEFORE mode change`);
-    console.log(`🔍 [INDEX_DEBUG] Changing from ${mode} to ${newMode}`);
+    console.log(`🚨 [MODE_SWITCH_CRITICAL] ===== STARTING MODE SWITCH =====`);
+    console.log(`🚨 [MODE_SWITCH_CRITICAL] From: ${mode} → To: ${newMode}`);
+    console.log(`🚨 [MODE_SWITCH_CRITICAL] Store contains ${ratingsCount} ratings BEFORE any mode switch logic`);
+    console.log(`🚨 [MODE_SWITCH_CRITICAL] Ratings IDs before switch: ${Object.keys(ratings).slice(0, 10).join(', ')}${Object.keys(ratings).length > 10 ? '...' : ''}`);
+    console.log(`🚨 [MODE_SWITCH_CRITICAL] Call stack:`, new Error().stack?.split('\n').slice(1, 4).join(' | '));
     
     setMode(newMode);
+    
+    // Check ratings immediately after mode change call
+    setTimeout(() => {
+      const ratingsAfter = getAllRatings();
+      const ratingsCountAfter = Object.keys(ratingsAfter).length;
+      
+      console.log(`🚨 [MODE_SWITCH_CRITICAL] Store contains ${ratingsCountAfter} ratings AFTER mode change call`);
+      
+      if (ratingsCountAfter !== ratingsCount) {
+        console.log(`🚨 [MODE_SWITCH_CRITICAL] ❌ RATING COUNT CHANGED DURING MODE SWITCH!`);
+        console.log(`🚨 [MODE_SWITCH_CRITICAL] Before: ${ratingsCount}, After: ${ratingsCountAfter}`);
+        console.log(`🚨 [MODE_SWITCH_CRITICAL] Difference: ${ratingsCountAfter - ratingsCount}`);
+      } else {
+        console.log(`🚨 [MODE_SWITCH_CRITICAL] ✅ Rating count preserved during mode switch`);
+      }
+      console.log(`🚨 [MODE_SWITCH_CRITICAL] ===== MODE SWITCH COMPLETE =====`);
+    }, 50);
   };
 
   // Monitor store changes during component lifecycle
