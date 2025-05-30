@@ -79,11 +79,11 @@ const Index = () => {
     <div className="min-h-screen bg-gray-50">
       {/* Application Header */}
       <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10 relative">
-        <div className="container max-w-7xl mx-auto px-4 py-2">
-          <div className="flex items-center justify-between">
+        <div className="container max-w-7xl mx-auto px-4">
+          <div className="flex items-center justify-between h-16">
             {/* Left side - Logo */}
             <div className="flex items-center">
-              <div className="h-32 flex items-center">
+              <div className="h-14 flex items-center">
                 <img 
                   src="/lovable-uploads/008c1959-1f2a-4416-9d73-9f706e384331.png" 
                   alt="PokeRank Mania" 
@@ -95,7 +95,7 @@ const Index = () => {
             {/* Right side - Controls grouped together */}
             <div className="flex items-center gap-3">
               {/* Mode and Style Controls Group */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 bg-gray-50 rounded-lg p-1">
                 {/* Mode Switcher */}
                 <ModeSwitcher currentMode={mode} onModeChange={handleModeChange} />
                 
@@ -105,7 +105,7 @@ const Index = () => {
                     <Dialog open={imageSettingsOpen} onOpenChange={setImageSettingsOpen}>
                       <TooltipTrigger asChild>
                         <DialogTrigger asChild>
-                          <Button variant="outline" size="sm" className="flex gap-2 items-center h-9 bg-gray-50 hover:bg-gray-100">
+                          <Button variant="ghost" size="sm" className="flex gap-2 items-center h-8 px-3 hover:bg-white">
                             <div className="flex items-center justify-center w-4 h-4 relative">
                               {!previewLoaded && (
                                 <Image className="w-3 h-3 text-gray-400" />
