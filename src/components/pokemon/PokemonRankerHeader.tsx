@@ -15,6 +15,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Info, RefreshCw, List } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { generations } from "@/services/pokemon";
+import { useTrueSkillStore } from "@/stores/trueskillStore";
+import { toast } from "@/hooks/use-toast";
 
 interface PokemonRankerHeaderProps {
   selectedGeneration: number;
@@ -35,7 +37,49 @@ export const PokemonRankerHeader: React.FC<PokemonRankerHeaderProps> = ({
   onResetDialogChange,
   onReset
 }) => {
+  const { clearAllRatings } = useTrueSkillStore();
   const generationName = selectedGeneration === 0 ? "All Generations" : `Generation ${selectedGeneration}`;
+
+  const handleManualReset = () => {
+    console.log("🔄 [MANUAL_RESET_FIXED] ===== MANUAL MODE RESET INITIATED =====");
+    
+    // Clear TrueSkill store (affects both modes)
+    clearAllRatings();
+    console.log("🔄 [MANUAL_RESET_FIXED] TrueSkill store cleared");
+    
+    // Clear Manual mode specific localStorage
+    const keysToRemove = [
+      'pokemon-active-suggestions',
+      'pokemon-ranker-rankings',
+      'pokemon-ranker-confidence'
+    ];
+    
+    keysToRemove.forEach(key => {
+      localStorage.removeItem(key);
+      console.log(`🔄 [MANUAL_RESET_FIXED] Cleared: ${key}`);
+    });
+    
+    // Call the original reset function
+    onReset();
+    
+    // Dispatch events to ensure synchronization
+    setTimeout(() => {
+      const resetEvent = new CustomEvent('manual-mode-reset', {
+        detail: { timestamp: Date.now() }
+      });
+      document.dispatchEvent(resetEvent);
+      
+      console.log("🔄 [MANUAL_RESET_FIXED] Reset events dispatched");
+    }, 50);
+    
+    toast({
+      title: "Manual Mode Reset",
+      description: "All rankings and suggestions have been cleared from Manual Mode.",
+      duration: 3000
+    });
+    
+    console.log("🔄 [MANUAL_RESET_FIXED] ===== MANUAL MODE RESET COMPLETE =====");
+  };
 
   return (
     <div className="flex items-center justify-between bg-white p-3 rounded-lg shadow border">
@@ -80,14 +124,14 @@ export const PokemonRankerHeader: React.FC<PokemonRankerHeaderProps> = ({
           </Button>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Reset Rankings</AlertDialogTitle>
+              <AlertDialogTitle>Reset Manual Mode Rankings</AlertDialogTitle>
               <AlertDialogDescription>
-                This will reset all rankings and suggestions for {generationName}. This action cannot be undone.
+                This will reset all rankings and suggestions for {generationName} in Manual Mode. This will also clear any TrueSkill ratings from Battle Mode. This action cannot be undone.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={onReset}>Reset</AlertDialogAction>
+              <AlertDialogAction onClick={handleManualReset}>Reset</AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
@@ -102,8 +146,9 @@ export const PokemonRankerHeader: React.FC<PokemonRankerHeaderProps> = ({
               <DialogTitle>How to use Pokémon Ranking</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 mt-2">
-              <p>Your rankings are automatically saved as you make changes!</p>
+              <p>Your rankings are automatically loaded from your Battle Mode progress!</p>
               <p>To suggest ranking adjustments, hover over a Pokémon in the rankings view and use the arrow controls.</p>
+              <p>Rankings are based on TrueSkill ratings calculated from your battles.</p>
             </div>
           </DialogContent>
         </Dialog>

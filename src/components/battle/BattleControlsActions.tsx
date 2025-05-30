@@ -22,6 +22,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import BattleSettings from "./BattleSettings";
 import { SingleBattle } from "@/hooks/battle/types";
+import { useTrueSkillStore } from "@/stores/trueskillStore";
+import { toast } from "@/hooks/use-toast";
 
 interface BattleControlsActionsProps {
   selectedGeneration: number;
@@ -46,55 +48,87 @@ const BattleControlsActions: React.FC<BattleControlsActionsProps> = ({
 }) => {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [restartDialogOpen, setRestartDialogOpen] = useState(false);
+  const { clearAllRatings } = useTrueSkillStore();
   
   const safeSelectedGeneration = selectedGeneration !== undefined ? selectedGeneration : 0;
   
   const handleRestart = () => {
     const timestamp = new Date().toISOString();
     
-    console.log(`📝 [${timestamp}] RESTART BUTTON: handleRestart triggered`);
+    console.log(`🔄 [RESTART_FIXED] ===== COMPREHENSIVE RESTART INITIATED =====`);
+    console.log(`🔄 [RESTART_FIXED] Timestamp: ${timestamp}`);
     
     setRestartDialogOpen(false);
-    console.log(`📝 [${timestamp}] RESTART BUTTON: Restart dialog closed`);
     
-    if (performFullBattleReset) {
-      console.log(`📝 [${timestamp}] RESTART BUTTON: Using centralized performFullBattleReset`);
-      performFullBattleReset();
-      console.log(`📝 [${timestamp}] RESTART BUTTON: Centralized reset completed`);
-    } else {
-      console.log(`📝 [${timestamp}] RESTART BUTTON: Using legacy reset method (fallback)`);
-      
-      localStorage.removeItem('pokemon-active-suggestions');
-      console.log(`📝 [${timestamp}] RESTART BUTTON: Cleared pokemon-active-suggestions from localStorage`);
-      
-      localStorage.removeItem('pokemon-battle-count');
-      console.log(`📝 [${timestamp}] RESTART BUTTON: Cleared pokemon-battle-count from localStorage`);
-      
-      localStorage.removeItem('pokemon-battle-tracking');
-      console.log(`📝 [${timestamp}] RESTART BUTTON: Cleared pokemon-battle-tracking from localStorage`);
-      
-      if (setBattlesCompleted) {
-        setBattlesCompleted(0);
-        console.log(`📝 [${timestamp}] RESTART BUTTON: ✅ battlesCompleted explicitly reset to 0`);
-      } else {
-        console.warn(`📝 [${timestamp}] RESTART BUTTON: ⚠️ setBattlesCompleted function not provided, cannot reset React state directly`);
-      }
-      
-      if (setBattleResults) {
-        setBattleResults([]);
-        console.log(`📝 [${timestamp}] RESTART BUTTON: ✅ battleResults explicitly reset to []`);
-      } else {
-        console.warn(`📝 [${timestamp}] RESTART BUTTON: ⚠️ setBattleResults not provided`);
-      }
-      
-      console.log(`📝 [${timestamp}] RESTART BUTTON: Calling onRestartBattles callback`);
-      onRestartBattles();
-      console.log(`📝 [${timestamp}] RESTART BUTTON: onRestartBattles callback executed`);
+    // Step 1: Clear TrueSkill store first (this affects Manual Mode)
+    console.log(`🔄 [RESTART_FIXED] Step 1: Clearing TrueSkill store`);
+    clearAllRatings();
+    
+    // Step 2: Clear all localStorage items
+    console.log(`🔄 [RESTART_FIXED] Step 2: Clearing localStorage`);
+    const keysToRemove = [
+      'pokemon-active-suggestions',
+      'pokemon-battle-count',
+      'pokemon-battle-results',
+      'pokemon-battle-tracking',
+      'pokemon-battle-history',
+      'pokemon-battles-completed',
+      'pokemon-battle-seen',
+      'suggestionUsageCounts',
+      'pokemon-ranker-rankings',
+      'pokemon-ranker-confidence'
+    ];
+    
+    keysToRemove.forEach(key => {
+      localStorage.removeItem(key);
+      console.log(`🔄 [RESTART_FIXED] Cleared: ${key}`);
+    });
+    
+    // Step 3: Reset React state
+    console.log(`🔄 [RESTART_FIXED] Step 3: Resetting React state`);
+    if (setBattlesCompleted) {
+      setBattlesCompleted(0);
+      console.log(`🔄 [RESTART_FIXED] ✅ Battles completed reset to 0`);
     }
     
+    if (setBattleResults) {
+      setBattleResults([]);
+      console.log(`🔄 [RESTART_FIXED] ✅ Battle results reset to []`);
+    }
+    
+    // Step 4: Use centralized reset if available
+    if (performFullBattleReset) {
+      console.log(`🔄 [RESTART_FIXED] Step 4: Using centralized reset`);
+      performFullBattleReset();
+    } else {
+      console.log(`🔄 [RESTART_FIXED] Step 4: Using legacy reset callback`);
+      onRestartBattles();
+    }
+    
+    // Step 5: Dispatch events to notify other components
+    console.log(`🔄 [RESTART_FIXED] Step 5: Dispatching reset events`);
     setTimeout(() => {
-      console.log(`📝 [${timestamp}] RESTART BUTTON: [200ms later] Current battle count:`, localStorage.getItem('pokemon-battle-count'));
-    }, 200);
+      // Notify Manual Mode
+      const manualModeEvent = new CustomEvent('trueskill-store-cleared');
+      document.dispatchEvent(manualModeEvent);
+      
+      // General reset event
+      const resetEvent = new CustomEvent('battle-system-reset', {
+        detail: { timestamp, source: 'restart-button' }
+      });
+      document.dispatchEvent(resetEvent);
+      
+      console.log(`🔄 [RESTART_FIXED] ✅ Events dispatched`);
+    }, 50);
+    
+    // Step 6: Show success toast
+    toast({
+      title: "Battles Restarted",
+      description: "All battles, rankings, and progress have been completely reset.",
+      duration: 3000
+    });
+    
+    console.log(`🔄 [RESTART_FIXED] ===== RESTART COMPLETE =====`);
   };
 
   return (
@@ -137,7 +171,6 @@ const BattleControlsActions: React.FC<BattleControlsActionsProps> = ({
           className="flex items-center gap-1 h-8 text-sm px-4"
           onClick={() => {
             console.log("🔍 Restart button clicked - opening confirmation dialog");
-            console.log("🔍 Current battle count:", localStorage.getItem('pokemon-battle-count'));
             setRestartDialogOpen(true);
           }}
         >
@@ -147,7 +180,7 @@ const BattleControlsActions: React.FC<BattleControlsActionsProps> = ({
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure you want to restart?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will reset all battles, progress, rankings, and suggestions. Your battle count will return to 1. This action cannot be undone.
+              This will completely reset all battles, progress, rankings, and suggestions across both Battle Mode and Manual Mode. Your battle count will return to 1 and all rankings will be cleared. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
