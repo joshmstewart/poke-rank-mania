@@ -20,7 +20,7 @@ const PokemonListContent: React.FC<PokemonListContentProps> = ({
   isRankingArea
 }) => {
   return (
-    <div className={`flex-1 overflow-auto bg-gray-50 rounded-lg p-2 min-h-[400px] ${isRankingArea ? 'z-10' : ''}`}>
+    <div className={`flex-1 overflow-auto bg-gray-50 rounded-lg p-2 min-h-[400px] ${isRankingArea ? 'z-20 relative' : 'z-10 relative'}`}>
       <Droppable droppableId={droppableId}>
         {(provided, snapshot) => (
           <div
@@ -70,6 +70,7 @@ const PokemonListContent: React.FC<PokemonListContentProps> = ({
                           ref={provided.innerRef}
                           {...provided.draggableProps}
                           {...provided.dragHandleProps}
+                          className="relative z-10"
                         >
                           <PokemonCard
                             pokemon={pokemon}
