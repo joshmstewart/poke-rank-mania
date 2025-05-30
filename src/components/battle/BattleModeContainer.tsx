@@ -110,7 +110,6 @@ const BattleModeContainer: React.FC<BattleModeContainerProps> = ({
           onRankingsUpdate={() => {}}
           setBattlesCompleted={setBattlesCompleted}
           setBattleResults={setBattleResults}
-          hideControls={true}
         />
       </div>
     </div>

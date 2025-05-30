@@ -2,7 +2,6 @@
 import React from "react";
 import { Pokemon, TopNOption, RankedPokemon } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "@/hooks/battle/types";
-import BattleContentHeader from "./BattleContentHeader";
 import BattleContentMain from "./BattleContentMain";
 import BattleContentMilestone from "./BattleContentMilestone";
 import BattleContentLoading from "./BattleContentLoading";
@@ -116,21 +115,11 @@ const BattleContentRenderer: React.FC<BattleContentRendererProps> = ({
     return <BattleContentLoading />;
   }
 
-  // Show main interface
+  // Show main interface without header (header is rendered by BattleModeContainer)
   console.log(`🔧 [BATTLE_CONTENT_RENDERER] Showing main interface with ${currentBattle.length} Pokemon`);
   
   return (
     <div className="w-full">
-      <BattleContentHeader
-        selectedGeneration={selectedGeneration}
-        battleType={battleType}
-        onGenerationChange={setSelectedGeneration}
-        setBattleType={setBattleType}
-        performFullBattleReset={performFullBattleReset}
-        setBattlesCompleted={setBattlesCompleted}
-        setBattleResults={setBattleResults}
-      />
-
       <BattleContentMain
         currentBattle={currentBattle}
         selectedPokemon={selectedPokemon}
