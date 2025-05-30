@@ -9,6 +9,8 @@ import { InfiniteScrollLoader } from "./InfiniteScrollLoader";
 import { useDragHandler } from "./useDragHandler";
 import { LoadingType } from "@/hooks/usePokemonRanker";
 import { useRankings } from "@/hooks/battle/useRankings";
+import { useTrueSkillStore } from "@/stores/trueskillStore";
+import { usePokemonContext } from "@/contexts/PokemonContext";
 
 interface RankingUIProps {
   isLoading: boolean;
@@ -42,17 +44,60 @@ export const RankingUI: React.FC<RankingUIProps> = ({
   getPageRange
 }) => {
   // Get TrueSkill-based rankings from Battle Mode system
-  const { finalRankings: battleModeRankings } = useRankings();
+  const { finalRankings: battleModeRankings, generateRankings } = useRankings();
+  const { getAllRatings } = useTrueSkillStore();
+  const { pokemonLookupMap } = usePokemonContext();
   
-  // DEBUG: Log what we're getting from the Battle Mode system
-  console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] battleModeRankings length: ${battleModeRankings.length}`);
-  console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] battleModeRankings:`, battleModeRankings);
-  console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] rankedPokemon length: ${rankedPokemon.length}`);
-  console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] rankedPokemon:`, rankedPokemon);
+  // CRITICAL FIX: Generate rankings directly from TrueSkill store when needed
+  const [localRankings, setLocalRankings] = useState<any[]>([]);
   
-  // Use Battle Mode rankings for the right panel instead of manual rankings
-  const displayRankings = battleModeRankings.length > 0 ? battleModeRankings : rankedPokemon;
+  useEffect(() => {
+    const syncTrueSkillRankings = () => {
+      const allRatings = getAllRatings();
+      const ratedPokemonIds = Object.keys(allRatings).map(Number);
+      
+      console.log(`🔍🔍🔍 [RANKING_UI_DIRECT] Found ${ratedPokemonIds.length} Pokemon with TrueSkill ratings`);
+      
+      if (ratedPokemonIds.length === 0) {
+        setLocalRankings([]);
+        return;
+      }
+
+      // Generate rankings directly using the Battle Mode system
+      const emptyBattleResults: any[] = [];
+      const generatedRankings = generateRankings(emptyBattleResults);
+      
+      console.log(`🔍🔍🔍 [RANKING_UI_DIRECT] Generated ${generatedRankings.length} rankings directly`);
+      setLocalRankings(generatedRankings);
+    };
+
+    // Sync immediately if we have data
+    if (pokemonLookupMap.size > 0 && Object.keys(getAllRatings()).length > 0) {
+      syncTrueSkillRankings();
+    }
+
+    // Also listen for TrueSkill updates
+    const handleTrueSkillUpdate = () => {
+      setTimeout(syncTrueSkillRankings, 100);
+    };
+
+    document.addEventListener('trueskill-updated', handleTrueSkillUpdate);
+    document.addEventListener('trueskill-store-updated', handleTrueSkillUpdate);
+    document.addEventListener('trueskill-store-loaded', handleTrueSkillUpdate);
+
+    return () => {
+      document.removeEventListener('trueskill-updated', handleTrueSkillUpdate);
+      document.removeEventListener('trueskill-store-updated', handleTrueSkillUpdate);
+      document.removeEventListener('trueskill-store-loaded', handleTrueSkillUpdate);
+    };
+  }, [getAllRatings, pokemonLookupMap.size, generateRankings]);
   
+  // Use local rankings if available, otherwise fall back to battle mode rankings, then manual rankings
+  const displayRankings = localRankings.length > 0 ? localRankings 
+    : battleModeRankings.length > 0 ? battleModeRankings 
+    : rankedPokemon;
+  
+  console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] localRankings: ${localRankings.length}, battleModeRankings: ${battleModeRankings.length}, rankedPokemon: ${rankedPokemon.length}`);
   console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] displayRankings length: ${displayRankings.length}`);
   console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] displayRankings sample:`, displayRankings.slice(0, 3));
   
