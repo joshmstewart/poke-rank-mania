@@ -30,41 +30,55 @@ export const useTrueSkillIntegration = ({
   // Load data from cloud on startup
   useEffect(() => {
     const initializeFromCloud = async () => {
-      console.log("[POKEMON_RANKER_CLOUD] Loading data from cloud...");
+      console.log("[TRUESKILL_DEBUG] Loading data from cloud...");
       await loadFromCloud();
+      console.log("[TRUESKILL_DEBUG] Cloud load completed");
     };
     
     initializeFromCloud();
   }, [loadFromCloud]);
   
-  // CRITICAL FIX: Sync TrueSkill data using Pokemon context data
+  // ENHANCED DEBUGGING: Main sync effect with comprehensive logging
   useEffect(() => {
     const updateRankingsFromTrueSkill = () => {
-      console.log("[TRUESKILL_MANUAL_CLOUD] Attempting to sync TrueSkill data to Manual mode");
+      console.log("[TRUESKILL_DEBUG] ===== STARTING SYNC ATTEMPT =====");
+      console.log("[TRUESKILL_DEBUG] Current state check:");
+      console.log("[TRUESKILL_DEBUG] - isLoading:", isLoading);
+      console.log("[TRUESKILL_DEBUG] - storeIsLoading:", storeIsLoading);
+      console.log("[TRUESKILL_DEBUG] - pokemonLookupMap.size:", pokemonLookupMap.size);
+      console.log("[TRUESKILL_DEBUG] - availablePokemon.length:", availablePokemon.length);
+      console.log("[TRUESKILL_DEBUG] - rankedPokemon.length:", rankedPokemon.length);
       
       const allRatings = getAllRatings();
       const ratedPokemonIds = Object.keys(allRatings).map(Number);
       
-      console.log("[TRUESKILL_MANUAL_CLOUD] Found TrueSkill ratings for Pokemon IDs:", ratedPokemonIds);
+      console.log("[TRUESKILL_DEBUG] TrueSkill store analysis:");
+      console.log("[TRUESKILL_DEBUG] - Total ratings in store:", Object.keys(allRatings).length);
+      console.log("[TRUESKILL_DEBUG] - Rated Pokemon IDs:", ratedPokemonIds);
+      console.log("[TRUESKILL_DEBUG] - Sample ratings:", Object.entries(allRatings).slice(0, 3).map(([id, rating]) => `${id}: μ=${rating.mu.toFixed(2)}`));
       
       if (ratedPokemonIds.length === 0) {
-        console.log("[TRUESKILL_MANUAL_CLOUD] No TrueSkill ratings found");
+        console.log("[TRUESKILL_DEBUG] ❌ No TrueSkill ratings found - cannot sync");
         return;
       }
       
-      // CRITICAL FIX: Get Pokemon from context lookup map instead of current state arrays
+      // Get Pokemon from context lookup map
       const allAvailablePokemon = Array.from(pokemonLookupMap.values());
       
-      console.log("[TRUESKILL_MANUAL_CLOUD] Working with", allAvailablePokemon.length, "total Pokemon from context");
+      console.log("[TRUESKILL_DEBUG] Pokemon context analysis:");
+      console.log("[TRUESKILL_DEBUG] - Total Pokemon in context:", allAvailablePokemon.length);
+      console.log("[TRUESKILL_DEBUG] - Sample Pokemon from context:", allAvailablePokemon.slice(0, 3).map(p => `${p.name}(${p.id})`));
       
       if (allAvailablePokemon.length === 0) {
-        console.log("[TRUESKILL_MANUAL_CLOUD] No Pokemon in context lookup map - waiting for data");
+        console.log("[TRUESKILL_DEBUG] ❌ No Pokemon in context lookup map - waiting for data");
         return;
       }
       
-      // Separate Pokemon into rated and unrated
+      // Separate Pokemon into rated and unrated with detailed logging
       const ratedPokemon: Pokemon[] = [];
       const unratedPokemon: Pokemon[] = [];
+      
+      console.log("[TRUESKILL_DEBUG] ===== SEPARATING POKEMON =====");
       
       allAvailablePokemon.forEach(pokemon => {
         if (ratedPokemonIds.includes(pokemon.id)) {
@@ -74,17 +88,37 @@ export const useTrueSkillIntegration = ({
             rating: rating
           };
           ratedPokemon.push(pokemonWithRating);
-          console.log("[TRUESKILL_MANUAL_CLOUD] Added to rated:", pokemon.name, "μ=" + rating.mu.toFixed(2));
+          console.log("[TRUESKILL_DEBUG] ✅ Added to rated:", pokemon.name, `μ=${rating.mu.toFixed(2)}, σ=${rating.sigma.toFixed(2)}`);
         } else {
           unratedPokemon.push(pokemon);
         }
       });
       
+      console.log("[TRUESKILL_DEBUG] Separation results:");
+      console.log("[TRUESKILL_DEBUG] - Rated Pokemon count:", ratedPokemon.length);
+      console.log("[TRUESKILL_DEBUG] - Unrated Pokemon count:", unratedPokemon.length);
+      
+      if (ratedPokemon.length === 0) {
+        console.log("[TRUESKILL_DEBUG] ❌ No Pokemon matched between TrueSkill store and context");
+        console.log("[TRUESKILL_DEBUG] - TrueSkill IDs:", ratedPokemonIds.slice(0, 10));
+        console.log("[TRUESKILL_DEBUG] - Context IDs:", allAvailablePokemon.slice(0, 10).map(p => p.id));
+        return;
+      }
+      
       // Sort rated Pokemon by conservative score (mu - 3 * sigma)
+      console.log("[TRUESKILL_DEBUG] ===== SORTING RATED POKEMON =====");
       ratedPokemon.sort((a, b) => {
         const scoreA = a.rating ? (a.rating.mu - 3 * a.rating.sigma) : 0;
         const scoreB = b.rating ? (b.rating.mu - 3 * b.rating.sigma) : 0;
         return scoreB - scoreA;
+      });
+      
+      console.log("[TRUESKILL_DEBUG] Top 5 rated Pokemon after sorting:");
+      ratedPokemon.slice(0, 5).forEach((pokemon, index) => {
+        if (pokemon.rating) {
+          const score = pokemon.rating.mu - 3 * pokemon.rating.sigma;
+          console.log(`[TRUESKILL_DEBUG] ${index + 1}. ${pokemon.name}: μ=${pokemon.rating.mu.toFixed(2)}, σ=${pokemon.rating.sigma.toFixed(2)}, score=${score.toFixed(2)}`);
+        }
       });
       
       // Calculate confidence scores
@@ -95,51 +129,72 @@ export const useTrueSkillIntegration = ({
         }
       });
       
+      console.log("[TRUESKILL_DEBUG] ===== UPDATING STATE =====");
+      console.log("[TRUESKILL_DEBUG] About to set:");
+      console.log("[TRUESKILL_DEBUG] - Ranked Pokemon:", ratedPokemon.length);
+      console.log("[TRUESKILL_DEBUG] - Available Pokemon:", unratedPokemon.length);
+      console.log("[TRUESKILL_DEBUG] - Confidence scores:", Object.keys(newConfidenceScores).length);
+      
       // Update state
       setRankedPokemon(ratedPokemon);
       setAvailablePokemon(unratedPokemon);
       setConfidenceScores(newConfidenceScores);
       
-      console.log("[TRUESKILL_MANUAL_CLOUD] ✅ Successfully synced Manual Mode:");
-      console.log("[TRUESKILL_MANUAL_CLOUD] - Ranked Pokemon:", ratedPokemon.length);
-      console.log("[TRUESKILL_MANUAL_CLOUD] - Available Pokemon:", unratedPokemon.length);
+      console.log("[TRUESKILL_DEBUG] ✅ ===== SYNC COMPLETED SUCCESSFULLY =====");
+      console.log("[TRUESKILL_DEBUG] Final state:");
+      console.log("[TRUESKILL_DEBUG] - Ranked Pokemon:", ratedPokemon.length);
+      console.log("[TRUESKILL_DEBUG] - Available Pokemon:", unratedPokemon.length);
     };
     
-    // CRITICAL FIX: Only check that Pokemon context data is loaded and store is ready
-    if (!isLoading && !storeIsLoading && pokemonLookupMap.size > 0) {
-      console.log("[TRUESKILL_MANUAL_CLOUD] ✅ Data ready - attempting sync with context data");
+    // Check if we're ready to sync
+    const isReady = !isLoading && !storeIsLoading && pokemonLookupMap.size > 0;
+    
+    console.log("[TRUESKILL_DEBUG] ===== SYNC READINESS CHECK =====");
+    console.log("[TRUESKILL_DEBUG] isReady:", isReady);
+    console.log("[TRUESKILL_DEBUG] Breakdown:");
+    console.log("[TRUESKILL_DEBUG] - !isLoading:", !isLoading);
+    console.log("[TRUESKILL_DEBUG] - !storeIsLoading:", !storeIsLoading);
+    console.log("[TRUESKILL_DEBUG] - pokemonLookupMap.size > 0:", pokemonLookupMap.size > 0);
+    
+    if (isReady) {
+      console.log("[TRUESKILL_DEBUG] ✅ Data ready - attempting sync");
       
       // Small delay to ensure Pokemon data is fully loaded
       setTimeout(() => {
         updateRankingsFromTrueSkill();
       }, 100);
     } else {
-      console.log("[TRUESKILL_MANUAL_CLOUD] ⏳ Waiting for data:", {
-        pokemonLoading: isLoading,
-        storeLoading: storeIsLoading,
-        contextPokemonCount: pokemonLookupMap.size
-      });
+      console.log("[TRUESKILL_DEBUG] ⏳ Waiting for data to be ready");
     }
   }, [isLoading, storeIsLoading, pokemonLookupMap.size, getAllRatings, getRating, setRankedPokemon, setAvailablePokemon, setConfidenceScores]);
 
-  // Listen for TrueSkill store updates from Battle mode
+  // Listen for TrueSkill store updates from Battle mode with enhanced logging
   useEffect(() => {
     const handleStoreUpdate = (event: CustomEvent) => {
-      console.log("[TRUESKILL_MANUAL_CLOUD] Received TrueSkill store update, re-syncing");
+      console.log("[TRUESKILL_DEBUG] ===== STORE UPDATE EVENT RECEIVED =====");
+      console.log("[TRUESKILL_DEBUG] Event type:", event.type);
+      console.log("[TRUESKILL_DEBUG] Event detail:", event.detail);
       
       // Small delay to ensure store is fully updated
       setTimeout(() => {
         if (!isLoading && !storeIsLoading && pokemonLookupMap.size > 0) {
+          console.log("[TRUESKILL_DEBUG] Re-syncing after store update");
+          
           const allRatings = getAllRatings();
           const ratedPokemonIds = Object.keys(allRatings).map(Number);
           
-          if (ratedPokemonIds.length === 0) return;
+          console.log("[TRUESKILL_DEBUG] Store update - ratings count:", Object.keys(allRatings).length);
           
-          // Use context Pokemon data for re-sync too
+          if (ratedPokemonIds.length === 0) {
+            console.log("[TRUESKILL_DEBUG] No ratings after store update");
+            return;
+          }
+          
+          // Use context Pokemon data for re-sync
           const allAvailablePokemon = Array.from(pokemonLookupMap.values());
           
           if (allAvailablePokemon.length === 0) {
-            console.log("[TRUESKILL_MANUAL_CLOUD] No Pokemon in context during update");
+            console.log("[TRUESKILL_DEBUG] No Pokemon in context during update");
             return;
           }
           
@@ -172,7 +227,9 @@ export const useTrueSkillIntegration = ({
           setAvailablePokemon(unratedPokemon);
           setConfidenceScores(newConfidenceScores);
           
-          console.log("[TRUESKILL_MANUAL_CLOUD] ✅ Re-sync completed - Ranked:", ratedPokemon.length);
+          console.log("[TRUESKILL_DEBUG] ✅ Re-sync completed - Ranked:", ratedPokemon.length);
+        } else {
+          console.log("[TRUESKILL_DEBUG] Not ready for re-sync after store update");
         }
       }, 100);
     };
