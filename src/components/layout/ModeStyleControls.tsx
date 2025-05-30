@@ -32,7 +32,7 @@ const ModeStyleControls: React.FC<ModeStyleControlsProps> = ({
   const [previewLoaded, setPreviewLoaded] = useState(false);
   const [currentImageMode, setCurrentImageMode] = useState<'pokemon' | 'tcg'>('pokemon');
 
-  // Load preview image and current mode when component mounts or dialog closes
+  // Load preview image and current mode when component mounts or when settings change
   useEffect(() => {
     const updatePreviewImage = () => {
       const imageMode = getCurrentImageMode();
@@ -65,7 +65,28 @@ const ModeStyleControls: React.FC<ModeStyleControlsProps> = ({
     return () => {
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, [imageSettingsOpen]); // Add imageSettingsOpen as dependency
+  }, []); // Remove imageSettingsOpen from dependency array
+
+  // Listen for changes when dialog closes
+  useEffect(() => {
+    if (!imageSettingsOpen) {
+      // Small delay to ensure localStorage has been updated
+      setTimeout(() => {
+        const imageMode = getCurrentImageMode();
+        setCurrentImageMode(imageMode);
+        
+        let newUrl = '';
+        if (imageMode === 'tcg') {
+          newUrl = 'https://images.pokemontcg.io/base1/58_hires.png';
+        } else {
+          newUrl = getPreferredImageUrl(PIKACHU_ID);
+        }
+        
+        setPreviewImageUrl(newUrl);
+        setPreviewLoaded(false);
+      }, 100);
+    }
+  }, [imageSettingsOpen]);
 
   // Get current mode display text and icon
   const getCurrentModeText = () => {
@@ -105,13 +126,11 @@ const ModeStyleControls: React.FC<ModeStyleControlsProps> = ({
               <DialogTrigger asChild>
                 <Button variant="ghost" size="sm" className="flex gap-2 items-center h-9 px-4 hover:bg-white/70 transition-colors">
                   <div className="flex items-center justify-center w-5 h-5 relative">
-                    {previewImageUrl && (
+                    {previewImageUrl && previewLoaded && (
                       <img 
                         src={previewImageUrl}
                         alt="Current style preview"
-                        className={`w-full h-full object-contain rounded-sm transition-opacity duration-300 ${
-                          previewLoaded ? 'opacity-100' : 'opacity-0'
-                        }`}
+                        className="w-full h-full object-contain rounded-sm"
                         onLoad={() => setPreviewLoaded(true)}
                         onError={() => {
                           console.error('Failed to load preview image:', previewImageUrl);
