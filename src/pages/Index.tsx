@@ -100,7 +100,7 @@ const Index = () => {
                   src="/lovable-uploads/008c1959-1f2a-4416-9d73-9f706e384331.png" 
                   alt="PokeRank Mania" 
                   className="w-auto object-contain"
-                  style={{ height: '100px', width: 'auto' }}
+                  style={{ height: '130px', width: 'auto' }}
                 />
               </div>
             </div>
