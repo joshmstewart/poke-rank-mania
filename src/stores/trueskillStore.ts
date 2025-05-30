@@ -119,13 +119,36 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
         }, 100);
       },
       
-      // Cloud sync that works for both authenticated and session-based users
+      // DEFENSIVE Cloud sync - never clear local data on cloud failures
       syncToCloud: async () => {
+        const state = get();
+        
+        // Skip sync if no ratings to sync
+        if (Object.keys(state.ratings).length === 0) {
+          console.log('[TRUESKILL_CLOUD] No ratings to sync, skipping cloud sync');
+          return;
+        }
+        
         try {
-          const state = get();
           const { data: { user } } = await supabase.auth.getUser();
           
-          console.log('[TRUESKILL_CLOUD] Starting cloud sync...');
+          console.log('[TRUESKILL_CLOUD] Starting cloud sync...', {
+            ratingsCount: Object.keys(state.ratings).length,
+            isAuthenticated: !!user
+          });
+          
+          // Check if table exists by doing a simple count query first
+          const { error: tableError } = await supabase
+            .from('trueskill_sessions')
+            .select('id', { count: 'exact', head: true });
+          
+          if (tableError) {
+            console.log('[TRUESKILL_CLOUD] Table access error (keeping local data):', tableError.message);
+            if (tableError.message.includes('relation "public.trueskill_sessions" does not exist')) {
+              console.log('[TRUESKILL_CLOUD] trueskill_sessions table does not exist in database');
+            }
+            return; // Don't clear local data on table errors
+          }
           
           // Prepare sync data with proper type casting
           const syncData = {
@@ -143,26 +166,43 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
             });
           
           if (error) {
-            console.log('[TRUESKILL_CLOUD] Sync error (will retry later):', error.message);
-            return;
+            console.log('[TRUESKILL_CLOUD] Sync error (keeping local data):', error.message);
+            return; // Don't clear local data on sync errors
           }
           
           console.log('[TRUESKILL_CLOUD] Successfully synced to cloud');
           set({ lastSyncedAt: new Date().toISOString() });
           
         } catch (error) {
-          console.log('[TRUESKILL_CLOUD] Sync failed (will retry later):', error);
+          console.log('[TRUESKILL_CLOUD] Sync failed (keeping local data):', error);
+          // Never clear local data on cloud failures
         }
       },
       
-      // Cloud loading that works for both authenticated and session-based users
+      // DEFENSIVE Cloud loading - preserve local data if cloud load fails
       loadFromCloud: async () => {
+        const state = get();
+        const localRatingsCount = Object.keys(state.ratings).length;
+        
         try {
           set({ isLoading: true });
-          const state = get();
           const { data: { user } } = await supabase.auth.getUser();
           
-          console.log('[TRUESKILL_CLOUD] Loading from cloud...');
+          console.log('[TRUESKILL_CLOUD] Loading from cloud...', {
+            localRatingsCount,
+            isAuthenticated: !!user
+          });
+          
+          // Check if table exists first
+          const { error: tableError } = await supabase
+            .from('trueskill_sessions')
+            .select('id', { count: 'exact', head: true });
+          
+          if (tableError) {
+            console.log('[TRUESKILL_CLOUD] Table access error during load (keeping local data):', tableError.message);
+            set({ isLoading: false });
+            return;
+          }
           
           let query = supabase.from('trueskill_sessions').select('*');
           
@@ -176,7 +216,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           const { data, error } = await query.maybeSingle();
           
           if (error) {
-            console.log('[TRUESKILL_CLOUD] Load error:', error.message);
+            console.log('[TRUESKILL_CLOUD] Load error (keeping local data):', error.message);
             set({ isLoading: false });
             return;
           }
@@ -184,29 +224,43 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           if (data?.ratings_data) {
             // Safe type casting from Json to our Record type
             const loadedRatings = data.ratings_data as unknown as Record<number, TrueSkillRating>;
+            const cloudRatingsCount = Object.keys(loadedRatings).length;
             
-            console.log(`[TRUESKILL_CLOUD] Loaded ${Object.keys(loadedRatings).length} ratings from cloud`);
-            set({ 
-              ratings: loadedRatings,
-              lastSyncedAt: data.last_updated,
-              isLoading: false
+            console.log('[TRUESKILL_CLOUD] Cloud data found:', {
+              cloudRatingsCount,
+              localRatingsCount,
+              willMerge: cloudRatingsCount > localRatingsCount
             });
             
-            // Dispatch load event
-            setTimeout(() => {
-              const loadEvent = new CustomEvent('trueskill-store-loaded', {
-                detail: { ratingsCount: Object.keys(loadedRatings).length }
+            // Only update if cloud has more data than local, or if local is empty
+            if (cloudRatingsCount > localRatingsCount || localRatingsCount === 0) {
+              console.log(`[TRUESKILL_CLOUD] Loading ${cloudRatingsCount} ratings from cloud`);
+              set({ 
+                ratings: loadedRatings,
+                lastSyncedAt: data.last_updated,
+                isLoading: false
               });
-              document.dispatchEvent(loadEvent);
-            }, 50);
+              
+              // Dispatch load event
+              setTimeout(() => {
+                const loadEvent = new CustomEvent('trueskill-store-loaded', {
+                  detail: { ratingsCount: cloudRatingsCount }
+                });
+                document.dispatchEvent(loadEvent);
+              }, 50);
+            } else {
+              console.log('[TRUESKILL_CLOUD] Local data is more recent, keeping local ratings');
+              set({ isLoading: false });
+            }
           } else {
-            console.log('[TRUESKILL_CLOUD] No cloud data found for this session/user');
+            console.log('[TRUESKILL_CLOUD] No cloud data found, keeping local data');
             set({ isLoading: false });
           }
           
         } catch (error) {
-          console.log('[TRUESKILL_CLOUD] Load failed, using local storage:', error);
+          console.log('[TRUESKILL_CLOUD] Load failed, keeping local data:', error);
           set({ isLoading: false });
+          // Never clear local data on cloud failures
         }
       }
     }),
