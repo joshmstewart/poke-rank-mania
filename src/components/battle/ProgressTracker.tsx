@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { CheckCircle, Award, TrendingUp } from "lucide-react";
@@ -15,9 +15,34 @@ const ProgressTracker: React.FC<ProgressTrackerProps> = ({
   battlesCompleted,
   getBattlesRemaining
 }) => {
+  // CRITICAL FIX: Local state to force immediate updates on reset
+  const [localBattlesCompleted, setLocalBattlesCompleted] = useState(battlesCompleted);
+  const [localCompletionPercentage, setLocalCompletionPercentage] = useState(completionPercentage);
+
+  // Update local state when props change
+  useEffect(() => {
+    setLocalBattlesCompleted(battlesCompleted);
+    setLocalCompletionPercentage(completionPercentage);
+  }, [battlesCompleted, completionPercentage]);
+
+  // CRITICAL FIX: Listen for reset events and immediately update display
+  useEffect(() => {
+    const handleBattleSystemReset = () => {
+      console.log(`🔄 [PROGRESS_TRACKER_RESET] Resetting progress display to 0`);
+      setLocalBattlesCompleted(0);
+      setLocalCompletionPercentage(0);
+    };
+
+    document.addEventListener('battle-system-reset', handleBattleSystemReset);
+    
+    return () => {
+      document.removeEventListener('battle-system-reset', handleBattleSystemReset);
+    };
+  }, []);
+
   // Ensure we have valid values by using defaults if needed
-  const safeCompletionPercentage = isNaN(completionPercentage) ? 0 : Math.min(100, completionPercentage);
-  const safeBattlesCompleted = isNaN(battlesCompleted) ? 0 : battlesCompleted;
+  const safeCompletionPercentage = isNaN(localCompletionPercentage) ? 0 : Math.min(100, localCompletionPercentage);
+  const safeBattlesCompleted = isNaN(localBattlesCompleted) ? 0 : localBattlesCompleted;
   const isComplete = safeCompletionPercentage >= 100;
   const hasStarted = safeBattlesCompleted > 0;
   
