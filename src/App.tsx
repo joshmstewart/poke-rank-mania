@@ -1,44 +1,41 @@
+import React, { useState, useEffect } from "react";
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import BattleMode from "@/components/battle/BattleModeCore";
+import ModeStyleControls from "@/components/layout/ModeStyleControls";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { Toaster } from "@/components/ui/toaster"
+import PokemonRankerWithProvider from "@/components/pokemon/PokemonRankerWithProvider";
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext";
-import { PokemonProvider } from "@/contexts/PokemonContext";
-import { ImpliedBattleTrackerProvider } from "@/contexts/ImpliedBattleTracker";
-import ImpliedBattleValidator from "@/components/battle/ImpliedBattleValidator";
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
+function App() {
+  const [mode, setMode] = useLocalStorage<"rank" | "battle">("pokemon-ranker-mode", "battle");
 
-const queryClient = new QueryClient();
+  const handleModeChange = (newMode: "rank" | "battle") => {
+    setMode(newMode);
+  };
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <PokemonProvider allPokemon={[]}>
-        <ImpliedBattleTrackerProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <div className="min-h-screen">
-                <Routes>
-                  <Route path="/" element={
-                    <>
-                      <ImpliedBattleValidator />
-                      <Index />
-                    </>
-                  } />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </div>
-            </BrowserRouter>
-          </TooltipProvider>
-        </ImpliedBattleTrackerProvider>
-      </PokemonProvider>
-    </AuthProvider>
-  </QueryClientProvider>
-);
+  const renderContent = () => {
+    if (mode === "battle") {
+      return <BattleMode />;
+    } else {
+      return <PokemonRankerWithProvider />;
+    }
+  };
+
+  return (
+    <div className="flex flex-col h-screen">
+      <header className="bg-gray-50 py-4 px-6 border-b border-gray-200">
+        <div className="container max-w-7xl mx-auto">
+          <ModeStyleControls mode={mode} onModeChange={handleModeChange} />
+        </div>
+      </header>
+      <main className="flex-grow bg-gray-100 py-6 px-4">
+        <div className="container max-w-7xl mx-auto">
+          {renderContent()}
+        </div>
+      </main>
+      <Toaster />
+    </div>
+  );
+}
 
 export default App;
