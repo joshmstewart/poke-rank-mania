@@ -77,7 +77,7 @@ const ModeStyleControls: React.FC<ModeStyleControlsProps> = ({
   const CurrentIcon = getCurrentModeIcon();
 
   return (
-    <div className="flex items-center gap-4 bg-gray-50 rounded-xl p-2 shadow-sm border border-gray-100">
+    <div className="flex items-center gap-4 bg-gray-100 rounded-xl p-2 shadow-md border-2 border-gray-400">
       {/* Mode Switcher */}
       <TooltipProvider>
         <Tooltip>
@@ -93,7 +93,7 @@ const ModeStyleControls: React.FC<ModeStyleControlsProps> = ({
       </TooltipProvider>
       
       {/* Vertical Divider */}
-      <div className="h-8 w-px bg-gray-200"></div>
+      <div className="h-8 w-px bg-gray-300"></div>
       
       {/* Image Style Button */}
       <TooltipProvider>

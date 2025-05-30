@@ -13,7 +13,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ mode, onModeChange }) => {
   return (
     <header className="bg-white border-b-2 border-gray-300 shadow-md sticky top-0 z-50 relative">
       <div className="container max-w-7xl mx-auto px-6">
-        <div className="flex items-center justify-between h-24 bg-gray-100 rounded-lg mx-2 my-2 px-4">
+        <div className="flex items-center justify-between h-24 bg-gray-200 rounded-lg mx-2 my-2 px-4 border-2 border-gray-300 shadow-sm">
           {/* Left side - Logo */}
           <LogoSection />
           
