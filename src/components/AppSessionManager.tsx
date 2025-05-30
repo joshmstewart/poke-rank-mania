@@ -96,10 +96,10 @@ const AppSessionManager = () => {
         // Load the existing session data
         const sessionData = loadUnifiedSessionData();
         
-        // Update with the new session ID and cloud data
+        // Update with the new session ID and cloud data (with null check)
         const updatedSessionData = {
           ...sessionData,
-          ...cloudSessionData,
+          ...(cloudSessionData || {}),
           sessionId: sessionIdToLoad
         };
         
