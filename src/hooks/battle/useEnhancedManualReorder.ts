@@ -87,68 +87,74 @@ export const useEnhancedManualReorder = (
       console.log(`🔥 [ENHANCED_REORDER] Converted rating object to Rating instance for ${draggedPokemon.name}`);
     }
 
-    // Identify opponents and process implied battles
+    // Identify opponents and process implied battles with new frequency rules
     const impliedBattles: Array<{
       opponent: RankedPokemon;
       draggedWins: boolean;
       battleType: string;
+      frequency: number; // NEW: How many times to process this battle
     }> = [];
 
-    console.log(`🔥 [ENHANCED_REORDER] ===== IDENTIFYING IMPLIED BATTLES =====`);
+    console.log(`🔥 [ENHANCED_REORDER] ===== IDENTIFYING IMPLIED BATTLES WITH NEW FREQUENCY RULES =====`);
 
-    // P_above_1: Pokemon at new_index - 1 (dragged loses)
+    // P_above_1: Pokemon at new_index - 1 (dragged loses) - IMMEDIATE NEIGHBOR: 2 updates
     if (new_index > 0) {
       const p_above_1 = workingRankings[new_index - 1];
       if (p_above_1 && p_above_1.id !== draggedPokemonId) {
         impliedBattles.push({
           opponent: p_above_1,
           draggedWins: false,
-          battleType: "P_above_1"
+          battleType: "P_above_1",
+          frequency: 2 // IMMEDIATE NEIGHBOR: Process twice
         });
-        console.log(`🔥 [ENHANCED_REORDER] Added P_above_1 battle: ${draggedPokemon.name} LOSES to ${p_above_1.name}`);
+        console.log(`🔥 [ENHANCED_REORDER] Added P_above_1 battle: ${draggedPokemon.name} LOSES to ${p_above_1.name} (FREQUENCY: 2)`);
       }
     }
 
-    // P_above_2: Pokemon at new_index - 2 (dragged loses)
+    // P_above_2: Pokemon at new_index - 2 (dragged loses) - SECONDARY NEIGHBOR: 1 update
     if (new_index > 1) {
       const p_above_2 = workingRankings[new_index - 2];
       if (p_above_2 && p_above_2.id !== draggedPokemonId) {
         impliedBattles.push({
           opponent: p_above_2,
           draggedWins: false,
-          battleType: "P_above_2"
+          battleType: "P_above_2",
+          frequency: 1 // SECONDARY NEIGHBOR: Process once
         });
-        console.log(`🔥 [ENHANCED_REORDER] Added P_above_2 battle: ${draggedPokemon.name} LOSES to ${p_above_2.name}`);
+        console.log(`🔥 [ENHANCED_REORDER] Added P_above_2 battle: ${draggedPokemon.name} LOSES to ${p_above_2.name} (FREQUENCY: 1)`);
       }
     }
 
-    // P_below_1: Pokemon at new_index + 1 (dragged wins)
+    // P_below_1: Pokemon at new_index + 1 (dragged wins) - IMMEDIATE NEIGHBOR: 2 updates
     if (new_index < N - 1) {
       const p_below_1 = workingRankings[new_index + 1];
       if (p_below_1 && p_below_1.id !== draggedPokemonId) {
         impliedBattles.push({
           opponent: p_below_1,
           draggedWins: true,
-          battleType: "P_below_1"
+          battleType: "P_below_1",
+          frequency: 2 // IMMEDIATE NEIGHBOR: Process twice
         });
-        console.log(`🔥 [ENHANCED_REORDER] Added P_below_1 battle: ${draggedPokemon.name} WINS against ${p_below_1.name}`);
+        console.log(`🔥 [ENHANCED_REORDER] Added P_below_1 battle: ${draggedPokemon.name} WINS against ${p_below_1.name} (FREQUENCY: 2)`);
       }
     }
 
-    // P_below_2: Pokemon at new_index + 2 (dragged wins)
+    // P_below_2: Pokemon at new_index + 2 (dragged wins) - SECONDARY NEIGHBOR: 1 update
     if (new_index < N - 2) {
       const p_below_2 = workingRankings[new_index + 2];
       if (p_below_2 && p_below_2.id !== draggedPokemonId) {
         impliedBattles.push({
           opponent: p_below_2,
           draggedWins: true,
-          battleType: "P_below_2"
+          battleType: "P_below_2",
+          frequency: 1 // SECONDARY NEIGHBOR: Process once
         });
-        console.log(`🔥 [ENHANCED_REORDER] Added P_below_2 battle: ${draggedPokemon.name} WINS against ${p_below_2.name}`);
+        console.log(`🔥 [ENHANCED_REORDER] Added P_below_2 battle: ${draggedPokemon.name} WINS against ${p_below_2.name} (FREQUENCY: 1)`);
       }
     }
 
-    console.log(`🔥 [ENHANCED_REORDER] ===== PROCESSING ${impliedBattles.length} IMPLIED BATTLES =====`);
+    const totalUpdates = impliedBattles.reduce((sum, battle) => sum + battle.frequency, 0);
+    console.log(`🔥 [ENHANCED_REORDER] ===== PROCESSING ${impliedBattles.length} IMPLIED BATTLE TYPES (${totalUpdates} total TrueSkill updates) =====`);
 
     if (impliedBattles.length === 0) {
       console.log(`🔥 [ENHANCED_REORDER] ⚠️ No implied battles to process`);
@@ -156,9 +162,9 @@ export const useEnhancedManualReorder = (
       return;
     }
 
-    // Process each implied battle with TrueSkill updates
-    impliedBattles.forEach(({ opponent, draggedWins, battleType }, index) => {
-      console.log(`🔥 [ENHANCED_REORDER] --- Battle ${index + 1}/${impliedBattles.length}: ${battleType} ---`);
+    // Process each implied battle with the specified frequency
+    impliedBattles.forEach(({ opponent, draggedWins, battleType, frequency }, battleIndex) => {
+      console.log(`🔥 [ENHANCED_REORDER] --- Battle Type ${battleIndex + 1}/${impliedBattles.length}: ${battleType} (${frequency}x) ---`);
       
       // Ensure opponent has a valid TrueSkill rating
       if (!opponent.rating) {
@@ -169,39 +175,42 @@ export const useEnhancedManualReorder = (
         console.log(`🔥 [ENHANCED_REORDER] Converted rating object to Rating instance for opponent ${opponent.name}`);
       }
 
-      console.log(`🔥 [ENHANCED_REORDER] Battle: ${draggedPokemon.name} vs ${opponent.name} - ${draggedWins ? 'dragged wins' : 'opponent wins'}`);
-      console.log(`🔥 [ENHANCED_REORDER] BEFORE - ${draggedPokemon.name}: μ=${draggedPokemon.rating.mu.toFixed(3)} σ=${draggedPokemon.rating.sigma.toFixed(3)}`);
-      console.log(`🔥 [ENHANCED_REORDER] BEFORE - ${opponent.name}: μ=${opponent.rating.mu.toFixed(3)} σ=${opponent.rating.sigma.toFixed(3)}`);
+      // Process the battle the specified number of times
+      for (let updateIndex = 0; updateIndex < frequency; updateIndex++) {
+        console.log(`🔥 [ENHANCED_REORDER] Battle Update ${updateIndex + 1}/${frequency}: ${draggedPokemon.name} vs ${opponent.name} - ${draggedWins ? 'dragged wins' : 'opponent wins'}`);
+        console.log(`🔥 [ENHANCED_REORDER] BEFORE Update ${updateIndex + 1} - ${draggedPokemon.name}: μ=${draggedPokemon.rating.mu.toFixed(3)} σ=${draggedPokemon.rating.sigma.toFixed(3)}`);
+        console.log(`🔥 [ENHANCED_REORDER] BEFORE Update ${updateIndex + 1} - ${opponent.name}: μ=${opponent.rating.mu.toFixed(3)} σ=${opponent.rating.sigma.toFixed(3)}`);
 
-      // Apply TrueSkill rating update
-      let newDraggedRating: Rating;
-      let newOpponentRating: Rating;
+        // Apply TrueSkill rating update
+        let newDraggedRating: Rating;
+        let newOpponentRating: Rating;
 
-      try {
-        if (draggedWins) {
-          [newDraggedRating, newOpponentRating] = rate_1vs1(draggedPokemon.rating, opponent.rating);
-        } else {
-          [newOpponentRating, newDraggedRating] = rate_1vs1(opponent.rating, draggedPokemon.rating);
+        try {
+          if (draggedWins) {
+            [newDraggedRating, newOpponentRating] = rate_1vs1(draggedPokemon.rating, opponent.rating);
+          } else {
+            [newOpponentRating, newDraggedRating] = rate_1vs1(opponent.rating, draggedPokemon.rating);
+          }
+
+          // Update the ratings
+          draggedPokemon.rating = newDraggedRating;
+          opponent.rating = newOpponentRating;
+
+          console.log(`🔥 [ENHANCED_REORDER] AFTER Update ${updateIndex + 1}  - ${draggedPokemon.name}: μ=${draggedPokemon.rating.mu.toFixed(3)} σ=${draggedPokemon.rating.sigma.toFixed(3)}`);
+          console.log(`🔥 [ENHANCED_REORDER] AFTER Update ${updateIndex + 1}  - ${opponent.name}: μ=${opponent.rating.mu.toFixed(3)} σ=${opponent.rating.sigma.toFixed(3)}`);
+
+          // Add to implied battle tracker for each individual update
+          console.log(`🔥 [ENHANCED_REORDER] Adding update ${updateIndex + 1}/${frequency} to implied battle tracker...`);
+          addImpliedBattle({
+            draggedPokemon: draggedPokemon.name,
+            opponent: opponent.name,
+            winner: draggedWins ? draggedPokemon.name : opponent.name,
+            battleType: `${battleType} (manual rank update ${updateIndex + 1}/${frequency})`
+          });
+          console.log(`🔥 [ENHANCED_REORDER] ✅ Added implied battle update ${updateIndex + 1}/${frequency} to tracker`);
+        } catch (error) {
+          console.error(`🔥 [ENHANCED_REORDER] ❌ Error processing TrueSkill update ${updateIndex + 1}/${frequency}:`, error);
         }
-
-        // Update the ratings
-        draggedPokemon.rating = newDraggedRating;
-        opponent.rating = newOpponentRating;
-
-        console.log(`🔥 [ENHANCED_REORDER] AFTER  - ${draggedPokemon.name}: μ=${draggedPokemon.rating.mu.toFixed(3)} σ=${draggedPokemon.rating.sigma.toFixed(3)}`);
-        console.log(`🔥 [ENHANCED_REORDER] AFTER  - ${opponent.name}: μ=${opponent.rating.mu.toFixed(3)} σ=${opponent.rating.sigma.toFixed(3)}`);
-
-        // Add to implied battle tracker for validation
-        console.log(`🔥 [ENHANCED_REORDER] Adding to implied battle tracker...`);
-        addImpliedBattle({
-          draggedPokemon: draggedPokemon.name,
-          opponent: opponent.name,
-          winner: draggedWins ? draggedPokemon.name : opponent.name,
-          battleType: `${battleType} (manual rank)`
-        });
-        console.log(`🔥 [ENHANCED_REORDER] ✅ Added implied battle to tracker`);
-      } catch (error) {
-        console.error(`🔥 [ENHANCED_REORDER] ❌ Error processing TrueSkill update:`, error);
       }
     });
 
@@ -227,7 +236,7 @@ export const useEnhancedManualReorder = (
     workingRankings.sort((a, b) => b.score - a.score);
 
     console.log(`🔥 [ENHANCED_REORDER] ===== ENHANCED REORDER COMPLETE =====`);
-    console.log(`🔥 [ENHANCED_REORDER] Successfully processed ${impliedBattles.length} TrueSkill updates for ${draggedPokemon.name}`);
+    console.log(`🔥 [ENHANCED_REORDER] Successfully processed ${totalUpdates} TrueSkill updates for ${draggedPokemon.name} (${impliedBattles.length} battle types)`);
 
     // Update the rankings
     try {
@@ -237,9 +246,9 @@ export const useEnhancedManualReorder = (
       console.error(`🔥 [ENHANCED_REORDER] ❌ Error calling onRankingsUpdate:`, error);
     }
 
-    // Show user feedback
+    // Show user feedback with updated information
     toast.success(`Enhanced ranking update for ${draggedPokemon.name}`, {
-      description: `Applied ${impliedBattles.length} TrueSkill adjustments based on new position`
+      description: `Applied ${totalUpdates} TrueSkill adjustments (immediate neighbors weighted 2x)`
     });
 
   }, [finalRankings, pokemonLookupMap, onRankingsUpdate, addImpliedBattle]);
