@@ -56,7 +56,8 @@ export const attemptCacheBustedLoad = (
 export const getNextFallbackUrl = (pokemonId: number, retryCount: number, displayName: string, currentImageType: string) => {
   if (retryCount < 3) {
     const nextRetry = retryCount + 1;
-    const nextUrl = getPreferredImageUrl(pokemonId, nextRetry);
+    // Fix: Use only pokemonId argument since getPreferredImageUrl expects 1 argument
+    const nextUrl = getPreferredImageUrl(pokemonId);
     
     console.log(`❌ Image load failed for ${displayName} (#${pokemonId}) with type "${currentImageType}" - trying fallback #${nextRetry}: ${nextUrl}`);
     

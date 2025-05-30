@@ -7,6 +7,9 @@ import { Check } from 'lucide-react';
 export type ImageType = 'official' | 'artwork' | 'sprite' | 'tcg-cards';
 export type ImageMode = 'pokemon' | 'tcg';
 
+// Legacy types for backward compatibility
+export type PokemonImageType = 'official' | 'home' | 'dream' | 'default';
+
 interface ImageOption {
   id: ImageType;
   name: string;
@@ -209,6 +212,23 @@ export const getPreferredImageUrl = (pokemonId: number): string => {
 
 export const getCurrentImageMode = (): ImageMode => {
   return localStorage.getItem('pokemon-image-mode') as ImageMode | null || 'pokemon';
+};
+
+// Legacy function for backward compatibility
+export const getPreferredImageType = (): PokemonImageType => {
+  const preferredType = localStorage.getItem('pokemon-image-preference') as ImageType | null || 'official';
+  
+  // Map new types to legacy types
+  switch (preferredType) {
+    case 'official':
+      return 'official';
+    case 'artwork':
+      return 'dream';
+    case 'sprite':
+      return 'default';
+    default:
+      return 'official';
+  }
 };
 
 export default ImagePreferenceSelector;
