@@ -46,7 +46,7 @@ const ModeStyleControls: React.FC<ModeStyleControlsProps> = ({
         const url = getPreferredImageUrl(PIKACHU_ID);
         setPreviewImageUrl(url);
       }
-      setPreviewLoaded(false);
+      setPreviewLoaded(false); // Reset loaded state when URL changes
     };
 
     updatePreviewImage();
@@ -103,13 +103,13 @@ const ModeStyleControls: React.FC<ModeStyleControlsProps> = ({
               <DialogTrigger asChild>
                 <Button variant="ghost" size="sm" className="flex gap-2 items-center h-9 px-4 hover:bg-white/70 transition-colors">
                   <div className="flex items-center justify-center w-5 h-5 relative">
-                    {previewImageUrl ? (
+                    {previewImageUrl && previewLoaded ? (
                       <img 
                         src={previewImageUrl}
                         alt="Current style preview"
-                        className={`w-full h-full object-contain rounded-sm ${previewLoaded ? 'opacity-100' : 'opacity-0'}`}
+                        className="w-full h-full object-contain rounded-sm"
                         onLoad={() => setPreviewLoaded(true)}
-                        onError={() => { /* Keep showing on error */ }}
+                        onError={() => setPreviewLoaded(false)}
                       />
                     ) : (
                       <CurrentIcon className="w-4 h-4 text-gray-600" />
@@ -136,12 +136,15 @@ const ModeStyleControls: React.FC<ModeStyleControlsProps> = ({
                 const imageMode = getCurrentImageMode();
                 setCurrentImageMode(imageMode);
                 
+                let newUrl = '';
                 if (imageMode === 'tcg') {
-                  setPreviewImageUrl('https://images.pokemontcg.io/base1/58_hires.png');
+                  newUrl = 'https://images.pokemontcg.io/base1/58_hires.png';
                 } else {
-                  setPreviewImageUrl(getPreferredImageUrl(PIKACHU_ID));
+                  newUrl = getPreferredImageUrl(PIKACHU_ID);
                 }
-                setPreviewLoaded(false);
+                
+                setPreviewImageUrl(newUrl);
+                setPreviewLoaded(false); // Reset loaded state
               }} />
             </DialogContent>
           </Dialog>
