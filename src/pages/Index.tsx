@@ -5,7 +5,6 @@ import BattleMode from "@/components/BattleMode";
 import AppSessionManager from "@/components/AppSessionManager";
 import Logo from "@/components/ui/Logo";
 import ModeSwitcher from "@/components/ModeSwitcher";
-import { CloudSyncButton } from "@/components/auth/CloudSyncButton";
 import { 
   Dialog,
   DialogContent, 
@@ -78,93 +77,94 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="container max-w-7xl mx-auto py-4">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex-shrink-0">
-            <Logo />
-          </div>
-          <div className="flex items-center gap-4">
-            {/* Cloud Sync Button */}
-            <CloudSyncButton />
+      {/* Compact Header Bar */}
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+        <div className="container max-w-7xl mx-auto px-4 py-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Logo />
+              <div className="flex items-center gap-3">
+                {mode === "battle" ? (
+                  <Trophy className="h-5 w-5 text-primary" />
+                ) : (
+                  <DraftingCompass className="h-5 w-5 text-primary" />
+                )}
+                <div>
+                  <h1 className="text-lg font-bold leading-none">
+                    {mode === "battle" ? "Battle Mode" : "Manual Ranking"}
+                  </h1>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {mode === "battle" 
+                      ? "Compare Pokémon head-to-head to build your ranking" 
+                      : "Drag and drop to manually create your ranking"}
+                  </p>
+                </div>
+              </div>
+            </div>
             
-            {/* Mode Switcher */}
-            <ModeSwitcher currentMode={mode} onModeChange={handleModeChange} />
-            
-            {/* Image Style Dialog */}
-            <TooltipProvider>
-              <Tooltip>
-                <Dialog open={imageSettingsOpen} onOpenChange={setImageSettingsOpen}>
-                  <TooltipTrigger asChild>
-                    <DialogTrigger asChild>
-                      <Button variant="outline" size="sm" className="flex gap-2 items-center h-9">
-                        <div className="flex items-center justify-center w-5 h-5 relative">
-                          {!previewLoaded && (
-                            <Image className="w-4 h-4 text-gray-400" />
-                          )}
-                          {previewImageUrl && (
-                            <img 
-                              src={previewImageUrl}
-                              alt="Current style"
-                              className={`w-full h-full object-contain ${previewLoaded ? 'opacity-100' : 'opacity-0'}`}
-                              onLoad={() => setPreviewLoaded(true)}
-                              onError={() => { /* Keep showing icon on error */ }}
-                            />
-                          )}
-                        </div>
-                        <span className="hidden sm:inline">{getCurrentModeText()}</span>
-                      </Button>
-                    </DialogTrigger>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    Choose between Pokémon images or TCG cards for battles
-                  </TooltipContent>
-                  <DialogContent className="max-w-2xl">
-                    <DialogHeader>
-                      <DialogTitle>Battle Style Preferences</DialogTitle>
-                      <DialogDescription>
-                        Choose how you want to see and battle with Pokémon.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <ImagePreferenceSelector onClose={() => {
-                      setImageSettingsOpen(false);
-                      // Update preview after closing
-                      const imageMode = getCurrentImageMode();
-                      setCurrentImageMode(imageMode);
-                      
-                      // Always load Pikachu preview regardless of mode
-                      setPreviewImageUrl(getPreferredImageUrl(PIKACHU_ID));
-                      setPreviewLoaded(false);
-                    }} />
-                  </DialogContent>
-                </Dialog>
-              </Tooltip>
-            </TooltipProvider>
-            
-            <AppSessionManager />
-          </div>
-        </div>
-
-        {/* Mode Header */}
-        <div className="max-w-4xl mx-auto mb-6">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-3">
-              {mode === "battle" ? (
-                <Trophy className="h-6 w-6 text-primary" />
-              ) : (
-                <DraftingCompass className="h-6 w-6 text-primary" />
-              )}
-              <h1 className="text-2xl font-bold">
-                {mode === "battle" ? "Battle Mode" : "Manual Ranking"}
-              </h1>
+            <div className="flex items-center gap-2">
+              {/* Mode Switcher */}
+              <ModeSwitcher currentMode={mode} onModeChange={handleModeChange} />
+              
+              {/* Image Style Dialog */}
+              <TooltipProvider>
+                <Tooltip>
+                  <Dialog open={imageSettingsOpen} onOpenChange={setImageSettingsOpen}>
+                    <TooltipTrigger asChild>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="sm" className="flex gap-2 items-center h-8">
+                          <div className="flex items-center justify-center w-4 h-4 relative">
+                            {!previewLoaded && (
+                              <Image className="w-3 h-3 text-gray-400" />
+                            )}
+                            {previewImageUrl && (
+                              <img 
+                                src={previewImageUrl}
+                                alt="Current style"
+                                className={`w-full h-full object-contain ${previewLoaded ? 'opacity-100' : 'opacity-0'}`}
+                                onLoad={() => setPreviewLoaded(true)}
+                                onError={() => { /* Keep showing icon on error */ }}
+                              />
+                            )}
+                          </div>
+                          <span className="hidden sm:inline text-xs">{getCurrentModeText()}</span>
+                        </Button>
+                      </DialogTrigger>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      Choose between Pokémon images or TCG cards for battles
+                    </TooltipContent>
+                    <DialogContent className="max-w-2xl">
+                      <DialogHeader>
+                        <DialogTitle>Battle Style Preferences</DialogTitle>
+                        <DialogDescription>
+                          Choose how you want to see and battle with Pokémon.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <ImagePreferenceSelector onClose={() => {
+                        setImageSettingsOpen(false);
+                        // Update preview after closing
+                        const imageMode = getCurrentImageMode();
+                        setCurrentImageMode(imageMode);
+                        
+                        // Always load Pikachu preview regardless of mode
+                        setPreviewImageUrl(getPreferredImageUrl(PIKACHU_ID));
+                        setPreviewLoaded(false);
+                      }} />
+                    </DialogContent>
+                  </Dialog>
+                </Tooltip>
+              </TooltipProvider>
+              
+              {/* Combined Save Progress / Session Manager */}
+              <AppSessionManager />
             </div>
           </div>
-          <p className="text-muted-foreground">
-            {mode === "battle" 
-              ? "Compare Pokémon head-to-head to determine your personal ranking. Your choices will be used to generate a personalized tier list." 
-              : "Drag and drop Pokémon to manually create and order your personal ranking list. Perfect for fine-tuning after battles."}
-          </p>
         </div>
+      </div>
 
+      {/* Main Content */}
+      <div className="container max-w-7xl mx-auto py-4">
         {mode === "rank" ? <PokemonRanker /> : <BattleMode />}
       </div>
     </div>

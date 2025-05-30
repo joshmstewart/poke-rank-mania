@@ -2,8 +2,11 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Copy, Save, Cloud } from "lucide-react";
+import { Copy, Save, Cloud, CloudOff } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
+import { AuthDialog } from "@/components/auth/AuthDialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useCloudSync } from "@/hooks/useCloudSync";
 import {
   loadUnifiedSessionData,
@@ -12,6 +15,7 @@ import {
 } from "@/services/pokemonService";
 
 const AppSessionManager = () => {
+  const { user } = useAuth();
   const [sessionId, setSessionId] = useState("");
   const [importValue, setImportValue] = useState("");
   const [sessionDialogOpen, setSessionDialogOpen] = useState(false);
@@ -161,90 +165,143 @@ const AppSessionManager = () => {
       setIsLoading(false);
     }
   };
-  
+
+  // If user is signed in, show cloud sync status
+  if (user) {
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="flex items-center gap-1 text-green-600 text-xs">
+              <Cloud className="h-3 w-3" />
+              <span className="hidden sm:inline">Synced</span>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Your progress is being saved to the cloud</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+
+  // If user is not signed in, show combined save progress button
   return (
     <div className="flex items-center gap-2">
       <Dialog open={sessionDialogOpen} onOpenChange={setSessionDialogOpen}>
-        <DialogTrigger asChild>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="gap-1"
-          >
-            <div className="relative">
-              <Save className="h-4 w-4" />
-              {!isInEditor && isUploading && (
-                <Cloud className="h-2 w-2 absolute -top-1 -right-1 text-blue-500 animate-pulse" />
-              )}
-            </div>
-            Session
-          </Button>
-        </DialogTrigger>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <DialogTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="gap-1 h-8"
+                >
+                  <div className="relative">
+                    <CloudOff className="h-4 w-4 text-muted-foreground" />
+                    {!isInEditor && isUploading && (
+                      <Cloud className="h-2 w-2 absolute -top-1 -right-1 text-blue-500 animate-pulse" />
+                    )}
+                  </div>
+                  <span className="hidden sm:inline text-xs">Save Progress</span>
+                </Button>
+              </DialogTrigger>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Sign in to save your progress to the cloud, or save/load session data</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Cloud className="h-5 w-5" />
-              Your {isInEditor ? "Local" : "Cloud"} Session
+              <CloudOff className="h-5 w-5" />
+              Save Your Progress
             </DialogTitle>
           </DialogHeader>
           
           <div className="space-y-6 mt-4">
-            <div>
-              <div className="text-sm text-muted-foreground mb-2">
-                {isInEditor 
-                  ? "Your session is stored locally in the editor. Cloud saving is disabled to prevent test data from being saved."
-                  : "Your session is automatically saved to the cloud as you make progress. Use your Session ID to access your data from any device:"
-                }
+            {/* Sign in option */}
+            <div className="p-4 border rounded-lg bg-blue-50">
+              <div className="flex items-start gap-3">
+                <Cloud className="h-5 w-5 text-blue-600 mt-0.5" />
+                <div className="flex-1">
+                  <h3 className="font-medium text-blue-900">Save to Cloud (Recommended)</h3>
+                  <p className="text-sm text-blue-700 mb-3">
+                    Sign in to automatically save your progress and access it from any device.
+                  </p>
+                  <AuthDialog>
+                    <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                      Sign In to Save Progress
+                    </Button>
+                  </AuthDialog>
+                </div>
               </div>
-              
-              <div className="flex items-center gap-2">
-                <input 
-                  className="w-full p-2 border rounded" 
-                  value={sessionId} 
-                  readOnly 
-                />
-                <Button 
-                  variant="outline"
-                  size="icon" 
-                  onClick={handleCopySessionId}
-                >
-                  <Copy className="h-4 w-4" />
-                </Button>
-              </div>
-              
-              <div className="text-xs mt-1 flex items-center gap-1">
-                {isInEditor ? (
-                  <span className="text-orange-600">Local session (editor mode)</span>
-                ) : (
-                  <>
-                    <Cloud className="h-3 w-3 text-green-600" />
-                    <span className="text-green-600">
-                      {isUploading ? "Saving to cloud..." : "Saved to cloud"}
-                    </span>
-                  </>
-                )}
+            </div>
+
+            {/* Session ID option */}
+            <div className="p-4 border rounded-lg">
+              <div className="flex items-start gap-3">
+                <Save className="h-5 w-5 text-gray-600 mt-0.5" />
+                <div className="flex-1">
+                  <h3 className="font-medium text-gray-900">Local Session</h3>
+                  <p className="text-sm text-gray-600 mb-3">
+                    {isInEditor 
+                      ? "Your session is stored locally in the editor. Use your Session ID to transfer progress."
+                      : "Your session is saved locally. Use your Session ID to access from other devices."
+                    }
+                  </p>
+                  
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <input 
+                        className="w-full p-2 border rounded text-sm" 
+                        value={sessionId} 
+                        readOnly 
+                      />
+                      <Button 
+                        variant="outline"
+                        size="sm" 
+                        onClick={handleCopySessionId}
+                      >
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                    </div>
+                    
+                    <div className="text-xs text-gray-500">
+                      {isInEditor ? (
+                        <span className="text-orange-600">Local session (editor mode)</span>
+                      ) : (
+                        <>
+                          {isUploading ? "Saving..." : "Saved locally"}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
             
+            {/* Load session option */}
             <div className="border-t pt-4">
               <div className="text-sm text-muted-foreground mb-2">
-                {isInEditor 
-                  ? "To load a session from the cloud (when deployed), enter your Session ID:"
-                  : "To access your session from another device, enter your Session ID:"
-                }
+                Load a session from another device:
               </div>
               
               <div className="flex items-center gap-2">
                 <input 
-                  className="w-full p-2 border rounded" 
+                  className="w-full p-2 border rounded text-sm" 
                   value={importValue}
                   onChange={(e) => setImportValue(e.target.value)}
-                  placeholder="Enter your Session ID"
+                  placeholder="Enter Session ID"
                   disabled={isLoading}
                 />
                 <Button 
                   onClick={handleImport}
                   disabled={isLoading}
+                  size="sm"
                 >
                   {isLoading ? "Loading..." : "Load"}
                 </Button>
