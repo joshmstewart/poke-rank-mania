@@ -1,16 +1,13 @@
 
 import React from "react";
 import { BattleType } from "@/hooks/battle/types";
-import { RankingMode } from "@/components/ranking/RankingModeSelector";
 import BattleControlsDropdowns from "./BattleControlsDropdowns";
 
 interface BattleControlsProps {
   selectedGeneration: number;
   battleType: BattleType;
-  rankingMode?: RankingMode;
   onGenerationChange: (generation: string) => void;
   onBattleTypeChange: (type: BattleType) => void;
-  onRankingModeChange?: (mode: RankingMode) => void;
   onReset: () => void;
   battleHistory: any[];
 }
@@ -18,10 +15,8 @@ interface BattleControlsProps {
 const BattleControls: React.FC<BattleControlsProps> = ({
   selectedGeneration,
   battleType,
-  rankingMode,
   onGenerationChange,
   onBattleTypeChange,
-  onRankingModeChange,
   onReset,
   battleHistory
 }) => {
@@ -31,10 +26,8 @@ const BattleControls: React.FC<BattleControlsProps> = ({
         <BattleControlsDropdowns
           selectedGeneration={selectedGeneration}
           battleType={battleType}
-          rankingMode={rankingMode}
           onGenerationChange={onGenerationChange}
           onBattleTypeChange={onBattleTypeChange}
-          onRankingModeChange={onRankingModeChange}
         />
         
         <div className="flex gap-2">

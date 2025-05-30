@@ -1,12 +1,8 @@
 
-import React, { useState } from "react";
+import React from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "@/hooks/battle/types";
-import { RankingMode } from "@/components/ranking/RankingModeSelector";
-import { useUnifiedTrueSkillRankings } from "@/hooks/ranking/useUnifiedTrueSkillRankings";
-import { usePendingRefinementsManager } from "@/hooks/battle/usePendingRefinementsManager";
 import BattleControls from "./BattleControls";
-import ManualRankingMode from "@/components/ranking/ManualRankingMode";
 import ImpliedBattleValidator from "./ImpliedBattleValidator";
 
 interface BattleContentRendererProps {
@@ -72,98 +68,7 @@ const BattleContentRenderer: React.FC<BattleContentRendererProps> = ({
 }) => {
   console.log(`🎮 [RENDERER] BattleContentRenderer render`);
 
-  const [rankingMode, setRankingMode] = useState<RankingMode>("battle");
-
-  // Get all Pokemon from context for unified rankings
-  const allPokemon = React.useMemo(() => {
-    // Combine current battle, final rankings, and any other Pokemon sources
-    const pokemonMap = new Map<number, Pokemon>();
-    
-    // Add from current battle
-    currentBattle.forEach(p => pokemonMap.set(p.id, p));
-    
-    // Add from final rankings (these have TrueSkill data)
-    finalRankings.forEach(p => pokemonMap.set(p.id, p));
-    
-    return Array.from(pokemonMap.values());
-  }, [currentBattle, finalRankings]);
-
-  const {
-    allRankedPokemon,
-    unrankedPokemon,
-    addPokemonToRankings,
-    reorderPokemon,
-    updateFromBattleResults
-  } = useUnifiedTrueSkillRankings(allPokemon);
-
-  const {
-    localPendingRefinements,
-    markAsPending,
-    updateFromProps
-  } = usePendingRefinementsManager(new Set());
-
-  // Sync unified rankings with external updates
-  React.useEffect(() => {
-    if (finalRankings.length > 0) {
-      updateFromBattleResults(finalRankings);
-    }
-  }, [finalRankings, updateFromBattleResults]);
-
-  // Enhanced manual reorder that updates both local and external state
-  const handleUnifiedManualReorder = (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => {
-    console.log(`🎮 [RENDERER] Unified manual reorder: ${draggedPokemonId} from ${sourceIndex} to ${destinationIndex}`);
-    
-    // Mark as pending
-    markAsPending(draggedPokemonId);
-    
-    // Update unified rankings
-    reorderPokemon(draggedPokemonId, sourceIndex, destinationIndex);
-    
-    // Also call original handler for compatibility
-    if (handleManualReorder) {
-      handleManualReorder(draggedPokemonId, sourceIndex, destinationIndex);
-    }
-  };
-
-  const handleAddPokemonToUnifiedRankings = (pokemon: Pokemon, targetIndex: number) => {
-    console.log(`🎮 [RENDERER] Adding Pokemon to unified rankings: ${pokemon.name} at index ${targetIndex}`);
-    
-    // Mark as pending
-    markAsPending(pokemon.id);
-    
-    // Add to unified rankings
-    addPokemonToRankings(pokemon, targetIndex);
-  };
-
-  // Render different content based on mode and state
-  if (rankingMode === "manual") {
-    return (
-      <div className="space-y-4">
-        <ImpliedBattleValidator />
-        
-        <BattleControls
-          selectedGeneration={selectedGeneration}
-          battleType={battleType}
-          rankingMode={rankingMode}
-          onGenerationChange={(gen) => setSelectedGeneration(Number(gen))}
-          onBattleTypeChange={setBattleType}
-          onRankingModeChange={setRankingMode}
-          onReset={performFullBattleReset}
-          battleHistory={battleHistory}
-        />
-
-        <ManualRankingMode
-          rankedPokemon={allRankedPokemon}
-          unrankedPokemon={unrankedPokemon}
-          onAddPokemonToRankings={handleAddPokemonToUnifiedRankings}
-          onReorderPokemon={reorderPokemon}
-          pendingRefinements={localPendingRefinements}
-        />
-      </div>
-    );
-  }
-
-  // For battle mode, show existing battle interface or milestone
+  // For milestone, show existing milestone interface
   if (showingMilestone) {
     return (
       <div className="space-y-4">
@@ -217,10 +122,8 @@ const BattleContentRenderer: React.FC<BattleContentRendererProps> = ({
       <BattleControls
         selectedGeneration={selectedGeneration}
         battleType={battleType}
-        rankingMode={rankingMode}
         onGenerationChange={(gen) => setSelectedGeneration(Number(gen))}
         onBattleTypeChange={setBattleType}
-        onRankingModeChange={setRankingMode}
         onReset={performFullBattleReset}
         battleHistory={battleHistory}
       />
