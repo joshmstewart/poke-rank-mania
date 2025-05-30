@@ -39,6 +39,30 @@ interface TCGApiResponse {
 // In-memory cache for TCG cards
 const tcgCardCache = new Map<string, TCGCard | null>();
 
+// Rarity priority ranking (lower number = higher priority)
+const rarityPriority: { [key: string]: number } = {
+  'Amazing Rare': 1,
+  'Rare Secret': 2,
+  'Rare Ultra': 3,
+  'Rare Rainbow': 4,
+  'Rare Holo VMAX': 5,
+  'Rare Holo V': 6,
+  'Rare Holo GX': 7,
+  'Rare Holo EX': 8,
+  'Rare Holo': 9,
+  'Rare': 10,
+  'Uncommon': 11,
+  'Common': 12
+};
+
+const sortCardsByRarity = (cards: TCGCard[]): TCGCard[] => {
+  return cards.sort((a, b) => {
+    const aPriority = rarityPriority[a.rarity || ''] || 999;
+    const bPriority = rarityPriority[b.rarity || ''] || 999;
+    return aPriority - bPriority;
+  });
+};
+
 export const usePokemonTCGCard = (pokemonName: string, isModalOpen: boolean) => {
   const [tcgCard, setTcgCard] = useState<TCGCard | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -80,27 +104,34 @@ export const usePokemonTCGCard = (pokemonName: string, isModalOpen: boolean) => 
         console.log(`🃏 [TCG_API] Raw API response for ${pokemonName}:`, data);
 
         if (data.data && data.data.length > 0) {
-          const firstCard = data.data[0];
+          // Sort cards by rarity priority
+          const sortedCards = sortCardsByRarity(data.data);
+          const selectedCard = sortedCards[0];
+          
+          console.log(`🃏 [TCG_RARITY] Available rarities for ${pokemonName}:`, 
+            data.data.map(card => card.rarity).filter(Boolean)
+          );
+          console.log(`🃏 [TCG_SELECTION] Selected card with rarity: ${selectedCard.rarity}`);
           
           // Log metadata for decision-making
           console.log(`🃏 [TCG_METADATA] Card metadata for ${pokemonName}:`, {
-            id: firstCard.id,
-            name: firstCard.name,
-            setName: firstCard.set.name,
-            setSeries: firstCard.set.series,
-            rarity: firstCard.rarity,
-            supertype: firstCard.supertype,
-            subtypes: firstCard.subtypes,
-            hp: firstCard.hp,
-            types: firstCard.types,
-            hasLargeImage: !!firstCard.images?.large,
-            imageUrl: firstCard.images?.large,
-            flavorText: firstCard.flavorText,
-            attacksCount: firstCard.attacks?.length || 0
+            id: selectedCard.id,
+            name: selectedCard.name,
+            setName: selectedCard.set.name,
+            setSeries: selectedCard.set.series,
+            rarity: selectedCard.rarity,
+            supertype: selectedCard.supertype,
+            subtypes: selectedCard.subtypes,
+            hp: selectedCard.hp,
+            types: selectedCard.types,
+            hasLargeImage: !!selectedCard.images?.large,
+            imageUrl: selectedCard.images?.large,
+            flavorText: selectedCard.flavorText,
+            attacksCount: selectedCard.attacks?.length || 0
           });
 
-          setTcgCard(firstCard);
-          tcgCardCache.set(cacheKey, firstCard);
+          setTcgCard(selectedCard);
+          tcgCardCache.set(cacheKey, selectedCard);
         } else {
           console.log(`🃏 [TCG_API] No TCG cards found for ${pokemonName}, using fallback`);
           setTcgCard(null);
