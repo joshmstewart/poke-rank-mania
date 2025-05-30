@@ -68,7 +68,8 @@ const BattleContentCore: React.FC<BattleContentCoreProps> = ({
     resetMilestoneInProgress,
     performFullBattleReset,
     handleManualReorder,
-    pendingRefinements
+    pendingRefinements,
+    onRankingsUpdate
   } = stateData;
 
   console.log(`🔧 [BATTLE_CONTENT_CORE] Render - Instance: ${instanceRef.current}`);
@@ -102,6 +103,7 @@ const BattleContentCore: React.FC<BattleContentCoreProps> = ({
       removeSuggestion={removeSuggestion}
       resetMilestoneInProgress={resetMilestoneInProgress}
       handleManualReorder={handleManualReorder}
+      onRankingsUpdate={onRankingsUpdate}
       setBattlesCompleted={setBattlesCompleted}
       setBattleResults={setBattleResults}
     />
