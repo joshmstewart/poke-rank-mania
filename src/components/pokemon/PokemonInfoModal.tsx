@@ -29,28 +29,22 @@ const PokemonInfoModal: React.FC<PokemonInfoModalProps> = ({
   const { tcgCard, secondTcgCard, isLoading: isLoadingTCG, error: tcgError, hasTcgCard } = usePokemonTCGCard(pokemon.name, isOpen);
   
   const handleInfoClick = (e: React.MouseEvent) => {
-    console.log(`🔘 [MODAL_DEBUG] PokemonInfoModal: Trigger clicked for ${pokemon.name}`);
     e.stopPropagation();
     e.preventDefault();
     setIsOpen(true);
   };
 
   const handleDialogClick = (e: React.MouseEvent) => {
-    console.log(`🔘 [MODAL_DEBUG] PokemonInfoModal: Dialog clicked for ${pokemon.name}`);
     e.stopPropagation();
   };
 
   const handleDialogOpen = (open: boolean) => {
-    console.log(`🔘 [MODAL_DEBUG] PokemonInfoModal: Dialog ${open ? 'opened' : 'closed'} for ${pokemon.name}`);
     setIsOpen(open);
     
     if (onOpenChange) {
       onOpenChange(open);
     }
   };
-  
-  console.log(`🔘 [MODAL_DEBUG] Rendering PokemonInfoModal for ${pokemon.name}, isOpen: ${isOpen}`);
-  console.log(`🃏 [TCG_DEBUG] TCG card state for ${pokemon.name}:`, { hasTcgCard, isLoadingTCG, tcgError });
 
   // Determine what content to show
   const showLoading = isLoadingTCG;
