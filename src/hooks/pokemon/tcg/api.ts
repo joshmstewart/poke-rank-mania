@@ -1,6 +1,5 @@
-
 import { TCGApiResponse, TCGCard } from './types';
-import { sortCardsByRarity } from './sorting';
+import { selectDiverseCards } from './sorting';
 
 export const fetchTCGCards = async (pokemonName: string): Promise<{ firstCard: TCGCard | null; secondCard: TCGCard | null }> => {
   // Clean the Pokemon name for API search (remove hyphens, special characters)
@@ -30,37 +29,33 @@ export const fetchTCGCards = async (pokemonName: string): Promise<{ firstCard: T
   console.log(`🃏 [TCG_API] Raw API response for ${pokemonName}:`, data);
 
   if (data.data && data.data.length > 0) {
-    // Sort cards by rarity priority
-    const sortedCards = sortCardsByRarity(data.data);
-    const selectedCard = sortedCards[0];
-    
-    // Select second card if available (different from first)
-    const secondCard = sortedCards.length > 1 ? sortedCards[1] : null;
+    // Use new diverse selection logic
+    const { firstCard, secondCard } = selectDiverseCards(data.data);
     
     console.log(`🃏 [TCG_RARITY] Available rarities for ${pokemonName}:`, 
       data.data.map(card => card.rarity).filter(Boolean)
     );
-    console.log(`🃏 [TCG_SELECTION] Selected first card with rarity: ${selectedCard.rarity}`);
-    console.log(`🃏 [TCG_SELECTION] Selected second card with rarity: ${secondCard?.rarity || 'none'}`);
+    console.log(`🃏 [TCG_SELECTION] Selected first card with rarity: ${firstCard.rarity} from set: ${firstCard.set.name}`);
+    console.log(`🃏 [TCG_SELECTION] Selected second card with rarity: ${secondCard?.rarity || 'none'} from set: ${secondCard?.set.name || 'none'}`);
     
     // Log metadata for decision-making
     console.log(`🃏 [TCG_METADATA] First card metadata for ${pokemonName}:`, {
-      id: selectedCard.id,
-      name: selectedCard.name,
-      setName: selectedCard.set.name,
-      setSeries: selectedCard.set.series,
-      rarity: selectedCard.rarity,
-      supertype: selectedCard.supertype,
-      subtypes: selectedCard.subtypes,
-      hp: selectedCard.hp,
-      types: selectedCard.types,
-      hasLargeImage: !!selectedCard.images?.large,
-      imageUrl: selectedCard.images?.large,
-      flavorText: selectedCard.flavorText,
-      attacksCount: selectedCard.attacks?.length || 0
+      id: firstCard.id,
+      name: firstCard.name,
+      setName: firstCard.set.name,
+      setSeries: firstCard.set.series,
+      rarity: firstCard.rarity,
+      supertype: firstCard.supertype,
+      subtypes: firstCard.subtypes,
+      hp: firstCard.hp,
+      types: firstCard.types,
+      hasLargeImage: !!firstCard.images?.large,
+      imageUrl: firstCard.images?.large,
+      flavorText: firstCard.flavorText,
+      attacksCount: firstCard.attacks?.length || 0
     });
 
-    return { firstCard: selectedCard, secondCard };
+    return { firstCard, secondCard };
   }
 
   console.log(`🃏 [TCG_API] No TCG cards found for ${pokemonName}, using fallback`);

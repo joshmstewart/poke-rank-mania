@@ -26,3 +26,24 @@ export const sortCardsByRarity = (cards: TCGCard[]): TCGCard[] => {
     return aPriority - bPriority;
   });
 };
+
+export const selectDiverseCards = (cards: TCGCard[]): { firstCard: TCGCard; secondCard: TCGCard | null } => {
+  if (cards.length === 0) {
+    throw new Error('No cards provided');
+  }
+
+  // Sort by rarity first
+  const sortedCards = sortCardsByRarity(cards);
+  const firstCard = sortedCards[0];
+
+  if (sortedCards.length === 1) {
+    return { firstCard, secondCard: null };
+  }
+
+  // Try to find a second card from a different set
+  const secondCard = sortedCards.find(card => 
+    card.set.id !== firstCard.set.id
+  ) || sortedCards[1]; // Fallback to second card if all from same set
+
+  return { firstCard, secondCard };
+};
