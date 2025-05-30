@@ -30,7 +30,7 @@ const PokemonListContent: React.FC<PokemonListContentProps> = ({
   return (
     <div 
       ref={containerRef}
-      className={`flex-1 overflow-auto bg-gray-50 rounded-lg p-2 min-h-[400px] ${isRankingArea ? 'z-20 relative' : 'z-10 relative'}`}
+      className={`flex-1 overflow-auto bg-gray-50 rounded-lg p-2 ${isRankingArea ? 'min-h-[800px] z-20 relative' : 'min-h-[400px] z-10 relative'}`}
     >
       <Droppable droppableId={droppableId}>
         {(provided, snapshot) => (
