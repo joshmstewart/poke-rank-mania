@@ -10,6 +10,12 @@ export const useAutoScroll = (itemCount: number, isRankingArea: boolean) => {
 
   console.log(`🔍 [AUTO_SCROLL_DEBUG] Hook called - itemCount: ${itemCount}, isRankingArea: ${isRankingArea}`);
 
+  // COMPLETELY DISABLE auto-scroll for ranking areas to prevent interference with manual scrolling
+  if (isRankingArea) {
+    console.log(`🔍 [AUTO_SCROLL_DEBUG] Auto-scroll DISABLED for ranking area`);
+    return { containerRef };
+  }
+
   // Check if user is at the "last card only" position (last card visible at top)
   const checkIfAtLastCardOnly = () => {
     if (!containerRef.current || itemCount === 0) {
@@ -99,7 +105,7 @@ export const useAutoScroll = (itemCount: number, isRankingArea: boolean) => {
   useEffect(() => {
     console.log(`🔍 [AUTO_SCROLL_DEBUG] Items effect - isRankingArea: ${isRankingArea}, itemCount: ${itemCount}, previousCount: ${previousCountRef.current}, autoAdjustMode: ${autoAdjustModeRef.current}`);
     
-    if (!isRankingArea || !containerRef.current) {
+    if (!containerRef.current) {
       console.log(`🔍 [AUTO_SCROLL_DEBUG] Items effect - early return`);
       previousCountRef.current = itemCount; // Still update the count
       return;
@@ -120,13 +126,13 @@ export const useAutoScroll = (itemCount: number, isRankingArea: boolean) => {
     }
 
     previousCountRef.current = itemCount;
-  }, [itemCount, isRankingArea]);
+  }, [itemCount]);
 
   // Track scroll position and update states
   useEffect(() => {
     console.log(`🔍 [AUTO_SCROLL_DEBUG] Scroll effect - isRankingArea: ${isRankingArea}`);
     
-    if (!isRankingArea || !containerRef.current) {
+    if (!containerRef.current) {
       console.log(`🔍 [AUTO_SCROLL_DEBUG] Scroll effect - early return`);
       return;
     }
@@ -190,7 +196,7 @@ export const useAutoScroll = (itemCount: number, isRankingArea: boolean) => {
       clearTimeout(scrollTimeout);
       console.log(`🔍 [AUTO_SCROLL_DEBUG] Scroll listener removed`);
     };
-  }, [isRankingArea]);
+  }, []);
 
   return { containerRef };
 };
