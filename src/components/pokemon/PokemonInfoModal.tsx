@@ -33,110 +33,10 @@ const PokemonInfoModal: React.FC<PokemonInfoModalProps> = ({
   const { flavorText, isLoadingFlavor } = usePokemonFlavorText(pokemon.id, isOpen);
   const { tcgCard, secondTcgCard, isLoading: isLoadingTCG, error: tcgError, hasTcgCard } = usePokemonTCGCard(pokemon.name, isOpen);
   
-  useEffect(() => {
-    console.log(`🔘 [MODAL_DEBUG] PokemonInfoModal for ${pokemon.name} mounted, isOpen: ${isOpen}`);
-  }, [pokemon.name, isOpen]);
-
-  useEffect(() => {
-    console.log(`🔘 [MODAL_DEBUG] Modal state effect - isOpen changed to: ${isOpen} for ${pokemon.name}`);
-    
-    if (isOpen) {
-      // Enhanced debugging when modal opens
-      setTimeout(() => {
-        console.log(`🔘 [MODAL_DEBUG] === COMPREHENSIVE DIALOG DEBUG FOR ${pokemon.name} ===`);
-        
-        // Check the current modal's DOM hierarchy
-        const currentModal = document.querySelector(`[data-radix-dialog-content="true"]`);
-        if (currentModal) {
-          console.log(`🔘 [MODAL_DEBUG] Found modal in DOM, checking hierarchy...`);
-          
-          // Walk up the DOM tree to understand the structure
-          let element = currentModal;
-          let depth = 0;
-          while (element && depth < 15) {
-            const style = window.getComputedStyle(element);
-            console.log(`🔘 [MODAL_DEBUG] Level ${depth}: ${element.tagName}`, {
-              className: element.className,
-              id: element.id,
-              zIndex: style.zIndex,
-              position: style.position,
-              transform: style.transform,
-              opacity: style.opacity,
-              display: style.display
-            });
-            
-            element = element.parentElement;
-            depth++;
-          }
-        }
-        
-        // Check ALL dialog-related elements in the entire document
-        const allDialogElements = document.querySelectorAll('*[data-radix-dialog], *[role="dialog"], *[data-state]');
-        console.log(`🔘 [MODAL_DEBUG] Found ${allDialogElements.length} dialog-related elements in document`);
-        
-        allDialogElements.forEach((el, index) => {
-          const style = window.getComputedStyle(el);
-          const rect = el.getBoundingClientRect();
-          console.log(`🔘 [MODAL_DEBUG] Dialog element ${index}:`, {
-            tagName: el.tagName,
-            role: el.getAttribute('role'),
-            dataState: el.getAttribute('data-state'),
-            className: el.className,
-            zIndex: style.zIndex,
-            position: style.position,
-            display: style.display,
-            visibility: style.visibility,
-            opacity: style.opacity,
-            isVisible: rect.width > 0 && rect.height > 0,
-            rect: {
-              top: rect.top,
-              left: rect.left,
-              width: rect.width,
-              height: rect.height
-            }
-          });
-        });
-        
-        // Check if there are multiple portals or conflicting elements
-        const portals = document.querySelectorAll('[data-radix-portal]');
-        console.log(`🔘 [MODAL_DEBUG] Found ${portals.length} portal containers`);
-        portals.forEach((portal, index) => {
-          console.log(`🔘 [MODAL_DEBUG] Portal ${index} contents:`, {
-            childElementCount: portal.childElementCount,
-            children: Array.from(portal.children).map(child => ({
-              tagName: child.tagName,
-              className: child.className,
-              role: child.getAttribute('role'),
-              dataState: child.getAttribute('data-state')
-            }))
-          });
-        });
-        
-        // Check if our specific modal content is actually visible
-        const modalContent = document.querySelector('[data-radix-dialog-content="true"]');
-        if (modalContent) {
-          const contentRect = modalContent.getBoundingClientRect();
-          const isActuallyVisible = contentRect.width > 0 && contentRect.height > 0 && 
-                                   contentRect.top >= 0 && contentRect.left >= 0;
-          console.log(`🔘 [MODAL_DEBUG] Modal content visibility check:`, {
-            hasSize: contentRect.width > 0 && contentRect.height > 0,
-            inViewport: contentRect.top >= 0 && contentRect.left >= 0,
-            actuallyVisible: isActuallyVisible,
-            rect: contentRect
-          });
-        }
-        
-      }, 300); // Increased timeout to ensure everything is rendered
-    }
-  }, [isOpen, pokemon.name]);
-  
   const handleInfoClick = (e: React.MouseEvent) => {
     console.log(`🔘 [MODAL_DEBUG] PokemonInfoModal: Trigger clicked for ${pokemon.name}`);
-    console.log(`🔘 [MODAL_DEBUG] Current isOpen state: ${isOpen}`);
     e.stopPropagation();
     e.preventDefault();
-    
-    console.log(`🔘 [MODAL_DEBUG] About to set isOpen to true`);
     setIsOpen(true);
   };
 
@@ -147,8 +47,6 @@ const PokemonInfoModal: React.FC<PokemonInfoModalProps> = ({
 
   const handleDialogOpen = (open: boolean) => {
     console.log(`🔘 [MODAL_DEBUG] PokemonInfoModal: Dialog ${open ? 'opened' : 'closed'} for ${pokemon.name}`);
-    console.log(`🔘 [MODAL_DEBUG] PokemonInfoModal: Modal state changed to: ${open}`);
-    console.log(`🔘 [MODAL_DEBUG] Previous state was: ${isOpen}`);
     setIsOpen(open);
     
     if (onOpenChange) {
