@@ -1,6 +1,6 @@
 
 import React from "react";
-import { Pokemon, TopNOption } from "@/services/pokemon";
+import { Pokemon, TopNOption, RankedPokemon } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "@/hooks/battle/types";
 import BattleContentHeader from "./BattleContentHeader";
 import BattleContentMain from "./BattleContentMain";
@@ -37,6 +37,7 @@ interface BattleContentRendererProps {
   removeSuggestion: any;
   resetMilestoneInProgress: () => void;
   handleManualReorder: any;
+  onRankingsUpdate: (updatedRankings: RankedPokemon[]) => void;
   
   // Optional parent props
   setBattlesCompleted?: React.Dispatch<React.SetStateAction<number>>;
@@ -70,6 +71,7 @@ const BattleContentRenderer: React.FC<BattleContentRendererProps> = ({
   removeSuggestion,
   resetMilestoneInProgress,
   handleManualReorder,
+  onRankingsUpdate,
   setBattlesCompleted,
   setBattleResults
 }) => {
@@ -103,6 +105,7 @@ const BattleContentRenderer: React.FC<BattleContentRendererProps> = ({
         resetMilestoneInProgress={resetMilestoneInProgress}
         handleManualReorder={handleManualReorder}
         pendingRefinements={new Set<number>()}
+        onRankingsUpdate={onRankingsUpdate}
       />
     );
   }
