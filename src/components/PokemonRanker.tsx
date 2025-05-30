@@ -8,6 +8,7 @@ import { Rating } from "ts-trueskill";
 import { toast } from "@/hooks/use-toast";
 import { PokemonRankerHeader } from "./pokemon/PokemonRankerHeader";
 import { PokemonRankerContent } from "./pokemon/PokemonRankerContent";
+import { Button } from "@/components/ui/button";
 
 const PokemonRanker = () => {
   console.log(`🔄 [MANUAL_MODE_SYNC] ===== PokemonRanker Component Render =====`);
@@ -38,7 +39,7 @@ const PokemonRanker = () => {
   const { clearAllRatings, getAllRatings, getRating } = useTrueSkillStore();
   const { pokemonLookupMap, allPokemon } = usePokemonContext();
 
-  // FIXED: Enhanced sync function that properly waits for context
+  // ENHANCED: Extract sync function to allow manual triggering for diagnostics
   const syncWithTrueSkillStore = React.useCallback(async () => {
     console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_CRITICAL] ===== SYNC FUNCTION ENTRY =====`);
     console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_CRITICAL] Timestamp: ${new Date().toISOString()}`);
@@ -167,8 +168,20 @@ const PokemonRanker = () => {
     console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_CRITICAL] ===== SYNC PROCESS COMPLETE =====`);
   }, [getAllRatings, getRating, pokemonLookupMap, allPokemon, setRankedPokemon, setAvailablePokemon]);
 
-  // CRITICAL FIX: This effect must depend on BOTH the map object AND individual properties to ensure proper re-triggering
+  // DIAGNOSTIC: Manual sync trigger button
+  const handleManualSync = () => {
+    console.log(`🔥🔥🔥 [MANUAL_TRIGGER_DIAGNOSTIC] Manual sync button clicked`);
+    console.log(`🔥🔥🔥 [MANUAL_TRIGGER_DIAGNOSTIC] Current context state: map size=${pokemonLookupMap.size}, array length=${allPokemon.length}`);
+    const ratings = getAllRatings();
+    console.log(`🔥🔥🔥 [MANUAL_TRIGGER_DIAGNOSTIC] Current ratings count: ${Object.keys(ratings).length}`);
+    syncWithTrueSkillStore();
+  };
+
+  // CRITICAL FIX: Enhanced useEffect with ultra-detailed logging and simplified dependencies
   useEffect(() => {
+    // NEW: Absolute top-level log to ensure effect callback is entered
+    console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_ENTRY] Effect callback entered. Timestamp: ${Date.now()}`);
+    
     const effectRunId = Date.now();
     console.log(`🔥🔥🔥 [MANUAL_SYNC_DETAIL] ===== EFFECT RUN #${effectRunId} START =====`);
     console.log(`🔥🔥🔥 [MANUAL_SYNC_DETAIL] Effect trigger timestamp: ${new Date().toISOString()}`);
@@ -205,10 +218,10 @@ const PokemonRanker = () => {
     
     console.log(`🔥🔥🔥 [MANUAL_SYNC_DETAIL] ===== EFFECT RUN #${effectRunId} COMPLETE =====`);
   }, [
-    pokemonLookupMap, // The map object itself
-    pokemonLookupMap.size, // Explicit size dependency
-    allPokemon, // The array object itself  
-    allPokemon.length, // Explicit length dependency
+    // SIMPLIFIED: Start with just primitive dependencies to isolate the issue
+    pokemonLookupMap.size,
+    allPokemon.length,
+    // Keep essential functions
     getAllRatings, 
     syncWithTrueSkillStore, 
     setRankedPokemon, 
@@ -321,6 +334,17 @@ const PokemonRanker = () => {
           onResetDialogChange={setResetDialogOpen}
           onReset={handleReset}
         />
+
+        {/* DIAGNOSTIC: Manual sync button for testing */}
+        <div className="flex justify-center">
+          <Button 
+            onClick={handleManualSync}
+            variant="outline"
+            className="bg-yellow-100 border-yellow-400 text-yellow-800 hover:bg-yellow-200"
+          >
+            🔍 Debug: Manual Sync (Context: {pokemonLookupMap.size}, Ratings: {Object.keys(getAllRatings()).length})
+          </Button>
+        </div>
 
         <PokemonRankerContent
           showRankings={showRankings}
