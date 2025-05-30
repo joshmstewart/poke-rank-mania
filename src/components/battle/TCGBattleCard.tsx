@@ -10,6 +10,7 @@ import TCGCardInfo from "./TCGCardInfo";
 import TCGCardInteractions from "./TCGCardInteractions";
 import TCGCardLoading from "./TCGCardLoading";
 import { usePokemonTCGCard } from "@/hooks/pokemon/usePokemonTCGCard";
+import { getCurrentImageMode } from "@/components/settings/imagePreferenceHelpers";
 
 interface TCGBattleCardProps {
   pokemon: Pokemon;
@@ -30,6 +31,7 @@ const TCGBattleCard: React.FC<TCGBattleCardProps> = memo(({
   const lastClickTimeRef = useRef(0);
   const [isHovered, setIsHovered] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
+  const [currentImageMode, setCurrentImageMode] = useState<'pokemon' | 'tcg>(() => getCurrentImageMode());
 
   // Always try to load TCG card data
   const { tcgCard, isLoading: isLoadingTCG, hasTcgCard } = usePokemonTCGCard(pokemon.name, true);
@@ -37,6 +39,31 @@ const TCGBattleCard: React.FC<TCGBattleCardProps> = memo(({
   const displayName = pokemon.name;
   
   console.log(`🃏 [TCG_BATTLE_CARD] ${displayName}: TCG loading=${isLoadingTCG}, hasTcgCard=${hasTcgCard}, isProcessing=${isProcessing}`);
+
+  // Listen for image mode changes
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "pokemon-image-mode") {
+        const newMode = getCurrentImageMode();
+        console.log(`🃏 [TCG_BATTLE_CARD] Image mode changed to: ${newMode} (Storage event)`);
+        setCurrentImageMode(newMode);
+      }
+    };
+
+    const handlePreferencesSaved = (e: CustomEvent) => {
+      const newMode = e.detail.mode;
+      console.log(`🃏 [TCG_BATTLE_CARD] Image mode changed to: ${newMode} (Done clicked)`);
+      setCurrentImageMode(newMode);
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('pokemon-preferences-saved', handlePreferencesSaved as EventListener);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('pokemon-preferences-saved', handlePreferencesSaved as EventListener);
+    };
+  }, []);
 
   useEffect(() => {
     console.log(`🃏 [TCG_BATTLE_CARD] ${displayName}: Component mounted/updated`);

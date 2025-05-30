@@ -35,6 +35,17 @@ const ImagePreferenceSelector: React.FC<ImagePreferenceSelectorProps> = ({ onClo
     setImageLoadStates(prev => ({ ...prev, [id]: false }));
   };
 
+  const handleDoneClick = () => {
+    // Dispatch a custom event to notify components that preferences have been saved
+    window.dispatchEvent(new CustomEvent('pokemon-preferences-saved', {
+      detail: { mode: selectedMode, type: selectedType }
+    }));
+    
+    if (onClose) {
+      onClose();
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Image Mode Selection */}
@@ -61,7 +72,7 @@ const ImagePreferenceSelector: React.FC<ImagePreferenceSelectorProps> = ({ onClo
 
       {onClose && (
         <div className="flex justify-end pt-4">
-          <Button onClick={onClose}>Done</Button>
+          <Button onClick={handleDoneClick}>Done</Button>
         </div>
       )}
     </div>
