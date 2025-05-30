@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Rating } from 'ts-trueskill';
@@ -14,6 +15,7 @@ interface TrueSkillStore {
   ratings: Record<number, TrueSkillRating>; // pokemonId -> rating
   isLoading: boolean;
   lastSyncedAt: string | null;
+  sessionId: string;
   updateRating: (pokemonId: number, rating: Rating) => void;
   getRating: (pokemonId: number) => Rating;
   hasRating: (pokemonId: number) => boolean;
@@ -23,9 +25,15 @@ interface TrueSkillStore {
   loadFromCloud: () => Promise<void>;
 }
 
-// Debug store creation
-console.log(`🏪 [STORE_INIT_DEBUG] TrueSkill store being created`);
-console.error(`🚨 [STORE_INIT_DEBUG] Store initialization - Stack trace:`, new Error().stack);
+// Generate or load session ID
+const getOrCreateSessionId = (): string => {
+  const stored = localStorage.getItem('trueskill-session-id');
+  if (stored) return stored;
+  
+  const newSessionId = crypto.randomUUID();
+  localStorage.setItem('trueskill-session-id', newSessionId);
+  return newSessionId;
+};
 
 export const useTrueSkillStore = create<TrueSkillStore>()(
   persist(
@@ -33,9 +41,10 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
       ratings: {},
       isLoading: false,
       lastSyncedAt: null,
+      sessionId: getOrCreateSessionId(),
       
       updateRating: (pokemonId: number, rating: Rating) => {
-        console.log(`[TRUESKILL_CLOUD] Updating rating for Pokemon ${pokemonId}: μ=${rating.mu.toFixed(2)}, σ=${rating.sigma.toFixed(2)}`);
+        console.log(`[TRUESKILL_LOCAL] Updating rating for Pokemon ${pokemonId}: μ=${rating.mu.toFixed(2)}, σ=${rating.sigma.toFixed(2)}`);
         
         set((state) => {
           const newRatings = {
@@ -48,7 +57,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
             }
           };
           
-          // ENHANCED: Dispatch event to notify Manual mode of updates
+          // Dispatch event to notify Manual mode of updates
           setTimeout(() => {
             const updateEvent = new CustomEvent('trueskill-store-updated', {
               detail: { pokemonId, rating: newRatings[pokemonId] }
@@ -56,16 +65,20 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
             document.dispatchEvent(updateEvent);
           }, 10);
           
-          // Auto-sync to cloud after rating update
-          setTimeout(() => {
-            get().syncToCloud();
+          // Try to sync to cloud if user is authenticated (non-blocking)
+          setTimeout(async () => {
+            try {
+              await get().syncToCloud();
+            } catch (error) {
+              console.log('[TRUESKILL_LOCAL] Cloud sync failed, continuing with local storage');
+            }
           }, 1000);
           
           return { ratings: newRatings };
         });
         
         const updatedRating = get().ratings[pokemonId];
-        console.log(`[TRUESKILL_CLOUD] Verified update - Pokemon ${pokemonId} now has μ=${updatedRating.mu.toFixed(2)}, σ=${updatedRating.sigma.toFixed(2)}, battles=${updatedRating.battleCount}`);
+        console.log(`[TRUESKILL_LOCAL] Updated Pokemon ${pokemonId} - μ=${updatedRating.mu.toFixed(2)}, σ=${updatedRating.sigma.toFixed(2)}, battles=${updatedRating.battleCount}`);
       },
       
       getRating: (pokemonId: number) => {
@@ -81,38 +94,26 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
       },
       
       getAllRatings: () => {
-        const ratings = get().ratings;
-        console.log(`🔍 [STORE_GET_ALL] getAllRatings called - returning ${Object.keys(ratings).length} ratings`);
-        return ratings;
+        return get().ratings;
       },
       
       clearAllRatings: () => {
-        const currentRatings = get().ratings;
-        const ratingsCount = Object.keys(currentRatings).length;
-        
-        // CRITICAL DEBUG: Log the stack trace to see WHO is calling clearAllRatings
-        console.error(`🚨 [STORE_CLEAR_DEBUG] clearAllRatings() called! Current ratings: ${ratingsCount}`);
-        console.error(`🚨 [STORE_CLEAR_DEBUG] Stack trace:`, new Error().stack);
-        
-        // Log current state before clearing
-        if (ratingsCount > 0) {
-          console.error(`🚨 [STORE_CLEAR_DEBUG] About to clear ${ratingsCount} ratings!`);
-          console.error(`🚨 [STORE_CLEAR_DEBUG] Sample ratings being lost:`, Object.entries(currentRatings).slice(0, 3));
-        }
-        
-        console.log('[TRUESKILL_CLOUD] Clearing all ratings and syncing to cloud');
+        console.log('[TRUESKILL_LOCAL] Clearing all ratings');
         set({ ratings: {}, lastSyncedAt: null });
         
-        // ENHANCED: Dispatch clear event
+        // Dispatch clear event
         setTimeout(() => {
           const clearEvent = new CustomEvent('trueskill-store-cleared');
           document.dispatchEvent(clearEvent);
-          console.error(`🚨 [STORE_CLEAR_DEBUG] Dispatched trueskill-store-cleared event`);
         }, 10);
         
-        // Sync empty state to cloud
-        setTimeout(() => {
-          get().syncToCloud();
+        // Try to sync to cloud if user is authenticated (non-blocking)
+        setTimeout(async () => {
+          try {
+            await get().syncToCloud();
+          } catch (error) {
+            console.log('[TRUESKILL_LOCAL] Cloud sync failed, continuing with local storage');
+          }
         }, 100);
       },
       
@@ -120,7 +121,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
         try {
           const { data: { user } } = await supabase.auth.getUser();
           if (!user) {
-            console.log('[TRUESKILL_CLOUD] No authenticated user, skipping cloud sync');
+            console.log('[TRUESKILL_LOCAL] No authenticated user, using local storage only');
             return;
           }
           
@@ -150,7 +151,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           set({ lastSyncedAt: new Date().toISOString() });
           console.log('[TRUESKILL_CLOUD] ✅ Successfully synced to cloud');
         } catch (error) {
-          console.error('[TRUESKILL_CLOUD] Error syncing to cloud:', error);
+          console.log('[TRUESKILL_LOCAL] Cloud sync failed, continuing with local storage:', error);
         }
       },
       
@@ -159,7 +160,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           set({ isLoading: true });
           const { data: { user } } = await supabase.auth.getUser();
           if (!user) {
-            console.log('[TRUESKILL_CLOUD] No authenticated user, skipping cloud load');
+            console.log('[TRUESKILL_LOCAL] No authenticated user, using local storage only');
             set({ isLoading: false });
             return;
           }
@@ -203,7 +204,6 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
             });
             
             console.log('[TRUESKILL_CLOUD] ✅ Loaded ratings from cloud:', Object.keys(convertedRatings).length, 'Pokemon');
-            console.log(`🔍 [CLOUD_LOAD_DEBUG] Setting ${Object.keys(convertedRatings).length} ratings in store`);
             
             set({ 
               ratings: convertedRatings,
@@ -211,41 +211,26 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
               isLoading: false 
             });
             
-            // ENHANCED: Dispatch load complete event
+            // Dispatch load complete event
             setTimeout(() => {
               const loadEvent = new CustomEvent('trueskill-store-loaded', {
                 detail: { ratingsCount: Object.keys(convertedRatings).length }
               });
               document.dispatchEvent(loadEvent);
-              console.log(`🔍 [CLOUD_LOAD_DEBUG] Dispatched trueskill-store-loaded event with ${Object.keys(convertedRatings).length} ratings`);
             }, 10);
           } else {
-            console.log('[TRUESKILL_CLOUD] No cloud data found, starting fresh');
+            console.log('[TRUESKILL_CLOUD] No cloud data found, using local storage');
             set({ isLoading: false });
           }
         } catch (error) {
-          console.error('[TRUESKILL_CLOUD] Error loading from cloud:', error);
+          console.log('[TRUESKILL_LOCAL] Cloud load failed, continuing with local storage:', error);
           set({ isLoading: false });
         }
       }
     }),
     {
       name: 'trueskill-ratings-store',
-      version: 1,
-      onRehydrateStorage: () => {
-        console.log(`🏪 [STORE_REHYDRATE_DEBUG] Store rehydration starting`);
-        return (state, error) => {
-          if (error) {
-            console.error(`🚨 [STORE_REHYDRATE_DEBUG] Store rehydration failed:`, error);
-          } else {
-            const ratingsCount = state?.ratings ? Object.keys(state.ratings).length : 0;
-            console.log(`🏪 [STORE_REHYDRATE_DEBUG] Store rehydrated with ${ratingsCount} ratings`);
-          }
-        };
-      }
+      version: 1
     }
   )
 );
-
-// Debug store creation complete
-console.log(`🏪 [STORE_INIT_DEBUG] TrueSkill store creation completed`);
