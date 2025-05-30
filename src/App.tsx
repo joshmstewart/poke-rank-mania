@@ -14,7 +14,7 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 5 * 60 * 1000, // 5 minutes
-      cacheTime: 10 * 60 * 1000, // 10 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes (renamed from cacheTime)
     },
   },
 });
@@ -22,7 +22,7 @@ const queryClient = new QueryClient({
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <PokemonProvider>
+      <PokemonProvider allPokemon={[]}>
         <ImpliedBattleTrackerProvider>
           <Router>
             <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
