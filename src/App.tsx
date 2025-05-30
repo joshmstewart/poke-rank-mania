@@ -1,44 +1,62 @@
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext";
-import { PokemonProvider } from "@/contexts/PokemonContext";
-import { ImpliedBattleTrackerProvider } from "@/contexts/ImpliedBattleTracker";
-import ImpliedBattleValidator from "@/components/battle/ImpliedBattleValidator";
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as SonnerToaster } from "sonner";
+import PokemonRanker from "./components/PokemonRanker";
+import BattleMode from "./components/BattleMode";
+import ModeSwitcher from "./components/ModeSwitcher";
+import AppSessionManager from "./components/AppSessionManager";
+import { PokemonProvider } from "./contexts/PokemonContext";
+import { ImpliedBattleProvider, useImpliedBattleTracker } from "./contexts/ImpliedBattleTracker";
+import ImpliedBattleTracker from "./components/validation/ImpliedBattleTracker";
+import "./App.css";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <PokemonProvider allPokemon={[]}>
-        <ImpliedBattleTrackerProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <div className="min-h-screen">
-                <Routes>
-                  <Route path="/" element={
-                    <>
-                      <ImpliedBattleValidator />
-                      <Index />
-                    </>
-                  } />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </div>
-            </BrowserRouter>
-          </TooltipProvider>
-        </ImpliedBattleTrackerProvider>
-      </PokemonProvider>
-    </AuthProvider>
-  </QueryClientProvider>
-);
+const AppContent: React.FC = () => {
+  const { impliedBattles } = useImpliedBattleTracker();
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Site Header */}
+      <header className="bg-white border-b border-gray-200 px-4 py-3">
+        <div className="max-w-7xl mx-auto">
+          <ModeSwitcher />
+        </div>
+      </header>
+
+      {/* Implied Battle Validation Component - positioned below header, above battle settings */}
+      <ImpliedBattleTracker battles={impliedBattles} />
+
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto">
+        <Routes>
+          <Route path="/" element={<PokemonRanker />} />
+          <Route path="/battle" element={<BattleMode />} />
+        </Routes>
+      </main>
+
+      <Toaster />
+      <SonnerToaster />
+    </div>
+  );
+};
+
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <Router>
+        <ImpliedBattleProvider>
+          <PokemonProvider>
+            <AppSessionManager />
+            <AppContent />
+          </PokemonProvider>
+        </ImpliedBattleProvider>
+      </Router>
+    </QueryClientProvider>
+  );
+}
 
 export default App;

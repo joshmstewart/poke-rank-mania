@@ -3,6 +3,7 @@ import React from "react";
 import { usePokemonRanker } from "@/hooks/usePokemonRanker";
 import { RankedPokemon } from "@/services/pokemon";
 import { useRankingSuggestions } from "@/hooks/battle/useRankingSuggestions";
+import { useEnhancedManualReorder } from "@/hooks/battle/useEnhancedManualReorder";
 import { toast } from "@/hooks/use-toast";
 import { PokemonRankerHeader } from "./pokemon/PokemonRankerHeader";
 import { PokemonRankerContent } from "./pokemon/PokemonRankerContent";
@@ -33,12 +34,12 @@ const PokemonRanker = () => {
   // Convert rankedPokemon to proper RankedPokemon type with defaults including new required properties
   const typedRankedPokemon: RankedPokemon[] = rankedPokemon.map(pokemon => ({
     ...pokemon,
-    score: 0,
-    count: 0,
-    confidence: 0,
-    wins: 0,
-    losses: 0,
-    winRate: 0
+    score: pokemon.score || 0,
+    count: pokemon.count || 0,
+    confidence: pokemon.confidence || 0,
+    wins: pokemon.wins || 0,
+    losses: pokemon.losses || 0,
+    winRate: pokemon.winRate || 0
   }));
 
   // Initialize the ranking suggestions hook
@@ -47,6 +48,15 @@ const PokemonRanker = () => {
     removeSuggestion,
     clearAllSuggestions
   } = useRankingSuggestions(typedRankedPokemon, setRankedPokemon as any);
+
+  // Initialize the enhanced manual reorder hook for unified TrueSkill
+  const { handleEnhancedManualReorder } = useEnhancedManualReorder(
+    typedRankedPokemon,
+    (updatedRankings: RankedPokemon[]) => {
+      console.log(`🔥 [POKEMON_RANKER] Received enhanced reorder update with ${updatedRankings.length} Pokemon`);
+      setRankedPokemon(updatedRankings as any);
+    }
+  );
 
   const handleReset = () => {
     // Clear suggestion arrows explicitly on reset
@@ -107,6 +117,7 @@ const PokemonRanker = () => {
           suggestRanking={suggestRanking}
           removeSuggestion={removeSuggestion}
           clearAllSuggestions={clearAllSuggestions}
+          handleEnhancedManualReorder={handleEnhancedManualReorder}
         />
       </div>
     </div>

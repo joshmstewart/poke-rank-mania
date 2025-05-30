@@ -1,63 +1,58 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback } from 'react';
 
 interface ImpliedBattle {
   id: string;
-  timestamp: string;
   draggedPokemon: string;
   opponent: string;
   winner: string;
   battleType: string;
-  sequence: number;
+  timestamp: string;
 }
 
-interface ImpliedBattleTrackerContextType {
+interface ImpliedBattleContextType {
   impliedBattles: ImpliedBattle[];
-  addImpliedBattle: (battle: Omit<ImpliedBattle, 'id' | 'timestamp' | 'sequence'>) => void;
+  addImpliedBattle: (battle: Omit<ImpliedBattle, 'id' | 'timestamp'>) => void;
   clearImpliedBattles: () => void;
 }
 
-const ImpliedBattleTrackerContext = createContext<ImpliedBattleTrackerContextType | undefined>(undefined);
+const ImpliedBattleContext = createContext<ImpliedBattleContextType | undefined>(undefined);
 
-let sequenceCounter = 0;
-
-export const ImpliedBattleTrackerProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const ImpliedBattleProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [impliedBattles, setImpliedBattles] = useState<ImpliedBattle[]>([]);
 
-  const addImpliedBattle = (battle: Omit<ImpliedBattle, 'id' | 'timestamp' | 'sequence'>) => {
+  const addImpliedBattle = useCallback((battle: Omit<ImpliedBattle, 'id' | 'timestamp'>) => {
     const newBattle: ImpliedBattle = {
       ...battle,
-      id: `implied-${Date.now()}-${Math.random()}`,
-      timestamp: new Date().toLocaleTimeString(),
-      sequence: ++sequenceCounter
+      id: `${Date.now()}-${Math.random()}`,
+      timestamp: new Date().toISOString()
     };
 
     setImpliedBattles(prev => {
-      const updated = [newBattle, ...prev];
-      // Keep only the last 6 records
-      return updated.slice(0, 6);
+      const updated = [...prev, newBattle];
+      // Keep only last 10 battles
+      return updated.slice(-10);
     });
-  };
+  }, []);
 
-  const clearImpliedBattles = () => {
+  const clearImpliedBattles = useCallback(() => {
     setImpliedBattles([]);
-    sequenceCounter = 0;
-  };
+  }, []);
 
   return (
-    <ImpliedBattleTrackerContext.Provider value={{
+    <ImpliedBattleContext.Provider value={{
       impliedBattles,
       addImpliedBattle,
       clearImpliedBattles
     }}>
       {children}
-    </ImpliedBattleTrackerContext.Provider>
+    </ImpliedBattleContext.Provider>
   );
 };
 
 export const useImpliedBattleTracker = () => {
-  const context = useContext(ImpliedBattleTrackerContext);
-  if (context === undefined) {
-    throw new Error('useImpliedBattleTracker must be used within an ImpliedBattleTrackerProvider');
+  const context = useContext(ImpliedBattleContext);
+  if (!context) {
+    throw new Error('useImpliedBattleTracker must be used within ImpliedBattleProvider');
   }
   return context;
 };
