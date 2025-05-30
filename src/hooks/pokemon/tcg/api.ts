@@ -1,3 +1,4 @@
+
 import { TCGApiResponse, TCGCard } from './types';
 import { selectDiverseCards } from './sorting';
 
@@ -27,6 +28,18 @@ export const fetchTCGCards = async (pokemonName: string): Promise<{ firstCard: T
 
   const data: TCGApiResponse = await response.json();
   console.log(`🃏 [TCG_API] Raw API response for ${pokemonName}:`, data);
+
+  // Special detailed logging for Charizard to analyze name forms
+  if (searchName.toLowerCase().includes('charizard')) {
+    console.log(`🔥 [CHARIZARD_TCG_ANALYSIS] Found ${data.data.length} Charizard cards:`);
+    data.data.forEach((card, index) => {
+      console.log(`🔥 [CHARIZARD_TCG_CARD_${index + 1}] Name: "${card.name}" | Set: ${card.set.name} | Rarity: ${card.rarity} | Supertype: ${card.supertype} | Subtypes: ${card.subtypes?.join(', ') || 'none'}`);
+    });
+    
+    // Group by unique names to see all variations
+    const uniqueNames = [...new Set(data.data.map(card => card.name))];
+    console.log(`🔥 [CHARIZARD_TCG_UNIQUE_NAMES] ${uniqueNames.length} unique Charizard card names found:`, uniqueNames);
+  }
 
   if (data.data && data.data.length > 0) {
     // Use new diverse selection logic
