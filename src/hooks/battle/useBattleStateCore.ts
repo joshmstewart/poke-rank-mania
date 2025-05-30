@@ -6,6 +6,7 @@ import { useBattleRankings } from "./useBattleRankings";
 import { useBattleMilestones } from "./useBattleMilestones";
 import { useSharedRefinementQueue } from "./useSharedRefinementQueue";
 import { useBattleStatePersistence } from "@/hooks/useBattleStatePersistence";
+import { useTrueSkillStore } from "@/stores/trueskillStore";
 
 export const useBattleStateCore = (
   allPokemon: Pokemon[],
@@ -15,6 +16,7 @@ export const useBattleStateCore = (
   console.log(`🔧 [BATTLE_STATE_CORE] Initializing with ${allPokemon.length} Pokemon`);
   
   const { loadBattleCount, saveBattleCount, loadBattleState, saveBattleState } = useBattleStatePersistence();
+  const { getAllRatings } = useTrueSkillStore();
   
   // ENHANCED: Load battle count from persistence
   const [battlesCompleted, setBattlesCompleted] = useState(() => {
@@ -52,7 +54,19 @@ export const useBattleStateCore = (
   useEffect(() => {
     saveBattleCount(battlesCompleted);
     console.log(`🔧 [BATTLE_STATE_CORE] Saved battle count: ${battlesCompleted}`);
-  }, [battlesCompleted, saveBattleCount]);
+    
+    // CRITICAL: Log store state whenever battle count changes
+    const currentRatings = getAllRatings();
+    const ratingCount = Object.keys(currentRatings).length;
+    console.log(`🔧 [BATTLE_STATE_CORE] ===== BATTLE COUNT CHANGED TO ${battlesCompleted} =====`);
+    console.log(`🔧 [BATTLE_STATE_CORE] Store currently has ${ratingCount} ratings`);
+    if (ratingCount > 0) {
+      console.log(`🔧 [BATTLE_STATE_CORE] Current ratings:`, Object.keys(currentRatings).map(id => {
+        const rating = currentRatings[parseInt(id)];
+        return `ID:${id} μ:${rating.mu.toFixed(2)} battles:${rating.battleCount}`;
+      }));
+    }
+  }, [battlesCompleted, saveBattleCount, getAllRatings]);
 
   // ENHANCED: Load battle state on mount
   useEffect(() => {
@@ -72,6 +86,11 @@ export const useBattleStateCore = (
     console.log(`🚀 [START_NEW_BATTLE] Starting new ${battleType} battle`);
     console.log(`🚀 [START_NEW_BATTLE] Checking refinement queue...`);
     
+    // CRITICAL: Log store state before generating new battle
+    const preNewBattleRatings = getAllRatings();
+    const preNewBattleCount = Object.keys(preNewBattleRatings).length;
+    console.log(`🚀 [START_NEW_BATTLE] Store has ${preNewBattleCount} ratings before generating new battle`);
+    
     if (refinementQueue) {
       console.log(`🚀 [START_NEW_BATTLE] Refinement queue state: hasRefinementBattles=${refinementQueue.hasRefinementBattles}, count=${refinementQueue.refinementBattleCount}`);
     }
@@ -81,6 +100,15 @@ export const useBattleStateCore = (
       setCurrentBattle(newBattle);
       setSelectedPokemon([]);
       console.log(`🚀 [START_NEW_BATTLE] New battle set: ${newBattle.map(p => p.name).join(' vs ')}`);
+      
+      // CRITICAL: Log store state after generating new battle
+      const postNewBattleRatings = getAllRatings();
+      const postNewBattleCount = Object.keys(postNewBattleRatings).length;
+      console.log(`🚀 [START_NEW_BATTLE] Store has ${postNewBattleCount} ratings after generating new battle`);
+      
+      if (postNewBattleCount !== preNewBattleCount) {
+        console.log(`🚀 [START_NEW_BATTLE] ⚠️ RATING COUNT CHANGED during battle generation! ${preNewBattleCount} → ${postNewBattleCount}`);
+      }
       
       // ENHANCED: Save battle state including current battle
       const stateToSave = {
@@ -95,11 +123,16 @@ export const useBattleStateCore = (
     } else {
       console.error(`🚀 [START_NEW_BATTLE] Failed to generate battle`);
     }
-  }, [battleType, generateNewBattle, battlesCompleted, refinementQueue, battleHistory, battleResults, saveBattleState]);
+  }, [battleType, generateNewBattle, battlesCompleted, refinementQueue, battleHistory, battleResults, saveBattleState, getAllRatings]);
 
   // CRITICAL FIX: Complete reset function that resets everything
   const performCompleteReset = useCallback(() => {
     console.log(`🔄 [COMPLETE_RESET] Starting complete reset of all battle state`);
+    
+    // CRITICAL: Log store state before reset
+    const preResetRatings = getAllRatings();
+    const preResetCount = Object.keys(preResetRatings).length;
+    console.log(`🔄 [COMPLETE_RESET] Store has ${preResetCount} ratings before reset`);
     
     // Reset all state immediately
     setBattlesCompleted(0);
@@ -124,12 +157,23 @@ export const useBattleStateCore = (
     
     console.log(`🔄 [COMPLETE_RESET] All battle state reset to initial values`);
     
+    // CRITICAL: Log store state after reset
+    setTimeout(() => {
+      const postResetRatings = getAllRatings();
+      const postResetCount = Object.keys(postResetRatings).length;
+      console.log(`🔄 [COMPLETE_RESET] Store has ${postResetCount} ratings after reset`);
+      
+      if (postResetCount !== preResetCount) {
+        console.log(`🔄 [COMPLETE_RESET] ⚠️ Store rating count changed during reset: ${preResetCount} → ${postResetCount}`);
+      }
+    }, 50);
+    
     // Start a new battle after a short delay
     setTimeout(() => {
       console.log(`🔄 [COMPLETE_RESET] Starting new battle after reset`);
       startNewBattle();
     }, 100);
-  }, [resetRecentlyUsed, saveBattleCount, startNewBattle]);
+  }, [resetRecentlyUsed, saveBattleCount, startNewBattle, getAllRatings]);
 
   // CRITICAL FIX: Listen for restart events and reset all state
   useEffect(() => {
@@ -150,6 +194,11 @@ export const useBattleStateCore = (
     console.log(`🎯🎯🎯 [POKEMON_SELECT] ===== Pokemon Selection =====`);
     console.log(`🎯🎯🎯 [POKEMON_SELECT] Pokemon ${pokemonId} selected`);
     console.log(`🎯🎯🎯 [POKEMON_SELECT] Current battle: ${currentBattle.map(p => `${p.name}(${p.id})`).join(' vs ')}`);
+    
+    // CRITICAL: Log store state at the moment of Pokemon selection
+    const selectRatings = getAllRatings();
+    const selectRatingCount = Object.keys(selectRatings).length;
+    console.log(`🎯🎯🎯 [POKEMON_SELECT] Store has ${selectRatingCount} ratings at moment of selection`);
     
     if (isProcessingResult) {
       console.log(`🎯🎯🎯 [POKEMON_SELECT] Already processing, ignoring selection`);
@@ -174,6 +223,12 @@ export const useBattleStateCore = (
       setBattlesCompleted(newBattlesCompleted);
       setSelectedPokemon([]);
       
+      // CRITICAL: Log store state immediately after battle completion but before milestone check
+      const postBattleRatings = getAllRatings();
+      const postBattleCount = Object.keys(postBattleRatings).length;
+      console.log(`🎯🎯🎯 [POKEMON_SELECT] ===== POST-BATTLE STORE STATE =====`);
+      console.log(`🎯🎯🎯 [POKEMON_SELECT] Store has ${postBattleCount} ratings after battle #${newBattlesCompleted}`);
+      
       // Check for milestone BEFORE starting next battle
       const hitMilestone = checkForMilestone(newBattlesCompleted);
       
@@ -186,6 +241,11 @@ export const useBattleStateCore = (
         const rankings = generateRankingsFromBattleHistory(newBattleHistory);
         setFinalRankings(rankings);
         setRankingGenerated(true);
+        
+        // CRITICAL: Log store state during milestone processing
+        const milestoneRatings = getAllRatings();
+        const milestoneCount = Object.keys(milestoneRatings).length;
+        console.log(`🎯🎯🎯 [POKEMON_SELECT] Store has ${milestoneCount} ratings during milestone processing`);
       } else {
         console.log(`🎯🎯🎯 [POKEMON_SELECT] No milestone hit, starting next battle`);
         setTimeout(() => {
@@ -193,7 +253,7 @@ export const useBattleStateCore = (
         }, 100);
       }
     }
-  }, [selectedPokemon, battleType, currentBattle, isProcessingResult, battlesCompleted, checkForMilestone, startNewBattle, addToRecentlyUsed, battleHistory, generateRankingsFromBattleHistory]);
+  }, [selectedPokemon, battleType, currentBattle, isProcessingResult, battlesCompleted, checkForMilestone, startNewBattle, addToRecentlyUsed, battleHistory, generateRankingsFromBattleHistory, getAllRatings]);
 
   // Triplet selection handler
   const handleTripletSelectionComplete = useCallback(() => {
