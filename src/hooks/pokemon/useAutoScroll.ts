@@ -10,12 +10,6 @@ export const useAutoScroll = (itemCount: number, isRankingArea: boolean) => {
 
   console.log(`🔍 [AUTO_SCROLL_DEBUG] Hook called - itemCount: ${itemCount}, isRankingArea: ${isRankingArea}`);
 
-  // COMPLETELY DISABLE auto-scroll for ranking areas to prevent interference with manual scrolling
-  if (isRankingArea) {
-    console.log(`🔍 [AUTO_SCROLL_DEBUG] Auto-scroll DISABLED for ranking area`);
-    return { containerRef };
-  }
-
   // Check if user is at the "last card only" position (last card visible at top)
   const checkIfAtLastCardOnly = () => {
     if (!containerRef.current || itemCount === 0) {
@@ -48,7 +42,7 @@ export const useAutoScroll = (itemCount: number, isRankingArea: boolean) => {
     return isAtLastCardOnly;
   };
 
-  // Check if user is scrolled to the very bottom - MUCH MORE STRICT
+  // Check if user is scrolled to the very bottom - EXTREMELY STRICT for ranking areas
   const checkIfScrolledToBottom = () => {
     if (!containerRef.current) {
       console.log(`🔍 [AUTO_SCROLL_DEBUG] checkIfScrolledToBottom - no container`);
@@ -57,11 +51,13 @@ export const useAutoScroll = (itemCount: number, isRankingArea: boolean) => {
     
     const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
     
-    // MUCH STRICTER: Only consider "at bottom" if we're within 1px of the absolute bottom
-    const isAtBottom = Math.abs((scrollTop + clientHeight) - scrollHeight) <= 1;
+    // For ranking areas, be EXTREMELY strict - must be at absolute bottom
+    // For available Pokemon, be more lenient
+    const tolerance = isRankingArea ? 0 : 1;
+    const isAtBottom = Math.abs((scrollTop + clientHeight) - scrollHeight) <= tolerance;
     
     console.log(`🔍 [AUTO_SCROLL_DEBUG] checkIfScrolledToBottom - scrollTop: ${scrollTop}, clientHeight: ${clientHeight}, scrollHeight: ${scrollHeight}`);
-    console.log(`🔍 [SCROLL_LIMIT_DEBUG] Strict calculation: |${scrollTop + clientHeight} - ${scrollHeight}| = ${Math.abs((scrollTop + clientHeight) - scrollHeight)} <= 1 = ${isAtBottom}`);
+    console.log(`🔍 [SCROLL_LIMIT_DEBUG] ${isRankingArea ? 'RANKING' : 'AVAILABLE'} area calculation: |${scrollTop + clientHeight} - ${scrollHeight}| = ${Math.abs((scrollTop + clientHeight) - scrollHeight)} <= ${tolerance} = ${isAtBottom}`);
     console.log(`🔍 [SCROLL_LIMIT_DEBUG] Distance from bottom: ${scrollHeight - (scrollTop + clientHeight)}px`);
     console.log(`🔍 [SCROLL_LIMIT_DEBUG] Max possible scroll: ${scrollHeight - clientHeight}px, current scroll: ${scrollTop}px`);
     
@@ -126,7 +122,7 @@ export const useAutoScroll = (itemCount: number, isRankingArea: boolean) => {
     }
 
     previousCountRef.current = itemCount;
-  }, [itemCount]);
+  }, [itemCount, isRankingArea]);
 
   // Track scroll position and update states
   useEffect(() => {
@@ -196,7 +192,7 @@ export const useAutoScroll = (itemCount: number, isRankingArea: boolean) => {
       clearTimeout(scrollTimeout);
       console.log(`🔍 [AUTO_SCROLL_DEBUG] Scroll listener removed`);
     };
-  }, []);
+  }, [isRankingArea]);
 
   return { containerRef };
 };
