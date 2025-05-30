@@ -60,8 +60,9 @@ export const RankingUI: React.FC<RankingUIProps> = ({
 
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
-      <div className="grid md:grid-cols-2 gap-6">
-        <div>
+      <div className="grid md:grid-cols-2 gap-6 h-full">
+        {/* Left side - Available Pokemon with independent scroll */}
+        <div className="flex flex-col h-full max-h-[calc(100vh-12rem)] overflow-hidden">
           <PokemonList
             title="Available Pokémon"
             pokemonList={availablePokemon}
@@ -96,7 +97,9 @@ export const RankingUI: React.FC<RankingUIProps> = ({
             </div>
           )}
         </div>
-        <div>
+        
+        {/* Right side - Rankings with independent scroll */}
+        <div className="flex flex-col h-full max-h-[calc(100vh-12rem)] overflow-hidden">
           <PokemonList
             title="Your Rankings"
             pokemonList={rankedPokemon}

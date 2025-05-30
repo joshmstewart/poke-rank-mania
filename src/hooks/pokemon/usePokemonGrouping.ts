@@ -6,7 +6,8 @@ import { getPokemonGeneration, generationDetails } from "@/components/pokemon/ge
 export const usePokemonGrouping = (
   pokemonList: Pokemon[],
   searchTerm: string,
-  isRankingArea: boolean
+  isRankingArea: boolean,
+  isGenerationExpanded?: (genId: number) => boolean
 ) => {
   return useMemo(() => {
     // First filter by search term
@@ -43,13 +44,15 @@ export const usePokemonGrouping = (
         lastGeneration = generation.id;
       }
       
-      // Add the Pokemon
-      result.push({ type: 'pokemon', data: pokemon });
+      // Only add the Pokemon if its generation is expanded (or if no expansion function provided)
+      if (!isGenerationExpanded || isGenerationExpanded(generation?.id || 0)) {
+        result.push({ type: 'pokemon', data: pokemon });
+      }
     }
     
     return {
       items: result,
       showGenerationHeaders: true
     };
-  }, [pokemonList, searchTerm, isRankingArea]);
+  }, [pokemonList, searchTerm, isRankingArea, isGenerationExpanded]);
 };

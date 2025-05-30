@@ -10,6 +10,8 @@ interface PokemonListContentProps {
   showGenerationHeaders: boolean;
   viewMode: "list" | "grid";
   isRankingArea: boolean;
+  isGenerationExpanded?: (genId: number) => boolean;
+  onToggleGeneration?: (genId: number) => void;
 }
 
 const PokemonListContent: React.FC<PokemonListContentProps> = ({
@@ -17,7 +19,9 @@ const PokemonListContent: React.FC<PokemonListContentProps> = ({
   items,
   showGenerationHeaders,
   viewMode,
-  isRankingArea
+  isRankingArea,
+  isGenerationExpanded,
+  onToggleGeneration
 }) => {
   return (
     <div className={`flex-1 overflow-auto bg-gray-50 rounded-lg p-2 min-h-[400px] ${isRankingArea ? 'z-20 relative' : 'z-10 relative'}`}>
@@ -35,6 +39,7 @@ const PokemonListContent: React.FC<PokemonListContentProps> = ({
               items.map((item, index) => {
                 if (item.type === 'header') {
                   // Render generation header
+                  const isExpanded = isGenerationExpanded ? isGenerationExpanded(item.generationId!) : true;
                   return (
                     <GenerationHeader
                       key={`header-${item.generationId}`}
@@ -43,6 +48,8 @@ const PokemonListContent: React.FC<PokemonListContentProps> = ({
                       region={item.data.region}
                       games={item.data.games}
                       viewMode={viewMode}
+                      isExpanded={isExpanded}
+                      onToggle={() => onToggleGeneration && onToggleGeneration(item.generationId!)}
                     />
                   );
                 } else {
@@ -85,7 +92,6 @@ const PokemonListContent: React.FC<PokemonListContentProps> = ({
               })
             ) : (
               <div className={`flex items-center justify-center ${viewMode === "grid" ? "col-span-full" : ""} h-32 text-muted-foreground`}>
-                {/* Search term check for empty state message */}
                 No Pokemon found
               </div>
             )}

@@ -6,6 +6,8 @@ import PokemonListControls from "./pokemon/PokemonListControls";
 import PokemonListContent from "./pokemon/PokemonListContent";
 import PokemonListOverlay from "./pokemon/PokemonListOverlay";
 import { usePokemonGrouping } from "@/hooks/pokemon/usePokemonGrouping";
+import { useGenerationExpansion } from "@/hooks/pokemon/useGenerationExpansion";
+import { getPokemonGeneration } from "@/components/pokemon/generationUtils";
 
 interface PokemonListProps {
   title: string;
@@ -25,7 +27,21 @@ const PokemonList = ({
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   
-  const groupedAndFilteredPokemon = usePokemonGrouping(pokemonList, searchTerm, isRankingArea);
+  // Get unique generations from the pokemon list
+  const generations = Array.from(new Set(
+    pokemonList
+      .map(pokemon => getPokemonGeneration(pokemon.id)?.id)
+      .filter(Boolean)
+  )) as number[];
+  
+  const { isGenerationExpanded, toggleGeneration } = useGenerationExpansion(generations);
+  
+  const groupedAndFilteredPokemon = usePokemonGrouping(
+    pokemonList, 
+    searchTerm, 
+    isRankingArea,
+    isRankingArea ? undefined : isGenerationExpanded
+  );
 
   return (
     <div className={`flex flex-col h-full ${isRankingArea ? 'relative' : ''}`}>
@@ -43,6 +59,8 @@ const PokemonList = ({
         showGenerationHeaders={groupedAndFilteredPokemon.showGenerationHeaders}
         viewMode={viewMode}
         isRankingArea={isRankingArea}
+        isGenerationExpanded={isRankingArea ? undefined : isGenerationExpanded}
+        onToggleGeneration={isRankingArea ? undefined : toggleGeneration}
       />
       
       <PokemonListOverlay
