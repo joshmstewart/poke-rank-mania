@@ -27,36 +27,18 @@ export const useTrueSkillIntegration = ({
   const { getAllRatings, getRating, loadFromCloud, isLoading: storeIsLoading } = useTrueSkillStore();
   const { pokemonLookupMap } = usePokemonContext();
   
-  // CRITICAL DEBUG: Track store state changes
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const allRatings = getAllRatings();
-      const ratingsCount = Object.keys(allRatings).length;
-      console.log(`🔍 [STORE_MONITOR] TrueSkill store has ${ratingsCount} ratings`);
-      if (ratingsCount > 0) {
-        console.log(`🔍 [STORE_MONITOR] Sample ratings:`, Object.entries(allRatings).slice(0, 3).map(([id, rating]) => `${id}: μ=${rating.mu.toFixed(2)}`));
-      }
-    }, 2000);
-    
-    return () => clearInterval(interval);
-  }, [getAllRatings]);
-  
   // Load data from cloud on startup
   useEffect(() => {
     const initializeFromCloud = async () => {
       console.log("[TRUESKILL_DEBUG] Loading data from cloud...");
       await loadFromCloud();
       console.log("[TRUESKILL_DEBUG] Cloud load completed");
-      
-      // CRITICAL DEBUG: Check ratings immediately after cloud load
-      const ratingsAfterLoad = getAllRatings();
-      console.log(`🔍 [CLOUD_LOAD_CHECK] After cloud load: ${Object.keys(ratingsAfterLoad).length} ratings`);
     };
     
     initializeFromCloud();
-  }, [loadFromCloud, getAllRatings]);
+  }, [loadFromCloud]);
   
-  // CRITICAL FIX: Main sync effect that works with both Battle and Manual mode data flows
+  // MAIN SYNC EFFECT - works for both Battle and Manual mode
   useEffect(() => {
     const updateRankingsFromTrueSkill = () => {
       console.log("[TRUESKILL_DEBUG] ===== STARTING SYNC ATTEMPT =====");
@@ -72,19 +54,14 @@ export const useTrueSkillIntegration = ({
       
       console.log("[TRUESKILL_DEBUG] TrueSkill store analysis:");
       console.log("[TRUESKILL_DEBUG] - Total ratings in store:", Object.keys(allRatings).length);
-      console.log("[TRUESKILL_DEBUG] - Rated Pokemon IDs:", ratedPokemonIds.slice(0, 10)); // Show first 10
-      console.log("[TRUESKILL_DEBUG] - Sample ratings:", Object.entries(allRatings).slice(0, 3).map(([id, rating]) => `${id}: μ=${rating.mu.toFixed(2)}`));
+      console.log("[TRUESKILL_DEBUG] - Rated Pokemon IDs:", ratedPokemonIds.slice(0, 10));
       
       if (ratedPokemonIds.length === 0) {
         console.log("[TRUESKILL_DEBUG] ❌ No TrueSkill ratings found - cannot sync");
-        console.log("[TRUESKILL_DEBUG] 🔍 DEBUGGING: This means either:");
-        console.log("[TRUESKILL_DEBUG] 🔍   1. No battles have been completed");
-        console.log("[TRUESKILL_DEBUG] 🔍   2. TrueSkill store was cleared");
-        console.log("[TRUESKILL_DEBUG] 🔍   3. Store is not loading properly");
         return;
       }
       
-      // CRITICAL FIX: Get Pokemon data - prioritize context map but use arrays as fallback
+      // Get Pokemon data - prioritize context map but use Manual mode arrays as fallback
       let allAvailablePokemon: Pokemon[] = [];
       
       if (pokemonLookupMap.size > 0) {
@@ -109,33 +86,24 @@ export const useTrueSkillIntegration = ({
         console.log("[TRUESKILL_DEBUG] - Combined unique:", allAvailablePokemon.length);
       } else {
         console.log("[TRUESKILL_DEBUG] ❌ No Pokemon data available from any source");
-        console.log("[TRUESKILL_DEBUG] 🔍 This suggests Manual mode hasn't loaded Pokemon yet");
         return;
       }
-      
-      console.log("[TRUESKILL_DEBUG] Pokemon data analysis:");
-      console.log("[TRUESKILL_DEBUG] - Total Pokemon available:", allAvailablePokemon.length);
-      console.log("[TRUESKILL_DEBUG] - Sample Pokemon:", allAvailablePokemon.slice(0, 3).map(p => `${p.name}(${p.id})`));
       
       if (allAvailablePokemon.length === 0) {
         console.log("[TRUESKILL_DEBUG] ❌ No Pokemon available for processing");
         return;
       }
       
-      // CRITICAL DEBUG: Check if any of the available Pokemon have ratings
-      console.log("[TRUESKILL_DEBUG] ===== RATING MATCH CHECK =====");
+      // Check if any of the available Pokemon have ratings
       const availablePokemonIds = allAvailablePokemon.map(p => p.id);
       const matchingIds = ratedPokemonIds.filter(id => availablePokemonIds.includes(id));
       console.log("[TRUESKILL_DEBUG] - Available Pokemon IDs (first 10):", availablePokemonIds.slice(0, 10));
       console.log("[TRUESKILL_DEBUG] - Rated Pokemon IDs (first 10):", ratedPokemonIds.slice(0, 10));
       console.log("[TRUESKILL_DEBUG] - Matching IDs:", matchingIds.length);
-      console.log("[TRUESKILL_DEBUG] - Sample matches:", matchingIds.slice(0, 5));
       
-      // Separate Pokemon into rated and unrated with detailed logging
+      // Separate Pokemon into rated and unrated
       const ratedPokemon: Pokemon[] = [];
       const unratedPokemon: Pokemon[] = [];
-      
-      console.log("[TRUESKILL_DEBUG] ===== SEPARATING POKEMON =====");
       
       allAvailablePokemon.forEach(pokemon => {
         if (ratedPokemonIds.includes(pokemon.id)) {
@@ -157,14 +125,10 @@ export const useTrueSkillIntegration = ({
       
       if (ratedPokemon.length === 0) {
         console.log("[TRUESKILL_DEBUG] ❌ No Pokemon matched between TrueSkill store and available Pokemon");
-        console.log("[TRUESKILL_DEBUG] - TrueSkill IDs:", ratedPokemonIds.slice(0, 10));
-        console.log("[TRUESKILL_DEBUG] - Available IDs:", allAvailablePokemon.slice(0, 10).map(p => p.id));
-        console.log("[TRUESKILL_DEBUG] 🔍 This suggests a data mismatch or different Pokemon sets");
         return;
       }
       
       // Sort rated Pokemon by conservative score (mu - 3 * sigma)
-      console.log("[TRUESKILL_DEBUG] ===== SORTING RATED POKEMON =====");
       ratedPokemon.sort((a, b) => {
         const scoreA = a.rating ? (a.rating.mu - 3 * a.rating.sigma) : 0;
         const scoreB = b.rating ? (b.rating.mu - 3 * b.rating.sigma) : 0;
@@ -199,13 +163,12 @@ export const useTrueSkillIntegration = ({
       setConfidenceScores(newConfidenceScores);
       
       console.log("[TRUESKILL_DEBUG] ✅ ===== SYNC COMPLETED SUCCESSFULLY =====");
-      console.log("[TRUESKILL_DEBUG] Final state:");
-      console.log("[TRUESKILL_DEBUG] - Ranked Pokemon:", ratedPokemon.length);
-      console.log("[TRUESKILL_DEBUG] - Available Pokemon:", unratedPokemon.length);
     };
     
-    // CRITICAL FIX: Updated readiness check that works for both modes
-    const hasPokemonData = pokemonLookupMap.size > 0 || availablePokemon.length > 0 || rankedPokemon.length > 0;
+    // FIXED: Updated readiness check - Manual mode is ready when it has Pokemon data
+    const hasManualModePokemon = availablePokemon.length > 0 || rankedPokemon.length > 0;
+    const hasBattleModePokemon = pokemonLookupMap.size > 0;
+    const hasPokemonData = hasManualModePokemon || hasBattleModePokemon;
     const isReady = !isLoading && !storeIsLoading && hasPokemonData;
     
     console.log("[TRUESKILL_DEBUG] ===== SYNC READINESS CHECK =====");
@@ -214,27 +177,27 @@ export const useTrueSkillIntegration = ({
     console.log("[TRUESKILL_DEBUG] - !isLoading:", !isLoading);
     console.log("[TRUESKILL_DEBUG] - !storeIsLoading:", !storeIsLoading);
     console.log("[TRUESKILL_DEBUG] - hasPokemonData:", hasPokemonData);
-    console.log("[TRUESKILL_DEBUG]   - pokemonLookupMap.size > 0:", pokemonLookupMap.size > 0);
-    console.log("[TRUESKILL_DEBUG]   - availablePokemon.length > 0:", availablePokemon.length > 0);
-    console.log("[TRUESKILL_DEBUG]   - rankedPokemon.length > 0:", rankedPokemon.length > 0);
+    console.log("[TRUESKILL_DEBUG]   - hasManualModePokemon:", hasManualModePokemon);
+    console.log("[TRUESKILL_DEBUG]   - hasBattleModePokemon:", hasBattleModePokemon);
     
     if (isReady) {
       console.log("[TRUESKILL_DEBUG] ✅ Data ready - attempting sync");
       
-      // CRITICAL DEBUG: Check store state right before sync
+      // Check store state right before sync
       const preSync = getAllRatings();
       console.log(`🔍 [PRE_SYNC_CHECK] Store has ${Object.keys(preSync).length} ratings before sync`);
       
-      // Small delay to ensure Pokemon data is fully loaded
-      setTimeout(() => {
+      if (Object.keys(preSync).length > 0) {
         updateRankingsFromTrueSkill();
-      }, 100);
+      } else {
+        console.log("[TRUESKILL_DEBUG] ⏳ Store has no ratings yet, waiting...");
+      }
     } else {
       console.log("[TRUESKILL_DEBUG] ⏳ Waiting for data to be ready");
     }
   }, [isLoading, storeIsLoading, pokemonLookupMap.size, availablePokemon.length, rankedPokemon.length, getAllRatings, getRating, setRankedPokemon, setAvailablePokemon, setConfidenceScores]);
 
-  // Listen for TrueSkill store updates from Battle mode with enhanced logging
+  // Listen for TrueSkill store updates from Battle mode
   useEffect(() => {
     const handleStoreUpdate = (event: CustomEvent) => {
       console.log("[TRUESKILL_DEBUG] ===== STORE UPDATE EVENT RECEIVED =====");
@@ -243,7 +206,9 @@ export const useTrueSkillIntegration = ({
       
       // Small delay to ensure store is fully updated
       setTimeout(() => {
-        const hasPokemonData = pokemonLookupMap.size > 0 || availablePokemon.length > 0 || rankedPokemon.length > 0;
+        const hasManualModePokemon = availablePokemon.length > 0 || rankedPokemon.length > 0;
+        const hasBattleModePokemon = pokemonLookupMap.size > 0;
+        const hasPokemonData = hasManualModePokemon || hasBattleModePokemon;
         
         if (!isLoading && !storeIsLoading && hasPokemonData) {
           console.log("[TRUESKILL_DEBUG] Re-syncing after store update");
@@ -319,7 +284,7 @@ export const useTrueSkillIntegration = ({
 
     return () => {
       document.removeEventListener('trueskill-store-updated', handleStoreUpdate as EventListener);
-      document.removeEventListener('trueskill-store-loaded', handleStoreUpdate as EventListener);
+      document.removeEventListener('trueskill-store-loaded', handleStoreEvent as EventListener);
     };
   }, [getAllRatings, getRating, isLoading, storeIsLoading, pokemonLookupMap.size, availablePokemon.length, rankedPokemon.length, setRankedPokemon, setAvailablePokemon, setConfidenceScores]);
 
