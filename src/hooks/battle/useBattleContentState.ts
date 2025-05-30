@@ -111,7 +111,7 @@ export const useBattleContentState = (
     () => { },
     () => null,
     async () => { },
-    () => { } // Add missing 13th argument
+    () => { }
   );
 
   const coordination = useBattleCoordination(
@@ -122,7 +122,7 @@ export const useBattleContentState = (
     stableSetCurrentBattle,
     stableSetSelectedPokemon,
     activeTier,
-    () => {} // freezePokemonForTier placeholder
+    () => {} // freezePokemonForTier placeholder that returns void
   );
 
   const milestoneEvents = {
@@ -132,7 +132,10 @@ export const useBattleContentState = (
   const { setFinalRankingsWithLogging, processBattleResultWithRefinement, clearAllSuggestions } = useBattleStateProcessors(
     { setFinalRankings },
     milestoneEvents,
-    () => coordination.startNewBattle(battleType)
+    () => { 
+      // Wrap startNewBattle to ensure it returns void
+      coordination.startNewBattle(battleType);
+    }
   );
 
   // Event handlers
