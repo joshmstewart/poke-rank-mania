@@ -56,6 +56,34 @@ export const useBattleContentState = (
     setSelectedPokemon(pokemon);
   }, []);
 
+  // Coordinator state
+  useBattleCoordinatorState(
+    false,
+    allPokemon,
+    selectedGeneration,
+    battleType,
+    battleResults,
+    battlesCompleted,
+    battleHistory,
+    0,
+    false,
+    () => { },
+    () => null,
+    async () => { },
+    () => { }
+  );
+
+  const coordination = useBattleCoordination(
+    selectedGeneration,
+    battleResults,
+    finalRankings,
+    currentBattle,
+    stableSetCurrentBattle,
+    stableSetSelectedPokemon,
+    activeTier,
+    () => {} // freezePokemonForTier placeholder that returns void
+  );
+
   // CRITICAL: Create the main battle processing function with milestone detection
   const processBattleResult = useCallback(async (
     selectedPokemonIds: number[],
@@ -84,11 +112,22 @@ export const useBattleContentState = (
           const isMilestone = checkForMilestone(newCount);
           if (isMilestone) {
             console.log(`🏆🏆🏆 [MILESTONE_HIT] ===== MILESTONE ${newCount} REACHED! =====`);
+            
+            // CRITICAL FIX: Generate rankings immediately when milestone is hit
+            console.log(`🏆🏆🏆 [MILESTONE_FIX] Generating rankings for milestone ${newCount}`);
+            
+            // Get the updated battle results including the current one
+            const updatedResults = [...battleResults, result];
+            
+            // Generate rankings using the coordination system
+            const generatedRankings = coordination.generateRankings(updatedResults);
+            console.log(`🏆🏆🏆 [MILESTONE_FIX] Generated ${generatedRankings?.length || 0} rankings for milestone`);
+            
             // Trigger milestone view
             setTimeout(() => {
               coordination.setShowingMilestone(true);
               console.log(`🏆🏆🏆 [MILESTONE_HIT] Showing milestone view for battle ${newCount}`);
-            }, 100);
+            }, 200); // Slight delay to ensure rankings are set
           }
           
           return newCount;
@@ -111,7 +150,7 @@ export const useBattleContentState = (
       console.error(`🚨🚨🚨 [BATTLE_STATE_CRITICAL] ❌ Error in battle processing:`, error);
       return null;
     }
-  }, [processResultFromProcessor, setBattlesCompleted, checkForMilestone]);
+  }, [processResultFromProcessor, setBattlesCompleted, checkForMilestone, battleResults, coordination]);
 
   // CRITICAL FIX: Create a proper battle generation function
   const generateNewBattle = useCallback((battleType: BattleType): Pokemon[] => {
@@ -156,34 +195,6 @@ export const useBattleContentState = (
       console.error(`🚀 [START_NEW_BATTLE_FIX] ❌ Failed to generate new battle`);
     }
   }, [generateNewBattle, stableSetCurrentBattle]);
-
-  // Coordinator state
-  useBattleCoordinatorState(
-    false,
-    allPokemon,
-    selectedGeneration,
-    battleType,
-    battleResults,
-    battlesCompleted,
-    battleHistory,
-    0,
-    false,
-    () => { },
-    () => null,
-    async () => { },
-    () => { }
-  );
-
-  const coordination = useBattleCoordination(
-    selectedGeneration,
-    battleResults,
-    finalRankings,
-    currentBattle,
-    stableSetCurrentBattle,
-    stableSetSelectedPokemon,
-    activeTier,
-    () => {} // freezePokemonForTier placeholder that returns void
-  );
 
   const milestoneEvents = {
     originalProcessBattleResult: processBattleResult
