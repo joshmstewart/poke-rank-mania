@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import ModeSwitcher from "@/components/ModeSwitcher";
 import { 
   Dialog,
@@ -29,6 +29,10 @@ const ModeStyleControls: React.FC<ModeStyleControlsProps> = ({
   const [previewImageUrl, setPreviewImageUrl] = useState<string>("");
   const [currentImageMode, setCurrentImageMode] = useState<'pokemon' | 'tcg'>('pokemon');
   
+  // Track if this is the initial mount to prevent unnecessary effects
+  const isInitialMount = useRef(true);
+  const previousDialogState = useRef(imageSettingsOpen);
+  
   const { getPreviewImage, isLoading, imageStates, updateImageState } = usePreviewImageCache();
 
   // Memoize the update function to prevent dependency changes
@@ -49,10 +53,13 @@ const ModeStyleControls: React.FC<ModeStyleControlsProps> = ({
 
   // Initial load - only run once on mount
   useEffect(() => {
-    updatePreviewImage();
+    if (isInitialMount.current) {
+      updatePreviewImage();
+      isInitialMount.current = false;
+    }
   }, [updatePreviewImage]);
 
-  // Listen for storage changes from other tabs - stable dependencies
+  // Listen for storage changes from other tabs
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === "pokemon-image-preference" || e.key === "pokemon-image-mode") {
@@ -69,8 +76,10 @@ const ModeStyleControls: React.FC<ModeStyleControlsProps> = ({
 
   // Handle dialog close updates - FIXED: Only run when dialog actually closes
   useEffect(() => {
-    if (!imageSettingsOpen) {
-      // Use a ref or flag to prevent running on initial mount
+    // Only update when dialog goes from open to closed (not on initial mount)
+    if (!isInitialMount.current && previousDialogState.current && !imageSettingsOpen) {
+      console.log(`🖼️ [MODE_CONTROLS] Dialog closed, updating preview`);
+      
       const timeoutId = setTimeout(async () => {
         const imageMode = getCurrentImageMode();
         setCurrentImageMode(imageMode);
@@ -86,7 +95,10 @@ const ModeStyleControls: React.FC<ModeStyleControlsProps> = ({
 
       return () => clearTimeout(timeoutId);
     }
-  }, [imageSettingsOpen, getPreviewImage]); // Only depend on dialog state and the stable getPreviewImage
+    
+    // Update the previous state
+    previousDialogState.current = imageSettingsOpen;
+  }, [imageSettingsOpen, getPreviewImage]);
 
   // Get current mode display text and icon - memoized to prevent re-renders
   const modeDisplay = useMemo(() => {
