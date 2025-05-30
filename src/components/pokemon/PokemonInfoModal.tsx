@@ -21,11 +21,13 @@ import Logo from "@/components/ui/Logo";
 interface PokemonInfoModalProps {
   pokemon: Pokemon;
   children?: React.ReactNode;
+  onOpenChange?: (open: boolean) => void;
 }
 
 const PokemonInfoModal: React.FC<PokemonInfoModalProps> = ({
   pokemon,
-  children
+  children,
+  onOpenChange
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const { flavorText, isLoadingFlavor } = usePokemonFlavorText(pokemon.id, isOpen);
@@ -76,6 +78,11 @@ const PokemonInfoModal: React.FC<PokemonInfoModalProps> = ({
     console.log(`🔘 [MODAL_DEBUG] PokemonInfoModal: Modal state changed to: ${open}`);
     console.log(`🔘 [MODAL_DEBUG] Previous state was: ${isOpen}`);
     setIsOpen(open);
+    
+    // Notify parent component about modal state change
+    if (onOpenChange) {
+      onOpenChange(open);
+    }
   };
   
   console.log(`🔘 [MODAL_DEBUG] Rendering PokemonInfoModal for ${pokemon.name}, isOpen: ${isOpen}`);

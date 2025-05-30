@@ -30,6 +30,7 @@ const TCGBattleCard: React.FC<TCGBattleCardProps> = memo(({
   const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastClickTimeRef = useRef(0);
   const [isHovered, setIsHovered] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
 
   // Always try to load TCG card data
   const { tcgCard, isLoading: isLoadingTCG, hasTcgCard } = usePokemonTCGCard(pokemon.name, true);
@@ -46,6 +47,14 @@ const TCGBattleCard: React.FC<TCGBattleCardProps> = memo(({
       }
     };
   }, [displayName]);
+
+  // Reset hover state when modal opens or closes
+  useEffect(() => {
+    console.log(`🔘 [HOVER_DEBUG] TCGBattleCard ${displayName}: Modal state changed to ${modalOpen}`);
+    if (modalOpen) {
+      setIsHovered(false);
+    }
+  }, [modalOpen, displayName]);
 
   const handleClick = useCallback((e: React.MouseEvent) => {
     console.log(`🖱️ [TCG_BATTLE_CARD] ${displayName}: Card clicked`);
@@ -85,14 +94,16 @@ const TCGBattleCard: React.FC<TCGBattleCardProps> = memo(({
   }, [pokemon.id, displayName, onSelect, isProcessing]);
 
   const handleMouseEnter = useCallback(() => {
-    if (!isProcessing) {
+    console.log(`🔘 [HOVER_DEBUG] TCGBattleCard ${displayName}: Mouse enter - modalOpen: ${modalOpen}, isProcessing: ${isProcessing}`);
+    if (!isProcessing && !modalOpen) {
       setIsHovered(true);
     }
-  }, [isProcessing]);
+  }, [isProcessing, modalOpen, displayName]);
 
   const handleMouseLeave = useCallback(() => {
+    console.log(`🔘 [HOVER_DEBUG] TCGBattleCard ${displayName}: Mouse leave`);
     setIsHovered(false);
-  }, []);
+  }, [displayName]);
 
   const handleInfoButtonInteraction = useCallback((e: React.MouseEvent) => {
     console.log(`🔘 [TCG_BATTLE_CARD] ${displayName}: Info button interaction`);
@@ -103,11 +114,19 @@ const TCGBattleCard: React.FC<TCGBattleCardProps> = memo(({
     setIsHovered(false);
   }, [displayName]);
 
+  const handleModalStateChange = useCallback((open: boolean) => {
+    console.log(`🔘 [MODAL_DEBUG] TCGBattleCard ${displayName}: Modal state changing to ${open}`);
+    setModalOpen(open);
+    if (open) {
+      setIsHovered(false);
+    }
+  }, [displayName]);
+
   const cardClasses = `
     relative cursor-pointer transition-all duration-200 transform
     ${isSelected ? 'ring-4 ring-blue-500 bg-blue-50 scale-105 shadow-xl' : 'hover:scale-105 hover:shadow-lg'}
     ${isProcessing ? 'pointer-events-none' : ''}
-    ${isHovered && !isSelected ? 'ring-2 ring-blue-300 ring-opacity-50' : ''}
+    ${isHovered && !isSelected && !modalOpen ? 'ring-2 ring-blue-300 ring-opacity-50' : ''}
   `.trim();
 
   // Determine what to show
@@ -128,7 +147,10 @@ const TCGBattleCard: React.FC<TCGBattleCardProps> = memo(({
       <CardContent className="p-4 text-center relative">
         {/* Info Button */}
         <div className="absolute top-1 right-1 z-30">
-          <PokemonInfoModal pokemon={pokemon}>
+          <PokemonInfoModal 
+            pokemon={pokemon}
+            onOpenChange={handleModalStateChange}
+          >
             <button 
               className="w-6 h-6 rounded-full bg-white/80 hover:bg-white border border-gray-300/60 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200 backdrop-blur-sm"
               onClick={handleInfoButtonInteraction}
