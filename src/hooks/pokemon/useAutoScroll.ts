@@ -30,11 +30,14 @@ export const useAutoScroll = (itemCount: number, isRankingArea: boolean) => {
     
     // Check if the last card is positioned at or near the top of the container
     const cardTopRelativeToContainer = lastCardRect.top - containerRect.top;
-    const threshold = 50; // Allow some tolerance
     
-    const isAtLastCardOnly = cardTopRelativeToContainer <= threshold && cardTopRelativeToContainer >= -threshold;
+    // More generous threshold - allow up to one card height
+    const cardHeight = lastCardRect.height;
+    const threshold = Math.min(cardHeight * 0.8, 150); // 80% of card height or 150px max
     
-    console.log(`🔍 [AUTO_SCROLL_DEBUG] checkIfAtLastCardOnly - cardTopRelativeToContainer: ${cardTopRelativeToContainer}, threshold: ${threshold}, result: ${isAtLastCardOnly}`);
+    const isAtLastCardOnly = cardTopRelativeToContainer <= threshold && cardTopRelativeToContainer >= -50;
+    
+    console.log(`🔍 [AUTO_SCROLL_DEBUG] checkIfAtLastCardOnly - cardTopRelativeToContainer: ${cardTopRelativeToContainer}, cardHeight: ${cardHeight}, threshold: ${threshold}, result: ${isAtLastCardOnly}`);
     
     return isAtLastCardOnly;
   };
@@ -95,15 +98,16 @@ export const useAutoScroll = (itemCount: number, isRankingArea: boolean) => {
     
     if (!isRankingArea || !containerRef.current) {
       console.log(`🔍 [AUTO_SCROLL_DEBUG] Items effect - early return`);
+      previousCountRef.current = itemCount; // Still update the count
       return;
     }
 
     const hasNewItem = itemCount > previousCountRef.current;
     
-    console.log(`🔍 [AUTO_SCROLL_DEBUG] Items effect - hasNewItem: ${hasNewItem}`);
+    console.log(`🔍 [AUTO_SCROLL_DEBUG] Items effect - hasNewItem: ${hasNewItem}, autoAdjustMode: ${autoAdjustModeRef.current}`);
     
     if (hasNewItem && autoAdjustModeRef.current) {
-      console.log(`🔍 [AUTO_SCROLL_DEBUG] Items effect - triggering auto-adjustment in 100ms`);
+      console.log(`🔍 [AUTO_SCROLL_DEBUG] Items effect - NEW POKEMON ADDED! Triggering auto-adjustment in 100ms`);
       // Small delay to ensure DOM is updated with new card
       setTimeout(() => {
         console.log(`🔍 [AUTO_SCROLL_DEBUG] Items effect - executing auto-adjustment now`);
