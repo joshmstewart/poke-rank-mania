@@ -64,18 +64,35 @@ export const fetchTCGCards = async (pokemonName: string): Promise<{ firstCard: T
 
   console.log(`🃏 [TCG_API] Searching for TCG cards with name: "${searchName}"`);
   
-  // Try multiple search strategies for better results
-  const searchStrategies = [
-    `name:"${searchName}"`,                    // Exact name match
-    `name:${searchName.replace(/\s/g, '')}`,   // No spaces (for hyphenated names)
-    `name:${searchName}`,                      // General name search
-  ];
+  // Build search strategies based on Pokemon name patterns
+  const searchStrategies = [];
 
   // Special case for Ho-oh - try both formats
   if (pokemonName.toLowerCase() === 'ho-oh') {
-    searchStrategies.unshift('name:"Ho-Oh"');  // Try with capital letters and hyphen
-    searchStrategies.unshift('name:"ho-oh"');  // Try with lowercase and hyphen
+    searchStrategies.push('name:"ho-oh"');
+    searchStrategies.push('name:"Ho-Oh"');
     console.log(`🦅 [TCG_HO_OH] Special search strategies for Ho-oh:`, searchStrategies);
+  }
+  
+  // Special case for form Pokemon like "shaymin-land", "shaymin-sky"
+  if (searchName.includes(' land') || searchName.includes(' sky')) {
+    const baseName = searchName.replace(/ (land|sky)$/, '').trim();
+    console.log(`🌿 [TCG_FORMS] Detected form Pokemon: ${pokemonName}, base name: ${baseName}`);
+    
+    // Try searching for the specific form first
+    searchStrategies.push(`name:"${searchName}"`);
+    searchStrategies.push(`name:"${baseName} land"`);
+    searchStrategies.push(`name:"${baseName} sky"`);
+    // Also try the base name to catch any general cards
+    searchStrategies.push(`name:"${baseName}"`);
+    searchStrategies.push(`name:${baseName}`);
+    
+    console.log(`🌿 [TCG_FORMS] Form search strategies:`, searchStrategies);
+  } else {
+    // Standard search strategies for other Pokemon
+    searchStrategies.push(`name:"${searchName}"`);                    // Exact name match
+    searchStrategies.push(`name:${searchName.replace(/\s/g, '')}`);   // No spaces (for hyphenated names)
+    searchStrategies.push(`name:${searchName}`);                      // General name search
   }
 
   let allCards: TCGCard[] = [];
@@ -124,7 +141,7 @@ export const fetchTCGCards = async (pokemonName: string): Promise<{ firstCard: T
   console.log(`🃏 [TCG_FILTER] Filtered ${uniqueCards.length - filteredCards.length} cards, ${filteredCards.length} remaining`);
 
   // Special detailed logging for specific Pokemon to analyze name forms
-  const specialPokemon = ['charizard', 'mewtwo', 'pikachu', 'squirtle', 'charmander', 'ho-oh'];
+  const specialPokemon = ['charizard', 'mewtwo', 'pikachu', 'squirtle', 'charmander', 'ho-oh', 'shaymin'];
   const matchedPokemon = specialPokemon.find(p => pokemonName.toLowerCase().includes(p.replace('-', '')));
   
   if (matchedPokemon) {
@@ -135,7 +152,8 @@ export const fetchTCGCards = async (pokemonName: string): Promise<{ firstCard: T
       'pikachu': '⚡',
       'squirtle': '💧',
       'charmander': '🦎',
-      'ho-oh': '🦅'
+      'ho-oh': '🦅',
+      'shaymin': '🌿'
     };
     const emoji = emojiMap[matchedPokemon] || '🃏';
     
