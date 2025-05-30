@@ -23,8 +23,23 @@ export const useGenerationExpansion = (generations: number[]) => {
     return expandedGenerations.has(generationId);
   };
 
+  const expandAll = () => {
+    setExpandedGenerations(new Set(generations));
+  };
+
+  const collapseAll = () => {
+    setExpandedGenerations(new Set());
+  };
+
+  const allExpanded = expandedGenerations.size === generations.length;
+  const allCollapsed = expandedGenerations.size === 0;
+
   return {
     isGenerationExpanded,
-    toggleGeneration
+    toggleGeneration,
+    expandAll,
+    collapseAll,
+    allExpanded,
+    allCollapsed
   };
 };

@@ -34,7 +34,13 @@ const PokemonList = ({
       .filter(Boolean)
   )) as number[];
   
-  const { isGenerationExpanded, toggleGeneration } = useGenerationExpansion(generations);
+  const { 
+    isGenerationExpanded, 
+    toggleGeneration, 
+    expandAll, 
+    collapseAll, 
+    allExpanded 
+  } = useGenerationExpansion(generations);
   
   const groupedAndFilteredPokemon = usePokemonGrouping(
     pokemonList, 
@@ -42,6 +48,9 @@ const PokemonList = ({
     isRankingArea,
     isRankingArea ? undefined : isGenerationExpanded
   );
+
+  // Show collapse all button only for available Pokemon (not ranking area) and when showing generation headers
+  const showCollapseAll = !isRankingArea && groupedAndFilteredPokemon.showGenerationHeaders;
 
   return (
     <div className={`flex flex-col h-full ${isRankingArea ? 'relative' : ''}`}>
@@ -51,6 +60,10 @@ const PokemonList = ({
         onSearchChange={setSearchTerm}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
+        showCollapseAll={showCollapseAll}
+        allExpanded={allExpanded}
+        onExpandAll={expandAll}
+        onCollapseAll={collapseAll}
       />
       
       <PokemonListContent

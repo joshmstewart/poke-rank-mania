@@ -1,7 +1,8 @@
 
 import React from "react";
-import { Search, List, Grid } from "lucide-react";
+import { Search, List, Grid, ChevronDown, ChevronUp } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 interface PokemonListControlsProps {
@@ -10,6 +11,10 @@ interface PokemonListControlsProps {
   onSearchChange: (value: string) => void;
   viewMode: "list" | "grid";
   onViewModeChange: (value: "list" | "grid") => void;
+  showCollapseAll?: boolean;
+  allExpanded?: boolean;
+  onExpandAll?: () => void;
+  onCollapseAll?: () => void;
 }
 
 const PokemonListControls: React.FC<PokemonListControlsProps> = ({
@@ -17,7 +22,11 @@ const PokemonListControls: React.FC<PokemonListControlsProps> = ({
   searchTerm,
   onSearchChange,
   viewMode,
-  onViewModeChange
+  onViewModeChange,
+  showCollapseAll = false,
+  allExpanded = false,
+  onExpandAll,
+  onCollapseAll
 }) => {
   return (
     <div className="flex items-center justify-between mb-4">
@@ -35,6 +44,27 @@ const PokemonListControls: React.FC<PokemonListControlsProps> = ({
             <Grid className="h-4 w-4" />
           </ToggleGroupItem>
         </ToggleGroup>
+        
+        {showCollapseAll && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={allExpanded ? onCollapseAll : onExpandAll}
+            className="flex items-center gap-1"
+          >
+            {allExpanded ? (
+              <>
+                <ChevronUp className="h-3 w-3" />
+                Collapse All
+              </>
+            ) : (
+              <>
+                <ChevronDown className="h-3 w-3" />
+                Expand All
+              </>
+            )}
+          </Button>
+        )}
       </div>
       <div className="relative w-full max-w-xs">
         <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
