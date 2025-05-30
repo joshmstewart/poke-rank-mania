@@ -119,7 +119,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
         }, 100);
       },
       
-      // DEFENSIVE Cloud sync - never clear local data on cloud failures
+      // FIXED: Robust cloud sync with proper error handling and defensive programming
       syncToCloud: async () => {
         const state = get();
         
@@ -130,113 +130,124 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
         }
         
         try {
-          const { data: { user } } = await supabase.auth.getUser();
-          
           console.log('[TRUESKILL_CLOUD] Starting cloud sync...', {
             ratingsCount: Object.keys(state.ratings).length,
-            isAuthenticated: !!user
+            sessionId: state.sessionId.substring(0, 8) + '...'
           });
           
-          // Check if table exists by doing a simple count query first
-          const { error: tableError } = await supabase
-            .from('trueskill_sessions')
-            .select('id', { count: 'exact', head: true });
+          // Get current user status
+          const { data: { user }, error: userError } = await supabase.auth.getUser();
           
-          if (tableError) {
-            console.log('[TRUESKILL_CLOUD] Table access error (keeping local data):', tableError.message);
-            if (tableError.message.includes('relation "public.trueskill_sessions" does not exist')) {
-              console.log('[TRUESKILL_CLOUD] trueskill_sessions table does not exist in database');
-            }
-            return; // Don't clear local data on table errors
+          if (userError) {
+            console.log('[TRUESKILL_CLOUD] Auth error during sync (keeping local data):', userError.message);
+            return;
           }
           
-          // Prepare sync data with proper type casting
+          // Prepare sync data with explicit type casting
           const syncData = {
-            session_id: state.sessionId,
-            user_id: user?.id || null,
-            ratings_data: state.ratings as any, // Cast to any for JSONB compatibility
+            session_id: user?.id ? null : state.sessionId, // Only set session_id for anonymous users
+            user_id: user?.id || null, // Only set user_id for authenticated users
+            ratings_data: state.ratings,
             last_updated: new Date().toISOString()
           };
           
-          // Use upsert with array input and handle both insert and update cases
-          const { error } = await supabase
+          console.log('[TRUESKILL_CLOUD] Sync data prepared:', {
+            hasUserId: !!syncData.user_id,
+            hasSessionId: !!syncData.session_id,
+            ratingsCount: Object.keys(state.ratings).length
+          });
+          
+          // Use upsert to handle both insert and update cases
+          const { error: upsertError } = await supabase
             .from('trueskill_sessions')
             .upsert([syncData], {
-              onConflict: user?.id ? 'user_id' : 'session_id'
+              onConflict: user?.id ? 'user_id' : 'session_id',
+              ignoreDuplicates: false
             });
           
-          if (error) {
-            console.log('[TRUESKILL_CLOUD] Sync error (keeping local data):', error.message);
-            return; // Don't clear local data on sync errors
+          if (upsertError) {
+            console.log('[TRUESKILL_CLOUD] Upsert error (keeping local data):', {
+              code: upsertError.code,
+              message: upsertError.message,
+              details: upsertError.details,
+              hint: upsertError.hint
+            });
+            return;
           }
           
-          console.log('[TRUESKILL_CLOUD] Successfully synced to cloud');
+          console.log('[TRUESKILL_CLOUD] ✅ Successfully synced to cloud');
           set({ lastSyncedAt: new Date().toISOString() });
           
         } catch (error) {
-          console.log('[TRUESKILL_CLOUD] Sync failed (keeping local data):', error);
-          // Never clear local data on cloud failures
+          console.log('[TRUESKILL_CLOUD] Unexpected sync error (keeping local data):', error);
+          // Never clear local data on any error
         }
       },
       
-      // DEFENSIVE Cloud loading - preserve local data if cloud load fails
+      // FIXED: Robust cloud loading with proper error handling
       loadFromCloud: async () => {
         const state = get();
         const localRatingsCount = Object.keys(state.ratings).length;
         
         try {
           set({ isLoading: true });
-          const { data: { user } } = await supabase.auth.getUser();
           
           console.log('[TRUESKILL_CLOUD] Loading from cloud...', {
             localRatingsCount,
-            isAuthenticated: !!user
+            sessionId: state.sessionId.substring(0, 8) + '...'
           });
           
-          // Check if table exists first
-          const { error: tableError } = await supabase
-            .from('trueskill_sessions')
-            .select('id', { count: 'exact', head: true });
+          // Get current user status
+          const { data: { user }, error: userError } = await supabase.auth.getUser();
           
-          if (tableError) {
-            console.log('[TRUESKILL_CLOUD] Table access error during load (keeping local data):', tableError.message);
+          if (userError) {
+            console.log('[TRUESKILL_CLOUD] Auth error during load (keeping local data):', userError.message);
             set({ isLoading: false });
             return;
           }
           
+          // Build query based on authentication status
           let query = supabase.from('trueskill_sessions').select('*');
           
-          // If user is authenticated, prioritize user_id, otherwise use session_id
           if (user?.id) {
+            // Authenticated user - look for their user_id
             query = query.eq('user_id', user.id);
+            console.log('[TRUESKILL_CLOUD] Querying for authenticated user:', user.id);
           } else {
-            query = query.eq('session_id', state.sessionId);
+            // Anonymous user - look for their session_id
+            query = query.eq('session_id', state.sessionId).is('user_id', null);
+            console.log('[TRUESKILL_CLOUD] Querying for anonymous session:', state.sessionId.substring(0, 8) + '...');
           }
           
-          const { data, error } = await query.maybeSingle();
+          const { data, error: selectError } = await query.maybeSingle();
           
-          if (error) {
-            console.log('[TRUESKILL_CLOUD] Load error (keeping local data):', error.message);
+          if (selectError) {
+            console.log('[TRUESKILL_CLOUD] Select error (keeping local data):', {
+              code: selectError.code,
+              message: selectError.message,
+              details: selectError.details,
+              hint: selectError.hint
+            });
             set({ isLoading: false });
             return;
           }
           
-          if (data?.ratings_data) {
-            // Safe type casting from Json to our Record type
-            const loadedRatings = data.ratings_data as unknown as Record<number, TrueSkillRating>;
-            const cloudRatingsCount = Object.keys(loadedRatings).length;
+          if (data?.ratings_data && typeof data.ratings_data === 'object') {
+            // Safely cast the cloud data
+            const cloudRatings = data.ratings_data as Record<number, TrueSkillRating>;
+            const cloudRatingsCount = Object.keys(cloudRatings).length;
             
             console.log('[TRUESKILL_CLOUD] Cloud data found:', {
               cloudRatingsCount,
               localRatingsCount,
-              willMerge: cloudRatingsCount > localRatingsCount
+              lastUpdated: data.last_updated
             });
             
             // Only update if cloud has more data than local, or if local is empty
             if (cloudRatingsCount > localRatingsCount || localRatingsCount === 0) {
-              console.log(`[TRUESKILL_CLOUD] Loading ${cloudRatingsCount} ratings from cloud`);
+              console.log(`[TRUESKILL_CLOUD] ✅ Loading ${cloudRatingsCount} ratings from cloud`);
               set({ 
-                ratings: loadedRatings,
+                ratings: cloudRatings,
                 lastSyncedAt: data.last_updated,
                 isLoading: false
               });
@@ -258,9 +269,9 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           }
           
         } catch (error) {
-          console.log('[TRUESKILL_CLOUD] Load failed, keeping local data:', error);
+          console.log('[TRUESKILL_CLOUD] Unexpected load error, keeping local data:', error);
           set({ isLoading: false });
-          // Never clear local data on cloud failures
+          // Never clear local data on any error
         }
       }
     }),
