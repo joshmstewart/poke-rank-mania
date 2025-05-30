@@ -1,14 +1,15 @@
-
 import React, { useState, useCallback, memo, useRef, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "@/hooks/battle/types";
-import PokemonInfo from "./PokemonInfo";
 import LoadingOverlay from "./LoadingOverlay";
 import PokemonInfoModal from "@/components/pokemon/PokemonInfoModal";
 import EnhancedTCGFallback from "./EnhancedTCGFallback";
+import TCGCardImage from "./TCGCardImage";
+import TCGCardInfo from "./TCGCardInfo";
+import TCGCardInteractions from "./TCGCardInteractions";
+import TCGCardLoading from "./TCGCardLoading";
 import { usePokemonTCGCard } from "@/hooks/pokemon/usePokemonTCGCard";
-import Logo from "@/components/ui/Logo";
 
 interface TCGBattleCardProps {
   pokemon: Pokemon;
@@ -27,7 +28,6 @@ const TCGBattleCard: React.FC<TCGBattleCardProps> = memo(({
 }) => {
   const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastClickTimeRef = useRef(0);
-  const [cardImageLoaded, setCardImageLoaded] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
   // Always try to load TCG card data
@@ -36,14 +36,6 @@ const TCGBattleCard: React.FC<TCGBattleCardProps> = memo(({
   const displayName = pokemon.name;
   
   console.log(`🃏 [TCG_BATTLE_CARD] ${displayName}: TCG loading=${isLoadingTCG}, hasTcgCard=${hasTcgCard}, isProcessing=${isProcessing}`);
-
-  // Log the image URL being used
-  useEffect(() => {
-    if (tcgCard) {
-      console.log(`📷 [TCG_BATTLE_CARD] ${displayName}: Using SMALL image URL: ${tcgCard.images.small}`);
-      console.log(`📷 [TCG_BATTLE_CARD] ${displayName}: Large image URL (NOT USED): ${tcgCard.images.large}`);
-    }
-  }, [tcgCard, displayName]);
 
   useEffect(() => {
     console.log(`🃏 [TCG_BATTLE_CARD] ${displayName}: Component mounted/updated`);
@@ -130,77 +122,22 @@ const TCGBattleCard: React.FC<TCGBattleCardProps> = memo(({
           </PokemonInfoModal>
         </div>
 
-        {/* Selection feedback overlay */}
-        {isHovered && !isSelected && !isProcessing && (
-          <div className="absolute inset-0 bg-blue-500 bg-opacity-10 rounded-lg flex items-center justify-center">
-            <div className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-medium shadow-lg">
-              Choose this Pokémon
-            </div>
-          </div>
-        )}
-
-        {isSelected && (
-          <div className="absolute top-2 left-2 bg-green-500 text-white px-2 py-1 rounded-full text-xs font-bold shadow-lg z-20">
-            Winner!
-          </div>
-        )}
+        {/* Interactive elements */}
+        <TCGCardInteractions 
+          isHovered={isHovered}
+          isSelected={isSelected}
+          isProcessing={isProcessing}
+        />
 
         <div className="relative">
           {/* Loading State */}
-          {showLoading && (
-            <div className="flex flex-col items-center justify-center py-8 space-y-4">
-              <div className="animate-pulse">
-                <Logo />
-              </div>
-              <p className="text-sm text-gray-600">Loading card...</p>
-            </div>
-          )}
+          {showLoading && <TCGCardLoading />}
 
           {/* TCG Card Display */}
           {showTCGCard && (
             <div className="space-y-3">
-              <div className="relative">
-                <img 
-                  src={tcgCard.images.small} 
-                  alt={tcgCard.name}
-                  className={`w-full max-w-[200px] mx-auto rounded-lg shadow-md transition-opacity duration-300 ${
-                    cardImageLoaded ? 'opacity-100' : 'opacity-0'
-                  }`}
-                  onLoad={() => {
-                    console.log(`✅ [TCG_BATTLE_CARD] ${displayName}: Small TCG image loaded successfully from: ${tcgCard.images.small}`);
-                    setCardImageLoaded(true);
-                  }}
-                  onError={(e) => {
-                    console.error(`🃏 [TCG_BATTLE_CARD] Failed to load TCG card SMALL image for ${displayName} from: ${tcgCard.images.small}`);
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = 'none';
-                  }}
-                />
-                {!cardImageLoaded && showTCGCard && (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="animate-pulse">
-                      <Logo />
-                    </div>
-                  </div>
-                )}
-              </div>
-              
-              {/* Pokemon Name and Type info below card - FIXED: Remove the 0 line */}
-              <div className="space-y-1">
-                <h3 className="font-bold text-lg text-gray-800">{displayName}</h3>
-                <p className="text-sm text-gray-600">#{pokemon.id}</p>
-                
-                {/* Always show type tags for consistency */}
-                {pokemon.types && pokemon.types.length > 0 && (
-                  <div className="flex justify-center gap-1 mt-2">
-                    {pokemon.types.map((type, index) => (
-                      <span key={index} className="bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs font-medium">
-                        {type}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
+              <TCGCardImage tcgCard={tcgCard} displayName={displayName} />
+              <TCGCardInfo pokemon={pokemon} displayName={displayName} />
             </div>
           )}
 
