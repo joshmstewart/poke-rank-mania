@@ -1,4 +1,3 @@
-
 import * as React from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { X } from "lucide-react"
@@ -20,22 +19,76 @@ const DialogOverlay = React.forwardRef<
   React.useEffect(() => {
     console.log(`🔍 [DIALOG_DEBUG] DialogOverlay mounted with z-index 9998`);
     
-    // Check if overlay is in DOM and get computed styles
+    // More comprehensive DOM inspection
     setTimeout(() => {
-      const overlays = document.querySelectorAll('[data-radix-dialog-overlay]');
-      console.log(`🔍 [DIALOG_DEBUG] Found ${overlays.length} overlay elements in DOM`);
+      // Check all possible selectors for dialog elements
+      const overlaySelectors = [
+        '[data-radix-dialog-overlay]',
+        '[data-state="open"][role="dialog"]',
+        '.fixed.inset-0.z-\\[9998\\]',
+        '[data-radix-collection-item]'
+      ];
       
-      overlays.forEach((overlay, index) => {
-        const computedStyle = window.getComputedStyle(overlay as Element);
-        console.log(`🔍 [DIALOG_DEBUG] Overlay ${index} computed styles:`, {
-          zIndex: computedStyle.zIndex,
-          position: computedStyle.position,
-          display: computedStyle.display,
-          visibility: computedStyle.visibility,
-          opacity: computedStyle.opacity
+      let foundOverlays = [];
+      overlaySelectors.forEach(selector => {
+        const elements = document.querySelectorAll(selector);
+        console.log(`🔍 [DIALOG_DEBUG] Selector "${selector}" found ${elements.length} elements`);
+        elements.forEach((el, index) => {
+          foundOverlays.push({ selector, element: el, index });
         });
       });
-    }, 100);
+      
+      console.log(`🔍 [DIALOG_DEBUG] Total overlay-like elements found: ${foundOverlays.length}`);
+      
+      // Check the entire document body for any elements with high z-index
+      const allElements = document.querySelectorAll('*');
+      const elementsWithZIndex = [];
+      
+      allElements.forEach(el => {
+        const style = window.getComputedStyle(el);
+        const zIndex = parseInt(style.zIndex);
+        if (zIndex >= 1000) {
+          elementsWithZIndex.push({
+            element: el,
+            zIndex: zIndex,
+            position: style.position,
+            tagName: el.tagName,
+            className: el.className,
+            id: el.id
+          });
+        }
+      });
+      
+      console.log(`🔍 [DIALOG_DEBUG] Elements with z-index >= 1000:`, elementsWithZIndex);
+      
+      // Check for portal containers
+      const portalContainers = document.querySelectorAll('[data-radix-portal]');
+      console.log(`🔍 [DIALOG_DEBUG] Found ${portalContainers.length} portal containers`);
+      portalContainers.forEach((container, index) => {
+        console.log(`🔍 [DIALOG_DEBUG] Portal container ${index}:`, {
+          tagName: container.tagName,
+          className: container.className,
+          childCount: container.children.length,
+          innerHTML: container.innerHTML.substring(0, 200)
+        });
+      });
+      
+      // Check document.body direct children for dialogs
+      const bodyChildren = Array.from(document.body.children);
+      console.log(`🔍 [DIALOG_DEBUG] Document.body has ${bodyChildren.length} direct children`);
+      bodyChildren.forEach((child, index) => {
+        if (child.tagName !== 'SCRIPT') {
+          const style = window.getComputedStyle(child);
+          console.log(`🔍 [DIALOG_DEBUG] Body child ${index}:`, {
+            tagName: child.tagName,
+            className: child.className,
+            zIndex: style.zIndex,
+            position: style.position,
+            display: style.display
+          });
+        }
+      });
+    }, 200);
   }, []);
 
   return (
@@ -58,46 +111,65 @@ const DialogContent = React.forwardRef<
   React.useEffect(() => {
     console.log(`🔍 [DIALOG_DEBUG] DialogContent mounted with z-index 10001`);
     
-    // Check if content is in DOM and get computed styles
     setTimeout(() => {
-      const contents = document.querySelectorAll('[data-radix-dialog-content]');
-      console.log(`🔍 [DIALOG_DEBUG] Found ${contents.length} content elements in DOM`);
+      // Check for content elements
+      const contentSelectors = [
+        '[data-radix-dialog-content]',
+        '.fixed.left-\\[50\\%\\].top-\\[50\\%\\].z-\\[10001\\]'
+      ];
       
-      contents.forEach((content, index) => {
-        const computedStyle = window.getComputedStyle(content as Element);
-        console.log(`🔍 [DIALOG_DEBUG] Content ${index} computed styles:`, {
-          zIndex: computedStyle.zIndex,
-          position: computedStyle.position,
-          display: computedStyle.display,
-          visibility: computedStyle.visibility,
-          opacity: computedStyle.opacity,
-          transform: computedStyle.transform
+      contentSelectors.forEach(selector => {
+        const elements = document.querySelectorAll(selector);
+        console.log(`🔍 [DIALOG_DEBUG] Content selector "${selector}" found ${elements.length} elements`);
+        
+        elements.forEach((content, index) => {
+          const style = window.getComputedStyle(content);
+          const rect = content.getBoundingClientRect();
+          console.log(`🔍 [DIALOG_DEBUG] Content ${index} details:`, {
+            zIndex: style.zIndex,
+            position: style.position,
+            display: style.display,
+            visibility: style.visibility,
+            opacity: style.opacity,
+            transform: style.transform,
+            rect: {
+              top: rect.top,
+              left: rect.left,
+              width: rect.width,
+              height: rect.height,
+              visible: rect.width > 0 && rect.height > 0
+            }
+          });
+          
+          // Check the parent chain for stacking context creators
+          let parent = content.parentElement;
+          let level = 0;
+          while (parent && level < 10) {
+            const parentStyle = window.getComputedStyle(parent);
+            const hasStackingContext = 
+              parentStyle.zIndex !== 'auto' ||
+              parentStyle.opacity !== '1' ||
+              parentStyle.transform !== 'none' ||
+              parentStyle.position === 'fixed' ||
+              parentStyle.position === 'sticky';
+              
+            if (hasStackingContext) {
+              console.log(`🔍 [DIALOG_DEBUG] Stacking context creator at level ${level}:`, {
+                tagName: parent.tagName,
+                className: parent.className,
+                zIndex: parentStyle.zIndex,
+                opacity: parentStyle.opacity,
+                transform: parentStyle.transform,
+                position: parentStyle.position
+              });
+            }
+            
+            parent = parent.parentElement;
+            level++;
+          }
         });
       });
-
-      // Check all elements with high z-index that might interfere
-      const allElements = document.querySelectorAll('*');
-      const highZIndexElements: Element[] = [];
-      
-      allElements.forEach(el => {
-        const style = window.getComputedStyle(el);
-        const zIndex = parseInt(style.zIndex);
-        if (zIndex > 9000) {
-          highZIndexElements.push(el);
-        }
-      });
-      
-      console.log(`🔍 [DIALOG_DEBUG] Found ${highZIndexElements.length} elements with z-index > 9000:`);
-      highZIndexElements.forEach((el, index) => {
-        const style = window.getComputedStyle(el);
-        console.log(`🔍 [DIALOG_DEBUG] High z-index element ${index}:`, {
-          tagName: el.tagName,
-          className: el.className,
-          zIndex: style.zIndex,
-          position: style.position
-        });
-      });
-    }, 100);
+    }, 200);
   }, []);
 
   return (

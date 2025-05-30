@@ -41,77 +41,92 @@ const PokemonInfoModal: React.FC<PokemonInfoModalProps> = ({
     console.log(`🔘 [MODAL_DEBUG] Modal state effect - isOpen changed to: ${isOpen} for ${pokemon.name}`);
     
     if (isOpen) {
-      // Add more comprehensive DOM inspection when modal opens
+      // Enhanced debugging when modal opens
       setTimeout(() => {
-        const modal = document.querySelector('[data-radix-dialog-content="true"]');
-        const overlay = document.querySelector('[data-radix-dialog-overlay]');
+        console.log(`🔘 [MODAL_DEBUG] === COMPREHENSIVE DIALOG DEBUG FOR ${pokemon.name} ===`);
         
-        console.log(`🔘 [MODAL_DEBUG] DOM check - Modal element found: ${!!modal}, Overlay found: ${!!overlay}`);
-        
-        if (modal) {
-          const modalStyle = window.getComputedStyle(modal);
-          const modalRect = modal.getBoundingClientRect();
-          console.log(`🔘 [MODAL_DEBUG] Modal computed styles:`, {
-            display: modalStyle.display,
-            visibility: modalStyle.visibility,
-            zIndex: modalStyle.zIndex,
-            opacity: modalStyle.opacity,
-            position: modalStyle.position,
-            transform: modalStyle.transform
-          });
-          console.log(`🔘 [MODAL_DEBUG] Modal bounding rect:`, modalRect);
+        // Check the current modal's DOM hierarchy
+        const currentModal = document.querySelector(`[data-radix-dialog-content="true"]`);
+        if (currentModal) {
+          console.log(`🔘 [MODAL_DEBUG] Found modal in DOM, checking hierarchy...`);
           
-          if (overlay) {
-            const overlayStyle = window.getComputedStyle(overlay);
-            const overlayRect = overlay.getBoundingClientRect();
-            console.log(`🔘 [MODAL_DEBUG] Overlay computed styles:`, {
-              display: overlayStyle.display,
-              visibility: overlayStyle.visibility,
-              zIndex: overlayStyle.zIndex,
-              opacity: overlayStyle.opacity,
-              position: overlayStyle.position
+          // Walk up the DOM tree to understand the structure
+          let element = currentModal;
+          let depth = 0;
+          while (element && depth < 15) {
+            const style = window.getComputedStyle(element);
+            console.log(`🔘 [MODAL_DEBUG] Level ${depth}: ${element.tagName}`, {
+              className: element.className,
+              id: element.id,
+              zIndex: style.zIndex,
+              position: style.position,
+              transform: style.transform,
+              opacity: style.opacity,
+              display: style.display
             });
-            console.log(`🔘 [MODAL_DEBUG] Overlay bounding rect:`, overlayRect);
             
-            // Check if overlay is covering the modal
-            const modalZ = parseInt(modalStyle.zIndex);
-            const overlayZ = parseInt(overlayStyle.zIndex);
-            console.log(`🔘 [MODAL_DEBUG] Z-index comparison: Modal=${modalZ}, Overlay=${overlayZ}`);
-            console.log(`🔘 [MODAL_DEBUG] Modal should be on top: ${modalZ > overlayZ}`);
+            element = element.parentElement;
+            depth++;
           }
         }
         
-        if (overlay && !modal) {
-          const overlayStyle = window.getComputedStyle(overlay);
-          const overlayRect = overlay.getBoundingClientRect();
-          console.log(`🔘 [MODAL_DEBUG] Overlay computed styles:`, {
-            display: overlayStyle.display,
-            visibility: overlayStyle.visibility,
-            zIndex: overlayStyle.zIndex,
-            opacity: overlayStyle.opacity,
-            position: overlayStyle.position
+        // Check ALL dialog-related elements in the entire document
+        const allDialogElements = document.querySelectorAll('*[data-radix-dialog], *[role="dialog"], *[data-state]');
+        console.log(`🔘 [MODAL_DEBUG] Found ${allDialogElements.length} dialog-related elements in document`);
+        
+        allDialogElements.forEach((el, index) => {
+          const style = window.getComputedStyle(el);
+          const rect = el.getBoundingClientRect();
+          console.log(`🔘 [MODAL_DEBUG] Dialog element ${index}:`, {
+            tagName: el.tagName,
+            role: el.getAttribute('role'),
+            dataState: el.getAttribute('data-state'),
+            className: el.className,
+            zIndex: style.zIndex,
+            position: style.position,
+            display: style.display,
+            visibility: style.visibility,
+            opacity: style.opacity,
+            isVisible: rect.width > 0 && rect.height > 0,
+            rect: {
+              top: rect.top,
+              left: rect.left,
+              width: rect.width,
+              height: rect.height
+            }
           });
-          console.log(`🔘 [MODAL_DEBUG] Overlay bounding rect:`, overlayRect);
+        });
+        
+        // Check if there are multiple portals or conflicting elements
+        const portals = document.querySelectorAll('[data-radix-portal]');
+        console.log(`🔘 [MODAL_DEBUG] Found ${portals.length} portal containers`);
+        portals.forEach((portal, index) => {
+          console.log(`🔘 [MODAL_DEBUG] Portal ${index} contents:`, {
+            childElementCount: portal.childElementCount,
+            children: Array.from(portal.children).map(child => ({
+              tagName: child.tagName,
+              className: child.className,
+              role: child.getAttribute('role'),
+              dataState: child.getAttribute('data-state')
+            }))
+          });
+        });
+        
+        // Check if our specific modal content is actually visible
+        const modalContent = document.querySelector('[data-radix-dialog-content="true"]');
+        if (modalContent) {
+          const contentRect = modalContent.getBoundingClientRect();
+          const isActuallyVisible = contentRect.width > 0 && contentRect.height > 0 && 
+                                   contentRect.top >= 0 && contentRect.left >= 0;
+          console.log(`🔘 [MODAL_DEBUG] Modal content visibility check:`, {
+            hasSize: contentRect.width > 0 && contentRect.height > 0,
+            inViewport: contentRect.top >= 0 && contentRect.left >= 0,
+            actuallyVisible: isActuallyVisible,
+            rect: contentRect
+          });
         }
-
-        // Check for any parent elements that might be interfering
-        if (modal) {
-          let parent = modal.parentElement;
-          let level = 0;
-          while (parent && level < 5) {
-            const parentStyle = window.getComputedStyle(parent);
-            console.log(`🔘 [MODAL_DEBUG] Parent level ${level}:`, {
-              tagName: parent.tagName,
-              className: parent.className,
-              zIndex: parentStyle.zIndex,
-              position: parentStyle.position,
-              transform: parentStyle.transform
-            });
-            parent = parent.parentElement;
-            level++;
-          }
-        }
-      }, 200);
+        
+      }, 300); // Increased timeout to ensure everything is rendered
     }
   }, [isOpen, pokemon.name]);
   
@@ -121,7 +136,6 @@ const PokemonInfoModal: React.FC<PokemonInfoModalProps> = ({
     e.stopPropagation();
     e.preventDefault();
     
-    // Force open the modal
     console.log(`🔘 [MODAL_DEBUG] About to set isOpen to true`);
     setIsOpen(true);
   };
@@ -137,7 +151,6 @@ const PokemonInfoModal: React.FC<PokemonInfoModalProps> = ({
     console.log(`🔘 [MODAL_DEBUG] Previous state was: ${isOpen}`);
     setIsOpen(open);
     
-    // Notify parent component about modal state change
     if (onOpenChange) {
       onOpenChange(open);
     }
