@@ -63,7 +63,7 @@ export const setCachedCard = async (pokemonName: string, firstCard: TCGCard | nu
         {
           pokemon_name: pokemonName.toLowerCase(),
           card_data: firstCard as any,
-          second_card_data: secondCard || null,
+          second_card_data: secondCard ? (secondCard as any) : null,
           updated_at: new Date().toISOString()
         }
       ], {
