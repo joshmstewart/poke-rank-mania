@@ -29,16 +29,27 @@ export const fetchTCGCards = async (pokemonName: string): Promise<{ firstCard: T
   const data: TCGApiResponse = await response.json();
   console.log(`🃏 [TCG_API] Raw API response for ${pokemonName}:`, data);
 
-  // Special detailed logging for Charizard to analyze name forms
-  if (searchName.toLowerCase().includes('charizard')) {
-    console.log(`🔥 [CHARIZARD_TCG_ANALYSIS] Found ${data.data.length} Charizard cards:`);
+  // Special detailed logging for Charizard and Mewtwo to analyze name forms
+  if (searchName.toLowerCase().includes('charizard') || searchName.toLowerCase().includes('mewtwo')) {
+    const pokemonType = searchName.toLowerCase().includes('charizard') ? 'CHARIZARD' : 'MEWTWO';
+    const emoji = searchName.toLowerCase().includes('charizard') ? '🔥' : '🧬';
+    
+    console.log(`${emoji} [${pokemonType}_TCG_ANALYSIS] Found ${data.data.length} ${pokemonType} cards:`);
     data.data.forEach((card, index) => {
-      console.log(`🔥 [CHARIZARD_TCG_CARD_${index + 1}] Name: "${card.name}" | Set: ${card.set.name} | Rarity: ${card.rarity} | Supertype: ${card.supertype} | Subtypes: ${card.subtypes?.join(', ') || 'none'}`);
+      console.log(`${emoji} [${pokemonType}_TCG_CARD_${index + 1}] Name: "${card.name}" | Set: ${card.set.name} | Rarity: ${card.rarity} | Supertype: ${card.supertype} | Subtypes: ${card.subtypes?.join(', ') || 'none'}`);
     });
     
     // Group by unique names to see all variations
     const uniqueNames = [...new Set(data.data.map(card => card.name))];
-    console.log(`🔥 [CHARIZARD_TCG_UNIQUE_NAMES] ${uniqueNames.length} unique Charizard card names found:`, uniqueNames);
+    console.log(`${emoji} [${pokemonType}_TCG_UNIQUE_NAMES] ${uniqueNames.length} unique ${pokemonType} card names found:`, uniqueNames);
+    
+    // Look specifically for Mega patterns
+    const megaCards = data.data.filter(card => card.name.toLowerCase().includes('mega'));
+    if (megaCards.length > 0) {
+      console.log(`${emoji} [${pokemonType}_TCG_MEGA_FOUND] Found ${megaCards.length} Mega cards:`, megaCards.map(card => card.name));
+    } else {
+      console.log(`${emoji} [${pokemonType}_TCG_MEGA_NONE] No Mega cards found in this search`);
+    }
   }
 
   if (data.data && data.data.length > 0) {
