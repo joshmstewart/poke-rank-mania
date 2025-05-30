@@ -4,17 +4,19 @@ import { TCGCard } from './types';
 // Rarity priority ranking (lower number = higher priority)
 const rarityPriority: { [key: string]: number } = {
   'Amazing Rare': 1,
-  'Rare Secret': 2,
-  'Rare Ultra': 3,
-  'Rare Rainbow': 4,
-  'Rare Holo VMAX': 5,
-  'Rare Holo V': 6,
-  'Rare Holo GX': 7,
-  'Rare Holo EX': 8,
-  'Rare Holo': 9,
-  'Rare': 10,
-  'Uncommon': 11,
-  'Common': 12
+  'Illustration Rare': 2,
+  'Rare Secret': 3,
+  'Rare Ultra': 4,
+  'Rare Rainbow': 5,
+  'Promo': 6,
+  'Rare Holo VMAX': 7,
+  'Rare Holo V': 8,
+  'Rare Holo GX': 9,
+  'Rare Holo EX': 10,
+  'Rare Holo': 11,
+  'Rare': 12,
+  'Uncommon': 13,
+  'Common': 14
 };
 
 export const sortCardsByRarity = (cards: TCGCard[]): TCGCard[] => {
