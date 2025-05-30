@@ -18,6 +18,7 @@ const PIKACHU_POKEMON_URL = 'https://raw.githubusercontent.com/PokeAPI/sprites/m
 export const usePreviewImageCache = () => {
   const [cachedImages, setCachedImages] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [imageStates, setImageStates] = useState<Record<string, { loaded: boolean; error: boolean }>>({});
 
   const getCacheKey = (mode: 'tcg' | 'pokemon') => `preview_${mode}_pikachu`;
 
@@ -109,31 +110,22 @@ export const usePreviewImageCache = () => {
       // If not cached, use the appropriate URL and cache it
       const imageUrl = mode === 'tcg' ? PIKACHU_TCG_URL : PIKACHU_POKEMON_URL;
       
-      // Verify the image loads before caching
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      
-      return new Promise((resolve) => {
-        img.onload = () => {
-          console.log(`🖼️ [CLOUD_CACHE] Successfully loaded and caching ${mode} image in cloud`);
-          cacheImage(mode, imageUrl);
-          setIsLoading(false);
-          resolve(imageUrl);
-        };
-        
-        img.onerror = () => {
-          console.error(`🖼️ [CLOUD_CACHE] Failed to load ${mode} image, using fallback`);
-          setIsLoading(false);
-          resolve(imageUrl); // Still return the URL even if it failed to load
-        };
-        
-        img.src = imageUrl;
-      });
+      // Cache the image immediately without validation
+      await cacheImage(mode, imageUrl);
+      setIsLoading(false);
+      return imageUrl;
     } catch (error) {
       console.error('Error getting preview image:', error);
       setIsLoading(false);
       return mode === 'tcg' ? PIKACHU_TCG_URL : PIKACHU_POKEMON_URL;
     }
+  };
+
+  const updateImageState = (url: string, loaded: boolean, error: boolean) => {
+    setImageStates(prev => ({
+      ...prev,
+      [url]: { loaded, error }
+    }));
   };
 
   // Clean up expired cache entries on component mount
@@ -152,6 +144,8 @@ export const usePreviewImageCache = () => {
   return {
     getPreviewImage,
     isLoading,
-    cachedImages
+    cachedImages,
+    imageStates,
+    updateImageState
   };
 };

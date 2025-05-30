@@ -27,11 +27,9 @@ const ModeStyleControls: React.FC<ModeStyleControlsProps> = ({
 }) => {
   const [imageSettingsOpen, setImageSettingsOpen] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState<string>("");
-  const [previewLoaded, setPreviewLoaded] = useState(false);
-  const [previewError, setPreviewError] = useState(false);
   const [currentImageMode, setCurrentImageMode] = useState<'pokemon' | 'tcg'>('pokemon');
   
-  const { getPreviewImage, isLoading } = usePreviewImageCache();
+  const { getPreviewImage, isLoading, imageStates, updateImageState } = usePreviewImageCache();
 
   // Load preview image and current mode when component mounts or when settings change
   useEffect(() => {
@@ -44,12 +42,9 @@ const ModeStyleControls: React.FC<ModeStyleControlsProps> = ({
       try {
         const newUrl = await getPreviewImage(imageMode);
         setPreviewImageUrl(newUrl);
-        setPreviewLoaded(false); // Reset loaded state when URL changes
-        setPreviewError(false); // Reset error state when URL changes
         console.log(`🖼️ [MODE_CONTROLS] Set preview URL: ${newUrl}`);
       } catch (error) {
         console.error('Failed to get preview image:', error);
-        setPreviewError(true);
       }
     };
 
@@ -80,8 +75,6 @@ const ModeStyleControls: React.FC<ModeStyleControlsProps> = ({
         try {
           const newUrl = await getPreviewImage(imageMode);
           setPreviewImageUrl(newUrl);
-          setPreviewLoaded(false);
-          setPreviewError(false);
           console.log(`🖼️ [MODE_CONTROLS] Dialog closed, updated preview URL: ${newUrl}`);
         } catch (error) {
           console.error('Failed to update preview image after dialog close:', error);
@@ -100,6 +93,11 @@ const ModeStyleControls: React.FC<ModeStyleControlsProps> = ({
   };
 
   const CurrentIcon = getCurrentModeIcon();
+
+  // Get image state for current preview
+  const currentImageState = imageStates[previewImageUrl];
+  const imageLoaded = currentImageState?.loaded || false;
+  const imageError = currentImageState?.error || false;
 
   return (
     <div className="flex items-center gap-4 bg-gray-100 rounded-xl p-2 shadow-md border-2 border-gray-400">
@@ -128,24 +126,24 @@ const ModeStyleControls: React.FC<ModeStyleControlsProps> = ({
               <DialogTrigger asChild>
                 <Button variant="ghost" size="sm" className="flex gap-2 items-center h-9 px-4 hover:bg-white/70 transition-colors">
                   <div className="flex items-center justify-center w-5 h-5 relative">
-                    {previewImageUrl && !previewError && (
+                    {previewImageUrl && !imageError && (
                       <img 
                         src={previewImageUrl}
                         alt="Current style preview"
-                        className={`w-full h-full object-contain rounded-sm transition-opacity duration-300 ${
-                          previewLoaded ? 'opacity-100' : 'opacity-0'
+                        className={`w-full h-full object-contain rounded-sm transition-opacity duration-200 ${
+                          imageLoaded ? 'opacity-100' : 'opacity-0'
                         }`}
                         onLoad={() => {
                           console.log('✅ [MODE_CONTROLS] Preview image loaded successfully:', previewImageUrl);
-                          setPreviewLoaded(true);
+                          updateImageState(previewImageUrl, true, false);
                         }}
                         onError={() => {
                           console.error('❌ [MODE_CONTROLS] Failed to load preview image:', previewImageUrl);
-                          setPreviewError(true);
+                          updateImageState(previewImageUrl, false, true);
                         }}
                       />
                     )}
-                    {(isLoading || !previewLoaded || previewError || !previewImageUrl) && (
+                    {(isLoading || !imageLoaded || imageError || !previewImageUrl) && (
                       <CurrentIcon className="w-4 h-4 text-gray-600" />
                     )}
                   </div>
