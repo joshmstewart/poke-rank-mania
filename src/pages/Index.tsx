@@ -14,7 +14,7 @@ import {
   DialogTrigger
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Image, ChevronDown } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import ImagePreferenceSelector, { getPreferredImageUrl, getCurrentImageMode } from "@/components/settings/ImagePreferenceSelector";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -79,7 +79,7 @@ const Index = () => {
     <div className="min-h-screen bg-gray-50">
       {/* Application Header */}
       <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10 relative">
-        <div className="container max-w-7xl mx-auto px-4">
+        <div className="container max-w-7xl mx-auto px-6">
           <div className="flex items-center justify-between h-24">
             {/* Left side - Logo */}
             <div className="flex items-center">
@@ -92,69 +92,88 @@ const Index = () => {
               </div>
             </div>
             
-            {/* Right side - Controls grouped together */}
-            <div className="flex items-center gap-3">
-              {/* Mode and Style Controls Group */}
-              <div className="flex items-center gap-2 bg-gray-50 rounded-lg p-1">
-                {/* Mode Switcher */}
-                <ModeSwitcher currentMode={mode} onModeChange={handleModeChange} />
-                
-                {/* Image Style Button */}
-                <TooltipProvider>
-                  <Tooltip>
-                    <Dialog open={imageSettingsOpen} onOpenChange={setImageSettingsOpen}>
-                      <TooltipTrigger asChild>
-                        <DialogTrigger asChild>
-                          <Button variant="ghost" size="sm" className="flex gap-2 items-center h-8 px-3 hover:bg-white">
-                            <div className="flex items-center justify-center w-4 h-4 relative">
-                              {!previewLoaded && (
-                                <Image className="w-3 h-3 text-gray-400" />
-                              )}
-                              {previewImageUrl && (
-                                <img 
-                                  src={previewImageUrl}
-                                  alt="Current style"
-                                  className={`w-full h-full object-contain ${previewLoaded ? 'opacity-100' : 'opacity-0'}`}
-                                  onLoad={() => setPreviewLoaded(true)}
-                                  onError={() => { /* Keep showing icon on error */ }}
-                                />
-                              )}
-                            </div>
-                            <span className="text-sm">{getCurrentModeText()}</span>
-                            <ChevronDown className="w-3 h-3 text-gray-500" />
-                          </Button>
-                        </DialogTrigger>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        Choose between Pokémon images or TCG cards
-                      </TooltipContent>
-                      <DialogContent className="max-w-2xl">
-                        <DialogHeader>
-                          <DialogTitle>Battle Style Preferences</DialogTitle>
-                          <DialogDescription>
-                            Choose how you want to see and battle with Pokémon.
-                          </DialogDescription>
-                        </DialogHeader>
-                        <ImagePreferenceSelector onClose={() => {
-                          setImageSettingsOpen(false);
-                          // Update preview after closing
-                          const imageMode = getCurrentImageMode();
-                          setCurrentImageMode(imageMode);
-                          
-                          // Always load Pikachu preview regardless of mode
-                          setPreviewImageUrl(getPreferredImageUrl(PIKACHU_ID));
-                          setPreviewLoaded(false);
-                        }} />
-                      </DialogContent>
-                    </Dialog>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
+            {/* Center - Mode and Style Controls Group */}
+            <div className="flex items-center gap-4 bg-gray-50 rounded-xl p-2 shadow-sm border border-gray-100">
+              {/* Mode Switcher */}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div>
+                      <ModeSwitcher currentMode={mode} onModeChange={handleModeChange} />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    <p>Switch between Battle mode (head-to-head comparisons) and Manual mode (drag & drop ranking)</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
               
-              {/* Save Progress - separate action */}
-              <div className="border-l border-gray-200 pl-3">
-                <AppSessionManager />
-              </div>
+              {/* Vertical Divider */}
+              <div className="h-8 w-px bg-gray-200"></div>
+              
+              {/* Image Style Button */}
+              <TooltipProvider>
+                <Tooltip>
+                  <Dialog open={imageSettingsOpen} onOpenChange={setImageSettingsOpen}>
+                    <TooltipTrigger asChild>
+                      <DialogTrigger asChild>
+                        <Button variant="ghost" size="sm" className="flex gap-2 items-center h-9 px-4 hover:bg-white/70 transition-colors">
+                          <div className="flex items-center justify-center w-5 h-5 relative">
+                            {previewImageUrl && (
+                              <img 
+                                src={previewImageUrl}
+                                alt="Current style preview"
+                                className={`w-full h-full object-contain rounded-sm ${previewLoaded ? 'opacity-100' : 'opacity-0'}`}
+                                onLoad={() => setPreviewLoaded(true)}
+                                onError={() => { /* Keep showing on error */ }}
+                              />
+                            )}
+                          </div>
+                          <span className="text-sm font-medium">{getCurrentModeText()}</span>
+                          <ChevronDown className="w-3 h-3 text-gray-500" />
+                        </Button>
+                      </DialogTrigger>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">
+                      <p>Choose between Pokémon artwork and TCG card images for battles</p>
+                    </TooltipContent>
+                    <DialogContent className="max-w-2xl">
+                      <DialogHeader>
+                        <DialogTitle>Battle Style Preferences</DialogTitle>
+                        <DialogDescription>
+                          Choose how you want to see and battle with Pokémon.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <ImagePreferenceSelector onClose={() => {
+                        setImageSettingsOpen(false);
+                        // Update preview after closing
+                        const imageMode = getCurrentImageMode();
+                        setCurrentImageMode(imageMode);
+                        
+                        // Always load Pikachu preview regardless of mode
+                        setPreviewImageUrl(getPreferredImageUrl(PIKACHU_ID));
+                        setPreviewLoaded(false);
+                      }} />
+                    </DialogContent>
+                  </Dialog>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+            
+            {/* Right side - Save Progress */}
+            <div className="flex items-center">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div>
+                      <AppSessionManager />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    <p>Save your progress and rankings to continue later</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </div>
         </div>
