@@ -70,6 +70,11 @@ const Index = () => {
     };
   }, []);
 
+  // Get current mode display text
+  const getCurrentModeText = () => {
+    return currentImageMode === 'tcg' ? 'TCG Card' : 'Image';
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container max-w-7xl mx-auto py-4">
@@ -77,7 +82,7 @@ const Index = () => {
           <div className="flex-shrink-0">
             <Logo />
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-4">
             {/* Mode Switcher */}
             <ModeSwitcher currentMode={mode} onModeChange={handleModeChange} />
             
@@ -102,7 +107,7 @@ const Index = () => {
                             />
                           )}
                         </div>
-                        <span className="hidden sm:inline">Battle Style</span>
+                        <span className="hidden sm:inline">{getCurrentModeText()}</span>
                       </Button>
                     </DialogTrigger>
                   </TooltipTrigger>
