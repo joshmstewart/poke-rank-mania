@@ -83,6 +83,9 @@ const PokemonRanker = () => {
     
     console.log(`🔥🔥🔥 [MANUAL_SYNC_FIXED] Generated ${rankings.length} rankings from Battle Mode system`);
     console.log(`🔥🔥🔥 [MANUAL_SYNC_FIXED] ===== SYNC COMPLETE =====`);
+    
+    // Return the rankings for immediate use
+    return rankings;
   }, [getAllRatings, pokemonLookupMap.size, generateRankings]);
 
   // Sync when context and TrueSkill data are ready
@@ -135,12 +138,20 @@ const PokemonRanker = () => {
   }, [syncWithBattleModeRankings, getAllRatings, pokemonLookupMap.size]);
 
   // Manual sync trigger for debugging
-  const handleManualSync = () => {
+  const handleManualSync = async () => {
     console.log(`🔥🔥🔥 [MANUAL_TRIGGER_FIXED] Manual sync triggered`);
     console.log(`🔥🔥🔥 [MANUAL_TRIGGER_FIXED] Context: ${pokemonLookupMap.size}, Ratings: ${Object.keys(getAllRatings()).length}`);
     console.log(`🔥🔥🔥 [MANUAL_TRIGGER_FIXED] Battle Mode rankings: ${battleModeRankings.length}`);
     
-    syncWithBattleModeRankings();
+    const rankings = await syncWithBattleModeRankings();
+    if (rankings && rankings.length > 0) {
+      console.log(`🔥🔥🔥 [MANUAL_TRIGGER_FIXED] Sync successful - ${rankings.length} rankings generated`);
+      toast({
+        title: "Sync Complete",
+        description: `Successfully synced ${rankings.length} ranked Pokemon from Battle Mode`,
+        duration: 3000
+      });
+    }
   };
 
   // Convert manual rankedPokemon to proper type (for fallback only)
@@ -216,7 +227,7 @@ const PokemonRanker = () => {
           isLoading={isLoading}
           availablePokemon={availablePokemon}
           rankedPokemon={rankedPokemon}
-          typedRankedPokemon={showRankings ? battleModeRankings : typedRankedPokemon}
+          typedRankedPokemon={battleModeRankings}
           confidenceScores={showRankings ? battleConfidenceScores : confidenceScores}
           selectedGeneration={selectedGeneration}
           loadingType={loadingType}
