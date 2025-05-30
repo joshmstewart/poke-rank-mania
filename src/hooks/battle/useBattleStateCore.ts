@@ -7,6 +7,7 @@ import { useBattleMilestones } from "./useBattleMilestones";
 import { useSharedRefinementQueue } from "./useSharedRefinementQueue";
 import { useBattleStatePersistence } from "@/hooks/useBattleStatePersistence";
 import { useTrueSkillStore } from "@/stores/trueskillStore";
+import { useBattleResultProcessor } from "./useBattleResultProcessor";
 
 export const useBattleStateCore = (
   allPokemon: Pokemon[],
@@ -49,6 +50,12 @@ export const useBattleStateCore = (
   
   // CRITICAL FIX: Get shared refinement queue
   const refinementQueue = useSharedRefinementQueue();
+
+  // CRITICAL: Add battle result processor
+  const { processResult: processBattleResult } = useBattleResultProcessor(
+    battleResults,
+    setBattleResults
+  );
 
   // ENHANCED: Save battle count whenever it changes
   useEffect(() => {
@@ -217,43 +224,56 @@ export const useBattleStateCore = (
       // Add current battle Pokemon to recently used IMMEDIATELY
       addToRecentlyUsed(currentBattle);
       
-      // Process battle result
-      setBattleResults(prev => [...prev, { battle: currentBattle, selected: newSelection }]);
-      setBattleHistory(prev => [...prev, { battle: currentBattle, selected: newSelection }]);
-      setBattlesCompleted(newBattlesCompleted);
-      setSelectedPokemon([]);
+      // CRITICAL: Process battle result using the proper processor
+      console.log(`🔥🔥🔥 [POKEMON_SELECT_CRITICAL] ===== CALLING BATTLE PROCESSOR =====`);
+      console.log(`🔥🔥🔥 [POKEMON_SELECT_CRITICAL] Selections: ${newSelection}`);
+      console.log(`🔥🔥🔥 [POKEMON_SELECT_CRITICAL] Battle type: ${battleType}`);
+      console.log(`🔥🔥🔥 [POKEMON_SELECT_CRITICAL] Current battle Pokemon: ${currentBattle.map(p => `${p.name}(${p.id})`).join(', ')}`);
       
-      // CRITICAL: Log store state immediately after battle completion but before milestone check
-      const postBattleRatings = getAllRatings();
-      const postBattleCount = Object.keys(postBattleRatings).length;
-      console.log(`🎯🎯🎯 [POKEMON_SELECT] ===== POST-BATTLE STORE STATE =====`);
-      console.log(`🎯🎯🎯 [POKEMON_SELECT] Store has ${postBattleCount} ratings after battle #${newBattlesCompleted}`);
+      const battleResult = processBattleResult(newSelection, battleType, currentBattle);
       
-      // Check for milestone BEFORE starting next battle
-      const hitMilestone = checkForMilestone(newBattlesCompleted);
-      
-      if (hitMilestone) {
-        console.log(`🎯🎯🎯 [POKEMON_SELECT] Milestone hit, showing milestone screen`);
-        setShowingMilestone(true);
+      if (battleResult) {
+        console.log(`🔥🔥🔥 [POKEMON_SELECT_CRITICAL] ✅ Battle result processed successfully`);
         
-        // Generate rankings from actual battle history
-        const newBattleHistory = [...battleHistory, { battle: currentBattle, selected: newSelection }];
-        const rankings = generateRankingsFromBattleHistory(newBattleHistory);
-        setFinalRankings(rankings);
-        setRankingGenerated(true);
+        // Update state
+        setBattleHistory(prev => [...prev, { battle: currentBattle, selected: newSelection }]);
+        setBattlesCompleted(newBattlesCompleted);
+        setSelectedPokemon([]);
         
-        // CRITICAL: Log store state during milestone processing
-        const milestoneRatings = getAllRatings();
-        const milestoneCount = Object.keys(milestoneRatings).length;
-        console.log(`🎯🎯🎯 [POKEMON_SELECT] Store has ${milestoneCount} ratings during milestone processing`);
+        // CRITICAL: Log store state immediately after battle completion but before milestone check
+        const postBattleRatings = getAllRatings();
+        const postBattleCount = Object.keys(postBattleRatings).length;
+        console.log(`🎯🎯🎯 [POKEMON_SELECT] ===== POST-BATTLE STORE STATE =====`);
+        console.log(`🎯🎯🎯 [POKEMON_SELECT] Store has ${postBattleCount} ratings after battle #${newBattlesCompleted}`);
+        
+        // Check for milestone BEFORE starting next battle
+        const hitMilestone = checkForMilestone(newBattlesCompleted);
+        
+        if (hitMilestone) {
+          console.log(`🎯🎯🎯 [POKEMON_SELECT] Milestone hit, showing milestone screen`);
+          setShowingMilestone(true);
+          
+          // Generate rankings from actual battle history
+          const newBattleHistory = [...battleHistory, { battle: currentBattle, selected: newSelection }];
+          const rankings = generateRankingsFromBattleHistory(newBattleHistory);
+          setFinalRankings(rankings);
+          setRankingGenerated(true);
+          
+          // CRITICAL: Log store state during milestone processing
+          const milestoneRatings = getAllRatings();
+          const milestoneCount = Object.keys(milestoneRatings).length;
+          console.log(`🎯🎯🎯 [POKEMON_SELECT] Store has ${milestoneCount} ratings during milestone processing`);
+        } else {
+          console.log(`🎯🎯🎯 [POKEMON_SELECT] No milestone hit, starting next battle`);
+          setTimeout(() => {
+            startNewBattle();
+          }, 100);
+        }
       } else {
-        console.log(`🎯🎯🎯 [POKEMON_SELECT] No milestone hit, starting next battle`);
-        setTimeout(() => {
-          startNewBattle();
-        }, 100);
+        console.error(`🔥🔥🔥 [POKEMON_SELECT_CRITICAL] ❌ Battle result processing failed`);
       }
     }
-  }, [selectedPokemon, battleType, currentBattle, isProcessingResult, battlesCompleted, checkForMilestone, startNewBattle, addToRecentlyUsed, battleHistory, generateRankingsFromBattleHistory, getAllRatings]);
+  }, [selectedPokemon, battleType, currentBattle, isProcessingResult, battlesCompleted, checkForMilestone, startNewBattle, addToRecentlyUsed, battleHistory, generateRankingsFromBattleHistory, getAllRatings, processBattleResult]);
 
   // Triplet selection handler
   const handleTripletSelectionComplete = useCallback(() => {
@@ -264,26 +284,30 @@ export const useBattleStateCore = (
       
       addToRecentlyUsed(currentBattle);
       
-      setBattleResults(prev => [...prev, { battle: currentBattle, selected: selectedPokemon }]);
-      setBattleHistory(prev => [...prev, { battle: currentBattle, selected: selectedPokemon }]);
-      setBattlesCompleted(newBattlesCompleted);
-      setSelectedPokemon([]);
+      // Process triplet battle result
+      const battleResult = processBattleResult(selectedPokemon, battleType, currentBattle);
       
-      const hitMilestone = checkForMilestone(newBattlesCompleted);
-      
-      if (hitMilestone) {
-        setShowingMilestone(true);
-        const newBattleHistory = [...battleHistory, { battle: currentBattle, selected: selectedPokemon }];
-        const rankings = generateRankingsFromBattleHistory(newBattleHistory);
-        setFinalRankings(rankings);
-        setRankingGenerated(true);
-      } else {
-        setTimeout(() => {
-          startNewBattle();
-        }, 100);
+      if (battleResult) {
+        setBattleHistory(prev => [...prev, { battle: currentBattle, selected: selectedPokemon }]);
+        setBattlesCompleted(newBattlesCompleted);
+        setSelectedPokemon([]);
+        
+        const hitMilestone = checkForMilestone(newBattlesCompleted);
+        
+        if (hitMilestone) {
+          setShowingMilestone(true);
+          const newBattleHistory = [...battleHistory, { battle: currentBattle, selected: selectedPokemon }];
+          const rankings = generateRankingsFromBattleHistory(newBattleHistory);
+          setFinalRankings(rankings);
+          setRankingGenerated(true);
+        } else {
+          setTimeout(() => {
+            startNewBattle();
+          }, 100);
+        }
       }
     }
-  }, [battleType, selectedPokemon, currentBattle, battlesCompleted, checkForMilestone, startNewBattle, addToRecentlyUsed, battleHistory, generateRankingsFromBattleHistory]);
+  }, [battleType, selectedPokemon, currentBattle, battlesCompleted, checkForMilestone, startNewBattle, addToRecentlyUsed, battleHistory, generateRankingsFromBattleHistory, processBattleResult]);
 
   // CRITICAL FIX: Listen for refinement queue updates and force new battles
   useEffect(() => {
