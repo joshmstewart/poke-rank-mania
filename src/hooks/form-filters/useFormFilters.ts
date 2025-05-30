@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { FormFilters, PokemonFormType } from "./types";
 import { getStoredFilters, saveFilters } from "./storage";
-import { isStarterPokemon, getPokemonFormCategory } from "./categorization";
+import { isStarterPokemon, isTotemPokemon, getPokemonFormCategory } from "./categorization";
 import { storePokemon, getStoredPokemon, clearStoredPokemon } from "./excludedStore";
 
 export const useFormFilters = () => {
@@ -45,13 +45,19 @@ export const useFormFilters = () => {
       return false;
     }
     
+    // SECOND: Always exclude totem Pokemon regardless of filters
+    if (isTotemPokemon(pokemon)) {
+      console.log(`🚫 [FORM_FILTER_DEBUG] ${pokemon.name} (${pokemon.id}) EXCLUDED - TOTEM POKEMON (always filtered)`);
+      return false;
+    }
+    
     // ENHANCED: Additional Cramorant filtering at the form filter level
     if (pokemon.name.toLowerCase().includes('cramorant')) {
       console.log(`🚫 [FORM_FILTER_DEBUG] ${pokemon.name} (${pokemon.id}) EXCLUDED - CRAMORANT FORM (always filtered)`);
       return false;
     }
     
-    // If all filters are enabled, include all Pokemon (except starters and Cramorant)
+    // If all filters are enabled, include all Pokemon (except starters, totems, and Cramorant)
     if (isAllEnabled) {
       console.log(`🟢 [FORM_FILTER_DEBUG] ${pokemon.name} (${pokemon.id}) INCLUDED - all filters enabled`);
       return true;

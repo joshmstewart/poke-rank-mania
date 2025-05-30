@@ -8,6 +8,12 @@ export const isStarterPokemon = (pokemon: Pokemon): boolean => {
   return name.includes("starter");
 };
 
+// Check if a Pokemon is a totem and should be completely excluded
+export const isTotemPokemon = (pokemon: Pokemon): boolean => {
+  const name = pokemon.name.toLowerCase();
+  return name.includes("totem");
+};
+
 // Check if a Pokemon belongs to a specific form category
 export const getPokemonFormCategory = (pokemon: Pokemon): PokemonFormType | null => {
   const name = pokemon.name.toLowerCase();
