@@ -124,16 +124,27 @@ const PokemonRanker = () => {
     };
   }, [getAllRatings, getRating, pokemonLookupMap, setRankedPokemon]);
 
-  // Convert rankedPokemon to proper RankedPokemon type with defaults including new required properties
-  const typedRankedPokemon: RankedPokemon[] = rankedPokemon.map(pokemon => ({
-    ...pokemon,
-    score: pokemon.score || 0,
-    count: pokemon.count || 0,
-    confidence: pokemon.confidence || 0,
-    wins: pokemon.wins || 0,
-    losses: pokemon.losses || 0,
-    winRate: pokemon.winRate || 0
-  }));
+  // FIXED: Convert rankedPokemon to proper RankedPokemon type with safe property access
+  const typedRankedPokemon: RankedPokemon[] = rankedPokemon.map(pokemon => {
+    // Check if pokemon already has RankedPokemon properties (from TrueSkill sync)
+    const hasRankedProps = 'score' in pokemon && 'count' in pokemon;
+    
+    if (hasRankedProps) {
+      // Pokemon is already a RankedPokemon, just cast it
+      return pokemon as RankedPokemon;
+    } else {
+      // Pokemon needs to be converted to RankedPokemon with defaults
+      return {
+        ...pokemon,
+        score: 0,
+        count: 0,
+        confidence: 0,
+        wins: 0,
+        losses: 0,
+        winRate: 0
+      } as RankedPokemon;
+    }
+  });
 
   // Initialize the ranking suggestions hook
   const {
