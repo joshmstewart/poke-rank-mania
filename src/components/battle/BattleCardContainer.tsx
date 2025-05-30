@@ -75,6 +75,25 @@ const BattleCardContainer: React.FC<BattleCardContainerProps> = ({
     }, 50);
   }, [pokemon.id, displayName, onSelect, isProcessing]);
 
+  const handleMouseEnter = useCallback(() => {
+    if (!isProcessing) {
+      setIsHovered(true);
+    }
+  }, [isProcessing]);
+
+  const handleMouseLeave = useCallback(() => {
+    setIsHovered(false);
+  }, []);
+
+  const handleInfoButtonInteraction = useCallback((e: React.MouseEvent) => {
+    console.log(`🔘 [INFO_BUTTON_DEBUG] BattleCardContainer ${displayName}: Info button interaction`);
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Force reset hover state when info button is interacted with
+    setIsHovered(false);
+  }, [displayName]);
+
   const cardClasses = `
     relative cursor-pointer transition-all duration-200 transform
     ${isSelected ? 'ring-4 ring-blue-500 bg-blue-50 scale-105 shadow-xl' : 'hover:scale-105 hover:shadow-lg'}
@@ -86,8 +105,8 @@ const BattleCardContainer: React.FC<BattleCardContainerProps> = ({
     <Card 
       className={cardClasses}
       onClick={handleClick}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       data-pokemon-id={pokemon.id}
       data-pokemon-name={displayName}
       data-processing={isProcessing ? "true" : "false"}
@@ -98,11 +117,9 @@ const BattleCardContainer: React.FC<BattleCardContainerProps> = ({
           <PokemonInfoModal pokemon={pokemon}>
             <button 
               className="w-6 h-6 rounded-full bg-white/80 hover:bg-white border border-gray-300/60 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200 backdrop-blur-sm"
-              onClick={(e) => {
-                console.log(`🔘 [INFO_BUTTON_DEBUG] BattleCardContainer ${displayName}: Inner button clicked`);
-                e.preventDefault();
-                e.stopPropagation();
-              }}
+              onClick={handleInfoButtonInteraction}
+              onMouseEnter={() => setIsHovered(false)}
+              data-info-button="true"
             >
               i
             </button>
