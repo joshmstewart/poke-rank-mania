@@ -48,7 +48,7 @@ const PokemonInfoModal: React.FC<PokemonInfoModalProps> = ({
 
   // Determine what content to show
   const showLoading = isLoadingTCG;
-  const showTCGCards = !isLoadingTCG && hasTcgCard && tcgCard;
+  const showTCGCards = !isLoadingTCG && hasTcgCard && tcgCard !== null;
   const showFallbackInfo = !isLoadingTCG && !hasTcgCard;
   
   return (
