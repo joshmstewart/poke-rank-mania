@@ -13,33 +13,47 @@ export const useEnhancedManualReorder = (
   const { pokemonLookupMap } = usePokemonContext();
   const { addImpliedBattle } = useImpliedBattleTracker();
 
+  console.log(`🔥 [ENHANCED_REORDER_HOOK_INIT] ===== HOOK INITIALIZATION =====`);
+  console.log(`🔥 [ENHANCED_REORDER_HOOK_INIT] finalRankings length: ${finalRankings?.length || 0}`);
+  console.log(`🔥 [ENHANCED_REORDER_HOOK_INIT] onRankingsUpdate exists: ${!!onRankingsUpdate}`);
+  console.log(`🔥 [ENHANCED_REORDER_HOOK_INIT] addImpliedBattle exists: ${!!addImpliedBattle}`);
+  console.log(`🔥 [ENHANCED_REORDER_HOOK_INIT] pokemonLookupMap size: ${pokemonLookupMap?.size || 0}`);
+
   const handleEnhancedManualReorder = useCallback((
     draggedPokemonId: number, 
     sourceIndex: number, 
     destinationIndex: number
   ) => {
-    console.log(`🔥 [ENHANCED_REORDER] ===== STARTING ENHANCED MANUAL REORDER =====`);
-    console.log(`🔥 [ENHANCED_REORDER] Pokemon ID: ${draggedPokemonId}`);
-    console.log(`🔥 [ENHANCED_REORDER] Source Index: ${sourceIndex} → Destination Index: ${destinationIndex}`);
-    console.log(`🔥 [ENHANCED_REORDER] Total rankings available: ${finalRankings.length}`);
-    console.log(`🔥 [ENHANCED_REORDER] onRankingsUpdate function exists: ${!!onRankingsUpdate}`);
-    console.log(`🔥 [ENHANCED_REORDER] addImpliedBattle function exists: ${!!addImpliedBattle}`);
+    console.log(`🔥 [ENHANCED_REORDER] ===== FUNCTION ENTRY POINT =====`);
+    console.log(`🔥 [ENHANCED_REORDER] This function was called! Parameters:`);
+    console.log(`🔥 [ENHANCED_REORDER] - draggedPokemonId: ${draggedPokemonId}`);
+    console.log(`🔥 [ENHANCED_REORDER] - sourceIndex: ${sourceIndex}`);
+    console.log(`🔥 [ENHANCED_REORDER] - destinationIndex: ${destinationIndex}`);
+    console.log(`🔥 [ENHANCED_REORDER] - finalRankings available: ${!!finalRankings}`);
+    console.log(`🔥 [ENHANCED_REORDER] - finalRankings length: ${finalRankings?.length || 0}`);
+    console.log(`🔥 [ENHANCED_REORDER] - onRankingsUpdate available: ${!!onRankingsUpdate}`);
+    console.log(`🔥 [ENHANCED_REORDER] - addImpliedBattle available: ${!!addImpliedBattle}`);
 
     // CRITICAL DEBUG: Check if we have the required dependencies
     if (!finalRankings || finalRankings.length === 0) {
       console.error(`🔥 [ENHANCED_REORDER] ❌ No finalRankings available! Length: ${finalRankings?.length}`);
+      console.error(`🔥 [ENHANCED_REORDER] ❌ Raw finalRankings:`, finalRankings);
       return;
     }
 
     if (!onRankingsUpdate) {
       console.error(`🔥 [ENHANCED_REORDER] ❌ No onRankingsUpdate function provided!`);
+      console.error(`🔥 [ENHANCED_REORDER] ❌ onRankingsUpdate value:`, onRankingsUpdate);
       return;
     }
 
     if (!addImpliedBattle) {
       console.error(`🔥 [ENHANCED_REORDER] ❌ No addImpliedBattle function available!`);
+      console.error(`🔥 [ENHANCED_REORDER] ❌ addImpliedBattle value:`, addImpliedBattle);
       return;
     }
+
+    console.log(`🔥 [ENHANCED_REORDER] ✅ All dependencies verified, proceeding with logic...`);
 
     // Create a working copy of the rankings
     const workingRankings = [...finalRankings];
@@ -233,6 +247,7 @@ export const useEnhancedManualReorder = (
   console.log(`🔥 [ENHANCED_REORDER_HOOK] Hook created with ${finalRankings?.length || 0} rankings`);
   console.log(`🔥 [ENHANCED_REORDER_HOOK] onRankingsUpdate exists: ${!!onRankingsUpdate}`);
   console.log(`🔥 [ENHANCED_REORDER_HOOK] addImpliedBattle exists: ${!!addImpliedBattle}`);
+  console.log(`🔥 [ENHANCED_REORDER_HOOK] Returning function: ${handleEnhancedManualReorder.name || 'anonymous'}`);
 
   return { handleEnhancedManualReorder };
 };

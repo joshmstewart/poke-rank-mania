@@ -46,6 +46,13 @@ const BattleContentMilestone: React.FC<BattleContentMilestoneProps> = ({
   console.log(`🏆 [MILESTONE_COMPONENT_ULTRA_DEBUG] - rankingGenerated: ${rankingGenerated}`);
   console.log(`🏆 [MILESTONE_COMPONENT_ULTRA_DEBUG] - activeTier: ${activeTier}`);
   
+  // CRITICAL: Check the handleManualReorder function
+  console.log(`🚨 [MILESTONE_FUNCTION_DEBUG] ===== FUNCTION ANALYSIS =====`);
+  console.log(`🚨 [MILESTONE_FUNCTION_DEBUG] handleManualReorder exists: ${!!handleManualReorder}`);
+  console.log(`🚨 [MILESTONE_FUNCTION_DEBUG] handleManualReorder type: ${typeof handleManualReorder}`);
+  console.log(`🚨 [MILESTONE_FUNCTION_DEBUG] handleManualReorder function name: ${handleManualReorder?.name || 'anonymous'}`);
+  console.log(`🚨 [MILESTONE_FUNCTION_DEBUG] handleManualReorder toString: ${handleManualReorder?.toString()?.substring(0, 200) || 'undefined'}`);
+  
   if (finalRankings && finalRankings.length > 0) {
     console.log(`🏆 [MILESTONE_COMPONENT_ULTRA_DEBUG] Sample rankings:`, finalRankings.slice(0, 5).map(p => `${p.name} (${p.id})`));
     
@@ -63,6 +70,34 @@ const BattleContentMilestone: React.FC<BattleContentMilestoneProps> = ({
   }
   
   console.log(`🏆 [MILESTONE_COMPONENT_ULTRA_DEBUG] ===== END PROPS LOGGING =====`);
+
+  // CRITICAL: Create a wrapper that logs every step
+  const handleManualReorderWithFullDebug = (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => {
+    console.log(`🚨 [MILESTONE_WRAPPER_DEBUG] ===== MILESTONE WRAPPER CALLED =====`);
+    console.log(`🚨 [MILESTONE_WRAPPER_DEBUG] draggedPokemonId: ${draggedPokemonId}`);
+    console.log(`🚨 [MILESTONE_WRAPPER_DEBUG] sourceIndex: ${sourceIndex}`);
+    console.log(`🚨 [MILESTONE_WRAPPER_DEBUG] destinationIndex: ${destinationIndex}`);
+    console.log(`🚨 [MILESTONE_WRAPPER_DEBUG] handleManualReorder available: ${!!handleManualReorder}`);
+    console.log(`🚨 [MILESTONE_WRAPPER_DEBUG] handleManualReorder type: ${typeof handleManualReorder}`);
+    
+    if (handleManualReorder && typeof handleManualReorder === 'function') {
+      console.log(`🚨 [MILESTONE_WRAPPER_DEBUG] ===== CALLING PARENT HANDLER =====`);
+      try {
+        console.log(`🚨 [MILESTONE_WRAPPER_DEBUG] About to call handleManualReorder(${draggedPokemonId}, ${sourceIndex}, ${destinationIndex})`);
+        const result = handleManualReorder(draggedPokemonId, sourceIndex, destinationIndex);
+        console.log(`🚨 [MILESTONE_WRAPPER_DEBUG] ✅ Parent handler call completed`);
+        console.log(`🚨 [MILESTONE_WRAPPER_DEBUG] ✅ Result: ${result}`);
+      } catch (error) {
+        console.error(`🚨 [MILESTONE_WRAPPER_DEBUG] ❌ Error calling parent handler:`, error);
+        console.error(`🚨 [MILESTONE_WRAPPER_DEBUG] ❌ Error stack:`, error.stack);
+      }
+    } else {
+      console.error(`🚨 [MILESTONE_WRAPPER_DEBUG] ❌ No valid parent handler available!`);
+      console.error(`🚨 [MILESTONE_WRAPPER_DEBUG] ❌ handleManualReorder value:`, handleManualReorder);
+    }
+    
+    console.log(`🚨 [MILESTONE_WRAPPER_DEBUG] ===== MILESTONE WRAPPER COMPLETE =====`);
+  };
 
   return (
     <div className="w-full max-w-6xl mx-auto p-6">
@@ -84,7 +119,7 @@ const BattleContentMilestone: React.FC<BattleContentMilestoneProps> = ({
           onSaveRankings={handleSaveRankings}
           isMilestoneView={true}
           activeTier={activeTier}
-          onManualReorder={handleManualReorder}
+          onManualReorder={handleManualReorderWithFullDebug}
           pendingRefinements={pendingRefinements}
           enableDragAndDrop={true}
         />
