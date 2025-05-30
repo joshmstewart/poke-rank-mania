@@ -123,7 +123,7 @@ const ModeStyleControls: React.FC<ModeStyleControlsProps> = ({
             <TooltipContent side="bottom">
               <p>Choose between Pokémon artwork and TCG card images for battles</p>
             </TooltipContent>
-            <DialogContent className="max-w-2xl z-[60]">
+            <DialogContent className="max-w-2xl z-[10005]">
               <DialogHeader>
                 <DialogTitle>Battle Style Preferences</DialogTitle>
                 <DialogDescription>
