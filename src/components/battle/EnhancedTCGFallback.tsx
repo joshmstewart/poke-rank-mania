@@ -16,7 +16,7 @@ const EnhancedTCGFallback: React.FC<EnhancedTCGFallbackProps> = ({ pokemon }) =>
 
   return (
     <div className="space-y-3">
-      {/* Fallback to Pokemon artwork */}
+      {/* Fallback to Pokemon artwork without any overlays */}
       <div className="relative">
         <img 
           src={imageUrl}
