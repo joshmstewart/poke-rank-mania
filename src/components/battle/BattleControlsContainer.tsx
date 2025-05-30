@@ -37,24 +37,29 @@ const BattleControlsContainer: React.FC<BattleControlsContainerProps> = ({
   }, [safeSelectedGeneration, battleType]);
 
   return (
-    <div className="flex items-center justify-between bg-white p-3 rounded-lg shadow border w-full">
-      <BattleControlsDropdowns
-        selectedGeneration={safeSelectedGeneration}
-        battleType={battleType}
-        onGenerationChange={onGenerationChange}
-        onBattleTypeChange={onBattleTypeChange}
-      />
-      
-      <BattleControlsActions
-        selectedGeneration={safeSelectedGeneration}
-        battleType={battleType}
-        onGenerationChange={onGenerationChange}
-        onBattleTypeChange={onBattleTypeChange}
-        onRestartBattles={onRestartBattles}
-        setBattlesCompleted={setBattlesCompleted}
-        setBattleResults={setBattleResults}
-        performFullBattleReset={performFullBattleReset}
-      />
+    <div className="flex items-center justify-between bg-white p-4 rounded-lg shadow border w-full">
+      <div className="flex items-center">
+        <BattleControlsDropdowns
+          selectedGeneration={safeSelectedGeneration}
+          battleType={battleType}
+          onGenerationChange={onGenerationChange}
+          onBattleTypeChange={onBattleTypeChange}
+        />
+        
+        {/* Subtle vertical divider between filter settings and action settings */}
+        <div className="h-8 w-px bg-gray-200 mx-6"></div>
+        
+        <BattleControlsActions
+          selectedGeneration={safeSelectedGeneration}
+          battleType={battleType}
+          onGenerationChange={onGenerationChange}
+          onBattleTypeChange={onBattleTypeChange}
+          onRestartBattles={onRestartBattles}
+          setBattlesCompleted={setBattlesCompleted}
+          setBattleResults={setBattleResults}
+          performFullBattleReset={performFullBattleReset}
+        />
+      </div>
     </div>
   );
 };

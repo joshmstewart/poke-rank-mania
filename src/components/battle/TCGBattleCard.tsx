@@ -5,6 +5,7 @@ import { BattleType } from "@/hooks/battle/types";
 import PokemonInfo from "./PokemonInfo";
 import LoadingOverlay from "./LoadingOverlay";
 import PokemonInfoModal from "@/components/pokemon/PokemonInfoModal";
+import EnhancedTCGFallback from "./EnhancedTCGFallback";
 import { usePokemonTCGCard } from "@/hooks/pokemon/usePokemonTCGCard";
 import Logo from "@/components/ui/Logo";
 
@@ -26,6 +27,7 @@ const TCGBattleCard: React.FC<TCGBattleCardProps> = memo(({
   const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastClickTimeRef = useRef(0);
   const [cardImageLoaded, setCardImageLoaded] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
 
   // Always try to load TCG card data
   const { tcgCard, isLoading: isLoadingTCG, hasTcgCard } = usePokemonTCGCard(pokemon.name, true);
@@ -89,9 +91,10 @@ const TCGBattleCard: React.FC<TCGBattleCardProps> = memo(({
   }, [pokemon.id, displayName, onSelect, isProcessing]);
 
   const cardClasses = `
-    relative cursor-pointer transition-all duration-200 transform hover:scale-105 
-    ${isSelected ? 'ring-4 ring-blue-500 bg-blue-50' : 'hover:shadow-lg'}
+    relative cursor-pointer transition-all duration-200 transform
+    ${isSelected ? 'ring-4 ring-blue-500 bg-blue-50 scale-105 shadow-xl' : 'hover:scale-105 hover:shadow-lg'}
     ${isProcessing ? 'pointer-events-none' : ''}
+    ${isHovered && !isSelected ? 'ring-2 ring-blue-300 ring-opacity-50' : ''}
   `.trim();
 
   // Determine what to show
@@ -103,6 +106,8 @@ const TCGBattleCard: React.FC<TCGBattleCardProps> = memo(({
     <Card 
       className={cardClasses}
       onClick={handleClick}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       data-pokemon-id={pokemon.id}
       data-pokemon-name={displayName}
       data-processing={isProcessing ? "true" : "false"}
@@ -112,7 +117,7 @@ const TCGBattleCard: React.FC<TCGBattleCardProps> = memo(({
         <div className="absolute top-1 right-1 z-30">
           <PokemonInfoModal pokemon={pokemon}>
             <button 
-              className="w-5 h-5 rounded-full bg-white/60 hover:bg-white/80 border border-gray-300/60 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200 backdrop-blur-sm"
+              className="w-6 h-6 rounded-full bg-white/80 hover:bg-white border border-gray-300/60 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200 backdrop-blur-sm"
               onClick={(e) => {
                 console.log(`🔘 [TCG_BATTLE_CARD] ${displayName}: Info button clicked`);
                 e.preventDefault();
@@ -123,6 +128,21 @@ const TCGBattleCard: React.FC<TCGBattleCardProps> = memo(({
             </button>
           </PokemonInfoModal>
         </div>
+
+        {/* Selection feedback overlay */}
+        {isHovered && !isSelected && !isProcessing && (
+          <div className="absolute inset-0 bg-blue-500 bg-opacity-10 rounded-lg flex items-center justify-center">
+            <div className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-medium shadow-lg">
+              Choose this Pokémon
+            </div>
+          </div>
+        )}
+
+        {isSelected && (
+          <div className="absolute top-2 left-2 bg-green-500 text-white px-2 py-1 rounded-full text-xs font-bold shadow-lg z-20">
+            Winner!
+          </div>
+        )}
 
         <div className="relative">
           {/* Loading State */}
@@ -164,27 +184,26 @@ const TCGBattleCard: React.FC<TCGBattleCardProps> = memo(({
                 )}
               </div>
               
-              {/* Pokemon Name below card */}
+              {/* Pokemon Name and Type info below card - CONSISTENT TYPE DISPLAY */}
               <div className="space-y-1">
                 <h3 className="font-bold text-lg text-gray-800">{displayName}</h3>
                 <p className="text-sm text-gray-600">#{pokemon.id}</p>
+                
+                {/* Always show type tags for consistency */}
+                {pokemon.types && pokemon.types.length > 0 && (
+                  <PokemonInfo 
+                    displayName=""
+                    pokemonId={0}
+                    types={pokemon.types}
+                  />
+                )}
               </div>
             </div>
           )}
 
-          {/* Fallback to regular Pokemon info */}
+          {/* Enhanced Fallback */}
           {showFallback && (
-            <div className="space-y-3">
-              <div className="w-32 h-32 mx-auto bg-gray-100 rounded-lg flex items-center justify-center">
-                <p className="text-sm text-gray-500">No TCG card</p>
-              </div>
-              
-              <PokemonInfo 
-                displayName={displayName}
-                pokemonId={pokemon.id}
-                types={pokemon.types}
-              />
-            </div>
+            <EnhancedTCGFallback pokemon={pokemon} />
           )}
 
           {/* Loading overlay that keeps content visible */}

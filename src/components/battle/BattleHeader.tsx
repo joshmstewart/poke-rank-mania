@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
 interface BattleHeaderProps {
   battlesCompleted: number;
@@ -18,27 +18,35 @@ const BattleHeader: React.FC<BattleHeaderProps> = ({
   isProcessing,
   internalProcessing
 }) => {
-  // Only show back button if there's history to go back to
-  const showBackButton = hasHistory && battlesCompleted > 0;
-  
+  const currentBattle = battlesCompleted + 1;
+  const combinedProcessing = isProcessing || internalProcessing;
+
   return (
     <div className="flex items-center justify-between mb-4">
+      {/* Left side - Current battle info */}
+      <div className="flex flex-col">
+        <div className="text-2xl font-bold text-gray-800 mb-1">
+          Battle {currentBattle}
+        </div>
+        <div className="text-sm text-gray-600">
+          Battles completed: {battlesCompleted}
+        </div>
+      </div>
+
+      {/* Right side - Back button */}
       <div className="flex items-center">
-        {showBackButton && (
-          <Button
+        {hasHistory && (
+          <Button 
+            onClick={onGoBack}
             variant="outline"
             size="sm"
-            onClick={onGoBack}
-            disabled={isProcessing || internalProcessing}
-            className="mr-2"
+            disabled={combinedProcessing}
+            className="flex items-center gap-2"
           >
-            <ChevronLeft className="h-4 w-4 mr-1" />
+            <ArrowLeft className="h-4 w-4" />
             Back
           </Button>
         )}
-        <span className="text-sm text-muted-foreground">
-          Battles completed: {battlesCompleted}
-        </span>
       </div>
     </div>
   );

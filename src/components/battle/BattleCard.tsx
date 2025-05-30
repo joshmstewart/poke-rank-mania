@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, memo, useRef, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Pokemon } from "@/services/pokemon";
@@ -46,6 +45,7 @@ const BattleCard: React.FC<BattleCardProps> = memo(({
   const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastClickTimeRef = useRef(0);
   const [infoButtonVisible, setInfoButtonVisible] = useState(true);
+  const [isHovered, setIsHovered] = useState(false);
 
   // CRITICAL FIX: Use the Pokemon name directly (it should already be formatted by validateBattlePokemon)
   const displayName = pokemon.name;
@@ -125,25 +125,28 @@ const BattleCard: React.FC<BattleCardProps> = memo(({
   console.log(`🖼️ BattleCard: Loading "${preferredImageType}" image for ${displayName} (#${pokemon.id}): ${imageUrl}`);
 
   const cardClasses = `
-    relative cursor-pointer transition-all duration-200 transform hover:scale-105 
-    ${isSelected ? 'ring-4 ring-blue-500 bg-blue-50' : 'hover:shadow-lg'}
+    relative cursor-pointer transition-all duration-200 transform
+    ${isSelected ? 'ring-4 ring-blue-500 bg-blue-50 scale-105 shadow-xl' : 'hover:scale-105 hover:shadow-lg'}
     ${isProcessing ? 'pointer-events-none' : ''}
+    ${isHovered && !isSelected ? 'ring-2 ring-blue-300 ring-opacity-50' : ''}
   `.trim();
 
   return (
     <Card 
       className={cardClasses}
       onClick={handleClick}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       data-pokemon-id={pokemon.id}
       data-pokemon-name={displayName}
       data-processing={isProcessing ? "true" : "false"}
     >
       <CardContent className="p-4 text-center relative">
-        {/* Info Button - Even more subtle */}
+        {/* Info Button - Enhanced visibility */}
         <div className="absolute top-1 right-1 z-30">
           <PokemonInfoModal pokemon={pokemon}>
             <button 
-              className="w-5 h-5 rounded-full bg-white/60 hover:bg-white/80 border border-gray-300/60 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200 backdrop-blur-sm"
+              className="w-6 h-6 rounded-full bg-white/80 hover:bg-white border border-gray-300/60 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200 backdrop-blur-sm"
               onClick={(e) => {
                 console.log(`🔘 [INFO_BUTTON_DEBUG] BattleCard ${displayName}: Inner button clicked`);
                 e.preventDefault();
@@ -155,6 +158,21 @@ const BattleCard: React.FC<BattleCardProps> = memo(({
           </PokemonInfoModal>
         </div>
 
+        {/* Selection feedback overlay */}
+        {isHovered && !isSelected && !isProcessing && (
+          <div className="absolute inset-0 bg-blue-500 bg-opacity-10 rounded-lg flex items-center justify-center z-10">
+            <div className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-medium shadow-lg">
+              Choose this Pokémon
+            </div>
+          </div>
+        )}
+
+        {isSelected && (
+          <div className="absolute top-2 left-2 bg-green-500 text-white px-2 py-1 rounded-full text-xs font-bold shadow-lg z-20">
+            Winner!
+          </div>
+        )}
+
         {/* CRITICAL FIX: Keep Pokemon visible, add loading overlay instead */}
         <div className="relative">
           {/* Pokemon Image */}
@@ -164,7 +182,7 @@ const BattleCard: React.FC<BattleCardProps> = memo(({
             pokemonId={pokemon.id}
           />
 
-          {/* Pokemon Info */}
+          {/* Pokemon Info - Always show types for consistency */}
           <PokemonInfo 
             displayName={displayName}
             pokemonId={pokemon.id}

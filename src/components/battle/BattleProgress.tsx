@@ -1,5 +1,7 @@
 
 import React from "react";
+import { Progress } from "@/components/ui/progress";
+import { Trophy } from "lucide-react";
 
 interface BattleProgressProps {
   battlesCompleted: number;
@@ -12,34 +14,33 @@ const BattleProgress: React.FC<BattleProgressProps> = ({
   getMilestoneProgress,
   getNextMilestone
 }) => {
-  // Calculate battles remaining until next milestone
   const nextMilestone = getNextMilestone();
-  const battlesUntilNextMilestone = Math.max(0, nextMilestone - battlesCompleted);
   const progressPercentage = getMilestoneProgress();
-  
-  console.log(`🎯 [BATTLE_PROGRESS] Display values:`, {
-    battlesCompleted,
-    nextMilestone,
-    battlesUntilNextMilestone,
-    progressPercentage
-  });
+  const battlesUntilMilestone = nextMilestone - battlesCompleted;
   
   return (
-    <div>
-      <div className="h-1.5 w-full bg-gray-200 rounded-full mt-2 overflow-hidden">
-        <div 
-          className="h-1.5 bg-primary rounded-full transition-all duration-500 relative"
-          style={{ width: `${progressPercentage}%` }}
-        >
-          {progressPercentage > 30 && (
-            <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
-          )}
+    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <Trophy className="h-4 w-4 text-blue-600" />
+          <span className="text-sm font-medium text-blue-800">
+            Next Milestone: {nextMilestone}
+          </span>
         </div>
+        <span className="text-sm text-blue-600 font-medium">
+          {battlesUntilMilestone} battles away
+        </span>
       </div>
-      <div className="flex justify-between text-xs mt-1 text-gray-500">
-        <div>Battle: {battlesCompleted + 1}</div>
-        <div>
-          Next milestone: <span className="font-medium text-primary">{battlesUntilNextMilestone}</span> battles away
+      
+      {/* Progress bar visualization */}
+      <div className="space-y-2">
+        <Progress 
+          value={progressPercentage} 
+          className="h-2 bg-blue-100"
+        />
+        <div className="flex justify-between text-xs text-blue-600">
+          <span>{battlesCompleted} completed</span>
+          <span>{Math.round(progressPercentage)}% to milestone</span>
         </div>
       </div>
     </div>
