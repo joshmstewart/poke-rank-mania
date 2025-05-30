@@ -39,7 +39,7 @@ const PokemonRanker = () => {
   const { clearAllRatings, getAllRatings, getRating } = useTrueSkillStore();
   const { pokemonLookupMap } = usePokemonContext();
 
-  // CRITICAL FIX: Sync with TrueSkill store on component mount and when store updates
+  // CRITICAL FIX: Load ALL Pokemon with TrueSkill ratings, not just those in current view
   useEffect(() => {
     console.log(`🔄 [MANUAL_SYNC_FIX] ===== SYNCING MANUAL MODE WITH TRUESKILL STORE =====`);
     
@@ -54,27 +54,31 @@ const PokemonRanker = () => {
         return;
       }
 
-      // Convert TrueSkill ratings to Manual mode format - FIXED: Create proper RankedPokemon objects
-      const convertedRankings: RankedPokemon[] = ratedPokemonIds
-        .map(pokemonId => {
-          const pokemon = pokemonLookupMap.get(pokemonId);
-          if (!pokemon) {
-            console.warn(`🔄 [MANUAL_SYNC_FIX] Pokemon ID ${pokemonId} not found in lookup map`);
-            return null;
-          }
+      // FIXED: Get ALL Pokemon from context map, not just those currently loaded
+      const allAvailablePokemon = Array.from(pokemonLookupMap.values());
+      console.log(`🔄 [MANUAL_SYNC_FIX] Total Pokemon in context: ${allAvailablePokemon.length}`);
 
-          const trueskillRating = getRating(pokemonId);
-          const trueskillData = allRatings[pokemonId];
+      if (allAvailablePokemon.length === 0) {
+        console.log(`🔄 [MANUAL_SYNC_FIX] No Pokemon in context map yet - waiting...`);
+        return;
+      }
+
+      // Separate ALL Pokemon into rated and unrated (not just those in current view)
+      const convertedRankings: RankedPokemon[] = [];
+      const unratedPokemon: RankedPokemon[] = [];
+
+      allAvailablePokemon.forEach(pokemon => {
+        if (ratedPokemonIds.includes(pokemon.id)) {
+          const trueskillRating = getRating(pokemon.id);
+          const trueskillData = allRatings[pokemon.id];
           
           // Calculate conservative score and confidence (same as Battle mode)
           const conservativeEstimate = trueskillRating.mu - 3 * trueskillRating.sigma;
           const normalizedConfidence = Math.max(0, Math.min(100, 100 * (1 - (trueskillRating.sigma / 8.33))));
 
-          console.log(`🔄 [MANUAL_SYNC_FIX] Converting ${pokemon.name}: score=${conservativeEstimate.toFixed(2)}, confidence=${normalizedConfidence.toFixed(1)}%, battles=${trueskillData.battleCount}`);
-
-          // FIXED: Create a proper RankedPokemon object with all required properties
+          // Create a proper RankedPokemon object with all required properties
           const rankedPokemon: RankedPokemon = {
-            ...pokemon, // Spread all Pokemon properties
+            ...pokemon,
             score: conservativeEstimate,
             count: trueskillData.battleCount || 0,
             confidence: normalizedConfidence,
@@ -84,47 +88,63 @@ const PokemonRanker = () => {
             rating: trueskillRating
           };
 
-          return rankedPokemon;
-        })
-        .filter((pokemon): pokemon is RankedPokemon => pokemon !== null)
-        .sort((a, b) => b.score - a.score); // Sort by score descending
+          convertedRankings.push(rankedPokemon);
+        } else {
+          // Convert unrated Pokemon to RankedPokemon format with default values
+          const unratedRanked: RankedPokemon = {
+            ...pokemon,
+            score: 0,
+            count: 0,
+            confidence: 0,
+            wins: 0,
+            losses: 0,
+            winRate: 0
+          };
+          unratedPokemon.push(unratedRanked);
+        }
+      });
 
-      console.log(`🔄 [MANUAL_SYNC_FIX] ✅ Converted ${convertedRankings.length} Pokemon to Manual format`);
-      console.log(`🔄 [MANUAL_SYNC_FIX] Top 3 Pokemon:`, convertedRankings.slice(0, 3).map(p => `${p.name} (${p.score.toFixed(1)})`));
+      // Sort ranked Pokemon by score descending (highest first)
+      convertedRankings.sort((a, b) => b.score - a.score);
+
+      console.log(`🔄 [MANUAL_SYNC_FIX] ✅ Converted ${convertedRankings.length} ranked Pokemon, ${unratedPokemon.length} unrated`);
+      console.log(`🔄 [MANUAL_SYNC_FIX] Top 5 ranked Pokemon:`, convertedRankings.slice(0, 5).map(p => `${p.name} (${p.score.toFixed(1)})`));
       
-      // Update Manual mode rankings
+      // Update Manual mode with ALL Pokemon
       setRankedPokemon(convertedRankings);
-      console.log(`🔄 [MANUAL_SYNC_FIX] ✅ Manual mode rankings updated with TrueSkill data`);
+      setAvailablePokemon(unratedPokemon);
+      console.log(`🔄 [MANUAL_SYNC_FIX] ✅ Manual mode updated with ALL Pokemon data`);
     };
 
-    // Sync immediately
-    syncWithTrueSkillStore();
+    // Only sync if we have Pokemon context data
+    if (pokemonLookupMap.size > 0) {
+      syncWithTrueSkillStore();
+    } else {
+      console.log(`🔄 [MANUAL_SYNC_FIX] Pokemon context not ready yet, waiting...`);
+    }
 
     // Listen for TrueSkill store updates
     const handleTrueSkillUpdate = (event: CustomEvent) => {
       console.log(`🔄 [MANUAL_SYNC_FIX] TrueSkill store updated, re-syncing Manual mode...`);
-      syncWithTrueSkillStore();
-    };
-
-    const handleTrueSkillStoreUpdate = (event: CustomEvent) => {
-      console.log(`🔄 [MANUAL_SYNC_FIX] TrueSkill store direct update, re-syncing Manual mode...`);
-      syncWithTrueSkillStore();
+      if (pokemonLookupMap.size > 0) {
+        syncWithTrueSkillStore();
+      }
     };
 
     // Add event listeners
     document.addEventListener('trueskill-updated', handleTrueSkillUpdate as EventListener);
-    document.addEventListener('trueskill-store-updated', handleTrueSkillStoreUpdate as EventListener);
-    document.addEventListener('trueskill-store-loaded', handleTrueSkillStoreUpdate as EventListener);
+    document.addEventListener('trueskill-store-updated', handleTrueSkillUpdate as EventListener);
+    document.addEventListener('trueskill-store-loaded', handleTrueSkillUpdate as EventListener);
 
     // Cleanup
     return () => {
       document.removeEventListener('trueskill-updated', handleTrueSkillUpdate as EventListener);
-      document.removeEventListener('trueskill-store-updated', handleTrueSkillStoreUpdate as EventListener);
-      document.removeEventListener('trueskill-store-loaded', handleTrueSkillStoreUpdate as EventListener);
+      document.removeEventListener('trueskill-store-updated', handleTrueSkillUpdate as EventListener);
+      document.removeEventListener('trueskill-store-loaded', handleTrueSkillUpdate as EventListener);
     };
-  }, [getAllRatings, getRating, pokemonLookupMap, setRankedPokemon]);
+  }, [getAllRatings, getRating, pokemonLookupMap, setRankedPokemon, setAvailablePokemon]);
 
-  // FIXED: Convert rankedPokemon to proper RankedPokemon type with safe property access
+  // Convert rankedPokemon to ensure proper RankedPokemon type
   const typedRankedPokemon: RankedPokemon[] = rankedPokemon.map(pokemon => {
     // Check if pokemon already has RankedPokemon properties (from TrueSkill sync)
     const hasRankedProps = 'score' in pokemon && 'count' in pokemon;

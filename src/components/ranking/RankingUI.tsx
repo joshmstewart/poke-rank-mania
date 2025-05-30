@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
 import { DragDropContext } from "react-beautiful-dnd";
 import { ITEMS_PER_PAGE } from "@/services/pokemon";
 import PokemonList from "@/components/PokemonList";
@@ -40,6 +40,10 @@ export const RankingUI: React.FC<RankingUIProps> = ({
   handlePageChange,
   getPageRange
 }) => {
+  // Infinite scroll state for ranked Pokemon
+  const [displayedRankedCount, setDisplayedRankedCount] = useState(50);
+  const rankedScrollRef = useRef<HTMLDivElement>(null);
+
   const { handleDragEnd } = useDragHandler(
     availablePokemon,
     rankedPokemon,
@@ -52,6 +56,45 @@ export const RankingUI: React.FC<RankingUIProps> = ({
     console.log("[TRUESKILL_MANUAL] Drag-and-drop temporarily disabled in Manual Mode");
     // Do nothing - drag is disabled
   };
+
+  // Load more ranked Pokemon when scrolling
+  const loadMoreRanked = useCallback(() => {
+    if (displayedRankedCount < rankedPokemon.length) {
+      setDisplayedRankedCount(prev => Math.min(prev + 50, rankedPokemon.length));
+      console.log(`[RANKED_INFINITE_SCROLL] Loading more ranked Pokemon: ${displayedRankedCount} -> ${Math.min(displayedRankedCount + 50, rankedPokemon.length)}`);
+    }
+  }, [displayedRankedCount, rankedPokemon.length]);
+
+  // Set up intersection observer for ranked Pokemon infinite scroll
+  useEffect(() => {
+    const currentRef = rankedScrollRef.current;
+    if (!currentRef) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && displayedRankedCount < rankedPokemon.length) {
+          loadMoreRanked();
+        }
+      },
+      { rootMargin: '200px', threshold: 0.1 }
+    );
+
+    observer.observe(currentRef);
+
+    return () => {
+      if (currentRef) {
+        observer.unobserve(currentRef);
+      }
+    };
+  }, [displayedRankedCount, rankedPokemon.length, loadMoreRanked]);
+
+  // Reset displayed count when ranked Pokemon list changes
+  useEffect(() => {
+    setDisplayedRankedCount(Math.min(50, rankedPokemon.length));
+  }, [rankedPokemon.length]);
+
+  // Get the currently displayed ranked Pokemon
+  const displayedRankedPokemon = rankedPokemon.slice(0, displayedRankedCount);
 
   if (isLoading && availablePokemon.length === 0) {
     return (
@@ -104,19 +147,36 @@ export const RankingUI: React.FC<RankingUIProps> = ({
           )}
         </div>
         
-        {/* Right side - Rankings (TrueSkill ordered) with independent scroll */}
+        {/* Right side - Rankings (TrueSkill ordered) with infinite scroll */}
         <div className="flex flex-col h-full max-h-[calc(100vh-12rem)] overflow-hidden">
           <PokemonList
-            title="Your Rankings (TrueSkill Ordered)"
-            pokemonList={rankedPokemon}
+            title={`Your Rankings (TrueSkill Ordered) - ${displayedRankedCount} of ${rankedPokemon.length}`}
+            pokemonList={displayedRankedPokemon}
             droppableId="ranked"
             isRankingArea={true}
           />
           
-          {/* Temporary notice about disabled drag-and-drop */}
-          {rankedPokemon.length > 0 && (
-            <div className="text-center text-xs text-muted-foreground mt-1 p-2 bg-yellow-50 rounded">
-              Drag-and-drop temporarily disabled. Rankings based on TrueSkill ratings from Battle Mode.
+          {/* Infinite scroll loading for ranked Pokemon */}
+          {displayedRankedCount < rankedPokemon.length && (
+            <div 
+              ref={rankedScrollRef}
+              className="text-center py-4 text-sm text-muted-foreground"
+            >
+              Loading more ranked Pokémon... ({displayedRankedCount}/{rankedPokemon.length})
+            </div>
+          )}
+          
+          {/* Show completion message when all ranked Pokemon are loaded */}
+          {displayedRankedCount >= rankedPokemon.length && rankedPokemon.length > 0 && (
+            <div className="text-center text-xs text-muted-foreground mt-1 p-2 bg-green-50 rounded">
+              All {rankedPokemon.length} ranked Pokémon loaded. Rankings based on TrueSkill ratings from Battle Mode.
+            </div>
+          )}
+          
+          {/* Show message when no ranked Pokemon */}
+          {rankedPokemon.length === 0 && (
+            <div className="text-center text-xs text-muted-foreground mt-1 p-2 bg-blue-50 rounded">
+              No ranked Pokémon yet. Complete some battles in Battle Mode to see rankings here.
             </div>
           )}
         </div>
