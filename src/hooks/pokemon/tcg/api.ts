@@ -64,17 +64,56 @@ export const fetchTCGCards = async (pokemonName: string): Promise<{ firstCard: T
 
   console.log(`🃏 [TCG_API] Searching for TCG cards with name: "${searchName}"`);
   
-  const response = await fetch(`https://api.pokemontcg.io/v2/cards?q=name:"${searchName}"`);
-  
-  if (!response.ok) {
-    throw new Error(`TCG API error: ${response.status} ${response.statusText}`);
+  // Try multiple search strategies for better results
+  const searchStrategies = [
+    `name:"${searchName}"`,                    // Exact name match
+    `name:${searchName.replace(/\s/g, '')}`,   // No spaces (for hyphenated names)
+    `name:${searchName}`,                      // General name search
+  ];
+
+  // Special case for Ho-oh - try both formats
+  if (pokemonName.toLowerCase() === 'ho-oh') {
+    searchStrategies.unshift('name:"Ho-Oh"');  // Try with capital letters and hyphen
+    searchStrategies.unshift('name:"ho-oh"');  // Try with lowercase and hyphen
+    console.log(`🦅 [TCG_HO_OH] Special search strategies for Ho-oh:`, searchStrategies);
   }
 
-  const data: TCGApiResponse = await response.json();
-  console.log(`🃏 [TCG_API] Raw API response for ${pokemonName}:`, data);
+  let allCards: TCGCard[] = [];
+  
+  for (const strategy of searchStrategies) {
+    try {
+      console.log(`🔍 [TCG_SEARCH] Trying search strategy: ${strategy}`);
+      const response = await fetch(`https://api.pokemontcg.io/v2/cards?q=${strategy}`);
+      
+      if (!response.ok) {
+        console.warn(`🚫 [TCG_API] Search strategy "${strategy}" failed: ${response.status}`);
+        continue;
+      }
+
+      const data: TCGApiResponse = await response.json();
+      console.log(`🃏 [TCG_API] Search strategy "${strategy}" returned ${data.data.length} cards`);
+      
+      if (data.data.length > 0) {
+        allCards = [...allCards, ...data.data];
+        // If we get good results, we can break early
+        if (data.data.length >= 3) break;
+      }
+    } catch (error) {
+      console.error(`🚫 [TCG_API] Error with search strategy "${strategy}":`, error);
+    }
+  }
+
+  console.log(`🃏 [TCG_API] Combined search results for ${pokemonName}: ${allCards.length} total cards`);
+
+  // Remove duplicates based on card ID
+  const uniqueCards = allCards.filter((card, index, self) => 
+    index === self.findIndex(c => c.id === card.id)
+  );
+
+  console.log(`🃏 [TCG_API] After removing duplicates: ${uniqueCards.length} unique cards`);
 
   // Filter out card backs and blocked cards
-  const filteredCards = data.data.filter(card => {
+  const filteredCards = uniqueCards.filter(card => {
     const isBlocked = isCardBack(card);
     if (isBlocked) {
       console.log(`🚫 [TCG_FILTER] Filtered out card: ${card.id} (${card.name})`);
@@ -82,11 +121,11 @@ export const fetchTCGCards = async (pokemonName: string): Promise<{ firstCard: T
     return !isBlocked;
   });
 
-  console.log(`🃏 [TCG_FILTER] Filtered ${data.data.length - filteredCards.length} cards, ${filteredCards.length} remaining`);
+  console.log(`🃏 [TCG_FILTER] Filtered ${uniqueCards.length - filteredCards.length} cards, ${filteredCards.length} remaining`);
 
   // Special detailed logging for specific Pokemon to analyze name forms
-  const specialPokemon = ['charizard', 'mewtwo', 'pikachu', 'squirtle', 'charmander'];
-  const matchedPokemon = specialPokemon.find(p => searchName.toLowerCase().includes(p));
+  const specialPokemon = ['charizard', 'mewtwo', 'pikachu', 'squirtle', 'charmander', 'ho-oh'];
+  const matchedPokemon = specialPokemon.find(p => pokemonName.toLowerCase().includes(p.replace('-', '')));
   
   if (matchedPokemon) {
     const pokemonType = matchedPokemon.toUpperCase();
@@ -95,9 +134,10 @@ export const fetchTCGCards = async (pokemonName: string): Promise<{ firstCard: T
       'mewtwo': '🧬',
       'pikachu': '⚡',
       'squirtle': '💧',
-      'charmander': '🦎'
+      'charmander': '🦎',
+      'ho-oh': '🦅'
     };
-    const emoji = emojiMap[matchedPokemon];
+    const emoji = emojiMap[matchedPokemon] || '🃏';
     
     console.log(`${emoji} [${pokemonType}_TCG_ANALYSIS] Found ${filteredCards.length} ${pokemonType} cards after filtering:`);
     filteredCards.forEach((card, index) => {
@@ -107,14 +147,6 @@ export const fetchTCGCards = async (pokemonName: string): Promise<{ firstCard: T
     // Group by unique names to see all variations
     const uniqueNames = [...new Set(filteredCards.map(card => card.name))];
     console.log(`${emoji} [${pokemonType}_TCG_UNIQUE_NAMES] ${uniqueNames.length} unique ${pokemonType} card names found:`, uniqueNames);
-    
-    // Look specifically for Mega patterns
-    const megaCards = filteredCards.filter(card => card.name.toLowerCase().includes('mega'));
-    if (megaCards.length > 0) {
-      console.log(`${emoji} [${pokemonType}_TCG_MEGA_FOUND] Found ${megaCards.length} Mega cards:`, megaCards.map(card => card.name));
-    } else {
-      console.log(`${emoji} [${pokemonType}_TCG_MEGA_NONE] No Mega cards found in this search`);
-    }
   }
 
   if (filteredCards && filteredCards.length > 0) {
@@ -147,6 +179,6 @@ export const fetchTCGCards = async (pokemonName: string): Promise<{ firstCard: T
     return { firstCard, secondCard };
   }
 
-  console.log(`🃏 [TCG_API] No valid TCG cards found for ${pokemonName} after filtering, using fallback`);
+  console.log(`🃏 [TCG_API] No valid TCG cards found for ${pokemonName} after all search strategies, using fallback`);
   return { firstCard: null, secondCard: null };
 };
