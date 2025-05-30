@@ -14,7 +14,7 @@ import {
   DialogTrigger
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Image, CreditCard } from "lucide-react";
 import ImagePreferenceSelector, { getPreferredImageUrl, getCurrentImageMode } from "@/components/settings/ImagePreferenceSelector";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -48,9 +48,14 @@ const Index = () => {
       const imageMode = getCurrentImageMode();
       setCurrentImageMode(imageMode);
       
-      // Always load Pikachu preview image regardless of mode
-      const url = getPreferredImageUrl(PIKACHU_ID);
-      setPreviewImageUrl(url);
+      if (imageMode === 'tcg') {
+        // Use a Pikachu TCG card image for TCG mode
+        setPreviewImageUrl('https://images.pokemontcg.io/base1/58_hires.png');
+      } else {
+        // Use regular Pikachu artwork for Pokemon mode
+        const url = getPreferredImageUrl(PIKACHU_ID);
+        setPreviewImageUrl(url);
+      }
       setPreviewLoaded(false);
     };
 
@@ -70,10 +75,16 @@ const Index = () => {
     };
   }, []);
 
-  // Get current mode display text
+  // Get current mode display text and icon
   const getCurrentModeText = () => {
     return currentImageMode === 'tcg' ? 'TCG Cards' : 'Images';
   };
+
+  const getCurrentModeIcon = () => {
+    return currentImageMode === 'tcg' ? CreditCard : Image;
+  };
+
+  const CurrentIcon = getCurrentModeIcon();
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -83,7 +94,7 @@ const Index = () => {
           <div className="flex items-center justify-between h-24">
             {/* Left side - Logo */}
             <div className="flex items-center">
-              <div className="h-48 flex items-center py-4 px-4">
+              <div className="h-16 flex items-center py-4 px-4">
                 <img 
                   src="/lovable-uploads/008c1959-1f2a-4416-9d73-9f706e384331.png" 
                   alt="PokeRank Mania" 
@@ -119,7 +130,7 @@ const Index = () => {
                       <DialogTrigger asChild>
                         <Button variant="ghost" size="sm" className="flex gap-2 items-center h-9 px-4 hover:bg-white/70 transition-colors">
                           <div className="flex items-center justify-center w-5 h-5 relative">
-                            {previewImageUrl && (
+                            {previewImageUrl ? (
                               <img 
                                 src={previewImageUrl}
                                 alt="Current style preview"
@@ -127,6 +138,8 @@ const Index = () => {
                                 onLoad={() => setPreviewLoaded(true)}
                                 onError={() => { /* Keep showing on error */ }}
                               />
+                            ) : (
+                              <CurrentIcon className="w-4 h-4 text-gray-600" />
                             )}
                           </div>
                           <span className="text-sm font-medium">{getCurrentModeText()}</span>
@@ -150,8 +163,11 @@ const Index = () => {
                         const imageMode = getCurrentImageMode();
                         setCurrentImageMode(imageMode);
                         
-                        // Always load Pikachu preview regardless of mode
-                        setPreviewImageUrl(getPreferredImageUrl(PIKACHU_ID));
+                        if (imageMode === 'tcg') {
+                          setPreviewImageUrl('https://images.pokemontcg.io/base1/58_hires.png');
+                        } else {
+                          setPreviewImageUrl(getPreferredImageUrl(PIKACHU_ID));
+                        }
                         setPreviewLoaded(false);
                       }} />
                     </DialogContent>

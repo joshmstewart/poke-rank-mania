@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Check } from 'lucide-react';
+import { Check, Image, CreditCard } from 'lucide-react';
 
 export type ImageType = 'official' | 'artwork' | 'sprite' | 'tcg-cards';
 export type ImageMode = 'pokemon' | 'tcg';
@@ -21,18 +21,24 @@ interface ImageModeOption {
   id: ImageMode;
   name: string;
   description: string;
+  icon: React.ComponentType<any>;
+  previewImage: string;
 }
 
 const imageModeOptions: ImageModeOption[] = [
   {
     id: 'pokemon',
     name: 'Pokémon Images',
-    description: 'Classic Pokémon artwork and sprites'
+    description: 'Classic Pokémon artwork and sprites',
+    icon: Image,
+    previewImage: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png'
   },
   {
     id: 'tcg',
     name: 'TCG Cards',
-    description: 'Real Pokémon Trading Card Game cards'
+    description: 'Real Pokémon Trading Card Game cards',
+    icon: CreditCard,
+    previewImage: 'https://images.pokemontcg.io/base1/58_hires.png'
   }
 ];
 
@@ -96,27 +102,48 @@ const ImagePreferenceSelector: React.FC<ImagePreferenceSelectorProps> = ({ onClo
       <div>
         <h3 className="text-lg font-semibold mb-3">Battle Mode</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {imageModeOptions.map((mode) => (
-            <Card
-              key={mode.id}
-              className={`p-4 cursor-pointer transition-all border-2 ${
-                selectedMode === mode.id
-                  ? 'border-primary bg-primary/5'
-                  : 'border-gray-200 hover:border-gray-300'
-              }`}
-              onClick={() => setSelectedMode(mode.id)}
-            >
-              <div className="flex items-start justify-between">
-                <div>
-                  <h4 className="font-medium text-sm">{mode.name}</h4>
-                  <p className="text-xs text-gray-600 mt-1">{mode.description}</p>
+          {imageModeOptions.map((mode) => {
+            const IconComponent = mode.icon;
+            return (
+              <Card
+                key={mode.id}
+                className={`p-4 cursor-pointer transition-all border-2 ${
+                  selectedMode === mode.id
+                    ? 'border-primary bg-primary/5'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+                onClick={() => setSelectedMode(mode.id)}
+              >
+                <div className="space-y-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-2">
+                      <IconComponent className="w-4 h-4 text-primary" />
+                      <h4 className="font-medium text-sm">{mode.name}</h4>
+                    </div>
+                    {selectedMode === mode.id && (
+                      <Check className="w-4 h-4 text-primary mt-0.5" />
+                    )}
+                  </div>
+                  
+                  <div className="flex justify-center">
+                    <div className="w-16 h-16 flex items-center justify-center bg-gray-50 rounded-lg">
+                      <img
+                        src={mode.previewImage}
+                        alt={`${mode.name} preview`}
+                        className={`max-w-full max-h-full object-contain transition-opacity ${
+                          imageLoadStates[mode.id] ? 'opacity-100' : 'opacity-0'
+                        }`}
+                        onLoad={() => handleImageLoad(mode.id)}
+                        onError={() => handleImageError(mode.id)}
+                      />
+                    </div>
+                  </div>
+                  
+                  <p className="text-xs text-gray-600 text-center">{mode.description}</p>
                 </div>
-                {selectedMode === mode.id && (
-                  <Check className="w-4 h-4 text-primary mt-0.5" />
-                )}
-              </div>
-            </Card>
-          ))}
+              </Card>
+            );
+          })}
         </div>
       </div>
 
