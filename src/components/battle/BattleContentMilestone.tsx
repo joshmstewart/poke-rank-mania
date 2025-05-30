@@ -1,7 +1,7 @@
-
 import React from "react";
 import { Pokemon, TopNOption, RankedPokemon } from "@/services/pokemon";
 import RankingDisplayContainer from "./RankingDisplayContainer";
+import { useBattleManualReorder } from "@/hooks/battle/useBattleManualReorder";
 
 interface BattleContentMilestoneProps {
   finalRankings: Pokemon[] | RankedPokemon[];
@@ -19,6 +19,7 @@ interface BattleContentMilestoneProps {
   resetMilestoneInProgress: () => void;
   handleManualReorder?: (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => void;
   pendingRefinements?: Set<number>;
+  onRankingsUpdate: (updatedRankings: RankedPokemon[]) => void;
 }
 
 const BattleContentMilestone: React.FC<BattleContentMilestoneProps> = ({
@@ -36,7 +37,8 @@ const BattleContentMilestone: React.FC<BattleContentMilestoneProps> = ({
   setShowingMilestone,
   resetMilestoneInProgress,
   handleManualReorder,
-  pendingRefinements
+  pendingRefinements,
+  onRankingsUpdate
 }) => {
   console.log(`🏆 [MILESTONE_COMPONENT_ULTRA_DEBUG] ===== BattleContentMilestone RENDER =====`);
   console.log(`🏆 [MILESTONE_COMPONENT_ULTRA_DEBUG] Props received:`);
@@ -45,14 +47,46 @@ const BattleContentMilestone: React.FC<BattleContentMilestoneProps> = ({
   console.log(`🏆 [MILESTONE_COMPONENT_ULTRA_DEBUG] - battlesCompleted: ${battlesCompleted}`);
   console.log(`🏆 [MILESTONE_COMPONENT_ULTRA_DEBUG] - rankingGenerated: ${rankingGenerated}`);
   console.log(`🏆 [MILESTONE_COMPONENT_ULTRA_DEBUG] - activeTier: ${activeTier}`);
+  console.log(`🏆 [MILESTONE_COMPONENT_ULTRA_DEBUG] - onRankingsUpdate available: ${!!onRankingsUpdate}`);
+
+  // CRITICAL: Use the enhanced manual reorder hook directly in this component
+  const { handleManualReorder: enhancedHandleManualReorder } = useBattleManualReorder(
+    finalRankings as RankedPokemon[],
+    onRankingsUpdate
+  );
+
+  console.log(`🚨 [MILESTONE_ENHANCED_DEBUG] ===== ENHANCED HOOK SETUP =====`);
+  console.log(`🚨 [MILESTONE_ENHANCED_DEBUG] enhancedHandleManualReorder exists: ${!!enhancedHandleManualReorder}`);
+  console.log(`🚨 [MILESTONE_ENHANCED_DEBUG] enhancedHandleManualReorder type: ${typeof enhancedHandleManualReorder}`);
   
-  // CRITICAL: Check the handleManualReorder function
-  console.log(`🚨 [MILESTONE_FUNCTION_DEBUG] ===== FUNCTION ANALYSIS =====`);
-  console.log(`🚨 [MILESTONE_FUNCTION_DEBUG] handleManualReorder exists: ${!!handleManualReorder}`);
-  console.log(`🚨 [MILESTONE_FUNCTION_DEBUG] handleManualReorder type: ${typeof handleManualReorder}`);
-  console.log(`🚨 [MILESTONE_FUNCTION_DEBUG] handleManualReorder function name: ${handleManualReorder?.name || 'anonymous'}`);
-  console.log(`🚨 [MILESTONE_FUNCTION_DEBUG] handleManualReorder toString: ${handleManualReorder?.toString()?.substring(0, 200) || 'undefined'}`);
-  
+  // CRITICAL: Create a wrapper that logs every step and uses the enhanced hook
+  const handleManualReorderWithFullDebug = (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => {
+    console.log(`🚨 [MILESTONE_WRAPPER_DEBUG] ===== MILESTONE WRAPPER CALLED =====`);
+    console.log(`🚨 [MILESTONE_WRAPPER_DEBUG] draggedPokemonId: ${draggedPokemonId}`);
+    console.log(`🚨 [MILESTONE_WRAPPER_DEBUG] sourceIndex: ${sourceIndex}`);
+    console.log(`🚨 [MILESTONE_WRAPPER_DEBUG] destinationIndex: ${destinationIndex}`);
+    console.log(`🚨 [MILESTONE_WRAPPER_DEBUG] enhancedHandleManualReorder available: ${!!enhancedHandleManualReorder}`);
+    console.log(`🚨 [MILESTONE_WRAPPER_DEBUG] enhancedHandleManualReorder type: ${typeof enhancedHandleManualReorder}`);
+    
+    if (enhancedHandleManualReorder && typeof enhancedHandleManualReorder === 'function') {
+      console.log(`🚨 [MILESTONE_WRAPPER_DEBUG] ===== CALLING ENHANCED HANDLER =====`);
+      try {
+        console.log(`🚨 [MILESTONE_WRAPPER_DEBUG] About to call enhancedHandleManualReorder(${draggedPokemonId}, ${sourceIndex}, ${destinationIndex})`);
+        const result = enhancedHandleManualReorder(draggedPokemonId, sourceIndex, destinationIndex);
+        console.log(`🚨 [MILESTONE_WRAPPER_DEBUG] ✅ Enhanced handler call completed`);
+        console.log(`🚨 [MILESTONE_WRAPPER_DEBUG] ✅ Result: ${result}`);
+      } catch (error) {
+        console.error(`🚨 [MILESTONE_WRAPPER_DEBUG] ❌ Error calling enhanced handler:`, error);
+        console.error(`🚨 [MILESTONE_WRAPPER_DEBUG] ❌ Error stack:`, error.stack);
+      }
+    } else {
+      console.error(`🚨 [MILESTONE_WRAPPER_DEBUG] ❌ No valid enhanced handler available!`);
+      console.error(`🚨 [MILESTONE_WRAPPER_DEBUG] ❌ enhancedHandleManualReorder value:`, enhancedHandleManualReorder);
+    }
+    
+    console.log(`🚨 [MILESTONE_WRAPPER_DEBUG] ===== MILESTONE WRAPPER COMPLETE =====`);
+  };
+
   if (finalRankings && finalRankings.length > 0) {
     console.log(`🏆 [MILESTONE_COMPONENT_ULTRA_DEBUG] Sample rankings:`, finalRankings.slice(0, 5).map(p => `${p.name} (${p.id})`));
     
@@ -70,34 +104,6 @@ const BattleContentMilestone: React.FC<BattleContentMilestoneProps> = ({
   }
   
   console.log(`🏆 [MILESTONE_COMPONENT_ULTRA_DEBUG] ===== END PROPS LOGGING =====`);
-
-  // CRITICAL: Create a wrapper that logs every step
-  const handleManualReorderWithFullDebug = (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => {
-    console.log(`🚨 [MILESTONE_WRAPPER_DEBUG] ===== MILESTONE WRAPPER CALLED =====`);
-    console.log(`🚨 [MILESTONE_WRAPPER_DEBUG] draggedPokemonId: ${draggedPokemonId}`);
-    console.log(`🚨 [MILESTONE_WRAPPER_DEBUG] sourceIndex: ${sourceIndex}`);
-    console.log(`🚨 [MILESTONE_WRAPPER_DEBUG] destinationIndex: ${destinationIndex}`);
-    console.log(`🚨 [MILESTONE_WRAPPER_DEBUG] handleManualReorder available: ${!!handleManualReorder}`);
-    console.log(`🚨 [MILESTONE_WRAPPER_DEBUG] handleManualReorder type: ${typeof handleManualReorder}`);
-    
-    if (handleManualReorder && typeof handleManualReorder === 'function') {
-      console.log(`🚨 [MILESTONE_WRAPPER_DEBUG] ===== CALLING PARENT HANDLER =====`);
-      try {
-        console.log(`🚨 [MILESTONE_WRAPPER_DEBUG] About to call handleManualReorder(${draggedPokemonId}, ${sourceIndex}, ${destinationIndex})`);
-        const result = handleManualReorder(draggedPokemonId, sourceIndex, destinationIndex);
-        console.log(`🚨 [MILESTONE_WRAPPER_DEBUG] ✅ Parent handler call completed`);
-        console.log(`🚨 [MILESTONE_WRAPPER_DEBUG] ✅ Result: ${result}`);
-      } catch (error) {
-        console.error(`🚨 [MILESTONE_WRAPPER_DEBUG] ❌ Error calling parent handler:`, error);
-        console.error(`🚨 [MILESTONE_WRAPPER_DEBUG] ❌ Error stack:`, error.stack);
-      }
-    } else {
-      console.error(`🚨 [MILESTONE_WRAPPER_DEBUG] ❌ No valid parent handler available!`);
-      console.error(`🚨 [MILESTONE_WRAPPER_DEBUG] ❌ handleManualReorder value:`, handleManualReorder);
-    }
-    
-    console.log(`🚨 [MILESTONE_WRAPPER_DEBUG] ===== MILESTONE WRAPPER COMPLETE =====`);
-  };
 
   return (
     <div className="w-full max-w-6xl mx-auto p-6">
