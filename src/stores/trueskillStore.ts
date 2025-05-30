@@ -93,13 +93,16 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           const state = get();
           console.log('[TRUESKILL_CLOUD] Syncing ratings to cloud...', Object.keys(state.ratings).length, 'Pokemon');
           
+          // Convert ratings to JSON-compatible format
+          const ratingsAsJson = JSON.parse(JSON.stringify(state.ratings));
+          
           const { error } = await supabase
             .from('user_rankings')
             .upsert({
               user_id: user.id,
               generation: 0, // Use generation 0 for TrueSkill store
               pokemon_rankings: [],
-              battle_results: state.ratings,
+              battle_results: ratingsAsJson,
               completion_percentage: 0,
               battles_completed: Object.values(state.ratings).reduce((sum, rating) => sum + rating.battleCount, 0),
               updated_at: new Date().toISOString()
@@ -143,9 +146,31 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           }
           
           if (data && data.battle_results) {
-            console.log('[TRUESKILL_CLOUD] ✅ Loaded ratings from cloud:', Object.keys(data.battle_results).length, 'Pokemon');
+            // Safely convert JSON back to Record<number, TrueSkillRating>
+            const ratingsData = typeof data.battle_results === 'object' && data.battle_results !== null 
+              ? data.battle_results as Record<string, any>
+              : {};
+            
+            // Convert string keys to number keys and validate structure
+            const convertedRatings: Record<number, TrueSkillRating> = {};
+            Object.entries(ratingsData).forEach(([key, value]) => {
+              const pokemonId = parseInt(key, 10);
+              if (!isNaN(pokemonId) && value && typeof value === 'object') {
+                const rating = value as any;
+                if (typeof rating.mu === 'number' && typeof rating.sigma === 'number') {
+                  convertedRatings[pokemonId] = {
+                    mu: rating.mu,
+                    sigma: rating.sigma,
+                    lastUpdated: rating.lastUpdated || new Date().toISOString(),
+                    battleCount: rating.battleCount || 0
+                  };
+                }
+              }
+            });
+            
+            console.log('[TRUESKILL_CLOUD] ✅ Loaded ratings from cloud:', Object.keys(convertedRatings).length, 'Pokemon');
             set({ 
-              ratings: data.battle_results,
+              ratings: convertedRatings,
               lastSyncedAt: data.updated_at,
               isLoading: false 
             });
