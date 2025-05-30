@@ -53,7 +53,7 @@ const Index = () => {
 
     // Listen for storage changes to update preview if another tab changes the preference
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "pokemon-image-preference") {
+      if (e.key === "pokemon-image-preference" || e.key === "pokemon-image-mode") {
         updatePreviewImage();
       }
     };
@@ -97,18 +97,18 @@ const Index = () => {
                             />
                           )}
                         </div>
-                        <span className="hidden sm:inline">Image Style</span>
+                        <span className="hidden sm:inline">Battle Style</span>
                       </Button>
                     </DialogTrigger>
                   </TooltipTrigger>
                   <TooltipContent>
-                    Choose your preferred Pokémon image style
+                    Choose between Pokémon images or TCG cards for battles
                   </TooltipContent>
                   <DialogContent className="max-w-2xl">
                     <DialogHeader>
-                      <DialogTitle>Image Style Preferences</DialogTitle>
+                      <DialogTitle>Battle Style Preferences</DialogTitle>
                       <DialogDescription>
-                        Choose your preferred Pokémon image style for the app.
+                        Choose how you want to see and battle with Pokémon.
                       </DialogDescription>
                     </DialogHeader>
                     <ImagePreferenceSelector onClose={() => {

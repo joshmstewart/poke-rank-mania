@@ -1,219 +1,214 @@
 
-import React, { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
+import React, { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Check } from 'lucide-react';
 
-// Sample Pokémon ID to show as example
-const SAMPLE_POKEMON_ID = 25; // Pikachu
+export type ImageType = 'official' | 'artwork' | 'sprite' | 'tcg-cards';
+export type ImageMode = 'pokemon' | 'tcg';
 
-// Image type options
-export type PokemonImageType = "default" | "official" | "home" | "dream";
-
-// Constants for localStorage
-export const POKEMON_IMAGE_PREFERENCE_KEY = "pokemon-image-preference";
-export const DEFAULT_IMAGE_PREFERENCE: PokemonImageType = "official";
-
-interface ImageTypeOption {
-  id: PokemonImageType;
+interface ImageOption {
+  id: ImageType;
   name: string;
-  url: (id: number) => string;
   description: string;
-  fallbackInfo: string; // Added to explain the fallback behavior
+  previewUrl: string;
 }
 
-const imageTypeOptions: ImageTypeOption[] = [
+interface ImageModeOption {
+  id: ImageMode;
+  name: string;
+  description: string;
+}
+
+const imageModeOptions: ImageModeOption[] = [
   {
-    id: "default",
-    name: "Default Sprite",
-    url: (id) => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`,
-    description: "Simple pixel art sprite from the games",
-    fallbackInfo: "Most reliable option, used as final fallback for all styles"
+    id: 'pokemon',
+    name: 'Pokémon Images',
+    description: 'Classic Pokémon artwork and sprites'
   },
   {
-    id: "official",
-    name: "Official Artwork",
-    url: (id) => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`,
-    description: "High quality official artwork",
-    fallbackInfo: "Falls back to: Dream World → Home → Default Sprites"
-  },
-  {
-    id: "home",
-    name: "Home Artwork",
-    url: (id) => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/home/${id}.png`,
-    description: "Modern 3D style from Pokémon Home",
-    fallbackInfo: "Falls back to: Official → Dream World → Default Sprites"
-  },
-  {
-    id: "dream",
-    name: "Dream World",
-    url: (id) => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/dream-world/${id}.svg`,
-    description: "Vector artwork from Dream World (SVG format)",
-    fallbackInfo: "Falls back to: Official → Home → Default Sprites"
+    id: 'tcg',
+    name: 'TCG Cards',
+    description: 'Real Pokémon Trading Card Game cards'
   }
 ];
 
-// Get the preferred image type from local storage
-export const getPreferredImageType = (): PokemonImageType => {
-  const stored = localStorage.getItem(POKEMON_IMAGE_PREFERENCE_KEY);
-  
-  // Only log during development or when debugging
-  if (process.env.NODE_ENV === "development") {
-    console.log("🖼️ [DEV] Getting preferred image type:", stored);
+const imageTypeOptions: ImageOption[] = [
+  {
+    id: 'official',
+    name: 'Official Artwork',
+    description: 'High-quality official Pokémon artwork',
+    previewUrl: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png'
+  },
+  {
+    id: 'artwork',
+    name: 'Dream World',
+    description: 'Dream World style artwork',
+    previewUrl: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/dream-world/25.svg'
+  },
+  {
+    id: 'sprite',
+    name: 'Classic Sprite',
+    description: 'Retro pixel art sprites',
+    previewUrl: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png'
   }
-  
-  if (stored && (stored === "default" || stored === "official" || stored === "home" || stored === "dream")) {
-    return stored;
-  }
-  
-  return DEFAULT_IMAGE_PREFERENCE;
-};
-
-// Use direct import from utils file instead of require
-// This function now forwards to getPokemonImageUrl in utils.ts
-export const getPreferredImageUrl = (pokemonId: number, fallbackLevel?: number): string => {
-  // Forward to utils.ts implementation via imported function (see import at bottom of file)
-  return getPokemonImageUrl(pokemonId, fallbackLevel);
-};
-
-// Export image options for use elsewhere
-export const getImageTypeOptions = () => imageTypeOptions;
+];
 
 interface ImagePreferenceSelectorProps {
   onClose?: () => void;
 }
 
 const ImagePreferenceSelector: React.FC<ImagePreferenceSelectorProps> = ({ onClose }) => {
-  const [selectedImageType, setSelectedImageType] = useState<PokemonImageType>(getPreferredImageType());
-  const [imagesLoaded, setImagesLoaded] = useState<Record<string, boolean>>({});
-  const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
-  const [retryAttempts, setRetryAttempts] = useState<Record<string, number>>({});
+  const [selectedMode, setSelectedMode] = useState<ImageMode>(() => {
+    const stored = localStorage.getItem('pokemon-image-mode') as ImageMode | null;
+    return stored || 'pokemon';
+  });
+  
+  const [selectedType, setSelectedType] = useState<ImageType>(() => {
+    const stored = localStorage.getItem('pokemon-image-preference') as ImageType | null;
+    return stored || 'official';
+  });
+
+  const [imageLoadStates, setImageLoadStates] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    localStorage.setItem('pokemon-image-mode', selectedMode);
+  }, [selectedMode]);
+
+  useEffect(() => {
+    localStorage.setItem('pokemon-image-preference', selectedType);
+  }, [selectedType]);
 
   const handleImageLoad = (id: string) => {
-    setImagesLoaded(prev => ({ ...prev, [id]: true }));
+    setImageLoadStates(prev => ({ ...prev, [id]: true }));
   };
 
   const handleImageError = (id: string) => {
-    // Track retry attempts
-    const currentAttempts = retryAttempts[id] || 0;
-    
-    if (currentAttempts < 2) {
-      // Try with cache busting
-      setRetryAttempts(prev => ({ ...prev, [id]: currentAttempts + 1 }));
-      
-      // Apply cache busting and retry
-      const option = imageTypeOptions.find(opt => opt.id === id);
-      if (option) {
-        const cacheBustedUrl = `${option.url(SAMPLE_POKEMON_ID)}?_cb=${Date.now()}`;
-        
-        // Wait a moment before retrying
-        setTimeout(() => {
-          const img = document.getElementById(`img-${id}`) as HTMLImageElement;
-          if (img) {
-            console.log(`🔄 Retrying image ${id} with cache busting: ${cacheBustedUrl}`);
-            img.src = cacheBustedUrl;
-          }
-        }, 500);
-        
-        return;
-      }
-    }
-    
-    // If out of retries, mark as error
-    setImageErrors(prev => ({ ...prev, [id]: true }));
-    
-    // Mark this image as needing cache busting for future loads
-    markImageAsNeedingCacheBusting(SAMPLE_POKEMON_ID, id as PokemonImageType);
+    setImageLoadStates(prev => ({ ...prev, [id]: false }));
   };
-
-  const handleSave = () => {
-    localStorage.setItem(POKEMON_IMAGE_PREFERENCE_KEY, selectedImageType);
-    toast.success("Image preference saved!", {
-      description: "Your preferred Pokémon image style has been saved."
-    });
-    
-    // Dispatch event to inform components of the change
-    const event = new Event("imagePreferenceChanged");
-    window.dispatchEvent(event);
-    
-    if (onClose) onClose();
-  };
-
-  const selectOption = (optionId: PokemonImageType) => {
-    setSelectedImageType(optionId);
-  };
-
-  // Reset loaded/error state if we switch to this component
-  useEffect(() => {
-    setImagesLoaded({});
-    setImageErrors({});
-    setRetryAttempts({});
-  }, []);
 
   return (
-    <Card className="max-w-2xl mx-auto">
-      <CardHeader>
-        <CardTitle>Choose Preferred Pokémon Image Style</CardTitle>
-        <CardDescription>
-          Select which style of Pokémon images you prefer to see throughout the app.
-          Each style has a custom fallback chain if the preferred image isn't available.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {imageTypeOptions.map((option) => (
-            <Button
-              key={option.id}
-              variant={selectedImageType === option.id ? "default" : "outline"}
-              className={`h-auto p-4 flex flex-col items-center justify-start gap-3 w-full ${selectedImageType === option.id ? 'ring-2 ring-primary' : ''}`}
-              onClick={() => selectOption(option.id)}
+    <div className="space-y-6">
+      {/* Image Mode Selection */}
+      <div>
+        <h3 className="text-lg font-semibold mb-3">Battle Mode</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {imageModeOptions.map((mode) => (
+            <Card
+              key={mode.id}
+              className={`p-4 cursor-pointer transition-all border-2 ${
+                selectedMode === mode.id
+                  ? 'border-primary bg-primary/5'
+                  : 'border-gray-200 hover:border-gray-300'
+              }`}
+              onClick={() => setSelectedMode(mode.id)}
             >
-              <div className="w-20 h-20 rounded bg-gray-100 overflow-hidden relative">
-                {!imagesLoaded[option.id] && !imageErrors[option.id] && (
-                  <div className="absolute inset-0 flex items-center justify-center animate-pulse bg-gray-200">
-                    <span className="text-xs text-gray-400">Loading...</span>
-                  </div>
-                )}
-                <img 
-                  id={`img-${option.id}`}
-                  src={option.url(SAMPLE_POKEMON_ID)} 
-                  alt={`${option.name} example`}
-                  className={`w-full h-full object-contain ${imagesLoaded[option.id] ? 'opacity-100' : 'opacity-0'} transition-opacity duration-200`}
-                  onLoad={() => handleImageLoad(option.id)}
-                  onError={() => handleImageError(option.id)}
-                  crossOrigin="anonymous"
-                />
-                {imageErrors[option.id] && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
-                    <span className="text-xs text-red-500">Failed to load</span>
-                  </div>
+              <div className="flex items-start justify-between">
+                <div>
+                  <h4 className="font-medium text-sm">{mode.name}</h4>
+                  <p className="text-xs text-gray-600 mt-1">{mode.description}</p>
+                </div>
+                {selectedMode === mode.id && (
+                  <Check className="w-4 h-4 text-primary mt-0.5" />
                 )}
               </div>
-              <div className="text-center">
-                <h3 className="font-medium">{option.name}</h3>
-                <p className="text-xs text-gray-500 mt-1">{option.description}</p>
-                <p className="text-xs text-blue-500 mt-1">{option.fallbackInfo}</p>
-              </div>
-            </Button>
+            </Card>
           ))}
         </div>
-      </CardContent>
-      <CardFooter className="flex justify-end space-x-2">
-        {onClose && (
-          <Button variant="outline" onClick={onClose}>
-            Cancel
-          </Button>
-        )}
-        <Button onClick={handleSave}>
-          Save Preference
-        </Button>
-      </CardFooter>
-    </Card>
+      </div>
+
+      {/* Image Type Selection - Only show for Pokemon mode */}
+      {selectedMode === 'pokemon' && (
+        <div>
+          <h3 className="text-lg font-semibold mb-3">Image Style</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {imageTypeOptions.map((option) => (
+              <Card
+                key={option.id}
+                className={`p-4 cursor-pointer transition-all border-2 ${
+                  selectedType === option.id
+                    ? 'border-primary bg-primary/5'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+                onClick={() => setSelectedType(option.id)}
+              >
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-medium text-sm">{option.name}</h4>
+                    {selectedType === option.id && (
+                      <Check className="w-4 h-4 text-primary" />
+                    )}
+                  </div>
+                  
+                  <div className="flex justify-center">
+                    <div className="w-16 h-16 flex items-center justify-center bg-gray-50 rounded-lg">
+                      <img
+                        src={option.previewUrl}
+                        alt={`${option.name} preview`}
+                        className={`max-w-full max-h-full object-contain transition-opacity ${
+                          imageLoadStates[option.id] ? 'opacity-100' : 'opacity-0'
+                        }`}
+                        onLoad={() => handleImageLoad(option.id)}
+                        onError={() => handleImageError(option.id)}
+                      />
+                    </div>
+                  </div>
+                  
+                  <p className="text-xs text-gray-600 text-center">{option.description}</p>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {selectedMode === 'tcg' && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <h4 className="font-medium text-blue-900 mb-2">TCG Card Mode</h4>
+          <p className="text-sm text-blue-700">
+            In this mode, you'll battle with real Pokémon Trading Card Game cards. 
+            Cards will be loaded dynamically during battles for an authentic TCG experience.
+          </p>
+        </div>
+      )}
+
+      {onClose && (
+        <div className="flex justify-end pt-4">
+          <Button onClick={onClose}>Done</Button>
+        </div>
+      )}
+    </div>
   );
 };
 
-export default ImagePreferenceSelector;
+// Helper functions for getting preferred images
+export const getImageModeOptions = () => imageModeOptions;
+export const getImageTypeOptions = () => imageTypeOptions;
 
-// Fix circular dependency by importing at the bottom after exports
-// This breaks the circular reference chain
-import { getPokemonImageUrl, markImageAsNeedingCacheBusting } from "@/services/pokemon/api/utils";
+export const getPreferredImageUrl = (pokemonId: number): string => {
+  const mode = localStorage.getItem('pokemon-image-mode') as ImageMode | null || 'pokemon';
+  
+  if (mode === 'tcg') {
+    // For TCG mode, we'll return a placeholder since actual cards are loaded dynamically
+    return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pokemonId}.png`;
+  }
+  
+  const preferredType = localStorage.getItem('pokemon-image-preference') as ImageType | null || 'official';
+  
+  switch (preferredType) {
+    case 'official':
+      return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pokemonId}.png`;
+    case 'artwork':
+      return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/dream-world/${pokemonId}.svg`;
+    case 'sprite':
+      return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemonId}.png`;
+    default:
+      return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pokemonId}.png`;
+  }
+};
+
+export const getCurrentImageMode = (): ImageMode => {
+  return localStorage.getItem('pokemon-image-mode') as ImageMode | null || 'pokemon';
+};
+
+export default ImagePreferenceSelector;
