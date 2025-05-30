@@ -30,7 +30,7 @@ const PokemonListContent: React.FC<PokemonListContentProps> = ({
   return (
     <div 
       ref={containerRef}
-      className={`flex-1 overflow-auto bg-gray-50 rounded-lg p-2 ${isRankingArea ? 'min-h-[600px] max-h-[calc(100vh-12rem)] z-20 relative' : 'min-h-[400px] max-h-[calc(100vh-12rem)] z-10 relative'}`}
+      className={`flex-1 bg-gray-50 rounded-lg p-2 ${isRankingArea ? 'overflow-y-auto max-h-[calc(100vh-12rem)] z-20 relative' : 'overflow-auto min-h-[400px] max-h-[calc(100vh-12rem)] z-10 relative'}`}
     >
       <Droppable droppableId={droppableId}>
         {(provided, snapshot) => (
@@ -39,7 +39,7 @@ const PokemonListContent: React.FC<PokemonListContentProps> = ({
             ref={provided.innerRef}
             className={`
               ${viewMode === "grid" ? "grid grid-cols-2 md:grid-cols-3 gap-2" : "space-y-2"} 
-              h-full ${snapshot.isDraggingOver && isRankingArea ? 'bg-green-50 border-2 border-dashed border-green-500 rounded' : ''}
+              ${isRankingArea ? 'min-h-full' : 'h-full'} ${snapshot.isDraggingOver && isRankingArea ? 'bg-green-50 border-2 border-dashed border-green-500 rounded' : ''}
             `}
           >
             {items.length > 0 ? (
