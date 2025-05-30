@@ -4,11 +4,19 @@ import { sortCardsByRarity } from './sorting';
 
 export const fetchTCGCards = async (pokemonName: string): Promise<{ firstCard: TCGCard | null; secondCard: TCGCard | null }> => {
   // Clean the Pokemon name for API search (remove hyphens, special characters)
-  const searchName = pokemonName
+  let searchName = pokemonName
     .toLowerCase()
     .replace(/-/g, ' ')
     .replace(/[^a-z0-9\s]/g, '')
     .trim();
+
+  // Special handling for G-Max Pokemon - search for VMAX version instead
+  if (searchName.includes('g max') || searchName.includes('gmax')) {
+    // Extract the base Pokemon name (everything before 'g max' or 'gmax')
+    const baseName = searchName.replace(/g\s*max\s*/, '').trim();
+    searchName = `${baseName} vmax`;
+    console.log(`🃏 [TCG_GMAX] Detected G-Max Pokemon, searching for VMAX version: "${searchName}"`);
+  }
 
   console.log(`🃏 [TCG_API] Searching for TCG cards with name: "${searchName}"`);
   
