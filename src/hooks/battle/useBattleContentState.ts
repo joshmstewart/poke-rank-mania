@@ -42,12 +42,12 @@ export const useBattleContentState = (
   );
 
   // Create a stable wrapper for battle processing that ensures TrueSkill updates
-  const stableSetCurrentBattle = useCallback((battle: Pokemon[]) => {
+  const stableSetCurrentBattle = useCallback((battle: Pokemon[]): void => {
     console.log(`🚨🚨🚨 [BATTLE_STATE_CRITICAL] Setting current battle: ${battle.map(p => p.name)}`);
     setCurrentBattle(battle);
   }, []);
 
-  const stableSetSelectedPokemon = useCallback((pokemon: number[]) => {
+  const stableSetSelectedPokemon = useCallback((pokemon: number[]): void => {
     console.log(`🚨🚨🚨 [BATTLE_STATE_CRITICAL] Setting selected pokemon: ${pokemon}`);
     setSelectedPokemon(pokemon);
   }, []);
