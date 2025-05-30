@@ -35,7 +35,7 @@ export const useTrueSkillIntegration = ({
     initializeFromCloud();
   }, [loadFromCloud]);
   
-  // CRITICAL FIX: Wait for Pokemon data AND TrueSkill store to be ready
+  // CRITICAL FIX: Sync TrueSkill data when Pokemon data is ready, regardless of current list state
   useEffect(() => {
     const updateRankingsFromTrueSkill = () => {
       console.log("[TRUESKILL_MANUAL_CLOUD] Attempting to sync TrueSkill data to Manual mode");
@@ -50,21 +50,28 @@ export const useTrueSkillIntegration = ({
         return;
       }
       
-      // Get all Pokemon from both lists
+      // CRITICAL FIX: Get all current Pokemon from both lists, but if empty, we still need to proceed
+      // because we need to populate from the base Pokemon data that was loaded
       const allCurrentPokemon = [...availablePokemon, ...rankedPokemon];
       
-      if (allCurrentPokemon.length === 0) {
-        console.log("[TRUESKILL_MANUAL_CLOUD] No Pokemon data loaded yet - cannot sync TrueSkill ratings");
+      console.log("[TRUESKILL_MANUAL_CLOUD] Working with", allCurrentPokemon.length, "total Pokemon");
+      console.log("[TRUESKILL_MANUAL_CLOUD] Available Pokemon count:", availablePokemon.length);
+      console.log("[TRUESKILL_MANUAL_CLOUD] Ranked Pokemon count:", rankedPokemon.length);
+      
+      // CRITICAL FIX: If we have no Pokemon in our lists but we have ratings, 
+      // we need to populate from the available Pokemon that should have been loaded
+      let pokemonToWorkWith = allCurrentPokemon;
+      
+      if (pokemonToWorkWith.length === 0) {
+        console.log("[TRUESKILL_MANUAL_CLOUD] No Pokemon in current lists - this means we need to wait for base data");
         return;
       }
-      
-      console.log("[TRUESKILL_MANUAL_CLOUD] Working with", allCurrentPokemon.length, "total Pokemon");
       
       // Separate Pokemon into rated and unrated
       const ratedPokemon: Pokemon[] = [];
       const unratedPokemon: Pokemon[] = [];
       
-      allCurrentPokemon.forEach(pokemon => {
+      pokemonToWorkWith.forEach(pokemon => {
         if (ratedPokemonIds.includes(pokemon.id)) {
           const rating = getRating(pokemon.id);
           const pokemonWithRating = {
@@ -103,23 +110,22 @@ export const useTrueSkillIntegration = ({
       console.log("[TRUESKILL_MANUAL_CLOUD] - Available Pokemon:", unratedPokemon.length);
     };
     
-    // Only sync when all conditions are met:
-    // 1. Pokemon data is loaded (!isLoading)
-    // 2. TrueSkill store is loaded (!storeIsLoading) 
-    // 3. We have Pokemon to work with
-    if (!isLoading && !storeIsLoading && (availablePokemon.length > 0 || rankedPokemon.length > 0)) {
-      console.log("[TRUESKILL_MANUAL_CLOUD] ✅ All conditions met - syncing TrueSkill to Manual");
-      updateRankingsFromTrueSkill();
+    // CRITICAL FIX: Only check that Pokemon data is loaded and store is ready
+    // Don't require existing Pokemon in lists since we're trying to populate them
+    if (!isLoading && !storeIsLoading) {
+      console.log("[TRUESKILL_MANUAL_CLOUD] ✅ Data ready - attempting sync");
+      
+      // Small delay to ensure Pokemon data is fully loaded
+      setTimeout(() => {
+        updateRankingsFromTrueSkill();
+      }, 100);
     } else {
-      console.log("[TRUESKILL_MANUAL_CLOUD] ⏳ Waiting for conditions:", {
+      console.log("[TRUESKILL_MANUAL_CLOUD] ⏳ Waiting for data:", {
         pokemonLoading: isLoading,
-        storeLoading: storeIsLoading,
-        hasPokemon: (availablePokemon.length > 0 || rankedPokemon.length > 0),
-        availableCount: availablePokemon.length,
-        rankedCount: rankedPokemon.length
+        storeLoading: storeIsLoading
       });
     }
-  }, [isLoading, storeIsLoading, availablePokemon, rankedPokemon, getAllRatings, getRating, setRankedPokemon, setAvailablePokemon, setConfidenceScores]);
+  }, [isLoading, storeIsLoading, availablePokemon.length, rankedPokemon.length, getAllRatings, getRating, setRankedPokemon, setAvailablePokemon, setConfidenceScores]);
 
   // Listen for TrueSkill store updates from Battle mode
   useEffect(() => {
@@ -128,13 +134,19 @@ export const useTrueSkillIntegration = ({
       
       // Small delay to ensure store is fully updated
       setTimeout(() => {
-        if (!isLoading && !storeIsLoading && (availablePokemon.length > 0 || rankedPokemon.length > 0)) {
+        if (!isLoading && !storeIsLoading) {
           const allRatings = getAllRatings();
           const ratedPokemonIds = Object.keys(allRatings).map(Number);
           
           if (ratedPokemonIds.length === 0) return;
           
           const allCurrentPokemon = [...availablePokemon, ...rankedPokemon];
+          
+          if (allCurrentPokemon.length === 0) {
+            console.log("[TRUESKILL_MANUAL_CLOUD] No Pokemon to work with during update");
+            return;
+          }
+          
           const ratedPokemon: Pokemon[] = [];
           const unratedPokemon: Pokemon[] = [];
           
