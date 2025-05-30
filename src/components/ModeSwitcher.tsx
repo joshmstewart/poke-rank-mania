@@ -14,6 +14,13 @@ interface ModeSwitcherProps {
 }
 
 const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ currentMode, onModeChange }) => {
+  const handleModeChange = (mode: "rank" | "battle") => {
+    console.log(`🔄 [MODE_SWITCH_DEBUG] Switching from ${currentMode} to ${mode}`);
+    console.error(`🚨 [MODE_SWITCH_DEBUG] Mode change from ${currentMode} to ${mode} - checking if this triggers rating clear`);
+    console.error(`🚨 [MODE_SWITCH_DEBUG] Stack trace:`, new Error().stack);
+    onModeChange(mode);
+  };
+
   return (
     <TooltipProvider>
       <div className="flex items-center">
@@ -21,7 +28,7 @@ const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ currentMode, onModeChange }
           <Tooltip>
             <TooltipTrigger asChild>
               <button
-                onClick={() => onModeChange("battle")}
+                onClick={() => handleModeChange("battle")}
                 className={`flex items-center justify-center gap-2 px-4 py-2 rounded-md transition-all duration-200 font-medium text-sm ${
                   currentMode === "battle"
                     ? "bg-blue-900 text-white shadow-sm"
@@ -41,7 +48,7 @@ const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ currentMode, onModeChange }
           <Tooltip>
             <TooltipTrigger asChild>
               <button
-                onClick={() => onModeChange("rank")}
+                onClick={() => handleModeChange("rank")}
                 className={`flex items-center justify-center gap-2 px-4 py-2 rounded-md transition-all duration-200 font-medium text-sm ${
                   currentMode === "rank"
                     ? "bg-blue-900 text-white shadow-sm"

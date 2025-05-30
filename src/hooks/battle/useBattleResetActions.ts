@@ -22,6 +22,8 @@ export const useBattleResetActions = (
 
   const performFullBattleReset = useCallback(() => {
     console.log(`🔄 [BATTLE_RESET] Performing full battle reset including centralized TrueSkill store`);
+    console.error(`🚨 [BATTLE_RESET_DEBUG] performFullBattleReset called - this will clear TrueSkill ratings!`);
+    console.error(`🚨 [BATTLE_RESET_DEBUG] Stack trace:`, new Error().stack);
     
     setBattlesCompleted(0);
     setBattleResults([]);
@@ -37,6 +39,7 @@ export const useBattleResetActions = (
     clearRefinementQueue();
     
     // Clear centralized TrueSkill store
+    console.error(`🚨 [BATTLE_RESET_DEBUG] About to call clearAllRatings() from performFullBattleReset`);
     clearAllRatings();
     console.log(`✅ [BATTLE_RESET] Cleared centralized TrueSkill store`);
     

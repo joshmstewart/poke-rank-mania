@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Rating } from 'ts-trueskill';
@@ -77,10 +78,25 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
       },
       
       getAllRatings: () => {
-        return get().ratings;
+        const ratings = get().ratings;
+        console.log(`🔍 [STORE_GET_ALL] getAllRatings called - returning ${Object.keys(ratings).length} ratings`);
+        return ratings;
       },
       
       clearAllRatings: () => {
+        const currentRatings = get().ratings;
+        const ratingsCount = Object.keys(currentRatings).length;
+        
+        // CRITICAL DEBUG: Log the stack trace to see WHO is calling clearAllRatings
+        console.error(`🚨 [STORE_CLEAR_DEBUG] clearAllRatings() called! Current ratings: ${ratingsCount}`);
+        console.error(`🚨 [STORE_CLEAR_DEBUG] Stack trace:`, new Error().stack);
+        
+        // Log current state before clearing
+        if (ratingsCount > 0) {
+          console.error(`🚨 [STORE_CLEAR_DEBUG] About to clear ${ratingsCount} ratings!`);
+          console.error(`🚨 [STORE_CLEAR_DEBUG] Sample ratings being lost:`, Object.entries(currentRatings).slice(0, 3));
+        }
+        
         console.log('[TRUESKILL_CLOUD] Clearing all ratings and syncing to cloud');
         set({ ratings: {}, lastSyncedAt: null });
         
@@ -88,6 +104,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
         setTimeout(() => {
           const clearEvent = new CustomEvent('trueskill-store-cleared');
           document.dispatchEvent(clearEvent);
+          console.error(`🚨 [STORE_CLEAR_DEBUG] Dispatched trueskill-store-cleared event`);
         }, 10);
         
         // Sync empty state to cloud
@@ -183,6 +200,8 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
             });
             
             console.log('[TRUESKILL_CLOUD] ✅ Loaded ratings from cloud:', Object.keys(convertedRatings).length, 'Pokemon');
+            console.log(`🔍 [CLOUD_LOAD_DEBUG] Setting ${Object.keys(convertedRatings).length} ratings in store`);
+            
             set({ 
               ratings: convertedRatings,
               lastSyncedAt: data.updated_at,
@@ -195,6 +214,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
                 detail: { ratingsCount: Object.keys(convertedRatings).length }
               });
               document.dispatchEvent(loadEvent);
+              console.log(`🔍 [CLOUD_LOAD_DEBUG] Dispatched trueskill-store-loaded event with ${Object.keys(convertedRatings).length} ratings`);
             }, 10);
           } else {
             console.log('[TRUESKILL_CLOUD] No cloud data found, starting fresh');
