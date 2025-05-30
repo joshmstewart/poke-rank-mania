@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import ModeSwitcher from "@/components/ModeSwitcher";
 import { 
   Dialog,
@@ -31,26 +31,29 @@ const ModeStyleControls: React.FC<ModeStyleControlsProps> = ({
   
   const { getPreviewImage, isLoading, imageStates, updateImageState } = usePreviewImageCache();
 
-  // Load preview image and current mode when component mounts or when settings change
+  // Memoize the update function to prevent dependency changes
+  const updatePreviewImage = useCallback(async () => {
+    const imageMode = getCurrentImageMode();
+    setCurrentImageMode(imageMode);
+    
+    console.log(`🖼️ [MODE_CONTROLS] Updating preview image for mode: ${imageMode}`);
+    
+    try {
+      const newUrl = await getPreviewImage(imageMode);
+      setPreviewImageUrl(newUrl);
+      console.log(`🖼️ [MODE_CONTROLS] Set preview URL: ${newUrl}`);
+    } catch (error) {
+      console.error('Failed to get preview image:', error);
+    }
+  }, [getPreviewImage]);
+
+  // Initial load - only run once on mount
   useEffect(() => {
-    const updatePreviewImage = async () => {
-      const imageMode = getCurrentImageMode();
-      setCurrentImageMode(imageMode);
-      
-      console.log(`🖼️ [MODE_CONTROLS] Updating preview image for mode: ${imageMode}`);
-      
-      try {
-        const newUrl = await getPreviewImage(imageMode);
-        setPreviewImageUrl(newUrl);
-        console.log(`🖼️ [MODE_CONTROLS] Set preview URL: ${newUrl}`);
-      } catch (error) {
-        console.error('Failed to get preview image:', error);
-      }
-    };
-
     updatePreviewImage();
+  }, [updatePreviewImage]);
 
-    // Listen for storage changes to update preview if another tab changes the preference
+  // Listen for storage changes from other tabs - stable dependencies
+  useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === "pokemon-image-preference" || e.key === "pokemon-image-mode") {
         updatePreviewImage();
@@ -62,13 +65,13 @@ const ModeStyleControls: React.FC<ModeStyleControlsProps> = ({
     return () => {
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, [getPreviewImage]);
+  }, [updatePreviewImage]);
 
-  // Listen for changes when dialog closes
+  // Handle dialog close updates - FIXED: Only run when dialog actually closes
   useEffect(() => {
     if (!imageSettingsOpen) {
-      // Small delay to ensure localStorage has been updated
-      setTimeout(async () => {
+      // Use a ref or flag to prevent running on initial mount
+      const timeoutId = setTimeout(async () => {
         const imageMode = getCurrentImageMode();
         setCurrentImageMode(imageMode);
         
@@ -80,30 +83,47 @@ const ModeStyleControls: React.FC<ModeStyleControlsProps> = ({
           console.error('Failed to update preview image after dialog close:', error);
         }
       }, 100);
+
+      return () => clearTimeout(timeoutId);
     }
-  }, [imageSettingsOpen, getPreviewImage]);
+  }, [imageSettingsOpen, getPreviewImage]); // Only depend on dialog state and the stable getPreviewImage
 
-  // Get current mode display text and icon
-  const getCurrentModeText = () => {
-    return currentImageMode === 'tcg' ? 'TCG Cards' : 'Images';
-  };
+  // Get current mode display text and icon - memoized to prevent re-renders
+  const modeDisplay = useMemo(() => {
+    const text = currentImageMode === 'tcg' ? 'TCG Cards' : 'Images';
+    const IconComponent = currentImageMode === 'tcg' ? CreditCard : Image;
+    return { text, IconComponent };
+  }, [currentImageMode]);
 
-  const getCurrentModeIcon = () => {
-    return currentImageMode === 'tcg' ? CreditCard : Image;
-  };
+  // Get image state for current preview - with proper defaults and memoization
+  const imageDisplayState = useMemo(() => {
+    const currentImageState = imageStates[previewImageUrl];
+    const imageLoaded = currentImageState?.loaded ?? false;
+    const imageError = currentImageState?.error ?? false;
+    
+    // Determine if we should show the preview image or fallback icon
+    const hasValidUrl = previewImageUrl && previewImageUrl.length > 0;
+    const shouldShowPreviewImage = hasValidUrl && !imageError;
+    const shouldShowFallbackIcon = !hasValidUrl || imageError;
 
-  const CurrentIcon = getCurrentModeIcon();
+    return {
+      imageLoaded,
+      imageError,
+      shouldShowPreviewImage,
+      shouldShowFallbackIcon
+    };
+  }, [previewImageUrl, imageStates]);
 
-  // Get image state for current preview - with proper defaults
-  const currentImageState = imageStates[previewImageUrl];
-  const imageLoaded = currentImageState?.loaded ?? false;
-  const imageError = currentImageState?.error ?? false;
-  
-  // Determine if we should show the preview image or fallback icon
-  // If we have a URL and no error state is recorded, try to show the image
-  const hasValidUrl = previewImageUrl && previewImageUrl.length > 0;
-  const shouldShowPreviewImage = hasValidUrl && !imageError;
-  const shouldShowFallbackIcon = !hasValidUrl || imageError;
+  // Stable image load/error handlers
+  const handleImageLoad = useCallback(() => {
+    console.log('✅ [MODE_CONTROLS] Preview image loaded successfully:', previewImageUrl);
+    updateImageState(previewImageUrl, true, false);
+  }, [previewImageUrl, updateImageState]);
+
+  const handleImageError = useCallback(() => {
+    console.error('❌ [MODE_CONTROLS] Failed to load preview image:', previewImageUrl);
+    updateImageState(previewImageUrl, false, true);
+  }, [previewImageUrl, updateImageState]);
 
   return (
     <div className="flex items-center gap-4 bg-gray-100 rounded-xl p-2 shadow-md border-2 border-gray-400">
@@ -132,28 +152,22 @@ const ModeStyleControls: React.FC<ModeStyleControlsProps> = ({
               <DialogTrigger asChild>
                 <Button variant="ghost" size="sm" className="flex gap-2 items-center h-9 px-4 hover:bg-white/70 transition-colors">
                   <div className="flex items-center justify-center w-5 h-5 relative">
-                    {shouldShowPreviewImage && (
+                    {imageDisplayState.shouldShowPreviewImage && (
                       <img 
                         src={previewImageUrl}
                         alt="Current style preview"
                         className={`w-full h-full object-contain rounded-sm transition-opacity duration-200 ${
-                          imageLoaded ? 'opacity-100' : 'opacity-0'
+                          imageDisplayState.imageLoaded ? 'opacity-100' : 'opacity-0'
                         }`}
-                        onLoad={() => {
-                          console.log('✅ [MODE_CONTROLS] Preview image loaded successfully:', previewImageUrl);
-                          updateImageState(previewImageUrl, true, false);
-                        }}
-                        onError={() => {
-                          console.error('❌ [MODE_CONTROLS] Failed to load preview image:', previewImageUrl);
-                          updateImageState(previewImageUrl, false, true);
-                        }}
+                        onLoad={handleImageLoad}
+                        onError={handleImageError}
                       />
                     )}
-                    {shouldShowFallbackIcon && (
-                      <CurrentIcon className="w-4 h-4 text-gray-600" />
+                    {imageDisplayState.shouldShowFallbackIcon && (
+                      <modeDisplay.IconComponent className="w-4 h-4 text-gray-600" />
                     )}
                   </div>
-                  <span className="text-sm font-medium">{getCurrentModeText()}</span>
+                  <span className="text-sm font-medium">{modeDisplay.text}</span>
                   <ChevronDown className="w-3 h-3 text-gray-500" />
                 </Button>
               </DialogTrigger>
