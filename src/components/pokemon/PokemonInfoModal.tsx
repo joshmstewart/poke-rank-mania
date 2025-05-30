@@ -1,22 +1,17 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Pokemon } from "@/services/pokemon";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
-import { Info } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { usePokemonFlavorText } from "@/hooks/pokemon/usePokemonFlavorText";
 import { usePokemonTCGCard } from "@/hooks/pokemon/usePokemonTCGCard";
-import PokemonBasicInfo from "./PokemonBasicInfo";
-import PokemonStats from "./PokemonStats";
-import PokemonDescription from "./PokemonDescription";
-import PokemonTCGCardDisplay from "./PokemonTCGCardDisplay";
-import Logo from "@/components/ui/Logo";
+import PokemonModalTrigger from "./PokemonModalTrigger";
+import PokemonModalContent from "./PokemonModalContent";
+import PokemonModalLoading from "./PokemonModalLoading";
 
 interface PokemonInfoModalProps {
   pokemon: Pokemon;
@@ -64,18 +59,10 @@ const PokemonInfoModal: React.FC<PokemonInfoModalProps> = ({
   
   return (
     <Dialog open={isOpen} onOpenChange={handleDialogOpen}>
-      <DialogTrigger asChild onClick={handleInfoClick}>
-        {children || (
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="w-6 h-6 p-0 rounded-full bg-white/90 hover:bg-white shadow-sm border relative"
-            data-info-button="true"
-          >
-            <Info className="w-3 h-3 text-blue-600" />
-          </Button>
-        )}
-      </DialogTrigger>
+      <PokemonModalTrigger onTriggerClick={handleInfoClick}>
+        {children}
+      </PokemonModalTrigger>
+      
       <DialogContent 
         className="max-w-4xl max-h-[90vh] overflow-y-auto pointer-events-auto"
         onClick={handleDialogClick}
@@ -87,34 +74,20 @@ const PokemonInfoModal: React.FC<PokemonInfoModalProps> = ({
           </DialogTitle>
         </DialogHeader>
 
-        {/* Loading state with logo */}
-        {showLoading && (
-          <div className="flex flex-col items-center justify-center py-12 space-y-4">
-            <div className="animate-pulse">
-              <Logo />
-            </div>
-            <p className="text-lg font-medium text-gray-600">Loading card data...</p>
-          </div>
-        )}
+        {/* Loading state */}
+        {showLoading && <PokemonModalLoading />}
 
-        {/* Display TCG cards if available */}
-        {showTCGCards && (
-          <PokemonTCGCardDisplay tcgCard={tcgCard} secondCard={secondTcgCard} />
-        )}
-
-        {/* Fallback to original info layout if no TCG cards */}
-        {showFallbackInfo && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Left side - Pokemon image and basic info */}
-            <PokemonBasicInfo pokemon={pokemon} />
-
-            {/* Right side - Stats and description */}
-            <div className="space-y-4">
-              <PokemonStats pokemon={pokemon} />
-              <PokemonDescription flavorText={flavorText} isLoadingFlavor={isLoadingFlavor} />
-            </div>
-          </div>
-        )}
+        {/* Modal content */}
+        <PokemonModalContent
+          pokemon={pokemon}
+          showLoading={showLoading}
+          showTCGCards={showTCGCards}
+          showFallbackInfo={showFallbackInfo}
+          tcgCard={tcgCard}
+          secondTcgCard={secondTcgCard}
+          flavorText={flavorText}
+          isLoadingFlavor={isLoadingFlavor}
+        />
       </DialogContent>
     </Dialog>
   );
