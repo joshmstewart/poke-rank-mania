@@ -1,3 +1,4 @@
+
 import { TCGApiResponse, TCGCard } from './types';
 import { selectDiverseCards } from './sorting';
 import { getCachedCards, setCachedCard } from './cache';
@@ -38,6 +39,45 @@ const isCardBack = (card: TCGCard): boolean => {
   return false;
 };
 
+// Function to normalize names by removing accents and special characters
+const normalizeForSearch = (name: string): string => {
+  return name
+    .toLowerCase()
+    .normalize('NFD') // Decompose accented characters
+    .replace(/[\u0300-\u036f]/g, '') // Remove diacritical marks
+    .replace(/[^a-z0-9\s]/g, '') // Remove other special characters
+    .trim();
+};
+
+// Function to create search name variations
+const createSearchVariations = (pokemonName: string): string[] => {
+  const variations = [];
+  
+  // Original name as-is
+  variations.push(pokemonName.toLowerCase());
+  
+  // Normalized version (no accents)
+  const normalized = normalizeForSearch(pokemonName);
+  if (normalized !== pokemonName.toLowerCase()) {
+    variations.push(normalized);
+  }
+  
+  // Handle hyphens - try with spaces and without
+  if (pokemonName.includes('-')) {
+    variations.push(pokemonName.replace(/-/g, ' ').toLowerCase());
+    variations.push(pokemonName.replace(/-/g, '').toLowerCase());
+  }
+  
+  // Handle spaces - try with hyphens and without
+  if (pokemonName.includes(' ')) {
+    variations.push(pokemonName.replace(/\s+/g, '-').toLowerCase());
+    variations.push(pokemonName.replace(/\s+/g, '').toLowerCase());
+  }
+  
+  // Remove duplicates
+  return [...new Set(variations)];
+};
+
 export const fetchTCGCards = async (pokemonName: string): Promise<{ firstCard: TCGCard | null; secondCard: TCGCard | null }> => {
   // Check database cache first
   const cachedResult = await getCachedCards(pokemonName);
@@ -46,12 +86,14 @@ export const fetchTCGCards = async (pokemonName: string): Promise<{ firstCard: T
     return cachedResult;
   }
 
+  console.log(`🃏 [TCG_API] Starting search for: "${pokemonName}"`);
+  
+  // Create name variations for search
+  const nameVariations = createSearchVariations(pokemonName);
+  console.log(`🃏 [TCG_VARIATIONS] Search variations for ${pokemonName}:`, nameVariations);
+
   // Clean the Pokemon name for API search (remove hyphens, special characters)
-  let searchName = pokemonName
-    .toLowerCase()
-    .replace(/-/g, ' ')
-    .replace(/[^a-z0-9\s]/g, '')
-    .trim();
+  let searchName = normalizeForSearch(pokemonName);
 
   // Special handling for Mega Pokemon - search for M version instead
   if (searchName.includes('mega ')) {
@@ -69,16 +111,23 @@ export const fetchTCGCards = async (pokemonName: string): Promise<{ firstCard: T
     console.log(`🃏 [TCG_GMAX] Detected G-Max Pokemon, searching for VMAX version: "${searchName}"`);
   }
 
-  console.log(`🃏 [TCG_API] Searching for TCG cards with name: "${searchName}"`);
+  console.log(`🃏 [TCG_API] Primary search name: "${searchName}"`);
   
-  // Build search strategies based on Pokemon name patterns
+  // Build comprehensive search strategies
   const searchStrategies = [];
+
+  // Add strategies for each name variation
+  for (const variation of nameVariations) {
+    searchStrategies.push(`name:"${variation}"`);
+    searchStrategies.push(`name:${variation.replace(/\s/g, '')}`); // No spaces
+    searchStrategies.push(`name:${variation}`); // General search
+  }
 
   // Special case for Ho-oh - try both formats
   if (pokemonName.toLowerCase() === 'ho-oh') {
     searchStrategies.push('name:"ho-oh"');
     searchStrategies.push('name:"Ho-Oh"');
-    console.log(`🦅 [TCG_HO_OH] Special search strategies for Ho-oh:`, searchStrategies);
+    console.log(`🦅 [TCG_HO_OH] Special search strategies for Ho-oh added`);
   }
   
   // Special case for form Pokemon like "shaymin-land", "shaymin-sky"
@@ -93,14 +142,9 @@ export const fetchTCGCards = async (pokemonName: string): Promise<{ firstCard: T
     // Also try the base name to catch any general cards
     searchStrategies.push(`name:"${baseName}"`);
     searchStrategies.push(`name:${baseName}`);
-    
-    console.log(`🌿 [TCG_FORMS] Form search strategies:`, searchStrategies);
-  } else {
-    // Standard search strategies for other Pokemon
-    searchStrategies.push(`name:"${searchName}"`);                    // Exact name match
-    searchStrategies.push(`name:${searchName.replace(/\s/g, '')}`);   // No spaces (for hyphenated names)
-    searchStrategies.push(`name:${searchName}`);                      // General name search
   }
+
+  console.log(`🔍 [TCG_STRATEGIES] Total search strategies for ${pokemonName}:`, searchStrategies.length);
 
   let allCards: TCGCard[] = [];
   
@@ -148,7 +192,7 @@ export const fetchTCGCards = async (pokemonName: string): Promise<{ firstCard: T
   console.log(`🃏 [TCG_FILTER] Filtered ${uniqueCards.length - filteredCards.length} cards, ${filteredCards.length} remaining`);
 
   // Special detailed logging for specific Pokemon to analyze name forms
-  const specialPokemon = ['charizard', 'mewtwo', 'pikachu', 'squirtle', 'charmander', 'ho-oh', 'shaymin'];
+  const specialPokemon = ['charizard', 'mewtwo', 'pikachu', 'squirtle', 'charmander', 'ho-oh', 'shaymin', 'flabebe', 'chien-pao'];
   const matchedPokemon = specialPokemon.find(p => pokemonName.toLowerCase().includes(p.replace('-', '')));
   
   if (matchedPokemon) {
@@ -160,7 +204,9 @@ export const fetchTCGCards = async (pokemonName: string): Promise<{ firstCard: T
       'squirtle': '💧',
       'charmander': '🦎',
       'ho-oh': '🦅',
-      'shaymin': '🌿'
+      'shaymin': '🌿',
+      'flabebe': '🌸',
+      'chien-pao': '❄️'
     };
     const emoji = emojiMap[matchedPokemon] || '🃏';
     
