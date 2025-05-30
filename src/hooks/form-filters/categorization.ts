@@ -14,6 +14,20 @@ export const isTotemPokemon = (pokemon: Pokemon): boolean => {
   return name.includes("totem");
 };
 
+// Check if a Pokemon is a size variant that should be completely excluded
+export const isSizeVariantPokemon = (pokemon: Pokemon): boolean => {
+  const name = pokemon.name.toLowerCase();
+  
+  // Always exclude Pumpkaboo and Gourgeist size variants
+  if ((name.includes("pumpkaboo") || name.includes("gourgeist")) && 
+      (name.includes("small") || name.includes("large") || name.includes("super") || name.includes("size"))) {
+    console.log(`🚫 [SIZE_VARIANT_DEBUG] ${pokemon.name} (${pokemon.id}) EXCLUDED - size variant`);
+    return true;
+  }
+  
+  return false;
+};
+
 // Check if a Pokemon belongs to a specific form category
 export const getPokemonFormCategory = (pokemon: Pokemon): PokemonFormType | null => {
   const name = pokemon.name.toLowerCase();

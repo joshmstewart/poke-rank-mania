@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { FormFilters, PokemonFormType } from "./types";
 import { getStoredFilters, saveFilters } from "./storage";
-import { isStarterPokemon, isTotemPokemon, getPokemonFormCategory } from "./categorization";
+import { isStarterPokemon, isTotemPokemon, isSizeVariantPokemon, getPokemonFormCategory } from "./categorization";
 import { storePokemon, getStoredPokemon, clearStoredPokemon } from "./excludedStore";
 
 export const useFormFilters = () => {
@@ -51,13 +51,19 @@ export const useFormFilters = () => {
       return false;
     }
     
+    // THIRD: Always exclude size variant Pokemon (Pumpkaboo/Gourgeist sizes)
+    if (isSizeVariantPokemon(pokemon)) {
+      console.log(`🚫 [FORM_FILTER_DEBUG] ${pokemon.name} (${pokemon.id}) EXCLUDED - SIZE VARIANT (always filtered)`);
+      return false;
+    }
+    
     // ENHANCED: Additional Cramorant filtering at the form filter level
     if (pokemon.name.toLowerCase().includes('cramorant')) {
       console.log(`🚫 [FORM_FILTER_DEBUG] ${pokemon.name} (${pokemon.id}) EXCLUDED - CRAMORANT FORM (always filtered)`);
       return false;
     }
     
-    // If all filters are enabled, include all Pokemon (except starters, totems, and Cramorant)
+    // If all filters are enabled, include all Pokemon (except starters, totems, size variants, and Cramorant)
     if (isAllEnabled) {
       console.log(`🟢 [FORM_FILTER_DEBUG] ${pokemon.name} (${pokemon.id}) INCLUDED - all filters enabled`);
       return true;
