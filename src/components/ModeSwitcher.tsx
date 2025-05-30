@@ -18,25 +18,49 @@ const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ currentMode, onModeChange }
   const { getAllRatings } = useTrueSkillStore();
 
   const handleModeChange = (mode: "rank" | "battle") => {
-    console.log(`🔄 [MODE_SWITCH_DEBUG] Switching from ${currentMode} to ${mode}`);
+    console.error(`🚨🚨🚨 [MODE_SWITCH_ENTRY] ===== ENTERING handleModeChange =====`);
+    console.error(`🚨 [MODE_SWITCH_ENTRY] Target mode: ${mode}, Current mode: ${currentMode}`);
+    console.error(`🚨 [MODE_SWITCH_ENTRY] Call stack at entry:`, new Error().stack);
     
-    // CRITICAL DEBUG: Check store before mode change
-    const ratingsBeforeSwitch = getAllRatings();
-    console.error(`🚨 [MODE_SWITCH_CRITICAL] BEFORE switch to ${mode}: Store has ${Object.keys(ratingsBeforeSwitch).length} ratings`);
-    console.error(`🚨 [MODE_SWITCH_CRITICAL] Call stack at mode switch:`, new Error().stack);
+    // STEP 1: Check store state at very beginning
+    const ratingsAtEntry = getAllRatings();
+    console.error(`🚨 [MODE_SWITCH_STEP1] Store check at ENTRY: ${Object.keys(ratingsAtEntry).length} ratings`);
+    
+    // STEP 2: Check if this is the specific problematic switch (battle -> rank)
+    if (currentMode === "battle" && mode === "rank") {
+      console.error(`🚨🚨🚨 [MODE_SWITCH_CRITICAL_PATH] This is the battle->rank switch!`);
+      console.error(`🚨 [MODE_SWITCH_CRITICAL_PATH] Store has ${Object.keys(ratingsAtEntry).length} ratings before any actions`);
+    }
+    
+    // STEP 3: Call onModeChange and check store immediately after
+    console.error(`🚨 [MODE_SWITCH_STEP3] About to call onModeChange(${mode})`);
+    
+    // Add a synchronous check right before the call
+    const ratingsBeforeCall = getAllRatings();
+    console.error(`🚨 [MODE_SWITCH_STEP3] Store check RIGHT BEFORE onModeChange: ${Object.keys(ratingsBeforeCall).length} ratings`);
     
     onModeChange(mode);
     
-    // CRITICAL DEBUG: Check store after mode change (with delay)
+    // STEP 4: Check store immediately after onModeChange (synchronous)
+    const ratingsAfterCall = getAllRatings();
+    console.error(`🚨 [MODE_SWITCH_STEP4] Store check IMMEDIATELY AFTER onModeChange: ${Object.keys(ratingsAfterCall).length} ratings`);
+    
+    if (Object.keys(ratingsBeforeCall).length !== Object.keys(ratingsAfterCall).length) {
+      console.error(`🚨🚨🚨 [MODE_SWITCH_SMOKING_GUN] STORE CLEARED BY onModeChange CALL!`);
+      console.error(`🚨 [MODE_SWITCH_SMOKING_GUN] Before call: ${Object.keys(ratingsBeforeCall).length}, After call: ${Object.keys(ratingsAfterCall).length}`);
+    }
+    
+    // STEP 5: Additional async checks
     setTimeout(() => {
-      const ratingsAfterSwitch = getAllRatings();
-      console.error(`🚨 [MODE_SWITCH_CRITICAL] AFTER switch to ${mode}: Store has ${Object.keys(ratingsAfterSwitch).length} ratings`);
+      const ratingsAfter100ms = getAllRatings();
+      console.error(`🚨 [MODE_SWITCH_STEP5] Store check after 100ms: ${Object.keys(ratingsAfter100ms).length} ratings`);
       
-      if (Object.keys(ratingsBeforeSwitch).length !== Object.keys(ratingsAfterSwitch).length) {
-        console.error(`🚨🚨🚨 [MODE_SWITCH_CRITICAL] RATING COUNT CHANGED DURING MODE SWITCH!`);
-        console.error(`🚨 [MODE_SWITCH_CRITICAL] Before: ${Object.keys(ratingsBeforeSwitch).length}, After: ${Object.keys(ratingsAfterSwitch).length}`);
+      if (Object.keys(ratingsAfterCall).length !== Object.keys(ratingsAfter100ms).length) {
+        console.error(`🚨🚨🚨 [MODE_SWITCH_ASYNC_CLEAR] Store cleared by async operation!`);
       }
     }, 100);
+    
+    console.error(`🚨🚨🚨 [MODE_SWITCH_EXIT] ===== EXITING handleModeChange =====`);
   };
 
   return (

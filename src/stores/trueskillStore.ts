@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Rating } from 'ts-trueskill';
@@ -119,15 +118,43 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
       },
       
       clearAllRatings: () => {
-        // CRITICAL DEBUG: Log who is calling clearAllRatings
-        console.error(`🚨🚨🚨 [TRUESKILL_CLEAR_DEBUG] clearAllRatings() called!`);
-        console.error(`🚨 [TRUESKILL_CLEAR_DEBUG] Call stack:`, new Error().stack);
+        // ENHANCED CRITICAL DEBUG: Detailed investigation of who is calling clearAllRatings
+        console.error(`🚨🚨🚨🚨🚨 [TRUESKILL_CLEAR_CRITICAL] ===== clearAllRatings() CALLED! =====`);
+        console.error(`🚨 [TRUESKILL_CLEAR_CRITICAL] Timestamp: ${new Date().toISOString()}`);
+        
+        // Get the full call stack
+        const stack = new Error().stack;
+        console.error(`🚨 [TRUESKILL_CLEAR_CRITICAL] FULL CALL STACK:`);
+        console.error(stack);
+        
+        // Parse stack to identify the immediate caller
+        const stackLines = stack?.split('\n') || [];
+        if (stackLines.length > 1) {
+          console.error(`🚨 [TRUESKILL_CLEAR_CRITICAL] IMMEDIATE CALLER: ${stackLines[1]}`);
+          if (stackLines.length > 2) {
+            console.error(`🚨 [TRUESKILL_CLEAR_CRITICAL] CALLER'S CALLER: ${stackLines[2]}`);
+          }
+          if (stackLines.length > 3) {
+            console.error(`🚨 [TRUESKILL_CLEAR_CRITICAL] THIRD LEVEL CALLER: ${stackLines[3]}`);
+          }
+        }
         
         const currentRatings = get().ratings;
         const ratingsCount = Object.keys(currentRatings).length;
-        console.error(`🚨 [TRUESKILL_CLEAR_DEBUG] About to clear ${ratingsCount} ratings`);
+        console.error(`🚨 [TRUESKILL_CLEAR_CRITICAL] About to clear ${ratingsCount} ratings`);
+        
+        // Log some sample ratings that are about to be lost
+        if (ratingsCount > 0) {
+          const sampleIds = Object.keys(currentRatings).slice(0, 5);
+          console.error(`🚨 [TRUESKILL_CLEAR_CRITICAL] Sample ratings being lost:`, sampleIds.map(id => ({
+            id,
+            rating: currentRatings[parseInt(id)]
+          })));
+        }
         
         set({ ratings: {}, lastSyncedAt: null });
+        
+        console.error(`🚨 [TRUESKILL_CLEAR_CRITICAL] ✅ Ratings cleared. Store now has ${Object.keys(get().ratings).length} ratings`);
         
         // CRITICAL FIX: Dispatch clear events for synchronization
         setTimeout(() => {
