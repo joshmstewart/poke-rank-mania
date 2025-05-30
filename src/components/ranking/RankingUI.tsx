@@ -78,22 +78,26 @@ export const RankingUI: React.FC<RankingUIProps> = ({
   return (
     <div className="container max-w-7xl mx-auto space-y-6">
       <DragDropContext onDragEnd={handleDisabledDragEnd}>
-        <div className="grid lg:grid-cols-2 gap-6">
+        <div className="grid lg:grid-cols-2 gap-6 min-h-[600px]">
           {/* Left side - Available Pokemon */}
-          <AvailablePokemonSection
-            availablePokemon={availablePokemon}
-            isLoading={isLoading}
-            selectedGeneration={selectedGeneration}
-            loadingType={loadingType}
-            currentPage={currentPage}
-            totalPages={totalPages}
-            loadingRef={loadingRef}
-            handlePageChange={handlePageChange}
-            getPageRange={getPageRange}
-          />
+          <div className="flex flex-col">
+            <AvailablePokemonSection
+              availablePokemon={availablePokemon}
+              isLoading={isLoading}
+              selectedGeneration={selectedGeneration}
+              loadingType={loadingType}
+              currentPage={currentPage}
+              totalPages={totalPages}
+              loadingRef={loadingRef}
+              handlePageChange={handlePageChange}
+              getPageRange={getPageRange}
+            />
+          </div>
           
           {/* Right side - Rankings */}
-          <RankingsSection displayRankings={displayRankings} />
+          <div className="flex flex-col">
+            <RankingsSection displayRankings={displayRankings} />
+          </div>
         </div>
       </DragDropContext>
     </div>
