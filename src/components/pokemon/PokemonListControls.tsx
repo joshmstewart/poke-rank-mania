@@ -42,7 +42,7 @@ const PokemonListControls: React.FC<PokemonListControlsProps> = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="flex items-center gap-1.5">
-              <span className="text-xs font-medium text-gray-700">View:</span>
+              <span className="text-sm font-medium text-gray-700">View:</span>
               <ToggleGroup 
                 type="single" 
                 value={viewMode} 
@@ -52,16 +52,16 @@ const PokemonListControls: React.FC<PokemonListControlsProps> = ({
                 <ToggleGroupItem 
                   value="list" 
                   aria-label="List view"
-                  className="h-6 w-6 p-0 data-[state=on]:bg-blue-500 data-[state=on]:text-white"
+                  className="h-7 w-7 p-0 data-[state=on]:bg-blue-500 data-[state=on]:text-white"
                 >
-                  <List className="h-3 w-3" />
+                  <List className="h-3.5 w-3.5" />
                 </ToggleGroupItem>
                 <ToggleGroupItem 
                   value="grid" 
                   aria-label="Grid view"
-                  className="h-6 w-6 p-0 data-[state=on]:bg-blue-500 data-[state=on]:text-white"
+                  className="h-7 w-7 p-0 data-[state=on]:bg-blue-500 data-[state=on]:text-white"
                 >
-                  <Grid className="h-3 w-3" />
+                  <Grid className="h-3.5 w-3.5" />
                 </ToggleGroupItem>
               </ToggleGroup>
             </div>
@@ -91,7 +91,7 @@ const PokemonListControls: React.FC<PokemonListControlsProps> = ({
           </div>
           
           {!hideSearch && (
-            <div className="relative w-20">
+            <div className="relative w-24">
               <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-gray-400" />
               <Input
                 placeholder="Search"
