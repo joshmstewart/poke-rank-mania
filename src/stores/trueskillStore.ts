@@ -2,6 +2,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Rating } from 'ts-trueskill';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface TrueSkillRating {
   mu: number;
@@ -56,8 +57,10 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
             }
           };
           
-          // Dispatch events for synchronization
+          // Trigger cloud sync after state update
           setTimeout(() => {
+            get().syncToCloud();
+            
             const updateEvent = new CustomEvent('trueskill-store-updated', {
               detail: { pokemonId, rating: newRatings[pokemonId] }
             });
@@ -71,75 +74,38 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
               }
             });
             document.dispatchEvent(syncEvent);
-            
-            console.log(`[TRUESKILL_SYNC_EVENTS] Dispatched update events for Pokemon ${pokemonId}`);
-          }, 10);
+          }, 100);
           
-          console.log(`[TRUESKILL_LOCAL] Updated Pokemon ${pokemonId} - μ=${newRatings[pokemonId].mu.toFixed(2)}, σ=${newRatings[pokemonId].sigma.toFixed(2)}, battles=${newRatings[pokemonId].battleCount}`);
           return { ratings: newRatings };
         });
       },
       
       getRating: (pokemonId: number) => {
         const state = get();
-        console.log(`🔍 [TRUESKILL_GET_RATING] Getting rating for Pokemon ${pokemonId} - store has ${Object.keys(state.ratings).length} total ratings`);
         const storedRating = state.ratings[pokemonId];
         if (storedRating) {
-          console.log(`✅ [TRUESKILL_GET_RATING] Found rating for Pokemon ${pokemonId}: μ=${storedRating.mu.toFixed(2)}, σ=${storedRating.sigma.toFixed(2)}`);
           return new Rating(storedRating.mu, storedRating.sigma);
         }
-        console.log(`❌ [TRUESKILL_GET_RATING] No rating found for Pokemon ${pokemonId}`);
         return new Rating();
       },
       
       hasRating: (pokemonId: number) => {
-        const hasIt = pokemonId in get().ratings;
-        console.log(`🔍 [TRUESKILL_HAS_RATING] Pokemon ${pokemonId} has rating: ${hasIt}`);
-        return hasIt;
+        return pokemonId in get().ratings;
       },
       
       getAllRatings: () => {
-        const ratings = get().ratings;
-        console.log(`🔍 [TRUESKILL_GET_ALL] Returning ${Object.keys(ratings).length} ratings`);
-        return ratings;
+        return get().ratings;
       },
       
       clearAllRatings: () => {
-        console.error(`🚨🚨🚨🚨🚨 [TRUESKILL_CLEAR_CRITICAL] ===== clearAllRatings() CALLED! =====`);
-        console.error(`🚨 [TRUESKILL_CLEAR_CRITICAL] Timestamp: ${new Date().toISOString()}`);
-        
-        const stack = new Error().stack;
-        console.error(`🚨 [TRUESKILL_CLEAR_CRITICAL] FULL CALL STACK:`);
-        console.error(stack);
-        
-        const stackLines = stack?.split('\n') || [];
-        if (stackLines.length > 1) {
-          console.error(`🚨 [TRUESKILL_CLEAR_CRITICAL] IMMEDIATE CALLER: ${stackLines[1]}`);
-          if (stackLines.length > 2) {
-            console.error(`🚨 [TRUESKILL_CLEAR_CRITICAL] CALLER'S CALLER: ${stackLines[2]}`);
-          }
-          if (stackLines.length > 3) {
-            console.error(`🚨 [TRUESKILL_CLEAR_CRITICAL] THIRD LEVEL CALLER: ${stackLines[3]}`);
-          }
-        }
-        
-        const currentRatings = get().ratings;
-        const ratingsCount = Object.keys(currentRatings).length;
-        console.error(`🚨 [TRUESKILL_CLEAR_CRITICAL] About to clear ${ratingsCount} ratings`);
-        
-        if (ratingsCount > 0) {
-          const sampleIds = Object.keys(currentRatings).slice(0, 5);
-          console.error(`🚨 [TRUESKILL_CLEAR_CRITICAL] Sample ratings being lost:`, sampleIds.map(id => ({
-            id,
-            rating: currentRatings[parseInt(id)]
-          })));
-        }
+        console.log(`[TRUESKILL_CLEAR] Clearing all ratings`);
         
         set({ ratings: {}, lastSyncedAt: null });
         
-        console.error(`🚨 [TRUESKILL_CLEAR_CRITICAL] ✅ Ratings cleared. Store now has ${Object.keys(get().ratings).length} ratings`);
-        
+        // Sync clear to cloud
         setTimeout(() => {
+          get().syncToCloud();
+          
           const clearEvent = new CustomEvent('trueskill-store-cleared');
           document.dispatchEvent(clearEvent);
           
@@ -150,36 +116,94 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
             }
           });
           document.dispatchEvent(syncEvent);
-          
-          console.log(`[TRUESKILL_SYNC_EVENTS] Dispatched clear events`);
-        }, 10);
+        }, 100);
       },
       
-      // FIXED: Simplified cloud sync to avoid RLS issues
+      // Cloud sync that works for both authenticated and session-based users
       syncToCloud: async () => {
         try {
           const state = get();
-          console.log('[TRUESKILL_CLOUD] Sync disabled due to RLS policy issues - using local storage only');
+          const { user } = await supabase.auth.getUser();
           
-          // Don't attempt cloud sync to avoid RLS errors that might corrupt local state
+          console.log('[TRUESKILL_CLOUD] Starting cloud sync...');
+          
+          // Prepare sync data
+          const syncData = {
+            session_id: state.sessionId,
+            user_id: user?.id || null,
+            ratings_data: state.ratings,
+            last_updated: new Date().toISOString()
+          };
+          
+          // Use upsert to handle both insert and update cases
+          const { error } = await supabase
+            .from('trueskill_sessions')
+            .upsert(syncData, {
+              onConflict: user?.id ? 'user_id' : 'session_id'
+            });
+          
+          if (error) {
+            console.log('[TRUESKILL_CLOUD] Sync error (will retry later):', error.message);
+            return;
+          }
+          
+          console.log('[TRUESKILL_CLOUD] Successfully synced to cloud');
           set({ lastSyncedAt: new Date().toISOString() });
           
         } catch (error) {
-          console.log('[TRUESKILL_CLOUD] Cloud sync disabled:', error);
+          console.log('[TRUESKILL_CLOUD] Sync failed (will retry later):', error);
         }
       },
       
-      // FIXED: Simplified cloud loading to avoid RLS issues  
+      // Cloud loading that works for both authenticated and session-based users
       loadFromCloud: async () => {
         try {
-          console.log('[TRUESKILL_CLOUD] Cloud loading disabled due to RLS policy issues - using local storage only');
-          set({ isLoading: false });
+          set({ isLoading: true });
+          const state = get();
+          const { user } = await supabase.auth.getUser();
           
-          // Don't attempt cloud loading to avoid RLS errors
-          // Data will persist via Zustand's persist middleware
+          console.log('[TRUESKILL_CLOUD] Loading from cloud...');
+          
+          let query = supabase.from('trueskill_sessions').select('*');
+          
+          // If user is authenticated, prioritize user_id, otherwise use session_id
+          if (user?.id) {
+            query = query.eq('user_id', user.id);
+          } else {
+            query = query.eq('session_id', state.sessionId);
+          }
+          
+          const { data, error } = await query.single();
+          
+          if (error) {
+            if (error.code !== 'PGRST116') { // Not found is OK
+              console.log('[TRUESKILL_CLOUD] Load error:', error.message);
+            }
+            set({ isLoading: false });
+            return;
+          }
+          
+          if (data?.ratings_data) {
+            console.log(`[TRUESKILL_CLOUD] Loaded ${Object.keys(data.ratings_data).length} ratings from cloud`);
+            set({ 
+              ratings: data.ratings_data,
+              lastSyncedAt: data.last_updated,
+              isLoading: false
+            });
+            
+            // Dispatch load event
+            setTimeout(() => {
+              const loadEvent = new CustomEvent('trueskill-store-loaded', {
+                detail: { ratingsCount: Object.keys(data.ratings_data).length }
+              });
+              document.dispatchEvent(loadEvent);
+            }, 50);
+          } else {
+            set({ isLoading: false });
+          }
           
         } catch (error) {
-          console.log('[TRUESKILL_CLOUD] Cloud load disabled, using local storage:', error);
+          console.log('[TRUESKILL_CLOUD] Load failed, using local storage:', error);
           set({ isLoading: false });
         }
       }

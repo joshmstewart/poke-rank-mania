@@ -18,32 +18,28 @@ export const useCloudSync = () => {
   const { user, session } = useAuth();
   const { loadFromCloud, syncToCloud, getAllRatings } = useTrueSkillStore();
 
-  // Auto-load from cloud when user authenticates
+  // Auto-load from cloud when component mounts
+  useEffect(() => {
+    console.log('[CLOUD_SYNC] Initializing cloud sync...');
+    loadFromCloud();
+  }, [loadFromCloud]);
+
+  // Auto-sync when user authenticates
   useEffect(() => {
     if (user && session) {
-      console.log('[CLOUD_SYNC] User authenticated, loading data from cloud...');
-      loadFromCloud();
+      console.log('[CLOUD_SYNC] User authenticated, syncing to cloud...');
+      syncToCloud();
     }
-  }, [user, session, loadFromCloud]);
+  }, [user, session, syncToCloud]);
 
   // Save battle data to cloud via TrueSkill store
   const saveBattleToCloud = useCallback(async (battleData: BattleData) => {
-    if (!user || !session) {
-      console.log('[CLOUD_SYNC] No authenticated user, cannot save to cloud');
-      return;
-    }
-
     console.log('[CLOUD_SYNC] Saving battle data via TrueSkill store...');
     await syncToCloud();
-  }, [user, session, syncToCloud]);
+  }, [syncToCloud]);
 
   // Load battle data from cloud via TrueSkill store
   const loadBattleFromCloud = useCallback(async (generation: number): Promise<BattleData | null> => {
-    if (!user || !session) {
-      console.log('[CLOUD_SYNC] No authenticated user, cannot load from cloud');
-      return null;
-    }
-
     console.log('[CLOUD_SYNC] Loading battle data via TrueSkill store...');
     await loadFromCloud();
     
@@ -60,23 +56,18 @@ export const useCloudSync = () => {
       completionPercentage: 0,
       fullRankingMode: false
     };
-  }, [user, session, loadFromCloud, getAllRatings]);
+  }, [loadFromCloud, getAllRatings]);
 
   // Save rankings to cloud via TrueSkill store
   const saveRankingsToCloud = useCallback(async (rankings: any[], generation: number) => {
-    if (!user || !session) {
-      console.log('[CLOUD_SYNC] No authenticated user, cannot save rankings to cloud');
-      return;
-    }
-
     console.log('[CLOUD_SYNC] Saving rankings via TrueSkill store...');
     await syncToCloud();
 
     toast({
-      title: "Rankings Saved",
+      title: "Progress Saved",
       description: "Your rankings have been saved to the cloud!",
     });
-  }, [user, session, syncToCloud]);
+  }, [syncToCloud]);
 
   // Session management via TrueSkill store
   const saveSessionToCloud = useCallback(async (sessionId: string, sessionData: any) => {
