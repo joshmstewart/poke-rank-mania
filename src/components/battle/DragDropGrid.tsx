@@ -31,17 +31,26 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
   onLocalReorder,
   onMarkAsPending
 }) => {
-  console.log(`🚨 [DND_SETUP_DEBUG] DragDropGrid render with ${displayRankings.length} Pokemon`);
+  console.log(`🎯 [GRID_FLOW] DragDropGrid render with ${displayRankings.length} Pokemon`);
+  console.log(`🎯 [GRID_FLOW] onManualReorder function exists: ${!!onManualReorder}`);
 
   const handleManualReorderWrapper = React.useCallback((draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => {
-    console.log(`🚨 [DND_SETUP_DEBUG] Manual reorder wrapper called:`, draggedPokemonId, sourceIndex, destinationIndex);
+    console.log(`🎯 [GRID_FLOW] ===== MANUAL REORDER WRAPPER CALLED =====`);
+    console.log(`🎯 [GRID_FLOW] Pokemon ${draggedPokemonId} moved from ${sourceIndex} to ${destinationIndex}`);
     
-    // CRITICAL FIX: Immediately show as pending and keep it persistent
+    // Mark as pending immediately
     onMarkAsPending(draggedPokemonId);
     
+    // CRITICAL: Call the enhanced reorder logic
     if (typeof onManualReorder === 'function') {
+      console.log(`🎯 [GRID_FLOW] Calling onManualReorder function...`);
       onManualReorder(draggedPokemonId, sourceIndex, destinationIndex);
+      console.log(`🎯 [GRID_FLOW] onManualReorder function call completed`);
+    } else {
+      console.error(`🎯 [GRID_FLOW] ❌ onManualReorder is not a function!`, typeof onManualReorder);
     }
+    
+    console.log(`🎯 [GRID_FLOW] ===== MANUAL REORDER WRAPPER COMPLETE =====`);
   }, [onManualReorder, onMarkAsPending]);
 
   const { sensors, handleDragEnd } = useDragAndDrop({
@@ -51,33 +60,20 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
   });
 
   const handleDragStart = (event: DragStartEvent) => {
-    console.log(`🚨 [DND_CONTEXT_DEBUG] ===== DRAG STARTED SUCCESSFULLY =====`);
-    console.log(`🚨 [DND_CONTEXT_DEBUG] ✅ @dnd-kit DndContext is working!`);
-    console.log(`🚨 [DND_CONTEXT_DEBUG] Active ID:`, event.active.id);
+    console.log(`🎯 [GRID_FLOW] ===== DRAG STARTED =====`);
+    console.log(`🎯 [GRID_FLOW] Active ID:`, event.active.id);
     
-    // CRITICAL FIX: Show pending immediately when drag starts and persist it
     const draggedPokemonId = Number(event.active.id);
     const draggedPokemon = displayRankings.find(p => p.id === draggedPokemonId);
     
-    // Mark as pending through callback
+    // Mark as pending when drag starts
     onMarkAsPending(draggedPokemonId);
     
-    // CRITICAL FIX: Dispatch drag start event for global listening
-    const dragStartEvent = new CustomEvent('drag-start-pending', {
-      detail: { 
-        pokemonId: draggedPokemonId, 
-        pokemonName: draggedPokemon?.name || 'Unknown',
-        timestamp: new Date().toISOString()
-      }
-    });
-    document.dispatchEvent(dragStartEvent);
-    console.log(`🚨 [DND_CONTEXT_DEBUG] Dispatched drag-start-pending event for ${draggedPokemon?.name}`);
+    console.log(`🎯 [GRID_FLOW] Marked ${draggedPokemon?.name} as pending`);
   };
 
   const handleDragOver = (event: DragOverEvent) => {
-    console.log(`🚨 [DND_CONTEXT_DEBUG] ===== DRAGGING OVER =====`);
-    console.log(`🚨 [DND_CONTEXT_DEBUG] Over ID:`, event.over?.id || 'none');
-    console.log(`🚨 [DND_CONTEXT_DEBUG] Active ID:`, event.active.id);
+    console.log(`🎯 [GRID_FLOW] Dragging over:`, event.over?.id || 'none');
   };
 
   return (
@@ -96,7 +92,6 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
           {displayRankings.map((pokemon, index) => {
             const isPending = localPendingRefinements.has(pokemon.id);
             const pendingCount = pendingBattleCounts.get(pokemon.id) || 0;
-            console.log(`🚨 [DND_SETUP_DEBUG] Rendering card ${index}: ${pokemon.name} (ID: ${pokemon.id}) - Pending: ${isPending}, Count: ${pendingCount}`);
             
             return (
               <DraggablePokemonCard
