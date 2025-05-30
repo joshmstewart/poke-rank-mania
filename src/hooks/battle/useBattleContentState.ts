@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
@@ -19,10 +20,29 @@ export const useBattleContentState = (
   const instanceRef = useRef(`battle-content-${Date.now()}`);
   const isResettingRef = useRef(false);
   
-  // State initialization
+  // CRITICAL FIX: Persist and restore battle progress
+  const getStoredBattlesCompleted = () => {
+    try {
+      const stored = localStorage.getItem('pokemon-battles-completed');
+      return stored ? parseInt(stored, 10) : 0;
+    } catch {
+      return 0;
+    }
+  };
+
+  const getStoredBattleResults = () => {
+    try {
+      const stored = localStorage.getItem('pokemon-battle-results');
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  };
+
+  // State initialization with persistence
   const [currentBattle, setCurrentBattle] = useState<Pokemon[]>([]);
-  const [battleResults, setBattleResultsInternal] = useState<SingleBattle[]>([]);
-  const [battlesCompleted, setBattlesCompletedInternal] = useState(0);
+  const [battleResults, setBattleResultsInternal] = useState<SingleBattle[]>(getStoredBattleResults);
+  const [battlesCompleted, setBattlesCompletedInternal] = useState(getStoredBattlesCompleted);
   const [selectedPokemon, setSelectedPokemon] = useState<number[]>([]);
   const [battleType, setBattleType] = useState<BattleType>(initialBattleType);
   const [selectedGeneration, setSelectedGeneration] = useState(initialSelectedGeneration);
@@ -33,7 +53,28 @@ export const useBattleContentState = (
   const [isBattleTransitioning, setIsBattleTransitioning] = useState(false);
   const [pendingRefinements] = useState<Set<number>>(new Set());
 
-  console.log(`🔧 [BATTLE_CONTENT_STATE] Instance: ${instanceRef.current}`);
+  console.log(`🔧 [BATTLE_CONTENT_STATE_PERSISTENCE] Instance: ${instanceRef.current}`);
+  console.log(`🔧 [BATTLE_CONTENT_STATE_PERSISTENCE] Restored battles completed: ${battlesCompleted}`);
+  console.log(`🔧 [BATTLE_CONTENT_STATE_PERSISTENCE] Restored battle results: ${battleResults.length}`);
+
+  // CRITICAL FIX: Persist battle progress whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem('pokemon-battles-completed', battlesCompleted.toString());
+      console.log(`🔧 [BATTLE_STATE_PERSISTENCE] Saved battles completed: ${battlesCompleted}`);
+    } catch (error) {
+      console.error('Failed to save battles completed:', error);
+    }
+  }, [battlesCompleted]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('pokemon-battle-results', JSON.stringify(battleResults));
+      console.log(`🔧 [BATTLE_STATE_PERSISTENCE] Saved battle results: ${battleResults.length}`);
+    } catch (error) {
+      console.error('Failed to save battle results:', error);
+    }
+  }, [battleResults]);
 
   // Get milestone functionality
   const { milestones, checkForMilestone } = useBattleMilestones();
@@ -116,7 +157,7 @@ export const useBattleContentState = (
             console.log(`🏆🏆🏆 [MILESTONE_FIX] Generating rankings for milestone ${newCount}`);
             
             // FIXED: Ensure result is always flattened to SingleBattle[]
-            const resultArray = Array.isArray(result) ? result : [result];
+            const resultArray = Array.isArray(result) ? result.flat() : [result];
             const updatedResults = [...battleResults, ...resultArray];
             
             // CRITICAL FIX: Generate rankings and set them in state immediately
@@ -126,6 +167,20 @@ export const useBattleContentState = (
             if (generatedRankings && generatedRankings.length > 0) {
               console.log(`🏆🏆🏆 [MILESTONE_FIX] Setting finalRankings with ${generatedRankings.length} Pokemon`);
               setFinalRankings(generatedRankings);
+              
+              // CRITICAL FIX: Force TrueSkill store synchronization for Manual Mode compatibility
+              console.log(`🔧 [TRUESKILL_SYNC] Ensuring TrueSkill store is synced for Manual Mode`);
+              
+              // Trigger a custom event to notify Manual Mode of the updated rankings
+              const syncEvent = new CustomEvent('trueskill-updated', {
+                detail: { 
+                  source: 'battle-milestone',
+                  pokemonCount: generatedRankings.length,
+                  timestamp: Date.now()
+                }
+              });
+              document.dispatchEvent(syncEvent);
+              
             } else {
               console.error(`🏆🏆🏆 [MILESTONE_FIX] ❌ No rankings generated!`);
             }
