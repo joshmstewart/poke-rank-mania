@@ -36,7 +36,7 @@ const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
         <PokemonInfoModal pokemon={validatedPokemon} />
       </div>
       
-      <div className="flex items-start p-3 gap-3 pr-8 min-h-[100px]">
+      <div className="flex items-start p-2 gap-2 pr-6 min-h-[90px]">
         <PokemonCardImage 
           pokemonId={pokemonId}
           displayName={displayName}

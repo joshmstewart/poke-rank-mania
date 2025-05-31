@@ -23,18 +23,23 @@ const PokemonCardInfo: React.FC<PokemonCardInfoProps> = ({
 
   return (
     <div className="flex-1 min-w-0 min-h-0">
-      <div className={`flex justify-between items-start ${compact ? "text-sm" : "text-base"}`}>
-        <span className="font-medium pr-3 flex-1 min-w-0 leading-tight">{displayName}</span>
-        <span className="text-xs text-gray-500 whitespace-nowrap ml-2 flex-shrink-0">#{normalizedId}</span>
+      <div className={`flex justify-between items-start ${compact ? "text-xs" : "text-sm"}`}>
+        <span className={`font-medium pr-2 flex-1 min-w-0 leading-tight break-words ${compact ? "text-xs" : "text-sm"}`}>
+          {displayName}
+        </span>
+        <span className={`text-gray-500 whitespace-nowrap ml-1 flex-shrink-0 ${compact ? "text-xs" : "text-xs"}`}>
+          #{normalizedId}
+        </span>
       </div>
       {types?.length > 0 && (
-        <div className="flex gap-1.5 mt-2 flex-wrap">
+        <div className="flex gap-1 mt-1.5 flex-wrap">
           {types.map(type => {
             const colorClass = typeColors[type] || typeColors[type.toLowerCase()] || "bg-gray-400";
             return (
               <Badge 
                 key={type} 
-                className={`${colorClass} text-white text-xs px-2 py-1 border-0 font-medium`}
+                variant="secondary"
+                className={`${colorClass} text-white border-0 font-medium ${compact ? "text-xs px-1.5 py-0.5" : "text-xs px-2 py-1"}`}
               >
                 {type}
               </Badge>
@@ -43,7 +48,7 @@ const PokemonCardInfo: React.FC<PokemonCardInfoProps> = ({
         </div>
       )}
       {!compact && flavorText && (
-        <div className="text-xs mt-2 line-clamp-2 text-muted-foreground leading-relaxed">
+        <div className={`mt-1.5 line-clamp-2 text-muted-foreground leading-relaxed ${compact ? "text-xs" : "text-xs"}`}>
           {flavorText}
         </div>
       )}

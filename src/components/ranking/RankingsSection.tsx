@@ -59,21 +59,21 @@ export const RankingsSection: React.FC<RankingsSectionProps> = ({
 
   return (
     <>
-      {/* Header with gradient background and enhanced styling */}
-      <div className="bg-gradient-to-r from-amber-600 to-orange-600 text-white p-6 border-b flex-shrink-0">
-        <h2 className="text-xl font-bold flex items-center gap-3">
-          <Trophy className="w-6 h-6 text-amber-200" />
+      {/* Header with gradient background - reduced padding */}
+      <div className="bg-gradient-to-r from-amber-600 to-orange-600 text-white p-4 border-b flex-shrink-0">
+        <h2 className="text-lg font-bold flex items-center gap-2">
+          <Trophy className="w-5 h-5 text-amber-200" />
           Your Rankings ({displayRankings.length})
         </h2>
-        <p className="text-amber-100 text-sm mt-2">
+        <p className="text-amber-100 text-xs mt-1">
           {displayRankings.length > 0 ? 'TrueSkill Ordered • Battle Mode synced' : 'No rankings yet'}
         </p>
       </div>
 
-      {/* Content area with proper scrolling */}
+      {/* Content area with proper scrolling - reduced padding */}
       <div className="flex-1 min-h-0">
         <ScrollArea className="h-full">
-          <div className="bg-gray-50 min-h-full p-4">
+          <div className="bg-gray-50 min-h-full p-2">
             <PokemonList
               title=""
               pokemonList={displayedRankedPokemon}
@@ -84,16 +84,16 @@ export const RankingsSection: React.FC<RankingsSectionProps> = ({
         </ScrollArea>
       </div>
       
-      {/* Footer with status information */}
-      <div className="border-t bg-white p-4 flex-shrink-0">
+      {/* Footer with status information - reduced padding */}
+      <div className="border-t bg-white p-2 flex-shrink-0">
         {/* Infinite scroll loading for ranked Pokemon */}
         {displayedRankedCount < displayRankings.length && (
           <div 
             ref={rankedScrollRef}
-            className="text-center py-3 text-sm text-gray-600 bg-blue-50 rounded-lg border border-blue-200"
+            className="text-center py-2 text-xs text-gray-600 bg-blue-50 rounded-lg border border-blue-200"
           >
             <div className="flex items-center justify-center gap-2">
-              <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+              <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
               Loading more... ({displayedRankedCount}/{displayRankings.length})
             </div>
           </div>
@@ -101,9 +101,9 @@ export const RankingsSection: React.FC<RankingsSectionProps> = ({
         
         {/* Show completion message when all ranked Pokemon are loaded */}
         {displayedRankedCount >= displayRankings.length && displayRankings.length > 0 && (
-          <div className="text-center text-sm bg-green-50 border border-green-200 rounded-lg p-4">
+          <div className="text-center text-xs bg-green-50 border border-green-200 rounded-lg p-3">
             <div className="flex items-center justify-center gap-2 text-green-700">
-              <Star className="w-4 h-4 fill-current" />
+              <Star className="w-3 h-3 fill-current" />
               All {displayRankings.length} ranked Pokémon loaded
             </div>
             <p className="text-green-600 text-xs mt-1">Rankings based on TrueSkill ratings from Battle Mode</p>
@@ -112,8 +112,8 @@ export const RankingsSection: React.FC<RankingsSectionProps> = ({
         
         {/* Show message when no ranked Pokemon */}
         {displayRankings.length === 0 && (
-          <div className="text-center bg-blue-50 border border-blue-200 rounded-lg p-6">
-            <div className="text-blue-700 text-sm font-medium mb-2">No ranked Pokémon yet</div>
+          <div className="text-center bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="text-blue-700 text-xs font-medium mb-2">No ranked Pokémon yet</div>
             <p className="text-blue-600 text-xs">Complete some battles in Battle Mode to see rankings here</p>
           </div>
         )}
