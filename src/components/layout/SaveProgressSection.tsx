@@ -28,7 +28,12 @@ const SaveProgressSection: React.FC = () => {
 
   if (user && session) {
     console.log('SaveProgressSection: rendering authenticated user display for:', user.email);
-    return <AuthenticatedUserDisplay />;
+    console.log('SaveProgressSection: About to render AuthenticatedUserDisplay component');
+    return (
+      <div>
+        <AuthenticatedUserDisplay />
+      </div>
+    );
   }
 
   console.log('SaveProgressSection: no user found, rendering cloud sync button');
