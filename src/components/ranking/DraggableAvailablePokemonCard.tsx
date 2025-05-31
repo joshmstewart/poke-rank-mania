@@ -10,24 +10,15 @@ interface DraggableAvailablePokemonCardProps {
   pokemon: Pokemon;
 }
 
-const typeColors: Record<string, string> = {
-  Normal: "bg-gray-400", Fire: "bg-red-500", Water: "bg-blue-500", Electric: "bg-yellow-400",
-  Grass: "bg-green-500", Ice: "bg-blue-200", Fighting: "bg-red-700", Poison: "bg-purple-600",
-  Ground: "bg-yellow-700", Flying: "bg-indigo-300", Psychic: "bg-pink-500", Bug: "bg-lime-500",
-  Rock: "bg-stone-500", Ghost: "bg-purple-700", Dragon: "bg-indigo-600", Dark: "bg-stone-800 text-white",
-  Steel: "bg-slate-400", Fairy: "bg-pink-300",
-};
-
 export const DraggableAvailablePokemonCard: React.FC<DraggableAvailablePokemonCardProps> = ({
   pokemon
 }) => {
   const [loadedImages, setLoadedImages] = useState<Set<number>>(new Set());
   
-  // CRITICAL: Enhanced draggable setup with comprehensive logging
+  // CRITICAL FIX: Simplified draggable setup with essential logging only
   const dragId = `available-${pokemon.id}`;
   
   console.log(`🚨🚨🚨 [DRAGGABLE_AVAILABLE_ULTRA_CRITICAL] Setting up draggable for ${pokemon.name} (ID: ${pokemon.id})`);
-  console.log(`🚨🚨🚨 [DRAGGABLE_AVAILABLE_ULTRA_CRITICAL] Drag ID: ${dragId}`);
   
   const {
     attributes,
@@ -59,18 +50,17 @@ export const DraggableAvailablePokemonCard: React.FC<DraggableAvailablePokemonCa
     transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
   } : undefined;
 
-  console.log(`🚨🚨🚨 [DRAGGABLE_AVAILABLE_ULTRA_CRITICAL] ${pokemon.name} - isDragging: ${isDragging}, transform: ${!!transform}`);
+  // CRITICAL FIX: Separate the info button from draggable area to prevent event conflicts
+  const handleInfoClick = (e: React.MouseEvent) => {
+    console.log(`🔘🔘🔘 [AVAILABLE_INFO_CRITICAL] Info button clicked for ${pokemon.name} in Available`);
+    e.stopPropagation();
+    e.preventDefault();
+  };
 
   return (
-    <div 
-      ref={setNodeRef} 
-      style={style}
-      className={`relative group ${isDragging ? 'opacity-50 scale-105 z-50' : ''}`}
-      {...attributes}
-      {...listeners}
-    >
-      {/* CRITICAL: Info button with proper isolation and event handling */}
-      <div className="absolute top-1 right-1 z-50">
+    <div className="relative group">
+      {/* CRITICAL FIX: Info button outside of draggable container */}
+      <div className="absolute top-1 right-1 z-50 pointer-events-auto">
         <PokemonInfoModal 
           pokemon={pokemon}
           onOpenChange={(open) => {
@@ -78,74 +68,62 @@ export const DraggableAvailablePokemonCard: React.FC<DraggableAvailablePokemonCa
           }}
         >
           <button 
-            className="w-6 h-6 rounded-full bg-white hover:bg-gray-50 border border-gray-300 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-bold shadow-lg transition-all duration-200 cursor-pointer relative z-50"
-            onClick={(e) => {
-              console.log(`🔘🔘🔘 [AVAILABLE_INFO_CRITICAL] Info button clicked for ${pokemon.name} in Available`);
-              e.stopPropagation();
-              e.preventDefault();
-            }}
-            onPointerDown={(e) => {
-              console.log(`🔘🔘🔘 [AVAILABLE_INFO_CRITICAL] Info button pointer down for ${pokemon.name}`);
-              e.stopPropagation();
-            }}
-            onMouseDown={(e) => {
-              console.log(`🔘🔘🔘 [AVAILABLE_INFO_CRITICAL] Info button mouse down for ${pokemon.name}`);
-              e.stopPropagation();
-            }}
-            type="button"
+            className="w-6 h-6 rounded-full bg-white hover:bg-gray-50 border border-gray-300 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-bold shadow-lg transition-all duration-200"
+            onClick={handleInfoClick}
             style={{ 
               pointerEvents: 'auto',
               position: 'relative',
               zIndex: 60
             }}
+            type="button"
           >
             i
           </button>
         </PokemonInfoModal>
       </div>
 
-      {/* Card with drag handles */}
-      <div className="bg-white rounded-lg border-2 border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing">
-        {/* Pokemon image */}
-        <div className="aspect-square bg-gray-50 p-2 relative">
-          {!isImageLoaded && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-8 h-8 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin"></div>
-            </div>
-          )}
-          <img
-            src={pokemon.image}
-            alt={pokemon.name}
-            className={`w-full h-full object-contain transition-opacity ${isImageLoaded ? 'opacity-100' : 'opacity-0'}`}
-            onLoad={() => handleImageLoad(pokemon.id)}
-            onError={() => handleImageError(pokemon.id)}
-            loading="lazy"
-          />
-        </div>
-
-        {/* Pokemon info */}
-        <div className="p-2 space-y-1">
-          <h3 className="text-sm font-semibold text-center line-clamp-2 min-h-[2.5rem] flex items-center justify-center">
-            {pokemon.name}
-          </h3>
-          
-          <div className="text-xs text-gray-500 text-center">
-            #{normalizedId}
+      {/* CRITICAL FIX: Draggable card with proper drag event logging */}
+      <div 
+        ref={setNodeRef} 
+        style={style}
+        className={`relative ${isDragging ? 'opacity-50 scale-105 z-50' : ''} cursor-grab active:cursor-grabbing`}
+        {...attributes}
+        {...listeners}
+        onPointerDown={(e) => {
+          console.log(`🚨🚨🚨 [DRAG_START_CRITICAL] Pointer down on ${pokemon.name} - initiating drag`);
+        }}
+        onDragStart={(e) => {
+          console.log(`🚨🚨🚨 [DRAG_START_CRITICAL] Native drag start for ${pokemon.name}`);
+        }}
+      >
+        <div className="bg-white rounded-lg border-2 border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+          {/* Pokemon image */}
+          <div className="aspect-square bg-gray-50 p-2 relative">
+            {!isImageLoaded && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-8 h-8 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin"></div>
+              </div>
+            )}
+            <img
+              src={pokemon.image}
+              alt={pokemon.name}
+              className={`w-full h-full object-contain transition-opacity ${isImageLoaded ? 'opacity-100' : 'opacity-0'}`}
+              onLoad={() => handleImageLoad(pokemon.id)}
+              onError={() => handleImageError(pokemon.id)}
+              loading="lazy"
+            />
           </div>
 
-          {/* Types */}
-          {pokemon.types && pokemon.types.length > 0 && (
-            <div className="flex flex-wrap gap-1 justify-center">
-              {pokemon.types.map(type => (
-                <Badge 
-                  key={type} 
-                  className={`${typeColors[type]} text-white text-xs px-1 py-0.5 h-auto`}
-                >
-                  {type}
-                </Badge>
-              ))}
+          {/* Pokemon info - REMOVED TYPES as requested */}
+          <div className="p-2 space-y-1">
+            <h3 className="text-sm font-semibold text-center line-clamp-2 min-h-[2.5rem] flex items-center justify-center">
+              {pokemon.name}
+            </h3>
+            
+            <div className="text-xs text-gray-500 text-center">
+              #{normalizedId}
             </div>
-          )}
+          </div>
         </div>
       </div>
     </div>

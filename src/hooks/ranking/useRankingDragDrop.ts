@@ -13,7 +13,7 @@ export const useRankingDragDrop = (
   const [activeDraggedPokemon, setActiveDraggedPokemon] = useState<any>(null);
   const { updateRating } = useTrueSkillStore();
 
-  // CRITICAL FIX: Enhanced drag to rankings functionality with proper ES6 imports
+  // CRITICAL FIX: Enhanced drag to rankings functionality with proper error handling
   const handleDragToRankings = useCallback((pokemonId: number) => {
     console.log(`🔥🔥🔥 [DRAG_TO_RANKINGS_CRITICAL] ===== ENHANCED DRAG TO RANKINGS =====`);
     console.log(`🔥🔥🔥 [DRAG_TO_RANKINGS_CRITICAL] Pokemon ID: ${pokemonId}`);
@@ -28,7 +28,6 @@ export const useRankingDragDrop = (
     
     console.log(`🔥🔥🔥 [DRAG_TO_RANKINGS_CRITICAL] ✅ Found Pokemon: ${pokemon.name}`);
     
-    // CRITICAL FIX: Use ES6 import instead of require for browser environment
     try {
       const defaultRating = new Rating(25.0, 8.333); // Default TrueSkill values
       
@@ -62,8 +61,17 @@ export const useRankingDragDrop = (
       console.error(`🔥🔥🔥 [DRAG_TO_RANKINGS_CRITICAL] Error details:`, {
         name: error?.name,
         message: error?.message,
-        stack: error?.stack
+        stack: error?.stack,
+        cause: error?.cause
       });
+      
+      // Try to provide helpful debugging info
+      try {
+        console.error(`🔥🔥🔥 [DRAG_TO_RANKINGS_CRITICAL] Rating constructor test:`, new Rating());
+        console.error(`🔥🔥🔥 [DRAG_TO_RANKINGS_CRITICAL] updateRating function exists:`, typeof updateRating);
+      } catch (debugError) {
+        console.error(`🔥🔥🔥 [DRAG_TO_RANKINGS_CRITICAL] Debug error:`, debugError);
+      }
     }
   }, [localRankings.length, availablePokemon, updateRating, setAvailablePokemon]);
 
@@ -77,6 +85,7 @@ export const useRankingDragDrop = (
   const handleDragStart = useCallback((event: DragStartEvent) => {
     console.log(`🔥🔥🔥 [DRAG_START_CRITICAL] ===== DRAG START =====`);
     console.log(`🔥🔥🔥 [DRAG_START_CRITICAL] Active ID: ${event.active.id}`);
+    console.log(`🔥🔥🔥 [DRAG_START_CRITICAL] Active data:`, event.active.data.current);
 
     const activeId = event.active.id.toString();
     let draggedPokemon = null;
@@ -128,7 +137,7 @@ export const useRankingDragDrop = (
       );
       
       console.log(`🔥🔥🔥 [DRAG_END_CRITICAL] Is rankings drop target: ${isRankingsDropTarget}`);
-      console.log(`🔥🔥🔥 [DRAG_END_CRITICAL] Drop target analysis - overId: "${overId}", starts with available: ${overId.startsWith('available-')}`);
+      console.log(`🔥🔥🔥 [DRAG_END_CRITICAL] Drop target analysis - overId: "${overId}"`);
       
       if (isRankingsDropTarget) {
         console.log(`🔥🔥🔥 [DRAG_END_CRITICAL] ✅ Valid drop to rankings - calling handleDragToRankings`);

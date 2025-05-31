@@ -57,26 +57,23 @@ export const RankingLayout: React.FC<RankingLayoutProps> = ({
   handleManualReorder,
   handleLocalReorder
 }) => {
-  // CRITICAL: Enhanced drag event logging to track what's happening
+  // CRITICAL FIX: Enhanced drag event logging with immediate detection
   const enhancedHandleDragStart = (event: DragStartEvent) => {
-    console.log(`🚨🚨🚨 [LAYOUT_DRAG_CRITICAL] ===== DRAG START IN LAYOUT =====`);
-    console.log(`🚨🚨🚨 [LAYOUT_DRAG_CRITICAL] Active ID: ${event.active.id}`);
-    console.log(`🚨🚨🚨 [LAYOUT_DRAG_CRITICAL] Active data:`, event.active.data.current);
+    console.log(`🚨🚨🚨 [LAYOUT_DRAG_START_CRITICAL] ===== DRAG START DETECTED =====`);
+    console.log(`🚨🚨🚨 [LAYOUT_DRAG_START_CRITICAL] Active ID: ${event.active.id}`);
+    console.log(`🚨🚨🚨 [LAYOUT_DRAG_START_CRITICAL] Active data:`, event.active.data.current);
+    console.log(`🚨🚨🚨 [LAYOUT_DRAG_START_CRITICAL] This proves drag detection is working`);
     handleDragStart(event);
   };
 
   const enhancedHandleDragEnd = (event: DragEndEvent) => {
-    console.log(`🚨🚨🚨 [LAYOUT_DRAG_CRITICAL] ===== DRAG END IN LAYOUT =====`);
-    console.log(`🚨🚨🚨 [LAYOUT_DRAG_CRITICAL] Active ID: ${event.active.id}`);
-    console.log(`🚨🚨🚨 [LAYOUT_DRAG_CRITICAL] Over ID: ${event.over?.id || 'NULL'}`);
-    console.log(`🚨🚨🚨 [LAYOUT_DRAG_CRITICAL] Over data:`, event.over?.data?.current);
-    console.log(`🚨🚨🚨 [LAYOUT_DRAG_CRITICAL] Event object:`, {
-      active: { id: event.active.id, data: event.active.data.current },
-      over: event.over ? { id: event.over.id, data: event.over.data.current } : null
-    });
+    console.log(`🚨🚨🚨 [LAYOUT_DRAG_END_CRITICAL] ===== DRAG END DETECTED =====`);
+    console.log(`🚨🚨🚨 [LAYOUT_DRAG_END_CRITICAL] Active ID: ${event.active.id}`);
+    console.log(`🚨🚨🚨 [LAYOUT_DRAG_END_CRITICAL] Over ID: ${event.over?.id || 'NULL'}`);
+    console.log(`🚨🚨🚨 [LAYOUT_DRAG_END_CRITICAL] Over data:`, event.over?.data?.current);
     
     if (!event.over) {
-      console.log(`🚨🚨🚨 [LAYOUT_DRAG_CRITICAL] ❌ No drop target detected`);
+      console.log(`🚨🚨🚨 [LAYOUT_DRAG_END_CRITICAL] ❌ No drop target detected`);
       return;
     }
     
@@ -106,7 +103,7 @@ export const RankingLayout: React.FC<RankingLayoutProps> = ({
       collisionDetection={closestCenter}
     >
       <div className="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen p-1">
-        {/* Battle Controls Header - same as Battle Mode */}
+        {/* Battle Controls Header */}
         <div className="max-w-7xl mx-auto mb-4">
           <BattleControls
             selectedGeneration={selectedGeneration}
@@ -119,7 +116,7 @@ export const RankingLayout: React.FC<RankingLayoutProps> = ({
         
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-2 gap-2" style={{ height: 'calc(100vh - 8rem)' }}>
-            {/* Left side - Available Pokemon (unrated) with enhanced styling */}
+            {/* Left side - Available Pokemon */}
             <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden flex flex-col">
               <AvailablePokemonSection
                 availablePokemon={filteredAvailablePokemon}
@@ -134,7 +131,7 @@ export const RankingLayout: React.FC<RankingLayoutProps> = ({
               />
             </div>
             
-            {/* Right side - Rankings with enhanced styling */}
+            {/* Right side - Rankings */}
             <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden flex flex-col">
               <RankingsSection 
                 displayRankings={displayRankings}
@@ -147,7 +144,7 @@ export const RankingLayout: React.FC<RankingLayoutProps> = ({
         </div>
       </div>
 
-      {/* Add drag overlay for visibility */}
+      {/* Drag overlay */}
       <DragOverlay>
         {activeDraggedPokemon ? (
           <div className="opacity-90 transform scale-105 shadow-2xl z-50">

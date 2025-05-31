@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
+import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { Badge } from "@/components/ui/badge";
 import { normalizePokedexNumber } from "@/utils/pokemon";
 import PokemonInfoModal from "@/components/pokemon/PokemonInfoModal";
@@ -8,7 +8,7 @@ import { VotingArrows } from "./VotingArrows";
 
 interface RankingGridProps {
   displayRankings: (Pokemon | RankedPokemon)[];
-  activeTier?: TopNOption;
+  activeTier?: any;
   isMilestoneView?: boolean;
   battlesCompleted?: number;
   onSuggestRanking?: (pokemon: RankedPokemon, direction: "up" | "down", strength: 1 | 2 | 3) => void;
@@ -52,8 +52,8 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
 
         return (
           <div key={pokemon.id} className="relative group">
-            {/* CRITICAL FIX: Info button with proper isolation and event handling */}
-            <div className="absolute top-1 right-1 z-50">
+            {/* CRITICAL FIX: Info button with proper isolation outside of any other container */}
+            <div className="absolute top-1 right-1 z-50 pointer-events-auto">
               <PokemonInfoModal 
                 pokemon={pokemon}
                 onOpenChange={(open) => {
@@ -61,28 +61,18 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
                 }}
               >
                 <button 
-                  className="w-6 h-6 rounded-full bg-white hover:bg-gray-50 border border-gray-300 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-bold shadow-lg transition-all duration-200 cursor-pointer relative z-50"
+                  className="w-6 h-6 rounded-full bg-white hover:bg-gray-50 border border-gray-300 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-bold shadow-lg transition-all duration-200"
                   onClick={(e) => {
                     console.log(`🔘🔘🔘 [RANKING_GRID_INFO_CRITICAL] Info button clicked for ${pokemon.name} in Rankings`);
-                    console.log(`🔘🔘🔘 [RANKING_GRID_INFO_CRITICAL] Event target:`, e.target);
-                    console.log(`🔘🔘🔘 [RANKING_GRID_INFO_CRITICAL] Event currentTarget:`, e.currentTarget);
                     e.stopPropagation();
                     e.preventDefault();
                   }}
-                  onPointerDown={(e) => {
-                    console.log(`🔘🔘🔘 [RANKING_GRID_INFO_CRITICAL] Info button pointer down for ${pokemon.name}`);
-                    e.stopPropagation();
-                  }}
-                  onMouseDown={(e) => {
-                    console.log(`🔘🔘🔘 [RANKING_GRID_INFO_CRITICAL] Info button mouse down for ${pokemon.name}`);
-                    e.stopPropagation();
-                  }}
-                  type="button"
                   style={{ 
                     pointerEvents: 'auto',
                     position: 'relative',
                     zIndex: 60
                   }}
+                  type="button"
                 >
                   i
                 </button>
@@ -98,7 +88,7 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
               />
             )}
 
-            {/* Card with no click handlers that could interfere */}
+            {/* CRITICAL FIX: Card with no event handlers that could interfere with info button */}
             <div className="bg-white rounded-lg border-2 border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
               {/* Rank number */}
               <div className="bg-gradient-to-r from-yellow-400 to-yellow-600 text-white text-center py-1">
