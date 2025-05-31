@@ -21,6 +21,7 @@ interface TrueSkillStore {
   hasRating: (pokemonId: number) => boolean;
   getAllRatings: () => Record<number, TrueSkillRating>;
   clearAllRatings: () => void;
+  clearCloudData: () => Promise<void>;
   syncToCloud: () => Promise<void>;
   loadFromCloud: () => Promise<void>;
 }
