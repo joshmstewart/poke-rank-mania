@@ -1,4 +1,5 @@
-import React from "react";
+
+import React, { useEffect, useState } from "react";
 import { DragDropContext } from "react-beautiful-dnd";
 import { LoadingState } from "./LoadingState";
 import { AvailablePokemonSection } from "./AvailablePokemonSection";
@@ -46,29 +47,43 @@ export const RankingUI: React.FC<RankingUIProps> = ({
   // Get local rankings from TrueSkill sync
   const { localRankings } = useTrueSkillSync();
   
-  // Prioritize manual rankings: if user has manually ranked Pokemon, show those first
-  // Otherwise fall back to TrueSkill rankings
-  const displayRankings = rankedPokemon.length > 0 ? rankedPokemon 
-    : localRankings.length > 0 ? localRankings 
-    : battleModeRankings.length > 0 ? battleModeRankings 
-    : [];
+  // Local state to track if user has made manual changes
+  const [hasManualChanges, setHasManualChanges] = useState(false);
   
-  // Filter available Pokemon to exclude those in the DISPLAY rankings
+  // Initialize rankings from TrueSkill when available (but only if no manual changes yet)
+  useEffect(() => {
+    // Only auto-populate if we don't have manual rankings AND we have TrueSkill data
+    if (rankedPokemon.length === 0 && !hasManualChanges) {
+      const trueskillRankings = localRankings.length > 0 ? localRankings : battleModeRankings;
+      if (trueskillRankings.length > 0) {
+        console.log(`🔍🔍🔍 [RANKING_UI_INIT] Auto-populating from TrueSkill: ${trueskillRankings.length} Pokemon`);
+        setRankedPokemon(trueskillRankings);
+      }
+    }
+  }, [localRankings, battleModeRankings, rankedPokemon.length, hasManualChanges, setRankedPokemon]);
+  
+  // Determine what to show on the right side - always use manual state once populated
+  const displayRankings = rankedPokemon;
+  
+  // Filter available Pokemon to exclude those in the display rankings
   const displayRankingsIds = new Set(displayRankings.map(p => p.id));
   const filteredAvailablePokemon = availablePokemon.filter(p => !displayRankingsIds.has(p.id));
   
   console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] Manual rankedPokemon: ${rankedPokemon.length}, localRankings: ${localRankings.length}, battleModeRankings: ${battleModeRankings.length}`);
   console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] displayRankings length: ${displayRankings.length}`);
-  console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] Using manual rankings: ${rankedPokemon.length > 0}`);
+  console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] hasManualChanges: ${hasManualChanges}`);
   console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] filteredAvailablePokemon length: ${filteredAvailablePokemon.length}`);
-  console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] displayRankingsIds:`, Array.from(displayRankingsIds));
 
-  // Use the actual state arrays for drag and drop - pass the original arrays, not filtered
+  // Enhanced drag handler that marks manual changes
   const { handleDragEnd } = useDragHandler(
-    availablePokemon, // Pass original array
-    rankedPokemon,    // Pass actual ranked state
+    availablePokemon,
+    rankedPokemon,
     setAvailablePokemon,
-    setRankedPokemon
+    (newRankedPokemon) => {
+      console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] Manual change detected, setting hasManualChanges to true`);
+      setHasManualChanges(true);
+      setRankedPokemon(newRankedPokemon);
+    }
   );
 
   if (isLoading && availablePokemon.length === 0) {

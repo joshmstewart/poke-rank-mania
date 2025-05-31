@@ -11,7 +11,7 @@ export const useDragHandler = (
   availablePokemon: Pokemon[],
   rankedPokemon: Pokemon[],
   setAvailablePokemon: React.Dispatch<React.SetStateAction<Pokemon[]>>,
-  setRankedPokemon: React.Dispatch<React.SetStateAction<Pokemon[]>>
+  setRankedPokemon: React.Dispatch<React.SetStateAction<Pokemon[]>> | ((newRanked: Pokemon[]) => void)
 ): DragHandlerResult => {
   const handleDragEnd = (result: DropResult) => {
     const { source, destination } = result;
