@@ -17,12 +17,6 @@ export const useTrueSkillSync = () => {
   const syncWithBattleModeRankings = useCallback(async () => {
     console.log(`🔥🔥🔥 [MANUAL_SYNC_FIXED] ===== BATTLE MODE SYNC ENTRY =====`);
     
-    // CRITICAL: In manual mode, only sync on initial load, not after drag operations
-    if (manualOrderLocked) {
-      console.log(`🔥🔥🔥 [MANUAL_SYNC_FIXED] Manual order locked - skipping sync to preserve user order`);
-      return localRankings;
-    }
-    
     // Check context readiness
     if (pokemonLookupMap.size === 0) {
       console.log(`🔥🔥🔥 [MANUAL_SYNC_FIXED] Context not ready - deferring sync`);
@@ -52,7 +46,7 @@ export const useTrueSkillSync = () => {
     setLocalRankings(rankings);
     
     return rankings;
-  }, [getAllRatings, pokemonLookupMap.size, generateRankings, manualOrderLocked, localRankings]);
+  }, [getAllRatings, pokemonLookupMap.size, generateRankings]);
 
   // Initialize local rankings from TrueSkill store on mount
   useEffect(() => {
@@ -130,16 +124,26 @@ export const useTrueSkillSync = () => {
     const handleTrueSkillUpdate = (event: CustomEvent) => {
       console.log(`🔥🔥🔥 [TRUESKILL_SYNC_EVENT] Received sync event:`, event.detail);
       
-      // CRITICAL: In manual mode, handle add operations immediately but ignore reordering sync events
-      if (window.location.pathname === '/' || window.location.pathname.includes('manual')) {
-        if (event.detail?.action === 'add') {
-          console.log(`🔥🔥🔥 [TRUESKILL_SYNC_EVENT] MANUAL MODE - handling ADD operation for new Pokemon`);
-          // Force a re-sync for add operations only
-          syncWithBattleModeRankings();
-        } else {
-          console.log(`🔥🔥🔥 [TRUESKILL_SYNC_EVENT] MANUAL MODE - ignoring non-add sync events to preserve manual order`);
-        }
+      // CRITICAL FIX: Always handle ADD operations regardless of manual lock status
+      if (event.detail?.action === 'add') {
+        console.log(`🔥🔥🔥 [TRUESKILL_SYNC_EVENT] ADD operation detected - forcing sync regardless of manual lock`);
+        // Temporarily unlock to allow new Pokemon addition, then re-lock
+        const wasLocked = manualOrderLocked;
+        setManualOrderLocked(false);
+        syncWithBattleModeRankings().then(() => {
+          if (wasLocked) {
+            setManualOrderLocked(true);
+          }
+        });
         return;
+      }
+      
+      // For non-add operations, respect manual lock in manual mode
+      if (window.location.pathname === '/' || window.location.pathname.includes('manual')) {
+        if (manualOrderLocked) {
+          console.log(`🔥🔥🔥 [TRUESKILL_SYNC_EVENT] MANUAL MODE - ignoring non-add sync events to preserve manual order`);
+          return;
+        }
       }
       
       console.log(`🔥🔥🔥 [TRUESKILL_SYNC_EVENT] Battle Mode sync event - proceeding with sync`);
@@ -153,7 +157,7 @@ export const useTrueSkillSync = () => {
       document.removeEventListener('trueskill-updated', handleTrueSkillUpdate as EventListener);
       document.removeEventListener('trueskill-store-updated', handleTrueSkillUpdate as EventListener);
     };
-  }, [syncWithBattleModeRankings]);
+  }, [syncWithBattleModeRankings, manualOrderLocked]);
 
   return {
     localRankings,
