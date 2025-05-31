@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { Button } from "@/components/ui/button";
@@ -48,37 +49,50 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
   const displayRankings = localRankings.slice(0, Math.min(milestoneDisplayCount, maxItems));
   const hasMoreToLoad = milestoneDisplayCount < maxItems;
 
-  // Update local state when props change
+  // Update local state when props change, but only if we don't have local changes
   useEffect(() => {
-    setLocalRankings(formattedRankings);
+    console.log(`🏆 [MILESTONE_DRAG_SYNC] Props changed - formattedRankings: ${formattedRankings.length}, localRankings: ${localRankings.length}`);
+    
+    // Only update if the rankings are significantly different (suggesting external update)
+    // This prevents overwriting local drag changes
+    const hasSignificantDifference = Math.abs(formattedRankings.length - localRankings.length) > 0 ||
+      formattedRankings.slice(0, 5).some((p, i) => p.id !== localRankings[i]?.id);
+    
+    if (hasSignificantDifference) {
+      console.log(`🏆 [MILESTONE_DRAG_SYNC] Significant difference detected, updating local rankings`);
+      setLocalRankings(formattedRankings);
+    } else {
+      console.log(`🏆 [MILESTONE_DRAG_SYNC] No significant difference, keeping local rankings to preserve drag state`);
+    }
   }, [formattedRankings]);
 
-  // Use enhanced manual reorder hook to track implied battles
+  // FIXED: Use only the enhanced manual reorder, don't call the original onManualReorder
   const { handleEnhancedManualReorder } = useEnhancedManualReorder(
-    formattedRankings as RankedPokemon[],
+    localRankings as RankedPokemon[],
     (updatedRankings: RankedPokemon[]) => {
+      console.log(`🏆 [MILESTONE_DRAG_FIXED] Enhanced reorder callback with ${updatedRankings.length} Pokemon`);
       setLocalRankings(updatedRankings);
-      // Also call the original handler if provided
-      // Note: onManualReorder might not expect this, but we'll keep the flow
+      // DON'T call onManualReorder here - it's causing the reset
     },
     true // preventAutoResorting = true to maintain manual order
   );
 
-  // Enhanced drag and drop that uses both handlers
+  // FIXED: Simplified drag and drop that only uses enhanced reorder
   const { sensors, handleDragEnd } = useDragAndDrop({
     displayRankings,
     onManualReorder: (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => {
-      console.log(`🔥 [MILESTONE_DRAG_DEBUG] Drag completed: ${draggedPokemonId} from ${sourceIndex} to ${destinationIndex}`);
+      console.log(`🏆 [MILESTONE_DRAG_FIXED] Drag completed: ${draggedPokemonId} from ${sourceIndex} to ${destinationIndex}`);
+      console.log(`🏆 [MILESTONE_DRAG_FIXED] Using ONLY enhanced manual reorder (no original handler)`);
       
-      // Call the enhanced manual reorder for implied battle tracking
+      // CRITICAL FIX: Only call the enhanced manual reorder, don't call onManualReorder
       handleEnhancedManualReorder(draggedPokemonId, sourceIndex, destinationIndex);
       
-      // Also call the original handler
-      if (onManualReorder) {
-        onManualReorder(draggedPokemonId, sourceIndex, destinationIndex);
-      }
+      console.log(`🏆 [MILESTONE_DRAG_FIXED] Enhanced reorder completed, NOT calling original onManualReorder to prevent reset`);
     },
-    onLocalReorder: setLocalRankings
+    onLocalReorder: (newRankings) => {
+      console.log(`🏆 [MILESTONE_DRAG_FIXED] Local reorder for immediate UI feedback with ${newRankings.length} Pokemon`);
+      setLocalRankings(newRankings);
+    }
   });
 
   return (
