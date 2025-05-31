@@ -48,7 +48,7 @@ const BattleContentMilestone: React.FC<BattleContentMilestoneProps> = ({
 
   if (finalRankings && finalRankings.length > 0) {
     console.log(`🏆 [MILESTONE_COMPONENT_TRUESKILL_SYNC] Sample rankings:`, finalRankings.slice(0, 5).map(p => {
-      const score = 'score' in p ? p.score?.toFixed(3) : 'N/A';
+      const score = 'score' in p && typeof p.score === 'number' ? p.score.toFixed(3) : 'N/A';
       return `${p.name} (${p.id}) - Score: ${score}`;
     }));
     console.log(`🏆 [MILESTONE_COMPONENT_TRUESKILL_SYNC] Rankings now using TrueSkill store data (same as Manual mode)`);

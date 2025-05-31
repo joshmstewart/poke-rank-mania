@@ -28,11 +28,8 @@ export const useBattleContentState = (
     // The rankings are already updated through TrueSkill during battle processing
     // So we primarily use this for milestone display consistency
     
-    if (coreState.setFinalRankings) {
-      coreState.setFinalRankings(updatedRankings);
-      console.log(`🔧 [BATTLE_CONTENT_RANKINGS_UPDATE] Final rankings updated for milestone display`);
-    }
-  }, [coreState.setFinalRankings]);
+    console.log(`🔧 [BATTLE_CONTENT_RANKINGS_UPDATE] Rankings update received, TrueSkill store handles persistence`);
+  }, []);
 
   // CRITICAL FIX: Sync external battle state setters
   const { battlesCompleted, battleResults } = coreState;
