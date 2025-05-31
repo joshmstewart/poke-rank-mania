@@ -32,7 +32,7 @@ export const useDragHandler = (
       return;
     }
 
-    // Get the filtered available Pokemon (excluding those already ranked)
+    // Get the filtered available Pokemon (excluding those already ranked) for display purposes
     const rankedPokemonIds = new Set(rankedPokemon.map(p => p.id));
     const filteredAvailablePokemon = availablePokemon.filter(p => !rankedPokemonIds.has(p.id));
     
@@ -42,7 +42,7 @@ export const useDragHandler = (
         const newItems = Array.from(filteredAvailablePokemon);
         const [movedItem] = newItems.splice(source.index, 1);
         newItems.splice(destination.index, 0, movedItem);
-        // We don't update the state here since it's just reordering within filtered list
+        // For reordering within available, we don't need to update state since it's just visual reordering
         console.log("🔄 Reordered within available list:", movedItem.name);
       } else if (source.droppableId === "ranked") {
         const newItems = Array.from(rankedPokemon);
@@ -56,29 +56,52 @@ export const useDragHandler = (
     else {
       if (source.droppableId === "available" && destination.droppableId === "ranked") {
         // Moving from available to ranked
-        const sourceItems = Array.from(filteredAvailablePokemon);
-        const destItems = Array.from(rankedPokemon);
+        const movedItem = filteredAvailablePokemon[source.index];
         
-        const [movedItem] = sourceItems.splice(source.index, 1);
-        destItems.splice(destination.index, 0, movedItem);
+        if (!movedItem) {
+          console.error("🔄 No item found at source index:", source.index);
+          return;
+        }
         
         console.log("🔄 Moving from available to ranked:", movedItem.name);
-        console.log("🔄 New ranked count:", destItems.length);
         
-        // Only update ranked Pokemon - the filtering will handle removing from available display
-        setRankedPokemon(destItems);
+        // Remove from available Pokemon state
+        const newAvailablePokemon = availablePokemon.filter(p => p.id !== movedItem.id);
+        
+        // Add to ranked Pokemon state at the correct position
+        const newRankedPokemon = Array.from(rankedPokemon);
+        newRankedPokemon.splice(destination.index, 0, movedItem);
+        
+        console.log("🔄 New available count:", newAvailablePokemon.length);
+        console.log("🔄 New ranked count:", newRankedPokemon.length);
+        
+        // Update both states
+        setAvailablePokemon(newAvailablePokemon);
+        setRankedPokemon(newRankedPokemon);
         
       } else if (source.droppableId === "ranked" && destination.droppableId === "available") {
         // Moving from ranked to available
-        const sourceItems = Array.from(rankedPokemon);
+        const movedItem = rankedPokemon[source.index];
         
-        const [movedItem] = sourceItems.splice(source.index, 1);
+        if (!movedItem) {
+          console.error("🔄 No item found at ranked index:", source.index);
+          return;
+        }
         
         console.log("🔄 Moving from ranked to available:", movedItem.name);
-        console.log("🔄 New ranked count:", sourceItems.length);
         
-        // Only update ranked Pokemon - the filtering will handle adding to available display
-        setRankedPokemon(sourceItems);
+        // Remove from ranked Pokemon state
+        const newRankedPokemon = rankedPokemon.filter(p => p.id !== movedItem.id);
+        
+        // Add back to available Pokemon state
+        const newAvailablePokemon = [...availablePokemon, movedItem];
+        
+        console.log("🔄 New ranked count:", newRankedPokemon.length);
+        console.log("🔄 New available count:", newAvailablePokemon.length);
+        
+        // Update both states
+        setRankedPokemon(newRankedPokemon);
+        setAvailablePokemon(newAvailablePokemon);
       }
     }
   };
