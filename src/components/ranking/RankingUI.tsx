@@ -1,5 +1,6 @@
 
 import React, { useEffect, useState } from "react";
+import { DndContext, DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import { LoadingState } from "./LoadingState";
 import { AvailablePokemonSection } from "./AvailablePokemonSection";
 import { RankingsSection } from "./RankingsSection";
@@ -126,6 +127,30 @@ export const RankingUI: React.FC<RankingUIProps> = ({
     setRankedPokemon(newRankings);
   };
 
+  // Unified drag handlers for the shared DndContext
+  const handleDragStart = (event: DragStartEvent) => {
+    console.log(`🔄 [RANKING_UI] Drag started for item:`, event.active.id);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    console.log(`🔄 [RANKING_UI] Drag ended:`, event);
+    
+    const { active, over } = event;
+    
+    if (!over) {
+      console.log(`🔄 [RANKING_UI] No drop target`);
+      return;
+    }
+
+    // Check if dragging from available to rankings
+    if (active.id.toString().startsWith('available-') && over.id === 'rankings-drop-zone') {
+      const pokemonId = parseInt(active.id.toString().replace('available-', ''));
+      console.log(`🔄 [RANKING_UI] Dragging Pokemon ${pokemonId} from available to rankings`);
+      handleDragToRankings(pokemonId);
+    }
+    // Handle reordering within rankings (this will be handled by DragDropGrid's own logic)
+  };
+
   if (isLoading && availablePokemon.length === 0) {
     return (
       <LoadingState 
@@ -138,47 +163,48 @@ export const RankingUI: React.FC<RankingUIProps> = ({
   }
 
   return (
-    <div className="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen p-1">
-      {/* Battle Controls Header - same as Battle Mode */}
-      <div className="max-w-7xl mx-auto mb-4">
-        <BattleControls
-          selectedGeneration={selectedGeneration}
-          battleType={battleType}
-          onGenerationChange={(gen) => onGenerationChange(Number(gen))}
-          onBattleTypeChange={setBattleType}
-          onRestartBattles={onReset}
-        />
-      </div>
-      
-      <div className="max-w-7xl mx-auto">
-        <div className="grid md:grid-cols-2 gap-2" style={{ height: 'calc(100vh - 8rem)' }}>
-          {/* Left side - Available Pokemon (unrated) with enhanced styling */}
-          <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden flex flex-col">
-            <AvailablePokemonSection
-              availablePokemon={filteredAvailablePokemon}
-              isLoading={isLoading}
-              selectedGeneration={selectedGeneration}
-              loadingType={loadingType}
-              currentPage={currentPage}
-              totalPages={totalPages}
-              loadingRef={loadingRef}
-              handlePageChange={handlePageChange}
-              getPageRange={getPageRange}
-              onDragToRankings={handleDragToRankings}
-            />
-          </div>
-          
-          {/* Right side - Rankings with enhanced styling */}
-          <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden flex flex-col">
-            <RankingsSection 
-              displayRankings={displayRankings}
-              onManualReorder={handleManualReorder}
-              onLocalReorder={handleLocalReorder}
-              pendingRefinements={new Set()}
-            />
+    <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+      <div className="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen p-1">
+        {/* Battle Controls Header - same as Battle Mode */}
+        <div className="max-w-7xl mx-auto mb-4">
+          <BattleControls
+            selectedGeneration={selectedGeneration}
+            battleType={battleType}
+            onGenerationChange={(gen) => onGenerationChange(Number(gen))}
+            onBattleTypeChange={setBattleType}
+            onRestartBattles={onReset}
+          />
+        </div>
+        
+        <div className="max-w-7xl mx-auto">
+          <div className="grid md:grid-cols-2 gap-2" style={{ height: 'calc(100vh - 8rem)' }}>
+            {/* Left side - Available Pokemon (unrated) with enhanced styling */}
+            <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden flex flex-col">
+              <AvailablePokemonSection
+                availablePokemon={filteredAvailablePokemon}
+                isLoading={isLoading}
+                selectedGeneration={selectedGeneration}
+                loadingType={loadingType}
+                currentPage={currentPage}
+                totalPages={totalPages}
+                loadingRef={loadingRef}
+                handlePageChange={handlePageChange}
+                getPageRange={getPageRange}
+              />
+            </div>
+            
+            {/* Right side - Rankings with enhanced styling */}
+            <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden flex flex-col">
+              <RankingsSection 
+                displayRankings={displayRankings}
+                onManualReorder={handleManualReorder}
+                onLocalReorder={handleLocalReorder}
+                pendingRefinements={new Set()}
+              />
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </DndContext>
   );
 };
