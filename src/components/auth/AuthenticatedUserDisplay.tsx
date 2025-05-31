@@ -28,9 +28,9 @@ export const AuthenticatedUserDisplay: React.FC = () => {
   // Get the current user from either user or session
   const currentUser = user || session?.user;
   
-  // Set display values with proper fallbacks
-  const displayEmail = currentUser?.email || 'Unknown User';
-  const displayName = profile?.display_name || profile?.username || currentUser?.email?.split('@')[0] || 'User';
+  // Set display values with proper fallbacks - NEVER let these be undefined
+  const displayEmail = currentUser?.email || 'Loading...';
+  const displayName = profile?.display_name || profile?.username || currentUser?.email?.split('@')[0] || 'Loading...';
   const avatarUrl = profile?.avatar_url;
 
   console.log('🔵 AuthenticatedUserDisplay: Display values:', {
@@ -78,6 +78,8 @@ export const AuthenticatedUserDisplay: React.FC = () => {
 
   console.log('🔵 AuthenticatedUserDisplay: ABOUT TO RENDER JSX - this should ALWAYS appear when component is called');
 
+  // CRITICAL CHANGE: Always render the component structure when called by authenticated parent
+  // No early returns that could cause the component to disappear
   return (
     <div className="bg-red-500 border-4 border-yellow-400 p-2">
       <div className="text-white font-bold">🔥 AUTHENTICATED USER DISPLAY 🔥</div>
