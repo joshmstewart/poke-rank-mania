@@ -61,12 +61,13 @@ export const AuthenticatedUserDisplay: React.FC = () => {
   const avatarUrl = profile?.avatar_url;
 
   console.log('🔍 AuthenticatedUserDisplay: Rendering with displayName:', displayName);
+  console.log('🔍 AuthenticatedUserDisplay: THIS SHOULD SHOW USER DROPDOWN, NOT SYNCED BUTTON');
 
   return (
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="h-auto p-2">
+          <Button variant="ghost" className="h-auto p-2" style={{ backgroundColor: 'red', color: 'white' }}>
             <div className="flex items-center gap-2">
               <Avatar className="h-8 w-8">
                 <AvatarImage src={avatarUrl || undefined} alt={displayName} />

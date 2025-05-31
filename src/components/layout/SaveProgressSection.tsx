@@ -29,15 +29,21 @@ const SaveProgressSection: React.FC = () => {
   if (user && session) {
     console.log('SaveProgressSection: rendering authenticated user display for:', user.email);
     console.log('SaveProgressSection: About to render AuthenticatedUserDisplay component');
+    console.log('SaveProgressSection: DEFINITELY returning AuthenticatedUserDisplay, NOT CloudSyncButton');
     return (
-      <div>
+      <div className="save-progress-authenticated">
         <AuthenticatedUserDisplay />
       </div>
     );
   }
 
   console.log('SaveProgressSection: no user found, rendering cloud sync button');
-  return <CloudSyncButton />;
+  console.log('SaveProgressSection: DEFINITELY returning CloudSyncButton, NOT AuthenticatedUserDisplay');
+  return (
+    <div className="save-progress-unauthenticated">
+      <CloudSyncButton />
+    </div>
+  );
 };
 
 export default SaveProgressSection;
