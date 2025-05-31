@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { DndContext, DragEndEvent, DragStartEvent } from '@dnd-kit/core';
+import { DndContext, DragEndEvent, DragStartEvent, closestCenter } from '@dnd-kit/core';
+import { arrayMove } from '@dnd-kit/sortable';
 import { LoadingState } from "./LoadingState";
 import { AvailablePokemonSection } from "./AvailablePokemonSection";
 import { RankingsSection } from "./RankingsSection";
@@ -146,8 +147,27 @@ export const RankingUI: React.FC<RankingUIProps> = ({
       const pokemonId = parseInt(active.id.toString().replace('available-', ''));
       console.log(`🔄 [RANKING_UI] Dragging Pokemon ${pokemonId} from available to rankings`);
       handleDragToRankings(pokemonId);
+      return;
     }
-    // Handle reordering within rankings (this will be handled by DragDropGrid's own logic)
+
+    // Handle reordering within rankings
+    if (!active.id.toString().startsWith('available-') && !over.id.toString().startsWith('available-')) {
+      const activeId = Number(active.id);
+      const overId = Number(over.id);
+      
+      // Find the indices of the dragged and target Pokemon
+      const oldIndex = displayRankings.findIndex(p => p.id === activeId);
+      const newIndex = displayRankings.findIndex(p => p.id === overId);
+      
+      if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
+        console.log(`🔄 [RANKING_UI] Reordering within rankings: ${activeId} from ${oldIndex} to ${newIndex}`);
+        
+        // Use arrayMove for proper reordering
+        const newRankings = arrayMove(displayRankings, oldIndex, newIndex);
+        setRankedPokemon(newRankings);
+        setHasManualChanges(true);
+      }
+    }
   };
 
   if (isLoading && availablePokemon.length === 0) {
@@ -162,7 +182,11 @@ export const RankingUI: React.FC<RankingUIProps> = ({
   }
 
   return (
-    <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+    <DndContext 
+      onDragStart={handleDragStart} 
+      onDragEnd={handleDragEnd}
+      collisionDetection={closestCenter}
+    >
       <div className="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen p-1">
         {/* Battle Controls Header - same as Battle Mode */}
         <div className="max-w-7xl mx-auto mb-4">
