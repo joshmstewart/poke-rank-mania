@@ -9,21 +9,12 @@ export const CloudSyncButton: React.FC = () => {
   const { user } = useAuth();
   const [showAuthDialog, setShowAuthDialog] = useState(false);
 
-  console.log('🟡🟡🟡 CloudSyncButton: RENDER START - Component is rendering');
-  console.log('🟡🟡🟡 CloudSyncButton: Auth state:', {
-    hasUser: !!user,
-    userEmail: user?.email,
-    userId: user?.id,
-    timestamp: new Date().toISOString()
-  });
+  console.log('🟡 CloudSyncButton: Rendering - user authenticated:', !!user);
 
-  // Only show for unauthenticated users - authenticated users see sync status in SaveProgressSection
+  // Only show for unauthenticated users
   if (user) {
-    console.log('🟡🟡🟡 CloudSyncButton: ✅ User IS authenticated - RETURNING NULL (sync status shown elsewhere)');
     return null;
   }
-
-  console.log('🟡🟡🟡 CloudSyncButton: ❌ User is NOT authenticated, rendering save progress button');
 
   return (
     <AuthDialog 
