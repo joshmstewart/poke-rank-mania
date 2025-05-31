@@ -46,11 +46,11 @@ const PokemonCardImage: React.FC<PokemonCardImageProps> = ({
   }, [imageUrl]);
 
   return (
-    <div className={`${compact ? "w-12 h-12" : "w-16 h-16"} bg-gray-50 rounded-md relative flex-shrink-0 ${className || ""}`}>
+    <div className={`${compact ? "w-14 h-14" : "w-16 h-16"} bg-gray-50 rounded-md relative flex-shrink-0 ${className || ""}`}>
       <AspectRatio ratio={1}>
         {!imageLoaded && !imageError && imageUrl && (
           <div className="animate-pulse bg-gray-200 absolute inset-0 flex items-center justify-center">
-            <span className="text-xs text-gray-500">Loading...</span>
+            <span className="text-xs text-gray-500">...</span>
           </div>
         )}
         {imageUrl && (
