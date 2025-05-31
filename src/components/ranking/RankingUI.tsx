@@ -9,6 +9,9 @@ import { useTrueSkillSync } from "@/hooks/ranking/useTrueSkillSync";
 import { useRankings } from "@/hooks/battle/useRankings";
 import { LoadingType } from "@/hooks/usePokemonRanker";
 import { ITEMS_PER_PAGE } from "@/services/pokemon";
+import BattleControls from "@/components/battle/BattleControls";
+import { BattleType } from "@/hooks/battle/types";
+import { SingleBattle } from "@/hooks/battle/types";
 
 interface RankingUIProps {
   isLoading: boolean;
@@ -24,6 +27,8 @@ interface RankingUIProps {
   setRankedPokemon: React.Dispatch<React.SetStateAction<any[]>>;
   handlePageChange: (page: number) => void;
   getPageRange: () => number[];
+  onGenerationChange: (gen: number) => void;
+  onReset: () => void;
 }
 
 export const RankingUI: React.FC<RankingUIProps> = ({
@@ -39,7 +44,9 @@ export const RankingUI: React.FC<RankingUIProps> = ({
   setAvailablePokemon,
   setRankedPokemon,
   handlePageChange,
-  getPageRange
+  getPageRange,
+  onGenerationChange,
+  onReset
 }) => {
   // Get TrueSkill-based rankings from Battle Mode system
   const { finalRankings: battleModeRankings } = useRankings();
@@ -49,6 +56,9 @@ export const RankingUI: React.FC<RankingUIProps> = ({
   
   // Local state to track if user has made manual changes
   const [hasManualChanges, setHasManualChanges] = useState(false);
+  
+  // Battle type state (needed for BattleControls compatibility)
+  const [battleType, setBattleType] = useState<BattleType>("pairs");
   
   // Initialize rankings from TrueSkill when available (but only if no manual changes yet)
   useEffect(() => {
@@ -99,9 +109,20 @@ export const RankingUI: React.FC<RankingUIProps> = ({
 
   return (
     <div className="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen p-1">
+      {/* Battle Controls Header - same as Battle Mode */}
+      <div className="max-w-7xl mx-auto mb-4">
+        <BattleControls
+          selectedGeneration={selectedGeneration}
+          battleType={battleType}
+          onGenerationChange={(gen) => onGenerationChange(Number(gen))}
+          onBattleTypeChange={setBattleType}
+          onRestartBattles={onReset}
+        />
+      </div>
+      
       <DragDropContext onDragEnd={handleDragEnd}>
         <div className="max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-2 gap-2" style={{ height: 'calc(100vh - 4rem)' }}>
+          <div className="grid md:grid-cols-2 gap-2" style={{ height: 'calc(100vh - 8rem)' }}>
             {/* Left side - Available Pokemon (unrated) with enhanced styling */}
             <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden flex flex-col">
               <AvailablePokemonSection
