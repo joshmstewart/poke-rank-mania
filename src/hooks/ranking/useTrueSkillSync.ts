@@ -1,5 +1,5 @@
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useTrueSkillStore } from "@/stores/trueskillStore";
 import { usePokemonContext } from "@/contexts/PokemonContext";
 import { RankedPokemon, Pokemon } from "@/services/pokemon";
@@ -10,6 +10,11 @@ export const useTrueSkillSync = () => {
   const { getAllRatings, clearAllRatings } = useTrueSkillStore();
   const { pokemonLookupMap, allPokemon } = usePokemonContext();
   const [localRankings, setLocalRankings] = useState<RankedPokemon[]>([]);
+  
+  // CRITICAL FIX: Use refs to track context readiness for better effect triggering
+  const contextReadyRef = useRef(false);
+  const lastMapSizeRef = useRef(0);
+  const lastAllPokemonLengthRef = useRef(0);
 
   console.log(`🔥🔥🔥 [TRUESKILL_SYNC_CONTEXT_TRACK] Context state - Map size: ${pokemonLookupMap.size}, AllPokemon length: ${allPokemon.length}`);
 
@@ -60,7 +65,7 @@ export const useTrueSkillSync = () => {
     return rankedPokemon;
   }, [pokemonLookupMap]);
 
-  // CRITICAL FIX: Sync with TrueSkill store when context is ready
+  // CRITICAL FIX: Enhanced sync with better context readiness detection
   const syncWithTrueSkill = useCallback(() => {
     console.log(`🔥🔥🔥 [TRUESKILL_SYNC_TRIGGER] ===== SYNC TRIGGERED =====`);
     console.log(`🔥🔥🔥 [TRUESKILL_SYNC_TRIGGER] Context ready: ${pokemonLookupMap.size > 0}`);
@@ -79,31 +84,51 @@ export const useTrueSkillSync = () => {
     return rankings;
   }, [getAllRatings, convertRatingsToRankings, pokemonLookupMap.size]);
 
-  // CRITICAL FIX: Use both pokemonLookupMap.size AND allPokemon.length as dependencies
+  // CRITICAL FIX: Enhanced context readiness detection with manual change tracking
   useEffect(() => {
-    console.log(`🔥🔥🔥 [TRUESKILL_SYNC_EFFECT] ===== useEffect TRIGGERED =====`);
-    console.log(`🔥🔥🔥 [TRUESKILL_SYNC_EFFECT] pokemonLookupMap.size: ${pokemonLookupMap.size}`);
-    console.log(`🔥🔥🔥 [TRUESKILL_SYNC_EFFECT] allPokemon.length: ${allPokemon.length}`);
+    console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_ENTRY] ===== MANUAL SYNC EFFECT ENTRY =====`);
+    console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_ENTRY] pokemonLookupMap.size: ${pokemonLookupMap.size} (prev: ${lastMapSizeRef.current})`);
+    console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_ENTRY] allPokemon.length: ${allPokemon.length} (prev: ${lastAllPokemonLengthRef.current})`);
+    console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_ENTRY] contextReadyRef.current: ${contextReadyRef.current}`);
     
-    // Only sync when context is actually ready
-    if (pokemonLookupMap.size > 0 && allPokemon.length > 0) {
-      console.log(`🔥🔥🔥 [TRUESKILL_SYNC_EFFECT] ✅ Context is ready - performing sync`);
+    // Check if context values actually changed
+    const mapSizeChanged = pokemonLookupMap.size !== lastMapSizeRef.current;
+    const allPokemonLengthChanged = allPokemon.length !== lastAllPokemonLengthRef.current;
+    
+    console.log(`🔥🔥🔥 [MANUAL_SYNC_ULTRA_ENTRY] mapSizeChanged: ${mapSizeChanged}, allPokemonLengthChanged: ${allPokemonLengthChanged}`);
+    
+    // Update refs
+    lastMapSizeRef.current = pokemonLookupMap.size;
+    lastAllPokemonLengthRef.current = allPokemon.length;
+    
+    const isContextReady = pokemonLookupMap.size > 0 && allPokemon.length > 0;
+    const contextJustBecameReady = isContextReady && !contextReadyRef.current;
+    
+    console.log(`🔥🔥🔥 [MANUAL_SYNC_DETAIL] Context ready: ${isContextReady}, just became ready: ${contextJustBecameReady}`);
+    
+    if (isContextReady) {
+      console.log(`🔥🔥🔥 [MANUAL_SYNC_DETAIL] ✅ Context is ready - performing sync`);
+      contextReadyRef.current = true;
       syncWithTrueSkill();
     } else {
-      console.log(`🔥🔥🔥 [TRUESKILL_SYNC_EFFECT] ⚠️ Context not ready - waiting...`);
+      console.log(`🔥🔥🔥 [MANUAL_SYNC_DETAIL] ⚠️ Context not ready - waiting...`);
+      contextReadyRef.current = false;
     }
-  }, [pokemonLookupMap.size, allPokemon.length, syncWithTrueSkill]);
+  }, [pokemonLookupMap, allPokemon, syncWithTrueSkill]); // CRITICAL: Use the objects directly, not just size/length
 
   // Listen for TrueSkill store changes
   useEffect(() => {
     const handleStoreUpdated = () => {
       console.log(`🔥🔥🔥 [TRUESKILL_SYNC_EVENT] Store updated - syncing...`);
-      syncWithTrueSkill();
+      if (contextReadyRef.current) {
+        syncWithTrueSkill();
+      }
     };
 
     const handleStoreCleared = () => {
       console.log(`🔥🔥🔥 [TRUESKILL_SYNC_EVENT] ===== STORE CLEARED - RESETTING LOCAL RANKINGS =====`);
       setLocalRankings([]);
+      contextReadyRef.current = false;
     };
 
     // Listen for store events
