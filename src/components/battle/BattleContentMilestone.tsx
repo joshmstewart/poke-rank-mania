@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Pokemon, TopNOption, RankedPokemon } from "@/services/pokemon";
 import RankingDisplayContainer from "./RankingDisplayContainer";
@@ -40,32 +39,19 @@ const BattleContentMilestone: React.FC<BattleContentMilestoneProps> = ({
   pendingRefinements,
   onRankingsUpdate
 }) => {
-  console.log(`🏆 [MILESTONE_COMPONENT_UX_FIX] ===== BattleContentMilestone RENDER =====`);
-  console.log(`🏆 [MILESTONE_COMPONENT_UX_FIX] Props received:`);
-  console.log(`🏆 [MILESTONE_COMPONENT_UX_FIX] - finalRankings type: ${Array.isArray(finalRankings) ? 'array' : typeof finalRankings}`);
-  console.log(`🏆 [MILESTONE_COMPONENT_UX_FIX] - finalRankings length: ${finalRankings?.length || 0}`);
-  console.log(`🏆 [MILESTONE_COMPONENT_UX_FIX] - battlesCompleted: ${battlesCompleted}`);
-  console.log(`🏆 [MILESTONE_COMPONENT_UX_FIX] - rankingGenerated: ${rankingGenerated}`);
-  console.log(`🏆 [MILESTONE_COMPONENT_UX_FIX] - activeTier: ${activeTier}`);
-  console.log(`🏆 [MILESTONE_COMPONENT_UX_FIX] - onRankingsUpdate available: ${!!onRankingsUpdate}`);
+  console.log(`🏆 [MILESTONE_COMPONENT_TRUESKILL_SYNC] ===== BattleContentMilestone RENDER =====`);
+  console.log(`🏆 [MILESTONE_COMPONENT_TRUESKILL_SYNC] finalRankings type: ${Array.isArray(finalRankings) ? 'array' : typeof finalRankings}`);
+  console.log(`🏆 [MILESTONE_COMPONENT_TRUESKILL_SYNC] finalRankings length: ${finalRankings?.length || 0}`);
+  console.log(`🏆 [MILESTONE_COMPONENT_TRUESKILL_SYNC] battlesCompleted: ${battlesCompleted}`);
+  console.log(`🏆 [MILESTONE_COMPONENT_TRUESKILL_SYNC] rankingGenerated: ${rankingGenerated}`);
 
   if (finalRankings && finalRankings.length > 0) {
-    console.log(`🏆 [MILESTONE_COMPONENT_UX_FIX] Sample rankings:`, finalRankings.slice(0, 5).map(p => `${p.name} (${p.id})`));
-    
-    // Check for name formatting issues
-    finalRankings.slice(0, 10).forEach((pokemon, index) => {
-      console.log(`🏆 [MILESTONE_NAME_CHECK] Pokemon #${index + 1}: "${pokemon.name}" (ID: ${pokemon.id})`);
-      if (pokemon.name.includes('-') && !pokemon.name.includes('(') && !pokemon.name.includes('Mega ') && !pokemon.name.includes('Alolan ') && !pokemon.name.includes('G-Max ')) {
-        console.log(`🚨 [MILESTONE_NAME_CHECK] Potentially unformatted name detected: "${pokemon.name}"`);
-      }
-    });
+    console.log(`🏆 [MILESTONE_COMPONENT_TRUESKILL_SYNC] Sample rankings:`, finalRankings.slice(0, 5).map(p => `${p.name} (${p.id}) - Score: ${p.score?.toFixed(3) || 'N/A'}`));
+    console.log(`🏆 [MILESTONE_COMPONENT_TRUESKILL_SYNC] Rankings now using TrueSkill store data (same as Manual mode)`);
   } else {
-    console.log(`🚨 [MILESTONE_COMPONENT_UX_FIX] WARNING: finalRankings is empty or undefined!`);
-    console.log(`🚨 [MILESTONE_COMPONENT_UX_FIX] This is likely why no Pokemon are showing at the milestone`);
-    console.log(`🚨 [MILESTONE_COMPONENT_UX_FIX] Raw finalRankings value:`, finalRankings);
+    console.log(`🚨 [MILESTONE_COMPONENT_TRUESKILL_SYNC] WARNING: finalRankings is empty or undefined!`);
+    console.log(`🚨 [MILESTONE_COMPONENT_TRUESKILL_SYNC] This could indicate TrueSkill store sync issue`);
   }
-  
-  console.log(`🏆 [MILESTONE_COMPONENT_UX_FIX] ===== END PROPS LOGGING =====`);
 
   return (
     <div className="w-full max-w-6xl mx-auto p-6">
@@ -73,6 +59,14 @@ const BattleContentMilestone: React.FC<BattleContentMilestoneProps> = ({
       <p className="mb-4">
         Congratulations! You've completed {battlesCompleted} battles.
       </p>
+      
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+        <h3 className="font-semibold text-blue-900 mb-2">📊 Rankings Info</h3>
+        <p className="text-blue-800 text-sm">
+          Showing {finalRankings?.length || 0} Pokémon ranked through TrueSkill system. 
+          These rankings are synced with Manual mode and include all battles completed across sessions.
+        </p>
+      </div>
 
       {finalRankings && finalRankings.length > 0 ? (
         <RankingDisplayContainer
@@ -94,11 +88,11 @@ const BattleContentMilestone: React.FC<BattleContentMilestoneProps> = ({
       ) : (
         <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded mb-4">
           <h3 className="font-bold">⚠️ No Pokemon Rankings Available</h3>
-          <p>The ranking system hasn't generated Pokemon data yet. This could mean:</p>
+          <p>The TrueSkill ranking system hasn't generated Pokemon data yet. This could mean:</p>
           <ul className="list-disc list-inside mt-2">
-            <li>The TrueSkill ranking system hasn't processed the battle results</li>
-            <li>There's an issue with the ranking calculation</li>
-            <li>The data isn't being passed correctly to this component</li>
+            <li>No battles have been completed in this session</li>
+            <li>TrueSkill store is not properly populated</li>
+            <li>Rankings generation is not using the centralized store</li>
           </ul>
           <p className="mt-2">
             <strong>Debug info:</strong> finalRankings length = {finalRankings?.length || 0}

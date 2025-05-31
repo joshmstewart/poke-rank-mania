@@ -1,75 +1,69 @@
 
 import { useCallback } from "react";
-import { Pokemon } from "@/services/pokemon";
-
-interface BattleRecord {
-  battle: Pokemon[];
-  selected: number[];
-}
+import { useTrueSkillStore } from "@/stores/trueskillStore";
+import { usePokemonContext } from "@/contexts/PokemonContext";
+import { Rating } from "ts-trueskill";
+import { RankedPokemon } from "@/services/pokemon";
 
 export const useBattleRankings = () => {
-  const generateRankingsFromBattleHistory = useCallback((battleHistory: BattleRecord[]) => {
-    console.log(`🏆 [RANKING_GENERATION] ===== Generating rankings from battle history =====`);
-    console.log(`🏆 [RANKING_GENERATION] Battle history length: ${battleHistory.length}`);
+  const { getAllRatings } = useTrueSkillStore();
+  const { pokemonLookupMap } = usePokemonContext();
+
+  const generateRankingsFromBattleHistory = useCallback((battleHistory: any[]) => {
+    console.log(`📊 [BATTLE_RANKINGS_FIXED] ===== GENERATING MILESTONE RANKINGS =====`);
+    console.log(`📊 [BATTLE_RANKINGS_FIXED] Battle history length: ${battleHistory?.length || 0}`);
     
-    if (battleHistory.length === 0) {
-      console.log(`🏆 [RANKING_GENERATION] No battle history, setting empty rankings`);
+    // Get all TrueSkill ratings from the centralized store
+    const allRatings = getAllRatings();
+    const ratedPokemonIds = Object.keys(allRatings).map(Number);
+    
+    console.log(`📊 [BATTLE_RANKINGS_FIXED] TrueSkill store contains ${ratedPokemonIds.length} rated Pokemon`);
+    console.log(`📊 [BATTLE_RANKINGS_FIXED] Pokemon lookup map size: ${pokemonLookupMap.size}`);
+    
+    if (ratedPokemonIds.length === 0) {
+      console.log(`📊 [BATTLE_RANKINGS_FIXED] No TrueSkill ratings found, returning empty rankings`);
       return [];
     }
 
-    // Track Pokemon that have actually participated in battles
-    const pokemonStats = new Map<number, { pokemon: Pokemon, wins: number, losses: number, battles: number }>();
+    // Create RankedPokemon objects from TrueSkill store (same as Manual mode)
+    const rankings: RankedPokemon[] = [];
     
-    battleHistory.forEach((battleRecord, index) => {
-      console.log(`🏆 [RANKING_GENERATION] Processing battle ${index + 1}: ${battleRecord.battle.map(p => p.name).join(' vs ')}`);
-      console.log(`🏆 [RANKING_GENERATION] Selected in this battle: [${battleRecord.selected.join(', ')}]`);
+    ratedPokemonIds.forEach(pokemonId => {
+      const basePokemon = pokemonLookupMap.get(pokemonId);
+      const ratingData = allRatings[pokemonId];
       
-      battleRecord.battle.forEach((pokemon: Pokemon) => {
-        if (!pokemonStats.has(pokemon.id)) {
-          pokemonStats.set(pokemon.id, {
-            pokemon,
-            wins: 0,
-            losses: 0,
-            battles: 0
-          });
-        }
+      if (basePokemon && ratingData) {
+        const rating = new Rating(ratingData.mu, ratingData.sigma);
+        const conservativeEstimate = rating.mu - 3 * rating.sigma;
+        const confidence = Math.max(0, Math.min(100, 100 * (1 - (rating.sigma / 8.33))));
         
-        const stats = pokemonStats.get(pokemon.id)!;
-        stats.battles++;
-        
-        if (battleRecord.selected.includes(pokemon.id)) {
-          stats.wins++;
-          console.log(`🏆 [RANKING_GENERATION] ${pokemon.name} WON (${stats.wins}W/${stats.losses}L)`);
-        } else {
-          stats.losses++;
-          console.log(`🏆 [RANKING_GENERATION] ${pokemon.name} LOST (${stats.wins}W/${stats.losses}L)`);
-        }
-      });
-    });
-
-    // Convert to ranked Pokemon with proper scoring
-    const rankedPokemon = Array.from(pokemonStats.values())
-      .map(({ pokemon, wins, losses, battles }) => {
-        const winRate = battles > 0 ? wins / battles : 0;
-        const score = winRate * 100 + (wins * 2); // Win rate percentage + bonus for total wins
-        
-        return {
-          ...pokemon,
-          score,
-          count: battles,
-          confidence: Math.min(battles * 20, 100), // Confidence based on battle count
-          wins,
-          losses,
-          winRate: winRate * 100
+        const rankedPokemon: RankedPokemon = {
+          ...basePokemon,
+          score: conservativeEstimate,
+          confidence: confidence,
+          rating: rating
         };
-      })
-      .sort((a, b) => b.score - a.score); // Sort by score descending
-
-    console.log(`🏆 [RANKING_GENERATION] Generated rankings for ${rankedPokemon.length} Pokemon who actually battled`);
-    console.log(`🏆 [RANKING_GENERATION] Top 5: ${rankedPokemon.slice(0, 5).map(p => `${p.name} (${p.score.toFixed(1)})`).join(', ')}`);
+        
+        rankings.push(rankedPokemon);
+      } else {
+        console.log(`📊 [BATTLE_RANKINGS_FIXED] ⚠️ Missing data for Pokemon ${pokemonId}: basePokemon=${!!basePokemon}, ratingData=${!!ratingData}`);
+      }
+    });
     
-    return rankedPokemon;
-  }, []);
+    // Sort by score (conservative estimate) - same as Manual mode
+    rankings.sort((a, b) => b.score - a.score);
+    
+    console.log(`📊 [BATTLE_RANKINGS_FIXED] Generated ${rankings.length} rankings from TrueSkill store`);
+    console.log(`📊 [BATTLE_RANKINGS_FIXED] Top 5 rankings:`, rankings.slice(0, 5).map(p => ({
+      name: p.name,
+      id: p.id,
+      score: p.score.toFixed(3),
+      confidence: p.confidence.toFixed(1)
+    })));
+    console.log(`📊 [BATTLE_RANKINGS_FIXED] ===== MILESTONE RANKINGS COMPLETE =====`);
+    
+    return rankings;
+  }, [getAllRatings, pokemonLookupMap]);
 
   return {
     generateRankingsFromBattleHistory
