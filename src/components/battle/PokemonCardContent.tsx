@@ -30,9 +30,9 @@ const PokemonCardContent: React.FC<PokemonCardContentProps> = ({
       <div className="flex-1 p-2 flex flex-col">
         <div className="flex-1 flex items-center justify-center">
           <PokemonImage 
-            pokemon={pokemon} 
-            compact={true}
-            className="w-16 h-16 object-contain"
+            imageUrl={pokemon.imageUrl || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pokemon.id}.png`}
+            displayName={pokemon.name}
+            pokemonId={pokemon.id}
           />
         </div>
         
