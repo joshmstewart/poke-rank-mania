@@ -10,8 +10,9 @@ interface AppHeaderProps {
 }
 
 const AppHeader: React.FC<AppHeaderProps> = ({ mode, onModeChange }) => {
-  console.log('🟢 AppHeader: RENDER CHECK - Component is rendering');
-  console.log('🟢 AppHeader: Stack trace:', new Error().stack);
+  // CRITICAL LOGGING - Always fires when header renders
+  console.log('🟢🟢🟢 AppHeader: ALWAYS FIRES - Header component is rendering');
+  console.log('🟢🟢🟢 AppHeader: Timestamp:', new Date().toISOString());
 
   return (
     <header className="bg-white border-b-2 border-gray-300 shadow-md sticky top-0 z-50 relative">

@@ -7,27 +7,19 @@ import { CloudSyncButton } from '@/components/auth/CloudSyncButton';
 const SaveProgressSection: React.FC = () => {
   const { user, loading, session } = useAuth();
 
-  console.log('🔴 SaveProgressSection: RENDER CHECK - Component is rendering');
-  console.log('🔴 SaveProgressSection: DETAILED AUTH STATE CHECK:', {
+  // CRITICAL LOGGING - Always fires regardless of state
+  console.log('🔴🔴🔴 SaveProgressSection: ALWAYS FIRES - Component is rendering');
+  console.log('🔴🔴🔴 SaveProgressSection: Auth state details:', {
     hasUser: !!user,
     hasSession: !!session,
     loading,
     userEmail: user?.email,
     userId: user?.id,
-    sessionAccessToken: session?.access_token ? 'present' : 'missing',
-    sessionExpiresAt: session?.expires_at,
-    currentTime: Date.now() / 1000
+    timestamp: new Date().toISOString()
   });
-  console.log('🔴 SaveProgressSection: Stack trace:', new Error().stack);
-
-  // Add more detailed condition checking
-  const isAuthenticated = !!(user && session);
-  console.log('🔴 SaveProgressSection: IS AUTHENTICATED?', isAuthenticated);
-  console.log('🔴 SaveProgressSection: User check:', !!user);
-  console.log('🔴 SaveProgressSection: Session check:', !!session);
   
   if (loading) {
-    console.log('🔴 SaveProgressSection: LOADING STATE - showing loading spinner');
+    console.log('🔴🔴🔴 SaveProgressSection: LOADING STATE - showing spinner');
     return (
       <div className="flex items-center gap-2">
         <div className="animate-pulse bg-gray-200 h-8 w-24 rounded"></div>
@@ -35,12 +27,15 @@ const SaveProgressSection: React.FC = () => {
     );
   }
 
+  const isAuthenticated = !!(user && session);
+  console.log('🔴🔴🔴 SaveProgressSection: Authentication check result:', isAuthenticated);
+  
   if (isAuthenticated) {
-    console.log('🔴 SaveProgressSection: ✅ AUTHENTICATED - rendering AuthenticatedUserDisplay');
+    console.log('🔴🔴🔴 SaveProgressSection: ✅ AUTHENTICATED - About to render AuthenticatedUserDisplay');
     return <AuthenticatedUserDisplay />;
   }
 
-  console.log('🔴 SaveProgressSection: ❌ NOT AUTHENTICATED - rendering CloudSyncButton');
+  console.log('🔴🔴🔴 SaveProgressSection: ❌ NOT AUTHENTICATED - About to render CloudSyncButton');
   return <CloudSyncButton />;
 };
 
