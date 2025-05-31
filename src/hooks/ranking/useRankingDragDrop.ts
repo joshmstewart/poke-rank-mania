@@ -55,7 +55,7 @@ export const useRankingDragDrop = (
       const pokemonId = parseInt(activeId.replace('available-', ''));
       console.log(`🚀🚀🚀 [DRAG_END_CRITICAL] Available Pokemon ${pokemonId} dragged to ${overId}`);
       
-      // CRITICAL FIX: Check for valid drop targets more comprehensively
+      // Check for valid drop targets
       const isValidDropTarget = (
         // Direct drop zone IDs
         overId === 'rankings-drop-zone' || 
@@ -64,7 +64,7 @@ export const useRankingDragDrop = (
         over.data?.current?.type === 'rankings-container' ||
         over.data?.current?.type === 'rankings-grid' ||
         over.data?.current?.accepts?.includes('available-pokemon') ||
-        // Drop on ranked Pokemon (for insertion)
+        // Drop on ranked Pokemon (for insertion) - exclude placeholders and other available Pokemon
         (!overId.startsWith('available-') && 
          !overId.startsWith('collision-placeholder-') &&
          !isNaN(parseInt(overId)) && 
@@ -72,8 +72,6 @@ export const useRankingDragDrop = (
       );
       
       console.log(`🚀🚀🚀 [DRAG_END_CRITICAL] Drop target validation: ${isValidDropTarget}`);
-      console.log(`🚀🚀🚀 [DRAG_END_CRITICAL] Over ID: "${overId}"`);
-      console.log(`🚀🚀🚀 [DRAG_END_CRITICAL] Over type: "${over.data?.current?.type}"`);
       
       if (isValidDropTarget) {
         console.log(`🚀🚀🚀 [DRAG_END_CRITICAL] ✅ VALID DROP - Adding Pokemon ${pokemonId} to rankings`);
@@ -94,31 +92,33 @@ export const useRankingDragDrop = (
             return newAvailable;
           });
           
-          // Handle insertion at specific position if dropped on ranked Pokemon
-          let insertionPosition = 'end';
+          // CRITICAL FIX: Determine insertion position more precisely
+          let insertionPosition = localRankings.length; // Default to end
+          
+          // If dropped on a specific ranked Pokemon, insert before it
           if (!overId.startsWith('available-') && 
               !overId.startsWith('collision-placeholder-') &&
-              !isNaN(parseInt(overId)) && 
-              localRankings.some(p => p.id === parseInt(overId))) {
+              !isNaN(parseInt(overId))) {
             const targetPokemonId = parseInt(overId);
             const targetIndex = localRankings.findIndex(p => p.id === targetPokemonId);
             if (targetIndex !== -1) {
-              insertionPosition = targetIndex.toString();
+              insertionPosition = targetIndex;
               console.log(`🚀🚀🚀 [DRAG_END_CRITICAL] ✅ Will insert at position ${targetIndex} (before ${localRankings[targetIndex].name})`);
             }
           }
           
-          // Dispatch immediate sync event
+          // CRITICAL FIX: Dispatch event with precise insertion data
           const event = new CustomEvent('trueskill-store-updated', {
             detail: { 
               pokemonId, 
               source: 'drag-to-rankings', 
               action: 'add',
-              insertionPosition
+              insertionPosition,
+              targetPokemonId: insertionPosition < localRankings.length ? localRankings[insertionPosition].id : null
             }
           });
           document.dispatchEvent(event);
-          console.log(`🚀🚀🚀 [DRAG_END_CRITICAL] ✅ Dispatched trueskill-store-updated event immediately`);
+          console.log(`🚀🚀🚀 [DRAG_END_CRITICAL] ✅ Dispatched event with insertion position ${insertionPosition}`);
           
           return;
         } else {

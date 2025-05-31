@@ -119,28 +119,68 @@ export const useTrueSkillSync = () => {
     setManualOrderLocked(true); // Lock the order after manual update
   }, []);
 
+  // CRITICAL FIX: Handle insertion position for newly added Pokemon
+  const handlePokemonInsertion = useCallback((pokemonId: number, insertionPosition: number, targetPokemonId: number | null) => {
+    console.log(`🔥🔥🔥 [POKEMON_INSERTION] Adding Pokemon ${pokemonId} at position ${insertionPosition}`);
+    
+    const allRatings = getAllRatings();
+    const pokemon = pokemonLookupMap.get(pokemonId);
+    const rating = getRating(pokemonId);
+    
+    if (!pokemon || !rating) {
+      console.error(`🔥🔥🔥 [POKEMON_INSERTION] ❌ Pokemon ${pokemonId} not found`);
+      return;
+    }
+
+    const conservativeEstimate = rating.mu - 3 * rating.sigma;
+    const confidence = Math.max(0, Math.min(100, 100 * (1 - (rating.sigma / 8.33))));
+
+    const newRankedPokemon: RankedPokemon = {
+      ...pokemon,
+      score: conservativeEstimate,
+      confidence: confidence,
+      rating: rating
+    } as RankedPokemon;
+
+    setLocalRankings(prevRankings => {
+      const newRankings = [...prevRankings];
+      
+      // Insert at the specified position
+      if (insertionPosition >= 0 && insertionPosition <= newRankings.length) {
+        newRankings.splice(insertionPosition, 0, newRankedPokemon);
+        console.log(`🔥🔥🔥 [POKEMON_INSERTION] ✅ Inserted ${pokemon.name} at position ${insertionPosition}`);
+      } else {
+        // Fallback to end if position is invalid
+        newRankings.push(newRankedPokemon);
+        console.log(`🔥🔥🔥 [POKEMON_INSERTION] ✅ Added ${pokemon.name} to end (invalid position)`);
+      }
+      
+      return newRankings;
+    });
+    
+    setManualOrderLocked(true); // Lock order after manual insertion
+  }, [getAllRatings, pokemonLookupMap, getRating]);
+
   // CRITICAL: Listen for TrueSkill store updates and sync immediately
   useEffect(() => {
     const handleTrueSkillUpdate = (event: CustomEvent) => {
       console.log(`🔥🔥🔥 [TRUESKILL_SYNC_EVENT] Received sync event:`, event.detail);
       
-      // CRITICAL FIX: Always handle ADD operations regardless of manual lock status
+      // CRITICAL FIX: Handle ADD operations with insertion position
       if (event.detail?.action === 'add') {
-        console.log(`🔥🔥🔥 [TRUESKILL_SYNC_EVENT] ADD operation detected - forcing sync regardless of manual lock`);
-        // Temporarily unlock to allow new Pokemon addition, then re-lock
-        const wasLocked = manualOrderLocked;
-        setManualOrderLocked(false);
-        syncWithBattleModeRankings().then(() => {
-          if (wasLocked) {
-            setManualOrderLocked(true);
-          }
-        });
-        return;
+        console.log(`🔥🔥🔥 [TRUESKILL_SYNC_EVENT] ADD operation detected with insertion data`);
+        const { pokemonId, insertionPosition, targetPokemonId } = event.detail;
+        
+        if (typeof insertionPosition === 'number') {
+          console.log(`🔥🔥🔥 [TRUESKILL_SYNC_EVENT] Using specific insertion position: ${insertionPosition}`);
+          handlePokemonInsertion(pokemonId, insertionPosition, targetPokemonId);
+          return;
+        }
       }
       
       // For non-add operations, respect manual lock in manual mode
       if (window.location.pathname === '/' || window.location.pathname.includes('manual')) {
-        if (manualOrderLocked) {
+        if (manualOrderLocked && event.detail?.action !== 'add') {
           console.log(`🔥🔥🔥 [TRUESKILL_SYNC_EVENT] MANUAL MODE - ignoring non-add sync events to preserve manual order`);
           return;
         }
@@ -157,7 +197,7 @@ export const useTrueSkillSync = () => {
       document.removeEventListener('trueskill-updated', handleTrueSkillUpdate as EventListener);
       document.removeEventListener('trueskill-store-updated', handleTrueSkillUpdate as EventListener);
     };
-  }, [syncWithBattleModeRankings, manualOrderLocked]);
+  }, [syncWithBattleModeRankings, manualOrderLocked, handlePokemonInsertion]);
 
   return {
     localRankings,
