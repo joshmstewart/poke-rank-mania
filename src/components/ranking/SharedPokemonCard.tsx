@@ -6,16 +6,26 @@ import { normalizePokedexNumber } from "@/utils/pokemon";
 import { getPokemonBackgroundColor } from "@/components/battle/utils/PokemonColorUtils";
 import PokemonInfoModal from "@/components/pokemon/PokemonInfoModal";
 
-interface DraggableAvailablePokemonCardProps {
+interface SharedPokemonCardProps {
   pokemon: Pokemon;
+  showRankNumber?: boolean;
+  rankNumber?: number;
+  isAvailable?: boolean;
+  onSuggestRanking?: (pokemon: any, direction: "up" | "down", strength: 1 | 2 | 3) => void;
+  onRemoveSuggestion?: (pokemonId: number) => void;
 }
 
-export const DraggableAvailablePokemonCard: React.FC<DraggableAvailablePokemonCardProps> = ({
-  pokemon
+export const SharedPokemonCard: React.FC<SharedPokemonCardProps> = ({
+  pokemon,
+  showRankNumber = false,
+  rankNumber,
+  isAvailable = false,
+  onSuggestRanking,
+  onRemoveSuggestion
 }) => {
   const [loadedImages, setLoadedImages] = useState<Set<number>>(new Set());
   
-  const dragId = `available-${pokemon.id}`;
+  const dragId = isAvailable ? `available-${pokemon.id}` : pokemon.id.toString();
   
   const {
     attributes,
@@ -26,9 +36,9 @@ export const DraggableAvailablePokemonCard: React.FC<DraggableAvailablePokemonCa
   } = useDraggable({
     id: dragId,
     data: {
-      type: 'available-pokemon',
+      type: isAvailable ? 'available-pokemon' : 'ranked-pokemon',
       pokemon: pokemon,
-      source: 'available'
+      source: isAvailable ? 'available' : 'ranked'
     }
   });
 
@@ -42,19 +52,17 @@ export const DraggableAvailablePokemonCard: React.FC<DraggableAvailablePokemonCa
 
   const normalizedId = normalizePokedexNumber(pokemon.id);
   const isImageLoaded = loadedImages.has(pokemon.id);
-  
-  // CRITICAL: Use the exact same background color logic as ranking cards
   const backgroundColor = getPokemonBackgroundColor(pokemon);
 
   const style = transform ? {
     transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
   } : undefined;
 
-  console.log(`🎨 [AVAILABLE_CARD_RENDER] ${pokemon.name}: backgroundColor=${backgroundColor}, types=${JSON.stringify(pokemon.types)}`);
+  const isRankedPokemon = 'score' in pokemon;
 
   return (
     <div className="relative group">
-      {/* Info button - EXACTLY matching ranking cards */}
+      {/* Info button - identical on both sides */}
       <div className="absolute top-1 right-1 z-50">
         <PokemonInfoModal pokemon={pokemon}>
           <button 
@@ -74,20 +82,22 @@ export const DraggableAvailablePokemonCard: React.FC<DraggableAvailablePokemonCa
         </PokemonInfoModal>
       </div>
 
-      {/* Card - IDENTICAL to ranking cards structure with invisible header for height matching */}
+      {/* Card structure - identical on both sides */}
       <div 
         ref={setNodeRef} 
         style={style}
-        className={`${backgroundColor} rounded-lg border-2 border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow ${isDragging ? 'opacity-50 scale-105 z-40' : ''} cursor-grab active:cursor-grabbing`}
-        {...attributes}
-        {...listeners}
+        className={`${backgroundColor} rounded-lg border-2 border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow ${isDragging ? 'opacity-50 scale-105 z-40' : ''} ${isAvailable ? 'cursor-grab active:cursor-grabbing' : ''}`}
+        {...(isAvailable ? attributes : {})}
+        {...(isAvailable ? listeners : {})}
       >
-        {/* Invisible rank header to match ranking card height */}
-        <div className="bg-transparent text-transparent text-center py-1 pointer-events-none">
-          <span className="text-sm font-bold opacity-0">.</span>
+        {/* Header - rank number or transparent spacer */}
+        <div className={`text-center py-1 ${showRankNumber ? 'bg-gradient-to-r from-yellow-400 to-yellow-600 text-white' : 'bg-transparent text-transparent pointer-events-none'}`}>
+          <span className="text-sm font-bold">
+            {showRankNumber ? `#${rankNumber}` : '.'}
+          </span>
         </div>
 
-        {/* Pokemon image - IDENTICAL to ranking cards */}
+        {/* Pokemon image - identical on both sides */}
         <div className="aspect-square bg-gray-50/50 p-2 relative">
           {!isImageLoaded && (
             <div className="absolute inset-0 flex items-center justify-center">
@@ -104,7 +114,7 @@ export const DraggableAvailablePokemonCard: React.FC<DraggableAvailablePokemonCa
           />
         </div>
 
-        {/* Pokemon info - IDENTICAL to ranking cards with WHITE background */}
+        {/* Pokemon info - identical on both sides with WHITE background */}
         <div className="p-2 space-y-1 bg-white">
           <h3 className="text-sm font-semibold text-center line-clamp-2 min-h-[2.5rem] flex items-center justify-center">
             {pokemon.name}
@@ -113,10 +123,17 @@ export const DraggableAvailablePokemonCard: React.FC<DraggableAvailablePokemonCa
           <div className="text-xs text-gray-500 text-center">
             #{normalizedId}
           </div>
+
+          {/* Score for ranked Pokemon */}
+          {isRankedPokemon && 'score' in pokemon && (
+            <div className="text-xs text-center text-gray-600">
+              Score: {pokemon.score.toFixed(1)}
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 };
 
-export default DraggableAvailablePokemonCard;
+export default SharedPokemonCard;
