@@ -22,9 +22,9 @@ const PokemonCardInfo: React.FC<PokemonCardInfoProps> = ({
   const normalizedId = normalizePokedexNumber(pokemonId);
 
   return (
-    <div className="flex-1 min-w-0">
+    <div className="flex-1 min-w-0 min-h-0">
       <div className={`flex justify-between items-start ${compact ? "text-sm" : "text-base"}`}>
-        <span className="font-medium pr-3 break-words flex-1 min-w-0">{displayName}</span>
+        <span className="font-medium pr-3 flex-1 min-w-0 leading-tight">{displayName}</span>
         <span className="text-xs text-gray-500 whitespace-nowrap ml-2 flex-shrink-0">#{normalizedId}</span>
       </div>
       {types?.length > 0 && (
@@ -35,9 +35,6 @@ const PokemonCardInfo: React.FC<PokemonCardInfoProps> = ({
               <Badge 
                 key={type} 
                 className={`${colorClass} text-white text-xs px-2 py-1 border-0 font-medium`}
-                style={{ 
-                  backgroundColor: !colorClass.includes('bg-') ? colorClass : undefined
-                }}
               >
                 {type}
               </Badge>
