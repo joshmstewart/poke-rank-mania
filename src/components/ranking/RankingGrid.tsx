@@ -33,7 +33,7 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
 }) => {
   const [loadedImages, setLoadedImages] = useState<Set<number>>(new Set());
 
-  console.log(`🔥🔥🔥 [RANKING_GRID_INFO] Rendering ${displayRankings.length} Pokemon`);
+  console.log(`🔥🔥🔥 [RANKING_GRID_CRITICAL] Rendering ${displayRankings.length} Pokemon in Rankings grid`);
 
   const handleImageLoad = (pokemonId: number) => {
     setLoadedImages(prev => new Set(prev).add(pokemonId));
@@ -41,12 +41,6 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
 
   const handleImageError = (pokemonId: number) => {
     console.warn(`Failed to load image for Pokemon ${pokemonId}`);
-  };
-
-  const handleInfoButtonClick = (pokemon: Pokemon, event: React.MouseEvent) => {
-    console.log(`🔥🔥🔥 [INFO_BUTTON_RANKINGS_FIXED] Info button clicked for ${pokemon.name} in Rankings`);
-    event.stopPropagation();
-    event.preventDefault();
   };
 
   return (
@@ -58,17 +52,37 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
 
         return (
           <div key={pokemon.id} className="relative group">
-            {/* CRITICAL FIX: Completely rewritten info button with proper modal integration */}
-            <div className="absolute top-1 right-1 z-[100]">
-              <PokemonInfoModal pokemon={pokemon}>
+            {/* CRITICAL FIX: Info button with proper isolation and event handling */}
+            <div className="absolute top-1 right-1 z-50">
+              <PokemonInfoModal 
+                pokemon={pokemon}
+                onOpenChange={(open) => {
+                  console.log(`🔘🔘🔘 [RANKING_GRID_INFO_CRITICAL] Modal ${open ? 'opened' : 'closed'} for ${pokemon.name} in Rankings`);
+                }}
+              >
                 <button 
-                  className="w-6 h-6 rounded-full bg-white hover:bg-gray-50 border border-gray-300 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-bold shadow-lg transition-all duration-200 cursor-pointer"
-                  onClick={(e) => handleInfoButtonClick(pokemon, e)}
+                  className="w-6 h-6 rounded-full bg-white hover:bg-gray-50 border border-gray-300 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-bold shadow-lg transition-all duration-200 cursor-pointer relative z-50"
+                  onClick={(e) => {
+                    console.log(`🔘🔘🔘 [RANKING_GRID_INFO_CRITICAL] Info button clicked for ${pokemon.name} in Rankings`);
+                    console.log(`🔘🔘🔘 [RANKING_GRID_INFO_CRITICAL] Event target:`, e.target);
+                    console.log(`🔘🔘🔘 [RANKING_GRID_INFO_CRITICAL] Event currentTarget:`, e.currentTarget);
+                    e.stopPropagation();
+                    e.preventDefault();
+                  }}
+                  onPointerDown={(e) => {
+                    console.log(`🔘🔘🔘 [RANKING_GRID_INFO_CRITICAL] Info button pointer down for ${pokemon.name}`);
+                    e.stopPropagation();
+                  }}
                   onMouseDown={(e) => {
-                    console.log(`🔥🔥🔥 [INFO_BUTTON_RANKINGS_FIXED] Info mouse down for ${pokemon.name}`);
+                    console.log(`🔘🔘🔘 [RANKING_GRID_INFO_CRITICAL] Info button mouse down for ${pokemon.name}`);
                     e.stopPropagation();
                   }}
                   type="button"
+                  style={{ 
+                    pointerEvents: 'auto',
+                    position: 'relative',
+                    zIndex: 60
+                  }}
                 >
                   i
                 </button>

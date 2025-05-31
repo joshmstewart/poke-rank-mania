@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useTrueSkillSync } from "@/hooks/ranking/useTrueSkillSync";
 import { LoadingType } from "@/hooks/usePokemonRanker";
 import { BattleType } from "@/hooks/battle/types";
@@ -43,20 +43,22 @@ export const RankingUI: React.FC<RankingUIProps> = ({
   onGenerationChange,
   onReset
 }) => {
-  // Get TrueSkill-based rankings - this is the ONLY source of truth
+  // CRITICAL: Get TrueSkill-based rankings - this is the ONLY source of truth
   const { localRankings } = useTrueSkillSync();
   
   // Battle type state (needed for BattleControls compatibility)
   const [battleType, setBattleType] = useState<BattleType>("pairs");
   
-  console.log(`🔥 [RANKING_UI_REFACTORED] Manual mode using TrueSkill rankings: ${localRankings.length} Pokemon`);
-  console.log(`🔥 [RANKING_UI_REFACTORED] Ignoring separate rankedPokemon state: ${rankedPokemon.length}`);
+  console.log(`🔥🔥🔥 [RANKING_UI_CRITICAL] ===== RANKING UI RENDER =====`);
+  console.log(`🔥🔥🔥 [RANKING_UI_CRITICAL] Manual mode using TrueSkill rankings: ${localRankings.length} Pokemon`);
+  console.log(`🔥🔥🔥 [RANKING_UI_CRITICAL] Ignoring separate rankedPokemon state: ${rankedPokemon.length}`);
+  console.log(`🔥🔥🔥 [RANKING_UI_CRITICAL] Available Pokemon count: ${availablePokemon.length}`);
 
   // Enhanced manual reorder with fake battles (preserving the existing system)
   const { handleEnhancedManualReorder } = useEnhancedManualReorder(
     localRankings, // Use TrueSkill rankings, not separate state
     (newRankings) => {
-      console.log(`🔥 [RANKING_UI_REFACTORED] Manual reorder completed with ${newRankings.length} Pokemon`);
+      console.log(`🔥🔥🔥 [RANKING_UI_CRITICAL] Manual reorder completed with ${newRankings.length} Pokemon`);
       // Note: We don't update setRankedPokemon anymore since we use TrueSkill
     },
     true // preventAutoResorting = true to maintain manual order
@@ -83,20 +85,33 @@ export const RankingUI: React.FC<RankingUIProps> = ({
 
   // Handle local reordering (for DragDropGrid compatibility)
   const handleLocalReorder = (newRankings: any[]) => {
-    console.log(`🔥 [RANKING_UI_REFACTORED] Local reorder with ${newRankings.length} Pokemon`);
+    console.log(`🔥🔥🔥 [RANKING_UI_CRITICAL] Local reorder with ${newRankings.length} Pokemon`);
     // Note: We don't update local state since we use TrueSkill rankings
   };
 
-  // Use TrueSkill rankings as the single source of truth
+  // CRITICAL: Use TrueSkill rankings as the single source of truth
   const displayRankings = localRankings;
   
-  // Filter available Pokemon to exclude those in the display rankings
+  // CRITICAL: Filter available Pokemon to exclude those in the display rankings
   const displayRankingsIds = new Set(displayRankings.map(p => p.id));
   const filteredAvailablePokemon = availablePokemon.filter(p => !displayRankingsIds.has(p.id));
   
-  console.log(`🔥 [RANKING_UI_REFACTORED] TrueSkill localRankings: ${localRankings.length}`);
-  console.log(`🔥 [RANKING_UI_REFACTORED] displayRankings length: ${displayRankings.length}`);
-  console.log(`🔥 [RANKING_UI_REFACTORED] Filtered available: ${filteredAvailablePokemon.length}`);
+  console.log(`🔥🔥🔥 [RANKING_UI_CRITICAL] TrueSkill localRankings: ${localRankings.length}`);
+  console.log(`🔥🔥🔥 [RANKING_UI_CRITICAL] displayRankings length: ${displayRankings.length}`);
+  console.log(`🔥🔥🔥 [RANKING_UI_CRITICAL] Filtered available: ${filteredAvailablePokemon.length}`);
+  console.log(`🔥🔥🔥 [RANKING_UI_CRITICAL] Display rankings IDs: ${Array.from(displayRankingsIds).slice(0, 10).join(', ')}${displayRankingsIds.size > 10 ? '...' : ''}`);
+
+  // CRITICAL: Log data source validation
+  useEffect(() => {
+    console.log(`🔥🔥🔥 [RANKING_UI_DATA_SOURCE_CRITICAL] Data source validation:`);
+    console.log(`🔥🔥🔥 [RANKING_UI_DATA_SOURCE_CRITICAL] TrueSkill localRankings: ${localRankings.length}`);
+    console.log(`🔥🔥🔥 [RANKING_UI_DATA_SOURCE_CRITICAL] Legacy rankedPokemon (ignored): ${rankedPokemon.length}`);
+    console.log(`🔥🔥🔥 [RANKING_UI_DATA_SOURCE_CRITICAL] Using displayRankings: ${displayRankings.length}`);
+    
+    if (localRankings.length > 0) {
+      console.log(`🔥🔥🔥 [RANKING_UI_DATA_SOURCE_CRITICAL] First 3 rankings:`, localRankings.slice(0, 3).map(p => ({ id: p.id, name: p.name, score: p.score })));
+    }
+  }, [localRankings, rankedPokemon, displayRankings]);
 
   return (
     <RankingLayout
