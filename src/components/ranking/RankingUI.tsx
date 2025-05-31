@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { DndContext, DragEndEvent, DragStartEvent, closestCenter, DragOverlay } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
@@ -12,6 +11,9 @@ import { ITEMS_PER_PAGE } from "@/services/pokemon";
 import BattleControls from "@/components/battle/BattleControls";
 import { BattleType } from "@/hooks/battle/types";
 import PokemonCard from "@/components/PokemonCard";
+import { useEnhancedManualReorder } from "@/hooks/battle/useEnhancedManualReorder";
+import { useTrueSkillStore } from "@/stores/trueskillStore";
+import { toast } from "@/hooks/use-toast";
 
 interface RankingUIProps {
   isLoading: boolean;
@@ -62,6 +64,9 @@ export const RankingUI: React.FC<RankingUIProps> = ({
   
   // Add drag overlay state
   const [activeDraggedPokemon, setActiveDraggedPokemon] = useState<any>(null);
+  
+  // Get TrueSkill store functions
+  const { clearAllRatings } = useTrueSkillStore();
   
   // CRITICAL FIX: Initialize from TrueSkill when switching to Manual mode
   useEffect(() => {
@@ -120,22 +125,82 @@ export const RankingUI: React.FC<RankingUIProps> = ({
   console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] hasManualChanges: ${hasManualChanges}`);
   console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] filteredAvailablePokemon length: ${filteredAvailablePokemon.length}`);
 
-  // FIXED: Enhanced reset function to properly clear manual mode
-  const handleReset = () => {
-    console.log(`🔄 [MANUAL_RESET] Performing manual mode reset for generation ${selectedGeneration}`);
+  // COMPREHENSIVE RESET: Same as Battle Mode
+  const handleComprehensiveReset = () => {
+    const timestamp = new Date().toISOString();
     
-    // Clear localStorage for this generation
-    localStorage.removeItem(`manual-rankings-gen-${selectedGeneration}`);
+    console.log(`🔄 [COMPREHENSIVE_RESET] ===== COMPREHENSIVE RESTART INITIATED =====`);
+    console.log(`🔄 [COMPREHENSIVE_RESET] Timestamp: ${timestamp}`);
     
-    // Reset local state
+    // Step 1: Clear TrueSkill store first (this affects both modes)
+    console.log(`🔄 [COMPREHENSIVE_RESET] Step 1: Clearing TrueSkill store`);
+    clearAllRatings();
+    
+    // Step 2: Clear all localStorage items
+    console.log(`🔄 [COMPREHENSIVE_RESET] Step 2: Clearing localStorage`);
+    const keysToRemove = [
+      'pokemon-active-suggestions',
+      'pokemon-battle-count',
+      'pokemon-battle-results',
+      'pokemon-battle-tracking',
+      'pokemon-battle-history',
+      'pokemon-battles-completed',
+      'pokemon-battle-seen',
+      'suggestionUsageCounts',
+      'pokemon-ranker-rankings',
+      'pokemon-ranker-confidence'
+    ];
+    
+    // Also clear generation-specific manual rankings
+    for (let gen = 0; gen <= 9; gen++) {
+      keysToRemove.push(`manual-rankings-gen-${gen}`);
+    }
+    
+    keysToRemove.forEach(key => {
+      localStorage.removeItem(key);
+      console.log(`🔄 [COMPREHENSIVE_RESET] Cleared: ${key}`);
+    });
+    
+    // Step 3: Reset React state
+    console.log(`🔄 [COMPREHENSIVE_RESET] Step 3: Resetting React state`);
     setRankedPokemon([]);
     setHasManualChanges(false);
     
-    // Call the original reset from the parent
+    // Step 4: Call the original reset from the parent
     onReset();
     
-    console.log(`🔄 [MANUAL_RESET] Manual mode reset complete`);
+    // Step 5: Dispatch events to notify other components
+    console.log(`🔄 [COMPREHENSIVE_RESET] Step 5: Dispatching reset events`);
+    setTimeout(() => {
+      // Notify both modes
+      const manualModeEvent = new CustomEvent('trueskill-store-cleared');
+      document.dispatchEvent(manualModeEvent);
+      
+      // General reset event
+      const resetEvent = new CustomEvent('battle-system-reset', {
+        detail: { timestamp, source: 'manual-mode-restart' }
+      });
+      document.dispatchEvent(resetEvent);
+      
+      console.log(`🔄 [COMPREHENSIVE_RESET] ✅ Events dispatched`);
+    }, 50);
+    
+    // Step 6: Show success toast
+    toast({
+      title: "Complete Reset",
+      description: "All battles, rankings, and progress have been completely reset across both modes.",
+      duration: 3000
+    });
+    
+    console.log(`🔄 [COMPREHENSIVE_RESET] ===== COMPREHENSIVE RESET COMPLETE =====`);
   };
+
+  // Enhanced manual reorder with fake battles (preserving the existing system)
+  const { handleEnhancedManualReorder } = useEnhancedManualReorder(
+    displayRankings,
+    setRankedPokemon,
+    true // preventAutoResorting = true to maintain manual order
+  );
 
   // Handle drag from available to rankings
   const handleDragToRankings = (pokemonId: number, insertIndex?: number) => {
@@ -163,16 +228,13 @@ export const RankingUI: React.FC<RankingUIProps> = ({
     console.log(`🔄 [RANKING_UI] Successfully moved ${pokemon.name} to rankings`);
   };
 
-  // Handle manual reordering within the rankings
+  // Handle manual reordering within the rankings (using enhanced system with fake battles)
   const handleManualReorder = (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => {
     console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] Manual reorder: Pokemon ${draggedPokemonId} from ${sourceIndex} to ${destinationIndex}`);
     setHasManualChanges(true);
     
-    const newRankings = [...rankedPokemon];
-    const [movedPokemon] = newRankings.splice(sourceIndex, 1);
-    newRankings.splice(destinationIndex, 0, movedPokemon);
-    
-    setRankedPokemon(newRankings);
+    // Use the enhanced manual reorder that creates fake battles
+    handleEnhancedManualReorder(draggedPokemonId, sourceIndex, destinationIndex);
   };
 
   // Handle local reordering (for DragDropGrid compatibility)
@@ -269,10 +331,8 @@ export const RankingUI: React.FC<RankingUIProps> = ({
       if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
         console.log(`🔄🔄🔄 [DRAG_DEBUG] ✅ Performing reorder from ${oldIndex} to ${newIndex}`);
         
-        // Use arrayMove for proper reordering
-        const newRankings = arrayMove(displayRankings, oldIndex, newIndex);
-        setRankedPokemon(newRankings);
-        setHasManualChanges(true);
+        // Use enhanced manual reorder that creates fake battles
+        handleManualReorder(activePokemonId, oldIndex, newIndex);
       }
     }
     
@@ -304,7 +364,7 @@ export const RankingUI: React.FC<RankingUIProps> = ({
             battleType={battleType}
             onGenerationChange={(gen) => onGenerationChange(Number(gen))}
             onBattleTypeChange={setBattleType}
-            onRestartBattles={handleReset}
+            onRestartBattles={handleComprehensiveReset}
           />
         </div>
         
