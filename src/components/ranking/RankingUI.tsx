@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { DndContext, DragEndEvent, DragStartEvent, closestCenter, DragOverlay } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
@@ -6,7 +5,6 @@ import { LoadingState } from "./LoadingState";
 import { AvailablePokemonSection } from "./AvailablePokemonSection";
 import { RankingsSection } from "./RankingsSection";
 import { useTrueSkillSync } from "@/hooks/ranking/useTrueSkillSync";
-import { useRankings } from "@/hooks/battle/useRankings";
 import { LoadingType } from "@/hooks/usePokemonRanker";
 import { ITEMS_PER_PAGE } from "@/services/pokemon";
 import BattleControls from "@/components/battle/BattleControls";
@@ -51,10 +49,7 @@ export const RankingUI: React.FC<RankingUIProps> = ({
   onGenerationChange,
   onReset
 }) => {
-  // Get TrueSkill-based rankings from Battle Mode system
-  const { finalRankings: battleModeRankings } = useRankings();
-  
-  // Get local rankings from TrueSkill sync
+  // Get TrueSkill-based rankings
   const { localRankings } = useTrueSkillSync();
   
   // Local state to track if user has made manual changes
@@ -69,14 +64,35 @@ export const RankingUI: React.FC<RankingUIProps> = ({
   // Get TrueSkill store functions
   const { clearAllRatings } = useTrueSkillStore();
   
-  // CRITICAL FIX: Initialize from TrueSkill when switching to Manual mode
+  // CRITICAL FIX: Reset everything when TrueSkill store is cleared
   useEffect(() => {
-    const trueskillRankings = localRankings.length > 0 ? localRankings : battleModeRankings;
-    
-    console.log(`🔄 [TRUESKILL_INIT] Manual mode initialization check for gen ${selectedGeneration}`);
-    console.log(`🔄 [TRUESKILL_INIT] rankedPokemon.length: ${rankedPokemon.length}`);
-    console.log(`🔄 [TRUESKILL_INIT] trueskillRankings.length: ${trueskillRankings.length}`);
-    console.log(`🔄 [TRUESKILL_INIT] hasManualChanges: ${hasManualChanges}`);
+    const handleStoreCleared = () => {
+      console.log(`🔥 [RANKING_UI] ===== TRUESKILL STORE CLEARED - RESETTING EVERYTHING =====`);
+      setRankedPokemon([]);
+      setHasManualChanges(false);
+      
+      // Clear saved manual rankings for current generation
+      localStorage.removeItem(`manual-rankings-gen-${selectedGeneration}`);
+      
+      toast({
+        title: "Rankings Cleared",
+        description: "All rankings have been reset due to battle restart",
+        duration: 3000
+      });
+    };
+
+    document.addEventListener('trueskill-store-cleared', handleStoreCleared);
+    return () => {
+      document.removeEventListener('trueskill-store-cleared', handleStoreCleared);
+    };
+  }, [selectedGeneration, setRankedPokemon]);
+
+  // Initialize from TrueSkill when switching to Manual mode
+  useEffect(() => {
+    console.log(`🔥 [RANKING_UI] Manual mode initialization check for gen ${selectedGeneration}`);
+    console.log(`🔥 [RANKING_UI] rankedPokemon.length: ${rankedPokemon.length}`);
+    console.log(`🔥 [RANKING_UI] localRankings.length: ${localRankings.length}`);
+    console.log(`🔥 [RANKING_UI] hasManualChanges: ${hasManualChanges}`);
     
     // Check for saved manual rankings first
     const savedRankings = localStorage.getItem(`manual-rankings-gen-${selectedGeneration}`);
@@ -84,31 +100,31 @@ export const RankingUI: React.FC<RankingUIProps> = ({
     if (savedRankings) {
       try {
         const parsed = JSON.parse(savedRankings);
-        console.log(`🔄 [TRUESKILL_INIT] Loading saved manual rankings: ${parsed.length} items`);
+        console.log(`🔥 [RANKING_UI] Loading saved manual rankings: ${parsed.length} items`);
         setRankedPokemon(parsed);
         setHasManualChanges(true);
         return;
       } catch (error) {
-        console.error(`🔄 [TRUESKILL_INIT] Failed to load saved rankings:`, error);
+        console.error(`🔥 [RANKING_UI] Failed to load saved rankings:`, error);
       }
     }
     
     // If no saved rankings and no current manual rankings, initialize from TrueSkill
-    if (trueskillRankings.length > 0 && rankedPokemon.length === 0) {
-      console.log(`🔄 [TRUESKILL_INIT] ✅ Initializing from TrueSkill: ${trueskillRankings.length} Pokemon`);
-      setRankedPokemon(trueskillRankings);
+    if (localRankings.length > 0 && rankedPokemon.length === 0) {
+      console.log(`🔥 [RANKING_UI] ✅ Initializing from TrueSkill: ${localRankings.length} Pokemon`);
+      setRankedPokemon(localRankings);
     }
-  }, [localRankings, battleModeRankings, selectedGeneration, rankedPokemon.length, setRankedPokemon]);
+  }, [localRankings, selectedGeneration, rankedPokemon.length, setRankedPokemon]);
 
   // Reset state when generation changes
   useEffect(() => {
-    console.log(`🔄 [TRUESKILL_INIT] Generation changed to ${selectedGeneration}, resetting state`);
+    console.log(`🔥 [RANKING_UI] Generation changed to ${selectedGeneration}, resetting state`);
     setHasManualChanges(false);
   }, [selectedGeneration]);
 
   // Persistence effect
   useEffect(() => {
-    console.log(`💾 [PERSISTENCE_DEBUG] Saving ranked Pokemon to localStorage: ${rankedPokemon.length} items`);
+    console.log(`🔥 [RANKING_UI] Saving ranked Pokemon to localStorage: ${rankedPokemon.length} items`);
     if (rankedPokemon.length > 0 && hasManualChanges) {
       localStorage.setItem(`manual-rankings-gen-${selectedGeneration}`, JSON.stringify(rankedPokemon));
     }
@@ -117,14 +133,13 @@ export const RankingUI: React.FC<RankingUIProps> = ({
   // Determine what to show on the right side - always use manual state once populated
   const displayRankings = rankedPokemon;
   
-  // FIXED: Filter available Pokemon to exclude those in the display rankings
+  // Filter available Pokemon to exclude those in the display rankings
   const displayRankingsIds = new Set(displayRankings.map(p => p.id));
   const filteredAvailablePokemon = availablePokemon.filter(p => !displayRankingsIds.has(p.id));
   
-  console.log(`🔥 [RANKING_UI_FIXED] Manual rankedPokemon: ${rankedPokemon.length}, localRankings: ${localRankings.length}, battleModeRankings: ${battleModeRankings.length}`);
-  console.log(`🔥 [RANKING_UI_FIXED] displayRankings length: ${displayRankings.length}`);
-  console.log(`🔥 [RANKING_UI_FIXED] hasManualChanges: ${hasManualChanges}`);
-  console.log(`🔥 [RANKING_UI_FIXED] filteredAvailablePokemon length: ${filteredAvailablePokemon.length}`);
+  console.log(`🔥 [RANKING_UI] Manual rankedPokemon: ${rankedPokemon.length}, localRankings: ${localRankings.length}`);
+  console.log(`🔥 [RANKING_UI] displayRankings length: ${displayRankings.length}`);
+  console.log(`🔥 [RANKING_UI] hasManualChanges: ${hasManualChanges}`);
 
   // COMPREHENSIVE RESET: Same as Battle Mode
   const handleComprehensiveReset = () => {
@@ -234,7 +249,7 @@ export const RankingUI: React.FC<RankingUIProps> = ({
 
   // Handle manual reordering within the rankings (using enhanced system with fake battles)
   const handleManualReorder = (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => {
-    console.log(`🔥 [RANKING_UI_FIXED] Manual reorder: Pokemon ${draggedPokemonId} from ${sourceIndex} to ${destinationIndex}`);
+    console.log(`🔥 [RANKING_UI] Manual reorder: Pokemon ${draggedPokemonId} from ${sourceIndex} to ${destinationIndex}`);
     setHasManualChanges(true);
     
     // Use the enhanced manual reorder that creates fake battles
@@ -243,7 +258,7 @@ export const RankingUI: React.FC<RankingUIProps> = ({
 
   // Handle local reordering (for DragDropGrid compatibility)
   const handleLocalReorder = (newRankings: any[]) => {
-    console.log(`🔥 [RANKING_UI_FIXED] Local reorder with ${newRankings.length} Pokemon`);
+    console.log(`🔥 [RANKING_UI] Local reorder with ${newRankings.length} Pokemon`);
     setHasManualChanges(true);
     setRankedPokemon(newRankings);
   };
