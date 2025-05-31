@@ -60,45 +60,41 @@ export const AuthenticatedUserDisplay: React.FC = () => {
   const displayName = profile?.display_name || profile?.username || user.email || 'Trainer';
   const avatarUrl = profile?.avatar_url;
 
-  console.log('🔍 AuthenticatedUserDisplay: Rendering with displayName:', displayName);
-  console.log('🔍 AuthenticatedUserDisplay: THIS SHOULD SHOW USER DROPDOWN, NOT SYNCED BUTTON');
+  console.log('🔍 AuthenticatedUserDisplay: Rendering authenticated user dropdown for:', displayName);
 
   return (
-    <div style={{ border: '3px solid green', padding: '8px', backgroundColor: 'lightgreen' }}>
-      <div style={{ fontSize: '10px', color: 'darkgreen' }}>AUTHENTICATED USER DISPLAY</div>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="h-auto p-2" style={{ backgroundColor: 'red', color: 'white' }}>
-            <div className="flex items-center gap-2">
-              <Avatar className="h-8 w-8">
-                <AvatarImage src={avatarUrl || undefined} alt={displayName} />
-                <AvatarFallback>
-                  <User className="h-4 w-4" />
-                </AvatarFallback>
-              </Avatar>
-              <span className="text-sm font-medium hidden sm:inline">
-                {displayName}
-              </span>
-            </div>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56">
-          <DropdownMenuItem onClick={() => setProfileModalOpen(true)}>
-            <Settings className="mr-2 h-4 w-4" />
-            My Profile
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handleSignOut}>
-            <LogOut className="mr-2 h-4 w-4" />
-            Sign Out
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" className="h-auto p-2">
+          <div className="flex items-center gap-2">
+            <Avatar className="h-8 w-8">
+              <AvatarImage src={avatarUrl || undefined} alt={displayName} />
+              <AvatarFallback>
+                <User className="h-4 w-4" />
+              </AvatarFallback>
+            </Avatar>
+            <span className="text-sm font-medium hidden sm:inline">
+              {displayName}
+            </span>
+          </div>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuItem onClick={() => setProfileModalOpen(true)}>
+          <Settings className="mr-2 h-4 w-4" />
+          My Profile
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={handleSignOut}>
+          <LogOut className="mr-2 h-4 w-4" />
+          Sign Out
+        </DropdownMenuItem>
+      </DropdownMenuContent>
 
       <ProfileModal 
         open={profileModalOpen} 
         onOpenChange={handleProfileModalClose}
       />
-    </div>
+    </DropdownMenu>
   );
 };
