@@ -6,20 +6,39 @@ const API_BASE = "https://pokeapi.co/api/v2";
 
 export const fetchPokemonData = async (generations: number[]): Promise<Pokemon[]> => {
   try {
-    console.log("🔍 Fetching Pokemon data for generations:", generations);
+    console.log("🔍🔍🔍 [API_FETCH_DEBUG] ===== STARTING POKEMON FETCH =====");
+    console.log("🔍🔍🔍 [API_FETCH_DEBUG] Fetching Pokemon data for generations:", generations);
     
     const responses = await Promise.all(
-      generations.map(gen => 
-        fetch(`${API_BASE}/generation/${gen}`)
-          .then(res => res.json())
-      )
+      generations.map(async gen => {
+        console.log(`🔍🔍🔍 [API_FETCH_DEBUG] Fetching generation ${gen}...`);
+        const response = await fetch(`${API_BASE}/generation/${gen}`);
+        const data = await response.json();
+        console.log(`🔍🔍🔍 [API_FETCH_DEBUG] Generation ${gen} returned ${data.pokemon_species?.length || 0} species`);
+        return data;
+      })
     );
 
     const allSpecies = responses.flatMap(response => 
       response.pokemon_species || []
     );
 
-    console.log(`📊 Found ${allSpecies.length} Pokemon species across generations`);
+    console.log(`🔍🔍🔍 [API_FETCH_DEBUG] Total species found across all generations: ${allSpecies.length}`);
+
+    // Sample some species to see what we're getting
+    if (allSpecies.length > 0) {
+      const sampleSpecies = allSpecies.slice(0, 10).map(s => {
+        const id = s.url.split('/').filter(Boolean).pop();
+        return `${s.name}(${id})`;
+      });
+      console.log(`🔍🔍🔍 [API_FETCH_DEBUG] Sample species: ${sampleSpecies.join(', ')}`);
+      
+      // Check the ID range of all species
+      const allIds = allSpecies.map(s => parseInt(s.url.split('/').filter(Boolean).pop()));
+      const minId = Math.min(...allIds);
+      const maxId = Math.max(...allIds);
+      console.log(`🔍🔍🔍 [API_FETCH_DEBUG] Species ID range: ${minId} - ${maxId}`);
+    }
 
     // Fetch detailed data for each Pokemon
     const pokemonPromises = allSpecies.map(async (species: any) => {
@@ -104,7 +123,29 @@ export const fetchPokemonData = async (generations: number[]): Promise<Pokemon[]
     const pokemonResults = await Promise.all(pokemonPromises);
     const validPokemon = pokemonResults.filter(pokemon => pokemon !== null);
 
-    console.log(`✅ Successfully loaded ${validPokemon.length} Pokemon with formatted names`);
+    console.log(`🔍🔍🔍 [API_FETCH_DEBUG] ===== FETCH COMPLETE =====`);
+    console.log(`🔍🔍🔍 [API_FETCH_DEBUG] Successfully loaded ${validPokemon.length} Pokemon with formatted names`);
+    
+    // CRITICAL: Check the final ID distribution
+    if (validPokemon.length > 0) {
+      const finalIds = validPokemon.map(p => p.id);
+      const finalMinId = Math.min(...finalIds);
+      const finalMaxId = Math.max(...finalIds);
+      console.log(`🔍🔍🔍 [API_FETCH_DEBUG] Final Pokemon ID range: ${finalMinId} - ${finalMaxId}`);
+      
+      const finalDistribution = {
+        'Gen1(1-151)': finalIds.filter(id => id >= 1 && id <= 151).length,
+        'Gen2(152-251)': finalIds.filter(id => id >= 152 && id <= 251).length,
+        'Gen3(252-386)': finalIds.filter(id => id >= 252 && id <= 386).length,
+        'Gen4(387-493)': finalIds.filter(id => id >= 387 && id <= 493).length,
+        'Gen5(494-649)': finalIds.filter(id => id >= 494 && id <= 649).length,
+        'Gen6(650-721)': finalIds.filter(id => id >= 650 && id <= 721).length,
+        'Gen7(722-809)': finalIds.filter(id => id >= 722 && id <= 809).length,
+        'Gen8(810-905)': finalIds.filter(id => id >= 810 && id <= 905).length,
+        'Gen9(906+)': finalIds.filter(id => id >= 906).length,
+      };
+      console.log(`🔍🔍🔍 [API_FETCH_DEBUG] Final generation distribution:`, finalDistribution);
+    }
     
     // VERIFICATION: Check final result for unformatted names
     const unformattedCount = validPokemon.filter(p => 
@@ -125,11 +166,12 @@ export const fetchPokemonData = async (generations: number[]): Promise<Pokemon[]
     return validPokemon;
 
   } catch (error) {
-    console.error("Error fetching Pokemon data:", error);
+    console.error("🔍🔍🔍 [API_FETCH_DEBUG] Error fetching Pokemon data:", error);
     throw error;
   }
 };
 
 export const fetchAllPokemon = async (): Promise<Pokemon[]> => {
+  console.log(`🔍🔍🔍 [API_FETCH_DEBUG] fetchAllPokemon called - will fetch generations 1-9`);
   return fetchPokemonData([1, 2, 3, 4, 5, 6, 7, 8, 9]);
 };
