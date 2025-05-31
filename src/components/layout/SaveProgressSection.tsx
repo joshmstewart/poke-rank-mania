@@ -30,8 +30,14 @@ const SaveProgressSection: React.FC = () => {
   // Check if we have a user OR a session (either should indicate authenticated state)
   const currentUser = user || session?.user;
   
+  console.log('🚨 SaveProgressSection: currentUser check:', {
+    currentUser: !!currentUser,
+    userEmail: currentUser?.email,
+    willShowAuthenticatedDisplay: !!currentUser
+  });
+  
   if (currentUser) {
-    console.log('🚨 SaveProgressSection: User is authenticated, showing user display');
+    console.log('🚨 SaveProgressSection: SHOWING AUTHENTICATED USER DISPLAY');
     return (
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2">
@@ -45,7 +51,7 @@ const SaveProgressSection: React.FC = () => {
     );
   }
 
-  console.log('🚨 SaveProgressSection: User is not authenticated, showing cloud sync button');
+  console.log('🚨 SaveProgressSection: SHOWING CLOUD SYNC BUTTON');
   return <CloudSyncButton />;
 };
 

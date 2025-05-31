@@ -14,7 +14,8 @@ export const AuthenticatedUserDisplay: React.FC = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
 
-  console.log('🔵 AuthenticatedUserDisplay: Rendering with auth state:', {
+  console.log('🔵 AuthenticatedUserDisplay: COMPONENT IS RENDERING');
+  console.log('🔵 AuthenticatedUserDisplay: Auth state:', {
     hasUser: !!user,
     hasSession: !!session,
     userEmail: user?.email,
@@ -32,7 +33,7 @@ export const AuthenticatedUserDisplay: React.FC = () => {
   const displayName = profile?.display_name || profile?.username || currentUser?.email?.split('@')[0] || 'User';
   const avatarUrl = profile?.avatar_url;
 
-  console.log('🔵 AuthenticatedUserDisplay: Final display values:', {
+  console.log('🔵 AuthenticatedUserDisplay: Display values:', {
     currentUser: !!currentUser,
     displayName,
     displayEmail,
@@ -75,10 +76,14 @@ export const AuthenticatedUserDisplay: React.FC = () => {
     }
   };
 
-  console.log('🔵 AuthenticatedUserDisplay: Rendering dropdown with user:', displayName);
+  console.log('🔵 AuthenticatedUserDisplay: ABOUT TO RENDER JSX - this should ALWAYS appear when component is called');
 
   return (
-    <>
+    <div className="bg-red-500 border-4 border-yellow-400 p-2">
+      <div className="text-white font-bold">🔥 AUTHENTICATED USER DISPLAY 🔥</div>
+      <div className="text-white">User: {displayName}</div>
+      <div className="text-white">Email: {displayEmail}</div>
+      
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="h-auto p-2">
@@ -112,6 +117,6 @@ export const AuthenticatedUserDisplay: React.FC = () => {
         open={profileModalOpen} 
         onOpenChange={handleProfileModalClose}
       />
-    </>
+    </div>
   );
 };
