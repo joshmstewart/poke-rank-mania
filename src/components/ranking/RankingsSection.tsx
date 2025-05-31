@@ -17,7 +17,9 @@ export const RankingsSection: React.FC<RankingsSectionProps> = ({
   onLocalReorder,
   pendingRefinements = new Set()
 }) => {
-  console.log(`🔍🔍🔍 [RANKINGS_SECTION_DEBUG] Rendering with ${displayRankings.length} Pokemon`);
+  console.log(`🚨🚨🚨 [RANKINGS_SECTION_ULTRA_CRITICAL] ===== RENDERING RANKINGS SECTION =====`);
+  console.log(`🚨🚨🚨 [RANKINGS_SECTION_ULTRA_CRITICAL] Display rankings count: ${displayRankings.length}`);
+  console.log(`🚨🚨🚨 [RANKINGS_SECTION_ULTRA_CRITICAL] Display rankings IDs:`, displayRankings.map(p => p.id).join(', '));
   
   const { setNodeRef, isOver } = useDroppable({
     id: 'rankings-drop-zone',
@@ -27,13 +29,15 @@ export const RankingsSection: React.FC<RankingsSectionProps> = ({
     }
   });
   
+  console.log(`🚨🚨🚨 [RANKINGS_SECTION_ULTRA_CRITICAL] Droppable setup - ID: rankings-drop-zone, isOver: ${isOver}`);
+  
   const handleMarkAsPending = (pokemonId: number) => {
-    console.log(`🔍🔍🔍 [RANKINGS_SECTION_DEBUG] Marking Pokemon ${pokemonId} as pending`);
+    console.log(`🚨🚨🚨 [RANKINGS_SECTION_ULTRA_CRITICAL] Marking Pokemon ${pokemonId} as pending`);
     // For manual mode, we don't need special pending logic like battle mode
   };
 
   const handleLocalReorderWrapper = (newRankings: (Pokemon | RankedPokemon)[]) => {
-    console.log(`🔍🔍🔍 [RANKINGS_SECTION_DEBUG] Local reorder with ${newRankings.length} Pokemon`);
+    console.log(`🚨🚨🚨 [RANKINGS_SECTION_ULTRA_CRITICAL] Local reorder with ${newRankings.length} Pokemon`);
     if (onLocalReorder) {
       onLocalReorder(newRankings);
     }

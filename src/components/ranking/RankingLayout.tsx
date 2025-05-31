@@ -1,6 +1,6 @@
 
 import React from "react";
-import { DndContext, DragOverlay, closestCenter } from '@dnd-kit/core';
+import { DndContext, DragOverlay, closestCenter, DragStartEvent, DragEndEvent } from '@dnd-kit/core';
 import { LoadingState } from "./LoadingState";
 import { AvailablePokemonSection } from "./AvailablePokemonSection";
 import { RankingsSection } from "./RankingsSection";
@@ -28,8 +28,8 @@ interface RankingLayoutProps {
   onGenerationChange: (gen: number) => void;
   handleComprehensiveReset: () => void;
   setBattleType: React.Dispatch<React.SetStateAction<BattleType>>;
-  handleDragStart: (event: any) => void;
-  handleDragEnd: (event: any) => void;
+  handleDragStart: (event: DragStartEvent) => void;
+  handleDragEnd: (event: DragEndEvent) => void;
   handleManualReorder: (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => void;
   handleLocalReorder: (newRankings: any[]) => void;
 }
@@ -57,6 +57,32 @@ export const RankingLayout: React.FC<RankingLayoutProps> = ({
   handleManualReorder,
   handleLocalReorder
 }) => {
+  // CRITICAL: Enhanced drag event logging to track what's happening
+  const enhancedHandleDragStart = (event: DragStartEvent) => {
+    console.log(`🚨🚨🚨 [LAYOUT_DRAG_CRITICAL] ===== DRAG START IN LAYOUT =====`);
+    console.log(`🚨🚨🚨 [LAYOUT_DRAG_CRITICAL] Active ID: ${event.active.id}`);
+    console.log(`🚨🚨🚨 [LAYOUT_DRAG_CRITICAL] Active data:`, event.active.data.current);
+    handleDragStart(event);
+  };
+
+  const enhancedHandleDragEnd = (event: DragEndEvent) => {
+    console.log(`🚨🚨🚨 [LAYOUT_DRAG_CRITICAL] ===== DRAG END IN LAYOUT =====`);
+    console.log(`🚨🚨🚨 [LAYOUT_DRAG_CRITICAL] Active ID: ${event.active.id}`);
+    console.log(`🚨🚨🚨 [LAYOUT_DRAG_CRITICAL] Over ID: ${event.over?.id || 'NULL'}`);
+    console.log(`🚨🚨🚨 [LAYOUT_DRAG_CRITICAL] Over data:`, event.over?.data?.current);
+    console.log(`🚨🚨🚨 [LAYOUT_DRAG_CRITICAL] Event object:`, {
+      active: { id: event.active.id, data: event.active.data.current },
+      over: event.over ? { id: event.over.id, data: event.over.data.current } : null
+    });
+    
+    if (!event.over) {
+      console.log(`🚨🚨🚨 [LAYOUT_DRAG_CRITICAL] ❌ No drop target detected`);
+      return;
+    }
+    
+    handleDragEnd(event);
+  };
+
   if (isLoading && availablePokemon.length === 0) {
     return (
       <LoadingState 
@@ -68,10 +94,15 @@ export const RankingLayout: React.FC<RankingLayoutProps> = ({
     );
   }
 
+  console.log(`🚨🚨🚨 [LAYOUT_CRITICAL] ===== RENDERING LAYOUT =====`);
+  console.log(`🚨🚨🚨 [LAYOUT_CRITICAL] Available Pokemon: ${filteredAvailablePokemon.length}`);
+  console.log(`🚨🚨🚨 [LAYOUT_CRITICAL] Display Rankings: ${displayRankings.length}`);
+  console.log(`🚨🚨🚨 [LAYOUT_CRITICAL] Active Dragged Pokemon:`, activeDraggedPokemon?.name || 'None');
+
   return (
     <DndContext 
-      onDragStart={handleDragStart} 
-      onDragEnd={handleDragEnd}
+      onDragStart={enhancedHandleDragStart} 
+      onDragEnd={enhancedHandleDragEnd}
       collisionDetection={closestCenter}
     >
       <div className="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen p-1">
