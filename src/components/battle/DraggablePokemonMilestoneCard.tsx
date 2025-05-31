@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -27,10 +28,10 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
 }) => {
   const [isOpen, setIsOpen] = React.useState(false);
 
-  // Only use sortable if draggable
+  // Only use sortable if draggable AND modal is not open
   const sortableResult = useSortable({ 
     id: isDraggable ? (isAvailable ? `available-${pokemon.id}` : pokemon.id) : `static-${pokemon.id}`,
-    disabled: !isDraggable,
+    disabled: !isDraggable || isOpen, // Disable drag when modal is open
     data: {
       type: isAvailable ? 'available-pokemon' : 'ranked-pokemon',
       pokemon: pokemon,
@@ -73,12 +74,12 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       ref={setNodeRef}
       style={style}
       className={`${backgroundColorClass} rounded-lg border border-gray-200 relative overflow-hidden h-40 flex flex-col ${
-        isDraggable ? 'cursor-grab active:cursor-grabbing' : ''
+        isDraggable && !isOpen ? 'cursor-grab active:cursor-grabbing' : ''
       } ${
         isDragging ? 'opacity-60 z-50 scale-105 shadow-2xl' : 'hover:shadow-lg transition-all duration-200'
       } ${isPending ? 'ring-2 ring-blue-400 ring-opacity-50' : ''}`}
-      {...(isDraggable ? attributes : {})}
-      {...(isDraggable ? listeners : {})}
+      {...(isDraggable && !isOpen ? attributes : {})}
+      {...(isDraggable && !isOpen ? listeners : {})}
     >
       {/* Pending banner if needed */}
       {isPending && (
