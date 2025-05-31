@@ -52,14 +52,14 @@ export const RankingUI: React.FC<RankingUIProps> = ({
     : battleModeRankings.length > 0 ? battleModeRankings 
     : rankedPokemon;
   
-  // Filter available Pokemon to exclude those in the ACTUAL rankedPokemon state array
-  const rankedPokemonIds = new Set(rankedPokemon.map(p => p.id));
-  const filteredAvailablePokemon = availablePokemon.filter(p => !rankedPokemonIds.has(p.id));
+  // Filter available Pokemon to exclude those in the DISPLAY rankings (not just manual ranked Pokemon)
+  const displayRankingsIds = new Set(displayRankings.map(p => p.id));
+  const filteredAvailablePokemon = availablePokemon.filter(p => !displayRankingsIds.has(p.id));
   
   console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] localRankings: ${localRankings.length}, battleModeRankings: ${battleModeRankings.length}, rankedPokemon: ${rankedPokemon.length}`);
   console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] displayRankings length: ${displayRankings.length}`);
   console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] filteredAvailablePokemon length: ${filteredAvailablePokemon.length}`);
-  console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] rankedPokemonIds:`, Array.from(rankedPokemonIds));
+  console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] displayRankingsIds:`, Array.from(displayRankingsIds));
 
   // Use the actual state arrays for drag and drop - pass the original arrays, not filtered
   const { handleDragEnd } = useDragHandler(
