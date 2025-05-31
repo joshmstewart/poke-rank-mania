@@ -107,7 +107,16 @@ export const useRankingDragDrop = (
             }
           }
           
-          // CRITICAL FIX: Dispatch event with precise insertion data
+          // CRITICAL FIX: Trigger implied battles for new Pokemon addition
+          console.log(`🔥🔥🔥 [IMPLIED_BATTLE_TRIGGER] ===== TRIGGERING IMPLIED BATTLES FOR NEW POKEMON =====`);
+          console.log(`🔥🔥🔥 [IMPLIED_BATTLE_TRIGGER] Pokemon ${pokemonId} (${pokemon.name}) inserted at position ${insertionPosition}`);
+          
+          // Call enhanced manual reorder to trigger implied battles
+          // We use -1 as source index to indicate this is a new addition
+          handleEnhancedManualReorder(pokemonId, -1, insertionPosition);
+          console.log(`🔥🔥🔥 [IMPLIED_BATTLE_TRIGGER] ✅ Enhanced manual reorder called for implied battles`);
+          
+          // Also dispatch the standard event for other components
           const event = new CustomEvent('trueskill-store-updated', {
             detail: { 
               pokemonId, 
