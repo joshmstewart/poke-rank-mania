@@ -1,13 +1,13 @@
 
 import React, { useState } from "react";
 import { useDraggable } from '@dnd-kit/core';
-import { Pokemon } from "@/services/pokemon";
+import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { normalizePokedexNumber } from "@/utils/pokemon";
 import { getPokemonBackgroundColor } from "@/components/battle/utils/PokemonColorUtils";
 import PokemonInfoModal from "@/components/pokemon/PokemonInfoModal";
 
 interface SharedPokemonCardProps {
-  pokemon: Pokemon;
+  pokemon: Pokemon | RankedPokemon;
   showRankNumber?: boolean;
   rankNumber?: number;
   isAvailable?: boolean;
@@ -58,7 +58,10 @@ export const SharedPokemonCard: React.FC<SharedPokemonCardProps> = ({
     transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
   } : undefined;
 
-  const isRankedPokemon = 'score' in pokemon;
+  // Type guard function to check if pokemon is RankedPokemon
+  const isRankedPokemon = (p: Pokemon | RankedPokemon): p is RankedPokemon => {
+    return 'score' in p && typeof (p as RankedPokemon).score === 'number';
+  };
 
   return (
     <div className="relative group">
@@ -125,7 +128,7 @@ export const SharedPokemonCard: React.FC<SharedPokemonCardProps> = ({
           </div>
 
           {/* Score for ranked Pokemon */}
-          {isRankedPokemon && 'score' in pokemon && (
+          {isRankedPokemon(pokemon) && (
             <div className="text-xs text-center text-gray-600">
               Score: {pokemon.score.toFixed(1)}
             </div>
