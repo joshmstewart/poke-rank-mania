@@ -43,45 +43,6 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
     console.warn(`Failed to load image for Pokemon ${pokemonId}`);
   };
 
-  // CRITICAL DEBUG: Add comprehensive info button click logging
-  const handleInfoButtonClick = (pokemon: Pokemon | RankedPokemon, e: React.MouseEvent) => {
-    console.log(`🚨🚨🚨 [INFO_BUTTON_RANKINGS_DEBUG] ===== INFO BUTTON CLICKED =====`);
-    console.log(`🚨🚨🚨 [INFO_BUTTON_RANKINGS_DEBUG] Pokemon: ${pokemon.name} (ID: ${pokemon.id})`);
-    console.log(`🚨🚨🚨 [INFO_BUTTON_RANKINGS_DEBUG] Event type: ${e.type}`);
-    console.log(`🚨🚨🚨 [INFO_BUTTON_RANKINGS_DEBUG] Target:`, e.target);
-    console.log(`🚨🚨🚨 [INFO_BUTTON_RANKINGS_DEBUG] Current target:`, e.currentTarget);
-    console.log(`🚨🚨🚨 [INFO_BUTTON_RANKINGS_DEBUG] Event bubbles: ${e.bubbles}`);
-    console.log(`🚨🚨🚨 [INFO_BUTTON_RANKINGS_DEBUG] Default prevented: ${e.defaultPrevented}`);
-    
-    // Stop all propagation immediately - FIXED: Use correct React event methods
-    e.preventDefault();
-    e.stopPropagation();
-    
-    console.log(`🚨🚨🚨 [INFO_BUTTON_RANKINGS_DEBUG] After stopping propagation - Default prevented: ${e.defaultPrevented}`);
-  };
-
-  // CRITICAL DEBUG: Add card click logging to see if it interferes
-  const handleCardClick = (pokemon: Pokemon | RankedPokemon, e: React.MouseEvent) => {
-    console.log(`🎯🎯🎯 [CARD_CLICK_RANKINGS_DEBUG] Card clicked for ${pokemon.name}`);
-    console.log(`🎯🎯🎯 [CARD_CLICK_RANKINGS_DEBUG] Target:`, e.target);
-    console.log(`🎯🎯🎯 [CARD_CLICK_RANKINGS_DEBUG] Current target:`, e.currentTarget);
-    
-    // Check if click came from info button area
-    const target = e.target as HTMLElement;
-    const isInfoButton = target.closest('[data-info-button="true"]') || 
-                        target.textContent === 'i' || 
-                        target.closest('button');
-    
-    if (isInfoButton) {
-      console.log(`🎯🎯🎯 [CARD_CLICK_RANKINGS_DEBUG] ❌ Click from info button - stopping`);
-      e.preventDefault();
-      e.stopPropagation();
-      return;
-    }
-    
-    console.log(`🎯🎯🎯 [CARD_CLICK_RANKINGS_DEBUG] Regular card click - allowing`);
-  };
-
   return (
     <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))' }}>
       {displayRankings.map((pokemon, index) => {
@@ -91,27 +52,23 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
 
         return (
           <div key={pokemon.id} className="relative group">
-            {/* CRITICAL DEBUG: Completely isolate info button */}
-            <div 
-              className="absolute top-1 right-1 z-50"
-              data-info-button="true"
-              onClick={(e) => handleInfoButtonClick(pokemon, e)}
-              onPointerDown={(e) => {
-                console.log(`🚨🚨🚨 [INFO_BUTTON_RANKINGS_DEBUG] Pointer down for ${pokemon.name}`);
-                e.stopPropagation();
-              }}
-              onMouseDown={(e) => {
-                console.log(`🚨🚨🚨 [INFO_BUTTON_RANKINGS_DEBUG] Mouse down for ${pokemon.name}`);
-                e.stopPropagation();
-              }}
-            >
+            {/* COMPLETELY REDESIGNED: Info button with absolute positioning and higher z-index */}
+            <div className="absolute top-1 right-1 z-[60]">
               <PokemonInfoModal pokemon={pokemon}>
                 <button 
-                  className="w-5 h-5 rounded-full bg-white/90 hover:bg-white border border-gray-300 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200 backdrop-blur-sm"
-                  onClick={(e) => {
-                    console.log(`🚨🚨🚨 [INFO_BUTTON_RANKINGS_DEBUG] Button element clicked for ${pokemon.name}`);
-                    e.preventDefault();
+                  className="w-5 h-5 rounded-full bg-white/95 hover:bg-white border border-gray-300 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-medium shadow-md transition-all duration-200 backdrop-blur-sm hover:shadow-lg"
+                  onMouseDown={(e) => {
+                    console.log(`🔥 [INFO_BUTTON_FIX] Mouse down on info button for ${pokemon.name}`);
                     e.stopPropagation();
+                  }}
+                  onPointerDown={(e) => {
+                    console.log(`🔥 [INFO_BUTTON_FIX] Pointer down on info button for ${pokemon.name}`);
+                    e.stopPropagation();
+                  }}
+                  onClick={(e) => {
+                    console.log(`🔥 [INFO_BUTTON_FIX] Info button clicked for ${pokemon.name} - should open modal`);
+                    e.stopPropagation();
+                    e.preventDefault();
                   }}
                 >
                   i
@@ -128,10 +85,8 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
               />
             )}
 
-            <div 
-              className="bg-white rounded-lg border-2 border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow"
-              onClick={(e) => handleCardClick(pokemon, e)}
-            >
+            {/* REDESIGNED: Card without any click handlers to avoid conflicts */}
+            <div className="bg-white rounded-lg border-2 border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
               {/* Rank number */}
               <div className="bg-gradient-to-r from-yellow-400 to-yellow-600 text-white text-center py-1">
                 <span className="text-sm font-bold">#{index + 1}</span>

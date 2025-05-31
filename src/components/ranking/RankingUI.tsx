@@ -203,59 +203,24 @@ export const RankingUI: React.FC<RankingUIProps> = ({
     true // preventAutoResorting = true to maintain manual order
   );
 
-  // CRITICAL DEBUG: Completely rewrite drag to rankings to be bulletproof
+  // COMPLETELY REDESIGNED: Simple and bulletproof drag to rankings
   const handleDragToRankings = (pokemonId: number) => {
-    console.log(`🔥🔥🔥 [DRAG_TO_RANKINGS_CRITICAL] ===== BULLETPROOF DRAG TO RANKINGS =====`);
-    console.log(`🔥🔥🔥 [DRAG_TO_RANKINGS_CRITICAL] Step 1: Find Pokemon ${pokemonId} in available list`);
-    console.log(`🔥🔥🔥 [DRAG_TO_RANKINGS_CRITICAL] Available Pokemon count: ${availablePokemon.length}`);
-    console.log(`🔥🔥🔥 [DRAG_TO_RANKINGS_CRITICAL] Available Pokemon IDs: ${availablePokemon.map(p => p.id).slice(0, 10).join(', ')}...`);
+    console.log(`🎯 [DRAG_FIX] SIMPLE drag to rankings for Pokemon ${pokemonId}`);
     
     const pokemon = availablePokemon.find(p => p.id === pokemonId);
     if (!pokemon) {
-      console.error(`🔥🔥🔥 [DRAG_TO_RANKINGS_CRITICAL] ❌ CRITICAL ERROR: Pokemon ${pokemonId} not found in available list!`);
-      console.error(`🔥🔥🔥 [DRAG_TO_RANKINGS_CRITICAL] Available IDs:`, availablePokemon.map(p => p.id));
+      console.error(`🎯 [DRAG_FIX] Pokemon ${pokemonId} not found`);
       return;
     }
     
-    console.log(`🔥🔥🔥 [DRAG_TO_RANKINGS_CRITICAL] Step 2: Found Pokemon: ${pokemon.name}`);
-    console.log(`🔥🔥🔥 [DRAG_TO_RANKINGS_CRITICAL] Current ranked Pokemon count: ${rankedPokemon.length}`);
-    console.log(`🔥🔥🔥 [DRAG_TO_RANKINGS_CRITICAL] Current ranked Pokemon IDs: ${rankedPokemon.map(p => p.id).join(', ')}`);
+    console.log(`🎯 [DRAG_FIX] Moving ${pokemon.name} to rankings`);
     
-    // Check if Pokemon is already in ranked list (defensive)
-    const alreadyRanked = rankedPokemon.find(p => p.id === pokemonId);
-    if (alreadyRanked) {
-      console.error(`🔥🔥🔥 [DRAG_TO_RANKINGS_CRITICAL] ❌ CRITICAL ERROR: Pokemon ${pokemonId} is already in ranked list!`);
-      return;
-    }
+    // Simple state updates
+    setAvailablePokemon(prev => prev.filter(p => p.id !== pokemonId));
+    setRankedPokemon(prev => [...prev, pokemon]);
+    setHasManualChanges(true);
     
-    console.log(`🔥🔥🔥 [DRAG_TO_RANKINGS_CRITICAL] Step 3: Calculating new state`);
-    
-    // Calculate new state
-    const newAvailable = availablePokemon.filter(p => p.id !== pokemonId);
-    const newRanked = [...rankedPokemon, pokemon];
-    
-    console.log(`🔥🔥🔥 [DRAG_TO_RANKINGS_CRITICAL] New available count: ${newAvailable.length} (removed 1)`);
-    console.log(`🔥🔥🔥 [DRAG_TO_RANKINGS_CRITICAL] New ranked count: ${newRanked.length} (added 1)`);
-    console.log(`🔥🔥🔥 [DRAG_TO_RANKINGS_CRITICAL] Sanity check: ${availablePokemon.length} - 1 = ${newAvailable.length} ✓`);
-    console.log(`🔥🔥🔥 [DRAG_TO_RANKINGS_CRITICAL] Sanity check: ${rankedPokemon.length} + 1 = ${newRanked.length} ✓`);
-    
-    console.log(`🔥🔥🔥 [DRAG_TO_RANKINGS_CRITICAL] Step 4: Applying state updates`);
-    
-    try {
-      setAvailablePokemon(newAvailable);
-      console.log(`🔥🔥🔥 [DRAG_TO_RANKINGS_CRITICAL] ✅ Available Pokemon state updated`);
-      
-      setRankedPokemon(newRanked);
-      console.log(`🔥🔥🔥 [DRAG_TO_RANKINGS_CRITICAL] ✅ Ranked Pokemon state updated`);
-      
-      setHasManualChanges(true);
-      console.log(`🔥🔥🔥 [DRAG_TO_RANKINGS_CRITICAL] ✅ Manual changes flag set`);
-      
-      console.log(`🔥🔥🔥 [DRAG_TO_RANKINGS_CRITICAL] ===== SUCCESS: ${pokemon.name} moved to rankings =====`);
-      
-    } catch (error) {
-      console.error(`🔥🔥🔥 [DRAG_TO_RANKINGS_CRITICAL] ❌ CRITICAL ERROR during state update:`, error);
-    }
+    console.log(`🎯 [DRAG_FIX] Successfully moved ${pokemon.name} to rankings`);
   };
 
   // Handle manual reordering within the rankings (using enhanced system with fake battles)
@@ -274,67 +239,50 @@ export const RankingUI: React.FC<RankingUIProps> = ({
     setRankedPokemon(newRankings);
   };
 
-  // CRITICAL DEBUG: Enhanced drag handlers with comprehensive logging
+  // REDESIGNED: Simple drag handlers
   const handleDragStart = (event: DragStartEvent) => {
-    console.log(`🌟🌟🌟 [DRAG_DEBUG_CRITICAL] ===== DRAG START DETAILED =====`);
-    console.log(`🌟🌟🌟 [DRAG_DEBUG_CRITICAL] Active ID: ${event.active.id}`);
-    console.log(`🌟🌟🌟 [DRAG_DEBUG_CRITICAL] Active data:`, event.active.data);
-    console.log(`🌟🌟🌟 [DRAG_DEBUG_CRITICAL] Event:`, event);
+    console.log(`🎯 [DRAG_FIX] Drag start: ${event.active.id}`);
 
-    // Set the dragged Pokemon for overlay
     const activeId = event.active.id.toString();
     let draggedPokemon = null;
     
     if (activeId.startsWith('available-')) {
       const pokemonId = parseInt(activeId.replace('available-', ''));
       draggedPokemon = availablePokemon.find(p => p.id === pokemonId);
-      console.log(`🌟🌟🌟 [DRAG_DEBUG_CRITICAL] Found available Pokemon for overlay: ${draggedPokemon?.name} (ID: ${pokemonId})`);
     } else {
       const pokemonId = parseInt(activeId);
       draggedPokemon = displayRankings.find(p => p.id === pokemonId);
-      console.log(`🌟🌟🌟 [DRAG_DEBUG_CRITICAL] Found ranked Pokemon for overlay: ${draggedPokemon?.name} (ID: ${pokemonId})`);
     }
     
     setActiveDraggedPokemon(draggedPokemon);
-    console.log(`🌟🌟🌟 [DRAG_DEBUG_CRITICAL] Overlay Pokemon set:`, draggedPokemon?.name || 'null');
+    console.log(`🎯 [DRAG_FIX] Dragging: ${draggedPokemon?.name || 'unknown'}`);
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
-    console.log(`💥💥💥 [DRAG_END_CRITICAL] ===== DRAG END DETAILED =====`);
+    console.log(`🎯 [DRAG_FIX] Drag end triggered`);
     
-    // Clear the drag overlay FIRST
     setActiveDraggedPokemon(null);
-    console.log(`💥💥💥 [DRAG_END_CRITICAL] Drag overlay cleared`);
     
     const { active, over } = event;
     
-    console.log(`💥💥💥 [DRAG_END_CRITICAL] Active:`, active);
-    console.log(`💥💥💥 [DRAG_END_CRITICAL] Over:`, over);
-    
     if (!over) {
-      console.log(`💥💥💥 [DRAG_END_CRITICAL] ❌ No drop target - drag cancelled`);
+      console.log(`🎯 [DRAG_FIX] No drop target`);
       return;
     }
 
     const activeId = active.id.toString();
     const overId = over.id.toString();
 
-    console.log(`💥💥💥 [DRAG_END_CRITICAL] Active ID: ${activeId}`);
-    console.log(`💥💥💥 [DRAG_END_CRITICAL] Over ID: ${overId}`);
-    console.log(`💥💥💥 [DRAG_END_CRITICAL] Over data:`, over.data);
+    console.log(`🎯 [DRAG_FIX] Dropped ${activeId} onto ${overId}`);
 
-    // CRITICAL: Check for dragging from available to rankings
+    // Handle dragging from available to rankings
     if (activeId.startsWith('available-')) {
       const pokemonId = parseInt(activeId.replace('available-', ''));
-      console.log(`💥💥💥 [DRAG_END_CRITICAL] 🎯 AVAILABLE TO RANKINGS: Pokemon ID: ${pokemonId}`);
-      console.log(`💥💥💥 [DRAG_END_CRITICAL] 🎯 Drop target: ${overId}`);
       
-      // Accept ANY drop target in rankings area
+      // Accept any drop in rankings area
       if (overId === 'rankings-drop-zone' || !overId.startsWith('available-')) {
-        console.log(`💥💥💥 [DRAG_END_CRITICAL] ✅ Valid drop target - calling handleDragToRankings`);
+        console.log(`🎯 [DRAG_FIX] Valid drop - calling handleDragToRankings`);
         handleDragToRankings(pokemonId);
-      } else {
-        console.log(`💥💥💥 [DRAG_END_CRITICAL] ❌ Invalid drop target for available Pokemon`);
       }
       return;
     }
@@ -344,22 +292,14 @@ export const RankingUI: React.FC<RankingUIProps> = ({
       const activePokemonId = Number(activeId);
       const overPokemonId = Number(overId);
       
-      console.log(`💥💥💥 [DRAG_END_CRITICAL] 🔄 REORDERING WITHIN RANKINGS: ${activePokemonId} -> ${overPokemonId}`);
-      
       const oldIndex = displayRankings.findIndex(p => p.id === activePokemonId);
       const newIndex = displayRankings.findIndex(p => p.id === overPokemonId);
       
-      console.log(`💥💥💥 [DRAG_END_CRITICAL] Old index: ${oldIndex}, New index: ${newIndex}`);
-      
       if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-        console.log(`💥💥💥 [DRAG_END_CRITICAL] ✅ Performing reorder from ${oldIndex} to ${newIndex}`);
+        console.log(`🎯 [DRAG_FIX] Reordering from ${oldIndex} to ${newIndex}`);
         handleManualReorder(activePokemonId, oldIndex, newIndex);
-      } else {
-        console.log(`💥💥💥 [DRAG_END_CRITICAL] ❌ Invalid reorder indices or same position`);
       }
     }
-    
-    console.log(`💥💥💥 [DRAG_END_CRITICAL] ===== DRAG END COMPLETE =====`);
   };
 
   if (isLoading && availablePokemon.length === 0) {
