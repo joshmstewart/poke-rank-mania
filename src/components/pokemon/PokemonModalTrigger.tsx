@@ -16,22 +16,19 @@ const PokemonModalTrigger: React.FC<PokemonModalTriggerProps> = ({
 }) => {
   const handleTriggerClick = (e: React.MouseEvent) => {
     console.log(`🔘🔘🔘 [MODAL_TRIGGER_DEBUG] Modal trigger clicked for ${pokemon.name}`);
-    // CRITICAL FIX: Prevent all event bubbling and default behavior
-    e.preventDefault();
+    // CRITICAL FIX: Only prevent propagation, don't prevent default
     e.stopPropagation();
   };
 
   const handleTriggerPointerDown = (e: React.PointerEvent) => {
     console.log(`🔘🔘🔘 [MODAL_TRIGGER_DEBUG] Modal trigger pointer down for ${pokemon.name}`);
-    // CRITICAL FIX: Prevent all event bubbling and default behavior
-    e.preventDefault();
+    // CRITICAL FIX: Only prevent propagation for pointer events
     e.stopPropagation();
   };
 
   const handleTriggerMouseDown = (e: React.MouseEvent) => {
     console.log(`🔘🔘🔘 [MODAL_TRIGGER_DEBUG] Modal trigger mouse down for ${pokemon.name}`);
-    // CRITICAL FIX: Prevent all event bubbling and default behavior
-    e.preventDefault();
+    // CRITICAL FIX: Only prevent propagation for mouse events
     e.stopPropagation();
   };
 

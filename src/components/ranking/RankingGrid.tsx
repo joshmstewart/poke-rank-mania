@@ -47,8 +47,10 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
 
   const handleInfoButtonClick = (pokemon: Pokemon | RankedPokemon, e: React.MouseEvent) => {
     console.log(`🔘 [RANKING_GRID_DEBUG] RankingGrid: Info button clicked for ${pokemon.name} (${pokemon.id})`);
+    // CRITICAL FIX: Proper event handling for info button
     e.preventDefault();
     e.stopPropagation();
+    e.stopImmediatePropagation();
   };
 
   return (
@@ -63,22 +65,20 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
 
         return (
           <div key={pokemon.id} className="relative group">
-            {/* Info Button - more subtle design */}
+            {/* Info Button - FIXED: Better event isolation */}
             <div 
               className="absolute top-1 right-1 z-30"
-              onClick={(e) => {
-                console.log(`🔘 [RANKING_GRID_DEBUG] Info button container clicked for ${pokemon.name}`);
-                handleInfoButtonClick(pokemon, e);
-              }}
+              onClick={(e) => handleInfoButtonClick(pokemon, e)}
+              onPointerDown={(e) => handleInfoButtonClick(pokemon, e)}
+              onMouseDown={(e) => handleInfoButtonClick(pokemon, e)}
             >
               <PokemonInfoModal pokemon={pokemon}>
                 <button 
                   className="w-5 h-5 rounded-full bg-white/80 hover:bg-white border border-gray-300 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200 backdrop-blur-sm"
-                  onClick={(e) => {
-                    console.log(`🔘 [RANKING_GRID_DEBUG] RankingGrid: Inner button clicked for ${pokemon.name}`);
-                    e.preventDefault();
-                    e.stopPropagation();
-                  }}
+                  data-info-button="true"
+                  onClick={(e) => handleInfoButtonClick(pokemon, e)}
+                  onPointerDown={(e) => handleInfoButtonClick(pokemon, e)}
+                  onMouseDown={(e) => handleInfoButtonClick(pokemon, e)}
                 >
                   i
                 </button>

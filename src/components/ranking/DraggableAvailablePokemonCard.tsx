@@ -35,6 +35,37 @@ const DraggableAvailablePokemonCard: React.FC<DraggableAvailablePokemonCardProps
 
   const backgroundColorClass = getPokemonBackgroundColor(pokemon);
 
+  // CRITICAL FIX: Handle info button interactions properly
+  const handleInfoButtonClick = (e: React.MouseEvent) => {
+    console.log(`🔘 [INFO_BUTTON_DEBUG] Info button clicked for ${pokemon.name}`);
+    // Stop all event propagation to prevent drag interference
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+  };
+
+  // CRITICAL FIX: Create drag handlers that exclude info button area
+  const dragListeners = {
+    ...listeners,
+    onPointerDown: (e: React.PointerEvent) => {
+      // Check if the click is on the info button or its children
+      const target = e.target as HTMLElement;
+      const isInfoButton = target.closest('[data-info-button="true"]') || 
+                          target.closest('button') ||
+                          target.textContent === 'i';
+      
+      if (isInfoButton) {
+        console.log(`🔘 [DRAG_DEBUG] Ignoring pointer down on info button for ${pokemon.name}`);
+        return;
+      }
+      
+      console.log(`🔍 [DRAG_DEBUG] Starting drag for ${pokemon.name}`);
+      if (listeners?.onPointerDown) {
+        listeners.onPointerDown(e);
+      }
+    }
+  };
+
   return (
     <div
       ref={setNodeRef}
@@ -43,17 +74,22 @@ const DraggableAvailablePokemonCard: React.FC<DraggableAvailablePokemonCardProps
         isDragging ? 'opacity-60 z-50 scale-105 shadow-2xl' : 'hover:shadow-lg transition-all duration-200'
       }`}
       {...attributes}
-      {...listeners}
+      {...dragListeners}
     >
-      {/* Info Button - more subtle design */}
-      <div className="absolute top-1 right-1 z-30">
+      {/* Info Button - prevent drag interference */}
+      <div 
+        className="absolute top-1 right-1 z-30"
+        onClick={handleInfoButtonClick}
+        onPointerDown={handleInfoButtonClick}
+        onMouseDown={handleInfoButtonClick}
+      >
         <PokemonInfoModal pokemon={pokemon}>
           <button 
             className="w-5 h-5 rounded-full bg-white/80 hover:bg-white border border-gray-300 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200 backdrop-blur-sm"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-            }}
+            data-info-button="true"
+            onClick={handleInfoButtonClick}
+            onPointerDown={handleInfoButtonClick}
+            onMouseDown={handleInfoButtonClick}
           >
             i
           </button>
