@@ -57,24 +57,28 @@ export const RankingLayout: React.FC<RankingLayoutProps> = ({
   handleManualReorder,
   handleLocalReorder
 }) => {
-  // CRITICAL FIX: Enhanced drag event logging with immediate detection
+  // CRITICAL FIX: Enhanced drag event logging with proper event detection
   const enhancedHandleDragStart = (event: DragStartEvent) => {
-    console.log(`🚨🚨🚨 [LAYOUT_DRAG_START_CRITICAL] ===== DRAG START DETECTED =====`);
-    console.log(`🚨🚨🚨 [LAYOUT_DRAG_START_CRITICAL] Active ID: ${event.active.id}`);
-    console.log(`🚨🚨🚨 [LAYOUT_DRAG_START_CRITICAL] Active data:`, event.active.data.current);
-    console.log(`🚨🚨🚨 [LAYOUT_DRAG_START_CRITICAL] Event object:`, event);
-    console.log(`🚨🚨🚨 [LAYOUT_DRAG_START_CRITICAL] This proves drag detection is working at layout level`);
+    console.log(`🚨🚨🚨 [LAYOUT_DRAG_START_DETECTED] ===== DRAG START DETECTED =====`);
+    console.log(`🚨🚨🚨 [LAYOUT_DRAG_START_ID] Active ID: ${event.active.id}`);
+    console.log(`🚨🚨🚨 [LAYOUT_DRAG_START_DATA] Active data:`, event.active.data.current);
+    console.log(`🚨🚨🚨 [LAYOUT_DRAG_START_EVENT] Full event:`, {
+      activeId: event.active.id,
+      activeData: event.active.data.current,
+      activatorEvent: event.activatorEvent
+    });
+    console.log(`🚨🚨🚨 [LAYOUT_DRAG_START_SUCCESS] Drag detection is working at layout level`);
     handleDragStart(event);
   };
 
   const enhancedHandleDragEnd = (event: DragEndEvent) => {
-    console.log(`🚨🚨🚨 [LAYOUT_DRAG_END_CRITICAL] ===== DRAG END DETECTED =====`);
-    console.log(`🚨🚨🚨 [LAYOUT_DRAG_END_CRITICAL] Active ID: ${event.active.id}`);
-    console.log(`🚨🚨🚨 [LAYOUT_DRAG_END_CRITICAL] Over ID: ${event.over?.id || 'NULL'}`);
-    console.log(`🚨🚨🚨 [LAYOUT_DRAG_END_CRITICAL] Over data:`, event.over?.data?.current);
+    console.log(`🚨🚨🚨 [LAYOUT_DRAG_END_DETECTED] ===== DRAG END DETECTED =====`);
+    console.log(`🚨🚨🚨 [LAYOUT_DRAG_END_ACTIVE] Active ID: ${event.active.id}`);
+    console.log(`🚨🚨🚨 [LAYOUT_DRAG_END_OVER] Over ID: ${event.over?.id || 'NULL'}`);
+    console.log(`🚨🚨🚨 [LAYOUT_DRAG_END_OVER_DATA] Over data:`, event.over?.data?.current);
     
     if (!event.over) {
-      console.log(`🚨🚨🚨 [LAYOUT_DRAG_END_CRITICAL] ❌ No drop target detected`);
+      console.log(`🚨🚨🚨 [LAYOUT_DRAG_END_NO_TARGET] No drop target detected`);
       return;
     }
     
@@ -92,10 +96,10 @@ export const RankingLayout: React.FC<RankingLayoutProps> = ({
     );
   }
 
-  console.log(`🚨🚨🚨 [LAYOUT_CRITICAL] ===== RENDERING LAYOUT =====`);
-  console.log(`🚨🚨🚨 [LAYOUT_CRITICAL] Available Pokemon: ${filteredAvailablePokemon.length}`);
-  console.log(`🚨🚨🚨 [LAYOUT_CRITICAL] Display Rankings: ${displayRankings.length}`);
-  console.log(`🚨🚨🚨 [LAYOUT_CRITICAL] Active Dragged Pokemon:`, activeDraggedPokemon?.name || 'None');
+  console.log(`🚨🚨🚨 [LAYOUT_RENDER] ===== RENDERING LAYOUT =====`);
+  console.log(`🚨🚨🚨 [LAYOUT_AVAILABLE] Available Pokemon: ${filteredAvailablePokemon.length}`);
+  console.log(`🚨🚨🚨 [LAYOUT_RANKINGS] Display Rankings: ${displayRankings.length}`);
+  console.log(`🚨🚨🚨 [LAYOUT_DRAGGED] Active Dragged Pokemon: ${activeDraggedPokemon?.name || 'None'}`);
 
   return (
     <DndContext 

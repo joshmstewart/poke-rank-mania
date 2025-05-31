@@ -15,14 +15,6 @@ interface RankingGridProps {
   onRemoveSuggestion?: (pokemonId: number) => void;
 }
 
-const typeColors: Record<string, string> = {
-  Normal: "bg-gray-400", Fire: "bg-red-500", Water: "bg-blue-500", Electric: "bg-yellow-400",
-  Grass: "bg-green-500", Ice: "bg-blue-200", Fighting: "bg-red-700", Poison: "bg-purple-600",
-  Ground: "bg-yellow-700", Flying: "bg-indigo-300", Psychic: "bg-pink-500", Bug: "bg-lime-500",
-  Rock: "bg-stone-500", Ghost: "bg-purple-700", Dragon: "bg-indigo-600", Dark: "bg-stone-800 text-white",
-  Steel: "bg-slate-400", Fairy: "bg-pink-300",
-};
-
 export const RankingGrid: React.FC<RankingGridProps> = ({
   displayRankings,
   activeTier,
@@ -33,7 +25,7 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
 }) => {
   const [loadedImages, setLoadedImages] = useState<Set<number>>(new Set());
 
-  console.log(`🔥🔥🔥 [RANKING_GRID_CRITICAL] Rendering ${displayRankings.length} Pokemon in Rankings grid`);
+  console.log(`🔥🔥🔥 [RANKING_GRID_RENDER] Rendering ${displayRankings.length} Pokemon in Rankings grid`);
 
   const handleImageLoad = (pokemonId: number) => {
     setLoadedImages(prev => new Set(prev).add(pokemonId));
@@ -50,28 +42,45 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
         const isRankedPokemon = 'score' in pokemon;
         const isImageLoaded = loadedImages.has(pokemon.id);
 
+        // CRITICAL FIX: Info button state management
+        const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
+
+        const handleInfoClick = (e: React.MouseEvent) => {
+          console.log(`🔘🔘🔘 [RANKING_INFO_CLICK_DETAILED] Info button clicked for ${pokemon.name} in Rankings`);
+          e.stopPropagation();
+          e.preventDefault();
+          
+          console.log(`🔘🔘🔘 [RANKING_INFO_MODAL_ATTEMPT] Attempting to open modal for ${pokemon.name}`);
+          setIsInfoModalOpen(true);
+          console.log(`🔘🔘🔘 [RANKING_INFO_MODAL_STATE] Modal state set to open for ${pokemon.name}`);
+        };
+
+        const handleModalOpenChange = (open: boolean) => {
+          console.log(`🔘🔘🔘 [RANKING_INFO_MODAL_CHANGE] Modal ${open ? 'opened' : 'closed'} for ${pokemon.name} in Rankings`);
+          setIsInfoModalOpen(open);
+        };
+
         return (
           <div key={pokemon.id} className="relative group">
-            {/* CRITICAL FIX: Info button with complete isolation */}
+            {/* CRITICAL FIX: Info button with complete isolation and state management */}
             <div 
-              className="absolute top-2 right-2 z-50"
-              style={{ pointerEvents: 'auto' }}
-              onPointerDown={(e) => e.stopPropagation()}
-              onPointerUp={(e) => e.stopPropagation()}
-              onClick={(e) => e.stopPropagation()}
+              className="absolute top-1 right-1 z-50"
+              style={{ 
+                pointerEvents: 'auto',
+                position: 'absolute',
+                zIndex: 9999
+              }}
             >
               <PokemonInfoModal 
                 pokemon={pokemon}
-                onOpenChange={(open) => {
-                  console.log(`🔘🔘🔘 [RANKING_INFO_CRITICAL] Modal ${open ? 'opened' : 'closed'} for ${pokemon.name} in Rankings`);
-                }}
+                onOpenChange={handleModalOpenChange}
               >
                 <button 
                   className="w-6 h-6 rounded-full bg-white hover:bg-gray-50 border border-gray-300 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-bold shadow-lg transition-all duration-200"
-                  onClick={(e) => {
-                    console.log(`🔘🔘🔘 [RANKING_INFO_CLICK_CRITICAL] Info button clicked for ${pokemon.name} in Rankings`);
+                  onClick={handleInfoClick}
+                  onPointerDown={(e) => {
+                    console.log(`🔘🔘🔘 [RANKING_INFO_POINTER_DOWN] Info button pointer down for ${pokemon.name}`);
                     e.stopPropagation();
-                    e.preventDefault();
                   }}
                   type="button"
                   data-info-button="true"
@@ -90,7 +99,7 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
               />
             )}
 
-            {/* Card with no event handlers that could interfere */}
+            {/* Card with no interfering event handlers */}
             <div className="bg-white rounded-lg border-2 border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
               {/* Rank number */}
               <div className="bg-gradient-to-r from-yellow-400 to-yellow-600 text-white text-center py-1">
@@ -123,20 +132,6 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
                 <div className="text-xs text-gray-500 text-center">
                   #{normalizedId}
                 </div>
-
-                {/* Types */}
-                {pokemon.types && pokemon.types.length > 0 && (
-                  <div className="flex flex-wrap gap-1 justify-center">
-                    {pokemon.types.map(type => (
-                      <Badge 
-                        key={type} 
-                        className={`${typeColors[type]} text-white text-xs px-1 py-0.5 h-auto`}
-                      >
-                        {type}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
 
                 {/* Score for ranked Pokemon */}
                 {isRankedPokemon && 'score' in pokemon && (
