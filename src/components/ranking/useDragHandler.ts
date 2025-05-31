@@ -17,6 +17,8 @@ export const useDragHandler = (
     const { source, destination } = result;
     
     console.log("🔄 Drag ended:", { source, destination });
+    console.log("🔄 Available Pokemon count:", availablePokemon.length);
+    console.log("🔄 Ranked Pokemon count:", rankedPokemon.length);
     
     // Dropped outside of any droppable area
     if (!destination) {
@@ -37,13 +39,13 @@ export const useDragHandler = (
         const [movedItem] = newItems.splice(source.index, 1);
         newItems.splice(destination.index, 0, movedItem);
         setAvailablePokemon(newItems);
-        console.log("🔄 Reordered within available list");
+        console.log("🔄 Reordered within available list:", movedItem.name);
       } else if (source.droppableId === "ranked") {
         const newItems = Array.from(rankedPokemon);
         const [movedItem] = newItems.splice(source.index, 1);
         newItems.splice(destination.index, 0, movedItem);
         setRankedPokemon(newItems);
-        console.log("🔄 Reordered within ranked list");
+        console.log("🔄 Reordered within ranked list:", movedItem.name);
       }
     } 
     // Moving from one list to another
@@ -56,9 +58,12 @@ export const useDragHandler = (
         const [movedItem] = sourceItems.splice(source.index, 1);
         destItems.splice(destination.index, 0, movedItem);
         
+        console.log("🔄 Moving from available to ranked:", movedItem.name);
+        console.log("🔄 New available count:", sourceItems.length);
+        console.log("🔄 New ranked count:", destItems.length);
+        
         setAvailablePokemon(sourceItems);
         setRankedPokemon(destItems);
-        console.log("🔄 Moved from available to ranked:", movedItem.name);
       } else if (source.droppableId === "ranked" && destination.droppableId === "available") {
         // Moving from ranked to available
         const sourceItems = Array.from(rankedPokemon);
@@ -67,9 +72,12 @@ export const useDragHandler = (
         const [movedItem] = sourceItems.splice(source.index, 1);
         destItems.splice(destination.index, 0, movedItem);
         
+        console.log("🔄 Moving from ranked to available:", movedItem.name);
+        console.log("🔄 New ranked count:", sourceItems.length);
+        console.log("🔄 New available count:", destItems.length);
+        
         setRankedPokemon(sourceItems);
         setAvailablePokemon(destItems);
-        console.log("🔄 Moved from ranked to available:", movedItem.name);
       }
     }
   };

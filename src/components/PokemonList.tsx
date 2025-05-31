@@ -23,11 +23,11 @@ const PokemonList: React.FC<PokemonListProps> = ({
         <div
           ref={provided.innerRef}
           {...provided.droppableProps}
-          className={`min-h-[100px] ${
+          className={`min-h-[100px] p-1 ${
             snapshot.isDraggingOver ? "bg-blue-50" : ""
           }`}
         >
-          <div className="grid grid-cols-3 gap-1 p-1">
+          <div className="grid grid-cols-3 gap-1">
             {pokemonList.map((pokemon, index) => (
               <Draggable key={pokemon.id} draggableId={pokemon.id.toString()} index={index}>
                 {(provided, snapshot) => (
@@ -40,6 +40,17 @@ const PokemonList: React.FC<PokemonListProps> = ({
                         ? "z-50 transform rotate-2 scale-105 shadow-2xl opacity-90" 
                         : "hover:shadow-md transition-shadow duration-200"
                     }`}
+                    style={{
+                      ...provided.draggableProps.style,
+                      // Ensure the dragged item maintains its size and doesn't break grid
+                      ...(snapshot.isDragging && {
+                        position: 'fixed',
+                        top: provided.draggableProps.style?.top,
+                        left: provided.draggableProps.style?.left,
+                        width: 'auto',
+                        height: 'auto'
+                      })
+                    }}
                   >
                     <PokemonCard
                       pokemon={pokemon}
