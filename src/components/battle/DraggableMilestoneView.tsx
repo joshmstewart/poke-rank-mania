@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { getPokemonBackgroundColor } from "./utils/PokemonColorUtils";
 import InfiniteScrollHandler from "./InfiniteScrollHandler";
 import PokemonInfoModal from "@/components/pokemon/PokemonInfoModal";
+import AutoBattleLogsModal from "./AutoBattleLogsModal";
 import { usePendingRefinementsManager } from "@/hooks/battle/usePendingRefinementsManager";
 import { useDragAndDrop } from "@/hooks/battle/useDragAndDrop";
 import {
@@ -168,6 +169,7 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
           <span className="text-gray-500 text-sm">
             (Showing {displayRankings.length} of {activeTier === "All" ? maxItems : Math.min(Number(activeTier), maxItems)})
           </span>
+          <AutoBattleLogsModal />
         </div>
         
         <Button 
