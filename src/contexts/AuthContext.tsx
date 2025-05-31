@@ -25,35 +25,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     console.log('🔴 AuthProvider: INITIALIZING AUTH CONTEXT');
     
-    // CRITICAL FIX: Set up auth listener FIRST, then get initial session
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('🔴 AuthProvider: Auth state change event:', {
-          event,
-          hasSession: !!session,
-          hasUser: !!session?.user,
-          userEmail: session?.user?.email,
-          userId: session?.user?.id
-        });
-        
-        // Update state immediately
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        // Only set loading to false after we've processed the auth state
-        if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
-          setLoading(false);
-        }
-        
-        console.log('🔴 AuthProvider: Updated state after auth change:', {
-          userSet: !!session?.user,
-          sessionSet: !!session,
-          loading: false
-        });
-      }
-    );
-
-    // Get initial session after setting up the listener
+    // Get initial session first
     const getInitialSession = async () => {
       try {
         console.log('🔴 AuthProvider: Getting initial session...');
@@ -86,7 +58,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     };
 
-    // Start the initialization
+    // Set up auth listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('🔴 AuthProvider: Auth state change event:', {
+          event,
+          hasSession: !!session,
+          hasUser: !!session?.user,
+          userEmail: session?.user?.email,
+          userId: session?.user?.id
+        });
+        
+        // Update state immediately
+        setSession(session);
+        setUser(session?.user ?? null);
+        setLoading(false);
+        
+        console.log('🔴 AuthProvider: Updated state after auth change:', {
+          userSet: !!session?.user,
+          sessionSet: !!session,
+          loading: false
+        });
+      }
+    );
+
+    // Get initial session
     getInitialSession();
 
     return () => {
