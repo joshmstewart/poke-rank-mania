@@ -1,5 +1,5 @@
 
-import React, { createContext, useRef } from 'react';
+import React, { createContext, useRef, useEffect } from 'react';
 import { AuthContextType } from './types';
 import { authService } from './authService';
 import { useAuthState } from './useAuthState';
@@ -10,20 +10,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { user, session, loading } = useAuthState();
   
   // Use a ref to track if this is the same provider instance
-  const providerInstanceRef = useRef(Math.random());
+  const providerInstanceRef = useRef(Math.random().toString(36).substring(7));
 
-  console.log('🔴 AuthProvider: COMPONENT RENDER START - every render should show this');
-  console.log('🔴 AuthProvider: Provider instance ID:', providerInstanceRef.current);
-  console.log('🔴 AuthProvider: Current state at render start:', {
+  console.log('🔴🔴🔴 AUTH_PROVIDER: ===== PROVIDER RENDER START =====');
+  console.log('🔴🔴🔴 AUTH_PROVIDER: Provider instance ID:', providerInstanceRef.current);
+  console.log('🔴🔴🔴 AUTH_PROVIDER: Current state at render start:', {
     hasUser: !!user,
     hasSession: !!session,
     loading,
     userEmail: user?.email,
     timestamp: new Date().toISOString()
   });
-  console.log('🔴 AuthProvider: 🚨 PROVIDER MUST REMAIN STABLE THROUGHOUT AUTH CHANGES 🚨');
+  console.log('🔴🔴🔴 AUTH_PROVIDER: 🚨 PROVIDER MUST REMAIN STABLE THROUGHOUT AUTH CHANGES 🚨');
 
-  const value = {
+  useEffect(() => {
+    console.log('🔴🔴🔴 AUTH_PROVIDER: ===== PROVIDER MOUNT EFFECT =====');
+    console.log('🔴🔴🔴 AUTH_PROVIDER: Provider mounted with instance:', providerInstanceRef.current);
+    console.log('🔴🔴🔴 AUTH_PROVIDER: 🟢 PROVIDER IS MOUNTED AND SHOULD STAY STABLE 🟢');
+    
+    return () => {
+      console.log('🔴🔴🔴 AUTH_PROVIDER: ===== PROVIDER UNMOUNT DETECTED =====');
+      console.log('🔴🔴🔴 AUTH_PROVIDER: 🚨🚨🚨 PROVIDER UNMOUNTING - THIS INDICATES ROOT CAUSE 🚨🚨🚨');
+      console.log('🔴🔴🔴 AUTH_PROVIDER: Provider instance unmounting:', providerInstanceRef.current);
+    };
+  }, []);
+
+  const value = React.useMemo(() => ({
     user,
     session,
     loading,
@@ -33,9 +45,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signInWithGoogle: authService.signInWithGoogle,
     signInWithPhone: authService.signInWithPhone,
     verifyPhoneOtp: authService.verifyPhoneOtp,
-  };
+  }), [user, session, loading]);
 
-  console.log('🔴 AuthProvider: RENDER END - About to return JSX with context value:', {
+  console.log('🔴🔴🔴 AUTH_PROVIDER: ===== RENDER END =====');
+  console.log('🔴🔴🔴 AUTH_PROVIDER: About to return JSX with context value:', {
     hasUser: !!user,
     hasSession: !!session,
     loading,
@@ -44,7 +57,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     timestamp: new Date().toISOString()
   });
 
-  console.log('🔴 AuthProvider: 🚨🚨🚨 RETURNING JSX - this should ALWAYS appear 🚨🚨🚨');
+  console.log('🔴🔴🔴 AUTH_PROVIDER: 🚨🚨🚨 RETURNING JSX - this should ALWAYS appear 🚨🚨🚨');
 
   return (
     <AuthContext.Provider value={value}>

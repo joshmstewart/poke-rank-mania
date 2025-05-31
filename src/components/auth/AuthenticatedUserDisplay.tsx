@@ -14,8 +14,8 @@ export const AuthenticatedUserDisplay: React.FC = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
 
-  console.log('🔵🔵🔵 AuthenticatedUserDisplay: ===== COMPONENT RENDER START =====');
-  console.log('🔵🔵🔵 AuthenticatedUserDisplay: Auth state received:', {
+  console.log('🔵🔵🔵 AUTHENTICATED_USER_DISPLAY: ===== COMPONENT RENDER START =====');
+  console.log('🔵🔵🔵 AUTHENTICATED_USER_DISPLAY: Auth state received:', {
     hasUser: !!user,
     hasSession: !!session,
     userEmail: user?.email || 'no email',
@@ -28,7 +28,7 @@ export const AuthenticatedUserDisplay: React.FC = () => {
   // Get the current user from either user or session
   const currentUser = user || session?.user;
   
-  console.log('🔵🔵🔵 AuthenticatedUserDisplay: CurrentUser determination:', {
+  console.log('🔵🔵🔵 AUTHENTICATED_USER_DISPLAY: CurrentUser determination:', {
     currentUser: !!currentUser,
     fromUser: !!user,
     fromSession: !!session?.user,
@@ -41,7 +41,7 @@ export const AuthenticatedUserDisplay: React.FC = () => {
   const displayName = profile?.display_name || profile?.username || currentUser?.email?.split('@')[0] || 'Loading...';
   const avatarUrl = profile?.avatar_url;
 
-  console.log('🔵🔵🔵 AuthenticatedUserDisplay: Display values computed:', {
+  console.log('🔵🔵🔵 AUTHENTICATED_USER_DISPLAY: Display values computed:', {
     displayName,
     displayEmail,
     avatarUrl: avatarUrl || 'no avatar',
@@ -50,29 +50,29 @@ export const AuthenticatedUserDisplay: React.FC = () => {
   });
 
   useEffect(() => {
-    console.log('🔵🔵🔵 AuthenticatedUserDisplay: UseEffect triggered for profile loading');
+    console.log('🔵🔵🔵 AUTHENTICATED_USER_DISPLAY: UseEffect triggered for profile loading');
     // Load profile if we have either user or session
     if (currentUser?.id) {
-      console.log('🔵🔵🔵 AuthenticatedUserDisplay: Loading profile for user ID:', currentUser.id);
+      console.log('🔵🔵🔵 AUTHENTICATED_USER_DISPLAY: Loading profile for user ID:', currentUser.id);
       loadProfile(currentUser.id);
     } else {
-      console.log('🔵🔵🔵 AuthenticatedUserDisplay: No user ID available for profile loading');
+      console.log('🔵🔵🔵 AUTHENTICATED_USER_DISPLAY: No user ID available for profile loading');
     }
   }, [user, session]);
 
   const loadProfile = async (userId: string) => {
-    console.log('🔵🔵🔵 AuthenticatedUserDisplay: Loading profile for user:', userId);
+    console.log('🔵🔵🔵 AUTHENTICATED_USER_DISPLAY: Loading profile for user:', userId);
     try {
       const profileData = await getProfile(userId);
       setProfile(profileData);
-      console.log('🔵🔵🔵 AuthenticatedUserDisplay: Profile loaded successfully:', profileData);
+      console.log('🔵🔵🔵 AUTHENTICATED_USER_DISPLAY: Profile loaded successfully:', profileData);
     } catch (error) {
-      console.error('🔵🔵🔵 AuthenticatedUserDisplay: Error loading profile:', error);
+      console.error('🔵🔵🔵 AUTHENTICATED_USER_DISPLAY: Error loading profile:', error);
     }
   };
 
   const handleSignOut = async () => {
-    console.log('🔵🔵🔵 AuthenticatedUserDisplay: Signing out...');
+    console.log('🔵🔵🔵 AUTHENTICATED_USER_DISPLAY: Signing out...');
     await signOut();
     toast({
       title: 'Signed out',
@@ -87,8 +87,8 @@ export const AuthenticatedUserDisplay: React.FC = () => {
     }
   };
 
-  console.log('🔵🔵🔵 AuthenticatedUserDisplay: 🟢 ALWAYS RENDERING COMPONENT STRUCTURE 🟢');
-  console.log('🔵🔵🔵 AuthenticatedUserDisplay: About to render JSX with values:', {
+  console.log('🔵🔵🔵 AUTHENTICATED_USER_DISPLAY: 🟢 ALWAYS RENDERING COMPONENT STRUCTURE 🟢');
+  console.log('🔵🔵🔵 AUTHENTICATED_USER_DISPLAY: About to render JSX with values:', {
     displayName,
     displayEmail,
     hasAvatar: !!avatarUrl

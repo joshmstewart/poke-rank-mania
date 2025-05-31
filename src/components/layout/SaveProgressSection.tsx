@@ -7,11 +7,11 @@ import { Check } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 const SaveProgressSection: React.FC = () => {
-  console.log('🚨🚨🚨 SaveProgressSection: ===== COMPONENT RENDER START =====');
+  console.log('🚨🚨🚨 SAVE_PROGRESS_SECTION: ===== COMPONENT RENDER START =====');
   
   const { user, loading, session } = useAuth();
 
-  console.log('🚨🚨🚨 SaveProgressSection: Auth state received from useAuth:', {
+  console.log('🚨🚨🚨 SAVE_PROGRESS_SECTION: Auth state received from useAuth:', {
     hasUser: !!user,
     hasSession: !!session,
     loading,
@@ -23,7 +23,7 @@ const SaveProgressSection: React.FC = () => {
   });
 
   if (loading) {
-    console.log('🚨🚨🚨 SaveProgressSection: 🔄 RETURNING LOADING STATE 🔄');
+    console.log('🚨🚨🚨 SAVE_PROGRESS_SECTION: 🔄 RETURNING LOADING STATE 🔄');
     return (
       <div className="flex items-center justify-center py-4">
         <div className="animate-pulse bg-gray-200 h-8 w-24 rounded"></div>
@@ -34,7 +34,7 @@ const SaveProgressSection: React.FC = () => {
   // Show authenticated display if we have EITHER user OR session with user
   const isAuthenticated = !!user || !!session?.user;
   
-  console.log('🚨🚨🚨 SaveProgressSection: Authentication decision logic:', {
+  console.log('🚨🚨🚨 SAVE_PROGRESS_SECTION: Authentication decision logic:', {
     isAuthenticated,
     hasUser: !!user,
     hasSessionUser: !!session?.user,
@@ -46,8 +46,8 @@ const SaveProgressSection: React.FC = () => {
   });
   
   if (isAuthenticated) {
-    console.log('🚨🚨🚨 SaveProgressSection: 🟢 AUTHENTICATED - RENDERING AuthenticatedUserDisplay 🟢');
-    console.log('🚨🚨🚨 SaveProgressSection: User data being passed to AuthenticatedUserDisplay:', {
+    console.log('🚨🚨🚨 SAVE_PROGRESS_SECTION: 🟢 AUTHENTICATED - RENDERING AuthenticatedUserDisplay 🟢');
+    console.log('🚨🚨🚨 SAVE_PROGRESS_SECTION: User data being passed to AuthenticatedUserDisplay:', {
       user: user ? 'present' : 'null',
       session: session ? 'present' : 'null',
       userEmail: user?.email || session?.user?.email || 'no email'
@@ -66,7 +66,7 @@ const SaveProgressSection: React.FC = () => {
     );
   }
 
-  console.log('🚨🚨🚨 SaveProgressSection: 🔴 NOT AUTHENTICATED - RENDERING CloudSyncButton 🔴');
+  console.log('🚨🚨🚨 SAVE_PROGRESS_SECTION: 🔴 NOT AUTHENTICATED - RENDERING CloudSyncButton 🔴');
   return <CloudSyncButton />;
 };
 

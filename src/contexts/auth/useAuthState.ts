@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -8,166 +8,164 @@ export const useAuthState = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   
-  // Use refs to prevent unnecessary re-renders that could cause unmounting
-  const stateStable = useRef(false);
-  const authListenerSet = useRef(false);
+  // Critical refs to prevent component unmounting
   const mountedRef = useRef(true);
+  const authListenerRef = useRef<any>(null);
+  const stateInitializedRef = useRef(false);
+  const hookInstanceRef = useRef(Math.random().toString(36).substring(7));
 
-  console.log('🔴 useAuthState: HOOK INITIALIZED - STABLE INSTANCE');
-  console.log('🔴 useAuthState: Current state at init:', {
+  console.log('🔴🔴🔴 USE_AUTH_STATE: ===== HOOK INITIALIZED =====');
+  console.log('🔴🔴🔴 USE_AUTH_STATE: Hook instance ID:', hookInstanceRef.current);
+  console.log('🔴🔴🔴 USE_AUTH_STATE: Current state at init:', {
     hasUser: !!user,
     hasSession: !!session,
     loading,
     userEmail: user?.email,
-    stateStable: stateStable.current,
     timestamp: new Date().toISOString()
   });
 
-  // Use useCallback to ensure stable auth state handler
+  // Stable auth state handler that won't cause unmounting
   const handleAuthStateChange = useCallback((event: any, session: Session | null) => {
     if (!mountedRef.current) {
-      console.log('🔴 useAuthState: Component unmounted, ignoring auth state change');
+      console.log('🔴🔴🔴 USE_AUTH_STATE: Component unmounted, ignoring auth state change');
       return;
     }
 
-    console.log('🔴 useAuthState: ⚠️⚠️⚠️ AUTH STATE CHANGE EVENT TRIGGERED ⚠️⚠️⚠️');
-    console.log('🔴 useAuthState: Event type:', event);
-    console.log('🔴 useAuthState: Session in callback:', {
+    console.log('🔴🔴🔴 USE_AUTH_STATE: ⚠️⚠️⚠️ AUTH STATE CHANGE EVENT TRIGGERED ⚠️⚠️⚠️');
+    console.log('🔴🔴🔴 USE_AUTH_STATE: Event type:', event);
+    console.log('🔴🔴🔴 USE_AUTH_STATE: Hook instance handling event:', hookInstanceRef.current);
+    console.log('🔴🔴🔴 USE_AUTH_STATE: Session in callback:', {
       hasSession: !!session,
       hasUser: !!session?.user,
       userEmail: session?.user?.email,
       userId: session?.user?.id,
-      sessionAccessToken: session?.access_token ? 'present' : 'missing',
-      sessionRefreshToken: session?.refresh_token ? 'present' : 'missing',
       timestamp: new Date().toISOString()
     });
     
-    console.log('🔴 useAuthState: About to update state - CRITICAL POINT');
-    console.log('🔴 useAuthState: Previous state before update:', {
+    console.log('🔴🔴🔴 USE_AUTH_STATE: About to update state - CRITICAL POINT');
+    console.log('🔴🔴🔴 USE_AUTH_STATE: Previous state before update:', {
       hadUser: !!user,
       hadSession: !!session,
       wasLoading: loading
     });
     
-    // Use React.startTransition to prevent UI blocking during auth updates
-    React.startTransition(() => {
-      if (!mountedRef.current) return;
+    // CRITICAL: Use synchronous state updates to prevent component tree destruction
+    if (mountedRef.current) {
+      console.log('🔴🔴🔴 USE_AUTH_STATE: 🚨 SETTING NEW STATE VALUES SYNCHRONOUSLY 🚨');
+      console.log('🔴🔴🔴 USE_AUTH_STATE: New user:', !!session?.user, session?.user?.email);
+      console.log('🔴🔴🔴 USE_AUTH_STATE: New session:', !!session);
       
-      console.log('🔴 useAuthState: 🚨 SETTING NEW STATE VALUES 🚨');
-      console.log('🔴 useAuthState: New user:', !!session?.user, session?.user?.email);
-      console.log('🔴 useAuthState: New session:', !!session);
-      
-      // Update state synchronously without causing unmounting
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
-      stateStable.current = true;
+      stateInitializedRef.current = true;
       
-      console.log('🔴 useAuthState: State updated successfully:', {
+      console.log('🔴🔴🔴 USE_AUTH_STATE: State updated successfully:', {
         userSet: !!session?.user,
         sessionSet: !!session,
         loading: false,
-        stateStable: stateStable.current,
+        stateInitialized: stateInitializedRef.current,
+        hookInstance: hookInstanceRef.current,
         timestamp: new Date().toISOString()
       });
-    });
+    }
 
-    console.log('🔴 useAuthState: ⚠️⚠️⚠️ AUTH STATE CHANGE COMPLETE ⚠️⚠️⚠️');
+    console.log('🔴🔴🔴 USE_AUTH_STATE: ⚠️⚠️⚠️ AUTH STATE CHANGE COMPLETE ⚠️⚠️⚠️');
   }, [user, session, loading]);
 
   useEffect(() => {
-    console.log('🔴 useAuthState: USEEFFECT STARTING - this should only show once on mount');
-    console.log('🔴 useAuthState: Auth listener already set?', authListenerSet.current);
+    console.log('🔴🔴🔴 USE_AUTH_STATE: ===== USEEFFECT STARTING =====');
+    console.log('🔴🔴🔴 USE_AUTH_STATE: Hook instance in effect:', hookInstanceRef.current);
+    console.log('🔴🔴🔴 USE_AUTH_STATE: Auth listener already set?', !!authListenerRef.current);
     
     mountedRef.current = true;
     
     // Prevent multiple listeners
-    if (authListenerSet.current) {
-      console.log('🔴 useAuthState: Auth listener already exists, skipping setup');
+    if (authListenerRef.current) {
+      console.log('🔴🔴🔴 USE_AUTH_STATE: Auth listener already exists, skipping setup');
       return;
     }
     
-    // Set up auth state listener FIRST
+    console.log('🔴🔴🔴 USE_AUTH_STATE: Setting up auth listener...');
+    
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthStateChange);
+    authListenerRef.current = subscription;
 
-    authListenerSet.current = true;
-    console.log('🔴 useAuthState: Auth listener set up, now getting initial session...');
+    console.log('🔴🔴🔴 USE_AUTH_STATE: Auth listener set up, now getting initial session...');
 
-    // THEN get initial session
+    // Get initial session
     const getInitialSession = async () => {
       try {
-        console.log('🔴 useAuthState: Calling supabase.auth.getSession()...');
+        console.log('🔴🔴🔴 USE_AUTH_STATE: Calling supabase.auth.getSession()...');
         const { data: { session }, error } = await supabase.auth.getSession();
         
-        console.log('🔴 useAuthState: Initial session response:', {
+        console.log('🔴🔴🔴 USE_AUTH_STATE: Initial session response:', {
           hasSession: !!session,
           hasUser: !!session?.user,
           userEmail: session?.user?.email,
           userId: session?.user?.id,
-          sessionAccessToken: session?.access_token ? 'present' : 'missing',
-          sessionRefreshToken: session?.refresh_token ? 'present' : 'missing',
           error: error?.message,
+          hookInstance: hookInstanceRef.current,
           timestamp: new Date().toISOString()
         });
         
         if (error) {
-          console.error('🔴 useAuthState: Error getting initial session:', error);
+          console.error('🔴🔴🔴 USE_AUTH_STATE: Error getting initial session:', error);
         }
         
         if (!mountedRef.current) return;
         
-        console.log('🔴 useAuthState: About to set initial state...');
+        console.log('🔴🔴🔴 USE_AUTH_STATE: About to set initial state synchronously...');
         
-        // Update state with initial session
-        React.startTransition(() => {
-          if (!mountedRef.current) return;
-          
-          setSession(session);
-          setUser(session?.user ?? null);
-          setLoading(false);
-          stateStable.current = true;
-          
-          console.log('🔴 useAuthState: Initial state set:', {
-            user: !!session?.user, 
-            session: !!session,
-            loading: false,
-            stateStable: stateStable.current,
-            timestamp: new Date().toISOString()
-          });
+        // Update state with initial session synchronously
+        setSession(session);
+        setUser(session?.user ?? null);
+        setLoading(false);
+        stateInitializedRef.current = true;
+        
+        console.log('🔴🔴🔴 USE_AUTH_STATE: Initial state set:', {
+          user: !!session?.user, 
+          session: !!session,
+          loading: false,
+          stateInitialized: stateInitializedRef.current,
+          hookInstance: hookInstanceRef.current,
+          timestamp: new Date().toISOString()
         });
         
       } catch (err) {
-        console.error('🔴 useAuthState: Exception during initial auth check:', err);
+        console.error('🔴🔴🔴 USE_AUTH_STATE: Exception during initial auth check:', err);
         if (mountedRef.current) {
-          React.startTransition(() => {
-            setSession(null);
-            setUser(null);
-            setLoading(false);
-            stateStable.current = true;
-          });
+          setSession(null);
+          setUser(null);
+          setLoading(false);
+          stateInitializedRef.current = true;
         }
       }
     };
 
-    // Get initial session
     getInitialSession();
 
-    console.log('🔴 useAuthState: Initial session check started, returning cleanup function');
+    console.log('🔴🔴🔴 USE_AUTH_STATE: Initial session check started, returning cleanup function');
 
     return () => {
-      console.log('🔴 useAuthState: CLEANUP - Unsubscribing auth listener');
+      console.log('🔴🔴🔴 USE_AUTH_STATE: ===== CLEANUP TRIGGERED =====');
+      console.log('🔴🔴🔴 USE_AUTH_STATE: Hook instance cleaning up:', hookInstanceRef.current);
       mountedRef.current = false;
-      authListenerSet.current = false;
-      subscription.unsubscribe();
+      if (authListenerRef.current) {
+        authListenerRef.current.unsubscribe();
+        authListenerRef.current = null;
+      }
     };
   }, []); // Empty dependency array to ensure this only runs once
 
-  console.log('🔴 useAuthState: Hook returning values:', {
+  console.log('🔴🔴🔴 USE_AUTH_STATE: Hook returning values:', {
     hasUser: !!user,
     hasSession: !!session,
     loading,
-    stateStable: stateStable.current,
+    stateInitialized: stateInitializedRef.current,
     userEmail: user?.email,
+    hookInstance: hookInstanceRef.current,
     timestamp: new Date().toISOString()
   });
 

@@ -12,7 +12,7 @@ function AppContent() {
   const [mode, setMode] = useLocalStorage<"rank" | "battle">("pokemon-ranker-mode", "battle");
   const renderCount = useRef(0);
   const mountTime = useRef(new Date().toISOString());
-  const stableInstance = useRef(Math.random());
+  const stableInstance = useRef(Math.random().toString(36).substring(7));
 
   // Track renders and mount/unmount
   renderCount.current += 1;
@@ -26,16 +26,18 @@ function AppContent() {
   console.log('🚀🚀🚀 APP_CONTENT: 🔥 THIS COMPONENT MUST NEVER DISAPPEAR AFTER AUTH 🔥');
 
   useEffect(() => {
-    console.log('🚀🚀🚀 APP_CONTENT: ===== MOUNT EFFECT =====');
+    console.log('🚀🚀🚀 APP_CONTENT: ===== MOUNT EFFECT TRIGGERED =====');
     console.log('🚀🚀🚀 APP_CONTENT: Component mounted at:', new Date().toISOString());
     console.log('🚀🚀🚀 APP_CONTENT: Stable instance ID on mount:', stableInstance.current);
+    console.log('🚀🚀🚀 APP_CONTENT: 🟢 COMPONENT IS NOW MOUNTED AND SHOULD STAY MOUNTED 🟢');
     
     return () => {
-      console.log('🚀🚀🚀 APP_CONTENT: ===== UNMOUNT DETECTED =====');
+      console.log('🚀🚀🚀 APP_CONTENT: ===== UNMOUNT DETECTED - CRITICAL ERROR =====');
       console.log('🚀🚀🚀 APP_CONTENT: 🚨🚨🚨 COMPONENT IS UNMOUNTING - THIS SHOULD NOT HAPPEN AFTER AUTH 🚨🚨🚨');
       console.log('🚀🚀🚀 APP_CONTENT: Unmounting at:', new Date().toISOString());
       console.log('🚀🚀🚀 APP_CONTENT: Was mounted at:', mountTime.current);
       console.log('🚀🚀🚀 APP_CONTENT: Stable instance that unmounted:', stableInstance.current);
+      console.log('🚀🚀🚀 APP_CONTENT: This indicates the auth system is causing component tree destruction');
     };
   }, []);
 
@@ -83,31 +85,32 @@ function AppContent() {
 function App() {
   const renderCount = useRef(0);
   const mountTime = useRef(new Date().toISOString());
-  const stableRootInstance = useRef(Math.random());
+  const stableRootInstance = useRef(Math.random().toString(36).substring(7));
   
   renderCount.current += 1;
 
-  console.log('🚀🚀🚀 APP: ===== ROOT APP RENDER START =====');
-  console.log('🚀🚀🚀 APP: Stable root instance ID:', stableRootInstance.current);
-  console.log('🚀🚀🚀 APP: Render count:', renderCount.current);
-  console.log('🚀🚀🚀 APP: Mount time:', mountTime.current);
-  console.log('🚀🚀🚀 APP: Timestamp:', new Date().toISOString());
-  console.log('🚀🚀🚀 APP: 🚨 ROOT COMPONENT RENDERING 🚨');
+  console.log('🚀🚀🚀 ROOT_APP: ===== ROOT APP RENDER START =====');
+  console.log('🚀🚀🚀 ROOT_APP: Stable root instance ID:', stableRootInstance.current);
+  console.log('🚀🚀🚀 ROOT_APP: Render count:', renderCount.current);
+  console.log('🚀🚀🚀 ROOT_APP: Mount time:', mountTime.current);
+  console.log('🚀🚀🚀 ROOT_APP: Timestamp:', new Date().toISOString());
+  console.log('🚀🚀🚀 ROOT_APP: 🚨 ROOT COMPONENT RENDERING 🚨');
   
   useEffect(() => {
-    console.log('🚀🚀🚀 APP: ===== ROOT MOUNT EFFECT =====');
-    console.log('🚀🚀🚀 APP: Root component mounted at:', new Date().toISOString());
-    console.log('🚀🚀🚀 APP: Stable root instance on mount:', stableRootInstance.current);
+    console.log('🚀🚀🚀 ROOT_APP: ===== ROOT MOUNT EFFECT =====');
+    console.log('🚀🚀🚀 ROOT_APP: Root component mounted at:', new Date().toISOString());
+    console.log('🚀🚀🚀 ROOT_APP: Stable root instance on mount:', stableRootInstance.current);
+    console.log('🚀🚀🚀 ROOT_APP: 🟢 ROOT IS MOUNTED - SHOULD STAY STABLE 🟢');
     
     return () => {
-      console.log('🚀🚀🚀 APP: ===== ROOT UNMOUNT DETECTED =====');
-      console.log('🚀🚀🚀 APP: 🚨🚨🚨 ROOT COMPONENT UNMOUNTING 🚨🚨🚨');
-      console.log('🚀🚀🚀 APP: Root unmounting at:', new Date().toISOString());
-      console.log('🚀🚀🚀 APP: Root instance that unmounted:', stableRootInstance.current);
+      console.log('🚀🚀🚀 ROOT_APP: ===== ROOT UNMOUNT DETECTED =====');
+      console.log('🚀🚀🚀 ROOT_APP: 🚨🚨🚨 ROOT COMPONENT UNMOUNTING - CRITICAL ERROR 🚨🚨🚨');
+      console.log('🚀🚀🚀 ROOT_APP: Root unmounting at:', new Date().toISOString());
+      console.log('🚀🚀🚀 ROOT_APP: Root instance that unmounted:', stableRootInstance.current);
     };
   }, []);
   
-  console.log('🚀🚀🚀 APP: About to render AuthWrapper and AppContent');
+  console.log('🚀🚀🚀 ROOT_APP: About to render AuthWrapper and AppContent');
   
   return (
     <div className="app-root">
