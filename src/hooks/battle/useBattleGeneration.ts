@@ -12,18 +12,40 @@ export const useBattleGeneration = (allPokemon: Pokemon[]) => {
     
     console.log(`🎲🎲🎲 [BATTLE_GENERATION_DEBUG] ===== Battle #${battleNumber} Generation =====`);
     console.log(`🎲🎲🎲 [BATTLE_GENERATION_DEBUG] Battle size: ${battleSize}`);
-    console.log(`🎲🎲🎲 [BATTLE_GENERATION_DEBUG] Total Pokemon: ${allPokemon.length}`);
+    console.log(`🎲🎲🎲 [BATTLE_GENERATION_DEBUG] Total Pokemon received: ${allPokemon.length}`);
     
-    // Log Pokemon ID ranges for debugging
-    const pokemonIds = allPokemon.map(p => p.id);
-    const minId = Math.min(...pokemonIds);
-    const maxId = Math.max(...pokemonIds);
-    console.log(`🎲🎲🎲 [BATTLE_GENERATION_DEBUG] Pokemon ID range: ${minId} - ${maxId}`);
-    console.log(`🎲🎲🎲 [BATTLE_GENERATION_DEBUG] First 10 Pokemon IDs: [${pokemonIds.slice(0, 10).join(', ')}]`);
-    console.log(`🎲🎲🎲 [BATTLE_GENERATION_DEBUG] Last 10 Pokemon IDs: [${pokemonIds.slice(-10).join(', ')}]`);
+    // COMPREHENSIVE DEBUGGING: Analyze the input Pokemon dataset
+    if (allPokemon.length > 0) {
+      const pokemonIds = allPokemon.map(p => p.id);
+      const minId = Math.min(...pokemonIds);
+      const maxId = Math.max(...pokemonIds);
+      console.log(`🎲🎲🎲 [INPUT_ANALYSIS] Pokemon ID range: ${minId} - ${maxId}`);
+      
+      // Detailed distribution analysis
+      const distributions = {
+        '1-150': pokemonIds.filter(id => id >= 1 && id <= 150).length,
+        '151-300': pokemonIds.filter(id => id >= 151 && id <= 300).length,
+        '301-450': pokemonIds.filter(id => id >= 301 && id <= 450).length,
+        '451-600': pokemonIds.filter(id => id >= 451 && id <= 600).length,
+        '601-750': pokemonIds.filter(id => id >= 601 && id <= 750).length,
+        '751-900': pokemonIds.filter(id => id >= 751 && id <= 900).length,
+        '901-1025': pokemonIds.filter(id => id >= 901 && id <= 1025).length,
+        '1026+': pokemonIds.filter(id => id >= 1026).length,
+      };
+      console.log(`🎲🎲🎲 [INPUT_ANALYSIS] Pokemon distribution by ID ranges:`, distributions);
+      
+      // Sample Pokemon from different ranges
+      const sampleLow = allPokemon.filter(p => p.id <= 150).slice(0, 3).map(p => `${p.name}(${p.id})`);
+      const sampleMid = allPokemon.filter(p => p.id >= 400 && p.id <= 600).slice(0, 3).map(p => `${p.name}(${p.id})`);
+      const sampleHigh = allPokemon.filter(p => p.id >= 800).slice(0, 3).map(p => `${p.name}(${p.id})`);
+      
+      console.log(`🎲🎲🎲 [INPUT_ANALYSIS] Sample low ID Pokemon: [${sampleLow.join(', ')}]`);
+      console.log(`🎲🎲🎲 [INPUT_ANALYSIS] Sample mid ID Pokemon: [${sampleMid.join(', ')}]`);
+      console.log(`🎲🎲🎲 [INPUT_ANALYSIS] Sample high ID Pokemon: [${sampleHigh.join(', ')}]`);
+    }
     
     console.log(`🎲🎲🎲 [BATTLE_GENERATION_DEBUG] Recently used Pokemon count: ${recentlyUsedPokemon.size}`);
-    console.log(`🎲🎲🎲 [BATTLE_GENERATION_DEBUG] Recently used IDs: [${Array.from(recentlyUsedPokemon).join(', ')}]`);
+    console.log(`🎲🎲🎲 [BATTLE_GENERATION_DEBUG] Recently used IDs: [${Array.from(recentlyUsedPokemon).slice(0, 10).join(', ')}${recentlyUsedPokemon.size > 10 ? '...' : ''}]`);
     
     // CRITICAL FIX: Check for refinement battles FIRST and consume them properly
     if (refinementQueue && refinementQueue.hasRefinementBattles && refinementQueue.refinementBattleCount > 0) {
@@ -47,8 +69,6 @@ export const useBattleGeneration = (allPokemon: Pokemon[]) => {
           console.log(`🎯 [REFINEMENT_PRIORITY] ✅ RETURNING REFINEMENT BATTLE: ${validated.map(p => p.name).join(' vs ')}`);
           console.log(`🎯 [REFINEMENT_PRIORITY] Reason: ${nextRefinement.reason}`);
           
-          // CRITICAL FIX: Mark this refinement as consumed but DON'T dispatch completion yet
-          // The completion should only be dispatched when the user actually makes a choice
           setTimeout(() => {
             console.log(`🎯 [REFINEMENT_CONSUMPTION] Consuming refinement battle from queue`);
             refinementQueue.popRefinementBattle();
@@ -59,15 +79,11 @@ export const useBattleGeneration = (allPokemon: Pokemon[]) => {
         } else {
           console.error(`🎯 [REFINEMENT_PRIORITY] ❌ Could not find Pokemon for refinement - removing from queue`);
           refinementQueue.popRefinementBattle();
-          // Try again recursively
           return generateNewBattle(battleType, battlesCompleted, refinementQueue);
         }
       }
     } else {
       console.log(`🎯 [REFINEMENT_PRIORITY] No refinement battles available - proceeding with regular generation`);
-      if (refinementQueue) {
-        console.log(`🎯 [REFINEMENT_PRIORITY] Queue state: hasRefinementBattles=${refinementQueue.hasRefinementBattles}, count=${refinementQueue.refinementBattleCount}`);
-      }
     }
     
     if (!allPokemon || allPokemon.length < battleSize) {
@@ -75,58 +91,91 @@ export const useBattleGeneration = (allPokemon: Pokemon[]) => {
       return [];
     }
     
-    // Step 1: Filter out recently used Pokemon FIRST
+    // Step 1: Filter out recently used Pokemon
     let availablePokemon = allPokemon.filter(pokemon => !recentlyUsedPokemon.has(pokemon.id));
-    console.log(`🎲🎲🎲 [BATTLE_GENERATION_DEBUG] Available after filtering recent: ${availablePokemon.length}`);
+    console.log(`🎲🎲🎲 [FILTERING_TRACE] Available after filtering recent: ${availablePokemon.length}`);
     
-    // Debug: Log ID ranges of available Pokemon
+    // CRITICAL DEBUG: Analyze the available Pokemon distribution after recent filtering
     if (availablePokemon.length > 0) {
       const availableIds = availablePokemon.map(p => p.id);
       const availableMinId = Math.min(...availableIds);
       const availableMaxId = Math.max(...availableIds);
-      console.log(`🎲🎲🎲 [BATTLE_GENERATION_DEBUG] Available Pokemon ID range: ${availableMinId} - ${availableMaxId}`);
-      console.log(`🎲🎲🎲 [BATTLE_GENERATION_DEBUG] Available sample IDs: [${availableIds.slice(0, 20).join(', ')}]`);
+      console.log(`🎲🎲🎲 [FILTERING_TRACE] Available Pokemon ID range: ${availableMinId} - ${availableMaxId}`);
+      
+      const availableDistributions = {
+        '1-150': availableIds.filter(id => id >= 1 && id <= 150).length,
+        '151-300': availableIds.filter(id => id >= 151 && id <= 300).length,
+        '301-450': availableIds.filter(id => id >= 301 && id <= 450).length,
+        '451-600': availableIds.filter(id => id >= 451 && id <= 600).length,
+        '601-750': availableIds.filter(id => id >= 601 && id <= 750).length,
+        '751-900': availableIds.filter(id => id >= 751 && id <= 900).length,
+        '901-1025': availableIds.filter(id => id >= 901 && id <= 1025).length,
+        '1026+': availableIds.filter(id => id >= 1026).length,
+      };
+      console.log(`🎲🎲🎲 [FILTERING_TRACE] Available distribution after recent filter:`, availableDistributions);
     }
     
-    // Step 2: If not enough available, reduce the recent list size
+    // Step 2: Handle insufficient available Pokemon
     if (availablePokemon.length < battleSize) {
-      console.log(`🎲🎲🎲 [BATTLE_GENERATION_DEBUG] Not enough non-recent Pokemon, reducing recent list`);
+      console.log(`🎲🎲🎲 [FILTERING_TRACE] Not enough non-recent Pokemon, reducing recent list`);
       
-      // Keep only the last 10 instead of 20
       const recentArray = Array.from(recentlyUsedPokemon);
       const reducedRecent = new Set(recentArray.slice(-10));
       setRecentlyUsedPokemon(reducedRecent);
       
       availablePokemon = allPokemon.filter(pokemon => !reducedRecent.has(pokemon.id));
-      console.log(`🎲🎲🎲 [BATTLE_GENERATION_DEBUG] Available after reducing recent list: ${availablePokemon.length}`);
+      console.log(`🎲🎲🎲 [FILTERING_TRACE] Available after reducing recent list: ${availablePokemon.length}`);
       
-      // If still not enough, clear recent list completely
       if (availablePokemon.length < battleSize) {
-        console.log(`🎲🎲🎲 [BATTLE_GENERATION_DEBUG] Still not enough, clearing recent list completely`);
+        console.log(`🎲🎲🎲 [FILTERING_TRACE] Still not enough, clearing recent list completely`);
         setRecentlyUsedPokemon(new Set());
         availablePokemon = [...allPokemon];
       }
     }
     
-    // Step 3: Use crypto random for true randomness
+    // ENHANCED RANDOMIZATION: Test multiple randomization approaches
+    console.log(`🎲🎲🎲 [RANDOMIZATION_TRACE] Starting randomization with ${availablePokemon.length} Pokemon`);
+    
+    // Method 1: Simple crypto-random selection
+    const cryptoSelected: Pokemon[] = [];
     const availableCopy = [...availablePokemon];
     
-    // Fisher-Yates shuffle with crypto random
-    for (let i = availableCopy.length - 1; i > 0; i--) {
+    for (let i = 0; i < battleSize && availableCopy.length > 0; i++) {
       const randomArray = new Uint32Array(1);
       crypto.getRandomValues(randomArray);
-      const j = Math.floor((randomArray[0] / (0xFFFFFFFF + 1)) * (i + 1));
-      [availableCopy[i], availableCopy[j]] = [availableCopy[j], availableCopy[i]];
+      const randomIndex = Math.floor((randomArray[0] / (0xFFFFFFFF + 1)) * availableCopy.length);
+      
+      console.log(`🎲🎲🎲 [RANDOMIZATION_TRACE] Selection ${i + 1}: randomIndex=${randomIndex}, poolSize=${availableCopy.length}`);
+      
+      const selected = availableCopy.splice(randomIndex, 1)[0];
+      cryptoSelected.push(selected);
+      
+      console.log(`🎲🎲🎲 [RANDOMIZATION_TRACE] Selected: ${selected.name} (ID: ${selected.id})`);
     }
     
-    // Take the first battleSize Pokemon from shuffled array
-    const result = availableCopy.slice(0, battleSize);
-    const validated = validateBattlePokemon(result);
+    const validated = validateBattlePokemon(cryptoSelected);
     
-    console.log(`🎲🎲🎲 [BATTLE_GENERATION_DEBUG] Selected Pokemon details:`);
+    console.log(`🎲🎲🎲 [FINAL_SELECTION] Final battle composition:`);
     validated.forEach((pokemon, index) => {
-      console.log(`🎲🎲🎲 [BATTLE_GENERATION_DEBUG] #${index + 1}: ${pokemon.name} (ID: ${pokemon.id}, Gen: ${pokemon.generation})`);
+      console.log(`🎲🎲🎲 [FINAL_SELECTION] #${index + 1}: ${pokemon.name} (ID: ${pokemon.id})`);
     });
+    
+    // Calculate selection statistics
+    const selectedIds = validated.map(p => p.id);
+    const selectionStats = {
+      min: Math.min(...selectedIds),
+      max: Math.max(...selectedIds),
+      average: Math.round(selectedIds.reduce((sum, id) => sum + id, 0) / selectedIds.length),
+      range: Math.max(...selectedIds) - Math.min(...selectedIds)
+    };
+    console.log(`🎲🎲🎲 [SELECTION_STATS] Selection statistics:`, selectionStats);
+    
+    // Test if selection is biased towards low numbers
+    const lowBias = selectedIds.filter(id => id <= 200).length;
+    const midRange = selectedIds.filter(id => id > 200 && id <= 600).length;
+    const highRange = selectedIds.filter(id => id > 600).length;
+    console.log(`🎲🎲🎲 [BIAS_ANALYSIS] Selection bias: low(≤200)=${lowBias}, mid(201-600)=${midRange}, high(>600)=${highRange}`);
+    
     console.log(`🎲🎲🎲 [BATTLE_GENERATION_DEBUG] ===== Generation Complete =====`);
     
     return validated;
