@@ -4,17 +4,12 @@ import { Pokemon } from "@/services/pokemon";
 import { LoadingType } from "@/hooks/usePokemonRanker";
 import { PaginationControls } from "./PaginationControls";
 import { InfiniteScrollLoader } from "./InfiniteScrollLoader";
-import { useDragAndDrop } from "@/hooks/battle/useDragAndDrop";
 import {
   DndContext,
   closestCenter,
   DragStartEvent,
   DragEndEvent,
 } from '@dnd-kit/core';
-import {
-  SortableContext,
-  rectSortingStrategy,
-} from '@dnd-kit/sortable';
 import DraggablePokemonCard from "@/components/battle/DraggablePokemonCard";
 
 interface AvailablePokemonSectionProps {
@@ -47,11 +42,14 @@ export const AvailablePokemonSection: React.FC<AvailablePokemonSectionProps> = (
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     
+    console.log(`🔍 [AVAILABLE_SECTION] Drag ended:`, { activeId: active.id, overId: over?.id });
+    
     if (!over) return;
     
     // Handle drag to rankings area if over target supports it
     const pokemonId = Number(active.id);
     if (onDragToRankings && over.id === 'rankings-drop-zone') {
+      console.log(`🔍 [AVAILABLE_SECTION] Dragging Pokemon ${pokemonId} to rankings`);
       onDragToRankings(pokemonId);
     }
   };
@@ -85,21 +83,17 @@ export const AvailablePokemonSection: React.FC<AvailablePokemonSectionProps> = (
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
           >
-            <SortableContext 
-              items={availablePokemon.map(p => p.id)} 
-              strategy={rectSortingStrategy}
-            >
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
-                {availablePokemon.map((pokemon, index) => (
-                  <DraggablePokemonCard
-                    key={pokemon.id}
-                    pokemon={pokemon}
-                    index={index}
-                    isPending={false}
-                  />
-                ))}
-              </div>
-            </SortableContext>
+            {/* No SortableContext here - we don't want internal reordering */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+              {availablePokemon.map((pokemon, index) => (
+                <DraggablePokemonCard
+                  key={pokemon.id}
+                  pokemon={pokemon}
+                  index={index}
+                  isPending={false}
+                />
+              ))}
+            </div>
           </DndContext>
         )}
         

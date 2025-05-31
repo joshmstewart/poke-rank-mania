@@ -2,6 +2,7 @@
 import React from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import DragDropGrid from "@/components/battle/DragDropGrid";
+import { useDroppable } from '@dnd-kit/core';
 
 interface RankingsSectionProps {
   displayRankings: (Pokemon | RankedPokemon)[];
@@ -17,6 +18,10 @@ export const RankingsSection: React.FC<RankingsSectionProps> = ({
   pendingRefinements = new Set()
 }) => {
   console.log(`🔍 [RANKINGS_SECTION] Rendering with ${displayRankings.length} Pokemon`);
+  
+  const { setNodeRef } = useDroppable({
+    id: 'rankings-drop-zone',
+  });
   
   const handleMarkAsPending = (pokemonId: number) => {
     console.log(`🔍 [RANKINGS_SECTION] Marking Pokemon ${pokemonId} as pending`);
@@ -40,8 +45,8 @@ export const RankingsSection: React.FC<RankingsSectionProps> = ({
         </div>
       </div>
       
-      {/* Rankings Grid */}
-      <div className="flex-1 overflow-y-auto p-4">
+      {/* Rankings Grid - Set up as drop zone */}
+      <div className="flex-1 overflow-y-auto p-4" ref={setNodeRef}>
         {displayRankings.length === 0 ? (
           <div className="flex items-center justify-center h-full text-gray-500">
             <div className="text-center">
