@@ -33,18 +33,18 @@ export const AvailablePokemonSection: React.FC<AvailablePokemonSectionProps> = (
   return (
     <>
       {/* Header with gradient background - reduced padding */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-4 border-b flex-shrink-0">
-        <h2 className="text-lg font-bold flex items-center gap-2">
-          <div className="w-3 h-3 bg-blue-300 rounded-full"></div>
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-3 border-b flex-shrink-0">
+        <h2 className="text-base font-bold flex items-center gap-2">
+          <div className="w-2 h-2 bg-blue-300 rounded-full"></div>
           Available Pokémon ({availablePokemon.length})
         </h2>
-        <p className="text-blue-100 text-xs mt-1">Unrated • Ready to rank</p>
+        <p className="text-blue-100 text-xs mt-0.5">Unrated • Ready to rank</p>
       </div>
 
       {/* Content area with proper scrolling - reduced padding */}
       <div className="flex-1 min-h-0">
         <ScrollArea className="h-full">
-          <div className="bg-gray-50 min-h-full p-2">
+          <div className="bg-gray-50 min-h-full p-1">
             <PokemonList
               title=""
               pokemonList={availablePokemon}
@@ -55,7 +55,7 @@ export const AvailablePokemonSection: React.FC<AvailablePokemonSectionProps> = (
       </div>
       
       {/* Footer controls - reduced padding */}
-      <div className="border-t bg-white p-2 flex-shrink-0">
+      <div className="border-t bg-white p-1.5 flex-shrink-0">
         {/* Infinite scroll loading indicator */}
         {loadingType === "infinite" && (
           <InfiniteScrollLoader
@@ -79,7 +79,7 @@ export const AvailablePokemonSection: React.FC<AvailablePokemonSectionProps> = (
         
         {/* Single load info */}
         {loadingType === "single" && (
-          <div className="text-center text-xs text-gray-600 bg-gray-50 rounded-lg p-2">
+          <div className="text-center text-xs text-gray-600 bg-gray-50 rounded-lg p-1.5">
             Loaded {availablePokemon.length} Pokémon
           </div>
         )}

@@ -81,12 +81,12 @@ export const RankingUI: React.FC<RankingUIProps> = ({
   }
 
   return (
-    <div className="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen p-2">
+    <div className="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen p-1">
       <DragDropContext onDragEnd={handleDisabledDragEnd}>
         <div className="max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-2 gap-3" style={{ height: 'calc(100vh - 6rem)' }}>
+          <div className="grid md:grid-cols-2 gap-2" style={{ height: 'calc(100vh - 4rem)' }}>
             {/* Left side - Available Pokemon (unrated) with enhanced styling */}
-            <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden flex flex-col">
+            <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden flex flex-col">
               <AvailablePokemonSection
                 availablePokemon={availablePokemon}
                 isLoading={isLoading}
@@ -101,7 +101,7 @@ export const RankingUI: React.FC<RankingUIProps> = ({
             </div>
             
             {/* Right side - Rankings (TrueSkill ordered) with enhanced styling */}
-            <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden flex flex-col">
+            <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden flex flex-col">
               <RankingsSection displayRankings={displayRankings} />
             </div>
           </div>

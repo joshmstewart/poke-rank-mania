@@ -60,12 +60,12 @@ export const RankingsSection: React.FC<RankingsSectionProps> = ({
   return (
     <>
       {/* Header with gradient background - reduced padding */}
-      <div className="bg-gradient-to-r from-amber-600 to-orange-600 text-white p-4 border-b flex-shrink-0">
-        <h2 className="text-lg font-bold flex items-center gap-2">
-          <Trophy className="w-5 h-5 text-amber-200" />
+      <div className="bg-gradient-to-r from-amber-600 to-orange-600 text-white p-3 border-b flex-shrink-0">
+        <h2 className="text-base font-bold flex items-center gap-2">
+          <Trophy className="w-4 h-4 text-amber-200" />
           Your Rankings ({displayRankings.length})
         </h2>
-        <p className="text-amber-100 text-xs mt-1">
+        <p className="text-amber-100 text-xs mt-0.5">
           {displayRankings.length > 0 ? 'TrueSkill Ordered • Battle Mode synced' : 'No rankings yet'}
         </p>
       </div>
@@ -73,7 +73,7 @@ export const RankingsSection: React.FC<RankingsSectionProps> = ({
       {/* Content area with proper scrolling - reduced padding */}
       <div className="flex-1 min-h-0">
         <ScrollArea className="h-full">
-          <div className="bg-gray-50 min-h-full p-2">
+          <div className="bg-gray-50 min-h-full p-1">
             <PokemonList
               title=""
               pokemonList={displayedRankedPokemon}
@@ -85,12 +85,12 @@ export const RankingsSection: React.FC<RankingsSectionProps> = ({
       </div>
       
       {/* Footer with status information - reduced padding */}
-      <div className="border-t bg-white p-2 flex-shrink-0">
+      <div className="border-t bg-white p-1.5 flex-shrink-0">
         {/* Infinite scroll loading for ranked Pokemon */}
         {displayedRankedCount < displayRankings.length && (
           <div 
             ref={rankedScrollRef}
-            className="text-center py-2 text-xs text-gray-600 bg-blue-50 rounded-lg border border-blue-200"
+            className="text-center py-1.5 text-xs text-gray-600 bg-blue-50 rounded-lg border border-blue-200"
           >
             <div className="flex items-center justify-center gap-2">
               <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
@@ -101,7 +101,7 @@ export const RankingsSection: React.FC<RankingsSectionProps> = ({
         
         {/* Show completion message when all ranked Pokemon are loaded */}
         {displayedRankedCount >= displayRankings.length && displayRankings.length > 0 && (
-          <div className="text-center text-xs bg-green-50 border border-green-200 rounded-lg p-3">
+          <div className="text-center text-xs bg-green-50 border border-green-200 rounded-lg p-2">
             <div className="flex items-center justify-center gap-2 text-green-700">
               <Star className="w-3 h-3 fill-current" />
               All {displayRankings.length} ranked Pokémon loaded
@@ -112,8 +112,8 @@ export const RankingsSection: React.FC<RankingsSectionProps> = ({
         
         {/* Show message when no ranked Pokemon */}
         {displayRankings.length === 0 && (
-          <div className="text-center bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div className="text-blue-700 text-xs font-medium mb-2">No ranked Pokémon yet</div>
+          <div className="text-center bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <div className="text-blue-700 text-xs font-medium mb-1">No ranked Pokémon yet</div>
             <p className="text-blue-600 text-xs">Complete some battles in Battle Mode to see rankings here</p>
           </div>
         )}
