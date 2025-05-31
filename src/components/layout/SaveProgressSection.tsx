@@ -33,16 +33,23 @@ const SaveProgressSection: React.FC = () => {
   
   if (isAuthenticated) {
     console.log('🔴🔴🔴 SaveProgressSection: ✅ AUTHENTICATED - About to render BOTH sync status AND user display');
+    console.log('🔴🔴🔴 SaveProgressSection: RENDERING AUTHENTICATED LAYOUT NOW');
     return (
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-4 bg-yellow-100 border border-yellow-300 p-2">
+        {/* Temporary debug styling to make the container visible */}
+        
         {/* Sync Status Indicator */}
-        <Badge variant="secondary" className="flex items-center gap-1 bg-green-100 text-green-700 border-green-200">
-          <Check className="h-3 w-3" />
-          <span className="text-xs">Synced</span>
-        </Badge>
+        <div className="bg-red-100 border border-red-300 p-1">
+          <Badge variant="secondary" className="flex items-center gap-1 bg-green-100 text-green-700 border-green-200">
+            <Check className="h-3 w-3" />
+            <span className="text-xs">Synced</span>
+          </Badge>
+        </div>
         
         {/* User Profile Management */}
-        <AuthenticatedUserDisplay />
+        <div className="bg-purple-100 border border-purple-300 p-1">
+          <AuthenticatedUserDisplay />
+        </div>
       </div>
     );
   }

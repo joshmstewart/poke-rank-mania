@@ -15,8 +15,8 @@ export const AuthenticatedUserDisplay: React.FC = () => {
   const [profileModalOpen, setProfileModalOpen] = useState(false);
 
   // CRITICAL LOGGING - Always fires when component renders
-  console.log('🔍🔍🔍 AuthenticatedUserDisplay: ALWAYS FIRES - Component is rendering');
-  console.log('🔍🔍🔍 AuthenticatedUserDisplay: Auth state:', {
+  console.log('🔵🔵🔵 AuthenticatedUserDisplay: COMPONENT IS MOUNTING/RENDERING');
+  console.log('🔵🔵🔵 AuthenticatedUserDisplay: Auth state:', {
     hasUser: !!user,
     userEmail: user?.email,
     userId: user?.id,
@@ -25,16 +25,16 @@ export const AuthenticatedUserDisplay: React.FC = () => {
 
   useEffect(() => {
     if (user) {
-      console.log('🔍🔍🔍 AuthenticatedUserDisplay: Loading profile for user:', user.id);
+      console.log('🔵🔵🔵 AuthenticatedUserDisplay: Loading profile for user:', user.id);
       loadProfile();
     }
   }, [user]);
 
   const loadProfile = async () => {
     if (!user) return;
-    console.log('🔍🔍🔍 AuthenticatedUserDisplay: Fetching profile data...');
+    console.log('🔵🔵🔵 AuthenticatedUserDisplay: Fetching profile data...');
     const profileData = await getProfile(user.id);
-    console.log('🔍🔍🔍 AuthenticatedUserDisplay: Profile data received:', profileData);
+    console.log('🔵🔵🔵 AuthenticatedUserDisplay: Profile data received:', profileData);
     setProfile(profileData);
   };
 
@@ -55,48 +55,52 @@ export const AuthenticatedUserDisplay: React.FC = () => {
   };
 
   if (!user) {
-    console.log('🔍🔍🔍 AuthenticatedUserDisplay: ❌ No user found, returning null');
+    console.log('🔵🔵🔵 AuthenticatedUserDisplay: ❌ No user found, returning null');
     return null;
   }
 
   const displayName = profile?.display_name || profile?.username || user.email || 'Trainer';
   const avatarUrl = profile?.avatar_url;
 
-  console.log('🔍🔍🔍 AuthenticatedUserDisplay: ✅ About to render user dropdown for:', displayName);
+  console.log('🔵🔵🔵 AuthenticatedUserDisplay: ✅ About to render user dropdown for:', displayName);
+  console.log('🔵🔵🔵 AuthenticatedUserDisplay: RENDERING DROPDOWN COMPONENT NOW');
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="h-auto p-2">
-          <div className="flex items-center gap-2">
-            <Avatar className="h-8 w-8">
-              <AvatarImage src={avatarUrl || undefined} alt={displayName} />
-              <AvatarFallback>
-                <User className="h-4 w-4" />
-              </AvatarFallback>
-            </Avatar>
-            <span className="text-sm font-medium hidden sm:inline">
-              {displayName}
-            </span>
-          </div>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuItem onClick={() => setProfileModalOpen(true)}>
-          <Settings className="mr-2 h-4 w-4" />
-          My Profile
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleSignOut}>
-          <LogOut className="mr-2 h-4 w-4" />
-          Sign Out
-        </DropdownMenuItem>
-      </DropdownMenuContent>
+    <div className="bg-blue-100 border border-blue-300 p-1">
+      {/* Temporary debug styling to make this component visible */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" className="h-auto p-2">
+            <div className="flex items-center gap-2">
+              <Avatar className="h-8 w-8">
+                <AvatarImage src={avatarUrl || undefined} alt={displayName} />
+                <AvatarFallback>
+                  <User className="h-4 w-4" />
+                </AvatarFallback>
+              </Avatar>
+              <span className="text-sm font-medium hidden sm:inline">
+                {displayName}
+              </span>
+            </div>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuItem onClick={() => setProfileModalOpen(true)}>
+            <Settings className="mr-2 h-4 w-4" />
+            My Profile
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={handleSignOut}>
+            <LogOut className="mr-2 h-4 w-4" />
+            Sign Out
+          </DropdownMenuItem>
+        </DropdownMenuContent>
 
-      <ProfileModal 
-        open={profileModalOpen} 
-        onOpenChange={handleProfileModalClose}
-      />
-    </DropdownMenu>
+        <ProfileModal 
+          open={profileModalOpen} 
+          onOpenChange={handleProfileModalClose}
+        />
+      </DropdownMenu>
+    </div>
   );
 };
