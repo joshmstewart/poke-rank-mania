@@ -1,4 +1,3 @@
-
 import React from "react";
 import { DragDropContext } from "react-beautiful-dnd";
 import { LoadingState } from "./LoadingState";
@@ -47,17 +46,20 @@ export const RankingUI: React.FC<RankingUIProps> = ({
   // Get local rankings from TrueSkill sync
   const { localRankings } = useTrueSkillSync();
   
-  // Use local rankings if available, otherwise fall back to battle mode rankings, then manual rankings
-  const displayRankings = localRankings.length > 0 ? localRankings 
+  // Prioritize manual rankings: if user has manually ranked Pokemon, show those first
+  // Otherwise fall back to TrueSkill rankings
+  const displayRankings = rankedPokemon.length > 0 ? rankedPokemon 
+    : localRankings.length > 0 ? localRankings 
     : battleModeRankings.length > 0 ? battleModeRankings 
-    : rankedPokemon;
+    : [];
   
-  // Filter available Pokemon to exclude those in the DISPLAY rankings (not just manual ranked Pokemon)
+  // Filter available Pokemon to exclude those in the DISPLAY rankings
   const displayRankingsIds = new Set(displayRankings.map(p => p.id));
   const filteredAvailablePokemon = availablePokemon.filter(p => !displayRankingsIds.has(p.id));
   
-  console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] localRankings: ${localRankings.length}, battleModeRankings: ${battleModeRankings.length}, rankedPokemon: ${rankedPokemon.length}`);
+  console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] Manual rankedPokemon: ${rankedPokemon.length}, localRankings: ${localRankings.length}, battleModeRankings: ${battleModeRankings.length}`);
   console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] displayRankings length: ${displayRankings.length}`);
+  console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] Using manual rankings: ${rankedPokemon.length > 0}`);
   console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] filteredAvailablePokemon length: ${filteredAvailablePokemon.length}`);
   console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] displayRankingsIds:`, Array.from(displayRankingsIds));
 

@@ -39,17 +39,16 @@ export const useDragHandler = (
     // Moving within the same list
     if (source.droppableId === destination.droppableId) {
       if (source.droppableId === "available") {
-        const newItems = Array.from(filteredAvailablePokemon);
-        const [movedItem] = newItems.splice(source.index, 1);
-        newItems.splice(destination.index, 0, movedItem);
-        // For reordering within available, we don't need to update state since it's just visual reordering
-        console.log("🔄 Reordered within available list:", movedItem.name);
+        // Reordering within available list - we don't update state since it's just visual
+        console.log("🔄 Reordered within available list");
       } else if (source.droppableId === "ranked") {
-        const newItems = Array.from(rankedPokemon);
-        const [movedItem] = newItems.splice(source.index, 1);
-        newItems.splice(destination.index, 0, movedItem);
-        setRankedPokemon(newItems);
-        console.log("🔄 Reordered within ranked list:", movedItem.name);
+        // Reordering within ranked list
+        const newRankedItems = Array.from(rankedPokemon);
+        const [movedItem] = newRankedItems.splice(source.index, 1);
+        newRankedItems.splice(destination.index, 0, movedItem);
+        
+        console.log("🔄 Reordered within ranked list:", movedItem.name, "from", source.index, "to", destination.index);
+        setRankedPokemon(newRankedItems);
       }
     } 
     // Moving from one list to another
@@ -63,9 +62,9 @@ export const useDragHandler = (
           return;
         }
         
-        console.log("🔄 Moving from available to ranked:", movedItem.name);
+        console.log("🔄 Moving from available to ranked:", movedItem.name, "to position", destination.index);
         
-        // Remove from available Pokemon state
+        // Remove from available Pokemon state (from original array, not filtered)
         const newAvailablePokemon = availablePokemon.filter(p => p.id !== movedItem.id);
         
         // Add to ranked Pokemon state at the correct position
@@ -74,6 +73,7 @@ export const useDragHandler = (
         
         console.log("🔄 New available count:", newAvailablePokemon.length);
         console.log("🔄 New ranked count:", newRankedPokemon.length);
+        console.log("🔄 Ranked order:", newRankedPokemon.map(p => p.name));
         
         // Update both states
         setAvailablePokemon(newAvailablePokemon);
@@ -93,7 +93,7 @@ export const useDragHandler = (
         // Remove from ranked Pokemon state
         const newRankedPokemon = rankedPokemon.filter(p => p.id !== movedItem.id);
         
-        // Add back to available Pokemon state
+        // Add back to available Pokemon state (at the end, since order doesn't matter for available)
         const newAvailablePokemon = [...availablePokemon, movedItem];
         
         console.log("🔄 New ranked count:", newRankedPokemon.length);
