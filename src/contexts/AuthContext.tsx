@@ -22,14 +22,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
+  console.log('🔴 AuthProvider: COMPONENT RENDER START - every render should show this');
+  console.log('🔴 AuthProvider: Current state at render start:', {
+    hasUser: !!user,
+    hasSession: !!session,
+    loading,
+    userEmail: user?.email,
+    timestamp: new Date().toISOString()
+  });
+
   useEffect(() => {
-    console.log('🔴 AuthProvider: INITIALIZING AUTH CONTEXT');
+    console.log('🔴 AuthProvider: USEEFFECT STARTING - this should only show once on mount');
     
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('🔴 AuthProvider: Auth state change event:', {
-          event,
+        console.log('🔴 AuthProvider: ⚠️⚠️⚠️ AUTH STATE CHANGE EVENT TRIGGERED ⚠️⚠️⚠️');
+        console.log('🔴 AuthProvider: Event type:', event);
+        console.log('🔴 AuthProvider: Session in callback:', {
           hasSession: !!session,
           hasUser: !!session?.user,
           userEmail: session?.user?.email,
@@ -39,27 +49,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           timestamp: new Date().toISOString()
         });
         
+        console.log('🔴 AuthProvider: About to update state...');
+        
         // Update state immediately and synchronously
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
         
-        console.log('🔴 AuthProvider: Updated state after auth change:', {
+        console.log('🔴 AuthProvider: State updated. New values:', {
           userSet: !!session?.user,
           sessionSet: !!session,
           loading: false,
           timestamp: new Date().toISOString()
         });
+
+        console.log('🔴 AuthProvider: ⚠️⚠️⚠️ AUTH STATE CHANGE COMPLETE ⚠️⚠️⚠️');
       }
     );
+
+    console.log('🔴 AuthProvider: Auth listener set up, now getting initial session...');
 
     // THEN get initial session
     const getInitialSession = async () => {
       try {
-        console.log('🔴 AuthProvider: Getting initial session...');
+        console.log('🔴 AuthProvider: Calling supabase.auth.getSession()...');
         const { data: { session }, error } = await supabase.auth.getSession();
         
-        console.log('🔴 AuthProvider: Initial session result:', {
+        console.log('🔴 AuthProvider: Initial session response:', {
           hasSession: !!session,
           hasUser: !!session?.user,
           userEmail: session?.user?.email,
@@ -74,12 +90,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.error('🔴 AuthProvider: Error getting initial session:', error);
         }
         
+        console.log('🔴 AuthProvider: About to set initial state...');
+        
         // Update state with initial session
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
         
-        console.log('🔴 AuthProvider: Initial state set - user:', !!session?.user, 'session:', !!session);
+        console.log('🔴 AuthProvider: Initial state set:', {
+          user: !!session?.user, 
+          session: !!session,
+          loading: false,
+          timestamp: new Date().toISOString()
+        });
         
       } catch (err) {
         console.error('🔴 AuthProvider: Exception during initial auth check:', err);
@@ -92,8 +115,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Get initial session
     getInitialSession();
 
+    console.log('🔴 AuthProvider: Initial session check started, returning cleanup function');
+
     return () => {
-      console.log('🔴 AuthProvider: Cleaning up auth listener');
+      console.log('🔴 AuthProvider: CLEANUP - Unsubscribing auth listener');
       subscription.unsubscribe();
     };
   }, []);
@@ -161,13 +186,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     verifyPhoneOtp,
   };
 
-  console.log('🔴 AuthProvider: RENDER - providing context value:', {
+  console.log('🔴 AuthProvider: RENDER END - About to return JSX with context value:', {
     hasUser: !!user,
     hasSession: !!session,
     loading,
     userEmail: user?.email,
     timestamp: new Date().toISOString()
   });
+
+  console.log('🔴 AuthProvider: 🚨🚨🚨 RETURNING JSX - this should ALWAYS appear 🚨🚨🚨');
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
