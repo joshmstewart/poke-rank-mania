@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
-import SharedPokemonCard from "./SharedPokemonCard";
+import DraggablePokemonMilestoneCard from "@/components/battle/DraggablePokemonMilestoneCard";
 import { VotingArrows } from "./VotingArrows";
 
 interface RankingGridProps {
@@ -37,14 +37,13 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
               />
             )}
 
-            {/* Using shared card component */}
-            <SharedPokemonCard
+            {/* Using unified card component */}
+            <DraggablePokemonMilestoneCard
               pokemon={pokemon}
-              showRankNumber={true}
-              rankNumber={index + 1}
+              index={index}
+              showRank={true}
+              isDraggable={false}
               isAvailable={false}
-              onSuggestRanking={onSuggestRanking}
-              onRemoveSuggestion={onRemoveSuggestion}
             />
           </div>
         );

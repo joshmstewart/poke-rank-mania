@@ -5,7 +5,7 @@ import {
   rectSortingStrategy,
 } from '@dnd-kit/sortable';
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
-import DraggablePokemonCard from "./DraggablePokemonCard";
+import DraggablePokemonMilestoneCard from "./DraggablePokemonMilestoneCard";
 
 interface DragDropGridProps {
   displayRankings: (Pokemon | RankedPokemon)[];
@@ -37,12 +37,14 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
           const pendingCount = pendingBattleCounts.get(pokemon.id) || 0;
           
           return (
-            <DraggablePokemonCard
+            <DraggablePokemonMilestoneCard
               key={pokemon.id}
               pokemon={pokemon}
               index={index}
               isPending={isPending}
               showRank={true}
+              isDraggable={true}
+              isAvailable={false}
             />
           );
         })}

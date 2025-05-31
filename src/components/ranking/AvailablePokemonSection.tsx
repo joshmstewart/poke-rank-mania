@@ -4,7 +4,7 @@ import { Pokemon } from "@/services/pokemon";
 import { LoadingType } from "@/hooks/usePokemonRanker";
 import { InfiniteScrollLoader } from "./InfiniteScrollLoader";
 import { PaginationControls } from "./PaginationControls";
-import SharedPokemonCard from "./SharedPokemonCard";
+import DraggablePokemonMilestoneCard from "@/components/battle/DraggablePokemonMilestoneCard";
 
 interface AvailablePokemonSectionProps {
   availablePokemon: Pokemon[];
@@ -41,7 +41,7 @@ export const AvailablePokemonSection: React.FC<AvailablePokemonSectionProps> = (
         </div>
       </div>
       
-      {/* Pokemon Grid - Using shared component */}
+      {/* Pokemon Grid - Using unified card component */}
       <div className="flex-1 overflow-y-auto p-4">
         {availablePokemon.length === 0 ? (
           <div className="flex items-center justify-center h-full text-gray-500">
@@ -52,12 +52,14 @@ export const AvailablePokemonSection: React.FC<AvailablePokemonSectionProps> = (
           </div>
         ) : (
           <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))' }}>
-            {availablePokemon.map((pokemon) => (
-              <SharedPokemonCard
+            {availablePokemon.map((pokemon, index) => (
+              <DraggablePokemonMilestoneCard
                 key={pokemon.id}
                 pokemon={pokemon}
+                index={index}
+                showRank={false}
+                isDraggable={true}
                 isAvailable={true}
-                showRankNumber={false}
               />
             ))}
           </div>
