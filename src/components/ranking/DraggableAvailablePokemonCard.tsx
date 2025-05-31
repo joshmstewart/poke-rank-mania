@@ -35,60 +35,32 @@ const DraggableAvailablePokemonCard: React.FC<DraggableAvailablePokemonCardProps
 
   const backgroundColorClass = getPokemonBackgroundColor(pokemon);
 
-  // CRITICAL FIX: Handle info button interactions properly
-  const handleInfoButtonClick = (e: React.MouseEvent) => {
-    console.log(`🔘 [INFO_BUTTON_DEBUG] Info button clicked for ${pokemon.name}`);
-    // Stop event propagation to prevent drag interference
-    e.preventDefault();
-    e.stopPropagation();
-  };
-
-  // CRITICAL FIX: Create drag handlers that exclude info button area
-  const dragListeners = {
-    ...listeners,
-    onPointerDown: (e: React.PointerEvent) => {
-      // Check if the click is on the info button or its children
-      const target = e.target as HTMLElement;
-      const isInfoButton = target.closest('[data-info-button="true"]') || 
-                          target.closest('button') ||
-                          target.textContent === 'i';
-      
-      if (isInfoButton) {
-        console.log(`🔘 [DRAG_DEBUG] Ignoring pointer down on info button for ${pokemon.name}`);
-        return;
-      }
-      
-      console.log(`🔍 [DRAG_DEBUG] Starting drag for ${pokemon.name}`);
-      if (listeners?.onPointerDown) {
-        listeners.onPointerDown(e);
-      }
-    }
-  };
-
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className={`${backgroundColorClass} rounded-lg border border-gray-200 relative overflow-hidden h-40 flex flex-col cursor-grab active:cursor-grabbing ${
+      className={`${backgroundColorClass} rounded-lg border border-gray-200 relative overflow-hidden h-40 flex flex-col ${
         isDragging ? 'opacity-60 z-50 scale-105 shadow-2xl' : 'hover:shadow-lg transition-all duration-200'
       }`}
-      {...attributes}
-      {...dragListeners}
     >
-      {/* Info Button - prevent drag interference */}
-      <div 
-        className="absolute top-1 right-1 z-30"
-        onClick={handleInfoButtonClick}
-        onPointerDown={handleInfoButtonClick}
-        onMouseDown={handleInfoButtonClick}
-      >
+      {/* Draggable area - everything except the info button */}
+      <div
+        className="absolute inset-0 cursor-grab active:cursor-grabbing"
+        {...attributes}
+        {...listeners}
+        style={{ zIndex: 1 }}
+      />
+      
+      {/* Info Button - positioned above the draggable area */}
+      <div className="absolute top-1 right-1 z-20">
         <PokemonInfoModal pokemon={pokemon}>
           <button 
-            className="w-5 h-5 rounded-full bg-white/80 hover:bg-white border border-gray-300 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200 backdrop-blur-sm"
-            data-info-button="true"
-            onClick={handleInfoButtonClick}
-            onPointerDown={handleInfoButtonClick}
-            onMouseDown={handleInfoButtonClick}
+            className="w-5 h-5 rounded-full bg-white/90 hover:bg-white border border-gray-300 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200 backdrop-blur-sm"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              console.log(`🔘 [INFO_BUTTON_DEBUG] Info button clicked for ${pokemon.name}`);
+            }}
           >
             i
           </button>
@@ -96,7 +68,7 @@ const DraggableAvailablePokemonCard: React.FC<DraggableAvailablePokemonCardProps
       </div>
       
       {/* Pokemon image - larger and taking up more space */}
-      <div className="flex-1 flex justify-center items-center px-2 pt-6 pb-1">
+      <div className="flex-1 flex justify-center items-center px-2 pt-6 pb-1 relative z-10 pointer-events-none">
         <img 
           src={pokemon.image} 
           alt={pokemon.name}
@@ -108,8 +80,8 @@ const DraggableAvailablePokemonCard: React.FC<DraggableAvailablePokemonCardProps
         />
       </div>
       
-      {/* Pokemon info - white section at bottom exactly like milestone */}
-      <div className="bg-white text-center py-2 px-2 mt-auto border-t border-gray-100">
+      {/* Pokemon info - white section at bottom */}
+      <div className="bg-white text-center py-2 px-2 mt-auto border-t border-gray-100 relative z-10 pointer-events-none">
         <h3 className="font-bold text-gray-800 text-sm leading-tight mb-1">
           {pokemon.name}
         </h3>

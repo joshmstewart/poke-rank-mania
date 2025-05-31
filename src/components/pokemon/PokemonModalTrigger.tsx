@@ -14,21 +14,10 @@ const PokemonModalTrigger: React.FC<PokemonModalTriggerProps> = ({
   children,
   pokemon
 }) => {
-  const handleTriggerClick = (e: React.MouseEvent) => {
+  const handleClick = (e: React.MouseEvent) => {
     console.log(`🔘🔘🔘 [MODAL_TRIGGER_DEBUG] Modal trigger clicked for ${pokemon.name}`);
-    // CRITICAL FIX: Only prevent propagation, don't prevent default
-    e.stopPropagation();
-  };
-
-  const handleTriggerPointerDown = (e: React.PointerEvent) => {
-    console.log(`🔘🔘🔘 [MODAL_TRIGGER_DEBUG] Modal trigger pointer down for ${pokemon.name}`);
-    // CRITICAL FIX: Only prevent propagation for pointer events
-    e.stopPropagation();
-  };
-
-  const handleTriggerMouseDown = (e: React.MouseEvent) => {
-    console.log(`🔘🔘🔘 [MODAL_TRIGGER_DEBUG] Modal trigger mouse down for ${pokemon.name}`);
-    // CRITICAL FIX: Only prevent propagation for mouse events
+    // Prevent any propagation to parent drag elements
+    e.preventDefault();
     e.stopPropagation();
   };
 
@@ -38,11 +27,8 @@ const PokemonModalTrigger: React.FC<PokemonModalTriggerProps> = ({
         <Button 
           variant="ghost" 
           size="sm" 
-          className="w-6 h-6 p-0 rounded-full bg-white/90 hover:bg-white shadow-sm border relative z-50"
-          data-info-button="true"
-          onClick={handleTriggerClick}
-          onPointerDown={handleTriggerPointerDown}
-          onMouseDown={handleTriggerMouseDown}
+          className="w-6 h-6 p-0 rounded-full bg-white/90 hover:bg-white shadow-sm border relative"
+          onClick={handleClick}
         >
           <Info className="w-3 h-3 text-blue-600" />
         </Button>

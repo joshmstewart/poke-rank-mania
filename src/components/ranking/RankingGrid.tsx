@@ -34,8 +34,6 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
   const [loadedImages, setLoadedImages] = useState<Set<number>>(new Set());
 
   console.log(`🔘 [RANKING_GRID_DEBUG] RankingGrid: Rendering ${displayRankings.length} Pokemon`);
-  console.log(`🔘 [RANKING_GRID_DEBUG] RankingGrid: isMilestoneView=${isMilestoneView}, activeTier=${activeTier}`);
-  console.log(`🔘 [RANKING_GRID_DEBUG] RankingGrid: battlesCompleted=${battlesCompleted}`);
 
   const handleImageLoad = (pokemonId: number) => {
     setLoadedImages(prev => new Set(prev).add(pokemonId));
@@ -45,13 +43,6 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
     console.warn(`Failed to load image for Pokemon ${pokemonId}`);
   };
 
-  const handleInfoButtonClick = (pokemon: Pokemon | RankedPokemon, e: React.MouseEvent) => {
-    console.log(`🔘 [RANKING_GRID_DEBUG] RankingGrid: Info button clicked for ${pokemon.name} (${pokemon.id})`);
-    // CRITICAL FIX: Proper event handling for info button
-    e.preventDefault();
-    e.stopPropagation();
-  };
-
   return (
     <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))' }}>
       {displayRankings.map((pokemon, index) => {
@@ -59,25 +50,18 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
         const isRankedPokemon = 'score' in pokemon;
         const isImageLoaded = loadedImages.has(pokemon.id);
 
-        console.log(`🔘 [RANKING_GRID_DEBUG] RankingGrid: Rendering Pokemon ${pokemon.name} (${pokemon.id}) at rank ${index + 1}`);
-        console.log(`🔘 [RANKING_GRID_DEBUG] About to show info button for ${pokemon.name}`);
-
         return (
           <div key={pokemon.id} className="relative group">
-            {/* Info Button - FIXED: Better event isolation */}
-            <div 
-              className="absolute top-1 right-1 z-30"
-              onClick={(e) => handleInfoButtonClick(pokemon, e)}
-              onPointerDown={(e) => handleInfoButtonClick(pokemon, e)}
-              onMouseDown={(e) => handleInfoButtonClick(pokemon, e)}
-            >
+            {/* Info Button - positioned independently */}
+            <div className="absolute top-1 right-1 z-30">
               <PokemonInfoModal pokemon={pokemon}>
                 <button 
-                  className="w-5 h-5 rounded-full bg-white/80 hover:bg-white border border-gray-300 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200 backdrop-blur-sm"
-                  data-info-button="true"
-                  onClick={(e) => handleInfoButtonClick(pokemon, e)}
-                  onPointerDown={(e) => handleInfoButtonClick(pokemon, e)}
-                  onMouseDown={(e) => handleInfoButtonClick(pokemon, e)}
+                  className="w-5 h-5 rounded-full bg-white/90 hover:bg-white border border-gray-300 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200 backdrop-blur-sm"
+                  onClick={(e) => {
+                    console.log(`🔘 [RANKING_GRID_DEBUG] Info button clicked for ${pokemon.name}`);
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
                 >
                   i
                 </button>
