@@ -1,17 +1,14 @@
 
 import React, { useEffect, useState } from "react";
-import { DragDropContext } from "react-beautiful-dnd";
 import { LoadingState } from "./LoadingState";
 import { AvailablePokemonSection } from "./AvailablePokemonSection";
 import { RankingsSection } from "./RankingsSection";
-import { useDragHandler } from "./useDragHandler";
 import { useTrueSkillSync } from "@/hooks/ranking/useTrueSkillSync";
 import { useRankings } from "@/hooks/battle/useRankings";
 import { LoadingType } from "@/hooks/usePokemonRanker";
 import { ITEMS_PER_PAGE } from "@/services/pokemon";
 import BattleControls from "@/components/battle/BattleControls";
 import { BattleType } from "@/hooks/battle/types";
-import { SingleBattle } from "@/hooks/battle/types";
 
 interface RankingUIProps {
   isLoading: boolean;
@@ -84,17 +81,24 @@ export const RankingUI: React.FC<RankingUIProps> = ({
   console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] hasManualChanges: ${hasManualChanges}`);
   console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] filteredAvailablePokemon length: ${filteredAvailablePokemon.length}`);
 
-  // Enhanced drag handler that marks manual changes
-  const { handleDragEnd } = useDragHandler(
-    availablePokemon,
-    rankedPokemon,
-    setAvailablePokemon,
-    (newRankedPokemon) => {
-      console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] Manual change detected, setting hasManualChanges to true`);
-      setHasManualChanges(true);
-      setRankedPokemon(newRankedPokemon);
-    }
-  );
+  // Handle manual reordering within the rankings
+  const handleManualReorder = (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => {
+    console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] Manual reorder: Pokemon ${draggedPokemonId} from ${sourceIndex} to ${destinationIndex}`);
+    setHasManualChanges(true);
+    
+    const newRankings = [...rankedPokemon];
+    const [movedPokemon] = newRankings.splice(sourceIndex, 1);
+    newRankings.splice(destinationIndex, 0, movedPokemon);
+    
+    setRankedPokemon(newRankings);
+  };
+
+  // Handle local reordering (for DragDropGrid compatibility)
+  const handleLocalReorder = (newRankings: any[]) => {
+    console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] Local reorder with ${newRankings.length} Pokemon`);
+    setHasManualChanges(true);
+    setRankedPokemon(newRankings);
+  };
 
   if (isLoading && availablePokemon.length === 0) {
     return (
@@ -120,31 +124,34 @@ export const RankingUI: React.FC<RankingUIProps> = ({
         />
       </div>
       
-      <DragDropContext onDragEnd={handleDragEnd}>
-        <div className="max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-2 gap-2" style={{ height: 'calc(100vh - 8rem)' }}>
-            {/* Left side - Available Pokemon (unrated) with enhanced styling */}
-            <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden flex flex-col">
-              <AvailablePokemonSection
-                availablePokemon={filteredAvailablePokemon}
-                isLoading={isLoading}
-                selectedGeneration={selectedGeneration}
-                loadingType={loadingType}
-                currentPage={currentPage}
-                totalPages={totalPages}
-                loadingRef={loadingRef}
-                handlePageChange={handlePageChange}
-                getPageRange={getPageRange}
-              />
-            </div>
-            
-            {/* Right side - Rankings with enhanced styling */}
-            <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden flex flex-col">
-              <RankingsSection displayRankings={displayRankings} />
-            </div>
+      <div className="max-w-7xl mx-auto">
+        <div className="grid md:grid-cols-2 gap-2" style={{ height: 'calc(100vh - 8rem)' }}>
+          {/* Left side - Available Pokemon (unrated) with enhanced styling */}
+          <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden flex flex-col">
+            <AvailablePokemonSection
+              availablePokemon={filteredAvailablePokemon}
+              isLoading={isLoading}
+              selectedGeneration={selectedGeneration}
+              loadingType={loadingType}
+              currentPage={currentPage}
+              totalPages={totalPages}
+              loadingRef={loadingRef}
+              handlePageChange={handlePageChange}
+              getPageRange={getPageRange}
+            />
+          </div>
+          
+          {/* Right side - Rankings with enhanced styling */}
+          <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden flex flex-col">
+            <RankingsSection 
+              displayRankings={displayRankings}
+              onManualReorder={handleManualReorder}
+              onLocalReorder={handleLocalReorder}
+              pendingRefinements={new Set()}
+            />
           </div>
         </div>
-      </DragDropContext>
+      </div>
     </div>
   );
 };

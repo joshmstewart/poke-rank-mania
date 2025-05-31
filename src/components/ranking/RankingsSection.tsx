@@ -1,123 +1,65 @@
 
-import React, { useState, useRef, useCallback, useEffect } from "react";
-import PokemonList from "@/components/PokemonList";
-import { Trophy, Star } from "lucide-react";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import React from "react";
+import { Pokemon, RankedPokemon } from "@/services/pokemon";
+import DragDropGrid from "@/components/battle/DragDropGrid";
 
 interface RankingsSectionProps {
-  displayRankings: any[];
+  displayRankings: (Pokemon | RankedPokemon)[];
+  onManualReorder?: (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => void;
+  onLocalReorder?: (newRankings: (Pokemon | RankedPokemon)[]) => void;
+  pendingRefinements?: Set<number>;
 }
 
 export const RankingsSection: React.FC<RankingsSectionProps> = ({
-  displayRankings
+  displayRankings,
+  onManualReorder,
+  onLocalReorder,
+  pendingRefinements = new Set()
 }) => {
-  const [displayedRankedCount, setDisplayedRankedCount] = useState(50);
-  const rankedScrollRef = useRef<HTMLDivElement>(null);
-
-  // Load more ranked Pokemon when scrolling
-  const loadMoreRanked = useCallback(() => {
-    if (displayedRankedCount < displayRankings.length) {
-      setDisplayedRankedCount(prev => Math.min(prev + 50, displayRankings.length));
-      console.log(`[RANKED_INFINITE_SCROLL] Loading more ranked Pokemon: ${displayedRankedCount} -> ${Math.min(displayedRankedCount + 50, displayRankings.length)}`);
-    }
-  }, [displayedRankedCount, displayRankings.length]);
-
-  // Set up intersection observer for ranked Pokemon infinite scroll
-  useEffect(() => {
-    const currentRef = rankedScrollRef.current;
-    if (!currentRef) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && displayedRankedCount < displayRankings.length) {
-          loadMoreRanked();
-        }
-      },
-      { rootMargin: '200px', threshold: 0.1 }
-    );
-
-    observer.observe(currentRef);
-
-    return () => {
-      if (currentRef) {
-        observer.unobserve(currentRef);
-      }
-    };
-  }, [displayedRankedCount, displayRankings.length, loadMoreRanked]);
-
-  // Reset displayed count when ranked Pokemon list changes
-  useEffect(() => {
-    setDisplayedRankedCount(Math.min(50, displayRankings.length));
-    console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] Reset displayedRankedCount to: ${Math.min(50, displayRankings.length)}`);
-  }, [displayRankings.length]);
-
-  // Get the currently displayed ranked Pokemon
-  const displayedRankedPokemon = displayRankings.slice(0, displayedRankedCount);
+  console.log(`🔍 [RANKINGS_SECTION] Rendering with ${displayRankings.length} Pokemon`);
   
-  console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] displayedRankedPokemon length: ${displayedRankedPokemon.length}`);
-  console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] displayedRankedPokemon sample:`, displayedRankedPokemon.slice(0, 2));
+  const handleMarkAsPending = (pokemonId: number) => {
+    console.log(`🔍 [RANKINGS_SECTION] Marking Pokemon ${pokemonId} as pending`);
+    // For manual mode, we don't need special pending logic like battle mode
+  };
+
+  const handleLocalReorderWrapper = (newRankings: (Pokemon | RankedPokemon)[]) => {
+    console.log(`🔍 [RANKINGS_SECTION] Local reorder with ${newRankings.length} Pokemon`);
+    if (onLocalReorder) {
+      onLocalReorder(newRankings);
+    }
+  };
 
   return (
-    <>
-      {/* Header with gradient background - reduced padding */}
-      <div className="bg-gradient-to-r from-amber-600 to-orange-600 text-white p-3 border-b flex-shrink-0">
-        <h2 className="text-base font-bold flex items-center gap-2">
-          <Trophy className="w-4 h-4 text-amber-200" />
-          Your Rankings ({displayRankings.length})
-        </h2>
-        <p className="text-amber-100 text-xs mt-0.5">
-          {displayRankings.length > 0 ? 'TrueSkill Ordered • Battle Mode synced' : 'No rankings yet'}
-        </p>
-      </div>
-
-      {/* Content area with proper scrolling - reduced padding */}
-      <div className="flex-1 min-h-0">
-        <ScrollArea className="h-full">
-          <div className="bg-gray-50 min-h-full p-1">
-            <PokemonList
-              title=""
-              pokemonList={displayedRankedPokemon}
-              droppableId="ranked"
-              isRankingArea={true}
-            />
-          </div>
-        </ScrollArea>
+    <div className="flex flex-col h-full">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-yellow-400 to-yellow-600 text-white p-3 flex items-center justify-between">
+        <h2 className="text-lg font-bold">Your Rankings</h2>
+        <div className="text-sm">
+          {displayRankings.length} Pokémon ranked
+        </div>
       </div>
       
-      {/* Footer with status information - reduced padding */}
-      <div className="border-t bg-white p-1.5 flex-shrink-0">
-        {/* Infinite scroll loading for ranked Pokemon */}
-        {displayedRankedCount < displayRankings.length && (
-          <div 
-            ref={rankedScrollRef}
-            className="text-center py-1.5 text-xs text-gray-600 bg-blue-50 rounded-lg border border-blue-200"
-          >
-            <div className="flex items-center justify-center gap-2">
-              <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-              Loading more... ({displayedRankedCount}/{displayRankings.length})
+      {/* Rankings Grid */}
+      <div className="flex-1 overflow-y-auto p-4">
+        {displayRankings.length === 0 ? (
+          <div className="flex items-center justify-center h-full text-gray-500">
+            <div className="text-center">
+              <p className="text-lg mb-2">No Pokémon ranked yet</p>
+              <p className="text-sm">Drag Pokémon from the left to start ranking!</p>
             </div>
           </div>
-        )}
-        
-        {/* Show completion message when all ranked Pokemon are loaded */}
-        {displayedRankedCount >= displayRankings.length && displayRankings.length > 0 && (
-          <div className="text-center text-xs bg-green-50 border border-green-200 rounded-lg p-2">
-            <div className="flex items-center justify-center gap-2 text-green-700">
-              <Star className="w-3 h-3 fill-current" />
-              All {displayRankings.length} ranked Pokémon loaded
-            </div>
-            <p className="text-green-600 text-xs mt-1">Rankings based on TrueSkill ratings from Battle Mode</p>
-          </div>
-        )}
-        
-        {/* Show message when no ranked Pokemon */}
-        {displayRankings.length === 0 && (
-          <div className="text-center bg-blue-50 border border-blue-200 rounded-lg p-3">
-            <div className="text-blue-700 text-xs font-medium mb-1">No ranked Pokémon yet</div>
-            <p className="text-blue-600 text-xs">Complete some battles in Battle Mode to see rankings here</p>
-          </div>
+        ) : (
+          <DragDropGrid
+            displayRankings={displayRankings}
+            localPendingRefinements={pendingRefinements}
+            pendingBattleCounts={new Map()}
+            onManualReorder={onManualReorder || (() => {})}
+            onLocalReorder={handleLocalReorderWrapper}
+            onMarkAsPending={handleMarkAsPending}
+          />
         )}
       </div>
-    </>
+    </div>
   );
 };
