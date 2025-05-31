@@ -108,9 +108,10 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
         
         set({ ratings: {}, lastSyncedAt: null });
         
-        // Sync clear to cloud and trigger events
-        setTimeout(() => {
-          get().syncToCloud();
+        // CRITICAL FIX: Clear cloud data immediately and don't restore from cloud
+        setTimeout(async () => {
+          console.log(`[TRUESKILL_CLEAR] ===== CLEARING CLOUD DATA =====`);
+          await get().clearCloudData();
           
           const clearEvent = new CustomEvent('trueskill-store-cleared');
           document.dispatchEvent(clearEvent);
@@ -122,7 +123,61 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
             }
           });
           document.dispatchEvent(syncEvent);
+          
+          console.log(`[TRUESKILL_CLEAR] ===== CLEAR COMPLETE - NO CLOUD RELOAD =====`);
         }, 100);
+      },
+      
+      // NEW: Function to clear cloud data
+      clearCloudData: async () => {
+        const state = get();
+        
+        console.log(`🌐 [CLOUD_CLEAR] ===== CLEARING CLOUD DATA =====`);
+        console.log(`🌐 [CLOUD_CLEAR] Session ID: ${state.sessionId.substring(0, 8)}...`);
+        
+        try {
+          // Check current user status
+          const { data: { user }, error: userError } = await supabase.auth.getUser();
+          
+          if (userError) {
+            console.log(`🌐 [CLOUD_CLEAR] Auth check error:`, userError.message);
+          }
+          
+          if (user?.id) {
+            // Authenticated user - clear user_id data
+            console.log(`🌐 [CLOUD_CLEAR] Clearing for authenticated user:`, user.id);
+            
+            const { error: deleteError } = await supabase
+              .from('trueskill_sessions')
+              .delete()
+              .eq('user_id', user.id)
+              .is('session_id', null);
+            
+            if (deleteError) {
+              console.log(`🌐 [CLOUD_CLEAR] Error clearing authenticated user data:`, deleteError);
+            } else {
+              console.log(`🌐 [CLOUD_CLEAR] ✅ Cleared authenticated user data`);
+            }
+          } else {
+            // Anonymous user - clear session_id data
+            console.log(`🌐 [CLOUD_CLEAR] Clearing for anonymous session:`, state.sessionId.substring(0, 8) + '...');
+            
+            const { error: deleteError } = await supabase
+              .from('trueskill_sessions')
+              .delete()
+              .eq('session_id', state.sessionId)
+              .is('user_id', null);
+            
+            if (deleteError) {
+              console.log(`🌐 [CLOUD_CLEAR] Error clearing anonymous session data:`, deleteError);
+            } else {
+              console.log(`🌐 [CLOUD_CLEAR] ✅ Cleared anonymous session data`);
+            }
+          }
+          
+        } catch (error) {
+          console.log(`🌐 [CLOUD_CLEAR] Unexpected error clearing cloud data:`, error);
+        }
       },
       
       // ENHANCED: Detailed cloud sync logging
@@ -229,7 +284,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
         }
       },
       
-      // ENHANCED: Ultra-detailed cloud loading with critical rating count tracking
+      // ENHANCED: Modified to not auto-load after a clear operation
       loadFromCloud: async () => {
         const state = get();
         const localRatingsCount = Object.keys(state.ratings).length;
@@ -240,6 +295,14 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
         console.log(`🌐🌐🌐 [CLOUD_LOAD_CRITICAL] Local ratings count: ${localRatingsCount}`);
         console.log(`🌐🌐🌐 [CLOUD_LOAD_CRITICAL] Local rating IDs: ${Object.keys(state.ratings).slice(0, 15).join(', ')}${Object.keys(state.ratings).length > 15 ? '...' : ''}`);
         console.log(`🌐🌐🌐 [CLOUD_LOAD_CRITICAL] Session ID: ${state.sessionId.substring(0, 8)}...`);
+        
+        // CRITICAL FIX: Don't load from cloud immediately after a clear
+        if (localRatingsCount === 0 && !state.lastSyncedAt) {
+          console.log(`🌐🌐🌐 [CLOUD_LOAD_CRITICAL] ===== RECENTLY CLEARED - SKIPPING CLOUD LOAD =====`);
+          console.log(`🌐🌐🌐 [CLOUD_LOAD_CRITICAL] Local is empty and no lastSyncedAt - assuming recent clear`);
+          set({ isLoading: false });
+          return;
+        }
         
         try {
           set({ isLoading: true });
