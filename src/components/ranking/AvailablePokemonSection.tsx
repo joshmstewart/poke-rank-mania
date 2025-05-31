@@ -83,7 +83,6 @@ export const AvailablePokemonSection: React.FC<AvailablePokemonSectionProps> = (
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
           >
-            {/* No SortableContext here - we don't want internal reordering */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
               {availablePokemon.map((pokemon, index) => (
                 <DraggablePokemonCard
@@ -91,6 +90,7 @@ export const AvailablePokemonSection: React.FC<AvailablePokemonSectionProps> = (
                   pokemon={pokemon}
                   index={index}
                   isPending={false}
+                  showRank={false}
                 />
               ))}
             </div>

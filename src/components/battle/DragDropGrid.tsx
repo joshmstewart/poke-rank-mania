@@ -106,6 +106,7 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
                 pokemon={pokemon}
                 index={index}
                 isPending={isPending}
+                showRank={true}
               />
             );
           })}

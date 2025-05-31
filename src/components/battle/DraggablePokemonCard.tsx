@@ -12,12 +12,14 @@ interface DraggablePokemonCardProps {
   pokemon: Pokemon | RankedPokemon;
   index: number;
   isPending?: boolean;
+  showRank?: boolean;
 }
 
 const DraggablePokemonCard: React.FC<DraggablePokemonCardProps> = ({ 
   pokemon, 
   index, 
-  isPending = false 
+  isPending = false,
+  showRank = true
 }) => {
   console.log(`🚨 [CARD_SETUP_DEBUG] ===== RENDERING CARD ${pokemon.name} =====`);
   console.log(`🚨 [CARD_SETUP_DEBUG] isPending: ${isPending}`);
@@ -71,7 +73,7 @@ const DraggablePokemonCard: React.FC<DraggablePokemonCardProps> = ({
       onClick={handleClick}
     >
       <PendingBanner isPending={isPending} />
-      <PokemonCardContent pokemon={pokemon} index={index} isPending={isPending} />
+      <PokemonCardContent pokemon={pokemon} index={index} isPending={isPending} showRank={showRank} />
     </div>
   );
 };
