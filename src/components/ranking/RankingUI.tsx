@@ -57,62 +57,56 @@ export const RankingUI: React.FC<RankingUIProps> = ({
   // Local state to track if user has made manual changes
   const [hasManualChanges, setHasManualChanges] = useState(false);
   
-  // Track if we've already initialized from TrueSkill for this generation
-  const [trueskillInitialized, setTrueskillInitialized] = useState(false);
-  
   // Battle type state (needed for BattleControls compatibility)
   const [battleType, setBattleType] = useState<BattleType>("pairs");
   
-  // CRITICAL FIX: Add drag overlay state
+  // Add drag overlay state
   const [activeDraggedPokemon, setActiveDraggedPokemon] = useState<any>(null);
   
   // CRITICAL FIX: Initialize from TrueSkill when switching to Manual mode
   useEffect(() => {
     const trueskillRankings = localRankings.length > 0 ? localRankings : battleModeRankings;
     
-    console.log(`🔄 [TRUESKILL_INIT] Checking TrueSkill initialization for gen ${selectedGeneration}`);
+    console.log(`🔄 [TRUESKILL_INIT] Manual mode initialization check for gen ${selectedGeneration}`);
     console.log(`🔄 [TRUESKILL_INIT] rankedPokemon.length: ${rankedPokemon.length}`);
     console.log(`🔄 [TRUESKILL_INIT] trueskillRankings.length: ${trueskillRankings.length}`);
-    console.log(`🔄 [TRUESKILL_INIT] trueskillInitialized: ${trueskillInitialized}`);
+    console.log(`🔄 [TRUESKILL_INIT] hasManualChanges: ${hasManualChanges}`);
     
-    // If we have TrueSkill data but no manual rankings, and haven't initialized yet
-    if (trueskillRankings.length > 0 && rankedPokemon.length === 0 && !trueskillInitialized) {
-      console.log(`🔄 [TRUESKILL_INIT] ✅ Initializing from TrueSkill: ${trueskillRankings.length} Pokemon`);
-      setRankedPokemon(trueskillRankings);
-      setTrueskillInitialized(true);
-    }
-  }, [localRankings, battleModeRankings, rankedPokemon.length, trueskillInitialized, selectedGeneration, setRankedPokemon]);
-
-  // Reset initialization flag when generation changes
-  useEffect(() => {
-    console.log(`🔄 [TRUESKILL_INIT] Generation changed to ${selectedGeneration}, resetting initialization flag`);
-    setTrueskillInitialized(false);
-    setHasManualChanges(false);
-  }, [selectedGeneration]);
-
-  // CRITICAL FIX: Add persistence effect
-  useEffect(() => {
-    console.log(`💾 [PERSISTENCE_DEBUG] Saving ranked Pokemon to localStorage: ${rankedPokemon.length} items`);
-    if (rankedPokemon.length > 0) {
-      localStorage.setItem(`manual-rankings-gen-${selectedGeneration}`, JSON.stringify(rankedPokemon));
-    }
-  }, [rankedPokemon, selectedGeneration]);
-
-  // CRITICAL FIX: Load persisted rankings on generation change
-  useEffect(() => {
+    // Check for saved manual rankings first
     const savedRankings = localStorage.getItem(`manual-rankings-gen-${selectedGeneration}`);
+    
     if (savedRankings) {
       try {
         const parsed = JSON.parse(savedRankings);
-        console.log(`💾 [PERSISTENCE_DEBUG] Loading saved rankings for gen ${selectedGeneration}: ${parsed.length} items`);
+        console.log(`🔄 [TRUESKILL_INIT] Loading saved manual rankings: ${parsed.length} items`);
         setRankedPokemon(parsed);
         setHasManualChanges(true);
-        setTrueskillInitialized(true); // Mark as initialized since we loaded manual data
+        return;
       } catch (error) {
-        console.error(`💾 [PERSISTENCE_DEBUG] Failed to load saved rankings:`, error);
+        console.error(`🔄 [TRUESKILL_INIT] Failed to load saved rankings:`, error);
       }
     }
-  }, [selectedGeneration, setRankedPokemon]);
+    
+    // If no saved rankings and no current manual rankings, initialize from TrueSkill
+    if (trueskillRankings.length > 0 && rankedPokemon.length === 0) {
+      console.log(`🔄 [TRUESKILL_INIT] ✅ Initializing from TrueSkill: ${trueskillRankings.length} Pokemon`);
+      setRankedPokemon(trueskillRankings);
+    }
+  }, [localRankings, battleModeRankings, selectedGeneration, rankedPokemon.length, setRankedPokemon]);
+
+  // Reset state when generation changes
+  useEffect(() => {
+    console.log(`🔄 [TRUESKILL_INIT] Generation changed to ${selectedGeneration}, resetting state`);
+    setHasManualChanges(false);
+  }, [selectedGeneration]);
+
+  // Persistence effect
+  useEffect(() => {
+    console.log(`💾 [PERSISTENCE_DEBUG] Saving ranked Pokemon to localStorage: ${rankedPokemon.length} items`);
+    if (rankedPokemon.length > 0 && hasManualChanges) {
+      localStorage.setItem(`manual-rankings-gen-${selectedGeneration}`, JSON.stringify(rankedPokemon));
+    }
+  }, [rankedPokemon, selectedGeneration, hasManualChanges]);
   
   // Determine what to show on the right side - always use manual state once populated
   const displayRankings = rankedPokemon;
@@ -123,7 +117,7 @@ export const RankingUI: React.FC<RankingUIProps> = ({
   
   console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] Manual rankedPokemon: ${rankedPokemon.length}, localRankings: ${localRankings.length}, battleModeRankings: ${battleModeRankings.length}`);
   console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] displayRankings length: ${displayRankings.length}`);
-  console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] hasManualChanges: ${hasManualChanges}, trueskillInitialized: ${trueskillInitialized}`);
+  console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] hasManualChanges: ${hasManualChanges}`);
   console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] filteredAvailablePokemon length: ${filteredAvailablePokemon.length}`);
 
   // Handle drag from available to rankings
@@ -175,10 +169,8 @@ export const RankingUI: React.FC<RankingUIProps> = ({
   const handleDragStart = (event: DragStartEvent) => {
     console.log(`🔄🔄🔄 [DRAG_DEBUG] === DRAG START ===`);
     console.log(`🔄🔄🔄 [DRAG_DEBUG] Active ID: ${event.active.id}`);
-    console.log(`🔄🔄🔄 [DRAG_DEBUG] Active data:`, event.active.data?.current);
-    console.log(`🔄🔄🔄 [DRAG_DEBUG] Active element:`, event.active);
 
-    // CRITICAL FIX: Set the dragged Pokemon for overlay
+    // Set the dragged Pokemon for overlay
     const activeId = event.active.id.toString();
     let draggedPokemon = null;
     
@@ -197,9 +189,8 @@ export const RankingUI: React.FC<RankingUIProps> = ({
 
   const handleDragEnd = (event: DragEndEvent) => {
     console.log(`🔄🔄🔄 [DRAG_DEBUG] === DRAG END ===`);
-    console.log(`🔄🔄🔄 [DRAG_DEBUG] Full event:`, event);
     
-    // CRITICAL FIX: Clear the drag overlay
+    // Clear the drag overlay
     setActiveDraggedPokemon(null);
     
     const { active, over } = event;
@@ -214,8 +205,6 @@ export const RankingUI: React.FC<RankingUIProps> = ({
 
     console.log(`🔄🔄🔄 [DRAG_DEBUG] Active ID: ${activeId}`);
     console.log(`🔄🔄🔄 [DRAG_DEBUG] Over ID: ${overId}`);
-    console.log(`🔄🔄🔄 [DRAG_DEBUG] Active data:`, active.data?.current);
-    console.log(`🔄🔄🔄 [DRAG_DEBUG] Over data:`, over.data?.current);
 
     // Check if dragging from available to rankings
     if (activeId.startsWith('available-')) {
@@ -226,7 +215,6 @@ export const RankingUI: React.FC<RankingUIProps> = ({
       const pokemon = filteredAvailablePokemon.find(p => p.id === pokemonId);
       if (!pokemon) {
         console.log(`🔄🔄🔄 [DRAG_DEBUG] ❌ Pokemon ${pokemonId} not found in available list`);
-        console.log(`🔄🔄🔄 [DRAG_DEBUG] Available Pokemon IDs:`, filteredAvailablePokemon.map(p => p.id));
         return;
       }
       
@@ -333,7 +321,7 @@ export const RankingUI: React.FC<RankingUIProps> = ({
         </div>
       </div>
 
-      {/* CRITICAL FIX: Add drag overlay for visibility */}
+      {/* Add drag overlay for visibility */}
       <DragOverlay>
         {activeDraggedPokemon ? (
           <div className="opacity-90 transform scale-105 shadow-2xl z-50">
