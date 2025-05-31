@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { useDraggable } from '@dnd-kit/core';
 import { Pokemon } from "@/services/pokemon";
 import { normalizePokedexNumber } from "@/utils/pokemon";
+import { getPokemonBackgroundColor } from "@/components/battle/utils/PokemonColorUtils";
 import PokemonInfoModal from "@/components/pokemon/PokemonInfoModal";
 
 interface DraggableAvailablePokemonCardProps {
@@ -42,6 +43,9 @@ export const DraggableAvailablePokemonCard: React.FC<DraggableAvailablePokemonCa
 
   const normalizedId = normalizePokedexNumber(pokemon.id);
   const isImageLoaded = loadedImages.has(pokemon.id);
+  
+  // CRITICAL: Use the same background color logic as ranking cards
+  const backgroundColor = getPokemonBackgroundColor(pokemon);
 
   const style = transform ? {
     transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
@@ -50,19 +54,24 @@ export const DraggableAvailablePokemonCard: React.FC<DraggableAvailablePokemonCa
   const handleInfoClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
+    console.log(`🔍 [AVAILABLE_INFO_CLICK] Info button clicked for ${pokemon.name}`);
     setIsInfoModalOpen(true);
   };
 
   const handleModalOpenChange = (open: boolean) => {
+    console.log(`🔍 [AVAILABLE_MODAL_CHANGE] Modal ${open ? 'opened' : 'closed'} for ${pokemon.name}`);
     setIsInfoModalOpen(open);
   };
 
+  console.log(`🎨 [AVAILABLE_CARD_RENDER] ${pokemon.name}: backgroundColor=${backgroundColor}, types=${JSON.stringify(pokemon.types)}`);
+
   return (
     <div className="relative group">
-      {/* Info button - EXACTLY like rankings */}
+      {/* Info button - Same as ranking cards */}
       <div className="absolute top-1 right-1 z-50">
         <PokemonInfoModal 
           pokemon={pokemon}
+          open={isInfoModalOpen}
           onOpenChange={handleModalOpenChange}
         >
           <button 
@@ -76,21 +85,21 @@ export const DraggableAvailablePokemonCard: React.FC<DraggableAvailablePokemonCa
         </PokemonInfoModal>
       </div>
 
-      {/* Card - EXACTLY matching rankings card styling except badge color */}
+      {/* Card - EXACTLY matching ranking cards with type-colored background */}
       <div 
         ref={setNodeRef} 
         style={style}
-        className={`bg-white rounded-lg border-2 border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow ${isDragging ? 'opacity-50 scale-105 z-40' : ''} cursor-grab active:cursor-grabbing`}
+        className={`${backgroundColor} rounded-lg border-2 border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow ${isDragging ? 'opacity-50 scale-105 z-40' : ''} cursor-grab active:cursor-grabbing`}
         {...attributes}
         {...listeners}
       >
-        {/* Available badge - blue instead of yellow, but same structure as rank badge */}
+        {/* Available badge - blue instead of rank number */}
         <div className="bg-gradient-to-r from-blue-400 to-blue-600 text-white text-center py-1">
           <span className="text-sm font-bold">Available</span>
         </div>
 
-        {/* Pokemon image - EXACTLY like rankings */}
-        <div className="aspect-square bg-gray-50 p-2 relative">
+        {/* Pokemon image - Same as ranking cards */}
+        <div className="aspect-square bg-gray-50/50 p-2 relative">
           {!isImageLoaded && (
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="w-8 h-8 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin"></div>
@@ -106,7 +115,7 @@ export const DraggableAvailablePokemonCard: React.FC<DraggableAvailablePokemonCa
           />
         </div>
 
-        {/* Pokemon info - EXACTLY matching rankings styling */}
+        {/* Pokemon info - Same as ranking cards */}
         <div className="p-2 space-y-1">
           <h3 className="text-sm font-semibold text-center line-clamp-2 min-h-[2.5rem] flex items-center justify-center">
             {pokemon.name}

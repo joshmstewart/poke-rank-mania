@@ -14,6 +14,7 @@ export const useRankingDragDrop = (
   const { updateRating } = useTrueSkillStore();
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
+    console.log(`🔥 [DRAG_START] ===== DRAG START =====`);
     console.log(`🔥 [DRAG_START] Active ID: ${event.active.id}`);
 
     const activeId = event.active.id.toString();
@@ -33,14 +34,16 @@ export const useRankingDragDrop = (
   }, [availablePokemon, localRankings]);
 
   const handleDragEnd = useCallback((event: DragEndEvent) => {
+    console.log(`🔥 [DRAG_END] ===== DRAG END =====`);
     console.log(`🔥 [DRAG_END] Active: ${event.active.id}, Over: ${event.over?.id || 'NULL'}`);
+    console.log(`🔥 [DRAG_END] Over data:`, event.over?.data?.current);
     
     setActiveDraggedPokemon(null);
     
     const { active, over } = event;
     
     if (!over) {
-      console.log(`🔥 [DRAG_END] No drop target`);
+      console.log(`🔥 [DRAG_END] ❌ No drop target`);
       return;
     }
 
@@ -52,33 +55,40 @@ export const useRankingDragDrop = (
       const pokemonId = parseInt(activeId.replace('available-', ''));
       console.log(`🔥 [DRAG_END] Available Pokemon ${pokemonId} dragged to ${overId}`);
       
-      // More comprehensive check for rankings drop zone
-      const isRankingsTarget = (
+      // CRITICAL: Enhanced drop zone detection
+      const isRankingsDropZone = (
         overId === 'rankings-drop-zone' || 
         overId === 'rankings-section' ||
         overId.startsWith('rankings') ||
+        // Check if over data indicates it's a rankings target
+        (over.data?.current?.type === 'rankings-container') ||
+        (over.data?.current?.accepts === 'available-pokemon') ||
         // Also check if dropped on any ranked pokemon
-        (!overId.startsWith('available-') && !isNaN(parseInt(overId)))
+        (!overId.startsWith('available-') && !isNaN(parseInt(overId)) && localRankings.some(p => p.id === parseInt(overId)))
       );
       
-      console.log(`🔥 [DRAG_END] Is rankings target: ${isRankingsTarget}`);
+      console.log(`🔥 [DRAG_END] Drop zone analysis:`);
+      console.log(`🔥 [DRAG_END] - overId: ${overId}`);
+      console.log(`🔥 [DRAG_END] - over.data.current:`, over.data?.current);
+      console.log(`🔥 [DRAG_END] - isRankingsDropZone: ${isRankingsDropZone}`);
+      console.log(`🔥 [DRAG_END] - localRankings count: ${localRankings.length}`);
       
-      if (isRankingsTarget) {
-        console.log(`🔥 [DRAG_END] Adding Pokemon ${pokemonId} to rankings`);
+      if (isRankingsDropZone) {
+        console.log(`🔥 [DRAG_END] ✅ Valid rankings drop zone - adding Pokemon ${pokemonId}`);
         
         const pokemon = availablePokemon.find(p => p.id === pokemonId);
         if (pokemon) {
-          console.log(`🔥 [DRAG_END] Found pokemon:`, pokemon.name);
+          console.log(`🔥 [DRAG_END] ✅ Found pokemon:`, pokemon.name);
           
           // Add to TrueSkill store with default rating
           const defaultRating = new Rating(25.0, 8.333);
           updateRating(pokemonId, defaultRating);
-          console.log(`🔥 [DRAG_END] Added rating to TrueSkill store for ${pokemonId}`);
+          console.log(`🔥 [DRAG_END] ✅ Added rating to TrueSkill store for ${pokemonId}`);
           
           // Remove from available
           setAvailablePokemon(prev => {
             const newAvailable = prev.filter(p => p.id !== pokemonId);
-            console.log(`🔥 [DRAG_END] Removed from available. New count: ${newAvailable.length}`);
+            console.log(`🔥 [DRAG_END] ✅ Removed from available. New count: ${newAvailable.length}`);
             return newAvailable;
           });
           
@@ -88,14 +98,15 @@ export const useRankingDragDrop = (
               detail: { pokemonId, source: 'drag-to-rankings' }
             });
             document.dispatchEvent(event);
-            console.log(`🔥 [DRAG_END] Dispatched trueskill-store-updated event`);
+            console.log(`🔥 [DRAG_END] ✅ Dispatched trueskill-store-updated event`);
           }, 100);
         } else {
           console.error(`🔥 [DRAG_END] ❌ Pokemon ${pokemonId} not found in available list!`);
         }
         return;
       } else {
-        console.log(`🔥 [DRAG_END] Not a rankings target - ignoring drop`);
+        console.log(`🔥 [DRAG_END] ❌ Not a valid rankings target - ignoring drop`);
+        console.log(`🔥 [DRAG_END] ❌ Available drop zones: rankings-drop-zone, rankings-section, or ranked pokemon IDs`);
       }
     }
 
@@ -108,7 +119,7 @@ export const useRankingDragDrop = (
       const newIndex = localRankings.findIndex(p => p.id === overPokemonId);
       
       if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-        console.log(`🔥 [DRAG_END] Reordering from ${oldIndex} to ${newIndex}`);
+        console.log(`🔥 [DRAG_END] ✅ Reordering from ${oldIndex} to ${newIndex}`);
         handleEnhancedManualReorder(activePokemonId, oldIndex, newIndex);
       }
     }
