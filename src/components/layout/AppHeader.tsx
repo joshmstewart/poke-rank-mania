@@ -24,7 +24,10 @@ const AppHeader: React.FC<AppHeaderProps> = ({ mode, onModeChange }) => {
           <ModeStyleControls mode={mode} onModeChange={onModeChange} />
           
           {/* Right side - ONLY SaveProgressSection (no other auth components) */}
-          <SaveProgressSection />
+          <div className="bg-blue-200 border-2 border-blue-600 p-2">
+            <div className="text-xs text-blue-800 mb-1">DEBUG: HEADER RIGHT SIDE</div>
+            <SaveProgressSection />
+          </div>
         </div>
       </div>
     </header>
