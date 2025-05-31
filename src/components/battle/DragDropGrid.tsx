@@ -31,7 +31,7 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
       items={displayRankings.map(p => p.id)} 
       strategy={rectSortingStrategy}
     >
-      <div className="grid grid-cols-5 gap-4">
+      <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))' }}>
         {displayRankings.map((pokemon, index) => {
           const isPending = localPendingRefinements.has(pokemon.id);
           const pendingCount = pendingBattleCounts.get(pokemon.id) || 0;

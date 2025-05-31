@@ -41,7 +41,7 @@ export const AvailablePokemonSection: React.FC<AvailablePokemonSectionProps> = (
         </div>
       </div>
       
-      {/* Pokemon Grid - Same 5-column layout as milestone */}
+      {/* Pokemon Grid - Responsive grid with minimum card width */}
       <div className="flex-1 overflow-y-auto p-4">
         {availablePokemon.length === 0 ? (
           <div className="flex items-center justify-center h-full text-gray-500">
@@ -51,7 +51,7 @@ export const AvailablePokemonSection: React.FC<AvailablePokemonSectionProps> = (
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-5 gap-4">
+          <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))' }}>
             {availablePokemon.map((pokemon) => (
               <DraggableAvailablePokemonCard
                 key={pokemon.id}

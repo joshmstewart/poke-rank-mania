@@ -21,7 +21,7 @@ const DraggableMilestoneGrid: React.FC<DraggableMilestoneGridProps> = ({
       items={displayRankings.map(p => p.id)} 
       strategy={rectSortingStrategy}
     >
-      <div className="grid grid-cols-5 gap-4 mb-6">
+      <div className="grid gap-4 mb-6" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))' }}>
         {displayRankings.map((pokemon, index) => {
           const isPending = localPendingRefinements.has(pokemon.id);
           
