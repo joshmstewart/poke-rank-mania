@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from "react";
-import { DndContext, DragEndEvent, DragStartEvent, closestCenter } from '@dnd-kit/core';
+import { DndContext, DragEndEvent, DragStartEvent, closestCenter, DragOverlay } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
 import { LoadingState } from "./LoadingState";
 import { AvailablePokemonSection } from "./AvailablePokemonSection";
@@ -11,6 +11,7 @@ import { LoadingType } from "@/hooks/usePokemonRanker";
 import { ITEMS_PER_PAGE } from "@/services/pokemon";
 import BattleControls from "@/components/battle/BattleControls";
 import { BattleType } from "@/hooks/battle/types";
+import PokemonCard from "@/components/PokemonCard";
 
 interface RankingUIProps {
   isLoading: boolean;
@@ -59,6 +60,9 @@ export const RankingUI: React.FC<RankingUIProps> = ({
   // Battle type state (needed for BattleControls compatibility)
   const [battleType, setBattleType] = useState<BattleType>("pairs");
   
+  // CRITICAL FIX: Add drag overlay state
+  const [activeDraggedPokemon, setActiveDraggedPokemon] = useState<any>(null);
+  
   // Initialize rankings from TrueSkill when available (but only if no manual changes yet)
   useEffect(() => {
     // Only auto-populate if we don't have manual rankings AND we have TrueSkill data
@@ -70,6 +74,29 @@ export const RankingUI: React.FC<RankingUIProps> = ({
       }
     }
   }, [localRankings, battleModeRankings, rankedPokemon.length, hasManualChanges, setRankedPokemon]);
+
+  // CRITICAL FIX: Add persistence effect
+  useEffect(() => {
+    console.log(`💾 [PERSISTENCE_DEBUG] Saving ranked Pokemon to localStorage: ${rankedPokemon.length} items`);
+    if (rankedPokemon.length > 0) {
+      localStorage.setItem(`manual-rankings-gen-${selectedGeneration}`, JSON.stringify(rankedPokemon));
+    }
+  }, [rankedPokemon, selectedGeneration]);
+
+  // CRITICAL FIX: Load persisted rankings on generation change
+  useEffect(() => {
+    const savedRankings = localStorage.getItem(`manual-rankings-gen-${selectedGeneration}`);
+    if (savedRankings && !hasManualChanges) {
+      try {
+        const parsed = JSON.parse(savedRankings);
+        console.log(`💾 [PERSISTENCE_DEBUG] Loading saved rankings for gen ${selectedGeneration}: ${parsed.length} items`);
+        setRankedPokemon(parsed);
+        setHasManualChanges(true);
+      } catch (error) {
+        console.error(`💾 [PERSISTENCE_DEBUG] Failed to load saved rankings:`, error);
+      }
+    }
+  }, [selectedGeneration, hasManualChanges, setRankedPokemon]);
   
   // Determine what to show on the right side - always use manual state once populated
   const displayRankings = rankedPokemon;
@@ -134,11 +161,30 @@ export const RankingUI: React.FC<RankingUIProps> = ({
     console.log(`🔄🔄🔄 [DRAG_DEBUG] Active ID: ${event.active.id}`);
     console.log(`🔄🔄🔄 [DRAG_DEBUG] Active data:`, event.active.data?.current);
     console.log(`🔄🔄🔄 [DRAG_DEBUG] Active element:`, event.active);
+
+    // CRITICAL FIX: Set the dragged Pokemon for overlay
+    const activeId = event.active.id.toString();
+    let draggedPokemon = null;
+    
+    if (activeId.startsWith('available-')) {
+      const pokemonId = parseInt(activeId.replace('available-', ''));
+      draggedPokemon = filteredAvailablePokemon.find(p => p.id === pokemonId);
+      console.log(`🔄🔄🔄 [DRAG_DEBUG] Found available Pokemon for overlay: ${draggedPokemon?.name}`);
+    } else {
+      const pokemonId = parseInt(activeId);
+      draggedPokemon = displayRankings.find(p => p.id === pokemonId);
+      console.log(`🔄🔄🔄 [DRAG_DEBUG] Found ranked Pokemon for overlay: ${draggedPokemon?.name}`);
+    }
+    
+    setActiveDraggedPokemon(draggedPokemon);
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
     console.log(`🔄🔄🔄 [DRAG_DEBUG] === DRAG END ===`);
     console.log(`🔄🔄🔄 [DRAG_DEBUG] Full event:`, event);
+    
+    // CRITICAL FIX: Clear the drag overlay
+    setActiveDraggedPokemon(null);
     
     const { active, over } = event;
     
@@ -270,6 +316,20 @@ export const RankingUI: React.FC<RankingUIProps> = ({
           </div>
         </div>
       </div>
+
+      {/* CRITICAL FIX: Add drag overlay for visibility */}
+      <DragOverlay>
+        {activeDraggedPokemon ? (
+          <div className="opacity-90 transform scale-105 shadow-2xl z-50">
+            <PokemonCard 
+              pokemon={activeDraggedPokemon}
+              viewMode="grid"
+              compact={true}
+              isDragging={true}
+            />
+          </div>
+        ) : null}
+      </DragOverlay>
     </DndContext>
   );
 };

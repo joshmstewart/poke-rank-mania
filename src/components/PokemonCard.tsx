@@ -31,10 +31,32 @@ const PokemonCard = ({ pokemon, isDragging, viewMode = "list", compact }: Pokemo
   
   console.log(`🎮 [POKEMON_CARD_SIMPLE] Final render values:`, { pokemonId, displayName, imageUrl });
 
+  // CRITICAL FIX: Prevent unwanted card clicks
+  const handleCardClick = (e: React.MouseEvent) => {
+    console.log(`🎮 [POKEMON_CARD_CLICK_DEBUG] Card clicked for ${displayName}`);
+    console.log(`🎮 [POKEMON_CARD_CLICK_DEBUG] Target:`, e.target);
+    console.log(`🎮 [POKEMON_CARD_CLICK_DEBUG] Current target:`, e.currentTarget);
+    
+    // Check if click came from info button
+    const target = e.target as HTMLElement;
+    if (target.closest('[data-info-button="true"]') || target.textContent === 'i') {
+      console.log(`🎮 [POKEMON_CARD_CLICK_DEBUG] ❌ Click originated from info button - ignoring`);
+      return;
+    }
+    
+    // CRITICAL FIX: Don't do anything on card click - let drag handle interactions
+    console.log(`🎮 [POKEMON_CARD_CLICK_DEBUG] Regular card click - no action taken`);
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
   if (viewMode === "grid") {
     // Grid layout: compact vertical layout with image on top, name and number below
     return (
-      <Card className={`w-full overflow-hidden relative ${isDragging ? "opacity-50" : ""}`}>
+      <Card 
+        className={`w-full overflow-hidden relative ${isDragging ? "opacity-50" : ""}`}
+        onClick={handleCardClick}
+      >
         <div className="absolute top-1 right-1 z-10">
           <PokemonInfoModal pokemon={validatedPokemon} />
         </div>
@@ -67,7 +89,10 @@ const PokemonCard = ({ pokemon, isDragging, viewMode = "list", compact }: Pokemo
 
   // Original list layout for other views
   return (
-    <Card className={`w-full overflow-hidden relative ${isDragging ? "opacity-50" : ""}`}>
+    <Card 
+      className={`w-full overflow-hidden relative ${isDragging ? "opacity-50" : ""}`}
+      onClick={handleCardClick}
+    >
       <div className="absolute top-1 right-1 z-10">
         <PokemonInfoModal pokemon={validatedPokemon} />
       </div>
