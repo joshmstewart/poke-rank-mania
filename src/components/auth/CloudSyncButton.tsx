@@ -3,12 +3,25 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Cloud } from 'lucide-react';
 import { AuthDialog } from './AuthDialog';
+import { useAuth } from '@/contexts/AuthContext';
 
 export const CloudSyncButton: React.FC = () => {
+  const { user } = useAuth();
   const [showAuthDialog, setShowAuthDialog] = useState(false);
 
-  console.log('🟡 CloudSyncButton: RENDERING - This should NOT show when authenticated!');
-  console.log('🟡 CloudSyncButton: Component is being rendered from:', new Error().stack);
+  console.log('🟡 CloudSyncButton: RENDER CHECK', {
+    hasUser: !!user,
+    userEmail: user?.email,
+    shouldRender: !user
+  });
+
+  // Don't render anything if user is authenticated
+  if (user) {
+    console.log('🟡 CloudSyncButton: ❌ User is authenticated, returning null (not rendering)');
+    return null;
+  }
+
+  console.log('🟡 CloudSyncButton: ✅ User is NOT authenticated, rendering save progress button');
 
   return (
     <>
