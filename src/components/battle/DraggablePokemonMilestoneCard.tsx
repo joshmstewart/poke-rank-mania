@@ -51,6 +51,20 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
 
   const backgroundColorClass = getPokemonBackgroundColor(pokemon);
 
+  // Handle info button click to prevent drag interference
+  const handleInfoClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log(`Info button clicked for ${pokemon.name}`);
+  };
+
+  // Handle pointer down to prevent drag start on info button
+  const handleInfoPointerDown = (e: React.PointerEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    console.log(`Info button pointer down for ${pokemon.name}`);
+  };
+
   return (
     <div
       ref={setNodeRef}
@@ -74,16 +88,15 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       <div className="absolute top-1 right-1 z-30">
         <PokemonInfoModal pokemon={pokemon}>
           <button 
-            className="w-5 h-5 rounded-full bg-white/80 hover:bg-white border border-gray-300 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200 backdrop-blur-sm"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-            }}
-            onPointerDown={(e) => {
+            className="w-5 h-5 rounded-full bg-white/80 hover:bg-white border border-gray-300 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200 backdrop-blur-sm cursor-pointer"
+            onClick={handleInfoClick}
+            onPointerDown={handleInfoPointerDown}
+            onMouseDown={(e) => {
               e.stopPropagation();
               e.preventDefault();
             }}
             type="button"
+            style={{ pointerEvents: 'auto' }}
           >
             i
           </button>
