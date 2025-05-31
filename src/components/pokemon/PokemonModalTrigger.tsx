@@ -19,7 +19,6 @@ const PokemonModalTrigger: React.FC<PokemonModalTriggerProps> = ({
     // CRITICAL FIX: Prevent all event bubbling and default behavior
     e.preventDefault();
     e.stopPropagation();
-    e.stopImmediatePropagation();
   };
 
   const handleTriggerPointerDown = (e: React.PointerEvent) => {
@@ -27,7 +26,6 @@ const PokemonModalTrigger: React.FC<PokemonModalTriggerProps> = ({
     // CRITICAL FIX: Prevent all event bubbling and default behavior
     e.preventDefault();
     e.stopPropagation();
-    e.stopImmediatePropagation();
   };
 
   const handleTriggerMouseDown = (e: React.MouseEvent) => {
@@ -35,7 +33,6 @@ const PokemonModalTrigger: React.FC<PokemonModalTriggerProps> = ({
     // CRITICAL FIX: Prevent all event bubbling and default behavior
     e.preventDefault();
     e.stopPropagation();
-    e.stopImmediatePropagation();
   };
 
   return (
