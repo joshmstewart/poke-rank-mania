@@ -5,7 +5,7 @@ import { Pokemon } from "@/services/pokemon";
 import { validateBattlePokemon } from "@/services/pokemon/api/utils";
 import PokemonInfoModal from "@/components/pokemon/PokemonInfoModal";
 import PokemonCardImage from "@/components/pokemon/PokemonCardImage";
-import PokemonCardInfo from "@/components/pokemon/PokemonCardInfo";
+import { normalizePokedexNumber } from "@/utils/pokemon";
 
 interface PokemonCardProps {
   pokemon: Pokemon;
@@ -14,7 +14,7 @@ interface PokemonCardProps {
   compact?: boolean;
 }
 
-const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
+const PokemonCard = ({ pokemon, isDragging, viewMode = "list", compact }: PokemonCardProps) => {
   console.log(`🎮 [POKEMON_CARD_SIMPLE] Rendering ${pokemon.name} with image: ${pokemon.image}`);
 
   // Validate the Pokemon to ensure image and name consistency
@@ -27,29 +27,68 @@ const PokemonCard = ({ pokemon, isDragging, compact }: PokemonCardProps) => {
   const pokemonId = validatedPokemon.id;
   const displayName = validatedPokemon.name;
   const imageUrl = validatedPokemon.image;
+  const normalizedId = normalizePokedexNumber(pokemonId);
   
   console.log(`🎮 [POKEMON_CARD_SIMPLE] Final render values:`, { pokemonId, displayName, imageUrl });
 
+  if (viewMode === "grid") {
+    // Grid layout: compact vertical layout with image on top, name and number below
+    return (
+      <Card className={`w-full overflow-hidden relative ${isDragging ? "opacity-50" : ""}`}>
+        <div className="absolute top-1 right-1 z-10">
+          <PokemonInfoModal pokemon={validatedPokemon} />
+        </div>
+        
+        <div className="flex flex-col p-1">
+          {/* Image section */}
+          <div className="aspect-square mb-2">
+            <PokemonCardImage 
+              pokemonId={pokemonId}
+              displayName={displayName}
+              compact={true}
+              imageUrl={imageUrl}
+              className="w-full h-full"
+            />
+          </div>
+          
+          {/* Name and number section */}
+          <div className="text-center px-1">
+            <div className="text-xs font-medium leading-tight break-words">
+              {displayName}
+            </div>
+            <div className="text-xs text-gray-500 mt-0.5">
+              #{normalizedId}
+            </div>
+          </div>
+        </div>
+      </Card>
+    );
+  }
+
+  // Original list layout for other views
   return (
     <Card className={`w-full overflow-hidden relative ${isDragging ? "opacity-50" : ""}`}>
       <div className="absolute top-1 right-1 z-10">
         <PokemonInfoModal pokemon={validatedPokemon} />
       </div>
       
-      <div className={`flex items-start gap-2 pr-5 ${compact ? "p-1.5 min-h-[80px]" : "p-2 min-h-[90px]"}`}>
+      <div className={`flex items-start gap-1 pr-5 ${compact ? "p-1 min-h-[60px]" : "p-1.5 min-h-[70px]"}`}>
         <PokemonCardImage 
           pokemonId={pokemonId}
           displayName={displayName}
           compact={compact}
           imageUrl={imageUrl}
         />
-        <PokemonCardInfo 
-          pokemonId={pokemonId}
-          displayName={displayName}
-          types={validatedPokemon.types}
-          flavorText={validatedPokemon.flavorText}
-          compact={compact}
-        />
+        <div className="flex-1 min-w-0">
+          <div className={`flex justify-between items-start ${compact ? "text-xs" : "text-sm"}`}>
+            <span className={`font-medium pr-1 flex-1 min-w-0 leading-tight break-words ${compact ? "text-xs" : "text-sm"}`}>
+              {displayName}
+            </span>
+            <span className={`text-gray-500 whitespace-nowrap ml-1 flex-shrink-0 ${compact ? "text-xs" : "text-xs"}`}>
+              #{normalizedId}
+            </span>
+          </div>
+        </div>
       </div>
     </Card>
   );

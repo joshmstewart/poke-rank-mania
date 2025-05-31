@@ -27,15 +27,16 @@ const PokemonList: React.FC<PokemonListProps> = ({
             snapshot.isDraggingOver ? "bg-blue-50" : ""
           }`}
         >
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-1">
+          <div className="grid grid-cols-3 gap-1 p-1">
             {pokemonList.map((pokemon, index) => (
-              <div key={pokemon.id}>
+              <div key={pokemon.id} className="flex flex-col">
                 <PokemonCard
                   pokemon={pokemon}
                   compact={true}
+                  viewMode="grid"
                 />
                 {isRankingArea && (
-                  <div className="text-center text-xs text-gray-500 mt-0.5">
+                  <div className="text-center text-xs text-gray-500 mt-1">
                     #{index + 1}
                   </div>
                 )}

@@ -45,19 +45,22 @@ const PokemonCardImage: React.FC<PokemonCardImageProps> = ({
     }
   }, [imageUrl]);
 
+  // Use the actual imageUrl that's passed in, which should be the validated one
+  const finalImageUrl = imageUrl || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pokemonId}.png`;
+
   return (
-    <div className={`${compact ? "w-16 h-16" : "w-20 h-20"} bg-gray-50 rounded-md relative flex-shrink-0 ${className || ""}`}>
+    <div className={`${compact ? "w-12 h-12" : "w-16 h-16"} ${className || ""} bg-gray-50 rounded-md relative flex-shrink-0`}>
       <AspectRatio ratio={1}>
-        {!imageLoaded && !imageError && imageUrl && (
+        {!imageLoaded && !imageError && finalImageUrl && (
           <div className="animate-pulse bg-gray-200 absolute inset-0 flex items-center justify-center">
             <span className="text-xs text-gray-500">...</span>
           </div>
         )}
-        {imageUrl && !imageError && (
+        {finalImageUrl && !imageError && (
           <img
-            src={imageUrl}
+            src={finalImageUrl}
             alt={displayName}
-            className={`w-full h-full object-contain p-1 transition-opacity duration-200 ${imageLoaded ? "opacity-100" : "opacity-0"}`}
+            className={`w-full h-full object-contain p-0.5 transition-opacity duration-200 ${imageLoaded ? "opacity-100" : "opacity-0"}`}
             loading="lazy"
             onLoad={handleImageLoad}
             onError={handleImageError}
@@ -71,7 +74,7 @@ const PokemonCardImage: React.FC<PokemonCardImageProps> = ({
             <div className="text-red-400 text-center text-xs">Error</div>
           </div>
         )}
-        {!imageUrl && (
+        {!finalImageUrl && (
           <div className="absolute inset-0 flex flex-col justify-center items-center bg-red-100 text-xs p-1">
             <div className="font-medium text-red-600 text-xs">NO URL</div>
             <div className="text-red-500 text-xs">#{normalizedId}</div>
