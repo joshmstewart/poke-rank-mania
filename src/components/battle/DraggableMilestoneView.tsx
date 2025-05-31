@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { Button } from "@/components/ui/button";
@@ -8,6 +7,7 @@ import PokemonInfoModal from "@/components/pokemon/PokemonInfoModal";
 import AutoBattleLogsModal from "./AutoBattleLogsModal";
 import { usePendingRefinementsManager } from "@/hooks/battle/usePendingRefinementsManager";
 import { useDragAndDrop } from "@/hooks/battle/useDragAndDrop";
+import { useEnhancedManualReorder } from "@/hooks/battle/useEnhancedManualReorder";
 import {
   DndContext,
   closestCenter,
@@ -151,9 +151,31 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
     setLocalRankings(formattedRankings);
   }, [formattedRankings]);
 
+  // Use enhanced manual reorder hook to track implied battles
+  const { handleEnhancedManualReorder } = useEnhancedManualReorder(
+    formattedRankings as RankedPokemon[],
+    (updatedRankings: RankedPokemon[]) => {
+      setLocalRankings(updatedRankings);
+      // Also call the original handler if provided
+      // Note: onManualReorder might not expect this, but we'll keep the flow
+    },
+    true // preventAutoResorting = true to maintain manual order
+  );
+
+  // Enhanced drag and drop that uses both handlers
   const { sensors, handleDragEnd } = useDragAndDrop({
     displayRankings,
-    onManualReorder,
+    onManualReorder: (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => {
+      console.log(`🔥 [MILESTONE_DRAG_DEBUG] Drag completed: ${draggedPokemonId} from ${sourceIndex} to ${destinationIndex}`);
+      
+      // Call the enhanced manual reorder for implied battle tracking
+      handleEnhancedManualReorder(draggedPokemonId, sourceIndex, destinationIndex);
+      
+      // Also call the original handler
+      if (onManualReorder) {
+        onManualReorder(draggedPokemonId, sourceIndex, destinationIndex);
+      }
+    },
     onLocalReorder: setLocalRankings
   });
 
