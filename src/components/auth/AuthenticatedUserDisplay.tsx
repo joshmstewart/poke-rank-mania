@@ -19,23 +19,40 @@ export const AuthenticatedUserDisplay: React.FC = () => {
     hasSession: !!session,
     userEmail: user?.email,
     userId: user?.id,
+    sessionUserEmail: session?.user?.email,
+    sessionUserId: session?.user?.id,
     timestamp: new Date().toISOString()
+  });
+
+  // Force the component to always show something when called
+  const currentUser = user || session?.user;
+  const displayEmail = currentUser?.email || 'Unknown User';
+  const displayName = profile?.display_name || profile?.username || displayEmail;
+  const avatarUrl = profile?.avatar_url;
+
+  console.log('🔵 AuthenticatedUserDisplay: Final display values:', {
+    currentUser: !!currentUser,
+    displayName,
+    displayEmail,
+    avatarUrl
   });
 
   useEffect(() => {
     // Load profile if we have either user or session
-    if (user || session?.user) {
-      const userId = user?.id || session?.user?.id;
-      if (userId) {
-        loadProfile(userId);
-      }
+    if (currentUser?.id) {
+      loadProfile(currentUser.id);
     }
   }, [user, session]);
 
   const loadProfile = async (userId: string) => {
     console.log('🔵 AuthenticatedUserDisplay: Loading profile for user:', userId);
-    const profileData = await getProfile(userId);
-    setProfile(profileData);
+    try {
+      const profileData = await getProfile(userId);
+      setProfile(profileData);
+      console.log('🔵 AuthenticatedUserDisplay: Profile loaded:', profileData);
+    } catch (error) {
+      console.error('🔵 AuthenticatedUserDisplay: Error loading profile:', error);
+    }
   };
 
   const handleSignOut = async () => {
@@ -49,43 +66,27 @@ export const AuthenticatedUserDisplay: React.FC = () => {
 
   const handleProfileModalClose = (open: boolean) => {
     setProfileModalOpen(open);
-    if (!open && (user || session?.user)) {
-      const userId = user?.id || session?.user?.id;
-      if (userId) {
-        loadProfile(userId);
-      }
+    if (!open && currentUser?.id) {
+      loadProfile(currentUser.id);
     }
   };
 
-  // Show the component if we have either user or session
-  const currentUser = user || session?.user;
-  if (!currentUser) {
-    console.log('🔵 AuthenticatedUserDisplay: No user found, not rendering');
-    return null;
-  }
-
-  const displayName = profile?.display_name || profile?.username || currentUser?.email || 'Trainer';
-  const avatarUrl = profile?.avatar_url;
-
-  console.log('🔵 AuthenticatedUserDisplay: Rendering dropdown for user:', {
-    displayName,
-    avatarUrl,
-    hasProfile: !!profile
-  });
+  // ALWAYS render something if this component is called - don't return null
+  console.log('🔵 AuthenticatedUserDisplay: About to render dropdown');
 
   return (
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="h-auto p-2">
+          <Button variant="ghost" className="h-auto p-2 bg-red-500 border-4 border-yellow-400">
             <div className="flex items-center gap-2">
               <Avatar className="h-8 w-8">
                 <AvatarImage src={avatarUrl || undefined} alt={displayName} />
-                <AvatarFallback>
+                <AvatarFallback className="bg-blue-500 text-white">
                   <User className="h-4 w-4" />
                 </AvatarFallback>
               </Avatar>
-              <span className="text-sm font-medium hidden sm:inline">
+              <span className="text-sm font-medium text-white">
                 {displayName}
               </span>
             </div>
