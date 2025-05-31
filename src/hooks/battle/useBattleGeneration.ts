@@ -10,11 +10,20 @@ export const useBattleGeneration = (allPokemon: Pokemon[]) => {
     const battleSize = battleType === "pairs" ? 2 : 3;
     const battleNumber = battlesCompleted + 1;
     
-    console.log(`🎲🎲🎲 [ANTI_REPEAT_GENERATION] ===== Battle #${battleNumber} Generation =====`);
-    console.log(`🎲🎲🎲 [ANTI_REPEAT_GENERATION] Battle size: ${battleSize}`);
-    console.log(`🎲🎲🎲 [ANTI_REPEAT_GENERATION] Total Pokemon: ${allPokemon.length}`);
-    console.log(`🎲🎲🎲 [ANTI_REPEAT_GENERATION] Recently used Pokemon count: ${recentlyUsedPokemon.size}`);
-    console.log(`🎲🎲🎲 [ANTI_REPEAT_GENERATION] Recently used IDs: [${Array.from(recentlyUsedPokemon).join(', ')}]`);
+    console.log(`🎲🎲🎲 [BATTLE_GENERATION_DEBUG] ===== Battle #${battleNumber} Generation =====`);
+    console.log(`🎲🎲🎲 [BATTLE_GENERATION_DEBUG] Battle size: ${battleSize}`);
+    console.log(`🎲🎲🎲 [BATTLE_GENERATION_DEBUG] Total Pokemon: ${allPokemon.length}`);
+    
+    // Log Pokemon ID ranges for debugging
+    const pokemonIds = allPokemon.map(p => p.id);
+    const minId = Math.min(...pokemonIds);
+    const maxId = Math.max(...pokemonIds);
+    console.log(`🎲🎲🎲 [BATTLE_GENERATION_DEBUG] Pokemon ID range: ${minId} - ${maxId}`);
+    console.log(`🎲🎲🎲 [BATTLE_GENERATION_DEBUG] First 10 Pokemon IDs: [${pokemonIds.slice(0, 10).join(', ')}]`);
+    console.log(`🎲🎲🎲 [BATTLE_GENERATION_DEBUG] Last 10 Pokemon IDs: [${pokemonIds.slice(-10).join(', ')}]`);
+    
+    console.log(`🎲🎲🎲 [BATTLE_GENERATION_DEBUG] Recently used Pokemon count: ${recentlyUsedPokemon.size}`);
+    console.log(`🎲🎲🎲 [BATTLE_GENERATION_DEBUG] Recently used IDs: [${Array.from(recentlyUsedPokemon).join(', ')}]`);
     
     // CRITICAL FIX: Check for refinement battles FIRST and consume them properly
     if (refinementQueue && refinementQueue.hasRefinementBattles && refinementQueue.refinementBattleCount > 0) {
@@ -62,17 +71,26 @@ export const useBattleGeneration = (allPokemon: Pokemon[]) => {
     }
     
     if (!allPokemon || allPokemon.length < battleSize) {
-      console.error(`🎲🎲🎲 [ANTI_REPEAT_GENERATION] Not enough Pokemon: need ${battleSize}, have ${allPokemon.length}`);
+      console.error(`🎲🎲🎲 [BATTLE_GENERATION_DEBUG] Not enough Pokemon: need ${battleSize}, have ${allPokemon.length}`);
       return [];
     }
     
     // Step 1: Filter out recently used Pokemon FIRST
     let availablePokemon = allPokemon.filter(pokemon => !recentlyUsedPokemon.has(pokemon.id));
-    console.log(`🎲🎲🎲 [ANTI_REPEAT_GENERATION] Available after filtering recent: ${availablePokemon.length}`);
+    console.log(`🎲🎲🎲 [BATTLE_GENERATION_DEBUG] Available after filtering recent: ${availablePokemon.length}`);
+    
+    // Debug: Log ID ranges of available Pokemon
+    if (availablePokemon.length > 0) {
+      const availableIds = availablePokemon.map(p => p.id);
+      const availableMinId = Math.min(...availableIds);
+      const availableMaxId = Math.max(...availableIds);
+      console.log(`🎲🎲🎲 [BATTLE_GENERATION_DEBUG] Available Pokemon ID range: ${availableMinId} - ${availableMaxId}`);
+      console.log(`🎲🎲🎲 [BATTLE_GENERATION_DEBUG] Available sample IDs: [${availableIds.slice(0, 20).join(', ')}]`);
+    }
     
     // Step 2: If not enough available, reduce the recent list size
     if (availablePokemon.length < battleSize) {
-      console.log(`🎲🎲🎲 [ANTI_REPEAT_GENERATION] Not enough non-recent Pokemon, reducing recent list`);
+      console.log(`🎲🎲🎲 [BATTLE_GENERATION_DEBUG] Not enough non-recent Pokemon, reducing recent list`);
       
       // Keep only the last 10 instead of 20
       const recentArray = Array.from(recentlyUsedPokemon);
@@ -80,18 +98,17 @@ export const useBattleGeneration = (allPokemon: Pokemon[]) => {
       setRecentlyUsedPokemon(reducedRecent);
       
       availablePokemon = allPokemon.filter(pokemon => !reducedRecent.has(pokemon.id));
-      console.log(`🎲🎲🎲 [ANTI_REPEAT_GENERATION] Available after reducing recent list: ${availablePokemon.length}`);
+      console.log(`🎲🎲🎲 [BATTLE_GENERATION_DEBUG] Available after reducing recent list: ${availablePokemon.length}`);
       
       // If still not enough, clear recent list completely
       if (availablePokemon.length < battleSize) {
-        console.log(`🎲🎲🎲 [ANTI_REPEAT_GENERATION] Still not enough, clearing recent list completely`);
+        console.log(`🎲🎲🎲 [BATTLE_GENERATION_DEBUG] Still not enough, clearing recent list completely`);
         setRecentlyUsedPokemon(new Set());
         availablePokemon = [...allPokemon];
       }
     }
     
     // Step 3: Use crypto random for true randomness
-    const selected: Pokemon[] = [];
     const availableCopy = [...availablePokemon];
     
     // Fisher-Yates shuffle with crypto random
@@ -106,8 +123,11 @@ export const useBattleGeneration = (allPokemon: Pokemon[]) => {
     const result = availableCopy.slice(0, battleSize);
     const validated = validateBattlePokemon(result);
     
-    console.log(`🎲🎲🎲 [ANTI_REPEAT_GENERATION] Selected Pokemon: ${validated.map(p => `${p.name}(${p.id})`).join(' vs ')}`);
-    console.log(`🎲🎲🎲 [ANTI_REPEAT_GENERATION] ===== Generation Complete =====`);
+    console.log(`🎲🎲🎲 [BATTLE_GENERATION_DEBUG] Selected Pokemon details:`);
+    validated.forEach((pokemon, index) => {
+      console.log(`🎲🎲🎲 [BATTLE_GENERATION_DEBUG] #${index + 1}: ${pokemon.name} (ID: ${pokemon.id}, Gen: ${pokemon.generation})`);
+    });
+    console.log(`🎲🎲🎲 [BATTLE_GENERATION_DEBUG] ===== Generation Complete =====`);
     
     return validated;
   }, [allPokemon, recentlyUsedPokemon]);
