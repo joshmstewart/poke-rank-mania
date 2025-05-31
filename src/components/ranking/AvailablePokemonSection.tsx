@@ -3,8 +3,8 @@ import React from "react";
 import { DndContext, DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import { Pokemon } from "@/services/pokemon";
 import { LoadingType } from "@/hooks/usePokemonRanker";
-import InfiniteScrollLoader from "./InfiniteScrollLoader";
-import PaginationControls from "./PaginationControls";
+import { InfiniteScrollLoader } from "./InfiniteScrollLoader";
+import { PaginationControls } from "./PaginationControls";
 import DraggableAvailablePokemonCard from "./DraggableAvailablePokemonCard";
 
 interface AvailablePokemonSectionProps {
