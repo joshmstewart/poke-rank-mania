@@ -18,7 +18,7 @@ export const DraggableAvailablePokemonCard: React.FC<DraggableAvailablePokemonCa
   // CRITICAL FIX: Simplified draggable setup with essential logging only
   const dragId = `available-${pokemon.id}`;
   
-  console.log(`🚨🚨🚨 [DRAGGABLE_AVAILABLE_ULTRA_CRITICAL] Setting up draggable for ${pokemon.name} (ID: ${pokemon.id})`);
+  console.log(`🚨🚨🚨 [DRAGGABLE_AVAILABLE_INITIATION] Setting up draggable for ${pokemon.name} (ID: ${pokemon.id}) with drag ID: ${dragId}`);
   
   const {
     attributes,
@@ -50,51 +50,53 @@ export const DraggableAvailablePokemonCard: React.FC<DraggableAvailablePokemonCa
     transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
   } : undefined;
 
-  // CRITICAL FIX: Separate the info button from draggable area to prevent event conflicts
+  // CRITICAL FIX: Info button with proper isolation and event handling
   const handleInfoClick = (e: React.MouseEvent) => {
-    console.log(`🔘🔘🔘 [AVAILABLE_INFO_CRITICAL] Info button clicked for ${pokemon.name} in Available`);
+    console.log(`🔘🔘🔘 [INFO_BUTTON_CRITICAL] Info button clicked for ${pokemon.name} in Available`);
     e.stopPropagation();
     e.preventDefault();
   };
 
+  // CRITICAL FIX: Add drag start logging
+  const handlePointerDown = (e: React.PointerEvent) => {
+    console.log(`🚨🚨🚨 [DRAG_INITIATION_CRITICAL] Pointer down on ${pokemon.name} - attempting to start drag`);
+  };
+
   return (
     <div className="relative group">
-      {/* CRITICAL FIX: Info button outside of draggable container */}
-      <div className="absolute top-1 right-1 z-50 pointer-events-auto">
+      {/* CRITICAL FIX: Info button completely outside and isolated */}
+      <div 
+        className="absolute top-2 right-2 z-50"
+        style={{ pointerEvents: 'auto' }}
+        onPointerDown={(e) => e.stopPropagation()}
+        onPointerUp={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
+      >
         <PokemonInfoModal 
           pokemon={pokemon}
           onOpenChange={(open) => {
-            console.log(`🔘🔘🔘 [AVAILABLE_INFO_CRITICAL] Modal ${open ? 'opened' : 'closed'} for ${pokemon.name} in Available`);
+            console.log(`🔘🔘🔘 [INFO_MODAL_CRITICAL] Modal ${open ? 'opened' : 'closed'} for ${pokemon.name} in Available`);
           }}
         >
           <button 
             className="w-6 h-6 rounded-full bg-white hover:bg-gray-50 border border-gray-300 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-bold shadow-lg transition-all duration-200"
             onClick={handleInfoClick}
-            style={{ 
-              pointerEvents: 'auto',
-              position: 'relative',
-              zIndex: 60
-            }}
             type="button"
+            data-info-button="true"
           >
             i
           </button>
         </PokemonInfoModal>
       </div>
 
-      {/* CRITICAL FIX: Draggable card with proper drag event logging */}
+      {/* CRITICAL FIX: Draggable card with proper event handling and consistent styling */}
       <div 
         ref={setNodeRef} 
         style={style}
-        className={`relative ${isDragging ? 'opacity-50 scale-105 z-50' : ''} cursor-grab active:cursor-grabbing`}
+        className={`relative ${isDragging ? 'opacity-50 scale-105 z-40' : ''} cursor-grab active:cursor-grabbing`}
         {...attributes}
         {...listeners}
-        onPointerDown={(e) => {
-          console.log(`🚨🚨🚨 [DRAG_START_CRITICAL] Pointer down on ${pokemon.name} - initiating drag`);
-        }}
-        onDragStart={(e) => {
-          console.log(`🚨🚨🚨 [DRAG_START_CRITICAL] Native drag start for ${pokemon.name}`);
-        }}
+        onPointerDown={handlePointerDown}
       >
         <div className="bg-white rounded-lg border-2 border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
           {/* Pokemon image */}
@@ -114,7 +116,7 @@ export const DraggableAvailablePokemonCard: React.FC<DraggableAvailablePokemonCa
             />
           </div>
 
-          {/* Pokemon info - REMOVED TYPES as requested */}
+          {/* Pokemon info - consistent with rankings styling */}
           <div className="p-2 space-y-1">
             <h3 className="text-sm font-semibold text-center line-clamp-2 min-h-[2.5rem] flex items-center justify-center">
               {pokemon.name}

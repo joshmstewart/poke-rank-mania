@@ -11,10 +11,9 @@ export const useTrueSkillSync = () => {
   const { pokemonLookupMap, allPokemon } = usePokemonContext();
   const [localRankings, setLocalRankings] = useState<RankedPokemon[]>([]);
   
-  // CRITICAL FIX: Simplified context tracking to prevent sync repetition
-  const contextReadyRef = useRef(false);
-  const lastSyncedRatingsCountRef = useRef(0);
+  // CRITICAL FIX: Prevent sync repetition with better state tracking
   const syncInProgressRef = useRef(false);
+  const lastSyncedCountRef = useRef(0);
   const initializedRef = useRef(false);
 
   console.log(`🚨🚨🚨 [TRUESKILL_SYNC_ULTRA_CRITICAL] Hook execution - Map size: ${pokemonLookupMap.size}, AllPokemon length: ${allPokemon.length}`);
@@ -85,25 +84,22 @@ export const useTrueSkillSync = () => {
     
     console.log(`🚨🚨🚨 [TRUESKILL_SYNC_ULTRA_CRITICAL] ===== SYNC TRIGGERED =====`);
     console.log(`🚨🚨🚨 [TRUESKILL_SYNC_ULTRA_CRITICAL] Context ready: ${pokemonLookupMap.size > 0}`);
-    console.log(`🚨🚨🚨 [TRUESKILL_SYNC_ULTRA_CRITICAL] Current localRankings count: ${localRankings.length}`);
     
     const allRatings = getAllRatings();
     const ratingsCount = Object.keys(allRatings).length;
     
     console.log(`🚨🚨🚨 [TRUESKILL_SYNC_ULTRA_CRITICAL] ===== TRUESKILL STORE ANALYSIS =====`);
     console.log(`🚨🚨🚨 [TRUESKILL_SYNC_ULTRA_CRITICAL] Store ratings count: ${ratingsCount}`);
-    console.log(`🚨🚨🚨 [TRUESKILL_SYNC_ULTRA_CRITICAL] Last synced count: ${lastSyncedRatingsCountRef.current}`);
+    console.log(`🚨🚨🚨 [TRUESKILL_SYNC_ULTRA_CRITICAL] Last synced count: ${lastSyncedCountRef.current}`);
     
     // Only proceed if context is ready
     if (pokemonLookupMap.size === 0 || allPokemon.length === 0) {
       console.log(`🚨🚨🚨 [TRUESKILL_SYNC_ULTRA_CRITICAL] ⚠️ Context not ready - deferring sync`);
-      contextReadyRef.current = false;
       syncInProgressRef.current = false;
       return [];
     }
     
-    contextReadyRef.current = true;
-    lastSyncedRatingsCountRef.current = ratingsCount;
+    lastSyncedCountRef.current = ratingsCount;
     
     const rankings = convertRatingsToRankings(allRatings);
     
@@ -115,9 +111,9 @@ export const useTrueSkillSync = () => {
     syncInProgressRef.current = false;
     console.log(`🚨🚨🚨 [TRUESKILL_SYNC_ULTRA_CRITICAL] ===== SYNC COMPLETE =====`);
     return rankings;
-  }, [getAllRatings, convertRatingsToRankings, pokemonLookupMap.size, allPokemon.length, localRankings.length]);
+  }, [getAllRatings, convertRatingsToRankings, pokemonLookupMap.size, allPokemon.length]);
 
-  // CRITICAL FIX: Simplified effect with better change detection
+  // CRITICAL FIX: Improved effect with better change detection
   useEffect(() => {
     if (!initializedRef.current) {
       console.log(`🚨🚨🚨 [MANUAL_SYNC_ULTRA_ULTRA_CRITICAL] ===== FIRST INITIALIZATION =====`);
@@ -132,10 +128,9 @@ export const useTrueSkillSync = () => {
     const ratingsCount = Object.keys(currentRatings).length;
     
     const isContextReady = pokemonLookupMap.size > 0 && allPokemon.length > 0;
-    const contextJustBecameReady = isContextReady && !contextReadyRef.current;
-    const ratingsChanged = ratingsCount !== lastSyncedRatingsCountRef.current;
+    const ratingsChanged = ratingsCount !== lastSyncedCountRef.current;
     
-    if (isContextReady && (contextJustBecameReady || ratingsChanged) && !syncInProgressRef.current) {
+    if (isContextReady && ratingsChanged && !syncInProgressRef.current) {
       console.log(`🚨🚨🚨 [MANUAL_SYNC_ULTRA_ULTRA_CRITICAL] ✅ Triggering sync - context ready and data changed`);
       syncWithTrueSkill();
     } else {
@@ -143,21 +138,20 @@ export const useTrueSkillSync = () => {
     }
   }, [pokemonLookupMap.size, allPokemon.length, getAllRatings, syncWithTrueSkill]);
 
-  // CRITICAL FIX: Add store clearing function to prevent data accumulation
+  // CRITICAL FIX: Store clearing function
   const clearRankingsStore = useCallback(() => {
     console.log(`🚨🚨🚨 [STORE_CLEAR_CRITICAL] ===== CLEARING TRUESKILL STORE =====`);
     console.log(`🚨🚨🚨 [STORE_CLEAR_CRITICAL] Current store count before clear: ${Object.keys(getAllRatings()).length}`);
     clearAllRatings();
     setLocalRankings([]);
-    lastSyncedRatingsCountRef.current = 0;
-    contextReadyRef.current = false;
+    lastSyncedCountRef.current = 0;
     console.log(`🚨🚨🚨 [STORE_CLEAR_CRITICAL] ✅ Store cleared - localRankings reset`);
   }, [clearAllRatings, getAllRatings]);
 
-  // Listen for TrueSkill store changes without repetitive syncing
+  // Listen for store changes
   useEffect(() => {
     const handleStoreUpdated = () => {
-      if (contextReadyRef.current && !syncInProgressRef.current) {
+      if (!syncInProgressRef.current && pokemonLookupMap.size > 0) {
         setTimeout(() => {
           syncWithTrueSkill();
         }, 100);
@@ -167,8 +161,7 @@ export const useTrueSkillSync = () => {
     const handleStoreCleared = () => {
       console.log(`🚨🚨🚨 [TRUESKILL_SYNC_ULTRA_CRITICAL] ===== STORE CLEARED - RESETTING LOCAL RANKINGS =====`);
       setLocalRankings([]);
-      contextReadyRef.current = false;
-      lastSyncedRatingsCountRef.current = 0;
+      lastSyncedCountRef.current = 0;
     };
 
     document.addEventListener('trueskill-store-updated', handleStoreUpdated);
@@ -180,7 +173,7 @@ export const useTrueSkillSync = () => {
       document.removeEventListener('trueskill-store-cleared', handleStoreCleared);
       document.removeEventListener('trueskill-updated', handleStoreUpdated);
     };
-  }, [syncWithTrueSkill]);
+  }, [syncWithTrueSkill, pokemonLookupMap.size]);
 
   const handleManualSync = async () => {
     console.log(`🚨🚨🚨 [MANUAL_SYNC_BUTTON_ULTRA_CRITICAL] ===== MANUAL SYNC BUTTON CLICKED =====`);

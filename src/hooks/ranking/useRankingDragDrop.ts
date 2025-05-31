@@ -61,17 +61,8 @@ export const useRankingDragDrop = (
       console.error(`🔥🔥🔥 [DRAG_TO_RANKINGS_CRITICAL] Error details:`, {
         name: error?.name,
         message: error?.message,
-        stack: error?.stack,
-        cause: error?.cause
+        stack: error?.stack
       });
-      
-      // Try to provide helpful debugging info
-      try {
-        console.error(`🔥🔥🔥 [DRAG_TO_RANKINGS_CRITICAL] Rating constructor test:`, new Rating());
-        console.error(`🔥🔥🔥 [DRAG_TO_RANKINGS_CRITICAL] updateRating function exists:`, typeof updateRating);
-      } catch (debugError) {
-        console.error(`🔥🔥🔥 [DRAG_TO_RANKINGS_CRITICAL] Debug error:`, debugError);
-      }
     }
   }, [localRankings.length, availablePokemon, updateRating, setAvailablePokemon]);
 

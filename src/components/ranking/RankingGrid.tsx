@@ -52,27 +52,29 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
 
         return (
           <div key={pokemon.id} className="relative group">
-            {/* CRITICAL FIX: Info button with proper isolation outside of any other container */}
-            <div className="absolute top-1 right-1 z-50 pointer-events-auto">
+            {/* CRITICAL FIX: Info button with complete isolation */}
+            <div 
+              className="absolute top-2 right-2 z-50"
+              style={{ pointerEvents: 'auto' }}
+              onPointerDown={(e) => e.stopPropagation()}
+              onPointerUp={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
+            >
               <PokemonInfoModal 
                 pokemon={pokemon}
                 onOpenChange={(open) => {
-                  console.log(`🔘🔘🔘 [RANKING_GRID_INFO_CRITICAL] Modal ${open ? 'opened' : 'closed'} for ${pokemon.name} in Rankings`);
+                  console.log(`🔘🔘🔘 [RANKING_INFO_CRITICAL] Modal ${open ? 'opened' : 'closed'} for ${pokemon.name} in Rankings`);
                 }}
               >
                 <button 
                   className="w-6 h-6 rounded-full bg-white hover:bg-gray-50 border border-gray-300 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-bold shadow-lg transition-all duration-200"
                   onClick={(e) => {
-                    console.log(`🔘🔘🔘 [RANKING_GRID_INFO_CRITICAL] Info button clicked for ${pokemon.name} in Rankings`);
+                    console.log(`🔘🔘🔘 [RANKING_INFO_CLICK_CRITICAL] Info button clicked for ${pokemon.name} in Rankings`);
                     e.stopPropagation();
                     e.preventDefault();
                   }}
-                  style={{ 
-                    pointerEvents: 'auto',
-                    position: 'relative',
-                    zIndex: 60
-                  }}
                   type="button"
+                  data-info-button="true"
                 >
                   i
                 </button>
@@ -88,7 +90,7 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
               />
             )}
 
-            {/* CRITICAL FIX: Card with no event handlers that could interfere with info button */}
+            {/* Card with no event handlers that could interfere */}
             <div className="bg-white rounded-lg border-2 border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
               {/* Rank number */}
               <div className="bg-gradient-to-r from-yellow-400 to-yellow-600 text-white text-center py-1">

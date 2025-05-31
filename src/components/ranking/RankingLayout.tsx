@@ -62,7 +62,8 @@ export const RankingLayout: React.FC<RankingLayoutProps> = ({
     console.log(`🚨🚨🚨 [LAYOUT_DRAG_START_CRITICAL] ===== DRAG START DETECTED =====`);
     console.log(`🚨🚨🚨 [LAYOUT_DRAG_START_CRITICAL] Active ID: ${event.active.id}`);
     console.log(`🚨🚨🚨 [LAYOUT_DRAG_START_CRITICAL] Active data:`, event.active.data.current);
-    console.log(`🚨🚨🚨 [LAYOUT_DRAG_START_CRITICAL] This proves drag detection is working`);
+    console.log(`🚨🚨🚨 [LAYOUT_DRAG_START_CRITICAL] Event object:`, event);
+    console.log(`🚨🚨🚨 [LAYOUT_DRAG_START_CRITICAL] This proves drag detection is working at layout level`);
     handleDragStart(event);
   };
 
