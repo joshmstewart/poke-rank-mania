@@ -202,7 +202,7 @@ export const AuthDialog: React.FC<AuthDialogProps> = ({ children }) => {
   }
 
   const renderMethodsView = () => (
-    <div className="space-y-6">
+    <>
       {/* Email/Password Section */}
       <form onSubmit={handleEmailAuth} className="space-y-4">
         {isSignUp && (
@@ -255,7 +255,7 @@ export const AuthDialog: React.FC<AuthDialogProps> = ({ children }) => {
       </form>
 
       {/* Separator */}
-      <div className="relative">
+      <div className="relative my-6">
         <div className="absolute inset-0 flex items-center">
           <Separator className="w-full" />
         </div>
@@ -291,12 +291,12 @@ export const AuthDialog: React.FC<AuthDialogProps> = ({ children }) => {
           Continue with Phone
         </Button>
       </div>
-    </div>
+    </>
   );
 
   const renderPhoneInputView = () => (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2 mb-4">
+    <>
+      <div className="flex items-center gap-2 mb-6">
         <Button
           type="button"
           variant="ghost"
@@ -331,12 +331,12 @@ export const AuthDialog: React.FC<AuthDialogProps> = ({ children }) => {
           Send OTP
         </Button>
       </form>
-    </div>
+    </>
   );
 
   const renderPhoneOtpView = () => (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2 mb-4">
+    <>
+      <div className="flex items-center gap-2 mb-6">
         <Button
           type="button"
           variant="ghost"
@@ -380,7 +380,7 @@ export const AuthDialog: React.FC<AuthDialogProps> = ({ children }) => {
           Resend OTP
         </Button>
       </form>
-    </div>
+    </>
   );
 
   return (
@@ -401,9 +401,11 @@ export const AuthDialog: React.FC<AuthDialogProps> = ({ children }) => {
           </DialogTitle>
         </DialogHeader>
         
-        {currentView === 'methods' && renderMethodsView()}
-        {currentView === 'phone-input' && renderPhoneInputView()}
-        {currentView === 'phone-otp' && renderPhoneOtpView()}
+        <div className="mt-4">
+          {currentView === 'methods' && renderMethodsView()}
+          {currentView === 'phone-input' && renderPhoneInputView()}
+          {currentView === 'phone-otp' && renderPhoneOtpView()}
+        </div>
       </DialogContent>
     </Dialog>
   );
