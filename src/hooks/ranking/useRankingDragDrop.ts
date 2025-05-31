@@ -98,9 +98,20 @@ export const useRankingDragDrop = (
     }
   }, [availablePokemon, localRankings, updateRating, setAvailablePokemon, handleEnhancedManualReorder]);
 
+  // Add the missing handleManualReorder function
+  const handleManualReorder = useCallback((
+    draggedPokemonId: number,
+    sourceIndex: number,
+    destinationIndex: number
+  ) => {
+    console.log(`🔥 [MANUAL_REORDER] Pokemon ${draggedPokemonId} moved from ${sourceIndex} to ${destinationIndex}`);
+    handleEnhancedManualReorder(draggedPokemonId, sourceIndex, destinationIndex);
+  }, [handleEnhancedManualReorder]);
+
   return {
     activeDraggedPokemon,
     handleDragStart,
-    handleDragEnd
+    handleDragEnd,
+    handleManualReorder
   };
 };
