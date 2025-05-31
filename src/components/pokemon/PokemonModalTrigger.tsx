@@ -14,13 +14,6 @@ const PokemonModalTrigger: React.FC<PokemonModalTriggerProps> = ({
   children,
   pokemon
 }) => {
-  const handleClick = (e: React.MouseEvent) => {
-    console.log(`🔘🔘🔘 [MODAL_TRIGGER_DEBUG] Modal trigger clicked for ${pokemon.name}`);
-    // Prevent any propagation to parent drag elements
-    e.preventDefault();
-    e.stopPropagation();
-  };
-
   return (
     <DialogTrigger asChild>
       {children || (
@@ -28,7 +21,6 @@ const PokemonModalTrigger: React.FC<PokemonModalTriggerProps> = ({
           variant="ghost" 
           size="sm" 
           className="w-6 h-6 p-0 rounded-full bg-white/90 hover:bg-white shadow-sm border relative"
-          onClick={handleClick}
         >
           <Info className="w-3 h-3 text-blue-600" />
         </Button>

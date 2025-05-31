@@ -43,31 +43,30 @@ const DraggableAvailablePokemonCard: React.FC<DraggableAvailablePokemonCardProps
         isDragging ? 'opacity-60 z-50 scale-105 shadow-2xl' : 'hover:shadow-lg transition-all duration-200'
       }`}
     >
-      {/* Draggable area - everything except the info button */}
-      <div
-        className="absolute inset-0 cursor-grab active:cursor-grabbing"
-        {...attributes}
-        {...listeners}
-        style={{ zIndex: 1 }}
-      />
-      
-      {/* Info Button - positioned above the draggable area */}
-      <div className="absolute top-1 right-1 z-20">
+      {/* Info Button - CRITICAL: Outside drag area, no event handlers */}
+      <div className="absolute top-1 right-1 z-30">
         <PokemonInfoModal pokemon={pokemon}>
           <button 
             className="w-5 h-5 rounded-full bg-white/90 hover:bg-white border border-gray-300 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200 backdrop-blur-sm"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              console.log(`🔘 [INFO_BUTTON_DEBUG] Info button clicked for ${pokemon.name}`);
-            }}
+            onPointerDown={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
           >
             i
           </button>
         </PokemonInfoModal>
       </div>
       
-      {/* Pokemon image - larger and taking up more space */}
+      {/* Draggable area - CRITICAL: Exclude the info button area */}
+      <div
+        className="absolute inset-0 cursor-grab active:cursor-grabbing"
+        style={{ 
+          clipPath: 'polygon(0% 0%, 85% 0%, 85% 25%, 100% 25%, 100% 100%, 0% 100%)'
+        }}
+        {...attributes}
+        {...listeners}
+      />
+      
+      {/* Pokemon image */}
       <div className="flex-1 flex justify-center items-center px-2 pt-6 pb-1 relative z-10 pointer-events-none">
         <img 
           src={pokemon.image} 
@@ -80,7 +79,7 @@ const DraggableAvailablePokemonCard: React.FC<DraggableAvailablePokemonCardProps
         />
       </div>
       
-      {/* Pokemon info - white section at bottom */}
+      {/* Pokemon info */}
       <div className="bg-white text-center py-2 px-2 mt-auto border-t border-gray-100 relative z-10 pointer-events-none">
         <h3 className="font-bold text-gray-800 text-sm leading-tight mb-1">
           {pokemon.name}
