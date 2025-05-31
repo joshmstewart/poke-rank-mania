@@ -102,13 +102,23 @@ export const useFormFilters = () => {
     console.log(`🔍 [FILTER_PIPELINE_ANALYSIS] ===== STARTING FILTER ANALYSIS =====`);
     console.log(`🔍 [FILTER_PIPELINE_ANALYSIS] Input Pokemon count: ${inputPokemon.length}`);
     
+    let inputDistribution = {
+      '1-100': 0,
+      '101-200': 0,
+      '201-400': 0,
+      '401-600': 0,
+      '601-800': 0,
+      '801-1025': 0,
+      '1026+': 0,
+    };
+    
     if (inputPokemon.length > 0) {
       const inputIds = inputPokemon.map(p => p.id);
       const inputMinId = Math.min(...inputIds);
       const inputMaxId = Math.max(...inputIds);
       console.log(`🔍 [FILTER_PIPELINE_ANALYSIS] Input ID range: ${inputMinId} - ${inputMaxId}`);
       
-      const inputDistribution = {
+      inputDistribution = {
         '1-100': inputIds.filter(id => id >= 1 && id <= 100).length,
         '101-200': inputIds.filter(id => id >= 101 && id <= 200).length,
         '201-400': inputIds.filter(id => id >= 201 && id <= 400).length,
