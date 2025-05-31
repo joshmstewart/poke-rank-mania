@@ -23,27 +23,64 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log('AuthProvider: Setting up auth state listener');
+    console.log('AuthProvider: Initializing auth state management');
     
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        console.log('Auth state change:', { event, user: session?.user?.email, hasSession: !!session });
+        console.log('Auth state change event:', { 
+          event, 
+          userEmail: session?.user?.email, 
+          userId: session?.user?.id,
+          hasSession: !!session,
+          accessToken: session?.access_token ? 'present' : 'missing'
+        });
+        
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+        
+        // Force a small delay to ensure state propagation
+        setTimeout(() => {
+          console.log('Auth state after update:', {
+            userSet: !!session?.user,
+            sessionSet: !!session
+          });
+        }, 100);
       }
     );
 
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('Initial session check:', { user: session?.user?.email, hasSession: !!session });
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+    const initializeAuth = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        console.log('Initial session check result:', { 
+          userEmail: session?.user?.email, 
+          userId: session?.user?.id,
+          hasSession: !!session,
+          error: error?.message,
+          accessToken: session?.access_token ? 'present' : 'missing'
+        });
+        
+        if (error) {
+          console.error('Error getting initial session:', error);
+        }
+        
+        setSession(session);
+        setUser(session?.user ?? null);
+        setLoading(false);
+      } catch (err) {
+        console.error('Exception during initial auth check:', err);
+        setLoading(false);
+      }
+    };
 
-    return () => subscription.unsubscribe();
+    initializeAuth();
+
+    return () => {
+      console.log('AuthProvider: Cleaning up auth listener');
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {
@@ -105,6 +142,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signInWithPhone,
     verifyPhoneOtp,
   };
+
+  console.log('AuthProvider render:', {
+    hasUser: !!user,
+    hasSession: !!session,
+    loading,
+    userEmail: user?.email
+  });
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

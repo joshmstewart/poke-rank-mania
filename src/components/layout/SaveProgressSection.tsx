@@ -5,11 +5,20 @@ import { AuthenticatedUserDisplay } from '@/components/auth/AuthenticatedUserDis
 import { CloudSyncButton } from '@/components/auth/CloudSyncButton';
 
 const SaveProgressSection: React.FC = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, session } = useAuth();
 
-  console.log('SaveProgressSection render:', { user: !!user, loading, userId: user?.id });
+  // More detailed logging
+  console.log('SaveProgressSection render:', { 
+    user: !!user, 
+    loading, 
+    userId: user?.id,
+    userEmail: user?.email,
+    hasSession: !!session,
+    sessionUserId: session?.user?.id 
+  });
 
   if (loading) {
+    console.log('SaveProgressSection: showing loading state');
     return (
       <div className="flex items-center gap-2">
         <div className="animate-pulse bg-gray-200 h-8 w-24 rounded"></div>
@@ -17,14 +26,12 @@ const SaveProgressSection: React.FC = () => {
     );
   }
 
-  if (user) {
-    console.log('Rendering AuthenticatedUserDisplay for user:', user.email);
-    // Show authenticated user display when logged in
+  if (user && session) {
+    console.log('SaveProgressSection: rendering authenticated user display for:', user.email);
     return <AuthenticatedUserDisplay />;
   }
 
-  console.log('Rendering CloudSyncButton - no user found');
-  // Show cloud sync button when not logged in
+  console.log('SaveProgressSection: no user found, rendering cloud sync button');
   return <CloudSyncButton />;
 };
 
