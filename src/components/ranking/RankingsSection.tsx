@@ -1,6 +1,7 @@
 
 import React, { useState, useRef, useCallback, useEffect } from "react";
 import PokemonList from "@/components/PokemonList";
+import { Trophy, Star } from "lucide-react";
 
 interface RankingsSectionProps {
   displayRankings: any[];
@@ -56,37 +57,62 @@ export const RankingsSection: React.FC<RankingsSectionProps> = ({
   console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] displayedRankedPokemon sample:`, displayedRankedPokemon.slice(0, 2));
 
   return (
-    <div className="flex flex-col h-full max-h-[calc(100vh-12rem)] overflow-hidden">
-      <PokemonList
-        title={`Your Rankings (TrueSkill Ordered) - ${displayedRankedCount} of ${displayRankings.length}`}
-        pokemonList={displayedRankedPokemon}
-        droppableId="ranked"
-        isRankingArea={true}
-      />
+    <div className="flex flex-col h-full">
+      {/* Header with gradient background and enhanced styling */}
+      <div className="bg-gradient-to-r from-amber-600 to-orange-600 text-white p-4 border-b">
+        <h2 className="text-lg font-semibold flex items-center gap-2">
+          <Trophy className="w-5 h-5 text-amber-200" />
+          Your Rankings ({displayRankings.length})
+        </h2>
+        <p className="text-amber-100 text-sm mt-1">
+          {displayRankings.length > 0 ? 'TrueSkill Ordered • Battle Mode synced' : 'No rankings yet'}
+        </p>
+      </div>
+
+      {/* Content area with improved styling */}
+      <div className="flex-1 overflow-hidden bg-gray-50">
+        <PokemonList
+          title=""
+          pokemonList={displayedRankedPokemon}
+          droppableId="ranked"
+          isRankingArea={true}
+        />
+      </div>
       
-      {/* Infinite scroll loading for ranked Pokemon */}
-      {displayedRankedCount < displayRankings.length && (
-        <div 
-          ref={rankedScrollRef}
-          className="text-center py-4 text-sm text-muted-foreground"
-        >
-          Loading more ranked Pokémon... ({displayedRankedCount}/{displayRankings.length})
-        </div>
-      )}
-      
-      {/* Show completion message when all ranked Pokemon are loaded */}
-      {displayedRankedCount >= displayRankings.length && displayRankings.length > 0 && (
-        <div className="text-center text-xs text-muted-foreground mt-1 p-2 bg-green-50 rounded">
-          All {displayRankings.length} ranked Pokémon loaded. Rankings based on TrueSkill ratings from Battle Mode.
-        </div>
-      )}
-      
-      {/* Show message when no ranked Pokemon */}
-      {displayRankings.length === 0 && (
-        <div className="text-center text-xs text-muted-foreground mt-1 p-2 bg-blue-50 rounded">
-          No ranked Pokémon yet. Complete some battles in Battle Mode to see rankings here.
-        </div>
-      )}
+      {/* Footer with status information */}
+      <div className="border-t bg-white p-3">
+        {/* Infinite scroll loading for ranked Pokemon */}
+        {displayedRankedCount < displayRankings.length && (
+          <div 
+            ref={rankedScrollRef}
+            className="text-center py-2 text-sm text-gray-600 bg-blue-50 rounded-md border border-blue-200"
+          >
+            <div className="flex items-center justify-center gap-2">
+              <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+              Loading more... ({displayedRankedCount}/{displayRankings.length})
+            </div>
+          </div>
+        )}
+        
+        {/* Show completion message when all ranked Pokemon are loaded */}
+        {displayedRankedCount >= displayRankings.length && displayRankings.length > 0 && (
+          <div className="text-center text-sm bg-green-50 border border-green-200 rounded-md p-3">
+            <div className="flex items-center justify-center gap-2 text-green-700">
+              <Star className="w-4 h-4 fill-current" />
+              All {displayRankings.length} ranked Pokémon loaded
+            </div>
+            <p className="text-green-600 text-xs mt-1">Rankings based on TrueSkill ratings from Battle Mode</p>
+          </div>
+        )}
+        
+        {/* Show message when no ranked Pokemon */}
+        {displayRankings.length === 0 && (
+          <div className="text-center bg-blue-50 border border-blue-200 rounded-md p-4">
+            <div className="text-blue-700 text-sm font-medium mb-1">No ranked Pokémon yet</div>
+            <p className="text-blue-600 text-xs">Complete some battles in Battle Mode to see rankings here</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

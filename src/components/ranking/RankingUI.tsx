@@ -81,24 +81,32 @@ export const RankingUI: React.FC<RankingUIProps> = ({
   }
 
   return (
-    <DragDropContext onDragEnd={handleDisabledDragEnd}>
-      <div className="grid md:grid-cols-2 gap-6 h-full">
-        {/* Left side - Available Pokemon (unrated) with independent scroll */}
-        <AvailablePokemonSection
-          availablePokemon={availablePokemon}
-          isLoading={isLoading}
-          selectedGeneration={selectedGeneration}
-          loadingType={loadingType}
-          currentPage={currentPage}
-          totalPages={totalPages}
-          loadingRef={loadingRef}
-          handlePageChange={handlePageChange}
-          getPageRange={getPageRange}
-        />
-        
-        {/* Right side - Rankings (TrueSkill ordered) with infinite scroll */}
-        <RankingsSection displayRankings={displayRankings} />
-      </div>
-    </DragDropContext>
+    <div className="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen p-4">
+      <DragDropContext onDragEnd={handleDisabledDragEnd}>
+        <div className="max-w-7xl mx-auto">
+          <div className="grid md:grid-cols-2 gap-6 h-[calc(100vh-8rem)]">
+            {/* Left side - Available Pokemon (unrated) with enhanced styling */}
+            <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+              <AvailablePokemonSection
+                availablePokemon={availablePokemon}
+                isLoading={isLoading}
+                selectedGeneration={selectedGeneration}
+                loadingType={loadingType}
+                currentPage={currentPage}
+                totalPages={totalPages}
+                loadingRef={loadingRef}
+                handlePageChange={handlePageChange}
+                getPageRange={getPageRange}
+              />
+            </div>
+            
+            {/* Right side - Rankings (TrueSkill ordered) with enhanced styling */}
+            <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+              <RankingsSection displayRankings={displayRankings} />
+            </div>
+          </div>
+        </div>
+      </DragDropContext>
+    </div>
   );
 };
