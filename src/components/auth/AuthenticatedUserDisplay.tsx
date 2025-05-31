@@ -24,17 +24,21 @@ export const AuthenticatedUserDisplay: React.FC = () => {
     timestamp: new Date().toISOString()
   });
 
-  // Force the component to always show something when called
+  // Get the current user from either user or session
   const currentUser = user || session?.user;
+  
+  // Set display values with proper fallbacks
   const displayEmail = currentUser?.email || 'Unknown User';
-  const displayName = profile?.display_name || profile?.username || displayEmail;
+  const displayName = profile?.display_name || profile?.username || currentUser?.email?.split('@')[0] || 'User';
   const avatarUrl = profile?.avatar_url;
 
   console.log('🔵 AuthenticatedUserDisplay: Final display values:', {
     currentUser: !!currentUser,
     displayName,
     displayEmail,
-    avatarUrl
+    avatarUrl,
+    userFromAuth: user?.email,
+    userFromSession: session?.user?.email
   });
 
   useEffect(() => {
@@ -71,14 +75,19 @@ export const AuthenticatedUserDisplay: React.FC = () => {
     }
   };
 
-  // ALWAYS render something if this component is called - don't return null
-  console.log('🔵 AuthenticatedUserDisplay: About to render dropdown');
+  // Only render if we have a current user
+  if (!currentUser) {
+    console.log('🔵 AuthenticatedUserDisplay: No current user, not rendering');
+    return null;
+  }
+
+  console.log('🔵 AuthenticatedUserDisplay: Rendering dropdown with user:', displayName);
 
   return (
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="h-auto p-2 bg-red-500 border-4 border-yellow-400">
+          <Button variant="ghost" className="h-auto p-2">
             <div className="flex items-center gap-2">
               <Avatar className="h-8 w-8">
                 <AvatarImage src={avatarUrl || undefined} alt={displayName} />
@@ -86,7 +95,7 @@ export const AuthenticatedUserDisplay: React.FC = () => {
                   <User className="h-4 w-4" />
                 </AvatarFallback>
               </Avatar>
-              <span className="text-sm font-medium text-white">
+              <span className="text-sm font-medium">
                 {displayName}
               </span>
             </div>

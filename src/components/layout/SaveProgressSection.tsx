@@ -11,22 +11,13 @@ const SaveProgressSection: React.FC = () => {
   
   const { user, loading, session } = useAuth();
 
-  console.log('🚨 SaveProgressSection: Auth state in detail:', {
+  console.log('🚨 SaveProgressSection: Auth state:', {
     hasUser: !!user,
     hasSession: !!session,
     loading,
-    userEmail: user?.email,
-    userId: user?.id,
-    sessionAccessToken: session?.access_token ? 'present' : 'missing',
-    sessionUser: !!session?.user,
-    sessionUserEmail: session?.user?.email,
-    sessionUserId: session?.user?.id,
+    userEmail: user?.email || session?.user?.email,
     timestamp: new Date().toISOString()
   });
-
-  // Let's see the raw objects
-  console.log('🚨 SaveProgressSection: Raw user object:', user);
-  console.log('🚨 SaveProgressSection: Raw session object:', session);
 
   if (loading) {
     return (
@@ -36,23 +27,26 @@ const SaveProgressSection: React.FC = () => {
     );
   }
 
-  // FORCE showing the authenticated display if we have ANY indication of being logged in
-  // This includes checking if we can see "Synced" status (which means we're authenticated)
-  console.log('🚨 SaveProgressSection: About to make auth decision...');
+  // Check if we have a user OR a session (either should indicate authenticated state)
+  const currentUser = user || session?.user;
   
-  // For now, let's ALWAYS show the AuthenticatedUserDisplay to see if it renders
-  console.log('🚨 SaveProgressSection: FORCING AuthenticatedUserDisplay to show');
-  return (
-    <div className="flex items-center gap-4">
-      <div className="flex items-center gap-2">
-        <Badge variant="secondary" className="flex items-center gap-1 bg-green-100 text-green-700 border-green-200">
-          <Check className="h-3 w-3" />
-          <span className="text-xs">Synced</span>
-        </Badge>
+  if (currentUser) {
+    console.log('🚨 SaveProgressSection: User is authenticated, showing user display');
+    return (
+      <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
+          <Badge variant="secondary" className="flex items-center gap-1 bg-green-100 text-green-700 border-green-200">
+            <Check className="h-3 w-3" />
+            <span className="text-xs">Synced</span>
+          </Badge>
+        </div>
+        <AuthenticatedUserDisplay />
       </div>
-      <AuthenticatedUserDisplay />
-    </div>
-  );
+    );
+  }
+
+  console.log('🚨 SaveProgressSection: User is not authenticated, showing cloud sync button');
+  return <CloudSyncButton />;
 };
 
 export default SaveProgressSection;
