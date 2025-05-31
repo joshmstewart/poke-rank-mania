@@ -1,6 +1,6 @@
 
 import React from "react";
-import { Droppable } from "react-beautiful-dnd";
+import { Droppable, Draggable } from "react-beautiful-dnd";
 import PokemonCard from "./PokemonCard";
 import { Pokemon } from "@/services/pokemon";
 
@@ -29,18 +29,28 @@ const PokemonList: React.FC<PokemonListProps> = ({
         >
           <div className="grid grid-cols-3 gap-1 p-1">
             {pokemonList.map((pokemon, index) => (
-              <div key={pokemon.id} className="flex flex-col">
-                <PokemonCard
-                  pokemon={pokemon}
-                  compact={true}
-                  viewMode="grid"
-                />
-                {isRankingArea && (
-                  <div className="text-center text-xs text-gray-500 mt-1">
-                    #{index + 1}
+              <Draggable key={pokemon.id} draggableId={pokemon.id.toString()} index={index}>
+                {(provided, snapshot) => (
+                  <div
+                    ref={provided.innerRef}
+                    {...provided.draggableProps}
+                    {...provided.dragHandleProps}
+                    className={`flex flex-col ${snapshot.isDragging ? "opacity-50" : ""}`}
+                  >
+                    <PokemonCard
+                      pokemon={pokemon}
+                      compact={true}
+                      viewMode="grid"
+                      isDragging={snapshot.isDragging}
+                    />
+                    {isRankingArea && (
+                      <div className="text-center text-xs text-gray-500 mt-1">
+                        #{index + 1}
+                      </div>
+                    )}
                   </div>
                 )}
-              </div>
+              </Draggable>
             ))}
           </div>
           {provided.placeholder}
