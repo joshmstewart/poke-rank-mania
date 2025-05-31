@@ -218,17 +218,17 @@ export const RankingUI: React.FC<RankingUIProps> = ({
 
     console.log(`🔥 [DRAG_FIXED] Dropped ${activeId} onto ${overId}`);
 
-    // CRITICAL FIX: Handle dragging from available to rankings with better detection
+    // FIXED: Simplified drag from available to rankings detection
     if (activeId.startsWith('available-')) {
       const pokemonId = parseInt(activeId.replace('available-', ''));
       
-      // Accept drops on rankings area OR any ranked Pokemon
-      if (overId === 'rankings-drop-zone' || (!overId.startsWith('available-') && !isNaN(parseInt(overId)))) {
+      // Accept ANY drop that's not on another available Pokemon
+      if (!overId.startsWith('available-')) {
         console.log(`🔥 [DRAG_FIXED] ✅ Valid drop to rankings area - executing move`);
         handleDragToRankings(pokemonId);
         return;
       } else {
-        console.log(`🔥 [DRAG_FIXED] ❌ Invalid drop target: ${overId}`);
+        console.log(`🔥 [DRAG_FIXED] ❌ Invalid drop - cannot drop available on available`);
         return;
       }
     }
