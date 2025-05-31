@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -96,16 +95,13 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
               className="w-5 h-5 rounded-full bg-white/80 hover:bg-white border border-gray-300 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200 backdrop-blur-sm cursor-pointer"
               onClick={(e) => {
                 e.stopPropagation();
-                e.preventDefault();
                 console.log(`Info button clicked for ${pokemon.name}`);
               }}
               onPointerDown={(e) => {
                 e.stopPropagation();
-                e.preventDefault();
               }}
               onMouseDown={(e) => {
                 e.stopPropagation();
-                e.preventDefault();
               }}
               type="button"
               style={{ pointerEvents: 'auto' }}
