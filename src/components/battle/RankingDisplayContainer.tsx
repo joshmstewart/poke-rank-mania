@@ -83,25 +83,8 @@ const RankingDisplayContainer: React.FC<RankingDisplayContainerProps> = ({
 
   if (isMilestoneView) {
     console.log("🔍 [CONTAINER_DEBUG] ===== MILESTONE VIEW SELECTED =====");
+    console.log("🔍 [CONTAINER_DEBUG] Using DraggableMilestoneView (with drag and drop and info buttons)");
     
-    // Use original MilestoneView when drag and drop is disabled (default milestone behavior)
-    if (!enableDragAndDrop) {
-      console.log("🔍 [CONTAINER_DEBUG] Using original MilestoneView (no drag and drop)");
-      return (
-        <MilestoneView
-          formattedRankings={formattedRankings}
-          battlesCompleted={battlesCompleted}
-          activeTier={activeTier}
-          milestoneDisplayCount={milestoneDisplayCount}
-          onContinueBattles={onContinueBattles}
-          onLoadMore={handleMilestoneLoadMore}
-          getMaxItemsForTier={getMaxItemsForTier}
-        />
-      );
-    }
-    
-    // Use DraggableMilestoneView when drag and drop is enabled
-    console.log("🔍 [CONTAINER_DEBUG] Using DraggableMilestoneView (with drag and drop)");
     return (
       <DraggableMilestoneView
         formattedRankings={formattedRankings}

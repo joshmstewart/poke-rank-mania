@@ -2,7 +2,6 @@
 import React from "react";
 import { Pokemon, TopNOption, RankedPokemon } from "@/services/pokemon";
 import RankingDisplayContainer from "./RankingDisplayContainer";
-import { useBattleManualReorder } from "@/hooks/battle/useBattleManualReorder";
 
 interface BattleContentMilestoneProps {
   finalRankings: Pokemon[] | RankedPokemon[];
@@ -90,7 +89,7 @@ const BattleContentMilestone: React.FC<BattleContentMilestoneProps> = ({
           activeTier={activeTier}
           onManualReorder={handleManualReorder}
           pendingRefinements={pendingRefinements}
-          enableDragAndDrop={false}
+          enableDragAndDrop={true}
         />
       ) : (
         <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded mb-4">
