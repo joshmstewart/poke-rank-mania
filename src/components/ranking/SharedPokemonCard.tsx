@@ -93,12 +93,14 @@ export const SharedPokemonCard: React.FC<SharedPokemonCardProps> = ({
         {...(isAvailable ? attributes : {})}
         {...(isAvailable ? listeners : {})}
       >
-        {/* Header - rank number or transparent spacer */}
-        <div className={`text-center py-1 ${showRankNumber ? 'bg-gradient-to-r from-yellow-400 to-yellow-600 text-white' : 'bg-transparent text-transparent pointer-events-none'}`}>
-          <span className="text-sm font-bold">
-            {showRankNumber ? `#${rankNumber}` : '.'}
-          </span>
-        </div>
+        {/* Header - only render if showRankNumber is true */}
+        {showRankNumber && (
+          <div className="text-center py-1 bg-gradient-to-r from-yellow-400 to-yellow-600 text-white">
+            <span className="text-sm font-bold">
+              #{rankNumber}
+            </span>
+          </div>
+        )}
 
         {/* Pokemon image - identical on both sides */}
         <div className="aspect-square bg-gray-50/50 p-2 relative">
