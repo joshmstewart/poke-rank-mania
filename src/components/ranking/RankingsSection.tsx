@@ -19,8 +19,11 @@ export const RankingsSection: React.FC<RankingsSectionProps> = ({
 }) => {
   console.log(`🔍 [RANKINGS_SECTION] Rendering with ${displayRankings.length} Pokemon`);
   
-  const { setNodeRef } = useDroppable({
+  const { setNodeRef, isOver } = useDroppable({
     id: 'rankings-drop-zone',
+    data: {
+      type: 'rankings-container'
+    }
   });
   
   const handleMarkAsPending = (pokemonId: number) => {
@@ -45,13 +48,21 @@ export const RankingsSection: React.FC<RankingsSectionProps> = ({
         </div>
       </div>
       
-      {/* Rankings Grid - Set up as drop zone */}
-      <div className="flex-1 overflow-y-auto p-4" ref={setNodeRef}>
+      {/* Rankings Grid - Set up as drop zone with visual feedback */}
+      <div 
+        className={`flex-1 overflow-y-auto p-4 transition-colors ${
+          isOver ? 'bg-yellow-50 border-2 border-dashed border-yellow-400' : ''
+        }`} 
+        ref={setNodeRef}
+      >
         {displayRankings.length === 0 ? (
           <div className="flex items-center justify-center h-full text-gray-500">
             <div className="text-center">
               <p className="text-lg mb-2">No Pokémon ranked yet</p>
               <p className="text-sm">Drag Pokémon from the left to start ranking!</p>
+              {isOver && (
+                <p className="text-yellow-600 font-medium mt-2">Drop here to add to rankings!</p>
+              )}
             </div>
           </div>
         ) : (

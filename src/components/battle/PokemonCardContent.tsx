@@ -24,6 +24,12 @@ const PokemonCardContent: React.FC<PokemonCardContentProps> = ({
 
   console.log(`🔘 [CARD_CONTENT_DEBUG] Rendering ${pokemon.name} - ID: ${pokemon.id}, normalizedId: ${normalizedId}`);
 
+  const handleInfoClick = (e: React.MouseEvent) => {
+    console.log(`🔘 [INFO_BUTTON_DEBUG] Info button clicked for ${pokemon.name}`);
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
   return (
     <>
       {/* Rank number - only show if showRank is true */}
@@ -36,17 +42,18 @@ const PokemonCardContent: React.FC<PokemonCardContentProps> = ({
       {/* Pokemon image and info container */}
       <div className="flex-1 p-2 flex flex-col relative">
         {/* Info Button - positioned to not interfere with drag */}
-        <PokemonInfoModal pokemon={pokemon}>
-          <button 
-            className="absolute top-1 right-1 z-30 w-6 h-6 rounded-full bg-white/90 hover:bg-white border border-gray-300 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200"
-            onClick={(e) => {
-              console.log(`🔘 [INFO_BUTTON_DEBUG] Info button clicked for ${pokemon.name}`);
-              // Let the PokemonInfoModal handle the click - don't prevent it
-            }}
-          >
-            i
-          </button>
-        </PokemonInfoModal>
+        <div className="absolute top-1 right-1 z-30">
+          <PokemonInfoModal pokemon={pokemon}>
+            <button 
+              className="w-6 h-6 rounded-full bg-white/90 hover:bg-white border border-gray-300 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200"
+              onClick={handleInfoClick}
+              onPointerDown={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
+            >
+              i
+            </button>
+          </PokemonInfoModal>
+        </div>
 
         {/* Pokemon image */}
         <div className="flex-1 flex items-center justify-center mb-2">
@@ -59,12 +66,12 @@ const PokemonCardContent: React.FC<PokemonCardContentProps> = ({
         
         {/* Pokemon info section - name, number, and types */}
         <div className="mt-auto bg-white/95 rounded-md p-2 border border-gray-200/50">
-          {/* Name and ID row - force display with important styles */}
-          <div className="flex justify-between items-start mb-1" style={{ display: 'flex !important' }}>
-            <div className="text-sm font-semibold text-gray-900 flex-1 pr-2 leading-tight" style={{ color: '#111827 !important', fontSize: '14px !important' }}>
+          {/* Name and ID row */}
+          <div className="flex justify-between items-start mb-1">
+            <div className="text-sm font-semibold text-gray-900 flex-1 pr-2 leading-tight">
               {pokemon.name}
             </div>
-            <div className="text-xs text-gray-500 whitespace-nowrap flex-shrink-0" style={{ color: '#6b7280 !important', fontSize: '12px !important' }}>
+            <div className="text-xs text-gray-500 whitespace-nowrap flex-shrink-0">
               #{normalizedId}
             </div>
           </div>
