@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import BattleModeLoader from "./BattleModeLoader";
 import BattleModeProvider from "./BattleModeProvider";
@@ -61,61 +60,30 @@ const BattleModeCore: React.FC = () => {
     setIsLoading(loading);
   }, []);
 
-  // ENHANCED: Smart initialization that preserves TrueSkill consistency
+  // SIMPLIFIED: Only restore battle count from localStorage, no smart preservation
   useEffect(() => {
     if (hasInitialized) return;
     
-    const performSmartInitialization = () => {
-      console.log(`🧹 [SMART_INIT] Performing smart initialization`);
+    const performSimpleInitialization = () => {
+      console.log(`🧹 [SIMPLE_INIT] Performing simple initialization`);
       
-      // Get current TrueSkill state
-      const currentRatings = getAllRatings();
-      const ratingsCount = Object.keys(currentRatings).length;
-      
-      console.log(`🧹 [SMART_INIT] Found ${ratingsCount} existing TrueSkill ratings`);
-      
-      // Only clear battle tracking data, preserve TrueSkill ratings
-      const keysToRemove = [
-        'pokemon-battle-recently-used',
-        'pokemon-battle-last-battle',
-        'pokemon-ranker-battle-history',
-        'pokemon-battle-history',
-        'pokemon-battle-tracking',
-        'pokemon-battle-seen'
-      ];
-      
-      // CRITICAL: Only clear battle count if no TrueSkill ratings exist
-      if (ratingsCount === 0) {
-        keysToRemove.push('pokemon-battle-count');
-        console.log(`🧹 [SMART_INIT] No TrueSkill ratings found, clearing battle count too`);
-      } else {
-        console.log(`🧹 [SMART_INIT] TrueSkill ratings exist, preserving battle count`);
-      }
-      
-      keysToRemove.forEach(key => localStorage.removeItem(key));
-      
-      // Load saved battle count if TrueSkill data exists
-      if (ratingsCount > 0) {
-        const savedBattleCount = localStorage.getItem('pokemon-battle-count');
-        if (savedBattleCount) {
-          const count = parseInt(savedBattleCount, 10);
-          console.log(`🧹 [SMART_INIT] Restoring battle count: ${count}`);
+      // Only restore battle count if it exists in localStorage
+      const savedBattleCount = localStorage.getItem('pokemon-battle-count');
+      if (savedBattleCount) {
+        const count = parseInt(savedBattleCount, 10);
+        if (!isNaN(count) && count > 0) {
+          console.log(`🧹 [SIMPLE_INIT] Restoring battle count: ${count}`);
           setBattlesCompleted(count);
-        } else {
-          // Estimate battle count from TrueSkill data
-          const estimatedBattles = Object.values(currentRatings).reduce((sum, rating) => sum + (rating.battleCount || 0), 0) / 2;
-          console.log(`🧹 [SMART_INIT] Estimating battle count from TrueSkill: ${estimatedBattles}`);
-          setBattlesCompleted(Math.floor(estimatedBattles));
         }
       }
       
       setHasInitialized(true);
-      console.log('[DEBUG BattleModeCore] Smart initialization completed');
+      console.log('[DEBUG BattleModeCore] Simple initialization completed');
     };
     
-    const timer = setTimeout(performSmartInitialization, 200);
+    const timer = setTimeout(performSimpleInitialization, 200);
     return () => clearTimeout(timer);
-  }, [hasInitialized, getAllRatings]);
+  }, [hasInitialized]);
 
   // Loading state
   if (isLoading || !stablePokemon.length) {

@@ -23,9 +23,13 @@ export const useBattleResetActions = (
   const performFullBattleReset = useCallback(() => {
     console.log(`🔄 [BATTLE_RESET] Performing COMPLETE battle reset including centralized TrueSkill store`);
     console.error(`🚨 [BATTLE_RESET_DEBUG] performFullBattleReset called - this will clear ALL data!`);
-    console.error(`🚨 [BATTLE_RESET_DEBUG] Stack trace:`, new Error().stack);
     
-    // Reset all battle state
+    // STEP 1: Clear centralized TrueSkill store FIRST
+    console.error(`🚨 [BATTLE_RESET_DEBUG] About to call clearAllRatings() from performFullBattleReset`);
+    clearAllRatings();
+    console.log(`✅ [BATTLE_RESET] Cleared centralized TrueSkill store`);
+    
+    // STEP 2: Reset all battle state
     setBattlesCompleted(0);
     setBattleResults([]);
     setBattleHistory([]);
@@ -39,12 +43,7 @@ export const useBattleResetActions = (
     clearAllSuggestions();
     clearRefinementQueue();
     
-    // Clear centralized TrueSkill store
-    console.error(`🚨 [BATTLE_RESET_DEBUG] About to call clearAllRatings() from performFullBattleReset`);
-    clearAllRatings();
-    console.log(`✅ [BATTLE_RESET] Cleared centralized TrueSkill store`);
-    
-    // Clear ALL battle-related localStorage
+    // STEP 3: Clear ALL battle-related localStorage
     const keysToRemove = [
       'pokemon-battle-count',
       'pokemon-battle-results',
@@ -55,17 +54,36 @@ export const useBattleResetActions = (
       'pokemon-battle-tracking',
       'pokemon-battle-seen',
       'pokemon-active-suggestions',
-      'suggestionUsageCounts'
+      'suggestionUsageCounts',
+      'pokemon-ranker-rankings',
+      'pokemon-ranker-confidence'
     ];
+    
+    // Also clear generation-specific manual rankings
+    for (let gen = 0; gen <= 9; gen++) {
+      keysToRemove.push(`manual-rankings-gen-${gen}`);
+    }
     
     keysToRemove.forEach(key => localStorage.removeItem(key));
     
+    // STEP 4: Start new battle after a small delay
     setTimeout(() => {
       startNewBattleWrapper();
     }, 100);
     
+    // STEP 5: Dispatch events to notify other components
+    setTimeout(() => {
+      const clearEvent = new CustomEvent('trueskill-store-cleared');
+      document.dispatchEvent(clearEvent);
+      
+      const resetEvent = new CustomEvent('battle-system-reset', {
+        detail: { timestamp: Date.now(), source: 'battle-mode-restart' }
+      });
+      document.dispatchEvent(resetEvent);
+    }, 150);
+    
     toast.success("Complete battle reset", {
-      description: "All battle data and rankings cleared. Starting fresh!"
+      description: "All battle data and TrueSkill ratings completely cleared. Starting fresh!"
     });
   }, [
     setBattlesCompleted, setBattleResults, setBattleHistory, setSelectedPokemon,
