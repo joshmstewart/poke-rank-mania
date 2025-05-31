@@ -15,6 +15,18 @@ export const fetchPokemonData = async (generations: number[]): Promise<Pokemon[]
         const response = await fetch(`${API_BASE}/generation/${gen}`);
         const data = await response.json();
         console.log(`🔍🔍🔍 [API_FETCH_DEBUG] Generation ${gen} returned ${data.pokemon_species?.length || 0} species`);
+        
+        // CRITICAL: Log each generation's species in detail
+        if (data.pokemon_species && data.pokemon_species.length > 0) {
+          const speciesIds = data.pokemon_species.map(s => {
+            const id = parseInt(s.url.split('/').filter(Boolean).pop());
+            return id;
+          }).sort((a, b) => a - b);
+          
+          console.log(`🔍🔍🔍 [API_FETCH_DEBUG] Gen ${gen} species ID range: ${speciesIds[0]} - ${speciesIds[speciesIds.length - 1]}`);
+          console.log(`🔍🔍🔍 [API_FETCH_DEBUG] Gen ${gen} first 10 species: ${data.pokemon_species.slice(0, 10).map(s => s.name).join(', ')}`);
+        }
+        
         return data;
       })
     );
@@ -24,6 +36,11 @@ export const fetchPokemonData = async (generations: number[]): Promise<Pokemon[]
     );
 
     console.log(`🔍🔍🔍 [API_FETCH_DEBUG] Total species found across all generations: ${allSpecies.length}`);
+
+    // CRITICAL: Check if we're missing generations or species
+    if (allSpecies.length < 800) {
+      console.error(`🚨🚨🚨 [API_FETCH_DEBUG] WARNING: Only ${allSpecies.length} species found - expected 1000+!`);
+    }
 
     // Sample some species to see what we're getting
     if (allSpecies.length > 0) {
@@ -38,12 +55,33 @@ export const fetchPokemonData = async (generations: number[]): Promise<Pokemon[]
       const minId = Math.min(...allIds);
       const maxId = Math.max(...allIds);
       console.log(`🔍🔍🔍 [API_FETCH_DEBUG] Species ID range: ${minId} - ${maxId}`);
+      
+      // CRITICAL: Check distribution by generation ranges
+      const genDistribution = {
+        'Gen1(1-151)': allIds.filter(id => id >= 1 && id <= 151).length,
+        'Gen2(152-251)': allIds.filter(id => id >= 152 && id <= 251).length,
+        'Gen3(252-386)': allIds.filter(id => id >= 252 && id <= 386).length,
+        'Gen4(387-493)': allIds.filter(id => id >= 387 && id <= 493).length,
+        'Gen5(494-649)': allIds.filter(id => id >= 494 && id <= 649).length,
+        'Gen6(650-721)': allIds.filter(id => id >= 650 && id <= 721).length,
+        'Gen7(722-809)': allIds.filter(id => id >= 722 && id <= 809).length,
+        'Gen8(810-905)': allIds.filter(id => id >= 810 && id <= 905).length,
+        'Gen9(906+)': allIds.filter(id => id >= 906).length,
+      };
+      console.log(`🔍🔍🔍 [API_FETCH_DEBUG] Species distribution by generation:`, genDistribution);
     }
 
     // Fetch detailed data for each Pokemon
-    const pokemonPromises = allSpecies.map(async (species: any) => {
+    console.log(`🔍🔍🔍 [API_FETCH_DEBUG] Starting to fetch individual Pokemon data for ${allSpecies.length} species...`);
+    
+    const pokemonPromises = allSpecies.map(async (species: any, index: number) => {
       try {
         const pokemonId = species.url.split('/').filter(Boolean).pop();
+        
+        if (index % 100 === 0) {
+          console.log(`🔍🔍🔍 [API_FETCH_DEBUG] Processing Pokemon ${index}/${allSpecies.length} (ID: ${pokemonId})`);
+        }
+        
         const pokemonResponse = await fetch(`${API_BASE}/pokemon/${pokemonId}`);
         const pokemonData = await pokemonResponse.json();
         
@@ -55,39 +93,15 @@ export const fetchPokemonData = async (generations: number[]): Promise<Pokemon[]
           return null;
         }
 
-        // ULTRA-DETAILED LOGGING: Track every step of name processing
-        console.log(`🔧 [API_NAME_PROCESSING] ===== PROCESSING POKEMON ${pokemonData.id} =====`);
-        console.log(`🔧 [API_NAME_PROCESSING] Raw API name: "${pokemonData.name}"`);
-        console.log(`🔧 [API_NAME_PROCESSING] Raw name type: ${typeof pokemonData.name}`);
-        console.log(`🔧 [API_NAME_PROCESSING] Raw name length: ${pokemonData.name.length}`);
-        console.log(`🔧 [API_NAME_PROCESSING] Raw name chars: [${pokemonData.name.split('').join(', ')}]`);
-        
         // Check if this is a name that should be formatted
         const shouldFormat = pokemonData.name.includes('-');
-        console.log(`🔧 [API_NAME_PROCESSING] Should format (contains hyphen): ${shouldFormat}`);
         
         if (shouldFormat) {
-          console.log(`🔧 [API_NAME_PROCESSING] BEFORE formatPokemonName: "${pokemonData.name}"`);
-          
-          // Call formatPokemonName and track result
           const formattedName = formatPokemonName(pokemonData.name);
-          
-          console.log(`🔧 [API_NAME_PROCESSING] AFTER formatPokemonName: "${formattedName}"`);
-          console.log(`🔧 [API_NAME_PROCESSING] Formatting changed name: ${pokemonData.name !== formattedName}`);
-          console.log(`🔧 [API_NAME_PROCESSING] Final formatted name type: ${typeof formattedName}`);
-          console.log(`🔧 [API_NAME_PROCESSING] Final formatted name length: ${formattedName.length}`);
-          
-          // Special check for G-Max Pokemon
-          if (pokemonData.name.toLowerCase().includes('gmax')) {
-            console.log(`🎯 [GMAX_SPECIFIC] GMAX Pokemon detected: "${pokemonData.name}"`);
-            console.log(`🎯 [GMAX_SPECIFIC] Formatted result: "${formattedName}"`);
-            console.log(`🎯 [GMAX_SPECIFIC] Contains "G-Max": ${formattedName.includes('G-Max')}`);
-            console.log(`🎯 [GMAX_SPECIFIC] Still contains hyphen: ${formattedName.includes('-')}`);
-          }
           
           const pokemon = {
             id: pokemonData.id,
-            name: formattedName, // Use the formatted name
+            name: formattedName,
             image: pokemonData.sprites.other['official-artwork'].front_default || 
                    pokemonData.sprites.front_default,
             types: pokemonData.types.map((type: any) => 
@@ -95,15 +109,12 @@ export const fetchPokemonData = async (generations: number[]): Promise<Pokemon[]
             )
           };
 
-          console.log(`🔧 [API_NAME_PROCESSING] Final Pokemon object name: "${pokemon.name}"`);
-          console.log(`🔧 [API_NAME_PROCESSING] ===== END PROCESSING POKEMON ${pokemonData.id} =====`);
-          
           return pokemon;
         } else {
           // No formatting needed
           const pokemon = {
             id: pokemonData.id,
-            name: pokemonData.name.charAt(0).toUpperCase() + pokemonData.name.slice(1), // Just capitalize
+            name: pokemonData.name.charAt(0).toUpperCase() + pokemonData.name.slice(1),
             image: pokemonData.sprites.other['official-artwork'].front_default || 
                    pokemonData.sprites.front_default,
             types: pokemonData.types.map((type: any) => 
@@ -111,7 +122,6 @@ export const fetchPokemonData = async (generations: number[]): Promise<Pokemon[]
             )
           };
 
-          console.log(`🔧 [API_NAME_PROCESSING] No formatting needed for: "${pokemon.name}"`);
           return pokemon;
         }
       } catch (error) {
@@ -124,43 +134,12 @@ export const fetchPokemonData = async (generations: number[]): Promise<Pokemon[]
     const validPokemon = pokemonResults.filter(pokemon => pokemon !== null);
 
     console.log(`🔍🔍🔍 [API_FETCH_DEBUG] ===== FETCH COMPLETE =====`);
-    console.log(`🔍🔍🔍 [API_FETCH_DEBUG] Successfully loaded ${validPokemon.length} Pokemon with formatted names`);
+    console.log(`🔍🔍🔍 [API_FETCH_DEBUG] Successfully loaded ${validPokemon.length} Pokemon out of ${allSpecies.length} species`);
     
-    // CRITICAL: Check the final ID distribution
-    if (validPokemon.length > 0) {
-      const finalIds = validPokemon.map(p => p.id);
-      const finalMinId = Math.min(...finalIds);
-      const finalMaxId = Math.max(...finalIds);
-      console.log(`🔍🔍🔍 [API_FETCH_DEBUG] Final Pokemon ID range: ${finalMinId} - ${finalMaxId}`);
-      
-      const finalDistribution = {
-        'Gen1(1-151)': finalIds.filter(id => id >= 1 && id <= 151).length,
-        'Gen2(152-251)': finalIds.filter(id => id >= 152 && id <= 251).length,
-        'Gen3(252-386)': finalIds.filter(id => id >= 252 && id <= 386).length,
-        'Gen4(387-493)': finalIds.filter(id => id >= 387 && id <= 493).length,
-        'Gen5(494-649)': finalIds.filter(id => id >= 494 && id <= 649).length,
-        'Gen6(650-721)': finalIds.filter(id => id >= 650 && id <= 721).length,
-        'Gen7(722-809)': finalIds.filter(id => id >= 722 && id <= 809).length,
-        'Gen8(810-905)': finalIds.filter(id => id >= 810 && id <= 905).length,
-        'Gen9(906+)': finalIds.filter(id => id >= 906).length,
-      };
-      console.log(`🔍🔍🔍 [API_FETCH_DEBUG] Final generation distribution:`, finalDistribution);
-    }
-    
-    // VERIFICATION: Check final result for unformatted names
-    const unformattedCount = validPokemon.filter(p => 
-      p.name.includes('-') && !p.name.includes('(') && !p.name.includes('Mega ') && !p.name.includes('Alolan ') && !p.name.includes('G-Max ')
-    ).length;
-    
-    if (unformattedCount > 0) {
-      console.error(`🚨 [API_FINAL_ERROR] ${unformattedCount} Pokemon still have unformatted names!`);
-      validPokemon.filter(p => 
-        p.name.includes('-') && !p.name.includes('(') && !p.name.includes('Mega ') && !p.name.includes('Alolan ') && !p.name.includes('G-Max ')
-      ).forEach(p => {
-        console.error(`🚨 [API_UNFORMATTED] "${p.name}" (ID: ${p.id})`);
-      });
-    } else {
-      console.log(`✅ [API_FINAL_SUCCESS] All Pokemon names properly formatted`);
+    // CRITICAL: Final verification
+    if (validPokemon.length < 1000) {
+      console.error(`🚨🚨🚨 [API_FETCH_DEBUG] CRITICAL ERROR: Only ${validPokemon.length} Pokemon loaded - expected 1000+!`);
+      console.error(`🚨🚨🚨 [API_FETCH_DEBUG] This indicates a problem with the generation data or API response`);
     }
     
     return validPokemon;
