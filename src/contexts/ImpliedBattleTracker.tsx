@@ -33,8 +33,8 @@ export const ImpliedBattleTrackerProvider: React.FC<{ children: ReactNode }> = (
 
     setImpliedBattles(prev => {
       const updated = [newBattle, ...prev];
-      // Keep only the last 6 records
-      return updated.slice(0, 6);
+      // Keep only the last 10 records
+      return updated.slice(0, 10);
     });
   };
 
