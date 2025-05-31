@@ -52,15 +52,12 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
     console.log(`🚨🚨🚨 [INFO_BUTTON_RANKINGS_DEBUG] Current target:`, e.currentTarget);
     console.log(`🚨🚨🚨 [INFO_BUTTON_RANKINGS_DEBUG] Event bubbles: ${e.bubbles}`);
     console.log(`🚨🚨🚨 [INFO_BUTTON_RANKINGS_DEBUG] Default prevented: ${e.defaultPrevented}`);
-    console.log(`🚨🚨🚨 [INFO_BUTTON_RANKINGS_DEBUG] Propagation stopped: ${e.isPropagationStopped()}`);
     
-    // Stop all propagation immediately
+    // Stop all propagation immediately - FIXED: Use correct React event methods
     e.preventDefault();
     e.stopPropagation();
-    e.stopImmediatePropagation();
     
     console.log(`🚨🚨🚨 [INFO_BUTTON_RANKINGS_DEBUG] After stopping propagation - Default prevented: ${e.defaultPrevented}`);
-    console.log(`🚨🚨🚨 [INFO_BUTTON_RANKINGS_DEBUG] After stopping propagation - Propagation stopped: ${e.isPropagationStopped()}`);
   };
 
   // CRITICAL DEBUG: Add card click logging to see if it interferes
@@ -115,7 +112,6 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
                     console.log(`🚨🚨🚨 [INFO_BUTTON_RANKINGS_DEBUG] Button element clicked for ${pokemon.name}`);
                     e.preventDefault();
                     e.stopPropagation();
-                    e.stopImmediatePropagation();
                   }}
                 >
                   i
