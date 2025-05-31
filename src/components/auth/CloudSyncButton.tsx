@@ -17,13 +17,13 @@ export const CloudSyncButton: React.FC = () => {
     timestamp: new Date().toISOString()
   });
 
-  // CRITICAL: Don't render anything if user is authenticated
+  // Only show for unauthenticated users - authenticated users see sync status in SaveProgressSection
   if (user) {
-    console.log('🟡🟡🟡 CloudSyncButton: ❌ User IS authenticated - RETURNING NULL (should not render anything)');
+    console.log('🟡🟡🟡 CloudSyncButton: ✅ User IS authenticated - RETURNING NULL (sync status shown elsewhere)');
     return null;
   }
 
-  console.log('🟡🟡🟡 CloudSyncButton: ✅ User is NOT authenticated, rendering save progress button');
+  console.log('🟡🟡🟡 CloudSyncButton: ❌ User is NOT authenticated, rendering save progress button');
 
   return (
     <AuthDialog 
