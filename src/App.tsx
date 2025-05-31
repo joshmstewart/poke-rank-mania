@@ -15,6 +15,7 @@ function App() {
   console.log('🚀🚀🚀 APP.TSX: MAIN APP COMPONENT IS RENDERING');
   console.log('🚀🚀🚀 APP.TSX: Current mode:', mode);
   console.log('🚀🚀🚀 APP.TSX: Timestamp:', new Date().toISOString());
+  console.log('🚀🚀🚀 APP.TSX: App component mounted - this should NEVER disappear after auth');
 
   const handleModeChange = (newMode: "rank" | "battle") => {
     console.log('🚀🚀🚀 APP.TSX: Mode changing from', mode, 'to', newMode);
@@ -32,28 +33,39 @@ function App() {
 
   console.log('🚀🚀🚀 APP.TSX: About to render main app structure');
 
+  // Add a key to prevent unmounting during auth state changes
+  return (
+    <div key="main-app" className="flex flex-col h-screen">
+      <div className="bg-purple-500 border-8 border-yellow-500 p-4 m-2">
+        <div className="text-2xl font-bold text-yellow-500 mb-2">🚀 MAIN APP CONTAINER 🚀</div>
+        <div className="text-white">App is rendering - timestamp: {new Date().toISOString()}</div>
+        <div className="text-white">Mode: {mode}</div>
+        <div className="text-white font-bold">🔥 THIS SHOULD NEVER DISAPPEAR AFTER LOGIN 🔥</div>
+      </div>
+      
+      <AppHeader mode={mode} onModeChange={handleModeChange} />
+      
+      <main className="flex-grow bg-gray-100 py-6 px-4">
+        <div className="container max-w-7xl mx-auto">
+          {renderContent()}
+        </div>
+      </main>
+      <Toaster />
+    </div>
+  );
+}
+
+// Wrap the App component to ensure it doesn't get unmounted
+function AppWrapper() {
+  console.log('🚀🚀🚀 APP.TSX: APP WRAPPER RENDERING - this is the root component');
+  
   return (
     <AuthProvider>
       <ImpliedBattleTrackerProvider>
-        <div className="flex flex-col h-screen">
-          <div className="bg-purple-500 border-8 border-yellow-500 p-4 m-2">
-            <div className="text-2xl font-bold text-yellow-500 mb-2">🚀 MAIN APP CONTAINER 🚀</div>
-            <div className="text-white">App is rendering - timestamp: {new Date().toISOString()}</div>
-            <div className="text-white">Mode: {mode}</div>
-          </div>
-          
-          <AppHeader mode={mode} onModeChange={handleModeChange} />
-          
-          <main className="flex-grow bg-gray-100 py-6 px-4">
-            <div className="container max-w-7xl mx-auto">
-              {renderContent()}
-            </div>
-          </main>
-          <Toaster />
-        </div>
+        <App />
       </ImpliedBattleTrackerProvider>
     </AuthProvider>
   );
 }
 
-export default App;
+export default AppWrapper;
