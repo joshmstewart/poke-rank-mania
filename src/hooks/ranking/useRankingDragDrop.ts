@@ -80,7 +80,7 @@ export const useRankingDragDrop = (
         if (pokemon) {
           console.log(`🚀🚀🚀 [DRAG_END_CRITICAL] ✅ Found pokemon:`, pokemon.name);
           
-          // Add to TrueSkill store with default rating
+          // CRITICAL FIX: Only add to TrueSkill store, don't trigger full sync
           const defaultRating = new Rating(25.0, 8.333);
           updateRating(pokemonId, defaultRating);
           console.log(`🚀🚀🚀 [DRAG_END_CRITICAL] ✅ Added rating to TrueSkill store for ${pokemonId}`);
@@ -107,27 +107,29 @@ export const useRankingDragDrop = (
             }
           }
           
-          // CRITICAL FIX: Trigger implied battles for new Pokemon addition
-          console.log(`🔥🔥🔥 [IMPLIED_BATTLE_TRIGGER] ===== TRIGGERING IMPLIED BATTLES FOR NEW POKEMON =====`);
-          console.log(`🔥🔥🔥 [IMPLIED_BATTLE_TRIGGER] Pokemon ${pokemonId} (${pokemon.name}) inserted at position ${insertionPosition}`);
+          // CRITICAL FIX: Use enhanced manual reorder for the single Pokemon addition
+          // This will handle the local rankings update without triggering a full TrueSkill sync
+          console.log(`🔥🔥🔥 [MANUAL_ADD_SINGLE_POKEMON] ===== ADDING SINGLE POKEMON WITHOUT FULL SYNC =====`);
+          console.log(`🔥🔥🔥 [MANUAL_ADD_SINGLE_POKEMON] Pokemon ${pokemonId} (${pokemon.name}) inserted at position ${insertionPosition}`);
           
-          // Call enhanced manual reorder to trigger implied battles
-          // We use -1 as source index to indicate this is a new addition
+          // Call enhanced manual reorder but with special handling for new additions
+          // We use -1 as source index to indicate this is a new addition (not a reorder)
           handleEnhancedManualReorder(pokemonId, -1, insertionPosition);
-          console.log(`🔥🔥🔥 [IMPLIED_BATTLE_TRIGGER] ✅ Enhanced manual reorder called for implied battles`);
+          console.log(`🔥🔥🔥 [MANUAL_ADD_SINGLE_POKEMON] ✅ Enhanced manual reorder called for single Pokemon addition`);
           
-          // Also dispatch the standard event for other components
-          const event = new CustomEvent('trueskill-store-updated', {
+          // Dispatch a specific event for single Pokemon addition (not full sync)
+          const event = new CustomEvent('single-pokemon-added-to-rankings', {
             detail: { 
               pokemonId, 
               source: 'drag-to-rankings', 
-              action: 'add',
+              action: 'add-single',
               insertionPosition,
-              targetPokemonId: insertionPosition < localRankings.length ? localRankings[insertionPosition].id : null
+              targetPokemonId: insertionPosition < localRankings.length ? localRankings[insertionPosition].id : null,
+              preventFullSync: true // Flag to prevent full TrueSkill sync
             }
           });
           document.dispatchEvent(event);
-          console.log(`🚀🚀🚀 [DRAG_END_CRITICAL] ✅ Dispatched event with insertion position ${insertionPosition}`);
+          console.log(`🚀🚀🚀 [DRAG_END_CRITICAL] ✅ Dispatched single-add event (no full sync)`);
           
           return;
         } else {

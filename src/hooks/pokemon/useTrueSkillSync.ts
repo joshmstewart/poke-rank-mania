@@ -75,6 +75,21 @@ export const useTrueSkillSync = () => {
     }
   };
 
+  // CRITICAL FIX: Listen for single Pokemon addition events and DON'T trigger full sync
+  useEffect(() => {
+    const handleSinglePokemonAdd = (event: CustomEvent) => {
+      console.log(`🔥🔥🔥 [SINGLE_POKEMON_ADD_LISTENER] Single Pokemon added, NOT triggering full sync`);
+      console.log(`🔥🔥🔥 [SINGLE_POKEMON_ADD_LISTENER] Event details:`, event.detail);
+      // Do nothing - let the drag logic handle the single addition
+    };
+
+    document.addEventListener('single-pokemon-added-to-rankings', handleSinglePokemonAdd as EventListener);
+    
+    return () => {
+      document.removeEventListener('single-pokemon-added-to-rankings', handleSinglePokemonAdd as EventListener);
+    };
+  }, []);
+
   return {
     syncWithBattleModeRankings,
     handleManualSync
