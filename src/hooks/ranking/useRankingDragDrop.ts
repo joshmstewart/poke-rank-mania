@@ -53,7 +53,7 @@ export const useRankingDragDrop = (
     } catch (error) {
       console.error(`🔥🔥🔥 [DRAG_TO_RANKINGS_ENHANCED] ❌ Error adding Pokemon to TrueSkill:`, error);
     }
-  }, [pokemonId, localRankings.length, availablePokemon, updateRating, setAvailablePokemon]);
+  }, [localRankings.length, availablePokemon, updateRating, setAvailablePokemon]);
 
   // Handle manual reordering within the rankings
   const handleManualReorder = useCallback((draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => {
@@ -143,7 +143,7 @@ export const useRankingDragDrop = (
     }
     
     console.log(`🔥🔥🔥 [DRAG_END_ENHANCED] ===== DRAG END COMPLETE =====`);
-  }, [activeId, overId, over, localRankings, handleDragToRankings, handleManualReorder]);
+  }, [localRankings, handleDragToRankings, handleManualReorder]);
 
   return {
     activeDraggedPokemon,
