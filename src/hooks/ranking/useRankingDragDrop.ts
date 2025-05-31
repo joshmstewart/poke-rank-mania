@@ -55,27 +55,27 @@ export const useRankingDragDrop = (
       const pokemonId = parseInt(activeId.replace('available-', ''));
       console.log(`🚀🚀🚀 [DRAG_END_CRITICAL] Available Pokemon ${pokemonId} dragged to ${overId}`);
       
-      // CRITICAL FIX: Handle drops on ranked Pokemon for insertion
-      const isDropOnRankedPokemon = !overId.startsWith('available-') && 
-                                  !isNaN(parseInt(overId)) && 
-                                  localRankings.some(p => p.id === parseInt(overId));
-      
-      // Check if dropped on any valid rankings target OR on a ranked Pokemon for insertion
-      const isValidRankingsTarget = (
+      // CRITICAL FIX: Check for valid drop targets more comprehensively
+      const isValidDropTarget = (
+        // Direct drop zone IDs
         overId === 'rankings-drop-zone' || 
         overId === 'rankings-grid-drop-zone' ||
+        // Drop zone data types
         over.data?.current?.type === 'rankings-container' ||
         over.data?.current?.type === 'rankings-grid' ||
         over.data?.current?.accepts?.includes('available-pokemon') ||
-        isDropOnRankedPokemon // NEW: Allow drops on ranked Pokemon for insertion
+        // Drop on ranked Pokemon (for insertion)
+        (!overId.startsWith('available-') && 
+         !overId.startsWith('collision-placeholder-') &&
+         !isNaN(parseInt(overId)) && 
+         localRankings.some(p => p.id === parseInt(overId)))
       );
       
-      console.log(`🚀🚀🚀 [DRAG_END_CRITICAL] Drop zone validation:`);
-      console.log(`🚀🚀🚀 [DRAG_END_CRITICAL] - overId: ${overId}`);
-      console.log(`🚀🚀🚀 [DRAG_END_CRITICAL] - isDropOnRankedPokemon: ${isDropOnRankedPokemon}`);
-      console.log(`🚀🚀🚀 [DRAG_END_CRITICAL] - isValidRankingsTarget: ${isValidRankingsTarget}`);
+      console.log(`🚀🚀🚀 [DRAG_END_CRITICAL] Drop target validation: ${isValidDropTarget}`);
+      console.log(`🚀🚀🚀 [DRAG_END_CRITICAL] Over ID: "${overId}"`);
+      console.log(`🚀🚀🚀 [DRAG_END_CRITICAL] Over type: "${over.data?.current?.type}"`);
       
-      if (isValidRankingsTarget) {
+      if (isValidDropTarget) {
         console.log(`🚀🚀🚀 [DRAG_END_CRITICAL] ✅ VALID DROP - Adding Pokemon ${pokemonId} to rankings`);
         
         const pokemon = availablePokemon.find(p => p.id === pokemonId);
@@ -94,9 +94,12 @@ export const useRankingDragDrop = (
             return newAvailable;
           });
           
-          // CRITICAL FIX: Handle insertion at specific position if dropped on ranked Pokemon
+          // Handle insertion at specific position if dropped on ranked Pokemon
           let insertionPosition = 'end';
-          if (isDropOnRankedPokemon) {
+          if (!overId.startsWith('available-') && 
+              !overId.startsWith('collision-placeholder-') &&
+              !isNaN(parseInt(overId)) && 
+              localRankings.some(p => p.id === parseInt(overId))) {
             const targetPokemonId = parseInt(overId);
             const targetIndex = localRankings.findIndex(p => p.id === targetPokemonId);
             if (targetIndex !== -1) {
@@ -105,13 +108,13 @@ export const useRankingDragDrop = (
             }
           }
           
-          // IMMEDIATE sync without delay - dispatch event synchronously with insertion info
+          // Dispatch immediate sync event
           const event = new CustomEvent('trueskill-store-updated', {
             detail: { 
               pokemonId, 
               source: 'drag-to-rankings', 
               action: 'add',
-              insertionPosition // NEW: Pass insertion position info
+              insertionPosition
             }
           });
           document.dispatchEvent(event);
@@ -128,7 +131,7 @@ export const useRankingDragDrop = (
     }
 
     // Handle reordering within rankings
-    if (!activeId.startsWith('available-') && !overId.startsWith('available-')) {
+    if (!activeId.startsWith('available-') && !overId.startsWith('available-') && !overId.startsWith('collision-placeholder-')) {
       const activePokemonId = Number(activeId);
       const overPokemonId = Number(overId);
       

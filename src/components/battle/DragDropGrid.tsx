@@ -36,13 +36,23 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
     }
   });
 
+  // CRITICAL FIX: Include both ranked Pokemon IDs AND placeholder IDs for collision detection
+  // This allows collision detection to work when dragging available Pokemon over ranked ones
+  const sortableItems = [
+    ...displayRankings.map(p => p.id),
+    // Add placeholder items for collision detection with available Pokemon
+    ...Array.from({length: 10}, (_, i) => `collision-placeholder-${i}`)
+  ];
+
+  console.log(`🔍 [GRID_DEBUG] Sortable items:`, sortableItems.slice(0, 5), '...');
+
   return (
     <div 
       ref={setNodeRef}
       className={`transition-colors ${isOver ? 'bg-yellow-50/50' : ''}`}
     >
       <SortableContext 
-        items={displayRankings.map(p => p.id)} 
+        items={sortableItems}
         strategy={rectSortingStrategy}
       >
         <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))' }}>
