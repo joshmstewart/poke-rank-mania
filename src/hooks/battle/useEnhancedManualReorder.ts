@@ -28,33 +28,23 @@ export const useEnhancedManualReorder = (
     sourceIndex: number, 
     destinationIndex: number
   ) => {
-    console.log(`🔥 [ENHANCED_REORDER] ===== FUNCTION ENTRY POINT =====`);
-    console.log(`🔥 [ENHANCED_REORDER] This function was called! Parameters:`);
-    console.log(`🔥 [ENHANCED_REORDER] - draggedPokemonId: ${draggedPokemonId}`);
-    console.log(`🔥 [ENHANCED_REORDER] - sourceIndex: ${sourceIndex}`);
-    console.log(`🔥 [ENHANCED_REORDER] - destinationIndex: ${destinationIndex}`);
-    console.log(`🔥 [ENHANCED_REORDER] - preventAutoResorting: ${preventAutoResorting}`);
-    console.log(`🔥 [ENHANCED_REORDER] - finalRankings available: ${!!finalRankings}`);
-    console.log(`🔥 [ENHANCED_REORDER] - finalRankings length: ${finalRankings?.length || 0}`);
-    console.log(`🔥 [ENHANCED_REORDER] - onRankingsUpdate available: ${!!onRankingsUpdate}`);
-    console.log(`🔥 [ENHANCED_REORDER] - addImpliedBattle available: ${!!addImpliedBattle}`);
+    console.log(`🔥 [ENHANCED_REORDER] ===== MANUAL MODE REORDER =====`);
+    console.log(`🔥 [ENHANCED_REORDER] Pokemon ${draggedPokemonId} moved from ${sourceIndex} to ${destinationIndex}`);
+    console.log(`🔥 [ENHANCED_REORDER] preventAutoResorting: ${preventAutoResorting}`);
 
     // CRITICAL DEBUG: Check if we have the required dependencies
     if (!finalRankings || finalRankings.length === 0) {
       console.error(`🔥 [ENHANCED_REORDER] ❌ No finalRankings available! Length: ${finalRankings?.length}`);
-      console.error(`🔥 [ENHANCED_REORDER] ❌ Raw finalRankings:`, finalRankings);
       return;
     }
 
     if (!onRankingsUpdate) {
       console.error(`🔥 [ENHANCED_REORDER] ❌ No onRankingsUpdate function provided!`);
-      console.error(`🔥 [ENHANCED_REORDER] ❌ onRankingsUpdate value:`, onRankingsUpdate);
       return;
     }
 
     if (!addImpliedBattle) {
       console.error(`🔥 [ENHANCED_REORDER] ❌ No addImpliedBattle function available!`);
-      console.error(`🔥 [ENHANCED_REORDER] ❌ addImpliedBattle value:`, addImpliedBattle);
       return;
     }
 
@@ -68,16 +58,10 @@ export const useEnhancedManualReorder = (
     const draggedPokemon = workingRankings.find(p => p.id === draggedPokemonId);
     if (!draggedPokemon) {
       console.error(`🔥 [ENHANCED_REORDER] ❌ Pokemon ${draggedPokemonId} not found in rankings`);
-      console.error(`🔥 [ENHANCED_REORDER] ❌ Available Pokemon IDs:`, workingRankings.map(p => p.id));
       return;
     }
 
     console.log(`🔥 [ENHANCED_REORDER] Found dragged Pokemon: ${draggedPokemon.name}`);
-
-    console.log(`🔥 [ENHANCED_REORDER] ===== BEFORE MOVE POSITIONS =====`);
-    workingRankings.forEach((p, idx) => {
-      console.log(`🔥 [ENHANCED_REORDER] Position ${idx}: ${p.name} (${p.id})`);
-    });
 
     // STEP 1: Perform the physical move to get final positions
     const [movedPokemon] = workingRankings.splice(sourceIndex, 1);
@@ -114,7 +98,6 @@ export const useEnhancedManualReorder = (
           frequency: 2
         });
         console.log(`🔥 [ENHANCED_REORDER] Added P_above_1 battle: ${draggedPokemon.name} LOSES to ${p_above_1.name} (FREQUENCY: 2)`);
-        console.log(`🔥 [ENHANCED_REORDER] P_above_1 is at final position ${draggedFinalIndex - 1}`);
       }
     }
 
@@ -129,7 +112,6 @@ export const useEnhancedManualReorder = (
           frequency: 1
         });
         console.log(`🔥 [ENHANCED_REORDER] Added P_above_2 battle: ${draggedPokemon.name} LOSES to ${p_above_2.name} (FREQUENCY: 1)`);
-        console.log(`🔥 [ENHANCED_REORDER] P_above_2 is at final position ${draggedFinalIndex - 2}`);
       }
     }
 
@@ -144,7 +126,6 @@ export const useEnhancedManualReorder = (
           frequency: 2
         });
         console.log(`🔥 [ENHANCED_REORDER] Added P_below_1 battle: ${draggedPokemon.name} WINS against ${p_below_1.name} (FREQUENCY: 2)`);
-        console.log(`🔥 [ENHANCED_REORDER] P_below_1 is at final position ${draggedFinalIndex + 1}`);
       }
     }
 
@@ -159,7 +140,6 @@ export const useEnhancedManualReorder = (
           frequency: 1
         });
         console.log(`🔥 [ENHANCED_REORDER] Added P_below_2 battle: ${draggedPokemon.name} WINS against ${p_below_2.name} (FREQUENCY: 1)`);
-        console.log(`🔥 [ENHANCED_REORDER] P_below_2 is at final position ${draggedFinalIndex + 2}`);
       }
     }
 
@@ -179,7 +159,7 @@ export const useEnhancedManualReorder = (
       return;
     }
 
-    // CRITICAL FIX: Update TrueSkill store directly for proper synchronization
+    // CRITICAL FIX FOR MANUAL MODE: Update TrueSkill store directly WITHOUT triggering sync events
     let updatedDraggedRating = draggedRating;
 
     // Process each implied battle with the specified frequency
@@ -196,8 +176,6 @@ export const useEnhancedManualReorder = (
       // Process the battle the specified number of times
       for (let updateIndex = 0; updateIndex < frequency; updateIndex++) {
         console.log(`🔥 [ENHANCED_REORDER] Battle Update ${updateIndex + 1}/${frequency}: ${draggedPokemon.name} vs ${opponent.name} - ${draggedWins ? 'dragged wins' : 'opponent wins'}`);
-        console.log(`🔥 [ENHANCED_REORDER] BEFORE Update ${updateIndex + 1} - ${draggedPokemon.name}: μ=${updatedDraggedRating.mu.toFixed(3)} σ=${updatedDraggedRating.sigma.toFixed(3)}`);
-        console.log(`🔥 [ENHANCED_REORDER] BEFORE Update ${updateIndex + 1} - ${opponent.name}: μ=${opponentRating.mu.toFixed(3)} σ=${opponentRating.sigma.toFixed(3)}`);
 
         // Apply TrueSkill rating update
         let newDraggedRating: Rating;
@@ -231,21 +209,65 @@ export const useEnhancedManualReorder = (
         }
       }
 
-      // CRITICAL FIX: Update centralized TrueSkill store for proper synchronization
-      console.log(`🔥 [ENHANCED_REORDER] Updating centralized TrueSkill store for ${opponent.name}`);
-      updateRating(opponent.id, opponentRating);
+      // CRITICAL FIX FOR MANUAL MODE: Silent update without sync events
+      if (preventAutoResorting) {
+        console.log(`🔥 [ENHANCED_REORDER] MANUAL MODE: Silently updating TrueSkill store for ${opponent.name} (no sync events)`);
+        // Directly update the store's internal ratings without triggering events
+        const store = useTrueSkillStore.getState();
+        store.ratings[opponent.id] = {
+          mu: opponentRating.mu,
+          sigma: opponentRating.sigma,
+          lastUpdated: new Date().toISOString(),
+          battleCount: (store.ratings[opponent.id]?.battleCount || 0) + frequency
+        };
+      } else {
+        console.log(`🔥 [ENHANCED_REORDER] Updating centralized TrueSkill store for ${opponent.name}`);
+        updateRating(opponent.id, opponentRating);
+      }
     });
 
-    // CRITICAL FIX: Update centralized TrueSkill store for dragged Pokemon
-    console.log(`🔥 [ENHANCED_REORDER] Updating centralized TrueSkill store for dragged Pokemon ${draggedPokemon.name}`);
-    updateRating(draggedPokemonId, updatedDraggedRating);
+    // CRITICAL FIX FOR MANUAL MODE: Silent update for dragged Pokemon
+    if (preventAutoResorting) {
+      console.log(`🔥 [ENHANCED_REORDER] MANUAL MODE: Silently updating TrueSkill store for dragged Pokemon ${draggedPokemon.name} (no sync events)`);
+      // Directly update the store's internal ratings without triggering events
+      const store = useTrueSkillStore.getState();
+      store.ratings[draggedPokemonId] = {
+        mu: updatedDraggedRating.mu,
+        sigma: updatedDraggedRating.sigma,
+        lastUpdated: new Date().toISOString(),
+        battleCount: (store.ratings[draggedPokemonId]?.battleCount || 0) + totalUpdates
+      };
+    } else {
+      console.log(`🔥 [ENHANCED_REORDER] Updating centralized TrueSkill store for dragged Pokemon ${draggedPokemon.name}`);
+      updateRating(draggedPokemonId, updatedDraggedRating);
+    }
 
     console.log(`🔥 [ENHANCED_REORDER] ===== RECALCULATING SCORES =====`);
 
     // Recalculate scores based on updated ratings
     workingRankings.forEach(pokemon => {
-      // Get the latest rating from centralized store
-      const latestRating = getRating(pokemon.id);
+      // Get the latest rating from centralized store OR use updated local values for manual mode
+      let latestRating: Rating;
+      
+      if (preventAutoResorting) {
+        // In manual mode, use the locally updated ratings
+        if (pokemon.id === draggedPokemonId) {
+          latestRating = updatedDraggedRating;
+        } else {
+          const battleAffected = impliedBattles.find(b => b.opponent.id === pokemon.id);
+          if (battleAffected) {
+            // This Pokemon was affected by the battles, get its updated rating from store
+            const store = useTrueSkillStore.getState();
+            const storedRating = store.ratings[pokemon.id];
+            latestRating = storedRating ? new Rating(storedRating.mu, storedRating.sigma) : getRating(pokemon.id);
+          } else {
+            latestRating = getRating(pokemon.id);
+          }
+        }
+      } else {
+        latestRating = getRating(pokemon.id);
+      }
+      
       if (latestRating) {
         const oldScore = pokemon.score;
         const conservativeEstimate = latestRating.mu - 3 * latestRating.sigma;
@@ -261,8 +283,8 @@ export const useEnhancedManualReorder = (
 
     // CRITICAL FIX: Skip re-sorting if preventAutoResorting is true
     if (preventAutoResorting) {
-      console.log(`🔥 [ENHANCED_REORDER] ===== SKIPPING RE-SORTING (preventAutoResorting = true) =====`);
-      console.log(`🔥 [ENHANCED_REORDER] Maintaining manual order to preserve user experience`);
+      console.log(`🔥 [ENHANCED_REORDER] ===== MANUAL MODE: MAINTAINING USER ORDER =====`);
+      console.log(`🔥 [ENHANCED_REORDER] Skipping re-sorting to preserve manual positioning`);
     } else {
       console.log(`🔥 [ENHANCED_REORDER] ===== RE-SORTING RANKINGS =====`);
       // Re-sort the rankings based on updated scores
@@ -272,16 +294,21 @@ export const useEnhancedManualReorder = (
     console.log(`🔥 [ENHANCED_REORDER] ===== ENHANCED REORDER COMPLETE =====`);
     console.log(`🔥 [ENHANCED_REORDER] Successfully processed ${totalUpdates} TrueSkill updates for ${draggedPokemon.name} (${impliedBattles.length} battle types)`);
 
-    // CRITICAL FIX: Dispatch synchronization event for Manual Mode
-    const syncEvent = new CustomEvent('trueskill-updated', {
-      detail: { 
-        source: 'manual-reorder',
-        pokemonUpdated: [draggedPokemonId, ...impliedBattles.map(b => b.opponent.id)],
-        timestamp: Date.now()
-      }
-    });
-    document.dispatchEvent(syncEvent);
-    console.log(`🔥 [ENHANCED_REORDER] Dispatched TrueSkill sync event for Manual Mode`);
+    // CRITICAL FIX: NO sync events for manual mode
+    if (!preventAutoResorting) {
+      // Only dispatch sync events for non-manual modes
+      const syncEvent = new CustomEvent('trueskill-updated', {
+        detail: { 
+          source: 'manual-reorder',
+          pokemonUpdated: [draggedPokemonId, ...impliedBattles.map(b => b.opponent.id)],
+          timestamp: Date.now()
+        }
+      });
+      document.dispatchEvent(syncEvent);
+      console.log(`🔥 [ENHANCED_REORDER] Dispatched TrueSkill sync event for Battle Mode`);
+    } else {
+      console.log(`🔥 [ENHANCED_REORDER] MANUAL MODE: Skipping sync events to prevent auto-resorting`);
+    }
 
     // Update the rankings
     try {
@@ -293,11 +320,11 @@ export const useEnhancedManualReorder = (
 
     // Show user feedback with updated information
     const feedbackMessage = preventAutoResorting 
-      ? `Manual reorder for ${draggedPokemon.name}` 
+      ? `Manual position set for ${draggedPokemon.name}` 
       : `Enhanced ranking update for ${draggedPokemon.name}`;
     
     const feedbackDescription = preventAutoResorting
-      ? `Position updated, TrueSkill adjusted (${totalUpdates} updates)`
+      ? `Position locked at rank ${destinationIndex + 1}, TrueSkill adjusted silently`
       : `Applied ${totalUpdates} TrueSkill adjustments (immediate neighbors weighted 2x)`;
 
     toast.success(feedbackMessage, {
@@ -305,12 +332,6 @@ export const useEnhancedManualReorder = (
     });
 
   }, [finalRankings, pokemonLookupMap, onRankingsUpdate, addImpliedBattle, preventAutoResorting, getRating, updateRating]);
-
-  console.log(`🔥 [ENHANCED_REORDER_HOOK] Hook created with ${finalRankings?.length || 0} rankings`);
-  console.log(`🔥 [ENHANCED_REORDER_HOOK] onRankingsUpdate exists: ${!!onRankingsUpdate}`);
-  console.log(`🔥 [ENHANCED_REORDER_HOOK] preventAutoResorting: ${preventAutoResorting}`);
-  console.log(`🔥 [ENHANCED_REORDER_HOOK] addImpliedBattle exists: ${!!addImpliedBattle}`);
-  console.log(`🔥 [ENHANCED_REORDER_HOOK] Returning function: ${handleEnhancedManualReorder.name || 'anonymous'}`);
 
   return { handleEnhancedManualReorder };
 };
