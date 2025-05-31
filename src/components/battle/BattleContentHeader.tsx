@@ -1,6 +1,7 @@
 
 import React from "react";
 import BattleControls from "./BattleControls";
+import ImpliedBattleValidator from "./ImpliedBattleValidator";
 import { BattleType } from "@/hooks/battle/types";
 import { SingleBattle } from "@/hooks/battle/types";
 
@@ -24,16 +25,22 @@ const BattleContentHeader: React.FC<BattleContentHeaderProps> = ({
   setBattleResults
 }) => {
   return (
-    <BattleControls
-      selectedGeneration={selectedGeneration}
-      battleType={battleType}
-      onGenerationChange={(gen) => onGenerationChange(Number(gen))}
-      onBattleTypeChange={setBattleType}
-      onRestartBattles={performFullBattleReset}
-      setBattlesCompleted={setBattlesCompleted}
-      setBattleResults={setBattleResults}
-      performFullBattleReset={performFullBattleReset}
-    />
+    <div>
+      {/* Implied Battle Validator for tracking auto battles */}
+      <ImpliedBattleValidator />
+      
+      {/* Main Battle Controls */}
+      <BattleControls
+        selectedGeneration={selectedGeneration}
+        battleType={battleType}
+        onGenerationChange={(gen) => onGenerationChange(Number(gen))}
+        onBattleTypeChange={setBattleType}
+        onRestartBattles={performFullBattleReset}
+        setBattlesCompleted={setBattlesCompleted}
+        setBattleResults={setBattleResults}
+        performFullBattleReset={performFullBattleReset}
+      />
+    </div>
   );
 };
 
