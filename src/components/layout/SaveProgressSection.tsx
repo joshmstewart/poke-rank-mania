@@ -1,25 +1,19 @@
 
-import React from "react";
-import AppSessionManager from "@/components/AppSessionManager";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import React from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { AuthenticatedUserDisplay } from '@/components/auth/AuthenticatedUserDisplay';
+import { CloudSyncButton } from '@/components/auth/CloudSyncButton';
 
 const SaveProgressSection: React.FC = () => {
-  return (
-    <div className="flex items-center">
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div>
-              <AppSessionManager />
-            </div>
-          </TooltipTrigger>
-          <TooltipContent side="bottom">
-            <p>Save your progress and rankings to continue later</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    </div>
-  );
+  const { user } = useAuth();
+
+  if (user) {
+    // Show authenticated user display when logged in
+    return <AuthenticatedUserDisplay />;
+  }
+
+  // Show cloud sync button when not logged in
+  return <CloudSyncButton />;
 };
 
 export default SaveProgressSection;
