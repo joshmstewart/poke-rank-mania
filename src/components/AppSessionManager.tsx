@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -16,6 +15,13 @@ import {
 
 const AppSessionManager = () => {
   const { user } = useAuth();
+  
+  console.log('🟡 AppSessionManager: Rendering with user state:', {
+    hasUser: !!user,
+    userEmail: user?.email,
+    userId: user?.id
+  });
+
   const [sessionId, setSessionId] = useState("");
   const [importValue, setImportValue] = useState("");
   const [sessionDialogOpen, setSessionDialogOpen] = useState(false);
@@ -168,10 +174,12 @@ const AppSessionManager = () => {
 
   // If user is signed in, don't show anything - SaveProgressSection handles authenticated display
   if (user) {
+    console.log('🟡 AppSessionManager: User is authenticated, returning null');
     return null;
   }
 
-  // If user is not signed in, show combined save progress button
+  console.log('🟡 AppSessionManager: User is NOT authenticated, showing save progress button');
+
   return (
     <div className="flex items-center gap-2">
       <Dialog open={sessionDialogOpen} onOpenChange={setSessionDialogOpen}>
