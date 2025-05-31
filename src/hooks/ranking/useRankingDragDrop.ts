@@ -92,14 +92,12 @@ export const useRankingDragDrop = (
             return newAvailable;
           });
           
-          // Trigger immediate sync to update rankings
-          setTimeout(() => {
-            const event = new CustomEvent('trueskill-store-updated', {
-              detail: { pokemonId, source: 'drag-to-rankings', action: 'add' }
-            });
-            document.dispatchEvent(event);
-            console.log(`🚀🚀🚀 [DRAG_END_CRITICAL] ✅ Dispatched trueskill-store-updated event`);
-          }, 50);
+          // IMMEDIATE sync without delay - dispatch event synchronously
+          const event = new CustomEvent('trueskill-store-updated', {
+            detail: { pokemonId, source: 'drag-to-rankings', action: 'add' }
+          });
+          document.dispatchEvent(event);
+          console.log(`🚀🚀🚀 [DRAG_END_CRITICAL] ✅ Dispatched trueskill-store-updated event immediately`);
           
           return;
         } else {

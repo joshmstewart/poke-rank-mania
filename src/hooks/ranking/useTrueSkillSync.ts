@@ -125,14 +125,20 @@ export const useTrueSkillSync = () => {
     setManualOrderLocked(true); // Lock the order after manual update
   }, []);
 
-  // CRITICAL: Completely disable TrueSkill sync events in Manual Mode
+  // CRITICAL: Listen for TrueSkill store updates and sync immediately
   useEffect(() => {
     const handleTrueSkillUpdate = (event: CustomEvent) => {
       console.log(`🔥🔥🔥 [TRUESKILL_SYNC_EVENT] Received sync event:`, event.detail);
       
-      // CRITICAL: In manual mode, ignore ALL sync events to preserve manual order
+      // CRITICAL: In manual mode, handle add operations immediately but ignore reordering sync events
       if (window.location.pathname === '/' || window.location.pathname.includes('manual')) {
-        console.log(`🔥🔥🔥 [TRUESKILL_SYNC_EVENT] MANUAL MODE DETECTED - ignoring ALL sync events to preserve manual order`);
+        if (event.detail?.action === 'add') {
+          console.log(`🔥🔥🔥 [TRUESKILL_SYNC_EVENT] MANUAL MODE - handling ADD operation for new Pokemon`);
+          // Force a re-sync for add operations only
+          syncWithBattleModeRankings();
+        } else {
+          console.log(`🔥🔥🔥 [TRUESKILL_SYNC_EVENT] MANUAL MODE - ignoring non-add sync events to preserve manual order`);
+        }
         return;
       }
       
