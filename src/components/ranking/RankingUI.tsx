@@ -81,6 +81,32 @@ export const RankingUI: React.FC<RankingUIProps> = ({
   console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] hasManualChanges: ${hasManualChanges}`);
   console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] filteredAvailablePokemon length: ${filteredAvailablePokemon.length}`);
 
+  // Handle drag from available to rankings
+  const handleDragToRankings = (pokemonId: number, insertIndex?: number) => {
+    console.log(`🔄 [RANKING_UI] Moving Pokemon ${pokemonId} to rankings at index ${insertIndex}`);
+    
+    const pokemon = filteredAvailablePokemon.find(p => p.id === pokemonId);
+    if (!pokemon) {
+      console.error(`🔄 [RANKING_UI] Pokemon ${pokemonId} not found in available list`);
+      return;
+    }
+    
+    // Remove from available
+    const newAvailable = availablePokemon.filter(p => p.id !== pokemonId);
+    
+    // Add to ranked at specified position or at the end
+    const newRanked = [...rankedPokemon];
+    const targetIndex = insertIndex !== undefined ? insertIndex : newRanked.length;
+    newRanked.splice(targetIndex, 0, pokemon);
+    
+    // Update states
+    setAvailablePokemon(newAvailable);
+    setRankedPokemon(newRanked);
+    setHasManualChanges(true);
+    
+    console.log(`🔄 [RANKING_UI] Successfully moved ${pokemon.name} to rankings`);
+  };
+
   // Handle manual reordering within the rankings
   const handleManualReorder = (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => {
     console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] Manual reorder: Pokemon ${draggedPokemonId} from ${sourceIndex} to ${destinationIndex}`);
@@ -138,6 +164,7 @@ export const RankingUI: React.FC<RankingUIProps> = ({
               loadingRef={loadingRef}
               handlePageChange={handlePageChange}
               getPageRange={getPageRange}
+              onDragToRankings={handleDragToRankings}
             />
           </div>
           
