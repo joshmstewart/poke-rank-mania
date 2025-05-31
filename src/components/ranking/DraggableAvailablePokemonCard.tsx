@@ -11,7 +11,7 @@ interface DraggableAvailablePokemonCardProps {
 const DraggableAvailablePokemonCard: React.FC<DraggableAvailablePokemonCardProps> = ({ 
   pokemon
 }) => {
-  console.log(`🔍 [DRAGGABLE_AVAILABLE] Setting up draggable for ${pokemon.name} (ID: ${pokemon.id})`);
+  console.log(`🔍🔍🔍 [DRAGGABLE_AVAILABLE_DEBUG] Setting up draggable for ${pokemon.name} (ID: ${pokemon.id})`);
   
   const {
     attributes,
@@ -23,7 +23,8 @@ const DraggableAvailablePokemonCard: React.FC<DraggableAvailablePokemonCardProps
     id: `available-${pokemon.id}`,
     data: {
       pokemon,
-      source: 'available'
+      source: 'available',
+      type: 'available-pokemon'
     }
   });
 
@@ -31,7 +32,16 @@ const DraggableAvailablePokemonCard: React.FC<DraggableAvailablePokemonCardProps
     transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
   } : undefined;
 
-  console.log(`🔍 [DRAGGABLE_AVAILABLE] ${pokemon.name} - isDragging: ${isDragging}, listeners exists: ${!!listeners}`);
+  console.log(`🔍🔍🔍 [DRAGGABLE_AVAILABLE_DEBUG] ${pokemon.name}:`);
+  console.log(`🔍🔍🔍 [DRAGGABLE_AVAILABLE_DEBUG] - isDragging: ${isDragging}`);
+  console.log(`🔍🔍🔍 [DRAGGABLE_AVAILABLE_DEBUG] - listeners exists: ${!!listeners}`);
+  console.log(`🔍🔍🔍 [DRAGGABLE_AVAILABLE_DEBUG] - transform:`, transform);
+  console.log(`🔍🔍🔍 [DRAGGABLE_AVAILABLE_DEBUG] - attributes:`, attributes);
+
+  const handleClick = (e: React.MouseEvent) => {
+    console.log(`🔍🔍🔍 [DRAGGABLE_AVAILABLE_DEBUG] Click on ${pokemon.name}`);
+    // Don't prevent default here - let the info button handle its own events
+  };
 
   return (
     <div
@@ -40,6 +50,7 @@ const DraggableAvailablePokemonCard: React.FC<DraggableAvailablePokemonCardProps
       className={`cursor-grab active:cursor-grabbing ${
         isDragging ? 'opacity-60 z-50 scale-105 shadow-2xl' : 'hover:shadow-lg transition-all duration-200'
       }`}
+      onClick={handleClick}
       {...attributes}
       {...listeners}
     >
