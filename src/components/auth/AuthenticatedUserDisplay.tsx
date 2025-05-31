@@ -75,12 +75,6 @@ export const AuthenticatedUserDisplay: React.FC = () => {
     }
   };
 
-  // Only render if we have a current user
-  if (!currentUser) {
-    console.log('🔵 AuthenticatedUserDisplay: No current user, not rendering');
-    return null;
-  }
-
   console.log('🔵 AuthenticatedUserDisplay: Rendering dropdown with user:', displayName);
 
   return (
