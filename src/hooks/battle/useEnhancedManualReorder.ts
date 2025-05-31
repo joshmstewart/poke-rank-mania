@@ -337,9 +337,20 @@ export const useEnhancedManualReorder = (
     console.log(`🔥 [ENHANCED_REORDER] ===== ENHANCED REORDER COMPLETE =====`);
     console.log(`🔥 [ENHANCED_REORDER] Successfully processed ${totalUpdates} TrueSkill updates for ${draggedPokemon.name} (${impliedBattles.length} battle types)`);
 
-    // CRITICAL FIX: NO sync events for manual mode
-    if (!preventAutoResorting) {
-      // Only dispatch sync events for non-manual modes
+    // CRITICAL FIX: For new Pokemon additions, use a different event to prevent double insertion
+    if (sourceIndex === -1) {
+      console.log(`🔥 [ENHANCED_REORDER] NEW POKEMON: Dispatching insertion event without auto-sync`);
+      // Dispatch a different event that won't trigger the insertion logic in useTrueSkillSync
+      const insertionEvent = new CustomEvent('pokemon-manually-inserted', {
+        detail: { 
+          pokemonId: draggedPokemonId,
+          insertionPosition: destinationIndex,
+          timestamp: Date.now()
+        }
+      });
+      document.dispatchEvent(insertionEvent);
+    } else if (!preventAutoResorting) {
+      // Only dispatch sync events for reordering in non-manual modes
       const syncEvent = new CustomEvent('trueskill-updated', {
         detail: { 
           source: 'manual-reorder',
