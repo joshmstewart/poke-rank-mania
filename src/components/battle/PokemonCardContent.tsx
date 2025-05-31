@@ -34,11 +34,6 @@ const PokemonCardContent: React.FC<PokemonCardContentProps> = ({
           <PokemonInfoModal pokemon={pokemon}>
             <button 
               className="w-6 h-6 rounded-full bg-white/80 hover:bg-white border border-gray-300/60 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200 backdrop-blur-sm"
-              onClick={(e) => {
-                console.log(`🔘 [INFO_BUTTON_DEBUG] PokemonCardContent: Info button clicked for ${pokemon.name}`);
-                e.preventDefault();
-                e.stopPropagation();
-              }}
               data-info-button="true"
             >
               i
@@ -56,7 +51,7 @@ const PokemonCardContent: React.FC<PokemonCardContentProps> = ({
         </div>
         
         {/* Pokemon info - name, number, and types */}
-        <div className="mt-auto min-h-[2rem]">
+        <div className="mt-auto bg-white/90 rounded p-2">
           <PokemonCardInfo
             pokemonId={pokemon.id}
             displayName={pokemon.name}
