@@ -106,7 +106,8 @@ export const AvailablePokemonSection: React.FC<AvailablePokemonSectionProps> = (
         {/* Loading and Pagination */}
         <InfiniteScrollLoader
           isLoading={isLoading}
-          loadingType={loadingType}
+          currentPage={currentPage}
+          totalPages={totalPages}
           loadingRef={loadingRef}
         />
         
@@ -114,8 +115,9 @@ export const AvailablePokemonSection: React.FC<AvailablePokemonSectionProps> = (
           <PaginationControls
             currentPage={currentPage}
             totalPages={totalPages}
+            pageRange={getPageRange()}
             onPageChange={handlePageChange}
-            getPageRange={getPageRange}
+            itemsPerPage={50}
           />
         )}
       </div>
