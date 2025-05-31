@@ -60,9 +60,10 @@ export const RankingUI: React.FC<RankingUIProps> = ({
   console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] displayRankings length: ${displayRankings.length}`);
   console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] filteredAvailablePokemon length: ${filteredAvailablePokemon.length}`);
 
+  // Use the actual state arrays for drag and drop, not the filtered/display arrays
   const { handleDragEnd } = useDragHandler(
-    filteredAvailablePokemon,
-    displayRankings,
+    availablePokemon,
+    rankedPokemon,
     setAvailablePokemon,
     setRankedPokemon
   );
