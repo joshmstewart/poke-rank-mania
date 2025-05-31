@@ -12,166 +12,144 @@ export const usePokemonLoader = () => {
   // Get form filters
   const { shouldIncludePokemon, storePokemon } = useFormFilters();
 
-  // ENHANCED: Network-resilient loading with exponential backoff
+  // CRITICAL FIX: Force fresh load by clearing cache first
   const loadInitialBatch = useCallback(async (genId = 0, fullRankingMode = true) => {
-    // CRITICAL FIX: If Pokemon are already locked, don't reload
-    if (pokemonLockedRef.current && allPokemon.length > 0) {
-      console.log(`🔒 [PERFORMANCE_FIX] Pokemon already loaded (${allPokemon.length}) - skipping reload`);
-      setIsLoading(false);
-      return allPokemon;
-    }
-
-    // Check cache first
-    const cacheKey = `pokemon-cache-${genId}-${fullRankingMode}`;
-    const cached = localStorage.getItem(cacheKey);
+    console.log(`🧹🧹🧹 [CACHE_CLEAR_FIX] ===== FORCING FRESH POKEMON LOAD =====`);
     
-    if (cached && !pokemonLockedRef.current) {
-      try {
-        const cachedPokemon = JSON.parse(cached);
-        console.log(`🚀 [PERFORMANCE_FIX] Loaded ${cachedPokemon.length} Pokemon from cache`);
-        setAllPokemon(cachedPokemon);
-        pokemonLockedRef.current = true;
-        setIsLoading(false);
-        return cachedPokemon;
-      } catch (e) {
-        console.log("🧹 [PERFORMANCE_FIX] Cache corrupted, fetching fresh data");
-        localStorage.removeItem(cacheKey);
-      }
-    }
+    // CRITICAL: Clear ALL Pokemon caches to force fresh API calls
+    const cacheKeys = Object.keys(localStorage).filter(key => key.startsWith('pokemon-cache-'));
+    cacheKeys.forEach(key => {
+      console.log(`🧹🧹🧹 [CACHE_CLEAR_FIX] Clearing cache: ${key}`);
+      localStorage.removeItem(key);
+    });
+    
+    // Reset Pokemon lock to allow fresh loading
+    pokemonLockedRef.current = false;
+    console.log(`🧹🧹🧹 [CACHE_CLEAR_FIX] Cache cleared, Pokemon unlocked, starting fresh API fetch`);
 
     setIsLoading(true);
     
-    // ENHANCED: Network resilience with retry logic
-    const maxRetries = 3;
-    let lastError: Error | null = null;
-    
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        console.log(`🚀 [NETWORK_RESILIENCE] Attempt ${attempt}/${maxRetries} - Loading Pokemon with optimized batching`);
-        
-        // Add exponential backoff delay for retries
-        if (attempt > 1) {
-          const delayMs = Math.min(1000 * Math.pow(2, attempt - 2), 5000); // Cap at 5 seconds
-          console.log(`🚀 [NETWORK_RESILIENCE] Waiting ${delayMs}ms before retry...`);
-          await new Promise(resolve => setTimeout(resolve, delayMs));
-        }
-        
-        // PERFORMANCE FIX: Load and process in chunks to prevent UI blocking
-        const allPokemonData = await fetchAllPokemon(genId, fullRankingMode, false);
-        
-        if (!allPokemonData || allPokemonData.length === 0) {
-          throw new Error(`No Pokemon data received from API (attempt ${attempt})`);
-        }
-        
-        console.log(`🚀 [NETWORK_RESILIENCE] ✅ Successfully fetched ${allPokemonData.length} Pokemon on attempt ${attempt}`);
-        
-        // Process in chunks to avoid blocking the main thread
-        const processInChunks = (data: Pokemon[], chunkSize = 200): Promise<Pokemon[]> => {
-          return new Promise((resolve) => {
-            const filtered: Pokemon[] = [];
-            let index = 0;
-            
-            const processChunk = () => {
-              const chunk = data.slice(index, index + chunkSize);
-              
-              for (const pokemon of chunk) {
-                const include = shouldIncludePokemon(pokemon);
-                if (!include) {
-                  storePokemon(pokemon);
-                } else {
-                  filtered.push(pokemon);
-                }
-              }
-              
-              index += chunkSize;
-              
-              if (index < data.length) {
-                // Process next chunk in next tick
-                setTimeout(processChunk, 0);
-              } else {
-                resolve(filtered);
-              }
-            };
-            
-            processChunk();
-          });
-        };
-        
-        const filteredPokemon = await processInChunks(allPokemonData);
-        
-        // PERFORMANCE FIX: Pre-shuffle once and cache
-        const shuffledPokemon = [...filteredPokemon].sort(() => Math.random() - 0.5);
-        console.log(`✅ [NETWORK_RESILIENCE] Processed ${shuffledPokemon.length} Pokemon with optimized filtering`);
-        
-        // Cache the result
-        try {
-          localStorage.setItem(cacheKey, JSON.stringify(shuffledPokemon));
-          console.log(`💾 [NETWORK_RESILIENCE] Cached ${shuffledPokemon.length} Pokemon for faster future loads`);
-        } catch (e) {
-          console.warn("🚨 [NETWORK_RESILIENCE] Could not cache Pokemon data - storage full");
-        }
-        
-        setAllPokemon(shuffledPokemon);
-        setIsLoading(false);
-        
-        // Lock Pokemon after successful load
-        pokemonLockedRef.current = true;
-        console.log(`🔒 [NETWORK_RESILIENCE] Pokemon locked at ${shuffledPokemon.length} to prevent reloads`);
-        
-        return shuffledPokemon;
-        
-      } catch (error) {
-        lastError = error as Error;
-        console.error(`🚨 [NETWORK_RESILIENCE] Attempt ${attempt}/${maxRetries} failed:`, error);
-        
-        // If this is not the last attempt, continue to retry
-        if (attempt < maxRetries) {
-          console.log(`🔄 [NETWORK_RESILIENCE] Will retry after delay...`);
-          continue;
-        }
-        
-        // On final failure, check for any usable cached data
-        console.error(`🚨 [NETWORK_RESILIENCE] All ${maxRetries} attempts failed. Checking for fallback data...`);
-        
-        // Try any available cache as emergency fallback
-        const fallbackKeys = Object.keys(localStorage).filter(key => key.startsWith('pokemon-cache-'));
-        for (const key of fallbackKeys) {
-          try {
-            const fallbackData = JSON.parse(localStorage.getItem(key) || '[]');
-            if (fallbackData.length > 0) {
-              console.log(`💾 [NETWORK_RESILIENCE] Using fallback cache: ${fallbackData.length} Pokemon from ${key}`);
-              setAllPokemon(fallbackData);
-              setIsLoading(false);
-              pokemonLockedRef.current = true;
-              return fallbackData;
-            }
-          } catch (e) {
-            console.warn(`🚨 [NETWORK_RESILIENCE] Fallback cache ${key} corrupted, removing`);
-            localStorage.removeItem(key);
-          }
-        }
+    try {
+      console.log(`🚀🚀🚀 [FRESH_API_CALL] Making fresh API call with NO CACHE`);
+      
+      // CRITICAL: Call the API directly without any cache checks
+      const allPokemonData = await fetchAllPokemon(genId, fullRankingMode, false);
+      
+      if (!allPokemonData || allPokemonData.length === 0) {
+        throw new Error(`No Pokemon data received from fresh API call`);
       }
+      
+      console.log(`🚀🚀🚀 [FRESH_API_CALL] ✅ Fresh API call returned ${allPokemonData.length} Pokemon`);
+      
+      // CRITICAL: Log the ID distribution of what we got from API
+      if (allPokemonData.length > 0) {
+        const apiIds = allPokemonData.map(p => p.id);
+        const apiMinId = Math.min(...apiIds);
+        const apiMaxId = Math.max(...apiIds);
+        console.log(`🚀🚀🚀 [FRESH_API_CALL] API returned ID range: ${apiMinId} - ${apiMaxId}`);
+        
+        const apiDistribution = {
+          'Gen1(1-151)': apiIds.filter(id => id >= 1 && id <= 151).length,
+          'Gen2(152-251)': apiIds.filter(id => id >= 152 && id <= 251).length,
+          'Gen3(252-386)': apiIds.filter(id => id >= 252 && id <= 386).length,
+          'Gen4(387-493)': apiIds.filter(id => id >= 387 && id <= 493).length,
+          'Gen5(494-649)': apiIds.filter(id => id >= 494 && id <= 649).length,
+          'Gen6(650-721)': apiIds.filter(id => id >= 650 && id <= 721).length,
+          'Gen7(722-809)': apiIds.filter(id => id >= 722 && id <= 809).length,
+          'Gen8(810-905)': apiIds.filter(id => id >= 810 && id <= 905).length,
+          'Gen9(906+)': apiIds.filter(id => id >= 906).length,
+        };
+        console.log(`🚀🚀🚀 [FRESH_API_CALL] Fresh API distribution by generation:`, apiDistribution);
+      }
+      
+      // Process in chunks to avoid blocking the main thread
+      const processInChunks = (data: Pokemon[], chunkSize = 200): Promise<Pokemon[]> => {
+        return new Promise((resolve) => {
+          const filtered: Pokemon[] = [];
+          let index = 0;
+          
+          const processChunk = () => {
+            const chunk = data.slice(index, index + chunkSize);
+            
+            for (const pokemon of chunk) {
+              const include = shouldIncludePokemon(pokemon);
+              if (!include) {
+                storePokemon(pokemon);
+              } else {
+                filtered.push(pokemon);
+              }
+            }
+            
+            index += chunkSize;
+            
+            if (index < data.length) {
+              // Process next chunk in next tick
+              setTimeout(processChunk, 0);
+            } else {
+              resolve(filtered);
+            }
+          };
+          
+          processChunk();
+        });
+      };
+      
+      const filteredPokemon = await processInChunks(allPokemonData);
+      
+      // Pre-shuffle once
+      const shuffledPokemon = [...filteredPokemon].sort(() => Math.random() - 0.5);
+      console.log(`✅🚀🚀🚀 [FRESH_API_CALL] Final result: ${shuffledPokemon.length} Pokemon after filtering`);
+      
+      // CRITICAL: Log the final ID distribution after filtering
+      if (shuffledPokemon.length > 0) {
+        const finalIds = shuffledPokemon.map(p => p.id);
+        const finalMinId = Math.min(...finalIds);
+        const finalMaxId = Math.max(...finalIds);
+        console.log(`✅🚀🚀🚀 [FRESH_API_CALL] Final ID range after filtering: ${finalMinId} - ${finalMaxId}`);
+        
+        const finalDistribution = {
+          'Gen1(1-151)': finalIds.filter(id => id >= 1 && id <= 151).length,
+          'Gen2(152-251)': finalIds.filter(id => id >= 152 && id <= 251).length,
+          'Gen3(252-386)': finalIds.filter(id => id >= 252 && id <= 386).length,
+          'Gen4(387-493)': finalIds.filter(id => id >= 387 && id <= 493).length,
+          'Gen5(494-649)': finalIds.filter(id => id >= 494 && id <= 649).length,
+          'Gen6(650-721)': finalIds.filter(id => id >= 650 && id <= 721).length,
+          'Gen7(722-809)': finalIds.filter(id => id >= 722 && id <= 809).length,
+          'Gen8(810-905)': finalIds.filter(id => id >= 810 && id <= 905).length,
+          'Gen9(906+)': finalIds.filter(id => id >= 906).length,
+        };
+        console.log(`✅🚀🚀🚀 [FRESH_API_CALL] Final distribution after filtering:`, finalDistribution);
+      }
+      
+      setAllPokemon(shuffledPokemon);
+      setIsLoading(false);
+      
+      // Lock Pokemon after successful load
+      pokemonLockedRef.current = true;
+      console.log(`🔒🚀🚀🚀 [FRESH_API_CALL] Pokemon locked at ${shuffledPokemon.length} to prevent reloads`);
+      
+      return shuffledPokemon;
+      
+    } catch (error) {
+      console.error(`🚨🚀🚀🚀 [FRESH_API_CALL] Fresh API call failed:`, error);
+      setIsLoading(false);
+      
+      toast({
+        title: "Network Error", 
+        description: `Failed to load fresh Pokémon data. ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: "destructive",
+        duration: 10000
+      });
+      
+      return [];
     }
-    
-    // If we get here, all attempts failed and no fallback was available
-    console.error("🚨 [NETWORK_RESILIENCE] Complete failure - no Pokemon data available");
-    setIsLoading(false);
-    
-    toast({
-      title: "Network Error",
-      description: `Failed to load Pokémon data after ${maxRetries} attempts. ${lastError?.message || 'Unknown error'}`,
-      variant: "destructive",
-      duration: 10000
-    });
-    
-    return [];
-  }, [shouldIncludePokemon, storePokemon, allPokemon.length]);
+  }, [shouldIncludePokemon, storePokemon]);
 
   const loadPokemon = useCallback(async (genId = 0, fullRankingMode = true) => {
     return loadInitialBatch(genId, fullRankingMode);
   }, [loadInitialBatch]);
 
-  // PERFORMANCE FIX: Clear cache when needed
+  // Clear cache when needed
   const clearCache = useCallback(() => {
     const keys = Object.keys(localStorage).filter(key => key.startsWith('pokemon-cache-'));
     keys.forEach(key => localStorage.removeItem(key));
