@@ -1,5 +1,5 @@
 
-import React, { createContext } from 'react';
+import React, { createContext, useRef } from 'react';
 import { AuthContextType } from './types';
 import { authService } from './authService';
 import { useAuthState } from './useAuthState';
@@ -8,8 +8,12 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, session, loading } = useAuthState();
+  
+  // Use a ref to track if this is the same provider instance
+  const providerInstanceRef = useRef(Math.random());
 
   console.log('🔴 AuthProvider: COMPONENT RENDER START - every render should show this');
+  console.log('🔴 AuthProvider: Provider instance ID:', providerInstanceRef.current);
   console.log('🔴 AuthProvider: Current state at render start:', {
     hasUser: !!user,
     hasSession: !!session,
@@ -40,7 +44,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   console.log('🔴 AuthProvider: 🚨🚨🚨 RETURNING JSX - this should ALWAYS appear 🚨🚨🚨');
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value} key="stable-auth-context">
+      {children}
+    </AuthContext.Provider>
+  );
 };
 
 export { AuthContext };

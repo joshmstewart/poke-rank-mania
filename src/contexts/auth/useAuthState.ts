@@ -22,7 +22,7 @@ export const useAuthState = () => {
     
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         console.log('🔴 useAuthState: ⚠️⚠️⚠️ AUTH STATE CHANGE EVENT TRIGGERED ⚠️⚠️⚠️');
         console.log('🔴 useAuthState: Event type:', event);
         console.log('🔴 useAuthState: Session in callback:', {
@@ -35,12 +35,22 @@ export const useAuthState = () => {
           timestamp: new Date().toISOString()
         });
         
-        console.log('🔴 useAuthState: About to update state...');
+        console.log('🔴 useAuthState: About to update state - CRITICAL POINT');
         
-        // Update state immediately and synchronously
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
+        // CRITICAL: Use React.startTransition to prevent unmounting during state updates
+        // This ensures the component tree stays stable during auth changes
+        if (typeof React !== 'undefined' && React.startTransition) {
+          React.startTransition(() => {
+            setSession(session);
+            setUser(session?.user ?? null);
+            setLoading(false);
+          });
+        } else {
+          // Fallback for older React versions
+          setSession(session);
+          setUser(session?.user ?? null);
+          setLoading(false);
+        }
         
         console.log('🔴 useAuthState: State updated. New values:', {
           userSet: !!session?.user,
@@ -78,10 +88,18 @@ export const useAuthState = () => {
         
         console.log('🔴 useAuthState: About to set initial state...');
         
-        // Update state with initial session
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
+        // Update state with initial session - use transition here too
+        if (typeof React !== 'undefined' && React.startTransition) {
+          React.startTransition(() => {
+            setSession(session);
+            setUser(session?.user ?? null);
+            setLoading(false);
+          });
+        } else {
+          setSession(session);
+          setUser(session?.user ?? null);
+          setLoading(false);
+        }
         
         console.log('🔴 useAuthState: Initial state set:', {
           user: !!session?.user, 

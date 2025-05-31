@@ -55,11 +55,16 @@ function AppContent() {
 
 function App() {
   console.log('🚀🚀🚀 APP: ROOT APP COMPONENT RENDERING - this is the very top level');
+  console.log('🚀🚀🚀 APP: Timestamp:', new Date().toISOString());
   
+  // CRITICAL: Ensure App component doesn't unmount during auth changes
+  // Use a stable key to prevent React from recreating the component tree
   return (
-    <AuthWrapper>
-      <AppContent />
-    </AuthWrapper>
+    <div key="stable-app-root" className="app-root">
+      <AuthWrapper>
+        <AppContent />
+      </AuthWrapper>
+    </div>
   );
 }
 
