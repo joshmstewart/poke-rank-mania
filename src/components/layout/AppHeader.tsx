@@ -10,7 +10,6 @@ interface AppHeaderProps {
 }
 
 const AppHeader: React.FC<AppHeaderProps> = ({ mode, onModeChange }) => {
-  // CRITICAL LOGGING - Always fires when header renders
   console.log('🟢🟢🟢 AppHeader: ALWAYS FIRES - Header component is rendering');
   console.log('🟢🟢🟢 AppHeader: Timestamp:', new Date().toISOString());
 
@@ -24,7 +23,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ mode, onModeChange }) => {
           {/* Center - Mode and Style Controls Group */}
           <ModeStyleControls mode={mode} onModeChange={onModeChange} />
           
-          {/* Right side - Save Progress */}
+          {/* Right side - ONLY SaveProgressSection (no other auth components) */}
           <SaveProgressSection />
         </div>
       </div>

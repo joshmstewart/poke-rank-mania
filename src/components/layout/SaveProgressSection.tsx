@@ -7,8 +7,7 @@ import { CloudSyncButton } from '@/components/auth/CloudSyncButton';
 const SaveProgressSection: React.FC = () => {
   const { user, loading, session } = useAuth();
 
-  // CRITICAL LOGGING - Always fires regardless of state
-  console.log('🔴🔴🔴 SaveProgressSection: ALWAYS FIRES - Component is rendering');
+  console.log('🔴🔴🔴 SaveProgressSection: RENDER START - Component is rendering');
   console.log('🔴🔴🔴 SaveProgressSection: Auth state details:', {
     hasUser: !!user,
     hasSession: !!session,
