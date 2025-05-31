@@ -59,7 +59,14 @@ export const DraggableAvailablePokemonCard: React.FC<DraggableAvailablePokemonCa
         <PokemonInfoModal pokemon={pokemon}>
           <button 
             className="w-6 h-6 rounded-full bg-white hover:bg-gray-50 border border-gray-300 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-bold shadow-lg transition-all duration-200"
-            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+            }}
+            onPointerDown={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+            }}
             type="button"
           >
             i
@@ -67,7 +74,7 @@ export const DraggableAvailablePokemonCard: React.FC<DraggableAvailablePokemonCa
         </PokemonInfoModal>
       </div>
 
-      {/* Card - IDENTICAL to ranking cards except no rank number */}
+      {/* Card - IDENTICAL to ranking cards structure with invisible header for height matching */}
       <div 
         ref={setNodeRef} 
         style={style}
@@ -75,6 +82,11 @@ export const DraggableAvailablePokemonCard: React.FC<DraggableAvailablePokemonCa
         {...attributes}
         {...listeners}
       >
+        {/* Invisible rank header to match ranking card height */}
+        <div className="bg-transparent text-transparent text-center py-1 pointer-events-none">
+          <span className="text-sm font-bold opacity-0">.</span>
+        </div>
+
         {/* Pokemon image - IDENTICAL to ranking cards */}
         <div className="aspect-square bg-gray-50/50 p-2 relative">
           {!isImageLoaded && (

@@ -55,7 +55,7 @@ export const useRankingDragDrop = (
       const pokemonId = parseInt(activeId.replace('available-', ''));
       console.log(`🚀🚀🚀 [DRAG_END_CRITICAL] Available Pokemon ${pokemonId} dragged to ${overId}`);
       
-      // SUPER CRITICAL: More comprehensive drop zone detection
+      // ENHANCED: More comprehensive drop zone detection
       const isValidRankingsTarget = (
         overId === 'rankings-drop-zone' || 
         overId === 'rankings-section' ||
@@ -68,7 +68,9 @@ export const useRankingDragDrop = (
          !isNaN(parseInt(overId)) && 
          localRankings.some(p => p.id === parseInt(overId))) ||
         // Also accept if no specific data but over element has rankings in class/id
-        (!over.data?.current && overId.includes('ranking'))
+        (!over.data?.current && overId.includes('ranking')) ||
+        // CRITICAL: Accept ANY drop that's not on another available pokemon
+        (!overId.startsWith('available-'))
       );
       
       console.log(`🚀🚀🚀 [DRAG_END_CRITICAL] Drop zone validation:`);
