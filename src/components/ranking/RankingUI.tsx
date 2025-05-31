@@ -52,22 +52,20 @@ export const RankingUI: React.FC<RankingUIProps> = ({
     : battleModeRankings.length > 0 ? battleModeRankings 
     : rankedPokemon;
   
+  // Filter available Pokemon to exclude those already in rankings
+  const rankedPokemonIds = new Set(displayRankings.map(p => p.id));
+  const filteredAvailablePokemon = availablePokemon.filter(p => !rankedPokemonIds.has(p.id));
+  
   console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] localRankings: ${localRankings.length}, battleModeRankings: ${battleModeRankings.length}, rankedPokemon: ${rankedPokemon.length}`);
   console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] displayRankings length: ${displayRankings.length}`);
-  console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] displayRankings sample:`, displayRankings.slice(0, 3));
+  console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] filteredAvailablePokemon length: ${filteredAvailablePokemon.length}`);
 
   const { handleDragEnd } = useDragHandler(
-    availablePokemon,
-    rankedPokemon,
+    filteredAvailablePokemon,
+    displayRankings,
     setAvailablePokemon,
     setRankedPokemon
   );
-
-  // Temporarily disable drag-and-drop for Manual Mode TrueSkill integration
-  const handleDisabledDragEnd = () => {
-    console.log("[TRUESKILL_MANUAL] Drag-and-drop temporarily disabled in Manual Mode");
-    // Do nothing - drag is disabled
-  };
 
   if (isLoading && availablePokemon.length === 0) {
     return (
@@ -82,13 +80,13 @@ export const RankingUI: React.FC<RankingUIProps> = ({
 
   return (
     <div className="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen p-1">
-      <DragDropContext onDragEnd={handleDisabledDragEnd}>
+      <DragDropContext onDragEnd={handleDragEnd}>
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-2 gap-2" style={{ height: 'calc(100vh - 4rem)' }}>
             {/* Left side - Available Pokemon (unrated) with enhanced styling */}
             <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden flex flex-col">
               <AvailablePokemonSection
-                availablePokemon={availablePokemon}
+                availablePokemon={filteredAvailablePokemon}
                 isLoading={isLoading}
                 selectedGeneration={selectedGeneration}
                 loadingType={loadingType}

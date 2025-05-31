@@ -16,20 +16,17 @@ export const useDragHandler = (
   const handleDragEnd = (result: DropResult) => {
     const { source, destination } = result;
     
-    // Dropped outside of any droppable area
-    if (!destination) return;
+    console.log("🔄 Drag ended:", { source, destination });
     
-    // Check if the destination is the overlay area
-    if (destination.droppableId === "ranked-overlay") {
-      // When dropped on the overlay, add to the end of the ranked list
-      const sourceItems = Array.from(availablePokemon);
-      const destItems = Array.from(rankedPokemon);
-      
-      const [movedItem] = sourceItems.splice(source.index, 1);
-      destItems.push(movedItem); // Add to the end
-      
-      setAvailablePokemon(sourceItems);
-      setRankedPokemon(destItems);
+    // Dropped outside of any droppable area
+    if (!destination) {
+      console.log("🔄 No destination, canceling drag");
+      return;
+    }
+    
+    // Same position, no change needed
+    if (source.droppableId === destination.droppableId && source.index === destination.index) {
+      console.log("🔄 Same position, no change");
       return;
     }
     
@@ -40,11 +37,13 @@ export const useDragHandler = (
         const [movedItem] = newItems.splice(source.index, 1);
         newItems.splice(destination.index, 0, movedItem);
         setAvailablePokemon(newItems);
+        console.log("🔄 Reordered within available list");
       } else if (source.droppableId === "ranked") {
         const newItems = Array.from(rankedPokemon);
         const [movedItem] = newItems.splice(source.index, 1);
         newItems.splice(destination.index, 0, movedItem);
         setRankedPokemon(newItems);
+        console.log("🔄 Reordered within ranked list");
       }
     } 
     // Moving from one list to another
@@ -59,6 +58,7 @@ export const useDragHandler = (
         
         setAvailablePokemon(sourceItems);
         setRankedPokemon(destItems);
+        console.log("🔄 Moved from available to ranked");
       } else if (source.droppableId === "ranked" && destination.droppableId === "available") {
         // Moving from ranked to available
         const sourceItems = Array.from(rankedPokemon);
@@ -69,6 +69,7 @@ export const useDragHandler = (
         
         setRankedPokemon(sourceItems);
         setAvailablePokemon(destItems);
+        console.log("🔄 Moved from ranked to available");
       }
     }
   };
