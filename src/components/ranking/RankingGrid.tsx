@@ -38,21 +38,20 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
         const normalizedId = normalizePokedexNumber(pokemon.id);
         const isRankedPokemon = 'score' in pokemon;
         const isImageLoaded = loadedImages.has(pokemon.id);
-        const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
 
         const handleInfoClick = (e: React.MouseEvent) => {
           e.stopPropagation();
           e.preventDefault();
-          setIsInfoModalOpen(true);
+          console.log(`🔍 [INFO_CLICK] Info button clicked for ${pokemon.name}`);
         };
 
         const handleModalOpenChange = (open: boolean) => {
-          setIsInfoModalOpen(open);
+          console.log(`🔍 [MODAL_CHANGE] Modal ${open ? 'opened' : 'closed'} for ${pokemon.name}`);
         };
 
         return (
           <div key={pokemon.id} className="relative group">
-            {/* Info button */}
+            {/* Info button - EXACTLY matching available cards */}
             <div className="absolute top-1 right-1 z-50">
               <PokemonInfoModal 
                 pokemon={pokemon}
@@ -78,7 +77,7 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
               />
             )}
 
-            {/* Card */}
+            {/* Card - EXACTLY matching available cards except badge color */}
             <div className="bg-white rounded-lg border-2 border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
               {/* Rank number */}
               <div className="bg-gradient-to-r from-yellow-400 to-yellow-600 text-white text-center py-1">

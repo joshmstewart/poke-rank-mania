@@ -53,13 +53,17 @@ export const DraggableAvailablePokemonCard: React.FC<DraggableAvailablePokemonCa
     setIsInfoModalOpen(true);
   };
 
+  const handleModalOpenChange = (open: boolean) => {
+    setIsInfoModalOpen(open);
+  };
+
   return (
     <div className="relative group">
-      {/* Info button positioned absolutely - EXACTLY like rankings */}
+      {/* Info button - EXACTLY like rankings */}
       <div className="absolute top-1 right-1 z-50">
         <PokemonInfoModal 
           pokemon={pokemon}
-          onOpenChange={setIsInfoModalOpen}
+          onOpenChange={handleModalOpenChange}
         >
           <button 
             className="w-6 h-6 rounded-full bg-white hover:bg-gray-50 border border-gray-300 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-bold shadow-lg transition-all duration-200"
@@ -72,7 +76,7 @@ export const DraggableAvailablePokemonCard: React.FC<DraggableAvailablePokemonCa
         </PokemonInfoModal>
       </div>
 
-      {/* Card - EXACTLY matching rankings card styling */}
+      {/* Card - EXACTLY matching rankings card styling except badge color */}
       <div 
         ref={setNodeRef} 
         style={style}
@@ -80,7 +84,7 @@ export const DraggableAvailablePokemonCard: React.FC<DraggableAvailablePokemonCa
         {...attributes}
         {...listeners}
       >
-        {/* Available badge - using blue instead of yellow but same structure */}
+        {/* Available badge - blue instead of yellow, but same structure as rank badge */}
         <div className="bg-gradient-to-r from-blue-400 to-blue-600 text-white text-center py-1">
           <span className="text-sm font-bold">Available</span>
         </div>
