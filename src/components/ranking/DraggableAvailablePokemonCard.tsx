@@ -53,17 +53,13 @@ export const DraggableAvailablePokemonCard: React.FC<DraggableAvailablePokemonCa
     setIsInfoModalOpen(true);
   };
 
-  const handleModalOpenChange = (open: boolean) => {
-    setIsInfoModalOpen(open);
-  };
-
   return (
     <div className="relative group">
-      {/* Info button positioned absolutely */}
+      {/* Info button positioned absolutely - EXACTLY like rankings */}
       <div className="absolute top-1 right-1 z-50">
         <PokemonInfoModal 
           pokemon={pokemon}
-          onOpenChange={handleModalOpenChange}
+          onOpenChange={setIsInfoModalOpen}
         >
           <button 
             className="w-6 h-6 rounded-full bg-white hover:bg-gray-50 border border-gray-300 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-bold shadow-lg transition-all duration-200"
@@ -76,7 +72,7 @@ export const DraggableAvailablePokemonCard: React.FC<DraggableAvailablePokemonCa
         </PokemonInfoModal>
       </div>
 
-      {/* Draggable card - MATCHING RIGHT SIDE STYLING */}
+      {/* Card - EXACTLY matching rankings card styling */}
       <div 
         ref={setNodeRef} 
         style={style}
@@ -84,12 +80,12 @@ export const DraggableAvailablePokemonCard: React.FC<DraggableAvailablePokemonCa
         {...attributes}
         {...listeners}
       >
-        {/* Available badge - matching rankings style */}
+        {/* Available badge - using blue instead of yellow but same structure */}
         <div className="bg-gradient-to-r from-blue-400 to-blue-600 text-white text-center py-1">
           <span className="text-sm font-bold">Available</span>
         </div>
 
-        {/* Pokemon image */}
+        {/* Pokemon image - EXACTLY like rankings */}
         <div className="aspect-square bg-gray-50 p-2 relative">
           {!isImageLoaded && (
             <div className="absolute inset-0 flex items-center justify-center">
