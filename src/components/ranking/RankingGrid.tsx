@@ -52,15 +52,11 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
 
         return (
           <div key={pokemon.id} className="relative group">
-            {/* Info Button - FIXED: Remove all event interference */}
+            {/* Info Button - FIXED: Let PokemonInfoModal handle everything */}
             <div className="absolute top-1 right-1 z-30">
               <PokemonInfoModal pokemon={pokemon}>
                 <button 
                   className="w-5 h-5 rounded-full bg-white/90 hover:bg-white border border-gray-300 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200 backdrop-blur-sm"
-                  onClick={(e) => {
-                    console.log(`🔘 [RANKING_GRID_DEBUG] Info button clicked for ${pokemon.name} - allowing default behavior`);
-                    // Don't prevent anything - let the modal handle it naturally
-                  }}
                 >
                   i
                 </button>

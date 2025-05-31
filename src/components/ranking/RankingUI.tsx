@@ -202,40 +202,31 @@ export const RankingUI: React.FC<RankingUIProps> = ({
     true // preventAutoResorting = true to maintain manual order
   );
 
-  // Handle drag from available to rankings - FIXED: Defer state updates
+  // Handle drag from available to rankings - FIXED: Simplified without setTimeout
   const handleDragToRankings = (pokemonId: number, insertIndex?: number) => {
-    console.log(`🚀🚀🚀 [DRAG_TO_RANKINGS] ===== DEFERRED DRAG TO RANKINGS =====`);
-    console.log(`🚀🚀🚀 [DRAG_TO_RANKINGS] Moving Pokemon ${pokemonId} to rankings at index ${insertIndex}`);
+    console.log(`🚀🚀🚀 [DRAG_TO_RANKINGS] ===== SIMPLIFIED DRAG TO RANKINGS =====`);
+    console.log(`🚀🚀🚀 [DRAG_TO_RANKINGS] Moving Pokemon ${pokemonId} to rankings`);
     
-    const pokemon = filteredAvailablePokemon.find(p => p.id === pokemonId);
+    const pokemon = availablePokemon.find(p => p.id === pokemonId);
     if (!pokemon) {
-      console.error(`🚀🚀🚀 [DRAG_TO_RANKINGS] ❌ Pokemon ${pokemonId} not found in available list`);
+      console.error(`🚀🚀🚀 [DRAG_TO_RANKINGS] ❌ Pokemon ${pokemonId} not found`);
       return;
     }
     
     console.log(`🚀🚀🚀 [DRAG_TO_RANKINGS] Found pokemon: ${pokemon.name}`);
     
-    // FIXED: Use setTimeout to defer state updates until after drag completes
-    setTimeout(() => {
-      console.log(`🚀🚀🚀 [DRAG_TO_RANKINGS] Executing deferred state updates...`);
-      
-      // Remove from available
-      const newAvailable = availablePokemon.filter(p => p.id !== pokemonId);
-      console.log(`🚀🚀🚀 [DRAG_TO_RANKINGS] New available length: ${newAvailable.length}`);
-      
-      // Add to ranked at specified position or at the end
-      const newRanked = [...rankedPokemon];
-      const targetIndex = insertIndex !== undefined ? insertIndex : newRanked.length;
-      newRanked.splice(targetIndex, 0, pokemon);
-      console.log(`🚀🚀🚀 [DRAG_TO_RANKINGS] New ranked length: ${newRanked.length}`);
-      
-      // Update states
-      setAvailablePokemon(newAvailable);
-      setRankedPokemon(newRanked);
-      setHasManualChanges(true);
-      
-      console.log(`🚀🚀🚀 [DRAG_TO_RANKINGS] ✅ Successfully moved ${pokemon.name} to rankings`);
-    }, 50); // Small delay to let drag complete
+    // FIXED: Direct state updates without setTimeout
+    const newAvailable = availablePokemon.filter(p => p.id !== pokemonId);
+    const newRanked = [...rankedPokemon, pokemon]; // Always add to end for simplicity
+    
+    console.log(`🚀🚀🚀 [DRAG_TO_RANKINGS] Updating states directly`);
+    console.log(`🚀🚀🚀 [DRAG_TO_RANKINGS] New available: ${newAvailable.length}, New ranked: ${newRanked.length}`);
+    
+    setAvailablePokemon(newAvailable);
+    setRankedPokemon(newRanked);
+    setHasManualChanges(true);
+    
+    console.log(`🚀🚀🚀 [DRAG_TO_RANKINGS] ✅ Successfully moved ${pokemon.name}`);
   };
 
   // Handle manual reordering within the rankings (using enhanced system with fake battles)
@@ -265,7 +256,7 @@ export const RankingUI: React.FC<RankingUIProps> = ({
     
     if (activeId.startsWith('available-')) {
       const pokemonId = parseInt(activeId.replace('available-', ''));
-      draggedPokemon = filteredAvailablePokemon.find(p => p.id === pokemonId);
+      draggedPokemon = availablePokemon.find(p => p.id === pokemonId);
       console.log(`🔄🔄🔄 [DRAG_DEBUG] Found available Pokemon for overlay: ${draggedPokemon?.name}`);
     } else {
       const pokemonId = parseInt(activeId);
@@ -295,33 +286,28 @@ export const RankingUI: React.FC<RankingUIProps> = ({
     console.log(`🔄🔄🔄 [DRAG_DEBUG] Active ID: ${activeId}`);
     console.log(`🔄🔄🔄 [DRAG_DEBUG] Over ID: ${overId}`);
 
-    // SIMPLIFIED: Check if dragging from available to rankings
+    // FIXED: Simplified check for dragging from available to rankings
     if (activeId.startsWith('available-')) {
       const pokemonId = parseInt(activeId.replace('available-', ''));
       console.log(`🔄🔄🔄 [DRAG_DEBUG] 🎯 AVAILABLE TO RANKINGS: Pokemon ID: ${pokemonId}`);
       
-      // FIXED: Use deferred update
+      // FIXED: Direct call without deferred update
       handleDragToRankings(pokemonId);
       return;
     }
 
-    // Handle reordering within rankings (both IDs should be numeric for ranked Pokemon)
+    // Handle reordering within rankings
     if (!activeId.startsWith('available-') && !overId.startsWith('available-') && overId !== 'rankings-drop-zone') {
       const activePokemonId = Number(activeId);
       const overPokemonId = Number(overId);
       
       console.log(`🔄🔄🔄 [DRAG_DEBUG] 🔄 REORDERING WITHIN RANKINGS: ${activePokemonId} -> ${overPokemonId}`);
       
-      // Find the indices of the dragged and target Pokemon
       const oldIndex = displayRankings.findIndex(p => p.id === activePokemonId);
       const newIndex = displayRankings.findIndex(p => p.id === overPokemonId);
       
-      console.log(`🔄🔄🔄 [DRAG_DEBUG] Old index: ${oldIndex}, New index: ${newIndex}`);
-      
       if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
         console.log(`🔄🔄🔄 [DRAG_DEBUG] ✅ Performing reorder from ${oldIndex} to ${newIndex}`);
-        
-        // Use enhanced manual reorder that creates fake battles
         handleManualReorder(activePokemonId, oldIndex, newIndex);
       }
     }
