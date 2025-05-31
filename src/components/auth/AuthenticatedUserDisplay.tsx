@@ -10,25 +10,36 @@ import { getProfile, type Profile } from '@/services/profileService';
 import { ProfileModal } from './ProfileModal';
 
 export const AuthenticatedUserDisplay: React.FC = () => {
-  const { user, signOut } = useAuth();
+  const { user, session, signOut } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
 
-  console.log('🔵 AuthenticatedUserDisplay: Rendering for user:', user?.email);
+  console.log('🔵 AuthenticatedUserDisplay: Rendering with auth state:', {
+    hasUser: !!user,
+    hasSession: !!session,
+    userEmail: user?.email,
+    userId: user?.id,
+    timestamp: new Date().toISOString()
+  });
 
   useEffect(() => {
-    if (user) {
-      loadProfile();
+    // Load profile if we have either user or session
+    if (user || session?.user) {
+      const userId = user?.id || session?.user?.id;
+      if (userId) {
+        loadProfile(userId);
+      }
     }
-  }, [user]);
+  }, [user, session]);
 
-  const loadProfile = async () => {
-    if (!user) return;
-    const profileData = await getProfile(user.id);
+  const loadProfile = async (userId: string) => {
+    console.log('🔵 AuthenticatedUserDisplay: Loading profile for user:', userId);
+    const profileData = await getProfile(userId);
     setProfile(profileData);
   };
 
   const handleSignOut = async () => {
+    console.log('🔵 AuthenticatedUserDisplay: Signing out...');
     await signOut();
     toast({
       title: 'Signed out',
@@ -38,17 +49,29 @@ export const AuthenticatedUserDisplay: React.FC = () => {
 
   const handleProfileModalClose = (open: boolean) => {
     setProfileModalOpen(open);
-    if (!open) {
-      loadProfile();
+    if (!open && (user || session?.user)) {
+      const userId = user?.id || session?.user?.id;
+      if (userId) {
+        loadProfile(userId);
+      }
     }
   };
 
-  if (!user) {
+  // Show the component if we have either user or session
+  const currentUser = user || session?.user;
+  if (!currentUser) {
+    console.log('🔵 AuthenticatedUserDisplay: No user found, not rendering');
     return null;
   }
 
-  const displayName = profile?.display_name || profile?.username || user?.email || 'Trainer';
+  const displayName = profile?.display_name || profile?.username || currentUser?.email || 'Trainer';
   const avatarUrl = profile?.avatar_url;
+
+  console.log('🔵 AuthenticatedUserDisplay: Rendering dropdown for user:', {
+    displayName,
+    avatarUrl,
+    hasProfile: !!profile
+  });
 
   return (
     <>
@@ -68,7 +91,7 @@ export const AuthenticatedUserDisplay: React.FC = () => {
             </div>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuContent align="end" className="w-56 bg-white shadow-lg border z-50">
           <DropdownMenuItem onClick={() => setProfileModalOpen(true)}>
             <Settings className="mr-2 h-4 w-4" />
             My Profile
