@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -24,8 +25,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     console.log('🔴 AuthProvider: INITIALIZING AUTH CONTEXT');
     
-    // Get initial session FIRST, then set up listener
-    const initializeAuth = async () => {
+    // CRITICAL FIX: Set up auth listener FIRST, then get initial session
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('🔴 AuthProvider: Auth state change event:', {
+          event,
+          hasSession: !!session,
+          hasUser: !!session?.user,
+          userEmail: session?.user?.email,
+          userId: session?.user?.id
+        });
+        
+        // Update state immediately
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        // Only set loading to false after we've processed the auth state
+        if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+          setLoading(false);
+        }
+        
+        console.log('🔴 AuthProvider: Updated state after auth change:', {
+          userSet: !!session?.user,
+          sessionSet: !!session,
+          loading: false
+        });
+      }
+    );
+
+    // Get initial session after setting up the listener
+    const getInitialSession = async () => {
       try {
         console.log('🔴 AuthProvider: Getting initial session...');
         const { data: { session }, error } = await supabase.auth.getSession();
@@ -42,12 +71,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.error('🔴 AuthProvider: Error getting initial session:', error);
         }
         
-        // Set state regardless of session existence
+        // Update state with initial session
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
         
-        console.log('🔴 AuthProvider: State set - user:', !!session?.user, 'session:', !!session);
+        console.log('🔴 AuthProvider: Initial state set - user:', !!session?.user, 'session:', !!session);
         
       } catch (err) {
         console.error('🔴 AuthProvider: Exception during initial auth check:', err);
@@ -57,30 +86,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     };
 
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        console.log('🔴 AuthProvider: Auth state change event:', {
-          event,
-          hasSession: !!session,
-          hasUser: !!session?.user,
-          userEmail: session?.user?.email,
-          userId: session?.user?.id
-        });
-        
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
-        
-        console.log('🔴 AuthProvider: Updated state after auth change:', {
-          userSet: !!session?.user,
-          sessionSet: !!session
-        });
-      }
-    );
-
-    // Initialize auth state
-    initializeAuth();
+    // Start the initialization
+    getInitialSession();
 
     return () => {
       console.log('🔴 AuthProvider: Cleaning up auth listener');
