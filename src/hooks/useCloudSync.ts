@@ -1,4 +1,3 @@
-
 import { useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTrueSkillStore } from '@/stores/trueskillStore';
@@ -17,6 +16,13 @@ interface BattleData {
 export const useCloudSync = () => {
   const { user, session } = useAuth();
   const { loadFromCloud, syncToCloud, getAllRatings } = useTrueSkillStore();
+
+  console.log('🟠 useCloudSync: Hook is being called');
+  console.log('🟠 useCloudSync: Auth state in hook:', {
+    hasUser: !!user,
+    hasSession: !!session,
+    userEmail: user?.email
+  });
 
   // Auto-load from cloud when component mounts
   useEffect(() => {

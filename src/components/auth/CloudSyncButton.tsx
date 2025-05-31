@@ -8,6 +8,7 @@ export const CloudSyncButton: React.FC = () => {
   const [showAuthDialog, setShowAuthDialog] = useState(false);
 
   console.log('🟡 CloudSyncButton: RENDERING - This should NOT show when authenticated!');
+  console.log('🟡 CloudSyncButton: Component is being rendered from:', new Error().stack);
 
   return (
     <>

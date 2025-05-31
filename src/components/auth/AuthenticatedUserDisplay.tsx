@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -14,12 +13,14 @@ export const AuthenticatedUserDisplay: React.FC = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
 
+  console.log('🔍 AuthenticatedUserDisplay: RENDER CHECK - Component is rendering');
   console.log('🔍 AuthenticatedUserDisplay render:', {
     hasUser: !!user,
     userEmail: user?.email,
     userId: user?.id,
     profile: profile ? `loaded: ${profile.display_name || profile.username}` : 'not loaded'
   });
+  console.log('🔍 AuthenticatedUserDisplay: Stack trace:', new Error().stack);
 
   useEffect(() => {
     if (user) {
@@ -53,14 +54,14 @@ export const AuthenticatedUserDisplay: React.FC = () => {
   };
 
   if (!user) {
-    console.log('🔍 AuthenticatedUserDisplay: No user found, returning null');
+    console.log('🔍 AuthenticatedUserDisplay: ❌ No user found, returning null');
     return null;
   }
 
   const displayName = profile?.display_name || profile?.username || user.email || 'Trainer';
   const avatarUrl = profile?.avatar_url;
 
-  console.log('🔍 AuthenticatedUserDisplay: Rendering authenticated user dropdown for:', displayName);
+  console.log('🔍 AuthenticatedUserDisplay: ✅ Rendering authenticated user dropdown for:', displayName);
 
   return (
     <DropdownMenu>

@@ -16,11 +16,13 @@ import {
 const AppSessionManager = () => {
   const { user } = useAuth();
   
-  console.log('🟡 AppSessionManager: Rendering with user state:', {
+  console.log('🟡 AppSessionManager: RENDER CHECK - Component is rendering');
+  console.log('🟡 AppSessionManager: Auth state:', {
     hasUser: !!user,
     userEmail: user?.email,
     userId: user?.id
   });
+  console.log('🟡 AppSessionManager: Stack trace:', new Error().stack);
 
   const [sessionId, setSessionId] = useState("");
   const [importValue, setImportValue] = useState("");
@@ -174,11 +176,11 @@ const AppSessionManager = () => {
 
   // If user is signed in, don't show anything - SaveProgressSection handles authenticated display
   if (user) {
-    console.log('🟡 AppSessionManager: User is authenticated, returning null');
+    console.log('🟡 AppSessionManager: ✅ User is authenticated, returning null (should not render anything)');
     return null;
   }
 
-  console.log('🟡 AppSessionManager: User is NOT authenticated, showing save progress button');
+  console.log('🟡 AppSessionManager: ❌ User is NOT authenticated, rendering session manager UI');
 
   return (
     <div className="flex items-center gap-2">
