@@ -10,7 +10,7 @@ import { useTrueSkillStore } from "@/stores/trueskillStore";
 export const useEnhancedManualReorder = (
   finalRankings: RankedPokemon[],
   onRankingsUpdate: (updatedRankings: RankedPokemon[]) => void,
-  preventAutoResorting: boolean = false // NEW: Flag to prevent auto-resorting
+  preventAutoResorting: boolean = false
 ) => {
   const { pokemonLookupMap } = usePokemonContext();
   const { addImpliedBattle } = useImpliedBattleTracker();
@@ -28,7 +28,7 @@ export const useEnhancedManualReorder = (
     sourceIndex: number, 
     destinationIndex: number
   ) => {
-    console.log(`🔥 [ENHANCED_REORDER] ===== MANUAL MODE REORDER =====`);
+    console.log(`🔥 [ENHANCED_REORDER] ===== STRENGTHENED MANUAL MODE REORDER =====`);
     console.log(`🔥 [ENHANCED_REORDER] Pokemon ${draggedPokemonId} moved from ${sourceIndex} to ${destinationIndex}`);
     console.log(`🔥 [ENHANCED_REORDER] preventAutoResorting: ${preventAutoResorting}`);
 
@@ -48,13 +48,13 @@ export const useEnhancedManualReorder = (
       return;
     }
 
-    console.log(`🔥 [ENHANCED_REORDER] ✅ All dependencies verified, proceeding with logic...`);
+    console.log(`🔥 [ENHANCED_REORDER] ✅ All dependencies verified, proceeding with strengthened logic...`);
 
     // Create a working copy of the rankings
     const workingRankings = [...finalRankings];
     console.log(`🔥 [ENHANCED_REORDER] Created working copy with ${workingRankings.length} Pokemon`);
     
-    // NEW: Handle new Pokemon addition (sourceIndex = -1)
+    // Handle new Pokemon addition (sourceIndex = -1) or existing Pokemon reorder
     let draggedPokemon: RankedPokemon;
     let draggedFinalIndex: number;
     
@@ -112,7 +112,7 @@ export const useEnhancedManualReorder = (
 
     console.log(`🔥 [ENHANCED_REORDER] ===== AFTER MOVE - FINAL POSITIONS =====`);
     workingRankings.forEach((p, idx) => {
-      if (idx <= draggedFinalIndex + 2 && idx >= draggedFinalIndex - 2) {
+      if (idx <= draggedFinalIndex + 3 && idx >= draggedFinalIndex - 3) {
         console.log(`🔥 [ENHANCED_REORDER] Position ${idx}: ${p.name} (${p.id}) ${idx === draggedFinalIndex ? '← DRAGGED' : ''}`);
       }
     });
@@ -120,7 +120,7 @@ export const useEnhancedManualReorder = (
     const N = workingRankings.length;
     console.log(`🔥 [ENHANCED_REORDER] Dragged Pokemon final position: ${draggedFinalIndex} out of ${N} total Pokemon`);
 
-    // STEP 2: NOW identify opponents using the FINAL positions after ALL movements
+    // STEP 2: STRENGTHENED IMPLIED BATTLES with new logic
     const impliedBattles: Array<{
       opponent: RankedPokemon;
       draggedWins: boolean;
@@ -128,61 +128,167 @@ export const useEnhancedManualReorder = (
       frequency: number;
     }> = [];
 
-    console.log(`🔥 [ENHANCED_REORDER] ===== IDENTIFYING OPPONENTS USING FINAL POSITIONS =====`);
+    console.log(`🔥 [ENHANCED_REORDER] ===== GENERATING STRENGTHENED IMPLIED BATTLES =====`);
 
-    // P_above_1: Pokemon at draggedFinalIndex - 1 (dragged loses) - IMMEDIATE NEIGHBOR: 2 updates
-    if (draggedFinalIndex > 0) {
-      const p_above_1 = workingRankings[draggedFinalIndex - 1];
-      if (p_above_1 && p_above_1.id !== draggedPokemonId) {
-        impliedBattles.push({
-          opponent: p_above_1,
-          draggedWins: false,
-          battleType: "P_above_1",
-          frequency: 2
-        });
-        console.log(`🔥 [ENHANCED_REORDER] Added P_above_1 battle: ${draggedPokemon.name} LOSES to ${p_above_1.name} (FREQUENCY: 2)`);
+    // NEW STRENGTHENED LOGIC: Based on specific position rules
+    const position = draggedFinalIndex + 1; // Convert to 1-based indexing for easier logic
+
+    if (position === 1) {
+      // Special case: #1 spot - battle against spots 2, 3, and 4 two times each
+      console.log(`🔥 [ENHANCED_REORDER] POSITION #1 SPECIAL RULES: Battle against #2, #3, #4 twice each`);
+      
+      for (let targetPos = 2; targetPos <= 4; targetPos++) {
+        const targetIndex = targetPos - 1; // Convert back to 0-based
+        if (targetIndex < N) {
+          const opponent = workingRankings[targetIndex];
+          if (opponent && opponent.id !== draggedPokemonId) {
+            impliedBattles.push({
+              opponent: opponent,
+              draggedWins: true, // #1 beats everyone below
+              battleType: `Position_1_vs_${targetPos}`,
+              frequency: 2
+            });
+            console.log(`🔥 [ENHANCED_REORDER] Added #1 special battle: ${draggedPokemon.name} WINS 2x against #${targetPos} ${opponent.name}`);
+          }
+        }
       }
-    }
-
-    // P_above_2: Pokemon at draggedFinalIndex - 2 (dragged loses) - SECONDARY NEIGHBOR: 1 update
-    if (draggedFinalIndex > 1) {
-      const p_above_2 = workingRankings[draggedFinalIndex - 2];
-      if (p_above_2 && p_above_2.id !== draggedPokemonId) {
-        impliedBattles.push({
-          opponent: p_above_2,
-          draggedWins: false,
-          battleType: "P_above_2",
-          frequency: 1
-        });
-        console.log(`🔥 [ENHANCED_REORDER] Added P_above_2 battle: ${draggedPokemon.name} LOSES to ${p_above_2.name} (FREQUENCY: 1)`);
+    } else if (position === 2) {
+      // Special case: #2 spot - battle against #1 twice, #3 twice, #4 twice, #5 once
+      console.log(`🔥 [ENHANCED_REORDER] POSITION #2 SPECIAL RULES`);
+      
+      // Battle against #1 twice (loses)
+      if (draggedFinalIndex > 0) {
+        const opponent = workingRankings[0];
+        if (opponent && opponent.id !== draggedPokemonId) {
+          impliedBattles.push({
+            opponent: opponent,
+            draggedWins: false,
+            battleType: `Position_2_vs_1`,
+            frequency: 2
+          });
+          console.log(`🔥 [ENHANCED_REORDER] Added #2 special battle: ${draggedPokemon.name} LOSES 2x to #1 ${opponent.name}`);
+        }
       }
-    }
-
-    // P_below_1: Pokemon at draggedFinalIndex + 1 (dragged wins) - IMMEDIATE NEIGHBOR: 2 updates
-    if (draggedFinalIndex < N - 1) {
-      const p_below_1 = workingRankings[draggedFinalIndex + 1];
-      if (p_below_1 && p_below_1.id !== draggedPokemonId) {
-        impliedBattles.push({
-          opponent: p_below_1,
-          draggedWins: true,
-          battleType: "P_below_1",
-          frequency: 2
-        });
-        console.log(`🔥 [ENHANCED_REORDER] Added P_below_1 battle: ${draggedPokemon.name} WINS against ${p_below_1.name} (FREQUENCY: 2)`);
+      
+      // Battle against #3, #4 twice each (wins)
+      for (let targetPos = 3; targetPos <= 4; targetPos++) {
+        const targetIndex = targetPos - 1;
+        if (targetIndex < N) {
+          const opponent = workingRankings[targetIndex];
+          if (opponent && opponent.id !== draggedPokemonId) {
+            impliedBattles.push({
+              opponent: opponent,
+              draggedWins: true,
+              battleType: `Position_2_vs_${targetPos}`,
+              frequency: 2
+            });
+            console.log(`🔥 [ENHANCED_REORDER] Added #2 special battle: ${draggedPokemon.name} WINS 2x against #${targetPos} ${opponent.name}`);
+          }
+        }
       }
-    }
-
-    // P_below_2: Pokemon at draggedFinalIndex + 2 (dragged wins) - SECONDARY NEIGHBOR: 1 update
-    if (draggedFinalIndex < N - 2) {
-      const p_below_2 = workingRankings[draggedFinalIndex + 2];
-      if (p_below_2 && p_below_2.id !== draggedPokemonId) {
-        impliedBattles.push({
-          opponent: p_below_2,
-          draggedWins: true,
-          battleType: "P_below_2",
-          frequency: 1
-        });
-        console.log(`🔥 [ENHANCED_REORDER] Added P_below_2 battle: ${draggedPokemon.name} WINS against ${p_below_2.name} (FREQUENCY: 1)`);
+      
+      // Battle against #5 once (wins)
+      if (4 < N) {
+        const opponent = workingRankings[4];
+        if (opponent && opponent.id !== draggedPokemonId) {
+          impliedBattles.push({
+            opponent: opponent,
+            draggedWins: true,
+            battleType: `Position_2_vs_5`,
+            frequency: 1
+          });
+          console.log(`🔥 [ENHANCED_REORDER] Added #2 special battle: ${draggedPokemon.name} WINS 1x against #5 ${opponent.name}`);
+        }
+      }
+    } else if (position === 3) {
+      // Special case: #3 spot - battle against #1 twice, #2 twice, #4 twice, #5 once, #6 once
+      console.log(`🔥 [ENHANCED_REORDER] POSITION #3 SPECIAL RULES`);
+      
+      // Battle against #1, #2 twice each (loses)
+      for (let targetPos = 1; targetPos <= 2; targetPos++) {
+        const targetIndex = targetPos - 1;
+        if (targetIndex >= 0) {
+          const opponent = workingRankings[targetIndex];
+          if (opponent && opponent.id !== draggedPokemonId) {
+            impliedBattles.push({
+              opponent: opponent,
+              draggedWins: false,
+              battleType: `Position_3_vs_${targetPos}`,
+              frequency: 2
+            });
+            console.log(`🔥 [ENHANCED_REORDER] Added #3 special battle: ${draggedPokemon.name} LOSES 2x to #${targetPos} ${opponent.name}`);
+          }
+        }
+      }
+      
+      // Battle against #4 twice (wins)
+      if (3 < N) {
+        const opponent = workingRankings[3];
+        if (opponent && opponent.id !== draggedPokemonId) {
+          impliedBattles.push({
+            opponent: opponent,
+            draggedWins: true,
+            battleType: `Position_3_vs_4`,
+            frequency: 2
+          });
+          console.log(`🔥 [ENHANCED_REORDER] Added #3 special battle: ${draggedPokemon.name} WINS 2x against #4 ${opponent.name}`);
+        }
+      }
+      
+      // Battle against #5, #6 once each (wins)
+      for (let targetPos = 5; targetPos <= 6; targetPos++) {
+        const targetIndex = targetPos - 1;
+        if (targetIndex < N) {
+          const opponent = workingRankings[targetIndex];
+          if (opponent && opponent.id !== draggedPokemonId) {
+            impliedBattles.push({
+              opponent: opponent,
+              draggedWins: true,
+              battleType: `Position_3_vs_${targetPos}`,
+              frequency: 1
+            });
+            console.log(`🔥 [ENHANCED_REORDER] Added #3 special battle: ${draggedPokemon.name} WINS 1x against #${targetPos} ${opponent.name}`);
+          }
+        }
+      }
+    } else {
+      // General case (position 4+): Standard strengthened logic
+      console.log(`🔥 [ENHANCED_REORDER] GENERAL POSITION RULES: 1-3 spaces up/down with varying frequencies`);
+      
+      // Battle against 1, 2, 3 spaces above (dragged loses)
+      for (let distance = 1; distance <= 3; distance++) {
+        const targetIndex = draggedFinalIndex - distance;
+        if (targetIndex >= 0) {
+          const opponent = workingRankings[targetIndex];
+          if (opponent && opponent.id !== draggedPokemonId) {
+            const frequency = distance === 1 ? 3 : 1; // 1 space up = 3 times, others = 1 time
+            impliedBattles.push({
+              opponent: opponent,
+              draggedWins: false,
+              battleType: `P_above_${distance}`,
+              frequency: frequency
+            });
+            console.log(`🔥 [ENHANCED_REORDER] Added general battle: ${draggedPokemon.name} LOSES ${frequency}x to ${opponent.name} (${distance} spaces above)`);
+          }
+        }
+      }
+      
+      // Battle against 1, 2, 3 spaces below (dragged wins)
+      for (let distance = 1; distance <= 3; distance++) {
+        const targetIndex = draggedFinalIndex + distance;
+        if (targetIndex < N) {
+          const opponent = workingRankings[targetIndex];
+          if (opponent && opponent.id !== draggedPokemonId) {
+            const frequency = distance === 1 ? 3 : 1; // 1 space down = 3 times, others = 1 time
+            impliedBattles.push({
+              opponent: opponent,
+              draggedWins: true,
+              battleType: `P_below_${distance}`,
+              frequency: frequency
+            });
+            console.log(`🔥 [ENHANCED_REORDER] Added general battle: ${draggedPokemon.name} WINS ${frequency}x against ${opponent.name} (${distance} spaces below)`);
+          }
+        }
       }
     }
 
@@ -202,7 +308,7 @@ export const useEnhancedManualReorder = (
       return;
     }
 
-    // CRITICAL FIX FOR MANUAL MODE: Update TrueSkill store directly WITHOUT triggering sync events
+    // Process TrueSkill updates
     let updatedDraggedRating = draggedRating;
 
     // Process each implied battle with the specified frequency
@@ -252,10 +358,9 @@ export const useEnhancedManualReorder = (
         }
       }
 
-      // CRITICAL FIX FOR MANUAL MODE: Silent update without sync events
+      // Update TrueSkill store for opponent
       if (preventAutoResorting) {
         console.log(`🔥 [ENHANCED_REORDER] MANUAL MODE: Silently updating TrueSkill store for ${opponent.name} (no sync events)`);
-        // Directly update the store's internal ratings without triggering events
         const store = useTrueSkillStore.getState();
         store.ratings[opponent.id] = {
           mu: opponentRating.mu,
@@ -269,10 +374,9 @@ export const useEnhancedManualReorder = (
       }
     });
 
-    // CRITICAL FIX FOR MANUAL MODE: Silent update for dragged Pokemon
+    // Update TrueSkill store for dragged Pokemon
     if (preventAutoResorting) {
       console.log(`🔥 [ENHANCED_REORDER] MANUAL MODE: Silently updating TrueSkill store for dragged Pokemon ${draggedPokemon.name} (no sync events)`);
-      // Directly update the store's internal ratings without triggering events
       const store = useTrueSkillStore.getState();
       store.ratings[draggedPokemonId] = {
         mu: updatedDraggedRating.mu,
@@ -289,17 +393,14 @@ export const useEnhancedManualReorder = (
 
     // Recalculate scores based on updated ratings
     workingRankings.forEach(pokemon => {
-      // Get the latest rating from centralized store OR use updated local values for manual mode
       let latestRating: Rating;
       
       if (preventAutoResorting) {
-        // In manual mode, use the locally updated ratings
         if (pokemon.id === draggedPokemonId) {
           latestRating = updatedDraggedRating;
         } else {
           const battleAffected = impliedBattles.find(b => b.opponent.id === pokemon.id);
           if (battleAffected) {
-            // This Pokemon was affected by the battles, get its updated rating from store
             const store = useTrueSkillStore.getState();
             const storedRating = store.ratings[pokemon.id];
             latestRating = storedRating ? new Rating(storedRating.mu, storedRating.sigma) : getRating(pokemon.id);
@@ -316,7 +417,7 @@ export const useEnhancedManualReorder = (
         const conservativeEstimate = latestRating.mu - 3 * latestRating.sigma;
         pokemon.score = conservativeEstimate;
         pokemon.confidence = Math.max(0, Math.min(100, 100 * (1 - (latestRating.sigma / 8.33))));
-        pokemon.rating = latestRating; // Update the rating reference
+        pokemon.rating = latestRating;
         
         if (pokemon.id === draggedPokemonId || impliedBattles.some(b => b.opponent.id === pokemon.id)) {
           console.log(`🔥 [ENHANCED_REORDER] Score update - ${pokemon.name}: ${oldScore?.toFixed(3)} → ${pokemon.score.toFixed(3)} (confidence: ${pokemon.confidence.toFixed(1)}%)`);
@@ -324,23 +425,21 @@ export const useEnhancedManualReorder = (
       }
     });
 
-    // CRITICAL FIX: Skip re-sorting if preventAutoResorting is true
+    // Skip re-sorting if preventAutoResorting is true
     if (preventAutoResorting) {
       console.log(`🔥 [ENHANCED_REORDER] ===== MANUAL MODE: MAINTAINING USER ORDER =====`);
       console.log(`🔥 [ENHANCED_REORDER] Skipping re-sorting to preserve manual positioning`);
     } else {
       console.log(`🔥 [ENHANCED_REORDER] ===== RE-SORTING RANKINGS =====`);
-      // Re-sort the rankings based on updated scores
       workingRankings.sort((a, b) => b.score - a.score);
     }
 
-    console.log(`🔥 [ENHANCED_REORDER] ===== ENHANCED REORDER COMPLETE =====`);
+    console.log(`🔥 [ENHANCED_REORDER] ===== STRENGTHENED REORDER COMPLETE =====`);
     console.log(`🔥 [ENHANCED_REORDER] Successfully processed ${totalUpdates} TrueSkill updates for ${draggedPokemon.name} (${impliedBattles.length} battle types)`);
 
-    // CRITICAL FIX: For new Pokemon additions, use a different event to prevent double insertion
+    // Handle events
     if (sourceIndex === -1) {
       console.log(`🔥 [ENHANCED_REORDER] NEW POKEMON: Dispatching insertion event without auto-sync`);
-      // Dispatch a different event that won't trigger the insertion logic in useTrueSkillSync
       const insertionEvent = new CustomEvent('pokemon-manually-inserted', {
         detail: { 
           pokemonId: draggedPokemonId,
@@ -350,7 +449,6 @@ export const useEnhancedManualReorder = (
       });
       document.dispatchEvent(insertionEvent);
     } else if (!preventAutoResorting) {
-      // Only dispatch sync events for reordering in non-manual modes
       const syncEvent = new CustomEvent('trueskill-updated', {
         detail: { 
           source: 'manual-reorder',
@@ -374,16 +472,16 @@ export const useEnhancedManualReorder = (
 
     // Show user feedback with updated information
     const feedbackMessage = sourceIndex === -1 
-      ? `Added ${draggedPokemon.name} with implied battles` 
+      ? `Added ${draggedPokemon.name} with strengthened implied battles` 
       : preventAutoResorting 
-        ? `Manual position set for ${draggedPokemon.name}` 
-        : `Enhanced ranking update for ${draggedPokemon.name}`;
+        ? `Strengthened manual position set for ${draggedPokemon.name}` 
+        : `Strengthened ranking update for ${draggedPokemon.name}`;
     
     const feedbackDescription = sourceIndex === -1
-      ? `Applied ${totalUpdates} TrueSkill adjustments based on insertion position`
+      ? `Applied ${totalUpdates} strengthened TrueSkill adjustments based on insertion position`
       : preventAutoResorting
-        ? `Position locked at rank ${destinationIndex + 1}, TrueSkill adjusted silently`
-        : `Applied ${totalUpdates} TrueSkill adjustments (immediate neighbors weighted 2x)`;
+        ? `Position locked at rank ${destinationIndex + 1}, TrueSkill adjusted with ${totalUpdates} updates`
+        : `Applied ${totalUpdates} strengthened TrueSkill adjustments with enhanced battle frequencies`;
 
     toast.success(feedbackMessage, {
       description: feedbackDescription
