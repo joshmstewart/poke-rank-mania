@@ -16,6 +16,8 @@ const SaveProgressSection: React.FC = () => {
     loading,
     userEmail: user?.email,
     userId: user?.id,
+    userObject: user,
+    sessionObject: session,
     timestamp: new Date().toISOString()
   });
   
@@ -30,16 +32,20 @@ const SaveProgressSection: React.FC = () => {
 
   const isAuthenticated = !!(user && session);
   console.log('🔴🔴🔴 SaveProgressSection: Authentication check result:', isAuthenticated);
+  console.log('🔴🔴🔴 SaveProgressSection: User check:', !!user);
+  console.log('🔴🔴🔴 SaveProgressSection: Session check:', !!session);
   
   if (isAuthenticated) {
     console.log('🔴🔴🔴 SaveProgressSection: ✅ AUTHENTICATED - About to render BOTH sync status AND user display');
     console.log('🔴🔴🔴 SaveProgressSection: RENDERING AUTHENTICATED LAYOUT NOW');
     return (
-      <div className="flex items-center gap-4 bg-yellow-100 border border-yellow-300 p-2">
-        {/* Temporary debug styling to make the container visible */}
+      <div className="flex items-center gap-4 bg-yellow-100 border-2 border-yellow-500 p-4">
+        {/* Make debug styling VERY visible */}
+        <div className="text-xs text-yellow-800">DEBUG: AUTHENTICATED CONTAINER</div>
         
         {/* Sync Status Indicator */}
-        <div className="bg-red-100 border border-red-300 p-1">
+        <div className="bg-red-100 border-2 border-red-500 p-2">
+          <div className="text-xs text-red-800 mb-1">DEBUG: SYNC STATUS</div>
           <Badge variant="secondary" className="flex items-center gap-1 bg-green-100 text-green-700 border-green-200">
             <Check className="h-3 w-3" />
             <span className="text-xs">Synced</span>
@@ -47,7 +53,8 @@ const SaveProgressSection: React.FC = () => {
         </div>
         
         {/* User Profile Management */}
-        <div className="bg-purple-100 border border-purple-300 p-1">
+        <div className="bg-purple-100 border-2 border-purple-500 p-2">
+          <div className="text-xs text-purple-800 mb-1">DEBUG: USER DISPLAY</div>
           <AuthenticatedUserDisplay />
         </div>
       </div>
@@ -55,7 +62,12 @@ const SaveProgressSection: React.FC = () => {
   }
 
   console.log('🔴🔴🔴 SaveProgressSection: ❌ NOT AUTHENTICATED - About to render CloudSyncButton');
-  return <CloudSyncButton />;
+  return (
+    <div className="bg-orange-100 border-2 border-orange-500 p-2">
+      <div className="text-xs text-orange-800 mb-1">DEBUG: UNAUTHENTICATED</div>
+      <CloudSyncButton />
+    </div>
+  );
 };
 
 export default SaveProgressSection;

@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -36,6 +35,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           hasUser: !!session?.user,
           userEmail: session?.user?.email,
           userId: session?.user?.id,
+          sessionAccessToken: session?.access_token ? 'present' : 'missing',
+          sessionRefreshToken: session?.refresh_token ? 'present' : 'missing',
           error: error?.message
         });
         
@@ -66,7 +67,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           hasSession: !!session,
           hasUser: !!session?.user,
           userEmail: session?.user?.email,
-          userId: session?.user?.id
+          userId: session?.user?.id,
+          sessionAccessToken: session?.access_token ? 'present' : 'missing',
+          sessionRefreshToken: session?.refresh_token ? 'present' : 'missing'
         });
         
         // Update state immediately
@@ -155,7 +158,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     hasUser: !!user,
     hasSession: !!session,
     loading,
-    userEmail: user?.email
+    userEmail: user?.email,
+    userObject: user,
+    sessionObject: session
   });
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -170,7 +175,8 @@ export const useAuth = () => {
   console.log('🔴 useAuth: Returning context:', {
     hasUser: !!context.user,
     hasSession: !!context.session,
-    loading: context.loading
+    loading: context.loading,
+    userEmail: context.user?.email
   });
   
   return context;
