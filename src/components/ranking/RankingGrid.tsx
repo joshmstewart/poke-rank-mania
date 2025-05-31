@@ -52,11 +52,23 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
 
         return (
           <div key={pokemon.id} className="relative group">
-            {/* Info Button - CRITICAL: No event conflicts */}
+            {/* Info Button - CRITICAL: Same event handling as DraggableAvailablePokemonCard */}
             <div className="absolute top-1 right-1 z-30">
               <PokemonInfoModal pokemon={pokemon}>
                 <button 
                   className="w-5 h-5 rounded-full bg-white/90 hover:bg-white border border-gray-300 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200 backdrop-blur-sm"
+                  onPointerDown={(e) => {
+                    console.log(`🔘 [RANKING_GRID_DEBUG] Info button pointer down for ${pokemon.name}`);
+                    e.stopPropagation();
+                  }}
+                  onMouseDown={(e) => {
+                    console.log(`🔘 [RANKING_GRID_DEBUG] Info button mouse down for ${pokemon.name}`);
+                    e.stopPropagation();
+                  }}
+                  onClick={(e) => {
+                    console.log(`🔘 [RANKING_GRID_DEBUG] Info button clicked for ${pokemon.name}`);
+                    e.stopPropagation();
+                  }}
                 >
                   i
                 </button>

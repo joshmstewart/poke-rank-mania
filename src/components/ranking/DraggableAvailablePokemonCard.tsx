@@ -35,6 +35,23 @@ const DraggableAvailablePokemonCard: React.FC<DraggableAvailablePokemonCardProps
 
   const backgroundColorClass = getPokemonBackgroundColor(pokemon);
 
+  // Add debug logging for info button interactions
+  const handleInfoButtonClick = (e: React.MouseEvent) => {
+    console.log(`🔘🔘🔘 [AVAILABLE_INFO_DEBUG] Info button clicked for ${pokemon.name}`);
+    console.log(`🔘🔘🔘 [AVAILABLE_INFO_DEBUG] Event:`, e.type);
+    // Don't prevent default here - let the modal handle it
+  };
+
+  const handleInfoButtonPointerDown = (e: React.PointerEvent) => {
+    console.log(`🔘🔘🔘 [AVAILABLE_INFO_DEBUG] Info button pointer down for ${pokemon.name}`);
+    e.stopPropagation();
+  };
+
+  const handleInfoButtonMouseDown = (e: React.MouseEvent) => {
+    console.log(`🔘🔘🔘 [AVAILABLE_INFO_DEBUG] Info button mouse down for ${pokemon.name}`);
+    e.stopPropagation();
+  };
+
   return (
     <div
       ref={setNodeRef}
@@ -43,20 +60,21 @@ const DraggableAvailablePokemonCard: React.FC<DraggableAvailablePokemonCardProps
         isDragging ? 'opacity-60 z-50 scale-105 shadow-2xl' : 'hover:shadow-lg transition-all duration-200'
       }`}
     >
-      {/* Info Button - CRITICAL: Outside drag area, no event handlers */}
+      {/* Info Button - CRITICAL: Outside drag area, comprehensive event handling */}
       <div className="absolute top-1 right-1 z-30">
         <PokemonInfoModal pokemon={pokemon}>
           <button 
             className="w-5 h-5 rounded-full bg-white/90 hover:bg-white border border-gray-300 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200 backdrop-blur-sm"
-            onPointerDown={(e) => e.stopPropagation()}
-            onMouseDown={(e) => e.stopPropagation()}
+            onPointerDown={handleInfoButtonPointerDown}
+            onMouseDown={handleInfoButtonMouseDown}
+            onClick={handleInfoButtonClick}
           >
             i
           </button>
         </PokemonInfoModal>
       </div>
       
-      {/* Draggable area - CRITICAL: Exclude the info button area */}
+      {/* Draggable area - CRITICAL: Exclude the info button area completely */}
       <div
         className="absolute inset-0 cursor-grab active:cursor-grabbing"
         style={{ 
