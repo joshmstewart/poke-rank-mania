@@ -6,17 +6,20 @@ import BattleModeContainer from "./BattleModeContainer";
 import { RefinementQueueProvider } from "./RefinementQueueProvider";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "@/hooks/battle/types";
+import { useTrueSkillStore } from "@/stores/trueskillStore";
 
 const BattleModeCore: React.FC = () => {
   console.log('[DEBUG BattleModeCore] Component rendering');
   console.log(`🔄 [REFINEMENT_PROVIDER_TOP_LEVEL] Wrapping entire BattleMode with single RefinementQueueProvider`);
   
-  // CRITICAL FIX: Completely stable state management
+  // CRITICAL FIX: Stable state management with TrueSkill awareness
   const [battlesCompleted, setBattlesCompleted] = useState(0);
   const [battleResults, setBattleResults] = useState<SingleBattle[]>([]);
-  const [emergencyResetPerformed, setEmergencyResetPerformed] = useState(false);
   const [allPokemon, setAllPokemon] = useState<Pokemon[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasInitialized, setHasInitialized] = useState(false);
+
+  const { getAllRatings } = useTrueSkillStore();
 
   // CRITICAL FIX: Store battle type in ref to prevent re-renders and use stable initial value
   const getInitialBattleType = (): BattleType => {
@@ -39,7 +42,7 @@ const BattleModeCore: React.FC = () => {
     
     console.log(`🔒 [POKEMON_LOADING_FIX] BattleModeCore using complete Pokemon dataset: ${allPokemon.length}`);
     return allPokemon;
-  }, [allPokemon.length > 0 ? 'HAS_POKEMON' : 'NO_POKEMON']); // CRITICAL: Only change when we go from no Pokemon to having Pokemon
+  }, [allPokemon.length > 0 ? 'HAS_POKEMON' : 'NO_POKEMON']);
 
   // CRITICAL FIX: Ultra-stable callback references that never change
   const stableSetBattlesCompleted = useCallback((value: React.SetStateAction<number>) => {
@@ -58,50 +61,61 @@ const BattleModeCore: React.FC = () => {
     setIsLoading(loading);
   }, []);
 
-  // Emergency reset on mount - simplified
+  // ENHANCED: Smart initialization that preserves TrueSkill consistency
   useEffect(() => {
-    if (emergencyResetPerformed) return;
+    if (hasInitialized) return;
     
-    const performInitialReset = () => {
-      console.log(`🧹 [REFRESH_FIX] Performing initial reset`);
+    const performSmartInitialization = () => {
+      console.log(`🧹 [SMART_INIT] Performing smart initialization`);
       
-      const keysToRemember = [
-        'pokemon-ranker-battle-type',
-        'pokemon-active-tier',
-        'pokemon-frozen-pokemon'
-      ];
+      // Get current TrueSkill state
+      const currentRatings = getAllRatings();
+      const ratingsCount = Object.keys(currentRatings).length;
       
-      const rememberedValues: Record<string, string | null> = {};
-      keysToRemember.forEach(key => {
-        rememberedValues[key] = localStorage.getItem(key);
-      });
+      console.log(`🧹 [SMART_INIT] Found ${ratingsCount} existing TrueSkill ratings`);
       
+      // Only clear battle tracking data, preserve TrueSkill ratings
       const keysToRemove = [
         'pokemon-battle-recently-used',
         'pokemon-battle-last-battle',
         'pokemon-ranker-battle-history',
         'pokemon-battle-history',
         'pokemon-battle-tracking',
-        'pokemon-battle-seen',
-        'pokemon-battle-count'
+        'pokemon-battle-seen'
       ];
+      
+      // CRITICAL: Only clear battle count if no TrueSkill ratings exist
+      if (ratingsCount === 0) {
+        keysToRemove.push('pokemon-battle-count');
+        console.log(`🧹 [SMART_INIT] No TrueSkill ratings found, clearing battle count too`);
+      } else {
+        console.log(`🧹 [SMART_INIT] TrueSkill ratings exist, preserving battle count`);
+      }
       
       keysToRemove.forEach(key => localStorage.removeItem(key));
       
-      // Restore remembered values
-      Object.entries(rememberedValues).forEach(([key, value]) => {
-        if (value !== null) {
-          localStorage.setItem(key, value);
+      // Load saved battle count if TrueSkill data exists
+      if (ratingsCount > 0) {
+        const savedBattleCount = localStorage.getItem('pokemon-battle-count');
+        if (savedBattleCount) {
+          const count = parseInt(savedBattleCount, 10);
+          console.log(`🧹 [SMART_INIT] Restoring battle count: ${count}`);
+          setBattlesCompleted(count);
+        } else {
+          // Estimate battle count from TrueSkill data
+          const estimatedBattles = Object.values(currentRatings).reduce((sum, rating) => sum + (rating.battleCount || 0), 0) / 2;
+          console.log(`🧹 [SMART_INIT] Estimating battle count from TrueSkill: ${estimatedBattles}`);
+          setBattlesCompleted(Math.floor(estimatedBattles));
         }
-      });
+      }
       
-      setEmergencyResetPerformed(true);
-      console.log('[DEBUG BattleModeCore] Emergency reset completed');
+      setHasInitialized(true);
+      console.log('[DEBUG BattleModeCore] Smart initialization completed');
     };
     
-    const timer = setTimeout(performInitialReset, 200);
+    const timer = setTimeout(performSmartInitialization, 200);
     return () => clearTimeout(timer);
-  }, [emergencyResetPerformed]);
+  }, [hasInitialized, getAllRatings]);
 
   // Loading state
   if (isLoading || !stablePokemon.length) {
