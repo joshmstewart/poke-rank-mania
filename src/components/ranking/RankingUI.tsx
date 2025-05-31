@@ -111,7 +111,7 @@ export const RankingUI: React.FC<RankingUIProps> = ({
   // Determine what to show on the right side - always use manual state once populated
   const displayRankings = rankedPokemon;
   
-  // Filter available Pokemon to exclude those in the display rankings
+  // FIXED: Filter available Pokemon to exclude those in the display rankings
   const displayRankingsIds = new Set(displayRankings.map(p => p.id));
   const filteredAvailablePokemon = availablePokemon.filter(p => !displayRankingsIds.has(p.id));
   
@@ -119,6 +119,23 @@ export const RankingUI: React.FC<RankingUIProps> = ({
   console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] displayRankings length: ${displayRankings.length}`);
   console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] hasManualChanges: ${hasManualChanges}`);
   console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] filteredAvailablePokemon length: ${filteredAvailablePokemon.length}`);
+
+  // FIXED: Enhanced reset function to properly clear manual mode
+  const handleReset = () => {
+    console.log(`🔄 [MANUAL_RESET] Performing manual mode reset for generation ${selectedGeneration}`);
+    
+    // Clear localStorage for this generation
+    localStorage.removeItem(`manual-rankings-gen-${selectedGeneration}`);
+    
+    // Reset local state
+    setRankedPokemon([]);
+    setHasManualChanges(false);
+    
+    // Call the original reset from the parent
+    onReset();
+    
+    console.log(`🔄 [MANUAL_RESET] Manual mode reset complete`);
+  };
 
   // Handle drag from available to rankings
   const handleDragToRankings = (pokemonId: number, insertIndex?: number) => {
@@ -287,7 +304,7 @@ export const RankingUI: React.FC<RankingUIProps> = ({
             battleType={battleType}
             onGenerationChange={(gen) => onGenerationChange(Number(gen))}
             onBattleTypeChange={setBattleType}
-            onRestartBattles={onReset}
+            onRestartBattles={handleReset}
           />
         </div>
         
