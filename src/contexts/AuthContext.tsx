@@ -31,32 +31,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       authTokenKey: localStorage.getItem('supabase.auth.token') ? 'found' : 'missing'
     });
     
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        console.log('Auth state change event:', { 
-          event, 
-          userEmail: session?.user?.email, 
-          userId: session?.user?.id,
-          hasSession: !!session,
-          accessToken: session?.access_token ? 'present' : 'missing'
-        });
-        
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
-        
-        // Force a small delay to ensure state propagation
-        setTimeout(() => {
-          console.log('Auth state after update:', {
-            userSet: !!session?.user,
-            sessionSet: !!session
-          });
-        }, 100);
-      }
-    );
-
-    // Get initial session
+    // Get initial session FIRST, then set up listener
     const initializeAuth = async () => {
       try {
         console.log('🔍 About to call getSession...');
@@ -76,19 +51,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         if (session) {
           console.log('✅ Found valid session, setting user state');
+          setSession(session);
+          setUser(session.user);
         } else {
           console.log('❌ No session found, user will remain null');
+          setSession(null);
+          setUser(null);
         }
         
-        setSession(session);
-        setUser(session?.user ?? null);
         setLoading(false);
       } catch (err) {
         console.error('Exception during initial auth check:', err);
+        setSession(null);
+        setUser(null);
         setLoading(false);
       }
     };
 
+    // Set up auth state listener AFTER initial check
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        console.log('Auth state change event:', { 
+          event, 
+          userEmail: session?.user?.email, 
+          userId: session?.user?.id,
+          hasSession: !!session,
+          accessToken: session?.access_token ? 'present' : 'missing'
+        });
+        
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        // Only set loading to false if we haven't already
+        if (loading) {
+          setLoading(false);
+        }
+        
+        // Force a small delay to ensure state propagation
+        setTimeout(() => {
+          console.log('Auth state after update:', {
+            userSet: !!session?.user,
+            sessionSet: !!session
+          });
+        }, 100);
+      }
+    );
+
+    // Initialize auth state
     initializeAuth();
 
     return () => {
