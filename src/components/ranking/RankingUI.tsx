@@ -52,8 +52,7 @@ export const RankingUI: React.FC<RankingUIProps> = ({
     : battleModeRankings.length > 0 ? battleModeRankings 
     : rankedPokemon;
   
-  // FIXED: Filter available Pokemon to exclude those in the ACTUAL rankedPokemon state array
-  // This ensures that manually dragged Pokemon are properly filtered out
+  // Filter available Pokemon to exclude those in the ACTUAL rankedPokemon state array
   const rankedPokemonIds = new Set(rankedPokemon.map(p => p.id));
   const filteredAvailablePokemon = availablePokemon.filter(p => !rankedPokemonIds.has(p.id));
   
@@ -62,10 +61,10 @@ export const RankingUI: React.FC<RankingUIProps> = ({
   console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] filteredAvailablePokemon length: ${filteredAvailablePokemon.length}`);
   console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] rankedPokemonIds:`, Array.from(rankedPokemonIds));
 
-  // Use the actual state arrays for drag and drop
+  // Use the actual state arrays for drag and drop - pass the original arrays, not filtered
   const { handleDragEnd } = useDragHandler(
-    filteredAvailablePokemon, // Use the filtered array for consistency
-    rankedPokemon,
+    availablePokemon, // Pass original array
+    rankedPokemon,    // Pass actual ranked state
     setAvailablePokemon,
     setRankedPokemon
   );

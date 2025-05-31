@@ -31,14 +31,18 @@ export const useDragHandler = (
       console.log("🔄 Same position, no change");
       return;
     }
+
+    // Get the filtered available Pokemon (excluding those already ranked)
+    const rankedPokemonIds = new Set(rankedPokemon.map(p => p.id));
+    const filteredAvailablePokemon = availablePokemon.filter(p => !rankedPokemonIds.has(p.id));
     
     // Moving within the same list
     if (source.droppableId === destination.droppableId) {
       if (source.droppableId === "available") {
-        const newItems = Array.from(availablePokemon);
+        const newItems = Array.from(filteredAvailablePokemon);
         const [movedItem] = newItems.splice(source.index, 1);
         newItems.splice(destination.index, 0, movedItem);
-        setAvailablePokemon(newItems);
+        // We don't update the state here since it's just reordering within filtered list
         console.log("🔄 Reordered within available list:", movedItem.name);
       } else if (source.droppableId === "ranked") {
         const newItems = Array.from(rankedPokemon);
@@ -52,35 +56,29 @@ export const useDragHandler = (
     else {
       if (source.droppableId === "available" && destination.droppableId === "ranked") {
         // Moving from available to ranked
-        const sourceItems = Array.from(availablePokemon);
+        const sourceItems = Array.from(filteredAvailablePokemon);
         const destItems = Array.from(rankedPokemon);
         
         const [movedItem] = sourceItems.splice(source.index, 1);
         destItems.splice(destination.index, 0, movedItem);
         
         console.log("🔄 Moving from available to ranked:", movedItem.name);
-        console.log("🔄 New available count:", sourceItems.length);
         console.log("🔄 New ranked count:", destItems.length);
         
-        // Update both states in one go - no double updates
-        setAvailablePokemon(sourceItems);
+        // Only update ranked Pokemon - the filtering will handle removing from available display
         setRankedPokemon(destItems);
         
       } else if (source.droppableId === "ranked" && destination.droppableId === "available") {
         // Moving from ranked to available
         const sourceItems = Array.from(rankedPokemon);
-        const destItems = Array.from(availablePokemon);
         
         const [movedItem] = sourceItems.splice(source.index, 1);
-        destItems.splice(destination.index, 0, movedItem);
         
         console.log("🔄 Moving from ranked to available:", movedItem.name);
         console.log("🔄 New ranked count:", sourceItems.length);
-        console.log("🔄 New available count:", destItems.length);
         
-        // Update both states in one go - no double updates
+        // Only update ranked Pokemon - the filtering will handle adding to available display
         setRankedPokemon(sourceItems);
-        setAvailablePokemon(destItems);
       }
     }
   };
