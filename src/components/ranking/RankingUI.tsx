@@ -57,23 +57,38 @@ export const RankingUI: React.FC<RankingUIProps> = ({
   // Local state to track if user has made manual changes
   const [hasManualChanges, setHasManualChanges] = useState(false);
   
+  // Track if we've already initialized from TrueSkill for this generation
+  const [trueskillInitialized, setTrueskillInitialized] = useState(false);
+  
   // Battle type state (needed for BattleControls compatibility)
   const [battleType, setBattleType] = useState<BattleType>("pairs");
   
   // CRITICAL FIX: Add drag overlay state
   const [activeDraggedPokemon, setActiveDraggedPokemon] = useState<any>(null);
   
-  // Initialize rankings from TrueSkill when available (but only if no manual changes yet)
+  // CRITICAL FIX: Initialize from TrueSkill when switching to Manual mode
   useEffect(() => {
-    // Only auto-populate if we don't have manual rankings AND we have TrueSkill data
-    if (rankedPokemon.length === 0 && !hasManualChanges) {
-      const trueskillRankings = localRankings.length > 0 ? localRankings : battleModeRankings;
-      if (trueskillRankings.length > 0) {
-        console.log(`🔍🔍🔍 [RANKING_UI_INIT] Auto-populating from TrueSkill: ${trueskillRankings.length} Pokemon`);
-        setRankedPokemon(trueskillRankings);
-      }
+    const trueskillRankings = localRankings.length > 0 ? localRankings : battleModeRankings;
+    
+    console.log(`🔄 [TRUESKILL_INIT] Checking TrueSkill initialization for gen ${selectedGeneration}`);
+    console.log(`🔄 [TRUESKILL_INIT] rankedPokemon.length: ${rankedPokemon.length}`);
+    console.log(`🔄 [TRUESKILL_INIT] trueskillRankings.length: ${trueskillRankings.length}`);
+    console.log(`🔄 [TRUESKILL_INIT] trueskillInitialized: ${trueskillInitialized}`);
+    
+    // If we have TrueSkill data but no manual rankings, and haven't initialized yet
+    if (trueskillRankings.length > 0 && rankedPokemon.length === 0 && !trueskillInitialized) {
+      console.log(`🔄 [TRUESKILL_INIT] ✅ Initializing from TrueSkill: ${trueskillRankings.length} Pokemon`);
+      setRankedPokemon(trueskillRankings);
+      setTrueskillInitialized(true);
     }
-  }, [localRankings, battleModeRankings, rankedPokemon.length, hasManualChanges, setRankedPokemon]);
+  }, [localRankings, battleModeRankings, rankedPokemon.length, trueskillInitialized, selectedGeneration, setRankedPokemon]);
+
+  // Reset initialization flag when generation changes
+  useEffect(() => {
+    console.log(`🔄 [TRUESKILL_INIT] Generation changed to ${selectedGeneration}, resetting initialization flag`);
+    setTrueskillInitialized(false);
+    setHasManualChanges(false);
+  }, [selectedGeneration]);
 
   // CRITICAL FIX: Add persistence effect
   useEffect(() => {
@@ -86,17 +101,18 @@ export const RankingUI: React.FC<RankingUIProps> = ({
   // CRITICAL FIX: Load persisted rankings on generation change
   useEffect(() => {
     const savedRankings = localStorage.getItem(`manual-rankings-gen-${selectedGeneration}`);
-    if (savedRankings && !hasManualChanges) {
+    if (savedRankings) {
       try {
         const parsed = JSON.parse(savedRankings);
         console.log(`💾 [PERSISTENCE_DEBUG] Loading saved rankings for gen ${selectedGeneration}: ${parsed.length} items`);
         setRankedPokemon(parsed);
         setHasManualChanges(true);
+        setTrueskillInitialized(true); // Mark as initialized since we loaded manual data
       } catch (error) {
         console.error(`💾 [PERSISTENCE_DEBUG] Failed to load saved rankings:`, error);
       }
     }
-  }, [selectedGeneration, hasManualChanges, setRankedPokemon]);
+  }, [selectedGeneration, setRankedPokemon]);
   
   // Determine what to show on the right side - always use manual state once populated
   const displayRankings = rankedPokemon;
@@ -107,7 +123,7 @@ export const RankingUI: React.FC<RankingUIProps> = ({
   
   console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] Manual rankedPokemon: ${rankedPokemon.length}, localRankings: ${localRankings.length}, battleModeRankings: ${battleModeRankings.length}`);
   console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] displayRankings length: ${displayRankings.length}`);
-  console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] hasManualChanges: ${hasManualChanges}`);
+  console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] hasManualChanges: ${hasManualChanges}, trueskillInitialized: ${trueskillInitialized}`);
   console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] filteredAvailablePokemon length: ${filteredAvailablePokemon.length}`);
 
   // Handle drag from available to rankings
@@ -332,4 +348,107 @@ export const RankingUI: React.FC<RankingUIProps> = ({
       </DragOverlay>
     </DndContext>
   );
+};
+
+// Missing drag handler functions that were abbreviated:
+const handleDragStart = (event: DragStartEvent) => {
+  console.log(`🔄🔄🔄 [DRAG_DEBUG] === DRAG START ===`);
+  console.log(`🔄🔄🔄 [DRAG_DEBUG] Active ID: ${event.active.id}`);
+  console.log(`🔄🔄🔄 [DRAG_DEBUG] Active data:`, event.active.data?.current);
+  console.log(`🔄🔄🔄 [DRAG_DEBUG] Active element:`, event.active);
+
+  // CRITICAL FIX: Set the dragged Pokemon for overlay
+  const activeId = event.active.id.toString();
+  let draggedPokemon = null;
+  
+  if (activeId.startsWith('available-')) {
+    const pokemonId = parseInt(activeId.replace('available-', ''));
+    draggedPokemon = filteredAvailablePokemon.find(p => p.id === pokemonId);
+    console.log(`🔄🔄🔄 [DRAG_DEBUG] Found available Pokemon for overlay: ${draggedPokemon?.name}`);
+  } else {
+    const pokemonId = parseInt(activeId);
+    draggedPokemon = displayRankings.find(p => p.id === pokemonId);
+    console.log(`🔄🔄🔄 [DRAG_DEBUG] Found ranked Pokemon for overlay: ${draggedPokemon?.name}`);
+  }
+  
+  setActiveDraggedPokemon(draggedPokemon);
+};
+
+const handleDragEnd = (event: DragEndEvent) => {
+  console.log(`🔄🔄🔄 [DRAG_DEBUG] === DRAG END ===`);
+  console.log(`🔄🔄🔄 [DRAG_DEBUG] Full event:`, event);
+  
+  // CRITICAL FIX: Clear the drag overlay
+  setActiveDraggedPokemon(null);
+  
+  const { active, over } = event;
+  
+  if (!over) {
+    console.log(`🔄🔄🔄 [DRAG_DEBUG] ❌ No drop target - drag cancelled`);
+    return;
+  }
+
+  const activeId = active.id.toString();
+  const overId = over.id.toString();
+
+  console.log(`🔄🔄🔄 [DRAG_DEBUG] Active ID: ${activeId}`);
+  console.log(`🔄🔄🔄 [DRAG_DEBUG] Over ID: ${overId}`);
+  console.log(`🔄🔄🔄 [DRAG_DEBUG] Active data:`, active.data?.current);
+  console.log(`🔄🔄🔄 [DRAG_DEBUG] Over data:`, over.data?.current);
+
+  // Check if dragging from available to rankings
+  if (activeId.startsWith('available-')) {
+    const pokemonId = parseInt(activeId.replace('available-', ''));
+    console.log(`🔄🔄🔄 [DRAG_DEBUG] 🎯 AVAILABLE TO RANKINGS: Pokemon ID: ${pokemonId}`);
+    
+    // Find the Pokemon in available list
+    const pokemon = filteredAvailablePokemon.find(p => p.id === pokemonId);
+    if (!pokemon) {
+      console.log(`🔄🔄🔄 [DRAG_DEBUG] ❌ Pokemon ${pokemonId} not found in available list`);
+      console.log(`🔄🔄🔄 [DRAG_DEBUG] Available Pokemon IDs:`, filteredAvailablePokemon.map(p => p.id));
+      return;
+    }
+    
+    console.log(`🔄🔄🔄 [DRAG_DEBUG] ✅ Found Pokemon: ${pokemon.name}`);
+    
+    if (overId === 'rankings-drop-zone') {
+      console.log(`🔄🔄🔄 [DRAG_DEBUG] 🎯 Dropping to rankings drop zone`);
+      handleDragToRankings(pokemonId);
+      return;
+    } else if (!overId.startsWith('available-')) {
+      // Dragging over a specific Pokemon in rankings
+      const overPokemonId = Number(overId);
+      const insertIndex = displayRankings.findIndex(p => p.id === overPokemonId);
+      console.log(`🔄🔄🔄 [DRAG_DEBUG] 🎯 Dropping near Pokemon ${overPokemonId} at index ${insertIndex}`);
+      if (insertIndex !== -1) {
+        handleDragToRankings(pokemonId, insertIndex);
+        return;
+      }
+    }
+  }
+
+  // Handle reordering within rankings (both IDs should be numeric for ranked Pokemon)
+  if (!activeId.startsWith('available-') && !overId.startsWith('available-') && overId !== 'rankings-drop-zone') {
+    const activePokemonId = Number(activeId);
+    const overPokemonId = Number(overId);
+    
+    console.log(`🔄🔄🔄 [DRAG_DEBUG] 🔄 REORDERING WITHIN RANKINGS: ${activePokemonId} -> ${overPokemonId}`);
+    
+    // Find the indices of the dragged and target Pokemon
+    const oldIndex = displayRankings.findIndex(p => p.id === activePokemonId);
+    const newIndex = displayRankings.findIndex(p => p.id === overPokemonId);
+    
+    console.log(`🔄🔄🔄 [DRAG_DEBUG] Old index: ${oldIndex}, New index: ${newIndex}`);
+    
+    if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
+      console.log(`🔄🔄🔄 [DRAG_DEBUG] ✅ Performing reorder from ${oldIndex} to ${newIndex}`);
+      
+      // Use arrayMove for proper reordering
+      const newRankings = arrayMove(displayRankings, oldIndex, newIndex);
+      setRankedPokemon(newRankings);
+      setHasManualChanges(true);
+    }
+  }
+  
+  console.log(`🔄🔄🔄 [DRAG_DEBUG] === DRAG END COMPLETE ===`);
 };
