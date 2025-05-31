@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -11,13 +10,19 @@ import { Loader2, User, LogOut, Phone, ArrowLeft, Mail } from 'lucide-react';
 
 interface AuthDialogProps {
   children: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 type AuthView = 'methods' | 'phone-input' | 'phone-otp';
 
-export const AuthDialog: React.FC<AuthDialogProps> = ({ children }) => {
+export const AuthDialog: React.FC<AuthDialogProps> = ({ 
+  children, 
+  open: controlledOpen, 
+  onOpenChange: controlledOnOpenChange 
+}) => {
   const { user, signIn, signUp, signOut, signInWithGoogle, signInWithPhone, verifyPhoneOtp, loading } = useAuth();
-  const [isOpen, setIsOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [currentView, setCurrentView] = useState<AuthView>('methods');
   const [email, setEmail] = useState('');
@@ -26,6 +31,10 @@ export const AuthDialog: React.FC<AuthDialogProps> = ({ children }) => {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [otp, setOtp] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
+
+  // Use controlled state if provided, otherwise use internal state
+  const isOpen = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setIsOpen = controlledOnOpenChange || setInternalOpen;
 
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,7 +48,6 @@ export const AuthDialog: React.FC<AuthDialogProps> = ({ children }) => {
     }
     
     if (result.error) {
-      // If sign in fails, try sign up for new users
       if (!isSignUp && result.error.message?.includes('Invalid login credentials')) {
         toast({
           title: 'Account not found',
@@ -69,10 +77,8 @@ export const AuthDialog: React.FC<AuthDialogProps> = ({ children }) => {
     e.preventDefault();
     setIsLoading(true);
     
-    // Ensure phone number is in international format
     let formattedPhone = phoneNumber.trim();
     if (!formattedPhone.startsWith('+')) {
-      // Default to US if no country code provided
       formattedPhone = '+1' + formattedPhone.replace(/\D/g, '');
     }
     
