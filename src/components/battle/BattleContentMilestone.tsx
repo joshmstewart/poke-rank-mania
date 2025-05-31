@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Pokemon, TopNOption, RankedPokemon } from "@/services/pokemon";
 import RankingDisplayContainer from "./RankingDisplayContainer";
@@ -46,7 +47,10 @@ const BattleContentMilestone: React.FC<BattleContentMilestoneProps> = ({
   console.log(`🏆 [MILESTONE_COMPONENT_TRUESKILL_SYNC] rankingGenerated: ${rankingGenerated}`);
 
   if (finalRankings && finalRankings.length > 0) {
-    console.log(`🏆 [MILESTONE_COMPONENT_TRUESKILL_SYNC] Sample rankings:`, finalRankings.slice(0, 5).map(p => `${p.name} (${p.id}) - Score: ${p.score?.toFixed(3) || 'N/A'}`));
+    console.log(`🏆 [MILESTONE_COMPONENT_TRUESKILL_SYNC] Sample rankings:`, finalRankings.slice(0, 5).map(p => {
+      const score = 'score' in p ? p.score?.toFixed(3) : 'N/A';
+      return `${p.name} (${p.id}) - Score: ${score}`;
+    }));
     console.log(`🏆 [MILESTONE_COMPONENT_TRUESKILL_SYNC] Rankings now using TrueSkill store data (same as Manual mode)`);
   } else {
     console.log(`🚨 [MILESTONE_COMPONENT_TRUESKILL_SYNC] WARNING: finalRankings is empty or undefined!`);

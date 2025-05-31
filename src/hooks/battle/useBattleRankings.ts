@@ -41,7 +41,11 @@ export const useBattleRankings = () => {
           ...basePokemon,
           score: conservativeEstimate,
           confidence: confidence,
-          rating: rating
+          rating: rating,
+          count: ratingData.battleCount || 0,
+          wins: 0, // These would need to be calculated from battle history
+          losses: 0,
+          winRate: 0
         };
         
         rankings.push(rankedPokemon);

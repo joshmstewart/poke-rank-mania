@@ -1,5 +1,5 @@
 
-import { useRef, useCallback } from "react";
+import React, { useRef, useCallback } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
 import { useBattleStateCore } from "./useBattleStateCore";
@@ -28,8 +28,10 @@ export const useBattleContentState = (
     // The rankings are already updated through TrueSkill during battle processing
     // So we primarily use this for milestone display consistency
     
-    coreState.setFinalRankings(updatedRankings);
-    console.log(`🔧 [BATTLE_CONTENT_RANKINGS_UPDATE] Final rankings updated for milestone display`);
+    if (coreState.setFinalRankings) {
+      coreState.setFinalRankings(updatedRankings);
+      console.log(`🔧 [BATTLE_CONTENT_RANKINGS_UPDATE] Final rankings updated for milestone display`);
+    }
   }, [coreState.setFinalRankings]);
 
   // CRITICAL FIX: Sync external battle state setters
