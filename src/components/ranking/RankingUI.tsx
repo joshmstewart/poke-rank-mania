@@ -146,25 +146,26 @@ export const RankingUI: React.FC<RankingUIProps> = ({
 
   // COMPLETELY FIXED: Super simple drag to rankings
   const handleDragToRankings = (pokemonId: number) => {
-    console.log(`🔥 [DRAG_FIXED] Simple drag to rankings for Pokemon ${pokemonId}`);
+    console.log(`🔥🔥🔥 [DRAG_TO_RANKINGS] ===== DRAG TO RANKINGS FUNCTION CALLED =====`);
+    console.log(`🔥🔥🔥 [DRAG_TO_RANKINGS] Pokemon ID: ${pokemonId}`);
     
     const pokemon = availablePokemon.find(p => p.id === pokemonId);
     if (!pokemon) {
-      console.error(`🔥 [DRAG_FIXED] Pokemon ${pokemonId} not found in available list`);
+      console.error(`🔥🔥🔥 [DRAG_TO_RANKINGS] ❌ Pokemon ${pokemonId} not found in available list`);
       return;
     }
     
-    console.log(`🔥 [DRAG_FIXED] Found Pokemon: ${pokemon.name}, moving to rankings`);
+    console.log(`🔥🔥🔥 [DRAG_TO_RANKINGS] ✅ Found Pokemon: ${pokemon.name}, moving to rankings`);
     
     // Simple atomic operations - only remove from available
     setAvailablePokemon(prev => {
       const updated = prev.filter(p => p.id !== pokemonId);
-      console.log(`🔥 [DRAG_FIXED] Removed ${pokemon.name} from available (${prev.length} -> ${updated.length})`);
+      console.log(`🔥🔥🔥 [DRAG_TO_RANKINGS] Removed ${pokemon.name} from available (${prev.length} -> ${updated.length})`);
       return updated;
     });
     
     // Pokemon will appear in rankings through TrueSkill sync once it gets rated
-    console.log(`🔥 [DRAG_FIXED] Pokemon ${pokemon.name} will appear in rankings via TrueSkill`);
+    console.log(`🔥🔥🔥 [DRAG_TO_RANKINGS] Pokemon ${pokemon.name} will appear in rankings via TrueSkill`);
   };
 
   // Handle manual reordering within the rankings (using enhanced system with fake battles)
@@ -183,7 +184,8 @@ export const RankingUI: React.FC<RankingUIProps> = ({
 
   // COMPLETELY FIXED: Super simple drag handlers
   const handleDragStart = (event: DragStartEvent) => {
-    console.log(`🔥 [DRAG_FIXED] Drag start: ${event.active.id}`);
+    console.log(`🔥🔥🔥 [DRAG_START] ===== DRAG START =====`);
+    console.log(`🔥🔥🔥 [DRAG_START] Active ID: ${event.active.id}`);
 
     const activeId = event.active.id.toString();
     let draggedPokemon = null;
@@ -191,44 +193,46 @@ export const RankingUI: React.FC<RankingUIProps> = ({
     if (activeId.startsWith('available-')) {
       const pokemonId = parseInt(activeId.replace('available-', ''));
       draggedPokemon = availablePokemon.find(p => p.id === pokemonId);
-      console.log(`🔥 [DRAG_FIXED] Dragging available Pokemon: ${draggedPokemon?.name} (ID: ${pokemonId})`);
+      console.log(`🔥🔥🔥 [DRAG_START] Dragging available Pokemon: ${draggedPokemon?.name} (ID: ${pokemonId})`);
     } else {
       const pokemonId = parseInt(activeId);
       draggedPokemon = localRankings.find(p => p.id === pokemonId);
-      console.log(`🔥 [DRAG_FIXED] Dragging ranked Pokemon: ${draggedPokemon?.name} (ID: ${pokemonId})`);
+      console.log(`🔥🔥🔥 [DRAG_START] Dragging ranked Pokemon: ${draggedPokemon?.name} (ID: ${pokemonId})`);
     }
     
     setActiveDraggedPokemon(draggedPokemon);
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
-    console.log(`🔥 [DRAG_FIXED] ===== DRAG END =====`);
+    console.log(`🔥🔥🔥 [DRAG_END] ===== DRAG END START =====`);
     
     setActiveDraggedPokemon(null);
     
     const { active, over } = event;
     
     if (!over) {
-      console.log(`🔥 [DRAG_FIXED] No drop target - drag cancelled`);
+      console.log(`🔥🔥🔥 [DRAG_END] No drop target - drag cancelled`);
       return;
     }
 
     const activeId = active.id.toString();
     const overId = over.id.toString();
 
-    console.log(`🔥 [DRAG_FIXED] Dropped ${activeId} onto ${overId}`);
+    console.log(`🔥🔥🔥 [DRAG_END] Active: ${activeId}`);
+    console.log(`🔥🔥🔥 [DRAG_END] Over: ${overId}`);
 
-    // FIXED: Simplified drag from available to rankings detection
+    // CRITICAL FIX: Handle drag from available to rankings
     if (activeId.startsWith('available-')) {
       const pokemonId = parseInt(activeId.replace('available-', ''));
+      console.log(`🔥🔥🔥 [DRAG_END] Available Pokemon ${pokemonId} dragged`);
       
-      // Accept ANY drop that's not on another available Pokemon
-      if (!overId.startsWith('available-')) {
-        console.log(`🔥 [DRAG_FIXED] ✅ Valid drop to rankings area - executing move`);
+      // Check if dropped on rankings area or any ranked Pokemon
+      if (overId === 'rankings-drop-zone' || (!overId.startsWith('available-') && !isNaN(parseInt(overId)))) {
+        console.log(`🔥🔥🔥 [DRAG_END] ✅ Valid drop to rankings - calling handleDragToRankings`);
         handleDragToRankings(pokemonId);
         return;
       } else {
-        console.log(`🔥 [DRAG_FIXED] ❌ Invalid drop - cannot drop available on available`);
+        console.log(`🔥🔥🔥 [DRAG_END] ❌ Invalid drop target for available Pokemon: ${overId}`);
         return;
       }
     }
@@ -242,14 +246,14 @@ export const RankingUI: React.FC<RankingUIProps> = ({
       const newIndex = localRankings.findIndex(p => p.id === overPokemonId);
       
       if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-        console.log(`🔥 [DRAG_FIXED] ✅ Reordering within rankings from ${oldIndex} to ${newIndex}`);
+        console.log(`🔥🔥🔥 [DRAG_END] ✅ Reordering within rankings from ${oldIndex} to ${newIndex}`);
         handleManualReorder(activePokemonId, oldIndex, newIndex);
       } else {
-        console.log(`🔥 [DRAG_FIXED] ❌ Invalid reorder attempt: oldIndex=${oldIndex}, newIndex=${newIndex}`);
+        console.log(`🔥🔥🔥 [DRAG_END] ❌ Invalid reorder attempt: oldIndex=${oldIndex}, newIndex=${newIndex}`);
       }
     }
     
-    console.log(`🔥 [DRAG_FIXED] ===== DRAG END COMPLETE =====`);
+    console.log(`🔥🔥🔥 [DRAG_END] ===== DRAG END COMPLETE =====`);
   };
 
   // Use TrueSkill rankings as the single source of truth

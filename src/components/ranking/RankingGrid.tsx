@@ -33,7 +33,7 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
 }) => {
   const [loadedImages, setLoadedImages] = useState<Set<number>>(new Set());
 
-  console.log(`🔥 [RANKING_GRID_FIXED] Rendering ${displayRankings.length} Pokemon`);
+  console.log(`🔥🔥🔥 [RANKING_GRID_INFO] Rendering ${displayRankings.length} Pokemon`);
 
   const handleImageLoad = (pokemonId: number) => {
     setLoadedImages(prev => new Set(prev).add(pokemonId));
@@ -52,33 +52,30 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
 
         return (
           <div key={pokemon.id} className="relative group">
-            {/* COMPLETELY FIXED: Info button with highest z-index and no interference */}
-            <div className="absolute top-1 right-1 z-[100]">
-              <PokemonInfoModal pokemon={pokemon}>
-                <button 
-                  className="w-6 h-6 rounded-full bg-white hover:bg-gray-50 border border-gray-300 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-bold shadow-lg transition-all duration-200"
-                  onClick={(e) => {
-                    console.log(`🔥 [INFO_FIXED] Info clicked for ${pokemon.name} - stopping ALL propagation`);
-                    e.stopPropagation();
-                    e.preventDefault();
-                    // Modal will open automatically due to PokemonInfoModal wrapper
-                  }}
-                  onMouseDown={(e) => {
-                    console.log(`🔥 [INFO_FIXED] Info mouse down for ${pokemon.name} - stopping ALL propagation`);
-                    e.stopPropagation();
-                    e.preventDefault();
-                  }}
-                  onPointerDown={(e) => {
-                    console.log(`🔥 [INFO_FIXED] Info pointer down for ${pokemon.name} - stopping ALL propagation`);
-                    e.stopPropagation();
-                    e.preventDefault();
-                  }}
-                  style={{ pointerEvents: 'auto' }}
-                >
-                  i
-                </button>
-              </PokemonInfoModal>
-            </div>
+            {/* CRITICAL FIX: Info button with proper modal wrapper and event handling */}
+            <PokemonInfoModal pokemon={pokemon}>
+              <button 
+                className="absolute top-1 right-1 z-[100] w-6 h-6 rounded-full bg-white hover:bg-gray-50 border border-gray-300 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-bold shadow-lg transition-all duration-200"
+                onClick={(e) => {
+                  console.log(`🔥🔥🔥 [INFO_BUTTON_FIXED] Info button clicked for ${pokemon.name} in Rankings`);
+                  e.stopPropagation();
+                  e.preventDefault();
+                }}
+                onMouseDown={(e) => {
+                  console.log(`🔥🔥🔥 [INFO_BUTTON_FIXED] Info mouse down for ${pokemon.name} in Rankings`);
+                  e.stopPropagation();
+                  e.preventDefault();
+                }}
+                onPointerDown={(e) => {
+                  console.log(`🔥🔥🔥 [INFO_BUTTON_FIXED] Info pointer down for ${pokemon.name} in Rankings`);
+                  e.stopPropagation();
+                  e.preventDefault();
+                }}
+                style={{ pointerEvents: 'auto' }}
+              >
+                i
+              </button>
+            </PokemonInfoModal>
 
             {/* Voting arrows for ranked Pokemon */}
             {isRankedPokemon && onSuggestRanking && onRemoveSuggestion && (
@@ -89,7 +86,7 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
               />
             )}
 
-            {/* COMPLETELY FIXED: Card with no click handlers that could interfere */}
+            {/* Card with no click handlers that could interfere */}
             <div className="bg-white rounded-lg border-2 border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
               {/* Rank number */}
               <div className="bg-gradient-to-r from-yellow-400 to-yellow-600 text-white text-center py-1">
