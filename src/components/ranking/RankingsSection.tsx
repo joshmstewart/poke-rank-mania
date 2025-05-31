@@ -27,11 +27,6 @@ export const RankingsSection: React.FC<RankingsSectionProps> = ({
     }
   });
   
-  console.log(`🔍🔍🔍 [RANKINGS_SECTION_DEBUG] Droppable setup:`);
-  console.log(`🔍🔍🔍 [RANKINGS_SECTION_DEBUG] - ID: rankings-drop-zone`);
-  console.log(`🔍🔍🔍 [RANKINGS_SECTION_DEBUG] - isOver: ${isOver}`);
-  console.log(`🔍🔍🔍 [RANKINGS_SECTION_DEBUG] - setNodeRef exists: ${!!setNodeRef}`);
-  
   const handleMarkAsPending = (pokemonId: number) => {
     console.log(`🔍🔍🔍 [RANKINGS_SECTION_DEBUG] Marking Pokemon ${pokemonId} as pending`);
     // For manual mode, we don't need special pending logic like battle mode
@@ -54,7 +49,7 @@ export const RankingsSection: React.FC<RankingsSectionProps> = ({
         </div>
       </div>
       
-      {/* Rankings Grid - Set up as drop zone with visual feedback */}
+      {/* Rankings Grid - Set up as drop zone with visual feedback, same 5-column layout */}
       <div 
         className={`flex-1 overflow-y-auto p-4 transition-colors ${
           isOver ? 'bg-yellow-50 border-2 border-dashed border-yellow-400' : ''

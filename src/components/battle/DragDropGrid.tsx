@@ -1,11 +1,6 @@
 
 import React from "react";
 import {
-  closestCenter,
-  DragStartEvent,
-  DragOverEvent,
-} from '@dnd-kit/core';
-import {
   SortableContext,
   rectSortingStrategy,
 } from '@dnd-kit/sortable';
@@ -36,7 +31,7 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
       items={displayRankings.map(p => p.id)} 
       strategy={rectSortingStrategy}
     >
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+      <div className="grid grid-cols-5 gap-4">
         {displayRankings.map((pokemon, index) => {
           const isPending = localPendingRefinements.has(pokemon.id);
           const pendingCount = pendingBattleCounts.get(pokemon.id) || 0;
