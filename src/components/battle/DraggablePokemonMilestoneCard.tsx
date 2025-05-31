@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -51,6 +52,8 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   const style = {
     transform: CSS.Transform.toString(transform),
     transition: isDragging ? 'none' : transition,
+    minHeight: '140px',
+    minWidth: '140px'
   };
 
   const backgroundColorClass = getPokemonBackgroundColor(pokemon);
@@ -79,7 +82,6 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       } ${isPending ? 'ring-2 ring-blue-400 ring-opacity-50' : ''}`}
       {...(isDraggable && !isOpen ? attributes : {})}
       {...(isDraggable && !isOpen ? listeners : {})}
-      style={{...style, minHeight: '140px', minWidth: '140px'}}
     >
       {/* Pending banner if needed */}
       {isPending && (
