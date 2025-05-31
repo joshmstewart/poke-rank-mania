@@ -76,8 +76,8 @@ export const useRankingCalculator = (
         
         console.log(`[generateRankings] ${completePokemon.name} TrueSkill: μ=${trueskillRating.mu.toFixed(2)}, σ=${trueskillRating.sigma.toFixed(2)}, battles=${trueskillData.battleCount}`);
 
-        // Calculate conservative score (mu - 3 * sigma)
-        const conservativeEstimate = trueskillRating.mu - 3 * trueskillRating.sigma;
+        // Calculate conservative score (mu - sigma) - Changed from 3 * sigma to 1 * sigma
+        const conservativeEstimate = trueskillRating.mu - trueskillRating.sigma;
         const normalizedConfidence = Math.max(0, Math.min(100, 100 * (1 - (trueskillRating.sigma / 8.33))));
 
         const pokemonFrozenStatus = frozenPokemon[completePokemon.id] || {};
@@ -146,7 +146,7 @@ export const useRankingCalculator = (
     });
     setConfidenceScores(confidenceMap);
 
-    console.log(`[generateRankings #${currentCount}] COMPLETE - Rankings now unified with Manual Mode`);
+    console.log(`[generateRankings #${currentCount}] COMPLETE - Rankings now unified with Manual Mode using μ - σ scoring`);
     
     // Update previous rankings ref
     previousRankingsRef.current = safeFinalRankings;
