@@ -10,8 +10,9 @@ interface AppHeaderProps {
 }
 
 const AppHeader: React.FC<AppHeaderProps> = ({ mode, onModeChange }) => {
-  console.log('🟢🟢🟢 AppHeader: ALWAYS FIRES - Header component is rendering');
-  console.log('🟢🟢🟢 AppHeader: Timestamp:', new Date().toISOString());
+  console.log('🔥🔥🔥 AppHeader: HEADER IS RENDERING - this should ALWAYS appear');
+  console.log('🔥🔥🔥 AppHeader: Current mode:', mode);
+  console.log('🔥🔥🔥 AppHeader: Timestamp:', new Date().toISOString());
 
   return (
     <header className="bg-white border-b-2 border-gray-300 shadow-md sticky top-0 z-50 relative">
@@ -23,9 +24,9 @@ const AppHeader: React.FC<AppHeaderProps> = ({ mode, onModeChange }) => {
           {/* Center - Mode and Style Controls Group */}
           <ModeStyleControls mode={mode} onModeChange={onModeChange} />
           
-          {/* Right side - ONLY SaveProgressSection (no other auth components) */}
-          <div className="bg-blue-200 border-2 border-blue-600 p-2">
-            <div className="text-xs text-blue-800 mb-1">DEBUG: HEADER RIGHT SIDE</div>
+          {/* Right side - VERY VISIBLE CONTAINER */}
+          <div className="bg-blue-900 border-8 border-yellow-400 p-4">
+            <div className="text-xl font-bold text-yellow-400 mb-2">🔵 HEADER RIGHT SIDE 🔵</div>
             <SaveProgressSection />
           </div>
         </div>
