@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -24,6 +23,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     console.log('AuthProvider: Initializing auth state management');
+    
+    // Debug localStorage to see what's stored
+    console.log('🔍 LocalStorage debug:', {
+      allKeys: Object.keys(localStorage),
+      supabaseKeys: Object.keys(localStorage).filter(key => key.includes('supabase') || key.includes('sb-')),
+      authTokenKey: localStorage.getItem('supabase.auth.token') ? 'found' : 'missing'
+    });
     
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -53,17 +59,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Get initial session
     const initializeAuth = async () => {
       try {
+        console.log('🔍 About to call getSession...');
         const { data: { session }, error } = await supabase.auth.getSession();
         console.log('Initial session check result:', { 
           userEmail: session?.user?.email, 
           userId: session?.user?.id,
           hasSession: !!session,
           error: error?.message,
-          accessToken: session?.access_token ? 'present' : 'missing'
+          accessToken: session?.access_token ? 'present' : 'missing',
+          sessionData: session ? 'session object found' : 'no session object'
         });
         
         if (error) {
           console.error('Error getting initial session:', error);
+        }
+        
+        if (session) {
+          console.log('✅ Found valid session, setting user state');
+        } else {
+          console.log('❌ No session found, user will remain null');
         }
         
         setSession(session);
@@ -147,7 +161,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     hasUser: !!user,
     hasSession: !!session,
     loading,
-    userEmail: user?.email
+    userEmail: user?.email,
+    localStorageHasAuth: !!localStorage.getItem('supabase.auth.token')
   });
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
