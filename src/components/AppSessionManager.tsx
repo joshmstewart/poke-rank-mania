@@ -166,23 +166,9 @@ const AppSessionManager = () => {
     }
   };
 
-  // If user is signed in, show cloud sync status
+  // If user is signed in, don't show anything - SaveProgressSection handles authenticated display
   if (user) {
-    return (
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div className="flex items-center gap-1 text-green-600 text-xs">
-              <Cloud className="h-3 w-3" />
-              <span className="hidden sm:inline">Synced</span>
-            </div>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Your progress is being saved to the cloud</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    );
+    return null;
   }
 
   // If user is not signed in, show combined save progress button
