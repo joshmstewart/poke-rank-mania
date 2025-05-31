@@ -7,12 +7,22 @@ import { CloudSyncButton } from '@/components/auth/CloudSyncButton';
 const SaveProgressSection: React.FC = () => {
   const { user, loading, session } = useAuth();
 
-  console.log('🔴 SaveProgressSection: Auth state check:', {
+  console.log('🔴 SaveProgressSection: DETAILED AUTH STATE CHECK:', {
     hasUser: !!user,
     hasSession: !!session,
     loading,
-    userEmail: user?.email
+    userEmail: user?.email,
+    userId: user?.id,
+    sessionAccessToken: session?.access_token ? 'present' : 'missing',
+    sessionExpiresAt: session?.expires_at,
+    currentTime: Date.now() / 1000
   });
+
+  // Add more detailed condition checking
+  const isAuthenticated = !!(user && session);
+  console.log('🔴 SaveProgressSection: IS AUTHENTICATED?', isAuthenticated);
+  console.log('🔴 SaveProgressSection: User check:', !!user);
+  console.log('🔴 SaveProgressSection: Session check:', !!session);
   
   if (loading) {
     console.log('🔴 SaveProgressSection: LOADING STATE - showing loading spinner');
@@ -23,12 +33,12 @@ const SaveProgressSection: React.FC = () => {
     );
   }
 
-  if (user && session) {
-    console.log('🔴 SaveProgressSection: ✅ AUTHENTICATED - showing user display directly');
+  if (isAuthenticated) {
+    console.log('🔴 SaveProgressSection: ✅ AUTHENTICATED - showing AuthenticatedUserDisplay');
     return <AuthenticatedUserDisplay />;
   }
 
-  console.log('🔴 SaveProgressSection: ❌ NOT AUTHENTICATED - showing cloud sync button');
+  console.log('🔴 SaveProgressSection: ❌ NOT AUTHENTICATED - showing CloudSyncButton');
   return <CloudSyncButton />;
 };
 
