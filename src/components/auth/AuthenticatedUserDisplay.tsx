@@ -66,8 +66,9 @@ export const AuthenticatedUserDisplay: React.FC = () => {
   console.log('🔵🔵🔵 AuthenticatedUserDisplay: RENDERING DROPDOWN COMPONENT NOW');
 
   return (
-    <div className="bg-blue-100 border border-blue-300 p-1">
+    <div className="bg-blue-100 border-2 border-blue-300 p-2">
       {/* Temporary debug styling to make this component visible */}
+      <div className="text-xs font-bold text-blue-800 mb-1">🔵 USER DROPDOWN COMPONENT 🔵</div>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="h-auto p-2">
