@@ -6,24 +6,23 @@ import AppHeader from "@/components/layout/AppHeader";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { Toaster } from "@/components/ui/toaster"
 import PokemonRankerWithProvider from "@/components/pokemon/PokemonRankerWithProvider";
-import { AuthProvider } from "@/contexts/AuthContext";
-import { ImpliedBattleTrackerProvider } from "@/contexts/ImpliedBattleTracker";
+import { AuthWrapper } from "@/components/auth/AuthWrapper";
 
-function App() {
+function AppContent() {
   const [mode, setMode] = useLocalStorage<"rank" | "battle">("pokemon-ranker-mode", "battle");
 
-  console.log('🚀🚀🚀 APP.TSX: MAIN APP COMPONENT IS RENDERING');
-  console.log('🚀🚀🚀 APP.TSX: Current mode:', mode);
-  console.log('🚀🚀🚀 APP.TSX: Timestamp:', new Date().toISOString());
-  console.log('🚀🚀🚀 APP.TSX: App component mounted - this should NEVER disappear after auth');
+  console.log('🚀🚀🚀 APP_CONTENT: MAIN APP CONTENT IS RENDERING');
+  console.log('🚀🚀🚀 APP_CONTENT: Current mode:', mode);
+  console.log('🚀🚀🚀 APP_CONTENT: Timestamp:', new Date().toISOString());
+  console.log('🚀🚀🚀 APP_CONTENT: App content mounted - this should NEVER disappear after auth');
 
   const handleModeChange = (newMode: "rank" | "battle") => {
-    console.log('🚀🚀🚀 APP.TSX: Mode changing from', mode, 'to', newMode);
+    console.log('🚀🚀🚀 APP_CONTENT: Mode changing from', mode, 'to', newMode);
     setMode(newMode);
   };
 
   const renderContent = () => {
-    console.log('🚀🚀🚀 APP.TSX: Rendering content for mode:', mode);
+    console.log('🚀🚀🚀 APP_CONTENT: Rendering content for mode:', mode);
     if (mode === "battle") {
       return <BattleMode />;
     } else {
@@ -31,11 +30,10 @@ function App() {
     }
   };
 
-  console.log('🚀🚀🚀 APP.TSX: About to render main app structure');
+  console.log('🚀🚀🚀 APP_CONTENT: About to render main app structure');
 
-  // Add a key to prevent unmounting during auth state changes
   return (
-    <div key="main-app" className="flex flex-col h-screen">
+    <div className="flex flex-col h-screen">
       <div className="bg-purple-500 border-8 border-yellow-500 p-4 m-2">
         <div className="text-2xl font-bold text-yellow-500 mb-2">🚀 MAIN APP CONTAINER 🚀</div>
         <div className="text-white">App is rendering - timestamp: {new Date().toISOString()}</div>
@@ -55,17 +53,14 @@ function App() {
   );
 }
 
-// Wrap the App component to ensure it doesn't get unmounted
-function AppWrapper() {
-  console.log('🚀🚀🚀 APP.TSX: APP WRAPPER RENDERING - this is the root component');
+function App() {
+  console.log('🚀🚀🚀 APP: ROOT APP COMPONENT RENDERING - this is the very top level');
   
   return (
-    <AuthProvider>
-      <ImpliedBattleTrackerProvider>
-        <App />
-      </ImpliedBattleTrackerProvider>
-    </AuthProvider>
+    <AuthWrapper>
+      <AppContent />
+    </AuthWrapper>
   );
 }
 
-export default AppWrapper;
+export default App;
