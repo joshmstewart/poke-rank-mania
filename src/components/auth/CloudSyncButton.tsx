@@ -6,15 +6,35 @@ import { AuthDialog } from './AuthDialog';
 import { useAuth } from '@/contexts/AuthContext';
 
 export const CloudSyncButton: React.FC = () => {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const [showAuthDialog, setShowAuthDialog] = useState(false);
 
-  console.log('🟡 CloudSyncButton: Rendering - user authenticated:', !!user);
+  console.log('🟡🟡🟡 CloudSyncButton: ===== COMPONENT RENDER START =====');
+  console.log('🟡🟡🟡 CloudSyncButton: Auth state:', {
+    hasUser: !!user,
+    hasSession: !!session,
+    userEmail: user?.email || 'no email',
+    sessionUserEmail: session?.user?.email || 'no session email',
+    timestamp: new Date().toISOString()
+  });
+
+  const isAuthenticated = !!user || !!session?.user;
+
+  console.log('🟡🟡🟡 CloudSyncButton: Authentication check:', {
+    isAuthenticated,
+    hasUser: !!user,
+    hasSessionUser: !!session?.user,
+    willReturnNull: isAuthenticated,
+    willRenderButton: !isAuthenticated
+  });
 
   // Only show for unauthenticated users
-  if (user) {
+  if (isAuthenticated) {
+    console.log('🟡🟡🟡 CloudSyncButton: 🚫 USER IS AUTHENTICATED - RETURNING NULL 🚫');
     return null;
   }
+
+  console.log('🟡🟡🟡 CloudSyncButton: 🟢 USER NOT AUTHENTICATED - RENDERING BUTTON 🟢');
 
   return (
     <AuthDialog 

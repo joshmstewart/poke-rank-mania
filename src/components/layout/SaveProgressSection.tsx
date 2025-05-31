@@ -7,19 +7,23 @@ import { Check } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 const SaveProgressSection: React.FC = () => {
-  console.log('🚨 SaveProgressSection: Component rendering');
+  console.log('🚨🚨🚨 SaveProgressSection: ===== COMPONENT RENDER START =====');
   
   const { user, loading, session } = useAuth();
 
-  console.log('🚨 SaveProgressSection: Auth state:', {
+  console.log('🚨🚨🚨 SaveProgressSection: Auth state received from useAuth:', {
     hasUser: !!user,
     hasSession: !!session,
     loading,
-    userEmail: user?.email || session?.user?.email,
+    userEmail: user?.email || 'no email',
+    sessionUserEmail: session?.user?.email || 'no session email',
+    userFromAuth: user ? 'present' : 'null',
+    sessionFromAuth: session ? 'present' : 'null',
     timestamp: new Date().toISOString()
   });
 
   if (loading) {
+    console.log('🚨🚨🚨 SaveProgressSection: 🔄 RETURNING LOADING STATE 🔄');
     return (
       <div className="flex items-center justify-center py-4">
         <div className="animate-pulse bg-gray-200 h-8 w-24 rounded"></div>
@@ -30,15 +34,25 @@ const SaveProgressSection: React.FC = () => {
   // Show authenticated display if we have EITHER user OR session with user
   const isAuthenticated = !!user || !!session?.user;
   
-  console.log('🚨 SaveProgressSection: Authentication check:', {
+  console.log('🚨🚨🚨 SaveProgressSection: Authentication decision logic:', {
     isAuthenticated,
     hasUser: !!user,
     hasSessionUser: !!session?.user,
-    willShowAuthenticatedDisplay: isAuthenticated
+    userEmail: user?.email,
+    sessionUserEmail: session?.user?.email,
+    willShowAuthenticatedDisplay: isAuthenticated,
+    willShowCloudSyncButton: !isAuthenticated,
+    timestamp: new Date().toISOString()
   });
   
   if (isAuthenticated) {
-    console.log('🚨 SaveProgressSection: SHOWING AUTHENTICATED USER DISPLAY');
+    console.log('🚨🚨🚨 SaveProgressSection: 🟢 AUTHENTICATED - RENDERING AuthenticatedUserDisplay 🟢');
+    console.log('🚨🚨🚨 SaveProgressSection: User data being passed to AuthenticatedUserDisplay:', {
+      user: user ? 'present' : 'null',
+      session: session ? 'present' : 'null',
+      userEmail: user?.email || session?.user?.email || 'no email'
+    });
+    
     return (
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2">
@@ -52,7 +66,7 @@ const SaveProgressSection: React.FC = () => {
     );
   }
 
-  console.log('🚨 SaveProgressSection: SHOWING CLOUD SYNC BUTTON');
+  console.log('🚨🚨🚨 SaveProgressSection: 🔴 NOT AUTHENTICATED - RENDERING CloudSyncButton 🔴');
   return <CloudSyncButton />;
 };
 

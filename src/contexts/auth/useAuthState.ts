@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -7,6 +7,10 @@ export const useAuthState = () => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  // Use refs to prevent unnecessary re-renders that could cause unmounting
+  const stateStable = useRef(false);
+  const authListenerSet = useRef(false);
 
   console.log('🔴 useAuthState: HOOK INITIALIZED');
   console.log('🔴 useAuthState: Current state at init:', {
@@ -14,11 +18,19 @@ export const useAuthState = () => {
     hasSession: !!session,
     loading,
     userEmail: user?.email,
+    stateStable: stateStable.current,
     timestamp: new Date().toISOString()
   });
 
   useEffect(() => {
     console.log('🔴 useAuthState: USEEFFECT STARTING - this should only show once on mount');
+    console.log('🔴 useAuthState: Auth listener already set?', authListenerSet.current);
+    
+    // Prevent multiple listeners
+    if (authListenerSet.current) {
+      console.log('🔴 useAuthState: Auth listener already exists, skipping setup');
+      return;
+    }
     
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -36,19 +48,33 @@ export const useAuthState = () => {
         });
         
         console.log('🔴 useAuthState: About to update state - CRITICAL POINT');
-        
-        // CRITICAL: Use React.startTransition to prevent unmounting during state updates
-        // This ensures the component tree stays stable during auth changes
-        React.startTransition(() => {
-          setSession(session);
-          setUser(session?.user ?? null);
-          setLoading(false);
+        console.log('🔴 useAuthState: Previous state before update:', {
+          hadUser: !!user,
+          hadSession: !!session,
+          wasLoading: loading
         });
         
+        // Use a more stable state update approach
+        const newUser = session?.user ?? null;
+        const newSession = session;
+        const newLoading = false;
+        
+        console.log('🔴 useAuthState: 🚨 SETTING NEW STATE VALUES 🚨');
+        console.log('🔴 useAuthState: New user:', !!newUser, newUser?.email);
+        console.log('🔴 useAuthState: New session:', !!newSession);
+        console.log('🔴 useAuthState: New loading:', newLoading);
+        
+        // Update state synchronously without transitions to prevent unmounting
+        setSession(newSession);
+        setUser(newUser);
+        setLoading(newLoading);
+        stateStable.current = true;
+        
         console.log('🔴 useAuthState: State updated. New values:', {
-          userSet: !!session?.user,
-          sessionSet: !!session,
-          loading: false,
+          userSet: !!newUser,
+          sessionSet: !!newSession,
+          loading: newLoading,
+          stateStable: stateStable.current,
           timestamp: new Date().toISOString()
         });
 
@@ -56,6 +82,7 @@ export const useAuthState = () => {
       }
     );
 
+    authListenerSet.current = true;
     console.log('🔴 useAuthState: Auth listener set up, now getting initial session...');
 
     // THEN get initial session
@@ -81,17 +108,17 @@ export const useAuthState = () => {
         
         console.log('🔴 useAuthState: About to set initial state...');
         
-        // Update state with initial session - use transition here too
-        React.startTransition(() => {
-          setSession(session);
-          setUser(session?.user ?? null);
-          setLoading(false);
-        });
+        // Update state with initial session
+        setSession(session);
+        setUser(session?.user ?? null);
+        setLoading(false);
+        stateStable.current = true;
         
         console.log('🔴 useAuthState: Initial state set:', {
           user: !!session?.user, 
           session: !!session,
           loading: false,
+          stateStable: stateStable.current,
           timestamp: new Date().toISOString()
         });
         
@@ -100,6 +127,7 @@ export const useAuthState = () => {
         setSession(null);
         setUser(null);
         setLoading(false);
+        stateStable.current = true;
       }
     };
 
@@ -110,9 +138,19 @@ export const useAuthState = () => {
 
     return () => {
       console.log('🔴 useAuthState: CLEANUP - Unsubscribing auth listener');
+      authListenerSet.current = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, []); // Empty dependency array to ensure this only runs once
+
+  console.log('🔴 useAuthState: Hook returning values:', {
+    hasUser: !!user,
+    hasSession: !!session,
+    loading,
+    stateStable: stateStable.current,
+    userEmail: user?.email,
+    timestamp: new Date().toISOString()
+  });
 
   return { user, session, loading };
 };

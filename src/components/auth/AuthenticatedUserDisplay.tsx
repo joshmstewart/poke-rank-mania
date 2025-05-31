@@ -14,54 +14,65 @@ export const AuthenticatedUserDisplay: React.FC = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
 
-  console.log('🔵 AuthenticatedUserDisplay: COMPONENT IS RENDERING');
-  console.log('🔵 AuthenticatedUserDisplay: Auth state:', {
+  console.log('🔵🔵🔵 AuthenticatedUserDisplay: ===== COMPONENT RENDER START =====');
+  console.log('🔵🔵🔵 AuthenticatedUserDisplay: Auth state received:', {
     hasUser: !!user,
     hasSession: !!session,
-    userEmail: user?.email,
-    userId: user?.id,
-    sessionUserEmail: session?.user?.email,
-    sessionUserId: session?.user?.id,
+    userEmail: user?.email || 'no email',
+    userId: user?.id || 'no id',
+    sessionUserEmail: session?.user?.email || 'no session email',
+    sessionUserId: session?.user?.id || 'no session id',
     timestamp: new Date().toISOString()
   });
 
   // Get the current user from either user or session
   const currentUser = user || session?.user;
   
+  console.log('🔵🔵🔵 AuthenticatedUserDisplay: CurrentUser determination:', {
+    currentUser: !!currentUser,
+    fromUser: !!user,
+    fromSession: !!session?.user,
+    currentUserEmail: currentUser?.email || 'no email',
+    currentUserId: currentUser?.id || 'no id'
+  });
+  
   // Set display values with proper fallbacks - NEVER let these be undefined
   const displayEmail = currentUser?.email || 'Loading...';
   const displayName = profile?.display_name || profile?.username || currentUser?.email?.split('@')[0] || 'Loading...';
   const avatarUrl = profile?.avatar_url;
 
-  console.log('🔵 AuthenticatedUserDisplay: Display values:', {
-    currentUser: !!currentUser,
+  console.log('🔵🔵🔵 AuthenticatedUserDisplay: Display values computed:', {
     displayName,
     displayEmail,
-    avatarUrl,
-    userFromAuth: user?.email,
-    userFromSession: session?.user?.email
+    avatarUrl: avatarUrl || 'no avatar',
+    profilePresent: !!profile,
+    timestamp: new Date().toISOString()
   });
 
   useEffect(() => {
+    console.log('🔵🔵🔵 AuthenticatedUserDisplay: UseEffect triggered for profile loading');
     // Load profile if we have either user or session
     if (currentUser?.id) {
+      console.log('🔵🔵🔵 AuthenticatedUserDisplay: Loading profile for user ID:', currentUser.id);
       loadProfile(currentUser.id);
+    } else {
+      console.log('🔵🔵🔵 AuthenticatedUserDisplay: No user ID available for profile loading');
     }
   }, [user, session]);
 
   const loadProfile = async (userId: string) => {
-    console.log('🔵 AuthenticatedUserDisplay: Loading profile for user:', userId);
+    console.log('🔵🔵🔵 AuthenticatedUserDisplay: Loading profile for user:', userId);
     try {
       const profileData = await getProfile(userId);
       setProfile(profileData);
-      console.log('🔵 AuthenticatedUserDisplay: Profile loaded:', profileData);
+      console.log('🔵🔵🔵 AuthenticatedUserDisplay: Profile loaded successfully:', profileData);
     } catch (error) {
-      console.error('🔵 AuthenticatedUserDisplay: Error loading profile:', error);
+      console.error('🔵🔵🔵 AuthenticatedUserDisplay: Error loading profile:', error);
     }
   };
 
   const handleSignOut = async () => {
-    console.log('🔵 AuthenticatedUserDisplay: Signing out...');
+    console.log('🔵🔵🔵 AuthenticatedUserDisplay: Signing out...');
     await signOut();
     toast({
       title: 'Signed out',
@@ -76,10 +87,15 @@ export const AuthenticatedUserDisplay: React.FC = () => {
     }
   };
 
-  console.log('🔵 AuthenticatedUserDisplay: ABOUT TO RENDER JSX - this should ALWAYS appear when component is called');
+  console.log('🔵🔵🔵 AuthenticatedUserDisplay: 🟢 ALWAYS RENDERING COMPONENT STRUCTURE 🟢');
+  console.log('🔵🔵🔵 AuthenticatedUserDisplay: About to render JSX with values:', {
+    displayName,
+    displayEmail,
+    hasAvatar: !!avatarUrl
+  });
 
-  // CRITICAL CHANGE: Always render the component structure when called by authenticated parent
-  // No early returns that could cause the component to disappear
+  // CRITICAL: Always render the component structure when called by authenticated parent
+  // Never return null - this component should only be called when user is authenticated
   return (
     <div className="bg-red-500 border-4 border-yellow-400 p-2">
       <div className="text-white font-bold">🔥 AUTHENTICATED USER DISPLAY 🔥</div>
