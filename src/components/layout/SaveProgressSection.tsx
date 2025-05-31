@@ -31,7 +31,8 @@ const SaveProgressSection: React.FC = () => {
     console.log('SaveProgressSection: About to render AuthenticatedUserDisplay component');
     console.log('SaveProgressSection: DEFINITELY returning AuthenticatedUserDisplay, NOT CloudSyncButton');
     return (
-      <div className="save-progress-authenticated">
+      <div className="save-progress-authenticated" style={{ border: '2px solid blue', padding: '4px' }}>
+        <div style={{ fontSize: '12px', color: 'blue' }}>AUTHENTICATED SECTION</div>
         <AuthenticatedUserDisplay />
       </div>
     );
@@ -40,7 +41,8 @@ const SaveProgressSection: React.FC = () => {
   console.log('SaveProgressSection: no user found, rendering cloud sync button');
   console.log('SaveProgressSection: DEFINITELY returning CloudSyncButton, NOT AuthenticatedUserDisplay');
   return (
-    <div className="save-progress-unauthenticated">
+    <div className="save-progress-unauthenticated" style={{ border: '2px solid red', padding: '4px' }}>
+      <div style={{ fontSize: '12px', color: 'red' }}>UNAUTHENTICATED SECTION</div>
       <CloudSyncButton />
     </div>
   );

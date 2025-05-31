@@ -64,7 +64,8 @@ export const AuthenticatedUserDisplay: React.FC = () => {
   console.log('🔍 AuthenticatedUserDisplay: THIS SHOULD SHOW USER DROPDOWN, NOT SYNCED BUTTON');
 
   return (
-    <>
+    <div style={{ border: '3px solid green', padding: '8px', backgroundColor: 'lightgreen' }}>
+      <div style={{ fontSize: '10px', color: 'darkgreen' }}>AUTHENTICATED USER DISPLAY</div>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="h-auto p-2" style={{ backgroundColor: 'red', color: 'white' }}>
@@ -98,6 +99,6 @@ export const AuthenticatedUserDisplay: React.FC = () => {
         open={profileModalOpen} 
         onOpenChange={handleProfileModalClose}
       />
-    </>
+    </div>
   );
 };
