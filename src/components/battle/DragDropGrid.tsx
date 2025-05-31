@@ -15,6 +15,7 @@ interface DragDropGridProps {
   onManualReorder: (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => void;
   onLocalReorder: (newRankings: (Pokemon | RankedPokemon)[]) => void;
   onMarkAsPending: (pokemonId: number) => void;
+  availablePokemon?: any[]; // Add this to get available Pokemon for collision detection
 }
 
 const DragDropGrid: React.FC<DragDropGridProps> = ({
@@ -23,7 +24,8 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
   pendingBattleCounts,
   onManualReorder,
   onLocalReorder,
-  onMarkAsPending
+  onMarkAsPending,
+  availablePokemon = []
 }) => {
   console.log(`🔍 [GRID_DEBUG] DragDropGrid render with ${displayRankings.length} Pokemon`);
 
@@ -36,15 +38,16 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
     }
   });
 
-  // CRITICAL FIX: Include both ranked Pokemon IDs AND placeholder IDs for collision detection
-  // This allows collision detection to work when dragging available Pokemon over ranked ones
+  // CRITICAL FIX: Include ranked Pokemon IDs AND available Pokemon IDs for proper collision detection
   const sortableItems = [
-    ...displayRankings.map(p => p.id),
-    // Add placeholder items for collision detection with available Pokemon
+    ...displayRankings.map(p => p.id), // Ranked Pokemon IDs (numbers)
+    ...availablePokemon.map(p => `available-${p.id}`), // Available Pokemon IDs (available-X format)
+    // Add placeholder items for additional collision detection
     ...Array.from({length: 10}, (_, i) => `collision-placeholder-${i}`)
   ];
 
   console.log(`🔍 [GRID_DEBUG] Sortable items:`, sortableItems.slice(0, 5), '...');
+  console.log(`🔍 [GRID_DEBUG] Available Pokemon count for collision: ${availablePokemon.length}`);
 
   return (
     <div 

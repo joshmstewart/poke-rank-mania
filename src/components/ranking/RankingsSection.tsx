@@ -9,17 +9,19 @@ interface RankingsSectionProps {
   onManualReorder?: (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => void;
   onLocalReorder?: (newRankings: (Pokemon | RankedPokemon)[]) => void;
   pendingRefinements?: Set<number>;
+  availablePokemon?: any[]; // Add this prop to pass available Pokemon
 }
 
 export const RankingsSection: React.FC<RankingsSectionProps> = ({
   displayRankings,
   onManualReorder,
   onLocalReorder,
-  pendingRefinements = new Set()
+  pendingRefinements = new Set(),
+  availablePokemon = []
 }) => {
   console.log(`🚨🚨🚨 [RANKINGS_SECTION_ULTRA_CRITICAL] ===== RENDERING RANKINGS SECTION =====`);
   console.log(`🚨🚨🚨 [RANKINGS_SECTION_ULTRA_CRITICAL] Display rankings count: ${displayRankings.length}`);
-  console.log(`🚨🚨🚨 [RANKINGS_SECTION_ULTRA_CRITICAL] Display rankings IDs:`, displayRankings.map(p => p.id).join(', '));
+  console.log(`🚨🚨🚨 [RANKINGS_SECTION_ULTRA_CRITICAL] Available Pokemon for collision: ${availablePokemon.length}`);
   
   const { setNodeRef, isOver } = useDroppable({
     id: 'rankings-drop-zone',
@@ -53,7 +55,7 @@ export const RankingsSection: React.FC<RankingsSectionProps> = ({
         </div>
       </div>
       
-      {/* Rankings Grid - Set up as drop zone with visual feedback, same 5-column layout */}
+      {/* Rankings Grid - Set up as drop zone with visual feedback */}
       <div 
         className={`flex-1 overflow-y-auto p-4 transition-colors ${
           isOver ? 'bg-yellow-50 border-2 border-dashed border-yellow-400' : ''
@@ -78,6 +80,7 @@ export const RankingsSection: React.FC<RankingsSectionProps> = ({
             onManualReorder={onManualReorder || (() => {})}
             onLocalReorder={handleLocalReorderWrapper}
             onMarkAsPending={handleMarkAsPending}
+            availablePokemon={availablePokemon}
           />
         )}
       </div>

@@ -143,6 +143,7 @@ export const RankingLayout: React.FC<RankingLayoutProps> = ({
                 onManualReorder={handleManualReorder}
                 onLocalReorder={handleLocalReorder}
                 pendingRefinements={new Set()}
+                availablePokemon={filteredAvailablePokemon}
               />
             </div>
           </div>
