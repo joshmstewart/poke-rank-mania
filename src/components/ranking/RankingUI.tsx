@@ -52,17 +52,19 @@ export const RankingUI: React.FC<RankingUIProps> = ({
     : battleModeRankings.length > 0 ? battleModeRankings 
     : rankedPokemon;
   
-  // Filter available Pokemon to exclude those already in rankings
-  const rankedPokemonIds = new Set(displayRankings.map(p => p.id));
+  // FIXED: Filter available Pokemon to exclude those in the ACTUAL rankedPokemon state array
+  // This ensures that manually dragged Pokemon are properly filtered out
+  const rankedPokemonIds = new Set(rankedPokemon.map(p => p.id));
   const filteredAvailablePokemon = availablePokemon.filter(p => !rankedPokemonIds.has(p.id));
   
   console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] localRankings: ${localRankings.length}, battleModeRankings: ${battleModeRankings.length}, rankedPokemon: ${rankedPokemon.length}`);
   console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] displayRankings length: ${displayRankings.length}`);
   console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] filteredAvailablePokemon length: ${filteredAvailablePokemon.length}`);
+  console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] rankedPokemonIds:`, Array.from(rankedPokemonIds));
 
-  // Use the actual state arrays for drag and drop, not the filtered/display arrays
+  // Use the actual state arrays for drag and drop
   const { handleDragEnd } = useDragHandler(
-    availablePokemon,
+    filteredAvailablePokemon, // Use the filtered array for consistency
     rankedPokemon,
     setAvailablePokemon,
     setRankedPokemon
@@ -99,7 +101,7 @@ export const RankingUI: React.FC<RankingUIProps> = ({
               />
             </div>
             
-            {/* Right side - Rankings (TrueSkill ordered) with enhanced styling */}
+            {/* Right side - Rankings with enhanced styling */}
             <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden flex flex-col">
               <RankingsSection displayRankings={displayRankings} />
             </div>

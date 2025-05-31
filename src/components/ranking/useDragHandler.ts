@@ -62,8 +62,16 @@ export const useDragHandler = (
         console.log("🔄 New available count:", sourceItems.length);
         console.log("🔄 New ranked count:", destItems.length);
         
+        // CRITICAL: Update both states to ensure consistency
         setAvailablePokemon(sourceItems);
         setRankedPokemon(destItems);
+        
+        // Also need to update the main available list to remove the Pokemon permanently
+        // This ensures it doesn't reappear when the component re-renders
+        setAvailablePokemon(prevAvailable => 
+          prevAvailable.filter(p => p.id !== movedItem.id)
+        );
+        
       } else if (source.droppableId === "ranked" && destination.droppableId === "available") {
         // Moving from ranked to available
         const sourceItems = Array.from(rankedPokemon);
@@ -78,6 +86,16 @@ export const useDragHandler = (
         
         setRankedPokemon(sourceItems);
         setAvailablePokemon(destItems);
+        
+        // Also need to add it back to the main available list
+        setAvailablePokemon(prevAvailable => {
+          // Only add if it's not already there
+          const exists = prevAvailable.some(p => p.id === movedItem.id);
+          if (!exists) {
+            return [...prevAvailable, movedItem];
+          }
+          return prevAvailable;
+        });
       }
     }
   };
