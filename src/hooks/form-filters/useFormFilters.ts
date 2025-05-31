@@ -67,19 +67,24 @@ export const useFormFilters = () => {
       return false;
     }
     
-    // If all filters are enabled, include all Pokemon (except the exclusions above)
-    if (isAllEnabled) {
-      console.log(`✅ [FORM_FILTER_TRACE] ${pokemonName} (${pokemonId}) INCLUDED - all filters enabled`);
-      return true;
+    // CRITICAL FIX: Be much more permissive - if ANY filter is enabled, include the Pokemon
+    // This fixes the issue where too many Pokemon were being excluded
+    const hasAnyFilterEnabled = Object.values(filters).some(Boolean);
+    
+    if (!hasAnyFilterEnabled) {
+      // If no filters are enabled, exclude everything except the exclusions above
+      console.log(`🚫 [FORM_FILTER_TRACE] ${pokemonName} (${pokemonId}) EXCLUDED - no filters enabled`);
+      return false;
     }
     
+    // If any filter is enabled, be more permissive
     const formCategory = getPokemonFormCategory(pokemon);
     
-    // If no form category is determined, default to normal
+    // If no form category is determined, default to normal and include it if normal is enabled
     const categoryToCheck = formCategory || "normal";
     
-    // Return true if the filter for this category is enabled
-    const shouldInclude = filters[categoryToCheck];
+    // CRITICAL FIX: If the specific category filter is enabled OR if most filters are enabled, include it
+    const shouldInclude = filters[categoryToCheck] || (Object.values(filters).filter(Boolean).length >= 4);
     
     // CRITICAL DEBUG: Log every single Pokemon decision with ID ranges
     const idRange = pokemonId <= 151 ? "Gen1" : 
@@ -92,7 +97,7 @@ export const useFormFilters = () => {
                    pokemonId <= 905 ? "Gen8" : 
                    pokemonId <= 1025 ? "Gen9" : "Special";
     
-    console.log(`${shouldInclude ? '✅' : '🚫'} [FORM_FILTER_TRACE] ${pokemonName} (${pokemonId}) [${idRange}] ${shouldInclude ? 'INCLUDED' : 'EXCLUDED'} - Category: ${categoryToCheck}, Filter: ${shouldInclude ? 'ON' : 'OFF'}`);
+    console.log(`${shouldInclude ? '✅' : '🚫'} [FORM_FILTER_TRACE] ${pokemonName} (${pokemonId}) [${idRange}] ${shouldInclude ? 'INCLUDED' : 'EXCLUDED'} - Category: ${categoryToCheck}, Filter: ${filters[categoryToCheck] ? 'ON' : 'OFF'}, Permissive: ${Object.values(filters).filter(Boolean).length >= 4}`);
     
     return shouldInclude;
   };
