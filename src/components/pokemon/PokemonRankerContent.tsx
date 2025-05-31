@@ -25,6 +25,8 @@ interface PokemonRankerContentProps {
   suggestRanking: (pokemon: RankedPokemon, direction: "up" | "down", strength: 1 | 2 | 3) => void;
   removeSuggestion: (pokemonId: number) => void;
   clearAllSuggestions: () => void;
+  onGenerationChange: (gen: number) => void;
+  onReset: () => void;
 }
 
 export const PokemonRankerContent: React.FC<PokemonRankerContentProps> = ({
@@ -46,7 +48,9 @@ export const PokemonRankerContent: React.FC<PokemonRankerContentProps> = ({
   getPageRange,
   suggestRanking,
   removeSuggestion,
-  clearAllSuggestions
+  clearAllSuggestions,
+  onGenerationChange,
+  onReset
 }) => {
   if (showRankings) {
     return (
@@ -75,6 +79,8 @@ export const PokemonRankerContent: React.FC<PokemonRankerContentProps> = ({
       setRankedPokemon={setRankedPokemon}
       handlePageChange={handlePageChange}
       getPageRange={getPageRange}
+      onGenerationChange={onGenerationChange}
+      onReset={onReset}
     />
   );
 };

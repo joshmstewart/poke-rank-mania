@@ -21,10 +21,7 @@ export default function PokemonRanker() {
     handlePageChange,
     getPageRange,
     resetRankings
-  } = usePokemonRanker({
-    selectedGeneration,
-    onGenerationChange: setSelectedGeneration
-  });
+  } = usePokemonRanker();
 
   const handleGenerationChange = (gen: number) => {
     console.log(`🔍 [POKEMON_RANKER] Generation changing from ${selectedGeneration} to ${gen}`);
