@@ -40,37 +40,18 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
         const isRankedPokemon = 'score' in pokemon;
         const isImageLoaded = loadedImages.has(pokemon.id);
         
-        // Use the same background color logic as available cards
+        // Use the exact same background color logic as available cards
         const backgroundColor = getPokemonBackgroundColor(pokemon);
-
-        const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
-
-        const handleInfoClick = (e: React.MouseEvent) => {
-          e.stopPropagation();
-          e.preventDefault();
-          console.log(`🔍 [RANKING_INFO_CLICK] Info button clicked for ${pokemon.name}`);
-          setIsInfoModalOpen(true);
-        };
-
-        const handleModalOpenChange = (open: boolean) => {
-          console.log(`🔍 [RANKING_MODAL_CHANGE] Modal ${open ? 'opened' : 'closed'} for ${pokemon.name}`);
-          setIsInfoModalOpen(open);
-        };
 
         console.log(`🎨 [RANKING_CARD_RENDER] ${pokemon.name}: backgroundColor=${backgroundColor}, types=${JSON.stringify(pokemon.types)}`);
 
         return (
           <div key={pokemon.id} className="relative group">
-            {/* Info button - Same as available cards */}
+            {/* Info button - IDENTICAL to available cards */}
             <div className="absolute top-1 right-1 z-50">
-              <PokemonInfoModal 
-                pokemon={pokemon}
-                open={isInfoModalOpen}
-                onOpenChange={handleModalOpenChange}
-              >
+              <PokemonInfoModal pokemon={pokemon}>
                 <button 
                   className="w-6 h-6 rounded-full bg-white hover:bg-gray-50 border border-gray-300 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-bold shadow-lg transition-all duration-200"
-                  onClick={handleInfoClick}
                   onPointerDown={(e) => e.stopPropagation()}
                   type="button"
                 >
@@ -88,14 +69,14 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
               />
             )}
 
-            {/* Card - Same styling as available cards with type-colored background */}
+            {/* Card - IDENTICAL to available cards */}
             <div className={`${backgroundColor} rounded-lg border-2 border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow`}>
-              {/* Rank number - yellow instead of blue */}
+              {/* Rank number - yellow header */}
               <div className="bg-gradient-to-r from-yellow-400 to-yellow-600 text-white text-center py-1">
                 <span className="text-sm font-bold">#{index + 1}</span>
               </div>
 
-              {/* Pokemon image - Same as available cards */}
+              {/* Pokemon image - IDENTICAL to available cards */}
               <div className="aspect-square bg-gray-50/50 p-2 relative">
                 {!isImageLoaded && (
                   <div className="absolute inset-0 flex items-center justify-center">
@@ -112,8 +93,8 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
                 />
               </div>
 
-              {/* Pokemon info - Same as available cards */}
-              <div className="p-2 space-y-1">
+              {/* Pokemon info - IDENTICAL to available cards with WHITE background */}
+              <div className="p-2 space-y-1 bg-white">
                 <h3 className="text-sm font-semibold text-center line-clamp-2 min-h-[2.5rem] flex items-center justify-center">
                   {pokemon.name}
                 </h3>

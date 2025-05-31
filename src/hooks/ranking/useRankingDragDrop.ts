@@ -14,8 +14,8 @@ export const useRankingDragDrop = (
   const { updateRating } = useTrueSkillStore();
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
-    console.log(`🔥 [DRAG_START] ===== DRAG START =====`);
-    console.log(`🔥 [DRAG_START] Active ID: ${event.active.id}`);
+    console.log(`🚀🚀🚀 [DRAG_START_CRITICAL] ===== DRAG START =====`);
+    console.log(`🚀🚀🚀 [DRAG_START_CRITICAL] Active ID: ${event.active.id}`);
 
     const activeId = event.active.id.toString();
     let draggedPokemon = null;
@@ -23,27 +23,27 @@ export const useRankingDragDrop = (
     if (activeId.startsWith('available-')) {
       const pokemonId = parseInt(activeId.replace('available-', ''));
       draggedPokemon = availablePokemon.find(p => p.id === pokemonId);
-      console.log(`🔥 [DRAG_START] Dragging available: ${draggedPokemon?.name} (ID: ${pokemonId})`);
+      console.log(`🚀🚀🚀 [DRAG_START_CRITICAL] Dragging available: ${draggedPokemon?.name} (ID: ${pokemonId})`);
     } else {
       const pokemonId = parseInt(activeId);
       draggedPokemon = localRankings.find(p => p.id === pokemonId);
-      console.log(`🔥 [DRAG_START] Dragging ranked: ${draggedPokemon?.name} (ID: ${pokemonId})`);
+      console.log(`🚀🚀🚀 [DRAG_START_CRITICAL] Dragging ranked: ${draggedPokemon?.name} (ID: ${pokemonId})`);
     }
     
     setActiveDraggedPokemon(draggedPokemon);
   }, [availablePokemon, localRankings]);
 
   const handleDragEnd = useCallback((event: DragEndEvent) => {
-    console.log(`🔥 [DRAG_END] ===== DRAG END =====`);
-    console.log(`🔥 [DRAG_END] Active: ${event.active.id}, Over: ${event.over?.id || 'NULL'}`);
-    console.log(`🔥 [DRAG_END] Over data:`, event.over?.data?.current);
+    console.log(`🚀🚀🚀 [DRAG_END_CRITICAL] ===== DRAG END =====`);
+    console.log(`🚀🚀🚀 [DRAG_END_CRITICAL] Active: ${event.active.id}, Over: ${event.over?.id || 'NULL'}`);
+    console.log(`🚀🚀🚀 [DRAG_END_CRITICAL] Over data:`, event.over?.data?.current);
     
     setActiveDraggedPokemon(null);
     
     const { active, over } = event;
     
     if (!over) {
-      console.log(`🔥 [DRAG_END] ❌ No drop target`);
+      console.log(`🚀🚀🚀 [DRAG_END_CRITICAL] ❌ No drop target`);
       return;
     }
 
@@ -53,61 +53,67 @@ export const useRankingDragDrop = (
     // Handle drag from available to rankings
     if (activeId.startsWith('available-')) {
       const pokemonId = parseInt(activeId.replace('available-', ''));
-      console.log(`🔥 [DRAG_END] Available Pokemon ${pokemonId} dragged to ${overId}`);
+      console.log(`🚀🚀🚀 [DRAG_END_CRITICAL] Available Pokemon ${pokemonId} dragged to ${overId}`);
       
-      // CRITICAL: Enhanced drop zone detection
-      const isRankingsDropZone = (
+      // SUPER CRITICAL: More comprehensive drop zone detection
+      const isValidRankingsTarget = (
         overId === 'rankings-drop-zone' || 
         overId === 'rankings-section' ||
         overId.startsWith('rankings') ||
-        // Check if over data indicates it's a rankings target
+        // Check over data for rankings container
         (over.data?.current?.type === 'rankings-container') ||
         (over.data?.current?.accepts === 'available-pokemon') ||
-        // Also check if dropped on any ranked pokemon
-        (!overId.startsWith('available-') && !isNaN(parseInt(overId)) && localRankings.some(p => p.id === parseInt(overId)))
+        // Check if dropped on any ranked pokemon (reorder case)
+        (!overId.startsWith('available-') && 
+         !isNaN(parseInt(overId)) && 
+         localRankings.some(p => p.id === parseInt(overId))) ||
+        // Also accept if no specific data but over element has rankings in class/id
+        (!over.data?.current && overId.includes('ranking'))
       );
       
-      console.log(`🔥 [DRAG_END] Drop zone analysis:`);
-      console.log(`🔥 [DRAG_END] - overId: ${overId}`);
-      console.log(`🔥 [DRAG_END] - over.data.current:`, over.data?.current);
-      console.log(`🔥 [DRAG_END] - isRankingsDropZone: ${isRankingsDropZone}`);
-      console.log(`🔥 [DRAG_END] - localRankings count: ${localRankings.length}`);
+      console.log(`🚀🚀🚀 [DRAG_END_CRITICAL] Drop zone validation:`);
+      console.log(`🚀🚀🚀 [DRAG_END_CRITICAL] - overId: ${overId}`);
+      console.log(`🚀🚀🚀 [DRAG_END_CRITICAL] - over.data.current:`, over.data?.current);
+      console.log(`🚀🚀🚀 [DRAG_END_CRITICAL] - isValidRankingsTarget: ${isValidRankingsTarget}`);
+      console.log(`🚀🚀🚀 [DRAG_END_CRITICAL] - localRankings count: ${localRankings.length}`);
+      console.log(`🚀🚀🚀 [DRAG_END_CRITICAL] - available count: ${availablePokemon.length}`);
       
-      if (isRankingsDropZone) {
-        console.log(`🔥 [DRAG_END] ✅ Valid rankings drop zone - adding Pokemon ${pokemonId}`);
+      if (isValidRankingsTarget) {
+        console.log(`🚀🚀🚀 [DRAG_END_CRITICAL] ✅ VALID DROP - Adding Pokemon ${pokemonId} to rankings`);
         
         const pokemon = availablePokemon.find(p => p.id === pokemonId);
         if (pokemon) {
-          console.log(`🔥 [DRAG_END] ✅ Found pokemon:`, pokemon.name);
+          console.log(`🚀🚀🚀 [DRAG_END_CRITICAL] ✅ Found pokemon:`, pokemon.name);
           
-          // Add to TrueSkill store with default rating
+          // CRITICAL: Add to TrueSkill store with default rating
           const defaultRating = new Rating(25.0, 8.333);
           updateRating(pokemonId, defaultRating);
-          console.log(`🔥 [DRAG_END] ✅ Added rating to TrueSkill store for ${pokemonId}`);
+          console.log(`🚀🚀🚀 [DRAG_END_CRITICAL] ✅ Added rating to TrueSkill store for ${pokemonId}`);
           
-          // Remove from available
+          // CRITICAL: Remove from available list IMMEDIATELY
           setAvailablePokemon(prev => {
             const newAvailable = prev.filter(p => p.id !== pokemonId);
-            console.log(`🔥 [DRAG_END] ✅ Removed from available. New count: ${newAvailable.length}`);
+            console.log(`🚀🚀🚀 [DRAG_END_CRITICAL] ✅ Removed from available. Count: ${prev.length} -> ${newAvailable.length}`);
             return newAvailable;
           });
           
-          // Trigger sync to update rankings
+          // CRITICAL: Trigger immediate sync to update rankings
           setTimeout(() => {
             const event = new CustomEvent('trueskill-store-updated', {
-              detail: { pokemonId, source: 'drag-to-rankings' }
+              detail: { pokemonId, source: 'drag-to-rankings', action: 'add' }
             });
             document.dispatchEvent(event);
-            console.log(`🔥 [DRAG_END] ✅ Dispatched trueskill-store-updated event`);
-          }, 100);
+            console.log(`🚀🚀🚀 [DRAG_END_CRITICAL] ✅ Dispatched trueskill-store-updated event`);
+          }, 50);
+          
+          return; // CRITICAL: Exit early after successful add
         } else {
-          console.error(`🔥 [DRAG_END] ❌ Pokemon ${pokemonId} not found in available list!`);
+          console.error(`🚀🚀🚀 [DRAG_END_CRITICAL] ❌ Pokemon ${pokemonId} not found in available list!`);
         }
-        return;
       } else {
-        console.log(`🔥 [DRAG_END] ❌ Not a valid rankings target - ignoring drop`);
-        console.log(`🔥 [DRAG_END] ❌ Available drop zones: rankings-drop-zone, rankings-section, or ranked pokemon IDs`);
+        console.log(`🚀🚀🚀 [DRAG_END_CRITICAL] ❌ Invalid drop target - ignoring`);
       }
+      return;
     }
 
     // Handle reordering within rankings
@@ -119,7 +125,7 @@ export const useRankingDragDrop = (
       const newIndex = localRankings.findIndex(p => p.id === overPokemonId);
       
       if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-        console.log(`🔥 [DRAG_END] ✅ Reordering from ${oldIndex} to ${newIndex}`);
+        console.log(`🚀🚀🚀 [DRAG_END_CRITICAL] ✅ Reordering from ${oldIndex} to ${newIndex}`);
         handleEnhancedManualReorder(activePokemonId, oldIndex, newIndex);
       }
     }
@@ -130,7 +136,7 @@ export const useRankingDragDrop = (
     sourceIndex: number,
     destinationIndex: number
   ) => {
-    console.log(`🔥 [MANUAL_REORDER] Pokemon ${draggedPokemonId} moved from ${sourceIndex} to ${destinationIndex}`);
+    console.log(`🚀🚀🚀 [MANUAL_REORDER_CRITICAL] Pokemon ${draggedPokemonId} moved from ${sourceIndex} to ${destinationIndex}`);
     handleEnhancedManualReorder(draggedPokemonId, sourceIndex, destinationIndex);
   }, [handleEnhancedManualReorder]);
 
