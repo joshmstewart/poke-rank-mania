@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { DndContext, DragEndEvent, DragStartEvent, closestCenter } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
@@ -142,25 +143,30 @@ export const RankingUI: React.FC<RankingUIProps> = ({
       return;
     }
 
+    const activeId = active.id.toString();
+    const overId = over.id.toString();
+
+    console.log(`🔄 [RANKING_UI] Active ID: ${activeId}, Over ID: ${overId}`);
+
     // Check if dragging from available to rankings
-    if (active.id.toString().startsWith('available-') && over.id === 'rankings-drop-zone') {
-      const pokemonId = parseInt(active.id.toString().replace('available-', ''));
+    if (activeId.startsWith('available-') && overId === 'rankings-drop-zone') {
+      const pokemonId = parseInt(activeId.replace('available-', ''));
       console.log(`🔄 [RANKING_UI] Dragging Pokemon ${pokemonId} from available to rankings`);
       handleDragToRankings(pokemonId);
       return;
     }
 
-    // Handle reordering within rankings
-    if (!active.id.toString().startsWith('available-') && !over.id.toString().startsWith('available-')) {
-      const activeId = Number(active.id);
-      const overId = Number(over.id);
+    // Handle reordering within rankings (both IDs should be numeric for ranked Pokemon)
+    if (!activeId.startsWith('available-') && !overId.startsWith('available-') && overId !== 'rankings-drop-zone') {
+      const activePokemonId = Number(activeId);
+      const overPokemonId = Number(overId);
       
       // Find the indices of the dragged and target Pokemon
-      const oldIndex = displayRankings.findIndex(p => p.id === activeId);
-      const newIndex = displayRankings.findIndex(p => p.id === overId);
+      const oldIndex = displayRankings.findIndex(p => p.id === activePokemonId);
+      const newIndex = displayRankings.findIndex(p => p.id === overPokemonId);
       
       if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-        console.log(`🔄 [RANKING_UI] Reordering within rankings: ${activeId} from ${oldIndex} to ${newIndex}`);
+        console.log(`🔄 [RANKING_UI] Reordering within rankings: ${activePokemonId} from ${oldIndex} to ${newIndex}`);
         
         // Use arrayMove for proper reordering
         const newRankings = arrayMove(displayRankings, oldIndex, newIndex);

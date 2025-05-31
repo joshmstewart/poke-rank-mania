@@ -24,12 +24,6 @@ const PokemonCardContent: React.FC<PokemonCardContentProps> = ({
 
   console.log(`🔘 [CARD_CONTENT_DEBUG] Rendering ${pokemon.name} - ID: ${pokemon.id}, normalizedId: ${normalizedId}`);
 
-  const handleInfoClick = (e: React.MouseEvent) => {
-    console.log(`🔘 [INFO_BUTTON_DEBUG] Info button clicked for ${pokemon.name}`);
-    e.preventDefault();
-    e.stopPropagation();
-  };
-
   return (
     <>
       {/* Rank number - only show if showRank is true */}
@@ -46,9 +40,19 @@ const PokemonCardContent: React.FC<PokemonCardContentProps> = ({
           <PokemonInfoModal pokemon={pokemon}>
             <button 
               className="w-6 h-6 rounded-full bg-white/90 hover:bg-white border border-gray-300 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200"
-              onClick={handleInfoClick}
-              onPointerDown={(e) => e.stopPropagation()}
-              onMouseDown={(e) => e.stopPropagation()}
+              onPointerDown={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+              }}
+              onMouseDown={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                console.log(`🔘 [INFO_BUTTON_DEBUG] Info button clicked for ${pokemon.name}`);
+              }}
             >
               i
             </button>
