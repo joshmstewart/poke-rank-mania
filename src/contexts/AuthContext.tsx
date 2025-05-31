@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -24,7 +25,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     console.log('🔴 AuthProvider: INITIALIZING AUTH CONTEXT');
     
-    // Get initial session first
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('🔴 AuthProvider: Auth state change event:', {
+          event,
+          hasSession: !!session,
+          hasUser: !!session?.user,
+          userEmail: session?.user?.email,
+          userId: session?.user?.id,
+          sessionAccessToken: session?.access_token ? 'present' : 'missing',
+          sessionRefreshToken: session?.refresh_token ? 'present' : 'missing',
+          timestamp: new Date().toISOString()
+        });
+        
+        // Update state immediately and synchronously
+        setSession(session);
+        setUser(session?.user ?? null);
+        setLoading(false);
+        
+        console.log('🔴 AuthProvider: Updated state after auth change:', {
+          userSet: !!session?.user,
+          sessionSet: !!session,
+          loading: false,
+          timestamp: new Date().toISOString()
+        });
+      }
+    );
+
+    // THEN get initial session
     const getInitialSession = async () => {
       try {
         console.log('🔴 AuthProvider: Getting initial session...');
@@ -37,7 +66,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           userId: session?.user?.id,
           sessionAccessToken: session?.access_token ? 'present' : 'missing',
           sessionRefreshToken: session?.refresh_token ? 'present' : 'missing',
-          error: error?.message
+          error: error?.message,
+          timestamp: new Date().toISOString()
         });
         
         if (error) {
@@ -58,32 +88,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setLoading(false);
       }
     };
-
-    // Set up auth listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('🔴 AuthProvider: Auth state change event:', {
-          event,
-          hasSession: !!session,
-          hasUser: !!session?.user,
-          userEmail: session?.user?.email,
-          userId: session?.user?.id,
-          sessionAccessToken: session?.access_token ? 'present' : 'missing',
-          sessionRefreshToken: session?.refresh_token ? 'present' : 'missing'
-        });
-        
-        // Update state immediately
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
-        
-        console.log('🔴 AuthProvider: Updated state after auth change:', {
-          userSet: !!session?.user,
-          sessionSet: !!session,
-          loading: false
-        });
-      }
-    );
 
     // Get initial session
     getInitialSession();
@@ -113,16 +117,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
+    console.log('🔴 AuthProvider: Signing out...');
     await supabase.auth.signOut();
   };
 
   const signInWithGoogle = async () => {
+    console.log('🔴 AuthProvider: Starting Google sign in...');
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: window.location.origin
       }
     });
+    console.log('🔴 AuthProvider: Google sign in result:', { error: error?.message });
     return { error };
   };
 
@@ -159,8 +166,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     hasSession: !!session,
     loading,
     userEmail: user?.email,
-    userObject: user,
-    sessionObject: session
+    timestamp: new Date().toISOString()
   });
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -176,7 +182,8 @@ export const useAuth = () => {
     hasUser: !!context.user,
     hasSession: !!context.session,
     loading: context.loading,
-    userEmail: context.user?.email
+    userEmail: context.user?.email,
+    timestamp: new Date().toISOString()
   });
   
   return context;
