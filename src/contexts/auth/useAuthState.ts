@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -39,18 +39,11 @@ export const useAuthState = () => {
         
         // CRITICAL: Use React.startTransition to prevent unmounting during state updates
         // This ensures the component tree stays stable during auth changes
-        if (typeof React !== 'undefined' && React.startTransition) {
-          React.startTransition(() => {
-            setSession(session);
-            setUser(session?.user ?? null);
-            setLoading(false);
-          });
-        } else {
-          // Fallback for older React versions
+        React.startTransition(() => {
           setSession(session);
           setUser(session?.user ?? null);
           setLoading(false);
-        }
+        });
         
         console.log('🔴 useAuthState: State updated. New values:', {
           userSet: !!session?.user,
@@ -89,17 +82,11 @@ export const useAuthState = () => {
         console.log('🔴 useAuthState: About to set initial state...');
         
         // Update state with initial session - use transition here too
-        if (typeof React !== 'undefined' && React.startTransition) {
-          React.startTransition(() => {
-            setSession(session);
-            setUser(session?.user ?? null);
-            setLoading(false);
-          });
-        } else {
+        React.startTransition(() => {
           setSession(session);
           setUser(session?.user ?? null);
           setLoading(false);
-        }
+        });
         
         console.log('🔴 useAuthState: Initial state set:', {
           user: !!session?.user, 
