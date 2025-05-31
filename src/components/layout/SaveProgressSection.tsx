@@ -27,16 +27,17 @@ const SaveProgressSection: React.FC = () => {
     );
   }
 
-  // Check if we have a user OR a session (either should indicate authenticated state)
-  const currentUser = user || session?.user;
+  // Show authenticated display if we have EITHER user OR session with user
+  const isAuthenticated = !!user || !!session?.user;
   
-  console.log('🚨 SaveProgressSection: currentUser check:', {
-    currentUser: !!currentUser,
-    userEmail: currentUser?.email,
-    willShowAuthenticatedDisplay: !!currentUser
+  console.log('🚨 SaveProgressSection: Authentication check:', {
+    isAuthenticated,
+    hasUser: !!user,
+    hasSessionUser: !!session?.user,
+    willShowAuthenticatedDisplay: isAuthenticated
   });
   
-  if (currentUser) {
+  if (isAuthenticated) {
     console.log('🚨 SaveProgressSection: SHOWING AUTHENTICATED USER DISPLAY');
     return (
       <div className="flex items-center gap-4">
