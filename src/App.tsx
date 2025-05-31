@@ -8,6 +8,7 @@ import { Toaster } from "@/components/ui/toaster"
 import PokemonRankerWithProvider from "@/components/pokemon/PokemonRankerWithProvider";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ImpliedBattleTrackerProvider } from "@/contexts/ImpliedBattleTracker";
+import ImpliedBattleValidator from "@/components/battle/ImpliedBattleValidator";
 
 function App() {
   const [mode, setMode] = useLocalStorage<"rank" | "battle">("pokemon-ranker-mode", "battle");
@@ -29,6 +30,10 @@ function App() {
       <ImpliedBattleTrackerProvider>
         <div className="flex flex-col h-screen">
           <AppHeader mode={mode} onModeChange={handleModeChange} />
+          
+          {/* Always visible battle tracker at the top */}
+          <ImpliedBattleValidator />
+          
           <main className="flex-grow bg-gray-100 py-6 px-4">
             <div className="container max-w-7xl mx-auto">
               {renderContent()}
