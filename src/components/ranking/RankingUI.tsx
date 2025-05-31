@@ -133,16 +133,17 @@ export const RankingUI: React.FC<RankingUIProps> = ({
     console.log(`🔄🔄🔄 [DRAG_DEBUG] === DRAG START ===`);
     console.log(`🔄🔄🔄 [DRAG_DEBUG] Active ID: ${event.active.id}`);
     console.log(`🔄🔄🔄 [DRAG_DEBUG] Active data:`, event.active.data?.current);
+    console.log(`🔄🔄🔄 [DRAG_DEBUG] Active element:`, event.active);
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
     console.log(`🔄🔄🔄 [DRAG_DEBUG] === DRAG END ===`);
-    console.log(`🔄🔄🔄 [DRAG_DEBUG] Event:`, event);
+    console.log(`🔄🔄🔄 [DRAG_DEBUG] Full event:`, event);
     
     const { active, over } = event;
     
     if (!over) {
-      console.log(`🔄🔄🔄 [DRAG_DEBUG] No drop target - drag cancelled`);
+      console.log(`🔄🔄🔄 [DRAG_DEBUG] ❌ No drop target - drag cancelled`);
       return;
     }
 
@@ -157,17 +158,27 @@ export const RankingUI: React.FC<RankingUIProps> = ({
     // Check if dragging from available to rankings
     if (activeId.startsWith('available-')) {
       const pokemonId = parseInt(activeId.replace('available-', ''));
-      console.log(`🔄🔄🔄 [DRAG_DEBUG] Dragging from available - Pokemon ID: ${pokemonId}`);
+      console.log(`🔄🔄🔄 [DRAG_DEBUG] 🎯 AVAILABLE TO RANKINGS: Pokemon ID: ${pokemonId}`);
+      
+      // Find the Pokemon in available list
+      const pokemon = filteredAvailablePokemon.find(p => p.id === pokemonId);
+      if (!pokemon) {
+        console.log(`🔄🔄🔄 [DRAG_DEBUG] ❌ Pokemon ${pokemonId} not found in available list`);
+        console.log(`🔄🔄🔄 [DRAG_DEBUG] Available Pokemon IDs:`, filteredAvailablePokemon.map(p => p.id));
+        return;
+      }
+      
+      console.log(`🔄🔄🔄 [DRAG_DEBUG] ✅ Found Pokemon: ${pokemon.name}`);
       
       if (overId === 'rankings-drop-zone') {
-        console.log(`🔄🔄🔄 [DRAG_DEBUG] Dropping to rankings drop zone`);
+        console.log(`🔄🔄🔄 [DRAG_DEBUG] 🎯 Dropping to rankings drop zone`);
         handleDragToRankings(pokemonId);
         return;
       } else if (!overId.startsWith('available-')) {
         // Dragging over a specific Pokemon in rankings
         const overPokemonId = Number(overId);
         const insertIndex = displayRankings.findIndex(p => p.id === overPokemonId);
-        console.log(`🔄🔄🔄 [DRAG_DEBUG] Dropping near Pokemon ${overPokemonId} at index ${insertIndex}`);
+        console.log(`🔄🔄🔄 [DRAG_DEBUG] 🎯 Dropping near Pokemon ${overPokemonId} at index ${insertIndex}`);
         if (insertIndex !== -1) {
           handleDragToRankings(pokemonId, insertIndex);
           return;
@@ -180,7 +191,7 @@ export const RankingUI: React.FC<RankingUIProps> = ({
       const activePokemonId = Number(activeId);
       const overPokemonId = Number(overId);
       
-      console.log(`🔄🔄🔄 [DRAG_DEBUG] Reordering within rankings: ${activePokemonId} -> ${overPokemonId}`);
+      console.log(`🔄🔄🔄 [DRAG_DEBUG] 🔄 REORDERING WITHIN RANKINGS: ${activePokemonId} -> ${overPokemonId}`);
       
       // Find the indices of the dragged and target Pokemon
       const oldIndex = displayRankings.findIndex(p => p.id === activePokemonId);
@@ -189,7 +200,7 @@ export const RankingUI: React.FC<RankingUIProps> = ({
       console.log(`🔄🔄🔄 [DRAG_DEBUG] Old index: ${oldIndex}, New index: ${newIndex}`);
       
       if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-        console.log(`🔄🔄🔄 [DRAG_DEBUG] Performing reorder from ${oldIndex} to ${newIndex}`);
+        console.log(`🔄🔄🔄 [DRAG_DEBUG] ✅ Performing reorder from ${oldIndex} to ${newIndex}`);
         
         // Use arrayMove for proper reordering
         const newRankings = arrayMove(displayRankings, oldIndex, newIndex);

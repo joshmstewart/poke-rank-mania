@@ -43,6 +43,25 @@ const DraggableAvailablePokemonCard: React.FC<DraggableAvailablePokemonCardProps
     // Don't prevent default here - let the info button handle its own events
   };
 
+  const handlePointerDown = (e: React.PointerEvent) => {
+    console.log(`🔍🔍🔍 [DRAGGABLE_AVAILABLE_DEBUG] 🎯 POINTER DOWN on ${pokemon.name}`);
+    console.log(`🔍🔍🔍 [DRAGGABLE_AVAILABLE_DEBUG] - Event target:`, e.target);
+    console.log(`🔍🔍🔍 [DRAGGABLE_AVAILABLE_DEBUG] - Current target:`, e.currentTarget);
+    
+    // Check if clicking on info button
+    const target = e.target as HTMLElement;
+    if (target.closest('[data-info-button="true"]') || target.textContent === 'i') {
+      console.log(`🔍🔍🔍 [DRAGGABLE_AVAILABLE_DEBUG] ❌ Clicked on info button - not starting drag`);
+      e.stopPropagation();
+      return;
+    }
+    
+    console.log(`🔍🔍🔍 [DRAGGABLE_AVAILABLE_DEBUG] ✅ Valid drag start - calling listeners`);
+    if (listeners?.onPointerDown) {
+      listeners.onPointerDown(e);
+    }
+  };
+
   return (
     <div
       ref={setNodeRef}
@@ -51,8 +70,8 @@ const DraggableAvailablePokemonCard: React.FC<DraggableAvailablePokemonCardProps
         isDragging ? 'opacity-60 z-50 scale-105 shadow-2xl' : 'hover:shadow-lg transition-all duration-200'
       }`}
       onClick={handleClick}
+      onPointerDown={handlePointerDown}
       {...attributes}
-      {...listeners}
     >
       <PokemonCard 
         pokemon={pokemon}

@@ -24,14 +24,14 @@ const PokemonCardContent: React.FC<PokemonCardContentProps> = ({
 
   console.log(`🔘 [CARD_CONTENT_DEBUG] Rendering ${pokemon.name} - ID: ${pokemon.id}, normalizedId: ${normalizedId}`);
 
-  const handleInfoButtonEvent = (e: React.MouseEvent | React.PointerEvent) => {
+  const handleInfoButtonEvent = (e: React.MouseEvent | React.PointerEvent | React.TouchEvent) => {
     console.log(`🔘🔘🔘 [INFO_DEBUG] Info button event for ${pokemon.name}`);
     console.log(`🔘🔘🔘 [INFO_DEBUG] Event type: ${e.type}`);
     e.stopPropagation();
     e.preventDefault();
     
     // Force the event to not bubble up to drag handlers
-    if ('stopImmediatePropagation' in e) {
+    if ('stopImmediatePropagation' in e && typeof e.stopImmediatePropagation === 'function') {
       e.stopImmediatePropagation();
     }
   };

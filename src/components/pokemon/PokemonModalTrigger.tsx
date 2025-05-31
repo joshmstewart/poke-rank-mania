@@ -15,6 +15,7 @@ const PokemonModalTrigger: React.FC<PokemonModalTriggerProps> = ({
   pokemon
 }) => {
   const handleTriggerClick = (e: React.MouseEvent) => {
+    console.log(`🔘🔘🔘 [MODAL_TRIGGER_DEBUG] Modal trigger clicked for ${pokemon.name}`);
     // Prevent event bubbling if needed
     e.stopPropagation();
   };
