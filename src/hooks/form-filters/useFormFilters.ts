@@ -39,33 +39,37 @@ export const useFormFilters = () => {
   
   // Check if a Pokemon should be included based on current filters
   const shouldIncludePokemon = (pokemon: Pokemon): boolean => {
+    // ENHANCED DEBUG: Track what's being filtered and why
+    const pokemonId = pokemon.id;
+    const pokemonName = pokemon.name;
+    
     // FIRST: Always exclude starter Pokemon regardless of filters
     if (isStarterPokemon(pokemon)) {
-      console.log(`🚫 [FORM_FILTER_DEBUG] ${pokemon.name} (${pokemon.id}) EXCLUDED - STARTER POKEMON (always filtered)`);
+      console.log(`🚫 [FORM_FILTER_TRACE] ${pokemonName} (${pokemonId}) EXCLUDED - STARTER POKEMON`);
       return false;
     }
     
     // SECOND: Always exclude totem Pokemon regardless of filters
     if (isTotemPokemon(pokemon)) {
-      console.log(`🚫 [FORM_FILTER_DEBUG] ${pokemon.name} (${pokemon.id}) EXCLUDED - TOTEM POKEMON (always filtered)`);
+      console.log(`🚫 [FORM_FILTER_TRACE] ${pokemonName} (${pokemonId}) EXCLUDED - TOTEM POKEMON`);
       return false;
     }
     
     // THIRD: Always exclude size variant Pokemon (Pumpkaboo/Gourgeist sizes)
     if (isSizeVariantPokemon(pokemon)) {
-      console.log(`🚫 [FORM_FILTER_DEBUG] ${pokemon.name} (${pokemon.id}) EXCLUDED - SIZE VARIANT (always filtered)`);
+      console.log(`🚫 [FORM_FILTER_TRACE] ${pokemonName} (${pokemonId}) EXCLUDED - SIZE VARIANT`);
       return false;
     }
     
     // ENHANCED: Additional Cramorant filtering at the form filter level
     if (pokemon.name.toLowerCase().includes('cramorant')) {
-      console.log(`🚫 [FORM_FILTER_DEBUG] ${pokemon.name} (${pokemon.id}) EXCLUDED - CRAMORANT FORM (always filtered)`);
+      console.log(`🚫 [FORM_FILTER_TRACE] ${pokemonName} (${pokemonId}) EXCLUDED - CRAMORANT FORM`);
       return false;
     }
     
-    // If all filters are enabled, include all Pokemon (except starters, totems, size variants, and Cramorant)
+    // If all filters are enabled, include all Pokemon (except the exclusions above)
     if (isAllEnabled) {
-      console.log(`🟢 [FORM_FILTER_DEBUG] ${pokemon.name} (${pokemon.id}) INCLUDED - all filters enabled`);
+      console.log(`✅ [FORM_FILTER_TRACE] ${pokemonName} (${pokemonId}) INCLUDED - all filters enabled`);
       return true;
     }
     
@@ -77,9 +81,19 @@ export const useFormFilters = () => {
     // Return true if the filter for this category is enabled
     const shouldInclude = filters[categoryToCheck];
     
-    // ENHANCED LOGGING: Show current filter states
-    console.log(`🎛️ [FORM_FILTER_STATES] Current filters:`, filters);
-    console.log(`${shouldInclude ? '🟢' : '🔴'} [FORM_FILTER_DEBUG] ${pokemon.name} (${pokemon.id}) ${shouldInclude ? 'INCLUDED' : 'EXCLUDED'} - ${categoryToCheck} filter is ${shouldInclude ? 'enabled' : 'disabled'}`);
+    // CRITICAL DEBUG: Log every single Pokemon decision with ID ranges
+    const idRange = pokemonId <= 151 ? "Gen1" : 
+                   pokemonId <= 251 ? "Gen2" : 
+                   pokemonId <= 386 ? "Gen3" : 
+                   pokemonId <= 493 ? "Gen4" : 
+                   pokemonId <= 649 ? "Gen5" : 
+                   pokemonId <= 721 ? "Gen6" : 
+                   pokemonId <= 809 ? "Gen7" : 
+                   pokemonId <= 905 ? "Gen8" : 
+                   pokemonId <= 1025 ? "Gen9" : "Special";
+    
+    console.log(`${shouldInclude ? '✅' : '🚫'} [FORM_FILTER_TRACE] ${pokemonName} (${pokemonId}) [${idRange}] ${shouldInclude ? 'INCLUDED' : 'EXCLUDED'} - Category: ${categoryToCheck}, Filter: ${shouldInclude ? 'ON' : 'OFF'}`);
+    
     return shouldInclude;
   };
   
