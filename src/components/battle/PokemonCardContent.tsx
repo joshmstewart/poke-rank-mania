@@ -36,7 +36,7 @@ const PokemonCardContent: React.FC<PokemonCardContentProps> = ({
           />
         </div>
         
-        {/* Pokemon info */}
+        {/* Pokemon info - RESTORED */}
         <div className="mt-2">
           <PokemonCardInfo
             pokemonId={pokemon.id}
