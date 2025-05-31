@@ -50,7 +50,6 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
     // CRITICAL FIX: Proper event handling for info button
     e.preventDefault();
     e.stopPropagation();
-    e.stopImmediatePropagation();
   };
 
   return (

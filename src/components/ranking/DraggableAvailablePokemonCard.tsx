@@ -38,10 +38,9 @@ const DraggableAvailablePokemonCard: React.FC<DraggableAvailablePokemonCardProps
   // CRITICAL FIX: Handle info button interactions properly
   const handleInfoButtonClick = (e: React.MouseEvent) => {
     console.log(`🔘 [INFO_BUTTON_DEBUG] Info button clicked for ${pokemon.name}`);
-    // Stop all event propagation to prevent drag interference
+    // Stop event propagation to prevent drag interference
     e.preventDefault();
     e.stopPropagation();
-    e.stopImmediatePropagation();
   };
 
   // CRITICAL FIX: Create drag handlers that exclude info button area
