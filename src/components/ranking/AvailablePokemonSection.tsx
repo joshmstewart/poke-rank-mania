@@ -1,10 +1,10 @@
-
 import React from "react";
 import PokemonList from "@/components/PokemonList";
 import { InfiniteScrollLoader } from "./InfiniteScrollLoader";
 import { PaginationControls } from "./PaginationControls";
 import { LoadingType } from "@/hooks/usePokemonRanker";
 import { ITEMS_PER_PAGE } from "@/services/pokemon";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface AvailablePokemonSectionProps {
   availablePokemon: any[];
@@ -30,9 +30,9 @@ export const AvailablePokemonSection: React.FC<AvailablePokemonSectionProps> = (
   getPageRange
 }) => {
   return (
-    <div className="flex flex-col h-full">
+    <>
       {/* Header with gradient background */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-4 border-b">
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-4 border-b flex-shrink-0">
         <h2 className="text-lg font-semibold flex items-center gap-2">
           <div className="w-3 h-3 bg-blue-300 rounded-full"></div>
           Available Pokémon ({availablePokemon.length})
@@ -40,17 +40,21 @@ export const AvailablePokemonSection: React.FC<AvailablePokemonSectionProps> = (
         <p className="text-blue-100 text-sm mt-1">Unrated • Ready to rank</p>
       </div>
 
-      {/* Content area with improved styling */}
-      <div className="flex-1 overflow-hidden bg-gray-50">
-        <PokemonList
-          title=""
-          pokemonList={availablePokemon}
-          droppableId="available"
-        />
+      {/* Content area with proper scrolling */}
+      <div className="flex-1 min-h-0">
+        <ScrollArea className="h-full">
+          <div className="bg-gray-50 min-h-full">
+            <PokemonList
+              title=""
+              pokemonList={availablePokemon}
+              droppableId="available"
+            />
+          </div>
+        </ScrollArea>
       </div>
       
       {/* Footer controls with better spacing */}
-      <div className="border-t bg-white p-3">
+      <div className="border-t bg-white p-3 flex-shrink-0">
         {/* Infinite scroll loading indicator */}
         {loadingType === "infinite" && (
           <InfiniteScrollLoader
@@ -79,6 +83,6 @@ export const AvailablePokemonSection: React.FC<AvailablePokemonSectionProps> = (
           </div>
         )}
       </div>
-    </div>
+    </>
   );
 };

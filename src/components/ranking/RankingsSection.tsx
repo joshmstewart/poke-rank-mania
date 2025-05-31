@@ -1,7 +1,7 @@
-
 import React, { useState, useRef, useCallback, useEffect } from "react";
 import PokemonList from "@/components/PokemonList";
 import { Trophy, Star } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface RankingsSectionProps {
   displayRankings: any[];
@@ -57,9 +57,9 @@ export const RankingsSection: React.FC<RankingsSectionProps> = ({
   console.log(`🔍🔍🔍 [RANKING_UI_DEBUG] displayedRankedPokemon sample:`, displayedRankedPokemon.slice(0, 2));
 
   return (
-    <div className="flex flex-col h-full">
+    <>
       {/* Header with gradient background and enhanced styling */}
-      <div className="bg-gradient-to-r from-amber-600 to-orange-600 text-white p-4 border-b">
+      <div className="bg-gradient-to-r from-amber-600 to-orange-600 text-white p-4 border-b flex-shrink-0">
         <h2 className="text-lg font-semibold flex items-center gap-2">
           <Trophy className="w-5 h-5 text-amber-200" />
           Your Rankings ({displayRankings.length})
@@ -69,18 +69,22 @@ export const RankingsSection: React.FC<RankingsSectionProps> = ({
         </p>
       </div>
 
-      {/* Content area with improved styling */}
-      <div className="flex-1 overflow-hidden bg-gray-50">
-        <PokemonList
-          title=""
-          pokemonList={displayedRankedPokemon}
-          droppableId="ranked"
-          isRankingArea={true}
-        />
+      {/* Content area with proper scrolling */}
+      <div className="flex-1 min-h-0">
+        <ScrollArea className="h-full">
+          <div className="bg-gray-50 min-h-full">
+            <PokemonList
+              title=""
+              pokemonList={displayedRankedPokemon}
+              droppableId="ranked"
+              isRankingArea={true}
+            />
+          </div>
+        </ScrollArea>
       </div>
       
       {/* Footer with status information */}
-      <div className="border-t bg-white p-3">
+      <div className="border-t bg-white p-3 flex-shrink-0">
         {/* Infinite scroll loading for ranked Pokemon */}
         {displayedRankedCount < displayRankings.length && (
           <div 
@@ -113,6 +117,6 @@ export const RankingsSection: React.FC<RankingsSectionProps> = ({
           </div>
         )}
       </div>
-    </div>
+    </>
   );
 };

@@ -24,13 +24,22 @@ const PokemonCardInfo: React.FC<PokemonCardInfoProps> = ({
   return (
     <div className="flex-1 min-w-0">
       <div className={`flex justify-between items-start ${compact ? "text-sm" : "text-base"}`}>
-        <span className="font-medium truncate pr-2">{displayName}</span>
-        <span className="text-xs text-right whitespace-nowrap ml-2">#{normalizedId}</span>
+        <span className="font-medium pr-2 break-words">{displayName}</span>
+        <span className="text-xs text-right whitespace-nowrap ml-2 flex-shrink-0">#{normalizedId}</span>
       </div>
       {types?.length > 0 && (
-        <div className="flex gap-1 mt-1">
+        <div className="flex gap-1 mt-1 flex-wrap">
           {types.map(type => (
-            <Badge key={type} className={`${typeColors[type]} text-xs px-1.5 py-0.5`}>{type}</Badge>
+            <Badge 
+              key={type} 
+              className={`${typeColors[type]} text-white text-xs px-1.5 py-0.5 border-0`}
+              style={{ 
+                backgroundColor: typeColors[type]?.includes('bg-') ? undefined : typeColors[type],
+                color: type === 'Dark' ? 'white' : undefined
+              }}
+            >
+              {type}
+            </Badge>
           ))}
         </div>
       )}
