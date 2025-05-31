@@ -13,7 +13,7 @@ export const useRankingDragDrop = (
   const [activeDraggedPokemon, setActiveDraggedPokemon] = useState<any>(null);
   const { updateRating } = useTrueSkillStore();
 
-  // CRITICAL FIX: Enhanced drag to rankings functionality
+  // CRITICAL FIX: Enhanced drag to rankings functionality with proper ES6 imports
   const handleDragToRankings = useCallback((pokemonId: number) => {
     console.log(`🔥🔥🔥 [DRAG_TO_RANKINGS_CRITICAL] ===== ENHANCED DRAG TO RANKINGS =====`);
     console.log(`🔥🔥🔥 [DRAG_TO_RANKINGS_CRITICAL] Pokemon ID: ${pokemonId}`);
@@ -28,15 +28,17 @@ export const useRankingDragDrop = (
     
     console.log(`🔥🔥🔥 [DRAG_TO_RANKINGS_CRITICAL] ✅ Found Pokemon: ${pokemon.name}`);
     
-    // Add to TrueSkill store with default rating
+    // CRITICAL FIX: Use ES6 import instead of require for browser environment
     try {
-      const TrueSkill = require('ts-trueskill');
-      const defaultRating = new TrueSkill.Rating(25.0, 8.333); // Default TrueSkill values
+      const defaultRating = new Rating(25.0, 8.333); // Default TrueSkill values
       
       console.log(`🔥🔥🔥 [DRAG_TO_RANKINGS_CRITICAL] Adding to TrueSkill store with default rating`);
       console.log(`🔥🔥🔥 [DRAG_TO_RANKINGS_CRITICAL] Default rating - mu: ${defaultRating.mu}, sigma: ${defaultRating.sigma}`);
+      console.log(`🔥🔥🔥 [DRAG_TO_RANKINGS_CRITICAL] About to call updateRating for Pokemon ID: ${pokemonId}`);
       
       updateRating(pokemonId, defaultRating);
+      
+      console.log(`🔥🔥🔥 [DRAG_TO_RANKINGS_CRITICAL] ✅ updateRating called successfully`);
       
       // Remove from available Pokemon
       setAvailablePokemon(prev => {
@@ -57,6 +59,11 @@ export const useRankingDragDrop = (
       console.log(`🔥🔥🔥 [DRAG_TO_RANKINGS_CRITICAL] ✅ Pokemon ${pokemon.name} successfully added to rankings`);
     } catch (error) {
       console.error(`🔥🔥🔥 [DRAG_TO_RANKINGS_CRITICAL] ❌ Error adding Pokemon to TrueSkill:`, error);
+      console.error(`🔥🔥🔥 [DRAG_TO_RANKINGS_CRITICAL] Error details:`, {
+        name: error?.name,
+        message: error?.message,
+        stack: error?.stack
+      });
     }
   }, [localRankings.length, availablePokemon, updateRating, setAvailablePokemon]);
 
