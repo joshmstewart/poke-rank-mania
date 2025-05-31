@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { DndContext, DragEndEvent, DragStartEvent, closestCenter, DragOverlay } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
@@ -203,9 +202,9 @@ export const RankingUI: React.FC<RankingUIProps> = ({
     true // preventAutoResorting = true to maintain manual order
   );
 
-  // Handle drag from available to rankings - SIMPLIFIED VERSION
+  // Handle drag from available to rankings - FIXED: Defer state updates
   const handleDragToRankings = (pokemonId: number, insertIndex?: number) => {
-    console.log(`🚀🚀🚀 [DRAG_TO_RANKINGS] ===== SIMPLIFIED DRAG TO RANKINGS =====`);
+    console.log(`🚀🚀🚀 [DRAG_TO_RANKINGS] ===== DEFERRED DRAG TO RANKINGS =====`);
     console.log(`🚀🚀🚀 [DRAG_TO_RANKINGS] Moving Pokemon ${pokemonId} to rankings at index ${insertIndex}`);
     
     const pokemon = filteredAvailablePokemon.find(p => p.id === pokemonId);
@@ -215,28 +214,28 @@ export const RankingUI: React.FC<RankingUIProps> = ({
     }
     
     console.log(`🚀🚀🚀 [DRAG_TO_RANKINGS] Found pokemon: ${pokemon.name}`);
-    console.log(`🚀🚀🚀 [DRAG_TO_RANKINGS] Current availablePokemon length: ${availablePokemon.length}`);
-    console.log(`🚀🚀🚀 [DRAG_TO_RANKINGS] Current rankedPokemon length: ${rankedPokemon.length}`);
     
-    // Remove from available - IMMEDIATE UPDATE
-    const newAvailable = availablePokemon.filter(p => p.id !== pokemonId);
-    console.log(`🚀🚀🚀 [DRAG_TO_RANKINGS] New available length after removal: ${newAvailable.length}`);
-    
-    // Add to ranked at specified position or at the end - IMMEDIATE UPDATE
-    const newRanked = [...rankedPokemon];
-    const targetIndex = insertIndex !== undefined ? insertIndex : newRanked.length;
-    newRanked.splice(targetIndex, 0, pokemon);
-    console.log(`🚀🚀🚀 [DRAG_TO_RANKINGS] New ranked length after addition: ${newRanked.length}`);
-    console.log(`🚀🚀🚀 [DRAG_TO_RANKINGS] Inserted at index: ${targetIndex}`);
-    
-    // Update states IMMEDIATELY
-    console.log(`🚀🚀🚀 [DRAG_TO_RANKINGS] Updating state immediately...`);
-    setAvailablePokemon(newAvailable);
-    setRankedPokemon(newRanked);
-    setHasManualChanges(true);
-    
-    console.log(`🚀🚀🚀 [DRAG_TO_RANKINGS] ✅ Successfully moved ${pokemon.name} to rankings`);
-    console.log(`🚀🚀🚀 [DRAG_TO_RANKINGS] ===== DRAG TO RANKINGS COMPLETE =====`);
+    // FIXED: Use setTimeout to defer state updates until after drag completes
+    setTimeout(() => {
+      console.log(`🚀🚀🚀 [DRAG_TO_RANKINGS] Executing deferred state updates...`);
+      
+      // Remove from available
+      const newAvailable = availablePokemon.filter(p => p.id !== pokemonId);
+      console.log(`🚀🚀🚀 [DRAG_TO_RANKINGS] New available length: ${newAvailable.length}`);
+      
+      // Add to ranked at specified position or at the end
+      const newRanked = [...rankedPokemon];
+      const targetIndex = insertIndex !== undefined ? insertIndex : newRanked.length;
+      newRanked.splice(targetIndex, 0, pokemon);
+      console.log(`🚀🚀🚀 [DRAG_TO_RANKINGS] New ranked length: ${newRanked.length}`);
+      
+      // Update states
+      setAvailablePokemon(newAvailable);
+      setRankedPokemon(newRanked);
+      setHasManualChanges(true);
+      
+      console.log(`🚀🚀🚀 [DRAG_TO_RANKINGS] ✅ Successfully moved ${pokemon.name} to rankings`);
+    }, 50); // Small delay to let drag complete
   };
 
   // Handle manual reordering within the rankings (using enhanced system with fake battles)
@@ -301,8 +300,7 @@ export const RankingUI: React.FC<RankingUIProps> = ({
       const pokemonId = parseInt(activeId.replace('available-', ''));
       console.log(`🔄🔄🔄 [DRAG_DEBUG] 🎯 AVAILABLE TO RANKINGS: Pokemon ID: ${pokemonId}`);
       
-      // SIMPLIFIED: Just add to the end of rankings
-      console.log(`🔄🔄🔄 [DRAG_DEBUG] 🎯 Adding to end of rankings (simplified)`);
+      // FIXED: Use deferred update
       handleDragToRankings(pokemonId);
       return;
     }
