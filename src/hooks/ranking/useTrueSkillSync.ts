@@ -1,14 +1,17 @@
 
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTrueSkillStore } from "@/stores/trueskillStore";
 import { usePokemonContext } from "@/contexts/PokemonContext";
 import { useRankings } from "@/hooks/battle/useRankings";
 import { toast } from "@/hooks/use-toast";
+import { RankedPokemon } from "@/services/pokemon";
+import { Rating } from "ts-trueskill";
 
 export const useTrueSkillSync = () => {
-  const { clearAllRatings, getAllRatings } = useTrueSkillStore();
+  const { clearAllRatings, getAllRatings, getRating } = useTrueSkillStore();
   const { pokemonLookupMap } = usePokemonContext();
   const { generateRankings } = useRankings();
+  const [localRankings, setLocalRankings] = useState<RankedPokemon[]>([]);
 
   const syncWithBattleModeRankings = useCallback(async () => {
     console.log(`🔥🔥🔥 [MANUAL_SYNC_FIXED] ===== BATTLE MODE SYNC ENTRY =====`);
@@ -27,6 +30,7 @@ export const useTrueSkillSync = () => {
     
     if (ratedPokemonIds.length === 0) {
       console.log(`🔥🔥🔥 [MANUAL_SYNC_FIXED] No TrueSkill ratings - clearing rankings`);
+      setLocalRankings([]);
       return;
     }
 
@@ -37,8 +41,60 @@ export const useTrueSkillSync = () => {
     console.log(`🔥🔥🔥 [MANUAL_SYNC_FIXED] Generated ${rankings.length} rankings from Battle Mode system`);
     console.log(`🔥🔥🔥 [MANUAL_SYNC_FIXED] ===== SYNC COMPLETE =====`);
     
+    // Update local rankings state
+    setLocalRankings(rankings);
+    
     return rankings;
   }, [getAllRatings, pokemonLookupMap.size, generateRankings]);
+
+  // Initialize local rankings from TrueSkill store on mount
+  useEffect(() => {
+    const initializeLocalRankings = () => {
+      console.log(`🔥🔥🔥 [MANUAL_INIT] Initializing local rankings from TrueSkill store`);
+      
+      if (pokemonLookupMap.size === 0) {
+        console.log(`🔥🔥🔥 [MANUAL_INIT] Context not ready - deferring initialization`);
+        return;
+      }
+
+      const allRatings = getAllRatings();
+      const ratedPokemonIds = Object.keys(allRatings).map(Number);
+      
+      if (ratedPokemonIds.length === 0) {
+        console.log(`🔥🔥🔥 [MANUAL_INIT] No TrueSkill ratings available`);
+        setLocalRankings([]);
+        return;
+      }
+
+      // Convert TrueSkill ratings to ranked Pokemon
+      const rankedPokemon: RankedPokemon[] = ratedPokemonIds
+        .map(pokemonId => {
+          const pokemon = pokemonLookupMap.get(pokemonId);
+          const rating = getRating(pokemonId);
+          
+          if (!pokemon || !rating) {
+            return null;
+          }
+
+          const conservativeEstimate = rating.mu - 3 * rating.sigma;
+          const confidence = Math.max(0, Math.min(100, 100 * (1 - (rating.sigma / 8.33))));
+
+          return {
+            ...pokemon,
+            score: conservativeEstimate,
+            confidence: confidence,
+            rating: rating
+          } as RankedPokemon;
+        })
+        .filter((pokemon): pokemon is RankedPokemon => pokemon !== null)
+        .sort((a, b) => b.score - a.score);
+
+      console.log(`🔥🔥🔥 [MANUAL_INIT] Initialized ${rankedPokemon.length} local rankings`);
+      setLocalRankings(rankedPokemon);
+    };
+
+    initializeLocalRankings();
+  }, [pokemonLookupMap, getAllRatings, getRating]);
 
   const handleManualSync = async () => {
     console.log(`🔥🔥🔥 [MANUAL_TRIGGER_FIXED] Manual sync triggered`);
@@ -84,6 +140,7 @@ export const useTrueSkillSync = () => {
   }, [syncWithBattleModeRankings]);
 
   return {
+    localRankings,
     syncWithBattleModeRankings,
     handleManualSync
   };
