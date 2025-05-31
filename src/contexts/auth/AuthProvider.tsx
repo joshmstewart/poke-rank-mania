@@ -21,6 +21,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     userEmail: user?.email,
     timestamp: new Date().toISOString()
   });
+  console.log('🔴 AuthProvider: 🚨 PROVIDER MUST REMAIN STABLE THROUGHOUT AUTH CHANGES 🚨');
 
   const value = {
     user,
@@ -39,13 +40,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     hasSession: !!session,
     loading,
     userEmail: user?.email,
+    providerInstance: providerInstanceRef.current,
     timestamp: new Date().toISOString()
   });
 
   console.log('🔴 AuthProvider: 🚨🚨🚨 RETURNING JSX - this should ALWAYS appear 🚨🚨🚨');
 
   return (
-    <AuthContext.Provider value={value} key="stable-auth-context">
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

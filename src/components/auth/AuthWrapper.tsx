@@ -8,14 +8,15 @@ interface AuthWrapperProps {
 }
 
 export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
-  console.log('🟢🟢🟢 AuthWrapper: RENDERING - this should be stable');
-  console.log('🟢🟢🟢 AuthWrapper: Timestamp:', new Date().toISOString());
+  const wrapperInstance = useRef(Math.random());
   
-  // Use a ref to ensure this component doesn't remount unnecessarily
-  const wrapperRef = useRef<HTMLDivElement>(null);
+  console.log('🟢🟢🟢 AuthWrapper: RENDERING - this should be stable');
+  console.log('🟢🟢🟢 AuthWrapper: Wrapper instance ID:', wrapperInstance.current);
+  console.log('🟢🟢🟢 AuthWrapper: Timestamp:', new Date().toISOString());
+  console.log('🟢🟢🟢 AuthWrapper: 🔥 WRAPPER MUST REMAIN STABLE 🔥');
   
   return (
-    <div ref={wrapperRef} key="stable-auth-wrapper">
+    <div className="auth-wrapper-container">
       <AuthProvider>
         <ImpliedBattleTrackerProvider>
           {children}
