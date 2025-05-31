@@ -12,9 +12,16 @@ export const useTrueSkillSync = () => {
   const { pokemonLookupMap } = usePokemonContext();
   const { generateRankings } = useRankings();
   const [localRankings, setLocalRankings] = useState<RankedPokemon[]>([]);
+  const [manualOrderLocked, setManualOrderLocked] = useState(false);
 
   const syncWithBattleModeRankings = useCallback(async () => {
     console.log(`🔥🔥🔥 [MANUAL_SYNC_FIXED] ===== BATTLE MODE SYNC ENTRY =====`);
+    
+    // CRITICAL: In manual mode, only sync on initial load, not after drag operations
+    if (manualOrderLocked) {
+      console.log(`🔥🔥🔥 [MANUAL_SYNC_FIXED] Manual order locked - skipping sync to preserve user order`);
+      return localRankings;
+    }
     
     // Check context readiness
     if (pokemonLookupMap.size === 0) {
@@ -45,7 +52,7 @@ export const useTrueSkillSync = () => {
     setLocalRankings(rankings);
     
     return rankings;
-  }, [getAllRatings, pokemonLookupMap.size, generateRankings]);
+  }, [getAllRatings, pokemonLookupMap.size, generateRankings, manualOrderLocked, localRankings]);
 
   // Initialize local rankings from TrueSkill store on mount
   useEffect(() => {
@@ -111,20 +118,21 @@ export const useTrueSkillSync = () => {
     }
   };
 
-  // CRITICAL FIX: Disable automatic TrueSkill sync events in Manual Mode
+  // CRITICAL: Custom update function for manual mode that preserves order
+  const updateLocalRankings = useCallback((newRankings: RankedPokemon[]) => {
+    console.log(`🔥🔥🔥 [MANUAL_UPDATE] Updating local rankings in manual mode with ${newRankings.length} Pokemon`);
+    setLocalRankings(newRankings);
+    setManualOrderLocked(true); // Lock the order after manual update
+  }, []);
+
+  // CRITICAL: Completely disable TrueSkill sync events in Manual Mode
   useEffect(() => {
     const handleTrueSkillUpdate = (event: CustomEvent) => {
       console.log(`🔥🔥🔥 [TRUESKILL_SYNC_EVENT] Received sync event:`, event.detail);
       
-      // CRITICAL: Check if we're in manual mode by looking at the source
-      if (event.detail?.source === 'manual-reorder') {
-        console.log(`🔥🔥🔥 [TRUESKILL_SYNC_EVENT] IGNORING manual-reorder sync event to prevent auto-resorting`);
-        return;
-      }
-      
-      // Check URL to determine if we're in Manual Mode
+      // CRITICAL: In manual mode, ignore ALL sync events to preserve manual order
       if (window.location.pathname === '/' || window.location.pathname.includes('manual')) {
-        console.log(`🔥🔥🔥 [TRUESKILL_SYNC_EVENT] MANUAL MODE DETECTED - ignoring sync event to preserve manual order`);
+        console.log(`🔥🔥🔥 [TRUESKILL_SYNC_EVENT] MANUAL MODE DETECTED - ignoring ALL sync events to preserve manual order`);
         return;
       }
       
@@ -133,15 +141,19 @@ export const useTrueSkillSync = () => {
     };
 
     document.addEventListener('trueskill-updated', handleTrueSkillUpdate as EventListener);
+    document.addEventListener('trueskill-store-updated', handleTrueSkillUpdate as EventListener);
     
     return () => {
       document.removeEventListener('trueskill-updated', handleTrueSkillUpdate as EventListener);
+      document.removeEventListener('trueskill-store-updated', handleTrueSkillUpdate as EventListener);
     };
   }, [syncWithBattleModeRankings]);
 
   return {
     localRankings,
     syncWithBattleModeRankings,
-    handleManualSync
+    handleManualSync,
+    updateLocalRankings,
+    manualOrderLocked
   };
 };

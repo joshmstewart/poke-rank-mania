@@ -43,8 +43,8 @@ export const RankingUI: React.FC<RankingUIProps> = ({
   onGenerationChange,
   onReset
 }) => {
-  // CRITICAL: Get TrueSkill-based rankings - this is the ONLY source of truth
-  const { localRankings } = useTrueSkillSync();
+  // CRITICAL: Get TrueSkill-based rankings with manual update capability
+  const { localRankings, updateLocalRankings } = useTrueSkillSync();
   
   // Battle type state (needed for BattleControls compatibility)
   const [battleType, setBattleType] = useState<BattleType>("pairs");
@@ -54,13 +54,10 @@ export const RankingUI: React.FC<RankingUIProps> = ({
   console.log(`🔥🔥🔥 [RANKING_UI_CRITICAL] Ignoring separate rankedPokemon state: ${rankedPokemon.length}`);
   console.log(`🔥🔥🔥 [RANKING_UI_CRITICAL] Available Pokemon count: ${availablePokemon.length}`);
 
-  // Enhanced manual reorder with fake battles (preserving the existing system)
+  // Enhanced manual reorder with manual order preservation
   const { handleEnhancedManualReorder } = useEnhancedManualReorder(
-    localRankings, // Use TrueSkill rankings, not separate state
-    (newRankings) => {
-      console.log(`🔥🔥🔥 [RANKING_UI_CRITICAL] Manual reorder completed with ${newRankings.length} Pokemon`);
-      // Note: We don't update setRankedPokemon anymore since we use TrueSkill
-    },
+    localRankings, // Use TrueSkill rankings
+    updateLocalRankings, // Use the manual-mode-aware update function
     true // preventAutoResorting = true to maintain manual order
   );
 
@@ -86,7 +83,7 @@ export const RankingUI: React.FC<RankingUIProps> = ({
   // Handle local reordering (for DragDropGrid compatibility)
   const handleLocalReorder = (newRankings: any[]) => {
     console.log(`🔥🔥🔥 [RANKING_UI_CRITICAL] Local reorder with ${newRankings.length} Pokemon`);
-    // Note: We don't update local state since we use TrueSkill rankings
+    updateLocalRankings(newRankings); // Use manual-mode-aware update
   };
 
   // CRITICAL: Use TrueSkill rankings as the single source of truth
