@@ -24,26 +24,32 @@ const PokemonCardInfo: React.FC<PokemonCardInfoProps> = ({
   return (
     <div className="flex-1 min-w-0">
       <div className={`flex justify-between items-start ${compact ? "text-sm" : "text-base"}`}>
-        <span className="font-medium pr-2 break-words">{displayName}</span>
-        <span className="text-xs text-right whitespace-nowrap ml-2 flex-shrink-0">#{normalizedId}</span>
+        <span className="font-medium pr-3 break-words flex-1 min-w-0">{displayName}</span>
+        <span className="text-xs text-gray-500 whitespace-nowrap ml-2 flex-shrink-0">#{normalizedId}</span>
       </div>
       {types?.length > 0 && (
-        <div className="flex gap-1 mt-1 flex-wrap">
-          {types.map(type => (
-            <Badge 
-              key={type} 
-              className={`${typeColors[type]} text-white text-xs px-1.5 py-0.5 border-0`}
-              style={{ 
-                backgroundColor: typeColors[type]?.includes('bg-') ? undefined : typeColors[type],
-                color: type === 'Dark' ? 'white' : undefined
-              }}
-            >
-              {type}
-            </Badge>
-          ))}
+        <div className="flex gap-1.5 mt-2 flex-wrap">
+          {types.map(type => {
+            const colorClass = typeColors[type] || typeColors[type.toLowerCase()] || "bg-gray-400";
+            return (
+              <Badge 
+                key={type} 
+                className={`${colorClass} text-white text-xs px-2 py-1 border-0 font-medium`}
+                style={{ 
+                  backgroundColor: !colorClass.includes('bg-') ? colorClass : undefined
+                }}
+              >
+                {type}
+              </Badge>
+            );
+          })}
         </div>
       )}
-      {!compact && flavorText && <div className="text-xs mt-1 line-clamp-2 text-muted-foreground">{flavorText}</div>}
+      {!compact && flavorText && (
+        <div className="text-xs mt-2 line-clamp-2 text-muted-foreground leading-relaxed">
+          {flavorText}
+        </div>
+      )}
     </div>
   );
 };

@@ -1,3 +1,4 @@
+
 import React from "react";
 import PokemonList from "@/components/PokemonList";
 import { InfiniteScrollLoader } from "./InfiniteScrollLoader";
@@ -32,18 +33,18 @@ export const AvailablePokemonSection: React.FC<AvailablePokemonSectionProps> = (
   return (
     <>
       {/* Header with gradient background */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-4 border-b flex-shrink-0">
-        <h2 className="text-lg font-semibold flex items-center gap-2">
-          <div className="w-3 h-3 bg-blue-300 rounded-full"></div>
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6 border-b flex-shrink-0">
+        <h2 className="text-xl font-bold flex items-center gap-3">
+          <div className="w-4 h-4 bg-blue-300 rounded-full"></div>
           Available Pokémon ({availablePokemon.length})
         </h2>
-        <p className="text-blue-100 text-sm mt-1">Unrated • Ready to rank</p>
+        <p className="text-blue-100 text-sm mt-2">Unrated • Ready to rank</p>
       </div>
 
       {/* Content area with proper scrolling */}
       <div className="flex-1 min-h-0">
         <ScrollArea className="h-full">
-          <div className="bg-gray-50 min-h-full">
+          <div className="bg-gray-50 min-h-full p-4">
             <PokemonList
               title=""
               pokemonList={availablePokemon}
@@ -54,7 +55,7 @@ export const AvailablePokemonSection: React.FC<AvailablePokemonSectionProps> = (
       </div>
       
       {/* Footer controls with better spacing */}
-      <div className="border-t bg-white p-3 flex-shrink-0">
+      <div className="border-t bg-white p-4 flex-shrink-0">
         {/* Infinite scroll loading indicator */}
         {loadingType === "infinite" && (
           <InfiniteScrollLoader
@@ -78,7 +79,7 @@ export const AvailablePokemonSection: React.FC<AvailablePokemonSectionProps> = (
         
         {/* Single load info */}
         {loadingType === "single" && (
-          <div className="text-center text-sm text-gray-600">
+          <div className="text-center text-sm text-gray-600 bg-gray-50 rounded-lg p-3">
             Loaded {availablePokemon.length} Pokémon
           </div>
         )}
