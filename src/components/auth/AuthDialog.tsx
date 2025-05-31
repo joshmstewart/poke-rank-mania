@@ -7,19 +7,23 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, User, LogOut } from 'lucide-react';
+import { Loader2, User, LogOut, Phone, ArrowLeft } from 'lucide-react';
 
 interface AuthDialogProps {
   children: React.ReactNode;
 }
 
 export const AuthDialog: React.FC<AuthDialogProps> = ({ children }) => {
-  const { user, signIn, signUp, signOut, signInWithGoogle, loading } = useAuth();
+  const { user, signIn, signUp, signOut, signInWithGoogle, signInWithPhone, verifyPhoneOtp, loading } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [otp, setOtp] = useState('');
+  const [phoneStep, setPhoneStep] = useState<'phone' | 'otp'>('phone');
+  const [otpSent, setOtpSent] = useState(false);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,6 +71,79 @@ export const AuthDialog: React.FC<AuthDialogProps> = ({ children }) => {
     setIsLoading(false);
   };
 
+  const handlePhoneSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    
+    // Ensure phone number is in international format
+    let formattedPhone = phoneNumber.trim();
+    if (!formattedPhone.startsWith('+')) {
+      // Default to US if no country code provided
+      formattedPhone = '+1' + formattedPhone.replace(/\D/g, '');
+    }
+    
+    const { error } = await signInWithPhone(formattedPhone);
+    
+    if (error) {
+      toast({
+        title: 'Phone Authentication Failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } else {
+      toast({
+        title: 'OTP Sent!',
+        description: 'Please check your phone for the verification code.',
+      });
+      setPhoneNumber(formattedPhone);
+      setOtpSent(true);
+      setPhoneStep('otp');
+    }
+    setIsLoading(false);
+  };
+
+  const handleOtpVerification = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    
+    const { error } = await verifyPhoneOtp(phoneNumber, otp);
+    
+    if (error) {
+      toast({
+        title: 'OTP Verification Failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } else {
+      toast({
+        title: 'Welcome!',
+        description: 'Successfully signed in with your phone number.',
+      });
+      setIsOpen(false);
+      resetForm();
+    }
+    setIsLoading(false);
+  };
+
+  const handleResendOtp = async () => {
+    setIsLoading(true);
+    const { error } = await signInWithPhone(phoneNumber);
+    
+    if (error) {
+      toast({
+        title: 'Resend Failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } else {
+      toast({
+        title: 'OTP Resent!',
+        description: 'Please check your phone for the new verification code.',
+      });
+    }
+    setIsLoading(false);
+  };
+
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     const { error } = await signInWithGoogle();
@@ -93,6 +170,15 @@ export const AuthDialog: React.FC<AuthDialogProps> = ({ children }) => {
     setEmail('');
     setPassword('');
     setDisplayName('');
+    setPhoneNumber('');
+    setOtp('');
+    setPhoneStep('phone');
+    setOtpSent(false);
+  };
+
+  const handleBackToPhone = () => {
+    setPhoneStep('phone');
+    setOtp('');
   };
 
   if (loading) {
@@ -107,7 +193,7 @@ export const AuthDialog: React.FC<AuthDialogProps> = ({ children }) => {
     return (
       <div className="flex items-center gap-2">
         <span className="text-sm text-muted-foreground">
-          {user.user_metadata?.display_name || user.email}
+          {user.user_metadata?.display_name || user.email || user.phone}
         </span>
         <Button variant="outline" size="sm" onClick={handleSignOut}>
           <LogOut className="h-4 w-4" />
@@ -118,7 +204,12 @@ export const AuthDialog: React.FC<AuthDialogProps> = ({ children }) => {
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      setIsOpen(open);
+      if (!open) {
+        resetForm();
+      }
+    }}>
       <DialogTrigger asChild>
         {children}
       </DialogTrigger>
@@ -131,9 +222,10 @@ export const AuthDialog: React.FC<AuthDialogProps> = ({ children }) => {
         </DialogHeader>
         
         <Tabs defaultValue="signin" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="signin">Sign In</TabsTrigger>
             <TabsTrigger value="signup">Sign Up</TabsTrigger>
+            <TabsTrigger value="phone">Phone</TabsTrigger>
           </TabsList>
           
           <TabsContent value="signin" className="space-y-4">
@@ -221,6 +313,77 @@ export const AuthDialog: React.FC<AuthDialogProps> = ({ children }) => {
                 Create Account
               </Button>
             </form>
+          </TabsContent>
+
+          <TabsContent value="phone" className="space-y-4">
+            {phoneStep === 'phone' ? (
+              <form onSubmit={handlePhoneSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="phone-number">Phone Number</Label>
+                  <Input
+                    id="phone-number"
+                    type="tel"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    placeholder="+1 (555) 123-4567"
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Include your country code (e.g., +1 for US/Canada)
+                  </p>
+                </div>
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  <Phone className="mr-2 h-4 w-4" />
+                  Send OTP
+                </Button>
+              </form>
+            ) : (
+              <form onSubmit={handleOtpVerification} className="space-y-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleBackToPhone}
+                    disabled={isLoading}
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                  </Button>
+                  <span className="text-sm text-muted-foreground">
+                    Enter code sent to {phoneNumber}
+                  </span>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="otp-code">Verification Code</Label>
+                  <Input
+                    id="otp-code"
+                    type="text"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value)}
+                    placeholder="123456"
+                    maxLength={6}
+                    required
+                  />
+                </div>
+                
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Verify OTP
+                </Button>
+                
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={handleResendOtp}
+                  disabled={isLoading}
+                >
+                  Resend OTP
+                </Button>
+              </form>
+            )}
           </TabsContent>
         </Tabs>
       </DialogContent>
