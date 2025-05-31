@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -73,13 +72,14 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     <div
       ref={setNodeRef}
       style={style}
-      className={`${backgroundColorClass} rounded-lg border border-gray-200 relative overflow-hidden h-40 flex flex-col ${
+      className={`${backgroundColorClass} rounded-lg border border-gray-200 relative overflow-hidden h-35 flex flex-col ${
         isDraggable && !isOpen ? 'cursor-grab active:cursor-grabbing' : ''
       } ${
         isDragging ? 'opacity-60 z-50 scale-105 shadow-2xl' : 'hover:shadow-lg transition-all duration-200'
       } ${isPending ? 'ring-2 ring-blue-400 ring-opacity-50' : ''}`}
       {...(isDraggable && !isOpen ? attributes : {})}
       {...(isDraggable && !isOpen ? listeners : {})}
+      style={{...style, minHeight: '140px', minWidth: '140px'}}
     >
       {/* Pending banner if needed */}
       {isPending && (
@@ -148,7 +148,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
         <img 
           src={pokemon.image} 
           alt={pokemon.name}
-          className="w-20 h-20 object-contain"
+          className="w-16 h-16 object-contain"
           loading="lazy"
           onError={(e) => {
             const target = e.target as HTMLImageElement;

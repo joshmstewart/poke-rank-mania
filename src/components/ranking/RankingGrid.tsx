@@ -22,7 +22,7 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
   onRemoveSuggestion
 }) => {
   return (
-    <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))' }}>
+    <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
       {displayRankings.map((pokemon, index) => {
         const isRankedPokemon = 'score' in pokemon;
 
