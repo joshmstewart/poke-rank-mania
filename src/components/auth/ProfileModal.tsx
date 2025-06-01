@@ -45,15 +45,16 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
   });
 
   useEffect(() => {
-    if (open && user) {
+    if (open && user?.id) {
       console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] Modal opened, loading profile for user:', user.id);
       loadProfile();
     }
-  }, [open, user]);
+  }, [open, user?.id]);
 
   const loadProfile = async () => {
-    if (!user) {
-      console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] ❌ No user available for profile loading');
+    if (!user?.id) {
+      console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] ❌ No user ID available for profile loading');
+      setLoading(false);
       return;
     }
     
@@ -61,6 +62,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
     setLoading(true);
     
     try {
+      console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] Calling getProfile with user ID:', user.id);
       const profileData = await getProfile(user.id);
       console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] Profile data received:', profileData);
       
@@ -71,18 +73,49 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
         setDisplayName(profileData.display_name || '');
         console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] ✅ Profile loaded successfully');
       } else {
-        console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] No profile data found, initializing empty state');
-        setProfile(null);
+        console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] No profile data found, creating default profile');
+        // Create a default profile object for new users
+        const defaultProfile: Profile = {
+          id: user.id,
+          email: user.email || undefined,
+          display_name: user.phone ? `User ${user.phone.slice(-4)}` : 'New User',
+          avatar_url: '',
+          username: user.phone ? `user_${user.phone.slice(-4)}` : 'new_user',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        
+        setProfile(defaultProfile);
         setSelectedAvatar('');
-        setUsername('');
-        setDisplayName('');
+        setUsername(defaultProfile.username || '');
+        setDisplayName(defaultProfile.display_name || '');
+        console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] ✅ Default profile created for new user');
       }
     } catch (error) {
       console.error('🎯🎯🎯 [PROFILE_MODAL_FIXED] ❌ Error loading profile:', error);
+      
+      // Create a fallback profile even if there's an error
+      const fallbackProfile: Profile = {
+        id: user.id,
+        email: user.email || undefined,
+        display_name: user.phone ? `User ${user.phone.slice(-4)}` : 'User',
+        avatar_url: '',
+        username: user.phone ? `user_${user.phone.slice(-4)}` : 'user',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      
+      setProfile(fallbackProfile);
+      setSelectedAvatar('');
+      setUsername(fallbackProfile.username || '');
+      setDisplayName(fallbackProfile.display_name || '');
+      
+      console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] ⚠️ Using fallback profile due to error');
+      
       toast({
-        title: 'Profile Load Error',
-        description: 'Failed to load your profile. Please try again.',
-        variant: 'destructive',
+        title: 'Profile Load Warning',
+        description: 'Could not load existing profile. You can still update your information.',
+        variant: 'default',
       });
     } finally {
       setLoading(false);
@@ -91,8 +124,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
   };
 
   const handleSave = async () => {
-    if (!user) {
-      console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] ❌ No user available for profile save');
+    if (!user?.id) {
+      console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] ❌ No user ID available for profile save');
       return;
     }
 
@@ -149,8 +182,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
     return genNames[gen] || `Generation ${gen}`;
   };
 
-  if (!user) {
-    console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] ❌ No user, not rendering modal');
+  if (!user?.id) {
+    console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] ❌ No user ID, not rendering modal');
     return null;
   }
 
