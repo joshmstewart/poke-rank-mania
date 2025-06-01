@@ -7,7 +7,7 @@ import {
   getProfile, 
   updateProfile, 
   type Profile
-} from '@/services/profileService';
+} from '@/services/profile';
 import { ProfileModalHeader } from './ProfileModalHeader';
 import { ProfileModalContent } from './ProfileModalContent';
 
