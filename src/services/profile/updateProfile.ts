@@ -20,8 +20,7 @@ export const updateProfile = async (userId: string, updates: Partial<Profile>): 
     const { data, error } = await supabase
       .from('profiles')
       .upsert(updateData, { 
-        onConflict: 'id',
-        returning: 'minimal' 
+        onConflict: 'id'
       });
 
     console.log('🎯 [PROFILE_SERVICE_DEBUG] Upsert completed');
