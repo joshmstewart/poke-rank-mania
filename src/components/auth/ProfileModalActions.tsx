@@ -23,16 +23,13 @@ export const ProfileModalActions: React.FC<ProfileModalActionsProps> = ({
   const { user } = useAuth();
   const { isSaving, directSaveProfile } = useDirectProfileSave();
 
-  console.log('🔘 [PROFILE_ACTIONS] Rendering with isSaving:', isSaving);
-  console.log('🔘 [PROFILE_ACTIONS] User available:', !!user);
-
+  // Remove excessive logging - only log on important actions, not every render
+  
   const handleSaveClick = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
     console.log('🔘 [PROFILE_ACTIONS] Save button clicked!');
-    console.log('🔘 [PROFILE_ACTIONS] Current isSaving state:', isSaving);
-    console.log('🔘 [PROFILE_ACTIONS] User ID:', user?.id);
     
     if (!user?.id) {
       console.error('🔘 [PROFILE_ACTIONS] No user ID available');
@@ -75,8 +72,6 @@ export const ProfileModalActions: React.FC<ProfileModalActionsProps> = ({
   };
 
   const isButtonDisabled = isSaving || !user;
-
-  console.log('🔘 [PROFILE_ACTIONS] Button disabled?', isButtonDisabled);
 
   return (
     <div className="flex flex-col gap-2 pt-4">
