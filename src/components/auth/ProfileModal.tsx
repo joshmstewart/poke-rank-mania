@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/auth/useAuth';
@@ -101,7 +102,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
     setAvatarModalOpen(true);
   };
 
-  const handleAvatarSelection = async (avatarUrl: string) => {
+  const handleAvatarSelection = (avatarUrl: string) => {
+    console.log('Avatar selected:', avatarUrl);
     setSelectedAvatar(avatarUrl);
     setAvatarModalOpen(false);
   };
