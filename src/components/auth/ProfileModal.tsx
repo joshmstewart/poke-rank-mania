@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/auth/useAuth';
@@ -122,7 +123,6 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
     console.log('🚀🚀🚀 [PROFILE_MODAL] HANDLE_SAVE CALLBACK TRIGGERED! 🚀🚀🚀');
     console.log('🚀 [PROFILE_MODAL] Component mounted:', mountedRef.current);
     console.log('🚀 [PROFILE_MODAL] Function called at:', new Date().toISOString());
-    console.log('🚀 [PROFILE_MODAL] Call stack:', new Error().stack);
     
     if (!mountedRef.current) {
       console.log('🚀 [PROFILE_MODAL] Component unmounted, skipping save');
@@ -172,7 +172,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
         console.log('🚀 [PROFILE_MODAL] Save successful, closing modal');
         onOpenChange(false);
       } else {
-        console.log('🚀 [PROFILE_MODAL] Save failed');
+        console.log('🚀 [PROFILE_MODAL] Save failed or component unmounted');
       }
     } catch (error) {
       console.error('🚀 [PROFILE_MODAL] Error in handleSave:', error);
@@ -181,31 +181,27 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
 
   const handleAvatarClick = useCallback(() => {
     if (!mountedRef.current) return;
-    console.log('🎭 [PROFILE_MODAL] Avatar clicked');
+    console.log('🎭 [PROFILE_MODAL] Avatar clicked, opening avatar modal');
     setAvatarModalOpen(true);
   }, []);
 
   const handleAvatarSelection = useCallback((avatarUrl: string) => {
     if (!mountedRef.current) return;
-    console.log('🎭 [PROFILE_MODAL] Avatar selected:', avatarUrl);
+    console.log('🎭 [PROFILE_MODAL] ===== AVATAR SELECTED =====');
+    console.log('🎭 [PROFILE_MODAL] New avatar URL:', avatarUrl);
+    console.log('🎭 [PROFILE_MODAL] Previous avatar:', selectedAvatar);
+    
     setSelectedAvatar(avatarUrl);
     setAvatarModalOpen(false);
-  }, []);
+    
+    console.log('🎭 [PROFILE_MODAL] Avatar state should be updated to:', avatarUrl);
+  }, [selectedAvatar]);
 
   const handleCancel = useCallback(() => {
     if (!mountedRef.current) return;
     console.log('🎭 [PROFILE_MODAL] Cancel clicked from content');
     onOpenChange(false);
   }, [onOpenChange]);
-
-  // Test function that bypasses everything
-  const directSaveTest = useCallback(async () => {
-    console.log('🔥🔥🔥 DIRECT SAVE TEST TRIGGERED! 🔥🔥🔥');
-    alert('Direct save test clicked! This proves the button can receive clicks.');
-    
-    console.log('🔥 [PROFILE_MODAL] About to call handleSave directly...');
-    await handleSave();
-  }, [handleSave]);
 
   if (!user?.id) {
     console.log('🎭 [PROFILE_MODAL] No user ID, returning null');
@@ -220,17 +216,6 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
           <ProfileModalHeader />
-          
-          {/* TEST BUTTON - bypasses all components */}
-          <div className="bg-red-100 p-2 border border-red-300 rounded">
-            <p className="text-xs text-red-700 mb-2">Debug: Direct test button</p>
-            <button 
-              onClick={directSaveTest}
-              className="bg-red-500 text-white px-3 py-1 rounded text-sm"
-            >
-              🔥 DIRECT SAVE TEST
-            </button>
-          </div>
           
           <ProfileModalContent
             loading={false}

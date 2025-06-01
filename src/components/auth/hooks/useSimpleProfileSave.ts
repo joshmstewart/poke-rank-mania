@@ -1,12 +1,13 @@
 
 import React, { useState, useRef, useCallback } from 'react';
 import { updateProfile } from '@/services/profile/updateProfile';
-import { toast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 export const useSimpleProfileSave = () => {
   const [saving, setSaving] = useState(false);
   const mountedRef = useRef(true);
   const savingRef = useRef(false);
+  const { toast } = useToast();
 
   console.log('🔥 [SIMPLE_SAVE_HOOK] ===== HOOK INITIALIZATION =====');
   console.log('🔥 [SIMPLE_SAVE_HOOK] Initial saving state:', saving);
