@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -33,16 +34,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
   const [trainerAvatarsByGen, setTrainerAvatarsByGen] = useState<Record<number, TrainerAvatar[]>>({});
   const [loadingTrainers, setLoadingTrainers] = useState(false);
 
-  console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] ===== COMPONENT RENDER =====');
-  console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] Modal open:', open);
-  console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] User from useAuth:', {
-    hasUser: !!user,
-    userId: user?.id || 'NO_USER_ID',
-    userEmail: user?.email || 'NO_EMAIL',
-    userPhone: user?.phone || 'NO_PHONE',
-    loading,
-    timestamp: new Date().toISOString()
-  });
+  console.log('🎯 [PROFILE_MODAL] Modal open:', open, 'User ID:', user?.id);
 
   // Load trainer avatars when modal opens
   useEffect(() => {
@@ -57,14 +49,14 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
       console.log('📸 Loading trainer avatars from PokeAPI...');
       const avatarsByGen = await getTrainerAvatarsByGenerationAsync();
       setTrainerAvatarsByGen(avatarsByGen);
-      console.log('📸 Trainer avatars loaded:', Object.keys(avatarsByGen).length, 'generations');
+      console.log('📸 Trainer avatars loaded by generation:', Object.keys(avatarsByGen));
       console.log('📸 Total trainers loaded:', Object.values(avatarsByGen).flat().length);
     } catch (error) {
       console.error('📸 Error loading trainer avatars:', error);
       toast({
         title: 'Avatar Loading Error',
-        description: 'Could not load trainer avatars. Using fallback images.',
-        variant: 'default',
+        description: 'Could not load trainer avatars from PokeAPI.',
+        variant: 'destructive',
       });
     } finally {
       setLoadingTrainers(false);
@@ -73,46 +65,33 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
 
   useEffect(() => {
     if (open && user?.id) {
-      console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] Modal opened, loading profile for user:', user.id);
+      console.log('🎯 [PROFILE_MODAL] Loading profile for user:', user.id);
       loadProfile();
     } else if (open && !user?.id) {
-      console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] Modal opened but no user ID, setting loading to false');
+      console.log('🎯 [PROFILE_MODAL] No user ID available');
       setLoading(false);
     }
   }, [open, user?.id]);
 
   const loadProfile = async () => {
     if (!user?.id) {
-      console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] ❌ No user ID available for profile loading');
       setLoading(false);
       return;
     }
     
-    console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] Starting profile load for user ID:', user.id);
     setLoading(true);
     
     try {
-      console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] Calling getProfile with user ID:', user.id);
-      
-      // Add a timeout to prevent infinite loading
-      const profilePromise = getProfile(user.id);
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Profile load timeout')), 10000)
-      );
-      
-      const profileData = await Promise.race([profilePromise, timeoutPromise]) as Profile | null;
-      
-      console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] Profile data received:', profileData);
+      const profileData = await getProfile(user.id);
       
       if (profileData) {
         setProfile(profileData);
         setSelectedAvatar(profileData.avatar_url || '');
         setUsername(profileData.username || '');
         setDisplayName(profileData.display_name || '');
-        console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] ✅ Profile loaded successfully');
+        console.log('🎯 [PROFILE_MODAL] Profile loaded successfully');
       } else {
-        console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] No profile data found, creating default profile');
-        // Create a default profile object for new users
+        // Create default profile for new users
         const defaultProfile: Profile = {
           id: user.id,
           email: user.email || undefined,
@@ -127,48 +106,23 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
         setSelectedAvatar('');
         setUsername(defaultProfile.username || '');
         setDisplayName(defaultProfile.display_name || '');
-        console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] ✅ Default profile created for new user');
+        console.log('🎯 [PROFILE_MODAL] Created default profile for new user');
       }
     } catch (error) {
-      console.error('🎯🎯🎯 [PROFILE_MODAL_FIXED] ❌ Error loading profile:', error);
-      
-      // Create a fallback profile even if there's an error
-      const fallbackProfile: Profile = {
-        id: user.id,
-        email: user.email || undefined,
-        display_name: user.phone ? `User ${user.phone.slice(-4)}` : 'User',
-        avatar_url: '',
-        username: user.phone ? `user_${user.phone.slice(-4)}` : 'user',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-      
-      setProfile(fallbackProfile);
-      setSelectedAvatar('');
-      setUsername(fallbackProfile.username || '');
-      setDisplayName(fallbackProfile.display_name || '');
-      
-      console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] ⚠️ Using fallback profile due to error');
-      
+      console.error('🎯 [PROFILE_MODAL] Error loading profile:', error);
       toast({
-        title: 'Profile Load Warning',
-        description: 'Could not load existing profile. You can still update your information.',
-        variant: 'default',
+        title: 'Profile Load Error',
+        description: 'Could not load profile. You can still update your information.',
+        variant: 'destructive',
       });
     } finally {
-      console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] Setting loading to false in finally block');
       setLoading(false);
-      console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] Profile loading completed');
     }
   };
 
   const handleSave = async () => {
-    if (!user?.id) {
-      console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] ❌ No user ID available for profile save');
-      return;
-    }
+    if (!user?.id) return;
 
-    console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] Starting profile save for user:', user.id);
     setSaving(true);
     
     try {
@@ -179,14 +133,12 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
       });
 
       if (success) {
-        console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] ✅ Profile saved successfully');
         toast({
           title: 'Profile Updated',
           description: 'Your profile has been successfully updated.',
         });
         onOpenChange(false);
       } else {
-        console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] ❌ Profile save failed');
         toast({
           title: 'Update Failed',
           description: 'Failed to update your profile. Please try again.',
@@ -194,7 +146,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
         });
       }
     } catch (error) {
-      console.error('🎯🎯🎯 [PROFILE_MODAL_FIXED] ❌ Error saving profile:', error);
+      console.error('🎯 [PROFILE_MODAL] Error saving profile:', error);
       toast({
         title: 'Save Error',
         description: 'An error occurred while saving your profile.',
@@ -206,28 +158,26 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
   };
 
   const handleAvatarSelect = (avatar: TrainerAvatar) => {
-    console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] Avatar selected:', avatar.name, 'URL:', avatar.url);
+    console.log('🎯 [PROFILE_MODAL] Avatar selected:', avatar.name, 'URL:', avatar.url);
     setSelectedAvatar(avatar.url);
   };
 
   const getGenerationName = (gen: number): string => {
     const genNames: Record<number, string> = {
-      1: 'Generation I (Kanto)',
-      2: 'Generation II (Johto)', 
-      3: 'Generation III (Hoenn)',
-      4: 'Generation IV (Sinnoh)',
-      5: 'Generation V (Unova)',
+      1: 'Generation I',
+      2: 'Generation II', 
+      3: 'Generation III',
+      4: 'Generation IV',
+      5: 'Generation V',
     };
     return genNames[gen] || `Generation ${gen}`;
   };
 
   if (!user?.id) {
-    console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] ❌ No user ID, not rendering modal');
     return null;
   }
 
   if (loading) {
-    console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] Rendering loading state');
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-md">
@@ -239,8 +189,6 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
       </Dialog>
     );
   }
-
-  console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] Rendering full profile modal');
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -264,7 +212,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
             <div>
               <p className="font-medium">Current Avatar</p>
               <p className="text-sm text-muted-foreground">
-                {selectedAvatar ? getTrainerAvatarByUrl(selectedAvatar)?.name || 'Custom Avatar' : 'No avatar selected'}
+                {selectedAvatar ? getTrainerAvatarByUrl(selectedAvatar)?.name || 'PokeAPI Trainer' : 'No avatar selected'}
               </p>
             </div>
           </div>
@@ -328,16 +276,14 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
                             <AvatarImage 
                               src={avatar.url} 
                               alt={avatar.name}
-                              onError={(e) => {
+                              onError={() => {
                                 console.log('📸 Image failed to load:', avatar.url);
-                                const target = e.target as HTMLImageElement;
-                                target.style.display = 'none';
                               }}
                               onLoad={() => {
                                 console.log('📸 Image loaded successfully:', avatar.url);
                               }}
                             />
-                            <AvatarFallback>{avatar.name.slice(0, 2)}</AvatarFallback>
+                            <AvatarFallback>{avatar.name.slice(0, 2).toUpperCase()}</AvatarFallback>
                           </Avatar>
                           <p className="text-sm font-medium">{avatar.name}</p>
                           <p className="text-xs text-muted-foreground">{avatar.category}</p>
@@ -350,7 +296,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
             ) : (
               <div className="text-center py-8 text-muted-foreground">
                 <p>Could not load trainer avatars from PokeAPI.</p>
-                <p className="text-sm">Please try refreshing the modal.</p>
+                <p className="text-sm">Please check your internet connection and try again.</p>
               </div>
             )}
           </div>

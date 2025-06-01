@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 export interface Profile {
@@ -23,34 +24,6 @@ let trainerCache: TrainerAvatar[] | null = null;
 let cacheTimestamp = 0;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
-// Fallback trainers if API fails
-const getFallbackTrainers = (): TrainerAvatar[] => {
-  return [
-    { id: 'ace-trainer', name: 'Ace Trainer', generation: 1, category: 'Elite', url: '/trainer-avatars/gen1/red.png' },
-    { id: 'youngster', name: 'Youngster', generation: 1, category: 'Basic', url: '/trainer-avatars/gen1/blue.png' },
-    { id: 'lass', name: 'Lass', generation: 1, category: 'Basic', url: '/trainer-avatars/gen1/misty.png' },
-    { id: 'hiker', name: 'Hiker', generation: 1, category: 'Specialist', url: '/trainer-avatars/gen1/brock.png' },
-    { id: 'swimmer', name: 'Swimmer', generation: 2, category: 'Specialist', url: '/trainer-avatars/gen2/gold.png' },
-    { id: 'cooltrainer', name: 'Cool Trainer', generation: 2, category: 'Elite', url: '/trainer-avatars/gen2/silver.png' },
-    { id: 'pokefan', name: 'Pokéfan', generation: 3, category: 'Basic', url: '/trainer-avatars/gen3/brendan.png' },
-    { id: 'breeder', name: 'Breeder', generation: 3, category: 'Specialist', url: '/trainer-avatars/gen3/may.png' },
-    { id: 'ninja-boy', name: 'Ninja Boy', generation: 4, category: 'Specialist', url: '/trainer-avatars/gen4/lucas.png' },
-    { id: 'battle-girl', name: 'Battle Girl', generation: 4, category: 'Fighter', url: '/trainer-avatars/gen4/dawn.png' },
-    { id: 'veteran', name: 'Veteran', generation: 5, category: 'Elite', url: '/trainer-avatars/gen5/hilbert.png' },
-    { id: 'psychic', name: 'Psychic', generation: 5, category: 'Specialist', url: '/trainer-avatars/gen5/hilda.png' }
-  ];
-};
-
-// Verify if an image URL is valid
-const verifyImageUrl = async (url: string): Promise<boolean> => {
-  try {
-    const response = await fetch(url, { method: 'HEAD' });
-    return response.ok && response.headers.get('content-type')?.startsWith('image/');
-  } catch {
-    return false;
-  }
-};
-
 // Fetch trainer types from PokeAPI
 const fetchTrainerTypesFromAPI = async (): Promise<TrainerAvatar[]> => {
   try {
@@ -63,12 +36,12 @@ const fetchTrainerTypesFromAPI = async (): Promise<TrainerAvatar[]> => {
     const trainers: TrainerAvatar[] = [];
     
     // Fetch details for each trainer type
-    for (const trainerType of data.results.slice(0, 20)) { // Limit to first 20 for performance
+    for (const trainerType of data.results.slice(0, 15)) { // Limit to first 15
       try {
         const detailResponse = await fetch(trainerType.url);
         const trainerDetail = await detailResponse.json();
         
-        console.log('📸 Trainer detail fetched:', trainerDetail.name, 'sprites:', trainerDetail.sprites);
+        console.log('📸 Processing trainer:', trainerDetail.name);
         
         // Try different sprite properties
         let sprite = null;
@@ -80,28 +53,37 @@ const fetchTrainerTypesFromAPI = async (): Promise<TrainerAvatar[]> => {
         }
         
         if (sprite) {
-          // Verify the image actually loads
-          const isValidImage = await verifyImageUrl(sprite);
-          console.log('📸 Image verification for', trainerDetail.name, ':', isValidImage, 'URL:', sprite);
+          // Determine generation based on trainer type ID
+          let generation = 1;
+          if (trainerDetail.id > 20) generation = 2;
+          if (trainerDetail.id > 40) generation = 3;
+          if (trainerDetail.id > 60) generation = 4;
+          if (trainerDetail.id > 80) generation = 5;
           
-          if (isValidImage) {
-            // Determine generation based on trainer type ID (rough approximation)
-            let generation = 1;
-            if (trainerDetail.id > 50) generation = 2;
-            if (trainerDetail.id > 100) generation = 3;
-            if (trainerDetail.id > 150) generation = 4;
-            if (trainerDetail.id > 200) generation = 5;
-            
-            trainers.push({
-              id: trainerDetail.name,
-              name: trainerDetail.name.split('-').map((word: string) => 
-                word.charAt(0).toUpperCase() + word.slice(1)
-              ).join(' '),
-              generation,
-              category: 'Trainer',
-              url: sprite
-            });
+          // Determine category based on name patterns
+          let category = 'Trainer';
+          const name = trainerDetail.name.toLowerCase();
+          if (name.includes('ace') || name.includes('champion') || name.includes('elite')) {
+            category = 'Elite';
+          } else if (name.includes('gym') || name.includes('leader')) {
+            category = 'Leader';
+          } else if (name.includes('youngster') || name.includes('lass') || name.includes('schoolkid')) {
+            category = 'Basic';
+          } else if (name.includes('hiker') || name.includes('swimmer') || name.includes('sailor')) {
+            category = 'Specialist';
           }
+          
+          trainers.push({
+            id: trainerDetail.name,
+            name: trainerDetail.name.split('-').map((word: string) => 
+              word.charAt(0).toUpperCase() + word.slice(1)
+            ).join(' '),
+            generation,
+            category,
+            url: sprite
+          });
+          
+          console.log('📸 Added trainer:', trainerDetail.name, 'with sprite:', sprite);
         } else {
           console.log('📸 No sprite found for trainer:', trainerDetail.name);
         }
@@ -110,19 +92,12 @@ const fetchTrainerTypesFromAPI = async (): Promise<TrainerAvatar[]> => {
       }
     }
     
-    console.log('📸 Successfully fetched trainer sprites:', trainers.length);
-    
-    // If we didn't get enough trainers from PokeAPI, supplement with fallbacks
-    if (trainers.length < 8) {
-      console.log('📸 Not enough valid PokeAPI trainers, using fallbacks');
-      return getFallbackTrainers();
-    }
-    
+    console.log('📸 Successfully fetched', trainers.length, 'trainer sprites from PokeAPI');
     return trainers;
     
   } catch (error) {
     console.error('📸 Error fetching trainer types from PokeAPI:', error);
-    return getFallbackTrainers();
+    return [];
   }
 };
 
@@ -177,17 +152,12 @@ export const updateProfile = async (userId: string, updates: Partial<Profile>): 
   return true;
 };
 
-export const getTrainerAvatarsByGeneration = (): Record<number, TrainerAvatar[]> => {
-  // This will now be populated by the async function call in the component
-  return {};
-};
-
 export const getTrainerAvatarByUrl = (url: string): TrainerAvatar | undefined => {
   if (!trainerCache) return undefined;
   return trainerCache.find(avatar => avatar.url === url);
 };
 
-// New async function to get trainers by generation
+// Get trainers grouped by generation
 export const getTrainerAvatarsByGenerationAsync = async (): Promise<Record<number, TrainerAvatar[]>> => {
   const trainers = await getTrainerAvatars();
   
