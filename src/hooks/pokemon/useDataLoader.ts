@@ -1,67 +1,56 @@
 
 import { useCallback } from "react";
-import { useFormFilters } from "@/hooks/useFormFilters";
-import { usePokemonContext } from "@/contexts/PokemonContext";
-import { formatPokemonName } from "@/utils/pokemon";
+import { Pokemon } from "@/services/pokemon";
+import { LoadingType } from "./types";
+import { usePokemonData } from "./usePokemonData";
 
 export const useDataLoader = (
   selectedGeneration: number,
   currentPage: number,
   loadSize: number,
-  loadingType: string,
-  setAvailablePokemon: React.Dispatch<React.SetStateAction<any[]>>,
-  setRankedPokemon: React.Dispatch<React.SetStateAction<any[]>>,
+  loadingType: LoadingType,
+  setAvailablePokemon: React.Dispatch<React.SetStateAction<Pokemon[]>>,
+  setRankedPokemon: React.Dispatch<React.SetStateAction<Pokemon[]>>,
   setTotalPages: React.Dispatch<React.SetStateAction<number>>,
   setIsLoading: React.Dispatch<React.SetStateAction<boolean>>
 ) => {
-  const { analyzeFilteringPipeline } = useFormFilters();
-  const { allPokemon } = usePokemonContext();
+  const { getPokemonData } = usePokemonData();
 
   const loadData = useCallback(async () => {
+    console.log(`🚨🚨🚨 [DATA_LOADER_INVESTIGATION] ===== LOAD DATA CALLED =====`);
+    console.log(`🚨🚨🚨 [DATA_LOADER_INVESTIGATION] selectedGeneration: ${selectedGeneration}`);
+    console.log(`🚨🚨🚨 [DATA_LOADER_INVESTIGATION] currentPage: ${currentPage}`);
+    console.log(`🚨🚨🚨 [DATA_LOADER_INVESTIGATION] loadSize: ${loadSize}`);
+    console.log(`🚨🚨🚨 [DATA_LOADER_INVESTIGATION] loadingType: ${loadingType}`);
+    
     setIsLoading(true);
     
     try {
-      console.log(`🔍 [DATA_LOADER] Loading data for generation ${selectedGeneration}, page ${currentPage}`);
+      const data = await getPokemonData(selectedGeneration, currentPage, loadSize, loadingType);
       
-      // Get all Pokemon from context - this should already be filtered by generation if needed
-      const availablePokemonData = allPokemon || [];
-      console.log(`🔍 [DATA_LOADER] Raw available Pokemon: ${availablePokemonData.length}`);
+      console.log(`🚨🚨🚨 [DATA_LOADER_INVESTIGATION] RAW DATA RECEIVED:`);
+      console.log(`🚨🚨🚨 [DATA_LOADER_INVESTIGATION] data.availablePokemon: ${data.availablePokemon.length}`);
+      console.log(`🚨🚨🚨 [DATA_LOADER_INVESTIGATION] data.rankedPokemon: ${data.rankedPokemon.length}`);
+      console.log(`🚨🚨🚨 [DATA_LOADER_INVESTIGATION] data.totalPages: ${data.totalPages}`);
+      console.log(`🚨🚨🚨 [DATA_LOADER_INVESTIGATION] TOTAL RAW: ${data.availablePokemon.length + data.rankedPokemon.length}`);
       
-      // Apply form filters with debugging
-      const formFilteredPokemon = analyzeFilteringPipeline(availablePokemonData);
-      console.log(`🔍 [DATA_LOADER] After form filters: ${formFilteredPokemon.length}`);
+      // Check for unique IDs
+      const availableIds = new Set(data.availablePokemon.map(p => p.id));
+      const rankedIds = new Set(data.rankedPokemon.map(p => p.id));
+      const totalUniqueIds = new Set([...availableIds, ...rankedIds]);
+      console.log(`🚨🚨🚨 [DATA_LOADER_INVESTIGATION] Unique available IDs: ${availableIds.size}`);
+      console.log(`🚨🚨🚨 [DATA_LOADER_INVESTIGATION] Unique ranked IDs: ${rankedIds.size}`);
+      console.log(`🚨🚨🚨 [DATA_LOADER_INVESTIGATION] Total unique IDs: ${totalUniqueIds.size}`);
       
-      // CRITICAL FIX: Apply name formatting and sort by Pokedex number
-      const formattedPokemon = formFilteredPokemon
-        .map(pokemon => ({
-          ...pokemon,
-          name: formatPokemonName(pokemon.name)
-        }))
-        .sort((a, b) => a.id - b.id); // Sort by Pokedex number for proper order
-      
-      console.log(`🔍 [DATA_LOADER] Applied name formatting and sorting to ${formattedPokemon.length} Pokemon`);
-      console.log(`🔍 [DATA_LOADER] Sample formatted names:`, formattedPokemon.slice(0, 3).map(p => `${p.name} (${p.id})`));
-      
-      if (loadingType === "pagination") {
-        const startIndex = (currentPage - 1) * loadSize;
-        const endIndex = startIndex + loadSize;
-        const paginatedPokemon = formattedPokemon.slice(startIndex, endIndex);
-        
-        console.log(`🔍 [DATA_LOADER] Pagination: showing ${startIndex}-${endIndex} of ${formattedPokemon.length}`);
-        setAvailablePokemon(paginatedPokemon);
-        setTotalPages(Math.ceil(formattedPokemon.length / loadSize));
-      } else {
-        // Load all at once
-        setAvailablePokemon(formattedPokemon);
-        setTotalPages(1);
-      }
-      
+      setAvailablePokemon(data.availablePokemon);
+      setRankedPokemon(data.rankedPokemon);
+      setTotalPages(data.totalPages);
     } catch (error) {
-      console.error('Error loading data:', error);
+      console.error("🚨🚨🚨 [DATA_LOADER_ERROR] Failed to load Pokemon data:", error);
     } finally {
       setIsLoading(false);
     }
-  }, [selectedGeneration, currentPage, loadSize, loadingType, allPokemon, analyzeFilteringPipeline, setAvailablePokemon, setRankedPokemon, setTotalPages, setIsLoading]);
+  }, [selectedGeneration, currentPage, loadSize, loadingType, getPokemonData, setAvailablePokemon, setRankedPokemon, setTotalPages, setIsLoading]);
 
   return { loadData };
 };

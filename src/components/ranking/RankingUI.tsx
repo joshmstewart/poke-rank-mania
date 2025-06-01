@@ -29,7 +29,7 @@ interface RankingUIProps {
 export const RankingUI: React.FC<RankingUIProps> = ({
   isLoading,
   availablePokemon,
-  rankedPokemon, // This will be ignored in favor of TrueSkill rankings
+  rankedPokemon,
   selectedGeneration,
   loadingType,
   currentPage,
@@ -37,7 +37,7 @@ export const RankingUI: React.FC<RankingUIProps> = ({
   loadSize,
   loadingRef,
   setAvailablePokemon,
-  setRankedPokemon, // This will be ignored in favor of TrueSkill rankings
+  setRankedPokemon,
   handlePageChange,
   getPageRange,
   onGenerationChange,
@@ -49,16 +49,42 @@ export const RankingUI: React.FC<RankingUIProps> = ({
   // Battle type state (needed for BattleControls compatibility)
   const [battleType, setBattleType] = useState<BattleType>("pairs");
   
-  console.log(`🔥🔥🔥 [RANKING_UI_CRITICAL] ===== RANKING UI RENDER =====`);
-  console.log(`🔥🔥🔥 [RANKING_UI_CRITICAL] Manual mode using TrueSkill rankings: ${localRankings.length} Pokemon`);
-  console.log(`🔥🔥🔥 [RANKING_UI_CRITICAL] Ignoring separate rankedPokemon state: ${rankedPokemon.length}`);
-  console.log(`🔥🔥🔥 [RANKING_UI_CRITICAL] Available Pokemon count: ${availablePokemon.length}`);
-
+  // CRITICAL DEBUGGING: Add comprehensive data flow analysis
+  console.log(`🚨🚨🚨 [RANKING_UI_DATA_INVESTIGATION] ===== COMPREHENSIVE DATA ANALYSIS =====`);
+  console.log(`🚨🚨🚨 [INPUT_DATA] availablePokemon.length: ${availablePokemon.length}`);
+  console.log(`🚨🚨🚨 [INPUT_DATA] rankedPokemon.length: ${rankedPokemon.length}`);
+  console.log(`🚨🚨🚨 [INPUT_DATA] localRankings.length: ${localRankings.length}`);
+  console.log(`🚨🚨🚨 [INPUT_DATA] Total from props: ${availablePokemon.length + rankedPokemon.length}`);
+  console.log(`🚨🚨🚨 [INPUT_DATA] Total with TrueSkill: ${availablePokemon.length + localRankings.length}`);
+  
+  // Log sample IDs to see what's missing
+  if (availablePokemon.length > 0) {
+    const availableIds = availablePokemon.map(p => p.id).slice(0, 10);
+    console.log(`🚨🚨🚨 [AVAILABLE_SAMPLE] First 10 available IDs: ${availableIds.join(', ')}`);
+  }
+  
+  if (localRankings.length > 0) {
+    const rankedIds = localRankings.map(p => p.id).slice(0, 10);
+    console.log(`🚨🚨🚨 [RANKED_SAMPLE] First 10 ranked IDs: ${rankedIds.join(', ')}`);
+  }
+  
+  // Check for ID overlaps
+  const availableIdSet = new Set(availablePokemon.map(p => p.id));
+  const rankedIdSet = new Set(localRankings.map(p => p.id));
+  const overlap = [...availableIdSet].filter(id => rankedIdSet.has(id));
+  console.log(`🚨🚨🚨 [OVERLAP_CHECK] Overlapping Pokemon IDs: ${overlap.length}`);
+  if (overlap.length > 0) {
+    console.log(`🚨🚨🚨 [OVERLAP_DETAIL] Overlapping IDs: ${overlap.slice(0, 20).join(', ')}`);
+  }
+  
+  // Check what generation filtering is doing
+  console.log(`🚨🚨🚨 [GENERATION_FILTER] selectedGeneration: ${selectedGeneration}`);
+  
   // Enhanced manual reorder with manual order preservation
   const { handleEnhancedManualReorder } = useEnhancedManualReorder(
-    localRankings, // Use TrueSkill rankings
-    updateLocalRankings, // Use the manual-mode-aware update function
-    true // preventAutoResorting = true to maintain manual order
+    localRankings,
+    updateLocalRankings,
+    true
   );
 
   // Use the extracted reset functionality
@@ -82,8 +108,8 @@ export const RankingUI: React.FC<RankingUIProps> = ({
 
   // Handle local reordering (for DragDropGrid compatibility)
   const handleLocalReorder = (newRankings: any[]) => {
-    console.log(`🔥🔥🔥 [RANKING_UI_CRITICAL] Local reorder with ${newRankings.length} Pokemon`);
-    updateLocalRankings(newRankings); // Use manual-mode-aware update
+    console.log(`🚨🚨🚨 [LOCAL_REORDER] Local reorder with ${newRankings.length} Pokemon`);
+    updateLocalRankings(newRankings);
   };
 
   // CRITICAL: Use TrueSkill rankings as the single source of truth
@@ -93,22 +119,10 @@ export const RankingUI: React.FC<RankingUIProps> = ({
   const displayRankingsIds = new Set(displayRankings.map(p => p.id));
   const filteredAvailablePokemon = availablePokemon.filter(p => !displayRankingsIds.has(p.id));
   
-  console.log(`🔥🔥🔥 [RANKING_UI_CRITICAL] TrueSkill localRankings: ${localRankings.length}`);
-  console.log(`🔥🔥🔥 [RANKING_UI_CRITICAL] displayRankings length: ${displayRankings.length}`);
-  console.log(`🔥🔥🔥 [RANKING_UI_CRITICAL] Filtered available: ${filteredAvailablePokemon.length}`);
-  console.log(`🔥🔥🔥 [RANKING_UI_CRITICAL] Display rankings IDs: ${Array.from(displayRankingsIds).slice(0, 10).join(', ')}${displayRankingsIds.size > 10 ? '...' : ''}`);
-
-  // CRITICAL: Log data source validation
-  useEffect(() => {
-    console.log(`🔥🔥🔥 [RANKING_UI_DATA_SOURCE_CRITICAL] Data source validation:`);
-    console.log(`🔥🔥🔥 [RANKING_UI_DATA_SOURCE_CRITICAL] TrueSkill localRankings: ${localRankings.length}`);
-    console.log(`🔥🔥🔥 [RANKING_UI_DATA_SOURCE_CRITICAL] Legacy rankedPokemon (ignored): ${rankedPokemon.length}`);
-    console.log(`🔥🔥🔥 [RANKING_UI_DATA_SOURCE_CRITICAL] Using displayRankings: ${displayRankings.length}`);
-    
-    if (localRankings.length > 0) {
-      console.log(`🔥🔥🔥 [RANKING_UI_DATA_SOURCE_CRITICAL] First 3 rankings:`, localRankings.slice(0, 3).map(p => ({ id: p.id, name: p.name, score: p.score })));
-    }
-  }, [localRankings, rankedPokemon, displayRankings]);
+  console.log(`🚨🚨🚨 [FINAL_COUNTS] displayRankings: ${displayRankings.length}`);
+  console.log(`🚨🚨🚨 [FINAL_COUNTS] filteredAvailablePokemon: ${filteredAvailablePokemon.length}`);
+  console.log(`🚨🚨🚨 [FINAL_COUNTS] TOTAL VISIBLE: ${displayRankings.length + filteredAvailablePokemon.length}`);
+  console.log(`🚨🚨🚨 [FINAL_COUNTS] Expected from forms filtering: ???`);
 
   return (
     <RankingLayout

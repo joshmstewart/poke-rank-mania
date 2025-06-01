@@ -35,6 +35,15 @@ export const usePokemonRanker = (): RankingState & RankingActions & { loadingRef
     setLoadingType
   } = useRankingState();
 
+  // CRITICAL DEBUGGING: Track data at the hook level
+  console.log(`🔍🔍🔍 [POKEMON_RANKER_HOOK] ===== DATA FLOW INVESTIGATION =====`);
+  console.log(`🔍🔍🔍 [POKEMON_RANKER_HOOK] Raw availablePokemon: ${availablePokemon.length}`);
+  console.log(`🔍🔍🔍 [POKEMON_RANKER_HOOK] Raw rankedPokemon: ${rankedPokemon.length}`);
+  console.log(`🔍🔍🔍 [POKEMON_RANKER_HOOK] selectedGeneration: ${selectedGeneration}`);
+  console.log(`🔍🔍🔍 [POKEMON_RANKER_HOOK] loadSize: ${loadSize}`);
+  console.log(`🔍🔍🔍 [POKEMON_RANKER_HOOK] currentPage: ${currentPage}`);
+  console.log(`🔍🔍🔍 [POKEMON_RANKER_HOOK] totalPages: ${totalPages}`);
+
   // Use the handlers hook
   const {
     resetRankings,
@@ -57,7 +66,7 @@ export const usePokemonRanker = (): RankingState & RankingActions & { loadingRef
   // Use TrueSkill integration hook
   const { isStoreLoading } = useTrueSkillIntegration({
     isLoading,
-    storeLoading: false, // We'll get this from the hook
+    storeLoading: false,
     availablePokemon,
     rankedPokemon,
     setRankedPokemon,
@@ -92,6 +101,10 @@ export const usePokemonRanker = (): RankingState & RankingActions & { loadingRef
   useEffect(() => {
     loadData();
   }, [selectedGeneration, currentPage, loadSize]);
+
+  // CRITICAL: Log what we're returning
+  console.log(`🔍🔍🔍 [POKEMON_RANKER_RETURN] Returning availablePokemon: ${availablePokemon.length}`);
+  console.log(`🔍🔍🔍 [POKEMON_RANKER_RETURN] Returning rankedPokemon: ${rankedPokemon.length}`);
 
   return {
     isLoading: isLoading || isStoreLoading,
