@@ -210,10 +210,10 @@ export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
   console.log('🟢🟢🟢 [NAWGTI_CRITICAL] Minimal mode:', useMinimalMode);
   console.log('🟢🟢🟢 [NAWGTI_CRITICAL] Current auth state for rendering decision:', authState);
 
-  // CRITICAL: Always render the outer wrapper structure
+  // CRITICAL: Always render the outer wrapper structure with stable keys
   return (
     <AuthWrapperErrorBoundary onError={handleError}>
-      <div className="auth-wrapper-container" style={{ minHeight: '100vh', position: 'relative' }}>
+      <div className="auth-wrapper-container" style={{ minHeight: '100vh', position: 'relative' }} key="nawgti-container">
         <div style={{ 
           position: 'fixed', 
           top: '10px', 
@@ -241,8 +241,8 @@ export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
           </span>
         </div>
         
-        <AuthProvider>
-          <ImpliedBattleTrackerProvider>
+        <AuthProvider key="auth-provider-stable">
+          <ImpliedBattleTrackerProvider key="battle-tracker-stable">
             {useMinimalMode ? (
               <div style={{ 
                 border: '8px solid green', 
@@ -251,7 +251,7 @@ export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
                 marginTop: '180px', 
                 backgroundColor: '#e0ffe0',
                 minHeight: '200px'
-              }}>
+              }} key="minimal-mode-container">
                 <div style={{ fontSize: '24px', fontWeight: 'bold', color: 'green' }}>
                   🚀 MINIMAL MODE - NAWGTI WRAPPER TEST 🚀
                 </div>
@@ -264,7 +264,7 @@ export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
                 </p>
               </div>
             ) : (
-              <div style={{ marginTop: '160px' }}>
+              <div style={{ marginTop: '160px' }} key="main-children-container">
                 {children}
               </div>
             )}

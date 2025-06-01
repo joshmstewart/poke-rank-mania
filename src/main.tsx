@@ -1,5 +1,5 @@
 
-import { StrictMode } from "react";
+import React, { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
@@ -64,7 +64,7 @@ const AppWrapper = () => {
   }, []);
   
   return (
-    <div className="app-wrapper-diagnostic">
+    <div className="app-wrapper-diagnostic" key="app-wrapper-stable">
       <div style={{ 
         position: 'fixed', 
         top: 0, 
@@ -77,7 +77,7 @@ const AppWrapper = () => {
       }}>
         🟡 APP WRAPPER RENDERED: {new Date().toLocaleTimeString()} | Render #{renderCount}
       </div>
-      <App />
+      <App key="main-app-stable" />
     </div>
   );
 };
@@ -86,7 +86,7 @@ console.log('🔥🔥🔥 MAIN.TSX: About to render AppWrapper which contains Ap
 
 root.render(
   <StrictMode>
-    <AppWrapper />
+    <AppWrapper key="app-wrapper-root" />
   </StrictMode>
 );
 

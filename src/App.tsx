@@ -151,15 +151,15 @@ function AppContent() {
   const renderContent = () => {
     console.log('🚀🚀🚀 APP_CONTENT: Rendering content for mode:', mode);
     if (mode === "battle") {
-      return <BattleMode />;
+      return <BattleMode key="battle-mode-stable" />;
     } else {
-      return <PokemonRankerWithProvider />;
+      return <PokemonRankerWithProvider key="ranker-mode-stable" />;
     }
   };
 
   return (
-    <div className="flex flex-col h-screen">
-      <div className="bg-purple-500 border-8 border-yellow-500 p-4 m-2">
+    <div className="flex flex-col h-screen" key="app-content-root">
+      <div className="bg-purple-500 border-8 border-yellow-500 p-4 m-2" key="app-content-debug">
         <div className="text-2xl font-bold text-yellow-500 mb-2">🚀 MAIN APP CONTAINER 🚀</div>
         <div className="text-white">Instance: {stableInstance.current}</div>
         <div className="text-white">Full App is rendering - timestamp: {new Date().toISOString()}</div>
@@ -169,14 +169,14 @@ function AppContent() {
         <div className="text-white font-bold">🔥 THIS SHOULD NEVER DISAPPEAR AFTER LOGIN 🔥</div>
       </div>
       
-      <AppHeader mode={mode} onModeChange={handleModeChange} />
+      <AppHeader mode={mode} onModeChange={handleModeChange} key="app-header-stable" />
       
-      <main className="flex-grow bg-gray-100 py-6 px-4">
+      <main className="flex-grow bg-gray-100 py-6 px-4" key="app-main-content">
         <div className="container max-w-7xl mx-auto">
           {renderContent()}
         </div>
       </main>
-      <Toaster />
+      <Toaster key="toaster-stable" />
     </div>
   );
 }
@@ -282,9 +282,9 @@ function App() {
     console.log('🚀🚀🚀 ROOT_APP: 🟣 USING MINIMAL VERSION FOR ISOLATION TESTING 🟣');
     return (
       <AppErrorBoundary>
-        <div className="app-root">
-          <AuthWrapper>
-            <MinimalAppForDebugging />
+        <div className="app-root" key="app-root-minimal">
+          <AuthWrapper key="auth-wrapper-minimal">
+            <MinimalAppForDebugging key="minimal-app-debug" />
           </AuthWrapper>
         </div>
       </AppErrorBoundary>
@@ -295,9 +295,9 @@ function App() {
   
   return (
     <AppErrorBoundary>
-      <div className="app-root">
-        <AuthWrapper>
-          <AppContent />
+      <div className="app-root" key="app-root-full">
+        <AuthWrapper key="auth-wrapper-full">
+          <AppContent key="app-content-full" />
         </AuthWrapper>
       </div>
     </AppErrorBoundary>
