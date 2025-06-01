@@ -1,9 +1,10 @@
+
 import { useState, useEffect } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { FormFilters, PokemonFormType } from "./types";
 import { getStoredFilters, saveFilters, clearStoredFilters } from "./storage";
 import { 
-  isStarterPokemon, 
+  isStarterVariant, 
   isTotemPokemon, 
   isSizeVariantPokemon, 
   isSpecialKoraidonMiraidonMode,
