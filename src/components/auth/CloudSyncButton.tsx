@@ -4,14 +4,29 @@ import { Button } from '@/components/ui/button';
 import { Cloud } from 'lucide-react';
 import { AuthDialog } from './AuthDialog';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 export const CloudSyncButton: React.FC = () => {
   const { user, session } = useAuth();
   const [showAuthDialog, setShowAuthDialog] = useState(false);
+  const [directSupabaseUser, setDirectSupabaseUser] = React.useState<any>(null);
 
-  console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON_FINAL: ===== POST-LOGIN DIAGNOSTIC RENDER START =====');
-  console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON_FINAL: 🔥 POST-LOGIN DIAGNOSTIC MODE 🔥');
-  console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON_FINAL: Auth state from useAuth:', {
+  // Get direct Supabase user for comparison
+  React.useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user: directUser }, error }) => {
+      setDirectSupabaseUser(directUser);
+      console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON_ULTIMATE: Direct Supabase user check:', {
+        hasDirectUser: !!directUser,
+        directEmail: directUser?.email,
+        error: error?.message,
+        timestamp: new Date().toISOString()
+      });
+    });
+  }, []);
+
+  console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON_ULTIMATE: ===== RENDER START =====');
+  console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON_ULTIMATE: 🔥 ULTIMATE RENDERING MODE 🔥');
+  console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON_ULTIMATE: Auth state from useAuth:', {
     hasUser: !!user,
     hasSession: !!session,
     userEmail: user?.email || 'no email',
@@ -20,53 +35,49 @@ export const CloudSyncButton: React.FC = () => {
     timestamp: new Date().toISOString()
   });
 
-  const isAuthenticated = !!user || !!session?.user;
+  console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON_ULTIMATE: Direct Supabase user:', {
+    hasDirectUser: !!directSupabaseUser,
+    directUserEmail: directSupabaseUser?.email || 'no direct email',
+    timestamp: new Date().toISOString()
+  });
 
-  console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON_FINAL: 🔥 POST-LOGIN AUTHENTICATION CHECK:', {
+  console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON_ULTIMATE: Call stack:', new Error().stack);
+
+  const isAuthenticated = !!(user || session?.user || directSupabaseUser);
+
+  console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON_ULTIMATE: 🔥 AUTHENTICATION CHECK 🔥');
+  console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON_ULTIMATE: Authentication check:', {
     isAuthenticated,
     hasUser: !!user,
     hasSessionUser: !!session?.user,
+    hasDirectUser: !!directSupabaseUser,
     willReturnNull: isAuthenticated,
     willRenderButton: !isAuthenticated,
-    NOTE: 'Should return null if useAuth fixes worked'
+    renderDecision: isAuthenticated ? 'RETURN_NULL' : 'RENDER_BUTTON',
+    timestamp: new Date().toISOString()
   });
 
   if (isAuthenticated) {
-    console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON_FINAL: 🚫 USER IS AUTHENTICATED - RETURNING NULL 🚫');
-    console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON_FINAL: This indicates useAuth context fixes are working!');
+    console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON_ULTIMATE: 🚫 USER IS AUTHENTICATED - RETURNING NULL 🚫');
+    console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON_ULTIMATE: This indicates authentication is working!');
     return null;
   }
 
-  console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON_FINAL: 🟢 USER NOT AUTHENTICATED - RENDERING BUTTON 🟢');
-  console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON_FINAL: This indicates useAuth context still shows unauthenticated');
+  console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON_ULTIMATE: 🟢 USER NOT AUTHENTICATED - RENDERING BUTTON 🟢');
+  console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON_ULTIMATE: This indicates user needs to authenticate');
 
   return (
-    <div style={{ 
-      backgroundColor: '#ffff00', 
-      border: '2px solid #0066ff', 
-      padding: '10px',
-      borderRadius: '5px'
-    }}>
-      <div style={{ color: 'black', fontWeight: 'bold', fontSize: '12px' }}>
-        🟡 CLOUD SYNC BUTTON (POST-LOGIN DIAGNOSTIC) 🟡
-      </div>
-      <div style={{ color: 'black', fontSize: '10px' }}>
-        Not authenticated - showing sync button<br/>
-        Time: {new Date().toLocaleTimeString()}<br/>
-        useAuth context: {isAuthenticated ? 'WORKING' : 'BROKEN'}
-      </div>
-      <AuthDialog 
-        open={showAuthDialog} 
-        onOpenChange={setShowAuthDialog}
+    <AuthDialog 
+      open={showAuthDialog} 
+      onOpenChange={setShowAuthDialog}
+    >
+      <Button
+        variant="outline"
+        className="flex items-center gap-2"
       >
-        <Button
-          variant="outline"
-          className="flex items-center gap-2 mt-2"
-        >
-          <Cloud className="h-4 w-4" />
-          <span className="hidden sm:inline">Save Progress</span>
-        </Button>
-      </AuthDialog>
-    </div>
+        <Cloud className="h-4 w-4" />
+        <span className="hidden sm:inline">Save Progress</span>
+      </Button>
+    </AuthDialog>
   );
 };

@@ -9,15 +9,15 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, session, loading } = useAuthState();
   const renderCount = useRef(0);
-  const providerInstanceRef = useRef('auth-provider-fixed');
+  const providerInstanceRef = useRef('auth-provider-bulletproof-ultimate');
   const lastAuthStateRef = useRef('INITIAL');
   
   renderCount.current += 1;
 
-  console.log('🔴🔴🔴 [AUTH_PROVIDER_FIXED] ===== AUTH PROVIDER RENDER =====');
-  console.log('🔴🔴🔴 [AUTH_PROVIDER_FIXED] Provider instance:', providerInstanceRef.current);
-  console.log('🔴🔴🔴 [AUTH_PROVIDER_FIXED] Render count:', renderCount.current);
-  console.log('🔴🔴🔴 [AUTH_PROVIDER_FIXED] Raw auth data from useAuthState:', {
+  console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] ===== AUTH PROVIDER RENDER =====');
+  console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] Provider instance:', providerInstanceRef.current);
+  console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] Render count:', renderCount.current);
+  console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] Raw auth data from useAuthState:', {
     hasUser: !!user,
     hasSession: !!session,
     loading,
@@ -27,16 +27,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     sessionUserId: session?.user?.id,
     timestamp: new Date().toISOString()
   });
+  console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] Render stack trace:', new Error().stack);
 
   // Compute auth state - be very explicit about the logic
   const authState = loading ? 'LOADING' : (user || session?.user) ? 'AUTHENTICATED' : 'UNAUTHENTICATED';
   
-  console.log('🔴🔴🔴 [AUTH_PROVIDER_FIXED] ⚡ AUTH STATE COMPUTATION ⚡');
-  console.log('🔴🔴🔴 [AUTH_PROVIDER_FIXED] - loading:', loading);
-  console.log('🔴🔴🔴 [AUTH_PROVIDER_FIXED] - user exists:', !!user);
-  console.log('🔴🔴🔴 [AUTH_PROVIDER_FIXED] - session.user exists:', !!session?.user);
-  console.log('🔴🔴🔴 [AUTH_PROVIDER_FIXED] - computed authState:', authState);
-  console.log('🔴🔴🔴 [AUTH_PROVIDER_FIXED] - previous authState:', lastAuthStateRef.current);
+  console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] ⚡ AUTH STATE COMPUTATION ⚡');
+  console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] - loading:', loading);
+  console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] - user exists:', !!user);
+  console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] - session.user exists:', !!session?.user);
+  console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] - computed authState:', authState);
+  console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] - previous authState:', lastAuthStateRef.current);
 
   // Critical: Log what will be provided to useAuth consumers
   const contextValue = React.useMemo(() => ({
@@ -51,8 +52,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     verifyPhoneOtp: authService.verifyPhoneOtp,
   }), [user, session, loading]);
 
-  console.log('🔴🔴🔴 [AUTH_PROVIDER_FIXED] 🎯 CONTEXT VALUE TO BE PROVIDED 🎯');
-  console.log('🔴🔴🔴 [AUTH_PROVIDER_FIXED] Context value:', {
+  console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] 🎯 CONTEXT VALUE TO BE PROVIDED 🎯');
+  console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] Context value:', {
     hasUser: !!contextValue.user,
     hasSession: !!contextValue.session,
     loading: contextValue.loading,
@@ -63,23 +64,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Communicate auth state to parent wrapper
   useEffect(() => {
-    console.log('🔴🔴🔴 [AUTH_PROVIDER_FIXED] ===== AUTH STATE EFFECT =====');
-    console.log('🔴🔴🔴 [AUTH_PROVIDER_FIXED] Provider instance:', providerInstanceRef.current);
-    console.log('🔴🔴🔴 [AUTH_PROVIDER_FIXED] Effect triggered with state:', authState);
-    console.log('🔴🔴🔴 [AUTH_PROVIDER_FIXED] Previous state was:', lastAuthStateRef.current);
-    console.log('🔴🔴🔴 [AUTH_PROVIDER_FIXED] State changed:', lastAuthStateRef.current !== authState);
+    console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] ===== AUTH STATE EFFECT =====');
+    console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] Provider instance:', providerInstanceRef.current);
+    console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] Effect triggered with state:', authState);
+    console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] Previous state was:', lastAuthStateRef.current);
+    console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] State changed:', lastAuthStateRef.current !== authState);
+    console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] Effect stack trace:', new Error().stack);
 
     // Check if state actually changed
     if (lastAuthStateRef.current !== authState) {
-      console.log('🔴🔴🔴 [AUTH_PROVIDER_FIXED] 🚨 AUTH STATE CHANGED 🚨');
-      console.log('🔴🔴🔴 [AUTH_PROVIDER_FIXED] From:', lastAuthStateRef.current);
-      console.log('🔴🔴🔴 [AUTH_PROVIDER_FIXED] To:', authState);
+      console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] 🚨 AUTH STATE CHANGED 🚨');
+      console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] From:', lastAuthStateRef.current);
+      console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] To:', authState);
       
       lastAuthStateRef.current = authState;
     }
     
-    console.log('🔴🔴🔴 [AUTH_PROVIDER_FIXED] Current auth state for nawgti:', authState);
-    console.log('🔴🔴🔴 [AUTH_PROVIDER_FIXED] Detailed auth info:', {
+    console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] Current auth state for nawgti:', authState);
+    console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] Detailed auth info:', {
       hasUser: !!user,
       hasSession: !!session,
       loading,
@@ -96,42 +98,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       userId: user?.id || session?.user?.id
     };
     
-    console.log('🔴🔴🔴 [AUTH_PROVIDER_FIXED] Dispatching nawgti-auth-state event with:', eventDetail);
+    console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] Dispatching nawgti-auth-state event with:', eventDetail);
     
     window.dispatchEvent(new CustomEvent('nawgti-auth-state', { 
       detail: eventDetail
     }));
     
-    console.log('🔴🔴🔴 [AUTH_PROVIDER_FIXED] Event dispatched successfully');
+    console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] Event dispatched successfully');
     
     if (authState === 'AUTHENTICATED') {
-      console.log('🔴🔴🔴 [AUTH_PROVIDER_FIXED] ✅✅✅ PROVIDER REPORTS AUTHENTICATED ✅✅✅');
-      console.log('🔴🔴🔴 [AUTH_PROVIDER_FIXED] User email:', user?.email || session?.user?.email);
-      console.log('🔴🔴🔴 [AUTH_PROVIDER_FIXED] 🎯 useAuth CONSUMERS SHOULD NOW SEE AUTHENTICATED STATE 🎯');
-      console.log('🔴🔴🔴 [AUTH_PROVIDER_FIXED] NAWGTI SHOULD REMAIN STABLE WITH THIS STATE');
+      console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] ✅✅✅ PROVIDER REPORTS AUTHENTICATED ✅✅✅');
+      console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] User email:', user?.email || session?.user?.email);
+      console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] 🎯 useAuth CONSUMERS SHOULD NOW SEE AUTHENTICATED STATE 🎯');
+      console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] NAWGTI SHOULD REMAIN STABLE WITH THIS STATE');
     } else if (authState === 'LOADING') {
-      console.log('🔴🔴🔴 [AUTH_PROVIDER_FIXED] Provider reports LOADING state');
+      console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] Provider reports LOADING state');
     } else {
-      console.log('🔴🔴🔴 [AUTH_PROVIDER_FIXED] Provider reports UNAUTHENTICATED state');
+      console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] Provider reports UNAUTHENTICATED state');
     }
   }, [user, session, loading, authState]);
 
   useEffect(() => {
-    console.log('🔴🔴🔴 [AUTH_PROVIDER_FIXED] ===== PROVIDER MOUNTED =====');
-    console.log('🔴🔴🔴 [AUTH_PROVIDER_FIXED] Provider mounted with instance:', providerInstanceRef.current);
-    console.log('🔴🔴🔴 [AUTH_PROVIDER_FIXED] Mount timestamp:', new Date().toISOString());
+    console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] ===== PROVIDER MOUNTED =====');
+    console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] Provider mounted with instance:', providerInstanceRef.current);
+    console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] Mount timestamp:', new Date().toISOString());
+    console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] Mount stack trace:', new Error().stack);
     
     return () => {
-      console.log('🔴🔴🔴 [AUTH_PROVIDER_FIXED] ===== PROVIDER UNMOUNT =====');
-      console.log('🔴🔴🔴 [AUTH_PROVIDER_FIXED] 🚨 AUTH PROVIDER UNMOUNTING 🚨');
-      console.log('🔴🔴🔴 [AUTH_PROVIDER_FIXED] Instance unmounting:', providerInstanceRef.current);
-      console.log('🔴🔴🔴 [AUTH_PROVIDER_FIXED] Unmount timestamp:', new Date().toISOString());
-      console.log('🔴🔴🔴 [AUTH_PROVIDER_FIXED] Final auth state:', authState);
+      console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] ===== PROVIDER UNMOUNT =====');
+      console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] 🚨🚨🚨 AUTH PROVIDER UNMOUNTING 🚨🚨🚨');
+      console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] Instance unmounting:', providerInstanceRef.current);
+      console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] Unmount timestamp:', new Date().toISOString());
+      console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] Final auth state:', authState);
+      console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] Unmount stack trace:', new Error().stack);
     };
   }, []);
 
-  console.log('🔴🔴🔴 [AUTH_PROVIDER_FIXED] About to render context with children');
-  console.log('🔴🔴🔴 [AUTH_PROVIDER_FIXED] Final auth state for this render:', authState);
+  console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] About to render context with children');
+  console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] Final auth state for this render:', authState);
 
   return (
     <div style={{ position: 'relative' }}>
@@ -147,7 +151,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         border: '3px solid yellow',
         maxWidth: '400px'
       }}>
-        🔴 AUTH PROVIDER FIXED: {authState} | Render #{renderCount.current}<br/>
+        🔴 AUTH PROVIDER ULTIMATE: {authState} | Render #{renderCount.current}<br/>
         Instance: {providerInstanceRef.current}<br/>
         User: {user?.email || 'none'}<br/>
         Session: {session?.user?.email || 'none'}<br/>

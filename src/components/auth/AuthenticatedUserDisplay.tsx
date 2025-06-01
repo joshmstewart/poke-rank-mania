@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { getProfile, type Profile } from '@/services/profileService';
 import { ProfileModal } from './ProfileModal';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AuthenticatedUserDisplayProps {
   currentUser?: any;
@@ -18,26 +19,41 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
   const [profile, setProfile] = useState<Profile | null>(null);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [renderCount, setRenderCount] = useState(0);
+  const [directSupabaseUser, setDirectSupabaseUser] = useState<any>(null);
 
   // Increment render count for diagnostics
   useEffect(() => {
     setRenderCount(prev => prev + 1);
   });
 
-  console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FINAL: ===== POST-LOGIN RENDER START =====');
-  console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FINAL: 🔥 POST-LOGIN RENDERING MODE 🔥');
-  console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FINAL: Render count:', renderCount);
-  console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FINAL: Props received:', {
+  // Get direct Supabase user for comparison
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user: directUser }, error }) => {
+      setDirectSupabaseUser(directUser);
+      console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_ULTIMATE: Direct Supabase user check:', {
+        hasDirectUser: !!directUser,
+        directEmail: directUser?.email,
+        error: error?.message,
+        timestamp: new Date().toISOString()
+      });
+    });
+  }, []);
+
+  console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_ULTIMATE: ===== RENDER START =====');
+  console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_ULTIMATE: 🔥 ULTIMATE RENDERING MODE 🔥');
+  console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_ULTIMATE: Render count:', renderCount);
+  console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_ULTIMATE: Props received:', {
     currentUserProp: !!currentUser,
     currentUserEmail: currentUser?.email || 'no prop email',
     currentUserId: currentUser?.id || 'no prop id',
     propSource: currentUser?.email?.includes('forced-post-login-diagnostic') ? 'FORCED_POST_LOGIN_DIAGNOSTIC' : 'REAL_USER_PROP',
     timestamp: new Date().toISOString()
   });
+  console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_ULTIMATE: Call stack:', new Error().stack);
 
   // CRITICAL: Log the auth context state from useAuth
-  console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FINAL: 🎯 AUTH CONTEXT STATE FROM useAuth 🎯');
-  console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FINAL: Auth context state from useAuth:', {
+  console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_ULTIMATE: 🎯 AUTH CONTEXT STATE FROM useAuth 🎯');
+  console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_ULTIMATE: Auth context state from useAuth:', {
     hasUser: !!user,
     hasSession: !!session,
     userEmail: user?.email || 'no user email',
@@ -48,78 +64,86 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
     timestamp: new Date().toISOString()
   });
 
-  // Use current user from props or context
-  const effectiveUser = currentUser || user || session?.user;
+  console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_ULTIMATE: 🎯 DIRECT SUPABASE USER 🎯');
+  console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_ULTIMATE: Direct Supabase user:', {
+    hasDirectUser: !!directSupabaseUser,
+    directUserEmail: directSupabaseUser?.email || 'no direct email',
+    directUserId: directSupabaseUser?.id || 'no direct id',
+    timestamp: new Date().toISOString()
+  });
+
+  // Use current user from props, context, or direct Supabase check
+  const effectiveUser = currentUser || user || session?.user || directSupabaseUser;
   
-  console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FINAL: 🔥 EFFECTIVE USER (POST-LOGIN) 🔥');
-  console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FINAL: Effective user analysis:', {
+  console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_ULTIMATE: 🔥 EFFECTIVE USER ANALYSIS 🔥');
+  console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_ULTIMATE: Effective user analysis:', {
     effectiveUser: !!effectiveUser,
-    sourceUsed: currentUser ? 'prop' : user ? 'context-user' : session?.user ? 'context-session' : 'none',
+    sourceUsed: currentUser ? 'prop' : user ? 'context-user' : session?.user ? 'context-session' : directSupabaseUser ? 'direct-supabase' : 'none',
     effectiveUserEmail: effectiveUser?.email || 'no effective email',
     effectiveUserId: effectiveUser?.id || 'no effective id',
     isForced: currentUser?.email?.includes('forced-post-login-diagnostic'),
-    willRender: !!effectiveUser
+    willRender: !!effectiveUser,
+    renderDecision: !!effectiveUser ? 'WILL_RENDER' : 'WILL_NOT_RENDER'
   });
   
   if (!effectiveUser) {
-    console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FINAL: ❌ NO EFFECTIVE USER - CRITICAL FAILURE ❌');
-    return (
-      <div style={{ color: 'red', fontWeight: 'bold', fontSize: '12px' }}>
-        ❌ POST-LOGIN RENDER FAILED - NO USER ❌
-      </div>
-    );
+    console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_ULTIMATE: ❌ NO EFFECTIVE USER - RETURNING NULL ❌');
+    console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_ULTIMATE: Render decision: NULL (no user found anywhere)');
+    return null;
   }
   
   const displayEmail = effectiveUser?.email || 'unknown-user@example.com';
   const displayName = profile?.display_name || profile?.username || effectiveUser?.email?.split('@')[0] || 'User';
   const avatarUrl = profile?.avatar_url;
 
-  console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FINAL: 🔥 POST-LOGIN DISPLAY VALUES 🔥');
-  console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FINAL: Display values:', {
+  console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_ULTIMATE: 🔥 DISPLAY VALUES 🔥');
+  console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_ULTIMATE: Display values:', {
     displayName,
     displayEmail,
     avatarUrl: avatarUrl || 'no avatar',
     profilePresent: !!profile,
     renderCount,
     effectiveUser: !!effectiveUser,
-    POST_LOGIN_RENDER_SUCCESS: true,
+    RENDER_SUCCESS: true,
     timestamp: new Date().toISOString()
   });
 
   useEffect(() => {
-    console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FINAL: ===== POST-LOGIN MOUNT EFFECT =====');
-    console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FINAL: Component mounted post-login, render count:', renderCount);
+    console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_ULTIMATE: ===== MOUNT EFFECT =====');
+    console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_ULTIMATE: Component mounted, render count:', renderCount);
+    console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_ULTIMATE: Mount stack:', new Error().stack);
     
     return () => {
-      console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FINAL: ===== POST-LOGIN UNMOUNT DETECTED =====');
-      console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FINAL: 🚨 AuthenticatedUserDisplay UNMOUNTING POST-LOGIN 🚨');
-      console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FINAL: Final render count was:', renderCount);
+      console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_ULTIMATE: ===== UNMOUNT DETECTED =====');
+      console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_ULTIMATE: 🚨🚨🚨 AuthenticatedUserDisplay UNMOUNTING 🚨🚨🚨');
+      console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_ULTIMATE: Final render count was:', renderCount);
+      console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_ULTIMATE: Unmount stack:', new Error().stack);
     };
   }, []);
 
   useEffect(() => {
-    console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FINAL: Profile loading effect triggered post-login');
+    console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_ULTIMATE: Profile loading effect triggered');
     if (effectiveUser?.id && !effectiveUser?.email?.includes('forced-post-login-diagnostic')) {
-      console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FINAL: Loading profile for real user ID:', effectiveUser.id);
+      console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_ULTIMATE: Loading profile for real user ID:', effectiveUser.id);
       loadProfile(effectiveUser.id);
     } else {
-      console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FINAL: Skipping profile load (diagnostic user or no ID)');
+      console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_ULTIMATE: Skipping profile load (diagnostic user or no ID)');
     }
-  }, [currentUser, user, session]);
+  }, [currentUser, user, session, directSupabaseUser]);
 
   const loadProfile = async (userId: string) => {
-    console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FINAL: Loading profile for user:', userId);
+    console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_ULTIMATE: Loading profile for user:', userId);
     try {
       const profileData = await getProfile(userId);
       setProfile(profileData);
-      console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FINAL: Profile loaded successfully:', profileData);
+      console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_ULTIMATE: Profile loaded successfully:', profileData);
     } catch (error) {
-      console.error('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FINAL: Error loading profile:', error);
+      console.error('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_ULTIMATE: Error loading profile:', error);
     }
   };
 
   const handleSignOut = async () => {
-    console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FINAL: Signing out...');
+    console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_ULTIMATE: Signing out...');
     await signOut();
     toast({
       title: 'Signed out',
@@ -134,19 +158,19 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
     }
   };
 
-  console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FINAL: 🔥 POST-LOGIN RENDER - ABOUT TO RENDER JSX 🔥');
-  console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FINAL: About to render JSX with values:', {
+  console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_ULTIMATE: 🔥 ABOUT TO RENDER JSX 🔥');
+  console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_ULTIMATE: About to render JSX with values:', {
     displayName,
     displayEmail,
     hasAvatar: !!avatarUrl,
     renderCount,
     effectiveUser: !!effectiveUser,
-    isForced: effectiveUser?.email?.includes('forced-post-login-diagnostic'),
+    sourceUsed: currentUser ? 'prop' : user ? 'context-user' : session?.user ? 'context-session' : directSupabaseUser ? 'direct-supabase' : 'none',
     timestamp: new Date().toISOString()
   });
 
   // Special styling for forced diagnostic mode
-  const isForced = effectiveUser?.email?.includes('forced-post-login-diagnostic');
+  const isForced = currentUser?.email?.includes('forced-post-login-diagnostic');
   const containerStyle = isForced ? {
     border: '3px solid red',
     backgroundColor: 'rgba(255, 0, 0, 0.1)',
@@ -158,7 +182,7 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
     <div className="flex items-center gap-2" style={containerStyle}>
       {isForced && (
         <div style={{ fontSize: '10px', color: 'red', fontWeight: 'bold' }}>
-          POST-LOGIN FORCED:
+          FORCED:
         </div>
       )}
       <DropdownMenu>
@@ -171,14 +195,14 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
               </AvatarFallback>
             </Avatar>
             <span className="text-sm font-medium hidden sm:inline">
-              {isForced ? 'FORCED POST-LOGIN' : displayName}
+              {displayName}
             </span>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
           <DropdownMenuItem onClick={() => setProfileModalOpen(true)}>
             <Settings className="mr-2 h-4 w-4" />
-            {isForced ? 'Profile (Forced)' : 'My Profile'}
+            My Profile
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleSignOut}>
