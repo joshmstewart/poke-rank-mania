@@ -9,26 +9,31 @@ export const updateProfile = async (userId: string, updates: Partial<Profile>): 
   
   try {
     const updateData = {
+      id: userId, // Include the user ID for upsert
       ...updates,
       updated_at: new Date().toISOString(),
     };
     
-    console.log('🎯 [PROFILE_SERVICE_DEBUG] Final update data:', updateData);
+    console.log('🎯 [PROFILE_SERVICE_DEBUG] Final upsert data:', updateData);
     
-    const { error } = await supabase
+    // Use upsert (INSERT ... ON CONFLICT DO UPDATE) to handle both create and update cases
+    const { data, error } = await supabase
       .from('profiles')
-      .update(updateData)
-      .eq('id', userId);
+      .upsert(updateData, { 
+        onConflict: 'id',
+        returning: 'minimal' 
+      });
 
-    console.log('🎯 [PROFILE_SERVICE_DEBUG] Update completed');
-    console.log('🎯 [PROFILE_SERVICE_DEBUG] Update error:', error);
+    console.log('🎯 [PROFILE_SERVICE_DEBUG] Upsert completed');
+    console.log('🎯 [PROFILE_SERVICE_DEBUG] Upsert data:', data);
+    console.log('🎯 [PROFILE_SERVICE_DEBUG] Upsert error:', error);
 
     if (error) {
-      console.error('🎯 [PROFILE_SERVICE_DEBUG] Update error details:', error);
+      console.error('🎯 [PROFILE_SERVICE_DEBUG] Upsert error details:', error);
       return false;
     }
 
-    console.log('🎯 [PROFILE_SERVICE_DEBUG] Update successful');
+    console.log('🎯 [PROFILE_SERVICE_DEBUG] Upsert successful');
     console.log('🎯 [PROFILE_SERVICE_DEBUG] ===== updateProfile END =====');
     return true;
   } catch (error) {
