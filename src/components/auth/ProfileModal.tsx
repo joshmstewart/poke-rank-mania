@@ -83,6 +83,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
   const handleSave = useCallback(async () => {
     console.log('🚀🚀🚀 [PROFILE_MODAL] HANDLE_SAVE CALLBACK TRIGGERED! 🚀🚀🚀');
     console.log('🚀 [PROFILE_MODAL] Component mounted:', mountedRef.current);
+    console.log('🚀 [PROFILE_MODAL] Function called at:', new Date().toISOString());
+    console.log('🚀 [PROFILE_MODAL] Call stack:', new Error().stack);
     
     if (!mountedRef.current) {
       console.log('🚀 [PROFILE_MODAL] Component unmounted, skipping save');
@@ -114,21 +116,28 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
       return;
     }
 
-    console.log('🚀 [PROFILE_MODAL] Calling saveProfile...');
-    const success = await saveProfile(user.id, {
-      avatar_url: selectedAvatar,
-      username: username.trim(),
-      display_name: displayName.trim(),
-    });
+    console.log('🚀 [PROFILE_MODAL] About to call saveProfile...');
+    console.log('🚀 [PROFILE_MODAL] saveProfile type:', typeof saveProfile);
+    console.log('🚀 [PROFILE_MODAL] saveProfile is function:', typeof saveProfile === 'function');
+    
+    try {
+      const success = await saveProfile(user.id, {
+        avatar_url: selectedAvatar,
+        username: username.trim(),
+        display_name: displayName.trim(),
+      });
 
-    console.log('🚀 [PROFILE_MODAL] Save completed, success:', success);
-    console.log('🚀 [PROFILE_MODAL] Current saving state after save:', saving);
+      console.log('🚀 [PROFILE_MODAL] Save completed, success:', success);
+      console.log('🚀 [PROFILE_MODAL] Current saving state after save:', saving);
 
-    if (success && mountedRef.current) {
-      console.log('🚀 [PROFILE_MODAL] Save successful, closing modal');
-      onOpenChange(false);
-    } else {
-      console.log('🚀 [PROFILE_MODAL] Save failed');
+      if (success && mountedRef.current) {
+        console.log('🚀 [PROFILE_MODAL] Save successful, closing modal');
+        onOpenChange(false);
+      } else {
+        console.log('🚀 [PROFILE_MODAL] Save failed');
+      }
+    } catch (error) {
+      console.error('🚀 [PROFILE_MODAL] Error in handleSave:', error);
     }
   }, [user?.id, selectedAvatar, username, displayName, saving, saveProfile, onOpenChange]);
 
@@ -152,10 +161,12 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
   }, [onOpenChange]);
 
   // Test function that bypasses everything
-  const directSaveTest = useCallback(() => {
+  const directSaveTest = useCallback(async () => {
     console.log('🔥🔥🔥 DIRECT SAVE TEST TRIGGERED! 🔥🔥🔥');
     alert('Direct save test clicked! This proves the button can receive clicks.');
-    handleSave();
+    
+    console.log('🔥 [PROFILE_MODAL] About to call handleSave directly...');
+    await handleSave();
   }, [handleSave]);
 
   if (!user?.id) {
@@ -164,7 +175,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
   }
 
   console.log('🎭 [PROFILE_MODAL] About to render dialog, handleSave type:', typeof handleSave);
-  console.log('🎭 [PROFILE_MODAL] handleSave reference:', handleSave.toString().substring(0, 50));
+  console.log('🎭 [PROFILE_MODAL] handleSave reference exists:', !!handleSave);
 
   return (
     <>
