@@ -2,12 +2,10 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/auth/useAuth';
-import { toast } from '@/hooks/use-toast';
-import { updateProfile } from '@/services/profile/updateProfile';
 import { ProfileModalHeader } from './ProfileModalHeader';
 import { ProfileModalContent } from './ProfileModalContent';
 import { AvatarSelectionModal } from './AvatarSelectionModal';
-import { useProfileCache } from './hooks/useProfileCache';
+import { useSimpleProfileSave } from './hooks/useSimpleProfileSave';
 
 interface ProfileModalProps {
   open: boolean;
@@ -16,30 +14,19 @@ interface ProfileModalProps {
 
 export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }) => {
   const { user } = useAuth();
-  const { getProfileFromCache, prefetchProfile, invalidateCache } = useProfileCache();
+  const { saving, saveProfile } = useSimpleProfileSave();
+  
   const [selectedAvatar, setSelectedAvatar] = useState<string>('');
   const [username, setUsername] = useState('');
   const [displayName, setDisplayName] = useState('');
-  const [saving, setSaving] = useState(false);
   const [avatarModalOpen, setAvatarModalOpen] = useState(false);
-  const [modalInstanceId] = useState(`modal-${Date.now()}`);
 
-  console.log('🎭 [PROFILE_MODAL] ===== MODAL RENDER =====');
-  console.log('🎭 [PROFILE_MODAL] Modal instance ID:', modalInstanceId);
-  console.log('🎭 [PROFILE_MODAL] Modal open:', open);
-  console.log('🎭 [PROFILE_MODAL] User ID:', user?.id);
-  console.log('🎭 [PROFILE_MODAL] Saving state:', saving);
+  console.log('🎭 [PROFILE_MODAL_SIMPLE] Render - Open:', open, 'Saving:', saving, 'User:', !!user);
 
-  // Initialize form with cached data immediately when modal opens
+  // Initialize form with default values when modal opens
   useEffect(() => {
-    console.log('🎭 [PROFILE_MODAL] ===== INITIALIZATION EFFECT =====');
-    console.log('🎭 [PROFILE_MODAL] Modal instance ID:', modalInstanceId);
-    console.log('🎭 [PROFILE_MODAL] Effect triggered - open:', open, 'user.id:', user?.id);
-    
-    if (open && user?.id) {
-      // Get cached profile data
-      const cachedProfile = getProfileFromCache(user.id);
-      console.log('🎭 [PROFILE_MODAL] Cached profile data:', cachedProfile);
+    if (open && user) {
+      console.log('🎭 [PROFILE_MODAL_SIMPLE] Initializing form for user:', user.id);
       
       // Set defaults based on user info
       let defaultDisplayName = 'New User';
@@ -56,143 +43,72 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
         defaultUsername = emailPart;
       }
       
-      // Use cached data if available, otherwise use defaults
-      const avatarToSet = cachedProfile?.avatar_url || '';
-      const usernameToSet = cachedProfile?.username || defaultUsername;
-      const displayNameToSet = cachedProfile?.display_name || defaultDisplayName;
-      
-      console.log('🎭 [PROFILE_MODAL] Setting form values:', {
-        avatar: avatarToSet,
-        username: usernameToSet,
-        displayName: displayNameToSet
+      console.log('🎭 [PROFILE_MODAL_SIMPLE] Setting defaults:', {
+        displayName: defaultDisplayName,
+        username: defaultUsername
       });
       
-      setSelectedAvatar(avatarToSet);
-      setUsername(usernameToSet);
-      setDisplayName(displayNameToSet);
-      
-      // Refresh cache in background (non-blocking) - but only if we don't have fresh data
-      if (!cachedProfile) {
-        console.log('🎭 [PROFILE_MODAL] No cached data, prefetching...');
-        prefetchProfile(user.id);
-      } else {
-        console.log('🎭 [PROFILE_MODAL] Using cached data, skipping prefetch');
-      }
+      setSelectedAvatar('');
+      setUsername(defaultUsername);
+      setDisplayName(defaultDisplayName);
     }
     
     if (!open) {
-      console.log('🎭 [PROFILE_MODAL] Modal closed, resetting form');
-      // Reset form when modal closes
+      console.log('🎭 [PROFILE_MODAL_SIMPLE] Modal closed, resetting form');
       setSelectedAvatar('');
       setUsername('');
       setDisplayName('');
-      setSaving(false); // Make sure saving state is reset
     }
-  }, [open, user?.id, user?.email, user?.phone]); // Removed getProfileFromCache and prefetchProfile from deps
+  }, [open, user?.id, user?.email, user?.phone]);
 
   const handleSave = async () => {
     if (!user?.id) {
-      console.log('❌ [PROFILE_SAVE] No user ID available for save');
-      toast({
-        title: 'Authentication Error',
-        description: 'User not authenticated. Please log in again.',
-        variant: 'destructive',
-      });
+      console.log('❌ [PROFILE_MODAL_SIMPLE] No user ID for save');
       return;
     }
 
-    console.log('🚀 [PROFILE_SAVE] ===== STARTING SAVE OPERATION =====');
-    console.log('🚀 [PROFILE_SAVE] Modal instance ID:', modalInstanceId);
-    console.log('🚀 [PROFILE_SAVE] User ID:', user.id);
-    console.log('🚀 [PROFILE_SAVE] Selected Avatar:', selectedAvatar);
-    console.log('🚀 [PROFILE_SAVE] Username:', username.trim());
-    console.log('🚀 [PROFILE_SAVE] Display Name:', displayName.trim());
+    console.log('🚀 [PROFILE_MODAL_SIMPLE] Starting save process');
+    console.log('🚀 [PROFILE_MODAL_SIMPLE] Form data:', {
+      avatar: selectedAvatar,
+      username: username.trim(),
+      displayName: displayName.trim()
+    });
 
     // Validate input
     if (!username.trim() || !displayName.trim()) {
-      toast({
-        title: 'Validation Error',
-        description: 'Username and display name are required.',
-        variant: 'destructive',
-      });
+      console.log('❌ [PROFILE_MODAL_SIMPLE] Validation failed');
       return;
     }
 
-    console.log('🚀 [PROFILE_SAVE] Setting saving state to true');
-    setSaving(true);
-    
-    try {
-      console.log('🚀 [PROFILE_SAVE] About to call updateProfile function...');
-      
-      const updateData = {
-        avatar_url: selectedAvatar,
-        username: username.trim(),
-        display_name: displayName.trim(),
-      };
-      
-      console.log('🚀 [PROFILE_SAVE] Update data prepared:', updateData);
-      console.log('🚀 [PROFILE_SAVE] Calling updateProfile with userID:', user.id);
-      
-      const success = await updateProfile(user.id, updateData);
-      
-      console.log('🚀 [PROFILE_SAVE] updateProfile returned:', success);
+    const success = await saveProfile(user.id, {
+      avatar_url: selectedAvatar,
+      username: username.trim(),
+      display_name: displayName.trim(),
+    });
 
-      if (success) {
-        console.log('🚀 [PROFILE_SAVE] Success! Invalidating cache and showing success...');
-        
-        // Invalidate the cache so next time we fetch fresh data
-        invalidateCache(user.id);
-        
-        toast({
-          title: 'Profile Updated',
-          description: 'Your profile has been successfully updated.',
-        });
-        
-        console.log('🚀 [PROFILE_SAVE] Toast shown, about to close modal');
-        console.log('🚀 [PROFILE_SAVE] Setting saving to false and closing modal');
-        setSaving(false);
-        onOpenChange(false);
-        console.log('🚀 [PROFILE_SAVE] Modal close triggered');
-      } else {
-        console.log('❌ [PROFILE_SAVE] Update failed - updateProfile returned false');
-        setSaving(false);
-        toast({
-          title: 'Update Failed',
-          description: 'Failed to update your profile. Please check the console for details.',
-          variant: 'destructive',
-        });
-      }
-    } catch (error) {
-      console.error('❌ [PROFILE_SAVE] Exception during save:', error);
-      console.error('❌ [PROFILE_SAVE] Error details:', JSON.stringify(error, null, 2));
-      setSaving(false);
-      toast({
-        title: 'Save Error',
-        description: `An error occurred while saving your profile: ${error.message || 'Unknown error'}`,
-        variant: 'destructive',
-      });
+    if (success) {
+      console.log('🚀 [PROFILE_MODAL_SIMPLE] Save successful, closing modal');
+      onOpenChange(false);
+    } else {
+      console.log('🚀 [PROFILE_MODAL_SIMPLE] Save failed');
     }
-    
-    console.log('🚀 [PROFILE_SAVE] ===== SAVE OPERATION COMPLETE =====');
   };
 
   const handleAvatarClick = () => {
-    console.log('🎭 [PROFILE_MODAL] Avatar clicked, opening avatar modal');
+    console.log('🎭 [PROFILE_MODAL_SIMPLE] Avatar clicked');
     setAvatarModalOpen(true);
   };
 
   const handleAvatarSelection = (avatarUrl: string) => {
-    console.log('🎭 [PROFILE_MODAL] Avatar selected:', avatarUrl);
+    console.log('🎭 [PROFILE_MODAL_SIMPLE] Avatar selected:', avatarUrl);
     setSelectedAvatar(avatarUrl);
     setAvatarModalOpen(false);
   };
 
   if (!user?.id) {
-    console.log('🎭 [PROFILE_MODAL] No user ID, returning null');
+    console.log('🎭 [PROFILE_MODAL_SIMPLE] No user ID, returning null');
     return null;
   }
-
-  console.log('🎭 [PROFILE_MODAL] About to render modal with saving state:', saving);
 
   return (
     <>
