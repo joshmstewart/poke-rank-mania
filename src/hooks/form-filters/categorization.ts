@@ -74,30 +74,9 @@ export const logCategoryStats = () => {
   });
 };
 
-// Check if Pokemon is a starter (always exclude)
+// FIXED: Check if Pokemon has the literal word "starter" in its name
 export const isStarterPokemon = (pokemon: Pokemon): boolean => {
-  const starterIds = [
-    // Gen 1
-    1, 4, 7, // Bulbasaur, Charmander, Squirtle
-    // Gen 2
-    152, 155, 158, // Chikorita, Cyndaquil, Totodile
-    // Gen 3
-    252, 255, 258, // Treecko, Torchic, Mudkip
-    // Gen 4
-    387, 390, 393, // Turtwig, Chimchar, Piplup
-    // Gen 5
-    495, 498, 501, // Snivy, Tepig, Oshawott
-    // Gen 6
-    650, 653, 656, // Chespin, Fennekin, Froakie
-    // Gen 7
-    722, 725, 728, // Rowlet, Litten, Popplio
-    // Gen 8
-    810, 813, 816, // Grookey, Scorbunny, Sobble
-    // Gen 9
-    906, 909, 912, // Sprigatito, Fuecoco, Quaxly
-  ];
-  
-  return starterIds.includes(pokemon.id);
+  return pokemon.name.toLowerCase().includes('starter');
 };
 
 // Check if Pokemon is a totem variant (always exclude)
