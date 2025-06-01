@@ -103,14 +103,29 @@ export const isSpecialKoraidonMiraidonMode = (pokemon: Pokemon): boolean => {
          (name.includes('limited') || name.includes('build') || name.includes('mode'));
 };
 
-// NEW: Check if Pokemon should be blocked (always exclude)
+// ENHANCED: More comprehensive blocked Pokemon detection
 export const isBlockedPokemon = (pokemon: Pokemon): boolean => {
-  return isStarterPokemon(pokemon) || 
+  const name = pokemon.name.toLowerCase();
+  
+  // Log each Pokemon being checked for blocking
+  const isBlocked = isStarterPokemon(pokemon) || 
          isTotemPokemon(pokemon) || 
          isSizeVariantPokemon(pokemon) || 
          isSpecialKoraidonMiraidonMode(pokemon) ||
-         (pokemon.name.toLowerCase().includes('minior') && pokemon.name.toLowerCase().includes('meteor')) ||
-         (pokemon.name.toLowerCase().includes('cramorant') && pokemon.name.toLowerCase() !== 'cramorant');
+         (name.includes('minior') && name.includes('meteor')) ||
+         (name.includes('cramorant') && name !== 'cramorant') ||
+         // Additional blocked patterns
+         name.includes('-cap') || // Pikachu caps that might be missed
+         name.includes('shadow') || // Shadow Pokemon
+         name.includes('purified') || // Purified Pokemon
+         name.includes('clone') || // Clone Pokemon
+         name.includes('copy'); // Copy Pokemon
+  
+  if (isBlocked) {
+    console.log(`🚫 [BLOCKED_DETECTION] "${pokemon.name}" (ID: ${pokemon.id}) detected as blocked`);
+  }
+  
+  return isBlocked;
 };
 
 // FIXED: Much more precise categorization that only catches actual form variants
@@ -119,13 +134,11 @@ export const getPokemonFormCategory = (pokemon: Pokemon): PokemonFormType | null
   const originalName = pokemon.name; // Keep original for logging
   let category: PokemonFormType | null = null;
   
-  // FIRST: Check if Pokemon should be blocked
+  // FIRST: Check if Pokemon should be blocked - this takes priority
   if (isBlockedPokemon(pokemon)) {
     category = 'blocked';
+    console.log(`🚫 [BLOCKED_CATEGORIZATION] "${originalName}" (ID: ${pokemon.id}) categorized as blocked`);
   }
-  // CRITICAL FIX: Only catch Pokemon that have a hyphen AND the form indicator comes AFTER the hyphen
-  // This prevents base Pokemon names from being miscategorized
-  
   // Regional forms (must have hyphen and regional indicator after it)
   else if (name.includes('-alolan') || name.includes('-galarian') || name.includes('-hisuian') || name.includes('-paldean') ||
       name.includes('-alola') || name.includes('-galar') || name.includes('-hisui') || name.includes('-paldea')) {
@@ -210,25 +223,16 @@ export const getPokemonFormCategory = (pokemon: Pokemon): PokemonFormType | null
     category = 'normal';
   }
   
-  // Update stats and track ALL examples (remove the 20-item limit)
+  // Update stats and track ALL examples
   if (category) {
     categoryStats[category]++;
     
     // Track ALL examples for complete debugging
     miscategorizedExamples[category].push(`${originalName} (${pokemon.id})`);
     
-    // Log specific problematic cases for debugging
-    if (category === 'colorsFlavors' && !name.includes('-')) {
-      console.log(`🚨 [COLORS_NO_HYPHEN] "${originalName}" (ID: ${pokemon.id}) categorized as colorsFlavors without hyphen`);
-    }
-    if (category === 'forms' && !name.includes('-')) {
-      console.log(`🚨 [FORMS_NO_HYPHEN] "${originalName}" (ID: ${pokemon.id}) categorized as forms without hyphen`);
-    }
-    if (category === 'costumes' && !name.includes('pikachu') && !name.includes('-costume') && !name.includes('-hat')) {
-      console.log(`🚨 [COSTUME_UNEXPECTED] "${originalName}" (ID: ${pokemon.id}) categorized as costume unexpectedly`);
-    }
+    // Enhanced logging for blocked Pokemon
     if (category === 'blocked') {
-      console.log(`🚫 [BLOCKED_POKEMON] "${originalName}" (ID: ${pokemon.id}) categorized as blocked`);
+      console.log(`🚫 [BLOCKED_POKEMON_FINAL] "${originalName}" (ID: ${pokemon.id}) FINAL categorization: blocked`);
     }
   }
   
