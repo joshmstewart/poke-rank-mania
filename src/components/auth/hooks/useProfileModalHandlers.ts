@@ -30,8 +30,10 @@ export const useProfileModalHandlers = (
     console.log('🚀 [PROFILE_MODAL_HANDLERS] Current saving state:', saving);
     console.log('🚀 [PROFILE_MODAL_HANDLERS] Form values:', {
       avatar: selectedAvatar,
-      username: username.trim(),
-      displayName: displayName.trim()
+      username: username?.trim(),
+      displayName: displayName?.trim(),
+      usernameLength: username?.trim()?.length,
+      displayNameLength: displayName?.trim()?.length
     });
 
     if (!user?.id) {
@@ -39,11 +41,15 @@ export const useProfileModalHandlers = (
       return;
     }
 
-    // Validate input
-    if (!username.trim() || !displayName.trim()) {
-      console.log('❌ [PROFILE_MODAL_HANDLERS] Validation failed - empty fields');
-      return;
-    }
+    // Simplified validation - allow empty fields and let backend handle defaults
+    const trimmedUsername = username?.trim() || '';
+    const trimmedDisplayName = displayName?.trim() || '';
+    
+    console.log('🚀 [PROFILE_MODAL_HANDLERS] Trimmed values:', {
+      trimmedUsername,
+      trimmedDisplayName,
+      selectedAvatar
+    });
 
     if (saving) {
       console.log('❌ [PROFILE_MODAL_HANDLERS] Already saving, skipping');
@@ -55,9 +61,9 @@ export const useProfileModalHandlers = (
     
     try {
       const success = await saveProfile(user.id, {
-        avatar_url: selectedAvatar,
-        username: username.trim(),
-        display_name: displayName.trim(),
+        avatar_url: selectedAvatar || '',
+        username: trimmedUsername || `user_${user.id.slice(0, 8)}`,
+        display_name: trimmedDisplayName || 'New User',
       });
 
       console.log('🚀 [PROFILE_MODAL_HANDLERS] Save completed, success:', success);
