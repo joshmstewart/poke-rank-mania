@@ -64,6 +64,11 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
   const handleSave = async () => {
     if (!user?.id) {
       console.log('❌ [PROFILE_SAVE] No user ID available for save');
+      toast({
+        title: 'Authentication Error',
+        description: 'User not authenticated. Please log in again.',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -72,6 +77,16 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
     console.log('🚀 [PROFILE_SAVE] Selected Avatar:', selectedAvatar);
     console.log('🚀 [PROFILE_SAVE] Username:', username.trim());
     console.log('🚀 [PROFILE_SAVE] Display Name:', displayName.trim());
+
+    // Validate input
+    if (!username.trim() || !displayName.trim()) {
+      toast({
+        title: 'Validation Error',
+        description: 'Username and display name are required.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     setSaving(true);
     console.log('🚀 [PROFILE_SAVE] Setting saving state to true');
@@ -86,6 +101,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
       };
       
       console.log('🚀 [PROFILE_SAVE] Update data prepared:', updateData);
+      console.log('🚀 [PROFILE_SAVE] Calling updateProfile with userID:', user.id);
       
       const success = await updateProfile(user.id, updateData);
       
@@ -106,10 +122,10 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
         onOpenChange(false);
         console.log('🚀 [PROFILE_SAVE] Modal close triggered');
       } else {
-        console.log('❌ [PROFILE_SAVE] Update failed');
+        console.log('❌ [PROFILE_SAVE] Update failed - updateProfile returned false');
         toast({
           title: 'Update Failed',
-          description: 'Failed to update your profile. Please try again.',
+          description: 'Failed to update your profile. Please check the console for details.',
           variant: 'destructive',
         });
       }
@@ -118,7 +134,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
       console.error('❌ [PROFILE_SAVE] Error details:', JSON.stringify(error, null, 2));
       toast({
         title: 'Save Error',
-        description: 'An error occurred while saving your profile.',
+        description: `An error occurred while saving your profile: ${error.message || 'Unknown error'}`,
         variant: 'destructive',
       });
     } finally {
