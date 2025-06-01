@@ -8,6 +8,11 @@ export const updateProfile = async (userId: string, updates: Partial<Profile>): 
   console.log('🚀🔵 [PROFILE_UPDATE_SVC] Updates received:', updates);
   console.log('🚀🔵 [PROFILE_UPDATE_SVC] Supabase client available:', !!supabase);
   
+  // Check current auth state
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  console.log('🚀🔵 [PROFILE_UPDATE_SVC] Current auth user:', user?.id || 'NO_USER');
+  console.log('🚀🔵 [PROFILE_UPDATE_SVC] Auth error:', authError?.message || 'NONE');
+  
   if (!userId || userId.length < 10) {
     console.error('🚀🔴 [PROFILE_UPDATE_SVC] Invalid user ID:', userId);
     return false;
