@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/auth/useAuth';
@@ -23,9 +22,36 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
   const [displayName, setDisplayName] = useState<string>('');
   const [avatarModalOpen, setAvatarModalOpen] = useState<boolean>(false);
 
+  // Store initial values to calculate hasChanges
+  const [initialValues, setInitialValues] = useState<{
+    avatar: string;
+    username: string;
+    displayName: string;
+  }>({
+    avatar: '',
+    username: '',
+    displayName: ''
+  });
+
   console.log('🎭 [PROFILE_MODAL_SIMPLE] Render - Open:', open, 'Saving:', saving, 'User:', !!user);
   console.log('🎭 [PROFILE_MODAL_SIMPLE] saveProfile function type:', typeof saveProfile);
   console.log('🎭 [PROFILE_MODAL_SIMPLE] Form state:', { selectedAvatar, username, displayName });
+
+  // Calculate hasChanges
+  const hasChanges = 
+    selectedAvatar !== initialValues.avatar ||
+    username.trim() !== initialValues.username ||
+    displayName.trim() !== initialValues.displayName;
+
+  console.log('🎭 [PROFILE_MODAL_SIMPLE] hasChanges calculation:', {
+    hasChanges,
+    selectedAvatar,
+    initialAvatar: initialValues.avatar,
+    username: username.trim(),
+    initialUsername: initialValues.username,
+    displayName: displayName.trim(),
+    initialDisplayName: initialValues.displayName
+  });
 
   // Cleanup on unmount
   useEffect(() => {
@@ -70,6 +96,13 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
       setSelectedAvatar(() => '');
       setUsername(() => defaultUsername);
       setDisplayName(() => defaultDisplayName);
+      
+      // Set initial values for hasChanges calculation
+      setInitialValues({
+        avatar: '',
+        username: defaultUsername,
+        displayName: defaultDisplayName
+      });
     }
     
     if (!open && mountedRef.current) {
@@ -77,6 +110,11 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
       setSelectedAvatar(() => '');
       setUsername(() => '');
       setDisplayName(() => '');
+      setInitialValues({
+        avatar: '',
+        username: '',
+        displayName: ''
+      });
     }
   }, [open, user?.id, user?.email, user?.phone]);
 
@@ -206,6 +244,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
             onCancel={handleCancel}
             onSave={handleSave}
             onAvatarClick={handleAvatarClick}
+            hasChanges={hasChanges}
+            user={user}
           />
         </DialogContent>
       </Dialog>
