@@ -67,22 +67,28 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
   }, [open, user?.id, user?.email, user?.phone]);
 
   const handleSave = async () => {
-    if (!user?.id) {
-      console.log('❌ [PROFILE_MODAL_SIMPLE] No user ID for save');
-      return;
-    }
-
-    console.log('🚀 [PROFILE_MODAL_SIMPLE] Starting save process');
-    console.log('🚀 [PROFILE_MODAL_SIMPLE] Current saving state before save:', saving);
-    console.log('🚀 [PROFILE_MODAL_SIMPLE] Form data:', {
+    console.log('🚀 [PROFILE_MODAL_SIMPLE] ===== HANDLE SAVE CLICKED =====');
+    console.log('🚀 [PROFILE_MODAL_SIMPLE] User ID:', user?.id);
+    console.log('🚀 [PROFILE_MODAL_SIMPLE] Current saving state:', saving);
+    console.log('🚀 [PROFILE_MODAL_SIMPLE] Form values:', {
       avatar: selectedAvatar,
       username: username.trim(),
       displayName: displayName.trim()
     });
 
+    if (!user?.id) {
+      console.log('❌ [PROFILE_MODAL_SIMPLE] No user ID for save');
+      return;
+    }
+
     // Validate input
     if (!username.trim() || !displayName.trim()) {
-      console.log('❌ [PROFILE_MODAL_SIMPLE] Validation failed');
+      console.log('❌ [PROFILE_MODAL_SIMPLE] Validation failed - empty fields');
+      return;
+    }
+
+    if (saving) {
+      console.log('❌ [PROFILE_MODAL_SIMPLE] Already saving, skipping');
       return;
     }
 
@@ -98,10 +104,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
 
     if (success) {
       console.log('🚀 [PROFILE_MODAL_SIMPLE] Save successful, closing modal');
-      // Add a small delay to ensure state updates before closing
-      setTimeout(() => {
-        onOpenChange(false);
-      }, 100);
+      onOpenChange(false);
     } else {
       console.log('🚀 [PROFILE_MODAL_SIMPLE] Save failed');
     }
