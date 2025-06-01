@@ -1,9 +1,9 @@
-
 import React, { useCallback, useMemo } from "react";
 import { useFormFilters } from "@/hooks/useFormFilters";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { usePokemonContext } from "@/contexts/PokemonContext";
 
@@ -35,7 +35,8 @@ export function FormFiltersSelector() {
     toggleFilter,
     isAllEnabled,
     toggleAll,
-    getPokemonFormCategory
+    getPokemonFormCategory,
+    getMiscategorizedPokemonExamples
   } = useFormFilters();
   
   const { allPokemon } = usePokemonContext();
@@ -106,6 +107,24 @@ export function FormFiltersSelector() {
     }
   };
 
+  // NEW: Debug function to show miscategorized examples
+  const showMiscategorizedExamples = useCallback(() => {
+    const examples = getMiscategorizedPokemonExamples();
+    console.log(`🔍 [DEBUG_EXAMPLES] Full miscategorized examples:`, examples);
+    
+    // Show in toast for easy viewing
+    Object.entries(examples).forEach(([category, pokemonList]) => {
+      if (pokemonList.length > 0) {
+        console.log(`🔍 [DEBUG_${category.toUpperCase()}] ${pokemonList.join(', ')}`);
+      }
+    });
+    
+    toast({
+      title: "Miscategorized Examples Logged",
+      description: "Check the console for detailed examples of how Pokemon are being categorized",
+    });
+  }, [getMiscategorizedPokemonExamples]);
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between mb-2">
@@ -118,6 +137,18 @@ export function FormFiltersSelector() {
           />
           <Label htmlFor="all-forms" className="text-sm">All Forms</Label>
         </div>
+      </div>
+      
+      {/* NEW: Debug button */}
+      <div className="flex justify-center">
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={showMiscategorizedExamples}
+          className="text-xs"
+        >
+          Debug Categorization
+        </Button>
       </div>
       
       <Separator />

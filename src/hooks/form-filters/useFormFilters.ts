@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { FormFilters, PokemonFormType } from "./types";
@@ -8,7 +7,9 @@ import {
   isTotemPokemon, 
   isSizeVariantPokemon, 
   isSpecialKoraidonMiraidonMode,
-  getPokemonFormCategory 
+  getPokemonFormCategory,
+  getMiscategorizedExamples,
+  logCategoryStats
 } from "./categorization";
 import { storePokemon, getStoredPokemon, clearStoredPokemon } from "./excludedStore";
 
@@ -153,6 +154,9 @@ export const useFormFilters = () => {
     console.log(`🔍 [DETERMINISTIC_FILTER_PIPELINE] Output Pokemon count: ${filteredPokemon.length}`);
     console.log(`🔍 [DETERMINISTIC_FILTER_PIPELINE] Filtered out: ${sortedInput.length - filteredPokemon.length}`);
     
+    // NEW: Log categorization stats and examples
+    logCategoryStats();
+    
     // Verify output is still sorted
     const outputIds = filteredPokemon.map(p => p.id);
     const isSorted = outputIds.every((id, i) => i === 0 || id >= outputIds[i - 1]);
@@ -161,6 +165,11 @@ export const useFormFilters = () => {
     console.log(`🔍 [DETERMINISTIC_FILTER_PIPELINE] ===== DETERMINISTIC FILTER ANALYSIS COMPLETE =====`);
     
     return filteredPokemon;
+  };
+  
+  // NEW: Function to get miscategorized examples for debugging
+  const getMiscategorizedPokemonExamples = () => {
+    return getMiscategorizedExamples();
   };
   
   // Return the filter state and functions
@@ -173,6 +182,7 @@ export const useFormFilters = () => {
     shouldIncludePokemon,
     analyzeFilteringPipeline,
     getPokemonFormCategory,
+    getMiscategorizedPokemonExamples,
     storePokemon,
     getStoredPokemon,
     clearStoredPokemon

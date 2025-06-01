@@ -1,4 +1,3 @@
-
 import { Pokemon } from "@/services/pokemon";
 import { PokemonFormType } from "./types";
 
@@ -14,6 +13,18 @@ let categoryStats: Record<PokemonFormType, number> = {
   colorsFlavors: 0
 };
 
+// NEW: Track miscategorized Pokemon for debugging
+let miscategorizedExamples: Record<PokemonFormType, string[]> = {
+  normal: [],
+  megaGmax: [],
+  regional: [],
+  gender: [],
+  forms: [],
+  originPrimal: [],
+  costumes: [],
+  colorsFlavors: []
+};
+
 export const resetCategoryStats = () => {
   categoryStats = {
     normal: 0,
@@ -25,9 +36,23 @@ export const resetCategoryStats = () => {
     costumes: 0,
     colorsFlavors: 0
   };
+  
+  // Reset examples
+  miscategorizedExamples = {
+    normal: [],
+    megaGmax: [],
+    regional: [],
+    gender: [],
+    forms: [],
+    originPrimal: [],
+    costumes: [],
+    colorsFlavors: []
+  };
 };
 
 export const getCategoryStats = () => ({ ...categoryStats });
+
+export const getMiscategorizedExamples = () => ({ ...miscategorizedExamples });
 
 export const logCategoryStats = () => {
   console.log(`📊 [FORM_CATEGORY_STATS] Current distribution:`, categoryStats);
@@ -38,6 +63,14 @@ export const logCategoryStats = () => {
   Object.entries(categoryStats).forEach(([category, count]) => {
     const percentage = total > 0 ? ((count / total) * 100).toFixed(1) : '0.0';
     console.log(`📊 [FORM_CATEGORY_STATS] ${category}: ${count} (${percentage}%)`);
+  });
+  
+  // NEW: Log examples of miscategorized Pokemon
+  console.log(`🔍 [MISCATEGORIZED_EXAMPLES] Examples by category:`);
+  Object.entries(miscategorizedExamples).forEach(([category, examples]) => {
+    if (examples.length > 0) {
+      console.log(`🔍 [MISCATEGORIZED_EXAMPLES] ${category} (${examples.length}): ${examples.slice(0, 10).join(', ')}${examples.length > 10 ? '...' : ''}`);
+    }
   });
 };
 
@@ -87,7 +120,7 @@ export const isSpecialKoraidonMiraidonMode = (pokemon: Pokemon): boolean => {
          (name.includes('limited') || name.includes('build') || name.includes('mode'));
 };
 
-// Main categorization function
+// Main categorization function with detailed logging
 export const getPokemonFormCategory = (pokemon: Pokemon): PokemonFormType | null => {
   const name = pokemon.name.toLowerCase();
   let category: PokemonFormType | null = null;
@@ -128,6 +161,9 @@ export const getPokemonFormCategory = (pokemon: Pokemon): PokemonFormType | null
            name.includes('oricorio') || name.includes('lycanroc') ||
            name.includes('toxtricity') || name.includes('urshifu') || name.includes('basculin')) {
     category = 'colorsFlavors';
+    
+    // CRITICAL DEBUG: Log Pokemon being categorized as colorsFlavors
+    console.log(`🚨 [COLOR_FLAVOR_DEBUG] Pokemon "${pokemon.name}" (ID: ${pokemon.id}) categorized as colorsFlavors due to containing color/flavor keywords`);
   }
   // Special forms (other form differences)
   else if (name.includes('sky') || name.includes('speed') || name.includes('attack') || name.includes('defense') ||
@@ -140,15 +176,28 @@ export const getPokemonFormCategory = (pokemon: Pokemon): PokemonFormType | null
            name.includes('ultra') || name.includes('dusk') || name.includes('original') || name.includes('zen') ||
            name.includes('therian') || name.includes('incarnate') || name.includes('aria') || name.includes('step')) {
     category = 'forms';
+    
+    // CRITICAL DEBUG: Log Pokemon being categorized as forms
+    console.log(`🚨 [FORMS_DEBUG] Pokemon "${pokemon.name}" (ID: ${pokemon.id}) categorized as forms due to containing form keywords`);
   }
   // Default to normal if no special form detected
   else {
     category = 'normal';
   }
   
-  // Update stats
+  // Update stats and track examples
   if (category) {
     categoryStats[category]++;
+    
+    // Track first 20 examples of each category for debugging
+    if (miscategorizedExamples[category].length < 20) {
+      miscategorizedExamples[category].push(`${pokemon.name} (${pokemon.id})`);
+    }
+    
+    // SPECIAL DEBUG: Log all non-normal categorizations
+    if (category !== 'normal') {
+      console.log(`🔍 [NON_NORMAL_CATEGORIZATION] "${pokemon.name}" (ID: ${pokemon.id}) -> ${category}`);
+    }
   }
   
   return category;
