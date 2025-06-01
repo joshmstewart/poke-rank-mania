@@ -18,7 +18,10 @@ export const ProfileModalActions: React.FC<ProfileModalActionsProps> = ({
 
   const handleSaveClick = () => {
     console.log('🔘 [PROFILE_ACTIONS] Save button clicked! Calling onSave...');
+    console.log('🔘 [PROFILE_ACTIONS] onSave function exists:', !!onSave);
+    console.log('🔘 [PROFILE_ACTIONS] About to call onSave');
     onSave();
+    console.log('🔘 [PROFILE_ACTIONS] onSave called successfully');
   };
 
   const handleCancelClick = () => {
@@ -31,7 +34,11 @@ export const ProfileModalActions: React.FC<ProfileModalActionsProps> = ({
       <Button variant="outline" onClick={handleCancelClick}>
         Cancel
       </Button>
-      <Button onClick={handleSaveClick} disabled={saving}>
+      <Button 
+        onClick={handleSaveClick} 
+        disabled={saving}
+        type="button"
+      >
         {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
         <Save className="mr-2 h-4 w-4" />
         Save Changes
