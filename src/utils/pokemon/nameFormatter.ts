@@ -47,6 +47,28 @@ export const formatPokemonName = (name: string): string => {
     return ''; // Return empty to filter out
   }
   
+  // SPECIAL CASE: Handle Maushold family variants
+  if (name.toLowerCase().includes('maushold') && name.toLowerCase().includes('family')) {
+    console.log(`🔧 [FORMAT_DEBUG] Processing Maushold family variant: "${name}"`);
+    if (name.toLowerCase().includes('family-of-three')) {
+      return "Maushold (Family of Three)";
+    }
+    if (name.toLowerCase().includes('family-of-four')) {
+      return "Maushold (Family of Four)";
+    }
+    // If it's just a generic family reference, handle it generically
+    const parts = name.split('-');
+    if (parts.length > 2) {
+      const baseName = parts[0];
+      const familyParts = parts.slice(1);
+      const formattedBase = capitalizeWords(baseName);
+      const formattedVariant = capitalizeWords(familyParts.join(' '));
+      const result = `${formattedBase} (${formattedVariant})`;
+      console.log(`🔧 [FORMAT_DEBUG] Maushold family result: "${result}"`);
+      return result;
+    }
+  }
+  
   // RULE 1: Handle variants with suffixes that should be moved to front
   // Handle parentheses variants first: "dialga (origin forme)" -> "Origin Forme Dialga"
   const parenthesesMatch = name.match(/^([^(]+)\s*\(([^)]+)\)$/i);
@@ -81,17 +103,16 @@ export const formatPokemonName = (name: string): string => {
         console.log(`🔧 [FORMAT_DEBUG] Hyphen variant: "${name}" -> "${result}"`);
         return result;
       }
-    } else if (parts.length === 3) {
-      // Handle cases like "pikachu-hoenn-cap" -> "Hoenn Cap Pikachu"
+    } else if (parts.length >= 3) {
       const baseName = parts[0];
-      const variant1 = parts[1];
-      const variant2 = parts[2];
+      const variantParts = parts.slice(1);
       
-      if (!['alola', 'galar', 'hisui', 'paldea'].includes(variant1.toLowerCase())) {
+      // Don't format regional forms this way
+      if (!['alola', 'galar', 'hisui', 'paldea'].includes(variantParts[0].toLowerCase())) {
         const formattedBase = capitalizeWords(baseName);
-        const formattedVariant = capitalizeWords(`${variant1} ${variant2}`);
-        const result = `${formattedVariant} ${formattedBase}`;
-        console.log(`🔧 [FORMAT_DEBUG] Triple hyphen variant: "${name}" -> "${result}"`);
+        const formattedVariant = capitalizeWords(variantParts.join(' '));
+        const result = `${formattedBase} (${formattedVariant})`;
+        console.log(`🔧 [FORMAT_DEBUG] Multi-hyphen variant: "${name}" -> "${result}"`);
         return result;
       }
     }
