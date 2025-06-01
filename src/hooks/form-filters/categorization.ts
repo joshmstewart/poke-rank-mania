@@ -13,7 +13,7 @@ import {
 
 // Re-export functions for backward compatibility
 export { 
-  isStarterPokemon, 
+  isStarterVariant, 
   isTotemPokemon, 
   isSizeVariantPokemon, 
   isSpecialKoraidonMiraidonMode,

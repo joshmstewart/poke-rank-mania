@@ -1,36 +1,28 @@
 
 import { Pokemon } from "@/services/pokemon";
 
-// FIXED: Check if Pokemon is a starter by ID ranges and specific IDs
-export const isStarterPokemon = (pokemon: Pokemon): boolean => {
-  // Original starters from each generation by ID
-  const starterIds = [
-    // Gen 1: Bulbasaur, Ivysaur, Venusaur, Charmander, Charmeleon, Charizard, Squirtle, Wartortle, Blastoise
-    1, 2, 3, 4, 5, 6, 7, 8, 9,
-    // Gen 2: Chikorita, Bayleef, Meganium, Cyndaquil, Quilava, Typhlosion, Totodile, Croconaw, Feraligatr
-    152, 153, 154, 155, 156, 157, 158, 159, 160,
-    // Gen 3: Treecko, Grovyle, Sceptile, Torchic, Combusken, Blaziken, Mudkip, Marshtomp, Swampert
-    252, 253, 254, 255, 256, 257, 258, 259, 260,
-    // Gen 4: Turtwig, Grotle, Torterra, Chimchar, Monferno, Infernape, Piplup, Prinplup, Empoleon
-    387, 388, 389, 390, 391, 392, 393, 394, 395,
-    // Gen 5: Snivy, Servine, Serperior, Tepig, Pignite, Emboar, Oshawott, Dewott, Samurott
-    495, 496, 497, 498, 499, 500, 501, 502, 503,
-    // Gen 6: Chespin, Quilladin, Chesnaught, Fennekin, Braixen, Delphox, Froakie, Frogadier, Greninja
-    650, 651, 652, 653, 654, 655, 656, 657, 658,
-    // Gen 7: Rowlet, Dartrix, Decidueye, Litten, Torracat, Incineroar, Popplio, Brionne, Primarina
-    722, 723, 724, 725, 726, 727, 728, 729, 730,
-    // Gen 8: Grookey, Thwackey, Rillaboom, Scorbunny, Raboot, Cinderace, Sobble, Drizzile, Inteleon
-    810, 811, 812, 813, 814, 815, 816, 817, 818,
-    // Gen 9: Sprigatito, Floragato, Meowscarada, Fuecoco, Crocalor, Skeledirge, Quaxly, Quaxwell, Quaquaval
-    906, 907, 908, 909, 910, 911, 912, 913, 914
-  ];
+// Check if Pokemon has "starter" in the name (like Pikachu variants)
+export const isStarterVariant = (pokemon: Pokemon): boolean => {
+  const name = pokemon.name.toLowerCase();
+  const hasStarter = name.includes('starter');
   
-  return starterIds.includes(pokemon.id);
+  if (hasStarter) {
+    console.log(`🔍 [STARTER_VARIANT_DETECTED] Found Pokemon with "starter" in name: "${pokemon.name}" (ID: ${pokemon.id})`);
+  }
+  
+  return hasStarter;
 };
 
 // Check if Pokemon is a totem variant (always exclude)
 export const isTotemPokemon = (pokemon: Pokemon): boolean => {
-  return pokemon.name.toLowerCase().includes('totem');
+  const name = pokemon.name.toLowerCase();
+  const hasTotem = name.includes('totem');
+  
+  if (hasTotem) {
+    console.log(`🔍 [TOTEM_VARIANT_DETECTED] Found Pokemon with "totem" in name: "${pokemon.name}" (ID: ${pokemon.id})`);
+  }
+  
+  return hasTotem;
 };
 
 // Check if Pokemon is a size variant (always exclude)
@@ -48,12 +40,12 @@ export const isSpecialKoraidonMiraidonMode = (pokemon: Pokemon): boolean => {
          (name.includes('limited') || name.includes('build') || name.includes('mode'));
 };
 
-// ENHANCED: More comprehensive blocked Pokemon detection
+// FIXED: Only block Pokemon with specific problematic patterns in their names
 export const isBlockedPokemon = (pokemon: Pokemon): boolean => {
   const name = pokemon.name.toLowerCase();
   
-  // Check various blocking conditions
-  const isBlocked = isStarterPokemon(pokemon) || 
+  // Check various blocking conditions - NO MORE ID-BASED STARTER BLOCKING
+  const isBlocked = isStarterVariant(pokemon) || 
          isTotemPokemon(pokemon) || 
          isSizeVariantPokemon(pokemon) || 
          isSpecialKoraidonMiraidonMode(pokemon) ||
