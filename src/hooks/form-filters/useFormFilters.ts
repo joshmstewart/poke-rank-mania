@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { FormFilters, PokemonFormType } from "./types";
@@ -63,7 +64,8 @@ export const useFormFilters = () => {
       forms: newValue,
       originPrimal: newValue,
       costumes: newValue,
-      colorsFlavors: newValue
+      colorsFlavors: newValue,
+      blocked: newValue
     };
     console.log(`🧹 [FORM_FILTERS_TOGGLE_ALL] Setting all filters to: ${newValue}`);
     saveFilters(updated);
