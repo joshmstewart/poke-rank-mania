@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Card } from '@/components/ui/card';
-import { usePreviewImageCache } from '@/hooks/usePreviewImageCache';
+import { useTCGImageCache } from '@/hooks/useTCGImageCache';
 import Logo from '@/components/ui/Logo';
 
 interface TCGCard {
@@ -38,8 +38,8 @@ interface PokemonTCGCardDisplayProps {
 
 const PokemonTCGCardDisplay: React.FC<PokemonTCGCardDisplayProps> = ({ tcgCard, secondCard }) => {
   const CardDisplay = ({ card }: { card: TCGCard }) => {
-    // Use the image cache for large TCG card images
-    const { cachedImageUrl, isLoading, error } = usePreviewImageCache(
+    // Use the TCG image cache for large images
+    const { cachedImageUrl, isLoading, error } = useTCGImageCache(
       card.images.large,
       `tcg-card-${card.id}-large`
     );

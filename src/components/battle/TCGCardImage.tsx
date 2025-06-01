@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { TCGCard } from "@/hooks/pokemon/tcg/types";
 import Logo from "@/components/ui/Logo";
-import { usePreviewImageCache } from "@/hooks/usePreviewImageCache";
+import { useTCGImageCache } from "@/hooks/useTCGImageCache";
 
 interface TCGCardImageProps {
   tcgCard: TCGCard;
@@ -12,8 +12,8 @@ interface TCGCardImageProps {
 const TCGCardImage: React.FC<TCGCardImageProps> = ({ tcgCard, displayName }) => {
   const [cardImageLoaded, setCardImageLoaded] = useState(false);
   
-  // Use the image cache for TCG card images
-  const { cachedImageUrl, isLoading, error } = usePreviewImageCache(
+  // Use the TCG image cache for small images
+  const { cachedImageUrl, isLoading, error } = useTCGImageCache(
     tcgCard.images.small,
     `tcg-card-${tcgCard.id}-small`
   );
