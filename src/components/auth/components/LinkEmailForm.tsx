@@ -56,7 +56,10 @@ export const LinkEmailForm: React.FC<LinkEmailFormProps> = ({
   const handleLinkEmail = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('🔗 [LINK_EMAIL] Form submitted with:', { email, password: '***', confirmPassword: '***' });
+    
     if (!email || !password) {
+      console.log('🔗 [LINK_EMAIL] Missing email or password');
       toast({
         title: 'Missing information',
         description: 'Please provide both email and password',
@@ -66,6 +69,7 @@ export const LinkEmailForm: React.FC<LinkEmailFormProps> = ({
     }
 
     if (password !== confirmPassword) {
+      console.log('🔗 [LINK_EMAIL] Passwords do not match');
       toast({
         title: 'Password mismatch',
         description: 'Passwords do not match',
@@ -75,6 +79,7 @@ export const LinkEmailForm: React.FC<LinkEmailFormProps> = ({
     }
 
     if (password.length < 6) {
+      console.log('🔗 [LINK_EMAIL] Password too short');
       toast({
         title: 'Password too short',
         description: 'Password must be at least 6 characters long',
@@ -85,6 +90,7 @@ export const LinkEmailForm: React.FC<LinkEmailFormProps> = ({
 
     // Check for validation errors
     if (Object.keys(validationErrors).length > 0) {
+      console.log('🔗 [LINK_EMAIL] Validation errors present:', validationErrors);
       toast({
         title: 'Please fix validation errors',
         description: 'Check the form for any errors before submitting',
@@ -94,46 +100,111 @@ export const LinkEmailForm: React.FC<LinkEmailFormProps> = ({
     }
 
     setIsLoading(true);
+    console.log('🔗 [LINK_EMAIL] Starting email linking process...');
+    
     try {
-      console.log('🔗 [LINK_EMAIL] Starting email linking process...');
+      // Get current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
       
-      // First, try to update the user's email
-      const { error: emailError } = await supabase.auth.updateUser({
-        email: email,
-      });
-
-      if (emailError) {
-        console.error('🔗 [LINK_EMAIL] Email update error:', emailError);
+      if (userError || !user) {
+        console.error('🔗 [LINK_EMAIL] No authenticated user found:', userError);
         toast({
-          title: 'Failed to link email',
-          description: emailError.message,
+          title: 'Authentication error',
+          description: 'You must be logged in to link an email',
           variant: 'destructive',
         });
         return;
       }
 
-      // Then update the password
-      const { error: passwordError } = await supabase.auth.updateUser({
-        password: password,
-      });
+      console.log('🔗 [LINK_EMAIL] Current user:', { id: user.id, email: user.email, phone: user.phone });
 
-      if (passwordError) {
-        console.error('🔗 [LINK_EMAIL] Password update error:', passwordError);
-        toast({
-          title: 'Email linked but password update failed',
-          description: passwordError.message,
-          variant: 'destructive',
+      // For phone-authenticated users, we need to add email as a new identity
+      if (user.phone && !user.email) {
+        console.log('🔗 [LINK_EMAIL] Phone user adding email - updating user email and password');
+        
+        // Update user email - this will send a confirmation email
+        const { error: emailError } = await supabase.auth.updateUser({
+          email: email,
         });
+
+        if (emailError) {
+          console.error('🔗 [LINK_EMAIL] Email update error:', emailError);
+          
+          if (emailError.message?.includes('email_exists') || emailError.message?.includes('already been registered')) {
+            toast({
+              title: 'Email already in use',
+              description: 'This email is already associated with another account. Please use a different email.',
+              variant: 'destructive',
+            });
+          } else {
+            toast({
+              title: 'Failed to link email',
+              description: emailError.message || 'An error occurred while linking your email',
+              variant: 'destructive',
+            });
+          }
+          return;
+        }
+
+        // Update password separately
+        const { error: passwordError } = await supabase.auth.updateUser({
+          password: password,
+        });
+
+        if (passwordError) {
+          console.error('🔗 [LINK_EMAIL] Password update error:', passwordError);
+          toast({
+            title: 'Email linked but password update failed',
+            description: passwordError.message || 'Password could not be set',
+            variant: 'destructive',
+          });
+        } else {
+          console.log('🔗 [LINK_EMAIL] ✅ Successfully linked email and password');
+          toast({
+            title: 'Email and password linked successfully',
+            description: 'Please check your email to verify the new address. You can now sign in with email and password.',
+          });
+          setEmail('');
+          setPassword('');
+          setConfirmPassword('');
+          onClose?.();
+        }
       } else {
-        console.log('🔗 [LINK_EMAIL] ✅ Successfully linked email and password');
-        toast({
-          title: 'Email and password linked successfully',
-          description: 'Please check your email to verify the new address. You can now sign in with email and password.',
+        console.log('🔗 [LINK_EMAIL] User already has email, updating email and password');
+        
+        // User already has email, just update it
+        const { error: updateError } = await supabase.auth.updateUser({
+          email: email,
+          password: password,
         });
-        setEmail('');
-        setPassword('');
-        setConfirmPassword('');
-        onClose?.();
+
+        if (updateError) {
+          console.error('🔗 [LINK_EMAIL] Update error:', updateError);
+          
+          if (updateError.message?.includes('email_exists') || updateError.message?.includes('already been registered')) {
+            toast({
+              title: 'Email already in use',
+              description: 'This email is already associated with another account. Please use a different email.',
+              variant: 'destructive',
+            });
+          } else {
+            toast({
+              title: 'Failed to update email and password',
+              description: updateError.message || 'An error occurred while updating your credentials',
+              variant: 'destructive',
+            });
+          }
+        } else {
+          console.log('🔗 [LINK_EMAIL] ✅ Successfully updated email and password');
+          toast({
+            title: 'Email and password updated successfully',
+            description: 'Please check your email to verify the new address.',
+          });
+          setEmail('');
+          setPassword('');
+          setConfirmPassword('');
+          onClose?.();
+        }
       }
     } catch (error: any) {
       console.error('🔗 [LINK_EMAIL] Unexpected error:', error);
