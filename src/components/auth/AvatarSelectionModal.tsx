@@ -1,10 +1,10 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarImage } from '@/components/ui/avatar';
-import { pokemonAvatars } from '@/services/pokemonAvatars';
+import { getPokemonAvatars } from '@/services/pokemonAvatars';
 
 interface AvatarSelectionModalProps {
   open: boolean;
@@ -20,6 +20,26 @@ export const AvatarSelectionModal: React.FC<AvatarSelectionModalProps> = ({
   onSelectAvatar
 }) => {
   const [selectedAvatar, setSelectedAvatar] = useState(currentAvatar);
+  const [avatarUrls, setAvatarUrls] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadAvatars = async () => {
+      try {
+        setLoading(true);
+        const urls = await getPokemonAvatars();
+        setAvatarUrls(urls);
+      } catch (error) {
+        console.error('Failed to load avatars:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (open) {
+      loadAvatars();
+    }
+  }, [open]);
 
   const handleSelect = () => {
     onSelectAvatar(selectedAvatar);
@@ -37,32 +57,38 @@ export const AvatarSelectionModal: React.FC<AvatarSelectionModalProps> = ({
             <div className="text-sm text-gray-600 mb-3 text-center">
               Scroll down to see more Pokémon avatars
             </div>
-            <div className="grid grid-cols-6 gap-3">
-              {pokemonAvatars.map((avatar) => (
-                <button
-                  key={avatar.url}
-                  onClick={() => setSelectedAvatar(avatar.url)}
-                  className={`relative rounded-full transition-all duration-200 hover:scale-110 ${
-                    selectedAvatar === avatar.url
-                      ? 'ring-4 ring-blue-500 ring-offset-2'
-                      : 'hover:ring-2 hover:ring-blue-300'
-                  }`}
-                >
-                  <Avatar className="w-16 h-16">
-                    <AvatarImage 
-                      src={avatar.url} 
-                      alt={avatar.name}
-                      className="object-cover"
-                    />
-                  </Avatar>
-                  {selectedAvatar === avatar.url && (
-                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs">✓</span>
-                    </div>
-                  )}
-                </button>
-              ))}
-            </div>
+            {loading ? (
+              <div className="flex justify-center items-center h-32">
+                <div className="text-sm text-gray-500">Loading avatars...</div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-6 gap-3">
+                {avatarUrls.map((avatarUrl, index) => (
+                  <button
+                    key={`${avatarUrl}-${index}`}
+                    onClick={() => setSelectedAvatar(avatarUrl)}
+                    className={`relative rounded-full transition-all duration-200 hover:scale-110 ${
+                      selectedAvatar === avatarUrl
+                        ? 'ring-4 ring-blue-500 ring-offset-2'
+                        : 'hover:ring-2 hover:ring-blue-300'
+                    }`}
+                  >
+                    <Avatar className="w-16 h-16">
+                      <AvatarImage 
+                        src={avatarUrl} 
+                        alt={`Pokemon avatar ${index + 1}`}
+                        className="object-cover"
+                      />
+                    </Avatar>
+                    {selectedAvatar === avatarUrl && (
+                      <div className="absolute -top-1 -right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                        <span className="text-white text-xs">✓</span>
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
             <div className="text-xs text-gray-500 mt-4 text-center">
               End of avatar selection
             </div>
@@ -72,7 +98,7 @@ export const AvatarSelectionModal: React.FC<AvatarSelectionModalProps> = ({
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button onClick={handleSelect}>
+            <Button onClick={handleSelect} disabled={loading}>
               Select Avatar
             </Button>
           </div>
