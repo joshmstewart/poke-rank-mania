@@ -7,7 +7,7 @@ export type PokemonFormType =
   | "forms"
   | "originPrimal"
   | "costumes"
-  | "colorsFlavors"; // New category for color and flavor variants
+  | "colorsFlavors";
 
 export interface FormFilters {
   normal: boolean;
@@ -17,5 +17,5 @@ export interface FormFilters {
   forms: boolean;
   originPrimal: boolean;
   costumes: boolean;
-  colorsFlavors: boolean; // New filter
+  colorsFlavors: boolean;
 }

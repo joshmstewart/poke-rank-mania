@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { FormFilters, PokemonFormType } from "./types";
-import { getStoredFilters, saveFilters } from "./storage";
+import { getStoredFilters, saveFilters, clearStoredFilters } from "./storage";
 import { 
   isStarterPokemon, 
   isTotemPokemon, 
@@ -13,7 +13,11 @@ import {
 import { storePokemon, getStoredPokemon, clearStoredPokemon } from "./excludedStore";
 
 export const useFormFilters = () => {
-  const [filters, setFilters] = useState<FormFilters>(getStoredFilters());
+  const [filters, setFilters] = useState<FormFilters>(() => {
+    const storedFilters = getStoredFilters();
+    console.log('🧹 [FORM_FILTERS_INIT] Initializing with filters:', storedFilters);
+    return storedFilters;
+  });
   
   // Determine if all filters are enabled
   const isAllEnabled = Object.values(filters).every(Boolean);
@@ -22,6 +26,7 @@ export const useFormFilters = () => {
   const toggleFilter = (filter: PokemonFormType) => {
     setFilters(prev => {
       const updated = { ...prev, [filter]: !prev[filter] };
+      console.log(`🧹 [FORM_FILTERS_TOGGLE] Toggling ${filter}: ${prev[filter]} -> ${updated[filter]}`);
       saveFilters(updated);
       return updated;
     });
@@ -38,10 +43,29 @@ export const useFormFilters = () => {
       forms: newValue,
       originPrimal: newValue,
       costumes: newValue,
-      colorsFlavors: newValue // Include new category
+      colorsFlavors: newValue
     };
+    console.log(`🧹 [FORM_FILTERS_TOGGLE_ALL] Setting all filters to: ${newValue}`);
     saveFilters(updated);
     setFilters(updated);
+  };
+
+  // Reset filters to default (all enabled)
+  const resetFilters = () => {
+    clearStoredFilters();
+    const defaultFilters = {
+      normal: true,
+      megaGmax: true,
+      regional: true,
+      gender: true,
+      forms: true,
+      originPrimal: true,
+      costumes: true,
+      colorsFlavors: true
+    };
+    console.log('🧹 [FORM_FILTERS_RESET] Resetting to default filters');
+    saveFilters(defaultFilters);
+    setFilters(defaultFilters);
   };
   
   // Check if a Pokemon should be included based on current filters
@@ -186,6 +210,7 @@ export const useFormFilters = () => {
     toggleFilter,
     isAllEnabled,
     toggleAll,
+    resetFilters,
     shouldIncludePokemon,
     analyzeFilteringPipeline: (inputPokemon: Pokemon[]) => {
       console.log(`🔍 [FILTER_PIPELINE_ANALYSIS] ===== STARTING FILTER ANALYSIS =====`);

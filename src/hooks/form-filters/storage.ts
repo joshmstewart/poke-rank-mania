@@ -18,7 +18,7 @@ export const getStoredFilters = (): FormFilters => {
         forms: true,
         originPrimal: true,
         costumes: true,
-        colorsFlavors: true // Default to enabled for new category
+        colorsFlavors: true
       };
       
       // Merge with defaults to handle missing properties
@@ -26,9 +26,12 @@ export const getStoredFilters = (): FormFilters => {
     }
   } catch (error) {
     console.error('Error loading form filters from localStorage:', error);
+    // Clear corrupted data
+    localStorage.removeItem(STORAGE_KEY);
   }
   
   // Return default filters with all enabled
+  console.log('🧹 [FORM_FILTERS_STORAGE] Using default filters - all enabled');
   return {
     normal: true,
     megaGmax: true,
@@ -43,8 +46,19 @@ export const getStoredFilters = (): FormFilters => {
 
 export const saveFilters = (filters: FormFilters): void => {
   try {
+    console.log('🧹 [FORM_FILTERS_STORAGE] Saving filters:', filters);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(filters));
   } catch (error) {
     console.error('Error saving form filters to localStorage:', error);
+  }
+};
+
+// Add a function to clear filters (useful for resets)
+export const clearStoredFilters = (): void => {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+    console.log('🧹 [FORM_FILTERS_STORAGE] Cleared stored filters');
+  } catch (error) {
+    console.error('Error clearing form filters from localStorage:', error);
   }
 };
