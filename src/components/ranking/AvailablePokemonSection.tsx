@@ -116,7 +116,6 @@ export const AvailablePokemonSection: React.FC<AvailablePokemonSectionProps> = (
         loadingRef={loadingRef}
         currentPage={currentPage}
         totalPages={totalPages}
-        hasMore={currentPage < totalPages}
       />
     </div>
   );
