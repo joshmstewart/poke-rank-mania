@@ -41,6 +41,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
     userId: user?.id || 'NO_USER_ID',
     userEmail: user?.email || 'NO_EMAIL',
     userPhone: user?.phone || 'NO_PHONE',
+    loading,
     timestamp: new Date().toISOString()
   });
 
@@ -48,6 +49,9 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
     if (open && user?.id) {
       console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] Modal opened, loading profile for user:', user.id);
       loadProfile();
+    } else if (open && !user?.id) {
+      console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] Modal opened but no user ID, setting loading to false');
+      setLoading(false);
     }
   }, [open, user?.id]);
 
@@ -63,7 +67,15 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
     
     try {
       console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] Calling getProfile with user ID:', user.id);
-      const profileData = await getProfile(user.id);
+      
+      // Add a timeout to prevent infinite loading
+      const profilePromise = getProfile(user.id);
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Profile load timeout')), 10000)
+      );
+      
+      const profileData = await Promise.race([profilePromise, timeoutPromise]) as Profile | null;
+      
       console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] Profile data received:', profileData);
       
       if (profileData) {
@@ -118,6 +130,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
         variant: 'default',
       });
     } finally {
+      console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] Setting loading to false in finally block');
       setLoading(false);
       console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] Profile loading completed');
     }
