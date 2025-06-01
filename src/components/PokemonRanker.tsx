@@ -23,6 +23,18 @@ export default function PokemonRanker() {
     resetRankings
   } = usePokemonRanker();
 
+  // 🚨🚨🚨 POKEMON RANKER COMPONENT LEVEL TRACKING
+  console.log(`🔍 [POKEMON_RANKER] ===== COMPONENT LEVEL DATA TRACKING =====`);
+  console.log(`🔍 [POKEMON_RANKER] Received from usePokemonRanker:`);
+  console.log(`🔍 [POKEMON_RANKER] - availablePokemon: ${availablePokemon.length}`);
+  console.log(`🔍 [POKEMON_RANKER] - rankedPokemon: ${rankedPokemon.length}`);
+  console.log(`🔍 [POKEMON_RANKER] - selectedGeneration: ${selectedGeneration}`);
+  
+  if (rankedPokemon.length > 0) {
+    console.log(`🚨🚨🚨 [POKEMON_RANKER_CRITICAL] RANKED POKEMON AT COMPONENT LEVEL: ${rankedPokemon.length}`);
+    console.log(`🚨🚨🚨 [POKEMON_RANKER_CRITICAL] Sample IDs: ${rankedPokemon.slice(0, 10).map(p => p.id).join(', ')}`);
+  }
+
   const handleGenerationChange = (gen: number) => {
     console.log(`🔍 [POKEMON_RANKER] Generation changing from ${selectedGeneration} to ${gen}`);
     setSelectedGeneration(gen);

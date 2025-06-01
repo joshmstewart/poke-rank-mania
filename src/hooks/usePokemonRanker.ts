@@ -35,14 +35,22 @@ export const usePokemonRanker = (): RankingState & RankingActions & { loadingRef
     setLoadingType
   } = useRankingState();
 
-  // CRITICAL DEBUGGING: Track data at the hook level
-  console.log(`🔍🔍🔍 [POKEMON_RANKER_HOOK] ===== DATA FLOW INVESTIGATION =====`);
-  console.log(`🔍🔍🔍 [POKEMON_RANKER_HOOK] Raw availablePokemon: ${availablePokemon.length}`);
-  console.log(`🔍🔍🔍 [POKEMON_RANKER_HOOK] Raw rankedPokemon: ${rankedPokemon.length}`);
-  console.log(`🔍🔍🔍 [POKEMON_RANKER_HOOK] selectedGeneration: ${selectedGeneration}`);
-  console.log(`🔍🔍🔍 [POKEMON_RANKER_HOOK] loadSize: ${loadSize}`);
-  console.log(`🔍🔍🔍 [POKEMON_RANKER_HOOK] currentPage: ${currentPage}`);
-  console.log(`🔍🔍🔍 [POKEMON_RANKER_HOOK] totalPages: ${totalPages}`);
+  // 🚨🚨🚨 ULTRA CRITICAL MISSING DATA SOURCE DETECTION
+  console.log(`🔍🔍🔍 [POKEMON_RANKER_HOOK] ===== CRITICAL DATA SOURCE HUNT =====`);
+  console.log(`🔍🔍🔍 [POKEMON_RANKER_STATE] Raw availablePokemon: ${availablePokemon.length}`);
+  console.log(`🔍🔍🔍 [POKEMON_RANKER_STATE] Raw rankedPokemon: ${rankedPokemon.length}`);
+  console.log(`🔍🔍🔍 [POKEMON_RANKER_STATE] selectedGeneration: ${selectedGeneration}`);
+  console.log(`🔍🔍🔍 [POKEMON_RANKER_STATE] loadSize: ${loadSize}`);
+  console.log(`🔍🔍🔍 [POKEMON_RANKER_STATE] currentPage: ${currentPage}`);
+  console.log(`🔍🔍🔍 [POKEMON_RANKER_STATE] totalPages: ${totalPages}`);
+  
+  // 🚨 CRITICAL: Check if rankedPokemon state has data that TrueSkill doesn't know about
+  if (rankedPokemon.length > 0) {
+    console.log(`🚨🚨🚨 [CRITICAL_FINDING] RANKED POKEMON FOUND IN STATE: ${rankedPokemon.length}`);
+    console.log(`🚨🚨🚨 [CRITICAL_FINDING] Ranked Pokemon IDs: ${rankedPokemon.slice(0, 20).map(p => p.id).join(', ')}${rankedPokemon.length > 20 ? '...' : ''}`);
+    console.log(`🚨🚨🚨 [CRITICAL_FINDING] Sample names: ${rankedPokemon.slice(0, 5).map(p => p.name).join(', ')}`);
+    console.log(`🚨🚨🚨 [CRITICAL_FINDING] WHERE DID THIS DATA COME FROM???`);
+  }
 
   // Use the handlers hook
   const {
