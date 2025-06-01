@@ -58,16 +58,27 @@ export const useSimpleProfileSave = () => {
       savingRef.current = true;
       setSaving(true);
       
-      // Add a timeout as safety net
+      // Add a shorter timeout as safety net
       const timeoutId = setTimeout(() => {
-        console.log('🔥 [SIMPLE_SAVE] ⚠️ TIMEOUT: Force resetting saving state after 30 seconds');
-        savingRef.current = false;
-        setSaving(false);
-      }, 30000);
+        console.log('🔥 [SIMPLE_SAVE] ⚠️ TIMEOUT: Force resetting saving state after 10 seconds');
+        if (mountedRef.current) {
+          savingRef.current = false;
+          setSaving(false);
+          toast({
+            title: 'Save Timeout',
+            description: 'The save operation took too long and was cancelled. Please try again.',
+            variant: 'destructive',
+          });
+        }
+      }, 10000); // 10 second timeout instead of 30
       
       console.log('🔥 [SIMPLE_SAVE] About to call updateProfile...');
+      const startTime = Date.now();
+      
       const success = await updateProfile(userId, profileData);
-      console.log('🔥 [SIMPLE_SAVE] updateProfile completed with result:', success);
+      
+      const endTime = Date.now();
+      console.log('🔥 [SIMPLE_SAVE] updateProfile completed in', (endTime - startTime), 'ms with result:', success);
       
       // Clear timeout since we completed
       clearTimeout(timeoutId);

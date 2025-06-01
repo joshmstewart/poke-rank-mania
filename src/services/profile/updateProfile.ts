@@ -15,11 +15,15 @@ export const updateProfile = async (userId: string, updates: Partial<Profile>): 
 
   try {
     console.log('🚀 [PROFILE_UPDATE] Testing database connection...');
+    const connectionStartTime = Date.now();
+    
     const { data: testData, error: testError } = await supabase
       .from('profiles')
       .select('count')
       .limit(1);
     
+    const connectionEndTime = Date.now();
+    console.log('🚀 [PROFILE_UPDATE] Connection test completed in', (connectionEndTime - connectionStartTime), 'ms');
     console.log('🚀 [PROFILE_UPDATE] Connection test result:', { testData, testError });
     
     if (testError) {
@@ -39,6 +43,8 @@ export const updateProfile = async (userId: string, updates: Partial<Profile>): 
     console.log('🚀 [PROFILE_UPDATE] Attempting upsert with data:', profileData);
     console.log('🚀 [PROFILE_UPDATE] About to call supabase.from("profiles").upsert()...');
 
+    const upsertStartTime = Date.now();
+    
     // Use upsert with onConflict to handle both insert and update
     const upsertPromise = supabase
       .from('profiles')
@@ -52,7 +58,8 @@ export const updateProfile = async (userId: string, updates: Partial<Profile>): 
     
     const { data, error } = await upsertPromise;
 
-    console.log('🚀 [PROFILE_UPDATE] Upsert completed!');
+    const upsertEndTime = Date.now();
+    console.log('🚀 [PROFILE_UPDATE] Upsert completed in', (upsertEndTime - upsertStartTime), 'ms');
     console.log('🚀 [PROFILE_UPDATE] Upsert result data:', data);
     console.log('🚀 [PROFILE_UPDATE] Upsert result error:', error);
     
