@@ -28,7 +28,6 @@ function AppContent() {
     console.log('🚀🚀🚀 APP_CONTENT_FIXED: ===== FIXED APP CONTENT MOUNTED =====');
     console.log('🚀🚀🚀 APP_CONTENT_FIXED: Component mounted at:', new Date().toISOString());
     console.log('🚀🚀🚀 APP_CONTENT_FIXED: Instance ID on mount:', stableInstance.current);
-    console.log('🚀🚀🚀 APP_CONTENT_FIXED: Mount stack:', new Error().stack);
     
     // Store globally for debugging
     if (typeof window !== 'undefined') {
@@ -50,7 +49,7 @@ function AppContent() {
         mode: mode,
         timestamp: new Date().toISOString()
       });
-    }, 4000);
+    }, 6000); // Reduced frequency
     
     intervalRefs.current.push(monitoringInterval);
     
@@ -59,7 +58,6 @@ function AppContent() {
       console.log('🚀🚀🚀 APP_CONTENT_FIXED: ===== PAGE UNLOAD DETECTED =====');
       console.log('🚀🚀🚀 APP_CONTENT_FIXED: 🚨 PAGE IS RELOADING/NAVIGATING AWAY 🚨');
       console.log('🚀🚀🚀 APP_CONTENT_FIXED: This explains why app-content would disappear');
-      console.log('🚀🚀🚀 APP_CONTENT_FIXED: Timestamp:', new Date().toISOString());
     };
     
     window.addEventListener('beforeunload', handleBeforeUnload);
@@ -70,7 +68,6 @@ function AppContent() {
       console.log('🚀🚀🚀 APP_CONTENT_FIXED: Unmounting at:', new Date().toISOString());
       console.log('🚀🚀🚀 APP_CONTENT_FIXED: Instance that unmounted:', stableInstance.current);
       console.log('🚀🚀🚀 APP_CONTENT_FIXED: Mode at unmount:', mode);
-      console.log('🚀🚀🚀 APP_CONTENT_FIXED: Unmount stack:', new Error().stack);
       
       unmountDetectedRef.current = true;
       
@@ -106,7 +103,7 @@ function AppContent() {
     }
   };
 
-  // VISUAL DEBUG OVERLAY REMOVED - Clean production-like interface
+  // Clean production interface
   return (
     <div className="flex flex-col h-screen">
       <AppHeader mode={mode} onModeChange={handleModeChange} />
@@ -139,7 +136,6 @@ function App() {
     console.log('🚀🚀🚀 ROOT_APP_FIXED: ===== ROOT MOUNT EFFECT =====');
     console.log('🚀🚀🚀 ROOT_APP_FIXED: Root component mounted at:', new Date().toISOString());
     console.log('🚀🚀🚀 ROOT_APP_FIXED: Stable root instance on mount:', stableRootInstance.current);
-    console.log('🚀🚀🚀 ROOT_APP_FIXED: Mount stack:', new Error().stack);
     
     // Add monitoring
     const monitoringInterval = setInterval(() => {
@@ -154,7 +150,7 @@ function App() {
         renderCount: renderCount.current,
         timestamp: new Date().toISOString()
       });
-    }, 6000);
+    }, 8000); // Reduced frequency
     
     intervalRefs.current.push(monitoringInterval);
     
@@ -163,7 +159,6 @@ function App() {
       console.log('🚀🚀🚀 ROOT_APP_FIXED: 🚨🚨🚨 ROOT COMPONENT UNMOUNTING 🚨🚨🚨');
       console.log('🚀🚀🚀 ROOT_APP_FIXED: Root unmounting at:', new Date().toISOString());
       console.log('🚀🚀🚀 ROOT_APP_FIXED: Root instance that unmounted:', stableRootInstance.current);
-      console.log('🚀🚀🚀 ROOT_APP_FIXED: Unmount stack:', new Error().stack);
       
       unmountDetectedRef.current = true;
       

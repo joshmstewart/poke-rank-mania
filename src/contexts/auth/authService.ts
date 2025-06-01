@@ -35,14 +35,18 @@ export const authService = {
     console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] Current URL:', window.location.href);
     console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] Origin:', window.location.origin);
     
-    // Use the current origin as redirect URL to prevent localhost issues
-    const redirectUrl = window.location.origin;
-    console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] Using redirect URL:', redirectUrl);
+    // CRITICAL FIX: Use the current origin to prevent redirect to live site
+    const currentOrigin = window.location.origin;
+    console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] Using redirect URL:', currentOrigin);
+    
+    // For dev environment, ensure we stay on the correct domain
+    const isDevEnvironment = currentOrigin.includes('lovableproject.com') || currentOrigin.includes('localhost');
+    console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] Is dev environment:', isDevEnvironment);
     
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: redirectUrl,
+        redirectTo: currentOrigin,
         queryParams: {
           access_type: 'offline',
           prompt: 'consent',

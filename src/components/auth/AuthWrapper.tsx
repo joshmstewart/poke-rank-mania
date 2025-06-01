@@ -1,5 +1,5 @@
 
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useMemo } from 'react';
 import { AuthProvider } from '@/contexts/auth';
 import { ImpliedBattleTrackerProvider } from '@/contexts/ImpliedBattleTracker';
 
@@ -12,7 +12,6 @@ export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
   const renderCount = useRef(0);
   const mountTime = useRef(new Date().toISOString());
   const [authState, setAuthState] = useState('UNKNOWN');
-  const [lastHeartbeat, setLastHeartbeat] = useState(new Date().toISOString());
   const unmountDetectedRef = useRef(false);
   const intervalRefs = useRef<NodeJS.Timeout[]>([]);
   
@@ -23,13 +22,11 @@ export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
   console.log('🟢🟢🟢 [NAWGTI_FIXED] Render count:', renderCount.current);
   console.log('🟢🟢🟢 [NAWGTI_FIXED] Auth state:', authState);
   console.log('🟢🟢🟢 [NAWGTI_FIXED] Mount time:', mountTime.current);
-  console.log('🟢🟢🟢 [NAWGTI_FIXED] THIS WRAPPER IS STABILIZED');
 
   useEffect(() => {
     console.log('🟢🟢🟢 [NAWGTI_FIXED] ===== NAWGTI MOUNT EFFECT =====');
     console.log('🟢🟢🟢 [NAWGTI_FIXED] Wrapper (nawgti) mounted successfully');
     console.log('🟢🟢🟢 [NAWGTI_FIXED] Mount timestamp:', new Date().toISOString());
-    console.log('🟢🟢🟢 [NAWGTI_FIXED] Mount stack:', new Error().stack);
     
     // Store instance globally for debugging
     if (typeof window !== 'undefined') {
@@ -37,7 +34,7 @@ export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
       (window as any).nawgtiMounted = true;
     }
     
-    // Set up monitoring with longer intervals to reduce noise
+    // Set up monitoring with longer intervals
     const monitoringInterval = setInterval(() => {
       if (unmountDetectedRef.current) {
         console.log('🟢🟢🟢 [NAWGTI_FIXED] ⚠️ UNMOUNT FLAG DETECTED IN MONITORING ⚠️');
@@ -52,7 +49,7 @@ export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
         stillMounted: 'YES',
         timestamp: new Date().toISOString()
       });
-    }, 3000);
+    }, 5000); // Reduced frequency
     
     intervalRefs.current.push(monitoringInterval);
     
@@ -82,34 +79,11 @@ export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
       console.log('🟢🟢🟢 [NAWGTI_FIXED] ===== PAGE UNLOAD DETECTED =====');
       console.log('🟢🟢🟢 [NAWGTI_FIXED] 🚨 PAGE IS RELOADING/NAVIGATING AWAY 🚨');
       console.log('🟢🟢🟢 [NAWGTI_FIXED] This explains why nawgti would disappear');
-      console.log('🟢🟢🟢 [NAWGTI_FIXED] Timestamp:', new Date().toISOString());
     };
     
     window.addEventListener('nawgti-auth-state', handleAuthStateChange);
     window.addEventListener('beforeunload', handleBeforeUnload);
     console.log('🟢🟢🟢 [NAWGTI_FIXED] Auth state listener added to window');
-    
-    // Enhanced heartbeat with reduced frequency
-    const heartbeat = setInterval(() => {
-      const currentTime = new Date().toISOString();
-      setLastHeartbeat(currentTime);
-      
-      console.log('🟢🟢🟢 [NAWGTI_FIXED] 💓 NAWGTI HEARTBEAT:', {
-        instance: wrapperInstance.current,
-        time: new Date().toLocaleTimeString(),
-        authState: authState,
-        renderCount: renderCount.current,
-        mountTime: mountTime.current,
-        isVisible: 'YES_LOGGING_FROM_INSIDE_COMPONENT',
-        timestamp: currentTime
-      });
-      
-      if (authState === 'AUTHENTICATED') {
-        console.log('🟢🟢🟢 [NAWGTI_FIXED] 🎯 AUTHENTICATED HEARTBEAT - NAWGTI IS STABLE 🎯');
-      }
-    }, 5000);
-    
-    intervalRefs.current.push(heartbeat);
     
     console.log('🟢🟢🟢 [NAWGTI_FIXED] All monitoring and listeners established');
     
@@ -120,7 +94,6 @@ export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
       console.log('🟢🟢🟢 [NAWGTI_FIXED] Total renders before unmount:', renderCount.current);
       console.log('🟢🟢🟢 [NAWGTI_FIXED] Auth state at unmount:', authState);
       console.log('🟢🟢🟢 [NAWGTI_FIXED] THIS IS THE CRITICAL FAILURE - NAWGTI SHOULD NOT UNMOUNT POST-LOGIN');
-      console.log('🟢🟢🟢 [NAWGTI_FIXED] Unmount stack trace:', new Error().stack);
       
       // Set flag and try to log to window
       unmountDetectedRef.current = true;
@@ -163,7 +136,7 @@ export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
   console.log('🟢🟢🟢 [NAWGTI_FIXED] About to render JSX structure');
   console.log('🟢🟢🟢 [NAWGTI_FIXED] Current auth state for rendering decision:', authState);
 
-  // VISUAL DEBUG OVERLAY REMOVED - Only functional wrapper remains
+  // Clean production wrapper - no visual debug overlay
   return (
     <div className="auth-wrapper-container" style={{ minHeight: '100vh', position: 'relative' }}>
       <AuthProvider>
