@@ -38,9 +38,8 @@ export const BulletproofAuthDisplay: React.FC = () => {
   return (
     <div style={{
       position: 'fixed',
-      top: '200px',
-      left: '50%',
-      transform: 'translateX(-50%)',
+      bottom: '20px',
+      right: '20px',
       zIndex: 99999,
       backgroundColor: '#ff0000',
       color: '#ffffff',
@@ -48,7 +47,7 @@ export const BulletproofAuthDisplay: React.FC = () => {
       border: '5px solid #ffff00',
       fontSize: '16px',
       fontWeight: 'bold',
-      maxWidth: '600px',
+      maxWidth: '400px',
       textAlign: 'center'
     }}>
       <div style={{ fontSize: '20px', marginBottom: '10px' }}>
