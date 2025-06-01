@@ -16,6 +16,8 @@ interface ProfileModalContentProps {
   onCancel: () => void;
   onSave: () => void;
   onAvatarClick: () => void;
+  hasChanges?: boolean;
+  user?: any;
 }
 
 export const ProfileModalContent: React.FC<ProfileModalContentProps> = ({
@@ -29,13 +31,17 @@ export const ProfileModalContent: React.FC<ProfileModalContentProps> = ({
   saving,
   onCancel,
   onSave,
-  onAvatarClick
+  onAvatarClick,
+  hasChanges,
+  user
 }) => {
   console.log('📝 [PROFILE_CONTENT] ===== RENDER =====');
   console.log('📝 [PROFILE_CONTENT] onSave function received:', {
     onSaveExists: !!onSave,
     onSaveType: typeof onSave,
     saving,
+    hasChanges,
+    userExists: !!user,
     timestamp: new Date().toISOString()
   });
 
@@ -60,12 +66,16 @@ export const ProfileModalContent: React.FC<ProfileModalContentProps> = ({
         <p className="text-xs text-blue-700 mb-2">Debug: Content level onSave check</p>
         <p className="text-xs">onSave exists: {String(!!onSave)}</p>
         <p className="text-xs">onSave type: {typeof onSave}</p>
+        <p className="text-xs">hasChanges: {String(hasChanges)}</p>
+        <p className="text-xs">user exists: {String(!!user)}</p>
       </div>
       
       <ProfileModalActions
         onCancel={onCancel}
         onSave={onSave}
         saving={saving}
+        hasChanges={hasChanges}
+        user={user}
       />
     </div>
   );
