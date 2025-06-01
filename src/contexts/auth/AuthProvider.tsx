@@ -21,10 +21,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     hasUser: !!user,
     hasSession: !!session,
     loading,
-    userEmail: user?.email,
-    sessionUserEmail: session?.user?.email,
-    userId: user?.id,
-    sessionUserId: session?.user?.id,
+    userEmail: user?.email || 'NO_USER_EMAIL_FROM_HOOK',
+    userId: user?.id || 'NO_USER_ID_FROM_HOOK',
+    sessionUserEmail: session?.user?.email || 'NO_SESSION_USER_EMAIL_FROM_HOOK',
+    sessionUserId: session?.user?.id || 'NO_SESSION_USER_ID_FROM_HOOK',
+    userObjectFull: user ? {
+      id: user.id,
+      email: user.email,
+      email_confirmed_at: user.email_confirmed_at,
+      phone: user.phone,
+      created_at: user.created_at,
+      user_metadata: user.user_metadata,
+      app_metadata: user.app_metadata
+    } : 'NULL_USER_FROM_HOOK',
+    sessionUserObjectFull: session?.user ? {
+      id: session.user.id,
+      email: session.user.email,
+      email_confirmed_at: session.user.email_confirmed_at,
+      phone: session.user.phone,
+      created_at: session.user.created_at,
+      user_metadata: session.user.user_metadata,
+      app_metadata: session.user.app_metadata
+    } : 'NULL_SESSION_USER_FROM_HOOK',
     timestamp: new Date().toISOString()
   });
   console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] Render stack trace:', new Error().stack);
@@ -35,30 +53,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] ⚡ AUTH STATE COMPUTATION ⚡');
   console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] - loading:', loading);
   console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] - user exists:', !!user);
+  console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] - user email:', user?.email || 'NO_USER_EMAIL');
   console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] - session.user exists:', !!session?.user);
+  console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] - session.user email:', session?.user?.email || 'NO_SESSION_USER_EMAIL');
   console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] - computed authState:', authState);
   console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] - previous authState:', lastAuthStateRef.current);
 
   // Critical: Log what will be provided to useAuth consumers
-  const contextValue = React.useMemo(() => ({
-    user,
-    session,
-    loading,
-    signIn: authService.signIn,
-    signUp: authService.signUp,
-    signOut: authService.signOut,
-    signInWithGoogle: authService.signInWithGoogle,
-    signInWithPhone: authService.signInWithPhone,
-    verifyPhoneOtp: authService.verifyPhoneOtp,
-  }), [user, session, loading]);
+  const contextValue = React.useMemo(() => {
+    const contextToProvide = {
+      user,
+      session,
+      loading,
+      signIn: authService.signIn,
+      signUp: authService.signUp,
+      signOut: authService.signOut,
+      signInWithGoogle: authService.signInWithGoogle,
+      signInWithPhone: authService.signInWithPhone,
+      verifyPhoneOtp: authService.verifyPhoneOtp,
+    };
 
-  console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] 🎯 CONTEXT VALUE TO BE PROVIDED 🎯');
-  console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] Context value:', {
+    console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] 🎯 CONTEXT VALUE BEING MEMOIZED 🎯');
+    console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] Context value to provide:', {
+      hasUser: !!contextToProvide.user,
+      hasSession: !!contextToProvide.session,
+      loading: contextToProvide.loading,
+      userEmail: contextToProvide.user?.email || 'NO_EMAIL_IN_CONTEXT_USER',
+      userId: contextToProvide.user?.id || 'NO_ID_IN_CONTEXT_USER',
+      sessionUserEmail: contextToProvide.session?.user?.email || 'NO_EMAIL_IN_CONTEXT_SESSION',
+      sessionUserId: contextToProvide.session?.user?.id || 'NO_ID_IN_CONTEXT_SESSION',
+      userFromUseAuthState: !!user,
+      sessionFromUseAuthState: !!session,
+      loadingFromUseAuthState: loading,
+      timestamp: new Date().toISOString()
+    });
+
+    return contextToProvide;
+  }, [user, session, loading]);
+
+  console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] 🎯 FINAL CONTEXT VALUE TO BE PROVIDED 🎯');
+  console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] Final context value:', {
     hasUser: !!contextValue.user,
     hasSession: !!contextValue.session,
     loading: contextValue.loading,
-    userEmail: contextValue.user?.email,
-    sessionUserEmail: contextValue.session?.user?.email,
+    userEmail: contextValue.user?.email || 'NO_FINAL_USER_EMAIL',
+    userId: contextValue.user?.id || 'NO_FINAL_USER_ID',
+    sessionUserEmail: contextValue.session?.user?.email || 'NO_FINAL_SESSION_EMAIL',
+    sessionUserId: contextValue.session?.user?.id || 'NO_FINAL_SESSION_ID',
     timestamp: new Date().toISOString()
   });
 
@@ -85,7 +126,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       hasUser: !!user,
       hasSession: !!session,
       loading,
-      userEmail: user?.email || session?.user?.email,
+      userEmail: user?.email || session?.user?.email || 'NO_EMAIL_AVAILABLE',
+      userId: user?.id || session?.user?.id || 'NO_ID_AVAILABLE',
       timestamp: new Date().toISOString()
     });
     
@@ -94,8 +136,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       authState, 
       timestamp: new Date().toISOString(),
       providerInstance: providerInstanceRef.current,
-      userEmail: user?.email || session?.user?.email,
-      userId: user?.id || session?.user?.id
+      userEmail: user?.email || session?.user?.email || 'NO_EMAIL_FOR_EVENT',
+      userId: user?.id || session?.user?.id || 'NO_ID_FOR_EVENT'
     };
     
     console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] Dispatching nawgti-auth-state event with:', eventDetail);
@@ -108,8 +150,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     if (authState === 'AUTHENTICATED') {
       console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] ✅✅✅ PROVIDER REPORTS AUTHENTICATED ✅✅✅');
-      console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] User email:', user?.email || session?.user?.email);
-      console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] 🎯 useAuth CONSUMERS SHOULD NOW SEE AUTHENTICATED STATE 🎯');
+      console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] User email:', user?.email || session?.user?.email || 'NO_EMAIL_DESPITE_AUTH');
+      console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] User ID:', user?.id || session?.user?.id || 'NO_ID_DESPITE_AUTH');
+      console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] 🎯 useAuth CONSUMERS SHOULD NOW SEE AUTHENTICATED STATE WITH EMAIL 🎯');
       console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] NAWGTI SHOULD REMAIN STABLE WITH THIS STATE');
     } else if (authState === 'LOADING') {
       console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] Provider reports LOADING state');
@@ -157,7 +200,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         Session: {session?.user?.email || 'none'}<br/>
         Loading: {loading ? 'YES' : 'NO'}<br/>
         <span style={{ fontSize: '10px', color: 'yellow' }}>
-          This should show AUTHENTICATED post-login
+          This should show AUTHENTICATED with EMAIL post-login
         </span>
       </div>
       <AuthContext.Provider value={contextValue}>
