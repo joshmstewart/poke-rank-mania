@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/auth/useAuth';
 import { toast } from '@/hooks/use-toast';
@@ -75,30 +74,51 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
     });
   }, [effectiveUser?.id, prefetchProfile, getProfileFromCache]);
 
-  // Listen for profile updates with immediate cache refresh
+  // FIXED: Listen for profile updates with immediate fresh fetch (not cache)
   useEffect(() => {
     const handleProfileUpdate = async (event: CustomEvent) => {
+      console.log('🔄 [AUTH_USER_DISPLAY] ===== PROFILE UPDATE EVENT =====');
       console.log('🔄 [AUTH_USER_DISPLAY] Profile updated event received:', event.detail);
+      console.log('🔄 [AUTH_USER_DISPLAY] Event detail avatar_url:', event.detail?.avatar_url);
+      console.log('🔄 [AUTH_USER_DISPLAY] Event detail timestamp:', event.detail?.timestamp);
       
       if (effectiveUser?.id && !isLoadingProfile.current) {
-        // Immediately invalidate cache
+        console.log('🔄 [AUTH_USER_DISPLAY] 🚀 PROCESSING PROFILE UPDATE - FORCING FRESH FETCH');
+        
+        // Immediately invalidate cache to ensure we don't use stale data
         invalidateCache(effectiveUser.id);
         
-        // Force refresh the profile data
+        // CRITICAL FIX: Use the event data directly first, then fetch fresh
+        if (event.detail && event.detail.avatar_url) {
+          console.log('🔄 [AUTH_USER_DISPLAY] 🎯 Using FRESH event data directly');
+          const updatedProfile = {
+            ...currentProfile,
+            id: effectiveUser.id,
+            avatar_url: event.detail.avatar_url,
+            username: event.detail.username || currentProfile?.username,
+            display_name: event.detail.display_name || currentProfile?.display_name,
+            updated_at: event.detail.timestamp
+          };
+          
+          console.log('🔄 [AUTH_USER_DISPLAY] 🎯 Setting profile from event data:', updatedProfile.avatar_url);
+          setCurrentProfile(updatedProfile);
+          setIsProfileLoaded(true);
+        }
+        
+        // Also fetch fresh data to ensure cache is updated
         isLoadingProfile.current = true;
-        setIsProfileLoaded(false);
         
         try {
-          // Wait a moment for the database to be consistent
-          await new Promise(resolve => setTimeout(resolve, 500)); // Increased delay
+          // Small delay to ensure database consistency
+          await new Promise(resolve => setTimeout(resolve, 200));
           
-          // Fetch fresh profile data
+          // Fetch completely fresh profile data
           await prefetchProfile(effectiveUser.id);
-          const updatedProfile = getProfileFromCache(effectiveUser.id);
+          const freshProfile = getProfileFromCache(effectiveUser.id);
           
-          if (updatedProfile) {
-            console.log('🔄 [AUTH_USER_DISPLAY] Setting updated profile with avatar:', updatedProfile.avatar_url);
-            setCurrentProfile(updatedProfile);
+          if (freshProfile) {
+            console.log('🔄 [AUTH_USER_DISPLAY] 🎯 FINAL: Setting fresh profile with avatar:', freshProfile.avatar_url);
+            setCurrentProfile(freshProfile);
           }
           setIsProfileLoaded(true);
         } finally {
@@ -112,7 +132,7 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
     return () => {
       window.removeEventListener('profile-updated', handleProfileUpdate as EventListener);
     };
-  }, [effectiveUser?.id, getProfileFromCache, prefetchProfile, invalidateCache]);
+  }, [effectiveUser?.id, getProfileFromCache, prefetchProfile, invalidateCache, currentProfile]);
 
   const handleSignOut = useCallback(async () => {
     try {
