@@ -1,9 +1,10 @@
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useAuth } from '@/contexts/auth/useAuth';
 import { toast } from '@/hooks/use-toast';
 import { ProfileModal } from './ProfileModal';
 import { UserDropdownMenu } from './components/UserDropdownMenu';
+import { useProfileCache } from './hooks/useProfileCache';
 
 interface AuthenticatedUserDisplayProps {
   currentUser?: any;
@@ -12,9 +13,32 @@ interface AuthenticatedUserDisplayProps {
 export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> = ({ currentUser }) => {
   const { user, signOut } = useAuth();
   const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const { prefetchProfile } = useProfileCache();
 
   // Use the user from context or props, no additional auth calls needed
   const effectiveUser = currentUser || user;
+
+  // Listen for profile updates to refresh the display
+  useEffect(() => {
+    const handleProfileUpdate = (event: CustomEvent) => {
+      console.log('🔄 [AUTH_USER_DISPLAY] Profile updated, refreshing display');
+      
+      // Force refresh by incrementing key
+      setRefreshKey(prev => prev + 1);
+      
+      // Prefetch updated profile
+      if (effectiveUser?.id) {
+        prefetchProfile(effectiveUser.id);
+      }
+    };
+
+    window.addEventListener('profile-updated', handleProfileUpdate as EventListener);
+    
+    return () => {
+      window.removeEventListener('profile-updated', handleProfileUpdate as EventListener);
+    };
+  }, [effectiveUser?.id, prefetchProfile]);
 
   const handleSignOut = useCallback(async () => {
     try {
@@ -46,7 +70,7 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2" key={refreshKey}>
       <UserDropdownMenu user={effectiveUser} />
 
       <ProfileModal 

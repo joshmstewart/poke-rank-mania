@@ -6,6 +6,7 @@ import { ProfileModalHeader } from './ProfileModalHeader';
 import { ProfileModalContent } from './ProfileModalContent';
 import { AvatarSelectionModal } from './AvatarSelectionModal';
 import { useProfileFormState } from './hooks/useProfileFormState';
+import { useProfileCache } from './hooks/useProfileCache';
 
 interface ProfileModalProps {
   open: boolean;
@@ -14,6 +15,7 @@ interface ProfileModalProps {
 
 export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }) => {
   const { user } = useAuth();
+  const { getProfileFromCache } = useProfileCache();
   
   const {
     selectedAvatar,
@@ -26,6 +28,23 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
     setAvatarModalOpen,
     mountedRef
   } = useProfileFormState(open);
+
+  // Load current profile data when modal opens
+  useEffect(() => {
+    if (open && user?.id && mountedRef.current) {
+      console.log('🎭 [PROFILE_MODAL] Loading current profile data');
+      
+      // Get current profile from cache
+      const currentProfile = getProfileFromCache(user.id);
+      
+      if (currentProfile) {
+        console.log('🎭 [PROFILE_MODAL] Setting form with current profile:', currentProfile);
+        setSelectedAvatar(currentProfile.avatar_url || '');
+        setUsername(currentProfile.username || '');
+        setDisplayName(currentProfile.display_name || '');
+      }
+    }
+  }, [open, user?.id, getProfileFromCache, setSelectedAvatar, setUsername, setDisplayName, mountedRef]);
 
   const handleAvatarClick = () => {
     if (!mountedRef.current) return;

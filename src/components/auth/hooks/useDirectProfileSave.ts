@@ -2,9 +2,13 @@
 import { useState, useCallback } from 'react';
 import { updateProfile } from '@/services/profile/updateProfile';
 import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/auth/useAuth';
+import { useProfileCache } from './useProfileCache';
 
 export const useDirectProfileSave = () => {
   const [isSaving, setIsSaving] = useState(false);
+  const { user } = useAuth();
+  const { invalidateCache } = useProfileCache();
 
   const directSaveProfile = useCallback(async (
     userId: string,
@@ -15,8 +19,6 @@ export const useDirectProfileSave = () => {
     }
   ) => {
     console.log('🚀 [DIRECT_SAVE] Starting save operation');
-    console.log('🚀 [DIRECT_SAVE] User ID:', userId);
-    console.log('🚀 [DIRECT_SAVE] Profile data:', profileData);
 
     if (isSaving) {
       console.log('🚀 [DIRECT_SAVE] Already saving, ignoring request');
@@ -39,9 +41,8 @@ export const useDirectProfileSave = () => {
     try {
       console.log('🚀 [DIRECT_SAVE] Calling updateProfile service...');
       
-      // Reduced timeout to 15 seconds now that auth spam is fixed
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Profile update timeout after 15 seconds')), 15000);
+        setTimeout(() => reject(new Error('Profile update timeout after 8 seconds')), 8000);
       });
       
       const updatePromise = updateProfile(userId, profileData);
@@ -51,7 +52,16 @@ export const useDirectProfileSave = () => {
       console.log('🚀📢 [DIRECT_SAVE] updateProfile service returned:', result);
       
       if (result) {
-        console.log('🚀✅ [DIRECT_SAVE] Save successful, showing success toast');
+        console.log('🚀✅ [DIRECT_SAVE] Save successful, invalidating cache and updating context');
+        
+        // Invalidate profile cache to force refresh
+        invalidateCache(userId);
+        
+        // Force a fresh auth context update by dispatching custom event
+        window.dispatchEvent(new CustomEvent('profile-updated', {
+          detail: { userId, profileData }
+        }));
+        
         toast({
           title: 'Profile Updated',
           description: 'Your profile has been successfully updated.',
@@ -78,7 +88,7 @@ export const useDirectProfileSave = () => {
       console.log('🚀🏁 [DIRECT_SAVE] Entering finally block. Resetting isSaving.');
       setIsSaving(false);
     }
-  }, [isSaving]);
+  }, [isSaving, invalidateCache]);
 
   return { isSaving, directSaveProfile };
 };
