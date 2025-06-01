@@ -22,6 +22,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
   const [avatarModalOpen, setAvatarModalOpen] = useState(false);
 
   console.log('🎭 [PROFILE_MODAL_SIMPLE] Render - Open:', open, 'Saving:', saving, 'User:', !!user);
+  console.log('🎭 [PROFILE_MODAL_SIMPLE] saveProfile function type:', typeof saveProfile);
+  console.log('🎭 [PROFILE_MODAL_SIMPLE] Form state:', { selectedAvatar, username, displayName });
 
   // Debug effect to track saving state changes in modal
   useEffect(() => {
@@ -126,6 +128,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
     return null;
   }
 
+  console.log('🎭 [PROFILE_MODAL_SIMPLE] About to render dialog, handleSave type:', typeof handleSave);
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -140,7 +144,10 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
             displayName={displayName}
             setDisplayName={setDisplayName}
             saving={saving}
-            onCancel={() => onOpenChange(false)}
+            onCancel={() => {
+              console.log('🎭 [PROFILE_MODAL_SIMPLE] Cancel clicked from content');
+              onOpenChange(false);
+            }}
             onSave={handleSave}
             onAvatarClick={handleAvatarClick}
           />

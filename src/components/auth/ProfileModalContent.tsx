@@ -31,6 +31,14 @@ export const ProfileModalContent: React.FC<ProfileModalContentProps> = ({
   onSave,
   onAvatarClick
 }) => {
+  console.log('📝 [PROFILE_CONTENT] Render - saving:', saving, 'onSave type:', typeof onSave);
+  console.log('📝 [PROFILE_CONTENT] Props received:', {
+    loading,
+    saving,
+    hasOnSave: !!onSave,
+    hasOnCancel: !!onCancel
+  });
+
   if (loading) {
     return <ProfileModalLoading />;
   }
