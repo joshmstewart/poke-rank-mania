@@ -15,6 +15,7 @@ export const useGenerationExpansion = (generations: number[]) => {
       } else {
         newSet.add(generationId);
       }
+      console.log(`🔍 [GENERATION_EXPANSION] Toggled generation ${generationId}, now expanded: ${!prev.has(generationId)}`);
       return newSet;
     });
   };
@@ -24,15 +25,19 @@ export const useGenerationExpansion = (generations: number[]) => {
   };
 
   const expandAll = () => {
+    console.log(`🔍 [GENERATION_EXPANSION] Expanding all generations`);
     setExpandedGenerations(new Set(generations));
   };
 
   const collapseAll = () => {
+    console.log(`🔍 [GENERATION_EXPANSION] Collapsing all generations`);
     setExpandedGenerations(new Set());
   };
 
   const allExpanded = expandedGenerations.size === generations.length;
   const allCollapsed = expandedGenerations.size === 0;
+
+  console.log(`🔍 [GENERATION_EXPANSION] Current state: ${expandedGenerations.size}/${generations.length} expanded`);
 
   return {
     isGenerationExpanded,

@@ -10,13 +10,18 @@ export const usePokemonGrouping = (
   isGenerationExpanded?: (genId: number) => boolean
 ) => {
   return useMemo(() => {
+    console.log(`🔍 [POKEMON_GROUPING] Processing ${pokemonList.length} Pokemon, search: "${searchTerm}", isRankingArea: ${isRankingArea}`);
+    
     // First filter by search term
     const filtered = pokemonList.filter(pokemon => 
       pokemon.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
     
+    console.log(`🔍 [POKEMON_GROUPING] After search filter: ${filtered.length} Pokemon`);
+    
     // If this is the ranking area or we're searching, don't group by generation
-    if (isRankingArea || searchTerm) {
+    if (isRankingArea || searchTerm.trim()) {
+      console.log(`🔍 [POKEMON_GROUPING] Not grouping - returning flat list`);
       return {
         items: filtered.map(pokemon => ({ type: 'pokemon', data: pokemon })),
         showGenerationHeaders: false
@@ -44,12 +49,13 @@ export const usePokemonGrouping = (
         lastGeneration = generation.id;
       }
       
-      // OPTIMIZATION: Only add Pokemon if its generation is expanded
-      // This prevents loading Pokemon from collapsed generations
+      // Add Pokemon if its generation is expanded (or if no expansion function provided)
       if (!isGenerationExpanded || isGenerationExpanded(generation?.id || 0)) {
         result.push({ type: 'pokemon', data: pokemon });
       }
     }
+    
+    console.log(`🔍 [POKEMON_GROUPING] Generated ${result.length} items with headers`);
     
     return {
       items: result,

@@ -31,13 +31,15 @@ export const useDataLoader = (
       const formFilteredPokemon = analyzeFilteringPipeline(availablePokemonData);
       console.log(`🔍 [DATA_LOADER] After form filters: ${formFilteredPokemon.length}`);
       
-      // CRITICAL FIX: Apply name formatting to all Pokemon before setting them
-      const formattedPokemon = formFilteredPokemon.map(pokemon => ({
-        ...pokemon,
-        name: formatPokemonName(pokemon.name)
-      }));
+      // CRITICAL FIX: Apply name formatting and sort by Pokedex number
+      const formattedPokemon = formFilteredPokemon
+        .map(pokemon => ({
+          ...pokemon,
+          name: formatPokemonName(pokemon.name)
+        }))
+        .sort((a, b) => a.id - b.id); // Sort by Pokedex number for proper order
       
-      console.log(`🔍 [DATA_LOADER] Applied name formatting to ${formattedPokemon.length} Pokemon`);
+      console.log(`🔍 [DATA_LOADER] Applied name formatting and sorting to ${formattedPokemon.length} Pokemon`);
       console.log(`🔍 [DATA_LOADER] Sample formatted names:`, formattedPokemon.slice(0, 3).map(p => `${p.name} (${p.id})`));
       
       if (loadingType === "pagination") {

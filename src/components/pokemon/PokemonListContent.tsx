@@ -5,7 +5,9 @@ import { Card } from "@/components/ui/card";
 import PokemonInfoModal from "./PokemonInfoModal";
 import PokemonCardImage from "./PokemonCardImage";
 import PokemonCardInfo from "./PokemonCardInfo";
+import GenerationHeader from "./GenerationHeader";
 import { VotingArrows } from "@/components/ranking/VotingArrows";
+import DraggablePokemonMilestoneCard from "@/components/battle/DraggablePokemonMilestoneCard";
 
 interface PokemonListContentProps {
   items: any[];
@@ -24,17 +26,9 @@ export const PokemonListContent: React.FC<PokemonListContentProps> = ({
   isGenerationExpanded,
   onToggleGeneration
 }) => {
-  console.log(`🔍 [AUTO_SCROLL_DEBUG] PokemonListContent rendering with itemCount: ${items.length}`);
+  console.log(`🔍 [POKEMON_LIST_CONTENT] Rendering with itemCount: ${items.length}, showHeaders: ${showGenerationHeaders}`);
 
-  // Extract Pokemon from items with proper null checks
-  const pokemon = items
-    .filter(item => item && item.type === 'pokemon' && item.data) // Ensure item exists and has the right structure
-    .map(item => item.data) // Extract the Pokemon data
-    .filter(pokemonData => pokemonData && pokemonData.id) || []; // Ensure Pokemon data is valid
-
-  console.log(`🔍 [POKEMON_EXTRACTION_DEBUG] Extracted ${pokemon.length} valid Pokemon from ${items.length} items`);
-
-  if (pokemon.length === 0) {
+  if (!items || items.length === 0) {
     return (
       <div className="text-center py-8 text-gray-500">
         {isRankingArea ? "No ranked Pokémon yet" : "No available Pokémon"}
@@ -43,53 +37,96 @@ export const PokemonListContent: React.FC<PokemonListContentProps> = ({
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-      {pokemon.map((pokemonItem, index) => {
-        // Additional safety check before rendering
-        if (!pokemonItem || !pokemonItem.id) {
-          console.warn(`🚨 [POKEMON_RENDER_WARNING] Skipping invalid Pokemon at index ${index}:`, pokemonItem);
+    <div className="space-y-4">
+      {items.map((item, index) => {
+        if (!item) {
+          console.warn(`🚨 [POKEMON_LIST_CONTENT] Skipping null item at index ${index}`);
           return null;
         }
 
-        return (
-          <Card 
-            key={`pokemon-${pokemonItem.id}-${isRankingArea ? 'ranked' : 'available'}-${index}`}
-            className="relative group hover:shadow-lg transition-shadow bg-white border border-gray-200"
-          >
-            <PokemonInfoModal pokemon={pokemonItem}>
-              <div className="p-4 cursor-pointer">
-                <PokemonCardImage 
-                  pokemonId={pokemonItem.id}
-                  displayName={pokemonItem.name}
-                  imageUrl={pokemonItem.image}
-                  className=""
-                />
-                <PokemonCardInfo 
-                  pokemonId={pokemonItem.id}
-                  displayName={pokemonItem.name}
-                  types={pokemonItem.types}
-                  flavorText={pokemonItem.flavorText}
+        // Render generation header
+        if (item.type === 'header') {
+          return (
+            <GenerationHeader
+              key={`gen-${item.generationId}`}
+              generationId={item.generationId}
+              name={item.data.name}
+              region={item.data.region}
+              games={item.data.games}
+              viewMode={viewMode}
+              isExpanded={isGenerationExpanded ? isGenerationExpanded(item.generationId) : true}
+              onToggle={() => onToggleGeneration?.(item.generationId)}
+            />
+          );
+        }
+
+        // Render Pokemon
+        if (item.type === 'pokemon' && item.data) {
+          const pokemon = item.data;
+          
+          if (!pokemon || !pokemon.id) {
+            console.warn(`🚨 [POKEMON_LIST_CONTENT] Skipping invalid Pokemon at index ${index}:`, pokemon);
+            return null;
+          }
+
+          // Use the unified card component for available Pokemon (not ranking area)
+          if (!isRankingArea) {
+            return (
+              <div key={`pokemon-${pokemon.id}-${index}`} className="inline-block">
+                <DraggablePokemonMilestoneCard
+                  pokemon={pokemon}
+                  index={index}
+                  showRank={false}
+                  isDraggable={true}
+                  isAvailable={true}
                 />
               </div>
-            </PokemonInfoModal>
-            
-            {isRankingArea && 'score' in pokemonItem && (
-              <>
-                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <VotingArrows
-                    pokemon={pokemonItem}
-                    onSuggestRanking={() => {}}
-                    onRemoveSuggestion={() => {}}
+            );
+          }
+
+          // Original card for ranking area
+          return (
+            <Card 
+              key={`pokemon-${pokemon.id}-${isRankingArea ? 'ranked' : 'available'}-${index}`}
+              className="relative group hover:shadow-lg transition-shadow bg-white border border-gray-200"
+            >
+              <PokemonInfoModal pokemon={pokemon}>
+                <div className="p-4 cursor-pointer">
+                  <PokemonCardImage 
+                    pokemonId={pokemon.id}
+                    displayName={pokemon.name}
+                    imageUrl={pokemon.image}
+                    className=""
+                  />
+                  <PokemonCardInfo 
+                    pokemonId={pokemon.id}
+                    displayName={pokemon.name}
+                    types={pokemon.types}
+                    flavorText={pokemon.flavorText}
                   />
                 </div>
-                <div className="absolute top-2 left-2 bg-blue-500 text-white text-xs px-2 py-1 rounded">
-                  #{index + 1}
-                </div>
-              </>
-            )}
-          </Card>
-        );
-      }).filter(Boolean)} {/* Remove any null entries from the render */}
+              </PokemonInfoModal>
+              
+              {isRankingArea && 'score' in pokemon && (
+                <>
+                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <VotingArrows
+                      pokemon={pokemon}
+                      onSuggestRanking={() => {}}
+                      onRemoveSuggestion={() => {}}
+                    />
+                  </div>
+                  <div className="absolute top-2 left-2 bg-blue-500 text-white text-xs px-2 py-1 rounded">
+                    #{index + 1}
+                  </div>
+                </>
+              )}
+            </Card>
+          );
+        }
+
+        return null;
+      }).filter(Boolean)}
     </div>
   );
 };
