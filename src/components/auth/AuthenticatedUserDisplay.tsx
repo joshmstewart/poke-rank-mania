@@ -13,8 +13,8 @@ interface AuthenticatedUserDisplayProps {
 export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> = ({ currentUser }) => {
   const { user, signOut } = useAuth();
   const [profileModalOpen, setProfileModalOpen] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
   const [currentProfile, setCurrentProfile] = useState(null);
+  const [isProfileLoaded, setIsProfileLoaded] = useState(false);
   const { prefetchProfile, getProfileFromCache, invalidateCache } = useProfileCache();
   
   const isLoadingProfile = useRef(false);
@@ -27,7 +27,7 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
     effectiveUserId: effectiveUser?.id?.substring(0, 8),
     currentProfileAvatar: currentProfile?.avatar_url,
     userMetadataAvatar: effectiveUser?.user_metadata?.avatar_url,
-    refreshKey
+    isProfileLoaded
   });
 
   // Load profile data when user changes
@@ -40,12 +40,14 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
     
     isLoadingProfile.current = true;
     lastUserId.current = effectiveUser.id;
+    setIsProfileLoaded(false);
     
     // Get cached profile first
     const cachedProfile = getProfileFromCache(effectiveUser.id);
     if (cachedProfile) {
       console.log('🔄 [AUTH_USER_DISPLAY] Using cached profile with avatar:', cachedProfile.avatar_url);
       setCurrentProfile(cachedProfile);
+      setIsProfileLoaded(true);
     }
     
     // Always fetch fresh profile data
@@ -55,6 +57,7 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
         console.log('🔄 [AUTH_USER_DISPLAY] Updated with fresh profile avatar:', freshProfile.avatar_url);
         setCurrentProfile(freshProfile);
       }
+      setIsProfileLoaded(true);
     }).finally(() => {
       isLoadingProfile.current = false;
     });
@@ -71,6 +74,7 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
         
         // Force refresh the profile data
         isLoadingProfile.current = true;
+        setIsProfileLoaded(false);
         
         try {
           // Wait a moment for the database to be consistent
@@ -83,8 +87,8 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
           if (updatedProfile) {
             console.log('🔄 [AUTH_USER_DISPLAY] Setting updated profile with avatar:', updatedProfile.avatar_url);
             setCurrentProfile(updatedProfile);
-            setRefreshKey(prev => prev + 1); // Force re-render
           }
+          setIsProfileLoaded(true);
         } finally {
           isLoadingProfile.current = false;
         }
@@ -123,6 +127,16 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
     return null;
   }
 
+  // Don't render until we've at least attempted to load the profile
+  if (!isProfileLoaded) {
+    return (
+      <div className="flex items-center gap-2">
+        <div className="h-12 w-12 rounded-full bg-gray-200 animate-pulse" />
+        <div className="hidden sm:inline h-4 w-24 bg-gray-200 animate-pulse rounded" />
+      </div>
+    );
+  }
+
   // Create enhanced user with proper avatar priority - ALWAYS use profile avatar if available
   const enhancedUser = {
     ...effectiveUser,
@@ -144,7 +158,7 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
   });
 
   return (
-    <div className="flex items-center gap-2" key={`user-display-${refreshKey}-${currentProfile?.avatar_url}`}>
+    <div className="flex items-center gap-2">
       <UserDropdownMenu user={enhancedUser} />
 
       <ProfileModal 
