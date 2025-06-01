@@ -3,59 +3,90 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Profile } from './types';
 
 export const updateProfile = async (userId: string, updates: Partial<Profile>): Promise<boolean> => {
-  console.log('🎯 [PROFILE_SERVICE_DEBUG] ===== updateProfile START =====');
-  console.log('🎯 [PROFILE_SERVICE_DEBUG] userId:', userId);
-  console.log('🎯 [PROFILE_SERVICE_DEBUG] updates:', updates);
+  console.log('🔍 [PROFILE_DEBUG] ===== STARTING SIMPLE PROFILE UPDATE =====');
+  console.log('🔍 [PROFILE_DEBUG] User ID:', userId);
+  console.log('🔍 [PROFILE_DEBUG] Updates:', updates);
+  console.log('🔍 [PROFILE_DEBUG] Supabase client exists:', !!supabase);
   
+  // Check if we can even connect to Supabase
   try {
-    // First check if profile exists
-    const { data: existingProfile, error: checkError } = await supabase
+    const { data: testData, error: testError } = await supabase.from('profiles').select('count').limit(1);
+    console.log('🔍 [PROFILE_DEBUG] Supabase connection test:', { testData, testError });
+  } catch (e) {
+    console.error('🔍 [PROFILE_DEBUG] Supabase connection failed:', e);
+    return false;
+  }
+
+  try {
+    // Step 1: Try to check if profile exists with the simplest possible query
+    console.log('🔍 [PROFILE_DEBUG] Step 1: Checking if profile exists...');
+    const { data: existingProfiles, error: selectError } = await supabase
       .from('profiles')
-      .select('id')
-      .eq('id', userId)
-      .single();
+      .select('*')
+      .eq('id', userId);
 
-    console.log('🎯 [PROFILE_SERVICE_DEBUG] Existing profile check:', { existingProfile, checkError });
+    console.log('🔍 [PROFILE_DEBUG] Existing profiles query result:', {
+      data: existingProfiles,
+      error: selectError,
+      count: existingProfiles?.length || 0
+    });
 
-    if (checkError && checkError.code !== 'PGRST116') {
-      // PGRST116 is "not found" error, which is expected for new users
-      console.error('🎯 [PROFILE_SERVICE_DEBUG] Unexpected error checking profile:', checkError);
-      return false;
-    }
+    const profileExists = existingProfiles && existingProfiles.length > 0;
+    console.log('🔍 [PROFILE_DEBUG] Profile exists?', profileExists);
 
-    const updateData = {
+    // Step 2: Prepare the data
+    const now = new Date().toISOString();
+    const profileData = {
       id: userId,
       ...updates,
-      updated_at: new Date().toISOString(),
-      // Only set created_at if this is a new profile
-      ...((!existingProfile && !checkError) ? {} : { created_at: new Date().toISOString() })
+      updated_at: now,
+      ...(profileExists ? {} : { created_at: now })
     };
-    
-    console.log('🎯 [PROFILE_SERVICE_DEBUG] Final upsert data:', updateData);
-    
-    // Use upsert to handle both create and update cases
-    const { data, error } = await supabase
-      .from('profiles')
-      .upsert(updateData, { 
-        onConflict: 'id'
-      })
-      .select();
 
-    console.log('🎯 [PROFILE_SERVICE_DEBUG] Upsert completed');
-    console.log('🎯 [PROFILE_SERVICE_DEBUG] Upsert data:', data);
-    console.log('🎯 [PROFILE_SERVICE_DEBUG] Upsert error:', error);
+    console.log('🔍 [PROFILE_DEBUG] Step 2: Prepared data:', profileData);
 
-    if (error) {
-      console.error('🎯 [PROFILE_SERVICE_DEBUG] Upsert error details:', error);
-      return false;
+    // Step 3: Try the simplest possible approach - delete and insert
+    if (profileExists) {
+      console.log('🔍 [PROFILE_DEBUG] Step 3a: Profile exists, trying UPDATE...');
+      const { data: updateData, error: updateError } = await supabase
+        .from('profiles')
+        .update({
+          ...updates,
+          updated_at: now
+        })
+        .eq('id', userId)
+        .select();
+
+      console.log('🔍 [PROFILE_DEBUG] Update result:', { updateData, updateError });
+      
+      if (updateError) {
+        console.error('🔍 [PROFILE_DEBUG] Update failed:', updateError);
+        return false;
+      }
+      
+      console.log('🔍 [PROFILE_DEBUG] Update successful!');
+      return true;
+    } else {
+      console.log('🔍 [PROFILE_DEBUG] Step 3b: Profile does not exist, trying INSERT...');
+      const { data: insertData, error: insertError } = await supabase
+        .from('profiles')
+        .insert(profileData)
+        .select();
+
+      console.log('🔍 [PROFILE_DEBUG] Insert result:', { insertData, insertError });
+      
+      if (insertError) {
+        console.error('🔍 [PROFILE_DEBUG] Insert failed:', insertError);
+        return false;
+      }
+      
+      console.log('🔍 [PROFILE_DEBUG] Insert successful!');
+      return true;
     }
 
-    console.log('🎯 [PROFILE_SERVICE_DEBUG] Upsert successful');
-    console.log('🎯 [PROFILE_SERVICE_DEBUG] ===== updateProfile END =====');
-    return true;
-  } catch (error) {
-    console.error('🎯 [PROFILE_SERVICE_DEBUG] Exception in updateProfile:', error);
-    console.log('🎯 [PROFILE_SERVICE_DEBUG] ===== updateProfile END (exception) =====');
+  } catch (exception) {
+    console.error('🔍 [PROFILE_DEBUG] Exception caught:', exception);
+    console.error('🔍 [PROFILE_DEBUG] Exception stack:', exception.stack);
     return false;
   }
 };
