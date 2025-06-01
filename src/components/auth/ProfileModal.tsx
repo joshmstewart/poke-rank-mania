@@ -12,10 +12,7 @@ import { User, Save, Loader2 } from 'lucide-react';
 import { 
   getProfile, 
   updateProfile, 
-  getTrainerAvatarByUrl,
-  getTrainerAvatarsByGenerationAsync,
-  type Profile,
-  type TrainerAvatar 
+  type Profile
 } from '@/services/profileService';
 
 interface ProfileModalProps {
@@ -31,51 +28,19 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
   const [displayName, setDisplayName] = useState('');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [trainerAvatarsByGen, setTrainerAvatarsByGen] = useState<Record<number, TrainerAvatar[]>>({});
-  const [loadingTrainers, setLoadingTrainers] = useState(false);
 
-  console.log('🎯 [PROFILE_MODAL] Modal open:', open, 'User ID:', user?.id);
-
-  // Load trainer avatars when modal opens
-  useEffect(() => {
-    if (open) {
-      loadTrainerAvatars();
-    }
-  }, [open]);
-
-  const loadTrainerAvatars = async () => {
-    setLoadingTrainers(true);
-    try {
-      console.log('📸 Loading trainer avatars from PokeAPI...');
-      const avatarsByGen = await getTrainerAvatarsByGenerationAsync();
-      setTrainerAvatarsByGen(avatarsByGen);
-      console.log('📸 Trainer avatars loaded by generation:', Object.keys(avatarsByGen));
-      console.log('📸 Total trainers loaded:', Object.values(avatarsByGen).flat().length);
-    } catch (error) {
-      console.error('📸 Error loading trainer avatars:', error);
-      toast({
-        title: 'Avatar Loading Error',
-        description: 'Could not load trainer avatars from PokeAPI.',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoadingTrainers(false);
-    }
-  };
+  console.log('🎯 [PROFILE_MODAL] Render - Modal open:', open, 'User ID:', user?.id);
 
   useEffect(() => {
     if (open && user?.id) {
       console.log('🎯 [PROFILE_MODAL] Loading profile for user:', user.id);
       loadProfile();
-    } else if (open && !user?.id) {
-      console.log('🎯 [PROFILE_MODAL] No user ID available');
-      setLoading(false);
     }
   }, [open, user?.id]);
 
   const loadProfile = async () => {
     if (!user?.id) {
-      setLoading(false);
+      console.log('🎯 [PROFILE_MODAL] No user ID available');
       return;
     }
     
@@ -92,36 +57,24 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
         setUsername(profileData.username || '');
         setDisplayName(profileData.display_name || '');
       } else {
-        console.log('🎯 [PROFILE_MODAL] No profile found, creating default');
-        // Create default profile for users without one
+        console.log('🎯 [PROFILE_MODAL] No profile found, setting defaults');
+        // Set default values
         const defaultDisplayName = user.phone ? `User ${user.phone.slice(-4)}` : user.email ? user.email.split('@')[0] : 'New User';
         const defaultUsername = user.phone ? `user_${user.phone.slice(-4)}` : user.email ? user.email.split('@')[0] : 'new_user';
         
-        const defaultProfile: Profile = {
-          id: user.id,
-          email: user.email || undefined,
-          display_name: defaultDisplayName,
-          avatar_url: '',
-          username: defaultUsername,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        };
-        
-        setProfile(defaultProfile);
         setSelectedAvatar('');
         setUsername(defaultUsername);
         setDisplayName(defaultDisplayName);
-        console.log('🎯 [PROFILE_MODAL] Created default profile');
       }
     } catch (error) {
       console.error('🎯 [PROFILE_MODAL] Error loading profile:', error);
       toast({
         title: 'Profile Load Error',
-        description: 'Could not load profile. You can still update your information.',
+        description: 'Could not load profile. Please try again.',
         variant: 'destructive',
       });
       
-      // Set defaults even on error so user can still interact
+      // Set defaults even on error
       const defaultDisplayName = user.phone ? `User ${user.phone.slice(-4)}` : user.email ? user.email.split('@')[0] : 'New User';
       const defaultUsername = user.phone ? `user_${user.phone.slice(-4)}` : user.email ? user.email.split('@')[0] : 'new_user';
       
@@ -170,23 +123,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
     }
   };
 
-  const handleAvatarSelect = (avatar: TrainerAvatar) => {
-    console.log('🎯 [PROFILE_MODAL] Avatar selected:', avatar.name, 'URL:', avatar.url);
-    setSelectedAvatar(avatar.url);
-  };
-
-  const getGenerationName = (gen: number): string => {
-    const genNames: Record<number, string> = {
-      1: 'Generation I',
-      2: 'Generation II', 
-      3: 'Generation III',
-      4: 'Generation IV',
-      5: 'Generation V',
-    };
-    return genNames[gen] || `Generation ${gen}`;
-  };
-
   if (!user?.id) {
+    console.log('🎯 [PROFILE_MODAL] No user, not rendering modal');
     return null;
   }
 
@@ -205,7 +143,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <User className="h-5 w-5" />
@@ -225,7 +163,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
             <div>
               <p className="font-medium">Current Avatar</p>
               <p className="text-sm text-muted-foreground">
-                {selectedAvatar ? getTrainerAvatarByUrl(selectedAvatar)?.name || 'PokeAPI Trainer' : 'No avatar selected'}
+                {selectedAvatar ? 'Custom Avatar' : 'No avatar selected'}
               </p>
             </div>
           </div>
@@ -252,67 +190,18 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
             </div>
           </div>
 
-          {/* Avatar Selection */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Choose Your Trainer Avatar</h3>
-            
-            {loadingTrainers ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin" />
-                <span className="ml-2">Loading trainer sprites from PokeAPI...</span>
-              </div>
-            ) : Object.keys(trainerAvatarsByGen).length > 0 ? (
-              <Tabs defaultValue="1" className="w-full">
-                <TabsList className="grid w-full grid-cols-5">
-                  {Object.keys(trainerAvatarsByGen).map((gen) => (
-                    <TabsTrigger key={gen} value={gen}>
-                      Gen {gen}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-                
-                {Object.entries(trainerAvatarsByGen).map(([gen, avatars]) => (
-                  <TabsContent key={gen} value={gen} className="space-y-4">
-                    <h4 className="font-medium">{getGenerationName(Number(gen))}</h4>
-                    <div className="grid grid-cols-4 gap-4">
-                      {avatars.map((avatar) => (
-                        <button
-                          key={avatar.id}
-                          onClick={() => handleAvatarSelect(avatar)}
-                          className={`p-3 rounded-lg border-2 transition-all hover:bg-muted ${
-                            selectedAvatar === avatar.url 
-                              ? 'border-primary bg-primary/10' 
-                              : 'border-border'
-                          }`}
-                        >
-                          <Avatar className="h-16 w-16 mx-auto mb-2">
-                            <AvatarImage 
-                              src={avatar.url} 
-                              alt={avatar.name}
-                              onError={(e) => {
-                                console.log('📸 Image failed to load:', avatar.url);
-                                e.currentTarget.style.display = 'none';
-                              }}
-                              onLoad={() => {
-                                console.log('📸 Image loaded successfully:', avatar.url);
-                              }}
-                            />
-                            <AvatarFallback>{avatar.name.slice(0, 2).toUpperCase()}</AvatarFallback>
-                          </Avatar>
-                          <p className="text-sm font-medium">{avatar.name}</p>
-                          <p className="text-xs text-muted-foreground">{avatar.category}</p>
-                        </button>
-                      ))}
-                    </div>
-                  </TabsContent>
-                ))}
-              </Tabs>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                <p>Could not load trainer avatars from PokeAPI.</p>
-                <p className="text-sm">Please check your internet connection and try again.</p>
-              </div>
-            )}
+          {/* Avatar URL Input */}
+          <div className="space-y-2">
+            <Label htmlFor="avatar-url">Avatar URL (Optional)</Label>
+            <Input
+              id="avatar-url"
+              value={selectedAvatar}
+              onChange={(e) => setSelectedAvatar(e.target.value)}
+              placeholder="https://example.com/avatar.png"
+            />
+            <p className="text-sm text-muted-foreground">
+              Enter a URL to an image you'd like to use as your avatar
+            </p>
           </div>
 
           {/* Action Buttons */}
