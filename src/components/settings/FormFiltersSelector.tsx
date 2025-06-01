@@ -1,10 +1,11 @@
 
-import React, { useCallback } from "react";
+import React, { useCallback, useMemo } from "react";
 import { useFormFilters } from "@/hooks/useFormFilters";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "@/hooks/use-toast";
+import { usePokemonContext } from "@/contexts/PokemonContext";
 
 export type PokemonFormType = 
   | "normal"
@@ -33,8 +34,38 @@ export function FormFiltersSelector() {
     filters, 
     toggleFilter,
     isAllEnabled,
-    toggleAll
+    toggleAll,
+    getPokemonFormCategory
   } = useFormFilters();
+  
+  const { allPokemon } = usePokemonContext();
+  
+  // Calculate counts for each form category
+  const formCounts = useMemo(() => {
+    console.log(`🔢 [FORM_COUNTS] Calculating form counts for ${allPokemon.length} Pokemon`);
+    
+    const counts: Record<PokemonFormType, number> = {
+      normal: 0,
+      megaGmax: 0,
+      regional: 0,
+      gender: 0,
+      forms: 0,
+      originPrimal: 0,
+      costumes: 0,
+      colorsFlavors: 0
+    };
+    
+    allPokemon.forEach(pokemon => {
+      const category = getPokemonFormCategory(pokemon);
+      if (category) {
+        counts[category]++;
+      }
+    });
+    
+    console.log(`🔢 [FORM_COUNTS] Calculated counts:`, counts);
+    
+    return counts;
+  }, [allPokemon, getPokemonFormCategory]);
   
   // Callback to handle toggling a filter
   const handleToggleFilter = useCallback((filter: PokemonFormType) => {
@@ -98,7 +129,10 @@ export function FormFiltersSelector() {
             <img src={formExampleImages.normal} alt="Normal Pokémon" className="h-8 w-8 object-contain" />
           </div>
           <div className="flex flex-1 items-center justify-between">
-            <Label htmlFor="normal" className="text-sm">Normal Pokémon</Label>
+            <div className="flex flex-col">
+              <Label htmlFor="normal" className="text-sm">Normal Pokémon</Label>
+              <span className="text-xs text-muted-foreground">{formCounts.normal} Pokemon</span>
+            </div>
             <Switch 
               id="normal" 
               checked={filters.normal}
@@ -113,7 +147,10 @@ export function FormFiltersSelector() {
             <img src={formExampleImages.regional} alt="Regional Form" className="h-8 w-8 object-contain" />
           </div>
           <div className="flex flex-1 items-center justify-between">
-            <Label htmlFor="regional" className="text-sm">Regional Variants</Label>
+            <div className="flex flex-col">
+              <Label htmlFor="regional" className="text-sm">Regional Variants</Label>
+              <span className="text-xs text-muted-foreground">{formCounts.regional} Pokemon</span>
+            </div>
             <Switch 
               id="regional" 
               checked={filters.regional}
@@ -122,13 +159,16 @@ export function FormFiltersSelector() {
           </div>
         </div>
         
-        {/* Colors & Flavors - NEW */}
+        {/* Colors & Flavors */}
         <div className="flex items-center space-x-3">
           <div className="h-10 w-10 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden">
             <img src={formExampleImages.colorsFlavors} alt="Color/Flavor Variant" className="h-8 w-8 object-contain" />
           </div>
           <div className="flex flex-1 items-center justify-between">
-            <Label htmlFor="colorsFlavors" className="text-sm">Colors & Flavors</Label>
+            <div className="flex flex-col">
+              <Label htmlFor="colorsFlavors" className="text-sm">Colors & Flavors</Label>
+              <span className="text-xs text-muted-foreground">{formCounts.colorsFlavors} Pokemon</span>
+            </div>
             <Switch 
               id="colorsFlavors" 
               checked={filters.colorsFlavors}
@@ -143,7 +183,10 @@ export function FormFiltersSelector() {
             <img src={formExampleImages.gender} alt="Gender Form" className="h-8 w-8 object-contain" />
           </div>
           <div className="flex flex-1 items-center justify-between">
-            <Label htmlFor="gender" className="text-sm">Gender Differences</Label>
+            <div className="flex flex-col">
+              <Label htmlFor="gender" className="text-sm">Gender Differences</Label>
+              <span className="text-xs text-muted-foreground">{formCounts.gender} Pokemon</span>
+            </div>
             <Switch 
               id="gender" 
               checked={filters.gender}
@@ -158,7 +201,10 @@ export function FormFiltersSelector() {
             <img src={formExampleImages.forms} alt="Special Form" className="h-8 w-8 object-contain" />
           </div>
           <div className="flex flex-1 items-center justify-between">
-            <Label htmlFor="forms" className="text-sm">Special Forms</Label>
+            <div className="flex flex-col">
+              <Label htmlFor="forms" className="text-sm">Special Forms</Label>
+              <span className="text-xs text-muted-foreground">{formCounts.forms} Pokemon</span>
+            </div>
             <Switch 
               id="forms" 
               checked={filters.forms}
@@ -173,7 +219,10 @@ export function FormFiltersSelector() {
             <img src={formExampleImages.megaGmax} alt="Mega/Gmax Form" className="h-8 w-8 object-contain" />
           </div>
           <div className="flex flex-1 items-center justify-between">
-            <Label htmlFor="megaGmax" className="text-sm">Mega & Gigantamax Forms</Label>
+            <div className="flex flex-col">
+              <Label htmlFor="megaGmax" className="text-sm">Mega & Gigantamax Forms</Label>
+              <span className="text-xs text-muted-foreground">{formCounts.megaGmax} Pokemon</span>
+            </div>
             <Switch 
               id="megaGmax" 
               checked={filters.megaGmax}
@@ -188,7 +237,10 @@ export function FormFiltersSelector() {
             <img src={formExampleImages.originPrimal} alt="Origin/Primal Form" className="h-8 w-8 object-contain" />
           </div>
           <div className="flex flex-1 items-center justify-between">
-            <Label htmlFor="originPrimal" className="text-sm">Origin & Primal Forms</Label>
+            <div className="flex flex-col">
+              <Label htmlFor="originPrimal" className="text-sm">Origin & Primal Forms</Label>
+              <span className="text-xs text-muted-foreground">{formCounts.originPrimal} Pokemon</span>
+            </div>
             <Switch 
               id="originPrimal" 
               checked={filters.originPrimal}
@@ -203,7 +255,10 @@ export function FormFiltersSelector() {
             <img src={formExampleImages.costumes} alt="Costume Pokémon" className="h-8 w-8 object-contain" />
           </div>
           <div className="flex flex-1 items-center justify-between">
-            <Label htmlFor="costumes" className="text-sm">Costume Pokémon</Label>
+            <div className="flex flex-col">
+              <Label htmlFor="costumes" className="text-sm">Costume Pokémon</Label>
+              <span className="text-xs text-muted-foreground">{formCounts.costumes} Pokemon</span>
+            </div>
             <Switch 
               id="costumes" 
               checked={filters.costumes}
