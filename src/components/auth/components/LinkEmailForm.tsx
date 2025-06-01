@@ -30,6 +30,7 @@ export const LinkEmailForm: React.FC<LinkEmailFormProps> = ({
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
 
   // Real-time validation
   useEffect(() => {
@@ -52,6 +53,56 @@ export const LinkEmailForm: React.FC<LinkEmailFormProps> = ({
 
     setValidationErrors(errors);
   }, [email, password, confirmPassword]);
+
+  // Check email availability when user leaves the email field
+  const handleEmailBlur = async () => {
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return; // Don't check if email is empty or invalid format
+    }
+
+    setIsCheckingEmail(true);
+    console.log('🔍 [EMAIL_CHECK] Checking email availability for:', email);
+
+    try {
+      // Try to update user with this email to see if it's available
+      const { error } = await supabase.auth.updateUser({
+        email: email,
+      });
+
+      if (error) {
+        console.log('🔍 [EMAIL_CHECK] Email check result - error:', error);
+        
+        if (error.message?.includes('email_exists') || error.message?.includes('already been registered')) {
+          setValidationErrors(prev => ({
+            ...prev,
+            email: 'This email is already associated with another account. Please use a different email.'
+          }));
+        } else if (error.message?.includes('rate limit')) {
+          setValidationErrors(prev => ({
+            ...prev,
+            email: 'Too many requests. Please wait a moment before trying again.'
+          }));
+        } else {
+          console.log('🔍 [EMAIL_CHECK] Other error during email check:', error.message);
+          // Don't show other errors as they might be misleading
+        }
+      } else {
+        console.log('🔍 [EMAIL_CHECK] ✅ Email appears to be available');
+        // Remove email error if it was previously set due to availability
+        setValidationErrors(prev => {
+          const newErrors = { ...prev };
+          if (prev.email?.includes('already associated')) {
+            delete newErrors.email;
+          }
+          return newErrors;
+        });
+      }
+    } catch (error: any) {
+      console.error('🔍 [EMAIL_CHECK] Unexpected error during email check:', error);
+    } finally {
+      setIsCheckingEmail(false);
+    }
+  };
 
   const handleLinkEmail = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -232,15 +283,23 @@ export const LinkEmailForm: React.FC<LinkEmailFormProps> = ({
       <form onSubmit={handleLinkEmail} className="space-y-3">
         <div>
           <Label htmlFor="link-email">Email Address</Label>
-          <Input
-            id="link-email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="your@email.com"
-            className={validationErrors.email ? 'border-red-500' : ''}
-            required
-          />
+          <div className="relative">
+            <Input
+              id="link-email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              onBlur={handleEmailBlur}
+              placeholder="your@email.com"
+              className={validationErrors.email ? 'border-red-500' : ''}
+              required
+            />
+            {isCheckingEmail && (
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+              </div>
+            )}
+          </div>
           {validationErrors.email && (
             <p className="text-sm text-red-500 mt-1">{validationErrors.email}</p>
           )}
@@ -282,7 +341,7 @@ export const LinkEmailForm: React.FC<LinkEmailFormProps> = ({
           </Button>
           <Button 
             type="submit" 
-            disabled={isLoading || !email.trim() || !password.trim() || !confirmPassword.trim() || Object.keys(validationErrors).length > 0} 
+            disabled={isLoading || !email.trim() || !password.trim() || !confirmPassword.trim() || Object.keys(validationErrors).length > 0 || isCheckingEmail} 
             className="flex-1"
           >
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
