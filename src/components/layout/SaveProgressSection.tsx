@@ -31,30 +31,41 @@ const SaveProgressSection: React.FC = () => {
     );
   }
 
-  // Show authenticated display if we have EITHER user OR session with user
+  // DIAGNOSTIC EXPERIMENT: Force AuthenticatedUserDisplay to render if ANY auth data exists
+  const hasAnyAuthData = !!user || !!session?.user || !!session;
   const isAuthenticated = !!user || !!session?.user;
   
-  console.log('🚨🚨🚨 SAVE_PROGRESS_SECTION: Authentication decision logic:', {
+  console.log('🚨🚨🚨 SAVE_PROGRESS_SECTION: DIAGNOSTIC EXPERIMENT - Authentication decision logic:', {
+    hasAnyAuthData,
     isAuthenticated,
     hasUser: !!user,
     hasSessionUser: !!session?.user,
+    hasSession: !!session,
     userEmail: user?.email,
     sessionUserEmail: session?.user?.email,
-    willShowAuthenticatedDisplay: isAuthenticated,
-    willShowCloudSyncButton: !isAuthenticated,
+    experimentalForceRender: hasAnyAuthData,
+    normalRenderDecision: isAuthenticated,
+    willForceAuthenticatedDisplay: hasAnyAuthData,
     timestamp: new Date().toISOString()
   });
-  
-  if (isAuthenticated) {
-    console.log('🚨🚨🚨 SAVE_PROGRESS_SECTION: 🟢 AUTHENTICATED - RENDERING AuthenticatedUserDisplay 🟢');
+
+  // DIAGNOSTIC: Force render AuthenticatedUserDisplay if we have ANY auth data
+  if (hasAnyAuthData) {
+    console.log('🚨🚨🚨 SAVE_PROGRESS_SECTION: 🟢 DIAGNOSTIC EXPERIMENT - FORCING AuthenticatedUserDisplay RENDER 🟢');
     console.log('🚨🚨🚨 SAVE_PROGRESS_SECTION: User data being passed to AuthenticatedUserDisplay:', {
       user: user ? 'present' : 'null',
       session: session ? 'present' : 'null',
-      userEmail: user?.email || session?.user?.email || 'no email'
+      userEmail: user?.email || session?.user?.email || 'no email',
+      experimentType: 'FORCED_RENDER_FOR_DIAGNOSTICS'
     });
     
     return (
       <div className="flex items-center gap-4">
+        <div className="bg-orange-500 border-4 border-red-500 p-2">
+          <div className="text-white font-bold text-xs">🔧 DIAGNOSTIC MODE 🔧</div>
+          <div className="text-white text-xs">Force rendering AuthenticatedUserDisplay</div>
+          <div className="text-white text-xs">Auth data detected: {hasAnyAuthData ? 'YES' : 'NO'}</div>
+        </div>
         <div className="flex items-center gap-2">
           <Badge variant="secondary" className="flex items-center gap-1 bg-green-100 text-green-700 border-green-200">
             <Check className="h-3 w-3" />
@@ -66,7 +77,7 @@ const SaveProgressSection: React.FC = () => {
     );
   }
 
-  console.log('🚨🚨🚨 SAVE_PROGRESS_SECTION: 🔴 NOT AUTHENTICATED - RENDERING CloudSyncButton 🔴');
+  console.log('🚨🚨🚨 SAVE_PROGRESS_SECTION: 🔴 NO AUTH DATA DETECTED - RENDERING CloudSyncButton 🔴');
   return <CloudSyncButton />;
 };
 

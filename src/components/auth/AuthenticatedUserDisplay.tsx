@@ -13,8 +13,15 @@ export const AuthenticatedUserDisplay: React.FC = () => {
   const { user, session, signOut } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const [renderCount, setRenderCount] = useState(0);
+
+  // Increment render count for diagnostics
+  useEffect(() => {
+    setRenderCount(prev => prev + 1);
+  });
 
   console.log('🔵🔵🔵 AUTHENTICATED_USER_DISPLAY: ===== COMPONENT RENDER START =====');
+  console.log('🔵🔵🔵 AUTHENTICATED_USER_DISPLAY: Render count:', renderCount);
   console.log('🔵🔵🔵 AUTHENTICATED_USER_DISPLAY: Auth state received:', {
     hasUser: !!user,
     hasSession: !!session,
@@ -48,6 +55,17 @@ export const AuthenticatedUserDisplay: React.FC = () => {
     profilePresent: !!profile,
     timestamp: new Date().toISOString()
   });
+
+  useEffect(() => {
+    console.log('🔵🔵🔵 AUTHENTICATED_USER_DISPLAY: ===== MOUNT EFFECT =====');
+    console.log('🔵🔵🔵 AUTHENTICATED_USER_DISPLAY: Component mounted, render count:', renderCount);
+    
+    return () => {
+      console.log('🔵🔵🔵 AUTHENTICATED_USER_DISPLAY: ===== UNMOUNT DETECTED =====');
+      console.log('🔵🔵🔵 AUTHENTICATED_USER_DISPLAY: 🚨 AuthenticatedUserDisplay UNMOUNTING 🚨');
+      console.log('🔵🔵🔵 AUTHENTICATED_USER_DISPLAY: Final render count was:', renderCount);
+    };
+  }, []);
 
   useEffect(() => {
     console.log('🔵🔵🔵 AUTHENTICATED_USER_DISPLAY: UseEffect triggered for profile loading');
@@ -87,11 +105,13 @@ export const AuthenticatedUserDisplay: React.FC = () => {
     }
   };
 
-  console.log('🔵🔵🔵 AUTHENTICATED_USER_DISPLAY: 🟢 ALWAYS RENDERING COMPONENT STRUCTURE 🟢');
+  console.log('🔵🔵🔵 AUTHENTICATED_USER_DISPLAY: 🟢 DIAGNOSTIC: FORCED RENDER MODE ACTIVE 🟢');
   console.log('🔵🔵🔵 AUTHENTICATED_USER_DISPLAY: About to render JSX with values:', {
     displayName,
     displayEmail,
-    hasAvatar: !!avatarUrl
+    hasAvatar: !!avatarUrl,
+    renderCount,
+    currentUser: !!currentUser
   });
 
   // CRITICAL: Always render the component structure when called by authenticated parent
@@ -99,8 +119,10 @@ export const AuthenticatedUserDisplay: React.FC = () => {
   return (
     <div className="bg-red-500 border-4 border-yellow-400 p-2">
       <div className="text-white font-bold">🔥 AUTHENTICATED USER DISPLAY 🔥</div>
-      <div className="text-white">User: {displayName}</div>
-      <div className="text-white">Email: {displayEmail}</div>
+      <div className="text-white text-xs">Render #{renderCount}</div>
+      <div className="text-white text-xs">User: {displayName}</div>
+      <div className="text-white text-xs">Email: {displayEmail}</div>
+      <div className="text-white text-xs">Timestamp: {new Date().toLocaleTimeString()}</div>
       
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
