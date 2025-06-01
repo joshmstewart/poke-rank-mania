@@ -87,48 +87,50 @@ export const AvailablePokemonSection: React.FC<AvailablePokemonSectionProps> = (
   const allExpanded = expandedGenerations.size === availableGenerations.length && availableGenerations.length > 0;
 
   return (
-    <div className="w-full">
-      <div className="mb-4">
-        <div className="space-y-2 mb-3">
-          {/* Section Header with Total Count */}
-          <div className="border-b border-gray-200 pb-1">
-            <div className="flex justify-between items-center">
-              <h2 className="text-lg font-bold text-gray-900">Available Pokémon</h2>
-              <div className="text-sm font-medium text-gray-600 bg-gray-100 px-2 py-1 rounded">
-                Total: {availablePokemon.length}
-              </div>
-            </div>
+    <div className="flex flex-col h-full">
+      {/* Streamlined Header to match Rankings section */}
+      <div className="bg-white border-b border-gray-200 p-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-gray-900">Available Pokémon</h2>
+          <div className="text-sm text-gray-500 font-medium">
+            {availablePokemon.length} Pokémon available
           </div>
-          
-          <PokemonListControls
-            title=""
-            searchTerm={searchTerm}
-            onSearchChange={setSearchTerm}
-            viewMode={viewMode}
-            onViewModeChange={setViewMode}
-            showCollapseAll={true}
-            allExpanded={allExpanded}
-            onExpandAll={() => expandAll(availableGenerations)}
-            onCollapseAll={collapseAll}
-          />
         </div>
       </div>
+      
+      {/* Controls Section */}
+      <div className="p-4 border-b border-gray-200">
+        <PokemonListControls
+          title=""
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+          showCollapseAll={true}
+          allExpanded={allExpanded}
+          onExpandAll={() => expandAll(availableGenerations)}
+          onCollapseAll={collapseAll}
+        />
+      </div>
 
-      <PokemonGridSection
-        items={items}
-        showGenerationHeaders={showGenerationHeaders}
-        viewMode={viewMode}
-        isRankingArea={false}
-        isGenerationExpanded={isGenerationExpanded}
-        onToggleGeneration={toggleGeneration}
-      />
+      {/* Pokemon Grid */}
+      <div className="flex-1 overflow-y-auto p-4">
+        <PokemonGridSection
+          items={items}
+          showGenerationHeaders={showGenerationHeaders}
+          viewMode={viewMode}
+          isRankingArea={false}
+          isGenerationExpanded={isGenerationExpanded}
+          onToggleGeneration={toggleGeneration}
+        />
 
-      <InfiniteScrollLoader
-        isLoading={isLoading}
-        loadingRef={loadingRef}
-        currentPage={currentPage}
-        totalPages={totalPages}
-      />
+        <InfiniteScrollLoader
+          isLoading={isLoading}
+          loadingRef={loadingRef}
+          currentPage={currentPage}
+          totalPages={totalPages}
+        />
+      </div>
     </div>
   );
 };
