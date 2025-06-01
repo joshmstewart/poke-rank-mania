@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { memo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Save, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/auth/useAuth';
@@ -13,7 +13,7 @@ interface ProfileModalActionsProps {
   onSaveSuccess: () => void;
 }
 
-export const ProfileModalActions: React.FC<ProfileModalActionsProps> = ({
+export const ProfileModalActions: React.FC<ProfileModalActionsProps> = memo(({
   onCancel,
   selectedAvatar,
   username,
@@ -23,8 +23,6 @@ export const ProfileModalActions: React.FC<ProfileModalActionsProps> = ({
   const { user } = useAuth();
   const { isSaving, directSaveProfile } = useDirectProfileSave();
 
-  // Remove excessive logging - only log on important actions, not every render
-  
   const handleSaveClick = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -96,4 +94,6 @@ export const ProfileModalActions: React.FC<ProfileModalActionsProps> = ({
       </div>
     </div>
   );
-};
+});
+
+ProfileModalActions.displayName = 'ProfileModalActions';

@@ -17,12 +17,15 @@ export const useDirectProfileSave = () => {
     console.log('🚀 [DIRECT_SAVE] Starting save operation');
     console.log('🚀 [DIRECT_SAVE] User ID:', userId);
     console.log('🚀 [DIRECT_SAVE] Profile data:', profileData);
-    console.log('🚀 [DIRECT_SAVE] Current isSaving state:', isSaving);
 
-    if (isSaving) {
-      console.log('🚀 [DIRECT_SAVE] Already saving, returning false');
-      return false;
-    }
+    // Use a local variable instead of relying on state closure
+    setIsSaving(prev => {
+      if (prev) {
+        console.log('🚀 [DIRECT_SAVE] Already saving, returning false');
+        return prev; // Don't change state if already saving
+      }
+      return true; // Set to saving
+    });
 
     if (!userId) {
       console.error('🚀 [DIRECT_SAVE] No user ID provided');
@@ -31,13 +34,11 @@ export const useDirectProfileSave = () => {
         description: 'User ID is required to save profile.',
         variant: 'destructive',
       });
+      setIsSaving(false);
       return false;
     }
 
     try {
-      console.log('🚀 [DIRECT_SAVE] Setting isSaving to true');
-      setIsSaving(true);
-      
       console.log('🚀 [DIRECT_SAVE] Calling updateProfile service...');
       
       // Add a timeout to prevent hanging forever
@@ -80,7 +81,7 @@ export const useDirectProfileSave = () => {
       setIsSaving(false);
       console.log('🚀🏁 [DIRECT_SAVE] isSaving SET TO FALSE');
     }
-  }, []); // Remove isSaving from dependencies to prevent stale closures
+  }, []); // Remove isSaving from dependencies to prevent circular re-creation
 
   return { isSaving, directSaveProfile };
 };
