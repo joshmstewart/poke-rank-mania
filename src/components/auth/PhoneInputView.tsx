@@ -18,9 +18,38 @@ export const PhoneInputView: React.FC<PhoneInputViewProps> = ({
   const { isLoading, handlePhoneSubmit } = useAuthHandlers();
   const [phoneNumber, setPhoneNumber] = useState('');
 
+  console.log('📱 [PHONE_INPUT_VIEW_DEBUG] Component render:', {
+    phoneNumber,
+    isLoading,
+    hasHandlePhoneSubmit: !!handlePhoneSubmit
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
+    console.log('📱 [PHONE_INPUT_VIEW_DEBUG] ===== FORM SUBMIT =====');
+    console.log('📱 [PHONE_INPUT_VIEW_DEBUG] Event:', e.type);
+    console.log('📱 [PHONE_INPUT_VIEW_DEBUG] Phone number:', phoneNumber);
+    console.log('📱 [PHONE_INPUT_VIEW_DEBUG] Is loading:', isLoading);
+    
     e.preventDefault();
+    
+    if (!phoneNumber.trim()) {
+      console.error('📱 [PHONE_INPUT_VIEW_DEBUG] No phone number entered');
+      return;
+    }
+    
+    if (!handlePhoneSubmit) {
+      console.error('📱 [PHONE_INPUT_VIEW_DEBUG] handlePhoneSubmit is not available');
+      return;
+    }
+    
+    console.log('📱 [PHONE_INPUT_VIEW_DEBUG] Calling handlePhoneSubmit...');
     handlePhoneSubmit(phoneNumber, onSuccess);
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    console.log('📱 [PHONE_INPUT_VIEW_DEBUG] Phone number changed:', newValue);
+    setPhoneNumber(newValue);
   };
 
   return (
@@ -47,7 +76,7 @@ export const PhoneInputView: React.FC<PhoneInputViewProps> = ({
             id="phone-number"
             type="tel"
             value={phoneNumber}
-            onChange={(e) => setPhoneNumber(e.target.value)}
+            onChange={handlePhoneChange}
             placeholder="+1 (555) 123-4567"
             required
           />
@@ -55,7 +84,15 @@ export const PhoneInputView: React.FC<PhoneInputViewProps> = ({
             Include your country code (e.g., +1 for US/Canada)
           </p>
         </div>
-        <Button type="submit" className="w-full" disabled={isLoading}>
+        <Button 
+          type="submit" 
+          className="w-full" 
+          disabled={isLoading || !phoneNumber.trim()}
+          onClick={(e) => {
+            console.log('📱 [PHONE_INPUT_VIEW_DEBUG] Button clicked directly');
+            // The form submit will handle the actual submission
+          }}
+        >
           {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Send OTP
         </Button>

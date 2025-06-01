@@ -94,53 +94,111 @@ export const authService = {
   },
 
   signInWithPhone: async (phone: string) => {
-    console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 Starting phone sign in...');
-    console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 Phone number:', phone);
+    console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 ===== PHONE SIGN IN START =====');
+    console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 Phone number received:', phone);
+    console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 Phone length:', phone?.length);
     console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 Current environment:', window.location.origin);
+    console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 Supabase client available:', !!supabase);
     
-    const { error } = await supabase.auth.signInWithOtp({
-      phone: phone,
-    });
-    
-    console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 Phone OTP request result:', { 
-      error: error?.message,
-      phoneUsed: phone,
-      timestamp: new Date().toISOString()
-    });
-    
-    if (error) {
-      console.error('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 Phone auth error:', error);
-    } else {
-      console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 OTP should be sent to phone, ready for verification');
+    if (!phone || phone.length < 10) {
+      console.error('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 Invalid phone number:', phone);
+      return { error: { message: 'Please enter a valid phone number' } };
     }
     
-    return { error };
+    try {
+      console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 Calling supabase.auth.signInWithOtp...');
+      
+      const { data, error } = await supabase.auth.signInWithOtp({
+        phone: phone,
+      });
+
+      const endTime = Date.now();
+      
+      console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 Phone OTP request completed');
+      console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 Result data:', data);
+      console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 Result error:', error);
+      console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 Phone used:', phone);
+      console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 Timestamp:', new Date().toISOString());
+      
+      if (error) {
+        console.error('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 Phone auth error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
+        return { error };
+      } else {
+        console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 ✅ OTP SHOULD BE SENT TO PHONE ✅');
+        console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 Ready for OTP verification');
+        return { error: null };
+      }
+      
+    } catch (exception) {
+      console.error('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 ===== EXCEPTION IN PHONE AUTH =====');
+      console.error('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 Exception:', exception);
+      console.error('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 Exception type:', typeof exception);
+      console.error('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 Exception message:', exception?.message);
+      console.error('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 Exception stack:', exception?.stack);
+      
+      return { error: { message: 'Failed to send OTP. Please try again.' } };
+    } finally {
+      console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 ===== PHONE SIGN IN END =====');
+    }
   },
 
   verifyPhoneOtp: async (phone: string, token: string) => {
-    console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 Starting phone OTP verification...');
+    console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 ===== PHONE OTP VERIFICATION START =====');
     console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 Phone:', phone);
-    console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 Token length:', token.length);
+    console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 Token length:', token?.length);
+    console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 Token value:', token);
     
-    const { error } = await supabase.auth.verifyOtp({
-      phone: phone,
-      token: token,
-      type: 'sms',
-    });
-    
-    console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 Phone OTP verification result:', { 
-      error: error?.message,
-      phoneUsed: phone,
-      tokenLength: token.length,
-      timestamp: new Date().toISOString()
-    });
-    
-    if (error) {
-      console.error('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 Phone OTP verification error:', error);
-    } else {
-      console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 ✅ PHONE LOGIN SUCCESS - USER SHOULD NOW BE AUTHENTICATED ✅');
+    if (!phone || !token) {
+      console.error('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 Missing phone or token');
+      return { error: { message: 'Phone number and OTP code are required' } };
     }
     
-    return { error };
+    if (token.length !== 6) {
+      console.error('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 Invalid token length:', token.length);
+      return { error: { message: 'OTP code must be 6 digits' } };
+    }
+    
+    try {
+      console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 Calling supabase.auth.verifyOtp...');
+      
+      const { data, error } = await supabase.auth.verifyOtp({
+        phone: phone,
+        token: token,
+        type: 'sms',
+      });
+      
+      console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 Phone OTP verification completed');
+      console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 Result data:', data);
+      console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 Result error:', error);
+      console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 Phone used:', phone);
+      console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 Token length:', token.length);
+      console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 Timestamp:', new Date().toISOString());
+      
+      if (error) {
+        console.error('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 Phone OTP verification error:', error);
+        return { error };
+      } else {
+        console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 ✅ PHONE LOGIN SUCCESS - USER SHOULD NOW BE AUTHENTICATED ✅');
+        console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 User data:', data.user);
+        console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 Session data:', data.session);
+        return { error: null };
+      }
+      
+    } catch (exception) {
+      console.error('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 ===== EXCEPTION IN OTP VERIFICATION =====');
+      console.error('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 Exception:', exception);
+      console.error('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 Exception type:', typeof exception);
+      console.error('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 Exception message:', exception?.message);
+      
+      return { error: { message: 'Failed to verify OTP. Please try again.' } };
+    } finally {
+      console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 ===== PHONE OTP VERIFICATION END =====');
+    }
   },
 };
+</lov-code>
