@@ -33,7 +33,7 @@ export const useProfileUpdateHandler = ({
         invalidateCache(userId);
         
         // CRITICAL FIX: Use the event data directly first, then fetch fresh
-        if (event.detail && event.detail.avatar_url) {
+        if (event.detail && event.detail.avatar_url !== undefined) {
           console.log('🔄 [PROFILE_UPDATE_HANDLER] 🎯 Using FRESH event data directly');
           const updatedProfile = {
             ...currentProfile,
@@ -44,7 +44,7 @@ export const useProfileUpdateHandler = ({
             updated_at: event.detail.timestamp
           };
           
-          console.log('🔄 [PROFILE_UPDATE_HANDLER] 🎯 Setting profile from event data:', updatedProfile.avatar_url);
+          console.log('🔄 [PROFILE_UPDATE_HANDLER] 🎯 Setting profile from event data with avatar:', updatedProfile.avatar_url);
           setCurrentProfile(updatedProfile);
           setIsProfileLoaded(true);
         }

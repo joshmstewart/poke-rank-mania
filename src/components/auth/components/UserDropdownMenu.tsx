@@ -57,6 +57,7 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({ user }) => {
   console.log('🎭 [USER_DROPDOWN] User initials:', userInitials);
   console.log('🎭 [USER_DROPDOWN] Has avatar URL?', !!avatarUrl);
   console.log('🎭 [USER_DROPDOWN] Avatar URL length:', avatarUrl?.length || 0);
+  console.log('🎭 [USER_DROPDOWN] Avatar URL is truthy:', !!avatarUrl);
   console.log('🎭 [USER_DROPDOWN] ===== END DEBUG =====');
 
   return (
