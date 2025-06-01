@@ -52,7 +52,7 @@ export const usePokemonRanker = (): RankingState & RankingActions & { loadingRef
     console.log(`🚨🚨🚨 [CRITICAL_FINDING] WHERE DID THIS DATA COME FROM???`);
   }
 
-  // Use the handlers hook
+  // Use the handlers hook - FIX: Cast setRankedPokemon to match expected type
   const {
     resetRankings,
     handleGenerationChange,
@@ -67,7 +67,7 @@ export const usePokemonRanker = (): RankingState & RankingActions & { loadingRef
     setLoadSize,
     availablePokemon,
     rankedPokemon,
-    setRankedPokemon,
+    setRankedPokemon: setRankedPokemon as any, // Type cast to fix the mismatch
     setConfidenceScores
   });
 
