@@ -15,9 +15,11 @@ function AppContent() {
   const stableInstance = useRef('app-content-main-stable-FIXED');
   const unmountDetectedRef = useRef(false);
   const intervalRefs = useRef<NodeJS.Timeout[]>([]);
+  const lastLogTime = useRef(0);
 
   renderCount.current += 1;
 
+  // CRITICAL: Ensure we're logging with the correct _FIXED identifier
   console.log('🚀🚀🚀 APP_CONTENT_FIXED: ===== FIXED APP CONTENT RENDER =====');
   console.log('🚀🚀🚀 APP_CONTENT_FIXED: Instance ID:', stableInstance.current);
   console.log('🚀🚀🚀 APP_CONTENT_FIXED: Render count:', renderCount.current);
@@ -35,21 +37,26 @@ function AppContent() {
       (window as any).appContentMounted = true;
     }
     
-    // Add monitoring with reduced frequency
+    // Add monitoring with throttling to reduce log spam
     const monitoringInterval = setInterval(() => {
       if (unmountDetectedRef.current) {
         console.log('🚀🚀🚀 APP_CONTENT_FIXED: ⚠️ UNMOUNT FLAG DETECTED ⚠️');
         return;
       }
       
-      console.log('🚀🚀🚀 APP_CONTENT_FIXED: 🔍 MONITORING CHECK - Still mounted:', {
-        instance: stableInstance.current,
-        time: new Date().toLocaleTimeString(),
-        renderCount: renderCount.current,
-        mode: mode,
-        timestamp: new Date().toISOString()
-      });
-    }, 6000); // Reduced frequency
+      const now = Date.now();
+      // Only log every 30 seconds to reduce spam
+      if (now - lastLogTime.current > 30000) {
+        console.log('🚀🚀🚀 APP_CONTENT_FIXED: 🔍 MONITORING CHECK - Still mounted:', {
+          instance: stableInstance.current,
+          time: new Date().toLocaleTimeString(),
+          renderCount: renderCount.current,
+          mode: mode,
+          timestamp: new Date().toISOString()
+        });
+        lastLogTime.current = now;
+      }
+    }, 6000);
     
     intervalRefs.current.push(monitoringInterval);
     
@@ -124,9 +131,11 @@ function App() {
   const stableRootInstance = useRef('app-root-main-stable-FIXED');
   const unmountDetectedRef = useRef(false);
   const intervalRefs = useRef<NodeJS.Timeout[]>([]);
+  const lastLogTime = useRef(0);
   
   renderCount.current += 1;
 
+  // CRITICAL: Ensure we're logging with the correct _FIXED identifier
   console.log('🚀🚀🚀 ROOT_APP_FIXED: ===== FIXED ROOT APP RENDER =====');
   console.log('🚀🚀🚀 ROOT_APP_FIXED: Instance ID:', stableRootInstance.current);
   console.log('🚀🚀🚀 ROOT_APP_FIXED: Render count:', renderCount.current);
@@ -137,20 +146,25 @@ function App() {
     console.log('🚀🚀🚀 ROOT_APP_FIXED: Root component mounted at:', new Date().toISOString());
     console.log('🚀🚀🚀 ROOT_APP_FIXED: Stable root instance on mount:', stableRootInstance.current);
     
-    // Add monitoring
+    // Add monitoring with throttling
     const monitoringInterval = setInterval(() => {
       if (unmountDetectedRef.current) {
         console.log('🚀🚀🚀 ROOT_APP_FIXED: ⚠️ ROOT UNMOUNT FLAG DETECTED ⚠️');
         return;
       }
       
-      console.log('🚀🚀🚀 ROOT_APP_FIXED: 🔍 ROOT MONITORING CHECK - Still mounted:', {
-        instance: stableRootInstance.current,
-        time: new Date().toLocaleTimeString(),
-        renderCount: renderCount.current,
-        timestamp: new Date().toISOString()
-      });
-    }, 8000); // Reduced frequency
+      const now = Date.now();
+      // Only log every 40 seconds to reduce spam
+      if (now - lastLogTime.current > 40000) {
+        console.log('🚀🚀🚀 ROOT_APP_FIXED: 🔍 ROOT MONITORING CHECK - Still mounted:', {
+          instance: stableRootInstance.current,
+          time: new Date().toLocaleTimeString(),
+          renderCount: renderCount.current,
+          timestamp: new Date().toISOString()
+        });
+        lastLogTime.current = now;
+      }
+    }, 8000);
     
     intervalRefs.current.push(monitoringInterval);
     

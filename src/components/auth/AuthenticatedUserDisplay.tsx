@@ -1,10 +1,10 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { LogOut, User, Settings } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/auth/useAuth';
 import { toast } from '@/hooks/use-toast';
 import { getProfile, type Profile } from '@/services/profileService';
 import { ProfileModal } from './ProfileModal';
@@ -20,69 +20,95 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [renderCount, setRenderCount] = useState(0);
   const [directSupabaseUser, setDirectSupabaseUser] = useState<any>(null);
+  const [initialized, setInitialized] = useState(false);
 
-  // Increment render count for diagnostics - but stabilize it
+  // CRITICAL FIX: Stabilize render counting - only log every 50 renders to reduce spam
   useEffect(() => {
-    setRenderCount(prev => prev + 1);
+    if (!initialized) {
+      setInitialized(true);
+      setRenderCount(1);
+      console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FIXED: ===== INITIAL RENDER =====');
+      console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FIXED: Component mounted and initialized');
+    } else {
+      setRenderCount(prev => {
+        const newCount = prev + 1;
+        // Only log every 50 renders to reduce console spam
+        if (newCount % 50 === 0) {
+          console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FIXED: Render milestone:', newCount);
+          console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FIXED: ⚠️ HIGH RENDER COUNT - investigating cause');
+        }
+        return newCount;
+      });
+    }
   });
 
-  // Get direct Supabase user for comparison
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user: directUser }, error }) => {
+  // Get direct Supabase user for comparison - STABILIZED with useCallback
+  const checkDirectSupabaseUser = useCallback(async () => {
+    try {
+      const { data: { user: directUser }, error } = await supabase.auth.getUser();
       setDirectSupabaseUser(directUser);
-      console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FIXED: Direct Supabase user check:', {
-        hasDirectUser: !!directUser,
-        directEmail: directUser?.email || null,
-        directPhone: directUser?.phone || null,
-        directId: directUser?.id || null,
-        error: error?.message,
+      if (renderCount <= 5) {
+        console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FIXED: Direct Supabase user check:', {
+          hasDirectUser: !!directUser,
+          directEmail: directUser?.email || null,
+          directPhone: directUser?.phone || null,
+          directId: directUser?.id || null,
+          error: error?.message,
+          timestamp: new Date().toISOString()
+        });
+      }
+    } catch (error) {
+      console.error('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FIXED: Error checking direct user:', error);
+    }
+  }, [renderCount]);
+
+  useEffect(() => {
+    if (initialized) {
+      checkDirectSupabaseUser();
+    }
+  }, [initialized, checkDirectSupabaseUser]);
+
+  // CRITICAL: Log comprehensive auth context state but reduce frequency
+  useEffect(() => {
+    if (renderCount <= 10 || renderCount % 100 === 0) {
+      console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FIXED: ===== CONTEXT STATE CHECK =====');
+      console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FIXED: Render count:', renderCount);
+      console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FIXED: Props received:', {
+        currentUserProp: !!currentUser,
+        currentUserEmail: currentUser?.email || null,
+        currentUserPhone: currentUser?.phone || null,
+        currentUserId: currentUser?.id || null
+      });
+
+      console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FIXED: 🎯 AUTH CONTEXT FROM useAuth 🎯');
+      console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FIXED: Auth context state:', {
+        hasUser: !!user,
+        hasSession: !!session,
+        userEmail: user?.email || null,
+        userPhone: user?.phone || null,
+        userId: user?.id || null,
+        sessionUserEmail: session?.user?.email || null,
+        sessionUserPhone: session?.user?.phone || null,
+        sessionUserId: session?.user?.id || null,
+        contextWorking: (!!user || !!session?.user) ? 'YES_CONTEXT_WORKING' : 'NO_CONTEXT_BROKEN',
         timestamp: new Date().toISOString()
       });
-    });
-  }, []);
+    }
+  }, [user, session, currentUser, renderCount]);
 
-  // CRITICAL: Log render info but reduce frequency to prevent excessive logs
-  if (renderCount % 100 === 1 || renderCount <= 10) {
-    console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FIXED: ===== RENDER START =====');
-    console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FIXED: Render count:', renderCount);
-    console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FIXED: Props received:', {
-      currentUserProp: !!currentUser,
-      currentUserEmail: currentUser?.email || null,
-      currentUserPhone: currentUser?.phone || null,
-      currentUserId: currentUser?.id || null,
-      timestamp: new Date().toISOString()
-    });
-
-    console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FIXED: 🎯 AUTH CONTEXT FROM useAuth 🎯');
-    console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FIXED: Auth context from useAuth:', {
-      hasUser: !!user,
-      hasSession: !!session,
-      userEmail: user?.email || null,
-      userPhone: user?.phone || null,
-      userId: user?.id || null,
-      sessionUserEmail: session?.user?.email || null,
-      sessionUserPhone: session?.user?.phone || null,
-      sessionUserId: session?.user?.id || null,
-      contextWorking: (!!user || !!session?.user) ? 'YES_CONTEXT_WORKING' : 'NO_CONTEXT_BROKEN',
-      timestamp: new Date().toISOString()
-    });
-  }
-
-  // Use current user from props, context, or direct Supabase check
+  // STABILIZED: Use current user from props, context, or direct Supabase check
   const effectiveUser = useMemo(() => {
     return currentUser || user || session?.user || directSupabaseUser;
   }, [currentUser, user, session?.user, directSupabaseUser]);
   
-  // Create stable display values using useMemo to prevent re-renders
+  // STABILIZED: Create display values using useMemo with stable dependencies
   const displayValues = useMemo(() => {
     if (!effectiveUser) return null;
 
-    // Handle phone auth vs email auth display
     const displayEmail = effectiveUser?.email;
     const displayPhone = effectiveUser?.phone;
     const displayId = effectiveUser?.id;
     
-    // Create display name prioritizing available data
     let displayName = 'User';
     let displayIdentifier = 'unknown';
     
@@ -106,14 +132,54 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
       avatarUrl: profile?.avatar_url,
       sourceUsed: currentUser ? 'PROP' : user ? 'CONTEXT_USER' : session?.user ? 'CONTEXT_SESSION' : directSupabaseUser ? 'DIRECT_SUPABASE' : 'NONE'
     };
-  }, [effectiveUser, profile, currentUser, user, session?.user, directSupabaseUser]);
+  }, [effectiveUser, profile?.display_name, profile?.username, profile?.avatar_url, currentUser, user, session?.user, directSupabaseUser]);
+
+  // STABILIZED: Load profile with useCallback to prevent re-renders
+  const loadProfile = useCallback(async (userId: string) => {
+    try {
+      const profileData = await getProfile(userId);
+      setProfile(profileData);
+      if (renderCount <= 5) {
+        console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FIXED: Profile loaded successfully:', profileData);
+      }
+    } catch (error) {
+      console.error('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FIXED: Error loading profile:', error);
+    }
+  }, [renderCount]);
+
+  // Load profile when user ID changes
+  useEffect(() => {
+    if (effectiveUser?.id && effectiveUser?.id.length > 10) {
+      loadProfile(effectiveUser.id);
+    }
+  }, [effectiveUser?.id, loadProfile]);
+
+  // STABILIZED: Sign out handler with useCallback
+  const handleSignOut = useCallback(async () => {
+    console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FIXED: Signing out...');
+    await signOut();
+    toast({
+      title: 'Signed out',
+      description: 'You have been successfully signed out.',
+    });
+  }, [signOut]);
+
+  // STABILIZED: Profile modal handler with useCallback
+  const handleProfileModalClose = useCallback((open: boolean) => {
+    setProfileModalOpen(open);
+    if (!open && effectiveUser?.id && effectiveUser?.id.length > 10) {
+      loadProfile(effectiveUser.id);
+    }
+  }, [effectiveUser?.id, loadProfile]);
 
   if (!effectiveUser || !displayValues) {
-    console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FIXED: ❌ NO EFFECTIVE USER - RETURNING NULL ❌');
+    if (renderCount <= 5) {
+      console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FIXED: ❌ NO EFFECTIVE USER - RETURNING NULL ❌');
+    }
     return null;
   }
 
-  if (renderCount % 100 === 1 || renderCount <= 10) {
+  if (renderCount <= 10 || renderCount % 100 === 0) {
     console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FIXED: 🔥 DISPLAY VALUES 🔥');
     console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FIXED: Display values:', {
       ...displayValues,
@@ -124,9 +190,10 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
     });
   }
 
+  // Mount/unmount tracking
   useEffect(() => {
     console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FIXED: ===== MOUNT EFFECT =====');
-    console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FIXED: Component mounted, render count:', renderCount);
+    console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FIXED: Component mounted successfully');
     
     return () => {
       console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FIXED: ===== UNMOUNT DETECTED =====');
@@ -134,39 +201,6 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
       console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FIXED: Final render count was:', renderCount);
     };
   }, []);
-
-  useEffect(() => {
-    if (effectiveUser?.id && effectiveUser?.id.length > 10) {
-      console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FIXED: Loading profile for user ID:', effectiveUser.id);
-      loadProfile(effectiveUser.id);
-    }
-  }, [effectiveUser?.id]);
-
-  const loadProfile = async (userId: string) => {
-    try {
-      const profileData = await getProfile(userId);
-      setProfile(profileData);
-      console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FIXED: Profile loaded successfully:', profileData);
-    } catch (error) {
-      console.error('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FIXED: Error loading profile:', error);
-    }
-  };
-
-  const handleSignOut = async () => {
-    console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FIXED: Signing out...');
-    await signOut();
-    toast({
-      title: 'Signed out',
-      description: 'You have been successfully signed out.',
-    });
-  };
-
-  const handleProfileModalClose = (open: boolean) => {
-    setProfileModalOpen(open);
-    if (!open && effectiveUser?.id && effectiveUser?.id.length > 10) {
-      loadProfile(effectiveUser.id);
-    }
-  };
 
   return (
     <div className="flex items-center gap-2">

@@ -14,9 +14,11 @@ export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
   const [authState, setAuthState] = useState('UNKNOWN');
   const unmountDetectedRef = useRef(false);
   const intervalRefs = useRef<NodeJS.Timeout[]>([]);
+  const lastLogTime = useRef(0);
   
   renderCount.current += 1;
   
+  // CRITICAL: Ensure we're logging with the correct _FIXED identifier
   console.log('🟢🟢🟢 [NAWGTI_FIXED] ===== FIXED WRAPPER RENDER =====');
   console.log('🟢🟢🟢 [NAWGTI_FIXED] Instance ID:', wrapperInstance.current);
   console.log('🟢🟢🟢 [NAWGTI_FIXED] Render count:', renderCount.current);
@@ -34,26 +36,7 @@ export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
       (window as any).nawgtiMounted = true;
     }
     
-    // Set up monitoring with longer intervals
-    const monitoringInterval = setInterval(() => {
-      if (unmountDetectedRef.current) {
-        console.log('🟢🟢🟢 [NAWGTI_FIXED] ⚠️ UNMOUNT FLAG DETECTED IN MONITORING ⚠️');
-        return;
-      }
-      
-      console.log('🟢🟢🟢 [NAWGTI_FIXED] 🔍 NAWGTI MONITORING CHECK:', {
-        instance: wrapperInstance.current,
-        time: new Date().toLocaleTimeString(),
-        authState: authState,
-        renderCount: renderCount.current,
-        stillMounted: 'YES',
-        timestamp: new Date().toISOString()
-      });
-    }, 5000); // Reduced frequency
-    
-    intervalRefs.current.push(monitoringInterval);
-    
-    // Listen for auth state changes from AuthProvider
+    // CRITICAL: Listen for auth state changes from AuthProvider with proper logging
     const handleAuthStateChange = (event: any) => {
       console.log('🟢🟢🟢 [NAWGTI_FIXED] ===== AUTH STATE EVENT RECEIVED =====');
       console.log('🟢🟢🟢 [NAWGTI_FIXED] NAWGTI received auth state event:', event.detail);
@@ -71,6 +54,9 @@ export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
         console.log('🟢🟢🟢 [NAWGTI_FIXED] 🎉 NAWGTI NOW SEES AUTHENTICATED STATE 🎉');
         console.log('🟢🟢🟢 [NAWGTI_FIXED] NAWGTI should remain stable and visible');
         console.log('🟢🟢🟢 [NAWGTI_FIXED] 🎯 CRITICAL: NAWGTI MUST NOT DISAPPEAR FROM THIS POINT FORWARD 🎯');
+        console.log('🟢🟢🟢 [NAWGTI_FIXED] User email from event:', event.detail?.userEmail || 'NO_EMAIL_IN_EVENT');
+        console.log('🟢🟢🟢 [NAWGTI_FIXED] User phone from event:', event.detail?.userPhone || 'NO_PHONE_IN_EVENT');
+        console.log('🟢🟢🟢 [NAWGTI_FIXED] User ID from event:', event.detail?.userId || 'NO_ID_IN_EVENT');
       }
     };
     
@@ -85,6 +71,30 @@ export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
     window.addEventListener('beforeunload', handleBeforeUnload);
     console.log('🟢🟢🟢 [NAWGTI_FIXED] Auth state listener added to window');
     
+    // Set up monitoring with throttling to reduce log spam
+    const monitoringInterval = setInterval(() => {
+      if (unmountDetectedRef.current) {
+        console.log('🟢🟢🟢 [NAWGTI_FIXED] ⚠️ UNMOUNT FLAG DETECTED IN MONITORING ⚠️');
+        return;
+      }
+      
+      const now = Date.now();
+      // Only log every 30 seconds to reduce spam
+      if (now - lastLogTime.current > 30000) {
+        console.log('🟢🟢🟢 [NAWGTI_FIXED] 🔍 NAWGTI MONITORING CHECK:', {
+          instance: wrapperInstance.current,
+          time: new Date().toLocaleTimeString(),
+          authState: authState,
+          renderCount: renderCount.current,
+          stillMounted: 'YES',
+          timestamp: new Date().toISOString()
+        });
+        lastLogTime.current = now;
+      }
+    }, 5000);
+    
+    intervalRefs.current.push(monitoringInterval);
+    
     console.log('🟢🟢🟢 [NAWGTI_FIXED] All monitoring and listeners established');
     
     return () => {
@@ -95,7 +105,6 @@ export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
       console.log('🟢🟢🟢 [NAWGTI_FIXED] Auth state at unmount:', authState);
       console.log('🟢🟢🟢 [NAWGTI_FIXED] THIS IS THE CRITICAL FAILURE - NAWGTI SHOULD NOT UNMOUNT POST-LOGIN');
       
-      // Set flag and try to log to window
       unmountDetectedRef.current = true;
       
       if (typeof window !== 'undefined') {
@@ -120,7 +129,7 @@ export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
     };
   }, []);
 
-  // Auth state monitoring effect
+  // Auth state monitoring effect - CRITICAL for showing wrapper's perception of auth state
   useEffect(() => {
     console.log('🟢🟢🟢 [NAWGTI_FIXED] ===== AUTH STATE MONITORING EFFECT =====');
     console.log('🟢🟢🟢 [NAWGTI_FIXED] Auth state monitoring effect triggered');
@@ -130,6 +139,12 @@ export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
     if (authState === 'AUTHENTICATED') {
       console.log('🟢🟢🟢 [NAWGTI_FIXED] ✅ NAWGTI SEES AUTHENTICATED STATE ✅');
       console.log('🟢🟢🟢 [NAWGTI_FIXED] 🔥 CRITICAL: NAWGTI MUST REMAIN VISIBLE FROM THIS POINT 🔥');
+    } else if (authState === 'LOADING') {
+      console.log('🟢🟢🟢 [NAWGTI_FIXED] ⏳ NAWGTI SEES LOADING STATE ⏳');
+    } else if (authState === 'UNAUTHENTICATED') {
+      console.log('🟢🟢🟢 [NAWGTI_FIXED] ❌ NAWGTI SEES UNAUTHENTICATED STATE ❌');
+    } else {
+      console.log('🟢🟢🟢 [NAWGTI_FIXED] ❓ NAWGTI SEES UNKNOWN STATE - WAITING FOR AUTH PROVIDER ❓');
     }
   }, [authState]);
 
