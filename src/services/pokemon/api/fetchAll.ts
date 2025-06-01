@@ -57,14 +57,15 @@ export const fetchAllPokemon = async (
   });
 
   try {
-    let limit = fullRankingMode ? 2000 : 1025;
+    // FIXED: Always fetch ALL Pokemon (1025+ is the minimum)
+    let limit = 2000; // Increased to ensure we get all Pokemon including variants
     
     // CRITICAL: Log different batch modes
     if (initialBatchOnly) {
       limit = batchSize;
       console.log(`📦 [REFRESH_DETECTION] Call #${currentCallId}: INITIAL BATCH MODE - limit: ${limit}`);
     } else {
-      console.log(`📦 [REFRESH_DETECTION] Call #${currentCallId}: FULL LOAD MODE - limit: ${limit}`);
+      console.log(`📦 [REFRESH_DETECTION] Call #${currentCallId}: FULL LOAD MODE - limit: ${limit} (FIXED TO GET ALL POKEMON)`);
     }
 
     console.log(`🌐 [REFRESH_DETECTION] Call #${currentCallId}: Fetching from API with limit ${limit}`);
@@ -77,6 +78,11 @@ export const fetchAllPokemon = async (
 
     const data: PokemonAPIResponse = await response.json();
     console.log(`📥 [REFRESH_DETECTION] Call #${currentCallId}: API returned ${data.results.length} Pokemon`);
+    
+    // CRITICAL: Verify we got enough Pokemon
+    if (data.results.length < 1025) {
+      console.error(`🚨 [POKEMON_COUNT_ERROR] Call #${currentCallId}: Only got ${data.results.length} Pokemon, expected at least 1025!`);
+    }
     
     // CRITICAL: Track processing milestones
     const startProcessingTime = Date.now();
@@ -139,8 +145,10 @@ export const fetchAllPokemon = async (
     if (filteredList.length === 1025) {
       console.error(`🔥 [REFRESH_DETECTION] Call #${currentCallId}: RETURNING EXACTLY 1025 POKEMON - MILESTONE!`);
     }
-    if (filteredList.length === 1271) {
-      console.error(`🔥 [REFRESH_DETECTION] Call #${currentCallId}: RETURNING EXACTLY 1271 POKEMON - MILESTONE!`);
+    if (filteredList.length >= 1025) {
+      console.log(`✅ [POKEMON_COUNT_SUCCESS] Call #${currentCallId}: SUCCESS! Returning ${filteredList.length} Pokemon (>= 1025)`);
+    } else {
+      console.error(`🚨 [POKEMON_COUNT_ERROR] Call #${currentCallId}: FAILURE! Only returning ${filteredList.length} Pokemon (< 1025)`);
     }
 
     return filteredList;
