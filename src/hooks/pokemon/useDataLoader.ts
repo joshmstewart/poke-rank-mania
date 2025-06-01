@@ -1,3 +1,4 @@
+
 import { useCallback } from "react";
 import { usePokemonData } from "./usePokemonData";
 import { LoadingType } from "./types";
@@ -15,49 +16,49 @@ export const useDataLoader = (
   const { getPokemonData } = usePokemonData();
 
   const loadData = useCallback(async () => {
-    console.log(`🚀 [DATA_LOADER] ===== STARTING DATA LOAD =====`);
-    console.log(`🚀 [DATA_LOADER] Parameters: gen=${selectedGeneration}, page=${currentPage}, size=${loadSize}, type=${loadingType}`);
+    console.log(`🚀 [DATA_LOADER_FIXED] ===== STARTING FIXED DATA LOAD =====`);
+    console.log(`🚀 [DATA_LOADER_FIXED] Parameters: gen=${selectedGeneration}, page=${currentPage}, size=${loadSize}, type=${loadingType}`);
     
     setIsLoading(true);
     
     try {
-      console.log(`🚀 [DATA_LOADER] Calling getPokemonData...`);
+      console.log(`🚀 [DATA_LOADER_FIXED] Calling fixed getPokemonData...`);
       const result = await getPokemonData(selectedGeneration, currentPage, loadSize, loadingType);
       
-      console.log(`🚀 [DATA_LOADER] ===== DATA LOAD RESULTS =====`);
-      console.log(`🚀 [DATA_LOADER] ✅ SUCCESS - Available Pokemon: ${result.availablePokemon.length}`);
-      console.log(`🚀 [DATA_LOADER] ✅ SUCCESS - Ranked Pokemon: ${result.rankedPokemon.length}`);
-      console.log(`🚀 [DATA_LOADER] ✅ SUCCESS - Total Pages: ${result.totalPages}`);
+      console.log(`🚀 [DATA_LOADER_FIXED] ===== FIXED DATA LOAD RESULTS =====`);
+      console.log(`🚀 [DATA_LOADER_FIXED] ✅ SUCCESS - Available Pokemon: ${result.availablePokemon.length}`);
+      console.log(`🚀 [DATA_LOADER_FIXED] ✅ SUCCESS - Ranked Pokemon: ${result.rankedPokemon.length}`);
+      console.log(`🚀 [DATA_LOADER_FIXED] ✅ SUCCESS - Total Pages: ${result.totalPages}`);
       
-      // CRITICAL FIX: Always update state, even if data is empty (to clear previous state)
-      console.log(`🚀 [DATA_LOADER] ===== UPDATING STATE =====`);
-      console.log(`🚀 [DATA_LOADER] Setting availablePokemon to: ${result.availablePokemon.length}`);
-      console.log(`🚀 [DATA_LOADER] Setting rankedPokemon to: ${result.rankedPokemon.length}`);
+      console.log(`🚀 [DATA_LOADER_FIXED] ===== UPDATING STATE (SHOULD FIX UI) =====`);
+      console.log(`🚀 [DATA_LOADER_FIXED] Setting availablePokemon to: ${result.availablePokemon.length}`);
+      console.log(`🚀 [DATA_LOADER_FIXED] Setting rankedPokemon to: ${result.rankedPokemon.length}`);
       
       setAvailablePokemon(result.availablePokemon);
       setRankedPokemon(result.rankedPokemon);
       setTotalPages(result.totalPages);
       
-      console.log(`🚀 [DATA_LOADER] ✅ State updated successfully`);
+      console.log(`🚀 [DATA_LOADER_FIXED] ✅ State updated successfully - UI should now show Pokemon`);
       
     } catch (error) {
-      console.error(`🚀 [DATA_LOADER] ❌ Error loading data:`, error);
+      console.error(`🚀 [DATA_LOADER_FIXED] ❌ Error loading data:`, error);
       
-      // CRITICAL FIX: Don't leave UI in broken state on error
-      // Instead, keep existing data or set to empty arrays if needed
-      console.log(`🚀 [DATA_LOADER] ⚠️ Error occurred, maintaining current state`);
+      // CRITICAL FIX: Only clear state if this is a genuine first load failure
+      // Don't interfere with already-loaded Pokemon context data
+      console.log(`🚀 [DATA_LOADER_FIXED] ⚠️ Error occurred - checking if this is initial load`);
       
-      // Only clear state if this is the first load attempt
       if (currentPage === 1) {
-        console.log(`🚀 [DATA_LOADER] First load failed, clearing state`);
+        console.log(`🚀 [DATA_LOADER_FIXED] First load failed, setting empty state`);
         setAvailablePokemon([]);
         setRankedPokemon([]);
         setTotalPages(0);
+      } else {
+        console.log(`🚀 [DATA_LOADER_FIXED] Subsequent page load failed, maintaining current state`);
       }
       
     } finally {
       setIsLoading(false);
-      console.log(`🚀 [DATA_LOADER] ===== DATA LOAD COMPLETE =====`);
+      console.log(`🚀 [DATA_LOADER_FIXED] ===== FIXED DATA LOAD COMPLETE =====`);
     }
   }, [selectedGeneration, currentPage, loadSize, loadingType, getPokemonData, setAvailablePokemon, setRankedPokemon, setTotalPages, setIsLoading]);
 

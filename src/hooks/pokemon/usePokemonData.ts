@@ -5,10 +5,12 @@ import { LoadingType } from "./types";
 import { usePokemonService } from "@/hooks/pokemon/usePokemonService";
 import { formatPokemonName } from "@/utils/pokemon";
 import { useTrueSkillSync } from "@/hooks/ranking/useTrueSkillSync";
+import { usePokemonContext } from "@/contexts/PokemonContext";
 
 export const usePokemonData = () => {
   const { getAllPokemon } = usePokemonService();
   const { localRankings } = useTrueSkillSync();
+  const { allPokemon: contextPokemon } = usePokemonContext();
 
   const getPokemonData = useCallback(async (
     selectedGeneration: number,
@@ -16,25 +18,30 @@ export const usePokemonData = () => {
     loadSize: number,
     loadingType: LoadingType
   ) => {
-    console.log(`🔒 [DETERMINISTIC_DATA] ===== GET POKEMON DATA (DETERMINISTIC) =====`);
-    console.log(`🔒 [DETERMINISTIC_DATA] Params: gen=${selectedGeneration}, page=${currentPage}, size=${loadSize}, type=${loadingType}`);
+    console.log(`🔒 [DETERMINISTIC_DATA_FIXED] ===== GET POKEMON DATA (CONTEXT-FIRST APPROACH) =====`);
+    console.log(`🔒 [DETERMINISTIC_DATA_FIXED] Params: gen=${selectedGeneration}, page=${currentPage}, size=${loadSize}, type=${loadingType}`);
     
     try {
-      // Get ALL Pokemon with proper error handling
-      const allPokemonResult = await getAllPokemon();
+      // CRITICAL FIX: Use context Pokemon first if available (1239 Pokemon loaded successfully)
+      let allPokemon: Pokemon[] = [];
       
-      console.log(`🔒 [DEBUG_DATA_FLOW] Raw result type:`, typeof allPokemonResult);
-      console.log(`🔒 [DEBUG_DATA_FLOW] Is array:`, Array.isArray(allPokemonResult));
-      console.log(`🔒 [DEBUG_DATA_FLOW] Length:`, allPokemonResult?.length || 'NO LENGTH');
-      
-      // CRITICAL FIX: Validate we have a proper Pokemon array
-      if (!Array.isArray(allPokemonResult) || allPokemonResult.length === 0) {
-        console.error(`🔒 [DETERMINISTIC_DATA] ❌ Invalid Pokemon data received:`, allPokemonResult);
-        throw new Error(`Invalid Pokemon data: expected array, got ${typeof allPokemonResult} with length ${allPokemonResult?.length || 0}`);
+      if (contextPokemon && contextPokemon.length > 0) {
+        console.log(`🔒 [DETERMINISTIC_DATA_FIXED] ✅ Using PokemonContext data: ${contextPokemon.length} Pokemon`);
+        allPokemon = contextPokemon;
+      } else {
+        console.log(`🔒 [DETERMINISTIC_DATA_FIXED] ⚠️ Context empty, falling back to service`);
+        const serviceResult = await getAllPokemon();
+        
+        if (!Array.isArray(serviceResult) || serviceResult.length === 0) {
+          console.error(`🔒 [DETERMINISTIC_DATA_FIXED] ❌ Service also failed - no Pokemon available`);
+          throw new Error(`No Pokemon data available from any source`);
+        }
+        
+        allPokemon = serviceResult;
+        console.log(`🔒 [DETERMINISTIC_DATA_FIXED] ✅ Using service data: ${allPokemon.length} Pokemon`);
       }
       
-      const allPokemon = allPokemonResult as Pokemon[];
-      console.log(`🔒 [DETERMINISTIC_DATA] ✅ Valid Pokemon array received: ${allPokemon.length}`);
+      console.log(`🔒 [DETERMINISTIC_DATA_FIXED] ✅ Valid Pokemon array: ${allPokemon.length}`);
       
       // Sort by ID for consistency
       const sortedPokemon = [...allPokemon].sort((a, b) => a.id - b.id);
@@ -83,7 +90,7 @@ export const usePokemonData = () => {
       // Calculate pagination
       const totalPages = loadingType === "pagination" ? Math.ceil(availablePokemon.length / loadSize) : 1;
       
-      console.log(`🔒 [DETERMINISTIC_DATA] ✅ SUCCESS - Returning data with ${availablePokemon.length} available, ${rankedPokemon.length} ranked`);
+      console.log(`🔒 [DETERMINISTIC_DATA_FIXED] ✅ SUCCESS - Returning data with ${availablePokemon.length} available, ${rankedPokemon.length} ranked`);
       
       return {
         availablePokemon,
@@ -92,10 +99,10 @@ export const usePokemonData = () => {
       };
       
     } catch (error) {
-      console.error(`🔒 [DETERMINISTIC_DATA] ❌ Error in getPokemonData:`, error);
-      throw error; // Re-throw to be handled by caller
+      console.error(`🔒 [DETERMINISTIC_DATA_FIXED] ❌ Error in getPokemonData:`, error);
+      throw error;
     }
-  }, [getAllPokemon, localRankings]);
+  }, [getAllPokemon, localRankings, contextPokemon]);
 
   return { getPokemonData };
 };
