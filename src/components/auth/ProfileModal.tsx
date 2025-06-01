@@ -63,38 +63,50 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
 
   const handleSave = async () => {
     if (!user?.id) {
-      console.log('No user ID available for save');
+      console.log('❌ [PROFILE_SAVE] No user ID available for save');
       return;
     }
 
-    console.log('Starting save with data:', {
-      userId: user.id,
-      selectedAvatar,
-      username: username.trim(),
-      displayName: displayName.trim()
-    });
+    console.log('🚀 [PROFILE_SAVE] ===== STARTING SAVE OPERATION =====');
+    console.log('🚀 [PROFILE_SAVE] User ID:', user.id);
+    console.log('🚀 [PROFILE_SAVE] Selected Avatar:', selectedAvatar);
+    console.log('🚀 [PROFILE_SAVE] Username:', username.trim());
+    console.log('🚀 [PROFILE_SAVE] Display Name:', displayName.trim());
 
     setSaving(true);
+    console.log('🚀 [PROFILE_SAVE] Setting saving state to true');
     
     try {
-      const success = await updateProfile(user.id, {
+      console.log('🚀 [PROFILE_SAVE] About to call updateProfile function...');
+      
+      const updateData = {
         avatar_url: selectedAvatar,
         username: username.trim(),
         display_name: displayName.trim(),
-      });
-
-      console.log('Update result:', success);
+      };
+      
+      console.log('🚀 [PROFILE_SAVE] Update data prepared:', updateData);
+      
+      const success = await updateProfile(user.id, updateData);
+      
+      console.log('🚀 [PROFILE_SAVE] updateProfile returned:', success);
 
       if (success) {
+        console.log('🚀 [PROFILE_SAVE] Success! About to refresh cache...');
+        
         // Force refresh the profile cache
         await prefetchProfile(user.id);
+        console.log('🚀 [PROFILE_SAVE] Cache refreshed successfully');
         
         toast({
           title: 'Profile Updated',
           description: 'Your profile has been successfully updated.',
         });
+        console.log('🚀 [PROFILE_SAVE] Toast shown, about to close modal');
         onOpenChange(false);
+        console.log('🚀 [PROFILE_SAVE] Modal close triggered');
       } else {
+        console.log('❌ [PROFILE_SAVE] Update failed');
         toast({
           title: 'Update Failed',
           description: 'Failed to update your profile. Please try again.',
@@ -102,14 +114,17 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
         });
       }
     } catch (error) {
-      console.error('Error saving profile:', error);
+      console.error('❌ [PROFILE_SAVE] Exception during save:', error);
+      console.error('❌ [PROFILE_SAVE] Error details:', JSON.stringify(error, null, 2));
       toast({
         title: 'Save Error',
         description: 'An error occurred while saving your profile.',
         variant: 'destructive',
       });
     } finally {
+      console.log('🚀 [PROFILE_SAVE] Setting saving state to false');
       setSaving(false);
+      console.log('🚀 [PROFILE_SAVE] ===== SAVE OPERATION COMPLETE =====');
     }
   };
 
