@@ -9,9 +9,9 @@ export const CloudSyncButton: React.FC = () => {
   const { user, session } = useAuth();
   const [showAuthDialog, setShowAuthDialog] = useState(false);
 
-  console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON_FORCED: ===== DIAGNOSTIC RENDER START =====');
-  console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON_FORCED: 🔥 FORCED LOGGING MODE (RE-IMPLEMENTED) 🔥');
-  console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON_FORCED: Auth state from useAuth (validation target):', {
+  console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON_FINAL: ===== POST-LOGIN DIAGNOSTIC RENDER START =====');
+  console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON_FINAL: 🔥 POST-LOGIN DIAGNOSTIC MODE 🔥');
+  console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON_FINAL: Auth state from useAuth:', {
     hasUser: !!user,
     hasSession: !!session,
     userEmail: user?.email || 'no email',
@@ -22,7 +22,7 @@ export const CloudSyncButton: React.FC = () => {
 
   const isAuthenticated = !!user || !!session?.user;
 
-  console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON_FORCED: 🔥 AUTHENTICATION CHECK:', {
+  console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON_FINAL: 🔥 POST-LOGIN AUTHENTICATION CHECK:', {
     isAuthenticated,
     hasUser: !!user,
     hasSessionUser: !!session?.user,
@@ -32,13 +32,13 @@ export const CloudSyncButton: React.FC = () => {
   });
 
   if (isAuthenticated) {
-    console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON_FORCED: 🚫 USER IS AUTHENTICATED - RETURNING NULL 🚫');
-    console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON_FORCED: This indicates useAuth context fixes are working!');
+    console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON_FINAL: 🚫 USER IS AUTHENTICATED - RETURNING NULL 🚫');
+    console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON_FINAL: This indicates useAuth context fixes are working!');
     return null;
   }
 
-  console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON_FORCED: 🟢 USER NOT AUTHENTICATED - RENDERING BUTTON 🟢');
-  console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON_FORCED: This indicates useAuth context still shows unauthenticated');
+  console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON_FINAL: 🟢 USER NOT AUTHENTICATED - RENDERING BUTTON 🟢');
+  console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON_FINAL: This indicates useAuth context still shows unauthenticated');
 
   return (
     <div style={{ 
@@ -48,7 +48,7 @@ export const CloudSyncButton: React.FC = () => {
       borderRadius: '5px'
     }}>
       <div style={{ color: 'black', fontWeight: 'bold', fontSize: '12px' }}>
-        🟡 CLOUD SYNC BUTTON (FORCED LOGGING) 🟡
+        🟡 CLOUD SYNC BUTTON (POST-LOGIN DIAGNOSTIC) 🟡
       </div>
       <div style={{ color: 'black', fontSize: '10px' }}>
         Not authenticated - showing sync button<br/>
