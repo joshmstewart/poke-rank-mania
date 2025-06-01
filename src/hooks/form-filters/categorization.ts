@@ -2,186 +2,150 @@
 import { Pokemon } from "@/services/pokemon";
 import { PokemonFormType } from "./types";
 
-// Check if a Pokemon is a starter and should be completely excluded
+// CRITICAL: Log form category distribution for debugging
+let categoryStats: Record<PokemonFormType, number> = {
+  normal: 0,
+  megaGmax: 0,
+  regional: 0,
+  gender: 0,
+  forms: 0,
+  originPrimal: 0,
+  costumes: 0,
+  colorsFlavors: 0
+};
+
+export const resetCategoryStats = () => {
+  categoryStats = {
+    normal: 0,
+    megaGmax: 0,
+    regional: 0,
+    gender: 0,
+    forms: 0,
+    originPrimal: 0,
+    costumes: 0,
+    colorsFlavors: 0
+  };
+};
+
+export const getCategoryStats = () => ({ ...categoryStats });
+
+export const logCategoryStats = () => {
+  console.log(`📊 [FORM_CATEGORY_STATS] Current distribution:`, categoryStats);
+  const total = Object.values(categoryStats).reduce((sum, count) => sum + count, 0);
+  console.log(`📊 [FORM_CATEGORY_STATS] Total categorized: ${total}`);
+  
+  // Show percentages
+  Object.entries(categoryStats).forEach(([category, count]) => {
+    const percentage = total > 0 ? ((count / total) * 100).toFixed(1) : '0.0';
+    console.log(`📊 [FORM_CATEGORY_STATS] ${category}: ${count} (${percentage}%)`);
+  });
+};
+
+// Check if Pokemon is a starter (always exclude)
 export const isStarterPokemon = (pokemon: Pokemon): boolean => {
-  const name = pokemon.name.toLowerCase();
-  return name.includes("starter");
+  const starterIds = [
+    // Gen 1
+    1, 4, 7, // Bulbasaur, Charmander, Squirtle
+    // Gen 2
+    152, 155, 158, // Chikorita, Cyndaquil, Totodile
+    // Gen 3
+    252, 255, 258, // Treecko, Torchic, Mudkip
+    // Gen 4
+    387, 390, 393, // Turtwig, Chimchar, Piplup
+    // Gen 5
+    495, 498, 501, // Snivy, Tepig, Oshawott
+    // Gen 6
+    650, 653, 656, // Chespin, Fennekin, Froakie
+    // Gen 7
+    722, 725, 728, // Rowlet, Litten, Popplio
+    // Gen 8
+    810, 813, 816, // Grookey, Scorbunny, Sobble
+    // Gen 9
+    906, 909, 912, // Sprigatito, Fuecoco, Quaxly
+  ];
+  
+  return starterIds.includes(pokemon.id);
 };
 
-// Check if a Pokemon is a totem and should be completely excluded
+// Check if Pokemon is a totem variant (always exclude)
 export const isTotemPokemon = (pokemon: Pokemon): boolean => {
-  const name = pokemon.name.toLowerCase();
-  return name.includes("totem");
+  return pokemon.name.toLowerCase().includes('totem');
 };
 
-// Check if a Pokemon is a size variant that should be completely excluded
+// Check if Pokemon is a size variant (always exclude)
 export const isSizeVariantPokemon = (pokemon: Pokemon): boolean => {
   const name = pokemon.name.toLowerCase();
-  
-  // Always exclude Pumpkaboo and Gourgeist size variants
-  if ((name.includes("pumpkaboo") || name.includes("gourgeist")) && 
-      (name.includes("small") || name.includes("large") || name.includes("super") || name.includes("size"))) {
-    console.log(`🚫 [SIZE_VARIANT_DEBUG] ${pokemon.name} (${pokemon.id}) EXCLUDED - size variant`);
-    return true;
-  }
-  
-  return false;
+  return name.includes('small') || name.includes('large') || name.includes('super') ||
+         (name.includes('pumpkaboo') && (name.includes('small') || name.includes('large') || name.includes('super'))) ||
+         (name.includes('gourgeist') && (name.includes('small') || name.includes('large') || name.includes('super')));
 };
 
-// Check if a Pokemon is a special Koraidon/Miraidon mode that should be excluded
+// Check if Pokemon is a special Koraidon/Miraidon mode (always exclude)
 export const isSpecialKoraidonMiraidonMode = (pokemon: Pokemon): boolean => {
   const name = pokemon.name.toLowerCase();
-  
-  if ((name.includes('koraidon') || name.includes('miraidon')) && 
-      (name.includes('apex') || name.includes('limited') || 
-       name.includes('build') || name.includes('mode'))) {
-    console.log(`🚫 [KORAIDON_MIRAIDON_DEBUG] ${pokemon.name} (${pokemon.id}) EXCLUDED - special mode`);
-    return true;
-  }
-  
-  return false;
+  return (name.includes('koraidon') || name.includes('miraidon')) && 
+         (name.includes('apex') || name.includes('limited') || name.includes('build') || name.includes('mode'));
 };
 
-// Check if a Pokemon is a color/flavor variant
-export const isColorFlavorVariant = (pokemon: Pokemon): boolean => {
-  const name = pokemon.name.toLowerCase();
-  
-  // Common color variants
-  const colorKeywords = [
-    'red', 'blue', 'green', 'yellow', 'orange', 'purple', 'pink', 'black', 'white', 'gray', 'grey',
-    'brown', 'silver', 'gold', 'rainbow', 'indigo', 'violet', 'cyan', 'magenta'
-  ];
-  
-  // Common flavor variants (especially for Alcremie)
-  const flavorKeywords = [
-    'vanilla', 'chocolate', 'strawberry', 'berry', 'mint', 'lemon', 'orange', 'apple',
-    'caramel', 'ruby', 'matcha', 'salted', 'cream', 'sweet', 'bitter', 'sour', 'spicy'
-  ];
-  
-  // Minior color cores
-  const miniorColors = ['red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet'];
-  
-  // Check for Minior specifically
-  if (name.includes('minior')) {
-    return miniorColors.some(color => name.includes(color));
-  }
-  
-  // Check for Alcremie and its forms
-  if (name.includes('alcremie')) {
-    return flavorKeywords.some(flavor => name.includes(flavor)) || 
-           colorKeywords.some(color => name.includes(color));
-  }
-  
-  // General color/flavor check for hyphenated names
-  if (name.includes('-')) {
-    const parts = name.split('-');
-    return parts.some(part => 
-      colorKeywords.includes(part) || flavorKeywords.includes(part)
-    );
-  }
-  
-  return false;
-};
-
-// Check if a Pokemon belongs to a specific form category
+// Main categorization function
 export const getPokemonFormCategory = (pokemon: Pokemon): PokemonFormType | null => {
   const name = pokemon.name.toLowerCase();
+  let category: PokemonFormType | null = null;
   
-  console.log(`🔍 [FORM_CATEGORIZATION_ENHANCED] Analyzing: "${pokemon.name}" (ID: ${pokemon.id})`);
-  
-  // Check for color/flavor variants FIRST (new category)
-  if (isColorFlavorVariant(pokemon)) {
-    console.log(`🎨 [FORM_FILTER_DEBUG] ${pokemon.name} (${pokemon.id}) categorized as COLOR/FLAVOR`);
-    return "colorsFlavors";
+  // Regional forms (Alolan, Galarian, Hisuian, Paldean)
+  if (name.includes('alolan') || name.includes('galarian') || name.includes('hisuian') || name.includes('paldean') ||
+      name.includes('alola') || name.includes('galar') || name.includes('hisui') || name.includes('paldea')) {
+    category = 'regional';
+  }
+  // Mega and Gigantamax forms
+  else if (name.includes('mega') || name.includes('gmax') || name.includes('gigantamax')) {
+    category = 'megaGmax';
+  }
+  // Origin and Primal forms
+  else if (name.includes('origin') || name.includes('primal')) {
+    category = 'originPrimal';
+  }
+  // Gender differences (male/female variants)
+  else if (name.includes('male') || name.includes('female') || name.includes('-m') || name.includes('-f') ||
+           name.includes('♂') || name.includes('♀')) {
+    category = 'gender';
+  }
+  // Costume Pokemon (caps, costumes, etc.)
+  else if (name.includes('cap') || name.includes('costume') || name.includes('hat') || name.includes('libre') ||
+           name.includes('phd') || name.includes('pop-star') || name.includes('rock-star') || name.includes('belle')) {
+    category = 'costumes';
+  }
+  // Colors and flavors (specific color/flavor variants)
+  else if (name.includes('red') || name.includes('blue') || name.includes('yellow') || name.includes('green') ||
+           name.includes('orange') || name.includes('indigo') || name.includes('violet') || name.includes('white') ||
+           name.includes('black') || name.includes('brown') || name.includes('pink') || name.includes('gray') ||
+           name.includes('strawberry') || name.includes('love') || name.includes('star') || name.includes('rainbow') ||
+           name.includes('flower') || name.includes('diamond') || name.includes('heart') || name.includes('clover') ||
+           name.includes('minior') || name.includes('oricorio') || name.includes('lycanroc') ||
+           name.includes('toxtricity') || name.includes('urshifu') || name.includes('basculin')) {
+    category = 'colorsFlavors';
+  }
+  // Special forms (other form differences)
+  else if (name.includes('sky') || name.includes('speed') || name.includes('attack') || name.includes('defense') ||
+           name.includes('plant') || name.includes('sandy') || name.includes('trash') || name.includes('frost') ||
+           name.includes('heat') || name.includes('wash') || name.includes('fan') || name.includes('mow') ||
+           name.includes('altered') || name.includes('resolute') || name.includes('ordinary') || name.includes('pirouette') ||
+           name.includes('blade') || name.includes('shield') || name.includes('confined') || name.includes('unbound') ||
+           name.includes('complete') || name.includes('meteor') || name.includes('crowned') || name.includes('eternamax') ||
+           name.includes('ice') || name.includes('shadow') || name.includes('dusk') || name.includes('dawn') ||
+           name.includes('ultra') || name.includes('dusk') || name.includes('original') || name.includes('zen') ||
+           name.includes('therian') || name.includes('incarnate') || name.includes('aria') || name.includes('step')) {
+    category = 'forms';
+  }
+  // Default to normal if no special form detected
+  else {
+    category = 'normal';
   }
   
-  // Check for costumes (Pikachu caps and cosplay forms)
-  if ((name.includes("pikachu") && (
-      name.includes("cap") || 
-      name.includes("phd") || 
-      name.includes("cosplay") || 
-      name.includes("belle") || 
-      name.includes("libre") || 
-      name.includes("pop-star") || 
-      name.includes("rock-star") ||
-      name.includes("partner"))) || 
-      name.includes("crowned")) {
-    console.log(`🎭 [FORM_FILTER_DEBUG] ${pokemon.name} (${pokemon.id}) categorized as COSTUME`);
-    return "costumes";
+  // Update stats
+  if (category) {
+    categoryStats[category]++;
   }
   
-  // Check for Origin and Primal forms (AFTER costumes) - make more strict
-  if ((name.includes("origin") && !name.includes("pikachu")) || 
-      (name.includes("primal") && !name.includes("pikachu"))) {
-    console.log(`🔥 [FORM_FILTER_DEBUG] ${pokemon.name} (${pokemon.id}) categorized as ORIGIN/PRIMAL`);
-    return "originPrimal";
-  }
-  
-  // Check for mega evolutions and gigantamax forms
-  if (name.includes("mega") || name.includes("g-max") || name.includes("gmax") || name.includes("eternamax")) {
-    console.log(`💥 [FORM_FILTER_DEBUG] ${pokemon.name} (${pokemon.id}) categorized as MEGA/GMAX`);
-    return "megaGmax";
-  }
-  
-  // Check for regional variants
-  if (name.includes("alolan") || 
-      name.includes("galarian") || 
-      name.includes("hisuian") || 
-      name.includes("paldean")) {
-    console.log(`🌍 [FORM_FILTER_DEBUG] ${pokemon.name} (${pokemon.id}) categorized as REGIONAL`);
-    return "regional";
-  }
-  
-  // Check for gender differences - only treat as gender variants if they explicitly have gender indicators
-  if ((name.includes("female") || name.includes("male")) && 
-      (name.includes("-f") || name.includes("-m")) && 
-      pokemon.id > 10000) {
-    console.log(`⚧️ [FORM_FILTER_DEBUG] ${pokemon.name} (${pokemon.id}) categorized as GENDER`);
-    return "gender";
-  }
-  
-  // Check for special forms
-  if (name.includes("form") || 
-      name.includes("style") || 
-      name.includes("mode") || 
-      name.includes("size") || 
-      name.includes("cloak") ||
-      name.includes("rotom-") ||
-      name.includes("forme") ||
-      name.includes("unbound") ||
-      name.includes("gorging") ||
-      name.includes("-theme")) {
-    console.log(`🔄 [FORM_FILTER_DEBUG] ${pokemon.name} (${pokemon.id}) categorized as FORMS`);
-    return "forms";
-  }
-  
-  // A Pokemon is normal if it has a standard Pokedex number (1-1010) AND no special form indicators
-  if (pokemon.id <= 1010 && 
-      !name.includes("mega") && 
-      !name.includes("gmax") && 
-      !name.includes("g-max") &&
-      !name.includes("alolan") && 
-      !name.includes("galarian") && 
-      !name.includes("hisuian") && 
-      !name.includes("paldean") &&
-      !name.includes("origin") &&
-      !name.includes("primal") &&
-      !name.includes("cap") &&
-      !name.includes("form") &&
-      !name.includes("style") &&
-      !name.includes("mode") &&
-      !name.includes("crowned")) {
-    console.log(`✅ [FORM_FILTER_DEBUG] ${pokemon.name} (${pokemon.id}) is NORMAL (standard form)`);
-    return "normal";
-  }
-  
-  // If Pokemon has ID > 1010, it's likely a special form
-  if (pokemon.id > 1010) {
-    console.log(`🔄 [FORM_FILTER_DEBUG] ${pokemon.name} (${pokemon.id}) categorized as FORMS (high ID number)`);
-    return "forms";
-  }
-  
-  // Default to normal for any edge cases
-  console.log(`✅ [FORM_FILTER_DEBUG] ${pokemon.name} (${pokemon.id}) defaulting to NORMAL`);
-  return "normal";
+  return category;
 };
