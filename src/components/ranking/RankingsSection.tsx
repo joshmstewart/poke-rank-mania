@@ -47,12 +47,17 @@ export const RankingsSection: React.FC<RankingsSectionProps> = ({
 
   return (
     <div className="flex flex-col h-full">
-      {/* Streamlined Header */}
-      <div className="bg-white border-b border-gray-200 p-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">Your Rankings</h2>
-          <div className="text-sm text-gray-500 font-medium">
-            {displayRankings.length} Pokémon ranked
+      {/* Header with consistent formatting to match Available section */}
+      <div className="mb-4">
+        <div className="space-y-2 mb-3">
+          {/* Section Header with Total Count */}
+          <div className="border-b border-gray-200 pb-1">
+            <div className="flex justify-between items-center">
+              <h2 className="text-lg font-bold text-gray-900">Your Rankings</h2>
+              <div className="text-sm font-medium text-gray-600 bg-gray-100 px-2 py-1 rounded">
+                Total: {displayRankings.length}
+              </div>
+            </div>
           </div>
         </div>
       </div>
