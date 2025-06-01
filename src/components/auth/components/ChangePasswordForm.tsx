@@ -3,33 +3,36 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, Mail } from 'lucide-react';
+import { Loader2, Key } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
-interface LinkEmailFormProps {
-  isVisible: boolean;
-  isLoading: boolean;
-  setIsLoading: (loading: boolean) => void;
-  onClose?: () => void;
+interface ChangePasswordFormProps {
+  onClose: () => void;
 }
 
-export const LinkEmailForm: React.FC<LinkEmailFormProps> = ({
-  isVisible,
-  isLoading,
-  setIsLoading,
-  onClose
-}) => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+export const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({ onClose }) => {
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleLinkEmail = async (e: React.FormEvent) => {
+  const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password !== confirmPassword) {
+    
+    if (newPassword !== confirmPassword) {
       toast({
         title: 'Password mismatch',
-        description: 'Passwords do not match',
+        description: 'New passwords do not match',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast({
+        title: 'Password too short',
+        description: 'Password must be at least 6 characters long',
         variant: 'destructive',
       });
       return;
@@ -38,25 +41,24 @@ export const LinkEmailForm: React.FC<LinkEmailFormProps> = ({
     setIsLoading(true);
     try {
       const { error } = await supabase.auth.updateUser({
-        email: email,
-        password: password,
+        password: newPassword,
       });
 
       if (error) {
         toast({
-          title: 'Failed to link email',
+          title: 'Failed to change password',
           description: error.message,
           variant: 'destructive',
         });
       } else {
         toast({
-          title: 'Email linked successfully',
-          description: 'Please check your email to verify the new address',
+          title: 'Password changed',
+          description: 'Your password has been updated successfully',
         });
-        setEmail('');
-        setPassword('');
+        setCurrentPassword('');
+        setNewPassword('');
         setConfirmPassword('');
-        onClose?.();
+        onClose();
       }
     } catch (error) {
       toast({
@@ -69,39 +71,33 @@ export const LinkEmailForm: React.FC<LinkEmailFormProps> = ({
     }
   };
 
-  if (!isVisible) return null;
-
   return (
-    <div className="space-y-4 p-4 border rounded-md bg-gray-50">
-      <form onSubmit={handleLinkEmail} className="space-y-3">
+    <div className="space-y-4 p-4 border rounded-md">
+      <div className="flex items-center gap-2 mb-2">
+        <Key className="h-4 w-4" />
+        <span className="font-medium">Change Password</span>
+      </div>
+      <form onSubmit={handleChangePassword} className="space-y-3">
         <div>
-          <Label htmlFor="link-email">Email Address</Label>
+          <Label htmlFor="new-password">New Password</Label>
           <Input
-            id="link-email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-        </div>
-        <div>
-          <Label htmlFor="link-password">Password</Label>
-          <Input
-            id="link-password"
+            id="new-password"
             type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
             required
+            minLength={6}
           />
         </div>
         <div>
-          <Label htmlFor="confirm-password">Confirm Password</Label>
+          <Label htmlFor="confirm-new-password">Confirm New Password</Label>
           <Input
-            id="confirm-password"
+            id="confirm-new-password"
             type="password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             required
+            minLength={6}
           />
         </div>
         <div className="flex gap-2 pt-2">
@@ -110,7 +106,7 @@ export const LinkEmailForm: React.FC<LinkEmailFormProps> = ({
           </Button>
           <Button type="submit" disabled={isLoading} className="flex-1">
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Link Email & Password
+            Change Password
           </Button>
         </div>
       </form>

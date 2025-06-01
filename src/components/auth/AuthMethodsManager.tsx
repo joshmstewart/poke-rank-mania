@@ -5,8 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Link as LinkIcon } from 'lucide-react';
 import { useAuth } from '@/contexts/auth/useAuth';
 import { CurrentAuthMethods } from './components/CurrentAuthMethods';
-import { LinkEmailForm } from './components/LinkEmailForm';
-import { LinkGoogleButton } from './components/LinkGoogleButton';
+import { AddAuthMethodsSection } from './components/AddAuthMethodsSection';
 import { unlinkIdentity } from './utils/authMethodsUtils';
 
 export const AuthMethodsManager: React.FC = () => {
@@ -48,23 +47,12 @@ export const AuthMethodsManager: React.FC = () => {
         <Separator />
 
         {/* Add New Methods */}
-        <div>
-          <h4 className="text-sm font-medium mb-3">Add Authentication Methods</h4>
-          
-          {/* Link Email/Password */}
-          <LinkEmailForm
-            isVisible={!hasEmail}
-            isLoading={isLoading}
-            setIsLoading={setIsLoading}
-          />
-
-          {/* Link Google */}
-          <LinkGoogleButton
-            isVisible={!hasGoogle}
-            isLoading={isLoading}
-            setIsLoading={setIsLoading}
-          />
-        </div>
+        <AddAuthMethodsSection
+          hasEmail={hasEmail}
+          hasGoogle={hasGoogle}
+          isLoading={isLoading}
+          setIsLoading={setIsLoading}
+        />
       </CardContent>
     </Card>
   );

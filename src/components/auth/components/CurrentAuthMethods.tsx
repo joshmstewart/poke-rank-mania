@@ -1,8 +1,10 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Mail, Phone, Unlink } from 'lucide-react';
+import { Mail, Phone, Unlink, Key, ChevronDown, ChevronUp } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { ChangePasswordForm } from './ChangePasswordForm';
 
 interface CurrentAuthMethodsProps {
   user: User | null;
@@ -15,6 +17,8 @@ export const CurrentAuthMethods: React.FC<CurrentAuthMethodsProps> = ({
   onUnlinkIdentity,
   isLoading
 }) => {
+  const [showChangePassword, setShowChangePassword] = useState(false);
+
   const hasEmail = !!user?.email;
   const hasPhone = !!user?.phone;
   const hasGoogle = user?.app_metadata?.providers?.includes('google');
@@ -24,13 +28,31 @@ export const CurrentAuthMethods: React.FC<CurrentAuthMethodsProps> = ({
       <h4 className="text-sm font-medium mb-3">Currently Linked</h4>
       <div className="space-y-2">
         {hasEmail && (
-          <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-md">
-            <div className="flex items-center gap-2">
-              <Mail className="h-4 w-4 text-green-600" />
-              <span className="text-sm">Email: {user?.email}</span>
+          <div className="p-3 bg-green-50 border border-green-200 rounded-md">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Mail className="h-4 w-4 text-green-600" />
+                <span className="text-sm">Email: {user?.email}</span>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowChangePassword(!showChangePassword)}
+              >
+                <Key className="h-3 w-3 mr-1" />
+                Change Password
+                {showChangePassword ? <ChevronUp className="h-3 w-3 ml-1" /> : <ChevronDown className="h-3 w-3 ml-1" />}
+              </Button>
             </div>
+            
+            <Collapsible open={showChangePassword} onOpenChange={setShowChangePassword}>
+              <CollapsibleContent className="mt-3">
+                <ChangePasswordForm onClose={() => setShowChangePassword(false)} />
+              </CollapsibleContent>
+            </Collapsible>
           </div>
         )}
+        
         {hasPhone && (
           <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-md">
             <div className="flex items-center gap-2">
@@ -39,6 +61,7 @@ export const CurrentAuthMethods: React.FC<CurrentAuthMethodsProps> = ({
             </div>
           </div>
         )}
+        
         {hasGoogle && (
           <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-md">
             <div className="flex items-center gap-2">
