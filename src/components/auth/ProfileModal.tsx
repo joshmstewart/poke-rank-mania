@@ -82,31 +82,36 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
     setLoading(true);
     
     try {
+      console.log('🎯 [PROFILE_MODAL] Fetching profile for user ID:', user.id);
       const profileData = await getProfile(user.id);
       
       if (profileData) {
+        console.log('🎯 [PROFILE_MODAL] Profile found:', profileData);
         setProfile(profileData);
         setSelectedAvatar(profileData.avatar_url || '');
         setUsername(profileData.username || '');
         setDisplayName(profileData.display_name || '');
-        console.log('🎯 [PROFILE_MODAL] Profile loaded successfully');
       } else {
-        // Create default profile for new users
+        console.log('🎯 [PROFILE_MODAL] No profile found, creating default');
+        // Create default profile for users without one
+        const defaultDisplayName = user.phone ? `User ${user.phone.slice(-4)}` : user.email ? user.email.split('@')[0] : 'New User';
+        const defaultUsername = user.phone ? `user_${user.phone.slice(-4)}` : user.email ? user.email.split('@')[0] : 'new_user';
+        
         const defaultProfile: Profile = {
           id: user.id,
           email: user.email || undefined,
-          display_name: user.phone ? `User ${user.phone.slice(-4)}` : 'New User',
+          display_name: defaultDisplayName,
           avatar_url: '',
-          username: user.phone ? `user_${user.phone.slice(-4)}` : 'new_user',
+          username: defaultUsername,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         };
         
         setProfile(defaultProfile);
         setSelectedAvatar('');
-        setUsername(defaultProfile.username || '');
-        setDisplayName(defaultProfile.display_name || '');
-        console.log('🎯 [PROFILE_MODAL] Created default profile for new user');
+        setUsername(defaultUsername);
+        setDisplayName(defaultDisplayName);
+        console.log('🎯 [PROFILE_MODAL] Created default profile');
       }
     } catch (error) {
       console.error('🎯 [PROFILE_MODAL] Error loading profile:', error);
@@ -115,6 +120,14 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
         description: 'Could not load profile. You can still update your information.',
         variant: 'destructive',
       });
+      
+      // Set defaults even on error so user can still interact
+      const defaultDisplayName = user.phone ? `User ${user.phone.slice(-4)}` : user.email ? user.email.split('@')[0] : 'New User';
+      const defaultUsername = user.phone ? `user_${user.phone.slice(-4)}` : user.email ? user.email.split('@')[0] : 'new_user';
+      
+      setSelectedAvatar('');
+      setUsername(defaultUsername);
+      setDisplayName(defaultDisplayName);
     } finally {
       setLoading(false);
     }
@@ -276,8 +289,9 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
                             <AvatarImage 
                               src={avatar.url} 
                               alt={avatar.name}
-                              onError={() => {
+                              onError={(e) => {
                                 console.log('📸 Image failed to load:', avatar.url);
+                                e.currentTarget.style.display = 'none';
                               }}
                               onLoad={() => {
                                 console.log('📸 Image loaded successfully:', avatar.url);
