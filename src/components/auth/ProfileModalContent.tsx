@@ -57,10 +57,33 @@ export const ProfileModalContent: React.FC<ProfileModalContentProps> = ({
   }, [username, displayName, validationErrors, clearErrors]);
 
   const handleSave = async () => {
-    if (!user?.id || !mountedRef.current) return;
+    if (!user?.id || !mountedRef.current) {
+      console.error('🎭 [PROFILE_MODAL_CONTENT] No user ID or component unmounted');
+      return;
+    }
 
-    // Validate before saving
-    if (!validateProfile(username, displayName)) {
+    console.log('🎭 [PROFILE_MODAL_CONTENT] Starting save with data:', {
+      userId: user.id,
+      username: username.trim(),
+      displayName: displayName.trim(),
+      avatar: selectedAvatar
+    });
+
+    // Basic validation
+    const trimmedUsername = username.trim();
+    const trimmedDisplayName = displayName.trim();
+    
+    if (!trimmedUsername || !trimmedDisplayName) {
+      toast({
+        title: 'Validation Error',
+        description: 'Username and display name are required.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!validateProfile(trimmedUsername, trimmedDisplayName)) {
+      console.log('🎭 [PROFILE_MODAL_CONTENT] Validation failed');
       return;
     }
 
@@ -68,13 +91,15 @@ export const ProfileModalContent: React.FC<ProfileModalContentProps> = ({
     clearErrors();
 
     try {
-      console.log('🎭 [PROFILE_MODAL_CONTENT] Saving profile with validation...');
+      console.log('🎭 [PROFILE_MODAL_CONTENT] Calling updateProfile service...');
       
       const success = await updateProfile(user.id, {
-        username: username.trim(),
-        display_name: displayName.trim(),
-        avatar_url: selectedAvatar,
+        username: trimmedUsername,
+        display_name: trimmedDisplayName,
+        avatar_url: selectedAvatar || '',
       });
+
+      console.log('🎭 [PROFILE_MODAL_CONTENT] Update result:', success);
 
       if (success && mountedRef.current) {
         console.log('🎭 [PROFILE_MODAL_CONTENT] ✅ Profile saved successfully');
@@ -84,7 +109,13 @@ export const ProfileModalContent: React.FC<ProfileModalContentProps> = ({
         
         // Dispatch event for other components to update
         window.dispatchEvent(new CustomEvent('profile-updated', {
-          detail: { userId: user.id, timestamp: new Date().toISOString() }
+          detail: { 
+            userId: user.id, 
+            timestamp: new Date().toISOString(),
+            avatar_url: selectedAvatar,
+            username: trimmedUsername,
+            display_name: trimmedDisplayName
+          }
         }));
         
         toast({
@@ -94,7 +125,12 @@ export const ProfileModalContent: React.FC<ProfileModalContentProps> = ({
         
         onSaveSuccess();
       } else if (mountedRef.current) {
-        throw new Error('Profile update failed');
+        console.error('🎭 [PROFILE_MODAL_CONTENT] Profile update failed');
+        toast({
+          title: 'Save failed',
+          description: 'There was an error saving your profile. Please try again.',
+          variant: 'destructive',
+        });
       }
     } catch (error: any) {
       console.error('🎭 [PROFILE_MODAL_CONTENT] Save error:', error);
@@ -142,7 +178,6 @@ export const ProfileModalContent: React.FC<ProfileModalContentProps> = ({
               </AvatarFallback>
             </Avatar>
             
-            {/* Camera overlay on hover */}
             <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-0 group-hover:bg-opacity-20 rounded-full transition-all">
               <Camera className="h-6 w-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
             </div>
@@ -193,7 +228,7 @@ export const ProfileModalContent: React.FC<ProfileModalContentProps> = ({
 
       {/* Action Buttons */}
       <div className="flex gap-3 pt-4">
-        <Button variant="outline" onClick={onCancel} className="flex-1">
+        <Button variant="outline" onClick={onCancel} className="flex-1" disabled={isSaving}>
           Cancel
         </Button>
         <Button 
@@ -202,7 +237,7 @@ export const ProfileModalContent: React.FC<ProfileModalContentProps> = ({
           className="flex-1"
         >
           {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Save Profile
+          {isSaving ? 'Saving...' : 'Save Profile'}
         </Button>
       </div>
     </div>

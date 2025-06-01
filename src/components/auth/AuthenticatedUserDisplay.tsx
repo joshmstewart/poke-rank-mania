@@ -17,7 +17,6 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
   const [currentProfile, setCurrentProfile] = useState(null);
   const { prefetchProfile, getProfileFromCache } = useProfileCache();
   
-  // CRITICAL FIX: Prevent infinite loops with refs to track loading state
   const isLoadingProfile = useRef(false);
   const lastUserId = useRef<string | null>(null);
 
@@ -30,7 +29,7 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
     userMetadataAvatar: effectiveUser?.user_metadata?.avatar_url
   });
 
-  // CRITICAL FIX: Simplified profile loading with loop prevention
+  // Load profile data when user changes
   useEffect(() => {
     if (!effectiveUser?.id || isLoadingProfile.current || lastUserId.current === effectiveUser.id) {
       return;
@@ -38,7 +37,6 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
 
     console.log('🔄 [AUTH_USER_DISPLAY] Loading profile for user:', effectiveUser.id);
     
-    // Prevent concurrent loads
     isLoadingProfile.current = true;
     lastUserId.current = effectiveUser.id;
     
@@ -49,7 +47,7 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
       setCurrentProfile(cachedProfile);
     }
     
-    // Always try to get fresh profile data to ensure we have the latest avatar
+    // Always fetch fresh profile data
     prefetchProfile(effectiveUser.id).then(() => {
       const freshProfile = getProfileFromCache(effectiveUser.id);
       if (freshProfile) {
@@ -61,14 +59,13 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
     });
   }, [effectiveUser?.id, prefetchProfile, getProfileFromCache]);
 
-  // CRITICAL FIX: Simplified profile update listener with debouncing
+  // Listen for profile updates
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
     
     const handleProfileUpdate = (event: CustomEvent) => {
       console.log('🔄 [AUTH_USER_DISPLAY] Profile updated event received:', event.detail);
       
-      // Debounce rapid updates
       clearTimeout(timeoutId);
       timeoutId = setTimeout(() => {
         if (effectiveUser?.id && !isLoadingProfile.current) {
@@ -79,7 +76,7 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
             setCurrentProfile(updatedProfile);
           }
         }
-      }, 100); // 100ms debounce
+      }, 100);
     };
 
     window.addEventListener('profile-updated', handleProfileUpdate as EventListener);
@@ -115,22 +112,23 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
     return null;
   }
 
-  // Create enhanced user object with PRIORITY for profile avatar over user metadata
+  // CRITICAL FIX: Create enhanced user with proper avatar priority
   const enhancedUser = {
     ...effectiveUser,
     user_metadata: {
       ...effectiveUser.user_metadata,
-      // CRITICAL: Prioritize profile avatar_url over user_metadata avatar_url
-      avatar_url: currentProfile?.avatar_url || effectiveUser.user_metadata?.avatar_url,
-      username: currentProfile?.username || effectiveUser.user_metadata?.username,
-      display_name: currentProfile?.display_name || effectiveUser.user_metadata?.display_name,
+      // FIXED: Ensure profile avatar takes absolute priority
+      avatar_url: currentProfile?.avatar_url || effectiveUser.user_metadata?.avatar_url || '',
+      username: currentProfile?.username || effectiveUser.user_metadata?.username || effectiveUser.email?.split('@')[0] || 'User',
+      display_name: currentProfile?.display_name || effectiveUser.user_metadata?.display_name || effectiveUser.user_metadata?.username || 'User',
     }
   };
 
   console.log('🎭 [AUTH_USER_DISPLAY] Enhanced user for dropdown:', {
     avatarUrl: enhancedUser.user_metadata.avatar_url,
     displayName: enhancedUser.user_metadata.display_name,
-    username: enhancedUser.user_metadata.username
+    username: enhancedUser.user_metadata.username,
+    hasProfileAvatar: !!currentProfile?.avatar_url
   });
 
   return (
