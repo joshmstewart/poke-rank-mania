@@ -15,7 +15,7 @@ interface ProfileModalProps {
 
 export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }) => {
   const { user } = useAuth();
-  const { getProfileFromCache } = useProfileCache();
+  const { getProfileFromCache, prefetchProfile } = useProfileCache();
   
   const {
     selectedAvatar,
@@ -32,19 +32,31 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
   // Load current profile data when modal opens
   useEffect(() => {
     if (open && user?.id && mountedRef.current) {
-      console.log('🎭 [PROFILE_MODAL] Loading current profile data');
+      console.log('🎭 [PROFILE_MODAL] Loading current profile data for modal');
       
-      // Get current profile from cache
-      const currentProfile = getProfileFromCache(user.id);
+      // First try to get from cache
+      let currentProfile = getProfileFromCache(user.id);
       
       if (currentProfile) {
-        console.log('🎭 [PROFILE_MODAL] Setting form with current profile:', currentProfile);
+        console.log('🎭 [PROFILE_MODAL] Setting form with cached profile:', currentProfile);
         setSelectedAvatar(currentProfile.avatar_url || '');
         setUsername(currentProfile.username || '');
         setDisplayName(currentProfile.display_name || '');
+      } else {
+        // If no cache, fetch fresh data
+        console.log('🎭 [PROFILE_MODAL] No cached profile, fetching fresh data');
+        prefetchProfile(user.id).then(() => {
+          const freshProfile = getProfileFromCache(user.id);
+          if (freshProfile && mountedRef.current) {
+            console.log('🎭 [PROFILE_MODAL] Setting form with fresh profile:', freshProfile);
+            setSelectedAvatar(freshProfile.avatar_url || '');
+            setUsername(freshProfile.username || '');
+            setDisplayName(freshProfile.display_name || '');
+          }
+        });
       }
     }
-  }, [open, user?.id, getProfileFromCache, setSelectedAvatar, setUsername, setDisplayName, mountedRef]);
+  }, [open, user?.id, getProfileFromCache, prefetchProfile, setSelectedAvatar, setUsername, setDisplayName, mountedRef]);
 
   const handleAvatarClick = () => {
     if (!mountedRef.current) return;

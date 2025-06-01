@@ -8,7 +8,7 @@ import { useProfileCache } from './useProfileCache';
 export const useDirectProfileSave = () => {
   const [isSaving, setIsSaving] = useState(false);
   const { user } = useAuth();
-  const { invalidateCache } = useProfileCache();
+  const { invalidateCache, prefetchProfile } = useProfileCache();
 
   const directSaveProfile = useCallback(async (
     userId: string,
@@ -42,7 +42,7 @@ export const useDirectProfileSave = () => {
       console.log('🚀 [DIRECT_SAVE] Calling updateProfile service...');
       
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Profile update timeout after 8 seconds')), 8000);
+        setTimeout(() => reject(new Error('Profile update timeout after 5 seconds')), 5000);
       });
       
       const updatePromise = updateProfile(userId, profileData);
@@ -52,15 +52,28 @@ export const useDirectProfileSave = () => {
       console.log('🚀📢 [DIRECT_SAVE] updateProfile service returned:', result);
       
       if (result) {
-        console.log('🚀✅ [DIRECT_SAVE] Save successful, invalidating cache and updating context');
+        console.log('🚀✅ [DIRECT_SAVE] Save successful, refreshing cache and UI');
         
-        // Invalidate profile cache to force refresh
+        // Clear cache first
         invalidateCache(userId);
         
-        // Force a fresh auth context update by dispatching custom event
+        // Wait a moment for database to settle
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Prefetch fresh data
+        await prefetchProfile(userId);
+        
+        // Dispatch multiple events to ensure all components update
         window.dispatchEvent(new CustomEvent('profile-updated', {
-          detail: { userId, profileData }
+          detail: { userId, profileData, timestamp: Date.now() }
         }));
+        
+        // Force a second update after a delay
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('profile-updated', {
+            detail: { userId, profileData, timestamp: Date.now() }
+          }));
+        }, 200);
         
         toast({
           title: 'Profile Updated',
@@ -88,7 +101,7 @@ export const useDirectProfileSave = () => {
       console.log('🚀🏁 [DIRECT_SAVE] Entering finally block. Resetting isSaving.');
       setIsSaving(false);
     }
-  }, [isSaving, invalidateCache]);
+  }, [isSaving, invalidateCache, prefetchProfile]);
 
   return { isSaving, directSaveProfile };
 };
