@@ -1,4 +1,3 @@
-
 import { useMemo } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { getPokemonGeneration, generationDetails } from "@/components/pokemon/generationUtils";
@@ -117,7 +116,7 @@ const createBaseGenerationMap = () => {
     'torkoal', 'spoink', 'grumpig', 'spinda', 'trapinch', 'vibrava',
     'flygon', 'cacnea', 'cacturne', 'swablu', 'altaria', 'zangoose',
     'seviper', 'lunatone', 'solrock', 'barboach', 'whiscash', 'corphish',
-    'crawdaunt', 'balt'oy', 'claydol', 'lileep', 'cradily', 'anorith',
+    'crawdaunt', 'baltoy', 'claydol', 'lileep', 'cradily', 'anorith',
     'armaldo', 'feebas', 'milotic', 'castform', 'kecleon', 'shuppet',
     'banette', 'duskull', 'dusclops', 'tropius', 'chimecho', 'absol',
     'wynaut', 'snorunt', 'glalie', 'spheal', 'sealeo', 'walrein',
