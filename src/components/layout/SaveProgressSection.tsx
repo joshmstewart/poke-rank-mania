@@ -7,12 +7,12 @@ import { Check } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 const SaveProgressSection: React.FC = () => {
-  console.log('🚨🚨🚨 SAVE_PROGRESS_SECTION: ===== COMPONENT RENDER START =====');
+  console.log('🚨🚨🚨 SAVE_PROGRESS_SECTION_FIXED: ===== COMPONENT RENDER START =====');
   
   const { user, loading, session } = useAuth();
 
-  console.log('🚨🚨🚨 SAVE_PROGRESS_SECTION: 🔥 MAXIMUM FORCE MODE 🔥');
-  console.log('🚨🚨🚨 SAVE_PROGRESS_SECTION: Auth state received from useAuth:', {
+  console.log('🚨🚨🚨 SAVE_PROGRESS_SECTION_FIXED: 🔥 USING FIXED useAuth 🔥');
+  console.log('🚨🚨🚨 SAVE_PROGRESS_SECTION_FIXED: Auth state received from FIXED useAuth:', {
     hasUser: !!user,
     hasSession: !!session,
     loading,
@@ -24,7 +24,7 @@ const SaveProgressSection: React.FC = () => {
   });
 
   if (loading) {
-    console.log('🚨🚨🚨 SAVE_PROGRESS_SECTION: 🔄 RETURNING LOADING STATE 🔄');
+    console.log('🚨🚨🚨 SAVE_PROGRESS_SECTION_FIXED: 🔄 RETURNING LOADING STATE 🔄');
     return (
       <div className="flex items-center justify-center py-4">
         <div className="animate-pulse bg-gray-200 h-8 w-24 rounded"></div>
@@ -32,42 +32,39 @@ const SaveProgressSection: React.FC = () => {
     );
   }
 
-  // 🔥 FORCED RENDERING LOGIC - ABSOLUTELY NO CONDITIONS 🔥
-  const hasAnyAuthData = !!user || !!session?.user || !!session;
+  // Use the FIXED auth state - no more forcing
+  const isAuthenticated = !!user || !!session?.user;
   const authenticatedUser = user || session?.user;
   
-  console.log('🚨🚨🚨 SAVE_PROGRESS_SECTION: 🔥 FORCED RENDERING DECISION 🔥');
-  console.log('🚨🚨🚨 SAVE_PROGRESS_SECTION: hasAnyAuthData:', hasAnyAuthData);
-  console.log('🚨🚨🚨 SAVE_PROGRESS_SECTION: authenticatedUser:', !!authenticatedUser);
-  console.log('🚨🚨🚨 SAVE_PROGRESS_SECTION: authenticatedUser email:', authenticatedUser?.email || 'no email');
-  console.log('🚨🚨🚨 SAVE_PROGRESS_SECTION: FORCING AuthenticatedUserDisplay RENDER REGARDLESS');
+  console.log('🚨🚨🚨 SAVE_PROGRESS_SECTION_FIXED: 🔥 FIXED AUTH DECISION 🔥');
+  console.log('🚨🚨🚨 SAVE_PROGRESS_SECTION_FIXED: isAuthenticated (from fixed useAuth):', isAuthenticated);
+  console.log('🚨🚨🚨 SAVE_PROGRESS_SECTION_FIXED: authenticatedUser:', !!authenticatedUser);
+  console.log('🚨🚨🚨 SAVE_PROGRESS_SECTION_FIXED: authenticatedUser email:', authenticatedUser?.email || 'no email');
 
-  // 🔥 ALWAYS RENDER AuthenticatedUserDisplay WITH FALLBACK USER 🔥
-  const fallbackUser = authenticatedUser || {
-    email: 'forced-diagnostic-user@example.com',
-    id: 'forced-diagnostic-id'
-  };
-
-  console.log('🚨🚨🚨 SAVE_PROGRESS_SECTION: 🟢 FORCING AuthenticatedUserDisplay WITH USER:', fallbackUser);
-  
-  return (
-    <div className="flex items-center gap-4">
-      <div className="bg-red-500 border-4 border-yellow-400 p-2">
-        <div className="text-white font-bold text-xs">🔥 MAXIMUM FORCE MODE 🔥</div>
-        <div className="text-white text-xs">SaveProgressSection FORCING AuthenticatedUserDisplay</div>
-        <div className="text-white text-xs">Auth data: {hasAnyAuthData ? 'YES' : 'NO'}</div>
-        <div className="text-white text-xs">User email: {fallbackUser.email}</div>
-        <div className="text-white text-xs">Time: {new Date().toLocaleTimeString()}</div>
+  if (isAuthenticated && authenticatedUser) {
+    console.log('🚨🚨🚨 SAVE_PROGRESS_SECTION_FIXED: ✅ AUTHENTICATED - RENDERING AuthenticatedUserDisplay ✅');
+    console.log('🚨🚨🚨 SAVE_PROGRESS_SECTION_FIXED: 🟢 NO MORE FORCED RENDERING - USING REAL AUTH STATE 🟢');
+    console.log('🚨🚨🚨 SAVE_PROGRESS_SECTION_FIXED: User to pass to AuthenticatedUserDisplay:', authenticatedUser.email);
+    
+    return (
+      <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
+          <Badge variant="secondary" className="flex items-center gap-1 bg-green-100 text-green-700 border-green-200">
+            <Check className="h-3 w-3" />
+            <span className="text-xs">Synced</span>
+          </Badge>
+        </div>
+        <AuthenticatedUserDisplay currentUser={authenticatedUser} />
       </div>
-      <div className="flex items-center gap-2">
-        <Badge variant="secondary" className="flex items-center gap-1 bg-green-100 text-green-700 border-green-200">
-          <Check className="h-3 w-3" />
-          <span className="text-xs">Synced</span>
-        </Badge>
+    );
+  } else {
+    console.log('🚨🚨🚨 SAVE_PROGRESS_SECTION_FIXED: ❌ NOT AUTHENTICATED - RENDERING CloudSyncButton ❌');
+    return (
+      <div className="flex items-center gap-4">
+        <CloudSyncButton />
       </div>
-      <AuthenticatedUserDisplay currentUser={fallbackUser} />
-    </div>
-  );
+    );
+  }
 };
 
 export default SaveProgressSection;
