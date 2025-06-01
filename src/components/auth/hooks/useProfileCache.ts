@@ -13,10 +13,6 @@ interface ProfileCache {
 export const useProfileCache = () => {
   const [cache, setCache] = useState<ProfileCache>({});
   const fetchingRef = useRef<Set<string>>(new Set());
-  const hookInstanceRef = useRef(`profile-cache-${Date.now()}`);
-
-  // Remove excessive logging that's causing spam
-  // Only log on major operations, not on every render
 
   const getCachedProfile = useCallback((userId: string): Profile | null => {
     const cached = cache[userId];
@@ -29,12 +25,11 @@ export const useProfileCache = () => {
     return isExpired ? null : cached.profile;
   }, [cache]);
 
-  const prefetchProfile = useCallback(async (userId: string) => {
+  const prefetchProfile = useCallback(async (userId: string): Promise<void> => {
     if (!userId || fetchingRef.current.has(userId)) {
       return;
     }
     
-    // Check cache but don't skip if we have data - we might want to refresh
     const cached = getCachedProfile(userId);
     
     fetchingRef.current.add(userId);
@@ -50,7 +45,10 @@ export const useProfileCache = () => {
     }));
     
     try {
+      console.log('🎯 [PROFILE_CACHE] Fetching fresh profile for:', userId);
       const profile = await getProfile(userId);
+      
+      console.log('🎯 [PROFILE_CACHE] Fresh profile received:', profile?.avatar_url);
       
       setCache(prev => ({
         ...prev,
@@ -80,11 +78,15 @@ export const useProfileCache = () => {
   }, [getCachedProfile]);
 
   const invalidateCache = useCallback((userId: string) => {
+    console.log('🎯 [PROFILE_CACHE] Invalidating cache for user:', userId);
     setCache(prev => {
       const newCache = { ...prev };
       delete newCache[userId];
       return newCache;
     });
+    
+    // Also remove from fetching set to allow immediate refetch
+    fetchingRef.current.delete(userId);
   }, []);
 
   return {

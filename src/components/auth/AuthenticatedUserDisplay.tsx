@@ -15,7 +15,7 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [currentProfile, setCurrentProfile] = useState(null);
-  const { prefetchProfile, getProfileFromCache } = useProfileCache();
+  const { prefetchProfile, getProfileFromCache, invalidateCache } = useProfileCache();
   
   const isLoadingProfile = useRef(false);
   const lastUserId = useRef<string | null>(null);
@@ -26,7 +26,8 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
     hasEffectiveUser: !!effectiveUser,
     effectiveUserId: effectiveUser?.id?.substring(0, 8),
     currentProfileAvatar: currentProfile?.avatar_url,
-    userMetadataAvatar: effectiveUser?.user_metadata?.avatar_url
+    userMetadataAvatar: effectiveUser?.user_metadata?.avatar_url,
+    refreshKey
   });
 
   // Load profile data when user changes
@@ -59,33 +60,43 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
     });
   }, [effectiveUser?.id, prefetchProfile, getProfileFromCache]);
 
-  // Listen for profile updates
+  // Listen for profile updates with immediate cache refresh
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
-    
-    const handleProfileUpdate = (event: CustomEvent) => {
+    const handleProfileUpdate = async (event: CustomEvent) => {
       console.log('🔄 [AUTH_USER_DISPLAY] Profile updated event received:', event.detail);
       
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(() => {
-        if (effectiveUser?.id && !isLoadingProfile.current) {
-          setRefreshKey(prev => prev + 1);
+      if (effectiveUser?.id && !isLoadingProfile.current) {
+        // Immediately invalidate cache
+        invalidateCache(effectiveUser.id);
+        
+        // Force refresh the profile data
+        isLoadingProfile.current = true;
+        
+        try {
+          // Wait a moment for the database to be consistent
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
+          // Fetch fresh profile data
+          await prefetchProfile(effectiveUser.id);
           const updatedProfile = getProfileFromCache(effectiveUser.id);
+          
           if (updatedProfile) {
             console.log('🔄 [AUTH_USER_DISPLAY] Setting updated profile with avatar:', updatedProfile.avatar_url);
             setCurrentProfile(updatedProfile);
+            setRefreshKey(prev => prev + 1); // Force re-render
           }
+        } finally {
+          isLoadingProfile.current = false;
         }
-      }, 100);
+      }
     };
 
     window.addEventListener('profile-updated', handleProfileUpdate as EventListener);
     
     return () => {
-      clearTimeout(timeoutId);
       window.removeEventListener('profile-updated', handleProfileUpdate as EventListener);
     };
-  }, [effectiveUser?.id, getProfileFromCache]);
+  }, [effectiveUser?.id, getProfileFromCache, prefetchProfile, invalidateCache]);
 
   const handleSignOut = useCallback(async () => {
     try {
@@ -112,12 +123,12 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
     return null;
   }
 
-  // CRITICAL FIX: Create enhanced user with proper avatar priority
+  // Create enhanced user with proper avatar priority - ALWAYS use profile avatar if available
   const enhancedUser = {
     ...effectiveUser,
     user_metadata: {
       ...effectiveUser.user_metadata,
-      // FIXED: Ensure profile avatar takes absolute priority
+      // CRITICAL: Profile avatar takes absolute priority
       avatar_url: currentProfile?.avatar_url || effectiveUser.user_metadata?.avatar_url || '',
       username: currentProfile?.username || effectiveUser.user_metadata?.username || effectiveUser.email?.split('@')[0] || 'User',
       display_name: currentProfile?.display_name || effectiveUser.user_metadata?.display_name || effectiveUser.user_metadata?.username || 'User',
@@ -128,11 +139,12 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
     avatarUrl: enhancedUser.user_metadata.avatar_url,
     displayName: enhancedUser.user_metadata.display_name,
     username: enhancedUser.user_metadata.username,
-    hasProfileAvatar: !!currentProfile?.avatar_url
+    hasProfileAvatar: !!currentProfile?.avatar_url,
+    profileAvatarUrl: currentProfile?.avatar_url
   });
 
   return (
-    <div className="flex items-center gap-2" key={`${refreshKey}-${currentProfile?.updated_at}`}>
+    <div className="flex items-center gap-2" key={`user-display-${refreshKey}-${currentProfile?.avatar_url}`}>
       <UserDropdownMenu user={enhancedUser} />
 
       <ProfileModal 
