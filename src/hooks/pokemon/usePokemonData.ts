@@ -1,4 +1,3 @@
-
 import { useCallback } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { LoadingType } from "./types";
@@ -20,6 +19,12 @@ export const usePokemonData = () => {
     // Get ALL Pokemon first
     const allPokemonResult = await getAllPokemon();
     
+    // DEBUGGING: Log the exact type and content we received
+    console.log(`🔒 [DEBUG_DATA_FLOW] Raw result type:`, typeof allPokemonResult);
+    console.log(`🔒 [DEBUG_DATA_FLOW] Is array:`, Array.isArray(allPokemonResult));
+    console.log(`🔒 [DEBUG_DATA_FLOW] Length:`, allPokemonResult?.length || 'NO LENGTH');
+    console.log(`🔒 [DEBUG_DATA_FLOW] First 3 items:`, allPokemonResult?.slice(0, 3));
+    
     // Type guard to ensure we have a Pokemon array
     if (!Array.isArray(allPokemonResult)) {
       console.log(`🔒 [DETERMINISTIC_DATA] No valid Pokemon array received`);
@@ -33,16 +38,19 @@ export const usePokemonData = () => {
     const allPokemon = allPokemonResult as Pokemon[];
     console.log(`🔒 [DETERMINISTIC_DATA] Raw Pokemon from service: ${allPokemon.length}`);
     
+    // DEBUGGING: Check if we're losing Pokemon at each step
+    console.log(`🔒 [DEBUG_FILTER_STEPS] Starting with ${allPokemon.length} Pokemon`);
+    
     // CRITICAL FIX: Sort by ID to ensure consistent ordering
     const sortedPokemon = [...allPokemon].sort((a, b) => a.id - b.id);
-    console.log(`🔒 [DETERMINISTIC_DATA] Pokemon sorted by ID for consistency: ${sortedPokemon.length}`);
+    console.log(`🔒 [DEBUG_FILTER_STEPS] After sorting: ${sortedPokemon.length} Pokemon`);
     
     // Apply name formatting to ALL Pokemon before any other processing
     const formattedPokemon = sortedPokemon.map(pokemon => ({
       ...pokemon,
       name: formatPokemonName(pokemon.name)
     }));
-    console.log(`🔒 [DETERMINISTIC_DATA] After name formatting: ${formattedPokemon.length}`);
+    console.log(`🔒 [DEBUG_FILTER_STEPS] After formatting: ${formattedPokemon.length} Pokemon`);
     
     // CRITICAL FIX: Use the SAME filtering logic as the loader to ensure consistency
     // Import and use the exact same shouldIncludePokemon function
@@ -51,12 +59,13 @@ export const usePokemonData = () => {
     
     // Apply form filters (this should be deterministic and match the loader)
     const filteredPokemon = formattedPokemon.filter(shouldIncludePokemon);
-    console.log(`🔒 [DETERMINISTIC_DATA] After form filtering: ${filteredPokemon.length}`);
-    console.log(`🔒 [DETERMINISTIC_DATA] Pokemon lost in filtering: ${formattedPokemon.length - filteredPokemon.length}`);
+    console.log(`🔒 [DEBUG_FILTER_STEPS] After form filtering: ${filteredPokemon.length} Pokemon`);
+    console.log(`🔒 [DEBUG_FILTER_STEPS] Pokemon lost in filtering: ${formattedPokemon.length - filteredPokemon.length}`);
     
     // Apply generation filter if needed - FIXED LOGIC
     let generationFiltered = filteredPokemon;
     if (selectedGeneration > 0) {
+      const beforeGenFilter = generationFiltered.length;
       generationFiltered = filteredPokemon.filter(pokemon => {
         let gen: number;
         let baseId = pokemon.id;
@@ -90,13 +99,9 @@ export const usePokemonData = () => {
         }
         
         const matches = gen === selectedGeneration;
-        if (matches) {
-          console.log(`🔒 [DETERMINISTIC_GEN_FILTER] ${pokemon.name} (ID: ${pokemon.id}, baseId: ${baseId}) -> Gen ${gen} (INCLUDED)`);
-        }
-        
         return matches;
       });
-      console.log(`🔒 [DETERMINISTIC_DATA] After generation filter (gen ${selectedGeneration}): ${generationFiltered.length}`);
+      console.log(`🔒 [DEBUG_FILTER_STEPS] Generation filter (gen ${selectedGeneration}): ${beforeGenFilter} → ${generationFiltered.length}`);
     }
     
     // CRITICAL FIX: Keep Pokemon sorted by ID for deterministic ordering
@@ -108,6 +113,13 @@ export const usePokemonData = () => {
     console.log(`🔒 [DETERMINISTIC_DATA] Available: ${finalPokemon.length} (sorted by ID)`);
     console.log(`🔒 [DETERMINISTIC_DATA] Ranked: 0 (manual mode starts empty)`);
     console.log(`🔒 [DETERMINISTIC_DATA] Total pages: ${totalPages}`);
+    
+    // DEBUGGING: Log the data flow summary
+    console.log(`🔒 [DEBUG_DATA_FLOW_SUMMARY] ===== DATA FLOW SUMMARY =====`);
+    console.log(`🔒 [DEBUG_DATA_FLOW_SUMMARY] Service returned: ${allPokemon.length}`);
+    console.log(`🔒 [DEBUG_DATA_FLOW_SUMMARY] After form filters: ${filteredPokemon.length}`);
+    console.log(`🔒 [DEBUG_DATA_FLOW_SUMMARY] After gen filters: ${generationFiltered.length}`);
+    console.log(`🔒 [DEBUG_DATA_FLOW_SUMMARY] Final result: ${finalPokemon.length}`);
     
     return {
       availablePokemon: finalPokemon,

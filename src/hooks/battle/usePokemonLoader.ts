@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { Pokemon, fetchAllPokemon } from "@/services/pokemon";
 import { toast } from "@/hooks/use-toast";
-import { useFormFilters } from "@/hooks/useFormFilters";
+import { useFormFilters } from "@/hooks/form-filters/useFormFilters";
 
 export const usePokemonLoader = () => {
   const [allPokemon, setAllPokemon] = useState<Pokemon[]>([]);
