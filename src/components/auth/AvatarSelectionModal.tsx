@@ -16,15 +16,15 @@ interface AvatarSelectionModalProps {
 
 // Generation details for display
 const generationDetails: Record<number, { name: string, games: string }> = {
-  1: { name: "Gen 1", games: "Red, Blue, Yellow" },
-  2: { name: "Gen 2", games: "Gold, Silver, Crystal" },
-  3: { name: "Gen 3", games: "Ruby, Sapphire, Emerald" },
-  4: { name: "Gen 4", games: "Diamond, Pearl, Platinum" },
-  5: { name: "Gen 5", games: "Black, White" },
-  6: { name: "Gen 6", games: "X, Y" },
-  7: { name: "Gen 7", games: "Sun, Moon" },
-  8: { name: "Gen 8", games: "Sword, Shield" },
-  9: { name: "Gen 9", games: "Scarlet, Violet" }
+  1: { name: "Gen 1", games: "Red, Blue, & Yellow" },
+  2: { name: "Gen 2", games: "Gold, Silver, & Crystal" },
+  3: { name: "Gen 3", games: "Ruby, Sapphire, & Emerald" },
+  4: { name: "Gen 4", games: "Diamond, Pearl, & Platinum" },
+  5: { name: "Gen 5", games: "Black & White" },
+  6: { name: "Gen 6", games: "X & Y" },
+  7: { name: "Gen 7", games: "Sun & Moon" },
+  8: { name: "Gen 8", games: "Sword & Shield" },
+  9: { name: "Gen 9", games: "Scarlet & Violet" }
 };
 
 // Function to get Pokemon ID from avatar URL
@@ -75,7 +75,7 @@ export const AvatarSelectionModal: React.FC<AvatarSelectionModalProps> = ({
     }
   }, [open]);
 
-  // Group avatars by generation
+  // Group avatars by generation and sort by Pokemon ID within each generation
   const avatarsByGeneration = React.useMemo(() => {
     const grouped: Record<number, string[]> = {};
     
@@ -89,6 +89,15 @@ export const AvatarSelectionModal: React.FC<AvatarSelectionModalProps> = ({
         }
         grouped[generation.id].push(url);
       }
+    });
+    
+    // Sort each generation's Pokemon by ID
+    Object.keys(grouped).forEach(genId => {
+      grouped[parseInt(genId)].sort((a, b) => {
+        const idA = getPokemonIdFromUrl(a);
+        const idB = getPokemonIdFromUrl(b);
+        return idA - idB;
+      });
     });
     
     return grouped;
