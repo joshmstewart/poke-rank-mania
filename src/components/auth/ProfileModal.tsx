@@ -1,14 +1,12 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/auth/useAuth';
 import { toast } from '@/hooks/use-toast';
-import { 
-  getProfile, 
-  updateProfile, 
-  type Profile
-} from '@/services/profile';
+import { updateProfile } from '@/services/profile';
 import { ProfileModalHeader } from './ProfileModalHeader';
 import { ProfileModalContent } from './ProfileModalContent';
+import { useProfileCache } from './hooks/useProfileCache';
 
 interface ProfileModalProps {
   open: boolean;
@@ -17,23 +15,19 @@ interface ProfileModalProps {
 
 export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }) => {
   const { user } = useAuth();
+  const { getProfileFromCache, prefetchProfile } = useProfileCache();
   const [selectedAvatar, setSelectedAvatar] = useState<string>('');
   const [username, setUsername] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [saving, setSaving] = useState(false);
-  const [initialized, setInitialized] = useState(false);
 
-  console.log('🚀 [PROFILE_MODAL_NEW] === NEW APPROACH RENDER ===');
-  console.log('🚀 [PROFILE_MODAL_NEW] Modal open:', open);
-  console.log('🚀 [PROFILE_MODAL_NEW] User ID:', user?.id);
-  console.log('🚀 [PROFILE_MODAL_NEW] Initialized:', initialized);
-
-  // Novel approach: Initialize immediately when modal opens, no loading state
-  React.useEffect(() => {
-    if (open && user?.id && !initialized) {
-      console.log('🚀 [PROFILE_MODAL_NEW] INITIALIZING PROFILE DATA...');
+  // Initialize form with cached data immediately when modal opens
+  useEffect(() => {
+    if (open && user?.id) {
+      // Get cached profile data
+      const cachedProfile = getProfileFromCache(user.id);
       
-      // Set defaults immediately - no loading state
+      // Set defaults based on user info
       let defaultDisplayName = 'New User';
       let defaultUsername = 'new_user';
       
@@ -48,46 +42,25 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
         defaultUsername = emailPart;
       }
       
-      setSelectedAvatar('');
-      setUsername(defaultUsername);
-      setDisplayName(defaultDisplayName);
-      setInitialized(true);
+      // Use cached data if available, otherwise use defaults
+      setSelectedAvatar(cachedProfile?.avatar_url || '');
+      setUsername(cachedProfile?.username || defaultUsername);
+      setDisplayName(cachedProfile?.display_name || defaultDisplayName);
       
-      console.log('🚀 [PROFILE_MODAL_NEW] ✅ DEFAULTS SET, NOW LOADING PROFILE IN BACKGROUND...');
-      
-      // Load actual profile data in background, update fields if found
-      getProfile(user.id).then(profile => {
-        console.log('🚀 [PROFILE_MODAL_NEW] Background profile load result:', profile);
-        if (profile) {
-          setSelectedAvatar(profile.avatar_url || '');
-          setUsername(profile.username || defaultUsername);
-          setDisplayName(profile.display_name || defaultDisplayName);
-          console.log('🚀 [PROFILE_MODAL_NEW] ✅ PROFILE DATA UPDATED FROM DATABASE');
-        } else {
-          console.log('🚀 [PROFILE_MODAL_NEW] ✅ KEEPING DEFAULTS (NO PROFILE IN DB)');
-        }
-      }).catch(error => {
-        console.error('🚀 [PROFILE_MODAL_NEW] Background profile load error:', error);
-        // Keep defaults on error
-      });
+      // Refresh cache in background (non-blocking)
+      prefetchProfile(user.id);
     }
     
     if (!open) {
-      // Reset when modal closes
-      setInitialized(false);
+      // Reset form when modal closes
       setSelectedAvatar('');
       setUsername('');
       setDisplayName('');
     }
-  }, [open, user?.id, user?.email, user?.phone, initialized]);
+  }, [open, user?.id, user?.email, user?.phone, getProfileFromCache, prefetchProfile]);
 
   const handleSave = async () => {
-    console.log('🚀 [PROFILE_MODAL_NEW] Saving profile');
-    
-    if (!user?.id) {
-      console.log('🚀 [PROFILE_MODAL_NEW] No user ID for save');
-      return;
-    }
+    if (!user?.id) return;
 
     setSaving(true);
     
@@ -112,7 +85,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
         });
       }
     } catch (error) {
-      console.error('🚀 [PROFILE_MODAL_NEW] Error saving profile:', error);
+      console.error('Error saving profile:', error);
       toast({
         title: 'Save Error',
         description: 'An error occurred while saving your profile.',
@@ -124,11 +97,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
   };
 
   if (!user?.id) {
-    console.log('🚀 [PROFILE_MODAL_NEW] No user, returning null');
     return null;
   }
-
-  console.log('🚀 [PROFILE_MODAL_NEW] About to render modal - NO LOADING STATE!');
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
