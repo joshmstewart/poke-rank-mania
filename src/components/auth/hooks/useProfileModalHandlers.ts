@@ -52,7 +52,6 @@ export const useProfileModalHandlers = (
 
     console.log('🚀 [PROFILE_MODAL_HANDLERS] About to call saveProfile...');
     console.log('🚀 [PROFILE_MODAL_HANDLERS] saveProfile type:', typeof saveProfile);
-    console.log('🚀 [PROFILE_MODAL_HANDLERS] saveProfile is function:', typeof saveProfile === 'function');
     
     try {
       const success = await saveProfile(user.id, {
@@ -62,7 +61,6 @@ export const useProfileModalHandlers = (
       });
 
       console.log('🚀 [PROFILE_MODAL_HANDLERS] Save completed, success:', success);
-      console.log('🚀 [PROFILE_MODAL_HANDLERS] Current saving state after save:', saving);
 
       if (success && mountedRef.current) {
         console.log('🚀 [PROFILE_MODAL_HANDLERS] Save successful, closing modal');
@@ -73,13 +71,13 @@ export const useProfileModalHandlers = (
     } catch (error) {
       console.error('🚀 [PROFILE_MODAL_HANDLERS] Error in handleSave:', error);
     }
-  }, [user?.id, selectedAvatar, username, displayName, saving, saveProfile, onOpenChange]);
+  }, [user?.id, selectedAvatar, username, displayName, saving, saveProfile, onOpenChange, mountedRef]);
 
   const handleAvatarClick = useCallback(() => {
     if (!mountedRef.current) return;
     console.log('🎭 [PROFILE_MODAL_HANDLERS] Avatar clicked, opening avatar modal');
     setAvatarModalOpen(true);
-  }, [setAvatarModalOpen]);
+  }, [setAvatarModalOpen, mountedRef]);
 
   const handleAvatarSelection = useCallback((avatarUrl: string) => {
     if (!mountedRef.current) return;
@@ -91,13 +89,13 @@ export const useProfileModalHandlers = (
     setAvatarModalOpen(false);
     
     console.log('🎭 [PROFILE_MODAL_HANDLERS] Avatar state should be updated to:', avatarUrl);
-  }, [selectedAvatar, setSelectedAvatar, setAvatarModalOpen]);
+  }, [selectedAvatar, setSelectedAvatar, setAvatarModalOpen, mountedRef]);
 
   const handleCancel = useCallback(() => {
     if (!mountedRef.current) return;
     console.log('🎭 [PROFILE_MODAL_HANDLERS] Cancel clicked from content');
     onOpenChange(false);
-  }, [onOpenChange]);
+  }, [onOpenChange, mountedRef]);
 
   return {
     handleSave,

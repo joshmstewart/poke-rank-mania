@@ -59,6 +59,11 @@ export const ProfileModalActions: React.FC<ProfileModalActionsProps> = ({
       return;
     }
     
+    if (!hasChanges) {
+      console.log('🔘 [PROFILE_ACTIONS] ❌ No changes to save');
+      return;
+    }
+    
     console.log('🔘 [PROFILE_ACTIONS] ✅ About to call onSave...');
     try {
       const result = onSave();
@@ -69,6 +74,13 @@ export const ProfileModalActions: React.FC<ProfileModalActionsProps> = ({
   };
 
   const isButtonDisabled = saving || !hasChanges || !user;
+
+  console.log('🔘 [PROFILE_ACTIONS] Button disabled state:', isButtonDisabled);
+  console.log('🔘 [PROFILE_ACTIONS] Disabled reasons:', {
+    saving,
+    noChanges: !hasChanges,
+    noUser: !user
+  });
 
   return (
     <div className="flex flex-col gap-2 pt-4">
