@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/auth/useAuth';
 import { ProfileModalHeader } from './ProfileModalHeader';
@@ -80,86 +80,109 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
     }
   }, [open, user?.id, user?.email, user?.phone]);
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
+    console.log('🚀🚀🚀 [PROFILE_MODAL] HANDLE_SAVE CALLBACK TRIGGERED! 🚀🚀🚀');
+    console.log('🚀 [PROFILE_MODAL] Component mounted:', mountedRef.current);
+    
     if (!mountedRef.current) {
-      console.log('🚀 [PROFILE_MODAL_SIMPLE] Component unmounted, skipping save');
+      console.log('🚀 [PROFILE_MODAL] Component unmounted, skipping save');
       return;
     }
 
-    console.log('🚀 [PROFILE_MODAL_SIMPLE] ===== HANDLE SAVE CLICKED =====');
-    console.log('🚀 [PROFILE_MODAL_SIMPLE] User ID:', user?.id);
-    console.log('🚀 [PROFILE_MODAL_SIMPLE] Current saving state:', saving);
-    console.log('🚀 [PROFILE_MODAL_SIMPLE] Form values:', {
+    console.log('🚀 [PROFILE_MODAL] ===== HANDLE SAVE CLICKED =====');
+    console.log('🚀 [PROFILE_MODAL] User ID:', user?.id);
+    console.log('🚀 [PROFILE_MODAL] Current saving state:', saving);
+    console.log('🚀 [PROFILE_MODAL] Form values:', {
       avatar: selectedAvatar,
       username: username.trim(),
       displayName: displayName.trim()
     });
 
     if (!user?.id) {
-      console.log('❌ [PROFILE_MODAL_SIMPLE] No user ID for save');
+      console.log('❌ [PROFILE_MODAL] No user ID for save');
       return;
     }
 
     // Validate input
     if (!username.trim() || !displayName.trim()) {
-      console.log('❌ [PROFILE_MODAL_SIMPLE] Validation failed - empty fields');
+      console.log('❌ [PROFILE_MODAL] Validation failed - empty fields');
       return;
     }
 
     if (saving) {
-      console.log('❌ [PROFILE_MODAL_SIMPLE] Already saving, skipping');
+      console.log('❌ [PROFILE_MODAL] Already saving, skipping');
       return;
     }
 
-    console.log('🚀 [PROFILE_MODAL_SIMPLE] Calling saveProfile...');
+    console.log('🚀 [PROFILE_MODAL] Calling saveProfile...');
     const success = await saveProfile(user.id, {
       avatar_url: selectedAvatar,
       username: username.trim(),
       display_name: displayName.trim(),
     });
 
-    console.log('🚀 [PROFILE_MODAL_SIMPLE] Save completed, success:', success);
-    console.log('🚀 [PROFILE_MODAL_SIMPLE] Current saving state after save:', saving);
+    console.log('🚀 [PROFILE_MODAL] Save completed, success:', success);
+    console.log('🚀 [PROFILE_MODAL] Current saving state after save:', saving);
 
     if (success && mountedRef.current) {
-      console.log('🚀 [PROFILE_MODAL_SIMPLE] Save successful, closing modal');
+      console.log('🚀 [PROFILE_MODAL] Save successful, closing modal');
       onOpenChange(false);
     } else {
-      console.log('🚀 [PROFILE_MODAL_SIMPLE] Save failed');
+      console.log('🚀 [PROFILE_MODAL] Save failed');
     }
-  };
+  }, [user?.id, selectedAvatar, username, displayName, saving, saveProfile, onOpenChange]);
 
-  const handleAvatarClick = () => {
+  const handleAvatarClick = useCallback(() => {
     if (!mountedRef.current) return;
-    console.log('🎭 [PROFILE_MODAL_SIMPLE] Avatar clicked');
+    console.log('🎭 [PROFILE_MODAL] Avatar clicked');
     setAvatarModalOpen(true);
-  };
+  }, []);
 
-  const handleAvatarSelection = (avatarUrl: string) => {
+  const handleAvatarSelection = useCallback((avatarUrl: string) => {
     if (!mountedRef.current) return;
-    console.log('🎭 [PROFILE_MODAL_SIMPLE] Avatar selected:', avatarUrl);
+    console.log('🎭 [PROFILE_MODAL] Avatar selected:', avatarUrl);
     setSelectedAvatar(avatarUrl);
     setAvatarModalOpen(false);
-  };
+  }, []);
 
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     if (!mountedRef.current) return;
-    console.log('🎭 [PROFILE_MODAL_SIMPLE] Cancel clicked from content');
+    console.log('🎭 [PROFILE_MODAL] Cancel clicked from content');
     onOpenChange(false);
-  };
+  }, [onOpenChange]);
+
+  // Test function that bypasses everything
+  const directSaveTest = useCallback(() => {
+    console.log('🔥🔥🔥 DIRECT SAVE TEST TRIGGERED! 🔥🔥🔥');
+    alert('Direct save test clicked! This proves the button can receive clicks.');
+    handleSave();
+  }, [handleSave]);
 
   if (!user?.id) {
-    console.log('🎭 [PROFILE_MODAL_SIMPLE] No user ID, returning null');
+    console.log('🎭 [PROFILE_MODAL] No user ID, returning null');
     return null;
   }
 
-  console.log('🎭 [PROFILE_MODAL_SIMPLE] About to render dialog, handleSave type:', typeof handleSave);
+  console.log('🎭 [PROFILE_MODAL] About to render dialog, handleSave type:', typeof handleSave);
+  console.log('🎭 [PROFILE_MODAL] handleSave reference:', handleSave.toString().substring(0, 50));
 
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
           <ProfileModalHeader />
+          
+          {/* TEST BUTTON - bypasses all components */}
+          <div className="bg-red-100 p-2 border border-red-300 rounded">
+            <p className="text-xs text-red-700 mb-2">Debug: Direct test button</p>
+            <button 
+              onClick={directSaveTest}
+              className="bg-red-500 text-white px-3 py-1 rounded text-sm"
+            >
+              🔥 DIRECT SAVE TEST
+            </button>
+          </div>
+          
           <ProfileModalContent
             loading={false}
             selectedAvatar={selectedAvatar}

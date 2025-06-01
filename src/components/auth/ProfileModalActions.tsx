@@ -62,6 +62,14 @@ export const ProfileModalActions: React.FC<ProfileModalActionsProps> = ({
     onCancel();
   };
 
+  // Direct test handler
+  const directTest = (e: React.MouseEvent) => {
+    console.log('🟢🟢🟢 DIRECT TEST IN ACTIONS COMPONENT! 🟢🟢🟢');
+    alert('Actions component direct test works!');
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
   console.log('🔘 [PROFILE_ACTIONS] About to render buttons with state:', {
     saving,
     buttonDisabled: saving,
@@ -69,24 +77,38 @@ export const ProfileModalActions: React.FC<ProfileModalActionsProps> = ({
   });
 
   return (
-    <div className="flex justify-end gap-2 pt-4">
-      <Button 
-        variant="outline" 
-        onClick={handleCancelClick}
-        type="button"
-      >
-        Cancel
-      </Button>
-      <Button 
-        onClick={handleSaveClick} 
-        disabled={saving}
-        type="button"
-        className={saving ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}
-      >
-        {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-        <Save className="mr-2 h-4 w-4" />
-        {saving ? 'Saving...' : 'Save Changes'}
-      </Button>
+    <div className="flex flex-col gap-2 pt-4">
+      {/* TEST BUTTON */}
+      <div className="bg-yellow-100 p-2 border border-yellow-300 rounded">
+        <p className="text-xs text-yellow-700 mb-1">Debug: Actions component test</p>
+        <button 
+          onClick={directTest}
+          className="bg-yellow-500 text-white px-2 py-1 rounded text-xs"
+        >
+          🟢 ACTIONS TEST
+        </button>
+      </div>
+      
+      {/* NORMAL BUTTONS */}
+      <div className="flex justify-end gap-2">
+        <Button 
+          variant="outline" 
+          onClick={handleCancelClick}
+          type="button"
+        >
+          Cancel
+        </Button>
+        <Button 
+          onClick={handleSaveClick} 
+          disabled={saving}
+          type="button"
+          className={saving ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}
+        >
+          {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          <Save className="mr-2 h-4 w-4" />
+          {saving ? 'Saving...' : 'Save Changes'}
+        </Button>
+      </div>
     </div>
   );
 };
