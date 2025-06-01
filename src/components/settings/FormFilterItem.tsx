@@ -2,7 +2,7 @@
 import React from "react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { PokemonFormType } from "./types";
+import { PokemonFormType } from "@/hooks/form-filters/types";
 import { formExampleImages } from "./formFilterData";
 import { getFilterName } from "./formFilterHelpers";
 

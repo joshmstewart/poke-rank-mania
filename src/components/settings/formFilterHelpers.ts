@@ -1,5 +1,5 @@
 
-import { PokemonFormType } from "./types";
+import { PokemonFormType } from "@/hooks/form-filters/types";
 
 // Helper to get friendly filter name
 export const getFilterName = (filter: PokemonFormType): string => {

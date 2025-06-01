@@ -1,4 +1,3 @@
-
 import React, { useCallback, useMemo } from "react";
 import { useFormFilters } from "@/hooks/useFormFilters";
 import { Switch } from "@/components/ui/switch";
@@ -6,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "@/hooks/use-toast";
 import { usePokemonContext } from "@/contexts/PokemonContext";
-import { PokemonFormType } from "./types";
+import { PokemonFormType } from "@/hooks/form-filters/types";
 import { FormFilterItem } from "./FormFilterItem";
 import { FormFilterDebug } from "./FormFilterDebug";
 import { getFilterName } from "./formFilterHelpers";

@@ -1,5 +1,5 @@
 
-import { PokemonFormType } from "./types";
+import { PokemonFormType } from "@/hooks/form-filters/types";
 
 // Image URLs for different form types
 export const formExampleImages: Record<PokemonFormType, string> = {
