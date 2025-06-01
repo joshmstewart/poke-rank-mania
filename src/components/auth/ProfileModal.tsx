@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/auth/useAuth';
 import { toast } from '@/hooks/use-toast';
 import { User, Save, Loader2 } from 'lucide-react';
 import { 
@@ -34,54 +34,107 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
 
   const trainerAvatarsByGen = getTrainerAvatarsByGeneration();
 
+  console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] ===== COMPONENT RENDER =====');
+  console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] Modal open:', open);
+  console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] User from useAuth:', {
+    hasUser: !!user,
+    userId: user?.id || 'NO_USER_ID',
+    userEmail: user?.email || 'NO_EMAIL',
+    userPhone: user?.phone || 'NO_PHONE',
+    timestamp: new Date().toISOString()
+  });
+
   useEffect(() => {
     if (open && user) {
+      console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] Modal opened, loading profile for user:', user.id);
       loadProfile();
     }
   }, [open, user]);
 
   const loadProfile = async () => {
-    if (!user) return;
-    
-    setLoading(true);
-    const profileData = await getProfile(user.id);
-    
-    if (profileData) {
-      setProfile(profileData);
-      setSelectedAvatar(profileData.avatar_url || '');
-      setUsername(profileData.username || '');
-      setDisplayName(profileData.display_name || '');
+    if (!user) {
+      console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] ❌ No user available for profile loading');
+      return;
     }
-    setLoading(false);
+    
+    console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] Starting profile load for user ID:', user.id);
+    setLoading(true);
+    
+    try {
+      const profileData = await getProfile(user.id);
+      console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] Profile data received:', profileData);
+      
+      if (profileData) {
+        setProfile(profileData);
+        setSelectedAvatar(profileData.avatar_url || '');
+        setUsername(profileData.username || '');
+        setDisplayName(profileData.display_name || '');
+        console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] ✅ Profile loaded successfully');
+      } else {
+        console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] No profile data found, initializing empty state');
+        setProfile(null);
+        setSelectedAvatar('');
+        setUsername('');
+        setDisplayName('');
+      }
+    } catch (error) {
+      console.error('🎯🎯🎯 [PROFILE_MODAL_FIXED] ❌ Error loading profile:', error);
+      toast({
+        title: 'Profile Load Error',
+        description: 'Failed to load your profile. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+      console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] Profile loading completed');
+    }
   };
 
   const handleSave = async () => {
-    if (!user || !profile) return;
+    if (!user) {
+      console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] ❌ No user available for profile save');
+      return;
+    }
 
+    console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] Starting profile save for user:', user.id);
     setSaving(true);
-    const success = await updateProfile(user.id, {
-      avatar_url: selectedAvatar,
-      username: username.trim(),
-      display_name: displayName.trim(),
-    });
-
-    if (success) {
-      toast({
-        title: 'Profile Updated',
-        description: 'Your profile has been successfully updated.',
+    
+    try {
+      const success = await updateProfile(user.id, {
+        avatar_url: selectedAvatar,
+        username: username.trim(),
+        display_name: displayName.trim(),
       });
-      onOpenChange(false);
-    } else {
+
+      if (success) {
+        console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] ✅ Profile saved successfully');
+        toast({
+          title: 'Profile Updated',
+          description: 'Your profile has been successfully updated.',
+        });
+        onOpenChange(false);
+      } else {
+        console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] ❌ Profile save failed');
+        toast({
+          title: 'Update Failed',
+          description: 'Failed to update your profile. Please try again.',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      console.error('🎯🎯🎯 [PROFILE_MODAL_FIXED] ❌ Error saving profile:', error);
       toast({
-        title: 'Update Failed',
-        description: 'Failed to update your profile. Please try again.',
+        title: 'Save Error',
+        description: 'An error occurred while saving your profile.',
         variant: 'destructive',
       });
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   };
 
   const handleAvatarSelect = (avatar: TrainerAvatar) => {
+    console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] Avatar selected:', avatar.name);
     setSelectedAvatar(avatar.url);
   };
 
@@ -96,17 +149,26 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
     return genNames[gen] || `Generation ${gen}`;
   };
 
+  if (!user) {
+    console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] ❌ No user, not rendering modal');
+    return null;
+  }
+
   if (loading) {
+    console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] Rendering loading state');
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-md">
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-8 w-8 animate-spin" />
+            <span className="ml-2">Loading profile...</span>
           </div>
         </DialogContent>
       </Dialog>
     );
   }
+
+  console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] Rendering full profile modal');
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
