@@ -71,7 +71,7 @@ export const useDirectProfileSave = () => {
       console.log('🚀 [DIRECT_SAVE] Setting isSaving to false in finally block');
       setIsSaving(false);
     }
-  }, [isSaving]);
+  }, []); // Remove isSaving from dependencies to prevent stale closures
 
   return { isSaving, directSaveProfile };
 };
