@@ -1,5 +1,13 @@
 
-import { PokemonFormType } from "@/components/settings/FormFiltersSelector";
+export type PokemonFormType = 
+  | "normal"
+  | "megaGmax" 
+  | "regional" 
+  | "gender" 
+  | "forms"
+  | "originPrimal"
+  | "costumes"
+  | "colorsFlavors"; // New category for color and flavor variants
 
 export interface FormFilters {
   normal: boolean;
@@ -9,6 +17,5 @@ export interface FormFilters {
   forms: boolean;
   originPrimal: boolean;
   costumes: boolean;
+  colorsFlavors: boolean; // New filter
 }
-
-export type { PokemonFormType };

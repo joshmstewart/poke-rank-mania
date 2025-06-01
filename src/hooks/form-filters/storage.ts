@@ -1,29 +1,50 @@
 
 import { FormFilters } from "./types";
 
-// Retrieve filters from localStorage or use defaults (mega/gmax disabled, others enabled)
+const STORAGE_KEY = 'pokemon-form-filters';
+
 export const getStoredFilters = (): FormFilters => {
-  const stored = localStorage.getItem('pokemon-form-filters');
-  if (stored) {
-    try {
-      return JSON.parse(stored);
-    } catch (e) {
-      console.error("Error parsing stored form filters:", e);
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      
+      // Ensure all required properties exist (including new colorsFlavors)
+      const defaultFilters: FormFilters = {
+        normal: true,
+        megaGmax: true,
+        regional: true,
+        gender: true,
+        forms: true,
+        originPrimal: true,
+        costumes: true,
+        colorsFlavors: true // Default to enabled for new category
+      };
+      
+      // Merge with defaults to handle missing properties
+      return { ...defaultFilters, ...parsed };
     }
+  } catch (error) {
+    console.error('Error loading form filters from localStorage:', error);
   }
   
-  // Default to mega/gmax evolutions disabled, others enabled (including normal)
+  // Return default filters with all enabled
   return {
     normal: true,
-    megaGmax: false,
+    megaGmax: true,
     regional: true,
     gender: true,
     forms: true,
     originPrimal: true,
-    costumes: true
+    costumes: true,
+    colorsFlavors: true
   };
 };
 
 export const saveFilters = (filters: FormFilters): void => {
-  localStorage.setItem('pokemon-form-filters', JSON.stringify(filters));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(filters));
+  } catch (error) {
+    console.error('Error saving form filters to localStorage:', error);
+  }
 };

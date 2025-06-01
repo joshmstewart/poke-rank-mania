@@ -1,9 +1,14 @@
-
 import { useState } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { FormFilters, PokemonFormType } from "./types";
 import { getStoredFilters, saveFilters } from "./storage";
-import { isStarterPokemon, isTotemPokemon, isSizeVariantPokemon, getPokemonFormCategory } from "./categorization";
+import { 
+  isStarterPokemon, 
+  isTotemPokemon, 
+  isSizeVariantPokemon, 
+  isSpecialKoraidonMiraidonMode,
+  getPokemonFormCategory 
+} from "./categorization";
 import { storePokemon, getStoredPokemon, clearStoredPokemon } from "./excludedStore";
 
 export const useFormFilters = () => {
@@ -31,7 +36,8 @@ export const useFormFilters = () => {
       gender: newValue,
       forms: newValue,
       originPrimal: newValue,
-      costumes: newValue
+      costumes: newValue,
+      colorsFlavors: newValue // Include new category
     };
     saveFilters(updated);
     setFilters(updated);
@@ -60,7 +66,13 @@ export const useFormFilters = () => {
       return false;
     }
     
-    // ENHANCED: Additional Cramorant filtering at the form filter level
+    // FOURTH: Always exclude special Koraidon/Miraidon modes
+    if (isSpecialKoraidonMiraidonMode(pokemon)) {
+      console.log(`🚫 [FORM_FILTER_TRACE] ${pokemonName} (${pokemonId}) EXCLUDED - SPECIAL KORAIDON/MIRAIDON MODE`);
+      return false;
+    }
+    
+    // Enhanced Cramorant filtering at the form filter level
     if (pokemon.name.toLowerCase().includes('cramorant')) {
       console.log(`🚫 [FORM_FILTER_TRACE] ${pokemonName} (${pokemonId}) EXCLUDED - CRAMORANT FORM`);
       return false;
@@ -80,18 +92,7 @@ export const useFormFilters = () => {
     // Return true if the filter for this category is enabled
     const shouldInclude = filters[categoryToCheck];
     
-    // CRITICAL DEBUG: Log every single Pokemon decision with ID ranges
-    const idRange = pokemonId <= 151 ? "Gen1" : 
-                   pokemonId <= 251 ? "Gen2" : 
-                   pokemonId <= 386 ? "Gen3" : 
-                   pokemonId <= 493 ? "Gen4" : 
-                   pokemonId <= 649 ? "Gen5" : 
-                   pokemonId <= 721 ? "Gen6" : 
-                   pokemonId <= 809 ? "Gen7" : 
-                   pokemonId <= 905 ? "Gen8" : 
-                   pokemonId <= 1025 ? "Gen9" : "Special";
-    
-    console.log(`${shouldInclude ? '✅' : '🚫'} [FORM_FILTER_TRACE] ${pokemonName} (${pokemonId}) [${idRange}] ${shouldInclude ? 'INCLUDED' : 'EXCLUDED'} - Category: ${categoryToCheck}, Filter: ${shouldInclude ? 'ON' : 'OFF'}`);
+    console.log(`${shouldInclude ? '✅' : '🚫'} [FORM_FILTER_TRACE] ${pokemonName} (${pokemonId}) ${shouldInclude ? 'INCLUDED' : 'EXCLUDED'} - Category: ${categoryToCheck}, Filter: ${shouldInclude ? 'ON' : 'OFF'}`);
     
     return shouldInclude;
   };
@@ -179,7 +180,12 @@ export const useFormFilters = () => {
     isAllEnabled,
     toggleAll,
     shouldIncludePokemon,
-    analyzeFilteringPipeline,
+    analyzeFilteringPipeline: (inputPokemon: Pokemon[]) => {
+      console.log(`🔍 [FILTER_PIPELINE_ANALYSIS] ===== STARTING FILTER ANALYSIS =====`);
+      const filteredPokemon = inputPokemon.filter(shouldIncludePokemon);
+      console.log(`🔍 [FILTER_PIPELINE_ANALYSIS] Output Pokemon count: ${filteredPokemon.length}`);
+      return filteredPokemon;
+    },
     getPokemonFormCategory,
     storePokemon,
     getStoredPokemon,

@@ -13,7 +13,8 @@ export type PokemonFormType =
   | "gender" 
   | "forms"
   | "originPrimal"
-  | "costumes";
+  | "costumes"
+  | "colorsFlavors";
 
 // Image URLs for different form types
 const formExampleImages = {
@@ -22,10 +23,9 @@ const formExampleImages = {
   gender: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/female/593.png", // Female Jellicent
   forms: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10120.png", // Hoopa Unbound
   megaGmax: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10034.png", // Mega Charizard Y
-  // Changed to use Giratina Origin (ID 10007) instead of Pikachu or Kyogre
   originPrimal: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10007.png", // Giratina Origin
-  // Using original-cap Pikachu from official artwork
   costumes: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10094.png", // Pikachu with Original Cap
+  colorsFlavors: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/774.png", // Minior (represents color variants)
 };
 
 export function FormFiltersSelector() {
@@ -71,6 +71,7 @@ export function FormFiltersSelector() {
       case "forms": return "Special Forms";
       case "originPrimal": return "Origin & Primal Forms";
       case "costumes": return "Costume Pokémon";
+      case "colorsFlavors": return "Colors & Flavors";
     }
   };
 
@@ -91,7 +92,7 @@ export function FormFiltersSelector() {
       <Separator />
       
       <div className="space-y-4">
-        {/* Normal Pokémon - NEW ADDITION AT TOP */}
+        {/* Normal Pokémon */}
         <div className="flex items-center space-x-3">
           <div className="h-10 w-10 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden">
             <img src={formExampleImages.normal} alt="Normal Pokémon" className="h-8 w-8 object-contain" />
@@ -117,6 +118,21 @@ export function FormFiltersSelector() {
               id="regional" 
               checked={filters.regional}
               onCheckedChange={() => handleToggleFilter("regional")} 
+            />
+          </div>
+        </div>
+        
+        {/* Colors & Flavors - NEW */}
+        <div className="flex items-center space-x-3">
+          <div className="h-10 w-10 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden">
+            <img src={formExampleImages.colorsFlavors} alt="Color/Flavor Variant" className="h-8 w-8 object-contain" />
+          </div>
+          <div className="flex flex-1 items-center justify-between">
+            <Label htmlFor="colorsFlavors" className="text-sm">Colors & Flavors</Label>
+            <Switch 
+              id="colorsFlavors" 
+              checked={filters.colorsFlavors}
+              onCheckedChange={() => handleToggleFilter("colorsFlavors")} 
             />
           </div>
         </div>
