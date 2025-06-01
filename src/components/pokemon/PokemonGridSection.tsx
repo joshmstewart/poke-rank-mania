@@ -38,16 +38,17 @@ export const PokemonGridSection: React.FC<PokemonGridSectionProps> = ({
     const flushPokemonBatch = () => {
       if (currentPokemonBatch.length > 0) {
         sections.push(
-          <div key={`pokemon-grid-${currentGeneration}`} className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+          <div key={`pokemon-grid-${currentGeneration}`} className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
             {currentPokemonBatch.map((pokemon, index) => (
-              <DraggablePokemonMilestoneCard
-                key={`pokemon-${pokemon.id}-${index}`}
-                pokemon={pokemon}
-                index={index}
-                showRank={false}
-                isDraggable={true}
-                isAvailable={true}
-              />
+              <div key={`pokemon-${pokemon.id}-${index}`} className="min-w-[140px] min-h-[140px]">
+                <DraggablePokemonMilestoneCard
+                  pokemon={pokemon}
+                  index={index}
+                  showRank={false}
+                  isDraggable={true}
+                  isAvailable={true}
+                />
+              </div>
             ))}
           </div>
         );
@@ -84,5 +85,5 @@ export const PokemonGridSection: React.FC<PokemonGridSectionProps> = ({
     return sections;
   };
 
-  return <div className="space-y-4">{renderItems()}</div>;
+  return <div className="space-y-6">{renderItems()}</div>;
 };

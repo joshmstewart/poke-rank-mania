@@ -35,7 +35,7 @@ export const AvailablePokemonSection: React.FC<AvailablePokemonSectionProps> = (
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
 
-  console.log(`🔍 [AVAILABLE_SECTION] Rendering ${availablePokemon.length} available Pokemon`);
+  console.log(`🔍 [AVAILABLE_SECTION] Rendering ${availablePokemon.length} available Pokemon for generation ${selectedGeneration}`);
 
   // Get all possible generations from the available Pokemon
   const availableGenerations = useMemo(() => {
@@ -80,6 +80,9 @@ export const AvailablePokemonSection: React.FC<AvailablePokemonSectionProps> = (
     isGenerationExpanded
   );
 
+  // Calculate the correct generation to display
+  const displayGeneration = selectedGeneration || (availableGenerations.length > 0 ? availableGenerations[0] : 0);
+
   return (
     <div className="flex flex-col h-full">
       {/* Header with Controls */}
@@ -87,7 +90,7 @@ export const AvailablePokemonSection: React.FC<AvailablePokemonSectionProps> = (
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-gray-900">Available Pokémon</h2>
           <div className="text-sm text-gray-500 font-medium">
-            Gen {selectedGeneration} • {availablePokemon.length} available
+            Gen {displayGeneration} • {availablePokemon.length} available
           </div>
         </div>
         
