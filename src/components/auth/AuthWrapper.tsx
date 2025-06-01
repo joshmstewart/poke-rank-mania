@@ -8,14 +8,27 @@ interface AuthWrapperProps {
 }
 
 export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
-  const wrapperInstance = useRef('nawgti');
+  const wrapperInstance = useRef('nawgti-stable');
   const renderCount = useRef(0);
   const mountTime = useRef(new Date().toISOString());
   const [authState, setAuthState] = useState('UNKNOWN');
   const [lastHeartbeat, setLastHeartbeat] = useState(new Date().toISOString());
   const unmountDetectedRef = useRef(false);
+  const intervalRefs = useRef<NodeJS.Timeout[]>([]);
   
   renderCount.current += 1;
+  
+  // CRITICAL: Add to window immediately for external monitoring
+  if (typeof window !== 'undefined') {
+    (window as any).nawgtiDebug = {
+      instance: wrapperInstance.current,
+      renderCount: renderCount.current,
+      authState,
+      mountTime: mountTime.current,
+      lastRender: new Date().toISOString(),
+      isUnmounting: unmountDetectedRef.current
+    };
+  }
   
   // AGGRESSIVE LOGGING - Every render
   console.log('🟢🟢🟢 [NAWGTI_CRITICAL] ===== OUTER WRAPPER BOX RENDER START =====');
@@ -25,28 +38,22 @@ export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
   console.log('🟢🟢🟢 [NAWGTI_CRITICAL] Current auth state:', authState);
   console.log('🟢🟢🟢 [NAWGTI_CRITICAL] Timestamp:', new Date().toISOString());
   console.log('🟢🟢🟢 [NAWGTI_CRITICAL] Component is rendering normally - no unmount detected');
-  
-  // Add to window for external monitoring
-  if (typeof window !== 'undefined') {
-    (window as any).nawgtiStatus = {
-      instance: wrapperInstance.current,
-      renderCount: renderCount.current,
-      authState,
-      mountTime: mountTime.current,
-      lastRender: new Date().toISOString()
-    };
-  }
 
   useEffect(() => {
     console.log('🟢🟢🟢 [NAWGTI_CRITICAL] ===== NAWGTI MOUNT EFFECT =====');
     console.log('🟢🟢🟢 [NAWGTI_CRITICAL] Wrapper (nawgti) mounted successfully');
     console.log('🟢🟢🟢 [NAWGTI_CRITICAL] Mount timestamp:', new Date().toISOString());
     
+    // Store instance globally for debugging
+    if (typeof window !== 'undefined') {
+      (window as any).nawgtiInstance = wrapperInstance.current;
+      (window as any).nawgtiMounted = true;
+    }
+    
     // Set up aggressive monitoring
     const monitoringInterval = setInterval(() => {
       if (unmountDetectedRef.current) {
         console.log('🟢🟢🟢 [NAWGTI_CRITICAL] ⚠️ UNMOUNT FLAG DETECTED IN MONITORING ⚠️');
-        clearInterval(monitoringInterval);
         return;
       }
       
@@ -58,7 +65,9 @@ export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
         stillMounted: 'YES',
         timestamp: new Date().toISOString()
       });
-    }, 1000); // Every second
+    }, 1000);
+    
+    intervalRefs.current.push(monitoringInterval);
     
     // Listen for auth state changes from AuthProvider
     const handleAuthStateChange = (event: any) => {
@@ -81,7 +90,16 @@ export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
       }
     };
     
+    // Listen for page unload/reload
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      console.log('🟢🟢🟢 [NAWGTI_CRITICAL] ===== PAGE UNLOAD DETECTED =====');
+      console.log('🟢🟢🟢 [NAWGTI_CRITICAL] 🚨 PAGE IS RELOADING/NAVIGATING AWAY 🚨');
+      console.log('🟢🟢🟢 [NAWGTI_CRITICAL] This explains why nawgti would disappear');
+      console.log('🟢🟢🟢 [NAWGTI_CRITICAL] Timestamp:', new Date().toISOString());
+    };
+    
     window.addEventListener('nawgti-auth-state', handleAuthStateChange);
+    window.addEventListener('beforeunload', handleBeforeUnload);
     console.log('🟢🟢🟢 [NAWGTI_CRITICAL] Auth state listener added to window');
     
     // Enhanced heartbeat
@@ -104,6 +122,8 @@ export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
       }
     }, 2000);
     
+    intervalRefs.current.push(heartbeat);
+    
     console.log('🟢🟢🟢 [NAWGTI_CRITICAL] All monitoring and listeners established');
     
     return () => {
@@ -124,12 +144,16 @@ export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
           renderCount: renderCount.current,
           unmountTime: new Date().toISOString()
         };
+        (window as any).nawgtiMounted = false;
         console.log('🟢🟢🟢 [NAWGTI_CRITICAL] Unmount info saved to window.nawgtiUnmountDetected');
       }
       
       window.removeEventListener('nawgti-auth-state', handleAuthStateChange);
-      clearInterval(heartbeat);
-      clearInterval(monitoringInterval);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      
+      // Clear all intervals
+      intervalRefs.current.forEach(interval => clearInterval(interval));
+      intervalRefs.current = [];
       
       console.log('🟢🟢🟢 [NAWGTI_CRITICAL] NAWGTI cleanup completed');
     };

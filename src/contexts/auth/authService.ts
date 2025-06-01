@@ -27,13 +27,30 @@ export const authService = {
 
   signInWithGoogle: async () => {
     console.log('🔴 AuthService: Starting Google sign in...');
+    console.log('🔴 AuthService: Current URL:', window.location.href);
+    console.log('🔴 AuthService: Origin:', window.location.origin);
+    
+    // Use the current origin as redirect URL to prevent localhost issues
+    const redirectUrl = window.location.origin;
+    console.log('🔴 AuthService: Using redirect URL:', redirectUrl);
+    
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: window.location.origin
+        redirectTo: redirectUrl,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        }
       }
     });
+    
     console.log('🔴 AuthService: Google sign in result:', { error: error?.message });
+    
+    if (error) {
+      console.error('🔴 AuthService: Google OAuth error:', error);
+    }
+    
     return { error };
   },
 

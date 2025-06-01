@@ -9,11 +9,12 @@ import PokemonRankerWithProvider from "@/components/pokemon/PokemonRankerWithPro
 import { AuthWrapper } from "@/components/auth/AuthWrapper";
 
 function AppContent() {
-  const [mode, setMode] = useLocalStorage<"rank" | "battle">("pokemon-ranker-mode", "battle");
+  const [mode, setMode] = useLocalStorage<"rank" | "battle">("pokemon-ranker-mode", "rank");
   const renderCount = useRef(0);
   const mountTime = useRef(new Date().toISOString());
-  const stableInstance = useRef('app-content-main');
+  const stableInstance = useRef('app-content-main-stable');
   const unmountDetectedRef = useRef(false);
+  const intervalRefs = useRef<NodeJS.Timeout[]>([]);
 
   renderCount.current += 1;
 
@@ -40,11 +41,16 @@ function AppContent() {
     console.log('🚀🚀🚀 APP_CONTENT: Component mounted at:', new Date().toISOString());
     console.log('🚀🚀🚀 APP_CONTENT: Stable instance ID on mount:', stableInstance.current);
     
+    // Store globally for debugging
+    if (typeof window !== 'undefined') {
+      (window as any).appContentInstance = stableInstance.current;
+      (window as any).appContentMounted = true;
+    }
+    
     // Add aggressive monitoring
     const monitoringInterval = setInterval(() => {
       if (unmountDetectedRef.current) {
         console.log('🚀🚀🚀 APP_CONTENT: ⚠️ UNMOUNT FLAG DETECTED ⚠️');
-        clearInterval(monitoringInterval);
         return;
       }
       
@@ -55,6 +61,18 @@ function AppContent() {
         mode: mode
       });
     }, 3000);
+    
+    intervalRefs.current.push(monitoringInterval);
+    
+    // Listen for page navigation/reload
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      console.log('🚀🚀🚀 APP_CONTENT: ===== PAGE UNLOAD DETECTED =====');
+      console.log('🚀🚀🚀 APP_CONTENT: 🚨 PAGE IS RELOADING/NAVIGATING AWAY 🚨');
+      console.log('🚀🚀🚀 APP_CONTENT: This explains why app-content would disappear');
+      console.log('🚀🚀🚀 APP_CONTENT: Timestamp:', new Date().toISOString());
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
     
     return () => {
       console.log('🚀🚀🚀 APP_CONTENT: ===== FULL APP CONTENT UNMOUNT DETECTED =====');
@@ -72,9 +90,14 @@ function AppContent() {
           renderCount: renderCount.current,
           unmountTime: new Date().toISOString()
         };
+        (window as any).appContentMounted = false;
       }
       
-      clearInterval(monitoringInterval);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      
+      // Clear all intervals
+      intervalRefs.current.forEach(interval => clearInterval(interval));
+      intervalRefs.current = [];
     };
   }, []);
 
@@ -119,8 +142,9 @@ function AppContent() {
 function App() {
   const renderCount = useRef(0);
   const mountTime = useRef(new Date().toISOString());
-  const stableRootInstance = useRef('app-root-main');
+  const stableRootInstance = useRef('app-root-main-stable');
   const unmountDetectedRef = useRef(false);
+  const intervalRefs = useRef<NodeJS.Timeout[]>([]);
   
   renderCount.current += 1;
 
@@ -139,7 +163,6 @@ function App() {
     const monitoringInterval = setInterval(() => {
       if (unmountDetectedRef.current) {
         console.log('🚀🚀🚀 ROOT_APP: ⚠️ ROOT UNMOUNT FLAG DETECTED ⚠️');
-        clearInterval(monitoringInterval);
         return;
       }
       
@@ -150,6 +173,8 @@ function App() {
       });
     }, 4000);
     
+    intervalRefs.current.push(monitoringInterval);
+    
     return () => {
       console.log('🚀🚀🚀 ROOT_APP: ===== ROOT UNMOUNT DETECTED =====');
       console.log('🚀🚀🚀 ROOT_APP: 🚨🚨🚨 ROOT COMPONENT UNMOUNTING 🚨🚨🚨');
@@ -157,18 +182,19 @@ function App() {
       console.log('🚀🚀🚀 ROOT_APP: Root instance that unmounted:', stableRootInstance.current);
       
       unmountDetectedRef.current = true;
-      clearInterval(monitoringInterval);
+      
+      // Clear all intervals
+      intervalRefs.current.forEach(interval => clearInterval(interval));
+      intervalRefs.current = [];
     };
   }, []);
   
   console.log('🚀🚀🚀 ROOT_APP: 🟢 About to render AuthWrapper and AppContent 🟢');
   
   return (
-    <div className="app-root">
-      <AuthWrapper>
-        <AppContent />
-      </AuthWrapper>
-    </div>
+    <AuthWrapper>
+      <AppContent />
+    </AuthWrapper>
   );
 }
 
