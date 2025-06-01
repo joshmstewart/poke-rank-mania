@@ -23,38 +23,6 @@ export const ProfileModalActions: React.FC<ProfileModalActionsProps> = ({
     timestamp: new Date().toISOString()
   });
 
-  const handleSaveClick = (e: React.MouseEvent) => {
-    console.log('🔘 [PROFILE_ACTIONS] ===== SAVE BUTTON CLICKED =====');
-    console.log('🔘 [PROFILE_ACTIONS] Click event:', e);
-    console.log('🔘 [PROFILE_ACTIONS] Button disabled state:', saving);
-    console.log('🔘 [PROFILE_ACTIONS] onSave function:', {
-      exists: !!onSave,
-      type: typeof onSave,
-      string: onSave.toString().substring(0, 100)
-    });
-    
-    e.preventDefault();
-    e.stopPropagation();
-    
-    if (saving) {
-      console.log('🔘 [PROFILE_ACTIONS] ❌ Button is disabled due to saving state');
-      return;
-    }
-    
-    if (!onSave) {
-      console.error('🔘 [PROFILE_ACTIONS] ❌ No onSave function provided!');
-      return;
-    }
-    
-    console.log('🔘 [PROFILE_ACTIONS] ✅ Calling onSave function...');
-    try {
-      onSave();
-      console.log('🔘 [PROFILE_ACTIONS] ✅ onSave called successfully');
-    } catch (error) {
-      console.error('🔘 [PROFILE_ACTIONS] ❌ Error calling onSave:', error);
-    }
-  };
-
   const handleCancelClick = (e: React.MouseEvent) => {
     console.log('🔘 [PROFILE_ACTIONS] Cancel button clicked');
     e.preventDefault();
@@ -62,33 +30,28 @@ export const ProfileModalActions: React.FC<ProfileModalActionsProps> = ({
     onCancel();
   };
 
-  // Direct test handler
-  const directTest = (e: React.MouseEvent) => {
-    console.log('🟢🟢🟢 DIRECT TEST IN ACTIONS COMPONENT! 🟢🟢🟢');
-    alert('Actions component direct test works!');
-    e.preventDefault();
-    e.stopPropagation();
+  // Simplified save handler - direct call to onSave
+  const handleSaveClick = () => {
+    console.log('🔘 [PROFILE_ACTIONS] ===== SAVE BUTTON CLICKED (SIMPLIFIED) =====');
+    console.log('🔘 [PROFILE_ACTIONS] onSave function exists:', !!onSave);
+    console.log('🔘 [PROFILE_ACTIONS] saving state:', saving);
+    
+    if (saving) {
+      console.log('🔘 [PROFILE_ACTIONS] ❌ Blocked - already saving');
+      return;
+    }
+    
+    if (!onSave) {
+      console.error('🔘 [PROFILE_ACTIONS] ❌ No onSave function!');
+      return;
+    }
+    
+    console.log('🔘 [PROFILE_ACTIONS] ✅ Calling onSave...');
+    onSave();
   };
-
-  console.log('🔘 [PROFILE_ACTIONS] About to render buttons with state:', {
-    saving,
-    buttonDisabled: saving,
-    showSpinner: saving
-  });
 
   return (
     <div className="flex flex-col gap-2 pt-4">
-      {/* TEST BUTTON */}
-      <div className="bg-yellow-100 p-2 border border-yellow-300 rounded">
-        <p className="text-xs text-yellow-700 mb-1">Debug: Actions component test</p>
-        <button 
-          onClick={directTest}
-          className="bg-yellow-500 text-white px-2 py-1 rounded text-xs"
-        >
-          🟢 ACTIONS TEST
-        </button>
-      </div>
-      
       {/* NORMAL BUTTONS */}
       <div className="flex justify-end gap-2">
         <Button 
@@ -102,7 +65,6 @@ export const ProfileModalActions: React.FC<ProfileModalActionsProps> = ({
           onClick={handleSaveClick} 
           disabled={saving}
           type="button"
-          className={saving ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}
         >
           {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           <Save className="mr-2 h-4 w-4" />
