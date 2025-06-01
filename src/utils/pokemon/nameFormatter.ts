@@ -16,6 +16,47 @@ export const formatPokemonName = (name: string): string => {
   console.log(`🔧 [FORMAT_ULTRA_DEBUG] ===== formatPokemonName ENTRY =====`);
   console.log(`🔧 [FORMAT_ULTRA_DEBUG] Input name: "${name}"`);
   
+  // SPECIAL FILTERING: Hide specific Pokemon that should never appear
+  const lowerName = name.toLowerCase();
+  
+  // Hide Rockruff (Own Tempo)
+  if (lowerName.includes('rockruff') && lowerName.includes('own-tempo')) {
+    console.log(`🔧 [FORMAT_DEBUG] Filtering out Rockruff (Own Tempo): "${name}"`);
+    return ''; // Return empty to filter out
+  }
+  
+  // Hide Busted Mimikyu
+  if (lowerName.includes('mimikyu') && lowerName.includes('busted')) {
+    console.log(`🔧 [FORMAT_DEBUG] Filtering out Busted Mimikyu: "${name}"`);
+    return ''; // Return empty to filter out
+  }
+  
+  // Hide all Minior meteor forms (e.g., "Minior (Green Meteor)", "minior-red-meteor", etc.)
+  if (lowerName.includes('minior') && lowerName.includes('meteor')) {
+    console.log(`🔧 [FORMAT_DEBUG] Filtering out Minior meteor form: "${name}"`);
+    return ''; // Return empty to filter out
+  }
+  
+  // SPECIAL CASE: Handle Zygarde forms
+  if (lowerName.includes('zygarde')) {
+    console.log(`🔧 [FORMAT_DEBUG] Processing Zygarde form: "${name}"`);
+    
+    if (lowerName.includes('10') || lowerName.includes('ten')) {
+      return "Zygarde 10% Power";
+    }
+    if (lowerName.includes('50') || lowerName.includes('fifty')) {
+      return "Zygarde 50%";
+    }
+    if (lowerName.includes('complete') || lowerName.includes('100')) {
+      return "Zygarde 100% Power";
+    }
+    
+    // Default Zygarde (assume it's the 50% form)
+    if (name.toLowerCase() === 'zygarde') {
+      return "Zygarde 50%";
+    }
+  }
+  
   // SPECIAL CASE: Handle Nidoran with gender symbols
   if (name.toLowerCase().includes('nidoran')) {
     if (name.toLowerCase().includes('male') || name.toLowerCase().includes('-m')) {
