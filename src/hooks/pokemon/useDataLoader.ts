@@ -15,7 +15,7 @@ export const useDataLoader = (
   setIsLoading: React.Dispatch<React.SetStateAction<boolean>>
 ) => {
   const { analyzeFilteringPipeline } = useFormFilters();
-  const { filteredPokemon } = usePokemonContext();
+  const { allPokemon } = usePokemonContext();
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -23,8 +23,8 @@ export const useDataLoader = (
     try {
       console.log(`🔍 [DATA_LOADER] Loading data for generation ${selectedGeneration}, page ${currentPage}`);
       
-      // Get filtered Pokemon from context
-      const availablePokemonData = filteredPokemon || [];
+      // Get all Pokemon from context - this should already be filtered by generation if needed
+      const availablePokemonData = allPokemon || [];
       console.log(`🔍 [DATA_LOADER] Raw available Pokemon: ${availablePokemonData.length}`);
       
       // Apply form filters with debugging
@@ -59,7 +59,7 @@ export const useDataLoader = (
     } finally {
       setIsLoading(false);
     }
-  }, [selectedGeneration, currentPage, loadSize, loadingType, filteredPokemon, analyzeFilteringPipeline, setAvailablePokemon, setRankedPokemon, setTotalPages, setIsLoading]);
+  }, [selectedGeneration, currentPage, loadSize, loadingType, allPokemon, analyzeFilteringPipeline, setAvailablePokemon, setRankedPokemon, setTotalPages, setIsLoading]);
 
   return { loadData };
 };
