@@ -40,13 +40,6 @@ export const ProfileModalContent: React.FC<ProfileModalContentProps> = ({
   const { invalidateCache } = useProfileCache();
   const { validationErrors, validateProfile, handleDatabaseError, clearErrors } = useProfileValidation();
   const [isSaving, setIsSaving] = useState(false);
-  const mountedRef = useRef(true);
-
-  useEffect(() => {
-    return () => {
-      mountedRef.current = false;
-    };
-  }, []);
 
   // Clear errors when user starts typing
   useEffect(() => {
@@ -57,8 +50,15 @@ export const ProfileModalContent: React.FC<ProfileModalContentProps> = ({
   }, [username, displayName, validationErrors, clearErrors]);
 
   const handleSave = async () => {
-    if (!user?.id || !mountedRef.current) {
-      console.error('🎭 [PROFILE_MODAL_CONTENT] No user ID or component unmounted');
+    console.log('🎭 [PROFILE_MODAL_CONTENT] handleSave called with user:', user?.id);
+    
+    if (!user?.id) {
+      console.error('🎭 [PROFILE_MODAL_CONTENT] No user ID available');
+      toast({
+        title: 'Error',
+        description: 'No user session found. Please try signing in again.',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -101,7 +101,7 @@ export const ProfileModalContent: React.FC<ProfileModalContentProps> = ({
 
       console.log('🎭 [PROFILE_MODAL_CONTENT] Update result:', success);
 
-      if (success && mountedRef.current) {
+      if (success) {
         console.log('🎭 [PROFILE_MODAL_CONTENT] ✅ Profile saved successfully');
         
         // Invalidate cache to force refresh
@@ -124,7 +124,7 @@ export const ProfileModalContent: React.FC<ProfileModalContentProps> = ({
         });
         
         onSaveSuccess();
-      } else if (mountedRef.current) {
+      } else {
         console.error('🎭 [PROFILE_MODAL_CONTENT] Profile update failed');
         toast({
           title: 'Save failed',
@@ -135,21 +135,17 @@ export const ProfileModalContent: React.FC<ProfileModalContentProps> = ({
     } catch (error: any) {
       console.error('🎭 [PROFILE_MODAL_CONTENT] Save error:', error);
       
-      if (mountedRef.current) {
-        handleDatabaseError(error);
-        
-        if (!validationErrors.username && !validationErrors.displayName && !validationErrors.general) {
-          toast({
-            title: 'Save failed',
-            description: 'There was an error saving your profile. Please try again.',
-            variant: 'destructive',
-          });
-        }
+      handleDatabaseError(error);
+      
+      if (!validationErrors.username && !validationErrors.displayName && !validationErrors.general) {
+        toast({
+          title: 'Save failed',
+          description: 'There was an error saving your profile. Please try again.',
+          variant: 'destructive',
+        });
       }
     } finally {
-      if (mountedRef.current) {
-        setIsSaving(false);
-      }
+      setIsSaving(false);
     }
   };
 
