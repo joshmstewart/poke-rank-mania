@@ -61,4 +61,3 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({
     </div>
   );
 };
-</DropdownMenu>
