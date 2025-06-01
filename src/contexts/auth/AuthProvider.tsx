@@ -180,33 +180,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] About to render context with children');
   console.log('🔴🔴🔴 [AUTH_PROVIDER_ULTIMATE] Final auth state for this render:', authState);
 
+  // Clean production wrapper - no visual debug overlay
   return (
-    <div style={{ position: 'relative' }}>
-      <div style={{ 
-        position: 'fixed', 
-        top: '90px', 
-        left: '10px', 
-        zIndex: 9998, 
-        backgroundColor: 'red', 
-        color: 'white', 
-        padding: '10px',
-        fontSize: '12px',
-        border: '3px solid yellow',
-        maxWidth: '400px'
-      }}>
-        🔴 AUTH PROVIDER ULTIMATE: {authState} | Render #{renderCount.current}<br/>
-        Instance: {providerInstanceRef.current}<br/>
-        User: {user?.email || 'none'}<br/>
-        Session: {session?.user?.email || 'none'}<br/>
-        Loading: {loading ? 'YES' : 'NO'}<br/>
-        <span style={{ fontSize: '10px', color: 'yellow' }}>
-          This should show AUTHENTICATED with EMAIL post-login
-        </span>
-      </div>
-      <AuthContext.Provider value={contextValue}>
-        {children}
-      </AuthContext.Provider>
-    </div>
+    <AuthContext.Provider value={contextValue}>
+      {children}
+    </AuthContext.Provider>
   );
 };
 
