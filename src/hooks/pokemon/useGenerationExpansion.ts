@@ -1,10 +1,8 @@
+
 import React, { useState, useMemo, useEffect } from "react";
 
-export const useGenerationExpansion = (generations: number[]) => {
-  const [expandedGenerations, setExpandedGenerations] = useState<Set<number>>(() => {
-    // Start with all generations expanded
-    return new Set(generations);
-  });
+export const useGenerationExpansion = () => {
+  const [expandedGenerations, setExpandedGenerations] = useState<Set<number>>(new Set());
 
   const toggleGeneration = (generationId: number) => {
     setExpandedGenerations(prev => {
@@ -23,7 +21,7 @@ export const useGenerationExpansion = (generations: number[]) => {
     return expandedGenerations.has(generationId);
   };
 
-  const expandAll = () => {
+  const expandAll = (generations: number[]) => {
     console.log(`🔍 [GENERATION_EXPANSION] Expanding all generations:`, generations);
     setExpandedGenerations(new Set(generations));
   };
@@ -33,37 +31,11 @@ export const useGenerationExpansion = (generations: number[]) => {
     setExpandedGenerations(new Set<number>());
   };
 
-  // Update the expanded generations when the available generations change
-  useEffect(() => {
-    setExpandedGenerations(prev => {
-      // Keep only the generations that still exist and add any new ones
-      const newSet = new Set<number>();
-      generations.forEach(gen => {
-        if (prev.has(gen) || prev.size === generations.length) {
-          newSet.add(gen);
-        }
-      });
-      // If we had all generations expanded before, expand all new ones too
-      if (prev.size === 0) {
-        return new Set<number>(); // Keep collapsed state
-      }
-      return newSet.size === 0 ? new Set<number>(generations) : newSet;
-    });
-  }, [generations]);
-
-  const allExpanded = expandedGenerations.size === generations.length && generations.length > 0;
-  const allCollapsed = expandedGenerations.size === 0;
-
-  console.log(`🔍 [GENERATION_EXPANSION] Current state: ${expandedGenerations.size}/${generations.length} expanded`);
-  console.log(`🔍 [GENERATION_EXPANSION] Available generations:`, generations);
-  console.log(`🔍 [GENERATION_EXPANSION] Expanded generations:`, Array.from(expandedGenerations));
-
   return {
+    expandedGenerations,
     isGenerationExpanded,
     toggleGeneration,
     expandAll,
-    collapseAll,
-    allExpanded,
-    allCollapsed
+    collapseAll
   };
 };

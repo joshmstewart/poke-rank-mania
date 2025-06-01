@@ -72,7 +72,7 @@ export const AvailablePokemonSection: React.FC<AvailablePokemonSectionProps> = (
     return Array.from(generations).sort((a, b) => a - b);
   }, [availablePokemon]);
 
-  const { expandedGenerations, toggleGeneration, isGenerationExpanded } = useGenerationExpansion();
+  const { expandedGenerations, toggleGeneration, isGenerationExpanded, expandAll, collapseAll } = useGenerationExpansion();
 
   const { items, showGenerationHeaders } = usePokemonGrouping(
     availablePokemon,
@@ -84,17 +84,21 @@ export const AvailablePokemonSection: React.FC<AvailablePokemonSectionProps> = (
   console.log(`🔍 [AVAILABLE_SECTION] Pokemon grouping returned ${items.length} items with headers: ${showGenerationHeaders}`);
   console.log(`🔍 [AVAILABLE_SECTION] Available generations: ${availableGenerations.join(', ')}`);
 
+  const allExpanded = expandedGenerations.size === availableGenerations.length && availableGenerations.length > 0;
+
   return (
     <div className="w-full">
       <div className="mb-4">
         <PokemonListControls
+          title="Available Pokémon"
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
           viewMode={viewMode}
           onViewModeChange={setViewMode}
-          availableGenerations={availableGenerations}
-          selectedGeneration={selectedGeneration}
-          onGenerationChange={() => {}} // Generation change handled by parent
+          showCollapseAll={true}
+          allExpanded={allExpanded}
+          onExpandAll={() => expandAll(availableGenerations)}
+          onCollapseAll={collapseAll}
         />
       </div>
 
@@ -107,12 +111,11 @@ export const AvailablePokemonSection: React.FC<AvailablePokemonSectionProps> = (
         onToggleGeneration={toggleGeneration}
       />
 
-      {/* REMOVED PAGINATION CONTROLS - Using infinite scroll only */}
-      
       <InfiniteScrollLoader
         isLoading={isLoading}
         loadingRef={loadingRef}
-        hasMore={currentPage < totalPages}
+        currentPage={currentPage}
+        totalPages={totalPages}
       />
     </div>
   );
