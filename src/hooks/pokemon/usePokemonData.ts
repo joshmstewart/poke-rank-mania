@@ -16,15 +16,15 @@ export const usePokemonData = () => {
     loadSize: number,
     loadingType: LoadingType
   ) => {
-    console.log(`🔒 [POKEMON_DATA_CRITICAL_FIX] ===== FIXING AVAILABILITY REGRESSION =====`);
-    console.log(`🔒 [POKEMON_DATA_CRITICAL_FIX] Params: gen=${selectedGeneration}, page=${currentPage}, size=${loadSize}, type=${loadingType}`);
-    console.log(`🔒 [POKEMON_DATA_CRITICAL_FIX] Context Pokemon: ${contextPokemon?.length || 0}`);
-    console.log(`🔒 [POKEMON_DATA_CRITICAL_FIX] TrueSkill rankings: ${localRankings?.length || 0}`);
+    console.log(`🔒 [POKEMON_DATA_DETERMINISTIC] ===== DETERMINISTIC DATA PROCESSING =====`);
+    console.log(`🔒 [POKEMON_DATA_DETERMINISTIC] Input: gen=${selectedGeneration}, page=${currentPage}, size=${loadSize}, type=${loadingType}`);
+    console.log(`🔒 [POKEMON_DATA_DETERMINISTIC] Context Pokemon: ${contextPokemon?.length || 0}`);
+    console.log(`🔒 [POKEMON_DATA_DETERMINISTIC] TrueSkill rankings: ${localRankings?.length || 0}`);
     
     try {
-      // CRITICAL FIX: Always use PokemonContext as the primary source
+      // CRITICAL FIX: Ensure we have valid context data
       if (!contextPokemon || !Array.isArray(contextPokemon) || contextPokemon.length === 0) {
-        console.log(`🔒 [POKEMON_DATA_CRITICAL_FIX] ❌ No valid context data - returning empty result`);
+        console.log(`🔒 [POKEMON_DATA_DETERMINISTIC] ❌ No valid context data - returning deterministic empty result`);
         return {
           availablePokemon: [],
           rankedPokemon: [],
@@ -32,20 +32,20 @@ export const usePokemonData = () => {
         };
       }
       
-      console.log(`🔒 [POKEMON_DATA_CRITICAL_FIX] ✅ Using Context data: ${contextPokemon.length} Pokemon`);
+      console.log(`🔒 [POKEMON_DATA_DETERMINISTIC] ✅ Using Context data: ${contextPokemon.length} Pokemon`);
       
-      // Sort by ID for consistency
+      // DETERMINISTIC: Sort by ID for absolute consistency
       const sortedPokemon = [...contextPokemon].sort((a, b) => a.id - b.id);
-      console.log(`🔒 [POKEMON_DATA_CRITICAL_FIX] After sorting: ${sortedPokemon.length} Pokemon`);
+      console.log(`🔒 [POKEMON_DATA_DETERMINISTIC] After deterministic sorting: ${sortedPokemon.length} Pokemon`);
       
-      // Apply name formatting
+      // DETERMINISTIC: Apply name formatting consistently
       const formattedPokemon = sortedPokemon.map(pokemon => ({
         ...pokemon,
         name: formatPokemonName(pokemon.name)
       }));
-      console.log(`🔒 [POKEMON_DATA_CRITICAL_FIX] After formatting: ${formattedPokemon.length} Pokemon`);
+      console.log(`🔒 [POKEMON_DATA_DETERMINISTIC] After deterministic formatting: ${formattedPokemon.length} Pokemon`);
       
-      // Apply generation filtering if needed
+      // DETERMINISTIC: Apply generation filtering if needed
       let filteredByGeneration = formattedPokemon;
       if (selectedGeneration > 0) {
         const genRanges = {
@@ -54,14 +54,16 @@ export const usePokemonData = () => {
         };
         const [min, max] = genRanges[selectedGeneration as keyof typeof genRanges] || [0, 9999];
         filteredByGeneration = formattedPokemon.filter(p => p.id >= min && p.id <= max);
-        console.log(`🔒 [POKEMON_DATA_CRITICAL_FIX] After gen ${selectedGeneration} filtering: ${filteredByGeneration.length} Pokemon`);
+        console.log(`🔒 [POKEMON_DATA_DETERMINISTIC] After deterministic gen ${selectedGeneration} filtering: ${filteredByGeneration.length} Pokemon`);
       }
       
-      // Get TrueSkill ranked Pokemon IDs to filter out from available
+      // DETERMINISTIC: Get TrueSkill ranked Pokemon IDs (sorted for consistency)
       const rankedPokemonIds = new Set((localRankings || []).map(p => p.id));
-      console.log(`🔒 [POKEMON_DATA_CRITICAL_FIX] TrueSkill ranked Pokemon count: ${rankedPokemonIds.size}`);
+      const sortedRankedIds = Array.from(rankedPokemonIds).sort((a, b) => a - b);
+      console.log(`🔒 [POKEMON_DATA_DETERMINISTIC] TrueSkill ranked Pokemon (deterministic): ${sortedRankedIds.length}`);
+      console.log(`🔒 [POKEMON_DATA_DETERMINISTIC] Ranked IDs (first 10): ${sortedRankedIds.slice(0, 10).join(', ')}`);
       
-      // Split into available and ranked - CRITICAL: Use the filtered list properly
+      // DETERMINISTIC: Split into available and ranked with consistent ordering
       const availablePokemon = filteredByGeneration.filter(p => !rankedPokemonIds.has(p.id));
       const rankedPokemon = (localRankings || []).filter(p => {
         if (selectedGeneration === 0) return true;
@@ -73,17 +75,16 @@ export const usePokemonData = () => {
         return p.id >= min && p.id <= max;
       });
       
-      console.log(`🔒 [POKEMON_DATA_CRITICAL_FIX] FINAL SPLIT:`);
-      console.log(`🔒 [POKEMON_DATA_CRITICAL_FIX] - Available Pokemon: ${availablePokemon.length}`);
-      console.log(`🔒 [POKEMON_DATA_CRITICAL_FIX] - Ranked Pokemon: ${rankedPokemon.length}`);
-      console.log(`🔒 [POKEMON_DATA_CRITICAL_FIX] - Total Context Pokemon: ${contextPokemon.length}`);
-      console.log(`🔒 [POKEMON_DATA_CRITICAL_FIX] - After Generation Filter: ${filteredByGeneration.length}`);
-      console.log(`🔒 [POKEMON_DATA_CRITICAL_FIX] - Ranked IDs to exclude: ${rankedPokemonIds.size}`);
+      console.log(`🔒 [POKEMON_DATA_DETERMINISTIC] DETERMINISTIC FINAL SPLIT:`);
+      console.log(`🔒 [POKEMON_DATA_DETERMINISTIC] - Available Pokemon: ${availablePokemon.length}`);
+      console.log(`🔒 [POKEMON_DATA_DETERMINISTIC] - Ranked Pokemon: ${rankedPokemon.length}`);
+      console.log(`🔒 [POKEMON_DATA_DETERMINISTIC] - Total should equal: ${filteredByGeneration.length}`);
+      console.log(`🔒 [POKEMON_DATA_DETERMINISTIC] - Verification: ${availablePokemon.length + rankedPokemon.length} = ${filteredByGeneration.length}? ${availablePokemon.length + rankedPokemon.length === filteredByGeneration.length ? '✅' : '❌'}`);
       
-      // Calculate pagination
+      // Calculate pagination deterministically
       const totalPages = loadingType === "pagination" ? Math.ceil(availablePokemon.length / loadSize) : 1;
       
-      console.log(`🔒 [POKEMON_DATA_CRITICAL_FIX] ✅ SUCCESS - Returning data with ${availablePokemon.length} available, ${rankedPokemon.length} ranked`);
+      console.log(`🔒 [POKEMON_DATA_DETERMINISTIC] ✅ DETERMINISTIC SUCCESS - Available: ${availablePokemon.length}, Ranked: ${rankedPokemon.length}, Pages: ${totalPages}`);
       
       return {
         availablePokemon,
@@ -92,7 +93,7 @@ export const usePokemonData = () => {
       };
       
     } catch (error) {
-      console.error(`🔒 [POKEMON_DATA_CRITICAL_FIX] ❌ Error in getPokemonData:`, error);
+      console.error(`🔒 [POKEMON_DATA_DETERMINISTIC] ❌ Error in deterministic getPokemonData:`, error);
       return {
         availablePokemon: [],
         rankedPokemon: [],
