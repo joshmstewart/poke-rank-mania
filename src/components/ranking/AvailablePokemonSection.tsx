@@ -89,34 +89,17 @@ export const AvailablePokemonSection: React.FC<AvailablePokemonSectionProps> = (
   return (
     <div className="w-full">
       <div className="mb-4">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Available Pokémon</h2>
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
-              placeholder="Search Pokémon..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-md text-sm"
-            />
-            <button
-              onClick={() => setViewMode(viewMode === "grid" ? "list" : "grid")}
-              className="px-3 py-2 bg-blue-500 text-white rounded-md text-sm hover:bg-blue-600"
-            >
-              {viewMode === "grid" ? "List" : "Grid"}
-            </button>
-            {availableGenerations.length > 1 && (
-              <>
-                <button
-                  onClick={() => allExpanded ? collapseAll() : expandAll(availableGenerations)}
-                  className="px-3 py-2 bg-gray-500 text-white rounded-md text-sm hover:bg-gray-600"
-                >
-                  {allExpanded ? "Collapse All" : "Expand All"}
-                </button>
-              </>
-            )}
-          </div>
-        </div>
+        <PokemonListControls
+          title="Available Pokémon"
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+          showCollapseAll={true}
+          allExpanded={allExpanded}
+          onExpandAll={() => expandAll(availableGenerations)}
+          onCollapseAll={collapseAll}
+        />
       </div>
 
       <PokemonGridSection
@@ -133,6 +116,7 @@ export const AvailablePokemonSection: React.FC<AvailablePokemonSectionProps> = (
         loadingRef={loadingRef}
         currentPage={currentPage}
         totalPages={totalPages}
+        hasMore={currentPage < totalPages}
       />
     </div>
   );
