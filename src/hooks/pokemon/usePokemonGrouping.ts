@@ -1,4 +1,3 @@
-
 import { useMemo } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { getPokemonGeneration, generationDetails } from "@/components/pokemon/generationUtils";
@@ -17,10 +16,12 @@ const getBaseGeneration = (pokemon: Pokemon): number => {
       'rattata': 1, 'raticate': 1, 'raichu': 1, 'sandshrew': 1, 'sandslash': 1,
       'vulpix': 1, 'ninetales': 1, 'diglett': 1, 'dugtrio': 1, 'meowth': 1,
       'persian': 1, 'geodude': 1, 'graveler': 1, 'golem': 1, 'grimer': 1,
-      'muk': 1, 'exeggutor': 1, 'marowak': 1,
+      'muk': 1, 'exeggutor': 1, 'marowak': 1, 'voltorb': 1, 'electrode': 1,
+      'slowpoke': 1, 'slowbro': 1, 'farfetchd': 1, 'ponyta': 1, 'rapidash': 1,
+      'slowking': 2, 'corsola': 2,
       
       // Gen 2
-      'wooper': 2, 'qwilfish': 2, 'corsola': 2, 'zigzagoon': 2, 'linoone': 2,
+      'qwilfish': 2,
       
       // Gen 3
       'zigzagoon': 3, 'linoone': 3,
@@ -30,20 +31,18 @@ const getBaseGeneration = (pokemon: Pokemon): number => {
       
       // Gen 5
       'darumaka': 5, 'darmanitan': 5, 'yamask': 5, 'cofagrigus': 5, 'stunfisk': 5,
-      'braviary': 5,
+      'zorua': 5, 'zoroark': 5, 'braviary': 5,
       
       // Gen 7
-      'decidueye': 7, 'typhlosion': 7, 'samurott': 7, 'lilligant': 7, 'basculin': 7,
-      'zorua': 7, 'zoroark': 7, 'braviary': 7, 'sliggoo': 7, 'goodra': 7,
-      'avalugg': 7, 'voltorb': 7, 'electrode': 7,
+      'decidueye': 7, 'typhlosion': 2, 'samurott': 5, 'lilligant': 5, 'basculin': 5,
+      'sliggoo': 6, 'goodra': 6, 'avalugg': 6,
       
       // Gen 8
-      'slowpoke': 8, 'slowbro': 8, 'slowking': 8, 'farfetchd': 8, 'weezing': 8,
-      'mr. mime': 8, 'articuno': 8, 'zapdos': 8, 'moltres': 8, 'rapidash': 8,
-      'corsola': 8, 'cursola': 8,
+      'mr. mime': 1, 'articuno': 1, 'zapdos': 1, 'moltres': 1, 'weezing': 1,
+      'cursola': 2,
       
       // Gen 9
-      'tauros': 9, 'wooper': 9
+      'tauros': 1, 'wooper': 2
     };
     
     if (baseGenerationMap[baseName]) {
@@ -61,6 +60,8 @@ const getBaseGeneration = (pokemon: Pokemon): number => {
       // Gen 1
       'venusaur': 1, 'charizard': 1, 'blastoise': 1, 'alakazam': 1, 'gengar': 1,
       'kangaskhan': 1, 'pinsir': 1, 'gyarados': 1, 'aerodactyl': 1, 'mewtwo': 1,
+      'butterfree': 1, 'pikachu': 1, 'machamp': 1, 'kingler': 1, 'lapras': 1,
+      'eevee': 1, 'snorlax': 1,
       
       // Gen 3
       'blaziken': 3, 'swampert': 3, 'gardevoir': 3, 'sableye': 3, 'mawile': 3,
@@ -73,16 +74,14 @@ const getBaseGeneration = (pokemon: Pokemon): number => {
       'garchomp': 4, 'lucario': 4, 'abomasnow': 4,
       
       // Gen 5
-      'audino': 5,
+      'audino': 5, 'garbodor': 5,
       
       // Gen 6
       'diancie': 6,
       
       // Gen 8 (G-Max forms)
-      'charizard': 1, 'butterfree': 1, 'pikachu': 1, 'meowth': 1, 'machamp': 1,
-      'gengar': 1, 'kingler': 1, 'lapras': 1, 'eevee': 1, 'snorlax': 1,
-      'garbodor': 5, 'corviknight': 8, 'orbeetle': 8, 'drednaw': 8, 'coalossal': 8,
-      'flapple': 8, 'appletun': 8, 'sandaconda': 8, 'toxapex': 8, 'centiskorch': 8,
+      'corviknight': 8, 'orbeetle': 8, 'drednaw': 8, 'coalossal': 8,
+      'flapple': 8, 'appletun': 8, 'sandaconda': 8, 'toxapex': 7, 'centiskorch': 8,
       'hatterene': 8, 'grimmsnarl': 8, 'alcremie': 8, 'copperajah': 8, 'duraludon': 8
     };
     
@@ -97,45 +96,14 @@ const getBaseGeneration = (pokemon: Pokemon): number => {
     const baseName = name.split('(')[0].trim();
     
     const baseGenerationMap: Record<string, number> = {
-      'rotom': 4,
-      'shaymin': 4,
-      'giratina': 4,
-      'arceus': 4,
-      'deoxys': 3,
-      'wormadam': 4,
-      'cherrim': 4,
-      'shellos': 4,
-      'gastrodon': 4,
-      'burmy': 4,
-      'dialga': 4,
-      'palkia': 4,
-      'tornadus': 5,
-      'thundurus': 5,
-      'landorus': 5,
-      'kyurem': 5,
-      'keldeo': 5,
-      'meloetta': 5,
-      'genesect': 5,
-      'hoopa': 6,
-      'oricorio': 7,
-      'lycanroc': 7,
-      'wishiwashi': 7,
-      'minior': 7,
-      'mimikyu': 7,
-      'necrozma': 7,
-      'toxtricity': 8,
-      'indeedee': 8,
-      'morpeko': 8,
-      'zacian': 8,
-      'zamazenta': 8,
-      'urshifu': 8,
-      'calyrex': 8,
-      'enamorus': 8,
-      'basculegion': 8,
-      'gimmighoul': 9,
-      'paldea': 9,
-      'gourgeist': 6,
-      'pumpkaboo': 6
+      'rotom': 4, 'shaymin': 4, 'giratina': 4, 'arceus': 4, 'deoxys': 3,
+      'wormadam': 4, 'cherrim': 4, 'shellos': 4, 'gastrodon': 4, 'burmy': 4,
+      'dialga': 4, 'palkia': 4, 'tornadus': 5, 'thundurus': 5, 'landorus': 5,
+      'kyurem': 5, 'keldeo': 5, 'meloetta': 5, 'genesect': 5, 'hoopa': 6,
+      'oricorio': 7, 'lycanroc': 7, 'wishiwashi': 7, 'minior': 7, 'mimikyu': 7,
+      'necrozma': 7, 'toxtricity': 8, 'indeedee': 8, 'morpeko': 8, 'zacian': 8,
+      'zamazenta': 8, 'urshifu': 8, 'calyrex': 8, 'enamorus': 8, 'basculegion': 8,
+      'gimmighoul': 9, 'paldea': 9, 'gourgeist': 6, 'pumpkaboo': 6
     };
     
     if (baseGenerationMap[baseName]) {
