@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect } from 'react';
 import { useAuth } from '@/contexts/auth/useAuth';
 import { toast } from '@/hooks/use-toast';
@@ -57,11 +58,7 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
 
   return (
     <div className="flex items-center gap-2">
-      <UserDropdownMenu
-        displayValues={displayValues}
-        onProfileClick={handleProfileClick}
-        onSignOut={handleSignOut}
-      />
+      <UserDropdownMenu user={effectiveUser} />
 
       <ProfileModal 
         open={profileModalOpen} 
