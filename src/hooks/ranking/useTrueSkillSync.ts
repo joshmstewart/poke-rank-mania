@@ -11,33 +11,95 @@ export const useTrueSkillSync = () => {
   const { pokemonLookupMap } = usePokemonContext();
   const [localRankings, setLocalRankings] = useState<RankedPokemon[]>([]);
 
-  // CRITICAL FIX: Sync with TrueSkill store only when both store and context are ready
+  // ULTRA COMPREHENSIVE LOGGING: Track ALL data sources
   useEffect(() => {
-    console.log(`🔥 [TRUESKILL_SYNC] ===== CHECKING READINESS =====`);
+    console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] ===== COMPREHENSIVE DATA AUDIT =====`);
     
+    // 1. Check TrueSkill Store
     const allRatings = getAllRatings();
     const ratedPokemonIds = Object.keys(allRatings).map(Number);
     
-    console.log(`🔥 [TRUESKILL_SYNC] TrueSkill ratings count: ${ratedPokemonIds.length}`);
-    console.log(`🔥 [TRUESKILL_SYNC] TrueSkill rating IDs: ${ratedPokemonIds.slice(0, 20).join(', ')}${ratedPokemonIds.length > 20 ? '...' : ''}`);
-    console.log(`🔥 [TRUESKILL_SYNC] Pokemon lookup map size: ${pokemonLookupMap.size}`);
+    console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] TRUESKILL STORE AUDIT:`);
+    console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] - Store ratings count: ${ratedPokemonIds.length}`);
+    console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] - Store rating IDs: ${ratedPokemonIds.slice(0, 20).join(', ')}${ratedPokemonIds.length > 20 ? '...' : ''}`);
+    
+    // 2. Check localStorage for any ranking data
+    console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] LOCALSTORAGE AUDIT:`);
+    const localStorageKeys = Object.keys(localStorage);
+    const rankingKeys = localStorageKeys.filter(key => 
+      key.includes('ranking') || 
+      key.includes('pokemon') || 
+      key.includes('trueskill') ||
+      key.includes('battle')
+    );
+    
+    rankingKeys.forEach(key => {
+      try {
+        const value = localStorage.getItem(key);
+        if (value) {
+          const parsed = JSON.parse(value);
+          if (Array.isArray(parsed)) {
+            console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] - LocalStorage key "${key}": ${parsed.length} items`);
+          } else if (typeof parsed === 'object' && parsed !== null) {
+            const objectKeys = Object.keys(parsed);
+            console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] - LocalStorage key "${key}": object with ${objectKeys.length} keys`);
+            if (objectKeys.length > 0) {
+              console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] - First few keys: ${objectKeys.slice(0, 10).join(', ')}`);
+            }
+          } else {
+            console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] - LocalStorage key "${key}": ${typeof parsed} value`);
+          }
+        }
+      } catch (e) {
+        console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] - LocalStorage key "${key}": non-JSON value`);
+      }
+    });
 
-    // CRITICAL FIX: Only proceed if both data sources are ready
+    // 3. Check current localRankings state
+    console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] CURRENT STATE AUDIT:`);
+    console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] - Current localRankings count: ${localRankings.length}`);
+    console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] - Current localRankings IDs: ${localRankings.slice(0, 20).map(p => p.id).join(', ')}${localRankings.length > 20 ? '...' : ''}`);
+
+    // 4. Check Pokemon context
+    console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] CONTEXT AUDIT:`);
+    console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] - Pokemon lookup map size: ${pokemonLookupMap.size}`);
+
+    // 5. Check if there are any React state sources we're missing
+    console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] REACT STATE AUDIT:`);
+    console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] - Component useState localRankings: ${localRankings.length}`);
+    
+    // 6. Check for any generation-specific data
+    console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] GENERATION-SPECIFIC DATA AUDIT:`);
+    for (let gen = 0; gen <= 9; gen++) {
+      const genKey = `manual-rankings-gen-${gen}`;
+      const genData = localStorage.getItem(genKey);
+      if (genData) {
+        try {
+          const parsed = JSON.parse(genData);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] - Found gen ${gen} data: ${parsed.length} items`);
+          }
+        } catch (e) {
+          console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] - Gen ${gen} data exists but not parseable`);
+        }
+      }
+    }
+
+    // CRITICAL: Only process TrueSkill if we have data AND context is ready
     if (ratedPokemonIds.length === 0) {
-      console.log(`🔥 [TRUESKILL_SYNC] No ratings found, setting empty rankings`);
-      setLocalRankings([]);
+      console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] No TrueSkill ratings found, keeping current state`);
+      console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] ===== END COMPREHENSIVE AUDIT =====`);
       return;
     }
 
     if (pokemonLookupMap.size === 0) {
-      console.log(`🔥 [TRUESKILL_SYNC] Pokemon context not ready yet, waiting...`);
+      console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] Pokemon context not ready yet, keeping current state`);
+      console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] ===== END COMPREHENSIVE AUDIT =====`);
       return;
     }
 
-    console.log(`🔥 [TRUESKILL_SYNC] Both data sources ready, generating rankings`);
-    console.log(`🔥 [TRUESKILL_SYNC] =====TRUESKILL DETAILS=====`);
-    console.log(`🔥 [TRUESKILL_SYNC] Total ratings in store: ${ratedPokemonIds.length}`);
-    console.log(`🔥 [TRUESKILL_SYNC] Context map size: ${pokemonLookupMap.size}`);
+    console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] PROCESSING TRUESKILL DATA:`);
+    console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] - Both data sources ready, generating rankings from TrueSkill`);
 
     const rankings: RankedPokemon[] = [];
     const missingFromContext: number[] = [];
@@ -51,7 +113,6 @@ export const useTrueSkillSync = () => {
         const conservativeEstimate = rating.mu - rating.sigma;
         const confidence = Math.max(0, Math.min(100, 100 * (1 - (rating.sigma / 8.33))));
 
-        // Apply name formatting
         const formattedName = formatPokemonName(basePokemon.name);
 
         const rankedPokemon: RankedPokemon = {
@@ -70,41 +131,34 @@ export const useTrueSkillSync = () => {
       } else {
         if (!basePokemon) {
           missingFromContext.push(pokemonId);
-          console.log(`🔥 [TRUESKILL_SYNC] ⚠️ Missing Pokemon data for ID ${pokemonId} in context`);
-        }
-        if (!ratingData) {
-          console.log(`🔥 [TRUESKILL_SYNC] ⚠️ Missing rating data for ID ${pokemonId}`);
         }
       }
     });
 
-    console.log(`🔥 [TRUESKILL_SYNC] CRITICAL INSIGHT: Found ${missingFromContext.length} Pokemon IDs in TrueSkill that aren't in context`);
-    console.log(`🔥 [TRUESKILL_SYNC] Missing IDs (first 20): ${missingFromContext.slice(0, 20).join(', ')}${missingFromContext.length > 20 ? '...' : ''}`);
-
-    // Sort by score
     rankings.sort((a, b) => b.score - a.score);
 
-    console.log(`🔥 [TRUESKILL_SYNC] Generated ${rankings.length} formatted rankings out of ${ratedPokemonIds.length} total ratings`);
-    console.log(`🔥 [TRUESKILL_SYNC] Sample rankings:`, rankings.slice(0, 3).map(p => ({
-      name: p.name,
-      id: p.id,
-      score: p.score.toFixed(3)
-    })));
+    console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] FINAL TRUESKILL PROCESSING:`);
+    console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] - Generated ${rankings.length} TrueSkill rankings`);
+    console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] - Missing from context: ${missingFromContext.length}`);
+    console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] - Setting localRankings to: ${rankings.length} items`);
 
     setLocalRankings(rankings);
-  }, [getAllRatings, pokemonLookupMap.size]); // CRITICAL FIX: Depend on map size, not map object
+    console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] ===== END COMPREHENSIVE AUDIT =====`);
+  }, [getAllRatings, pokemonLookupMap.size, localRankings.length]); // Include localRankings.length to detect external changes
 
   // Manual update function that preserves formatting
   const updateLocalRankings = (newRankings: RankedPokemon[]) => {
-    console.log(`🔥 [TRUESKILL_SYNC] Manual update with ${newRankings.length} rankings`);
+    console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] MANUAL UPDATE CALLED:`);
+    console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] - Updating with ${newRankings.length} rankings`);
+    console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] - New ranking IDs: ${newRankings.slice(0, 20).map(p => p.id).join(', ')}${newRankings.length > 20 ? '...' : ''}`);
     
-    // Ensure all names are properly formatted
     const formattedRankings = newRankings.map(pokemon => ({
       ...pokemon,
       name: formatPokemonName(pokemon.name)
     }));
     
     setLocalRankings(formattedRankings);
+    console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] - Manual update complete`);
   };
 
   return {
