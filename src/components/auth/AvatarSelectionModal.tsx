@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarImage } from '@/components/ui/avatar';
 import { getPokemonAvatars } from '@/services/pokemonAvatars';
+import { generations } from '@/services/pokemon';
 
 interface AvatarSelectionModalProps {
   open: boolean;
@@ -12,6 +13,32 @@ interface AvatarSelectionModalProps {
   currentAvatar: string;
   onSelectAvatar: (avatarUrl: string) => void;
 }
+
+// Generation details for display
+const generationDetails: Record<number, { name: string, games: string }> = {
+  1: { name: "Gen 1", games: "Red, Blue, Yellow" },
+  2: { name: "Gen 2", games: "Gold, Silver, Crystal" },
+  3: { name: "Gen 3", games: "Ruby, Sapphire, Emerald" },
+  4: { name: "Gen 4", games: "Diamond, Pearl, Platinum" },
+  5: { name: "Gen 5", games: "Black, White" },
+  6: { name: "Gen 6", games: "X, Y" },
+  7: { name: "Gen 7", games: "Sun, Moon" },
+  8: { name: "Gen 8", games: "Sword, Shield" },
+  9: { name: "Gen 9", games: "Scarlet, Violet" }
+};
+
+// Function to get Pokemon ID from avatar URL
+const getPokemonIdFromUrl = (url: string): number => {
+  const match = url.match(/\/(\d+)\.png$/);
+  return match ? parseInt(match[1], 10) : 0;
+};
+
+// Function to get generation for a Pokemon ID
+const getPokemonGeneration = (pokemonId: number) => {
+  return generations.find(gen => 
+    pokemonId >= gen.start && pokemonId <= gen.end && gen.id !== 0
+  );
+};
 
 export const AvatarSelectionModal: React.FC<AvatarSelectionModalProps> = ({
   open,
@@ -48,6 +75,25 @@ export const AvatarSelectionModal: React.FC<AvatarSelectionModalProps> = ({
     }
   }, [open]);
 
+  // Group avatars by generation
+  const avatarsByGeneration = React.useMemo(() => {
+    const grouped: Record<number, string[]> = {};
+    
+    avatarUrls.forEach(url => {
+      const pokemonId = getPokemonIdFromUrl(url);
+      const generation = getPokemonGeneration(pokemonId);
+      
+      if (generation) {
+        if (!grouped[generation.id]) {
+          grouped[generation.id] = [];
+        }
+        grouped[generation.id].push(url);
+      }
+    });
+    
+    return grouped;
+  }, [avatarUrls]);
+
   const handleSelect = () => {
     onSelectAvatar(selectedAvatar);
   };
@@ -62,42 +108,62 @@ export const AvatarSelectionModal: React.FC<AvatarSelectionModalProps> = ({
         <div className="flex flex-col gap-4">
           <ScrollArea className="h-96 w-full rounded-md border p-4">
             <div className="text-sm text-gray-600 mb-3 text-center">
-              Scroll down to see more Pokémon avatars
+              Scroll down to see more Pokémon avatars organized by generation
             </div>
             {loading ? (
               <div className="flex justify-center items-center h-32">
                 <div className="text-sm text-gray-500">Loading avatars...</div>
               </div>
             ) : (
-              <div className="grid grid-cols-6 gap-3">
-                {avatarUrls.map((avatarUrl, index) => (
-                  <div
-                    key={`${avatarUrl}-${index}`}
-                    className="relative flex justify-center items-center"
-                  >
-                    <button
-                      onClick={() => setSelectedAvatar(avatarUrl)}
-                      className={`relative w-16 h-16 rounded-full transition-all duration-200 hover:scale-110 ${
-                        selectedAvatar === avatarUrl
-                          ? 'ring-4 ring-blue-500 ring-offset-2'
-                          : 'hover:ring-2 hover:ring-blue-300'
-                      }`}
-                    >
-                      <Avatar className="w-16 h-16">
-                        <AvatarImage 
-                          src={avatarUrl} 
-                          alt={`Pokemon avatar ${index + 1}`}
-                          className="object-cover border-2 border-gray-200"
-                        />
-                      </Avatar>
-                      {selectedAvatar === avatarUrl && (
-                        <div className="absolute -top-1 -right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
-                          <span className="text-white text-xs">✓</span>
+              <div className="space-y-6">
+                {Object.entries(avatarsByGeneration)
+                  .sort(([a], [b]) => parseInt(a) - parseInt(b))
+                  .map(([genId, urls]) => {
+                    const genDetails = generationDetails[parseInt(genId)];
+                    if (!genDetails || urls.length === 0) return null;
+                    
+                    return (
+                      <div key={genId} className="space-y-3">
+                        {/* Generation Header */}
+                        <div className="bg-gradient-to-r from-blue-50 to-transparent rounded-md p-3 border border-blue-100">
+                          <h3 className="font-bold text-gray-800">{genDetails.name}</h3>
+                          <p className="text-sm text-gray-600">{genDetails.games}</p>
                         </div>
-                      )}
-                    </button>
-                  </div>
-                ))}
+                        
+                        {/* Pokemon Grid for this generation */}
+                        <div className="grid grid-cols-6 gap-3">
+                          {urls.map((avatarUrl, index) => (
+                            <div
+                              key={`${avatarUrl}-${index}`}
+                              className="relative flex justify-center items-center"
+                            >
+                              <button
+                                onClick={() => setSelectedAvatar(avatarUrl)}
+                                className={`relative w-16 h-16 rounded-full transition-all duration-200 hover:scale-110 ${
+                                  selectedAvatar === avatarUrl
+                                    ? 'ring-4 ring-blue-500 ring-offset-2'
+                                    : 'hover:ring-2 hover:ring-blue-300'
+                                }`}
+                              >
+                                <Avatar className="w-16 h-16">
+                                  <AvatarImage 
+                                    src={avatarUrl} 
+                                    alt={`Pokemon avatar ${getPokemonIdFromUrl(avatarUrl)}`}
+                                    className="object-cover border-2 border-gray-200"
+                                  />
+                                </Avatar>
+                                {selectedAvatar === avatarUrl && (
+                                  <div className="absolute -top-1 -right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                                    <span className="text-white text-xs">✓</span>
+                                  </div>
+                                )}
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
               </div>
             )}
             <div className="text-xs text-gray-500 mt-4 text-center">
