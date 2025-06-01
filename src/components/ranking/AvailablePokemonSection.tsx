@@ -89,17 +89,29 @@ export const AvailablePokemonSection: React.FC<AvailablePokemonSectionProps> = (
   return (
     <div className="w-full">
       <div className="mb-4">
-        <PokemonListControls
-          title="Available Pokémon"
-          searchTerm={searchTerm}
-          onSearchChange={setSearchTerm}
-          viewMode={viewMode}
-          onViewModeChange={setViewMode}
-          showCollapseAll={true}
-          allExpanded={allExpanded}
-          onExpandAll={() => expandAll(availableGenerations)}
-          onCollapseAll={collapseAll}
-        />
+        <div className="space-y-2 mb-3">
+          {/* Section Header with Total Count */}
+          <div className="border-b border-gray-200 pb-1">
+            <div className="flex justify-between items-center">
+              <h2 className="text-lg font-bold text-gray-900">Available Pokémon</h2>
+              <div className="text-sm font-medium text-gray-600 bg-gray-100 px-2 py-1 rounded">
+                Total: {availablePokemon.length}
+              </div>
+            </div>
+          </div>
+          
+          <PokemonListControls
+            title=""
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
+            showCollapseAll={true}
+            allExpanded={allExpanded}
+            onExpandAll={() => expandAll(availableGenerations)}
+            onCollapseAll={collapseAll}
+          />
+        </div>
       </div>
 
       <PokemonGridSection
