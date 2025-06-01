@@ -29,11 +29,10 @@ export const usePokemonGrouping = (
     }
     
     // Group by generation for the available Pokemon list
-    const result = [];
-    let currentGeneration: number | null = null;
+    const generationGroups = new Map<number, Pokemon[]>();
     
-    for (const pokemon of filtered) {
-      // Calculate generation based on Pokemon ID
+    // Group Pokemon by generation
+    filtered.forEach(pokemon => {
       let generation: number;
       if (pokemon.id <= 151) generation = 1;
       else if (pokemon.id <= 251) generation = 2;
@@ -45,28 +44,40 @@ export const usePokemonGrouping = (
       else if (pokemon.id <= 905) generation = 8;
       else generation = 9;
       
-      if (generation !== currentGeneration) {
-        // Add a header for new generation
-        const genDetails = generationDetails[generation];
-        result.push({ 
-          type: 'header', 
-          generationId: generation,
-          data: {
-            name: `Generation ${generation}`,
-            region: genDetails?.region || "Unknown",
-            games: genDetails?.games || ""
-          }
-        });
-        currentGeneration = generation;
+      if (!generationGroups.has(generation)) {
+        generationGroups.set(generation, []);
       }
+      generationGroups.get(generation)!.push(pokemon);
+    });
+    
+    // Build the result with headers and Pokemon
+    const result = [];
+    const sortedGenerations = Array.from(generationGroups.keys()).sort();
+    
+    for (const generation of sortedGenerations) {
+      const genDetails = generationDetails[generation];
+      const pokemonInGen = generationGroups.get(generation) || [];
       
-      // Add Pokemon if its generation is expanded (or if no expansion function provided)
+      // Add generation header
+      result.push({ 
+        type: 'header', 
+        generationId: generation,
+        data: {
+          name: `Generation ${generation}`,
+          region: genDetails?.region || "Unknown",
+          games: genDetails?.games || ""
+        }
+      });
+      
+      // Add Pokemon if generation is expanded (or if no expansion function provided)
       if (!isGenerationExpanded || isGenerationExpanded(generation)) {
-        result.push({ type: 'pokemon', data: pokemon });
+        pokemonInGen.forEach(pokemon => {
+          result.push({ type: 'pokemon', data: pokemon });
+        });
       }
     }
     
-    console.log(`🔍 [POKEMON_GROUPING] Generated ${result.length} items with headers`);
+    console.log(`🔍 [POKEMON_GROUPING] Generated ${result.length} items with headers for ${sortedGenerations.length} generations`);
     
     return {
       items: result,

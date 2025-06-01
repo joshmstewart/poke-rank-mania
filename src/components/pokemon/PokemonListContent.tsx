@@ -47,16 +47,24 @@ export const PokemonListContent: React.FC<PokemonListContentProps> = ({
         // Render generation header
         if (item.type === 'header') {
           return (
-            <GenerationHeader
-              key={`gen-${item.generationId}`}
-              generationId={item.generationId}
-              name={item.data.name}
-              region={item.data.region}
-              games={item.data.games}
-              viewMode={viewMode}
-              isExpanded={isGenerationExpanded ? isGenerationExpanded(item.generationId) : true}
-              onToggle={() => onToggleGeneration?.(item.generationId)}
-            />
+            <div key={`gen-${item.generationId}`} className="w-full">
+              <GenerationHeader
+                generationId={item.generationId}
+                name={item.data.name}
+                region={item.data.region}
+                games={item.data.games}
+                viewMode={viewMode}
+                isExpanded={isGenerationExpanded ? isGenerationExpanded(item.generationId) : true}
+                onToggle={() => onToggleGeneration?.(item.generationId)}
+              />
+              
+              {/* Grid container for Pokemon in this generation */}
+              {isGenerationExpanded && isGenerationExpanded(item.generationId) && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 mt-4">
+                  {/* Pokemon will be rendered after this header */}
+                </div>
+              )}
+            </div>
           );
         }
 
@@ -72,15 +80,14 @@ export const PokemonListContent: React.FC<PokemonListContentProps> = ({
           // Use the unified card component for available Pokemon (not ranking area)
           if (!isRankingArea) {
             return (
-              <div key={`pokemon-${pokemon.id}-${index}`} className="inline-block">
-                <DraggablePokemonMilestoneCard
-                  pokemon={pokemon}
-                  index={index}
-                  showRank={false}
-                  isDraggable={true}
-                  isAvailable={true}
-                />
-              </div>
+              <DraggablePokemonMilestoneCard
+                key={`pokemon-${pokemon.id}-${index}`}
+                pokemon={pokemon}
+                index={index}
+                showRank={false}
+                isDraggable={true}
+                isAvailable={true}
+              />
             );
           }
 

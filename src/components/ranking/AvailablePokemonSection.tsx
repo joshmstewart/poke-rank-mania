@@ -5,7 +5,7 @@ import { LoadingType } from "@/hooks/usePokemonRanker";
 import { InfiniteScrollLoader } from "./InfiniteScrollLoader";
 import { PaginationControls } from "./PaginationControls";
 import PokemonListControls from "@/components/pokemon/PokemonListControls";
-import { PokemonListContent } from "@/components/pokemon/PokemonListContent";
+import { PokemonGridSection } from "@/components/pokemon/PokemonGridSection";
 import { usePokemonGrouping } from "@/hooks/pokemon/usePokemonGrouping";
 import { useGenerationExpansion } from "@/hooks/pokemon/useGenerationExpansion";
 
@@ -115,16 +115,14 @@ export const AvailablePokemonSection: React.FC<AvailablePokemonSectionProps> = (
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-            <PokemonListContent
-              items={groupedItems}
-              showGenerationHeaders={showGenerationHeaders}
-              viewMode={viewMode}
-              isRankingArea={false}
-              isGenerationExpanded={isGenerationExpanded}
-              onToggleGeneration={toggleGeneration}
-            />
-          </div>
+          <PokemonGridSection
+            items={groupedItems}
+            showGenerationHeaders={showGenerationHeaders}
+            viewMode={viewMode}
+            isRankingArea={false}
+            isGenerationExpanded={isGenerationExpanded}
+            onToggleGeneration={toggleGeneration}
+          />
         )}
         
         {/* Loading indicator */}
