@@ -110,22 +110,22 @@ export const getPokemonFormCategory = (pokemon: Pokemon): PokemonFormType | null
            name.includes('♂') || name.includes('♀')) {
     category = 'gender';
   }
-  // Costume Pokemon (caps, costumes, etc.) - ENHANCED to catch all Pikachu costumes
+  // Costume Pokemon (caps, costumes, etc.) - ENHANCED to catch all Pikachu costumes including Cosplay and Alolan
   else if (name.includes('cap') || name.includes('costume') || name.includes('hat') || name.includes('libre') ||
            name.includes('phd') || name.includes('pop-star') || name.includes('rock-star') || name.includes('belle') ||
            name.includes('pop star') || name.includes('rock star') || name.includes('cosplay') ||
            (name.includes('pikachu') && (name.includes('original') || name.includes('hoenn') || name.includes('sinnoh') || 
             name.includes('unova') || name.includes('kalos') || name.includes('alola') || name.includes('partner') ||
-            name.includes('world') || name.includes('ash') || name.includes('alolan')))) {
+            name.includes('world') || name.includes('ash') || name.includes('alolan') || name.includes('cosplay')))) {
     category = 'costumes';
   }
-  // Colors and flavors (specific color/flavor variants) - ENHANCED to filter meteor Minior
+  // Colors and flavors (specific color/flavor variants) - REMOVED meteor Minior (now excluded entirely)
   else if (name.includes('red') || name.includes('blue') || name.includes('yellow') || name.includes('green') ||
            name.includes('orange') || name.includes('indigo') || name.includes('violet') || name.includes('white') ||
            name.includes('black') || name.includes('brown') || name.includes('pink') || name.includes('gray') ||
            name.includes('strawberry') || name.includes('love') || name.includes('star') || name.includes('rainbow') ||
            name.includes('flower') || name.includes('diamond') || name.includes('heart') || name.includes('clover') ||
-           (name.includes('minior') && name.includes('meteor')) || name.includes('oricorio') || name.includes('lycanroc') ||
+           name.includes('oricorio') || name.includes('lycanroc') ||
            name.includes('toxtricity') || name.includes('urshifu') || name.includes('basculin')) {
     category = 'colorsFlavors';
   }

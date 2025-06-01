@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { FormFilters, PokemonFormType } from "./types";
@@ -69,6 +70,12 @@ export const useFormFilters = () => {
     // FOURTH: Always exclude special Koraidon/Miraidon modes
     if (isSpecialKoraidonMiraidonMode(pokemon)) {
       console.log(`🚫 [FORM_FILTER_TRACE] ${pokemonName} (${pokemonId}) EXCLUDED - SPECIAL KORAIDON/MIRAIDON MODE`);
+      return false;
+    }
+    
+    // FIFTH: Always exclude meteor Minior forms (FIXED - moved from categorization to exclusion)
+    if (pokemon.name.toLowerCase().includes('minior') && pokemon.name.toLowerCase().includes('meteor')) {
+      console.log(`🚫 [FORM_FILTER_TRACE] ${pokemonName} (${pokemonId}) EXCLUDED - METEOR MINIOR FORM`);
       return false;
     }
     
