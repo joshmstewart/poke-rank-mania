@@ -67,7 +67,7 @@ export const AvatarSelectionModal: React.FC<AvatarSelectionModalProps> = ({
                   <button
                     key={`${avatarUrl}-${index}`}
                     onClick={() => setSelectedAvatar(avatarUrl)}
-                    className={`relative rounded-full transition-all duration-200 hover:scale-110 ${
+                    className={`relative aspect-square rounded-full transition-all duration-200 hover:scale-110 ${
                       selectedAvatar === avatarUrl
                         ? 'ring-4 ring-blue-500 ring-offset-2'
                         : 'hover:ring-2 hover:ring-blue-300'
@@ -77,7 +77,7 @@ export const AvatarSelectionModal: React.FC<AvatarSelectionModalProps> = ({
                       <AvatarImage 
                         src={avatarUrl} 
                         alt={`Pokemon avatar ${index + 1}`}
-                        className="object-cover"
+                        className="object-cover border-2 border-gray-200"
                       />
                     </Avatar>
                     {selectedAvatar === avatarUrl && (
