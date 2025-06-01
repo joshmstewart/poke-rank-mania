@@ -34,7 +34,10 @@ export const ProfileModalForm: React.FC<ProfileModalFormProps> = ({
         <div>
           <p className="font-medium">Current Avatar</p>
           <p className="text-sm text-muted-foreground">
-            {selectedAvatar ? 'Custom Avatar' : 'No avatar selected'}
+            {selectedAvatar ? 'Pokemon Avatar' : 'No avatar selected'}
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Click your avatar in the top right to change it
           </p>
         </div>
       </div>
@@ -58,19 +61,6 @@ export const ProfileModalForm: React.FC<ProfileModalFormProps> = ({
             placeholder="Your username"
           />
         </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="avatar-url">Avatar URL (Optional)</Label>
-        <Input
-          id="avatar-url"
-          value={selectedAvatar}
-          onChange={(e) => setSelectedAvatar(e.target.value)}
-          placeholder="https://example.com/avatar.png"
-        />
-        <p className="text-sm text-muted-foreground">
-          Enter a URL to an image you'd like to use as your avatar
-        </p>
       </div>
     </div>
   );
