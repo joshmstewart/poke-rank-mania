@@ -4,7 +4,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/auth/useAuth';
 import { toast } from '@/hooks/use-toast';
@@ -26,32 +25,40 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
   const [selectedAvatar, setSelectedAvatar] = useState<string>('');
   const [username, setUsername] = useState('');
   const [displayName, setDisplayName] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  console.log('🎯 [PROFILE_MODAL] Render - Modal open:', open, 'User ID:', user?.id);
+  console.log('🎯 [PROFILE_MODAL] Render - Modal open:', open, 'User ID:', user?.id, 'Loading:', loading);
 
   useEffect(() => {
     if (open && user?.id) {
-      console.log('🎯 [PROFILE_MODAL] Loading profile for user:', user.id);
+      console.log('🎯 [PROFILE_MODAL] Effect triggered - Loading profile for user:', user.id);
       loadProfile();
+    } else if (!open) {
+      // Reset state when modal closes
+      setLoading(true);
+      setProfile(null);
+      setSelectedAvatar('');
+      setUsername('');
+      setDisplayName('');
     }
   }, [open, user?.id]);
 
   const loadProfile = async () => {
     if (!user?.id) {
       console.log('🎯 [PROFILE_MODAL] No user ID available');
+      setLoading(false);
       return;
     }
     
-    setLoading(true);
+    console.log('🎯 [PROFILE_MODAL] Starting profile load for user ID:', user.id);
     
     try {
-      console.log('🎯 [PROFILE_MODAL] Fetching profile for user ID:', user.id);
       const profileData = await getProfile(user.id);
+      console.log('🎯 [PROFILE_MODAL] Profile fetch completed. Data:', profileData);
       
       if (profileData) {
-        console.log('🎯 [PROFILE_MODAL] Profile found:', profileData);
+        console.log('🎯 [PROFILE_MODAL] Setting profile data:', profileData);
         setProfile(profileData);
         setSelectedAvatar(profileData.avatar_url || '');
         setUsername(profileData.username || '');
@@ -67,12 +74,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
         setDisplayName(defaultDisplayName);
       }
     } catch (error) {
-      console.error('🎯 [PROFILE_MODAL] Error loading profile:', error);
-      toast({
-        title: 'Profile Load Error',
-        description: 'Could not load profile. Please try again.',
-        variant: 'destructive',
-      });
+      console.error('🎯 [PROFILE_MODAL] Error in loadProfile:', error);
       
       // Set defaults even on error
       const defaultDisplayName = user.phone ? `User ${user.phone.slice(-4)}` : user.email ? user.email.split('@')[0] : 'New User';
@@ -81,7 +83,14 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
       setSelectedAvatar('');
       setUsername(defaultUsername);
       setDisplayName(defaultDisplayName);
+      
+      toast({
+        title: 'Profile Load Error',
+        description: 'Could not load profile. Using defaults.',
+        variant: 'destructive',
+      });
     } finally {
+      console.log('🎯 [PROFILE_MODAL] Setting loading to false');
       setLoading(false);
     }
   };
@@ -128,18 +137,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
     return null;
   }
 
-  if (loading) {
-    return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-md">
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin" />
-            <span className="ml-2">Loading profile...</span>
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
-  }
+  console.log('🎯 [PROFILE_MODAL] About to render - Loading:', loading, 'Display Name:', displayName, 'Username:', username);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -151,71 +149,78 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
-          {/* Current Avatar Preview */}
-          <div className="flex items-center gap-4">
-            <Avatar className="h-16 w-16">
-              <AvatarImage src={selectedAvatar} alt="Selected avatar" />
-              <AvatarFallback>
-                <User className="h-8 w-8" />
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <p className="font-medium">Current Avatar</p>
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin" />
+            <span className="ml-2">Loading profile...</span>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {/* Current Avatar Preview */}
+            <div className="flex items-center gap-4">
+              <Avatar className="h-16 w-16">
+                <AvatarImage src={selectedAvatar} alt="Selected avatar" />
+                <AvatarFallback>
+                  <User className="h-8 w-8" />
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <p className="font-medium">Current Avatar</p>
+                <p className="text-sm text-muted-foreground">
+                  {selectedAvatar ? 'Custom Avatar' : 'No avatar selected'}
+                </p>
+              </div>
+            </div>
+
+            {/* Profile Information */}
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="display-name">Display Name</Label>
+                <Input
+                  id="display-name"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  placeholder="Your trainer name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="username">Username</Label>
+                <Input
+                  id="username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="Your username"
+                />
+              </div>
+            </div>
+
+            {/* Avatar URL Input */}
+            <div className="space-y-2">
+              <Label htmlFor="avatar-url">Avatar URL (Optional)</Label>
+              <Input
+                id="avatar-url"
+                value={selectedAvatar}
+                onChange={(e) => setSelectedAvatar(e.target.value)}
+                placeholder="https://example.com/avatar.png"
+              />
               <p className="text-sm text-muted-foreground">
-                {selectedAvatar ? 'Custom Avatar' : 'No avatar selected'}
+                Enter a URL to an image you'd like to use as your avatar
               </p>
             </div>
-          </div>
 
-          {/* Profile Information */}
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="display-name">Display Name</Label>
-              <Input
-                id="display-name"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="Your trainer name"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
-              <Input
-                id="username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Your username"
-              />
+            {/* Action Buttons */}
+            <div className="flex justify-end gap-2 pt-4">
+              <Button variant="outline" onClick={() => onOpenChange(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleSave} disabled={saving}>
+                {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                <Save className="mr-2 h-4 w-4" />
+                Save Changes
+              </Button>
             </div>
           </div>
-
-          {/* Avatar URL Input */}
-          <div className="space-y-2">
-            <Label htmlFor="avatar-url">Avatar URL (Optional)</Label>
-            <Input
-              id="avatar-url"
-              value={selectedAvatar}
-              onChange={(e) => setSelectedAvatar(e.target.value)}
-              placeholder="https://example.com/avatar.png"
-            />
-            <p className="text-sm text-muted-foreground">
-              Enter a URL to an image you'd like to use as your avatar
-            </p>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex justify-end gap-2 pt-4">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleSave} disabled={saving}>
-              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              <Save className="mr-2 h-4 w-4" />
-              Save Changes
-            </Button>
-          </div>
-        </div>
+        )}
       </DialogContent>
     </Dialog>
   );
