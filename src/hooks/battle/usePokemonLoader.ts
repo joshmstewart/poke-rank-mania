@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useRef, useEffect } from "react";
 import { Pokemon, fetchAllPokemon } from "@/services/pokemon";
 import { toast } from "@/hooks/use-toast";
@@ -12,100 +11,66 @@ export const usePokemonLoader = () => {
   // Get form filters
   const { shouldIncludePokemon, storePokemon } = useFormFilters();
 
-  // CRITICAL FIX: Force fresh load by clearing cache first
+  // CRITICAL FIX: Deterministic, consistent loading with NO randomization
   const loadInitialBatch = useCallback(async (genId = 0, fullRankingMode = true) => {
-    console.log(`🧹🧹🧹 [CACHE_CLEAR_FIX] ===== FORCING FRESH POKEMON LOAD =====`);
+    console.log(`🔒 [DETERMINISTIC_LOAD] ===== STARTING DETERMINISTIC POKEMON LOAD =====`);
     
-    // CRITICAL: Clear ALL Pokemon caches to force fresh API calls
-    const cacheKeys = Object.keys(localStorage).filter(key => key.startsWith('pokemon-cache-'));
-    cacheKeys.forEach(key => {
-      console.log(`🧹🧹🧹 [CACHE_CLEAR_FIX] Clearing cache: ${key}`);
-      localStorage.removeItem(key);
-    });
-    
-    // Reset Pokemon lock to allow fresh loading
-    pokemonLockedRef.current = false;
-    console.log(`🧹🧹🧹 [CACHE_CLEAR_FIX] Cache cleared, Pokemon unlocked, starting fresh API fetch`);
+    // Only clear cache if Pokemon are not already locked
+    if (!pokemonLockedRef.current) {
+      const cacheKeys = Object.keys(localStorage).filter(key => key.startsWith('pokemon-cache-'));
+      cacheKeys.forEach(key => {
+        console.log(`🧹 [DETERMINISTIC_LOAD] Clearing cache: ${key}`);
+        localStorage.removeItem(key);
+      });
+      console.log(`🧹 [DETERMINISTIC_LOAD] Cache cleared for fresh load`);
+    } else {
+      console.log(`🔒 [DETERMINISTIC_LOAD] Pokemon already locked, skipping cache clear`);
+      return allPokemon; // Return existing Pokemon if already loaded
+    }
 
     setIsLoading(true);
     
     try {
-      console.log(`🚀🚀🚀 [FRESH_API_CALL] Making fresh API call with NO CACHE`);
+      console.log(`🚀 [DETERMINISTIC_LOAD] Making deterministic API call`);
       
-      // CRITICAL: Call the API directly without any cache checks
       const allPokemonData = await fetchAllPokemon(genId, fullRankingMode, false);
       
       if (!allPokemonData || allPokemonData.length === 0) {
-        throw new Error(`No Pokemon data received from fresh API call`);
+        throw new Error(`No Pokemon data received from API call`);
       }
       
-      console.log(`🚀🚀🚀 [FRESH_API_CALL] ✅ Fresh API call returned ${allPokemonData.length} Pokemon`);
+      console.log(`🚀 [DETERMINISTIC_LOAD] API returned ${allPokemonData.length} Pokemon`);
       
-      // CRITICAL: Log the ID distribution of what we got from API
-      if (allPokemonData.length > 0) {
-        const apiIds = allPokemonData.map(p => p.id);
-        const apiMinId = Math.min(...apiIds);
-        const apiMaxId = Math.max(...apiIds);
-        console.log(`🚀🚀🚀 [FRESH_API_CALL] API returned ID range: ${apiMinId} - ${apiMaxId}`);
-        
-        const apiDistribution = {
-          'Gen1(1-151)': apiIds.filter(id => id >= 1 && id <= 151).length,
-          'Gen2(152-251)': apiIds.filter(id => id >= 152 && id <= 251).length,
-          'Gen3(252-386)': apiIds.filter(id => id >= 252 && id <= 386).length,
-          'Gen4(387-493)': apiIds.filter(id => id >= 387 && id <= 493).length,
-          'Gen5(494-649)': apiIds.filter(id => id >= 494 && id <= 649).length,
-          'Gen6(650-721)': apiIds.filter(id => id >= 650 && id <= 721).length,
-          'Gen7(722-809)': apiIds.filter(id => id >= 722 && id <= 809).length,
-          'Gen8(810-905)': apiIds.filter(id => id >= 810 && id <= 905).length,
-          'Gen9(906+)': apiIds.filter(id => id >= 906).length,
-        };
-        console.log(`🚀🚀🚀 [FRESH_API_CALL] Fresh API distribution by generation:`, apiDistribution);
+      // CRITICAL FIX: Sort by ID to ensure consistent ordering
+      const sortedPokemon = [...allPokemonData].sort((a, b) => a.id - b.id);
+      console.log(`🔒 [DETERMINISTIC_LOAD] Pokemon sorted by ID for consistency`);
+      
+      // CRITICAL FIX: Synchronous filtering to avoid race conditions
+      const filteredPokemon: Pokemon[] = [];
+      
+      for (const pokemon of sortedPokemon) {
+        const include = shouldIncludePokemon(pokemon);
+        if (!include) {
+          storePokemon(pokemon);
+        } else {
+          filteredPokemon.push(pokemon);
+        }
       }
       
-      // Process in chunks to avoid blocking the main thread
-      const processInChunks = (data: Pokemon[], chunkSize = 200): Promise<Pokemon[]> => {
-        return new Promise((resolve) => {
-          const filtered: Pokemon[] = [];
-          let index = 0;
-          
-          const processChunk = () => {
-            const chunk = data.slice(index, index + chunkSize);
-            
-            for (const pokemon of chunk) {
-              const include = shouldIncludePokemon(pokemon);
-              if (!include) {
-                storePokemon(pokemon);
-              } else {
-                filtered.push(pokemon);
-              }
-            }
-            
-            index += chunkSize;
-            
-            if (index < data.length) {
-              // Process next chunk in next tick
-              setTimeout(processChunk, 0);
-            } else {
-              resolve(filtered);
-            }
-          };
-          
-          processChunk();
-        });
-      };
+      console.log(`✅ [DETERMINISTIC_LOAD] Synchronous filtering complete: ${filteredPokemon.length} Pokemon after filtering`);
       
-      const filteredPokemon = await processInChunks(allPokemonData);
+      // CRITICAL FIX: NO SHUFFLING - keep deterministic order
+      // const shuffledPokemon = [...filteredPokemon].sort(() => Math.random() - 0.5); // REMOVED
+      const finalPokemon = filteredPokemon; // Keep sorted by ID
       
-      // Pre-shuffle once
-      const shuffledPokemon = [...filteredPokemon].sort(() => Math.random() - 0.5);
-      console.log(`✅🚀🚀🚀 [FRESH_API_CALL] Final result: ${shuffledPokemon.length} Pokemon after filtering`);
+      console.log(`✅ [DETERMINISTIC_LOAD] Final result: ${finalPokemon.length} Pokemon in deterministic order`);
       
-      // CRITICAL: Log the final ID distribution after filtering
-      if (shuffledPokemon.length > 0) {
-        const finalIds = shuffledPokemon.map(p => p.id);
+      // Log deterministic distribution
+      if (finalPokemon.length > 0) {
+        const finalIds = finalPokemon.map(p => p.id);
         const finalMinId = Math.min(...finalIds);
         const finalMaxId = Math.max(...finalIds);
-        console.log(`✅🚀🚀🚀 [FRESH_API_CALL] Final ID range after filtering: ${finalMinId} - ${finalMaxId}`);
+        console.log(`✅ [DETERMINISTIC_LOAD] Final ID range: ${finalMinId} - ${finalMaxId}`);
         
         const finalDistribution = {
           'Gen1(1-151)': finalIds.filter(id => id >= 1 && id <= 151).length,
@@ -118,32 +83,32 @@ export const usePokemonLoader = () => {
           'Gen8(810-905)': finalIds.filter(id => id >= 810 && id <= 905).length,
           'Gen9(906+)': finalIds.filter(id => id >= 906).length,
         };
-        console.log(`✅🚀🚀🚀 [FRESH_API_CALL] Final distribution after filtering:`, finalDistribution);
+        console.log(`✅ [DETERMINISTIC_LOAD] Deterministic distribution:`, finalDistribution);
       }
       
-      setAllPokemon(shuffledPokemon);
+      setAllPokemon(finalPokemon);
       setIsLoading(false);
       
-      // Lock Pokemon after successful load
+      // Lock Pokemon after successful load to prevent reloads
       pokemonLockedRef.current = true;
-      console.log(`🔒🚀🚀🚀 [FRESH_API_CALL] Pokemon locked at ${shuffledPokemon.length} to prevent reloads`);
+      console.log(`🔒 [DETERMINISTIC_LOAD] Pokemon locked at ${finalPokemon.length} - will be consistent on reload`);
       
-      return shuffledPokemon;
+      return finalPokemon;
       
     } catch (error) {
-      console.error(`🚨🚀🚀🚀 [FRESH_API_CALL] Fresh API call failed:`, error);
+      console.error(`🚨 [DETERMINISTIC_LOAD] Load failed:`, error);
       setIsLoading(false);
       
       toast({
         title: "Network Error", 
-        description: `Failed to load fresh Pokémon data. ${error instanceof Error ? error.message : 'Unknown error'}`,
+        description: `Failed to load Pokémon data. ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive",
         duration: 10000
       });
       
       return [];
     }
-  }, [shouldIncludePokemon, storePokemon]);
+  }, [shouldIncludePokemon, storePokemon, allPokemon]);
 
   const loadPokemon = useCallback(async (genId = 0, fullRankingMode = true) => {
     return loadInitialBatch(genId, fullRankingMode);
@@ -154,7 +119,7 @@ export const usePokemonLoader = () => {
     const keys = Object.keys(localStorage).filter(key => key.startsWith('pokemon-cache-'));
     keys.forEach(key => localStorage.removeItem(key));
     pokemonLockedRef.current = false;
-    console.log("🧹 [PERFORMANCE_FIX] Pokemon cache cleared");
+    console.log("🧹 [DETERMINISTIC_LOAD] Pokemon cache cleared - next load will be fresh");
   }, []);
 
   return {

@@ -15,36 +15,38 @@ export const usePokemonData = () => {
     loadSize: number,
     loadingType: LoadingType
   ) => {
-    console.log(`🔥🔥🔥 [POKEMON_DATA_INVESTIGATION] ===== GET POKEMON DATA =====`);
-    console.log(`🔥🔥🔥 [POKEMON_DATA_INVESTIGATION] Params: gen=${selectedGeneration}, page=${currentPage}, size=${loadSize}, type=${loadingType}`);
+    console.log(`🔒 [DETERMINISTIC_DATA] ===== GET POKEMON DATA (DETERMINISTIC) =====`);
+    console.log(`🔒 [DETERMINISTIC_DATA] Params: gen=${selectedGeneration}, page=${currentPage}, size=${loadSize}, type=${loadingType}`);
     
     // Get ALL Pokemon first
     const allPokemon = await getAllPokemon();
-    console.log(`🔥🔥🔥 [POKEMON_DATA_INVESTIGATION] Raw Pokemon from service: ${allPokemon.length}`);
+    console.log(`🔒 [DETERMINISTIC_DATA] Raw Pokemon from service: ${allPokemon.length}`);
     
-    // CRITICAL FIX: Apply name formatting to ALL Pokemon before any other processing
-    const formattedPokemon = allPokemon.map(pokemon => ({
+    // CRITICAL FIX: Sort by ID to ensure consistent ordering
+    const sortedPokemon = [...allPokemon].sort((a, b) => a.id - b.id);
+    console.log(`🔒 [DETERMINISTIC_DATA] Pokemon sorted by ID for consistency: ${sortedPokemon.length}`);
+    
+    // Apply name formatting to ALL Pokemon before any other processing
+    const formattedPokemon = sortedPokemon.map(pokemon => ({
       ...pokemon,
       name: formatPokemonName(pokemon.name)
     }));
-    console.log(`🔥🔥🔥 [POKEMON_DATA_INVESTIGATION] After name formatting: ${formattedPokemon.length}`);
+    console.log(`🔒 [DETERMINISTIC_DATA] After name formatting: ${formattedPokemon.length}`);
     
-    // Apply form filters
+    // Apply form filters (this should be deterministic)
     const filteredPokemon = analyzeFilteringPipeline(formattedPokemon);
-    console.log(`🔥🔥🔥 [POKEMON_DATA_INVESTIGATION] After form filtering: ${filteredPokemon.length}`);
-    console.log(`🔥🔥🔥 [POKEMON_DATA_INVESTIGATION] POKEMON LOST IN FILTERING: ${formattedPokemon.length - filteredPokemon.length}`);
+    console.log(`🔒 [DETERMINISTIC_DATA] After form filtering: ${filteredPokemon.length}`);
+    console.log(`🔒 [DETERMINISTIC_DATA] Pokemon lost in filtering: ${formattedPokemon.length - filteredPokemon.length}`);
     
     // Apply generation filter if needed - FIXED LOGIC
     let generationFiltered = filteredPokemon;
     if (selectedGeneration > 0) {
       generationFiltered = filteredPokemon.filter(pokemon => {
-        // CRITICAL FIX: Use proper generation logic that considers base Pokemon
         let gen: number;
         let baseId = pokemon.id;
         
         // For high IDs (variants/forms), try to map to base Pokemon generation
         if (pokemon.id > 1025) {
-          // Try modulo operations to find base ID
           const mod1000 = pokemon.id % 1000;
           const mod10000 = pokemon.id % 10000;
           
@@ -53,7 +55,6 @@ export const usePokemonData = () => {
           } else if (mod10000 >= 1 && mod10000 <= 1025) {
             baseId = mod10000;
           } else {
-            // For special cases, keep original ID
             baseId = pokemon.id;
           }
         }
@@ -69,30 +70,31 @@ export const usePokemonData = () => {
         else if (baseId <= 905) gen = 8;
         else if (baseId <= 1025) gen = 9;
         else {
-          // For completely unknown IDs, default to latest generation
           gen = 9;
         }
         
         const matches = gen === selectedGeneration;
         if (matches) {
-          console.log(`🔥🔥🔥 [GEN_FILTER] ${pokemon.name} (ID: ${pokemon.id}, baseId: ${baseId}) -> Gen ${gen} (INCLUDED)`);
+          console.log(`🔒 [DETERMINISTIC_GEN_FILTER] ${pokemon.name} (ID: ${pokemon.id}, baseId: ${baseId}) -> Gen ${gen} (INCLUDED)`);
         }
         
         return matches;
       });
-      console.log(`🔥🔥🔥 [POKEMON_DATA_INVESTIGATION] After generation filter (gen ${selectedGeneration}): ${generationFiltered.length}`);
+      console.log(`🔒 [DETERMINISTIC_DATA] After generation filter (gen ${selectedGeneration}): ${generationFiltered.length}`);
     }
     
-    // For manual ranking mode, return all Pokemon as available initially
-    const totalPages = Math.ceil(generationFiltered.length / loadSize);
+    // CRITICAL FIX: Keep Pokemon sorted by ID for deterministic ordering
+    const finalPokemon = [...generationFiltered].sort((a, b) => a.id - b.id);
     
-    console.log(`🔥🔥🔥 [POKEMON_DATA_INVESTIGATION] FINAL RESULT:`);
-    console.log(`🔥🔥🔥 [POKEMON_DATA_INVESTIGATION] Available: ${generationFiltered.length}`);
-    console.log(`🔥🔥🔥 [POKEMON_DATA_INVESTIGATION] Ranked: 0 (manual mode starts empty)`);
-    console.log(`🔥🔥🔥 [POKEMON_DATA_INVESTIGATION] Total pages: ${totalPages}`);
+    const totalPages = Math.ceil(finalPokemon.length / loadSize);
+    
+    console.log(`🔒 [DETERMINISTIC_DATA] FINAL DETERMINISTIC RESULT:`);
+    console.log(`🔒 [DETERMINISTIC_DATA] Available: ${finalPokemon.length} (sorted by ID)`);
+    console.log(`🔒 [DETERMINISTIC_DATA] Ranked: 0 (manual mode starts empty)`);
+    console.log(`🔒 [DETERMINISTIC_DATA] Total pages: ${totalPages}`);
     
     return {
-      availablePokemon: generationFiltered,
+      availablePokemon: finalPokemon,
       rankedPokemon: [], // Manual mode starts with empty rankings
       totalPages
     };
