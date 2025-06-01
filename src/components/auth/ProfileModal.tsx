@@ -28,168 +28,103 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  console.log('🎯 [PROFILE_MODAL_DETAILED] ===========================================');
-  console.log('🎯 [PROFILE_MODAL_DETAILED] Component render:', {
-    modalOpen: open,
-    userId: user?.id,
-    userPhone: user?.phone,
-    userEmail: user?.email,
-    loading,
-    saving,
-    profileExists: !!profile,
-    displayName,
-    username,
-    selectedAvatar
-  });
+  console.log('🎯 [PROFILE_MODAL_DEBUG] ===== COMPONENT RENDER =====');
+  console.log('🎯 [PROFILE_MODAL_DEBUG] Modal open:', open);
+  console.log('🎯 [PROFILE_MODAL_DEBUG] User ID:', user?.id);
+  console.log('🎯 [PROFILE_MODAL_DEBUG] Loading state:', loading);
 
-  console.log('🎯 [PROFILE_MODAL_DETAILED] useEffect dependencies check:', {
-    open,
-    'user?.id': user?.id,
-    'typeof user?.id': typeof user?.id,
-    'user exists': !!user,
-    'user object': user
-  });
-
-  // Simplified useEffect with better dependency tracking
   useEffect(() => {
-    console.log('🎯 [PROFILE_MODAL_DETAILED] ===== useEffect TRIGGERED =====');
-    console.log('🎯 [PROFILE_MODAL_DETAILED] useEffect triggered with:', {
-      open,
-      userId: user?.id,
-      hasUser: !!user,
-      'user?.id truthy': !!user?.id,
-      'open && user?.id': open && !!user?.id
-    });
-
-    // Reset loading when modal opens
-    if (open) {
-      console.log('🎯 [PROFILE_MODAL_DETAILED] Modal opened - starting load process');
-      setLoading(true);
+    console.log('🎯 [PROFILE_MODAL_DEBUG] ===== useEffect TRIGGERED =====');
+    console.log('🎯 [PROFILE_MODAL_DEBUG] Effect dependencies:', { open, userId: user?.id });
+    
+    const loadProfileWithErrorHandling = async () => {
+      console.log('🎯 [PROFILE_MODAL_DEBUG] ===== loadProfileWithErrorHandling START =====');
       
-      if (user?.id) {
-        console.log('🎯 [PROFILE_MODAL_DETAILED] ✅ CONDITIONS MET - calling loadProfile()');
-        console.log('🎯 [PROFILE_MODAL_DETAILED] About to call loadProfile with userId:', user.id);
-        loadProfile();
-      } else {
-        console.log('🎯 [PROFILE_MODAL_DETAILED] ❌ NO USER ID - setting loading to false');
+      if (!user?.id) {
+        console.log('🎯 [PROFILE_MODAL_DEBUG] No user ID, setting loading to false');
         setLoading(false);
+        return;
       }
+
+      try {
+        console.log('🎯 [PROFILE_MODAL_DEBUG] About to call getProfile with ID:', user.id);
+        console.log('🎯 [PROFILE_MODAL_DEBUG] Calling getProfile...');
+        
+        const result = await getProfile(user.id);
+        
+        console.log('🎯 [PROFILE_MODAL_DEBUG] ===== getProfile COMPLETED =====');
+        console.log('🎯 [PROFILE_MODAL_DEBUG] Result received:', result);
+        console.log('🎯 [PROFILE_MODAL_DEBUG] Result type:', typeof result);
+        console.log('🎯 [PROFILE_MODAL_DEBUG] Result is null:', result === null);
+        console.log('🎯 [PROFILE_MODAL_DEBUG] Result is undefined:', result === undefined);
+        
+        if (result) {
+          console.log('🎯 [PROFILE_MODAL_DEBUG] Setting profile data...');
+          setProfile(result);
+          setSelectedAvatar(result.avatar_url || '');
+          setUsername(result.username || '');
+          setDisplayName(result.display_name || '');
+          console.log('🎯 [PROFILE_MODAL_DEBUG] Profile data set successfully');
+        } else {
+          console.log('🎯 [PROFILE_MODAL_DEBUG] No profile found, setting defaults...');
+          const defaultDisplayName = user.phone ? `User ${user.phone.slice(-4)}` : user.email ? user.email.split('@')[0] : 'New User';
+          const defaultUsername = user.phone ? `user_${user.phone.slice(-4)}` : user.email ? user.email.split('@')[0] : 'new_user';
+          
+          setSelectedAvatar('');
+          setUsername(defaultUsername);
+          setDisplayName(defaultDisplayName);
+          console.log('🎯 [PROFILE_MODAL_DEBUG] Defaults set:', { defaultDisplayName, defaultUsername });
+        }
+        
+      } catch (error) {
+        console.error('🎯 [PROFILE_MODAL_DEBUG] ===== ERROR IN loadProfileWithErrorHandling =====');
+        console.error('🎯 [PROFILE_MODAL_DEBUG] Error:', error);
+        console.error('🎯 [PROFILE_MODAL_DEBUG] Error message:', error instanceof Error ? error.message : 'Unknown error');
+        console.error('🎯 [PROFILE_MODAL_DEBUG] Error stack:', error instanceof Error ? error.stack : 'No stack');
+        
+        // Set defaults on error
+        const defaultDisplayName = user.phone ? `User ${user.phone.slice(-4)}` : user.email ? user.email.split('@')[0] : 'New User';
+        const defaultUsername = user.phone ? `user_${user.phone.slice(-4)}` : user.email ? user.email.split('@')[0] : 'new_user';
+        
+        setSelectedAvatar('');
+        setUsername(defaultUsername);
+        setDisplayName(defaultDisplayName);
+        
+        toast({
+          title: 'Profile Load Error',
+          description: 'Could not load profile. Using defaults.',
+          variant: 'destructive',
+        });
+      } finally {
+        console.log('🎯 [PROFILE_MODAL_DEBUG] Setting loading to false in finally block');
+        setLoading(false);
+        console.log('🎯 [PROFILE_MODAL_DEBUG] ===== loadProfileWithErrorHandling END =====');
+      }
+    };
+
+    if (open) {
+      console.log('🎯 [PROFILE_MODAL_DEBUG] Modal is open, starting load...');
+      setLoading(true);
+      loadProfileWithErrorHandling();
     } else {
-      console.log('🎯 [PROFILE_MODAL_DETAILED] Modal closed, resetting state');
+      console.log('🎯 [PROFILE_MODAL_DEBUG] Modal closed, resetting state');
       setLoading(true);
       setProfile(null);
       setSelectedAvatar('');
       setUsername('');
       setDisplayName('');
     }
-  }, [open, user?.id]); // Simplified dependencies
-
-  const loadProfile = async () => {
-    console.log('🎯 [PROFILE_MODAL_DETAILED] ===== loadProfile() START =====');
-    console.log('🎯 [PROFILE_MODAL_DETAILED] loadProfile function called');
-    console.log('🎯 [PROFILE_MODAL_DETAILED] Current loading state before check:', loading);
-    
-    if (!user?.id) {
-      console.log('🎯 [PROFILE_MODAL_DETAILED] No user ID in loadProfile, exiting early');
-      setLoading(false);
-      return;
-    }
-    
-    console.log('🎯 [PROFILE_MODAL_DETAILED] Starting profile load for user:', user.id);
-    console.log('🎯 [PROFILE_MODAL_DETAILED] User object details:', {
-      id: user.id,
-      email: user.email,
-      phone: user.phone,
-      fullUserObject: user
-    });
-    
-    try {
-      console.log('🎯 [PROFILE_MODAL_DETAILED] About to call getProfile()...');
-      console.log('🎯 [PROFILE_MODAL_DETAILED] Calling getProfile with userId:', user.id);
-      
-      const profileData = await getProfile(user.id);
-      
-      console.log('🎯 [PROFILE_MODAL_DETAILED] getProfile() returned:', profileData);
-      console.log('🎯 [PROFILE_MODAL_DETAILED] Profile data type:', typeof profileData);
-      console.log('🎯 [PROFILE_MODAL_DETAILED] Profile data is null:', profileData === null);
-      console.log('🎯 [PROFILE_MODAL_DETAILED] Profile data is undefined:', profileData === undefined);
-      
-      if (profileData) {
-        console.log('🎯 [PROFILE_MODAL_DETAILED] Profile data found, setting state:', {
-          avatar_url: profileData.avatar_url,
-          username: profileData.username,
-          display_name: profileData.display_name
-        });
-        
-        console.log('🎯 [PROFILE_MODAL_DETAILED] Setting profile state...');
-        setProfile(profileData);
-        console.log('🎯 [PROFILE_MODAL_DETAILED] Setting avatar state...');
-        setSelectedAvatar(profileData.avatar_url || '');
-        console.log('🎯 [PROFILE_MODAL_DETAILED] Setting username state...');
-        setUsername(profileData.username || '');
-        console.log('🎯 [PROFILE_MODAL_DETAILED] Setting display name state...');
-        setDisplayName(profileData.display_name || '');
-        
-        console.log('🎯 [PROFILE_MODAL_DETAILED] All profile state set successfully');
-      } else {
-        console.log('🎯 [PROFILE_MODAL_DETAILED] No profile found, generating defaults');
-        
-        const defaultDisplayName = user.phone ? `User ${user.phone.slice(-4)}` : user.email ? user.email.split('@')[0] : 'New User';
-        const defaultUsername = user.phone ? `user_${user.phone.slice(-4)}` : user.email ? user.email.split('@')[0] : 'new_user';
-        
-        console.log('🎯 [PROFILE_MODAL_DETAILED] Generated defaults:', {
-          defaultDisplayName,
-          defaultUsername
-        });
-        
-        console.log('🎯 [PROFILE_MODAL_DETAILED] Setting default state values...');
-        setSelectedAvatar('');
-        setUsername(defaultUsername);
-        setDisplayName(defaultDisplayName);
-        
-        console.log('🎯 [PROFILE_MODAL_DETAILED] Default state set successfully');
-      }
-    } catch (error) {
-      console.error('🎯 [PROFILE_MODAL_DETAILED] Error in loadProfile:', error);
-      console.error('🎯 [PROFILE_MODAL_DETAILED] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
-      
-      const defaultDisplayName = user.phone ? `User ${user.phone.slice(-4)}` : user.email ? user.email.split('@')[0] : 'New User';
-      const defaultUsername = user.phone ? `user_${user.phone.slice(-4)}` : user.email ? user.email.split('@')[0] : 'new_user';
-      
-      console.log('🎯 [PROFILE_MODAL_DETAILED] Setting fallback defaults due to error');
-      
-      setSelectedAvatar('');
-      setUsername(defaultUsername);
-      setDisplayName(defaultDisplayName);
-      
-      toast({
-        title: 'Profile Load Error',
-        description: 'Could not load profile. Using defaults.',
-        variant: 'destructive',
-      });
-    } finally {
-      console.log('🎯 [PROFILE_MODAL_DETAILED] Setting loading to false in finally block');
-      console.log('🎯 [PROFILE_MODAL_DETAILED] Current loading state before setting to false:', loading);
-      setLoading(false);
-      console.log('🎯 [PROFILE_MODAL_DETAILED] Loading should now be false');
-      console.log('🎯 [PROFILE_MODAL_DETAILED] ===== loadProfile() END =====');
-    }
-  };
+  }, [open, user?.id]);
 
   const handleSave = async () => {
-    console.log('🎯 [PROFILE_MODAL_DETAILED] handleSave() called');
+    console.log('🎯 [PROFILE_MODAL_DEBUG] handleSave called');
     
     if (!user?.id) {
-      console.log('🎯 [PROFILE_MODAL_DETAILED] No user ID for save operation');
+      console.log('🎯 [PROFILE_MODAL_DEBUG] No user ID for save');
       return;
     }
 
     setSaving(true);
-    console.log('🎯 [PROFILE_MODAL_DETAILED] Saving profile with data:', {
-      avatar_url: selectedAvatar,
-      username: username.trim(),
-      display_name: displayName.trim()
-    });
     
     try {
       const success = await updateProfile(user.id, {
@@ -197,8 +132,6 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
         username: username.trim(),
         display_name: displayName.trim(),
       });
-
-      console.log('🎯 [PROFILE_MODAL_DETAILED] Update result:', success);
 
       if (success) {
         toast({
@@ -214,7 +147,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
         });
       }
     } catch (error) {
-      console.error('🎯 [PROFILE_MODAL_DETAILED] Error saving profile:', error);
+      console.error('🎯 [PROFILE_MODAL_DEBUG] Error saving profile:', error);
       toast({
         title: 'Save Error',
         description: 'An error occurred while saving your profile.',
@@ -226,11 +159,11 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
   };
 
   if (!user?.id) {
-    console.log('🎯 [PROFILE_MODAL_DETAILED] No user, returning null');
+    console.log('🎯 [PROFILE_MODAL_DEBUG] No user, returning null');
     return null;
   }
 
-  console.log('🎯 [PROFILE_MODAL_DETAILED] About to render modal with loading state:', loading);
+  console.log('🎯 [PROFILE_MODAL_DEBUG] About to render modal, loading:', loading);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
