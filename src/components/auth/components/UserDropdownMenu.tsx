@@ -1,56 +1,91 @@
 
-import React from 'react';
+import React, { useState, useCallback } from 'react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { LogOut, User, Settings } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { User, Settings, LogOut, ChevronDown } from 'lucide-react';
+import { useAuth } from '@/contexts/auth/useAuth';
+import { ProfileModal } from '../ProfileModal';
 
 interface UserDropdownMenuProps {
-  displayValues: {
-    displayName: string;
-    displayIdentifier: string;
-    avatarUrl?: string;
-  } | null;
-  onProfileClick: () => void;
-  onSignOut: () => void;
+  user: {
+    id: string;
+    email?: string;
+    user_metadata?: {
+      avatar_url?: string;
+      username?: string;
+      display_name?: string;
+    };
+  };
 }
 
-export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({
-  displayValues,
-  onProfileClick,
-  onSignOut
-}) => {
-  if (!displayValues) return null;
+export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({ user }) => {
+  const { signOut } = useAuth();
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
+
+  const handleSignOut = useCallback(async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  }, [signOut]);
+
+  const handleProfileModalOpen = useCallback(() => {
+    setProfileModalOpen(true);
+  }, []);
+
+  const handleProfileModalClose = useCallback((open: boolean) => {
+    setProfileModalOpen(open);
+  }, []);
+
+  const displayName = user.user_metadata?.display_name || user.user_metadata?.username || 'User';
+  const avatarUrl = user.user_metadata?.avatar_url;
+  const userInitials = displayName.charAt(0).toUpperCase();
 
   return (
-    <div className="flex items-center gap-2">
-      <Avatar className="h-8 w-8">
-        <AvatarImage src={displayValues.avatarUrl || undefined} alt={displayValues.displayName} />
-        <AvatarFallback className="bg-blue-500 text-white">
-          <User className="h-4 w-4" />
-        </AvatarFallback>
-      </Avatar>
-
+    <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="flex items-center gap-2 px-3 py-2">
-            <span className="text-sm font-medium hidden sm:inline">
-              {displayValues.displayName}
+          <Button variant="ghost" className="flex items-center gap-2 px-3">
+            <Avatar className="h-8 w-8">
+              <AvatarImage src={avatarUrl} alt={displayName} />
+              <AvatarFallback className="bg-primary text-primary-foreground">
+                {userInitials}
+              </AvatarFallback>
+            </Avatar>
+            <span className="hidden sm:inline text-sm font-medium truncate max-w-32">
+              {displayName}
             </span>
+            <ChevronDown className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
+        
         <DropdownMenuContent align="end" className="w-56">
-          <DropdownMenuItem onClick={onProfileClick}>
+          <DropdownMenuItem onClick={handleProfileModalOpen}>
             <Settings className="mr-2 h-4 w-4" />
-            My Profile
+            Edit Profile
           </DropdownMenuItem>
+          
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={onSignOut}>
+          
+          <DropdownMenuItem onClick={handleSignOut}>
             <LogOut className="mr-2 h-4 w-4" />
             Sign Out
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-    </div>
+
+      <ProfileModal 
+        open={profileModalOpen} 
+        onOpenChange={handleProfileModalClose}
+      />
+    </>
   );
 };
