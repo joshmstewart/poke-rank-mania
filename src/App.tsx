@@ -7,8 +7,6 @@ import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { Toaster } from "@/components/ui/toaster"
 import PokemonRankerWithProvider from "@/components/pokemon/PokemonRankerWithProvider";
 import { AuthWrapper } from "@/components/auth/AuthWrapper";
-import { BulletproofAuthDisplay } from "@/components/auth/BulletproofAuthDisplay";
-import { PersistentWrapperMonitor } from "@/components/auth/PersistentWrapperMonitor";
 
 function AppContent() {
   const [mode, setMode] = useLocalStorage<"rank" | "battle">("pokemon-ranker-mode", "rank");
@@ -52,7 +50,7 @@ function AppContent() {
         mode: mode,
         timestamp: new Date().toISOString()
       });
-    }, 4000); // Reduced frequency
+    }, 4000);
     
     intervalRefs.current.push(monitoringInterval);
     
@@ -108,22 +106,9 @@ function AppContent() {
     }
   };
 
+  // VISUAL DEBUG OVERLAY REMOVED - Clean production-like interface
   return (
     <div className="flex flex-col h-screen">
-      {/* FIXED PERSISTENT COMPONENTS */}
-      <BulletproofAuthDisplay />
-      <PersistentWrapperMonitor />
-      
-      <div className="bg-purple-500 border-8 border-yellow-500 p-4 m-2">
-        <div className="text-2xl font-bold text-yellow-500 mb-2">🚀 FIXED MAIN APP CONTAINER 🚀</div>
-        <div className="text-white">Instance: {stableInstance.current}</div>
-        <div className="text-white">Fixed App rendering - timestamp: {new Date().toISOString()}</div>
-        <div className="text-white">Mode: {mode}</div>
-        <div className="text-white">Render count: {renderCount.current}</div>
-        <div className="text-white">Mount time: {mountTime.current}</div>
-        <div className="text-white font-bold">🔥 STABILIZED - WILL NOT DISAPPEAR 🔥</div>
-      </div>
-      
       <AppHeader mode={mode} onModeChange={handleModeChange} />
       
       <main className="flex-grow bg-gray-100 py-6 px-4">
@@ -169,7 +154,7 @@ function App() {
         renderCount: renderCount.current,
         timestamp: new Date().toISOString()
       });
-    }, 6000); // Reduced frequency
+    }, 6000);
     
     intervalRefs.current.push(monitoringInterval);
     

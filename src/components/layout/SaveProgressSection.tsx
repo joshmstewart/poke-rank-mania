@@ -1,101 +1,78 @@
 
 import React from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { AuthenticatedUserDisplay } from '@/components/auth/AuthenticatedUserDisplay';
 import { CloudSyncButton } from '@/components/auth/CloudSyncButton';
-import { Check } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { AuthenticatedUserDisplay } from '@/components/auth/AuthenticatedUserDisplay';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 
-const SaveProgressSection: React.FC = () => {
-  console.log('🚨🚨🚨 SAVE_PROGRESS_SECTION_ULTIMATE: ===== COMPONENT RENDER START =====');
-  
-  const { user, loading, session } = useAuth();
+export const SaveProgressSection = () => {
+  const { user, session } = useAuth();
   const [directSupabaseUser, setDirectSupabaseUser] = React.useState<any>(null);
 
   // Get direct Supabase user for comparison
   React.useEffect(() => {
     supabase.auth.getUser().then(({ data: { user: directUser }, error }) => {
       setDirectSupabaseUser(directUser);
-      console.log('🚨🚨🚨 SAVE_PROGRESS_SECTION_ULTIMATE: Direct Supabase user check:', {
+      console.log('💾💾💾 SAVE_PROGRESS_SECTION_FIXED: Direct Supabase user check:', {
         hasDirectUser: !!directUser,
         directEmail: directUser?.email,
+        directPhone: directUser?.phone,
         error: error?.message,
         timestamp: new Date().toISOString()
       });
     });
   }, []);
 
-  console.log('🚨🚨🚨 SAVE_PROGRESS_SECTION_ULTIMATE: 🔥 AUTH STATE FROM useAuth 🔥');
-  console.log('🚨🚨🚨 SAVE_PROGRESS_SECTION_ULTIMATE: Auth state received from useAuth:', {
+  console.log('💾💾💾 SAVE_PROGRESS_SECTION_FIXED: ===== RENDER START =====');
+  console.log('💾💾💾 SAVE_PROGRESS_SECTION_FIXED: 🔥 FIXED RENDERING MODE 🔥');
+  console.log('💾💾💾 SAVE_PROGRESS_SECTION_FIXED: Auth state from useAuth:', {
     hasUser: !!user,
     hasSession: !!session,
-    loading,
     userEmail: user?.email || 'no email',
+    userPhone: user?.phone || 'no phone',
     sessionUserEmail: session?.user?.email || 'no session email',
-    userFromAuth: user ? 'present' : 'null',
-    sessionFromAuth: session ? 'present' : 'null',
+    sessionUserPhone: session?.user?.phone || 'no session phone',
+    contextFixed: (!!user || !!session?.user) ? 'YES - useAuth WORKING!' : 'NO - useAuth STILL BROKEN',
     timestamp: new Date().toISOString()
   });
 
-  console.log('🚨🚨🚨 SAVE_PROGRESS_SECTION_ULTIMATE: 🔥 DIRECT SUPABASE USER 🔥');
-  console.log('🚨🚨🚨 SAVE_PROGRESS_SECTION_ULTIMATE: Direct Supabase user:', {
+  console.log('💾💾💾 SAVE_PROGRESS_SECTION_FIXED: Direct Supabase user:', {
     hasDirectUser: !!directSupabaseUser,
     directUserEmail: directSupabaseUser?.email || 'no direct email',
-    directUserId: directSupabaseUser?.id || 'no direct id',
+    directUserPhone: directSupabaseUser?.phone || 'no direct phone',
     timestamp: new Date().toISOString()
   });
 
-  console.log('🚨🚨🚨 SAVE_PROGRESS_SECTION_ULTIMATE: Call stack:', new Error().stack);
+  console.log('💾💾💾 SAVE_PROGRESS_SECTION_FIXED: Call stack:', new Error().stack);
 
-  if (loading) {
-    console.log('🚨🚨🚨 SAVE_PROGRESS_SECTION_ULTIMATE: 🔄 RETURNING LOADING STATE 🔄');
-    return (
-      <div className="flex items-center justify-center py-4">
-        <div className="animate-pulse bg-gray-200 h-8 w-24 rounded"></div>
-      </div>
-    );
-  }
-
-  // Check for authentication from any source
   const isAuthenticated = !!(user || session?.user || directSupabaseUser);
-  const effectiveUser = user || session?.user || directSupabaseUser;
-  
-  console.log('🚨🚨🚨 SAVE_PROGRESS_SECTION_ULTIMATE: 🔥 AUTHENTICATION CHECK 🔥');
-  console.log('🚨🚨🚨 SAVE_PROGRESS_SECTION_ULTIMATE: Authentication analysis:', {
+
+  console.log('💾💾💾 SAVE_PROGRESS_SECTION_FIXED: 🔥 AUTHENTICATION CHECK 🔥');
+  console.log('💾💾💾 SAVE_PROGRESS_SECTION_FIXED: Authentication check:', {
     isAuthenticated,
     hasUser: !!user,
     hasSessionUser: !!session?.user,
     hasDirectUser: !!directSupabaseUser,
-    effectiveUserEmail: effectiveUser?.email,
-    renderDecision: isAuthenticated ? 'RENDER_AUTHENTICATED' : 'RENDER_UNAUTHENTICATED',
+    renderDecision: isAuthenticated ? 'RENDER_AUTHENTICATED_DISPLAY' : 'RENDER_CLOUD_SYNC_BUTTON',
     timestamp: new Date().toISOString()
   });
 
-  if (isAuthenticated) {
-    console.log('🚨🚨🚨 SAVE_PROGRESS_SECTION_ULTIMATE: ✅ USER IS AUTHENTICATED - RENDERING AUTH UI ✅');
-    
-    return (
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2">
-          <Badge variant="secondary" className="flex items-center gap-1 bg-green-100 text-green-700 border-green-200">
-            <Check className="h-3 w-3" />
-            <span className="text-xs">Synced</span>
-          </Badge>
-        </div>
-        
-        <AuthenticatedUserDisplay currentUser={effectiveUser} />
-      </div>
-    );
-  }
+  console.log('💾💾💾 SAVE_PROGRESS_SECTION_FIXED: 🔥 ABOUT TO RENDER JSX 🔥');
+  console.log('💾💾💾 SAVE_PROGRESS_SECTION_FIXED: About to render JSX with decision:', {
+    isAuthenticated,
+    willRenderAuthenticatedDisplay: isAuthenticated,
+    willRenderCloudSyncButton: !isAuthenticated,
+    timestamp: new Date().toISOString()
+  });
 
-  console.log('🚨🚨🚨 SAVE_PROGRESS_SECTION_ULTIMATE: ❌ USER NOT AUTHENTICATED - RENDERING SYNC BUTTON ❌');
-  
+  // VISUAL DEBUG OVERLAY REMOVED - Clean production interface
   return (
     <div className="flex items-center gap-4">
-      <CloudSyncButton />
+      {isAuthenticated ? (
+        <AuthenticatedUserDisplay currentUser={user || session?.user || directSupabaseUser} />
+      ) : (
+        <CloudSyncButton />
+      )}
     </div>
   );
 };
-
-export default SaveProgressSection;

@@ -52,7 +52,7 @@ export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
         stillMounted: 'YES',
         timestamp: new Date().toISOString()
       });
-    }, 3000); // Reduced frequency
+    }, 3000);
     
     intervalRefs.current.push(monitoringInterval);
     
@@ -107,7 +107,7 @@ export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
       if (authState === 'AUTHENTICATED') {
         console.log('🟢🟢🟢 [NAWGTI_FIXED] 🎯 AUTHENTICATED HEARTBEAT - NAWGTI IS STABLE 🎯');
       }
-    }, 5000); // Reduced frequency
+    }, 5000);
     
     intervalRefs.current.push(heartbeat);
     
@@ -163,40 +163,12 @@ export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
   console.log('🟢🟢🟢 [NAWGTI_FIXED] About to render JSX structure');
   console.log('🟢🟢🟢 [NAWGTI_FIXED] Current auth state for rendering decision:', authState);
 
+  // VISUAL DEBUG OVERLAY REMOVED - Only functional wrapper remains
   return (
     <div className="auth-wrapper-container" style={{ minHeight: '100vh', position: 'relative' }}>
-      <div style={{ 
-        position: 'fixed', 
-        top: '10px', 
-        left: '10px', 
-        zIndex: 9999, 
-        backgroundColor: 'purple', 
-        color: 'white', 
-        padding: '15px',
-        fontSize: '14px',
-        fontWeight: 'bold',
-        border: '5px solid yellow',
-        maxWidth: '500px'
-      }}>
-        🟢 FIXED WRAPPER BOX (NAWGTI) 🟢<br/>
-        Instance ID: {wrapperInstance.current}<br/>
-        Render #{renderCount.current}<br/>
-        Auth State: {authState}<br/>
-        Time: {new Date().toLocaleTimeString()}<br/>
-        Last Heartbeat: {new Date(lastHeartbeat).toLocaleTimeString()}<br/>
-        <span style={{ color: 'red', fontSize: '12px' }}>
-          ⚠️ STABILIZED - WILL NOT DISAPPEAR ⚠️
-        </span><br/>
-        <span style={{ color: 'yellow', fontSize: '11px' }}>
-          Enhanced with stability fixes
-        </span>
-      </div>
-      
       <AuthProvider>
         <ImpliedBattleTrackerProvider>
-          <div style={{ marginTop: '160px' }}>
-            {children}
-          </div>
+          {children}
         </ImpliedBattleTrackerProvider>
       </AuthProvider>
     </div>
