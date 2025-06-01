@@ -23,9 +23,9 @@ export const shouldFilterPokemon = (name: string): boolean => {
     return true;
   }
   
-  // Hide special modes of Koraidon and Miraidon
+  // Hide special modes of Koraidon and Miraidon (but NOT Apex forms)
   if ((lowerName.includes('koraidon') || lowerName.includes('miraidon')) && 
-      (lowerName.includes('apex') || lowerName.includes('limited') || 
+      (lowerName.includes('limited') || 
        lowerName.includes('build') || lowerName.includes('mode'))) {
     console.log(`🔧 [FORMAT_DEBUG] Filtering out special Koraidon/Miraidon mode: "${name}"`);
     return true;
