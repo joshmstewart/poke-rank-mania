@@ -12,12 +12,9 @@ interface ProfileModalContentProps {
   setUsername: (value: string) => void;
   displayName: string;
   setDisplayName: (value: string) => void;
-  saving: boolean;
   onCancel: () => void;
-  onSave: () => void;
   onAvatarClick: () => void;
-  hasChanges?: boolean;
-  user?: any;
+  onSaveSuccess: () => void;
 }
 
 export const ProfileModalContent: React.FC<ProfileModalContentProps> = ({
@@ -28,22 +25,11 @@ export const ProfileModalContent: React.FC<ProfileModalContentProps> = ({
   setUsername,
   displayName,
   setDisplayName,
-  saving,
   onCancel,
-  onSave,
   onAvatarClick,
-  hasChanges,
-  user
+  onSaveSuccess
 }) => {
-  console.log('📝 [PROFILE_CONTENT] ===== RENDER =====');
-  console.log('📝 [PROFILE_CONTENT] onSave function received:', {
-    onSaveExists: !!onSave,
-    onSaveType: typeof onSave,
-    saving,
-    hasChanges,
-    userExists: !!user,
-    timestamp: new Date().toISOString()
-  });
+  console.log('📝📝📝 [NEW_PROFILE_CONTENT] Render with simplified props');
 
   if (loading) {
     return <ProfileModalLoading />;
@@ -63,10 +49,10 @@ export const ProfileModalContent: React.FC<ProfileModalContentProps> = ({
       
       <ProfileModalActions
         onCancel={onCancel}
-        onSave={onSave}
-        saving={saving}
-        hasChanges={hasChanges}
-        user={user}
+        selectedAvatar={selectedAvatar}
+        username={username}
+        displayName={displayName}
+        onSaveSuccess={onSaveSuccess}
       />
     </div>
   );

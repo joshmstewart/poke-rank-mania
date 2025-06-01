@@ -2,101 +2,98 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Save, Loader2 } from 'lucide-react';
+import { useAuth } from '@/contexts/auth/useAuth';
+import { useDirectProfileSave } from './hooks/useDirectProfileSave';
 
 interface ProfileModalActionsProps {
   onCancel: () => void;
-  onSave: () => void;
-  saving: boolean;
-  hasChanges?: boolean;
-  user?: any;
+  selectedAvatar: string;
+  username: string;
+  displayName: string;
+  onSaveSuccess: () => void;
 }
 
 export const ProfileModalActions: React.FC<ProfileModalActionsProps> = ({
   onCancel,
-  onSave,
-  saving,
-  hasChanges,
-  user
+  selectedAvatar,
+  username,
+  displayName,
+  onSaveSuccess
 }) => {
-  console.log('🔘 [PROFILE_ACTIONS] ===== COMPONENT RENDER =====');
-  console.log('🔘 [PROFILE_ACTIONS] Render state:', {
-    saving,
-    hasChanges,
-    userExists: !!user,
-    onSaveExists: !!onSave,
-    onSaveType: typeof onSave,
-    onCancelExists: !!onCancel,
-    timestamp: new Date().toISOString()
+  const { user } = useAuth();
+  const { isSaving, directSaveProfile } = useDirectProfileSave();
+
+  console.log('🔘🔘🔘 [NEW_PROFILE_ACTIONS] Render with props:', {
+    selectedAvatar,
+    username,
+    displayName,
+    hasUser: !!user,
+    isSaving
   });
 
-  const handleCancelClick = (e: React.MouseEvent) => {
-    console.log('🔘 [PROFILE_ACTIONS] Cancel button clicked');
-    e.preventDefault();
-    e.stopPropagation();
-    onCancel();
-  };
-
-  const handleSaveChangesButtonClick = (e: React.MouseEvent) => {
-    console.log("🟢🟢🟢 [PROFILE_ACTIONS_CLICK] 'Save Changes' Button onClick Handler EXECUTED! 🟢🟢🟢");
-    
-    console.log('🔘 [PROFILE_ACTIONS] ===== SAVE BUTTON CLICKED =====');
-    console.log('🔘 [PROFILE_ACTIONS] Click event:', e);
-    console.log('🔘 [PROFILE_ACTIONS] onSave function exists:', !!onSave);
-    console.log('🔘 [PROFILE_ACTIONS] saving state:', saving);
-    console.log('🔘 [PROFILE_ACTIONS] hasChanges state:', hasChanges);
-    console.log('🔘 [PROFILE_ACTIONS] user exists:', !!user);
-    
+  const handleSaveClick = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
-    if (saving) {
-      console.log('🔘 [PROFILE_ACTIONS] ❌ Blocked - already saving');
+    console.log('🔘🔘🔘 [NEW_PROFILE_ACTIONS] Save button clicked!');
+    console.log('🔘🔘🔘 [NEW_PROFILE_ACTIONS] Current state:', {
+      isSaving,
+      userId: user?.id,
+      formData: { selectedAvatar, username, displayName }
+    });
+
+    if (!user?.id) {
+      console.log('🔘🔘🔘 [NEW_PROFILE_ACTIONS] No user ID, aborting');
       return;
     }
-    
-    if (!onSave) {
-      console.error('🔘 [PROFILE_ACTIONS] ❌ No onSave function!');
+
+    if (isSaving) {
+      console.log('🔘🔘🔘 [NEW_PROFILE_ACTIONS] Already saving, aborting');
       return;
     }
+
+    const trimmedUsername = username?.trim() || '';
+    const trimmedDisplayName = displayName?.trim() || '';
+
+    console.log('🔘🔘🔘 [NEW_PROFILE_ACTIONS] About to call directSaveProfile');
     
-    // Remove hasChanges requirement for now to debug
-    console.log('🔘 [PROFILE_ACTIONS] ✅ About to call onSave...');
-    try {
-      const result = onSave();
-      console.log('🔘 [PROFILE_ACTIONS] onSave called, result:', result);
-    } catch (error) {
-      console.error('🔘 [PROFILE_ACTIONS] Error calling onSave:', error);
+    const success = await directSaveProfile(user.id, {
+      avatar_url: selectedAvatar || '',
+      username: trimmedUsername || `user_${user.id.slice(0, 8)}`,
+      display_name: trimmedDisplayName || 'New User',
+    });
+
+    console.log('🔘🔘🔘 [NEW_PROFILE_ACTIONS] Save completed, success:', success);
+
+    if (success) {
+      console.log('🔘🔘🔘 [NEW_PROFILE_ACTIONS] Calling onSaveSuccess');
+      onSaveSuccess();
     }
   };
 
-  // Simplified button state - only disable if saving or no user
-  const isButtonDisabled = saving || !user;
+  const isButtonDisabled = isSaving || !user;
 
-  console.log('🔘 [PROFILE_ACTIONS] Button disabled state:', isButtonDisabled);
-  console.log('🔘 [PROFILE_ACTIONS] Disabled reasons:', {
-    saving,
-    noUser: !user,
-    hasChanges: hasChanges
-  });
+  console.log('🔘🔘🔘 [NEW_PROFILE_ACTIONS] Button disabled?', isButtonDisabled);
 
   return (
     <div className="flex flex-col gap-2 pt-4">
       <div className="flex justify-end gap-2">
         <Button 
           variant="outline" 
-          onClick={handleCancelClick}
+          onClick={onCancel}
           type="button"
+          disabled={isSaving}
         >
           Cancel
         </Button>
         <Button 
-          onClick={handleSaveChangesButtonClick}
+          onClick={handleSaveClick}
           disabled={isButtonDisabled}
           type="button"
         >
-          {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           <Save className="mr-2 h-4 w-4" />
-          {saving ? 'Saving...' : 'Save Changes'}
+          {isSaving ? 'Saving...' : 'Save Changes'}
         </Button>
       </div>
     </div>
