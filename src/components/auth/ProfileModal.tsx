@@ -58,6 +58,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
       const avatarsByGen = await getTrainerAvatarsByGenerationAsync();
       setTrainerAvatarsByGen(avatarsByGen);
       console.log('📸 Trainer avatars loaded:', Object.keys(avatarsByGen).length, 'generations');
+      console.log('📸 Total trainers loaded:', Object.values(avatarsByGen).flat().length);
     } catch (error) {
       console.error('📸 Error loading trainer avatars:', error);
       toast({
@@ -205,7 +206,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
   };
 
   const handleAvatarSelect = (avatar: TrainerAvatar) => {
-    console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] Avatar selected:', avatar.name);
+    console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] Avatar selected:', avatar.name, 'URL:', avatar.url);
     setSelectedAvatar(avatar.url);
   };
 
@@ -324,7 +325,18 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
                           }`}
                         >
                           <Avatar className="h-16 w-16 mx-auto mb-2">
-                            <AvatarImage src={avatar.url} alt={avatar.name} />
+                            <AvatarImage 
+                              src={avatar.url} 
+                              alt={avatar.name}
+                              onError={(e) => {
+                                console.log('📸 Image failed to load:', avatar.url);
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                              }}
+                              onLoad={() => {
+                                console.log('📸 Image loaded successfully:', avatar.url);
+                              }}
+                            />
                             <AvatarFallback>{avatar.name.slice(0, 2)}</AvatarFallback>
                           </Avatar>
                           <p className="text-sm font-medium">{avatar.name}</p>
