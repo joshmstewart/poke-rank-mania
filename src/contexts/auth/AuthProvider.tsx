@@ -9,16 +9,42 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, session, loading } = useAuthState();
   const renderCount = useRef(0);
-  
-  // Use a ref to track if this is the same provider instance
-  const providerInstanceRef = useRef(Math.random().toString(36).substring(7));
+  const providerInstanceRef = useRef('auth-provider-main');
   
   renderCount.current += 1;
 
-  console.log('🔴🔴🔴 AUTH_PROVIDER: ===== PROVIDER RENDER START =====');
-  console.log('🔴🔴🔴 AUTH_PROVIDER: Provider instance ID:', providerInstanceRef.current);
-  console.log('🔴🔴🔴 AUTH_PROVIDER: Render count:', renderCount.current);
-  console.log('🔴🔴🔴 AUTH_PROVIDER: Current state at render start:', {
+  // Communicate auth state to parent wrapper
+  useEffect(() => {
+    console.log('🔴🔴🔴 [AUTH_PROVIDER_NAWGTI] ===== AUTH STATE EFFECT =====');
+    console.log('🔴🔴🔴 [AUTH_PROVIDER_NAWGTI] Provider instance:', providerInstanceRef.current);
+    console.log('🔴🔴🔴 [AUTH_PROVIDER_NAWGTI] Current auth state:', {
+      hasUser: !!user,
+      hasSession: !!session,
+      loading,
+      userEmail: user?.email,
+      timestamp: new Date().toISOString()
+    });
+
+    // Try to communicate state to parent AuthWrapper
+    const authState = loading ? 'LOADING' : (user || session?.user) ? 'AUTHENTICATED' : 'UNAUTHENTICATED';
+    console.log('🔴🔴🔴 [AUTH_PROVIDER_NAWGTI] Computed auth state for nawgti:', authState);
+    
+    // Dispatch custom event to notify AuthWrapper
+    window.dispatchEvent(new CustomEvent('nawgti-auth-state', { 
+      detail: { authState, timestamp: new Date().toISOString() } 
+    }));
+    
+    if (authState === 'AUTHENTICATED') {
+      console.log('🔴🔴🔴 [AUTH_PROVIDER_NAWGTI] ✅ PROVIDER REPORTS AUTHENTICATED ✅');
+      console.log('🔴🔴🔴 [AUTH_PROVIDER_NAWGTI] User email:', user?.email || session?.user?.email);
+      console.log('🔴🔴🔴 [AUTH_PROVIDER_NAWGTI] NAWGTI SHOULD REMAIN STABLE WITH THIS STATE');
+    }
+  }, [user, session, loading]);
+
+  console.log('🔴🔴🔴 [AUTH_PROVIDER_NAWGTI] ===== PROVIDER RENDER =====');
+  console.log('🔴🔴🔴 [AUTH_PROVIDER_NAWGTI] Instance:', providerInstanceRef.current);
+  console.log('🔴🔴🔴 [AUTH_PROVIDER_NAWGTI] Render count:', renderCount.current);
+  console.log('🔴🔴🔴 [AUTH_PROVIDER_NAWGTI] State:', {
     hasUser: !!user,
     hasSession: !!session,
     loading,
@@ -27,31 +53,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
 
   useEffect(() => {
-    console.log('🔴🔴🔴 AUTH_PROVIDER: ===== PROVIDER MOUNT EFFECT =====');
-    console.log('🔴🔴🔴 AUTH_PROVIDER: Provider mounted with instance:', providerInstanceRef.current);
-    console.log('🔴🔴🔴 AUTH_PROVIDER: Mount timestamp:', new Date().toISOString());
+    console.log('🔴🔴🔴 [AUTH_PROVIDER_NAWGTI] ===== PROVIDER MOUNTED =====');
+    console.log('🔴🔴🔴 [AUTH_PROVIDER_NAWGTI] Provider mounted with instance:', providerInstanceRef.current);
     
     return () => {
-      console.log('🔴🔴🔴 AUTH_PROVIDER: ===== PROVIDER UNMOUNT DETECTED =====');
-      console.log('🔴🔴🔴 AUTH_PROVIDER: 🚨🚨🚨 PROVIDER UNMOUNTING 🚨🚨🚨');
-      console.log('🔴🔴🔴 AUTH_PROVIDER: Provider instance unmounting:', providerInstanceRef.current);
-      console.log('🔴🔴🔴 AUTH_PROVIDER: Unmount timestamp:', new Date().toISOString());
+      console.log('🔴🔴🔴 [AUTH_PROVIDER_NAWGTI] ===== PROVIDER UNMOUNT =====');
+      console.log('🔴🔴🔴 [AUTH_PROVIDER_NAWGTI] 🚨 AUTH PROVIDER UNMOUNTING 🚨');
+      console.log('🔴🔴🔴 [AUTH_PROVIDER_NAWGTI] Instance unmounting:', providerInstanceRef.current);
     };
   }, []);
-
-  // STRATEGY 1: Log state changes and their effect on rendering
-  useEffect(() => {
-    console.log('🔴🔴🔴 AUTH_PROVIDER: ===== AUTH STATE EFFECT =====');
-    console.log('🔴🔴🔴 AUTH_PROVIDER: Auth state changed:', {
-      hasUser: !!user,
-      hasSession: !!session,
-      loading,
-      userEmail: user?.email,
-      providerInstance: providerInstanceRef.current,
-      timestamp: new Date().toISOString()
-    });
-    console.log('🔴🔴🔴 AUTH_PROVIDER: Provider is still stable, should NOT cause unmounting');
-  }, [user, session, loading]);
 
   const value = React.useMemo(() => ({
     user,
@@ -65,22 +75,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     verifyPhoneOtp: authService.verifyPhoneOtp,
   }), [user, session, loading]);
 
-  console.log('🔴🔴🔴 AUTH_PROVIDER: About to render context with children');
-  console.log('🔴🔴🔴 AUTH_PROVIDER: Children type:', typeof children);
+  console.log('🔴🔴🔴 [AUTH_PROVIDER_NAWGTI] About to render context with children');
 
   return (
     <div style={{ position: 'relative' }}>
       <div style={{ 
         position: 'fixed', 
-        top: '60px', 
-        left: 0, 
-        zIndex: 9997, 
+        top: '90px', 
+        left: '10px', 
+        zIndex: 9998, 
         backgroundColor: 'red', 
         color: 'white', 
-        padding: '5px',
-        fontSize: '12px'
+        padding: '10px',
+        fontSize: '12px',
+        border: '3px solid yellow'
       }}>
-        🔴 AUTH PROVIDER: {loading ? 'LOADING' : (user ? 'AUTHENTICATED' : 'UNAUTHENTICATED')} | Render #{renderCount.current}
+        🔴 AUTH PROVIDER: {loading ? 'LOADING' : (user ? 'AUTHENTICATED' : 'UNAUTHENTICATED')} | Render #{renderCount.current}<br/>
+        Instance: {providerInstanceRef.current}
       </div>
       <AuthContext.Provider value={value}>
         {children}

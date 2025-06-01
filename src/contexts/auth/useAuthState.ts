@@ -8,33 +8,33 @@ export const useAuthState = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   
-  // Critical refs to prevent component unmounting
   const mountedRef = useRef(true);
   const authListenerRef = useRef<any>(null);
-  const stateInitializedRef = useRef(false);
-  const hookInstanceRef = useRef(Math.random().toString(36).substring(7));
+  const hookInstanceRef = useRef('auth-state-hook-main');
+  const initializationCompleteRef = useRef(false);
 
-  console.log('🔴🔴🔴 USE_AUTH_STATE: ===== HOOK INITIALIZED =====');
-  console.log('🔴🔴🔴 USE_AUTH_STATE: Hook instance ID:', hookInstanceRef.current);
-  console.log('🔴🔴🔴 USE_AUTH_STATE: Current state at init:', {
+  console.log('🔴🔴🔴 [USE_AUTH_STATE_NAWGTI] ===== HOOK RENDER =====');
+  console.log('🔴🔴🔴 [USE_AUTH_STATE_NAWGTI] Hook instance:', hookInstanceRef.current);
+  console.log('🔴🔴🔴 [USE_AUTH_STATE_NAWGTI] Current state:', {
     hasUser: !!user,
     hasSession: !!session,
     loading,
     userEmail: user?.email,
+    initialization: initializationCompleteRef.current,
     timestamp: new Date().toISOString()
   });
 
-  // Stable auth state handler that won't cause unmounting
+  // Stable auth state handler
   const handleAuthStateChange = useCallback((event: any, session: Session | null) => {
     if (!mountedRef.current) {
-      console.log('🔴🔴🔴 USE_AUTH_STATE: Component unmounted, ignoring auth state change');
+      console.log('🔴🔴🔴 [USE_AUTH_STATE_NAWGTI] Component unmounted, ignoring auth change');
       return;
     }
 
-    console.log('🔴🔴🔴 USE_AUTH_STATE: ⚠️⚠️⚠️ AUTH STATE CHANGE EVENT TRIGGERED ⚠️⚠️⚠️');
-    console.log('🔴🔴🔴 USE_AUTH_STATE: Event type:', event);
-    console.log('🔴🔴🔴 USE_AUTH_STATE: Hook instance handling event:', hookInstanceRef.current);
-    console.log('🔴🔴🔴 USE_AUTH_STATE: Session in callback:', {
+    console.log('🔴🔴🔴 [USE_AUTH_STATE_NAWGTI] ⚠️ AUTH STATE CHANGE ⚠️');
+    console.log('🔴🔴🔴 [USE_AUTH_STATE_NAWGTI] Event:', event);
+    console.log('🔴🔴🔴 [USE_AUTH_STATE_NAWGTI] Hook instance handling:', hookInstanceRef.current);
+    console.log('🔴🔴🔴 [USE_AUTH_STATE_NAWGTI] New session data:', {
       hasSession: !!session,
       hasUser: !!session?.user,
       userEmail: session?.user?.email,
@@ -42,131 +42,121 @@ export const useAuthState = () => {
       timestamp: new Date().toISOString()
     });
     
-    console.log('🔴🔴🔴 USE_AUTH_STATE: About to update state - CRITICAL POINT');
-    console.log('🔴🔴🔴 USE_AUTH_STATE: Previous state before update:', {
-      hadUser: !!user,
-      hadSession: !!session,
-      wasLoading: loading
-    });
+    console.log('🔴🔴🔴 [USE_AUTH_STATE_NAWGTI] 🚨 UPDATING STATE SYNCHRONOUSLY 🚨');
     
-    // CRITICAL: Use synchronous state updates to prevent component tree destruction
-    if (mountedRef.current) {
-      console.log('🔴🔴🔴 USE_AUTH_STATE: 🚨 SETTING NEW STATE VALUES SYNCHRONOUSLY 🚨');
-      console.log('🔴🔴🔴 USE_AUTH_STATE: New user:', !!session?.user, session?.user?.email);
-      console.log('🔴🔴🔴 USE_AUTH_STATE: New session:', !!session);
-      
+    // CRITICAL: Synchronous state updates
+    try {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
-      stateInitializedRef.current = true;
+      initializationCompleteRef.current = true;
       
-      console.log('🔴🔴🔴 USE_AUTH_STATE: State updated successfully:', {
+      console.log('🔴🔴🔴 [USE_AUTH_STATE_NAWGTI] ✅ STATE UPDATE COMPLETED ✅');
+      console.log('🔴🔴🔴 [USE_AUTH_STATE_NAWGTI] New state values:', {
         userSet: !!session?.user,
         sessionSet: !!session,
         loading: false,
-        stateInitialized: stateInitializedRef.current,
-        hookInstance: hookInstanceRef.current,
-        timestamp: new Date().toISOString()
+        hookInstance: hookInstanceRef.current
       });
+      
+      if (session?.user) {
+        console.log('🔴🔴🔴 [USE_AUTH_STATE_NAWGTI] 🎉 USER AUTHENTICATED 🎉');
+        console.log('🔴🔴🔴 [USE_AUTH_STATE_NAWGTI] This should trigger NAWGTI to show AUTHENTICATED state');
+      } else {
+        console.log('🔴🔴🔴 [USE_AUTH_STATE_NAWGTI] User signed out or not authenticated');
+      }
+      
+    } catch (error) {
+      console.error('🔴🔴🔴 [USE_AUTH_STATE_NAWGTI] ❌ ERROR IN STATE UPDATE:', error);
     }
 
-    console.log('🔴🔴🔴 USE_AUTH_STATE: ⚠️⚠️⚠️ AUTH STATE CHANGE COMPLETE ⚠️⚠️⚠️');
-  }, [user, session, loading]);
+    console.log('🔴🔴🔴 [USE_AUTH_STATE_NAWGTI] ⚠️ AUTH STATE CHANGE COMPLETE ⚠️');
+  }, []);
 
   useEffect(() => {
-    console.log('🔴🔴🔴 USE_AUTH_STATE: ===== USEEFFECT STARTING =====');
-    console.log('🔴🔴🔴 USE_AUTH_STATE: Hook instance in effect:', hookInstanceRef.current);
-    console.log('🔴🔴🔴 USE_AUTH_STATE: Auth listener already set?', !!authListenerRef.current);
+    console.log('🔴🔴🔴 [USE_AUTH_STATE_NAWGTI] ===== SETUP EFFECT =====');
+    console.log('🔴🔴🔴 [USE_AUTH_STATE_NAWGTI] Hook instance in effect:', hookInstanceRef.current);
     
     mountedRef.current = true;
     
-    // Prevent multiple listeners
     if (authListenerRef.current) {
-      console.log('🔴🔴🔴 USE_AUTH_STATE: Auth listener already exists, skipping setup');
+      console.log('🔴🔴🔴 [USE_AUTH_STATE_NAWGTI] Listener already exists, skipping');
       return;
     }
     
-    console.log('🔴🔴🔴 USE_AUTH_STATE: Setting up auth listener...');
+    console.log('🔴🔴🔴 [USE_AUTH_STATE_NAWGTI] Setting up auth listener...');
     
-    // Set up auth state listener
+    // Setup auth listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthStateChange);
     authListenerRef.current = subscription;
 
-    console.log('🔴🔴🔴 USE_AUTH_STATE: Auth listener set up, now getting initial session...');
+    console.log('🔴🔴🔴 [USE_AUTH_STATE_NAWGTI] Getting initial session...');
 
     // Get initial session
     const getInitialSession = async () => {
       try {
-        console.log('🔴🔴🔴 USE_AUTH_STATE: Calling supabase.auth.getSession()...');
+        console.log('🔴🔴🔴 [USE_AUTH_STATE_NAWGTI] Calling getSession()...');
         const { data: { session }, error } = await supabase.auth.getSession();
         
-        console.log('🔴🔴🔴 USE_AUTH_STATE: Initial session response:', {
+        console.log('🔴🔴🔴 [USE_AUTH_STATE_NAWGTI] Initial session result:', {
           hasSession: !!session,
           hasUser: !!session?.user,
           userEmail: session?.user?.email,
-          userId: session?.user?.id,
           error: error?.message,
-          hookInstance: hookInstanceRef.current,
-          timestamp: new Date().toISOString()
+          hookInstance: hookInstanceRef.current
         });
         
         if (error) {
-          console.error('🔴🔴🔴 USE_AUTH_STATE: Error getting initial session:', error);
+          console.error('🔴🔴🔴 [USE_AUTH_STATE_NAWGTI] Initial session error:', error);
         }
         
         if (!mountedRef.current) return;
         
-        console.log('🔴🔴🔴 USE_AUTH_STATE: About to set initial state synchronously...');
+        console.log('🔴🔴🔴 [USE_AUTH_STATE_NAWGTI] Setting initial state...');
         
-        // Update state with initial session synchronously
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
-        stateInitializedRef.current = true;
+        initializationCompleteRef.current = true;
         
-        console.log('🔴🔴🔴 USE_AUTH_STATE: Initial state set:', {
+        console.log('🔴🔴🔴 [USE_AUTH_STATE_NAWGTI] Initial state set:', {
           user: !!session?.user, 
           session: !!session,
           loading: false,
-          stateInitialized: stateInitializedRef.current,
-          hookInstance: hookInstanceRef.current,
-          timestamp: new Date().toISOString()
+          hookInstance: hookInstanceRef.current
         });
         
       } catch (err) {
-        console.error('🔴🔴🔴 USE_AUTH_STATE: Exception during initial auth check:', err);
+        console.error('🔴🔴🔴 [USE_AUTH_STATE_NAWGTI] Exception in initial check:', err);
         if (mountedRef.current) {
           setSession(null);
           setUser(null);
           setLoading(false);
-          stateInitializedRef.current = true;
+          initializationCompleteRef.current = true;
         }
       }
     };
 
     getInitialSession();
 
-    console.log('🔴🔴🔴 USE_AUTH_STATE: Initial session check started, returning cleanup function');
-
     return () => {
-      console.log('🔴🔴🔴 USE_AUTH_STATE: ===== CLEANUP TRIGGERED =====');
-      console.log('🔴🔴🔴 USE_AUTH_STATE: Hook instance cleaning up:', hookInstanceRef.current);
+      console.log('🔴🔴🔴 [USE_AUTH_STATE_NAWGTI] ===== CLEANUP =====');
+      console.log('🔴🔴🔴 [USE_AUTH_STATE_NAWGTI] Hook cleanup for:', hookInstanceRef.current);
       mountedRef.current = false;
       if (authListenerRef.current) {
         authListenerRef.current.unsubscribe();
         authListenerRef.current = null;
       }
     };
-  }, []); // Empty dependency array to ensure this only runs once
+  }, [handleAuthStateChange]);
 
-  console.log('🔴🔴🔴 USE_AUTH_STATE: Hook returning values:', {
+  console.log('🔴🔴🔴 [USE_AUTH_STATE_NAWGTI] Returning hook values:', {
     hasUser: !!user,
     hasSession: !!session,
     loading,
-    stateInitialized: stateInitializedRef.current,
     userEmail: user?.email,
     hookInstance: hookInstanceRef.current,
-    timestamp: new Date().toISOString()
+    initialized: initializationCompleteRef.current
   });
 
   return { user, session, loading };
