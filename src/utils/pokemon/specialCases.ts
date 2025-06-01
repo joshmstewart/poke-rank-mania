@@ -49,6 +49,12 @@ export const handleSpecialCases = (name: string): string | null => {
     return "Ash's Greninja";
   }
   
+  // SPECIAL CASE: Handle Cosplay Pikachu
+  if (lowerName.includes('pikachu') && lowerName.includes('cosplay')) {
+    console.log(`🔧 [FORMAT_DEBUG] Cosplay Pikachu case: "${name}"`);
+    return "Cosplay Pikachu";
+  }
+  
   // SPECIAL CASE: Handle Pikachu costumes with parentheses - move variant to front
   if (lowerName.includes('pikachu') && name.includes('(') && name.includes(')')) {
     const parenthesesMatch = name.match(/^([^(]+)\s*\(([^)]+)\)$/i);
@@ -102,6 +108,20 @@ export const handleSpecialCases = (name: string): string | null => {
       const formattedVariant = capitalizeWords(variant);
       const result = `${formattedVariant} ${formattedBase}`;
       console.log(`🔧 [FORMAT_DEBUG] Pikachu costume variant: "${name}" -> "${result}"`);
+      return result;
+    }
+  }
+  
+  // SPECIAL CASE: Handle Oricorio forms with parentheses
+  if (lowerName.includes('oricorio') && name.includes('(') && name.includes(')')) {
+    const parenthesesMatch = name.match(/^([^(]+)\s*\(([^)]+)\)$/i);
+    if (parenthesesMatch) {
+      const baseName = parenthesesMatch[1].trim();
+      const variant = parenthesesMatch[2].trim();
+      const formattedBase = capitalizeWords(baseName);
+      const formattedVariant = capitalizeWords(variant);
+      const result = `${formattedVariant} ${formattedBase}`;
+      console.log(`🔧 [FORMAT_DEBUG] Oricorio variant: "${name}" -> "${result}"`);
       return result;
     }
   }

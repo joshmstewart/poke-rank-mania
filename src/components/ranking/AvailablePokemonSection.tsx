@@ -36,7 +36,7 @@ export const AvailablePokemonSection: React.FC<AvailablePokemonSectionProps> = (
 
   console.log(`🔍 [AVAILABLE_SECTION] Rendering ${availablePokemon.length} available Pokemon for generation ${selectedGeneration}`);
 
-  // Get all possible generations from the available Pokemon - improved logic
+  // Get all possible generations from the available Pokemon - FIXED generation detection
   const availableGenerations = useMemo(() => {
     const generations = new Set<number>();
     availablePokemon.forEach(pokemon => {
@@ -45,17 +45,39 @@ export const AvailablePokemonSection: React.FC<AvailablePokemonSectionProps> = (
       
       // For high IDs (variants/forms), try to map to base Pokemon generation
       if (pokemon.id > 1025) {
-        const mod1000 = pokemon.id % 1000;
-        const mod10000 = pokemon.id % 10000;
-        
-        if (mod1000 >= 1 && mod1000 <= 1025) {
-          baseId = mod1000;
-        } else if (mod10000 >= 1 && mod10000 <= 1025) {
-          baseId = mod10000;
+        // Handle specific known variant ranges
+        if (pokemon.id >= 10001 && pokemon.id <= 10300) {
+          // Many Gen 6-7 forms are in this range
+          baseId = pokemon.id - 10000;
+        } else {
+          // For other high IDs, try to extract the base from the name
+          const pokemonName = pokemon.name.toLowerCase();
+          
+          // Zygarde forms should be Gen 6
+          if (pokemonName.includes('zygarde')) {
+            gen = 6;
+            generations.add(gen);
+            return;
+          }
+          
+          // If we can't determine, use the modulo approach as fallback
+          const mod1000 = pokemon.id % 1000;
+          const mod10000 = pokemon.id % 10000;
+          
+          if (mod1000 >= 1 && mod1000 <= 1025) {
+            baseId = mod1000;
+          } else if (mod10000 >= 1 && mod10000 <= 1025) {
+            baseId = mod10000;
+          } else {
+            // Default to latest generation for unknown high IDs
+            gen = 9;
+            generations.add(gen);
+            return;
+          }
         }
       }
       
-      // Standard generation ranges
+      // Standard generation ranges for base IDs
       if (baseId <= 151) gen = 1;
       else if (baseId <= 251) gen = 2;
       else if (baseId <= 386) gen = 3;
