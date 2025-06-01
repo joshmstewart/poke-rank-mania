@@ -1,12 +1,9 @@
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useAuth } from '@/contexts/auth/useAuth';
 import { toast } from '@/hooks/use-toast';
 import { ProfileModal } from './ProfileModal';
 import { UserDropdownMenu } from './components/UserDropdownMenu';
-import { useAuthenticatedUser } from './hooks/useAuthenticatedUser';
-import { useOptimizedProfileData } from './hooks/useOptimizedProfileData';
-import { useProfileCache } from './hooks/useProfileCache';
 
 interface AuthenticatedUserDisplayProps {
   currentUser?: any;
@@ -15,17 +12,9 @@ interface AuthenticatedUserDisplayProps {
 export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> = ({ currentUser }) => {
   const { user, signOut } = useAuth();
   const [profileModalOpen, setProfileModalOpen] = useState(false);
-  const { prefetchProfile } = useProfileCache();
 
-  const { effectiveUser } = useAuthenticatedUser(currentUser);
-  const { displayValues } = useOptimizedProfileData(effectiveUser);
-
-  // Pre-fetch profile data immediately when component mounts
-  useEffect(() => {
-    if (effectiveUser?.id && effectiveUser?.id.length > 10) {
-      prefetchProfile(effectiveUser.id);
-    }
-  }, [effectiveUser?.id, prefetchProfile]);
+  // Use the user from context or props, no additional auth calls needed
+  const effectiveUser = currentUser || user;
 
   const handleSignOut = useCallback(async () => {
     try {
@@ -52,7 +41,7 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
     setProfileModalOpen(open);
   }, []);
 
-  if (!effectiveUser || !displayValues) {
+  if (!effectiveUser) {
     return null;
   }
 

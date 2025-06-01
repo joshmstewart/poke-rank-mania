@@ -45,7 +45,7 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({ user }) => {
     setProfileModalOpen(open);
   }, []);
 
-  const displayName = user.user_metadata?.display_name || user.user_metadata?.username || 'User';
+  const displayName = user.user_metadata?.display_name || user.user_metadata?.username || user.email || 'User';
   const avatarUrl = user.user_metadata?.avatar_url;
   const userInitials = displayName.charAt(0).toUpperCase();
 

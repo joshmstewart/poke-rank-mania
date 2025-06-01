@@ -39,9 +39,9 @@ export const useDirectProfileSave = () => {
     try {
       console.log('🚀 [DIRECT_SAVE] Calling updateProfile service...');
       
-      // Temporarily increase timeout to 60 seconds for debugging
+      // Reduced timeout to 15 seconds now that auth spam is fixed
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Profile update timeout after 60 seconds')), 60000);
+        setTimeout(() => reject(new Error('Profile update timeout after 15 seconds')), 15000);
       });
       
       const updatePromise = updateProfile(userId, profileData);
@@ -77,9 +77,8 @@ export const useDirectProfileSave = () => {
     } finally {
       console.log('🚀🏁 [DIRECT_SAVE] Entering finally block. Resetting isSaving.');
       setIsSaving(false);
-      console.log('🚀🏁 [DIRECT_SAVE] isSaving SET TO FALSE');
     }
-  }, []); // Removed isSaving from dependencies to prevent recreation
+  }, [isSaving]);
 
   return { isSaving, directSaveProfile };
 };
