@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
@@ -21,26 +21,34 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
   const [renderCount, setRenderCount] = useState(0);
   const [directSupabaseUser, setDirectSupabaseUser] = useState<any>(null);
   const [initialized, setInitialized] = useState(false);
+  const lastLogTime = useRef(0);
 
-  // CRITICAL FIX: Stabilize render counting - only log every 50 renders to reduce spam
+  // Increment render count on each render
+  useEffect(() => {
+    setRenderCount(prev => prev + 1);
+  });
+
+  // Initialize component
   useEffect(() => {
     if (!initialized) {
       setInitialized(true);
-      setRenderCount(1);
-      console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FIXED: ===== INITIAL RENDER =====');
+      console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FIXED: ===== COMPONENT INITIALIZED =====');
       console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FIXED: Component mounted and initialized');
-    } else {
-      setRenderCount(prev => {
-        const newCount = prev + 1;
-        // Only log every 50 renders to reduce console spam
-        if (newCount % 50 === 0) {
-          console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FIXED: Render milestone:', newCount);
-          console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FIXED: ⚠️ HIGH RENDER COUNT - investigating cause');
-        }
-        return newCount;
-      });
     }
-  });
+  }, [initialized]);
+
+  // Throttled logging to reduce console spam
+  useEffect(() => {
+    const now = Date.now();
+    // Only log every 5 seconds to reduce spam
+    if (now - lastLogTime.current > 5000) {
+      console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FIXED: Render #' + renderCount);
+      if (renderCount > 1000) {
+        console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FIXED: ⚠️ HIGH RENDER COUNT - investigating cause');
+      }
+      lastLogTime.current = now;
+    }
+  }, [renderCount]);
 
   // Get direct Supabase user for comparison - STABILIZED with useCallback
   const checkDirectSupabaseUser = useCallback(async () => {
@@ -68,19 +76,11 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
     }
   }, [initialized, checkDirectSupabaseUser]);
 
-  // CRITICAL: Log comprehensive auth context state but reduce frequency
+  // Log auth context state on changes
   useEffect(() => {
-    if (renderCount <= 10 || renderCount % 100 === 0) {
+    const now = Date.now();
+    if (now - lastLogTime.current > 3000) { // Log auth context changes every 3 seconds max
       console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FIXED: ===== CONTEXT STATE CHECK =====');
-      console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FIXED: Render count:', renderCount);
-      console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FIXED: Props received:', {
-        currentUserProp: !!currentUser,
-        currentUserEmail: currentUser?.email || null,
-        currentUserPhone: currentUser?.phone || null,
-        currentUserId: currentUser?.id || null
-      });
-
-      console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FIXED: 🎯 AUTH CONTEXT FROM useAuth 🎯');
       console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FIXED: Auth context state:', {
         hasUser: !!user,
         hasSession: !!session,
@@ -93,8 +93,9 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
         contextWorking: (!!user || !!session?.user) ? 'YES_CONTEXT_WORKING' : 'NO_CONTEXT_BROKEN',
         timestamp: new Date().toISOString()
       });
+      lastLogTime.current = now;
     }
-  }, [user, session, currentUser, renderCount]);
+  }, [user, session, renderCount]);
 
   // STABILIZED: Use current user from props, context, or direct Supabase check
   const effectiveUser = useMemo(() => {
@@ -154,15 +155,42 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
     }
   }, [effectiveUser?.id, loadProfile]);
 
-  // STABILIZED: Sign out handler with useCallback
+  // ENHANCED: Sign out handler with comprehensive logging
   const handleSignOut = useCallback(async () => {
-    console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FIXED: Signing out...');
-    await signOut();
-    toast({
-      title: 'Signed out',
-      description: 'You have been successfully signed out.',
+    console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FIXED: ===== SIGN OUT INITIATED =====');
+    console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FIXED: User clicked sign out button');
+    console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FIXED: Current auth state before signOut:', {
+      hasUser: !!user,
+      hasSession: !!session,
+      userEmail: user?.email || null,
+      userPhone: user?.phone || null,
+      userId: user?.id || null
     });
-  }, [signOut]);
+    
+    try {
+      console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FIXED: Calling authService.signOut()...');
+      await signOut();
+      
+      console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FIXED: ✅ signOut() completed');
+      console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FIXED: Showing success toast...');
+      
+      toast({
+        title: 'Signed out',
+        description: 'You have been successfully signed out.',
+      });
+      
+      console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FIXED: ✅ SIGN OUT PROCESS COMPLETE ✅');
+      console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FIXED: Auth context should now update to unauthenticated state');
+      
+    } catch (error) {
+      console.error('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FIXED: ❌ Sign out error:', error);
+      toast({
+        title: 'Sign out error',
+        description: 'There was an error signing out. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  }, [signOut, user, session]);
 
   // STABILIZED: Profile modal handler with useCallback
   const handleProfileModalClose = useCallback((open: boolean) => {
@@ -179,7 +207,8 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
     return null;
   }
 
-  if (renderCount <= 10 || renderCount % 100 === 0) {
+  const now = Date.now();
+  if (now - lastLogTime.current > 10000 || renderCount <= 10) { // Log display values every 10 seconds or early renders
     console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FIXED: 🔥 DISPLAY VALUES 🔥');
     console.log('🌟🌟🌟 AUTHENTICATED_USER_DISPLAY_FIXED: Display values:', {
       ...displayValues,

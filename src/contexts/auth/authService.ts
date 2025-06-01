@@ -25,9 +25,39 @@ export const authService = {
   },
 
   signOut: async () => {
-    console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] Starting sign out...');
-    await supabase.auth.signOut();
-    console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] Sign out completed');
+    console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] ===== SIGN OUT START =====');
+    console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] Starting comprehensive sign out process...');
+    
+    try {
+      // Step 1: Clear any local storage auth data first
+      console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] Clearing local storage auth data...');
+      Object.keys(localStorage).forEach((key) => {
+        if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+          console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] Removing localStorage key:', key);
+          localStorage.removeItem(key);
+        }
+      });
+
+      // Step 2: Attempt Supabase sign out with global scope
+      console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] Calling supabase.auth.signOut()...');
+      const { error } = await supabase.auth.signOut({ scope: 'global' });
+      
+      if (error) {
+        console.error('🔴🔴🔴 [AUTH_SERVICE_FIXED] Supabase signOut error:', error);
+        // Continue with cleanup even if signOut fails
+      } else {
+        console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] ✅ Supabase signOut successful');
+      }
+
+      // Step 3: Force a brief delay to allow auth state to propagate
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] ✅ SIGN OUT COMPLETE ✅');
+      
+    } catch (error) {
+      console.error('🔴🔴🔴 [AUTH_SERVICE_FIXED] ❌ Sign out error:', error);
+      // Even if there's an error, we've cleared local storage
+    }
   },
 
   signInWithGoogle: async () => {
