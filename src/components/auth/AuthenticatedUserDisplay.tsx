@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/auth/useAuth';
 import { toast } from '@/hooks/use-toast';
 import { ProfileModal } from './ProfileModal';
@@ -16,66 +16,79 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
   const [refreshKey, setRefreshKey] = useState(0);
   const [currentProfile, setCurrentProfile] = useState(null);
   const { prefetchProfile, getProfileFromCache } = useProfileCache();
+  
+  // CRITICAL FIX: Prevent infinite loops with refs to track loading state
+  const isLoadingProfile = useRef(false);
+  const lastUserId = useRef<string | null>(null);
 
-  // Use the user from context or props, no additional auth calls needed
   const effectiveUser = currentUser || user;
 
-  // Load profile data immediately when component mounts or user changes
+  // CRITICAL FIX: Simplified profile loading with loop prevention
   useEffect(() => {
-    if (effectiveUser?.id) {
-      console.log('🔄 [AUTH_USER_DISPLAY] Loading profile for user:', effectiveUser.id);
-      
-      // Get cached profile first
-      const cachedProfile = getProfileFromCache(effectiveUser.id);
-      if (cachedProfile) {
-        console.log('🔄 [AUTH_USER_DISPLAY] Using cached profile:', cachedProfile);
-        setCurrentProfile(cachedProfile);
-      }
-      
-      // Prefetch fresh profile data
+    if (!effectiveUser?.id || isLoadingProfile.current || lastUserId.current === effectiveUser.id) {
+      return;
+    }
+
+    console.log('🔄 [AUTH_USER_DISPLAY] Loading profile for user:', effectiveUser.id);
+    
+    // Prevent concurrent loads
+    isLoadingProfile.current = true;
+    lastUserId.current = effectiveUser.id;
+    
+    // Get cached profile first
+    const cachedProfile = getProfileFromCache(effectiveUser.id);
+    if (cachedProfile) {
+      console.log('🔄 [AUTH_USER_DISPLAY] Using cached profile:', cachedProfile);
+      setCurrentProfile(cachedProfile);
+    }
+    
+    // Only prefetch if we don't have fresh cached data (less than 5 minutes old)
+    const shouldPrefetch = !cachedProfile || 
+      (new Date().getTime() - new Date(cachedProfile.updated_at).getTime()) > 300000; // 5 minutes
+    
+    if (shouldPrefetch) {
       prefetchProfile(effectiveUser.id).then(() => {
         const freshProfile = getProfileFromCache(effectiveUser.id);
         if (freshProfile) {
           console.log('🔄 [AUTH_USER_DISPLAY] Updated with fresh profile:', freshProfile);
           setCurrentProfile(freshProfile);
         }
+      }).finally(() => {
+        isLoadingProfile.current = false;
       });
+    } else {
+      isLoadingProfile.current = false;
     }
   }, [effectiveUser?.id, prefetchProfile, getProfileFromCache]);
 
-  // Listen for profile updates to refresh the display
+  // CRITICAL FIX: Simplified profile update listener with debouncing
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    
     const handleProfileUpdate = (event: CustomEvent) => {
       console.log('🔄 [AUTH_USER_DISPLAY] Profile updated event received:', event.detail);
       
-      if (effectiveUser?.id) {
-        // Force refresh by incrementing key
-        setRefreshKey(prev => prev + 1);
-        
-        // Get updated profile from cache
-        const updatedProfile = getProfileFromCache(effectiveUser.id);
-        if (updatedProfile) {
-          console.log('🔄 [AUTH_USER_DISPLAY] Setting updated profile:', updatedProfile);
-          setCurrentProfile(updatedProfile);
-        }
-        
-        // Also prefetch to ensure we have the latest
-        prefetchProfile(effectiveUser.id).then(() => {
-          const freshProfile = getProfileFromCache(effectiveUser.id);
-          if (freshProfile) {
-            console.log('🔄 [AUTH_USER_DISPLAY] Final profile update:', freshProfile);
-            setCurrentProfile(freshProfile);
+      // Debounce rapid updates
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        if (effectiveUser?.id && !isLoadingProfile.current) {
+          setRefreshKey(prev => prev + 1);
+          const updatedProfile = getProfileFromCache(effectiveUser.id);
+          if (updatedProfile) {
+            console.log('🔄 [AUTH_USER_DISPLAY] Setting updated profile:', updatedProfile);
+            setCurrentProfile(updatedProfile);
           }
-        });
-      }
+        }
+      }, 100); // 100ms debounce
     };
 
     window.addEventListener('profile-updated', handleProfileUpdate as EventListener);
     
     return () => {
+      clearTimeout(timeoutId);
       window.removeEventListener('profile-updated', handleProfileUpdate as EventListener);
     };
-  }, [effectiveUser?.id, prefetchProfile, getProfileFromCache]);
+  }, [effectiveUser?.id, getProfileFromCache]);
 
   const handleSignOut = useCallback(async () => {
     try {
