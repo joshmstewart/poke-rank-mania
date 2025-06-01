@@ -1,5 +1,6 @@
 
 import { useTrueSkillSync } from "@/hooks/ranking/useTrueSkillSync";
+import { useFormFilters } from "@/hooks/useFormFilters";
 
 interface UseRankingDataProcessingProps {
   availablePokemon: any[];
@@ -14,6 +15,9 @@ export const useRankingDataProcessing = ({
   selectedGeneration,
   totalPages
 }: UseRankingDataProcessingProps) => {
+  // Get form filters to ensure rankings respect the same filtering as available Pokemon
+  const { shouldIncludePokemon } = useFormFilters();
+  
   // ULTRA COMPREHENSIVE INPUT TRACKING
   console.log(`🚨🚨🚨 [RANKING_DATA_PROCESSING] ===== COMPREHENSIVE INPUT AUDIT =====`);
   console.log(`🚨🚨🚨 [RANKING_DATA_PROCESSING] PROPS RECEIVED:`);
@@ -39,20 +43,36 @@ export const useRankingDataProcessing = ({
     console.log(`🚨🚨🚨 [RANKING_DATA_PROCESSING] - localRankings sample IDs: ${localRankings.slice(0, 10).map(p => p.id).join(', ')}...`);
   }
   
+  // CRITICAL FIX: Apply form filters to TrueSkill rankings to match Available Pokemon filtering
+  const filteredLocalRankings = localRankings.filter(pokemon => {
+    const shouldInclude = shouldIncludePokemon(pokemon);
+    if (!shouldInclude) {
+      console.log(`🚨🚨🚨 [RANKING_FILTER_APPLIED] Filtering out ${pokemon.name} (${pokemon.id}) from rankings - form filter exclusion`);
+    }
+    return shouldInclude;
+  });
+  
+  console.log(`🚨🚨🚨 [RANKING_DATA_PROCESSING] FORM FILTER APPLICATION:`);
+  console.log(`🚨🚨🚨 [RANKING_DATA_PROCESSING] - Raw TrueSkill rankings: ${localRankings.length}`);
+  console.log(`🚨🚨🚨 [RANKING_DATA_PROCESSING] - After form filtering: ${filteredLocalRankings.length}`);
+  console.log(`🚨🚨🚨 [RANKING_DATA_PROCESSING] - Filtered out: ${localRankings.length - filteredLocalRankings.length}`);
+  
   // ULTRA COMPREHENSIVE DATA SOURCE COMPARISON
   console.log(`🚨🚨🚨 [RANKING_DATA_PROCESSING] DATA SOURCE COMPARISON:`);
   console.log(`🚨🚨🚨 [RANKING_DATA_PROCESSING] - Props rankedPokemon: ${rankedPokemon.length}`);
-  console.log(`🚨🚨🚨 [RANKING_DATA_PROCESSING] - TrueSkill localRankings: ${localRankings.length}`);
+  console.log(`🚨🚨🚨 [RANKING_DATA_PROCESSING] - Filtered TrueSkill localRankings: ${filteredLocalRankings.length}`);
   console.log(`🚨🚨🚨 [RANKING_DATA_PROCESSING] - Which one should we use?`);
   
-  // CRITICAL DECISION POINT: Which rankings to use?
+  // CRITICAL DECISION POINT: Use filtered TrueSkill rankings
   let displayRankings;
-  if (localRankings.length > 0) {
-    console.log(`🚨🚨🚨 [RANKING_DATA_PROCESSING] DECISION: Using TrueSkill localRankings (${localRankings.length} items)`);
-    displayRankings = localRankings;
+  if (filteredLocalRankings.length > 0) {
+    console.log(`🚨🚨🚨 [RANKING_DATA_PROCESSING] DECISION: Using filtered TrueSkill localRankings (${filteredLocalRankings.length} items)`);
+    displayRankings = filteredLocalRankings;
   } else if (rankedPokemon.length > 0) {
-    console.log(`🚨🚨🚨 [RANKING_DATA_PROCESSING] DECISION: Using props rankedPokemon (${rankedPokemon.length} items)`);
-    displayRankings = rankedPokemon;
+    // Apply same filtering to fallback ranked Pokemon
+    const filteredRankedPokemon = rankedPokemon.filter(shouldIncludePokemon);
+    console.log(`🚨🚨🚨 [RANKING_DATA_PROCESSING] DECISION: Using filtered props rankedPokemon (${filteredRankedPokemon.length} items)`);
+    displayRankings = filteredRankedPokemon;
   } else {
     console.log(`🚨🚨🚨 [RANKING_DATA_PROCESSING] DECISION: No rankings from either source`);
     displayRankings = [];
@@ -60,7 +80,19 @@ export const useRankingDataProcessing = ({
   
   console.log(`🚨🚨🚨 [RANKING_DATA_PROCESSING] FINAL DISPLAY RANKINGS: ${displayRankings.length}`);
   
-  // Calculate filtered available Pokemon
+  // Log sample of what we're showing in rankings
+  if (displayRankings.length > 0) {
+    const sampleRankings = displayRankings.slice(0, 5);
+    console.log(`🚨🚨🚨 [RANKING_DATA_PROCESSING] Sample rankings being displayed:`, 
+      sampleRankings.map(p => `${p.name} (${p.id})`).join(', '));
+    
+    // Check for normal vs special forms
+    const normalCount = sampleRankings.filter(p => !p.name.toLowerCase().includes('mega') && 
+      !p.name.toLowerCase().includes('alolan') && !p.name.toLowerCase().includes('galarian')).length;
+    console.log(`🚨🚨🚨 [RANKING_DATA_PROCESSING] Normal vs special in sample: ${normalCount}/${sampleRankings.length} are normal`);
+  }
+  
+  // Calculate filtered available Pokemon using the same form filters
   const displayRankingsIds = new Set(displayRankings.map(p => p.id));
   
   console.log(`🚨🚨🚨 [RANKING_DATA_PROCESSING] FILTERING CALCULATION:`);
@@ -94,7 +126,7 @@ export const useRankingDataProcessing = ({
   console.log(`🚨🚨🚨 [RANKING_DATA_PROCESSING] ===== END COMPREHENSIVE AUDIT =====`);
 
   return {
-    localRankings,
+    localRankings: filteredLocalRankings, // Return filtered rankings
     updateLocalRankings,
     displayRankings,
     filteredAvailablePokemon
