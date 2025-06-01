@@ -16,18 +16,30 @@ interface ProfileModalProps {
 
 export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }) => {
   const { user } = useAuth();
-  const { getProfileFromCache, prefetchProfile } = useProfileCache();
+  const { getProfileFromCache, prefetchProfile, invalidateCache } = useProfileCache();
   const [selectedAvatar, setSelectedAvatar] = useState<string>('');
   const [username, setUsername] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [saving, setSaving] = useState(false);
   const [avatarModalOpen, setAvatarModalOpen] = useState(false);
+  const [modalInstanceId] = useState(`modal-${Date.now()}`);
+
+  console.log('🎭 [PROFILE_MODAL] ===== MODAL RENDER =====');
+  console.log('🎭 [PROFILE_MODAL] Modal instance ID:', modalInstanceId);
+  console.log('🎭 [PROFILE_MODAL] Modal open:', open);
+  console.log('🎭 [PROFILE_MODAL] User ID:', user?.id);
+  console.log('🎭 [PROFILE_MODAL] Saving state:', saving);
 
   // Initialize form with cached data immediately when modal opens
   useEffect(() => {
+    console.log('🎭 [PROFILE_MODAL] ===== INITIALIZATION EFFECT =====');
+    console.log('🎭 [PROFILE_MODAL] Modal instance ID:', modalInstanceId);
+    console.log('🎭 [PROFILE_MODAL] Effect triggered - open:', open, 'user.id:', user?.id);
+    
     if (open && user?.id) {
       // Get cached profile data
       const cachedProfile = getProfileFromCache(user.id);
+      console.log('🎭 [PROFILE_MODAL] Cached profile data:', cachedProfile);
       
       // Set defaults based on user info
       let defaultDisplayName = 'New User';
@@ -45,21 +57,38 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
       }
       
       // Use cached data if available, otherwise use defaults
-      setSelectedAvatar(cachedProfile?.avatar_url || '');
-      setUsername(cachedProfile?.username || defaultUsername);
-      setDisplayName(cachedProfile?.display_name || defaultDisplayName);
+      const avatarToSet = cachedProfile?.avatar_url || '';
+      const usernameToSet = cachedProfile?.username || defaultUsername;
+      const displayNameToSet = cachedProfile?.display_name || defaultDisplayName;
       
-      // Refresh cache in background (non-blocking)
-      prefetchProfile(user.id);
+      console.log('🎭 [PROFILE_MODAL] Setting form values:', {
+        avatar: avatarToSet,
+        username: usernameToSet,
+        displayName: displayNameToSet
+      });
+      
+      setSelectedAvatar(avatarToSet);
+      setUsername(usernameToSet);
+      setDisplayName(displayNameToSet);
+      
+      // Refresh cache in background (non-blocking) - but only if we don't have fresh data
+      if (!cachedProfile) {
+        console.log('🎭 [PROFILE_MODAL] No cached data, prefetching...');
+        prefetchProfile(user.id);
+      } else {
+        console.log('🎭 [PROFILE_MODAL] Using cached data, skipping prefetch');
+      }
     }
     
     if (!open) {
+      console.log('🎭 [PROFILE_MODAL] Modal closed, resetting form');
       // Reset form when modal closes
       setSelectedAvatar('');
       setUsername('');
       setDisplayName('');
+      setSaving(false); // Make sure saving state is reset
     }
-  }, [open, user?.id, user?.email, user?.phone, getProfileFromCache, prefetchProfile]);
+  }, [open, user?.id, user?.email, user?.phone]); // Removed getProfileFromCache and prefetchProfile from deps
 
   const handleSave = async () => {
     if (!user?.id) {
@@ -73,6 +102,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
     }
 
     console.log('🚀 [PROFILE_SAVE] ===== STARTING SAVE OPERATION =====');
+    console.log('🚀 [PROFILE_SAVE] Modal instance ID:', modalInstanceId);
     console.log('🚀 [PROFILE_SAVE] User ID:', user.id);
     console.log('🚀 [PROFILE_SAVE] Selected Avatar:', selectedAvatar);
     console.log('🚀 [PROFILE_SAVE] Username:', username.trim());
@@ -88,8 +118,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
       return;
     }
 
-    setSaving(true);
     console.log('🚀 [PROFILE_SAVE] Setting saving state to true');
+    setSaving(true);
     
     try {
       console.log('🚀 [PROFILE_SAVE] About to call updateProfile function...');
@@ -108,17 +138,24 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
       console.log('🚀 [PROFILE_SAVE] updateProfile returned:', success);
 
       if (success) {
-        console.log('🚀 [PROFILE_SAVE] Success! About to show toast and close modal...');
+        console.log('🚀 [PROFILE_SAVE] Success! Invalidating cache and showing success...');
+        
+        // Invalidate the cache so next time we fetch fresh data
+        invalidateCache(user.id);
         
         toast({
           title: 'Profile Updated',
           description: 'Your profile has been successfully updated.',
         });
+        
         console.log('🚀 [PROFILE_SAVE] Toast shown, about to close modal');
+        console.log('🚀 [PROFILE_SAVE] Setting saving to false and closing modal');
+        setSaving(false);
         onOpenChange(false);
         console.log('🚀 [PROFILE_SAVE] Modal close triggered');
       } else {
         console.log('❌ [PROFILE_SAVE] Update failed - updateProfile returned false');
+        setSaving(false);
         toast({
           title: 'Update Failed',
           description: 'Failed to update your profile. Please check the console for details.',
@@ -128,32 +165,34 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
     } catch (error) {
       console.error('❌ [PROFILE_SAVE] Exception during save:', error);
       console.error('❌ [PROFILE_SAVE] Error details:', JSON.stringify(error, null, 2));
+      setSaving(false);
       toast({
         title: 'Save Error',
         description: `An error occurred while saving your profile: ${error.message || 'Unknown error'}`,
         variant: 'destructive',
       });
-    } finally {
-      console.log('🚀 [PROFILE_SAVE] Setting saving state to false');
-      setSaving(false);
-      console.log('🚀 [PROFILE_SAVE] ===== SAVE OPERATION COMPLETE =====');
     }
+    
+    console.log('🚀 [PROFILE_SAVE] ===== SAVE OPERATION COMPLETE =====');
   };
 
   const handleAvatarClick = () => {
-    console.log('Avatar clicked, opening modal');
+    console.log('🎭 [PROFILE_MODAL] Avatar clicked, opening avatar modal');
     setAvatarModalOpen(true);
   };
 
   const handleAvatarSelection = (avatarUrl: string) => {
-    console.log('Avatar selected in ProfileModal:', avatarUrl);
+    console.log('🎭 [PROFILE_MODAL] Avatar selected:', avatarUrl);
     setSelectedAvatar(avatarUrl);
     setAvatarModalOpen(false);
   };
 
   if (!user?.id) {
+    console.log('🎭 [PROFILE_MODAL] No user ID, returning null');
     return null;
   }
+
+  console.log('🎭 [PROFILE_MODAL] About to render modal with saving state:', saving);
 
   return (
     <>
