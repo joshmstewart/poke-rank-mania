@@ -37,7 +37,7 @@ export const ProfileModalContent: React.FC<ProfileModalContentProps> = ({
   onSaveSuccess
 }) => {
   const { user } = useAuth();
-  const { invalidateProfile } = useProfileCache();
+  const { invalidateCache } = useProfileCache();
   const { validationErrors, validateProfile, handleDatabaseError, clearErrors } = useProfileValidation();
   const [isSaving, setIsSaving] = useState(false);
   const mountedRef = useRef(true);
@@ -80,7 +80,7 @@ export const ProfileModalContent: React.FC<ProfileModalContentProps> = ({
         console.log('🎭 [PROFILE_MODAL_CONTENT] ✅ Profile saved successfully');
         
         // Invalidate cache to force refresh
-        invalidateProfile(user.id);
+        invalidateCache(user.id);
         
         // Dispatch event for other components to update
         window.dispatchEvent(new CustomEvent('profile-updated', {
