@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/auth/useAuth';
@@ -31,6 +30,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
   console.log('🎯 [PROFILE_MODAL_DEBUG] User email:', user?.email);
   console.log('🎯 [PROFILE_MODAL_DEBUG] User phone:', user?.phone);
   console.log('🎯 [PROFILE_MODAL_DEBUG] Loading state:', loading);
+  console.log('🎯 [PROFILE_MODAL_DEBUG] Import check - getProfile function:', typeof getProfile);
 
   useEffect(() => {
     console.log('🎯 [PROFILE_MODAL_DEBUG] ===== useEffect TRIGGERED =====');

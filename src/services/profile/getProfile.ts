@@ -11,15 +11,54 @@ export const getProfile = async (userId: string): Promise<Profile | null> => {
   
   // Check if we have a valid auth session
   try {
+    console.log('🎯 [PROFILE_SERVICE_DEBUG] Testing auth session...');
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
     console.log('🎯 [PROFILE_SERVICE_DEBUG] Current session check:', {
       hasSession: !!session,
       sessionUserId: session?.user?.id,
       sessionError: sessionError?.message,
-      matchesRequestedUserId: session?.user?.id === userId
+      matchesRequestedUserId: session?.user?.id === userId,
+      sessionAccessToken: session?.access_token ? 'present' : 'missing'
     });
+    
+    if (!session) {
+      console.error('🎯 [PROFILE_SERVICE_DEBUG] 🚨 NO ACTIVE SESSION - this will cause RLS to block access 🚨');
+      return null;
+    }
+    
+    if (session.user.id !== userId) {
+      console.error('🎯 [PROFILE_SERVICE_DEBUG] 🚨 SESSION USER ID MISMATCH 🚨');
+      console.error('🎯 [PROFILE_SERVICE_DEBUG] Session user ID:', session.user.id);
+      console.error('🎯 [PROFILE_SERVICE_DEBUG] Requested user ID:', userId);
+      return null;
+    }
+    
   } catch (err) {
     console.error('🎯 [PROFILE_SERVICE_DEBUG] Session check failed:', err);
+  }
+  
+  // Test basic database connectivity first
+  try {
+    console.log('🎯 [PROFILE_SERVICE_DEBUG] Testing basic database connectivity...');
+    const { data: testData, error: testError } = await supabase
+      .from('profiles')
+      .select('count(*)')
+      .limit(1);
+    
+    console.log('🎯 [PROFILE_SERVICE_DEBUG] Database connectivity test:', {
+      testData,
+      testError: testError?.message,
+      connected: !testError
+    });
+    
+    if (testError) {
+      console.error('🎯 [PROFILE_SERVICE_DEBUG] 🚨 DATABASE CONNECTION FAILED 🚨');
+      console.error('🎯 [PROFILE_SERVICE_DEBUG] Connection error:', testError);
+      return null;
+    }
+  } catch (connErr) {
+    console.error('🎯 [PROFILE_SERVICE_DEBUG] Database connection exception:', connErr);
+    return null;
   }
   
   try {
