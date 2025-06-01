@@ -86,6 +86,9 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
       console.log('Update result:', success);
 
       if (success) {
+        // Force refresh the profile cache
+        await prefetchProfile(user.id);
+        
         toast({
           title: 'Profile Updated',
           description: 'Your profile has been successfully updated.',
