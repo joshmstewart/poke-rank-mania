@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { FormFilters, PokemonFormType } from "./types";
 import { getStoredFilters, saveFilters, clearStoredFilters } from "./storage";
@@ -13,11 +13,30 @@ import {
 import { storePokemon, getStoredPokemon, clearStoredPokemon } from "./excludedStore";
 
 export const useFormFilters = () => {
+  // CRITICAL FIX: Force immediate synchronous initialization
   const [filters, setFilters] = useState<FormFilters>(() => {
+    // Clear any potentially corrupted data first
+    const allKeys = Object.keys(localStorage);
+    const corruptedKeys = allKeys.filter(key => 
+      key.startsWith('pokemon-form-filters') && 
+      key !== 'pokemon-form-filters'
+    );
+    corruptedKeys.forEach(key => {
+      console.log(`🧹 [FORM_FILTERS_CORRUPTION_FIX] Removing corrupted key: ${key}`);
+      localStorage.removeItem(key);
+    });
+    
     const storedFilters = getStoredFilters();
-    console.log('🧹 [FORM_FILTERS_INIT] Initializing with filters:', storedFilters);
+    console.log('🧹 [FORM_FILTERS_DETERMINISTIC_INIT] DETERMINISTIC initialization with filters:', storedFilters);
     return storedFilters;
   });
+  
+  // CRITICAL FIX: Ensure filters are always properly set on mount
+  useEffect(() => {
+    const currentFilters = getStoredFilters();
+    console.log('🧹 [FORM_FILTERS_MOUNT_SYNC] Syncing filters on mount:', currentFilters);
+    setFilters(currentFilters);
+  }, []);
   
   // Determine if all filters are enabled
   const isAllEnabled = Object.values(filters).every(Boolean);
@@ -68,50 +87,43 @@ export const useFormFilters = () => {
     setFilters(defaultFilters);
   };
   
-  // Check if a Pokemon should be included based on current filters
+  // CRITICAL FIX: Completely deterministic Pokemon filtering
   const shouldIncludePokemon = (pokemon: Pokemon): boolean => {
     const pokemonId = pokemon.id;
-    const pokemonName = pokemon.name;
+    const pokemonName = pokemon.name.toLowerCase();
     
     // FIRST: Always exclude starter Pokemon regardless of filters
     if (isStarterPokemon(pokemon)) {
-      console.log(`🚫 [FORM_FILTER_TRACE] ${pokemonName} (${pokemonId}) EXCLUDED - STARTER POKEMON`);
       return false;
     }
     
     // SECOND: Always exclude totem Pokemon regardless of filters
     if (isTotemPokemon(pokemon)) {
-      console.log(`🚫 [FORM_FILTER_TRACE] ${pokemonName} (${pokemonId}) EXCLUDED - TOTEM POKEMON`);
       return false;
     }
     
     // THIRD: Always exclude size variant Pokemon (Pumpkaboo/Gourgeist sizes)
     if (isSizeVariantPokemon(pokemon)) {
-      console.log(`🚫 [FORM_FILTER_TRACE] ${pokemonName} (${pokemonId}) EXCLUDED - SIZE VARIANT`);
       return false;
     }
     
     // FOURTH: Always exclude special Koraidon/Miraidon modes
     if (isSpecialKoraidonMiraidonMode(pokemon)) {
-      console.log(`🚫 [FORM_FILTER_TRACE] ${pokemonName} (${pokemonId}) EXCLUDED - SPECIAL KORAIDON/MIRAIDON MODE`);
       return false;
     }
     
-    // FIFTH: Always exclude meteor Minior forms (FIXED - moved from categorization to exclusion)
-    if (pokemon.name.toLowerCase().includes('minior') && pokemon.name.toLowerCase().includes('meteor')) {
-      console.log(`🚫 [FORM_FILTER_TRACE] ${pokemonName} (${pokemonId}) EXCLUDED - METEOR MINIOR FORM`);
+    // FIFTH: Always exclude meteor Minior forms
+    if (pokemonName.includes('minior') && pokemonName.includes('meteor')) {
       return false;
     }
     
     // Enhanced Cramorant filtering at the form filter level
-    if (pokemon.name.toLowerCase().includes('cramorant')) {
-      console.log(`🚫 [FORM_FILTER_TRACE] ${pokemonName} (${pokemonId}) EXCLUDED - CRAMORANT FORM`);
+    if (pokemonName.includes('cramorant') && pokemonName !== 'cramorant') {
       return false;
     }
     
     // If all filters are enabled, include all Pokemon (except the exclusions above)
     if (isAllEnabled) {
-      console.log(`✅ [FORM_FILTER_TRACE] ${pokemonName} (${pokemonId}) INCLUDED - all filters enabled`);
       return true;
     }
     
@@ -121,85 +133,32 @@ export const useFormFilters = () => {
     const categoryToCheck = formCategory || "normal";
     
     // Return true if the filter for this category is enabled
-    const shouldInclude = filters[categoryToCheck];
-    
-    console.log(`${shouldInclude ? '✅' : '🚫'} [FORM_FILTER_TRACE] ${pokemonName} (${pokemonId}) ${shouldInclude ? 'INCLUDED' : 'EXCLUDED'} - Category: ${categoryToCheck}, Filter: ${shouldInclude ? 'ON' : 'OFF'}`);
-    
-    return shouldInclude;
+    return filters[categoryToCheck];
   };
 
-  // CRITICAL DEBUG: Add a function to analyze the full filtering pipeline
+  // CRITICAL FIX: Deterministic filtering pipeline with consistent ordering
   const analyzeFilteringPipeline = (inputPokemon: Pokemon[]): Pokemon[] => {
-    console.log(`🔍 [FILTER_PIPELINE_ANALYSIS] ===== STARTING FILTER ANALYSIS =====`);
-    console.log(`🔍 [FILTER_PIPELINE_ANALYSIS] Input Pokemon count: ${inputPokemon.length}`);
+    console.log(`🔍 [DETERMINISTIC_FILTER_PIPELINE] ===== STARTING DETERMINISTIC FILTER ANALYSIS =====`);
+    console.log(`🔍 [DETERMINISTIC_FILTER_PIPELINE] Input Pokemon count: ${inputPokemon.length}`);
+    console.log(`🔍 [DETERMINISTIC_FILTER_PIPELINE] Current filter states:`, filters);
+    console.log(`🔍 [DETERMINISTIC_FILTER_PIPELINE] All filters enabled: ${isAllEnabled}`);
     
-    let inputDistribution = {
-      '1-100': 0,
-      '101-200': 0,
-      '201-400': 0,
-      '401-600': 0,
-      '601-800': 0,
-      '801-1025': 0,
-      '1026+': 0,
-    };
+    // CRITICAL: Sort input by ID for absolute determinism
+    const sortedInput = [...inputPokemon].sort((a, b) => a.id - b.id);
+    console.log(`🔍 [DETERMINISTIC_FILTER_PIPELINE] Sorted input by ID for determinism`);
     
-    if (inputPokemon.length > 0) {
-      const inputIds = inputPokemon.map(p => p.id);
-      const inputMinId = Math.min(...inputIds);
-      const inputMaxId = Math.max(...inputIds);
-      console.log(`🔍 [FILTER_PIPELINE_ANALYSIS] Input ID range: ${inputMinId} - ${inputMaxId}`);
-      
-      inputDistribution = {
-        '1-100': inputIds.filter(id => id >= 1 && id <= 100).length,
-        '101-200': inputIds.filter(id => id >= 101 && id <= 200).length,
-        '201-400': inputIds.filter(id => id >= 201 && id <= 400).length,
-        '401-600': inputIds.filter(id => id >= 401 && id <= 600).length,
-        '601-800': inputIds.filter(id => id >= 601 && id <= 800).length,
-        '801-1025': inputIds.filter(id => id >= 801 && id <= 1025).length,
-        '1026+': inputIds.filter(id => id >= 1026).length,
-      };
-      console.log(`🔍 [FILTER_PIPELINE_ANALYSIS] Input distribution:`, inputDistribution);
-    }
+    // Apply filtering deterministically
+    const filteredPokemon = sortedInput.filter(shouldIncludePokemon);
     
-    console.log(`🔍 [FILTER_PIPELINE_ANALYSIS] Current filter states:`, filters);
-    console.log(`🔍 [FILTER_PIPELINE_ANALYSIS] All filters enabled: ${isAllEnabled}`);
+    console.log(`🔍 [DETERMINISTIC_FILTER_PIPELINE] Output Pokemon count: ${filteredPokemon.length}`);
+    console.log(`🔍 [DETERMINISTIC_FILTER_PIPELINE] Filtered out: ${sortedInput.length - filteredPokemon.length}`);
     
-    // Apply filtering and track results
-    const filteredPokemon = inputPokemon.filter(shouldIncludePokemon);
+    // Verify output is still sorted
+    const outputIds = filteredPokemon.map(p => p.id);
+    const isSorted = outputIds.every((id, i) => i === 0 || id >= outputIds[i - 1]);
+    console.log(`🔍 [DETERMINISTIC_FILTER_PIPELINE] Output still sorted by ID: ${isSorted}`);
     
-    console.log(`🔍 [FILTER_PIPELINE_ANALYSIS] Output Pokemon count: ${filteredPokemon.length}`);
-    
-    if (filteredPokemon.length > 0) {
-      const outputIds = filteredPokemon.map(p => p.id);
-      const outputMinId = Math.min(...outputIds);
-      const outputMaxId = Math.max(...outputIds);
-      console.log(`🔍 [FILTER_PIPELINE_ANALYSIS] Output ID range: ${outputMinId} - ${outputMaxId}`);
-      
-      const outputDistribution = {
-        '1-100': outputIds.filter(id => id >= 1 && id <= 100).length,
-        '101-200': outputIds.filter(id => id >= 101 && id <= 200).length,
-        '201-400': outputIds.filter(id => id >= 201 && id <= 400).length,
-        '401-600': outputIds.filter(id => id >= 401 && id <= 600).length,
-        '601-800': outputIds.filter(id => id >= 601 && id <= 800).length,
-        '801-1025': outputIds.filter(id => id >= 801 && id <= 1025).length,
-        '1026+': outputIds.filter(id => id >= 1026).length,
-      };
-      console.log(`🔍 [FILTER_PIPELINE_ANALYSIS] Output distribution:`, outputDistribution);
-      
-      // Calculate filtering impact
-      const filteringImpact = {
-        '1-100': ((inputDistribution['1-100'] - outputDistribution['1-100']) / Math.max(inputDistribution['1-100'], 1) * 100).toFixed(1),
-        '101-200': ((inputDistribution['101-200'] - outputDistribution['101-200']) / Math.max(inputDistribution['101-200'], 1) * 100).toFixed(1),
-        '201-400': ((inputDistribution['201-400'] - outputDistribution['201-400']) / Math.max(inputDistribution['201-400'], 1) * 100).toFixed(1),
-        '401-600': ((inputDistribution['401-600'] - outputDistribution['401-600']) / Math.max(inputDistribution['401-600'], 1) * 100).toFixed(1),
-        '601-800': ((inputDistribution['601-800'] - outputDistribution['601-800']) / Math.max(inputDistribution['601-800'], 1) * 100).toFixed(1),
-        '801-1025': ((inputDistribution['801-1025'] - outputDistribution['801-1025']) / Math.max(inputDistribution['801-1025'], 1) * 100).toFixed(1),
-        '1026+': ((inputDistribution['1026+'] - outputDistribution['1026+']) / Math.max(inputDistribution['1026+'], 1) * 100).toFixed(1),
-      };
-      console.log(`🔍 [FILTER_PIPELINE_ANALYSIS] Filtering impact (% removed):`, filteringImpact);
-    }
-    
-    console.log(`🔍 [FILTER_PIPELINE_ANALYSIS] ===== FILTER ANALYSIS COMPLETE =====`);
+    console.log(`🔍 [DETERMINISTIC_FILTER_PIPELINE] ===== DETERMINISTIC FILTER ANALYSIS COMPLETE =====`);
     
     return filteredPokemon;
   };
@@ -212,12 +171,7 @@ export const useFormFilters = () => {
     toggleAll,
     resetFilters,
     shouldIncludePokemon,
-    analyzeFilteringPipeline: (inputPokemon: Pokemon[]) => {
-      console.log(`🔍 [FILTER_PIPELINE_ANALYSIS] ===== STARTING FILTER ANALYSIS =====`);
-      const filteredPokemon = inputPokemon.filter(shouldIncludePokemon);
-      console.log(`🔍 [FILTER_PIPELINE_ANALYSIS] Output Pokemon count: ${filteredPokemon.length}`);
-      return filteredPokemon;
-    },
+    analyzeFilteringPipeline,
     getPokemonFormCategory,
     storePokemon,
     getStoredPokemon,
