@@ -130,25 +130,28 @@ export const ProfileModalContent: React.FC<ProfileModalContentProps> = ({
     <div className="space-y-6">
       {/* Avatar Section */}
       <div className="flex flex-col items-center space-y-4">
-        <div className="relative">
-          <Avatar className="h-24 w-24 cursor-pointer" onClick={onAvatarClick}>
-            <AvatarImage src={selectedAvatar} alt="Profile avatar" />
-            <AvatarFallback className="text-lg">
-              {displayName ? displayName.charAt(0).toUpperCase() : user?.email?.charAt(0).toUpperCase() || '?'}
-            </AvatarFallback>
-          </Avatar>
-          <Button
-            size="sm"
-            variant="outline"
-            className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full p-0"
+        <div className="relative group">
+          <div 
+            className="relative border-2 border-dashed border-gray-300 rounded-full p-1 cursor-pointer transition-all hover:border-gray-400 hover:bg-gray-50 group-hover:border-gray-400"
             onClick={onAvatarClick}
           >
-            <Camera className="h-4 w-4" />
-          </Button>
+            <Avatar className="h-24 w-24">
+              <AvatarImage src={selectedAvatar} alt="Profile avatar" />
+              <AvatarFallback className="text-lg">
+                {displayName ? displayName.charAt(0).toUpperCase() : user?.email?.charAt(0).toUpperCase() || '?'}
+              </AvatarFallback>
+            </Avatar>
+            
+            {/* Camera overlay on hover */}
+            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-0 group-hover:bg-opacity-20 rounded-full transition-all">
+              <Camera className="h-6 w-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+            </div>
+          </div>
         </div>
-        <Button variant="outline" onClick={onAvatarClick}>
-          Change Avatar
-        </Button>
+        
+        <p className="text-sm text-muted-foreground text-center">
+          Click your avatar to change it
+        </p>
       </div>
 
       {/* Form Fields */}
