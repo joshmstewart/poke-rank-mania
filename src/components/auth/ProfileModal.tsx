@@ -25,30 +25,49 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  console.log('🎯 [PROFILE_MODAL] Modal open:', open, 'User ID:', user?.id);
+  console.log('🎯 [PROFILE_MODAL] === PROFILE MODAL RENDER ===');
+  console.log('🎯 [PROFILE_MODAL] Modal open:', open);
+  console.log('🎯 [PROFILE_MODAL] User ID:', user?.id);
+  console.log('🎯 [PROFILE_MODAL] Loading state:', loading);
 
   useEffect(() => {
+    console.log('🎯 [PROFILE_MODAL] === EFFECT TRIGGERED ===');
+    console.log('🎯 [PROFILE_MODAL] Effect deps:', { open, userId: user?.id, userEmail: user?.email, userPhone: user?.phone });
+
     const loadProfile = async () => {
+      console.log('🎯 [PROFILE_MODAL] === LOAD PROFILE FUNCTION START ===');
+      
       if (!user?.id || !open) {
-        console.log('🎯 [PROFILE_MODAL] Skipping load - no user or modal closed');
+        console.log('🎯 [PROFILE_MODAL] Skipping load - conditions not met:', {
+          hasUserId: !!user?.id,
+          modalOpen: open
+        });
         return;
       }
 
-      console.log('🎯 [PROFILE_MODAL] Starting profile load for:', user.id);
+      console.log('🎯 [PROFILE_MODAL] Setting loading to true and starting profile load...');
       setLoading(true);
 
       try {
+        console.log('🎯 [PROFILE_MODAL] About to call getProfile service...');
+        const startTime = Date.now();
+        
         const result = await getProfile(user.id);
+        
+        const endTime = Date.now();
+        console.log('🎯 [PROFILE_MODAL] getProfile completed in:', endTime - startTime, 'ms');
+        console.log('🎯 [PROFILE_MODAL] Profile result type:', typeof result);
         console.log('🎯 [PROFILE_MODAL] Profile result:', result);
         
         if (result) {
+          console.log('🎯 [PROFILE_MODAL] Setting profile data from result...');
           setProfile(result);
           setSelectedAvatar(result.avatar_url || '');
           setUsername(result.username || '');
           setDisplayName(result.display_name || '');
-          console.log('🎯 [PROFILE_MODAL] Profile loaded successfully');
+          console.log('🎯 [PROFILE_MODAL] Profile data set successfully');
         } else {
-          console.log('🎯 [PROFILE_MODAL] No profile found, setting defaults');
+          console.log('🎯 [PROFILE_MODAL] No profile found, setting defaults...');
           
           // Create better defaults for phone users
           let defaultDisplayName = 'New User';
@@ -69,10 +88,17 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
           setSelectedAvatar('');
           setUsername(defaultUsername);
           setDisplayName(defaultDisplayName);
+          console.log('🎯 [PROFILE_MODAL] Default values set:', {
+            defaultDisplayName,
+            defaultUsername
+          });
         }
         
       } catch (error) {
+        console.error('🎯 [PROFILE_MODAL] === ERROR IN LOAD PROFILE ===');
         console.error('🎯 [PROFILE_MODAL] Error loading profile:', error);
+        console.error('🎯 [PROFILE_MODAL] Error type:', typeof error);
+        console.error('🎯 [PROFILE_MODAL] Error message:', error?.message);
         
         // Set defaults on error
         const defaultDisplayName = user.phone ? `User ${user.phone.slice(-4)}` : user.email ? user.email.split('@')[0] : 'New User';
@@ -89,13 +115,14 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
           variant: 'destructive',
         });
       } finally {
+        console.log('🎯 [PROFILE_MODAL] Setting loading to false - profile load complete');
         setLoading(false);
-        console.log('🎯 [PROFILE_MODAL] Profile loading completed');
       }
     };
 
     // Reset state when modal closes
     if (!open) {
+      console.log('🎯 [PROFILE_MODAL] Modal closed, resetting all state...');
       setLoading(false);
       setProfile(null);
       setSelectedAvatar('');
@@ -105,6 +132,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
     }
 
     // Load profile when modal opens
+    console.log('🎯 [PROFILE_MODAL] Modal is open, calling loadProfile...');
     loadProfile();
   }, [open, user?.id, user?.email, user?.phone]);
 
@@ -154,6 +182,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
     console.log('🎯 [PROFILE_MODAL] No user, returning null');
     return null;
   }
+
+  console.log('🎯 [PROFILE_MODAL] About to render modal with loading state:', loading);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
