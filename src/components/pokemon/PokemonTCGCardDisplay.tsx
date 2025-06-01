@@ -1,6 +1,8 @@
 
 import React from 'react';
 import { Card } from '@/components/ui/card';
+import { usePreviewImageCache } from '@/hooks/usePreviewImageCache';
+import Logo from '@/components/ui/Logo';
 
 interface TCGCard {
   id: string;
@@ -36,21 +38,50 @@ interface PokemonTCGCardDisplayProps {
 
 const PokemonTCGCardDisplay: React.FC<PokemonTCGCardDisplayProps> = ({ tcgCard, secondCard }) => {
   const CardDisplay = ({ card }: { card: TCGCard }) => {
-    console.log(`📷 [TCG_CARD_DISPLAY] ${card.name}: Using LARGE image URL: ${card.images.large}`);
+    // Use the image cache for large TCG card images
+    const { cachedImageUrl, isLoading, error } = usePreviewImageCache(
+      card.images.large,
+      `tcg-card-${card.id}-large`
+    );
+
+    console.log(`📷 [TCG_CARD_DISPLAY] ${card.name}: Using cached LARGE image URL: ${cachedImageUrl || card.images.large}`);
     console.log(`📷 [TCG_CARD_DISPLAY] ${card.name}: Small image URL (NOT USED): ${card.images.small}`);
+    
+    const imageUrl = cachedImageUrl || card.images.large;
+
+    if (isLoading) {
+      return (
+        <div className="flex flex-col items-center space-y-4">
+          <div className="relative w-full max-w-sm h-[400px] flex items-center justify-center">
+            <div className="animate-pulse">
+              <Logo />
+            </div>
+          </div>
+          <Card className="p-3 w-full">
+            <div className="text-center space-y-1">
+              <p className="text-sm font-medium text-gray-700">Loading...</p>
+            </div>
+          </Card>
+        </div>
+      );
+    }
+
+    if (error) {
+      console.error(`❌ [TCG_CARD_DISPLAY] Error loading cached image for ${card.name}:`, error);
+    }
     
     return (
       <div className="flex flex-col items-center space-y-4">
         <div className="relative">
           <img 
-            src={card.images.large} 
+            src={imageUrl} 
             alt={card.name}
             className="w-full max-w-sm rounded-lg shadow-lg"
             onLoad={() => {
-              console.log(`✅ [TCG_CARD_DISPLAY] ${card.name}: Large TCG image loaded successfully from: ${card.images.large}`);
+              console.log(`✅ [TCG_CARD_DISPLAY] ${card.name}: Large TCG image loaded successfully from: ${imageUrl}`);
             }}
             onError={(e) => {
-              console.error(`❌ [TCG_CARD_DISPLAY] Failed to load TCG card LARGE image for ${card.name} from: ${card.images.large}`);
+              console.error(`❌ [TCG_CARD_DISPLAY] Failed to load TCG card LARGE image for ${card.name} from: ${imageUrl}`);
               const target = e.target as HTMLImageElement;
               target.style.display = 'none';
             }}
