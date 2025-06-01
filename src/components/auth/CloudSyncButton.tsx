@@ -9,36 +9,36 @@ export const CloudSyncButton: React.FC = () => {
   const { user, session } = useAuth();
   const [showAuthDialog, setShowAuthDialog] = useState(false);
 
-  console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON: ===== MAXIMUM FORCE DIAGNOSTIC RENDER START =====');
-  console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON: 🔥 FORCED LOGGING MODE 🔥');
-  console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON: Auth state:', {
+  console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON_FORCED: ===== DIAGNOSTIC RENDER START =====');
+  console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON_FORCED: 🔥 FORCED LOGGING MODE (RE-IMPLEMENTED) 🔥');
+  console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON_FORCED: Auth state from useAuth (validation target):', {
     hasUser: !!user,
     hasSession: !!session,
     userEmail: user?.email || 'no email',
     sessionUserEmail: session?.user?.email || 'no session email',
+    contextFixed: (!!user || !!session?.user) ? 'YES - useAuth WORKING!' : 'NO - useAuth STILL BROKEN',
     timestamp: new Date().toISOString()
   });
 
   const isAuthenticated = !!user || !!session?.user;
 
-  console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON: 🔥 FORCED AUTHENTICATION CHECK:', {
+  console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON_FORCED: 🔥 AUTHENTICATION CHECK:', {
     isAuthenticated,
     hasUser: !!user,
     hasSessionUser: !!session?.user,
     willReturnNull: isAuthenticated,
     willRenderButton: !isAuthenticated,
-    DIAGNOSTIC_NOTE: 'Should return null if authenticated (AuthenticatedUserDisplay should be forced elsewhere)'
+    NOTE: 'Should return null if useAuth fixes worked'
   });
 
-  // Only show for unauthenticated users - BUT LOG EVERYTHING
   if (isAuthenticated) {
-    console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON: 🚫 USER IS AUTHENTICATED - RETURNING NULL 🚫');
-    console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON: AuthenticatedUserDisplay should be FORCED to render elsewhere');
-    console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON: 🔥 THIS SHOULD NOT SHOW SYNCED TEXT 🔥');
+    console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON_FORCED: 🚫 USER IS AUTHENTICATED - RETURNING NULL 🚫');
+    console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON_FORCED: This indicates useAuth context fixes are working!');
     return null;
   }
 
-  console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON: 🟢 USER NOT AUTHENTICATED - RENDERING BUTTON 🟢');
+  console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON_FORCED: 🟢 USER NOT AUTHENTICATED - RENDERING BUTTON 🟢');
+  console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON_FORCED: This indicates useAuth context still shows unauthenticated');
 
   return (
     <div style={{ 
@@ -52,7 +52,8 @@ export const CloudSyncButton: React.FC = () => {
       </div>
       <div style={{ color: 'black', fontSize: '10px' }}>
         Not authenticated - showing sync button<br/>
-        Time: {new Date().toLocaleTimeString()}
+        Time: {new Date().toLocaleTimeString()}<br/>
+        useAuth context: {isAuthenticated ? 'WORKING' : 'BROKEN'}
       </div>
       <AuthDialog 
         open={showAuthDialog} 
