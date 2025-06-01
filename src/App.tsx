@@ -9,10 +9,11 @@ import PokemonRankerWithProvider from "@/components/pokemon/PokemonRankerWithPro
 import { AuthWrapper } from "@/components/auth/AuthWrapper";
 import { useAuth } from "@/contexts/AuthContext";
 
-// STRATEGY 2: Minimal App version for isolation testing
+// STRATEGY 2: Minimal App version for isolation testing  
 const MinimalAppForDebugging = () => {
   const renderCount = useRef(0);
-  const instanceId = useRef('jfteda'); // Fixed instance ID for tracking
+  const instanceId = useRef('jfteda');
+  const unmountDetectedRef = useRef(false);
   renderCount.current += 1;
   
   console.log('🟣🟣🟣 MINIMAL_APP: ===== MINIMAL APP RENDERING =====');
@@ -25,11 +26,29 @@ const MinimalAppForDebugging = () => {
     console.log('🟣🟣🟣 MINIMAL_APP: Instance ID on mount:', instanceId.current);
     console.log('🟣🟣🟣 MINIMAL_APP: Mount timestamp:', new Date().toISOString());
     
+    // Add monitoring
+    const monitoringInterval = setInterval(() => {
+      if (unmountDetectedRef.current) {
+        console.log('🟣🟣🟣 MINIMAL_APP: ⚠️ UNMOUNT FLAG DETECTED ⚠️');
+        clearInterval(monitoringInterval);
+        return;
+      }
+      
+      console.log('🟣🟣🟣 MINIMAL_APP: 🔍 MONITORING CHECK - Still mounted:', {
+        instance: instanceId.current,
+        time: new Date().toLocaleTimeString(),
+        renderCount: renderCount.current
+      });
+    }, 2000);
+    
     return () => {
       console.log('🟣🟣🟣 MINIMAL_APP: ===== MINIMAL APP UNMOUNTING =====');
       console.log('🟣🟣🟣 MINIMAL_APP: ❌❌❌ THIS SHOULD NOT HAPPEN AFTER LOGIN ❌❌❌');
       console.log('🟣🟣🟣 MINIMAL_APP: Instance ID unmounting:', instanceId.current);
       console.log('🟣🟣🟣 MINIMAL_APP: Unmount timestamp:', new Date().toISOString());
+      
+      unmountDetectedRef.current = true;
+      clearInterval(monitoringInterval);
     };
   }, []);
   
@@ -59,6 +78,7 @@ function AppContent() {
   const renderCount = useRef(0);
   const mountTime = useRef(new Date().toISOString());
   const stableInstance = useRef('app-content-main');
+  const unmountDetectedRef = useRef(false);
 
   renderCount.current += 1;
 
@@ -69,16 +89,57 @@ function AppContent() {
   console.log('🚀🚀🚀 APP_CONTENT: Current mode:', mode);
   console.log('🚀🚀🚀 APP_CONTENT: Timestamp:', new Date().toISOString());
 
+  // Add to window for monitoring
+  if (typeof window !== 'undefined') {
+    (window as any).appContentStatus = {
+      instance: stableInstance.current,
+      renderCount: renderCount.current,
+      mode,
+      mountTime: mountTime.current,
+      lastRender: new Date().toISOString()
+    };
+  }
+
   useEffect(() => {
     console.log('🚀🚀🚀 APP_CONTENT: ===== FULL APP CONTENT MOUNTED =====');
     console.log('🚀🚀🚀 APP_CONTENT: Component mounted at:', new Date().toISOString());
     console.log('🚀🚀🚀 APP_CONTENT: Stable instance ID on mount:', stableInstance.current);
+    
+    // Add aggressive monitoring
+    const monitoringInterval = setInterval(() => {
+      if (unmountDetectedRef.current) {
+        console.log('🚀🚀🚀 APP_CONTENT: ⚠️ UNMOUNT FLAG DETECTED ⚠️');
+        clearInterval(monitoringInterval);
+        return;
+      }
+      
+      console.log('🚀🚀🚀 APP_CONTENT: 🔍 MONITORING CHECK - Still mounted:', {
+        instance: stableInstance.current,
+        time: new Date().toLocaleTimeString(),
+        renderCount: renderCount.current,
+        mode: mode
+      });
+    }, 3000);
     
     return () => {
       console.log('🚀🚀🚀 APP_CONTENT: ===== FULL APP CONTENT UNMOUNT DETECTED =====');
       console.log('🚀🚀🚀 APP_CONTENT: 🚨🚨🚨 COMPONENT IS UNMOUNTING 🚨🚨🚨');
       console.log('🚀🚀🚀 APP_CONTENT: Unmounting at:', new Date().toISOString());
       console.log('🚀🚀🚀 APP_CONTENT: Stable instance that unmounted:', stableInstance.current);
+      console.log('🚀🚀🚀 APP_CONTENT: Mode at unmount:', mode);
+      
+      unmountDetectedRef.current = true;
+      
+      if (typeof window !== 'undefined') {
+        (window as any).appContentUnmountDetected = {
+          instance: stableInstance.current,
+          mode,
+          renderCount: renderCount.current,
+          unmountTime: new Date().toISOString()
+        };
+      }
+      
+      clearInterval(monitoringInterval);
     };
   }, []);
 
@@ -120,11 +181,57 @@ function AppContent() {
   );
 }
 
+// Error boundary for App root
+class AppErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: any) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('🚀🚀🚀 ROOT_APP: ❌ ERROR CAUGHT IN ROOT APP:', {
+      error: error.message,
+      stack: error.stack,
+      componentStack: errorInfo.componentStack,
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ 
+          border: '5px solid red', 
+          padding: '20px', 
+          backgroundColor: '#ffe0e0',
+          color: 'red',
+          fontSize: '16px',
+          fontWeight: 'bold'
+        }}>
+          🚨 ROOT APP ERROR BOUNDARY TRIGGERED 🚨<br/>
+          Something went wrong in the main app<br/>
+          Check console for details
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 // STRATEGY 4: Root-level conditional logic with comprehensive logging
 function App() {
   const renderCount = useRef(0);
   const mountTime = useRef(new Date().toISOString());
   const stableRootInstance = useRef('app-root-main');
+  const unmountDetectedRef = useRef(false);
   
   renderCount.current += 1;
 
@@ -139,11 +246,29 @@ function App() {
     console.log('🚀🚀🚀 ROOT_APP: Root component mounted at:', new Date().toISOString());
     console.log('🚀🚀🚀 ROOT_APP: Stable root instance on mount:', stableRootInstance.current);
     
+    // Add monitoring
+    const monitoringInterval = setInterval(() => {
+      if (unmountDetectedRef.current) {
+        console.log('🚀🚀🚀 ROOT_APP: ⚠️ ROOT UNMOUNT FLAG DETECTED ⚠️');
+        clearInterval(monitoringInterval);
+        return;
+      }
+      
+      console.log('🚀🚀🚀 ROOT_APP: 🔍 ROOT MONITORING CHECK - Still mounted:', {
+        instance: stableRootInstance.current,
+        time: new Date().toLocaleTimeString(),
+        renderCount: renderCount.current
+      });
+    }, 4000);
+    
     return () => {
       console.log('🚀🚀🚀 ROOT_APP: ===== ROOT UNMOUNT DETECTED =====');
       console.log('🚀🚀🚀 ROOT_APP: 🚨🚨🚨 ROOT COMPONENT UNMOUNTING 🚨🚨🚨');
       console.log('🚀🚀🚀 ROOT_APP: Root unmounting at:', new Date().toISOString());
       console.log('🚀🚀🚀 ROOT_APP: Root instance that unmounted:', stableRootInstance.current);
+      
+      unmountDetectedRef.current = true;
+      clearInterval(monitoringInterval);
     };
   }, []);
   
@@ -156,22 +281,26 @@ function App() {
   if (useMinimalVersion) {
     console.log('🚀🚀🚀 ROOT_APP: 🟣 USING MINIMAL VERSION FOR ISOLATION TESTING 🟣');
     return (
-      <div className="app-root">
-        <AuthWrapper>
-          <MinimalAppForDebugging />
-        </AuthWrapper>
-      </div>
+      <AppErrorBoundary>
+        <div className="app-root">
+          <AuthWrapper>
+            <MinimalAppForDebugging />
+          </AuthWrapper>
+        </div>
+      </AppErrorBoundary>
     );
   }
   
   console.log('🚀🚀🚀 ROOT_APP: 🟢 USING FULL VERSION - About to render AuthWrapper and AppContent 🟢');
   
   return (
-    <div className="app-root">
-      <AuthWrapper>
-        <AppContent />
-      </AuthWrapper>
-    </div>
+    <AppErrorBoundary>
+      <div className="app-root">
+        <AuthWrapper>
+          <AppContent />
+        </AuthWrapper>
+      </div>
+    </AppErrorBoundary>
   );
 }
 
