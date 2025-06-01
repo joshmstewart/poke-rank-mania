@@ -7,7 +7,8 @@ export type PokemonFormType =
   | "forms"
   | "originPrimal"
   | "costumes"
-  | "colorsFlavors";
+  | "colorsFlavors"
+  | "blocked";
 
 export interface FormFilters {
   normal: boolean;
@@ -18,4 +19,5 @@ export interface FormFilters {
   originPrimal: boolean;
   costumes: boolean;
   colorsFlavors: boolean;
+  blocked: boolean;
 }

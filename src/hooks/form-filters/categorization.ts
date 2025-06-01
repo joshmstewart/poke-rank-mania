@@ -10,7 +10,8 @@ let categoryStats: Record<PokemonFormType, number> = {
   forms: 0,
   originPrimal: 0,
   costumes: 0,
-  colorsFlavors: 0
+  colorsFlavors: 0,
+  blocked: 0
 };
 
 // NEW: Track miscategorized Pokemon for debugging
@@ -22,7 +23,8 @@ let miscategorizedExamples: Record<PokemonFormType, string[]> = {
   forms: [],
   originPrimal: [],
   costumes: [],
-  colorsFlavors: []
+  colorsFlavors: [],
+  blocked: []
 };
 
 export const resetCategoryStats = () => {
@@ -34,7 +36,8 @@ export const resetCategoryStats = () => {
     forms: 0,
     originPrimal: 0,
     costumes: 0,
-    colorsFlavors: 0
+    colorsFlavors: 0,
+    blocked: 0
   };
   
   // Reset examples
@@ -46,7 +49,8 @@ export const resetCategoryStats = () => {
     forms: [],
     originPrimal: [],
     costumes: [],
-    colorsFlavors: []
+    colorsFlavors: [],
+    blocked: []
   };
 };
 
@@ -99,17 +103,31 @@ export const isSpecialKoraidonMiraidonMode = (pokemon: Pokemon): boolean => {
          (name.includes('limited') || name.includes('build') || name.includes('mode'));
 };
 
+// NEW: Check if Pokemon should be blocked (always exclude)
+export const isBlockedPokemon = (pokemon: Pokemon): boolean => {
+  return isStarterPokemon(pokemon) || 
+         isTotemPokemon(pokemon) || 
+         isSizeVariantPokemon(pokemon) || 
+         isSpecialKoraidonMiraidonMode(pokemon) ||
+         (pokemon.name.toLowerCase().includes('minior') && pokemon.name.toLowerCase().includes('meteor')) ||
+         (pokemon.name.toLowerCase().includes('cramorant') && pokemon.name.toLowerCase() !== 'cramorant');
+};
+
 // FIXED: Much more precise categorization that only catches actual form variants
 export const getPokemonFormCategory = (pokemon: Pokemon): PokemonFormType | null => {
   const name = pokemon.name.toLowerCase();
   const originalName = pokemon.name; // Keep original for logging
   let category: PokemonFormType | null = null;
   
+  // FIRST: Check if Pokemon should be blocked
+  if (isBlockedPokemon(pokemon)) {
+    category = 'blocked';
+  }
   // CRITICAL FIX: Only catch Pokemon that have a hyphen AND the form indicator comes AFTER the hyphen
   // This prevents base Pokemon names from being miscategorized
   
   // Regional forms (must have hyphen and regional indicator after it)
-  if (name.includes('-alolan') || name.includes('-galarian') || name.includes('-hisuian') || name.includes('-paldean') ||
+  else if (name.includes('-alolan') || name.includes('-galarian') || name.includes('-hisuian') || name.includes('-paldean') ||
       name.includes('-alola') || name.includes('-galar') || name.includes('-hisui') || name.includes('-paldea')) {
     category = 'regional';
   }
@@ -208,6 +226,9 @@ export const getPokemonFormCategory = (pokemon: Pokemon): PokemonFormType | null
     }
     if (category === 'costumes' && !name.includes('pikachu') && !name.includes('-costume') && !name.includes('-hat')) {
       console.log(`🚨 [COSTUME_UNEXPECTED] "${originalName}" (ID: ${pokemon.id}) categorized as costume unexpectedly`);
+    }
+    if (category === 'blocked') {
+      console.log(`🚫 [BLOCKED_POKEMON] "${originalName}" (ID: ${pokemon.id}) categorized as blocked`);
     }
   }
   

@@ -81,49 +81,20 @@ export const useFormFilters = () => {
       forms: true,
       originPrimal: true,
       costumes: true,
-      colorsFlavors: true
+      colorsFlavors: true,
+      blocked: false // Default blocked to false
     };
     console.log('🧹 [FORM_FILTERS_RESET] Resetting to default filters');
     saveFilters(defaultFilters);
     setFilters(defaultFilters);
   };
   
-  // CRITICAL FIX: Completely deterministic Pokemon filtering
+  // CRITICAL FIX: Updated Pokemon filtering - blocked Pokemon are now categorized but can be toggled
   const shouldIncludePokemon = (pokemon: Pokemon): boolean => {
     const pokemonId = pokemon.id;
     const pokemonName = pokemon.name.toLowerCase();
     
-    // FIRST: Always exclude starter Pokemon regardless of filters
-    if (isStarterPokemon(pokemon)) {
-      return false;
-    }
-    
-    // SECOND: Always exclude totem Pokemon regardless of filters
-    if (isTotemPokemon(pokemon)) {
-      return false;
-    }
-    
-    // THIRD: Always exclude size variant Pokemon (Pumpkaboo/Gourgeist sizes)
-    if (isSizeVariantPokemon(pokemon)) {
-      return false;
-    }
-    
-    // FOURTH: Always exclude special Koraidon/Miraidon modes
-    if (isSpecialKoraidonMiraidonMode(pokemon)) {
-      return false;
-    }
-    
-    // FIFTH: Always exclude meteor Minior forms
-    if (pokemonName.includes('minior') && pokemonName.includes('meteor')) {
-      return false;
-    }
-    
-    // Enhanced Cramorant filtering at the form filter level
-    if (pokemonName.includes('cramorant') && pokemonName !== 'cramorant') {
-      return false;
-    }
-    
-    // If all filters are enabled, include all Pokemon (except the exclusions above)
+    // If all filters are enabled, include all Pokemon (including blocked if that filter is enabled)
     if (isAllEnabled) {
       return true;
     }

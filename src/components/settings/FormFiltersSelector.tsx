@@ -15,7 +15,8 @@ export type PokemonFormType =
   | "forms"
   | "originPrimal"
   | "costumes"
-  | "colorsFlavors";
+  | "colorsFlavors"
+  | "blocked";
 
 // Image URLs for different form types
 const formExampleImages = {
@@ -27,6 +28,7 @@ const formExampleImages = {
   originPrimal: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10007.png", // Giratina Origin
   costumes: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10094.png", // Pikachu with Original Cap
   colorsFlavors: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/774.png", // Minior (represents color variants)
+  blocked: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/1.png", // Bulbasaur (represents blocked starter)
 };
 
 export function FormFiltersSelector() {
@@ -53,7 +55,8 @@ export function FormFiltersSelector() {
       forms: 0,
       originPrimal: 0,
       costumes: 0,
-      colorsFlavors: 0
+      colorsFlavors: 0,
+      blocked: 0
     };
     
     allPokemon.forEach(pokemon => {
@@ -104,6 +107,7 @@ export function FormFiltersSelector() {
       case "originPrimal": return "Origin & Primal Forms";
       case "costumes": return "Costume Pokémon";
       case "colorsFlavors": return "Colors & Flavors";
+      case "blocked": return "Blocked Pokémon";
     }
   };
 
@@ -314,6 +318,24 @@ export function FormFiltersSelector() {
               id="costumes" 
               checked={filters.costumes}
               onCheckedChange={() => handleToggleFilter("costumes")} 
+            />
+          </div>
+        </div>
+        
+        {/* Blocked Pokémon */}
+        <div className="flex items-center space-x-3">
+          <div className="h-10 w-10 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden">
+            <img src={formExampleImages.blocked} alt="Blocked Pokémon" className="h-8 w-8 object-contain grayscale" />
+          </div>
+          <div className="flex flex-1 items-center justify-between">
+            <div className="flex flex-col">
+              <Label htmlFor="blocked" className="text-sm">Blocked Pokémon</Label>
+              <span className="text-xs text-muted-foreground">{formCounts.blocked} Pokemon (starters, totems, etc.)</span>
+            </div>
+            <Switch 
+              id="blocked" 
+              checked={filters.blocked}
+              onCheckedChange={() => handleToggleFilter("blocked")} 
             />
           </div>
         </div>
