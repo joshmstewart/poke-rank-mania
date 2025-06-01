@@ -53,7 +53,7 @@ export const AvailablePokemonSection: React.FC<AvailablePokemonSectionProps> = (
             </div>
           </div>
         ) : (
-          <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))' }}>
+          <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
             {availablePokemon.map((pokemon, index) => (
               <DraggablePokemonMilestoneCard
                 key={pokemon.id}
