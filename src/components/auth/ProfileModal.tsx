@@ -42,15 +42,26 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
     selectedAvatar
   });
 
+  console.log('🎯 [PROFILE_MODAL_DETAILED] useEffect dependencies check:', {
+    open,
+    'user?.id': user?.id,
+    'typeof user?.id': typeof user?.id,
+    'user exists': !!user,
+    'user object': user
+  });
+
   useEffect(() => {
+    console.log('🎯 [PROFILE_MODAL_DETAILED] ===== useEffect TRIGGERED =====');
     console.log('🎯 [PROFILE_MODAL_DETAILED] useEffect triggered with:', {
       open,
       userId: user?.id,
-      hasUser: !!user
+      hasUser: !!user,
+      'user?.id truthy': !!user?.id,
+      'open && user?.id': open && !!user?.id
     });
 
     if (open && user?.id) {
-      console.log('🎯 [PROFILE_MODAL_DETAILED] Conditions met, calling loadProfile()');
+      console.log('🎯 [PROFILE_MODAL_DETAILED] ✅ CONDITIONS MET - calling loadProfile()');
       loadProfile();
     } else if (!open) {
       console.log('🎯 [PROFILE_MODAL_DETAILED] Modal closed, resetting state');
@@ -60,19 +71,25 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
       setUsername('');
       setDisplayName('');
     } else {
-      console.log('🎯 [PROFILE_MODAL_DETAILED] Conditions NOT met:', {
+      console.log('🎯 [PROFILE_MODAL_DETAILED] ❌ CONDITIONS NOT MET:', {
         modalOpen: open,
         hasUserId: !!user?.id,
-        userIdValue: user?.id
+        userIdValue: user?.id,
+        userObject: user
       });
+      // Force loading to false if conditions aren't met but modal is open
+      if (open) {
+        console.log('🎯 [PROFILE_MODAL_DETAILED] Modal is open but no user - setting loading to false');
+        setLoading(false);
+      }
     }
-  }, [open, user?.id]);
+  }, [open, user?.id, user]); // Added user to dependencies to ensure we catch all user changes
 
   const loadProfile = async () => {
     console.log('🎯 [PROFILE_MODAL_DETAILED] ===== loadProfile() START =====');
     
     if (!user?.id) {
-      console.log('🎯 [PROFILE_MODAL_DETAILED] No user ID, exiting early');
+      console.log('🎯 [PROFILE_MODAL_DETAILED] No user ID in loadProfile, exiting early');
       setLoading(false);
       return;
     }
