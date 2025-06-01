@@ -1,52 +1,44 @@
 
 import { useCallback } from "react";
-import { Pokemon } from "@/services/pokemon";
-import { LoadingType } from "./types";
 import { usePokemonData } from "./usePokemonData";
+import { LoadingType } from "./types";
 
 export const useDataLoader = (
   selectedGeneration: number,
   currentPage: number,
   loadSize: number,
   loadingType: LoadingType,
-  setAvailablePokemon: React.Dispatch<React.SetStateAction<Pokemon[]>>,
-  setRankedPokemon: React.Dispatch<React.SetStateAction<Pokemon[]>>,
+  setAvailablePokemon: React.Dispatch<React.SetStateAction<any[]>>,
+  setRankedPokemon: React.Dispatch<React.SetStateAction<any[]>>,
   setTotalPages: React.Dispatch<React.SetStateAction<number>>,
   setIsLoading: React.Dispatch<React.SetStateAction<boolean>>
 ) => {
   const { getPokemonData } = usePokemonData();
 
   const loadData = useCallback(async () => {
-    console.log(`🚨🚨🚨 [DATA_LOADER_INVESTIGATION] ===== LOAD DATA CALLED =====`);
-    console.log(`🚨🚨🚨 [DATA_LOADER_INVESTIGATION] selectedGeneration: ${selectedGeneration}`);
-    console.log(`🚨🚨🚨 [DATA_LOADER_INVESTIGATION] currentPage: ${currentPage}`);
-    console.log(`🚨🚨🚨 [DATA_LOADER_INVESTIGATION] loadSize: ${loadSize}`);
-    console.log(`🚨🚨🚨 [DATA_LOADER_INVESTIGATION] loadingType: ${loadingType}`);
-    
+    console.log(`🚀 [DATA_LOADER] Starting data load for gen ${selectedGeneration}, page ${currentPage}`);
     setIsLoading(true);
     
     try {
-      const data = await getPokemonData(selectedGeneration, currentPage, loadSize, loadingType);
+      // CRITICAL FIX: Wait for Pokemon data to be ready
+      const result = await getPokemonData(selectedGeneration, currentPage, loadSize, loadingType);
       
-      console.log(`🚨🚨🚨 [DATA_LOADER_INVESTIGATION] RAW DATA RECEIVED:`);
-      console.log(`🚨🚨🚨 [DATA_LOADER_INVESTIGATION] data.availablePokemon: ${data.availablePokemon.length}`);
-      console.log(`🚨🚨🚨 [DATA_LOADER_INVESTIGATION] data.rankedPokemon: ${data.rankedPokemon.length}`);
-      console.log(`🚨🚨🚨 [DATA_LOADER_INVESTIGATION] data.totalPages: ${data.totalPages}`);
-      console.log(`🚨🚨🚨 [DATA_LOADER_INVESTIGATION] TOTAL RAW: ${data.availablePokemon.length + data.rankedPokemon.length}`);
+      console.log(`🚀 [DATA_LOADER] Data loaded successfully:`);
+      console.log(`🚀 [DATA_LOADER] - Available Pokemon: ${result.availablePokemon.length}`);
+      console.log(`🚀 [DATA_LOADER] - Ranked Pokemon: ${result.rankedPokemon.length}`);
+      console.log(`🚀 [DATA_LOADER] - Total Pages: ${result.totalPages}`);
       
-      // Check for unique IDs
-      const availableIds = new Set(data.availablePokemon.map(p => p.id));
-      const rankedIds = new Set(data.rankedPokemon.map(p => p.id));
-      const totalUniqueIds = new Set([...availableIds, ...rankedIds]);
-      console.log(`🚨🚨🚨 [DATA_LOADER_INVESTIGATION] Unique available IDs: ${availableIds.size}`);
-      console.log(`🚨🚨🚨 [DATA_LOADER_INVESTIGATION] Unique ranked IDs: ${rankedIds.size}`);
-      console.log(`🚨🚨🚨 [DATA_LOADER_INVESTIGATION] Total unique IDs: ${totalUniqueIds.size}`);
+      // CRITICAL FIX: Only update state if we have valid data
+      if (result.availablePokemon.length > 0 || result.rankedPokemon.length > 0) {
+        setAvailablePokemon(result.availablePokemon);
+        setRankedPokemon(result.rankedPokemon);
+        setTotalPages(result.totalPages);
+      } else {
+        console.log(`🚀 [DATA_LOADER] ⚠️ No Pokemon data received, keeping existing state`);
+      }
       
-      setAvailablePokemon(data.availablePokemon);
-      setRankedPokemon(data.rankedPokemon);
-      setTotalPages(data.totalPages);
     } catch (error) {
-      console.error("🚨🚨🚨 [DATA_LOADER_ERROR] Failed to load Pokemon data:", error);
+      console.error(`🚀 [DATA_LOADER] ❌ Error loading data:`, error);
     } finally {
       setIsLoading(false);
     }

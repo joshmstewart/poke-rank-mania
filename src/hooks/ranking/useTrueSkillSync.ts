@@ -11,21 +11,29 @@ export const useTrueSkillSync = () => {
   const { pokemonLookupMap } = usePokemonContext();
   const [localRankings, setLocalRankings] = useState<RankedPokemon[]>([]);
 
-  // Sync with TrueSkill store and apply name formatting
+  // CRITICAL FIX: Sync with TrueSkill store only when both store and context are ready
   useEffect(() => {
-    console.log(`🔥 [TRUESKILL_SYNC] ===== SYNCING WITH TRUESKILL STORE =====`);
+    console.log(`🔥 [TRUESKILL_SYNC] ===== CHECKING READINESS =====`);
     
     const allRatings = getAllRatings();
     const ratedPokemonIds = Object.keys(allRatings).map(Number);
     
-    console.log(`🔥 [TRUESKILL_SYNC] Found ${ratedPokemonIds.length} rated Pokemon in store`);
+    console.log(`🔥 [TRUESKILL_SYNC] TrueSkill ratings count: ${ratedPokemonIds.length}`);
     console.log(`🔥 [TRUESKILL_SYNC] Pokemon lookup map size: ${pokemonLookupMap.size}`);
 
+    // CRITICAL FIX: Only proceed if both data sources are ready
     if (ratedPokemonIds.length === 0) {
       console.log(`🔥 [TRUESKILL_SYNC] No ratings found, setting empty rankings`);
       setLocalRankings([]);
       return;
     }
+
+    if (pokemonLookupMap.size === 0) {
+      console.log(`🔥 [TRUESKILL_SYNC] Pokemon context not ready yet, waiting...`);
+      return;
+    }
+
+    console.log(`🔥 [TRUESKILL_SYNC] Both data sources ready, generating rankings`);
 
     const rankings: RankedPokemon[] = [];
 
@@ -38,13 +46,12 @@ export const useTrueSkillSync = () => {
         const conservativeEstimate = rating.mu - rating.sigma;
         const confidence = Math.max(0, Math.min(100, 100 * (1 - (rating.sigma / 8.33))));
 
-        // CRITICAL FIX: Apply name formatting here
+        // Apply name formatting
         const formattedName = formatPokemonName(basePokemon.name);
-        console.log(`🔥 [TRUESKILL_SYNC] Formatting: "${basePokemon.name}" → "${formattedName}"`);
 
         const rankedPokemon: RankedPokemon = {
           ...basePokemon,
-          name: formattedName, // Use formatted name
+          name: formattedName,
           score: conservativeEstimate,
           confidence: confidence,
           rating: rating,
@@ -56,7 +63,12 @@ export const useTrueSkillSync = () => {
 
         rankings.push(rankedPokemon);
       } else {
-        console.log(`🔥 [TRUESKILL_SYNC] ⚠️ Missing data for Pokemon ${pokemonId}: basePokemon=${!!basePokemon}, ratingData=${!!ratingData}`);
+        if (!basePokemon) {
+          console.log(`🔥 [TRUESKILL_SYNC] ⚠️ Missing Pokemon data for ID ${pokemonId} in context`);
+        }
+        if (!ratingData) {
+          console.log(`🔥 [TRUESKILL_SYNC] ⚠️ Missing rating data for ID ${pokemonId}`);
+        }
       }
     });
 
@@ -64,14 +76,14 @@ export const useTrueSkillSync = () => {
     rankings.sort((a, b) => b.score - a.score);
 
     console.log(`🔥 [TRUESKILL_SYNC] Generated ${rankings.length} formatted rankings`);
-    console.log(`🔥 [TRUESKILL_SYNC] Sample formatted rankings:`, rankings.slice(0, 3).map(p => ({
+    console.log(`🔥 [TRUESKILL_SYNC] Sample rankings:`, rankings.slice(0, 3).map(p => ({
       name: p.name,
       id: p.id,
       score: p.score.toFixed(3)
     })));
 
     setLocalRankings(rankings);
-  }, [getAllRatings, pokemonLookupMap]);
+  }, [getAllRatings, pokemonLookupMap.size]); // CRITICAL FIX: Depend on map size, not map object
 
   // Manual update function that preserves formatting
   const updateLocalRankings = (newRankings: RankedPokemon[]) => {

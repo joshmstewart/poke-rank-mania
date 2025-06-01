@@ -3,23 +3,42 @@ import { useCallback } from "react";
 import { usePokemonLoader } from "@/hooks/battle/usePokemonLoader";
 
 export const usePokemonService = () => {
-  const { allPokemon } = usePokemonLoader();
+  const { allPokemon, isLoading } = usePokemonLoader();
   
   const getAllPokemon = useCallback(async () => {
     console.log(`🔧 [POKEMON_SERVICE] Getting all Pokemon from loader service`);
+    console.log(`🔧 [POKEMON_SERVICE] Current state - isLoading: ${isLoading}, Pokemon count: ${allPokemon.length}`);
     
-    // If we already have Pokemon loaded, return them immediately
+    // CRITICAL FIX: Wait for loading to complete instead of returning empty array
+    if (isLoading) {
+      console.log(`🔧 [POKEMON_SERVICE] Still loading, waiting for completion`);
+      // Return a promise that resolves when loading is done
+      return new Promise((resolve) => {
+        const checkLoading = () => {
+          if (!isLoading && allPokemon.length > 0) {
+            console.log(`🔧 [POKEMON_SERVICE] Loading completed, returning ${allPokemon.length} Pokemon`);
+            resolve(allPokemon);
+          } else {
+            setTimeout(checkLoading, 100);
+          }
+        };
+        checkLoading();
+      });
+    }
+    
+    // If we have Pokemon and not loading, return them immediately
     if (allPokemon && allPokemon.length > 0) {
-      console.log(`🔧 [POKEMON_SERVICE] Using cached Pokemon from loader: ${allPokemon.length}`);
+      console.log(`🔧 [POKEMON_SERVICE] Using loaded Pokemon from cache: ${allPokemon.length}`);
       return allPokemon;
     }
     
-    // If not loaded yet, this will trigger loading and return empty array temporarily
-    console.log(`🔧 [POKEMON_SERVICE] No Pokemon loaded yet, returning empty array`);
+    // CRITICAL FIX: Only return empty if truly no data available
+    console.log(`🔧 [POKEMON_SERVICE] No Pokemon available - this should rarely happen`);
     return [];
-  }, [allPokemon]);
+  }, [allPokemon, isLoading]);
 
   return {
-    getAllPokemon
+    getAllPokemon,
+    isLoading
   };
 };
