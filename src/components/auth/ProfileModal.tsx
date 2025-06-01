@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/auth/useAuth';
 import { toast } from '@/hooks/use-toast';
@@ -17,90 +17,75 @@ interface ProfileModalProps {
 
 export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }) => {
   const { user } = useAuth();
-  const [profile, setProfile] = useState<Profile | null>(null);
   const [selectedAvatar, setSelectedAvatar] = useState<string>('');
   const [username, setUsername] = useState('');
   const [displayName, setDisplayName] = useState('');
-  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [initialized, setInitialized] = useState(false);
 
-  console.log('🎯 [PROFILE_MODAL] === PROFILE MODAL RENDER ===');
-  console.log('🎯 [PROFILE_MODAL] Modal open:', open);
-  console.log('🎯 [PROFILE_MODAL] User ID:', user?.id);
-  console.log('🎯 [PROFILE_MODAL] Loading state:', loading);
+  console.log('🚀 [PROFILE_MODAL_NEW] === NEW APPROACH RENDER ===');
+  console.log('🚀 [PROFILE_MODAL_NEW] Modal open:', open);
+  console.log('🚀 [PROFILE_MODAL_NEW] User ID:', user?.id);
+  console.log('🚀 [PROFILE_MODAL_NEW] Initialized:', initialized);
 
-  useEffect(() => {
+  // Novel approach: Initialize immediately when modal opens, no loading state
+  React.useEffect(() => {
+    if (open && user?.id && !initialized) {
+      console.log('🚀 [PROFILE_MODAL_NEW] INITIALIZING PROFILE DATA...');
+      
+      // Set defaults immediately - no loading state
+      let defaultDisplayName = 'New User';
+      let defaultUsername = 'new_user';
+      
+      if (user.phone) {
+        const phoneDigits = user.phone.replace(/\D/g, '');
+        const lastFour = phoneDigits.slice(-4);
+        defaultDisplayName = `User ${lastFour}`;
+        defaultUsername = `user_${lastFour}`;
+      } else if (user.email) {
+        const emailPart = user.email.split('@')[0];
+        defaultDisplayName = emailPart;
+        defaultUsername = emailPart;
+      }
+      
+      setSelectedAvatar('');
+      setUsername(defaultUsername);
+      setDisplayName(defaultDisplayName);
+      setInitialized(true);
+      
+      console.log('🚀 [PROFILE_MODAL_NEW] ✅ DEFAULTS SET, NOW LOADING PROFILE IN BACKGROUND...');
+      
+      // Load actual profile data in background, update fields if found
+      getProfile(user.id).then(profile => {
+        console.log('🚀 [PROFILE_MODAL_NEW] Background profile load result:', profile);
+        if (profile) {
+          setSelectedAvatar(profile.avatar_url || '');
+          setUsername(profile.username || defaultUsername);
+          setDisplayName(profile.display_name || defaultDisplayName);
+          console.log('🚀 [PROFILE_MODAL_NEW] ✅ PROFILE DATA UPDATED FROM DATABASE');
+        } else {
+          console.log('🚀 [PROFILE_MODAL_NEW] ✅ KEEPING DEFAULTS (NO PROFILE IN DB)');
+        }
+      }).catch(error => {
+        console.error('🚀 [PROFILE_MODAL_NEW] Background profile load error:', error);
+        // Keep defaults on error
+      });
+    }
+    
     if (!open) {
-      // Reset state when modal closes
-      setLoading(false);
-      setProfile(null);
+      // Reset when modal closes
+      setInitialized(false);
       setSelectedAvatar('');
       setUsername('');
       setDisplayName('');
-      return;
     }
-
-    if (!user?.id) {
-      setLoading(false);
-      return;
-    }
-
-    // Load profile when modal opens
-    const loadProfile = async () => {
-      console.log('🎯 [PROFILE_MODAL] Starting profile load for user:', user.id);
-      setLoading(true);
-
-      try {
-        const result = await getProfile(user.id);
-        console.log('🎯 [PROFILE_MODAL] getProfile returned:', result);
-        
-        if (result) {
-          setProfile(result);
-          setSelectedAvatar(result.avatar_url || '');
-          setUsername(result.username || '');
-          setDisplayName(result.display_name || '');
-        } else {
-          // Set defaults for new users
-          let defaultDisplayName = 'New User';
-          let defaultUsername = 'new_user';
-          
-          if (user.phone) {
-            const phoneDigits = user.phone.replace(/\D/g, '');
-            const lastFour = phoneDigits.slice(-4);
-            defaultDisplayName = `User ${lastFour}`;
-            defaultUsername = `user_${lastFour}`;
-          } else if (user.email) {
-            const emailPart = user.email.split('@')[0];
-            defaultDisplayName = emailPart;
-            defaultUsername = emailPart;
-          }
-          
-          setProfile(null);
-          setSelectedAvatar('');
-          setUsername(defaultUsername);
-          setDisplayName(defaultDisplayName);
-        }
-      } catch (error) {
-        console.error('🎯 [PROFILE_MODAL] Error in loadProfile:', error);
-        toast({
-          title: 'Profile Load Error',
-          description: 'Could not load profile. Using defaults.',
-          variant: 'destructive',
-        });
-      } finally {
-        console.log('🎯 [PROFILE_MODAL] Setting loading to false');
-        setLoading(false);
-      }
-    };
-
-    loadProfile();
-  }, [open, user?.id, user?.email, user?.phone]);
+  }, [open, user?.id, user?.email, user?.phone, initialized]);
 
   const handleSave = async () => {
-    console.log('🎯 [PROFILE_MODAL] Saving profile');
+    console.log('🚀 [PROFILE_MODAL_NEW] Saving profile');
     
     if (!user?.id) {
-      console.log('🎯 [PROFILE_MODAL] No user ID for save');
+      console.log('🚀 [PROFILE_MODAL_NEW] No user ID for save');
       return;
     }
 
@@ -127,7 +112,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
         });
       }
     } catch (error) {
-      console.error('🎯 [PROFILE_MODAL] Error saving profile:', error);
+      console.error('🚀 [PROFILE_MODAL_NEW] Error saving profile:', error);
       toast({
         title: 'Save Error',
         description: 'An error occurred while saving your profile.',
@@ -139,18 +124,18 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
   };
 
   if (!user?.id) {
-    console.log('🎯 [PROFILE_MODAL] No user, returning null');
+    console.log('🚀 [PROFILE_MODAL_NEW] No user, returning null');
     return null;
   }
 
-  console.log('🎯 [PROFILE_MODAL] About to render modal with loading state:', loading);
+  console.log('🚀 [PROFILE_MODAL_NEW] About to render modal - NO LOADING STATE!');
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
         <ProfileModalHeader />
         <ProfileModalContent
-          loading={loading}
+          loading={false}
           selectedAvatar={selectedAvatar}
           setSelectedAvatar={setSelectedAvatar}
           username={username}
