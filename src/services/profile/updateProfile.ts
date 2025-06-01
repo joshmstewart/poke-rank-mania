@@ -5,7 +5,7 @@ import type { Profile } from './types';
 export const updateProfile = async (userId: string, updates: Partial<Profile>): Promise<boolean> => {
   console.log('🚀🔵 [PROFILE_UPDATE_SVC] ===== STARTING PROFILE UPDATE SERVICE =====');
   console.log('🚀🔵 [PROFILE_UPDATE_SVC] User ID:', userId);
-  console.log('🚀🔵 [PROFILE_UPDATE_SVC] Updates:', updates);
+  console.log('🚀🔵 [PROFILE_UPDATE_SVC] Updates received:', updates);
   console.log('🚀🔵 [PROFILE_UPDATE_SVC] Supabase client available:', !!supabase);
   
   if (!userId || userId.length < 10) {
@@ -23,12 +23,12 @@ export const updateProfile = async (userId: string, updates: Partial<Profile>): 
       updated_at: now
     };
 
-    console.log('🚀🔵 [PROFILE_UPDATE_SVC] Attempting upsert with data:', profileData);
+    console.log('🚀🔵 [PROFILE_UPDATE_SVC] Final profile data for upsert:', profileData);
     console.log('🚀🔵 [PROFILE_UPDATE_SVC] About to call supabase.from("profiles").upsert()...');
 
     const upsertStartTime = Date.now();
     
-    // Simplified upsert without aggressive timeouts
+    // Direct Supabase call with detailed error handling
     const upsertResult = await supabase
       .from('profiles')
       .upsert(profileData, {
