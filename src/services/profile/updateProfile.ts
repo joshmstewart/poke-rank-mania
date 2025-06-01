@@ -14,30 +14,6 @@ export const updateProfile = async (userId: string, updates: Partial<Profile>): 
   }
 
   try {
-    console.log('🚀🔵 [PROFILE_UPDATE_SVC] Testing database connection...');
-    const connectionStartTime = Date.now();
-    
-    // Add timeout to the connection test
-    const testConnectionPromise = supabase
-      .from('profiles')
-      .select('count')
-      .limit(1);
-    
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error('Connection test timeout')), 10000);
-    });
-    
-    const testResult = await Promise.race([testConnectionPromise, timeoutPromise]);
-    
-    const connectionEndTime = Date.now();
-    console.log('🚀🔵 [PROFILE_UPDATE_SVC] Connection test completed in', (connectionEndTime - connectionStartTime), 'ms');
-    console.log('🚀🔵 [PROFILE_UPDATE_SVC] Connection test result:', { data: testResult.data, error: testResult.error });
-    
-    if (testResult.error) {
-      console.error('🚀🔴 [PROFILE_UPDATE_SVC] Database connection failed:', testResult.error);
-      return false;
-    }
-
     const now = new Date().toISOString();
     
     // Prepare the complete profile data for upsert
@@ -52,22 +28,14 @@ export const updateProfile = async (userId: string, updates: Partial<Profile>): 
 
     const upsertStartTime = Date.now();
     
-    // Add timeout to the upsert operation
-    const upsertPromise = supabase
+    // Simplified upsert without aggressive timeouts
+    const upsertResult = await supabase
       .from('profiles')
       .upsert(profileData, {
         onConflict: 'id'
       })
       .select()
       .single();
-
-    const upsertTimeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error('Upsert operation timeout')), 15000);
-    });
-
-    console.log('🚀🔵 [PROFILE_UPDATE_SVC] Upsert promise created, awaiting result...');
-    
-    const upsertResult = await Promise.race([upsertPromise, upsertTimeoutPromise]);
 
     const upsertEndTime = Date.now();
     console.log('🚀🔵 [PROFILE_UPDATE_SVC] Upsert completed in', (upsertEndTime - upsertStartTime), 'ms');
