@@ -31,40 +31,41 @@ const SaveProgressSection: React.FC = () => {
     );
   }
 
-  // DIAGNOSTIC EXPERIMENT: Force AuthenticatedUserDisplay to render if ANY auth data exists
+  // FORCED DIAGNOSTIC APPROACH: Always render AuthenticatedUserDisplay if we have ANY auth data
   const hasAnyAuthData = !!user || !!session?.user || !!session;
-  const isAuthenticated = !!user || !!session?.user;
+  const authenticatedUser = user || session?.user;
   
-  console.log('🚨🚨🚨 SAVE_PROGRESS_SECTION: DIAGNOSTIC EXPERIMENT - Authentication decision logic:', {
+  console.log('🚨🚨🚨 SAVE_PROGRESS_SECTION: FORCED DIAGNOSTIC DECISION LOGIC:', {
     hasAnyAuthData,
-    isAuthenticated,
     hasUser: !!user,
     hasSessionUser: !!session?.user,
     hasSession: !!session,
     userEmail: user?.email,
     sessionUserEmail: session?.user?.email,
-    experimentalForceRender: hasAnyAuthData,
-    normalRenderDecision: isAuthenticated,
-    willForceAuthenticatedDisplay: hasAnyAuthData,
+    authenticatedUserEmail: authenticatedUser?.email,
+    FORCING_AUTHENTICATED_DISPLAY: hasAnyAuthData,
     timestamp: new Date().toISOString()
   });
 
-  // DIAGNOSTIC: Force render AuthenticatedUserDisplay if we have ANY auth data
+  // CRITICAL DIAGNOSTIC: Force render AuthenticatedUserDisplay if ANY auth data exists
   if (hasAnyAuthData) {
-    console.log('🚨🚨🚨 SAVE_PROGRESS_SECTION: 🟢 DIAGNOSTIC EXPERIMENT - FORCING AuthenticatedUserDisplay RENDER 🟢');
-    console.log('🚨🚨🚨 SAVE_PROGRESS_SECTION: User data being passed to AuthenticatedUserDisplay:', {
-      user: user ? 'present' : 'null',
-      session: session ? 'present' : 'null',
-      userEmail: user?.email || session?.user?.email || 'no email',
-      experimentType: 'FORCED_RENDER_FOR_DIAGNOSTICS'
+    console.log('🚨🚨🚨 SAVE_PROGRESS_SECTION: 🟢 FORCING AuthenticatedUserDisplay RENDER 🟢');
+    console.log('🚨🚨🚨 SAVE_PROGRESS_SECTION: Passing authenticatedUser to AuthenticatedUserDisplay:', {
+      authenticatedUser: !!authenticatedUser,
+      userEmail: authenticatedUser?.email || 'no email',
+      userId: authenticatedUser?.id || 'no id',
+      authDataSource: user ? 'from user' : 'from session.user',
+      timestamp: new Date().toISOString()
     });
     
     return (
       <div className="flex items-center gap-4">
-        <div className="bg-orange-500 border-4 border-red-500 p-2">
-          <div className="text-white font-bold text-xs">🔧 DIAGNOSTIC MODE 🔧</div>
-          <div className="text-white text-xs">Force rendering AuthenticatedUserDisplay</div>
-          <div className="text-white text-xs">Auth data detected: {hasAnyAuthData ? 'YES' : 'NO'}</div>
+        <div className="bg-red-500 border-4 border-yellow-400 p-2">
+          <div className="text-white font-bold text-xs">🔥 FORCED DIAGNOSTIC MODE 🔥</div>
+          <div className="text-white text-xs">SaveProgressSection FORCING AuthenticatedUserDisplay</div>
+          <div className="text-white text-xs">Auth data: {hasAnyAuthData ? 'YES' : 'NO'}</div>
+          <div className="text-white text-xs">User email: {authenticatedUser?.email || 'none'}</div>
+          <div className="text-white text-xs">Time: {new Date().toLocaleTimeString()}</div>
         </div>
         <div className="flex items-center gap-2">
           <Badge variant="secondary" className="flex items-center gap-1 bg-green-100 text-green-700 border-green-200">
@@ -72,7 +73,7 @@ const SaveProgressSection: React.FC = () => {
             <span className="text-xs">Synced</span>
           </Badge>
         </div>
-        <AuthenticatedUserDisplay />
+        <AuthenticatedUserDisplay currentUser={authenticatedUser} />
       </div>
     );
   }

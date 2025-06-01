@@ -9,7 +9,7 @@ export const CloudSyncButton: React.FC = () => {
   const { user, session } = useAuth();
   const [showAuthDialog, setShowAuthDialog] = useState(false);
 
-  console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON: ===== COMPONENT RENDER START =====');
+  console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON: ===== DIAGNOSTIC RENDER START =====');
   console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON: Auth state:', {
     hasUser: !!user,
     hasSession: !!session,
@@ -25,22 +25,24 @@ export const CloudSyncButton: React.FC = () => {
     hasUser: !!user,
     hasSessionUser: !!session?.user,
     willReturnNull: isAuthenticated,
-    willRenderButton: !isAuthenticated
+    willRenderButton: !isAuthenticated,
+    DIAGNOSTIC_NOTE: 'Should return null if authenticated (AuthenticatedUserDisplay should be shown instead)'
   });
 
   // Only show for unauthenticated users
   if (isAuthenticated) {
     console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON: 🚫 USER IS AUTHENTICATED - RETURNING NULL 🚫');
-    console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON: 🚫 CloudSyncButton will NOT render - AuthenticatedUserDisplay should be shown instead 🚫');
+    console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON: AuthenticatedUserDisplay should be handling this case');
     return null;
   }
 
   console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON: 🟢 USER NOT AUTHENTICATED - RENDERING BUTTON 🟢');
 
   return (
-    <div className="bg-blue-500 border-2 border-yellow-400 p-2">
-      <div className="text-white font-bold text-xs">🟡 CLOUD SYNC BUTTON 🟡</div>
-      <div className="text-white text-xs">Not authenticated - showing sync button</div>
+    <div className="bg-yellow-500 border-2 border-blue-400 p-2">
+      <div className="text-black font-bold text-xs">🟡 CLOUD SYNC BUTTON 🟡</div>
+      <div className="text-black text-xs">Not authenticated - showing sync button</div>
+      <div className="text-black text-xs">Time: {new Date().toLocaleTimeString()}</div>
       <AuthDialog 
         open={showAuthDialog} 
         onOpenChange={setShowAuthDialog}
