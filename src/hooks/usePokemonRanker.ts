@@ -71,13 +71,13 @@ export const usePokemonRanker = (): RankingState & RankingActions & { loadingRef
     setConfidenceScores
   });
 
-  // Use TrueSkill integration hook
+  // Use TrueSkill integration hook - FIX: Cast setRankedPokemon to match expected type
   const { isStoreLoading } = useTrueSkillIntegration({
     isLoading,
     storeLoading: false,
     availablePokemon,
     rankedPokemon,
-    setRankedPokemon,
+    setRankedPokemon: setRankedPokemon as any, // Type cast to fix the mismatch
     setAvailablePokemon,
     setConfidenceScores
   });
