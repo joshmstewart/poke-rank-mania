@@ -41,12 +41,25 @@ export const AvailablePokemonSection: React.FC<AvailablePokemonSectionProps> = (
   const availableGenerations = useMemo(() => {
     const generations = new Set<number>();
     availablePokemon.forEach(pokemon => {
-      const gen = Math.floor((pokemon.id - 1) / 151) + 1; // Simple generation calculation
+      // Use a more accurate generation calculation
+      let gen: number;
+      if (pokemon.id <= 151) gen = 1;
+      else if (pokemon.id <= 251) gen = 2;
+      else if (pokemon.id <= 386) gen = 3;
+      else if (pokemon.id <= 493) gen = 4;
+      else if (pokemon.id <= 649) gen = 5;
+      else if (pokemon.id <= 721) gen = 6;
+      else if (pokemon.id <= 809) gen = 7;
+      else if (pokemon.id <= 905) gen = 8;
+      else gen = 9;
+      
       if (gen >= 1 && gen <= 9) {
         generations.add(gen);
       }
     });
-    return Array.from(generations).sort();
+    const genArray = Array.from(generations).sort();
+    console.log(`🔍 [AVAILABLE_SECTION] Available generations:`, genArray);
+    return genArray;
   }, [availablePokemon]);
 
   // Generation expansion controls
@@ -102,14 +115,16 @@ export const AvailablePokemonSection: React.FC<AvailablePokemonSectionProps> = (
             </div>
           </div>
         ) : (
-          <PokemonListContent
-            items={groupedItems}
-            showGenerationHeaders={showGenerationHeaders}
-            viewMode={viewMode}
-            isRankingArea={false}
-            isGenerationExpanded={isGenerationExpanded}
-            onToggleGeneration={toggleGeneration}
-          />
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+            <PokemonListContent
+              items={groupedItems}
+              showGenerationHeaders={showGenerationHeaders}
+              viewMode={viewMode}
+              isRankingArea={false}
+              isGenerationExpanded={isGenerationExpanded}
+              onToggleGeneration={toggleGeneration}
+            />
+          </div>
         )}
         
         {/* Loading indicator */}

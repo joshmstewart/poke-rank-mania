@@ -16,6 +16,23 @@ export const formatPokemonName = (name: string): string => {
   console.log(`🔧 [FORMAT_ULTRA_DEBUG] ===== formatPokemonName ENTRY =====`);
   console.log(`🔧 [FORMAT_ULTRA_DEBUG] Input name: "${name}"`);
   
+  // SPECIAL CASE: Handle Nidoran with gender symbols
+  if (name.toLowerCase().includes('nidoran')) {
+    if (name.toLowerCase().includes('male') || name.toLowerCase().includes('-m')) {
+      console.log(`🔧 [FORMAT_DEBUG] Nidoran male case: "${name}"`);
+      return "Nidoran♂";
+    }
+    if (name.toLowerCase().includes('female') || name.toLowerCase().includes('-f')) {
+      console.log(`🔧 [FORMAT_DEBUG] Nidoran female case: "${name}"`);
+      return "Nidoran♀";
+    }
+    // If it's just "nidoran" without gender specification, check the Pokemon ID context
+    // For now, default to just capitalizing if no gender is specified
+    if (name.toLowerCase() === 'nidoran') {
+      return "Nidoran";
+    }
+  }
+  
   // RULE 5: Special case for Greninja Ash
   if (name.toLowerCase().includes('greninja') && name.toLowerCase().includes('ash')) {
     console.log(`🔧 [FORMAT_DEBUG] Special Greninja Ash case: "${name}"`);

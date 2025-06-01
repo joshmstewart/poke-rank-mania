@@ -30,27 +30,38 @@ export const usePokemonGrouping = (
     
     // Group by generation for the available Pokemon list
     const result = [];
-    let lastGeneration: number | null = null;
+    let currentGeneration: number | null = null;
     
     for (const pokemon of filtered) {
-      const generation = getPokemonGeneration(pokemon.id);
+      // Calculate generation based on Pokemon ID
+      let generation: number;
+      if (pokemon.id <= 151) generation = 1;
+      else if (pokemon.id <= 251) generation = 2;
+      else if (pokemon.id <= 386) generation = 3;
+      else if (pokemon.id <= 493) generation = 4;
+      else if (pokemon.id <= 649) generation = 5;
+      else if (pokemon.id <= 721) generation = 6;
+      else if (pokemon.id <= 809) generation = 7;
+      else if (pokemon.id <= 905) generation = 8;
+      else generation = 9;
       
-      if (generation && generation.id !== lastGeneration) {
+      if (generation !== currentGeneration) {
         // Add a header for new generation
+        const genDetails = generationDetails[generation];
         result.push({ 
           type: 'header', 
-          generationId: generation.id,
+          generationId: generation,
           data: {
-            name: generation.name,
-            region: generationDetails[generation.id]?.region || "Unknown",
-            games: generationDetails[generation.id]?.games || ""
+            name: `Generation ${generation}`,
+            region: genDetails?.region || "Unknown",
+            games: genDetails?.games || ""
           }
         });
-        lastGeneration = generation.id;
+        currentGeneration = generation;
       }
       
       // Add Pokemon if its generation is expanded (or if no expansion function provided)
-      if (!isGenerationExpanded || isGenerationExpanded(generation?.id || 0)) {
+      if (!isGenerationExpanded || isGenerationExpanded(generation)) {
         result.push({ type: 'pokemon', data: pokemon });
       }
     }

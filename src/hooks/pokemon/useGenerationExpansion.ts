@@ -1,5 +1,5 @@
 
-import { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 
 export const useGenerationExpansion = (generations: number[]) => {
   const [expandedGenerations, setExpandedGenerations] = useState<Set<number>>(() => {
@@ -25,7 +25,7 @@ export const useGenerationExpansion = (generations: number[]) => {
   };
 
   const expandAll = () => {
-    console.log(`🔍 [GENERATION_EXPANSION] Expanding all generations`);
+    console.log(`🔍 [GENERATION_EXPANSION] Expanding all generations:`, generations);
     setExpandedGenerations(new Set(generations));
   };
 
@@ -34,10 +34,30 @@ export const useGenerationExpansion = (generations: number[]) => {
     setExpandedGenerations(new Set());
   };
 
-  const allExpanded = expandedGenerations.size === generations.length;
+  // Update the expanded generations when the available generations change
+  useEffect(() => {
+    setExpandedGenerations(prev => {
+      // Keep only the generations that still exist and add any new ones
+      const newSet = new Set();
+      generations.forEach(gen => {
+        if (prev.has(gen) || prev.size === generations.length) {
+          newSet.add(gen);
+        }
+      });
+      // If we had all generations expanded before, expand all new ones too
+      if (prev.size === 0) {
+        return new Set(); // Keep collapsed state
+      }
+      return newSet.size === 0 ? new Set(generations) : newSet;
+    });
+  }, [generations]);
+
+  const allExpanded = expandedGenerations.size === generations.length && generations.length > 0;
   const allCollapsed = expandedGenerations.size === 0;
 
   console.log(`🔍 [GENERATION_EXPANSION] Current state: ${expandedGenerations.size}/${generations.length} expanded`);
+  console.log(`🔍 [GENERATION_EXPANSION] Available generations:`, generations);
+  console.log(`🔍 [GENERATION_EXPANSION] Expanded generations:`, Array.from(expandedGenerations));
 
   return {
     isGenerationExpanded,
