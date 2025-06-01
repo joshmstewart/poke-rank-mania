@@ -3,6 +3,9 @@ import { capitalizeFirstLetter } from './helpers';
 import { handleRegionalForms } from './regionalForms';
 import { handleSpecialForms } from './specialForms';
 import { handlePokemonVariants } from './pokemonVariants';
+import { shouldFilterPokemon } from './filters';
+import { handleSpecialCases } from './specialCases';
+import { handleVariantFormatting } from './variantFormatting';
 
 /**
  * Format Pokémon names to properly display regional forms
@@ -16,147 +19,23 @@ export const formatPokemonName = (name: string): string => {
   console.log(`🔧 [FORMAT_ULTRA_DEBUG] ===== formatPokemonName ENTRY =====`);
   console.log(`🔧 [FORMAT_ULTRA_DEBUG] Input name: "${name}"`);
   
-  // SPECIAL FILTERING: Hide specific Pokemon that should never appear
-  const lowerName = name.toLowerCase();
-  
-  // Hide Rockruff (Own Tempo)
-  if (lowerName.includes('rockruff') && lowerName.includes('own-tempo')) {
-    console.log(`🔧 [FORMAT_DEBUG] Filtering out Rockruff (Own Tempo): "${name}"`);
+  // Check if this Pokemon should be filtered out
+  if (shouldFilterPokemon(name)) {
     return ''; // Return empty to filter out
   }
   
-  // Hide Busted Mimikyu
-  if (lowerName.includes('mimikyu') && lowerName.includes('busted')) {
-    console.log(`🔧 [FORMAT_DEBUG] Filtering out Busted Mimikyu: "${name}"`);
-    return ''; // Return empty to filter out
+  // Handle special cases first (Zygarde, Nidoran, Greninja Ash, Maushold)
+  const specialCaseResult = handleSpecialCases(name);
+  if (specialCaseResult) {
+    console.log(`🔧 [FORMAT_ULTRA_DEBUG] ===== formatPokemonName EXIT (SPECIAL CASE) =====`);
+    return specialCaseResult;
   }
   
-  // Hide all Minior meteor forms (e.g., "Minior (Green Meteor)", "minior-red-meteor", etc.)
-  if (lowerName.includes('minior') && lowerName.includes('meteor')) {
-    console.log(`🔧 [FORMAT_DEBUG] Filtering out Minior meteor form: "${name}"`);
-    return ''; // Return empty to filter out
-  }
-  
-  // SPECIAL CASE: Handle Zygarde forms
-  if (lowerName.includes('zygarde')) {
-    console.log(`🔧 [FORMAT_DEBUG] Processing Zygarde form: "${name}"`);
-    
-    if (lowerName.includes('10') || lowerName.includes('ten')) {
-      return "Zygarde 10% Power";
-    }
-    if (lowerName.includes('50') || lowerName.includes('fifty')) {
-      return "Zygarde 50%";
-    }
-    if (lowerName.includes('complete') || lowerName.includes('100')) {
-      return "Zygarde 100% Power";
-    }
-    
-    // Default Zygarde (assume it's the 50% form)
-    if (name.toLowerCase() === 'zygarde') {
-      return "Zygarde 50%";
-    }
-  }
-  
-  // SPECIAL CASE: Handle Nidoran with gender symbols
-  if (name.toLowerCase().includes('nidoran')) {
-    if (name.toLowerCase().includes('male') || name.toLowerCase().includes('-m')) {
-      console.log(`🔧 [FORMAT_DEBUG] Nidoran male case: "${name}"`);
-      return "Nidoran♂";
-    }
-    if (name.toLowerCase().includes('female') || name.toLowerCase().includes('-f')) {
-      console.log(`🔧 [FORMAT_DEBUG] Nidoran female case: "${name}"`);
-      return "Nidoran♀";
-    }
-    // If it's just "nidoran" without gender specification, check the Pokemon ID context
-    // For now, default to just capitalizing if no gender is specified
-    if (name.toLowerCase() === 'nidoran') {
-      return "Nidoran";
-    }
-  }
-  
-  // RULE 5: Special case for Greninja Ash
-  if (name.toLowerCase().includes('greninja') && name.toLowerCase().includes('ash')) {
-    console.log(`🔧 [FORMAT_DEBUG] Special Greninja Ash case: "${name}"`);
-    return "Ash's Greninja";
-  }
-  
-  // RULE 3: Hide special modes of Koraidon and Miraidon
-  if ((name.toLowerCase().includes('koraidon') || name.toLowerCase().includes('miraidon')) && 
-      (name.toLowerCase().includes('apex') || name.toLowerCase().includes('limited') || 
-       name.toLowerCase().includes('build') || name.toLowerCase().includes('mode'))) {
-    console.log(`🔧 [FORMAT_DEBUG] Filtering out special Koraidon/Miraidon mode: "${name}"`);
-    return ''; // Return empty to filter out
-  }
-  
-  // SPECIAL CASE: Handle Maushold family variants
-  if (name.toLowerCase().includes('maushold') && name.toLowerCase().includes('family')) {
-    console.log(`🔧 [FORMAT_DEBUG] Processing Maushold family variant: "${name}"`);
-    if (name.toLowerCase().includes('family-of-three')) {
-      return "Maushold (Family of Three)";
-    }
-    if (name.toLowerCase().includes('family-of-four')) {
-      return "Maushold (Family of Four)";
-    }
-    // If it's just a generic family reference, handle it generically
-    const parts = name.split('-');
-    if (parts.length > 2) {
-      const baseName = parts[0];
-      const familyParts = parts.slice(1);
-      const formattedBase = capitalizeWords(baseName);
-      const formattedVariant = capitalizeWords(familyParts.join(' '));
-      const result = `${formattedBase} (${formattedVariant})`;
-      console.log(`🔧 [FORMAT_DEBUG] Maushold family result: "${result}"`);
-      return result;
-    }
-  }
-  
-  // RULE 1: Handle variants with suffixes that should be moved to front
-  // Handle parentheses variants first: "dialga (origin forme)" -> "Origin Forme Dialga"
-  const parenthesesMatch = name.match(/^([^(]+)\s*\(([^)]+)\)$/i);
-  if (parenthesesMatch) {
-    const baseName = parenthesesMatch[1].trim();
-    const variant = parenthesesMatch[2].trim();
-    const formattedBase = capitalizeWords(baseName);
-    const formattedVariant = capitalizeWords(variant);
-    const result = `${formattedVariant} ${formattedBase}`;
-    console.log(`🔧 [FORMAT_DEBUG] Parentheses variant: "${name}" -> "${result}"`);
-    return result;
-  }
-  
-  // Handle hyphenated variants: "calyrex-shadow" -> "Shadow Calyrex"
-  if (name.includes('-')) {
-    const parts = name.split('-');
-    if (parts.length === 2) {
-      const baseName = parts[0];
-      const variant = parts[1];
-      
-      // Check if this is a regional form (handle these separately)
-      if (['alola', 'galar', 'hisui', 'paldea'].includes(variant.toLowerCase())) {
-        // Let regional forms handler take care of this
-      } else if (['mega', 'gmax', 'origin', 'primal'].some(special => 
-        name.toLowerCase().includes(special))) {
-        // Let special forms handler take care of this
-      } else {
-        // This is a color/flavor/variant that should be moved to front
-        const formattedBase = capitalizeWords(baseName);
-        const formattedVariant = capitalizeWords(variant);
-        const result = `${formattedVariant} ${formattedBase}`;
-        console.log(`🔧 [FORMAT_DEBUG] Hyphen variant: "${name}" -> "${result}"`);
-        return result;
-      }
-    } else if (parts.length >= 3) {
-      const baseName = parts[0];
-      const variantParts = parts.slice(1);
-      
-      // Don't format regional forms this way
-      if (!['alola', 'galar', 'hisui', 'paldea'].includes(variantParts[0].toLowerCase())) {
-        const formattedBase = capitalizeWords(baseName);
-        const formattedVariant = capitalizeWords(variantParts.join(' '));
-        const result = `${formattedBase} (${formattedVariant})`;
-        console.log(`🔧 [FORMAT_DEBUG] Multi-hyphen variant: "${name}" -> "${result}"`);
-        return result;
-      }
-    }
+  // Handle variants that should be moved to front
+  const variantFormattingResult = handleVariantFormatting(name);
+  if (variantFormattingResult) {
+    console.log(`🔧 [FORMAT_ULTRA_DEBUG] ===== formatPokemonName EXIT (VARIANT) =====`);
+    return variantFormattingResult;
   }
   
   // Try special forms first (G-Max, Mega, Primal, Origin)
@@ -180,7 +59,7 @@ export const formatPokemonName = (name: string): string => {
     return variantResult;
   }
   
-  // RULE 2: Capitalize the first letter of every word (including after hyphens)
+  // Default: Capitalize the first letter of every word (including after hyphens)
   const result = capitalizeWords(name);
   console.log(`🔧 [FORMAT_DEBUG] Default capitalization: "${name}" -> "${result}"`);
   console.log(`🔧 [FORMAT_ULTRA_DEBUG] ===== formatPokemonName EXIT (DEFAULT) =====`);
