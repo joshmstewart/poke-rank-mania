@@ -31,9 +31,11 @@ export const usePokemonGrouping = (
     // Group by generation for the available Pokemon list
     const generationGroups = new Map<number, Pokemon[]>();
     
-    // Group Pokemon by generation
+    // Group Pokemon by generation - using more comprehensive logic
     filtered.forEach(pokemon => {
       let generation: number;
+      
+      // Use more accurate generation boundaries
       if (pokemon.id <= 151) generation = 1;
       else if (pokemon.id <= 251) generation = 2;
       else if (pokemon.id <= 386) generation = 3;
@@ -42,7 +44,23 @@ export const usePokemonGrouping = (
       else if (pokemon.id <= 721) generation = 6;
       else if (pokemon.id <= 809) generation = 7;
       else if (pokemon.id <= 905) generation = 8;
-      else generation = 9;
+      else if (pokemon.id <= 1010) generation = 9;
+      else {
+        // For Pokemon with IDs > 1010, try to map them to their base generation
+        // Most of these are alternate forms of existing Pokemon
+        const baseId = pokemon.id % 1000; // Simple heuristic - may need refinement
+        if (baseId <= 151) generation = 1;
+        else if (baseId <= 251) generation = 2;
+        else if (baseId <= 386) generation = 3;
+        else if (baseId <= 493) generation = 4;
+        else if (baseId <= 649) generation = 5;
+        else if (baseId <= 721) generation = 6;
+        else if (baseId <= 809) generation = 7;
+        else if (baseId <= 905) generation = 8;
+        else generation = 9;
+      }
+      
+      console.log(`🔍 [POKEMON_GROUPING] ${pokemon.name} (ID: ${pokemon.id}) -> Generation ${generation}`);
       
       if (!generationGroups.has(generation)) {
         generationGroups.set(generation, []);
@@ -54,9 +72,13 @@ export const usePokemonGrouping = (
     const result = [];
     const sortedGenerations = Array.from(generationGroups.keys()).sort();
     
+    console.log(`🔍 [POKEMON_GROUPING] Found generations: ${sortedGenerations.join(', ')}`);
+    
     for (const generation of sortedGenerations) {
       const genDetails = generationDetails[generation];
       const pokemonInGen = generationGroups.get(generation) || [];
+      
+      console.log(`🔍 [POKEMON_GROUPING] Generation ${generation}: ${pokemonInGen.length} Pokemon`);
       
       // Add generation header
       result.push({ 
@@ -74,6 +96,9 @@ export const usePokemonGrouping = (
         pokemonInGen.forEach(pokemon => {
           result.push({ type: 'pokemon', data: pokemon });
         });
+        console.log(`🔍 [POKEMON_GROUPING] Added ${pokemonInGen.length} Pokemon for expanded Generation ${generation}`);
+      } else {
+        console.log(`🔍 [POKEMON_GROUPING] Skipped ${pokemonInGen.length} Pokemon for collapsed Generation ${generation}`);
       }
     }
     

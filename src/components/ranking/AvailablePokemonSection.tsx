@@ -37,12 +37,13 @@ export const AvailablePokemonSection: React.FC<AvailablePokemonSectionProps> = (
 
   console.log(`🔍 [AVAILABLE_SECTION] Rendering ${availablePokemon.length} available Pokemon for generation ${selectedGeneration}`);
 
-  // Get all possible generations from the available Pokemon
+  // Get all possible generations from the available Pokemon - improved logic
   const availableGenerations = useMemo(() => {
     const generations = new Set<number>();
     availablePokemon.forEach(pokemon => {
-      // Use a more accurate generation calculation
       let gen: number;
+      
+      // Use more accurate generation calculation
       if (pokemon.id <= 151) gen = 1;
       else if (pokemon.id <= 251) gen = 2;
       else if (pokemon.id <= 386) gen = 3;
@@ -51,7 +52,20 @@ export const AvailablePokemonSection: React.FC<AvailablePokemonSectionProps> = (
       else if (pokemon.id <= 721) gen = 6;
       else if (pokemon.id <= 809) gen = 7;
       else if (pokemon.id <= 905) gen = 8;
-      else gen = 9;
+      else if (pokemon.id <= 1010) gen = 9;
+      else {
+        // For Pokemon with IDs > 1010, try to map them to their base generation
+        const baseId = pokemon.id % 1000;
+        if (baseId <= 151) gen = 1;
+        else if (baseId <= 251) gen = 2;
+        else if (baseId <= 386) gen = 3;
+        else if (baseId <= 493) gen = 4;
+        else if (baseId <= 649) gen = 5;
+        else if (baseId <= 721) gen = 6;
+        else if (baseId <= 809) gen = 7;
+        else if (baseId <= 905) gen = 8;
+        else gen = 9;
+      }
       
       if (gen >= 1 && gen <= 9) {
         generations.add(gen);
@@ -59,6 +73,7 @@ export const AvailablePokemonSection: React.FC<AvailablePokemonSectionProps> = (
     });
     const genArray = Array.from(generations).sort();
     console.log(`🔍 [AVAILABLE_SECTION] Available generations:`, genArray);
+    console.log(`🔍 [AVAILABLE_SECTION] Sample Pokemon IDs:`, availablePokemon.slice(0, 10).map(p => `${p.name}(${p.id})`));
     return genArray;
   }, [availablePokemon]);
 

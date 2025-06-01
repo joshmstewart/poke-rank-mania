@@ -36,21 +36,26 @@ export const PokemonGridSection: React.FC<PokemonGridSectionProps> = ({
     const sections: JSX.Element[] = [];
 
     const flushPokemonBatch = () => {
-      if (currentPokemonBatch.length > 0) {
-        sections.push(
-          <div key={`pokemon-grid-${currentGeneration}`} className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
-            {currentPokemonBatch.map((pokemon, index) => (
-              <DraggablePokemonMilestoneCard
-                key={`pokemon-${pokemon.id}-${index}`}
-                pokemon={pokemon}
-                index={index}
-                showRank={false}
-                isDraggable={true}
-                isAvailable={true}
-              />
-            ))}
-          </div>
-        );
+      if (currentPokemonBatch.length > 0 && currentGeneration !== null) {
+        // Only render Pokemon grid if the generation is expanded
+        const isExpanded = isGenerationExpanded ? isGenerationExpanded(currentGeneration) : true;
+        
+        if (isExpanded) {
+          sections.push(
+            <div key={`pokemon-grid-${currentGeneration}`} className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
+              {currentPokemonBatch.map((pokemon, index) => (
+                <DraggablePokemonMilestoneCard
+                  key={`pokemon-${pokemon.id}-${index}`}
+                  pokemon={pokemon}
+                  index={index}
+                  showRank={false}
+                  isDraggable={true}
+                  isAvailable={true}
+                />
+              ))}
+            </div>
+          );
+        }
         currentPokemonBatch = [];
       }
     };
