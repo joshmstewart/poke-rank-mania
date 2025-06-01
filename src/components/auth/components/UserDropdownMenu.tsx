@@ -49,13 +49,30 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({ user }) => {
   const avatarUrl = user.user_metadata?.avatar_url;
   const userInitials = displayName.charAt(0).toUpperCase();
 
+  console.log('🎭 [USER_DROPDOWN] Rendering with avatar data:', {
+    avatarUrl,
+    displayName,
+    userInitials,
+    hasAvatarUrl: !!avatarUrl
+  });
+
   return (
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="flex items-center gap-2 px-3">
             <Avatar className="h-12 w-12">
-              <AvatarImage src={avatarUrl} alt={displayName} />
+              {avatarUrl && (
+                <AvatarImage 
+                  src={avatarUrl} 
+                  alt={displayName}
+                  onLoad={() => console.log('🎭 [USER_DROPDOWN] Avatar image loaded successfully')}
+                  onError={(e) => {
+                    console.error('🎭 [USER_DROPDOWN] Avatar image failed to load:', e);
+                    console.error('🎭 [USER_DROPDOWN] Failed avatar URL:', avatarUrl);
+                  }}
+                />
+              )}
               <AvatarFallback className="bg-primary text-primary-foreground">
                 {userInitials}
               </AvatarFallback>

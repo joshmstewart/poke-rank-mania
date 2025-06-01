@@ -23,6 +23,13 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
 
   const effectiveUser = currentUser || user;
 
+  console.log('🎭 [AUTH_USER_DISPLAY] Rendering with user:', {
+    hasEffectiveUser: !!effectiveUser,
+    effectiveUserId: effectiveUser?.id?.substring(0, 8),
+    currentProfileAvatar: currentProfile?.avatar_url,
+    userMetadataAvatar: effectiveUser?.user_metadata?.avatar_url
+  });
+
   // CRITICAL FIX: Simplified profile loading with loop prevention
   useEffect(() => {
     if (!effectiveUser?.id || isLoadingProfile.current || lastUserId.current === effectiveUser.id) {
@@ -38,27 +45,20 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
     // Get cached profile first
     const cachedProfile = getProfileFromCache(effectiveUser.id);
     if (cachedProfile) {
-      console.log('🔄 [AUTH_USER_DISPLAY] Using cached profile:', cachedProfile);
+      console.log('🔄 [AUTH_USER_DISPLAY] Using cached profile with avatar:', cachedProfile.avatar_url);
       setCurrentProfile(cachedProfile);
     }
     
-    // Only prefetch if we don't have fresh cached data (less than 5 minutes old)
-    const shouldPrefetch = !cachedProfile || 
-      (new Date().getTime() - new Date(cachedProfile.updated_at).getTime()) > 300000; // 5 minutes
-    
-    if (shouldPrefetch) {
-      prefetchProfile(effectiveUser.id).then(() => {
-        const freshProfile = getProfileFromCache(effectiveUser.id);
-        if (freshProfile) {
-          console.log('🔄 [AUTH_USER_DISPLAY] Updated with fresh profile:', freshProfile);
-          setCurrentProfile(freshProfile);
-        }
-      }).finally(() => {
-        isLoadingProfile.current = false;
-      });
-    } else {
+    // Always try to get fresh profile data to ensure we have the latest avatar
+    prefetchProfile(effectiveUser.id).then(() => {
+      const freshProfile = getProfileFromCache(effectiveUser.id);
+      if (freshProfile) {
+        console.log('🔄 [AUTH_USER_DISPLAY] Updated with fresh profile avatar:', freshProfile.avatar_url);
+        setCurrentProfile(freshProfile);
+      }
+    }).finally(() => {
       isLoadingProfile.current = false;
-    }
+    });
   }, [effectiveUser?.id, prefetchProfile, getProfileFromCache]);
 
   // CRITICAL FIX: Simplified profile update listener with debouncing
@@ -75,7 +75,7 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
           setRefreshKey(prev => prev + 1);
           const updatedProfile = getProfileFromCache(effectiveUser.id);
           if (updatedProfile) {
-            console.log('🔄 [AUTH_USER_DISPLAY] Setting updated profile:', updatedProfile);
+            console.log('🔄 [AUTH_USER_DISPLAY] Setting updated profile with avatar:', updatedProfile.avatar_url);
             setCurrentProfile(updatedProfile);
           }
         }
@@ -115,16 +115,23 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
     return null;
   }
 
-  // Create enhanced user object with profile data
+  // Create enhanced user object with PRIORITY for profile avatar over user metadata
   const enhancedUser = {
     ...effectiveUser,
     user_metadata: {
       ...effectiveUser.user_metadata,
+      // CRITICAL: Prioritize profile avatar_url over user_metadata avatar_url
       avatar_url: currentProfile?.avatar_url || effectiveUser.user_metadata?.avatar_url,
       username: currentProfile?.username || effectiveUser.user_metadata?.username,
       display_name: currentProfile?.display_name || effectiveUser.user_metadata?.display_name,
     }
   };
+
+  console.log('🎭 [AUTH_USER_DISPLAY] Enhanced user for dropdown:', {
+    avatarUrl: enhancedUser.user_metadata.avatar_url,
+    displayName: enhancedUser.user_metadata.display_name,
+    username: enhancedUser.user_metadata.username
+  });
 
   return (
     <div className="flex items-center gap-2" key={`${refreshKey}-${currentProfile?.updated_at}`}>
