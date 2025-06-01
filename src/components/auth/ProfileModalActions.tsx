@@ -18,17 +18,6 @@ export const ProfileModalActions: React.FC<ProfileModalActionsProps> = ({
   hasChanges,
   user
 }) => {
-  // 1. Log received props at the very top
-  console.log(
-    "🔵 [PROFILE_ACTIONS_PROPS] Received Props: ",
-    {
-      saving_prop: saving,
-      hasChanges_prop: hasChanges,
-      user_prop_exists: !!user,
-      onSave_prop_type: typeof onSave
-    }
-  );
-
   console.log('🔘 [PROFILE_ACTIONS] ===== COMPONENT RENDER =====');
   console.log('🔘 [PROFILE_ACTIONS] Render state:', {
     saving,
@@ -47,7 +36,6 @@ export const ProfileModalActions: React.FC<ProfileModalActionsProps> = ({
     onCancel();
   };
 
-  // 3. Clearly defined handler for Save Changes button
   const handleSaveChangesButtonClick = (e: React.MouseEvent) => {
     console.log("🟢🟢🟢 [PROFILE_ACTIONS_CLICK] 'Save Changes' Button onClick Handler EXECUTED! 🟢🟢🟢");
     
@@ -57,7 +45,6 @@ export const ProfileModalActions: React.FC<ProfileModalActionsProps> = ({
     console.log('🔘 [PROFILE_ACTIONS] saving state:', saving);
     console.log('🔘 [PROFILE_ACTIONS] hasChanges state:', hasChanges);
     console.log('🔘 [PROFILE_ACTIONS] user exists:', !!user);
-    console.log('🔘 [PROFILE_ACTIONS] Call stack at click:', new Error().stack);
     
     e.preventDefault();
     e.stopPropagation();
@@ -81,41 +68,10 @@ export const ProfileModalActions: React.FC<ProfileModalActionsProps> = ({
     }
   };
 
-  // 2. Calculate disabled state and log before return
   const isButtonDisabled = saving || !hasChanges || !user;
-  console.log(
-    "🔵 [PROFILE_ACTIONS_DISABLED_CHECK] Button Disabled Status:",
-    {
-      isButtonDisabled_final: isButtonDisabled,
-      condition_saving: saving,
-      condition_not_hasChanges: !hasChanges, // Crucial for our hypothesis
-      condition_not_user: !user
-    }
-  );
 
   return (
     <div className="flex flex-col gap-2 pt-4">
-      {/* DEBUG BUTTON */}
-      <div className="bg-yellow-100 p-2 border border-yellow-300 rounded">
-        <p className="text-xs text-yellow-700 mb-2">Debug: Actions test button</p>
-        <button 
-          onClick={() => {
-            console.log('🟢 [PROFILE_ACTIONS] DIRECT TEST CLICKED! 🟢');
-            alert('Direct save test clicked! This proves the button can receive clicks.');
-            
-            // Try calling onSave directly
-            if (onSave) {
-              console.log('🟢 [PROFILE_ACTIONS] Calling onSave from direct test...');
-              onSave();
-            }
-          }}
-          className="bg-yellow-500 text-white px-3 py-1 rounded text-sm"
-        >
-          🟢 ACTIONS TEST
-        </button>
-      </div>
-      
-      {/* NORMAL BUTTONS */}
       <div className="flex justify-end gap-2">
         <Button 
           variant="outline" 

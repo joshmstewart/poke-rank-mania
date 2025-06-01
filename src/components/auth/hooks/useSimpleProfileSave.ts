@@ -1,13 +1,12 @@
 
 import React, { useState, useRef, useCallback } from 'react';
 import { updateProfile } from '@/services/profile/updateProfile';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/hooks/use-toast';
 
 export const useSimpleProfileSave = () => {
   const [saving, setSaving] = useState(false);
   const mountedRef = useRef(true);
   const savingRef = useRef(false);
-  const { toast } = useToast();
 
   console.log('🔥 [SIMPLE_SAVE_HOOK] ===== HOOK INITIALIZATION =====');
   console.log('🔥 [SIMPLE_SAVE_HOOK] Initial saving state:', saving);
@@ -71,7 +70,7 @@ export const useSimpleProfileSave = () => {
             variant: 'destructive',
           });
         }
-      }, 10000); // 10 second timeout instead of 30
+      }, 10000);
       
       console.log('🔥 [SIMPLE_SAVE] About to call updateProfile...');
       const startTime = Date.now();

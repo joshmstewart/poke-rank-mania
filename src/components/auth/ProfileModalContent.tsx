@@ -61,15 +61,6 @@ export const ProfileModalContent: React.FC<ProfileModalContentProps> = ({
         onAvatarClick={onAvatarClick}
       />
       
-      {/* DEBUG: Verify onSave is being passed */}
-      <div className="bg-blue-100 p-2 border border-blue-300 rounded">
-        <p className="text-xs text-blue-700 mb-2">Debug: Content level onSave check</p>
-        <p className="text-xs">onSave exists: {String(!!onSave)}</p>
-        <p className="text-xs">onSave type: {typeof onSave}</p>
-        <p className="text-xs">hasChanges: {String(hasChanges)}</p>
-        <p className="text-xs">user exists: {String(!!user)}</p>
-      </div>
-      
       <ProfileModalActions
         onCancel={onCancel}
         onSave={onSave}
