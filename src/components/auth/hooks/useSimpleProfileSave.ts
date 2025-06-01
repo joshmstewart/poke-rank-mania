@@ -13,7 +13,7 @@ export const useSimpleProfileSave = () => {
     username: string;
     display_name: string;
   }) => {
-    console.log('🔥 [SIMPLE_SAVE] Starting simple save process');
+    console.log('🔥 [SIMPLE_SAVE] ===== STARTING SAVE OPERATION =====');
     console.log('🔥 [SIMPLE_SAVE] User ID:', userId);
     console.log('🔥 [SIMPLE_SAVE] Profile data:', profileData);
     console.log('🔥 [SIMPLE_SAVE] Current saving state:', savingRef.current);
@@ -35,10 +35,9 @@ export const useSimpleProfileSave = () => {
       setSaving(true);
       console.log('🔥 [SIMPLE_SAVE] setSaving(true) called');
       
-      console.log('🔥 [SIMPLE_SAVE] Calling updateProfile...');
+      console.log('🔥 [SIMPLE_SAVE] About to call updateProfile...');
       const success = await updateProfile(userId, profileData);
-      
-      console.log('🔥 [SIMPLE_SAVE] updateProfile returned:', success);
+      console.log('🔥 [SIMPLE_SAVE] updateProfile completed with result:', success);
       
       // Check if component is still mounted before updating state
       if (!mountedRef.current) {
@@ -47,13 +46,13 @@ export const useSimpleProfileSave = () => {
       }
       
       if (success) {
-        console.log('🔥 [SIMPLE_SAVE] Save successful, showing toast');
+        console.log('🔥 [SIMPLE_SAVE] Save successful, showing success toast');
         toast({
           title: 'Profile Updated',
           description: 'Your profile has been successfully updated.',
         });
       } else {
-        console.log('🔥 [SIMPLE_SAVE] Save failed, showing error');
+        console.log('🔥 [SIMPLE_SAVE] Save failed, showing error toast');
         toast({
           title: 'Update Failed',
           description: 'Failed to update your profile. Please try again.',
@@ -64,23 +63,30 @@ export const useSimpleProfileSave = () => {
       console.log('🔥 [SIMPLE_SAVE] About to set saving to false...');
       savingRef.current = false;
       setSaving(false);
-      console.log('🔥 [SIMPLE_SAVE] setSaving(false) called - saving should now be false');
+      console.log('🔥 [SIMPLE_SAVE] setSaving(false) completed - saving should now be false');
       
       return success;
     } catch (error) {
-      console.error('🔥 [SIMPLE_SAVE] Error during save:', error);
+      console.error('🔥 [SIMPLE_SAVE] Exception caught during save:', error);
+      console.error('🔥 [SIMPLE_SAVE] Error name:', error?.name);
+      console.error('🔥 [SIMPLE_SAVE] Error message:', error?.message);
+      console.error('🔥 [SIMPLE_SAVE] Error stack:', error?.stack);
       
       if (mountedRef.current) {
-        console.log('🔥 [SIMPLE_SAVE] Error: setting saving to false');
+        console.log('🔥 [SIMPLE_SAVE] Setting saving to false after error');
         savingRef.current = false;
         setSaving(false);
         toast({
           title: 'Save Error',
-          description: `An error occurred: ${error.message || 'Unknown error'}`,
+          description: `An error occurred: ${error?.message || 'Unknown error'}`,
           variant: 'destructive',
         });
       }
       return false;
+    } finally {
+      console.log('🔥 [SIMPLE_SAVE] ===== SAVE OPERATION COMPLETED =====');
+      console.log('🔥 [SIMPLE_SAVE] Final saving ref state:', savingRef.current);
+      console.log('🔥 [SIMPLE_SAVE] Final component mounted state:', mountedRef.current);
     }
   }, []); // Remove saving from dependencies to avoid stale closure
 
