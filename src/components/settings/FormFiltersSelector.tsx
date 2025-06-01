@@ -1,35 +1,15 @@
+
 import React, { useCallback, useMemo } from "react";
 import { useFormFilters } from "@/hooks/useFormFilters";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { usePokemonContext } from "@/contexts/PokemonContext";
-
-export type PokemonFormType = 
-  | "normal"
-  | "megaGmax" 
-  | "regional" 
-  | "gender" 
-  | "forms"
-  | "originPrimal"
-  | "costumes"
-  | "colorsFlavors"
-  | "blocked";
-
-// Image URLs for different form types
-const formExampleImages = {
-  normal: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png", // Pikachu
-  regional: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10091.png", // Alolan Muk
-  gender: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/female/593.png", // Female Jellicent
-  forms: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10120.png", // Hoopa Unbound
-  megaGmax: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10034.png", // Mega Charizard Y
-  originPrimal: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10007.png", // Giratina Origin
-  costumes: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10094.png", // Pikachu with Original Cap
-  colorsFlavors: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/774.png", // Minior (represents color variants)
-  blocked: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/1.png", // Bulbasaur (represents blocked starter)
-};
+import { PokemonFormType } from "./types";
+import { FormFilterItem } from "./FormFilterItem";
+import { FormFilterDebug } from "./FormFilterDebug";
+import { getFilterName } from "./formFilterHelpers";
 
 export function FormFiltersSelector() {
   const { 
@@ -95,59 +75,6 @@ export function FormFiltersSelector() {
         : "All Pokémon forms will be included in battles",
     });
   }, [isAllEnabled, toggleAll]);
-  
-  // Helper to get friendly filter name
-  const getFilterName = (filter: PokemonFormType): string => {
-    switch (filter) {
-      case "normal": return "Normal Pokémon";
-      case "megaGmax": return "Mega & Gigantamax Forms";
-      case "regional": return "Regional Variants";
-      case "gender": return "Gender Differences";
-      case "forms": return "Special Forms";
-      case "originPrimal": return "Origin & Primal Forms";
-      case "costumes": return "Costume Pokémon";
-      case "colorsFlavors": return "Colors & Flavors";
-      case "blocked": return "Blocked Pokémon";
-    }
-  };
-
-  // NEW: Enhanced debug function to show complete lists
-  const showMiscategorizedExamples = useCallback(() => {
-    const examples = getMiscategorizedPokemonExamples();
-    console.log(`🔍 [DEBUG_EXAMPLES] Full miscategorized examples:`, examples);
-    
-    // Show detailed breakdown in console with full lists
-    Object.entries(examples).forEach(([category, pokemonList]) => {
-      if (pokemonList.length > 0) {
-        console.log(`🔍 [DEBUG_${category.toUpperCase()}_FULL]`, pokemonList);
-        console.log(`🔍 [DEBUG_${category.toUpperCase()}_COUNT] Total: ${pokemonList.length}`);
-      }
-    });
-    
-    // Also create a comprehensive summary
-    const summary = Object.entries(examples)
-      .map(([category, pokemonList]) => `${category}: ${pokemonList.length}`)
-      .join(', ');
-    
-    console.log(`🔍 [DEBUG_SUMMARY] Category counts: ${summary}`);
-    
-    // Create a downloadable JSON file with all the data
-    const dataStr = JSON.stringify(examples, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(dataBlob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'pokemon-categorization-debug.json';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    
-    toast({
-      title: "Debug Data Exported",
-      description: "Full categorization data logged to console and downloaded as JSON file",
-    });
-  }, [getMiscategorizedPokemonExamples]);
 
   return (
     <div className="space-y-4">
@@ -163,182 +90,74 @@ export function FormFiltersSelector() {
         </div>
       </div>
       
-      {/* NEW: Debug button */}
-      <div className="flex justify-center">
-        <Button 
-          variant="outline" 
-          size="sm"
-          onClick={showMiscategorizedExamples}
-          className="text-xs"
-        >
-          Debug Categorization
-        </Button>
-      </div>
+      <FormFilterDebug getMiscategorizedExamples={getMiscategorizedPokemonExamples} />
       
       <Separator />
       
       <div className="space-y-4">
-        {/* Normal Pokémon */}
-        <div className="flex items-center space-x-3">
-          <div className="h-10 w-10 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden">
-            <img src={formExampleImages.normal} alt="Normal Pokémon" className="h-8 w-8 object-contain" />
-          </div>
-          <div className="flex flex-1 items-center justify-between">
-            <div className="flex flex-col">
-              <Label htmlFor="normal" className="text-sm">Normal Pokémon</Label>
-              <span className="text-xs text-muted-foreground">{formCounts.normal} Pokemon</span>
-            </div>
-            <Switch 
-              id="normal" 
-              checked={filters.normal}
-              onCheckedChange={() => handleToggleFilter("normal")} 
-            />
-          </div>
-        </div>
+        <FormFilterItem
+          filter="normal"
+          isEnabled={filters.normal}
+          count={formCounts.normal}
+          onToggle={handleToggleFilter}
+        />
         
-        {/* Regional Variants */}
-        <div className="flex items-center space-x-3">
-          <div className="h-10 w-10 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden">
-            <img src={formExampleImages.regional} alt="Regional Form" className="h-8 w-8 object-contain" />
-          </div>
-          <div className="flex flex-1 items-center justify-between">
-            <div className="flex flex-col">
-              <Label htmlFor="regional" className="text-sm">Regional Variants</Label>
-              <span className="text-xs text-muted-foreground">{formCounts.regional} Pokemon</span>
-            </div>
-            <Switch 
-              id="regional" 
-              checked={filters.regional}
-              onCheckedChange={() => handleToggleFilter("regional")} 
-            />
-          </div>
-        </div>
+        <FormFilterItem
+          filter="regional"
+          isEnabled={filters.regional}
+          count={formCounts.regional}
+          onToggle={handleToggleFilter}
+        />
         
-        {/* Colors & Flavors */}
-        <div className="flex items-center space-x-3">
-          <div className="h-10 w-10 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden">
-            <img src={formExampleImages.colorsFlavors} alt="Color/Flavor Variant" className="h-8 w-8 object-contain" />
-          </div>
-          <div className="flex flex-1 items-center justify-between">
-            <div className="flex flex-col">
-              <Label htmlFor="colorsFlavors" className="text-sm">Colors & Flavors</Label>
-              <span className="text-xs text-muted-foreground">{formCounts.colorsFlavors} Pokemon</span>
-            </div>
-            <Switch 
-              id="colorsFlavors" 
-              checked={filters.colorsFlavors}
-              onCheckedChange={() => handleToggleFilter("colorsFlavors")} 
-            />
-          </div>
-        </div>
+        <FormFilterItem
+          filter="colorsFlavors"
+          isEnabled={filters.colorsFlavors}
+          count={formCounts.colorsFlavors}
+          onToggle={handleToggleFilter}
+        />
         
-        {/* Gender Differences */}
-        <div className="flex items-center space-x-3">
-          <div className="h-10 w-10 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden">
-            <img src={formExampleImages.gender} alt="Gender Form" className="h-8 w-8 object-contain" />
-          </div>
-          <div className="flex flex-1 items-center justify-between">
-            <div className="flex flex-col">
-              <Label htmlFor="gender" className="text-sm">Gender Differences</Label>
-              <span className="text-xs text-muted-foreground">{formCounts.gender} Pokemon</span>
-            </div>
-            <Switch 
-              id="gender" 
-              checked={filters.gender}
-              onCheckedChange={() => handleToggleFilter("gender")} 
-            />
-          </div>
-        </div>
+        <FormFilterItem
+          filter="gender"
+          isEnabled={filters.gender}
+          count={formCounts.gender}
+          onToggle={handleToggleFilter}
+        />
         
-        {/* Special Forms */}
-        <div className="flex items-center space-x-3">
-          <div className="h-10 w-10 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden">
-            <img src={formExampleImages.forms} alt="Special Form" className="h-8 w-8 object-contain" />
-          </div>
-          <div className="flex flex-1 items-center justify-between">
-            <div className="flex flex-col">
-              <Label htmlFor="forms" className="text-sm">Special Forms</Label>
-              <span className="text-xs text-muted-foreground">{formCounts.forms} Pokemon</span>
-            </div>
-            <Switch 
-              id="forms" 
-              checked={filters.forms}
-              onCheckedChange={() => handleToggleFilter("forms")} 
-            />
-          </div>
-        </div>
+        <FormFilterItem
+          filter="forms"
+          isEnabled={filters.forms}
+          count={formCounts.forms}
+          onToggle={handleToggleFilter}
+        />
         
-        {/* Mega Evolutions and Gigantamax Forms */}
-        <div className="flex items-center space-x-3">
-          <div className="h-10 w-10 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden">
-            <img src={formExampleImages.megaGmax} alt="Mega/Gmax Form" className="h-8 w-8 object-contain" />
-          </div>
-          <div className="flex flex-1 items-center justify-between">
-            <div className="flex flex-col">
-              <Label htmlFor="megaGmax" className="text-sm">Mega & Gigantamax Forms</Label>
-              <span className="text-xs text-muted-foreground">{formCounts.megaGmax} Pokemon</span>
-            </div>
-            <Switch 
-              id="megaGmax" 
-              checked={filters.megaGmax}
-              onCheckedChange={() => handleToggleFilter("megaGmax")} 
-            />
-          </div>
-        </div>
+        <FormFilterItem
+          filter="megaGmax"
+          isEnabled={filters.megaGmax}
+          count={formCounts.megaGmax}
+          onToggle={handleToggleFilter}
+        />
         
-        {/* Origin & Primal Forms */}
-        <div className="flex items-center space-x-3">
-          <div className="h-10 w-10 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden">
-            <img src={formExampleImages.originPrimal} alt="Origin/Primal Form" className="h-8 w-8 object-contain" />
-          </div>
-          <div className="flex flex-1 items-center justify-between">
-            <div className="flex flex-col">
-              <Label htmlFor="originPrimal" className="text-sm">Origin & Primal Forms</Label>
-              <span className="text-xs text-muted-foreground">{formCounts.originPrimal} Pokemon</span>
-            </div>
-            <Switch 
-              id="originPrimal" 
-              checked={filters.originPrimal}
-              onCheckedChange={() => handleToggleFilter("originPrimal")} 
-            />
-          </div>
-        </div>
+        <FormFilterItem
+          filter="originPrimal"
+          isEnabled={filters.originPrimal}
+          count={formCounts.originPrimal}
+          onToggle={handleToggleFilter}
+        />
         
-        {/* Costume Pokémon */}
-        <div className="flex items-center space-x-3">
-          <div className="h-10 w-10 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden">
-            <img src={formExampleImages.costumes} alt="Costume Pokémon" className="h-8 w-8 object-contain" />
-          </div>
-          <div className="flex flex-1 items-center justify-between">
-            <div className="flex flex-col">
-              <Label htmlFor="costumes" className="text-sm">Costume Pokémon</Label>
-              <span className="text-xs text-muted-foreground">{formCounts.costumes} Pokemon</span>
-            </div>
-            <Switch 
-              id="costumes" 
-              checked={filters.costumes}
-              onCheckedChange={() => handleToggleFilter("costumes")} 
-            />
-          </div>
-        </div>
+        <FormFilterItem
+          filter="costumes"
+          isEnabled={filters.costumes}
+          count={formCounts.costumes}
+          onToggle={handleToggleFilter}
+        />
         
-        {/* Blocked Pokémon */}
-        <div className="flex items-center space-x-3">
-          <div className="h-10 w-10 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden">
-            <img src={formExampleImages.blocked} alt="Blocked Pokémon" className="h-8 w-8 object-contain grayscale" />
-          </div>
-          <div className="flex flex-1 items-center justify-between">
-            <div className="flex flex-col">
-              <Label htmlFor="blocked" className="text-sm">Blocked Pokémon</Label>
-              <span className="text-xs text-muted-foreground">{formCounts.blocked} Pokemon (starters, totems, etc.)</span>
-            </div>
-            <Switch 
-              id="blocked" 
-              checked={filters.blocked}
-              onCheckedChange={() => handleToggleFilter("blocked")} 
-            />
-          </div>
-        </div>
+        <FormFilterItem
+          filter="blocked"
+          isEnabled={filters.blocked}
+          count={formCounts.blocked}
+          onToggle={handleToggleFilter}
+          extraDescription="(starters, totems, etc.)"
+        />
       </div>
     </div>
   );
