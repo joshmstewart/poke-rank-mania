@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from "react";
 
 export const useGenerationExpansion = (generations: number[]) => {
@@ -31,14 +30,14 @@ export const useGenerationExpansion = (generations: number[]) => {
 
   const collapseAll = () => {
     console.log(`🔍 [GENERATION_EXPANSION] Collapsing all generations`);
-    setExpandedGenerations(new Set());
+    setExpandedGenerations(new Set<number>());
   };
 
   // Update the expanded generations when the available generations change
   useEffect(() => {
     setExpandedGenerations(prev => {
       // Keep only the generations that still exist and add any new ones
-      const newSet = new Set();
+      const newSet = new Set<number>();
       generations.forEach(gen => {
         if (prev.has(gen) || prev.size === generations.length) {
           newSet.add(gen);
@@ -46,9 +45,9 @@ export const useGenerationExpansion = (generations: number[]) => {
       });
       // If we had all generations expanded before, expand all new ones too
       if (prev.size === 0) {
-        return new Set(); // Keep collapsed state
+        return new Set<number>(); // Keep collapsed state
       }
-      return newSet.size === 0 ? new Set(generations) : newSet;
+      return newSet.size === 0 ? new Set<number>(generations) : newSet;
     });
   }, [generations]);
 
