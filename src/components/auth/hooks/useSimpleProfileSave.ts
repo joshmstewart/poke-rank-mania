@@ -6,6 +6,7 @@ import { toast } from '@/hooks/use-toast';
 export const useSimpleProfileSave = () => {
   const [saving, setSaving] = useState(false);
   const mountedRef = useRef(true);
+  const savingRef = useRef(false);
 
   const saveProfile = useCallback(async (userId: string, profileData: {
     avatar_url: string;
@@ -15,10 +16,10 @@ export const useSimpleProfileSave = () => {
     console.log('🔥 [SIMPLE_SAVE] Starting simple save process');
     console.log('🔥 [SIMPLE_SAVE] User ID:', userId);
     console.log('🔥 [SIMPLE_SAVE] Profile data:', profileData);
-    console.log('🔥 [SIMPLE_SAVE] Current saving state:', saving);
+    console.log('🔥 [SIMPLE_SAVE] Current saving state:', savingRef.current);
     console.log('🔥 [SIMPLE_SAVE] Component mounted:', mountedRef.current);
     
-    if (saving) {
+    if (savingRef.current) {
       console.log('🔥 [SIMPLE_SAVE] Already saving, skipping');
       return false;
     }
@@ -29,12 +30,10 @@ export const useSimpleProfileSave = () => {
     }
 
     try {
-      console.log('🔥 [SIMPLE_SAVE] About to set saving to true...');
+      console.log('🔥 [SIMPLE_SAVE] Setting saving to true...');
+      savingRef.current = true;
       setSaving(true);
       console.log('🔥 [SIMPLE_SAVE] setSaving(true) called');
-      
-      // Add a small delay to ensure state update
-      await new Promise(resolve => setTimeout(resolve, 10));
       
       console.log('🔥 [SIMPLE_SAVE] Calling updateProfile...');
       const success = await updateProfile(userId, profileData);
@@ -63,6 +62,7 @@ export const useSimpleProfileSave = () => {
       }
       
       console.log('🔥 [SIMPLE_SAVE] About to set saving to false...');
+      savingRef.current = false;
       setSaving(false);
       console.log('🔥 [SIMPLE_SAVE] setSaving(false) called - saving should now be false');
       
@@ -72,6 +72,7 @@ export const useSimpleProfileSave = () => {
       
       if (mountedRef.current) {
         console.log('🔥 [SIMPLE_SAVE] Error: setting saving to false');
+        savingRef.current = false;
         setSaving(false);
         toast({
           title: 'Save Error',
@@ -81,7 +82,7 @@ export const useSimpleProfileSave = () => {
       }
       return false;
     }
-  }, [saving]);
+  }, []); // Remove saving from dependencies to avoid stale closure
 
   // Effect to cleanup on unmount
   React.useEffect(() => {
@@ -94,6 +95,7 @@ export const useSimpleProfileSave = () => {
   // Debug effect to track saving state changes
   React.useEffect(() => {
     console.log('🔥 [SIMPLE_SAVE] Saving state changed to:', saving);
+    console.log('🔥 [SIMPLE_SAVE] SavingRef current value:', savingRef.current);
   }, [saving]);
 
   return { saving, saveProfile };
