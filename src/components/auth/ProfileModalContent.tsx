@@ -31,12 +31,12 @@ export const ProfileModalContent: React.FC<ProfileModalContentProps> = ({
   onSave,
   onAvatarClick
 }) => {
-  console.log('📝 [PROFILE_CONTENT] Render - saving:', saving, 'onSave type:', typeof onSave);
-  console.log('📝 [PROFILE_CONTENT] Props received:', {
-    loading,
+  console.log('📝 [PROFILE_CONTENT] ===== RENDER =====');
+  console.log('📝 [PROFILE_CONTENT] onSave function received:', {
+    onSaveExists: !!onSave,
+    onSaveType: typeof onSave,
     saving,
-    hasOnSave: !!onSave,
-    hasOnCancel: !!onCancel
+    timestamp: new Date().toISOString()
   });
 
   if (loading) {
@@ -54,6 +54,14 @@ export const ProfileModalContent: React.FC<ProfileModalContentProps> = ({
         setDisplayName={setDisplayName}
         onAvatarClick={onAvatarClick}
       />
+      
+      {/* DEBUG: Verify onSave is being passed */}
+      <div className="bg-blue-100 p-2 border border-blue-300 rounded">
+        <p className="text-xs text-blue-700 mb-2">Debug: Content level onSave check</p>
+        <p className="text-xs">onSave exists: {String(!!onSave)}</p>
+        <p className="text-xs">onSave type: {typeof onSave}</p>
+      </div>
+      
       <ProfileModalActions
         onCancel={onCancel}
         onSave={onSave}
