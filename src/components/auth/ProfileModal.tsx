@@ -28,6 +28,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
   console.log('🎯 [PROFILE_MODAL_DEBUG] ===== COMPONENT RENDER =====');
   console.log('🎯 [PROFILE_MODAL_DEBUG] Modal open:', open);
   console.log('🎯 [PROFILE_MODAL_DEBUG] User ID:', user?.id);
+  console.log('🎯 [PROFILE_MODAL_DEBUG] User email:', user?.email);
+  console.log('🎯 [PROFILE_MODAL_DEBUG] User phone:', user?.phone);
   console.log('🎯 [PROFILE_MODAL_DEBUG] Loading state:', loading);
 
   useEffect(() => {
@@ -45,12 +47,23 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
 
       try {
         console.log('🎯 [PROFILE_MODAL_DEBUG] About to call getProfile with ID:', user.id);
+        console.log('🎯 [PROFILE_MODAL_DEBUG] User object details:', {
+          id: user.id,
+          email: user.email,
+          phone: user.phone,
+          created_at: user.created_at,
+          app_metadata: user.app_metadata,
+          user_metadata: user.user_metadata
+        });
         console.log('🎯 [PROFILE_MODAL_DEBUG] Calling getProfile...');
         
         const result = await getProfile(user.id);
         
         console.log('🎯 [PROFILE_MODAL_DEBUG] ===== getProfile COMPLETED =====');
         console.log('🎯 [PROFILE_MODAL_DEBUG] Result received:', result);
+        console.log('🎯 [PROFILE_MODAL_DEBUG] Result type:', typeof result);
+        console.log('🎯 [PROFILE_MODAL_DEBUG] Result is null:', result === null);
+        console.log('🎯 [PROFILE_MODAL_DEBUG] Result is undefined:', result === undefined);
         
         if (result) {
           console.log('🎯 [PROFILE_MODAL_DEBUG] Setting profile data...');
@@ -61,8 +74,21 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
           console.log('🎯 [PROFILE_MODAL_DEBUG] Profile data set successfully');
         } else {
           console.log('🎯 [PROFILE_MODAL_DEBUG] No profile found, setting defaults...');
-          const defaultDisplayName = user.phone ? `User ${user.phone.slice(-4)}` : user.email ? user.email.split('@')[0] : 'New User';
-          const defaultUsername = user.phone ? `user_${user.phone.slice(-4)}` : user.email ? user.email.split('@')[0] : 'new_user';
+          
+          // Create better defaults for phone users
+          let defaultDisplayName = 'New User';
+          let defaultUsername = 'new_user';
+          
+          if (user.phone) {
+            const phoneDigits = user.phone.replace(/\D/g, '');
+            const lastFour = phoneDigits.slice(-4);
+            defaultDisplayName = `User ${lastFour}`;
+            defaultUsername = `user_${lastFour}`;
+          } else if (user.email) {
+            const emailPart = user.email.split('@')[0];
+            defaultDisplayName = emailPart;
+            defaultUsername = emailPart;
+          }
           
           setSelectedAvatar('');
           setUsername(defaultUsername);
@@ -73,6 +99,9 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
       } catch (error) {
         console.error('🎯 [PROFILE_MODAL_DEBUG] ===== ERROR IN loadProfile =====');
         console.error('🎯 [PROFILE_MODAL_DEBUG] Error:', error);
+        console.error('🎯 [PROFILE_MODAL_DEBUG] Error type:', typeof error);
+        console.error('🎯 [PROFILE_MODAL_DEBUG] Error message:', error?.message);
+        console.error('🎯 [PROFILE_MODAL_DEBUG] Error stack:', error?.stack);
         
         // Set defaults on error
         const defaultDisplayName = user.phone ? `User ${user.phone.slice(-4)}` : user.email ? user.email.split('@')[0] : 'New User';
@@ -106,7 +135,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
       setUsername('');
       setDisplayName('');
     }
-  }, [open, user?.id]);
+  }, [open, user?.id, user?.email, user?.phone]);
 
   const handleSave = async () => {
     console.log('🎯 [PROFILE_MODAL_DEBUG] handleSave called');
