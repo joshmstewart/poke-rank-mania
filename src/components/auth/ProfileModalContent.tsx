@@ -29,8 +29,6 @@ export const ProfileModalContent: React.FC<ProfileModalContentProps> = ({
   onAvatarClick,
   onSaveSuccess
 }) => {
-  console.log('📝📝📝 [NEW_PROFILE_CONTENT] Render with simplified props');
-
   if (loading) {
     return <ProfileModalLoading />;
   }

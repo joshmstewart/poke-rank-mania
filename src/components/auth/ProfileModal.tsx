@@ -27,36 +27,28 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
     mountedRef
   } = useProfileFormState(open);
 
-  console.log('🎭🎭🎭 [NEW_PROFILE_MODAL] Simplified render approach');
-  console.log('🎭🎭🎭 [NEW_PROFILE_MODAL] Open:', open, 'User:', !!user);
-
   const handleAvatarClick = () => {
     if (!mountedRef.current) return;
-    console.log('🎭🎭🎭 [NEW_PROFILE_MODAL] Avatar clicked');
     setAvatarModalOpen(true);
   };
 
   const handleAvatarSelection = (avatarUrl: string) => {
     if (!mountedRef.current) return;
-    console.log('🎭🎭🎭 [NEW_PROFILE_MODAL] Avatar selected:', avatarUrl);
     setSelectedAvatar(avatarUrl);
     setAvatarModalOpen(false);
   };
 
   const handleCancel = () => {
     if (!mountedRef.current) return;
-    console.log('🎭🎭🎭 [NEW_PROFILE_MODAL] Cancel clicked');
     onOpenChange(false);
   };
 
   const handleSaveSuccess = () => {
     if (!mountedRef.current) return;
-    console.log('🎭🎭🎭 [NEW_PROFILE_MODAL] Save successful, closing modal');
     onOpenChange(false);
   };
 
   if (!user?.id) {
-    console.log('🎭🎭🎭 [NEW_PROFILE_MODAL] No user ID, returning null');
     return null;
   }
 

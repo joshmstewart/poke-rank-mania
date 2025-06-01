@@ -23,39 +23,16 @@ export const ProfileModalActions: React.FC<ProfileModalActionsProps> = ({
   const { user } = useAuth();
   const { isSaving, directSaveProfile } = useDirectProfileSave();
 
-  console.log('🔘🔘🔘 [NEW_PROFILE_ACTIONS] Render with props:', {
-    selectedAvatar,
-    username,
-    displayName,
-    hasUser: !!user,
-    isSaving
-  });
-
   const handleSaveClick = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
-    console.log('🔘🔘🔘 [NEW_PROFILE_ACTIONS] Save button clicked!');
-    console.log('🔘🔘🔘 [NEW_PROFILE_ACTIONS] Current state:', {
-      isSaving,
-      userId: user?.id,
-      formData: { selectedAvatar, username, displayName }
-    });
-
-    if (!user?.id) {
-      console.log('🔘🔘🔘 [NEW_PROFILE_ACTIONS] No user ID, aborting');
-      return;
-    }
-
-    if (isSaving) {
-      console.log('🔘🔘🔘 [NEW_PROFILE_ACTIONS] Already saving, aborting');
+    if (!user?.id || isSaving) {
       return;
     }
 
     const trimmedUsername = username?.trim() || '';
     const trimmedDisplayName = displayName?.trim() || '';
-
-    console.log('🔘🔘🔘 [NEW_PROFILE_ACTIONS] About to call directSaveProfile');
     
     const success = await directSaveProfile(user.id, {
       avatar_url: selectedAvatar || '',
@@ -63,17 +40,12 @@ export const ProfileModalActions: React.FC<ProfileModalActionsProps> = ({
       display_name: trimmedDisplayName || 'New User',
     });
 
-    console.log('🔘🔘🔘 [NEW_PROFILE_ACTIONS] Save completed, success:', success);
-
     if (success) {
-      console.log('🔘🔘🔘 [NEW_PROFILE_ACTIONS] Calling onSaveSuccess');
       onSaveSuccess();
     }
   };
 
   const isButtonDisabled = isSaving || !user;
-
-  console.log('🔘🔘🔘 [NEW_PROFILE_ACTIONS] Button disabled?', isButtonDisabled);
 
   return (
     <div className="flex flex-col gap-2 pt-4">
