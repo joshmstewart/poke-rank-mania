@@ -38,17 +38,16 @@ export const PokemonGridSection: React.FC<PokemonGridSectionProps> = ({
     const flushPokemonBatch = () => {
       if (currentPokemonBatch.length > 0) {
         sections.push(
-          <div key={`pokemon-grid-${currentGeneration}`} className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+          <div key={`pokemon-grid-${currentGeneration}`} className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
             {currentPokemonBatch.map((pokemon, index) => (
-              <div key={`pokemon-${pokemon.id}-${index}`} className="min-w-[140px] min-h-[140px]">
-                <DraggablePokemonMilestoneCard
-                  pokemon={pokemon}
-                  index={index}
-                  showRank={false}
-                  isDraggable={true}
-                  isAvailable={true}
-                />
-              </div>
+              <DraggablePokemonMilestoneCard
+                key={`pokemon-${pokemon.id}-${index}`}
+                pokemon={pokemon}
+                index={index}
+                showRank={false}
+                isDraggable={true}
+                isAvailable={true}
+              />
             ))}
           </div>
         );
