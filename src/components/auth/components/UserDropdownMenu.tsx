@@ -49,12 +49,15 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({ user }) => {
   const avatarUrl = user.user_metadata?.avatar_url;
   const userInitials = displayName.charAt(0).toUpperCase();
 
-  console.log('🎭 [USER_DROPDOWN] Rendering with avatar data:', {
-    avatarUrl,
-    displayName,
-    userInitials,
-    hasAvatarUrl: !!avatarUrl
-  });
+  // CRITICAL DEBUG LOGGING
+  console.log('🎭 [USER_DROPDOWN] ===== CRITICAL DEBUG =====');
+  console.log('🎭 [USER_DROPDOWN] Full user object:', JSON.stringify(user, null, 2));
+  console.log('🎭 [USER_DROPDOWN] Avatar URL from user_metadata:', avatarUrl);
+  console.log('🎭 [USER_DROPDOWN] Display name:', displayName);
+  console.log('🎭 [USER_DROPDOWN] User initials:', userInitials);
+  console.log('🎭 [USER_DROPDOWN] Has avatar URL?', !!avatarUrl);
+  console.log('🎭 [USER_DROPDOWN] Avatar URL length:', avatarUrl?.length || 0);
+  console.log('🎭 [USER_DROPDOWN] ===== END DEBUG =====');
 
   return (
     <>
@@ -66,10 +69,14 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({ user }) => {
                 <AvatarImage 
                   src={avatarUrl} 
                   alt={displayName}
-                  onLoad={() => console.log('🎭 [USER_DROPDOWN] Avatar image loaded successfully')}
+                  onLoad={() => {
+                    console.log('🎭 [USER_DROPDOWN] ✅ Avatar image LOADED successfully');
+                    console.log('🎭 [USER_DROPDOWN] ✅ Loaded avatar URL:', avatarUrl);
+                  }}
                   onError={(e) => {
-                    console.error('🎭 [USER_DROPDOWN] Avatar image failed to load:', e);
-                    console.error('🎭 [USER_DROPDOWN] Failed avatar URL:', avatarUrl);
+                    console.error('🎭 [USER_DROPDOWN] ❌ Avatar image FAILED to load');
+                    console.error('🎭 [USER_DROPDOWN] ❌ Failed avatar URL:', avatarUrl);
+                    console.error('🎭 [USER_DROPDOWN] ❌ Error event:', e);
                   }}
                 />
               )}

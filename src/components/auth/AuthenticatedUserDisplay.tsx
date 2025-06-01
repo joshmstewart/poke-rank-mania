@@ -22,17 +22,29 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
 
   const effectiveUser = currentUser || user;
 
+  console.log('🎭 [AUTH_USER_DISPLAY] ===== CRITICAL DEBUG =====');
   console.log('🎭 [AUTH_USER_DISPLAY] Rendering with user:', {
     hasEffectiveUser: !!effectiveUser,
     effectiveUserId: effectiveUser?.id?.substring(0, 8),
     currentProfileAvatar: currentProfile?.avatar_url,
     userMetadataAvatar: effectiveUser?.user_metadata?.avatar_url,
-    isProfileLoaded
+    isProfileLoaded,
+    profileId: currentProfile?.id,
+    profileUsername: currentProfile?.username,
+    profileDisplayName: currentProfile?.display_name
   });
+  console.log('🎭 [AUTH_USER_DISPLAY] Full current profile:', JSON.stringify(currentProfile, null, 2));
+  console.log('🎭 [AUTH_USER_DISPLAY] Full effective user:', JSON.stringify(effectiveUser, null, 2));
+  console.log('🎭 [AUTH_USER_DISPLAY] ===== END DEBUG =====');
 
   // Load profile data when user changes
   useEffect(() => {
     if (!effectiveUser?.id || isLoadingProfile.current || lastUserId.current === effectiveUser.id) {
+      console.log('🔄 [AUTH_USER_DISPLAY] Skipping profile load:', {
+        hasUser: !!effectiveUser?.id,
+        isLoading: isLoadingProfile.current,
+        sameUser: lastUserId.current === effectiveUser.id
+      });
       return;
     }
 
@@ -78,7 +90,7 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
         
         try {
           // Wait a moment for the database to be consistent
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await new Promise(resolve => setTimeout(resolve, 500)); // Increased delay
           
           // Fetch fresh profile data
           await prefetchProfile(effectiveUser.id);
@@ -129,6 +141,7 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
 
   // Don't render until we've at least attempted to load the profile
   if (!isProfileLoaded) {
+    console.log('🔄 [AUTH_USER_DISPLAY] Showing loading state - profile not loaded yet');
     return (
       <div className="flex items-center gap-2">
         <div className="h-12 w-12 rounded-full bg-gray-200 animate-pulse" />
@@ -149,6 +162,7 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
     }
   };
 
+  console.log('🎭 [AUTH_USER_DISPLAY] ===== ENHANCED USER DEBUG =====');
   console.log('🎭 [AUTH_USER_DISPLAY] Enhanced user for dropdown:', {
     avatarUrl: enhancedUser.user_metadata.avatar_url,
     displayName: enhancedUser.user_metadata.display_name,
@@ -156,6 +170,8 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
     hasProfileAvatar: !!currentProfile?.avatar_url,
     profileAvatarUrl: currentProfile?.avatar_url
   });
+  console.log('🎭 [AUTH_USER_DISPLAY] Full enhanced user metadata:', JSON.stringify(enhancedUser.user_metadata, null, 2));
+  console.log('🎭 [AUTH_USER_DISPLAY] ===== END ENHANCED USER DEBUG =====');
 
   return (
     <div className="flex items-center gap-2">
