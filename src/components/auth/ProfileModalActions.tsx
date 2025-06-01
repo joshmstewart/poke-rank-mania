@@ -81,18 +81,6 @@ export const ProfileModalActions: React.FC<ProfileModalActionsProps> = ({
     }
   };
 
-  // Test button that bypasses everything
-  const directTest = () => {
-    console.log('🟢 [PROFILE_ACTIONS] DIRECT TEST CLICKED! 🟢');
-    alert('Direct save test clicked! This proves the button can receive clicks.');
-    
-    // Try calling onSave directly
-    if (onSave) {
-      console.log('🟢 [PROFILE_ACTIONS] Calling onSave from direct test...');
-      onSave();
-    }
-  };
-
   // 2. Calculate disabled state and log before return
   const isButtonDisabled = saving || !hasChanges || !user;
   console.log(
@@ -111,7 +99,16 @@ export const ProfileModalActions: React.FC<ProfileModalActionsProps> = ({
       <div className="bg-yellow-100 p-2 border border-yellow-300 rounded">
         <p className="text-xs text-yellow-700 mb-2">Debug: Actions test button</p>
         <button 
-          onClick={directTest}
+          onClick={() => {
+            console.log('🟢 [PROFILE_ACTIONS] DIRECT TEST CLICKED! 🟢');
+            alert('Direct save test clicked! This proves the button can receive clicks.');
+            
+            // Try calling onSave directly
+            if (onSave) {
+              console.log('🟢 [PROFILE_ACTIONS] Calling onSave from direct test...');
+              onSave();
+            }
+          }}
           className="bg-yellow-500 text-white px-3 py-1 rounded text-sm"
         >
           🟢 ACTIONS TEST
