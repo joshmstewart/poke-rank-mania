@@ -23,6 +23,11 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
 
   console.log('🎭 [PROFILE_MODAL_SIMPLE] Render - Open:', open, 'Saving:', saving, 'User:', !!user);
 
+  // Debug effect to track saving state changes in modal
+  useEffect(() => {
+    console.log('🎭 [PROFILE_MODAL_SIMPLE] Saving state effect triggered, saving:', saving);
+  }, [saving]);
+
   // Initialize form with default values when modal opens
   useEffect(() => {
     if (open && user) {
@@ -68,6 +73,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
     }
 
     console.log('🚀 [PROFILE_MODAL_SIMPLE] Starting save process');
+    console.log('🚀 [PROFILE_MODAL_SIMPLE] Current saving state before save:', saving);
     console.log('🚀 [PROFILE_MODAL_SIMPLE] Form data:', {
       avatar: selectedAvatar,
       username: username.trim(),
@@ -80,15 +86,22 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
       return;
     }
 
+    console.log('🚀 [PROFILE_MODAL_SIMPLE] Calling saveProfile...');
     const success = await saveProfile(user.id, {
       avatar_url: selectedAvatar,
       username: username.trim(),
       display_name: displayName.trim(),
     });
 
+    console.log('🚀 [PROFILE_MODAL_SIMPLE] Save completed, success:', success);
+    console.log('🚀 [PROFILE_MODAL_SIMPLE] Current saving state after save:', saving);
+
     if (success) {
       console.log('🚀 [PROFILE_MODAL_SIMPLE] Save successful, closing modal');
-      onOpenChange(false);
+      // Add a small delay to ensure state updates before closing
+      setTimeout(() => {
+        onOpenChange(false);
+      }, 100);
     } else {
       console.log('🚀 [PROFILE_MODAL_SIMPLE] Save failed');
     }
