@@ -54,7 +54,7 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({ user }) => {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="flex items-center gap-2 px-3">
-            <Avatar className="h-8 w-8">
+            <Avatar className="h-12 w-12">
               <AvatarImage src={avatarUrl} alt={displayName} />
               <AvatarFallback className="bg-primary text-primary-foreground">
                 {userInitials}
