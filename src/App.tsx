@@ -12,19 +12,23 @@ import { useAuth } from "@/contexts/AuthContext";
 // STRATEGY 2: Minimal App version for isolation testing
 const MinimalAppForDebugging = () => {
   const renderCount = useRef(0);
+  const instanceId = useRef('jfteda'); // Fixed instance ID for tracking
   renderCount.current += 1;
   
   console.log('🟣🟣🟣 MINIMAL_APP: ===== MINIMAL APP RENDERING =====');
+  console.log('🟣🟣🟣 MINIMAL_APP: Instance ID:', instanceId.current);
   console.log('🟣🟣🟣 MINIMAL_APP: Render count:', renderCount.current);
   console.log('🟣🟣🟣 MINIMAL_APP: Timestamp:', new Date().toISOString());
   
   useEffect(() => {
     console.log('🟣🟣🟣 MINIMAL_APP: ===== MINIMAL APP MOUNTED =====');
+    console.log('🟣🟣🟣 MINIMAL_APP: Instance ID on mount:', instanceId.current);
     console.log('🟣🟣🟣 MINIMAL_APP: Mount timestamp:', new Date().toISOString());
     
     return () => {
       console.log('🟣🟣🟣 MINIMAL_APP: ===== MINIMAL APP UNMOUNTING =====');
       console.log('🟣🟣🟣 MINIMAL_APP: ❌❌❌ THIS SHOULD NOT HAPPEN AFTER LOGIN ❌❌❌');
+      console.log('🟣🟣🟣 MINIMAL_APP: Instance ID unmounting:', instanceId.current);
       console.log('🟣🟣🟣 MINIMAL_APP: Unmount timestamp:', new Date().toISOString());
     };
   }, []);
@@ -40,7 +44,7 @@ const MinimalAppForDebugging = () => {
       <div style={{ fontSize: '24px', fontWeight: 'bold', color: 'purple' }}>
         🚀 MINIMAL APP CONTAINER (ISOLATION TEST) 🚀
       </div>
-      <p>App.tsx is MOUNTED and STABLE</p>
+      <p>App.tsx Instance: {instanceId.current}</p>
       <p>Current Time: {new Date().toLocaleTimeString()}</p>
       <p>Render Count: {renderCount.current}</p>
       <p style={{ fontWeight: 'bold', color: 'red' }}>
@@ -54,7 +58,7 @@ function AppContent() {
   const [mode, setMode] = useLocalStorage<"rank" | "battle">("pokemon-ranker-mode", "battle");
   const renderCount = useRef(0);
   const mountTime = useRef(new Date().toISOString());
-  const stableInstance = useRef(Math.random().toString(36).substring(7));
+  const stableInstance = useRef('app-content-main');
 
   renderCount.current += 1;
 
@@ -96,11 +100,11 @@ function AppContent() {
     <div className="flex flex-col h-screen">
       <div className="bg-purple-500 border-8 border-yellow-500 p-4 m-2">
         <div className="text-2xl font-bold text-yellow-500 mb-2">🚀 MAIN APP CONTAINER 🚀</div>
+        <div className="text-white">Instance: {stableInstance.current}</div>
         <div className="text-white">Full App is rendering - timestamp: {new Date().toISOString()}</div>
         <div className="text-white">Mode: {mode}</div>
         <div className="text-white">Render count: {renderCount.current}</div>
         <div className="text-white">Mount time: {mountTime.current}</div>
-        <div className="text-white">Instance ID: {stableInstance.current}</div>
         <div className="text-white font-bold">🔥 THIS SHOULD NEVER DISAPPEAR AFTER LOGIN 🔥</div>
       </div>
       
@@ -120,7 +124,7 @@ function AppContent() {
 function App() {
   const renderCount = useRef(0);
   const mountTime = useRef(new Date().toISOString());
-  const stableRootInstance = useRef(Math.random().toString(36).substring(7));
+  const stableRootInstance = useRef('app-root-main');
   
   renderCount.current += 1;
 
@@ -143,7 +147,7 @@ function App() {
     };
   }, []);
   
-  // STRATEGY 4: Check for conditional rendering logic that might affect auth state
+  // Check for conditional rendering logic that might affect auth state
   console.log('🚀🚀🚀 ROOT_APP: About to check for any conditional rendering...');
   
   // Check if we need to use minimal version for debugging
