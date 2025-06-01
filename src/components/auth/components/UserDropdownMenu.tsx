@@ -12,31 +12,24 @@ interface UserDropdownMenuProps {
     avatarUrl?: string;
   } | null;
   onProfileClick: () => void;
-  onAvatarClick: () => void;
   onSignOut: () => void;
 }
 
 export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({
   displayValues,
   onProfileClick,
-  onAvatarClick,
   onSignOut
 }) => {
   if (!displayValues) return null;
 
   return (
     <div className="flex items-center gap-2">
-      <button
-        onClick={onAvatarClick}
-        className="rounded-full transition-transform hover:scale-105"
-      >
-        <Avatar className="h-8 w-8">
-          <AvatarImage src={displayValues.avatarUrl || undefined} alt={displayValues.displayName} />
-          <AvatarFallback className="bg-blue-500 text-white">
-            <User className="h-4 w-4" />
-          </AvatarFallback>
-        </Avatar>
-      </button>
+      <Avatar className="h-8 w-8">
+        <AvatarImage src={displayValues.avatarUrl || undefined} alt={displayValues.displayName} />
+        <AvatarFallback className="bg-blue-500 text-white">
+          <User className="h-4 w-4" />
+        </AvatarFallback>
+      </Avatar>
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>

@@ -15,6 +15,7 @@ interface ProfileModalContentProps {
   saving: boolean;
   onCancel: () => void;
   onSave: () => void;
+  onAvatarClick: () => void;
 }
 
 export const ProfileModalContent: React.FC<ProfileModalContentProps> = ({
@@ -27,7 +28,8 @@ export const ProfileModalContent: React.FC<ProfileModalContentProps> = ({
   setDisplayName,
   saving,
   onCancel,
-  onSave
+  onSave,
+  onAvatarClick
 }) => {
   if (loading) {
     return <ProfileModalLoading />;
@@ -42,6 +44,7 @@ export const ProfileModalContent: React.FC<ProfileModalContentProps> = ({
         setUsername={setUsername}
         displayName={displayName}
         setDisplayName={setDisplayName}
+        onAvatarClick={onAvatarClick}
       />
       <ProfileModalActions
         onCancel={onCancel}

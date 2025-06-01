@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/auth/useAuth';
@@ -6,6 +5,7 @@ import { toast } from '@/hooks/use-toast';
 import { updateProfile } from '@/services/profile';
 import { ProfileModalHeader } from './ProfileModalHeader';
 import { ProfileModalContent } from './ProfileModalContent';
+import { AvatarSelectionModal } from './AvatarSelectionModal';
 import { useProfileCache } from './hooks/useProfileCache';
 
 interface ProfileModalProps {
@@ -20,6 +20,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
   const [username, setUsername] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [saving, setSaving] = useState(false);
+  const [avatarModalOpen, setAvatarModalOpen] = useState(false);
 
   // Initialize form with cached data immediately when modal opens
   useEffect(() => {
@@ -96,27 +97,46 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
     }
   };
 
+  const handleAvatarClick = () => {
+    setAvatarModalOpen(true);
+  };
+
+  const handleAvatarSelection = async (avatarUrl: string) => {
+    setSelectedAvatar(avatarUrl);
+    setAvatarModalOpen(false);
+  };
+
   if (!user?.id) {
     return null;
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
-        <ProfileModalHeader />
-        <ProfileModalContent
-          loading={false}
-          selectedAvatar={selectedAvatar}
-          setSelectedAvatar={setSelectedAvatar}
-          username={username}
-          setUsername={setUsername}
-          displayName={displayName}
-          setDisplayName={setDisplayName}
-          saving={saving}
-          onCancel={() => onOpenChange(false)}
-          onSave={handleSave}
-        />
-      </DialogContent>
-    </Dialog>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
+          <ProfileModalHeader />
+          <ProfileModalContent
+            loading={false}
+            selectedAvatar={selectedAvatar}
+            setSelectedAvatar={setSelectedAvatar}
+            username={username}
+            setUsername={setUsername}
+            displayName={displayName}
+            setDisplayName={setDisplayName}
+            saving={saving}
+            onCancel={() => onOpenChange(false)}
+            onSave={handleSave}
+            onAvatarClick={handleAvatarClick}
+          />
+        </DialogContent>
+      </Dialog>
+
+      <AvatarSelectionModal
+        open={avatarModalOpen}
+        onOpenChange={setAvatarModalOpen}
+        currentAvatar={selectedAvatar}
+        onSelectAvatar={handleAvatarSelection}
+      />
+    </>
   );
 };

@@ -49,14 +49,14 @@ export const AvatarSelectionModal: React.FC<AvatarSelectionModalProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl max-h-[80vh]">
         <DialogHeader>
-          <DialogTitle>Choose Your Avatar</DialogTitle>
+          <DialogTitle>Choose Your Trainer Avatar</DialogTitle>
         </DialogHeader>
         
         <div className="mt-4">
           {loading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin" />
-              <span className="ml-2">Loading Pokemon avatars...</span>
+              <span className="ml-2">Loading trainer avatars...</span>
             </div>
           ) : (
             <div className="grid grid-cols-6 gap-4 max-h-96 overflow-y-auto">
@@ -69,7 +69,7 @@ export const AvatarSelectionModal: React.FC<AvatarSelectionModalProps> = ({
                   }`}
                 >
                   <Avatar className="h-16 w-16">
-                    <AvatarImage src={avatarUrl} alt={`Pokemon avatar ${index + 1}`} />
+                    <AvatarImage src={avatarUrl} alt={`Trainer avatar ${index + 1}`} />
                     <AvatarFallback>
                       <User className="h-8 w-8" />
                     </AvatarFallback>

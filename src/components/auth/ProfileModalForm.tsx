@@ -12,6 +12,7 @@ interface ProfileModalFormProps {
   setUsername: (value: string) => void;
   displayName: string;
   setDisplayName: (value: string) => void;
+  onAvatarClick: () => void;
 }
 
 export const ProfileModalForm: React.FC<ProfileModalFormProps> = ({
@@ -20,24 +21,30 @@ export const ProfileModalForm: React.FC<ProfileModalFormProps> = ({
   username,
   setUsername,
   displayName,
-  setDisplayName
+  setDisplayName,
+  onAvatarClick
 }) => {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Avatar className="h-16 w-16">
-          <AvatarImage src={selectedAvatar} alt="Selected avatar" />
-          <AvatarFallback>
-            <User className="h-8 w-8" />
-          </AvatarFallback>
-        </Avatar>
+        <button
+          onClick={onAvatarClick}
+          className="rounded-full transition-transform hover:scale-105"
+        >
+          <Avatar className="h-16 w-16">
+            <AvatarImage src={selectedAvatar} alt="Selected avatar" />
+            <AvatarFallback>
+              <User className="h-8 w-8" />
+            </AvatarFallback>
+          </Avatar>
+        </button>
         <div>
           <p className="font-medium">Current Avatar</p>
           <p className="text-sm text-muted-foreground">
-            {selectedAvatar ? 'Pokemon Avatar' : 'No avatar selected'}
+            {selectedAvatar ? 'Trainer Avatar' : 'No avatar selected'}
           </p>
           <p className="text-xs text-muted-foreground mt-1">
-            Click your avatar in the top right to change it
+            Click your avatar to change it
           </p>
         </div>
       </div>
