@@ -23,6 +23,13 @@ export const AvatarSelectionModal: React.FC<AvatarSelectionModalProps> = ({
   const [avatarUrls, setAvatarUrls] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Update selectedAvatar when currentAvatar changes or modal opens
+  useEffect(() => {
+    if (open) {
+      setSelectedAvatar(currentAvatar);
+    }
+  }, [open, currentAvatar]);
+
   useEffect(() => {
     const loadAvatars = async () => {
       try {
@@ -64,28 +71,32 @@ export const AvatarSelectionModal: React.FC<AvatarSelectionModalProps> = ({
             ) : (
               <div className="grid grid-cols-6 gap-3">
                 {avatarUrls.map((avatarUrl, index) => (
-                  <button
+                  <div
                     key={`${avatarUrl}-${index}`}
-                    onClick={() => setSelectedAvatar(avatarUrl)}
-                    className={`relative aspect-square rounded-full transition-all duration-200 hover:scale-110 ${
-                      selectedAvatar === avatarUrl
-                        ? 'ring-4 ring-blue-500 ring-offset-2'
-                        : 'hover:ring-2 hover:ring-blue-300'
-                    }`}
+                    className="relative flex justify-center items-center"
                   >
-                    <Avatar className="w-16 h-16">
-                      <AvatarImage 
-                        src={avatarUrl} 
-                        alt={`Pokemon avatar ${index + 1}`}
-                        className="object-cover border-2 border-gray-200"
-                      />
-                    </Avatar>
-                    {selectedAvatar === avatarUrl && (
-                      <div className="absolute -top-1 -right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
-                        <span className="text-white text-xs">✓</span>
-                      </div>
-                    )}
-                  </button>
+                    <button
+                      onClick={() => setSelectedAvatar(avatarUrl)}
+                      className={`relative w-16 h-16 rounded-full transition-all duration-200 hover:scale-110 ${
+                        selectedAvatar === avatarUrl
+                          ? 'ring-4 ring-blue-500 ring-offset-2'
+                          : 'hover:ring-2 hover:ring-blue-300'
+                      }`}
+                    >
+                      <Avatar className="w-16 h-16">
+                        <AvatarImage 
+                          src={avatarUrl} 
+                          alt={`Pokemon avatar ${index + 1}`}
+                          className="object-cover border-2 border-gray-200"
+                        />
+                      </Avatar>
+                      {selectedAvatar === avatarUrl && (
+                        <div className="absolute -top-1 -right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                          <span className="text-white text-xs">✓</span>
+                        </div>
+                      )}
+                    </button>
+                  </div>
                 ))}
               </div>
             )}
