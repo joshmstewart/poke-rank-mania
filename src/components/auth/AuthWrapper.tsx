@@ -7,52 +7,6 @@ interface AuthWrapperProps {
   children: React.ReactNode;
 }
 
-// Error boundary to catch any errors that might cause unmounting
-class AuthWrapperErrorBoundary extends React.Component<
-  { children: React.ReactNode; onError: (error: Error, errorInfo: React.ErrorInfo) => void },
-  { hasError: boolean }
-> {
-  constructor(props: any) {
-    super(props);
-    this.state = { hasError: false };
-  }
-
-  static getDerivedStateFromError(error: Error) {
-    return { hasError: true };
-  }
-
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('🟢🟢🟢 [NAWGTI_ERROR_BOUNDARY] ❌ ERROR CAUGHT IN NAWGTI:', {
-      error: error.message,
-      stack: error.stack,
-      componentStack: errorInfo.componentStack,
-      timestamp: new Date().toISOString()
-    });
-    this.props.onError(error, errorInfo);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div style={{ 
-          border: '5px solid red', 
-          padding: '20px', 
-          backgroundColor: '#ffe0e0',
-          color: 'red',
-          fontSize: '16px',
-          fontWeight: 'bold'
-        }}>
-          🚨 NAWGTI ERROR BOUNDARY TRIGGERED 🚨<br/>
-          Something went wrong in AuthWrapper<br/>
-          Check console for details
-        </div>
-      );
-    }
-
-    return this.props.children;
-  }
-}
-
 export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
   const wrapperInstance = useRef('nawgti');
   const renderCount = useRef(0);
@@ -194,83 +148,46 @@ export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
     }
   }, [authState]);
 
-  const handleError = (error: Error, errorInfo: React.ErrorInfo) => {
-    console.error('🟢🟢🟢 [NAWGTI_CRITICAL] ❌ ERROR IN NAWGTI WRAPPER:', {
-      error: error.message,
-      authState,
-      renderCount: renderCount.current,
-      timestamp: new Date().toISOString()
-    });
-  };
-
-  // Check for minimal rendering mode
-  const useMinimalMode = new URLSearchParams(window.location.search).get('minimal') === 'true';
-  
   console.log('🟢🟢🟢 [NAWGTI_CRITICAL] About to render JSX structure');
-  console.log('🟢🟢🟢 [NAWGTI_CRITICAL] Minimal mode:', useMinimalMode);
   console.log('🟢🟢🟢 [NAWGTI_CRITICAL] Current auth state for rendering decision:', authState);
 
-  // CRITICAL: Always render the outer wrapper structure with stable keys
+  // CRITICAL: Always render the outer wrapper structure
   return (
-    <AuthWrapperErrorBoundary onError={handleError}>
-      <div className="auth-wrapper-container" style={{ minHeight: '100vh', position: 'relative' }} key="nawgti-container">
-        <div style={{ 
-          position: 'fixed', 
-          top: '10px', 
-          left: '10px', 
-          zIndex: 9999, 
-          backgroundColor: 'purple', 
-          color: 'white', 
-          padding: '15px',
-          fontSize: '14px',
-          fontWeight: 'bold',
-          border: '5px solid yellow',
-          maxWidth: '500px'
-        }}>
-          🟢 OUTER WRAPPER BOX (NAWGTI) 🟢<br/>
-          Instance ID: {wrapperInstance.current}<br/>
-          Render #{renderCount.current}<br/>
-          Auth State: {authState}<br/>
-          Time: {new Date().toLocaleTimeString()}<br/>
-          Last Heartbeat: {new Date(lastHeartbeat).toLocaleTimeString()}<br/>
-          <span style={{ color: 'red', fontSize: '12px' }}>
-            ⚠️ THIS SHOULD NEVER DISAPPEAR AFTER LOGIN ⚠️
-          </span><br/>
-          <span style={{ color: 'yellow', fontSize: '11px' }}>
-            If this disappears post-login, the wrapper unmounted
-          </span>
-        </div>
-        
-        <AuthProvider key="auth-provider-stable">
-          <ImpliedBattleTrackerProvider key="battle-tracker-stable">
-            {useMinimalMode ? (
-              <div style={{ 
-                border: '8px solid green', 
-                padding: '20px', 
-                margin: '20px',
-                marginTop: '180px', 
-                backgroundColor: '#e0ffe0',
-                minHeight: '200px'
-              }} key="minimal-mode-container">
-                <div style={{ fontSize: '24px', fontWeight: 'bold', color: 'green' }}>
-                  🚀 MINIMAL MODE - NAWGTI WRAPPER TEST 🚀
-                </div>
-                <p>NAWGTI Wrapper Instance: {wrapperInstance.current}</p>
-                <p>Render Count: {renderCount.current}</p>
-                <p>Auth State: {authState}</p>
-                <p>Current Time: {new Date().toLocaleTimeString()}</p>
-                <p style={{ fontWeight: 'bold', color: 'red' }}>
-                  🔥 IF THIS PERSISTS AFTER LOGIN, NAWGTI IS STABLE 🔥
-                </p>
-              </div>
-            ) : (
-              <div style={{ marginTop: '160px' }} key="main-children-container">
-                {children}
-              </div>
-            )}
-          </ImpliedBattleTrackerProvider>
-        </AuthProvider>
+    <div className="auth-wrapper-container" style={{ minHeight: '100vh', position: 'relative' }}>
+      <div style={{ 
+        position: 'fixed', 
+        top: '10px', 
+        left: '10px', 
+        zIndex: 9999, 
+        backgroundColor: 'purple', 
+        color: 'white', 
+        padding: '15px',
+        fontSize: '14px',
+        fontWeight: 'bold',
+        border: '5px solid yellow',
+        maxWidth: '500px'
+      }}>
+        🟢 OUTER WRAPPER BOX (NAWGTI) 🟢<br/>
+        Instance ID: {wrapperInstance.current}<br/>
+        Render #{renderCount.current}<br/>
+        Auth State: {authState}<br/>
+        Time: {new Date().toLocaleTimeString()}<br/>
+        Last Heartbeat: {new Date(lastHeartbeat).toLocaleTimeString()}<br/>
+        <span style={{ color: 'red', fontSize: '12px' }}>
+          ⚠️ THIS SHOULD NEVER DISAPPEAR AFTER LOGIN ⚠️
+        </span><br/>
+        <span style={{ color: 'yellow', fontSize: '11px' }}>
+          If this disappears post-login, the wrapper unmounted
+        </span>
       </div>
-    </AuthWrapperErrorBoundary>
+      
+      <AuthProvider>
+        <ImpliedBattleTrackerProvider>
+          <div style={{ marginTop: '160px' }}>
+            {children}
+          </div>
+        </ImpliedBattleTrackerProvider>
+      </AuthProvider>
+    </div>
   );
 };
