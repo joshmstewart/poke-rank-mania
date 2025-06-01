@@ -3,11 +3,14 @@ import { supabase } from '@/integrations/supabase/client';
 
 export const authService = {
   signIn: async (email: string, password: string) => {
+    console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] Starting email/password sign in...');
     const { error } = await supabase.auth.signInWithPassword({ email, password });
+    console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] Email/password sign in result:', { error: error?.message });
     return { error };
   },
 
   signUp: async (email: string, password: string, displayName?: string) => {
+    console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] Starting email/password sign up...');
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -17,22 +20,24 @@ export const authService = {
         },
       },
     });
+    console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] Email/password sign up result:', { error: error?.message });
     return { error };
   },
 
   signOut: async () => {
-    console.log('🔴 AuthService: Signing out...');
+    console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] Starting sign out...');
     await supabase.auth.signOut();
+    console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] Sign out completed');
   },
 
   signInWithGoogle: async () => {
-    console.log('🔴 AuthService: Starting Google sign in...');
-    console.log('🔴 AuthService: Current URL:', window.location.href);
-    console.log('🔴 AuthService: Origin:', window.location.origin);
+    console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] Starting Google sign in...');
+    console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] Current URL:', window.location.href);
+    console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] Origin:', window.location.origin);
     
     // Use the current origin as redirect URL to prevent localhost issues
     const redirectUrl = window.location.origin;
-    console.log('🔴 AuthService: Using redirect URL:', redirectUrl);
+    console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] Using redirect URL:', redirectUrl);
     
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -45,28 +50,63 @@ export const authService = {
       }
     });
     
-    console.log('🔴 AuthService: Google sign in result:', { error: error?.message });
+    console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] Google sign in result:', { error: error?.message });
     
     if (error) {
-      console.error('🔴 AuthService: Google OAuth error:', error);
+      console.error('🔴🔴🔴 [AUTH_SERVICE_FIXED] Google OAuth error:', error);
     }
     
     return { error };
   },
 
   signInWithPhone: async (phone: string) => {
+    console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 Starting phone sign in...');
+    console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 Phone number:', phone);
+    console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 Current environment:', window.location.origin);
+    
     const { error } = await supabase.auth.signInWithOtp({
       phone: phone,
     });
+    
+    console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 Phone OTP request result:', { 
+      error: error?.message,
+      phoneUsed: phone,
+      timestamp: new Date().toISOString()
+    });
+    
+    if (error) {
+      console.error('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 Phone auth error:', error);
+    } else {
+      console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 OTP should be sent to phone, ready for verification');
+    }
+    
     return { error };
   },
 
   verifyPhoneOtp: async (phone: string, token: string) => {
+    console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 Starting phone OTP verification...');
+    console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 Phone:', phone);
+    console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 Token length:', token.length);
+    
     const { error } = await supabase.auth.verifyOtp({
       phone: phone,
       token: token,
       type: 'sms',
     });
+    
+    console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 Phone OTP verification result:', { 
+      error: error?.message,
+      phoneUsed: phone,
+      tokenLength: token.length,
+      timestamp: new Date().toISOString()
+    });
+    
+    if (error) {
+      console.error('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 Phone OTP verification error:', error);
+    } else {
+      console.log('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 ✅ PHONE LOGIN SUCCESS - USER SHOULD NOW BE AUTHENTICATED ✅');
+    }
+    
     return { error };
   },
 };
