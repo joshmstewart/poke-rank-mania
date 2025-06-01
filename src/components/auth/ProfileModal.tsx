@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -50,6 +49,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
     'user object': user
   });
 
+  // Simplified useEffect with better dependency tracking
   useEffect(() => {
     console.log('🎯 [PROFILE_MODAL_DETAILED] ===== useEffect TRIGGERED =====');
     console.log('🎯 [PROFILE_MODAL_DETAILED] useEffect triggered with:', {
@@ -60,30 +60,27 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
       'open && user?.id': open && !!user?.id
     });
 
-    if (open && user?.id) {
-      console.log('🎯 [PROFILE_MODAL_DETAILED] ✅ CONDITIONS MET - calling loadProfile()');
-      loadProfile();
-    } else if (!open) {
+    // Reset loading when modal opens
+    if (open) {
+      console.log('🎯 [PROFILE_MODAL_DETAILED] Modal opened - starting load process');
+      setLoading(true);
+      
+      if (user?.id) {
+        console.log('🎯 [PROFILE_MODAL_DETAILED] ✅ CONDITIONS MET - calling loadProfile()');
+        loadProfile();
+      } else {
+        console.log('🎯 [PROFILE_MODAL_DETAILED] ❌ NO USER ID - setting loading to false');
+        setLoading(false);
+      }
+    } else {
       console.log('🎯 [PROFILE_MODAL_DETAILED] Modal closed, resetting state');
       setLoading(true);
       setProfile(null);
       setSelectedAvatar('');
       setUsername('');
       setDisplayName('');
-    } else {
-      console.log('🎯 [PROFILE_MODAL_DETAILED] ❌ CONDITIONS NOT MET:', {
-        modalOpen: open,
-        hasUserId: !!user?.id,
-        userIdValue: user?.id,
-        userObject: user
-      });
-      // Force loading to false if conditions aren't met but modal is open
-      if (open) {
-        console.log('🎯 [PROFILE_MODAL_DETAILED] Modal is open but no user - setting loading to false');
-        setLoading(false);
-      }
     }
-  }, [open, user?.id, user]); // Added user to dependencies to ensure we catch all user changes
+  }, [open, user?.id]); // Simplified dependencies
 
   const loadProfile = async () => {
     console.log('🎯 [PROFILE_MODAL_DETAILED] ===== loadProfile() START =====');
