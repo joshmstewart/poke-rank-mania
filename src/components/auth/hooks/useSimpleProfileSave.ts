@@ -4,7 +4,7 @@ import { updateProfile } from '@/services/profile/updateProfile';
 import { toast } from '@/hooks/use-toast';
 
 export const useSimpleProfileSave = () => {
-  const [saving, setSaving] = useState(false);
+  const [saving, setSaving] = useState(false); // Changed from true to false
   const mountedRef = useRef(true);
 
   console.log('🔥 [SIMPLE_SAVE_HOOK] ===== HOOK INITIALIZATION =====');
