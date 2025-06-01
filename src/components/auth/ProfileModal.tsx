@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/auth/useAuth';
 import { ProfileModalHeader } from './ProfileModalHeader';
 import { ProfileModalContent } from './ProfileModalContent';
 import { AvatarSelectionModal } from './AvatarSelectionModal';
+import { AuthMethodsManager } from './AuthMethodsManager';
 import { useProfileFormState } from './hooks/useProfileFormState';
 import { useProfileCache } from './hooks/useProfileCache';
 
@@ -86,21 +87,25 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <ProfileModalHeader />
           
-          <ProfileModalContent
-            loading={false}
-            selectedAvatar={selectedAvatar}
-            setSelectedAvatar={setSelectedAvatar}
-            username={username}
-            setUsername={setUsername}
-            displayName={displayName}
-            setDisplayName={setDisplayName}
-            onCancel={handleCancel}
-            onAvatarClick={handleAvatarClick}
-            onSaveSuccess={handleSaveSuccess}
-          />
+          <div className="space-y-6">
+            <ProfileModalContent
+              loading={false}
+              selectedAvatar={selectedAvatar}
+              setSelectedAvatar={setSelectedAvatar}
+              username={username}
+              setUsername={setUsername}
+              displayName={displayName}
+              setDisplayName={setDisplayName}
+              onCancel={handleCancel}
+              onAvatarClick={handleAvatarClick}
+              onSaveSuccess={handleSaveSuccess}
+            />
+            
+            <AuthMethodsManager />
+          </div>
         </DialogContent>
       </Dialog>
 
