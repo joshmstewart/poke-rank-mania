@@ -24,6 +24,7 @@ interface TrueSkillStore {
   syncToCloud: () => Promise<void>;
   loadFromCloud: () => Promise<void>;
   debugStore: () => void;
+  comprehensiveEnvironmentalDebug: () => void;
 }
 
 // Generate or load session ID
@@ -44,14 +45,122 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
       lastSyncedAt: null,
       sessionId: getOrCreateSessionId(),
       
+      comprehensiveEnvironmentalDebug: () => {
+        console.log(`🔍🔍🔍 [ENVIRONMENTAL_DEBUG_COMPREHENSIVE] ===== FULL ENVIRONMENTAL AUDIT =====`);
+        
+        // Environment detection
+        const environment = {
+          isLovableTester: window.location.hostname.includes('lovable') && !window.location.hostname.includes('app'),
+          isLovablePopout: window.location.hostname.includes('lovable.app'),
+          userAgent: navigator.userAgent,
+          hostname: window.location.hostname,
+          origin: window.location.origin,
+          href: window.location.href
+        };
+        
+        console.log(`🔍 [ENV_DEBUG] Environment Analysis:`, environment);
+        
+        // Comprehensive localStorage scan for TrueSkill-related keys
+        const allLocalStorageKeys = Object.keys(localStorage);
+        const trueskillRelatedKeys = allLocalStorageKeys.filter(key => 
+          key.toLowerCase().includes('trueskill') || 
+          key.toLowerCase().includes('rating') || 
+          key.toLowerCase().includes('battle') ||
+          key.toLowerCase().includes('pokemon')
+        );
+        
+        console.log(`🔍 [ENV_DEBUG] All localStorage keys (${allLocalStorageKeys.length}):`, allLocalStorageKeys);
+        console.log(`🔍 [ENV_DEBUG] TrueSkill-related keys (${trueskillRelatedKeys.length}):`, trueskillRelatedKeys);
+        
+        // Detailed analysis of each TrueSkill-related key
+        trueskillRelatedKeys.forEach(key => {
+          try {
+            const value = localStorage.getItem(key);
+            if (value) {
+              const parsed = JSON.parse(value);
+              console.log(`🔍 [ENV_DEBUG] Key "${key}":`, {
+                size: value.length,
+                type: typeof parsed,
+                isArray: Array.isArray(parsed),
+                keys: typeof parsed === 'object' ? Object.keys(parsed) : null,
+                sampleData: key.includes('trueskill') ? parsed : 'Non-TrueSkill data (truncated)'
+              });
+              
+              // Special handling for trueskill-ratings-store
+              if (key === 'trueskill-ratings-store' && parsed.state?.ratings) {
+                const ratings = parsed.state.ratings;
+                const ratingIds = Object.keys(ratings);
+                console.log(`🔍 [ENV_DEBUG] trueskill-ratings-store DETAILED:`, {
+                  ratingsCount: ratingIds.length,
+                  sampleIds: ratingIds.slice(0, 10),
+                  version: parsed.version,
+                  stateKeys: Object.keys(parsed.state || {})
+                });
+              }
+              
+              // Look for other potential rating stores
+              if (parsed.state?.ratings || (Array.isArray(parsed) && parsed.length > 0 && parsed[0]?.mu)) {
+                console.log(`🔍 [ENV_DEBUG] POTENTIAL RATING SOURCE "${key}":`, {
+                  ratingsCount: parsed.state?.ratings ? Object.keys(parsed.state.ratings).length : parsed.length,
+                  structure: parsed.state ? 'Zustand-style' : 'Array-style'
+                });
+              }
+            }
+          } catch (e) {
+            console.log(`🔍 [ENV_DEBUG] Failed to parse key "${key}":`, e);
+          }
+        });
+        
+        // Check current store state
+        const currentState = get();
+        console.log(`🔍 [ENV_DEBUG] Current Store State:`, {
+          ratingsCount: Object.keys(currentState.ratings).length,
+          sessionId: currentState.sessionId.substring(0, 8) + '...',
+          lastSyncedAt: currentState.lastSyncedAt,
+          isLoading: currentState.isLoading
+        });
+        
+        // Check for cloud data
+        setTimeout(async () => {
+          try {
+            const { data: { user } } = await supabase.auth.getUser();
+            console.log(`🔍 [ENV_DEBUG] Auth State:`, {
+              isAuthenticated: !!user,
+              userId: user?.id?.substring(0, 8) + '...' || 'None'
+            });
+            
+            // Try to check cloud data
+            if (user?.id) {
+              const { data, error } = await supabase
+                .from('trueskill_sessions')
+                .select('*')
+                .eq('user_id', user.id);
+              
+              console.log(`🔍 [ENV_DEBUG] Cloud TrueSkill Sessions for User:`, {
+                count: data?.length || 0,
+                error: error?.message || null,
+                data: data?.map(d => ({
+                  ratingsCount: Object.keys(d.ratings_data || {}).length,
+                  lastUpdated: d.last_updated
+                }))
+              });
+            }
+          } catch (e) {
+            console.log(`🔍 [ENV_DEBUG] Cloud check failed:`, e);
+          }
+        }, 100);
+        
+        console.log(`🔍🔍🔍 [ENVIRONMENTAL_DEBUG_COMPREHENSIVE] ===== END FULL AUDIT =====`);
+      },
+      
       debugStore: () => {
         const state = get();
-        console.log(`🔍 [TRUESKILL_STORE_DEBUG_ENHANCED] ===== ENHANCED STORE DEBUG =====`);
-        console.log(`🔍 [TRUESKILL_STORE_DEBUG_ENHANCED] Store ratings count: ${Object.keys(state.ratings).length}`);
-        console.log(`🔍 [TRUESKILL_STORE_DEBUG_ENHANCED] Session ID: ${state.sessionId.substring(0, 8)}...`);
-        console.log(`🔍 [TRUESKILL_STORE_DEBUG_ENHANCED] Last synced: ${state.lastSyncedAt}`);
+        console.log(`🔍 [TRUESKILL_STORE_DEBUG] ===== STORE DEBUG =====`);
+        console.log(`🔍 [TRUESKILL_STORE_DEBUG] Store ratings count: ${Object.keys(state.ratings).length}`);
+        console.log(`🔍 [TRUESKILL_STORE_DEBUG] Session ID: ${state.sessionId.substring(0, 8)}...`);
+        console.log(`🔍 [TRUESKILL_STORE_DEBUG] Last synced: ${state.lastSyncedAt}`);
         
-        // CRITICAL: More detailed localStorage inspection
+        // Enhanced localStorage inspection
         const localStorageData = localStorage.getItem('trueskill-ratings-store');
         if (localStorageData) {
           try {
@@ -59,44 +168,24 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
             const persistedRatings = parsed.state?.ratings || {};
             const persistedIds = Object.keys(persistedRatings);
             
-            console.log(`🔍 [TRUESKILL_STORE_DEBUG_ENHANCED] localStorage ratings count: ${persistedIds.length}`);
-            console.log(`🔍 [TRUESKILL_STORE_DEBUG_ENHANCED] localStorage rating IDs: ${persistedIds.slice(0, 20).join(', ')}${persistedIds.length > 20 ? '...' : ''}`);
-            console.log(`🔍 [TRUESKILL_STORE_DEBUG_ENHANCED] localStorage data structure:`, {
-              hasState: !!parsed.state,
-              hasRatings: !!parsed.state?.ratings,
-              ratingsType: typeof parsed.state?.ratings,
-              stateKeys: Object.keys(parsed.state || {}),
-              version: parsed.version
-            });
-            
-            // CRITICAL: Sample some ratings to verify structure
-            if (persistedIds.length > 0) {
-              const sampleId = persistedIds[0];
-              const sampleRating = persistedRatings[sampleId];
-              console.log(`🔍 [TRUESKILL_STORE_DEBUG_ENHANCED] Sample rating (ID ${sampleId}):`, sampleRating);
-            }
+            console.log(`🔍 [TRUESKILL_STORE_DEBUG] localStorage ratings count: ${persistedIds.length}`);
+            console.log(`🔍 [TRUESKILL_STORE_DEBUG] localStorage rating IDs: ${persistedIds.slice(0, 20).join(', ')}${persistedIds.length > 20 ? '...' : ''}`);
             
             if (persistedIds.length !== Object.keys(state.ratings).length) {
-              console.error(`🔍 [TRUESKILL_STORE_DEBUG_ENHANCED] ❌ MISMATCH: Store has ${Object.keys(state.ratings).length}, localStorage has ${persistedIds.length}`);
+              console.error(`🔍 [TRUESKILL_STORE_DEBUG] ❌ MISMATCH: Store has ${Object.keys(state.ratings).length}, localStorage has ${persistedIds.length}`);
               
-              // CRITICAL: If localStorage has more data, force reload
               if (persistedIds.length > Object.keys(state.ratings).length) {
-                console.log(`🔍 [TRUESKILL_STORE_DEBUG_ENHANCED] 🔄 localStorage has more data - forcing store reload`);
+                console.log(`🔍 [TRUESKILL_STORE_DEBUG] 🔄 localStorage has more data - forcing store reload`);
                 set({ ratings: persistedRatings });
                 return;
               }
             }
           } catch (e) {
-            console.error(`🔍 [TRUESKILL_STORE_DEBUG_ENHANCED] ❌ Failed to parse localStorage data:`, e);
+            console.error(`🔍 [TRUESKILL_STORE_DEBUG] ❌ Failed to parse localStorage data:`, e);
           }
-        } else {
-          console.log(`🔍 [TRUESKILL_STORE_DEBUG_ENHANCED] ⚠️ No localStorage data found`);
         }
         
-        // CRITICAL: Check if there are any other TrueSkill-related localStorage keys
-        console.log(`🔍 [TRUESKILL_STORE_DEBUG_ENHANCED] All localStorage keys:`, Object.keys(localStorage).filter(key => key.includes('trueskill') || key.includes('rating') || key.includes('battle')));
-        
-        console.log(`🔍 [TRUESKILL_STORE_DEBUG_ENHANCED] ===== END ENHANCED DEBUG =====`);
+        console.log(`🔍 [TRUESKILL_STORE_DEBUG] ===== END DEBUG =====`);
       },
       
       updateRating: (pokemonId: number, rating: Rating) => {
@@ -115,7 +204,6 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           
           console.log(`[TRUESKILL_STORE_DEBUG] After update - Total ratings: ${Object.keys(newRatings).length}`);
           
-          // Trigger events and cloud sync after state update
           setTimeout(() => {
             get().syncToCloud();
             
@@ -154,52 +242,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
       getAllRatings: () => {
         const state = get();
         const ratings = state.ratings;
-        console.log(`[TRUESKILL_STORE_DEBUG_ENHANCED] getAllRatings called - returning ${Object.keys(ratings).length} ratings`);
-        
-        // CRITICAL FIX: Enhanced localStorage consistency check with recovery
-        const localStorageData = localStorage.getItem('trueskill-ratings-store');
-        if (localStorageData) {
-          try {
-            const parsed = JSON.parse(localStorageData);
-            const persistedRatings = parsed.state?.ratings || {};
-            const persistedCount = Object.keys(persistedRatings).length;
-            
-            console.log(`[TRUESKILL_STORE_DEBUG_ENHANCED] Store: ${Object.keys(ratings).length}, localStorage: ${persistedCount}`);
-            
-            // CRITICAL: If there's a significant discrepancy, investigate and potentially recover
-            if (persistedCount !== Object.keys(ratings).length) {
-              console.error(`[TRUESKILL_STORE_DEBUG_ENHANCED] ❌ CRITICAL: Store/localStorage mismatch! Store: ${Object.keys(ratings).length}, localStorage: ${persistedCount}`);
-              
-              // If localStorage has significantly more data, it might be the correct source
-              if (persistedCount > Object.keys(ratings).length && persistedCount > 10) {
-                console.log(`[TRUESKILL_STORE_DEBUG_ENHANCED] 🔄 localStorage has much more data (${persistedCount} vs ${Object.keys(ratings).length}) - attempting recovery`);
-                
-                // Validate the localStorage data structure before using it
-                let isValidData = true;
-                const sampleIds = Object.keys(persistedRatings).slice(0, 5);
-                for (const id of sampleIds) {
-                  const rating = persistedRatings[id];
-                  if (!rating || typeof rating.mu !== 'number' || typeof rating.sigma !== 'number') {
-                    isValidData = false;
-                    console.error(`[TRUESKILL_STORE_DEBUG_ENHANCED] ❌ Invalid rating structure for ID ${id}:`, rating);
-                    break;
-                  }
-                }
-                
-                if (isValidData) {
-                  console.log(`[TRUESKILL_STORE_DEBUG_ENHANCED] ✅ localStorage data appears valid - recovering store`);
-                  set({ ratings: persistedRatings });
-                  return persistedRatings;
-                } else {
-                  console.error(`[TRUESKILL_STORE_DEBUG_ENHANCED] ❌ localStorage data is corrupted - keeping current store`);
-                }
-              }
-            }
-          } catch (e) {
-            console.error(`[TRUESKILL_STORE_DEBUG_ENHANCED] ❌ Failed to parse localStorage for consistency check:`, e);
-          }
-        }
-        
+        console.log(`[TRUESKILL_STORE_DEBUG] getAllRatings called - returning ${Object.keys(ratings).length} ratings`);
         return ratings;
       },
       
@@ -364,7 +407,6 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
         console.log(`🌐🌐🌐 [CLOUD_LOAD_CRITICAL] ===== CLOUD LOAD FUNCTION ENTRY =====`);
         console.log(`🌐🌐🌐 [CLOUD_LOAD_CRITICAL] Local ratings count: ${localRatingsCount}`);
         
-        // Don't load from cloud immediately after a clear
         if (localRatingsCount === 0 && !state.lastSyncedAt) {
           console.log(`🌐🌐🌐 [CLOUD_LOAD_CRITICAL] ===== RECENTLY CLEARED - SKIPPING CLOUD LOAD =====`);
           set({ isLoading: false });

@@ -18,30 +18,45 @@ export const usePokemonData = () => {
     loadSize: number,
     loadingType: LoadingType
   ) => {
-    console.log(`🔒 [DETERMINISTIC_DATA_FIXED] ===== GET POKEMON DATA (CONTEXT-FIRST APPROACH) =====`);
-    console.log(`🔒 [DETERMINISTIC_DATA_FIXED] Params: gen=${selectedGeneration}, page=${currentPage}, size=${loadSize}, type=${loadingType}`);
+    console.log(`🔒 [DETERMINISTIC_DATA_ENHANCED] ===== GET POKEMON DATA (CONTEXT-FIRST APPROACH) =====`);
+    console.log(`🔒 [DETERMINISTIC_DATA_ENHANCED] Params: gen=${selectedGeneration}, page=${currentPage}, size=${loadSize}, type=${loadingType}`);
     
     try {
-      // CRITICAL FIX: Use context Pokemon first if available (1239 Pokemon loaded successfully)
+      // CRITICAL: Always prioritize PokemonContext as the authoritative source
       let allPokemon: Pokemon[] = [];
       
-      if (contextPokemon && contextPokemon.length > 0) {
-        console.log(`🔒 [DETERMINISTIC_DATA_FIXED] ✅ Using PokemonContext data: ${contextPokemon.length} Pokemon`);
+      if (contextPokemon && Array.isArray(contextPokemon) && contextPokemon.length > 0) {
+        console.log(`🔒 [DETERMINISTIC_DATA_ENHANCED] ✅ Using PokemonContext data: ${contextPokemon.length} Pokemon`);
         allPokemon = contextPokemon;
       } else {
-        console.log(`🔒 [DETERMINISTIC_DATA_FIXED] ⚠️ Context empty, falling back to service`);
+        console.log(`🔒 [DETERMINISTIC_DATA_ENHANCED] ⚠️ Context empty or invalid, attempting service fallback`);
         const serviceResult = await getAllPokemon();
         
         if (!Array.isArray(serviceResult) || serviceResult.length === 0) {
-          console.error(`🔒 [DETERMINISTIC_DATA_FIXED] ❌ Service also failed - no Pokemon available`);
-          throw new Error(`No Pokemon data available from any source`);
+          console.log(`🔒 [DETERMINISTIC_DATA_ENHANCED] ❌ Service also failed - returning empty result`);
+          // Return a valid empty structure rather than throwing an error
+          return {
+            availablePokemon: [],
+            rankedPokemon: [],
+            totalPages: 0
+          };
         }
         
         allPokemon = serviceResult;
-        console.log(`🔒 [DETERMINISTIC_DATA_FIXED] ✅ Using service data: ${allPokemon.length} Pokemon`);
+        console.log(`🔒 [DETERMINISTIC_DATA_ENHANCED] ✅ Using service data: ${allPokemon.length} Pokemon`);
       }
       
-      console.log(`🔒 [DETERMINISTIC_DATA_FIXED] ✅ Valid Pokemon array: ${allPokemon.length}`);
+      // Validate that we have a proper array
+      if (!Array.isArray(allPokemon) || allPokemon.length === 0) {
+        console.log(`🔒 [DETERMINISTIC_DATA_ENHANCED] ❌ Invalid Pokemon data - returning empty result`);
+        return {
+          availablePokemon: [],
+          rankedPokemon: [],
+          totalPages: 0
+        };
+      }
+      
+      console.log(`🔒 [DETERMINISTIC_DATA_ENHANCED] ✅ Valid Pokemon array: ${allPokemon.length}`);
       
       // Sort by ID for consistency
       const sortedPokemon = [...allPokemon].sort((a, b) => a.id - b.id);
@@ -90,7 +105,7 @@ export const usePokemonData = () => {
       // Calculate pagination
       const totalPages = loadingType === "pagination" ? Math.ceil(availablePokemon.length / loadSize) : 1;
       
-      console.log(`🔒 [DETERMINISTIC_DATA_FIXED] ✅ SUCCESS - Returning data with ${availablePokemon.length} available, ${rankedPokemon.length} ranked`);
+      console.log(`🔒 [DETERMINISTIC_DATA_ENHANCED] ✅ SUCCESS - Returning data with ${availablePokemon.length} available, ${rankedPokemon.length} ranked`);
       
       return {
         availablePokemon,
@@ -99,8 +114,13 @@ export const usePokemonData = () => {
       };
       
     } catch (error) {
-      console.error(`🔒 [DETERMINISTIC_DATA_FIXED] ❌ Error in getPokemonData:`, error);
-      throw error;
+      console.error(`🔒 [DETERMINISTIC_DATA_ENHANCED] ❌ Error in getPokemonData:`, error);
+      // Return valid empty structure instead of throwing
+      return {
+        availablePokemon: [],
+        rankedPokemon: [],
+        totalPages: 0
+      };
     }
   }, [getAllPokemon, localRankings, contextPokemon]);
 

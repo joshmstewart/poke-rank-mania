@@ -7,14 +7,17 @@ import { Rating } from 'ts-trueskill';
 import { formatPokemonName } from '@/utils/pokemon';
 
 export const useTrueSkillSync = () => {
-  const { getAllRatings, debugStore } = useTrueSkillStore();
+  const { getAllRatings, debugStore, comprehensiveEnvironmentalDebug } = useTrueSkillStore();
   const { pokemonLookupMap } = usePokemonContext();
   const [localRankings, setLocalRankings] = useState<RankedPokemon[]>([]);
 
   useEffect(() => {
     console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] ===== COMPREHENSIVE DATA AUDIT =====`);
     
-    // CRITICAL FIX: Call the debug function to verify store state
+    // CRITICAL: Call comprehensive environmental debugging to find missing data
+    comprehensiveEnvironmentalDebug();
+    
+    // Call the regular debug function
     debugStore();
     
     const allRatings = getAllRatings();
@@ -23,26 +26,6 @@ export const useTrueSkillSync = () => {
     console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] TRUESKILL STORE AUDIT:`);
     console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] - Store ratings count: ${ratedPokemonIds.length}`);
     console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] - Store rating IDs: ${ratedPokemonIds.slice(0, 20).join(', ')}${ratedPokemonIds.length > 20 ? '...' : ''}`);
-    
-    // CRITICAL FIX: Also check localStorage directly for comparison
-    const localStorageData = localStorage.getItem('trueskill-ratings-store');
-    if (localStorageData) {
-      try {
-        const parsed = JSON.parse(localStorageData);
-        const persistedRatings = parsed.state?.ratings || {};
-        const persistedCount = Object.keys(persistedRatings).length;
-        console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] - localStorage ratings count: ${persistedCount}`);
-        
-        if (persistedCount !== ratedPokemonIds.length) {
-          console.error(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] ❌ CRITICAL MISMATCH: Store has ${ratedPokemonIds.length}, localStorage has ${persistedCount}`);
-          console.error(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] ❌ This indicates a serious data loading issue`);
-        }
-      } catch (e) {
-        console.error(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] ❌ Failed to parse localStorage data:`, e);
-      }
-    } else {
-      console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] ⚠️ No localStorage data found`);
-    }
     
     console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] CONTEXT AUDIT:`);
     console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] - Pokemon lookup map size: ${pokemonLookupMap.size}`);
@@ -101,7 +84,7 @@ export const useTrueSkillSync = () => {
 
     setLocalRankings(rankings);
     console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] ===== END COMPREHENSIVE AUDIT =====`);
-  }, [getAllRatings, pokemonLookupMap.size, debugStore]);
+  }, [getAllRatings, pokemonLookupMap.size, debugStore, comprehensiveEnvironmentalDebug]);
 
   const updateLocalRankings = (newRankings: RankedPokemon[]) => {
     console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] MANUAL UPDATE CALLED:`);
