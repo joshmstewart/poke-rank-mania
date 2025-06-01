@@ -23,29 +23,60 @@ export const ProfileModalActions: React.FC<ProfileModalActionsProps> = ({
   const { user } = useAuth();
   const { isSaving, directSaveProfile } = useDirectProfileSave();
 
+  console.log('🔘 [PROFILE_ACTIONS] Rendering with isSaving:', isSaving);
+  console.log('🔘 [PROFILE_ACTIONS] User available:', !!user);
+
   const handleSaveClick = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
-    if (!user?.id || isSaving) {
+    console.log('🔘 [PROFILE_ACTIONS] Save button clicked!');
+    console.log('🔘 [PROFILE_ACTIONS] Current isSaving state:', isSaving);
+    console.log('🔘 [PROFILE_ACTIONS] User ID:', user?.id);
+    
+    if (!user?.id) {
+      console.error('🔘 [PROFILE_ACTIONS] No user ID available');
+      return;
+    }
+
+    if (isSaving) {
+      console.log('🔘 [PROFILE_ACTIONS] Already saving, ignoring click');
       return;
     }
 
     const trimmedUsername = username?.trim() || '';
     const trimmedDisplayName = displayName?.trim() || '';
     
-    const success = await directSaveProfile(user.id, {
+    console.log('🔘 [PROFILE_ACTIONS] About to call directSaveProfile with:', {
+      userId: user.id,
       avatar_url: selectedAvatar || '',
       username: trimmedUsername || `user_${user.id.slice(0, 8)}`,
       display_name: trimmedDisplayName || 'New User',
     });
 
-    if (success) {
-      onSaveSuccess();
+    try {
+      const success = await directSaveProfile(user.id, {
+        avatar_url: selectedAvatar || '',
+        username: trimmedUsername || `user_${user.id.slice(0, 8)}`,
+        display_name: trimmedDisplayName || 'New User',
+      });
+
+      console.log('🔘 [PROFILE_ACTIONS] Save operation completed with result:', success);
+
+      if (success) {
+        console.log('🔘 [PROFILE_ACTIONS] Save successful, calling onSaveSuccess');
+        onSaveSuccess();
+      } else {
+        console.log('🔘 [PROFILE_ACTIONS] Save failed');
+      }
+    } catch (error) {
+      console.error('🔘 [PROFILE_ACTIONS] Error in handleSaveClick:', error);
     }
   };
 
   const isButtonDisabled = isSaving || !user;
+
+  console.log('🔘 [PROFILE_ACTIONS] Button disabled?', isButtonDisabled);
 
   return (
     <div className="flex flex-col gap-2 pt-4">
