@@ -1,105 +1,65 @@
 
-import { useState, useEffect } from "react";
-import { toast } from "@/hooks/use-toast";
-import { 
-  Pokemon, 
-  fetchAllPokemon, 
-  fetchPaginatedPokemon,
-  loadRankings,
-  ITEMS_PER_PAGE
-} from "@/services/pokemon";
-import { LoadingType } from "./types";
+import { useCallback } from "react";
+import { useFormFilters } from "@/hooks/useFormFilters";
+import { usePokemonContext } from "@/contexts/PokemonContext";
+import { formatPokemonName } from "@/utils/pokemon";
 
-export function useDataLoader(
+export const useDataLoader = (
   selectedGeneration: number,
   currentPage: number,
   loadSize: number,
-  loadingType: LoadingType,
-  setAvailablePokemon: React.Dispatch<React.SetStateAction<Pokemon[]>>,
-  setRankedPokemon: React.Dispatch<React.SetStateAction<Pokemon[]>>,
+  loadingType: string,
+  setAvailablePokemon: React.Dispatch<React.SetStateAction<any[]>>,
+  setRankedPokemon: React.Dispatch<React.SetStateAction<any[]>>,
   setTotalPages: React.Dispatch<React.SetStateAction<number>>,
   setIsLoading: React.Dispatch<React.SetStateAction<boolean>>
-) {
-  const loadData = async () => {
+) => {
+  const { analyzeFilteringPipeline } = useFormFilters();
+  const { filteredPokemon } = usePokemonContext();
+
+  const loadData = useCallback(async () => {
     setIsLoading(true);
     
     try {
-      // First try to load saved rankings for the selected generation
-      const savedRankings = loadRankings(selectedGeneration);
+      console.log(`🔍 [DATA_LOADER] Loading data for generation ${selectedGeneration}, page ${currentPage}`);
       
-      // Check if we should use pagination (for All Generations)
-      if (selectedGeneration === 0) {
-        // For single load option, adjust the limit/page size
-        const pageSize = loadingType === "single" ? loadSize : ITEMS_PER_PAGE;
-        const { pokemon, totalPages: pages } = await fetchPaginatedPokemon(selectedGeneration, currentPage);
+      // Get filtered Pokemon from context
+      const availablePokemonData = filteredPokemon || [];
+      console.log(`🔍 [DATA_LOADER] Raw available Pokemon: ${availablePokemonData.length}`);
+      
+      // Apply form filters with debugging
+      const formFilteredPokemon = analyzeFilteringPipeline(availablePokemonData);
+      console.log(`🔍 [DATA_LOADER] After form filters: ${formFilteredPokemon.length}`);
+      
+      // CRITICAL FIX: Apply name formatting to all Pokemon before setting them
+      const formattedPokemon = formFilteredPokemon.map(pokemon => ({
+        ...pokemon,
+        name: formatPokemonName(pokemon.name)
+      }));
+      
+      console.log(`🔍 [DATA_LOADER] Applied name formatting to ${formattedPokemon.length} Pokemon`);
+      console.log(`🔍 [DATA_LOADER] Sample formatted names:`, formattedPokemon.slice(0, 3).map(p => `${p.name} (${p.id})`));
+      
+      if (loadingType === "pagination") {
+        const startIndex = (currentPage - 1) * loadSize;
+        const endIndex = startIndex + loadSize;
+        const paginatedPokemon = formattedPokemon.slice(startIndex, endIndex);
         
-        setTotalPages(pages);
-        
-        if (savedRankings.length > 0) {
-          // Filter out the already ranked Pokémon from the available list
-          const savedIds = new Set(savedRankings.map(p => p.id));
-          const remainingPokemon = pokemon.filter(p => !savedIds.has(p.id));
-          
-          // For infinite scrolling, append to the list
-          if (loadingType === "infinite" && currentPage > 1) {
-            setAvailablePokemon(prev => {
-              const existingIds = new Set(prev.map(p => p.id));
-              const newPokemon = remainingPokemon.filter(p => !existingIds.has(p.id));
-              console.log(`Adding ${newPokemon.length} new Pokemon to existing ${prev.length}`);
-              return [...prev, ...newPokemon];
-            });
-          } else {
-            setAvailablePokemon(remainingPokemon);
-          }
-          
-          setRankedPokemon(savedRankings);
-        } else {
-          // For infinite scrolling, append to the list
-          if (loadingType === "infinite" && currentPage > 1) {
-            setAvailablePokemon(prev => {
-              const existingIds = new Set(prev.map(p => p.id));
-              const newPokemon = pokemon.filter(p => !existingIds.has(p.id));
-              console.log(`Adding ${newPokemon.length} new Pokemon to existing ${prev.length}. Page: ${currentPage}`);
-              return [...prev, ...newPokemon];
-            });
-          } else {
-            setAvailablePokemon(pokemon);
-          }
-          
-          setRankedPokemon([]);
-        }
+        console.log(`🔍 [DATA_LOADER] Pagination: showing ${startIndex}-${endIndex} of ${formattedPokemon.length}`);
+        setAvailablePokemon(paginatedPokemon);
+        setTotalPages(Math.ceil(formattedPokemon.length / loadSize));
       } else {
-        // For specific generations, use the original function
-        const allPokemon = await fetchAllPokemon(selectedGeneration);
-        
-        if (savedRankings.length > 0) {
-          // Filter out the already ranked Pokemon from available list
-          const savedIds = new Set(savedRankings.map(p => p.id));
-          const remainingPokemon = allPokemon.filter(p => !savedIds.has(p.id));
-          
-          setRankedPokemon(savedRankings);
-          setAvailablePokemon(remainingPokemon);
-          
-          toast({
-            title: "Rankings Loaded",
-            description: "Your previously saved rankings have been restored."
-          });
-        } else {
-          setAvailablePokemon(allPokemon);
-          setRankedPokemon([]);
-        }
+        // Load all at once
+        setAvailablePokemon(formattedPokemon);
+        setTotalPages(1);
       }
+      
     } catch (error) {
-      console.error("Error loading Pokémon data:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load Pokémon data. Please try again.",
-        variant: "destructive"
-      });
+      console.error('Error loading data:', error);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [selectedGeneration, currentPage, loadSize, loadingType, filteredPokemon, analyzeFilteringPipeline, setAvailablePokemon, setRankedPokemon, setTotalPages, setIsLoading]);
 
   return { loadData };
-}
+};

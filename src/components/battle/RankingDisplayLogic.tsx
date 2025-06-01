@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { Pokemon, TopNOption, RankedPokemon } from "@/services/pokemon";
-import { formatPokemonName } from "@/utils/pokemon";
 
 interface UseRankingDisplayLogicProps {
   finalRankings: Pokemon[] | RankedPokemon[];
@@ -22,40 +21,21 @@ export const useRankingDisplayLogic = ({
   console.log(`🔧 [RANKING_DISPLAY_LOGIC_DEBUG] isMilestoneView: ${isMilestoneView}`);
   console.log(`🔧 [RANKING_DISPLAY_LOGIC_DEBUG] activeTier: ${activeTier}`);
   
-  // CRITICAL FIX: Format all Pokemon names before displaying
+  // UPDATED: Don't re-format names that should already be formatted
   const formattedRankings = React.useMemo(() => {
-    console.log(`🔧 [MILESTONE_NAME_FIX] ===== FORMATTING ALL POKEMON NAMES =====`);
-    console.log(`🔧 [MILESTONE_NAME_FIX] Input rankings length: ${finalRankings?.length || 0}`);
+    console.log(`🔧 [RANKING_DISPLAY_LOGIC_FIXED] ===== USING PRE-FORMATTED POKEMON NAMES =====`);
+    console.log(`🔧 [RANKING_DISPLAY_LOGIC_FIXED] Input rankings length: ${finalRankings?.length || 0}`);
     
     if (!finalRankings || finalRankings.length === 0) {
-      console.log(`🚨 [MILESTONE_NAME_FIX] No rankings to format - returning empty array`);
+      console.log(`🚨 [RANKING_DISPLAY_LOGIC_FIXED] No rankings to display - returning empty array`);
       return [];
     }
     
-    const formatted = finalRankings.map((pokemon, index) => {
-      const originalName = pokemon.name;
-      const formattedName = formatPokemonName(originalName);
-      
-      console.log(`🔧 [MILESTONE_NAME_FIX] #${index + 1}: "${originalName}" → "${formattedName}"`);
-      console.log(`🔧 [MILESTONE_NAME_FIX] Name changed: ${originalName !== formattedName}`);
-      
-      // Special logging for G-Max
-      if (originalName.toLowerCase().includes('gmax')) {
-        console.log(`🎯 [MILESTONE_GMAX_FIX] GMAX Pokemon detected: "${originalName}"`);
-        console.log(`🎯 [MILESTONE_GMAX_FIX] Formatted to: "${formattedName}"`);
-        console.log(`🎯 [MILESTONE_GMAX_FIX] Contains 'G-Max': ${formattedName.includes('G-Max')}`);
-      }
-      
-      return {
-        ...pokemon,
-        name: formattedName
-      };
-    });
+    // Names should already be formatted at the source, so just return as-is
+    console.log(`✅ [RANKING_DISPLAY_LOGIC_FIXED] Using pre-formatted ${finalRankings.length} Pokemon names`);
+    console.log(`🔧 [RANKING_DISPLAY_LOGIC_FIXED] Sample names:`, finalRankings.slice(0, 3).map(p => `${p.name} (${p.id})`));
     
-    console.log(`✅ [MILESTONE_NAME_FIX] Formatted ${formatted.length} Pokemon names for display`);
-    console.log(`🔧 [MILESTONE_NAME_FIX] Sample formatted names:`, formatted.slice(0, 3).map(p => `${p.name} (${p.id})`));
-    console.log(`🔧 [MILESTONE_NAME_FIX] ===== END FORMATTING =====`);
-    return formatted;
+    return finalRankings;
   }, [finalRankings]);
   
   console.log(`🔧 [RANKING_DISPLAY_LOGIC_DEBUG] Formatted rankings length: ${formattedRankings.length}`);
@@ -78,20 +58,6 @@ export const useRankingDisplayLogic = ({
     if (displayRankings.length > 0) {
       displayRankings.slice(0, Math.min(5, displayRankings.length)).forEach((pokemon, index) => {
         console.log(`${index + 1}. ${pokemon.name} (ID: ${pokemon.id}) - Types: ${pokemon.types?.join(', ') || 'unknown'}`);
-        
-        // ENHANCED DEBUGGING: Log the complete structure of the first Pokemon
-        if (index === 0) {
-          console.log("🔍 COMPLETE POKEMON STRUCTURE for", pokemon.name, ":");
-          console.log("- Raw types property:", JSON.stringify(pokemon.types));
-          console.log("- Types is array:", Array.isArray(pokemon.types));
-          console.log("- Types length:", pokemon.types?.length || 0);
-          console.log("- First type element:", pokemon.types?.[0]);
-          console.log("- Type of first element:", typeof pokemon.types?.[0]);
-          if (pokemon.types?.[0] && typeof pokemon.types[0] === 'object') {
-            console.log("- First type object keys:", Object.keys(pokemon.types[0]));
-            console.log("- First type object structure:", JSON.stringify(pokemon.types[0]));
-          }
-        }
       });
     } else {
       console.log(`🚨 [RANKING_DISPLAY_LOGIC_DEBUG] No display rankings available`);
@@ -120,37 +86,6 @@ export const useRankingDisplayLogic = ({
     console.log(`🔧 [RANKING_DISPLAY_LOGIC_DEBUG] Milestone load more: ${milestoneDisplayCount} → ${newCount} (max: ${maxItems})`);
     setMilestoneDisplayCount(newCount);
   };
-
-  // ULTRA-DETAILED MILESTONE NAME LOGGING
-  if (isMilestoneView) {
-    console.log(`🏆 [MILESTONE_ULTRA_DEBUG] ===== MILESTONE VIEW RENDERING =====`);
-    console.log(`🏆 [MILESTONE_ULTRA_DEBUG] Total Pokemon in formattedRankings: ${formattedRankings.length}`);
-    
-    if (formattedRankings.length === 0) {
-      console.log(`🚨 [MILESTONE_ULTRA_DEBUG] CRITICAL: formattedRankings is EMPTY!`);
-      console.log(`🚨 [MILESTONE_ULTRA_DEBUG] This is why no Pokemon are showing in the milestone view`);
-      console.log(`🚨 [MILESTONE_ULTRA_DEBUG] Original finalRankings:`, finalRankings);
-    } else {
-      // Log first 5 Pokemon names in detail
-      formattedRankings.slice(0, 5).forEach((pokemon, index) => {
-        console.log(`🏆 [MILESTONE_ULTRA_DEBUG] Pokemon #${index + 1}:`);
-        console.log(`🏆 [MILESTONE_ULTRA_DEBUG]   ID: ${pokemon.id}`);
-        console.log(`🏆 [MILESTONE_ULTRA_DEBUG]   Name: "${pokemon.name}"`);
-        console.log(`🏆 [MILESTONE_ULTRA_DEBUG]   Name type: ${typeof pokemon.name}`);
-        console.log(`🏆 [MILESTONE_ULTRA_DEBUG]   Name length: ${pokemon.name.length}`);
-        console.log(`🏆 [MILESTONE_ULTRA_DEBUG]   Contains hyphen: ${pokemon.name.includes('-')}`);
-        console.log(`🏆 [MILESTONE_ULTRA_DEBUG]   Is formatted: ${!pokemon.name.includes('-') || pokemon.name.includes('(') || pokemon.name.includes('Mega ') || pokemon.name.includes('Alolan ') || pokemon.name.includes('G-Max ')}`);
-        
-        // Special check for G-Max
-        if (pokemon.name.toLowerCase().includes('gmax') || pokemon.name.includes('G-Max')) {
-          console.log(`🎯 [MILESTONE_GMAX_DEBUG] GMAX Pokemon in milestone: "${pokemon.name}"`);
-          console.log(`🎯 [MILESTONE_GMAX_DEBUG]   Contains 'G-Max': ${pokemon.name.includes('G-Max')}`);
-          console.log(`🎯 [MILESTONE_GMAX_DEBUG]   Contains 'gmax': ${pokemon.name.toLowerCase().includes('gmax')}`);
-        }
-      });
-    }
-    console.log(`🏆 [MILESTONE_ULTRA_DEBUG] ===== END MILESTONE DEBUG =====`);
-  }
 
   return {
     formattedRankings,
