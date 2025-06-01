@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/auth/useAuth';
 import { ProfileModalHeader } from './ProfileModalHeader';
@@ -15,15 +15,26 @@ interface ProfileModalProps {
 export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }) => {
   const { user } = useAuth();
   const { saving, saveProfile } = useSimpleProfileSave();
+  const mountedRef = useRef(true);
   
+  // Initialize state with proper default values to prevent React queue issues
   const [selectedAvatar, setSelectedAvatar] = useState<string>('');
-  const [username, setUsername] = useState('');
-  const [displayName, setDisplayName] = useState('');
-  const [avatarModalOpen, setAvatarModalOpen] = useState(false);
+  const [username, setUsername] = useState<string>('');
+  const [displayName, setDisplayName] = useState<string>('');
+  const [avatarModalOpen, setAvatarModalOpen] = useState<boolean>(false);
 
   console.log('🎭 [PROFILE_MODAL_SIMPLE] Render - Open:', open, 'Saving:', saving, 'User:', !!user);
   console.log('🎭 [PROFILE_MODAL_SIMPLE] saveProfile function type:', typeof saveProfile);
   console.log('🎭 [PROFILE_MODAL_SIMPLE] Form state:', { selectedAvatar, username, displayName });
+
+  // Cleanup on unmount
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      console.log('🎭 [PROFILE_MODAL_SIMPLE] Component unmounting');
+      mountedRef.current = false;
+    };
+  }, []);
 
   // Debug effect to track saving state changes in modal
   useEffect(() => {
@@ -32,7 +43,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
 
   // Initialize form with default values when modal opens
   useEffect(() => {
-    if (open && user) {
+    if (open && user && mountedRef.current) {
       console.log('🎭 [PROFILE_MODAL_SIMPLE] Initializing form for user:', user.id);
       
       // Set defaults based on user info
@@ -55,20 +66,26 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
         username: defaultUsername
       });
       
-      setSelectedAvatar('');
-      setUsername(defaultUsername);
-      setDisplayName(defaultDisplayName);
+      // Use functional updates to prevent stale state issues
+      setSelectedAvatar(() => '');
+      setUsername(() => defaultUsername);
+      setDisplayName(() => defaultDisplayName);
     }
     
-    if (!open) {
+    if (!open && mountedRef.current) {
       console.log('🎭 [PROFILE_MODAL_SIMPLE] Modal closed, resetting form');
-      setSelectedAvatar('');
-      setUsername('');
-      setDisplayName('');
+      setSelectedAvatar(() => '');
+      setUsername(() => '');
+      setDisplayName(() => '');
     }
   }, [open, user?.id, user?.email, user?.phone]);
 
   const handleSave = async () => {
+    if (!mountedRef.current) {
+      console.log('🚀 [PROFILE_MODAL_SIMPLE] Component unmounted, skipping save');
+      return;
+    }
+
     console.log('🚀 [PROFILE_MODAL_SIMPLE] ===== HANDLE SAVE CLICKED =====');
     console.log('🚀 [PROFILE_MODAL_SIMPLE] User ID:', user?.id);
     console.log('🚀 [PROFILE_MODAL_SIMPLE] Current saving state:', saving);
@@ -104,7 +121,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
     console.log('🚀 [PROFILE_MODAL_SIMPLE] Save completed, success:', success);
     console.log('🚀 [PROFILE_MODAL_SIMPLE] Current saving state after save:', saving);
 
-    if (success) {
+    if (success && mountedRef.current) {
       console.log('🚀 [PROFILE_MODAL_SIMPLE] Save successful, closing modal');
       onOpenChange(false);
     } else {
@@ -113,14 +130,22 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
   };
 
   const handleAvatarClick = () => {
+    if (!mountedRef.current) return;
     console.log('🎭 [PROFILE_MODAL_SIMPLE] Avatar clicked');
     setAvatarModalOpen(true);
   };
 
   const handleAvatarSelection = (avatarUrl: string) => {
+    if (!mountedRef.current) return;
     console.log('🎭 [PROFILE_MODAL_SIMPLE] Avatar selected:', avatarUrl);
     setSelectedAvatar(avatarUrl);
     setAvatarModalOpen(false);
+  };
+
+  const handleCancel = () => {
+    if (!mountedRef.current) return;
+    console.log('🎭 [PROFILE_MODAL_SIMPLE] Cancel clicked from content');
+    onOpenChange(false);
   };
 
   if (!user?.id) {
@@ -144,10 +169,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
             displayName={displayName}
             setDisplayName={setDisplayName}
             saving={saving}
-            onCancel={() => {
-              console.log('🎭 [PROFILE_MODAL_SIMPLE] Cancel clicked from content');
-              onOpenChange(false);
-            }}
+            onCancel={handleCancel}
             onSave={handleSave}
             onAvatarClick={handleAvatarClick}
           />
