@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -67,6 +68,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
       
       if (user?.id) {
         console.log('🎯 [PROFILE_MODAL_DETAILED] ✅ CONDITIONS MET - calling loadProfile()');
+        console.log('🎯 [PROFILE_MODAL_DETAILED] About to call loadProfile with userId:', user.id);
         loadProfile();
       } else {
         console.log('🎯 [PROFILE_MODAL_DETAILED] ❌ NO USER ID - setting loading to false');
@@ -84,6 +86,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
 
   const loadProfile = async () => {
     console.log('🎯 [PROFILE_MODAL_DETAILED] ===== loadProfile() START =====');
+    console.log('🎯 [PROFILE_MODAL_DETAILED] loadProfile function called');
+    console.log('🎯 [PROFILE_MODAL_DETAILED] Current loading state before check:', loading);
     
     if (!user?.id) {
       console.log('🎯 [PROFILE_MODAL_DETAILED] No user ID in loadProfile, exiting early');
@@ -101,8 +105,14 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
     
     try {
       console.log('🎯 [PROFILE_MODAL_DETAILED] About to call getProfile()...');
+      console.log('🎯 [PROFILE_MODAL_DETAILED] Calling getProfile with userId:', user.id);
+      
       const profileData = await getProfile(user.id);
+      
       console.log('🎯 [PROFILE_MODAL_DETAILED] getProfile() returned:', profileData);
+      console.log('🎯 [PROFILE_MODAL_DETAILED] Profile data type:', typeof profileData);
+      console.log('🎯 [PROFILE_MODAL_DETAILED] Profile data is null:', profileData === null);
+      console.log('🎯 [PROFILE_MODAL_DETAILED] Profile data is undefined:', profileData === undefined);
       
       if (profileData) {
         console.log('🎯 [PROFILE_MODAL_DETAILED] Profile data found, setting state:', {
@@ -111,12 +121,16 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
           display_name: profileData.display_name
         });
         
+        console.log('🎯 [PROFILE_MODAL_DETAILED] Setting profile state...');
         setProfile(profileData);
+        console.log('🎯 [PROFILE_MODAL_DETAILED] Setting avatar state...');
         setSelectedAvatar(profileData.avatar_url || '');
+        console.log('🎯 [PROFILE_MODAL_DETAILED] Setting username state...');
         setUsername(profileData.username || '');
+        console.log('🎯 [PROFILE_MODAL_DETAILED] Setting display name state...');
         setDisplayName(profileData.display_name || '');
         
-        console.log('🎯 [PROFILE_MODAL_DETAILED] State set successfully');
+        console.log('🎯 [PROFILE_MODAL_DETAILED] All profile state set successfully');
       } else {
         console.log('🎯 [PROFILE_MODAL_DETAILED] No profile found, generating defaults');
         
@@ -128,6 +142,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
           defaultUsername
         });
         
+        console.log('🎯 [PROFILE_MODAL_DETAILED] Setting default state values...');
         setSelectedAvatar('');
         setUsername(defaultUsername);
         setDisplayName(defaultDisplayName);
@@ -154,7 +169,9 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
       });
     } finally {
       console.log('🎯 [PROFILE_MODAL_DETAILED] Setting loading to false in finally block');
+      console.log('🎯 [PROFILE_MODAL_DETAILED] Current loading state before setting to false:', loading);
       setLoading(false);
+      console.log('🎯 [PROFILE_MODAL_DETAILED] Loading should now be false');
       console.log('🎯 [PROFILE_MODAL_DETAILED] ===== loadProfile() END =====');
     }
   };

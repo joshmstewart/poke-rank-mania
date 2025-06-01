@@ -21,6 +21,7 @@ export const getProfile = async (userId: string): Promise<Profile | null> => {
     console.log('🎯 [PROFILE_SERVICE_DETAILED] About to query Supabase profiles table...');
     console.log('🎯 [PROFILE_SERVICE_DETAILED] Query: SELECT * FROM profiles WHERE id =', userId);
     
+    console.log('🎯 [PROFILE_SERVICE_DETAILED] Calling supabase.from("profiles").select("*").eq("id", userId).maybeSingle()');
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
@@ -28,8 +29,12 @@ export const getProfile = async (userId: string): Promise<Profile | null> => {
       .maybeSingle();
 
     console.log('🎯 [PROFILE_SERVICE_DETAILED] Supabase query completed');
-    console.log('🎯 [PROFILE_SERVICE_DETAILED] Raw data received:', data);
-    console.log('🎯 [PROFILE_SERVICE_DETAILED] Error received:', error);
+    console.log('🎯 [PROFILE_SERVICE_DETAILED] Raw response data:', data);
+    console.log('🎯 [PROFILE_SERVICE_DETAILED] Raw response error:', error);
+    console.log('🎯 [PROFILE_SERVICE_DETAILED] Data type:', typeof data);
+    console.log('🎯 [PROFILE_SERVICE_DETAILED] Data is null:', data === null);
+    console.log('🎯 [PROFILE_SERVICE_DETAILED] Data is undefined:', data === undefined);
+    console.log('🎯 [PROFILE_SERVICE_DETAILED] Error exists:', !!error);
 
     if (error) {
       console.error('🎯 [PROFILE_SERVICE_DETAILED] Supabase error details:', {
@@ -38,11 +43,14 @@ export const getProfile = async (userId: string): Promise<Profile | null> => {
         hint: error.hint,
         code: error.code
       });
+      console.log('🎯 [PROFILE_SERVICE_DETAILED] Returning null due to error');
+      console.log('🎯 [PROFILE_SERVICE_DETAILED] ===== getProfile() END (with error) =====');
       return null;
     }
 
-    console.log('🎯 [PROFILE_SERVICE_DETAILED] Returning data:', data);
-    console.log('🎯 [PROFILE_SERVICE_DETAILED] ===== getProfile() END =====');
+    console.log('🎯 [PROFILE_SERVICE_DETAILED] No error, returning data:', data);
+    console.log('🎯 [PROFILE_SERVICE_DETAILED] Data will be returned as:', data);
+    console.log('🎯 [PROFILE_SERVICE_DETAILED] ===== getProfile() END (success) =====');
     return data;
   } catch (error) {
     console.error('🎯 [PROFILE_SERVICE_DETAILED] Exception in getProfile:', error);
@@ -54,6 +62,7 @@ export const getProfile = async (userId: string): Promise<Profile | null> => {
       console.error('🎯 [PROFILE_SERVICE_DETAILED] Exception stack:', error.stack);
     }
     
+    console.log('🎯 [PROFILE_SERVICE_DETAILED] Returning null due to exception');
     console.log('🎯 [PROFILE_SERVICE_DETAILED] ===== getProfile() END (with exception) =====');
     return null;
   }
