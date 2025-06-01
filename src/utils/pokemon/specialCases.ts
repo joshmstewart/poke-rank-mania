@@ -49,6 +49,63 @@ export const handleSpecialCases = (name: string): string | null => {
     return "Ash's Greninja";
   }
   
+  // SPECIAL CASE: Handle Pikachu costumes with parentheses - move variant to front
+  if (lowerName.includes('pikachu') && name.includes('(') && name.includes(')')) {
+    const parenthesesMatch = name.match(/^([^(]+)\s*\(([^)]+)\)$/i);
+    if (parenthesesMatch) {
+      const baseName = parenthesesMatch[1].trim();
+      const variant = parenthesesMatch[2].trim();
+      
+      // Special formatting for specific costume variants
+      if (variant.toLowerCase().includes('pop star')) {
+        return "Pop Star Pikachu";
+      }
+      if (variant.toLowerCase().includes('rock star')) {
+        return "Rock Star Pikachu";
+      }
+      if (variant.toLowerCase().includes('belle')) {
+        return "Belle Pikachu";
+      }
+      if (variant.toLowerCase().includes('phd')) {
+        return "Ph.D. Pikachu";
+      }
+      if (variant.toLowerCase().includes('libre')) {
+        return "Libre Pikachu";
+      }
+      if (variant.toLowerCase().includes('original cap')) {
+        return "Original Cap Pikachu";
+      }
+      if (variant.toLowerCase().includes('hoenn cap')) {
+        return "Hoenn Cap Pikachu";
+      }
+      if (variant.toLowerCase().includes('sinnoh cap')) {
+        return "Sinnoh Cap Pikachu";
+      }
+      if (variant.toLowerCase().includes('unova cap')) {
+        return "Unova Cap Pikachu";
+      }
+      if (variant.toLowerCase().includes('kalos cap')) {
+        return "Kalos Cap Pikachu";
+      }
+      if (variant.toLowerCase().includes('alola cap')) {
+        return "Alola Cap Pikachu";
+      }
+      if (variant.toLowerCase().includes('partner cap')) {
+        return "Partner Cap Pikachu";
+      }
+      if (variant.toLowerCase().includes('world cap')) {
+        return "World Cap Pikachu";
+      }
+      
+      // Generic case: move variant to front
+      const formattedBase = capitalizeWords(baseName);
+      const formattedVariant = capitalizeWords(variant);
+      const result = `${formattedVariant} ${formattedBase}`;
+      console.log(`🔧 [FORMAT_DEBUG] Pikachu costume variant: "${name}" -> "${result}"`);
+      return result;
+    }
+  }
+  
   // SPECIAL CASE: Handle Maushold family variants
   if (lowerName.includes('maushold') && lowerName.includes('family')) {
     console.log(`🔧 [FORMAT_DEBUG] Processing Maushold family variant: "${name}"`);

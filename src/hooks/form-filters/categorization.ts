@@ -84,7 +84,7 @@ export const isSizeVariantPokemon = (pokemon: Pokemon): boolean => {
 export const isSpecialKoraidonMiraidonMode = (pokemon: Pokemon): boolean => {
   const name = pokemon.name.toLowerCase();
   return (name.includes('koraidon') || name.includes('miraidon')) && 
-         (name.includes('apex') || name.includes('limited') || name.includes('build') || name.includes('mode'));
+         (name.includes('limited') || name.includes('build') || name.includes('mode'));
 };
 
 // Main categorization function
@@ -110,9 +110,13 @@ export const getPokemonFormCategory = (pokemon: Pokemon): PokemonFormType | null
            name.includes('♂') || name.includes('♀')) {
     category = 'gender';
   }
-  // Costume Pokemon (caps, costumes, etc.)
+  // Costume Pokemon (caps, costumes, etc.) - ENHANCED to catch Pikachu costumes
   else if (name.includes('cap') || name.includes('costume') || name.includes('hat') || name.includes('libre') ||
-           name.includes('phd') || name.includes('pop-star') || name.includes('rock-star') || name.includes('belle')) {
+           name.includes('phd') || name.includes('pop-star') || name.includes('rock-star') || name.includes('belle') ||
+           name.includes('pop star') || name.includes('rock star') || 
+           (name.includes('pikachu') && (name.includes('original') || name.includes('hoenn') || name.includes('sinnoh') || 
+            name.includes('unova') || name.includes('kalos') || name.includes('alola') || name.includes('partner') ||
+            name.includes('world') || name.includes('ash')))) {
     category = 'costumes';
   }
   // Colors and flavors (specific color/flavor variants)
