@@ -16,17 +16,37 @@ export const useDataLoader = (
   const { getPokemonData } = usePokemonData();
 
   const loadData = useCallback(async () => {
-    console.log(`🚀 [DATA_LOADER_DISABLED] ===== DATA LOADER PATH DISABLED =====`);
-    console.log(`🚀 [DATA_LOADER_DISABLED] This path is now redundant since PokemonContext is the authoritative source`);
-    console.log(`🚀 [DATA_LOADER_DISABLED] Parameters were: gen=${selectedGeneration}, page=${currentPage}, size=${loadSize}, type=${loadingType}`);
+    console.log(`🔄 [DATA_LOADER_ACTIVE_FIX] ===== RE-ENABLING DATA LOADER FOR REGRESSION FIX =====`);
+    console.log(`🔄 [DATA_LOADER_ACTIVE_FIX] Parameters: gen=${selectedGeneration}, page=${currentPage}, size=${loadSize}, type=${loadingType}`);
     
-    // Simply set loading to false and don't attempt to load data
-    // The PokemonContext and usePokemonData will handle the actual data loading
-    setIsLoading(false);
+    setIsLoading(true);
     
-    console.log(`🚀 [DATA_LOADER_DISABLED] Setting isLoading to false, data will come from PokemonContext`);
-    console.log(`🚀 [DATA_LOADER_DISABLED] ===== DATA LOADER PATH DISABLED =====`);
-  }, [selectedGeneration, currentPage, loadSize, loadingType, setIsLoading]);
+    try {
+      console.log(`🔄 [DATA_LOADER_ACTIVE_FIX] Calling getPokemonData...`);
+      const result = await getPokemonData(selectedGeneration, currentPage, loadSize, loadingType);
+      
+      console.log(`🔄 [DATA_LOADER_ACTIVE_FIX] Result received:`, {
+        availableCount: result.availablePokemon.length,
+        rankedCount: result.rankedPokemon.length,
+        totalPages: result.totalPages
+      });
+      
+      // CRITICAL: Actually set the state with the received data
+      setAvailablePokemon(result.availablePokemon);
+      setRankedPokemon(result.rankedPokemon);
+      setTotalPages(result.totalPages);
+      
+      console.log(`🔄 [DATA_LOADER_ACTIVE_FIX] ✅ State updated with available: ${result.availablePokemon.length}, ranked: ${result.rankedPokemon.length}`);
+      
+    } catch (error) {
+      console.error(`🔄 [DATA_LOADER_ACTIVE_FIX] ❌ Error loading data:`, error);
+      // Don't clear state on error, maintain current state
+    } finally {
+      setIsLoading(false);
+    }
+    
+    console.log(`🔄 [DATA_LOADER_ACTIVE_FIX] ===== DATA LOADER COMPLETE =====`);
+  }, [selectedGeneration, currentPage, loadSize, loadingType, getPokemonData, setIsLoading, setAvailablePokemon, setRankedPokemon, setTotalPages]);
 
   return { loadData };
 };

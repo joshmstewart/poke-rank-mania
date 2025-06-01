@@ -46,7 +46,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
       sessionId: getOrCreateSessionId(),
       
       comprehensiveEnvironmentalDebug: () => {
-        console.log(`🔍🔍🔍 [ENVIRONMENTAL_DEBUG_COMPREHENSIVE] ===== FULL ENVIRONMENTAL AUDIT =====`);
+        console.log(`🔍🔍🔍 [ENVIRONMENTAL_DEBUG_ULTRA_DETAILED] ===== COMPREHENSIVE TRUESKILL INVESTIGATION =====`);
         
         // Environment detection
         const environment = {
@@ -58,99 +58,129 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           href: window.location.href
         };
         
-        console.log(`🔍 [ENV_DEBUG] Environment Analysis:`, environment);
+        console.log(`🔍 [ENV_DEBUG_ULTRA] Environment Analysis:`, environment);
         
-        // Comprehensive localStorage scan for TrueSkill-related keys
+        // ULTRA COMPREHENSIVE localStorage scan
         const allLocalStorageKeys = Object.keys(localStorage);
         const trueskillRelatedKeys = allLocalStorageKeys.filter(key => 
           key.toLowerCase().includes('trueskill') || 
           key.toLowerCase().includes('rating') || 
           key.toLowerCase().includes('battle') ||
-          key.toLowerCase().includes('pokemon')
+          key.toLowerCase().includes('pokemon') ||
+          key.toLowerCase().includes('rank')
         );
         
-        console.log(`🔍 [ENV_DEBUG] All localStorage keys (${allLocalStorageKeys.length}):`, allLocalStorageKeys);
-        console.log(`🔍 [ENV_DEBUG] TrueSkill-related keys (${trueskillRelatedKeys.length}):`, trueskillRelatedKeys);
+        console.log(`🔍 [ENV_DEBUG_ULTRA] All localStorage keys (${allLocalStorageKeys.length}):`, allLocalStorageKeys);
+        console.log(`🔍 [ENV_DEBUG_ULTRA] TrueSkill-related keys (${trueskillRelatedKeys.length}):`, trueskillRelatedKeys);
         
-        // Detailed analysis of each TrueSkill-related key
-        trueskillRelatedKeys.forEach(key => {
+        // CRITICAL: Detailed analysis of EACH TrueSkill-related key
+        console.log(`🔍🔍🔍 [DETAILED_KEY_ANALYSIS] ===== ANALYZING EACH TRUESKILL KEY =====`);
+        
+        trueskillRelatedKeys.forEach((key, index) => {
           try {
             const value = localStorage.getItem(key);
             if (value) {
-              const parsed = JSON.parse(value);
-              console.log(`🔍 [ENV_DEBUG] Key "${key}":`, {
-                size: value.length,
-                type: typeof parsed,
-                isArray: Array.isArray(parsed),
-                keys: typeof parsed === 'object' ? Object.keys(parsed) : null,
-                sampleData: key.includes('trueskill') ? parsed : 'Non-TrueSkill data (truncated)'
-              });
+              console.log(`🔍 [KEY_${index + 1}] KEY NAME: "${key}"`);
+              console.log(`🔍 [KEY_${index + 1}] Raw size: ${value.length} characters`);
               
-              // Special handling for trueskill-ratings-store
-              if (key === 'trueskill-ratings-store' && parsed.state?.ratings) {
-                const ratings = parsed.state.ratings;
-                const ratingIds = Object.keys(ratings);
-                console.log(`🔍 [ENV_DEBUG] trueskill-ratings-store DETAILED:`, {
-                  ratingsCount: ratingIds.length,
-                  sampleIds: ratingIds.slice(0, 10),
-                  version: parsed.version,
-                  stateKeys: Object.keys(parsed.state || {})
-                });
+              try {
+                const parsed = JSON.parse(value);
+                console.log(`🔍 [KEY_${index + 1}] Parsed successfully`);
+                console.log(`🔍 [KEY_${index + 1}] Type: ${typeof parsed}`);
+                console.log(`🔍 [KEY_${index + 1}] Is Array: ${Array.isArray(parsed)}`);
+                
+                if (typeof parsed === 'object' && parsed !== null) {
+                  const keys = Object.keys(parsed);
+                  console.log(`🔍 [KEY_${index + 1}] Object keys (${keys.length}):`, keys);
+                  
+                  // Special handling for different data structures
+                  if (parsed.state?.ratings) {
+                    const ratings = parsed.state.ratings;
+                    const ratingIds = Object.keys(ratings);
+                    console.log(`🔍 [KEY_${index + 1}] ⭐ ZUSTAND RATING STORE FOUND!`);
+                    console.log(`🔍 [KEY_${index + 1}] ⭐ Ratings count: ${ratingIds.length}`);
+                    console.log(`🔍 [KEY_${index + 1}] ⭐ Sample IDs: ${ratingIds.slice(0, 10).join(', ')}${ratingIds.length > 10 ? '...' : ''}`);
+                    console.log(`🔍 [KEY_${index + 1}] ⭐ Version: ${parsed.version || 'unknown'}`);
+                    console.log(`🔍 [KEY_${index + 1}] ⭐ State keys: ${Object.keys(parsed.state || {}).join(', ')}`);
+                    
+                    if (ratingIds.length > 50) {
+                      console.log(`🔍 [KEY_${index + 1}] 🚨🚨🚨 LARGE DATASET FOUND! This might be the missing data!`);
+                    }
+                  } else if (Array.isArray(parsed) && parsed.length > 0 && parsed[0]?.mu) {
+                    console.log(`🔍 [KEY_${index + 1}] ⭐ ARRAY OF RATINGS FOUND!`);
+                    console.log(`🔍 [KEY_${index + 1}] ⭐ Array length: ${parsed.length}`);
+                    console.log(`🔍 [KEY_${index + 1}] ⭐ Sample structure:`, Object.keys(parsed[0] || {}));
+                    
+                    if (parsed.length > 50) {
+                      console.log(`🔍 [KEY_${index + 1}] 🚨🚨🚨 LARGE ARRAY FOUND! This might be the missing data!`);
+                    }
+                  } else if (keys.some(k => !isNaN(Number(k)))) {
+                    // Direct ratings object (keys are Pokemon IDs)
+                    const numericKeys = keys.filter(k => !isNaN(Number(k)));
+                    console.log(`🔍 [KEY_${index + 1}] ⭐ DIRECT RATINGS OBJECT FOUND!`);
+                    console.log(`🔍 [KEY_${index + 1}] ⭐ Numeric keys (Pokemon IDs): ${numericKeys.length}`);
+                    console.log(`🔍 [KEY_${index + 1}] ⭐ Sample IDs: ${numericKeys.slice(0, 10).join(', ')}${numericKeys.length > 10 ? '...' : ''}`);
+                    
+                    if (numericKeys.length > 50) {
+                      console.log(`🔍 [KEY_${index + 1}] 🚨🚨🚨 LARGE DIRECT RATINGS FOUND! This might be the missing data!`);
+                    }
+                  }
+                  
+                  // Look for nested Pokemon/rating data
+                  keys.forEach(subKey => {
+                    if (typeof parsed[subKey] === 'object' && parsed[subKey] !== null) {
+                      const subData = parsed[subKey];
+                      if (Array.isArray(subData) && subData.length > 50) {
+                        console.log(`🔍 [KEY_${index + 1}] 🚨 LARGE NESTED ARRAY in "${subKey}": ${subData.length} items`);
+                      } else if (typeof subData === 'object' && Object.keys(subData).length > 50) {
+                        console.log(`🔍 [KEY_${index + 1}] 🚨 LARGE NESTED OBJECT in "${subKey}": ${Object.keys(subData).length} keys`);
+                      }
+                    }
+                  });
+                }
+                
+              } catch (parseError) {
+                console.log(`🔍 [KEY_${index + 1}] ❌ Parse error:`, parseError.message);
+                console.log(`🔍 [KEY_${index + 1}] Raw value preview:`, value.substring(0, 200) + '...');
               }
-              
-              // Look for other potential rating stores
-              if (parsed.state?.ratings || (Array.isArray(parsed) && parsed.length > 0 && parsed[0]?.mu)) {
-                console.log(`🔍 [ENV_DEBUG] POTENTIAL RATING SOURCE "${key}":`, {
-                  ratingsCount: parsed.state?.ratings ? Object.keys(parsed.state.ratings).length : parsed.length,
-                  structure: parsed.state ? 'Zustand-style' : 'Array-style'
-                });
-              }
+            } else {
+              console.log(`🔍 [KEY_${index + 1}] KEY NAME: "${key}" - NULL/EMPTY VALUE`);
             }
           } catch (e) {
-            console.log(`🔍 [ENV_DEBUG] Failed to parse key "${key}":`, e);
+            console.log(`🔍 [KEY_${index + 1}] ❌ Error analyzing key "${key}":`, e);
           }
+          
+          console.log(`🔍 [KEY_${index + 1}] ===== END KEY ANALYSIS =====`);
         });
         
-        // Check current store state
+        // Check current store state vs localStorage
         const currentState = get();
-        console.log(`🔍 [ENV_DEBUG] Current Store State:`, {
-          ratingsCount: Object.keys(currentState.ratings).length,
-          sessionId: currentState.sessionId.substring(0, 8) + '...',
-          lastSyncedAt: currentState.lastSyncedAt,
-          isLoading: currentState.isLoading
-        });
+        console.log(`🔍 [ENV_DEBUG_ULTRA] Current Store vs localStorage Comparison:`);
+        console.log(`🔍 [ENV_DEBUG_ULTRA] - Store ratings count: ${Object.keys(currentState.ratings).length}`);
+        console.log(`🔍 [ENV_DEBUG_ULTRA] - Store session ID: ${currentState.sessionId.substring(0, 8)}...`);
+        console.log(`🔍 [ENV_DEBUG_ULTRA] - Store last synced: ${currentState.lastSyncedAt}`);
         
-        // Check for cloud data
-        setTimeout(async () => {
+        // Special focus on the main trueskill store
+        const mainStoreData = localStorage.getItem('trueskill-ratings-store');
+        if (mainStoreData) {
           try {
-            const { data: { user } } = await supabase.auth.getUser();
-            console.log(`🔍 [ENV_DEBUG] Auth State:`, {
-              isAuthenticated: !!user,
-              userId: user?.id?.substring(0, 8) + '...' || 'None'
-            });
+            const parsed = JSON.parse(mainStoreData);
+            const storeRatings = parsed.state?.ratings || {};
+            const storeRatingCount = Object.keys(storeRatings).length;
+            console.log(`🔍 [ENV_DEBUG_ULTRA] Main trueskill-ratings-store analysis:`);
+            console.log(`🔍 [ENV_DEBUG_ULTRA] - Main store rating count: ${storeRatingCount}`);
+            console.log(`🔍 [ENV_DEBUG_ULTRA] - Main store version: ${parsed.version}`);
+            console.log(`🔍 [ENV_DEBUG_ULTRA] - Main store state keys: ${Object.keys(parsed.state || {}).join(', ')}`);
             
-            // Try to check cloud data
-            if (user?.id) {
-              const { data, error } = await supabase
-                .from('trueskill_sessions')
-                .select('*')
-                .eq('user_id', user.id);
-              
-              console.log(`🔍 [ENV_DEBUG] Cloud TrueSkill Sessions for User:`, {
-                count: data?.length || 0,
-                error: error?.message || null,
-                data: data?.map(d => ({
-                  ratingsCount: Object.keys(d.ratings_data || {}).length,
-                  lastUpdated: d.last_updated
-                }))
-              });
+            if (storeRatingCount !== Object.keys(currentState.ratings).length) {
+              console.log(`🔍 [ENV_DEBUG_ULTRA] 🚨 MISMATCH: Store has ${Object.keys(currentState.ratings).length}, localStorage has ${storeRatingCount}`);
             }
           } catch (e) {
-            console.log(`🔍 [ENV_DEBUG] Cloud check failed:`, e);
+            console.log(`🔍 [ENV_DEBUG_ULTRA] ❌ Error parsing main store:`, e);
           }
-        }, 100);
+        }
         
-        console.log(`🔍🔍🔍 [ENVIRONMENTAL_DEBUG_COMPREHENSIVE] ===== END FULL AUDIT =====`);
+        console.log(`🔍🔍🔍 [ENVIRONMENTAL_DEBUG_ULTRA_DETAILED] ===== END COMPREHENSIVE INVESTIGATION =====`);
       },
       
       debugStore: () => {
