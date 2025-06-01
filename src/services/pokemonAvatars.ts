@@ -53,7 +53,7 @@ export const getPokemonAvatars = async (): Promise<string[]> => {
     722, 725, 728, // Starters
     785, 786, 787, 788, // Tapu guardians
     789, 790, 791, 792, // Cosmog evolution line
-    800, 801, 802, 807, 808, // Necrozma, Magearna, Marshadow, Zeraora (mythical)
+    800, 801, 802, 807, 808, 809, // Necrozma, Magearna, Marshadow, Zeraora, Melmetal (mythical)
     
     // Generation 8
     810, 813, 816, // Starters
