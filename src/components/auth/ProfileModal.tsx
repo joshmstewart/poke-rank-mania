@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/auth/useAuth';
 import { toast } from '@/hooks/use-toast';
-import { updateProfile } from '@/services/profile';
+import { updateProfile } from '@/services/profile/updateProfile';
 import { ProfileModalHeader } from './ProfileModalHeader';
 import { ProfileModalContent } from './ProfileModalContent';
 import { AvatarSelectionModal } from './AvatarSelectionModal';
@@ -62,7 +62,17 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
   }, [open, user?.id, user?.email, user?.phone, getProfileFromCache, prefetchProfile]);
 
   const handleSave = async () => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      console.log('No user ID available for save');
+      return;
+    }
+
+    console.log('Starting save with data:', {
+      userId: user.id,
+      selectedAvatar,
+      username: username.trim(),
+      displayName: displayName.trim()
+    });
 
     setSaving(true);
     
@@ -72,6 +82,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
         username: username.trim(),
         display_name: displayName.trim(),
       });
+
+      console.log('Update result:', success);
 
       if (success) {
         toast({
@@ -99,11 +111,12 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
   };
 
   const handleAvatarClick = () => {
+    console.log('Avatar clicked, opening modal');
     setAvatarModalOpen(true);
   };
 
   const handleAvatarSelection = (avatarUrl: string) => {
-    console.log('Avatar selected:', avatarUrl);
+    console.log('Avatar selected in ProfileModal:', avatarUrl);
     setSelectedAvatar(avatarUrl);
     setAvatarModalOpen(false);
   };
