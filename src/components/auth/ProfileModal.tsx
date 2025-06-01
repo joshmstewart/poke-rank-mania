@@ -28,57 +28,106 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  console.log('🎯 [PROFILE_MODAL] Render - Modal open:', open, 'User ID:', user?.id, 'Loading:', loading);
+  console.log('🎯 [PROFILE_MODAL_DETAILED] ===========================================');
+  console.log('🎯 [PROFILE_MODAL_DETAILED] Component render:', {
+    modalOpen: open,
+    userId: user?.id,
+    userPhone: user?.phone,
+    userEmail: user?.email,
+    loading,
+    saving,
+    profileExists: !!profile,
+    displayName,
+    username,
+    selectedAvatar
+  });
 
   useEffect(() => {
+    console.log('🎯 [PROFILE_MODAL_DETAILED] useEffect triggered with:', {
+      open,
+      userId: user?.id,
+      hasUser: !!user
+    });
+
     if (open && user?.id) {
-      console.log('🎯 [PROFILE_MODAL] Effect triggered - Loading profile for user:', user.id);
+      console.log('🎯 [PROFILE_MODAL_DETAILED] Conditions met, calling loadProfile()');
       loadProfile();
     } else if (!open) {
-      // Reset state when modal closes
+      console.log('🎯 [PROFILE_MODAL_DETAILED] Modal closed, resetting state');
       setLoading(true);
       setProfile(null);
       setSelectedAvatar('');
       setUsername('');
       setDisplayName('');
+    } else {
+      console.log('🎯 [PROFILE_MODAL_DETAILED] Conditions NOT met:', {
+        modalOpen: open,
+        hasUserId: !!user?.id,
+        userIdValue: user?.id
+      });
     }
   }, [open, user?.id]);
 
   const loadProfile = async () => {
+    console.log('🎯 [PROFILE_MODAL_DETAILED] ===== loadProfile() START =====');
+    
     if (!user?.id) {
-      console.log('🎯 [PROFILE_MODAL] No user ID available');
+      console.log('🎯 [PROFILE_MODAL_DETAILED] No user ID, exiting early');
       setLoading(false);
       return;
     }
     
-    console.log('🎯 [PROFILE_MODAL] Starting profile load for user ID:', user.id);
+    console.log('🎯 [PROFILE_MODAL_DETAILED] Starting profile load for user:', user.id);
+    console.log('🎯 [PROFILE_MODAL_DETAILED] User object details:', {
+      id: user.id,
+      email: user.email,
+      phone: user.phone,
+      fullUserObject: user
+    });
     
     try {
+      console.log('🎯 [PROFILE_MODAL_DETAILED] About to call getProfile()...');
       const profileData = await getProfile(user.id);
-      console.log('🎯 [PROFILE_MODAL] Profile fetch completed. Data:', profileData);
+      console.log('🎯 [PROFILE_MODAL_DETAILED] getProfile() returned:', profileData);
       
       if (profileData) {
-        console.log('🎯 [PROFILE_MODAL] Setting profile data:', profileData);
+        console.log('🎯 [PROFILE_MODAL_DETAILED] Profile data found, setting state:', {
+          avatar_url: profileData.avatar_url,
+          username: profileData.username,
+          display_name: profileData.display_name
+        });
+        
         setProfile(profileData);
         setSelectedAvatar(profileData.avatar_url || '');
         setUsername(profileData.username || '');
         setDisplayName(profileData.display_name || '');
+        
+        console.log('🎯 [PROFILE_MODAL_DETAILED] State set successfully');
       } else {
-        console.log('🎯 [PROFILE_MODAL] No profile found, setting defaults');
-        // Set default values
+        console.log('🎯 [PROFILE_MODAL_DETAILED] No profile found, generating defaults');
+        
         const defaultDisplayName = user.phone ? `User ${user.phone.slice(-4)}` : user.email ? user.email.split('@')[0] : 'New User';
         const defaultUsername = user.phone ? `user_${user.phone.slice(-4)}` : user.email ? user.email.split('@')[0] : 'new_user';
+        
+        console.log('🎯 [PROFILE_MODAL_DETAILED] Generated defaults:', {
+          defaultDisplayName,
+          defaultUsername
+        });
         
         setSelectedAvatar('');
         setUsername(defaultUsername);
         setDisplayName(defaultDisplayName);
+        
+        console.log('🎯 [PROFILE_MODAL_DETAILED] Default state set successfully');
       }
     } catch (error) {
-      console.error('🎯 [PROFILE_MODAL] Error in loadProfile:', error);
+      console.error('🎯 [PROFILE_MODAL_DETAILED] Error in loadProfile:', error);
+      console.error('🎯 [PROFILE_MODAL_DETAILED] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
       
-      // Set defaults even on error
       const defaultDisplayName = user.phone ? `User ${user.phone.slice(-4)}` : user.email ? user.email.split('@')[0] : 'New User';
       const defaultUsername = user.phone ? `user_${user.phone.slice(-4)}` : user.email ? user.email.split('@')[0] : 'new_user';
+      
+      console.log('🎯 [PROFILE_MODAL_DETAILED] Setting fallback defaults due to error');
       
       setSelectedAvatar('');
       setUsername(defaultUsername);
@@ -90,15 +139,26 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
         variant: 'destructive',
       });
     } finally {
-      console.log('🎯 [PROFILE_MODAL] Setting loading to false');
+      console.log('🎯 [PROFILE_MODAL_DETAILED] Setting loading to false in finally block');
       setLoading(false);
+      console.log('🎯 [PROFILE_MODAL_DETAILED] ===== loadProfile() END =====');
     }
   };
 
   const handleSave = async () => {
-    if (!user?.id) return;
+    console.log('🎯 [PROFILE_MODAL_DETAILED] handleSave() called');
+    
+    if (!user?.id) {
+      console.log('🎯 [PROFILE_MODAL_DETAILED] No user ID for save operation');
+      return;
+    }
 
     setSaving(true);
+    console.log('🎯 [PROFILE_MODAL_DETAILED] Saving profile with data:', {
+      avatar_url: selectedAvatar,
+      username: username.trim(),
+      display_name: displayName.trim()
+    });
     
     try {
       const success = await updateProfile(user.id, {
@@ -106,6 +166,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
         username: username.trim(),
         display_name: displayName.trim(),
       });
+
+      console.log('🎯 [PROFILE_MODAL_DETAILED] Update result:', success);
 
       if (success) {
         toast({
@@ -121,7 +183,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
         });
       }
     } catch (error) {
-      console.error('🎯 [PROFILE_MODAL] Error saving profile:', error);
+      console.error('🎯 [PROFILE_MODAL_DETAILED] Error saving profile:', error);
       toast({
         title: 'Save Error',
         description: 'An error occurred while saving your profile.',
@@ -133,11 +195,11 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
   };
 
   if (!user?.id) {
-    console.log('🎯 [PROFILE_MODAL] No user, not rendering modal');
+    console.log('🎯 [PROFILE_MODAL_DETAILED] No user, returning null');
     return null;
   }
 
-  console.log('🎯 [PROFILE_MODAL] About to render - Loading:', loading, 'Display Name:', displayName, 'Username:', username);
+  console.log('🎯 [PROFILE_MODAL_DETAILED] About to render modal with loading state:', loading);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -156,7 +218,6 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
           </div>
         ) : (
           <div className="space-y-6">
-            {/* Current Avatar Preview */}
             <div className="flex items-center gap-4">
               <Avatar className="h-16 w-16">
                 <AvatarImage src={selectedAvatar} alt="Selected avatar" />
@@ -172,7 +233,6 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
               </div>
             </div>
 
-            {/* Profile Information */}
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="display-name">Display Name</Label>
@@ -194,7 +254,6 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
               </div>
             </div>
 
-            {/* Avatar URL Input */}
             <div className="space-y-2">
               <Label htmlFor="avatar-url">Avatar URL (Optional)</Label>
               <Input
@@ -208,7 +267,6 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
               </p>
             </div>
 
-            {/* Action Buttons */}
             <div className="flex justify-end gap-2 pt-4">
               <Button variant="outline" onClick={() => onOpenChange(false)}>
                 Cancel

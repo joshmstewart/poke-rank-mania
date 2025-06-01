@@ -12,8 +12,14 @@ export interface Profile {
 }
 
 export const getProfile = async (userId: string): Promise<Profile | null> => {
+  console.log('🎯 [PROFILE_SERVICE_DETAILED] ===== getProfile() START =====');
+  console.log('🎯 [PROFILE_SERVICE_DETAILED] Input userId:', userId);
+  console.log('🎯 [PROFILE_SERVICE_DETAILED] userId type:', typeof userId);
+  console.log('🎯 [PROFILE_SERVICE_DETAILED] userId length:', userId?.length);
+  
   try {
-    console.log('🎯 [PROFILE_SERVICE] Fetching profile for user ID:', userId);
+    console.log('🎯 [PROFILE_SERVICE_DETAILED] About to query Supabase profiles table...');
+    console.log('🎯 [PROFILE_SERVICE_DETAILED] Query: SELECT * FROM profiles WHERE id =', userId);
     
     const { data, error } = await supabase
       .from('profiles')
@@ -21,40 +27,75 @@ export const getProfile = async (userId: string): Promise<Profile | null> => {
       .eq('id', userId)
       .maybeSingle();
 
+    console.log('🎯 [PROFILE_SERVICE_DETAILED] Supabase query completed');
+    console.log('🎯 [PROFILE_SERVICE_DETAILED] Raw data received:', data);
+    console.log('🎯 [PROFILE_SERVICE_DETAILED] Error received:', error);
+
     if (error) {
-      console.error('🎯 [PROFILE_SERVICE] Error fetching profile:', error);
+      console.error('🎯 [PROFILE_SERVICE_DETAILED] Supabase error details:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      });
       return null;
     }
 
-    console.log('🎯 [PROFILE_SERVICE] Profile fetch result:', data);
+    console.log('🎯 [PROFILE_SERVICE_DETAILED] Returning data:', data);
+    console.log('🎯 [PROFILE_SERVICE_DETAILED] ===== getProfile() END =====');
     return data;
   } catch (error) {
-    console.error('🎯 [PROFILE_SERVICE] Exception fetching profile:', error);
+    console.error('🎯 [PROFILE_SERVICE_DETAILED] Exception in getProfile:', error);
+    console.error('🎯 [PROFILE_SERVICE_DETAILED] Exception type:', typeof error);
+    console.error('🎯 [PROFILE_SERVICE_DETAILED] Exception constructor:', error?.constructor?.name);
+    
+    if (error instanceof Error) {
+      console.error('🎯 [PROFILE_SERVICE_DETAILED] Exception message:', error.message);
+      console.error('🎯 [PROFILE_SERVICE_DETAILED] Exception stack:', error.stack);
+    }
+    
+    console.log('🎯 [PROFILE_SERVICE_DETAILED] ===== getProfile() END (with exception) =====');
     return null;
   }
 };
 
 export const updateProfile = async (userId: string, updates: Partial<Profile>): Promise<boolean> => {
+  console.log('🎯 [PROFILE_SERVICE_DETAILED] ===== updateProfile() START =====');
+  console.log('🎯 [PROFILE_SERVICE_DETAILED] Input userId:', userId);
+  console.log('🎯 [PROFILE_SERVICE_DETAILED] Updates:', updates);
+  
   try {
-    console.log('🎯 [PROFILE_SERVICE] Updating profile for user ID:', userId, 'with:', updates);
+    const updateData = {
+      ...updates,
+      updated_at: new Date().toISOString(),
+    };
+    
+    console.log('🎯 [PROFILE_SERVICE_DETAILED] Final update data:', updateData);
+    console.log('🎯 [PROFILE_SERVICE_DETAILED] About to execute Supabase update...');
     
     const { error } = await supabase
       .from('profiles')
-      .update({
-        ...updates,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updateData)
       .eq('id', userId);
 
+    console.log('🎯 [PROFILE_SERVICE_DETAILED] Update completed with error:', error);
+
     if (error) {
-      console.error('🎯 [PROFILE_SERVICE] Error updating profile:', error);
+      console.error('🎯 [PROFILE_SERVICE_DETAILED] Update error details:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      });
       return false;
     }
 
-    console.log('🎯 [PROFILE_SERVICE] Profile updated successfully');
+    console.log('🎯 [PROFILE_SERVICE_DETAILED] Update successful');
+    console.log('🎯 [PROFILE_SERVICE_DETAILED] ===== updateProfile() END =====');
     return true;
   } catch (error) {
-    console.error('🎯 [PROFILE_SERVICE] Exception updating profile:', error);
+    console.error('🎯 [PROFILE_SERVICE_DETAILED] Exception updating profile:', error);
+    console.log('🎯 [PROFILE_SERVICE_DETAILED] ===== updateProfile() END (with exception) =====');
     return false;
   }
 };
