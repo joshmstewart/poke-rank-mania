@@ -1,3 +1,4 @@
+
 import { useCallback } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { LoadingType } from "./types";
@@ -17,7 +18,19 @@ export const usePokemonData = () => {
     console.log(`🔒 [DETERMINISTIC_DATA] Params: gen=${selectedGeneration}, page=${currentPage}, size=${loadSize}, type=${loadingType}`);
     
     // Get ALL Pokemon first
-    const allPokemon = await getAllPokemon();
+    const allPokemonResult = await getAllPokemon();
+    
+    // Type guard to ensure we have a Pokemon array
+    if (!Array.isArray(allPokemonResult)) {
+      console.log(`🔒 [DETERMINISTIC_DATA] No valid Pokemon array received`);
+      return {
+        availablePokemon: [],
+        rankedPokemon: [],
+        totalPages: 0
+      };
+    }
+    
+    const allPokemon = allPokemonResult as Pokemon[];
     console.log(`🔒 [DETERMINISTIC_DATA] Raw Pokemon from service: ${allPokemon.length}`);
     
     // CRITICAL FIX: Sort by ID to ensure consistent ordering

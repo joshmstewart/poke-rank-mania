@@ -1,11 +1,12 @@
 
 import { useCallback } from "react";
+import { Pokemon } from "@/services/pokemon";
 import { usePokemonLoader } from "@/hooks/battle/usePokemonLoader";
 
 export const usePokemonService = () => {
   const { allPokemon, isLoading } = usePokemonLoader();
   
-  const getAllPokemon = useCallback(async () => {
+  const getAllPokemon = useCallback(async (): Promise<Pokemon[]> => {
     console.log(`🔧 [POKEMON_SERVICE] Getting all Pokemon from loader service`);
     console.log(`🔧 [POKEMON_SERVICE] Current state - isLoading: ${isLoading}, Pokemon count: ${allPokemon.length}`);
     
@@ -13,7 +14,7 @@ export const usePokemonService = () => {
     if (isLoading) {
       console.log(`🔧 [POKEMON_SERVICE] Still loading, waiting for completion`);
       // Return a promise that resolves when loading is done
-      return new Promise((resolve) => {
+      return new Promise<Pokemon[]>((resolve) => {
         const checkLoading = () => {
           if (!isLoading && allPokemon.length > 0) {
             console.log(`🔧 [POKEMON_SERVICE] Loading completed, returning ${allPokemon.length} Pokemon`);
