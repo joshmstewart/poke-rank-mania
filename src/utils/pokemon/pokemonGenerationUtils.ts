@@ -1,4 +1,3 @@
-
 import { generations } from "@/services/pokemon";
 
 // Mapping of variant Pokemon IDs to their base species IDs
@@ -38,4 +37,38 @@ export const getGenerationName = (pokemonId: number) => {
     gen.id !== 0 && baseId >= gen.start && baseId <= gen.end
   );
   return generation ? generation.name : "Unknown Generation";
+};
+
+/**
+ * Extract the base Pokemon name from any variant form
+ * For example: "charizard-mega-x" -> "charizard"
+ */
+export const getBasePokemonName = (pokemonName: string): string => {
+  // Handle special cases first
+  if (pokemonName.toLowerCase().includes('wooper-paldea')) {
+    return 'wooper-paldea'; // Special case for Paldean Wooper
+  }
+  
+  // Remove common prefixes for regional forms
+  let name = pokemonName.toLowerCase();
+  
+  // Strip regional prefixes
+  const regionalPrefixes = ['alolan-', 'galarian-', 'hisuian-', 'paldean-'];
+  for (const prefix of regionalPrefixes) {
+    if (name.startsWith(prefix)) {
+      name = name.substring(prefix.length);
+      break;
+    }
+  }
+  
+  // Remove form suffixes (mega-, gmax-, etc)
+  name = name.replace(/-mega(-[xy])?$|-gmax$|-gigantamax$|-primal$|-origin$|-blade$|-shield$|-altered$|-white$|-black$|-sky$|-therian$|-incarnate$|-complete$|-50$|-10$|-crowned$/, '');
+  
+  // Handle special format with hyphens (we want to keep base name only)
+  if (name.includes('-')) {
+    // Only take the part before the first hyphen, which is usually the base Pokemon name
+    name = name.split('-')[0];
+  }
+  
+  return name;
 };
