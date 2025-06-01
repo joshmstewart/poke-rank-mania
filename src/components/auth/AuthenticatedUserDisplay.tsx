@@ -150,13 +150,13 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
     );
   }
 
-  // Create enhanced user with proper avatar priority - ALWAYS use profile avatar if available
+  // FIXED: Create enhanced user with proper avatar priority - Profile avatar takes absolute priority
   const enhancedUser = {
     ...effectiveUser,
     user_metadata: {
       ...effectiveUser.user_metadata,
-      // CRITICAL: Profile avatar takes absolute priority
-      avatar_url: currentProfile?.avatar_url || effectiveUser.user_metadata?.avatar_url || '',
+      // CRITICAL FIX: Use the profile avatar directly, not fallback to user metadata
+      avatar_url: currentProfile?.avatar_url || '',
       username: currentProfile?.username || effectiveUser.user_metadata?.username || effectiveUser.email?.split('@')[0] || 'User',
       display_name: currentProfile?.display_name || effectiveUser.user_metadata?.display_name || effectiveUser.user_metadata?.username || 'User',
     }
