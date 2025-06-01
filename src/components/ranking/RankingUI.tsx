@@ -43,8 +43,21 @@ export const RankingUI: React.FC<RankingUIProps> = ({
   onGenerationChange,
   onReset
 }) => {
+  // DETAILED LOGGING: Track input data
+  console.log(`🚨🚨🚨 [RANKING_UI_DATA_INPUT] ===== RANKING UI RECEIVED DATA =====`);
+  console.log(`🚨🚨🚨 [RANKING_UI_DATA_INPUT] Available Pokemon: ${availablePokemon.length}`);
+  console.log(`🚨🚨🚨 [RANKING_UI_DATA_INPUT] Available Pokemon IDs: ${availablePokemon.slice(0, 10).map(p => p.id).join(', ')}${availablePokemon.length > 10 ? '...' : ''}`);
+  console.log(`🚨🚨🚨 [RANKING_UI_DATA_INPUT] Ranked Pokemon: ${rankedPokemon.length}`);
+  console.log(`🚨🚨🚨 [RANKING_UI_DATA_INPUT] Selected Generation: ${selectedGeneration}`);
+  console.log(`🚨🚨🚨 [RANKING_UI_DATA_INPUT] Total Pages: ${totalPages}`);
+  
   // CRITICAL FIX: Use TrueSkill-based rankings with manual update capability
   const { localRankings, updateLocalRankings } = useTrueSkillSync();
+  
+  // DETAILED LOGGING: Track TrueSkill sync output
+  console.log(`🚨🚨🚨 [RANKING_UI_TRUESKILL] ===== TRUESKILL SYNC OUTPUT =====`);
+  console.log(`🚨🚨🚨 [RANKING_UI_TRUESKILL] localRankings from TrueSkill: ${localRankings.length}`);
+  console.log(`🚨🚨🚨 [RANKING_UI_TRUESKILL] First 10 localRankings IDs: ${localRankings.slice(0, 10).map(p => p.id).join(', ')}${localRankings.length > 10 ? '...' : ''}`);
   
   // Battle type state (needed for BattleControls compatibility)
   const [battleType, setBattleType] = useState<BattleType>("pairs");
@@ -58,7 +71,17 @@ export const RankingUI: React.FC<RankingUIProps> = ({
   // Filter out any Pokemon that are already in rankings from the available list
   const displayRankings = localRankings;
   const displayRankingsIds = new Set(displayRankings.map(p => p.id));
+  
+  console.log(`🚨🚨🚨 [RANKING_UI_FILTER] ===== FILTERING AVAILABLE POKEMON =====`);
+  console.log(`🚨🚨🚨 [RANKING_UI_FILTER] displayRankingsIds Set size: ${displayRankingsIds.size}`);
+  console.log(`🚨🚨🚨 [RANKING_UI_FILTER] First 10 ranked IDs: ${[...displayRankingsIds].slice(0, 10).join(', ')}${displayRankingsIds.size > 10 ? '...' : ''}`);
+  
   const filteredAvailablePokemon = availablePokemon.filter(p => !displayRankingsIds.has(p.id));
+  
+  console.log(`🚨🚨🚨 [RANKING_UI_FILTER] FILTER RESULT: ${filteredAvailablePokemon.length} Pokemon remaining after filtering ${availablePokemon.length} against ${displayRankingsIds.size} ranked IDs`);
+  if (filteredAvailablePokemon.length === 0 && availablePokemon.length > 0) {
+    console.log(`🚨🚨🚨 [RANKING_UI_FILTER] ⚠️ CRITICAL: All ${availablePokemon.length} Pokemon filtered out! Sample IDs: ${availablePokemon.slice(0, 10).map(p => p.id).join(', ')}...`);
+  }
   
   // CRITICAL FIX: Ensure the total always matches
   const totalVisiblePokemon = displayRankings.length + filteredAvailablePokemon.length;

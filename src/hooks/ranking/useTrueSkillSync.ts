@@ -19,6 +19,7 @@ export const useTrueSkillSync = () => {
     const ratedPokemonIds = Object.keys(allRatings).map(Number);
     
     console.log(`🔥 [TRUESKILL_SYNC] TrueSkill ratings count: ${ratedPokemonIds.length}`);
+    console.log(`🔥 [TRUESKILL_SYNC] TrueSkill rating IDs: ${ratedPokemonIds.slice(0, 20).join(', ')}${ratedPokemonIds.length > 20 ? '...' : ''}`);
     console.log(`🔥 [TRUESKILL_SYNC] Pokemon lookup map size: ${pokemonLookupMap.size}`);
 
     // CRITICAL FIX: Only proceed if both data sources are ready
@@ -34,8 +35,12 @@ export const useTrueSkillSync = () => {
     }
 
     console.log(`🔥 [TRUESKILL_SYNC] Both data sources ready, generating rankings`);
+    console.log(`🔥 [TRUESKILL_SYNC] =====TRUESKILL DETAILS=====`);
+    console.log(`🔥 [TRUESKILL_SYNC] Total ratings in store: ${ratedPokemonIds.length}`);
+    console.log(`🔥 [TRUESKILL_SYNC] Context map size: ${pokemonLookupMap.size}`);
 
     const rankings: RankedPokemon[] = [];
+    const missingFromContext: number[] = [];
 
     ratedPokemonIds.forEach(pokemonId => {
       const basePokemon = pokemonLookupMap.get(pokemonId);
@@ -64,6 +69,7 @@ export const useTrueSkillSync = () => {
         rankings.push(rankedPokemon);
       } else {
         if (!basePokemon) {
+          missingFromContext.push(pokemonId);
           console.log(`🔥 [TRUESKILL_SYNC] ⚠️ Missing Pokemon data for ID ${pokemonId} in context`);
         }
         if (!ratingData) {
@@ -72,10 +78,13 @@ export const useTrueSkillSync = () => {
       }
     });
 
+    console.log(`🔥 [TRUESKILL_SYNC] CRITICAL INSIGHT: Found ${missingFromContext.length} Pokemon IDs in TrueSkill that aren't in context`);
+    console.log(`🔥 [TRUESKILL_SYNC] Missing IDs (first 20): ${missingFromContext.slice(0, 20).join(', ')}${missingFromContext.length > 20 ? '...' : ''}`);
+
     // Sort by score
     rankings.sort((a, b) => b.score - a.score);
 
-    console.log(`🔥 [TRUESKILL_SYNC] Generated ${rankings.length} formatted rankings`);
+    console.log(`🔥 [TRUESKILL_SYNC] Generated ${rankings.length} formatted rankings out of ${ratedPokemonIds.length} total ratings`);
     console.log(`🔥 [TRUESKILL_SYNC] Sample rankings:`, rankings.slice(0, 3).map(p => ({
       name: p.name,
       id: p.id,
