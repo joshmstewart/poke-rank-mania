@@ -2,7 +2,7 @@
 import React from "react";
 import LogoSection from "./LogoSection";
 import ModeStyleControls from "./ModeStyleControls";
-import SaveProgressSection from "./SaveProgressSection";
+import { SaveProgressSection } from "./SaveProgressSection";
 
 interface AppHeaderProps {
   mode: "rank" | "battle";
@@ -24,9 +24,8 @@ const AppHeader: React.FC<AppHeaderProps> = ({ mode, onModeChange }) => {
           {/* Center - Mode and Style Controls Group */}
           <ModeStyleControls mode={mode} onModeChange={onModeChange} />
           
-          {/* Right side - VERY VISIBLE CONTAINER */}
-          <div className="bg-blue-900 border-8 border-yellow-400 p-4">
-            <div className="text-xl font-bold text-yellow-400 mb-2">🔵 HEADER RIGHT SIDE 🔵</div>
+          {/* Right side - Clean Save Progress Section */}
+          <div className="flex items-center">
             <SaveProgressSection />
           </div>
         </div>
