@@ -213,14 +213,12 @@ export const getPokemonFormCategory = (pokemon: Pokemon): PokemonFormType | null
     category = 'normal';
   }
   
-  // Update stats and track examples
+  // Update stats and track ALL examples (remove the 20-item limit)
   if (category) {
     categoryStats[category]++;
     
-    // Track first 20 examples of each category for debugging
-    if (miscategorizedExamples[category].length < 20) {
-      miscategorizedExamples[category].push(`${originalName} (${pokemon.id})`);
-    }
+    // Track ALL examples for complete debugging
+    miscategorizedExamples[category].push(`${originalName} (${pokemon.id})`);
     
     // Log specific problematic cases for debugging
     if (category === 'colorsFlavors' && !name.includes('-')) {

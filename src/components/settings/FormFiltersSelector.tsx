@@ -107,21 +107,41 @@ export function FormFiltersSelector() {
     }
   };
 
-  // NEW: Debug function to show miscategorized examples
+  // NEW: Enhanced debug function to show complete lists
   const showMiscategorizedExamples = useCallback(() => {
     const examples = getMiscategorizedPokemonExamples();
     console.log(`🔍 [DEBUG_EXAMPLES] Full miscategorized examples:`, examples);
     
-    // Show in toast for easy viewing
+    // Show detailed breakdown in console with full lists
     Object.entries(examples).forEach(([category, pokemonList]) => {
       if (pokemonList.length > 0) {
-        console.log(`🔍 [DEBUG_${category.toUpperCase()}] ${pokemonList.join(', ')}`);
+        console.log(`🔍 [DEBUG_${category.toUpperCase()}_FULL]`, pokemonList);
+        console.log(`🔍 [DEBUG_${category.toUpperCase()}_COUNT] Total: ${pokemonList.length}`);
       }
     });
     
+    // Also create a comprehensive summary
+    const summary = Object.entries(examples)
+      .map(([category, pokemonList]) => `${category}: ${pokemonList.length}`)
+      .join(', ');
+    
+    console.log(`🔍 [DEBUG_SUMMARY] Category counts: ${summary}`);
+    
+    // Create a downloadable JSON file with all the data
+    const dataStr = JSON.stringify(examples, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'pokemon-categorization-debug.json';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
     toast({
-      title: "Miscategorized Examples Logged",
-      description: "Check the console for detailed examples of how Pokemon are being categorized",
+      title: "Debug Data Exported",
+      description: "Full categorization data logged to console and downloaded as JSON file",
     });
   }, [getMiscategorizedPokemonExamples]);
 
