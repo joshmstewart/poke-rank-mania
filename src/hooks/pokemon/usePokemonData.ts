@@ -1,12 +1,10 @@
 import { useCallback } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { LoadingType } from "./types";
-import { useFormFilters } from "@/hooks/form-filters/useFormFilters";
 import { usePokemonService } from "@/hooks/pokemon/usePokemonService";
 import { formatPokemonName } from "@/utils/pokemon";
 
 export const usePokemonData = () => {
-  const { analyzeFilteringPipeline } = useFormFilters();
   const { getAllPokemon } = usePokemonService();
 
   const getPokemonData = useCallback(async (
@@ -33,8 +31,13 @@ export const usePokemonData = () => {
     }));
     console.log(`🔒 [DETERMINISTIC_DATA] After name formatting: ${formattedPokemon.length}`);
     
-    // Apply form filters (this should be deterministic)
-    const filteredPokemon = analyzeFilteringPipeline(formattedPokemon);
+    // CRITICAL FIX: Use the SAME filtering logic as the loader to ensure consistency
+    // Import and use the exact same shouldIncludePokemon function
+    const { useFormFilters } = await import("@/hooks/form-filters/useFormFilters");
+    const { shouldIncludePokemon } = useFormFilters();
+    
+    // Apply form filters (this should be deterministic and match the loader)
+    const filteredPokemon = formattedPokemon.filter(shouldIncludePokemon);
     console.log(`🔒 [DETERMINISTIC_DATA] After form filtering: ${filteredPokemon.length}`);
     console.log(`🔒 [DETERMINISTIC_DATA] Pokemon lost in filtering: ${formattedPokemon.length - filteredPokemon.length}`);
     
@@ -98,7 +101,7 @@ export const usePokemonData = () => {
       rankedPokemon: [], // Manual mode starts with empty rankings
       totalPages
     };
-  }, [analyzeFilteringPipeline, getAllPokemon]);
+  }, [getAllPokemon]);
 
   return { getPokemonData };
 };
