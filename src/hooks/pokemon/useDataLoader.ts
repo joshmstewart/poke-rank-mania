@@ -1,4 +1,3 @@
-
 import { useCallback } from "react";
 import { usePokemonData } from "./usePokemonData";
 import { LoadingType } from "./types";
@@ -16,7 +15,7 @@ export const useDataLoader = (
   const { getPokemonData } = usePokemonData();
 
   const loadData = useCallback(async () => {
-    console.log(`🔄 [DATA_LOADER_ACTIVE_FIX] ===== RE-ENABLING DATA LOADER FOR REGRESSION FIX =====`);
+    console.log(`🔄 [DATA_LOADER_ACTIVE_FIX] ===== CRITICAL REGRESSION FIX =====`);
     console.log(`🔄 [DATA_LOADER_ACTIVE_FIX] Parameters: gen=${selectedGeneration}, page=${currentPage}, size=${loadSize}, type=${loadingType}`);
     
     setIsLoading(true);
@@ -31,16 +30,22 @@ export const useDataLoader = (
         totalPages: result.totalPages
       });
       
-      // CRITICAL: Actually set the state with the received data
+      // CRITICAL: Ensure state is properly set and logged
+      console.log(`🔄 [DATA_LOADER_ACTIVE_FIX] Setting availablePokemon state to: ${result.availablePokemon.length}`);
       setAvailablePokemon(result.availablePokemon);
+      
+      console.log(`🔄 [DATA_LOADER_ACTIVE_FIX] Setting rankedPokemon state to: ${result.rankedPokemon.length}`);
       setRankedPokemon(result.rankedPokemon);
+      
+      console.log(`🔄 [DATA_LOADER_ACTIVE_FIX] Setting totalPages to: ${result.totalPages}`);
       setTotalPages(result.totalPages);
       
-      console.log(`🔄 [DATA_LOADER_ACTIVE_FIX] ✅ State updated with available: ${result.availablePokemon.length}, ranked: ${result.rankedPokemon.length}`);
+      console.log(`🔄 [DATA_LOADER_ACTIVE_FIX] ✅ ALL STATE UPDATED - Available: ${result.availablePokemon.length}, Ranked: ${result.rankedPokemon.length}`);
       
     } catch (error) {
       console.error(`🔄 [DATA_LOADER_ACTIVE_FIX] ❌ Error loading data:`, error);
-      // Don't clear state on error, maintain current state
+      // On error, don't clear state - keep current state to prevent regressions
+      console.log(`🔄 [DATA_LOADER_ACTIVE_FIX] ⚠️ Error occurred, maintaining current state`);
     } finally {
       setIsLoading(false);
     }

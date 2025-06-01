@@ -73,19 +73,24 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
         console.log(`🔍 [ENV_DEBUG_ULTRA] All localStorage keys (${allLocalStorageKeys.length}):`, allLocalStorageKeys);
         console.log(`🔍 [ENV_DEBUG_ULTRA] TrueSkill-related keys (${trueskillRelatedKeys.length}):`, trueskillRelatedKeys);
         
-        // CRITICAL: Detailed analysis of EACH TrueSkill-related key
+        // CRITICAL: Detailed analysis of EACH TrueSkill-related key with names and counts
         console.log(`🔍🔍🔍 [DETAILED_KEY_ANALYSIS] ===== ANALYZING EACH TRUESKILL KEY =====`);
+        
+        const keyAnalysis: Array<{name: string, size: number, itemCount: number | string, type: string, error?: string}> = [];
         
         trueskillRelatedKeys.forEach((key, index) => {
           try {
             const value = localStorage.getItem(key);
+            const analysis = { name: key, size: 0, itemCount: 0, type: 'unknown', error: undefined };
+            
             if (value) {
-              console.log(`🔍 [KEY_${index + 1}] KEY NAME: "${key}"`);
+              analysis.size = value.length;
+              console.log(`🔍 [KEY_${index + 1}] ===== ANALYZING KEY: "${key}" =====`);
               console.log(`🔍 [KEY_${index + 1}] Raw size: ${value.length} characters`);
               
               try {
                 const parsed = JSON.parse(value);
-                console.log(`🔍 [KEY_${index + 1}] Parsed successfully`);
+                console.log(`🔍 [KEY_${index + 1}] ✅ Parsed successfully`);
                 console.log(`🔍 [KEY_${index + 1}] Type: ${typeof parsed}`);
                 console.log(`🔍 [KEY_${index + 1}] Is Array: ${Array.isArray(parsed)}`);
                 
@@ -93,37 +98,64 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
                   const keys = Object.keys(parsed);
                   console.log(`🔍 [KEY_${index + 1}] Object keys (${keys.length}):`, keys);
                   
-                  // Special handling for different data structures
+                  // ZUSTAND RATING STORE DETECTION
                   if (parsed.state?.ratings) {
                     const ratings = parsed.state.ratings;
                     const ratingIds = Object.keys(ratings);
-                    console.log(`🔍 [KEY_${index + 1}] ⭐ ZUSTAND RATING STORE FOUND!`);
-                    console.log(`🔍 [KEY_${index + 1}] ⭐ Ratings count: ${ratingIds.length}`);
-                    console.log(`🔍 [KEY_${index + 1}] ⭐ Sample IDs: ${ratingIds.slice(0, 10).join(', ')}${ratingIds.length > 10 ? '...' : ''}`);
-                    console.log(`🔍 [KEY_${index + 1}] ⭐ Version: ${parsed.version || 'unknown'}`);
-                    console.log(`🔍 [KEY_${index + 1}] ⭐ State keys: ${Object.keys(parsed.state || {}).join(', ')}`);
+                    analysis.type = 'zustand-rating-store';
+                    analysis.itemCount = ratingIds.length;
+                    
+                    console.log(`🔍 [KEY_${index + 1}] 🌟 ZUSTAND RATING STORE FOUND!`);
+                    console.log(`🔍 [KEY_${index + 1}] 🌟 Ratings count: ${ratingIds.length}`);
+                    console.log(`🔍 [KEY_${index + 1}] 🌟 Sample IDs: ${ratingIds.slice(0, 10).join(', ')}${ratingIds.length > 10 ? '...' : ''}`);
+                    console.log(`🔍 [KEY_${index + 1}] 🌟 Version: ${parsed.version || 'unknown'}`);
+                    console.log(`🔍 [KEY_${index + 1}] 🌟 State keys: ${Object.keys(parsed.state || {}).join(', ')}`);
+                    console.log(`🔍 [KEY_${index + 1}] 🌟 Session ID: ${parsed.state?.sessionId?.substring(0, 8) || 'none'}...`);
+                    console.log(`🔍 [KEY_${index + 1}] 🌟 Last synced: ${parsed.state?.lastSyncedAt || 'never'}`);
                     
                     if (ratingIds.length > 50) {
                       console.log(`🔍 [KEY_${index + 1}] 🚨🚨🚨 LARGE DATASET FOUND! This might be the missing data!`);
                     }
+                    
+                    // Log first few ratings for verification
+                    if (ratingIds.length > 0) {
+                      console.log(`🔍 [KEY_${index + 1}] 🌟 Sample ratings:`);
+                      ratingIds.slice(0, 3).forEach(id => {
+                        const rating = ratings[id];
+                        console.log(`🔍 [KEY_${index + 1}] 🌟   Pokemon ${id}: μ=${rating.mu?.toFixed(2)}, σ=${rating.sigma?.toFixed(2)}, battles=${rating.battleCount || 0}`);
+                      });
+                    }
+                    
                   } else if (Array.isArray(parsed) && parsed.length > 0 && parsed[0]?.mu) {
-                    console.log(`🔍 [KEY_${index + 1}] ⭐ ARRAY OF RATINGS FOUND!`);
-                    console.log(`🔍 [KEY_${index + 1}] ⭐ Array length: ${parsed.length}`);
-                    console.log(`🔍 [KEY_${index + 1}] ⭐ Sample structure:`, Object.keys(parsed[0] || {}));
+                    analysis.type = 'rating-array';
+                    analysis.itemCount = parsed.length;
+                    
+                    console.log(`🔍 [KEY_${index + 1}] 🌟 ARRAY OF RATINGS FOUND!`);
+                    console.log(`🔍 [KEY_${index + 1}] 🌟 Array length: ${parsed.length}`);
+                    console.log(`🔍 [KEY_${index + 1}] 🌟 Sample structure:`, Object.keys(parsed[0] || {}));
                     
                     if (parsed.length > 50) {
                       console.log(`🔍 [KEY_${index + 1}] 🚨🚨🚨 LARGE ARRAY FOUND! This might be the missing data!`);
                     }
+                    
                   } else if (keys.some(k => !isNaN(Number(k)))) {
                     // Direct ratings object (keys are Pokemon IDs)
                     const numericKeys = keys.filter(k => !isNaN(Number(k)));
-                    console.log(`🔍 [KEY_${index + 1}] ⭐ DIRECT RATINGS OBJECT FOUND!`);
-                    console.log(`🔍 [KEY_${index + 1}] ⭐ Numeric keys (Pokemon IDs): ${numericKeys.length}`);
-                    console.log(`🔍 [KEY_${index + 1}] ⭐ Sample IDs: ${numericKeys.slice(0, 10).join(', ')}${numericKeys.length > 10 ? '...' : ''}`);
+                    analysis.type = 'direct-ratings-object';
+                    analysis.itemCount = numericKeys.length;
+                    
+                    console.log(`🔍 [KEY_${index + 1}] 🌟 DIRECT RATINGS OBJECT FOUND!`);
+                    console.log(`🔍 [KEY_${index + 1}] 🌟 Numeric keys (Pokemon IDs): ${numericKeys.length}`);
+                    console.log(`🔍 [KEY_${index + 1}] 🌟 Sample IDs: ${numericKeys.slice(0, 10).join(', ')}${numericKeys.length > 10 ? '...' : ''}`);
                     
                     if (numericKeys.length > 50) {
                       console.log(`🔍 [KEY_${index + 1}] 🚨🚨🚨 LARGE DIRECT RATINGS FOUND! This might be the missing data!`);
                     }
+                    
+                  } else {
+                    analysis.type = 'other-object';
+                    analysis.itemCount = keys.length;
+                    console.log(`🔍 [KEY_${index + 1}] Other object with ${keys.length} keys`);
                   }
                   
                   // Look for nested Pokemon/rating data
@@ -137,21 +169,48 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
                       }
                     }
                   });
+                } else {
+                  analysis.type = 'primitive';
+                  analysis.itemCount = 'N/A';
                 }
                 
               } catch (parseError) {
+                analysis.error = parseError.message;
+                analysis.type = 'parse-error';
+                analysis.itemCount = 'ERROR';
                 console.log(`🔍 [KEY_${index + 1}] ❌ Parse error:`, parseError.message);
                 console.log(`🔍 [KEY_${index + 1}] Raw value preview:`, value.substring(0, 200) + '...');
               }
             } else {
+              analysis.type = 'null-empty';
+              analysis.itemCount = 0;
               console.log(`🔍 [KEY_${index + 1}] KEY NAME: "${key}" - NULL/EMPTY VALUE`);
             }
+            
+            keyAnalysis.push(analysis);
+            console.log(`🔍 [KEY_${index + 1}] ===== END KEY ANALYSIS =====`);
           } catch (e) {
             console.log(`🔍 [KEY_${index + 1}] ❌ Error analyzing key "${key}":`, e);
+            keyAnalysis.push({ name: key, size: 0, itemCount: 'ERROR', type: 'analysis-error', error: e.message });
           }
-          
-          console.log(`🔍 [KEY_${index + 1}] ===== END KEY ANALYSIS =====`);
         });
+        
+        // SUMMARY TABLE
+        console.log(`🔍🔍🔍 [TRUESKILL_KEY_SUMMARY] ===== SUMMARY OF ALL TRUESKILL-RELATED KEYS =====`);
+        keyAnalysis.forEach((analysis, index) => {
+          console.log(`🔍 [SUMMARY_${index + 1}] "${analysis.name}": ${analysis.itemCount} items (${analysis.type}) [${analysis.size} chars]${analysis.error ? ` ERROR: ${analysis.error}` : ''}`);
+        });
+        
+        // CRITICAL FINDINGS
+        const largeDataKeys = keyAnalysis.filter(a => typeof a.itemCount === 'number' && a.itemCount > 50);
+        if (largeDataKeys.length > 0) {
+          console.log(`🔍🔍🔍 [CRITICAL_FINDINGS] ===== LARGE DATASETS FOUND =====`);
+          largeDataKeys.forEach(key => {
+            console.log(`🔍 [LARGE_DATA] "${key.name}": ${key.itemCount} items (${key.type}) - POTENTIAL SOURCE OF MISSING DATA!`);
+          });
+        } else {
+          console.log(`🔍🔍🔍 [CRITICAL_FINDINGS] ❌ NO LARGE DATASETS FOUND - Data may be lost or stored elsewhere`);
+        }
         
         // Check current store state vs localStorage
         const currentState = get();
@@ -159,26 +218,6 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
         console.log(`🔍 [ENV_DEBUG_ULTRA] - Store ratings count: ${Object.keys(currentState.ratings).length}`);
         console.log(`🔍 [ENV_DEBUG_ULTRA] - Store session ID: ${currentState.sessionId.substring(0, 8)}...`);
         console.log(`🔍 [ENV_DEBUG_ULTRA] - Store last synced: ${currentState.lastSyncedAt}`);
-        
-        // Special focus on the main trueskill store
-        const mainStoreData = localStorage.getItem('trueskill-ratings-store');
-        if (mainStoreData) {
-          try {
-            const parsed = JSON.parse(mainStoreData);
-            const storeRatings = parsed.state?.ratings || {};
-            const storeRatingCount = Object.keys(storeRatings).length;
-            console.log(`🔍 [ENV_DEBUG_ULTRA] Main trueskill-ratings-store analysis:`);
-            console.log(`🔍 [ENV_DEBUG_ULTRA] - Main store rating count: ${storeRatingCount}`);
-            console.log(`🔍 [ENV_DEBUG_ULTRA] - Main store version: ${parsed.version}`);
-            console.log(`🔍 [ENV_DEBUG_ULTRA] - Main store state keys: ${Object.keys(parsed.state || {}).join(', ')}`);
-            
-            if (storeRatingCount !== Object.keys(currentState.ratings).length) {
-              console.log(`🔍 [ENV_DEBUG_ULTRA] 🚨 MISMATCH: Store has ${Object.keys(currentState.ratings).length}, localStorage has ${storeRatingCount}`);
-            }
-          } catch (e) {
-            console.log(`🔍 [ENV_DEBUG_ULTRA] ❌ Error parsing main store:`, e);
-          }
-        }
         
         console.log(`🔍🔍🔍 [ENVIRONMENTAL_DEBUG_ULTRA_DETAILED] ===== END COMPREHENSIVE INVESTIGATION =====`);
       },
