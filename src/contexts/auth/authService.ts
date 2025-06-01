@@ -123,9 +123,7 @@ export const authService = {
       if (error) {
         console.error('🔴🔴🔴 [AUTH_SERVICE_FIXED] 📱 Phone auth error details:', {
           message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code
+          code: error.code || 'unknown'
         });
         return { error };
       } else {
