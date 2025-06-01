@@ -81,7 +81,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
         trueskillRelatedKeys.forEach((key, index) => {
           try {
             const value = localStorage.getItem(key);
-            const analysis = { name: key, size: 0, itemCount: 0, type: 'unknown', error: undefined };
+            const analysis = { name: key, size: 0, itemCount: 0 as number | string, type: 'unknown', error: undefined };
             
             if (value) {
               analysis.size = value.length;
@@ -175,10 +175,10 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
                 }
                 
               } catch (parseError) {
-                analysis.error = parseError.message;
+                analysis.error = parseError instanceof Error ? parseError.message : 'Unknown error';
                 analysis.type = 'parse-error';
                 analysis.itemCount = 'ERROR';
-                console.log(`🔍 [KEY_${index + 1}] ❌ Parse error:`, parseError.message);
+                console.log(`🔍 [KEY_${index + 1}] ❌ Parse error:`, parseError);
                 console.log(`🔍 [KEY_${index + 1}] Raw value preview:`, value.substring(0, 200) + '...');
               }
             } else {
@@ -191,7 +191,8 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
             console.log(`🔍 [KEY_${index + 1}] ===== END KEY ANALYSIS =====`);
           } catch (e) {
             console.log(`🔍 [KEY_${index + 1}] ❌ Error analyzing key "${key}":`, e);
-            keyAnalysis.push({ name: key, size: 0, itemCount: 'ERROR', type: 'analysis-error', error: e.message });
+            const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+            keyAnalysis.push({ name: key, size: 0, itemCount: 'ERROR', type: 'analysis-error', error: errorMessage });
           }
         });
         
