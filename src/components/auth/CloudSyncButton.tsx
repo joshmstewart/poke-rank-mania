@@ -9,7 +9,8 @@ export const CloudSyncButton: React.FC = () => {
   const { user, session } = useAuth();
   const [showAuthDialog, setShowAuthDialog] = useState(false);
 
-  console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON: ===== DIAGNOSTIC RENDER START =====');
+  console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON: ===== MAXIMUM FORCE DIAGNOSTIC RENDER START =====');
+  console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON: 🔥 FORCED LOGGING MODE 🔥');
   console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON: Auth state:', {
     hasUser: !!user,
     hasSession: !!session,
@@ -20,36 +21,46 @@ export const CloudSyncButton: React.FC = () => {
 
   const isAuthenticated = !!user || !!session?.user;
 
-  console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON: Authentication check:', {
+  console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON: 🔥 FORCED AUTHENTICATION CHECK:', {
     isAuthenticated,
     hasUser: !!user,
     hasSessionUser: !!session?.user,
     willReturnNull: isAuthenticated,
     willRenderButton: !isAuthenticated,
-    DIAGNOSTIC_NOTE: 'Should return null if authenticated (AuthenticatedUserDisplay should be shown instead)'
+    DIAGNOSTIC_NOTE: 'Should return null if authenticated (AuthenticatedUserDisplay should be forced elsewhere)'
   });
 
-  // Only show for unauthenticated users
+  // Only show for unauthenticated users - BUT LOG EVERYTHING
   if (isAuthenticated) {
     console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON: 🚫 USER IS AUTHENTICATED - RETURNING NULL 🚫');
-    console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON: AuthenticatedUserDisplay should be handling this case');
+    console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON: AuthenticatedUserDisplay should be FORCED to render elsewhere');
+    console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON: 🔥 THIS SHOULD NOT SHOW SYNCED TEXT 🔥');
     return null;
   }
 
   console.log('🟡🟡🟡 CLOUD_SYNC_BUTTON: 🟢 USER NOT AUTHENTICATED - RENDERING BUTTON 🟢');
 
   return (
-    <div className="bg-yellow-500 border-2 border-blue-400 p-2">
-      <div className="text-black font-bold text-xs">🟡 CLOUD SYNC BUTTON 🟡</div>
-      <div className="text-black text-xs">Not authenticated - showing sync button</div>
-      <div className="text-black text-xs">Time: {new Date().toLocaleTimeString()}</div>
+    <div style={{ 
+      backgroundColor: '#ffff00', 
+      border: '2px solid #0066ff', 
+      padding: '10px',
+      borderRadius: '5px'
+    }}>
+      <div style={{ color: 'black', fontWeight: 'bold', fontSize: '12px' }}>
+        🟡 CLOUD SYNC BUTTON (FORCED LOGGING) 🟡
+      </div>
+      <div style={{ color: 'black', fontSize: '10px' }}>
+        Not authenticated - showing sync button<br/>
+        Time: {new Date().toLocaleTimeString()}
+      </div>
       <AuthDialog 
         open={showAuthDialog} 
         onOpenChange={setShowAuthDialog}
       >
         <Button
           variant="outline"
-          className="flex items-center gap-2"
+          className="flex items-center gap-2 mt-2"
         >
           <Cloud className="h-4 w-4" />
           <span className="hidden sm:inline">Save Progress</span>
