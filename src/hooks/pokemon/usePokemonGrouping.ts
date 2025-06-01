@@ -1,3 +1,4 @@
+
 import { useMemo } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { getPokemonGeneration, generationDetails } from "@/components/pokemon/generationUtils";
@@ -43,9 +44,49 @@ const determineGenerationFromId = (pokemonId: number): number => {
   return 9;
 };
 
-// Create a comprehensive mapping of base Pokemon names to their generations
+// Create a comprehensive mapping of ALL Pokemon names (including variants) to their generations
 const createBaseGenerationMap = () => {
   const map: Record<string, number> = {};
+  
+  // Helper function to add variants for a base Pokemon
+  const addVariants = (baseName: string, generation: number) => {
+    map[baseName] = generation;
+    
+    // Add common variants that should inherit the same generation
+    map[`${baseName}-male`] = generation;
+    map[`${baseName}-female`] = generation;
+    map[`${baseName}-f`] = generation;
+    map[`${baseName}-m`] = generation;
+    
+    // Regional forms get assigned to their appearance generation
+    if (generation <= 6) { // Only add regional forms for Pokemon that existed before Gen 7
+      map[`${baseName}-alola`] = 7;
+      map[`${baseName}-alolan`] = 7;
+    }
+    if (generation <= 7) { // Only add for Pokemon that existed before Gen 8
+      map[`${baseName}-galar`] = 8;
+      map[`${baseName}-galarian`] = 8;
+      map[`${baseName}-hisui`] = 8;
+      map[`${baseName}-hisuian`] = 8;
+    }
+    if (generation <= 8) { // Only add for Pokemon that existed before Gen 9
+      map[`${baseName}-paldea`] = 9;
+      map[`${baseName}-paldean`] = 9;
+    }
+    
+    // Mega forms appear in Gen 6
+    if (generation <= 6) {
+      map[`${baseName}-mega`] = 6;
+      map[`${baseName}-mega-x`] = 6;
+      map[`${baseName}-mega-y`] = 6;
+    }
+    
+    // G-Max forms appear in Gen 8
+    if (generation <= 8) {
+      map[`${baseName}-gmax`] = 8;
+      map[`${baseName}-gigantamax`] = 8;
+    }
+  };
   
   // Generation 1 (1-151)
   const gen1Pokemon = [
@@ -75,7 +116,7 @@ const createBaseGenerationMap = () => {
     'omastar', 'kabuto', 'kabutops', 'aerodactyl', 'snorlax', 'articuno',
     'zapdos', 'moltres', 'dratini', 'dragonair', 'dragonite', 'mewtwo', 'mew'
   ];
-  gen1Pokemon.forEach(name => map[name] = 1);
+  gen1Pokemon.forEach(name => addVariants(name, 1));
 
   // Generation 2 (152-251)
   const gen2Pokemon = [
@@ -97,7 +138,7 @@ const createBaseGenerationMap = () => {
     'blissey', 'raikou', 'entei', 'suicune', 'larvitar', 'pupitar',
     'tyranitar', 'lugia', 'ho-oh', 'celebi'
   ];
-  gen2Pokemon.forEach(name => map[name] = 2);
+  gen2Pokemon.forEach(name => addVariants(name, 2));
 
   // Generation 3 (252-386)
   const gen3Pokemon = [
@@ -123,11 +164,15 @@ const createBaseGenerationMap = () => {
     'clamperl', 'huntail', 'gorebyss', 'relicanth', 'luvdisc', 'bagon',
     'shelgon', 'salamence', 'beldum', 'metang', 'metagross', 'regirock',
     'regice', 'registeel', 'latias', 'latios', 'kyogre', 'groudon',
-    'rayquaza', 'jirachi', 'deoxys',
-    // Fix typo in previous list
-    'baltoy'
+    'rayquaza', 'jirachi', 'deoxys'
   ];
-  gen3Pokemon.forEach(name => map[name] = 3);
+  gen3Pokemon.forEach(name => addVariants(name, 3));
+
+  // Add Deoxys forms specifically to Gen 3
+  map['deoxys-normal'] = 3;
+  map['deoxys-attack'] = 3;
+  map['deoxys-defense'] = 3;
+  map['deoxys-speed'] = 3;
 
   // Generation 4 (387-493)
   const gen4Pokemon = [
@@ -150,7 +195,18 @@ const createBaseGenerationMap = () => {
     'dialga', 'palkia', 'heatran', 'regigigas', 'giratina', 'cresselia',
     'phione', 'manaphy', 'darkrai', 'shaymin', 'arceus'
   ];
-  gen4Pokemon.forEach(name => map[name] = 4);
+  gen4Pokemon.forEach(name => addVariants(name, 4));
+
+  // Add specific Gen 4 forms
+  map['giratina-origin'] = 4;
+  map['giratina-altered'] = 4;
+  map['shaymin-land'] = 4;
+  map['shaymin-sky'] = 4;
+  map['rotom-heat'] = 4;
+  map['rotom-wash'] = 4;
+  map['rotom-frost'] = 4;
+  map['rotom-fan'] = 4;
+  map['rotom-mow'] = 4;
 
   // Generation 5 (494-649)
   const gen5Pokemon = [
@@ -181,7 +237,21 @@ const createBaseGenerationMap = () => {
     'cobalion', 'terrakion', 'virizion', 'tornadus', 'thundurus', 'reshiram',
     'zekrom', 'landorus', 'kyurem', 'keldeo', 'meloetta', 'genesect'
   ];
-  gen5Pokemon.forEach(name => map[name] = 5);
+  gen5Pokemon.forEach(name => addVariants(name, 5));
+
+  // Add specific Gen 5 forms
+  map['kyurem-white'] = 5;
+  map['kyurem-black'] = 5;
+  map['keldeo-ordinary'] = 5;
+  map['keldeo-resolute'] = 5;
+  map['meloetta-aria'] = 5;
+  map['meloetta-pirouette'] = 5;
+  map['tornadus-incarnate'] = 5;
+  map['tornadus-therian'] = 5;
+  map['thundurus-incarnate'] = 5;
+  map['thundurus-therian'] = 5;
+  map['landorus-incarnate'] = 5;
+  map['landorus-therian'] = 5;
 
   // Generation 6 (650-721)
   const gen6Pokemon = [
@@ -198,7 +268,16 @@ const createBaseGenerationMap = () => {
     'pumpkaboo', 'gourgeist', 'bergmite', 'avalugg', 'noibat', 'noivern',
     'xerneas', 'yveltal', 'zygarde', 'diancie', 'hoopa', 'volcanion'
   ];
-  gen6Pokemon.forEach(name => map[name] = 6);
+  gen6Pokemon.forEach(name => addVariants(name, 6));
+
+  // Add specific Gen 6 forms
+  map['aegislash-blade'] = 6;
+  map['aegislash-shield'] = 6;
+  map['zygarde-50'] = 6;
+  map['zygarde-10'] = 6;
+  map['zygarde-complete'] = 6;
+  map['hoopa-confined'] = 6;
+  map['hoopa-unbound'] = 6;
 
   // Generation 7 (722-809)
   const gen7Pokemon = [
@@ -218,7 +297,24 @@ const createBaseGenerationMap = () => {
     'necrozma', 'magearna', 'marshadow', 'poipole', 'naganadel', 'stakataka',
     'blacephalon', 'zeraora', 'meltan', 'melmetal'
   ];
-  gen7Pokemon.forEach(name => map[name] = 7);
+  gen7Pokemon.forEach(name => addVariants(name, 7));
+
+  // Add specific Gen 7 forms
+  map['lycanroc-midday'] = 7;
+  map['lycanroc-midnight'] = 7;
+  map['lycanroc-dusk'] = 7;
+  map['wishiwashi-solo'] = 7;
+  map['wishiwashi-school'] = 7;
+  map['minior-red-meteor'] = 7;
+  map['minior-orange-meteor'] = 7;
+  map['minior-yellow-meteor'] = 7;
+  map['minior-green-meteor'] = 7;
+  map['minior-blue-meteor'] = 7;
+  map['minior-indigo-meteor'] = 7;
+  map['minior-violet-meteor'] = 7;
+  map['necrozma-dusk'] = 7;
+  map['necrozma-dawn'] = 7;
+  map['necrozma-ultra'] = 7;
 
   // Generation 8 (810-905)
   const gen8Pokemon = [
@@ -239,7 +335,24 @@ const createBaseGenerationMap = () => {
     'regieleki', 'regidrago', 'glastrier', 'spectrier', 'calyrex', 'wyrdeer',
     'kleavor', 'ursaluna', 'basculegion', 'sneasler', 'overqwil', 'enamorus'
   ];
-  gen8Pokemon.forEach(name => map[name] = 8);
+  gen8Pokemon.forEach(name => addVariants(name, 8));
+
+  // Add specific Gen 8 forms
+  map['toxtricity-amped'] = 8;
+  map['toxtricity-low-key'] = 8;
+  map['eiscue-ice'] = 8;
+  map['eiscue-noice'] = 8;
+  map['morpeko-full-belly'] = 8;
+  map['morpeko-hangry'] = 8;
+  map['zacian-hero'] = 8;
+  map['zacian-crowned'] = 8;
+  map['zamazenta-hero'] = 8;
+  map['zamazenta-crowned'] = 8;
+  map['eternatus-eternamax'] = 8;
+  map['urshifu-single-strike'] = 8;
+  map['urshifu-rapid-strike'] = 8;
+  map['calyrex-ice'] = 8;
+  map['calyrex-shadow'] = 8;
 
   // Generation 9 (906-1025)
   const gen9Pokemon = [
@@ -263,24 +376,48 @@ const createBaseGenerationMap = () => {
     'miraidon', 'walking-wake', 'iron-leaves', 'dipplin', 'poltchageist', 'sinistcha',
     'okidogi', 'munkidori', 'fezandipiti', 'ogerpon', 'archaludon', 'hydrapple',
     'vampeagus', 'bloodmoon-ursaluna', 'gouging-fire', 'raging-bolt', 'iron-boulder',
-    'iron-crown', 'terapagos', 'pecharunt', 'wooper-paldea'
+    'iron-crown', 'terapagos', 'pecharunt'
   ];
-  gen9Pokemon.forEach(name => map[name] = 9);
+  gen9Pokemon.forEach(name => addVariants(name, 9));
 
-  // Special cases and fixes for regional variants or special forms that need specific generation assignments
-  const specialCases: Record<string, number> = {
-    'meowth-alola': 7,
-    'meowth-galar': 8,
-    'ponyta-galar': 8,
-    'farfetchd-galar': 8,
-    'mr-mime-galar': 8,
-    'growlithe-hisui': 8,
-    'wooper-paldea': 9,
-    'tauros-paldea': 9
-  };
-  Object.keys(specialCases).forEach(name => {
-    map[name] = specialCases[name];
-  });
+  // Add specific Gen 9 forms
+  map['palafin-zero'] = 9;
+  map['palafin-hero'] = 9;
+  map['tatsugiri-curly'] = 9;
+  map['tatsugiri-droopy'] = 9;
+  map['tatsugiri-stretchy'] = 9;
+  map['gimmighoul-chest'] = 9;
+  map['gimmighoul-roaming'] = 9;
+  map['koraidon-apex'] = 9;
+  map['miraidon-ultimate'] = 9;
+  map['ogerpon-wellspring'] = 9;
+  map['ogerpon-hearthflame'] = 9;
+  map['ogerpon-cornerstone'] = 9;
+  map['terapagos-normal'] = 9;
+  map['terapagos-terastal'] = 9;
+  map['terapagos-stellar'] = 9;
+
+  // Add specific Paldean forms and special cases
+  map['wooper-paldea'] = 9;
+  map['tauros-paldea-combat'] = 9;
+  map['tauros-paldea-blaze'] = 9;
+  map['tauros-paldea-aqua'] = 9;
+
+  // Special handling for Pikachu costume forms (all Gen 7 where they were introduced)
+  map['pikachu-original-cap'] = 7;
+  map['pikachu-hoenn-cap'] = 7;
+  map['pikachu-sinnoh-cap'] = 7;
+  map['pikachu-unova-cap'] = 7;
+  map['pikachu-kalos-cap'] = 7;
+  map['pikachu-alola-cap'] = 7;
+  map['pikachu-partner-cap'] = 7;
+  map['pikachu-world-cap'] = 7;
+  map['pikachu-cosplay'] = 7;
+  map['pikachu-rock-star'] = 7;
+  map['pikachu-belle'] = 7;
+  map['pikachu-pop-star'] = 7;
+  map['pikachu-phd'] = 7;
+  map['pikachu-libre'] = 7;
 
   return map;
 };
@@ -322,10 +459,15 @@ export const usePokemonGrouping = (
       // Get the base name of the Pokemon (removing regional/form variants)
       const baseName = getBasePokemonName(pokemon.name);
       
-      // Try to determine generation from the base Pokemon name first
-      let generation: number | undefined = baseGenerationMap[baseName];
+      // Try to determine generation from the exact Pokemon name first
+      let generation: number | undefined = baseGenerationMap[pokemon.name.toLowerCase()];
       
-      // If we couldn't find the generation by name, use ID-based logic
+      // If not found, try with the base name
+      if (!generation) {
+        generation = baseGenerationMap[baseName.toLowerCase()];
+      }
+      
+      // If we still couldn't find the generation, use ID-based logic
       if (!generation) {
         generation = determineGenerationFromId(pokemon.id);
       }
