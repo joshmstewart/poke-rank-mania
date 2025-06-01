@@ -39,18 +39,26 @@ export const useDirectProfileSave = () => {
       setIsSaving(true);
       
       console.log('🚀 [DIRECT_SAVE] Calling updateProfile service...');
-      const result = await updateProfile(userId, profileData);
       
-      console.log('🚀 [DIRECT_SAVE] updateProfile result:', result);
+      // Add a timeout to prevent hanging forever
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Profile update timeout after 30 seconds')), 30000);
+      });
+      
+      const updatePromise = updateProfile(userId, profileData);
+      
+      const result = await Promise.race([updatePromise, timeoutPromise]);
+      
+      console.log('🚀📢 [DIRECT_SAVE] updateProfile service returned:', result);
       
       if (result) {
-        console.log('🚀 [DIRECT_SAVE] Save successful, showing success toast');
+        console.log('🚀✅ [DIRECT_SAVE] Save successful, showing success toast');
         toast({
           title: 'Profile Updated',
           description: 'Your profile has been successfully updated.',
         });
       } else {
-        console.log('🚀 [DIRECT_SAVE] Save failed, showing error toast');
+        console.log('🚀❌ [DIRECT_SAVE] Save failed, showing error toast');
         toast({
           title: 'Update Failed',
           description: 'Failed to update your profile. Please try again.',
@@ -60,7 +68,7 @@ export const useDirectProfileSave = () => {
       
       return result;
     } catch (error) {
-      console.error('🚀 [DIRECT_SAVE] Exception caught:', error);
+      console.error('🚀🔥 [DIRECT_SAVE] Exception caught:', error);
       toast({
         title: 'Save Error',
         description: `An error occurred: ${error?.message || 'Unknown error'}`,
@@ -68,8 +76,9 @@ export const useDirectProfileSave = () => {
       });
       return false;
     } finally {
-      console.log('🚀 [DIRECT_SAVE] Setting isSaving to false in finally block');
+      console.log('🚀🏁 [DIRECT_SAVE] Entering finally block. Resetting isSaving.');
       setIsSaving(false);
+      console.log('🚀🏁 [DIRECT_SAVE] isSaving SET TO FALSE');
     }
   }, []); // Remove isSaving from dependencies to prevent stale closures
 
