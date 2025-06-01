@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,6 +14,12 @@ interface LinkEmailFormProps {
   onClose?: () => void;
 }
 
+interface ValidationErrors {
+  email?: string;
+  password?: string;
+  confirmPassword?: string;
+}
+
 export const LinkEmailForm: React.FC<LinkEmailFormProps> = ({
   isVisible,
   isLoading,
@@ -23,6 +29,29 @@ export const LinkEmailForm: React.FC<LinkEmailFormProps> = ({
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
+
+  // Real-time validation
+  useEffect(() => {
+    const errors: ValidationErrors = {};
+
+    // Email validation
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      errors.email = 'Please enter a valid email address';
+    }
+
+    // Password validation
+    if (password && password.length < 6) {
+      errors.password = 'Password must be at least 6 characters long';
+    }
+
+    // Confirm password validation
+    if (confirmPassword && password && confirmPassword !== password) {
+      errors.confirmPassword = 'Passwords do not match';
+    }
+
+    setValidationErrors(errors);
+  }, [email, password, confirmPassword]);
 
   const handleLinkEmail = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,6 +78,16 @@ export const LinkEmailForm: React.FC<LinkEmailFormProps> = ({
       toast({
         title: 'Password too short',
         description: 'Password must be at least 6 characters long',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Check for validation errors
+    if (Object.keys(validationErrors).length > 0) {
+      toast({
+        title: 'Please fix validation errors',
+        description: 'Check the form for any errors before submitting',
         variant: 'destructive',
       });
       return;
@@ -128,8 +167,12 @@ export const LinkEmailForm: React.FC<LinkEmailFormProps> = ({
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="your@email.com"
+            className={validationErrors.email ? 'border-red-500' : ''}
             required
           />
+          {validationErrors.email && (
+            <p className="text-sm text-red-500 mt-1">{validationErrors.email}</p>
+          )}
         </div>
         <div>
           <Label htmlFor="link-password">New Password</Label>
@@ -139,9 +182,13 @@ export const LinkEmailForm: React.FC<LinkEmailFormProps> = ({
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Minimum 6 characters"
+            className={validationErrors.password ? 'border-red-500' : ''}
             required
             minLength={6}
           />
+          {validationErrors.password && (
+            <p className="text-sm text-red-500 mt-1">{validationErrors.password}</p>
+          )}
         </div>
         <div>
           <Label htmlFor="confirm-password">Confirm Password</Label>
@@ -151,14 +198,22 @@ export const LinkEmailForm: React.FC<LinkEmailFormProps> = ({
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             placeholder="Re-enter your password"
+            className={validationErrors.confirmPassword ? 'border-red-500' : ''}
             required
           />
+          {validationErrors.confirmPassword && (
+            <p className="text-sm text-red-500 mt-1">{validationErrors.confirmPassword}</p>
+          )}
         </div>
         <div className="flex gap-2 pt-2">
           <Button type="button" variant="outline" onClick={onClose} className="flex-1">
             Cancel
           </Button>
-          <Button type="submit" disabled={isLoading} className="flex-1">
+          <Button 
+            type="submit" 
+            disabled={isLoading || !email.trim() || !password.trim() || !confirmPassword.trim() || Object.keys(validationErrors).length > 0} 
+            className="flex-1"
+          >
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             <Mail className="mr-2 h-4 w-4" />
             Link Email & Password
