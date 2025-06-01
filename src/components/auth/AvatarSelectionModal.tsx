@@ -124,10 +124,9 @@ export const AvatarSelectionModal: React.FC<AvatarSelectionModalProps> = ({
                     
                     return (
                       <div key={genId} className="space-y-3">
-                        {/* Generation Header */}
-                        <div className="bg-gradient-to-r from-blue-50 to-transparent rounded-md p-3 border border-blue-100">
-                          <h3 className="font-bold text-gray-800">{genDetails.name}</h3>
-                          <p className="text-sm text-gray-600">{genDetails.games}</p>
+                        {/* Generation Header - More compact */}
+                        <div className="bg-gradient-to-r from-blue-50 to-transparent rounded-md p-2 border border-blue-100">
+                          <h3 className="font-bold text-gray-800 text-sm">{genDetails.name}: {genDetails.games}</h3>
                         </div>
                         
                         {/* Pokemon Grid for this generation */}
@@ -137,27 +136,29 @@ export const AvatarSelectionModal: React.FC<AvatarSelectionModalProps> = ({
                               key={`${avatarUrl}-${index}`}
                               className="relative flex justify-center items-center"
                             >
-                              <button
-                                onClick={() => setSelectedAvatar(avatarUrl)}
-                                className={`relative w-16 h-16 rounded-full transition-all duration-200 hover:scale-110 ${
-                                  selectedAvatar === avatarUrl
-                                    ? 'ring-4 ring-blue-500 ring-offset-2'
-                                    : 'hover:ring-2 hover:ring-blue-300'
-                                }`}
-                              >
-                                <Avatar className="w-16 h-16">
-                                  <AvatarImage 
-                                    src={avatarUrl} 
-                                    alt={`Pokemon avatar ${getPokemonIdFromUrl(avatarUrl)}`}
-                                    className="object-cover border-2 border-gray-200"
-                                  />
-                                </Avatar>
-                                {selectedAvatar === avatarUrl && (
-                                  <div className="absolute -top-1 -right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
-                                    <span className="text-white text-xs">✓</span>
-                                  </div>
-                                )}
-                              </button>
+                              <div className="relative w-16 h-16 flex justify-center items-center">
+                                <button
+                                  onClick={() => setSelectedAvatar(avatarUrl)}
+                                  className={`w-16 h-16 aspect-square rounded-full transition-all duration-200 hover:scale-110 ${
+                                    selectedAvatar === avatarUrl
+                                      ? 'ring-4 ring-blue-500 ring-offset-2'
+                                      : 'hover:ring-2 hover:ring-blue-300'
+                                  }`}
+                                >
+                                  <Avatar className="w-16 h-16">
+                                    <AvatarImage 
+                                      src={avatarUrl} 
+                                      alt={`Pokemon avatar ${getPokemonIdFromUrl(avatarUrl)}`}
+                                      className="object-cover border-2 border-gray-200"
+                                    />
+                                  </Avatar>
+                                  {selectedAvatar === avatarUrl && (
+                                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                                      <span className="text-white text-xs">✓</span>
+                                    </div>
+                                  )}
+                                </button>
+                              </div>
                             </div>
                           ))}
                         </div>
