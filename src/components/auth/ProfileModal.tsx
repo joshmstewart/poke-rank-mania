@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -12,8 +11,8 @@ import { User, Save, Loader2 } from 'lucide-react';
 import { 
   getProfile, 
   updateProfile, 
-  getTrainerAvatarsByGeneration, 
   getTrainerAvatarByUrl,
+  getTrainerAvatarsByGenerationAsync,
   type Profile,
   type TrainerAvatar 
 } from '@/services/profileService';
@@ -31,8 +30,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
   const [displayName, setDisplayName] = useState('');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-
-  const trainerAvatarsByGen = getTrainerAvatarsByGeneration();
+  const [trainerAvatarsByGen, setTrainerAvatarsByGen] = useState<Record<number, TrainerAvatar[]>>({});
+  const [loadingTrainers, setLoadingTrainers] = useState(false);
 
   console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] ===== COMPONENT RENDER =====');
   console.log('🎯🎯🎯 [PROFILE_MODAL_FIXED] Modal open:', open);
@@ -44,6 +43,32 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
     loading,
     timestamp: new Date().toISOString()
   });
+
+  // Load trainer avatars when modal opens
+  useEffect(() => {
+    if (open) {
+      loadTrainerAvatars();
+    }
+  }, [open]);
+
+  const loadTrainerAvatars = async () => {
+    setLoadingTrainers(true);
+    try {
+      console.log('📸 Loading trainer avatars from PokeAPI...');
+      const avatarsByGen = await getTrainerAvatarsByGenerationAsync();
+      setTrainerAvatarsByGen(avatarsByGen);
+      console.log('📸 Trainer avatars loaded:', Object.keys(avatarsByGen).length, 'generations');
+    } catch (error) {
+      console.error('📸 Error loading trainer avatars:', error);
+      toast({
+        title: 'Avatar Loading Error',
+        description: 'Could not load trainer avatars. Using fallback images.',
+        variant: 'default',
+      });
+    } finally {
+      setLoadingTrainers(false);
+    }
+  };
 
   useEffect(() => {
     if (open && user?.id) {
@@ -269,41 +294,53 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Choose Your Trainer Avatar</h3>
             
-            <Tabs defaultValue="1" className="w-full">
-              <TabsList className="grid w-full grid-cols-5">
-                {Object.keys(trainerAvatarsByGen).map((gen) => (
-                  <TabsTrigger key={gen} value={gen}>
-                    Gen {gen}
-                  </TabsTrigger>
+            {loadingTrainers ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin" />
+                <span className="ml-2">Loading trainer sprites from PokeAPI...</span>
+              </div>
+            ) : Object.keys(trainerAvatarsByGen).length > 0 ? (
+              <Tabs defaultValue="1" className="w-full">
+                <TabsList className="grid w-full grid-cols-5">
+                  {Object.keys(trainerAvatarsByGen).map((gen) => (
+                    <TabsTrigger key={gen} value={gen}>
+                      Gen {gen}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+                
+                {Object.entries(trainerAvatarsByGen).map(([gen, avatars]) => (
+                  <TabsContent key={gen} value={gen} className="space-y-4">
+                    <h4 className="font-medium">{getGenerationName(Number(gen))}</h4>
+                    <div className="grid grid-cols-4 gap-4">
+                      {avatars.map((avatar) => (
+                        <button
+                          key={avatar.id}
+                          onClick={() => handleAvatarSelect(avatar)}
+                          className={`p-3 rounded-lg border-2 transition-all hover:bg-muted ${
+                            selectedAvatar === avatar.url 
+                              ? 'border-primary bg-primary/10' 
+                              : 'border-border'
+                          }`}
+                        >
+                          <Avatar className="h-16 w-16 mx-auto mb-2">
+                            <AvatarImage src={avatar.url} alt={avatar.name} />
+                            <AvatarFallback>{avatar.name.slice(0, 2)}</AvatarFallback>
+                          </Avatar>
+                          <p className="text-sm font-medium">{avatar.name}</p>
+                          <p className="text-xs text-muted-foreground">{avatar.category}</p>
+                        </button>
+                      ))}
+                    </div>
+                  </TabsContent>
                 ))}
-              </TabsList>
-              
-              {Object.entries(trainerAvatarsByGen).map(([gen, avatars]) => (
-                <TabsContent key={gen} value={gen} className="space-y-4">
-                  <h4 className="font-medium">{getGenerationName(Number(gen))}</h4>
-                  <div className="grid grid-cols-4 gap-4">
-                    {avatars.map((avatar) => (
-                      <button
-                        key={avatar.id}
-                        onClick={() => handleAvatarSelect(avatar)}
-                        className={`p-3 rounded-lg border-2 transition-all hover:bg-muted ${
-                          selectedAvatar === avatar.url 
-                            ? 'border-primary bg-primary/10' 
-                            : 'border-border'
-                        }`}
-                      >
-                        <Avatar className="h-16 w-16 mx-auto mb-2">
-                          <AvatarImage src={avatar.url} alt={avatar.name} />
-                          <AvatarFallback>{avatar.name.slice(0, 2)}</AvatarFallback>
-                        </Avatar>
-                        <p className="text-sm font-medium">{avatar.name}</p>
-                        <p className="text-xs text-muted-foreground">{avatar.category}</p>
-                      </button>
-                    ))}
-                  </div>
-                </TabsContent>
-              ))}
-            </Tabs>
+              </Tabs>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <p>Could not load trainer avatars from PokeAPI.</p>
+                <p className="text-sm">Please try refreshing the modal.</p>
+              </div>
+            )}
           </div>
 
           {/* Action Buttons */}
