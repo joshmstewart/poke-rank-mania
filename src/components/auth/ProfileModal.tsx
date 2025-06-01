@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/auth/useAuth';
@@ -24,56 +25,36 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  console.log('🎯 [PROFILE_MODAL_DEBUG] ===== COMPONENT RENDER =====');
-  console.log('🎯 [PROFILE_MODAL_DEBUG] Modal open:', open);
-  console.log('🎯 [PROFILE_MODAL_DEBUG] User ID:', user?.id);
-  console.log('🎯 [PROFILE_MODAL_DEBUG] User email:', user?.email);
-  console.log('🎯 [PROFILE_MODAL_DEBUG] User phone:', user?.phone);
-  console.log('🎯 [PROFILE_MODAL_DEBUG] Loading state:', loading);
-  console.log('🎯 [PROFILE_MODAL_DEBUG] Import check - getProfile function:', typeof getProfile);
+  console.log('🎯 [PROFILE_MODAL] Modal open:', open, 'User ID:', user?.id);
 
   useEffect(() => {
-    console.log('🎯 [PROFILE_MODAL_DEBUG] ===== useEffect TRIGGERED =====');
-    console.log('🎯 [PROFILE_MODAL_DEBUG] Effect dependencies:', { open, userId: user?.id });
-    
     const loadProfile = async () => {
-      console.log('🎯 [PROFILE_MODAL_DEBUG] ===== loadProfile START =====');
-      
       if (!user?.id) {
-        console.log('🎯 [PROFILE_MODAL_DEBUG] No user ID, setting loading to false');
+        console.log('🎯 [PROFILE_MODAL] No user ID, setting loading to false');
         setLoading(false);
         return;
       }
 
+      if (!open) {
+        console.log('🎯 [PROFILE_MODAL] Modal closed, skipping profile load');
+        return;
+      }
+
       try {
-        console.log('🎯 [PROFILE_MODAL_DEBUG] About to call getProfile with ID:', user.id);
-        console.log('🎯 [PROFILE_MODAL_DEBUG] User object details:', {
-          id: user.id,
-          email: user.email,
-          phone: user.phone,
-          created_at: user.created_at,
-          app_metadata: user.app_metadata,
-          user_metadata: user.user_metadata
-        });
-        console.log('🎯 [PROFILE_MODAL_DEBUG] Calling getProfile...');
+        console.log('🎯 [PROFILE_MODAL] Loading profile for:', user.id);
         
         const result = await getProfile(user.id);
         
-        console.log('🎯 [PROFILE_MODAL_DEBUG] ===== getProfile COMPLETED =====');
-        console.log('🎯 [PROFILE_MODAL_DEBUG] Result received:', result);
-        console.log('🎯 [PROFILE_MODAL_DEBUG] Result type:', typeof result);
-        console.log('🎯 [PROFILE_MODAL_DEBUG] Result is null:', result === null);
-        console.log('🎯 [PROFILE_MODAL_DEBUG] Result is undefined:', result === undefined);
+        console.log('🎯 [PROFILE_MODAL] Profile result:', result);
         
         if (result) {
-          console.log('🎯 [PROFILE_MODAL_DEBUG] Setting profile data...');
           setProfile(result);
           setSelectedAvatar(result.avatar_url || '');
           setUsername(result.username || '');
           setDisplayName(result.display_name || '');
-          console.log('🎯 [PROFILE_MODAL_DEBUG] Profile data set successfully');
+          console.log('🎯 [PROFILE_MODAL] Profile loaded successfully');
         } else {
-          console.log('🎯 [PROFILE_MODAL_DEBUG] No profile found, setting defaults...');
+          console.log('🎯 [PROFILE_MODAL] No profile found, setting defaults');
           
           // Create better defaults for phone users
           let defaultDisplayName = 'New User';
@@ -93,15 +74,10 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
           setSelectedAvatar('');
           setUsername(defaultUsername);
           setDisplayName(defaultDisplayName);
-          console.log('🎯 [PROFILE_MODAL_DEBUG] Defaults set:', { defaultDisplayName, defaultUsername });
         }
         
       } catch (error) {
-        console.error('🎯 [PROFILE_MODAL_DEBUG] ===== ERROR IN loadProfile =====');
-        console.error('🎯 [PROFILE_MODAL_DEBUG] Error:', error);
-        console.error('🎯 [PROFILE_MODAL_DEBUG] Error type:', typeof error);
-        console.error('🎯 [PROFILE_MODAL_DEBUG] Error message:', error?.message);
-        console.error('🎯 [PROFILE_MODAL_DEBUG] Error stack:', error?.stack);
+        console.error('🎯 [PROFILE_MODAL] Error loading profile:', error);
         
         // Set defaults on error
         const defaultDisplayName = user.phone ? `User ${user.phone.slice(-4)}` : user.email ? user.email.split('@')[0] : 'New User';
@@ -117,18 +93,16 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
           variant: 'destructive',
         });
       } finally {
-        console.log('🎯 [PROFILE_MODAL_DEBUG] Setting loading to false in finally block');
         setLoading(false);
-        console.log('🎯 [PROFILE_MODAL_DEBUG] ===== loadProfile END =====');
       }
     };
 
     if (open) {
-      console.log('🎯 [PROFILE_MODAL_DEBUG] Modal is open, starting load...');
+      console.log('🎯 [PROFILE_MODAL] Modal opened, loading profile');
       setLoading(true);
       loadProfile();
     } else {
-      console.log('🎯 [PROFILE_MODAL_DEBUG] Modal closed, resetting state');
+      console.log('🎯 [PROFILE_MODAL] Modal closed, resetting state');
       setLoading(true);
       setProfile(null);
       setSelectedAvatar('');
@@ -138,10 +112,10 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
   }, [open, user?.id, user?.email, user?.phone]);
 
   const handleSave = async () => {
-    console.log('🎯 [PROFILE_MODAL_DEBUG] handleSave called');
+    console.log('🎯 [PROFILE_MODAL] Saving profile');
     
     if (!user?.id) {
-      console.log('🎯 [PROFILE_MODAL_DEBUG] No user ID for save');
+      console.log('🎯 [PROFILE_MODAL] No user ID for save');
       return;
     }
 
@@ -168,7 +142,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
         });
       }
     } catch (error) {
-      console.error('🎯 [PROFILE_MODAL_DEBUG] Error saving profile:', error);
+      console.error('🎯 [PROFILE_MODAL] Error saving profile:', error);
       toast({
         title: 'Save Error',
         description: 'An error occurred while saving your profile.',
@@ -180,11 +154,9 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
   };
 
   if (!user?.id) {
-    console.log('🎯 [PROFILE_MODAL_DEBUG] No user, returning null');
+    console.log('🎯 [PROFILE_MODAL] No user, returning null');
     return null;
   }
-
-  console.log('🎯 [PROFILE_MODAL_DEBUG] About to render modal, loading:', loading);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
