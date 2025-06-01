@@ -1,3 +1,4 @@
+
 import { PokemonFormType } from "./types";
 
 // Hardcoded Pokemon categorization based on manual review
@@ -156,7 +157,6 @@ export const hardcodedPokemonCategories: Record<string, PokemonFormType> = {
   "mewtwo": "normal",
   "mew": "normal",
 
-  // ADD ALL MISSING NORMAL POKEMON FROM GENERATIONS 2-9 (IDs 152-1025)
   // Generation 2
   "chikorita": "normal", "bayleef": "normal", "meganium": "normal", "cyndaquil": "normal", "quilava": "normal", "typhlosion": "normal", "totodile": "normal", "croconaw": "normal", "feraligatr": "normal", "sentret": "normal", "furret": "normal", "hoothoot": "normal", "noctowl": "normal", "ledyba": "normal", "ledian": "normal", "spinarak": "normal", "ariados": "normal", "crobat": "normal", "chinchou": "normal", "lanturn": "normal", "pichu": "normal", "cleffa": "normal", "igglybuff": "normal", "togepi": "normal", "togetic": "normal", "natu": "normal", "xatu": "normal", "mareep": "normal", "flaaffy": "normal", "ampharos": "normal", "bellossom": "normal", "marill": "normal", "azumarill": "normal", "sudowoodo": "normal", "politoed": "normal", "hoppip": "normal", "skiploom": "normal", "jumpluff": "normal", "aipom": "normal", "sunkern": "normal", "sunflora": "normal", "yanma": "normal", "wooper": "normal", "quagsire": "normal", "espeon": "normal", "umbreon": "normal", "murkrow": "normal", "slowking": "normal", "misdreavus": "normal", "unown": "normal", "wobbuffet": "normal", "girafarig": "normal", "pineco": "normal", "forretress": "normal", "dunsparce": "normal", "gligar": "normal", "steelix": "normal", "snubbull": "normal", "granbull": "normal", "qwilfish": "normal", "scizor": "normal", "shuckle": "normal", "heracross": "normal", "sneasel": "normal", "teddiursa": "normal", "ursaring": "normal", "slugma": "normal", "magcargo": "normal", "swinub": "normal", "piloswine": "normal", "corsola": "normal", "remoraid": "normal", "octillery": "normal", "delibird": "normal", "mantine": "normal", "skarmory": "normal", "houndour": "normal", "houndoom": "normal", "kingdra": "normal", "phanpy": "normal", "donphan": "normal", "porygon2": "normal", "stantler": "normal", "smeargle": "normal", "tyrogue": "normal", "hitmontop": "normal", "smoochum": "normal", "elekid": "normal", "magby": "normal", "miltank": "normal", "blissey": "normal", "raikou": "normal", "entei": "normal", "suicune": "normal", "larvitar": "normal", "pupitar": "normal", "tyranitar": "normal", "lugia": "normal", "ho-oh": "normal", "celebi": "normal",
 
@@ -397,11 +397,9 @@ export const hardcodedPokemonCategories: Record<string, PokemonFormType> = {
   "rotom-frost": "forms",
   "rotom-fan": "forms",
   "rotom-mow": "forms",
-  "rotom": "normal",
   "castform-sunny": "forms",
   "castform-rainy": "forms",
   "castform-snowy": "forms",
-  "castform": "normal",
   "darmanitan-zen": "forms",
   "meloetta-pirouette": "forms",
   "meloetta-aria": "normal",
@@ -410,17 +408,14 @@ export const hardcodedPokemonCategories: Record<string, PokemonFormType> = {
   "landorus-therian": "forms",
   "kyurem-black": "forms",
   "kyurem-white": "forms",
-  "kyurem": "normal",
   "keldeo-resolute": "forms",
   "keldeo-ordinary": "normal",
   "aegislash-blade": "forms",
   "aegislash-shield": "normal",
   "floette-eternal": "forms",
   "hoopa-unbound": "forms",
-  "hoopa": "normal",
   "greninja-battle-bond": "blocked",
   "greninja-ash": "forms",
-  "greninja": "normal",
   "zygarde-10-power-construct": "forms",
   "zygarde-50-power-construct": "forms",
   "zygarde-complete": "forms",
@@ -440,7 +435,6 @@ export const hardcodedPokemonCategories: Record<string, PokemonFormType> = {
   "necrozma-dusk": "forms",
   "necrozma-dawn": "forms",
   "necrozma-ultra": "forms",
-  "necrozma": "normal",
   "darmanitan-galar-zen": "forms",
   "toxtricity-low-key": "forms",
   "toxtricity-amped": "normal",
@@ -449,22 +443,16 @@ export const hardcodedPokemonCategories: Record<string, PokemonFormType> = {
   "morpeko-hangry": "forms",
   "morpeko-full-belly": "normal",
   "zacian-crowned": "forms",
-  "zacian": "normal",
   "zamazenta-crowned": "forms",
-  "zamazenta": "normal",
   "urshifu-rapid-strike": "forms",
   "urshifu-single-strike": "normal",
   "zarude-dada": "forms",
-  "zarude": "normal",
   "calyrex-ice": "forms",
   "calyrex-shadow": "forms",
-  "calyrex": "normal",
   "ursaluna-bloodmoon": "forms",
   "ogerpon-wellspring-mask": "forms",
   "ogerpon-hearthflame-mask": "forms",
-  "ogerpon": "normal",
   "terapagos-terastal": "forms",
-  "terapagos": "normal",
   "dudunsparce-three-segment": "forms",
   "dudunsparce-two-segment": "normal",
   "palafin-hero": "forms",
@@ -475,9 +463,7 @@ export const hardcodedPokemonCategories: Record<string, PokemonFormType> = {
   "tatsugiri-stretchy": "forms",
   "tatsugiri-curly": "normal",
   "gimmighoul-roaming": "forms",
-  "gimmighoul": "normal",
   "magearna-original": "forms",
-  "magearna": "normal",
 
   // Blocked Pokemon (totem, size variants, special modes, etc.)
   "pumpkaboo-small": "blocked",
@@ -512,23 +498,34 @@ export const hardcodedPokemonCategories: Record<string, PokemonFormType> = {
   "rockruff-own-tempo": "blocked",
   "cramorant-gulping": "blocked",
   "cramorant-gorging": "blocked",
-  "cramorant": "normal",
   "koraidon-limited-build": "blocked",
   "koraidon-sprinting-build": "blocked",
   "koraidon-swimming-build": "blocked",
   "koraidon-gliding-build": "blocked",
-  "koraidon": "normal",
   "miraidon-low-power-mode": "blocked",
   "miraidon-drive-mode": "blocked",
   "miraidon-aquatic-mode": "blocked",
-  "miraidon-glide-mode": "blocked",
-  "miraidon": "normal"
+  "miraidon-glide-mode": "blocked"
 };
 
 // Get all normal Pokemon IDs from 1-1025 for faster lookup
 export const normalPokemonRange = new Set(Array.from({ length: 1025 }, (_, i) => i + 1));
 
+// Normalize Pokemon name for lookup (convert to lowercase, replace spaces with hyphens)
+const normalizePokemonName = (name: string): string => {
+  return name.toLowerCase().trim().replace(/\s+/g, '-');
+};
+
 export const getHardcodedCategory = (pokemonName: string): PokemonFormType | null => {
-  const normalizedName = pokemonName.toLowerCase().trim();
-  return hardcodedPokemonCategories[normalizedName] || null;
+  const normalizedName = normalizePokemonName(pokemonName);
+  console.log(`🔍 [HARDCODED_LOOKUP] Original: "${pokemonName}" -> Normalized: "${normalizedName}"`);
+  
+  const category = hardcodedPokemonCategories[normalizedName] || null;
+  if (category) {
+    console.log(`✅ [HARDCODED_FOUND] "${pokemonName}" -> "${normalizedName}" = ${category}`);
+  } else {
+    console.log(`❌ [HARDCODED_MISSING] "${pokemonName}" -> "${normalizedName}" not found`);
+  }
+  
+  return category;
 };
