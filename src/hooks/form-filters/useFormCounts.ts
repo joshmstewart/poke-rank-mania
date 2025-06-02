@@ -23,8 +23,8 @@ export const useFormCounts = (
       blocked: 0
     };
     
-    // SIMPLIFIED: Count all categories including blocked from raw unfiltered data
-    console.log(`📊 [FORM_COUNTS] Processing ${rawUnfilteredPokemon.length} raw unfiltered Pokemon for all categories`);
+    // FIXED: Always count all categories from raw unfiltered data regardless of filter state
+    console.log(`📊 [FORM_COUNTS] Counting all categories from ${rawUnfilteredPokemon.length} raw unfiltered Pokemon`);
     rawUnfilteredPokemon.forEach(pokemon => {
       const category = getPokemonFormCategory(pokemon);
       if (category) {
@@ -35,9 +35,9 @@ export const useFormCounts = (
       }
     });
     
-    console.log(`🔢 [FORM_COUNTS] Final calculated counts:`, counts);
+    console.log(`🔢 [FORM_COUNTS] Final calculated counts (showing actual totals regardless of filter state):`, counts);
     console.log(`🚫 [BLOCKED_COUNT_FINAL] Final blocked count: ${counts.blocked}`);
     
     return counts;
-  }, [allPokemon, rawUnfilteredPokemon, getPokemonFormCategory]);
+  }, [rawUnfilteredPokemon, getPokemonFormCategory]); // Removed dependency on allPokemon and filters since we always count from raw data
 };
