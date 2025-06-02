@@ -36,7 +36,7 @@ export const useBattleProcessorResult = (
       participants: currentBattle.map(p => ({ id: p.id, name: p.name })),
       winners: selectedPokemonIds,
       battleType,
-      timestamp: Date.now()
+      timestamp: Date.now().toString()
     };
 
     console.log('[BATTLE_PROCESSOR_RESULT] Created battle result:', newBattle);
