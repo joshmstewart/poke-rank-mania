@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import {
   DropdownMenu,
@@ -290,11 +289,11 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({ user }) => {
     }
   }, [user.id, sessionId]);
 
-  // NEW: Direct claim session functionality to fix sync issues
+  // FIXED: Updated claim session functionality to handle existing sessions properly
   const claimSession = useCallback(async () => {
-    console.log('🔗🔗🔗 [CLAIM_SESSION] ===== CLAIMING SESSION =====');
-    console.log('🔗🔗🔗 [CLAIM_SESSION] Current user ID:', user.id);
-    console.log('🔗🔗🔗 [CLAIM_SESSION] Current sessionId:', sessionId);
+    console.log('🔗🔗🔗 [CLAIM_SESSION_FIXED] ===== CLAIMING SESSION (FIXED) =====');
+    console.log('🔗🔗🔗 [CLAIM_SESSION_FIXED] Current user ID:', user.id);
+    console.log('🔗🔗🔗 [CLAIM_SESSION_FIXED] Current sessionId:', sessionId);
     
     try {
       if (!sessionId) {
@@ -307,21 +306,21 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({ user }) => {
       }
       
       // Step 1: Update profile with current session ID
-      console.log('🔗🔗🔗 [CLAIM_SESSION] Step 1: Updating profile with sessionId...');
+      console.log('🔗🔗🔗 [CLAIM_SESSION_FIXED] Step 1: Updating profile with sessionId...');
       const { error: profileError } = await supabase
         .from('profiles')
         .update({ trueskill_session_id: sessionId })
         .eq('id', user.id);
         
       if (profileError) {
-        console.error('🔗🔗🔗 [CLAIM_SESSION] Profile update error:', profileError);
+        console.error('🔗🔗🔗 [CLAIM_SESSION_FIXED] Profile update error:', profileError);
         throw profileError;
       }
       
-      console.log('🔗🔗🔗 [CLAIM_SESSION] ✅ Profile updated with sessionId:', sessionId);
+      console.log('🔗🔗🔗 [CLAIM_SESSION_FIXED] ✅ Profile updated with sessionId:', sessionId);
       
       // Step 2: Check if session exists in trueskill_sessions table
-      console.log('🔗🔗🔗 [CLAIM_SESSION] Step 2: Checking if session exists...');
+      console.log('🔗🔗🔗 [CLAIM_SESSION_FIXED] Step 2: Checking if session exists...');
       const { data: existingSession, error: checkError } = await supabase
         .from('trueskill_sessions')
         .select('id, user_id, ratings_data')
@@ -329,40 +328,57 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({ user }) => {
         .maybeSingle();
         
       if (checkError) {
-        console.error('🔗🔗🔗 [CLAIM_SESSION] Session check error:', checkError);
+        console.error('🔗🔗🔗 [CLAIM_SESSION_FIXED] Session check error:', checkError);
         throw checkError;
       }
       
-      // Step 3: Update or create the session
+      // Step 3: Handle existing session or create new one
       if (existingSession) {
-        console.log('🔗🔗🔗 [CLAIM_SESSION] Found existing session:', existingSession);
-        console.log('🔗🔗🔗 [CLAIM_SESSION] Step 3: Updating existing session with user_id...');
+        console.log('🔗🔗🔗 [CLAIM_SESSION_FIXED] Found existing session:', existingSession);
         
-        const { error: updateError } = await supabase
-          .from('trueskill_sessions')
-          .update({ user_id: user.id })
-          .eq('session_id', sessionId);
+        // FIXED: Update existing session's user_id if needed
+        if (existingSession.user_id !== user.id) {
+          console.log('🔗🔗🔗 [CLAIM_SESSION_FIXED] Step 3a: Updating existing session user_id...');
           
-        if (updateError) {
-          console.error('🔗🔗🔗 [CLAIM_SESSION] Session update error:', updateError);
-          throw updateError;
+          const { error: updateError } = await supabase
+            .from('trueskill_sessions')
+            .update({ user_id: user.id })
+            .eq('session_id', sessionId);
+            
+          if (updateError) {
+            console.error('🔗🔗🔗 [CLAIM_SESSION_FIXED] Session update error:', updateError);
+            throw updateError;
+          }
+          
+          console.log(`🔗🔗🔗 [CLAIM_SESSION_FIXED] ✅ Updated existing session user_id to: ${user.id}`);
+        } else {
+          console.log('🔗🔗🔗 [CLAIM_SESSION_FIXED] ✅ Session already linked to correct user');
         }
         
         const ratingsCount = Object.keys(existingSession.ratings_data || {}).length;
-        console.log(`🔗🔗🔗 [CLAIM_SESSION] ✅ Updated session with ${ratingsCount} ratings to user: ${user.id}`);
         
         toast({
           title: "✅ Session Claimed Successfully!",
-          description: `Successfully linked session with ${ratingsCount} ratings to your account!`,
+          description: `Successfully linked existing session with ${ratingsCount} ratings to your account!`,
           duration: 5000
         });
+        
       } else {
-        // Session doesn't exist yet, get ratings from store and force create it
-        console.log('🔗🔗🔗 [CLAIM_SESSION] No existing session found');
-        console.log('🔗🔗🔗 [CLAIM_SESSION] Step 3: Creating new session with ratings...');
+        // FIXED: Only create new session if it doesn't exist
+        console.log('🔗🔗🔗 [CLAIM_SESSION_FIXED] No existing session found');
+        console.log('🔗🔗🔗 [CLAIM_SESSION_FIXED] Step 3b: Creating new session with ratings...');
         
         const allRatings = getAllRatings();
         const ratingsCount = Object.keys(allRatings).length;
+        
+        if (ratingsCount === 0) {
+          toast({
+            title: "No Ratings to Sync",
+            description: "No local ratings found to create a session with.",
+            variant: "destructive"
+          });
+          return;
+        }
         
         const { error: insertError } = await supabase
           .from('trueskill_sessions')
@@ -374,23 +390,51 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({ user }) => {
           });
           
         if (insertError) {
-          console.error('🔗🔗🔗 [CLAIM_SESSION] Session insert error:', insertError);
-          throw insertError;
+          console.error('🔗🔗🔗 [CLAIM_SESSION_FIXED] Session insert error:', insertError);
+          
+          // FIXED: Handle duplicate key error gracefully
+          if (insertError.code === '23505') {
+            console.log('🔗🔗🔗 [CLAIM_SESSION_FIXED] Session already exists, attempting to update...');
+            
+            const { error: updateError } = await supabase
+              .from('trueskill_sessions')
+              .update({ 
+                user_id: user.id,
+                ratings_data: allRatings,
+                last_updated: new Date().toISOString()
+              })
+              .eq('session_id', sessionId);
+              
+            if (updateError) {
+              console.error('🔗🔗🔗 [CLAIM_SESSION_FIXED] Fallback update error:', updateError);
+              throw updateError;
+            }
+            
+            console.log(`🔗🔗🔗 [CLAIM_SESSION_FIXED] ✅ Updated session with ${ratingsCount} ratings for user: ${user.id}`);
+            
+            toast({
+              title: "✅ Session Updated!",
+              description: `Updated existing session with ${ratingsCount} ratings and linked to your account!`,
+              duration: 5000
+            });
+          } else {
+            throw insertError;
+          }
+        } else {
+          console.log(`🔗🔗🔗 [CLAIM_SESSION_FIXED] ✅ Created new session with ${ratingsCount} ratings for user: ${user.id}`);
+          
+          toast({
+            title: "✅ New Session Created!",
+            description: `Created and linked new session with ${ratingsCount} ratings to your account!`,
+            duration: 5000
+          });
         }
-        
-        console.log(`🔗🔗🔗 [CLAIM_SESSION] ✅ Created new session with ${ratingsCount} ratings for user: ${user.id}`);
-        
-        toast({
-          title: "✅ New Session Created!",
-          description: `Created and linked new session with ${ratingsCount} ratings to your account!`,
-          duration: 5000
-        });
       }
 
-      console.log('🔗🔗🔗 [CLAIM_SESSION] ===== CLAIM COMPLETED SUCCESSFULLY =====');
+      console.log('🔗🔗🔗 [CLAIM_SESSION_FIXED] ===== CLAIM COMPLETED SUCCESSFULLY =====');
       
     } catch (error) {
-      console.error('🔗🔗🔗 [CLAIM_SESSION] ❌ Session claim failed:', error);
+      console.error('🔗🔗🔗 [CLAIM_SESSION_FIXED] ❌ Session claim failed:', error);
       toast({
         title: "❌ Session Claim Failed",
         description: `Error claiming session: ${error.message}`,
