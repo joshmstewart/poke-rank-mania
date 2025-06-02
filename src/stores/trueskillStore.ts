@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Rating } from 'ts-trueskill';
+import { supabase } from '@/integrations/supabase/client';
 
 interface TrueSkillState {
   ratings: Record<string, { mu: number; sigma: number; battleCount?: number; lastUpdated?: string }>;
