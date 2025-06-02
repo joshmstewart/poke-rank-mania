@@ -37,8 +37,18 @@ export const useProfileLoader = (userId: string | undefined) => {
     lastUserId.current = userId;
     setIsProfileLoaded(false);
     
-    // Always fetch fresh profile data (no cache check first)
-    prefetchProfile(userId, true).then(() => {
+    // Check cache first before fetching
+    const cachedProfile = getProfileFromCache(userId);
+    if (cachedProfile) {
+      console.log('🔄 [PROFILE_LOADER] ✅ Using cached profile with avatar:', cachedProfile.avatar_url);
+      setCurrentProfile({ ...cachedProfile });
+      setIsProfileLoaded(true);
+      isLoadingProfile.current = false;
+      return;
+    }
+    
+    // No cached data, fetch fresh
+    prefetchProfile(userId, false).then(() => {
       const freshProfile = getProfileFromCache(userId);
       
       if (freshProfile) {

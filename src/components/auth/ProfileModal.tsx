@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/auth/useAuth';
 import { ProfileModalHeader } from './ProfileModalHeader';
@@ -16,7 +16,8 @@ interface ProfileModalProps {
 
 export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }) => {
   const { user } = useAuth();
-  const { prefetchProfile, getProfileFromCache } = useProfileCache();
+  const { getProfileFromCache } = useProfileCache();
+  const loadingRef = useRef(false);
   
   const {
     selectedAvatar,
@@ -30,44 +31,40 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
     mountedRef
   } = useProfileFormState(open);
 
-  // Load current profile data when modal opens - ALWAYS FETCH FRESH
+  // Load profile data when modal opens - simplified approach
   useEffect(() => {
-    if (open && user?.id && mountedRef.current) {
-      console.log('🎭 [PROFILE_MODAL] ===== MODAL OPENED - LOADING FRESH DATA =====');
+    if (open && user?.id && mountedRef.current && !loadingRef.current) {
+      console.log('🎭 [PROFILE_MODAL] ===== MODAL OPENED - LOADING DATA =====');
+      loadingRef.current = true;
       
-      // Always fetch fresh data when modal opens - force refresh
-      const loadFreshData = async () => {
-        console.log('🎭 [PROFILE_MODAL] Forcing fresh profile fetch for modal...');
+      // Get existing cached profile data
+      const cachedProfile = getProfileFromCache(user.id);
+      
+      if (cachedProfile && mountedRef.current) {
+        console.log('🎭 [PROFILE_MODAL] Setting modal form with cached profile:', {
+          avatar: cachedProfile.avatar_url,
+          username: cachedProfile.username,
+          displayName: cachedProfile.display_name
+        });
         
-        try {
-          // Force fresh fetch (no cache)
-          await prefetchProfile(user.id, true);
-          const freshProfile = getProfileFromCache(user.id);
-          
-          if (freshProfile && mountedRef.current) {
-            console.log('🎭 [PROFILE_MODAL] Setting modal form with FRESH profile:', {
-              avatar: freshProfile.avatar_url,
-              username: freshProfile.username,
-              displayName: freshProfile.display_name
-            });
-            
-            setSelectedAvatar(freshProfile.avatar_url || '');
-            setUsername(freshProfile.username || '');
-            setDisplayName(freshProfile.display_name || '');
-          } else {
-            console.log('🎭 [PROFILE_MODAL] No fresh profile found, using defaults');
-            setSelectedAvatar('');
-            setUsername('');
-            setDisplayName('');
-          }
-        } catch (error) {
-          console.error('🎭 [PROFILE_MODAL] Error loading fresh profile:', error);
-        }
-      };
+        setSelectedAvatar(cachedProfile.avatar_url || '');
+        setUsername(cachedProfile.username || '');
+        setDisplayName(cachedProfile.display_name || '');
+      } else {
+        console.log('🎭 [PROFILE_MODAL] No cached profile found, using defaults');
+        setSelectedAvatar('');
+        setUsername('');
+        setDisplayName('');
+      }
       
-      loadFreshData();
+      loadingRef.current = false;
     }
-  }, [open, user?.id, prefetchProfile, getProfileFromCache, setSelectedAvatar, setUsername, setDisplayName, mountedRef]);
+
+    // Reset loading flag when modal closes
+    if (!open) {
+      loadingRef.current = false;
+    }
+  }, [open, user?.id, getProfileFromCache, setSelectedAvatar, setUsername, setDisplayName, mountedRef]);
 
   const handleAvatarClick = () => {
     if (!mountedRef.current) return;

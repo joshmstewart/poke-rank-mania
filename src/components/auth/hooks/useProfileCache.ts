@@ -21,8 +21,8 @@ export const useProfileCache = () => {
       return null;
     }
     
-    // Cache is valid for 2 minutes only (reduced from 5)
-    const isExpired = Date.now() - cached.timestamp > 2 * 60 * 1000;
+    // Cache is valid for 5 minutes
+    const isExpired = Date.now() - cached.timestamp > 5 * 60 * 1000;
     if (isExpired) {
       console.log('🎯 [PROFILE_CACHE] Cache expired for user:', userId);
       return null;
@@ -38,9 +38,19 @@ export const useProfileCache = () => {
       return;
     }
 
-    if (!forceRefresh && fetchingRef.current.has(userId)) {
-      console.log('🎯 [PROFILE_CACHE] Already fetching profile for:', userId);
+    // Prevent multiple simultaneous fetches for the same user
+    if (fetchingRef.current.has(userId)) {
+      console.log('🎯 [PROFILE_CACHE] Already fetching profile for:', userId, '- skipping duplicate request');
       return;
+    }
+
+    // If not forcing refresh and we have valid cached data, skip fetch
+    if (!forceRefresh) {
+      const cachedProfile = getCachedProfile(userId);
+      if (cachedProfile) {
+        console.log('🎯 [PROFILE_CACHE] Valid cached profile exists, skipping fetch');
+        return;
+      }
     }
     
     fetchingRef.current.add(userId);
@@ -50,7 +60,7 @@ export const useProfileCache = () => {
     setCache(prev => ({
       ...prev,
       [userId]: {
-        profile: forceRefresh ? null : (prev[userId]?.profile || null),
+        profile: prev[userId]?.profile || null,
         timestamp: Date.now(),
         loading: true
       }
@@ -84,7 +94,7 @@ export const useProfileCache = () => {
       fetchingRef.current.delete(userId);
       console.log('🎯 [PROFILE_CACHE] Prefetch completed for user:', userId);
     }
-  }, []);
+  }, [getCachedProfile]);
 
   const getProfileFromCache = useCallback((userId: string): Profile | null => {
     const cachedProfile = getCachedProfile(userId);
