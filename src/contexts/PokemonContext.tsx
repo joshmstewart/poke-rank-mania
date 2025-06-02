@@ -13,16 +13,24 @@ const PokemonContext = createContext<PokemonContextType | undefined>(undefined);
 interface PokemonProviderProps {
   children: ReactNode;
   allPokemon: Pokemon[];
+  rawUnfilteredPokemon?: Pokemon[]; // NEW: Accept separate raw data
 }
 
-export const PokemonProvider: React.FC<PokemonProviderProps> = ({ children, allPokemon }) => {
-  console.log('[DEBUG PokemonContext] Provider rendering with', allPokemon.length, 'Pokemon');
+export const PokemonProvider: React.FC<PokemonProviderProps> = ({ 
+  children, 
+  allPokemon, 
+  rawUnfilteredPokemon 
+}) => {
+  console.log('[DEBUG PokemonContext] Provider rendering with', allPokemon.length, 'filtered Pokemon');
+  console.log('[DEBUG PokemonContext] Raw unfiltered Pokemon count:', rawUnfilteredPokemon?.length || 0);
   
-  // Store the raw unfiltered Pokemon data that gets passed in
-  const rawUnfilteredPokemon = useMemo(() => {
-    console.log(`📝 [RAW_POKEMON_STORAGE] Storing ${allPokemon.length} raw unfiltered Pokemon for form counting`);
-    return allPokemon;
-  }, [allPokemon]);
+  // Use the explicitly passed raw data, or fall back to allPokemon if not provided
+  const actualRawUnfilteredPokemon = useMemo(() => {
+    const rawData = rawUnfilteredPokemon || allPokemon;
+    console.log(`📝 [RAW_POKEMON_STORAGE] Storing ${rawData.length} ACTUAL raw unfiltered Pokemon for form counting`);
+    console.log(`📝 [RAW_POKEMON_STORAGE] Is this truly raw data? ${rawUnfilteredPokemon ? 'YES' : 'NO (fallback to filtered)'}`);
+    return rawData;
+  }, [rawUnfilteredPokemon, allPokemon]);
   
   // CRITICAL: Verify the source data has types before creating the map
   if (allPokemon.length > 0) {
@@ -93,19 +101,19 @@ export const PokemonProvider: React.FC<PokemonProviderProps> = ({ children, allP
   const contextValue = useMemo(() => {
     const value = {
       allPokemon, // This should be a new array reference when data changes
-      rawUnfilteredPokemon, // Raw unfiltered data for counting
+      rawUnfilteredPokemon: actualRawUnfilteredPokemon, // ACTUAL raw unfiltered data for counting
       pokemonLookupMap // This is always a new Map instance from above useMemo
     };
     
     // NEW: Enhanced logging to track context value changes
     console.log(`🌟🌟🌟 [CONTEXT_VALUE_CRITICAL] NEW context value created - timestamp: ${Date.now()}`);
     console.log(`🌟🌟🌟 [CONTEXT_VALUE_CRITICAL] allPokemon length: ${allPokemon.length}, map size: ${pokemonLookupMap.size}`);
-    console.log(`🌟🌟🌟 [CONTEXT_VALUE_CRITICAL] rawUnfilteredPokemon length: ${rawUnfilteredPokemon.length}`);
+    console.log(`🌟🌟🌟 [CONTEXT_VALUE_CRITICAL] rawUnfilteredPokemon length: ${actualRawUnfilteredPokemon.length}`);
     console.log(`🌟🌟🌟 [CONTEXT_VALUE_CRITICAL] allPokemon reference: ${allPokemon}`);
     console.log(`🌟🌟🌟 [CONTEXT_VALUE_CRITICAL] pokemonLookupMap reference: ${pokemonLookupMap}`);
     
     return value;
-  }, [allPokemon, rawUnfilteredPokemon, pokemonLookupMap]); // All dependencies ensure new value when any changes
+  }, [allPokemon, actualRawUnfilteredPokemon, pokemonLookupMap]); // All dependencies ensure new value when any changes
 
   return (
     <PokemonContext.Provider value={contextValue}>

@@ -7,10 +7,12 @@ import { useFormFilters } from "@/hooks/form-filters/useFormFilters";
 // CRITICAL FIX: Global singleton to prevent multiple simultaneous loads
 let globalLoadingLock = false;
 let globalPokemonCache: Pokemon[] | null = null;
+let globalRawPokemonCache: Pokemon[] | null = null; // NEW: Store truly raw data
 let globalLoadPromise: Promise<Pokemon[]> | null = null;
 
 export const usePokemonLoader = () => {
   const [allPokemon, setAllPokemon] = useState<Pokemon[]>([]);
+  const [rawUnfilteredPokemon, setRawUnfilteredPokemon] = useState<Pokemon[]>([]); // NEW: Store raw data
   const [isLoading, setIsLoading] = useState(false);
   const pokemonLockedRef = useRef(false);
   
@@ -25,28 +27,29 @@ export const usePokemonLoader = () => {
     console.log(`🔒 [SINGLETON_LOAD_ULTRA_FIX] Local Pokemon count: ${allPokemon.length}`);
     
     // If we already have global cache, use it immediately
-    if (globalPokemonCache && globalPokemonCache.length > 0) {
-      console.log(`🔒 [SINGLETON_LOAD_ULTRA_FIX] Using existing global cache: ${globalPokemonCache.length} Pokemon`);
+    if (globalPokemonCache && globalPokemonCache.length > 0 && globalRawPokemonCache) {
+      console.log(`🔒 [SINGLETON_LOAD_ULTRA_FIX] Using existing global cache: ${globalPokemonCache.length} filtered, ${globalRawPokemonCache.length} raw Pokemon`);
       
-      // Apply filtering deterministically
-      const filteredPokemon = analyzeFilteringPipeline(globalPokemonCache);
-      setAllPokemon(filteredPokemon);
+      setAllPokemon(globalPokemonCache);
+      setRawUnfilteredPokemon(globalRawPokemonCache);
       setIsLoading(false);
       pokemonLockedRef.current = true;
       
-      return filteredPokemon;
+      return globalPokemonCache;
     }
     
     // If currently loading globally, wait for it
     if (globalLoadingLock && globalLoadPromise) {
       console.log(`🔒 [SINGLETON_LOAD_ULTRA_FIX] Global load in progress - waiting...`);
       try {
-        const result = await globalLoadPromise;
-        const filteredPokemon = analyzeFilteringPipeline(result);
-        setAllPokemon(filteredPokemon);
-        setIsLoading(false);
-        pokemonLockedRef.current = true;
-        return filteredPokemon;
+        await globalLoadPromise;
+        if (globalPokemonCache && globalRawPokemonCache) {
+          setAllPokemon(globalPokemonCache);
+          setRawUnfilteredPokemon(globalRawPokemonCache);
+          setIsLoading(false);
+          pokemonLockedRef.current = true;
+          return globalPokemonCache;
+        }
       } catch (error) {
         console.error(`🔒 [SINGLETON_LOAD_ULTRA_FIX] Error waiting for global load:`, error);
         globalLoadingLock = false;
@@ -92,14 +95,19 @@ export const usePokemonLoader = () => {
       const sortedPokemon = [...allPokemonData].sort((a, b) => a.id - b.id);
       console.log(`🔒 [SINGLETON_LOAD_ULTRA_FIX] Pokemon sorted by ID for absolute consistency`);
       
-      // Store in global cache
-      globalPokemonCache = sortedPokemon;
-      console.log(`🔒 [SINGLETON_LOAD_ULTRA_FIX] Stored ${sortedPokemon.length} Pokemon in global cache`);
+      // NEW: Store the raw unfiltered data BEFORE any filtering
+      globalRawPokemonCache = sortedPokemon;
+      setRawUnfilteredPokemon(sortedPokemon);
+      console.log(`🔒 [RAW_DATA_STORAGE] Stored ${sortedPokemon.length} RAW unfiltered Pokemon separately`);
       
-      // Apply filtering deterministically
+      // Apply filtering deterministically to get filtered data
       const filteredPokemon = analyzeFilteringPipeline(sortedPokemon);
       
-      console.log(`🔒 [SINGLETON_LOAD_ULTRA_FIX] Final result: ${filteredPokemon.length} Pokemon after filtering`);
+      // Store filtered data in global cache
+      globalPokemonCache = filteredPokemon;
+      console.log(`🔒 [SINGLETON_LOAD_ULTRA_FIX] Stored ${filteredPokemon.length} FILTERED Pokemon in global cache`);
+      
+      console.log(`🔒 [SINGLETON_LOAD_ULTRA_FIX] Final result: ${filteredPokemon.length} filtered, ${sortedPokemon.length} raw Pokemon`);
       
       setAllPokemon(filteredPokemon);
       setIsLoading(false);
@@ -114,6 +122,7 @@ export const usePokemonLoader = () => {
       globalLoadingLock = false;
       globalLoadPromise = null;
       globalPokemonCache = null;
+      globalRawPokemonCache = null;
       setIsLoading(false);
       
       toast({
@@ -144,15 +153,18 @@ export const usePokemonLoader = () => {
     // Reset global state
     globalLoadingLock = false;
     globalPokemonCache = null;
+    globalRawPokemonCache = null;
     globalLoadPromise = null;
     
     pokemonLockedRef.current = false;
     setAllPokemon([]);
+    setRawUnfilteredPokemon([]);
     console.log("🧹 [SINGLETON_LOAD_ULTRA_FIX] All caches and global state cleared");
   }, []);
 
   return {
     allPokemon,
+    rawUnfilteredPokemon, // NEW: Return raw data
     isLoading,
     isBackgroundLoading: false,
     loadPokemon,
