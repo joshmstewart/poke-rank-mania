@@ -13,7 +13,7 @@ interface UnifiedPokemonCardProps {
   showRank?: boolean;
   showScore?: boolean;
   isRanked?: boolean;
-  hideScore?: boolean; // New prop to hide score
+  hideScore?: boolean;
 }
 
 export const UnifiedPokemonCard: React.FC<UnifiedPokemonCardProps> = ({
@@ -57,7 +57,7 @@ export const UnifiedPokemonCard: React.FC<UnifiedPokemonCardProps> = ({
             className="bg-yellow-500 text-white font-bold text-xs px-2 py-1 shadow-md flex items-center gap-1"
           >
             <Crown size={12} />
-            #{pokemon.currentRank}
+            #{pokemon.rank || pokemon.currentRank || 'N/A'}
           </Badge>
         </div>
       )}
