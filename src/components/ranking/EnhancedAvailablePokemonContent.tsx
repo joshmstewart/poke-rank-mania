@@ -2,7 +2,6 @@
 import React from "react";
 import { useDroppable } from '@dnd-kit/core';
 import { EnhancedAvailablePokemonCard } from "./EnhancedAvailablePokemonCard";
-import GenerationHeader from "@/components/pokemon/GenerationHeader";
 
 interface EnhancedAvailablePokemonContentProps {
   items: any[];
@@ -19,6 +18,32 @@ interface EnhancedAvailablePokemonContentProps {
 // Simple loading placeholder component
 const PokemonLoadingPlaceholder = () => (
   <div className="animate-pulse bg-gray-200 rounded-lg h-32 w-full"></div>
+);
+
+// Simple generation header component
+const SimpleGenerationHeader = ({ 
+  generationId, 
+  isExpanded, 
+  onToggle 
+}: { 
+  generationId: number; 
+  isExpanded: boolean; 
+  onToggle: () => void; 
+}) => (
+  <div className="bg-white rounded-lg my-2 border border-gray-200 shadow-sm">
+    <button
+      onClick={onToggle}
+      className="w-full flex items-center justify-between p-3 hover:bg-gray-50 transition-colors"
+    >
+      <div className="flex flex-col items-start">
+        <h3 className="font-semibold text-gray-900 text-sm">Generation {generationId}</h3>
+        <p className="text-xs text-gray-600">Gen {generationId} Pokémon</p>
+      </div>
+      <span className="text-gray-400">
+        {isExpanded ? '▲' : '▼'}
+      </span>
+    </button>
+  </div>
 );
 
 export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonContentProps> = ({
@@ -61,13 +86,9 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
           {items.map((item, index) => {
             if (item.type === 'header') {
               return (
-                <GenerationHeader
+                <SimpleGenerationHeader
                   key={`gen-${item.generation}`}
                   generationId={item.generation}
-                  name={`Generation ${item.generation}`}
-                  region={`Region ${item.generation}`}
-                  games={`Gen ${item.generation} Games`}
-                  viewMode={viewMode}
                   isExpanded={isGenerationExpanded(item.generation)}
                   onToggle={() => onToggleGeneration(item.generation)}
                 />

@@ -39,9 +39,13 @@ export const useEnhancedAvailablePokemon = ({
     const enhanced: EnhancedPokemon[] = filteredAvailablePokemon.map(pokemon => {
       const rankedInfo = rankedPokemonMap.get(pokemon.id);
       
+      // Generate proper image URL if missing
+      const imageUrl = pokemon.image || 
+        `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pokemon.id}.png`;
+      
       return {
         ...pokemon,
-        image: pokemon.image || '', // Ensure image is always a string
+        image: imageUrl, // Ensure image is always a proper URL
         isRanked: !!rankedInfo,
         currentRank: rankedInfo?.rank || null,
         // Provide default values for required properties
