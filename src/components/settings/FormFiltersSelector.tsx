@@ -20,11 +20,11 @@ export function FormFiltersSelector() {
     getMiscategorizedPokemonExamples
   } = useFormFilters();
   
-  const { allPokemon } = usePokemonContext();
+  const { allPokemon, rawUnfilteredPokemon } = usePokemonContext();
   
   // Calculate counts for each form category
   const formCounts = useMemo(() => {
-    console.log(`🔢 [FORM_COUNTS] Calculating form counts for ${allPokemon.length} Pokemon`);
+    console.log(`🔢 [FORM_COUNTS] Calculating form counts for ${allPokemon.length} filtered Pokemon and ${rawUnfilteredPokemon.length} raw Pokemon`);
     
     const counts: Record<PokemonFormType, number> = {
       normal: 0,
@@ -38,17 +38,28 @@ export function FormFiltersSelector() {
       blocked: 0
     };
     
+    // For all categories except blocked, use the filtered Pokemon list
     allPokemon.forEach(pokemon => {
       const category = getPokemonFormCategory(pokemon);
-      if (category) {
+      if (category && category !== 'blocked') {
         counts[category]++;
       }
     });
     
+    // CRITICAL: For blocked category, count from raw unfiltered data
+    console.log(`🚫 [BLOCKED_COUNT] Counting blocked Pokemon from ${rawUnfilteredPokemon.length} raw unfiltered Pokemon`);
+    rawUnfilteredPokemon.forEach(pokemon => {
+      const category = getPokemonFormCategory(pokemon);
+      if (category === 'blocked') {
+        counts.blocked++;
+      }
+    });
+    
     console.log(`🔢 [FORM_COUNTS] Calculated counts:`, counts);
+    console.log(`🚫 [BLOCKED_COUNT_FINAL] Final blocked count: ${counts.blocked}`);
     
     return counts;
-  }, [allPokemon, getPokemonFormCategory]);
+  }, [allPokemon, rawUnfilteredPokemon, getPokemonFormCategory]);
   
   // Callback to handle toggling a filter
   const handleToggleFilter = useCallback((filter: PokemonFormType) => {

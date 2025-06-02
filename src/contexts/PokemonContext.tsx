@@ -4,6 +4,7 @@ import { Pokemon } from '@/services/pokemon';
 
 interface PokemonContextType {
   allPokemon: Pokemon[];
+  rawUnfilteredPokemon: Pokemon[];
   pokemonLookupMap: Map<number, Pokemon>;
 }
 
@@ -16,6 +17,12 @@ interface PokemonProviderProps {
 
 export const PokemonProvider: React.FC<PokemonProviderProps> = ({ children, allPokemon }) => {
   console.log('[DEBUG PokemonContext] Provider rendering with', allPokemon.length, 'Pokemon');
+  
+  // Store the raw unfiltered Pokemon data that gets passed in
+  const rawUnfilteredPokemon = useMemo(() => {
+    console.log(`📝 [RAW_POKEMON_STORAGE] Storing ${allPokemon.length} raw unfiltered Pokemon for form counting`);
+    return allPokemon;
+  }, [allPokemon]);
   
   // CRITICAL: Verify the source data has types before creating the map
   if (allPokemon.length > 0) {
@@ -86,17 +93,19 @@ export const PokemonProvider: React.FC<PokemonProviderProps> = ({ children, allP
   const contextValue = useMemo(() => {
     const value = {
       allPokemon, // This should be a new array reference when data changes
+      rawUnfilteredPokemon, // Raw unfiltered data for counting
       pokemonLookupMap // This is always a new Map instance from above useMemo
     };
     
     // NEW: Enhanced logging to track context value changes
     console.log(`🌟🌟🌟 [CONTEXT_VALUE_CRITICAL] NEW context value created - timestamp: ${Date.now()}`);
     console.log(`🌟🌟🌟 [CONTEXT_VALUE_CRITICAL] allPokemon length: ${allPokemon.length}, map size: ${pokemonLookupMap.size}`);
+    console.log(`🌟🌟🌟 [CONTEXT_VALUE_CRITICAL] rawUnfilteredPokemon length: ${rawUnfilteredPokemon.length}`);
     console.log(`🌟🌟🌟 [CONTEXT_VALUE_CRITICAL] allPokemon reference: ${allPokemon}`);
     console.log(`🌟🌟🌟 [CONTEXT_VALUE_CRITICAL] pokemonLookupMap reference: ${pokemonLookupMap}`);
     
     return value;
-  }, [allPokemon, pokemonLookupMap]); // Both dependencies ensure new value when either changes
+  }, [allPokemon, rawUnfilteredPokemon, pokemonLookupMap]); // All dependencies ensure new value when any changes
 
   return (
     <PokemonContext.Provider value={contextValue}>
