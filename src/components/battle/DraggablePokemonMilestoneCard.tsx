@@ -95,6 +95,11 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       {...(isDraggable && !isOpen ? attributes : {})}
       {...(isDraggable && !isOpen ? listeners : {})}
     >
+      {/* Dark overlay for already-ranked Pokemon in available section */}
+      {context === 'available' && isRankedPokemon && (
+        <div className="absolute inset-0 bg-black bg-opacity-40 rounded-lg z-10"></div>
+      )}
+
       {/* Pending banner if needed */}
       {isPending && (
         <div className="absolute top-0 left-0 right-0 bg-blue-500 text-white text-xs py-1 px-2 z-20">
@@ -193,8 +198,8 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
           #{formattedId}
         </div>
         
-        {/* Score display for ranked Pokemon or available ranked Pokemon */}
-        {((context === 'ranked' && 'score' in pokemon) || (context === 'available' && 'score' in pokemon && pokemon.score !== undefined)) && (
+        {/* Score display - only for ranked context or non-available ranked Pokemon */}
+        {context === 'ranked' && 'score' in pokemon && (
           <div className="text-xs text-gray-700 font-medium">
             Score: {pokemon.score.toFixed(1)}
           </div>
