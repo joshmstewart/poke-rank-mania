@@ -15,12 +15,9 @@ interface PokemonCardProps {
 }
 
 const PokemonCard = ({ pokemon, isDragging, viewMode = "list", compact }: PokemonCardProps) => {
-  console.log(`🎮 [POKEMON_CARD_SIMPLE] Rendering ${pokemon.name} with image: ${pokemon.image}`);
-
   // Validate the Pokemon to ensure image and name consistency
   const validatedPokemon = useMemo(() => {
     const [validated] = validateBattlePokemon([pokemon]);
-    console.log(`🎮 [POKEMON_CARD_SIMPLE] Validated ${pokemon.name}: image=${validated.image}`);
     return validated;
   }, [pokemon]);
 
@@ -28,24 +25,16 @@ const PokemonCard = ({ pokemon, isDragging, viewMode = "list", compact }: Pokemo
   const displayName = validatedPokemon.name;
   const imageUrl = validatedPokemon.image;
   const normalizedId = normalizePokedexNumber(pokemonId);
-  
-  console.log(`🎮 [POKEMON_CARD_SIMPLE] Final render values:`, { pokemonId, displayName, imageUrl });
 
-  // CRITICAL FIX: Prevent unwanted card clicks
+  // Prevent unwanted card clicks
   const handleCardClick = (e: React.MouseEvent) => {
-    console.log(`🎮 [POKEMON_CARD_CLICK_DEBUG] Card clicked for ${displayName}`);
-    console.log(`🎮 [POKEMON_CARD_CLICK_DEBUG] Target:`, e.target);
-    console.log(`🎮 [POKEMON_CARD_CLICK_DEBUG] Current target:`, e.currentTarget);
-    
     // Check if click came from info button
     const target = e.target as HTMLElement;
     if (target.closest('[data-info-button="true"]') || target.textContent === 'i') {
-      console.log(`🎮 [POKEMON_CARD_CLICK_DEBUG] ❌ Click originated from info button - ignoring`);
       return;
     }
     
-    // CRITICAL FIX: Don't do anything on card click - let drag handle interactions
-    console.log(`🎮 [POKEMON_CARD_CLICK_DEBUG] Regular card click - no action taken`);
+    // Don't do anything on card click - let drag handle interactions
     e.preventDefault();
     e.stopPropagation();
   };

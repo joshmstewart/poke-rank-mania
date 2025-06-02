@@ -19,33 +19,7 @@ const PokemonThumbnail: React.FC<PokemonThumbnailProps> = ({
   showName = true,
   disabled = false
 }) => {
-  // CRITICAL: Track exactly where names are coming from
-  console.log(`🎯 [THUMBNAIL_CRITICAL] ===== POKEMON THUMBNAIL FOR ${pokemon.id} =====`);
-  console.log(`🎯 [THUMBNAIL_CRITICAL] Raw pokemon object received:`, pokemon);
-  console.log(`🎯 [THUMBNAIL_CRITICAL] pokemon.name property: "${pokemon.name}"`);
-  console.log(`🎯 [THUMBNAIL_CRITICAL] pokemon.name is formatted: ${!pokemon.name.includes('-') || pokemon.name.includes('(') || pokemon.name.includes('Mega ') || pokemon.name.includes('Alolan ')}`);
-  
-  // Check if this is an unformatted name that should have been formatted
-  const shouldBeFormatted = pokemon.name.includes('-') && !pokemon.name.includes('(') && !pokemon.name.includes('Mega ') && !pokemon.name.includes('Alolan ') && !pokemon.name.includes('Galarian ') && !pokemon.name.includes('Hisuian ');
-  
-  if (shouldBeFormatted) {
-    console.error(`🚨 [THUMBNAIL_CRITICAL] UNFORMATTED NAME DETECTED: "${pokemon.name}" (ID: ${pokemon.id})`);
-    console.error(`🚨 [THUMBNAIL_CRITICAL] This name should have been formatted but wasn't!`);
-    console.error(`🚨 [THUMBNAIL_CRITICAL] Pokemon object source analysis:`, {
-      hasId: !!pokemon.id,
-      hasName: !!pokemon.name,
-      hasImage: !!pokemon.image,
-      hasTypes: !!pokemon.types,
-      objectKeys: Object.keys(pokemon),
-      nameContainsHyphen: pokemon.name.includes('-'),
-      nameStartsWithLowercase: pokemon.name[0] === pokemon.name[0].toLowerCase()
-    });
-  }
-  
   const displayName = pokemon.name;
-  
-  console.log(`🎯 [THUMBNAIL_CRITICAL] Final displayName for render: "${displayName}"`);
-  console.log(`🎯 [THUMBNAIL_CRITICAL] ===== END THUMBNAIL ${pokemon.id} =====`);
 
   return (
     <div

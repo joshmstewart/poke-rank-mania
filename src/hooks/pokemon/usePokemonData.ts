@@ -10,22 +10,16 @@ export const usePokemonData = () => {
   const { allPokemon: contextPokemon } = usePokemonContext();
   const { localRankings } = useTrueSkillSync();
 
-  // CRITICAL FIX: Ultra-deterministic data processing with validation
+  // Deterministic data processing with validation
   const getPokemonData = useCallback(async (
     selectedGeneration: number,
     currentPage: number,
     loadSize: number,
     loadingType: LoadingType
   ) => {
-    console.log(`🔒 [ULTRA_DETERMINISTIC_DATA] ===== ULTRA DETERMINISTIC DATA PROCESSING =====`);
-    console.log(`🔒 [ULTRA_DETERMINISTIC_DATA] Input params - gen:${selectedGeneration}, page:${currentPage}, size:${loadSize}, type:${loadingType}`);
-    console.log(`🔒 [ULTRA_DETERMINISTIC_DATA] Context Pokemon: ${contextPokemon?.length || 0}`);
-    console.log(`🔒 [ULTRA_DETERMINISTIC_DATA] TrueSkill rankings: ${localRankings?.length || 0}`);
-    
     try {
-      // ULTRA-CRITICAL: Validate context data exists and is array
+      // Validate context data exists and is array
       if (!contextPokemon || !Array.isArray(contextPokemon) || contextPokemon.length === 0) {
-        console.log(`🔒 [ULTRA_DETERMINISTIC_DATA] ❌ Invalid context data - returning empty deterministic result`);
         return {
           availablePokemon: [],
           rankedPokemon: [],
@@ -33,35 +27,16 @@ export const usePokemonData = () => {
         };
       }
       
-      console.log(`🔒 [ULTRA_DETERMINISTIC_DATA] ✅ Valid context data: ${contextPokemon.length} Pokemon`);
+      // Sort by ID for consistency
+      const sortedPokemon = [...contextPokemon].sort((a, b) => a.id - b.id);
       
-      // ULTRA-DETERMINISTIC: Triple-sort by ID for absolute consistency
-      const tripleSort = [...contextPokemon]
-        .sort((a, b) => a.id - b.id)
-        .sort((a, b) => a.id - b.id)
-        .sort((a, b) => a.id - b.id);
+      // Apply name formatting
+      const formattedPokemon = sortedPokemon.map(pokemon => ({
+        ...pokemon,
+        name: formatPokemonName(pokemon.name)
+      }));
       
-      console.log(`🔒 [ULTRA_DETERMINISTIC_DATA] Triple-sorted for ultra-determinism: ${tripleSort.length} Pokemon`);
-      
-      // ULTRA-DETERMINISTIC: Apply name formatting with validation
-      const formattedPokemon = tripleSort.map(pokemon => {
-        const formatted = {
-          ...pokemon,
-          name: formatPokemonName(pokemon.name)
-        };
-        
-        // Validate formatting didn't break anything
-        if (!formatted.id || !formatted.name) {
-          console.error(`🔒 [ULTRA_DETERMINISTIC_DATA] ❌ Formatting corrupted Pokemon:`, pokemon);
-          return pokemon; // Return original if formatting failed
-        }
-        
-        return formatted;
-      });
-      
-      console.log(`🔒 [ULTRA_DETERMINISTIC_DATA] Formatted with validation: ${formattedPokemon.length} Pokemon`);
-      
-      // ULTRA-DETERMINISTIC: Apply generation filtering with validation
+      // Apply generation filtering
       let filteredByGeneration = formattedPokemon;
       if (selectedGeneration > 0) {
         const genRanges: { [key: number]: [number, number] } = {
@@ -71,7 +46,6 @@ export const usePokemonData = () => {
         
         const range = genRanges[selectedGeneration];
         if (!range) {
-          console.error(`🔒 [ULTRA_DETERMINISTIC_DATA] ❌ Invalid generation: ${selectedGeneration}`);
           return {
             availablePokemon: [],
             rankedPokemon: [],
@@ -81,32 +55,17 @@ export const usePokemonData = () => {
         
         const [min, max] = range;
         filteredByGeneration = formattedPokemon.filter(p => p.id >= min && p.id <= max);
-        console.log(`🔒 [ULTRA_DETERMINISTIC_DATA] Generation ${selectedGeneration} filtering (${min}-${max}): ${filteredByGeneration.length} Pokemon`);
       }
       
-      // ULTRA-DETERMINISTIC: Process TrueSkill rankings with validation
+      // Process TrueSkill rankings
       const validRankings = (localRankings || []).filter(ranking => {
-        const isValid = ranking && typeof ranking.id === 'number' && ranking.id > 0;
-        if (!isValid) {
-          console.error(`🔒 [ULTRA_DETERMINISTIC_DATA] ❌ Invalid ranking:`, ranking);
-        }
-        return isValid;
+        return ranking && typeof ranking.id === 'number' && ranking.id > 0;
       });
       
       const rankedPokemonIds = new Set(validRankings.map(p => p.id));
-      const sortedRankedIds = Array.from(rankedPokemonIds).sort((a, b) => a - b);
       
-      console.log(`🔒 [ULTRA_DETERMINISTIC_DATA] Valid TrueSkill rankings: ${validRankings.length}`);
-      console.log(`🔒 [ULTRA_DETERMINISTIC_DATA] Ranked Pokemon IDs (deterministic): ${sortedRankedIds.slice(0, 10).join(', ')}${sortedRankedIds.length > 10 ? '...' : ''}`);
-      
-      // ULTRA-DETERMINISTIC: Split into available and ranked with triple validation
-      const availablePokemon = filteredByGeneration.filter(p => {
-        const isAvailable = !rankedPokemonIds.has(p.id);
-        if (!isAvailable) {
-          console.log(`🔒 [ULTRA_DETERMINISTIC_DATA] Pokemon ${p.name} (${p.id}) is ranked, excluding from available`);
-        }
-        return isAvailable;
-      });
+      // Split into available and ranked
+      const availablePokemon = filteredByGeneration.filter(p => !rankedPokemonIds.has(p.id));
       
       const rankedPokemon = validRankings.filter(p => {
         if (selectedGeneration === 0) return true;
@@ -120,34 +79,11 @@ export const usePokemonData = () => {
         if (!range) return false;
         
         const [min, max] = range;
-        const inRange = p.id >= min && p.id <= max;
-        
-        if (!inRange) {
-          console.log(`🔒 [ULTRA_DETERMINISTIC_DATA] Ranked Pokemon ${p.name} (${p.id}) not in gen ${selectedGeneration} range, excluding`);
-        }
-        
-        return inRange;
+        return p.id >= min && p.id <= max;
       });
       
-      // ULTRA-CRITICAL: Validate the split is perfect
-      const totalVisible = availablePokemon.length + rankedPokemon.length;
-      const expectedTotal = filteredByGeneration.length;
-      
-      console.log(`🔒 [ULTRA_DETERMINISTIC_DATA] ULTRA-CRITICAL VALIDATION:`);
-      console.log(`🔒 [ULTRA_DETERMINISTIC_DATA] - Available Pokemon: ${availablePokemon.length}`);
-      console.log(`🔒 [ULTRA_DETERMINISTIC_DATA] - Ranked Pokemon: ${rankedPokemon.length}`);
-      console.log(`🔒 [ULTRA_DETERMINISTIC_DATA] - Total visible: ${totalVisible}`);
-      console.log(`🔒 [ULTRA_DETERMINISTIC_DATA] - Expected total: ${expectedTotal}`);
-      console.log(`🔒 [ULTRA_DETERMINISTIC_DATA] - Perfect split: ${totalVisible === expectedTotal ? '✅ YES' : '❌ NO'}`);
-      
-      if (totalVisible !== expectedTotal) {
-        console.error(`🔒 [ULTRA_DETERMINISTIC_DATA] ❌ CRITICAL: Pokemon count mismatch! Expected: ${expectedTotal}, Got: ${totalVisible}, Missing: ${expectedTotal - totalVisible}`);
-      }
-      
-      // Calculate pagination deterministically
+      // Calculate pagination
       const totalPages = loadingType === "pagination" ? Math.ceil(availablePokemon.length / loadSize) : 1;
-      
-      console.log(`🔒 [ULTRA_DETERMINISTIC_DATA] ✅ ULTRA-DETERMINISTIC SUCCESS - Available: ${availablePokemon.length}, Ranked: ${rankedPokemon.length}, Pages: ${totalPages}`);
       
       return {
         availablePokemon,
@@ -156,7 +92,7 @@ export const usePokemonData = () => {
       };
       
     } catch (error) {
-      console.error(`🔒 [ULTRA_DETERMINISTIC_DATA] ❌ Error in ultra-deterministic processing:`, error);
+      console.error('Error in data processing:', error);
       return {
         availablePokemon: [],
         rankedPokemon: [],

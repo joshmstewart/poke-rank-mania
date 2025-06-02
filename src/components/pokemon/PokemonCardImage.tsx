@@ -20,22 +20,18 @@ const PokemonCardImage: React.FC<PokemonCardImageProps> = ({
 }) => {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
-  
-  console.log(`🖼️ [SIMPLE_IMAGE_DEBUG] ${displayName}: imageUrl=${imageUrl}, loaded=${imageLoaded}, error=${imageError}`);
 
   const normalizedId = normalizePokedexNumber(pokemonId);
 
   const handleImageLoad = useCallback(() => {
-    console.log(`✅ [SIMPLE_IMAGE_DEBUG] Image loaded for ${displayName}`);
     setImageLoaded(true);
     setImageError(false);
-  }, [displayName]);
+  }, []);
 
   const handleImageError = useCallback(() => {
-    console.log(`❌ [SIMPLE_IMAGE_DEBUG] Image failed for ${displayName}`);
     setImageLoaded(false);
     setImageError(true);
-  }, [displayName]);
+  }, []);
 
   // Reset states when imageUrl changes
   React.useEffect(() => {
