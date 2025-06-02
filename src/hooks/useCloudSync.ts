@@ -1,4 +1,3 @@
-
 import { useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTrueSkillStore } from '@/stores/trueskillStore';
@@ -18,26 +17,62 @@ export const useCloudSync = () => {
   const { user, session } = useAuth();
   const { loadFromCloud, syncToCloud, getAllRatings, isHydrated, restoreSessionFromCloud, forceCorrectSession } = useTrueSkillStore();
 
-  // CRITICAL FIX: Force correct session IMMEDIATELY when user and hydration are ready
+  // CRITICAL INVESTIGATION: Enhanced debugging to track sessionId changes
   useEffect(() => {
     const ensureCorrectSessionImmediately = async () => {
+      console.log('🔍🔍🔍 [CLOUD_SYNC_INVESTIGATION] ===== CLOUD SYNC SESSION CHECK =====');
+      console.log('🔍🔍🔍 [CLOUD_SYNC_INVESTIGATION] user?.id:', user?.id?.substring(0, 8) || 'NONE');
+      console.log('🔍🔍🔍 [CLOUD_SYNC_INVESTIGATION] isHydrated:', isHydrated);
+      
       if (user?.id && isHydrated) {
-        console.log('🚨🚨🚨 [CLOUD_SYNC_IMMEDIATE_FIX] ===== IMMEDIATE SESSION CORRECTION =====');
-        console.log('🚨🚨🚨 [CLOUD_SYNC_IMMEDIATE_FIX] User ID:', user.id.substring(0, 8));
-        console.log('🚨🚨🚨 [CLOUD_SYNC_IMMEDIATE_FIX] Current sessionId before immediate check:', useTrueSkillStore.getState().sessionId);
+        const currentSessionId = useTrueSkillStore.getState().sessionId;
+        console.log('🔍🔍🔍 [CLOUD_SYNC_INVESTIGATION] Current TrueSkill sessionId BEFORE any action:', currentSessionId);
         
-        // STEP 1: Force correct session IMMEDIATELY
-        await forceCorrectSession(user.id);
-        
-        // STEP 2: Then ensure data is loaded for the correct session
-        await restoreSessionFromCloud(user.id);
-        
-        console.log('🚨🚨🚨 [CLOUD_SYNC_IMMEDIATE_FIX] Final sessionId after immediate correction:', useTrueSkillStore.getState().sessionId);
-        console.log('🚨🚨🚨 [CLOUD_SYNC_IMMEDIATE_FIX] Final ratings count:', Object.keys(useTrueSkillStore.getState().getAllRatings()).length);
+        // STEP 1: Check what the profile says FIRST
+        try {
+          const { supabase } = await import('@/integrations/supabase/client');
+          const { data: profile, error } = await supabase
+            .from('profiles')
+            .select('trueskill_session_id')
+            .eq('id', user.id)
+            .maybeSingle();
+            
+          if (profile?.trueskill_session_id) {
+            console.log('🔍🔍🔍 [CLOUD_SYNC_INVESTIGATION] ⚠️ Profile says sessionId should be:', profile.trueskill_session_id);
+            console.log('🔍🔍🔍 [CLOUD_SYNC_INVESTIGATION] ⚠️ TrueSkill store currently has:', currentSessionId);
+            
+            if (profile.trueskill_session_id !== currentSessionId) {
+              console.log('🔍🔍🔍 [CLOUD_SYNC_INVESTIGATION] 🚨 DETECTED MISMATCH IN CLOUD SYNC! 🚨');
+              console.log('🔍🔍🔍 [CLOUD_SYNC_INVESTIGATION] 🚨 This is likely where the problem happens!');
+              
+              // Force correct session
+              await forceCorrectSession(user.id);
+              
+              // Then restore data
+              await restoreSessionFromCloud(user.id);
+              
+              const finalSessionId = useTrueSkillStore.getState().sessionId;
+              const finalRatingsCount = Object.keys(useTrueSkillStore.getState().getAllRatings()).length;
+              console.log('🔍🔍🔍 [CLOUD_SYNC_INVESTIGATION] ✅ Final sessionId:', finalSessionId);
+              console.log('🔍🔍🔍 [CLOUD_SYNC_INVESTIGATION] ✅ Final ratings count:', finalRatingsCount);
+            } else {
+              console.log('🔍🔍🔍 [CLOUD_SYNC_INVESTIGATION] ✅ SessionIds match - no issue here');
+            }
+          } else {
+            console.log('🔍🔍🔍 [CLOUD_SYNC_INVESTIGATION] No profile sessionId found');
+          }
+        } catch (error) {
+          console.error('🔍🔍🔍 [CLOUD_SYNC_INVESTIGATION] Error checking profile:', error);
+        }
+      } else {
+        console.log('🔍🔍🔍 [CLOUD_SYNC_INVESTIGATION] Conditions not met for session check');
+        console.log('🔍🔍🔍 [CLOUD_SYNC_INVESTIGATION] - user?.id:', !!user?.id);
+        console.log('🔍🔍🔍 [CLOUD_SYNC_INVESTIGATION] - isHydrated:', isHydrated);
       }
+      
+      console.log('🔍🔍🔍 [CLOUD_SYNC_INVESTIGATION] ===== CLOUD SYNC CHECK COMPLETE =====');
     };
 
-    // Execute immediately, no delays
     ensureCorrectSessionImmediately();
   }, [user?.id, isHydrated, forceCorrectSession, restoreSessionFromCloud]);
 
