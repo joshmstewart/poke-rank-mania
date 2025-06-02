@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from "react";
 import { RankedPokemon } from "@/services/pokemon";
 import { LoadingType } from "./types";

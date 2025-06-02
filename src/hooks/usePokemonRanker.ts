@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { useRankingState } from "@/hooks/pokemon/useRankingState";
@@ -12,7 +13,7 @@ export const usePokemonRanker = () => {
   const [hasInitialized, setHasInitialized] = useState(false);
   
   const {
-    rankedPokemon,
+    rankedPokemonState: rankedPokemon,
     setRankedPokemon,
     confidenceScores,
     setConfidenceScores,
