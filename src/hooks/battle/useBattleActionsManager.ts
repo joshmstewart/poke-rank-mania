@@ -45,12 +45,12 @@ export const useBattleActionsManager = (
   );
   
   // Use processing hook for battle result processing
-  const { processResultLogic } = useBattleProcessorResult(
+  const { processBattleResult } = useBattleProcessorResult(
     battleResults,
     setBattleResults,
-    battlesCompleted,
     setBattlesCompleted,
-    setSelectedPokemon
+    currentBattle,
+    battleType
   );
 
   // Use handlers hook for user actions
@@ -98,32 +98,12 @@ export const useBattleActionsManager = (
     battleHistory,
     setBattleHistory,
     battleType,
-    (selectedPokemonIds: number[], currentBattlePokemon: Pokemon[], battleType: BattleType, selectedGeneration?: number) => {
-      // Create a simplified processBattleResult function using processResultLogic
-      processResultLogic(
-        selectedPokemonIds,
-        currentBattlePokemon,
-        (ids: number[], pokemon: Pokemon[], type: BattleType) => {
-          // Simple battle result processing
-          return battleResults;
-        },
-        battleType,
-        new Date().toISOString()
-      );
-    },
+    processBattleResult,
     goBack
   );
 
   return {
-    processBattleResult: (selectedPokemonIds: number[], currentBattlePokemon: Pokemon[], battleType: BattleType, selectedGeneration?: number) => {
-      processResultLogic(
-        selectedPokemonIds,
-        currentBattlePokemon,
-        (ids: number[], pokemon: Pokemon[], type: BattleType) => battleResults,
-        battleType,
-        new Date().toISOString()
-      );
-    },
+    processBattleResult,
     isProcessingResult: isProcessing,
     resetMilestoneInProgress: () => {}, // placeholder
     resetBattleProgressionMilestoneTracking: () => {}, // placeholder

@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from 'react';
 import {
   DropdownMenu,
@@ -385,7 +386,8 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({ user }) => {
           .insert({
             session_id: sessionId,
             user_id: user.id,
-            ratings_data: allRatings,
+            ratings_data: allRatings as any,
+            total_battles: 0,
             last_updated: new Date().toISOString()
           });
           
@@ -400,7 +402,8 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({ user }) => {
               .from('trueskill_sessions')
               .update({ 
                 user_id: user.id,
-                ratings_data: allRatings,
+                ratings_data: allRatings as any,
+                total_battles: 0,
                 last_updated: new Date().toISOString()
               })
               .eq('session_id', sessionId);
