@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { LoadingType } from "@/hooks/pokemon/types";
 import { usePokemonGrouping } from "@/hooks/pokemon/usePokemonGrouping";
@@ -38,6 +37,9 @@ export const EnhancedAvailablePokemonSection: React.FC<EnhancedAvailablePokemonS
   console.log(`🔍 [ENHANCED_AVAILABLE_SECTION] Rendering ${enhancedAvailablePokemon.length} enhanced available Pokemon`);
   console.log(`🔍 [ENHANCED_AVAILABLE_SECTION] Ranked Pokemon in available: ${enhancedAvailablePokemon.filter(p => p.isRanked).length}`);
 
+  // Calculate unranked Pokemon count
+  const unrankedCount = enhancedAvailablePokemon.filter(p => !p.isRanked).length;
+
   // Get all possible generations from the available Pokemon
   const availableGenerations = useAvailablePokemonGenerations(enhancedAvailablePokemon);
 
@@ -76,7 +78,10 @@ export const EnhancedAvailablePokemonSection: React.FC<EnhancedAvailablePokemonS
 
   return (
     <div className="flex flex-col h-full">
-      <AvailablePokemonHeader availablePokemonCount={enhancedAvailablePokemon.length} />
+      <AvailablePokemonHeader 
+        availablePokemonCount={enhancedAvailablePokemon.length}
+        unrankedCount={unrankedCount}
+      />
       
       <AvailablePokemonControls
         searchTerm={searchTerm}

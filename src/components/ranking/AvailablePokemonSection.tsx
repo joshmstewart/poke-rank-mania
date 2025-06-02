@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { LoadingType } from "@/hooks/pokemon/types";
@@ -38,15 +37,12 @@ export const AvailablePokemonSection: React.FC<AvailablePokemonSectionProps> = (
 
   console.log(`🔍 [AVAILABLE_SECTION] Rendering ${availablePokemon.length} available Pokemon for generation ${selectedGeneration}`);
 
-  // Get all possible generations from the available Pokemon
   const availableGenerations = useAvailablePokemonGenerations(availablePokemon);
 
   const { expandedGenerations, toggleGeneration, isGenerationExpanded, expandAll, collapseAll, expandGenerations } = useGenerationExpansion();
 
-  // Get generations that have search matches
   const generationsWithMatches = useSearchMatches(availablePokemon, searchTerm);
 
-  // Auto-expand generations with search matches
   useEffect(() => {
     if (searchTerm.trim() && generationsWithMatches.length > 0) {
       console.log(`🔍 [SEARCH_EXPAND] Auto-expanding generations with matches: ${generationsWithMatches.join(', ')}`);
@@ -54,21 +50,18 @@ export const AvailablePokemonSection: React.FC<AvailablePokemonSectionProps> = (
     }
   }, [searchTerm, generationsWithMatches, expandGenerations]);
 
-  // Create a modified isGenerationExpanded function that always shows expanded when searching
   const isGenerationExpandedForDisplay = (genId: number) => {
-    // If we're searching and this generation has matches, always show as expanded
     if (searchTerm.trim() && generationsWithMatches.includes(genId)) {
       return true;
     }
-    // Otherwise use the normal expansion state
     return isGenerationExpanded(genId);
   };
 
   const { items, showGenerationHeaders } = usePokemonGrouping(
     availablePokemon,
     searchTerm,
-    false, // This is not the ranking area
-    isGenerationExpandedForDisplay // Use our modified function
+    false,
+    isGenerationExpandedForDisplay
   );
 
   console.log(`🔍 [AVAILABLE_SECTION] Pokemon grouping returned ${items.length} items with headers: ${showGenerationHeaders}`);
