@@ -3,7 +3,7 @@ import { Pokemon } from "@/services/pokemon";
 import { PokemonFormType } from "./types";
 import { isBlockedPokemon } from "./blockedDetection";
 import { categorizeFormType } from "./formDetection";
-import { getHardcodedCategory, normalPokemonRange } from "./hardcodedCategories";
+import { getHardcodedCategoryByID } from "./categories/idBasedCategories";
 import { 
   resetCategoryStats, 
   getCategoryStats, 
@@ -32,45 +32,46 @@ export {
 let trackedNormalPokemon = new Set<number>();
 let filteredOutNormalPokemon = new Set<number>();
 
-// FIXED: Enhanced categorization with hardcoded mapping first, pattern detection as fallback
+// FIXED: Enhanced categorization using ID-based mapping for reliability
 export const getPokemonFormCategory = (pokemon: Pokemon): PokemonFormType | null => {
-  const name = pokemon.name.toLowerCase();
-  const originalName = pokemon.name; // Keep original for logging
+  const pokemonId = pokemon.id;
+  const originalName = pokemon.name;
   let category: PokemonFormType | null = null;
   
-  console.log(`🎯 [CATEGORIZATION_ENHANCED] Processing "${originalName}" (ID: ${pokemon.id})`);
+  console.log(`🎯 [ID_CATEGORIZATION] Processing "${originalName}" (ID: ${pokemonId})`);
   
-  // FIRST: Check hardcoded categorization - this is the most reliable
-  const hardcodedCategory = getHardcodedCategory(name);
-  if (hardcodedCategory) {
-    category = hardcodedCategory;
-    console.log(`✅ [HARDCODED_CATEGORY] "${originalName}" (ID: ${pokemon.id}) found in hardcoded list: ${category}`);
+  // FIRST: Check ID-based categorization - this is the most reliable
+  const idBasedCategory = getHardcodedCategoryByID(pokemonId);
+  if (idBasedCategory) {
+    category = idBasedCategory;
+    console.log(`✅ [ID_BASED_CATEGORY] "${originalName}" (ID: ${pokemonId}) found in ID mapping: ${category}`);
     
     // Track normal Pokemon specifically
     if (category === 'normal') {
-      trackedNormalPokemon.add(pokemon.id);
-      console.log(`📝 [NORMAL_TRACKING] Added Pokemon ${pokemon.id} "${originalName}" to normal tracking set. Total: ${trackedNormalPokemon.size}`);
+      trackedNormalPokemon.add(pokemonId);
+      console.log(`📝 [NORMAL_TRACKING] Added Pokemon ${pokemonId} "${originalName}" to normal tracking set. Total: ${trackedNormalPokemon.size}`);
     }
   } else {
-    console.log(`⚠️ [NO_HARDCODED_MATCH] "${originalName}" (ID: ${pokemon.id}) not found in hardcoded list, using fallback detection`);
+    console.log(`⚠️ [NO_ID_MATCH] "${originalName}" (ID: ${pokemonId}) not found in ID mapping, using fallback detection`);
     
     // SECOND: Check if Pokemon should be blocked using pattern detection
     if (isBlockedPokemon(pokemon)) {
       category = 'blocked';
-      console.log(`🚫 [BLOCKED_FALLBACK] "${originalName}" (ID: ${pokemon.id}) categorized as blocked by pattern detection`);
+      console.log(`🚫 [BLOCKED_FALLBACK] "${originalName}" (ID: ${pokemonId}) categorized as blocked by pattern detection`);
     } else {
       // THIRD: Use form detection for non-blocked Pokemon
+      const name = pokemon.name.toLowerCase();
       category = categorizeFormType(name);
-      console.log(`🔍 [PATTERN_FALLBACK] "${originalName}" (ID: ${pokemon.id}) categorized as ${category} by pattern detection`);
+      console.log(`🔍 [PATTERN_FALLBACK] "${originalName}" (ID: ${pokemonId}) categorized as ${category} by pattern detection`);
     }
   }
   
   // Update stats and track ALL examples
   if (category) {
-    updateCategoryStats(category, originalName, pokemon.id);
+    updateCategoryStats(category, originalName, pokemonId);
   }
   
-  console.log(`🏁 [FINAL_CATEGORIZATION] "${originalName}" (ID: ${pokemon.id}) final category: ${category}`);
+  console.log(`🏁 [FINAL_CATEGORIZATION] "${originalName}" (ID: ${pokemonId}) final category: ${category}`);
   
   return category;
 };
