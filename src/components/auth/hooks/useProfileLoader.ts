@@ -16,6 +16,7 @@ export const useProfileLoader = (userId: string | undefined) => {
       return;
     }
 
+    console.log('🔄 [PROFILE_LOADER] ===== LOADING PROFILE =====');
     console.log('🔄 [PROFILE_LOADER] Loading profile for user:', userId?.substring(0, 8));
     
     isLoadingProfile.current = true;
@@ -26,8 +27,7 @@ export const useProfileLoader = (userId: string | undefined) => {
     const cachedProfile = getProfileFromCache(userId);
     
     if (cachedProfile) {
-      console.log('🔄 [PROFILE_LOADER] ✅ Setting cached profile with avatar:', cachedProfile.avatar_url);
-      // Force new object reference to ensure state update
+      console.log('🔄 [PROFILE_LOADER] ✅ Found cached profile with avatar:', cachedProfile.avatar_url);
       setCurrentProfile({ ...cachedProfile });
       setIsProfileLoaded(true);
     }
@@ -38,13 +38,13 @@ export const useProfileLoader = (userId: string | undefined) => {
       
       if (freshProfile) {
         console.log('🔄 [PROFILE_LOADER] ✅ Setting fresh profile with avatar:', freshProfile.avatar_url);
-        // Force new object reference to ensure state update
         setCurrentProfile({ ...freshProfile });
       }
       setIsProfileLoaded(true);
       
     }).finally(() => {
       isLoadingProfile.current = false;
+      console.log('🔄 [PROFILE_LOADER] Profile loading completed');
     });
   }, [userId, prefetchProfile, getProfileFromCache]);
 

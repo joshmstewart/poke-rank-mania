@@ -17,29 +17,36 @@ export const useProfileCache = () => {
   const getCachedProfile = useCallback((userId: string): Profile | null => {
     const cached = cache[userId];
     if (!cached) {
+      console.log('🎯 [PROFILE_CACHE] No cache entry for user:', userId);
       return null;
     }
     
-    // Cache is valid for 5 minutes
-    const isExpired = Date.now() - cached.timestamp > 5 * 60 * 1000;
-    return isExpired ? null : cached.profile;
+    // Cache is valid for 2 minutes (shorter for more frequent updates)
+    const isExpired = Date.now() - cached.timestamp > 2 * 60 * 1000;
+    if (isExpired) {
+      console.log('🎯 [PROFILE_CACHE] Cache expired for user:', userId);
+      return null;
+    }
+    
+    console.log('🎯 [PROFILE_CACHE] Returning cached profile for user:', userId, 'with avatar:', cached.profile?.avatar_url);
+    return cached.profile;
   }, [cache]);
 
   const prefetchProfile = useCallback(async (userId: string): Promise<void> => {
     if (!userId || fetchingRef.current.has(userId)) {
+      console.log('🎯 [PROFILE_CACHE] Skipping prefetch - no userId or already fetching:', userId);
       return;
     }
     
-    const cached = getCachedProfile(userId);
-    
     fetchingRef.current.add(userId);
+    console.log('🎯 [PROFILE_CACHE] Starting prefetch for user:', userId);
     
     // Set loading state
     setCache(prev => ({
       ...prev,
       [userId]: {
-        profile: cached,
-        timestamp: cached ? prev[userId]?.timestamp || Date.now() : Date.now(),
+        profile: prev[userId]?.profile || null,
+        timestamp: Date.now(),
         loading: true
       }
     }));
@@ -48,7 +55,7 @@ export const useProfileCache = () => {
       console.log('🎯 [PROFILE_CACHE] Fetching fresh profile for:', userId);
       const profile = await getProfile(userId);
       
-      console.log('🎯 [PROFILE_CACHE] Fresh profile received:', profile?.avatar_url);
+      console.log('🎯 [PROFILE_CACHE] Fresh profile received for:', userId, 'with avatar:', profile?.avatar_url);
       
       setCache(prev => ({
         ...prev,
@@ -59,26 +66,29 @@ export const useProfileCache = () => {
         }
       }));
     } catch (error) {
-      console.error('❌ [PROFILE_CACHE] Profile prefetch error:', error);
+      console.error('❌ [PROFILE_CACHE] Profile prefetch error for user:', userId, error);
       setCache(prev => ({
         ...prev,
         [userId]: {
-          profile: cached,
-          timestamp: cached ? prev[userId]?.timestamp || Date.now() : Date.now(),
+          profile: prev[userId]?.profile || null,
+          timestamp: Date.now(),
           loading: false
         }
       }));
     } finally {
       fetchingRef.current.delete(userId);
+      console.log('🎯 [PROFILE_CACHE] Prefetch completed for user:', userId);
     }
-  }, [getCachedProfile]);
+  }, []);
 
   const getProfileFromCache = useCallback((userId: string): Profile | null => {
-    return getCachedProfile(userId);
+    const cachedProfile = getCachedProfile(userId);
+    console.log('🎯 [PROFILE_CACHE] getProfileFromCache called for:', userId, 'returning:', cachedProfile?.avatar_url || 'NO_AVATAR');
+    return cachedProfile;
   }, [getCachedProfile]);
 
   const invalidateCache = useCallback((userId: string) => {
-    console.log('🎯 [PROFILE_CACHE] Invalidating cache for user:', userId);
+    console.log('🎯 [PROFILE_CACHE] 🔥 INVALIDATING CACHE for user:', userId);
     setCache(prev => {
       const newCache = { ...prev };
       delete newCache[userId];
@@ -87,6 +97,7 @@ export const useProfileCache = () => {
     
     // Also remove from fetching set to allow immediate refetch
     fetchingRef.current.delete(userId);
+    console.log('🎯 [PROFILE_CACHE] 🔥 Cache invalidated and fetching cleared for user:', userId);
   }, []);
 
   return {

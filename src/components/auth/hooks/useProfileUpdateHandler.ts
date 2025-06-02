@@ -24,15 +24,16 @@ export const useProfileUpdateHandler = ({
       console.log('🔄 [PROFILE_UPDATE_HANDLER] ===== PROFILE UPDATE EVENT =====');
       console.log('🔄 [PROFILE_UPDATE_HANDLER] Profile updated event received:', event.detail);
       console.log('🔄 [PROFILE_UPDATE_HANDLER] Event detail avatar_url:', event.detail?.avatar_url);
-      console.log('🔄 [PROFILE_UPDATE_HANDLER] Event detail timestamp:', event.detail?.timestamp);
+      console.log('🔄 [PROFILE_UPDATE_HANDLER] Current userId:', userId);
+      console.log('🔄 [PROFILE_UPDATE_HANDLER] Is loading:', isLoadingProfile.current);
       
       if (userId && !isLoadingProfile.current) {
-        console.log('🔄 [PROFILE_UPDATE_HANDLER] 🚀 PROCESSING PROFILE UPDATE - FORCING FRESH FETCH');
+        console.log('🔄 [PROFILE_UPDATE_HANDLER] 🚀 PROCESSING PROFILE UPDATE');
         
         // Immediately invalidate cache to ensure we don't use stale data
         invalidateCache(userId);
         
-        // CRITICAL FIX: Use the event data directly first, then fetch fresh
+        // CRITICAL: Use the event data directly first
         if (event.detail && event.detail.avatar_url !== undefined) {
           console.log('🔄 [PROFILE_UPDATE_HANDLER] 🎯 Using FRESH event data directly');
           const updatedProfile = {
@@ -53,10 +54,11 @@ export const useProfileUpdateHandler = ({
         isLoadingProfile.current = true;
         
         try {
-          // Small delay to ensure database consistency
-          await new Promise(resolve => setTimeout(resolve, 200));
+          // Give the database a moment to be consistent
+          await new Promise(resolve => setTimeout(resolve, 300));
           
           // Fetch completely fresh profile data
+          console.log('🔄 [PROFILE_UPDATE_HANDLER] Fetching fresh profile data...');
           await prefetchProfile(userId);
           const freshProfile = getProfileFromCache(userId);
           
@@ -65,15 +67,22 @@ export const useProfileUpdateHandler = ({
             setCurrentProfile(freshProfile);
           }
           setIsProfileLoaded(true);
+        } catch (error) {
+          console.error('🔄 [PROFILE_UPDATE_HANDLER] Error fetching fresh profile:', error);
         } finally {
           isLoadingProfile.current = false;
+          console.log('🔄 [PROFILE_UPDATE_HANDLER] Profile update processing completed');
         }
+      } else {
+        console.log('🔄 [PROFILE_UPDATE_HANDLER] Skipping update - no userId or currently loading');
       }
     };
 
+    console.log('🔄 [PROFILE_UPDATE_HANDLER] Adding profile-updated event listener');
     window.addEventListener('profile-updated', handleProfileUpdate as EventListener);
     
     return () => {
+      console.log('🔄 [PROFILE_UPDATE_HANDLER] Removing profile-updated event listener');
       window.removeEventListener('profile-updated', handleProfileUpdate as EventListener);
     };
   }, [userId, getProfileFromCache, prefetchProfile, invalidateCache, currentProfile, setCurrentProfile, setIsProfileLoaded, isLoadingProfile]);

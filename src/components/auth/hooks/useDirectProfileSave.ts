@@ -1,107 +1,98 @@
 
-import { useState, useCallback } from 'react';
-import { updateProfile } from '@/services/profile/updateProfile';
-import { toast } from '@/hooks/use-toast';
+import { useState } from 'react';
 import { useAuth } from '@/contexts/auth/useAuth';
+import { toast } from '@/hooks/use-toast';
+import { updateProfile } from '@/services/profile';
 import { useProfileCache } from './useProfileCache';
 
 export const useDirectProfileSave = () => {
-  const [isSaving, setIsSaving] = useState(false);
   const { user } = useAuth();
-  const { invalidateCache, prefetchProfile } = useProfileCache();
+  const { invalidateCache } = useProfileCache();
+  const [isSaving, setIsSaving] = useState(false);
 
-  const directSaveProfile = useCallback(async (
-    userId: string,
-    profileData: {
-      avatar_url: string;
-      username: string;
-      display_name: string;
+  const directSaveProfile = async (userId: string, profileData: {
+    avatar_url: string;
+    username: string;
+    display_name: string;
+  }): Promise<boolean> => {
+    console.log('🔘 [DIRECT_PROFILE_SAVE] ===== STARTING DIRECT SAVE =====');
+    console.log('🔘 [DIRECT_PROFILE_SAVE] User ID:', userId);
+    console.log('🔘 [DIRECT_PROFILE_SAVE] Profile data:', profileData);
+
+    if (!userId || !user) {
+      console.error('🔘 [DIRECT_PROFILE_SAVE] No user ID or user available');
+      return false;
     }
-  ) => {
-    console.log('🚀 [DIRECT_SAVE] Starting save operation');
 
     if (isSaving) {
-      console.log('🚀 [DIRECT_SAVE] Already saving, ignoring request');
+      console.log('🔘 [DIRECT_PROFILE_SAVE] Already saving, skipping');
       return false;
     }
 
     setIsSaving(true);
 
-    if (!userId) {
-      console.error('🚀 [DIRECT_SAVE] No user ID provided');
-      toast({
-        title: 'Error',
-        description: 'User ID is required to save profile.',
-        variant: 'destructive',
-      });
-      setIsSaving(false);
-      return false;
-    }
-
     try {
-      console.log('🚀 [DIRECT_SAVE] Calling updateProfile service...');
-      
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Profile update timeout after 5 seconds')), 5000);
-      });
-      
-      const updatePromise = updateProfile(userId, profileData);
-      
-      const result = await Promise.race([updatePromise, timeoutPromise]);
-      
-      console.log('🚀📢 [DIRECT_SAVE] updateProfile service returned:', result);
-      
-      if (result) {
-        console.log('🚀✅ [DIRECT_SAVE] Save successful, refreshing cache and UI');
-        
-        // Clear cache first
+      // Clear cache first to ensure fresh data
+      console.log('🔘 [DIRECT_PROFILE_SAVE] Invalidating cache for user:', userId);
+      invalidateCache(userId);
+
+      // Save to database
+      console.log('🔘 [DIRECT_PROFILE_SAVE] Calling updateProfile service...');
+      const success = await updateProfile(userId, profileData);
+
+      console.log('🔘 [DIRECT_PROFILE_SAVE] Update result:', success);
+
+      if (success) {
+        // Invalidate cache again after successful save
         invalidateCache(userId);
         
-        // Wait a moment for database to settle
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        // Prefetch fresh data
-        await prefetchProfile(userId);
-        
-        // Dispatch multiple events to ensure all components update
-        window.dispatchEvent(new CustomEvent('profile-updated', {
-          detail: { userId, profileData, timestamp: Date.now() }
-        }));
-        
-        // Force a second update after a delay
-        setTimeout(() => {
-          window.dispatchEvent(new CustomEvent('profile-updated', {
-            detail: { userId, profileData, timestamp: Date.now() }
-          }));
-        }, 200);
-        
-        toast({
-          title: 'Profile Updated',
-          description: 'Your profile has been successfully updated.',
+        // Dispatch profile update event with fresh data
+        const updateEvent = new CustomEvent('profile-updated', {
+          detail: { 
+            userId: userId, 
+            timestamp: new Date().toISOString(),
+            avatar_url: profileData.avatar_url,
+            username: profileData.username,
+            display_name: profileData.display_name
+          }
         });
-      } else {
-        console.log('🚀❌ [DIRECT_SAVE] Save failed, showing error toast');
+        
+        console.log('🔘 [DIRECT_PROFILE_SAVE] Dispatching profile-updated event:', updateEvent.detail);
+        window.dispatchEvent(updateEvent);
+        
         toast({
-          title: 'Update Failed',
-          description: 'Failed to update your profile. Please try again.',
+          title: 'Profile updated',
+          description: 'Your profile has been saved successfully.',
+        });
+        
+        return true;
+      } else {
+        console.error('🔘 [DIRECT_PROFILE_SAVE] Profile update failed');
+        toast({
+          title: 'Save failed',
+          description: 'There was an error saving your profile. Please try again.',
           variant: 'destructive',
         });
+        return false;
       }
+    } catch (error: any) {
+      console.error('🔘 [DIRECT_PROFILE_SAVE] Save error:', error);
       
-      return result;
-    } catch (error) {
-      console.error('🚀🔥 [DIRECT_SAVE] Exception caught:', error);
       toast({
-        title: 'Save Error',
-        description: `An error occurred: ${error?.message || 'Unknown error'}`,
+        title: 'Save failed',
+        description: 'There was an error saving your profile. Please try again.',
         variant: 'destructive',
       });
+      
       return false;
     } finally {
-      console.log('🚀🏁 [DIRECT_SAVE] Entering finally block. Resetting isSaving.');
       setIsSaving(false);
+      console.log('🔘 [DIRECT_PROFILE_SAVE] ===== DIRECT SAVE COMPLETED =====');
     }
-  }, [isSaving, invalidateCache, prefetchProfile]);
+  };
 
-  return { isSaving, directSaveProfile };
+  return {
+    isSaving,
+    directSaveProfile
+  };
 };
