@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { Pokemon, fetchAllPokemon } from "@/services/pokemon";
 import { toast } from "@/hooks/use-toast";
 import { BattleType } from "./types";
+import { useTrueSkillStore } from "@/stores/trueskillStore";
 
 export const useBattleInitializer = (
   setBattleResults: React.Dispatch<React.SetStateAction<any[]>>,
@@ -17,6 +18,8 @@ export const useBattleInitializer = (
   const [allPokemon, setAllPokemon] = useState<Pokemon[]>([]);
   const [currentBattle, setCurrentBattle] = useState<Pokemon[]>([]);
   const [battleType, setBattleType] = useState<BattleType>("pairs");
+  
+  const { getAllRatings, isHydrated } = useTrueSkillStore();
 
   useEffect(() => {
     // Load battle type from localStorage
@@ -29,6 +32,22 @@ export const useBattleInitializer = (
     }
   }, []);
 
+  // CRITICAL FIX: Sync battle count with TrueSkill store when hydrated
+  useEffect(() => {
+    if (isHydrated) {
+      const ratings = getAllRatings();
+      const totalBattles = Object.values(ratings).reduce((sum, rating) => {
+        return sum + (rating.battleCount || 0);
+      }, 0);
+      
+      console.log(`🔄 [BATTLE_COUNT_SYNC] Syncing battle count from TrueSkill: ${totalBattles}`);
+      setBattlesCompleted(totalBattles);
+      
+      // Also update localStorage for consistency
+      localStorage.setItem('pokemon-battle-count', totalBattles.toString());
+    }
+  }, [isHydrated, getAllRatings, setBattlesCompleted]);
+
   const loadPokemon = async (genId = 0, fullRankingMode = false, preserveState = false) => {
     setIsLoading(true);
     try {
@@ -38,7 +57,18 @@ export const useBattleInitializer = (
       if (!preserveState) {
         // Reset battle state if not preserving state
         setBattleResults([]);
-        setBattlesCompleted(0);
+        
+        // CRITICAL FIX: Don't reset battle count to 0, get it from TrueSkill
+        if (isHydrated) {
+          const ratings = getAllRatings();
+          const totalBattles = Object.values(ratings).reduce((sum, rating) => {
+            return sum + (rating.battleCount || 0);
+          }, 0);
+          setBattlesCompleted(totalBattles);
+        } else {
+          setBattlesCompleted(0);
+        }
+        
         setRankingGenerated(false);
         console.log("🟢 setRankingGenerated explicitly set to FALSE.");
 

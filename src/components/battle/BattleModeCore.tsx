@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import BattleModeLoader from "./BattleModeLoader";
 import BattleModeProvider from "./BattleModeProvider";
@@ -18,7 +19,7 @@ const BattleModeCore: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasInitialized, setHasInitialized] = useState(false);
 
-  const { getAllRatings } = useTrueSkillStore();
+  const { getAllRatings, isHydrated } = useTrueSkillStore();
 
   // CRITICAL FIX: Store battle type in ref to prevent re-renders and use stable initial value
   const getInitialBattleType = (): BattleType => {
@@ -60,30 +61,44 @@ const BattleModeCore: React.FC = () => {
     setIsLoading(loading);
   }, []);
 
-  // SIMPLIFIED: Only restore battle count from localStorage, no smart preservation
+  // CRITICAL FIX: Initialize battle count from TrueSkill store when hydrated
   useEffect(() => {
     if (hasInitialized) return;
     
-    const performSimpleInitialization = () => {
-      console.log(`🧹 [SIMPLE_INIT] Performing simple initialization`);
+    const performInitialization = () => {
+      console.log(`🧹 [BATTLE_COUNT_INIT] Performing initialization with TrueSkill sync`);
       
-      // Only restore battle count if it exists in localStorage
-      const savedBattleCount = localStorage.getItem('pokemon-battle-count');
-      if (savedBattleCount) {
-        const count = parseInt(savedBattleCount, 10);
-        if (!isNaN(count) && count > 0) {
-          console.log(`🧹 [SIMPLE_INIT] Restoring battle count: ${count}`);
-          setBattlesCompleted(count);
+      if (isHydrated) {
+        // Get actual battle count from TrueSkill store
+        const ratings = getAllRatings();
+        const totalBattles = Object.values(ratings).reduce((sum, rating) => {
+          return sum + (rating.battleCount || 0);
+        }, 0);
+        
+        console.log(`🧹 [BATTLE_COUNT_INIT] Setting battle count from TrueSkill: ${totalBattles}`);
+        setBattlesCompleted(totalBattles);
+        
+        // Update localStorage for consistency
+        localStorage.setItem('pokemon-battle-count', totalBattles.toString());
+      } else {
+        // Fallback to localStorage if not hydrated yet
+        const savedBattleCount = localStorage.getItem('pokemon-battle-count');
+        if (savedBattleCount) {
+          const count = parseInt(savedBattleCount, 10);
+          if (!isNaN(count) && count > 0) {
+            console.log(`🧹 [BATTLE_COUNT_INIT] Fallback to localStorage battle count: ${count}`);
+            setBattlesCompleted(count);
+          }
         }
       }
       
       setHasInitialized(true);
-      console.log('[DEBUG BattleModeCore] Simple initialization completed');
+      console.log('[DEBUG BattleModeCore] Initialization completed');
     };
     
-    const timer = setTimeout(performSimpleInitialization, 200);
+    const timer = setTimeout(performInitialization, 200);
     return () => clearTimeout(timer);
-  }, [hasInitialized]);
+  }, [hasInitialized, isHydrated, getAllRatings]);
 
   // Loading state
   if (isLoading || !stablePokemon.length) {
