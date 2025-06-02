@@ -50,13 +50,16 @@ export const usePokemonRanker = () => {
     if (!hasInitialized) {
       console.log(`🔍 [POKEMON_RANKER_INIT] Starting Pokemon load initialization...`);
       setHasInitialized(true);
+      // CRITICAL FIX: Set loading type to show all Pokemon, not paginated
+      setLoadingType("single");
+      setLoadSize(1000); // Large number to show all
       loadPokemon(0, true).then((result) => {
         console.log(`🔍 [POKEMON_RANKER_INIT] Load completed with ${result?.length || 0} Pokemon`);
       }).catch((error) => {
         console.error(`🔍 [POKEMON_RANKER_INIT] Load failed:`, error);
       });
     }
-  }, [hasInitialized, loadPokemon]);
+  }, [hasInitialized, loadPokemon, setLoadingType, setLoadSize]);
 
   // Log when Pokemon data becomes available
   useEffect(() => {
@@ -80,11 +83,12 @@ export const usePokemonRanker = () => {
     selectedGeneration
   );
 
+  // CRITICAL FIX: For ranking interface, we want to show ALL filtered Pokemon, not paginated subset
   const { paginatedItems: availablePokemon, totalPages: calculatedTotalPages } = usePagination(
     filteredAvailablePokemon,
     currentPage,
-    loadSize,
-    loadingType
+    filteredAvailablePokemon.length, // Use full length instead of loadSize to show all Pokemon
+    "single" // Force single load mode to bypass pagination
   );
 
   useEffect(() => {
