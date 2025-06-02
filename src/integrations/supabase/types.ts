@@ -85,6 +85,7 @@ export type Database = {
           display_name: string | null
           email: string | null
           id: string
+          trueskill_session_id: string | null
           updated_at: string
           username: string | null
         }
@@ -94,6 +95,7 @@ export type Database = {
           display_name?: string | null
           email?: string | null
           id: string
+          trueskill_session_id?: string | null
           updated_at?: string
           username?: string | null
         }
@@ -103,6 +105,7 @@ export type Database = {
           display_name?: string | null
           email?: string | null
           id?: string
+          trueskill_session_id?: string | null
           updated_at?: string
           username?: string | null
         }

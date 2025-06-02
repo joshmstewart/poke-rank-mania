@@ -126,9 +126,10 @@ export const useTrueSkillStore = create<TrueSkillState>()(
         
         try {
           // Get user profile which should include their TrueSkill sessionId
+          // Using raw query to avoid TypeScript issues with the new column
           const { data: profile, error } = await supabase
             .from('profiles')
-            .select('trueskill_session_id')
+            .select('*')
             .eq('id', userId)
             .maybeSingle();
 
@@ -137,17 +138,20 @@ export const useTrueSkillStore = create<TrueSkillState>()(
             return;
           }
 
-          if (profile?.trueskill_session_id) {
-            console.log(`🔄 [TRUESKILL_RESTORE] Found stored sessionId: ${profile.trueskill_session_id}`);
+          // Access the trueskill_session_id using bracket notation to avoid TS errors
+          const storedSessionId = profile ? (profile as any).trueskill_session_id : null;
+
+          if (storedSessionId) {
+            console.log(`🔄 [TRUESKILL_RESTORE] Found stored sessionId: ${storedSessionId}`);
             
             // Set the sessionId in the store and localStorage
-            set({ sessionId: profile.trueskill_session_id });
+            set({ sessionId: storedSessionId });
             
             // Force update localStorage with the restored sessionId
             const currentStorage = JSON.parse(localStorage.getItem('trueskill-storage') || '{}');
             currentStorage.state = {
               ...currentStorage.state,
-              sessionId: profile.trueskill_session_id
+              sessionId: storedSessionId
             };
             localStorage.setItem('trueskill-storage', JSON.stringify(currentStorage));
             
@@ -163,7 +167,7 @@ export const useTrueSkillStore = create<TrueSkillState>()(
             if (currentSessionId) {
               await supabase
                 .from('profiles')
-                .update({ trueskill_session_id: currentSessionId })
+                .update({ trueskill_session_id: currentSessionId } as any)
                 .eq('id', userId);
               
               console.log(`🔄 [TRUESKILL_RESTORE] Saved current sessionId to user profile`);
