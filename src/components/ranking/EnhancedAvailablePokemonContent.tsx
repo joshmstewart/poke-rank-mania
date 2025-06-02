@@ -1,7 +1,7 @@
 
 import React from "react";
 import { useDroppable } from '@dnd-kit/core';
-import { RankingGrid } from "./RankingGrid";
+import DragDropGrid from "@/components/battle/DragDropGrid";
 import GenerationHeader from "@/components/pokemon/GenerationHeader";
 
 interface EnhancedAvailablePokemonContentProps {
@@ -62,14 +62,15 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
         // Render previous generation's Pokemon if any
         if (currentGenerationPokemon.length > 0) {
           result.push(
-            <RankingGrid
+            <DragDropGrid
               key={`gen-${currentGeneration}-pokemon`}
               displayRankings={currentGenerationPokemon}
-              activeTier={undefined}
-              isMilestoneView={false}
-              battlesCompleted={0}
-              onSuggestRanking={undefined}
-              onRemoveSuggestion={undefined}
+              localPendingRefinements={new Set()}
+              pendingBattleCounts={new Map()}
+              onManualReorder={() => {}}
+              onLocalReorder={() => {}}
+              onMarkAsPending={() => {}}
+              availablePokemon={[]}
             />
           );
           currentGenerationPokemon = [];
@@ -105,14 +106,15 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
     // Render remaining Pokemon
     if (currentGenerationPokemon.length > 0) {
       result.push(
-        <RankingGrid
+        <DragDropGrid
           key={`gen-${currentGeneration}-pokemon-final`}
           displayRankings={currentGenerationPokemon}
-          activeTier={undefined}
-          isMilestoneView={false}
-          battlesCompleted={0}
-          onSuggestRanking={undefined}
-          onRemoveSuggestion={undefined}
+          localPendingRefinements={new Set()}
+          pendingBattleCounts={new Map()}
+          onManualReorder={() => {}}
+          onLocalReorder={() => {}}
+          onMarkAsPending={() => {}}
+          availablePokemon={[]}
         />
       );
     }
