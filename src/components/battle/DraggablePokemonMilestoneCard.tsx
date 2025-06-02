@@ -175,18 +175,20 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
         </div>
       )}
       
-      {/* Pokemon image - scaled to 20x20 (80px) */}
+      {/* Pokemon image - circular container with drop shadow */}
       <div className="flex-1 flex justify-center items-center px-2 pt-6 pb-1">
-        <img 
-          src={pokemon.image} 
-          alt={pokemon.name}
-          className="w-20 h-20 object-contain"
-          loading="lazy"
-          onError={(e) => {
-            const target = e.target as HTMLImageElement;
-            target.style.display = 'none';
-          }}
-        />
+        <div className="w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
+          <img 
+            src={pokemon.image} 
+            alt={pokemon.name}
+            className="w-20 h-20 object-contain"
+            loading="lazy"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.style.display = 'none';
+            }}
+          />
+        </div>
       </div>
       
       {/* Pokemon info - white section at bottom with reduced padding */}
