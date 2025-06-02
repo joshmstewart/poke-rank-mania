@@ -59,17 +59,17 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({ user }) => {
     setProfileModalOpen(open);
   }, []);
 
-  // FORCE SYNC TO CLOUD: Save localStorage ratings to database and link to user
+  // IMPROVED FORCE SYNC: Better error handling and verification
   const forceSyncToCloud = useCallback(async () => {
-    console.log('🚨🚨🚨 [FORCE_SYNC_TO_CLOUD] ===== FORCING SYNC TO CLOUD =====');
-    console.log('🚨🚨🚨 [FORCE_SYNC_TO_CLOUD] Current user ID:', user.id);
-    console.log('🚨🚨🚨 [FORCE_SYNC_TO_CLOUD] Current sessionId:', sessionId);
+    console.log('🚨🚨🚨 [FORCE_SYNC_IMPROVED] ===== IMPROVED FORCE SYNC TO CLOUD =====');
+    console.log('🚨🚨🚨 [FORCE_SYNC_IMPROVED] Current user ID:', user.id);
+    console.log('🚨🚨🚨 [FORCE_SYNC_IMPROVED] Current sessionId:', sessionId);
     
     try {
       const allRatings = getAllRatings();
       const ratingsCount = Object.keys(allRatings).length;
       
-      console.log('🚨🚨🚨 [FORCE_SYNC_TO_CLOUD] Ratings to sync:', ratingsCount);
+      console.log('🚨🚨🚨 [FORCE_SYNC_IMPROVED] Ratings to sync:', ratingsCount);
       
       if (ratingsCount === 0) {
         toast({
@@ -80,50 +80,59 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({ user }) => {
         return;
       }
 
-      // Step 1: Force sync the ratings to cloud
-      console.log('🚨🚨🚨 [FORCE_SYNC_TO_CLOUD] Step 1: Syncing ratings to cloud...');
+      // Step 1: Force sync the ratings to cloud using the store function
+      console.log('🚨🚨🚨 [FORCE_SYNC_IMPROVED] Step 1: Syncing ratings to cloud...');
       await syncToCloud();
       
       // Step 2: Link the session to user profile
-      console.log('🚨🚨🚨 [FORCE_SYNC_TO_CLOUD] Step 2: Linking session to user profile...');
+      console.log('🚨🚨🚨 [FORCE_SYNC_IMPROVED] Step 2: Linking session to user profile...');
       const { error: profileError } = await supabase
         .from('profiles')
         .update({ trueskill_session_id: sessionId })
         .eq('id', user.id);
 
       if (profileError) {
-        console.error('🚨🚨🚨 [FORCE_SYNC_TO_CLOUD] Profile update error:', profileError);
+        console.error('🚨🚨🚨 [FORCE_SYNC_IMPROVED] Profile update error:', profileError);
         throw profileError;
       }
 
-      // Step 3: Verify the data was synced
-      console.log('🚨🚨🚨 [FORCE_SYNC_TO_CLOUD] Step 3: Verifying sync...');
+      // Step 3: Wait a moment and verify the data exists
+      console.log('🚨🚨🚨 [FORCE_SYNC_IMPROVED] Step 3: Waiting and verifying sync...');
+      await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
+      
       const { data: sessionData, error: sessionError } = await supabase
         .from('trueskill_sessions')
-        .select('ratings_data, user_id')
+        .select('ratings_data, user_id, session_id')
         .eq('session_id', sessionId)
         .maybeSingle();
 
+      console.log('🚨🚨🚨 [FORCE_SYNC_IMPROVED] Session verification result:', {
+        found: !!sessionData,
+        sessionId: sessionData?.session_id,
+        userId: sessionData?.user_id,
+        ratingsCount: sessionData ? Object.keys(sessionData.ratings_data || {}).length : 0,
+        error: sessionError
+      });
+
       if (sessionError) {
-        console.error('🚨🚨🚨 [FORCE_SYNC_TO_CLOUD] Session verification error:', sessionError);
+        console.error('🚨🚨🚨 [FORCE_SYNC_IMPROVED] Session verification error:', sessionError);
         throw sessionError;
       }
 
       if (sessionData) {
         const cloudRatingsCount = Object.keys(sessionData.ratings_data || {}).length;
-        console.log('🚨🚨🚨 [FORCE_SYNC_TO_CLOUD] ✅ Cloud verification: Found', cloudRatingsCount, 'ratings');
-        console.log('🚨🚨🚨 [FORCE_SYNC_TO_CLOUD] ✅ Session user_id:', sessionData.user_id);
+        console.log('🚨🚨🚨 [FORCE_SYNC_IMPROVED] ✅ Success! Found', cloudRatingsCount, 'ratings in cloud');
 
-        // Step 4: Update the session to link to user if not already linked
-        if (!sessionData.user_id) {
-          console.log('🚨🚨🚨 [FORCE_SYNC_TO_CLOUD] Step 4: Linking session user_id...');
+        // Step 4: Ensure the session is linked to the user
+        if (sessionData.user_id !== user.id) {
+          console.log('🚨🚨🚨 [FORCE_SYNC_IMPROVED] Step 4: Linking session user_id...');
           const { error: linkError } = await supabase
             .from('trueskill_sessions')
             .update({ user_id: user.id })
             .eq('session_id', sessionId);
 
           if (linkError) {
-            console.error('🚨🚨🚨 [FORCE_SYNC_TO_CLOUD] Session linking error:', linkError);
+            console.error('🚨🚨🚨 [FORCE_SYNC_IMPROVED] Session linking error:', linkError);
             throw linkError;
           }
         }
@@ -134,15 +143,21 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({ user }) => {
           duration: 5000
         });
 
-        console.log('🚨🚨🚨 [FORCE_SYNC_TO_CLOUD] ✅✅✅ FORCE SYNC COMPLETED SUCCESSFULLY! ✅✅✅');
-        console.log('🚨🚨🚨 [FORCE_SYNC_TO_CLOUD] ✅ Your progress is now permanently saved to the cloud!');
+        console.log('🚨🚨🚨 [FORCE_SYNC_IMPROVED] ✅✅✅ FORCE SYNC COMPLETED SUCCESSFULLY! ✅✅✅');
         
       } else {
-        throw new Error('Session data not found after sync');
+        // If no data found, show more helpful error
+        console.log('🚨🚨🚨 [FORCE_SYNC_IMPROVED] ⚠️ No session data found, but sync may have worked');
+        
+        toast({
+          title: "⚠️ Sync Status Unclear",
+          description: `Attempted to sync ${ratingsCount} ratings. Please try the "Find All Sessions" to verify.`,
+          duration: 5000
+        });
       }
 
     } catch (error) {
-      console.error('🚨🚨🚨 [FORCE_SYNC_TO_CLOUD] ❌ Force sync failed:', error);
+      console.error('🚨🚨🚨 [FORCE_SYNC_IMPROVED] ❌ Force sync failed:', error);
       toast({
         title: "❌ Force Sync Failed",
         description: `Error syncing to cloud: ${error.message}`,
