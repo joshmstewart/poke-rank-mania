@@ -94,7 +94,7 @@ export const useEnhancedAvailablePokemon = ({
           wins: rankedInfo?.pokemon.wins || 0,
           losses: rankedInfo?.pokemon.losses || 0,
           winRate: rankedInfo?.pokemon.winRate || 0,
-          image: pokemon.image || pokemon.spriteUrl || '',
+          image: pokemon.image || '',
           generation: pokemon.generation || 1
         };
         
