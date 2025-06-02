@@ -48,13 +48,26 @@ export function FormFiltersSelector() {
     
     // CRITICAL: For blocked category, count from raw unfiltered data
     console.log(`🚫 [BLOCKED_COUNT] Counting blocked Pokemon from ${rawUnfilteredPokemon.length} raw unfiltered Pokemon`);
-    rawUnfilteredPokemon.forEach(pokemon => {
+    
+    // Debug: Let's see what we're working with
+    let debugBlockedCount = 0;
+    rawUnfilteredPokemon.forEach((pokemon, index) => {
       const category = getPokemonFormCategory(pokemon);
       if (category === 'blocked') {
         counts.blocked++;
+        debugBlockedCount++;
+        if (debugBlockedCount <= 10) { // Log first 10 blocked Pokemon found
+          console.log(`🚫 [BLOCKED_FOUND] Found blocked Pokemon: "${pokemon.name}" (ID: ${pokemon.id})`);
+        }
+      }
+      
+      // Also log some sample Pokemon names to see what we're working with
+      if (index < 20) {
+        console.log(`🔍 [SAMPLE_POKEMON] ${index + 1}: "${pokemon.name}" (ID: ${pokemon.id}) -> category: ${category}`);
       }
     });
     
+    console.log(`🚫 [BLOCKED_COUNT_DEBUG] Total blocked Pokemon found: ${debugBlockedCount}`);
     console.log(`🔢 [FORM_COUNTS] Calculated counts:`, counts);
     console.log(`🚫 [BLOCKED_COUNT_FINAL] Final blocked count: ${counts.blocked}`);
     
