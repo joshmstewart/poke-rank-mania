@@ -2,6 +2,7 @@
 import { useCallback } from "react";
 import { useTrueSkillStore } from "@/stores/trueskillStore";
 import { usePokemonContext } from "@/contexts/PokemonContext";
+import { Rating } from 'ts-trueskill';
 
 export const useReRankingTrigger = (
   localRankings: any[],
@@ -29,7 +30,6 @@ export const useReRankingTrigger = (
       console.log(`🔄🔄🔄 [RE_RANKING_TRIGGER] Current rating: mu=${currentRating.mu.toFixed(2)}, sigma=${currentRating.sigma.toFixed(2)}`);
       
       // Simulate battles with other ranked Pokemon to update rating
-      // This is a simplified simulation - in a real implementation, you'd want more sophisticated battle logic
       const otherRankedPokemon = localRankings.filter(p => p.id !== pokemonId);
       
       let updatedRating = currentRating;
@@ -45,21 +45,20 @@ export const useReRankingTrigger = (
       for (const opponent of battleOpponents) {
         const opponentRating = getRating(opponent.id.toString());
         
-        // Simulate battle outcome (you might want to use actual battle logic here)
+        // Simulate battle outcome
         const winProbability = 1 / (1 + Math.pow(10, (opponentRating.mu - updatedRating.mu) / 400));
         const didWin = Math.random() < winProbability;
         
         // Create a simple rating update based on battle outcome
-        // This is a simplified version - you might want to use your existing battle system
         if (didWin) {
           // Won - increase rating
-          updatedRating = new (require('ts-trueskill').Rating)(
+          updatedRating = new Rating(
             updatedRating.mu + (opponentRating.mu > updatedRating.mu ? 2 : 1),
             Math.max(updatedRating.sigma * 0.95, 1)
           );
         } else {
           // Lost - decrease rating  
-          updatedRating = new (require('ts-trueskill').Rating)(
+          updatedRating = new Rating(
             updatedRating.mu - (opponentRating.mu < updatedRating.mu ? 2 : 1),
             Math.max(updatedRating.sigma * 0.95, 1)
           );
@@ -72,12 +71,7 @@ export const useReRankingTrigger = (
       console.log(`🔄🔄🔄 [RE_RANKING_TRIGGER] Final rating: mu=${updatedRating.mu.toFixed(2)}, sigma=${updatedRating.sigma.toFixed(2)}`);
       
       // Update the rating in TrueSkill store
-      const currentStats = useTrueSkillStore.getState().getAllRatings()[pokemonId.toString()];
-      updateRating(
-        pokemonId.toString(), 
-        updatedRating, 
-        (currentStats?.battleCount || 0) + battleCount
-      );
+      updateRating(pokemonId.toString(), updatedRating);
       
       // Create updated rankings by re-sorting all Pokemon by their TrueSkill ratings
       const allRatings = useTrueSkillStore.getState().getAllRatings();

@@ -48,7 +48,7 @@ export const useBattleProcessorResult = (
       return updated;
     });
 
-    // FIXED: Increment total battle count explicitly
+    // Increment total battle count explicitly
     incrementTotalBattles();
     console.log('[BATTLE_PROCESSOR_RESULT] Incremented total battle count in TrueSkill store');
 
@@ -59,12 +59,9 @@ export const useBattleProcessorResult = (
       return newCount;
     });
 
-    // Update individual Pokemon battle counts and TrueSkill ratings
+    // Update individual Pokemon battle counts
     currentBattle.forEach(pokemon => {
       incrementBattleCount(pokemon.id.toString());
-      
-      // This would be where TrueSkill rating updates happen
-      // The actual rating calculation should happen elsewhere
     });
 
     console.log('[BATTLE_PROCESSOR_RESULT] Battle processing completed');

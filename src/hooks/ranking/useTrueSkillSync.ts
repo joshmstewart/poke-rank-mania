@@ -7,7 +7,7 @@ import { Rating } from 'ts-trueskill';
 import { formatPokemonName } from '@/utils/pokemon';
 
 export const useTrueSkillSync = () => {
-  const { getAllRatings, isHydrated, waitForHydration, isLoading, sessionId, loadFromCloud } = useTrueSkillStore();
+  const { getAllRatings, isHydrated, waitForHydration, syncInProgress, sessionId, loadFromCloud } = useTrueSkillStore();
   const { pokemonLookupMap } = usePokemonContext();
   const [localRankings, setLocalRankings] = useState<RankedPokemon[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -38,11 +38,11 @@ export const useTrueSkillSync = () => {
         }
       }
       
-      if (isLoading) {
+      if (syncInProgress) {
         let attempts = 0;
         const maxAttempts = 50;
         
-        while (useTrueSkillStore.getState().isLoading && attempts < maxAttempts) {
+        while (useTrueSkillStore.getState().syncInProgress && attempts < maxAttempts) {
           await new Promise(resolve => setTimeout(resolve, 100));
           attempts++;
         }
@@ -59,7 +59,7 @@ export const useTrueSkillSync = () => {
   const ratingsCount = Object.keys(allRatings).length;
 
   useEffect(() => {
-    if (!contextReady || !isInitialized || isLoading) {
+    if (!contextReady || !isInitialized || syncInProgress) {
       return;
     }
 
@@ -102,7 +102,7 @@ export const useTrueSkillSync = () => {
 
     rankings.sort((a, b) => b.score - a.score);
     setLocalRankings(rankings);
-  }, [contextReady, ratingsCount, allRatings, pokemonLookupMap, isInitialized, isLoading, sessionId]);
+  }, [contextReady, ratingsCount, allRatings, pokemonLookupMap, isInitialized, syncInProgress, sessionId]);
 
   const updateLocalRankings = useMemo(() => {
     return (newRankings: RankedPokemon[]) => {

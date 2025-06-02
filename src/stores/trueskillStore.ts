@@ -15,14 +15,16 @@ interface TrueSkillStore {
   isHydrated: boolean;
   lastSyncTime: number;
   syncInProgress: boolean;
-  totalBattles: number; // NEW: Explicit battle count
+  totalBattles: number;
   
   // Actions
   updateRating: (pokemonId: string, rating: Rating) => void;
   incrementBattleCount: (pokemonId: string) => void;
-  incrementTotalBattles: () => void; // NEW: Increment total battle count
-  setTotalBattles: (count: number) => void; // NEW: Set total battle count
+  incrementTotalBattles: () => void;
+  setTotalBattles: (count: number) => void;
   getAllRatings: () => Record<string, TrueSkillRating>;
+  getRating: (pokemonId: string) => Rating;
+  hasRating: (pokemonId: string) => boolean;
   clearAllRatings: () => void;
   syncToCloud: () => Promise<void>;
   loadFromCloud: () => Promise<void>;
@@ -40,7 +42,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
       isHydrated: false,
       lastSyncTime: 0,
       syncInProgress: false,
-      totalBattles: 0, // NEW: Initialize total battles
+      totalBattles: 0,
 
       updateRating: (pokemonId: string, rating: Rating) => {
         set((state) => ({
@@ -70,7 +72,6 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
         }));
       },
 
-      // NEW: Increment total battle count
       incrementTotalBattles: () => {
         set((state) => ({
           totalBattles: state.totalBattles + 1
@@ -80,17 +81,28 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
         setTimeout(() => get().syncToCloud(), 100);
       },
 
-      // NEW: Set total battle count
       setTotalBattles: (count: number) => {
         set({ totalBattles: count });
       },
 
       getAllRatings: () => get().ratings,
 
+      getRating: (pokemonId: string) => {
+        const rating = get().ratings[pokemonId];
+        if (rating) {
+          return new Rating(rating.mu, rating.sigma);
+        }
+        return new Rating(); // Default rating
+      },
+
+      hasRating: (pokemonId: string) => {
+        return pokemonId in get().ratings;
+      },
+
       clearAllRatings: () => {
         set({ 
           ratings: {},
-          totalBattles: 0 // NEW: Reset total battles when clearing
+          totalBattles: 0
         });
         setTimeout(() => get().syncToCloud(), 100);
       },
@@ -109,8 +121,8 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               sessionId: state.sessionId,
-              ratings: state.ratings,
-              totalBattles: state.totalBattles, // NEW: Include total battles in sync
+              ratings: state.ratings as any,
+              totalBattles: state.totalBattles,
               lastUpdated: new Date().toISOString()
             })
           });
@@ -153,7 +165,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
             console.log(`[TRUESKILL_STORE] Loaded ${Object.keys(result.ratings).length} ratings, ${result.totalBattles || 0} total battles from cloud`);
             set({ 
               ratings: result.ratings,
-              totalBattles: result.totalBattles || 0 // NEW: Load total battles from cloud
+              totalBattles: result.totalBattles || 0
             });
           }
         } catch (error) {

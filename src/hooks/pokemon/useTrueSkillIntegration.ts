@@ -22,7 +22,7 @@ export const useTrueSkillIntegration = ({
   setAvailablePokemon,
   setConfidenceScores
 }: UseTrueSkillIntegrationProps) => {
-  const { loadFromCloud, isLoading: storeIsLoading } = useTrueSkillStore();
+  const { loadFromCloud, syncInProgress } = useTrueSkillStore();
   
   // Load data from cloud on startup - simplified
   useEffect(() => {
@@ -40,6 +40,6 @@ export const useTrueSkillIntegration = ({
   console.log("[TRUESKILL_INTEGRATION] Hook active - main sync handled by PokemonRanker");
 
   return {
-    isStoreLoading: storeIsLoading
+    isStoreLoading: syncInProgress
   };
 };
