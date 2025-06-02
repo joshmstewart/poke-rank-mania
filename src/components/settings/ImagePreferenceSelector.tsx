@@ -59,6 +59,13 @@ const ImagePreferenceSelector: React.FC<ImagePreferenceSelectorProps> = ({ onClo
     setImageLoadStates(prev => ({ ...prev, [id]: false }));
   };
 
+  const handleTypeChange = (type: ImageType) => {
+    // Filter out invalid types for Pokemon mode
+    if (['official', 'artwork', 'sprite'].includes(type)) {
+      setSelectedType(type as 'official' | 'artwork' | 'sprite');
+    }
+  };
+
   const handleDoneClick = () => {
     // Dispatch a custom event to notify components that preferences have been saved
     window.dispatchEvent(new CustomEvent('pokemon-preferences-saved', {
@@ -85,7 +92,7 @@ const ImagePreferenceSelector: React.FC<ImagePreferenceSelectorProps> = ({ onClo
       {selectedMode === 'pokemon' && (
         <ImageTypeSelector
           selectedType={selectedType}
-          onTypeChange={setSelectedType}
+          onTypeChange={handleTypeChange}
           imageLoadStates={imageLoadStates}
           onImageLoad={handleImageLoad}
           onImageError={handleImageError}

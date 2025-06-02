@@ -65,10 +65,10 @@ export const useBattleStateMilestones = (
         }
 
         // Get TrueSkill rating from centralized store
-        const trueskillRating = getRating(pokemonId);
-        const trueskillData = allRatings[pokemonId];
+        const trueskillRating = getRating(pokemonId.toString());
+        const trueskillData = allRatings[pokemonId.toString()];
         
-        console.log(`🚨🚨🚨 [RANKING_GENERATION_UNIFIED] ${completePokemon.name}: μ=${trueskillRating.mu.toFixed(2)}, σ=${trueskillRating.sigma.toFixed(2)}, battles=${trueskillData.battleCount}`);
+        console.log(`🚨🚨🚨 [RANKING_GENERATION_UNIFIED] ${completePokemon.name}: μ=${trueskillRating.mu.toFixed(2)}, σ=${trueskillRating.sigma.toFixed(2)}, battles=${trueskillData?.battleCount || 0}`);
 
         // Calculate conservative score (mu - sigma) - Changed from 3 * sigma to 1 * sigma
         const conservativeEstimate = trueskillRating.mu - trueskillRating.sigma;
@@ -97,7 +97,7 @@ export const useBattleStateMilestones = (
 
         // Use TrueSkill battle count if no battle history available
         if (totalBattles === 0) {
-          totalBattles = trueskillData.battleCount || 0;
+          totalBattles = trueskillData?.battleCount || 0;
         }
 
         const winRate = totalBattles > 0 ? (wins / totalBattles) * 100 : 0;
