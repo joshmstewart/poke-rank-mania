@@ -8,7 +8,7 @@ import { Crown } from "lucide-react";
 interface EnhancedPokemon {
   id: number;
   name: string;
-  image?: string;
+  image: string; // Make required to match RankedPokemon type
   types?: string[];
   isRanked: boolean;
   currentRank: number | null;

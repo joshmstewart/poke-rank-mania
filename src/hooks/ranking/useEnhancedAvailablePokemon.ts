@@ -12,6 +12,8 @@ interface EnhancedPokemon extends Pokemon {
   wins: number;
   losses: number;
   winRate: number;
+  // Ensure image is required to match RankedPokemon type
+  image: string;
 }
 
 interface UseEnhancedAvailablePokemonProps {
@@ -39,6 +41,7 @@ export const useEnhancedAvailablePokemon = ({
       
       return {
         ...pokemon,
+        image: pokemon.image || '', // Ensure image is always a string
         isRanked: !!rankedInfo,
         currentRank: rankedInfo?.rank || null,
         // Provide default values for required properties
