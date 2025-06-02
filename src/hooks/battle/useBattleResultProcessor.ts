@@ -21,7 +21,7 @@ export const useBattleResultProcessor = (
   const { saveBattleCount } = useBattleStatePersistence();
   
   // Get the centralized TrueSkill store functions - SINGLE SOURCE OF TRUTH
-  const { updateRating, getRating, hasRating, getAllRatings } = useTrueSkillStore();
+  const { updateRating, getRating, hasRating, getAllRatings, incrementTotalBattles, incrementBattleCount } = useTrueSkillStore();
 
   const processResult = useCallback((
     selections: number[],
@@ -92,6 +92,17 @@ export const useBattleResultProcessor = (
           updateRating(loser.id.toString(), newLoserRating);
           console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] ✅ Loser rating updated for ${loser.id}`);
           
+          // CRITICAL FIX: Increment individual battle counts for both Pokemon
+          console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] ===== INCREMENTING BATTLE COUNTS =====`);
+          incrementBattleCount(winner.id.toString());
+          incrementBattleCount(loser.id.toString());
+          console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] ✅ Incremented battle counts for both Pokemon`);
+          
+          // CRITICAL FIX: Increment total battle count - THIS WAS MISSING!
+          console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] ===== INCREMENTING TOTAL BATTLES =====`);
+          incrementTotalBattles();
+          console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] ✅ Incremented total battles count`);
+          
           // CRITICAL: Verify the ratings were stored immediately after each update
           console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] ===== VERIFICATION AFTER UPDATES =====`);
           const verifyWinner = getRating(winner.id.toString());
@@ -102,11 +113,13 @@ export const useBattleResultProcessor = (
           // CRITICAL: Check total store state after these updates
           const ratingsAfterUpdate = getAllRatings();
           const ratingCountAfter = Object.keys(ratingsAfterUpdate).length;
+          const totalBattlesAfter = useTrueSkillStore.getState().totalBattles;
           console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] ===== STORE STATE AFTER UPDATES =====`);
           console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] Total ratings after: ${ratingCountAfter} (was ${ratingCountBefore})`);
+          console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] Total battles after: ${totalBattlesAfter}`);
           
           // ENHANCED: Save battle count for persistence
-          const newBattleCount = battleResults.length + 1;
+          const newBattleCount = totalBattlesAfter;
           saveBattleCount(newBattleCount);
           console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] Saved battle count: ${newBattleCount}`);
           
@@ -177,15 +190,27 @@ export const useBattleResultProcessor = (
             });
           });
 
+          // CRITICAL FIX: Increment battle counts for triplets too
+          console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] ===== INCREMENTING TRIPLET BATTLE COUNTS =====`);
+          currentBattle.forEach(pokemon => {
+            incrementBattleCount(pokemon.id.toString());
+          });
+          
+          // CRITICAL FIX: Increment total battle count for triplets
+          incrementTotalBattles();
+          console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] ✅ Incremented total battles count for triplet`);
+
           // Check store state after all triplet processing
           const afterTripletRatings = getAllRatings();
           const tripletRatingCount = Object.keys(afterTripletRatings).length;
+          const totalBattlesAfterTriplet = useTrueSkillStore.getState().totalBattles;
           console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] ===== TRIPLET BATTLE COMPLETE =====`);
           console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] Total ratings after triplet: ${tripletRatingCount} (was ${ratingCountBefore})`);
+          console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] Total battles after triplet: ${totalBattlesAfterTriplet}`);
           console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] Processed ${updateCount} individual matchups`);
 
           // ENHANCED: Save battle count for triplets too
-          const newBattleCount = battleResults.length + newResults.length;
+          const newBattleCount = totalBattlesAfterTriplet;
           saveBattleCount(newBattleCount);
           console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] Saved battle count: ${newBattleCount}`);
 
@@ -202,7 +227,7 @@ export const useBattleResultProcessor = (
       setIsProcessing(false);
       return null;
     }
-  }, [activeTier, freezePokemonForTier, trackLowerTierLoss, updateRating, getRating, getAllRatings, battleResults.length, saveBattleCount]);
+  }, [activeTier, freezePokemonForTier, trackLowerTierLoss, updateRating, getRating, getAllRatings, incrementTotalBattles, incrementBattleCount, saveBattleCount]);
 
   // CRITICAL: Create a wrapper that ensures battle results are properly saved to the battle results array
   const processBattleAndUpdateResults = useCallback((
