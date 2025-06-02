@@ -49,17 +49,16 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({ user }) => {
   const avatarUrl = user.user_metadata?.avatar_url;
   const userInitials = displayName.charAt(0).toUpperCase();
 
-  // ENHANCED DEBUG LOGGING
-  console.log('🎭 [USER_DROPDOWN] ===== AVATAR DISPLAY DEBUG =====');
-  console.log('🎭 [USER_DROPDOWN] Full user object:', JSON.stringify(user, null, 2));
-  console.log('🎭 [USER_DROPDOWN] Avatar URL from user_metadata:', avatarUrl);
+  // CRITICAL DEBUG: Track every render of this component
+  console.log('🎭 [USER_DROPDOWN] ===== COMPONENT RENDER DEBUG =====');
+  console.log('🎭 [USER_DROPDOWN] Component rendered at:', new Date().toISOString());
+  console.log('🎭 [USER_DROPDOWN] User ID:', user.id?.substring(0, 8));
+  console.log('🎭 [USER_DROPDOWN] Avatar URL:', avatarUrl);
   console.log('🎭 [USER_DROPDOWN] Avatar URL type:', typeof avatarUrl);
-  console.log('🎭 [USER_DROPDOWN] Avatar URL truthy check:', !!avatarUrl);
   console.log('🎭 [USER_DROPDOWN] Avatar URL length:', avatarUrl?.length || 0);
   console.log('🎭 [USER_DROPDOWN] Display name:', displayName);
-  console.log('🎭 [USER_DROPDOWN] User initials fallback:', userInitials);
-  console.log('🎭 [USER_DROPDOWN] Will show avatar image?', !!avatarUrl);
-  console.log('🎭 [USER_DROPDOWN] ===== END AVATAR DEBUG =====');
+  console.log('🎭 [USER_DROPDOWN] Will attempt to show avatar:', !!avatarUrl);
+  console.log('🎭 [USER_DROPDOWN] ===== END RENDER DEBUG =====');
 
   return (
     <>
@@ -74,15 +73,20 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({ user }) => {
                   onLoad={() => {
                     console.log('🎭 [USER_DROPDOWN] ✅ Avatar image LOADED successfully');
                     console.log('🎭 [USER_DROPDOWN] ✅ Loaded avatar URL:', avatarUrl);
+                    console.log('🎭 [USER_DROPDOWN] ✅ Load timestamp:', new Date().toISOString());
                   }}
                   onError={(e) => {
                     console.error('🎭 [USER_DROPDOWN] ❌ Avatar image FAILED to load');
                     console.error('🎭 [USER_DROPDOWN] ❌ Failed avatar URL:', avatarUrl);
+                    console.error('🎭 [USER_DROPDOWN] ❌ Error timestamp:', new Date().toISOString());
                     console.error('🎭 [USER_DROPDOWN] ❌ Error event:', e);
                   }}
                 />
               ) : (
-                <div style={{ display: 'none' }} />
+                <>
+                  {console.log('🎭 [USER_DROPDOWN] ❌ NO AVATAR URL - rendering fallback only')}
+                  <div style={{ display: 'none' }} />
+                </>
               )}
               <AvatarFallback className="bg-primary text-primary-foreground">
                 {userInitials}
