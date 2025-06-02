@@ -24,6 +24,31 @@ interface TrueSkillState {
   comprehensiveEnvironmentalDebug: () => void;
 }
 
+// CRITICAL DEBUGGING: Check localStorage IMMEDIATELY
+console.log(`🔍🔍🔍 [LOCALSTORAGE_INVESTIGATION] ===== CHECKING LOCALSTORAGE ON STORE INIT =====`);
+const storedData = localStorage.getItem('trueskill-storage');
+console.log(`🔍🔍🔍 [LOCALSTORAGE_INVESTIGATION] Raw localStorage data:`, storedData);
+if (storedData) {
+  try {
+    const parsed = JSON.parse(storedData);
+    console.log(`🔍🔍🔍 [LOCALSTORAGE_INVESTIGATION] Parsed localStorage:`, parsed);
+    console.log(`🔍🔍🔍 [LOCALSTORAGE_INVESTIGATION] Ratings in localStorage:`, parsed.state?.ratings);
+    console.log(`🔍🔍🔍 [LOCALSTORAGE_INVESTIGATION] Rating count in localStorage:`, Object.keys(parsed.state?.ratings || {}).length);
+  } catch (e) {
+    console.error(`🔍🔍🔍 [LOCALSTORAGE_INVESTIGATION] Failed to parse localStorage:`, e);
+  }
+} else {
+  console.log(`🔍🔍🔍 [LOCALSTORAGE_INVESTIGATION] ❌ NO DATA IN LOCALSTORAGE!`);
+}
+
+// Check all possible storage keys
+console.log(`🔍🔍🔍 [LOCALSTORAGE_INVESTIGATION] All localStorage keys:`, Object.keys(localStorage));
+Object.keys(localStorage).forEach(key => {
+  if (key.includes('trueskill') || key.includes('rating') || key.includes('battle')) {
+    console.log(`🔍🔍🔍 [LOCALSTORAGE_INVESTIGATION] Found relevant key [${key}]:`, localStorage.getItem(key));
+  }
+});
+
 export const useTrueSkillStore = create<TrueSkillState>()(
   persist(
     (set, get) => ({
@@ -35,8 +60,8 @@ export const useTrueSkillStore = create<TrueSkillState>()(
 
       updateRating: (pokemonId: string, rating: Rating, battleCount?: number) => {
         console.log(`🔍 [TRUESKILL_STORE_DEBUG] Updating rating for Pokemon ${pokemonId}: mu=${rating.mu}, sigma=${rating.sigma}, battles=${battleCount || 0}`);
-        set((state) => ({
-          ratings: {
+        set((state) => {
+          const newRatings = {
             ...state.ratings,
             [pokemonId]: { 
               mu: rating.mu, 
@@ -44,10 +69,17 @@ export const useTrueSkillStore = create<TrueSkillState>()(
               battleCount: battleCount || state.ratings[pokemonId]?.battleCount || 0,
               lastUpdated: new Date().toISOString()
             }
-          },
-          isDirty: true,
-          lastUpdated: new Date().toISOString()
-        }));
+          };
+          
+          console.log(`🔍 [TRUESKILL_STORE_UPDATE] New ratings object:`, newRatings);
+          console.log(`🔍 [TRUESKILL_STORE_UPDATE] New ratings count:`, Object.keys(newRatings).length);
+          
+          return {
+            ratings: newRatings,
+            isDirty: true,
+            lastUpdated: new Date().toISOString()
+          };
+        });
         
         // Immediately check what we just set
         const newRatings = get().ratings;
@@ -81,9 +113,24 @@ export const useTrueSkillStore = create<TrueSkillState>()(
         console.log(`🚨🚨🚨 [STORE_GETALLRATINGS_CRITICAL] Is ratings null/undefined?`, ratings == null);
         console.log(`🚨🚨🚨 [STORE_GETALLRATINGS_CRITICAL] Ratings constructor:`, ratings?.constructor?.name);
         
+        // CRITICAL: Check localStorage again RIGHT NOW
+        const currentStoredData = localStorage.getItem('trueskill-storage');
+        console.log(`🚨🚨🚨 [STORE_GETALLRATINGS_CRITICAL] Current localStorage data:`, currentStoredData);
+        if (currentStoredData) {
+          try {
+            const parsed = JSON.parse(currentStoredData);
+            console.log(`🚨🚨🚨 [STORE_GETALLRATINGS_CRITICAL] Current parsed localStorage:`, parsed);
+            console.log(`🚨🚨🚨 [STORE_GETALLRATINGS_CRITICAL] Current ratings in localStorage:`, parsed.state?.ratings);
+          } catch (e) {
+            console.error(`🚨🚨🚨 [STORE_GETALLRATINGS_CRITICAL] Failed to parse current localStorage:`, e);
+          }
+        }
+        
         if (ratings && Object.keys(ratings).length > 0) {
           const firstKey = Object.keys(ratings)[0];
           console.log(`🚨🚨🚨 [STORE_GETALLRATINGS_CRITICAL] Sample rating [${firstKey}]:`, ratings[firstKey]);
+        } else {
+          console.log(`🚨🚨🚨 [STORE_GETALLRATINGS_CRITICAL] ❌ STORE RATINGS IS EMPTY BUT CHECKING IF LOCALSTORAGE HAS DATA...`);
         }
         
         console.log(`🚨🚨🚨 [STORE_GETALLRATINGS_CRITICAL] Returning:`, ratings || {});
