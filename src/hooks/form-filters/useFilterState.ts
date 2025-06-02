@@ -1,8 +1,9 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { FormFilters, PokemonFormType } from "./types";
 import { getStoredFilters, saveFilters, clearStoredFilters } from "./storage";
 import { toast } from "@/hooks/use-toast";
-import { useTrueSkillStore } from "@/stores/trueskillStore";
+import { useCloudPreferences } from "@/hooks/useCloudPreferences";
 
 const getFilterName = (filter: PokemonFormType): string => {
   const filterNames: Record<PokemonFormType, string> = {
@@ -20,52 +21,25 @@ const getFilterName = (filter: PokemonFormType): string => {
 };
 
 export const useFilterState = () => {
-  const { syncToCloud, getFormFilters, setFormFilters } = useTrueSkillStore();
+  const { formFilters, updateFormFilters, isInitialized } = useCloudPreferences();
+  const [filters, setFilters] = useState<FormFilters>(formFilters);
   
-  // CRITICAL FIX: Initialize with cloud data if available, fallback to localStorage
-  const [filters, setFilters] = useState<FormFilters>(() => {
-    // Try cloud data first
-    const cloudFilters = getFormFilters();
-    if (cloudFilters && Object.keys(cloudFilters).length > 0) {
-      console.log('🌥️ [FORM_FILTERS_CLOUD] Initializing with cloud filters:', cloudFilters);
-      return cloudFilters;
-    }
-    
-    // Fallback to localStorage
-    const storedFilters = getStoredFilters();
-    console.log('🧹 [FORM_FILTERS_LOCAL] Initializing with localStorage filters:', storedFilters);
-    return storedFilters;
-  });
-  
-  // Load from cloud on mount
+  // Update local state when cloud preferences change
   useEffect(() => {
-    const cloudFilters = getFormFilters();
-    if (cloudFilters && Object.keys(cloudFilters).length > 0) {
-      console.log('🌥️ [FORM_FILTERS_CLOUD] Loading filters from cloud on mount:', cloudFilters);
-      setFilters(cloudFilters);
-      // Also save to localStorage for offline access
-      saveFilters(cloudFilters);
+    if (isInitialized) {
+      console.log('🌥️ [FORM_FILTERS_CLOUD] Cloud preferences initialized, updating filters:', formFilters);
+      setFilters(formFilters);
     }
-  }, [getFormFilters]);
+  }, [formFilters, isInitialized]);
   
   // Determine if all filters are enabled
   const isAllEnabled = Object.values(filters).every(Boolean);
   
-  // Save filters to both cloud and localStorage
+  // Save filters to cloud
   const saveFiltersToCloud = useCallback(async (newFilters: FormFilters) => {
     console.log('🌥️ [FORM_FILTERS_CLOUD] Saving filters to cloud:', newFilters);
-    
-    // Save to cloud via TrueSkill store
-    setFormFilters(newFilters);
-    
-    // Also save to localStorage for offline access
-    saveFilters(newFilters);
-    
-    // Sync to cloud
-    await syncToCloud();
-    
-    console.log('🌥️ [FORM_FILTERS_CLOUD] Filters saved and synced to cloud');
-  }, [setFormFilters, syncToCloud]);
+    await updateFormFilters(newFilters);
+  }, [updateFormFilters]);
   
   // Toggle a specific filter
   const toggleFilter = useCallback((filter: PokemonFormType) => {
@@ -115,19 +89,19 @@ export const useFilterState = () => {
     });
   }, [isAllEnabled, saveFiltersToCloud]);
 
-  // Reset filters to default (with new defaults)
+  // Reset filters to default
   const resetFilters = useCallback(() => {
     clearStoredFilters();
     const defaultFilters = {
-      normal: true,        // ON by default
-      megaGmax: false,     // OFF by default
-      regional: true,      // ON by default
-      gender: true,        // ON by default
-      forms: true,         // ON by default (Special Forms)
-      originPrimal: false, // OFF by default
-      costumes: false,     // OFF by default
-      colorsFlavors: false, // OFF by default
-      blocked: false       // OFF by default (always)
+      normal: true,        
+      megaGmax: false,     
+      regional: true,      
+      gender: true,        
+      forms: true,         
+      originPrimal: false, 
+      costumes: false,     
+      colorsFlavors: false, 
+      blocked: false       
     };
     console.log('🧹 [FORM_FILTERS_RESET] Resetting to default filters');
     

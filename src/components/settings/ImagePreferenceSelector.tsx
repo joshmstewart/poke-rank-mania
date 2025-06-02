@@ -5,8 +5,11 @@ import ImageModeSelector from './ImageModeSelector';
 import ImageTypeSelector from './ImageTypeSelector';
 import TCGModeInfo from './TCGModeInfo';
 import { ImageType, ImageMode, ImagePreferenceSelectorProps } from './types';
+import { useCloudPreferences } from '@/hooks/useCloudPreferences';
 
 const ImagePreferenceSelector: React.FC<ImagePreferenceSelectorProps> = ({ onClose }) => {
+  const { imagePreferences, updateImagePreferences, isInitialized } = useCloudPreferences();
+  
   const [selectedMode, setSelectedMode] = useState<ImageMode>(() => {
     const stored = localStorage.getItem('pokemon-image-mode') as ImageMode | null;
     return stored || 'pokemon';
@@ -19,13 +22,24 @@ const ImagePreferenceSelector: React.FC<ImagePreferenceSelectorProps> = ({ onClo
 
   const [imageLoadStates, setImageLoadStates] = useState<Record<string, boolean>>({});
 
+  // Update local state when cloud preferences are loaded
   useEffect(() => {
-    localStorage.setItem('pokemon-image-mode', selectedMode);
-  }, [selectedMode]);
+    if (isInitialized && imagePreferences) {
+      console.log('🖼️ [IMAGE_PREFS] Cloud preferences loaded:', imagePreferences);
+      setSelectedMode(imagePreferences.mode);
+      setSelectedType(imagePreferences.type);
+    }
+  }, [imagePreferences, isInitialized]);
 
+  // Update cloud when local state changes
   useEffect(() => {
-    localStorage.setItem('pokemon-image-preference', selectedType);
-  }, [selectedType]);
+    if (isInitialized) {
+      updateImagePreferences({
+        mode: selectedMode,
+        type: selectedType
+      });
+    }
+  }, [selectedMode, selectedType, isInitialized, updateImagePreferences]);
 
   const handleImageLoad = (id: string) => {
     setImageLoadStates(prev => ({ ...prev, [id]: true }));
