@@ -6,11 +6,46 @@ import { BattleType } from "@/hooks/battle/types";
 import { LoadingType } from "@/hooks/pokemon/types";
 import { RankingsSection } from "./RankingsSection";
 import { EnhancedAvailablePokemonSection } from "./EnhancedAvailablePokemonSection";
-import { BattleTypeToggle } from "@/components/battle/BattleTypeToggle";
-import { GenerationSelector } from "@/components/battle/GenerationSelector";
 import { Button } from "@/components/ui/button";
 import { RotateCcw } from "lucide-react";
 import PokemonCard from "@/components/PokemonCard";
+
+// Simple components to replace missing imports
+const GenerationSelector = ({ selectedGeneration, onGenerationChange }: { 
+  selectedGeneration: number; 
+  onGenerationChange: (gen: number) => void;
+}) => (
+  <div className="flex items-center gap-2">
+    <label className="text-sm font-medium">Generation:</label>
+    <select 
+      value={selectedGeneration} 
+      onChange={(e) => onGenerationChange(Number(e.target.value))}
+      className="px-3 py-1 border rounded"
+    >
+      <option value={0}>All Generations</option>
+      {[1,2,3,4,5,6,7,8,9].map(gen => (
+        <option key={gen} value={gen}>Gen {gen}</option>
+      ))}
+    </select>
+  </div>
+);
+
+const BattleTypeToggle = ({ battleType, setBattleType }: {
+  battleType: BattleType;
+  setBattleType: (type: BattleType) => void;
+}) => (
+  <div className="flex items-center gap-2">
+    <label className="text-sm font-medium">Battle Type:</label>
+    <select 
+      value={battleType} 
+      onChange={(e) => setBattleType(e.target.value as BattleType)}
+      className="px-3 py-1 border rounded"
+    >
+      <option value="pairs">Pairs</option>
+      <option value="triplets">Triplets</option>
+    </select>
+  </div>
+);
 
 interface EnhancedRankingLayoutProps {
   isLoading: boolean;

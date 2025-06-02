@@ -2,8 +2,7 @@
 import React from "react";
 import { useDroppable } from '@dnd-kit/core';
 import { EnhancedAvailablePokemonCard } from "./EnhancedAvailablePokemonCard";
-import { GenerationHeader } from "@/components/pokemon/GenerationHeader";
-import { PokemonLoadingPlaceholder } from "@/components/pokemon/PokemonLoadingPlaceholder";
+import GenerationHeader from "@/components/pokemon/GenerationHeader";
 
 interface EnhancedAvailablePokemonContentProps {
   items: any[];
@@ -16,6 +15,11 @@ interface EnhancedAvailablePokemonContentProps {
   currentPage: number;
   totalPages: number;
 }
+
+// Simple loading placeholder component
+const PokemonLoadingPlaceholder = () => (
+  <div className="animate-pulse bg-gray-200 rounded-lg h-32 w-full"></div>
+);
 
 export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonContentProps> = ({
   items,

@@ -12,6 +12,13 @@ interface EnhancedPokemon {
   types?: string[];
   isRanked: boolean;
   currentRank: number | null;
+  // Add missing properties to satisfy Pokemon/RankedPokemon type requirements
+  score?: number;
+  count?: number;
+  confidence?: number;
+  wins?: number;
+  losses?: number;
+  winRate?: number;
 }
 
 interface EnhancedAvailablePokemonCardProps {
