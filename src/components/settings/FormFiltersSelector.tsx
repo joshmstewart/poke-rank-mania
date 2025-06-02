@@ -51,6 +51,9 @@ export function FormFiltersSelector() {
     
     // Debug: Let's see what we're working with
     let debugBlockedCount = 0;
+    let sampleBlockedNames: string[] = [];
+    let sampleNormalNames: string[] = [];
+    
     rawUnfilteredPokemon.forEach((pokemon, index) => {
       const category = getPokemonFormCategory(pokemon);
       if (category === 'blocked') {
@@ -58,16 +61,28 @@ export function FormFiltersSelector() {
         debugBlockedCount++;
         if (debugBlockedCount <= 10) { // Log first 10 blocked Pokemon found
           console.log(`🚫 [BLOCKED_FOUND] Found blocked Pokemon: "${pokemon.name}" (ID: ${pokemon.id})`);
+          sampleBlockedNames.push(pokemon.name);
         }
       }
       
       // Also log some sample Pokemon names to see what we're working with
-      if (index < 20) {
+      if (index < 50) {
         console.log(`🔍 [SAMPLE_POKEMON] ${index + 1}: "${pokemon.name}" (ID: ${pokemon.id}) -> category: ${category}`);
+        if (category === 'normal' && sampleNormalNames.length < 10) {
+          sampleNormalNames.push(pokemon.name);
+        }
+      }
+      
+      // Let's specifically check for some Pokemon that should be blocked
+      const name = pokemon.name.toLowerCase();
+      if (name.includes('starter') || name.includes('totem') || name.includes('meteor')) {
+        console.log(`🎯 [POTENTIAL_BLOCKED] Found potential blocked Pokemon: "${pokemon.name}" (ID: ${pokemon.id}) -> category: ${category}`);
       }
     });
     
     console.log(`🚫 [BLOCKED_COUNT_DEBUG] Total blocked Pokemon found: ${debugBlockedCount}`);
+    console.log(`🚫 [BLOCKED_SAMPLES] Sample blocked names:`, sampleBlockedNames);
+    console.log(`📝 [NORMAL_SAMPLES] Sample normal names:`, sampleNormalNames);
     console.log(`🔢 [FORM_COUNTS] Calculated counts:`, counts);
     console.log(`🚫 [BLOCKED_COUNT_FINAL] Final blocked count: ${counts.blocked}`);
     
