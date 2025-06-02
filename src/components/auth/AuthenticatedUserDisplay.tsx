@@ -36,14 +36,16 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
     isLoadingProfile
   } = useProfileLoader(effectiveUser?.id);
 
-  console.log('🎭🎭🎭 [AUTH_USER_DISPLAY_TRACE] 🚨🚨🚨 RECEIVED PROFILE FROM LOADER 🚨🚨🚨');
-  console.log('🎭🎭🎭 [AUTH_USER_DISPLAY_TRACE] 📊 PROFILE LOADER RESULTS:', {
+  console.log('🎭🎭🎭 [AUTH_USER_DISPLAY_TRACE] 🚨🚨🚨 PROFILE LOADER HOOK RESULTS 🚨🚨🚨');
+  console.log('🎭🎭🎭 [AUTH_USER_DISPLAY_TRACE] 📊 DETAILED PROFILE ANALYSIS:', {
     hasCurrentProfile: !!currentProfile,
     currentProfileType: typeof currentProfile,
     currentProfileIsNull: currentProfile === null,
     currentProfileIsUndefined: currentProfile === undefined,
     currentProfileId: currentProfile?.id?.substring(0, 8),
     currentProfileAvatarUrl: currentProfile?.avatar_url,
+    currentProfileAvatarUrlType: typeof currentProfile?.avatar_url,
+    currentProfileAvatarUrlLength: currentProfile?.avatar_url?.length || 0,
     currentProfileDisplayName: currentProfile?.display_name,
     currentProfileUsername: currentProfile?.username,
     isProfileLoaded,
@@ -64,22 +66,18 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
   // Create enhanced user object
   const enhancedUser = useEnhancedUser(effectiveUser, currentProfile);
 
-  console.log('🎭🎭🎭 [AUTH_USER_DISPLAY_TRACE] 🎯 ENHANCED USER CREATION INPUTS:', {
-    effectiveUserHasMetadata: !!effectiveUser?.user_metadata,
-    effectiveUserMetadataAvatarUrl: effectiveUser?.user_metadata?.avatar_url,
-    currentProfileExists: !!currentProfile,
-    currentProfileAvatarUrl: currentProfile?.avatar_url,
-    currentProfilePassedToEnhanced: currentProfile ? 'YES' : 'NO',
-    timestamp: new Date().toISOString()
-  });
+  console.log('🎭🎭🎭 [AUTH_USER_DISPLAY_TRACE] 🎯 ENHANCED USER HOOK INPUTS:');
+  console.log('🎭🎭🎭 [AUTH_USER_DISPLAY_TRACE] - effectiveUser has metadata:', !!effectiveUser?.user_metadata);
+  console.log('🎭🎭🎭 [AUTH_USER_DISPLAY_TRACE] - effectiveUser metadata avatar:', effectiveUser?.user_metadata?.avatar_url);
+  console.log('🎭🎭🎭 [AUTH_USER_DISPLAY_TRACE] - currentProfile passed:', !!currentProfile);
+  console.log('🎭🎭🎭 [AUTH_USER_DISPLAY_TRACE] - currentProfile avatar:', currentProfile?.avatar_url);
 
-  console.log('🎭🎭🎭 [AUTH_USER_DISPLAY_TRACE] 🎯 ENHANCED USER FINAL RESULT:', {
-    hasEnhancedUser: !!enhancedUser,
-    enhancedUserAvatarUrl: enhancedUser?.user_metadata?.avatar_url,
-    enhancedUserDisplayName: enhancedUser?.user_metadata?.display_name,
-    enhancedUserUsername: enhancedUser?.user_metadata?.username,
-    enhancedUserFullMetadata: enhancedUser?.user_metadata
-  });
+  console.log('🎭🎭🎭 [AUTH_USER_DISPLAY_TRACE] 🎯 ENHANCED USER HOOK RESULTS:');
+  console.log('🎭🎭🎭 [AUTH_USER_DISPLAY_TRACE] - hasEnhancedUser:', !!enhancedUser);
+  console.log('🎭🎭🎭 [AUTH_USER_DISPLAY_TRACE] - enhancedUser avatar:', enhancedUser?.user_metadata?.avatar_url);
+  console.log('🎭🎭🎭 [AUTH_USER_DISPLAY_TRACE] - enhancedUser display name:', enhancedUser?.user_metadata?.display_name);
+  console.log('🎭🎭🎭 [AUTH_USER_DISPLAY_TRACE] - enhancedUser username:', enhancedUser?.user_metadata?.username);
+  console.log('🎭🎭🎭 [AUTH_USER_DISPLAY_TRACE] - enhancedUser full metadata:', enhancedUser?.user_metadata);
 
   const handleSignOut = useCallback(async () => {
     try {
@@ -119,7 +117,12 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
   }
 
   console.log('🎭🎭🎭 [AUTH_USER_DISPLAY_TRACE] ===== RENDERING USER DROPDOWN =====');
-  console.log('🎭🎭🎭 [AUTH_USER_DISPLAY_TRACE] Final avatar being passed to dropdown:', enhancedUser.user_metadata?.avatar_url);
+  console.log('🎭🎭🎭 [AUTH_USER_DISPLAY_TRACE] 🎯 FINAL AVATAR BEING PASSED TO DROPDOWN:', {
+    avatarUrl: enhancedUser.user_metadata?.avatar_url,
+    avatarUrlType: typeof enhancedUser.user_metadata?.avatar_url,
+    avatarUrlLength: enhancedUser.user_metadata?.avatar_url?.length || 0,
+    timestamp: new Date().toISOString()
+  });
 
   return (
     <div className="flex items-center gap-2">
