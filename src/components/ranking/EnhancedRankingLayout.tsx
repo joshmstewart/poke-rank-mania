@@ -6,46 +6,9 @@ import { BattleType } from "@/hooks/battle/types";
 import { LoadingType } from "@/hooks/pokemon/types";
 import { RankingsSection } from "./RankingsSection";
 import { EnhancedAvailablePokemonSection } from "./EnhancedAvailablePokemonSection";
-import { Button } from "@/components/ui/button";
-import { RotateCcw } from "lucide-react";
+import UnifiedControls from "@/components/shared/UnifiedControls";
 import PokemonCard from "@/components/PokemonCard";
-
-// Simple components to replace missing imports
-const GenerationSelector = ({ selectedGeneration, onGenerationChange }: { 
-  selectedGeneration: number; 
-  onGenerationChange: (gen: number) => void;
-}) => (
-  <div className="flex items-center gap-2">
-    <label className="text-sm font-medium">Generation:</label>
-    <select 
-      value={selectedGeneration} 
-      onChange={(e) => onGenerationChange(Number(e.target.value))}
-      className="px-3 py-1 border rounded"
-    >
-      <option value={0}>All Generations</option>
-      {[1,2,3,4,5,6,7,8,9].map(gen => (
-        <option key={gen} value={gen}>Gen {gen}</option>
-      ))}
-    </select>
-  </div>
-);
-
-const BattleTypeToggle = ({ battleType, setBattleType }: {
-  battleType: BattleType;
-  setBattleType: (type: BattleType) => void;
-}) => (
-  <div className="flex items-center gap-2">
-    <label className="text-sm font-medium">Battle Type:</label>
-    <select 
-      value={battleType} 
-      onChange={(e) => setBattleType(e.target.value as BattleType)}
-      className="px-3 py-1 border rounded"
-    >
-      <option value="pairs">Pairs</option>
-      <option value="triplets">Triplets</option>
-    </select>
-  </div>
-);
+import { Card } from "@/components/ui/card";
 
 interface EnhancedRankingLayoutProps {
   isLoading: boolean;
@@ -100,71 +63,69 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = ({
   console.log(`🎨 [ENHANCED_LAYOUT] Enhanced available Pokemon: ${enhancedAvailablePokemon.length}`);
   console.log(`🎨 [ENHANCED_LAYOUT] Ranked Pokemon in enhanced: ${enhancedAvailablePokemon.filter(p => p.isRanked).length}`);
 
+  const handleManualModeReset = () => {
+    console.log(`🔄 [MANUAL_MODE_RESET] Performing Manual mode specific reset actions`);
+    handleComprehensiveReset();
+  };
+
   return (
     <DndContext
       collisionDetection={closestCenter}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex flex-col h-screen bg-gray-50">
-        {/* Header */}
-        <div className="bg-white border-b border-gray-200 p-4">
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold text-gray-900">Manual Pokemon Ranking</h1>
-            <Button
-              onClick={handleComprehensiveReset}
-              variant="outline"
-              size="sm"
-              className="flex items-center gap-2"
-            >
-              <RotateCcw size={16} />
-              Reset Rankings
-            </Button>
-          </div>
-          
-          <div className="flex items-center gap-4">
-            <GenerationSelector
-              selectedGeneration={selectedGeneration}
-              onGenerationChange={onGenerationChange}
-            />
-            <BattleTypeToggle
-              battleType={battleType}
-              setBattleType={setBattleType}
-            />
-          </div>
+      <div className="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen p-4">
+        {/* Settings Card */}
+        <div className="max-w-7xl mx-auto mb-4">
+          <Card className="shadow-lg">
+            <div className="p-4">
+              <UnifiedControls
+                selectedGeneration={selectedGeneration}
+                battleType={battleType}
+                onGenerationChange={(gen) => onGenerationChange(Number(gen))}
+                onBattleTypeChange={setBattleType}
+                showBattleTypeControls={true}
+                mode="manual"
+                onReset={handleComprehensiveReset}
+                customResetAction={handleManualModeReset}
+              />
+            </div>
+          </Card>
         </div>
 
-        {/* Main Content */}
-        <div className="flex-1 flex overflow-hidden">
-          {/* Enhanced Available Pokemon Column */}
-          <div className="w-1/2 border-r border-gray-200 bg-white">
-            <EnhancedAvailablePokemonSection
-              enhancedAvailablePokemon={enhancedAvailablePokemon}
-              isLoading={isLoading}
-              selectedGeneration={selectedGeneration}
-              loadingType={loadingType}
-              currentPage={currentPage}
-              totalPages={totalPages}
-              loadingRef={loadingRef}
-              handlePageChange={handlePageChange}
-              getPageRange={getPageRange}
-            />
-          </div>
-
-          {/* Rankings Column */}
-          <div className="w-1/2 bg-white">
-            <SortableContext 
-              items={displayRankings.map(p => p.id.toString())} 
-              strategy={verticalListSortingStrategy}
-            >
-              <RankingsSection
-                displayRankings={displayRankings}
-                onManualReorder={handleManualReorder}
-                onLocalReorder={handleLocalReorder}
-                pendingRefinements={new Set()}
-                availablePokemon={enhancedAvailablePokemon}
+        {/* Main Content Grid */}
+        <div className="max-w-7xl mx-auto">
+          <div className="grid md:grid-cols-2 gap-4" style={{ height: 'calc(100vh - 12rem)' }}>
+            {/* Enhanced Available Pokemon Card */}
+            <Card className="shadow-lg border border-gray-200 overflow-hidden flex flex-col">
+              <EnhancedAvailablePokemonSection
+                enhancedAvailablePokemon={enhancedAvailablePokemon}
+                isLoading={isLoading}
+                selectedGeneration={selectedGeneration}
+                loadingType={loadingType}
+                currentPage={currentPage}
+                totalPages={totalPages}
+                loadingRef={loadingRef}
+                handlePageChange={handlePageChange}
+                getPageRange={getPageRange}
               />
-            </SortableContext>
+            </Card>
+
+            {/* Rankings Card */}
+            <Card className="shadow-lg border border-gray-200 overflow-hidden flex flex-col">
+              <SortableContext 
+                items={displayRankings.map(p => p.id.toString())} 
+                strategy={verticalListSortingStrategy}
+              >
+                <RankingsSection
+                  displayRankings={displayRankings}
+                  onManualReorder={handleManualReorder}
+                  onLocalReorder={handleLocalReorder}
+                  pendingRefinements={new Set()}
+                  availablePokemon={enhancedAvailablePokemon}
+                />
+              </SortableContext>
+            </Card>
           </div>
         </div>
 
