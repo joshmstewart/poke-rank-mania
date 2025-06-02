@@ -40,18 +40,19 @@ export const RankingUI: React.FC<RankingUIProps> = ({
   onGenerationChange,
   onReset
 }) => {
-  console.log(`🔮 [CHAT_MESSAGE_INVESTIGATION] ===== RankingUI RENDER =====`);
-  console.log(`🔮 [CHAT_MESSAGE_INVESTIGATION] RankingUI rendered with ${rankedPokemon.length} ranked Pokemon`);
+  console.log(`🔮 [ENHANCED_RANKING_UI] ===== ENHANCED RankingUI RENDER =====`);
+  console.log(`🔮 [ENHANCED_RANKING_UI] RankingUI rendered with ${rankedPokemon.length} ranked Pokemon`);
 
   // Use extracted state management
   const { battleType, setBattleType } = useRankingUIState();
 
-  // Use extracted data processing
+  // Use enhanced data processing with new features
   const {
     localRankings,
     updateLocalRankings,
     displayRankings,
-    filteredAvailablePokemon
+    filteredAvailablePokemon,
+    enhancedAvailablePokemon
   } = useRankingDataProcessing({
     availablePokemon,
     rankedPokemon,
@@ -59,7 +60,8 @@ export const RankingUI: React.FC<RankingUIProps> = ({
     totalPages
   });
 
-  console.log(`🔮 [CHAT_MESSAGE_INVESTIGATION] After data processing: ${localRankings.length} local, ${displayRankings.length} display rankings`);
+  console.log(`🔮 [ENHANCED_RANKING_UI] After enhanced processing: ${localRankings.length} local, ${displayRankings.length} display rankings`);
+  console.log(`🔮 [ENHANCED_RANKING_UI] Enhanced available Pokemon: ${enhancedAvailablePokemon.length}`);
 
   return (
     <RankingUICore
@@ -67,6 +69,7 @@ export const RankingUI: React.FC<RankingUIProps> = ({
       availablePokemon={availablePokemon}
       displayRankings={displayRankings}
       filteredAvailablePokemon={filteredAvailablePokemon}
+      enhancedAvailablePokemon={enhancedAvailablePokemon}
       localRankings={localRankings}
       updateLocalRankings={updateLocalRankings}
       selectedGeneration={selectedGeneration}

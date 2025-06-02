@@ -1,0 +1,152 @@
+
+import React from "react";
+import { DndContext, DragOverlay, closestCenter } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { BattleType } from "@/hooks/battle/types";
+import { LoadingType } from "@/hooks/pokemon/types";
+import { RankingsSection } from "./RankingsSection";
+import { EnhancedAvailablePokemonSection } from "./EnhancedAvailablePokemonSection";
+import { BattleTypeToggle } from "@/components/battle/BattleTypeToggle";
+import { GenerationSelector } from "@/components/battle/GenerationSelector";
+import { Button } from "@/components/ui/button";
+import { RotateCcw } from "lucide-react";
+import PokemonCard from "@/components/PokemonCard";
+
+interface EnhancedRankingLayoutProps {
+  isLoading: boolean;
+  availablePokemon: any[];
+  enhancedAvailablePokemon: any[];
+  displayRankings: any[];
+  selectedGeneration: number;
+  loadingType: LoadingType;
+  currentPage: number;
+  totalPages: number;
+  loadSize: number;
+  loadingRef: React.RefObject<HTMLDivElement>;
+  battleType: BattleType;
+  activeDraggedPokemon: any;
+  filteredAvailablePokemon: any[];
+  handlePageChange: (page: number) => void;
+  getPageRange: () => number[];
+  onGenerationChange: (gen: number) => void;
+  handleComprehensiveReset: () => void;
+  setBattleType: React.Dispatch<React.SetStateAction<BattleType>>;
+  handleDragStart: (event: any) => void;
+  handleDragEnd: (event: any) => void;
+  handleManualReorder: (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => void;
+  handleLocalReorder: (newRankings: any[]) => void;
+}
+
+export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = ({
+  isLoading,
+  availablePokemon,
+  enhancedAvailablePokemon,
+  displayRankings,
+  selectedGeneration,
+  loadingType,
+  currentPage,
+  totalPages,
+  loadSize,
+  loadingRef,
+  battleType,
+  activeDraggedPokemon,
+  filteredAvailablePokemon,
+  handlePageChange,
+  getPageRange,
+  onGenerationChange,
+  handleComprehensiveReset,
+  setBattleType,
+  handleDragStart,
+  handleDragEnd,
+  handleManualReorder,
+  handleLocalReorder
+}) => {
+  console.log(`🎨 [ENHANCED_LAYOUT] Rendering enhanced layout`);
+  console.log(`🎨 [ENHANCED_LAYOUT] Enhanced available Pokemon: ${enhancedAvailablePokemon.length}`);
+  console.log(`🎨 [ENHANCED_LAYOUT] Ranked Pokemon in enhanced: ${enhancedAvailablePokemon.filter(p => p.isRanked).length}`);
+
+  return (
+    <DndContext
+      collisionDetection={closestCenter}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
+      <div className="flex flex-col h-screen bg-gray-50">
+        {/* Header */}
+        <div className="bg-white border-b border-gray-200 p-4">
+          <div className="flex items-center justify-between mb-4">
+            <h1 className="text-2xl font-bold text-gray-900">Manual Pokemon Ranking</h1>
+            <Button
+              onClick={handleComprehensiveReset}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <RotateCcw size={16} />
+              Reset Rankings
+            </Button>
+          </div>
+          
+          <div className="flex items-center gap-4">
+            <GenerationSelector
+              selectedGeneration={selectedGeneration}
+              onGenerationChange={onGenerationChange}
+            />
+            <BattleTypeToggle
+              battleType={battleType}
+              setBattleType={setBattleType}
+            />
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="flex-1 flex overflow-hidden">
+          {/* Enhanced Available Pokemon Column */}
+          <div className="w-1/2 border-r border-gray-200 bg-white">
+            <EnhancedAvailablePokemonSection
+              enhancedAvailablePokemon={enhancedAvailablePokemon}
+              isLoading={isLoading}
+              selectedGeneration={selectedGeneration}
+              loadingType={loadingType}
+              currentPage={currentPage}
+              totalPages={totalPages}
+              loadingRef={loadingRef}
+              handlePageChange={handlePageChange}
+              getPageRange={getPageRange}
+            />
+          </div>
+
+          {/* Rankings Column */}
+          <div className="w-1/2 bg-white">
+            <SortableContext 
+              items={displayRankings.map(p => p.id.toString())} 
+              strategy={verticalListSortingStrategy}
+            >
+              <RankingsSection
+                displayRankings={displayRankings}
+                onManualReorder={handleManualReorder}
+                onLocalReorder={handleLocalReorder}
+                pendingRefinements={new Set()}
+                availablePokemon={enhancedAvailablePokemon}
+              />
+            </SortableContext>
+          </div>
+        </div>
+
+        {/* Drag Overlay */}
+        <DragOverlay>
+          {activeDraggedPokemon ? (
+            <div className="transform rotate-3 scale-105 opacity-90">
+              <PokemonCard
+                pokemon={activeDraggedPokemon}
+                compact={true}
+                viewMode="grid"
+                isDragging={true}
+              />
+            </div>
+          ) : null}
+        </DragOverlay>
+      </div>
+    </DndContext>
+  );
+};

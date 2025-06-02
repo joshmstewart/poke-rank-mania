@@ -1,8 +1,10 @@
+
 import React from "react";
 import { useEnhancedManualReorder } from "@/hooks/battle/useEnhancedManualReorder";
-import { useRankingDragDrop } from "@/hooks/ranking/useRankingDragDrop";
+import { useEnhancedRankingDragDrop } from "@/hooks/ranking/useEnhancedRankingDragDrop";
+import { useReRankingTrigger } from "@/hooks/ranking/useReRankingTrigger";
 import { useRankingReset } from "./RankingResetHandler";
-import { RankingLayout } from "./RankingLayout";
+import { EnhancedRankingLayout } from "./EnhancedRankingLayout";
 import { BattleType } from "@/hooks/battle/types";
 import { LoadingType } from "@/hooks/pokemon/types";
 
@@ -11,6 +13,7 @@ interface RankingUICoreProps {
   availablePokemon: any[];
   displayRankings: any[];
   filteredAvailablePokemon: any[];
+  enhancedAvailablePokemon: any[];
   localRankings: any[];
   updateLocalRankings: (rankings: any[]) => void;
   selectedGeneration: number;
@@ -34,6 +37,7 @@ export const RankingUICore: React.FC<RankingUICoreProps> = ({
   availablePokemon,
   displayRankings,
   filteredAvailablePokemon,
+  enhancedAvailablePokemon,
   localRankings,
   updateLocalRankings,
   selectedGeneration,
@@ -51,6 +55,10 @@ export const RankingUICore: React.FC<RankingUICoreProps> = ({
   onGenerationChange,
   onReset
 }) => {
+  console.log(`🚨🚨🚨 [ENHANCED_RANKING_UI_CORE] ===== ENHANCED RENDERING =====`);
+  console.log(`🚨🚨🚨 [ENHANCED_RANKING_UI_CORE] Enhanced available Pokemon: ${enhancedAvailablePokemon.length}`);
+  console.log(`🚨🚨🚨 [ENHANCED_RANKING_UI_CORE] Local rankings: ${localRankings.length}`);
+
   // Enhanced manual reorder with manual order preservation
   const { handleEnhancedManualReorder } = useEnhancedManualReorder(
     localRankings,
@@ -58,35 +66,40 @@ export const RankingUICore: React.FC<RankingUICoreProps> = ({
     true
   );
 
+  // Re-ranking trigger for already-ranked Pokemon
+  const { triggerReRanking } = useReRankingTrigger(localRankings, updateLocalRankings);
+
   // Use the extracted reset functionality
   const { handleComprehensiveReset } = useRankingReset({
     onReset,
     setRankedPokemon
   });
 
-  // Use the extracted drag and drop functionality
+  // Use the enhanced drag and drop functionality
   const {
     activeDraggedPokemon,
     handleDragStart,
     handleDragEnd,
     handleManualReorder
-  } = useRankingDragDrop(
-    filteredAvailablePokemon,
+  } = useEnhancedRankingDragDrop(
+    enhancedAvailablePokemon,
     localRankings,
     setAvailablePokemon,
-    handleEnhancedManualReorder
+    handleEnhancedManualReorder,
+    triggerReRanking
   );
 
   // Handle local reordering (for DragDropGrid compatibility)
   const handleLocalReorder = (newRankings: any[]) => {
-    console.log(`🚨🚨🚨 [RANKING_UI_CORE] Local reorder called with ${newRankings.length} Pokemon`);
+    console.log(`🚨🚨🚨 [ENHANCED_RANKING_UI_CORE] Local reorder called with ${newRankings.length} Pokemon`);
     updateLocalRankings(newRankings);
   };
 
   return (
-    <RankingLayout
+    <EnhancedRankingLayout
       isLoading={isLoading}
       availablePokemon={availablePokemon}
+      enhancedAvailablePokemon={enhancedAvailablePokemon}
       displayRankings={displayRankings}
       selectedGeneration={selectedGeneration}
       loadingType={loadingType}

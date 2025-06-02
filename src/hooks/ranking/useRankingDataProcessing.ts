@@ -2,6 +2,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useTrueSkillSync } from "./useTrueSkillSync";
 import { useGenerationFilter } from "@/hooks/battle/useGenerationFilter";
+import { useEnhancedAvailablePokemon } from "./useEnhancedAvailablePokemon";
 
 interface UseRankingDataProcessingProps {
   availablePokemon: any[];
@@ -16,45 +17,50 @@ export const useRankingDataProcessing = ({
   selectedGeneration,
   totalPages
 }: UseRankingDataProcessingProps) => {
-  console.log(`🔮 [DATA_PROCESSING_CRITICAL] ===== DATA PROCESSING HOOK =====`);
-  console.log(`🔮 [DATA_PROCESSING_CRITICAL] Input rankedPokemon: ${rankedPokemon.length}`);
-  console.log(`🔮 [DATA_PROCESSING_CRITICAL] Input availablePokemon: ${availablePokemon.length}`);
+  console.log(`🔮 [DATA_PROCESSING_ENHANCED] ===== ENHANCED DATA PROCESSING HOOK =====`);
+  console.log(`🔮 [DATA_PROCESSING_ENHANCED] Input rankedPokemon: ${rankedPokemon.length}`);
+  console.log(`🔮 [DATA_PROCESSING_ENHANCED] Input availablePokemon: ${availablePokemon.length}`);
   
   const { localRankings: trueskillRankings, updateLocalRankings } = useTrueSkillSync();
   
-  // CORRECTED: Use TrueSkill rankings when available, fall back to manual rankings
+  // Use TrueSkill rankings when available, fall back to manual rankings
   const localRankings = useMemo(() => {
-    console.log(`🔮 [DATA_PROCESSING_CRITICAL] Determining ranking source...`);
-    console.log(`🔮 [DATA_PROCESSING_CRITICAL] trueskillRankings.length: ${trueskillRankings.length}`);
-    console.log(`🔮 [DATA_PROCESSING_CRITICAL] rankedPokemon.length: ${rankedPokemon.length}`);
+    console.log(`🔮 [DATA_PROCESSING_ENHANCED] Determining ranking source...`);
+    console.log(`🔮 [DATA_PROCESSING_ENHANCED] trueskillRankings.length: ${trueskillRankings.length}`);
+    console.log(`🔮 [DATA_PROCESSING_ENHANCED] rankedPokemon.length: ${rankedPokemon.length}`);
     
-    // CORRECTED: Prefer TrueSkill rankings when available
     if (trueskillRankings.length > 0) {
-      console.log(`🔮 [DATA_PROCESSING_CRITICAL] Using TrueSkill rankings: ${trueskillRankings.length} Pokemon`);
+      console.log(`🔮 [DATA_PROCESSING_ENHANCED] Using TrueSkill rankings: ${trueskillRankings.length} Pokemon`);
       return trueskillRankings;
     }
     
-    // Fall back to manual rankings if no TrueSkill data
     if (rankedPokemon.length > 0) {
-      console.log(`🔮 [DATA_PROCESSING_CRITICAL] Using manual rankings: ${rankedPokemon.length} Pokemon`);
+      console.log(`🔮 [DATA_PROCESSING_ENHANCED] Using manual rankings: ${rankedPokemon.length} Pokemon`);
       return rankedPokemon;
     }
     
-    // Empty state - no rankings available
-    console.log(`🔮 [DATA_PROCESSING_CRITICAL] No rankings available - returning empty array`);
+    console.log(`🔮 [DATA_PROCESSING_ENHANCED] No rankings available - returning empty array`);
     return [];
   }, [trueskillRankings, rankedPokemon]);
 
   // Apply generation filtering to available Pokemon
   const { filteredAvailablePokemon } = useGenerationFilter(availablePokemon, selectedGeneration);
 
-  console.log(`🔮 [DATA_PROCESSING_CRITICAL] Final localRankings: ${localRankings.length}`);
-  console.log(`🔮 [DATA_PROCESSING_CRITICAL] Final filteredAvailablePokemon: ${filteredAvailablePokemon.length}`);
+  // NEW: Enhance available Pokemon with ranking status
+  const { enhancedAvailablePokemon } = useEnhancedAvailablePokemon({
+    filteredAvailablePokemon,
+    localRankings
+  });
+
+  console.log(`🔮 [DATA_PROCESSING_ENHANCED] Final localRankings: ${localRankings.length}`);
+  console.log(`🔮 [DATA_PROCESSING_ENHANCED] Final enhancedAvailablePokemon: ${enhancedAvailablePokemon.length}`);
+  console.log(`🔮 [DATA_PROCESSING_ENHANCED] Enhanced Pokemon with ranks: ${enhancedAvailablePokemon.filter(p => p.isRanked).length}`);
 
   return {
     localRankings,
     updateLocalRankings,
     displayRankings: localRankings,
-    filteredAvailablePokemon
+    filteredAvailablePokemon,
+    enhancedAvailablePokemon // NEW: Return enhanced Pokemon list
   };
 };
