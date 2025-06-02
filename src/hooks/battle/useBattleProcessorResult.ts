@@ -30,12 +30,12 @@ export const useBattleProcessorResult = (
       return;
     }
 
-    // Create battle result
+    // Create battle result - matching SingleBattle type structure
     const newBattle: SingleBattle = {
-      id: `battle-${Date.now()}-${Math.random()}`,
-      participants: currentBattle.map(p => ({ id: p.id, name: p.name })),
-      winners: selectedPokemonIds,
       battleType,
+      generation: currentBattle[0]?.generation || 1,
+      pokemonIds: currentBattle.map(p => p.id),
+      selectedPokemonIds,
       timestamp: Date.now().toString()
     };
 
