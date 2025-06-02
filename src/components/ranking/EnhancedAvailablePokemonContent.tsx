@@ -71,6 +71,7 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
               onLocalReorder={() => {}}
               onMarkAsPending={() => {}}
               availablePokemon={[]}
+              isAvailableSection={true}
             />
           );
           currentGenerationPokemon = [];
@@ -115,6 +116,7 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
           onLocalReorder={() => {}}
           onMarkAsPending={() => {}}
           availablePokemon={[]}
+          isAvailableSection={true}
         />
       );
     }

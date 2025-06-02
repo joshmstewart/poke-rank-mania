@@ -83,6 +83,7 @@ export const RankingsSection: React.FC<RankingsSectionProps> = ({
             onLocalReorder={handleLocalReorderWrapper}
             onMarkAsPending={handleMarkAsPending}
             availablePokemon={availablePokemon}
+            isAvailableSection={false}
           />
         )}
       </div>

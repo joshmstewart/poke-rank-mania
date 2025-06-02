@@ -16,6 +16,7 @@ interface DragDropGridProps {
   onLocalReorder: (newRankings: (Pokemon | RankedPokemon)[]) => void;
   onMarkAsPending: (pokemonId: number) => void;
   availablePokemon?: any[];
+  isAvailableSection?: boolean; // New prop to identify which section this is
 }
 
 const DragDropGrid: React.FC<DragDropGridProps> = ({
@@ -25,13 +26,14 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
   onManualReorder,
   onLocalReorder,
   onMarkAsPending,
-  availablePokemon = []
+  availablePokemon = [],
+  isAvailableSection = false
 }) => {
   // Set up a droppable zone that accepts available Pokemon
   const { setNodeRef, isOver } = useDroppable({
-    id: 'rankings-grid-drop-zone',
+    id: isAvailableSection ? 'available-grid-drop-zone' : 'rankings-grid-drop-zone',
     data: {
-      type: 'rankings-grid',
+      type: isAvailableSection ? 'available-grid' : 'rankings-grid',
       accepts: ['available-pokemon', 'ranked-pokemon']
     }
   });
@@ -63,9 +65,9 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
                 pokemon={pokemon}
                 index={index}
                 isPending={isPending}
-                showRank={true}
+                showRank={!isAvailableSection}
                 isDraggable={true}
-                isAvailable={false}
+                isAvailable={isAvailableSection}
               />
             );
           })}
