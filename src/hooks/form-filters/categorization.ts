@@ -1,4 +1,3 @@
-
 import { Pokemon } from "@/services/pokemon";
 import { PokemonFormType } from "./types";
 import { isBlockedPokemon } from "./blockedDetection";
@@ -38,61 +37,54 @@ let staticListFoundIds: number[] = [];
 
 // FIXED: Enhanced categorization using ID-based mapping for reliability
 export const getPokemonFormCategory = (pokemon: Pokemon): PokemonFormType | null => {
-  const pokemonId = pokemon.id;
-  const originalName = pokemon.name;
-  let category: PokemonFormType | null = null;
-  
-  console.log(`🎯 [ID_CATEGORIZATION] Processing "${originalName}" (ID: ${pokemonId})`);
-  
-  // CRITICAL DEBUG: Always check the static ID-based categorization first
-  const idBasedCategory = getHardcodedCategoryByID(pokemonId);
-  console.log(`🔍 [STATIC_ID_CHECK] Pokemon ${pokemonId} "${originalName}" -> static category: ${idBasedCategory || 'NOT_FOUND'}`);
-  
-  if (idBasedCategory) {
-    category = idBasedCategory;
-    console.log(`✅ [ID_BASED_CATEGORY] "${originalName}" (ID: ${pokemonId}) found in ID mapping: ${category}`);
+  try {
+    const pokemonId = pokemon.id;
+    const originalName = pokemon.name;
+    let category: PokemonFormType | null = null;
     
-    // CRITICAL: Track blocked Pokemon specifically from static list
-    if (category === 'blocked') {
-      staticListBlockedCount++;
-      staticListFoundIds.push(pokemonId);
-      console.log(`🚫 [STATIC_BLOCKED_FOUND] Pokemon ${pokemonId} "${originalName}" marked as BLOCKED in static list! Total static blocked so far: ${staticListBlockedCount}`);
-    }
+    // CRITICAL DEBUG: Always check the static ID-based categorization first
+    const idBasedCategory = getHardcodedCategoryByID(pokemonId);
     
-    // Track normal Pokemon specifically
-    if (category === 'normal') {
-      trackedNormalPokemon.add(pokemonId);
-      console.log(`📝 [NORMAL_TRACKING] Added Pokemon ${pokemonId} "${originalName}" to normal tracking set. Total: ${trackedNormalPokemon.size}`);
-    }
-  } else {
-    console.log(`⚠️ [NO_ID_MATCH] "${originalName}" (ID: ${pokemonId}) not found in ID mapping, using fallback detection`);
-    
-    // SECOND: Check if Pokemon should be blocked using pattern detection
-    if (isBlockedPokemon(pokemon)) {
-      category = 'blocked';
-      console.log(`🚫 [BLOCKED_FALLBACK] "${originalName}" (ID: ${pokemonId}) categorized as blocked by pattern detection`);
+    if (idBasedCategory) {
+      category = idBasedCategory;
+      
+      // CRITICAL: Track blocked Pokemon specifically from static list
+      if (category === 'blocked') {
+        staticListBlockedCount++;
+        staticListFoundIds.push(pokemonId);
+        console.log(`🚫 [STATIC_BLOCKED_FOUND] Pokemon ${pokemonId} "${originalName}" marked as BLOCKED in static list! Total static blocked so far: ${staticListBlockedCount}`);
+      }
+      
+      // Track normal Pokemon specifically
+      if (category === 'normal') {
+        trackedNormalPokemon.add(pokemonId);
+      }
     } else {
-      // THIRD: Use form detection for non-blocked Pokemon
-      const name = pokemon.name.toLowerCase();
-      category = categorizeFormType(name);
-      console.log(`🔍 [PATTERN_FALLBACK] "${originalName}" (ID: ${pokemonId}) categorized as ${category} by pattern detection`);
+      // SECOND: Check if Pokemon should be blocked using pattern detection
+      if (isBlockedPokemon(pokemon)) {
+        category = 'blocked';
+        console.log(`🚫 [BLOCKED_FALLBACK] "${originalName}" (ID: ${pokemonId}) categorized as blocked by pattern detection`);
+      } else {
+        // THIRD: Use form detection for non-blocked Pokemon
+        const name = pokemon.name.toLowerCase();
+        category = categorizeFormType(name);
+      }
     }
+    
+    // Update stats and track ALL examples
+    if (category) {
+      updateCategoryStats(category, originalName, pokemonId);
+    }
+    
+    return category;
+  } catch (error) {
+    console.error(`❌ [CATEGORIZATION_ERROR] Failed to categorize Pokemon ${pokemon.id} "${pokemon.name}":`, error);
+    return null;
   }
-  
-  // Update stats and track ALL examples
-  if (category) {
-    updateCategoryStats(category, originalName, pokemonId);
-  }
-  
-  console.log(`🏁 [FINAL_CATEGORIZATION] "${originalName}" (ID: ${pokemonId}) final category: ${category}`);
-  
-  return category;
 };
 
 // CRITICAL: Add function to get static list blocked count
 export const getStaticListBlockedCount = () => {
-  console.log(`📊 [STATIC_LIST_STATS] Static list blocked Pokemon found: ${staticListBlockedCount}`);
-  console.log(`📊 [STATIC_LIST_IDS] Static blocked IDs: ${staticListFoundIds.slice(0, 10).join(', ')}${staticListFoundIds.length > 10 ? '...' : ''}`);
   return {
     count: staticListBlockedCount,
     ids: staticListFoundIds
