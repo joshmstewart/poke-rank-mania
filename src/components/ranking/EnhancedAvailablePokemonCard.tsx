@@ -24,7 +24,7 @@ interface EnhancedAvailablePokemonCardProps {
   pokemon: EnhancedPokemon;
 }
 
-export const EnhancedAvailablePokemonCard: React.FC<EnhancedAvailablePokemonCardProps> = ({
+export const EnhancedAvailablePokemonCard: React.FC<EnhancedAvailablePokemonCardProps> = React.memo(({
   pokemon
 }) => {
   const {
@@ -45,8 +45,6 @@ export const EnhancedAvailablePokemonCard: React.FC<EnhancedAvailablePokemonCard
   const style = transform ? {
     transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
   } : undefined;
-
-  console.log(`🎴 [ENHANCED_CARD] Rendering ${pokemon.name} - isRanked: ${pokemon.isRanked}, rank: ${pokemon.currentRank}`);
 
   return (
     <div
@@ -90,7 +88,6 @@ export const EnhancedAvailablePokemonCard: React.FC<EnhancedAvailablePokemonCard
         </div>
       )}
 
-      {/* Use the standard PokemonCard component that works correctly */}
       <div className={`relative ${pokemon.isRanked ? 'opacity-90' : ''}`}>
         <PokemonCard
           pokemon={pokemon}
@@ -101,4 +98,6 @@ export const EnhancedAvailablePokemonCard: React.FC<EnhancedAvailablePokemonCard
       </div>
     </div>
   );
-};
+});
+
+EnhancedAvailablePokemonCard.displayName = 'EnhancedAvailablePokemonCard';

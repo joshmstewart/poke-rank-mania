@@ -37,16 +37,8 @@ export const useEnhancedAvailablePokemon = ({
     const enhanced: EnhancedPokemon[] = filteredAvailablePokemon.map(pokemon => {
       const rankedInfo = rankedPokemonMap.get(pokemon.id);
       
-      // Ensure we have a proper image URL - use the existing Pokemon image or generate one
-      const imageUrl = pokemon.image && pokemon.image.trim() !== '' ? 
-        pokemon.image : 
-        `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pokemon.id}.png`;
-      
-      console.log(`🔮 [ENHANCED_AVAILABLE] Processing ${pokemon.name} - image: ${imageUrl.substring(0, 50)}...`);
-      
       return {
         ...pokemon,
-        image: imageUrl,
         isRanked: !!rankedInfo,
         currentRank: rankedInfo?.rank || null,
         score: rankedInfo?.pokemon.score || 0,
@@ -62,7 +54,7 @@ export const useEnhancedAvailablePokemon = ({
     console.log(`🔮 [ENHANCED_AVAILABLE] Ranked Pokemon in available: ${enhanced.filter(p => p.isRanked).length}`);
     
     return enhanced;
-  }, [filteredAvailablePokemon, localRankings]);
+  }, [filteredAvailablePokemon.length, localRankings.length]);
 
   return { enhancedAvailablePokemon };
 };
