@@ -7,20 +7,43 @@ import { Rating } from 'ts-trueskill';
 import { formatPokemonName } from '@/utils/pokemon';
 
 export const useTrueSkillSync = () => {
-  const { getAllRatings, isHydrated, waitForHydration } = useTrueSkillStore();
+  const { getAllRatings, isHydrated, waitForHydration, isLoading } = useTrueSkillStore();
   const { pokemonLookupMap } = usePokemonContext();
   const [localRankings, setLocalRankings] = useState<RankedPokemon[]>([]);
+  const [isInitialized, setIsInitialized] = useState(false);
 
-  // Simplified hydration wait
+  // Wait for both hydration AND cloud loading to complete
   useEffect(() => {
-    const initializeAfterHydration = async () => {
+    const initializeAfterReady = async () => {
+      console.log(`🔍🔍🔍 [TRUESKILL_SYNC_INIT] Waiting for hydration and cloud sync...`);
+      console.log(`🔍🔍🔍 [TRUESKILL_SYNC_INIT] isHydrated: ${isHydrated}, isLoading: ${isLoading}`);
+      
       if (!isHydrated) {
         await waitForHydration();
       }
+      
+      // CRITICAL FIX: Wait for cloud loading to complete
+      // This ensures we have the latest data from the cloud before generating rankings
+      if (isLoading) {
+        console.log(`🔍🔍🔍 [TRUESKILL_SYNC_INIT] Waiting for cloud loading to complete...`);
+        // Poll until loading is complete
+        const pollInterval = setInterval(() => {
+          const currentLoadingState = useTrueSkillStore.getState().isLoading;
+          if (!currentLoadingState) {
+            console.log(`🔍🔍🔍 [TRUESKILL_SYNC_INIT] Cloud loading completed`);
+            clearInterval(pollInterval);
+            setIsInitialized(true);
+          }
+        }, 100);
+        
+        return () => clearInterval(pollInterval);
+      } else {
+        setIsInitialized(true);
+      }
     };
     
-    initializeAfterHydration();
-  }, [isHydrated, waitForHydration]);
+    initializeAfterReady();
+  }, [isHydrated, isLoading, waitForHydration]);
 
   const allRatings = getAllRatings();
   const contextReady = pokemonLookupMap.size > 0;
@@ -29,12 +52,15 @@ export const useTrueSkillSync = () => {
   useEffect(() => {
     console.log(`🔍🔍🔍 [TRUESKILL_SYNC_DEBUG] ===== TRUESKILL SYNC EFFECT =====`);
     console.log(`🔍🔍🔍 [TRUESKILL_SYNC_DEBUG] contextReady: ${contextReady}`);
-    console.log(`🔍🔍🔍 [TRUESKILL_SYNC_DEBUG] isHydrated: ${isHydrated}`);
+    console.log(`🔍🔍🔍 [TRUESKILL_SYNC_DEBUG] isInitialized: ${isInitialized}`);
+    console.log(`🔍🔍🔍 [TRUESKILL_SYNC_DEBUG] isLoading: ${isLoading}`);
     console.log(`🔍🔍🔍 [TRUESKILL_SYNC_DEBUG] ratingsCount: ${ratingsCount}`);
     console.log(`🔍🔍🔍 [TRUESKILL_SYNC_DEBUG] pokemonLookupMap.size: ${pokemonLookupMap.size}`);
 
-    if (!contextReady || !isHydrated) {
+    // CRITICAL FIX: Only generate rankings after initialization is complete
+    if (!contextReady || !isInitialized || isLoading) {
       console.log(`🔍🔍🔍 [TRUESKILL_SYNC_DEBUG] Not ready - early return`);
+      console.log(`🔍🔍🔍 [TRUESKILL_SYNC_DEBUG] Reasons: contextReady=${contextReady}, isInitialized=${isInitialized}, isLoading=${isLoading}`);
       return;
     }
 
@@ -84,7 +110,7 @@ export const useTrueSkillSync = () => {
     console.log(`🔍🔍🔍 [TRUESKILL_SYNC_DEBUG] Top 5 rankings: ${rankings.slice(0, 5).map(p => `${p.name}(${p.id}):${p.score.toFixed(2)}`).join(', ')}`);
     
     setLocalRankings(rankings);
-  }, [contextReady, ratingsCount, allRatings, pokemonLookupMap, isHydrated]);
+  }, [contextReady, ratingsCount, allRatings, pokemonLookupMap, isInitialized, isLoading]);
 
   const updateLocalRankings = useMemo(() => {
     return (newRankings: RankedPokemon[]) => {
