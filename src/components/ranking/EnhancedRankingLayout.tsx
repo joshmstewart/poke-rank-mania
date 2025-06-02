@@ -100,32 +100,6 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = ({
   console.log(`🎨 [ENHANCED_LAYOUT] Enhanced available Pokemon: ${enhancedAvailablePokemon.length}`);
   console.log(`🎨 [ENHANCED_LAYOUT] Ranked Pokemon in enhanced: ${enhancedAvailablePokemon.filter(p => p.isRanked).length}`);
 
-  // Create wrapper functions to match the expected signatures
-  const handleManualReorderWrapper = (activeId: number, overId: number) => {
-    // Find the indices of the active and over items
-    const activeIndex = displayRankings.findIndex(p => p.id === activeId);
-    const overIndex = displayRankings.findIndex(p => p.id === overId);
-    
-    if (activeIndex !== -1 && overIndex !== -1) {
-      handleManualReorder(activeId, activeIndex, overIndex);
-    }
-  };
-
-  const handleLocalReorderWrapper = (activeId: number, overId: number) => {
-    // For local reorder, we could implement array reordering here if needed
-    // For now, we'll use the same logic as manual reorder
-    const activeIndex = displayRankings.findIndex(p => p.id === activeId);
-    const overIndex = displayRankings.findIndex(p => p.id === overId);
-    
-    if (activeIndex !== -1 && overIndex !== -1) {
-      // Create new rankings array with items moved
-      const newRankings = [...displayRankings];
-      const [removed] = newRankings.splice(activeIndex, 1);
-      newRankings.splice(overIndex, 0, removed);
-      handleLocalReorder(newRankings);
-    }
-  };
-
   return (
     <DndContext
       collisionDetection={closestCenter}
@@ -185,8 +159,8 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = ({
             >
               <RankingsSection
                 displayRankings={displayRankings}
-                onManualReorder={handleManualReorderWrapper}
-                onLocalReorder={handleLocalReorderWrapper}
+                onManualReorder={handleManualReorder}
+                onLocalReorder={handleLocalReorder}
                 pendingRefinements={new Set()}
                 availablePokemon={enhancedAvailablePokemon}
               />
