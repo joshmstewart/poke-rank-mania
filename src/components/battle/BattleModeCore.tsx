@@ -7,6 +7,7 @@ import { RefinementQueueProvider } from "./RefinementQueueProvider";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "@/hooks/battle/types";
 import { useTrueSkillStore } from "@/stores/trueskillStore";
+import { useBattleDebugger } from "@/hooks/battle/useBattleDebugger";
 
 const BattleModeCore: React.FC = () => {
   console.log('[DEBUG BattleModeCore] Component rendering');
@@ -18,7 +19,16 @@ const BattleModeCore: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasInitialized, setHasInitialized] = useState(false);
 
-  const { totalBattles, setTotalBattles, isHydrated, waitForHydration } = useTrueSkillStore();
+  const { totalBattles, isHydrated, waitForHydration, loadFromCloud } = useTrueSkillStore();
+
+  // Add debug monitoring
+  const { manualDebugCheck } = useBattleDebugger();
+
+  // Expose debug function globally for easy access
+  useEffect(() => {
+    (window as any).debugBattleState = manualDebugCheck;
+    console.log('🔍 [DEBUG_SETUP] You can run window.debugBattleState() in console to check localStorage');
+  }, [manualDebugCheck]);
 
   const getInitialBattleType = (): BattleType => {
     const stored = localStorage.getItem('pokemon-ranker-battle-type') as BattleType | null;
@@ -57,28 +67,45 @@ const BattleModeCore: React.FC = () => {
     setIsLoading(loading);
   }, []);
 
-  // FIXED: Initialize battle count from TrueSkill store's totalBattles field
+  // CRITICAL FIX: Enhanced initialization with forced cloud sync
   useEffect(() => {
     if (hasInitialized) return;
     
-    const performCloudInitialization = async () => {
-      console.log(`🌥️ [CLOUD_BATTLE_INIT] Performing cloud-first initialization`);
+    const performEnhancedCloudInitialization = async () => {
+      console.log(`🌥️ [ENHANCED_CLOUD_INIT] Performing enhanced cloud-first initialization`);
       
-      if (!isHydrated) {
-        console.log(`🌥️ [CLOUD_BATTLE_INIT] Waiting for TrueSkill hydration...`);
-        await waitForHydration();
+      try {
+        if (!isHydrated) {
+          console.log(`🌥️ [ENHANCED_CLOUD_INIT] Waiting for TrueSkill hydration...`);
+          await waitForHydration();
+        }
+        
+        console.log(`🌥️ [ENHANCED_CLOUD_INIT] Hydration complete, forcing cloud sync...`);
+        
+        // Force load from cloud to ensure we have latest data
+        await loadFromCloud();
+        
+        // Get the final total battles count after cloud sync
+        const finalTotalBattles = useTrueSkillStore.getState().totalBattles;
+        console.log(`🌥️ [ENHANCED_CLOUD_INIT] ✅ Setting battle count from cloud: ${finalTotalBattles}`);
+        setBattlesCompleted(finalTotalBattles);
+        
+        setHasInitialized(true);
+        console.log('[DEBUG BattleModeCore] Enhanced cloud initialization completed');
+        
+      } catch (error) {
+        console.error(`🌥️ [ENHANCED_CLOUD_INIT] ❌ Enhanced initialization failed:`, error);
+        
+        // Fallback to current hydrated state
+        const fallbackCount = totalBattles;
+        console.log(`🌥️ [ENHANCED_CLOUD_INIT] 🔄 Using fallback count: ${fallbackCount}`);
+        setBattlesCompleted(fallbackCount);
+        setHasInitialized(true);
       }
-      
-      // Get battle count from TrueSkill store's totalBattles field
-      console.log(`🌥️ [CLOUD_BATTLE_INIT] Setting battle count from cloud: ${totalBattles}`);
-      setBattlesCompleted(totalBattles);
-      
-      setHasInitialized(true);
-      console.log('[DEBUG BattleModeCore] Cloud initialization completed');
     };
     
-    performCloudInitialization();
-  }, [hasInitialized, isHydrated, totalBattles, waitForHydration]);
+    performEnhancedCloudInitialization();
+  }, [hasInitialized, isHydrated, totalBattles, waitForHydration, loadFromCloud]);
 
   // Loading state
   if (isLoading || !stablePokemon.length) {

@@ -41,23 +41,21 @@ export const useBattleProcessorResult = (
 
     console.log('[BATTLE_PROCESSOR_RESULT] Created battle result:', newBattle);
 
-    // Update battle results
+    // Update battle results first
     setBattleResults(prev => {
       const updated = [...prev, newBattle];
       console.log(`[BATTLE_PROCESSOR_RESULT] Updated battle results: ${updated.length} total battles`);
       return updated;
     });
 
-    // Increment total battle count explicitly
+    // CRITICAL FIX: Increment total battle count in TrueSkill store FIRST
     incrementTotalBattles();
-    console.log('[BATTLE_PROCESSOR_RESULT] Incremented total battle count in TrueSkill store');
+    console.log('[BATTLE_PROCESSOR_RESULT] ✅ Incremented total battle count in TrueSkill store');
 
-    // Update battles completed state
-    setBattlesCompleted(prev => {
-      const newCount = prev + 1;
-      console.log(`[BATTLE_PROCESSOR_RESULT] Updated battles completed: ${newCount}`);
-      return newCount;
-    });
+    // CRITICAL FIX: Get the updated count from store and use it to update UI state
+    const updatedTotalBattles = useTrueSkillStore.getState().totalBattles;
+    setBattlesCompleted(updatedTotalBattles);
+    console.log(`[BATTLE_PROCESSOR_RESULT] ✅ Synchronized UI battle count to: ${updatedTotalBattles}`);
 
     // Update individual Pokemon battle counts
     currentBattle.forEach(pokemon => {
