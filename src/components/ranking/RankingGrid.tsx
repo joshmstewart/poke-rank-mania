@@ -2,7 +2,7 @@
 import React from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { VotingArrows } from "./VotingArrows";
-import { UnifiedPokemonCard } from "./UnifiedPokemonCard";
+import DraggablePokemonMilestoneCard from "@/components/battle/DraggablePokemonMilestoneCard";
 
 interface RankingGridProps {
   displayRankings: (Pokemon | RankedPokemon)[];
@@ -38,13 +38,15 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
               />
             )}
 
-            {/* Using unified card component */}
-            <UnifiedPokemonCard
+            {/* Using draggable card component */}
+            <DraggablePokemonMilestoneCard
               pokemon={pokemon}
-              rank={showRankNumber ? index + 1 : undefined}
+              index={index}
+              isPending={false}
               showRank={showRankNumber}
-              showScore={isRankedPokemon}
-              isRanked={isRankedPokemon}
+              isDraggable={false}
+              isAvailable={false}
+              context="ranked"
             />
           </div>
         );

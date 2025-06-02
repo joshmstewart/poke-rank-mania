@@ -158,7 +158,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
             className="bg-yellow-500 text-white font-bold text-xs px-2 py-1 shadow-md flex items-center gap-1"
           >
             <Crown size={12} />
-            #{currentRank}
+            #{String(currentRank)}
           </Badge>
         </div>
       )}

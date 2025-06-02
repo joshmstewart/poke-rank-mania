@@ -7,7 +7,7 @@ import PokemonCardImage from "./PokemonCardImage";
 import PokemonCardInfo from "./PokemonCardInfo";
 import GenerationHeader from "./GenerationHeader";
 import { VotingArrows } from "@/components/ranking/VotingArrows";
-import { EnhancedAvailablePokemonCard } from "@/components/ranking/EnhancedAvailablePokemonCard";
+import DraggablePokemonMilestoneCard from "@/components/battle/DraggablePokemonMilestoneCard";
 
 interface PokemonListContentProps {
   items: any[];
@@ -73,9 +73,15 @@ export const PokemonListContent: React.FC<PokemonListContentProps> = ({
           // Use the enhanced card component for available Pokemon to match rankings styling
           if (!isRankingArea) {
             return (
-              <EnhancedAvailablePokemonCard
+              <DraggablePokemonMilestoneCard
                 key={`pokemon-${pokemon.id}-${index}`}
                 pokemon={pokemon}
+                index={index}
+                isPending={false}
+                showRank={false}
+                isDraggable={true}
+                isAvailable={true}
+                context="available"
               />
             );
           }
