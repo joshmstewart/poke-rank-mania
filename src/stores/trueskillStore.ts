@@ -28,6 +28,7 @@ interface TrueSkillStore {
   clearAllRatings: () => void;
   syncToCloud: () => Promise<void>;
   loadFromCloud: () => Promise<void>;
+  smartSync: () => Promise<void>;
   waitForHydration: () => Promise<void>;
   restoreSessionFromCloud: (userId: string) => Promise<void>;
 }
@@ -173,6 +174,75 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
         }
       },
 
+      smartSync: async () => {
+        const state = get();
+        if (state.syncInProgress) return;
+        
+        set({ syncInProgress: true });
+        
+        try {
+          console.log(`[TRUESKILL_SMART_SYNC] Starting smart sync...`);
+          console.log(`[TRUESKILL_SMART_SYNC] Local state: ${state.totalBattles} battles, ${Object.keys(state.ratings).length} ratings`);
+          
+          // Get current cloud data
+          const response = await fetch('/api/trueskill/get', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionId: state.sessionId })
+          });
+          
+          let cloudData = null;
+          if (response.ok) {
+            const result = await response.json();
+            if (result.success) {
+              cloudData = {
+                totalBattles: result.totalBattles || 0,
+                ratings: result.ratings || {}
+              };
+            }
+          }
+          
+          console.log(`[TRUESKILL_SMART_SYNC] Cloud state: ${cloudData?.totalBattles || 0} battles, ${Object.keys(cloudData?.ratings || {}).length} ratings`);
+          
+          const localBattles = state.totalBattles;
+          const cloudBattles = cloudData?.totalBattles || 0;
+          
+          // Smart sync logic
+          if (cloudBattles > localBattles) {
+            // Case 1 & 3: Cloud has more data, use cloud and update local
+            console.log(`[TRUESKILL_SMART_SYNC] Cloud wins (${cloudBattles} > ${localBattles}), updating local with cloud data`);
+            set({
+              ratings: cloudData?.ratings || {},
+              totalBattles: cloudBattles
+            });
+          } else if (localBattles > cloudBattles) {
+            // Case 2: Local has more data, push local to cloud
+            console.log(`[TRUESKILL_SMART_SYNC] Local wins (${localBattles} > ${cloudBattles}), pushing local data to cloud`);
+            await get().syncToCloud();
+          } else if (localBattles === cloudBattles && cloudBattles > 0) {
+            // Equal and both have data, use cloud as authoritative
+            console.log(`[TRUESKILL_SMART_SYNC] Equal battle counts (${localBattles}), using cloud as authoritative source`);
+            set({
+              ratings: cloudData?.ratings || {},
+              totalBattles: cloudBattles
+            });
+          } else {
+            // Both are 0 or local > cloud but cloud is 0
+            console.log(`[TRUESKILL_SMART_SYNC] Using local data (local: ${localBattles}, cloud: ${cloudBattles})`);
+            if (localBattles > 0) {
+              await get().syncToCloud();
+            }
+          }
+          
+          console.log(`[TRUESKILL_SMART_SYNC] Smart sync completed successfully`);
+          
+        } catch (error) {
+          console.error('[TRUESKILL_SMART_SYNC] Smart sync failed:', error);
+        } finally {
+          set({ syncInProgress: false });
+        }
+      },
+
       waitForHydration: () => {
         return new Promise((resolve) => {
           if (get().isHydrated) {
@@ -194,7 +264,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
       restoreSessionFromCloud: async (userId: string) => {
         try {
           console.log(`[TRUESKILL_STORE] Restoring session for user: ${userId}`);
-          await get().loadFromCloud();
+          await get().smartSync();
         } catch (error) {
           console.error('[TRUESKILL_STORE] Session restoration failed:', error);
         }

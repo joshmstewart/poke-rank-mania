@@ -16,12 +16,12 @@ interface BattleData {
 
 export const useCloudSync = () => {
   const { user, session } = useAuth();
-  const { loadFromCloud, syncToCloud, getAllRatings, isHydrated, restoreSessionFromCloud } = useTrueSkillStore();
+  const { smartSync, syncToCloud, getAllRatings, isHydrated, restoreSessionFromCloud } = useTrueSkillStore();
 
   // Simple session restoration when user is authenticated and hydrated
   useEffect(() => {
     if (user?.id && isHydrated) {
-      console.log('[CLOUD_SYNC] User authenticated and hydrated, restoring session');
+      console.log('[CLOUD_SYNC] User authenticated and hydrated, restoring session with smart sync');
       restoreSessionFromCloud(user.id);
     }
   }, [user?.id, isHydrated, restoreSessionFromCloud]);
@@ -44,7 +44,7 @@ export const useCloudSync = () => {
       return null;
     }
     
-    await loadFromCloud();
+    await smartSync();
     
     const allRatings = getAllRatings();
     const battlesCompleted = Object.values(allRatings).reduce((sum, rating) => sum + rating.battleCount, 0);
@@ -58,7 +58,7 @@ export const useCloudSync = () => {
       completionPercentage: 0,
       fullRankingMode: false
     };
-  }, [loadFromCloud, getAllRatings, isHydrated]);
+  }, [smartSync, getAllRatings, isHydrated]);
 
   const saveRankingsToCloud = useCallback(async (rankings: any[], generation: number) => {
     if (!isHydrated) {
@@ -86,9 +86,9 @@ export const useCloudSync = () => {
       return {};
     }
     
-    await loadFromCloud();
+    await smartSync();
     return getAllRatings();
-  }, [loadFromCloud, getAllRatings, isHydrated]);
+  }, [smartSync, getAllRatings, isHydrated]);
 
   return {
     saveBattleToCloud,

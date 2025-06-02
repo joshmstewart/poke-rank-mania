@@ -19,7 +19,7 @@ export const useBattleInitializer = (
   const [currentBattle, setCurrentBattle] = useState<Pokemon[]>([]);
   const [battleType, setBattleType] = useState<BattleType>("pairs");
   
-  const { totalBattles, isHydrated, waitForHydration, loadFromCloud } = useTrueSkillStore();
+  const { totalBattles, isHydrated, waitForHydration, smartSync } = useTrueSkillStore();
 
   useEffect(() => {
     // Load battle type from localStorage (this is just UI preference, not data)
@@ -31,40 +31,40 @@ export const useBattleInitializer = (
     }
   }, []);
 
-  // CRITICAL FIX: Enhanced cloud initialization with proper battle count loading
+  // ENHANCED SMART SYNC: Use new smart sync logic that preserves local data
   useEffect(() => {
-    const performEnhancedCloudInitialization = async () => {
+    const performSmartCloudSync = async () => {
       try {
-        console.log(`🌥️ [ENHANCED_CLOUD_INIT] Starting enhanced cloud initialization...`);
+        console.log(`🌥️ [SMART_SYNC_INIT] Starting smart cloud synchronization...`);
         
         if (!isHydrated) {
-          console.log(`🌥️ [ENHANCED_CLOUD_INIT] Waiting for TrueSkill hydration...`);
+          console.log(`🌥️ [SMART_SYNC_INIT] Waiting for TrueSkill hydration...`);
           await waitForHydration();
         }
         
-        console.log(`🌥️ [ENHANCED_CLOUD_INIT] Hydration complete, loading from cloud...`);
+        console.log(`🌥️ [SMART_SYNC_INIT] Hydration complete, performing smart sync...`);
         
-        // Force load from cloud to get latest data
-        await loadFromCloud();
+        // Use smart sync instead of loadFromCloud to preserve local data
+        await smartSync();
         
-        // Get the updated battle count after cloud sync
+        // Get the final battle count after smart sync
         const finalTotalBattles = useTrueSkillStore.getState().totalBattles;
-        console.log(`🌥️ [ENHANCED_CLOUD_INIT] ✅ Final battle count from cloud: ${finalTotalBattles}`);
+        console.log(`🌥️ [SMART_SYNC_INIT] ✅ Final battle count after smart sync: ${finalTotalBattles}`);
         
         setBattlesCompleted(finalTotalBattles);
         
       } catch (error) {
-        console.error(`🌥️ [ENHANCED_CLOUD_INIT] ❌ Cloud initialization failed:`, error);
+        console.error(`🌥️ [SMART_SYNC_INIT] ❌ Smart sync failed:`, error);
         
         // Fallback to current hydrated state
         const fallbackCount = totalBattles;
-        console.log(`🌥️ [ENHANCED_CLOUD_INIT] 🔄 Using fallback count: ${fallbackCount}`);
+        console.log(`🌥️ [SMART_SYNC_INIT] 🔄 Using fallback count: ${fallbackCount}`);
         setBattlesCompleted(fallbackCount);
       }
     };
 
-    performEnhancedCloudInitialization();
-  }, [isHydrated, totalBattles, setBattlesCompleted, waitForHydration, loadFromCloud]);
+    performSmartCloudSync();
+  }, [isHydrated, totalBattles, setBattlesCompleted, waitForHydration, smartSync]);
 
   const loadPokemon = async (genId = 0, fullRankingMode = false, preserveState = false) => {
     setIsLoading(true);
@@ -76,7 +76,7 @@ export const useBattleInitializer = (
         // Reset battle state if not preserving state
         setBattleResults([]);
         
-        // CRITICAL FIX: Don't reset battle count, always use TrueSkill store value
+        // PRESERVE BATTLE COUNT: Don't reset battle count, always use TrueSkill store value
         const currentTotalBattles = useTrueSkillStore.getState().totalBattles;
         console.log(`🌥️ [LOAD_POKEMON] Preserving battle count from TrueSkill store: ${currentTotalBattles}`);
         setBattlesCompleted(currentTotalBattles);
