@@ -106,6 +106,7 @@ export function FormFiltersSelector() {
           count={formCounts.blocked}
           onToggle={handleToggleFilter}
           extraDescription="(starters, totems, etc.)"
+          disabled={true}
         />
       </div>
     </div>
