@@ -32,6 +32,10 @@ export {
 let trackedNormalPokemon = new Set<number>();
 let filteredOutNormalPokemon = new Set<number>();
 
+// CRITICAL DEBUG: Add static list verification
+let staticListBlockedCount = 0;
+let staticListFoundIds: number[] = [];
+
 // FIXED: Enhanced categorization using ID-based mapping for reliability
 export const getPokemonFormCategory = (pokemon: Pokemon): PokemonFormType | null => {
   const pokemonId = pokemon.id;
@@ -40,11 +44,20 @@ export const getPokemonFormCategory = (pokemon: Pokemon): PokemonFormType | null
   
   console.log(`🎯 [ID_CATEGORIZATION] Processing "${originalName}" (ID: ${pokemonId})`);
   
-  // FIRST: Check ID-based categorization - this is the most reliable
+  // CRITICAL DEBUG: Always check the static ID-based categorization first
   const idBasedCategory = getHardcodedCategoryByID(pokemonId);
+  console.log(`🔍 [STATIC_ID_CHECK] Pokemon ${pokemonId} "${originalName}" -> static category: ${idBasedCategory || 'NOT_FOUND'}`);
+  
   if (idBasedCategory) {
     category = idBasedCategory;
     console.log(`✅ [ID_BASED_CATEGORY] "${originalName}" (ID: ${pokemonId}) found in ID mapping: ${category}`);
+    
+    // CRITICAL: Track blocked Pokemon specifically from static list
+    if (category === 'blocked') {
+      staticListBlockedCount++;
+      staticListFoundIds.push(pokemonId);
+      console.log(`🚫 [STATIC_BLOCKED_FOUND] Pokemon ${pokemonId} "${originalName}" marked as BLOCKED in static list! Total static blocked so far: ${staticListBlockedCount}`);
+    }
     
     // Track normal Pokemon specifically
     if (category === 'normal') {
@@ -76,6 +89,16 @@ export const getPokemonFormCategory = (pokemon: Pokemon): PokemonFormType | null
   return category;
 };
 
+// CRITICAL: Add function to get static list blocked count
+export const getStaticListBlockedCount = () => {
+  console.log(`📊 [STATIC_LIST_STATS] Static list blocked Pokemon found: ${staticListBlockedCount}`);
+  console.log(`📊 [STATIC_LIST_IDS] Static blocked IDs: ${staticListFoundIds.slice(0, 10).join(', ')}${staticListFoundIds.length > 10 ? '...' : ''}`);
+  return {
+    count: staticListBlockedCount,
+    ids: staticListFoundIds
+  };
+};
+
 // New function to track filtered Pokemon
 export const trackFilteredPokemon = (pokemon: Pokemon, wasFiltered: boolean, reason?: string) => {
   if (trackedNormalPokemon.has(pokemon.id) && wasFiltered) {
@@ -100,5 +123,7 @@ export const getNormalPokemonStats = () => {
 export const resetNormalPokemonTracking = () => {
   trackedNormalPokemon.clear();
   filteredOutNormalPokemon.clear();
-  console.log(`🧹 [NORMAL_TRACKING_RESET] Reset normal Pokemon tracking`);
+  staticListBlockedCount = 0;
+  staticListFoundIds = [];
+  console.log(`🧹 [NORMAL_TRACKING_RESET] Reset normal Pokemon tracking and static list counters`);
 };
