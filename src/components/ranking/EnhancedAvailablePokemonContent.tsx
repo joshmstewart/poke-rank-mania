@@ -63,12 +63,13 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
               return (
                 <GenerationHeader
                   key={`gen-${item.generation}`}
-                  generation={item.generation}
-                  count={item.count}
-                  rankedCount={item.rankedCount}
+                  generationId={item.generation}
+                  name={`Generation ${item.generation}`}
+                  region={`Region ${item.generation}`}
+                  games={`Gen ${item.generation} Games`}
+                  viewMode={viewMode}
                   isExpanded={isGenerationExpanded(item.generation)}
                   onToggle={() => onToggleGeneration(item.generation)}
-                  showRankedInfo={true}
                 />
               );
             }

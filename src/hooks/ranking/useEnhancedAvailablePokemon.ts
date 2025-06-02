@@ -5,6 +5,13 @@ import { Pokemon, RankedPokemon } from "@/services/pokemon";
 interface EnhancedPokemon extends Pokemon {
   isRanked: boolean;
   currentRank: number | null;
+  // Add required properties for type compatibility
+  score: number;
+  count: number;
+  confidence: number;
+  wins: number;
+  losses: number;
+  winRate: number;
 }
 
 interface UseEnhancedAvailablePokemonProps {
@@ -33,7 +40,14 @@ export const useEnhancedAvailablePokemon = ({
       return {
         ...pokemon,
         isRanked: !!rankedInfo,
-        currentRank: rankedInfo?.rank || null
+        currentRank: rankedInfo?.rank || null,
+        // Provide default values for required properties
+        score: rankedInfo?.pokemon.score || 0,
+        count: rankedInfo?.pokemon.count || 0,
+        confidence: rankedInfo?.pokemon.confidence || 0,
+        wins: rankedInfo?.pokemon.wins || 0,
+        losses: rankedInfo?.pokemon.losses || 0,
+        winRate: rankedInfo?.pokemon.winRate || 0
       };
     });
     
