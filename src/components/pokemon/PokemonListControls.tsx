@@ -31,20 +31,18 @@ const PokemonListControls: React.FC<PokemonListControlsProps> = ({
   hideSearch = false
 }) => {
   return (
-    <div className="space-y-1">
-      {/* Section Header - only show if title is provided */}
-      {title && (
-        <div className="border-b border-gray-200 pb-1">
-          <h2 className="text-lg font-bold text-gray-900">{title}</h2>
-        </div>
-      )}
+    <div className="space-y-2 mb-3">
+      {/* Section Header */}
+      <div className="border-b border-gray-200 pb-1">
+        <h2 className="text-lg font-bold text-gray-900">{title}</h2>
+      </div>
       
       {/* Controls Row */}
-      <div className="bg-white rounded-lg border border-gray-200 p-2 shadow-sm">
+      <div className="bg-white rounded-lg border border-gray-200 p-2.5 shadow-sm">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <div className="flex items-center gap-1">
-              <span className="text-xs font-medium text-gray-700">View:</span>
+          <div className="flex items-center space-x-3">
+            <div className="flex items-center gap-1.5">
+              <span className="text-sm font-medium text-gray-700">View:</span>
               <ToggleGroup 
                 type="single" 
                 value={viewMode} 
@@ -54,16 +52,16 @@ const PokemonListControls: React.FC<PokemonListControlsProps> = ({
                 <ToggleGroupItem 
                   value="list" 
                   aria-label="List view"
-                  className="h-6 w-6 p-0 data-[state=on]:bg-blue-500 data-[state=on]:text-white"
+                  className="h-7 w-7 p-0 data-[state=on]:bg-blue-500 data-[state=on]:text-white"
                 >
-                  <List className="h-3 w-3" />
+                  <List className="h-3.5 w-3.5" />
                 </ToggleGroupItem>
                 <ToggleGroupItem 
                   value="grid" 
                   aria-label="Grid view"
-                  className="h-6 w-6 p-0 data-[state=on]:bg-blue-500 data-[state=on]:text-white"
+                  className="h-7 w-7 p-0 data-[state=on]:bg-blue-500 data-[state=on]:text-white"
                 >
-                  <Grid className="h-3 w-3" />
+                  <Grid className="h-3.5 w-3.5" />
                 </ToggleGroupItem>
               </ToggleGroup>
             </div>
@@ -74,17 +72,17 @@ const PokemonListControls: React.FC<PokemonListControlsProps> = ({
                   variant="outline"
                   size="sm"
                   onClick={allExpanded ? onCollapseAll : onExpandAll}
-                  className="h-5 px-1.5 text-xs flex items-center gap-1 hover:bg-gray-50"
+                  className="h-6 px-2 text-xs flex items-center gap-1 hover:bg-gray-50"
                 >
                   {allExpanded ? (
                     <>
-                      <ChevronUp className="h-2.5 w-2.5" />
-                      Collapse
+                      <ChevronUp className="h-3 w-3" />
+                      Collapse All
                     </>
                   ) : (
                     <>
-                      <ChevronDown className="h-2.5 w-2.5" />
-                      Expand
+                      <ChevronDown className="h-3 w-3" />
+                      Expand All
                     </>
                   )}
                 </Button>
@@ -93,11 +91,11 @@ const PokemonListControls: React.FC<PokemonListControlsProps> = ({
           </div>
           
           {!hideSearch && (
-            <div className="relative w-20">
-              <Search className="absolute left-1.5 top-1/2 transform -translate-y-1/2 h-2.5 w-2.5 text-gray-400" />
+            <div className="relative w-24">
+              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-gray-400" />
               <Input
                 placeholder="Search"
-                className="h-5 pl-5 text-xs py-0.5 bg-gray-50 border-gray-200 focus:bg-white transition-colors"
+                className="h-6 pl-6 text-xs py-1 bg-gray-50 border-gray-200 focus:bg-white transition-colors"
                 value={searchTerm}
                 onChange={(e) => onSearchChange(e.target.value)}
               />
