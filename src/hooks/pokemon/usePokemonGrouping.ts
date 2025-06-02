@@ -210,16 +210,16 @@ export const usePokemonGrouping = (
     
     console.log(`🔍 [POKEMON_GROUPING] After search filter: ${filtered.length} Pokemon`);
     
-    // If this is the ranking area or we're searching, don't group by generation
-    if (isRankingArea || searchTerm.trim()) {
-      console.log(`🔍 [POKEMON_GROUPING] Not grouping - returning flat list`);
+    // FIXED: Only return flat list for ranking area, not for available Pokemon area when searching
+    if (isRankingArea) {
+      console.log(`🔍 [POKEMON_GROUPING] Ranking area - returning flat list`);
       return {
         items: filtered.map(pokemon => ({ type: 'pokemon', data: pokemon })),
         showGenerationHeaders: false
       };
     }
     
-    // Group by generation for the available Pokemon list
+    // For available Pokemon area, always group by generation (even when searching)
     const generationGroups = new Map<number, Pokemon[]>();
     
     // Group Pokemon by generation using FIXED logic that catches ALL Pokemon
@@ -283,7 +283,7 @@ export const usePokemonGrouping = (
       }
     }
     
-    console.log(`🔍 [POKEMON_GROUPING] Generated ${result.length} items with headers for all generations`);
+    console.log(`🔍 [POKEMON_GROUPING] Generated ${result.length} items with headers for available Pokemon area`);
     
     return {
       items: result,
