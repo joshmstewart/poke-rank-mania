@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useTrueSkillStore } from '@/stores/trueskillStore';
 import { usePokemonContext } from '@/contexts/PokemonContext';
 import { RankedPokemon } from '@/services/pokemon';
@@ -7,47 +7,35 @@ import { Rating } from 'ts-trueskill';
 import { formatPokemonName } from '@/utils/pokemon';
 
 export const useTrueSkillSync = () => {
-  const { getAllRatings, debugStore, comprehensiveEnvironmentalDebug } = useTrueSkillStore();
+  const { getAllRatings } = useTrueSkillStore();
   const { pokemonLookupMap } = usePokemonContext();
   const [localRankings, setLocalRankings] = useState<RankedPokemon[]>([]);
 
+  // CRITICAL FIX: Stable references to prevent infinite re-renders
+  const allRatings = getAllRatings();
+  const contextReady = pokemonLookupMap.size > 0;
+  const ratingsCount = Object.keys(allRatings).length;
+
+  // CRITICAL FIX: Only process when we have stable data
+  const shouldProcess = useMemo(() => {
+    return contextReady && ratingsCount > 0;
+  }, [contextReady, ratingsCount]);
+
   useEffect(() => {
-    console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] ===== COMPREHENSIVE DATA AUDIT =====`);
+    if (!shouldProcess) {
+      console.log(`🔥🔥🔥 [TRUESKILL_SYNC_STABLE] Not ready - Context: ${contextReady}, Ratings: ${ratingsCount}`);
+      return;
+    }
+
+    console.log(`🔥🔥🔥 [TRUESKILL_SYNC_STABLE] ===== PROCESSING TRUESKILL DATA =====`);
+    console.log(`🔥🔥🔥 [TRUESKILL_SYNC_STABLE] Processing ${ratingsCount} ratings`);
     
-    // CRITICAL: Call comprehensive environmental debugging to find missing data
-    comprehensiveEnvironmentalDebug();
-    
-    // Call the regular debug function
-    debugStore();
-    
-    const allRatings = getAllRatings();
     const ratedPokemonIds = Object.keys(allRatings).map(Number);
-    
-    console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] TRUESKILL STORE AUDIT:`);
-    console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] - Store ratings count: ${ratedPokemonIds.length}`);
-    console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] - Store rating IDs: ${ratedPokemonIds.slice(0, 20).join(', ')}${ratedPokemonIds.length > 20 ? '...' : ''}`);
-    
-    console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] CONTEXT AUDIT:`);
-    console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] - Pokemon lookup map size: ${pokemonLookupMap.size}`);
-
-    if (ratedPokemonIds.length === 0) {
-      console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] No TrueSkill ratings found, keeping current state`);
-      return;
-    }
-
-    if (pokemonLookupMap.size === 0) {
-      console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] Pokemon context not ready yet, keeping current state`);
-      return;
-    }
-
-    console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] PROCESSING TRUESKILL DATA:`);
-
     const rankings: RankedPokemon[] = [];
-    const missingFromContext: number[] = [];
 
     ratedPokemonIds.forEach(pokemonId => {
       const basePokemon = pokemonLookupMap.get(pokemonId);
-      const ratingData = allRatings[pokemonId];
+      const ratingData = allRatings[pokemonId.toString()];
 
       if (basePokemon && ratingData) {
         const rating = new Rating(ratingData.mu, ratingData.sigma);
@@ -69,34 +57,28 @@ export const useTrueSkillSync = () => {
         };
 
         rankings.push(rankedPokemon);
-      } else {
-        if (!basePokemon) {
-          missingFromContext.push(pokemonId);
-        }
       }
     });
 
     rankings.sort((a, b) => b.score - a.score);
 
-    console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] FINAL TRUESKILL PROCESSING:`);
-    console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] - Generated ${rankings.length} TrueSkill rankings`);
-    console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] - Missing from context: ${missingFromContext.length}`);
-
+    console.log(`🔥🔥🔥 [TRUESKILL_SYNC_STABLE] ✅ Generated ${rankings.length} stable rankings`);
     setLocalRankings(rankings);
-    console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] ===== END COMPREHENSIVE AUDIT =====`);
-  }, [getAllRatings, pokemonLookupMap.size, debugStore, comprehensiveEnvironmentalDebug]);
+    console.log(`🔥🔥🔥 [TRUESKILL_SYNC_STABLE] ===== END PROCESSING =====`);
+  }, [shouldProcess, allRatings, pokemonLookupMap]);
 
-  const updateLocalRankings = (newRankings: RankedPokemon[]) => {
-    console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] MANUAL UPDATE CALLED:`);
-    console.log(`🔥🔥🔥 [TRUESKILL_SYNC_ULTRA] - Updating with ${newRankings.length} rankings`);
-    
-    const formattedRankings = newRankings.map(pokemon => ({
-      ...pokemon,
-      name: formatPokemonName(pokemon.name)
-    }));
-    
-    setLocalRankings(formattedRankings);
-  };
+  const updateLocalRankings = useMemo(() => {
+    return (newRankings: RankedPokemon[]) => {
+      console.log(`🔥🔥🔥 [TRUESKILL_SYNC_STABLE] Updating ${newRankings.length} rankings`);
+      
+      const formattedRankings = newRankings.map(pokemon => ({
+        ...pokemon,
+        name: formatPokemonName(pokemon.name)
+      }));
+      
+      setLocalRankings(formattedRankings);
+    };
+  }, []);
 
   return {
     localRankings,
