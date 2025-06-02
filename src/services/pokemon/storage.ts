@@ -19,7 +19,7 @@ export function saveRankings(
   // Extract and store rating data in centralized TrueSkill store
   rankings.forEach(pokemon => {
     if (pokemon.rating) {
-      useTrueSkillStore.getState().updateRating(pokemon.id, pokemon.rating);
+      useTrueSkillStore.getState().updateRating(pokemon.id.toString(), pokemon.rating);
     }
   });
   
@@ -119,7 +119,7 @@ export function importUnifiedSessionData(jsonData: string): boolean {
       const store = useTrueSkillStore.getState();
       Object.entries(data.ratingData).forEach(([pokemonId, ratingData]) => {
         const rating = new Rating(ratingData.mu, ratingData.sigma);
-        store.updateRating(Number(pokemonId), rating);
+        store.updateRating(pokemonId.toString(), rating);
       });
     }
     

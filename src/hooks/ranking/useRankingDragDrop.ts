@@ -82,7 +82,7 @@ export const useRankingDragDrop = (
           
           // CRITICAL FIX: Only add to TrueSkill store, don't trigger full sync
           const defaultRating = new Rating(25.0, 8.333);
-          updateRating(pokemonId, defaultRating);
+          updateRating(pokemonId.toString(), defaultRating);
           console.log(`🚀🚀🚀 [DRAG_END_CRITICAL] ✅ Added rating to TrueSkill store for ${pokemonId}`);
           
           // Remove from available list IMMEDIATELY
