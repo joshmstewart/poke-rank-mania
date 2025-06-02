@@ -22,32 +22,15 @@ interface TrueSkillState {
   setLoading: (loading: boolean) => void;
   debugStore: () => void;
   comprehensiveEnvironmentalDebug: () => void;
-}
-
-// CRITICAL FIX: Check localStorage and force manual hydration if needed
-console.log(`🔥 [STORE_INIT_FIX] ===== CHECKING LOCALSTORAGE AND FORCING HYDRATION =====`);
-const storedData = localStorage.getItem('trueskill-storage');
-console.log(`🔥 [STORE_INIT_FIX] Raw localStorage data exists:`, !!storedData);
-
-let manualHydrationData: any = null;
-if (storedData) {
-  try {
-    const parsed = JSON.parse(storedData);
-    manualHydrationData = parsed.state;
-    console.log(`🔥 [STORE_INIT_FIX] Parsed ratings from localStorage:`, Object.keys(manualHydrationData?.ratings || {}).length);
-    console.log(`🔥 [STORE_INIT_FIX] Sample ratings:`, Object.entries(manualHydrationData?.ratings || {}).slice(0, 3));
-  } catch (e) {
-    console.error(`🔥 [STORE_INIT_FIX] Failed to parse localStorage:`, e);
-  }
+  forceRehydrate: () => void;
 }
 
 export const useTrueSkillStore = create<TrueSkillState>()(
   persist(
     (set, get) => ({
-      // CRITICAL FIX: Initialize with manual hydration data if available
-      ratings: manualHydrationData?.ratings || {},
-      sessionId: manualHydrationData?.sessionId || null,
-      lastUpdated: manualHydrationData?.lastUpdated || null,
+      ratings: {},
+      sessionId: null,
+      lastUpdated: null,
       isDirty: false,
       isLoading: false,
 
@@ -64,7 +47,6 @@ export const useTrueSkillStore = create<TrueSkillState>()(
             }
           };
           
-          console.log(`🔍 [TRUESKILL_STORE_UPDATE] New ratings object:`, newRatings);
           console.log(`🔍 [TRUESKILL_STORE_UPDATE] New ratings count:`, Object.keys(newRatings).length);
           
           return {
@@ -73,10 +55,6 @@ export const useTrueSkillStore = create<TrueSkillState>()(
             lastUpdated: new Date().toISOString()
           };
         });
-        
-        // Immediately check what we just set
-        const newRatings = get().ratings;
-        console.log(`🔍 [TRUESKILL_STORE_DEBUG] After update, store now has ${Object.keys(newRatings).length} ratings`);
       },
 
       getRating: (pokemonId: string) => {
@@ -97,37 +75,47 @@ export const useTrueSkillStore = create<TrueSkillState>()(
         const state = get();
         const ratings = state.ratings;
         
-        console.log(`🔥 [STORE_GETALLRATINGS_FIXED] ===== FIXED getAllRatings =====`);
-        console.log(`🔥 [STORE_GETALLRATINGS_FIXED] Store ratings count:`, Object.keys(ratings || {}).length);
+        console.log(`🔥 [STORE_GETALLRATINGS_CRITICAL] Store has ${Object.keys(ratings || {}).length} ratings`);
         
-        if (!ratings || Object.keys(ratings).length === 0) {
-          console.log(`🔥 [STORE_GETALLRATINGS_FIXED] Store empty, checking localStorage again...`);
-          const currentStoredData = localStorage.getItem('trueskill-storage');
-          if (currentStoredData) {
-            try {
-              const parsed = JSON.parse(currentStoredData);
-              const lsRatings = parsed.state?.ratings || {};
-              console.log(`🔥 [STORE_GETALLRATINGS_FIXED] LocalStorage has ${Object.keys(lsRatings).length} ratings, but store is empty!`);
-              
-              // CRITICAL FIX: Manually force the ratings into the store if persist failed
-              if (Object.keys(lsRatings).length > 0) {
-                console.log(`🔥 [STORE_GETALLRATINGS_FIXED] FORCING MANUAL HYDRATION NOW!`);
-                set({ 
-                  ratings: lsRatings,
-                  sessionId: parsed.state?.sessionId || null,
-                  lastUpdated: parsed.state?.lastUpdated || null
-                });
-                console.log(`🔥 [STORE_GETALLRATINGS_FIXED] Manual hydration complete, returning ${Object.keys(lsRatings).length} ratings`);
-                return lsRatings;
-              }
-            } catch (e) {
-              console.error(`🔥 [STORE_GETALLRATINGS_FIXED] Failed to parse localStorage:`, e);
-            }
-          }
+        // If store is empty but we should have data, force rehydration
+        if ((!ratings || Object.keys(ratings).length === 0)) {
+          console.log(`🔥 [STORE_GETALLRATINGS_CRITICAL] Store empty - forcing rehydration`);
+          get().forceRehydrate();
+          
+          // Get ratings again after rehydration attempt
+          const newState = get();
+          const newRatings = newState.ratings;
+          console.log(`🔥 [STORE_GETALLRATINGS_CRITICAL] After rehydration: ${Object.keys(newRatings || {}).length} ratings`);
+          return newRatings || {};
         }
         
-        console.log(`🔥 [STORE_GETALLRATINGS_FIXED] Returning ${Object.keys(ratings || {}).length} ratings from store`);
         return ratings || {};
+      },
+
+      forceRehydrate: () => {
+        console.log(`🔥 [FORCE_REHYDRATE] Attempting to force rehydration from localStorage`);
+        
+        try {
+          const storedData = localStorage.getItem('trueskill-storage');
+          if (storedData) {
+            const parsed = JSON.parse(storedData);
+            const ratings = parsed.state?.ratings || {};
+            console.log(`🔥 [FORCE_REHYDRATE] Found ${Object.keys(ratings).length} ratings in localStorage`);
+            
+            if (Object.keys(ratings).length > 0) {
+              set({
+                ratings: ratings,
+                sessionId: parsed.state?.sessionId || null,
+                lastUpdated: parsed.state?.lastUpdated || null
+              });
+              console.log(`🔥 [FORCE_REHYDRATE] Successfully restored ${Object.keys(ratings).length} ratings`);
+            }
+          } else {
+            console.log(`🔥 [FORCE_REHYDRATE] No localStorage data found`);
+          }
+        } catch (e) {
+          console.error(`🔥 [FORCE_REHYDRATE] Error during rehydration:`, e);
+        }
       },
 
       clearAllRatings: () => {
@@ -251,23 +239,132 @@ export const useTrueSkillStore = create<TrueSkillState>()(
     }),
     {
       name: 'trueskill-storage',
-      // CRITICAL FIX: Ensure proper hydration
       partialize: (state) => ({
         ratings: state.ratings,
         sessionId: state.sessionId,
         lastUpdated: state.lastUpdated
       }),
-      // CRITICAL FIX: Add onRehydrateStorage to catch hydration issues
       onRehydrateStorage: () => {
         console.log('🔥 [STORE_HYDRATION] Starting hydration...');
         return (state, error) => {
           if (error) {
             console.error('🔥 [STORE_HYDRATION] Hydration failed:', error);
           } else {
-            console.log('🔥 [STORE_HYDRATION] Hydration successful, ratings count:', Object.keys(state?.ratings || {}).length);
+            const ratingsCount = Object.keys(state?.ratings || {}).length;
+            console.log('🔥 [STORE_HYDRATION] Hydration successful, ratings count:', ratingsCount);
+            
+            if (ratingsCount === 0) {
+              console.warn('🔥 [STORE_HYDRATION] WARNING: No ratings after hydration - data may be lost!');
+            }
           }
         };
       }
     }
   )
 );
+```
+
+```typescript
+import { useEffect, useState, useMemo } from 'react';
+import { useTrueSkillStore } from '@/stores/trueskillStore';
+import { usePokemonContext } from '@/contexts/PokemonContext';
+import { RankedPokemon } from '@/services/pokemon';
+import { Rating } from 'ts-trueskill';
+import { formatPokemonName } from '@/utils/pokemon';
+
+export const useTrueSkillSync = () => {
+  const { getAllRatings, debugStore, comprehensiveEnvironmentalDebug, forceRehydrate } = useTrueSkillStore();
+  const { pokemonLookupMap } = usePokemonContext();
+  const [localRankings, setLocalRankings] = useState<RankedPokemon[]>([]);
+
+  // Force rehydration on mount to ensure we have all data
+  useEffect(() => {
+    console.log(`🔥🔥🔥 [TRUESKILL_SYNC_CRITICAL] ===== FORCING INITIAL REHYDRATION =====`);
+    forceRehydrate();
+    debugStore();
+    comprehensiveEnvironmentalDebug();
+  }, []);
+
+  const allRatings = getAllRatings();
+  const contextReady = pokemonLookupMap.size > 0;
+  const ratingsCount = Object.keys(allRatings).length;
+
+  console.log(`🔥🔥🔥 [TRUESKILL_SYNC_CRITICAL] Current state: context=${contextReady}, ratings=${ratingsCount}`);
+
+  useEffect(() => {
+    if (!contextReady) {
+      console.log(`🔥🔥🔥 [TRUESKILL_SYNC_CRITICAL] Context not ready - Pokemon lookup map size: ${pokemonLookupMap.size}`);
+      return;
+    }
+
+    if (ratingsCount === 0) {
+      console.log(`🔥🔥🔥 [TRUESKILL_SYNC_CRITICAL] ❌ NO RATINGS! This should be 400+!`);
+      console.log(`🔥🔥🔥 [TRUESKILL_SYNC_CRITICAL] Attempting additional rehydration...`);
+      forceRehydrate();
+      return;
+    }
+
+    console.log(`🔥🔥🔥 [TRUESKILL_SYNC_CRITICAL] ===== PROCESSING ${ratingsCount} RATINGS =====`);
+    
+    const ratedPokemonIds = Object.keys(allRatings).map(Number);
+    const rankings: RankedPokemon[] = [];
+
+    ratedPokemonIds.forEach(pokemonId => {
+      const basePokemon = pokemonLookupMap.get(pokemonId);
+      const ratingData = allRatings[pokemonId.toString()];
+
+      if (basePokemon && ratingData) {
+        const rating = new Rating(ratingData.mu, ratingData.sigma);
+        const conservativeEstimate = rating.mu - rating.sigma;
+        const confidence = Math.max(0, Math.min(100, 100 * (1 - (rating.sigma / 8.33))));
+
+        const formattedName = formatPokemonName(basePokemon.name);
+
+        const rankedPokemon: RankedPokemon = {
+          ...basePokemon,
+          name: formattedName,
+          score: conservativeEstimate,
+          confidence: confidence,
+          rating: rating,
+          count: ratingData.battleCount || 0,
+          wins: 0,
+          losses: 0,
+          winRate: 0
+        };
+
+        rankings.push(rankedPokemon);
+      }
+    });
+
+    rankings.sort((a, b) => b.score - a.score);
+
+    console.log(`🔥🔥🔥 [TRUESKILL_SYNC_CRITICAL] ✅ Generated ${rankings.length} rankings (should be 400+)`);
+    if (rankings.length > 0) {
+      console.log(`🔥🔥🔥 [TRUESKILL_SYNC_CRITICAL] Sample rankings:`, rankings.slice(0, 5).map(p => `${p.name} (${p.score.toFixed(2)})`));
+    }
+    
+    if (rankings.length < 100) {
+      console.error(`🔥🔥🔥 [TRUESKILL_SYNC_CRITICAL] ❌ CRITICAL: Only ${rankings.length} rankings generated, expected 400+!`);
+    }
+    
+    setLocalRankings(rankings);
+  }, [contextReady, ratingsCount, allRatings, pokemonLookupMap, forceRehydrate]);
+
+  const updateLocalRankings = useMemo(() => {
+    return (newRankings: RankedPokemon[]) => {
+      console.log(`🔥🔥🔥 [TRUESKILL_SYNC_CRITICAL] Updating ${newRankings.length} rankings`);
+      
+      const formattedRankings = newRankings.map(pokemon => ({
+        ...pokemon,
+        name: formatPokemonName(pokemon.name)
+      }));
+      
+      setLocalRankings(formattedRankings);
+    };
+  }, []);
+
+  return {
+    localRankings,
+    updateLocalRankings
+  };
+};
