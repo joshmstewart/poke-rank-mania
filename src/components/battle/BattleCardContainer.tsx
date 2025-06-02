@@ -2,7 +2,10 @@
 import React, { useState, useCallback, useRef, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Pokemon } from "@/services/pokemon";
-import PokemonInfoModal from "@/components/pokemon/PokemonInfoModal";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import PokemonModalContent from "@/components/pokemon/PokemonModalContent";
+import { usePokemonFlavorText } from "@/hooks/pokemon/usePokemonFlavorText";
+import { usePokemonTCGCard } from "@/hooks/pokemon/usePokemonTCGCard";
 import LoadingOverlay from "./LoadingOverlay";
 import BattleCardImage from "./BattleCardImage";
 import BattleCardInfo from "./BattleCardInfo";
@@ -25,9 +28,14 @@ const BattleCardContainer: React.FC<BattleCardContainerProps> = ({
   imageUrl,
   displayName
 }) => {
+  const [isOpen, setIsOpen] = useState(false);
   const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastClickTimeRef = useRef(0);
   const [isHovered, setIsHovered] = useState(false);
+
+  // Hooks for modal content - match manual mode approach
+  const { flavorText, isLoadingFlavor } = usePokemonFlavorText(pokemon.id, isOpen);
+  const { tcgCard, secondTcgCard, isLoading: isLoadingTCG, error: tcgError, hasTcgCard } = usePokemonTCGCard(pokemon.name, isOpen);
 
   useEffect(() => {
     console.log(`🔘 [INFO_BUTTON_DEBUG] BattleCardContainer ${displayName}: Component mounted/updated`);
@@ -93,11 +101,20 @@ const BattleCardContainer: React.FC<BattleCardContainerProps> = ({
   const shouldShowHover = isHovered && !isSelected && !isProcessing;
 
   const cardClasses = `
-    relative cursor-pointer transition-all duration-200 transform
+    relative cursor-pointer transition-all duration-200 transform group
     ${isSelected ? 'ring-4 ring-blue-500 bg-blue-50 scale-105 shadow-xl' : 'hover:scale-105 hover:shadow-lg'}
     ${isProcessing ? 'pointer-events-none' : ''}
     ${shouldShowHover ? 'ring-2 ring-blue-300 ring-opacity-50' : ''}
   `.trim();
+
+  const handleDialogClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
+
+  // Determine what content to show in modal - match manual mode
+  const showLoading = isLoadingTCG;
+  const showTCGCards = !isLoadingTCG && hasTcgCard && tcgCard !== null;
+  const showFallbackInfo = !isLoadingTCG && !hasTcgCard;
 
   return (
     <Card 
@@ -111,9 +128,52 @@ const BattleCardContainer: React.FC<BattleCardContainerProps> = ({
       data-hovered={shouldShowHover ? "true" : "false"}
     >
       <CardContent className="p-4 text-center relative">
-        {/* Info Button - simplified to match manual mode */}
-        <div className="absolute top-1 right-1 z-30">
-          <PokemonInfoModal pokemon={pokemon} />
+        {/* Info Button - exact copy from manual mode */}
+        <div className="absolute top-1 right-1 z-30 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+          <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild>
+              <button 
+                className="w-5 h-5 rounded-full bg-white/80 hover:bg-white border border-gray-300 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200 backdrop-blur-sm cursor-pointer"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  console.log(`Info button clicked for ${pokemon.name}`);
+                }}
+                onPointerDown={(e) => {
+                  e.stopPropagation();
+                }}
+                onMouseDown={(e) => {
+                  e.stopPropagation();
+                }}
+                type="button"
+                style={{ pointerEvents: 'auto' }}
+              >
+                i
+              </button>
+            </DialogTrigger>
+            
+            <DialogContent 
+              className="max-w-4xl max-h-[90vh] overflow-y-auto pointer-events-auto"
+              onClick={handleDialogClick}
+              data-radix-dialog-content="true"
+            >
+              <DialogHeader>
+                <DialogTitle className="text-2xl font-bold text-center">
+                  {pokemon.name}
+                </DialogTitle>
+              </DialogHeader>
+
+              <PokemonModalContent
+                pokemon={pokemon}
+                showLoading={showLoading}
+                showTCGCards={showTCGCards}
+                showFallbackInfo={showFallbackInfo}
+                tcgCard={tcgCard}
+                secondTcgCard={secondTcgCard}
+                flavorText={flavorText}
+                isLoadingFlavor={isLoadingFlavor}
+              />
+            </DialogContent>
+          </Dialog>
         </div>
 
         {/* Interactive elements */}
