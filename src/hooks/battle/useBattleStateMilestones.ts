@@ -1,3 +1,4 @@
+
 import { useCallback } from "react";
 import { RankedPokemon, TopNOption } from "@/services/pokemon";
 import { useTrueSkillStore } from "@/stores/trueskillStore";
@@ -177,6 +178,21 @@ export const useBattleStateMilestones = (
     triggerMilestoneView(battlesCompleted);
   }, [battlesCompleted, triggerMilestoneView]);
 
+  // CRITICAL FIX: Method to manually trigger milestone view for battle 25 specifically
+  const triggerMilestone25 = useCallback(() => {
+    console.log(`🎯 [MILESTONE_25_TRIGGER] Manually triggering milestone view for battle 25`);
+    
+    // Force generate rankings
+    generateRankings();
+    
+    // Set all milestone flags
+    setMilestoneInProgress(true);
+    setShowingMilestone(true);
+    setRankingGenerated(true);
+    
+    console.log(`✅ [MILESTONE_25_TRIGGER] Battle 25 milestone view triggered successfully`);
+  }, [generateRankings, setMilestoneInProgress, setShowingMilestone, setRankingGenerated]);
+
   const suggestRanking = useCallback(() => {}, []);
 
   const removeSuggestion = useCallback(() => {}, []);
@@ -196,6 +212,7 @@ export const useBattleStateMilestones = (
     resetMilestoneInProgress,
     triggerMilestoneView,
     forceTriggerMilestone,
+    triggerMilestone25,
     suggestRanking,
     removeSuggestion,
     clearAllSuggestions,

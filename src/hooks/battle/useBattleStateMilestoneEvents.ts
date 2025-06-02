@@ -37,10 +37,42 @@ export const useBattleStateMilestoneEvents = ({
   setBattleResults
 }: MilestoneEventHookProps) => {
 
-  // CRITICAL FIX: Enhanced milestone checking that actually triggers the view
+  // CRITICAL FIX: Check for missed milestones on component mount
+  useEffect(() => {
+    console.log(`🎯 [MILESTONE_CHECK_MOUNT] Checking for missed milestones on mount`);
+    console.log(`🎯 [MILESTONE_CHECK_MOUNT] Current battles: ${battlesCompleted}, milestones: ${milestones.join(', ')}`);
+    
+    const missedMilestones = milestones.filter(milestone => 
+      battlesCompleted >= milestone && !showingMilestone
+    );
+    
+    if (missedMilestones.length > 0 && !milestoneInProgress) {
+      const latestMilestone = Math.max(...missedMilestones);
+      console.log(`🎯 [MILESTONE_CHECK_MOUNT] Found missed milestone: ${latestMilestone}`);
+      
+      setMilestoneInProgress(true);
+      setShowingMilestone(true);
+      setRankingGenerated(true);
+      
+      // Generate rankings for the milestone
+      setTimeout(() => {
+        const generateRankingsEvent = new CustomEvent('generate-milestone-rankings', {
+          detail: { 
+            milestone: latestMilestone,
+            timestamp: Date.now(),
+            source: 'mount-check'
+          }
+        });
+        document.dispatchEvent(generateRankingsEvent);
+      }, 100);
+    }
+  }, [battlesCompleted, milestones, showingMilestone, milestoneInProgress, setMilestoneInProgress, setShowingMilestone, setRankingGenerated]);
+
+  // Enhanced milestone checking that actually triggers the view
   const checkAndTriggerMilestone = useCallback((newBattlesCompleted: number) => {
     console.log(`🎯 [MILESTONE_CHECK_ENHANCED] Checking milestone for battle ${newBattlesCompleted}`);
     console.log(`🎯 [MILESTONE_CHECK_ENHANCED] Available milestones: ${milestones.join(', ')}`);
+    console.log(`🎯 [MILESTONE_CHECK_ENHANCED] Current state - showingMilestone: ${showingMilestone}, milestoneInProgress: ${milestoneInProgress}`);
     
     const isAtMilestone = milestones.includes(newBattlesCompleted);
     console.log(`🎯 [MILESTONE_CHECK_ENHANCED] Is at milestone? ${isAtMilestone}`);
@@ -59,7 +91,8 @@ export const useBattleStateMilestoneEvents = ({
         const generateRankingsEvent = new CustomEvent('generate-milestone-rankings', {
           detail: { 
             milestone: newBattlesCompleted,
-            timestamp: Date.now()
+            timestamp: Date.now(),
+            source: 'battle-completion'
           }
         });
         document.dispatchEvent(generateRankingsEvent);
