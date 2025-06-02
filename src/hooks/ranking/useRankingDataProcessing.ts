@@ -22,27 +22,44 @@ export const useRankingDataProcessing = ({
   // Get TrueSkill data with stable references
   const { localRankings, updateLocalRankings } = useTrueSkillSync();
   
-  console.log(`🚨🚨🚨 [RANKING_DATA_PROCESSING_STABLE] ===== STABLE PROCESSING =====`);
-  console.log(`🚨🚨🚨 [RANKING_DATA_PROCESSING_STABLE] TrueSkill rankings: ${localRankings.length}`);
-  console.log(`🚨🚨🚨 [RANKING_DATA_PROCESSING_STABLE] Available Pokemon: ${availablePokemon.length}`);
+  console.log(`🚨🚨🚨 [RANKING_DATA_PROCESSING_DEBUG] ===== COMPREHENSIVE PROCESSING DEBUG =====`);
+  console.log(`🚨🚨🚨 [RANKING_DATA_PROCESSING_DEBUG] Input rankedPokemon: ${rankedPokemon.length}`);
+  console.log(`🚨🚨🚨 [RANKING_DATA_PROCESSING_DEBUG] TrueSkill localRankings: ${localRankings.length}`);
+  console.log(`🚨🚨🚨 [RANKING_DATA_PROCESSING_DEBUG] Available Pokemon: ${availablePokemon.length}`);
+  
+  if (rankedPokemon.length > 0) {
+    console.log(`🚨🚨🚨 [RANKING_DATA_PROCESSING_DEBUG] Input ranked Pokemon sample:`, rankedPokemon.slice(0, 3).map(p => `${p.name} (${p.id})`));
+  }
+  
+  if (localRankings.length > 0) {
+    console.log(`🚨🚨🚨 [RANKING_DATA_PROCESSING_DEBUG] TrueSkill rankings sample:`, localRankings.slice(0, 3).map(p => `${p.name} (${p.id})`));
+  } else {
+    console.log(`🚨🚨🚨 [RANKING_DATA_PROCESSING_DEBUG] ❌ NO TRUESKILL RANKINGS - THIS IS WHY WE SEE 0!`);
+  }
   
   // CRITICAL FIX: Use stable memoization to prevent infinite re-renders
   const displayRankings = useMemo(() => {
-    console.log(`🚨🚨🚨 [RANKING_DATA_PROCESSING_STABLE] Memoizing display rankings`);
-    console.log(`🚨🚨🚨 [RANKING_DATA_PROCESSING_STABLE] TrueSkill count: ${localRankings.length}`);
+    console.log(`🚨🚨🚨 [RANKING_DATA_PROCESSING_DEBUG] Memoizing display rankings`);
+    console.log(`🚨🚨🚨 [RANKING_DATA_PROCESSING_DEBUG] TrueSkill count: ${localRankings.length}`);
+    console.log(`🚨🚨🚨 [RANKING_DATA_PROCESSING_DEBUG] Input ranked count: ${rankedPokemon.length}`);
     
     if (localRankings.length > 0) {
-      console.log(`🚨🚨🚨 [RANKING_DATA_PROCESSING_STABLE] ✅ Using ${localRankings.length} TrueSkill rankings`);
+      console.log(`🚨🚨🚨 [RANKING_DATA_PROCESSING_DEBUG] ✅ Using ${localRankings.length} TrueSkill rankings`);
       return localRankings;
     }
     
-    console.log(`🚨🚨🚨 [RANKING_DATA_PROCESSING_STABLE] ⚠️ Fallback to ${rankedPokemon.length} prop rankings`);
-    return rankedPokemon;
+    if (rankedPokemon.length > 0) {
+      console.log(`🚨🚨🚨 [RANKING_DATA_PROCESSING_DEBUG] ⚠️ Fallback to ${rankedPokemon.length} prop rankings`);
+      return rankedPokemon;
+    }
+    
+    console.log(`🚨🚨🚨 [RANKING_DATA_PROCESSING_DEBUG] ❌ NO RANKINGS FROM ANY SOURCE!`);
+    return [];
   }, [localRankings.length, rankedPokemon.length]);
 
   // CRITICAL FIX: Stable memoization for filtered available Pokemon
   const filteredAvailablePokemon = useMemo(() => {
-    console.log(`🚨🚨🚨 [RANKING_DATA_PROCESSING_STABLE] Filtering available Pokemon`);
+    console.log(`🚨🚨🚨 [RANKING_DATA_PROCESSING_DEBUG] Filtering available Pokemon`);
     
     const displayRankingsIds = new Set(displayRankings.map(p => p.id));
     
@@ -52,14 +69,14 @@ export const useRankingDataProcessing = ({
       return notAlreadyRanked && passesFormFilter;
     });
     
-    console.log(`🚨🚨🚨 [RANKING_DATA_PROCESSING_STABLE] Filtered: ${availablePokemon.length} -> ${filtered.length}`);
+    console.log(`🚨🚨🚨 [RANKING_DATA_PROCESSING_DEBUG] Filtered: ${availablePokemon.length} -> ${filtered.length}`);
     return filtered;
   }, [availablePokemon.length, displayRankings.length, shouldIncludePokemon]);
 
-  console.log(`🚨🚨🚨 [RANKING_DATA_PROCESSING_STABLE] FINAL RESULTS:`);
-  console.log(`🚨🚨🚨 [RANKING_DATA_PROCESSING_STABLE] - Display rankings: ${displayRankings.length}`);
-  console.log(`🚨🚨🚨 [RANKING_DATA_PROCESSING_STABLE] - Filtered available: ${filteredAvailablePokemon.length}`);
-  console.log(`🚨🚨🚨 [RANKING_DATA_PROCESSING_STABLE] ===== END STABLE PROCESSING =====`);
+  console.log(`🚨🚨🚨 [RANKING_DATA_PROCESSING_DEBUG] FINAL RESULTS:`);
+  console.log(`🚨🚨🚨 [RANKING_DATA_PROCESSING_DEBUG] - Display rankings: ${displayRankings.length}`);
+  console.log(`🚨🚨🚨 [RANKING_DATA_PROCESSING_DEBUG] - Filtered available: ${filteredAvailablePokemon.length}`);
+  console.log(`🚨🚨🚨 [RANKING_DATA_PROCESSING_DEBUG] ===== END PROCESSING DEBUG =====`);
 
   return {
     localRankings: displayRankings,

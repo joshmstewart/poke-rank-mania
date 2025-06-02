@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Rating } from 'ts-trueskill';
@@ -35,6 +34,7 @@ export const useTrueSkillStore = create<TrueSkillState>()(
       isLoading: false,
 
       updateRating: (pokemonId: string, rating: Rating, battleCount?: number) => {
+        console.log(`🔍 [TRUESKILL_STORE_DEBUG] Updating rating for Pokemon ${pokemonId}: mu=${rating.mu}, sigma=${rating.sigma}, battles=${battleCount || 0}`);
         set((state) => ({
           ratings: {
             ...state.ratings,
@@ -48,6 +48,10 @@ export const useTrueSkillStore = create<TrueSkillState>()(
           isDirty: true,
           lastUpdated: new Date().toISOString()
         }));
+        
+        // Immediately check what we just set
+        const newRatings = get().ratings;
+        console.log(`🔍 [TRUESKILL_STORE_DEBUG] After update, store now has ${Object.keys(newRatings).length} ratings`);
       },
 
       getRating: (pokemonId: string) => {
@@ -65,10 +69,13 @@ export const useTrueSkillStore = create<TrueSkillState>()(
       },
 
       getAllRatings: () => {
-        return get().ratings;
+        const ratings = get().ratings;
+        console.log(`🔍 [TRUESKILL_STORE_DEBUG] getAllRatings called - returning ${Object.keys(ratings).length} ratings`);
+        return ratings;
       },
 
       clearAllRatings: () => {
+        console.log(`🔍 [TRUESKILL_STORE_DEBUG] Clearing all ratings`);
         set({
           ratings: {},
           isDirty: true,
@@ -78,25 +85,26 @@ export const useTrueSkillStore = create<TrueSkillState>()(
 
       debugStore: () => {
         const state = get();
-        console.log('🔍 [TRUESKILL_DEBUG] Store state:', {
+        console.log('🔍 [TRUESKILL_STORE_DEBUG] Store state:', {
           ratingsCount: Object.keys(state.ratings).length,
           sessionId: state.sessionId,
           isDirty: state.isDirty,
           isLoading: state.isLoading,
-          lastUpdated: state.lastUpdated
+          lastUpdated: state.lastUpdated,
+          sampleRatings: Object.entries(state.ratings).slice(0, 3)
         });
       },
 
       comprehensiveEnvironmentalDebug: () => {
         const state = get();
-        console.log('🔍 [TRUESKILL_COMPREHENSIVE_DEBUG] Full environmental debug:', {
-          ratings: state.ratings,
-          ratingsCount: Object.keys(state.ratings).length,
-          sessionId: state.sessionId,
-          isDirty: state.isDirty,
-          isLoading: state.isLoading,
-          lastUpdated: state.lastUpdated
-        });
+        console.log('🔍 [TRUESKILL_STORE_COMPREHENSIVE_DEBUG] ===== FULL STORE DUMP =====');
+        console.log('🔍 [TRUESKILL_STORE_COMPREHENSIVE_DEBUG] Ratings object:', state.ratings);
+        console.log('🔍 [TRUESKILL_STORE_COMPREHENSIVE_DEBUG] Ratings count:', Object.keys(state.ratings).length);
+        console.log('🔍 [TRUESKILL_STORE_COMPREHENSIVE_DEBUG] Session ID:', state.sessionId);
+        console.log('🔍 [TRUESKILL_STORE_COMPREHENSIVE_DEBUG] Is dirty:', state.isDirty);
+        console.log('🔍 [TRUESKILL_STORE_COMPREHENSIVE_DEBUG] Is loading:', state.isLoading);
+        console.log('🔍 [TRUESKILL_STORE_COMPREHENSIVE_DEBUG] Last updated:', state.lastUpdated);
+        console.log('🔍 [TRUESKILL_STORE_COMPREHENSIVE_DEBUG] ===== END STORE DUMP =====');
       },
 
       syncToCloud: async () => {
