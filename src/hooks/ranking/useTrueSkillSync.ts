@@ -7,17 +7,28 @@ import { Rating } from 'ts-trueskill';
 import { formatPokemonName } from '@/utils/pokemon';
 
 export const useTrueSkillSync = () => {
-  const { getAllRatings, debugStore, comprehensiveEnvironmentalDebug, forceRehydrate } = useTrueSkillStore();
+  const { getAllRatings, debugStore, comprehensiveEnvironmentalDebug, forceRehydrate, waitForHydration } = useTrueSkillStore();
   const { pokemonLookupMap } = usePokemonContext();
   const [localRankings, setLocalRankings] = useState<RankedPokemon[]>([]);
 
-  // Force rehydration on mount to ensure we have all data
+  // CRITICAL FIX: Wait for proper hydration before doing anything
   useEffect(() => {
-    console.log(`🔥🔥🔥 [TRUESKILL_SYNC_CRITICAL] ===== FORCING INITIAL REHYDRATION =====`);
-    forceRehydrate();
-    debugStore();
-    comprehensiveEnvironmentalDebug();
-  }, []);
+    const initializeWithProperHydration = async () => {
+      console.log(`🔥🔥🔥 [TRUESKILL_SYNC_CRITICAL] ===== STARTING PROPER HYDRATION =====`);
+      
+      // Force immediate rehydration
+      forceRehydrate();
+      
+      // Wait for hydration to complete
+      await waitForHydration();
+      
+      console.log(`🔥🔥🔥 [TRUESKILL_SYNC_CRITICAL] ===== HYDRATION COMPLETE =====`);
+      debugStore();
+      comprehensiveEnvironmentalDebug();
+    };
+    
+    initializeWithProperHydration();
+  }, [forceRehydrate, waitForHydration, debugStore, comprehensiveEnvironmentalDebug]);
 
   const allRatings = getAllRatings();
   const contextReady = pokemonLookupMap.size > 0;

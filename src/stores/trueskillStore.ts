@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Rating } from 'ts-trueskill';
@@ -9,6 +8,7 @@ interface TrueSkillState {
   lastUpdated: string | null;
   isDirty: boolean;
   isLoading: boolean;
+  isHydrated: boolean;
   
   // Actions
   updateRating: (pokemonId: string, rating: Rating, battleCount?: number) => void;
@@ -24,6 +24,7 @@ interface TrueSkillState {
   debugStore: () => void;
   comprehensiveEnvironmentalDebug: () => void;
   forceRehydrate: () => void;
+  waitForHydration: () => Promise<void>;
 }
 
 export const useTrueSkillStore = create<TrueSkillState>()(
@@ -34,6 +35,7 @@ export const useTrueSkillStore = create<TrueSkillState>()(
       lastUpdated: null,
       isDirty: false,
       isLoading: false,
+      isHydrated: false,
 
       updateRating: (pokemonId: string, rating: Rating, battleCount?: number) => {
         console.log(`🔍 [TRUESKILL_STORE_DEBUG] Updating rating for Pokemon ${pokemonId}: mu=${rating.mu}, sigma=${rating.sigma}, battles=${battleCount || 0}`);
@@ -76,9 +78,15 @@ export const useTrueSkillStore = create<TrueSkillState>()(
         const state = get();
         const ratings = state.ratings;
         
-        console.log(`🔥 [STORE_GETALLRATINGS_CRITICAL] Store has ${Object.keys(ratings || {}).length} ratings`);
+        console.log(`🔥 [STORE_GETALLRATINGS_CRITICAL] Store has ${Object.keys(ratings || {}).length} ratings, hydrated: ${state.isHydrated}`);
         
-        // If store is empty but we should have data, force rehydration
+        // If not hydrated yet, wait for hydration
+        if (!state.isHydrated) {
+          console.log(`🔥 [STORE_GETALLRATINGS_CRITICAL] Not hydrated yet - forcing immediate rehydration`);
+          get().forceRehydrate();
+        }
+        
+        // If store is still empty after hydration attempt, force another rehydration
         if ((!ratings || Object.keys(ratings).length === 0)) {
           console.log(`🔥 [STORE_GETALLRATINGS_CRITICAL] Store empty - forcing rehydration`);
           get().forceRehydrate();
@@ -91,6 +99,22 @@ export const useTrueSkillStore = create<TrueSkillState>()(
         }
         
         return ratings || {};
+      },
+
+      waitForHydration: async () => {
+        return new Promise((resolve) => {
+          const checkHydration = () => {
+            const state = get();
+            if (state.isHydrated) {
+              console.log(`🔥 [WAIT_HYDRATION] Hydration complete with ${Object.keys(state.ratings).length} ratings`);
+              resolve();
+            } else {
+              console.log(`🔥 [WAIT_HYDRATION] Still waiting for hydration...`);
+              setTimeout(checkHydration, 50);
+            }
+          };
+          checkHydration();
+        });
       },
 
       forceRehydrate: () => {
@@ -107,15 +131,21 @@ export const useTrueSkillStore = create<TrueSkillState>()(
               set({
                 ratings: ratings,
                 sessionId: parsed.state?.sessionId || null,
-                lastUpdated: parsed.state?.lastUpdated || null
+                lastUpdated: parsed.state?.lastUpdated || null,
+                isHydrated: true
               });
               console.log(`🔥 [FORCE_REHYDRATE] Successfully restored ${Object.keys(ratings).length} ratings`);
+            } else {
+              console.log(`🔥 [FORCE_REHYDRATE] No ratings found in localStorage`);
+              set({ isHydrated: true });
             }
           } else {
             console.log(`🔥 [FORCE_REHYDRATE] No localStorage data found`);
+            set({ isHydrated: true });
           }
         } catch (e) {
           console.error(`🔥 [FORCE_REHYDRATE] Error during rehydration:`, e);
+          set({ isHydrated: true });
         }
       },
 
@@ -135,6 +165,7 @@ export const useTrueSkillStore = create<TrueSkillState>()(
           sessionId: state.sessionId,
           isDirty: state.isDirty,
           isLoading: state.isLoading,
+          isHydrated: state.isHydrated,
           lastUpdated: state.lastUpdated,
           sampleRatings: Object.entries(state.ratings).slice(0, 3)
         });
@@ -148,6 +179,7 @@ export const useTrueSkillStore = create<TrueSkillState>()(
         console.log('🔍 [TRUESKILL_STORE_COMPREHENSIVE_DEBUG] Session ID:', state.sessionId);
         console.log('🔍 [TRUESKILL_STORE_COMPREHENSIVE_DEBUG] Is dirty:', state.isDirty);
         console.log('🔍 [TRUESKILL_STORE_COMPREHENSIVE_DEBUG] Is loading:', state.isLoading);
+        console.log('🔍 [TRUESKILL_STORE_COMPREHENSIVE_DEBUG] Is hydrated:', state.isHydrated);
         console.log('🔍 [TRUESKILL_STORE_COMPREHENSIVE_DEBUG] Last updated:', state.lastUpdated);
         console.log('🔍 [TRUESKILL_STORE_COMPREHENSIVE_DEBUG] ===== END STORE DUMP =====');
       },
@@ -250,12 +282,22 @@ export const useTrueSkillStore = create<TrueSkillState>()(
         return (state, error) => {
           if (error) {
             console.error('🔥 [STORE_HYDRATION] Hydration failed:', error);
+            // Even if hydration fails, mark as hydrated so we don't get stuck
+            useTrueSkillStore.setState({ isHydrated: true });
           } else {
             const ratingsCount = Object.keys(state?.ratings || {}).length;
             console.log('🔥 [STORE_HYDRATION] Hydration successful, ratings count:', ratingsCount);
             
+            // CRITICAL: Always mark as hydrated and log the count
+            useTrueSkillStore.setState({ 
+              isHydrated: true,
+              ratings: state?.ratings || {}
+            });
+            
             if (ratingsCount === 0) {
               console.warn('🔥 [STORE_HYDRATION] WARNING: No ratings after hydration - data may be lost!');
+            } else {
+              console.log(`🔥 [STORE_HYDRATION] ✅ Successfully hydrated ${ratingsCount} ratings`);
             }
           }
         };
