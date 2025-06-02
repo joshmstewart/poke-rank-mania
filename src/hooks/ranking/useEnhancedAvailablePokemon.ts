@@ -12,7 +12,7 @@ interface EnhancedPokemon extends Pokemon {
   losses: number;
   winRate: number;
   image: string;
-  generationId: number;
+  generation: number;
 }
 
 interface UseEnhancedAvailablePokemonProps {
@@ -26,7 +26,7 @@ export const useEnhancedAvailablePokemon = ({
 }: UseEnhancedAvailablePokemonProps) => {
   
   const enhancedAvailablePokemon = useMemo(() => {
-    // CRITICAL FIX: Create efficient lookup map for ranked Pokemon
+    // Create efficient lookup map for ranked Pokemon
     const rankedPokemonMap = new Map<number, { rank: number; pokemon: RankedPokemon }>();
     
     if (localRankings && Array.isArray(localRankings)) {
@@ -37,7 +37,7 @@ export const useEnhancedAvailablePokemon = ({
       });
     }
     
-    // CRITICAL FIX: Safely process each available Pokemon
+    // Process each available Pokemon
     const enhanced: EnhancedPokemon[] = [];
     
     if (filteredAvailablePokemon && Array.isArray(filteredAvailablePokemon)) {
@@ -61,7 +61,7 @@ export const useEnhancedAvailablePokemon = ({
           losses: rankedInfo?.pokemon.losses || 0,
           winRate: rankedInfo?.pokemon.winRate || 0,
           image: pokemon.image || '',
-          generationId: pokemon.generationId || 1 // Ensure we always have a valid generation
+          generation: pokemon.generation || 1 // Use correct property name
         };
         
         enhanced.push(enhancedPokemon);

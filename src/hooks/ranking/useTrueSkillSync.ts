@@ -13,7 +13,7 @@ export const useTrueSkillSync = () => {
   const [isInitialized, setIsInitialized] = useState(false);
   const [hasTriedCloudSync, setHasTriedCloudSync] = useState(false);
 
-  // CRITICAL FIX: Force cloud sync on initialization
+  // Force cloud sync on initialization
   useEffect(() => {
     const initializeWithCloudSync = async () => {
       if (!isHydrated) {
@@ -66,7 +66,7 @@ export const useTrueSkillSync = () => {
   const ratingsCount = Object.keys(allRatings).length;
 
   useEffect(() => {
-    // CRITICAL FIX: Only generate rankings after EVERYTHING is ready
+    // Only generate rankings after EVERYTHING is ready
     if (!contextReady || !isInitialized || isLoading) {
       return;
     }
@@ -100,7 +100,7 @@ export const useTrueSkillSync = () => {
           wins: 0,
           losses: 0,
           winRate: 0,
-          generationId: basePokemon.generationId || 1, // Ensure generation is set
+          generation: basePokemon.generation || 1, // Use correct property name
           image: basePokemon.image || '' // Ensure image is set
         };
 
@@ -117,7 +117,7 @@ export const useTrueSkillSync = () => {
       const formattedRankings = newRankings.map(pokemon => ({
         ...pokemon,
         name: formatPokemonName(pokemon.name),
-        generationId: pokemon.generationId || 1,
+        generation: pokemon.generation || 1, // Use correct property name
         image: pokemon.image || ''
       }));
       
