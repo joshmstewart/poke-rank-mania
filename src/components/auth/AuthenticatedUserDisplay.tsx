@@ -47,23 +47,6 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
   // Create enhanced user object
   const enhancedUser = useEnhancedUser(effectiveUser, currentProfile);
 
-  // CRITICAL DEBUG: Log what's being passed to UserDropdownMenu
-  console.log('🎭 [AUTH_USER_DISPLAY] ===== HEADER USER DEBUG =====');
-  console.log('🎭 [AUTH_USER_DISPLAY] Enhanced user for header:', {
-    hasEnhancedUser: !!enhancedUser,
-    enhancedUserId: enhancedUser?.id?.substring(0, 8),
-    avatarUrl: enhancedUser?.user_metadata?.avatar_url,
-    displayName: enhancedUser?.user_metadata?.display_name,
-    timestamp: new Date().toISOString()
-  });
-  console.log('🎭 [AUTH_USER_DISPLAY] Profile data:', {
-    hasCurrentProfile: !!currentProfile,
-    profileAvatarUrl: currentProfile?.avatar_url,
-    profileDisplayName: currentProfile?.display_name,
-    isProfileLoaded
-  });
-  console.log('🎭 [AUTH_USER_DISPLAY] ===== END HEADER USER DEBUG =====');
-
   const handleSignOut = useCallback(async () => {
     try {
       await signOut();
@@ -91,16 +74,12 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
 
   // Don't render until we've at least attempted to load the profile
   if (!isProfileLoaded) {
-    console.log('🎭 [AUTH_USER_DISPLAY] ⏳ Profile not loaded yet, showing loading...');
     return <UserDisplayLoading />;
   }
 
   if (!enhancedUser) {
-    console.log('🎭 [AUTH_USER_DISPLAY] ❌ No enhanced user, showing loading...');
     return <UserDisplayLoading />;
   }
-
-  console.log('🎭 [AUTH_USER_DISPLAY] ✅ Rendering UserDropdownMenu with enhanced user');
 
   return (
     <div className="flex items-center gap-2">
