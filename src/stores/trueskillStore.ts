@@ -69,9 +69,27 @@ export const useTrueSkillStore = create<TrueSkillState>()(
       },
 
       getAllRatings: () => {
-        const ratings = get().ratings;
-        console.log(`🔍 [TRUESKILL_STORE_DEBUG] getAllRatings called - returning ${Object.keys(ratings).length} ratings`);
-        return ratings;
+        const state = get();
+        const ratings = state.ratings;
+        
+        console.log(`🚨🚨🚨 [STORE_GETALLRATINGS_CRITICAL] ===== INVESTIGATING getAllRatings =====`);
+        console.log(`🚨🚨🚨 [STORE_GETALLRATINGS_CRITICAL] Raw state object:`, state);
+        console.log(`🚨🚨🚨 [STORE_GETALLRATINGS_CRITICAL] Ratings property:`, ratings);
+        console.log(`🚨🚨🚨 [STORE_GETALLRATINGS_CRITICAL] Ratings type:`, typeof ratings);
+        console.log(`🚨🚨🚨 [STORE_GETALLRATINGS_CRITICAL] Ratings keys:`, Object.keys(ratings || {}));
+        console.log(`🚨🚨🚨 [STORE_GETALLRATINGS_CRITICAL] Ratings length:`, Object.keys(ratings || {}).length);
+        console.log(`🚨🚨🚨 [STORE_GETALLRATINGS_CRITICAL] Is ratings null/undefined?`, ratings == null);
+        console.log(`🚨🚨🚨 [STORE_GETALLRATINGS_CRITICAL] Ratings constructor:`, ratings?.constructor?.name);
+        
+        if (ratings && Object.keys(ratings).length > 0) {
+          const firstKey = Object.keys(ratings)[0];
+          console.log(`🚨🚨🚨 [STORE_GETALLRATINGS_CRITICAL] Sample rating [${firstKey}]:`, ratings[firstKey]);
+        }
+        
+        console.log(`🚨🚨🚨 [STORE_GETALLRATINGS_CRITICAL] Returning:`, ratings || {});
+        console.log(`🚨🚨🚨 [STORE_GETALLRATINGS_CRITICAL] ===== END getAllRatings INVESTIGATION =====`);
+        
+        return ratings || {};
       },
 
       clearAllRatings: () => {
