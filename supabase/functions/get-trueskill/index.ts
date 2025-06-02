@@ -12,7 +12,7 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  if (req.method !== 'GET') {
+  if (req.method !== 'POST') {
     return new Response(
       JSON.stringify({ success: false, error: 'Method not allowed', ratings: {} }),
       { 
@@ -22,24 +22,23 @@ Deno.serve(async (req) => {
     );
   }
 
-  const url = new URL(req.url);
-  const sessionId = url.searchParams.get('sessionId');
-
-  if (!sessionId) {
-    return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: 'Session ID is required',
-        ratings: {}
-      }),
-      { 
-        status: 400, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
-    );
-  }
-
   try {
+    const { sessionId } = await req.json();
+
+    if (!sessionId) {
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Session ID is required',
+          ratings: {}
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
     console.log(`[Edge Function getTrueSkill] Fetching data for sessionId: ${sessionId}`);
 
     const supabase = createClient(
