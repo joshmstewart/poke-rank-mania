@@ -7,7 +7,7 @@ import PokemonCardImage from "./PokemonCardImage";
 import PokemonCardInfo from "./PokemonCardInfo";
 import GenerationHeader from "./GenerationHeader";
 import { VotingArrows } from "@/components/ranking/VotingArrows";
-import DraggablePokemonMilestoneCard from "@/components/battle/DraggablePokemonMilestoneCard";
+import { EnhancedAvailablePokemonCard } from "@/components/ranking/EnhancedAvailablePokemonCard";
 
 interface PokemonListContentProps {
   items: any[];
@@ -57,13 +57,6 @@ export const PokemonListContent: React.FC<PokemonListContentProps> = ({
                 isExpanded={isGenerationExpanded ? isGenerationExpanded(item.generationId) : true}
                 onToggle={() => onToggleGeneration?.(item.generationId)}
               />
-              
-              {/* Grid container for Pokemon in this generation */}
-              {isGenerationExpanded && isGenerationExpanded(item.generationId) && (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 mt-4">
-                  {/* Pokemon will be rendered after this header */}
-                </div>
-              )}
             </div>
           );
         }
@@ -77,16 +70,12 @@ export const PokemonListContent: React.FC<PokemonListContentProps> = ({
             return null;
           }
 
-          // Use the unified card component for available Pokemon (not ranking area)
+          // Use the enhanced card component for available Pokemon to match rankings styling
           if (!isRankingArea) {
             return (
-              <DraggablePokemonMilestoneCard
+              <EnhancedAvailablePokemonCard
                 key={`pokemon-${pokemon.id}-${index}`}
                 pokemon={pokemon}
-                index={index}
-                showRank={false}
-                isDraggable={true}
-                isAvailable={true}
               />
             );
           }
