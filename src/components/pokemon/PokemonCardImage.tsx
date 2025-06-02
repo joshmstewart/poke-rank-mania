@@ -44,8 +44,8 @@ const PokemonCardImage: React.FC<PokemonCardImageProps> = ({
   // Use the actual imageUrl that's passed in, which should be the validated one
   const finalImageUrl = imageUrl || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pokemonId}.png`;
 
-  // Increase image container size by 20% while maintaining aspect ratio
-  const imageSize = compact ? "w-14 h-14" : "w-19 h-19";
+  // Increase image container size by 20% - updated sizes
+  const imageSize = compact ? "w-17 h-17" : "w-23 h-23";
 
   return (
     <div className={`${imageSize} ${className || ""} bg-gray-50 rounded-md relative flex-shrink-0`}>
