@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { FormFilters, PokemonFormType } from "./types";
 import { getStoredFilters, saveFilters, clearStoredFilters } from "./storage";
@@ -9,12 +8,12 @@ const getFilterName = (filter: PokemonFormType): string => {
   const filterNames: Record<PokemonFormType, string> = {
     normal: "Normal Pokémon",
     megaGmax: "Mega/Gigantamax Forms",
-    regional: "Regional Forms",
-    gender: "Gender Variants",
-    forms: "Alternative Forms",
+    regional: "Regional Variants",
+    gender: "Gender Differences",
+    forms: "Special Forms",
     originPrimal: "Origin/Primal Forms",
-    costumes: "Costume Variants",
-    colorsFlavors: "Color/Flavor Forms",
+    costumes: "Costume Pokémon",
+    colorsFlavors: "Colors",
     blocked: "Blocked Pokémon"
   };
   return filterNames[filter];
@@ -116,19 +115,19 @@ export const useFilterState = () => {
     });
   }, [isAllEnabled, saveFiltersToCloud]);
 
-  // Reset filters to default (all enabled)
+  // Reset filters to default (with new defaults)
   const resetFilters = useCallback(() => {
     clearStoredFilters();
     const defaultFilters = {
-      normal: true,
-      megaGmax: true,
-      regional: true,
-      gender: true,
-      forms: true,
-      originPrimal: true,
-      costumes: true,
-      colorsFlavors: true,
-      blocked: false // Default blocked to false
+      normal: true,        // ON by default
+      megaGmax: false,     // OFF by default
+      regional: true,      // ON by default
+      gender: true,        // ON by default
+      forms: true,         // ON by default (Special Forms)
+      originPrimal: false, // OFF by default
+      costumes: false,     // OFF by default
+      colorsFlavors: false, // OFF by default
+      blocked: false       // OFF by default (always)
     };
     console.log('🧹 [FORM_FILTERS_RESET] Resetting to default filters');
     

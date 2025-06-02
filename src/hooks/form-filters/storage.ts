@@ -1,18 +1,17 @@
-
 import { FormFilters } from "./types";
 
 const STORAGE_KEY = "pokemon-form-filters";
 
 const defaultFilters: FormFilters = {
-  normal: true,
-  megaGmax: true,
-  regional: true,
-  gender: true,
-  forms: true,
-  originPrimal: true,
-  costumes: true,
-  colorsFlavors: true,
-  blocked: false // Default to false - blocked Pokemon should not be shown by default
+  normal: true,        // ON by default
+  megaGmax: false,     // OFF by default (changed)
+  regional: true,      // ON by default
+  gender: true,        // ON by default
+  forms: true,         // ON by default (Special Forms)
+  originPrimal: false, // OFF by default (changed)
+  costumes: false,     // OFF by default (changed)
+  colorsFlavors: false, // OFF by default (changed)
+  blocked: false       // OFF by default (always)
 };
 
 export const getStoredFilters = (): FormFilters => {

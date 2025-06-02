@@ -11,7 +11,7 @@ export const getFilterName = (filter: PokemonFormType): string => {
     case "forms": return "Special Forms";
     case "originPrimal": return "Origin & Primal Forms";
     case "costumes": return "Costume Pokémon";
-    case "colorsFlavors": return "Colors & Flavors";
+    case "colorsFlavors": return "Colors";
     case "blocked": return "Blocked Pokémon";
   }
 };
