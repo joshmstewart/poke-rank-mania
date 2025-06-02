@@ -9,8 +9,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User, Settings, LogOut, ChevronDown } from 'lucide-react';
+import { User, Settings, LogOut, ChevronDown, Hash } from 'lucide-react';
 import { useAuth } from '@/contexts/auth/useAuth';
+import { useTrueSkillStore } from '@/stores/trueskillStore';
 import { ProfileModal } from '../ProfileModal';
 
 interface UserDropdownMenuProps {
@@ -27,6 +28,7 @@ interface UserDropdownMenuProps {
 
 export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({ user }) => {
   const { signOut } = useAuth();
+  const { sessionId } = useTrueSkillStore();
   const [profileModalOpen, setProfileModalOpen] = useState(false);
 
   console.log('🎭🎭🎭 [USER_DROPDOWN_FIXED] ===== USER DROPDOWN MENU RENDER =====');
@@ -102,6 +104,24 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({ user }) => {
             <Settings className="mr-2 h-4 w-4" />
             Edit Profile
           </DropdownMenuItem>
+          
+          {sessionId && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                onClick={() => navigator.clipboard.writeText(sessionId)}
+                className="cursor-pointer"
+              >
+                <Hash className="mr-2 h-4 w-4" />
+                <div className="flex flex-col">
+                  <span className="text-xs text-muted-foreground">Session ID (click to copy)</span>
+                  <span className="text-xs font-mono truncate max-w-[180px]" title={sessionId}>
+                    {sessionId}
+                  </span>
+                </div>
+              </DropdownMenuItem>
+            </>
+          )}
           
           <DropdownMenuSeparator />
           
