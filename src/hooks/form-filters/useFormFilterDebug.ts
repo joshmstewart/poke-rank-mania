@@ -7,12 +7,10 @@ import {
 import { storePokemon, getStoredPokemon, clearStoredPokemon } from "./excludedStore";
 
 export const useFormFilterDebug = () => {
-  // NEW: Function to get miscategorized examples for debugging
   const getMiscategorizedPokemonExamples = () => {
     return getMiscategorizedExamples();
   };
 
-  // Function to log category stats
   const logStats = () => {
     logCategoryStats();
   };
@@ -23,6 +21,6 @@ export const useFormFilterDebug = () => {
     storePokemon,
     getStoredPokemon,
     clearStoredPokemon,
-    getNormalPokemonStats // Export for debugging
+    getNormalPokemonStats
   };
 };
