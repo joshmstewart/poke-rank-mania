@@ -36,12 +36,15 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
     isLoadingProfile
   } = useProfileLoader(effectiveUser?.id);
 
-  console.log('🎭🎭🎭 [AUTH_USER_DISPLAY_TRACE] Profile loader state:', {
+  console.log('🎭🎭🎭 [AUTH_USER_DISPLAY_TRACE] 📊 PROFILE LOADER RESULTS:', {
     hasCurrentProfile: !!currentProfile,
     currentProfileId: currentProfile?.id?.substring(0, 8),
     currentProfileAvatarUrl: currentProfile?.avatar_url,
+    currentProfileDisplayName: currentProfile?.display_name,
+    currentProfileUsername: currentProfile?.username,
     isProfileLoaded,
-    isLoadingProfile: isLoadingProfile.current
+    isLoadingProfile: isLoadingProfile.current,
+    fullCurrentProfile: currentProfile
   });
 
   // Handle profile update events
@@ -56,11 +59,20 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
   // Create enhanced user object
   const enhancedUser = useEnhancedUser(effectiveUser, currentProfile);
 
-  console.log('🎭🎭🎭 [AUTH_USER_DISPLAY_TRACE] Enhanced user result:', {
+  console.log('🎭🎭🎭 [AUTH_USER_DISPLAY_TRACE] 🎯 ENHANCED USER CREATION INPUTS:', {
+    effectiveUserHasMetadata: !!effectiveUser?.user_metadata,
+    effectiveUserMetadataAvatarUrl: effectiveUser?.user_metadata?.avatar_url,
+    currentProfileExists: !!currentProfile,
+    currentProfileAvatarUrl: currentProfile?.avatar_url,
+    timestamp: new Date().toISOString()
+  });
+
+  console.log('🎭🎭🎭 [AUTH_USER_DISPLAY_TRACE] 🎯 ENHANCED USER FINAL RESULT:', {
     hasEnhancedUser: !!enhancedUser,
     enhancedUserAvatarUrl: enhancedUser?.user_metadata?.avatar_url,
     enhancedUserDisplayName: enhancedUser?.user_metadata?.display_name,
-    enhancedUserUsername: enhancedUser?.user_metadata?.username
+    enhancedUserUsername: enhancedUser?.user_metadata?.username,
+    enhancedUserFullMetadata: enhancedUser?.user_metadata
   });
 
   const handleSignOut = useCallback(async () => {
@@ -101,7 +113,7 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
   }
 
   console.log('🎭🎭🎭 [AUTH_USER_DISPLAY_TRACE] ===== RENDERING USER DROPDOWN =====');
-  console.log('🎭🎭🎭 [AUTH_USER_DISPLAY_TRACE] Passing enhanced user to dropdown with avatar:', enhancedUser.user_metadata?.avatar_url);
+  console.log('🎭🎭🎭 [AUTH_USER_DISPLAY_TRACE] Final avatar being passed to dropdown:', enhancedUser.user_metadata?.avatar_url);
 
   return (
     <div className="flex items-center gap-2">

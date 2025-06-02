@@ -21,6 +21,7 @@ export const useProfileLoader = (userId: string | undefined) => {
       return;
     }
 
+    console.log('🔄 [PROFILE_LOADER] ===== STARTING PROFILE LOAD =====');
     console.log('🔄 [PROFILE_LOADER] Loading profile for user:', userId);
     
     isLoadingProfile.current = true;
@@ -29,24 +30,55 @@ export const useProfileLoader = (userId: string | undefined) => {
     
     // Get cached profile first
     const cachedProfile = getProfileFromCache(userId);
+    console.log('🔄 [PROFILE_LOADER] 🎯 CACHED PROFILE RESULT:', {
+      hasCachedProfile: !!cachedProfile,
+      cachedAvatarUrl: cachedProfile?.avatar_url,
+      cachedDisplayName: cachedProfile?.display_name,
+      cachedUsername: cachedProfile?.username,
+      fullCachedProfile: cachedProfile
+    });
+    
     if (cachedProfile) {
-      console.log('🔄 [PROFILE_LOADER] Using cached profile with avatar:', cachedProfile.avatar_url);
+      console.log('🔄 [PROFILE_LOADER] ✅ SETTING CACHED PROFILE - Avatar:', cachedProfile.avatar_url);
       setCurrentProfile(cachedProfile);
       setIsProfileLoaded(true);
     }
     
     // Always fetch fresh profile data
+    console.log('🔄 [PROFILE_LOADER] 🚀 FETCHING FRESH PROFILE DATA...');
     prefetchProfile(userId).then(() => {
       const freshProfile = getProfileFromCache(userId);
+      console.log('🔄 [PROFILE_LOADER] 🎯 FRESH PROFILE RESULT:', {
+        hasFreshProfile: !!freshProfile,
+        freshAvatarUrl: freshProfile?.avatar_url,
+        freshDisplayName: freshProfile?.display_name,
+        freshUsername: freshProfile?.username,
+        fullFreshProfile: freshProfile
+      });
+      
       if (freshProfile) {
-        console.log('🔄 [PROFILE_LOADER] Updated with fresh profile avatar:', freshProfile.avatar_url);
+        console.log('🔄 [PROFILE_LOADER] ✅ SETTING FRESH PROFILE - Avatar:', freshProfile.avatar_url);
         setCurrentProfile(freshProfile);
       }
       setIsProfileLoaded(true);
+      
+      console.log('🔄 [PROFILE_LOADER] ===== PROFILE LOAD COMPLETE =====');
     }).finally(() => {
       isLoadingProfile.current = false;
     });
   }, [userId, prefetchProfile, getProfileFromCache]);
+
+  // Add logging whenever currentProfile changes
+  useEffect(() => {
+    console.log('🔄 [PROFILE_LOADER] 📊 CURRENT PROFILE STATE CHANGED:', {
+      hasCurrentProfile: !!currentProfile,
+      currentProfileAvatarUrl: currentProfile?.avatar_url,
+      currentProfileDisplayName: currentProfile?.display_name,
+      currentProfileUsername: currentProfile?.username,
+      isProfileLoaded,
+      timestamp: new Date().toISOString()
+    });
+  }, [currentProfile, isProfileLoaded]);
 
   return {
     currentProfile,
