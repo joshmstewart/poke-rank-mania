@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User, Settings, LogOut, ChevronDown, Hash, Database, Search, CloudUpload } from 'lucide-react';
+import { User, Settings, LogOut, ChevronDown, Hash, Database, Search, CloudUpload, Link } from 'lucide-react';
 import { useAuth } from '@/contexts/auth/useAuth';
 import { useTrueSkillStore } from '@/stores/trueskillStore';
 import { supabase } from '@/integrations/supabase/client';
@@ -290,6 +290,116 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({ user }) => {
     }
   }, [user.id, sessionId]);
 
+  // NEW: Direct claim session functionality to fix sync issues
+  const claimSession = useCallback(async () => {
+    console.log('🔗🔗🔗 [CLAIM_SESSION] ===== CLAIMING SESSION =====');
+    console.log('🔗🔗🔗 [CLAIM_SESSION] Current user ID:', user.id);
+    console.log('🔗🔗🔗 [CLAIM_SESSION] Current sessionId:', sessionId);
+    
+    try {
+      if (!sessionId) {
+        toast({
+          title: "No Session ID",
+          description: "There is no session ID to claim",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Step 1: Update profile with current session ID
+      console.log('🔗🔗🔗 [CLAIM_SESSION] Step 1: Updating profile with sessionId...');
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ trueskill_session_id: sessionId })
+        .eq('id', user.id);
+        
+      if (profileError) {
+        console.error('🔗🔗🔗 [CLAIM_SESSION] Profile update error:', profileError);
+        throw profileError;
+      }
+      
+      console.log('🔗🔗🔗 [CLAIM_SESSION] ✅ Profile updated with sessionId:', sessionId);
+      
+      // Step 2: Check if session exists in trueskill_sessions table
+      console.log('🔗🔗🔗 [CLAIM_SESSION] Step 2: Checking if session exists...');
+      const { data: existingSession, error: checkError } = await supabase
+        .from('trueskill_sessions')
+        .select('id, user_id, ratings_data')
+        .eq('session_id', sessionId)
+        .maybeSingle();
+        
+      if (checkError) {
+        console.error('🔗🔗🔗 [CLAIM_SESSION] Session check error:', checkError);
+        throw checkError;
+      }
+      
+      // Step 3: Update or create the session
+      if (existingSession) {
+        console.log('🔗🔗🔗 [CLAIM_SESSION] Found existing session:', existingSession);
+        console.log('🔗🔗🔗 [CLAIM_SESSION] Step 3: Updating existing session with user_id...');
+        
+        const { error: updateError } = await supabase
+          .from('trueskill_sessions')
+          .update({ user_id: user.id })
+          .eq('session_id', sessionId);
+          
+        if (updateError) {
+          console.error('🔗🔗🔗 [CLAIM_SESSION] Session update error:', updateError);
+          throw updateError;
+        }
+        
+        const ratingsCount = Object.keys(existingSession.ratings_data || {}).length;
+        console.log(`🔗🔗🔗 [CLAIM_SESSION] ✅ Updated session with ${ratingsCount} ratings to user: ${user.id}`);
+        
+        toast({
+          title: "✅ Session Claimed Successfully!",
+          description: `Successfully linked session with ${ratingsCount} ratings to your account!`,
+          duration: 5000
+        });
+      } else {
+        // Session doesn't exist yet, get ratings from store and force create it
+        console.log('🔗🔗🔗 [CLAIM_SESSION] No existing session found');
+        console.log('🔗🔗🔗 [CLAIM_SESSION] Step 3: Creating new session with ratings...');
+        
+        const allRatings = getAllRatings();
+        const ratingsCount = Object.keys(allRatings).length;
+        
+        const { error: insertError } = await supabase
+          .from('trueskill_sessions')
+          .insert({
+            session_id: sessionId,
+            user_id: user.id,
+            ratings_data: allRatings,
+            last_updated: new Date().toISOString()
+          });
+          
+        if (insertError) {
+          console.error('🔗🔗🔗 [CLAIM_SESSION] Session insert error:', insertError);
+          throw insertError;
+        }
+        
+        console.log(`🔗🔗🔗 [CLAIM_SESSION] ✅ Created new session with ${ratingsCount} ratings for user: ${user.id}`);
+        
+        toast({
+          title: "✅ New Session Created!",
+          description: `Created and linked new session with ${ratingsCount} ratings to your account!`,
+          duration: 5000
+        });
+      }
+
+      console.log('🔗🔗🔗 [CLAIM_SESSION] ===== CLAIM COMPLETED SUCCESSFULLY =====');
+      
+    } catch (error) {
+      console.error('🔗🔗🔗 [CLAIM_SESSION] ❌ Session claim failed:', error);
+      toast({
+        title: "❌ Session Claim Failed",
+        description: `Error claiming session: ${error.message}`,
+        variant: "destructive",
+        duration: 5000
+      });
+    }
+  }, [user.id, sessionId, getAllRatings]);
+
   const displayName = user.user_metadata?.display_name || user.user_metadata?.username || user.email || 'User';
   const avatarUrl = user.user_metadata?.avatar_url;
   const userInitials = displayName.charAt(0).toUpperCase();
@@ -339,6 +449,11 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({ user }) => {
           </DropdownMenuItem>
           
           <DropdownMenuSeparator />
+          
+          <DropdownMenuItem onClick={claimSession} className="text-blue-600">
+            <Link className="mr-2 h-4 w-4" />
+            Claim Session
+          </DropdownMenuItem>
           
           <DropdownMenuItem onClick={forceSyncToCloud} className="text-green-600">
             <CloudUpload className="mr-2 h-4 w-4" />
