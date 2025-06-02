@@ -22,6 +22,36 @@ const DEFAULT_IMAGE_PREFERENCES: ImagePreferences = {
   type: 'official'
 };
 
+// CRITICAL FIX: Add manual localStorage check like TrueSkill store
+console.log(`🌥️ [CLOUD_PREFERENCES_FIX] ===== CHECKING LOCALSTORAGE FOR PREFERENCES =====`);
+const checkLocalStoragePreferences = () => {
+  try {
+    const formFilters = localStorage.getItem('pokemon-form-filters');
+    const imageMode = localStorage.getItem('pokemon-image-mode');
+    const imagePreference = localStorage.getItem('pokemon-image-preference');
+    
+    console.log(`🌥️ [CLOUD_PREFERENCES_FIX] Local form filters:`, !!formFilters);
+    console.log(`🌥️ [CLOUD_PREFERENCES_FIX] Local image mode:`, imageMode);
+    console.log(`🌥️ [CLOUD_PREFERENCES_FIX] Local image preference:`, imagePreference);
+    
+    if (formFilters || imageMode || imagePreference) {
+      const parsedFilters = formFilters ? JSON.parse(formFilters) : DEFAULT_FORM_FILTERS;
+      const imagePrefs: ImagePreferences = {
+        mode: (imageMode as 'pokemon' | 'tcg') || 'pokemon',
+        type: (imagePreference as 'official' | 'artwork' | 'sprite') || 'official'
+      };
+      
+      return {
+        form_filters: parsedFilters,
+        image_preferences: imagePrefs
+      };
+    }
+  } catch (error) {
+    console.error(`🌥️ [CLOUD_PREFERENCES_FIX] Failed to parse localStorage:`, error);
+  }
+  return null;
+};
+
 export const useCloudPreferences = () => {
   const { user } = useAuth();
   const [preferences, setPreferences] = useState<UserPreferences | null>(null);
@@ -31,7 +61,21 @@ export const useCloudPreferences = () => {
   // Load preferences when user changes
   useEffect(() => {
     if (!user?.id) {
-      setPreferences(null);
+      // CRITICAL FIX: Even without user, try to load local preferences
+      console.log('🌥️ [CLOUD_PREFERENCES_FIX] No user, checking localStorage fallback');
+      const localData = checkLocalStoragePreferences();
+      if (localData) {
+        console.log('🌥️ [CLOUD_PREFERENCES_FIX] Using localStorage fallback:', localData);
+        const fallbackPrefs: UserPreferences = {
+          user_id: 'local',
+          form_filters: localData.form_filters || DEFAULT_FORM_FILTERS,
+          image_preferences: localData.image_preferences || DEFAULT_IMAGE_PREFERENCES,
+          other_settings: {}
+        };
+        setPreferences(fallbackPrefs);
+      } else {
+        setPreferences(null);
+      }
       setIsInitialized(false);
       return;
     }
@@ -43,15 +87,20 @@ export const useCloudPreferences = () => {
         
         let userPrefs = await getUserPreferences(user.id);
         
-        // If no preferences exist, create default ones
+        // CRITICAL FIX: If no cloud preferences exist, check localStorage first
         if (!userPrefs) {
-          console.log('🌥️ [CLOUD_PREFERENCES] No preferences found, creating defaults');
-          userPrefs = await upsertUserPreferences({
+          console.log('🌥️ [CLOUD_PREFERENCES_FIX] No cloud preferences, checking localStorage');
+          const localData = checkLocalStoragePreferences();
+          
+          const prefsToCreate = {
             user_id: user.id,
-            form_filters: DEFAULT_FORM_FILTERS,
-            image_preferences: DEFAULT_IMAGE_PREFERENCES,
+            form_filters: localData?.form_filters || DEFAULT_FORM_FILTERS,
+            image_preferences: localData?.image_preferences || DEFAULT_IMAGE_PREFERENCES,
             other_settings: {}
-          });
+          };
+          
+          console.log('🌥️ [CLOUD_PREFERENCES_FIX] Creating preferences with local data:', prefsToCreate);
+          userPrefs = await upsertUserPreferences(prefsToCreate);
         }
 
         setPreferences(userPrefs);
@@ -59,13 +108,19 @@ export const useCloudPreferences = () => {
         console.log('🌥️ [CLOUD_PREFERENCES] Preferences loaded:', userPrefs);
       } catch (error) {
         console.error('🌥️ [CLOUD_PREFERENCES] Error loading preferences:', error);
-        // Set defaults on error
+        
+        // CRITICAL FIX: On error, try localStorage fallback
+        console.log('🌥️ [CLOUD_PREFERENCES_FIX] Error occurred, trying localStorage fallback');
+        const localData = checkLocalStoragePreferences();
+        
         const defaultPrefs: UserPreferences = {
           user_id: user.id,
-          form_filters: DEFAULT_FORM_FILTERS,
-          image_preferences: DEFAULT_IMAGE_PREFERENCES,
+          form_filters: localData?.form_filters || DEFAULT_FORM_FILTERS,
+          image_preferences: localData?.image_preferences || DEFAULT_IMAGE_PREFERENCES,
           other_settings: {}
         };
+        
+        console.log('🌥️ [CLOUD_PREFERENCES_FIX] Using fallback preferences:', defaultPrefs);
         setPreferences(defaultPrefs);
         setIsInitialized(true);
       } finally {
@@ -78,7 +133,19 @@ export const useCloudPreferences = () => {
 
   // Update form filters
   const updateFormFilters = useCallback(async (filters: FormFilters) => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      console.log('🌥️ [CLOUD_PREFERENCES_FIX] No user, saving to localStorage only');
+      localStorage.setItem('pokemon-form-filters', JSON.stringify(filters));
+      
+      // Update local state
+      setPreferences(prev => prev ? { ...prev, form_filters: filters } : {
+        user_id: 'local',
+        form_filters: filters,
+        image_preferences: DEFAULT_IMAGE_PREFERENCES,
+        other_settings: {}
+      });
+      return;
+    }
 
     console.log('🌥️ [CLOUD_PREFERENCES] Updating form filters:', filters);
     
@@ -94,16 +161,31 @@ export const useCloudPreferences = () => {
       
       // Also save to localStorage for offline access
       localStorage.setItem('pokemon-form-filters', JSON.stringify(filters));
+      console.log('🌥️ [CLOUD_PREFERENCES_FIX] Form filters updated and saved locally');
     } catch (error) {
       console.error('🌥️ [CLOUD_PREFERENCES] Error updating form filters:', error);
       // Fallback to localStorage only
       localStorage.setItem('pokemon-form-filters', JSON.stringify(filters));
+      console.log('🌥️ [CLOUD_PREFERENCES_FIX] Fallback: saved to localStorage only');
     }
   }, [user?.id, preferences]);
 
   // Update image preferences
   const updateImagePreferences = useCallback(async (imagePrefs: ImagePreferences) => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      console.log('🌥️ [CLOUD_PREFERENCES_FIX] No user, saving image prefs to localStorage only');
+      localStorage.setItem('pokemon-image-mode', imagePrefs.mode);
+      localStorage.setItem('pokemon-image-preference', imagePrefs.type);
+      
+      // Update local state
+      setPreferences(prev => prev ? { ...prev, image_preferences: imagePrefs } : {
+        user_id: 'local',
+        form_filters: DEFAULT_FORM_FILTERS,
+        image_preferences: imagePrefs,
+        other_settings: {}
+      });
+      return;
+    }
 
     console.log('🌥️ [CLOUD_PREFERENCES] Updating image preferences:', imagePrefs);
     
@@ -120,17 +202,22 @@ export const useCloudPreferences = () => {
       // Also save to localStorage for offline access
       localStorage.setItem('pokemon-image-mode', imagePrefs.mode);
       localStorage.setItem('pokemon-image-preference', imagePrefs.type);
+      console.log('🌥️ [CLOUD_PREFERENCES_FIX] Image preferences updated and saved locally');
     } catch (error) {
       console.error('🌥️ [CLOUD_PREFERENCES] Error updating image preferences:', error);
       // Fallback to localStorage only
       localStorage.setItem('pokemon-image-mode', imagePrefs.mode);
       localStorage.setItem('pokemon-image-preference', imagePrefs.type);
+      console.log('🌥️ [CLOUD_PREFERENCES_FIX] Fallback: saved image prefs to localStorage only');
     }
   }, [user?.id, preferences]);
 
   // Update other settings
   const updateOtherSettings = useCallback(async (settings: Record<string, any>) => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      console.log('🌥️ [CLOUD_PREFERENCES_FIX] No user, cannot save other settings');
+      return;
+    }
 
     console.log('🌥️ [CLOUD_PREFERENCES] Updating other settings:', settings);
     
@@ -143,10 +230,31 @@ export const useCloudPreferences = () => {
       });
       
       setPreferences(updatedPrefs);
+      console.log('🌥️ [CLOUD_PREFERENCES_FIX] Other settings updated successfully');
     } catch (error) {
       console.error('🌥️ [CLOUD_PREFERENCES] Error updating other settings:', error);
     }
   }, [user?.id, preferences]);
+
+  // CRITICAL FIX: Add manual reload function like TrueSkill store
+  const forceReloadPreferences = useCallback(() => {
+    console.log('🌥️ [CLOUD_PREFERENCES_FIX] ===== FORCE RELOAD TRIGGERED =====');
+    const localData = checkLocalStoragePreferences();
+    if (localData) {
+      const forcedPrefs: UserPreferences = {
+        user_id: user?.id || 'local',
+        form_filters: localData.form_filters || DEFAULT_FORM_FILTERS,
+        image_preferences: localData.image_preferences || DEFAULT_IMAGE_PREFERENCES,
+        other_settings: {}
+      };
+      console.log('🌥️ [CLOUD_PREFERENCES_FIX] Force reload successful:', forcedPrefs);
+      setPreferences(forcedPrefs);
+      setIsInitialized(true);
+      return forcedPrefs;
+    }
+    console.log('🌥️ [CLOUD_PREFERENCES_FIX] Force reload found no local data');
+    return null;
+  }, [user?.id]);
 
   return {
     preferences,
@@ -157,6 +265,7 @@ export const useCloudPreferences = () => {
     otherSettings: preferences?.other_settings || {},
     updateFormFilters,
     updateImagePreferences,
-    updateOtherSettings
+    updateOtherSettings,
+    forceReloadPreferences
   };
 };
