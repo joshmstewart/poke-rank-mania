@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Rating } from 'ts-trueskill';
 import { supabase } from '@/integrations/supabase/client';
+import type { FormFilters } from "@/hooks/form-filters/types";
 
 export interface TrueSkillRating {
   mu: number;
@@ -25,6 +26,8 @@ interface TrueSkillStore {
   loadFromCloud: () => Promise<void>;
   debugStore: () => void;
   comprehensiveEnvironmentalDebug: () => void;
+  getFormFilters: () => FormFilters | null;
+  setFormFilters: (filters: FormFilters) => void;
 }
 
 // Generate or load session ID
@@ -585,10 +588,23 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
         const finalCount = Object.keys(finalState.ratings).length;
         console.log(`🌐🌐🌐 [CLOUD_LOAD_CRITICAL] ===== FUNCTION EXIT =====`);
         console.log(`🌐🌐🌐 [CLOUD_LOAD_CRITICAL] Final rating count: ${finalCount}`);
-      }
+      },
+      
+      getFormFilters: () => {
+        const state = get();
+        return (state as any).formFilters || null;
+      },
+      
+      setFormFilters: (filters: FormFilters) => {
+        console.log('🌥️ [TRUESKILL_STORE] Setting form filters in store:', filters);
+        set((state) => ({
+          ...state,
+          formFilters: filters
+        }));
+      },
     }),
     {
-      name: 'trueskill-ratings-store',
+      name: "trueskill-storage",
       version: 1
     }
   )

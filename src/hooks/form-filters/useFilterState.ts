@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { FormFilters, PokemonFormType } from "./types";
 import { getStoredFilters, saveFilters, clearStoredFilters } from "./storage";
 import { toast } from "@/hooks/use-toast";
+import { useTrueSkillStore } from "@/stores/trueskillStore";
 
 const getFilterName = (filter: PokemonFormType): string => {
   const filterNames: Record<PokemonFormType, string> = {
@@ -20,40 +21,62 @@ const getFilterName = (filter: PokemonFormType): string => {
 };
 
 export const useFilterState = () => {
-  // CRITICAL FIX: Force immediate synchronous initialization
+  const { syncToCloud, getFormFilters, setFormFilters } = useTrueSkillStore();
+  
+  // CRITICAL FIX: Initialize with cloud data if available, fallback to localStorage
   const [filters, setFilters] = useState<FormFilters>(() => {
-    // Clear any potentially corrupted data first
-    const allKeys = Object.keys(localStorage);
-    const corruptedKeys = allKeys.filter(key => 
-      key.startsWith('pokemon-form-filters') && 
-      key !== 'pokemon-form-filters'
-    );
-    corruptedKeys.forEach(key => {
-      console.log(`🧹 [FORM_FILTERS_CORRUPTION_FIX] Removing corrupted key: ${key}`);
-      localStorage.removeItem(key);
-    });
+    // Try cloud data first
+    const cloudFilters = getFormFilters();
+    if (cloudFilters && Object.keys(cloudFilters).length > 0) {
+      console.log('🌥️ [FORM_FILTERS_CLOUD] Initializing with cloud filters:', cloudFilters);
+      return cloudFilters;
+    }
     
+    // Fallback to localStorage
     const storedFilters = getStoredFilters();
-    console.log('🧹 [FORM_FILTERS_DETERMINISTIC_INIT] DETERMINISTIC initialization with filters:', storedFilters);
+    console.log('🧹 [FORM_FILTERS_LOCAL] Initializing with localStorage filters:', storedFilters);
     return storedFilters;
   });
   
-  // CRITICAL FIX: Ensure filters are always properly set on mount
+  // Load from cloud on mount
   useEffect(() => {
-    const currentFilters = getStoredFilters();
-    console.log('🧹 [FORM_FILTERS_MOUNT_SYNC] Syncing filters on mount:', currentFilters);
-    setFilters(currentFilters);
-  }, []);
+    const cloudFilters = getFormFilters();
+    if (cloudFilters && Object.keys(cloudFilters).length > 0) {
+      console.log('🌥️ [FORM_FILTERS_CLOUD] Loading filters from cloud on mount:', cloudFilters);
+      setFilters(cloudFilters);
+      // Also save to localStorage for offline access
+      saveFilters(cloudFilters);
+    }
+  }, [getFormFilters]);
   
   // Determine if all filters are enabled
   const isAllEnabled = Object.values(filters).every(Boolean);
+  
+  // Save filters to both cloud and localStorage
+  const saveFiltersToCloud = useCallback(async (newFilters: FormFilters) => {
+    console.log('🌥️ [FORM_FILTERS_CLOUD] Saving filters to cloud:', newFilters);
+    
+    // Save to cloud via TrueSkill store
+    setFormFilters(newFilters);
+    
+    // Also save to localStorage for offline access
+    saveFilters(newFilters);
+    
+    // Sync to cloud
+    await syncToCloud();
+    
+    console.log('🌥️ [FORM_FILTERS_CLOUD] Filters saved and synced to cloud');
+  }, [setFormFilters, syncToCloud]);
   
   // Toggle a specific filter
   const toggleFilter = useCallback((filter: PokemonFormType) => {
     setFilters(prev => {
       const updated = { ...prev, [filter]: !prev[filter] };
       console.log(`🧹 [FORM_FILTERS_TOGGLE] Toggling ${filter}: ${prev[filter]} -> ${updated[filter]}`);
-      saveFilters(updated);
+      
+      // Save to cloud
+      saveFiltersToCloud(updated);
+      
       return updated;
     });
     
@@ -64,7 +87,7 @@ export const useFilterState = () => {
         ? `${getFilterName(filter)} will no longer appear in battles`
         : `${getFilterName(filter)} will now be included in battles`,
     });
-  }, [filters]);
+  }, [filters, saveFiltersToCloud]);
   
   // Toggle all filters on/off
   const toggleAll = useCallback(() => {
@@ -81,8 +104,9 @@ export const useFilterState = () => {
       blocked: newValue
     };
     console.log(`🧹 [FORM_FILTERS_TOGGLE_ALL] Setting all filters to: ${newValue}`);
-    saveFilters(updated);
+    
     setFilters(updated);
+    saveFiltersToCloud(updated);
     
     toast({
       title: isAllEnabled ? "Disabled some Pokémon forms" : "Enabled all Pokémon forms",
@@ -90,7 +114,7 @@ export const useFilterState = () => {
         ? "Only standard forms will appear in battles"
         : "All Pokémon forms will be included in battles",
     });
-  }, [isAllEnabled]);
+  }, [isAllEnabled, saveFiltersToCloud]);
 
   // Reset filters to default (all enabled)
   const resetFilters = useCallback(() => {
@@ -107,9 +131,10 @@ export const useFilterState = () => {
       blocked: false // Default blocked to false
     };
     console.log('🧹 [FORM_FILTERS_RESET] Resetting to default filters');
-    saveFilters(defaultFilters);
+    
     setFilters(defaultFilters);
-  }, []);
+    saveFiltersToCloud(defaultFilters);
+  }, [saveFiltersToCloud]);
 
   return {
     filters,
