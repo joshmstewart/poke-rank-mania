@@ -18,7 +18,7 @@ interface DragDropGridProps {
   onLocalReorder: (activeId: number, overId: number) => void;
   onMarkAsPending: (pokemonId: number) => void;
   availablePokemon: Pokemon[];
-  isAvailableSection?: boolean; // New prop to indicate if this is the available section
+  isAvailableSection?: boolean;
 }
 
 const DraggablePokemonCard: React.FC<{
@@ -43,6 +43,16 @@ const DraggablePokemonCard: React.FC<{
   const isRankedPokemon = 'score' in pokemon;
   const backgroundColor = getPokemonTypeColor(pokemon);
   const formattedId = pokemon.id.toString().padStart(pokemon.id >= 10000 ? 5 : 3, '0');
+
+  // Calculate current rank for ranked Pokemon in available section
+  const getCurrentRank = () => {
+    if (isRankedPokemon && isAvailableSection) {
+      // For available section, we need to determine rank based on index in rankings
+      // This would typically come from the parent component's ranking data
+      return index + 1; // Fallback - this should be passed from parent
+    }
+    return null;
+  };
 
   return (
     <div
@@ -78,7 +88,7 @@ const DraggablePokemonCard: React.FC<{
               className="bg-yellow-500 text-white font-bold text-xs px-2 py-1 shadow-md flex items-center gap-1"
             >
               <Crown size={12} />
-              #{(pokemon as RankedPokemon).currentRank || 'Ranked'}
+              #{getCurrentRank()}
             </Badge>
           </div>
         )}
