@@ -7,12 +7,10 @@ import { usePokemonTCGCard } from "@/hooks/pokemon/usePokemonTCGCard";
 import { 
   useTCGBattleCardState, 
   useTCGImageModeListener, 
-  useTCGCleanupEffect, 
-  useTCGModalEffect 
+  useTCGCleanupEffect 
 } from "./tcg/TCGBattleCardHooks";
-import { useTCGBattleCardHandlers } from "./tcg/TCGBattleCardHandlers";
 import TCGBattleCardContent from "./tcg/TCGBattleCardContent";
-import TCGBattleCardInfoButton from "./tcg/TCGBattleCardInfoButton";
+import PokemonInfoModal from "@/components/pokemon/PokemonInfoModal";
 
 interface TCGBattleCardProps {
   pokemon: Pokemon;
@@ -34,8 +32,6 @@ const TCGBattleCard: React.FC<TCGBattleCardProps> = memo(({
     lastClickTimeRef,
     isHovered,
     setIsHovered,
-    modalOpen,
-    setModalOpen,
     currentImageMode,
     setCurrentImageMode
   } = useTCGBattleCardState();
@@ -47,7 +43,6 @@ const TCGBattleCard: React.FC<TCGBattleCardProps> = memo(({
 
   useTCGImageModeListener(setCurrentImageMode);
   useTCGCleanupEffect(displayName, clickTimeoutRef);
-  useTCGModalEffect(modalOpen, displayName, setIsHovered);
 
   const handleClick = React.useCallback((e: React.MouseEvent) => {
     console.log(`🖱️ [INFO_BUTTON_DEBUG] TCGBattleCard ${displayName}: Card clicked`);
@@ -100,7 +95,7 @@ const TCGBattleCard: React.FC<TCGBattleCardProps> = memo(({
     setIsHovered(false);
   }, [displayName, setIsHovered]);
 
-  const shouldShowHover = isHovered && !isSelected && !modalOpen && !isProcessing && !isLoadingTCG;
+  const shouldShowHover = isHovered && !isSelected && !isProcessing && !isLoadingTCG;
 
   const cardClasses = `
     relative cursor-pointer transition-all duration-200 transform
@@ -118,11 +113,13 @@ const TCGBattleCard: React.FC<TCGBattleCardProps> = memo(({
       data-pokemon-id={pokemon.id}
       data-pokemon-name={displayName}
       data-processing={isProcessing ? "true" : "false"}
-      data-modal-open={modalOpen ? "true" : "false"}
       data-hovered={shouldShowHover ? "true" : "false"}
     >
       <CardContent className="p-4 text-center relative">
-        <TCGBattleCardInfoButton pokemon={pokemon} />
+        {/* Info Button - simplified to match manual mode */}
+        <div className="absolute top-1 right-1 z-30" data-info-button="true">
+          <PokemonInfoModal pokemon={pokemon} />
+        </div>
 
         <TCGBattleCardContent
           pokemon={pokemon}
