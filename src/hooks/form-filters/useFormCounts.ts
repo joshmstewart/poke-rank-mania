@@ -36,25 +36,13 @@ export const useFormCounts = (
     // CRITICAL: For blocked category, count from raw unfiltered data
     console.log(`🚫 [BLOCKED_COUNT] Starting blocked count from ${rawUnfilteredPokemon.length} raw unfiltered Pokemon`);
     
-    // Process in smaller batches to prevent interruption
-    const batchSize = 50;
-    let processedCount = 0;
-    
-    for (let i = 0; i < rawUnfilteredPokemon.length; i += batchSize) {
-      const batch = rawUnfilteredPokemon.slice(i, i + batchSize);
-      
-      batch.forEach(pokemon => {
-        const category = getPokemonFormCategory(pokemon);
-        if (category === 'blocked') {
-          counts.blocked++;
-          console.log(`🚫 [BLOCKED_FOUND_BATCH] Found blocked Pokemon: ${pokemon.name} (ID: ${pokemon.id}). Total blocked so far: ${counts.blocked}`);
-        }
-        processedCount++;
-      });
-      
-      // Log progress every batch
-      console.log(`📊 [BATCH_PROGRESS] Processed ${processedCount}/${rawUnfilteredPokemon.length} Pokemon. Current blocked count: ${counts.blocked}`);
-    }
+    rawUnfilteredPokemon.forEach(pokemon => {
+      const category = getPokemonFormCategory(pokemon);
+      if (category === 'blocked') {
+        counts.blocked++;
+        console.log(`🚫 [BLOCKED_FOUND] Found blocked Pokemon: ${pokemon.name} (ID: ${pokemon.id}). Total blocked so far: ${counts.blocked}`);
+      }
+    });
     
     // CRITICAL: Get static list stats after processing
     const staticStats = getStaticListBlockedCount();
