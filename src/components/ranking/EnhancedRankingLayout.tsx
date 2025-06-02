@@ -74,8 +74,8 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = ({
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="bg-gradient-to-b from-blue-50 via-blue-50 to-blue-50 min-h-screen p-4">
-        {/* Settings Section - Direct card without extra wrapper */}
+      <div className="bg-gray-50 min-h-screen p-4">
+        {/* Settings Section */}
         <div className="max-w-7xl mx-auto mb-4">
           <UnifiedControls
             selectedGeneration={selectedGeneration}
