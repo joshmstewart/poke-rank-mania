@@ -18,26 +18,27 @@ export const useCloudSync = () => {
   const { user, session } = useAuth();
   const { loadFromCloud, syncToCloud, getAllRatings, isHydrated, restoreSessionFromCloud, forceCorrectSession } = useTrueSkillStore();
 
-  // CRITICAL FIX: Force correct session BEFORE any other operations
+  // CRITICAL FIX: Force correct session IMMEDIATELY when user and hydration are ready
   useEffect(() => {
-    const ensureCorrectSession = async () => {
+    const ensureCorrectSessionImmediately = async () => {
       if (user?.id && isHydrated) {
-        console.log('🚨 [CLOUD_SYNC_SESSION_FIX] ===== ENSURING CORRECT SESSION =====');
-        console.log('🚨 [CLOUD_SYNC_SESSION_FIX] User ID:', user.id);
-        console.log('🚨 [CLOUD_SYNC_SESSION_FIX] Current sessionId before check:', useTrueSkillStore.getState().sessionId);
+        console.log('🚨🚨🚨 [CLOUD_SYNC_IMMEDIATE_FIX] ===== IMMEDIATE SESSION CORRECTION =====');
+        console.log('🚨🚨🚨 [CLOUD_SYNC_IMMEDIATE_FIX] User ID:', user.id.substring(0, 8));
+        console.log('🚨🚨🚨 [CLOUD_SYNC_IMMEDIATE_FIX] Current sessionId before immediate check:', useTrueSkillStore.getState().sessionId);
         
-        // STEP 1: Force correct session first
+        // STEP 1: Force correct session IMMEDIATELY
         await forceCorrectSession(user.id);
         
-        // STEP 2: Then restore any additional data
+        // STEP 2: Then ensure data is loaded for the correct session
         await restoreSessionFromCloud(user.id);
         
-        console.log('🚨 [CLOUD_SYNC_SESSION_FIX] Final sessionId after correction:', useTrueSkillStore.getState().sessionId);
-        console.log('🚨 [CLOUD_SYNC_SESSION_FIX] Final ratings count:', Object.keys(useTrueSkillStore.getState().getAllRatings()).length);
+        console.log('🚨🚨🚨 [CLOUD_SYNC_IMMEDIATE_FIX] Final sessionId after immediate correction:', useTrueSkillStore.getState().sessionId);
+        console.log('🚨🚨🚨 [CLOUD_SYNC_IMMEDIATE_FIX] Final ratings count:', Object.keys(useTrueSkillStore.getState().getAllRatings()).length);
       }
     };
 
-    ensureCorrectSession();
+    // Execute immediately, no delays
+    ensureCorrectSessionImmediately();
   }, [user?.id, isHydrated, forceCorrectSession, restoreSessionFromCloud]);
 
   // Auto-sync when authenticated and hydrated
