@@ -44,8 +44,10 @@ const PokemonCardImage: React.FC<PokemonCardImageProps> = ({
   // Use the actual imageUrl that's passed in, which should be the validated one
   const finalImageUrl = imageUrl || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pokemonId}.png`;
 
-  // Significantly increased image container size - made much larger for Manual page
-  const imageSize = compact ? "w-20 h-20" : "w-28 h-28";
+  // SIGNIFICANTLY increased image container sizes - making them much larger
+  const imageSize = compact ? "w-24 h-24" : "w-40 h-40";
+
+  console.log(`🖼️ [POKEMON_CARD_IMAGE] ${displayName}: Using size ${imageSize} (compact: ${compact})`);
 
   return (
     <div className={`${imageSize} ${className || ""} bg-gray-50 rounded-md relative flex-shrink-0`}>
@@ -59,7 +61,7 @@ const PokemonCardImage: React.FC<PokemonCardImageProps> = ({
           <img
             src={finalImageUrl}
             alt={displayName}
-            className={`w-full h-full object-contain p-0.5 transition-opacity duration-200 ${imageLoaded ? "opacity-100" : "opacity-0"}`}
+            className={`w-full h-full object-contain p-1 transition-opacity duration-200 ${imageLoaded ? "opacity-100" : "opacity-0"}`}
             loading="lazy"
             onLoad={handleImageLoad}
             onError={handleImageError}
