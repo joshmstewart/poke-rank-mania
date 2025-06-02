@@ -55,7 +55,7 @@ export const useBattleProcessor = (
     setBattleResults,
     setBattlesCompleted,
     [],
-    'auto'
+    'pairs'
   );
 
   const { 
