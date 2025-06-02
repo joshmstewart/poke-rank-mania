@@ -1,7 +1,6 @@
-
-import { useTrueSkillSync } from "@/hooks/ranking/useTrueSkillSync";
-import { useFormFilters } from "@/hooks/useFormFilters";
-import { useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useTrueSkillSync } from "./useTrueSkillSync";
+import { useGenerationFilter } from "@/hooks/battle/useGenerationFilter";
 
 interface UseRankingDataProcessingProps {
   availablePokemon: any[];
@@ -16,70 +15,43 @@ export const useRankingDataProcessing = ({
   selectedGeneration,
   totalPages
 }: UseRankingDataProcessingProps) => {
-  const { shouldIncludePokemon } = useFormFilters();
-  const { localRankings, updateLocalRankings } = useTrueSkillSync();
+  console.log(`🔮 [DATA_PROCESSING_CRITICAL] ===== DATA PROCESSING HOOK =====`);
+  console.log(`🔮 [DATA_PROCESSING_CRITICAL] Input rankedPokemon: ${rankedPokemon.length}`);
+  console.log(`🔮 [DATA_PROCESSING_CRITICAL] Input availablePokemon: ${availablePokemon.length}`);
   
-  console.log(`🚨🚨🚨 [DATA_PROCESSING_ULTRA_DEBUG] ===== useRankingDataProcessing ENTRY =====`);
-  console.log(`🚨🚨🚨 [DATA_PROCESSING_ULTRA_DEBUG] Input rankedPokemon: ${rankedPokemon.length}`);
-  console.log(`🚨🚨🚨 [DATA_PROCESSING_ULTRA_DEBUG] Input localRankings: ${localRankings.length}`);
-  console.log(`🚨🚨🚨 [DATA_PROCESSING_ULTRA_DEBUG] Input availablePokemon: ${availablePokemon.length}`);
+  // CRITICAL FIX: For manual ranking mode, we should NOT automatically sync from TrueSkill
+  // The rankings should only come from the explicit rankedPokemon prop passed down
+  const { localRankings: trueskillRankings, updateLocalRankings } = useTrueSkillSync();
   
-  if (rankedPokemon.length > 0) {
-    console.log(`🚨🚨🚨 [DATA_PROCESSING_ULTRA_DEBUG] ⚠️⚠️⚠️ NON-EMPTY rankedPokemon DETECTED!`);
-    console.log(`🚨🚨🚨 [DATA_PROCESSING_ULTRA_DEBUG] rankedPokemon IDs: ${rankedPokemon.slice(0, 10).map(p => p.id).join(', ')}`);
-    console.log(`🚨🚨🚨 [DATA_PROCESSING_ULTRA_DEBUG] rankedPokemon names: ${rankedPokemon.slice(0, 10).map(p => p.name).join(', ')}`);
-  }
-  
-  const displayRankings = useMemo(() => {
-    console.log(`🚨🚨🚨 [DATA_PROCESSING_DISPLAY_CALC] ===== DISPLAY RANKINGS CALCULATION =====`);
-    console.log(`🚨🚨🚨 [DATA_PROCESSING_DISPLAY_CALC] localRankings.length: ${localRankings.length}`);
-    console.log(`🚨🚨🚨 [DATA_PROCESSING_DISPLAY_CALC] rankedPokemon.length: ${rankedPokemon.length}`);
+  // CRITICAL FIX: Only use TrueSkill rankings if explicitly requested
+  // For manual mode, prioritize the passed-in rankedPokemon
+  const localRankings = useMemo(() => {
+    console.log(`🔮 [DATA_PROCESSING_CRITICAL] Determining ranking source...`);
+    console.log(`🔮 [DATA_PROCESSING_CRITICAL] rankedPokemon.length: ${rankedPokemon.length}`);
+    console.log(`🔮 [DATA_PROCESSING_CRITICAL] trueskillRankings.length: ${trueskillRankings.length}`);
     
-    if (localRankings.length > 0) {
-      console.log(`🚨🚨🚨 [DATA_PROCESSING_DISPLAY_CALC] Using localRankings (${localRankings.length})`);
-      return localRankings;
+    // CRITICAL DECISION: Manual mode should start empty and only show what user explicitly ranks
+    // If rankedPokemon is empty, keep it empty regardless of TrueSkill data
+    if (rankedPokemon.length === 0) {
+      console.log(`🔮 [DATA_PROCESSING_CRITICAL] Manual mode: keeping empty rankings`);
+      return [];
     }
     
-    if (rankedPokemon.length > 0) {
-      console.log(`🚨🚨🚨 [DATA_PROCESSING_DISPLAY_CALC] ⚠️⚠️⚠️ USING rankedPokemon (${rankedPokemon.length})`);
-      console.log(`🚨🚨🚨 [DATA_PROCESSING_DISPLAY_CALC] This is the source of the 10 Pokemon!`);
-      console.log(`🚨🚨🚨 [DATA_PROCESSING_DISPLAY_CALC] rankedPokemon source call stack:`, new Error().stack?.split('\n').slice(1, 8).join(' | '));
-      return rankedPokemon;
-    }
-    
-    console.log(`🚨🚨🚨 [DATA_PROCESSING_DISPLAY_CALC] No rankings available - returning empty array`);
-    return [];
-  }, [localRankings.length, rankedPokemon.length]);
+    // If user has manually ranked Pokemon, use those
+    console.log(`🔮 [DATA_PROCESSING_CRITICAL] Manual mode: using explicit rankings`);
+    return rankedPokemon;
+  }, [rankedPokemon, trueskillRankings.length]);
 
-  const filteredAvailablePokemon = useMemo(() => {
-    console.log(`🔍🔍🔍 [RANKING_DATA_DEBUG] ===== FILTERED AVAILABLE CALCULATION =====`);
-    console.log(`🔍🔍🔍 [RANKING_DATA_DEBUG] availablePokemon.length: ${availablePokemon.length}`);
-    console.log(`🔍🔍🔍 [RANKING_DATA_DEBUG] displayRankings.length: ${displayRankings.length}`);
-    
-    const displayRankingsIds = new Set(displayRankings.map(p => p.id));
-    console.log(`🔍🔍🔍 [RANKING_DATA_DEBUG] displayRankingsIds size: ${displayRankingsIds.size}`);
-    
-    const filtered = availablePokemon.filter(p => {
-      const notAlreadyRanked = !displayRankingsIds.has(p.id);
-      const passesFormFilter = shouldIncludePokemon(p);
-      return notAlreadyRanked && passesFormFilter;
-    });
-    
-    console.log(`🔍🔍🔍 [RANKING_DATA_DEBUG] Filtered available count: ${filtered.length}`);
-    console.log(`🔍🔍🔍 [RANKING_DATA_DEBUG] Total calculation: ${availablePokemon.length} total - ${displayRankings.length} ranked = ${filtered.length} available`);
-    
-    return filtered;
-  }, [availablePokemon.length, displayRankings.length, shouldIncludePokemon]);
+  // Apply generation filtering to available Pokemon
+  const { filteredAvailablePokemon } = useGenerationFilter(availablePokemon, selectedGeneration);
 
-  console.log(`🔍🔍🔍 [RANKING_DATA_DEBUG] ===== FINAL RETURN VALUES =====`);
-  console.log(`🔍🔍🔍 [RANKING_DATA_DEBUG] Returning localRankings: ${displayRankings.length}`);
-  console.log(`🔍🔍🔍 [RANKING_DATA_DEBUG] Returning displayRankings: ${displayRankings.length}`);
-  console.log(`🔍🔍🔍 [RANKING_DATA_DEBUG] Returning filteredAvailablePokemon: ${filteredAvailablePokemon.length}`);
+  console.log(`🔮 [DATA_PROCESSING_CRITICAL] Final localRankings: ${localRankings.length}`);
+  console.log(`🔮 [DATA_PROCESSING_CRITICAL] Final filteredAvailablePokemon: ${filteredAvailablePokemon.length}`);
 
   return {
-    localRankings: displayRankings,
+    localRankings,
     updateLocalRankings,
-    displayRankings,
+    displayRankings: localRankings,
     filteredAvailablePokemon
   };
 };
