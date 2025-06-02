@@ -5,8 +5,7 @@ import { useRankingState } from "@/hooks/pokemon/useRankingState";
 import { usePokemonLoader } from "@/hooks/battle/usePokemonLoader";
 import { useGenerationFilter } from "@/hooks/battle/useGenerationFilter";
 import { usePagination } from "@/hooks/usePagination";
-
-export type LoadingType = "pagination" | "infinite" | "search";
+import { LoadingType } from "@/hooks/pokemon/types";
 
 export const usePokemonRanker = () => {
   const { loadPokemon, allPokemon: availablePokemonFromLoader, isLoading } = usePokemonLoader();

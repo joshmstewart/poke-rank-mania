@@ -8,7 +8,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { generations } from "@/services/pokemon";
-import { LoadingType } from "@/hooks/usePokemonRanker";
+import { LoadingType } from "@/hooks/pokemon/types";
 
 interface RankingControlsProps {
   selectedGeneration: number;
