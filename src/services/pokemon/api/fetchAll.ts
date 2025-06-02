@@ -1,3 +1,4 @@
+
 import { Pokemon, PokemonAPIResponse } from "../types";
 import { getPokemonImageUrl } from "./utils";
 
@@ -84,6 +85,10 @@ export const fetchAllPokemon = async (
       console.error(`🚨 [POKEMON_COUNT_ERROR] Call #${currentCallId}: Only got ${data.results.length} Pokemon, expected at least 1025!`);
     }
     
+    // NEW: Track Furfrou and Alcremie forms specifically
+    const furfrowFormsFound: string[] = [];
+    const alcremieFormsFound: string[] = [];
+    
     // CRITICAL: Track processing milestones
     const startProcessingTime = Date.now();
     console.log(`⚙️ [REFRESH_DETECTION] Call #${currentCallId}: Starting Pokemon processing at ${new Date(startProcessingTime).toISOString()}`);
@@ -92,6 +97,18 @@ export const fetchAllPokemon = async (
       try {
         const response = await fetch(pokemonInfo.url);
         const pokemonData = await response.json();
+
+        // NEW: Check for Furfrou forms (ID 676)
+        if (pokemonData.id === 676 || pokemonData.name.includes('furfrou')) {
+          furfrowFormsFound.push(pokemonData.name);
+          console.log(`🐩 [FURFROU_DEBUG] Found Furfrou form: ${pokemonData.name} (ID: ${pokemonData.id})`);
+        }
+        
+        // NEW: Check for Alcremie forms (ID 869)
+        if (pokemonData.id === 869 || pokemonData.name.includes('alcremie')) {
+          alcremieFormsFound.push(pokemonData.name);
+          console.log(`🍰 [ALCREMIE_DEBUG] Found Alcremie form: ${pokemonData.name} (ID: ${pokemonData.id})`);
+        }
 
         // CRITICAL: Log milestone numbers specifically
         if (index === 1024) {
@@ -136,6 +153,18 @@ export const fetchAllPokemon = async (
 
     const pokemonList = await Promise.all(pokemonPromises);
     const filteredList = pokemonList.filter((p): p is Pokemon => p !== null);
+    
+    // NEW: Log final Furfrou and Alcremie findings
+    console.log(`🐩 [FURFROU_FINAL] Call #${currentCallId}: Found ${furfrowFormsFound.length} Furfrou forms:`, furfrowFormsFound);
+    console.log(`🍰 [ALCREMIE_FINAL] Call #${currentCallId}: Found ${alcremieFormsFound.length} Alcremie forms:`, alcremieFormsFound);
+    
+    if (furfrowFormsFound.length === 0) {
+      console.error(`🚨 [FURFROU_MISSING] Call #${currentCallId}: NO FURFROU FORMS FOUND IN RAW API DATA!`);
+    }
+    
+    if (alcremieFormsFound.length === 0) {
+      console.error(`🚨 [ALCREMIE_MISSING] Call #${currentCallId}: NO ALCREMIE FORMS FOUND IN RAW API DATA!`);
+    }
     
     const processingTime = Date.now() - startProcessingTime;
     console.log(`✅ [REFRESH_DETECTION] Call #${currentCallId}: Processing completed in ${processingTime}ms`);
