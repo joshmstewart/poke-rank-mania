@@ -3,34 +3,35 @@ import { useMemo } from "react";
 import { LoadingType } from "@/hooks/pokemon/types";
 
 export const usePagination = (
-  items: any[], 
-  currentPage: number, 
-  loadSize: number, 
+  items: any[],
+  currentPage: number,
+  pageSize: number,
   loadingType: LoadingType
 ) => {
   const paginatedItems = useMemo(() => {
-    if (loadingType === "infinite") {
-      // For infinite loading, return all items up to current page
-      return items.slice(0, currentPage * loadSize);
+    console.log(`🔍 [PAGINATION] Input items: ${items.length}, page: ${currentPage}, size: ${pageSize}, type: ${loadingType}`);
+    
+    if (loadingType === "pagination") {
+      const startIndex = (currentPage - 1) * pageSize;
+      const endIndex = startIndex + pageSize;
+      const result = items.slice(startIndex, endIndex);
+      console.log(`🔍 [PAGINATION] Pagination mode: returning ${result.length} items (${startIndex}-${endIndex})`);
+      return result;
     }
     
-    if (loadingType === "search") {
-      // For search, return all items
-      return items;
-    }
-    
-    // For pagination, return items for current page only
-    const startIndex = (currentPage - 1) * loadSize;
-    const endIndex = startIndex + loadSize;
-    return items.slice(startIndex, endIndex);
-  }, [items, currentPage, loadSize, loadingType]);
+    // For infinite scroll or single load, return all items
+    console.log(`🔍 [PAGINATION] Non-pagination mode (${loadingType}): returning all ${items.length} items`);
+    return items;
+  }, [items, currentPage, pageSize, loadingType]);
 
   const totalPages = useMemo(() => {
-    if (loadingType === "infinite" || loadingType === "search") {
-      return 1;
+    if (loadingType === "pagination") {
+      const pages = Math.ceil(items.length / pageSize);
+      console.log(`🔍 [PAGINATION] Calculated total pages: ${pages} (${items.length} items / ${pageSize} per page)`);
+      return pages;
     }
-    return Math.ceil(items.length / loadSize);
-  }, [items.length, loadSize, loadingType]);
+    return 1;
+  }, [items.length, pageSize, loadingType]);
 
   return {
     paginatedItems,

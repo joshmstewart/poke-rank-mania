@@ -40,6 +40,15 @@ export const usePokemonRanker = () => {
     console.log(`🚨🚨🚨 [POKEMON_RANKER_CRITICAL] Call stack:`, new Error().stack?.split('\n').slice(1, 5).join(' | '));
   }
 
+  // Initialize Pokemon loading on first render
+  useEffect(() => {
+    if (!hasInitialized && availablePokemonFromLoader.length === 0 && !isLoading) {
+      console.log(`🔍 [POKEMON_RANKER_INIT] Initializing Pokemon load...`);
+      setHasInitialized(true);
+      loadPokemon(0, true);
+    }
+  }, [hasInitialized, availablePokemonFromLoader.length, isLoading, loadPokemon]);
+
   const { filteredAvailablePokemon, setSelectedGeneration: setGen } = useGenerationFilter(
     availablePokemonFromLoader,
     selectedGeneration
