@@ -116,9 +116,27 @@ const TCGBattleCard: React.FC<TCGBattleCardProps> = memo(({
       data-hovered={shouldShowHover ? "true" : "false"}
     >
       <CardContent className="p-4 text-center relative">
-        {/* Info Button - match BattleCardContainer exactly */}
-        <div className="absolute top-1 right-1 z-30">
-          <PokemonInfoModal pokemon={pokemon} />
+        {/* Info Button - styled to match manual mode */}
+        <div className="absolute top-1 right-1 z-30 opacity-0 group-hover:opacity-100 transition-opacity duration-200" data-info-button="true">
+          <PokemonInfoModal pokemon={pokemon}>
+            <button 
+              className="w-5 h-5 rounded-full bg-white/80 hover:bg-white border border-gray-300 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200 backdrop-blur-sm cursor-pointer"
+              onClick={(e) => {
+                e.stopPropagation();
+                console.log(`Info button clicked for ${pokemon.name}`);
+              }}
+              onPointerDown={(e) => {
+                e.stopPropagation();
+              }}
+              onMouseDown={(e) => {
+                e.stopPropagation();
+              }}
+              type="button"
+              style={{ pointerEvents: 'auto' }}
+            >
+              i
+            </button>
+          </PokemonInfoModal>
         </div>
 
         <TCGBattleCardContent
