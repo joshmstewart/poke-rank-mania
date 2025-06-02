@@ -129,20 +129,16 @@ export const useTrueSkillStore = create<TrueSkillState>()(
         set({ isLoading: true });
 
         try {
-          const response = await fetch('/api/syncTrueSkill', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ sessionId, ratings, lastUpdated }),
+          const { data, error } = await supabase.functions.invoke('sync-trueskill', {
+            body: { sessionId, ratings, lastUpdated }
           });
 
-          const data = await response.json();
-
-          if (data.success) {
+          if (error) {
+            console.error('Sync error:', error);
+          } else if (data?.success) {
             set({ isDirty: false });
           } else {
-            console.error('Sync failed:', data.error);
+            console.error('Sync failed:', data?.error);
           }
         } catch (error) {
           console.error('Sync error:', error);
@@ -168,48 +164,22 @@ export const useTrueSkillStore = create<TrueSkillState>()(
         set({ isLoading: true });
 
         try {
-          console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] Making fetch request to: /api/getTrueSkill?sessionId=${sessionId}`);
+          console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] Making request to get-trueskill function`);
           
-          const response = await fetch(`/api/getTrueSkill?sessionId=${sessionId}`);
+          const { data, error } = await supabase.functions.invoke('get-trueskill', {
+            body: { sessionId }
+          });
           
-          console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] Response received:`);
-          console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] - Status: ${response.status}`);
-          console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] - Status Text: ${response.statusText}`);
-          console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] - Content-Type: ${response.headers.get('content-type')}`);
-          
-          if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] Function response received:`);
+          console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] - Error: ${error ? JSON.stringify(error) : 'none'}`);
+          console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] - Data:`, data);
+
+          if (error) {
+            console.error(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] Function invocation error:`, error);
+            return;
           }
 
-          // CRITICAL FIX: Check content type before parsing JSON
-          const contentType = response.headers.get('content-type');
-          if (!contentType || !contentType.includes('application/json')) {
-            console.error(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] ===== CONTENT TYPE ERROR =====`);
-            console.error(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] Expected JSON but got: ${contentType}`);
-            console.error(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] This indicates the API endpoint returned HTML instead of JSON`);
-            throw new Error(`API returned non-JSON response. Content-Type: ${contentType}`);
-          }
-          
-          const data = await response.json();
-          
-          console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] Parsed response data:`);
-          console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] - Success: ${data.success}`);
-          console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] - Data type: ${typeof data}`);
-          console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] - Data keys: ${Object.keys(data).join(', ')}`);
-          
-          if (data.ratings) {
-            console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] - Ratings type: ${typeof data.ratings}`);
-            console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] - Ratings count: ${Object.keys(data.ratings).length}`);
-            console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] - First 5 rating IDs: ${Object.keys(data.ratings).slice(0, 5).join(', ')}`);
-          } else {
-            console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] - No ratings in response`);
-          }
-          
-          if (data.lastUpdated) {
-            console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] - LastUpdated: ${data.lastUpdated}`);
-          }
-
-          if (data.success) {
+          if (data?.success) {
             console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] Setting store state with cloud data`);
             
             set({
@@ -220,19 +190,14 @@ export const useTrueSkillStore = create<TrueSkillState>()(
             console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] Store updated - new ratings count: ${Object.keys(data.ratings || {}).length}`);
           } else {
             console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] Response success was false`);
-            if (data.error) {
+            if (data?.error) {
               console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] Response error: ${data.error}`);
             }
           }
           
         } catch (error) {
           console.error(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] ===== LOAD FROM CLOUD ERROR =====`);
-          console.error(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] Error type: ${typeof error}`);
-          console.error(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] Error constructor: ${error?.constructor?.name}`);
-          console.error(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] Error message: "${error?.message || 'No message'}"`);
-          console.error(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] Error stack:`, error?.stack);
-          console.error(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] Full error object:`, error);
-          console.error(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] JSON stringified error:`, JSON.stringify(error, Object.getOwnPropertyNames(error)));
+          console.error(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] Error:`, error);
         } finally {
           set({ isLoading: false });
           console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] ===== LOAD FROM CLOUD END =====`);
