@@ -2,7 +2,11 @@
 import React, { useState, useMemo, useEffect } from "react";
 
 export const useGenerationExpansion = () => {
-  const [expandedGenerations, setExpandedGenerations] = useState<Set<number>>(new Set());
+  // CRITICAL FIX: Default to expanded state - start with all generations expanded
+  const [expandedGenerations, setExpandedGenerations] = useState<Set<number>>(() => {
+    // Initialize with generations 1-9 all expanded by default
+    return new Set([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  });
 
   const toggleGeneration = (generationId: number) => {
     setExpandedGenerations(prev => {

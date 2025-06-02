@@ -26,18 +26,18 @@ const GenerationHeader: React.FC<GenerationHeaderProps> = ({
       <Button
         variant="ghost"
         onClick={onToggle}
-        className="w-full flex items-center justify-between p-4 h-auto hover:bg-gray-50"
+        className="w-full flex items-center justify-between p-3 h-auto hover:bg-gray-50"
       >
         <div className="flex flex-col items-start">
-          <h3 className="font-semibold text-gray-900 text-left">{name}</h3>
-          <p className="text-sm text-gray-600 text-left">
+          <h3 className="font-semibold text-gray-900 text-left text-sm">{name}</h3>
+          <p className="text-xs text-gray-600 text-left">
             {region} • {games}
           </p>
         </div>
         {isExpanded ? (
-          <ChevronUp className="h-5 w-5 text-gray-400" />
+          <ChevronUp className="h-4 w-4 text-gray-400" />
         ) : (
-          <ChevronDown className="h-5 w-5 text-gray-400" />
+          <ChevronDown className="h-4 w-4 text-gray-400" />
         )}
       </Button>
     </div>
