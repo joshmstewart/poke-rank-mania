@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User, Settings, LogOut, ChevronDown, Hash, Database } from 'lucide-react';
+import { User, Settings, LogOut, ChevronDown, Hash, Database, Search } from 'lucide-react';
 import { useAuth } from '@/contexts/auth/useAuth';
 import { useTrueSkillStore } from '@/stores/trueskillStore';
 import { supabase } from '@/integrations/supabase/client';
@@ -57,6 +57,118 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({ user }) => {
   const handleProfileModalClose = useCallback((open: boolean) => {
     setProfileModalOpen(open);
   }, []);
+
+  // COMPREHENSIVE SESSION SEARCH: Find where ratings are actually stored
+  const findAllSessions = useCallback(async () => {
+    console.log('🔍🔍🔍 [COMPREHENSIVE_SESSION_SEARCH] ===== SEARCHING ALL SESSIONS =====');
+    console.log('🔍🔍🔍 [COMPREHENSIVE_SESSION_SEARCH] Current user ID:', user.id);
+    console.log('🔍🔍🔍 [COMPREHENSIVE_SESSION_SEARCH] Current sessionId from store:', sessionId);
+    
+    try {
+      // 1. Check ALL trueskill_sessions regardless of user_id
+      console.log('🔍🔍🔍 [COMPREHENSIVE_SESSION_SEARCH] === STEP 1: ALL SESSIONS ===');
+      const { data: allSessions, error: allError } = await supabase
+        .from('trueskill_sessions')
+        .select('session_id, user_id, created_at, last_updated, ratings_data')
+        .order('created_at', { ascending: false });
+      
+      console.log(`🔍🔍🔍 [COMPREHENSIVE_SESSION_SEARCH] Total sessions in database: ${allSessions?.length || 0}`);
+      
+      if (allSessions && allSessions.length > 0) {
+        allSessions.forEach((session, index) => {
+          const ratingsCount = Object.keys(session.ratings_data || {}).length;
+          const isCurrentSession = session.session_id === sessionId;
+          const isLinkedToUser = session.user_id === user.id;
+          
+          console.log(`🔍🔍🔍 [COMPREHENSIVE_SESSION_SEARCH] Session ${index + 1}:`, {
+            sessionId: session.session_id,
+            userId: session.user_id,
+            ratingsCount,
+            createdAt: session.created_at,
+            lastUpdated: session.last_updated,
+            isCurrentSession,
+            isLinkedToUser,
+            hasSignificantRatings: ratingsCount > 50
+          });
+          
+          // Log the good sessions with lots of ratings
+          if (ratingsCount > 50) {
+            console.log(`🔍🔍🔍 [COMPREHENSIVE_SESSION_SEARCH] 🎯 FOUND GOOD SESSION with ${ratingsCount} ratings!`);
+            console.log(`🔍🔍🔍 [COMPREHENSIVE_SESSION_SEARCH] 🎯 Session ID: ${session.session_id}`);
+            console.log(`🔍🔍🔍 [COMPREHENSIVE_SESSION_SEARCH] 🎯 User ID: ${session.user_id || 'NULL'}`);
+            console.log(`🔍🔍🔍 [COMPREHENSIVE_SESSION_SEARCH] 🎯 Created: ${session.created_at}`);
+          }
+        });
+      }
+      
+      // 2. Check sessions specifically linked to your user
+      console.log('🔍🔍🔍 [COMPREHENSIVE_SESSION_SEARCH] === STEP 2: USER-LINKED SESSIONS ===');
+      const { data: userSessions, error: userError } = await supabase
+        .from('trueskill_sessions')
+        .select('session_id, created_at, last_updated, ratings_data')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      
+      console.log(`🔍🔍🔍 [COMPREHENSIVE_SESSION_SEARCH] Sessions linked to your user: ${userSessions?.length || 0}`);
+      
+      // 3. Check your profile's stored session ID
+      console.log('🔍🔍🔍 [COMPREHENSIVE_SESSION_SEARCH] === STEP 3: PROFILE SESSION ===');
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('trueskill_session_id')
+        .eq('id', user.id)
+        .maybeSingle();
+      
+      console.log('🔍🔍🔍 [COMPREHENSIVE_SESSION_SEARCH] Profile stored sessionId:', profile?.trueskill_session_id || 'NULL');
+      
+      // 4. Check for orphaned sessions (no user_id but significant ratings)
+      console.log('🔍🔍🔍 [COMPREHENSIVE_SESSION_SEARCH] === STEP 4: ORPHANED SESSIONS ===');
+      const { data: orphanedSessions, error: orphanedError } = await supabase
+        .from('trueskill_sessions')
+        .select('session_id, created_at, last_updated, ratings_data')
+        .is('user_id', null)
+        .order('created_at', { ascending: false });
+      
+      console.log(`🔍🔍🔍 [COMPREHENSIVE_SESSION_SEARCH] Orphaned sessions (no user_id): ${orphanedSessions?.length || 0}`);
+      
+      if (orphanedSessions && orphanedSessions.length > 0) {
+        orphanedSessions.forEach((session, index) => {
+          const ratingsCount = Object.keys(session.ratings_data || {}).length;
+          if (ratingsCount > 10) {
+            console.log(`🔍🔍🔍 [COMPREHENSIVE_SESSION_SEARCH] 🚨 ORPHANED SESSION ${index + 1} with ${ratingsCount} ratings!`);
+            console.log(`🔍🔍🔍 [COMPREHENSIVE_SESSION_SEARCH] 🚨 Session ID: ${session.session_id}`);
+            console.log(`🔍🔍🔍 [COMPREHENSIVE_SESSION_SEARCH] 🚨 Created: ${session.created_at}`);
+          }
+        });
+      }
+      
+      // 5. Check localStorage for any session information
+      console.log('🔍🔍🔍 [COMPREHENSIVE_SESSION_SEARCH] === STEP 5: LOCALSTORAGE CHECK ===');
+      const trueskillStorage = localStorage.getItem('trueskill-storage');
+      if (trueskillStorage) {
+        try {
+          const parsed = JSON.parse(trueskillStorage);
+          const localSessionId = parsed.state?.sessionId;
+          const localRatings = parsed.state?.ratings;
+          const localRatingsCount = Object.keys(localRatings || {}).length;
+          
+          console.log('🔍🔍🔍 [COMPREHENSIVE_SESSION_SEARCH] LocalStorage sessionId:', localSessionId);
+          console.log('🔍🔍🔍 [COMPREHENSIVE_SESSION_SEARCH] LocalStorage ratings count:', localRatingsCount);
+          
+          if (localRatingsCount > 50) {
+            console.log('🔍🔍🔍 [COMPREHENSIVE_SESSION_SEARCH] 🎯 LocalStorage has significant ratings!');
+          }
+        } catch (e) {
+          console.error('🔍🔍🔍 [COMPREHENSIVE_SESSION_SEARCH] Error parsing localStorage:', e);
+        }
+      }
+      
+      console.log('🔍🔍🔍 [COMPREHENSIVE_SESSION_SEARCH] ===== SEARCH COMPLETE =====');
+      
+    } catch (error) {
+      console.error('🔍🔍🔍 [COMPREHENSIVE_SESSION_SEARCH] Error during search:', error);
+    }
+  }, [user.id, sessionId]);
 
   // INVESTIGATION: Check for multiple sessions in database
   const investigateMultipleSessions = useCallback(async () => {
@@ -166,6 +278,11 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({ user }) => {
           <DropdownMenuItem onClick={investigateMultipleSessions}>
             <Database className="mr-2 h-4 w-4" />
             Investigate Sessions
+          </DropdownMenuItem>
+          
+          <DropdownMenuItem onClick={findAllSessions}>
+            <Search className="mr-2 h-4 w-4" />
+            Find All Sessions
           </DropdownMenuItem>
           
           {sessionId && (
