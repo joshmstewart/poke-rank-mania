@@ -19,12 +19,13 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
   
   const effectiveUser = currentUser || user;
 
-  console.log('🎭 [AUTH_USER_DISPLAY] ===== CRITICAL DEBUG =====');
-  console.log('🎭 [AUTH_USER_DISPLAY] Rendering with user:', {
+  console.log('🎭🎭🎭 [AUTH_USER_DISPLAY_TRACE] ===== AUTHENTICATED USER DISPLAY RENDER =====');
+  console.log('🎭🎭🎭 [AUTH_USER_DISPLAY_TRACE] Rendering with:', {
     hasEffectiveUser: !!effectiveUser,
     effectiveUserId: effectiveUser?.id?.substring(0, 8),
+    effectiveUserEmail: effectiveUser?.email,
+    timestamp: new Date().toISOString()
   });
-  console.log('🎭 [AUTH_USER_DISPLAY] ===== END DEBUG =====');
 
   // Use custom hooks for profile management
   const {
@@ -34,6 +35,14 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
     setIsProfileLoaded,
     isLoadingProfile
   } = useProfileLoader(effectiveUser?.id);
+
+  console.log('🎭🎭🎭 [AUTH_USER_DISPLAY_TRACE] Profile loader state:', {
+    hasCurrentProfile: !!currentProfile,
+    currentProfileId: currentProfile?.id?.substring(0, 8),
+    currentProfileAvatarUrl: currentProfile?.avatar_url,
+    isProfileLoaded,
+    isLoadingProfile: isLoadingProfile.current
+  });
 
   // Handle profile update events
   useProfileUpdateHandler({
@@ -46,6 +55,13 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
 
   // Create enhanced user object
   const enhancedUser = useEnhancedUser(effectiveUser, currentProfile);
+
+  console.log('🎭🎭🎭 [AUTH_USER_DISPLAY_TRACE] Enhanced user result:', {
+    hasEnhancedUser: !!enhancedUser,
+    enhancedUserAvatarUrl: enhancedUser?.user_metadata?.avatar_url,
+    enhancedUserDisplayName: enhancedUser?.user_metadata?.display_name,
+    enhancedUserUsername: enhancedUser?.user_metadata?.username
+  });
 
   const handleSignOut = useCallback(async () => {
     try {
@@ -69,17 +85,23 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
   }, []);
 
   if (!effectiveUser) {
+    console.log('🎭🎭🎭 [AUTH_USER_DISPLAY_TRACE] No effective user - returning null');
     return null;
   }
 
   // Don't render until we've at least attempted to load the profile
   if (!isProfileLoaded) {
+    console.log('🎭🎭🎭 [AUTH_USER_DISPLAY_TRACE] Profile not loaded yet - showing loading');
     return <UserDisplayLoading />;
   }
 
   if (!enhancedUser) {
+    console.log('🎭🎭🎭 [AUTH_USER_DISPLAY_TRACE] No enhanced user - showing loading');
     return <UserDisplayLoading />;
   }
+
+  console.log('🎭🎭🎭 [AUTH_USER_DISPLAY_TRACE] ===== RENDERING USER DROPDOWN =====');
+  console.log('🎭🎭🎭 [AUTH_USER_DISPLAY_TRACE] Passing enhanced user to dropdown with avatar:', enhancedUser.user_metadata?.avatar_url);
 
   return (
     <div className="flex items-center gap-2">
