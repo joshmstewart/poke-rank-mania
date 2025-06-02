@@ -74,23 +74,19 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = ({
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen p-4">
-        {/* Settings Card */}
+      <div className="bg-gradient-to-b from-blue-50 via-blue-50 to-blue-50 min-h-screen p-4">
+        {/* Settings Section - Direct card without extra wrapper */}
         <div className="max-w-7xl mx-auto mb-4">
-          <Card className="shadow-lg">
-            <div className="p-4">
-              <UnifiedControls
-                selectedGeneration={selectedGeneration}
-                battleType={battleType}
-                onGenerationChange={(gen) => onGenerationChange(Number(gen))}
-                onBattleTypeChange={setBattleType}
-                showBattleTypeControls={true}
-                mode="manual"
-                onReset={handleComprehensiveReset}
-                customResetAction={handleManualModeReset}
-              />
-            </div>
-          </Card>
+          <UnifiedControls
+            selectedGeneration={selectedGeneration}
+            battleType={battleType}
+            onGenerationChange={(gen) => onGenerationChange(Number(gen))}
+            onBattleTypeChange={setBattleType}
+            showBattleTypeControls={true}
+            mode="manual"
+            onReset={handleComprehensiveReset}
+            customResetAction={handleManualModeReset}
+          />
         </div>
 
         {/* Main Content Grid */}
