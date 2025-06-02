@@ -16,16 +16,21 @@ interface BattleData {
 
 export const useCloudSync = () => {
   const { user, session } = useAuth();
-  const { loadFromCloud, syncToCloud, getAllRatings, isHydrated } = useTrueSkillStore();
+  const { loadFromCloud, syncToCloud, getAllRatings, isHydrated, restoreSessionFromCloud } = useTrueSkillStore();
 
-  // Simplified auto-load - only when hydrated
+  // Restore TrueSkill session when user logs in and store is hydrated
   useEffect(() => {
-    if (isHydrated) {
-      loadFromCloud();
-    }
-  }, [loadFromCloud, isHydrated]);
+    const restoreSession = async () => {
+      if (user?.id && isHydrated) {
+        console.log('🔄 [CLOUD_SYNC] User logged in, attempting to restore TrueSkill session');
+        await restoreSessionFromCloud(user.id);
+      }
+    };
 
-  // Simplified auto-sync - only when hydrated
+    restoreSession();
+  }, [user?.id, isHydrated, restoreSessionFromCloud]);
+
+  // Auto-sync when authenticated and hydrated
   useEffect(() => {
     if (user && session && isHydrated) {
       syncToCloud();

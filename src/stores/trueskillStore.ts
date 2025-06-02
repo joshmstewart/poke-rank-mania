@@ -21,6 +21,7 @@ interface TrueSkillState {
   syncToCloud: () => Promise<void>;
   loadFromCloud: () => Promise<void>;
   setSessionId: (sessionId: string) => void;
+  restoreSessionFromCloud: (userId: string) => Promise<void>;
   markDirty: () => void;
   setLoading: (loading: boolean) => void;
   forceRehydrate: () => void;
@@ -120,6 +121,59 @@ export const useTrueSkillStore = create<TrueSkillState>()(
         });
       },
 
+      restoreSessionFromCloud: async (userId: string) => {
+        console.log(`🔄 [TRUESKILL_RESTORE] Restoring TrueSkill session for user: ${userId}`);
+        
+        try {
+          // Get user profile which should include their TrueSkill sessionId
+          const { data: profile, error } = await supabase
+            .from('profiles')
+            .select('trueskill_session_id')
+            .eq('id', userId)
+            .maybeSingle();
+
+          if (error) {
+            console.error('🔄 [TRUESKILL_RESTORE] Error fetching profile:', error);
+            return;
+          }
+
+          if (profile?.trueskill_session_id) {
+            console.log(`🔄 [TRUESKILL_RESTORE] Found stored sessionId: ${profile.trueskill_session_id}`);
+            
+            // Set the sessionId in the store and localStorage
+            set({ sessionId: profile.trueskill_session_id });
+            
+            // Force update localStorage with the restored sessionId
+            const currentStorage = JSON.parse(localStorage.getItem('trueskill-storage') || '{}');
+            currentStorage.state = {
+              ...currentStorage.state,
+              sessionId: profile.trueskill_session_id
+            };
+            localStorage.setItem('trueskill-storage', JSON.stringify(currentStorage));
+            
+            // Now load the data from cloud using the restored sessionId
+            await get().loadFromCloud();
+            
+            console.log(`🔄 [TRUESKILL_RESTORE] Successfully restored session and loaded data`);
+          } else {
+            console.log(`🔄 [TRUESKILL_RESTORE] No stored sessionId found for user, will use current session`);
+            
+            // If no stored sessionId but user is logged in, save current sessionId to their profile
+            const currentSessionId = get().sessionId;
+            if (currentSessionId) {
+              await supabase
+                .from('profiles')
+                .update({ trueskill_session_id: currentSessionId })
+                .eq('id', userId);
+              
+              console.log(`🔄 [TRUESKILL_RESTORE] Saved current sessionId to user profile`);
+            }
+          }
+        } catch (error) {
+          console.error('🔄 [TRUESKILL_RESTORE] Error during session restoration:', error);
+        }
+      },
+
       syncToCloud: async () => {
         const state = get();
         const { sessionId, ratings, lastUpdated, isDirty } = state;
@@ -153,56 +207,33 @@ export const useTrueSkillStore = create<TrueSkillState>()(
         const state = get();
         const { sessionId } = state;
 
-        console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] ===== LOAD FROM CLOUD START =====`);
-        console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] Current sessionId: ${sessionId}`);
-        console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] Current ratings count: ${Object.keys(state.ratings).length}`);
-        console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] Current lastUpdated: ${state.lastUpdated}`);
-
         if (!sessionId) {
-          console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] No sessionId - aborting cloud load`);
           return;
         }
 
         set({ isLoading: true });
 
         try {
-          console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] Making request to get-trueskill function`);
-          
           const { data, error } = await supabase.functions.invoke('get-trueskill', {
             body: { sessionId }
           });
-          
-          console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] Function response received:`);
-          console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] - Error: ${error ? JSON.stringify(error) : 'none'}`);
-          console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] - Data:`, data);
 
           if (error) {
-            console.error(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] Function invocation error:`, error);
+            console.error('Function invocation error:', error);
             return;
           }
 
           if (data?.success) {
-            console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] Setting store state with cloud data`);
-            
             set({
               ratings: data.ratings || {},
               lastUpdated: data.lastUpdated || state.lastUpdated
             });
-            
-            console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] Store updated - new ratings count: ${Object.keys(data.ratings || {}).length}`);
-          } else {
-            console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] Response success was false`);
-            if (data?.error) {
-              console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] Response error: ${data.error}`);
-            }
           }
           
         } catch (error) {
-          console.error(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] ===== LOAD FROM CLOUD ERROR =====`);
-          console.error(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] Error:`, error);
+          console.error('Load from cloud error:', error);
         } finally {
           set({ isLoading: false });
-          console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] ===== LOAD FROM CLOUD END =====`);
         }
       },
 
@@ -225,12 +256,10 @@ export const useTrueSkillStore = create<TrueSkillState>()(
         sessionId: state.sessionId,
         lastUpdated: state.lastUpdated
       }),
-      // CRITICAL FIX: Simplified hydration callback that doesn't access store methods
       onRehydrateStorage: () => {
         return (state, error) => {
           if (error) {
             console.error('Hydration failed:', error);
-            // Use a setTimeout to ensure the store is fully initialized before setting state
             setTimeout(() => {
               try {
                 useTrueSkillStore.setState({ isHydrated: true });
@@ -241,7 +270,6 @@ export const useTrueSkillStore = create<TrueSkillState>()(
           } else {
             const ratingsCount = Object.keys(state?.ratings || {}).length;
             
-            // Use setTimeout to avoid accessing store during initialization
             setTimeout(() => {
               try {
                 useTrueSkillStore.setState({ 
