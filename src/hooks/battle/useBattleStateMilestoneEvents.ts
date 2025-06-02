@@ -37,67 +37,62 @@ export const useBattleStateMilestoneEvents = ({
   setBattleResults
 }: MilestoneEventHookProps) => {
 
-  // STANDARD MILESTONES - Use this as the authoritative source
-  const STANDARD_MILESTONES = [10, 25, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 600, 700, 800, 900, 1000];
-
-  // DEBUGGING: Log milestone array and battle count on every render
+  // DEBUGGING: Log milestone array source and battle count on every render
   console.log(`🚨🚨🚨 [MILESTONE_DEBUG] ===== MILESTONE DETECTION DEBUG =====`);
   console.log(`🚨🚨🚨 [MILESTONE_DEBUG] Current battles: ${battlesCompleted}`);
-  console.log(`🚨🚨🚨 [MILESTONE_DEBUG] Standard milestones:`, STANDARD_MILESTONES);
-  console.log(`🚨🚨🚨 [MILESTONE_DEBUG] Passed milestones array:`, milestones);
-  console.log(`🚨🚨🚨 [MILESTONE_DEBUG] Are they the same?`, JSON.stringify(STANDARD_MILESTONES) === JSON.stringify(milestones));
-  console.log(`🚨🚨🚨 [MILESTONE_DEBUG] Is ${battlesCompleted} a standard milestone?`, STANDARD_MILESTONES.includes(battlesCompleted));
+  console.log(`🚨🚨🚨 [MILESTONE_DEBUG] Milestones from props:`, milestones);
+  console.log(`🚨🚨🚨 [MILESTONE_DEBUG] Is ${battlesCompleted} a milestone?`, milestones.includes(battlesCompleted));
   console.log(`🚨🚨🚨 [MILESTONE_DEBUG] showingMilestone:`, showingMilestone);
   console.log(`🚨🚨🚨 [MILESTONE_DEBUG] milestoneInProgress:`, milestoneInProgress);
   console.log(`🚨🚨🚨 [MILESTONE_DEBUG] ======================================`);
 
-  // CRITICAL FIX: Only use standard milestones, ignore passed array if it's wrong
+  // Use the milestones array passed in from props (from the store/state)
   useEffect(() => {
-    console.log(`🎯 [MILESTONE_CHECK_FIXED] Checking for exact standard milestone match`);
-    console.log(`🎯 [MILESTONE_CHECK_FIXED] Current battles: ${battlesCompleted}`);
+    console.log(`🎯 [MILESTONE_CHECK] Checking for milestone at battle ${battlesCompleted}`);
+    console.log(`🎯 [MILESTONE_CHECK] Available milestones:`, milestones);
     
-    // ONLY trigger if we're exactly at a STANDARD milestone
-    const isStandardMilestone = STANDARD_MILESTONES.includes(battlesCompleted);
+    // Only trigger if we're exactly at a milestone from the props array
+    const isMilestone = milestones.includes(battlesCompleted);
     
-    if (isStandardMilestone && !showingMilestone && !milestoneInProgress) {
-      console.log(`🎯 [MILESTONE_CHECK_FIXED] ✅ VALID MILESTONE: Battle ${battlesCompleted} is a standard milestone!`);
-      console.log(`🎯 [MILESTONE_CHECK_FIXED] ✅ Triggering milestone view...`);
+    if (isMilestone && !showingMilestone && !milestoneInProgress) {
+      console.log(`🎯 [MILESTONE_CHECK] ✅ VALID MILESTONE: Battle ${battlesCompleted} is a milestone!`);
+      console.log(`🎯 [MILESTONE_CHECK] ✅ Triggering milestone view...`);
       
       setMilestoneInProgress(true);
       setShowingMilestone(true);
       setRankingGenerated(true);
-    } else if (isStandardMilestone) {
-      console.log(`🎯 [MILESTONE_CHECK_FIXED] ⚠️ Valid milestone ${battlesCompleted} but already showing or in progress`);
+    } else if (isMilestone) {
+      console.log(`🎯 [MILESTONE_CHECK] ⚠️ Valid milestone ${battlesCompleted} but already showing or in progress`);
     } else {
-      console.log(`🎯 [MILESTONE_CHECK_FIXED] ✅ Battle ${battlesCompleted} is NOT a standard milestone - correctly skipping`);
+      console.log(`🎯 [MILESTONE_CHECK] ✅ Battle ${battlesCompleted} is NOT a milestone - correctly skipping`);
     }
-  }, [battlesCompleted, showingMilestone, milestoneInProgress, setMilestoneInProgress, setShowingMilestone, setRankingGenerated]);
+  }, [battlesCompleted, milestones, showingMilestone, milestoneInProgress, setMilestoneInProgress, setShowingMilestone, setRankingGenerated]);
 
-  // Enhanced milestone checking that only triggers on standard milestone matches
+  // Enhanced milestone checking that uses the props milestone array
   const checkAndTriggerMilestone = useCallback((newBattlesCompleted: number) => {
-    console.log(`🎯 [MILESTONE_CHECK_STANDARD] Checking standard milestone for battle ${newBattlesCompleted}`);
-    console.log(`🎯 [MILESTONE_CHECK_STANDARD] Standard milestones: ${STANDARD_MILESTONES.join(', ')}`);
+    console.log(`🎯 [MILESTONE_CHECK_CALLBACK] Checking milestone for battle ${newBattlesCompleted}`);
+    console.log(`🎯 [MILESTONE_CHECK_CALLBACK] Milestones from props: ${milestones.join(', ')}`);
     
-    // CRITICAL FIX: Only trigger on standard milestone matches
-    const isStandardMilestone = STANDARD_MILESTONES.includes(newBattlesCompleted);
-    console.log(`🎯 [MILESTONE_CHECK_STANDARD] Is exactly at standard milestone? ${isStandardMilestone}`);
+    // Use the milestones array from props
+    const isMilestone = milestones.includes(newBattlesCompleted);
+    console.log(`🎯 [MILESTONE_CHECK_CALLBACK] Is exactly at milestone? ${isMilestone}`);
     
-    if (isStandardMilestone && !showingMilestone && !milestoneInProgress) {
-      console.log(`🎯 [MILESTONE_CHECK_STANDARD] ✅ Triggering valid milestone ${newBattlesCompleted}`);
+    if (isMilestone && !showingMilestone && !milestoneInProgress) {
+      console.log(`🎯 [MILESTONE_CHECK_CALLBACK] ✅ Triggering valid milestone ${newBattlesCompleted}`);
       setMilestoneInProgress(true);
       setShowingMilestone(true);
       setRankingGenerated(true);
       return true;
     }
     
-    if (!isStandardMilestone) {
-      console.log(`🎯 [MILESTONE_CHECK_STANDARD] ✅ Battle ${newBattlesCompleted} is NOT a milestone - correctly skipping`);
+    if (!isMilestone) {
+      console.log(`🎯 [MILESTONE_CHECK_CALLBACK] ✅ Battle ${newBattlesCompleted} is NOT a milestone - correctly skipping`);
     }
     
     return false;
-  }, [showingMilestone, milestoneInProgress, setMilestoneInProgress, setShowingMilestone, setRankingGenerated]);
+  }, [milestones, showingMilestone, milestoneInProgress, setMilestoneInProgress, setShowingMilestone, setRankingGenerated]);
 
-  // Enhanced process battle result function with standard milestone detection
+  // Enhanced process battle result function with props milestone detection
   const originalProcessBattleResult = useCallback((
     selectedPokemonIds: number[],
     currentBattlePokemon: Pokemon[],
@@ -138,7 +133,7 @@ export const useBattleStateMilestoneEvents = ({
       return newResults;
     });
 
-    // CRITICAL FIX: Use standard milestone checking
+    // Use props milestone checking
     const milestoneTriggered = checkAndTriggerMilestone(newBattlesCompleted);
     
     if (!milestoneTriggered) {
