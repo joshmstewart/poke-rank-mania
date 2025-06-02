@@ -12,6 +12,7 @@ interface EnhancedPokemon extends Pokemon {
   losses: number;
   winRate: number;
   image: string;
+  generationId: number;
 }
 
 interface UseEnhancedAvailablePokemonProps {
@@ -25,30 +26,50 @@ export const useEnhancedAvailablePokemon = ({
 }: UseEnhancedAvailablePokemonProps) => {
   
   const enhancedAvailablePokemon = useMemo(() => {
-    // Create a lookup map for ranked Pokemon for O(1) lookup
+    // CRITICAL FIX: Create efficient lookup map for ranked Pokemon
     const rankedPokemonMap = new Map<number, { rank: number; pokemon: RankedPokemon }>();
-    localRankings.forEach((pokemon, index) => {
-      rankedPokemonMap.set(pokemon.id, { rank: index + 1, pokemon });
-    });
     
-    const enhanced: EnhancedPokemon[] = filteredAvailablePokemon.map(pokemon => {
-      const rankedInfo = rankedPokemonMap.get(pokemon.id);
-      
-      return {
-        ...pokemon,
-        isRanked: !!rankedInfo,
-        currentRank: rankedInfo?.rank || null,
-        score: rankedInfo?.pokemon.score || 0,
-        count: rankedInfo?.pokemon.count || 0,
-        confidence: rankedInfo?.pokemon.confidence || 0,
-        wins: rankedInfo?.pokemon.wins || 0,
-        losses: rankedInfo?.pokemon.losses || 0,
-        winRate: rankedInfo?.pokemon.winRate || 0
-      };
-    });
+    if (localRankings && Array.isArray(localRankings)) {
+      localRankings.forEach((pokemon, index) => {
+        if (pokemon && pokemon.id) {
+          rankedPokemonMap.set(pokemon.id, { rank: index + 1, pokemon });
+        }
+      });
+    }
+    
+    // CRITICAL FIX: Safely process each available Pokemon
+    const enhanced: EnhancedPokemon[] = [];
+    
+    if (filteredAvailablePokemon && Array.isArray(filteredAvailablePokemon)) {
+      filteredAvailablePokemon.forEach(pokemon => {
+        // Validate Pokemon object
+        if (!pokemon || typeof pokemon.id !== 'number') {
+          return; // Skip invalid Pokemon
+        }
+        
+        const rankedInfo = rankedPokemonMap.get(pokemon.id);
+        
+        // Create enhanced Pokemon with all required properties
+        const enhancedPokemon: EnhancedPokemon = {
+          ...pokemon,
+          isRanked: !!rankedInfo,
+          currentRank: rankedInfo?.rank || null,
+          score: rankedInfo?.pokemon.score || 0,
+          count: rankedInfo?.pokemon.count || 0,
+          confidence: rankedInfo?.pokemon.confidence || 0,
+          wins: rankedInfo?.pokemon.wins || 0,
+          losses: rankedInfo?.pokemon.losses || 0,
+          winRate: rankedInfo?.pokemon.winRate || 0,
+          image: pokemon.image || '',
+          generationId: pokemon.generationId || 1 // Ensure we always have a valid generation
+        };
+        
+        enhanced.push(enhancedPokemon);
+      });
+    }
     
     return enhanced;
-  }, [filteredAvailablePokemon.length, localRankings.length]);
+  }, [filteredAvailablePokemon, localRankings]);
 
   return { enhancedAvailablePokemon };
 };

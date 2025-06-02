@@ -24,7 +24,7 @@ export const useTrueSkillSync = () => {
       const initialRatings = useTrueSkillStore.getState().getAllRatings();
       const initialCount = Object.keys(initialRatings).length;
       
-      // CRITICAL FIX: Always attempt cloud sync after hydration, regardless of initial count
+      // Always attempt cloud sync after hydration if we have a session
       if (!hasTriedCloudSync && sessionId) {
         setHasTriedCloudSync(true);
         
@@ -99,7 +99,9 @@ export const useTrueSkillSync = () => {
           count: ratingData.battleCount || 0,
           wins: 0,
           losses: 0,
-          winRate: 0
+          winRate: 0,
+          generationId: basePokemon.generationId || 1, // Ensure generation is set
+          image: basePokemon.image || '' // Ensure image is set
         };
 
         rankings.push(rankedPokemon);
@@ -114,7 +116,9 @@ export const useTrueSkillSync = () => {
     return (newRankings: RankedPokemon[]) => {
       const formattedRankings = newRankings.map(pokemon => ({
         ...pokemon,
-        name: formatPokemonName(pokemon.name)
+        name: formatPokemonName(pokemon.name),
+        generationId: pokemon.generationId || 1,
+        image: pokemon.image || ''
       }));
       
       setLocalRankings(formattedRankings);

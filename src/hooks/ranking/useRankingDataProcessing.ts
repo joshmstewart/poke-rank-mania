@@ -20,23 +20,26 @@ export const useRankingDataProcessing = ({
   
   const { localRankings: trueskillRankings, updateLocalRankings } = useTrueSkillSync();
   
-  // Use TrueSkill rankings when available, fall back to manual rankings
+  // CRITICAL FIX: Use TrueSkill rankings as the primary source, with proper fallback
   const localRankings = useMemo(() => {
-    if (trueskillRankings.length > 0) {
+    // If we have TrueSkill rankings from the 277 rated Pokemon, use them
+    if (trueskillRankings && trueskillRankings.length > 0) {
       return trueskillRankings;
     }
     
-    if (rankedPokemon.length > 0) {
+    // Only fall back to manual rankings if TrueSkill is truly empty
+    if (rankedPokemon && rankedPokemon.length > 0) {
       return rankedPokemon;
     }
     
+    // Default to empty array
     return [];
   }, [trueskillRankings, rankedPokemon]);
 
   // Apply generation filtering to available Pokemon
   const { filteredAvailablePokemon } = useGenerationFilter(availablePokemon, selectedGeneration);
 
-  // NEW: Enhance available Pokemon with ranking status
+  // CRITICAL FIX: Enhanced available Pokemon with proper ranking status
   const { enhancedAvailablePokemon } = useEnhancedAvailablePokemon({
     filteredAvailablePokemon,
     localRankings
