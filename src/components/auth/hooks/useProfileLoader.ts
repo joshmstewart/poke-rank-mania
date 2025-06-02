@@ -61,7 +61,9 @@ export const useProfileLoader = (userId: string | undefined) => {
         console.log('🔄 [PROFILE_LOADER] ✅ SETTING FRESH PROFILE - Avatar:', freshProfile.avatar_url);
         console.log('🔄 [PROFILE_LOADER] 🚨 STATE UPDATE: setCurrentProfile with fresh data');
         console.log('🔄 [PROFILE_LOADER] 🚨 FRESH PROFILE FULL OBJECT:', JSON.stringify(freshProfile, null, 2));
-        setCurrentProfile(freshProfile);
+        
+        // CRITICAL FIX: Force state update with a new object reference
+        setCurrentProfile({ ...freshProfile });
       }
       setIsProfileLoaded(true);
       
@@ -86,13 +88,30 @@ export const useProfileLoader = (userId: string | undefined) => {
       timestamp: new Date().toISOString(),
       fullCurrentProfileObject: currentProfile ? JSON.stringify(currentProfile, null, 2) : 'NULL/UNDEFINED'
     });
+    
+    // CRITICAL: Log what we're about to return to the consuming component
+    console.log('🔄 [PROFILE_LOADER] 🎯 ABOUT TO RETURN TO COMPONENT:', {
+      willReturnProfile: !!currentProfile,
+      willReturnAvatarUrl: currentProfile?.avatar_url,
+      willReturnLoaded: isProfileLoaded
+    });
   }, [currentProfile, isProfileLoaded]);
 
-  return {
+  // CRITICAL: Log every time the hook returns values
+  const returnValue = {
     currentProfile,
     setCurrentProfile,
     isProfileLoaded,
     setIsProfileLoaded,
     isLoadingProfile
   };
+  
+  console.log('🔄 [PROFILE_LOADER] 🎯 HOOK RETURN VALUES:', {
+    returningProfile: !!returnValue.currentProfile,
+    returningAvatarUrl: returnValue.currentProfile?.avatar_url,
+    returningLoaded: returnValue.isProfileLoaded,
+    timestamp: new Date().toISOString()
+  });
+
+  return returnValue;
 };
