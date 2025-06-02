@@ -74,11 +74,11 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = ({
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen p-4">
-        {/* Settings Card */}
-        <div className="max-w-7xl mx-auto mb-4">
-          <Card className="shadow-lg">
-            <div className="p-4">
+      <div className="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen p-6">
+        <div className="max-w-7xl mx-auto space-y-6">
+          {/* Settings Card */}
+          <Card className="shadow-md">
+            <div className="p-6">
               <UnifiedControls
                 selectedGeneration={selectedGeneration}
                 battleType={battleType}
@@ -91,13 +91,11 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = ({
               />
             </div>
           </Card>
-        </div>
 
-        {/* Main Content Grid */}
-        <div className="max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-2 gap-4" style={{ height: 'calc(100vh - 12rem)' }}>
+          {/* Main Content Grid */}
+          <div className="grid md:grid-cols-2 gap-6" style={{ height: 'calc(100vh - 16rem)' }}>
             {/* Enhanced Available Pokemon Card */}
-            <Card className="shadow-lg border border-gray-200 overflow-hidden flex flex-col">
+            <Card className="shadow-md border border-gray-200 overflow-hidden flex flex-col">
               <EnhancedAvailablePokemonSection
                 enhancedAvailablePokemon={enhancedAvailablePokemon}
                 isLoading={isLoading}
@@ -112,7 +110,7 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = ({
             </Card>
 
             {/* Rankings Card */}
-            <Card className="shadow-lg border border-gray-200 overflow-hidden flex flex-col">
+            <Card className="shadow-md border border-gray-200 overflow-hidden flex flex-col">
               <SortableContext 
                 items={displayRankings.map(p => p.id.toString())} 
                 strategy={verticalListSortingStrategy}
