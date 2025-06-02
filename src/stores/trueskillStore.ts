@@ -156,26 +156,78 @@ export const useTrueSkillStore = create<TrueSkillState>()(
         const state = get();
         const { sessionId } = state;
 
+        console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] ===== LOAD FROM CLOUD START =====`);
+        console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] Current sessionId: ${sessionId}`);
+        console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] Current ratings count: ${Object.keys(state.ratings).length}`);
+        console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] Current lastUpdated: ${state.lastUpdated}`);
+
         if (!sessionId) {
+          console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] No sessionId - aborting cloud load`);
           return;
         }
 
         set({ isLoading: true });
 
         try {
+          console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] Making fetch request to: /api/getTrueSkill?sessionId=${sessionId}`);
+          
           const response = await fetch(`/api/getTrueSkill?sessionId=${sessionId}`);
+          
+          console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] Response received:`);
+          console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] - Status: ${response.status}`);
+          console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] - Status Text: ${response.statusText}`);
+          console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] - Headers: ${JSON.stringify(Object.fromEntries(response.headers.entries()))}`);
+          
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+          
           const data = await response.json();
+          
+          console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] Parsed response data:`);
+          console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] - Success: ${data.success}`);
+          console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] - Data type: ${typeof data}`);
+          console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] - Data keys: ${Object.keys(data).join(', ')}`);
+          
+          if (data.ratings) {
+            console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] - Ratings type: ${typeof data.ratings}`);
+            console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] - Ratings count: ${Object.keys(data.ratings).length}`);
+            console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] - First 5 rating IDs: ${Object.keys(data.ratings).slice(0, 5).join(', ')}`);
+          } else {
+            console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] - No ratings in response`);
+          }
+          
+          if (data.lastUpdated) {
+            console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] - LastUpdated: ${data.lastUpdated}`);
+          }
 
           if (data.success) {
+            console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] Setting store state with cloud data`);
+            
             set({
-              ratings: data.ratings,
-              lastUpdated: data.lastUpdated
+              ratings: data.ratings || {},
+              lastUpdated: data.lastUpdated || state.lastUpdated
             });
+            
+            console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] Store updated - new ratings count: ${Object.keys(data.ratings || {}).length}`);
+          } else {
+            console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] Response success was false`);
+            if (data.error) {
+              console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] Response error: ${data.error}`);
+            }
           }
+          
         } catch (error) {
-          console.error('Load error:', error);
+          console.error(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] ===== LOAD FROM CLOUD ERROR =====`);
+          console.error(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] Error type: ${typeof error}`);
+          console.error(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] Error constructor: ${error?.constructor?.name}`);
+          console.error(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] Error message: "${error?.message || 'No message'}"`);
+          console.error(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] Error stack:`, error?.stack);
+          console.error(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] Full error object:`, error);
+          console.error(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] JSON stringified error:`, JSON.stringify(error, Object.getOwnPropertyNames(error)));
         } finally {
           set({ isLoading: false });
+          console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] ===== LOAD FROM CLOUD END =====`);
         }
       },
 

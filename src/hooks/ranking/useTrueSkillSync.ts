@@ -27,16 +27,26 @@ export const useTrueSkillSync = () => {
   const ratingsCount = Object.keys(allRatings).length;
 
   useEffect(() => {
+    console.log(`🔍🔍🔍 [TRUESKILL_SYNC_DEBUG] ===== TRUESKILL SYNC EFFECT =====`);
+    console.log(`🔍🔍🔍 [TRUESKILL_SYNC_DEBUG] contextReady: ${contextReady}`);
+    console.log(`🔍🔍🔍 [TRUESKILL_SYNC_DEBUG] isHydrated: ${isHydrated}`);
+    console.log(`🔍🔍🔍 [TRUESKILL_SYNC_DEBUG] ratingsCount: ${ratingsCount}`);
+    console.log(`🔍🔍🔍 [TRUESKILL_SYNC_DEBUG] pokemonLookupMap.size: ${pokemonLookupMap.size}`);
+
     if (!contextReady || !isHydrated) {
+      console.log(`🔍🔍🔍 [TRUESKILL_SYNC_DEBUG] Not ready - early return`);
       return;
     }
 
     if (ratingsCount === 0) {
+      console.log(`🔍🔍🔍 [TRUESKILL_SYNC_DEBUG] No ratings - setting empty array`);
       setLocalRankings([]);
       return;
     }
     
     const ratedPokemonIds = Object.keys(allRatings).map(Number);
+    console.log(`🔍🔍🔍 [TRUESKILL_SYNC_DEBUG] ratedPokemonIds: [${ratedPokemonIds.slice(0, 10).join(', ')}${ratedPokemonIds.length > 10 ? '...' : ''}]`);
+    
     const rankings: RankedPokemon[] = [];
 
     ratedPokemonIds.forEach(pokemonId => {
@@ -63,10 +73,16 @@ export const useTrueSkillSync = () => {
         };
 
         rankings.push(rankedPokemon);
+      } else {
+        console.log(`🔍🔍🔍 [TRUESKILL_SYNC_DEBUG] Missing data for Pokemon ${pokemonId}: basePokemon=${!!basePokemon}, ratingData=${!!ratingData}`);
       }
     });
 
     rankings.sort((a, b) => b.score - a.score);
+    
+    console.log(`🔍🔍🔍 [TRUESKILL_SYNC_DEBUG] Generated ${rankings.length} rankings`);
+    console.log(`🔍🔍🔍 [TRUESKILL_SYNC_DEBUG] Top 5 rankings: ${rankings.slice(0, 5).map(p => `${p.name}(${p.id}):${p.score.toFixed(2)}`).join(', ')}`);
+    
     setLocalRankings(rankings);
   }, [contextReady, ratingsCount, allRatings, pokemonLookupMap, isHydrated]);
 
@@ -77,6 +93,7 @@ export const useTrueSkillSync = () => {
         name: formatPokemonName(pokemon.name)
       }));
       
+      console.log(`🔍🔍🔍 [TRUESKILL_SYNC_DEBUG] updateLocalRankings called with ${formattedRankings.length} rankings`);
       setLocalRankings(formattedRankings);
     };
   }, []);
