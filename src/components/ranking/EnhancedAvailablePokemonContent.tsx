@@ -2,6 +2,7 @@
 import React from "react";
 import { useDroppable } from '@dnd-kit/core';
 import { EnhancedAvailablePokemonCard } from "./EnhancedAvailablePokemonCard";
+import GenerationHeader from "@/components/pokemon/GenerationHeader";
 
 interface EnhancedAvailablePokemonContentProps {
   items: any[];
@@ -18,32 +19,6 @@ interface EnhancedAvailablePokemonContentProps {
 // Simple loading placeholder component
 const PokemonLoadingPlaceholder = () => (
   <div className="animate-pulse bg-gray-200 rounded-lg h-32 w-full"></div>
-);
-
-// Simple generation header component
-const SimpleGenerationHeader = ({ 
-  generationId, 
-  isExpanded, 
-  onToggle 
-}: { 
-  generationId: number; 
-  isExpanded: boolean; 
-  onToggle: () => void; 
-}) => (
-  <div className="bg-white rounded-lg my-2 border border-gray-200 shadow-sm">
-    <button
-      onClick={onToggle}
-      className="w-full flex items-center justify-between p-3 hover:bg-gray-50 transition-colors"
-    >
-      <div className="flex flex-col items-start">
-        <h3 className="font-semibold text-gray-900 text-sm">Generation {generationId}</h3>
-        <p className="text-xs text-gray-600">Gen {generationId} Pokémon</p>
-      </div>
-      <span className="text-gray-400">
-        {isExpanded ? '▲' : '▼'}
-      </span>
-    </button>
-  </div>
 );
 
 export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonContentProps> = ({
@@ -85,10 +60,22 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
         <div>
           {items.map((item, index) => {
             if (item.type === 'header') {
+              // Generate proper generation data
+              const generationData = {
+                id: item.generation,
+                name: `Generation ${item.generation}`,
+                region: getRegionForGeneration(item.generation),
+                games: getGamesForGeneration(item.generation)
+              };
+              
               return (
-                <SimpleGenerationHeader
+                <GenerationHeader
                   key={`gen-${item.generation}`}
                   generationId={item.generation}
+                  name={generationData.name}
+                  region={generationData.region}
+                  games={generationData.games}
+                  viewMode={viewMode}
                   isExpanded={isGenerationExpanded(item.generation)}
                   onToggle={() => onToggleGeneration(item.generation)}
                 />
@@ -118,4 +105,35 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
       )}
     </div>
   );
+};
+
+// Helper functions for generation data
+const getRegionForGeneration = (gen: number): string => {
+  const regions: Record<number, string> = {
+    1: "Kanto",
+    2: "Johto", 
+    3: "Hoenn",
+    4: "Sinnoh",
+    5: "Unova",
+    6: "Kalos",
+    7: "Alola",
+    8: "Galar",
+    9: "Paldea"
+  };
+  return regions[gen] || "Unknown";
+};
+
+const getGamesForGeneration = (gen: number): string => {
+  const games: Record<number, string> = {
+    1: "Red, Blue, Yellow",
+    2: "Gold, Silver, Crystal",
+    3: "Ruby, Sapphire, Emerald",
+    4: "Diamond, Pearl, Platinum",
+    5: "Black, White, B2W2",
+    6: "X, Y, ORAS",
+    7: "Sun, Moon, USUM",
+    8: "Sword, Shield",
+    9: "Scarlet, Violet"
+  };
+  return games[gen] || "Unknown";
 };

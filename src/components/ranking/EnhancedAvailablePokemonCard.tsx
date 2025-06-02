@@ -1,18 +1,17 @@
 
 import React from "react";
 import { useDraggable } from '@dnd-kit/core';
-import PokemonCardContent from "@/components/battle/PokemonCardContent";
 import { Badge } from "@/components/ui/badge";
 import { Crown } from "lucide-react";
+import PokemonCard from "@/components/PokemonCard";
 
 interface EnhancedPokemon {
   id: number;
   name: string;
-  image: string; // Make required to match RankedPokemon type
+  image: string;
   types?: string[];
   isRanked: boolean;
   currentRank: number | null;
-  // Make required properties to satisfy Pokemon/RankedPokemon type requirements
   score: number;
   count: number;
   confidence: number;
@@ -91,51 +90,14 @@ export const EnhancedAvailablePokemonCard: React.FC<EnhancedAvailablePokemonCard
         </div>
       )}
 
-      {/* Pokemon Card Content - Use simplified PokemonCard instead */}
+      {/* Use the standard PokemonCard component that works correctly */}
       <div className={`relative ${pokemon.isRanked ? 'opacity-90' : ''}`}>
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 hover:shadow-md transition-shadow">
-          <div className="flex items-center space-x-3">
-            {/* Pokemon Image */}
-            <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-              {pokemon.image ? (
-                <img
-                  src={pokemon.image}
-                  alt={pokemon.name}
-                  className="w-full h-full object-contain rounded-lg"
-                  onError={(e) => {
-                    console.error(`Failed to load image for ${pokemon.name}: ${pokemon.image}`);
-                    e.currentTarget.style.display = 'none';
-                  }}
-                />
-              ) : (
-                <span className="text-xs text-gray-400">No Image</span>
-              )}
-            </div>
-            
-            {/* Pokemon Info */}
-            <div className="flex-1 min-w-0">
-              <div className="flex justify-between items-start">
-                <span className="font-medium text-sm truncate pr-2">{pokemon.name}</span>
-                <span className="text-xs text-gray-500 whitespace-nowrap">#{pokemon.id}</span>
-              </div>
-              
-              {/* Types */}
-              {pokemon.types && pokemon.types.length > 0 && (
-                <div className="flex gap-1 mt-1 flex-wrap">
-                  {pokemon.types.map(type => (
-                    <Badge 
-                      key={type} 
-                      variant="secondary"
-                      className="text-xs px-1.5 py-0.5"
-                    >
-                      {type}
-                    </Badge>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+        <PokemonCard
+          pokemon={pokemon}
+          compact={true}
+          viewMode="grid"
+          isDragging={isDragging}
+        />
       </div>
     </div>
   );

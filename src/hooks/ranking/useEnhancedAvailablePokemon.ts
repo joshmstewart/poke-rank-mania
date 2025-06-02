@@ -5,14 +5,12 @@ import { Pokemon, RankedPokemon } from "@/services/pokemon";
 interface EnhancedPokemon extends Pokemon {
   isRanked: boolean;
   currentRank: number | null;
-  // Add required properties for type compatibility
   score: number;
   count: number;
   confidence: number;
   wins: number;
   losses: number;
   winRate: number;
-  // Ensure image is required to match RankedPokemon type
   image: string;
 }
 
@@ -39,16 +37,18 @@ export const useEnhancedAvailablePokemon = ({
     const enhanced: EnhancedPokemon[] = filteredAvailablePokemon.map(pokemon => {
       const rankedInfo = rankedPokemonMap.get(pokemon.id);
       
-      // Generate proper image URL if missing
-      const imageUrl = pokemon.image || 
+      // Ensure we have a proper image URL - use the existing Pokemon image or generate one
+      const imageUrl = pokemon.image && pokemon.image.trim() !== '' ? 
+        pokemon.image : 
         `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pokemon.id}.png`;
+      
+      console.log(`🔮 [ENHANCED_AVAILABLE] Processing ${pokemon.name} - image: ${imageUrl.substring(0, 50)}...`);
       
       return {
         ...pokemon,
-        image: imageUrl, // Ensure image is always a proper URL
+        image: imageUrl,
         isRanked: !!rankedInfo,
         currentRank: rankedInfo?.rank || null,
-        // Provide default values for required properties
         score: rankedInfo?.pokemon.score || 0,
         count: rankedInfo?.pokemon.count || 0,
         confidence: rankedInfo?.pokemon.confidence || 0,
