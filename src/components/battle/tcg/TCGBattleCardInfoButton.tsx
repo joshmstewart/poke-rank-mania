@@ -11,7 +11,7 @@ const TCGBattleCardInfoButton: React.FC<TCGBattleCardInfoButtonProps> = ({
   pokemon
 }) => {
   return (
-    <div className="absolute top-1 right-1 z-30">
+    <div className="absolute top-1 right-1 z-30" data-info-button="true">
       <PokemonInfoModal pokemon={pokemon} />
     </div>
   );

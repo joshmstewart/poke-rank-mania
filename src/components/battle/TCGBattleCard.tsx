@@ -49,23 +49,56 @@ const TCGBattleCard: React.FC<TCGBattleCardProps> = memo(({
   useTCGCleanupEffect(displayName, clickTimeoutRef);
   useTCGModalEffect(modalOpen, displayName, setIsHovered);
 
-  const {
-    handleClick,
-    handleMouseEnter,
-    handleMouseLeave,
-    handleInfoButtonInteraction,
-    handleModalStateChange
-  } = useTCGBattleCardHandlers({
-    displayName,
-    pokemonId: pokemon.id,
-    onSelect,
-    isProcessing,
-    clickTimeoutRef,
-    lastClickTimeRef,
-    modalOpen,
-    setIsHovered,
-    setModalOpen
-  });
+  const handleClick = React.useCallback((e: React.MouseEvent) => {
+    console.log(`🖱️ [INFO_BUTTON_DEBUG] TCGBattleCard ${displayName}: Card clicked`);
+    
+    // Check for info button clicks - match manual mode approach
+    const target = e.target as HTMLElement;
+    const isInfoButtonClick = target.closest('[data-info-button="true"]') || 
+        target.closest('[data-radix-dialog-content]') ||
+        target.closest('[data-radix-dialog-overlay]') ||
+        target.closest('[role="dialog"]');
+    
+    if (isInfoButtonClick) {
+      console.log(`ℹ️ [INFO_BUTTON_DEBUG] TCGBattleCard: Info dialog interaction for ${displayName}, preventing card selection`);
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+
+    const now = Date.now();
+    
+    // Prevent rapid double-clicks
+    if (now - lastClickTimeRef.current < 300) {
+      console.log(`🚫 TCGBattleCard: Ignoring rapid click on ${displayName}`);
+      return;
+    }
+    
+    lastClickTimeRef.current = now;
+    
+    console.log(`🖱️ TCGBattleCard: Click on ${displayName} (${pokemon.id}) - processing: ${isProcessing}`);
+    
+    if (clickTimeoutRef.current) {
+      clearTimeout(clickTimeoutRef.current);
+    }
+    
+    clickTimeoutRef.current = setTimeout(() => {
+      onSelect(pokemon.id);
+      clickTimeoutRef.current = null;
+    }, 50);
+  }, [pokemon.id, displayName, onSelect, isProcessing]);
+
+  const handleMouseEnter = React.useCallback(() => {
+    console.log(`🔘 [HOVER_DEBUG] TCGBattleCard ${displayName}: Mouse enter - isProcessing: ${isProcessing}`);
+    if (!isProcessing) {
+      setIsHovered(true);
+    }
+  }, [isProcessing, displayName, setIsHovered]);
+
+  const handleMouseLeave = React.useCallback(() => {
+    console.log(`🔘 [HOVER_DEBUG] TCGBattleCard ${displayName}: Mouse leave`);
+    setIsHovered(false);
+  }, [displayName, setIsHovered]);
 
   const shouldShowHover = isHovered && !isSelected && !modalOpen && !isProcessing && !isLoadingTCG;
 
