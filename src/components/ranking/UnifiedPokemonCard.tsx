@@ -13,6 +13,7 @@ interface UnifiedPokemonCardProps {
   showRank?: boolean;
   showScore?: boolean;
   isRanked?: boolean;
+  hideScore?: boolean; // New prop to hide score
 }
 
 export const UnifiedPokemonCard: React.FC<UnifiedPokemonCardProps> = ({
@@ -20,7 +21,8 @@ export const UnifiedPokemonCard: React.FC<UnifiedPokemonCardProps> = ({
   rank,
   showRank = false,
   showScore = false,
-  isRanked = false
+  isRanked = false,
+  hideScore = false
 }) => {
   // Get background color based on Pokemon type
   const backgroundColor = getPokemonTypeColor(pokemon);
@@ -79,8 +81,8 @@ export const UnifiedPokemonCard: React.FC<UnifiedPokemonCardProps> = ({
           #{formattedId}
         </div>
         
-        {/* Score display */}
-        {showScore && pokemon.score !== undefined && (
+        {/* Score display - only show if not hidden and showScore is true */}
+        {showScore && !hideScore && pokemon.score !== undefined && (
           <div className="text-xs text-gray-700 font-medium">
             Score: {pokemon.score.toFixed(1)}
           </div>

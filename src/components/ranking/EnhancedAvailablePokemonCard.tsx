@@ -58,7 +58,8 @@ export const EnhancedAvailablePokemonCard: React.FC<EnhancedAvailablePokemonCard
       <UnifiedPokemonCard
         pokemon={pokemon}
         isRanked={pokemon.isRanked}
-        showScore={pokemon.isRanked}
+        showScore={false}
+        hideScore={true}
       />
     </div>
   );
