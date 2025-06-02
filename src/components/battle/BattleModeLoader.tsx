@@ -3,7 +3,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { usePokemonLoader } from "@/hooks/battle/usePokemonLoader";
 
 interface BattleModeLoaderProps {
-  onPokemonLoaded: (pokemon: any[]) => void;
+  onPokemonLoaded: (pokemon: any[], rawPokemon?: any[]) => void;
   onLoadingChange: (isLoading: boolean) => void;
 }
 
@@ -11,7 +11,7 @@ const BattleModeLoader: React.FC<BattleModeLoaderProps> = ({
   onPokemonLoaded,
   onLoadingChange
 }) => {
-  const { allPokemon, isLoading, loadPokemon } = usePokemonLoader();
+  const { allPokemon, rawUnfilteredPokemon, isLoading, loadPokemon } = usePokemonLoader();
   const [loadingInitiated, setLoadingInitiated] = useState(false);
   const loaderInitiatedRef = useRef(false);
 
@@ -43,13 +43,13 @@ const BattleModeLoader: React.FC<BattleModeLoaderProps> = ({
     onLoadingChange(isLoading);
   }, [isLoading, onLoadingChange]);
 
-  // Notify parent when Pokemon are loaded
+  // CRITICAL FIX: Notify parent when Pokemon are loaded, including raw data
   useEffect(() => {
     if (allPokemon && allPokemon.length > 0) {
-      console.log(`✅ [PERFORMANCE_FIX] Notifying parent of ${allPokemon.length} Pokemon (optimized load)`);
-      onPokemonLoaded(allPokemon);
+      console.log(`✅ [PERFORMANCE_FIX] Notifying parent of ${allPokemon.length} filtered + ${rawUnfilteredPokemon.length} raw Pokemon (optimized load)`);
+      onPokemonLoaded(allPokemon, rawUnfilteredPokemon);
     }
-  }, [allPokemon, onPokemonLoaded]);
+  }, [allPokemon, rawUnfilteredPokemon, onPokemonLoaded]);
 
   return null; // This is a logic-only component
 };

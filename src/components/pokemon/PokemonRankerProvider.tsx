@@ -10,10 +10,18 @@ interface PokemonRankerProviderProps {
 
 const PokemonRankerProvider: React.FC<PokemonRankerProviderProps> = ({ children }) => {
   const [allPokemon, setAllPokemon] = useState<Pokemon[]>([]);
+  const [rawUnfilteredPokemon, setRawUnfilteredPokemon] = useState<Pokemon[]>([]);
   const [isRetrying, setIsRetrying] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [errorDetails, setErrorDetails] = useState<string>("");
-  const { loadPokemon, isLoading } = usePokemonLoader();
+  
+  // CRITICAL FIX: Get both filtered and raw data from the loader
+  const { 
+    allPokemon: filteredPokemon, 
+    rawUnfilteredPokemon: rawPokemon, 
+    isLoading, 
+    loadPokemon 
+  } = usePokemonLoader();
 
   const MAX_RETRIES = 3;
   const RETRY_DELAY = 2000; // 2 seconds
@@ -36,7 +44,6 @@ const PokemonRankerProvider: React.FC<PokemonRankerProviderProps> = ({ children 
       }
       
       console.log(`🔒 [MANUAL_MODE_PROVIDER] ✅ Successfully loaded ${pokemon.length} Pokemon for Manual Mode`);
-      setAllPokemon(pokemon);
       setRetryCount(0);
       setIsRetrying(false);
       
@@ -73,12 +80,27 @@ const PokemonRankerProvider: React.FC<PokemonRankerProviderProps> = ({ children 
     }
   };
 
+  // CRITICAL FIX: Update local state when loader provides data
+  useEffect(() => {
+    if (filteredPokemon.length > 0) {
+      console.log(`🔒 [MANUAL_MODE_PROVIDER] Received ${filteredPokemon.length} filtered Pokemon from loader`);
+      setAllPokemon(filteredPokemon);
+    }
+  }, [filteredPokemon]);
+
+  useEffect(() => {
+    if (rawPokemon.length > 0) {
+      console.log(`🔒 [MANUAL_MODE_PROVIDER] Received ${rawPokemon.length} RAW unfiltered Pokemon from loader`);
+      setRawUnfilteredPokemon(rawPokemon);
+    }
+  }, [rawPokemon]);
+
   useEffect(() => {
     loadDataWithRetry();
   }, []);
 
   // Enhanced loading state with retry information
-  if (isLoading || isRetrying || allPokemon.length === 0) {
+  if (isLoading || isRetrying || (allPokemon.length === 0 && rawUnfilteredPokemon.length === 0)) {
     return (
       <div className="flex justify-center items-center h-64 w-full">
         <div className="flex flex-col items-center max-w-md mx-auto text-center">
@@ -120,10 +142,13 @@ const PokemonRankerProvider: React.FC<PokemonRankerProviderProps> = ({ children 
     );
   }
 
-  console.log(`🔒 [MANUAL_MODE_PROVIDER] Providing ${allPokemon.length} Pokemon to Manual Mode context`);
+  console.log(`🔒 [MANUAL_MODE_PROVIDER] Providing ${allPokemon.length} filtered + ${rawUnfilteredPokemon.length} raw Pokemon to Manual Mode context`);
   
   return (
-    <PokemonProvider allPokemon={allPokemon}>
+    <PokemonProvider 
+      allPokemon={allPokemon} 
+      rawUnfilteredPokemon={rawUnfilteredPokemon}
+    >
       {children}
     </PokemonProvider>
   );
