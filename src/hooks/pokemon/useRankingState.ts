@@ -1,39 +1,39 @@
 
-import { useState, useEffect } from "react";
-import { Pokemon, RankedPokemon } from "@/services/pokemon";
+import { useState, useCallback } from "react";
+import { RankedPokemon } from "@/services/pokemon";
 import { LoadingType } from "./types";
 
 export const useRankingState = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const [availablePokemon, setAvailablePokemon] = useState<Pokemon[]>([]);
-  const [rankedPokemon, setRankedPokemon] = useState<RankedPokemon[]>([]);
+  const [availablePokemon, setAvailablePokemon] = useState<any[]>([]);
+  const [rankedPokemon, setRankedPokemonState] = useState<RankedPokemon[]>([]);
   const [confidenceScores, setConfidenceScores] = useState<Record<number, number>>({});
   const [selectedGeneration, setSelectedGeneration] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(0);
-  const [loadSize, setLoadSize] = useState(150);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loadSize, setLoadSize] = useState(10);
   const [loadingType, setLoadingType] = useState<LoadingType>("pagination");
 
-  // 🚨🚨🚨 ULTRA CRITICAL STATE CHANGE TRACKING
-  console.log(`🔍🔍🔍 [RANKING_STATE_HOOK] ===== STATE CHANGE TRACKING =====`);
-  console.log(`🔍🔍🔍 [RANKING_STATE] availablePokemon: ${availablePokemon.length}`);
-  console.log(`🔍🔍🔍 [RANKING_STATE] rankedPokemon: ${rankedPokemon.length}`);
-  
-  if (rankedPokemon.length > 0) {
-    console.log(`🚨🚨🚨 [STATE_CRITICAL] RANKED POKEMON IN STATE: ${rankedPokemon.length}`);
-    console.log(`🚨🚨🚨 [STATE_CRITICAL] Call stack when detected:`, new Error().stack);
-  }
-
-  // 🚨 CRITICAL: Track any external state changes to rankedPokemon
-  useEffect(() => {
-    console.log(`🚨🚨🚨 [STATE_CHANGE_DETECTOR] rankedPokemon changed to: ${rankedPokemon.length}`);
-    if (rankedPokemon.length > 0) {
-      console.log(`🚨🚨🚨 [STATE_CHANGE_DETECTOR] NEW RANKED POKEMON DATA:`);
-      console.log(`🚨🚨🚨 [STATE_CHANGE_DETECTOR] IDs: ${rankedPokemon.slice(0, 10).map(p => p.id).join(', ')}`);
-      console.log(`🚨🚨🚨 [STATE_CHANGE_DETECTOR] Names: ${rankedPokemon.slice(0, 5).map(p => p.name).join(', ')}`);
-      console.log(`🚨🚨🚨 [STATE_CHANGE_DETECTOR] Call stack:`, new Error().stack);
+  // CRITICAL DEBUG: Add logging to track where rankedPokemon changes come from
+  const setRankedPokemon = useCallback((rankings: RankedPokemon[] | ((prev: RankedPokemon[]) => RankedPokemon[])) => {
+    console.log(`🔍🔍🔍 [POKEMON_RANKING_STATE_SETTER] ⚠️⚠️⚠️ setRankedPokemon called`);
+    console.log(`🔍🔍🔍 [POKEMON_RANKING_STATE_SETTER] Call stack:`, new Error().stack?.split('\n').slice(1, 5).join(' | '));
+    
+    if (typeof rankings === 'function') {
+      setRankedPokemonState(prev => {
+        const newRankings = rankings(prev);
+        console.log(`🔍🔍🔍 [POKEMON_RANKING_STATE_SETTER] Function update: ${prev.length} → ${newRankings.length}`);
+        console.log(`🔍🔍🔍 [POKEMON_RANKING_STATE_SETTER] ⚠️⚠️⚠️ RANKED POKEMON SET TO ${newRankings.length} POKEMON`);
+        return newRankings;
+      });
+    } else {
+      console.log(`🔍🔍🔍 [POKEMON_RANKING_STATE_SETTER] Direct update: setting to ${rankings.length} rankings`);
+      console.log(`🔍🔍🔍 [POKEMON_RANKING_STATE_SETTER] ⚠️⚠️⚠️ RANKED POKEMON SET TO ${rankings.length} POKEMON`);
+      setRankedPokemonState(rankings);
     }
-  }, [rankedPokemon.length]);
+  }, []);
+
+  console.log(`🔍🔍🔍 [RANKING_STATE] ⚠️⚠️⚠️ rankedPokemon: ${rankedPokemon.length}`);
 
   return {
     isLoading,

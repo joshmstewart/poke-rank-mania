@@ -66,6 +66,7 @@ export const useTrueSkillSync = () => {
 
     if (ratingsCount === 0) {
       console.log(`🔍🔍🔍 [TRUESKILL_SYNC_DEBUG] No ratings - setting empty array`);
+      console.log(`🔍🔍🔍 [TRUESKILL_SYNC_DEBUG] ⚠️⚠️⚠️ SETTING LOCAL RANKINGS TO EMPTY ARRAY`);
       setLocalRankings([]);
       return;
     }
@@ -108,6 +109,7 @@ export const useTrueSkillSync = () => {
     
     console.log(`🔍🔍🔍 [TRUESKILL_SYNC_DEBUG] Generated ${rankings.length} rankings`);
     console.log(`🔍🔍🔍 [TRUESKILL_SYNC_DEBUG] Top 5 rankings: ${rankings.slice(0, 5).map(p => `${p.name}(${p.id}):${p.score.toFixed(2)}`).join(', ')}`);
+    console.log(`🔍🔍🔍 [TRUESKILL_SYNC_DEBUG] ⚠️⚠️⚠️ SETTING LOCAL RANKINGS TO ${rankings.length} POKEMON`);
     
     setLocalRankings(rankings);
   }, [contextReady, ratingsCount, allRatings, pokemonLookupMap, isInitialized, isLoading]);
@@ -120,9 +122,12 @@ export const useTrueSkillSync = () => {
       }));
       
       console.log(`🔍🔍🔍 [TRUESKILL_SYNC_DEBUG] updateLocalRankings called with ${formattedRankings.length} rankings`);
+      console.log(`🔍🔍🔍 [TRUESKILL_SYNC_DEBUG] ⚠️⚠️⚠️ UPDATE LOCAL RANKINGS TO ${formattedRankings.length} POKEMON`);
       setLocalRankings(formattedRankings);
     };
   }, []);
+
+  console.log(`🔍🔍🔍 [TRUESKILL_SYNC_RETURN] ⚠️⚠️⚠️ RETURNING ${localRankings.length} LOCAL RANKINGS`);
 
   return {
     localRankings,
