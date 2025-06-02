@@ -24,6 +24,18 @@ export const UnifiedPokemonCard: React.FC<UnifiedPokemonCardProps> = ({
   isRanked = false,
   hideScore = false
 }) => {
+  // CRITICAL LOGGING TO TRACE FINAL RENDERING DECISIONS
+  console.log(`💎💎💎 [UNIFIED_CARD_CRITICAL] ===== UNIFIED CARD RENDER =====`);
+  console.log(`💎💎💎 [UNIFIED_CARD_CRITICAL] Pokemon: ${pokemon.name} (${pokemon.id})`);
+  console.log(`💎💎💎 [UNIFIED_CARD_CRITICAL] rank: ${rank}`);
+  console.log(`💎💎💎 [UNIFIED_CARD_CRITICAL] showRank: ${showRank}`);
+  console.log(`💎💎💎 [UNIFIED_CARD_CRITICAL] showScore: ${showScore}`);
+  console.log(`💎💎💎 [UNIFIED_CARD_CRITICAL] isRanked: ${isRanked}`);
+  console.log(`💎💎💎 [UNIFIED_CARD_CRITICAL] hideScore: ${hideScore}`);
+  console.log(`💎💎💎 [UNIFIED_CARD_CRITICAL] pokemon.score: ${pokemon.score}`);
+  console.log(`💎💎💎 [UNIFIED_CARD_CRITICAL] pokemon.rank: ${pokemon.rank}`);
+  console.log(`💎💎💎 [UNIFIED_CARD_CRITICAL] pokemon.currentRank: ${pokemon.currentRank}`);
+
   // Get background color based on Pokemon type
   const backgroundColor = getPokemonTypeColor(pokemon);
   

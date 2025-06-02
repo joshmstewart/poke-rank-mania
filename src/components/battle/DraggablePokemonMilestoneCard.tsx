@@ -21,6 +21,15 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   isDraggable = true,
   isAvailable = false
 }) => {
+  // CRITICAL LOGGING TO TRACE PROP FLOW
+  console.log(`🎯🎯🎯 [DRAGGABLE_CARD_CRITICAL] ===== DRAGGABLE CARD RENDER =====`);
+  console.log(`🎯🎯🎯 [DRAGGABLE_CARD_CRITICAL] Pokemon: ${pokemon.name} (${pokemon.id})`);
+  console.log(`🎯🎯🎯 [DRAGGABLE_CARD_CRITICAL] showRank: ${showRank}`);
+  console.log(`🎯🎯🎯 [DRAGGABLE_CARD_CRITICAL] isAvailable: ${isAvailable}`);
+  console.log(`🎯🎯🎯 [DRAGGABLE_CARD_CRITICAL] index: ${index}`);
+  console.log(`🎯🎯🎯 [DRAGGABLE_CARD_CRITICAL] pokemon.isRanked: ${pokemon.isRanked}`);
+  console.log(`🎯🎯🎯 [DRAGGABLE_CARD_CRITICAL] pokemon.score: ${pokemon.score}`);
+
   const {
     attributes,
     listeners,
