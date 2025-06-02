@@ -77,7 +77,7 @@ export const getCachedCard = async (pokemonName: string): Promise<TCGCard | null
     }
     
     console.log(`🃏 [TCG_CACHE] Found valid cached card for ${pokemonName}:`, data.card_data);
-    return data.card_data as unknown as TCGCard;
+    return data.card_data as TCGCard;
   } catch (error) {
     console.error(`🃏 [TCG_CACHE] Error reading cache for ${pokemonName}:`, error);
     return null;
@@ -97,8 +97,8 @@ export const setCachedCard = async (pokemonName: string, firstCard: TCGCard | nu
       .upsert([
         {
           pokemon_name: pokemonName.toLowerCase(),
-          card_data: firstCard as any,
-          second_card_data: secondCard ? (secondCard as any) : null,
+          card_data: firstCard,
+          second_card_data: secondCard || null,
           updated_at: new Date().toISOString()
         }
       ], {
@@ -155,13 +155,13 @@ export const getCachedCards = async (pokemonName: string): Promise<{ firstCard: 
       await supabase
         .from('tcg_cards_cache')
         .delete()
-        .eq('cache_key', cacheKey);
+        .eq('pokemon_name', pokemonName.toLowerCase());
       return { firstCard: null, secondCard: null };
     }
     
     console.log(`🃏 [TCG_CACHE] Found valid cached cards for ${pokemonName}`);
-    const firstCard = data.card_data as unknown as TCGCard;
-    const secondCard = data.second_card_data ? (data.second_card_data as unknown as TCGCard) : null;
+    const firstCard = data.card_data as TCGCard;
+    const secondCard = data.second_card_data ? (data.second_card_data as TCGCard) : null;
 
     // Trigger image caching if cards exist
     if (firstCard) cacheCardImages(firstCard);
