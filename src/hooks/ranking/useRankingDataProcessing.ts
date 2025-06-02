@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useMemo } from "react";
 import { useTrueSkillSync } from "./useTrueSkillSync";
 import { useGenerationFilter } from "@/hooks/battle/useGenerationFilter";
@@ -19,28 +20,30 @@ export const useRankingDataProcessing = ({
   console.log(`🔮 [DATA_PROCESSING_CRITICAL] Input rankedPokemon: ${rankedPokemon.length}`);
   console.log(`🔮 [DATA_PROCESSING_CRITICAL] Input availablePokemon: ${availablePokemon.length}`);
   
-  // CRITICAL FIX: For manual ranking mode, we should NOT automatically sync from TrueSkill
-  // The rankings should only come from the explicit rankedPokemon prop passed down
   const { localRankings: trueskillRankings, updateLocalRankings } = useTrueSkillSync();
   
-  // CRITICAL FIX: Only use TrueSkill rankings if explicitly requested
-  // For manual mode, prioritize the passed-in rankedPokemon
+  // CORRECTED: Use TrueSkill rankings when available, fall back to manual rankings
   const localRankings = useMemo(() => {
     console.log(`🔮 [DATA_PROCESSING_CRITICAL] Determining ranking source...`);
-    console.log(`🔮 [DATA_PROCESSING_CRITICAL] rankedPokemon.length: ${rankedPokemon.length}`);
     console.log(`🔮 [DATA_PROCESSING_CRITICAL] trueskillRankings.length: ${trueskillRankings.length}`);
+    console.log(`🔮 [DATA_PROCESSING_CRITICAL] rankedPokemon.length: ${rankedPokemon.length}`);
     
-    // CRITICAL DECISION: Manual mode should start empty and only show what user explicitly ranks
-    // If rankedPokemon is empty, keep it empty regardless of TrueSkill data
-    if (rankedPokemon.length === 0) {
-      console.log(`🔮 [DATA_PROCESSING_CRITICAL] Manual mode: keeping empty rankings`);
-      return [];
+    // CORRECTED: Prefer TrueSkill rankings when available
+    if (trueskillRankings.length > 0) {
+      console.log(`🔮 [DATA_PROCESSING_CRITICAL] Using TrueSkill rankings: ${trueskillRankings.length} Pokemon`);
+      return trueskillRankings;
     }
     
-    // If user has manually ranked Pokemon, use those
-    console.log(`🔮 [DATA_PROCESSING_CRITICAL] Manual mode: using explicit rankings`);
-    return rankedPokemon;
-  }, [rankedPokemon, trueskillRankings.length]);
+    // Fall back to manual rankings if no TrueSkill data
+    if (rankedPokemon.length > 0) {
+      console.log(`🔮 [DATA_PROCESSING_CRITICAL] Using manual rankings: ${rankedPokemon.length} Pokemon`);
+      return rankedPokemon;
+    }
+    
+    // Empty state - no rankings available
+    console.log(`🔮 [DATA_PROCESSING_CRITICAL] No rankings available - returning empty array`);
+    return [];
+  }, [trueskillRankings, rankedPokemon]);
 
   // Apply generation filtering to available Pokemon
   const { filteredAvailablePokemon } = useGenerationFilter(availablePokemon, selectedGeneration);
