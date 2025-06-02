@@ -15,46 +15,66 @@ export const useTCGImageCache = (imageUrl: string, cacheKey: string) => {
       setError(null);
 
       try {
-        // Check cloud cache first
-        const { data, error: fetchError } = await supabase
+        // First, check if we have a cached image in storage
+        const { data: cacheData, error: fetchError } = await supabase
           .from('preview_image_cache')
-          .select('*')
+          .select('storage_path, stored_in_storage, image_url, expires_at')
           .eq('cache_key', cacheKey)
-          .gt('expires_at', new Date().toISOString())
           .single();
 
         if (fetchError && fetchError.code !== 'PGRST116') {
-          console.error('Error getting cached TCG image:', fetchError);
-          setCachedImageUrl(imageUrl); // Fallback to original URL
-          setIsLoading(false);
-          return;
+          console.error('🖼️ [TCG_CACHE] Error checking cache:', fetchError);
         }
 
-        if (data && data.image_url) {
-          console.log(`🖼️ [TCG_CACHE] Found cached image for ${cacheKey}`);
-          setCachedImageUrl(data.image_url);
-        } else {
-          console.log(`🖼️ [TCG_CACHE] No cached image found for ${cacheKey}, caching original URL`);
-          // Cache the original URL
-          await supabase
-            .from('preview_image_cache')
-            .upsert([
-              {
-                cache_key: cacheKey,
-                image_url: imageUrl,
-                content_type: 'image/png',
-                expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days
-              }
-            ], {
-              onConflict: 'cache_key'
-            });
+        // If we have a cached image in storage that hasn't expired
+        if (cacheData?.stored_in_storage && cacheData.storage_path) {
+          const now = new Date();
+          const expiresAt = new Date(cacheData.expires_at);
           
+          if (now < expiresAt) {
+            console.log(`🖼️ [TCG_CACHE] Found cached image in storage for ${cacheKey}`);
+            const { data: urlData } = supabase.storage
+              .from('tcg-images')
+              .getPublicUrl(cacheData.storage_path);
+            
+            setCachedImageUrl(urlData.publicUrl);
+            setIsLoading(false);
+            return;
+          } else {
+            console.log(`🖼️ [TCG_CACHE] Cached image expired for ${cacheKey}`);
+            // Clean up expired cache
+            await supabase
+              .from('preview_image_cache')
+              .delete()
+              .eq('cache_key', cacheKey);
+          }
+        }
+
+        // If no valid cache, trigger caching via edge function
+        console.log(`🖼️ [TCG_CACHE] No cached image found for ${cacheKey}, caching now...`);
+        
+        const { data: functionData, error: functionError } = await supabase.functions
+          .invoke('cache-tcg-image', {
+            body: { imageUrl, cacheKey }
+          });
+
+        if (functionError) {
+          console.error('🖼️ [TCG_CACHE] Function error:', functionError);
+          // Fallback to original URL
+          setCachedImageUrl(imageUrl);
+        } else if (functionData?.cachedUrl) {
+          console.log(`🖼️ [TCG_CACHE] Successfully cached image for ${cacheKey}`);
+          setCachedImageUrl(functionData.cachedUrl);
+        } else {
+          console.log(`🖼️ [TCG_CACHE] No cached URL returned, using original`);
           setCachedImageUrl(imageUrl);
         }
+
       } catch (err) {
-        console.error('Error in TCG image cache:', err);
+        console.error('🖼️ [TCG_CACHE] Error in cache process:', err);
         setError(err instanceof Error ? err.message : 'Unknown error');
-        setCachedImageUrl(imageUrl); // Fallback to original URL
+        // Fallback to original URL
+        setCachedImageUrl(imageUrl);
       } finally {
         setIsLoading(false);
       }

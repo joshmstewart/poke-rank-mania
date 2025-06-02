@@ -5,6 +5,41 @@ import { supabase } from '@/integrations/supabase/client';
 // Cache configuration
 const CACHE_EXPIRY_HOURS = 24; // Cache for 24 hours
 
+// Helper function to trigger image caching
+const cacheCardImages = async (card: TCGCard) => {
+  try {
+    // Cache both small and large images
+    const cachePromises = [];
+    
+    if (card.images.small) {
+      cachePromises.push(
+        supabase.functions.invoke('cache-tcg-image', {
+          body: { 
+            imageUrl: card.images.small, 
+            cacheKey: `tcg-card-${card.id}-small` 
+          }
+        })
+      );
+    }
+    
+    if (card.images.large) {
+      cachePromises.push(
+        supabase.functions.invoke('cache-tcg-image', {
+          body: { 
+            imageUrl: card.images.large, 
+            cacheKey: `tcg-card-${card.id}-large` 
+          }
+        })
+      );
+    }
+
+    await Promise.all(cachePromises);
+    console.log(`🃏 [TCG_CACHE] Images cached for card ${card.id}`);
+  } catch (error) {
+    console.error(`🃏 [TCG_CACHE] Error caching images for card ${card.id}:`, error);
+  }
+};
+
 // Database cache using Supabase
 export const getCachedCard = async (pokemonName: string): Promise<TCGCard | null> => {
   try {
@@ -76,6 +111,13 @@ export const setCachedCard = async (pokemonName: string, firstCard: TCGCard | nu
     }
 
     console.log(`🃏 [TCG_CACHE] Successfully cached card for ${pokemonName}`);
+
+    // Cache the images asynchronously
+    cacheCardImages(firstCard);
+    if (secondCard) {
+      cacheCardImages(secondCard);
+    }
+
   } catch (error) {
     console.error(`🃏 [TCG_CACHE] Error saving cache for ${pokemonName}:`, error);
   }
@@ -113,15 +155,19 @@ export const getCachedCards = async (pokemonName: string): Promise<{ firstCard: 
       await supabase
         .from('tcg_cards_cache')
         .delete()
-        .eq('pokemon_name', pokemonName.toLowerCase());
+        .eq('cache_key', cacheKey);
       return { firstCard: null, secondCard: null };
     }
     
     console.log(`🃏 [TCG_CACHE] Found valid cached cards for ${pokemonName}`);
-    return {
-      firstCard: data.card_data as unknown as TCGCard,
-      secondCard: data.second_card_data ? (data.second_card_data as unknown as TCGCard) : null
-    };
+    const firstCard = data.card_data as unknown as TCGCard;
+    const secondCard = data.second_card_data ? (data.second_card_data as unknown as TCGCard) : null;
+
+    // Trigger image caching if cards exist
+    if (firstCard) cacheCardImages(firstCard);
+    if (secondCard) cacheCardImages(secondCard);
+
+    return { firstCard, secondCard };
   } catch (error) {
     console.error(`🃏 [TCG_CACHE] Error reading cache for ${pokemonName}:`, error);
     return { firstCard: null, secondCard: null };

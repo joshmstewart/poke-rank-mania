@@ -49,6 +49,8 @@ export type Database = {
           id: string
           image_data: string | null
           image_url: string
+          storage_path: string | null
+          stored_in_storage: boolean | null
         }
         Insert: {
           cache_key: string
@@ -59,6 +61,8 @@ export type Database = {
           id?: string
           image_data?: string | null
           image_url: string
+          storage_path?: string | null
+          stored_in_storage?: boolean | null
         }
         Update: {
           cache_key?: string
@@ -69,6 +73,8 @@ export type Database = {
           id?: string
           image_data?: string | null
           image_url?: string
+          storage_path?: string | null
+          stored_in_storage?: boolean | null
         }
         Relationships: []
       }
