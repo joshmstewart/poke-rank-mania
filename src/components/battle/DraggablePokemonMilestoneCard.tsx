@@ -4,10 +4,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { getPokemonBackgroundColor } from "./utils/PokemonColorUtils";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import PokemonModalContent from "@/components/pokemon/PokemonModalContent";
-import { usePokemonFlavorText } from "@/hooks/pokemon/usePokemonFlavorText";
-import { usePokemonTCGCard } from "@/hooks/pokemon/usePokemonTCGCard";
+import PokemonInfoModal from "@/components/pokemon/PokemonInfoModal";
 import { Badge } from "@/components/ui/badge";
 import { Crown } from "lucide-react";
 
@@ -67,19 +64,6 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
 
   const backgroundColorClass = getPokemonBackgroundColor(pokemon);
 
-  // Hooks for modal content
-  const { flavorText, isLoadingFlavor } = usePokemonFlavorText(pokemon.id, isOpen);
-  const { tcgCard, secondTcgCard, isLoading: isLoadingTCG, error: tcgError, hasTcgCard } = usePokemonTCGCard(pokemon.name, isOpen);
-
-  // Determine what content to show
-  const showLoading = isLoadingTCG;
-  const showTCGCards = !isLoadingTCG && hasTcgCard && tcgCard !== null;
-  const showFallbackInfo = !isLoadingTCG && !hasTcgCard;
-
-  const handleDialogClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-  };
-
   // Format Pokemon ID with leading zeros
   const formattedId = pokemon.id.toString().padStart(pokemon.id >= 10000 ? 5 : 3, '0');
 
@@ -107,52 +91,12 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
         </div>
       )}
 
-      {/* Info Button with Dialog - now only shows on hover */}
+      {/* Info Button - now matches battle mode exactly */}
       <div className="absolute top-1 right-1 z-30 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
-          <DialogTrigger asChild>
-            <button 
-              className="w-5 h-5 rounded-full bg-white/80 hover:bg-white border border-gray-300 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200 backdrop-blur-sm cursor-pointer"
-              onClick={(e) => {
-                e.stopPropagation();
-                console.log(`Info button clicked for ${pokemon.name}`);
-              }}
-              onPointerDown={(e) => {
-                e.stopPropagation();
-              }}
-              onMouseDown={(e) => {
-                e.stopPropagation();
-              }}
-              type="button"
-              style={{ pointerEvents: 'auto' }}
-            >
-              i
-            </button>
-          </DialogTrigger>
-          
-          <DialogContent 
-            className="max-w-4xl max-h-[90vh] overflow-y-auto pointer-events-auto"
-            onClick={handleDialogClick}
-            data-radix-dialog-content="true"
-          >
-            <DialogHeader>
-              <DialogTitle className="text-2xl font-bold text-center">
-                {pokemon.name}
-              </DialogTitle>
-            </DialogHeader>
-
-            <PokemonModalContent
-              pokemon={pokemon}
-              showLoading={showLoading}
-              showTCGCards={showTCGCards}
-              showFallbackInfo={showFallbackInfo}
-              tcgCard={tcgCard}
-              secondTcgCard={secondTcgCard}
-              flavorText={flavorText}
-              isLoadingFlavor={isLoadingFlavor}
-            />
-          </DialogContent>
-        </Dialog>
+        <PokemonInfoModal 
+          pokemon={pokemon}
+          onOpenChange={setIsOpen}
+        />
       </div>
 
       {/* Crown badge for ranked Pokemon in available section */}
