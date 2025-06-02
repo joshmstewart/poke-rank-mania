@@ -1,3 +1,4 @@
+
 import React, {
   createContext,
   useState,
@@ -6,19 +7,20 @@ import React, {
   useCallback,
 } from "react";
 import { Pokemon } from "@/services/pokemon";
-import { PokemonService } from "@/services/PokemonService";
+import { PokemonService } from "@/services/pokemon";
 import { useToast } from "@/hooks/use-toast";
 import { useFormFilters } from "@/hooks/useFormFilters";
 
 interface PokemonContextType {
   allPokemon: Pokemon[];
-  rawUnfilteredPokemon: Pokemon[]; // Add this line
+  rawUnfilteredPokemon: Pokemon[];
   allGenerationPokemon: Pokemon[];
   isLoading: boolean;
   pokemonService: any;
   currentGeneration: number;
   setCurrentGeneration: (gen: number) => void;
   refreshPokemon: () => Promise<void>;
+  pokemonLookupMap: Map<number, Pokemon>; // Add missing property
 }
 
 export const PokemonContext = createContext<PokemonContextType | undefined>(undefined);
@@ -34,6 +36,15 @@ export const PokemonProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   // Store raw unfiltered Pokemon data for form counting
   const [rawUnfilteredPokemon, setRawUnfilteredPokemon] = useState<Pokemon[]>([]);
+
+  // Create lookup map for Pokemon
+  const pokemonLookupMap = useMemo(() => {
+    const map = new Map<number, Pokemon>();
+    allGenerationPokemon.forEach(pokemon => {
+      map.set(pokemon.id, pokemon);
+    });
+    return map;
+  }, [allGenerationPokemon]);
 
   const loadPokemon = useCallback(async (generation: number) => {
     setIsLoadingGeneration(true);
@@ -95,13 +106,14 @@ export const PokemonProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const contextValue = useMemo(() => ({
     allPokemon: filteredPokemon,
-    rawUnfilteredPokemon, // Add this for form counting
+    rawUnfilteredPokemon,
     allGenerationPokemon,
     isLoading: isLoading || isLoadingGeneration,
     pokemonService,
     currentGeneration,
     setCurrentGeneration,
-    refreshPokemon
+    refreshPokemon,
+    pokemonLookupMap
   }), [
     filteredPokemon,
     rawUnfilteredPokemon,
@@ -110,7 +122,8 @@ export const PokemonProvider: React.FC<{ children: React.ReactNode }> = ({ child
     isLoadingGeneration,
     pokemonService,
     currentGeneration,
-    refreshPokemon
+    refreshPokemon,
+    pokemonLookupMap
   ]);
 
   return (
