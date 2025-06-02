@@ -10,7 +10,7 @@ interface DraggablePokemonMilestoneCardProps {
   isPending?: boolean;
   showRank?: boolean;
   isDraggable?: boolean;
-  isAvailable?: boolean; // This tells us which section we're in
+  isAvailable?: boolean;
 }
 
 const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps> = ({
@@ -38,22 +38,6 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     transition,
   };
 
-  // Different props based on which section we're in
-  const cardProps = isAvailable ? {
-    // Available Pokemon section - hide score, show rank indicator for ranked Pokemon
-    showScore: false,
-    hideScore: true,
-    isRanked: pokemon.isRanked || false,
-    showRank: false // Don't show numbered rank, just the crown indicator
-  } : {
-    // Rankings section - show numbered rank, show score
-    showScore: true,
-    hideScore: false,
-    isRanked: false,
-    showRank: true,
-    rank: index + 1
-  };
-
   return (
     <div
       ref={setNodeRef}
@@ -64,7 +48,11 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     >
       <UnifiedPokemonCard
         pokemon={pokemon}
-        {...cardProps}
+        rank={showRank ? index + 1 : undefined}
+        showRank={showRank}
+        showScore={!isAvailable}
+        isRanked={pokemon.isRanked || false}
+        hideScore={isAvailable}
       />
     </div>
   );

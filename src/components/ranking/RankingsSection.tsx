@@ -9,7 +9,7 @@ interface RankingsSectionProps {
   onManualReorder?: (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => void;
   onLocalReorder?: (newRankings: (Pokemon | RankedPokemon)[]) => void;
   pendingRefinements?: Set<number>;
-  availablePokemon?: any[]; // Add this prop to pass available Pokemon
+  availablePokemon?: any[];
 }
 
 export const RankingsSection: React.FC<RankingsSectionProps> = ({
@@ -35,7 +35,6 @@ export const RankingsSection: React.FC<RankingsSectionProps> = ({
   
   const handleMarkAsPending = (pokemonId: number) => {
     console.log(`🚨🚨🚨 [RANKINGS_SECTION_ULTRA_CRITICAL] Marking Pokemon ${pokemonId} as pending`);
-    // For manual mode, we don't need special pending logic like battle mode
   };
 
   const handleLocalReorderWrapper = (newRankings: (Pokemon | RankedPokemon)[]) => {
@@ -47,7 +46,6 @@ export const RankingsSection: React.FC<RankingsSectionProps> = ({
 
   return (
     <div className="flex flex-col h-full">
-      {/* Streamlined Header */}
       <div className="bg-white border-b border-gray-200 p-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900">Your Rankings</h2>
@@ -57,7 +55,6 @@ export const RankingsSection: React.FC<RankingsSectionProps> = ({
         </div>
       </div>
       
-      {/* Rankings Grid - Set up as drop zone with visual feedback */}
       <div 
         className={`flex-1 overflow-y-auto p-4 transition-colors ${
           isOver ? 'bg-yellow-50 border-2 border-dashed border-yellow-400' : ''

@@ -16,7 +16,7 @@ interface DragDropGridProps {
   onLocalReorder: (newRankings: (Pokemon | RankedPokemon)[]) => void;
   onMarkAsPending: (pokemonId: number) => void;
   availablePokemon?: any[];
-  isAvailableSection?: boolean; // New prop to identify which section this is
+  isAvailableSection?: boolean;
 }
 
 const DragDropGrid: React.FC<DragDropGridProps> = ({
@@ -29,7 +29,6 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
   availablePokemon = [],
   isAvailableSection = false
 }) => {
-  // Set up a droppable zone that accepts available Pokemon
   const { setNodeRef, isOver } = useDroppable({
     id: isAvailableSection ? 'available-grid-drop-zone' : 'rankings-grid-drop-zone',
     data: {
@@ -38,7 +37,6 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
     }
   });
 
-  // Include ranked Pokemon IDs AND available Pokemon IDs for proper collision detection
   const sortableItems = [
     ...displayRankings.map(p => p.id),
     ...availablePokemon.map(p => `available-${p.id}`),
@@ -57,7 +55,6 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
         <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
           {displayRankings.map((pokemon, index) => {
             const isPending = localPendingRefinements.has(pokemon.id);
-            const pendingCount = pendingBattleCounts.get(pokemon.id) || 0;
             
             return (
               <DraggablePokemonMilestoneCard
