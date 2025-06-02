@@ -53,10 +53,9 @@ export const useBattleProcessor = (
   const { processResultLogic } = useBattleProcessorResult(
     battleResults,
     setBattleResults,
-    battlesCompleted,
     setBattlesCompleted,
-    setSelectedPokemon,
-    markSuggestionUsed
+    [],
+    'auto'
   );
 
   const { 
@@ -100,8 +99,7 @@ export const useBattleProcessor = (
         currentBattlePokemon,
         processResult,
         battleType,
-        new Date().toISOString(),
-        isResettingRef
+        new Date().toISOString()
       );
 
       if (!updatedResults) {

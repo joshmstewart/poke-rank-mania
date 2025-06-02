@@ -67,7 +67,28 @@ export const useBattleProcessorResult = (
     console.log('[BATTLE_PROCESSOR_RESULT] Battle processing completed');
   }, [currentBattle, battleType, setBattleResults, setBattlesCompleted, incrementTotalBattles, incrementBattleCount]);
 
+  // Add the missing processResultLogic function
+  const processResultLogic = useCallback((
+    selectedPokemonIds: number[],
+    currentBattlePokemon: Pokemon[],
+    processResult: any,
+    battleType: BattleType,
+    timestamp: string,
+    isResettingRef?: React.MutableRefObject<boolean>
+  ) => {
+    console.log('[BATTLE_PROCESSOR_RESULT_LOGIC] Processing result logic');
+    
+    if (isResettingRef?.current) {
+      console.log('[BATTLE_PROCESSOR_RESULT_LOGIC] Reset in progress, skipping');
+      return null;
+    }
+    
+    processBattleResult(selectedPokemonIds);
+    return battleResults;
+  }, [processBattleResult, battleResults]);
+
   return {
-    processBattleResult
+    processBattleResult,
+    processResultLogic
   };
 };

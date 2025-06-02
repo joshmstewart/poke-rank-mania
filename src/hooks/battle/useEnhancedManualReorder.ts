@@ -11,7 +11,7 @@ export const useEnhancedManualReorder = (
   finalRankings: RankedPokemon[],
   onRankingsUpdate: (newRankings: RankedPokemon[]) => void,
   preventAutoResorting: boolean,
-  addImpliedBattle: (winnerId: number, loserId: number) => void
+  addImpliedBattle?: (winnerId: number, loserId: number) => void
 ) => {
   const { updateRating, getRating } = useTrueSkillStore();
   const { pokemonLookupMap } = usePokemonContext();
@@ -117,7 +117,7 @@ export const useEnhancedManualReorder = (
         rating: rating,
         mu: rating.mu,
         sigma: rating.sigma,
-        battleCount: pokemon.battleCount || 0
+        count: pokemon.count || 0
       };
     });
   }, [getRating]);
@@ -172,7 +172,7 @@ export const useEnhancedManualReorder = (
       
       // Apply TrueSkill updates for affected Pokemon
       const rankDifference = Math.abs(newIndex - oldIndex);
-      if (rankDifference > 0) {
+      if (rankDifference > 0 && addImpliedBattle) {
         if (newIndex < oldIndex) {
           // Moved up - this Pokemon beats the ones it moved past
           for (let i = newIndex; i < oldIndex; i++) {
@@ -214,6 +214,38 @@ export const useEnhancedManualReorder = (
     }
   }, [localRankings, validateRankingsIntegrity, applyTrueSkillUpdates, addImpliedBattle, recalculateScores, onRankingsUpdate]);
 
+  // Add the missing handleEnhancedManualReorder function
+  const handleEnhancedManualReorder = useCallback((
+    draggedPokemonId: number,
+    sourceIndex: number,
+    destinationIndex: number
+  ) => {
+    console.log('🔥 [ENHANCED_MANUAL_REORDER] Manual reorder called:', draggedPokemonId, sourceIndex, destinationIndex);
+    
+    setIsUpdating(true);
+    
+    try {
+      const newRankings = arrayMove(localRankings, sourceIndex, destinationIndex);
+      
+      if (!validateRankingsIntegrity(newRankings)) {
+        console.error('🔥 [ENHANCED_MANUAL_REORDER] Rankings integrity check failed');
+        setIsUpdating(false);
+        return;
+      }
+      
+      const updatedRankings = recalculateScores(newRankings);
+      setLocalRankings(updatedRankings);
+      onRankingsUpdate(updatedRankings);
+      
+      console.log('🔥 [ENHANCED_MANUAL_REORDER] ✅ Manual reorder completed');
+      
+    } catch (error) {
+      console.error('🔥 [ENHANCED_MANUAL_REORDER] Error during manual reorder:', error);
+    } finally {
+      setIsUpdating(false);
+    }
+  }, [localRankings, validateRankingsIntegrity, recalculateScores, onRankingsUpdate]);
+
   const displayRankings = useMemo(() => {
     return localRankings.map((pokemon) => ({
       ...pokemon,
@@ -225,6 +257,7 @@ export const useEnhancedManualReorder = (
     displayRankings,
     handleDragStart,
     handleDragEnd,
+    handleEnhancedManualReorder,
     isDragging,
     isUpdating
   };
