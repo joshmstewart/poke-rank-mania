@@ -22,7 +22,7 @@ export const AvailablePokemonControls: React.FC<AvailablePokemonControlsProps> =
   onCollapseAll
 }) => {
   return (
-    <div className="p-4 border-b border-gray-200">
+    <div className="p-2 border-b border-gray-200">
       <PokemonListControls
         title=""
         searchTerm={searchTerm}
