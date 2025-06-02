@@ -1,119 +1,141 @@
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Pokemon } from "@/services/pokemon";
+import { useRankingState } from "@/hooks/pokemon/useRankingState";
+import { usePokemonLoader } from "@/hooks/battle/usePokemonLoader";
+import { useGenerationFilter } from "@/hooks/battle/useGenerationFilter";
+import { usePagination } from "@/hooks/usePagination";
 
-import { useEffect } from "react";
-import { useDataLoader } from "./pokemon/useDataLoader";
-import { useScrollObserver } from "./pokemon/useScrollObserver";
-import { usePagination } from "./pokemon/usePagination";
-import { useAutoSave } from "./pokemon/useAutoSave";
-import { useRankingState } from "./pokemon/useRankingState";
-import { useRankingHandlers } from "./pokemon/useRankingHandlers";
-import { useTrueSkillIntegration } from "./pokemon/useTrueSkillIntegration";
-import { LoadingType, RankingState, RankingActions } from "./pokemon/types";
+export type LoadingType = "pagination" | "infinite" | "search";
 
-// Change to "export type" for proper type re-exporting with isolatedModules
-export type { LoadingType } from "./pokemon/types";
-
-export const usePokemonRanker = (): RankingState & RankingActions & { loadingRef: React.RefObject<HTMLDivElement>, confidenceScores: Record<number, number> } => {
-  // CRITICAL FIX: Always call hooks in the same order
+export const usePokemonRanker = () => {
+  const { loadPokemon, allPokemon: availablePokemonFromLoader, isLoading } = usePokemonLoader();
+  const [hasInitialized, setHasInitialized] = useState(false);
+  
   const {
-    isLoading,
-    availablePokemon,
     rankedPokemon,
-    confidenceScores,
-    selectedGeneration,
-    currentPage,
-    totalPages,
-    loadSize,
-    loadingType,
-    setIsLoading,
-    setAvailablePokemon,
     setRankedPokemon,
+    confidenceScores,
     setConfidenceScores,
+    selectedGeneration,
     setSelectedGeneration,
+    currentPage,
     setCurrentPage,
+    totalPages,
     setTotalPages,
+    loadSize,
     setLoadSize,
+    loadingType,
     setLoadingType
   } = useRankingState();
 
-  // CRITICAL FIX: Always call all hooks unconditionally
-  const {
-    resetRankings,
-    handleGenerationChange,
-    handlePageChange,
-    handleLoadingTypeChange,
-    handleLoadSizeChange
-  } = useRankingHandlers({
-    setSelectedGeneration,
-    setCurrentPage,
-    setAvailablePokemon,
-    setLoadingType,
-    setLoadSize,
-    availablePokemon,
-    rankedPokemon,
-    setRankedPokemon: setRankedPokemon as any,
-    setConfidenceScores
-  });
-
-  const { isStoreLoading } = useTrueSkillIntegration({
-    isLoading,
-    storeLoading: false,
-    availablePokemon,
-    rankedPokemon,
-    setRankedPokemon: setRankedPokemon as any,
-    setAvailablePokemon,
-    setConfidenceScores
-  });
+  // CRITICAL DEBUG: Add ultra-specific logging to track where rankedPokemon gets set
+  console.log(`🚨🚨🚨 [POKEMON_RANKER_DEBUG] ===== usePokemonRanker HOOK STATE =====`);
+  console.log(`🚨🚨🚨 [POKEMON_RANKER_DEBUG] rankedPokemon from useRankingState: ${rankedPokemon.length}`);
+  console.log(`🚨🚨🚨 [POKEMON_RANKER_DEBUG] availablePokemonFromLoader: ${availablePokemonFromLoader.length}`);
+  console.log(`🚨🚨🚨 [POKEMON_RANKER_DEBUG] hasInitialized: ${hasInitialized}`);
   
-  const { loadData } = useDataLoader(
-    selectedGeneration,
+  if (rankedPokemon.length > 0) {
+    console.log(`🚨🚨🚨 [POKEMON_RANKER_CRITICAL] RANKED POKEMON DETECTED: ${rankedPokemon.length}`);
+    console.log(`🚨🚨🚨 [POKEMON_RANKER_CRITICAL] First 5 IDs: ${rankedPokemon.slice(0, 5).map(p => p.id).join(', ')}`);
+    console.log(`🚨🚨🚨 [POKEMON_RANKER_CRITICAL] Call stack:`, new Error().stack?.split('\n').slice(1, 5).join(' | '));
+  }
+
+  const { filteredAvailablePokemon, setSelectedGeneration: setGen } = useGenerationFilter(
+    availablePokemonFromLoader,
+    selectedGeneration
+  );
+
+  const { paginatedItems: availablePokemon, totalPages: calculatedTotalPages } = usePagination(
+    filteredAvailablePokemon,
     currentPage,
     loadSize,
-    loadingType,
-    setAvailablePokemon,
-    setRankedPokemon,
-    setTotalPages,
-    setIsLoading
+    loadingType
   );
-  
-  const { loadingRef } = useScrollObserver(
-    loadingType,
-    isLoading,
-    currentPage,
-    totalPages,
-    setCurrentPage
-  );
-  
-  const { getPageRange } = usePagination(currentPage, totalPages);
-  
-  // CRITICAL FIX: Call useAutoSave unconditionally
-  useAutoSave(rankedPokemon, selectedGeneration);
 
-  // CRITICAL FIX: Move effect after all hooks
   useEffect(() => {
-    loadData();
-  }, [selectedGeneration, currentPage, loadSize]);
+    if (calculatedTotalPages !== totalPages) {
+      setTotalPages(calculatedTotalPages);
+    }
+  }, [calculatedTotalPages, totalPages, setTotalPages]);
+
+  const loadingRef = useRef<HTMLDivElement>(null);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const getPageRange = () => {
+    const totalPagesArray = Array.from({ length: totalPages }, (_, i) => i + 1);
+    if (totalPages <= 5) {
+      return totalPagesArray;
+    }
+
+    const currentPageIndex = currentPage - 1;
+    let start = Math.max(0, currentPageIndex - 2);
+    let end = Math.min(totalPages - 1, currentPageIndex + 2);
+
+    if (start === 0) {
+      end = Math.min(totalPages - 1, 4);
+    } else if (end === totalPages - 1) {
+      start = Math.max(0, totalPages - 5);
+    }
+
+    const range = Array.from({ length: end - start + 1 }, (_, i) => start + i + 1);
+
+    if (range[0] !== 1) {
+      range.unshift(1);
+      if (range[1] !== 2) {
+        range.splice(1, 0, -1);
+      }
+    }
+
+    if (range[range.length - 1] !== totalPages) {
+      range.push(totalPages);
+      if (range[range.length - 2] !== totalPages - 1) {
+        range.splice(range.length - 1, 0, -1);
+      }
+    }
+
+    return range;
+  };
+
+  const resetRankings = useCallback(() => {
+    console.log(`🚨🚨🚨 [POKEMON_RANKER_RESET] Reset called - clearing rankedPokemon`);
+    setRankedPokemon([]);
+    setConfidenceScores({});
+  }, [setRankedPokemon, setConfidenceScores]);
+
+  // CRITICAL DEBUG: Monitor any effects that might be setting rankedPokemon
+  useEffect(() => {
+    console.log(`🚨🚨🚨 [POKEMON_RANKER_EFFECT_MONITOR] Effect triggered`);
+    console.log(`🚨🚨🚨 [POKEMON_RANKER_EFFECT_MONITOR] rankedPokemon: ${rankedPokemon.length}`);
+    console.log(`🚨🚨🚨 [POKEMON_RANKER_EFFECT_MONITOR] availablePokemonFromLoader: ${availablePokemonFromLoader.length}`);
+  }, [rankedPokemon.length, availablePokemonFromLoader.length]);
 
   console.log(`🔍🔍🔍 [POKEMON_RANKER_RETURN] Returning availablePokemon: ${availablePokemon.length}`);
   console.log(`🔍🔍🔍 [POKEMON_RANKER_RETURN] Returning rankedPokemon: ${rankedPokemon.length}`);
 
   return {
-    isLoading: isLoading || isStoreLoading,
+    isLoading,
     availablePokemon,
     rankedPokemon,
-    confidenceScores,
-    selectedGeneration,
-    currentPage,
-    totalPages,
-    loadSize,
-    loadingType,
-    loadingRef,
-    setAvailablePokemon,
+    setAvailablePokemon: setRankedPokemon,
     setRankedPokemon,
-    resetRankings,
-    handleGenerationChange,
+    confidenceScores,
+    setConfidenceScores,
+    selectedGeneration,
+    setSelectedGeneration: setGen,
+    currentPage,
+    setCurrentPage,
+    totalPages,
+    setTotalPages,
+    loadSize,
+    setLoadSize,
+    loadingType,
+    setLoadingType,
+    loadingRef,
     handlePageChange,
-    handleLoadingTypeChange,
-    handleLoadSizeChange,
-    getPageRange
+    getPageRange,
+    resetRankings
   };
 };

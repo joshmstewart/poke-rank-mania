@@ -19,24 +19,35 @@ export const useRankingDataProcessing = ({
   const { shouldIncludePokemon } = useFormFilters();
   const { localRankings, updateLocalRankings } = useTrueSkillSync();
   
+  console.log(`🚨🚨🚨 [DATA_PROCESSING_ULTRA_DEBUG] ===== useRankingDataProcessing ENTRY =====`);
+  console.log(`🚨🚨🚨 [DATA_PROCESSING_ULTRA_DEBUG] Input rankedPokemon: ${rankedPokemon.length}`);
+  console.log(`🚨🚨🚨 [DATA_PROCESSING_ULTRA_DEBUG] Input localRankings: ${localRankings.length}`);
+  console.log(`🚨🚨🚨 [DATA_PROCESSING_ULTRA_DEBUG] Input availablePokemon: ${availablePokemon.length}`);
+  
+  if (rankedPokemon.length > 0) {
+    console.log(`🚨🚨🚨 [DATA_PROCESSING_ULTRA_DEBUG] ⚠️⚠️⚠️ NON-EMPTY rankedPokemon DETECTED!`);
+    console.log(`🚨🚨🚨 [DATA_PROCESSING_ULTRA_DEBUG] rankedPokemon IDs: ${rankedPokemon.slice(0, 10).map(p => p.id).join(', ')}`);
+    console.log(`🚨🚨🚨 [DATA_PROCESSING_ULTRA_DEBUG] rankedPokemon names: ${rankedPokemon.slice(0, 10).map(p => p.name).join(', ')}`);
+  }
+  
   const displayRankings = useMemo(() => {
-    console.log(`🔍🔍🔍 [RANKING_DATA_DEBUG] ===== DISPLAY RANKINGS CALCULATION =====`);
-    console.log(`🔍🔍🔍 [RANKING_DATA_DEBUG] localRankings.length: ${localRankings.length}`);
-    console.log(`🔍🔍🔍 [RANKING_DATA_DEBUG] rankedPokemon.length: ${rankedPokemon.length}`);
+    console.log(`🚨🚨🚨 [DATA_PROCESSING_DISPLAY_CALC] ===== DISPLAY RANKINGS CALCULATION =====`);
+    console.log(`🚨🚨🚨 [DATA_PROCESSING_DISPLAY_CALC] localRankings.length: ${localRankings.length}`);
+    console.log(`🚨🚨🚨 [DATA_PROCESSING_DISPLAY_CALC] rankedPokemon.length: ${rankedPokemon.length}`);
     
     if (localRankings.length > 0) {
-      console.log(`🔍🔍🔍 [RANKING_DATA_DEBUG] Using localRankings (${localRankings.length})`);
-      console.log(`🔍🔍🔍 [RANKING_DATA_DEBUG] First 5 local rankings: ${localRankings.slice(0, 5).map(p => `${p.name}(${p.id})`).join(', ')}`);
+      console.log(`🚨🚨🚨 [DATA_PROCESSING_DISPLAY_CALC] Using localRankings (${localRankings.length})`);
       return localRankings;
     }
     
     if (rankedPokemon.length > 0) {
-      console.log(`🔍🔍🔍 [RANKING_DATA_DEBUG] Using rankedPokemon (${rankedPokemon.length})`);
-      console.log(`🔍🔍🔍 [RANKING_DATA_DEBUG] First 5 ranked Pokemon: ${rankedPokemon.slice(0, 5).map(p => `${p.name}(${p.id})`).join(', ')}`);
+      console.log(`🚨🚨🚨 [DATA_PROCESSING_DISPLAY_CALC] ⚠️⚠️⚠️ USING rankedPokemon (${rankedPokemon.length})`);
+      console.log(`🚨🚨🚨 [DATA_PROCESSING_DISPLAY_CALC] This is the source of the 10 Pokemon!`);
+      console.log(`🚨🚨🚨 [DATA_PROCESSING_DISPLAY_CALC] rankedPokemon source call stack:`, new Error().stack?.split('\n').slice(1, 8).join(' | '));
       return rankedPokemon;
     }
     
-    console.log(`🔍🔍🔍 [RANKING_DATA_DEBUG] No rankings available - returning empty array`);
+    console.log(`🚨🚨🚨 [DATA_PROCESSING_DISPLAY_CALC] No rankings available - returning empty array`);
     return [];
   }, [localRankings.length, rankedPokemon.length]);
 
