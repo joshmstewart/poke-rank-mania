@@ -12,16 +12,14 @@ const BattleModeCore: React.FC = () => {
   console.log('[DEBUG BattleModeCore] Component rendering');
   console.log(`🔄 [REFINEMENT_PROVIDER_TOP_LEVEL] Wrapping entire BattleMode with single RefinementQueueProvider`);
   
-  // CRITICAL FIX: Stable state management with TrueSkill awareness
   const [battlesCompleted, setBattlesCompleted] = useState(0);
   const [battleResults, setBattleResults] = useState<SingleBattle[]>([]);
   const [allPokemon, setAllPokemon] = useState<Pokemon[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [hasInitialized, setHasInitialized] = useState(false);
 
-  const { getAllRatings, isHydrated } = useTrueSkillStore();
+  const { getAllRatings, isHydrated, waitForHydration } = useTrueSkillStore();
 
-  // CRITICAL FIX: Store battle type in ref to prevent re-renders and use stable initial value
   const getInitialBattleType = (): BattleType => {
     const stored = localStorage.getItem('pokemon-ranker-battle-type') as BattleType | null;
     const defaultType: BattleType = "pairs";
@@ -34,7 +32,6 @@ const BattleModeCore: React.FC = () => {
   
   const initialBattleType = useMemo(() => getInitialBattleType(), []);
 
-  // CRITICAL FIX: Use stable Pokemon reference that NEVER changes once loaded
   const stablePokemon = useMemo(() => {
     if (!allPokemon || allPokemon.length === 0) {
       return [];
@@ -44,7 +41,6 @@ const BattleModeCore: React.FC = () => {
     return allPokemon;
   }, [allPokemon.length > 0 ? 'HAS_POKEMON' : 'NO_POKEMON']);
 
-  // CRITICAL FIX: Ultra-stable callback references that never change
   const stableSetBattlesCompleted = useCallback((value: React.SetStateAction<number>) => {
     setBattlesCompleted(value);
   }, []);
@@ -61,44 +57,33 @@ const BattleModeCore: React.FC = () => {
     setIsLoading(loading);
   }, []);
 
-  // CRITICAL FIX: Initialize battle count from TrueSkill store when hydrated
+  // CLOUD-FIRST: Initialize battle count from TrueSkill cloud data
   useEffect(() => {
     if (hasInitialized) return;
     
-    const performInitialization = () => {
-      console.log(`🧹 [BATTLE_COUNT_INIT] Performing initialization with TrueSkill sync`);
+    const performCloudInitialization = async () => {
+      console.log(`🌥️ [CLOUD_BATTLE_INIT] Performing cloud-first initialization`);
       
-      if (isHydrated) {
-        // Get actual battle count from TrueSkill store
-        const ratings = getAllRatings();
-        const totalBattles = Object.values(ratings).reduce((sum, rating) => {
-          return sum + (rating.battleCount || 0);
-        }, 0);
-        
-        console.log(`🧹 [BATTLE_COUNT_INIT] Setting battle count from TrueSkill: ${totalBattles}`);
-        setBattlesCompleted(totalBattles);
-        
-        // Update localStorage for consistency
-        localStorage.setItem('pokemon-battle-count', totalBattles.toString());
-      } else {
-        // Fallback to localStorage if not hydrated yet
-        const savedBattleCount = localStorage.getItem('pokemon-battle-count');
-        if (savedBattleCount) {
-          const count = parseInt(savedBattleCount, 10);
-          if (!isNaN(count) && count > 0) {
-            console.log(`🧹 [BATTLE_COUNT_INIT] Fallback to localStorage battle count: ${count}`);
-            setBattlesCompleted(count);
-          }
-        }
+      if (!isHydrated) {
+        console.log(`🌥️ [CLOUD_BATTLE_INIT] Waiting for TrueSkill hydration...`);
+        await waitForHydration();
       }
       
+      // Get battle count from TrueSkill cloud data
+      const ratings = getAllRatings();
+      const totalBattles = Object.values(ratings).reduce((sum, rating) => {
+        return sum + (rating.battleCount || 0);
+      }, 0);
+      
+      console.log(`🌥️ [CLOUD_BATTLE_INIT] Setting battle count from cloud: ${totalBattles}`);
+      setBattlesCompleted(totalBattles);
+      
       setHasInitialized(true);
-      console.log('[DEBUG BattleModeCore] Initialization completed');
+      console.log('[DEBUG BattleModeCore] Cloud initialization completed');
     };
     
-    const timer = setTimeout(performInitialization, 200);
-    return () => clearTimeout(timer);
-  }, [hasInitialized, isHydrated, getAllRatings]);
+    performCloudInitialization();
+  }, [hasInitialized, isHydrated, getAllRatings, waitForHydration]);
 
   // Loading state
   if (isLoading || !stablePokemon.length) {

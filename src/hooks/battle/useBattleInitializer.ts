@@ -19,34 +19,38 @@ export const useBattleInitializer = (
   const [currentBattle, setCurrentBattle] = useState<Pokemon[]>([]);
   const [battleType, setBattleType] = useState<BattleType>("pairs");
   
-  const { getAllRatings, isHydrated } = useTrueSkillStore();
+  const { getAllRatings, isHydrated, waitForHydration } = useTrueSkillStore();
 
   useEffect(() => {
-    // Load battle type from localStorage
+    // Load battle type from localStorage (this is just UI preference, not data)
     const savedBattleType = localStorage.getItem('pokemon-ranker-battle-type') as BattleType;
     if (savedBattleType && (savedBattleType === "pairs" || savedBattleType === "triplets")) {
       setBattleType(savedBattleType);
     } else {
-      // Set default to "pairs" if not valid in localStorage
       localStorage.setItem('pokemon-ranker-battle-type', "pairs");
     }
   }, []);
 
-  // CRITICAL FIX: Sync battle count with TrueSkill store when hydrated
+  // CLOUD-FIRST: Load battle count from TrueSkill cloud data when hydrated
   useEffect(() => {
-    if (isHydrated) {
+    const loadBattleCountFromCloud = async () => {
+      if (!isHydrated) {
+        console.log(`🌥️ [CLOUD_BATTLE_COUNT] Waiting for TrueSkill hydration...`);
+        await waitForHydration();
+      }
+      
+      console.log(`🌥️ [CLOUD_BATTLE_COUNT] Loading battle count from cloud...`);
       const ratings = getAllRatings();
       const totalBattles = Object.values(ratings).reduce((sum, rating) => {
         return sum + (rating.battleCount || 0);
       }, 0);
       
-      console.log(`🔄 [BATTLE_COUNT_SYNC] Syncing battle count from TrueSkill: ${totalBattles}`);
+      console.log(`🌥️ [CLOUD_BATTLE_COUNT] Loaded ${totalBattles} battles from cloud`);
       setBattlesCompleted(totalBattles);
-      
-      // Also update localStorage for consistency
-      localStorage.setItem('pokemon-battle-count', totalBattles.toString());
-    }
-  }, [isHydrated, getAllRatings, setBattlesCompleted]);
+    };
+
+    loadBattleCountFromCloud();
+  }, [isHydrated, getAllRatings, setBattlesCompleted, waitForHydration]);
 
   const loadPokemon = async (genId = 0, fullRankingMode = false, preserveState = false) => {
     setIsLoading(true);
@@ -58,15 +62,17 @@ export const useBattleInitializer = (
         // Reset battle state if not preserving state
         setBattleResults([]);
         
-        // CRITICAL FIX: Don't reset battle count to 0, get it from TrueSkill
+        // CLOUD-FIRST: Always get battle count from cloud, never reset to 0
+        console.log(`🌥️ [CLOUD_BATTLE_COUNT] Loading battle count from cloud after Pokemon load...`);
         if (isHydrated) {
           const ratings = getAllRatings();
           const totalBattles = Object.values(ratings).reduce((sum, rating) => {
             return sum + (rating.battleCount || 0);
           }, 0);
+          console.log(`🌥️ [CLOUD_BATTLE_COUNT] Setting battle count from cloud: ${totalBattles}`);
           setBattlesCompleted(totalBattles);
         } else {
-          setBattlesCompleted(0);
+          console.log(`🌥️ [CLOUD_BATTLE_COUNT] Store not hydrated yet, will load when ready`);
         }
         
         setRankingGenerated(false);
@@ -99,7 +105,6 @@ export const useBattleInitializer = (
 
   const startNewBattle = (pokemonList: Pokemon[], type: BattleType = battleType) => {
     if (pokemonList.length < 2) {
-      // Not enough Pokémon for a battle
       toast({
         title: "Not enough Pokémon",
         description: "Need at least 2 Pokémon for a battle.",
@@ -108,13 +113,9 @@ export const useBattleInitializer = (
       return;
     }
     
-    // Update current battle type
     setBattleType(type);
     
-    // Shuffle the list to get random Pokémon
     const shuffled = [...pokemonList].sort(() => Math.random() - 0.5);
-    
-    // Get the first 2 or 3 Pokémon based on battle type
     const battleSize = type === "triplets" ? 3 : 2;
     setCurrentBattle(shuffled.slice(0, battleSize));
     setSelectedPokemon([]);
