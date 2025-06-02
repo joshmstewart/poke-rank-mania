@@ -28,6 +28,10 @@ export const useBattleStateCoreRefactored = (
   // Use the state data management hook
   const stateData = useBattleStateData(initialBattleType, initialSelectedGeneration);
   
+  // MILESTONE INVESTIGATION: Log milestones from state data
+  console.log(`🔍🔍🔍 [MILESTONE_INVESTIGATION] useBattleStateCoreRefactored milestones from stateData:`, stateData.milestones);
+  console.log(`🔍🔍🔍 [MILESTONE_INVESTIGATION] stateData.battlesCompleted:`, stateData.battlesCompleted);
+  
   // Use coordination hook for battle management
   const coordination = useBattleStateCoordination(
     allPokemon,
@@ -50,6 +54,9 @@ export const useBattleStateCoreRefactored = (
 
   const refinementQueue = useSharedRefinementQueue();
 
+  // MILESTONE INVESTIGATION: Log before passing to milestone events
+  console.log(`🔍🔍🔍 [MILESTONE_INVESTIGATION] About to pass milestones to useBattleStateMilestoneEvents:`, stateData.milestones);
+  
   // Use milestone events hook
   const milestoneEvents = useBattleStateMilestoneEvents({
     battlesCompleted: stateData.battlesCompleted,

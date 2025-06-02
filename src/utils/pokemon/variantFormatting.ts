@@ -1,55 +1,40 @@
 
-import { capitalizeWords } from './helpers';
+import { capitalizeFirstLetter } from './helpers';
 
 /**
- * Handle Pokemon variants that should have their form moved to the front
+ * Handle variants that should be moved to front (like "Iron Moth" from "iron-moth")
  */
 export const handleVariantFormatting = (name: string): string | null => {
-  // Handle parentheses variants first: "dialga (origin forme)" -> "Origin Forme Dialga"
-  const parenthesesMatch = name.match(/^([^(]+)\s*\(([^)]+)\)$/i);
-  if (parenthesesMatch) {
-    const baseName = parenthesesMatch[1].trim();
-    const variant = parenthesesMatch[2].trim();
-    const formattedBase = capitalizeWords(baseName);
-    const formattedVariant = capitalizeWords(variant);
-    const result = `${formattedVariant} ${formattedBase}`;
-    console.log(`🔧 [FORMAT_DEBUG] Parentheses variant: "${name}" -> "${result}"`);
-    return result;
+  if (!name) return null;
+  
+  // Handle Iron variants (iron-moth -> Iron Moth)
+  if (name.startsWith('iron-')) {
+    const baseName = name.replace('iron-', '');
+    return `Iron ${capitalizeFirstLetter(baseName)}`;
   }
   
-  // Handle hyphenated variants: "calyrex-shadow" -> "Shadow Calyrex"
-  if (name.includes('-')) {
-    const parts = name.split('-');
-    if (parts.length === 2) {
-      const baseName = parts[0];
-      const variant = parts[1];
-      
-      // Check if this is a regional form or special form (handle these separately)
-      if (['alola', 'galar', 'hisui', 'paldea'].includes(variant.toLowerCase()) ||
-          ['mega', 'gmax', 'origin', 'primal'].some(special => 
-            name.toLowerCase().includes(special))) {
-        return null; // Let other handlers take care of this
-      }
-      
-      // This is a color/flavor/variant that should be moved to front
-      const formattedBase = capitalizeWords(baseName);
-      const formattedVariant = capitalizeWords(variant);
-      const result = `${formattedVariant} ${formattedBase}`;
-      console.log(`🔧 [FORMAT_DEBUG] Hyphen variant: "${name}" -> "${result}"`);
-      return result;
-    } else if (parts.length >= 3) {
-      const baseName = parts[0];
-      const variantParts = parts.slice(1);
-      
-      // Don't format regional forms this way
-      if (!['alola', 'galar', 'hisui', 'paldea'].includes(variantParts[0].toLowerCase())) {
-        const formattedBase = capitalizeWords(baseName);
-        const formattedVariant = capitalizeWords(variantParts.join(' '));
-        const result = `${formattedBase} (${formattedVariant})`;
-        console.log(`🔧 [FORMAT_DEBUG] Multi-hyphen variant: "${name}" -> "${result}"`);
-        return result;
-      }
-    }
+  // Handle Great Tusk variants (great-tusk -> Great Tusk)
+  if (name.startsWith('great-')) {
+    const baseName = name.replace('great-', '');
+    return `Great ${capitalizeFirstLetter(baseName)}`;
+  }
+  
+  // Handle Roaring Moon variants (roaring-moon -> Roaring Moon) 
+  if (name.startsWith('roaring-')) {
+    const baseName = name.replace('roaring-', '');
+    return `Roaring ${capitalizeFirstLetter(baseName)}`;
+  }
+  
+  // Handle Walking Wake variants (walking-wake -> Walking Wake)
+  if (name.startsWith('walking-')) {
+    const baseName = name.replace('walking-', '');
+    return `Walking ${capitalizeFirstLetter(baseName)}`;
+  }
+  
+  // Handle Scream Tail variants (scream-tail -> Scream Tail)
+  if (name.startsWith('scream-')) {
+    const baseName = name.replace('scream-', '');
+    return `Scream ${capitalizeFirstLetter(baseName)}`;
   }
   
   return null;
