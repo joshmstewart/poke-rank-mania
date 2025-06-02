@@ -85,9 +85,10 @@ export const fetchAllPokemon = async (
       console.error(`🚨 [POKEMON_COUNT_ERROR] Call #${currentCallId}: Only got ${data.results.length} Pokemon, expected at least 1025!`);
     }
     
-    // NEW: Track Furfrou and Alcremie forms specifically
+    // ENHANCED: Track specific Pokemon forms with better detection
     const furfrowFormsFound: string[] = [];
     const alcremieFormsFound: string[] = [];
+    const allPokemonNames: string[] = [];
     
     // CRITICAL: Track processing milestones
     const startProcessingTime = Date.now();
@@ -98,16 +99,19 @@ export const fetchAllPokemon = async (
         const response = await fetch(pokemonInfo.url);
         const pokemonData = await response.json();
 
-        // NEW: Check for Furfrou forms (ID 676)
-        if (pokemonData.id === 676 || pokemonData.name.includes('furfrou')) {
-          furfrowFormsFound.push(pokemonData.name);
-          console.log(`🐩 [FURFROU_DEBUG] Found Furfrou form: ${pokemonData.name} (ID: ${pokemonData.id})`);
+        // NEW: Log every Pokemon name and ID for debugging
+        allPokemonNames.push(`${pokemonData.name} (ID: ${pokemonData.id})`);
+        
+        // ENHANCED: More comprehensive Furfrou detection
+        if (pokemonData.id === 676 || pokemonData.name.toLowerCase().includes('furfrou')) {
+          furfrowFormsFound.push(`${pokemonData.name} (ID: ${pokemonData.id})`);
+          console.log(`🐩 [FURFROU_DEBUG] ✅ FOUND Furfrou form: "${pokemonData.name}" (ID: ${pokemonData.id})`);
         }
         
-        // NEW: Check for Alcremie forms (ID 869)
-        if (pokemonData.id === 869 || pokemonData.name.includes('alcremie')) {
-          alcremieFormsFound.push(pokemonData.name);
-          console.log(`🍰 [ALCREMIE_DEBUG] Found Alcremie form: ${pokemonData.name} (ID: ${pokemonData.id})`);
+        // ENHANCED: More comprehensive Alcremie detection  
+        if (pokemonData.id === 869 || pokemonData.name.toLowerCase().includes('alcremie')) {
+          alcremieFormsFound.push(`${pokemonData.name} (ID: ${pokemonData.id})`);
+          console.log(`🍰 [ALCREMIE_DEBUG] ✅ FOUND Alcremie form: "${pokemonData.name}" (ID: ${pokemonData.id})`);
         }
 
         // CRITICAL: Log milestone numbers specifically
@@ -154,12 +158,21 @@ export const fetchAllPokemon = async (
     const pokemonList = await Promise.all(pokemonPromises);
     const filteredList = pokemonList.filter((p): p is Pokemon => p !== null);
     
-    // NEW: Log final Furfrou and Alcremie findings
+    // ENHANCED: Comprehensive logging with Pokemon name samples
     console.log(`🐩 [FURFROU_FINAL] Call #${currentCallId}: Found ${furfrowFormsFound.length} Furfrou forms:`, furfrowFormsFound);
     console.log(`🍰 [ALCREMIE_FINAL] Call #${currentCallId}: Found ${alcremieFormsFound.length} Alcremie forms:`, alcremieFormsFound);
     
+    // Log some sample Pokemon names to verify we're getting the right data
+    console.log(`📝 [POKEMON_SAMPLE] Call #${currentCallId}: Sample of ALL Pokemon names (first 20):`, allPokemonNames.slice(0, 20));
+    console.log(`📝 [POKEMON_SAMPLE] Call #${currentCallId}: Sample of ALL Pokemon names (last 20):`, allPokemonNames.slice(-20));
+    
+    // Check specifically for Furfrou in the complete list
+    const furfrowInList = allPokemonNames.filter(name => name.toLowerCase().includes('furfrou'));
+    console.log(`🔍 [FURFROU_SEARCH] Call #${currentCallId}: Searching all Pokemon names for 'furfrou':`, furfrowInList);
+    
     if (furfrowFormsFound.length === 0) {
       console.error(`🚨 [FURFROU_MISSING] Call #${currentCallId}: NO FURFROU FORMS FOUND IN RAW API DATA!`);
+      console.error(`🚨 [FURFROU_MISSING] But found these in name search:`, furfrowInList);
     }
     
     if (alcremieFormsFound.length === 0) {
