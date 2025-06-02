@@ -37,93 +37,88 @@ export const useBattleStateMilestoneEvents = ({
   setBattleResults
 }: MilestoneEventHookProps) => {
 
+  // STANDARD MILESTONES - Use this as the authoritative source
+  const STANDARD_MILESTONES = [10, 25, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 600, 700, 800, 900, 1000];
+
   // DEBUGGING: Log milestone array and battle count on every render
   console.log(`🚨🚨🚨 [MILESTONE_DEBUG] ===== MILESTONE DETECTION DEBUG =====`);
   console.log(`🚨🚨🚨 [MILESTONE_DEBUG] Current battles: ${battlesCompleted}`);
-  console.log(`🚨🚨🚨 [MILESTONE_DEBUG] Milestones array:`, milestones);
-  console.log(`🚨🚨🚨 [MILESTONE_DEBUG] Milestones array type:`, typeof milestones);
-  console.log(`🚨🚨🚨 [MILESTONE_DEBUG] Milestones array length:`, milestones?.length);
-  console.log(`🚨🚨🚨 [MILESTONE_DEBUG] Is ${battlesCompleted} in milestones?`, milestones.includes(battlesCompleted));
+  console.log(`🚨🚨🚨 [MILESTONE_DEBUG] Standard milestones:`, STANDARD_MILESTONES);
+  console.log(`🚨🚨🚨 [MILESTONE_DEBUG] Passed milestones array:`, milestones);
+  console.log(`🚨🚨🚨 [MILESTONE_DEBUG] Are they the same?`, JSON.stringify(STANDARD_MILESTONES) === JSON.stringify(milestones));
+  console.log(`🚨🚨🚨 [MILESTONE_DEBUG] Is ${battlesCompleted} a standard milestone?`, STANDARD_MILESTONES.includes(battlesCompleted));
   console.log(`🚨🚨🚨 [MILESTONE_DEBUG] showingMilestone:`, showingMilestone);
   console.log(`🚨🚨🚨 [MILESTONE_DEBUG] milestoneInProgress:`, milestoneInProgress);
   console.log(`🚨🚨🚨 [MILESTONE_DEBUG] ======================================`);
 
-  // CRITICAL FIX: Only check for exact milestone matches to prevent false triggers
+  // CRITICAL FIX: Only use standard milestones, ignore passed array if it's wrong
   useEffect(() => {
-    console.log(`🎯 [MILESTONE_CHECK_MOUNT] Checking for exact milestone match on mount`);
-    console.log(`🎯 [MILESTONE_CHECK_MOUNT] Current battles: ${battlesCompleted}, milestones: ${milestones.join(', ')}`);
+    console.log(`🎯 [MILESTONE_CHECK_FIXED] Checking for exact standard milestone match`);
+    console.log(`🎯 [MILESTONE_CHECK_FIXED] Current battles: ${battlesCompleted}`);
     
-    // DEBUGGING: Extra verification
-    console.log(`🚨 [MILESTONE_CHECK_MOUNT] DEBUGGING MILESTONE CHECK:`);
-    console.log(`🚨 [MILESTONE_CHECK_MOUNT] - battlesCompleted type:`, typeof battlesCompleted);
-    console.log(`🚨 [MILESTONE_CHECK_MOUNT] - battlesCompleted value:`, battlesCompleted);
-    console.log(`🚨 [MILESTONE_CHECK_MOUNT] - milestones:`, JSON.stringify(milestones));
-    console.log(`🚨 [MILESTONE_CHECK_MOUNT] - milestones.includes(${battlesCompleted}):`, milestones.includes(battlesCompleted));
+    // ONLY trigger if we're exactly at a STANDARD milestone
+    const isStandardMilestone = STANDARD_MILESTONES.includes(battlesCompleted);
     
-    // ONLY trigger if we're exactly at a milestone (not just >= a milestone)
-    const isExactMilestone = milestones.includes(battlesCompleted);
-    
-    if (isExactMilestone && !showingMilestone && !milestoneInProgress) {
-      console.log(`🎯 [MILESTONE_CHECK_MOUNT] Found exact milestone match: ${battlesCompleted}`);
-      console.log(`🚨 [MILESTONE_CHECK_MOUNT] ❌ ERROR: Battle ${battlesCompleted} should NOT be a milestone!`);
-      console.log(`🚨 [MILESTONE_CHECK_MOUNT] ❌ Standard milestones: [10, 25, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 600, 700, 800, 900, 1000]`);
+    if (isStandardMilestone && !showingMilestone && !milestoneInProgress) {
+      console.log(`🎯 [MILESTONE_CHECK_FIXED] ✅ VALID MILESTONE: Battle ${battlesCompleted} is a standard milestone!`);
+      console.log(`🎯 [MILESTONE_CHECK_FIXED] ✅ Triggering milestone view...`);
       
-      // DON'T TRIGGER - this is clearly wrong
-      console.log(`🚨 [MILESTONE_CHECK_MOUNT] ❌ BLOCKING INCORRECT MILESTONE TRIGGER`);
-      return;
+      setMilestoneInProgress(true);
+      setShowingMilestone(true);
+      setRankingGenerated(true);
+    } else if (isStandardMilestone) {
+      console.log(`🎯 [MILESTONE_CHECK_FIXED] ⚠️ Valid milestone ${battlesCompleted} but already showing or in progress`);
     } else {
-      console.log(`🎯 [MILESTONE_CHECK_MOUNT] No exact milestone match. Battle ${battlesCompleted} is not in milestone list.`);
+      console.log(`🎯 [MILESTONE_CHECK_FIXED] ✅ Battle ${battlesCompleted} is NOT a standard milestone - correctly skipping`);
     }
-  }, [battlesCompleted, milestones, showingMilestone, milestoneInProgress, setMilestoneInProgress, setShowingMilestone, setRankingGenerated]);
+  }, [battlesCompleted, showingMilestone, milestoneInProgress, setMilestoneInProgress, setShowingMilestone, setRankingGenerated]);
 
-  // Enhanced milestone checking that only triggers on exact milestone matches
+  // Enhanced milestone checking that only triggers on standard milestone matches
   const checkAndTriggerMilestone = useCallback((newBattlesCompleted: number) => {
-    console.log(`🎯 [MILESTONE_CHECK_ENHANCED] Checking milestone for battle ${newBattlesCompleted}`);
-    console.log(`🎯 [MILESTONE_CHECK_ENHANCED] Available milestones: ${milestones.join(', ')}`);
-    console.log(`🎯 [MILESTONE_CHECK_ENHANCED] Current state - showingMilestone: ${showingMilestone}, milestoneInProgress: ${milestoneInProgress}`);
+    console.log(`🎯 [MILESTONE_CHECK_STANDARD] Checking standard milestone for battle ${newBattlesCompleted}`);
+    console.log(`🎯 [MILESTONE_CHECK_STANDARD] Standard milestones: ${STANDARD_MILESTONES.join(', ')}`);
     
-    // DEBUGGING: Extra verification
-    console.log(`🚨 [MILESTONE_CHECK_ENHANCED] DEBUGGING ENHANCED CHECK:`);
-    console.log(`🚨 [MILESTONE_CHECK_ENHANCED] - newBattlesCompleted type:`, typeof newBattlesCompleted);
-    console.log(`🚨 [MILESTONE_CHECK_ENHANCED] - newBattlesCompleted value:`, newBattlesCompleted);
-    console.log(`🚨 [MILESTONE_CHECK_ENHANCED] - milestones:`, JSON.stringify(milestones));
+    // CRITICAL FIX: Only trigger on standard milestone matches
+    const isStandardMilestone = STANDARD_MILESTONES.includes(newBattlesCompleted);
+    console.log(`🎯 [MILESTONE_CHECK_STANDARD] Is exactly at standard milestone? ${isStandardMilestone}`);
     
-    // CRITICAL FIX: Only trigger on exact milestone matches
-    const isAtMilestone = milestones.includes(newBattlesCompleted);
-    console.log(`🎯 [MILESTONE_CHECK_ENHANCED] Is exactly at milestone? ${isAtMilestone}`);
+    if (isStandardMilestone && !showingMilestone && !milestoneInProgress) {
+      console.log(`🎯 [MILESTONE_CHECK_STANDARD] ✅ Triggering valid milestone ${newBattlesCompleted}`);
+      setMilestoneInProgress(true);
+      setShowingMilestone(true);
+      setRankingGenerated(true);
+      return true;
+    }
     
-    if (isAtMilestone) {
-      console.log(`🚨 [MILESTONE_CHECK_ENHANCED] ❌ ERROR: Battle ${newBattlesCompleted} should NOT be a milestone!`);
-      console.log(`🚨 [MILESTONE_CHECK_ENHANCED] ❌ Standard milestones: [10, 25, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 600, 700, 800, 900, 1000]`);
-      console.log(`🚨 [MILESTONE_CHECK_ENHANCED] ❌ BLOCKING INCORRECT MILESTONE TRIGGER`);
-      return false;
+    if (!isStandardMilestone) {
+      console.log(`🎯 [MILESTONE_CHECK_STANDARD] ✅ Battle ${newBattlesCompleted} is NOT a milestone - correctly skipping`);
     }
     
     return false;
-  }, [milestones, showingMilestone, milestoneInProgress, setMilestoneInProgress, setShowingMilestone, setRankingGenerated]);
+  }, [showingMilestone, milestoneInProgress, setMilestoneInProgress, setShowingMilestone, setRankingGenerated]);
 
-  // Enhanced process battle result function with improved milestone detection
+  // Enhanced process battle result function with standard milestone detection
   const originalProcessBattleResult = useCallback((
     selectedPokemonIds: number[],
     currentBattlePokemon: Pokemon[],
     battleType: BattleType,
     selectedGeneration: number
   ) => {
-    console.log(`[ENHANCED_MILESTONE] Processing battle result - all ratings handled by centralized store`);
-    console.log(`[ENHANCED_MILESTONE] Selected Pokemon: ${selectedPokemonIds}`);
-    console.log(`[ENHANCED_MILESTONE] Current battles completed: ${battlesCompleted}`);
+    console.log(`[MILESTONE_FIXED] Processing battle result - all ratings handled by centralized store`);
+    console.log(`[MILESTONE_FIXED] Selected Pokemon: ${selectedPokemonIds}`);
+    console.log(`[MILESTONE_FIXED] Current battles completed: ${battlesCompleted}`);
 
     // Store battle history for UI display (not for rating calculations)
     const selected = selectedPokemonIds.sort((a, b) => a - b);
     setBattleHistory(prev => {
       const newHistory = [...prev, { battle: currentBattlePokemon, selected }];
-      console.log(`[ENHANCED_MILESTONE] Updated battle history length: ${newHistory.length}`);
+      console.log(`[MILESTONE_FIXED] Updated battle history length: ${newHistory.length}`);
       return newHistory;
     });
 
     // Increment battle counter
     const newBattlesCompleted = battlesCompleted + 1;
-    console.log(`[ENHANCED_MILESTONE] New battles completed: ${newBattlesCompleted}`);
+    console.log(`[MILESTONE_FIXED] New battles completed: ${newBattlesCompleted}`);
     
     setBattlesCompleted(newBattlesCompleted);
     localStorage.setItem('pokemon-battle-count', String(newBattlesCompleted));
@@ -139,11 +134,11 @@ export const useBattleStateMilestoneEvents = ({
 
     setBattleResults(prev => {
       const newResults = [...prev, newBattleResult];
-      console.log(`[ENHANCED_MILESTONE] Updated battle results length: ${newResults.length}`);
+      console.log(`[MILESTONE_FIXED] Updated battle results length: ${newResults.length}`);
       return newResults;
     });
 
-    // CRITICAL FIX: Use enhanced milestone checking that only triggers on exact matches
+    // CRITICAL FIX: Use standard milestone checking
     const milestoneTriggered = checkAndTriggerMilestone(newBattlesCompleted);
     
     if (!milestoneTriggered) {
@@ -151,7 +146,7 @@ export const useBattleStateMilestoneEvents = ({
       setSelectedPokemon([]);
     }
 
-    console.log(`[ENHANCED_MILESTONE] Battle processing complete. Milestone triggered: ${milestoneTriggered}`);
+    console.log(`[MILESTONE_FIXED] Battle processing complete. Milestone triggered: ${milestoneTriggered}`);
     return Promise.resolve();
   }, [battlesCompleted, checkAndTriggerMilestone, setSelectedPokemon, setBattleHistory, setBattlesCompleted, setBattleResults]);
 
