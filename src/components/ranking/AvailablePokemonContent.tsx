@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Pokemon } from "@/services/pokemon";
-import { LoadingType } from "@/hooks/usePokemonRanker";
+import { LoadingType } from "@/hooks/pokemon/types";
 import { InfiniteScrollLoader } from "./InfiniteScrollLoader";
 import { PokemonGridSection } from "@/components/pokemon/PokemonGridSection";
 

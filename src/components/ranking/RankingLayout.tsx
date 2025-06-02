@@ -7,7 +7,7 @@ import { RankingsSection } from "./RankingsSection";
 import BattleControls from "@/components/battle/BattleControls";
 import PokemonCard from "@/components/PokemonCard";
 import { BattleType } from "@/hooks/battle/types";
-import { LoadingType } from "@/hooks/usePokemonRanker";
+import { LoadingType } from "@/hooks/pokemon/types";
 import { ITEMS_PER_PAGE } from "@/services/pokemon";
 
 interface RankingLayoutProps {

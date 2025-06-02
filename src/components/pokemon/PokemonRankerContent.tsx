@@ -1,9 +1,8 @@
-
 import React from "react";
 import { RankedPokemon } from "@/services/pokemon";
 import { RankingResults } from "../ranking/RankingResults";
 import { RankingUI } from "../ranking/RankingUI";
-import { LoadingType } from "@/hooks/usePokemonRanker";
+import { LoadingType } from "@/hooks/pokemon/types";
 
 interface PokemonRankerContentProps {
   showRankings: boolean;

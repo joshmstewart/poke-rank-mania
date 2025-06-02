@@ -1,6 +1,6 @@
 
 import React from "react";
-import { LoadingType } from "@/hooks/usePokemonRanker";
+import { LoadingType } from "@/hooks/pokemon/types";
 import { useRankingUIState } from "@/hooks/ranking/useRankingUIState";
 import { useRankingDataProcessing } from "@/hooks/ranking/useRankingDataProcessing";
 import { RankingUICore } from "./RankingUICore";

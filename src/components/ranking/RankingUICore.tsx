@@ -1,11 +1,10 @@
-
 import React from "react";
 import { useEnhancedManualReorder } from "@/hooks/battle/useEnhancedManualReorder";
 import { useRankingDragDrop } from "@/hooks/ranking/useRankingDragDrop";
 import { useRankingReset } from "./RankingResetHandler";
 import { RankingLayout } from "./RankingLayout";
 import { BattleType } from "@/hooks/battle/types";
-import { LoadingType } from "@/hooks/usePokemonRanker";
+import { LoadingType } from "@/hooks/pokemon/types";
 
 interface RankingUICoreProps {
   isLoading: boolean;

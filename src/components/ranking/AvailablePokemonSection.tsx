@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect } from "react";
 import { Pokemon } from "@/services/pokemon";
-import { LoadingType } from "@/hooks/usePokemonRanker";
+import { LoadingType } from "@/hooks/pokemon/types";
 import { usePokemonGrouping } from "@/hooks/pokemon/usePokemonGrouping";
 import { useGenerationExpansion } from "@/hooks/pokemon/useGenerationExpansion";
 import { useAvailablePokemonGenerations } from "@/hooks/pokemon/useAvailablePokemonGenerations";
