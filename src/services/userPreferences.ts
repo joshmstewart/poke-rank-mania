@@ -37,7 +37,12 @@ export const getUserPreferences = async (userId: string): Promise<UserPreference
   }
 
   console.log('🌥️ [USER_PREFERENCES] Preferences fetched:', data);
-  return data as UserPreferences;
+  return {
+    ...data,
+    form_filters: data.form_filters as FormFilters,
+    image_preferences: data.image_preferences as ImagePreferences,
+    other_settings: data.other_settings as Record<string, any>
+  } as UserPreferences;
 };
 
 export const createUserPreferences = async (preferences: Omit<UserPreferences, 'id' | 'created_at' | 'updated_at'>): Promise<UserPreferences> => {
@@ -45,7 +50,12 @@ export const createUserPreferences = async (preferences: Omit<UserPreferences, '
   
   const { data, error } = await supabase
     .from('user_preferences')
-    .insert(preferences)
+    .insert({
+      user_id: preferences.user_id,
+      form_filters: preferences.form_filters as any,
+      image_preferences: preferences.image_preferences as any,
+      other_settings: preferences.other_settings as any
+    })
     .select()
     .single();
 
@@ -55,7 +65,12 @@ export const createUserPreferences = async (preferences: Omit<UserPreferences, '
   }
 
   console.log('🌥️ [USER_PREFERENCES] Preferences created:', data);
-  return data as UserPreferences;
+  return {
+    ...data,
+    form_filters: data.form_filters as FormFilters,
+    image_preferences: data.image_preferences as ImagePreferences,
+    other_settings: data.other_settings as Record<string, any>
+  } as UserPreferences;
 };
 
 export const updateUserPreferences = async (
@@ -64,9 +79,14 @@ export const updateUserPreferences = async (
 ): Promise<UserPreferences> => {
   console.log('🌥️ [USER_PREFERENCES] Updating preferences for user:', userId, updates);
   
+  const updateData: any = {};
+  if (updates.form_filters) updateData.form_filters = updates.form_filters;
+  if (updates.image_preferences) updateData.image_preferences = updates.image_preferences;
+  if (updates.other_settings) updateData.other_settings = updates.other_settings;
+  
   const { data, error } = await supabase
     .from('user_preferences')
-    .update(updates)
+    .update(updateData)
     .eq('user_id', userId)
     .select()
     .single();
@@ -77,7 +97,12 @@ export const updateUserPreferences = async (
   }
 
   console.log('🌥️ [USER_PREFERENCES] Preferences updated:', data);
-  return data as UserPreferences;
+  return {
+    ...data,
+    form_filters: data.form_filters as FormFilters,
+    image_preferences: data.image_preferences as ImagePreferences,
+    other_settings: data.other_settings as Record<string, any>
+  } as UserPreferences;
 };
 
 export const upsertUserPreferences = async (preferences: Omit<UserPreferences, 'id' | 'created_at' | 'updated_at'>): Promise<UserPreferences> => {
@@ -85,7 +110,12 @@ export const upsertUserPreferences = async (preferences: Omit<UserPreferences, '
   
   const { data, error } = await supabase
     .from('user_preferences')
-    .upsert(preferences, { 
+    .upsert({
+      user_id: preferences.user_id,
+      form_filters: preferences.form_filters as any,
+      image_preferences: preferences.image_preferences as any,
+      other_settings: preferences.other_settings as any
+    }, { 
       onConflict: 'user_id',
       ignoreDuplicates: false 
     })
@@ -98,5 +128,10 @@ export const upsertUserPreferences = async (preferences: Omit<UserPreferences, '
   }
 
   console.log('🌥️ [USER_PREFERENCES] Preferences upserted:', data);
-  return data as UserPreferences;
+  return {
+    ...data,
+    form_filters: data.form_filters as FormFilters,
+    image_preferences: data.image_preferences as ImagePreferences,
+    other_settings: data.other_settings as Record<string, any>
+  } as UserPreferences;
 };
