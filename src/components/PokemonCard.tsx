@@ -15,6 +15,9 @@ interface PokemonCardProps {
 }
 
 const PokemonCard = ({ pokemon, isDragging, viewMode = "list", compact }: PokemonCardProps) => {
+  // DEBUG: Log where compact prop comes from
+  console.log(`🔍 [POKEMON_CARD_DEBUG] ${pokemon.name}: compact prop = ${compact}, viewMode = ${viewMode}`);
+
   // Validate the Pokemon to ensure image and name consistency
   const validatedPokemon = useMemo(() => {
     const [validated] = validateBattlePokemon([pokemon]);
@@ -40,6 +43,7 @@ const PokemonCard = ({ pokemon, isDragging, viewMode = "list", compact }: Pokemo
   };
 
   if (viewMode === "grid") {
+    console.log(`🔍 [POKEMON_CARD_DEBUG] ${displayName}: GRID VIEW - using compact=false`);
     // Grid layout: compact vertical layout with image on top, name and number below
     return (
       <Card 
@@ -76,6 +80,7 @@ const PokemonCard = ({ pokemon, isDragging, viewMode = "list", compact }: Pokemo
     );
   }
 
+  console.log(`🔍 [POKEMON_CARD_DEBUG] ${displayName}: LIST VIEW - using compact=${compact}`);
   // Original list layout for other views
   return (
     <Card 
