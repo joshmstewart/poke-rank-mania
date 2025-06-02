@@ -37,18 +37,16 @@ export const useBattleStateMilestoneEvents = ({
   setBattleResults
 }: MilestoneEventHookProps) => {
 
-  // CRITICAL FIX: Check for missed milestones on component mount
+  // CRITICAL FIX: Only check for exact milestone matches to prevent false triggers
   useEffect(() => {
-    console.log(`🎯 [MILESTONE_CHECK_MOUNT] Checking for missed milestones on mount`);
+    console.log(`🎯 [MILESTONE_CHECK_MOUNT] Checking for exact milestone match on mount`);
     console.log(`🎯 [MILESTONE_CHECK_MOUNT] Current battles: ${battlesCompleted}, milestones: ${milestones.join(', ')}`);
     
-    const missedMilestones = milestones.filter(milestone => 
-      battlesCompleted >= milestone && !showingMilestone
-    );
+    // ONLY trigger if we're exactly at a milestone (not just >= a milestone)
+    const isExactMilestone = milestones.includes(battlesCompleted);
     
-    if (missedMilestones.length > 0 && !milestoneInProgress) {
-      const latestMilestone = Math.max(...missedMilestones);
-      console.log(`🎯 [MILESTONE_CHECK_MOUNT] Found missed milestone: ${latestMilestone}`);
+    if (isExactMilestone && !showingMilestone && !milestoneInProgress) {
+      console.log(`🎯 [MILESTONE_CHECK_MOUNT] Found exact milestone match: ${battlesCompleted}`);
       
       setMilestoneInProgress(true);
       setShowingMilestone(true);
@@ -58,24 +56,27 @@ export const useBattleStateMilestoneEvents = ({
       setTimeout(() => {
         const generateRankingsEvent = new CustomEvent('generate-milestone-rankings', {
           detail: { 
-            milestone: latestMilestone,
+            milestone: battlesCompleted,
             timestamp: Date.now(),
             source: 'mount-check'
           }
         });
         document.dispatchEvent(generateRankingsEvent);
       }, 100);
+    } else {
+      console.log(`🎯 [MILESTONE_CHECK_MOUNT] No exact milestone match. Battle ${battlesCompleted} is not in milestone list.`);
     }
   }, [battlesCompleted, milestones, showingMilestone, milestoneInProgress, setMilestoneInProgress, setShowingMilestone, setRankingGenerated]);
 
-  // Enhanced milestone checking that actually triggers the view
+  // Enhanced milestone checking that only triggers on exact milestone matches
   const checkAndTriggerMilestone = useCallback((newBattlesCompleted: number) => {
     console.log(`🎯 [MILESTONE_CHECK_ENHANCED] Checking milestone for battle ${newBattlesCompleted}`);
     console.log(`🎯 [MILESTONE_CHECK_ENHANCED] Available milestones: ${milestones.join(', ')}`);
     console.log(`🎯 [MILESTONE_CHECK_ENHANCED] Current state - showingMilestone: ${showingMilestone}, milestoneInProgress: ${milestoneInProgress}`);
     
+    // CRITICAL FIX: Only trigger on exact milestone matches
     const isAtMilestone = milestones.includes(newBattlesCompleted);
-    console.log(`🎯 [MILESTONE_CHECK_ENHANCED] Is at milestone? ${isAtMilestone}`);
+    console.log(`🎯 [MILESTONE_CHECK_ENHANCED] Is exactly at milestone? ${isAtMilestone}`);
     
     if (isAtMilestone && !showingMilestone && !milestoneInProgress) {
       console.log(`🎯 [MILESTONE_TRIGGERED] ===== MILESTONE ${newBattlesCompleted} TRIGGERED! =====`);
@@ -145,7 +146,7 @@ export const useBattleStateMilestoneEvents = ({
       return newResults;
     });
 
-    // CRITICAL FIX: Use enhanced milestone checking
+    // CRITICAL FIX: Use enhanced milestone checking that only triggers on exact matches
     const milestoneTriggered = checkAndTriggerMilestone(newBattlesCompleted);
     
     if (!milestoneTriggered) {
