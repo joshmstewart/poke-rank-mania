@@ -13,7 +13,6 @@ interface UnifiedPokemonCardProps {
   showRank?: boolean;
   showScore?: boolean;
   isRanked?: boolean;
-  hideScore?: boolean;
 }
 
 export const UnifiedPokemonCard: React.FC<UnifiedPokemonCardProps> = ({
@@ -21,26 +20,8 @@ export const UnifiedPokemonCard: React.FC<UnifiedPokemonCardProps> = ({
   rank,
   showRank = false,
   showScore = false,
-  isRanked = false,
-  hideScore = false
+  isRanked = false
 }) => {
-  // CRITICAL LOGGING TO TRACE FINAL RENDERING DECISIONS
-  console.log(`💎💎💎 [UNIFIED_CARD_CRITICAL] ===== UNIFIED CARD RENDER =====`);
-  console.log(`💎💎💎 [UNIFIED_CARD_CRITICAL] Pokemon: ${pokemon.name} (${pokemon.id})`);
-  console.log(`💎💎💎 [UNIFIED_CARD_CRITICAL] rank: ${rank}`);
-  console.log(`💎💎💎 [UNIFIED_CARD_CRITICAL] showRank: ${showRank}`);
-  console.log(`💎💎💎 [UNIFIED_CARD_CRITICAL] showScore: ${showScore}`);
-  console.log(`💎💎💎 [UNIFIED_CARD_CRITICAL] isRanked: ${isRanked}`);
-  console.log(`💎💎💎 [UNIFIED_CARD_CRITICAL] hideScore: ${hideScore}`);
-  console.log(`💎💎💎 [UNIFIED_CARD_CRITICAL] pokemon.score: ${pokemon.score}`);
-  console.log(`💎💎💎 [UNIFIED_CARD_CRITICAL] pokemon.rank: ${pokemon.rank}`);
-  console.log(`💎💎💎 [UNIFIED_CARD_CRITICAL] pokemon.currentRank: ${pokemon.currentRank}`);
-
-  // CRITICAL: Check the final score rendering condition
-  const willShowScore = showScore && !hideScore && pokemon.score !== undefined;
-  console.log(`💎💎💎 [UNIFIED_CARD_CRITICAL] FINAL DECISION - willShowScore: ${willShowScore}`);
-  console.log(`💎💎💎 [UNIFIED_CARD_CRITICAL] BREAKDOWN: showScore=${showScore} && !hideScore=${!hideScore} && hasScore=${pokemon.score !== undefined}`);
-
   // Get background color based on Pokemon type
   const backgroundColor = getPokemonTypeColor(pokemon);
   
@@ -74,7 +55,7 @@ export const UnifiedPokemonCard: React.FC<UnifiedPokemonCardProps> = ({
             className="bg-yellow-500 text-white font-bold text-xs px-2 py-1 shadow-md flex items-center gap-1"
           >
             <Crown size={12} />
-            #{pokemon.rank || pokemon.currentRank || 'N/A'}
+            #{pokemon.currentRank}
           </Badge>
         </div>
       )}
@@ -98,8 +79,8 @@ export const UnifiedPokemonCard: React.FC<UnifiedPokemonCardProps> = ({
           #{formattedId}
         </div>
         
-        {/* Score display - only show if not hidden and showScore is true */}
-        {willShowScore && (
+        {/* Score display */}
+        {showScore && pokemon.score !== undefined && (
           <div className="text-xs text-gray-700 font-medium">
             Score: {pokemon.score.toFixed(1)}
           </div>

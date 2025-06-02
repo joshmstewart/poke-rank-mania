@@ -16,7 +16,6 @@ interface DragDropGridProps {
   onLocalReorder: (newRankings: (Pokemon | RankedPokemon)[]) => void;
   onMarkAsPending: (pokemonId: number) => void;
   availablePokemon?: any[];
-  isAvailableSection?: boolean;
 }
 
 const DragDropGrid: React.FC<DragDropGridProps> = ({
@@ -26,29 +25,18 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
   onManualReorder,
   onLocalReorder,
   onMarkAsPending,
-  availablePokemon = [],
-  isAvailableSection = false
+  availablePokemon = []
 }) => {
-  // CRITICAL LOGGING TO TRACE RENDERING PATH
-  console.log(`🔥🔥🔥 [DRAGDROP_GRID_CRITICAL] ===== DRAGDROP GRID RENDER =====`);
-  console.log(`🔥🔥🔥 [DRAGDROP_GRID_CRITICAL] isAvailableSection: ${isAvailableSection}`);
-  console.log(`🔥🔥🔥 [DRAGDROP_GRID_CRITICAL] displayRankings length: ${displayRankings.length}`);
-  console.log(`🔥🔥🔥 [DRAGDROP_GRID_CRITICAL] First 3 Pokemon:`, displayRankings.slice(0, 3).map(p => ({ 
-    id: p.id, 
-    name: p.name, 
-    isRanked: (p as any).isRanked,
-    score: (p as any).score,
-    rank: (p as any).rank 
-  })));
-
+  // Set up a droppable zone that accepts available Pokemon
   const { setNodeRef, isOver } = useDroppable({
-    id: isAvailableSection ? 'available-grid-drop-zone' : 'rankings-grid-drop-zone',
+    id: 'rankings-grid-drop-zone',
     data: {
-      type: isAvailableSection ? 'available-grid' : 'rankings-grid',
+      type: 'rankings-grid',
       accepts: ['available-pokemon', 'ranked-pokemon']
     }
   });
 
+  // Include ranked Pokemon IDs AND available Pokemon IDs for proper collision detection
   const sortableItems = [
     ...displayRankings.map(p => p.id),
     ...availablePokemon.map(p => `available-${p.id}`),
@@ -67,8 +55,7 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
         <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
           {displayRankings.map((pokemon, index) => {
             const isPending = localPendingRefinements.has(pokemon.id);
-            
-            console.log(`🔥🔥🔥 [DRAGDROP_GRID_CRITICAL] Pokemon ${pokemon.name} (${pokemon.id}): isAvailableSection=${isAvailableSection}, index=${index}, isPending=${isPending}`);
+            const pendingCount = pendingBattleCounts.get(pokemon.id) || 0;
             
             return (
               <DraggablePokemonMilestoneCard
@@ -76,9 +63,9 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
                 pokemon={pokemon}
                 index={index}
                 isPending={isPending}
-                showRank={!isAvailableSection}
+                showRank={true}
                 isDraggable={true}
-                isAvailable={isAvailableSection}
+                isAvailable={false}
               />
             );
           })}

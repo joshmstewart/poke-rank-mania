@@ -16,6 +16,7 @@ interface EnhancedAvailablePokemonContentProps {
   totalPages: number;
 }
 
+// Simple loading placeholder component
 const PokemonLoadingPlaceholder = () => (
   <div className="animate-pulse bg-gray-200 rounded-lg h-32 w-full"></div>
 );
@@ -39,6 +40,7 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
     }
   });
 
+  // Group items by generation for display
   const renderContent = () => {
     if (items.length === 0 && !isLoading) {
       return (
@@ -57,6 +59,7 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
 
     for (const item of items) {
       if (item.type === 'header') {
+        // Render previous generation's Pokemon if any
         if (currentGenerationPokemon.length > 0) {
           result.push(
             <DragDropGrid
@@ -68,12 +71,12 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
               onLocalReorder={() => {}}
               onMarkAsPending={() => {}}
               availablePokemon={[]}
-              isAvailableSection={true}
             />
           );
           currentGenerationPokemon = [];
         }
 
+        // Add generation header
         const generationData = {
           id: item.generation,
           name: `Generation ${item.generation}`,
@@ -100,6 +103,7 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
       }
     }
 
+    // Render remaining Pokemon
     if (currentGenerationPokemon.length > 0) {
       result.push(
         <DragDropGrid
@@ -111,7 +115,6 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
           onLocalReorder={() => {}}
           onMarkAsPending={() => {}}
           availablePokemon={[]}
-          isAvailableSection={true}
         />
       );
     }
@@ -141,6 +144,7 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
   );
 };
 
+// Helper functions for generation data
 const getRegionForGeneration = (gen: number): string => {
   const regions: Record<number, string> = {
     1: "Kanto",
