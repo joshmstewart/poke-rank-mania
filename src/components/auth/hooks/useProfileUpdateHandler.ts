@@ -21,60 +21,46 @@ export const useProfileUpdateHandler = ({
 
   useEffect(() => {
     const handleProfileUpdate = async (event: CustomEvent) => {
-      console.log('🔄 [PROFILE_UPDATE_HANDLER] ===== PROFILE UPDATE EVENT =====');
-      console.log('🔄 [PROFILE_UPDATE_HANDLER] Profile updated event received:', event.detail);
-      console.log('🔄 [PROFILE_UPDATE_HANDLER] Event detail avatar_url:', event.detail?.avatar_url);
+      console.log('🔄 [PROFILE_UPDATE_HANDLER] ===== PROFILE UPDATE EVENT RECEIVED =====');
+      console.log('🔄 [PROFILE_UPDATE_HANDLER] Event detail:', event.detail);
       console.log('🔄 [PROFILE_UPDATE_HANDLER] Current userId:', userId);
       console.log('🔄 [PROFILE_UPDATE_HANDLER] Is loading:', isLoadingProfile.current);
       
-      if (userId && !isLoadingProfile.current) {
+      if (userId && !isLoadingProfile.current && event.detail) {
         console.log('🔄 [PROFILE_UPDATE_HANDLER] 🚀 PROCESSING PROFILE UPDATE');
         
-        // Immediately invalidate cache to ensure we don't use stale data
+        // IMMEDIATE UPDATE: Use event data directly for instant UI feedback
+        const updatedProfile = {
+          ...currentProfile,
+          id: userId,
+          avatar_url: event.detail.avatar_url,
+          username: event.detail.username,
+          display_name: event.detail.display_name,
+          updated_at: event.detail.timestamp
+        };
+        
+        console.log('🔄 [PROFILE_UPDATE_HANDLER] 🎯 IMMEDIATE: Setting profile from event data');
+        console.log('🔄 [PROFILE_UPDATE_HANDLER] 🎯 IMMEDIATE: Avatar URL:', updatedProfile.avatar_url);
+        setCurrentProfile(updatedProfile);
+        setIsProfileLoaded(true);
+        
+        // BACKGROUND REFRESH: Invalidate cache and fetch fresh data without waiting
+        console.log('🔄 [PROFILE_UPDATE_HANDLER] 🔄 BACKGROUND: Starting fresh data fetch');
         invalidateCache(userId);
         
-        // CRITICAL: Use the event data directly first
-        if (event.detail && event.detail.avatar_url !== undefined) {
-          console.log('🔄 [PROFILE_UPDATE_HANDLER] 🎯 Using FRESH event data directly');
-          const updatedProfile = {
-            ...currentProfile,
-            id: userId,
-            avatar_url: event.detail.avatar_url,
-            username: event.detail.username || currentProfile?.username,
-            display_name: event.detail.display_name || currentProfile?.display_name,
-            updated_at: event.detail.timestamp
-          };
-          
-          console.log('🔄 [PROFILE_UPDATE_HANDLER] 🎯 Setting profile from event data with avatar:', updatedProfile.avatar_url);
-          setCurrentProfile(updatedProfile);
-          setIsProfileLoaded(true);
-        }
-        
-        // Also fetch fresh data to ensure cache is updated
-        isLoadingProfile.current = true;
-        
-        try {
-          // Give the database a moment to be consistent
-          await new Promise(resolve => setTimeout(resolve, 300));
-          
-          // Fetch completely fresh profile data
-          console.log('🔄 [PROFILE_UPDATE_HANDLER] Fetching fresh profile data...');
-          await prefetchProfile(userId);
+        // Don't await this - let it happen in background
+        prefetchProfile(userId).then(() => {
           const freshProfile = getProfileFromCache(userId);
-          
           if (freshProfile) {
-            console.log('🔄 [PROFILE_UPDATE_HANDLER] 🎯 FINAL: Setting fresh profile with avatar:', freshProfile.avatar_url);
+            console.log('🔄 [PROFILE_UPDATE_HANDLER] 🔄 BACKGROUND: Fresh profile fetched');
+            console.log('🔄 [PROFILE_UPDATE_HANDLER] 🔄 BACKGROUND: Avatar URL:', freshProfile.avatar_url);
             setCurrentProfile(freshProfile);
           }
-          setIsProfileLoaded(true);
-        } catch (error) {
-          console.error('🔄 [PROFILE_UPDATE_HANDLER] Error fetching fresh profile:', error);
-        } finally {
-          isLoadingProfile.current = false;
-          console.log('🔄 [PROFILE_UPDATE_HANDLER] Profile update processing completed');
-        }
+        }).catch(error => {
+          console.error('🔄 [PROFILE_UPDATE_HANDLER] Background fetch error:', error);
+        });
       } else {
-        console.log('🔄 [PROFILE_UPDATE_HANDLER] Skipping update - no userId or currently loading');
+        console.log('🔄 [PROFILE_UPDATE_HANDLER] Skipping update - conditions not met');
       }
     };
 

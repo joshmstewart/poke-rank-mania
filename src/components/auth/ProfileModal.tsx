@@ -30,32 +30,42 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
     mountedRef
   } = useProfileFormState(open);
 
-  // Load current profile data when modal opens
+  // Load current profile data when modal opens - CRITICAL FIX
   useEffect(() => {
     if (open && user?.id && mountedRef.current) {
-      console.log('🎭 [PROFILE_MODAL] Loading current profile data for modal');
+      console.log('🎭 [PROFILE_MODAL] ===== MODAL OPENED - LOADING CURRENT DATA =====');
       
-      // First try to get from cache
-      let currentProfile = getProfileFromCache(user.id);
-      
-      if (currentProfile) {
-        console.log('🎭 [PROFILE_MODAL] Setting form with cached profile:', currentProfile);
-        setSelectedAvatar(currentProfile.avatar_url || '');
-        setUsername(currentProfile.username || '');
-        setDisplayName(currentProfile.display_name || '');
-      } else {
-        // If no cache, fetch fresh data
-        console.log('🎭 [PROFILE_MODAL] No cached profile, fetching fresh data');
-        prefetchProfile(user.id).then(() => {
-          const freshProfile = getProfileFromCache(user.id);
-          if (freshProfile && mountedRef.current) {
-            console.log('🎭 [PROFILE_MODAL] Setting form with fresh profile:', freshProfile);
-            setSelectedAvatar(freshProfile.avatar_url || '');
-            setUsername(freshProfile.username || '');
-            setDisplayName(freshProfile.display_name || '');
+      // Always fetch fresh data when modal opens to ensure we have latest
+      const loadCurrentData = async () => {
+        console.log('🎭 [PROFILE_MODAL] Fetching fresh profile data for modal...');
+        
+        try {
+          // Fetch fresh profile data
+          await prefetchProfile(user.id);
+          const currentProfile = getProfileFromCache(user.id);
+          
+          if (currentProfile && mountedRef.current) {
+            console.log('🎭 [PROFILE_MODAL] Setting modal form with current profile:', {
+              avatar: currentProfile.avatar_url,
+              username: currentProfile.username,
+              displayName: currentProfile.display_name
+            });
+            
+            setSelectedAvatar(currentProfile.avatar_url || '');
+            setUsername(currentProfile.username || '');
+            setDisplayName(currentProfile.display_name || '');
+          } else {
+            console.log('🎭 [PROFILE_MODAL] No current profile found, using defaults');
+            setSelectedAvatar('');
+            setUsername('');
+            setDisplayName('');
           }
-        });
-      }
+        } catch (error) {
+          console.error('🎭 [PROFILE_MODAL] Error loading current profile:', error);
+        }
+      };
+      
+      loadCurrentData();
     }
   }, [open, user?.id, getProfileFromCache, prefetchProfile, setSelectedAvatar, setUsername, setDisplayName, mountedRef]);
 
@@ -66,6 +76,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
 
   const handleAvatarSelection = (avatarUrl: string) => {
     if (!mountedRef.current) return;
+    console.log('🎭 [PROFILE_MODAL] Avatar selected in modal:', avatarUrl);
     setSelectedAvatar(avatarUrl);
     setAvatarModalOpen(false);
   };
@@ -77,6 +88,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
 
   const handleSaveSuccess = () => {
     if (!mountedRef.current) return;
+    console.log('🎭 [PROFILE_MODAL] Save successful - closing modal');
     onOpenChange(false);
   };
 

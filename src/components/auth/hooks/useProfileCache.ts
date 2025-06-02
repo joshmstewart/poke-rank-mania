@@ -21,8 +21,8 @@ export const useProfileCache = () => {
       return null;
     }
     
-    // Cache is valid for 2 minutes (shorter for more frequent updates)
-    const isExpired = Date.now() - cached.timestamp > 2 * 60 * 1000;
+    // Cache is valid for 5 minutes
+    const isExpired = Date.now() - cached.timestamp > 5 * 60 * 1000;
     if (isExpired) {
       console.log('🎯 [PROFILE_CACHE] Cache expired for user:', userId);
       return null;
@@ -83,7 +83,7 @@ export const useProfileCache = () => {
 
   const getProfileFromCache = useCallback((userId: string): Profile | null => {
     const cachedProfile = getCachedProfile(userId);
-    console.log('🎯 [PROFILE_CACHE] getProfileFromCache called for:', userId, 'returning:', cachedProfile?.avatar_url || 'NO_AVATAR');
+    console.log('🎯 [PROFILE_CACHE] getProfileFromCache called for:', userId, 'returning avatar:', cachedProfile?.avatar_url || 'NO_AVATAR');
     return cachedProfile;
   }, [getCachedProfile]);
 
