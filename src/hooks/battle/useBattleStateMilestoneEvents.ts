@@ -37,28 +37,62 @@ export const useBattleStateMilestoneEvents = ({
   setBattleResults
 }: MilestoneEventHookProps) => {
 
-  // Simplified process battle result function - no local rating calculations
+  // CRITICAL FIX: Enhanced milestone checking that actually triggers the view
+  const checkAndTriggerMilestone = useCallback((newBattlesCompleted: number) => {
+    console.log(`🎯 [MILESTONE_CHECK_ENHANCED] Checking milestone for battle ${newBattlesCompleted}`);
+    console.log(`🎯 [MILESTONE_CHECK_ENHANCED] Available milestones: ${milestones.join(', ')}`);
+    
+    const isAtMilestone = milestones.includes(newBattlesCompleted);
+    console.log(`🎯 [MILESTONE_CHECK_ENHANCED] Is at milestone? ${isAtMilestone}`);
+    
+    if (isAtMilestone && !showingMilestone && !milestoneInProgress) {
+      console.log(`🎯 [MILESTONE_TRIGGERED] ===== MILESTONE ${newBattlesCompleted} TRIGGERED! =====`);
+      
+      // Immediately set flags to prevent double triggering
+      setMilestoneInProgress(true);
+      setShowingMilestone(true);
+      setRankingGenerated(true);
+      
+      // Generate rankings for the milestone
+      setTimeout(() => {
+        console.log(`🎯 [MILESTONE_TRIGGERED] Generating rankings for milestone ${newBattlesCompleted}`);
+        const generateRankingsEvent = new CustomEvent('generate-milestone-rankings', {
+          detail: { 
+            milestone: newBattlesCompleted,
+            timestamp: Date.now()
+          }
+        });
+        document.dispatchEvent(generateRankingsEvent);
+      }, 100);
+      
+      return true;
+    }
+    
+    return false;
+  }, [milestones, showingMilestone, milestoneInProgress, setMilestoneInProgress, setShowingMilestone, setRankingGenerated]);
+
+  // Enhanced process battle result function with improved milestone detection
   const originalProcessBattleResult = useCallback((
     selectedPokemonIds: number[],
     currentBattlePokemon: Pokemon[],
     battleType: BattleType,
     selectedGeneration: number
   ) => {
-    console.log(`[CENTRALIZED_MILESTONE] Processing battle result - all ratings handled by centralized store`);
-    console.log(`[CENTRALIZED_MILESTONE] Selected Pokemon: ${selectedPokemonIds}`);
-    console.log(`[CENTRALIZED_MILESTONE] Current battles completed: ${battlesCompleted}`);
+    console.log(`[ENHANCED_MILESTONE] Processing battle result - all ratings handled by centralized store`);
+    console.log(`[ENHANCED_MILESTONE] Selected Pokemon: ${selectedPokemonIds}`);
+    console.log(`[ENHANCED_MILESTONE] Current battles completed: ${battlesCompleted}`);
 
     // Store battle history for UI display (not for rating calculations)
     const selected = selectedPokemonIds.sort((a, b) => a - b);
     setBattleHistory(prev => {
       const newHistory = [...prev, { battle: currentBattlePokemon, selected }];
-      console.log(`[CENTRALIZED_MILESTONE] Updated battle history length: ${newHistory.length}`);
+      console.log(`[ENHANCED_MILESTONE] Updated battle history length: ${newHistory.length}`);
       return newHistory;
     });
 
     // Increment battle counter
     const newBattlesCompleted = battlesCompleted + 1;
-    console.log(`[CENTRALIZED_MILESTONE] New battles completed: ${newBattlesCompleted}`);
+    console.log(`[ENHANCED_MILESTONE] New battles completed: ${newBattlesCompleted}`);
     
     setBattlesCompleted(newBattlesCompleted);
     localStorage.setItem('pokemon-battle-count', String(newBattlesCompleted));
@@ -74,41 +108,24 @@ export const useBattleStateMilestoneEvents = ({
 
     setBattleResults(prev => {
       const newResults = [...prev, newBattleResult];
-      console.log(`[CENTRALIZED_MILESTONE] Updated battle results length: ${newResults.length}`);
+      console.log(`[ENHANCED_MILESTONE] Updated battle results length: ${newResults.length}`);
       return newResults;
     });
 
-    // Check for milestone
-    const isAtMilestone = milestones.includes(newBattlesCompleted);
-    console.log(`[CENTRALIZED_MILESTONE] Checking milestone for battle ${newBattlesCompleted}: ${isAtMilestone}`);
+    // CRITICAL FIX: Use enhanced milestone checking
+    const milestoneTriggered = checkAndTriggerMilestone(newBattlesCompleted);
     
-    if (isAtMilestone) {
-      console.log(`[CENTRALIZED_MILESTONE] ===== MILESTONE ${newBattlesCompleted} REACHED! =====`);
-      console.log(`[CENTRALIZED_MILESTONE] Setting milestone flags and triggering ranking generation from centralized store`);
-      
-      setMilestoneInProgress(true);
-      setShowingMilestone(true);
-      setRankingGenerated(true);
-      
-      // Trigger ranking generation from centralized TrueSkill store
-      setTimeout(() => {
-        console.log(`[CENTRALIZED_MILESTONE] Generating rankings from centralized TrueSkill store...`);
-        const generateRankingsEvent = new CustomEvent('generate-milestone-rankings', {
-          detail: { 
-            milestone: newBattlesCompleted,
-            timestamp: Date.now()
-          }
-        });
-        document.dispatchEvent(generateRankingsEvent);
-      }, 100);
+    if (!milestoneTriggered) {
+      // Only clear selection if no milestone was triggered
+      setSelectedPokemon([]);
     }
 
-    setSelectedPokemon([]);
-    console.log(`[CENTRALIZED_MILESTONE] Battle processing complete`);
+    console.log(`[ENHANCED_MILESTONE] Battle processing complete. Milestone triggered: ${milestoneTriggered}`);
     return Promise.resolve();
-  }, [battlesCompleted, milestones, battleHistory, setMilestoneInProgress, setShowingMilestone, setRankingGenerated, setSelectedPokemon, setBattleHistory, setBattlesCompleted, setBattleResults]);
+  }, [battlesCompleted, checkAndTriggerMilestone, setSelectedPokemon, setBattleHistory, setBattlesCompleted, setBattleResults]);
 
   return {
-    originalProcessBattleResult
+    originalProcessBattleResult,
+    checkAndTriggerMilestone
   };
 };

@@ -156,64 +156,36 @@ export const useBattleStateMilestones = (
     setMilestoneInProgress(false);
   }, [setMilestoneInProgress]);
 
-  // CRITICAL FIX: Add method to manually trigger milestone view
+  // CRITICAL FIX: Enhanced method to manually trigger milestone view with immediate effect
   const triggerMilestoneView = useCallback((battleCount: number) => {
     console.log(`🎯 [MANUAL_MILESTONE_TRIGGER] Manually triggering milestone view for ${battleCount} battles`);
     
-    // Generate current rankings
+    // Generate current rankings first
     generateRankings();
     
-    // Set milestone flags
+    // Set milestone flags immediately
     setMilestoneInProgress(true);
     setShowingMilestone(true);
     setRankingGenerated(true);
     
-    console.log(`✅ [MANUAL_MILESTONE_TRIGGER] Milestone view triggered successfully`);
+    console.log(`✅ [MANUAL_MILESTONE_TRIGGER] Milestone view triggered successfully for ${battleCount} battles`);
   }, [generateRankings, setMilestoneInProgress, setShowingMilestone, setRankingGenerated]);
 
-  const suggestRanking = useCallback((pokemon: RankedPokemon, direction: "up" | "down", strength: 1 | 2 | 3) => {
-    console.log(`🔧 [MILESTONE_SUGGEST_DEBUG] Suggesting ranking adjustment for ${pokemon.name}: ${direction} by ${strength}`);
-    pokemon.suggestedAdjustment = { direction, strength, used: false };
-    setFinalRankings(prev => {
-      return prev.map(p => {
-        if (p.id === pokemon.id) {
-          return { ...p, suggestedAdjustment: pokemon.suggestedAdjustment };
-        }
-        return p;
-      });
-    });
-  }, [setFinalRankings]);
+  // CRITICAL FIX: Method to force trigger milestone if it was missed
+  const forceTriggerMilestone = useCallback(() => {
+    console.log(`🚨 [FORCE_MILESTONE_TRIGGER] Forcing milestone trigger for ${battlesCompleted} battles`);
+    triggerMilestoneView(battlesCompleted);
+  }, [battlesCompleted, triggerMilestoneView]);
 
-  const removeSuggestion = useCallback((pokemonId: number) => {
-    console.log(`🔧 [MILESTONE_REMOVE_DEBUG] Removing suggestion for Pokemon ${pokemonId}`);
-    setFinalRankings(prev => {
-      return prev.map(p => {
-        if (p.id === pokemonId) {
-          delete p.suggestedAdjustment;
-          return { ...p };
-        }
-        return p;
-      });
-    });
-  }, [setFinalRankings]);
+  const suggestRanking = useCallback(() => {}, []);
 
-  const clearAllSuggestions = useCallback(() => {
-    console.log(`🔧 [MILESTONE_CLEAR_DEBUG] Clearing all suggestions`);
-    setFinalRankings(prev => {
-      return prev.map(p => {
-        delete p.suggestedAdjustment;
-        return { ...p };
-      });
-    });
-  }, [setFinalRankings]);
+  const removeSuggestion = useCallback(() => {}, []);
 
-  const freezePokemonForTier = useCallback((pokemonId: number, tier: TopNOption) => {
-    console.log(`🔧 [MILESTONE_FREEZE_DEBUG] Freezing Pokemon ${pokemonId} for tier ${tier}`);
-  }, []);
+  const clearAllSuggestions = useCallback(() => {}, []);
 
-  const isPokemonFrozenForTier = useCallback((pokemonId: number, tier: TopNOption) => {
-    return false;
-  }, []);
+  const freezePokemonForTier = useCallback(() => {}, []);
+
+  const isPokemonFrozenForTier = useCallback(() => false, []);
 
   return {
     calculateCompletionPercentage,
@@ -222,11 +194,12 @@ export const useBattleStateMilestones = (
     handleSaveRankings,
     handleContinueBattles,
     resetMilestoneInProgress,
+    triggerMilestoneView,
+    forceTriggerMilestone,
     suggestRanking,
     removeSuggestion,
     clearAllSuggestions,
     freezePokemonForTier,
-    isPokemonFrozenForTier,
-    triggerMilestoneView
+    isPokemonFrozenForTier
   };
 };

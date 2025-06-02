@@ -39,21 +39,35 @@ export const useBattleProgression = (
     battleGenerationBlockedRef
   );
 
-  // CRITICAL FIX: Add method to check for missed milestones and trigger them
+  // CRITICAL FIX: Enhanced method to check for missed milestones and trigger them immediately
   const checkForMissedMilestones = (currentBattleCount: number, battleResults: any[]) => {
     console.log(`🔍 MISSED MILESTONE CHECK: Checking for missed milestones with ${currentBattleCount} battles`);
+    console.log(`🔍 MISSED MILESTONE CHECK: Available milestones: ${milestones.join(', ')}`);
     
+    // Find all milestones that should have been triggered by now
     const missedMilestones = milestones.filter(milestone => 
       currentBattleCount >= milestone
     );
     
+    console.log(`🔍 MISSED MILESTONE CHECK: All eligible milestones: ${missedMilestones.join(', ')}`);
+    
     if (missedMilestones.length > 0) {
-      const nextMissedMilestone = Math.min(...missedMilestones);
-      console.log(`🎯 MISSED MILESTONE FOUND: Triggering milestone ${nextMissedMilestone}`);
-      return triggerMilestone(nextMissedMilestone, battleResults);
+      // Get the highest milestone that was missed (most recent one)
+      const latestMissedMilestone = Math.max(...missedMilestones);
+      console.log(`🎯 MISSED MILESTONE FOUND: Triggering latest milestone ${latestMissedMilestone}`);
+      
+      // Force trigger the milestone view
+      setShowingMilestone(true);
+      return triggerMilestone(latestMissedMilestone, battleResults);
     }
     
     return false;
+  };
+
+  // CRITICAL FIX: Method to force check current battle count against milestones
+  const forceCheckCurrentMilestone = (battleResults: any[]) => {
+    console.log(`🔍 FORCE MILESTONE CHECK: Current battles completed: ${battlesCompleted}`);
+    return checkForMissedMilestones(battlesCompleted, battleResults);
   };
 
   return {
@@ -65,6 +79,7 @@ export const useBattleProgression = (
     isBattleGenerationBlocked,
     resetMilestoneTracking,
     triggerMilestone,
-    checkForMissedMilestones
+    checkForMissedMilestones,
+    forceCheckCurrentMilestone
   };
 };
