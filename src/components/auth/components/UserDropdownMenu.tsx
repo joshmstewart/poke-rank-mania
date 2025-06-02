@@ -29,15 +29,14 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({ user }) => {
   const { signOut } = useAuth();
   const [profileModalOpen, setProfileModalOpen] = useState(false);
 
-  console.log('🎭🎭🎭 [USER_DROPDOWN_TRACE] ===== USER DROPDOWN MENU RENDER =====');
-  console.log('🎭🎭🎭 [USER_DROPDOWN_TRACE] 🚨🚨🚨 RECEIVED USER PROP ANALYSIS 🚨🚨🚨');
-  console.log('🎭🎭🎭 [USER_DROPDOWN_TRACE] User prop details:', {
+  console.log('🎭🎭🎭 [USER_DROPDOWN_FIXED] ===== USER DROPDOWN MENU RENDER =====');
+  console.log('🎭🎭🎭 [USER_DROPDOWN_FIXED] User received:', {
     userId: user?.id?.substring(0, 8),
     userEmail: user?.email,
     hasUserMetadata: !!user?.user_metadata,
-    userMetadata: user?.user_metadata,
-    userMetadataType: typeof user?.user_metadata,
-    userMetadataKeys: user?.user_metadata ? Object.keys(user.user_metadata) : 'NO_METADATA'
+    avatarUrl: user?.user_metadata?.avatar_url,
+    avatarUrlType: typeof user?.user_metadata?.avatar_url,
+    avatarUrlLength: user?.user_metadata?.avatar_url?.length || 0
   });
 
   const handleSignOut = useCallback(async () => {
@@ -60,35 +59,11 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({ user }) => {
   const avatarUrl = user.user_metadata?.avatar_url;
   const userInitials = displayName.charAt(0).toUpperCase();
 
-  console.log('🎭🎭🎭 [USER_DROPDOWN_TRACE] ===== AVATAR URL COMPREHENSIVE ANALYSIS =====');
-  console.log('🎭🎭🎭 [USER_DROPDOWN_TRACE] 🎯 AVATAR URL EXTRACTION:', {
-    rawAvatarUrl: avatarUrl,
-    avatarUrlType: typeof avatarUrl,
-    avatarUrlLength: avatarUrl?.length || 0,
-    avatarUrlIsTruthy: !!avatarUrl,
-    avatarUrlIsEmptyString: avatarUrl === '',
-    avatarUrlIsNull: avatarUrl === null,
-    avatarUrlIsUndefined: avatarUrl === undefined,
-    avatarUrlTrimmed: avatarUrl?.trim?.(),
-    avatarUrlStartsWith: avatarUrl?.startsWith ? {
-      http: avatarUrl.startsWith('http'),
-      https: avatarUrl.startsWith('https'),
-      data: avatarUrl.startsWith('data:')
-    } : 'NO_STARTS_WITH_METHOD'
-  });
-  
-  console.log('🎭🎭🎭 [USER_DROPDOWN_TRACE] 🎯 DISPLAY VALUES:', {
-    displayName,
-    userInitials,
-    willRenderAvatarImage: !!avatarUrl && avatarUrl !== '',
-    timestamp: new Date().toISOString()
-  });
-
-  const shouldRenderAvatarImage = avatarUrl && avatarUrl.trim() !== '';
-  console.log('🎭🎭🎭 [USER_DROPDOWN_TRACE] 🎯 FINAL RENDER DECISION:', {
-    shouldRenderAvatarImage,
-    renderingLogic: `avatarUrl=${avatarUrl} && avatarUrl.trim()="${avatarUrl?.trim?.()}" !== ""`
-  });
+  console.log('🎭🎭🎭 [USER_DROPDOWN_FIXED] ===== FINAL AVATAR RENDERING DECISION =====');
+  console.log('🎭🎭🎭 [USER_DROPDOWN_FIXED] avatarUrl:', avatarUrl);
+  console.log('🎭🎭🎭 [USER_DROPDOWN_FIXED] displayName:', displayName);
+  console.log('🎭🎭🎭 [USER_DROPDOWN_FIXED] userInitials:', userInitials);
+  console.log('🎭🎭🎭 [USER_DROPDOWN_FIXED] Will render AvatarImage:', !!avatarUrl);
 
   return (
     <>
@@ -96,20 +71,18 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({ user }) => {
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="flex items-center gap-2 px-3">
             <Avatar className="h-12 w-12">
-              {shouldRenderAvatarImage && (
+              {avatarUrl && (
                 <AvatarImage 
                   src={avatarUrl} 
                   alt={displayName}
                   onLoad={() => {
-                    console.log('🎭🎭🎭 [USER_DROPDOWN_TRACE] ✅✅✅ AVATAR IMAGE LOADED SUCCESSFULLY ✅✅✅');
-                    console.log('🎭🎭🎭 [USER_DROPDOWN_TRACE] ✅ Loaded avatar URL:', avatarUrl);
-                    console.log('🎭🎭🎭 [USER_DROPDOWN_TRACE] ✅ Image load timestamp:', new Date().toISOString());
+                    console.log('🎭🎭🎭 [USER_DROPDOWN_FIXED] ✅✅✅ AVATAR IMAGE LOADED SUCCESSFULLY ✅✅✅');
+                    console.log('🎭🎭🎭 [USER_DROPDOWN_FIXED] ✅ Loaded avatar URL:', avatarUrl);
                   }}
                   onError={(e) => {
-                    console.error('🎭🎭🎭 [USER_DROPDOWN_TRACE] ❌❌❌ AVATAR IMAGE FAILED TO LOAD ❌❌❌');
-                    console.error('🎭🎭🎭 [USER_DROPDOWN_TRACE] ❌ Failed avatar URL:', avatarUrl);
-                    console.error('🎭🎭🎭 [USER_DROPDOWN_TRACE] ❌ Error event:', e);
-                    console.error('🎭🎭🎭 [USER_DROPDOWN_TRACE] ❌ Error timestamp:', new Date().toISOString());
+                    console.error('🎭🎭🎭 [USER_DROPDOWN_FIXED] ❌❌❌ AVATAR IMAGE FAILED TO LOAD ❌❌❌');
+                    console.error('🎭🎭🎭 [USER_DROPDOWN_FIXED] ❌ Failed avatar URL:', avatarUrl);
+                    console.error('🎭🎭🎭 [USER_DROPDOWN_FIXED] ❌ Error event:', e);
                   }}
                 />
               )}
