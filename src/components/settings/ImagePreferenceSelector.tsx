@@ -17,9 +17,11 @@ const ImagePreferenceSelector: React.FC<ImagePreferenceSelectorProps> = ({ onClo
   
   const [selectedType, setSelectedType] = useState<ImageType>(() => {
     const stored = localStorage.getItem('pokemon-image-preference') as ImageType | null;
-    // Filter out 'tcg-cards' type and default to 'official' instead
-    if (stored === 'tcg-cards') return 'official';
-    return stored || 'official';
+    // Default to 'official' for any invalid types
+    if (stored && ['official', 'artwork', 'sprite'].includes(stored)) {
+      return stored as 'official' | 'artwork' | 'sprite';
+    }
+    return 'official';
   });
 
   const [imageLoadStates, setImageLoadStates] = useState<Record<string, boolean>>({});
@@ -29,9 +31,9 @@ const ImagePreferenceSelector: React.FC<ImagePreferenceSelectorProps> = ({ onClo
     if (isInitialized && imagePreferences) {
       console.log('🖼️ [IMAGE_PREFS] Cloud preferences loaded:', imagePreferences);
       setSelectedMode(imagePreferences.mode);
-      // Ensure we don't set invalid types
-      if (imagePreferences.type !== 'tcg-cards') {
-        setSelectedType(imagePreferences.type);
+      // Ensure we only set valid types
+      if (['official', 'artwork', 'sprite'].includes(imagePreferences.type)) {
+        setSelectedType(imagePreferences.type as 'official' | 'artwork' | 'sprite');
       }
     }
   }, [imagePreferences, isInitialized]);

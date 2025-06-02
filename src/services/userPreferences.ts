@@ -39,9 +39,9 @@ export const getUserPreferences = async (userId: string): Promise<UserPreference
   console.log('🌥️ [USER_PREFERENCES] Preferences fetched:', data);
   return {
     ...data,
-    form_filters: data.form_filters as FormFilters,
-    image_preferences: data.image_preferences as ImagePreferences,
-    other_settings: data.other_settings as Record<string, any>
+    form_filters: data.form_filters as unknown as FormFilters,
+    image_preferences: data.image_preferences as unknown as ImagePreferences,
+    other_settings: data.other_settings as unknown as Record<string, any>
   } as UserPreferences;
 };
 
@@ -67,9 +67,9 @@ export const createUserPreferences = async (preferences: Omit<UserPreferences, '
   console.log('🌥️ [USER_PREFERENCES] Preferences created:', data);
   return {
     ...data,
-    form_filters: data.form_filters as FormFilters,
-    image_preferences: data.image_preferences as ImagePreferences,
-    other_settings: data.other_settings as Record<string, any>
+    form_filters: data.form_filters as unknown as FormFilters,
+    image_preferences: data.image_preferences as unknown as ImagePreferences,
+    other_settings: data.other_settings as unknown as Record<string, any>
   } as UserPreferences;
 };
 
@@ -99,9 +99,9 @@ export const updateUserPreferences = async (
   console.log('🌥️ [USER_PREFERENCES] Preferences updated:', data);
   return {
     ...data,
-    form_filters: data.form_filters as FormFilters,
-    image_preferences: data.image_preferences as ImagePreferences,
-    other_settings: data.other_settings as Record<string, any>
+    form_filters: data.form_filters as unknown as FormFilters,
+    image_preferences: data.image_preferences as unknown as ImagePreferences,
+    other_settings: data.other_settings as unknown as Record<string, any>
   } as UserPreferences;
 };
 
@@ -130,8 +130,8 @@ export const upsertUserPreferences = async (preferences: Omit<UserPreferences, '
   console.log('🌥️ [USER_PREFERENCES] Preferences upserted:', data);
   return {
     ...data,
-    form_filters: data.form_filters as FormFilters,
-    image_preferences: data.image_preferences as ImagePreferences,
-    other_settings: data.other_settings as Record<string, any>
+    form_filters: data.form_filters as unknown as FormFilters,
+    image_preferences: data.image_preferences as unknown as ImagePreferences,
+    other_settings: data.other_settings as unknown as Record<string, any>
   } as UserPreferences;
 };

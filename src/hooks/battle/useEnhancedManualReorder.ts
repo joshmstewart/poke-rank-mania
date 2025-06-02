@@ -1,4 +1,3 @@
-
 import { useCallback } from "react";
 import { RankedPokemon } from "@/services/pokemon";
 import { Rating, rate_1vs1 } from "ts-trueskill";
@@ -69,12 +68,8 @@ export const useEnhancedManualReorder = (
         return;
       }
       
-      // Get its TrueSkill rating
-      const rating = getRating(draggedPokemonId);
-      if (!rating) {
-        console.error(`🔥 [ENHANCED_REORDER] ❌ No TrueSkill rating found for Pokemon ${draggedPokemonId}`);
-        return;
-      }
+      // Get its TrueSkill rating - using string ID
+      const rating = getRating(draggedPokemonId.toString());
       
       // Create a RankedPokemon object
       const conservativeEstimate = rating.mu - 3 * rating.sigma;
@@ -292,12 +287,8 @@ export const useEnhancedManualReorder = (
       }
     }
 
-    // Get current TrueSkill ratings from centralized store
-    let draggedRating = getRating(draggedPokemonId);
-    if (!draggedRating) {
-      draggedRating = new Rating();
-      console.log(`🔥 [ENHANCED_REORDER] Created new Rating for ${draggedPokemon.name}`);
-    }
+    // Get current TrueSkill ratings from centralized store - using string IDs
+    let draggedRating = getRating(draggedPokemonId.toString());
 
     const totalUpdates = impliedBattles.reduce((sum, battle) => sum + battle.frequency, 0);
     console.log(`🔥 [ENHANCED_REORDER] ===== PROCESSING ${impliedBattles.length} IMPLIED BATTLE TYPES (${totalUpdates} total TrueSkill updates) =====`);
@@ -315,12 +306,8 @@ export const useEnhancedManualReorder = (
     impliedBattles.forEach(({ opponent, draggedWins, battleType, frequency }, battleIndex) => {
       console.log(`🔥 [ENHANCED_REORDER] --- Battle Type ${battleIndex + 1}/${impliedBattles.length}: ${battleType} (${frequency}x) ---`);
       
-      // Get opponent rating from centralized store
-      let opponentRating = getRating(opponent.id);
-      if (!opponentRating) {
-        opponentRating = new Rating();
-        console.log(`🔥 [ENHANCED_REORDER] Created new Rating for opponent ${opponent.name}`);
-      }
+      // Get opponent rating from centralized store - using string ID
+      let opponentRating = getRating(opponent.id.toString());
 
       // Process the battle the specified number of times
       for (let updateIndex = 0; updateIndex < frequency; updateIndex++) {
@@ -358,35 +345,35 @@ export const useEnhancedManualReorder = (
         }
       }
 
-      // Update TrueSkill store for opponent
+      // Update TrueSkill store for opponent - using string ID
       if (preventAutoResorting) {
         console.log(`🔥 [ENHANCED_REORDER] MANUAL MODE: Silently updating TrueSkill store for ${opponent.name} (no sync events)`);
         const store = useTrueSkillStore.getState();
-        store.ratings[opponent.id] = {
+        store.ratings[opponent.id.toString()] = {
           mu: opponentRating.mu,
           sigma: opponentRating.sigma,
           lastUpdated: new Date().toISOString(),
-          battleCount: (store.ratings[opponent.id]?.battleCount || 0) + frequency
+          battleCount: (store.ratings[opponent.id.toString()]?.battleCount || 0) + frequency
         };
       } else {
         console.log(`🔥 [ENHANCED_REORDER] Updating centralized TrueSkill store for ${opponent.name}`);
-        updateRating(opponent.id, opponentRating);
+        updateRating(opponent.id.toString(), opponentRating);
       }
     });
 
-    // Update TrueSkill store for dragged Pokemon
+    // Update TrueSkill store for dragged Pokemon - using string ID
     if (preventAutoResorting) {
       console.log(`🔥 [ENHANCED_REORDER] MANUAL MODE: Silently updating TrueSkill store for dragged Pokemon ${draggedPokemon.name} (no sync events)`);
       const store = useTrueSkillStore.getState();
-      store.ratings[draggedPokemonId] = {
+      store.ratings[draggedPokemonId.toString()] = {
         mu: updatedDraggedRating.mu,
         sigma: updatedDraggedRating.sigma,
         lastUpdated: new Date().toISOString(),
-        battleCount: (store.ratings[draggedPokemonId]?.battleCount || 0) + totalUpdates
+        battleCount: (store.ratings[draggedPokemonId.toString()]?.battleCount || 0) + totalUpdates
       };
     } else {
       console.log(`🔥 [ENHANCED_REORDER] Updating centralized TrueSkill store for dragged Pokemon ${draggedPokemon.name}`);
-      updateRating(draggedPokemonId, updatedDraggedRating);
+      updateRating(draggedPokemonId.toString(), updatedDraggedRating);
     }
 
     console.log(`🔥 [ENHANCED_REORDER] ===== RECALCULATING SCORES =====`);
@@ -402,14 +389,14 @@ export const useEnhancedManualReorder = (
           const battleAffected = impliedBattles.find(b => b.opponent.id === pokemon.id);
           if (battleAffected) {
             const store = useTrueSkillStore.getState();
-            const storedRating = store.ratings[pokemon.id];
-            latestRating = storedRating ? new Rating(storedRating.mu, storedRating.sigma) : getRating(pokemon.id);
+            const storedRating = store.ratings[pokemon.id.toString()];
+            latestRating = storedRating ? new Rating(storedRating.mu, storedRating.sigma) : getRating(pokemon.id.toString());
           } else {
-            latestRating = getRating(pokemon.id);
+            latestRating = getRating(pokemon.id.toString());
           }
         }
       } else {
-        latestRating = getRating(pokemon.id);
+        latestRating = getRating(pokemon.id.toString());
       }
       
       if (latestRating) {

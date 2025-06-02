@@ -1,4 +1,3 @@
-
 import { useCallback, useState } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
@@ -64,9 +63,9 @@ export const useBattleResultProcessor = (
           console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] Winner: ${winner.name} (${winner.id})`);
           console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] Loser: ${loser.name} (${loser.id})`);
           
-          // Get ratings from centralized store ONLY
-          const winnerRatingBefore = getRating(winner.id);
-          const loserRatingBefore = getRating(loser.id);
+          // Get ratings from centralized store ONLY - using string IDs
+          const winnerRatingBefore = getRating(winner.id.toString());
+          const loserRatingBefore = getRating(loser.id.toString());
           
           console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] ===== RATINGS BEFORE BATTLE =====`);
           console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] ${winner.name} BEFORE: μ=${winnerRatingBefore.mu.toFixed(3)}, σ=${winnerRatingBefore.sigma.toFixed(3)}`);
@@ -83,21 +82,19 @@ export const useBattleResultProcessor = (
           // Store updated ratings in centralized store - CRITICAL POINT
           console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] ===== UPDATING STORE =====`);
           console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] Calling updateRating for winner ${winner.name} (${winner.id})`);
-          console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] Winner rating object:`, { mu: newWinnerRating.mu, sigma: newWinnerRating.sigma });
           
-          updateRating(winner.id, newWinnerRating);
+          updateRating(winner.id.toString(), newWinnerRating);
           console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] ✅ Winner rating updated for ${winner.id}`);
           
           console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] Calling updateRating for loser ${loser.name} (${loser.id})`);
-          console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] Loser rating object:`, { mu: newLoserRating.mu, sigma: newLoserRating.sigma });
           
-          updateRating(loser.id, newLoserRating);
+          updateRating(loser.id.toString(), newLoserRating);
           console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] ✅ Loser rating updated for ${loser.id}`);
           
           // CRITICAL: Verify the ratings were stored immediately after each update
           console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] ===== VERIFICATION AFTER UPDATES =====`);
-          const verifyWinner = getRating(winner.id);
-          const verifyLoser = getRating(loser.id);
+          const verifyWinner = getRating(winner.id.toString());
+          const verifyLoser = getRating(loser.id.toString());
           console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] ${winner.name} VERIFICATION: μ=${verifyWinner.mu.toFixed(3)}, σ=${verifyWinner.sigma.toFixed(3)}`);
           console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] ${loser.name} VERIFICATION: μ=${verifyLoser.mu.toFixed(3)}, σ=${verifyLoser.sigma.toFixed(3)}`);
           
@@ -106,19 +103,6 @@ export const useBattleResultProcessor = (
           const ratingCountAfter = Object.keys(ratingsAfterUpdate).length;
           console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] ===== STORE STATE AFTER UPDATES =====`);
           console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] Total ratings after: ${ratingCountAfter} (was ${ratingCountBefore})`);
-          console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] Expected increase: 2 (if both Pokemon were new) or 0 (if both already had ratings)`);
-          console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] Store contents:`, Object.keys(ratingsAfterUpdate).map(id => {
-            const rating = ratingsAfterUpdate[parseInt(id)];
-            return `ID:${id} μ:${rating.mu.toFixed(2)} σ:${rating.sigma.toFixed(2)} battles:${rating.battleCount}`;
-          }));
-          
-          if (ratingCountAfter === ratingCountBefore + 2) {
-            console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] ✅ PERFECT: Store increased by 2 (both Pokemon were new)`);
-          } else if (ratingCountAfter === ratingCountBefore) {
-            console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] ✅ EXPECTED: Store same size (both Pokemon already had ratings)`);
-          } else {
-            console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] ⚠️ UNEXPECTED: Store count change from ${ratingCountBefore} to ${ratingCountAfter}`);
-          }
           
           // ENHANCED: Save battle count for persistence
           const newBattleCount = battleResults.length + 1;
@@ -162,9 +146,9 @@ export const useBattleResultProcessor = (
               updateCount++;
               console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] Triplet update #${updateCount}: ${winner.name} beats ${loser.name}`);
               
-              // Get ratings from centralized store ONLY
-              const winnerRating = getRating(winner.id);
-              const loserRating = getRating(loser.id);
+              // Get ratings from centralized store ONLY - using string IDs
+              const winnerRating = getRating(winner.id.toString());
+              const loserRating = getRating(loser.id.toString());
               
               console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] Before: ${winner.name} μ=${winnerRating.mu.toFixed(3)}, ${loser.name} μ=${loserRating.mu.toFixed(3)}`);
               
@@ -173,8 +157,8 @@ export const useBattleResultProcessor = (
               
               console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] After: ${winner.name} μ=${newWinnerRating.mu.toFixed(3)}, ${loser.name} μ=${newLoserRating.mu.toFixed(3)}`);
               
-              updateRating(winner.id, newWinnerRating);
-              updateRating(loser.id, newLoserRating);
+              updateRating(winner.id.toString(), newWinnerRating);
+              updateRating(loser.id.toString(), newLoserRating);
               console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] ✅ Updated both ratings for triplet matchup #${updateCount}`);
               
               // Create battle result record (for UI display only)

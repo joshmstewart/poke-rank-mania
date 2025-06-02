@@ -70,11 +70,11 @@ export const useRankingCalculator = (
           return null;
         }
 
-        // Get TrueSkill rating from centralized store
-        const trueskillRating = getRating(pokemonId);
-        const trueskillData = allRatings[pokemonId];
+        // Get TrueSkill rating from centralized store - using string ID
+        const trueskillRating = getRating(pokemonId.toString());
+        const trueskillData = allRatings[pokemonId.toString()];
         
-        console.log(`[generateRankings] ${completePokemon.name} TrueSkill: μ=${trueskillRating.mu.toFixed(2)}, σ=${trueskillRating.sigma.toFixed(2)}, battles=${trueskillData.battleCount}`);
+        console.log(`[generateRankings] ${completePokemon.name} TrueSkill: μ=${trueskillRating.mu.toFixed(2)}, σ=${trueskillRating.sigma.toFixed(2)}, battles=${trueskillData?.battleCount || 0}`);
 
         // Calculate conservative score (mu - sigma) - Changed from 3 * sigma to 1 * sigma
         const conservativeEstimate = trueskillRating.mu - trueskillRating.sigma;
@@ -89,7 +89,7 @@ export const useRankingCalculator = (
         // Calculate wins, losses, and win rate from battle results
         const wins = winsMap.get(completePokemon.id) || 0;
         const losses = lossesMap.get(completePokemon.id) || 0;
-        const totalBattles = countMap.get(completePokemon.id) || trueskillData.battleCount || 0;
+        const totalBattles = countMap.get(completePokemon.id) || trueskillData?.battleCount || 0;
         const winRate = totalBattles > 0 ? (wins / totalBattles) * 100 : 0;
 
         const rankedPokemon: RankedPokemon = {

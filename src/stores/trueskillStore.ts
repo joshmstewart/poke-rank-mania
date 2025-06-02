@@ -1,6 +1,7 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { Rating } from 'ts-trueskill';
 
 interface TrueSkillState {
   ratings: Record<string, { mu: number; sigma: number; battleCount?: number; lastUpdated?: string }>;
@@ -10,8 +11,8 @@ interface TrueSkillState {
   isLoading: boolean;
   
   // Actions
-  updateRating: (pokemonId: string, mu: number, sigma: number, battleCount?: number) => void;
-  getRating: (pokemonId: string) => { mu: number; sigma: number; battleCount?: number } | null;
+  updateRating: (pokemonId: string, rating: Rating, battleCount?: number) => void;
+  getRating: (pokemonId: string) => Rating;
   hasRating: (pokemonId: string) => boolean;
   getAllRatings: () => Record<string, { mu: number; sigma: number; battleCount?: number; lastUpdated?: string }>;
   clearAllRatings: () => void;
@@ -33,13 +34,13 @@ export const useTrueSkillStore = create<TrueSkillState>()(
       isDirty: false,
       isLoading: false,
 
-      updateRating: (pokemonId: string, mu: number, sigma: number, battleCount?: number) => {
+      updateRating: (pokemonId: string, rating: Rating, battleCount?: number) => {
         set((state) => ({
           ratings: {
             ...state.ratings,
             [pokemonId]: { 
-              mu, 
-              sigma, 
+              mu: rating.mu, 
+              sigma: rating.sigma, 
               battleCount: battleCount || state.ratings[pokemonId]?.battleCount || 0,
               lastUpdated: new Date().toISOString()
             }
@@ -51,7 +52,11 @@ export const useTrueSkillStore = create<TrueSkillState>()(
 
       getRating: (pokemonId: string) => {
         const ratings = get().ratings;
-        return ratings[pokemonId] || null;
+        const stored = ratings[pokemonId];
+        if (stored) {
+          return new Rating(stored.mu, stored.sigma);
+        }
+        return new Rating(); // Default rating
       },
 
       hasRating: (pokemonId: string) => {
