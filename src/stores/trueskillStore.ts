@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Rating } from 'ts-trueskill';
@@ -190,6 +191,12 @@ export const useTrueSkillStore = create<TrueSkillState>()(
         const lastUpdated = get().lastUpdated;
         const isDirty = get().isDirty;
         
+        console.log(`🔮 [CHAT_MESSAGE_INVESTIGATION] ===== SYNC TO CLOUD CALLED =====`);
+        console.log(`🔮 [CHAT_MESSAGE_INVESTIGATION] Called from stack:`, new Error().stack?.split('\n').slice(1, 4).join('\n'));
+        console.log(`🔮 [CHAT_MESSAGE_INVESTIGATION] Ratings count: ${Object.keys(ratings).length}`);
+        console.log(`🔮 [CHAT_MESSAGE_INVESTIGATION] Session ID: ${sessionId}`);
+        console.log(`🔮 [CHAT_MESSAGE_INVESTIGATION] Is dirty: ${isDirty}`);
+        
         if (!isDirty) {
           console.log('☁️ [TRUESKILL_STORE] Skipping sync - no changes');
           return;
@@ -230,6 +237,11 @@ export const useTrueSkillStore = create<TrueSkillState>()(
       loadFromCloud: async () => {
         const sessionId = get().sessionId;
 
+        console.log(`🔮 [CHAT_MESSAGE_INVESTIGATION] ===== LOAD FROM CLOUD CALLED =====`);
+        console.log(`🔮 [CHAT_MESSAGE_INVESTIGATION] Called from stack:`, new Error().stack?.split('\n').slice(1, 4).join('\n'));
+        console.log(`🔮 [CHAT_MESSAGE_INVESTIGATION] Session ID: ${sessionId}`);
+        console.log(`🔮 [CHAT_MESSAGE_INVESTIGATION] Current ratings count before load: ${Object.keys(get().ratings).length}`);
+
         if (!sessionId) {
           console.warn('☁️ [TRUESKILL_STORE] No session ID - cannot load from cloud');
           return;
@@ -244,10 +256,12 @@ export const useTrueSkillStore = create<TrueSkillState>()(
 
           if (data.success) {
             console.log('☁️ [TRUESKILL_STORE] Load successful');
+            console.log(`🔮 [CHAT_MESSAGE_INVESTIGATION] Cloud returned ${Object.keys(data.ratings || {}).length} ratings`);
             set({
               ratings: data.ratings,
               lastUpdated: data.lastUpdated
             });
+            console.log(`🔮 [CHAT_MESSAGE_INVESTIGATION] Store now has ${Object.keys(get().ratings).length} ratings after cloud load`);
           } else {
             console.warn('☁️ [TRUESKILL_STORE] Load failed:', data.error);
           }
@@ -259,6 +273,9 @@ export const useTrueSkillStore = create<TrueSkillState>()(
       },
 
       setSessionId: (sessionId: string) => {
+        console.log(`🔮 [CHAT_MESSAGE_INVESTIGATION] ===== SESSION ID SET =====`);
+        console.log(`🔮 [CHAT_MESSAGE_INVESTIGATION] New session ID: ${sessionId}`);
+        console.log(`🔮 [CHAT_MESSAGE_INVESTIGATION] Called from stack:`, new Error().stack?.split('\n').slice(1, 4).join('\n'));
         set({ sessionId });
       },
 

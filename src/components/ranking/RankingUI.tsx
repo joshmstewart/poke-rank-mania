@@ -40,6 +40,9 @@ export const RankingUI: React.FC<RankingUIProps> = ({
   onGenerationChange,
   onReset
 }) => {
+  console.log(`🔮 [CHAT_MESSAGE_INVESTIGATION] ===== RankingUI RENDER =====`);
+  console.log(`🔮 [CHAT_MESSAGE_INVESTIGATION] RankingUI rendered with ${rankedPokemon.length} ranked Pokemon`);
+
   // Use extracted state management
   const { battleType, setBattleType } = useRankingUIState();
 
@@ -55,6 +58,8 @@ export const RankingUI: React.FC<RankingUIProps> = ({
     selectedGeneration,
     totalPages
   });
+
+  console.log(`🔮 [CHAT_MESSAGE_INVESTIGATION] After data processing: ${localRankings.length} local, ${displayRankings.length} display rankings`);
 
   return (
     <RankingUICore

@@ -11,9 +11,13 @@ export const useTrueSkillSync = () => {
   const { pokemonLookupMap } = usePokemonContext();
   const [localRankings, setLocalRankings] = useState<RankedPokemon[]>([]);
 
+  console.log(`🔮 [CHAT_MESSAGE_INVESTIGATION] ===== useTrueSkillSync HOOK RENDER =====`);
+  console.log(`🔮 [CHAT_MESSAGE_INVESTIGATION] Component that uses TrueSkill data rendered`);
+
   // CRITICAL FIX: Wait for proper hydration before doing anything
   useEffect(() => {
     const initializeWithProperHydration = async () => {
+      console.log(`🔮 [CHAT_MESSAGE_INVESTIGATION] ===== HYDRATION EFFECT TRIGGERED =====`);
       console.log(`🔥🔥🔥 [TRUESKILL_SYNC_CRITICAL] ===== STARTING PROPER HYDRATION =====`);
       
       // Force immediate rehydration
@@ -34,9 +38,13 @@ export const useTrueSkillSync = () => {
   const contextReady = pokemonLookupMap.size > 0;
   const ratingsCount = Object.keys(allRatings).length;
 
+  console.log(`🔮 [CHAT_MESSAGE_INVESTIGATION] Current sync state: context=${contextReady}, ratings=${ratingsCount}`);
   console.log(`🔥🔥🔥 [TRUESKILL_SYNC_CRITICAL] Current state: context=${contextReady}, ratings=${ratingsCount}`);
 
   useEffect(() => {
+    console.log(`🔮 [CHAT_MESSAGE_INVESTIGATION] ===== RANKINGS GENERATION EFFECT =====`);
+    console.log(`🔮 [CHAT_MESSAGE_INVESTIGATION] Context ready: ${contextReady}, Ratings count: ${ratingsCount}`);
+    
     if (!contextReady) {
       console.log(`🔥🔥🔥 [TRUESKILL_SYNC_CRITICAL] Context not ready - Pokemon lookup map size: ${pokemonLookupMap.size}`);
       return;
@@ -49,6 +57,7 @@ export const useTrueSkillSync = () => {
       return;
     }
 
+    console.log(`🔮 [CHAT_MESSAGE_INVESTIGATION] ===== PROCESSING RANKINGS =====`);
     console.log(`🔥🔥🔥 [TRUESKILL_SYNC_CRITICAL] ===== PROCESSING ${ratingsCount} RATINGS =====`);
     
     const ratedPokemonIds = Object.keys(allRatings).map(Number);
@@ -83,6 +92,7 @@ export const useTrueSkillSync = () => {
 
     rankings.sort((a, b) => b.score - a.score);
 
+    console.log(`🔮 [CHAT_MESSAGE_INVESTIGATION] Generated ${rankings.length} rankings`);
     console.log(`🔥🔥🔥 [TRUESKILL_SYNC_CRITICAL] ✅ Generated ${rankings.length} rankings (should be 400+)`);
     if (rankings.length > 0) {
       console.log(`🔥🔥🔥 [TRUESKILL_SYNC_CRITICAL] Sample rankings:`, rankings.slice(0, 5).map(p => `${p.name} (${p.score.toFixed(2)})`));
@@ -97,6 +107,7 @@ export const useTrueSkillSync = () => {
 
   const updateLocalRankings = useMemo(() => {
     return (newRankings: RankedPokemon[]) => {
+      console.log(`🔮 [CHAT_MESSAGE_INVESTIGATION] ===== UPDATE LOCAL RANKINGS =====`);
       console.log(`🔥🔥🔥 [TRUESKILL_SYNC_CRITICAL] Updating ${newRankings.length} rankings`);
       
       const formattedRankings = newRankings.map(pokemon => ({
