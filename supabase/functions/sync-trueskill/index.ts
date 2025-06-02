@@ -23,7 +23,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { sessionId, ratings, lastUpdated } = await req.json();
+    const { sessionId, ratings, totalBattles, lastUpdated } = await req.json();
 
     if (!sessionId || typeof sessionId !== 'string') {
       return new Response(
@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`[Edge Function syncTrueSkill] Syncing data for sessionId: ${sessionId} with ${Object.keys(ratings).length} ratings`);
+    console.log(`[Edge Function syncTrueSkill] Syncing data for sessionId: ${sessionId} with ${Object.keys(ratings).length} ratings, ${totalBattles || 0} total battles`);
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -63,6 +63,7 @@ Deno.serve(async (req) => {
       .from('trueskill_sessions')
       .update({
         ratings_data: ratings,
+        total_battles: totalBattles || 0,
         last_updated: lastUpdated || new Date().toISOString()
       })
       .eq('session_id', sessionId)
@@ -92,6 +93,7 @@ Deno.serve(async (req) => {
         .insert({
           session_id: sessionId,
           ratings_data: ratings,
+          total_battles: totalBattles || 0,
           last_updated: lastUpdated || new Date().toISOString()
         });
 

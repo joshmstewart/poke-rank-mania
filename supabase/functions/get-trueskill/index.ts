@@ -14,7 +14,7 @@ Deno.serve(async (req) => {
 
   if (req.method !== 'POST') {
     return new Response(
-      JSON.stringify({ success: false, error: 'Method not allowed', ratings: {} }),
+      JSON.stringify({ success: false, error: 'Method not allowed', ratings: {}, totalBattles: 0 }),
       { 
         status: 405, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -30,7 +30,8 @@ Deno.serve(async (req) => {
         JSON.stringify({ 
           success: false, 
           error: 'Session ID is required',
-          ratings: {}
+          ratings: {},
+          totalBattles: 0
         }),
         { 
           status: 400, 
@@ -48,7 +49,7 @@ Deno.serve(async (req) => {
 
     const { data, error } = await supabase
       .from('trueskill_sessions')
-      .select('ratings_data, last_updated')
+      .select('ratings_data, total_battles, last_updated')
       .eq('session_id', sessionId)
       .maybeSingle();
 
@@ -58,7 +59,8 @@ Deno.serve(async (req) => {
         JSON.stringify({ 
           success: false, 
           error: 'Database error',
-          ratings: {}
+          ratings: {},
+          totalBattles: 0
         }),
         { 
           status: 500, 
@@ -73,6 +75,7 @@ Deno.serve(async (req) => {
         JSON.stringify({ 
           success: true, 
           ratings: {},
+          totalBattles: 0,
           lastUpdated: null
         }),
         { 
@@ -82,12 +85,13 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`[Edge Function getTrueSkill] Found data with ${Object.keys(data.ratings_data || {}).length} ratings`);
+    console.log(`[Edge Function getTrueSkill] Found data with ${Object.keys(data.ratings_data || {}).length} ratings, ${data.total_battles || 0} total battles`);
 
     return new Response(
       JSON.stringify({
         success: true,
         ratings: data.ratings_data || {},
+        totalBattles: data.total_battles || 0,
         lastUpdated: data.last_updated
       }),
       { 
@@ -102,7 +106,8 @@ Deno.serve(async (req) => {
       JSON.stringify({ 
         success: false, 
         error: 'Internal server error',
-        ratings: {}
+        ratings: {},
+        totalBattles: 0
       }),
       { 
         status: 500, 

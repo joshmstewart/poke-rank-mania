@@ -19,7 +19,7 @@ export const useBattleInitializer = (
   const [currentBattle, setCurrentBattle] = useState<Pokemon[]>([]);
   const [battleType, setBattleType] = useState<BattleType>("pairs");
   
-  const { getAllRatings, isHydrated, waitForHydration } = useTrueSkillStore();
+  const { totalBattles, setTotalBattles, isHydrated, waitForHydration } = useTrueSkillStore();
 
   useEffect(() => {
     // Load battle type from localStorage (this is just UI preference, not data)
@@ -31,7 +31,7 @@ export const useBattleInitializer = (
     }
   }, []);
 
-  // CLOUD-FIRST: Load battle count from TrueSkill cloud data when hydrated
+  // FIXED: Load battle count from TrueSkill store's totalBattles field
   useEffect(() => {
     const loadBattleCountFromCloud = async () => {
       if (!isHydrated) {
@@ -39,18 +39,12 @@ export const useBattleInitializer = (
         await waitForHydration();
       }
       
-      console.log(`🌥️ [CLOUD_BATTLE_COUNT] Loading battle count from cloud...`);
-      const ratings = getAllRatings();
-      const totalBattles = Object.values(ratings).reduce((sum, rating) => {
-        return sum + (rating.battleCount || 0);
-      }, 0);
-      
-      console.log(`🌥️ [CLOUD_BATTLE_COUNT] Loaded ${totalBattles} battles from cloud`);
+      console.log(`🌥️ [CLOUD_BATTLE_COUNT] Loading battle count from cloud: ${totalBattles}`);
       setBattlesCompleted(totalBattles);
     };
 
     loadBattleCountFromCloud();
-  }, [isHydrated, getAllRatings, setBattlesCompleted, waitForHydration]);
+  }, [isHydrated, totalBattles, setBattlesCompleted, waitForHydration]);
 
   const loadPokemon = async (genId = 0, fullRankingMode = false, preserveState = false) => {
     setIsLoading(true);
@@ -62,18 +56,9 @@ export const useBattleInitializer = (
         // Reset battle state if not preserving state
         setBattleResults([]);
         
-        // CLOUD-FIRST: Always get battle count from cloud, never reset to 0
-        console.log(`🌥️ [CLOUD_BATTLE_COUNT] Loading battle count from cloud after Pokemon load...`);
-        if (isHydrated) {
-          const ratings = getAllRatings();
-          const totalBattles = Object.values(ratings).reduce((sum, rating) => {
-            return sum + (rating.battleCount || 0);
-          }, 0);
-          console.log(`🌥️ [CLOUD_BATTLE_COUNT] Setting battle count from cloud: ${totalBattles}`);
-          setBattlesCompleted(totalBattles);
-        } else {
-          console.log(`🌥️ [CLOUD_BATTLE_COUNT] Store not hydrated yet, will load when ready`);
-        }
+        // FIXED: Always get battle count from TrueSkill store, never reset to 0
+        console.log(`🌥️ [CLOUD_BATTLE_COUNT] Using battle count from TrueSkill store: ${totalBattles}`);
+        setBattlesCompleted(totalBattles);
         
         setRankingGenerated(false);
         console.log("🟢 setRankingGenerated explicitly set to FALSE.");

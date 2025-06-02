@@ -145,6 +145,7 @@ export type Database = {
           last_updated: string
           ratings_data: Json
           session_id: string | null
+          total_battles: number
           user_id: string | null
         }
         Insert: {
@@ -153,6 +154,7 @@ export type Database = {
           last_updated?: string
           ratings_data?: Json
           session_id?: string | null
+          total_battles?: number
           user_id?: string | null
         }
         Update: {
@@ -161,6 +163,7 @@ export type Database = {
           last_updated?: string
           ratings_data?: Json
           session_id?: string | null
+          total_battles?: number
           user_id?: string | null
         }
         Relationships: []

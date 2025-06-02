@@ -18,7 +18,7 @@ const BattleModeCore: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasInitialized, setHasInitialized] = useState(false);
 
-  const { getAllRatings, isHydrated, waitForHydration } = useTrueSkillStore();
+  const { totalBattles, setTotalBattles, isHydrated, waitForHydration } = useTrueSkillStore();
 
   const getInitialBattleType = (): BattleType => {
     const stored = localStorage.getItem('pokemon-ranker-battle-type') as BattleType | null;
@@ -57,7 +57,7 @@ const BattleModeCore: React.FC = () => {
     setIsLoading(loading);
   }, []);
 
-  // CLOUD-FIRST: Initialize battle count from TrueSkill cloud data
+  // FIXED: Initialize battle count from TrueSkill store's totalBattles field
   useEffect(() => {
     if (hasInitialized) return;
     
@@ -69,12 +69,7 @@ const BattleModeCore: React.FC = () => {
         await waitForHydration();
       }
       
-      // Get battle count from TrueSkill cloud data
-      const ratings = getAllRatings();
-      const totalBattles = Object.values(ratings).reduce((sum, rating) => {
-        return sum + (rating.battleCount || 0);
-      }, 0);
-      
+      // Get battle count from TrueSkill store's totalBattles field
       console.log(`🌥️ [CLOUD_BATTLE_INIT] Setting battle count from cloud: ${totalBattles}`);
       setBattlesCompleted(totalBattles);
       
@@ -83,7 +78,7 @@ const BattleModeCore: React.FC = () => {
     };
     
     performCloudInitialization();
-  }, [hasInitialized, isHydrated, getAllRatings, waitForHydration]);
+  }, [hasInitialized, isHydrated, totalBattles, waitForHydration]);
 
   // Loading state
   if (isLoading || !stablePokemon.length) {
