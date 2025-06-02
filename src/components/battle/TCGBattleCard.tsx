@@ -89,12 +89,7 @@ const TCGBattleCard: React.FC<TCGBattleCardProps> = memo(({
       data-hovered={shouldShowHover ? "true" : "false"}
     >
       <CardContent className="p-4 text-center relative">
-        <TCGBattleCardInfoButton
-          pokemon={pokemon}
-          onModalStateChange={handleModalStateChange}
-          onInfoButtonInteraction={handleInfoButtonInteraction}
-          onMouseEnter={() => setIsHovered(false)}
-        />
+        <TCGBattleCardInfoButton pokemon={pokemon} />
 
         <TCGBattleCardContent
           pokemon={pokemon}
