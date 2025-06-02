@@ -1,7 +1,7 @@
 
 import React from "react";
 import { useDroppable } from '@dnd-kit/core';
-import { EnhancedAvailablePokemonCard } from "./EnhancedAvailablePokemonCard";
+import { RankingGrid } from "./RankingGrid";
 import GenerationHeader from "@/components/pokemon/GenerationHeader";
 
 interface EnhancedAvailablePokemonContentProps {
@@ -40,6 +40,86 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
     }
   });
 
+  // Group items by generation for display
+  const renderContent = () => {
+    if (items.length === 0 && !isLoading) {
+      return (
+        <div className="flex items-center justify-center h-full text-gray-500">
+          <div className="text-center">
+            <p className="text-lg mb-2">No Pokémon available</p>
+            <p className="text-sm">Try adjusting your filters</p>
+          </div>
+        </div>
+      );
+    }
+
+    const result = [];
+    let currentGenerationPokemon = [];
+    let currentGeneration = null;
+
+    for (const item of items) {
+      if (item.type === 'header') {
+        // Render previous generation's Pokemon if any
+        if (currentGenerationPokemon.length > 0) {
+          result.push(
+            <RankingGrid
+              key={`gen-${currentGeneration}-pokemon`}
+              displayRankings={currentGenerationPokemon}
+              activeTier={undefined}
+              isMilestoneView={false}
+              battlesCompleted={0}
+              onSuggestRanking={undefined}
+              onRemoveSuggestion={undefined}
+            />
+          );
+          currentGenerationPokemon = [];
+        }
+
+        // Add generation header
+        const generationData = {
+          id: item.generation,
+          name: `Generation ${item.generation}`,
+          region: getRegionForGeneration(item.generation),
+          games: getGamesForGeneration(item.generation)
+        };
+        
+        result.push(
+          <GenerationHeader
+            key={`gen-${item.generation}`}
+            generationId={item.generation}
+            name={generationData.name}
+            region={generationData.region}
+            games={generationData.games}
+            viewMode={viewMode}
+            isExpanded={isGenerationExpanded(item.generation)}
+            onToggle={() => onToggleGeneration(item.generation)}
+          />
+        );
+        
+        currentGeneration = item.generation;
+      } else if (item.type === 'pokemon') {
+        currentGenerationPokemon.push(item.data);
+      }
+    }
+
+    // Render remaining Pokemon
+    if (currentGenerationPokemon.length > 0) {
+      result.push(
+        <RankingGrid
+          key={`gen-${currentGeneration}-pokemon-final`}
+          displayRankings={currentGenerationPokemon}
+          activeTier={undefined}
+          isMilestoneView={false}
+          battlesCompleted={0}
+          onSuggestRanking={undefined}
+          onRemoveSuggestion={undefined}
+        />
+      );
+    }
+
+    return result;
+  };
+
   return (
     <div 
       ref={setNodeRef}
@@ -47,60 +127,17 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
         isOver ? 'bg-blue-50 border-2 border-dashed border-blue-400' : ''
       }`}
     >
-      {items.length === 0 && !isLoading ? (
-        <div className="flex items-center justify-center h-full text-gray-500">
-          <div className="text-center">
-            <p className="text-lg mb-2">No Pokémon available</p>
-            <p className="text-sm">Try adjusting your filters</p>
+      <div className="space-y-4">
+        {renderContent()}
+        
+        {isLoading && (
+          <div ref={loadingRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <PokemonLoadingPlaceholder key={`loading-${i}`} />
+            ))}
           </div>
-        </div>
-      ) : (
-        <div>
-          {items.map((item, index) => {
-            if (item.type === 'header') {
-              // Generate proper generation data
-              const generationData = {
-                id: item.generation,
-                name: `Generation ${item.generation}`,
-                region: getRegionForGeneration(item.generation),
-                games: getGamesForGeneration(item.generation)
-              };
-              
-              return (
-                <GenerationHeader
-                  key={`gen-${item.generation}`}
-                  generationId={item.generation}
-                  name={generationData.name}
-                  region={generationData.region}
-                  games={generationData.games}
-                  viewMode={viewMode}
-                  isExpanded={isGenerationExpanded(item.generation)}
-                  onToggle={() => onToggleGeneration(item.generation)}
-                />
-              );
-            }
-            
-            return (
-              <div 
-                key={`pokemon-${item.id}`} 
-                className={`
-                  ${viewMode === 'grid' ? 'inline-block w-full sm:w-1/2 lg:w-1/3 xl:w-1/4 p-1' : 'mb-2'}
-                `}
-              >
-                <EnhancedAvailablePokemonCard pokemon={item} />
-              </div>
-            );
-          })}
-          
-          {isLoading && (
-            <div ref={loadingRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-4">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <PokemonLoadingPlaceholder key={`loading-${i}`} />
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

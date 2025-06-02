@@ -25,6 +25,7 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
     <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
       {displayRankings.map((pokemon, index) => {
         const isRankedPokemon = 'score' in pokemon;
+        const showRankNumber = onSuggestRanking !== undefined; // Only show rank number in rankings section
 
         return (
           <div key={pokemon.id} className="relative group">
@@ -40,9 +41,10 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
             {/* Using unified card component */}
             <UnifiedPokemonCard
               pokemon={pokemon}
-              rank={index + 1}
-              showRank={true}
-              showScore={true}
+              rank={showRankNumber ? index + 1 : undefined}
+              showRank={showRankNumber}
+              showScore={isRankedPokemon}
+              isRanked={isRankedPokemon}
             />
           </div>
         );
