@@ -138,8 +138,6 @@ export const useTrueSkillStore = create<TrueSkillState>()(
         console.log(`🔄 [TRUESKILL_RESTORE] Restoring TrueSkill session for user: ${userId}`);
         
         try {
-          // Get user profile which should include their TrueSkill sessionId
-          // Using raw query to avoid TypeScript issues with the new column
           const { data: profile, error } = await supabase
             .from('profiles')
             .select('*')
@@ -151,16 +149,13 @@ export const useTrueSkillStore = create<TrueSkillState>()(
             return;
           }
 
-          // Access the trueskill_session_id using bracket notation to avoid TS errors
           const storedSessionId = profile ? (profile as any).trueskill_session_id : null;
 
           if (storedSessionId) {
             console.log(`🔄 [TRUESKILL_RESTORE] Found stored sessionId: ${storedSessionId}`);
             
-            // CRITICAL FIX: Set the sessionId in the store AND localStorage immediately
             set({ sessionId: storedSessionId });
             
-            // CRITICAL FIX: Force update localStorage with the restored sessionId
             try {
               const currentStorage = JSON.parse(localStorage.getItem('trueskill-storage') || '{}');
               currentStorage.state = {
@@ -173,14 +168,12 @@ export const useTrueSkillStore = create<TrueSkillState>()(
               console.error('🔄 [TRUESKILL_RESTORE] Error updating localStorage:', storageError);
             }
             
-            // Now load the data from cloud using the restored sessionId
             await get().loadFromCloud();
             
             console.log(`🔄 [TRUESKILL_RESTORE] Successfully restored session and loaded data`);
           } else {
             console.log(`🔄 [TRUESKILL_RESTORE] No stored sessionId found for user, will use current session`);
             
-            // If no stored sessionId but user is logged in, save current sessionId to their profile
             const currentSessionId = get().sessionId;
             if (currentSessionId) {
               await supabase
@@ -229,6 +222,7 @@ export const useTrueSkillStore = create<TrueSkillState>()(
         const state = get();
         const { sessionId } = state;
 
+        console.log(`🔧 [TRUESKILL_LOAD_CLOUD_FIX] ===== LOAD FROM CLOUD CALLED =====`);
         console.log(`🔧 [TRUESKILL_LOAD_CLOUD_FIX] loadFromCloud called with sessionId:`, sessionId);
 
         if (!sessionId) {
@@ -239,6 +233,8 @@ export const useTrueSkillStore = create<TrueSkillState>()(
         set({ isLoading: true });
 
         try {
+          console.log(`🔧 [TRUESKILL_LOAD_CLOUD_FIX] Invoking get-trueskill function with sessionId: ${sessionId}`);
+          
           const { data, error } = await supabase.functions.invoke('get-trueskill', {
             body: { sessionId }
           });
@@ -248,22 +244,42 @@ export const useTrueSkillStore = create<TrueSkillState>()(
             return;
           }
 
+          console.log(`🔧 [TRUESKILL_LOAD_CLOUD_FIX] Function response:`, { success: data?.success, ratingsCount: Object.keys(data?.ratings || {}).length });
+
           if (data?.success) {
             const ratingsCount = Object.keys(data.ratings || {}).length;
             console.log(`🔧 [TRUESKILL_LOAD_CLOUD_FIX] ✅ Loaded ${ratingsCount} ratings from cloud`);
             
-            set({
+            // CRITICAL FIX: Update ratings in state AND localStorage
+            const newState = {
               ratings: data.ratings || {},
               lastUpdated: data.lastUpdated || state.lastUpdated
-            });
+            };
+            
+            set(newState);
+            
+            // CRITICAL FIX: Also update localStorage immediately
+            try {
+              const currentStorage = JSON.parse(localStorage.getItem('trueskill-storage') || '{}');
+              currentStorage.state = {
+                ...currentStorage.state,
+                ...newState
+              };
+              localStorage.setItem('trueskill-storage', JSON.stringify(currentStorage));
+              console.log(`🔧 [TRUESKILL_LOAD_CLOUD_FIX] ✅ Updated localStorage with ${ratingsCount} cloud ratings`);
+            } catch (storageError) {
+              console.error('🔧 [TRUESKILL_LOAD_CLOUD_FIX] Error updating localStorage:', storageError);
+            }
+            
           } else {
-            console.log(`🔧 [TRUESKILL_LOAD_CLOUD_FIX] No data returned from cloud`);
+            console.log(`🔧 [TRUESKILL_LOAD_CLOUD_FIX] No data returned from cloud for sessionId: ${sessionId}`);
           }
           
         } catch (error) {
           console.error('🔧 [TRUESKILL_LOAD_CLOUD_FIX] Load from cloud error:', error);
         } finally {
           set({ isLoading: false });
+          console.log(`🔧 [TRUESKILL_LOAD_CLOUD_FIX] ===== LOAD FROM CLOUD COMPLETE =====`);
         }
       },
 
@@ -307,7 +323,6 @@ export const useTrueSkillStore = create<TrueSkillState>()(
             console.log(`🔧 [TRUESKILL_HYDRATION_FIX] Hydration success - sessionId:`, sessionId);
             console.log(`🔧 [TRUESKILL_HYDRATION_FIX] Hydration success - ratings count:`, ratingsCount);
             
-            // CRITICAL FIX: Ensure sessionId is properly restored
             setTimeout(() => {
               try {
                 useTrueSkillStore.setState({ 

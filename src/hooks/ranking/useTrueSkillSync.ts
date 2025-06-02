@@ -7,10 +7,11 @@ import { Rating } from 'ts-trueskill';
 import { formatPokemonName } from '@/utils/pokemon';
 
 export const useTrueSkillSync = () => {
-  const { getAllRatings, isHydrated, waitForHydration, isLoading, sessionId } = useTrueSkillStore();
+  const { getAllRatings, isHydrated, waitForHydration, isLoading, sessionId, loadFromCloud } = useTrueSkillStore();
   const { pokemonLookupMap } = usePokemonContext();
   const [localRankings, setLocalRankings] = useState<RankedPokemon[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [hasTriedCloudSync, setHasTriedCloudSync] = useState(false);
 
   // CRITICAL DEBUG: Track session ID and initialization state
   console.log(`🔍🔍🔍 [TRUESKILL_SYNC_SESSION_DEBUG] ===== SESSION & HYDRATION STATE =====`);
@@ -18,47 +19,72 @@ export const useTrueSkillSync = () => {
   console.log(`🔍🔍🔍 [TRUESKILL_SYNC_SESSION_DEBUG] isHydrated: ${isHydrated}`);
   console.log(`🔍🔍🔍 [TRUESKILL_SYNC_SESSION_DEBUG] isLoading: ${isLoading}`);
   console.log(`🔍🔍🔍 [TRUESKILL_SYNC_SESSION_DEBUG] isInitialized: ${isInitialized}`);
+  console.log(`🔍🔍🔍 [TRUESKILL_SYNC_SESSION_DEBUG] hasTriedCloudSync: ${hasTriedCloudSync}`);
 
-  // Wait for both hydration AND cloud loading to complete
+  // CRITICAL FIX: Force cloud sync on initialization
   useEffect(() => {
-    const initializeAfterReady = async () => {
-      console.log(`🔍🔍🔍 [TRUESKILL_SYNC_INIT] ===== INITIALIZATION START =====`);
-      console.log(`🔍🔍🔍 [TRUESKILL_SYNC_INIT] sessionId at start: ${sessionId}`);
-      console.log(`🔍🔍🔍 [TRUESKILL_SYNC_INIT] isHydrated: ${isHydrated}, isLoading: ${isLoading}`);
+    const initializeWithCloudSync = async () => {
+      console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_SYNC_FIX] ===== FORCED CLOUD SYNC INITIALIZATION =====`);
+      console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_SYNC_FIX] sessionId at start: ${sessionId}`);
+      console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_SYNC_FIX] isHydrated: ${isHydrated}, isLoading: ${isLoading}, hasTriedCloudSync: ${hasTriedCloudSync}`);
       
       if (!isHydrated) {
-        console.log(`🔍🔍🔍 [TRUESKILL_SYNC_INIT] Waiting for hydration...`);
+        console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_SYNC_FIX] Waiting for hydration...`);
         await waitForHydration();
-        console.log(`🔍🔍🔍 [TRUESKILL_SYNC_INIT] Hydration complete, sessionId: ${useTrueSkillStore.getState().sessionId}`);
+        console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_SYNC_FIX] Hydration complete, sessionId: ${useTrueSkillStore.getState().sessionId}`);
       }
       
-      // CRITICAL FIX: Wait for cloud loading to complete
+      // Get current ratings count after hydration
+      const initialRatings = useTrueSkillStore.getState().getAllRatings();
+      const initialCount = Object.keys(initialRatings).length;
+      console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_SYNC_FIX] Initial ratings from localStorage: ${initialCount}`);
+      
+      // CRITICAL FIX: Always attempt cloud sync after hydration, regardless of initial count
+      if (!hasTriedCloudSync && sessionId) {
+        console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_SYNC_FIX] Forcing cloud sync for sessionId: ${sessionId}`);
+        setHasTriedCloudSync(true);
+        
+        try {
+          await loadFromCloud();
+          
+          // Check ratings count after cloud sync
+          const postSyncRatings = useTrueSkillStore.getState().getAllRatings();
+          const postSyncCount = Object.keys(postSyncRatings).length;
+          console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_SYNC_FIX] ✅ Cloud sync completed: ${initialCount} → ${postSyncCount} ratings`);
+          
+          if (postSyncCount > initialCount) {
+            console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_SYNC_FIX] 🎉 Successfully loaded ${postSyncCount - initialCount} additional ratings from cloud!`);
+          } else if (postSyncCount === initialCount && initialCount > 0) {
+            console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_SYNC_FIX] Cloud sync completed - data was already up to date`);
+          } else if (postSyncCount === 0) {
+            console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_SYNC_FIX] No cloud data found for sessionId: ${sessionId}`);
+          }
+          
+        } catch (error) {
+          console.error(`🔍🔍🔍 [TRUESKILL_CLOUD_SYNC_FIX] ❌ Cloud sync failed:`, error);
+        }
+      }
+      
+      // Wait for any remaining loading to complete
       if (isLoading) {
-        console.log(`🔍🔍🔍 [TRUESKILL_SYNC_INIT] Waiting for cloud loading to complete...`);
+        console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_SYNC_FIX] Waiting for loading to complete...`);
         let attempts = 0;
-        const maxAttempts = 50; // 5 seconds max wait
+        const maxAttempts = 50;
         
         while (useTrueSkillStore.getState().isLoading && attempts < maxAttempts) {
           await new Promise(resolve => setTimeout(resolve, 100));
           attempts++;
-          console.log(`🔍🔍🔍 [TRUESKILL_SYNC_INIT] Cloud loading attempt ${attempts}...`);
         }
         
-        console.log(`🔍🔍🔍 [TRUESKILL_SYNC_INIT] Cloud loading completed after ${attempts} attempts`);
+        console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_SYNC_FIX] Loading completed after ${attempts} attempts`);
       }
       
-      // Get final state after everything is loaded
-      const finalState = useTrueSkillStore.getState();
-      const finalRatings = finalState.getAllRatings();
-      console.log(`🔍🔍🔍 [TRUESKILL_SYNC_INIT] Final sessionId: ${finalState.sessionId}`);
-      console.log(`🔍🔍🔍 [TRUESKILL_SYNC_INIT] Final ratings count: ${Object.keys(finalRatings).length}`);
-      
       setIsInitialized(true);
-      console.log(`🔍🔍🔍 [TRUESKILL_SYNC_INIT] ===== INITIALIZATION COMPLETE =====`);
+      console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_SYNC_FIX] ===== INITIALIZATION COMPLETE =====`);
     };
     
-    initializeAfterReady();
-  }, [isHydrated, isLoading, waitForHydration, sessionId]);
+    initializeWithCloudSync();
+  }, [isHydrated, sessionId, hasTriedCloudSync, waitForHydration, loadFromCloud]);
 
   const allRatings = getAllRatings();
   const contextReady = pokemonLookupMap.size > 0;
