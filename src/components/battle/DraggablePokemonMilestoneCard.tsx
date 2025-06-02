@@ -175,12 +175,12 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
         </div>
       )}
       
-      {/* Pokemon image - removed size constraints */}
+      {/* Pokemon image - scaled to 20x20 (80px) */}
       <div className="flex-1 flex justify-center items-center px-2 pt-6 pb-1">
         <img 
           src={pokemon.image} 
           alt={pokemon.name}
-          className="w-full h-full object-contain max-w-24 max-h-24"
+          className="w-20 h-20 object-contain"
           loading="lazy"
           onError={(e) => {
             const target = e.target as HTMLImageElement;

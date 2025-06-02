@@ -25,7 +25,10 @@ const AvatarImage = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <AvatarPrimitive.Image
     ref={ref}
-    className={cn("aspect-square h-full w-full rounded-full drop-shadow-2xl", className)}
+    className={cn("aspect-square h-full w-full rounded-full", className)}
+    style={{ 
+      filter: 'drop-shadow(0 4px 12px rgba(0, 0, 0, 0.4)) drop-shadow(0 2px 6px rgba(0, 0, 0, 0.6))'
+    }}
     {...props}
   />
 ))
