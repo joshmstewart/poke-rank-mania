@@ -13,7 +13,9 @@ export const useBattleProgression = (
   const { 
     checkMilestone, 
     isBattleGenerationBlocked,
-    battleGenerationBlockedRef 
+    battleGenerationBlockedRef,
+    resetMilestoneTracking,
+    triggerMilestone
   } = useBattleProgressionMilestone(
     milestones,
     generateRankings,
@@ -37,12 +39,32 @@ export const useBattleProgression = (
     battleGenerationBlockedRef
   );
 
+  // CRITICAL FIX: Add method to check for missed milestones and trigger them
+  const checkForMissedMilestones = (currentBattleCount: number, battleResults: any[]) => {
+    console.log(`🔍 MISSED MILESTONE CHECK: Checking for missed milestones with ${currentBattleCount} battles`);
+    
+    const missedMilestones = milestones.filter(milestone => 
+      currentBattleCount >= milestone
+    );
+    
+    if (missedMilestones.length > 0) {
+      const nextMissedMilestone = Math.min(...missedMilestones);
+      console.log(`🎯 MISSED MILESTONE FOUND: Triggering milestone ${nextMissedMilestone}`);
+      return triggerMilestone(nextMissedMilestone, battleResults);
+    }
+    
+    return false;
+  };
+
   return {
     checkMilestone,
     incrementBattlesCompleted,
     isShowingMilestone: showingMilestoneRef.current,
     resetMilestone,
     clearMilestoneProcessing,
-    isBattleGenerationBlocked
+    isBattleGenerationBlocked,
+    resetMilestoneTracking,
+    triggerMilestone,
+    checkForMissedMilestones
   };
 };

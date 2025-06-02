@@ -156,6 +156,21 @@ export const useBattleStateMilestones = (
     setMilestoneInProgress(false);
   }, [setMilestoneInProgress]);
 
+  // CRITICAL FIX: Add method to manually trigger milestone view
+  const triggerMilestoneView = useCallback((battleCount: number) => {
+    console.log(`🎯 [MANUAL_MILESTONE_TRIGGER] Manually triggering milestone view for ${battleCount} battles`);
+    
+    // Generate current rankings
+    generateRankings();
+    
+    // Set milestone flags
+    setMilestoneInProgress(true);
+    setShowingMilestone(true);
+    setRankingGenerated(true);
+    
+    console.log(`✅ [MANUAL_MILESTONE_TRIGGER] Milestone view triggered successfully`);
+  }, [generateRankings, setMilestoneInProgress, setShowingMilestone, setRankingGenerated]);
+
   const suggestRanking = useCallback((pokemon: RankedPokemon, direction: "up" | "down", strength: 1 | 2 | 3) => {
     console.log(`🔧 [MILESTONE_SUGGEST_DEBUG] Suggesting ranking adjustment for ${pokemon.name}: ${direction} by ${strength}`);
     pokemon.suggestedAdjustment = { direction, strength, used: false };
@@ -211,6 +226,7 @@ export const useBattleStateMilestones = (
     removeSuggestion,
     clearAllSuggestions,
     freezePokemonForTier,
-    isPokemonFrozenForTier
+    isPokemonFrozenForTier,
+    triggerMilestoneView
   };
 };
