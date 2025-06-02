@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Rating } from 'ts-trueskill';
@@ -176,10 +175,19 @@ export const useTrueSkillStore = create<TrueSkillState>()(
           console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] Response received:`);
           console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] - Status: ${response.status}`);
           console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] - Status Text: ${response.statusText}`);
-          console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] - Headers: ${JSON.stringify(Object.fromEntries(response.headers.entries()))}`);
+          console.log(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] - Content-Type: ${response.headers.get('content-type')}`);
           
           if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+
+          // CRITICAL FIX: Check content type before parsing JSON
+          const contentType = response.headers.get('content-type');
+          if (!contentType || !contentType.includes('application/json')) {
+            console.error(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] ===== CONTENT TYPE ERROR =====`);
+            console.error(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] Expected JSON but got: ${contentType}`);
+            console.error(`🔍🔍🔍 [TRUESKILL_CLOUD_DEBUG] This indicates the API endpoint returned HTML instead of JSON`);
+            throw new Error(`API returned non-JSON response. Content-Type: ${contentType}`);
           }
           
           const data = await response.json();
