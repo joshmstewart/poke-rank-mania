@@ -74,7 +74,7 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = ({
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="bg-gray-50 min-h-screen p-4">
+      <div className="bg-gray-100 min-h-screen p-4">
         {/* Settings Section */}
         <div className="max-w-7xl mx-auto mb-4">
           <UnifiedControls
