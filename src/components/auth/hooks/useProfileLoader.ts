@@ -13,11 +13,7 @@ export const useProfileLoader = (userId: string | undefined) => {
   // Load profile data when user changes
   useEffect(() => {
     if (!userId || isLoadingProfile.current || lastUserId.current === userId) {
-      console.log('🔄 [PROFILE_LOADER] Skipping profile load:', {
-        hasUser: !!userId,
-        isLoading: isLoadingProfile.current,
-        sameUser: lastUserId.current === userId
-      });
+      console.log('🔄 [PROFILE_LOADER] Skipping profile load - conditions not met');
       return;
     }
 
@@ -30,39 +26,29 @@ export const useProfileLoader = (userId: string | undefined) => {
     
     // Get cached profile first
     const cachedProfile = getProfileFromCache(userId);
-    console.log('🔄 [PROFILE_LOADER] 🎯 CACHED PROFILE RESULT:', {
+    console.log('🔄 [PROFILE_LOADER] Cached profile result:', {
       hasCachedProfile: !!cachedProfile,
-      cachedAvatarUrl: cachedProfile?.avatar_url,
-      cachedDisplayName: cachedProfile?.display_name,
-      cachedUsername: cachedProfile?.username,
-      fullCachedProfile: cachedProfile
+      cachedAvatarUrl: cachedProfile?.avatar_url
     });
     
     if (cachedProfile) {
-      console.log('🔄 [PROFILE_LOADER] ✅ SETTING CACHED PROFILE - Avatar:', cachedProfile.avatar_url);
-      console.log('🔄 [PROFILE_LOADER] 🚨 STATE UPDATE: setCurrentProfile with cached data');
-      setCurrentProfile(cachedProfile);
+      console.log('🔄 [PROFILE_LOADER] ✅ Setting cached profile with avatar:', cachedProfile.avatar_url);
+      setCurrentProfile({ ...cachedProfile });
       setIsProfileLoaded(true);
     }
     
     // Always fetch fresh profile data
-    console.log('🔄 [PROFILE_LOADER] 🚀 FETCHING FRESH PROFILE DATA...');
+    console.log('🔄 [PROFILE_LOADER] 🚀 Fetching fresh profile data...');
     prefetchProfile(userId).then(() => {
       const freshProfile = getProfileFromCache(userId);
-      console.log('🔄 [PROFILE_LOADER] 🎯 FRESH PROFILE RESULT:', {
+      console.log('🔄 [PROFILE_LOADER] Fresh profile result:', {
         hasFreshProfile: !!freshProfile,
-        freshAvatarUrl: freshProfile?.avatar_url,
-        freshDisplayName: freshProfile?.display_name,
-        freshUsername: freshProfile?.username,
-        fullFreshProfile: freshProfile
+        freshAvatarUrl: freshProfile?.avatar_url
       });
       
       if (freshProfile) {
-        console.log('🔄 [PROFILE_LOADER] ✅ SETTING FRESH PROFILE - Avatar:', freshProfile.avatar_url);
-        console.log('🔄 [PROFILE_LOADER] 🚨 STATE UPDATE: setCurrentProfile with fresh data');
-        console.log('🔄 [PROFILE_LOADER] 🚨 FRESH PROFILE FULL OBJECT:', JSON.stringify(freshProfile, null, 2));
-        
-        // CRITICAL FIX: Force state update with a new object reference
+        console.log('🔄 [PROFILE_LOADER] ✅ Setting fresh profile with avatar:', freshProfile.avatar_url);
+        // CRITICAL: Force state update with new object reference
         setCurrentProfile({ ...freshProfile });
       }
       setIsProfileLoaded(true);
@@ -73,31 +59,16 @@ export const useProfileLoader = (userId: string | undefined) => {
     });
   }, [userId, prefetchProfile, getProfileFromCache]);
 
-  // CRITICAL: Add logging whenever currentProfile state actually changes
+  // Log state changes for debugging
   useEffect(() => {
-    console.log('🔄 [PROFILE_LOADER] 🚨🚨🚨 CURRENT PROFILE STATE CHANGE DETECTED 🚨🚨🚨');
-    console.log('🔄 [PROFILE_LOADER] 📊 NEW CURRENT PROFILE STATE:', {
+    console.log('🔄 [PROFILE_LOADER] Profile state updated:', {
       hasCurrentProfile: !!currentProfile,
-      currentProfileType: typeof currentProfile,
-      currentProfileIsNull: currentProfile === null,
-      currentProfileIsUndefined: currentProfile === undefined,
-      currentProfileAvatarUrl: currentProfile?.avatar_url,
-      currentProfileDisplayName: currentProfile?.display_name,
-      currentProfileUsername: currentProfile?.username,
+      avatarUrl: currentProfile?.avatar_url,
       isProfileLoaded,
-      timestamp: new Date().toISOString(),
-      fullCurrentProfileObject: currentProfile ? JSON.stringify(currentProfile, null, 2) : 'NULL/UNDEFINED'
-    });
-    
-    // CRITICAL: Log what we're about to return to the consuming component
-    console.log('🔄 [PROFILE_LOADER] 🎯 ABOUT TO RETURN TO COMPONENT:', {
-      willReturnProfile: !!currentProfile,
-      willReturnAvatarUrl: currentProfile?.avatar_url,
-      willReturnLoaded: isProfileLoaded
+      timestamp: new Date().toISOString()
     });
   }, [currentProfile, isProfileLoaded]);
 
-  // CRITICAL: Log every time the hook returns values
   const returnValue = {
     currentProfile,
     setCurrentProfile,
@@ -106,12 +77,5 @@ export const useProfileLoader = (userId: string | undefined) => {
     isLoadingProfile
   };
   
-  console.log('🔄 [PROFILE_LOADER] 🎯 HOOK RETURN VALUES:', {
-    returningProfile: !!returnValue.currentProfile,
-    returningAvatarUrl: returnValue.currentProfile?.avatar_url,
-    returningLoaded: returnValue.isProfileLoaded,
-    timestamp: new Date().toISOString()
-  });
-
   return returnValue;
 };
