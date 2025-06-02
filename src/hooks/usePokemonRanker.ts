@@ -13,7 +13,7 @@ import { LoadingType, RankingState, RankingActions } from "./pokemon/types";
 export type { LoadingType } from "./pokemon/types";
 
 export const usePokemonRanker = (): RankingState & RankingActions & { loadingRef: React.RefObject<HTMLDivElement>, confidenceScores: Record<number, number> } => {
-  // Use the extracted state hook
+  // CRITICAL FIX: Always call hooks in the same order
   const {
     isLoading,
     availablePokemon,
@@ -35,24 +35,7 @@ export const usePokemonRanker = (): RankingState & RankingActions & { loadingRef
     setLoadingType
   } = useRankingState();
 
-  // 🚨🚨🚨 ULTRA CRITICAL MISSING DATA SOURCE DETECTION
-  console.log(`🔍🔍🔍 [POKEMON_RANKER_HOOK] ===== CRITICAL DATA SOURCE HUNT =====`);
-  console.log(`🔍🔍🔍 [POKEMON_RANKER_STATE] Raw availablePokemon: ${availablePokemon.length}`);
-  console.log(`🔍🔍🔍 [POKEMON_RANKER_STATE] Raw rankedPokemon: ${rankedPokemon.length}`);
-  console.log(`🔍🔍🔍 [POKEMON_RANKER_STATE] selectedGeneration: ${selectedGeneration}`);
-  console.log(`🔍🔍🔍 [POKEMON_RANKER_STATE] loadSize: ${loadSize}`);
-  console.log(`🔍🔍🔍 [POKEMON_RANKER_STATE] currentPage: ${currentPage}`);
-  console.log(`🔍🔍🔍 [POKEMON_RANKER_STATE] totalPages: ${totalPages}`);
-  
-  // 🚨 CRITICAL: Check if rankedPokemon state has data that TrueSkill doesn't know about
-  if (rankedPokemon.length > 0) {
-    console.log(`🚨🚨🚨 [CRITICAL_FINDING] RANKED POKEMON FOUND IN STATE: ${rankedPokemon.length}`);
-    console.log(`🚨🚨🚨 [CRITICAL_FINDING] Ranked Pokemon IDs: ${rankedPokemon.slice(0, 20).map(p => p.id).join(', ')}${rankedPokemon.length > 20 ? '...' : ''}`);
-    console.log(`🚨🚨🚨 [CRITICAL_FINDING] Sample names: ${rankedPokemon.slice(0, 5).map(p => p.name).join(', ')}`);
-    console.log(`🚨🚨🚨 [CRITICAL_FINDING] WHERE DID THIS DATA COME FROM???`);
-  }
-
-  // Use the handlers hook - FIX: Cast setRankedPokemon to match expected type
+  // CRITICAL FIX: Always call all hooks unconditionally
   const {
     resetRankings,
     handleGenerationChange,
@@ -67,17 +50,16 @@ export const usePokemonRanker = (): RankingState & RankingActions & { loadingRef
     setLoadSize,
     availablePokemon,
     rankedPokemon,
-    setRankedPokemon: setRankedPokemon as any, // Type cast to fix the mismatch
+    setRankedPokemon: setRankedPokemon as any,
     setConfidenceScores
   });
 
-  // Use TrueSkill integration hook - FIX: Cast setRankedPokemon to match expected type
   const { isStoreLoading } = useTrueSkillIntegration({
     isLoading,
     storeLoading: false,
     availablePokemon,
     rankedPokemon,
-    setRankedPokemon: setRankedPokemon as any, // Type cast to fix the mismatch
+    setRankedPokemon: setRankedPokemon as any,
     setAvailablePokemon,
     setConfidenceScores
   });
@@ -103,14 +85,14 @@ export const usePokemonRanker = (): RankingState & RankingActions & { loadingRef
   
   const { getPageRange } = usePagination(currentPage, totalPages);
   
-  // Auto-save functionality - now cloud-only
+  // CRITICAL FIX: Call useAutoSave unconditionally
   useAutoSave(rankedPokemon, selectedGeneration);
 
+  // CRITICAL FIX: Move effect after all hooks
   useEffect(() => {
     loadData();
   }, [selectedGeneration, currentPage, loadSize]);
 
-  // CRITICAL: Log what we're returning
   console.log(`🔍🔍🔍 [POKEMON_RANKER_RETURN] Returning availablePokemon: ${availablePokemon.length}`);
   console.log(`🔍🔍🔍 [POKEMON_RANKER_RETURN] Returning rankedPokemon: ${rankedPokemon.length}`);
 
