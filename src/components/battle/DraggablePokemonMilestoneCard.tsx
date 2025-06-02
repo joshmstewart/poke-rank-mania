@@ -47,6 +47,13 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     transition,
   };
 
+  // CRITICAL FIX: Correct the prop logic
+  const shouldShowScore = !isAvailable; // Rankings should show scores, Available should not
+  const shouldHideScore = isAvailable;  // Available should hide scores, Rankings should not
+  
+  console.log(`🎯🎯🎯 [DRAGGABLE_CARD_CRITICAL] CALCULATED shouldShowScore: ${shouldShowScore}`);
+  console.log(`🎯🎯🎯 [DRAGGABLE_CARD_CRITICAL] CALCULATED shouldHideScore: ${shouldHideScore}`);
+
   return (
     <div
       ref={setNodeRef}
@@ -59,9 +66,9 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
         pokemon={pokemon}
         rank={showRank ? index + 1 : undefined}
         showRank={showRank}
-        showScore={!isAvailable}
+        showScore={shouldShowScore}
         isRanked={pokemon.isRanked || false}
-        hideScore={isAvailable}
+        hideScore={shouldHideScore}
       />
     </div>
   );
