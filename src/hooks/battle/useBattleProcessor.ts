@@ -88,22 +88,10 @@ export const useBattleProcessor = (
     battleType: BattleType,
     currentSelectedGeneration: number = 0
   ) => {
-    const timestamp = new Date().toISOString();
-    console.log(`🚨🚨🚨 [BATTLE_PROCESSOR_ULTRA_TRACE] ===== PROCESS BATTLE START =====`);
-    console.log(`🚨🚨🚨 [BATTLE_PROCESSOR_ULTRA_TRACE] Timestamp: ${timestamp}`);
-    console.log(`🚨🚨🚨 [BATTLE_PROCESSOR_ULTRA_TRACE] Selected Pokemon: ${selectedPokemonIds}`);
-    console.log(`🚨🚨🚨 [BATTLE_PROCESSOR_ULTRA_TRACE] Current battle: ${currentBattlePokemon.map(p => p.name)}`);
-    console.log(`🚨🚨🚨 [BATTLE_PROCESSOR_ULTRA_TRACE] Battle type: ${battleType}`);
-    console.log(`📝 [${timestamp}] [PROCESSOR_FIX] PROCESS BATTLE: Called`);
-    
     if (isProcessingResult || milestoneInProgressRef.current) {
-      console.log(`🚨🚨🚨 [BATTLE_PROCESSOR_ULTRA_TRACE] ❌ Already processing, skipping`);
-      console.log(`📝 [${timestamp}] [PROCESSOR_FIX] PROCESS BATTLE: Already processing, skipping`);
       return;
     }
 
-    console.log(`🚨🚨🚨 [BATTLE_PROCESSOR_ULTRA_TRACE] ✅ Setting isProcessingResult = true`);
-    console.log(`📝 [${timestamp}] [PROCESSOR_FIX] PROCESS BATTLE: Setting isProcessingResult = true`);
     setIsProcessingResult(true);
     
     try {
@@ -112,46 +100,29 @@ export const useBattleProcessor = (
         currentBattlePokemon,
         processResult,
         battleType,
-        timestamp,
+        new Date().toISOString(),
         isResettingRef
       );
 
       if (!updatedResults) {
-        console.log(`🚨🚨🚨 [BATTLE_PROCESSOR_ULTRA_TRACE] ❌ No results, setting isProcessingResult = false`);
-        console.log(`📝 [${timestamp}] [PROCESSOR_FIX] PROCESS BATTLE: Setting isProcessingResult = false (no results)`);
         setIsProcessingResult(false);
         return;
       }
 
       const milestone = incrementBattlesCompleted(updatedResults);
-      console.log(`🚨🚨🚨 [BATTLE_PROCESSOR_ULTRA_TRACE] Battle completed, new count: ${battlesCompleted + 1}, Milestone hit: ${milestone !== null ? milestone : "none"}`);
-      console.log(`📝 [${timestamp}] PROCESS BATTLE: Battle completed, new count: ${battlesCompleted + 1}, Milestone hit: ${milestone !== null ? milestone : "none"}`);
       
       if (milestone !== null) {
-        console.log(`🚨🚨🚨 [BATTLE_PROCESSOR_ULTRA_TRACE] ===== MILESTONE ${milestone} HIT - HANDLING =====`);
-        handleMilestone(milestone, updatedResults, currentSelectedGeneration, timestamp);
+        handleMilestone(milestone, updatedResults, currentSelectedGeneration, new Date().toISOString());
       } else {
-        console.log(`🚨🚨🚨 [BATTLE_PROCESSOR_ULTRA_TRACE] ===== NO MILESTONE - CALLING generateNewBattle =====`);
-        console.log(`🚨🚨🚨 [BATTLE_PROCESSOR_ULTRA_TRACE] About to call generateNewBattle with:`);
-        console.log(`🚨🚨🚨 [BATTLE_PROCESSOR_ULTRA_TRACE] - battleType: ${battleType}`);
-        console.log(`🚨🚨🚨 [BATTLE_PROCESSOR_ULTRA_TRACE] - timestamp: ${timestamp}`);
-        
-        const result = generateNewBattle(battleType, timestamp);
-        console.log(`🚨🚨🚨 [BATTLE_PROCESSOR_ULTRA_TRACE] generateNewBattle returned: ${result}`);
+        generateNewBattle(battleType, new Date().toISOString());
       }
 
-      console.log(`🚨🚨🚨 [BATTLE_PROCESSOR_ULTRA_TRACE] ✅ Clearing isProcessingResult`);
-      console.log(`📝 [${timestamp}] [PROCESSOR_FIX] Clearing isProcessingResult`);
       setIsProcessingResult(false);
       
     } catch (e) {
-      console.error(`🚨🚨🚨 [BATTLE_PROCESSOR_ULTRA_TRACE] ❌ ERROR:`, e);
-      console.error(`📝 [${timestamp}] PROCESS BATTLE: Error:`, e);
-      console.log(`📝 [${timestamp}] [PROCESSOR_FIX] Setting isProcessingResult = false (after error)`);
+      console.error('Battle processing error:', e);
       setIsProcessingResult(false);
     }
-    
-    console.log(`🚨🚨🚨 [BATTLE_PROCESSOR_ULTRA_TRACE] ===== PROCESS BATTLE END =====`);
   }, [
     isProcessingResult,
     milestoneInProgressRef,

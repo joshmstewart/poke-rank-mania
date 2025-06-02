@@ -13,38 +13,31 @@ export const useTrueSkillSync = () => {
   const [isInitialized, setIsInitialized] = useState(false);
   const [hasTriedCloudSync, setHasTriedCloudSync] = useState(false);
 
-  // Force cloud sync on initialization
   useEffect(() => {
     const initializeWithCloudSync = async () => {
       if (!isHydrated) {
         await waitForHydration();
       }
       
-      // Get current ratings count after hydration
       const initialRatings = useTrueSkillStore.getState().getAllRatings();
       const initialCount = Object.keys(initialRatings).length;
       
-      // Always attempt cloud sync after hydration if we have a session
       if (!hasTriedCloudSync && sessionId) {
         setHasTriedCloudSync(true);
         
         try {
           await loadFromCloud();
-          
-          // Check ratings count after cloud sync
           const postSyncRatings = useTrueSkillStore.getState().getAllRatings();
           const postSyncCount = Object.keys(postSyncRatings).length;
           
           if (postSyncCount > initialCount) {
-            console.log(`✅ Successfully loaded ${postSyncCount - initialCount} additional ratings from cloud!`);
+            console.log(`Loaded ${postSyncCount - initialCount} additional ratings from cloud`);
           }
-          
         } catch (error) {
-          console.error(`❌ Cloud sync failed:`, error);
+          console.error('Cloud sync failed:', error);
         }
       }
       
-      // Wait for any remaining loading to complete
       if (isLoading) {
         let attempts = 0;
         const maxAttempts = 50;
@@ -66,7 +59,6 @@ export const useTrueSkillSync = () => {
   const ratingsCount = Object.keys(allRatings).length;
 
   useEffect(() => {
-    // Only generate rankings after EVERYTHING is ready
     if (!contextReady || !isInitialized || isLoading) {
       return;
     }
@@ -100,8 +92,8 @@ export const useTrueSkillSync = () => {
           wins: 0,
           losses: 0,
           winRate: 0,
-          generation: basePokemon.generation || 1, // Use correct property name
-          image: basePokemon.image || '' // Ensure image is set
+          generation: basePokemon.generation || 1,
+          image: basePokemon.image || ''
         };
 
         rankings.push(rankedPokemon);
@@ -117,7 +109,7 @@ export const useTrueSkillSync = () => {
       const formattedRankings = newRankings.map(pokemon => ({
         ...pokemon,
         name: formatPokemonName(pokemon.name),
-        generation: pokemon.generation || 1, // Use correct property name
+        generation: pokemon.generation || 1,
         image: pokemon.image || ''
       }));
       
