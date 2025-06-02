@@ -1,173 +1,132 @@
 
-import { useState, useCallback, useRef, useEffect } from "react";
-import { Pokemon, fetchAllPokemon } from "@/services/pokemon";
-import { toast } from "@/hooks/use-toast";
-import { useFormFilters } from "@/hooks/form-filters/useFormFilters";
-
-// CRITICAL FIX: Global singleton to prevent multiple simultaneous loads
-let globalLoadingLock = false;
-let globalPokemonCache: Pokemon[] | null = null;
-let globalRawPokemonCache: Pokemon[] | null = null; // NEW: Store truly raw data
-let globalLoadPromise: Promise<Pokemon[]> | null = null;
+import { useState, useCallback, useRef } from "react";
+import { Pokemon } from "@/services/pokemon";
+import { useGlobalPokemonCache } from "./useGlobalPokemonCache";
+import { usePokemonDataLoader } from "./usePokemonDataLoader";
+import { usePokemonFilterProcessor } from "./usePokemonFilterProcessor";
 
 export const usePokemonLoader = () => {
-  const [allPokemon, setAllPokemon] = useState<Pokemon[]>([]);
-  const [rawUnfilteredPokemon, setRawUnfilteredPokemon] = useState<Pokemon[]>([]); // NEW: Store raw data
   const [isLoading, setIsLoading] = useState(false);
   const pokemonLockedRef = useRef(false);
   
-  // Get form filters
-  const { shouldIncludePokemon, analyzeFilteringPipeline } = useFormFilters();
+  const {
+    allPokemon,
+    rawUnfilteredPokemon,
+    hasGlobalCache,
+    getGlobalCache,
+    setGlobalCache,
+    useExistingCache,
+    clearGlobalCache,
+    getLoadingState,
+    setLoadingState
+  } = useGlobalPokemonCache();
+
+  const { loadPokemonData } = usePokemonDataLoader();
+  const { processFilteredPokemon } = usePokemonFilterProcessor();
 
   // CRITICAL FIX: Ultra-deterministic singleton loading
   const loadInitialBatch = useCallback(async (genId = 0, fullRankingMode = true) => {
-    console.log(`🔒 [SINGLETON_LOAD_ULTRA_FIX] ===== SINGLETON POKEMON LOAD ENTRY =====`);
-    console.log(`🔒 [SINGLETON_LOAD_ULTRA_FIX] Global loading lock: ${globalLoadingLock}`);
-    console.log(`🔒 [SINGLETON_LOAD_ULTRA_FIX] Global cache exists: ${!!globalPokemonCache}`);
-    console.log(`🔒 [SINGLETON_LOAD_ULTRA_FIX] Local Pokemon count: ${allPokemon.length}`);
+    console.log(`🔒 [POKEMON_LOADER] ===== SINGLETON POKEMON LOAD ENTRY =====`);
+    
+    const loadingState = getLoadingState();
+    console.log(`🔒 [POKEMON_LOADER] Global loading lock: ${loadingState.isLoading}`);
+    console.log(`🔒 [POKEMON_LOADER] Global cache exists: ${hasGlobalCache()}`);
+    console.log(`🔒 [POKEMON_LOADER] Local Pokemon count: ${allPokemon.length}`);
     
     // If we already have global cache, use it immediately
-    if (globalPokemonCache && globalPokemonCache.length > 0 && globalRawPokemonCache) {
-      console.log(`🔒 [SINGLETON_LOAD_ULTRA_FIX] Using existing global cache: ${globalPokemonCache.length} filtered, ${globalRawPokemonCache.length} raw Pokemon`);
+    if (hasGlobalCache()) {
+      const cache = getGlobalCache();
+      console.log(`🔒 [POKEMON_LOADER] Using existing global cache: ${cache.filtered.length} filtered, ${cache.raw.length} raw Pokemon`);
       
-      setAllPokemon(globalPokemonCache);
-      setRawUnfilteredPokemon(globalRawPokemonCache);
+      useExistingCache();
       setIsLoading(false);
       pokemonLockedRef.current = true;
       
-      return globalPokemonCache;
+      return cache.filtered;
     }
     
     // If currently loading globally, wait for it
-    if (globalLoadingLock && globalLoadPromise) {
-      console.log(`🔒 [SINGLETON_LOAD_ULTRA_FIX] Global load in progress - waiting...`);
+    if (loadingState.isLoading && loadingState.promise) {
+      console.log(`🔒 [POKEMON_LOADER] Global load in progress - waiting...`);
       try {
-        await globalLoadPromise;
-        if (globalPokemonCache && globalRawPokemonCache) {
-          setAllPokemon(globalPokemonCache);
-          setRawUnfilteredPokemon(globalRawPokemonCache);
+        await loadingState.promise;
+        if (hasGlobalCache()) {
+          useExistingCache();
           setIsLoading(false);
           pokemonLockedRef.current = true;
-          return globalPokemonCache;
+          const cache = getGlobalCache();
+          return cache.filtered;
         }
       } catch (error) {
-        console.error(`🔒 [SINGLETON_LOAD_ULTRA_FIX] Error waiting for global load:`, error);
-        globalLoadingLock = false;
-        globalLoadPromise = null;
+        console.error(`🔒 [POKEMON_LOADER] Error waiting for global load:`, error);
+        setLoadingState(false);
       }
     }
     
     // If Pokemon are already locked locally, return existing data
     if (pokemonLockedRef.current && allPokemon.length > 0) {
-      console.log(`🔒 [SINGLETON_LOAD_ULTRA_FIX] Pokemon already locked locally: ${allPokemon.length}`);
+      console.log(`🔒 [POKEMON_LOADER] Pokemon already locked locally: ${allPokemon.length}`);
       return allPokemon;
     }
 
     // Start new global load
-    console.log(`🔒 [SINGLETON_LOAD_ULTRA_FIX] Starting new global load`);
-    globalLoadingLock = true;
+    console.log(`🔒 [POKEMON_LOADER] Starting new global load`);
     setIsLoading(true);
-    
-    // Clear ALL Pokemon-related cache for absolute freshness
-    const cacheKeys = Object.keys(localStorage).filter(key => 
-      key.startsWith('pokemon-cache-') || 
-      key.startsWith('pokemon-form-filters') ||
-      key.startsWith('excluded-pokemon') ||
-      key.includes('pokemon')
-    );
-    cacheKeys.forEach(key => {
-      console.log(`🧹 [SINGLETON_LOAD_ULTRA_FIX] Clearing cache: ${key}`);
-      localStorage.removeItem(key);
-    });
 
     try {
       // Create the global load promise
-      globalLoadPromise = fetchAllPokemon(genId, fullRankingMode, false);
-      const allPokemonData = await globalLoadPromise;
+      const loadPromise = loadPokemonData(genId, fullRankingMode);
+      setLoadingState(true, loadPromise);
       
-      if (!allPokemonData || allPokemonData.length === 0) {
-        throw new Error(`No Pokemon data received from API call`);
-      }
+      const sortedPokemon = await loadPromise;
       
-      console.log(`🔒 [SINGLETON_LOAD_ULTRA_FIX] API returned ${allPokemonData.length} Pokemon`);
+      // Store the raw unfiltered data BEFORE any filtering
+      console.log(`🔒 [RAW_DATA_STORAGE] Storing ${sortedPokemon.length} RAW unfiltered Pokemon separately`);
       
-      // ULTRA-CRITICAL: Sort by ID for absolute consistency
-      const sortedPokemon = [...allPokemonData].sort((a, b) => a.id - b.id);
-      console.log(`🔒 [SINGLETON_LOAD_ULTRA_FIX] Pokemon sorted by ID for absolute consistency`);
+      // Apply filtering to get filtered data
+      const filteredPokemon = processFilteredPokemon(sortedPokemon);
       
-      // NEW: Store the raw unfiltered data BEFORE any filtering
-      globalRawPokemonCache = sortedPokemon;
-      setRawUnfilteredPokemon(sortedPokemon);
-      console.log(`🔒 [RAW_DATA_STORAGE] Stored ${sortedPokemon.length} RAW unfiltered Pokemon separately`);
+      // Store both datasets in global cache
+      setGlobalCache(filteredPokemon, sortedPokemon);
+      console.log(`🔒 [POKEMON_LOADER] Final result: ${filteredPokemon.length} filtered, ${sortedPokemon.length} raw Pokemon`);
       
-      // Apply filtering deterministically to get filtered data
-      const filteredPokemon = analyzeFilteringPipeline(sortedPokemon);
-      
-      // Store filtered data in global cache
-      globalPokemonCache = filteredPokemon;
-      console.log(`🔒 [SINGLETON_LOAD_ULTRA_FIX] Stored ${filteredPokemon.length} FILTERED Pokemon in global cache`);
-      
-      console.log(`🔒 [SINGLETON_LOAD_ULTRA_FIX] Final result: ${filteredPokemon.length} filtered, ${sortedPokemon.length} raw Pokemon`);
-      
-      setAllPokemon(filteredPokemon);
       setIsLoading(false);
       pokemonLockedRef.current = true;
-      globalLoadingLock = false;
-      globalLoadPromise = null;
+      setLoadingState(false);
       
       return filteredPokemon;
       
     } catch (error) {
-      console.error(`🔒 [SINGLETON_LOAD_ULTRA_FIX] Load failed:`, error);
-      globalLoadingLock = false;
-      globalLoadPromise = null;
-      globalPokemonCache = null;
-      globalRawPokemonCache = null;
+      console.error(`🔒 [POKEMON_LOADER] Load failed:`, error);
+      setLoadingState(false);
+      clearGlobalCache();
       setIsLoading(false);
-      
-      toast({
-        title: "Network Error", 
-        description: `Failed to load Pokémon data. ${error instanceof Error ? error.message : 'Unknown error'}`,
-        variant: "destructive",
-        duration: 10000
-      });
       
       return [];
     }
-  }, [shouldIncludePokemon, analyzeFilteringPipeline, allPokemon.length]);
+  }, [
+    allPokemon.length, 
+    hasGlobalCache, 
+    getGlobalCache, 
+    useExistingCache, 
+    getLoadingState, 
+    setLoadingState, 
+    setGlobalCache, 
+    clearGlobalCache,
+    loadPokemonData,
+    processFilteredPokemon
+  ]);
 
   const loadPokemon = useCallback(async (genId = 0, fullRankingMode = true) => {
     return loadInitialBatch(genId, fullRankingMode);
   }, [loadInitialBatch]);
 
-  // Clear ALL caches and reset global state
-  const clearCache = useCallback(() => {
-    const keys = Object.keys(localStorage).filter(key => 
-      key.startsWith('pokemon-cache-') || 
-      key.startsWith('pokemon-form-filters') ||
-      key.startsWith('excluded-pokemon') ||
-      key.includes('pokemon')
-    );
-    keys.forEach(key => localStorage.removeItem(key));
-    
-    // Reset global state
-    globalLoadingLock = false;
-    globalPokemonCache = null;
-    globalRawPokemonCache = null;
-    globalLoadPromise = null;
-    
-    pokemonLockedRef.current = false;
-    setAllPokemon([]);
-    setRawUnfilteredPokemon([]);
-    console.log("🧹 [SINGLETON_LOAD_ULTRA_FIX] All caches and global state cleared");
-  }, []);
-
   return {
     allPokemon,
-    rawUnfilteredPokemon, // NEW: Return raw data
+    rawUnfilteredPokemon,
     isLoading,
     isBackgroundLoading: false,
     loadPokemon,
-    clearCache
+    clearCache: clearGlobalCache
   };
 };
