@@ -1,2 +1,2 @@
 
-export type LoadingType = "pagination" | "infinite" | "search";
+export type LoadingType = "pagination" | "infinite" | "search" | "single";
