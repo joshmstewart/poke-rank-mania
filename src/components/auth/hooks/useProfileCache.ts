@@ -21,8 +21,8 @@ export const useProfileCache = () => {
       return null;
     }
     
-    // Cache is valid for 5 minutes
-    const isExpired = Date.now() - cached.timestamp > 5 * 60 * 1000;
+    // Cache is valid for 2 minutes only (reduced from 5)
+    const isExpired = Date.now() - cached.timestamp > 2 * 60 * 1000;
     if (isExpired) {
       console.log('🎯 [PROFILE_CACHE] Cache expired for user:', userId);
       return null;
@@ -32,20 +32,25 @@ export const useProfileCache = () => {
     return cached.profile;
   }, [cache]);
 
-  const prefetchProfile = useCallback(async (userId: string): Promise<void> => {
-    if (!userId || fetchingRef.current.has(userId)) {
-      console.log('🎯 [PROFILE_CACHE] Skipping prefetch - no userId or already fetching:', userId);
+  const prefetchProfile = useCallback(async (userId: string, forceRefresh: boolean = false): Promise<void> => {
+    if (!userId) {
+      console.log('🎯 [PROFILE_CACHE] No userId provided for prefetch');
+      return;
+    }
+
+    if (!forceRefresh && fetchingRef.current.has(userId)) {
+      console.log('🎯 [PROFILE_CACHE] Already fetching profile for:', userId);
       return;
     }
     
     fetchingRef.current.add(userId);
-    console.log('🎯 [PROFILE_CACHE] Starting prefetch for user:', userId);
+    console.log('🎯 [PROFILE_CACHE] Starting prefetch for user:', userId, 'forceRefresh:', forceRefresh);
     
     // Set loading state
     setCache(prev => ({
       ...prev,
       [userId]: {
-        profile: prev[userId]?.profile || null,
+        profile: forceRefresh ? null : (prev[userId]?.profile || null),
         timestamp: Date.now(),
         loading: true
       }
@@ -100,9 +105,16 @@ export const useProfileCache = () => {
     console.log('🎯 [PROFILE_CACHE] 🔥 Cache invalidated and fetching cleared for user:', userId);
   }, []);
 
+  const clearAllCache = useCallback(() => {
+    console.log('🎯 [PROFILE_CACHE] 🔥 CLEARING ALL CACHE');
+    setCache({});
+    fetchingRef.current.clear();
+  }, []);
+
   return {
     prefetchProfile,
     getProfileFromCache,
-    invalidateCache
+    invalidateCache,
+    clearAllCache
   };
 };

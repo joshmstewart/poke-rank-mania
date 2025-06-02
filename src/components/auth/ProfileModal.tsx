@@ -16,7 +16,7 @@ interface ProfileModalProps {
 
 export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }) => {
   const { user } = useAuth();
-  const { getProfileFromCache, prefetchProfile } = useProfileCache();
+  const { prefetchProfile, getProfileFromCache } = useProfileCache();
   
   const {
     selectedAvatar,
@@ -30,44 +30,44 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ open, onOpenChange }
     mountedRef
   } = useProfileFormState(open);
 
-  // Load current profile data when modal opens - CRITICAL FIX
+  // Load current profile data when modal opens - ALWAYS FETCH FRESH
   useEffect(() => {
     if (open && user?.id && mountedRef.current) {
-      console.log('🎭 [PROFILE_MODAL] ===== MODAL OPENED - LOADING CURRENT DATA =====');
+      console.log('🎭 [PROFILE_MODAL] ===== MODAL OPENED - LOADING FRESH DATA =====');
       
-      // Always fetch fresh data when modal opens to ensure we have latest
-      const loadCurrentData = async () => {
-        console.log('🎭 [PROFILE_MODAL] Fetching fresh profile data for modal...');
+      // Always fetch fresh data when modal opens - force refresh
+      const loadFreshData = async () => {
+        console.log('🎭 [PROFILE_MODAL] Forcing fresh profile fetch for modal...');
         
         try {
-          // Fetch fresh profile data
-          await prefetchProfile(user.id);
-          const currentProfile = getProfileFromCache(user.id);
+          // Force fresh fetch (no cache)
+          await prefetchProfile(user.id, true);
+          const freshProfile = getProfileFromCache(user.id);
           
-          if (currentProfile && mountedRef.current) {
-            console.log('🎭 [PROFILE_MODAL] Setting modal form with current profile:', {
-              avatar: currentProfile.avatar_url,
-              username: currentProfile.username,
-              displayName: currentProfile.display_name
+          if (freshProfile && mountedRef.current) {
+            console.log('🎭 [PROFILE_MODAL] Setting modal form with FRESH profile:', {
+              avatar: freshProfile.avatar_url,
+              username: freshProfile.username,
+              displayName: freshProfile.display_name
             });
             
-            setSelectedAvatar(currentProfile.avatar_url || '');
-            setUsername(currentProfile.username || '');
-            setDisplayName(currentProfile.display_name || '');
+            setSelectedAvatar(freshProfile.avatar_url || '');
+            setUsername(freshProfile.username || '');
+            setDisplayName(freshProfile.display_name || '');
           } else {
-            console.log('🎭 [PROFILE_MODAL] No current profile found, using defaults');
+            console.log('🎭 [PROFILE_MODAL] No fresh profile found, using defaults');
             setSelectedAvatar('');
             setUsername('');
             setDisplayName('');
           }
         } catch (error) {
-          console.error('🎭 [PROFILE_MODAL] Error loading current profile:', error);
+          console.error('🎭 [PROFILE_MODAL] Error loading fresh profile:', error);
         }
       };
       
-      loadCurrentData();
+      loadFreshData();
     }
-  }, [open, user?.id, getProfileFromCache, prefetchProfile, setSelectedAvatar, setUsername, setDisplayName, mountedRef]);
+  }, [open, user?.id, prefetchProfile, getProfileFromCache, setSelectedAvatar, setUsername, setDisplayName, mountedRef]);
 
   const handleAvatarClick = () => {
     if (!mountedRef.current) return;

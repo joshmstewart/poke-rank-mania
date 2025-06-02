@@ -29,8 +29,11 @@ export const useProfileUpdateHandler = ({
       if (userId && !isLoadingProfile.current && event.detail) {
         console.log('🔄 [PROFILE_UPDATE_HANDLER] 🚀 PROCESSING PROFILE UPDATE');
         
-        // IMMEDIATE UPDATE: Use event data directly for instant UI feedback
-        const updatedProfile = {
+        // STEP 1: Invalidate cache immediately
+        invalidateCache(userId);
+        
+        // STEP 2: Set immediate state for instant UI feedback
+        const immediateProfile = {
           ...currentProfile,
           id: userId,
           avatar_url: event.detail.avatar_url,
@@ -40,25 +43,26 @@ export const useProfileUpdateHandler = ({
         };
         
         console.log('🔄 [PROFILE_UPDATE_HANDLER] 🎯 IMMEDIATE: Setting profile from event data');
-        console.log('🔄 [PROFILE_UPDATE_HANDLER] 🎯 IMMEDIATE: Avatar URL:', updatedProfile.avatar_url);
-        setCurrentProfile(updatedProfile);
+        console.log('🔄 [PROFILE_UPDATE_HANDLER] 🎯 IMMEDIATE: Avatar URL:', immediateProfile.avatar_url);
+        setCurrentProfile(immediateProfile);
         setIsProfileLoaded(true);
         
-        // BACKGROUND REFRESH: Invalidate cache and fetch fresh data without waiting
-        console.log('🔄 [PROFILE_UPDATE_HANDLER] 🔄 BACKGROUND: Starting fresh data fetch');
-        invalidateCache(userId);
-        
-        // Don't await this - let it happen in background
-        prefetchProfile(userId).then(() => {
-          const freshProfile = getProfileFromCache(userId);
-          if (freshProfile) {
-            console.log('🔄 [PROFILE_UPDATE_HANDLER] 🔄 BACKGROUND: Fresh profile fetched');
-            console.log('🔄 [PROFILE_UPDATE_HANDLER] 🔄 BACKGROUND: Avatar URL:', freshProfile.avatar_url);
-            setCurrentProfile(freshProfile);
+        // STEP 3: Fetch fresh data in background (with delay to avoid conflicts)
+        setTimeout(async () => {
+          try {
+            console.log('🔄 [PROFILE_UPDATE_HANDLER] 🔄 BACKGROUND: Fetching fresh data');
+            await prefetchProfile(userId, true); // Force fresh fetch
+            const freshProfile = getProfileFromCache(userId);
+            
+            if (freshProfile) {
+              console.log('🔄 [PROFILE_UPDATE_HANDLER] 🔄 BACKGROUND: Fresh profile received');
+              console.log('🔄 [PROFILE_UPDATE_HANDLER] 🔄 BACKGROUND: Avatar URL:', freshProfile.avatar_url);
+              setCurrentProfile({ ...freshProfile });
+            }
+          } catch (error) {
+            console.error('🔄 [PROFILE_UPDATE_HANDLER] Background fetch error:', error);
           }
-        }).catch(error => {
-          console.error('🔄 [PROFILE_UPDATE_HANDLER] Background fetch error:', error);
-        });
+        }, 500); // Small delay to prevent race conditions
       } else {
         console.log('🔄 [PROFILE_UPDATE_HANDLER] Skipping update - conditions not met');
       }
