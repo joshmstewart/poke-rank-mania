@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Rating } from 'ts-trueskill';
@@ -314,30 +313,56 @@ export const useTrueSkillStore = create<TrueSkillState>()(
 
       syncToCloud: async () => {
         const state = get();
-        const { sessionId, ratings, lastUpdated, isDirty } = state;
+        const { sessionId, ratings, lastUpdated } = state;
         
-        if (!isDirty || !sessionId) {
+        console.log(`💾 [SYNC_TO_CLOUD_ENHANCED] ===== ENHANCED SYNC TO CLOUD =====`);
+        console.log(`💾 [SYNC_TO_CLOUD_ENHANCED] SessionId:`, sessionId);
+        console.log(`💾 [SYNC_TO_CLOUD_ENHANCED] Ratings count:`, Object.keys(ratings).length);
+        console.log(`💾 [SYNC_TO_CLOUD_ENHANCED] isDirty:`, state.isDirty);
+
+        if (!sessionId) {
+          console.error('💾 [SYNC_TO_CLOUD_ENHANCED] ❌ No sessionId - cannot sync');
+          return;
+        }
+
+        // Always sync when called explicitly (for force sync)
+        const ratingsCount = Object.keys(ratings).length;
+        if (ratingsCount === 0) {
+          console.log('💾 [SYNC_TO_CLOUD_ENHANCED] No ratings to sync');
           return;
         }
 
         set({ isLoading: true });
 
         try {
+          console.log(`💾 [SYNC_TO_CLOUD_ENHANCED] Invoking sync-trueskill function...`);
+          
           const { data, error } = await supabase.functions.invoke('sync-trueskill', {
-            body: { sessionId, ratings, lastUpdated }
+            body: { 
+              sessionId, 
+              ratings, 
+              lastUpdated: lastUpdated || new Date().toISOString() 
+            }
           });
 
           if (error) {
-            console.error('Sync error:', error);
-          } else if (data?.success) {
+            console.error('💾 [SYNC_TO_CLOUD_ENHANCED] ❌ Sync error:', error);
+            throw error;
+          } 
+          
+          if (data?.success) {
+            console.log(`💾 [SYNC_TO_CLOUD_ENHANCED] ✅ Sync successful!`);
             set({ isDirty: false });
           } else {
-            console.error('Sync failed:', data?.error);
+            console.error('💾 [SYNC_TO_CLOUD_ENHANCED] ❌ Sync failed:', data?.error);
+            throw new Error(data?.error || 'Sync failed');
           }
         } catch (error) {
-          console.error('Sync error:', error);
+          console.error('💾 [SYNC_TO_CLOUD_ENHANCED] ❌ Sync error:', error);
+          throw error;
         } finally {
           set({ isLoading: false });
+          console.log(`💾 [SYNC_TO_CLOUD_ENHANCED] ===== SYNC COMPLETE =====`);
         }
       },
 

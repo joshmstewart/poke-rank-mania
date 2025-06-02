@@ -9,11 +9,12 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User, Settings, LogOut, ChevronDown, Hash, Database, Search } from 'lucide-react';
+import { User, Settings, LogOut, ChevronDown, Hash, Database, Search, CloudUpload } from 'lucide-react';
 import { useAuth } from '@/contexts/auth/useAuth';
 import { useTrueSkillStore } from '@/stores/trueskillStore';
 import { supabase } from '@/integrations/supabase/client';
 import { ProfileModal } from '../ProfileModal';
+import { toast } from '@/hooks/use-toast';
 
 interface UserDropdownMenuProps {
   user: {
@@ -29,7 +30,7 @@ interface UserDropdownMenuProps {
 
 export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({ user }) => {
   const { signOut } = useAuth();
-  const { sessionId } = useTrueSkillStore();
+  const { sessionId, getAllRatings, syncToCloud } = useTrueSkillStore();
   const [profileModalOpen, setProfileModalOpen] = useState(false);
 
   console.log('🎭🎭🎭 [USER_DROPDOWN_FIXED] ===== USER DROPDOWN MENU RENDER =====');
@@ -57,6 +58,99 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({ user }) => {
   const handleProfileModalClose = useCallback((open: boolean) => {
     setProfileModalOpen(open);
   }, []);
+
+  // FORCE SYNC TO CLOUD: Save localStorage ratings to database and link to user
+  const forceSyncToCloud = useCallback(async () => {
+    console.log('🚨🚨🚨 [FORCE_SYNC_TO_CLOUD] ===== FORCING SYNC TO CLOUD =====');
+    console.log('🚨🚨🚨 [FORCE_SYNC_TO_CLOUD] Current user ID:', user.id);
+    console.log('🚨🚨🚨 [FORCE_SYNC_TO_CLOUD] Current sessionId:', sessionId);
+    
+    try {
+      const allRatings = getAllRatings();
+      const ratingsCount = Object.keys(allRatings).length;
+      
+      console.log('🚨🚨🚨 [FORCE_SYNC_TO_CLOUD] Ratings to sync:', ratingsCount);
+      
+      if (ratingsCount === 0) {
+        toast({
+          title: "No Data to Sync",
+          description: "No ratings found in localStorage to sync to cloud.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Step 1: Force sync the ratings to cloud
+      console.log('🚨🚨🚨 [FORCE_SYNC_TO_CLOUD] Step 1: Syncing ratings to cloud...');
+      await syncToCloud();
+      
+      // Step 2: Link the session to user profile
+      console.log('🚨🚨🚨 [FORCE_SYNC_TO_CLOUD] Step 2: Linking session to user profile...');
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ trueskill_session_id: sessionId })
+        .eq('id', user.id);
+
+      if (profileError) {
+        console.error('🚨🚨🚨 [FORCE_SYNC_TO_CLOUD] Profile update error:', profileError);
+        throw profileError;
+      }
+
+      // Step 3: Verify the data was synced
+      console.log('🚨🚨🚨 [FORCE_SYNC_TO_CLOUD] Step 3: Verifying sync...');
+      const { data: sessionData, error: sessionError } = await supabase
+        .from('trueskill_sessions')
+        .select('ratings_data, user_id')
+        .eq('session_id', sessionId)
+        .maybeSingle();
+
+      if (sessionError) {
+        console.error('🚨🚨🚨 [FORCE_SYNC_TO_CLOUD] Session verification error:', sessionError);
+        throw sessionError;
+      }
+
+      if (sessionData) {
+        const cloudRatingsCount = Object.keys(sessionData.ratings_data || {}).length;
+        console.log('🚨🚨🚨 [FORCE_SYNC_TO_CLOUD] ✅ Cloud verification: Found', cloudRatingsCount, 'ratings');
+        console.log('🚨🚨🚨 [FORCE_SYNC_TO_CLOUD] ✅ Session user_id:', sessionData.user_id);
+
+        // Step 4: Update the session to link to user if not already linked
+        if (!sessionData.user_id) {
+          console.log('🚨🚨🚨 [FORCE_SYNC_TO_CLOUD] Step 4: Linking session user_id...');
+          const { error: linkError } = await supabase
+            .from('trueskill_sessions')
+            .update({ user_id: user.id })
+            .eq('session_id', sessionId);
+
+          if (linkError) {
+            console.error('🚨🚨🚨 [FORCE_SYNC_TO_CLOUD] Session linking error:', linkError);
+            throw linkError;
+          }
+        }
+
+        toast({
+          title: "✅ Force Sync Successful!",
+          description: `Successfully synced ${ratingsCount} ratings to cloud and linked to your account!`,
+          duration: 5000
+        });
+
+        console.log('🚨🚨🚨 [FORCE_SYNC_TO_CLOUD] ✅✅✅ FORCE SYNC COMPLETED SUCCESSFULLY! ✅✅✅');
+        console.log('🚨🚨🚨 [FORCE_SYNC_TO_CLOUD] ✅ Your progress is now permanently saved to the cloud!');
+        
+      } else {
+        throw new Error('Session data not found after sync');
+      }
+
+    } catch (error) {
+      console.error('🚨🚨🚨 [FORCE_SYNC_TO_CLOUD] ❌ Force sync failed:', error);
+      toast({
+        title: "❌ Force Sync Failed",
+        description: `Error syncing to cloud: ${error.message}`,
+        variant: "destructive",
+        duration: 5000
+      });
+    }
+  }, [user.id, sessionId, getAllRatings, syncToCloud]);
 
   // COMPREHENSIVE SESSION SEARCH: Find where ratings are actually stored
   const findAllSessions = useCallback(async () => {
@@ -273,6 +367,13 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({ user }) => {
           <DropdownMenuItem onClick={handleProfileModalOpen}>
             <Settings className="mr-2 h-4 w-4" />
             Edit Profile
+          </DropdownMenuItem>
+          
+          <DropdownMenuSeparator />
+          
+          <DropdownMenuItem onClick={forceSyncToCloud} className="text-green-600">
+            <CloudUpload className="mr-2 h-4 w-4" />
+            Force Sync to Cloud
           </DropdownMenuItem>
           
           <DropdownMenuItem onClick={investigateMultipleSessions}>
