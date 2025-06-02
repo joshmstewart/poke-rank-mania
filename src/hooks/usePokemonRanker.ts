@@ -28,67 +28,26 @@ export const usePokemonRanker = () => {
     setLoadingType
   } = useRankingState();
 
-  // CRITICAL DEBUG: Add ultra-specific logging to track where rankedPokemon gets set
-  console.log(`🚨🚨🚨 [POKEMON_RANKER_DEBUG] ===== usePokemonRanker HOOK STATE =====`);
-  console.log(`🚨🚨🚨 [POKEMON_RANKER_DEBUG] rankedPokemon from useRankingState: ${rankedPokemon.length}`);
-  console.log(`🚨🚨🚨 [POKEMON_RANKER_DEBUG] availablePokemonFromLoader: ${availablePokemonFromLoader.length}`);
-  console.log(`🚨🚨🚨 [POKEMON_RANKER_DEBUG] hasInitialized: ${hasInitialized}`);
-  
-  if (rankedPokemon.length > 0) {
-    console.log(`🚨🚨🚨 [POKEMON_RANKER_CRITICAL] RANKED POKEMON DETECTED: ${rankedPokemon.length}`);
-    console.log(`🚨🚨🚨 [POKEMON_RANKER_CRITICAL] First 5 IDs: ${rankedPokemon.slice(0, 5).map(p => p.id).join(', ')}`);
-    console.log(`🚨🚨🚨 [POKEMON_RANKER_CRITICAL] Call stack:`, new Error().stack?.split('\n').slice(1, 5).join(' | '));
-  }
-
-  // CRITICAL FIX: Initialize Pokemon loading immediately and more aggressively
+  // Initialize Pokemon loading
   useEffect(() => {
-    console.log(`🔍 [POKEMON_RANKER_INIT] Checking initialization conditions...`);
-    console.log(`🔍 [POKEMON_RANKER_INIT] hasInitialized: ${hasInitialized}`);
-    console.log(`🔍 [POKEMON_RANKER_INIT] availablePokemonFromLoader.length: ${availablePokemonFromLoader.length}`);
-    console.log(`🔍 [POKEMON_RANKER_INIT] isLoading: ${isLoading}`);
-    
     if (!hasInitialized) {
-      console.log(`🔍 [POKEMON_RANKER_INIT] Starting Pokemon load initialization...`);
       setHasInitialized(true);
-      // CRITICAL FIX: Set loading type to show all Pokemon, not paginated
       setLoadingType("single");
-      setLoadSize(1000); // Large number to show all
-      loadPokemon(0, true).then((result) => {
-        console.log(`🔍 [POKEMON_RANKER_INIT] Load completed with ${result?.length || 0} Pokemon`);
-      }).catch((error) => {
-        console.error(`🔍 [POKEMON_RANKER_INIT] Load failed:`, error);
-      });
+      setLoadSize(1000);
+      loadPokemon(0, true);
     }
   }, [hasInitialized, loadPokemon, setLoadingType, setLoadSize]);
-
-  // Log when Pokemon data becomes available
-  useEffect(() => {
-    if (availablePokemonFromLoader.length > 0) {
-      console.log(`🔍 [POKEMON_RANKER_DATA] Pokemon data available: ${availablePokemonFromLoader.length} Pokemon`);
-      
-      // Sample some Pokemon to verify data quality
-      const samplePokemon = availablePokemonFromLoader.slice(0, 5);
-      console.log(`🔍 [POKEMON_RANKER_DATA] Sample Pokemon: ${samplePokemon.map(p => `${p.name}(${p.id})`).join(', ')}`);
-      
-      const idRange = {
-        min: Math.min(...availablePokemonFromLoader.map(p => p.id)),
-        max: Math.max(...availablePokemonFromLoader.map(p => p.id))
-      };
-      console.log(`🔍 [POKEMON_RANKER_DATA] ID range: ${idRange.min} - ${idRange.max}`);
-    }
-  }, [availablePokemonFromLoader.length]);
 
   const { filteredAvailablePokemon, setSelectedGeneration: setGen } = useGenerationFilter(
     availablePokemonFromLoader,
     selectedGeneration
   );
 
-  // CRITICAL FIX: For ranking interface, we want to show ALL filtered Pokemon, not paginated subset
   const { paginatedItems: availablePokemon, totalPages: calculatedTotalPages } = usePagination(
     filteredAvailablePokemon,
     currentPage,
-    filteredAvailablePokemon.length, // Use full length instead of loadSize to show all Pokemon
-    "single" // Force single load mode to bypass pagination
+    filteredAvailablePokemon.length,
+    "single"
   );
 
   useEffect(() => {
@@ -139,21 +98,9 @@ export const usePokemonRanker = () => {
   };
 
   const resetRankings = useCallback(() => {
-    console.log(`🚨🚨🚨 [POKEMON_RANKER_RESET] Reset called - clearing rankedPokemon`);
     setRankedPokemon([]);
     setConfidenceScores({});
   }, [setRankedPokemon, setConfidenceScores]);
-
-  // CRITICAL DEBUG: Monitor any effects that might be setting rankedPokemon
-  useEffect(() => {
-    console.log(`🚨🚨🚨 [POKEMON_RANKER_EFFECT_MONITOR] Effect triggered`);
-    console.log(`🚨🚨🚨 [POKEMON_RANKER_EFFECT_MONITOR] rankedPokemon: ${rankedPokemon.length}`);
-    console.log(`🚨🚨🚨 [POKEMON_RANKER_EFFECT_MONITOR] availablePokemonFromLoader: ${availablePokemonFromLoader.length}`);
-  }, [rankedPokemon.length, availablePokemonFromLoader.length]);
-
-  console.log(`🔍🔍🔍 [POKEMON_RANKER_RETURN] Returning availablePokemon: ${availablePokemon.length}`);
-  console.log(`🔍🔍🔍 [POKEMON_RANKER_RETURN] Returning rankedPokemon: ${rankedPokemon.length}`);
-  console.log(`🔍🔍🔍 [POKEMON_RANKER_RETURN] filteredAvailablePokemon: ${filteredAvailablePokemon.length}`);
 
   return {
     isLoading,
