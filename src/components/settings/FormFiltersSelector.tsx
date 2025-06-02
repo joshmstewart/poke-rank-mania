@@ -49,42 +49,76 @@ export function FormFiltersSelector() {
     // CRITICAL: For blocked category, count from raw unfiltered data
     console.log(`🚫 [BLOCKED_COUNT] Counting blocked Pokemon from ${rawUnfilteredPokemon.length} raw unfiltered Pokemon`);
     
-    // Debug: Let's see what we're working with
+    // ENHANCED DEBUG: Let's examine the Pokemon names more carefully
     let debugBlockedCount = 0;
     let sampleBlockedNames: string[] = [];
     let sampleNormalNames: string[] = [];
+    let potentialBlockedNames: string[] = [];
     
     rawUnfilteredPokemon.forEach((pokemon, index) => {
       const category = getPokemonFormCategory(pokemon);
       if (category === 'blocked') {
         counts.blocked++;
         debugBlockedCount++;
-        if (debugBlockedCount <= 10) { // Log first 10 blocked Pokemon found
+        if (debugBlockedCount <= 10) {
           console.log(`🚫 [BLOCKED_FOUND] Found blocked Pokemon: "${pokemon.name}" (ID: ${pokemon.id})`);
           sampleBlockedNames.push(pokemon.name);
         }
       }
       
-      // Also log some sample Pokemon names to see what we're working with
-      if (index < 50) {
+      // Log first 100 Pokemon names to see what we're working with
+      if (index < 100) {
         console.log(`🔍 [SAMPLE_POKEMON] ${index + 1}: "${pokemon.name}" (ID: ${pokemon.id}) -> category: ${category}`);
-        if (category === 'normal' && sampleNormalNames.length < 10) {
+        if (category === 'normal' && sampleNormalNames.length < 15) {
           sampleNormalNames.push(pokemon.name);
         }
       }
       
-      // Let's specifically check for some Pokemon that should be blocked
+      // CRITICAL: Let's search for Pokemon that SHOULD be blocked based on name patterns
       const name = pokemon.name.toLowerCase();
-      if (name.includes('starter') || name.includes('totem') || name.includes('meteor')) {
+      
+      // Check for various blocking patterns
+      if (name.includes('starter') || 
+          name.includes('totem') || 
+          name.includes('meteor') ||
+          name.includes('cap') ||
+          name.includes('pikachu-') ||
+          name.includes('-small') ||
+          name.includes('-large') ||
+          name.includes('-super') ||
+          name.includes('limited') ||
+          name.includes('build') ||
+          name.includes('mode') ||
+          (name.includes('minior') && name.includes('meteor'))) {
         console.log(`🎯 [POTENTIAL_BLOCKED] Found potential blocked Pokemon: "${pokemon.name}" (ID: ${pokemon.id}) -> category: ${category}`);
+        potentialBlockedNames.push(pokemon.name);
+      }
+      
+      // Also check for specific Pokemon that are known to have blocked variants
+      if (name.includes('pumpkaboo') || 
+          name.includes('gourgeist') ||
+          name.includes('rockruff') ||
+          name.includes('cramorant') ||
+          name.includes('koraidon') ||
+          name.includes('miraidon') ||
+          name.includes('greninja')) {
+        console.log(`🔍 [VARIANT_CHECK] Found Pokemon with potential variants: "${pokemon.name}" (ID: ${pokemon.id}) -> category: ${category}`);
       }
     });
     
     console.log(`🚫 [BLOCKED_COUNT_DEBUG] Total blocked Pokemon found: ${debugBlockedCount}`);
     console.log(`🚫 [BLOCKED_SAMPLES] Sample blocked names:`, sampleBlockedNames);
     console.log(`📝 [NORMAL_SAMPLES] Sample normal names:`, sampleNormalNames);
+    console.log(`🎯 [POTENTIAL_BLOCKED_LIST] Pokemon that should potentially be blocked:`, potentialBlockedNames);
     console.log(`🔢 [FORM_COUNTS] Calculated counts:`, counts);
     console.log(`🚫 [BLOCKED_COUNT_FINAL] Final blocked count: ${counts.blocked}`);
+    
+    // CRITICAL: If we found potential blocked Pokemon but they weren't categorized as blocked,
+    // there's an issue with the categorization logic
+    if (potentialBlockedNames.length > 0 && counts.blocked === 0) {
+      console.error(`❌ [CATEGORIZATION_ERROR] Found ${potentialBlockedNames.length} Pokemon that should be blocked but none were categorized as blocked!`);
+      console.error(`❌ [CATEGORIZATION_ERROR] This suggests an issue with the getPokemonFormCategory function`);
+    }
     
     return counts;
   }, [allPokemon, rawUnfilteredPokemon, getPokemonFormCategory]);
