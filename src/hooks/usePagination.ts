@@ -19,7 +19,7 @@ export const usePagination = (
       return result;
     }
     
-    // For infinite scroll or single load, return all items
+    // For infinite scroll, single load, or any other mode, return all items
     console.log(`🔍 [PAGINATION] Non-pagination mode (${loadingType}): returning all ${items.length} items`);
     return items;
   }, [items, currentPage, pageSize, loadingType]);
@@ -30,6 +30,7 @@ export const usePagination = (
       console.log(`🔍 [PAGINATION] Calculated total pages: ${pages} (${items.length} items / ${pageSize} per page)`);
       return pages;
     }
+    console.log(`🔍 [PAGINATION] Non-pagination mode: returning 1 page for ${items.length} items`);
     return 1;
   }, [items.length, pageSize, loadingType]);
 

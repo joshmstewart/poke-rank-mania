@@ -40,14 +40,40 @@ export const usePokemonRanker = () => {
     console.log(`🚨🚨🚨 [POKEMON_RANKER_CRITICAL] Call stack:`, new Error().stack?.split('\n').slice(1, 5).join(' | '));
   }
 
-  // Initialize Pokemon loading on first render
+  // CRITICAL FIX: Initialize Pokemon loading immediately and more aggressively
   useEffect(() => {
-    if (!hasInitialized && availablePokemonFromLoader.length === 0 && !isLoading) {
-      console.log(`🔍 [POKEMON_RANKER_INIT] Initializing Pokemon load...`);
+    console.log(`🔍 [POKEMON_RANKER_INIT] Checking initialization conditions...`);
+    console.log(`🔍 [POKEMON_RANKER_INIT] hasInitialized: ${hasInitialized}`);
+    console.log(`🔍 [POKEMON_RANKER_INIT] availablePokemonFromLoader.length: ${availablePokemonFromLoader.length}`);
+    console.log(`🔍 [POKEMON_RANKER_INIT] isLoading: ${isLoading}`);
+    
+    if (!hasInitialized) {
+      console.log(`🔍 [POKEMON_RANKER_INIT] Starting Pokemon load initialization...`);
       setHasInitialized(true);
-      loadPokemon(0, true);
+      loadPokemon(0, true).then((result) => {
+        console.log(`🔍 [POKEMON_RANKER_INIT] Load completed with ${result?.length || 0} Pokemon`);
+      }).catch((error) => {
+        console.error(`🔍 [POKEMON_RANKER_INIT] Load failed:`, error);
+      });
     }
-  }, [hasInitialized, availablePokemonFromLoader.length, isLoading, loadPokemon]);
+  }, [hasInitialized, loadPokemon]);
+
+  // Log when Pokemon data becomes available
+  useEffect(() => {
+    if (availablePokemonFromLoader.length > 0) {
+      console.log(`🔍 [POKEMON_RANKER_DATA] Pokemon data available: ${availablePokemonFromLoader.length} Pokemon`);
+      
+      // Sample some Pokemon to verify data quality
+      const samplePokemon = availablePokemonFromLoader.slice(0, 5);
+      console.log(`🔍 [POKEMON_RANKER_DATA] Sample Pokemon: ${samplePokemon.map(p => `${p.name}(${p.id})`).join(', ')}`);
+      
+      const idRange = {
+        min: Math.min(...availablePokemonFromLoader.map(p => p.id)),
+        max: Math.max(...availablePokemonFromLoader.map(p => p.id))
+      };
+      console.log(`🔍 [POKEMON_RANKER_DATA] ID range: ${idRange.min} - ${idRange.max}`);
+    }
+  }, [availablePokemonFromLoader.length]);
 
   const { filteredAvailablePokemon, setSelectedGeneration: setGen } = useGenerationFilter(
     availablePokemonFromLoader,
@@ -123,6 +149,7 @@ export const usePokemonRanker = () => {
 
   console.log(`🔍🔍🔍 [POKEMON_RANKER_RETURN] Returning availablePokemon: ${availablePokemon.length}`);
   console.log(`🔍🔍🔍 [POKEMON_RANKER_RETURN] Returning rankedPokemon: ${rankedPokemon.length}`);
+  console.log(`🔍🔍🔍 [POKEMON_RANKER_RETURN] filteredAvailablePokemon: ${filteredAvailablePokemon.length}`);
 
   return {
     isLoading,
