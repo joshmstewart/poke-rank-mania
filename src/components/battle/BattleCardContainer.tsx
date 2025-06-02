@@ -28,7 +28,6 @@ const BattleCardContainer: React.FC<BattleCardContainerProps> = ({
   const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastClickTimeRef = useRef(0);
   const [isHovered, setIsHovered] = useState(false);
-  const [modalOpen, setModalOpen] = useState(false);
 
   useEffect(() => {
     console.log(`🔘 [INFO_BUTTON_DEBUG] BattleCardContainer ${displayName}: Component mounted/updated`);
@@ -39,25 +38,20 @@ const BattleCardContainer: React.FC<BattleCardContainerProps> = ({
     };
   }, [displayName]);
 
-  // Reset hover state when modal opens or closes
-  useEffect(() => {
-    console.log(`🔘 [HOVER_DEBUG] BattleCardContainer ${displayName}: Modal state changed to ${modalOpen}`);
-    // Always reset hover state when modal state changes
-    setIsHovered(false);
-  }, [modalOpen, displayName]);
-
   const handleClick = useCallback((e: React.MouseEvent) => {
     console.log(`🖱️ [INFO_BUTTON_DEBUG] BattleCardContainer ${displayName}: Card clicked`);
     
-    // Enhanced check for info button clicks
+    // Simple check for info button clicks - match manual mode approach
     const target = e.target as HTMLElement;
-    const isInfoButtonClick = target.closest('[data-info-button]') || 
-        target.closest('[role="dialog"]') || 
+    const isInfoButtonClick = target.closest('[data-info-button="true"]') || 
         target.closest('[data-radix-dialog-content]') ||
-        target.closest('[data-radix-dialog-overlay]');
+        target.closest('[data-radix-dialog-overlay]') ||
+        target.closest('[role="dialog"]');
     
     if (isInfoButtonClick) {
       console.log(`ℹ️ [INFO_BUTTON_DEBUG] BattleCardContainer: Info dialog interaction for ${displayName}, preventing card selection`);
+      e.preventDefault();
+      e.stopPropagation();
       return;
     }
 
@@ -84,36 +78,19 @@ const BattleCardContainer: React.FC<BattleCardContainerProps> = ({
   }, [pokemon.id, displayName, onSelect, isProcessing]);
 
   const handleMouseEnter = useCallback(() => {
-    console.log(`🔘 [HOVER_DEBUG] BattleCardContainer ${displayName}: Mouse enter - modalOpen: ${modalOpen}, isProcessing: ${isProcessing}`);
-    // Only allow hover state if modal is closed and not processing
-    if (!isProcessing && !modalOpen) {
+    console.log(`🔘 [HOVER_DEBUG] BattleCardContainer ${displayName}: Mouse enter - isProcessing: ${isProcessing}`);
+    if (!isProcessing) {
       setIsHovered(true);
     }
-  }, [isProcessing, modalOpen, displayName]);
+  }, [isProcessing, displayName]);
 
   const handleMouseLeave = useCallback(() => {
     console.log(`🔘 [HOVER_DEBUG] BattleCardContainer ${displayName}: Mouse leave`);
     setIsHovered(false);
   }, [displayName]);
 
-  const handleInfoButtonInteraction = useCallback((e: React.MouseEvent) => {
-    console.log(`🔘 [INFO_BUTTON_DEBUG] BattleCardContainer ${displayName}: Info button interaction`);
-    e.preventDefault();
-    e.stopPropagation();
-    
-    // Immediately clear hover state when info button is clicked
-    setIsHovered(false);
-  }, [displayName]);
-
-  const handleModalStateChange = useCallback((open: boolean) => {
-    console.log(`🔘 [MODAL_DEBUG] BattleCardContainer ${displayName}: Modal state changing to ${open}`);
-    setModalOpen(open);
-    // Force clear hover state regardless of modal state
-    setIsHovered(false);
-  }, [displayName]);
-
   // Ensure hover state is only applied when appropriate
-  const shouldShowHover = isHovered && !isSelected && !modalOpen && !isProcessing;
+  const shouldShowHover = isHovered && !isSelected && !isProcessing;
 
   const cardClasses = `
     relative cursor-pointer transition-all duration-200 transform
@@ -131,25 +108,12 @@ const BattleCardContainer: React.FC<BattleCardContainerProps> = ({
       data-pokemon-id={pokemon.id}
       data-pokemon-name={displayName}
       data-processing={isProcessing ? "true" : "false"}
-      data-modal-open={modalOpen ? "true" : "false"}
       data-hovered={shouldShowHover ? "true" : "false"}
     >
       <CardContent className="p-4 text-center relative">
-        {/* Info Button */}
+        {/* Info Button - simplified to match manual mode */}
         <div className="absolute top-1 right-1 z-30">
-          <PokemonInfoModal 
-            pokemon={pokemon}
-            onOpenChange={handleModalStateChange}
-          >
-            <button 
-              className="w-6 h-6 rounded-full bg-white/80 hover:bg-white border border-gray-300/60 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200 backdrop-blur-sm"
-              onClick={handleInfoButtonInteraction}
-              onMouseEnter={() => setIsHovered(false)}
-              data-info-button="true"
-            >
-              i
-            </button>
-          </PokemonInfoModal>
+          <PokemonInfoModal pokemon={pokemon} />
         </div>
 
         {/* Interactive elements */}
