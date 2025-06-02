@@ -25,9 +25,6 @@ export const useEnhancedAvailablePokemon = ({
 }: UseEnhancedAvailablePokemonProps) => {
   
   const enhancedAvailablePokemon = useMemo(() => {
-    console.log(`🔮 [ENHANCED_AVAILABLE] Processing ${filteredAvailablePokemon.length} available Pokemon`);
-    console.log(`🔮 [ENHANCED_AVAILABLE] Against ${localRankings.length} ranked Pokemon`);
-    
     // Create a lookup map for ranked Pokemon for O(1) lookup
     const rankedPokemonMap = new Map<number, { rank: number; pokemon: RankedPokemon }>();
     localRankings.forEach((pokemon, index) => {
@@ -49,9 +46,6 @@ export const useEnhancedAvailablePokemon = ({
         winRate: rankedInfo?.pokemon.winRate || 0
       };
     });
-    
-    console.log(`🔮 [ENHANCED_AVAILABLE] Enhanced ${enhanced.length} Pokemon`);
-    console.log(`🔮 [ENHANCED_AVAILABLE] Ranked Pokemon in available: ${enhanced.filter(p => p.isRanked).length}`);
     
     return enhanced;
   }, [filteredAvailablePokemon.length, localRankings.length]);

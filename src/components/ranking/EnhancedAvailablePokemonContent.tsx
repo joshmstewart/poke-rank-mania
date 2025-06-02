@@ -40,8 +40,6 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
     }
   });
 
-  console.log(`🎴 [ENHANCED_CONTENT] Rendering ${items.length} items`);
-
   return (
     <div 
       ref={setNodeRef}
