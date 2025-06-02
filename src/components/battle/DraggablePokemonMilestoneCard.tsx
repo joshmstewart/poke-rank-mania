@@ -189,12 +189,12 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
         />
       </div>
       
-      {/* Pokemon info - white section at bottom */}
-      <div className="bg-white text-center py-2 px-2 mt-auto border-t border-gray-100">
-        <h3 className="font-bold text-gray-800 text-sm leading-tight mb-1">
+      {/* Pokemon info - white section at bottom with reduced padding */}
+      <div className="bg-white text-center py-1.5 px-2 mt-auto border-t border-gray-100">
+        <h3 className="font-bold text-gray-800 text-sm leading-tight mb-0.5">
           {pokemon.name}
         </h3>
-        <div className="text-xs text-gray-600 mb-2">
+        <div className="text-xs text-gray-600 mb-1">
           #{formattedId}
         </div>
         
