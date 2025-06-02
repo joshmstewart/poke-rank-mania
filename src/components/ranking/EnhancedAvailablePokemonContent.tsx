@@ -1,7 +1,8 @@
 
 import React from "react";
 import { useDroppable } from '@dnd-kit/core';
-import DragDropGrid from "@/components/battle/DragDropGrid";
+import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable';
+import DraggablePokemonMilestoneCard from "@/components/battle/DraggablePokemonMilestoneCard";
 import GenerationHeader from "@/components/pokemon/GenerationHeader";
 
 interface EnhancedAvailablePokemonContentProps {
@@ -61,17 +62,29 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
       if (item.type === 'header') {
         // Render previous generation's Pokemon if any
         if (currentGenerationPokemon.length > 0) {
+          const pokemonIds = currentGenerationPokemon.map(p => `available-${p.id}`);
+          
           result.push(
-            <DragDropGrid
+            <SortableContext 
               key={`gen-${currentGeneration}-pokemon`}
-              displayRankings={currentGenerationPokemon}
-              localPendingRefinements={new Set()}
-              pendingBattleCounts={new Map()}
-              onManualReorder={() => {}}
-              onLocalReorder={() => {}}
-              onMarkAsPending={() => {}}
-              availablePokemon={[]}
-            />
+              items={pokemonIds}
+              strategy={rectSortingStrategy}
+            >
+              <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
+                {currentGenerationPokemon.map((pokemon, index) => (
+                  <DraggablePokemonMilestoneCard
+                    key={pokemon.id}
+                    pokemon={pokemon}
+                    index={index}
+                    isPending={false}
+                    showRank={false}
+                    isDraggable={true}
+                    isAvailable={true}
+                    context="available"
+                  />
+                ))}
+              </div>
+            </SortableContext>
           );
           currentGenerationPokemon = [];
         }
@@ -105,17 +118,29 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
 
     // Render remaining Pokemon
     if (currentGenerationPokemon.length > 0) {
+      const pokemonIds = currentGenerationPokemon.map(p => `available-${p.id}`);
+      
       result.push(
-        <DragDropGrid
+        <SortableContext 
           key={`gen-${currentGeneration}-pokemon-final`}
-          displayRankings={currentGenerationPokemon}
-          localPendingRefinements={new Set()}
-          pendingBattleCounts={new Map()}
-          onManualReorder={() => {}}
-          onLocalReorder={() => {}}
-          onMarkAsPending={() => {}}
-          availablePokemon={[]}
-        />
+          items={pokemonIds}
+          strategy={rectSortingStrategy}
+        >
+          <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
+            {currentGenerationPokemon.map((pokemon, index) => (
+              <DraggablePokemonMilestoneCard
+                key={pokemon.id}
+                pokemon={pokemon}
+                index={index}
+                isPending={false}
+                showRank={false}
+                isDraggable={true}
+                isAvailable={true}
+                context="available"
+              />
+            ))}
+          </div>
+        </SortableContext>
       );
     }
 

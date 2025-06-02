@@ -66,6 +66,7 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
                 showRank={true}
                 isDraggable={true}
                 isAvailable={false}
+                context="ranked"
               />
             );
           })}

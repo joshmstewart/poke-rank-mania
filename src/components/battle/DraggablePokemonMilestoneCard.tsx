@@ -8,6 +8,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import PokemonModalContent from "@/components/pokemon/PokemonModalContent";
 import { usePokemonFlavorText } from "@/hooks/pokemon/usePokemonFlavorText";
 import { usePokemonTCGCard } from "@/hooks/pokemon/usePokemonTCGCard";
+import { Badge } from "@/components/ui/badge";
+import { Crown } from "lucide-react";
 
 interface DraggablePokemonMilestoneCardProps {
   pokemon: Pokemon | RankedPokemon;
@@ -16,6 +18,7 @@ interface DraggablePokemonMilestoneCardProps {
   showRank?: boolean;
   isDraggable?: boolean;
   isAvailable?: boolean;
+  context?: 'available' | 'ranked';
 }
 
 const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps> = ({ 
@@ -24,19 +27,25 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   isPending = false,
   showRank = true,
   isDraggable = true,
-  isAvailable = false
+  isAvailable = false,
+  context = 'ranked'
 }) => {
   const [isOpen, setIsOpen] = React.useState(false);
+
+  // Determine if this Pokemon is ranked (for available context)
+  const isRankedPokemon = context === 'available' && 'isRanked' in pokemon && pokemon.isRanked;
+  const currentRank = isRankedPokemon && 'currentRank' in pokemon ? pokemon.currentRank : null;
 
   // Only use sortable if draggable AND modal is not open
   const sortableResult = useSortable({ 
     id: isDraggable ? (isAvailable ? `available-${pokemon.id}` : pokemon.id) : `static-${pokemon.id}`,
     disabled: !isDraggable || isOpen, // Disable drag when modal is open
     data: {
-      type: isAvailable ? 'available-pokemon' : 'ranked-pokemon',
+      type: context === 'available' ? 'available-pokemon' : 'ranked-pokemon',
       pokemon: pokemon,
-      source: isAvailable ? 'available' : 'ranked',
-      index
+      source: context,
+      index,
+      isRanked: isRankedPokemon
     }
   });
 
@@ -70,6 +79,9 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   const handleDialogClick = (e: React.MouseEvent) => {
     e.stopPropagation();
   };
+
+  // Format Pokemon ID with leading zeros
+  const formattedId = pokemon.id.toString().padStart(pokemon.id >= 10000 ? 5 : 3, '0');
 
   return (
     <div
@@ -138,8 +150,21 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
         </Dialog>
       </div>
 
+      {/* Crown badge for ranked Pokemon in available section */}
+      {context === 'available' && isRankedPokemon && currentRank && (
+        <div className="absolute top-2 left-2 z-20">
+          <Badge 
+            variant="secondary" 
+            className="bg-yellow-500 text-white font-bold text-xs px-2 py-1 shadow-md flex items-center gap-1"
+          >
+            <Crown size={12} />
+            #{currentRank}
+          </Badge>
+        </div>
+      )}
+
       {/* Ranking number - white circle with black text in top left if showRank */}
-      {showRank && (
+      {context === 'ranked' && showRank && (
         <div className="absolute top-2 left-2 w-7 h-7 bg-white rounded-full flex items-center justify-center text-sm font-bold z-10 shadow-sm border border-gray-200">
           <span className="text-black">{index + 1}</span>
         </div>
@@ -164,12 +189,13 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
         <h3 className="font-bold text-gray-800 text-sm leading-tight mb-1">
           {pokemon.name}
         </h3>
-        <div className="text-xs text-gray-600">
-          #{pokemon.id}
+        <div className="text-xs text-gray-600 mb-2">
+          #{formattedId}
         </div>
-        {/* Score for ranked Pokemon */}
-        {'score' in pokemon && (
-          <div className="text-xs text-center text-gray-600">
+        
+        {/* Score display for ranked Pokemon or available ranked Pokemon */}
+        {((context === 'ranked' && 'score' in pokemon) || (context === 'available' && 'score' in pokemon && pokemon.score !== undefined)) && (
+          <div className="text-xs text-gray-700 font-medium">
             Score: {pokemon.score.toFixed(1)}
           </div>
         )}
