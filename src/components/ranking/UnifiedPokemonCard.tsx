@@ -36,6 +36,11 @@ export const UnifiedPokemonCard: React.FC<UnifiedPokemonCardProps> = ({
   console.log(`💎💎💎 [UNIFIED_CARD_CRITICAL] pokemon.rank: ${pokemon.rank}`);
   console.log(`💎💎💎 [UNIFIED_CARD_CRITICAL] pokemon.currentRank: ${pokemon.currentRank}`);
 
+  // CRITICAL: Check the final score rendering condition
+  const willShowScore = showScore && !hideScore && pokemon.score !== undefined;
+  console.log(`💎💎💎 [UNIFIED_CARD_CRITICAL] FINAL DECISION - willShowScore: ${willShowScore}`);
+  console.log(`💎💎💎 [UNIFIED_CARD_CRITICAL] BREAKDOWN: showScore=${showScore} && !hideScore=${!hideScore} && hasScore=${pokemon.score !== undefined}`);
+
   // Get background color based on Pokemon type
   const backgroundColor = getPokemonTypeColor(pokemon);
   
@@ -94,7 +99,7 @@ export const UnifiedPokemonCard: React.FC<UnifiedPokemonCardProps> = ({
         </div>
         
         {/* Score display - only show if not hidden and showScore is true */}
-        {showScore && !hideScore && pokemon.score !== undefined && (
+        {willShowScore && (
           <div className="text-xs text-gray-700 font-medium">
             Score: {pokemon.score.toFixed(1)}
           </div>
