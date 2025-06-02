@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { CheckCircle, Award, TrendingUp } from "lucide-react";
+import { useTrueSkillStore } from "@/stores/trueskillStore";
 
 interface ProgressTrackerProps {
   completionPercentage: number;
@@ -12,24 +13,30 @@ interface ProgressTrackerProps {
 
 const ProgressTracker: React.FC<ProgressTrackerProps> = ({
   completionPercentage,
-  battlesCompleted,
+  battlesCompleted, // This prop is now ignored - we use TrueSkill store
   getBattlesRemaining
 }) => {
+  // CRITICAL FIX: Get battle count directly from TrueSkill store
+  const { totalBattles } = useTrueSkillStore();
+  
   // CRITICAL FIX: Local state to force immediate updates on reset
-  const [localBattlesCompleted, setLocalBattlesCompleted] = useState(battlesCompleted);
+  const [localBattlesCompleted, setLocalBattlesCompleted] = useState(totalBattles);
   const [localCompletionPercentage, setLocalCompletionPercentage] = useState(completionPercentage);
 
-  // Update local state when props change
+  // CRITICAL FIX: Always use TrueSkill store value as source of truth
   useEffect(() => {
-    setLocalBattlesCompleted(battlesCompleted);
+    console.log(`📊 [PROGRESS_TRACKER] Syncing with TrueSkill store: ${totalBattles} battles`);
+    setLocalBattlesCompleted(totalBattles);
     setLocalCompletionPercentage(completionPercentage);
-  }, [battlesCompleted, completionPercentage]);
+  }, [totalBattles, completionPercentage]);
 
   // CRITICAL FIX: Listen for reset events and immediately update display
   useEffect(() => {
     const handleBattleSystemReset = () => {
-      console.log(`🔄 [PROGRESS_TRACKER_RESET] Resetting progress display to 0`);
-      setLocalBattlesCompleted(0);
+      console.log(`🔄 [PROGRESS_TRACKER_RESET] Resetting progress display`);
+      const currentTotalBattles = useTrueSkillStore.getState().totalBattles;
+      console.log(`🔄 [PROGRESS_TRACKER_RESET] Using TrueSkill store value: ${currentTotalBattles}`);
+      setLocalBattlesCompleted(currentTotalBattles);
       setLocalCompletionPercentage(0);
     };
 

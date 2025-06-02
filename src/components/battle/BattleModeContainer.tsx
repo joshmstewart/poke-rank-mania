@@ -5,6 +5,7 @@ import BattleContentRenderer from "./BattleContentRenderer";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "@/hooks/battle/types";
 import { useBattleStateCore } from "@/hooks/battle/useBattleStateCore";
+import { useTrueSkillStore } from "@/stores/trueskillStore";
 
 interface BattleModeContainerProps {
   allPokemon: Pokemon[];
@@ -22,27 +23,37 @@ const BattleModeContainer: React.FC<BattleModeContainerProps> = ({
   console.log(`🔧 [BATTLE_MODE_CONTAINER] Rendering with ${allPokemon.length} Pokemon`);
   
   const [selectedGeneration, setSelectedGeneration] = useState(0);
+  
+  // CRITICAL FIX: Get battle count from TrueSkill store as single source of truth
+  const { totalBattles } = useTrueSkillStore();
 
   // CRITICAL FIX: Use the battle state from the core hook directly
   const battleState = useBattleStateCore(allPokemon, initialBattleType, selectedGeneration);
 
-  // CRITICAL FIX: Sync external state setters with internal battle state
+  // CRITICAL FIX: Always use TrueSkill store value for battles completed
   useEffect(() => {
+    console.log(`🔧 [BATTLE_COUNT_SYNC] Syncing battle count from TrueSkill store: ${totalBattles}`);
     if (setBattlesCompleted) {
-      setBattlesCompleted(battleState.battlesCompleted);
+      setBattlesCompleted(totalBattles);
     }
+  }, [totalBattles, setBattlesCompleted]);
+
+  // Sync battle results
+  useEffect(() => {
     if (setBattleResults) {
       setBattleResults(battleState.battleResults);
     }
-  }, [battleState.battlesCompleted, battleState.battleResults, setBattlesCompleted, setBattleResults]);
+  }, [battleState.battleResults, setBattleResults]);
 
   // CRITICAL FIX: Listen for reset events and force re-render
   useEffect(() => {
     const handleBattleSystemReset = () => {
       console.log(`🔄 [CONTAINER_RESET] Forcing state sync after reset`);
-      // Force immediate sync of the reset values
+      const currentTotalBattles = useTrueSkillStore.getState().totalBattles;
+      console.log(`🔄 [CONTAINER_RESET] Current TrueSkill battles: ${currentTotalBattles}`);
+      
       if (setBattlesCompleted) {
-        setBattlesCompleted(0);
+        setBattlesCompleted(currentTotalBattles);
       }
       if (setBattleResults) {
         setBattleResults([]);
@@ -84,7 +95,7 @@ const BattleModeContainer: React.FC<BattleModeContainerProps> = ({
           showingMilestone={battleState.showingMilestone}
           currentBattle={battleState.currentBattle}
           selectedPokemon={battleState.selectedPokemon}
-          battlesCompleted={battleState.battlesCompleted}
+          battlesCompleted={totalBattles}
           battleType={battleState.battleType}
           battleHistory={battleState.battleHistory}
           selectedGeneration={selectedGeneration}

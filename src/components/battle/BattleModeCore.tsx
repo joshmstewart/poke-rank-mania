@@ -13,13 +13,13 @@ const BattleModeCore: React.FC = () => {
   console.log('[DEBUG BattleModeCore] Component rendering');
   console.log(`🔄 [REFINEMENT_PROVIDER_TOP_LEVEL] Wrapping entire BattleMode with single RefinementQueueProvider`);
   
-  const [battlesCompleted, setBattlesCompleted] = useState(0);
+  // CRITICAL FIX: Use TrueSkill store as single source of truth for battle count
+  const { totalBattles, isHydrated, waitForHydration, smartSync } = useTrueSkillStore();
+  
   const [battleResults, setBattleResults] = useState<SingleBattle[]>([]);
   const [allPokemon, setAllPokemon] = useState<Pokemon[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [hasInitialized, setHasInitialized] = useState(false);
-
-  const { totalBattles, isHydrated, waitForHydration, smartSync } = useTrueSkillStore();
 
   // Add debug monitoring
   const { manualDebugCheck } = useBattleDebugger();
@@ -51,9 +51,11 @@ const BattleModeCore: React.FC = () => {
     return allPokemon;
   }, [allPokemon.length > 0 ? 'HAS_POKEMON' : 'NO_POKEMON']);
 
+  // CRITICAL FIX: Create stable setter that always uses TrueSkill store value
   const stableSetBattlesCompleted = useCallback((value: React.SetStateAction<number>) => {
-    setBattlesCompleted(value);
-  }, []);
+    // Don't set local state - always use TrueSkill store value
+    console.log(`🔧 [BATTLE_COUNT_SYNC] Ignoring local setState, using TrueSkill store value: ${totalBattles}`);
+  }, [totalBattles]);
 
   const stableSetBattleResults = useCallback((value: React.SetStateAction<SingleBattle[]>) => {
     setBattleResults(value);
@@ -87,25 +89,19 @@ const BattleModeCore: React.FC = () => {
         
         // Get the final total battles count after smart sync
         const finalTotalBattles = useTrueSkillStore.getState().totalBattles;
-        console.log(`🌥️ [SMART_SYNC_INIT] ✅ Setting battle count after smart sync: ${finalTotalBattles}`);
-        setBattlesCompleted(finalTotalBattles);
+        console.log(`🌥️ [SMART_SYNC_INIT] ✅ Final battle count after smart sync: ${finalTotalBattles}`);
         
         setHasInitialized(true);
         console.log('[DEBUG BattleModeCore] Smart sync initialization completed');
         
       } catch (error) {
         console.error(`🌥️ [SMART_SYNC_INIT] ❌ Smart sync initialization failed:`, error);
-        
-        // Fallback to current hydrated state
-        const fallbackCount = totalBattles;
-        console.log(`🌥️ [SMART_SYNC_INIT] 🔄 Using fallback count: ${fallbackCount}`);
-        setBattlesCompleted(fallbackCount);
         setHasInitialized(true);
       }
     };
     
     performSmartCloudInitialization();
-  }, [hasInitialized, isHydrated, totalBattles, waitForHydration, smartSync]);
+  }, [hasInitialized, isHydrated, waitForHydration, smartSync]);
 
   // Loading state
   if (isLoading || !stablePokemon.length) {
