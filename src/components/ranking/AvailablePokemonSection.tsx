@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { LoadingType } from "@/hooks/usePokemonRanker";
@@ -100,9 +99,18 @@ export const AvailablePokemonSection: React.FC<AvailablePokemonSectionProps> = (
   const generationsWithMatches = useMemo(() => {
     if (!searchTerm.trim()) return [];
     
+    console.log(`🔍 [SEARCH_DEBUG] Searching for "${searchTerm}" in ${availablePokemon.length} Pokemon`);
+    
     const matchingGenerations = new Set<number>();
+    const matchingPokemon: string[] = [];
+    
     availablePokemon.forEach(pokemon => {
-      if (pokemon.name.toLowerCase().includes(searchTerm.toLowerCase())) {
+      const pokemonNameLower = pokemon.name.toLowerCase();
+      const searchTermLower = searchTerm.toLowerCase();
+      
+      if (pokemonNameLower.includes(searchTermLower)) {
+        matchingPokemon.push(`${pokemon.name} (ID: ${pokemon.id})`);
+        
         // Use the same logic as above to determine generation
         let gen: number;
         let baseId = pokemon.id;
@@ -148,6 +156,9 @@ export const AvailablePokemonSection: React.FC<AvailablePokemonSectionProps> = (
       }
     });
     
+    console.log(`🔍 [SEARCH_DEBUG] Found ${matchingPokemon.length} matching Pokemon:`, matchingPokemon);
+    console.log(`🔍 [SEARCH_DEBUG] Matching generations:`, Array.from(matchingGenerations));
+    
     return Array.from(matchingGenerations);
   }, [availablePokemon, searchTerm]);
 
@@ -159,11 +170,21 @@ export const AvailablePokemonSection: React.FC<AvailablePokemonSectionProps> = (
     }
   }, [searchTerm, generationsWithMatches, expandGenerations]);
 
+  // Create a modified isGenerationExpanded function that always shows expanded when searching
+  const isGenerationExpandedForDisplay = (genId: number) => {
+    // If we're searching and this generation has matches, always show as expanded
+    if (searchTerm.trim() && generationsWithMatches.includes(genId)) {
+      return true;
+    }
+    // Otherwise use the normal expansion state
+    return isGenerationExpanded(genId);
+  };
+
   const { items, showGenerationHeaders } = usePokemonGrouping(
     availablePokemon,
     searchTerm,
     false, // This is not the ranking area
-    isGenerationExpanded
+    isGenerationExpandedForDisplay // Use our modified function
   );
 
   console.log(`🔍 [AVAILABLE_SECTION] Pokemon grouping returned ${items.length} items with headers: ${showGenerationHeaders}`);
@@ -205,7 +226,7 @@ export const AvailablePokemonSection: React.FC<AvailablePokemonSectionProps> = (
           showGenerationHeaders={showGenerationHeaders}
           viewMode={viewMode}
           isRankingArea={false}
-          isGenerationExpanded={isGenerationExpanded}
+          isGenerationExpanded={isGenerationExpandedForDisplay}
           onToggleGeneration={toggleGeneration}
         />
 
