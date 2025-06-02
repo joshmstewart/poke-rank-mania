@@ -93,22 +93,35 @@ export const useTrueSkillStore = create<TrueSkillState>()(
 
       forceRehydrate: () => {
         try {
+          console.log(`🔧 [TRUESKILL_HYDRATION_FIX] ===== FORCE REHYDRATE CALLED =====`);
           const storedData = localStorage.getItem('trueskill-storage');
+          console.log(`🔧 [TRUESKILL_HYDRATION_FIX] Raw localStorage data exists:`, !!storedData);
+          
           if (storedData) {
             const parsed = JSON.parse(storedData);
+            console.log(`🔧 [TRUESKILL_HYDRATION_FIX] Parsed data:`, parsed);
+            
             const ratings = parsed.state?.ratings || {};
+            const sessionId = parsed.state?.sessionId || null;
+            const lastUpdated = parsed.state?.lastUpdated || null;
+            
+            console.log(`🔧 [TRUESKILL_HYDRATION_FIX] Restoring sessionId:`, sessionId);
+            console.log(`🔧 [TRUESKILL_HYDRATION_FIX] Restoring ${Object.keys(ratings).length} ratings`);
             
             set({
               ratings: ratings,
-              sessionId: parsed.state?.sessionId || null,
-              lastUpdated: parsed.state?.lastUpdated || null,
+              sessionId: sessionId,
+              lastUpdated: lastUpdated,
               isHydrated: true
             });
+            
+            console.log(`🔧 [TRUESKILL_HYDRATION_FIX] ✅ Successfully restored sessionId: ${sessionId}`);
           } else {
+            console.log(`🔧 [TRUESKILL_HYDRATION_FIX] No localStorage data found`);
             set({ isHydrated: true });
           }
         } catch (e) {
-          console.error('Error during rehydration:', e);
+          console.error('🔧 [TRUESKILL_HYDRATION_FIX] Error during rehydration:', e);
           set({ isHydrated: true });
         }
       },
@@ -144,16 +157,21 @@ export const useTrueSkillStore = create<TrueSkillState>()(
           if (storedSessionId) {
             console.log(`🔄 [TRUESKILL_RESTORE] Found stored sessionId: ${storedSessionId}`);
             
-            // Set the sessionId in the store and localStorage
+            // CRITICAL FIX: Set the sessionId in the store AND localStorage immediately
             set({ sessionId: storedSessionId });
             
-            // Force update localStorage with the restored sessionId
-            const currentStorage = JSON.parse(localStorage.getItem('trueskill-storage') || '{}');
-            currentStorage.state = {
-              ...currentStorage.state,
-              sessionId: storedSessionId
-            };
-            localStorage.setItem('trueskill-storage', JSON.stringify(currentStorage));
+            // CRITICAL FIX: Force update localStorage with the restored sessionId
+            try {
+              const currentStorage = JSON.parse(localStorage.getItem('trueskill-storage') || '{}');
+              currentStorage.state = {
+                ...currentStorage.state,
+                sessionId: storedSessionId
+              };
+              localStorage.setItem('trueskill-storage', JSON.stringify(currentStorage));
+              console.log(`🔄 [TRUESKILL_RESTORE] ✅ Updated localStorage with sessionId`);
+            } catch (storageError) {
+              console.error('🔄 [TRUESKILL_RESTORE] Error updating localStorage:', storageError);
+            }
             
             // Now load the data from cloud using the restored sessionId
             await get().loadFromCloud();
@@ -211,7 +229,10 @@ export const useTrueSkillStore = create<TrueSkillState>()(
         const state = get();
         const { sessionId } = state;
 
+        console.log(`🔧 [TRUESKILL_LOAD_CLOUD_FIX] loadFromCloud called with sessionId:`, sessionId);
+
         if (!sessionId) {
+          console.log(`🔧 [TRUESKILL_LOAD_CLOUD_FIX] No sessionId - cannot load from cloud`);
           return;
         }
 
@@ -223,25 +244,31 @@ export const useTrueSkillStore = create<TrueSkillState>()(
           });
 
           if (error) {
-            console.error('Function invocation error:', error);
+            console.error('🔧 [TRUESKILL_LOAD_CLOUD_FIX] Function invocation error:', error);
             return;
           }
 
           if (data?.success) {
+            const ratingsCount = Object.keys(data.ratings || {}).length;
+            console.log(`🔧 [TRUESKILL_LOAD_CLOUD_FIX] ✅ Loaded ${ratingsCount} ratings from cloud`);
+            
             set({
               ratings: data.ratings || {},
               lastUpdated: data.lastUpdated || state.lastUpdated
             });
+          } else {
+            console.log(`🔧 [TRUESKILL_LOAD_CLOUD_FIX] No data returned from cloud`);
           }
           
         } catch (error) {
-          console.error('Load from cloud error:', error);
+          console.error('🔧 [TRUESKILL_LOAD_CLOUD_FIX] Load from cloud error:', error);
         } finally {
           set({ isLoading: false });
         }
       },
 
       setSessionId: (sessionId: string) => {
+        console.log(`🔧 [TRUESKILL_SESSION_FIX] setSessionId called with:`, sessionId);
         set({ sessionId });
       },
 
@@ -262,26 +289,37 @@ export const useTrueSkillStore = create<TrueSkillState>()(
       }),
       onRehydrateStorage: () => {
         return (state, error) => {
+          console.log(`🔧 [TRUESKILL_HYDRATION_FIX] ===== HYDRATION CALLBACK =====`);
+          
           if (error) {
-            console.error('Hydration failed:', error);
+            console.error('🔧 [TRUESKILL_HYDRATION_FIX] Hydration failed:', error);
             setTimeout(() => {
               try {
                 useTrueSkillStore.setState({ isHydrated: true });
               } catch (e) {
-                console.error('Error setting hydration state:', e);
+                console.error('🔧 [TRUESKILL_HYDRATION_FIX] Error setting hydration state:', e);
               }
             }, 0);
           } else {
             const ratingsCount = Object.keys(state?.ratings || {}).length;
+            const sessionId = state?.sessionId;
             
+            console.log(`🔧 [TRUESKILL_HYDRATION_FIX] Hydration success - sessionId:`, sessionId);
+            console.log(`🔧 [TRUESKILL_HYDRATION_FIX] Hydration success - ratings count:`, ratingsCount);
+            
+            // CRITICAL FIX: Ensure sessionId is properly restored
             setTimeout(() => {
               try {
                 useTrueSkillStore.setState({ 
                   isHydrated: true,
-                  ratings: state?.ratings || {}
+                  ratings: state?.ratings || {},
+                  sessionId: state?.sessionId || null,
+                  lastUpdated: state?.lastUpdated || null
                 });
+                
+                console.log(`🔧 [TRUESKILL_HYDRATION_FIX] ✅ Hydration complete with sessionId: ${state?.sessionId}`);
               } catch (e) {
-                console.error('Error setting hydrated state:', e);
+                console.error('🔧 [TRUESKILL_HYDRATION_FIX] Error setting hydrated state:', e);
                 useTrueSkillStore.setState({ isHydrated: true });
               }
             }, 0);
