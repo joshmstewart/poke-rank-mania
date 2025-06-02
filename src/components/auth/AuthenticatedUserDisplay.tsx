@@ -36,15 +36,20 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
     isLoadingProfile
   } = useProfileLoader(effectiveUser?.id);
 
+  console.log('🎭🎭🎭 [AUTH_USER_DISPLAY_TRACE] 🚨🚨🚨 RECEIVED PROFILE FROM LOADER 🚨🚨🚨');
   console.log('🎭🎭🎭 [AUTH_USER_DISPLAY_TRACE] 📊 PROFILE LOADER RESULTS:', {
     hasCurrentProfile: !!currentProfile,
+    currentProfileType: typeof currentProfile,
+    currentProfileIsNull: currentProfile === null,
+    currentProfileIsUndefined: currentProfile === undefined,
     currentProfileId: currentProfile?.id?.substring(0, 8),
     currentProfileAvatarUrl: currentProfile?.avatar_url,
     currentProfileDisplayName: currentProfile?.display_name,
     currentProfileUsername: currentProfile?.username,
     isProfileLoaded,
     isLoadingProfile: isLoadingProfile.current,
-    fullCurrentProfile: currentProfile
+    fullCurrentProfile: currentProfile ? JSON.stringify(currentProfile, null, 2) : 'NULL/UNDEFINED',
+    timestamp: new Date().toISOString()
   });
 
   // Handle profile update events
@@ -64,6 +69,7 @@ export const AuthenticatedUserDisplay: React.FC<AuthenticatedUserDisplayProps> =
     effectiveUserMetadataAvatarUrl: effectiveUser?.user_metadata?.avatar_url,
     currentProfileExists: !!currentProfile,
     currentProfileAvatarUrl: currentProfile?.avatar_url,
+    currentProfilePassedToEnhanced: currentProfile ? 'YES' : 'NO',
     timestamp: new Date().toISOString()
   });
 

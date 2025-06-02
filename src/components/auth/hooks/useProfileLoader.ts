@@ -40,6 +40,7 @@ export const useProfileLoader = (userId: string | undefined) => {
     
     if (cachedProfile) {
       console.log('🔄 [PROFILE_LOADER] ✅ SETTING CACHED PROFILE - Avatar:', cachedProfile.avatar_url);
+      console.log('🔄 [PROFILE_LOADER] 🚨 STATE UPDATE: setCurrentProfile with cached data');
       setCurrentProfile(cachedProfile);
       setIsProfileLoaded(true);
     }
@@ -58,6 +59,8 @@ export const useProfileLoader = (userId: string | undefined) => {
       
       if (freshProfile) {
         console.log('🔄 [PROFILE_LOADER] ✅ SETTING FRESH PROFILE - Avatar:', freshProfile.avatar_url);
+        console.log('🔄 [PROFILE_LOADER] 🚨 STATE UPDATE: setCurrentProfile with fresh data');
+        console.log('🔄 [PROFILE_LOADER] 🚨 FRESH PROFILE FULL OBJECT:', JSON.stringify(freshProfile, null, 2));
         setCurrentProfile(freshProfile);
       }
       setIsProfileLoaded(true);
@@ -68,15 +71,20 @@ export const useProfileLoader = (userId: string | undefined) => {
     });
   }, [userId, prefetchProfile, getProfileFromCache]);
 
-  // Add logging whenever currentProfile changes
+  // CRITICAL: Add logging whenever currentProfile state actually changes
   useEffect(() => {
-    console.log('🔄 [PROFILE_LOADER] 📊 CURRENT PROFILE STATE CHANGED:', {
+    console.log('🔄 [PROFILE_LOADER] 🚨🚨🚨 CURRENT PROFILE STATE CHANGE DETECTED 🚨🚨🚨');
+    console.log('🔄 [PROFILE_LOADER] 📊 NEW CURRENT PROFILE STATE:', {
       hasCurrentProfile: !!currentProfile,
+      currentProfileType: typeof currentProfile,
+      currentProfileIsNull: currentProfile === null,
+      currentProfileIsUndefined: currentProfile === undefined,
       currentProfileAvatarUrl: currentProfile?.avatar_url,
       currentProfileDisplayName: currentProfile?.display_name,
       currentProfileUsername: currentProfile?.username,
       isProfileLoaded,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      fullCurrentProfileObject: currentProfile ? JSON.stringify(currentProfile, null, 2) : 'NULL/UNDEFINED'
     });
   }, [currentProfile, isProfileLoaded]);
 
