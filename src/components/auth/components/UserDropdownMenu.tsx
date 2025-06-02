@@ -49,17 +49,16 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({ user }) => {
   const avatarUrl = user.user_metadata?.avatar_url;
   const userInitials = displayName.charAt(0).toUpperCase();
 
-  // ENHANCED DEBUG LOGGING
-  console.log('🎭 [USER_DROPDOWN] ===== AVATAR DISPLAY DEBUG =====');
+  // CRITICAL DEBUG LOGGING
+  console.log('🎭 [USER_DROPDOWN] ===== CRITICAL DEBUG =====');
   console.log('🎭 [USER_DROPDOWN] Full user object:', JSON.stringify(user, null, 2));
   console.log('🎭 [USER_DROPDOWN] Avatar URL from user_metadata:', avatarUrl);
-  console.log('🎭 [USER_DROPDOWN] Avatar URL type:', typeof avatarUrl);
-  console.log('🎭 [USER_DROPDOWN] Avatar URL truthy check:', !!avatarUrl);
-  console.log('🎭 [USER_DROPDOWN] Avatar URL length:', avatarUrl?.length || 0);
   console.log('🎭 [USER_DROPDOWN] Display name:', displayName);
-  console.log('🎭 [USER_DROPDOWN] User initials fallback:', userInitials);
-  console.log('🎭 [USER_DROPDOWN] Will show avatar image?', !!avatarUrl);
-  console.log('🎭 [USER_DROPDOWN] ===== END AVATAR DEBUG =====');
+  console.log('🎭 [USER_DROPDOWN] User initials:', userInitials);
+  console.log('🎭 [USER_DROPDOWN] Has avatar URL?', !!avatarUrl);
+  console.log('🎭 [USER_DROPDOWN] Avatar URL length:', avatarUrl?.length || 0);
+  console.log('🎭 [USER_DROPDOWN] Avatar URL is truthy:', !!avatarUrl);
+  console.log('🎭 [USER_DROPDOWN] ===== END DEBUG =====');
 
   return (
     <>
@@ -67,7 +66,7 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({ user }) => {
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="flex items-center gap-2 px-3">
             <Avatar className="h-12 w-12">
-              {avatarUrl ? (
+              {avatarUrl && (
                 <AvatarImage 
                   src={avatarUrl} 
                   alt={displayName}
@@ -81,8 +80,6 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({ user }) => {
                     console.error('🎭 [USER_DROPDOWN] ❌ Error event:', e);
                   }}
                 />
-              ) : (
-                <div style={{ display: 'none' }} />
               )}
               <AvatarFallback className="bg-primary text-primary-foreground">
                 {userInitials}
