@@ -31,11 +31,21 @@ export const useGenerationExpansion = () => {
     setExpandedGenerations(new Set<number>());
   };
 
+  const expandGenerations = (generations: number[]) => {
+    setExpandedGenerations(prev => {
+      const newSet = new Set(prev);
+      generations.forEach(gen => newSet.add(gen));
+      console.log(`🔍 [GENERATION_EXPANSION] Expanding specific generations:`, generations);
+      return newSet;
+    });
+  };
+
   return {
     expandedGenerations,
     isGenerationExpanded,
     toggleGeneration,
     expandAll,
-    collapseAll
+    collapseAll,
+    expandGenerations
   };
 };
