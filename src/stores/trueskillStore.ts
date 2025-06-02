@@ -24,37 +24,30 @@ interface TrueSkillState {
   comprehensiveEnvironmentalDebug: () => void;
 }
 
-// CRITICAL DEBUGGING: Check localStorage IMMEDIATELY
-console.log(`🔍🔍🔍 [LOCALSTORAGE_INVESTIGATION] ===== CHECKING LOCALSTORAGE ON STORE INIT =====`);
+// CRITICAL FIX: Check localStorage and force manual hydration if needed
+console.log(`🔥 [STORE_INIT_FIX] ===== CHECKING LOCALSTORAGE AND FORCING HYDRATION =====`);
 const storedData = localStorage.getItem('trueskill-storage');
-console.log(`🔍🔍🔍 [LOCALSTORAGE_INVESTIGATION] Raw localStorage data:`, storedData);
+console.log(`🔥 [STORE_INIT_FIX] Raw localStorage data exists:`, !!storedData);
+
+let manualHydrationData: any = null;
 if (storedData) {
   try {
     const parsed = JSON.parse(storedData);
-    console.log(`🔍🔍🔍 [LOCALSTORAGE_INVESTIGATION] Parsed localStorage:`, parsed);
-    console.log(`🔍🔍🔍 [LOCALSTORAGE_INVESTIGATION] Ratings in localStorage:`, parsed.state?.ratings);
-    console.log(`🔍🔍🔍 [LOCALSTORAGE_INVESTIGATION] Rating count in localStorage:`, Object.keys(parsed.state?.ratings || {}).length);
+    manualHydrationData = parsed.state;
+    console.log(`🔥 [STORE_INIT_FIX] Parsed ratings from localStorage:`, Object.keys(manualHydrationData?.ratings || {}).length);
+    console.log(`🔥 [STORE_INIT_FIX] Sample ratings:`, Object.entries(manualHydrationData?.ratings || {}).slice(0, 3));
   } catch (e) {
-    console.error(`🔍🔍🔍 [LOCALSTORAGE_INVESTIGATION] Failed to parse localStorage:`, e);
+    console.error(`🔥 [STORE_INIT_FIX] Failed to parse localStorage:`, e);
   }
-} else {
-  console.log(`🔍🔍🔍 [LOCALSTORAGE_INVESTIGATION] ❌ NO DATA IN LOCALSTORAGE!`);
 }
-
-// Check all possible storage keys
-console.log(`🔍🔍🔍 [LOCALSTORAGE_INVESTIGATION] All localStorage keys:`, Object.keys(localStorage));
-Object.keys(localStorage).forEach(key => {
-  if (key.includes('trueskill') || key.includes('rating') || key.includes('battle')) {
-    console.log(`🔍🔍🔍 [LOCALSTORAGE_INVESTIGATION] Found relevant key [${key}]:`, localStorage.getItem(key));
-  }
-});
 
 export const useTrueSkillStore = create<TrueSkillState>()(
   persist(
     (set, get) => ({
-      ratings: {},
-      sessionId: null,
-      lastUpdated: null,
+      // CRITICAL FIX: Initialize with manual hydration data if available
+      ratings: manualHydrationData?.ratings || {},
+      sessionId: manualHydrationData?.sessionId || null,
+      lastUpdated: manualHydrationData?.lastUpdated || null,
       isDirty: false,
       isLoading: false,
 
@@ -104,38 +97,36 @@ export const useTrueSkillStore = create<TrueSkillState>()(
         const state = get();
         const ratings = state.ratings;
         
-        console.log(`🚨🚨🚨 [STORE_GETALLRATINGS_CRITICAL] ===== INVESTIGATING getAllRatings =====`);
-        console.log(`🚨🚨🚨 [STORE_GETALLRATINGS_CRITICAL] Raw state object:`, state);
-        console.log(`🚨🚨🚨 [STORE_GETALLRATINGS_CRITICAL] Ratings property:`, ratings);
-        console.log(`🚨🚨🚨 [STORE_GETALLRATINGS_CRITICAL] Ratings type:`, typeof ratings);
-        console.log(`🚨🚨🚨 [STORE_GETALLRATINGS_CRITICAL] Ratings keys:`, Object.keys(ratings || {}));
-        console.log(`🚨🚨🚨 [STORE_GETALLRATINGS_CRITICAL] Ratings length:`, Object.keys(ratings || {}).length);
-        console.log(`🚨🚨🚨 [STORE_GETALLRATINGS_CRITICAL] Is ratings null/undefined?`, ratings == null);
-        console.log(`🚨🚨🚨 [STORE_GETALLRATINGS_CRITICAL] Ratings constructor:`, ratings?.constructor?.name);
+        console.log(`🔥 [STORE_GETALLRATINGS_FIXED] ===== FIXED getAllRatings =====`);
+        console.log(`🔥 [STORE_GETALLRATINGS_FIXED] Store ratings count:`, Object.keys(ratings || {}).length);
         
-        // CRITICAL: Check localStorage again RIGHT NOW
-        const currentStoredData = localStorage.getItem('trueskill-storage');
-        console.log(`🚨🚨🚨 [STORE_GETALLRATINGS_CRITICAL] Current localStorage data:`, currentStoredData);
-        if (currentStoredData) {
-          try {
-            const parsed = JSON.parse(currentStoredData);
-            console.log(`🚨🚨🚨 [STORE_GETALLRATINGS_CRITICAL] Current parsed localStorage:`, parsed);
-            console.log(`🚨🚨🚨 [STORE_GETALLRATINGS_CRITICAL] Current ratings in localStorage:`, parsed.state?.ratings);
-          } catch (e) {
-            console.error(`🚨🚨🚨 [STORE_GETALLRATINGS_CRITICAL] Failed to parse current localStorage:`, e);
+        if (!ratings || Object.keys(ratings).length === 0) {
+          console.log(`🔥 [STORE_GETALLRATINGS_FIXED] Store empty, checking localStorage again...`);
+          const currentStoredData = localStorage.getItem('trueskill-storage');
+          if (currentStoredData) {
+            try {
+              const parsed = JSON.parse(currentStoredData);
+              const lsRatings = parsed.state?.ratings || {};
+              console.log(`🔥 [STORE_GETALLRATINGS_FIXED] LocalStorage has ${Object.keys(lsRatings).length} ratings, but store is empty!`);
+              
+              // CRITICAL FIX: Manually force the ratings into the store if persist failed
+              if (Object.keys(lsRatings).length > 0) {
+                console.log(`🔥 [STORE_GETALLRATINGS_FIXED] FORCING MANUAL HYDRATION NOW!`);
+                set({ 
+                  ratings: lsRatings,
+                  sessionId: parsed.state?.sessionId || null,
+                  lastUpdated: parsed.state?.lastUpdated || null
+                });
+                console.log(`🔥 [STORE_GETALLRATINGS_FIXED] Manual hydration complete, returning ${Object.keys(lsRatings).length} ratings`);
+                return lsRatings;
+              }
+            } catch (e) {
+              console.error(`🔥 [STORE_GETALLRATINGS_FIXED] Failed to parse localStorage:`, e);
+            }
           }
         }
         
-        if (ratings && Object.keys(ratings).length > 0) {
-          const firstKey = Object.keys(ratings)[0];
-          console.log(`🚨🚨🚨 [STORE_GETALLRATINGS_CRITICAL] Sample rating [${firstKey}]:`, ratings[firstKey]);
-        } else {
-          console.log(`🚨🚨🚨 [STORE_GETALLRATINGS_CRITICAL] ❌ STORE RATINGS IS EMPTY BUT CHECKING IF LOCALSTORAGE HAS DATA...`);
-        }
-        
-        console.log(`🚨🚨🚨 [STORE_GETALLRATINGS_CRITICAL] Returning:`, ratings || {});
-        console.log(`🚨🚨🚨 [STORE_GETALLRATINGS_CRITICAL] ===== END getAllRatings INVESTIGATION =====`);
-        
+        console.log(`🔥 [STORE_GETALLRATINGS_FIXED] Returning ${Object.keys(ratings || {}).length} ratings from store`);
         return ratings || {};
       },
 
@@ -260,11 +251,23 @@ export const useTrueSkillStore = create<TrueSkillState>()(
     }),
     {
       name: 'trueskill-storage',
+      // CRITICAL FIX: Ensure proper hydration
       partialize: (state) => ({
         ratings: state.ratings,
         sessionId: state.sessionId,
         lastUpdated: state.lastUpdated
-      })
+      }),
+      // CRITICAL FIX: Add onRehydrateStorage to catch hydration issues
+      onRehydrateStorage: () => {
+        console.log('🔥 [STORE_HYDRATION] Starting hydration...');
+        return (state, error) => {
+          if (error) {
+            console.error('🔥 [STORE_HYDRATION] Hydration failed:', error);
+          } else {
+            console.log('🔥 [STORE_HYDRATION] Hydration successful, ratings count:', Object.keys(state?.ratings || {}).length);
+          }
+        };
+      }
     }
   )
 );
