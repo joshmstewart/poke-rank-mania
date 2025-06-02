@@ -87,7 +87,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     <div
       ref={setNodeRef}
       style={style}
-      className={`${backgroundColorClass} rounded-lg border border-gray-200 relative overflow-hidden h-35 flex flex-col ${
+      className={`${backgroundColorClass} rounded-lg border border-gray-200 relative overflow-hidden h-35 flex flex-col group ${
         isDraggable && !isOpen ? 'cursor-grab active:cursor-grabbing' : ''
       } ${
         isDragging ? 'opacity-60 z-50 scale-105 shadow-2xl' : 'hover:shadow-lg transition-all duration-200'
@@ -107,8 +107,8 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
         </div>
       )}
 
-      {/* Info Button with Dialog */}
-      <div className="absolute top-1 right-1 z-30">
+      {/* Info Button with Dialog - now only shows on hover */}
+      <div className="absolute top-1 right-1 z-30 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
             <button 
@@ -198,7 +198,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
           #{formattedId}
         </div>
         
-        {/* Score display - only for ranked context or non-available ranked Pokemon */}
+        {/* Score display - only for ranked context */}
         {context === 'ranked' && 'score' in pokemon && (
           <div className="text-xs text-gray-700 font-medium">
             Score: {pokemon.score.toFixed(1)}

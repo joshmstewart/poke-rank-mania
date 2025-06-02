@@ -89,28 +89,21 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
           currentGenerationPokemon = [];
         }
 
-        // Add generation header
-        const generationData = {
-          id: item.generation,
-          name: `Generation ${item.generation}`,
-          region: getRegionForGeneration(item.generation),
-          games: getGamesForGeneration(item.generation)
-        };
-        
+        // Add generation header with proper data
         result.push(
           <GenerationHeader
-            key={`gen-${item.generation}`}
-            generationId={item.generation}
-            name={generationData.name}
-            region={generationData.region}
-            games={generationData.games}
+            key={`gen-${item.generationId}`}
+            generationId={item.generationId}
+            name={item.data.name}
+            region={item.data.region}
+            games={item.data.games}
             viewMode={viewMode}
-            isExpanded={isGenerationExpanded(item.generation)}
-            onToggle={() => onToggleGeneration(item.generation)}
+            isExpanded={isGenerationExpanded(item.generationId)}
+            onToggle={() => onToggleGeneration(item.generationId)}
           />
         );
         
-        currentGeneration = item.generation;
+        currentGeneration = item.generationId;
       } else if (item.type === 'pokemon') {
         currentGenerationPokemon.push(item.data);
       }
