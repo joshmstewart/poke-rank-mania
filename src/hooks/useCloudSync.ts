@@ -16,30 +16,35 @@ interface BattleData {
 
 export const useCloudSync = () => {
   const { user, session } = useAuth();
-  const { loadFromCloud, syncToCloud, getAllRatings } = useTrueSkillStore();
+  const { loadFromCloud, syncToCloud, getAllRatings, isHydrated } = useTrueSkillStore();
 
-  // Auto-load from cloud when component mounts
+  // Simplified auto-load - only when hydrated
   useEffect(() => {
-    loadFromCloud();
-  }, [loadFromCloud]);
+    if (isHydrated) {
+      loadFromCloud();
+    }
+  }, [loadFromCloud, isHydrated]);
 
-  // Auto-sync when user authenticates
+  // Simplified auto-sync - only when hydrated
   useEffect(() => {
-    if (user && session) {
+    if (user && session && isHydrated) {
       syncToCloud();
     }
-  }, [user, session, syncToCloud]);
+  }, [user, session, syncToCloud, isHydrated]);
 
-  // Save battle data to cloud via TrueSkill store
   const saveBattleToCloud = useCallback(async (battleData: BattleData) => {
-    await syncToCloud();
-  }, [syncToCloud]);
+    if (isHydrated) {
+      await syncToCloud();
+    }
+  }, [syncToCloud, isHydrated]);
 
-  // Load battle data from cloud via TrueSkill store
   const loadBattleFromCloud = useCallback(async (generation: number): Promise<BattleData | null> => {
+    if (!isHydrated) {
+      return null;
+    }
+    
     await loadFromCloud();
     
-    // Return reconstructed battle data
     const allRatings = getAllRatings();
     const battlesCompleted = Object.values(allRatings).reduce((sum, rating) => sum + rating.battleCount, 0);
     
@@ -52,28 +57,37 @@ export const useCloudSync = () => {
       completionPercentage: 0,
       fullRankingMode: false
     };
-  }, [loadFromCloud, getAllRatings]);
+  }, [loadFromCloud, getAllRatings, isHydrated]);
 
-  // Save rankings to cloud via TrueSkill store
   const saveRankingsToCloud = useCallback(async (rankings: any[], generation: number) => {
+    if (!isHydrated) {
+      return;
+    }
+    
     await syncToCloud();
 
     toast({
       title: "Progress Saved",
       description: "Your rankings have been saved to the cloud!",
     });
-  }, [syncToCloud]);
+  }, [syncToCloud, isHydrated]);
 
-  // Session management via TrueSkill store
   const saveSessionToCloud = useCallback(async (sessionId: string, sessionData: any) => {
-    await syncToCloud();
-    return true;
-  }, [syncToCloud]);
+    if (isHydrated) {
+      await syncToCloud();
+      return true;
+    }
+    return false;
+  }, [syncToCloud, isHydrated]);
 
   const loadSessionFromCloud = useCallback(async (sessionId: string) => {
+    if (!isHydrated) {
+      return {};
+    }
+    
     await loadFromCloud();
     return getAllRatings();
-  }, [loadFromCloud, getAllRatings]);
+  }, [loadFromCloud, getAllRatings, isHydrated]);
 
   return {
     saveBattleToCloud,

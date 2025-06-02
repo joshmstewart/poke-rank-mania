@@ -22,8 +22,6 @@ interface TrueSkillState {
   setSessionId: (sessionId: string) => void;
   markDirty: () => void;
   setLoading: (loading: boolean) => void;
-  debugStore: () => void;
-  comprehensiveEnvironmentalDebug: () => void;
   forceRehydrate: () => void;
   waitForHydration: () => Promise<void>;
 }
@@ -98,16 +96,12 @@ export const useTrueSkillStore = create<TrueSkillState>()(
             const parsed = JSON.parse(storedData);
             const ratings = parsed.state?.ratings || {};
             
-            if (Object.keys(ratings).length > 0) {
-              set({
-                ratings: ratings,
-                sessionId: parsed.state?.sessionId || null,
-                lastUpdated: parsed.state?.lastUpdated || null,
-                isHydrated: true
-              });
-            } else {
-              set({ isHydrated: true });
-            }
+            set({
+              ratings: ratings,
+              sessionId: parsed.state?.sessionId || null,
+              lastUpdated: parsed.state?.lastUpdated || null,
+              isHydrated: true
+            });
           } else {
             set({ isHydrated: true });
           }
@@ -125,31 +119,9 @@ export const useTrueSkillStore = create<TrueSkillState>()(
         });
       },
 
-      debugStore: () => {
-        const state = get();
-        console.log('TrueSkill Store Debug:', {
-          ratingsCount: Object.keys(state.ratings).length,
-          isHydrated: state.isHydrated,
-          isDirty: state.isDirty,
-          isLoading: state.isLoading
-        });
-      },
-
-      comprehensiveEnvironmentalDebug: () => {
-        const state = get();
-        console.log('TrueSkill Store Full Debug:', {
-          ratingsCount: Object.keys(state.ratings).length,
-          sessionId: state.sessionId,
-          isHydrated: state.isHydrated,
-          lastUpdated: state.lastUpdated
-        });
-      },
-
       syncToCloud: async () => {
-        const sessionId = get().sessionId;
-        const ratings = get().ratings;
-        const lastUpdated = get().lastUpdated;
-        const isDirty = get().isDirty;
+        const state = get();
+        const { sessionId, ratings, lastUpdated, isDirty } = state;
         
         if (!isDirty || !sessionId) {
           return;
@@ -181,7 +153,8 @@ export const useTrueSkillStore = create<TrueSkillState>()(
       },
 
       loadFromCloud: async () => {
-        const sessionId = get().sessionId;
+        const state = get();
+        const { sessionId } = state;
 
         if (!sessionId) {
           return;
@@ -225,22 +198,34 @@ export const useTrueSkillStore = create<TrueSkillState>()(
         sessionId: state.sessionId,
         lastUpdated: state.lastUpdated
       }),
+      // CRITICAL FIX: Simplified hydration callback that doesn't access store methods
       onRehydrateStorage: () => {
         return (state, error) => {
           if (error) {
             console.error('Hydration failed:', error);
-            useTrueSkillStore.setState({ isHydrated: true });
+            // Use a setTimeout to ensure the store is fully initialized before setting state
+            setTimeout(() => {
+              try {
+                useTrueSkillStore.setState({ isHydrated: true });
+              } catch (e) {
+                console.error('Error setting hydration state:', e);
+              }
+            }, 0);
           } else {
             const ratingsCount = Object.keys(state?.ratings || {}).length;
             
-            useTrueSkillStore.setState({ 
-              isHydrated: true,
-              ratings: state?.ratings || {}
-            });
-            
-            if (ratingsCount === 0) {
-              console.warn('No ratings after hydration - data may be lost!');
-            }
+            // Use setTimeout to avoid accessing store during initialization
+            setTimeout(() => {
+              try {
+                useTrueSkillStore.setState({ 
+                  isHydrated: true,
+                  ratings: state?.ratings || {}
+                });
+              } catch (e) {
+                console.error('Error setting hydrated state:', e);
+                useTrueSkillStore.setState({ isHydrated: true });
+              }
+            }, 0);
           }
         };
       }

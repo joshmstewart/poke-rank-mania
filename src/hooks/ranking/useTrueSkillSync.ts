@@ -7,34 +7,32 @@ import { Rating } from 'ts-trueskill';
 import { formatPokemonName } from '@/utils/pokemon';
 
 export const useTrueSkillSync = () => {
-  const { getAllRatings, forceRehydrate, waitForHydration } = useTrueSkillStore();
+  const { getAllRatings, isHydrated, waitForHydration } = useTrueSkillStore();
   const { pokemonLookupMap } = usePokemonContext();
   const [localRankings, setLocalRankings] = useState<RankedPokemon[]>([]);
 
-  // Wait for proper hydration before doing anything
+  // Simplified hydration wait
   useEffect(() => {
-    const initializeWithProperHydration = async () => {
-      // Force immediate rehydration
-      forceRehydrate();
-      
-      // Wait for hydration to complete
-      await waitForHydration();
+    const initializeAfterHydration = async () => {
+      if (!isHydrated) {
+        await waitForHydration();
+      }
     };
     
-    initializeWithProperHydration();
-  }, [forceRehydrate, waitForHydration]);
+    initializeAfterHydration();
+  }, [isHydrated, waitForHydration]);
 
   const allRatings = getAllRatings();
   const contextReady = pokemonLookupMap.size > 0;
   const ratingsCount = Object.keys(allRatings).length;
 
   useEffect(() => {
-    if (!contextReady) {
+    if (!contextReady || !isHydrated) {
       return;
     }
 
     if (ratingsCount === 0) {
-      forceRehydrate();
+      setLocalRankings([]);
       return;
     }
     
@@ -69,13 +67,8 @@ export const useTrueSkillSync = () => {
     });
 
     rankings.sort((a, b) => b.score - a.score);
-    
-    if (rankings.length < 100) {
-      console.warn(`Only ${rankings.length} rankings generated, expected more!`);
-    }
-    
     setLocalRankings(rankings);
-  }, [contextReady, ratingsCount, allRatings, pokemonLookupMap, forceRehydrate]);
+  }, [contextReady, ratingsCount, allRatings, pokemonLookupMap, isHydrated]);
 
   const updateLocalRankings = useMemo(() => {
     return (newRankings: RankedPokemon[]) => {
