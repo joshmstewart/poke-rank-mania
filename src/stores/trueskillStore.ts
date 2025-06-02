@@ -135,7 +135,8 @@ export const useTrueSkillStore = create<TrueSkillState>()(
       },
 
       restoreSessionFromCloud: async (userId: string) => {
-        console.log(`🔄 [TRUESKILL_RESTORE] Restoring TrueSkill session for user: ${userId}`);
+        console.log(`🔄 [TRUESKILL_SESSION_RESTORE_FIX] ===== ENHANCED SESSION RESTORATION =====`);
+        console.log(`🔄 [TRUESKILL_SESSION_RESTORE_FIX] Restoring TrueSkill session for user: ${userId}`);
         
         try {
           const { data: profile, error } = await supabase
@@ -145,47 +146,64 @@ export const useTrueSkillStore = create<TrueSkillState>()(
             .maybeSingle();
 
           if (error) {
-            console.error('🔄 [TRUESKILL_RESTORE] Error fetching profile:', error);
+            console.error('🔄 [TRUESKILL_SESSION_RESTORE_FIX] Error fetching profile:', error);
             return;
           }
 
           const storedSessionId = profile ? (profile as any).trueskill_session_id : null;
 
           if (storedSessionId) {
-            console.log(`🔄 [TRUESKILL_RESTORE] Found stored sessionId: ${storedSessionId}`);
+            console.log(`🔄 [TRUESKILL_SESSION_RESTORE_FIX] Found stored sessionId in profile: ${storedSessionId}`);
             
-            set({ sessionId: storedSessionId });
+            // CRITICAL FIX: Check if this is different from current sessionId
+            const currentSessionId = get().sessionId;
+            console.log(`🔄 [TRUESKILL_SESSION_RESTORE_FIX] Current sessionId: ${currentSessionId}`);
+            console.log(`🔄 [TRUESKILL_SESSION_RESTORE_FIX] Profile sessionId: ${storedSessionId}`);
             
-            try {
-              const currentStorage = JSON.parse(localStorage.getItem('trueskill-storage') || '{}');
-              currentStorage.state = {
-                ...currentStorage.state,
-                sessionId: storedSessionId
-              };
-              localStorage.setItem('trueskill-storage', JSON.stringify(currentStorage));
-              console.log(`🔄 [TRUESKILL_RESTORE] ✅ Updated localStorage with sessionId`);
-            } catch (storageError) {
-              console.error('🔄 [TRUESKILL_RESTORE] Error updating localStorage:', storageError);
+            if (currentSessionId !== storedSessionId) {
+              console.log(`🔄 [TRUESKILL_SESSION_RESTORE_FIX] ⚠️ SESSION MISMATCH DETECTED - CORRECTING!`);
+              console.log(`🔄 [TRUESKILL_SESSION_RESTORE_FIX] Switching from ${currentSessionId} to ${storedSessionId}`);
+              
+              // Update the sessionId in state first
+              set({ sessionId: storedSessionId });
+              
+              // Update localStorage to reflect the correct sessionId
+              try {
+                const currentStorage = JSON.parse(localStorage.getItem('trueskill-storage') || '{}');
+                currentStorage.state = {
+                  ...currentStorage.state,
+                  sessionId: storedSessionId
+                };
+                localStorage.setItem('trueskill-storage', JSON.stringify(currentStorage));
+                console.log(`🔄 [TRUESKILL_SESSION_RESTORE_FIX] ✅ Updated localStorage with correct sessionId`);
+              } catch (storageError) {
+                console.error('🔄 [TRUESKILL_SESSION_RESTORE_FIX] Error updating localStorage:', storageError);
+              }
+            } else {
+              console.log(`🔄 [TRUESKILL_SESSION_RESTORE_FIX] SessionId already correct - no change needed`);
             }
             
+            // CRITICAL FIX: Always attempt cloud load with the correct sessionId
+            console.log(`🔄 [TRUESKILL_SESSION_RESTORE_FIX] Loading data from cloud for sessionId: ${storedSessionId}`);
             await get().loadFromCloud();
             
-            console.log(`🔄 [TRUESKILL_RESTORE] Successfully restored session and loaded data`);
+            console.log(`🔄 [TRUESKILL_SESSION_RESTORE_FIX] ✅ Session restoration completed successfully`);
           } else {
-            console.log(`🔄 [TRUESKILL_RESTORE] No stored sessionId found for user, will use current session`);
+            console.log(`🔄 [TRUESKILL_SESSION_RESTORE_FIX] No stored sessionId found for user, using current session`);
             
             const currentSessionId = get().sessionId;
             if (currentSessionId) {
+              console.log(`🔄 [TRUESKILL_SESSION_RESTORE_FIX] Saving current sessionId to profile: ${currentSessionId}`);
               await supabase
                 .from('profiles')
                 .update({ trueskill_session_id: currentSessionId } as any)
                 .eq('id', userId);
               
-              console.log(`🔄 [TRUESKILL_RESTORE] Saved current sessionId to user profile`);
+              console.log(`🔄 [TRUESKILL_SESSION_RESTORE_FIX] ✅ Saved current sessionId to user profile`);
             }
           }
         } catch (error) {
-          console.error('🔄 [TRUESKILL_RESTORE] Error during session restoration:', error);
+          console.error('🔄 [TRUESKILL_SESSION_RESTORE_FIX] Error during session restoration:', error);
         }
       },
 

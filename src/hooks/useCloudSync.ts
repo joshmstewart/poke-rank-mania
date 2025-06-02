@@ -1,4 +1,3 @@
-
 import { useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTrueSkillStore } from '@/stores/trueskillStore';
@@ -18,12 +17,19 @@ export const useCloudSync = () => {
   const { user, session } = useAuth();
   const { loadFromCloud, syncToCloud, getAllRatings, isHydrated, restoreSessionFromCloud } = useTrueSkillStore();
 
-  // Restore TrueSkill session when user logs in and store is hydrated
+  // CRITICAL FIX: Enhanced session restoration with immediate correction
   useEffect(() => {
     const restoreSession = async () => {
       if (user?.id && isHydrated) {
-        console.log('🔄 [CLOUD_SYNC] User logged in, attempting to restore TrueSkill session');
+        console.log('🔄 [CLOUD_SYNC_ENHANCED] User logged in, performing enhanced session restoration');
+        console.log('🔄 [CLOUD_SYNC_ENHANCED] User ID:', user.id);
+        console.log('🔄 [CLOUD_SYNC_ENHANCED] Current sessionId before restoration:', useTrueSkillStore.getState().sessionId);
+        
+        // Always attempt session restoration to ensure correct sessionId is loaded
         await restoreSessionFromCloud(user.id);
+        
+        console.log('🔄 [CLOUD_SYNC_ENHANCED] SessionId after restoration:', useTrueSkillStore.getState().sessionId);
+        console.log('🔄 [CLOUD_SYNC_ENHANCED] Ratings count after restoration:', Object.keys(useTrueSkillStore.getState().getAllRatings()).length);
       }
     };
 
