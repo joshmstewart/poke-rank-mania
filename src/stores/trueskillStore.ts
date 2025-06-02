@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Rating } from 'ts-trueskill';
@@ -22,6 +21,7 @@ interface TrueSkillState {
   loadFromCloud: () => Promise<void>;
   setSessionId: (sessionId: string) => void;
   restoreSessionFromCloud: (userId: string) => Promise<void>;
+  forceCorrectSession: (userId: string) => Promise<void>;
   markDirty: () => void;
   setLoading: (loading: boolean) => void;
   forceRehydrate: () => void;
@@ -132,6 +132,63 @@ export const useTrueSkillStore = create<TrueSkillState>()(
           isDirty: true,
           lastUpdated: new Date().toISOString()
         });
+      },
+
+      forceCorrectSession: async (userId: string) => {
+        console.log(`🚨 [FORCE_CORRECT_SESSION] ===== FORCING CORRECT SESSION FOR USER =====`);
+        console.log(`🚨 [FORCE_CORRECT_SESSION] User ID: ${userId}`);
+        
+        try {
+          // Get the correct sessionId from user profile
+          const { data: profile, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', userId)
+            .maybeSingle();
+
+          if (error) {
+            console.error('🚨 [FORCE_CORRECT_SESSION] Error fetching profile:', error);
+            return;
+          }
+
+          const correctSessionId = profile ? (profile as any).trueskill_session_id : null;
+          const currentSessionId = get().sessionId;
+          
+          console.log(`🚨 [FORCE_CORRECT_SESSION] Current sessionId: ${currentSessionId}`);
+          console.log(`🚨 [FORCE_CORRECT_SESSION] Correct sessionId from profile: ${correctSessionId}`);
+          
+          if (correctSessionId && currentSessionId !== correctSessionId) {
+            console.log(`🚨 [FORCE_CORRECT_SESSION] ⚠️ SESSION MISMATCH - FORCING CORRECTION!`);
+            
+            // Update sessionId in state first
+            set({ sessionId: correctSessionId });
+            
+            // Update localStorage immediately
+            try {
+              const currentStorage = JSON.parse(localStorage.getItem('trueskill-storage') || '{}');
+              currentStorage.state = {
+                ...currentStorage.state,
+                sessionId: correctSessionId
+              };
+              localStorage.setItem('trueskill-storage', JSON.stringify(currentStorage));
+              console.log(`🚨 [FORCE_CORRECT_SESSION] ✅ Updated localStorage with correct sessionId`);
+            } catch (storageError) {
+              console.error('🚨 [FORCE_CORRECT_SESSION] Error updating localStorage:', storageError);
+            }
+            
+            // Force load data from cloud for correct session
+            console.log(`🚨 [FORCE_CORRECT_SESSION] Loading data from cloud for correct sessionId: ${correctSessionId}`);
+            await get().loadFromCloud();
+            
+            console.log(`🚨 [FORCE_CORRECT_SESSION] ✅ Session correction completed successfully`);
+          } else if (correctSessionId) {
+            console.log(`🚨 [FORCE_CORRECT_SESSION] SessionId is already correct - no change needed`);
+          } else {
+            console.log(`🚨 [FORCE_CORRECT_SESSION] No sessionId found in profile`);
+          }
+        } catch (error) {
+          console.error('🚨 [FORCE_CORRECT_SESSION] Error during session correction:', error);
+        }
       },
 
       restoreSessionFromCloud: async (userId: string) => {

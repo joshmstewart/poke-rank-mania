@@ -1,3 +1,4 @@
+
 import { useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTrueSkillStore } from '@/stores/trueskillStore';
@@ -15,26 +16,29 @@ interface BattleData {
 
 export const useCloudSync = () => {
   const { user, session } = useAuth();
-  const { loadFromCloud, syncToCloud, getAllRatings, isHydrated, restoreSessionFromCloud } = useTrueSkillStore();
+  const { loadFromCloud, syncToCloud, getAllRatings, isHydrated, restoreSessionFromCloud, forceCorrectSession } = useTrueSkillStore();
 
-  // CRITICAL FIX: Enhanced session restoration with immediate correction
+  // CRITICAL FIX: Force correct session BEFORE any other operations
   useEffect(() => {
-    const restoreSession = async () => {
+    const ensureCorrectSession = async () => {
       if (user?.id && isHydrated) {
-        console.log('🔄 [CLOUD_SYNC_ENHANCED] User logged in, performing enhanced session restoration');
-        console.log('🔄 [CLOUD_SYNC_ENHANCED] User ID:', user.id);
-        console.log('🔄 [CLOUD_SYNC_ENHANCED] Current sessionId before restoration:', useTrueSkillStore.getState().sessionId);
+        console.log('🚨 [CLOUD_SYNC_SESSION_FIX] ===== ENSURING CORRECT SESSION =====');
+        console.log('🚨 [CLOUD_SYNC_SESSION_FIX] User ID:', user.id);
+        console.log('🚨 [CLOUD_SYNC_SESSION_FIX] Current sessionId before check:', useTrueSkillStore.getState().sessionId);
         
-        // Always attempt session restoration to ensure correct sessionId is loaded
+        // STEP 1: Force correct session first
+        await forceCorrectSession(user.id);
+        
+        // STEP 2: Then restore any additional data
         await restoreSessionFromCloud(user.id);
         
-        console.log('🔄 [CLOUD_SYNC_ENHANCED] SessionId after restoration:', useTrueSkillStore.getState().sessionId);
-        console.log('🔄 [CLOUD_SYNC_ENHANCED] Ratings count after restoration:', Object.keys(useTrueSkillStore.getState().getAllRatings()).length);
+        console.log('🚨 [CLOUD_SYNC_SESSION_FIX] Final sessionId after correction:', useTrueSkillStore.getState().sessionId);
+        console.log('🚨 [CLOUD_SYNC_SESSION_FIX] Final ratings count:', Object.keys(useTrueSkillStore.getState().getAllRatings()).length);
       }
     };
 
-    restoreSession();
-  }, [user?.id, isHydrated, restoreSessionFromCloud]);
+    ensureCorrectSession();
+  }, [user?.id, isHydrated, forceCorrectSession, restoreSessionFromCloud]);
 
   // Auto-sync when authenticated and hydrated
   useEffect(() => {
