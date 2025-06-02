@@ -1,5 +1,5 @@
 
-import React, { useRef, useEffect, useState, useMemo } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { AuthProvider } from '@/contexts/auth';
 import { ImpliedBattleTrackerProvider } from '@/contexts/ImpliedBattleTracker';
 
@@ -10,13 +10,10 @@ interface AuthWrapperProps {
 export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
   const wrapperInstance = useRef('nawgti-stable-FIXED');
   const renderCount = useRef(0);
-  const mountTime = useRef(new Date().toISOString());
   const [authState, setAuthState] = useState('UNKNOWN');
-  const lastLogTime = useRef(0);
   
   renderCount.current += 1;
   
-  // CRITICAL: Ensure we're logging with the correct _FIXED identifier
   console.log('🟢🟢🟢 [NAWGTI_FIXED] ===== FIXED WRAPPER RENDER =====');
   console.log('🟢🟢🟢 [NAWGTI_FIXED] Instance ID:', wrapperInstance.current);
   console.log('🟢🟢🟢 [NAWGTI_FIXED] Render count:', renderCount.current);
@@ -51,18 +48,6 @@ export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
     window.addEventListener('nawgti-auth-state', handleAuthStateChange);
     console.log('🟢🟢🟢 [NAWGTI_FIXED] Auth state listener added to window');
     
-    // FIXED: Remove the aggressive monitoring that was causing unmount flags
-    const monitoringInterval = setInterval(() => {
-      const now = Date.now();
-      // Only log every 60 seconds to reduce spam and avoid false unmount flags
-      if (now - lastLogTime.current > 60000) {
-        console.log('🟢🟢🟢 [NAWGTI_FIXED] 🔍 NAWGTI STABLE - Still mounted');
-        lastLogTime.current = now;
-      }
-    }, 30000); // Check less frequently
-    
-    console.log('🟢🟢🟢 [NAWGTI_FIXED] Monitoring established');
-    
     return () => {
       console.log('🟢🟢🟢 [NAWGTI_FIXED] ===== NAWGTI CLEAN UNMOUNT =====');
       console.log('🟢🟢🟢 [NAWGTI_FIXED] Wrapper unmounting cleanly');
@@ -72,7 +57,6 @@ export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
       }
       
       window.removeEventListener('nawgti-auth-state', handleAuthStateChange);
-      clearInterval(monitoringInterval);
       
       console.log('🟢🟢🟢 [NAWGTI_FIXED] NAWGTI cleanup completed');
     };
@@ -89,7 +73,7 @@ export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
 
   console.log('🟢🟢🟢 [NAWGTI_FIXED] About to render JSX structure');
 
-  // Clean wrapper - no debug overlays that could interfere
+  // Clean wrapper - no monitoring intervals that could interfere
   return (
     <div className="auth-wrapper-container" style={{ minHeight: '100vh' }}>
       <AuthProvider>
