@@ -56,7 +56,7 @@ const PokemonCard = ({ pokemon, isDragging, viewMode = "list", compact }: Pokemo
             <PokemonCardImage 
               pokemonId={pokemonId}
               displayName={displayName}
-              compact={true}
+              compact={false}
               imageUrl={imageUrl}
               className="w-full h-full"
             />

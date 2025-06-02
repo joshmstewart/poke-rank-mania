@@ -86,7 +86,7 @@ export const PokemonListContent: React.FC<PokemonListContentProps> = ({
             );
           }
 
-          // Original card for ranking area
+          // Original card for ranking area - make images larger here too
           return (
             <Card 
               key={`pokemon-${pokemon.id}-${isRankingArea ? 'ranked' : 'available'}-${index}`}
@@ -98,6 +98,7 @@ export const PokemonListContent: React.FC<PokemonListContentProps> = ({
                     pokemonId={pokemon.id}
                     displayName={pokemon.name}
                     imageUrl={pokemon.image}
+                    compact={false}
                     className=""
                   />
                   <PokemonCardInfo 
