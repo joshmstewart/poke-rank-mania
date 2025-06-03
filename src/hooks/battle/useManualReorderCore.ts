@@ -11,10 +11,11 @@ export const useManualReorderCore = (
   finalRankings: RankedPokemon[],
   onRankingsUpdate: (newRankings: RankedPokemon[]) => void,
   preventAutoResorting: boolean,
-  addImpliedBattle?: (winnerId: number, loserId: number) => void
+  _deprecatedImpliedBattleParam?: any // Deprecated parameter, no longer used
 ) => {
   const hookId = useRef(Date.now()).current;
   console.log(`🎯 [MANUAL_REORDER_CORE_${hookId}] Initializing with ${finalRankings.length} rankings`);
+  console.log(`🎯 [MANUAL_REORDER_CORE_${hookId}] EXPLICIT NOTE: Implied battles permanently removed`);
 
   // Early bailout for large datasets
   if (finalRankings.length > 500) {
@@ -68,8 +69,8 @@ export const useManualReorderCore = (
     setRenderTrigger(prev => prev + 1);
   }, []);
 
-  // CRITICAL FIX: Create stable instances with empty deps
-  const { simulateBattlesForReorder } = useBattleSimulation(addImpliedBattle);
+  // CRITICAL FIX: Create stable instances with empty deps - removed argument
+  const { simulateBattlesForReorder } = useBattleSimulation();
   const { updateScoresPreservingOrder } = useScoreUpdater(preventAutoResorting);
 
   // CRITICAL FIX: Only update when there's a real change and not during drag
