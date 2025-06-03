@@ -9,6 +9,7 @@ import UnifiedControls from "@/components/shared/UnifiedControls";
 import PokemonCard from "@/components/PokemonCard";
 import { Card } from "@/components/ui/card";
 import { useStableDragHandlers } from "@/hooks/battle/useStableDragHandlers";
+import { useImpliedBattleTracker } from "@/contexts/ImpliedBattleTracker";
 
 interface EnhancedRankingLayoutProps {
   isLoading: boolean;
@@ -62,6 +63,9 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
   console.log(`🔥🔥🔥 [LAYOUT_FIXED] ===== ENHANCED LAYOUT RENDER =====`);
   console.log(`🔥🔥🔥 [LAYOUT_FIXED] displayRankings count: ${displayRankings.length}`);
 
+  // Connect to implied battle tracker
+  const { addImpliedBattle } = useImpliedBattleTracker();
+
   // STEP 1: Introduce manual ranking order state for visual persistence
   const [manualRankingOrder, setManualRankingOrder] = useState(displayRankings);
   
@@ -114,7 +118,41 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
         console.log(`🔧 [MANUAL_DRAG] ✅ Manual order updated: ${movedPokemon.name} moved to position ${newIndex}`);
         setManualRankingOrder(updatedManualOrder);
         
-        // STEP 3: Trigger background score updates without immediate visual change
+        // STEP 3: Add implied battles based on the reorder
+        console.log(`🎲 [IMPLIED_BATTLES] Triggering implied battles for reorder`);
+        
+        // Determine who wins based on the direction of movement
+        if (newIndex < oldIndex) {
+          // Pokemon moved up - it beats the Pokemon it moved past
+          for (let i = newIndex; i < oldIndex; i++) {
+            const opponent = updatedManualOrder[i + 1];
+            if (opponent && opponent.id !== movedPokemon.id) {
+              console.log(`🎲 [IMPLIED_BATTLES] ${movedPokemon.name} beats ${opponent.name} (moved up)`);
+              addImpliedBattle({
+                draggedPokemon: movedPokemon.name,
+                opponent: opponent.name,
+                winner: movedPokemon.name,
+                battleType: 'Manual Reorder (Up)'
+              });
+            }
+          }
+        } else if (newIndex > oldIndex) {
+          // Pokemon moved down - Pokemon it moved past beat it
+          for (let i = oldIndex; i < newIndex; i++) {
+            const opponent = updatedManualOrder[i];
+            if (opponent && opponent.id !== movedPokemon.id) {
+              console.log(`🎲 [IMPLIED_BATTLES] ${opponent.name} beats ${movedPokemon.name} (moved down)`);
+              addImpliedBattle({
+                draggedPokemon: movedPokemon.name,
+                opponent: opponent.name,
+                winner: opponent.name,
+                battleType: 'Manual Reorder (Down)'
+              });
+            }
+          }
+        }
+        
+        // STEP 4: Trigger background score updates without immediate visual change
         handleManualReorder(parseInt(activeId), oldIndex, newIndex);
         
         return;
