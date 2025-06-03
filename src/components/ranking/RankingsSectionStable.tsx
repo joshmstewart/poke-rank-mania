@@ -1,106 +1,141 @@
 
-import React, { useCallback, useMemo } from "react";
-import { Pokemon, RankedPokemon } from "@/services/pokemon";
-import DragDropGridMemoized from "@/components/battle/DragDropGridMemoized";
+import React, { useMemo, useCallback } from "react";
 import { useDroppable } from '@dnd-kit/core';
-import { useStableDragHandlers } from "@/hooks/battle/useStableDragHandlers";
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { useStableSortable } from "@/hooks/battle/useStableSortable";
+import PokemonCard from "@/components/PokemonCard";
 
 interface RankingsSectionStableProps {
-  displayRankings: (Pokemon | RankedPokemon)[];
-  onManualReorder?: (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => void;
-  onLocalReorder?: (newRankings: (Pokemon | RankedPokemon)[]) => void;
-  pendingRefinements?: Set<number>;
-  availablePokemon?: any[];
+  displayRankings: any[];
+  onManualReorder: (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => void;
+  onLocalReorder: (newRankings: any[]) => void;
+  pendingRefinements: Set<number>;
+  availablePokemon: any[];
 }
+
+const SortableRankingCard: React.FC<{
+  pokemon: any;
+  index: number;
+}> = React.memo(({ pokemon, index }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+    style
+  } = useStableSortable({
+    id: pokemon.id.toString(),
+    data: {
+      type: 'ranking-pokemon',
+      pokemon: pokemon,
+      index: index
+    }
+  });
+
+  console.log(`🎯 [SORTABLE_RANKING_CARD] ${pokemon.name} (${pokemon.id}) - isDragging: ${isDragging}`);
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className={`transition-all duration-200 ${isDragging ? 'opacity-50 scale-105 z-50' : ''}`}
+    >
+      <PokemonCard
+        pokemon={pokemon}
+        compact={true}
+        viewMode="grid"
+        isDragging={isDragging}
+        rank={index + 1}
+      />
+    </div>
+  );
+});
+
+SortableRankingCard.displayName = 'SortableRankingCard';
 
 export const RankingsSectionStable: React.FC<RankingsSectionStableProps> = React.memo(({
   displayRankings,
   onManualReorder,
   onLocalReorder,
-  pendingRefinements = new Set<number>(),
-  availablePokemon = []
+  pendingRefinements,
+  availablePokemon
 }) => {
-  console.log(`🎯 [RANKINGS_SECTION_STABLE] Rendering with ${displayRankings.length} rankings`);
+  console.log(`🏆 [RANKINGS_SECTION_STABLE] Rendering with ${displayRankings.length} rankings`);
 
-  // Use stable drag handlers to prevent recreation
-  const { stableOnManualReorder, stableOnLocalReorder } = useStableDragHandlers(
-    onManualReorder,
-    onLocalReorder
-  );
-
-  // Memoize droppable configuration
-  const droppableConfig = useMemo(() => ({
-    id: 'rankings-drop-zone-stable',
+  const { setNodeRef: setDroppableRef } = useDroppable({
+    id: 'rankings-drop-zone',
     data: {
       type: 'rankings-container',
-      accepts: 'available-pokemon'
+      accepts: ['available-pokemon', 'ranking-pokemon']
     }
-  }), []);
+  });
 
-  const { setNodeRef, isOver } = useDroppable(droppableConfig);
-  
-  // Memoize pending battle counts to prevent recreation
-  const pendingBattleCounts = useMemo(() => new Map<number, number>(), []);
+  // Memoize sortable items
+  const sortableItems = useMemo(() => 
+    displayRankings.map(p => p.id.toString()),
+    [displayRankings]
+  );
 
-  // Memoized empty state content
-  const emptyStateContent = useMemo(() => (
-    <div className="flex items-center justify-center h-full text-gray-500">
-      <div className="text-center">
-        <p className="text-lg mb-2">No Pokémon ranked yet</p>
-        <p className="text-sm">Drag Pokémon from the left to start ranking!</p>
-        {isOver && (
-          <p className="text-yellow-600 font-medium mt-2">Drop here to add to rankings!</p>
-        )}
-      </div>
-    </div>
-  ), [isOver]);
+  // Memoized ranking cards
+  const rankingCards = useMemo(() => 
+    displayRankings.map((pokemon, index) => (
+      <SortableRankingCard
+        key={pokemon.id}
+        pokemon={pokemon}
+        index={index}
+      />
+    )),
+    [displayRankings]
+  );
 
-  // Memoized header content
-  const headerContent = useMemo(() => (
-    <div className="bg-white border-b border-gray-200 p-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-900">Your Rankings</h2>
-        <div className="text-sm text-gray-500 font-medium">
-          {displayRankings.length} Pokémon ranked
+  if (displayRankings.length === 0) {
+    return (
+      <div className="h-full flex flex-col">
+        <div className="flex items-center justify-between p-4 border-b bg-gray-50">
+          <h2 className="text-lg font-semibold text-gray-800">Your Rankings</h2>
+          <span className="text-sm text-gray-500">0 Pokémon</span>
+        </div>
+        
+        <div
+          ref={setDroppableRef}
+          className="flex-1 flex items-center justify-center p-8 border-2 border-dashed border-gray-300 rounded-lg m-4"
+        >
+          <div className="text-center">
+            <div className="text-4xl mb-4">🏆</div>
+            <h3 className="text-lg font-medium text-gray-700 mb-2">
+              No Rankings Yet
+            </h3>
+            <p className="text-gray-500 text-sm">
+              Drag Pokémon here to start ranking them
+            </p>
+          </div>
         </div>
       </div>
-    </div>
-  ), [displayRankings.length]);
-
-  // Memoized container class
-  const containerClassName = useMemo(() => 
-    `flex-1 overflow-y-auto p-4 transition-colors ${
-      isOver ? 'bg-yellow-50 border-2 border-dashed border-yellow-400' : ''
-    }`, 
-    [isOver]
-  );
+    );
+  }
 
   return (
-    <div className="flex flex-col h-full">
-      {headerContent}
+    <div className="h-full flex flex-col">
+      <div className="flex items-center justify-between p-4 border-b bg-gray-50">
+        <h2 className="text-lg font-semibold text-gray-800">Your Rankings</h2>
+        <span className="text-sm text-gray-500">{displayRankings.length} Pokémon</span>
+      </div>
       
-      <div 
-        className={containerClassName}
-        ref={setNodeRef}
-      >
-        {displayRankings.length === 0 ? emptyStateContent : (
-          <DragDropGridMemoized
-            displayRankings={displayRankings}
-            localPendingRefinements={pendingRefinements}
-            pendingBattleCounts={pendingBattleCounts}
-          />
-        )}
+      <div className="flex-1 overflow-y-auto p-4" ref={setDroppableRef}>
+        <SortableContext 
+          items={sortableItems}
+          strategy={verticalListSortingStrategy}
+        >
+          <div className="space-y-2">
+            {rankingCards}
+          </div>
+        </SortableContext>
       </div>
     </div>
-  );
-}, (prevProps, nextProps) => {
-  // Custom comparison for stable rendering
-  return (
-    prevProps.displayRankings.length === nextProps.displayRankings.length &&
-    prevProps.pendingRefinements.size === nextProps.pendingRefinements.size &&
-    prevProps.displayRankings.every((prev, index) => 
-      prev.id === nextProps.displayRankings[index]?.id
-    )
   );
 });
 

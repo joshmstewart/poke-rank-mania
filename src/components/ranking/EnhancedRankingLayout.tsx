@@ -1,7 +1,6 @@
 
 import React, { useMemo } from "react";
 import { DndContext, DragOverlay, pointerWithin } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { BattleType } from "@/hooks/battle/types";
 import { LoadingType } from "@/hooks/pokemon/types";
 import { RankingsSectionStable } from "./RankingsSectionStable";
@@ -61,17 +60,16 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
   handleLocalReorder
 }) => {
   console.log(`🎨 [ENHANCED_LAYOUT_STABLE] Rendering with ${displayRankings.length} rankings`);
+  console.log(`🎨 [ENHANCED_LAYOUT_STABLE] Drag handlers available:`, {
+    handleDragStart: !!handleDragStart,
+    handleDragEnd: !!handleDragEnd,
+    handleManualReorder: !!handleManualReorder
+  });
 
   // Use stable drag handlers
   const { stableOnManualReorder, stableOnLocalReorder } = useStableDragHandlers(
     handleManualReorder,
     handleLocalReorder
-  );
-
-  // Memoize sortable items
-  const sortableItems = useMemo(() => 
-    displayRankings.map(p => p.id.toString()),
-    [displayRankings]
   );
 
   // Memoized controls section
@@ -132,18 +130,13 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
             </Card>
 
             <Card className="shadow-lg border border-gray-200 overflow-hidden flex flex-col">
-              <SortableContext 
-                items={sortableItems}
-                strategy={verticalListSortingStrategy}
-              >
-                <RankingsSectionStable
-                  displayRankings={displayRankings}
-                  onManualReorder={stableOnManualReorder}
-                  onLocalReorder={stableOnLocalReorder}
-                  pendingRefinements={new Set()}
-                  availablePokemon={enhancedAvailablePokemon}
-                />
-              </SortableContext>
+              <RankingsSectionStable
+                displayRankings={displayRankings}
+                onManualReorder={stableOnManualReorder}
+                onLocalReorder={stableOnLocalReorder}
+                pendingRefinements={new Set()}
+                availablePokemon={enhancedAvailablePokemon}
+              />
             </Card>
           </div>
         </div>
