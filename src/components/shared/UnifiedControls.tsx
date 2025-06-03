@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { RefreshCw, Settings, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -27,6 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import BattleSettings from "../battle/BattleSettings";
+import CombinedRankingsModal from "../combined-rankings/CombinedRankingsModal";
 import { generations } from "@/services/pokemon";
 import { useTrueSkillStore } from "@/stores/trueskillStore";
 import { toast } from "sonner";
@@ -54,6 +56,7 @@ const UnifiedControls: React.FC<UnifiedControlsProps> = ({
 }) => {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [restartDialogOpen, setRestartDialogOpen] = useState(false);
+  const [rankingsOpen, setRankingsOpen] = useState(false);
   const { clearAllRatings } = useTrueSkillStore();
   
   const safeSelectedGeneration = selectedGeneration !== undefined ? selectedGeneration : 0;
@@ -157,15 +160,19 @@ const UnifiedControls: React.FC<UnifiedControlsProps> = ({
 
       <div className="flex items-center gap-4">
         {/* Rankings Button */}
-        <Button
-          variant="outline"
-          size="sm"
-          className="flex items-center gap-1 h-8 text-sm px-4"
-          onClick={handleCombinedRankingsClick}
-        >
-          <Users className="h-4 w-4" />
-          Rankings
-        </Button>
+        <Dialog open={rankingsOpen} onOpenChange={setRankingsOpen}>
+          <DialogTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-1 h-8 text-sm px-4"
+            >
+              <Users className="h-4 w-4" />
+              Rankings
+            </Button>
+          </DialogTrigger>
+          <CombinedRankingsModal onClose={() => setRankingsOpen(false)} />
+        </Dialog>
 
         {/* Settings Button (Forms) */}
         <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
