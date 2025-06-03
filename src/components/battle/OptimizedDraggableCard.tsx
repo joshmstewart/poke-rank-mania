@@ -1,7 +1,7 @@
 
 import React, { memo } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
-import { useStableSortable } from "@/hooks/battle/useStableSortable";
+import { useDraggable } from '@dnd-kit/core';
 import { getPokemonBackgroundColor } from "./utils/PokemonColorUtils";
 import PokemonMilestoneImage from "@/components/pokemon/PokemonMilestoneImage";
 import PokemonMilestoneInfo from "@/components/pokemon/PokemonMilestoneInfo";
@@ -24,13 +24,21 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
   isDraggable = true,
   context = 'ranked'
 }) => {
-  console.log(`🚀 [OPTIMIZED_CARD] ${pokemon.name}: Rendering optimized card`);
+  console.log(`🚀 [OPTIMIZED_CARD] ${pokemon.name}: Rendering optimized card (context: ${context})`);
 
-  // EXPLICITLY: Ensure consistent string ID that matches DndContext handlers
-  const sortableId = pokemon.id.toString();
+  // EXPLICIT NOTE: "All Filtered" Pokémon cards intentionally NOT sortable.
+  // Sorted explicitly by Pokédex number.
+  // Pokémon can ONLY be dragged into "Your Rankings" grid.
   
-  const sortableConfig = {
-    id: sortableId, // Explicit string ID for DndContext compatibility
+  // For Available Pokemon: Use useDraggable (no sorting within grid)
+  // For Ranked Pokemon: Use useSortable (allows reordering within rankings)
+  const sortableId = context === 'available' ? `available-${pokemon.id}` : pokemon.id.toString();
+  
+  console.log(`🔧 [DRAG_ID_FIX] Card ${pokemon.name} using ID: ${sortableId} (context: ${context})`);
+
+  // CORRECTED: Available Pokemon use useDraggable only (no sorting)
+  const dragConfig = {
+    id: sortableId,
     disabled: !isDraggable,
     data: {
       type: context === 'available' ? 'available-pokemon' : 'ranked-pokemon',
@@ -40,16 +48,12 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
     }
   };
 
-  console.log(`🔧 [DRAG_ID_FIX] Card ${pokemon.name} using sortable ID: ${sortableId}`);
-
-  // EXPLICITLY: Use stable sortable hook that integrates with single SortableContext
   const {
     attributes,
     listeners,
     setNodeRef,
-    isDragging,
-    style
-  } = useStableSortable(sortableConfig);
+    isDragging
+  } = useDraggable(dragConfig);
 
   const backgroundColorClass = getPokemonBackgroundColor(pokemon);
   
@@ -75,7 +79,6 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
   return (
     <div
       ref={setNodeRef}
-      style={style}
       className={cardClassName}
       {...dragProps}
     >

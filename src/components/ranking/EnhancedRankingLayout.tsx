@@ -103,6 +103,15 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
     console.log(`🔧 [MANUAL_DRAG] Manual Drag Start - ID: ${event.active.id}`);
     const activeId = event.active.id.toString();
     console.log(`🔧 [MANUAL_DRAG] Active ID as string: ${activeId}`);
+    
+    // EXPLICIT NOTE: "All Filtered" Pokémon cards intentionally use 'available-{id}' format
+    // Ranked Pokemon use just '{id}' format for reordering
+    if (activeId.startsWith('available-')) {
+      console.log(`🔧 [MANUAL_DRAG] Dragging from Available grid: ${activeId}`);
+    } else {
+      console.log(`🔧 [MANUAL_DRAG] Dragging within Rankings grid: ${activeId}`);
+    }
+    
     handleDragStart(event);
   };
 
@@ -116,11 +125,18 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
       return;
     }
     
-    // Handle manual reordering within rankings
     const activeId = active.id.toString();
     const overId = over.id.toString();
     
-    // Only handle reordering within the rankings (not adding new Pokemon)
+    // CORRECTED: Handle dragging from Available to Rankings
+    if (activeId.startsWith('available-')) {
+      console.log(`🔧 [MANUAL_DRAG] Available Pokemon dragged to Rankings`);
+      // Let the original handler manage this cross-grid drag
+      handleDragEnd(event);
+      return;
+    }
+    
+    // Handle manual reordering within rankings (ranked Pokemon only)
     if (!activeId.startsWith('available-') && !overId.startsWith('available-')) {
       const oldIndex = manualRankingOrder.findIndex(p => p.id.toString() === activeId);
       const newIndex = manualRankingOrder.findIndex(p => p.id.toString() === overId);
