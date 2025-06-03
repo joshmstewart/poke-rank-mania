@@ -34,18 +34,18 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   // Track renders for performance debugging
   useRenderTracker('DraggablePokemonMilestoneCard', { 
     pokemonId: pokemon.id,
-    isPending,
-    isDraggable 
+    isPending: Boolean(isPending),
+    isDraggable: Boolean(isDraggable)
   });
 
   const [isOpen, setIsOpen] = React.useState(false);
 
   // Memoize computed values
   const isRankedPokemon = useMemo(() => 
-    context === 'available' && 'isRanked' in pokemon && pokemon.isRanked, [context, pokemon]);
+    context === 'available' && 'isRanked' in pokemon && Boolean(pokemon.isRanked), [context, pokemon]);
   
   const currentRank = useMemo(() => 
-    isRankedPokemon && 'currentRank' in pokemon ? pokemon.currentRank : null, [isRankedPokemon, pokemon]);
+    isRankedPokemon && 'currentRank' in pokemon ? Number(pokemon.currentRank) || null : null, [isRankedPokemon, pokemon]);
 
   const sortableId = useMemo(() => 
     isDraggable ? (isAvailable ? `available-${pokemon.id}` : pokemon.id) : `static-${pokemon.id}`, 
@@ -93,9 +93,9 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   const { tcgCard, secondTcgCard, isLoading: isLoadingTCG, error: tcgError, hasTcgCard } = usePokemonTCGCard(pokemon.name, isOpen);
 
   // Memoize modal content flags
-  const showLoading = isLoadingTCG;
-  const showTCGCards = !isLoadingTCG && hasTcgCard && tcgCard !== null;
-  const showFallbackInfo = !isLoadingTCG && !hasTcgCard;
+  const showLoading = Boolean(isLoadingTCG);
+  const showTCGCards = Boolean(!isLoadingTCG && hasTcgCard && tcgCard !== null);
+  const showFallbackInfo = Boolean(!isLoadingTCG && !hasTcgCard);
 
   // Memoize drag/listener props
   const dragProps = useMemo(() => 
