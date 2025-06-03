@@ -39,7 +39,21 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = React.memo
 }) => {
   console.log(`🏆 [MILESTONE_STABLE] Rendering milestone view with ${formattedRankings.length} rankings`);
 
+  // CRITICAL DEBUG: Log incoming props to track visual updates
+  console.log('🎨 [MILESTONE_VISUAL_DEBUG] ===== MILESTONE VIEW RENDER =====');
+  console.log('🎨 [MILESTONE_VISUAL_DEBUG] formattedRankings length:', formattedRankings.length);
+  console.log('🎨 [MILESTONE_VISUAL_DEBUG] First 5 rankings:', formattedRankings.slice(0, 5).map((p, i) => `${i+1}. ${p.name} (${('score' in p ? p.score.toFixed(2) : 'N/A')})`));
+  console.log('🎨 [MILESTONE_VISUAL_DEBUG] Timestamp:', Date.now());
+
   const [localRankings, setLocalRankings] = useState(formattedRankings);
+  
+  // CRITICAL DEBUG: Log local state changes
+  useEffect(() => {
+    console.log('🎨 [MILESTONE_VISUAL_DEBUG] ===== LOCAL STATE UPDATE =====');
+    console.log('🎨 [MILESTONE_VISUAL_DEBUG] localRankings updated to:', localRankings.length, 'items');
+    console.log('🎨 [MILESTONE_VISUAL_DEBUG] First 5 local rankings:', localRankings.slice(0, 5).map((p, i) => `${i+1}. ${p.name} (${('score' in p ? p.score.toFixed(2) : 'N/A')})`));
+    console.log('🎨 [MILESTONE_VISUAL_DEBUG] Local state timestamp:', Date.now());
+  }, [localRankings]);
   
   const {
     localPendingRefinements,
@@ -51,28 +65,46 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = React.memo
   const maxItems = getMaxItemsForTier();
   
   // Memoize display rankings to prevent recreation
-  const displayRankings = useMemo(() => 
-    localRankings.slice(0, Math.min(milestoneDisplayCount, maxItems)),
-    [localRankings, milestoneDisplayCount, maxItems]
-  );
+  const displayRankings = useMemo(() => {
+    const result = localRankings.slice(0, Math.min(milestoneDisplayCount, maxItems));
+    
+    // CRITICAL DEBUG: Log what gets displayed
+    console.log('🎨 [MILESTONE_VISUAL_DEBUG] ===== DISPLAY RANKINGS MEMOIZED =====');
+    console.log('🎨 [MILESTONE_VISUAL_DEBUG] displayRankings length:', result.length);
+    console.log('🎨 [MILESTONE_VISUAL_DEBUG] First 5 display rankings:', result.slice(0, 5).map((p, i) => `${i+1}. ${p.name} (${('score' in p ? p.score.toFixed(2) : 'N/A')})`));
+    console.log('🎨 [MILESTONE_VISUAL_DEBUG] Display memoization timestamp:', Date.now());
+    
+    return result;
+  }, [localRankings, milestoneDisplayCount, maxItems]);
   
   const hasMoreToLoad = milestoneDisplayCount < maxItems;
 
   // Use stable drag handlers
   const { stableOnManualReorder, stableOnLocalReorder } = useStableDragHandlers(
     onManualReorder,
-    (newRankings: any[]) => setLocalRankings(newRankings)
+    (newRankings: any[]) => {
+      console.log('🎨 [MILESTONE_VISUAL_DEBUG] ===== STABLE LOCAL REORDER CALLED =====');
+      console.log('🎨 [MILESTONE_VISUAL_DEBUG] New rankings length:', newRankings.length);
+      console.log('🎨 [MILESTONE_VISUAL_DEBUG] First 5 new rankings:', newRankings.slice(0, 5).map((p, i) => `${i+1}. ${p.name} (${('score' in p ? p.score.toFixed(2) : 'N/A')})`));
+      setLocalRankings(newRankings);
+    }
   );
 
   // Update local state when props change, but only if we don't have local changes
   useEffect(() => {
     console.log(`🏆 [MILESTONE_STABLE] Props changed - checking for updates`);
+    console.log('🎨 [MILESTONE_VISUAL_DEBUG] ===== PROPS EFFECT TRIGGERED =====');
+    console.log('🎨 [MILESTONE_VISUAL_DEBUG] formattedRankings length:', formattedRankings.length);
+    console.log('🎨 [MILESTONE_VISUAL_DEBUG] localRankings length:', localRankings.length);
     
     const hasSignificantDifference = Math.abs(formattedRankings.length - localRankings.length) > 0 ||
       formattedRankings.slice(0, 5).some((p, i) => p.id !== localRankings[i]?.id);
     
+    console.log('🎨 [MILESTONE_VISUAL_DEBUG] hasSignificantDifference:', hasSignificantDifference);
+    
     if (hasSignificantDifference) {
       console.log(`🏆 [MILESTONE_STABLE] Updating local rankings`);
+      console.log('🎨 [MILESTONE_VISUAL_DEBUG] ===== UPDATING LOCAL FROM PROPS =====');
       setLocalRankings(formattedRankings);
     }
   }, [formattedRankings]);
@@ -80,7 +112,12 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = React.memo
   // FIXED: Use only the enhanced manual reorder
   const { handleEnhancedManualReorder } = useEnhancedManualReorder(
     localRankings as RankedPokemon[],
-    stableOnLocalReorder,
+    (updatedRankings: RankedPokemon[]) => {
+      console.log('🎨 [MILESTONE_VISUAL_DEBUG] ===== ENHANCED REORDER CALLBACK =====');
+      console.log('🎨 [MILESTONE_VISUAL_DEBUG] Updated rankings length:', updatedRankings.length);
+      console.log('🎨 [MILESTONE_VISUAL_DEBUG] First 5 updated rankings:', updatedRankings.slice(0, 5).map((p, i) => `${i+1}. ${p.name} (${p.score.toFixed(2)})`));
+      stableOnLocalReorder(updatedRankings);
+    },
     true // preventAutoResorting = true to maintain manual order
   );
 
@@ -89,6 +126,10 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = React.memo
     displayRankings,
     onManualReorder: (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => {
       console.log(`🏆 [MILESTONE_STABLE] Drag completed: ${draggedPokemonId} from ${sourceIndex} to ${destinationIndex}`);
+      console.log('🎨 [MILESTONE_VISUAL_DEBUG] ===== DRAG OPERATION INITIATED =====');
+      console.log('🎨 [MILESTONE_VISUAL_DEBUG] draggedPokemonId:', draggedPokemonId);
+      console.log('🎨 [MILESTONE_VISUAL_DEBUG] sourceIndex:', sourceIndex);
+      console.log('🎨 [MILESTONE_VISUAL_DEBUG] destinationIndex:', destinationIndex);
       handleEnhancedManualReorder(draggedPokemonId, sourceIndex, destinationIndex);
     },
     onLocalReorder: stableOnLocalReorder
@@ -117,6 +158,11 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = React.memo
     </div>
   ), [battlesCompleted, displayRankings.length, activeTier, maxItems, onContinueBattles]);
 
+  // CRITICAL DEBUG: Log before rendering DragDropGrid
+  console.log('🎨 [MILESTONE_VISUAL_DEBUG] ===== ABOUT TO RENDER GRID =====');
+  console.log('🎨 [MILESTONE_VISUAL_DEBUG] displayRankings passed to grid:', displayRankings.length);
+  console.log('🎨 [MILESTONE_VISUAL_DEBUG] Grid will show:', displayRankings.slice(0, 5).map((p, i) => `${i+1}. ${p.name} (${('score' in p ? p.score.toFixed(2) : 'N/A')})`));
+
   return (
     <div className="bg-white p-6 w-full max-w-7xl mx-auto">
       {headerContent}
@@ -143,12 +189,16 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = React.memo
   );
 }, (prevProps, nextProps) => {
   // Custom comparison to prevent unnecessary re-renders
-  return (
+  const isEqual = (
     prevProps.formattedRankings.length === nextProps.formattedRankings.length &&
     prevProps.battlesCompleted === nextProps.battlesCompleted &&
     prevProps.milestoneDisplayCount === nextProps.milestoneDisplayCount &&
     prevProps.activeTier === nextProps.activeTier
   );
+  
+  console.log('🎨 [MILESTONE_MEMO_DEBUG] Memo comparison result:', isEqual ? 'PREVENTING' : 'ALLOWING', 'rerender');
+  
+  return isEqual;
 });
 
 DraggableMilestoneView.displayName = 'DraggableMilestoneView';
