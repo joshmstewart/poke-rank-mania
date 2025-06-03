@@ -69,6 +69,44 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
     handleLocalReorder
   );
 
+  // STEP 2: Enhanced drag handlers with explicit string ID handling
+  const enhancedHandleDragStart = (event: DragStartEvent) => {
+    console.log(`🔧 [DRAG_FIX] Enhanced Drag Start - ID: ${event.active.id}`);
+    const activeId = event.active.id.toString();
+    console.log(`🔧 [DRAG_FIX] Active ID as string: ${activeId}`);
+    handleDragStart(event);
+  };
+
+  const enhancedHandleDragEnd = (event: DragEndEvent) => {
+    console.log(`🔧 [DRAG_FIX] Enhanced Drag End - Active: ${event.active.id}, Over: ${event.over?.id || 'NULL'}`);
+    
+    // STEP 2: Explicit string ID conversion for consistency
+    const activeId = event.active.id.toString();
+    const overId = event.over?.id?.toString();
+    
+    console.log(`🔧 [DRAG_FIX] IDs as strings - Active: ${activeId}, Over: ${overId}`);
+    
+    if (!event.over) {
+      console.log(`🔧 [DRAG_FIX] No drop target detected`);
+      return;
+    }
+    
+    // Create enhanced event with string IDs for consistency
+    const enhancedEvent = {
+      ...event,
+      active: {
+        ...event.active,
+        id: activeId
+      },
+      over: event.over ? {
+        ...event.over,
+        id: overId
+      } : null
+    };
+    
+    handleDragEnd(enhancedEvent);
+  };
+
   return (
     <div className="bg-gray-100 min-h-screen p-4">
       <div className="max-w-7xl mx-auto mb-4">
@@ -103,8 +141,8 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
           <Card className="shadow-lg border border-gray-200 overflow-hidden flex flex-col">
             <DndContext
               collisionDetection={pointerWithin}
-              onDragStart={handleDragStart}
-              onDragEnd={handleDragEnd}
+              onDragStart={enhancedHandleDragStart}
+              onDragEnd={enhancedHandleDragEnd}
             >
               <RankingsSectionStable
                 displayRankings={displayRankings}

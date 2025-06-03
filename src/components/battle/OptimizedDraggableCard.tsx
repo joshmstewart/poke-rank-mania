@@ -26,8 +26,11 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
 }) => {
   console.log(`🚀 [OPTIMIZED_CARD] ${pokemon.name}: Rendering optimized card`);
 
+  // STEP 4: Ensure consistent string ID that matches drag handlers
+  const sortableId = pokemon.id.toString();
+  
   const sortableConfig = {
-    id: pokemon.id,
+    id: sortableId, // Explicit string ID
     disabled: !isDraggable,
     data: {
       type: context === 'available' ? 'available-pokemon' : 'ranked-pokemon',
@@ -36,6 +39,8 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
       index
     }
   };
+
+  console.log(`🔧 [DRAG_ID_FIX] Card ${pokemon.name} using sortable ID: ${sortableId}`);
 
   const {
     attributes,

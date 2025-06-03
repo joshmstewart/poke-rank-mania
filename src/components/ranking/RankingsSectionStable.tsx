@@ -3,7 +3,6 @@ import React, { useCallback, useMemo } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import DragDropGridMemoized from "@/components/battle/DragDropGridMemoized";
 import { useDroppable } from '@dnd-kit/core';
-import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable';
 import { useStableDragHandlers } from "@/hooks/battle/useStableDragHandlers";
 
 interface RankingsSectionStableProps {
@@ -29,13 +28,6 @@ export const RankingsSectionStable: React.FC<RankingsSectionStableProps> = React
     onManualReorder,
     onLocalReorder
   );
-
-  // CRITICAL FIX: Create sortable items for the rankings grid
-  const sortableItems = useMemo(() => {
-    const items = displayRankings.map(p => p.id.toString());
-    console.log(`🎯 [RANKINGS_SECTION_STABLE] Sortable items created:`, items.slice(0, 5));
-    return items;
-  }, [displayRankings]);
 
   // FIXED: Properly configure droppable without visual conflicts
   const droppableConfig = useMemo(() => ({
@@ -82,18 +74,13 @@ export const RankingsSectionStable: React.FC<RankingsSectionStableProps> = React
         ref={setNodeRef}
       >
         {displayRankings.length === 0 ? emptyStateContent : (
-          <SortableContext 
-            items={sortableItems}
-            strategy={rectSortingStrategy}
-          >
-            <DragDropGridMemoized
-              displayRankings={displayRankings}
-              localPendingRefinements={pendingRefinements}
-              pendingBattleCounts={pendingBattleCounts}
-              onManualReorder={stableOnManualReorder}
-              onLocalReorder={stableOnLocalReorder}
-            />
-          </SortableContext>
+          <DragDropGridMemoized
+            displayRankings={displayRankings}
+            localPendingRefinements={pendingRefinements}
+            pendingBattleCounts={pendingBattleCounts}
+            onManualReorder={stableOnManualReorder}
+            onLocalReorder={stableOnLocalReorder}
+          />
         )}
       </div>
     </div>
