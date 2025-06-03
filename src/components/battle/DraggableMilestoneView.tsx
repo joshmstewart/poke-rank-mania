@@ -35,7 +35,7 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = React.memo
   onLoadMore,
   getMaxItemsForTier,
   onManualReorder,
-  pendingRefinements = new Set()
+  pendingRefinements = new Set<number>()
 }) => {
   console.log(`🏆 [MILESTONE_STABLE] Rendering milestone view with ${formattedRankings.length} rankings`);
 
