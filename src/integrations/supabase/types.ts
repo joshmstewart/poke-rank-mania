@@ -39,6 +39,45 @@ export type Database = {
         }
         Relationships: []
       }
+      global_rankings: {
+        Row: {
+          average_rating: number
+          confidence_score: number
+          created_at: string
+          generation: number
+          id: string
+          last_updated: string
+          pokemon_id: number
+          pokemon_name: string
+          total_battles: number
+          total_wins: number
+        }
+        Insert: {
+          average_rating?: number
+          confidence_score?: number
+          created_at?: string
+          generation: number
+          id?: string
+          last_updated?: string
+          pokemon_id: number
+          pokemon_name: string
+          total_battles?: number
+          total_wins?: number
+        }
+        Update: {
+          average_rating?: number
+          confidence_score?: number
+          created_at?: string
+          generation?: number
+          id?: string
+          last_updated?: string
+          pokemon_id?: number
+          pokemon_name?: string
+          total_battles?: number
+          total_wins?: number
+        }
+        Relationships: []
+      }
       preview_image_cache: {
         Row: {
           cache_key: string
@@ -240,6 +279,10 @@ export type Database = {
     }
     Functions: {
       cleanup_expired_preview_cache: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      update_global_rankings: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }

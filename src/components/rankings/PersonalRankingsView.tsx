@@ -4,6 +4,7 @@ import { useTrueSkillStore } from "@/stores/trueskillStore";
 import { generations } from "@/services/pokemon";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { usePokemonContext } from "@/contexts/PokemonContext";
+import { formatPokemonName } from "@/utils/pokemon";
 import DraggableMilestoneGrid from "../battle/DraggableMilestoneGrid";
 
 interface PersonalRankingsViewProps {
@@ -77,7 +78,8 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
         const winRate = battleCount > 0 ? (wins / battleCount) * 100 : 0;
         
         return {
-          ...pokemon, // Use actual Pokemon data (id, name, image, types, etc.)
+          ...pokemon, // Use actual Pokemon data (id, image, types, etc.)
+          name: formatPokemonName(pokemon.name), // Apply name formatting here
           score: score,
           count: battleCount,
           confidence: Math.max(0, 100 - (rating.sigma * 20)), // Convert sigma to confidence percentage
@@ -149,7 +151,7 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
 
   return (
     <div className="w-full max-w-7xl mx-auto">
-      {/* Simple header without Continue Battles button */}
+      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <span className="text-2xl">🏆</span>
