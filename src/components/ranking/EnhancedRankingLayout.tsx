@@ -1,7 +1,7 @@
 
 import React, { useMemo } from "react";
 import { DndContext, DragOverlay, pointerWithin, DragStartEvent, DragEndEvent } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { BattleType } from "@/hooks/battle/types";
 import { LoadingType } from "@/hooks/pokemon/types";
 import { RankingsSectionStable } from "./RankingsSectionStable";
@@ -60,9 +60,9 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
   handleManualReorder,
   handleLocalReorder
 }) => {
-  console.log(`🎨 [ENHANCED_LAYOUT_STABLE] Rendering with ${displayRankings.length} rankings`);
-  console.log(`🎨 [ENHANCED_LAYOUT_STABLE] handleDragEnd function exists: ${!!handleDragEnd}`);
-  console.log(`🎨 [ENHANCED_LAYOUT_STABLE] handleManualReorder function exists: ${!!handleManualReorder}`);
+  console.log(`🔥🔥🔥 [LAYOUT_FIXED] ===== ENHANCED LAYOUT RENDER =====`);
+  console.log(`🔥🔥🔥 [LAYOUT_FIXED] displayRankings count: ${displayRankings.length}`);
+  console.log(`🔥🔥🔥 [LAYOUT_FIXED] handleManualReorder exists: ${!!handleManualReorder}`);
 
   // Use stable drag handlers
   const { stableOnManualReorder, stableOnLocalReorder } = useStableDragHandlers(
@@ -70,56 +70,64 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
     handleLocalReorder
   );
 
-  // CRITICAL FIX: Enhanced drag end handler that properly routes events
+  // CRITICAL FIX: Completely revamped drag end handler
   const enhancedDragEnd = (event: DragEndEvent) => {
-    console.log(`🔥🔥🔥 [LAYOUT_DRAG_FIX] ===== ENHANCED DRAG END =====`);
-    console.log(`🔥🔥🔥 [LAYOUT_DRAG_FIX] Active: ${event.active.id}, Over: ${event.over?.id || 'NULL'}`);
-    console.log(`🔥🔥🔥 [LAYOUT_DRAG_FIX] Event details:`, event);
+    console.log(`🔥🔥🔥 [LAYOUT_FIXED] ===== DRAG END STARTED =====`);
     
     const { active, over } = event;
     if (!over) {
-      console.log(`🔥🔥🔥 [LAYOUT_DRAG_FIX] No drop target`);
+      console.log(`🔥🔥🔥 [LAYOUT_FIXED] No drop target - ending`);
       return;
     }
 
     const activeId = active.id.toString();
     const overId = over.id.toString();
     
-    console.log(`🔥🔥🔥 [LAYOUT_DRAG_FIX] activeId: ${activeId}, overId: ${overId}`);
+    console.log(`🔥🔥🔥 [LAYOUT_FIXED] Drag: ${activeId} -> ${overId}`);
 
-    // Handle drag from available to rankings OR reordering within rankings
+    // First, call the original drag end handler for state management
     if (handleDragEnd) {
-      console.log(`🔥🔥🔥 [LAYOUT_DRAG_FIX] Calling original handleDragEnd for state management`);
+      console.log(`🔥🔥🔥 [LAYOUT_FIXED] Calling original handleDragEnd`);
       handleDragEnd(event);
     }
     
-    // CRITICAL: Handle reordering within rankings using manual reorder
-    if (!activeId.startsWith('available-') && !overId.startsWith('available-') && !overId.startsWith('collision-placeholder-')) {
+    // CRITICAL FIX: Handle reordering within rankings
+    const activeIndex = displayRankings.findIndex(p => p.id.toString() === activeId);
+    const overIndex = displayRankings.findIndex(p => p.id.toString() === overId);
+    
+    console.log(`🔥🔥🔥 [LAYOUT_FIXED] Indices: active=${activeIndex}, over=${overIndex}`);
+    
+    if (activeIndex !== -1 && overIndex !== -1 && activeIndex !== overIndex) {
       const activePokemonId = Number(activeId);
-      const overPokemonId = Number(overId);
+      console.log(`🔥🔥🔥 [LAYOUT_FIXED] ✅ VALID REORDER - calling handleManualReorder`);
+      console.log(`🔥🔥🔥 [LAYOUT_FIXED] Args: pokemonId=${activePokemonId}, from=${activeIndex}, to=${overIndex}`);
       
-      console.log(`🔥🔥🔥 [LAYOUT_DRAG_FIX] Attempting reorder: ${activePokemonId} -> ${overPokemonId}`);
-      
-      const oldIndex = displayRankings.findIndex(p => p.id === activePokemonId);
-      const newIndex = displayRankings.findIndex(p => p.id === overPokemonId);
-      
-      console.log(`🔥🔥🔥 [LAYOUT_DRAG_FIX] Indices: ${oldIndex} -> ${newIndex}`);
-      
-      if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-        console.log(`🔥🔥🔥 [LAYOUT_DRAG_FIX] ✅ VALID REORDER - calling handleManualReorder`);
-        handleManualReorder(activePokemonId, oldIndex, newIndex);
+      if (handleManualReorder) {
+        try {
+          handleManualReorder(activePokemonId, activeIndex, overIndex);
+          console.log(`🔥🔥🔥 [LAYOUT_FIXED] ✅ Manual reorder completed successfully`);
+        } catch (error) {
+          console.error(`🔥🔥🔥 [LAYOUT_FIXED] ❌ Manual reorder failed:`, error);
+        }
       } else {
-        console.log(`🔥🔥🔥 [LAYOUT_DRAG_FIX] ❌ Invalid reorder indices`);
+        console.error(`🔥🔥🔥 [LAYOUT_FIXED] ❌ handleManualReorder not available`);
       }
+    } else {
+      console.log(`🔥🔥🔥 [LAYOUT_FIXED] ❌ Invalid reorder - skipping`);
+      console.log(`🔥🔥🔥 [LAYOUT_FIXED] Reasons: activeIndex=${activeIndex}, overIndex=${overIndex}, same=${activeIndex === overIndex}`);
     }
+    
+    console.log(`🔥🔥🔥 [LAYOUT_FIXED] ===== DRAG END COMPLETED =====`);
   };
 
-  // Create sortable items from rankings for the SortableContext
-  const sortableItems = useMemo(() => {
-    const items = displayRankings.map(p => p.id.toString());
-    console.log(`🔥🔥🔥 [LAYOUT_SORTABLE] Creating ${items.length} sortable items:`, items.slice(0, 5));
-    return items;
-  }, [displayRankings]);
+  // Create sortable items for the main DndContext
+  const allSortableItems = useMemo(() => {
+    const rankingIds = displayRankings.map(p => p.id.toString());
+    const availableIds = enhancedAvailablePokemon.map(p => `available-${p.id}`);
+    const combined = [...availableIds, ...rankingIds];
+    console.log(`🔥🔥🔥 [LAYOUT_FIXED] All sortable items: ${combined.length} (${availableIds.length} available + ${rankingIds.length} ranked)`);
+    return combined;
+  }, [displayRankings, enhancedAvailablePokemon]);
 
   return (
     <div className="bg-gray-100 min-h-screen p-4">
@@ -159,7 +167,7 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
               onDragEnd={enhancedDragEnd}
             >
               <SortableContext 
-                items={sortableItems}
+                items={allSortableItems}
                 strategy={verticalListSortingStrategy}
               >
                 <RankingsSectionStable
@@ -188,16 +196,6 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
         </div>
       </div>
     </div>
-  );
-}, (prevProps, nextProps) => {
-  // Custom comparison to prevent unnecessary re-renders
-  return (
-    prevProps.displayRankings.length === nextProps.displayRankings.length &&
-    prevProps.enhancedAvailablePokemon.length === nextProps.enhancedAvailablePokemon.length &&
-    prevProps.selectedGeneration === nextProps.selectedGeneration &&
-    prevProps.battleType === nextProps.battleType &&
-    prevProps.currentPage === nextProps.currentPage &&
-    prevProps.isLoading === nextProps.isLoading
   );
 });
 

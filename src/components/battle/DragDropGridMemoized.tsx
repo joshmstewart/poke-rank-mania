@@ -22,42 +22,32 @@ const DragDropGridMemoized: React.FC<DragDropGridMemoizedProps> = React.memo(({
   onManualReorder,
   onLocalReorder
 }) => {
-  // CRITICAL DEBUG: Log what the grid receives
-  console.log('🎨 [GRID_VISUAL_DEBUG] ===== DRAG DROP GRID RENDER =====');
-  console.log('🎨 [GRID_VISUAL_DEBUG] displayRankings length:', displayRankings.length);
-  console.log('🎨 [GRID_VISUAL_DEBUG] First 5 rankings received:', displayRankings.slice(0, 5).map((p, i) => {
-    const score = 'score' in p ? p.score.toFixed(2) : 'N/A';
-    return `${i+1}. ${p.name} (${score})`;
-  }));
-  console.log('🎨 [GRID_VISUAL_DEBUG] Grid render timestamp:', Date.now());
-  console.log('🎨 [GRID_VISUAL_DEBUG] onManualReorder exists:', !!onManualReorder);
-  console.log('🎨 [GRID_VISUAL_DEBUG] onLocalReorder exists:', !!onLocalReorder);
-  console.log('🎨 [GRID_VISUAL_DEBUG] NOTE: This grid does NOT handle drag events - handled by outer DndContext');
+  console.log('🎨 [GRID_FIXED] ===== DRAG DROP GRID RENDER =====');
+  console.log('🎨 [GRID_FIXED] displayRankings length:', displayRankings.length);
+  console.log('🎨 [GRID_FIXED] onManualReorder exists:', !!onManualReorder);
 
-  // Stable items array for SortableContext
+  // CRITICAL FIX: Use Pokemon IDs directly as sortable items
   const sortableItems = useMemo(() => {
-    const items = displayRankings.map(p => p.id);
-    console.log(`🎨 [GRID_VISUAL_DEBUG] Creating sortable items - count: ${items.length}`);
-    console.log('🎨 [GRID_VISUAL_DEBUG] Sortable items IDs:', items.slice(0, 10));
+    const items = displayRankings.map(p => p.id.toString());
+    console.log(`🎨 [GRID_FIXED] Sortable items created:`, items.slice(0, 5));
     return items;
   }, [displayRankings]);
 
-  // REDUCED LOGGING: Create cards for all items with detailed logging for first few
+  // Create cards with proper sortable integration
   const renderedCards = useMemo(() => {
-    console.log(`🎨 [GRID_VISUAL_DEBUG] Creating cards for ${displayRankings.length} pokemon`);
+    console.log(`🎨 [GRID_FIXED] Creating ${displayRankings.length} draggable cards`);
     
     return displayRankings.map((pokemon, index) => {
       const isPending = localPendingRefinements.has(pokemon.id);
       
-      // Enhanced logging for first 5 items
-      if (index < 5) {
+      if (index < 3) {
         const score = 'score' in pokemon ? pokemon.score.toFixed(2) : 'N/A';
-        console.log(`🎨 [GRID_VISUAL_DEBUG] Creating card ${index}: ${pokemon.name} (ID: ${pokemon.id}) score: ${score}`);
+        console.log(`🎨 [GRID_FIXED] Card ${index}: ${pokemon.name} (ID: ${pokemon.id}) score: ${score}`);
       }
       
       return (
         <OptimizedDraggableCard
-          key={pokemon.id}
+          key={pokemon.id.toString()}
           pokemon={pokemon}
           index={index}
           isPending={isPending}
@@ -67,7 +57,7 @@ const DragDropGridMemoized: React.FC<DragDropGridMemoizedProps> = React.memo(({
     });
   }, [displayRankings, localPendingRefinements]);
 
-  console.log(`🎨 [GRID_VISUAL_DEBUG] Grid render complete - ${renderedCards.length} cards created`);
+  console.log(`🎨 [GRID_FIXED] Rendering ${renderedCards.length} cards in SortableContext`);
 
   return (
     <SortableContext 
@@ -82,24 +72,6 @@ const DragDropGridMemoized: React.FC<DragDropGridMemoizedProps> = React.memo(({
       </div>
     </SortableContext>
   );
-}, (prevProps, nextProps) => {
-  const isEqual = (
-    prevProps.displayRankings.length === nextProps.displayRankings.length &&
-    prevProps.localPendingRefinements.size === nextProps.localPendingRefinements.size &&
-    // Quick check of first few items for order changes
-    prevProps.displayRankings.slice(0, 5).every((p, i) => p.id === nextProps.displayRankings[i]?.id)
-  );
-  
-  console.log(`🎨 [GRID_MEMO_DEBUG] Grid memo comparison: ${isEqual ? 'PREVENTING' : 'ALLOWING'} re-render`);
-  
-  if (!isEqual) {
-    console.log('🎨 [GRID_MEMO_DEBUG] Re-render reason:');
-    console.log('🎨 [GRID_MEMO_DEBUG] - Length changed:', prevProps.displayRankings.length !== nextProps.displayRankings.length);
-    console.log('🎨 [GRID_MEMO_DEBUG] - Pending changed:', prevProps.localPendingRefinements.size !== nextProps.localPendingRefinements.size);
-    console.log('🎨 [GRID_MEMO_DEBUG] - Order changed:', !prevProps.displayRankings.slice(0, 5).every((p, i) => p.id === nextProps.displayRankings[i]?.id));
-  }
-  
-  return isEqual;
 });
 
 DragDropGridMemoized.displayName = 'DragDropGridMemoized';
