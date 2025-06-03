@@ -3,7 +3,8 @@ import { useManualReorderCore } from './useManualReorderCore';
 import { RankedPokemon } from '@/services/pokemon';
 
 // EXPLICIT NOTE: "Implied Battles" logic has been permanently removed.
-// This hook now focuses exclusively on manual reordering with direct TrueSkill updates.
+// EXPLICIT NOTE: Immediate TrueSkill updates have been explicitly removed.
+// This hook now focuses exclusively on manual reordering with visual persistence only.
 export const useEnhancedManualReorder = (
   finalRankings: RankedPokemon[],
   onRankingsUpdate: (newRankings: RankedPokemon[]) => void,
@@ -12,6 +13,7 @@ export const useEnhancedManualReorder = (
 ) => {
   console.log(`🔥 [ENHANCED_REORDER_HOOK] Initializing with ${finalRankings.length} rankings`);
   console.log(`🔥 [ENHANCED_REORDER_HOOK] EXPLICIT NOTE: Implied battles permanently removed`);
+  console.log(`🔥 [ENHANCED_REORDER_HOOK] EXPLICIT NOTE: Immediate TrueSkill updates explicitly removed`);
 
   return useManualReorderCore(
     finalRankings,

@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { DragEndEvent } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
@@ -16,6 +15,7 @@ export const useManualReorderCore = (
   const hookId = useRef(Date.now()).current;
   console.log(`🎯 [MANUAL_REORDER_CORE_${hookId}] Initializing with ${finalRankings.length} rankings`);
   console.log(`🎯 [MANUAL_REORDER_CORE_${hookId}] EXPLICIT NOTE: Implied battles permanently removed`);
+  console.log(`🎯 [MANUAL_REORDER_CORE_${hookId}] EXPLICIT NOTE: Immediate TrueSkill updates explicitly removed`);
 
   // Early bailout for large datasets
   if (finalRankings.length > 500) {
@@ -69,9 +69,9 @@ export const useManualReorderCore = (
     setRenderTrigger(prev => prev + 1);
   }, []);
 
-  // CRITICAL FIX: Create stable instances with empty deps - removed argument
-  const { simulateBattlesForReorder } = useBattleSimulation();
-  const { updateScoresPreservingOrder } = useScoreUpdater(preventAutoResorting);
+  // EXPLICIT NOTE: Removed TrueSkill simulation hooks - no longer needed for manual reordering
+  // const { simulateBattlesForReorder } = useBattleSimulation();
+  // const { updateScoresPreservingOrder } = useScoreUpdater(preventAutoResorting);
 
   // CRITICAL FIX: Only update when there's a real change and not during drag
   useEffect(() => {
@@ -99,6 +99,7 @@ export const useManualReorderCore = (
   ) => {
     const processId = Date.now();
     console.log(`🎯 [MANUAL_REORDER_CORE_${processId}] ===== PROCESSING REORDER =====`);
+    console.log(`🎯 [MANUAL_REORDER_CORE_${processId}] EXPLICIT NOTE: No TrueSkill updates - visual reordering only`);
     
     if (currentRankings.length === 0) {
       console.error(`❌ [MANUAL_REORDER_CORE_${processId}] Rankings array is empty! Using stable ref.`);
@@ -114,28 +115,28 @@ export const useManualReorderCore = (
       }
     }
     
-    // Create new rankings with manual order
+    // Create new rankings with manual order - VISUAL ONLY
     const newRankings = arrayMove(currentRankings, oldIndex, newIndex);
     console.log(`🎯 [MANUAL_REORDER_CORE_${processId}] New manual order:`, newRankings.slice(0, 5).map((p, i) => `${i+1}. ${p.name}`));
     
-    // Simulate battles
-    const battlesSimulated = simulateBattlesForReorder(newRankings, movedPokemon, oldIndex, newIndex);
-    console.log(`🎯 [MANUAL_REORDER_CORE_${processId}] Battles simulated:`, battlesSimulated);
+    // EXPLICITLY removed immediate TrueSkill updates
+    // simulateBattlesForReorder(newRankings, movedPokemon, oldIndex, newIndex);
+    // const updatedRankings = updateScoresPreservingOrder(newRankings, movedPokemon.id);
     
-    // Update scores while preserving order
-    const updatedRankings = updateScoresPreservingOrder(newRankings, movedPokemon.id);
+    // Manual drag-and-drop explicitly manages μ and σ directly now - no immediate updates
+    console.log(`🎯 [MANUAL_REORDER_CORE_${processId}] ✅ Visual reordering only - no TrueSkill updates`);
     
     // Update both local state and stable ref immediately
     console.log(`🎯 [MANUAL_REORDER_CORE_${processId}] ===== UPDATING STATE =====`);
-    stableRankingsRef.current = updatedRankings;
-    setLocalRankings(updatedRankings);
+    stableRankingsRef.current = newRankings;
+    setLocalRankings(newRankings);
     
-    // Call parent callback
+    // Call parent callback with visual-only reordering
     setTimeout(() => {
       try {
-        console.log(`🎯 [MANUAL_REORDER_CORE_${processId}] Calling parent callback...`);
-        onRankingsUpdate(updatedRankings);
-        console.log(`🎯 [MANUAL_REORDER_CORE_${processId}] ✅ Parent callback completed`);
+        console.log(`🎯 [MANUAL_REORDER_CORE_${processId}] Calling parent callback with visual order...`);
+        onRankingsUpdate(newRankings);
+        console.log(`🎯 [MANUAL_REORDER_CORE_${processId}] ✅ Parent callback completed - visual only`);
       } catch (error) {
         console.error(`❌ [MANUAL_REORDER_CORE_${processId}] Parent callback failed:`, error);
       }
