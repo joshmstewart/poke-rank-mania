@@ -50,33 +50,6 @@ interface EnhancedRankingLayoutProps {
   handleLocalReorder: (newRankings: any[]) => void;
 }
 
-// Explicitly updated manual score adjustment logic:
-// Uses nearest distinct neighbors (above/below) to compute new μ/σ.
-// Ensures stable sorting, especially with multiple identical-scored Pokémon.
-const findNearestDistinct = (
-  list: any[],
-  startIndex: number,
-  direction: number,
-  getRating: (id: string) => Rating
-) => {
-  if (startIndex < 0 || startIndex >= list.length) return null;
-  
-  const baseRating = getRating(list[startIndex].id.toString());
-  const baseMu = baseRating.mu;
-  const baseSigma = baseRating.sigma;
-
-  let index = startIndex + direction;
-  while (index >= 0 && index < list.length) {
-    const neighbor = list[index];
-    const neighborRating = getRating(neighbor.id.toString());
-    if (neighborRating.mu !== baseMu || neighborRating.sigma !== baseSigma) {
-      return neighborRating;
-    }
-    index += direction;
-  }
-  return null;
-};
-
 export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React.memo(({
   isLoading,
   availablePokemon,
@@ -123,14 +96,12 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
     handleLocalReorder
   );
 
-  // Enhanced drag handlers with explicit nearest-distinct-neighbor logic
+  // Enhanced drag handlers with explicit position-based score calculation
   const enhancedHandleDragStart = (event: DragStartEvent) => {
     console.log(`🔧 [MANUAL_DRAG] Manual Drag Start - ID: ${event.active.id}`);
     const activeId = event.active.id.toString();
     console.log(`🔧 [MANUAL_DRAG] Active ID as string: ${activeId}`);
     
-    // EXPLICIT NOTE: "All Filtered" Pokémon cards intentionally use 'available-{id}' format
-    // Ranked Pokemon use just '{id}' format for reordering
     if (activeId.startsWith('available-')) {
       console.log(`🔧 [MANUAL_DRAG] Dragging from Available grid: ${activeId}`);
     } else {
@@ -140,6 +111,9 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
     handleDragStart(event);
   };
 
+  // Drag-and-Drop Explicit Manual Score Adjustment:
+  // Ensures moved Pokémon stays exactly in the dropped position upon refresh.
+  // Explicitly handles identical neighbor scores with a tiny μ adjustment.
   const enhancedHandleDragEnd = (event: DragEndEvent) => {
     console.log(`🔧 [MANUAL_DRAG] Manual Drag End - Active: ${event.active.id}, Over: ${event.over?.id || 'NULL'}`);
     
@@ -153,10 +127,9 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
     const activeId = active.id.toString();
     const overId = over.id.toString();
     
-    // CORRECTED: Handle dragging from Available to Rankings
+    // Handle dragging from Available to Rankings
     if (activeId.startsWith('available-')) {
       console.log(`🔧 [MANUAL_DRAG] Available Pokemon dragged to Rankings`);
-      // Let the original handler manage this cross-grid drag
       handleDragEnd(event);
       return;
     }
@@ -174,64 +147,89 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
         const [movedPokemon] = updatedManualOrder.splice(oldIndex, 1);
         updatedManualOrder.splice(newIndex, 0, movedPokemon);
         
-        console.log(`🔧 [MANUAL_DRAG] ✅ Manual order updated: ${movedPokemon.name} moved to position ${newIndex}`);
+        console.log(`🔧 [MANUAL_DRAG] ✅ Manual order updated: ${movedPokemon.name} moved to position ${newIndex + 1}`);
         setManualRankingOrder(updatedManualOrder);
 
-        // Explicitly updated manual score adjustment logic:
-        // Uses nearest distinct neighbors (above/below) to compute new μ/σ.
-        // Ensures stable sorting, especially with multiple identical-scored Pokémon.
-        console.log(`🎯 [SCORE_ADJUSTMENT] Starting explicit nearest-distinct-neighbor adjustment for ${movedPokemon.name}`);
+        console.log(`🎯 [POSITION_BASED_SCORING] Starting explicit position-based score adjustment for ${movedPokemon.name}`);
         
         // Capture BEFORE adjustment data
         const beforeMovedRating = getRating(movedPokemon.id.toString());
         
-        // Explicit nearest distinct neighbor search:
-        const neighborAbove = findNearestDistinct(updatedManualOrder, newIndex, -1, getRating);
-        const neighborBelow = findNearestDistinct(updatedManualOrder, newIndex, 1, getRating);
+        // Explicitly retrieve immediate neighbors
+        const neighborAbove = newIndex > 0 ? updatedManualOrder[newIndex - 1] : null;
+        const neighborBelow = newIndex < updatedManualOrder.length - 1 ? updatedManualOrder[newIndex + 1] : null;
         
         let newMu: number, newSigma: number;
         
         if (neighborAbove && neighborBelow) {
-          // Explicit average of distinctly scored neighbors
-          newMu = (neighborAbove.mu + neighborBelow.mu) / 2;
-          newSigma = (neighborAbove.sigma + neighborBelow.sigma) / 2;
+          // Get neighbor ratings from TrueSkill store
+          const aboveRating = getRating(neighborAbove.id.toString());
+          const belowRating = getRating(neighborBelow.id.toString());
           
-          const newScore = newMu - newSigma;
-          const aboveScore = neighborAbove.mu - neighborAbove.sigma;
-          const belowScore = neighborBelow.mu - neighborBelow.sigma;
+          // Clearly defined variables:
+          const scoreAbove = aboveRating.mu - aboveRating.sigma;
+          const scoreBelow = belowRating.mu - belowRating.sigma;
           
-          // Explicit checks ensuring correct score ordering:
-          if (newScore >= aboveScore) newMu -= 0.001;
-          if (newScore <= belowScore) newMu += 0.001;
+          // Calculate explicit target score:
+          const targetScore = (scoreAbove + scoreBelow) / 2;
           
-          console.log(`🎯 [SCORE_ADJUSTMENT] Between distinct neighbors - mu: ${newMu.toFixed(3)}, sigma: ${newSigma.toFixed(3)}`);
+          console.log(`🎯 [POSITION_BASED_SCORING] Above score: ${scoreAbove.toFixed(3)}, Below score: ${scoreBelow.toFixed(3)}, Target: ${targetScore.toFixed(3)}`);
+          
+          // Handle Special Case – Identical Neighbor Scores
+          if (
+            scoreAbove === scoreBelow &&
+            aboveRating.mu === belowRating.mu &&
+            aboveRating.sigma === belowRating.sigma
+          ) {
+            console.log(`🎯 [POSITION_BASED_SCORING] Identical neighbors detected - applying tiny adjustment`);
+            
+            const tinyAdjustment = 0.001;
+            
+            if (newIndex < oldIndex) { // moving upwards
+              newMu = aboveRating.mu + tinyAdjustment;
+            } else { // moving downwards
+              newMu = belowRating.mu - tinyAdjustment;
+            }
+            
+            newSigma = aboveRating.sigma; // keep sigma explicitly unchanged
+            
+            console.log(`🎯 [POSITION_BASED_SCORING] Identical case - mu: ${newMu.toFixed(3)}, sigma: ${newSigma.toFixed(3)}`);
+          } else {
+            // General case: Adjust μ Precisely to Achieve Target Score
+            newSigma = (aboveRating.sigma + belowRating.sigma) / 2;
+            newMu = targetScore + newSigma; // Ensures exactly: newMu - newSigma = targetScore
+            
+            console.log(`🎯 [POSITION_BASED_SCORING] General case - mu: ${newMu.toFixed(3)}, sigma: ${newSigma.toFixed(3)}, resulting score: ${(newMu - newSigma).toFixed(3)}`);
+          }
         } else if (neighborAbove) {
-          // Only neighbor above explicitly found
-          newMu = neighborAbove.mu - 0.001;
-          newSigma = neighborAbove.sigma;
-          console.log(`🎯 [SCORE_ADJUSTMENT] Above distinct neighbor only - mu: ${newMu.toFixed(3)}, sigma: ${newSigma.toFixed(3)}`);
+          // Explicit top position handling
+          const aboveRating = getRating(neighborAbove.id.toString());
+          newSigma = aboveRating.sigma;
+          newMu = aboveRating.mu + 0.001;
+          console.log(`🎯 [POSITION_BASED_SCORING] Top position - mu: ${newMu.toFixed(3)}, sigma: ${newSigma.toFixed(3)}`);
         } else if (neighborBelow) {
-          // Only neighbor below explicitly found
-          newMu = neighborBelow.mu + 0.001;
-          newSigma = neighborBelow.sigma;
-          console.log(`🎯 [SCORE_ADJUSTMENT] Below distinct neighbor only - mu: ${newMu.toFixed(3)}, sigma: ${newSigma.toFixed(3)}`);
+          // Explicit bottom position handling
+          const belowRating = getRating(neighborBelow.id.toString());
+          newSigma = belowRating.sigma;
+          newMu = belowRating.mu - 0.001;
+          console.log(`🎯 [POSITION_BASED_SCORING] Bottom position - mu: ${newMu.toFixed(3)}, sigma: ${newSigma.toFixed(3)}`);
         } else {
-          // Explicit edge case handling (no distinct neighbors)
+          // Only Pokémon in list
           newMu = beforeMovedRating.mu;
-          newSigma = Math.max(beforeMovedRating.sigma - 0.001, 1.0);
-          console.log(`🎯 [SCORE_ADJUSTMENT] No distinct neighbors - keeping current rating with slight sigma adjustment`);
+          newSigma = beforeMovedRating.sigma;
+          console.log(`🎯 [POSITION_BASED_SCORING] Only Pokemon - keeping current rating`);
         }
         
-        // Explicit permanent TrueSkill update:
+        // Permanent TrueSkill Store Update
         const newRating = new Rating(newMu, newSigma);
         updateRating(movedPokemon.id.toString(), newRating);
-        console.log(`🎯 [SCORE_ADJUSTMENT] ✅ Permanently updated ${movedPokemon.name} rating in TrueSkill store`);
+        console.log(`🎯 [POSITION_BASED_SCORING] ✅ Permanently updated ${movedPokemon.name} rating in TrueSkill store`);
         
-        // Set debug data explicitly
+        // Set debug data for modal
         const debugInfo: ScoreDebugInfo[] = [
           {
             name: movedPokemon.name,
-            position: 'Moved',
+            position: `Position ${newIndex + 1}`,
             muBefore: beforeMovedRating.mu,
             sigmaBefore: beforeMovedRating.sigma,
             scoreBefore: beforeMovedRating.mu - beforeMovedRating.sigma,
@@ -242,28 +240,30 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
         ];
 
         if (neighborAbove) {
+          const aboveRating = getRating(neighborAbove.id.toString());
           debugInfo.push({
-            name: `Above Neighbor`,
-            position: 'Above',
-            muBefore: neighborAbove.mu,
-            sigmaBefore: neighborAbove.sigma,
-            scoreBefore: neighborAbove.mu - neighborAbove.sigma,
+            name: neighborAbove.name,
+            position: `Above (Position ${newIndex})`,
+            muBefore: aboveRating.mu,
+            sigmaBefore: aboveRating.sigma,
+            scoreBefore: aboveRating.mu - aboveRating.sigma,
           });
         }
 
         if (neighborBelow) {
+          const belowRating = getRating(neighborBelow.id.toString());
           debugInfo.push({
-            name: `Below Neighbor`,
-            position: 'Below',
-            muBefore: neighborBelow.mu,
-            sigmaBefore: neighborBelow.sigma,
-            scoreBefore: neighborBelow.mu - neighborBelow.sigma,
+            name: neighborBelow.name,
+            position: `Below (Position ${newIndex + 2})`,
+            muBefore: belowRating.mu,
+            sigmaBefore: belowRating.sigma,
+            scoreBefore: belowRating.mu - belowRating.sigma,
           });
         }
 
         setDebugData(debugInfo);
         
-        // Trigger background manual reorder without TrueSkill updates (those are now handled above)
+        // Trigger background manual reorder
         handleManualReorder(parseInt(activeId), oldIndex, newIndex);
         
         return;
@@ -317,7 +317,6 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
           </Card>
 
           <Card className="shadow-lg border border-gray-200 overflow-hidden flex flex-col">
-            {/* SINGLE DNDCONTEXT: Handles ALL drag-and-drop operations */}
             <DndContext
               collisionDetection={pointerWithin}
               onDragStart={enhancedHandleDragStart}
@@ -331,7 +330,6 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
                 availablePokemon={enhancedAvailablePokemon}
               />
               
-              {/* Drag overlay for visual feedback */}
               <DragOverlay>
                 {activeDraggedPokemon ? (
                   <div className="transform rotate-3 scale-105 opacity-90">
@@ -349,7 +347,6 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
         </div>
       </div>
       
-      {/* Debug Modal */}
       <ScoreAdjustmentDebugModal
         open={showDebugModal}
         onClose={() => setShowDebugModal(false)}
