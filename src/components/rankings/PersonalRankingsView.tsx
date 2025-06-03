@@ -1,10 +1,9 @@
 
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { useTrueSkillStore } from "@/stores/trueskillStore";
 import { generations } from "@/services/pokemon";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { usePokemonContext } from "@/contexts/PokemonContext";
-import MilestoneHeader from "../battle/MilestoneHeader";
 import DraggableMilestoneGrid from "../battle/DraggableMilestoneGrid";
 
 interface PersonalRankingsViewProps {
@@ -16,6 +15,8 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
 }) => {
   const { getAllRatings } = useTrueSkillStore();
   const [milestoneDisplayCount, setMilestoneDisplayCount] = useState(50);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const loadingRef = useRef<HTMLDivElement | null>(null);
   
   // Get Pokemon data from context
   const { allPokemon, pokemonLookupMap } = usePokemonContext();
@@ -93,19 +94,46 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
 
   const displayRankings = rankings.slice(0, milestoneDisplayCount);
   const localPendingRefinements = new Set<number>();
+  const hasMoreToLoad = milestoneDisplayCount < rankings.length;
   
   const handleLoadMore = useCallback(() => {
-    setMilestoneDisplayCount(prev => prev + 50);
-  }, []);
+    if (hasMoreToLoad) {
+      setMilestoneDisplayCount(prev => Math.min(prev + 50, rankings.length));
+    }
+  }, [hasMoreToLoad, rankings.length]);
 
-  const handleContinueBattles = useCallback(() => {
-    // This would close the modal and return to battle mode
-    console.log("Continue battles clicked");
-  }, []);
+  // Set up infinite scroll observer
+  useEffect(() => {
+    // Clean up previous observer
+    if (observerRef.current && loadingRef.current) {
+      observerRef.current.unobserve(loadingRef.current);
+      observerRef.current.disconnect();
+      observerRef.current = null;
+    }
 
-  const getMaxItemsForTier = useCallback(() => {
-    return rankings.length;
-  }, [rankings.length]);
+    // Only set up observer if we have more items to load
+    if (hasMoreToLoad) {
+      observerRef.current = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting) {
+          console.log(`Loading more rankings: ${milestoneDisplayCount} -> ${Math.min(milestoneDisplayCount + 50, rankings.length)}`);
+          handleLoadMore();
+        }
+      }, { 
+        rootMargin: '200px',
+        threshold: 0.1 
+      });
+      
+      if (loadingRef.current) {
+        observerRef.current.observe(loadingRef.current);
+      }
+    }
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [hasMoreToLoad, milestoneDisplayCount, rankings.length, handleLoadMore]);
 
   if (!allPokemon || allPokemon.length === 0) {
     return (
@@ -121,20 +149,46 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
 
   return (
     <div className="w-full max-w-7xl mx-auto">
-      <MilestoneHeader
-        battlesCompleted={rankings.length}
-        displayCount={displayRankings.length}
-        activeTier="All"
-        maxItems={getMaxItemsForTier()}
-        pendingRefinementsCount={0}
-        onContinueBattles={handleContinueBattles}
-      />
+      {/* Simple header without Continue Battles button */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <span className="text-2xl">🏆</span>
+          <h1 className="text-xl font-bold text-gray-800">
+            Personal Rankings: {rankings.length} Battles
+          </h1>
+          <span className="text-gray-500 text-sm">
+            (Showing {displayRankings.length} of {rankings.length})
+          </span>
+        </div>
+      </div>
 
       {displayRankings.length > 0 ? (
-        <DraggableMilestoneGrid
-          displayRankings={displayRankings}
-          localPendingRefinements={localPendingRefinements}
-        />
+        <>
+          <DraggableMilestoneGrid
+            displayRankings={displayRankings}
+            localPendingRefinements={localPendingRefinements}
+          />
+          
+          {/* Infinite scroll loading indicator */}
+          {hasMoreToLoad && (
+            <div 
+              ref={loadingRef}
+              className="text-center py-4"
+            >
+              <div className="text-sm text-gray-500">
+                Loading more Pokémon... ({displayRankings.length}/{rankings.length})
+              </div>
+            </div>
+          )}
+          
+          {!hasMoreToLoad && rankings.length > 0 && (
+            <div className="text-center py-4">
+              <div className="text-sm text-gray-500">
+                All {rankings.length} ranked Pokémon loaded
+              </div>
+            </div>
+          )}
+        </>
       ) : (
         <div className="text-center py-12">
           <h3 className="text-xl font-semibold text-gray-700 mb-4">
@@ -143,17 +197,6 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
           <p className="text-gray-500">
             Start battling Pokémon to build your personal rankings for {currentGeneration?.name || "All Generations"}.
           </p>
-        </div>
-      )}
-
-      {displayRankings.length < rankings.length && (
-        <div className="text-center mt-6">
-          <button
-            onClick={handleLoadMore}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Load More
-          </button>
         </div>
       )}
     </div>
