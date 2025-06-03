@@ -1,59 +1,98 @@
 
 import React from "react";
-import { Link } from "react-router-dom";
-import { Swords, List } from "lucide-react";
+import { Trophy, DraftingCompass } from "lucide-react";
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger 
+} from "@/components/ui/tooltip";
+import { useTrueSkillStore } from "@/stores/trueskillStore";
 
-export default function ModeSwitcher() {
-  return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">
-          Pokémon Battle Ranker
-        </h1>
-        <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-          Choose your preferred method to rank and battle Pokémon
-        </p>
-      </div>
-
-      <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-        {/* Battle Mode */}
-        <Link
-          to="/battle"
-          className="group bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-200 hover:border-blue-300"
-        >
-          <div className="p-8">
-            <div className="w-16 h-16 bg-red-100 rounded-lg flex items-center justify-center mb-6 group-hover:bg-red-200 transition-colors">
-              <Swords className="h-8 w-8 text-red-600" />
-            </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-3">Battle Mode</h2>
-            <p className="text-gray-600 mb-4">
-              Battle Pokémon head-to-head and let our TrueSkill algorithm automatically generate rankings based on your choices.
-            </p>
-            <div className="text-blue-600 font-semibold group-hover:text-blue-700">
-              Start Battling →
-            </div>
-          </div>
-        </Link>
-
-        {/* Rankings - Combined Personal and Global */}
-        <Link
-          to="/community"
-          className="group bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-200 hover:border-green-300"
-        >
-          <div className="p-8">
-            <div className="w-16 h-16 bg-green-100 rounded-lg flex items-center justify-center mb-6 group-hover:bg-green-200 transition-colors">
-              <List className="h-8 w-8 text-green-600" />
-            </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-3">Rankings</h2>
-            <p className="text-gray-600 mb-4">
-              Manage your personal rankings with drag-and-drop, or view global community rankings based on all users' data.
-            </p>
-            <div className="text-green-600 font-semibold group-hover:text-green-700">
-              View Rankings →
-            </div>
-          </div>
-        </Link>
-      </div>
-    </div>
-  );
+interface ModeSwitcherProps {
+  currentMode: "rank" | "battle";
+  onModeChange: (mode: "rank" | "battle") => void;
 }
+
+const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ currentMode, onModeChange }) => {
+  const { getAllRatings } = useTrueSkillStore();
+
+  const handleModeChange = (mode: "rank" | "battle") => {
+    const ratingsBefore = getAllRatings();
+    const ratingsCountBefore = Object.keys(ratingsBefore).length;
+    
+    console.log(`🚨 [MODE_SWITCHER_CRITICAL] ===== MODE SWITCHER BUTTON CLICKED =====`);
+    console.log(`🚨 [MODE_SWITCHER_CRITICAL] From: ${currentMode} → To: ${mode}`);
+    console.log(`🚨 [MODE_SWITCHER_CRITICAL] Store state BEFORE switcher action: ${ratingsCountBefore} ratings`);
+    console.log(`🚨 [MODE_SWITCHER_CRITICAL] Rating IDs: ${Object.keys(ratingsBefore).slice(0, 10).join(', ')}${Object.keys(ratingsBefore).length > 10 ? '...' : ''}`);
+    
+    // Call the mode change
+    onModeChange(mode);
+    
+    // Check ratings after mode change (with delay to allow state updates)
+    setTimeout(() => {
+      const ratingsAfter = getAllRatings();
+      const ratingsCountAfter = Object.keys(ratingsAfter).length;
+      
+      console.log(`🚨 [MODE_SWITCHER_CRITICAL] Store state AFTER switcher action: ${ratingsCountAfter} ratings`);
+      
+      if (ratingsCountBefore !== ratingsCountAfter) {
+        console.log(`🚨 [MODE_SWITCHER_CRITICAL] ❌ RATING COUNT CHANGED! ${ratingsCountBefore} → ${ratingsCountAfter}`);
+        console.log(`🚨 [MODE_SWITCHER_CRITICAL] This indicates data loss during mode switch!`);
+      } else {
+        console.log(`🚨 [MODE_SWITCHER_CRITICAL] ✅ Rating count preserved during mode switch`);
+      }
+      console.log(`🚨 [MODE_SWITCHER_CRITICAL] ===== MODE SWITCHER ACTION COMPLETE =====`);
+    }, 100);
+  };
+
+  return (
+    <TooltipProvider>
+      <div className="flex items-center">
+        <div className="bg-white border border-gray-200 p-1 rounded-lg flex items-center shadow-sm">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => handleModeChange("battle")}
+                className={`flex items-center justify-center gap-2 px-4 py-2 rounded-md transition-all duration-200 font-medium text-sm ${
+                  currentMode === "battle"
+                    ? "bg-blue-900 text-white shadow-sm"
+                    : "hover:bg-gray-50 text-gray-600 hover:text-gray-800"
+                }`}
+                aria-label="Battle Mode"
+              >
+                <Trophy className={`h-4 w-4 ${currentMode === "battle" ? "text-white" : "text-blue-900"}`} />
+                <span>Battle</span>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" align="center">
+              <p>Battle Mode: Compare Pokémon head-to-head</p>
+            </TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => handleModeChange("rank")}
+                className={`flex items-center justify-center gap-2 px-4 py-2 rounded-md transition-all duration-200 font-medium text-sm ${
+                  currentMode === "rank"
+                    ? "bg-blue-900 text-white shadow-sm"
+                    : "hover:bg-gray-50 text-gray-600 hover:text-gray-800"
+                }`}
+                aria-label="Manual Mode"
+              >
+                <DraftingCompass className={`h-4 w-4 ${currentMode === "rank" ? "text-white" : "text-blue-900"}`} />
+                <span>Manual</span>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" align="center">
+              <p>Manual Mode: Drag and reorder rankings</p>
+            </TooltipContent>
+          </Tooltip>
+        </div>
+      </div>
+    </TooltipProvider>
+  );
+};
+
+export default ModeSwitcher;

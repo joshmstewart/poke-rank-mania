@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import ModeSwitcher from "@/components/ModeSwitcher";
 import { 
   Dialog,
   DialogContent, 
@@ -9,7 +10,7 @@ import {
   DialogTrigger
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, Image, CreditCard, Swords, List } from "lucide-react";
+import { ChevronDown, Image, CreditCard } from "lucide-react";
 import ImagePreferenceSelector from "@/components/settings/ImagePreferenceSelector";
 import { getCurrentImageMode } from "@/components/settings/imagePreferenceHelpers";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -142,25 +143,8 @@ const ModeStyleControls: React.FC<ModeStyleControlsProps> = ({
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <div className="flex bg-gray-200 rounded-lg p-1">
-              <Button
-                variant={mode === 'battle' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => onModeChange('battle')}
-                className="flex items-center gap-2"
-              >
-                <Swords className="h-4 w-4" />
-                Battle
-              </Button>
-              <Button
-                variant={mode === 'rank' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => onModeChange('rank')}
-                className="flex items-center gap-2"
-              >
-                <List className="h-4 w-4" />
-                Manual
-              </Button>
+            <div>
+              <ModeSwitcher currentMode={mode} onModeChange={onModeChange} />
             </div>
           </TooltipTrigger>
           <TooltipContent side="bottom">
