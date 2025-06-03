@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import BattleMode from "@/components/battle/BattleModeCore";
@@ -7,6 +6,9 @@ import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { Toaster } from "@/components/ui/toaster"
 import PokemonRankerWithProvider from "@/components/pokemon/PokemonRankerWithProvider";
 import { AuthWrapper } from "@/components/auth/AuthWrapper";
+import { QueryClient, QueryClientProvider } from 'react-query';
+import { PokemonProvider } from "@/components/pokemon/PokemonProvider";
+import { CommunityRankingsPage } from "./components/community/CommunityRankingsPage";
 
 function AppContent() {
   const [mode, setMode] = useLocalStorage<"rank" | "battle">("pokemon-ranker-mode", "rank");
@@ -185,9 +187,21 @@ function App() {
   console.log('🚀🚀🚀 ROOT_APP_FIXED: About to render fixed structure');
   
   return (
-    <AuthWrapper>
-      <AppContent />
-    </AuthWrapper>
+    <QueryClientProvider client={queryClient}>
+      <PokemonProvider>
+        <BrowserRouter>
+          <div className="min-h-screen bg-background">
+            <AppHeader />
+            <Routes>
+              <Route path="/" element={<ModeSwitcher />} />
+              <Route path="/battle" element={<BattleMode />} />
+              <Route path="/rankings" element={<PokemonRanker />} />
+              <Route path="/community" element={<CommunityRankingsPage />} />
+            </Routes>
+          </div>
+        </BrowserRouter>
+      </PokemonProvider>
+    </QueryClientProvider>
   );
 }
 
