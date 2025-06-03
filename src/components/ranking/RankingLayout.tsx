@@ -1,6 +1,6 @@
 
 import React from "react";
-import { DndContext, DragOverlay, closestCenter, DragStartEvent, DragEndEvent } from '@dnd-kit/core';
+import { DndContext, DragOverlay, pointerWithin, DragStartEvent, DragEndEvent } from '@dnd-kit/core';
 import { LoadingState } from "./LoadingState";
 import { AvailablePokemonSection } from "./AvailablePokemonSection";
 import { RankingsSection } from "./RankingsSection";
@@ -57,17 +57,11 @@ export const RankingLayout: React.FC<RankingLayoutProps> = ({
   handleManualReorder,
   handleLocalReorder
 }) => {
-  // CRITICAL FIX: Enhanced drag event logging with proper event detection
+  // PERFORMANCE FIX: Enhanced drag event logging with proper event detection
   const enhancedHandleDragStart = (event: DragStartEvent) => {
     console.log(`🚨🚨🚨 [LAYOUT_DRAG_START_DETECTED] ===== DRAG START DETECTED =====`);
     console.log(`🚨🚨🚨 [LAYOUT_DRAG_START_ID] Active ID: ${event.active.id}`);
     console.log(`🚨🚨🚨 [LAYOUT_DRAG_START_DATA] Active data:`, event.active.data.current);
-    console.log(`🚨🚨🚨 [LAYOUT_DRAG_START_EVENT] Full event:`, {
-      activeId: event.active.id,
-      activeData: event.active.data.current,
-      activatorEvent: event.activatorEvent
-    });
-    console.log(`🚨🚨🚨 [LAYOUT_DRAG_START_SUCCESS] Drag detection is working at layout level`);
     handleDragStart(event);
   };
 
@@ -75,7 +69,6 @@ export const RankingLayout: React.FC<RankingLayoutProps> = ({
     console.log(`🚨🚨🚨 [LAYOUT_DRAG_END_DETECTED] ===== DRAG END DETECTED =====`);
     console.log(`🚨🚨🚨 [LAYOUT_DRAG_END_ACTIVE] Active ID: ${event.active.id}`);
     console.log(`🚨🚨🚨 [LAYOUT_DRAG_END_OVER] Over ID: ${event.over?.id || 'NULL'}`);
-    console.log(`🚨🚨🚨 [LAYOUT_DRAG_END_OVER_DATA] Over data:`, event.over?.data?.current);
     
     if (!event.over) {
       console.log(`🚨🚨🚨 [LAYOUT_DRAG_END_NO_TARGET] No drop target detected`);
@@ -105,7 +98,7 @@ export const RankingLayout: React.FC<RankingLayoutProps> = ({
     <DndContext 
       onDragStart={enhancedHandleDragStart} 
       onDragEnd={enhancedHandleDragEnd}
-      collisionDetection={closestCenter}
+      collisionDetection={pointerWithin}
     >
       <div className="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen p-1">
         {/* Battle Controls Header */}

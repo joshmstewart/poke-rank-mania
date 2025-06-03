@@ -36,12 +36,9 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
     }
   });
 
-  // Include ranked Pokemon IDs AND available Pokemon IDs for proper collision detection
-  const sortableItems = [
-    ...displayRankings.map(p => p.id),
-    ...availablePokemon.map(p => `available-${p.id}`),
-    ...Array.from({length: 10}, (_, i) => `collision-placeholder-${i}`)
-  ];
+  // PERFORMANCE FIX: Only include ranked Pokemon IDs for collision detection
+  // This dramatically reduces the collision detection overhead
+  const sortableItems = displayRankings.map(p => p.id);
 
   return (
     <div 

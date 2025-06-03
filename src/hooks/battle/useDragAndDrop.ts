@@ -10,6 +10,7 @@ import {
 } from '@dnd-kit/sortable';
 import { arrayMove } from '@dnd-kit/sortable';
 import { DragEndEvent } from '@dnd-kit/core';
+import { useCallback } from 'react';
 
 interface UseDragAndDropProps {
   displayRankings: any[];
@@ -21,14 +22,20 @@ export const useDragAndDrop = ({ displayRankings, onManualReorder, onLocalReorde
   console.log(`🚀 [DRAG_DROP_FLOW] ===== useDragAndDrop with Enhanced Flow =====`);
   console.log(`🚀 [DRAG_DROP_FLOW] onManualReorder function exists: ${!!onManualReorder}`);
 
+  // PERFORMANCE FIX: Optimize sensor configuration
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // Require 8px movement before drag starts
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  // PERFORMANCE FIX: Memoize drag end handler to prevent recreation
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
     console.log(`🚀 [DRAG_DROP_FLOW] ===== DRAG END TRIGGERED =====`);
     
     const { active, over } = event;
@@ -55,31 +62,34 @@ export const useDragAndDrop = ({ displayRankings, onManualReorder, onLocalReorde
     const draggedPokemon = displayRankings[activeIndex];
     console.log(`🚀 [DRAG_DROP_FLOW] Dragged Pokemon: ${draggedPokemon.name} (${draggedPokemon.id})`);
 
-    // Calculate the new rankings for immediate UI feedback
-    const newRankings = arrayMove(displayRankings, activeIndex, overIndex);
+    // PERFORMANCE FIX: Only update local state if different from current
+    if (activeIndex !== overIndex) {
+      // Calculate the new rankings for immediate UI feedback
+      const newRankings = arrayMove(displayRankings, activeIndex, overIndex);
 
-    // Update local rankings for immediate UI feedback
-    if (onLocalReorder) {
-      console.log(`🚀 [DRAG_DROP_FLOW] Updating local rankings for immediate feedback...`);
-      onLocalReorder(newRankings);
-    }
+      // Update local rankings for immediate UI feedback
+      if (onLocalReorder) {
+        console.log(`🚀 [DRAG_DROP_FLOW] Updating local rankings for immediate feedback...`);
+        onLocalReorder(newRankings);
+      }
 
-    // CRITICAL: Call the enhanced manual reorder logic
-    if (onManualReorder) {
-      console.log(`🚀 [DRAG_DROP_FLOW] ===== CALLING ENHANCED MANUAL REORDER =====`);
-      console.log(`🚀 [DRAG_DROP_FLOW] This should trigger TrueSkill updates and implied battles`);
-      console.log(`🚀 [DRAG_DROP_FLOW] Calling: onManualReorder(${draggedPokemon.id}, ${activeIndex}, ${overIndex})`);
-      
-      // Call the enhanced manual reorder logic
-      onManualReorder(draggedPokemon.id, activeIndex, overIndex);
-      
-      console.log(`🚀 [DRAG_DROP_FLOW] Enhanced manual reorder call completed`);
-    } else {
-      console.error(`🚀 [DRAG_DROP_FLOW] ❌ onManualReorder is not available!`);
+      // CRITICAL: Call the enhanced manual reorder logic
+      if (onManualReorder) {
+        console.log(`🚀 [DRAG_DROP_FLOW] ===== CALLING ENHANCED MANUAL REORDER =====`);
+        console.log(`🚀 [DRAG_DROP_FLOW] This should trigger TrueSkill updates and implied battles`);
+        console.log(`🚀 [DRAG_DROP_FLOW] Calling: onManualReorder(${draggedPokemon.id}, ${activeIndex}, ${overIndex})`);
+        
+        // Call the enhanced manual reorder logic
+        onManualReorder(draggedPokemon.id, activeIndex, overIndex);
+        
+        console.log(`🚀 [DRAG_DROP_FLOW] Enhanced manual reorder call completed`);
+      } else {
+        console.error(`🚀 [DRAG_DROP_FLOW] ❌ onManualReorder is not available!`);
+      }
     }
     
     console.log(`🚀 [DRAG_DROP_FLOW] ===== DRAG END COMPLETE =====`);
-  };
+  }, [displayRankings, onManualReorder, onLocalReorder]);
 
   return { sensors, handleDragEnd };
 };
