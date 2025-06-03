@@ -24,6 +24,11 @@ interface DraggablePokemonMilestoneCardProps {
 // CRITICAL: Track renders with detailed prop analysis
 let renderCount = 0;
 
+// Type guard to check if pokemon is RankedPokemon
+const isRankedPokemon = (pokemon: Pokemon | RankedPokemon): pokemon is RankedPokemon => {
+  return 'score' in pokemon;
+};
+
 const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps> = memo(({ 
   pokemon, 
   index, 
@@ -41,20 +46,22 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
 
   // CRITICAL: Memoize all computed values with very specific dependencies
   const computedValues = useMemo(() => {
-    const isRankedPokemon = context === 'available' && 'isRanked' in pokemon && Boolean(pokemon.isRanked);
-    const currentRank = (isRankedPokemon && 'currentRank' in pokemon && typeof pokemon.currentRank === 'number') 
+    const isRanked = context === 'available' && isRankedPokemon(pokemon) && 'isRanked' in pokemon 
+      ? Boolean(pokemon.isRanked) 
+      : false;
+    const currentRank = (isRanked && 'currentRank' in pokemon && typeof pokemon.currentRank === 'number') 
       ? pokemon.currentRank 
       : null;
     const sortableId = isDraggable ? (isAvailable ? `available-${pokemon.id}` : pokemon.id) : `static-${pokemon.id}`;
     
-    console.log(`🔍 [CARD_RENDER_DEBUG] Computed values for ${pokemon.name}: sortableId=${sortableId}, isRankedPokemon=${isRankedPokemon}`);
+    console.log(`🔍 [CARD_RENDER_DEBUG] Computed values for ${pokemon.name}: sortableId=${sortableId}, isRanked=${isRanked}`);
     
     return {
-      isRankedPokemon,
+      isRankedPokemon: isRanked,
       currentRank,
       sortableId
     };
-  }, [context, pokemon.id, pokemon.isRanked, pokemon.currentRank, isDraggable, isAvailable]);
+  }, [context, pokemon.id, isDraggable, isAvailable]);
 
   // CRITICAL: Stable sortable configuration - only depend on truly changing values
   const sortableConfig = useMemo(() => {
