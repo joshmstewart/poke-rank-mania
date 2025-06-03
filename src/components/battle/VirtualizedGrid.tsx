@@ -1,6 +1,5 @@
 
 import React, { useMemo } from 'react';
-import { FixedSizeGrid as Grid } from 'react-window';
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import DraggablePokemonMilestoneCard from './DraggablePokemonMilestoneCard';
 
@@ -16,62 +15,6 @@ interface VirtualizedGridProps {
   onManualReorder?: (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => void;
 }
 
-interface CellProps {
-  columnIndex: number;
-  rowIndex: number;
-  style: React.CSSProperties;
-  data: {
-    items: (Pokemon | RankedPokemon)[];
-    columnCount: number;
-    context: 'available' | 'ranked';
-    localPendingRefinements: Set<number>;
-    onManualReorder?: (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => void;
-  };
-}
-
-const GridCell = React.memo<CellProps>(({ columnIndex, rowIndex, style, data }) => {
-  const { items, columnCount, context, localPendingRefinements, onManualReorder } = data;
-  const index = rowIndex * columnCount + columnIndex;
-  
-  if (index >= items.length) {
-    return <div style={style} />;
-  }
-
-  const pokemon = items[index];
-  const isPending = localPendingRefinements.has(pokemon.id);
-
-  return (
-    <div style={style} className="p-2">
-      <DraggablePokemonMilestoneCard
-        pokemon={pokemon}
-        index={index}
-        isPending={isPending}
-        showRank={context === 'ranked'}
-        isDraggable={true}
-        isAvailable={context === 'available'}
-        context={context}
-      />
-    </div>
-  );
-}, (prevProps, nextProps) => {
-  const prevIndex = prevProps.rowIndex * prevProps.data.columnCount + prevProps.columnIndex;
-  const nextIndex = nextProps.rowIndex * nextProps.data.columnCount + nextProps.columnIndex;
-  
-  const prevPokemon = prevProps.data.items[prevIndex];
-  const nextPokemon = nextProps.data.items[nextIndex];
-  
-  if (!prevPokemon && !nextPokemon) return true;
-  if (!prevPokemon || !nextPokemon) return false;
-  
-  return (
-    prevPokemon.id === nextPokemon.id &&
-    prevProps.data.localPendingRefinements.has(prevPokemon.id) === 
-    nextProps.data.localPendingRefinements.has(nextPokemon.id)
-  );
-});
-
-GridCell.displayName = 'GridCell';
-
 const VirtualizedGrid: React.FC<VirtualizedGridProps> = React.memo(({
   items,
   columnCount,
@@ -85,15 +28,16 @@ const VirtualizedGrid: React.FC<VirtualizedGridProps> = React.memo(({
 }) => {
   console.log(`🔥 [VIRTUALIZED_GRID] Rendering ${items.length} items in ${context} context`);
 
-  const rowCount = Math.ceil(items.length / columnCount);
-
-  const itemData = useMemo(() => ({
-    items,
-    columnCount,
-    context,
-    localPendingRefinements,
-    onManualReorder
-  }), [items, columnCount, context, localPendingRefinements, onManualReorder]);
+  const gridStyle = useMemo(() => ({
+    display: 'grid',
+    gridTemplateColumns: `repeat(${columnCount}, minmax(${itemWidth}px, 1fr))`,
+    gap: '8px',
+    padding: '8px',
+    height: `${containerHeight}px`,
+    width: `${containerWidth}px`,
+    overflowY: 'auto' as const,
+    overflowX: 'hidden' as const
+  }), [columnCount, itemWidth, containerHeight, containerWidth]);
 
   if (items.length === 0) {
     return (
@@ -109,19 +53,25 @@ const VirtualizedGrid: React.FC<VirtualizedGridProps> = React.memo(({
   }
 
   return (
-    <Grid
-      height={containerHeight}
-      width={containerWidth}
-      columnCount={columnCount}
-      columnWidth={itemWidth}
-      rowCount={rowCount}
-      rowHeight={itemHeight}
-      itemData={itemData}
-      overscanRowCount={2}
-      overscanColumnCount={1}
-    >
-      {GridCell}
-    </Grid>
+    <div style={gridStyle}>
+      {items.map((pokemon, index) => {
+        const isPending = localPendingRefinements.has(pokemon.id);
+
+        return (
+          <div key={pokemon.id} className="p-2">
+            <DraggablePokemonMilestoneCard
+              pokemon={pokemon}
+              index={index}
+              isPending={isPending}
+              showRank={context === 'ranked'}
+              isDraggable={true}
+              isAvailable={context === 'available'}
+              context={context}
+            />
+          </div>
+        );
+      })}
+    </div>
   );
 }, (prevProps, nextProps) => {
   return (
