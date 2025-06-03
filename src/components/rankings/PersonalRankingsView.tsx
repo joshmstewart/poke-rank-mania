@@ -6,6 +6,7 @@ import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { usePokemonContext } from "@/contexts/PokemonContext";
 import { formatPokemonName } from "@/utils/pokemon";
 import DraggableMilestoneGrid from "../battle/DraggableMilestoneGrid";
+import { useBattleManualReorder } from "@/hooks/battle/useBattleManualReorder";
 
 interface PersonalRankingsViewProps {
   selectedGeneration: number;
@@ -16,6 +17,7 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
 }) => {
   const { getAllRatings } = useTrueSkillStore();
   const [milestoneDisplayCount, setMilestoneDisplayCount] = useState(50);
+  const [localRankings, setLocalRankings] = useState<RankedPokemon[]>([]);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadingRef = useRef<HTMLDivElement | null>(null);
   
@@ -94,15 +96,33 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
     return rankedPokemon.sort((a, b) => b.score - a.score);
   }, [getAllRatings, pokemonLookupMap, selectedGeneration]);
 
-  const displayRankings = rankings.slice(0, milestoneDisplayCount);
+  // Update local rankings when rankings change
+  useEffect(() => {
+    setLocalRankings(rankings);
+  }, [rankings]);
+
+  // Handle rankings update from manual reorder
+  const handleRankingsUpdate = useCallback((updatedRankings: RankedPokemon[]) => {
+    console.log(`🏆 [PERSONAL_RANKINGS] Received rankings update with ${updatedRankings.length} Pokemon`);
+    setLocalRankings(updatedRankings);
+  }, []);
+
+  // Use the battle manual reorder hook with milestone view behavior
+  const { handleManualReorder } = useBattleManualReorder(
+    localRankings,
+    handleRankingsUpdate,
+    true // isMilestoneView = true to get the proper drag behavior
+  );
+
+  const displayRankings = localRankings.slice(0, milestoneDisplayCount);
   const localPendingRefinements = new Set<number>();
-  const hasMoreToLoad = milestoneDisplayCount < rankings.length;
+  const hasMoreToLoad = milestoneDisplayCount < localRankings.length;
   
   const handleLoadMore = useCallback(() => {
     if (hasMoreToLoad) {
-      setMilestoneDisplayCount(prev => Math.min(prev + 50, rankings.length));
+      setMilestoneDisplayCount(prev => Math.min(prev + 50, localRankings.length));
     }
-  }, [hasMoreToLoad, rankings.length]);
+  }, [hasMoreToLoad, localRankings.length]);
 
   // Set up infinite scroll observer
   useEffect(() => {
@@ -117,7 +137,7 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
     if (hasMoreToLoad) {
       observerRef.current = new IntersectionObserver((entries) => {
         if (entries[0].isIntersecting) {
-          console.log(`Loading more rankings: ${milestoneDisplayCount} -> ${Math.min(milestoneDisplayCount + 50, rankings.length)}`);
+          console.log(`Loading more rankings: ${milestoneDisplayCount} -> ${Math.min(milestoneDisplayCount + 50, localRankings.length)}`);
           handleLoadMore();
         }
       }, { 
@@ -135,7 +155,7 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
         observerRef.current.disconnect();
       }
     };
-  }, [hasMoreToLoad, milestoneDisplayCount, rankings.length, handleLoadMore]);
+  }, [hasMoreToLoad, milestoneDisplayCount, localRankings.length, handleLoadMore]);
 
   if (!allPokemon || allPokemon.length === 0) {
     return (
@@ -156,10 +176,10 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
         <div className="flex items-center gap-3">
           <span className="text-2xl">🏆</span>
           <h1 className="text-xl font-bold text-gray-800">
-            Personal Rankings: {rankings.length} Battles
+            Personal Rankings: {localRankings.length} Battles
           </h1>
           <span className="text-gray-500 text-sm">
-            (Showing {displayRankings.length} of {rankings.length})
+            (Showing {displayRankings.length} of {localRankings.length})
           </span>
         </div>
       </div>
@@ -169,6 +189,7 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
           <DraggableMilestoneGrid
             displayRankings={displayRankings}
             localPendingRefinements={localPendingRefinements}
+            onManualReorder={handleManualReorder}
           />
           
           {/* Infinite scroll loading indicator */}
@@ -178,15 +199,15 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
               className="text-center py-4"
             >
               <div className="text-sm text-gray-500">
-                Loading more Pokémon... ({displayRankings.length}/{rankings.length})
+                Loading more Pokémon... ({displayRankings.length}/{localRankings.length})
               </div>
             </div>
           )}
           
-          {!hasMoreToLoad && rankings.length > 0 && (
+          {!hasMoreToLoad && localRankings.length > 0 && (
             <div className="text-center py-4">
               <div className="text-sm text-gray-500">
-                All {rankings.length} ranked Pokémon loaded
+                All {localRankings.length} ranked Pokémon loaded
               </div>
             </div>
           )}
