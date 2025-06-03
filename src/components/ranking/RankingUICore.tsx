@@ -71,8 +71,17 @@ export const RankingUICore: React.FC<RankingUICoreProps> = React.memo(({
     addImpliedBattle // Pass battle function for simulation
   );
 
-  // Re-ranking trigger for already-ranked Pokemon
-  const { triggerReRanking } = useReRankingTrigger(localRankings, updateLocalRankings);
+  // Re-ranking trigger for already-ranked Pokemon with error handling
+  let triggerReRanking;
+  try {
+    const reRankingResult = useReRankingTrigger(localRankings, updateLocalRankings);
+    triggerReRanking = reRankingResult.triggerReRanking;
+  } catch (error) {
+    console.error('[RANKING_UI_CORE] Error initializing re-ranking trigger:', error);
+    triggerReRanking = () => {
+      console.warn('[RANKING_UI_CORE] Re-ranking unavailable due to store error');
+    };
+  }
 
   // Use the extracted reset functionality
   const { handleComprehensiveReset } = useRankingReset({
