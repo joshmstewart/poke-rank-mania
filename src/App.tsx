@@ -80,7 +80,7 @@ function App() {
   
   return (
     <QueryClientProvider client={queryClient}>
-      <PokemonProvider>
+      <PokemonProvider allPokemon={[]} rawUnfilteredPokemon={[]}>
         <Router>
           <div className="min-h-screen bg-background">
             <AppHeader mode={mode} onModeChange={handleModeChange} />
