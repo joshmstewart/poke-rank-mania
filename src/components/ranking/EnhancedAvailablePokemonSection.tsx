@@ -77,15 +77,23 @@ export const EnhancedAvailablePokemonSection: React.FC<EnhancedAvailablePokemonS
 
   // Transform items to match the expected interface
   const transformedItems = items.map(item => {
-    if ('type' in item && item.type === 'generation-header') {
+    // Check for header type (usePokemonGrouping returns 'header', not 'generation-header')
+    if ('type' in item && item.type === 'header') {
       return {
         type: 'generation-header' as const,
-        generationId: item.generationId,
-        generationName: item.generationName || `Generation ${item.generationId}`
+        generationId: item.generationId || 1,
+        generationName: (item.data?.name) || `Generation ${item.generationId || 1}`
       };
     }
+    // For pokemon items, return the actual pokemon data
+    if ('type' in item && item.type === 'pokemon' && item.data) {
+      return item.data;
+    }
+    // Fallback for direct pokemon objects
     return item;
   });
+
+  console.log(`🔍 [ENHANCED_AVAILABLE_SECTION] Transformed ${transformedItems.length} items`);
 
   const allExpanded = expandedGenerations.size === availableGenerations.length && availableGenerations.length > 0;
 
