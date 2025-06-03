@@ -9,7 +9,6 @@ import UnifiedControls from "@/components/shared/UnifiedControls";
 import PokemonCard from "@/components/PokemonCard";
 import { Card } from "@/components/ui/card";
 import { useStableDragHandlers } from "@/hooks/battle/useStableDragHandlers";
-import { useImpliedBattleTracker } from "@/contexts/ImpliedBattleTracker";
 
 interface EnhancedRankingLayoutProps {
   isLoading: boolean;
@@ -36,6 +35,8 @@ interface EnhancedRankingLayoutProps {
   handleLocalReorder: (newRankings: any[]) => void;
 }
 
+// EXPLICIT NOTE: "Implied Battles" logic has been permanently removed.
+// Manual drag-and-drop explicitly adjusts mu/sigma directly instead.
 export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React.memo(({
   isLoading,
   availablePokemon,
@@ -63,13 +64,10 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
   console.log(`🔥🔥🔥 [LAYOUT_FIXED] ===== ENHANCED LAYOUT RENDER =====`);
   console.log(`🔥🔥🔥 [LAYOUT_FIXED] displayRankings count: ${displayRankings.length}`);
 
-  // Connect to implied battle tracker
-  const { addImpliedBattle } = useImpliedBattleTracker();
-
-  // STEP 1: Introduce manual ranking order state for visual persistence
+  // Manual ranking order state for visual persistence
   const [manualRankingOrder, setManualRankingOrder] = useState(displayRankings);
   
-  // Update manual order when displayRankings changes (on initial load or refresh)
+  // Update manual order when displayRankings changes
   useEffect(() => {
     setManualRankingOrder(displayRankings);
   }, [displayRankings]);
@@ -80,7 +78,8 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
     handleLocalReorder
   );
 
-  // STEP 2: Enhanced drag handlers with manual order preservation
+  // Enhanced drag handlers with manual order preservation
+  // EXPLICIT NOTE: Removed all implied battle logic - now only handles visual reordering and direct TrueSkill updates
   const enhancedHandleDragStart = (event: DragStartEvent) => {
     console.log(`🔧 [MANUAL_DRAG] Manual Drag Start - ID: ${event.active.id}`);
     const activeId = event.active.id.toString();
@@ -98,7 +97,7 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
       return;
     }
     
-    // STEP 2: Handle manual reordering within rankings
+    // Handle manual reordering within rankings
     const activeId = active.id.toString();
     const overId = over.id.toString();
     
@@ -110,7 +109,7 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
       console.log(`🔧 [MANUAL_DRAG] Reordering indices: ${oldIndex} -> ${newIndex}`);
       
       if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-        // CRITICAL: Update only manual order state for visual persistence
+        // Update only manual order state for visual persistence
         const updatedManualOrder = [...manualRankingOrder];
         const [movedPokemon] = updatedManualOrder.splice(oldIndex, 1);
         updatedManualOrder.splice(newIndex, 0, movedPokemon);
@@ -118,41 +117,11 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
         console.log(`🔧 [MANUAL_DRAG] ✅ Manual order updated: ${movedPokemon.name} moved to position ${newIndex}`);
         setManualRankingOrder(updatedManualOrder);
         
-        // STEP 3: Add implied battles based on the reorder
-        console.log(`🎲 [IMPLIED_BATTLES] Triggering implied battles for reorder`);
+        // EXPLICIT NOTE: Implied battle logic permanently removed
+        // Direct TrueSkill updates now happen in handleManualReorder
+        console.log(`🎲 [DIRECT_TRUESKILL] Triggering direct TrueSkill updates for reorder`);
         
-        // Determine who wins based on the direction of movement
-        if (newIndex < oldIndex) {
-          // Pokemon moved up - it beats the Pokemon it moved past
-          for (let i = newIndex; i < oldIndex; i++) {
-            const opponent = updatedManualOrder[i + 1];
-            if (opponent && opponent.id !== movedPokemon.id) {
-              console.log(`🎲 [IMPLIED_BATTLES] ${movedPokemon.name} beats ${opponent.name} (moved up)`);
-              addImpliedBattle({
-                draggedPokemon: movedPokemon.name,
-                opponent: opponent.name,
-                winner: movedPokemon.name,
-                battleType: 'Manual Reorder (Up)'
-              });
-            }
-          }
-        } else if (newIndex > oldIndex) {
-          // Pokemon moved down - Pokemon it moved past beat it
-          for (let i = oldIndex; i < newIndex; i++) {
-            const opponent = updatedManualOrder[i];
-            if (opponent && opponent.id !== movedPokemon.id) {
-              console.log(`🎲 [IMPLIED_BATTLES] ${opponent.name} beats ${movedPokemon.name} (moved down)`);
-              addImpliedBattle({
-                draggedPokemon: movedPokemon.name,
-                opponent: opponent.name,
-                winner: opponent.name,
-                battleType: 'Manual Reorder (Down)'
-              });
-            }
-          }
-        }
-        
-        // STEP 4: Trigger background score updates without immediate visual change
+        // Trigger background score updates without immediate visual change
         handleManualReorder(parseInt(activeId), oldIndex, newIndex);
         
         return;
@@ -195,17 +164,12 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
           </Card>
 
           <Card className="shadow-lg border border-gray-200 overflow-hidden flex flex-col">
-            {/* EXPLICITLY THE SINGLE DNDCONTEXT:
-                - This is the ONLY DndContext in the entire component tree
-                - Handles ALL drag-and-drop operations for the ranking system
-                - No other DndContexts should exist anywhere else
-                - Uses enhanced drag handlers for manual reordering logic */}
+            {/* SINGLE DNDCONTEXT: Handles ALL drag-and-drop operations */}
             <DndContext
               collisionDetection={pointerWithin}
               onDragStart={enhancedHandleDragStart}
               onDragEnd={enhancedHandleDragEnd}
             >
-              {/* RankingsSectionStable: Pure container, NO conflicting contexts */}
               <RankingsSectionStable
                 displayRankings={manualRankingOrder}
                 onManualReorder={stableOnManualReorder}
@@ -214,7 +178,7 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
                 availablePokemon={enhancedAvailablePokemon}
               />
               
-              {/* Drag overlay for visual feedback during drag operations */}
+              {/* Drag overlay for visual feedback */}
               <DragOverlay>
                 {activeDraggedPokemon ? (
                   <div className="transform rotate-3 scale-105 opacity-90">

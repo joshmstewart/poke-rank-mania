@@ -33,6 +33,8 @@ interface RankingUICoreProps {
   onReset: () => void;
 }
 
+// EXPLICIT NOTE: "Implied Battles" logic has been permanently removed.
+// Manual drag-and-drop explicitly adjusts mu/sigma directly instead.
 export const RankingUICore: React.FC<RankingUICoreProps> = React.memo(({
   isLoading,
   availablePokemon,
@@ -60,17 +62,13 @@ export const RankingUICore: React.FC<RankingUICoreProps> = React.memo(({
   console.log(`🚨🚨🚨 [RANKING_UI_CORE_DEBUG] localRankings count: ${localRankings.length}`);
   console.log(`🚨🚨🚨 [RANKING_UI_CORE_DEBUG] enhancedAvailablePokemon count: ${enhancedAvailablePokemon.length}`);
 
-  // Simple implied battle function for Manual Mode
-  const addImpliedBattle = (winnerId: number, loserId: number) => {
-    console.log(`🎲 [MANUAL_IMPLIED_BATTLE] Battle: ${winnerId} beats ${loserId}`);
-  };
-
-  // Enhanced manual reorder with manual order preservation and battle simulation
+  // Enhanced manual reorder with manual order preservation and direct TrueSkill updates
+  // EXPLICIT NOTE: Removed addImpliedBattle parameter - no longer using implied battles
   const { handleEnhancedManualReorder } = useEnhancedManualReorder(
     localRankings,
     updateLocalRankings,
     true, // preventAutoResorting for Manual Mode
-    addImpliedBattle // Pass battle function for simulation
+    undefined // No implied battle function needed
   );
 
   console.log(`🚨🚨🚨 [RANKING_UI_CORE_DEBUG] handleEnhancedManualReorder created:`, !!handleEnhancedManualReorder);
