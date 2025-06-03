@@ -254,26 +254,61 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = React.memo
     </div>
   );
 }, (prevProps, nextProps) => {
-  // Custom comparison to prevent unnecessary re-renders
-  const isEqual = (
-    prevProps.formattedRankings.length === nextProps.formattedRankings.length &&
-    prevProps.battlesCompleted === nextProps.battlesCompleted &&
-    prevProps.milestoneDisplayCount === nextProps.milestoneDisplayCount &&
-    prevProps.activeTier === nextProps.activeTier
+  // FIXED: Enhanced comparison that detects order changes within the same array length
+  const lengthChanged = prevProps.formattedRankings.length !== nextProps.formattedRankings.length;
+  const battlesChanged = prevProps.battlesCompleted !== nextProps.battlesCompleted;
+  const displayCountChanged = prevProps.milestoneDisplayCount !== nextProps.milestoneDisplayCount;
+  const tierChanged = prevProps.activeTier !== nextProps.activeTier;
+  
+  // CRITICAL FIX: Check for order changes by comparing the first 10 Pokemon IDs
+  const orderChanged = !prevProps.formattedRankings.slice(0, 10).every((p, i) => 
+    p.id === nextProps.formattedRankings[i]?.id
   );
   
-  console.log('🎨 [MILESTONE_MEMO_DEBUG] Memo comparison result:', isEqual ? 'PREVENTING' : 'ALLOWING', 'rerender');
+  // CRITICAL FIX: Check for score changes in the first 10 Pokemon
+  const scoresChanged = !prevProps.formattedRankings.slice(0, 10).every((p, i) => {
+    const nextPokemon = nextProps.formattedRankings[i];
+    if (!nextPokemon) return false;
+    const prevScore = 'score' in p ? p.score : 0;
+    const nextScore = 'score' in nextPokemon ? nextPokemon.score : 0;
+    return Math.abs(prevScore - nextScore) < 0.01; // Allow small floating point differences
+  });
   
-  if (!isEqual) {
+  const shouldPreventRerender = !lengthChanged && !battlesChanged && !displayCountChanged && !tierChanged && !orderChanged && !scoresChanged;
+  
+  console.log('🎨 [MILESTONE_MEMO_DEBUG] Enhanced memo comparison result:', shouldPreventRerender ? 'PREVENTING' : 'ALLOWING', 'rerender');
+  
+  if (!shouldPreventRerender) {
     console.log('🎨 [MILESTONE_MEMO_DEBUG] Allowing rerender because:', {
-      lengthChanged: prevProps.formattedRankings.length !== nextProps.formattedRankings.length,
-      battlesChanged: prevProps.battlesCompleted !== nextProps.battlesCompleted,
-      displayCountChanged: prevProps.milestoneDisplayCount !== nextProps.milestoneDisplayCount,
-      tierChanged: prevProps.activeTier !== nextProps.activeTier
+      lengthChanged,
+      battlesChanged,
+      displayCountChanged,
+      tierChanged,
+      orderChanged,
+      scoresChanged
     });
+    
+    // CRITICAL DEBUG: Log the order comparison details
+    if (orderChanged) {
+      console.log('🎨 [MILESTONE_MEMO_DEBUG] Order changed - Previous first 5:', 
+        prevProps.formattedRankings.slice(0, 5).map(p => `${p.id}:${p.name}`)
+      );
+      console.log('🎨 [MILESTONE_MEMO_DEBUG] Order changed - Current first 5:', 
+        nextProps.formattedRankings.slice(0, 5).map(p => `${p.id}:${p.name}`)
+      );
+    }
+    
+    if (scoresChanged) {
+      console.log('🎨 [MILESTONE_MEMO_DEBUG] Scores changed - Previous first 5:', 
+        prevProps.formattedRankings.slice(0, 5).map(p => `${p.name}:${('score' in p ? p.score.toFixed(2) : 'N/A')}`)
+      );
+      console.log('🎨 [MILESTONE_MEMO_DEBUG] Scores changed - Current first 5:', 
+        nextProps.formattedRankings.slice(0, 5).map(p => `${p.name}:${('score' in p ? p.score.toFixed(2) : 'N/A')}`)
+      );
+    }
   }
   
-  return isEqual;
+  return shouldPreventRerender;
 });
 
 DraggableMilestoneView.displayName = 'DraggableMilestoneView';
