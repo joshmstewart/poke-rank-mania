@@ -1,6 +1,6 @@
 
 import React from "react";
-import { Trophy, DraftingCompass, Users } from "lucide-react";
+import { Trophy, DraftingCompass } from "lucide-react";
 import { 
   Tooltip,
   TooltipContent,
@@ -46,10 +46,6 @@ const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ currentMode, onModeChange }
     }, 100);
   };
 
-  const handleCombinedRankingsClick = () => {
-    window.location.href = '/combined-rankings';
-  };
-
   return (
     <TooltipProvider>
       <div className="flex items-center">
@@ -91,22 +87,6 @@ const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ currentMode, onModeChange }
             </TooltipTrigger>
             <TooltipContent side="bottom" align="center">
               <p>Manual Mode: Drag and reorder rankings</p>
-            </TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                onClick={handleCombinedRankingsClick}
-                className="flex items-center justify-center gap-2 px-4 py-2 rounded-md transition-all duration-200 font-medium text-sm hover:bg-gray-50 text-gray-600 hover:text-gray-800"
-                aria-label="Combined Rankings"
-              >
-                <Users className="h-4 w-4 text-blue-900" />
-                <span>Rankings</span>
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom" align="center">
-              <p>View your rankings and global community rankings</p>
             </TooltipContent>
           </Tooltip>
         </div>

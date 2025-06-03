@@ -1,6 +1,5 @@
-
 import React, { useState } from "react";
-import { RefreshCw, Settings } from "lucide-react";
+import { RefreshCw, Settings, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BattleType } from "@/hooks/battle/types";
 import {
@@ -58,6 +57,10 @@ const UnifiedControls: React.FC<UnifiedControlsProps> = ({
   const { clearAllRatings } = useTrueSkillStore();
   
   const safeSelectedGeneration = selectedGeneration !== undefined ? selectedGeneration : 0;
+  
+  const handleCombinedRankingsClick = () => {
+    window.location.href = '/combined-rankings';
+  };
   
   const handleUnifiedReset = () => {
     console.log(`🔄 [UNIFIED_RESET] ===== COMPLETE RESET INITIATED FROM ${mode.toUpperCase()} MODE =====`);
@@ -153,6 +156,17 @@ const UnifiedControls: React.FC<UnifiedControlsProps> = ({
       </div>
 
       <div className="flex items-center gap-4">
+        {/* Rankings Button */}
+        <Button
+          variant="outline"
+          size="sm"
+          className="flex items-center gap-1 h-8 text-sm px-4"
+          onClick={handleCombinedRankingsClick}
+        >
+          <Users className="h-4 w-4" />
+          Rankings
+        </Button>
+
         {/* Settings Button (Forms) */}
         <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
           <DialogTrigger asChild>
