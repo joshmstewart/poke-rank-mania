@@ -1,3 +1,4 @@
+
 import React, { useMemo, useCallback } from "react";
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
@@ -46,7 +47,7 @@ const SortableRankingCard: React.FC<{
       <PokemonCard
         pokemon={pokemon}
         compact={true}
-        viewMode="grid"
+        viewMode="list"
         isDragging={isDragging}
       />
     </div>
