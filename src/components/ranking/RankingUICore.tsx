@@ -59,11 +59,18 @@ export const RankingUICore: React.FC<RankingUICoreProps> = ({
   console.log(`🚨🚨🚨 [ENHANCED_RANKING_UI_CORE] Enhanced available Pokemon: ${enhancedAvailablePokemon.length}`);
   console.log(`🚨🚨🚨 [ENHANCED_RANKING_UI_CORE] Local rankings: ${localRankings.length}`);
 
-  // Enhanced manual reorder with manual order preservation
+  // Simple implied battle function for Manual Mode
+  const addImpliedBattle = (winnerId: number, loserId: number) => {
+    console.log(`🎲 [MANUAL_IMPLIED_BATTLE] Battle: ${winnerId} beats ${loserId}`);
+    // For Manual Mode, we just log the battle - the TrueSkill updates happen in the reorder hook
+  };
+
+  // Enhanced manual reorder with manual order preservation and battle simulation
   const { handleEnhancedManualReorder } = useEnhancedManualReorder(
     localRankings,
     updateLocalRankings,
-    true
+    true, // preventAutoResorting for Manual Mode
+    addImpliedBattle // Pass battle function for simulation
   );
 
   // Re-ranking trigger for already-ranked Pokemon

@@ -65,40 +65,97 @@ export const useEnhancedManualReorder = (
     return true;
   }, []);
 
-  // PERFORMANCE FIX: Defer heavy TrueSkill calculations
-  const applyTrueSkillUpdates = useCallback((
-    winnerPokemon: RankedPokemon, 
-    loserPokemon: RankedPokemon,
-    rankDifference: number
+  // FIXED: Immediate TrueSkill battle simulation
+  const simulateBattlesForReorder = useCallback((
+    reorderedRankings: RankedPokemon[],
+    movedPokemon: RankedPokemon,
+    oldIndex: number,
+    newIndex: number
   ) => {
-    console.log('🔥 [ENHANCED_REORDER_TRUESKILL] Applying TrueSkill updates...');
+    console.log('🔥🔥🔥 [BATTLE_SIMULATION] ===== SIMULATING BATTLES FOR REORDER =====');
+    console.log('🔥🔥🔥 [BATTLE_SIMULATION] Pokemon:', movedPokemon.name, 'moved from', oldIndex, 'to', newIndex);
     
-    // Get current ratings
-    const winnerRating = getRating(winnerPokemon.id.toString());
-    const loserRating = getRating(loserPokemon.id.toString());
+    let battlesSimulated = 0;
     
-    // Calculate rating adjustments based on rank difference
-    const baseAdjustment = Math.min(3, Math.max(0.5, rankDifference / 10));
+    if (newIndex < oldIndex) {
+      // Pokemon moved up - it should beat Pokemon it moved past
+      console.log('🔥🔥🔥 [BATTLE_SIMULATION] Pokemon moved UP - simulating wins');
+      for (let i = newIndex; i < oldIndex; i++) {
+        const opponent = reorderedRankings[i + 1];
+        if (opponent && opponent.id !== movedPokemon.id) {
+          // Get current ratings
+          const winnerRating = getRating(movedPokemon.id.toString());
+          const loserRating = getRating(opponent.id.toString());
+          
+          // Calculate new ratings - winner gains, loser loses
+          const ratingChange = Math.min(2.0, Math.max(0.5, Math.abs(oldIndex - newIndex) / 10));
+          
+          const newWinnerRating = new Rating(
+            winnerRating.mu + ratingChange,
+            Math.max(winnerRating.sigma * 0.9, 1.0)
+          );
+          
+          const newLoserRating = new Rating(
+            loserRating.mu - ratingChange,
+            Math.max(loserRating.sigma * 0.9, 1.0)
+          );
+          
+          // Update ratings
+          updateRating(movedPokemon.id.toString(), newWinnerRating);
+          updateRating(opponent.id.toString(), newLoserRating);
+          
+          console.log('🔥🔥🔥 [BATTLE_SIMULATION] Battle:', movedPokemon.name, 'BEATS', opponent.name);
+          battlesSimulated++;
+          
+          // Add implied battle if function exists
+          if (addImpliedBattle) {
+            addImpliedBattle(movedPokemon.id, opponent.id);
+          }
+        }
+      }
+    } else if (newIndex > oldIndex) {
+      // Pokemon moved down - Pokemon it moved past should beat it
+      console.log('🔥🔥🔥 [BATTLE_SIMULATION] Pokemon moved DOWN - simulating losses');
+      for (let i = oldIndex + 1; i <= newIndex; i++) {
+        const opponent = reorderedRankings[i - 1];
+        if (opponent && opponent.id !== movedPokemon.id) {
+          // Get current ratings
+          const winnerRating = getRating(opponent.id.toString());
+          const loserRating = getRating(movedPokemon.id.toString());
+          
+          // Calculate new ratings
+          const ratingChange = Math.min(2.0, Math.max(0.5, Math.abs(newIndex - oldIndex) / 10));
+          
+          const newWinnerRating = new Rating(
+            winnerRating.mu + ratingChange,
+            Math.max(winnerRating.sigma * 0.9, 1.0)
+          );
+          
+          const newLoserRating = new Rating(
+            loserRating.mu - ratingChange,
+            Math.max(loserRating.sigma * 0.9, 1.0)
+          );
+          
+          // Update ratings
+          updateRating(opponent.id.toString(), newWinnerRating);
+          updateRating(movedPokemon.id.toString(), newLoserRating);
+          
+          console.log('🔥🔥🔥 [BATTLE_SIMULATION]', opponent.name, 'BEATS', movedPokemon.name);
+          battlesSimulated++;
+          
+          // Add implied battle if function exists
+          if (addImpliedBattle) {
+            addImpliedBattle(opponent.id, movedPokemon.id);
+          }
+        }
+      }
+    }
     
-    // Create new ratings
-    const newWinnerRating = new Rating(
-      winnerRating.mu + baseAdjustment,
-      Math.max(winnerRating.sigma * 0.95, 1.0)
-    );
-    
-    const newLoserRating = new Rating(
-      loserRating.mu - baseAdjustment,
-      Math.max(loserRating.sigma * 0.95, 1.0)
-    );
-    
-    // Update the ratings in the store
-    updateRating(winnerPokemon.id.toString(), newWinnerRating);
-    updateRating(loserPokemon.id.toString(), newLoserRating);
-    
-    console.log('🔥 [ENHANCED_REORDER_TRUESKILL] TrueSkill ratings updated successfully');
-  }, [getRating, updateRating]);
+    console.log('🔥🔥🔥 [BATTLE_SIMULATION] ✅ Simulated', battlesSimulated, 'battles');
+    return battlesSimulated;
+  }, [getRating, updateRating, addImpliedBattle]);
 
-  // PERFORMANCE FIX: Only recalculate affected Pokemon scores
+  // FIXED: Immediate score recalculation
   const recalculateScores = useCallback((rankings: RankedPokemon[]): RankedPokemon[] => {
     console.log('🔥 [ENHANCED_REORDER_RECALC] Recalculating scores for', rankings.length, 'Pokemon');
     
@@ -106,6 +163,8 @@ export const useEnhancedManualReorder = (
       const rating = getRating(pokemon.id.toString());
       const conservativeEstimate = rating.mu - rating.sigma;
       const confidence = Math.max(0, Math.min(100, 100 * (1 - (rating.sigma / 8.33))));
+      
+      console.log('🔥 [ENHANCED_REORDER_RECALC]', pokemon.name, 'score:', pokemon.score.toFixed(2), '→', conservativeEstimate.toFixed(2));
       
       return {
         ...pokemon,
@@ -149,96 +208,56 @@ export const useEnhancedManualReorder = (
     
     const movedPokemon = localRankings[oldIndex];
     
-    // PERFORMANCE FIX: Immediate optimistic update
+    // FIXED: Immediate update with battle simulation
     const newRankings = arrayMove(localRankings, oldIndex, newIndex);
-    setLocalRankings(newRankings);
-    onRankingsUpdateRef.current(newRankings);
     
-    // PERFORMANCE FIX: Defer heavy calculations
-    setTimeout(() => {
-      setIsUpdating(true);
-      
-      try {
-        if (!validateRankingsIntegrity(newRankings)) {
-          console.error('🔥 [ENHANCED_REORDER_DRAG] Rankings integrity check failed');
-          return;
-        }
-        
-        // Apply TrueSkill updates for affected Pokemon
-        const rankDifference = Math.abs(newIndex - oldIndex);
-        if (rankDifference > 0 && addImpliedBattle) {
-          if (newIndex < oldIndex) {
-            // Moved up - this Pokemon beats the ones it moved past
-            for (let i = newIndex; i < oldIndex; i++) {
-              const beatenPokemon = newRankings[i + 1];
-              if (beatenPokemon && beatenPokemon.id !== movedPokemon.id) {
-                applyTrueSkillUpdates(movedPokemon, beatenPokemon, 1);
-                addImpliedBattle(movedPokemon.id, beatenPokemon.id);
-              }
-            }
-          } else {
-            // Moved down - the ones it moved past beat this Pokemon
-            for (let i = oldIndex + 1; i <= newIndex; i++) {
-              const winnerPokemon = newRankings[i - 1];
-              if (winnerPokemon && winnerPokemon.id !== movedPokemon.id) {
-                applyTrueSkillUpdates(winnerPokemon, movedPokemon, 1);
-                addImpliedBattle(winnerPokemon.id, movedPokemon.id);
-              }
-            }
-          }
-        }
-        
-        // Recalculate scores with updated TrueSkill ratings
-        const updatedRankings = recalculateScores(newRankings);
-        setLocalRankings(updatedRankings);
-        onRankingsUpdateRef.current(updatedRankings);
-        
-        console.log('🔥 [ENHANCED_REORDER_DRAG] ✅ Deferred processing complete');
-        
-      } catch (error) {
-        console.error('🔥 [ENHANCED_REORDER_DRAG] Error during deferred processing:', error);
-      } finally {
-        setIsUpdating(false);
-      }
-    }, 0);
-  }, [localRankings, validateRankingsIntegrity, applyTrueSkillUpdates, addImpliedBattle, recalculateScores]);
+    console.log('🔥 [ENHANCED_REORDER_DRAG] ===== STARTING BATTLE SIMULATION =====');
+    
+    // Simulate battles immediately
+    const battlesSimulated = simulateBattlesForReorder(newRankings, movedPokemon, oldIndex, newIndex);
+    
+    // Recalculate scores with updated TrueSkill ratings
+    const updatedRankings = recalculateScores(newRankings);
+    
+    // Update state immediately
+    setLocalRankings(updatedRankings);
+    onRankingsUpdateRef.current(updatedRankings);
+    
+    console.log('🔥 [ENHANCED_REORDER_DRAG] ✅ Drag processing complete with', battlesSimulated, 'battles simulated');
+  }, [localRankings, validateRankingsIntegrity, simulateBattlesForReorder, recalculateScores]);
 
-  // PERFORMANCE FIX: Optimized manual reorder with deferred heavy operations
+  // FIXED: Immediate manual reorder with battle simulation
   const handleEnhancedManualReorder = useCallback((
     draggedPokemonId: number,
     sourceIndex: number,
     destinationIndex: number
   ) => {
-    console.log('🔥 [ENHANCED_MANUAL_REORDER] Manual reorder called:', draggedPokemonId, sourceIndex, destinationIndex);
+    console.log('🔥 [ENHANCED_MANUAL_REORDER] ===== MANUAL REORDER CALLED =====');
+    console.log('🔥 [ENHANCED_MANUAL_REORDER] Pokemon:', draggedPokemonId, 'from', sourceIndex, 'to', destinationIndex);
     
-    // Immediate optimistic update
+    const movedPokemon = localRankings[sourceIndex];
+    if (!movedPokemon) {
+      console.error('🔥 [ENHANCED_MANUAL_REORDER] Pokemon not found at source index');
+      return;
+    }
+    
+    // Create new rankings
     const newRankings = arrayMove(localRankings, sourceIndex, destinationIndex);
-    setLocalRankings(newRankings);
-    onRankingsUpdateRef.current(newRankings);
     
-    // Defer heavy calculations
-    setTimeout(() => {
-      setIsUpdating(true);
-      
-      try {
-        if (!validateRankingsIntegrity(newRankings)) {
-          console.error('🔥 [ENHANCED_MANUAL_REORDER] Rankings integrity check failed');
-          return;
-        }
-        
-        const updatedRankings = recalculateScores(newRankings);
-        setLocalRankings(updatedRankings);
-        onRankingsUpdateRef.current(updatedRankings);
-        
-        console.log('🔥 [ENHANCED_MANUAL_REORDER] ✅ Manual reorder completed');
-        
-      } catch (error) {
-        console.error('🔥 [ENHANCED_MANUAL_REORDER] Error during manual reorder:', error);
-      } finally {
-        setIsUpdating(false);
-      }
-    }, 0);
-  }, [localRankings, validateRankingsIntegrity, recalculateScores]);
+    console.log('🔥 [ENHANCED_MANUAL_REORDER] ===== STARTING BATTLE SIMULATION =====');
+    
+    // Simulate battles immediately
+    const battlesSimulated = simulateBattlesForReorder(newRankings, movedPokemon, sourceIndex, destinationIndex);
+    
+    // Recalculate scores with updated TrueSkill ratings
+    const updatedRankings = recalculateScores(newRankings);
+    
+    // Update state immediately
+    setLocalRankings(updatedRankings);
+    onRankingsUpdateRef.current(updatedRankings);
+    
+    console.log('🔥 [ENHANCED_MANUAL_REORDER] ✅ Manual reorder complete with', battlesSimulated, 'battles simulated');
+  }, [localRankings, validateRankingsIntegrity, simulateBattlesForReorder, recalculateScores]);
 
   // PERFORMANCE FIX: Memoize display rankings to prevent recreation
   const displayRankings = useMemo(() => {
