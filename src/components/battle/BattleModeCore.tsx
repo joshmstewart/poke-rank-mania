@@ -20,6 +20,7 @@ const BattleModeCore: React.FC = () => {
   const [allPokemon, setAllPokemon] = useState<Pokemon[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [hasInitialized, setHasInitialized] = useState(false);
+  const [loadingError, setLoadingError] = useState<string | null>(null);
 
   // Add debug monitoring
   const { manualDebugCheck } = useBattleDebugger();
@@ -62,10 +63,17 @@ const BattleModeCore: React.FC = () => {
   }, []);
 
   const handlePokemonLoaded = useCallback((pokemon: Pokemon[]) => {
-    setAllPokemon(pokemon);
+    console.log(`🔒 [POKEMON_LOADING] Received ${pokemon.length} Pokemon`);
+    if (pokemon && pokemon.length > 0) {
+      setAllPokemon(pokemon);
+      setLoadingError(null);
+    } else {
+      setLoadingError("No Pokemon data received");
+    }
   }, []);
 
   const handleLoadingChange = useCallback((loading: boolean) => {
+    console.log(`🔒 [LOADING_STATE] Loading changed to: ${loading}`);
     setIsLoading(loading);
   }, []);
 
@@ -103,6 +111,29 @@ const BattleModeCore: React.FC = () => {
     performSmartCloudInitialization();
   }, [hasInitialized, isHydrated, waitForHydration, smartSync]);
 
+  // Show loading error if Pokemon failed to load
+  if (loadingError) {
+    return (
+      <RefinementQueueProvider>
+        <div className="flex justify-center items-center h-64 w-full">
+          <div className="flex flex-col items-center">
+            <p className="text-red-600 mb-4">Error loading Pokemon: {loadingError}</p>
+            <button 
+              onClick={() => {
+                setLoadingError(null);
+                setIsLoading(true);
+                window.location.reload();
+              }}
+              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </RefinementQueueProvider>
+    );
+  }
+
   // Loading state
   if (isLoading || !stablePokemon.length) {
     console.log(`🔒 [POKEMON_LOADING_FIX] BattleModeCore showing loading state - isLoading: ${isLoading}, Pokemon count: ${stablePokemon.length}`);
@@ -117,6 +148,9 @@ const BattleModeCore: React.FC = () => {
           <div className="flex flex-col items-center">
             <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent mb-4"></div>
             <p>Loading complete Pokémon dataset for battles...</p>
+            <p className="text-sm text-gray-500 mt-2">
+              Current status: {stablePokemon.length} Pokemon loaded
+            </p>
           </div>
         </div>
       </RefinementQueueProvider>

@@ -22,13 +22,50 @@ const BattleModeContainer: React.FC<BattleModeContainerProps> = ({
 }) => {
   console.log(`🔧 [BATTLE_MODE_CONTAINER] Rendering with ${allPokemon.length} Pokemon`);
   
+  // Add error boundary protection
+  const [hasError, setHasError] = useState(false);
   const [selectedGeneration, setSelectedGeneration] = useState(0);
   
   // CRITICAL FIX: Get battle count from TrueSkill store as single source of truth
   const { totalBattles } = useTrueSkillStore();
 
-  // CRITICAL FIX: Use the battle state from the core hook directly
-  const battleState = useBattleStateCore(allPokemon, initialBattleType, selectedGeneration);
+  // Add error handling for battle state initialization
+  let battleState;
+  try {
+    battleState = useBattleStateCore(allPokemon, initialBattleType, selectedGeneration);
+  } catch (error) {
+    console.error('🚨 [BATTLE_CONTAINER_ERROR] Failed to initialize battle state:', error);
+    setHasError(true);
+    battleState = null;
+  }
+
+  // Show error state if battle initialization failed
+  if (hasError || !battleState) {
+    return (
+      <div className="container max-w-7xl mx-auto py-6">
+        <div className="flex flex-col items-center justify-center h-64">
+          <div className="text-center">
+            <h2 className="text-xl font-bold mb-4 text-red-600">Battle System Error</h2>
+            <p className="text-gray-600 mb-4">
+              {allPokemon.length === 0 
+                ? "No Pokemon data available. Please wait for Pokemon to load."
+                : "Failed to initialize battle system."
+              }
+            </p>
+            <button 
+              onClick={() => {
+                setHasError(false);
+                window.location.reload();
+              }}
+              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // CRITICAL FIX: Always use TrueSkill store value for battles completed
   useEffect(() => {
@@ -40,10 +77,10 @@ const BattleModeContainer: React.FC<BattleModeContainerProps> = ({
 
   // Sync battle results
   useEffect(() => {
-    if (setBattleResults) {
+    if (setBattleResults && battleState) {
       setBattleResults(battleState.battleResults);
     }
-  }, [battleState.battleResults, setBattleResults]);
+  }, [battleState?.battleResults, setBattleResults]);
 
   // CRITICAL FIX: Listen for reset events and force re-render
   useEffect(() => {
@@ -70,12 +107,16 @@ const BattleModeContainer: React.FC<BattleModeContainerProps> = ({
   const handleGenerationChange = useCallback((gen: number) => {
     console.log(`🔧 [BATTLE_MODE_CONTAINER] Generation changed to: ${gen}`);
     setSelectedGeneration(gen);
-    battleState.setSelectedGeneration(gen);
+    if (battleState && battleState.setSelectedGeneration) {
+      battleState.setSelectedGeneration(gen);
+    }
   }, [battleState]);
 
   const handleBattleTypeChange = useCallback((type: BattleType) => {
     console.log(`🔧 [BATTLE_MODE_CONTAINER] Battle type changed to: ${type}`);
-    battleState.setBattleType(type);
+    if (battleState && battleState.setBattleType) {
+      battleState.setBattleType(type);
+    }
   }, [battleState]);
 
   return (
