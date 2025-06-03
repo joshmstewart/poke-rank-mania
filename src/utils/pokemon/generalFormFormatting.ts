@@ -39,11 +39,18 @@ export const handleGeneralFormFormatting = (name: string): string | null => {
   const parts = name.split('-');
   if (parts.length === 2) {
     const [baseName, formName] = parts;
+    const lowerFormName = formName.toLowerCase();
     
     // Special cases to skip
     if (lowerName.includes('-totem') || lowerName.includes('-hero') || 
         lowerName.includes('-large') || lowerName.includes('-dada')) {
       return null;
+    }
+    
+    // Special case: Remove "standard" and "ordinary" forms entirely
+    if (lowerFormName === 'standard' || lowerFormName === 'ordinary') {
+      console.log(`🔧 [GENERAL_FORM_DEBUG] Removing "${formName}" from: "${name}" -> "${capitalizeFirstLetter(baseName)}"`);
+      return capitalizeFirstLetter(baseName);
     }
     
     const capitalizedBase = capitalizeFirstLetter(baseName);
