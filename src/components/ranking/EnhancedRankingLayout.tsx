@@ -1,7 +1,7 @@
 
 import React, { useMemo } from "react";
 import { DndContext, DragOverlay, pointerWithin, DragStartEvent, DragEndEvent } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { BattleType } from "@/hooks/battle/types";
 import { LoadingType } from "@/hooks/pokemon/types";
 import { RankingsSectionStable } from "./RankingsSectionStable";
@@ -70,28 +70,28 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
     handleLocalReorder
   );
 
-  // CRITICAL FIX: Create a proper drag end handler that calls both the drag handler AND the manual reorder
+  // FIXED: Simple drag end handler that properly handles both available->rankings and rankings reordering
   const enhancedDragEnd = (event: DragEndEvent) => {
     console.log(`🔥🔥🔥 [LAYOUT_DRAG_FIX] ===== ENHANCED DRAG END =====`);
     console.log(`🔥🔥🔥 [LAYOUT_DRAG_FIX] Active: ${event.active.id}, Over: ${event.over?.id || 'NULL'}`);
     
-    // First call the original drag end handler (for state management)
+    const { active, over } = event;
+    if (!over) {
+      console.log(`🔥🔥🔥 [LAYOUT_DRAG_FIX] No drop target`);
+      return;
+    }
+
+    // First call the original handleDragEnd for available->rankings drops
     if (handleDragEnd) {
-      console.log(`🔥🔥🔥 [LAYOUT_DRAG_FIX] Calling original handleDragEnd`);
+      console.log(`🔥🔥🔥 [LAYOUT_DRAG_FIX] Calling original handleDragEnd for state management`);
       handleDragEnd(event);
     }
     
-    // Then handle the reordering logic specifically for rankings
-    const { active, over } = event;
-    if (!over || active.id === over.id) {
-      console.log(`🔥🔥🔥 [LAYOUT_DRAG_FIX] No valid drop target`);
-      return;
-    }
-    
-    // Check if this is a reorder within rankings (not from available to rankings)
+    // Handle reordering within rankings using SortableContext logic
     const activeId = active.id.toString();
     const overId = over.id.toString();
     
+    // Only handle reordering if both items are in the rankings (not available Pokemon)
     if (!activeId.startsWith('available-') && !overId.startsWith('available-')) {
       const activePokemonId = Number(activeId);
       const overPokemonId = Number(overId);
@@ -99,52 +99,25 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
       const oldIndex = displayRankings.findIndex(p => p.id === activePokemonId);
       const newIndex = displayRankings.findIndex(p => p.id === overPokemonId);
       
-      console.log(`🔥🔥🔥 [LAYOUT_DRAG_FIX] Reorder within rankings: ${activePokemonId} from ${oldIndex} to ${newIndex}`);
+      console.log(`🔥🔥🔥 [LAYOUT_DRAG_FIX] Reorder attempt: Pokemon ${activePokemonId} from index ${oldIndex} to ${newIndex}`);
       
-      if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex && handleManualReorder) {
-        console.log(`🔥🔥🔥 [LAYOUT_DRAG_FIX] Calling handleManualReorder directly`);
+      if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
+        console.log(`🔥🔥🔥 [LAYOUT_DRAG_FIX] Valid reorder - calling handleManualReorder`);
         handleManualReorder(activePokemonId, oldIndex, newIndex);
+      } else {
+        console.log(`🔥🔥🔥 [LAYOUT_DRAG_FIX] Invalid reorder indices - skipping`);
       }
+    } else {
+      console.log(`🔥🔥🔥 [LAYOUT_DRAG_FIX] Not a rankings reorder - letting original handler manage`);
     }
   };
 
-  // Memoize sortable items
-  const sortableItems = useMemo(() => 
-    displayRankings.map(p => p.id.toString()),
-    [displayRankings]
-  );
-
-  // Memoized controls section
-  const controlsSection = useMemo(() => (
-    <div className="max-w-7xl mx-auto mb-4">
-      <UnifiedControls
-        selectedGeneration={selectedGeneration}
-        battleType={battleType}
-        onGenerationChange={(gen) => onGenerationChange(Number(gen))}
-        onBattleTypeChange={setBattleType}
-        showBattleTypeControls={true}
-        mode="manual"
-        onReset={handleComprehensiveReset}
-        customResetAction={handleComprehensiveReset}
-      />
-    </div>
-  ), [selectedGeneration, battleType, onGenerationChange, setBattleType, handleComprehensiveReset]);
-
-  // Memoized drag overlay
-  const dragOverlay = useMemo(() => (
-    <DragOverlay>
-      {activeDraggedPokemon ? (
-        <div className="transform rotate-3 scale-105 opacity-90">
-          <PokemonCard
-            pokemon={activeDraggedPokemon}
-            compact={true}
-            viewMode="grid"
-            isDragging={true}
-          />
-        </div>
-      ) : null}
-    </DragOverlay>
-  ), [activeDraggedPokemon]);
+  // Create sortable items from rankings
+  const sortableItems = useMemo(() => {
+    const items = displayRankings.map(p => p.id.toString());
+    console.log(`🔥🔥🔥 [LAYOUT_SORTABLE] Creating ${items.length} sortable items:`, items.slice(0, 5));
+    return items;
+  }, [displayRankings]);
 
   return (
     <DndContext
