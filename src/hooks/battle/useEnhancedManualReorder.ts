@@ -317,7 +317,7 @@ export const useEnhancedManualReorder = (
     console.log('🔥 [PRESERVE_ORDER_ULTRA_OPTIMIZED] movedPokemonId:', movedPokemonId);
     console.log('🔥 [PRESERVE_ORDER_ULTRA_OPTIMIZED] newPosition:', newPosition);
 
-    // ULTRA-OPTIMIZED: Only update the moved Pokemon's score
+    // ULTRA-OPTIMIZED: Only update the moved Pokemon - this is user intent!
     let pokemonToUpdate: Set<number>;
     
     if (movedPokemonId !== undefined) {
@@ -515,14 +515,22 @@ export const useEnhancedManualReorder = (
     
     setLocalRankings(updatedRankings);
     
-    // CRITICAL DEBUG: Log the parent callback
-    console.log('🎨 [PARENT_CALLBACK_DEBUG] Calling onRankingsUpdate with:', {
+    // CRITICAL DEBUG: Log the parent callback execution
+    console.log('🎨 [PARENT_CALLBACK_DEBUG] About to call onRankingsUpdate with:', {
       updatedRankingsLength: updatedRankings.length,
       callbackExists: !!onRankingsUpdateRef.current,
+      callbackType: typeof onRankingsUpdateRef.current,
       timestamp: Date.now()
     });
     
-    onRankingsUpdateRef.current(updatedRankings);
+    // CRITICAL: Add try-catch to see if callback fails
+    try {
+      onRankingsUpdateRef.current(updatedRankings);
+      console.log('🎨 [PARENT_CALLBACK_DEBUG] ✅ Parent callback completed successfully');
+    } catch (error) {
+      console.error('🎨 [PARENT_CALLBACK_DEBUG] ❌ Parent callback failed:', error);
+      persistentLog.add(`❌ PARENT_CALLBACK_FAILED: ${error}`);
+    }
     
     const perfStateUpdateEnd = performance.now();
     persistentLog.add(`🎯 STATE_UPDATE: State update: ${(perfStateUpdateEnd - perfStateUpdateStart).toFixed(2)}ms`);

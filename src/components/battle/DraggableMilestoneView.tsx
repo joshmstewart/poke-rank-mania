@@ -43,7 +43,7 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = React.memo
   console.log('🎨 [MILESTONE_VISUAL_DEBUG] ===== MILESTONE VIEW RENDER =====');
   console.log('🎨 [MILESTONE_VISUAL_DEBUG] formattedRankings length:', formattedRankings.length);
   console.log('🎨 [MILESTONE_VISUAL_DEBUG] First 5 rankings:', formattedRankings.slice(0, 5).map((p, i) => `${i+1}. ${p.name} (${('score' in p ? p.score.toFixed(2) : 'N/A')})`));
-  console.log('🎨 [MILESTONE_VISUAL_DEBUG] Timestamp:', Date.now());
+  console.log('🎨 [MILESTONE_VISUAL_DEBUG] Render timestamp:', Date.now());
 
   const [localRankings, setLocalRankings] = useState(formattedRankings);
   
@@ -86,7 +86,9 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = React.memo
       console.log('🎨 [MILESTONE_VISUAL_DEBUG] ===== STABLE LOCAL REORDER CALLED =====');
       console.log('🎨 [MILESTONE_VISUAL_DEBUG] New rankings length:', newRankings.length);
       console.log('🎨 [MILESTONE_VISUAL_DEBUG] First 5 new rankings:', newRankings.slice(0, 5).map((p, i) => `${i+1}. ${p.name} (${('score' in p ? p.score.toFixed(2) : 'N/A')})`));
+      console.log('🎨 [MILESTONE_VISUAL_DEBUG] About to call setLocalRankings...');
       setLocalRankings(newRankings);
+      console.log('🎨 [MILESTONE_VISUAL_DEBUG] ✅ setLocalRankings called');
     }
   );
 
@@ -197,6 +199,15 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = React.memo
   );
   
   console.log('🎨 [MILESTONE_MEMO_DEBUG] Memo comparison result:', isEqual ? 'PREVENTING' : 'ALLOWING', 'rerender');
+  
+  if (!isEqual) {
+    console.log('🎨 [MILESTONE_MEMO_DEBUG] Allowing rerender because:', {
+      lengthChanged: prevProps.formattedRankings.length !== nextProps.formattedRankings.length,
+      battlesChanged: prevProps.battlesCompleted !== nextProps.battlesCompleted,
+      displayCountChanged: prevProps.milestoneDisplayCount !== nextProps.milestoneDisplayCount,
+      tierChanged: prevProps.activeTier !== nextProps.activeTier
+    });
+  }
   
   return isEqual;
 });
