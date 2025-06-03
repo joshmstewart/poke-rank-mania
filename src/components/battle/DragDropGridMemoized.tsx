@@ -6,6 +6,7 @@ import {
   SortableContext,
   rectSortingStrategy,
 } from '@dnd-kit/sortable';
+import { useDragAndDrop } from "@/hooks/battle/useDragAndDrop";
 
 interface DragDropGridMemoizedProps {
   displayRankings: (Pokemon | RankedPokemon)[];
@@ -32,6 +33,13 @@ const DragDropGridMemoized: React.FC<DragDropGridMemoizedProps> = React.memo(({
   console.log('🎨 [GRID_VISUAL_DEBUG] Grid render timestamp:', Date.now());
   console.log('🎨 [GRID_VISUAL_DEBUG] onManualReorder exists:', !!onManualReorder);
   console.log('🎨 [GRID_VISUAL_DEBUG] onLocalReorder exists:', !!onLocalReorder);
+
+  // Use the drag and drop hook with proper handlers
+  const { sensors, handleDragEnd } = useDragAndDrop({
+    displayRankings,
+    onManualReorder: onManualReorder || (() => {}),
+    onLocalReorder: onLocalReorder || (() => {})
+  });
 
   // Stable items array for SortableContext
   const sortableItems = useMemo(() => {
