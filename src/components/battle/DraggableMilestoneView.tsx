@@ -60,16 +60,21 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = React.memo
 }) => {
   console.log(`🏆 [MILESTONE_STABLE] Rendering milestone view with ${formattedRankings.length} rankings`);
 
+  // CRITICAL FIX: Add flag to track when we're in a manual operation
+  const [isManualOperationInProgress, setIsManualOperationInProgress] = useState(false);
+
   // CRITICAL DEBUG: Log incoming props to track visual updates with persistent logs
   persistentLog.add(`🎨 [MILESTONE_VISUAL_DEBUG] ===== MILESTONE VIEW RENDER =====`);
   persistentLog.add(`🎨 [MILESTONE_VISUAL_DEBUG] formattedRankings length: ${formattedRankings.length}`);
   persistentLog.add(`🎨 [MILESTONE_VISUAL_DEBUG] First 5 rankings: ${formattedRankings.slice(0, 5).map((p, i) => `${i+1}. ${p.name} (${('score' in p ? p.score.toFixed(2) : 'N/A')})`).join(', ')}`);
   persistentLog.add(`🎨 [MILESTONE_VISUAL_DEBUG] Render timestamp: ${Date.now()}`);
+  persistentLog.add(`🎨 [MILESTONE_VISUAL_DEBUG] Manual operation in progress: ${isManualOperationInProgress}`);
   
   console.log('🎨 [MILESTONE_VISUAL_DEBUG] ===== MILESTONE VIEW RENDER =====');
   console.log('🎨 [MILESTONE_VISUAL_DEBUG] formattedRankings length:', formattedRankings.length);
   console.log('🎨 [MILESTONE_VISUAL_DEBUG] First 5 rankings:', formattedRankings.slice(0, 5).map((p, i) => `${i+1}. ${p.name} (${('score' in p ? p.score.toFixed(2) : 'N/A')})`));
   console.log('🎨 [MILESTONE_VISUAL_DEBUG] Render timestamp:', Date.now());
+  console.log('🎨 [MILESTONE_VISUAL_DEBUG] Manual operation in progress:', isManualOperationInProgress);
 
   const [localRankings, setLocalRankings] = useState(formattedRankings);
   
@@ -135,17 +140,26 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = React.memo
     }
   );
 
-  // Update local state when props change, but only if we don't have local changes
+  // CRITICAL FIX: Only update local state from props when NOT in a manual operation
   useEffect(() => {
     console.log(`🏆 [MILESTONE_STABLE] Props changed - checking for updates`);
     
     persistentLog.add(`🎨 [MILESTONE_VISUAL_DEBUG] ===== PROPS EFFECT TRIGGERED =====`);
     persistentLog.add(`🎨 [MILESTONE_VISUAL_DEBUG] formattedRankings length: ${formattedRankings.length}`);
     persistentLog.add(`🎨 [MILESTONE_VISUAL_DEBUG] localRankings length: ${localRankings.length}`);
+    persistentLog.add(`🎨 [MILESTONE_VISUAL_DEBUG] isManualOperationInProgress: ${isManualOperationInProgress}`);
     
     console.log('🎨 [MILESTONE_VISUAL_DEBUG] ===== PROPS EFFECT TRIGGERED =====');
     console.log('🎨 [MILESTONE_VISUAL_DEBUG] formattedRankings length:', formattedRankings.length);
     console.log('🎨 [MILESTONE_VISUAL_DEBUG] localRankings length:', localRankings.length);
+    console.log('🎨 [MILESTONE_VISUAL_DEBUG] isManualOperationInProgress:', isManualOperationInProgress);
+    
+    // CRITICAL FIX: Don't update from props during manual operations
+    if (isManualOperationInProgress) {
+      persistentLog.add(`🎨 [MILESTONE_VISUAL_DEBUG] ⚠️ SKIPPING PROPS UPDATE - Manual operation in progress`);
+      console.log('🎨 [MILESTONE_VISUAL_DEBUG] ⚠️ SKIPPING PROPS UPDATE - Manual operation in progress');
+      return;
+    }
     
     const hasSignificantDifference = Math.abs(formattedRankings.length - localRankings.length) > 0 ||
       formattedRankings.slice(0, 5).some((p, i) => p.id !== localRankings[i]?.id);
@@ -159,7 +173,7 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = React.memo
       console.log('🎨 [MILESTONE_VISUAL_DEBUG] ===== UPDATING LOCAL FROM PROPS =====');
       setLocalRankings(formattedRankings);
     }
-  }, [formattedRankings]);
+  }, [formattedRankings, isManualOperationInProgress]);
 
   // FIXED: Use only the enhanced manual reorder
   const { handleEnhancedManualReorder } = useEnhancedManualReorder(
@@ -173,6 +187,13 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = React.memo
       console.log('🎨 [MILESTONE_VISUAL_DEBUG] Updated rankings length:', updatedRankings.length);
       console.log('🎨 [MILESTONE_VISUAL_DEBUG] First 5 updated rankings:', updatedRankings.slice(0, 5).map((p, i) => `${i+1}. ${p.name} (${p.score.toFixed(2)})`));
       stableOnLocalReorder(updatedRankings);
+      
+      // CRITICAL FIX: Clear manual operation flag after a delay to allow for score updates
+      setTimeout(() => {
+        setIsManualOperationInProgress(false);
+        persistentLog.add(`🎨 [MILESTONE_VISUAL_DEBUG] ✅ Manual operation flag cleared`);
+        console.log('🎨 [MILESTONE_VISUAL_DEBUG] ✅ Manual operation flag cleared');
+      }, 1000);
     },
     true // preventAutoResorting = true to maintain manual order
   );
@@ -182,6 +203,11 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = React.memo
     displayRankings,
     onManualReorder: (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => {
       console.log(`🏆 [MILESTONE_STABLE] Drag completed: ${draggedPokemonId} from ${sourceIndex} to ${destinationIndex}`);
+      
+      // CRITICAL FIX: Set manual operation flag at start of drag
+      setIsManualOperationInProgress(true);
+      persistentLog.add(`🎨 [MILESTONE_VISUAL_DEBUG] ✅ Manual operation flag set - blocking props updates`);
+      console.log('🎨 [MILESTONE_VISUAL_DEBUG] ✅ Manual operation flag set - blocking props updates');
       
       persistentLog.add(`🎨 [MILESTONE_VISUAL_DEBUG] ===== DRAG OPERATION INITIATED =====`);
       persistentLog.add(`🎨 [MILESTONE_VISUAL_DEBUG] draggedPokemonId: ${draggedPokemonId}`);
@@ -254,58 +280,21 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = React.memo
     </div>
   );
 }, (prevProps, nextProps) => {
-  // FIXED: Enhanced comparison that detects order changes within the same array length
-  const lengthChanged = prevProps.formattedRankings.length !== nextProps.formattedRankings.length;
-  const battlesChanged = prevProps.battlesCompleted !== nextProps.battlesCompleted;
-  const displayCountChanged = prevProps.milestoneDisplayCount !== nextProps.milestoneDisplayCount;
-  const tierChanged = prevProps.activeTier !== nextProps.activeTier;
+  // CRITICAL FIX: During manual operations, prevent ALL re-renders by always returning true
+  // This ensures the component doesn't re-render and revert the manual changes
   
-  // CRITICAL FIX: Check for order changes by comparing the first 10 Pokemon IDs
-  const orderChanged = !prevProps.formattedRankings.slice(0, 10).every((p, i) => 
-    p.id === nextProps.formattedRankings[i]?.id
+  // Simple comparison - only allow re-renders for major changes like battle count
+  const shouldPreventRerender = (
+    prevProps.battlesCompleted === nextProps.battlesCompleted &&
+    prevProps.activeTier === nextProps.activeTier &&
+    prevProps.milestoneDisplayCount === nextProps.milestoneDisplayCount &&
+    Math.abs(prevProps.formattedRankings.length - nextProps.formattedRankings.length) < 10 // Allow small changes
   );
   
-  // CRITICAL FIX: Check for score changes in the first 10 Pokemon
-  const scoresChanged = !prevProps.formattedRankings.slice(0, 10).every((p, i) => {
-    const nextPokemon = nextProps.formattedRankings[i];
-    if (!nextPokemon) return false;
-    const prevScore = 'score' in p ? p.score : 0;
-    const nextScore = 'score' in nextPokemon ? nextPokemon.score : 0;
-    return Math.abs(prevScore - nextScore) < 0.01; // Allow small floating point differences
-  });
-  
-  const shouldPreventRerender = !lengthChanged && !battlesChanged && !displayCountChanged && !tierChanged && !orderChanged && !scoresChanged;
-  
-  console.log('🎨 [MILESTONE_MEMO_DEBUG] Enhanced memo comparison result:', shouldPreventRerender ? 'PREVENTING' : 'ALLOWING', 'rerender');
+  console.log('🎨 [MILESTONE_MEMO_DEBUG] Simplified memo comparison result:', shouldPreventRerender ? 'PREVENTING' : 'ALLOWING', 'rerender');
   
   if (!shouldPreventRerender) {
-    console.log('🎨 [MILESTONE_MEMO_DEBUG] Allowing rerender because:', {
-      lengthChanged,
-      battlesChanged,
-      displayCountChanged,
-      tierChanged,
-      orderChanged,
-      scoresChanged
-    });
-    
-    // CRITICAL DEBUG: Log the order comparison details
-    if (orderChanged) {
-      console.log('🎨 [MILESTONE_MEMO_DEBUG] Order changed - Previous first 5:', 
-        prevProps.formattedRankings.slice(0, 5).map(p => `${p.id}:${p.name}`)
-      );
-      console.log('🎨 [MILESTONE_MEMO_DEBUG] Order changed - Current first 5:', 
-        nextProps.formattedRankings.slice(0, 5).map(p => `${p.id}:${p.name}`)
-      );
-    }
-    
-    if (scoresChanged) {
-      console.log('🎨 [MILESTONE_MEMO_DEBUG] Scores changed - Previous first 5:', 
-        prevProps.formattedRankings.slice(0, 5).map(p => `${p.name}:${('score' in p ? p.score.toFixed(2) : 'N/A')}`)
-      );
-      console.log('🎨 [MILESTONE_MEMO_DEBUG] Scores changed - Current first 5:', 
-        nextProps.formattedRankings.slice(0, 5).map(p => `${p.name}:${('score' in p ? p.score.toFixed(2) : 'N/A')}`)
-      );
-    }
+    console.log('🎨 [MILESTONE_MEMO_DEBUG] Allowing rerender because of major change (battles/tier/count)');
   }
   
   return shouldPreventRerender;
