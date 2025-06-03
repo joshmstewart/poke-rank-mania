@@ -7,6 +7,8 @@ import {
 import { useDroppable } from '@dnd-kit/core';
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import DraggablePokemonMilestoneCard from "./DraggablePokemonMilestoneCard";
+import SortableContextDebugger from "./SortableContextDebugger";
+import DndKitInternalTracker from "./DndKitInternalTracker";
 
 interface DragDropGridProps {
   displayRankings: (Pokemon | RankedPokemon)[];
@@ -29,19 +31,16 @@ const DragDropGrid: React.FC<DragDropGridProps> = React.memo(({
 }) => {
   console.log(`🎯 [GRID_RENDER_DEBUG] DragDropGrid rendering with ${displayRankings.length} items`);
 
-  // CRITICAL: Add context provider analysis
-  console.log(`🔍 [CONTEXT_PROVIDER_DEBUG] DragDropGrid: Checking for any context provision...`);
-  
-  // CRITICAL: Examine @dnd-kit/sortable's SortableContext for context updates
-  console.log(`🔍 [DND_CONTEXT_DEBUG] DragDropGrid: SortableContext about to be created with ${displayRankings.length} items`);
+  // CRITICAL: Add @dnd-kit internal state tracking
+  console.log(`🔍 [DND_CONTEXT_DEBUG] DragDropGrid: About to render with DndKitInternalTracker`);
 
   // CRITICAL: Create stable items array for SortableContext
   const sortableItems = useMemo(() => {
     const items = displayRankings.map(p => p.id);
     console.log(`🎯 [GRID_RENDER_DEBUG] Creating sortable items - count: ${items.length}`);
-    console.log(`🔍 [DND_CONTEXT_DEBUG] SortableContext items array reference changed: ${JSON.stringify(items.slice(0, 5))}...`);
+    console.log(`🔍 [DND_CONTEXT_DEBUG] SortableContext items array: [${items.slice(0, 3).join(', ')}...]`);
     return items;
-  }, [displayRankings.length, displayRankings.map(p => p.id).join(',')]); // More specific dependencies
+  }, [displayRankings.length, displayRankings.map(p => p.id).join(',')]);
 
   // Static droppable configuration
   const droppableConfig = useMemo(() => ({
@@ -50,17 +49,16 @@ const DragDropGrid: React.FC<DragDropGridProps> = React.memo(({
       type: 'rankings-grid',
       accepts: ['available-pokemon', 'ranked-pokemon']
     }
-  }), []); // Static - never changes
+  }), []);
 
   const { setNodeRef, isOver } = useDroppable(droppableConfig);
 
-  // CRITICAL: Log useDroppable state that might trigger context updates
   console.log(`🔍 [DND_CONTEXT_DEBUG] DragDropGrid: useDroppable isOver state: ${isOver}`);
 
   // Static grid style
   const gridStyle = useMemo(() => ({
     gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))'
-  }), []); // Static - never changes
+  }), []);
 
   // Memoize grid class names
   const gridClassName = useMemo(() => 
@@ -68,24 +66,31 @@ const DragDropGrid: React.FC<DragDropGridProps> = React.memo(({
     [isOver]
   );
 
-  // CRITICAL: Create a stable array of pending IDs for memo dependencies
-  const pendingIdsArray = useMemo(() => 
-    Array.from(localPendingRefinements).sort(), 
-    [localPendingRefinements.size, Array.from(localPendingRefinements).join(',')]
-  );
-
-  // CRITICAL: Render cards with very specific, stable props
+  // CRITICAL: Use simplified debugger components for first 5 items to isolate the issue
   const renderedCards = useMemo(() => {
     console.log(`🎯 [GRID_RENDER_DEBUG] Creating rendered cards for ${displayRankings.length} pokemon`);
     
     return displayRankings.map((pokemon, index) => {
+      // CRITICAL: Use simplified debugger for first 5 items, then regular cards
+      if (index < 5) {
+        console.log(`🎯 [GRID_RENDER_DEBUG] Using SortableContextDebugger for ${pokemon.name} at index ${index}`);
+        return (
+          <SortableContextDebugger
+            key={pokemon.id}
+            pokemonId={pokemon.id}
+            pokemonName={pokemon.name}
+            index={index}
+          />
+        );
+      }
+      
       const isPending = localPendingRefinements.has(pokemon.id);
       
-      console.log(`🎯 [GRID_RENDER_DEBUG] Creating card for ${pokemon.name} at index ${index}, pending: ${isPending}`);
+      console.log(`🎯 [GRID_RENDER_DEBUG] Creating regular card for ${pokemon.name} at index ${index}, pending: ${isPending}`);
       
       return (
         <DraggablePokemonMilestoneCard
-          key={pokemon.id} // Stable key based on Pokemon ID
+          key={pokemon.id}
           pokemon={pokemon}
           index={index}
           isPending={isPending}
@@ -97,15 +102,12 @@ const DragDropGrid: React.FC<DragDropGridProps> = React.memo(({
       );
     });
   }, [
-    // CRITICAL: Only depend on specific values that actually affect rendering
     displayRankings.length,
-    displayRankings.map(p => `${p.id}-${p.name}`).join('|'), // Pokemon identity
-    pendingIdsArray.join(',') // Pending status
+    displayRankings.map(p => `${p.id}-${p.name}`).join('|'),
+    Array.from(localPendingRefinements).sort().join(',')
   ]);
 
   console.log(`🎯 [GRID_RENDER_DEBUG] DragDropGrid render complete with ${renderedCards.length} cards`);
-  
-  // CRITICAL: Log the fact that SortableContext is being rendered with current items
   console.log(`🔍 [DND_CONTEXT_DEBUG] DragDropGrid: About to render SortableContext with items: [${sortableItems.slice(0, 3).join(', ')}...]`);
 
   return (
@@ -113,6 +115,9 @@ const DragDropGrid: React.FC<DragDropGridProps> = React.memo(({
       ref={setNodeRef}
       className={gridClassName}
     >
+      {/* CRITICAL: Add @dnd-kit internal state tracker */}
+      <DndKitInternalTracker />
+      
       <SortableContext 
         items={sortableItems}
         strategy={rectSortingStrategy}
@@ -124,49 +129,37 @@ const DragDropGrid: React.FC<DragDropGridProps> = React.memo(({
     </div>
   );
 }, (prevProps, nextProps) => {
-  // Enhanced comparison with detailed logging
   console.log(`🎯 [GRID_MEMO_DEBUG] Comparing props for re-render decision`);
   
-  // Check rankings length
   if (prevProps.displayRankings.length !== nextProps.displayRankings.length) {
     console.log(`🎯 [GRID_MEMO_DEBUG] Rankings length changed: ${prevProps.displayRankings.length} -> ${nextProps.displayRankings.length} - ALLOWING RE-RENDER`);
     return false;
   }
   
-  // Check if any Pokemon actually changed (ID or name only)
   for (let i = 0; i < prevProps.displayRankings.length; i++) {
     const prev = prevProps.displayRankings[i];
     const next = nextProps.displayRankings[i];
     
-    if (prev.id !== next.id) {
-      console.log(`🎯 [GRID_MEMO_DEBUG] Pokemon ID changed at index ${i}: ${prev.id} -> ${next.id} - ALLOWING RE-RENDER`);
-      return false;
-    }
-    
-    if (prev.name !== next.name) {
-      console.log(`🎯 [GRID_MEMO_DEBUG] Pokemon name changed at index ${i}: ${prev.name} -> ${next.name} - ALLOWING RE-RENDER`);
+    if (prev.id !== next.id || prev.name !== next.name) {
+      console.log(`🎯 [GRID_MEMO_DEBUG] Pokemon changed at index ${i}: ${prev.id}/${prev.name} -> ${next.id}/${next.name} - ALLOWING RE-RENDER`);
       return false;
     }
   }
   
-  // Check pending refinements
   if (prevProps.localPendingRefinements.size !== nextProps.localPendingRefinements.size) {
-    console.log(`🎯 [GRID_MEMO_DEBUG] Pending refinements size changed: ${prevProps.localPendingRefinements.size} -> ${nextProps.localPendingRefinements.size} - ALLOWING RE-RENDER`);
+    console.log(`🎯 [GRID_MEMO_DEBUG] Pending refinements size changed - ALLOWING RE-RENDER`);
     return false;
   }
   
-  // Compare pending refinements content efficiently
   const prevPendingArray = Array.from(prevProps.localPendingRefinements).sort();
   const nextPendingArray = Array.from(nextProps.localPendingRefinements).sort();
-  const pendingChanged = prevPendingArray.join(',') !== nextPendingArray.join(',');
-  
-  if (pendingChanged) {
+  if (prevPendingArray.join(',') !== nextPendingArray.join(',')) {
     console.log(`🎯 [GRID_MEMO_DEBUG] Pending refinements content changed - ALLOWING RE-RENDER`);
     return false;
   }
   
   console.log(`🎯 [GRID_MEMO_DEBUG] No meaningful changes detected - PREVENTING RE-RENDER`);
-  return true; // Prevent re-render
+  return true;
 });
 
 DragDropGrid.displayName = 'DragDropGrid';
