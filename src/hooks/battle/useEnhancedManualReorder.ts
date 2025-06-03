@@ -94,6 +94,12 @@ export const useEnhancedManualReorder = (
   const perfAfterStateInit = performance.now();
   persistentLog.add(`🎯 STATE_INIT: Time: ${(perfAfterStateInit - perfAfterStoreAccess).toFixed(2)}ms`);
 
+  // CRITICAL: Log data sync issues
+  persistentLog.add(`🔍 DATA_SYNC: finalRankings=${finalRankings.length}, localRankings=${localRankings.length}`);
+  if (finalRankings.length !== localRankings.length) {
+    persistentLog.add(`⚠️ DATA_SYNC_MISMATCH: finalRankings (${finalRankings.length}) != localRankings (${localRankings.length})`);
+  }
+
   // Stable refs to prevent recreation
   const onRankingsUpdateRef = useRef(onRankingsUpdate);
   onRankingsUpdateRef.current = onRankingsUpdate;
@@ -102,9 +108,13 @@ export const useEnhancedManualReorder = (
   useEffect(() => {
     const perfEffectStart = performance.now();
     persistentLog.add(`🎯 EFFECT_START: Local rankings update effect triggered`);
+    persistentLog.add(`🔍 EFFECT_DATA: finalRankings=${finalRankings.length}, isDragging=${isDragging}, isUpdating=${isUpdating}`);
     
     if (!isDragging && !isUpdating) {
+      persistentLog.add(`🔍 EFFECT_UPDATE: Updating localRankings from ${localRankings.length} to ${finalRankings.length} items`);
       setLocalRankings(finalRankings);
+    } else {
+      persistentLog.add(`🔍 EFFECT_SKIP: Skipping update (isDragging=${isDragging}, isUpdating=${isUpdating})`);
     }
     
     const perfEffectEnd = performance.now();
@@ -335,6 +345,7 @@ export const useEnhancedManualReorder = (
   const handleDragEnd = useCallback((event: DragEndEvent) => {
     const perfDragEndBegin = performance.now();
     persistentLog.add(`🎯 DRAG_END_BEGIN: Drag end handler called - THIS IS WHERE THE SLOWNESS HAPPENS`);
+    persistentLog.add(`🔍 DRAG_END_DATA: localRankings.length=${localRankings.length}, active.id=${event.active.id}, over.id=${event.over?.id || 'null'}`);
     
     const { active, over } = event;
     
@@ -351,14 +362,25 @@ export const useEnhancedManualReorder = (
     console.log('🔥 [ENHANCED_REORDER_DRAG] ===== PROCESSING DRAG END =====');
     console.log('🔥 [ENHANCED_REORDER_DRAG] BEFORE DRAG - Current order:', localRankings.map((p, i) => `${i+1}. ${p.name}`).slice(0, 10));
     
+    // CRITICAL: Log detailed data about the current state
+    persistentLog.add(`🔍 DRAG_DETAILED: localRankings has ${localRankings.length} items`);
+    if (localRankings.length > 0) {
+      persistentLog.add(`🔍 DRAG_FIRST_ITEMS: ${localRankings.slice(0, 5).map(p => `${p.id}:${p.name}`).join(', ')}`);
+    }
+    
     const perfIndexFindStart = performance.now();
     const oldIndex = localRankings.findIndex(p => p.id.toString() === active.id);
     const newIndex = localRankings.findIndex(p => p.id.toString() === over.id);
     const perfIndexFindEnd = performance.now();
     persistentLog.add(`🎯 INDEX_FIND: Index finding: ${(perfIndexFindEnd - perfIndexFindStart).toFixed(2)}ms`);
+    persistentLog.add(`🔍 INDEX_RESULTS: oldIndex=${oldIndex}, newIndex=${newIndex}, activeId=${active.id}, overId=${over.id}`);
     
     if (oldIndex === -1 || newIndex === -1) {
       persistentLog.add(`❌ INDEX_FIND_FAILED: Could not find Pokemon indices (old: ${oldIndex}, new: ${newIndex})`);
+      persistentLog.add(`❌ SEARCH_DETAILS: Looking for activeId=${active.id} and overId=${over.id} in ${localRankings.length} items`);
+      if (localRankings.length > 0) {
+        persistentLog.add(`❌ SAMPLE_IDS: First 10 IDs in localRankings: ${localRankings.slice(0, 10).map(p => p.id).join(', ')}`);
+      }
       console.error('🔥 [ENHANCED_REORDER_DRAG] Could not find Pokemon indices');
       return;
     }
@@ -423,10 +445,29 @@ export const useEnhancedManualReorder = (
   ) => {
     const perfManualReorderStart = performance.now();
     persistentLog.add(`🎯 MANUAL_REORDER_START: Manual reorder called for Pokemon ${draggedPokemonId} (${sourceIndex} -> ${destinationIndex}) - THIS IS WHERE THE SLOWNESS HAPPENS`);
+    persistentLog.add(`🔍 MANUAL_DATA: localRankings.length=${localRankings.length}, sourceIndex=${sourceIndex}, destinationIndex=${destinationIndex}`);
+    
     console.log('🔥 [ENHANCED_MANUAL_REORDER] ===== MANUAL REORDER CALLED =====');
     console.log('🔥 [ENHANCED_MANUAL_REORDER] Pokemon:', draggedPokemonId, 'from', sourceIndex, 'to', destinationIndex);
     console.log('🔥 [ENHANCED_MANUAL_REORDER] preventAutoResorting:', preventAutoResorting);
     console.log('🔥 [ENHANCED_MANUAL_REORDER] BEFORE REORDER - Current order:', localRankings.map((p, i) => `${i+1}. ${p.name}`).slice(0, 10));
+    
+    // CRITICAL: Detailed logging for the empty array issue
+    if (localRankings.length === 0) {
+      persistentLog.add(`❌ CRITICAL_ERROR: localRankings is EMPTY! This is the root cause.`);
+      persistentLog.add(`🔍 DEBUG_STATE: finalRankings.length=${finalRankings.length}, isDragging=${isDragging}, isUpdating=${isUpdating}`);
+      console.error('🔥 [ENHANCED_MANUAL_REORDER] ❌ CRITICAL: localRankings is empty!');
+      console.error('🔥 [ENHANCED_MANUAL_REORDER] finalRankings.length:', finalRankings.length);
+      console.error('🔥 [ENHANCED_MANUAL_REORDER] isDragging:', isDragging);
+      console.error('🔥 [ENHANCED_MANUAL_REORDER] isUpdating:', isUpdating);
+      return;
+    }
+    
+    if (sourceIndex < 0 || sourceIndex >= localRankings.length) {
+      persistentLog.add(`❌ INVALID_SOURCE_INDEX: sourceIndex ${sourceIndex} is out of bounds (0-${localRankings.length - 1})`);
+      console.error('🔥 [ENHANCED_MANUAL_REORDER] ❌ Invalid source index:', sourceIndex, 'for array of length:', localRankings.length);
+      return;
+    }
     
     const movedPokemon = localRankings[sourceIndex];
     if (!movedPokemon) {
