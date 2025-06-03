@@ -26,11 +26,11 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
 }) => {
   console.log(`🚀 [OPTIMIZED_CARD] ${pokemon.name}: Rendering optimized card`);
 
-  // STEP 4: Ensure consistent string ID that matches drag handlers
+  // EXPLICITLY: Ensure consistent string ID that matches DndContext handlers
   const sortableId = pokemon.id.toString();
   
   const sortableConfig = {
-    id: sortableId, // Explicit string ID
+    id: sortableId, // Explicit string ID for DndContext compatibility
     disabled: !isDraggable,
     data: {
       type: context === 'available' ? 'available-pokemon' : 'ranked-pokemon',
@@ -42,6 +42,7 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
 
   console.log(`🔧 [DRAG_ID_FIX] Card ${pokemon.name} using sortable ID: ${sortableId}`);
 
+  // EXPLICITLY: Use stable sortable hook that integrates with single SortableContext
   const {
     attributes,
     listeners,
@@ -52,6 +53,7 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
 
   const backgroundColorClass = getPokemonBackgroundColor(pokemon);
   
+  // EXPLICITLY: Only apply drag props if draggable to prevent conflicts
   const dragProps = isDraggable ? { ...attributes, ...listeners } : {};
 
   const cardClassName = `${backgroundColorClass} rounded-lg border border-gray-200 relative overflow-hidden h-35 flex flex-col group ${

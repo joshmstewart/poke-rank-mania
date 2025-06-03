@@ -195,11 +195,17 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
           </Card>
 
           <Card className="shadow-lg border border-gray-200 overflow-hidden flex flex-col">
+            {/* EXPLICITLY THE SINGLE DNDCONTEXT:
+                - This is the ONLY DndContext in the entire component tree
+                - Handles ALL drag-and-drop operations for the ranking system
+                - No other DndContexts should exist anywhere else
+                - Uses enhanced drag handlers for manual reordering logic */}
             <DndContext
               collisionDetection={pointerWithin}
               onDragStart={enhancedHandleDragStart}
               onDragEnd={enhancedHandleDragEnd}
             >
+              {/* RankingsSectionStable: Pure container, NO conflicting contexts */}
               <RankingsSectionStable
                 displayRankings={manualRankingOrder}
                 onManualReorder={stableOnManualReorder}
@@ -208,6 +214,7 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
                 availablePokemon={enhancedAvailablePokemon}
               />
               
+              {/* Drag overlay for visual feedback during drag operations */}
               <DragOverlay>
                 {activeDraggedPokemon ? (
                   <div className="transform rotate-3 scale-105 opacity-90">
