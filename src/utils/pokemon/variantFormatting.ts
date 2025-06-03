@@ -7,7 +7,7 @@ import { capitalizeFirstLetter } from './helpers';
 export const handleVariantFormatting = (name: string): string | null => {
   if (!name) return null;
   
-  // Handle Iron variants (iron-moth -> Iron Moth)
+  // Handle Iron variants (iron-moth -> Iron Moth, iron-thorns -> Iron Thorns)
   if (name.startsWith('iron-')) {
     const baseName = name.replace('iron-', '');
     return `Iron ${capitalizeFirstLetter(baseName)}`;

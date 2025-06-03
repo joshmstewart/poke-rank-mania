@@ -6,6 +6,7 @@ import { handlePokemonVariants } from './pokemonVariants';
 import { shouldFilterPokemon } from './filters';
 import { handleSpecialCases } from './specialCases';
 import { handleVariantFormatting } from './variantFormatting';
+import { handleGeneralFormFormatting } from './generalFormFormatting';
 
 /**
  * Format Pokémon names to properly display regional forms
@@ -27,13 +28,13 @@ export const formatPokemonName = (name: string): string => {
     return specialCaseResult;
   }
   
-  // Handle variants that should be moved to front
+  // Handle variants that should be moved to front (Iron, Great, etc.)
   const variantFormattingResult = handleVariantFormatting(name);
   if (variantFormattingResult) {
     return variantFormattingResult;
   }
   
-  // Try special forms first (G-Max, Mega, Primal, Origin)
+  // Try special forms first (G-Max, Mega, Primal, Origin, Deoxys, etc.)
   const specialFormResult = handleSpecialForms(name);
   if (specialFormResult) {
     return specialFormResult;
@@ -49,6 +50,12 @@ export const formatPokemonName = (name: string): string => {
   const variantResult = handlePokemonVariants(name);
   if (variantResult) {
     return variantResult;
+  }
+  
+  // Handle general form formatting (form descriptor moved to front)
+  const generalFormResult = handleGeneralFormFormatting(name);
+  if (generalFormResult) {
+    return generalFormResult;
   }
   
   // Default: Capitalize the first letter of every word (including after hyphens)

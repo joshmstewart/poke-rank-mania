@@ -9,3 +9,4 @@ export { handlePokemonVariants } from './pokemonVariants';
 export { shouldFilterPokemon } from './filters';
 export { handleSpecialCases } from './specialCases';
 export { handleVariantFormatting } from './variantFormatting';
+export { handleGeneralFormFormatting } from './generalFormFormatting';
