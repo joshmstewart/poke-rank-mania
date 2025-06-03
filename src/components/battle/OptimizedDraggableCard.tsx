@@ -2,6 +2,8 @@
 import React, { memo } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { useDraggable } from '@dnd-kit/core';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { getPokemonBackgroundColor } from "./utils/PokemonColorUtils";
 import PokemonMilestoneImage from "@/components/pokemon/PokemonMilestoneImage";
 import PokemonMilestoneInfo from "@/components/pokemon/PokemonMilestoneInfo";
@@ -37,28 +39,61 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
   console.log(`🔧 [DRAG_ID_FIX] Card ${pokemon.name} using ID: ${sortableId} (context: ${context})`);
 
   // CORRECTED: Available Pokemon use useDraggable only (no sorting)
-  const dragConfig = {
-    id: sortableId,
-    disabled: !isDraggable,
-    data: {
-      type: context === 'available' ? 'available-pokemon' : 'ranked-pokemon',
-      pokemon: pokemon,
-      source: context,
-      index
-    }
-  };
+  // Ranked Pokemon use useSortable (for reordering within rankings)
+  let dragAttributes, dragListeners, setNodeRef, isDragging, transform, transition;
 
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    isDragging
-  } = useDraggable(dragConfig);
+  if (context === 'available') {
+    // Available Pokemon: draggable but not sortable
+    const draggableConfig = {
+      id: sortableId,
+      disabled: !isDraggable,
+      data: {
+        type: 'available-pokemon',
+        pokemon: pokemon,
+        source: context,
+        index
+      }
+    };
+
+    const draggableResult = useDraggable(draggableConfig);
+    dragAttributes = draggableResult.attributes;
+    dragListeners = draggableResult.listeners;
+    setNodeRef = draggableResult.setNodeRef;
+    isDragging = draggableResult.isDragging;
+    transform = null;
+    transition = null;
+  } else {
+    // Ranked Pokemon: sortable within their grid
+    const sortableConfig = {
+      id: sortableId,
+      disabled: !isDraggable,
+      data: {
+        type: 'ranked-pokemon',
+        pokemon: pokemon,
+        source: context,
+        index
+      }
+    };
+
+    const sortableResult = useSortable(sortableConfig);
+    dragAttributes = sortableResult.attributes;
+    dragListeners = sortableResult.listeners;
+    setNodeRef = sortableResult.setNodeRef;
+    isDragging = sortableResult.isDragging;
+    transform = sortableResult.transform;
+    transition = sortableResult.transition;
+  }
 
   const backgroundColorClass = getPokemonBackgroundColor(pokemon);
   
   // EXPLICITLY: Only apply drag props if draggable to prevent conflicts
-  const dragProps = isDraggable ? { ...attributes, ...listeners } : {};
+  const dragProps = isDraggable ? { ...dragAttributes, ...dragListeners } : {};
+
+  // Apply transform for sortable items
+  const style = transform ? {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  } : undefined;
 
   const cardClassName = `${backgroundColorClass} rounded-lg border border-gray-200 relative overflow-hidden h-35 flex flex-col group ${
     isDraggable ? 'cursor-grab active:cursor-grabbing' : ''
@@ -80,6 +115,7 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
     <div
       ref={setNodeRef}
       className={cardClassName}
+      style={style}
       {...dragProps}
     >
       <PokemonMilestoneOverlays
