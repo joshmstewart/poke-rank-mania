@@ -63,37 +63,21 @@ const DragDropGrid: React.FC<DragDropGridProps> = React.memo(({
 
   const gridClassName = `transition-colors ${isOver ? 'bg-yellow-50/50' : ''}`;
 
-  // Use optimized cards for better performance
+  // CRITICAL: Use debugger for ALL items now to get comprehensive logging
   const renderedCards = useMemo(() => {
-    console.log(`🎯 [OPTIMIZED_GRID] Creating optimized cards for ${displayRankings.length} pokemon`);
+    console.log(`🎯 [OPTIMIZED_GRID] Creating cards for ${displayRankings.length} pokemon - ALL DEBUGGER MODE`);
     
     return displayRankings.map((pokemon, index) => {
       const isPending = localPendingRefinements.has(pokemon.id);
       
-      // Use debugger for first 3 items, optimized cards for the rest
-      if (index < 3) {
-        console.log(`🎯 [OPTIMIZED_GRID] Using SortableContextDebugger for ${pokemon.name} at index ${index}`);
-        return (
-          <SortableContextDebugger
-            key={pokemon.id}
-            pokemonId={pokemon.id}
-            pokemonName={pokemon.name}
-            index={index}
-          />
-        );
-      }
-      
-      console.log(`🎯 [OPTIMIZED_GRID] Using OptimizedDraggableCard for ${pokemon.name} at index ${index}`);
-      
+      // Use debugger for ALL items to get comprehensive diagnostic data
+      console.log(`🎯 [OPTIMIZED_GRID] Using SortableContextDebugger for ${pokemon.name} at index ${index}`);
       return (
-        <OptimizedDraggableCard
+        <SortableContextDebugger
           key={pokemon.id}
-          pokemon={pokemon}
+          pokemonId={pokemon.id}
+          pokemonName={pokemon.name}
           index={index}
-          isPending={isPending}
-          showRank={true}
-          isDraggable={true}
-          context="ranked"
         />
       );
     });
