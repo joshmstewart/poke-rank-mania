@@ -30,6 +30,42 @@ export const handleSpecialForms = (name: string): string | null => {
     return result;
   }
   
+  // Handle Deoxys forms - move the form to front
+  if (lowerName.includes('deoxys-')) {
+    console.log(`🔧 [DEOXYS_DEBUG] Processing Deoxys form: "${name}"`);
+    
+    if (lowerName.includes('deoxys-normal')) {
+      return 'Deoxys'; // Normal form is just "Deoxys"
+    }
+    if (lowerName.includes('deoxys-attack')) {
+      return 'Attack Deoxys';
+    }
+    if (lowerName.includes('deoxys-defense')) {
+      return 'Defense Deoxys';
+    }
+    if (lowerName.includes('deoxys-speed')) {
+      return 'Speed Deoxys';
+    }
+  }
+  
+  // Handle other special forms that should have the form moved to front
+  if (lowerName.includes('giratina-origin')) {
+    return 'Origin Giratina';
+  }
+  
+  if (lowerName.includes('shaymin-sky')) {
+    return 'Sky Shaymin';
+  }
+  
+  // Handle Rotom forms
+  if (lowerName.includes('rotom-')) {
+    if (lowerName.includes('rotom-heat')) return 'Heat Rotom';
+    if (lowerName.includes('rotom-wash')) return 'Wash Rotom';
+    if (lowerName.includes('rotom-frost')) return 'Frost Rotom';
+    if (lowerName.includes('rotom-fan')) return 'Fan Rotom';
+    if (lowerName.includes('rotom-mow')) return 'Mow Rotom';
+  }
+  
   // Handle Mega evolutions - properly capitalize the Pokemon name
   if (lowerName.includes('-mega-x')) {
     console.log(`🔧 [MEGA_DEBUG] Processing Mega X form: "${name}"`);
@@ -68,7 +104,7 @@ export const handleSpecialForms = (name: string): string | null => {
     return result;
   }
   
-  // Handle Origin forms
+  // Handle Origin forms (for other Pokemon like Dialga, Palkia)
   if (lowerName.includes('-origin')) {
     console.log(`🔧 [FORMAT_ORIGIN_DETECTED] Processing Origin form: "${name}"`);
     const baseName = name.substring(0, name.toLowerCase().indexOf('-origin'));
