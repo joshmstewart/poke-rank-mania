@@ -10,7 +10,7 @@ import VirtualizedGrid from "./VirtualizedGrid";
 
 interface DragDropGridMemoizedProps {
   displayRankings: (Pokemon | RankedPokemon)[];
-  localPendingRefinements: Set<number>;
+  localPendingRefinements: Set<number>; // Fix: Explicitly type as Set<number>
   pendingBattleCounts: Map<number, number>;
 }
 

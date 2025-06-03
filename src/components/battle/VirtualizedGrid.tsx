@@ -12,7 +12,7 @@ interface VirtualizedGridProps {
   containerHeight: number;
   containerWidth: number;
   context: 'available' | 'ranked';
-  localPendingRefinements?: Set<number>;
+  localPendingRefinements?: Set<number>; // Fix: Explicitly type as Set<number>
   onManualReorder?: (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => void;
 }
 
@@ -24,7 +24,7 @@ interface CellProps {
     items: (Pokemon | RankedPokemon)[];
     columnCount: number;
     context: 'available' | 'ranked';
-    localPendingRefinements: Set<number>;
+    localPendingRefinements: Set<number>; // Fix: Explicitly type as Set<number>
     onManualReorder?: (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => void;
   };
 }
@@ -80,7 +80,7 @@ const VirtualizedGrid: React.FC<VirtualizedGridProps> = React.memo(({
   containerHeight,
   containerWidth,
   context,
-  localPendingRefinements = new Set(),
+  localPendingRefinements = new Set<number>(), // Fix: Explicitly type as Set<number>
   onManualReorder
 }) => {
   console.log(`🔥 [VIRTUALIZED_GRID] Rendering ${items.length} items in ${context} context`);
