@@ -25,15 +25,25 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
     
     // Convert ratings to RankedPokemon format
     const rankedPokemon: RankedPokemon[] = Object.entries(ratings).map(([pokemonId, rating]) => {
-      // This is a simplified version - in a real implementation you'd need to fetch Pokemon data
+      const score = rating.mu - 2 * rating.sigma; // Conservative score estimate
+      const battleCount = rating.battleCount || 0;
+      const wins = Math.max(0, Math.floor(battleCount * 0.6)); // Estimate wins (60% win rate)
+      const losses = battleCount - wins;
+      const winRate = battleCount > 0 ? (wins / battleCount) * 100 : 0;
+      
       return {
         id: parseInt(pokemonId),
-        name: `Pokemon ${pokemonId}`, // Placeholder
+        name: `Pokemon ${pokemonId}`, // Placeholder - would need Pokemon data lookup
         image: "", // Placeholder
         types: [], // Placeholder
-        score: rating.mu - 2 * rating.sigma, // Conservative score estimate
-        generationId: 1 // Placeholder
-      } as RankedPokemon;
+        score: score,
+        generationId: 1, // Placeholder
+        count: battleCount,
+        confidence: Math.max(0, 100 - (rating.sigma * 20)), // Convert sigma to confidence percentage
+        wins: wins,
+        losses: losses,
+        winRate: winRate
+      };
     });
     
     // Sort by score descending
