@@ -1,4 +1,3 @@
-
 import React, { useMemo, useCallback } from "react";
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
@@ -49,7 +48,6 @@ const SortableRankingCard: React.FC<{
         compact={true}
         viewMode="grid"
         isDragging={isDragging}
-        rank={index + 1}
       />
     </div>
   );
