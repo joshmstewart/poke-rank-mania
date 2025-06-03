@@ -14,7 +14,8 @@ export const useManualReorderCore = (
   preventAutoResorting: boolean,
   addImpliedBattle?: (winnerId: number, loserId: number) => void
 ) => {
-  console.log('🎯 [MANUAL_REORDER_CORE] Initializing with', finalRankings.length, 'rankings');
+  const hookId = Date.now();
+  console.log(`🎯 [MANUAL_REORDER_CORE_${hookId}] Initializing with ${finalRankings.length} rankings`);
 
   // Early bailout for large datasets
   if (finalRankings.length > 500) {
@@ -65,13 +66,22 @@ export const useManualReorderCore = (
     onRankingsUpdateRef.current = onRankingsUpdate;
   }, [onRankingsUpdate]);
 
+  // CRITICAL DEBUG: Log state changes
+  useEffect(() => {
+    console.log(`🎯 [MANUAL_REORDER_CORE_${hookId}] localRankings changed:`, localRankings.slice(0, 3).map(p => p.name));
+  }, [localRankings, hookId]);
+
   // Update local rankings when final rankings change (but not during drag)
   useEffect(() => {
     if (!isDragging && !isUpdating) {
-      console.log('🎯 [MANUAL_REORDER_CORE] Updating local rankings from props');
+      console.log(`🎯 [MANUAL_REORDER_CORE_${hookId}] Updating local rankings from props`);
+      console.log(`🎯 [MANUAL_REORDER_CORE_${hookId}] FROM:`, localRankings.slice(0, 3).map(p => p.name));
+      console.log(`🎯 [MANUAL_REORDER_CORE_${hookId}] TO:`, finalRankings.slice(0, 3).map(p => p.name));
       setLocalRankings(finalRankings);
+    } else {
+      console.log(`🎯 [MANUAL_REORDER_CORE_${hookId}] Skipping props update - dragging:${isDragging}, updating:${isUpdating}`);
     }
-  }, [finalRankings, isDragging, isUpdating]);
+  }, [finalRankings, isDragging, isUpdating, hookId]);
 
   const getCurrentRankings = useCallback((): RankedPokemon[] => {
     const current = localRankingsRef.current;
@@ -91,42 +101,55 @@ export const useManualReorderCore = (
     newIndex: number,
     movedPokemon: RankedPokemon
   ) => {
-    console.log('🎯 [MANUAL_REORDER_CORE] Processing reorder:', movedPokemon.name, 'from', oldIndex + 1, 'to', newIndex + 1);
+    const processId = Date.now();
+    console.log(`🎯 [MANUAL_REORDER_CORE_${processId}] ===== PROCESSING REORDER =====`);
+    console.log(`🎯 [MANUAL_REORDER_CORE_${processId}] Pokemon: ${movedPokemon.name} from ${oldIndex + 1} to ${newIndex + 1}`);
+    console.log(`🎯 [MANUAL_REORDER_CORE_${processId}] Current rankings BEFORE:`, currentRankings.slice(0, 3).map(p => p.name));
     
     // Create new rankings with manual order
     const newRankings = arrayMove(currentRankings, oldIndex, newIndex);
-    console.log('🎯 [MANUAL_REORDER_CORE] New manual order:', newRankings.slice(0, 5).map((p, i) => `${i+1}. ${p.name}`));
+    console.log(`🎯 [MANUAL_REORDER_CORE_${processId}] New manual order:`, newRankings.slice(0, 5).map((p, i) => `${i+1}. ${p.name}`));
     
     // Simulate battles
     const battlesSimulated = simulateBattlesForReorder(newRankings, movedPokemon, oldIndex, newIndex);
-    console.log('🎯 [MANUAL_REORDER_CORE] Battles simulated:', battlesSimulated);
+    console.log(`🎯 [MANUAL_REORDER_CORE_${processId}] Battles simulated:`, battlesSimulated);
     
     // Update scores while preserving order
     const updatedRankings = updateScoresPreservingOrder(newRankings, movedPokemon.id);
     
     // Verify order preservation
     const orderPreserved = newRankings.every((pokemon, index) => updatedRankings[index].id === pokemon.id);
-    console.log('🎯 [MANUAL_REORDER_CORE] Order preserved:', orderPreserved);
+    console.log(`🎯 [MANUAL_REORDER_CORE_${processId}] Order preserved:`, orderPreserved);
     
     if (!orderPreserved) {
-      console.error('❌ [MANUAL_REORDER_CORE] Order was not preserved!');
+      console.error(`❌ [MANUAL_REORDER_CORE_${processId}] Order was not preserved!`);
     }
     
-    // CRITICAL FIX: Update local state immediately
+    // CRITICAL DEBUG: Update local state immediately with detailed logging
+    console.log(`🎯 [MANUAL_REORDER_CORE_${processId}] ===== UPDATING LOCAL STATE =====`);
+    console.log(`🎯 [MANUAL_REORDER_CORE_${processId}] BEFORE setLocalRankings:`, localRankingsRef.current.slice(0, 3).map(p => p.name));
     setLocalRankings(updatedRankings);
-    console.log('🎯 [MANUAL_REORDER_CORE] ✅ Local state updated immediately');
+    console.log(`🎯 [MANUAL_REORDER_CORE_${processId}] ✅ Called setLocalRankings with:`, updatedRankings.slice(0, 3).map(p => p.name));
+    
+    // CRITICAL DEBUG: Check state after a brief delay
+    setTimeout(() => {
+      console.log(`🎯 [MANUAL_REORDER_CORE_${processId}] ===== POST-UPDATE CHECK =====`);
+      console.log(`🎯 [MANUAL_REORDER_CORE_${processId}] localRankingsRef.current AFTER:`, localRankingsRef.current.slice(0, 3).map(p => p.name));
+    }, 50);
     
     // Then call parent callback
     try {
+      console.log(`🎯 [MANUAL_REORDER_CORE_${processId}] Calling parent callback...`);
       onRankingsUpdateRef.current(updatedRankings);
-      console.log('🎯 [MANUAL_REORDER_CORE] ✅ Parent callback completed');
+      console.log(`🎯 [MANUAL_REORDER_CORE_${processId}] ✅ Parent callback completed`);
     } catch (error) {
-      console.error('❌ [MANUAL_REORDER_CORE] Parent callback failed:', error);
+      console.error(`❌ [MANUAL_REORDER_CORE_${processId}] Parent callback failed:`, error);
     }
   }, [simulateBattlesForReorder, updateScoresPreservingOrder]);
 
   const handleDragEnd = useCallback((event: DragEndEvent) => {
-    console.log('🎯 [MANUAL_REORDER_CORE] Drag end handler called');
+    const dragId = Date.now();
+    console.log(`🎯 [MANUAL_REORDER_CORE_${dragId}] ===== DRAG END HANDLER =====`);
     
     const currentRankings = getCurrentRankings();
     const { active, over } = event;
@@ -134,7 +157,7 @@ export const useManualReorderCore = (
     clearDragState();
     
     if (!over || active.id === over.id) {
-      console.log('🎯 [MANUAL_REORDER_CORE] Drag ended with no change');
+      console.log(`🎯 [MANUAL_REORDER_CORE_${dragId}] Drag ended with no change`);
       return;
     }
 
@@ -142,7 +165,7 @@ export const useManualReorderCore = (
     const newIndex = currentRankings.findIndex(p => p.id.toString() === over.id);
     
     if (oldIndex === -1 || newIndex === -1) {
-      console.error('❌ [MANUAL_REORDER_CORE] Could not find Pokemon indices');
+      console.error(`❌ [MANUAL_REORDER_CORE_${dragId}] Could not find Pokemon indices`);
       return;
     }
     
@@ -155,23 +178,26 @@ export const useManualReorderCore = (
     sourceIndex: number,
     destinationIndex: number
   ) => {
-    console.log('🎯 [MANUAL_REORDER_CORE] Enhanced manual reorder called');
+    const enhancedId = Date.now();
+    console.log(`🎯 [MANUAL_REORDER_CORE_${enhancedId}] ===== ENHANCED MANUAL REORDER =====`);
+    console.log(`🎯 [MANUAL_REORDER_CORE_${enhancedId}] Pokemon ${draggedPokemonId} from ${sourceIndex} to ${destinationIndex}`);
     
     const currentRankings = getCurrentRankings();
+    console.log(`🎯 [MANUAL_REORDER_CORE_${enhancedId}] Current rankings:`, currentRankings.slice(0, 3).map(p => p.name));
     
     if (currentRankings.length === 0) {
-      console.error('❌ [MANUAL_REORDER_CORE] Current rankings is empty!');
+      console.error(`❌ [MANUAL_REORDER_CORE_${enhancedId}] Current rankings is empty!`);
       return;
     }
     
     if (sourceIndex < 0 || sourceIndex >= currentRankings.length) {
-      console.error('❌ [MANUAL_REORDER_CORE] Invalid source index:', sourceIndex);
+      console.error(`❌ [MANUAL_REORDER_CORE_${enhancedId}] Invalid source index:`, sourceIndex);
       return;
     }
     
     const movedPokemon = currentRankings[sourceIndex];
     if (!movedPokemon) {
-      console.error('❌ [MANUAL_REORDER_CORE] Pokemon not found at source index');
+      console.error(`❌ [MANUAL_REORDER_CORE_${enhancedId}] Pokemon not found at source index`);
       return;
     }
     
@@ -179,11 +205,13 @@ export const useManualReorderCore = (
   }, [getCurrentRankings, processReorder]);
 
   const displayRankings = useMemo(() => {
-    return localRankings.map((pokemon) => ({
+    const result = localRankings.map((pokemon) => ({
       ...pokemon,
       isBeingDragged: draggedPokemonId === pokemon.id
     }));
-  }, [localRankings, draggedPokemonId]);
+    console.log(`🎯 [MANUAL_REORDER_CORE_${hookId}] displayRankings memoized:`, result.slice(0, 3).map(p => p.name));
+    return result;
+  }, [localRankings, draggedPokemonId, hookId]);
 
   return {
     displayRankings,
