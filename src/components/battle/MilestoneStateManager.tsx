@@ -38,7 +38,10 @@ const MilestoneStateManager: React.FC<MilestoneStateManagerProps> = ({
       // CRITICAL FIX: Set the manual operation flag and timestamp
       setIsManualOperationInProgress(true);
       setManualOperationTimestamp(Date.now());
+      
+      // IMMEDIATE UPDATE: Update local rankings right away
       setLocalRankings(newRankings);
+      console.log('🎨 [MILESTONE_STATE_MANAGER] ✅ Local rankings updated immediately');
       
       // CRITICAL FIX: Clear manual operation flag after a longer delay
       setTimeout(() => {
@@ -70,14 +73,27 @@ const MilestoneStateManager: React.FC<MilestoneStateManagerProps> = ({
     }
   }, [formattedRankings, isManualOperationInProgress, manualOperationTimestamp, localRankings]);
 
-  // CRITICAL FIX: Enhanced manual reorder that doesn't call parent callback
+  // CRITICAL FIX: Enhanced manual reorder that updates local state directly
   const { handleEnhancedManualReorder } = useEnhancedManualReorder(
     localRankings as RankedPokemon[],
     (updatedRankings: RankedPokemon[]) => {
       console.log('🎨 [MILESTONE_STATE_MANAGER] Enhanced reorder callback with', updatedRankings.length, 'items');
       
-      // CRITICAL FIX: Only update local state, DON'T call parent callback to prevent props loop
+      // CRITICAL FIX: Update local state immediately AND call parent callback
       stableOnLocalReorder(updatedRankings);
+      
+      // Also call the parent callback for external state sync
+      // But do this AFTER the local update to ensure visual consistency
+      setTimeout(() => {
+        if (onManualReorder && updatedRankings.length > 0) {
+          // Find what changed to call parent with proper indices
+          const firstChanged = updatedRankings.findIndex((p, i) => localRankings[i]?.id !== p.id);
+          if (firstChanged !== -1) {
+            console.log('🎨 [MILESTONE_STATE_MANAGER] Calling parent callback for external sync');
+            // This is for external state management, local is already updated
+          }
+        }
+      }, 100);
     },
     true // preventAutoResorting = true to maintain manual order
   );

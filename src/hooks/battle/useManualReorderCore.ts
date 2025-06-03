@@ -112,9 +112,11 @@ export const useManualReorderCore = (
       console.error('❌ [MANUAL_REORDER_CORE] Order was not preserved!');
     }
     
-    // Update state
+    // CRITICAL FIX: Update local state immediately
     setLocalRankings(updatedRankings);
+    console.log('🎯 [MANUAL_REORDER_CORE] ✅ Local state updated immediately');
     
+    // Then call parent callback
     try {
       onRankingsUpdateRef.current(updatedRankings);
       console.log('🎯 [MANUAL_REORDER_CORE] ✅ Parent callback completed');
