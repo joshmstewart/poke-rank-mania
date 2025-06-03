@@ -1,8 +1,9 @@
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import { useTrueSkillStore } from "@/stores/trueskillStore";
 import { generations } from "@/services/pokemon";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
+import { usePokemonData } from "@/hooks/pokemon/usePokemonData";
 import MilestoneHeader from "../battle/MilestoneHeader";
 import DraggableMilestoneGrid from "../battle/DraggableMilestoneGrid";
 
@@ -16,39 +17,50 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
   const { getAllRatings, updateRating } = useTrueSkillStore();
   const [milestoneDisplayCount, setMilestoneDisplayCount] = useState(50);
   
+  // Get Pokemon data using the same hook as the main app
+  const { pokemonData, isLoading } = usePokemonData(selectedGeneration);
+  
   // Get current generation name
   const currentGeneration = generations.find(gen => gen.id === selectedGeneration);
   
-  // Transform TrueSkill data to ranked Pokemon format
-  const rankings = React.useMemo(() => {
+  // Transform TrueSkill data to ranked Pokemon format using actual Pokemon data
+  const rankings = useMemo(() => {
     const ratings = getAllRatings();
     
+    if (!pokemonData || pokemonData.length === 0) {
+      return [];
+    }
+    
+    // Create a map of Pokemon data for quick lookup
+    const pokemonMap = new Map(pokemonData.map(p => [p.id, p]));
+    
     // Convert ratings to RankedPokemon format
-    const rankedPokemon: RankedPokemon[] = Object.entries(ratings).map(([pokemonId, rating]) => {
-      const score = rating.mu - 2 * rating.sigma; // Conservative score estimate
-      const battleCount = rating.battleCount || 0;
-      const wins = Math.max(0, Math.floor(battleCount * 0.6)); // Estimate wins (60% win rate)
-      const losses = battleCount - wins;
-      const winRate = battleCount > 0 ? (wins / battleCount) * 100 : 0;
-      
-      return {
-        id: parseInt(pokemonId),
-        name: `Pokemon ${pokemonId}`, // Placeholder - would need Pokemon data lookup
-        image: "", // Placeholder
-        types: [], // Placeholder
-        score: score,
-        generationId: 1, // Placeholder
-        count: battleCount,
-        confidence: Math.max(0, 100 - (rating.sigma * 20)), // Convert sigma to confidence percentage
-        wins: wins,
-        losses: losses,
-        winRate: winRate
-      };
-    });
+    const rankedPokemon: RankedPokemon[] = Object.entries(ratings)
+      .map(([pokemonId, rating]) => {
+        const pokemon = pokemonMap.get(parseInt(pokemonId));
+        if (!pokemon) return null; // Skip if Pokemon data not found
+        
+        const score = rating.mu - 2 * rating.sigma; // Conservative score estimate
+        const battleCount = rating.battleCount || 0;
+        const wins = Math.max(0, Math.floor(battleCount * 0.6)); // Estimate wins (60% win rate)
+        const losses = battleCount - wins;
+        const winRate = battleCount > 0 ? (wins / battleCount) * 100 : 0;
+        
+        return {
+          ...pokemon, // Use actual Pokemon data (id, name, image, types, etc.)
+          score: score,
+          count: battleCount,
+          confidence: Math.max(0, 100 - (rating.sigma * 20)), // Convert sigma to confidence percentage
+          wins: wins,
+          losses: losses,
+          winRate: winRate
+        };
+      })
+      .filter((pokemon): pokemon is RankedPokemon => pokemon !== null);
     
     // Sort by score descending
     return rankedPokemon.sort((a, b) => b.score - a.score);
-  }, [getAllRatings]);
+  }, [getAllRatings, pokemonData]);
 
   const displayRankings = rankings.slice(0, milestoneDisplayCount);
   const localPendingRefinements = new Set<number>();
@@ -65,6 +77,18 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
   const getMaxItemsForTier = useCallback(() => {
     return rankings.length;
   }, [rankings.length]);
+
+  if (isLoading) {
+    return (
+      <div className="w-full max-w-7xl mx-auto">
+        <div className="text-center py-12">
+          <h3 className="text-xl font-semibold text-gray-700 mb-4">
+            Loading Rankings...
+          </h3>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-7xl mx-auto">

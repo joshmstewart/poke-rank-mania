@@ -6,7 +6,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
 import RankingsViewToggle from "./RankingsViewToggle";
 import GlobalRankingsView from "./GlobalRankingsView";
 import PersonalRankingsView from "./PersonalRankingsView";
@@ -41,14 +40,6 @@ const CombinedRankingsModal: React.FC<CombinedRankingsModalProps> = ({
               onViewChange={setActiveView} 
             />
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onOpenChange(false)}
-            className="h-8 w-8 p-0"
-          >
-            <X className="h-4 w-4" />
-          </Button>
         </div>
 
         {/* Content */}
