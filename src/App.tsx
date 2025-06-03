@@ -8,13 +8,14 @@ import { Toaster } from "@/components/ui/toaster"
 import PokemonRankerWithProvider from "@/components/pokemon/PokemonRankerWithProvider";
 import { AuthWrapper } from "@/components/auth/AuthWrapper";
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { PokemonProvider } from "@/components/pokemon/PokemonProvider";
+import { PokemonProvider } from "@/contexts/PokemonContext";
 import { CommunityRankingsPage } from "./components/community/CommunityRankingsPage";
 import ModeSwitcher from "@/components/ModeSwitcher";
 
 const queryClient = new QueryClient();
 
 function App() {
+  const [mode, setMode] = useLocalStorage("pokemon-ranker-mode", "rank");
   const renderCount = useRef(0);
   const mountTime = useRef(new Date().toISOString());
   const stableRootInstance = useRef('app-root-main-stable-FIXED');
@@ -70,6 +71,10 @@ function App() {
       intervalRefs.current = [];
     };
   }, []);
+
+  const handleModeChange = (newMode: "rank" | "battle") => {
+    setMode(newMode);
+  };
   
   console.log('🚀🚀🚀 ROOT_APP_FIXED: About to render fixed structure');
   
@@ -78,7 +83,7 @@ function App() {
       <PokemonProvider>
         <Router>
           <div className="min-h-screen bg-background">
-            <AppHeader />
+            <AppHeader mode={mode} onModeChange={handleModeChange} />
             <Routes>
               <Route path="/" element={<ModeSwitcher />} />
               <Route path="/battle" element={<BattleMode />} />
