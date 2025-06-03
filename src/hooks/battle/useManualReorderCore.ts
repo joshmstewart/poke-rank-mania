@@ -5,7 +5,6 @@ import { arrayMove } from '@dnd-kit/sortable';
 import { RankedPokemon } from '@/services/pokemon';
 import { useBattleSimulation } from './useBattleSimulation';
 import { useScoreUpdater } from './useScoreUpdater';
-import { useDragState } from './useDragState';
 import { useRenderTracker } from './useRenderTracker';
 
 export const useManualReorderCore = (
@@ -35,7 +34,7 @@ export const useManualReorderCore = (
     preventAutoResorting 
   });
 
-  // CRITICAL FIX: Use a stable ref to prevent state corruption
+  // CRITICAL FIX: Use completely stable state management
   const stableRankingsRef = useRef<RankedPokemon[]>(finalRankings);
   const [localRankings, setLocalRankings] = useState<RankedPokemon[]>(() => {
     console.log(`🎯 [MANUAL_REORDER_CORE_${hookId}] Initial local rankings:`, finalRankings.slice(0, 3).map(p => p.name));
@@ -43,22 +42,40 @@ export const useManualReorderCore = (
     return finalRankings;
   });
   
-  const {
-    isDragging,
-    draggedPokemonId,
-    isUpdating,
-    handleDragStart,
-    clearDragState,
-    setUpdatingState
-  } = useDragState();
+  // CRITICAL FIX: Use refs for drag state to prevent React state corruption
+  const isDraggingRef = useRef(false);
+  const draggedPokemonIdRef = useRef<number | null>(null);
+  const isUpdatingRef = useRef(false);
+  const [renderTrigger, setRenderTrigger] = useState(0);
 
+  // Stable callbacks with no dependencies
+  const handleDragStart = useCallback((event: any) => {
+    const draggedId = parseInt(event.active.id);
+    isDraggingRef.current = true;
+    draggedPokemonIdRef.current = draggedId;
+    setRenderTrigger(prev => prev + 1);
+    console.log('🎯 [DRAG_STATE] Drag started for Pokemon ID:', draggedId);
+  }, []);
+
+  const clearDragState = useCallback(() => {
+    isDraggingRef.current = false;
+    draggedPokemonIdRef.current = null;
+    setRenderTrigger(prev => prev + 1);
+  }, []);
+
+  const setUpdatingState = useCallback((updating: boolean) => {
+    isUpdatingRef.current = updating;
+    setRenderTrigger(prev => prev + 1);
+  }, []);
+
+  // CRITICAL FIX: Create stable instances with empty deps
   const { simulateBattlesForReorder } = useBattleSimulation(addImpliedBattle);
   const { updateScoresPreservingOrder } = useScoreUpdater(preventAutoResorting);
 
   // CRITICAL FIX: Only update when there's a real change and not during drag
   useEffect(() => {
-    if (isDragging || isUpdating) {
-      console.log(`🎯 [MANUAL_REORDER_CORE_${hookId}] Skipping props update - dragging:${isDragging}, updating:${isUpdating}`);
+    if (isDraggingRef.current || isUpdatingRef.current) {
+      console.log(`🎯 [MANUAL_REORDER_CORE_${hookId}] Skipping props update - dragging:${isDraggingRef.current}, updating:${isUpdatingRef.current}`);
       return;
     }
 
@@ -71,7 +88,7 @@ export const useManualReorderCore = (
       stableRankingsRef.current = finalRankings;
       setLocalRankings(finalRankings);
     }
-  }, [finalRankings, isDragging, isUpdating, hookId]);
+  }, [finalRankings, hookId]); // CRITICAL: Remove isDragging/isUpdating from deps
 
   const processReorder = useCallback((
     currentRankings: RankedPokemon[],
@@ -81,25 +98,19 @@ export const useManualReorderCore = (
   ) => {
     const processId = Date.now();
     console.log(`🎯 [MANUAL_REORDER_CORE_${processId}] ===== PROCESSING REORDER =====`);
-    console.log(`🎯 [MANUAL_REORDER_CORE_${processId}] Pokemon: ${movedPokemon.name} from ${oldIndex + 1} to ${newIndex + 1}`);
-    console.log(`🎯 [MANUAL_REORDER_CORE_${processId}] Current rankings length: ${currentRankings.length}`);
     
     if (currentRankings.length === 0) {
       console.error(`❌ [MANUAL_REORDER_CORE_${processId}] Rankings array is empty! Using stable ref.`);
-      // Fallback to stable ref
-      const fallbackRankings = stableRankingsRef.current;
-      if (fallbackRankings.length === 0) {
+      currentRankings = stableRankingsRef.current;
+      if (currentRankings.length === 0) {
         console.error(`❌ [MANUAL_REORDER_CORE_${processId}] Stable ref is also empty! Cannot proceed.`);
         return;
       }
-      // Recalculate indices using stable ref
-      const fallbackOldIndex = fallbackRankings.findIndex(p => p.id === movedPokemon.id);
-      if (fallbackOldIndex === -1) {
+      oldIndex = currentRankings.findIndex(p => p.id === movedPokemon.id);
+      if (oldIndex === -1) {
         console.error(`❌ [MANUAL_REORDER_CORE_${processId}] Pokemon not found in stable ref either!`);
         return;
       }
-      currentRankings = fallbackRankings;
-      oldIndex = fallbackOldIndex;
     }
     
     // Create new rankings with manual order
@@ -128,7 +139,7 @@ export const useManualReorderCore = (
         console.error(`❌ [MANUAL_REORDER_CORE_${processId}] Parent callback failed:`, error);
       }
     }, 0);
-  }, [simulateBattlesForReorder, updateScoresPreservingOrder, onRankingsUpdate]);
+  }, []); // CRITICAL: Empty deps to prevent re-creation
 
   const handleDragEnd = useCallback((event: DragEndEvent) => {
     const dragId = Date.now();
@@ -159,7 +170,7 @@ export const useManualReorderCore = (
     console.log(`🎯 [MANUAL_REORDER_CORE_${dragId}] Moving ${movedPokemon.name} from ${oldIndex} to ${newIndex}`);
     
     processReorder(currentRankings, oldIndex, newIndex, movedPokemon);
-  }, [clearDragState, processReorder, localRankings]);
+  }, []); // CRITICAL: Empty deps
 
   const handleEnhancedManualReorder = useCallback((
     draggedPokemonId: number,
@@ -168,11 +179,9 @@ export const useManualReorderCore = (
   ) => {
     const enhancedId = Date.now();
     console.log(`🎯 [MANUAL_REORDER_CORE_${enhancedId}] ===== ENHANCED MANUAL REORDER =====`);
-    console.log(`🎯 [MANUAL_REORDER_CORE_${enhancedId}] Pokemon ${draggedPokemonId} from ${sourceIndex} to ${destinationIndex}`);
     
     // Use stable ref first, fallback to local rankings
     const currentRankings = stableRankingsRef.current.length > 0 ? stableRankingsRef.current : localRankings;
-    console.log(`🎯 [MANUAL_REORDER_CORE_${enhancedId}] Current rankings length: ${currentRankings.length}`);
     
     if (currentRankings.length === 0) {
       console.error(`❌ [MANUAL_REORDER_CORE_${enhancedId}] No valid rankings available!`);
@@ -191,25 +200,25 @@ export const useManualReorderCore = (
     }
     
     processReorder(currentRankings, sourceIndex, destinationIndex, movedPokemon);
-  }, [processReorder, localRankings]);
+  }, []); // CRITICAL: Empty deps
 
   // Stable memoization
   const displayRankings = useMemo(() => {
     const source = localRankings.length > 0 ? localRankings : stableRankingsRef.current;
     const result = source.map((pokemon) => ({
       ...pokemon,
-      isBeingDragged: draggedPokemonId === pokemon.id
+      isBeingDragged: draggedPokemonIdRef.current === pokemon.id
     }));
     console.log(`🎯 [MANUAL_REORDER_CORE_${hookId}] displayRankings created from ${source.length} items`);
     return result;
-  }, [localRankings, draggedPokemonId, hookId]);
+  }, [localRankings, renderTrigger, hookId]); // Include renderTrigger to update when drag state changes
 
   return {
     displayRankings,
     handleDragStart,
     handleDragEnd,
     handleEnhancedManualReorder,
-    isDragging,
-    isUpdating
+    isDragging: isDraggingRef.current,
+    isUpdating: isUpdatingRef.current
   };
 };
