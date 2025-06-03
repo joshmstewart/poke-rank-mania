@@ -21,6 +21,8 @@ export const RankingsSectionStable: React.FC<RankingsSectionStableProps> = React
   availablePokemon = []
 }) => {
   console.log(`🎯 [RANKINGS_SECTION_STABLE] Rendering with ${displayRankings.length} rankings`);
+  console.log(`🎯 [RANKINGS_SECTION_STABLE] onManualReorder exists: ${!!onManualReorder}`);
+  console.log(`🎯 [RANKINGS_SECTION_STABLE] onLocalReorder exists: ${!!onLocalReorder}`);
 
   // Use stable drag handlers to prevent recreation
   const { stableOnManualReorder, stableOnLocalReorder } = useStableDragHandlers(
@@ -88,6 +90,8 @@ export const RankingsSectionStable: React.FC<RankingsSectionStableProps> = React
             displayRankings={displayRankings}
             localPendingRefinements={pendingRefinements}
             pendingBattleCounts={pendingBattleCounts}
+            onManualReorder={stableOnManualReorder}
+            onLocalReorder={stableOnLocalReorder}
           />
         )}
       </div>
