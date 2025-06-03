@@ -2,7 +2,6 @@
 import React, { useCallback, useMemo } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import DragDropGridMemoized from "@/components/battle/DragDropGridMemoized";
-import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable';
 import { useStableDragHandlers } from "@/hooks/battle/useStableDragHandlers";
 
@@ -36,17 +35,6 @@ export const RankingsSectionStable: React.FC<RankingsSectionStableProps> = React
     console.log(`🎯 [RANKINGS_SECTION_STABLE] Sortable items created:`, items.slice(0, 5));
     return items;
   }, [displayRankings]);
-
-  // Memoize droppable configuration
-  const droppableConfig = useMemo(() => ({
-    id: 'rankings-drop-zone-stable',
-    data: {
-      type: 'rankings-container',
-      accepts: 'available-pokemon'
-    }
-  }), []);
-
-  const { setNodeRef, isOver } = useDroppable(droppableConfig);
   
   // Memoize pending battle counts to prevent recreation
   const pendingBattleCounts = useMemo(() => new Map<number, number>(), []);
@@ -57,12 +45,9 @@ export const RankingsSectionStable: React.FC<RankingsSectionStableProps> = React
       <div className="text-center">
         <p className="text-lg mb-2">No Pokémon ranked yet</p>
         <p className="text-sm">Drag Pokémon from the left to start ranking!</p>
-        {isOver && (
-          <p className="text-yellow-600 font-medium mt-2">Drop here to add to rankings!</p>
-        )}
       </div>
     </div>
-  ), [isOver]);
+  ), []);
 
   // Memoized header content
   const headerContent = useMemo(() => (
@@ -76,22 +61,11 @@ export const RankingsSectionStable: React.FC<RankingsSectionStableProps> = React
     </div>
   ), [displayRankings.length]);
 
-  // Memoized container class
-  const containerClassName = useMemo(() => 
-    `flex-1 overflow-y-auto p-4 transition-colors ${
-      isOver ? 'bg-yellow-50 border-2 border-dashed border-yellow-400' : ''
-    }`, 
-    [isOver]
-  );
-
   return (
     <div className="flex flex-col h-full">
       {headerContent}
       
-      <div 
-        className={containerClassName}
-        ref={setNodeRef}
-      >
+      <div className="flex-1 overflow-y-auto p-4">
         {displayRankings.length === 0 ? emptyStateContent : (
           <SortableContext 
             items={sortableItems}
