@@ -506,30 +506,28 @@ export const useEnhancedManualReorder = (
     // Update state
     const perfStateUpdateStart = performance.now();
     
-    // CRITICAL DEBUG: Log before state updates
-    console.log('🎨 [STATE_UPDATE_DEBUG] About to update state with:', {
-      updatedRankingsLength: updatedRankings.length,
-      firstFew: updatedRankings.slice(0, 5).map((p, i) => `${i+1}. ${p.name} (${p.score.toFixed(2)})`),
-      timestamp: Date.now()
-    });
+    // CRITICAL DEBUG: Add to BOTH persistent logs AND console
+    const stateDebugMessage = `🎨 [STATE_UPDATE_DEBUG] About to update state with: ${updatedRankings.length} rankings, first few: ${updatedRankings.slice(0, 3).map((p, i) => `${i+1}.${p.name}`).join(', ')}, timestamp: ${Date.now()}`;
+    persistentLog.add(stateDebugMessage);
+    console.log(stateDebugMessage);
     
     setLocalRankings(updatedRankings);
     
-    // CRITICAL DEBUG: Log the parent callback execution
-    console.log('🎨 [PARENT_CALLBACK_DEBUG] About to call onRankingsUpdate with:', {
-      updatedRankingsLength: updatedRankings.length,
-      callbackExists: !!onRankingsUpdateRef.current,
-      callbackType: typeof onRankingsUpdateRef.current,
-      timestamp: Date.now()
-    });
+    // CRITICAL DEBUG: Add to BOTH persistent logs AND console for parent callback
+    const callbackDebugMessage = `🎨 [PARENT_CALLBACK_DEBUG] About to call onRankingsUpdate: exists=${!!onRankingsUpdateRef.current}, type=${typeof onRankingsUpdateRef.current}, length=${updatedRankings.length}, timestamp=${Date.now()}`;
+    persistentLog.add(callbackDebugMessage);
+    console.log(callbackDebugMessage);
     
     // CRITICAL: Add try-catch to see if callback fails
     try {
       onRankingsUpdateRef.current(updatedRankings);
-      console.log('🎨 [PARENT_CALLBACK_DEBUG] ✅ Parent callback completed successfully');
+      const successMessage = '🎨 [PARENT_CALLBACK_DEBUG] ✅ Parent callback completed successfully';
+      persistentLog.add(successMessage);
+      console.log(successMessage);
     } catch (error) {
-      console.error('🎨 [PARENT_CALLBACK_DEBUG] ❌ Parent callback failed:', error);
-      persistentLog.add(`❌ PARENT_CALLBACK_FAILED: ${error}`);
+      const errorMessage = `🎨 [PARENT_CALLBACK_DEBUG] ❌ Parent callback failed: ${error}`;
+      persistentLog.add(errorMessage);
+      console.error(errorMessage);
     }
     
     const perfStateUpdateEnd = performance.now();
@@ -622,30 +620,28 @@ export const useEnhancedManualReorder = (
     // Update state
     const perfStateUpdateStart = performance.now();
     
-    // CRITICAL DEBUG: Log before state updates
-    console.log('🎨 [STATE_UPDATE_DEBUG] About to update state with:', {
-      updatedRankingsLength: updatedRankings.length,
-      firstFew: updatedRankings.slice(0, 5).map((p, i) => `${i+1}. ${p.name} (${p.score.toFixed(2)})`),
-      timestamp: Date.now()
-    });
+    // CRITICAL DEBUG: Add to BOTH persistent logs AND console
+    const stateDebugMessage = `🎨 [STATE_UPDATE_DEBUG] About to update state with: ${updatedRankings.length} rankings, first few: ${updatedRankings.slice(0, 3).map((p, i) => `${i+1}.${p.name}`).join(', ')}, timestamp: ${Date.now()}`;
+    persistentLog.add(stateDebugMessage);
+    console.log(stateDebugMessage);
     
     setLocalRankings(updatedRankings);
     
-    // CRITICAL DEBUG: Log the parent callback execution
-    console.log('🎨 [PARENT_CALLBACK_DEBUG] About to call onRankingsUpdate with:', {
-      updatedRankingsLength: updatedRankings.length,
-      callbackExists: !!onRankingsUpdateRef.current,
-      callbackType: typeof onRankingsUpdateRef.current,
-      timestamp: Date.now()
-    });
+    // CRITICAL DEBUG: Add to BOTH persistent logs AND console for parent callback
+    const callbackDebugMessage = `🎨 [PARENT_CALLBACK_DEBUG] About to call onRankingsUpdate: exists=${!!onRankingsUpdateRef.current}, type=${typeof onRankingsUpdateRef.current}, length=${updatedRankings.length}, timestamp=${Date.now()}`;
+    persistentLog.add(callbackDebugMessage);
+    console.log(callbackDebugMessage);
     
     // CRITICAL: Add try-catch to see if callback fails
     try {
       onRankingsUpdateRef.current(updatedRankings);
-      console.log('🎨 [PARENT_CALLBACK_DEBUG] ✅ Parent callback completed successfully');
+      const successMessage = '🎨 [PARENT_CALLBACK_DEBUG] ✅ Parent callback completed successfully';
+      persistentLog.add(successMessage);
+      console.log(successMessage);
     } catch (error) {
-      console.error('🎨 [PARENT_CALLBACK_DEBUG] ❌ Parent callback failed:', error);
-      persistentLog.add(`❌ PARENT_CALLBACK_FAILED: ${error}`);
+      const errorMessage = `🎨 [PARENT_CALLBACK_DEBUG] ❌ Parent callback failed: ${error}`;
+      persistentLog.add(errorMessage);
+      console.error(errorMessage);
     }
     
     const perfStateUpdateEnd = performance.now();
