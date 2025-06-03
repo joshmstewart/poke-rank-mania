@@ -1,3 +1,4 @@
+
 import React, { useMemo, useState, useEffect } from "react";
 import { DndContext, DragOverlay, pointerWithin, DragStartEvent, DragEndEvent } from '@dnd-kit/core';
 import { Rating } from 'ts-trueskill';
@@ -95,6 +96,25 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
     handleManualReorder,
     handleLocalReorder
   );
+
+  // Helper function to refresh rankings with updated TrueSkill scores
+  const refreshRankingsWithUpdatedScores = (rankings: any[]) => {
+    const updatedRankings = rankings.map(pokemon => {
+      const rating = getRating(pokemon.id.toString());
+      const newScore = rating.mu - rating.sigma;
+      
+      return {
+        ...pokemon,
+        score: newScore,
+        rating: rating,
+        mu: rating.mu,
+        sigma: rating.sigma
+      };
+    });
+    
+    console.log(`🔄 [SCORE_REFRESH] Updated scores for ${updatedRankings.length} Pokemon`);
+    return updatedRankings;
+  };
 
   // CASCADING ADJUSTMENT HELPER FUNCTIONS
   const findIdenticalNeighborsAbove = (rankings: any[], startIndex: number, getRating: (id: string) => Rating) => {
@@ -208,7 +228,7 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
       return;
     }
     
-    // Handle manual reordering within rankings with detailed debug capture
+    // Handle manual reordering within rankings with detailed debug capture and immediate UI refresh
     if (!activeId.startsWith('available-') && !overId.startsWith('available-')) {
       const oldIndex = manualRankingOrder.findIndex(p => p.id.toString() === activeId);
       const newIndex = manualRankingOrder.findIndex(p => p.id.toString() === overId);
@@ -222,7 +242,6 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
         updatedManualOrder.splice(newIndex, 0, movedPokemon);
         
         console.log(`🔧 [ENHANCED_DEBUG_DRAG] ✅ Manual order updated: ${movedPokemon.name} moved to position ${newIndex + 1}`);
-        setManualRankingOrder(updatedManualOrder);
 
         // Initialize debug data collection
         const debugInfo: ScoreDebugInfo[] = [];
@@ -435,7 +454,14 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
         
         console.log(`🎯 [ENHANCED_DEBUG_SCORING] ✅ Updated ${movedPokemon.name} rating with detailed debug capture`);
         
-        // Trigger background manual reorder
+        // CRITICAL: Immediately refresh the UI with updated scores
+        console.log(`🔄 [UI_REFRESH] Refreshing UI with updated TrueSkill scores`);
+        const refreshedRankings = refreshRankingsWithUpdatedScores(updatedManualOrder);
+        setManualRankingOrder(refreshedRankings);
+        
+        console.log(`🔄 [UI_REFRESH] ✅ UI refreshed with ${refreshedRankings.length} updated rankings`);
+        
+        // Trigger background manual reorder for external state sync
         handleManualReorder(parseInt(activeId), oldIndex, newIndex);
         
         return;
