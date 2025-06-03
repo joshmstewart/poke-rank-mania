@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useEnhancedManualReorder } from "@/hooks/battle/useEnhancedManualReorder";
 import { useEnhancedRankingDragDrop } from "@/hooks/ranking/useEnhancedRankingDragDrop";
@@ -32,7 +31,7 @@ interface RankingUICoreProps {
   onReset: () => void;
 }
 
-export const RankingUICore: React.FC<RankingUICoreProps> = ({
+export const RankingUICore: React.FC<RankingUICoreProps> = React.memo(({
   isLoading,
   availablePokemon,
   displayRankings,
@@ -55,14 +54,11 @@ export const RankingUICore: React.FC<RankingUICoreProps> = ({
   onGenerationChange,
   onReset
 }) => {
-  console.log(`🚨🚨🚨 [ENHANCED_RANKING_UI_CORE] ===== ENHANCED RENDERING =====`);
-  console.log(`🚨🚨🚨 [ENHANCED_RANKING_UI_CORE] Enhanced available Pokemon: ${enhancedAvailablePokemon.length}`);
-  console.log(`🚨🚨🚨 [ENHANCED_RANKING_UI_CORE] Local rankings: ${localRankings.length}`);
+  console.log(`🚨🚨🚨 [ENHANCED_RANKING_UI_CORE_STABLE] Rendering with ${localRankings.length} rankings`);
 
   // Simple implied battle function for Manual Mode
   const addImpliedBattle = (winnerId: number, loserId: number) => {
     console.log(`🎲 [MANUAL_IMPLIED_BATTLE] Battle: ${winnerId} beats ${loserId}`);
-    // For Manual Mode, we just log the battle - the TrueSkill updates happen in the reorder hook
   };
 
   // Enhanced manual reorder with manual order preservation and battle simulation
@@ -98,7 +94,7 @@ export const RankingUICore: React.FC<RankingUICoreProps> = ({
 
   // Handle local reordering (for DragDropGrid compatibility)
   const handleLocalReorder = (newRankings: any[]) => {
-    console.log(`🚨🚨🚨 [ENHANCED_RANKING_UI_CORE] Local reorder called with ${newRankings.length} Pokemon`);
+    console.log(`🚨🚨🚨 [ENHANCED_RANKING_UI_CORE_STABLE] Local reorder called with ${newRankings.length} Pokemon`);
     updateLocalRankings(newRankings);
   };
 
@@ -128,4 +124,15 @@ export const RankingUICore: React.FC<RankingUICoreProps> = ({
       handleLocalReorder={handleLocalReorder}
     />
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison to prevent unnecessary re-renders
+  return (
+    prevProps.localRankings.length === nextProps.localRankings.length &&
+    prevProps.enhancedAvailablePokemon.length === nextProps.enhancedAvailablePokemon.length &&
+    prevProps.selectedGeneration === nextProps.selectedGeneration &&
+    prevProps.battleType === nextProps.battleType &&
+    prevProps.isLoading === nextProps.isLoading
+  );
+});
+
+RankingUICore.displayName = 'RankingUICore';
