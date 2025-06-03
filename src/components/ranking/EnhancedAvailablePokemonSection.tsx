@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { LoadingType } from "@/hooks/pokemon/types";
 import { usePokemonGrouping } from "@/hooks/pokemon/usePokemonGrouping";
@@ -74,6 +75,18 @@ export const EnhancedAvailablePokemonSection: React.FC<EnhancedAvailablePokemonS
   console.log(`🔍 [ENHANCED_AVAILABLE_SECTION] Pokemon grouping returned ${items.length} items with headers: ${showGenerationHeaders}`);
   console.log(`🔍 [ENHANCED_AVAILABLE_SECTION] Available generations: ${availableGenerations.join(', ')}`);
 
+  // Transform items to match the expected interface
+  const transformedItems = items.map(item => {
+    if ('type' in item && item.type === 'generation-header') {
+      return {
+        type: 'generation-header' as const,
+        generationId: item.generationId,
+        generationName: item.generationName || `Generation ${item.generationId}`
+      };
+    }
+    return item;
+  });
+
   const allExpanded = expandedGenerations.size === availableGenerations.length && availableGenerations.length > 0;
 
   return (
@@ -94,7 +107,7 @@ export const EnhancedAvailablePokemonSection: React.FC<EnhancedAvailablePokemonS
       />
 
       <EnhancedAvailablePokemonContent
-        items={items}
+        items={transformedItems}
         showGenerationHeaders={showGenerationHeaders}
         viewMode={viewMode}
         isGenerationExpanded={isGenerationExpandedForDisplay}

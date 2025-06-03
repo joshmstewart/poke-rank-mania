@@ -2,7 +2,7 @@
 import React from "react";
 import { Pokemon } from "@/services/pokemon";
 import OptimizedDraggableCard from "@/components/battle/OptimizedDraggableCard";
-import { GenerationHeader } from "@/components/pokemon/GenerationHeader";
+import GenerationHeader from "@/components/pokemon/GenerationHeader";
 import { InfiniteScrollLoader } from "./InfiniteScrollLoader";
 import { Loader2 } from "lucide-react";
 
@@ -44,7 +44,10 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
               <div key={`gen-header-${item.generationId}`} className="col-span-full">
                 <GenerationHeader
                   generationId={item.generationId}
-                  generationName={item.generationName}
+                  name={item.generationName}
+                  region=""
+                  games=""
+                  viewMode={viewMode}
                   isExpanded={isGenerationExpanded(item.generationId)}
                   onToggle={() => onToggleGeneration(item.generationId)}
                 />
@@ -62,7 +65,6 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
               context="available"
               isDraggable={true}
               showRank={false}
-              viewMode={viewMode}
             />
           );
         })}
