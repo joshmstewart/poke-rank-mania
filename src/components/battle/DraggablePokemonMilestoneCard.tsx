@@ -21,7 +21,7 @@ interface DraggablePokemonMilestoneCardProps {
   context?: 'available' | 'ranked';
 }
 
-// CRITICAL: Track renders with detailed prop analysis
+// Global render tracking for performance debugging
 let renderCount = 0;
 
 // Type guard to check if pokemon is RankedPokemon
@@ -39,12 +39,14 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   context = 'ranked'
 }) => {
   renderCount++;
+  
+  // ENHANCED DEBUG LOGS: Track every render with detailed prop analysis
   console.log(`🔍 [CARD_RENDER_DEBUG] ${pokemon.name} (ID: ${pokemon.id}): Render #${renderCount}`);
-  console.log(`🔍 [CARD_RENDER_DEBUG] Props: index=${index}, isPending=${isPending}, context=${context}, isDraggable=${isDraggable}`);
+  console.log(`🔍 [CARD_RENDER_DEBUG] Props: index=${index}, isPending=${isPending}, context=${context}, isDraggable=${isDraggable}, isAvailable=${isAvailable}, showRank=${showRank}`);
 
   const [isOpen, setIsOpen] = React.useState(false);
 
-  // CRITICAL: Memoize all computed values with very specific dependencies
+  // Memoize computed values with stable dependencies
   const computedValues = useMemo(() => {
     const isRanked = context === 'available' && isRankedPokemon(pokemon) && 'isRanked' in pokemon 
       ? Boolean(pokemon.isRanked) 
@@ -54,16 +56,16 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       : null;
     const sortableId = isDraggable ? (isAvailable ? `available-${pokemon.id}` : pokemon.id) : `static-${pokemon.id}`;
     
-    console.log(`🔍 [CARD_RENDER_DEBUG] Computed values for ${pokemon.name}: sortableId=${sortableId}, isRanked=${isRanked}`);
+    console.log(`🔍 [CARD_RENDER_DEBUG] Computed values for ${pokemon.name}: sortableId=${sortableId}, isRanked=${isRanked}, currentRank=${currentRank}`);
     
     return {
       isRankedPokemon: isRanked,
       currentRank,
       sortableId
     };
-  }, [context, pokemon.id, isDraggable, isAvailable]);
+  }, [context, pokemon.id, isDraggable, isAvailable]); // Removed unstable dependencies
 
-  // CRITICAL: Stable sortable configuration - only depend on truly changing values
+  // Stable sortable configuration
   const sortableConfig = useMemo(() => {
     const config = { 
       id: computedValues.sortableId,
@@ -77,9 +79,9 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       }
     };
     
-    console.log(`🔍 [CARD_RENDER_DEBUG] Sortable config created for ${pokemon.name}:`, config.id);
+    console.log(`🔍 [CARD_RENDER_DEBUG] Sortable config created for ${pokemon.name}: ${config.id}, disabled: ${config.disabled}`);
     return config;
-  }, [computedValues.sortableId, isDraggable, isOpen, context, pokemon, index, computedValues.isRankedPokemon]);
+  }, [computedValues.sortableId, isDraggable, isOpen, context, pokemon.id, index, computedValues.isRankedPokemon]); // Only essential props
 
   const {
     attributes,
@@ -90,7 +92,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     isDragging,
   } = useSortable(sortableConfig);
 
-  // CRITICAL: Memoize style to prevent object recreation
+  // Memoize style to prevent object recreation
   const cardStyle = useMemo(() => {
     const style = {
       transform: CSS.Transform.toString(transform),
@@ -102,37 +104,37 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     };
     
     if (isDragging) {
-      console.log(`🔍 [CARD_RENDER_DEBUG] ${pokemon.name} is being dragged, style updated`);
+      console.log(`🔍 [CARD_RENDER_DEBUG] ${pokemon.name} is being dragged`);
     }
     
     return style;
   }, [transform, isDragging, transition, isDraggable, isOpen]);
 
-  // CRITICAL: Memoize background color
+  // Memoize background color based only on pokemon types
   const backgroundColorClass = useMemo(() => {
     const bgClass = getPokemonBackgroundColor(pokemon);
     console.log(`🔍 [CARD_RENDER_DEBUG] Background class for ${pokemon.name}: ${bgClass}`);
     return bgClass;
-  }, [pokemon.types, pokemon.id]); // Only depend on types and id, not entire pokemon object
+  }, [pokemon.types?.join(',') || '', pokemon.id]); // Only types matter for background
 
-  // Only load modal content when actually opened
+  // Conditional hooks - only when modal is open
   const { flavorText, isLoadingFlavor } = usePokemonFlavorText(pokemon.id, isOpen);
   const { tcgCard, secondTcgCard, isLoading: isLoadingTCG, error: tcgError, hasTcgCard } = usePokemonTCGCard(pokemon.name, isOpen);
 
-  // CRITICAL: Memoize modal flags
+  // Memoize modal flags
   const modalFlags = useMemo(() => ({
     showLoading: isLoadingTCG,
     showTCGCards: !isLoadingTCG && hasTcgCard && tcgCard !== null,
     showFallbackInfo: !isLoadingTCG && !hasTcgCard
   }), [isLoadingTCG, hasTcgCard, tcgCard]);
 
-  // CRITICAL: Memoize drag props to prevent recreation
+  // Memoize drag props to prevent recreation
   const dragProps = useMemo(() => 
     isDraggable && !isOpen ? { ...attributes, ...listeners } : {}, 
     [isDraggable, isOpen, attributes, listeners]
   );
 
-  // CRITICAL: Memoize className to prevent recreation
+  // Memoize className to prevent recreation
   const cardClassName = useMemo(() => {
     const baseClasses = `${backgroundColorClass} rounded-lg border border-gray-200 relative overflow-hidden h-35 flex flex-col group`;
     const cursorClass = isDraggable && !isOpen ? 'cursor-grab active:cursor-grabbing' : '';
@@ -142,13 +144,13 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     return `${baseClasses} ${cursorClass} ${dragState} ${pendingState}`;
   }, [backgroundColorClass, isDraggable, isOpen, isDragging, isPending]);
 
-  // CRITICAL: Stable callback for modal toggle
+  // Stable callback for modal toggle
   const handleToggleModal = useCallback((open: boolean) => {
     console.log(`🔍 [CARD_RENDER_DEBUG] Modal toggle for ${pokemon.name}: ${open}`);
     setIsOpen(open);
-  }, [pokemon.name]);
+  }, []); // Empty deps - setIsOpen is stable
 
-  console.log(`🔍 [CARD_RENDER_DEBUG] ${pokemon.name} render complete, returning JSX`);
+  console.log(`🔍 [CARD_RENDER_DEBUG] ${pokemon.name} render complete`);
 
   return (
     <div
@@ -194,7 +196,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     </div>
   );
 }, (prevProps, nextProps) => {
-  // CRITICAL: Very detailed comparison with logging
+  // ENHANCED MEMO DEBUG: Detailed comparison with logging
   const pokemonChanged = prevProps.pokemon.id !== nextProps.pokemon.id;
   const indexChanged = prevProps.index !== nextProps.index;
   const pendingChanged = prevProps.isPending !== nextProps.isPending;
@@ -215,10 +217,10 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     if (availableChanged) console.log(`🔍 [CARD_MEMO_DEBUG] - Available: ${prevProps.isAvailable} -> ${nextProps.isAvailable}`);
     if (contextChanged) console.log(`🔍 [CARD_MEMO_DEBUG] - Context: ${prevProps.context} -> ${nextProps.context}`);
   } else {
-    console.log(`🔍 [CARD_MEMO_DEBUG] ${nextProps.pokemon.name}: No meaningful prop changes, preventing re-render`);
+    console.log(`🔍 [CARD_MEMO_DEBUG] ${nextProps.pokemon.name}: No prop changes, preventing re-render`);
   }
   
-  return !shouldUpdate;
+  return !shouldUpdate; // Return true to prevent re-render when props haven't changed
 });
 
 DraggablePokemonMilestoneCard.displayName = 'DraggablePokemonMilestoneCard';

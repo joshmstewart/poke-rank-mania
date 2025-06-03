@@ -29,36 +29,36 @@ const DragDropGrid: React.FC<DragDropGridProps> = React.memo(({
 }) => {
   console.log(`🎯 [GRID_RENDER_DEBUG] DragDropGrid rendering with ${displayRankings.length} items`);
 
-  // CRITICAL: Memoize sortable items based on actual pokemon IDs
+  // Memoize sortable items with stable dependency
   const sortableItems = useMemo(() => {
     const items = displayRankings.map(p => p.id);
-    console.log(`🎯 [GRID_RENDER_DEBUG] Sortable items created:`, items.slice(0, 5), '...');
+    console.log(`🎯 [GRID_RENDER_DEBUG] Creating sortable items:`, items.slice(0, 3), '... (total:', items.length, ')');
     return items;
-  }, [displayRankings.map(p => p.id).join(',')]); // Only change when actual IDs change
+  }, [displayRankings.length, displayRankings.map(p => p.id).join(',')]); // Only change when IDs actually change
 
-  // CRITICAL: Static droppable configuration
+  // Static droppable configuration (never changes)
   const droppableConfig = useMemo(() => ({
     id: 'rankings-grid-drop-zone',
     data: {
       type: 'rankings-grid',
       accepts: ['available-pokemon', 'ranked-pokemon']
     }
-  }), []); // Never changes
+  }), []); // Static
 
   const { setNodeRef, isOver } = useDroppable(droppableConfig);
 
-  // CRITICAL: Static grid style
+  // Static grid style (never changes)
   const gridStyle = useMemo(() => ({
     gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))'
-  }), []); // Never changes
+  }), []); // Static
 
-  // CRITICAL: Memoize grid class names
+  // Memoize grid class names
   const gridClassName = useMemo(() => 
     `transition-colors ${isOver ? 'bg-yellow-50/50' : ''}`, 
     [isOver]
   );
 
-  // CRITICAL: Memoize the rendered cards to prevent unnecessary recreation
+  // Memoize the rendered cards with very specific dependencies
   const renderedCards = useMemo(() => {
     console.log(`🎯 [GRID_RENDER_DEBUG] Creating rendered cards for ${displayRankings.length} pokemon`);
     
@@ -69,7 +69,7 @@ const DragDropGrid: React.FC<DragDropGridProps> = React.memo(({
       
       return (
         <DraggablePokemonMilestoneCard
-          key={pokemon.id}
+          key={pokemon.id} // Stable key
           pokemon={pokemon}
           index={index}
           isPending={isPending}
@@ -81,11 +81,12 @@ const DragDropGrid: React.FC<DragDropGridProps> = React.memo(({
       );
     });
   }, [
-    displayRankings.map(p => `${p.id}-${p.name}`).join(','), // Only re-create when actual pokemon change
-    Array.from(localPendingRefinements).sort().join(',') // Only when pending set actually changes
+    displayRankings.length, // Length changes
+    displayRankings.map(p => p.id).join(','), // Pokemon IDs and order
+    Array.from(localPendingRefinements).sort().join(',') // Pending status changes
   ]);
 
-  console.log(`🎯 [GRID_RENDER_DEBUG] DragDropGrid render complete`);
+  console.log(`🎯 [GRID_RENDER_DEBUG] DragDropGrid render complete with ${renderedCards.length} cards`);
 
   return (
     <div 
@@ -103,12 +104,12 @@ const DragDropGrid: React.FC<DragDropGridProps> = React.memo(({
     </div>
   );
 }, (prevProps, nextProps) => {
-  // CRITICAL: Enhanced comparison with detailed logging
+  // Enhanced comparison with detailed logging
   console.log(`🎯 [GRID_MEMO_DEBUG] Comparing props for re-render decision`);
   
   if (prevProps.displayRankings.length !== nextProps.displayRankings.length) {
     console.log(`🎯 [GRID_MEMO_DEBUG] Rankings length changed: ${prevProps.displayRankings.length} -> ${nextProps.displayRankings.length}`);
-    return false;
+    return false; // Allow re-render
   }
   
   // Check if any Pokemon in the rankings actually changed
@@ -118,26 +119,26 @@ const DragDropGrid: React.FC<DragDropGridProps> = React.memo(({
     
     if (prev.id !== next.id || prev.name !== next.name) {
       console.log(`🎯 [GRID_MEMO_DEBUG] Pokemon changed at index ${i}: ${prev.name} -> ${next.name}`);
-      return false;
+      return false; // Allow re-render
     }
   }
   
   // Check pending refinements
   if (prevProps.localPendingRefinements.size !== nextProps.localPendingRefinements.size) {
     console.log(`🎯 [GRID_MEMO_DEBUG] Pending refinements size changed: ${prevProps.localPendingRefinements.size} -> ${nextProps.localPendingRefinements.size}`);
-    return false;
+    return false; // Allow re-render
   }
   
   // Compare pending refinements content
   for (const id of prevProps.localPendingRefinements) {
     if (!nextProps.localPendingRefinements.has(id)) {
       console.log(`🎯 [GRID_MEMO_DEBUG] Pending refinement removed: ${id}`);
-      return false;
+      return false; // Allow re-render
     }
   }
   
   console.log(`🎯 [GRID_MEMO_DEBUG] No meaningful changes detected, preventing re-render`);
-  return true;
+  return true; // Prevent re-render
 });
 
 DragDropGrid.displayName = 'DragDropGrid';
