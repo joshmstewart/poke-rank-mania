@@ -98,6 +98,13 @@ export const useEnhancedManualReorder = (
   useEffect(() => {
     localRankingsRef.current = localRankings;
     persistentLog.add(`🔍 STATE_REF_UPDATE: localRankingsRef updated to ${localRankings.length} items`);
+    
+    // CRITICAL DEBUG: Log the visual state update
+    console.log('🎨 [VISUAL_STATE_UPDATE] localRankings state changed:', {
+      length: localRankings.length,
+      firstFew: localRankings.slice(0, 5).map((p, i) => `${i+1}. ${p.name} (${p.score.toFixed(2)})`),
+      timestamp: Date.now()
+    });
   }, [localRankings]);
   
   useEffect(() => {
@@ -335,10 +342,13 @@ export const useEnhancedManualReorder = (
         const conservativeEstimate = rating.mu - rating.sigma;
         const confidence = Math.max(0, Math.min(100, 100 * (1 - (rating.sigma / 8.33))));
         
+        const oldScore = pokemon.score;
+        
         persistentLog.add(`🎯 UPDATED_DRAGGED: ${pokemon.name} score ${pokemon.score.toFixed(2)} → ${conservativeEstimate.toFixed(2)}`);
         console.log(`🔥 [PRESERVE_ORDER_ULTRA_OPTIMIZED] UPDATED ${index+1}. ${pokemon.name}: score ${pokemon.score.toFixed(2)} → ${conservativeEstimate.toFixed(2)}`);
         
-        return {
+        // CRITICAL DEBUG: Log the actual Pokemon object being created
+        const updatedPokemon = {
           ...pokemon,
           score: conservativeEstimate,
           confidence: confidence,
@@ -347,6 +357,16 @@ export const useEnhancedManualReorder = (
           sigma: rating.sigma,
           count: pokemon.count || 0
         };
+        
+        console.log('🎨 [SCORE_UPDATE_DEBUG] Created updated Pokemon object:', {
+          id: updatedPokemon.id,
+          name: updatedPokemon.name,
+          oldScore: oldScore.toFixed(2),
+          newScore: updatedPokemon.score.toFixed(2),
+          position: index + 1
+        });
+        
+        return updatedPokemon;
       } else {
         // Keep existing score data for unchanged Pokemon
         return pokemon;
@@ -355,7 +375,7 @@ export const useEnhancedManualReorder = (
     const perfMapEnd = performance.now();
     persistentLog.add(`🎯 ULTRA_OPTIMIZED_MAP: Map operation: ${(perfMapEnd - perfMapStart).toFixed(2)}ms for ${pokemonToUpdate.size}/${rankings.length} items`);
     
-    console.log('🔥 [PRESERVE_ORDER_ULTRA_OPTIMIZED] FINAL Output order (MUST MATCH INPUT):', updatedRankings.map((p, i) => `${i+1}. ${p.name}`).slice(0, 10));
+    console.log('🔥 [PRESERVE_ORDER_ULTRA_OPTIMIZED] FINAL Output order (MUST MATCH INPUT):', updatedRankings.map((p, i) => `${i+1}. ${p.name} (${p.score.toFixed(2)})`).slice(0, 10));
     console.log('🔥 [PRESERVE_ORDER_ULTRA_OPTIMIZED] ===== ULTRA-OPTIMIZED ORDER PRESERVATION COMPLETE =====');
     
     // ABSOLUTELY NO SORTING when preventAutoResorting is true
@@ -370,6 +390,13 @@ export const useEnhancedManualReorder = (
     }
     const perfSortEnd = performance.now();
     persistentLog.add(`🎯 SORT: Sort operation: ${(perfSortEnd - perfSortStart).toFixed(2)}ms`);
+    
+    // CRITICAL DEBUG: Log the final result that will be used for display
+    console.log('🎨 [FINAL_RESULT_DEBUG] Final result that will update state:', {
+      length: finalResult.length,
+      firstFew: finalResult.slice(0, 5).map((p, i) => `${i+1}. ${p.name} (${p.score.toFixed(2)})`),
+      draggedPokemonNewPosition: movedPokemonId ? finalResult.findIndex(p => p.id === movedPokemonId) + 1 : 'N/A'
+    });
     
     const perfScoreUpdateEnd = performance.now();
     persistentLog.add(`🎯 ULTRA_OPTIMIZED_SCORE_UPDATE_END: Total ultra-optimized score update: ${(perfScoreUpdateEnd - perfScoreUpdateStart).toFixed(2)}ms`);
@@ -478,8 +505,25 @@ export const useEnhancedManualReorder = (
     
     // Update state
     const perfStateUpdateStart = performance.now();
+    
+    // CRITICAL DEBUG: Log before state updates
+    console.log('🎨 [STATE_UPDATE_DEBUG] About to update state with:', {
+      updatedRankingsLength: updatedRankings.length,
+      firstFew: updatedRankings.slice(0, 5).map((p, i) => `${i+1}. ${p.name} (${p.score.toFixed(2)})`),
+      timestamp: Date.now()
+    });
+    
     setLocalRankings(updatedRankings);
+    
+    // CRITICAL DEBUG: Log the parent callback
+    console.log('🎨 [PARENT_CALLBACK_DEBUG] Calling onRankingsUpdate with:', {
+      updatedRankingsLength: updatedRankings.length,
+      callbackExists: !!onRankingsUpdateRef.current,
+      timestamp: Date.now()
+    });
+    
     onRankingsUpdateRef.current(updatedRankings);
+    
     const perfStateUpdateEnd = performance.now();
     persistentLog.add(`🎯 STATE_UPDATE: State update: ${(perfStateUpdateEnd - perfStateUpdateStart).toFixed(2)}ms`);
     
@@ -588,6 +632,13 @@ export const useEnhancedManualReorder = (
       ...pokemon,
       isBeingDragged: draggedPokemonId === pokemon.id
     }));
+    
+    // CRITICAL DEBUG: Log what's being returned for display
+    console.log('🎨 [DISPLAY_RANKINGS_DEBUG] Display rankings memoized:', {
+      length: result.length,
+      firstFew: result.slice(0, 5).map((p, i) => `${i+1}. ${p.name} (${p.score.toFixed(2)})`),
+      timestamp: Date.now()
+    });
     
     const perfMemoEnd = performance.now();
     persistentLog.add(`🎯 MEMO_END: Display rankings memoization: ${(perfMemoEnd - perfMemoStart).toFixed(2)}ms`);
