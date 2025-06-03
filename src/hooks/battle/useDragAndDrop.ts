@@ -42,7 +42,7 @@ export const useDragAndDrop = ({ displayRankings, onManualReorder, onLocalReorde
     })
   ), []);
 
-  // PERFORMANCE FIX: Memoize drag end handler to prevent recreation
+  // CRITICAL FIX: Only call manual reorder, which handles everything including order preservation
   const handleDragEnd = useCallback((event: DragEndEvent) => {
     console.log(`🚀 [DRAG_DROP_FLOW] ===== DRAG END TRIGGERED =====`);
     
@@ -70,28 +70,16 @@ export const useDragAndDrop = ({ displayRankings, onManualReorder, onLocalReorde
     const draggedPokemon = displayRankings[activeIndex];
     console.log(`🚀 [DRAG_DROP_FLOW] Dragged Pokemon: ${draggedPokemon.name} (${draggedPokemon.id})`);
 
-    // PERFORMANCE FIX: Only update if different from current
+    // CRITICAL FIX: Only call manual reorder - it handles both order preservation AND TrueSkill updates
     if (activeIndex !== overIndex) {
-      // Calculate the new rankings for immediate UI feedback (optimistic update)
-      const newRankings = arrayMove(displayRankings, activeIndex, overIndex);
-
-      // Update local rankings for immediate UI feedback (non-blocking)
-      if (onLocalReorderRef.current) {
-        console.log(`🚀 [DRAG_DROP_FLOW] Updating local rankings for immediate feedback...`);
-        onLocalReorderRef.current(newRankings);
-      }
-
-      // CRITICAL: Defer heavy manual reorder logic to prevent blocking
       if (onManualReorderRef.current) {
-        console.log(`🚀 [DRAG_DROP_FLOW] ===== CALLING ENHANCED MANUAL REORDER =====`);
-        console.log(`🚀 [DRAG_DROP_FLOW] This should trigger TrueSkill updates and implied battles`);
+        console.log(`🚀 [DRAG_DROP_FLOW] ===== CALLING ENHANCED MANUAL REORDER ONLY =====`);
+        console.log(`🚀 [DRAG_DROP_FLOW] This will handle order preservation AND TrueSkill updates`);
         console.log(`🚀 [DRAG_DROP_FLOW] Calling: onManualReorder(${draggedPokemon.id}, ${activeIndex}, ${overIndex})`);
         
-        // Use setTimeout to defer heavy operations and prevent blocking the UI
-        setTimeout(() => {
-          onManualReorderRef.current(draggedPokemon.id, activeIndex, overIndex);
-          console.log(`🚀 [DRAG_DROP_FLOW] Enhanced manual reorder call completed (deferred)`);
-        }, 0);
+        // Call manual reorder directly - it handles everything
+        onManualReorderRef.current(draggedPokemon.id, activeIndex, overIndex);
+        console.log(`🚀 [DRAG_DROP_FLOW] Enhanced manual reorder call completed`);
       } else {
         console.error(`🚀 [DRAG_DROP_FLOW] ❌ onManualReorder is not available!`);
       }
