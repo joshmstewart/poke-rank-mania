@@ -9,7 +9,20 @@ import { EnhancedAvailablePokemonSection } from "./EnhancedAvailablePokemonSecti
 import UnifiedControls from "@/components/shared/UnifiedControls";
 import PokemonCard from "@/components/PokemonCard";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { useStableDragHandlers } from "@/hooks/battle/useStableDragHandlers";
+import ScoreAdjustmentDebugModal from "./ScoreAdjustmentDebugModal";
+
+interface ScoreDebugInfo {
+  name: string;
+  position: string;
+  muBefore: number;
+  sigmaBefore: number;
+  scoreBefore: number;
+  muAfter?: number;
+  sigmaAfter?: number;
+  scoreAfter?: number;
+}
 
 interface EnhancedRankingLayoutProps {
   isLoading: boolean;
@@ -70,6 +83,10 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
   const [manualRankingOrder, setManualRankingOrder] = useState(displayRankings);
   const { updateRating, getRating } = useTrueSkillStore();
   
+  // Debug modal state
+  const [showDebugModal, setShowDebugModal] = useState(false);
+  const [debugData, setDebugData] = useState<ScoreDebugInfo[]>([]);
+  
   // Update manual order when displayRankings changes
   useEffect(() => {
     setManualRankingOrder(displayRankings);
@@ -123,42 +140,42 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
         // Explicitly sets Pokémon's TrueSkill rating to the average of immediate neighbors upon manual reorder.
         console.log(`🎯 [SCORE_ADJUSTMENT] Starting permanent score adjustment for ${movedPokemon.name}`);
         
+        // Capture BEFORE adjustment data
+        const beforeMovedRating = getRating(movedPokemon.id.toString());
         const neighborAbove = updatedManualOrder[newIndex - 1];
         const neighborBelow = updatedManualOrder[newIndex + 1];
         
+        const beforeAboveRating = neighborAbove ? getRating(neighborAbove.id.toString()) : null;
+        const beforeBelowRating = neighborBelow ? getRating(neighborBelow.id.toString()) : null;
+        
         let newMu, newSigma;
         
-        // Get current ratings for neighbors
-        const aboveRating = neighborAbove ? getRating(neighborAbove.id.toString()) : null;
-        const belowRating = neighborBelow ? getRating(neighborBelow.id.toString()) : null;
-        
-        if (aboveRating && belowRating) {
+        if (beforeAboveRating && beforeBelowRating) {
           // Position between two neighbors - use average
-          newMu = (aboveRating.mu + belowRating.mu) / 2;
-          newSigma = (aboveRating.sigma + belowRating.sigma) / 2;
+          newMu = (beforeAboveRating.mu + beforeBelowRating.mu) / 2;
+          newSigma = (beforeAboveRating.sigma + beforeBelowRating.sigma) / 2;
           console.log(`🎯 [SCORE_ADJUSTMENT] Between neighbors - mu: ${newMu.toFixed(3)}, sigma: ${newSigma.toFixed(3)}`);
-        } else if (aboveRating) {
+        } else if (beforeAboveRating) {
           // Top position - slightly higher than neighbor above
-          newMu = aboveRating.mu + 0.001;
-          newSigma = aboveRating.sigma;
+          newMu = beforeAboveRating.mu + 0.001;
+          newSigma = beforeAboveRating.sigma;
           console.log(`🎯 [SCORE_ADJUSTMENT] Top position - mu: ${newMu.toFixed(3)}, sigma: ${newSigma.toFixed(3)}`);
-        } else if (belowRating) {
+        } else if (beforeBelowRating) {
           // Bottom position - slightly lower than neighbor below
-          newMu = belowRating.mu - 0.001;
-          newSigma = belowRating.sigma;
+          newMu = beforeBelowRating.mu - 0.001;
+          newSigma = beforeBelowRating.sigma;
           console.log(`🎯 [SCORE_ADJUSTMENT] Bottom position - mu: ${newMu.toFixed(3)}, sigma: ${newSigma.toFixed(3)}`);
         } else {
           // Edge case: only Pokémon in list - keep current rating
-          const currentRating = getRating(movedPokemon.id.toString());
-          newMu = currentRating.mu;
-          newSigma = currentRating.sigma;
+          newMu = beforeMovedRating.mu;
+          newSigma = beforeMovedRating.sigma;
           console.log(`🎯 [SCORE_ADJUSTMENT] Only Pokemon - keeping current rating`);
         }
         
         // Special handling for identical neighbors
-        if (aboveRating && belowRating && 
-            Math.abs(aboveRating.mu - belowRating.mu) < 0.001 && 
-            Math.abs(aboveRating.sigma - belowRating.sigma) < 0.001) {
+        if (beforeAboveRating && beforeBelowRating && 
+            Math.abs(beforeAboveRating.mu - beforeBelowRating.mu) < 0.001 && 
+            Math.abs(beforeAboveRating.sigma - beforeBelowRating.sigma) < 0.001) {
           newMu += 0.001;       // Slightly differentiate mu
           newSigma = Math.max(newSigma - 0.001, 1.0);    // Slightly reduce sigma but keep minimum
           console.log(`🎯 [SCORE_ADJUSTMENT] Identical neighbors - differentiated to mu: ${newMu.toFixed(3)}, sigma: ${newSigma.toFixed(3)}`);
@@ -168,6 +185,42 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
         const newRating = new Rating(newMu, newSigma);
         updateRating(movedPokemon.id.toString(), newRating);
         console.log(`🎯 [SCORE_ADJUSTMENT] ✅ Permanently updated ${movedPokemon.name} rating in TrueSkill store`);
+        
+        // Set debug data explicitly
+        const debugInfo: ScoreDebugInfo[] = [
+          {
+            name: movedPokemon.name,
+            position: 'Moved',
+            muBefore: beforeMovedRating.mu,
+            sigmaBefore: beforeMovedRating.sigma,
+            scoreBefore: beforeMovedRating.mu - beforeMovedRating.sigma,
+            muAfter: newMu,
+            sigmaAfter: newSigma,
+            scoreAfter: newMu - newSigma
+          }
+        ];
+
+        if (neighborAbove && beforeAboveRating) {
+          debugInfo.push({
+            name: neighborAbove.name,
+            position: 'Above',
+            muBefore: beforeAboveRating.mu,
+            sigmaBefore: beforeAboveRating.sigma,
+            scoreBefore: beforeAboveRating.mu - beforeAboveRating.sigma,
+          });
+        }
+
+        if (neighborBelow && beforeBelowRating) {
+          debugInfo.push({
+            name: neighborBelow.name,
+            position: 'Below',
+            muBefore: beforeBelowRating.mu,
+            sigmaBefore: beforeBelowRating.sigma,
+            scoreBefore: beforeBelowRating.mu - beforeBelowRating.sigma,
+          });
+        }
+
+        setDebugData(debugInfo);
         
         // Trigger background manual reorder without TrueSkill updates (those are now handled above)
         handleManualReorder(parseInt(activeId), oldIndex, newIndex);
@@ -193,6 +246,17 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
           onReset={handleComprehensiveReset}
           customResetAction={handleComprehensiveReset}
         />
+        
+        {/* Debug Controls */}
+        <div className="flex justify-center mt-4">
+          <Button 
+            onClick={() => setShowDebugModal(true)}
+            variant="outline"
+            className="bg-purple-100 border-purple-400 text-purple-800 hover:bg-purple-200"
+          >
+            🔍 Debug Score Adjustment
+          </Button>
+        </div>
       </div>
 
       <div className="max-w-7xl mx-auto">
@@ -243,6 +307,13 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
           </Card>
         </div>
       </div>
+      
+      {/* Debug Modal */}
+      <ScoreAdjustmentDebugModal
+        open={showDebugModal}
+        onClose={() => setShowDebugModal(false)}
+        debugData={debugData}
+      />
     </div>
   );
 });
