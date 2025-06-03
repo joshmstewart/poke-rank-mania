@@ -14,7 +14,7 @@ export const useManualReorderCore = (
   preventAutoResorting: boolean,
   addImpliedBattle?: (winnerId: number, loserId: number) => void
 ) => {
-  const hookId = useRef(Date.now()).current; // Stable ID
+  const hookId = useRef(Date.now()).current;
   console.log(`🎯 [MANUAL_REORDER_CORE_${hookId}] Initializing with ${finalRankings.length} rankings`);
 
   // Early bailout for large datasets
@@ -35,9 +35,11 @@ export const useManualReorderCore = (
     preventAutoResorting 
   });
 
-  // CRITICAL FIX: Use stable local state that doesn't cause render loops
+  // CRITICAL FIX: Use a stable ref to prevent state corruption
+  const stableRankingsRef = useRef<RankedPokemon[]>(finalRankings);
   const [localRankings, setLocalRankings] = useState<RankedPokemon[]>(() => {
     console.log(`🎯 [MANUAL_REORDER_CORE_${hookId}] Initial local rankings:`, finalRankings.slice(0, 3).map(p => p.name));
+    stableRankingsRef.current = finalRankings;
     return finalRankings;
   });
   
@@ -53,29 +55,23 @@ export const useManualReorderCore = (
   const { simulateBattlesForReorder } = useBattleSimulation(addImpliedBattle);
   const { updateScoresPreservingOrder } = useScoreUpdater(preventAutoResorting);
 
-  // CRITICAL FIX: Only update local rankings when not dragging and when there's a meaningful change
-  const lastFinalRankingsRef = useRef<RankedPokemon[]>(finalRankings);
+  // CRITICAL FIX: Only update when there's a real change and not during drag
   useEffect(() => {
-    // Skip updates during drag operations or when updating
     if (isDragging || isUpdating) {
       console.log(`🎯 [MANUAL_REORDER_CORE_${hookId}] Skipping props update - dragging:${isDragging}, updating:${isUpdating}`);
       return;
     }
 
-    // Only update if there's a significant change (length or first few items)
-    const hasSignificantChange = 
-      finalRankings.length !== lastFinalRankingsRef.current.length ||
-      finalRankings.slice(0, 5).some((p, i) => p.id !== lastFinalRankingsRef.current[i]?.id);
+    // Check if there's a meaningful difference
+    const hasChange = finalRankings.length !== stableRankingsRef.current.length ||
+      finalRankings.slice(0, 5).some((p, i) => p.id !== stableRankingsRef.current[i]?.id);
 
-    if (hasSignificantChange) {
-      console.log(`🎯 [MANUAL_REORDER_CORE_${hookId}] Significant change detected, updating local rankings`);
-      console.log(`🎯 [MANUAL_REORDER_CORE_${hookId}] FROM:`, localRankings.slice(0, 3).map(p => p.name));
-      console.log(`🎯 [MANUAL_REORDER_CORE_${hookId}] TO:`, finalRankings.slice(0, 3).map(p => p.name));
-      
+    if (hasChange) {
+      console.log(`🎯 [MANUAL_REORDER_CORE_${hookId}] Updating from props - length: ${finalRankings.length}`);
+      stableRankingsRef.current = finalRankings;
       setLocalRankings(finalRankings);
-      lastFinalRankingsRef.current = finalRankings;
     }
-  }, [finalRankings, isDragging, isUpdating, hookId]); // Removed localRankings from deps to prevent loops
+  }, [finalRankings, isDragging, isUpdating, hookId]);
 
   const processReorder = useCallback((
     currentRankings: RankedPokemon[],
@@ -86,6 +82,25 @@ export const useManualReorderCore = (
     const processId = Date.now();
     console.log(`🎯 [MANUAL_REORDER_CORE_${processId}] ===== PROCESSING REORDER =====`);
     console.log(`🎯 [MANUAL_REORDER_CORE_${processId}] Pokemon: ${movedPokemon.name} from ${oldIndex + 1} to ${newIndex + 1}`);
+    console.log(`🎯 [MANUAL_REORDER_CORE_${processId}] Current rankings length: ${currentRankings.length}`);
+    
+    if (currentRankings.length === 0) {
+      console.error(`❌ [MANUAL_REORDER_CORE_${processId}] Rankings array is empty! Using stable ref.`);
+      // Fallback to stable ref
+      const fallbackRankings = stableRankingsRef.current;
+      if (fallbackRankings.length === 0) {
+        console.error(`❌ [MANUAL_REORDER_CORE_${processId}] Stable ref is also empty! Cannot proceed.`);
+        return;
+      }
+      // Recalculate indices using stable ref
+      const fallbackOldIndex = fallbackRankings.findIndex(p => p.id === movedPokemon.id);
+      if (fallbackOldIndex === -1) {
+        console.error(`❌ [MANUAL_REORDER_CORE_${processId}] Pokemon not found in stable ref either!`);
+        return;
+      }
+      currentRankings = fallbackRankings;
+      oldIndex = fallbackOldIndex;
+    }
     
     // Create new rankings with manual order
     const newRankings = arrayMove(currentRankings, oldIndex, newIndex);
@@ -98,21 +113,21 @@ export const useManualReorderCore = (
     // Update scores while preserving order
     const updatedRankings = updateScoresPreservingOrder(newRankings, movedPokemon.id);
     
-    // CRITICAL FIX: Update local state immediately and prevent render loops
-    console.log(`🎯 [MANUAL_REORDER_CORE_${processId}] ===== IMMEDIATE LOCAL UPDATE =====`);
+    // Update both local state and stable ref immediately
+    console.log(`🎯 [MANUAL_REORDER_CORE_${processId}] ===== UPDATING STATE =====`);
+    stableRankingsRef.current = updatedRankings;
     setLocalRankings(updatedRankings);
     
-    // Update the ref to prevent the useEffect from overriding our change
-    lastFinalRankingsRef.current = updatedRankings;
-    
-    // Then call parent callback
-    try {
-      console.log(`🎯 [MANUAL_REORDER_CORE_${processId}] Calling parent callback...`);
-      onRankingsUpdate(updatedRankings);
-      console.log(`🎯 [MANUAL_REORDER_CORE_${processId}] ✅ Parent callback completed`);
-    } catch (error) {
-      console.error(`❌ [MANUAL_REORDER_CORE_${processId}] Parent callback failed:`, error);
-    }
+    // Call parent callback
+    setTimeout(() => {
+      try {
+        console.log(`🎯 [MANUAL_REORDER_CORE_${processId}] Calling parent callback...`);
+        onRankingsUpdate(updatedRankings);
+        console.log(`🎯 [MANUAL_REORDER_CORE_${processId}] ✅ Parent callback completed`);
+      } catch (error) {
+        console.error(`❌ [MANUAL_REORDER_CORE_${processId}] Parent callback failed:`, error);
+      }
+    }, 0);
   }, [simulateBattlesForReorder, updateScoresPreservingOrder, onRankingsUpdate]);
 
   const handleDragEnd = useCallback((event: DragEndEvent) => {
@@ -128,19 +143,23 @@ export const useManualReorderCore = (
       return;
     }
 
-    // Use current local rankings for drag operations
-    const currentRankings = localRankings;
+    // Use stable ref to ensure we have valid data
+    const currentRankings = stableRankingsRef.current.length > 0 ? stableRankingsRef.current : localRankings;
+    console.log(`🎯 [MANUAL_REORDER_CORE_${dragId}] Using rankings source with ${currentRankings.length} items`);
+    
     const oldIndex = currentRankings.findIndex(p => p.id.toString() === active.id);
     const newIndex = currentRankings.findIndex(p => p.id.toString() === over.id);
     
     if (oldIndex === -1 || newIndex === -1) {
-      console.error(`❌ [MANUAL_REORDER_CORE_${dragId}] Could not find Pokemon indices`);
+      console.error(`❌ [MANUAL_REORDER_CORE_${dragId}] Could not find Pokemon indices - old: ${oldIndex}, new: ${newIndex}`);
       return;
     }
     
     const movedPokemon = currentRankings[oldIndex];
+    console.log(`🎯 [MANUAL_REORDER_CORE_${dragId}] Moving ${movedPokemon.name} from ${oldIndex} to ${newIndex}`);
+    
     processReorder(currentRankings, oldIndex, newIndex, movedPokemon);
-  }, [localRankings, clearDragState, processReorder]);
+  }, [clearDragState, processReorder, localRankings]);
 
   const handleEnhancedManualReorder = useCallback((
     draggedPokemonId: number,
@@ -151,17 +170,17 @@ export const useManualReorderCore = (
     console.log(`🎯 [MANUAL_REORDER_CORE_${enhancedId}] ===== ENHANCED MANUAL REORDER =====`);
     console.log(`🎯 [MANUAL_REORDER_CORE_${enhancedId}] Pokemon ${draggedPokemonId} from ${sourceIndex} to ${destinationIndex}`);
     
-    // Use current local rankings
-    const currentRankings = localRankings;
-    console.log(`🎯 [MANUAL_REORDER_CORE_${enhancedId}] Current rankings:`, currentRankings.slice(0, 3).map(p => p.name));
+    // Use stable ref first, fallback to local rankings
+    const currentRankings = stableRankingsRef.current.length > 0 ? stableRankingsRef.current : localRankings;
+    console.log(`🎯 [MANUAL_REORDER_CORE_${enhancedId}] Current rankings length: ${currentRankings.length}`);
     
     if (currentRankings.length === 0) {
-      console.error(`❌ [MANUAL_REORDER_CORE_${enhancedId}] Current rankings is empty!`);
+      console.error(`❌ [MANUAL_REORDER_CORE_${enhancedId}] No valid rankings available!`);
       return;
     }
     
     if (sourceIndex < 0 || sourceIndex >= currentRankings.length) {
-      console.error(`❌ [MANUAL_REORDER_CORE_${enhancedId}] Invalid source index:`, sourceIndex);
+      console.error(`❌ [MANUAL_REORDER_CORE_${enhancedId}] Invalid source index: ${sourceIndex}`);
       return;
     }
     
@@ -172,15 +191,16 @@ export const useManualReorderCore = (
     }
     
     processReorder(currentRankings, sourceIndex, destinationIndex, movedPokemon);
-  }, [localRankings, processReorder]);
+  }, [processReorder, localRankings]);
 
-  // CRITICAL FIX: Stable memoization that doesn't cause render loops
+  // Stable memoization
   const displayRankings = useMemo(() => {
-    const result = localRankings.map((pokemon) => ({
+    const source = localRankings.length > 0 ? localRankings : stableRankingsRef.current;
+    const result = source.map((pokemon) => ({
       ...pokemon,
       isBeingDragged: draggedPokemonId === pokemon.id
     }));
-    console.log(`🎯 [MANUAL_REORDER_CORE_${hookId}] displayRankings memoized:`, result.slice(0, 3).map(p => p.name));
+    console.log(`🎯 [MANUAL_REORDER_CORE_${hookId}] displayRankings created from ${source.length} items`);
     return result;
   }, [localRankings, draggedPokemonId, hookId]);
 
