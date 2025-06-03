@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useEnhancedManualReorder } from "@/hooks/battle/useEnhancedManualReorder";
 import { useEnhancedRankingDragDrop } from "@/hooks/ranking/useEnhancedRankingDragDrop";
@@ -6,6 +7,7 @@ import { useRankingReset } from "./RankingResetHandler";
 import { EnhancedRankingLayout } from "./EnhancedRankingLayout";
 import { BattleType } from "@/hooks/battle/types";
 import { LoadingType } from "@/hooks/pokemon/types";
+import PersistentLogViewer from "@/components/debug/PersistentLogViewer";
 
 interface RankingUICoreProps {
   isLoading: boolean;
@@ -99,30 +101,34 @@ export const RankingUICore: React.FC<RankingUICoreProps> = React.memo(({
   };
 
   return (
-    <EnhancedRankingLayout
-      isLoading={isLoading}
-      availablePokemon={availablePokemon}
-      enhancedAvailablePokemon={enhancedAvailablePokemon}
-      displayRankings={displayRankings}
-      selectedGeneration={selectedGeneration}
-      loadingType={loadingType}
-      currentPage={currentPage}
-      totalPages={totalPages}
-      loadSize={loadSize}
-      loadingRef={loadingRef}
-      battleType={battleType}
-      activeDraggedPokemon={activeDraggedPokemon}
-      filteredAvailablePokemon={filteredAvailablePokemon}
-      handlePageChange={handlePageChange}
-      getPageRange={getPageRange}
-      onGenerationChange={onGenerationChange}
-      handleComprehensiveReset={handleComprehensiveReset}
-      setBattleType={setBattleType}
-      handleDragStart={handleDragStart}
-      handleDragEnd={handleDragEnd}
-      handleManualReorder={handleManualReorder}
-      handleLocalReorder={handleLocalReorder}
-    />
+    <>
+      <EnhancedRankingLayout
+        isLoading={isLoading}
+        availablePokemon={availablePokemon}
+        enhancedAvailablePokemon={enhancedAvailablePokemon}
+        displayRankings={displayRankings}
+        selectedGeneration={selectedGeneration}
+        loadingType={loadingType}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        loadSize={loadSize}
+        loadingRef={loadingRef}
+        battleType={battleType}
+        activeDraggedPokemon={activeDraggedPokemon}
+        filteredAvailablePokemon={filteredAvailablePokemon}
+        handlePageChange={handlePageChange}
+        getPageRange={getPageRange}
+        onGenerationChange={onGenerationChange}
+        handleComprehensiveReset={handleComprehensiveReset}
+        setBattleType={setBattleType}
+        handleDragStart={handleDragStart}
+        handleDragEnd={handleDragEnd}
+        handleManualReorder={handleManualReorder}
+        handleLocalReorder={handleLocalReorder}
+      />
+      
+      <PersistentLogViewer />
+    </>
   );
 }, (prevProps, nextProps) => {
   // Custom comparison to prevent unnecessary re-renders
