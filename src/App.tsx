@@ -15,7 +15,7 @@ import ModeSwitcher from "@/components/ModeSwitcher";
 const queryClient = new QueryClient();
 
 function App() {
-  const [mode, setMode] = useLocalStorage("pokemon-ranker-mode", "rank");
+  const [mode, setMode] = useLocalStorage<"rank" | "battle">("pokemon-ranker-mode", "rank");
   const renderCount = useRef(0);
   const mountTime = useRef(new Date().toISOString());
   const stableRootInstance = useRef('app-root-main-stable-FIXED');
@@ -80,20 +80,22 @@ function App() {
   
   return (
     <QueryClientProvider client={queryClient}>
-      <PokemonProvider allPokemon={[]} rawUnfilteredPokemon={[]}>
-        <Router>
-          <div className="min-h-screen bg-background">
-            <AppHeader mode={mode} onModeChange={handleModeChange} />
-            <Routes>
-              <Route path="/" element={<ModeSwitcher />} />
-              <Route path="/battle" element={<BattleMode />} />
-              <Route path="/rankings" element={<PokemonRankerWithProvider />} />
-              <Route path="/community" element={<CommunityRankingsPage />} />
-            </Routes>
-            <Toaster />
-          </div>
-        </Router>
-      </PokemonProvider>
+      <AuthWrapper>
+        <PokemonProvider allPokemon={[]} rawUnfilteredPokemon={[]}>
+          <Router>
+            <div className="min-h-screen bg-background">
+              <AppHeader mode={mode} onModeChange={handleModeChange} />
+              <Routes>
+                <Route path="/" element={<ModeSwitcher />} />
+                <Route path="/battle" element={<BattleMode />} />
+                <Route path="/rankings" element={<PokemonRankerWithProvider />} />
+                <Route path="/community" element={<CommunityRankingsPage />} />
+              </Routes>
+              <Toaster />
+            </div>
+          </Router>
+        </PokemonProvider>
+      </AuthWrapper>
     </QueryClientProvider>
   );
 }
