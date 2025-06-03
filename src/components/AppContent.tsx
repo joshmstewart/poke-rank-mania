@@ -2,10 +2,9 @@
 import React, { useMemo } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
-import { PokemonProvider } from "@/contexts/PokemonContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 // Use correct import paths based on existing file structure
-import BattleModeContainer from "@/components/battle/BattleModeContainer";
+import BattleModeCore from "@/components/battle/BattleModeCore";
 import PokemonRankerWithProvider from "@/components/pokemon/PokemonRankerWithProvider";
 
 // Simple navbar component for now
@@ -37,7 +36,7 @@ const AppContent: React.FC = React.memo(() => {
   console.log(`🚀🚀🚀 APP_CONTENT_FIXED: Rendering with stability measures`);
 
   const routes = useMemo(() => [
-    { path: "/", element: <BattleModeContainer allPokemon={[]} initialBattleType="pairs" /> },
+    { path: "/", element: <BattleModeCore /> },
     { path: "/ranker", element: <PokemonRankerWithProvider /> },
     { path: "/community", element: <CommunityPage /> }
   ], []);

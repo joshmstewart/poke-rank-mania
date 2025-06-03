@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import BattleContentHeader from "./BattleContentHeader";
 import BattleContentRenderer from "./BattleContentRenderer";
 import { Pokemon } from "@/services/pokemon";
@@ -14,7 +14,7 @@ interface BattleModeContainerProps {
   setBattleResults?: React.Dispatch<React.SetStateAction<SingleBattle[]>>;
 }
 
-const BattleModeContainer: React.FC<BattleModeContainerProps> = ({
+const BattleModeContainer: React.FC<BattleModeContainerProps> = React.memo(({
   allPokemon,
   initialBattleType,
   setBattlesCompleted,
@@ -22,20 +22,26 @@ const BattleModeContainer: React.FC<BattleModeContainerProps> = ({
 }) => {
   console.log(`🔧 [BATTLE_MODE_CONTAINER] Rendering with ${allPokemon.length} Pokemon`);
   
-  // Add error boundary protection
   const [hasError, setHasError] = useState(false);
   const [selectedGeneration, setSelectedGeneration] = useState(0);
   
-  // CRITICAL FIX: Get battle count from TrueSkill store as single source of truth
+  // Get battle count from TrueSkill store as single source of truth
   const { totalBattles } = useTrueSkillStore();
+
+  // Stable Pokemon reference to prevent re-renders
+  const stablePokemon = useMemo(() => {
+    return allPokemon && allPokemon.length > 0 ? allPokemon : [];
+  }, [allPokemon.length]);
 
   // Add error handling for battle state initialization
   let battleState;
   try {
-    battleState = useBattleStateCore(allPokemon, initialBattleType, selectedGeneration);
+    battleState = useBattleStateCore(stablePokemon, initialBattleType, selectedGeneration);
   } catch (error) {
     console.error('🚨 [BATTLE_CONTAINER_ERROR] Failed to initialize battle state:', error);
-    setHasError(true);
+    if (!hasError) {
+      setHasError(true);
+    }
     battleState = null;
   }
 
@@ -47,7 +53,7 @@ const BattleModeContainer: React.FC<BattleModeContainerProps> = ({
           <div className="text-center">
             <h2 className="text-xl font-bold mb-4 text-red-600">Battle System Error</h2>
             <p className="text-gray-600 mb-4">
-              {allPokemon.length === 0 
+              {stablePokemon.length === 0 
                 ? "No Pokemon data available. Please wait for Pokemon to load."
                 : "Failed to initialize battle system."
               }
@@ -67,54 +73,39 @@ const BattleModeContainer: React.FC<BattleModeContainerProps> = ({
     );
   }
 
-  // CRITICAL FIX: Always use TrueSkill store value for battles completed
+  // Stable callback references to prevent prop changes
+  const stableSetBattlesCompleted = useCallback((value: React.SetStateAction<number>) => {
+    setBattlesCompleted?.(value);
+  }, [setBattlesCompleted]);
+
+  const stableSetBattleResults = useCallback((value: React.SetStateAction<SingleBattle[]>) => {
+    setBattleResults?.(value);
+  }, [setBattleResults]);
+
+  // Sync battle count from TrueSkill store
   useEffect(() => {
     console.log(`🔧 [BATTLE_COUNT_SYNC] Syncing battle count from TrueSkill store: ${totalBattles}`);
-    if (setBattlesCompleted) {
-      setBattlesCompleted(totalBattles);
-    }
-  }, [totalBattles, setBattlesCompleted]);
+    stableSetBattlesCompleted(totalBattles);
+  }, [totalBattles, stableSetBattlesCompleted]);
 
   // Sync battle results
   useEffect(() => {
-    if (setBattleResults && battleState) {
-      setBattleResults(battleState.battleResults);
+    if (battleState?.battleResults) {
+      stableSetBattleResults(battleState.battleResults);
     }
-  }, [battleState?.battleResults, setBattleResults]);
-
-  // CRITICAL FIX: Listen for reset events and force re-render
-  useEffect(() => {
-    const handleBattleSystemReset = () => {
-      console.log(`🔄 [CONTAINER_RESET] Forcing state sync after reset`);
-      const currentTotalBattles = useTrueSkillStore.getState().totalBattles;
-      console.log(`🔄 [CONTAINER_RESET] Current TrueSkill battles: ${currentTotalBattles}`);
-      
-      if (setBattlesCompleted) {
-        setBattlesCompleted(currentTotalBattles);
-      }
-      if (setBattleResults) {
-        setBattleResults([]);
-      }
-    };
-
-    document.addEventListener('battle-system-reset', handleBattleSystemReset);
-    
-    return () => {
-      document.removeEventListener('battle-system-reset', handleBattleSystemReset);
-    };
-  }, [setBattlesCompleted, setBattleResults]);
+  }, [battleState?.battleResults, stableSetBattleResults]);
 
   const handleGenerationChange = useCallback((gen: number) => {
     console.log(`🔧 [BATTLE_MODE_CONTAINER] Generation changed to: ${gen}`);
     setSelectedGeneration(gen);
-    if (battleState && battleState.setSelectedGeneration) {
+    if (battleState?.setSelectedGeneration) {
       battleState.setSelectedGeneration(gen);
     }
   }, [battleState]);
 
   const handleBattleTypeChange = useCallback((type: BattleType) => {
     console.log(`🔧 [BATTLE_MODE_CONTAINER] Battle type changed to: ${type}`);
-    if (battleState && battleState.setBattleType) {
+    if (battleState?.setBattleType) {
       battleState.setBattleType(type);
     }
   }, [battleState]);
@@ -128,8 +119,8 @@ const BattleModeContainer: React.FC<BattleModeContainerProps> = ({
           onGenerationChange={handleGenerationChange}
           setBattleType={handleBattleTypeChange}
           performFullBattleReset={battleState.performFullBattleReset}
-          setBattlesCompleted={setBattlesCompleted}
-          setBattleResults={setBattleResults}
+          setBattlesCompleted={stableSetBattlesCompleted}
+          setBattleResults={stableSetBattleResults}
         />
 
         <BattleContentRenderer
@@ -160,12 +151,25 @@ const BattleModeContainer: React.FC<BattleModeContainerProps> = ({
           resetMilestoneInProgress={battleState.resetMilestoneInProgress}
           handleManualReorder={battleState.handleManualReorder}
           onRankingsUpdate={() => {}}
-          setBattlesCompleted={setBattlesCompleted}
-          setBattleResults={setBattleResults}
+          setBattlesCompleted={stableSetBattlesCompleted}
+          setBattleResults={stableSetBattleResults}
         />
       </div>
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  // Only re-render for meaningful changes
+  const battleTypeChanged = prevProps.initialBattleType !== nextProps.initialBattleType;
+  const pokemonCountChanged = prevProps.allPokemon.length !== nextProps.allPokemon.length;
+  
+  // Only update if battle type changed or we gained significant Pokemon data
+  const shouldUpdate = battleTypeChanged || (pokemonCountChanged && nextProps.allPokemon.length > 0);
+  
+  console.log(`🎯 [CONTAINER_MEMO] Should update: ${shouldUpdate} (battleType: ${battleTypeChanged}, pokemonCount: ${pokemonCountChanged})`);
+  
+  return !shouldUpdate;
+});
+
+BattleModeContainer.displayName = "BattleModeContainer";
 
 export default BattleModeContainer;
