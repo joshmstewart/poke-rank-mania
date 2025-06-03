@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useMemo, useCallback } from "react";
 import {
   SortableContext,
   rectSortingStrategy,
@@ -7,6 +7,7 @@ import {
 import { useDroppable } from '@dnd-kit/core';
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import DraggablePokemonMilestoneCard from "./DraggablePokemonMilestoneCard";
+import { useRenderTracker } from "@/hooks/battle/useRenderTracker";
 
 interface DragDropGridProps {
   displayRankings: (Pokemon | RankedPokemon)[];
@@ -18,7 +19,7 @@ interface DragDropGridProps {
   availablePokemon?: any[];
 }
 
-const DragDropGrid: React.FC<DragDropGridProps> = ({
+const DragDropGrid: React.FC<DragDropGridProps> = React.memo(({
   displayRankings,
   localPendingRefinements,
   pendingBattleCounts,
@@ -27,18 +28,32 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
   onMarkAsPending,
   availablePokemon = []
 }) => {
-  // Set up a droppable zone that accepts available Pokemon
-  const { setNodeRef, isOver } = useDroppable({
+  // Track renders for performance debugging
+  useRenderTracker('DragDropGrid', { 
+    rankingsCount: displayRankings.length,
+    pendingCount: localPendingRefinements.size 
+  });
+
+  // Memoize sortable items to prevent recreation on every render
+  const sortableItems = useMemo(() => {
+    return displayRankings.map(p => p.id);
+  }, [displayRankings]);
+
+  // Set up droppable zone with memoized configuration
+  const droppableConfig = useMemo(() => ({
     id: 'rankings-grid-drop-zone',
     data: {
       type: 'rankings-grid',
       accepts: ['available-pokemon', 'ranked-pokemon']
     }
-  });
+  }), []);
 
-  // PERFORMANCE FIX: Only include ranked Pokemon IDs for collision detection
-  // This dramatically reduces the collision detection overhead
-  const sortableItems = displayRankings.map(p => p.id);
+  const { setNodeRef, isOver } = useDroppable(droppableConfig);
+
+  // Memoize the grid style to prevent recreation
+  const gridStyle = useMemo(() => ({
+    gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))'
+  }), []);
 
   return (
     <div 
@@ -49,10 +64,9 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
         items={sortableItems}
         strategy={rectSortingStrategy}
       >
-        <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
+        <div className="grid gap-4" style={gridStyle}>
           {displayRankings.map((pokemon, index) => {
             const isPending = localPendingRefinements.has(pokemon.id);
-            const pendingCount = pendingBattleCounts.get(pokemon.id) || 0;
             
             return (
               <DraggablePokemonMilestoneCard
@@ -71,6 +85,8 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
       </SortableContext>
     </div>
   );
-};
+});
+
+DragDropGrid.displayName = 'DragDropGrid';
 
 export default DragDropGrid;

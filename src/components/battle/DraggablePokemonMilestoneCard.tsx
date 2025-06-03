@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useMemo, useCallback } from "react";
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
@@ -10,6 +10,7 @@ import { usePokemonFlavorText } from "@/hooks/pokemon/usePokemonFlavorText";
 import { usePokemonTCGCard } from "@/hooks/pokemon/usePokemonTCGCard";
 import { Badge } from "@/components/ui/badge";
 import { Crown } from "lucide-react";
+import { useRenderTracker } from "@/hooks/battle/useRenderTracker";
 
 interface DraggablePokemonMilestoneCardProps {
   pokemon: Pokemon | RankedPokemon;
@@ -21,7 +22,7 @@ interface DraggablePokemonMilestoneCardProps {
   context?: 'available' | 'ranked';
 }
 
-const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps> = ({ 
+const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps> = React.memo(({ 
   pokemon, 
   index, 
   isPending = false,
@@ -30,23 +31,39 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   isAvailable = false,
   context = 'ranked'
 }) => {
+  // Track renders for performance debugging
+  useRenderTracker('DraggablePokemonMilestoneCard', { 
+    pokemonId: pokemon.id,
+    isPending,
+    isDraggable 
+  });
+
   const [isOpen, setIsOpen] = React.useState(false);
 
-  // Determine if this Pokemon is ranked (for available context)
-  const isRankedPokemon = context === 'available' && 'isRanked' in pokemon && pokemon.isRanked;
-  const currentRank = isRankedPokemon && 'currentRank' in pokemon ? pokemon.currentRank : null;
+  // Memoize computed values
+  const isRankedPokemon = useMemo(() => 
+    context === 'available' && 'isRanked' in pokemon && pokemon.isRanked, [context, pokemon]);
+  
+  const currentRank = useMemo(() => 
+    isRankedPokemon && 'currentRank' in pokemon ? pokemon.currentRank : null, [isRankedPokemon, pokemon]);
+
+  const sortableId = useMemo(() => 
+    isDraggable ? (isAvailable ? `available-${pokemon.id}` : pokemon.id) : `static-${pokemon.id}`, 
+    [isDraggable, isAvailable, pokemon.id]);
+
+  const sortableData = useMemo(() => ({
+    type: context === 'available' ? 'available-pokemon' : 'ranked-pokemon',
+    pokemon: pokemon,
+    source: context,
+    index,
+    isRanked: isRankedPokemon
+  }), [context, pokemon, index, isRankedPokemon]);
 
   // Only use sortable if draggable AND modal is not open
   const sortableResult = useSortable({ 
-    id: isDraggable ? (isAvailable ? `available-${pokemon.id}` : pokemon.id) : `static-${pokemon.id}`,
-    disabled: !isDraggable || isOpen, // Disable drag when modal is open
-    data: {
-      type: context === 'available' ? 'available-pokemon' : 'ranked-pokemon',
-      pokemon: pokemon,
-      source: context,
-      index,
-      isRanked: isRankedPokemon
-    }
+    id: sortableId,
+    disabled: !isDraggable || isOpen,
+    data: sortableData
   });
 
   const {
@@ -58,33 +75,40 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     isDragging,
   } = sortableResult;
 
-  // Improved drag styling with better visual feedback
-  const style = {
+  // Memoize drag styling
+  const style = useMemo(() => ({
     transform: CSS.Transform.toString(transform),
-    transition: isDragging ? 'none' : transition, // Remove transition during drag for smoother following
+    transition: isDragging ? 'none' : transition,
     minHeight: '140px',
     minWidth: '140px',
-    zIndex: isDragging ? 1000 : 'auto', // Bring dragged item to front
+    zIndex: isDragging ? 1000 : 'auto',
     cursor: isDraggable && !isOpen ? 'grab' : 'default'
-  };
+  }), [transform, isDragging, transition, isDraggable, isOpen]);
 
-  const backgroundColorClass = getPokemonBackgroundColor(pokemon);
+  const backgroundColorClass = useMemo(() => 
+    getPokemonBackgroundColor(pokemon), [pokemon]);
 
   // Hooks for modal content
   const { flavorText, isLoadingFlavor } = usePokemonFlavorText(pokemon.id, isOpen);
   const { tcgCard, secondTcgCard, isLoading: isLoadingTCG, error: tcgError, hasTcgCard } = usePokemonTCGCard(pokemon.name, isOpen);
 
-  // Determine what content to show
+  // Memoize modal content flags
   const showLoading = isLoadingTCG;
   const showTCGCards = !isLoadingTCG && hasTcgCard && tcgCard !== null;
   const showFallbackInfo = !isLoadingTCG && !hasTcgCard;
 
-  const handleDialogClick = (e: React.MouseEvent) => {
+  const handleDialogClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
-  };
+  }, []);
 
-  // Format Pokemon ID with leading zeros
-  const formattedId = pokemon.id.toString().padStart(pokemon.id >= 10000 ? 5 : 3, '0');
+  // Memoize formatted ID
+  const formattedId = useMemo(() => 
+    pokemon.id.toString().padStart(pokemon.id >= 10000 ? 5 : 3, '0'), [pokemon.id]);
+
+  // Memoize drag/listener props
+  const dragProps = useMemo(() => 
+    isDraggable && !isOpen ? { ...attributes, ...listeners } : {}, 
+    [isDraggable, isOpen, attributes, listeners]);
 
   return (
     <div
@@ -95,8 +119,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       } ${
         isDragging ? 'opacity-80 scale-105 shadow-2xl border-blue-400 transform-gpu' : 'hover:shadow-lg transition-all duration-200'
       } ${isPending ? 'ring-2 ring-blue-400 ring-opacity-50' : ''}`}
-      {...(isDraggable && !isOpen ? attributes : {})}
-      {...(isDraggable && !isOpen ? listeners : {})}
+      {...dragProps}
     >
       {/* Enhanced drag overlay for better visual feedback */}
       {isDragging && (
@@ -223,6 +246,8 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       </div>
     </div>
   );
-};
+});
+
+DraggablePokemonMilestoneCard.displayName = 'DraggablePokemonMilestoneCard';
 
 export default DraggablePokemonMilestoneCard;
