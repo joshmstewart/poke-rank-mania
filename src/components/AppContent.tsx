@@ -7,14 +7,25 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import BattleModeCore from "@/components/battle/BattleModeCore";
 import PokemonRankerWithProvider from "@/components/pokemon/PokemonRankerWithProvider";
 
-// Simple navbar component for now
+// Enhanced navbar component with better visibility
 const Navbar: React.FC = () => {
   return (
-    <nav className="fixed top-0 left-0 right-0 bg-white shadow-sm z-50 border-b">
+    <nav className="fixed top-0 left-0 right-0 bg-white shadow-lg z-50 border-b border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
+        <div className="flex justify-between items-center h-16">
           <div className="flex items-center">
             <h1 className="text-xl font-bold text-gray-900">Pokémon Battles</h1>
+          </div>
+          <div className="flex items-center space-x-4">
+            <a href="/" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
+              Battle
+            </a>
+            <a href="/ranker" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
+              Ranker
+            </a>
+            <a href="/community" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
+              Community
+            </a>
           </div>
         </div>
       </div>
@@ -46,7 +57,7 @@ const AppContent: React.FC = React.memo(() => {
       <Router>
         <div className="min-h-screen bg-gray-50">
           <Navbar />
-          <main className="pt-16">
+          <main className="pt-20"> {/* Increased padding to ensure content doesn't overlap */}
             <Routes>
               {routes.map(({ path, element }) => (
                 <Route key={path} path={path} element={element} />
