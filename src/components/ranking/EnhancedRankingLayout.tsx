@@ -1,6 +1,7 @@
-
 import React, { useMemo, useState, useEffect } from "react";
 import { DndContext, DragOverlay, pointerWithin, DragStartEvent, DragEndEvent } from '@dnd-kit/core';
+import { Rating } from 'ts-trueskill';
+import { useTrueSkillStore } from "@/stores/trueskillStore";
 import { BattleType } from "@/hooks/battle/types";
 import { LoadingType } from "@/hooks/pokemon/types";
 import { RankingsSectionStable } from "./RankingsSectionStable";
@@ -35,8 +36,9 @@ interface EnhancedRankingLayoutProps {
   handleLocalReorder: (newRankings: any[]) => void;
 }
 
-// EXPLICIT NOTE: "Implied Battles" logic has been permanently removed.
-// Manual drag-and-drop explicitly adjusts mu/sigma directly instead.
+// Manual Score Adjustment Logic:
+// Explicitly sets Pokémon's TrueSkill rating to the average of immediate neighbors upon manual reorder.
+// Permanently maintains explicit positions even after refresh.
 export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React.memo(({
   isLoading,
   availablePokemon,
@@ -66,6 +68,7 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
 
   // Manual ranking order state for visual persistence
   const [manualRankingOrder, setManualRankingOrder] = useState(displayRankings);
+  const { updateRating, getRating } = useTrueSkillStore();
   
   // Update manual order when displayRankings changes
   useEffect(() => {
@@ -78,8 +81,7 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
     handleLocalReorder
   );
 
-  // Enhanced drag handlers with manual order preservation
-  // EXPLICIT NOTE: Removed all implied battle logic - now only handles visual reordering and direct TrueSkill updates
+  // Enhanced drag handlers with manual order preservation and permanent score adjustment
   const enhancedHandleDragStart = (event: DragStartEvent) => {
     console.log(`🔧 [MANUAL_DRAG] Manual Drag Start - ID: ${event.active.id}`);
     const activeId = event.active.id.toString();
@@ -109,19 +111,65 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
       console.log(`🔧 [MANUAL_DRAG] Reordering indices: ${oldIndex} -> ${newIndex}`);
       
       if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-        // Update only manual order state for visual persistence
+        // Update manual order state for visual persistence
         const updatedManualOrder = [...manualRankingOrder];
         const [movedPokemon] = updatedManualOrder.splice(oldIndex, 1);
         updatedManualOrder.splice(newIndex, 0, movedPokemon);
         
         console.log(`🔧 [MANUAL_DRAG] ✅ Manual order updated: ${movedPokemon.name} moved to position ${newIndex}`);
         setManualRankingOrder(updatedManualOrder);
+
+        // Manual Score Adjustment Logic:
+        // Explicitly sets Pokémon's TrueSkill rating to the average of immediate neighbors upon manual reorder.
+        console.log(`🎯 [SCORE_ADJUSTMENT] Starting permanent score adjustment for ${movedPokemon.name}`);
         
-        // EXPLICIT NOTE: Implied battle logic permanently removed
-        // Direct TrueSkill updates now happen in handleManualReorder
-        console.log(`🎲 [DIRECT_TRUESKILL] Triggering direct TrueSkill updates for reorder`);
+        const neighborAbove = updatedManualOrder[newIndex - 1];
+        const neighborBelow = updatedManualOrder[newIndex + 1];
         
-        // Trigger background score updates without immediate visual change
+        let newMu, newSigma;
+        
+        // Get current ratings for neighbors
+        const aboveRating = neighborAbove ? getRating(neighborAbove.id.toString()) : null;
+        const belowRating = neighborBelow ? getRating(neighborBelow.id.toString()) : null;
+        
+        if (aboveRating && belowRating) {
+          // Position between two neighbors - use average
+          newMu = (aboveRating.mu + belowRating.mu) / 2;
+          newSigma = (aboveRating.sigma + belowRating.sigma) / 2;
+          console.log(`🎯 [SCORE_ADJUSTMENT] Between neighbors - mu: ${newMu.toFixed(3)}, sigma: ${newSigma.toFixed(3)}`);
+        } else if (aboveRating) {
+          // Top position - slightly higher than neighbor above
+          newMu = aboveRating.mu + 0.001;
+          newSigma = aboveRating.sigma;
+          console.log(`🎯 [SCORE_ADJUSTMENT] Top position - mu: ${newMu.toFixed(3)}, sigma: ${newSigma.toFixed(3)}`);
+        } else if (belowRating) {
+          // Bottom position - slightly lower than neighbor below
+          newMu = belowRating.mu - 0.001;
+          newSigma = belowRating.sigma;
+          console.log(`🎯 [SCORE_ADJUSTMENT] Bottom position - mu: ${newMu.toFixed(3)}, sigma: ${newSigma.toFixed(3)}`);
+        } else {
+          // Edge case: only Pokémon in list - keep current rating
+          const currentRating = getRating(movedPokemon.id.toString());
+          newMu = currentRating.mu;
+          newSigma = currentRating.sigma;
+          console.log(`🎯 [SCORE_ADJUSTMENT] Only Pokemon - keeping current rating`);
+        }
+        
+        // Special handling for identical neighbors
+        if (aboveRating && belowRating && 
+            Math.abs(aboveRating.mu - belowRating.mu) < 0.001 && 
+            Math.abs(aboveRating.sigma - belowRating.sigma) < 0.001) {
+          newMu += 0.001;       // Slightly differentiate mu
+          newSigma = Math.max(newSigma - 0.001, 1.0);    // Slightly reduce sigma but keep minimum
+          console.log(`🎯 [SCORE_ADJUSTMENT] Identical neighbors - differentiated to mu: ${newMu.toFixed(3)}, sigma: ${newSigma.toFixed(3)}`);
+        }
+        
+        // Permanently update the Pokémon's rating explicitly
+        const newRating = new Rating(newMu, newSigma);
+        updateRating(movedPokemon.id.toString(), newRating);
+        console.log(`🎯 [SCORE_ADJUSTMENT] ✅ Permanently updated ${movedPokemon.name} rating in TrueSkill store`);
+        
+        // Trigger background manual reorder without TrueSkill updates (those are now handled above)
         handleManualReorder(parseInt(activeId), oldIndex, newIndex);
         
         return;
