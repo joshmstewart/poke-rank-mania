@@ -50,10 +50,12 @@ const DraggablePokemonMilestoneCardOptimized: React.FC<DraggablePokemonMilestone
 
   const [isOpen, setIsOpen] = React.useState(false);
 
-  // Memoize computed values with stable dependencies
+  // Memoize computed values with stable dependencies and proper typing
   const computedValues = useMemo(() => {
-    const isRankedPokemon = context === 'available' && 'isRanked' in pokemon && pokemon.isRanked;
-    const currentRank = isRankedPokemon && 'currentRank' in pokemon ? pokemon.currentRank : null;
+    const isRankedPokemon = context === 'available' && 'isRanked' in pokemon && Boolean(pokemon.isRanked);
+    const currentRank = (isRankedPokemon && 'currentRank' in pokemon && typeof pokemon.currentRank === 'number') 
+      ? pokemon.currentRank 
+      : null;
     const sortableId = isDraggable ? (isAvailable ? `available-${pokemon.id}` : pokemon.id) : `static-${pokemon.id}`;
     
     return {
