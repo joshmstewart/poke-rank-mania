@@ -1,5 +1,5 @@
 
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { DndContext, DragOverlay, pointerWithin, DragStartEvent, DragEndEvent } from '@dnd-kit/core';
 import { BattleType } from "@/hooks/battle/types";
 import { LoadingType } from "@/hooks/pokemon/types";
@@ -61,7 +61,14 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
 }) => {
   console.log(`🔥🔥🔥 [LAYOUT_FIXED] ===== ENHANCED LAYOUT RENDER =====`);
   console.log(`🔥🔥🔥 [LAYOUT_FIXED] displayRankings count: ${displayRankings.length}`);
-  console.log(`🔥🔥🔥 [LAYOUT_FIXED] handleManualReorder exists: ${!!handleManualReorder}`);
+
+  // STEP 1: Introduce manual ranking order state for visual persistence
+  const [manualRankingOrder, setManualRankingOrder] = useState(displayRankings);
+  
+  // Update manual order when displayRankings changes (on initial load or refresh)
+  useEffect(() => {
+    setManualRankingOrder(displayRankings);
+  }, [displayRankings]);
 
   // Use stable drag handlers
   const { stableOnManualReorder, stableOnLocalReorder } = useStableDragHandlers(
@@ -69,42 +76,53 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
     handleLocalReorder
   );
 
-  // STEP 2: Enhanced drag handlers with explicit string ID handling
+  // STEP 2: Enhanced drag handlers with manual order preservation
   const enhancedHandleDragStart = (event: DragStartEvent) => {
-    console.log(`🔧 [DRAG_FIX] Enhanced Drag Start - ID: ${event.active.id}`);
+    console.log(`🔧 [MANUAL_DRAG] Manual Drag Start - ID: ${event.active.id}`);
     const activeId = event.active.id.toString();
-    console.log(`🔧 [DRAG_FIX] Active ID as string: ${activeId}`);
+    console.log(`🔧 [MANUAL_DRAG] Active ID as string: ${activeId}`);
     handleDragStart(event);
   };
 
   const enhancedHandleDragEnd = (event: DragEndEvent) => {
-    console.log(`🔧 [DRAG_FIX] Enhanced Drag End - Active: ${event.active.id}, Over: ${event.over?.id || 'NULL'}`);
+    console.log(`🔧 [MANUAL_DRAG] Manual Drag End - Active: ${event.active.id}, Over: ${event.over?.id || 'NULL'}`);
     
-    // STEP 2: Explicit string ID conversion for consistency
-    const activeId = event.active.id.toString();
-    const overId = event.over?.id?.toString();
+    const { active, over } = event;
     
-    console.log(`🔧 [DRAG_FIX] IDs as strings - Active: ${activeId}, Over: ${overId}`);
-    
-    if (!event.over) {
-      console.log(`🔧 [DRAG_FIX] No drop target detected`);
+    if (!over || active.id === over.id) {
+      console.log(`🔧 [MANUAL_DRAG] No drop target or same position - exiting`);
       return;
     }
     
-    // Create enhanced event with string IDs for consistency
-    const enhancedEvent = {
-      ...event,
-      active: {
-        ...event.active,
-        id: activeId
-      },
-      over: event.over ? {
-        ...event.over,
-        id: overId
-      } : null
-    };
+    // STEP 2: Handle manual reordering within rankings
+    const activeId = active.id.toString();
+    const overId = over.id.toString();
     
-    handleDragEnd(enhancedEvent);
+    // Only handle reordering within the rankings (not adding new Pokemon)
+    if (!activeId.startsWith('available-') && !overId.startsWith('available-')) {
+      const oldIndex = manualRankingOrder.findIndex(p => p.id.toString() === activeId);
+      const newIndex = manualRankingOrder.findIndex(p => p.id.toString() === overId);
+      
+      console.log(`🔧 [MANUAL_DRAG] Reordering indices: ${oldIndex} -> ${newIndex}`);
+      
+      if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
+        // CRITICAL: Update only manual order state for visual persistence
+        const updatedManualOrder = [...manualRankingOrder];
+        const [movedPokemon] = updatedManualOrder.splice(oldIndex, 1);
+        updatedManualOrder.splice(newIndex, 0, movedPokemon);
+        
+        console.log(`🔧 [MANUAL_DRAG] ✅ Manual order updated: ${movedPokemon.name} moved to position ${newIndex}`);
+        setManualRankingOrder(updatedManualOrder);
+        
+        // STEP 3: Trigger background score updates without immediate visual change
+        handleManualReorder(parseInt(activeId), oldIndex, newIndex);
+        
+        return;
+      }
+    }
+    
+    // For other drag operations (like adding Pokemon), use original handler
+    handleDragEnd(event);
   };
 
   return (
@@ -145,7 +163,7 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
               onDragEnd={enhancedHandleDragEnd}
             >
               <RankingsSectionStable
-                displayRankings={displayRankings}
+                displayRankings={manualRankingOrder}
                 onManualReorder={stableOnManualReorder}
                 onLocalReorder={stableOnLocalReorder}
                 pendingRefinements={new Set()}
