@@ -621,8 +621,33 @@ export const useEnhancedManualReorder = (
     
     // Update state
     const perfStateUpdateStart = performance.now();
+    
+    // CRITICAL DEBUG: Log before state updates
+    console.log('🎨 [STATE_UPDATE_DEBUG] About to update state with:', {
+      updatedRankingsLength: updatedRankings.length,
+      firstFew: updatedRankings.slice(0, 5).map((p, i) => `${i+1}. ${p.name} (${p.score.toFixed(2)})`),
+      timestamp: Date.now()
+    });
+    
     setLocalRankings(updatedRankings);
-    onRankingsUpdateRef.current(updatedRankings);
+    
+    // CRITICAL DEBUG: Log the parent callback execution
+    console.log('🎨 [PARENT_CALLBACK_DEBUG] About to call onRankingsUpdate with:', {
+      updatedRankingsLength: updatedRankings.length,
+      callbackExists: !!onRankingsUpdateRef.current,
+      callbackType: typeof onRankingsUpdateRef.current,
+      timestamp: Date.now()
+    });
+    
+    // CRITICAL: Add try-catch to see if callback fails
+    try {
+      onRankingsUpdateRef.current(updatedRankings);
+      console.log('🎨 [PARENT_CALLBACK_DEBUG] ✅ Parent callback completed successfully');
+    } catch (error) {
+      console.error('🎨 [PARENT_CALLBACK_DEBUG] ❌ Parent callback failed:', error);
+      persistentLog.add(`❌ PARENT_CALLBACK_FAILED: ${error}`);
+    }
+    
     const perfStateUpdateEnd = performance.now();
     persistentLog.add(`🎯 MANUAL_STATE_UPDATE: State update: ${(perfStateUpdateEnd - perfStateUpdateStart).toFixed(2)}ms`);
     
