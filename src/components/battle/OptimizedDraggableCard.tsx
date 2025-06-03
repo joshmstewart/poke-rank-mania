@@ -57,6 +57,14 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
     isPending ? 'ring-2 ring-blue-400 ring-opacity-50' : ''
   }`;
 
+  // Fix the currentRank type issue
+  const getCurrentRank = (): number | null => {
+    if ('currentRank' in pokemon && typeof pokemon.currentRank === 'number') {
+      return pokemon.currentRank;
+    }
+    return null;
+  };
+
   return (
     <div
       ref={setNodeRef}
@@ -67,7 +75,7 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
       <PokemonMilestoneOverlays
         context={context}
         isRankedPokemon={context === 'available' && 'isRanked' in pokemon ? Boolean(pokemon.isRanked) : false}
-        currentRank={'currentRank' in pokemon ? pokemon.currentRank : null}
+        currentRank={getCurrentRank()}
         isPending={isPending}
         showRank={showRank}
         index={index}
