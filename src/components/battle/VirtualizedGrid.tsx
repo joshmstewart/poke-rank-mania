@@ -1,5 +1,5 @@
 
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo } from 'react';
 import { FixedSizeGrid as Grid } from 'react-window';
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import DraggablePokemonMilestoneCard from './DraggablePokemonMilestoneCard';
@@ -12,7 +12,7 @@ interface VirtualizedGridProps {
   containerHeight: number;
   containerWidth: number;
   context: 'available' | 'ranked';
-  localPendingRefinements?: Set<number>; // Fix: Explicitly type as Set<number>
+  localPendingRefinements?: Set<number>;
   onManualReorder?: (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => void;
 }
 
@@ -24,7 +24,7 @@ interface CellProps {
     items: (Pokemon | RankedPokemon)[];
     columnCount: number;
     context: 'available' | 'ranked';
-    localPendingRefinements: Set<number>; // Fix: Explicitly type as Set<number>
+    localPendingRefinements: Set<number>;
     onManualReorder?: (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => void;
   };
 }
@@ -80,7 +80,7 @@ const VirtualizedGrid: React.FC<VirtualizedGridProps> = React.memo(({
   containerHeight,
   containerWidth,
   context,
-  localPendingRefinements = new Set<number>(), // Fix: Explicitly type as Set<number>
+  localPendingRefinements = new Set<number>(),
   onManualReorder
 }) => {
   console.log(`🔥 [VIRTUALIZED_GRID] Rendering ${items.length} items in ${context} context`);
