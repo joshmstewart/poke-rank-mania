@@ -21,7 +21,10 @@ const DragDropGridMemoized: React.FC<DragDropGridMemoizedProps> = React.memo(({
   // CRITICAL DEBUG: Log what the grid receives
   console.log('🎨 [GRID_VISUAL_DEBUG] ===== DRAG DROP GRID RENDER =====');
   console.log('🎨 [GRID_VISUAL_DEBUG] displayRankings length:', displayRankings.length);
-  console.log('🎨 [GRID_VISUAL_DEBUG] First 5 rankings received:', displayRankings.slice(0, 5).map((p, i) => `${i+1}. ${p.name} (${('score' in p ? p.score.toFixed(2) : 'N/A')})`));
+  console.log('🎨 [GRID_VISUAL_DEBUG] First 5 rankings received:', displayRankings.slice(0, 5).map((p, i) => {
+    const score = 'score' in p ? p.score.toFixed(2) : 'N/A';
+    return `${i+1}. ${p.name} (${score})`;
+  }));
   console.log('🎨 [GRID_VISUAL_DEBUG] Grid render timestamp:', Date.now());
 
   // Stable items array for SortableContext
@@ -41,7 +44,8 @@ const DragDropGridMemoized: React.FC<DragDropGridMemoizedProps> = React.memo(({
       
       // Enhanced logging for first 5 items
       if (index < 5) {
-        console.log(`🎨 [GRID_VISUAL_DEBUG] Creating card ${index}: ${pokemon.name} (ID: ${pokemon.id}) score: ${('score' in pokemon ? pokemon.score.toFixed(2) : 'N/A'})`);
+        const score = 'score' in pokemon ? pokemon.score.toFixed(2) : 'N/A';
+        console.log(`🎨 [GRID_VISUAL_DEBUG] Creating card ${index}: ${pokemon.name} (ID: ${pokemon.id}) score: ${score}`);
       }
       
       return (
