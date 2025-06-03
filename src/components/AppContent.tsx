@@ -37,7 +37,7 @@ const AppContent: React.FC = React.memo(() => {
   console.log(`🚀🚀🚀 APP_CONTENT_FIXED: Rendering with stability measures`);
 
   const routes = useMemo(() => [
-    { path: "/", element: <BattleModeContainer /> },
+    { path: "/", element: <BattleModeContainer allPokemon={[]} initialBattleType="pairs" /> },
     { path: "/ranker", element: <PokemonRankerWithProvider /> },
     { path: "/community", element: <CommunityPage /> }
   ], []);
