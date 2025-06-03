@@ -65,7 +65,7 @@ export const useEnhancedManualReorder = (
     return true;
   }, []);
 
-  // FIXED: TrueSkill battle simulation that PRESERVES manual order
+  // Battle simulation that updates TrueSkill ratings but PRESERVES manual order
   const simulateBattlesForReorder = useCallback((
     reorderedRankings: RankedPokemon[],
     movedPokemon: RankedPokemon,
@@ -156,18 +156,19 @@ export const useEnhancedManualReorder = (
     return battlesSimulated;
   }, [getRating, updateRating, addImpliedBattle, preventAutoResorting]);
 
-  // CRITICAL FIX: Update scores WITHOUT changing order in Manual Mode
-  const updateScoresWithoutReordering = useCallback((rankings: RankedPokemon[]): RankedPokemon[] => {
-    console.log('🔥 [ENHANCED_REORDER_SCORES] ===== UPDATING SCORES WITHOUT REORDERING =====');
-    console.log('🔥 [ENHANCED_REORDER_SCORES] preventAutoResorting:', preventAutoResorting);
-    console.log('🔥 [ENHANCED_REORDER_SCORES] Input rankings order:', rankings.map(p => p.name).slice(0, 5));
+  // CRITICAL FIX: Update scores WITHOUT changing order when preventAutoResorting is true
+  const updateScoresPreservingOrder = useCallback((rankings: RankedPokemon[]): RankedPokemon[] => {
+    console.log('🔥 [PRESERVE_ORDER] ===== UPDATING SCORES WHILE PRESERVING ORDER =====');
+    console.log('🔥 [PRESERVE_ORDER] preventAutoResorting:', preventAutoResorting);
+    console.log('🔥 [PRESERVE_ORDER] Input order:', rankings.map(p => p.name).slice(0, 5));
     
+    // ALWAYS preserve the input order and just update the scores
     const updatedRankings = rankings.map((pokemon) => {
       const rating = getRating(pokemon.id.toString());
       const conservativeEstimate = rating.mu - rating.sigma;
       const confidence = Math.max(0, Math.min(100, 100 * (1 - (rating.sigma / 8.33))));
       
-      console.log('🔥 [ENHANCED_REORDER_SCORES]', pokemon.name, 'score updated:', pokemon.score.toFixed(2), '→', conservativeEstimate.toFixed(2));
+      console.log('🔥 [PRESERVE_ORDER]', pokemon.name, 'score updated:', pokemon.score.toFixed(2), '→', conservativeEstimate.toFixed(2));
       
       return {
         ...pokemon,
@@ -180,8 +181,8 @@ export const useEnhancedManualReorder = (
       };
     });
     
-    console.log('🔥 [ENHANCED_REORDER_SCORES] Output rankings order:', updatedRankings.map(p => p.name).slice(0, 5));
-    console.log('🔥 [ENHANCED_REORDER_SCORES] ===== SCORES UPDATED, ORDER PRESERVED =====');
+    console.log('🔥 [PRESERVE_ORDER] Output order (PRESERVED):', updatedRankings.map(p => p.name).slice(0, 5));
+    console.log('🔥 [PRESERVE_ORDER] ===== ORDER PRESERVED, SCORES UPDATED =====');
     
     return updatedRankings;
   }, [getRating, preventAutoResorting]);
@@ -225,8 +226,8 @@ export const useEnhancedManualReorder = (
     // Simulate battles and update TrueSkill ratings
     const battlesSimulated = simulateBattlesForReorder(newRankings, movedPokemon, oldIndex, newIndex);
     
-    // CRITICAL FIX: ALWAYS preserve manual order, just update scores
-    const updatedRankings = updateScoresWithoutReordering(newRankings);
+    // CRITICAL: ALWAYS preserve manual order, just update scores
+    const updatedRankings = updateScoresPreservingOrder(newRankings);
     
     console.log('🔥 [ENHANCED_REORDER_DRAG] FINAL ORDER CHECK:', updatedRankings.map(p => p.name).slice(0, 5));
     console.log('🔥 [ENHANCED_REORDER_DRAG] preventAutoResorting:', preventAutoResorting, '- Manual order preserved: TRUE');
@@ -236,9 +237,9 @@ export const useEnhancedManualReorder = (
     onRankingsUpdateRef.current(updatedRankings);
     
     console.log('🔥 [ENHANCED_REORDER_DRAG] ✅ Drag processing complete with', battlesSimulated, 'battles simulated');
-  }, [localRankings, validateRankingsIntegrity, simulateBattlesForReorder, updateScoresWithoutReordering, preventAutoResorting]);
+  }, [localRankings, validateRankingsIntegrity, simulateBattlesForReorder, updateScoresPreservingOrder, preventAutoResorting]);
 
-  // CRITICAL FIX: Manual reorder with GUARANTEED order preservation
+  // CRITICAL: Manual reorder with GUARANTEED order preservation
   const handleEnhancedManualReorder = useCallback((
     draggedPokemonId: number,
     sourceIndex: number,
@@ -263,8 +264,8 @@ export const useEnhancedManualReorder = (
     // Simulate battles and update TrueSkill ratings
     const battlesSimulated = simulateBattlesForReorder(newRankings, movedPokemon, sourceIndex, destinationIndex);
     
-    // CRITICAL FIX: ALWAYS preserve manual order, just update scores
-    const updatedRankings = updateScoresWithoutReordering(newRankings);
+    // CRITICAL: ALWAYS preserve manual order, just update scores
+    const updatedRankings = updateScoresPreservingOrder(newRankings);
     
     console.log('🔥 [ENHANCED_MANUAL_REORDER] FINAL ORDER CHECK:', updatedRankings.map(p => p.name).slice(0, 5));
     console.log('🔥 [ENHANCED_MANUAL_REORDER] preventAutoResorting:', preventAutoResorting, '- Manual order preserved: TRUE');
@@ -274,7 +275,7 @@ export const useEnhancedManualReorder = (
     onRankingsUpdateRef.current(updatedRankings);
     
     console.log('🔥 [ENHANCED_MANUAL_REORDER] ✅ Manual reorder complete with', battlesSimulated, 'battles simulated');
-  }, [localRankings, validateRankingsIntegrity, simulateBattlesForReorder, updateScoresWithoutReordering, preventAutoResorting]);
+  }, [localRankings, validateRankingsIntegrity, simulateBattlesForReorder, updateScoresPreservingOrder, preventAutoResorting]);
 
   // PERFORMANCE FIX: Memoize display rankings to prevent recreation
   const displayRankings = useMemo(() => {
