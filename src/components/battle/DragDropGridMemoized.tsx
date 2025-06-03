@@ -11,12 +11,16 @@ interface DragDropGridMemoizedProps {
   displayRankings: (Pokemon | RankedPokemon)[];
   localPendingRefinements: Set<number>;
   pendingBattleCounts: Map<number, number>;
+  onManualReorder?: (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => void;
+  onLocalReorder?: (newRankings: (Pokemon | RankedPokemon)[]) => void;
 }
 
 const DragDropGridMemoized: React.FC<DragDropGridMemoizedProps> = React.memo(({
   displayRankings,
   localPendingRefinements,
-  pendingBattleCounts
+  pendingBattleCounts,
+  onManualReorder,
+  onLocalReorder
 }) => {
   // CRITICAL DEBUG: Log what the grid receives
   console.log('🎨 [GRID_VISUAL_DEBUG] ===== DRAG DROP GRID RENDER =====');
@@ -26,6 +30,8 @@ const DragDropGridMemoized: React.FC<DragDropGridMemoizedProps> = React.memo(({
     return `${i+1}. ${p.name} (${score})`;
   }));
   console.log('🎨 [GRID_VISUAL_DEBUG] Grid render timestamp:', Date.now());
+  console.log('🎨 [GRID_VISUAL_DEBUG] onManualReorder exists:', !!onManualReorder);
+  console.log('🎨 [GRID_VISUAL_DEBUG] onLocalReorder exists:', !!onLocalReorder);
 
   // Stable items array for SortableContext
   const sortableItems = useMemo(() => {
