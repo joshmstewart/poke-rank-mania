@@ -29,12 +29,12 @@ const DragDropGrid: React.FC<DragDropGridProps> = React.memo(({
 }) => {
   console.log(`🎯 [GRID_RENDER_DEBUG] DragDropGrid rendering with ${displayRankings.length} items`);
 
-  // Create a stable items array for SortableContext
+  // CRITICAL: Create stable items array for SortableContext
   const sortableItems = useMemo(() => {
     const items = displayRankings.map(p => p.id);
     console.log(`🎯 [GRID_RENDER_DEBUG] Creating sortable items - count: ${items.length}`);
     return items;
-  }, [displayRankings]);
+  }, [displayRankings.length, displayRankings.map(p => p.id).join(',')]); // More specific dependencies
 
   // Static droppable configuration
   const droppableConfig = useMemo(() => ({
@@ -58,17 +58,15 @@ const DragDropGrid: React.FC<DragDropGridProps> = React.memo(({
     [isOver]
   );
 
-  // CRITICAL: Memoize the rendered cards with VERY specific dependencies
+  // CRITICAL: Create a stable array of pending IDs for memo dependencies
+  const pendingIdsArray = useMemo(() => 
+    Array.from(localPendingRefinements).sort(), 
+    [localPendingRefinements.size, Array.from(localPendingRefinements).join(',')]
+  );
+
+  // CRITICAL: Render cards with very specific, stable props
   const renderedCards = useMemo(() => {
     console.log(`🎯 [GRID_RENDER_DEBUG] Creating rendered cards for ${displayRankings.length} pokemon`);
-    
-    // Create a dependency string that only changes when actual content changes
-    const pokemonIdString = displayRankings.map(p => p.id).join(',');
-    const pokemonNameString = displayRankings.map(p => p.name).join(',');
-    const pendingArray = Array.from(localPendingRefinements).sort();
-    
-    console.log(`🎯 [GRID_RENDER_DEBUG] Dependencies - Pokemon IDs: ${pokemonIdString.substring(0, 50)}...`);
-    console.log(`🎯 [GRID_RENDER_DEBUG] Dependencies - Pending count: ${pendingArray.length}`);
     
     return displayRankings.map((pokemon, index) => {
       const isPending = localPendingRefinements.has(pokemon.id);
@@ -89,9 +87,10 @@ const DragDropGrid: React.FC<DragDropGridProps> = React.memo(({
       );
     });
   }, [
-    // Only re-create cards when these specific things change:
-    displayRankings.map(p => `${p.id}-${p.name}`).join('|'), // Pokemon identity and name
-    Array.from(localPendingRefinements).sort().join(',') // Pending status
+    // CRITICAL: Only depend on specific values that actually affect rendering
+    displayRankings.length,
+    displayRankings.map(p => `${p.id}-${p.name}`).join('|'), // Pokemon identity
+    pendingIdsArray.join(',') // Pending status
   ]);
 
   console.log(`🎯 [GRID_RENDER_DEBUG] DragDropGrid render complete with ${renderedCards.length} cards`);
@@ -115,12 +114,13 @@ const DragDropGrid: React.FC<DragDropGridProps> = React.memo(({
   // Enhanced comparison with detailed logging
   console.log(`🎯 [GRID_MEMO_DEBUG] Comparing props for re-render decision`);
   
+  // Check rankings length
   if (prevProps.displayRankings.length !== nextProps.displayRankings.length) {
     console.log(`🎯 [GRID_MEMO_DEBUG] Rankings length changed: ${prevProps.displayRankings.length} -> ${nextProps.displayRankings.length} - ALLOWING RE-RENDER`);
     return false;
   }
   
-  // Check if any Pokemon actually changed (ID or name)
+  // Check if any Pokemon actually changed (ID or name only)
   for (let i = 0; i < prevProps.displayRankings.length; i++) {
     const prev = prevProps.displayRankings[i];
     const next = nextProps.displayRankings[i];
@@ -142,19 +142,14 @@ const DragDropGrid: React.FC<DragDropGridProps> = React.memo(({
     return false;
   }
   
-  // Compare pending refinements content
-  for (const id of prevProps.localPendingRefinements) {
-    if (!nextProps.localPendingRefinements.has(id)) {
-      console.log(`🎯 [GRID_MEMO_DEBUG] Pending refinement removed: ${id} - ALLOWING RE-RENDER`);
-      return false;
-    }
-  }
+  // Compare pending refinements content efficiently
+  const prevPendingArray = Array.from(prevProps.localPendingRefinements).sort();
+  const nextPendingArray = Array.from(nextProps.localPendingRefinements).sort();
+  const pendingChanged = prevPendingArray.join(',') !== nextPendingArray.join(',');
   
-  for (const id of nextProps.localPendingRefinements) {
-    if (!prevProps.localPendingRefinements.has(id)) {
-      console.log(`🎯 [GRID_MEMO_DEBUG] Pending refinement added: ${id} - ALLOWING RE-RENDER`);
-      return false;
-    }
+  if (pendingChanged) {
+    console.log(`🎯 [GRID_MEMO_DEBUG] Pending refinements content changed - ALLOWING RE-RENDER`);
+    return false;
   }
   
   console.log(`🎯 [GRID_MEMO_DEBUG] No meaningful changes detected - PREVENTING RE-RENDER`);
