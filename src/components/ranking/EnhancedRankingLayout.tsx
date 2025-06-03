@@ -70,10 +70,11 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
     handleLocalReorder
   );
 
-  // FIXED: Simple drag end handler that properly handles both available->rankings and rankings reordering
+  // CRITICAL FIX: Enhanced drag end handler that properly routes events
   const enhancedDragEnd = (event: DragEndEvent) => {
     console.log(`🔥🔥🔥 [LAYOUT_DRAG_FIX] ===== ENHANCED DRAG END =====`);
     console.log(`🔥🔥🔥 [LAYOUT_DRAG_FIX] Active: ${event.active.id}, Over: ${event.over?.id || 'NULL'}`);
+    console.log(`🔥🔥🔥 [LAYOUT_DRAG_FIX] Event details:`, event);
     
     const { active, over } = event;
     if (!over) {
@@ -81,38 +82,39 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
       return;
     }
 
-    // First call the original handleDragEnd for available->rankings drops
+    const activeId = active.id.toString();
+    const overId = over.id.toString();
+    
+    console.log(`🔥🔥🔥 [LAYOUT_DRAG_FIX] activeId: ${activeId}, overId: ${overId}`);
+
+    // Handle drag from available to rankings OR reordering within rankings
     if (handleDragEnd) {
       console.log(`🔥🔥🔥 [LAYOUT_DRAG_FIX] Calling original handleDragEnd for state management`);
       handleDragEnd(event);
     }
     
-    // Handle reordering within rankings using SortableContext logic
-    const activeId = active.id.toString();
-    const overId = over.id.toString();
-    
-    // Only handle reordering if both items are in the rankings (not available Pokemon)
-    if (!activeId.startsWith('available-') && !overId.startsWith('available-')) {
+    // CRITICAL: Handle reordering within rankings using manual reorder
+    if (!activeId.startsWith('available-') && !overId.startsWith('available-') && !overId.startsWith('collision-placeholder-')) {
       const activePokemonId = Number(activeId);
       const overPokemonId = Number(overId);
+      
+      console.log(`🔥🔥🔥 [LAYOUT_DRAG_FIX] Attempting reorder: ${activePokemonId} -> ${overPokemonId}`);
       
       const oldIndex = displayRankings.findIndex(p => p.id === activePokemonId);
       const newIndex = displayRankings.findIndex(p => p.id === overPokemonId);
       
-      console.log(`🔥🔥🔥 [LAYOUT_DRAG_FIX] Reorder attempt: Pokemon ${activePokemonId} from index ${oldIndex} to ${newIndex}`);
+      console.log(`🔥🔥🔥 [LAYOUT_DRAG_FIX] Indices: ${oldIndex} -> ${newIndex}`);
       
       if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-        console.log(`🔥🔥🔥 [LAYOUT_DRAG_FIX] Valid reorder - calling handleManualReorder`);
+        console.log(`🔥🔥🔥 [LAYOUT_DRAG_FIX] ✅ VALID REORDER - calling handleManualReorder`);
         handleManualReorder(activePokemonId, oldIndex, newIndex);
       } else {
-        console.log(`🔥🔥🔥 [LAYOUT_DRAG_FIX] Invalid reorder indices - skipping`);
+        console.log(`🔥🔥🔥 [LAYOUT_DRAG_FIX] ❌ Invalid reorder indices`);
       }
-    } else {
-      console.log(`🔥🔥🔥 [LAYOUT_DRAG_FIX] Not a rankings reorder - letting original handler manage`);
     }
   };
 
-  // Create sortable items from rankings
+  // Create sortable items from rankings for the SortableContext
   const sortableItems = useMemo(() => {
     const items = displayRankings.map(p => p.id.toString());
     console.log(`🔥🔥🔥 [LAYOUT_SORTABLE] Creating ${items.length} sortable items:`, items.slice(0, 5));
@@ -120,42 +122,42 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
   }, [displayRankings]);
 
   return (
-    <DndContext
-      collisionDetection={pointerWithin}
-      onDragStart={handleDragStart}
-      onDragEnd={enhancedDragEnd}
-    >
-      <div className="bg-gray-100 min-h-screen p-4">
-        <div className="max-w-7xl mx-auto mb-4">
-          <UnifiedControls
-            selectedGeneration={selectedGeneration}
-            battleType={battleType}
-            onGenerationChange={(gen) => onGenerationChange(Number(gen))}
-            onBattleTypeChange={setBattleType}
-            showBattleTypeControls={true}
-            mode="manual"
-            onReset={handleComprehensiveReset}
-            customResetAction={handleComprehensiveReset}
-          />
-        </div>
+    <div className="bg-gray-100 min-h-screen p-4">
+      <div className="max-w-7xl mx-auto mb-4">
+        <UnifiedControls
+          selectedGeneration={selectedGeneration}
+          battleType={battleType}
+          onGenerationChange={(gen) => onGenerationChange(Number(gen))}
+          onBattleTypeChange={setBattleType}
+          showBattleTypeControls={true}
+          mode="manual"
+          onReset={handleComprehensiveReset}
+          customResetAction={handleComprehensiveReset}
+        />
+      </div>
 
-        <div className="max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-2 gap-4" style={{ height: 'calc(100vh - 12rem)' }}>
-            <Card className="shadow-lg border border-gray-200 overflow-hidden flex flex-col">
-              <EnhancedAvailablePokemonSection
-                enhancedAvailablePokemon={enhancedAvailablePokemon}
-                isLoading={isLoading}
-                selectedGeneration={selectedGeneration}
-                loadingType={loadingType}
-                currentPage={currentPage}
-                totalPages={totalPages}
-                loadingRef={loadingRef}
-                handlePageChange={handlePageChange}
-                getPageRange={getPageRange}
-              />
-            </Card>
+      <div className="max-w-7xl mx-auto">
+        <div className="grid md:grid-cols-2 gap-4" style={{ height: 'calc(100vh - 12rem)' }}>
+          <Card className="shadow-lg border border-gray-200 overflow-hidden flex flex-col">
+            <EnhancedAvailablePokemonSection
+              enhancedAvailablePokemon={enhancedAvailablePokemon}
+              isLoading={isLoading}
+              selectedGeneration={selectedGeneration}
+              loadingType={loadingType}
+              currentPage={currentPage}
+              totalPages={totalPages}
+              loadingRef={loadingRef}
+              handlePageChange={handlePageChange}
+              getPageRange={getPageRange}
+            />
+          </Card>
 
-            <Card className="shadow-lg border border-gray-200 overflow-hidden flex flex-col">
+          <Card className="shadow-lg border border-gray-200 overflow-hidden flex flex-col">
+            <DndContext
+              collisionDetection={pointerWithin}
+              onDragStart={handleDragStart}
+              onDragEnd={enhancedDragEnd}
+            >
               <SortableContext 
                 items={sortableItems}
                 strategy={verticalListSortingStrategy}
@@ -168,24 +170,24 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
                   availablePokemon={enhancedAvailablePokemon}
                 />
               </SortableContext>
-            </Card>
-          </div>
+              
+              <DragOverlay>
+                {activeDraggedPokemon ? (
+                  <div className="transform rotate-3 scale-105 opacity-90">
+                    <PokemonCard
+                      pokemon={activeDraggedPokemon}
+                      compact={true}
+                      viewMode="grid"
+                      isDragging={true}
+                    />
+                  </div>
+                ) : null}
+              </DragOverlay>
+            </DndContext>
+          </Card>
         </div>
-
-        <DragOverlay>
-          {activeDraggedPokemon ? (
-            <div className="transform rotate-3 scale-105 opacity-90">
-              <PokemonCard
-                pokemon={activeDraggedPokemon}
-                compact={true}
-                viewMode="grid"
-                isDragging={true}
-              />
-            </div>
-          ) : null}
-        </DragOverlay>
       </div>
-    </DndContext>
+    </div>
   );
 }, (prevProps, nextProps) => {
   // Custom comparison to prevent unnecessary re-renders
