@@ -1,30 +1,50 @@
 
 import { useRef, useEffect } from 'react';
 
-export const useRenderTracker = (componentName: string, props?: any) => {
-  const renderCount = useRef(0);
-  const prevProps = useRef<any>();
+// Global render tracking state
+const renderCounts = new Map<string, number>();
+const lastRenderTimes = new Map<string, number>();
+
+export const useRenderTracker = (componentName: string, additionalInfo?: any) => {
+  const renderCountRef = useRef(0);
+  const lastRenderTimeRef = useRef(Date.now());
   
-  renderCount.current += 1;
+  renderCountRef.current += 1;
+  const currentTime = Date.now();
+  const timeSinceLastRender = currentTime - lastRenderTimeRef.current;
+  lastRenderTimeRef.current = currentTime;
   
-  useEffect(() => {
-    if (renderCount.current > 1 && prevProps.current) {
-      const changedProps: string[] = [];
-      if (props) {
-        Object.keys(props).forEach(key => {
-          if (prevProps.current[key] !== props[key]) {
-            changedProps.push(key);
-          }
-        });
-      }
-      
-      console.log(`🔄 [RENDER_TRACKER] ${componentName} rendered ${renderCount.current} times`, {
-        changedProps: changedProps.length > 0 ? changedProps : 'No prop changes detected'
-      });
-    }
-    
-    prevProps.current = props;
-  });
+  // Update global tracking
+  renderCounts.set(componentName, (renderCounts.get(componentName) || 0) + 1);
+  lastRenderTimes.set(componentName, currentTime);
   
-  return renderCount.current;
+  // Log render information for performance monitoring
+  console.log(`🔍 [RENDER_TRACKER] ${componentName}: Render #${renderCountRef.current} (${timeSinceLastRender}ms since last)`, additionalInfo || '');
+  
+  // Log performance warning if component is rendering too frequently
+  if (renderCountRef.current > 10 && timeSinceLastRender < 100) {
+    console.warn(`⚠️ [RENDER_TRACKER] ${componentName}: High render frequency detected! ${renderCountRef.current} renders, last ${timeSinceLastRender}ms ago`);
+  }
+  
+  return {
+    renderCount: renderCountRef.current,
+    timeSinceLastRender
+  };
 };
+
+// Global function to get render statistics
+export const getRenderStats = () => {
+  const stats = Array.from(renderCounts.entries()).map(([componentName, count]) => ({
+    component: componentName,
+    totalRenders: count,
+    lastRenderTime: lastRenderTimes.get(componentName) || 0
+  }));
+  
+  console.table(stats);
+  return stats;
+};
+
+// Expose globally for debugging
+if (typeof window !== 'undefined') {
+  (window as any).getRenderStats = getRenderStats;
+}

@@ -1,7 +1,6 @@
 
 import { useSensors, useSensor, PointerSensor, KeyboardSensor } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
-import { arrayMove } from '@dnd-kit/sortable';
 import { DragEndEvent } from '@dnd-kit/core';
 import { useCallback, useMemo, useRef } from 'react';
 import { useRenderTracker } from './useRenderTracker';
@@ -11,6 +10,18 @@ interface UseDragAndDropProps {
   onManualReorder: (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => void;
   onLocalReorder: (newRankings: any[]) => void;
 }
+
+// Memoized sensor configuration to prevent recreation
+const SENSOR_CONFIG = {
+  pointer: {
+    activationConstraint: {
+      distance: 8, // Require 8px movement before drag starts
+    },
+  },
+  keyboard: {
+    coordinateGetter: sortableKeyboardCoordinates,
+  }
+};
 
 export const useDragAndDrop = ({ displayRankings, onManualReorder, onLocalReorder }: UseDragAndDropProps) => {
   // Track renders for performance debugging
@@ -22,7 +33,7 @@ export const useDragAndDrop = ({ displayRankings, onManualReorder, onLocalReorde
   console.log(`🚀 [DRAG_DROP_FLOW] ===== useDragAndDrop with Enhanced Flow =====`);
   console.log(`🚀 [DRAG_DROP_FLOW] onManualReorder function exists: ${!!onManualReorder}`);
 
-  // Stable reference to prevent recreation
+  // Stable references to prevent recreation
   const onManualReorderRef = useRef(onManualReorder);
   const onLocalReorderRef = useRef(onLocalReorder);
   
@@ -30,19 +41,13 @@ export const useDragAndDrop = ({ displayRankings, onManualReorder, onLocalReorde
   onManualReorderRef.current = onManualReorder;
   onLocalReorderRef.current = onLocalReorder;
 
-  // PERFORMANCE FIX: Optimize sensor configuration with memoization
+  // PERFORMANCE FIX: Memoize sensor configuration
   const sensors = useMemo(() => useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8, // Require 8px movement before drag starts
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
+    useSensor(PointerSensor, SENSOR_CONFIG.pointer),
+    useSensor(KeyboardSensor, SENSOR_CONFIG.keyboard)
   ), []);
 
-  // CRITICAL FIX: Only call manual reorder, which handles everything including order preservation
+  // CRITICAL FIX: Stable drag end handler with optimal logic
   const handleDragEnd = useCallback((event: DragEndEvent) => {
     console.log(`🚀 [DRAG_DROP_FLOW] ===== DRAG END TRIGGERED =====`);
     
@@ -86,7 +91,7 @@ export const useDragAndDrop = ({ displayRankings, onManualReorder, onLocalReorde
     }
     
     console.log(`🚀 [DRAG_DROP_FLOW] ===== DRAG END COMPLETE =====`);
-  }, [displayRankings]); // Only depend on displayRankings, not the functions
+  }, []); // Empty deps for maximum stability, using refs for current values
 
   return { sensors, handleDragEnd };
 };

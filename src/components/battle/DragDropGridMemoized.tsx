@@ -1,12 +1,12 @@
 
-import React, { useMemo } from "react";
+import React, { useMemo, memo } from "react";
 import {
   SortableContext,
   rectSortingStrategy,
 } from '@dnd-kit/sortable';
 import { useDroppable } from '@dnd-kit/core';
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
-import DraggablePokemonMilestoneCard from "./DraggablePokemonMilestoneCard";
+import DraggablePokemonMilestoneCardOptimized from "./DraggablePokemonMilestoneCardOptimized";
 
 interface DragDropGridMemoizedProps {
   displayRankings: (Pokemon | RankedPokemon)[];
@@ -14,7 +14,21 @@ interface DragDropGridMemoizedProps {
   pendingBattleCounts: Map<number, number>;
 }
 
-const DragDropGridMemoized: React.FC<DragDropGridMemoizedProps> = React.memo(({
+// Memoized grid style to prevent recreation
+const GRID_STYLE = {
+  gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))'
+};
+
+// Memoized droppable config to prevent recreation
+const DROPPABLE_CONFIG = {
+  id: 'rankings-grid-drop-zone-memoized',
+  data: {
+    type: 'rankings-grid',
+    accepts: ['available-pokemon', 'ranked-pokemon']
+  }
+};
+
+const DragDropGridMemoized: React.FC<DragDropGridMemoizedProps> = memo(({
   displayRankings,
   localPendingRefinements,
   pendingBattleCounts
@@ -26,27 +40,33 @@ const DragDropGridMemoized: React.FC<DragDropGridMemoizedProps> = React.memo(({
     return displayRankings.map(p => p.id);
   }, [displayRankings]);
 
-  // Set up droppable zone with memoized configuration
-  const droppableConfig = useMemo(() => ({
-    id: 'rankings-grid-drop-zone-memoized',
-    data: {
-      type: 'rankings-grid',
-      accepts: ['available-pokemon', 'ranked-pokemon']
-    }
-  }), []);
-
-  const { setNodeRef, isOver } = useDroppable(droppableConfig);
-
-  // Memoize the grid style to prevent recreation
-  const gridStyle = useMemo(() => ({
-    gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))'
-  }), []);
+  const { setNodeRef, isOver } = useDroppable(DROPPABLE_CONFIG);
 
   // Memoize grid class names
   const gridClassName = useMemo(() => 
     `transition-colors ${isOver ? 'bg-yellow-50/50' : ''}`, 
     [isOver]
   );
+
+  // Memoize the rendered Pokemon cards to prevent unnecessary re-renders
+  const renderedCards = useMemo(() => {
+    return displayRankings.map((pokemon, index) => {
+      const isPending = localPendingRefinements.has(pokemon.id);
+      
+      return (
+        <DraggablePokemonMilestoneCardOptimized
+          key={pokemon.id}
+          pokemon={pokemon}
+          index={index}
+          isPending={isPending}
+          showRank={true}
+          isDraggable={true}
+          isAvailable={false}
+          context="ranked"
+        />
+      );
+    });
+  }, [displayRankings, localPendingRefinements]);
 
   return (
     <div 
@@ -57,29 +77,14 @@ const DragDropGridMemoized: React.FC<DragDropGridMemoizedProps> = React.memo(({
         items={sortableItems}
         strategy={rectSortingStrategy}
       >
-        <div className="grid gap-4" style={gridStyle}>
-          {displayRankings.map((pokemon, index) => {
-            const isPending = localPendingRefinements.has(pokemon.id);
-            
-            return (
-              <DraggablePokemonMilestoneCard
-                key={pokemon.id}
-                pokemon={pokemon}
-                index={index}
-                isPending={isPending}
-                showRank={true}
-                isDraggable={true}
-                isAvailable={false}
-                context="ranked"
-              />
-            );
-          })}
+        <div className="grid gap-4" style={GRID_STYLE}>
+          {renderedCards}
         </div>
       </SortableContext>
     </div>
   );
 }, (prevProps, nextProps) => {
-  // Custom comparison to prevent unnecessary re-renders
+  // Enhanced comparison to prevent unnecessary re-renders
   if (prevProps.displayRankings.length !== nextProps.displayRankings.length) {
     return false;
   }
@@ -97,6 +102,13 @@ const DragDropGridMemoized: React.FC<DragDropGridMemoizedProps> = React.memo(({
   // Check pending refinements
   if (prevProps.localPendingRefinements.size !== nextProps.localPendingRefinements.size) {
     return false;
+  }
+  
+  // Compare pending refinements content
+  for (const id of prevProps.localPendingRefinements) {
+    if (!nextProps.localPendingRefinements.has(id)) {
+      return false;
+    }
   }
   
   // If all checks pass, props are effectively the same
