@@ -2,6 +2,7 @@
 import React, { useCallback, useMemo } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import DragDropGridMemoized from "@/components/battle/DragDropGridMemoized";
+import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable';
 import { useStableDragHandlers } from "@/hooks/battle/useStableDragHandlers";
 
@@ -35,6 +36,17 @@ export const RankingsSectionStable: React.FC<RankingsSectionStableProps> = React
     console.log(`🎯 [RANKINGS_SECTION_STABLE] Sortable items created:`, items.slice(0, 5));
     return items;
   }, [displayRankings]);
+
+  // FIXED: Properly configure droppable without visual conflicts
+  const droppableConfig = useMemo(() => ({
+    id: 'rankings-drop-zone-stable',
+    data: {
+      type: 'rankings-container',
+      accepts: ['available-pokemon']
+    }
+  }), []);
+
+  const { setNodeRef, isOver } = useDroppable(droppableConfig);
   
   // Memoize pending battle counts to prevent recreation
   const pendingBattleCounts = useMemo(() => new Map<number, number>(), []);
@@ -65,7 +77,10 @@ export const RankingsSectionStable: React.FC<RankingsSectionStableProps> = React
     <div className="flex flex-col h-full">
       {headerContent}
       
-      <div className="flex-1 overflow-y-auto p-4">
+      <div 
+        className="flex-1 overflow-y-auto p-4"
+        ref={setNodeRef}
+      >
         {displayRankings.length === 0 ? emptyStateContent : (
           <SortableContext 
             items={sortableItems}
