@@ -1,6 +1,5 @@
-
 import React, { useState } from "react";
-import { RefreshCw, Settings } from "lucide-react";
+import { RefreshCw, Settings, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BattleType } from "@/hooks/battle/types";
 import {
@@ -28,6 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import BattleSettings from "../battle/BattleSettings";
+import CombinedRankingsModal from "../rankings/CombinedRankingsModal";
 import { generations } from "@/services/pokemon";
 import { useTrueSkillStore } from "@/stores/trueskillStore";
 import { toast } from "sonner";
@@ -55,6 +55,7 @@ const UnifiedControls: React.FC<UnifiedControlsProps> = ({
 }) => {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [restartDialogOpen, setRestartDialogOpen] = useState(false);
+  const [rankingsOpen, setRankingsOpen] = useState(false);
   const { clearAllRatings } = useTrueSkillStore();
   
   const safeSelectedGeneration = selectedGeneration !== undefined ? selectedGeneration : 0;
@@ -153,6 +154,21 @@ const UnifiedControls: React.FC<UnifiedControlsProps> = ({
       </div>
 
       <div className="flex items-center gap-4">
+        {/* Rankings Button */}
+        <CombinedRankingsModal 
+          open={rankingsOpen} 
+          onOpenChange={setRankingsOpen}
+          selectedGeneration={safeSelectedGeneration}
+        >
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-1 h-8 text-sm px-4 min-w-[100px]"
+          >
+            <Trophy className="h-4 w-4" /> Rankings
+          </Button>
+        </CombinedRankingsModal>
+
         {/* Settings Button (Forms) */}
         <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
           <DialogTrigger asChild>
