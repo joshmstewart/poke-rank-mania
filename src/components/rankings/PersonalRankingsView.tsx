@@ -3,7 +3,7 @@ import React, { useState, useCallback, useMemo } from "react";
 import { useTrueSkillStore } from "@/stores/trueskillStore";
 import { generations } from "@/services/pokemon";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
-import { usePokemonData } from "@/hooks/pokemon/usePokemonData";
+import { usePokemonContext } from "@/contexts/PokemonContext";
 import MilestoneHeader from "../battle/MilestoneHeader";
 import DraggableMilestoneGrid from "../battle/DraggableMilestoneGrid";
 
@@ -14,31 +14,60 @@ interface PersonalRankingsViewProps {
 const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
   selectedGeneration
 }) => {
-  const { getAllRatings, updateRating } = useTrueSkillStore();
+  const { getAllRatings } = useTrueSkillStore();
   const [milestoneDisplayCount, setMilestoneDisplayCount] = useState(50);
   
-  // Get Pokemon data using the same hook as the main app
-  const { pokemonData, isLoading } = usePokemonData(selectedGeneration);
+  // Get Pokemon data from context
+  const { allPokemon, pokemonLookupMap } = usePokemonContext();
   
   // Get current generation name
   const currentGeneration = generations.find(gen => gen.id === selectedGeneration);
+  
+  // Filter Pokemon by generation
+  const filteredPokemon = useMemo(() => {
+    if (selectedGeneration === 0) {
+      return allPokemon; // All generations
+    }
+    
+    const genRanges: { [key: number]: [number, number] } = {
+      1: [1, 151], 2: [152, 251], 3: [252, 386], 4: [387, 493],
+      5: [494, 649], 6: [650, 721], 7: [722, 809], 8: [810, 905], 9: [906, 1025]
+    };
+    
+    const range = genRanges[selectedGeneration];
+    if (!range) return [];
+    
+    const [min, max] = range;
+    return allPokemon.filter(p => p.id >= min && p.id <= max);
+  }, [allPokemon, selectedGeneration]);
   
   // Transform TrueSkill data to ranked Pokemon format using actual Pokemon data
   const rankings = useMemo(() => {
     const ratings = getAllRatings();
     
-    if (!pokemonData || pokemonData.length === 0) {
+    if (!filteredPokemon || filteredPokemon.length === 0) {
       return [];
     }
-    
-    // Create a map of Pokemon data for quick lookup
-    const pokemonMap = new Map(pokemonData.map(p => [p.id, p]));
     
     // Convert ratings to RankedPokemon format
     const rankedPokemon: RankedPokemon[] = Object.entries(ratings)
       .map(([pokemonId, rating]) => {
-        const pokemon = pokemonMap.get(parseInt(pokemonId));
+        const pokemon = pokemonLookupMap.get(parseInt(pokemonId));
         if (!pokemon) return null; // Skip if Pokemon data not found
+        
+        // Filter by generation if needed
+        if (selectedGeneration > 0) {
+          const genRanges: { [key: number]: [number, number] } = {
+            1: [1, 151], 2: [152, 251], 3: [252, 386], 4: [387, 493],
+            5: [494, 649], 6: [650, 721], 7: [722, 809], 8: [810, 905], 9: [906, 1025]
+          };
+          
+          const range = genRanges[selectedGeneration];
+          if (!range) return null;
+          
+          const [min, max] = range;
+          if (pokemon.id < min || pokemon.id > max) return null;
+        }
         
         const score = rating.mu - 2 * rating.sigma; // Conservative score estimate
         const battleCount = rating.battleCount || 0;
@@ -60,7 +89,7 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
     
     // Sort by score descending
     return rankedPokemon.sort((a, b) => b.score - a.score);
-  }, [getAllRatings, pokemonData]);
+  }, [getAllRatings, pokemonLookupMap, selectedGeneration]);
 
   const displayRankings = rankings.slice(0, milestoneDisplayCount);
   const localPendingRefinements = new Set<number>();
@@ -78,7 +107,7 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
     return rankings.length;
   }, [rankings.length]);
 
-  if (isLoading) {
+  if (!allPokemon || allPokemon.length === 0) {
     return (
       <div className="w-full max-w-7xl mx-auto">
         <div className="text-center py-12">
