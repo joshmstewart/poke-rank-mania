@@ -18,6 +18,8 @@ export const useEnhancedRankingDragDrop = (
   const handleDragStart = useCallback((event: DragStartEvent) => {
     console.log(`🚀🚀🚀 [ENHANCED_DRAG_START] ===== ENHANCED DRAG START =====`);
     console.log(`🚀🚀🚀 [ENHANCED_DRAG_START] Active ID: ${event.active.id}`);
+    console.log(`🚀🚀🚀 [ENHANCED_DRAG_START] enhancedAvailablePokemon count: ${enhancedAvailablePokemon.length}`);
+    console.log(`🚀🚀🚀 [ENHANCED_DRAG_START] localRankings count: ${localRankings.length}`);
 
     const activeId = event.active.id.toString();
     let draggedPokemon = null;
@@ -34,18 +36,22 @@ export const useEnhancedRankingDragDrop = (
     }
     
     setActiveDraggedPokemon(draggedPokemon);
+    console.log(`🚀🚀🚀 [ENHANCED_DRAG_START] ✅ Drag start completed`);
   }, [enhancedAvailablePokemon, localRankings]);
 
-  const handleDragEnd = useCallback(async (event: DragEndEvent) => {
-    console.log(`🚀🚀🚀 [ENHANCED_DRAG_END] ===== ENHANCED DRAG END =====`);
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    console.log(`🚀🚀🚀 [ENHANCED_DRAG_END] ===== ENHANCED DRAG END START =====`);
     console.log(`🚀🚀🚀 [ENHANCED_DRAG_END] Active: ${event.active.id}, Over: ${event.over?.id || 'NULL'}`);
+    console.log(`🚀🚀🚀 [ENHANCED_DRAG_END] Over data:`, event.over?.data?.current);
+    console.log(`🚀🚀🚀 [ENHANCED_DRAG_END] handleEnhancedManualReorder type:`, typeof handleEnhancedManualReorder);
+    console.log(`🚀🚀🚀 [ENHANCED_DRAG_END] triggerReRanking type:`, typeof triggerReRanking);
     
     setActiveDraggedPokemon(null);
     
     const { active, over } = event;
     
     if (!over) {
-      console.log(`🚀🚀🚀 [ENHANCED_DRAG_END] ❌ No drop target`);
+      console.log(`🚀🚀🚀 [ENHANCED_DRAG_END] ❌ No drop target - ending`);
       return;
     }
 
@@ -54,6 +60,7 @@ export const useEnhancedRankingDragDrop = (
 
     // Handle drag from available to rankings
     if (activeId.startsWith('available-')) {
+      console.log(`🚀🚀🚀 [ENHANCED_DRAG_END] === PROCESSING AVAILABLE POKEMON DROP ===`);
       const pokemonId = parseInt(activeId.replace('available-', ''));
       console.log(`🚀🚀🚀 [ENHANCED_DRAG_END] Available Pokemon ${pokemonId} dragged to ${overId}`);
       
@@ -71,58 +78,49 @@ export const useEnhancedRankingDragDrop = (
       );
       
       console.log(`🚀🚀🚀 [ENHANCED_DRAG_END] Drop target validation: ${isValidDropTarget}`);
+      console.log(`🚀🚀🚀 [ENHANCED_DRAG_END] Drop target details:`, {
+        overId,
+        isRankingsDropZone: overId === 'rankings-drop-zone',
+        isRankingsGridDropZone: overId === 'rankings-grid-drop-zone',
+        overDataType: over.data?.current?.type,
+        overDataAccepts: over.data?.current?.accepts,
+        isNumericId: !isNaN(parseInt(overId)),
+        foundInLocalRankings: localRankings.some(p => p.id === parseInt(overId))
+      });
       
       if (isValidDropTarget) {
+        console.log(`🚀🚀🚀 [ENHANCED_DRAG_END] ✅ VALID DROP TARGET`);
         const pokemon = enhancedAvailablePokemon.find(p => p.id === pokemonId);
         if (pokemon) {
           console.log(`🚀🚀🚀 [ENHANCED_DRAG_END] ✅ Found pokemon: ${pokemon.name}`);
           console.log(`🚀🚀🚀 [ENHANCED_DRAG_END] Is already ranked: ${pokemon.isRanked}`);
           
           if (pokemon.isRanked) {
-            // CASE A: Pokemon is already ranked - trigger re-ranking
             console.log(`🔥🔥🔥 [RE_RANK_POKEMON] ===== RE-RANKING EXISTING POKEMON =====`);
-            console.log(`🔥🔥🔥 [RE_RANK_POKEMON] Pokemon ${pokemonId} (${pokemon.name}) currently at rank ${pokemon.currentRank}`);
+            console.log(`🔥🔥🔥 [RE_RANK_POKEMON] triggerReRanking function available:`, !!triggerReRanking);
             
-            try {
-              toast({
-                title: "Re-ranking Pokemon",
-                description: `Triggering new battles for ${pokemon.name} (currently rank #${pokemon.currentRank})`,
-                duration: 3000
-              });
-              
-              // Trigger re-ranking process
-              await triggerReRanking(pokemonId);
-              
-              console.log(`🔥🔥🔥 [RE_RANK_POKEMON] ✅ Re-ranking completed for ${pokemon.name}`);
-              
-              toast({
-                title: "Re-ranking Complete",
-                description: `${pokemon.name} has been re-ranked based on new battles!`,
-                duration: 3000
-              });
-              
-            } catch (error) {
-              console.error(`🔥🔥🔥 [RE_RANK_POKEMON] ❌ Re-ranking failed:`, error);
-              toast({
-                title: "Re-ranking Failed",
-                description: `Failed to re-rank ${pokemon.name}. Please try again.`,
-                variant: "destructive",
-                duration: 3000
-              });
+            if (triggerReRanking) {
+              try {
+                console.log(`🔥🔥🔥 [RE_RANK_POKEMON] Calling triggerReRanking for ${pokemonId}`);
+                triggerReRanking(pokemonId).then(() => {
+                  console.log(`🔥🔥🔥 [RE_RANK_POKEMON] ✅ Re-ranking completed for ${pokemon.name}`);
+                }).catch((error) => {
+                  console.error(`🔥🔥🔥 [RE_RANK_POKEMON] ❌ Re-ranking failed:`, error);
+                });
+              } catch (error) {
+                console.error(`🔥🔥🔥 [RE_RANK_POKEMON] ❌ Sync re-ranking failed:`, error);
+              }
+            } else {
+              console.error(`🔥🔥🔥 [RE_RANK_POKEMON] ❌ triggerReRanking function not available`);
             }
             
           } else {
-            // CASE B: Pokemon is not ranked - add as new
             console.log(`🔥🔥🔥 [ADD_NEW_POKEMON] ===== ADDING NEW POKEMON TO RANKINGS =====`);
-            console.log(`🔥🔥🔥 [ADD_NEW_POKEMON] Pokemon ${pokemonId} (${pokemon.name}) - first time ranking`);
             
             // Add to TrueSkill store
             const defaultRating = new Rating(25.0, 8.333);
             updateRating(pokemonId.toString(), defaultRating);
             console.log(`🔥🔥🔥 [ADD_NEW_POKEMON] ✅ Added rating to TrueSkill store for ${pokemonId}`);
-            
-            // Remove from available list (no longer needed as we show all Pokemon)
-            // setAvailablePokemon(prev => prev.filter(p => p.id !== pokemonId));
             
             // Determine insertion position
             let insertionPosition = localRankings.length;
@@ -137,18 +135,20 @@ export const useEnhancedRankingDragDrop = (
               }
             }
             
-            // Use enhanced manual reorder for the addition
-            handleEnhancedManualReorder(pokemonId, -1, insertionPosition);
+            console.log(`🔥🔥🔥 [ADD_NEW_POKEMON] Calling handleEnhancedManualReorder(${pokemonId}, -1, ${insertionPosition})`);
+            console.log(`🔥🔥🔥 [ADD_NEW_POKEMON] handleEnhancedManualReorder function:`, handleEnhancedManualReorder);
             
-            toast({
-                title: "Pokemon Added",
-                description: `${pokemon.name} has been added to rankings and will battle to determine its position!`,
-                duration: 3000
-            });
+            try {
+              handleEnhancedManualReorder(pokemonId, -1, insertionPosition);
+              console.log(`🔥🔥🔥 [ADD_NEW_POKEMON] ✅ handleEnhancedManualReorder completed`);
+            } catch (error) {
+              console.error(`🔥🔥🔥 [ADD_NEW_POKEMON] ❌ handleEnhancedManualReorder failed:`, error);
+            }
             
             console.log(`🔥🔥🔥 [ADD_NEW_POKEMON] ✅ Addition process completed`);
           }
           
+          console.log(`🚀🚀🚀 [ENHANCED_DRAG_END] ✅ Processing completed for available Pokemon`);
           return;
         } else {
           console.error(`🚀🚀🚀 [ENHANCED_DRAG_END] ❌ Pokemon ${pokemonId} not found in available list!`);
@@ -156,22 +156,37 @@ export const useEnhancedRankingDragDrop = (
       } else {
         console.log(`🚀🚀🚀 [ENHANCED_DRAG_END] ❌ Invalid drop target - ignoring`);
       }
+      console.log(`🚀🚀🚀 [ENHANCED_DRAG_END] ✅ Available Pokemon processing completed`);
       return;
     }
 
     // Handle reordering within rankings (existing logic)
     if (!activeId.startsWith('available-') && !overId.startsWith('available-') && !overId.startsWith('collision-placeholder-')) {
+      console.log(`🚀🚀🚀 [ENHANCED_DRAG_END] === PROCESSING RANKING REORDER ===`);
       const activePokemonId = Number(activeId);
       const overPokemonId = Number(overId);
+      
+      console.log(`🚀🚀🚀 [ENHANCED_DRAG_END] Reorder: ${activePokemonId} -> ${overPokemonId}`);
       
       const oldIndex = localRankings.findIndex(p => p.id === activePokemonId);
       const newIndex = localRankings.findIndex(p => p.id === overPokemonId);
       
+      console.log(`🚀🚀🚀 [ENHANCED_DRAG_END] Indices: ${oldIndex} -> ${newIndex}`);
+      
       if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-        console.log(`🚀🚀🚀 [ENHANCED_DRAG_END] ✅ Reordering from ${oldIndex} to ${newIndex}`);
-        handleEnhancedManualReorder(activePokemonId, oldIndex, newIndex);
+        console.log(`🚀🚀🚀 [ENHANCED_DRAG_END] ✅ Valid reorder - calling handleEnhancedManualReorder`);
+        try {
+          handleEnhancedManualReorder(activePokemonId, oldIndex, newIndex);
+          console.log(`🚀🚀🚀 [ENHANCED_DRAG_END] ✅ Reorder completed`);
+        } catch (error) {
+          console.error(`🚀🚀🚀 [ENHANCED_DRAG_END] ❌ Reorder failed:`, error);
+        }
+      } else {
+        console.log(`🚀🚀🚀 [ENHANCED_DRAG_END] ❌ Invalid indices for reorder`);
       }
     }
+    
+    console.log(`🚀🚀🚀 [ENHANCED_DRAG_END] ===== ENHANCED DRAG END COMPLETE =====`);
   }, [enhancedAvailablePokemon, localRankings, updateRating, handleEnhancedManualReorder, triggerReRanking]);
 
   const handleManualReorder = useCallback((
@@ -180,7 +195,12 @@ export const useEnhancedRankingDragDrop = (
     destinationIndex: number
   ) => {
     console.log(`🚀🚀🚀 [ENHANCED_MANUAL_REORDER] Pokemon ${draggedPokemonId} moved from ${sourceIndex} to ${destinationIndex}`);
-    handleEnhancedManualReorder(draggedPokemonId, sourceIndex, destinationIndex);
+    try {
+      handleEnhancedManualReorder(draggedPokemonId, sourceIndex, destinationIndex);
+      console.log(`🚀🚀🚀 [ENHANCED_MANUAL_REORDER] ✅ Manual reorder completed`);
+    } catch (error) {
+      console.error(`🚀🚀🚀 [ENHANCED_MANUAL_REORDER] ❌ Manual reorder failed:`, error);
+    }
   }, [handleEnhancedManualReorder]);
 
   return {
