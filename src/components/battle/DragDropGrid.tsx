@@ -29,10 +29,17 @@ const DragDropGrid: React.FC<DragDropGridProps> = React.memo(({
 }) => {
   console.log(`🎯 [GRID_RENDER_DEBUG] DragDropGrid rendering with ${displayRankings.length} items`);
 
+  // CRITICAL: Add context provider analysis
+  console.log(`🔍 [CONTEXT_PROVIDER_DEBUG] DragDropGrid: Checking for any context provision...`);
+  
+  // CRITICAL: Examine @dnd-kit/sortable's SortableContext for context updates
+  console.log(`🔍 [DND_CONTEXT_DEBUG] DragDropGrid: SortableContext about to be created with ${displayRankings.length} items`);
+
   // CRITICAL: Create stable items array for SortableContext
   const sortableItems = useMemo(() => {
     const items = displayRankings.map(p => p.id);
     console.log(`🎯 [GRID_RENDER_DEBUG] Creating sortable items - count: ${items.length}`);
+    console.log(`🔍 [DND_CONTEXT_DEBUG] SortableContext items array reference changed: ${JSON.stringify(items.slice(0, 5))}...`);
     return items;
   }, [displayRankings.length, displayRankings.map(p => p.id).join(',')]); // More specific dependencies
 
@@ -46,6 +53,9 @@ const DragDropGrid: React.FC<DragDropGridProps> = React.memo(({
   }), []); // Static - never changes
 
   const { setNodeRef, isOver } = useDroppable(droppableConfig);
+
+  // CRITICAL: Log useDroppable state that might trigger context updates
+  console.log(`🔍 [DND_CONTEXT_DEBUG] DragDropGrid: useDroppable isOver state: ${isOver}`);
 
   // Static grid style
   const gridStyle = useMemo(() => ({
@@ -94,6 +104,9 @@ const DragDropGrid: React.FC<DragDropGridProps> = React.memo(({
   ]);
 
   console.log(`🎯 [GRID_RENDER_DEBUG] DragDropGrid render complete with ${renderedCards.length} cards`);
+  
+  // CRITICAL: Log the fact that SortableContext is being rendered with current items
+  console.log(`🔍 [DND_CONTEXT_DEBUG] DragDropGrid: About to render SortableContext with items: [${sortableItems.slice(0, 3).join(', ')}...]`);
 
   return (
     <div 

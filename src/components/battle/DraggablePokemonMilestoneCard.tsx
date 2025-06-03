@@ -53,10 +53,16 @@ const DraggablePokemonMilestoneCardCore: React.FC<DraggablePokemonMilestoneCardP
   // CRITICAL: Track what might be causing renders beyond props
   const [isOpen, setIsOpen] = useState(false);
   
-  // Log state changes that could cause renders
+  // CRITICAL: Add comprehensive context tracking to identify which context updates are causing re-renders
+  console.log(`🔍 [CONTEXT_DEBUG] ${pokemon.name}: Checking for context consumption...`);
+  
+  // Track any context values this component might be consuming
+  // Note: If any contexts are being consumed via custom hooks, they need to be identified
+  
+  // CRITICAL: Enhanced state change tracking with component identification
   useEffect(() => {
-    console.log(`🔍 [CARD_STATE_DEBUG] ${pokemon.name}: isOpen state changed to ${isOpen}`);
-  }, [isOpen, pokemon.name]);
+    console.log(`🔍 [CARD_STATE_DEBUG] ${pokemon.name} (${context}): isOpen state changed to ${isOpen} (Render #${renderCountRef.current})`);
+  }, [isOpen, pokemon.name, context]);
 
   // Memoize computed values with very specific dependencies
   const computedValues = useMemo(() => {
@@ -122,6 +128,9 @@ const DraggablePokemonMilestoneCardCore: React.FC<DraggablePokemonMilestoneCardP
     transition,
     isDragging,
   } = useSortable(sortableConfig);
+
+  // CRITICAL: Check if useSortable hook consumption might be triggering renders
+  console.log(`🔍 [SORTABLE_DEBUG] ${pokemon.name}: useSortable returned - isDragging: ${isDragging}, transform: ${transform ? 'present' : 'null'}`);
 
   // Memoize style to prevent object recreation
   const cardStyle = useMemo(() => {
