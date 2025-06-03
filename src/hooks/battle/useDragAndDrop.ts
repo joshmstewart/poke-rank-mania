@@ -1,16 +1,9 @@
 
-import { useSensors, useMemo, useRef } from '@dnd-kit/core';
-import {
-  useSensor,
-  PointerSensor,
-  KeyboardSensor,
-} from '@dnd-kit/core';
-import {
-  sortableKeyboardCoordinates,
-} from '@dnd-kit/sortable';
+import { useSensors, useSensor, PointerSensor, KeyboardSensor } from '@dnd-kit/core';
+import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { arrayMove } from '@dnd-kit/sortable';
 import { DragEndEvent } from '@dnd-kit/core';
-import { useCallback } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import { useRenderTracker } from './useRenderTracker';
 
 interface UseDragAndDropProps {

@@ -17,7 +17,7 @@ export const RankingsSection: React.FC<RankingsSectionProps> = React.memo(({
   displayRankings,
   onManualReorder,
   onLocalReorder,
-  pendingRefinements = new Set(),
+  pendingRefinements = new Set<number>(),
   availablePokemon = []
 }) => {
   // Track renders for performance debugging
