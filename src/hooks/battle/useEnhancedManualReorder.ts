@@ -297,48 +297,34 @@ export const useEnhancedManualReorder = (
     return battlesSimulated;
   }, [getRating, updateRating, addImpliedBattle, preventAutoResorting]);
 
-  // updateScoresPreservingOrder function - OPTIMIZED VERSION
+  // updateScoresPreservingOrder function - ULTRA-OPTIMIZED: Only update the dragged Pokemon
   const updateScoresPreservingOrder = useCallback((
     rankings: RankedPokemon[], 
     movedPokemonId?: number, 
     newPosition?: number
   ): RankedPokemon[] => {
     const perfScoreUpdateStart = performance.now();
-    persistentLog.add(`🎯 SCORE_UPDATE_START: Optimized score update started for ${rankings.length} items`);
-    console.log('🔥 [PRESERVE_ORDER_OPTIMIZED] ===== OPTIMIZED SCORE UPDATE =====');
-    console.log('🔥 [PRESERVE_ORDER_OPTIMIZED] preventAutoResorting:', preventAutoResorting);
-    console.log('🔥 [PRESERVE_ORDER_OPTIMIZED] movedPokemonId:', movedPokemonId);
-    console.log('🔥 [PRESERVE_ORDER_OPTIMIZED] newPosition:', newPosition);
+    persistentLog.add(`🎯 SCORE_UPDATE_START: Ultra-optimized score update started for ${rankings.length} items`);
+    console.log('🔥 [PRESERVE_ORDER_ULTRA_OPTIMIZED] ===== ULTRA-OPTIMIZED SCORE UPDATE =====');
+    console.log('🔥 [PRESERVE_ORDER_ULTRA_OPTIMIZED] preventAutoResorting:', preventAutoResorting);
+    console.log('🔥 [PRESERVE_ORDER_ULTRA_OPTIMIZED] movedPokemonId:', movedPokemonId);
+    console.log('🔥 [PRESERVE_ORDER_ULTRA_OPTIMIZED] newPosition:', newPosition);
 
-    // Determine which Pokemon need score updates
+    // ULTRA-OPTIMIZED: Only update the moved Pokemon's score
     let pokemonToUpdate: Set<number>;
     
-    if (movedPokemonId !== undefined && newPosition !== undefined) {
-      // OPTIMIZED: Only update the moved Pokemon and its neighbors
-      pokemonToUpdate = new Set();
-      
-      // Add the moved Pokemon
-      pokemonToUpdate.add(movedPokemonId);
-      
-      // Add neighbors: 5 above and 5 below the ending position
-      const startNeighbor = Math.max(0, newPosition - 5);
-      const endNeighbor = Math.min(rankings.length - 1, newPosition + 5);
-      
-      for (let i = startNeighbor; i <= endNeighbor; i++) {
-        if (rankings[i]) {
-          pokemonToUpdate.add(rankings[i].id);
-        }
-      }
-      
-      persistentLog.add(`🎯 OPTIMIZED_UPDATE: Will update ${pokemonToUpdate.size} Pokemon (moved + neighbors ${startNeighbor}-${endNeighbor})`);
-      console.log('🔥 [PRESERVE_ORDER_OPTIMIZED] Updating Pokemon IDs:', Array.from(pokemonToUpdate));
+    if (movedPokemonId !== undefined) {
+      // Only update the moved Pokemon - this is user intent!
+      pokemonToUpdate = new Set([movedPokemonId]);
+      persistentLog.add(`🎯 ULTRA_OPTIMIZED_UPDATE: Will update only 1 Pokemon (${movedPokemonId}) - the dragged one`);
+      console.log('🔥 [PRESERVE_ORDER_ULTRA_OPTIMIZED] Updating only dragged Pokemon ID:', movedPokemonId);
     } else {
       // Fallback: Update all Pokemon (for non-drag operations)
       pokemonToUpdate = new Set(rankings.map(p => p.id));
       persistentLog.add(`🎯 FALLBACK_UPDATE: Will update all ${pokemonToUpdate.size} Pokemon (no move info)`);
     }
     
-    // OPTIMIZED: Batch process only affected ratings
+    // ULTRA-OPTIMIZED: Process only the affected Pokemon
     const perfMapStart = performance.now();
     const updatedRankings = rankings.map((pokemon, index) => {
       const needsUpdate = pokemonToUpdate.has(pokemon.id);
@@ -349,11 +335,8 @@ export const useEnhancedManualReorder = (
         const conservativeEstimate = rating.mu - rating.sigma;
         const confidence = Math.max(0, Math.min(100, 100 * (1 - (rating.sigma / 8.33))));
         
-        if (pokemonToUpdate.size <= 20) { // Only log details for small updates
-          persistentLog.add(`🎯 UPDATED_${index}: ${pokemon.name} score ${pokemon.score.toFixed(2)} → ${conservativeEstimate.toFixed(2)}`);
-        }
-        
-        console.log(`🔥 [PRESERVE_ORDER_OPTIMIZED] UPDATED ${index+1}. ${pokemon.name}: score ${pokemon.score.toFixed(2)} → ${conservativeEstimate.toFixed(2)}`);
+        persistentLog.add(`🎯 UPDATED_DRAGGED: ${pokemon.name} score ${pokemon.score.toFixed(2)} → ${conservativeEstimate.toFixed(2)}`);
+        console.log(`🔥 [PRESERVE_ORDER_ULTRA_OPTIMIZED] UPDATED ${index+1}. ${pokemon.name}: score ${pokemon.score.toFixed(2)} → ${conservativeEstimate.toFixed(2)}`);
         
         return {
           ...pokemon,
@@ -370,26 +353,26 @@ export const useEnhancedManualReorder = (
       }
     });
     const perfMapEnd = performance.now();
-    persistentLog.add(`🎯 OPTIMIZED_MAP: Map operation: ${(perfMapEnd - perfMapStart).toFixed(2)}ms for ${pokemonToUpdate.size}/${rankings.length} items`);
+    persistentLog.add(`🎯 ULTRA_OPTIMIZED_MAP: Map operation: ${(perfMapEnd - perfMapStart).toFixed(2)}ms for ${pokemonToUpdate.size}/${rankings.length} items`);
     
-    console.log('🔥 [PRESERVE_ORDER_OPTIMIZED] FINAL Output order (MUST MATCH INPUT):', updatedRankings.map((p, i) => `${i+1}. ${p.name}`).slice(0, 10));
-    console.log('🔥 [PRESERVE_ORDER_OPTIMIZED] ===== OPTIMIZED ORDER PRESERVATION COMPLETE =====');
+    console.log('🔥 [PRESERVE_ORDER_ULTRA_OPTIMIZED] FINAL Output order (MUST MATCH INPUT):', updatedRankings.map((p, i) => `${i+1}. ${p.name}`).slice(0, 10));
+    console.log('🔥 [PRESERVE_ORDER_ULTRA_OPTIMIZED] ===== ULTRA-OPTIMIZED ORDER PRESERVATION COMPLETE =====');
     
     // ABSOLUTELY NO SORTING when preventAutoResorting is true
     const perfSortStart = performance.now();
     let finalResult;
     if (preventAutoResorting) {
-      console.log('🔥 [PRESERVE_ORDER_OPTIMIZED] ✅ MANUAL ORDER PRESERVED - NO SORTING APPLIED');
+      console.log('🔥 [PRESERVE_ORDER_ULTRA_OPTIMIZED] ✅ MANUAL ORDER PRESERVED - NO SORTING APPLIED');
       finalResult = updatedRankings;
     } else {
-      console.log('🔥 [PRESERVE_ORDER_OPTIMIZED] ⚠️ Auto-resorting enabled - sorting by score');
+      console.log('🔥 [PRESERVE_ORDER_ULTRA_OPTIMIZED] ⚠️ Auto-resorting enabled - sorting by score');
       finalResult = updatedRankings.sort((a, b) => b.score - a.score);
     }
     const perfSortEnd = performance.now();
     persistentLog.add(`🎯 SORT: Sort operation: ${(perfSortEnd - perfSortStart).toFixed(2)}ms`);
     
     const perfScoreUpdateEnd = performance.now();
-    persistentLog.add(`🎯 OPTIMIZED_SCORE_UPDATE_END: Total optimized score update: ${(perfScoreUpdateEnd - perfScoreUpdateStart).toFixed(2)}ms`);
+    persistentLog.add(`🎯 ULTRA_OPTIMIZED_SCORE_UPDATE_END: Total ultra-optimized score update: ${(perfScoreUpdateEnd - perfScoreUpdateStart).toFixed(2)}ms`);
     
     return finalResult;
   }, [getRating, preventAutoResorting]);
@@ -470,7 +453,7 @@ export const useEnhancedManualReorder = (
     persistentLog.add(`🎯 BATTLES_SIMULATED: ${battlesSimulated} battles completed`);
     console.log('🔥 [ENHANCED_REORDER_DRAG] Battles simulated:', battlesSimulated);
     
-    // CRITICAL: ALWAYS preserve manual order, just update scores - OPTIMIZED VERSION
+    // CRITICAL: ALWAYS preserve manual order, just update scores - ULTRA-OPTIMIZED VERSION (only dragged Pokemon)
     const updatedRankings = updateScoresPreservingOrder(newRankings, movedPokemon.id, newIndex);
     
     console.log('🔥 [ENHANCED_REORDER_DRAG] FINAL ORDER CHECK (MUST MATCH MANUAL ORDER):');
@@ -561,7 +544,7 @@ export const useEnhancedManualReorder = (
     persistentLog.add(`🎯 MANUAL_BATTLES_SIMULATED: ${battlesSimulated} battles completed`);
     console.log('🔥 [ENHANCED_MANUAL_REORDER] Battles simulated:', battlesSimulated);
     
-    // CRITICAL: ALWAYS preserve manual order, just update scores - OPTIMIZED VERSION
+    // CRITICAL: ALWAYS preserve manual order, just update scores - ULTRA-OPTIMIZED VERSION (only dragged Pokemon)
     const updatedRankings = updateScoresPreservingOrder(newRankings, draggedPokemonId, destinationIndex);
     
     console.log('🔥 [ENHANCED_MANUAL_REORDER] FINAL ORDER CHECK (MUST MATCH MANUAL ORDER):');
