@@ -140,7 +140,7 @@ export const useEnhancedManualReorder = (
     return true;
   }, []);
 
-  // OPTIMIZED: Battle simulation with size limits
+  // OPTIMIZED: Battle simulation with size limits AND PERSISTENT LOGGING
   const simulateBattlesForReorder = useCallback((
     reorderedRankings: RankedPokemon[],
     movedPokemon: RankedPokemon,
@@ -164,6 +164,7 @@ export const useEnhancedManualReorder = (
       const endIndex = Math.min(oldIndex, newIndex + maxBattles);
       
       for (let i = newIndex; i < endIndex && battlesSimulated < maxBattles; i++) {
+        const perfBattleStart = performance.now();
         const opponent = reorderedRankings[i + 1];
         if (opponent && opponent.id !== movedPokemon.id) {
           // Get current ratings
@@ -195,6 +196,8 @@ export const useEnhancedManualReorder = (
             addImpliedBattle(movedPokemon.id, opponent.id);
           }
         }
+        const perfBattleEnd = performance.now();
+        persistentLog.add(`🎯 SINGLE_BATTLE_${i}: Battle processing time: ${(perfBattleEnd - perfBattleStart).toFixed(2)}ms`);
       }
       
       const perfUpwardMoveEnd = performance.now();
@@ -208,6 +211,7 @@ export const useEnhancedManualReorder = (
       const endIndex = Math.min(newIndex + 1, oldIndex + 1 + maxBattles);
       
       for (let i = oldIndex + 1; i <= newIndex && i < endIndex && battlesSimulated < maxBattles; i++) {
+        const perfBattleStart = performance.now();
         const opponent = reorderedRankings[i - 1];
         if (opponent && opponent.id !== movedPokemon.id) {
           // Get current ratings
@@ -239,6 +243,8 @@ export const useEnhancedManualReorder = (
             addImpliedBattle(opponent.id, movedPokemon.id);
           }
         }
+        const perfBattleEnd = performance.now();
+        persistentLog.add(`🎯 SINGLE_BATTLE_${i}: Battle processing time: ${(perfBattleEnd - perfBattleStart).toFixed(2)}ms`);
       }
       
       const perfDownwardMoveEnd = performance.now();
@@ -251,7 +257,7 @@ export const useEnhancedManualReorder = (
     return battlesSimulated;
   }, [getRating, updateRating, addImpliedBattle, preventAutoResorting]);
 
-  // OPTIMIZED: Score update with batch processing
+  // OPTIMIZED: Score update with batch processing AND PERSISTENT LOGGING
   const updateScoresPreservingOrder = useCallback((rankings: RankedPokemon[]): RankedPokemon[] => {
     const perfScoreUpdateStart = performance.now();
     persistentLog.add(`🎯 SCORE_UPDATE_START: Score update started for ${rankings.length} items`);
@@ -262,12 +268,18 @@ export const useEnhancedManualReorder = (
     // OPTIMIZED: Batch process ratings to avoid individual lookups
     const perfMapStart = performance.now();
     const updatedRankings = rankings.map((pokemon, index) => {
+      const perfSingleStart = performance.now();
       const rating = getRating(pokemon.id.toString());
       const conservativeEstimate = rating.mu - rating.sigma;
       const confidence = Math.max(0, Math.min(100, 100 * (1 - (rating.sigma / 8.33))));
       
       if (index < 5) { // Log first 5 items for detail
         persistentLog.add(`🎯 ITEM_${index}: ${pokemon.name} score ${pokemon.score.toFixed(2)} → ${conservativeEstimate.toFixed(2)}`);
+      }
+      
+      if (index % 50 === 0) { // Log every 50th item for progress tracking
+        const perfSingleEnd = performance.now();
+        persistentLog.add(`🎯 PROGRESS_${index}: Processed ${index}/${rankings.length} items, avg time: ${(perfSingleEnd - perfSingleStart).toFixed(2)}ms`);
       }
       
       console.log(`🔥 [PRESERVE_ORDER] ${index+1}. ${pokemon.name}: score ${pokemon.score.toFixed(2)} → ${conservativeEstimate.toFixed(2)}`);
@@ -322,7 +334,7 @@ export const useEnhancedManualReorder = (
 
   const handleDragEnd = useCallback((event: DragEndEvent) => {
     const perfDragEndBegin = performance.now();
-    persistentLog.add(`🎯 DRAG_END_BEGIN: Drag end handler called`);
+    persistentLog.add(`🎯 DRAG_END_BEGIN: Drag end handler called - THIS IS WHERE THE SLOWNESS HAPPENS`);
     
     const { active, over } = event;
     
@@ -403,14 +415,14 @@ export const useEnhancedManualReorder = (
     console.log('🔥 [ENHANCED_REORDER_DRAG] ✅ Drag processing complete');
   }, [localRankings, validateRankingsIntegrity, simulateBattlesForReorder, updateScoresPreservingOrder, preventAutoResorting]);
 
-  // CRITICAL: Manual reorder with GUARANTEED order preservation
+  // CRITICAL: Manual reorder with GUARANTEED order preservation AND PERSISTENT LOGGING
   const handleEnhancedManualReorder = useCallback((
     draggedPokemonId: number,
     sourceIndex: number,
     destinationIndex: number
   ) => {
     const perfManualReorderStart = performance.now();
-    persistentLog.add(`🎯 MANUAL_REORDER_START: Manual reorder called for Pokemon ${draggedPokemonId} (${sourceIndex} -> ${destinationIndex})`);
+    persistentLog.add(`🎯 MANUAL_REORDER_START: Manual reorder called for Pokemon ${draggedPokemonId} (${sourceIndex} -> ${destinationIndex}) - THIS IS WHERE THE SLOWNESS HAPPENS`);
     console.log('🔥 [ENHANCED_MANUAL_REORDER] ===== MANUAL REORDER CALLED =====');
     console.log('🔥 [ENHANCED_MANUAL_REORDER] Pokemon:', draggedPokemonId, 'from', sourceIndex, 'to', destinationIndex);
     console.log('🔥 [ENHANCED_MANUAL_REORDER] preventAutoResorting:', preventAutoResorting);
