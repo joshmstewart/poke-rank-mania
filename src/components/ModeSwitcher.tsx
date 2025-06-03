@@ -1,7 +1,7 @@
+
 import React from "react";
 import { Link } from "react-router-dom";
 import { Swords, List } from "lucide-react";
-import { Users } from "lucide-react";
 
 export default function ModeSwitcher() {
   return (
@@ -35,40 +35,21 @@ export default function ModeSwitcher() {
           </div>
         </Link>
 
-        {/* Manual Rankings */}
+        {/* Rankings - Combined Personal and Global */}
         <Link
-          to="/rankings"
+          to="/community"
           className="group bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-200 hover:border-green-300"
         >
           <div className="p-8">
             <div className="w-16 h-16 bg-green-100 rounded-lg flex items-center justify-center mb-6 group-hover:bg-green-200 transition-colors">
               <List className="h-8 w-8 text-green-600" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-3">Manual Rankings</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-3">Rankings</h2>
             <p className="text-gray-600 mb-4">
-              Manually drag and drop Pokémon to create your personal rankings. Perfect for when you know your preferences.
+              Manage your personal rankings with drag-and-drop, or view global community rankings based on all users' data.
             </p>
             <div className="text-green-600 font-semibold group-hover:text-green-700">
-              Create Rankings →
-            </div>
-          </div>
-        </Link>
-
-        {/* Community Rankings - NEW */}
-        <Link
-          to="/community"
-          className="group bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-200 hover:border-purple-300"
-        >
-          <div className="p-8">
-            <div className="w-16 h-16 bg-purple-100 rounded-lg flex items-center justify-center mb-6 group-hover:bg-purple-200 transition-colors">
-              <Users className="h-8 w-8 text-purple-600" />
-            </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-3">Community Rankings</h2>
-            <p className="text-gray-600 mb-4">
-              View global rankings based on all users' data, or manage your personal rankings with interactive tools.
-            </p>
-            <div className="text-purple-600 font-semibold group-hover:text-purple-700">
-              Explore Community →
+              View Rankings →
             </div>
           </div>
         </Link>

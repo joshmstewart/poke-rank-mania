@@ -2,11 +2,11 @@
 import React, { useState } from 'react';
 import { useGlobalRankings, GlobalRankedPokemon } from '@/hooks/useGlobalRankings';
 import { useGenerationState } from '@/hooks/battle/useGenerationState';
-import { GlobalRankingCard } from './GlobalRankingCard';
 import { LoadingState } from '../ranking/LoadingState';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import DraggablePokemonMilestoneCard from '@/components/battle/DraggablePokemonMilestoneCard';
 
 export const GlobalRankingsView: React.FC = () => {
   const { selectedGeneration, setSelectedGeneration } = useGenerationState();
@@ -17,16 +17,6 @@ export const GlobalRankingsView: React.FC = () => {
     minUsers,
     enabled: true
   });
-
-  // Group rankings by generation for display
-  const groupedRankings = globalRankings.reduce((acc, pokemon) => {
-    const gen = pokemon.generationId;
-    if (!acc[gen]) {
-      acc[gen] = [];
-    }
-    acc[gen].push(pokemon);
-    return acc;
-  }, {} as Record<number, GlobalRankedPokemon[]>);
 
   if (isLoading) {
     return (
@@ -48,6 +38,18 @@ export const GlobalRankingsView: React.FC = () => {
       </Alert>
     );
   }
+
+  // Convert global rankings to milestone card format
+  const milestoneFormattedPokemon = globalRankings.map((pokemon, index) => ({
+    id: pokemon.pokemonId,
+    name: pokemon.name,
+    image: pokemon.image,
+    types: pokemon.types,
+    generation: pokemon.generationId,
+    globalRank: pokemon.globalRank,
+    averageScore: pokemon.averageScore,
+    usersRankedCount: pokemon.usersRankedCount
+  }));
 
   return (
     <div className="space-y-6">
@@ -94,36 +96,46 @@ export const GlobalRankingsView: React.FC = () => {
         </div>
       </div>
 
-      {/* Rankings Display */}
-      {globalRankings.length === 0 ? (
+      {/* Global Rankings Grid - Using Milestone Style */}
+      {milestoneFormattedPokemon.length === 0 ? (
         <div className="text-center py-12">
           <p className="text-gray-600">No Pokémon meet the current criteria.</p>
           <p className="text-sm text-gray-500 mt-2">Try lowering the minimum users filter or selecting a different generation.</p>
         </div>
       ) : (
-        <div className="space-y-8">
-          {Object.entries(groupedRankings)
-            .sort(([a], [b]) => Number(a) - Number(b))
-            .map(([generation, pokemon]) => (
-              <div key={generation} className="bg-white rounded-lg shadow border overflow-hidden">
-                <div className="bg-gray-50 px-6 py-3 border-b">
-                  <h2 className="text-lg font-semibold text-gray-900">
-                    Generation {generation} ({pokemon.length} Pokémon)
-                  </h2>
-                </div>
-                
-                <div className="p-6">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {pokemon.map((rankedPokemon) => (
-                      <GlobalRankingCard 
-                        key={rankedPokemon.pokemonId}
-                        pokemon={rankedPokemon}
-                      />
-                    ))}
+        <div className="bg-white rounded-lg shadow border overflow-hidden">
+          <div className="bg-gray-50 px-6 py-3 border-b">
+            <h2 className="text-lg font-semibold text-gray-900">
+              Global Rankings ({milestoneFormattedPokemon.length} Pokémon)
+            </h2>
+          </div>
+          
+          <div className="p-6">
+            {/* Milestone-style grid - exactly 5 columns like milestone view */}
+            <div className="grid grid-cols-5 gap-4">
+              {milestoneFormattedPokemon.map((pokemon, index) => (
+                <div key={pokemon.id} className="relative">
+                  <DraggablePokemonMilestoneCard
+                    pokemon={pokemon}
+                    index={pokemon.globalRank - 1} // Use global rank for display
+                    isPending={false}
+                    showRank={true}
+                    isDraggable={false} // Global view is read-only
+                    isAvailable={false}
+                    context="ranked"
+                  />
+                  
+                  {/* Additional global ranking info overlay */}
+                  <div className="absolute bottom-2 left-2 right-2 bg-black/75 text-white text-xs rounded px-2 py-1">
+                    <div className="flex justify-between items-center">
+                      <span>Avg: {pokemon.averageScore.toFixed(1)}</span>
+                      <span>{pokemon.usersRankedCount} users</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
+          </div>
         </div>
       )}
     </div>
