@@ -4,6 +4,8 @@ import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import {
   DndContext,
   closestCenter,
+  DragOverlay,
+  defaultDropAnimationSideEffects,
 } from '@dnd-kit/core';
 import {
   SortableContext,
@@ -23,6 +25,8 @@ const DraggableMilestoneGrid: React.FC<DraggableMilestoneGridProps> = ({
   localPendingRefinements,
   onManualReorder
 }) => {
+  const [activePokemon, setActivePokemon] = React.useState<Pokemon | RankedPokemon | null>(null);
+
   console.log(`🎯 [DRAGGABLE_MILESTONE_GRID] Rendering with ${displayRankings.length} Pokemon`);
   console.log(`🎯 [DRAGGABLE_MILESTONE_GRID] onManualReorder provided: ${!!onManualReorder}`);
 
@@ -34,6 +38,27 @@ const DraggableMilestoneGrid: React.FC<DraggableMilestoneGridProps> = ({
     }),
     onLocalReorder: () => {} // Not needed for milestone grid
   });
+
+  const handleDragStart = (event: any) => {
+    const activePokemon = displayRankings.find(p => p.id === event.active.id);
+    setActivePokemon(activePokemon || null);
+  };
+
+  const handleDragEndWithCleanup = (event: any) => {
+    handleDragEnd(event);
+    setActivePokemon(null);
+  };
+
+  // Custom drop animation for smoother transitions
+  const dropAnimationConfig = {
+    sideEffects: defaultDropAnimationSideEffects({
+      styles: {
+        active: {
+          opacity: '0.4',
+        },
+      },
+    }),
+  };
 
   const content = (
     <div className="grid gap-4 mb-6" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
@@ -57,7 +82,8 @@ const DraggableMilestoneGrid: React.FC<DraggableMilestoneGridProps> = ({
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEndWithCleanup}
       >
         <SortableContext 
           items={displayRankings.map(p => p.id.toString())} 
@@ -65,6 +91,22 @@ const DraggableMilestoneGrid: React.FC<DraggableMilestoneGridProps> = ({
         >
           {content}
         </SortableContext>
+        
+        {/* Drag Overlay for smooth cursor following */}
+        <DragOverlay dropAnimation={dropAnimationConfig}>
+          {activePokemon ? (
+            <div className="rotate-2 scale-105">
+              <DraggablePokemonMilestoneCard
+                pokemon={activePokemon}
+                index={displayRankings.findIndex(p => p.id === activePokemon.id)}
+                showRank={true}
+                isDraggable={false}
+                context="ranked"
+                isPending={localPendingRefinements.has(activePokemon.id)}
+              />
+            </div>
+          ) : null}
+        </DragOverlay>
       </DndContext>
     );
   }

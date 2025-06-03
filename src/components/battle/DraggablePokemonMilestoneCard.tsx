@@ -58,11 +58,14 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     isDragging,
   } = sortableResult;
 
+  // Improved drag styling with better visual feedback
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition: isDragging ? 'none' : transition,
+    transition: isDragging ? 'none' : transition, // Remove transition during drag for smoother following
     minHeight: '140px',
-    minWidth: '140px'
+    minWidth: '140px',
+    zIndex: isDragging ? 1000 : 'auto', // Bring dragged item to front
+    cursor: isDraggable && !isOpen ? 'grab' : 'default'
   };
 
   const backgroundColorClass = getPokemonBackgroundColor(pokemon);
@@ -90,11 +93,16 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       className={`${backgroundColorClass} rounded-lg border border-gray-200 relative overflow-hidden h-35 flex flex-col group ${
         isDraggable && !isOpen ? 'cursor-grab active:cursor-grabbing' : ''
       } ${
-        isDragging ? 'opacity-60 z-50 scale-105 shadow-2xl' : 'hover:shadow-lg transition-all duration-200'
+        isDragging ? 'opacity-80 scale-105 shadow-2xl border-blue-400 transform-gpu' : 'hover:shadow-lg transition-all duration-200'
       } ${isPending ? 'ring-2 ring-blue-400 ring-opacity-50' : ''}`}
       {...(isDraggable && !isOpen ? attributes : {})}
       {...(isDraggable && !isOpen ? listeners : {})}
     >
+      {/* Enhanced drag overlay for better visual feedback */}
+      {isDragging && (
+        <div className="absolute inset-0 bg-blue-100 bg-opacity-30 rounded-lg pointer-events-none"></div>
+      )}
+
       {/* Dark overlay for already-ranked Pokemon in available section */}
       {context === 'available' && isRankedPokemon && (
         <div className="absolute inset-0 bg-black bg-opacity-40 rounded-lg z-10"></div>
@@ -107,53 +115,55 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
         </div>
       )}
 
-      {/* Info Button with Dialog - now only shows on hover */}
-      <div className="absolute top-1 right-1 z-30 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
-          <DialogTrigger asChild>
-            <button 
-              className="w-5 h-5 rounded-full bg-white/80 hover:bg-white border border-gray-300 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200 backdrop-blur-sm cursor-pointer"
-              onClick={(e) => {
-                e.stopPropagation();
-                console.log(`Info button clicked for ${pokemon.name}`);
-              }}
-              onPointerDown={(e) => {
-                e.stopPropagation();
-              }}
-              onMouseDown={(e) => {
-                e.stopPropagation();
-              }}
-              type="button"
-              style={{ pointerEvents: 'auto' }}
+      {/* Info Button with Dialog - now only shows on hover and disabled during drag */}
+      {!isDragging && (
+        <div className="absolute top-1 right-1 z-30 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+          <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild>
+              <button 
+                className="w-5 h-5 rounded-full bg-white/80 hover:bg-white border border-gray-300 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200 backdrop-blur-sm cursor-pointer"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  console.log(`Info button clicked for ${pokemon.name}`);
+                }}
+                onPointerDown={(e) => {
+                  e.stopPropagation();
+                }}
+                onMouseDown={(e) => {
+                  e.stopPropagation();
+                }}
+                type="button"
+                style={{ pointerEvents: 'auto' }}
+              >
+                i
+              </button>
+            </DialogTrigger>
+            
+            <DialogContent 
+              className="max-w-4xl max-h-[90vh] overflow-y-auto pointer-events-auto"
+              onClick={handleDialogClick}
+              data-radix-dialog-content="true"
             >
-              i
-            </button>
-          </DialogTrigger>
-          
-          <DialogContent 
-            className="max-w-4xl max-h-[90vh] overflow-y-auto pointer-events-auto"
-            onClick={handleDialogClick}
-            data-radix-dialog-content="true"
-          >
-            <DialogHeader>
-              <DialogTitle className="text-2xl font-bold text-center">
-                {pokemon.name}
-              </DialogTitle>
-            </DialogHeader>
+              <DialogHeader>
+                <DialogTitle className="text-2xl font-bold text-center">
+                  {pokemon.name}
+                </DialogTitle>
+              </DialogHeader>
 
-            <PokemonModalContent
-              pokemon={pokemon}
-              showLoading={showLoading}
-              showTCGCards={showTCGCards}
-              showFallbackInfo={showFallbackInfo}
-              tcgCard={tcgCard}
-              secondTcgCard={secondTcgCard}
-              flavorText={flavorText}
-              isLoadingFlavor={isLoadingFlavor}
-            />
-          </DialogContent>
-        </Dialog>
-      </div>
+              <PokemonModalContent
+                pokemon={pokemon}
+                showLoading={showLoading}
+                showTCGCards={showTCGCards}
+                showFallbackInfo={showFallbackInfo}
+                tcgCard={tcgCard}
+                secondTcgCard={secondTcgCard}
+                flavorText={flavorText}
+                isLoadingFlavor={isLoadingFlavor}
+              />
+            </DialogContent>
+          </Dialog>
+        </div>
+      )}
 
       {/* Crown badge for ranked Pokemon in available section */}
       {context === 'available' && isRankedPokemon && currentRank && (
@@ -170,7 +180,9 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
 
       {/* Ranking number - white circle with black text in top left if showRank */}
       {context === 'ranked' && showRank && (
-        <div className="absolute top-2 left-2 w-7 h-7 bg-white rounded-full flex items-center justify-center text-sm font-bold z-10 shadow-sm border border-gray-200">
+        <div className={`absolute top-2 left-2 w-7 h-7 bg-white rounded-full flex items-center justify-center text-sm font-bold z-10 shadow-sm border border-gray-200 ${
+          isDragging ? 'bg-blue-100 border-blue-300' : ''
+        }`}>
           <span className="text-black">{index + 1}</span>
         </div>
       )}
@@ -180,7 +192,9 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
         <img 
           src={pokemon.image} 
           alt={pokemon.name}
-          className="w-20 h-20 object-contain"
+          className={`w-20 h-20 object-contain transition-all duration-200 ${
+            isDragging ? 'scale-110' : ''
+          }`}
           loading="lazy"
           onError={(e) => {
             const target = e.target as HTMLImageElement;
@@ -190,7 +204,9 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       </div>
       
       {/* Pokemon info - white section at bottom with reduced padding */}
-      <div className="bg-white text-center py-1.5 px-2 mt-auto border-t border-gray-100">
+      <div className={`bg-white text-center py-1.5 px-2 mt-auto border-t border-gray-100 ${
+        isDragging ? 'bg-blue-50' : ''
+      }`}>
         <h3 className="font-bold text-gray-800 text-sm leading-tight mb-0.5">
           {pokemon.name}
         </h3>
