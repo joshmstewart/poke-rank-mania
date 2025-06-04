@@ -1,6 +1,6 @@
 
 import React from "react";
-import { GenerationHeader } from "./GenerationHeader";
+import GenerationHeader from "./GenerationHeader";
 import OptimizedDraggableCard from "@/components/battle/OptimizedDraggableCard";
 
 interface PokemonGridSectionProps {
