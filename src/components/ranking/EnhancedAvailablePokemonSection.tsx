@@ -34,15 +34,29 @@ export const EnhancedAvailablePokemonSection: React.FC<EnhancedAvailablePokemonS
   handlePageChange,
   getPageRange
 }) => {
-  // CRITICAL FIX: Explicitly ensure array is always valid
-  const safeEnhancedAvailablePokemon = Array.isArray(enhancedAvailablePokemon) ? enhancedAvailablePokemon : [];
+  // CRITICAL FIX: Add multiple layers of safety checks
+  const safeEnhancedAvailablePokemon = useMemo(() => {
+    if (!enhancedAvailablePokemon) {
+      console.warn('[ENHANCED_AVAILABLE_SECTION] enhancedAvailablePokemon is null/undefined');
+      return [];
+    }
+    if (!Array.isArray(enhancedAvailablePokemon)) {
+      console.warn('[ENHANCED_AVAILABLE_SECTION] enhancedAvailablePokemon is not an array:', typeof enhancedAvailablePokemon);
+      return [];
+    }
+    return enhancedAvailablePokemon;
+  }, [enhancedAvailablePokemon]);
   
   console.log(`🔍 [ENHANCED_AVAILABLE_SECTION] Rendering ${safeEnhancedAvailablePokemon.length} enhanced available Pokemon`);
   
-  const rankedPokemonInAvailable = useMemo(() => 
-    safeEnhancedAvailablePokemon.filter(p => 'isRanked' in p && p.isRanked).length, 
-    [safeEnhancedAvailablePokemon]
-  );
+  const rankedPokemonInAvailable = useMemo(() => {
+    try {
+      return safeEnhancedAvailablePokemon.filter(p => p && 'isRanked' in p && p.isRanked).length;
+    } catch (error) {
+      console.error('[ENHANCED_AVAILABLE_SECTION] Error counting ranked Pokemon:', error);
+      return 0;
+    }
+  }, [safeEnhancedAvailablePokemon]);
   
   console.log(`🔍 [ENHANCED_AVAILABLE_SECTION] Ranked Pokemon in available: ${rankedPokemonInAvailable}`);
 
@@ -78,15 +92,22 @@ export const EnhancedAvailablePokemonSection: React.FC<EnhancedAvailablePokemonS
     false // isRankingArea = false for available Pokemon section
   );
 
-  const renderPokemonCard = useCallback((pokemon: Pokemon | RankedPokemon, index: number) => (
-    <OptimizedDraggableCard
-      key={pokemon.id}
-      pokemon={pokemon}
-      index={index}
-      context="available"
-      showRank={false}
-    />
-  ), []);
+  const renderPokemonCard = useCallback((pokemon: Pokemon | RankedPokemon, index: number) => {
+    if (!pokemon || typeof pokemon.id !== 'number') {
+      console.error('[ENHANCED_AVAILABLE_SECTION] Invalid Pokemon for card render:', pokemon);
+      return null;
+    }
+
+    return (
+      <OptimizedDraggableCard
+        key={pokemon.id}
+        pokemon={pokemon}
+        index={index}
+        context="available"
+        showRank={false}
+      />
+    );
+  }, []);
 
   if (isLoading && safeEnhancedAvailablePokemon.length === 0) {
     return <LoadingState 
@@ -101,14 +122,24 @@ export const EnhancedAvailablePokemonSection: React.FC<EnhancedAvailablePokemonS
   const generationGroups = useMemo(() => {
     const groups = new Map<number, (Pokemon | RankedPokemon)[]>();
     
-    if (safeEnhancedAvailablePokemon && Array.isArray(safeEnhancedAvailablePokemon)) {
-      safeEnhancedAvailablePokemon.forEach(pokemon => {
-        const generation = pokemon.generation || 1;
-        if (!groups.has(generation)) {
-          groups.set(generation, []);
-        }
-        groups.get(generation)!.push(pokemon);
-      });
+    try {
+      if (safeEnhancedAvailablePokemon && Array.isArray(safeEnhancedAvailablePokemon)) {
+        safeEnhancedAvailablePokemon.forEach(pokemon => {
+          if (!pokemon || typeof pokemon.id !== 'number') {
+            console.warn('[ENHANCED_AVAILABLE_SECTION] Skipping invalid Pokemon:', pokemon);
+            return;
+          }
+          
+          const generation = pokemon.generation || 1;
+          if (!groups.has(generation)) {
+            groups.set(generation, []);
+          }
+          groups.get(generation)!.push(pokemon);
+        });
+      }
+    } catch (error) {
+      console.error('[ENHANCED_AVAILABLE_SECTION] Error creating generation groups:', error);
+      return [];
     }
     
     return Array.from(groups.entries())
@@ -120,7 +151,7 @@ export const EnhancedAvailablePokemonSection: React.FC<EnhancedAvailablePokemonS
     <div className="flex flex-col h-full">
       <AvailablePokemonHeader 
         availablePokemonCount={safeEnhancedAvailablePokemon.length}
-        unrankedCount={safeEnhancedAvailablePokemon.filter(p => !('isRanked' in p && p.isRanked)).length}
+        unrankedCount={safeEnhancedAvailablePokemon.filter(p => p && !('isRanked' in p && p.isRanked)).length}
       />
       
       <div 

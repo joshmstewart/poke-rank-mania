@@ -38,15 +38,21 @@ export const usePokemonRanker = () => {
     }
   }, [hasInitialized, loadPokemon, setLoadingType, setLoadSize]);
 
+  // CRITICAL FIX: Add safety checks for availablePokemonFromLoader
+  const safeAvailablePokemonFromLoader = Array.isArray(availablePokemonFromLoader) ? availablePokemonFromLoader : [];
+
   const { filteredAvailablePokemon, setSelectedGeneration: setGen } = useGenerationFilter(
-    availablePokemonFromLoader,
+    safeAvailablePokemonFromLoader,
     selectedGeneration
   );
 
+  // CRITICAL FIX: Add safety checks for filteredAvailablePokemon
+  const safeFilteredAvailablePokemon = Array.isArray(filteredAvailablePokemon) ? filteredAvailablePokemon : [];
+
   const { paginatedItems: availablePokemon, totalPages: calculatedTotalPages } = usePagination(
-    filteredAvailablePokemon,
+    safeFilteredAvailablePokemon,
     currentPage,
-    filteredAvailablePokemon.length,
+    safeFilteredAvailablePokemon.length,
     "single"
   );
 
@@ -104,8 +110,8 @@ export const usePokemonRanker = () => {
 
   return {
     isLoading,
-    availablePokemon,
-    rankedPokemon,
+    availablePokemon: Array.isArray(availablePokemon) ? availablePokemon : [],
+    rankedPokemon: Array.isArray(rankedPokemon) ? rankedPokemon : [],
     setAvailablePokemon: setRankedPokemon,
     setRankedPokemon,
     confidenceScores,
