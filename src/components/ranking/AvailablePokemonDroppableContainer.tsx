@@ -16,20 +16,20 @@ export const AvailablePokemonDroppableContainer: React.FC<AvailablePokemonDroppa
     },
   });
 
-  // CRITICAL: Add droppable initialization logging
+  // CRITICAL: Enhanced droppable initialization logging
   useEffect(() => {
-    console.log(`🎯🎯🎯 [DROPPABLE_INIT] Available drop zone initialized with ID: available-pokemon-drop-zone`);
-    console.log(`🎯🎯🎯 [DROPPABLE_INIT] setNodeRef function:`, !!setNodeRef);
+    console.log(`[DROPPABLE_INIT] Initialized droppable with ID: available-pokemon-drop-zone`);
+    console.log(`[DROPPABLE_INIT] setNodeRef function exists: ${!!setNodeRef}`);
   }, [setNodeRef]);
 
   // Additional logging when hover state changes
   useEffect(() => {
     if (isOver) {
-      console.log(`🎯🎯🎯 [DROPPABLE_HOVER] Available drop zone is being hovered over!`);
+      console.log(`[DROPPABLE_HOVER] Available drop zone is being hovered over!`);
     }
   }, [isOver]);
 
-  console.log(`🎯 [AVAILABLE_DROPPABLE] Available drop zone render - isOver: ${isOver}`);
+  console.log(`[AVAILABLE_DROPPABLE] Available drop zone render - isOver: ${isOver}`);
 
   return (
     <div 
@@ -38,8 +38,8 @@ export const AvailablePokemonDroppableContainer: React.FC<AvailablePokemonDroppa
         isOver ? 'bg-green-50 border-2 border-green-300' : ''
       }`}
       style={{
-        minHeight: '200px', // Ensure minimum height for drop zone
-        position: 'relative' // Ensure proper positioning
+        minHeight: '200px',
+        position: 'relative'
       }}
     >
       {children}

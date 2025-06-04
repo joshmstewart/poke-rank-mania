@@ -1,13 +1,14 @@
 
 import React, { useState, useEffect } from "react";
-import { DndContext, DragOverlay, closestCorners, useSensor, useSensors, PointerSensor, KeyboardSensor } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
+import { DndContext, DragOverlay, closestCenter, useSensor, useSensors, MouseSensor, TouchSensor } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useTrueSkillStore } from "@/stores/trueskillStore";
 import { BattleType } from "@/hooks/battle/types";
 import { LoadingType } from "@/hooks/pokemon/types";
 import { RankingsSectionStable } from "./RankingsSectionStable";
 import { EnhancedAvailablePokemonSection } from "./EnhancedAvailablePokemonSection";
 import { RankingsDroppableContainer } from "./RankingsDroppableContainer";
+import { AvailablePokemonDroppableContainer } from "./AvailablePokemonDroppableContainer";
 import UnifiedControls from "@/components/shared/UnifiedControls";
 import OptimizedDraggableCard from "@/components/battle/OptimizedDraggableCard";
 import { Card } from "@/components/ui/card";
@@ -67,8 +68,8 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
   handleManualReorder,
   handleLocalReorder
 }) => {
-  console.log(`🔥🔥🔥 [LAYOUT_DEBUG] ===== ENHANCED LAYOUT RENDER =====`);
-  console.log(`🔥🔥🔥 [LAYOUT_DEBUG] displayRankings count: ${displayRankings.length}`);
+  console.log(`[LAYOUT_DEBUG] ===== ENHANCED LAYOUT RENDER =====`);
+  console.log(`[LAYOUT_DEBUG] displayRankings count: ${displayRankings.length}`);
 
   // Manual ranking order state for visual persistence
   const [manualRankingOrder, setManualRankingOrder] = useState(displayRankings);
@@ -103,31 +104,58 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
 
   // CRITICAL FIX: Enhanced sensors with proper activation constraints
   const sensors = useSensors(
-    useSensor(PointerSensor, {
+    useSensor(MouseSensor, {
       activationConstraint: {
-        distance: 8, // Require 8px movement before drag starts
+        distance: 5, // Require 5px movement before drag starts
       },
     }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 250,
+        tolerance: 5,
+      },
     })
   );
+
+  console.log(`[SENSORS_INIT] Mouse and Touch sensors initialized`);
 
   // CRITICAL FIX: Create sortable IDs only for ranked Pokemon
   const rankedPokemonIds = manualRankingOrder.map(pokemon => `ranking-${pokemon.id}`);
 
-  console.log(`🎯 [SORTABLE_CONTEXT] Ranked Pokemon IDs:`, rankedPokemonIds.slice(0, 3));
-  console.log(`🎯 [DRAGGABLE_CONTEXT] Available Pokemon count: ${enhancedAvailablePokemon.length}`);
+  console.log(`[SORTABLE_CONTEXT] Ranked Pokemon IDs:`, rankedPokemonIds.slice(0, 3));
+  console.log(`[DRAGGABLE_CONTEXT] Available Pokemon count: ${enhancedAvailablePokemon.length}`);
 
   // CRITICAL FIX: Enhanced collision detection and debug logging
+  const debugCollisionDetection = (args: any) => {
+    console.log("[COLLISION_ARGS]", args);
+    console.log("[COLLISION_ARGS] Active:", args.active);
+    console.log("[COLLISION_ARGS] DroppableRects:", args.droppableRects);
+    console.log("[COLLISION_ARGS] DroppableContainers:", args.droppableContainers);
+    
+    const collisionResults = closestCenter(args);
+    
+    console.log("[COLLISION_RESULTS]", collisionResults);
+    
+    if (collisionResults.length === 0) {
+      console.log("[COLLISION_FAILURE] NO COLLISIONS DETECTED");
+      console.log("[COLLISION_FAILURE] - Check if droppable areas are registered");
+      console.log("[COLLISION_FAILURE] - Check CSS positioning and layout");
+      console.log("[COLLISION_FAILURE] - Check if draggable overlaps droppable areas");
+    } else {
+      console.log("[COLLISION_SUCCESS] COLLISIONS FOUND:", collisionResults.map(c => c.id));
+    }
+    
+    return collisionResults;
+  };
+
   const debugOnDragStart = (event: any) => {
-    console.log(`🎯 [DRAG_START_EVENT] ===== DRAG START TRIGGERED =====`);
-    console.log(`🎯 [DRAG_START_EVENT] Active ID: ${event.active.id}`);
-    console.log(`🎯 [DRAG_START_EVENT] Active data:`, event.active.data.current);
-    console.log(`🎯 [DRAG_START_EVENT] Available Pokemon count: ${enhancedAvailablePokemon.length}`);
-    console.log(`🎯 [DRAG_START_EVENT] Rankings count: ${manualRankingOrder.length}`);
-    console.log(`🎯 [DRAG_START_EVENT] Is available Pokemon: ${event.active.id.toString().startsWith('available-')}`);
-    console.log(`🎯 [DRAG_START_EVENT] Is ranking Pokemon: ${event.active.id.toString().startsWith('ranking-')}`);
+    console.log(`[DRAG_START] ===== DRAG START TRIGGERED =====`);
+    console.log(`[DRAG_START] Active ID: ${event.active.id}`);
+    console.log(`[DRAG_START] Active data:`, event.active.data.current);
+    console.log(`[DRAG_START] Available Pokemon count: ${enhancedAvailablePokemon.length}`);
+    console.log(`[DRAG_START] Rankings count: ${manualRankingOrder.length}`);
+    console.log(`[DRAG_START] Is available Pokemon: ${event.active.id.toString().startsWith('available-')}`);
+    console.log(`[DRAG_START] Is ranking Pokemon: ${event.active.id.toString().startsWith('ranking-')}`);
     
     // Call the enhanced handler
     enhancedHandleDragStart(event);
@@ -135,61 +163,44 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
 
   const debugOnDragOver = (event: any) => {
     if (event.over) {
-      console.log(`🔍 [COLLISION_DEBUG] ===== DRAG OVER COLLISION DETECTED =====`);
-      console.log(`🔍 [COLLISION_DEBUG] Active ID: ${event.active.id}`);
-      console.log(`🔍 [COLLISION_DEBUG] Over ID: ${event.over.id}`);
-      console.log(`🔍 [COLLISION_DEBUG] Active Type: ${event.active.data?.current?.type}`);
-      console.log(`🔍 [COLLISION_DEBUG] Over Type: ${event.over.data?.current?.type}`);
-      console.log(`🔍 [COLLISION_DEBUG] Over Accepts: ${event.over.data?.current?.accepts}`);
-      console.log(`🔍 [COLLISION_DEBUG] Collision strategy: closestCorners`);
-      console.log(`🔍 [COLLISION_DEBUG] Cross-context interaction: ${event.active.id.toString().startsWith('available-') && (event.over.id === 'rankings-drop-zone' || event.over.id.toString().startsWith('ranking-'))}`);
+      console.log(`[DRAG_OVER] ===== DRAG OVER COLLISION DETECTED =====`);
+      console.log(`[DRAG_OVER] Active ID: ${event.active.id}`);
+      console.log(`[DRAG_OVER] Over ID: ${event.over.id}`);
+      console.log(`[DRAG_OVER] Active Type: ${event.active.data?.current?.type}`);
+      console.log(`[DRAG_OVER] Over Type: ${event.over.data?.current?.type}`);
+      console.log(`[DRAG_OVER] Over Accepts: ${event.over.data?.current?.accepts}`);
+      console.log(`[DRAG_OVER] Cross-context interaction: ${event.active.id.toString().startsWith('available-') && (event.over.id === 'rankings-drop-zone' || event.over.id.toString().startsWith('ranking-'))}`);
       
       // EXPLICIT collision detection debugging for different targets
       if (event.active.id.toString().startsWith('available-')) {
         if (event.over.id === 'rankings-drop-zone') {
-          console.log(`🔍 [COLLISION_DEBUG] ✅ Available Pokemon ${event.active.id} colliding with rankings drop zone!`);
+          console.log(`[DRAG_OVER] ✅ Available Pokemon ${event.active.id} colliding with rankings drop zone!`);
         } else if (event.over.id.toString().startsWith('ranking-')) {
-          console.log(`🔍 [COLLISION_DEBUG] ✅ Available Pokemon ${event.active.id} colliding with sortable ranking card ${event.over.id}!`);
+          console.log(`[DRAG_OVER] ✅ Available Pokemon ${event.active.id} colliding with sortable ranking card ${event.over.id}!`);
         }
       }
     } else {
-      console.log(`🔍 [COLLISION_DEBUG] Dragging over NULL target`);
+      console.log(`[DRAG_OVER] Dragging over NULL target`);
     }
   };
 
   const debugOnDragEnd = (event: any) => {
-    console.log(`🎯 [DRAG_END_EVENT] ===== DRAG END TRIGGERED =====`);
-    console.log(`🎯 [DRAG_END_EVENT] Active ID: ${event.active.id}`);
-    console.log(`🎯 [DRAG_END_EVENT] Over ID: ${event.over?.id || 'NULL'}`);
-    console.log(`🎯 [DRAG_END_EVENT] Active Type: ${event.active.data?.current?.type}`);
-    console.log(`🎯 [DRAG_END_EVENT] Over Type: ${event.over?.data?.current?.type || 'NULL'}`);
-    console.log(`🎯 [DRAG_END_EVENT] Is Available Card: ${event.active.id.toString().startsWith('available-')}`);
-    console.log(`🎯 [DRAG_END_EVENT] Is Rankings Drop Zone: ${event.over?.id === 'rankings-drop-zone'}`);
-    console.log(`🎯 [DRAG_END_EVENT] Is Sortable Card: ${event.over?.id?.toString().startsWith('ranking-')}`);
-    console.log(`🎯 [DRAG_END_EVENT] Cross-context drop detected: ${event.active.id.toString().startsWith('available-') && (event.over?.id === 'rankings-drop-zone' || event.over?.id?.toString().startsWith('ranking-'))}`);
+    console.log(`[DRAG_END] ===== DRAG END TRIGGERED =====`);
+    console.log(`[DRAG_END] Active ID: ${event.active.id}`);
+    console.log(`[DRAG_END] Over ID: ${event.over?.id || 'NULL'}`);
+    console.log(`[DRAG_END] Active Type: ${event.active.data?.current?.type}`);
+    console.log(`[DRAG_END] Over Type: ${event.over?.data?.current?.type || 'NULL'}`);
+    console.log(`[DRAG_END] Is Available Card: ${event.active.id.toString().startsWith('available-')}`);
+    console.log(`[DRAG_END] Is Rankings Drop Zone: ${event.over?.id === 'rankings-drop-zone'}`);
+    console.log(`[DRAG_END] Is Sortable Card: ${event.over?.id?.toString().startsWith('ranking-')}`);
+    console.log(`[DRAG_END] Cross-context drop detected: ${event.active.id.toString().startsWith('available-') && (event.over?.id === 'rankings-drop-zone' || event.over?.id?.toString().startsWith('ranking-'))}`);
     
     if (!event.over) {
-      console.log(`🎯 [DRAG_END_EVENT] ❌ NO DROP TARGET - this indicates collision detection failure`);
+      console.log(`[DRAG_END] ❌ NO DROP TARGET - this indicates collision detection failure`);
     } else if (event.over.id === 'rankings-drop-zone') {
-      console.log(`🎯 [DRAG_END_EVENT] ✅ SUCCESSFUL DROP ON RANKINGS ZONE!`);
+      console.log(`[DRAG_END] ✅ SUCCESSFUL DROP ON RANKINGS ZONE!`);
     } else if (event.over.id.toString().startsWith('ranking-')) {
-      console.log(`🎯 [DRAG_END_EVENT] ✅ SUCCESSFUL DROP ON SORTABLE RANKING CARD!`);
-    }
-    
-    // CRITICAL FIX: Enhanced drag end logic with explicit type checking
-    const activeType = event.active.data?.current?.type;
-    const overType = event.over?.data?.current?.type;
-    
-    console.log(`🔥 [DRAG_LOGIC] Active type: ${activeType}, Over type: ${overType}`);
-    
-    if (activeType === 'available-pokemon' && (overType === 'ranked-pokemon' || event.over?.id === 'rankings-drop-zone')) {
-      console.log('✅ [DRAG_LOGIC] Valid drop detected! Available Pokemon -> Rankings');
-      const pokemon = event.active.data.current.pokemon;
-      console.log(`🔥 [DRAG_LOGIC] Moving Pokemon: ${pokemon?.name} (ID: ${pokemon?.id})`);
-    } else if (activeType === 'ranked-pokemon' && overType === 'ranked-pokemon') {
-      console.log('✅ [DRAG_LOGIC] Valid reorder detected! Ranking Pokemon -> Ranking Pokemon');
-    } else {
-      console.log('⚠️ [DRAG_LOGIC] Invalid drop - types do not match expected patterns');
+      console.log(`[DRAG_END] ✅ SUCCESSFUL DROP ON SORTABLE RANKING CARD!`);
     }
     
     // Call the enhanced handler
@@ -216,30 +227,30 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
       <div className="max-w-7xl mx-auto">
         <DndContext
           sensors={sensors}
-          collisionDetection={closestCorners}
+          collisionDetection={debugCollisionDetection}
           onDragStart={debugOnDragStart}
           onDragOver={debugOnDragOver}
           onDragEnd={debugOnDragEnd}
         >
           <div className="grid md:grid-cols-2 gap-4" style={{ height: 'calc(100vh - 12rem)' }}>
             <Card className="shadow-lg border border-gray-200 overflow-hidden flex flex-col">
-              {/* CRITICAL FIX: NO SortableContext for available Pokemon - they are just draggable */}
-              <EnhancedAvailablePokemonSection
-                enhancedAvailablePokemon={enhancedAvailablePokemon}
-                isLoading={isLoading}
-                selectedGeneration={selectedGeneration}
-                loadingType={loadingType}
-                currentPage={currentPage}
-                totalPages={totalPages}
-                loadingRef={loadingRef}
-                handlePageChange={handlePageChange}
-                getPageRange={getPageRange}
-              />
+              <AvailablePokemonDroppableContainer>
+                <EnhancedAvailablePokemonSection
+                  enhancedAvailablePokemon={enhancedAvailablePokemon}
+                  isLoading={isLoading}
+                  selectedGeneration={selectedGeneration}
+                  loadingType={loadingType}
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  loadingRef={loadingRef}
+                  handlePageChange={handlePageChange}
+                  getPageRange={getPageRange}
+                />
+              </AvailablePokemonDroppableContainer>
             </Card>
 
             <Card className="shadow-lg border border-gray-200 overflow-hidden flex flex-col">
               <RankingsDroppableContainer>
-                {/* CRITICAL FIX: Only SortableContext for ranked Pokemon */}
                 <SortableContext items={rankedPokemonIds} strategy={verticalListSortingStrategy}>
                   <RankingsSectionStable
                     displayRankings={manualRankingOrder}
