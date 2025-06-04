@@ -1,7 +1,7 @@
 
 import React, { memo } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
-import UnifiedPokemonCard from "./UnifiedPokemonCard";
+import SimpleStableCard from "./SimpleStableCard";
 
 interface OptimizedDraggableCardProps {
   pokemon: Pokemon | RankedPokemon;
@@ -22,9 +22,9 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
 }) => {
   console.log(`🔍 [OPTIMIZED_CARD_DEBUG] OptimizedDraggableCard - ${pokemon.name} - context: ${context}`);
   
-  // CRITICAL FIX: No conditional rendering - always render the same component
+  // CRITICAL FIX: ALWAYS render the EXACT same component - no variations whatsoever
   return (
-    <UnifiedPokemonCard
+    <SimpleStableCard
       pokemon={pokemon}
       index={index}
       isPending={isPending}

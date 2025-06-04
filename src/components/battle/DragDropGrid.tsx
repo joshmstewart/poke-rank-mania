@@ -33,9 +33,6 @@ const DragDropGrid: React.FC<DragDropGridProps> = React.memo(({
   onMarkAsPending,
   availablePokemon = []
 }) => {
-  // CRITICAL: Add debugging to track hook execution order
-  console.log("🔍 [HOOK_DEBUG] DragDropGrid - About to call hooks");
-  
   // ITEM 4: Add verification log at top-level
   React.useEffect(() => {
     console.log("✅ [HOOK_DEBUG] DragDropGrid - useEffect hook executed successfully");
@@ -43,19 +40,19 @@ const DragDropGrid: React.FC<DragDropGridProps> = React.memo(({
 
   console.log(`🎯 [OPTIMIZED_GRID] DragDropGrid rendering with ${displayRankings.length} items`);
 
-  // CRITICAL: Try-catch around hook to identify violations
-  let dndContext;
-  try {
-    console.log("🔍 [HOOK_DEBUG] DragDropGrid - Calling useDndContext");
-    dndContext = useDndContext();
-    console.log("✅ [HOOK_DEBUG] DragDropGrid - useDndContext successful");
-  } catch (error) {
-    console.error("❌ [HOOK_DEBUG] DragDropGrid - useDndContext failed:", error);
-    throw error;
-  }
-  
+  // CRITICAL FIX: ALWAYS call hooks unconditionally - no try-catch or conditional logic
+  const dndContext = useDndContext();
   const { active } = dndContext;
   
+  // CRITICAL FIX: ALWAYS call useDroppable unconditionally
+  const { setNodeRef, isOver } = useDroppable({
+    id: 'rankings-grid-drop-zone',
+    data: {
+      type: 'rankings-grid',
+      accepts: ['available-pokemon', 'ranked-pokemon']
+    }
+  });
+
   const activePokemon = useMemo(() => {
     if (!active) return null;
     
@@ -68,25 +65,6 @@ const DragDropGrid: React.FC<DragDropGridProps> = React.memo(({
     console.log(`🎯 [OPTIMIZED_GRID] Creating sortable items - count: ${items.length}`);
     return items;
   }, [displayRankings]);
-
-  // CRITICAL: Try-catch around useDroppable hook
-  let droppableResult;
-  try {
-    console.log("🔍 [HOOK_DEBUG] DragDropGrid - Calling useDroppable");
-    droppableResult = useDroppable({
-      id: 'rankings-grid-drop-zone',
-      data: {
-        type: 'rankings-grid',
-        accepts: ['available-pokemon', 'ranked-pokemon']
-      }
-    });
-    console.log("✅ [HOOK_DEBUG] DragDropGrid - useDroppable successful");
-  } catch (error) {
-    console.error("❌ [HOOK_DEBUG] DragDropGrid - useDroppable failed:", error);
-    throw error;
-  }
-
-  const { setNodeRef, isOver } = droppableResult;
 
   const gridClassName = `transition-colors ${isOver ? 'bg-yellow-50/50' : ''}`;
 
