@@ -7,6 +7,7 @@ import { BattleType } from "@/hooks/battle/types";
 import { LoadingType } from "@/hooks/pokemon/types";
 import { RankingsSectionStable } from "./RankingsSectionStable";
 import { EnhancedAvailablePokemonSection } from "./EnhancedAvailablePokemonSection";
+import { RankingsDroppableContainer } from "./RankingsDroppableContainer";
 import UnifiedControls from "@/components/shared/UnifiedControls";
 import OptimizedDraggableCard from "@/components/battle/OptimizedDraggableCard";
 import { Card } from "@/components/ui/card";
@@ -133,11 +134,11 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
       console.log(`🔍 [COLLISION_DEBUG] Over ID: ${event.over.id}`);
       console.log(`🔍 [COLLISION_DEBUG] Over data:`, event.over.data?.current);
       console.log(`🔍 [COLLISION_DEBUG] Collision strategy: rectIntersection`);
-      console.log(`🔍 [COLLISION_DEBUG] Cross-context interaction: ${event.active.id.toString().startsWith('available-') && event.over.id.toString().includes('ranking')}`);
+      console.log(`🔍 [COLLISION_DEBUG] Cross-context interaction: ${event.active.id.toString().startsWith('available-') && event.over.id === 'rankings-drop-zone'}`);
       
-      // EXPLICIT collision detection debugging
-      if (event.active.id.toString().startsWith('available-') && event.over) {
-        console.log(`🔍 [COLLISION_DEBUG] Available Pokemon ${event.active.id} colliding with ${event.over.id}`);
+      // EXPLICIT collision detection debugging for droppable container
+      if (event.active.id.toString().startsWith('available-') && event.over.id === 'rankings-drop-zone') {
+        console.log(`🔍 [COLLISION_DEBUG] ✅ Available Pokemon ${event.active.id} colliding with rankings drop zone!`);
         console.log(`🔍 [COLLISION_DEBUG] Drop zone type: ${event.over.data?.current?.type}`);
         console.log(`🔍 [COLLISION_DEBUG] Drop zone accepts: ${event.over.data?.current?.accepts}`);
       }
@@ -149,11 +150,13 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
     console.log(`🎯 [DRAG_END_EVENT] Active ID: ${event.active.id}`);
     console.log(`🎯 [DRAG_END_EVENT] Over ID: ${event.over?.id || 'NULL'}`);
     console.log(`🎯 [DRAG_END_EVENT] Is Available Card: ${event.active.id.toString().startsWith('available-')}`);
-    console.log(`🎯 [DRAG_END_EVENT] Is Ranking Target: ${event.over?.id?.toString().startsWith('ranking-') || event.over?.id === 'rankings-drop-zone'}`);
-    console.log(`🎯 [DRAG_END_EVENT] Cross-context drop detected: ${event.active.id.toString().startsWith('available-') && (event.over?.id?.toString().startsWith('ranking-') || event.over?.id === 'rankings-drop-zone')}`);
+    console.log(`🎯 [DRAG_END_EVENT] Is Rankings Drop Zone: ${event.over?.id === 'rankings-drop-zone'}`);
+    console.log(`🎯 [DRAG_END_EVENT] Cross-context drop detected: ${event.active.id.toString().startsWith('available-') && event.over?.id === 'rankings-drop-zone'}`);
     
     if (!event.over) {
       console.log(`🎯 [DRAG_END_EVENT] ❌ NO DROP TARGET - this indicates collision detection failure`);
+    } else if (event.over.id === 'rankings-drop-zone') {
+      console.log(`🎯 [DRAG_END_EVENT] ✅ SUCCESSFUL DROP ON RANKINGS ZONE!`);
     }
     
     // Call the enhanced handler
@@ -201,13 +204,15 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
             </Card>
 
             <Card className="shadow-lg border border-gray-200 overflow-hidden flex flex-col">
-              <RankingsSectionStable
-                displayRankings={manualRankingOrder}
-                onManualReorder={stableOnManualReorder}
-                onLocalReorder={stableOnLocalReorder}
-                pendingRefinements={new Set()}
-                availablePokemon={enhancedAvailablePokemon}
-              />
+              <RankingsDroppableContainer>
+                <RankingsSectionStable
+                  displayRankings={manualRankingOrder}
+                  onManualReorder={stableOnManualReorder}
+                  onLocalReorder={stableOnLocalReorder}
+                  pendingRefinements={new Set()}
+                  availablePokemon={enhancedAvailablePokemon}
+                />
+              </RankingsDroppableContainer>
             </Card>
           </div>
           
