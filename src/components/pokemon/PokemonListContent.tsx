@@ -7,7 +7,7 @@ import PokemonCardImage from "./PokemonCardImage";
 import PokemonCardInfo from "./PokemonCardInfo";
 import GenerationHeader from "./GenerationHeader";
 import { VotingArrows } from "@/components/ranking/VotingArrows";
-import DraggablePokemonMilestoneCard from "@/components/battle/DraggablePokemonMilestoneCard";
+import OptimizedDraggableCard from "@/components/battle/OptimizedDraggableCard";
 
 interface PokemonListContentProps {
   items: any[];
@@ -61,7 +61,7 @@ export const PokemonListContent: React.FC<PokemonListContentProps> = ({
           );
         }
 
-        // Render Pokemon
+        // Render Pokemon using OptimizedDraggableCard for consistency
         if (item.type === 'pokemon' && item.data) {
           const pokemon = item.data;
           
@@ -70,61 +70,17 @@ export const PokemonListContent: React.FC<PokemonListContentProps> = ({
             return null;
           }
 
-          // Use the enhanced card component for available Pokemon to match rankings styling
-          if (!isRankingArea) {
-            return (
-              <DraggablePokemonMilestoneCard
-                key={`pokemon-${pokemon.id}-${index}`}
-                pokemon={pokemon}
-                index={index}
-                isPending={false}
-                showRank={false}
-                isDraggable={true}
-                isAvailable={true}
-                context="available"
-              />
-            );
-          }
-
-          // Original card for ranking area - make images larger here too
+          // Use OptimizedDraggableCard for both available and ranked Pokemon
           return (
-            <Card 
-              key={`pokemon-${pokemon.id}-${isRankingArea ? 'ranked' : 'available'}-${index}`}
-              className="relative group hover:shadow-lg transition-shadow bg-white border border-gray-200"
-            >
-              <PokemonInfoModal pokemon={pokemon}>
-                <div className="p-4 cursor-pointer">
-                  <PokemonCardImage 
-                    pokemonId={pokemon.id}
-                    displayName={pokemon.name}
-                    imageUrl={pokemon.image}
-                    compact={false}
-                    className=""
-                  />
-                  <PokemonCardInfo 
-                    pokemonId={pokemon.id}
-                    displayName={pokemon.name}
-                    types={pokemon.types}
-                    flavorText={pokemon.flavorText}
-                  />
-                </div>
-              </PokemonInfoModal>
-              
-              {isRankingArea && 'score' in pokemon && (
-                <>
-                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <VotingArrows
-                      pokemon={pokemon}
-                      onSuggestRanking={() => {}}
-                      onRemoveSuggestion={() => {}}
-                    />
-                  </div>
-                  <div className="absolute top-2 left-2 bg-blue-500 text-white text-xs px-2 py-1 rounded">
-                    #{index + 1}
-                  </div>
-                </>
-              )}
-            </Card>
+            <OptimizedDraggableCard
+              key={`pokemon-${pokemon.id}-${index}`}
+              pokemon={pokemon}
+              index={index}
+              isPending={false}
+              showRank={isRankingArea}
+              isDraggable={true}
+              context={isRankingArea ? 'ranked' : 'available'}
+            />
           );
         }
 
