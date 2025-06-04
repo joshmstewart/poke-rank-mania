@@ -1,6 +1,6 @@
 
 import React from "react";
-import { DndContext, closestCenter, useSensor, useSensors, MouseSensor, TouchSensor } from '@dnd-kit/core';
+import { DndContext, closestCenter, useSensor, useSensors, MouseSensor, TouchSensor, DragOverlay } from '@dnd-kit/core';
 import { useEnhancedManualReorder } from "@/hooks/battle/useEnhancedManualReorder";
 import { useEnhancedRankingDragDrop } from "@/hooks/ranking/useEnhancedRankingDragDrop";
 import { useReRankingTriggerSafe } from "@/hooks/ranking/useReRankingTriggerSafe";
@@ -8,6 +8,7 @@ import { useRankingReset } from "./RankingResetHandler";
 import { EnhancedRankingLayout } from "./EnhancedRankingLayout";
 import { BattleType } from "@/hooks/battle/types";
 import { LoadingType } from "@/hooks/pokemon/types";
+import OptimizedDraggableCard from "@/components/battle/OptimizedDraggableCard";
 import PersistentLogViewer from "@/components/debug/PersistentLogViewer";
 
 interface RankingUICoreProps {
@@ -158,6 +159,21 @@ export const RankingUICore: React.FC<RankingUICoreProps> = React.memo(({
         handleManualReorder={handleManualReorder}
         handleLocalReorder={handleLocalReorder}
       />
+      
+      {/* CRITICAL FIX: Move DragOverlay to this level where DndContext exists */}
+      <DragOverlay>
+        {activeDraggedPokemon ? (
+          <div className="transform rotate-3 scale-105 opacity-90">
+            <OptimizedDraggableCard
+              pokemon={activeDraggedPokemon}
+              index={0}
+              showRank={false}
+              isDraggable={false}
+              context={activeDraggedPokemon.id?.toString().startsWith('draggable-available-') ? 'available' : 'ranked'}
+            />
+          </div>
+        ) : null}
+      </DragOverlay>
       
       <PersistentLogViewer />
     </DndContext>
