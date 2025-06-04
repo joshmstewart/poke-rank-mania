@@ -35,8 +35,6 @@ interface RankingUICoreProps {
   onReset: () => void;
 }
 
-// EXPLICIT NOTE: "Implied Battles" logic has been permanently removed.
-// Manual drag-and-drop explicitly adjusts mu/sigma directly instead.
 export const RankingUICore: React.FC<RankingUICoreProps> = React.memo(({
   isLoading,
   availablePokemon,
@@ -65,7 +63,6 @@ export const RankingUICore: React.FC<RankingUICoreProps> = React.memo(({
   console.log(`🚨🚨🚨 [RANKING_UI_CORE_DEBUG] enhancedAvailablePokemon count: ${enhancedAvailablePokemon.length}`);
 
   // Enhanced manual reorder with manual order preservation and direct TrueSkill updates
-  // EXPLICIT NOTE: Removed addImpliedBattle parameter - no longer using implied battles
   const { handleEnhancedManualReorder } = useEnhancedManualReorder(
     localRankings,
     updateLocalRankings,
@@ -126,6 +123,17 @@ export const RankingUICore: React.FC<RankingUICoreProps> = React.memo(({
     })
   );
 
+  // CRITICAL FIX: Determine context from dragged item ID
+  const getDraggedItemContext = React.useCallback((draggedPokemon: any): 'available' | 'ranked' => {
+    if (!draggedPokemon) return 'ranked';
+    
+    // Check if this Pokemon exists in enhancedAvailablePokemon
+    const isInAvailable = enhancedAvailablePokemon.some(p => p.id === draggedPokemon.id);
+    console.log(`🔍 [CONTEXT_DEBUG] Pokemon ${draggedPokemon.name} found in available: ${isInAvailable}`);
+    
+    return isInAvailable ? 'available' : 'ranked';
+  }, [enhancedAvailablePokemon]);
+
   console.log(`🚨🚨🚨 [RANKING_UI_CORE_DEBUG] About to render EnhancedRankingLayout with DndContext`);
 
   return (
@@ -160,7 +168,7 @@ export const RankingUICore: React.FC<RankingUICoreProps> = React.memo(({
         handleLocalReorder={handleLocalReorder}
       />
       
-      {/* CRITICAL FIX: Move DragOverlay to this level where DndContext exists */}
+      {/* CRITICAL FIX: Properly determine context for DragOverlay */}
       <DragOverlay>
         {activeDraggedPokemon ? (
           <div className="transform rotate-3 scale-105 opacity-90">
@@ -169,7 +177,7 @@ export const RankingUICore: React.FC<RankingUICoreProps> = React.memo(({
               index={0}
               showRank={false}
               isDraggable={false}
-              context={activeDraggedPokemon.id?.toString().startsWith('draggable-available-') ? 'available' : 'ranked'}
+              context={getDraggedItemContext(activeDraggedPokemon)}
             />
           </div>
         ) : null}
