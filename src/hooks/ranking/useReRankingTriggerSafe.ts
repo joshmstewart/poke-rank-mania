@@ -7,8 +7,8 @@ export const useReRankingTriggerSafe = (
   updateLocalRankings: (rankings: RankedPokemon[]) => void
 ) => {
   // Always create a trigger function, even if store is unavailable
-  const triggerReRanking = useCallback(async (pokemonToRerank: RankedPokemon[]) => {
-    console.log(`🔄 [SAFE_RE_RANKING_TRIGGER] Attempting re-ranking for ${pokemonToRerank.length} Pokemon`);
+  const triggerReRanking = useCallback(async (pokemonId: number) => {
+    console.log(`🔄 [SAFE_RE_RANKING_TRIGGER] Attempting re-ranking for Pokemon ID: ${pokemonId}`);
     
     try {
       // Dynamic import to avoid hook call issues
@@ -21,9 +21,7 @@ export const useReRankingTriggerSafe = (
       }
 
       const updatedRankings = localRankings.map(pokemon => {
-        const needsUpdate = pokemonToRerank.some(p => p.id === pokemon.id);
-        
-        if (needsUpdate) {
+        if (pokemon.id === pokemonId) {
           const rating = store.getRating(pokemon.id.toString());
           const conservativeEstimate = rating.mu - rating.sigma;
           const confidence = Math.max(0, Math.min(100, 100 * (1 - (rating.sigma / 8.33))));
