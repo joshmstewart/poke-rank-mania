@@ -1,5 +1,5 @@
 
-import React, { memo } from "react";
+import React, { memo, useEffect } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { useDraggable } from '@dnd-kit/core';
 import { useSortable } from '@dnd-kit/sortable';
@@ -51,7 +51,7 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
       }
     };
 
-    console.log(`🔧 [HOOK_DEBUG] Available Draggable:`, sortableId);
+    console.log(`🔧 [HOOK_DEBUG] Available Draggable Config:`, draggableConfig);
     const draggableResult = useDraggable(draggableConfig);
     dragAttributes = draggableResult.attributes;
     dragListeners = draggableResult.listeners;
@@ -59,6 +59,12 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
     isDragging = draggableResult.isDragging;
     transform = null;
     transition = null;
+    
+    // Add initialization logging
+    useEffect(() => {
+      console.log(`🎯 [DRAGGABLE_INIT] Available Pokemon initialized: ${sortableId}`);
+      console.log(`🎯 [DRAGGABLE_INIT] Pokemon name: ${pokemon.name}, isDraggable: ${isDraggable}`);
+    }, [sortableId, pokemon.name, isDraggable]);
   } else {
     // Ranked Pokemon: sortable within their grid
     const sortableConfig = {
@@ -72,7 +78,7 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
       }
     };
 
-    console.log(`🔧 [HOOK_DEBUG] Ranking Sortable:`, sortableId);
+    console.log(`🔧 [HOOK_DEBUG] Ranking Sortable Config:`, sortableConfig);
     const sortableResult = useSortable(sortableConfig);
     dragAttributes = sortableResult.attributes;
     dragListeners = sortableResult.listeners;
@@ -80,7 +86,16 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
     isDragging = sortableResult.isDragging;
     transform = sortableResult.transform;
     transition = sortableResult.transition;
+    
+    // Add initialization logging
+    useEffect(() => {
+      console.log(`🎯 [SORTABLE_INIT] Ranking Pokemon initialized: ${sortableId}`);
+      console.log(`🎯 [SORTABLE_INIT] Pokemon name: ${pokemon.name}, isDraggable: ${isDraggable}`);
+    }, [sortableId, pokemon.name, isDraggable]);
   }
+
+  // Log hook results
+  console.log(`🔧 [HOOK_RESULT] ${pokemon.name} (${context}): dragAttributes exists: ${!!dragAttributes}, listeners exists: ${!!dragListeners}`);
 
   const backgroundColorClass = getPokemonBackgroundColor(pokemon);
   
