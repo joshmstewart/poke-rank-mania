@@ -27,8 +27,7 @@ const PersistentLogViewer: React.FC = () => {
     '[DRAG_START]', '[DRAG_END]', '[DRAG_OVER]', '[DRAG_EVENT]',
     '[SORTABLE_CONTEXT]', '[DRAGGABLE_CONTEXT]', '[SENSORS_INIT]',
     'useDraggable', 'useDroppable', 'useSortable', 'DndContext',
-    'available-', 'ranking-', 'collision', 'droppable', 'draggable',
-    '🔥', '🚀', '🎯', '✅', '❌', '🚨', '🟢', '🔵', '🟡'
+    'available-', 'ranking-', 'collision', 'droppable', 'draggable'
   ];
 
   // Capture console logs
@@ -42,6 +41,11 @@ const PersistentLogViewer: React.FC = () => {
       const message = args.map(arg => 
         typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
       ).join(' ');
+
+      // CRITICAL FIX: Prevent infinite loop by ignoring our own log capture messages
+      if (message.includes('[PERSISTENT_LOG_VIEWER]') || message.includes('🔍')) {
+        return; // Don't capture our own logs
+      }
 
       // Check if this is a drag-related log
       const isDragRelated = dragKeywords.some(keyword => 
@@ -58,8 +62,7 @@ const PersistentLogViewer: React.FC = () => {
         };
 
         setLogs(prev => {
-          const newLogs = [...prev, logEntry].slice(-300); // Keep last 300 logs
-          console.log(`🔍 [PERSISTENT_LOG_VIEWER] Captured drag log: ${message.substring(0, 100)}...`);
+          const newLogs = [...prev, logEntry].slice(-100); // Reduced to 100 logs for performance
           return newLogs;
         });
       }
@@ -116,8 +119,6 @@ const PersistentLogViewer: React.FC = () => {
   };
 
   const categories = ['all', ...Array.from(new Set(logs.map(log => log.category).filter(Boolean)))];
-
-  console.log(`🔍 [PERSISTENT_LOG_VIEWER] Retrieved drag debug logs: ${logs.length}`);
 
   if (!isOpen) {
     return (
@@ -219,21 +220,9 @@ const PersistentLogViewer: React.FC = () => {
         </ScrollArea>
 
         <div className="p-4 border-t bg-gray-50">
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-xs">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
             <div>
-              <div className="font-medium">Droppable Init</div>
-              <div className="text-gray-600">
-                {logs.filter(l => l.message.includes('[DROPPABLE_INIT]')).length} logs
-              </div>
-            </div>
-            <div>
-              <div className="font-medium">Collision Detection</div>
-              <div className="text-gray-600">
-                {logs.filter(l => l.message.includes('[COLLISION_DETECTION]')).length} logs
-              </div>
-            </div>
-            <div>
-              <div className="font-medium">Drag Start/End</div>
+              <div className="font-medium">Drag Events</div>
               <div className="text-gray-600">
                 {logs.filter(l => l.message.includes('[EXPLICIT_DRAG_START]') || l.message.includes('[EXPLICIT_DRAG_END]')).length} logs
               </div>
@@ -242,6 +231,12 @@ const PersistentLogViewer: React.FC = () => {
               <div className="font-medium">Pokémon Moves</div>
               <div className="text-gray-600">
                 {logs.filter(l => l.message.includes('[POKEMON_MOVE]') || l.message.includes('[POKEMON_REORDER]')).length} logs
+              </div>
+            </div>
+            <div>
+              <div className="font-medium">Collision Detection</div>
+              <div className="text-gray-600">
+                {logs.filter(l => l.message.includes('[COLLISION_DETECTION]')).length} logs
               </div>
             </div>
             <div>

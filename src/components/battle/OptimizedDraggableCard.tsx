@@ -1,5 +1,5 @@
 
-import React, { memo, useEffect } from "react";
+import React, { memo, useEffect, useMemo, useCallback } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { useDraggable } from '@dnd-kit/core';
 import { useSortable } from '@dnd-kit/sortable';
@@ -30,119 +30,75 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
   // CRITICAL FIX: Use consistent ID formats with explicit prefixes
   const id = context === 'available' ? `available-${pokemon.id}` : `ranking-${pokemon.id}`;
   
-  // 🔥 COMPREHENSIVE DIAGNOSTIC LOGGING
+  // CRITICAL FIX: Reduced logging to essential events only
   useEffect(() => {
-    console.log(`🔥🔥🔥 [OPTIMIZED_DRAGGABLE_CARD] ===== CARD INITIALIZATION =====`);
-    console.log(`🔥🔥🔥 [OPTIMIZED_DRAGGABLE_CARD] Pokemon: ${pokemon.name} (ID: ${pokemon.id})`);
-    console.log(`🔥🔥🔥 [OPTIMIZED_DRAGGABLE_CARD] Context: ${context}`);
-    console.log(`🔥🔥🔥 [OPTIMIZED_DRAGGABLE_CARD] Generated ID: ${id}`);
-    console.log(`🔥🔥🔥 [OPTIMIZED_DRAGGABLE_CARD] isDraggable: ${isDraggable}`);
-    console.log(`🔥🔥🔥 [OPTIMIZED_DRAGGABLE_CARD] Component source: OptimizedDraggableCard.tsx`);
-    
-    if (context === 'available') {
-      console.log(`🟢🟢🟢 [AVAILABLE_POKEMON_INIT] Available Pokemon ${pokemon.name} initializing with ID: ${id}`);
-    } else {
-      console.log(`🔵🔵🔵 [RANKED_POKEMON_INIT] Ranked Pokemon ${pokemon.name} initializing with ID: ${id}`);
-    }
-  }, [pokemon.id, pokemon.name, context, isDraggable, id]);
+    console.log(`[DRAGGABLE_CARD_INIT] ${pokemon.name} (${id}) - ${context}`);
+  }, [pokemon.id, id, context]); // Minimal dependencies
 
-  console.log(`🎯 [DRAGGABLE_CARD_INIT] Initializing ${pokemon.name} with ID: ${id}, context: ${context}`);
+  // CRITICAL FIX: Memoize hook data to prevent recreation
+  const hookData = useMemo(() => ({
+    id,
+    disabled: !isDraggable,
+    data: {
+      type: context === 'available' ? 'available-pokemon' : 'ranked-pokemon',
+      pokemon: pokemon,
+      source: context,
+      index,
+      category: context === 'available' ? 'draggable-pokemon' : 'sortable-pokemon'
+    }
+  }), [id, isDraggable, context, pokemon, index]);
 
   // CRITICAL FIX: Use only ONE hook per context (never both simultaneously)
   const activeResult = context === 'available'
-    ? useDraggable({
-        id,
-        disabled: !isDraggable,
-        data: {
-          type: 'available-pokemon',
-          pokemon: pokemon,
-          source: context,
-          index,
-          category: 'draggable-pokemon'
-        }
-      })
-    : useSortable({
-        id,
-        disabled: !isDraggable,
-        data: {
-          type: 'ranked-pokemon',
-          pokemon: pokemon,
-          source: context,
-          index,
-          accepts: ['available-pokemon', 'ranked-pokemon'],
-          category: 'sortable-pokemon'
-        }
-      });
+    ? useDraggable(hookData)
+    : useSortable(hookData);
 
   const { attributes, listeners, setNodeRef, isDragging, transform } = activeResult;
 
-  // CRITICAL: Enhanced hook initialization logging
-  console.log(`🟢 [HOOK_INIT] ${pokemon.name} using ${context} hook:`, {
-    isDragging,
-    disabled: !isDraggable,
-    context,
-    hookType: context === 'available' ? 'useDraggable' : 'useSortable',
-    id,
-    hasAttributes: !!attributes,
-    hasListeners: !!listeners,
-    hasTransform: !!transform
-  });
-
-  // Additional logging for available Pokemon specifically
-  if (context === 'available') {
-    console.log(`🚀🚀🚀 [AVAILABLE_HOOK_DETAILED] ${pokemon.name} useDraggable result:`, {
-      isDragging,
-      id,
-      disabled: !isDraggable,
-      dataType: 'available-pokemon',
-      hasSetNodeRef: !!setNodeRef,
-      attributesKeys: attributes ? Object.keys(attributes) : [],
-      listenersKeys: listeners ? Object.keys(listeners) : []
-    });
-  }
-
-  const backgroundColorClass = getPokemonBackgroundColor(pokemon);
+  // CRITICAL FIX: Memoize background color to prevent recalculation
+  const backgroundColorClass = useMemo(() => getPokemonBackgroundColor(pokemon), [pokemon.id]);
   
-  // Only apply drag props if draggable to prevent conflicts
-  const dragProps = isDraggable ? { ...attributes, ...listeners } : {};
+  // CRITICAL FIX: Memoize drag props to prevent recreation
+  const dragProps = useMemo(() => 
+    isDraggable ? { ...attributes, ...listeners } : {}, 
+    [isDraggable, attributes, listeners]
+  );
 
-  // Apply transform for both draggable and sortable items
-  const style = transform ? {
+  // CRITICAL FIX: Memoize style calculation
+  const style = useMemo(() => transform ? {
     transform: CSS.Transform.toString(transform),
-  } : undefined;
+  } : undefined, [transform]);
 
-  const cardClassName = `${backgroundColorClass} rounded-lg border border-gray-200 relative overflow-hidden h-35 flex flex-col group ${
-    isDraggable ? 'cursor-grab active:cursor-grabbing' : ''
-  } ${
-    isDragging ? 'opacity-80 scale-105 shadow-2xl border-blue-400' : 'hover:shadow-lg transition-all duration-200'
-  } ${
-    isPending ? 'ring-2 ring-blue-400 ring-opacity-50' : ''
-  }`;
+  // CRITICAL FIX: Memoize class names to prevent recreation
+  const cardClassName = useMemo(() => {
+    const baseClasses = `${backgroundColorClass} rounded-lg border border-gray-200 relative overflow-hidden h-35 flex flex-col group`;
+    const cursorClass = isDraggable ? 'cursor-grab active:cursor-grabbing' : '';
+    const dragState = isDragging ? 'opacity-80 scale-105 shadow-2xl border-blue-400' : 'hover:shadow-lg transition-all duration-200';
+    const pendingState = isPending ? 'ring-2 ring-blue-400 ring-opacity-50' : '';
+    
+    return `${baseClasses} ${cursorClass} ${dragState} ${pendingState}`;
+  }, [backgroundColorClass, isDraggable, isDragging, isPending]);
 
-  // Fix the currentRank type issue
-  const getCurrentRank = (): number | null => {
+  // CRITICAL FIX: Memoize getCurrentRank function
+  const getCurrentRank = useMemo((): number | null => {
     if ('currentRank' in pokemon && typeof pokemon.currentRank === 'number') {
       return pokemon.currentRank;
     }
     return null;
-  };
+  }, [pokemon]);
 
-  // CRITICAL FIX: Add explicit event logging for drag events
-  const handlePointerDown = (event: React.PointerEvent) => {
-    console.log(`🎯 [DRAG_EVENT] PointerDown on ${pokemon.name} (${id}) - context: ${context}`);
+  // CRITICAL FIX: Minimal event logging
+  const handlePointerDown = useCallback((event: React.PointerEvent) => {
     if (listeners?.onPointerDown) {
       listeners.onPointerDown(event);
     }
-  };
+  }, [listeners]);
 
-  const handleMouseDown = (event: React.MouseEvent) => {
-    console.log(`🎯 [DRAG_EVENT] MouseDown on ${pokemon.name} (${id}) - context: ${context}`);
+  const handleMouseDown = useCallback((event: React.MouseEvent) => {
     if (listeners?.onMouseDown) {
       listeners.onMouseDown(event);
     }
-  };
-
-  console.log(`🚨🚨🚨 [COMPONENT_RENDER_EXIT] ${pokemon.name}: OptimizedDraggableCard render complete, about to return JSX`);
+  }, [listeners]);
 
   return (
     <div
@@ -156,7 +112,7 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
       <PokemonMilestoneOverlays
         context={context}
         isRankedPokemon={context === 'available' && 'isRanked' in pokemon ? Boolean(pokemon.isRanked) : false}
-        currentRank={getCurrentRank()}
+        currentRank={getCurrentRank}
         isPending={isPending}
         showRank={showRank}
         index={index}
@@ -168,16 +124,9 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
           <PokemonInfoModal pokemon={pokemon}>
             <button 
               className="w-5 h-5 rounded-full bg-white/80 hover:bg-white border border-gray-300 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200 backdrop-blur-sm cursor-pointer"
-              onClick={(e) => {
-                e.stopPropagation();
-                console.log(`Info button clicked for ${pokemon.name}`);
-              }}
-              onPointerDown={(e) => {
-                e.stopPropagation();
-              }}
-              onMouseDown={(e) => {
-                e.stopPropagation();
-              }}
+              onClick={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
               type="button"
               style={{ pointerEvents: 'auto' }}
             >
@@ -200,8 +149,8 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
     </div>
   );
 }, (prevProps, nextProps) => {
-  // Comprehensive but efficient prop comparison
-  const isEqual = (
+  // CRITICAL FIX: Efficient prop comparison to prevent unnecessary re-renders
+  return (
     prevProps.pokemon.id === nextProps.pokemon.id &&
     prevProps.index === nextProps.index &&
     prevProps.isPending === nextProps.isPending &&
@@ -209,10 +158,6 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
     prevProps.isDraggable === nextProps.isDraggable &&
     prevProps.context === nextProps.context
   );
-  
-  console.log(`🎯 [MEMO_DEBUG] ${nextProps.pokemon.name}: ${isEqual ? 'PREVENTING' : 'ALLOWING'} re-render`);
-  
-  return isEqual;
 });
 
 OptimizedDraggableCard.displayName = 'OptimizedDraggableCard';
