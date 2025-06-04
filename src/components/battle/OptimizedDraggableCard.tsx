@@ -1,5 +1,5 @@
 
-import React, { memo, useState } from "react";
+import React, { memo } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { useDraggable } from '@dnd-kit/core';
 import { useSortable } from '@dnd-kit/sortable';
@@ -9,8 +9,6 @@ import PokemonMilestoneImage from "@/components/pokemon/PokemonMilestoneImage";
 import PokemonMilestoneInfo from "@/components/pokemon/PokemonMilestoneInfo";
 import PokemonMilestoneOverlays from "@/components/pokemon/PokemonMilestoneOverlays";
 import PokemonInfoButton from "@/components/pokemon/PokemonInfoButton";
-import { usePokemonFlavorText } from "@/hooks/pokemon/usePokemonFlavorText";
-import { usePokemonTCGCard } from "@/hooks/pokemon/usePokemonTCGCard";
 
 interface OptimizedDraggableCardProps {
   pokemon: Pokemon | RankedPokemon;
@@ -30,11 +28,6 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
   context = 'ranked'
 }) => {
   console.log(`🚀 [OPTIMIZED_CARD] ${pokemon.name}: Rendering optimized card (context: ${context})`);
-
-  // Info modal state
-  const [isInfoOpen, setIsInfoOpen] = useState(false);
-  const { flavorText, isLoadingFlavor } = usePokemonFlavorText(pokemon.id, isInfoOpen);
-  const { tcgCard, secondTcgCard, isLoading: isLoadingTCG, error: tcgError, hasTcgCard } = usePokemonTCGCard(pokemon.name, isInfoOpen);
 
   // EXPLICIT NOTE: "All Filtered" Pokémon cards intentionally NOT sortable.
   // Sorted explicitly by Pokédex number.
@@ -119,11 +112,6 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
     return null;
   };
 
-  // Determine what content to show in modal
-  const showLoading = isLoadingTCG;
-  const showTCGCards = !isLoadingTCG && hasTcgCard && tcgCard !== null;
-  const showFallbackInfo = !isLoadingTCG && !hasTcgCard;
-
   return (
     <div
       ref={setNodeRef}
@@ -141,19 +129,11 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
         isDragging={isDragging}
       />
       
-      <PokemonInfoButton
-        pokemon={pokemon}
-        isOpen={isInfoOpen}
-        setIsOpen={setIsInfoOpen}
-        isDragging={isDragging}
-        showLoading={showLoading}
-        showTCGCards={showTCGCards}
-        showFallbackInfo={showFallbackInfo}
-        tcgCard={tcgCard}
-        secondTcgCard={secondTcgCard}
-        flavorText={flavorText}
-        isLoadingFlavor={isLoadingFlavor}
-      />
+      {!isDragging && (
+        <div className="absolute top-1 right-1 z-30 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+          <PokemonInfoButton pokemon={pokemon} />
+        </div>
+      )}
       
       <PokemonMilestoneImage
         pokemon={pokemon}
