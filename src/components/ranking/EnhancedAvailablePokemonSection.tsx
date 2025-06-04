@@ -82,7 +82,9 @@ export const EnhancedAvailablePokemonSection: React.FC<EnhancedAvailablePokemonS
       return {
         type: 'generation-header' as const,
         generationId: item.generationId || 1,
-        generationName: (item.data?.name) || `Generation ${item.generationId || 1}`
+        generationName: (item.data?.name) || `Generation ${item.generationId || 1}`,
+        region: item.data?.region || "Unknown",
+        games: item.data?.games || "Unknown"
       };
     }
     // For pokemon items, return the actual pokemon data
