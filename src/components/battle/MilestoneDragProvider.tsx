@@ -34,21 +34,17 @@ const MilestoneDragProvider: React.FC<MilestoneDragProviderProps> = ({
     console.log("🎯 [COLLISION_DETECTION] ===== COLLISION DETECTION TRIGGERED =====");
     console.log("🎯 [COLLISION_DETECTION] Active ID:", args.active.id);
     console.log("🎯 [COLLISION_DETECTION] Active data:", args.active.data?.current);
-    console.log("🎯 [COLLISION_DETECTION] Droppable rects count:", Object.keys(args.droppableRects).length);
-    console.log("🎯 [COLLISION_DETECTION] Droppable rect IDs:", Object.keys(args.droppableRects));
+    console.log("🎯 [COLLISION_DETECTION] Droppable rects count:", Object.keys(args.droppableRects || {}).length);
+    console.log("🎯 [COLLISION_DETECTION] Droppable rect IDs:", Object.keys(args.droppableRects || {}));
     console.log("🎯 [COLLISION_DETECTION] Collision results:", collisionResults);
     
-    // Enhanced logging for each droppable rect with proper type checking
-    Object.entries(args.droppableRects).forEach(([id, rect]) => {
+    // Simplified logging for each droppable rect to avoid TypeScript issues
+    Object.entries(args.droppableRects || {}).forEach(([id, rect]) => {
       console.log(`🎯 [COLLISION_DETECTION] Droppable "${id}":`, {
         id,
-        rect: rect && typeof rect === 'object' && 'left' in rect ? { 
-          x: (rect as any).left, 
-          y: (rect as any).top, 
-          width: (rect as any).width, 
-          height: (rect as any).height 
-        } : 'NULL',
-        disabled: rect && typeof rect === 'object' && 'disabled' in rect ? (rect as any).disabled : false
+        hasRect: !!rect,
+        rectType: typeof rect,
+        rectKeys: rect && typeof rect === 'object' ? Object.keys(rect) : []
       });
     });
     
