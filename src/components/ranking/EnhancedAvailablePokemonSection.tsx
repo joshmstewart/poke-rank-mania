@@ -50,8 +50,16 @@ export const EnhancedAvailablePokemonSection: React.FC<EnhancedAvailablePokemonS
     () => true
   );
   
-  const { loadingRef: scrollLoadingRef } = useScrollObserver();
+  // Fix: Call useScrollObserver with proper parameters
+  const { loadingRef: scrollLoadingRef } = useScrollObserver(
+    loadingType,
+    isLoading,
+    currentPage,
+    totalPages,
+    () => {} // Empty function since we handle page changes via props
+  );
   
+  // Fix: Call useAutoScrollEffects with proper parameters
   useAutoScrollEffects({
     isLoading,
     containerRef: scrollLoadingRef,
