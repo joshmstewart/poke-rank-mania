@@ -18,7 +18,7 @@ const PersistentLogViewer: React.FC = () => {
         const message = args.join(' ');
         const timestamp = new Date().toISOString();
         
-        // Capture drag-related logs
+        // ENHANCED: Capture ALL our new debug patterns
         if (message.includes('DRAG') || 
             message.includes('COLLISION') || 
             message.includes('SORTABLE') || 
@@ -32,16 +32,26 @@ const PersistentLogViewer: React.FC = () => {
             message.includes('useDraggable') ||
             message.includes('useSortable') ||
             message.includes('SortableContext') ||
-            message.includes('DndContext')) {
+            message.includes('DndContext') ||
+            message.includes('MILESTONE_GRID') ||
+            message.includes('[MILESTONE_') ||
+            message.includes('🎯') ||
+            message.includes('🔥') ||
+            message.includes('🚀') ||
+            message.includes('🔍') ||
+            message.includes('🏁') ||
+            message.includes('🔄') ||
+            message.includes('✅') ||
+            message.includes('❌')) {
           
           const logEntry = `[${timestamp}] ${message}`;
           
           // Store in localStorage for persistence
           const existingLogs = JSON.parse(localStorage.getItem('dragDebugLogs') || '[]');
-          const updatedLogs = [...existingLogs, logEntry].slice(-200); // Keep last 200 logs
+          const updatedLogs = [...existingLogs, logEntry].slice(-300); // Increased to 300 logs
           localStorage.setItem('dragDebugLogs', JSON.stringify(updatedLogs));
           
-          setLogs(prev => [...prev, logEntry].slice(-200));
+          setLogs(prev => [...prev, logEntry].slice(-300));
         }
         
         // Call original console.log
@@ -55,10 +65,10 @@ const PersistentLogViewer: React.FC = () => {
         
         // Store errors
         const existingLogs = JSON.parse(localStorage.getItem('dragDebugLogs') || '[]');
-        const updatedLogs = [...existingLogs, logEntry].slice(-200);
+        const updatedLogs = [...existingLogs, logEntry].slice(-300);
         localStorage.setItem('dragDebugLogs', JSON.stringify(updatedLogs));
         
-        setLogs(prev => [...prev, logEntry].slice(-200));
+        setLogs(prev => [...prev, logEntry].slice(-300));
         originalConsoleError(...args);
       };
 
@@ -69,10 +79,10 @@ const PersistentLogViewer: React.FC = () => {
         
         // Store warnings
         const existingLogs = JSON.parse(localStorage.getItem('dragDebugLogs') || '[]');
-        const updatedLogs = [...existingLogs, logEntry].slice(-200);
+        const updatedLogs = [...existingLogs, logEntry].slice(-300);
         localStorage.setItem('dragDebugLogs', JSON.stringify(updatedLogs));
         
-        setLogs(prev => [...prev, logEntry].slice(-200));
+        setLogs(prev => [...prev, logEntry].slice(-300));
         originalConsoleWarn(...args);
       };
     }
@@ -132,17 +142,20 @@ const PersistentLogViewer: React.FC = () => {
       `Generated: ${new Date().toISOString()}`,
       `Total Logs: ${logs.length}`,
       '',
+      '=== DROPPABLE INITIALIZATION LOGS ===',
+      ...logs.filter(log => log.includes('DROPPABLE_INIT')),
+      '',
       '=== COLLISION DETECTION LOGS ===',
       ...logs.filter(log => log.includes('COLLISION')),
+      '',
+      '=== MILESTONE GRID LOGS ===',
+      ...logs.filter(log => log.includes('MILESTONE_GRID')),
       '',
       '=== DRAG START/END LOGS ===',
       ...logs.filter(log => log.includes('DRAG_START') || log.includes('DRAG_END')),
       '',
-      '=== SORTABLE/DRAGGABLE HOOK LOGS ===',
-      ...logs.filter(log => log.includes('useDraggable') || log.includes('useSortable')),
-      '',
-      '=== CONTEXT LOGS ===',
-      ...logs.filter(log => log.includes('SortableContext') || log.includes('DndContext')),
+      '=== SENSOR & CONTEXT LOGS ===',
+      ...logs.filter(log => log.includes('MouseSensor') || log.includes('TouchSensor') || log.includes('DndContext')),
       '',
       '=== ID VERIFICATION LOGS ===',
       ...logs.filter(log => log.includes('available-') || log.includes('ranking-')),
@@ -263,8 +276,10 @@ const PersistentLogViewer: React.FC = () => {
                   log.includes('[ERROR]') ? 'bg-red-100 text-red-800' :
                   log.includes('[WARN]') ? 'bg-yellow-100 text-yellow-800' :
                   log.includes('COLLISION') ? 'bg-blue-100 text-blue-800' :
+                  log.includes('DROPPABLE_INIT') ? 'bg-purple-100 text-purple-800' :
+                  log.includes('MILESTONE_GRID') ? 'bg-orange-100 text-orange-800' :
                   log.includes('DRAG_START') || log.includes('DRAG_END') ? 'bg-green-100 text-green-800' :
-                  log.includes('available-') || log.includes('ranking-') ? 'bg-purple-100 text-purple-800' :
+                  log.includes('available-') || log.includes('ranking-') ? 'bg-indigo-100 text-indigo-800' :
                   'bg-gray-100 text-gray-800'
                 }`}
               >
@@ -281,7 +296,8 @@ const PersistentLogViewer: React.FC = () => {
             <span>
               Errors: {logs.filter(l => l.includes('[ERROR]')).length} | 
               Warnings: {logs.filter(l => l.includes('[WARN]')).length} | 
-              Collisions: {logs.filter(l => l.includes('COLLISION')).length}
+              Collisions: {logs.filter(l => l.includes('COLLISION')).length} |
+              Droppables: {logs.filter(l => l.includes('DROPPABLE_INIT')).length}
             </span>
             <span>
               Last updated: {logs.length > 0 ? logs[logs.length - 1].match(/\[(.*?)\]/)?.[1] || 'Unknown' : 'Never'}
