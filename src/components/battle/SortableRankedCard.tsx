@@ -34,6 +34,7 @@ const SortableRankedCard: React.FC<SortableRankedCardProps> = memo(({
     setNodeRef, 
     isDragging, 
     transform,
+    transition,
     isOver
   } = useSortable({
     id: uniqueId,
@@ -44,32 +45,42 @@ const SortableRankedCard: React.FC<SortableRankedCardProps> = memo(({
       source: 'ranked',
       index,
       category: 'sortable-ranked',
-      accepts: ['available-pokemon'] // Explicitly accept available Pokemon
+      accepts: ['available-pokemon']
     }
   });
 
   console.log(`🎯 [SORTABLE_DEBUG] Card ${pokemon.name}: isDragging=${isDragging}, isOver=${isOver}, transform=${!!transform}`);
 
+  // Enhanced visual feedback during drag operations
+  React.useEffect(() => {
+    if (isOver) {
+      console.log(`🎯 [HOVER_DEBUG] Ranked card ${pokemon.name} (ID: ${pokemon.id}) is being hovered over`);
+    }
+  }, [isOver, pokemon.name, pokemon.id]);
+
   const backgroundColorClass = React.useMemo(() => getPokemonBackgroundColor(pokemon), [pokemon.id]);
   
   const style = React.useMemo(() => {
-    const baseStyle: React.CSSProperties = {};
+    const baseStyle: React.CSSProperties = {
+      transition: isDragging ? 'none' : (transition || 'transform 200ms ease'),
+      zIndex: isDragging ? 1000 : undefined,
+    };
     
     if (transform) {
       baseStyle.transform = CSS.Transform.toString(transform);
     }
     
     return baseStyle;
-  }, [transform]);
+  }, [transform, transition, isDragging]);
 
   const cardClassName = React.useMemo(() => {
     const baseClasses = `${backgroundColorClass} rounded-lg border border-gray-200 relative overflow-hidden h-35 flex flex-col group`;
     const cursorClass = isDraggable ? 'cursor-grab active:cursor-grabbing' : '';
-    const dragState = isDragging ? 'opacity-80 scale-105 shadow-2xl border-blue-400' : 'hover:shadow-lg transition-all duration-200';
-    const dropState = isOver ? 'ring-2 ring-green-400 ring-opacity-70 bg-green-50' : '';
+    const dragState = isDragging ? 'opacity-50 scale-105 shadow-2xl border-blue-400 z-50' : 'hover:shadow-lg transition-all duration-200';
+    const dropState = isOver ? 'ring-2 ring-green-400 ring-opacity-70 bg-green-50 scale-102 shadow-lg' : '';
     const pendingState = isPending ? 'ring-2 ring-blue-400 ring-opacity-50' : '';
     
-    return `${baseClasses} ${cursorClass} ${dragState} ${dropState} ${pendingState}`;
+    return `${baseClasses} ${cursorClass} ${dragState} ${dropState} ${pendingState}`.trim();
   }, [backgroundColorClass, isDraggable, isDragging, isOver, isPending]);
 
   const getCurrentRank = React.useMemo((): number | null => {

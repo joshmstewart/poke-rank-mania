@@ -43,15 +43,19 @@ const DraggableAvailableCard: React.FC<DraggableAvailableCardProps> = memo(({
   
   const style = React.useMemo(() => transform ? {
     transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-  } : undefined, [transform]);
+    zIndex: isDragging ? 1000 : undefined,
+  } : undefined, [transform, isDragging]);
 
   const cardClassName = React.useMemo(() => {
     const baseClasses = `${backgroundColorClass} rounded-lg border border-gray-200 relative overflow-hidden h-35 flex flex-col group`;
     const cursorClass = isDraggable ? 'cursor-grab active:cursor-grabbing' : '';
-    const dragState = isDragging ? 'opacity-80 scale-105 shadow-2xl border-blue-400' : 'hover:shadow-lg transition-all duration-200';
+    const dragState = isDragging ? 'opacity-80 scale-105 shadow-2xl border-blue-400 z-50' : 'hover:shadow-lg transition-all duration-200';
     const pendingState = isPending ? 'ring-2 ring-blue-400 ring-opacity-50' : '';
     
-    return `${baseClasses} ${cursorClass} ${dragState} ${pendingState}`;
+    // CRITICAL FIX: Ensure proper spacing and no overlap
+    const spacingClasses = 'w-full min-w-0 flex-shrink-0';
+    
+    return `${baseClasses} ${cursorClass} ${dragState} ${pendingState} ${spacingClasses}`.trim();
   }, [backgroundColorClass, isDraggable, isDragging, isPending]);
 
   const getCurrentRank = React.useMemo((): number | null => {
@@ -68,7 +72,7 @@ const DraggableAvailableCard: React.FC<DraggableAvailableCardProps> = memo(({
     <div
       ref={setNodeRef}
       className={cardClassName}
-      style={{ ...style, minWidth: '140px' }}
+      style={{ ...style, minWidth: '140px', aspectRatio: '3/4' }}
       {...finalAttributes}
       {...finalListeners}
     >
