@@ -1,5 +1,6 @@
+
 import React, { useMemo, useState, useEffect } from "react";
-import { DndContext, DragOverlay, pointerWithin, DragStartEvent, DragEndEvent } from '@dnd-kit/core';
+import { DndContext, DragOverlay, closestCorners, DragStartEvent, DragEndEvent } from '@dnd-kit/core';
 import { Rating } from 'ts-trueskill';
 import { useTrueSkillStore } from "@/stores/trueskillStore";
 import { BattleType } from "@/hooks/battle/types";
@@ -499,7 +500,7 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
 
       <div className="max-w-7xl mx-auto">
         <DndContext
-          collisionDetection={pointerWithin}
+          collisionDetection={closestCorners}
           onDragStart={enhancedHandleDragStart}
           onDragEnd={enhancedHandleDragEnd}
         >
