@@ -59,19 +59,23 @@ export const useEnhancedRankingDragDrop = (
       const pokemonId = parseInt(activeId.replace('draggable-available-', ''));
       console.log(`🚀🚀🚀 [ENHANCED_DRAG_END] Available Pokemon ${pokemonId} dragged to ${overId}`);
       
-      // Enhanced validation logic for drop targets
-      const isValidDropTarget = (
-        overId === 'rankings-drop-zone' || 
-        overId === 'rankings-grid-drop-zone' ||
-        over.data?.current?.type === 'rankings-container' ||
-        over.data?.current?.type === 'rankings-grid' ||
-        over.data?.current?.accepts?.includes('available-pokemon') ||
-        (overId.startsWith('sortable-ranking-') && 
-         !isNaN(parseInt(overId.replace('sortable-ranking-', ''))) && 
-         localRankings.some(p => p.id === parseInt(overId.replace('sortable-ranking-', ''))))
+      // CRITICAL FIX: More precise validation for drop targets
+      const isValidRankedTarget = (
+        overId.startsWith('sortable-ranking-') && 
+        !isNaN(parseInt(overId.replace('sortable-ranking-', ''))) && 
+        localRankings.some(p => p.id === parseInt(overId.replace('sortable-ranking-', '')))
       );
       
-      console.log(`🎯 [VALIDATION_DEBUG] Drop target validation: ${isValidDropTarget}`);
+      // CRITICAL FIX: Also accept the rankings drop zone itself
+      const isValidDropZone = (
+        overId === 'rankings-drop-zone' || 
+        overId === 'rankings-grid-drop-zone' ||
+        over.data?.current?.type === 'rankings-container'
+      );
+      
+      const isValidDropTarget = isValidRankedTarget || isValidDropZone;
+      
+      console.log(`🎯 [VALIDATION_DEBUG] Valid ranked target: ${isValidRankedTarget}, Valid drop zone: ${isValidDropZone}, Overall valid: ${isValidDropTarget}`);
       
       if (isValidDropTarget) {
         console.log(`🚀🚀🚀 [ENHANCED_DRAG_END] ✅ VALID DROP TARGET`);
@@ -96,14 +100,14 @@ export const useEnhancedRankingDragDrop = (
             console.log(`🔥🔥🔥 [ADD_NEW_POKEMON] ✅ Added rating to TrueSkill store`);
           }
           
-          // Determine insertion position
+          // Determine insertion position based on drop target
           let insertionPosition = localRankings.length;
-          if (overId.startsWith('sortable-ranking-')) {
+          if (isValidRankedTarget) {
             const targetPokemonId = parseInt(overId.replace('sortable-ranking-', ''));
             const targetIndex = localRankings.findIndex(p => p.id === targetPokemonId);
             if (targetIndex !== -1) {
               insertionPosition = targetIndex;
-              console.log(`🔥🔥🔥 [INSERT_POSITION] Will insert at position ${targetIndex}`);
+              console.log(`🔥🔥🔥 [INSERT_POSITION] Will insert at position ${targetIndex} before ${localRankings[targetIndex]?.name}`);
             }
           }
           

@@ -5,8 +5,6 @@ import {
   rectSortingStrategy,
 } from '@dnd-kit/sortable';
 import { 
-  useDroppable,
-  DragOverlay,
   useDndContext
 } from '@dnd-kit/core';
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
@@ -44,14 +42,8 @@ const DragDropGrid: React.FC<DragDropGridProps> = React.memo(({
   const dndContext = useDndContext();
   const { active } = dndContext;
   
-  // CRITICAL FIX: ALWAYS call useDroppable unconditionally
-  const { setNodeRef, isOver } = useDroppable({
-    id: 'rankings-grid-drop-zone',
-    data: {
-      type: 'rankings-grid',
-      accepts: ['available-pokemon', 'ranked-pokemon']
-    }
-  });
+  // CRITICAL FIX: Remove the useDroppable hook that was causing the entire grid to be a drop zone
+  // Individual sortable cards will handle their own drop logic
 
   const activePokemon = useMemo(() => {
     if (!active) return null;
@@ -61,12 +53,14 @@ const DragDropGrid: React.FC<DragDropGridProps> = React.memo(({
   }, [active, displayRankings]);
 
   const sortableItems = useMemo(() => {
-    const items = displayRankings.map(p => p.id);
-    console.log(`🎯 [OPTIMIZED_GRID] Creating sortable items - count: ${items.length}`);
+    // CRITICAL FIX: Use the correct ID format that matches SortableRankedCard
+    const items = displayRankings.map(p => `sortable-ranking-${p.id}`);
+    console.log(`🎯 [OPTIMIZED_GRID] Creating sortable items with correct IDs:`, items);
     return items;
   }, [displayRankings]);
 
-  const gridClassName = `transition-colors ${isOver ? 'bg-yellow-50/50' : ''}`;
+  // CRITICAL FIX: Remove the grid className that was highlighting the entire area
+  const gridClassName = ""; // No special highlighting for the grid container
 
   // CRITICAL FIX: Always render the same component structure - no conditional rendering
   const renderedCards = useMemo(() => {
@@ -75,7 +69,7 @@ const DragDropGrid: React.FC<DragDropGridProps> = React.memo(({
     return displayRankings.map((pokemon, index) => {
       const isPending = localPendingRefinements.has(pokemon.id);
       
-      // ALWAYS render OptimizedDraggableCard - no conditional component switching
+      // ALWAYS render OptimizedDraggableCard with correct context
       return (
         <OptimizedDraggableCard
           key={pokemon.id}
@@ -88,13 +82,10 @@ const DragDropGrid: React.FC<DragDropGridProps> = React.memo(({
     });
   }, [displayRankings, localPendingRefinements]);
 
-  console.log(`🎯 [OPTIMIZED_GRID] Grid render complete with DragOverlay support`);
+  console.log(`🎯 [OPTIMIZED_GRID] Grid render complete - no conflicting drop zones`);
 
   return (
-    <div 
-      ref={setNodeRef}
-      className={gridClassName}
-    >
+    <div className={gridClassName}>
       <DndKitInternalTracker />
       
       <SortableContext 
@@ -108,15 +99,6 @@ const DragDropGrid: React.FC<DragDropGridProps> = React.memo(({
           {renderedCards}
         </div>
       </SortableContext>
-
-      <DragOverlay>
-        {activePokemon ? (
-          <DragOverlayContent 
-            pokemon={activePokemon} 
-            context="ranked"
-          />
-        ) : null}
-      </DragOverlay>
     </div>
   );
 }, (prevProps, nextProps) => {

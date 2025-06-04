@@ -1,6 +1,6 @@
 
 import React from "react";
-import { DndContext, closestCenter, useSensor, useSensors, MouseSensor, TouchSensor, DragOverlay } from '@dnd-kit/core';
+import { DndContext, closestCorners, useSensor, useSensors, MouseSensor, TouchSensor, DragOverlay } from '@dnd-kit/core';
 import { useEnhancedManualReorder } from "@/hooks/battle/useEnhancedManualReorder";
 import { useEnhancedRankingDragDrop } from "@/hooks/ranking/useEnhancedRankingDragDrop";
 import { useReRankingTriggerSafe } from "@/hooks/ranking/useReRankingTriggerSafe";
@@ -108,7 +108,7 @@ export const RankingUICore: React.FC<RankingUICoreProps> = React.memo(({
     updateLocalRankings(newRankings);
   };
 
-  // CRITICAL FIX: Setup sensors and DndContext at the TOP LEVEL
+  // CRITICAL FIX: Setup sensors and DndContext at the TOP LEVEL with better collision detection
   const sensors = useSensors(
     useSensor(MouseSensor, {
       activationConstraint: {
@@ -139,7 +139,7 @@ export const RankingUICore: React.FC<RankingUICoreProps> = React.memo(({
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCenter}
+      collisionDetection={closestCorners}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
