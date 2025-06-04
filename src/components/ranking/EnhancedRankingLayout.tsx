@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { DndContext, DragOverlay, closestCenter, useSensor, useSensors, MouseSensor, TouchSensor } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
@@ -224,9 +223,9 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
     handleDragStart(event);
   }, [handleDragStart]);
 
-  // Create sortable IDs for ranked Pokémon
+  // CRITICAL FIX: Create sortable IDs that match the SortableRankedCard component
   const rankedPokemonIds = useMemo(() => 
-    manualRankingOrder.map(pokemon => `ranking-${pokemon.id}`), 
+    manualRankingOrder.map(pokemon => `sortable-ranking-${pokemon.id}`), 
     [manualRankingOrder]
   );
 
@@ -294,7 +293,7 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
                   index={0}
                   showRank={false}
                   isDraggable={false}
-                  context={activeDraggedPokemon.id?.toString().startsWith('available-') ? 'available' : 'ranked'}
+                  context={activeDraggedPokemon.id?.toString().startsWith('draggable-available-') ? 'available' : 'ranked'}
                 />
               </div>
             ) : null}

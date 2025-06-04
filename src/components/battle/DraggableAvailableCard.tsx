@@ -1,5 +1,5 @@
 
-import React, { memo, useMemo, useCallback } from "react";
+import React, { memo, useMemo } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { useDraggable } from '@dnd-kit/core';
 import { getPokemonBackgroundColor } from "./utils/PokemonColorUtils";
@@ -23,10 +23,12 @@ const DraggableAvailableCard: React.FC<DraggableAvailableCardProps> = memo(({
   showRank = true,
   isDraggable = true
 }) => {
-  const id = `available-${pokemon.id}`;
+  // CRITICAL: Ensure unique ID format for available Pokemon
+  const uniqueId = `draggable-available-${pokemon.id}`;
   
-  const hookData = useMemo(() => ({
-    id,
+  // CRITICAL: Hook ALWAYS called unconditionally at top level
+  const { attributes, listeners, setNodeRef, isDragging, transform } = useDraggable({
+    id: uniqueId,
     disabled: !isDraggable,
     data: {
       type: 'available-pokemon',
@@ -35,17 +37,10 @@ const DraggableAvailableCard: React.FC<DraggableAvailableCardProps> = memo(({
       index,
       category: 'draggable-pokemon'
     }
-  }), [id, isDraggable, pokemon, index]);
-
-  const { attributes, listeners, setNodeRef, isDragging, transform } = useDraggable(hookData);
+  });
 
   const backgroundColorClass = useMemo(() => getPokemonBackgroundColor(pokemon), [pokemon.id]);
   
-  const dragProps = useMemo(() => 
-    isDraggable ? { ...attributes, ...listeners } : {}, 
-    [isDraggable, attributes, listeners]
-  );
-
   const style = useMemo(() => transform ? {
     transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
   } : undefined, [transform]);
@@ -66,17 +61,10 @@ const DraggableAvailableCard: React.FC<DraggableAvailableCardProps> = memo(({
     return null;
   }, [pokemon]);
 
-  const handlePointerDown = useCallback((event: React.PointerEvent) => {
-    if (listeners?.onPointerDown) {
-      listeners.onPointerDown(event);
-    }
-  }, [listeners]);
-
-  const handleMouseDown = useCallback((event: React.MouseEvent) => {
-    if (listeners?.onMouseDown) {
-      listeners.onMouseDown(event);
-    }
-  }, [listeners]);
+  const dragProps = useMemo(() => 
+    isDraggable ? { ...attributes, ...listeners } : {}, 
+    [isDraggable, attributes, listeners]
+  );
 
   return (
     <div
@@ -84,8 +72,6 @@ const DraggableAvailableCard: React.FC<DraggableAvailableCardProps> = memo(({
       className={cardClassName}
       style={{ ...style, minWidth: '140px' }}
       {...dragProps}
-      onPointerDown={handlePointerDown}
-      onMouseDown={handleMouseDown}
     >
       <PokemonMilestoneOverlays
         context="available"
@@ -103,10 +89,7 @@ const DraggableAvailableCard: React.FC<DraggableAvailableCardProps> = memo(({
             <button 
               className="w-5 h-5 rounded-full bg-white/80 hover:bg-white border border-gray-300 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200 backdrop-blur-sm cursor-pointer"
               onClick={(e) => e.stopPropagation()}
-              onPointerDown={(e) => e.stopPropagation()}
-              onMouseDown={(e) => e.stopPropagation()}
               type="button"
-              style={{ pointerEvents: 'auto' }}
             >
               i
             </button>

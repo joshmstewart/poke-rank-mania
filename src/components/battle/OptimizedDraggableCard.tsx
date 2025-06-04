@@ -21,36 +21,27 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
   isDraggable = true,
   context = 'ranked'
 }) => {
-  // CRITICAL FIX: Conditional component rendering instead of conditional hooks
-  // This ensures hooks are NEVER called conditionally
-  return context === 'available' 
-    ? (
-        <DraggableAvailableCard
-          pokemon={pokemon}
-          index={index}
-          isPending={isPending}
-          showRank={showRank}
-          isDraggable={isDraggable}
-        />
-      )
-    : (
-        <SortableRankedCard
-          pokemon={pokemon}
-          index={index}
-          isPending={isPending}
-          showRank={showRank}
-          isDraggable={isDraggable}
-        />
-      );
-}, (prevProps, nextProps) => {
-  // Efficient prop comparison to prevent unnecessary re-renders
+  // CRITICAL FIX: Pure conditional component rendering - NO HOOKS in this component
+  if (context === 'available') {
+    return (
+      <DraggableAvailableCard
+        pokemon={pokemon}
+        index={index}
+        isPending={isPending}
+        showRank={showRank}
+        isDraggable={isDraggable}
+      />
+    );
+  }
+
   return (
-    prevProps.pokemon.id === nextProps.pokemon.id &&
-    prevProps.index === nextProps.index &&
-    prevProps.isPending === nextProps.isPending &&
-    prevProps.showRank === nextProps.showRank &&
-    prevProps.isDraggable === nextProps.isDraggable &&
-    prevProps.context === nextProps.context
+    <SortableRankedCard
+      pokemon={pokemon}
+      index={index}
+      isPending={isPending}
+      showRank={showRank}
+      isDraggable={isDraggable}
+    />
   );
 });
 

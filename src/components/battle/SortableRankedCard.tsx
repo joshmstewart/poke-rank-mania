@@ -1,5 +1,5 @@
 
-import React, { memo, useMemo, useCallback } from "react";
+import React, { memo, useMemo } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -24,10 +24,12 @@ const SortableRankedCard: React.FC<SortableRankedCardProps> = memo(({
   showRank = true,
   isDraggable = true
 }) => {
-  const id = `ranking-${pokemon.id}`;
+  // CRITICAL: Ensure unique ID format for ranked Pokemon - different from available
+  const uniqueId = `sortable-ranking-${pokemon.id}`;
   
-  const hookData = useMemo(() => ({
-    id,
+  // CRITICAL: Hook ALWAYS called unconditionally at top level
+  const { attributes, listeners, setNodeRef, isDragging, transform } = useSortable({
+    id: uniqueId,
     disabled: !isDraggable,
     data: {
       type: 'ranked-pokemon',
@@ -36,17 +38,10 @@ const SortableRankedCard: React.FC<SortableRankedCardProps> = memo(({
       index,
       category: 'sortable-pokemon'
     }
-  }), [id, isDraggable, pokemon, index]);
-
-  const { attributes, listeners, setNodeRef, isDragging, transform } = useSortable(hookData);
+  });
 
   const backgroundColorClass = useMemo(() => getPokemonBackgroundColor(pokemon), [pokemon.id]);
   
-  const dragProps = useMemo(() => 
-    isDraggable ? { ...attributes, ...listeners } : {}, 
-    [isDraggable, attributes, listeners]
-  );
-
   const style = useMemo(() => transform ? {
     transform: CSS.Transform.toString(transform),
   } : undefined, [transform]);
@@ -67,17 +62,10 @@ const SortableRankedCard: React.FC<SortableRankedCardProps> = memo(({
     return null;
   }, [pokemon]);
 
-  const handlePointerDown = useCallback((event: React.PointerEvent) => {
-    if (listeners?.onPointerDown) {
-      listeners.onPointerDown(event);
-    }
-  }, [listeners]);
-
-  const handleMouseDown = useCallback((event: React.MouseEvent) => {
-    if (listeners?.onMouseDown) {
-      listeners.onMouseDown(event);
-    }
-  }, [listeners]);
+  const dragProps = useMemo(() => 
+    isDraggable ? { ...attributes, ...listeners } : {}, 
+    [isDraggable, attributes, listeners]
+  );
 
   return (
     <div
@@ -85,8 +73,6 @@ const SortableRankedCard: React.FC<SortableRankedCardProps> = memo(({
       className={cardClassName}
       style={{ ...style, minWidth: '140px' }}
       {...dragProps}
-      onPointerDown={handlePointerDown}
-      onMouseDown={handleMouseDown}
     >
       <PokemonMilestoneOverlays
         context="ranked"
@@ -104,10 +90,7 @@ const SortableRankedCard: React.FC<SortableRankedCardProps> = memo(({
             <button 
               className="w-5 h-5 rounded-full bg-white/80 hover:bg-white border border-gray-300 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200 backdrop-blur-sm cursor-pointer"
               onClick={(e) => e.stopPropagation()}
-              onPointerDown={(e) => e.stopPropagation()}
-              onMouseDown={(e) => e.stopPropagation()}
               type="button"
-              style={{ pointerEvents: 'auto' }}
             >
               i
             </button>
