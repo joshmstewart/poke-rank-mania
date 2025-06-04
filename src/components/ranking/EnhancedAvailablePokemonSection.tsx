@@ -59,12 +59,12 @@ export const EnhancedAvailablePokemonSection: React.FC<EnhancedAvailablePokemonS
     () => {} // Empty function since we handle page changes via props
   );
   
-  // Fix: Call useAutoScrollEffects with proper parameters
-  useAutoScrollEffects({
+  // Fix: Call useAutoScrollEffects with proper parameters - this is where the TS error was occurring
+  useAutoScrollEffects(
     isLoading,
-    containerRef: scrollLoadingRef,
-    currentGeneration: selectedGeneration
-  });
+    scrollLoadingRef,
+    selectedGeneration
+  );
 
   const renderPokemonCard = useCallback((pokemon: Pokemon | RankedPokemon, index: number) => (
     <OptimizedDraggableCard
