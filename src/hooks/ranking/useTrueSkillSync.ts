@@ -20,7 +20,7 @@ export const useTrueSkillSync = () => {
       }
       
       const initialRatings = useTrueSkillStore.getState().getAllRatings();
-      const initialCount = Object.keys(initialRatings).length;
+      const initialCount = Object.keys(initialRatings || {}).length;
       
       if (!hasTriedCloudSync && sessionId) {
         setHasTriedCloudSync(true);
@@ -28,7 +28,7 @@ export const useTrueSkillSync = () => {
         try {
           await loadFromCloud();
           const postSyncRatings = useTrueSkillStore.getState().getAllRatings();
-          const postSyncCount = Object.keys(postSyncRatings).length;
+          const postSyncCount = Object.keys(postSyncRatings || {}).length;
           
           if (postSyncCount > initialCount) {
             console.log(`Loaded ${postSyncCount - initialCount} additional ratings from cloud`);
@@ -54,8 +54,8 @@ export const useTrueSkillSync = () => {
     initializeWithCloudSync();
   }, [isHydrated, sessionId, hasTriedCloudSync, waitForHydration, loadFromCloud]);
 
-  const allRatings = getAllRatings();
-  const contextReady = pokemonLookupMap.size > 0;
+  const allRatings = getAllRatings() || {};
+  const contextReady = pokemonLookupMap && pokemonLookupMap.size > 0;
   const ratingsCount = Object.keys(allRatings).length;
 
   useEffect(() => {
@@ -72,6 +72,8 @@ export const useTrueSkillSync = () => {
     const rankings: RankedPokemon[] = [];
 
     ratedPokemonIds.forEach(pokemonId => {
+      if (!pokemonLookupMap) return;
+      
       const basePokemon = pokemonLookupMap.get(pokemonId);
       const ratingData = allRatings[pokemonId.toString()];
 
@@ -106,6 +108,11 @@ export const useTrueSkillSync = () => {
 
   const updateLocalRankings = useMemo(() => {
     return (newRankings: RankedPokemon[]) => {
+      if (!Array.isArray(newRankings)) {
+        console.warn('updateLocalRankings called with invalid data:', newRankings);
+        return;
+      }
+      
       const formattedRankings = newRankings.map(pokemon => ({
         ...pokemon,
         name: formatPokemonName(pokemon.name),
