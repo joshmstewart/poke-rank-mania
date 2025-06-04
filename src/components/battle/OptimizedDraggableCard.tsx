@@ -52,7 +52,7 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
       }
     };
 
-    console.log(`🎯 [DRAGGABLE_INIT] Available Pokemon initialized with useDraggable:`, sortableId);
+    console.log(`🎯 [DRAGGABLE_INIT] Available Pokemon ${pokemon.name} being initialized with useDraggable:`, sortableId);
     const draggableResult = useDraggable(draggableConfig);
     dragAttributes = draggableResult.attributes;
     dragListeners = draggableResult.listeners;
@@ -68,6 +68,8 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
       hasListeners: !!dragListeners,
       hasSetNodeRef: !!setNodeRef
     });
+    
+    console.log(`🎯 [DRAGGABLE_INIT] Available Pokemon initialized with useDraggable: ${sortableId}`);
   } else {
     // Ranked Pokemon: sortable within their grid
     const sortableConfig = {
@@ -122,7 +124,7 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
     <div
       ref={setNodeRef}
       className={cardClassName}
-      style={style}
+      style={{ ...style, minWidth: '140px' }}
       {...dragProps}
     >
       <PokemonMilestoneOverlays
