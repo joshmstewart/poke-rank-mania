@@ -31,16 +31,14 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
   return (
     <div className="flex-1 overflow-y-auto">
       <div className="p-4">
-        <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
-          <PokemonGridSection
-            items={items}
-            showGenerationHeaders={showGenerationHeaders}
-            viewMode={viewMode}
-            isRankingArea={false}
-            isGenerationExpanded={isGenerationExpanded}
-            onToggleGeneration={onToggleGeneration}
-          />
-        </div>
+        <PokemonGridSection
+          items={items}
+          showGenerationHeaders={showGenerationHeaders}
+          viewMode={viewMode}
+          isRankingArea={false}
+          isGenerationExpanded={isGenerationExpanded}
+          onToggleGeneration={onToggleGeneration}
+        />
         
         <InfiniteScrollLoader
           isLoading={isLoading}
