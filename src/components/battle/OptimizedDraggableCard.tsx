@@ -50,7 +50,7 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
         source: context,
         index,
         // CRITICAL: Add collision detection helpers
-        accepts: ['rankings-container', 'rankings-grid'],
+        accepts: ['rankings-container', 'rankings-grid', 'rankings-drop-zone'],
         category: 'draggable-available'
       }
     };
@@ -73,8 +73,6 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
       hasListeners: !!dragListeners,
       hasSetNodeRef: !!setNodeRef
     });
-    
-    console.log(`🎯 [DRAGGABLE_INIT] Available Pokemon initialized with useDraggable: ${sortableId}`);
   } else {
     // CRITICAL FIX: Enhanced sortable configuration with explicit collision data
     const sortableConfig = {
@@ -128,12 +126,29 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
     return null;
   };
 
+  // CRITICAL FIX: Add explicit event logging for drag events
+  const handlePointerDown = (event: React.PointerEvent) => {
+    console.log(`🎯 [DRAG_EVENT] PointerDown on ${pokemon.name} (${sortableId})`);
+    if (dragListeners?.onPointerDown) {
+      dragListeners.onPointerDown(event);
+    }
+  };
+
+  const handleMouseDown = (event: React.MouseEvent) => {
+    console.log(`🎯 [DRAG_EVENT] MouseDown on ${pokemon.name} (${sortableId})`);
+    if (dragListeners?.onMouseDown) {
+      dragListeners.onMouseDown(event);
+    }
+  };
+
   return (
     <div
       ref={setNodeRef}
       className={cardClassName}
       style={{ ...style, minWidth: '140px' }}
-      {...dragProps}
+      {...dragAttributes}
+      onPointerDown={handlePointerDown}
+      onMouseDown={handleMouseDown}
     >
       <PokemonMilestoneOverlays
         context={context}
