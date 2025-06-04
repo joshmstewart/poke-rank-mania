@@ -86,14 +86,14 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
                 ) : null;
               }
 
-              // Handle Pokémon items - CRITICAL: This is where cards are rendered
+              // Handle Pokémon items - CRITICAL: Ensure we're using OptimizedDraggableCard
               if (item.id) {
-                console.log(`🚨🚨🚨 [ENHANCED_CONTENT_POKEMON_DIAGNOSTIC] ===== ABOUT TO RENDER POKEMON CARD =====`);
-                console.log(`🚨🚨🚨 [ENHANCED_CONTENT_POKEMON_DIAGNOSTIC] Pokemon: ${item.name} (ID: ${item.id})`);
-                console.log(`🚨🚨🚨 [ENHANCED_CONTENT_POKEMON_DIAGNOSTIC] Using component: OptimizedDraggableCard`);
-                console.log(`🚨🚨🚨 [ENHANCED_CONTENT_POKEMON_DIAGNOSTIC] Context: 'available'`);
-                console.log(`🚨🚨🚨 [ENHANCED_CONTENT_POKEMON_DIAGNOSTIC] Index: ${index}`);
-                console.log(`🚨🚨🚨 [ENHANCED_CONTENT_POKEMON_DIAGNOSTIC] Import source: @/components/battle/OptimizedDraggableCard`);
+                console.log(`🔥🔥🔥 [CRITICAL_FIX] ===== RENDERING AVAILABLE POKEMON WITH OPTIMIZED CARD =====`);
+                console.log(`🔥🔥🔥 [CRITICAL_FIX] Pokemon: ${item.name} (ID: ${item.id})`);
+                console.log(`🔥🔥🔥 [CRITICAL_FIX] Using component: OptimizedDraggableCard`);
+                console.log(`🔥🔥🔥 [CRITICAL_FIX] Context: 'available'`);
+                console.log(`🔥🔥🔥 [CRITICAL_FIX] Key: available-${item.id}`);
+                console.log(`🔥🔥🔥 [CRITICAL_FIX] Index: ${index}`);
                 
                 return (
                   <OptimizedDraggableCard
