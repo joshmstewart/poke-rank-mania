@@ -13,7 +13,7 @@ const PokemonContext = createContext<PokemonContextType | undefined>(undefined);
 interface PokemonProviderProps {
   children: ReactNode;
   allPokemon: Pokemon[];
-  rawUnfilteredPokemon?: Pokemon[]; // NEW: Accept separate raw data
+  rawUnfilteredPokemon?: Pokemon[];
 }
 
 export const PokemonProvider: React.FC<PokemonProviderProps> = ({ 
@@ -21,99 +21,80 @@ export const PokemonProvider: React.FC<PokemonProviderProps> = ({
   allPokemon, 
   rawUnfilteredPokemon 
 }) => {
-  console.log('[DEBUG PokemonContext] Provider rendering with', allPokemon.length, 'filtered Pokemon');
+  console.log('[DEBUG PokemonContext] Provider rendering with', allPokemon?.length || 0, 'filtered Pokemon');
   console.log('[DEBUG PokemonContext] Raw unfiltered Pokemon count:', rawUnfilteredPokemon?.length || 0);
+  
+  // CRITICAL FIX: Ensure allPokemon is always a valid array
+  const safeAllPokemon = useMemo(() => {
+    if (!allPokemon) {
+      console.warn('[PokemonContext] allPokemon is null/undefined, using empty array');
+      return [];
+    }
+    if (!Array.isArray(allPokemon)) {
+      console.warn('[PokemonContext] allPokemon is not an array, using empty array');
+      return [];
+    }
+    return allPokemon.filter(p => p && typeof p.id === 'number' && p.name);
+  }, [allPokemon]);
   
   // Use the explicitly passed raw data, or fall back to allPokemon if not provided
   const actualRawUnfilteredPokemon = useMemo(() => {
-    const rawData = rawUnfilteredPokemon || allPokemon;
+    let rawData = rawUnfilteredPokemon || safeAllPokemon;
+    
+    // CRITICAL: Ensure raw data is also a valid array
+    if (!rawData) {
+      console.warn('[PokemonContext] rawData is null/undefined, using empty array');
+      rawData = [];
+    }
+    if (!Array.isArray(rawData)) {
+      console.warn('[PokemonContext] rawData is not an array, using safeAllPokemon');
+      rawData = safeAllPokemon;
+    }
+    
     console.log(`📝 [RAW_POKEMON_STORAGE] Storing ${rawData.length} ACTUAL raw unfiltered Pokemon for form counting`);
     console.log(`📝 [RAW_POKEMON_STORAGE] Is this truly raw data? ${rawUnfilteredPokemon ? 'YES' : 'NO (fallback to filtered)'}`);
     return rawData;
-  }, [rawUnfilteredPokemon, allPokemon]);
+  }, [rawUnfilteredPokemon, safeAllPokemon]);
   
-  // CRITICAL: Verify the source data has types before creating the map
-  if (allPokemon.length > 0) {
-    const samplePokemon = allPokemon.find(p => p.id === 60) || allPokemon[0]; // Poliwag or first
-    console.log('[CRITICAL DEBUG PokemonContext] Input allPokemon - Sample Pokemon types:', JSON.stringify({
-      id: samplePokemon.id,
-      name: samplePokemon.name,
-      types: samplePokemon.types,
-      hasTypes: !!samplePokemon.types,
-      typesLength: samplePokemon.types?.length || 0,
-      firstType: samplePokemon.types?.[0],
-      rawTypesStructure: samplePokemon.types
-    }));
-  }
-  
-  // CRITICAL FIX: Create lookup map that preserves COMPLETE original Pokemon data AND ensures new Map instance
+  // CRITICAL: Create lookup map that preserves COMPLETE original Pokemon data
   const pokemonLookupMap = useMemo(() => {
-    console.log('[DEBUG PokemonContext] Creating lookup map with', allPokemon.length, 'Pokemon');
-    console.log(`🌟🌟🌟 [CONTEXT_CREATION_CRITICAL] Creating NEW Map instance for ${allPokemon.length} Pokemon`);
+    console.log('[DEBUG PokemonContext] Creating lookup map with', safeAllPokemon.length, 'Pokemon');
+    console.log(`🌟🌟🌟 [CONTEXT_CREATION_CRITICAL] Creating NEW Map instance for ${safeAllPokemon.length} Pokemon`);
     
-    // CRITICAL: Always create a NEW Map instance, even if allPokemon is empty
-    // This ensures React detects the change when allPokemon goes from [] to [Pokemon...]
+    // CRITICAL: Always create a NEW Map instance, even if safeAllPokemon is empty
     const map = new Map<number, Pokemon>();
     
-    allPokemon.forEach((pokemon) => {
-      // CRITICAL: Log the exact pokemon object being stored for debugging
-      if (pokemon.id === 60) { // Poliwag example
-        console.log('[PokemonContext MAP POPULATION] Storing Poliwag (60):', JSON.stringify({
-          id: pokemon.id,
-          name: pokemon.name,
-          types: pokemon.types,
-          typesLength: pokemon.types?.length || 0,
-          hasValidTypes: !!(pokemon.types && pokemon.types.length > 0)
-        }));
-      }
-      
-      // Store the EXACT original Pokemon object - no modifications
-      map.set(pokemon.id, pokemon);
-    });
+    // CRITICAL: Only process if we have valid Pokemon array
+    if (safeAllPokemon && Array.isArray(safeAllPokemon)) {
+      safeAllPokemon.forEach((pokemon) => {
+        if (pokemon && typeof pokemon.id === 'number' && pokemon.name) {
+          map.set(pokemon.id, pokemon);
+        } else {
+          console.error('[PokemonContext] Invalid Pokemon skipped:', pokemon);
+        }
+      });
+    }
     
     console.log('[DEBUG PokemonContext] Lookup map created with', map.size, 'entries');
-    
-    // NEW: Critical logging for context readiness tracking
     console.log(`🌟🌟🌟 [CONTEXT_READINESS_CRITICAL] PokemonContext lookup map FINALIZED with ${map.size} entries`);
-    console.log(`🌟🌟🌟 [CONTEXT_READINESS_CRITICAL] Map instance timestamp: ${Date.now()}`);
-    if (map.size > 0) {
-      console.log(`🌟🌟🌟 [CONTEXT_READINESS_CRITICAL] ✅ CONTEXT IS NOW READY - Should trigger dependent effects`);
-    } else {
-      console.log(`🌟🌟🌟 [CONTEXT_READINESS_CRITICAL] ⚠️ Empty context created - waiting for Pokemon data`);
-    }
-    
-    // CRITICAL: Verify the map contains correct data after creation
-    const poliwagFromMap = map.get(60);
-    if (poliwagFromMap) {
-      console.log('[PokemonContext MAP VERIFICATION] Poliwag retrieved from CREATED map:', JSON.stringify({
-        id: poliwagFromMap.id,
-        name: poliwagFromMap.name,
-        types: poliwagFromMap.types,
-        typesLength: poliwagFromMap.types?.length || 0,
-        firstType: poliwagFromMap.types?.[0]
-      }));
-    }
     
     return map;
-  }, [allPokemon]); // CRITICAL: Depend on allPokemon array - React will detect reference changes
+  }, [safeAllPokemon]);
 
   // CRITICAL FIX: Create completely new context value object when dependencies change
   const contextValue = useMemo(() => {
     const value = {
-      allPokemon, // This should be a new array reference when data changes
-      rawUnfilteredPokemon: actualRawUnfilteredPokemon, // ACTUAL raw unfiltered data for counting
-      pokemonLookupMap // This is always a new Map instance from above useMemo
+      allPokemon: safeAllPokemon,
+      rawUnfilteredPokemon: actualRawUnfilteredPokemon,
+      pokemonLookupMap
     };
     
-    // NEW: Enhanced logging to track context value changes
     console.log(`🌟🌟🌟 [CONTEXT_VALUE_CRITICAL] NEW context value created - timestamp: ${Date.now()}`);
-    console.log(`🌟🌟🌟 [CONTEXT_VALUE_CRITICAL] allPokemon length: ${allPokemon.length}, map size: ${pokemonLookupMap.size}`);
+    console.log(`🌟🌟🌟 [CONTEXT_VALUE_CRITICAL] allPokemon length: ${safeAllPokemon.length}, map size: ${pokemonLookupMap.size}`);
     console.log(`🌟🌟🌟 [CONTEXT_VALUE_CRITICAL] rawUnfilteredPokemon length: ${actualRawUnfilteredPokemon.length}`);
-    console.log(`🌟🌟🌟 [CONTEXT_VALUE_CRITICAL] allPokemon reference: ${allPokemon}`);
-    console.log(`🌟🌟🌟 [CONTEXT_VALUE_CRITICAL] pokemonLookupMap reference: ${pokemonLookupMap}`);
     
     return value;
-  }, [allPokemon, actualRawUnfilteredPokemon, pokemonLookupMap]); // All dependencies ensure new value when any changes
+  }, [safeAllPokemon, actualRawUnfilteredPokemon, pokemonLookupMap]);
 
   return (
     <PokemonContext.Provider value={contextValue}>
