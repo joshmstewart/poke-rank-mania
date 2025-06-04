@@ -27,16 +27,25 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
   isDraggable = true,
   context = 'ranked'
 }) => {
-  // 🔥 DIAGNOSTIC LOGGING - This will help identify if this component is being used
-  useEffect(() => {
-    console.log(`🔥🔥🔥 [OPTIMIZED_DRAGGABLE_CARD] Loaded OptimizedDraggableCard for ${pokemon.name} (ID: ${pokemon.id}) with context: ${context}`);
-    console.log(`🔥🔥🔥 [OPTIMIZED_DRAGGABLE_CARD] Component source: OptimizedDraggableCard.tsx`);
-    console.log(`🔥🔥🔥 [OPTIMIZED_DRAGGABLE_CARD] isDraggable: ${isDraggable}, context: ${context}`);
-  }, [pokemon.id, pokemon.name, context, isDraggable]);
-
   // CRITICAL FIX: Use consistent ID formats with explicit prefixes
   const id = context === 'available' ? `available-${pokemon.id}` : `ranking-${pokemon.id}`;
   
+  // 🔥 COMPREHENSIVE DIAGNOSTIC LOGGING
+  useEffect(() => {
+    console.log(`🔥🔥🔥 [OPTIMIZED_DRAGGABLE_CARD] ===== CARD INITIALIZATION =====`);
+    console.log(`🔥🔥🔥 [OPTIMIZED_DRAGGABLE_CARD] Pokemon: ${pokemon.name} (ID: ${pokemon.id})`);
+    console.log(`🔥🔥🔥 [OPTIMIZED_DRAGGABLE_CARD] Context: ${context}`);
+    console.log(`🔥🔥🔥 [OPTIMIZED_DRAGGABLE_CARD] Generated ID: ${id}`);
+    console.log(`🔥🔥🔥 [OPTIMIZED_DRAGGABLE_CARD] isDraggable: ${isDraggable}`);
+    console.log(`🔥🔥🔥 [OPTIMIZED_DRAGGABLE_CARD] Component source: OptimizedDraggableCard.tsx`);
+    
+    if (context === 'available') {
+      console.log(`🟢🟢🟢 [AVAILABLE_POKEMON_INIT] Available Pokemon ${pokemon.name} initializing with ID: ${id}`);
+    } else {
+      console.log(`🔵🔵🔵 [RANKED_POKEMON_INIT] Ranked Pokemon ${pokemon.name} initializing with ID: ${id}`);
+    }
+  }, [pokemon.id, pokemon.name, context, isDraggable, id]);
+
   console.log(`🎯 [DRAGGABLE_CARD_INIT] Initializing ${pokemon.name} with ID: ${id}, context: ${context}`);
 
   // CRITICAL FIX: Use only ONE hook per context (never both simultaneously)
@@ -67,13 +76,30 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
 
   const { attributes, listeners, setNodeRef, isDragging, transform } = activeResult;
 
-  // CRITICAL: Log hook initialization results
+  // CRITICAL: Enhanced hook initialization logging
   console.log(`🟢 [HOOK_INIT] ${pokemon.name} using ${context} hook:`, {
     isDragging,
     disabled: !isDraggable,
     context,
-    hookType: context === 'available' ? 'useDraggable' : 'useSortable'
+    hookType: context === 'available' ? 'useDraggable' : 'useSortable',
+    id,
+    hasAttributes: !!attributes,
+    hasListeners: !!listeners,
+    hasTransform: !!transform
   });
+
+  // Additional logging for available Pokemon specifically
+  if (context === 'available') {
+    console.log(`🚀🚀🚀 [AVAILABLE_HOOK_DETAILED] ${pokemon.name} useDraggable result:`, {
+      isDragging,
+      id,
+      disabled: !isDraggable,
+      dataType: 'available-pokemon',
+      hasSetNodeRef: !!setNodeRef,
+      attributesKeys: attributes ? Object.keys(attributes) : [],
+      listenersKeys: listeners ? Object.keys(listeners) : []
+    });
+  }
 
   const backgroundColorClass = getPokemonBackgroundColor(pokemon);
   

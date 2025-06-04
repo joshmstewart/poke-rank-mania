@@ -35,7 +35,6 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
   console.log('🚨🚨🚨 [ENHANCED_CONTENT_DIAGNOSTIC] ===== ENHANCED AVAILABLE CONTENT COMPONENT ENTRY =====');
   console.log('🚨🚨🚨 [ENHANCED_CONTENT_DIAGNOSTIC] This is EnhancedAvailablePokemonContent.tsx rendering');
   console.log(`🚨🚨🚨 [ENHANCED_CONTENT_DIAGNOSTIC] Rendering ${items.length} items`);
-  console.log(`🚨🚨🚨 [ENHANCED_CONTENT_DIAGNOSTIC] First few items:`, items.slice(0, 3));
 
   // Count different item types
   const pokemonItems = items.filter(item => item.id && !item.type);
@@ -88,12 +87,13 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
 
               // Handle Pokémon items - CRITICAL: Ensure we're using OptimizedDraggableCard
               if (item.id) {
-                console.log(`🔥🔥🔥 [CRITICAL_FIX] ===== RENDERING AVAILABLE POKEMON WITH OPTIMIZED CARD =====`);
-                console.log(`🔥🔥🔥 [CRITICAL_FIX] Pokemon: ${item.name} (ID: ${item.id})`);
-                console.log(`🔥🔥🔥 [CRITICAL_FIX] Using component: OptimizedDraggableCard`);
-                console.log(`🔥🔥🔥 [CRITICAL_FIX] Context: 'available'`);
-                console.log(`🔥🔥🔥 [CRITICAL_FIX] Key: available-${item.id}`);
-                console.log(`🔥🔥🔥 [CRITICAL_FIX] Index: ${index}`);
+                console.log(`🔥🔥🔥 [CRITICAL_AVAILABLE_POKEMON_FIX] ===== RENDERING AVAILABLE POKEMON =====`);
+                console.log(`🔥🔥🔥 [CRITICAL_AVAILABLE_POKEMON_FIX] Pokemon: ${item.name} (ID: ${item.id})`);
+                console.log(`🔥🔥🔥 [CRITICAL_AVAILABLE_POKEMON_FIX] Using component: OptimizedDraggableCard`);
+                console.log(`🔥🔥🔥 [CRITICAL_AVAILABLE_POKEMON_FIX] Context: 'available'`);
+                console.log(`🔥🔥🔥 [CRITICAL_AVAILABLE_POKEMON_FIX] Key: available-${item.id}`);
+                console.log(`🔥🔥🔥 [CRITICAL_AVAILABLE_POKEMON_FIX] Index: ${index}`);
+                console.log(`🔥🔥🔥 [CRITICAL_AVAILABLE_POKEMON_FIX] This should initialize with useDraggable hook`);
                 
                 return (
                   <OptimizedDraggableCard
