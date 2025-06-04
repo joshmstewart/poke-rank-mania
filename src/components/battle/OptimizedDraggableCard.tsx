@@ -54,23 +54,29 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
       }
     };
 
-    console.log(`🎯 [DRAGGABLE_INIT] Available Pokemon ${pokemon.name} being initialized with useDraggable:`, sortableId);
-    console.log(`🎯 [DRAGGABLE_INIT] Draggable config:`, draggableConfig);
+    console.log(`🟢🟢🟢 [AVAILABLE_POKEMON_INIT] Available Pokemon ${pokemon.name} being initialized with useDraggable:`, sortableId);
+    console.log(`🟢🟢🟢 [AVAILABLE_POKEMON_INIT] Draggable config:`, draggableConfig);
     
     const draggableResult = useDraggable(draggableConfig);
     dragAttributes = draggableResult.attributes;
     dragListeners = draggableResult.listeners;
     setNodeRef = draggableResult.setNodeRef;
     isDragging = draggableResult.isDragging;
-    transform = null;
-    transition = null;
+    transform = draggableResult.transform ? {
+      x: draggableResult.transform.x,
+      y: draggableResult.transform.y,
+      scaleX: 1,
+      scaleY: 1
+    } : null;
+    transition = draggableResult.transition;
     
-    console.log(`🎯 [DRAGGABLE_INIT] Available Pokemon ${pokemon.name} draggable state:`, {
+    console.log(`🟢🟢🟢 [AVAILABLE_POKEMON_INIT] Available Pokemon ${pokemon.name} draggable state:`, {
       id: sortableId,
       isDragging,
       hasAttributes: !!dragAttributes,
       hasListeners: !!dragListeners,
-      hasSetNodeRef: !!setNodeRef
+      hasSetNodeRef: !!setNodeRef,
+      transform: transform
     });
   } else {
     // CRITICAL FIX: Enhanced sortable configuration with explicit collision data
@@ -89,7 +95,6 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
     };
 
     console.log(`🎯 [DRAGGABLE_INIT] Ranking Pokemon initialized with useSortable:`, sortableId);
-    console.log(`🎯 [DRAGGABLE_INIT] Sortable config:`, sortableConfig);
     const sortableResult = useSortable(sortableConfig);
     dragAttributes = sortableResult.attributes;
     dragListeners = sortableResult.listeners;
@@ -104,7 +109,7 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
   // Only apply drag props if draggable to prevent conflicts
   const dragProps = isDraggable ? { ...dragAttributes, ...dragListeners } : {};
 
-  // Apply transform for sortable items
+  // Apply transform for both draggable and sortable items
   const style = transform ? {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -128,14 +133,14 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
 
   // CRITICAL FIX: Add explicit event logging for drag events
   const handlePointerDown = (event: React.PointerEvent) => {
-    console.log(`🎯 [DRAG_EVENT] PointerDown on ${pokemon.name} (${sortableId})`);
+    console.log(`🎯 [DRAG_EVENT] PointerDown on ${pokemon.name} (${sortableId}) - context: ${context}`);
     if (dragListeners?.onPointerDown) {
       dragListeners.onPointerDown(event);
     }
   };
 
   const handleMouseDown = (event: React.MouseEvent) => {
-    console.log(`🎯 [DRAG_EVENT] MouseDown on ${pokemon.name} (${sortableId})`);
+    console.log(`🎯 [DRAG_EVENT] MouseDown on ${pokemon.name} (${sortableId}) - context: ${context}`);
     if (dragListeners?.onMouseDown) {
       dragListeners.onMouseDown(event);
     }
