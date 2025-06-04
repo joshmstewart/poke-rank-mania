@@ -39,54 +39,40 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
   
   console.log(`🎯 [DRAGGABLE_CARD_INIT] Initializing ${pokemon.name} with ID: ${id}, context: ${context}`);
 
-  // CRITICAL FIX: Always initialize both hooks with proper accepts configuration
-  const draggableResult = useDraggable({
-    id,
-    disabled: !isDraggable, // always initialize draggable if isDraggable=true
-    data: {
-      type: context === 'available' ? 'available-pokemon' : 'ranked-pokemon',
-      pokemon: pokemon,
-      source: context,
-      index,
-      category: 'draggable-pokemon'
-    }
-  });
+  // CRITICAL FIX: Use only ONE hook per context (never both simultaneously)
+  const activeResult = context === 'available'
+    ? useDraggable({
+        id,
+        disabled: !isDraggable,
+        data: {
+          type: 'available-pokemon',
+          pokemon: pokemon,
+          source: context,
+          index,
+          category: 'draggable-pokemon'
+        }
+      })
+    : useSortable({
+        id,
+        disabled: !isDraggable,
+        data: {
+          type: 'ranked-pokemon',
+          pokemon: pokemon,
+          source: context,
+          index,
+          accepts: ['available-pokemon', 'ranked-pokemon'],
+          category: 'sortable-pokemon'
+        }
+      });
 
-  const sortableResult = useSortable({
-    id,
-    disabled: !isDraggable, // always initialize sortable if isDraggable=true
-    data: {
-      type: context === 'available' ? 'available-pokemon' : 'ranked-pokemon',
-      pokemon: pokemon,
-      source: context,
-      index,
-      accepts: ['available-pokemon', 'ranked-pokemon'], // explicitly accept both types
-      category: 'sortable-pokemon'
-    }
-  });
-
-  // CRITICAL: Log hook initialization results
-  console.log(`🟢 [HOOK_INIT] ${pokemon.name} useDraggable:`, {
-    isDragging: draggableResult.isDragging,
-    disabled: !isDraggable,
-    context
-  });
-
-  console.log(`🟢 [HOOK_INIT] ${pokemon.name} useSortable:`, {
-    isDragging: sortableResult.isDragging,
-    disabled: !isDraggable,
-    context
-  });
-
-  // Select the appropriate properties based on context
-  const activeResult = context === 'available' ? draggableResult : sortableResult;
   const { attributes, listeners, setNodeRef, isDragging, transform } = activeResult;
 
-  console.log(`🎯 [ACTIVE_RESULT] ${pokemon.name} using ${context} result:`, {
+  // CRITICAL: Log hook initialization results
+  console.log(`🟢 [HOOK_INIT] ${pokemon.name} using ${context} hook:`, {
     isDragging,
-    hasAttributes: !!attributes,
-    hasListeners: !!listeners,
-    transform
+    disabled: !isDraggable,
+    context,
+    hookType: context === 'available' ? 'useDraggable' : 'useSortable'
   });
 
   const backgroundColorClass = getPokemonBackgroundColor(pokemon);

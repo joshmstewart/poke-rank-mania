@@ -56,7 +56,7 @@ export const PokemonGridSection: React.FC<PokemonGridSectionProps> = ({
         // Handle Pokémon items
         if (item.id) {
           if (isRankingArea) {
-            // ✅ Correct component for ranking/draggable area
+            // ✅ Correct component for ranking/draggable area with proper context
             console.log(`🔥🔥🔥 [POKEMON_GRID_FIX] Using OptimizedDraggableCard for ${item.name} in ranking area`);
             return (
               <OptimizedDraggableCard
@@ -66,11 +66,11 @@ export const PokemonGridSection: React.FC<PokemonGridSectionProps> = ({
                 isPending={false}
                 showRank={false}
                 isDraggable={true}
-                context="available" // crucially: set context correctly here
+                context="available" // CRITICAL: Available Pokémon use 'available' context
               />
             );
           } else {
-            // Legacy component, fine for display-only non-draggable context
+            // Legacy component for display-only non-draggable context
             console.log(`🚨🚨🚨 [POKEMON_GRID_LEGACY] Using legacy PokemonCard for ${item.name} in non-ranking area`);
             return (
               <PokemonCard
