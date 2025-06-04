@@ -17,17 +17,30 @@ interface EnhancedAvailablePokemonContentProps {
   totalPages: number;
 }
 
-export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonContentProps> = ({
-  items,
-  showGenerationHeaders,
-  viewMode,
-  isGenerationExpanded,
-  onToggleGeneration,
-  isLoading,
-  loadingRef,
-  currentPage,
-  totalPages
-}) => {
+export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonContentProps> = (props) => {
+  const {
+    items,
+    showGenerationHeaders,
+    viewMode,
+    isGenerationExpanded,
+    onToggleGeneration,
+    isLoading,
+    loadingRef,
+    currentPage,
+    totalPages
+  } = props;
+
+  // CRITICAL: Explicit component rendering confirmation
+  console.log('🚨 EnhancedAvailablePokemonContent COMPONENT RENDERED', {
+    itemsCount: items.length,
+    showGenerationHeaders,
+    viewMode,
+    isLoading,
+    currentPage,
+    totalPages,
+    props: props
+  });
+
   console.log(`🔍🔍🔍 [ENHANCED_CONTENT_RENDER] ===== ENHANCED AVAILABLE CONTENT RENDERING =====`);
   console.log(`🔍🔍🔍 [ENHANCED_CONTENT_RENDER] Rendering ${items.length} items`);
   console.log(`🔍🔍🔍 [ENHANCED_CONTENT_RENDER] First few items:`, items.slice(0, 3));
@@ -87,6 +100,9 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
               console.log(`🟢🟢🟢 [AVAILABLE_RENDER] Context: 'available'`);
               console.log(`🟢🟢🟢 [AVAILABLE_RENDER] Index: ${index}`);
               console.log(`🟢🟢🟢 [AVAILABLE_RENDER] About to render OptimizedDraggableCard with context='available'`);
+              
+              // CRITICAL: Explicit rendering confirmation before component
+              console.log(`🚨 ABOUT TO RENDER OptimizedDraggableCard for ${item.name} with context="available"`);
               
               return (
                 <OptimizedDraggableCard

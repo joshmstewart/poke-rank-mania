@@ -27,6 +27,9 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
   isDraggable = true,
   context = 'ranked'
 }) => {
+  // CRITICAL: Explicit component rendering confirmation
+  console.log(`🚨 OptimizedDraggableCard rendered: ${pokemon.name}, context: ${context}, isDraggable: ${isDraggable}`);
+
   // CRITICAL DIAGNOSTIC: Component render entry point
   console.log(`🚨🚨🚨 [COMPONENT_RENDER_ENTRY] ${pokemon.name}: OptimizedDraggableCard rendering with context='${context}', isDraggable=${isDraggable}`);
 
@@ -60,6 +63,10 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
     
     try {
       const draggableResult = useDraggable(draggableConfig);
+      
+      // CRITICAL: Explicit confirmation of useDraggable initialization
+      console.log(`🟢 useDraggable initialized for ${sortableId}`);
+      
       dragAttributes = draggableResult.attributes;
       dragListeners = draggableResult.listeners;
       setNodeRef = draggableResult.setNodeRef;
