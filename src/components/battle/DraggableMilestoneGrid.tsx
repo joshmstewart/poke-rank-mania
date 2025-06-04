@@ -6,6 +6,10 @@ import {
   closestCenter,
   DragOverlay,
   defaultDropAnimationSideEffects,
+  MouseSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
 } from '@dnd-kit/core';
 import {
   SortableContext,
@@ -30,8 +34,23 @@ const DraggableMilestoneGrid: React.FC<DraggableMilestoneGridProps> = ({
   console.log(`🎯 [DRAGGABLE_MILESTONE_GRID] Rendering with ${displayRankings.length} Pokemon`);
   console.log(`🎯 [DRAGGABLE_MILESTONE_GRID] onManualReorder provided: ${!!onManualReorder}`);
 
+  // Define sensors directly in this component
+  const sensors = useSensors(
+    useSensor(MouseSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 250,
+        tolerance: 5,
+      },
+    })
+  );
+
   // Only use drag and drop if onManualReorder is provided
-  const { sensors, handleDragEnd } = useDragAndDrop({
+  const { handleDragEnd } = useDragAndDrop({
     displayRankings,
     onManualReorder: onManualReorder || (() => {
       console.log(`🎯 [DRAGGABLE_MILESTONE_GRID] No manual reorder handler - drag disabled`);
@@ -81,7 +100,12 @@ const DraggableMilestoneGrid: React.FC<DraggableMilestoneGridProps> = ({
     return (
       <DndContext
         sensors={sensors}
-        collisionDetection={closestCenter}
+        collisionDetection={(args) => {
+          console.log("[MILESTONE_GRID_COLLISION_ARGS]", args);
+          const results = closestCenter(args);
+          console.log("[MILESTONE_GRID_COLLISION_RESULTS]", results);
+          return results;
+        }}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEndWithCleanup}
       >
