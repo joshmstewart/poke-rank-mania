@@ -38,12 +38,17 @@ const MilestoneDragProvider: React.FC<MilestoneDragProviderProps> = ({
     console.log("🎯 [COLLISION_DETECTION] Droppable rect IDs:", Object.keys(args.droppableRects));
     console.log("🎯 [COLLISION_DETECTION] Collision results:", collisionResults);
     
-    // Enhanced logging for each droppable rect
+    // Enhanced logging for each droppable rect with proper type checking
     Object.entries(args.droppableRects).forEach(([id, rect]) => {
       console.log(`🎯 [COLLISION_DETECTION] Droppable "${id}":`, {
         id,
-        rect: rect ? { x: rect.left, y: rect.top, width: rect.width, height: rect.height } : 'NULL',
-        disabled: rect?.disabled || false
+        rect: rect && typeof rect === 'object' && 'left' in rect ? { 
+          x: (rect as any).left, 
+          y: (rect as any).top, 
+          width: (rect as any).width, 
+          height: (rect as any).height 
+        } : 'NULL',
+        disabled: rect && typeof rect === 'object' && 'disabled' in rect ? (rect as any).disabled : false
       });
     });
     
