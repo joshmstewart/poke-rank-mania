@@ -1,8 +1,7 @@
 
 import React, { memo } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
-import DraggableAvailableCard from "./DraggableAvailableCard";
-import SortableRankedCard from "./SortableRankedCard";
+import UnifiedPokemonCard from "./UnifiedPokemonCard";
 
 interface OptimizedDraggableCardProps {
   pokemon: Pokemon | RankedPokemon;
@@ -21,31 +20,17 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
   isDraggable = true,
   context = 'ranked'
 }) => {
-  // CRITICAL: Add debugging to track which path is taken
-  console.log(`🔍 [CARD_DEBUG] OptimizedDraggableCard - ${pokemon.name} - context: ${context}`);
+  console.log(`🔍 [OPTIMIZED_CARD_DEBUG] OptimizedDraggableCard - ${pokemon.name} - context: ${context}`);
   
-  // CRITICAL FIX: Pure conditional component rendering - NO HOOKS in this component
-  if (context === 'available') {
-    console.log(`🔍 [CARD_DEBUG] Rendering DraggableAvailableCard for ${pokemon.name}`);
-    return (
-      <DraggableAvailableCard
-        pokemon={pokemon}
-        index={index}
-        isPending={isPending}
-        showRank={showRank}
-        isDraggable={isDraggable}
-      />
-    );
-  }
-
-  console.log(`🔍 [CARD_DEBUG] Rendering SortableRankedCard for ${pokemon.name}`);
+  // CRITICAL FIX: No conditional rendering - always render the same component
   return (
-    <SortableRankedCard
+    <UnifiedPokemonCard
       pokemon={pokemon}
       index={index}
       isPending={isPending}
       showRank={showRank}
       isDraggable={isDraggable}
+      context={context}
     />
   );
 });
