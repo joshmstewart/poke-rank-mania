@@ -64,8 +64,8 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
   handleManualReorder,
   handleLocalReorder
 }) => {
-  console.log(`🔥🔥🔥 [LAYOUT_FIXED] ===== ENHANCED LAYOUT RENDER =====`);
-  console.log(`🔥🔥🔥 [LAYOUT_FIXED] displayRankings count: ${displayRankings.length}`);
+  console.log(`🔥🔥🔥 [LAYOUT_DEBUG] ===== ENHANCED LAYOUT RENDER =====`);
+  console.log(`🔥🔥🔥 [LAYOUT_DEBUG] displayRankings count: ${displayRankings.length}`);
 
   // Manual ranking order state for visual persistence
   const [manualRankingOrder, setManualRankingOrder] = useState(displayRankings);
@@ -98,6 +98,33 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
     setDebugData
   });
 
+  // EXPLICIT DEBUG HANDLERS
+  const debugOnDragStart = (event: any) => {
+    console.log(`🔍 [COLLISION_DEBUG] ===== DRAG START DEBUG =====`);
+    console.log(`🔍 [COLLISION_DEBUG] Active ID: ${event.active.id}`);
+    console.log(`🔍 [COLLISION_DEBUG] Active data:`, event.active.data.current);
+    console.log(`🔍 [COLLISION_DEBUG] Available Pokemon count: ${enhancedAvailablePokemon.length}`);
+    console.log(`🔍 [COLLISION_DEBUG] Rankings count: ${manualRankingOrder.length}`);
+    enhancedHandleDragStart(event);
+  };
+
+  const debugOnDragOver = (event: any) => {
+    console.log(`🔍 [COLLISION_DEBUG] ===== DRAG OVER COLLISION DETECTED =====`);
+    console.log(`🔍 [COLLISION_DEBUG] Over ID: ${event.over?.id || 'NULL'}`);
+    console.log(`🔍 [COLLISION_DEBUG] Over data:`, event.over?.data?.current);
+    console.log(`🔍 [COLLISION_DEBUG] Collision strategy: closestCorners`);
+    console.log(`🔍 [COLLISION_DEBUG] Active: ${event.active.id} -> Over: ${event.over?.id || 'NULL'}`);
+  };
+
+  const debugOnDragEnd = (event: any) => {
+    console.log(`🔍 [COLLISION_DEBUG] ===== DRAG END DEBUG =====`);
+    console.log(`🔍 [COLLISION_DEBUG] Active ID: ${event.active.id}`);
+    console.log(`🔍 [COLLISION_DEBUG] Over ID: ${event.over?.id || 'NULL'}`);
+    console.log(`🔍 [COLLISION_DEBUG] Is Available Card: ${event.active.id.toString().startsWith('available-')}`);
+    console.log(`🔍 [COLLISION_DEBUG] Is Ranking Target: ${event.over?.id?.toString().startsWith('ranking-') || event.over?.id === 'rankings-drop-zone'}`);
+    enhancedHandleDragEnd(event);
+  };
+
   return (
     <div className="bg-gray-100 min-h-screen p-4">
       <div className="max-w-7xl mx-auto mb-4">
@@ -118,8 +145,9 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
       <div className="max-w-7xl mx-auto">
         <DndContext
           collisionDetection={closestCorners}
-          onDragStart={enhancedHandleDragStart}
-          onDragEnd={enhancedHandleDragEnd}
+          onDragStart={debugOnDragStart}
+          onDragOver={debugOnDragOver}
+          onDragEnd={debugOnDragEnd}
         >
           <div className="grid md:grid-cols-2 gap-4" style={{ height: 'calc(100vh - 12rem)' }}>
             <Card className="shadow-lg border border-gray-200 overflow-hidden flex flex-col">
