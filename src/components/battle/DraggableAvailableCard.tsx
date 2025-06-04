@@ -1,5 +1,4 @@
-
-import React, { memo, useMemo } from "react";
+import React, { memo, useMemo, useEffect } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { useDraggable } from '@dnd-kit/core';
 import { getPokemonBackgroundColor } from "./utils/PokemonColorUtils";
@@ -23,6 +22,11 @@ const DraggableAvailableCard: React.FC<DraggableAvailableCardProps> = memo(({
   showRank = true,
   isDraggable = true
 }) => {
+  // ITEM 4: Add verification log at top-level
+  useEffect(() => {
+    console.log("Hooks execution verified at top-level component rendering - DraggableAvailableCard");
+  }, []);
+
   // CRITICAL: Ensure unique ID format for available Pokemon
   const uniqueId = `draggable-available-${pokemon.id}`;
   

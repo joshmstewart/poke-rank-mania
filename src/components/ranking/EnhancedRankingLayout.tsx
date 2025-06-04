@@ -67,6 +67,11 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
   handleManualReorder,
   handleLocalReorder
 }) => {
+  // ITEM 4: Add verification log at top-level
+  React.useEffect(() => {
+    console.log("Hooks execution verified at top-level component rendering - EnhancedRankingLayout");
+  }, []);
+
   console.log(`[LAYOUT_DEBUG] Enhanced Layout Render - Rankings: ${displayRankings.length}`);
 
   // Manual ranking order state for visual persistence
@@ -82,7 +87,7 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
   const updateManualRankingOrder = useCallback((newOrder: any[]) => {
     setManualRankingOrder(prev => {
       if (prev.length === newOrder.length && prev.every((p, i) => p.id === newOrder[i]?.id)) {
-        return prev; // No change, prevent update
+        return prev;
       }
       return newOrder;
     });
@@ -91,7 +96,7 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
   const updateLocalAvailable = useCallback((newAvailable: any[]) => {
     setLocalAvailablePokemon(prev => {
       if (prev.length === newAvailable.length && prev.every((p, i) => p.id === newAvailable[i]?.id)) {
-        return prev; // No change, prevent update
+        return prev;
       }
       return newAvailable;
     });
@@ -116,7 +121,7 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
   const sensors = useMemo(() => useSensors(
     useSensor(MouseSensor, {
       activationConstraint: {
-        distance: 8, // Increased distance to prevent accidental drags
+        distance: 8,
       },
     }),
     useSensor(TouchSensor, {
@@ -207,7 +212,6 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
     console.log(`[DRAG_END] No valid move detected`);
   }, []);
 
-  // CRITICAL FIX: Simplified collision detection
   const explicitCollisionDetection = useCallback((args: any) => {
     const collisions = closestCenter(args);
     if (collisions.length === 0) {
@@ -216,43 +220,42 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
     return collisions;
   }, []);
 
-  // CRITICAL FIX: Minimal drag start logging
   const explicitHandleDragStart = useCallback((event: any) => {
     const activeData = event.active?.data?.current;
     console.log(`[DRAG_START] ${activeData?.pokemon?.name} (${activeData?.type})`);
     handleDragStart(event);
   }, [handleDragStart]);
 
-  // CRITICAL FIX: Create sortable IDs that match the SortableRankedCard component
   const rankedPokemonIds = useMemo(() => 
     manualRankingOrder.map(pokemon => `sortable-ranking-${pokemon.id}`), 
     [manualRankingOrder]
   );
 
+  // ITEM 1: FIXED - DndContext is ALWAYS rendered unconditionally at the same depth
   return (
-    <div className="bg-gray-100 min-h-screen p-4">
-      <div className="max-w-7xl mx-auto mb-4">
-        <UnifiedControls
-          selectedGeneration={selectedGeneration}
-          battleType={battleType}
-          onGenerationChange={(gen) => onGenerationChange(Number(gen))}
-          onBattleTypeChange={setBattleType}
-          showBattleTypeControls={true}
-          mode="manual"
-          onReset={handleComprehensiveReset}
-          customResetAction={handleComprehensiveReset}
-        />
-        
-        <DebugControls onShowDebugModal={() => setShowDebugModal(true)} />
-      </div>
+    <DndContext
+      sensors={sensors}
+      collisionDetection={explicitCollisionDetection}
+      onDragStart={explicitHandleDragStart}
+      onDragEnd={explicitHandleDragEnd}
+    >
+      <div className="bg-gray-100 min-h-screen p-4">
+        <div className="max-w-7xl mx-auto mb-4">
+          <UnifiedControls
+            selectedGeneration={selectedGeneration}
+            battleType={battleType}
+            onGenerationChange={(gen) => onGenerationChange(Number(gen))}
+            onBattleTypeChange={setBattleType}
+            showBattleTypeControls={true}
+            mode="manual"
+            onReset={handleComprehensiveReset}
+            customResetAction={handleComprehensiveReset}
+          />
+          
+          <DebugControls onShowDebugModal={() => setShowDebugModal(true)} />
+        </div>
 
-      <div className="max-w-7xl mx-auto">
-        <DndContext
-          sensors={sensors}
-          collisionDetection={explicitCollisionDetection}
-          onDragStart={explicitHandleDragStart}
-          onDragEnd={explicitHandleDragEnd}
-        >
+        <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-2 gap-4" style={{ height: 'calc(100vh - 12rem)' }}>
             <Card className="shadow-lg border border-gray-200 overflow-hidden flex flex-col">
               <AvailablePokemonDroppableContainer>
@@ -298,17 +301,17 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
               </div>
             ) : null}
           </DragOverlay>
-        </DndContext>
+        </div>
+        
+        <ScoreAdjustmentDebugModal
+          open={showDebugModal}
+          onClose={() => setShowDebugModal(false)}
+          debugData={debugData}
+        />
+        
+        <PersistentLogViewer />
       </div>
-      
-      <ScoreAdjustmentDebugModal
-        open={showDebugModal}
-        onClose={() => setShowDebugModal(false)}
-        debugData={debugData}
-      />
-      
-      <PersistentLogViewer />
-    </div>
+    </DndContext>
   );
 });
 

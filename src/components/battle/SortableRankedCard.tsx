@@ -1,5 +1,4 @@
-
-import React, { memo, useMemo } from "react";
+import React, { memo, useMemo, useEffect } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -24,6 +23,11 @@ const SortableRankedCard: React.FC<SortableRankedCardProps> = memo(({
   showRank = true,
   isDraggable = true
 }) => {
+  // ITEM 4: Add verification log at top-level
+  useEffect(() => {
+    console.log("Hooks execution verified at top-level component rendering - SortableRankedCard");
+  }, []);
+
   // CRITICAL: Ensure unique ID format for ranked Pokemon - different from available
   const uniqueId = `sortable-ranking-${pokemon.id}`;
   

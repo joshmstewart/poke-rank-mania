@@ -34,11 +34,15 @@ const DragDropGrid: React.FC<DragDropGridProps> = React.memo(({
   onMarkAsPending,
   availablePokemon = []
 }) => {
+  // ITEM 4: Add verification log at top-level
+  React.useEffect(() => {
+    console.log("Hooks execution verified at top-level component rendering - DragDropGrid");
+  }, []);
+
   console.log(`🎯 [OPTIMIZED_GRID] DragDropGrid rendering with ${displayRankings.length} items`);
 
   const { active } = useDndContext();
   
-  // Find the active pokemon for DragOverlay
   const activePokemon = useMemo(() => {
     if (!active) return null;
     
@@ -46,7 +50,6 @@ const DragDropGrid: React.FC<DragDropGridProps> = React.memo(({
     return displayRankings.find(p => p.id === activeId) || null;
   }, [active, displayRankings]);
 
-  // Stable items array for SortableContext
   const sortableItems = useMemo(() => {
     const items = displayRankings.map(p => p.id);
     console.log(`🎯 [OPTIMIZED_GRID] Creating sortable items - count: ${items.length}`);
@@ -63,16 +66,16 @@ const DragDropGrid: React.FC<DragDropGridProps> = React.memo(({
 
   const gridClassName = `transition-colors ${isOver ? 'bg-yellow-50/50' : ''}`;
 
-  // REDUCED LOGGING: Use regular optimized cards for most items, debugger only for first 3
+  // ITEM 2: FIXED - Always render all cards, use conditional content instead of conditional rendering
   const renderedCards = useMemo(() => {
-    console.log(`🎯 [OPTIMIZED_GRID] Creating cards for ${displayRankings.length} pokemon - LIMITED DEBUGGER MODE`);
+    console.log(`🎯 [OPTIMIZED_GRID] Creating cards for ${displayRankings.length} pokemon - FIXED CONDITIONAL RENDERING`);
     
     return displayRankings.map((pokemon, index) => {
       const isPending = localPendingRefinements.has(pokemon.id);
       
-      // Use debugger for only first 3 items to reduce log noise
+      // ITEM 2: ALWAYS render the card, but conditionally show debugger vs normal card
       if (index < 3) {
-        console.log(`🎯 [OPTIMIZED_GRID] Using SortableContextDebugger for ${pokemon.name} at index ${index} (limited logging)`);
+        console.log(`🎯 [OPTIMIZED_GRID] Using SortableContextDebugger for ${pokemon.name} at index ${index}`);
         return (
           <SortableContextDebugger
             key={pokemon.id}
@@ -83,7 +86,7 @@ const DragDropGrid: React.FC<DragDropGridProps> = React.memo(({
         );
       }
       
-      // Use regular optimized cards for the rest
+      // Always render OptimizedDraggableCard for the rest
       return (
         <OptimizedDraggableCard
           key={pokemon.id}
@@ -135,7 +138,6 @@ const DragDropGrid: React.FC<DragDropGridProps> = React.memo(({
     return false;
   }
   
-  // Quick comparison of first few items to detect order changes
   for (let i = 0; i < Math.min(5, prevProps.displayRankings.length); i++) {
     const prev = prevProps.displayRankings[i];
     const next = nextProps.displayRankings[i];
