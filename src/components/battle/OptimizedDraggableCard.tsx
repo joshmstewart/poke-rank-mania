@@ -32,7 +32,7 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
   // CRITICAL FIX: Use consistent ID formats for proper drag interaction
   const sortableId = context === 'available' ? `available-${pokemon.id}` : `ranking-${pokemon.id}`;
   
-  console.log(`🔧 [HOOK_DEBUG] Card ${pokemon.name} using ID: ${sortableId} (context: ${context})`);
+  console.log(`🎯 [DRAGGABLE_INIT] ${context === 'available' ? 'Available' : 'Ranking'} Pokemon initialized: ${sortableId}`);
 
   // For Available Pokemon: Use useDraggable only (no sorting)
   // For Ranked Pokemon: Use useSortable (for reordering within rankings)
@@ -51,7 +51,7 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
       }
     };
 
-    console.log(`🔧 [HOOK_DEBUG] Available Draggable:`, sortableId);
+    console.log(`🎯 [DRAGGABLE_INIT] Available Pokemon initialized:`, sortableId);
     const draggableResult = useDraggable(draggableConfig);
     dragAttributes = draggableResult.attributes;
     dragListeners = draggableResult.listeners;
@@ -72,7 +72,7 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
       }
     };
 
-    console.log(`🔧 [HOOK_DEBUG] Ranking Sortable:`, sortableId);
+    console.log(`🎯 [DRAGGABLE_INIT] Ranking Pokemon initialized:`, sortableId);
     const sortableResult = useSortable(sortableConfig);
     dragAttributes = sortableResult.attributes;
     dragListeners = sortableResult.listeners;
