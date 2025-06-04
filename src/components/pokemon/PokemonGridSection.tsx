@@ -33,12 +33,11 @@ export const PokemonGridSection: React.FC<PokemonGridSectionProps> = ({
           return (
             <div key={`gen-${item.generationId}`} className="col-span-full">
               <GenerationHeader
-                generation={{
-                  id: item.generationId,
-                  name: item.generationName,
-                  region: item.region,
-                  games: item.games
-                }}
+                generationId={item.generationId}
+                name={item.generationName}
+                region={item.region}
+                games={item.games}
+                viewMode={viewMode}
                 isExpanded={isGenerationExpanded(item.generationId)}
                 onToggle={() => onToggleGeneration(item.generationId)}
               />
