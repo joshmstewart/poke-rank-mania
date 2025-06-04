@@ -1,7 +1,6 @@
 
 import React from "react";
 import { LoadingType } from "@/hooks/pokemon/types";
-import { PokemonGridSection } from "@/components/pokemon/PokemonGridSection";
 import { InfiniteScrollLoader } from "./InfiniteScrollLoader";
 import OptimizedDraggableCard from "@/components/battle/OptimizedDraggableCard";
 
@@ -31,19 +30,27 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
   console.log(`🔍 [ENHANCED_AVAILABLE_CONTENT] ===== RENDERING START =====`);
   console.log(`🔍 [ENHANCED_AVAILABLE_CONTENT] Rendering ${items.length} items`);
 
-  const renderItems = () => {
-    if (!items || items.length === 0) {
-      console.log(`🔍 [ENHANCED_AVAILABLE_CONTENT] No items to render`);
-      return (
+  if (!items || items.length === 0) {
+    console.log(`🔍 [ENHANCED_AVAILABLE_CONTENT] No items to render`);
+    return (
+      <div className="flex-1 overflow-y-auto p-4">
         <div className="text-center py-8 text-gray-500">
           <p>No available Pokémon found</p>
         </div>
-      );
-    }
+        <InfiniteScrollLoader
+          isLoading={isLoading}
+          loadingRef={loadingRef}
+          currentPage={currentPage}
+          totalPages={totalPages}
+        />
+      </div>
+    );
+  }
 
-    console.log(`🔍 [ENHANCED_AVAILABLE_CONTENT] Processing ${items.length} items for rendering`);
+  console.log(`🔍 [ENHANCED_AVAILABLE_CONTENT] Processing ${items.length} items for rendering`);
 
-    return (
+  return (
+    <div className="flex-1 overflow-y-auto p-4">
       <div className="space-y-6">
         {items.map((item, index) => {
           console.log(`🔍 [ENHANCED_AVAILABLE_CONTENT] Processing item ${index}:`, {
@@ -78,8 +85,8 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
                 </div>
                 
                 {isExpanded && (
-                  <div className="mt-4">
-                    {/* This will be filled by the next Pokemon items */}
+                  <div className="mt-4 grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
+                    {/* Pokemon cards for this generation will be rendered separately */}
                   </div>
                 )}
               </div>
@@ -106,32 +113,20 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
             console.log(`🔍 [ENHANCED_AVAILABLE_CONTENT] isDraggable: true`);
             
             return (
-              <div key={`pokemon-${item.id}`} className="w-full">
-                <OptimizedDraggableCard
-                  pokemon={item}
-                  index={index}
-                  showRank={false}
-                  isDraggable={true}
-                  context="available"
-                />
-              </div>
+              <OptimizedDraggableCard
+                key={`pokemon-${item.id}`}
+                pokemon={item}
+                index={index}
+                showRank={false}
+                isDraggable={true}
+                context="available"
+              />
             );
           }
           
           console.log(`🔍 [ENHANCED_AVAILABLE_CONTENT] Item ${index} does not match any render condition - skipping`);
           return null;
         })}
-      </div>
-    );
-  };
-
-  const renderedContent = renderItems();
-  console.log(`🔍 [ENHANCED_AVAILABLE_CONTENT] ===== RENDERING END =====`);
-
-  return (
-    <div className="flex-1 overflow-y-auto p-4">
-      <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
-        {renderedContent}
       </div>
       
       <InfiniteScrollLoader
