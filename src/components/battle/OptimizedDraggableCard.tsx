@@ -1,5 +1,5 @@
 
-import React, { memo } from "react";
+import React, { memo, useEffect } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { useDraggable } from '@dnd-kit/core';
 import { useSortable } from '@dnd-kit/sortable';
@@ -27,15 +27,19 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
   isDraggable = true,
   context = 'ranked'
 }) => {
-  // CRITICAL: Explicit component rendering confirmation
-  console.log(`🚨 OptimizedDraggableCard rendered: ${pokemon.name}, context: ${context}, isDraggable: ${isDraggable}`);
+  // 🔥 DIAGNOSTIC LOGGING - This will help identify if this component is being used
+  useEffect(() => {
+    console.log(`🔥🔥🔥 [OPTIMIZED_DRAGGABLE_CARD] Loaded OptimizedDraggableCard for ${pokemon.name} (ID: ${pokemon.id}) with context: ${context}`);
+    console.log(`🔥🔥🔥 [OPTIMIZED_DRAGGABLE_CARD] Component source: OptimizedDraggableCard.tsx`);
+    console.log(`🔥🔥🔥 [OPTIMIZED_DRAGGABLE_CARD] isDraggable: ${isDraggable}, context: ${context}`);
+  }, [pokemon.id, pokemon.name, context, isDraggable]);
 
   // CRITICAL FIX: Use consistent ID formats with explicit prefixes
   const id = context === 'available' ? `available-${pokemon.id}` : `ranking-${pokemon.id}`;
   
-  console.log(`🎯 [DRAGGABLE_INIT] Initializing Pokemon: ${id} with context: ${context}`);
+  console.log(`🎯 [DRAGGABLE_CARD_INIT] Initializing ${pokemon.name} with ID: ${id}, context: ${context}`);
 
-  // CRITICAL FIX: Initialize hooks with proper data types
+  // CRITICAL FIX: Always initialize both hooks with proper disabled flags
   const draggableResult = useDraggable({
     id,
     disabled: !isDraggable || context !== 'available',
@@ -61,24 +65,24 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
     }
   });
 
-  // CRITICAL: Log initialization results
-  console.log(`🟢 useDraggable initialized for ${id}:`, {
+  // CRITICAL: Log hook initialization results
+  console.log(`🟢 [HOOK_INIT] ${pokemon.name} useDraggable:`, {
     isDragging: draggableResult.isDragging,
-    hasListeners: !!draggableResult.listeners,
-    disabled: !isDraggable || context !== 'available'
+    disabled: !isDraggable || context !== 'available',
+    context
   });
 
-  console.log(`🟢 useSortable initialized for ${id}:`, {
+  console.log(`🟢 [HOOK_INIT] ${pokemon.name} useSortable:`, {
     isDragging: sortableResult.isDragging,
-    hasListeners: !!sortableResult.listeners,
-    disabled: !isDraggable || context !== 'ranked'
+    disabled: !isDraggable || context !== 'ranked',
+    context
   });
 
   // Select the appropriate properties based on context
   const activeResult = context === 'available' ? draggableResult : sortableResult;
   const { attributes, listeners, setNodeRef, isDragging, transform } = activeResult;
 
-  console.log(`🎯 [ACTIVE_RESULT] Using ${context} result for ${pokemon.name}:`, {
+  console.log(`🎯 [ACTIVE_RESULT] ${pokemon.name} using ${context} result:`, {
     isDragging,
     hasAttributes: !!attributes,
     hasListeners: !!listeners,

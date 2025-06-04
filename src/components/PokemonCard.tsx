@@ -1,5 +1,4 @@
-
-import React, { useMemo } from "react";
+import React, { useMemo, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Pokemon } from "@/services/pokemon";
 import { validateBattlePokemon } from "@/services/pokemon/api/utils";
@@ -15,6 +14,15 @@ interface PokemonCardProps {
 }
 
 const PokemonCard = ({ pokemon, isDragging, viewMode = "list", compact }: PokemonCardProps) => {
+  // 🚨 DIAGNOSTIC LOGGING - This will help identify if this legacy component is being used
+  useEffect(() => {
+    console.log(`🚨🚨🚨 [LEGACY_POKEMON_CARD] ===== LEGACY PokemonCard.tsx BEING USED! =====`);
+    console.log(`🚨🚨🚨 [LEGACY_POKEMON_CARD] Pokemon: ${pokemon.name} (ID: ${pokemon.id})`);
+    console.log(`🚨🚨🚨 [LEGACY_POKEMON_CARD] Component source: PokemonCard.tsx (LEGACY)`);
+    console.log(`🚨🚨🚨 [LEGACY_POKEMON_CARD] This might be the issue - check imports!`);
+    console.log(`🚨🚨🚨 [LEGACY_POKEMON_CARD] ViewMode: ${viewMode}, Compact: ${compact}`);
+  }, [pokemon.id, pokemon.name, viewMode, compact]);
+
   // DEBUG: Log where compact prop comes from
   console.log(`🔍 [POKEMON_CARD_DEBUG] ${pokemon.name}: compact prop = ${compact}, viewMode = ${viewMode}`);
 

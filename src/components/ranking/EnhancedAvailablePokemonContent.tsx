@@ -32,26 +32,17 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
   } = props;
 
   // CRITICAL: Explicit component rendering confirmation
-  console.log('🚨 EnhancedAvailablePokemonContent COMPONENT RENDERED', {
-    itemsCount: items.length,
-    showGenerationHeaders,
-    viewMode,
-    isLoading,
-    currentPage,
-    totalPages,
-    props: props
-  });
-
-  console.log(`🔍🔍🔍 [ENHANCED_CONTENT_RENDER] ===== ENHANCED AVAILABLE CONTENT RENDERING =====`);
-  console.log(`🔍🔍🔍 [ENHANCED_CONTENT_RENDER] Rendering ${items.length} items`);
-  console.log(`🔍🔍🔍 [ENHANCED_CONTENT_RENDER] First few items:`, items.slice(0, 3));
+  console.log('🚨🚨🚨 [ENHANCED_CONTENT_DIAGNOSTIC] ===== ENHANCED AVAILABLE CONTENT COMPONENT ENTRY =====');
+  console.log('🚨🚨🚨 [ENHANCED_CONTENT_DIAGNOSTIC] This is EnhancedAvailablePokemonContent.tsx rendering');
+  console.log(`🚨🚨🚨 [ENHANCED_CONTENT_DIAGNOSTIC] Rendering ${items.length} items`);
+  console.log(`🚨🚨🚨 [ENHANCED_CONTENT_DIAGNOSTIC] First few items:`, items.slice(0, 3));
 
   // Count different item types
   const pokemonItems = items.filter(item => item.id && !item.type);
   const headerItems = items.filter(item => item.type === 'generation-header');
   
-  console.log(`🔍🔍🔍 [ENHANCED_CONTENT_RENDER] Pokemon items count: ${pokemonItems.length}`);
-  console.log(`🔍🔍🔍 [ENHANCED_CONTENT_RENDER] Header items count: ${headerItems.length}`);
+  console.log(`🚨🚨🚨 [ENHANCED_CONTENT_DIAGNOSTIC] Pokemon items count: ${pokemonItems.length}`);
+  console.log(`🚨🚨🚨 [ENHANCED_CONTENT_DIAGNOSTIC] Header items count: ${headerItems.length}`);
 
   return (
     <AvailablePokemonDroppableContainer>
@@ -69,7 +60,7 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
             }`}
           >
             {items.map((item, index) => {
-              console.log(`🔍🔍🔍 [ENHANCED_CONTENT_ITEM] Processing item ${index}:`, {
+              console.log(`🚨🚨🚨 [ENHANCED_CONTENT_ITEM_DIAGNOSTIC] Processing item ${index}:`, {
                 hasId: !!item.id,
                 hasType: !!item.type,
                 type: item.type,
@@ -79,7 +70,7 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
 
               // Handle generation headers
               if (item.type === 'generation-header') {
-                console.log(`🔍🔍🔍 [ENHANCED_CONTENT_HEADER] Rendering generation header for gen ${item.generationId}`);
+                console.log(`🚨🚨🚨 [ENHANCED_CONTENT_HEADER_DIAGNOSTIC] Rendering generation header for gen ${item.generationId}`);
                 return showGenerationHeaders ? (
                   <div key={`gen-${item.generationId}`} className="col-span-full">
                     <GenerationHeader
@@ -95,16 +86,14 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
                 ) : null;
               }
 
-              // Handle Pokémon items - CRITICAL FIX: Always use 'available' context
+              // Handle Pokémon items - CRITICAL: This is where cards are rendered
               if (item.id) {
-                console.log(`🟢🟢🟢 [AVAILABLE_RENDER] ===== RENDERING AVAILABLE POKEMON =====`);
-                console.log(`🟢🟢🟢 [AVAILABLE_RENDER] Pokemon: ${item.name} (ID: ${item.id})`);
-                console.log(`🟢🟢🟢 [AVAILABLE_RENDER] Context: 'available'`);
-                console.log(`🟢🟢🟢 [AVAILABLE_RENDER] Index: ${index}`);
-                console.log(`🟢🟢🟢 [AVAILABLE_RENDER] About to render OptimizedDraggableCard with context='available'`);
-                
-                // CRITICAL: Explicit rendering confirmation before component
-                console.log(`🚨 ABOUT TO RENDER OptimizedDraggableCard for ${item.name} with context="available"`);
+                console.log(`🚨🚨🚨 [ENHANCED_CONTENT_POKEMON_DIAGNOSTIC] ===== ABOUT TO RENDER POKEMON CARD =====`);
+                console.log(`🚨🚨🚨 [ENHANCED_CONTENT_POKEMON_DIAGNOSTIC] Pokemon: ${item.name} (ID: ${item.id})`);
+                console.log(`🚨🚨🚨 [ENHANCED_CONTENT_POKEMON_DIAGNOSTIC] Using component: OptimizedDraggableCard`);
+                console.log(`🚨🚨🚨 [ENHANCED_CONTENT_POKEMON_DIAGNOSTIC] Context: 'available'`);
+                console.log(`🚨🚨🚨 [ENHANCED_CONTENT_POKEMON_DIAGNOSTIC] Index: ${index}`);
+                console.log(`🚨🚨🚨 [ENHANCED_CONTENT_POKEMON_DIAGNOSTIC] Import source: @/components/battle/OptimizedDraggableCard`);
                 
                 return (
                   <OptimizedDraggableCard
@@ -119,7 +108,7 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
                 );
               }
 
-              console.log(`⚠️⚠️⚠️ [ENHANCED_CONTENT_UNKNOWN] Unknown item type at index ${index}:`, item);
+              console.log(`⚠️⚠️⚠️ [ENHANCED_CONTENT_UNKNOWN_DIAGNOSTIC] Unknown item type at index ${index}:`, item);
               return null;
             })}
           </div>
