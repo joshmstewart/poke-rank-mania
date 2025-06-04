@@ -68,7 +68,8 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
       scaleX: 1,
       scaleY: 1
     } : null;
-    transition = draggableResult.transition;
+    // CRITICAL FIX: useDraggable doesn't return transition, only useSortable does
+    transition = undefined;
     
     console.log(`🟢🟢🟢 [AVAILABLE_POKEMON_INIT] Available Pokemon ${pokemon.name} draggable state:`, {
       id: sortableId,

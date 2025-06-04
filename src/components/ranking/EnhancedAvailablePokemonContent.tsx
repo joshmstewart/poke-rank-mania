@@ -2,7 +2,7 @@
 import React from "react";
 import { LoadingType } from "@/hooks/pokemon/types";
 import OptimizedDraggableCard from "@/components/battle/OptimizedDraggableCard";
-import { GenerationHeader } from "@/components/pokemon/GenerationHeader";
+import GenerationHeader from "@/components/pokemon/GenerationHeader";
 import { LoadingState } from "./LoadingState";
 
 interface EnhancedAvailablePokemonContentProps {
@@ -52,9 +52,10 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
                 <div key={`gen-${item.generationId}`} className="col-span-full">
                   <GenerationHeader
                     generationId={item.generationId}
-                    generationName={item.generationName}
+                    name={item.generationName}
                     region={item.region}
                     games={item.games}
+                    viewMode={viewMode}
                     isExpanded={isGenerationExpanded(item.generationId)}
                     onToggle={() => onToggleGeneration(item.generationId)}
                   />
@@ -86,9 +87,10 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
       {/* Loading indicator */}
       {isLoading && (
         <LoadingState 
-          loadingRef={loadingRef}
-          currentPage={currentPage}
-          totalPages={totalPages}
+          selectedGeneration={0}
+          loadSize={20}
+          itemsPerPage={20}
+          loadingType="pagination"
         />
       )}
     </div>
