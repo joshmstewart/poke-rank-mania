@@ -25,7 +25,6 @@ export const PokemonGridSection: React.FC<PokemonGridSectionProps> = ({
   console.log(`🔍🔍🔍 [POKEMON_GRID_SECTION] ===== PokemonGridSection RENDERING =====`);
   console.log(`🔍🔍🔍 [POKEMON_GRID_SECTION] isRankingArea: ${isRankingArea}`);
   console.log(`🔍🔍🔍 [POKEMON_GRID_SECTION] Items count: ${items.length}`);
-  console.log(`🔍🔍🔍 [POKEMON_GRID_SECTION] This component uses PokemonCard (LEGACY)`);
 
   return (
     <div 
@@ -56,11 +55,9 @@ export const PokemonGridSection: React.FC<PokemonGridSectionProps> = ({
 
         // Handle Pokémon items
         if (item.id) {
-          console.log(`🚨🚨🚨 [POKEMON_GRID_WRONG_COMPONENT] Using PokemonCard for ${item.name} - THIS IS THE PROBLEM!`);
-          
           if (isRankingArea) {
-            // Use OptimizedDraggableCard for ranking areas
-            console.log(`🔥🔥🔥 [POKEMON_GRID_FIX] Switching to OptimizedDraggableCard for ranking area`);
+            // ✅ Correct component for ranking/draggable area
+            console.log(`🔥🔥🔥 [POKEMON_GRID_FIX] Using OptimizedDraggableCard for ${item.name} in ranking area`);
             return (
               <OptimizedDraggableCard
                 key={`pokemon-${item.id}`}
@@ -69,11 +66,11 @@ export const PokemonGridSection: React.FC<PokemonGridSectionProps> = ({
                 isPending={false}
                 showRank={false}
                 isDraggable={true}
-                context="available"
+                context="available" // crucially: set context correctly here
               />
             );
           } else {
-            // For non-ranking areas, use PokemonCard but log it
+            // Legacy component, fine for display-only non-draggable context
             console.log(`🚨🚨🚨 [POKEMON_GRID_LEGACY] Using legacy PokemonCard for ${item.name} in non-ranking area`);
             return (
               <PokemonCard

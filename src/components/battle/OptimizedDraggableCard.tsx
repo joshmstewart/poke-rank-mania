@@ -39,42 +39,42 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
   
   console.log(`🎯 [DRAGGABLE_CARD_INIT] Initializing ${pokemon.name} with ID: ${id}, context: ${context}`);
 
-  // CRITICAL FIX: Always initialize both hooks with proper disabled flags
+  // CRITICAL FIX: Always initialize both hooks with proper accepts configuration
   const draggableResult = useDraggable({
     id,
-    disabled: !isDraggable || context !== 'available',
+    disabled: !isDraggable, // always initialize draggable if isDraggable=true
     data: {
-      type: 'available-pokemon',
+      type: context === 'available' ? 'available-pokemon' : 'ranked-pokemon',
       pokemon: pokemon,
       source: context,
       index,
-      category: 'draggable-available'
+      category: 'draggable-pokemon'
     }
   });
 
   const sortableResult = useSortable({
     id,
-    disabled: !isDraggable || context !== 'ranked',
+    disabled: !isDraggable, // always initialize sortable if isDraggable=true
     data: {
-      type: 'ranked-pokemon',
+      type: context === 'available' ? 'available-pokemon' : 'ranked-pokemon',
       pokemon: pokemon,
       source: context,
       index,
-      accepts: ['available-pokemon', 'ranked-pokemon'],
-      category: 'sortable-ranked'
+      accepts: ['available-pokemon', 'ranked-pokemon'], // explicitly accept both types
+      category: 'sortable-pokemon'
     }
   });
 
   // CRITICAL: Log hook initialization results
   console.log(`🟢 [HOOK_INIT] ${pokemon.name} useDraggable:`, {
     isDragging: draggableResult.isDragging,
-    disabled: !isDraggable || context !== 'available',
+    disabled: !isDraggable,
     context
   });
 
   console.log(`🟢 [HOOK_INIT] ${pokemon.name} useSortable:`, {
     isDragging: sortableResult.isDragging,
-    disabled: !isDraggable || context !== 'ranked',
+    disabled: !isDraggable,
     context
   });
 
