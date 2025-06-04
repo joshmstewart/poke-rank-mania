@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { useDroppable } from '@dnd-kit/core';
 
 interface AvailablePokemonDroppableContainerProps {
@@ -16,16 +16,31 @@ export const AvailablePokemonDroppableContainer: React.FC<AvailablePokemonDroppa
     },
   });
 
-  console.log(`🎯 [AVAILABLE_DROPPABLE] Available drop zone initialized with ID: available-pokemon-drop-zone`);
-  console.log(`🎯 [AVAILABLE_DROPPABLE] Drop zone isOver: ${isOver}`);
-  console.log(`🎯 [AVAILABLE_DROPPABLE] Accepts: ['ranked-pokemon', 'available-pokemon']`);
+  // CRITICAL: Add droppable initialization logging
+  useEffect(() => {
+    console.log(`🎯🎯🎯 [DROPPABLE_INIT] Available drop zone initialized with ID: available-pokemon-drop-zone`);
+    console.log(`🎯🎯🎯 [DROPPABLE_INIT] setNodeRef function:`, !!setNodeRef);
+  }, [setNodeRef]);
+
+  // Additional logging when hover state changes
+  useEffect(() => {
+    if (isOver) {
+      console.log(`🎯🎯🎯 [DROPPABLE_HOVER] Available drop zone is being hovered over!`);
+    }
+  }, [isOver]);
+
+  console.log(`🎯 [AVAILABLE_DROPPABLE] Available drop zone render - isOver: ${isOver}`);
 
   return (
     <div 
       ref={setNodeRef} 
       className={`h-full w-full flex flex-col transition-colors available-drop-zone ${
-        isOver ? 'bg-green-50' : ''
+        isOver ? 'bg-green-50 border-2 border-green-300' : ''
       }`}
+      style={{
+        minHeight: '200px', // Ensure minimum height for drop zone
+        position: 'relative' // Ensure proper positioning
+      }}
     >
       {children}
     </div>

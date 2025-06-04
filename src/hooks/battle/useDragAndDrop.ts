@@ -1,5 +1,5 @@
 
-import { useSensors, useSensor, PointerSensor, KeyboardSensor } from '@dnd-kit/core';
+import { useSensors, useSensor, PointerSensor, KeyboardSensor, MouseSensor, TouchSensor } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { DragEndEvent } from '@dnd-kit/core';
 import { useCallback, useMemo, useRef } from 'react';
@@ -10,18 +10,6 @@ interface UseDragAndDropProps {
   onManualReorder: (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => void;
   onLocalReorder: (newRankings: any[]) => void;
 }
-
-// Memoized sensor configuration to prevent recreation
-const SENSOR_CONFIG = {
-  pointer: {
-    activationConstraint: {
-      distance: 8, // Require 8px movement before drag starts
-    },
-  },
-  keyboard: {
-    coordinateGetter: sortableKeyboardCoordinates,
-  }
-};
 
 export const useDragAndDrop = ({ displayRankings, onManualReorder, onLocalReorder }: UseDragAndDropProps) => {
   // Track renders for performance debugging
@@ -40,12 +28,6 @@ export const useDragAndDrop = ({ displayRankings, onManualReorder, onLocalReorde
   // Update refs when props change
   onManualReorderRef.current = onManualReorder;
   onLocalReorderRef.current = onLocalReorder;
-
-  // PERFORMANCE FIX: Memoize sensor configuration
-  const sensors = useMemo(() => useSensors(
-    useSensor(PointerSensor, SENSOR_CONFIG.pointer),
-    useSensor(KeyboardSensor, SENSOR_CONFIG.keyboard)
-  ), []);
 
   // CRITICAL FIX: Stable drag end handler with optimal logic
   const handleDragEnd = useCallback((event: DragEndEvent) => {
@@ -93,5 +75,6 @@ export const useDragAndDrop = ({ displayRankings, onManualReorder, onLocalReorde
     console.log(`🚀 [DRAG_DROP_FLOW] ===== DRAG END COMPLETE =====`);
   }, []); // Empty deps for maximum stability, using refs for current values
 
-  return { sensors, handleDragEnd };
+  // NOTE: Sensors are now handled in MilestoneDragProvider for better control
+  return { handleDragEnd };
 };
