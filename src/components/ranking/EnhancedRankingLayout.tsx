@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import { DndContext, DragOverlay, closestCorners, useSensor, useSensors, PointerSensor, KeyboardSensor } from '@dnd-kit/core';
-import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
+import { SortableContext, verticalListSortingStrategy, rectSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { useTrueSkillStore } from "@/stores/trueskillStore";
 import { BattleType } from "@/hooks/battle/types";
 import { LoadingType } from "@/hooks/pokemon/types";
@@ -113,6 +113,13 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
     })
   );
 
+  // CRITICAL FIX: Create sortable IDs for proper context separation
+  const rankedPokemonIds = manualRankingOrder.map(pokemon => `ranking-${pokemon.id}`);
+  const availablePokemonIds = enhancedAvailablePokemon.map(pokemon => `available-${pokemon.id}`);
+
+  console.log(`🎯 [SORTABLE_CONTEXT] Ranked Pokemon IDs:`, rankedPokemonIds.slice(0, 3));
+  console.log(`🎯 [SORTABLE_CONTEXT] Available Pokemon IDs:`, availablePokemonIds.slice(0, 3));
+
   // CRITICAL FIX: Enhanced collision detection and debug logging
   const debugOnDragStart = (event: any) => {
     console.log(`🎯 [DRAG_START_EVENT] ===== DRAG START TRIGGERED =====`);
@@ -132,8 +139,9 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
       console.log(`🔍 [COLLISION_DEBUG] ===== DRAG OVER COLLISION DETECTED =====`);
       console.log(`🔍 [COLLISION_DEBUG] Active ID: ${event.active.id}`);
       console.log(`🔍 [COLLISION_DEBUG] Over ID: ${event.over.id}`);
+      console.log(`🔍 [COLLISION_DEBUG] Active Type: ${event.active.data?.current?.type}`);
       console.log(`🔍 [COLLISION_DEBUG] Over Type: ${event.over.data?.current?.type}`);
-      console.log(`🔍 [COLLISION_DEBUG] Accepts: ${event.over.data?.current?.accepts}`);
+      console.log(`🔍 [COLLISION_DEBUG] Over Accepts: ${event.over.data?.current?.accepts}`);
       console.log(`🔍 [COLLISION_DEBUG] Collision strategy: closestCorners`);
       console.log(`🔍 [COLLISION_DEBUG] Cross-context interaction: ${event.active.id.toString().startsWith('available-') && (event.over.id === 'rankings-drop-zone' || event.over.id.toString().startsWith('ranking-'))}`);
       
@@ -154,6 +162,7 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
     console.log(`🎯 [DRAG_END_EVENT] ===== DRAG END TRIGGERED =====`);
     console.log(`🎯 [DRAG_END_EVENT] Active ID: ${event.active.id}`);
     console.log(`🎯 [DRAG_END_EVENT] Over ID: ${event.over?.id || 'NULL'}`);
+    console.log(`🎯 [DRAG_END_EVENT] Active Type: ${event.active.data?.current?.type}`);
     console.log(`🎯 [DRAG_END_EVENT] Over Type: ${event.over?.data?.current?.type || 'NULL'}`);
     console.log(`🎯 [DRAG_END_EVENT] Is Available Card: ${event.active.id.toString().startsWith('available-')}`);
     console.log(`🎯 [DRAG_END_EVENT] Is Rankings Drop Zone: ${event.over?.id === 'rankings-drop-zone'}`);
@@ -166,6 +175,22 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
       console.log(`🎯 [DRAG_END_EVENT] ✅ SUCCESSFUL DROP ON RANKINGS ZONE!`);
     } else if (event.over.id.toString().startsWith('ranking-')) {
       console.log(`🎯 [DRAG_END_EVENT] ✅ SUCCESSFUL DROP ON SORTABLE RANKING CARD!`);
+    }
+    
+    // CRITICAL FIX: Enhanced drag end logic with explicit type checking
+    const activeType = event.active.data?.current?.type;
+    const overType = event.over?.data?.current?.type;
+    
+    console.log(`🔥 [DRAG_LOGIC] Active type: ${activeType}, Over type: ${overType}`);
+    
+    if (activeType === 'available-pokemon' && (overType === 'ranked-pokemon' || event.over?.id === 'rankings-drop-zone')) {
+      console.log('✅ [DRAG_LOGIC] Valid drop detected! Available Pokemon -> Rankings');
+      const pokemon = event.active.data.current.pokemon;
+      console.log(`🔥 [DRAG_LOGIC] Moving Pokemon: ${pokemon?.name} (ID: ${pokemon?.id})`);
+    } else if (activeType === 'ranked-pokemon' && overType === 'ranked-pokemon') {
+      console.log('✅ [DRAG_LOGIC] Valid reorder detected! Ranking Pokemon -> Ranking Pokemon');
+    } else {
+      console.log('⚠️ [DRAG_LOGIC] Invalid drop - types do not match expected patterns');
     }
     
     // Call the enhanced handler
@@ -199,28 +224,34 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
         >
           <div className="grid md:grid-cols-2 gap-4" style={{ height: 'calc(100vh - 12rem)' }}>
             <Card className="shadow-lg border border-gray-200 overflow-hidden flex flex-col">
-              <EnhancedAvailablePokemonSection
-                enhancedAvailablePokemon={enhancedAvailablePokemon}
-                isLoading={isLoading}
-                selectedGeneration={selectedGeneration}
-                loadingType={loadingType}
-                currentPage={currentPage}
-                totalPages={totalPages}
-                loadingRef={loadingRef}
-                handlePageChange={handlePageChange}
-                getPageRange={getPageRange}
-              />
+              {/* CRITICAL FIX: Separate SortableContext for available Pokemon */}
+              <SortableContext items={availablePokemonIds} strategy={rectSortingStrategy}>
+                <EnhancedAvailablePokemonSection
+                  enhancedAvailablePokemon={enhancedAvailablePokemon}
+                  isLoading={isLoading}
+                  selectedGeneration={selectedGeneration}
+                  loadingType={loadingType}
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  loadingRef={loadingRef}
+                  handlePageChange={handlePageChange}
+                  getPageRange={getPageRange}
+                />
+              </SortableContext>
             </Card>
 
             <Card className="shadow-lg border border-gray-200 overflow-hidden flex flex-col">
               <RankingsDroppableContainer>
-                <RankingsSectionStable
-                  displayRankings={manualRankingOrder}
-                  onManualReorder={stableOnManualReorder}
-                  onLocalReorder={stableOnLocalReorder}
-                  pendingRefinements={new Set()}
-                  availablePokemon={enhancedAvailablePokemon}
-                />
+                {/* CRITICAL FIX: Separate SortableContext for ranked Pokemon */}
+                <SortableContext items={rankedPokemonIds} strategy={verticalListSortingStrategy}>
+                  <RankingsSectionStable
+                    displayRankings={manualRankingOrder}
+                    onManualReorder={stableOnManualReorder}
+                    onLocalReorder={stableOnLocalReorder}
+                    pendingRefinements={new Set()}
+                    availablePokemon={enhancedAvailablePokemon}
+                  />
+                </SortableContext>
               </RankingsDroppableContainer>
             </Card>
           </div>
