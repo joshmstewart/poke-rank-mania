@@ -69,7 +69,7 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
 }) => {
   // ITEM 4: Add verification log at top-level
   React.useEffect(() => {
-    console.log("Hooks execution verified at top-level component rendering - EnhancedRankingLayout");
+    console.log("✅ [HOOK_DEBUG] EnhancedRankingLayout - useEffect hook executed successfully");
   }, []);
 
   console.log(`[LAYOUT_DEBUG] Enhanced Layout Render - Rankings: ${displayRankings.length}`);
@@ -82,7 +82,7 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
   // Debug modal state
   const [showDebugModal, setShowDebugModal] = useState(false);
   const [debugData, setDebugData] = useState<ScoreDebugInfo[]>([]);
-  
+
   // CRITICAL FIX: Memoize state updates to prevent excessive re-renders
   const updateManualRankingOrder = useCallback((newOrder: any[]) => {
     setManualRankingOrder(prev => {
@@ -231,87 +231,81 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
     [manualRankingOrder]
   );
 
-  // ITEM 1: FIXED - DndContext is ALWAYS rendered unconditionally at the same depth
+  // CRITICAL FIX: Remove DndContext from here - it should be provided by parent or only exist in one place
+  // The DndContext should be in the parent component that manages the entire drag and drop flow
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={explicitCollisionDetection}
-      onDragStart={explicitHandleDragStart}
-      onDragEnd={explicitHandleDragEnd}
-    >
-      <div className="bg-gray-100 min-h-screen p-4">
-        <div className="max-w-7xl mx-auto mb-4">
-          <UnifiedControls
-            selectedGeneration={selectedGeneration}
-            battleType={battleType}
-            onGenerationChange={(gen) => onGenerationChange(Number(gen))}
-            onBattleTypeChange={setBattleType}
-            showBattleTypeControls={true}
-            mode="manual"
-            onReset={handleComprehensiveReset}
-            customResetAction={handleComprehensiveReset}
-          />
-          
-          <DebugControls onShowDebugModal={() => setShowDebugModal(true)} />
-        </div>
-
-        <div className="max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-2 gap-4" style={{ height: 'calc(100vh - 12rem)' }}>
-            <Card className="shadow-lg border border-gray-200 overflow-hidden flex flex-col">
-              <AvailablePokemonDroppableContainer>
-                <EnhancedAvailablePokemonSection
-                  enhancedAvailablePokemon={localAvailablePokemon}
-                  isLoading={isLoading}
-                  selectedGeneration={selectedGeneration}
-                  loadingType={loadingType}
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  loadingRef={loadingRef}
-                  handlePageChange={handlePageChange}
-                  getPageRange={getPageRange}
-                />
-              </AvailablePokemonDroppableContainer>
-            </Card>
-
-            <Card className="shadow-lg border border-gray-200 overflow-hidden flex flex-col">
-              <RankingsDroppableContainer>
-                <SortableContext items={rankedPokemonIds} strategy={verticalListSortingStrategy}>
-                  <RankingsSectionStable
-                    displayRankings={manualRankingOrder}
-                    onManualReorder={stableOnManualReorder}
-                    onLocalReorder={stableOnLocalReorder}
-                    pendingRefinements={new Set()}
-                    availablePokemon={localAvailablePokemon}
-                  />
-                </SortableContext>
-              </RankingsDroppableContainer>
-            </Card>
-          </div>
-          
-          <DragOverlay>
-            {activeDraggedPokemon ? (
-              <div className="transform rotate-3 scale-105 opacity-90">
-                <OptimizedDraggableCard
-                  pokemon={activeDraggedPokemon}
-                  index={0}
-                  showRank={false}
-                  isDraggable={false}
-                  context={activeDraggedPokemon.id?.toString().startsWith('draggable-available-') ? 'available' : 'ranked'}
-                />
-              </div>
-            ) : null}
-          </DragOverlay>
-        </div>
-        
-        <ScoreAdjustmentDebugModal
-          open={showDebugModal}
-          onClose={() => setShowDebugModal(false)}
-          debugData={debugData}
+    <div className="bg-gray-100 min-h-screen p-4">
+      <div className="max-w-7xl mx-auto mb-4">
+        <UnifiedControls
+          selectedGeneration={selectedGeneration}
+          battleType={battleType}
+          onGenerationChange={(gen) => onGenerationChange(Number(gen))}
+          onBattleTypeChange={setBattleType}
+          showBattleTypeControls={true}
+          mode="manual"
+          onReset={handleComprehensiveReset}
+          customResetAction={handleComprehensiveReset}
         />
         
-        <PersistentLogViewer />
+        <DebugControls onShowDebugModal={() => setShowDebugModal(true)} />
       </div>
-    </DndContext>
+
+      <div className="max-w-7xl mx-auto">
+        <div className="grid md:grid-cols-2 gap-4" style={{ height: 'calc(100vh - 12rem)' }}>
+          <Card className="shadow-lg border border-gray-200 overflow-hidden flex flex-col">
+            <AvailablePokemonDroppableContainer>
+              <EnhancedAvailablePokemonSection
+                enhancedAvailablePokemon={localAvailablePokemon}
+                isLoading={isLoading}
+                selectedGeneration={selectedGeneration}
+                loadingType={loadingType}
+                currentPage={currentPage}
+                totalPages={totalPages}
+                loadingRef={loadingRef}
+                handlePageChange={handlePageChange}
+                getPageRange={getPageRange}
+              />
+            </AvailablePokemonDroppableContainer>
+          </Card>
+
+          <Card className="shadow-lg border border-gray-200 overflow-hidden flex flex-col">
+            <RankingsDroppableContainer>
+              <SortableContext items={rankedPokemonIds} strategy={verticalListSortingStrategy}>
+                <RankingsSectionStable
+                  displayRankings={manualRankingOrder}
+                  onManualReorder={stableOnManualReorder}
+                  onLocalReorder={stableOnLocalReorder}
+                  pendingRefinements={new Set()}
+                  availablePokemon={localAvailablePokemon}
+                />
+              </SortableContext>
+            </RankingsDroppableContainer>
+          </Card>
+        </div>
+        
+        <DragOverlay>
+          {activeDraggedPokemon ? (
+            <div className="transform rotate-3 scale-105 opacity-90">
+              <OptimizedDraggableCard
+                pokemon={activeDraggedPokemon}
+                index={0}
+                showRank={false}
+                isDraggable={false}
+                context={activeDraggedPokemon.id?.toString().startsWith('draggable-available-') ? 'available' : 'ranked'}
+              />
+            </div>
+          ) : null}
+        </DragOverlay>
+      </div>
+      
+      <ScoreAdjustmentDebugModal
+        open={showDebugModal}
+        onClose={() => setShowDebugModal(false)}
+        debugData={debugData}
+      />
+      
+      <PersistentLogViewer />
+    </div>
   );
 });
 

@@ -1,5 +1,6 @@
 
 import React from "react";
+import { DndContext, closestCenter, useSensor, useSensors, MouseSensor, TouchSensor } from '@dnd-kit/core';
 import { useEnhancedManualReorder } from "@/hooks/battle/useEnhancedManualReorder";
 import { useEnhancedRankingDragDrop } from "@/hooks/ranking/useEnhancedRankingDragDrop";
 import { useReRankingTrigger } from "@/hooks/ranking/useReRankingTrigger";
@@ -119,10 +120,30 @@ export const RankingUICore: React.FC<RankingUICoreProps> = React.memo(({
     updateLocalRankings(newRankings);
   };
 
-  console.log(`🚨🚨🚨 [RANKING_UI_CORE_DEBUG] About to render EnhancedRankingLayout`);
+  // CRITICAL FIX: Setup sensors and DndContext at the TOP LEVEL
+  const sensors = useSensors(
+    useSensor(MouseSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 250,
+        tolerance: 8,
+      },
+    })
+  );
+
+  console.log(`🚨🚨🚨 [RANKING_UI_CORE_DEBUG] About to render EnhancedRankingLayout with DndContext`);
 
   return (
-    <>
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
       <EnhancedRankingLayout
         isLoading={isLoading}
         availablePokemon={availablePokemon}
@@ -149,7 +170,7 @@ export const RankingUICore: React.FC<RankingUICoreProps> = React.memo(({
       />
       
       <PersistentLogViewer />
-    </>
+    </DndContext>
   );
 }, (prevProps, nextProps) => {
   // Custom comparison to prevent unnecessary re-renders
