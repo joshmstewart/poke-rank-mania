@@ -33,14 +33,28 @@ const DragDropGrid: React.FC<DragDropGridProps> = React.memo(({
   onMarkAsPending,
   availablePokemon = []
 }) => {
+  // CRITICAL: Add debugging to track hook execution order
+  console.log("🔍 [HOOK_DEBUG] DragDropGrid - About to call hooks");
+  
   // ITEM 4: Add verification log at top-level
   React.useEffect(() => {
-    console.log("Hooks execution verified at top-level component rendering - DragDropGrid");
+    console.log("✅ [HOOK_DEBUG] DragDropGrid - useEffect hook executed successfully");
   }, []);
 
   console.log(`🎯 [OPTIMIZED_GRID] DragDropGrid rendering with ${displayRankings.length} items`);
 
-  const { active } = useDndContext();
+  // CRITICAL: Try-catch around hook to identify violations
+  let dndContext;
+  try {
+    console.log("🔍 [HOOK_DEBUG] DragDropGrid - Calling useDndContext");
+    dndContext = useDndContext();
+    console.log("✅ [HOOK_DEBUG] DragDropGrid - useDndContext successful");
+  } catch (error) {
+    console.error("❌ [HOOK_DEBUG] DragDropGrid - useDndContext failed:", error);
+    throw error;
+  }
+  
+  const { active } = dndContext;
   
   const activePokemon = useMemo(() => {
     if (!active) return null;
@@ -55,13 +69,24 @@ const DragDropGrid: React.FC<DragDropGridProps> = React.memo(({
     return items;
   }, [displayRankings]);
 
-  const { setNodeRef, isOver } = useDroppable({
-    id: 'rankings-grid-drop-zone',
-    data: {
-      type: 'rankings-grid',
-      accepts: ['available-pokemon', 'ranked-pokemon']
-    }
-  });
+  // CRITICAL: Try-catch around useDroppable hook
+  let droppableResult;
+  try {
+    console.log("🔍 [HOOK_DEBUG] DragDropGrid - Calling useDroppable");
+    droppableResult = useDroppable({
+      id: 'rankings-grid-drop-zone',
+      data: {
+        type: 'rankings-grid',
+        accepts: ['available-pokemon', 'ranked-pokemon']
+      }
+    });
+    console.log("✅ [HOOK_DEBUG] DragDropGrid - useDroppable successful");
+  } catch (error) {
+    console.error("❌ [HOOK_DEBUG] DragDropGrid - useDroppable failed:", error);
+    throw error;
+  }
+
+  const { setNodeRef, isOver } = droppableResult;
 
   const gridClassName = `transition-colors ${isOver ? 'bg-yellow-50/50' : ''}`;
 

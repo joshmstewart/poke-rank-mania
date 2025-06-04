@@ -21,8 +21,12 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
   isDraggable = true,
   context = 'ranked'
 }) => {
+  // CRITICAL: Add debugging to track which path is taken
+  console.log(`🔍 [CARD_DEBUG] OptimizedDraggableCard - ${pokemon.name} - context: ${context}`);
+  
   // CRITICAL FIX: Pure conditional component rendering - NO HOOKS in this component
   if (context === 'available') {
+    console.log(`🔍 [CARD_DEBUG] Rendering DraggableAvailableCard for ${pokemon.name}`);
     return (
       <DraggableAvailableCard
         pokemon={pokemon}
@@ -34,6 +38,7 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
     );
   }
 
+  console.log(`🔍 [CARD_DEBUG] Rendering SortableRankedCard for ${pokemon.name}`);
   return (
     <SortableRankedCard
       pokemon={pokemon}
