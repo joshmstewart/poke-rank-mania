@@ -16,11 +16,14 @@ export const usePokemonGrouping = (
   isGenerationExpanded: (genId: number) => boolean
 ) => {
   console.log(`🎯🎯🎯 [POKEMON_GROUPING_CRITICAL] ===== POKEMON GROUPING DEBUG =====`);
-  console.log(`🎯🎯🎯 [POKEMON_GROUPING_CRITICAL] Input Pokemon count: ${pokemon?.length || 0}`);
+  
+  // CRITICAL FIX: Ensure pokemon is always a valid array
+  const safePokemon = Array.isArray(pokemon) ? pokemon : [];
+  console.log(`🎯🎯🎯 [POKEMON_GROUPING_CRITICAL] Input Pokemon count: ${safePokemon.length}`);
   
   // CRITICAL: Log sample input Pokemon
-  if (pokemon && pokemon.length > 0) {
-    pokemon.slice(0, 3).forEach((p, index) => {
+  if (safePokemon.length > 0) {
+    safePokemon.slice(0, 3).forEach((p, index) => {
       console.log(`🎯🎯🎯 [POKEMON_GROUPING_CRITICAL] Input Pokemon #${index}:`, {
         id: p?.id,
         name: p?.name,
@@ -33,15 +36,15 @@ export const usePokemonGrouping = (
   const items = useMemo(() => {
     console.log(`🎯🎯🎯 [POKEMON_GROUPING_CRITICAL] ===== GROUPING LOGIC START =====`);
     
-    if (!pokemon || !Array.isArray(pokemon) || pokemon.length === 0) {
+    if (!safePokemon || safePokemon.length === 0) {
       console.log(`🎯🎯🎯 [POKEMON_GROUPING_CRITICAL] No valid Pokemon input - returning empty array`);
       return [];
     }
 
     // Filter Pokemon based on search term
-    let filteredPokemon = pokemon;
-    if (searchTerm.trim()) {
-      filteredPokemon = pokemon.filter(p => {
+    let filteredPokemon = safePokemon;
+    if (searchTerm && searchTerm.trim()) {
+      filteredPokemon = safePokemon.filter(p => {
         if (!p || !p.name) {
           console.error(`🎯🎯🎯 [POKEMON_GROUPING_CRITICAL] INVALID Pokemon during search filter:`, p);
           return false;
@@ -131,15 +134,15 @@ export const usePokemonGrouping = (
     console.log(`🎯🎯🎯 [POKEMON_GROUPING_CRITICAL] ===== GROUPING LOGIC COMPLETE =====`);
 
     return result;
-  }, [pokemon, searchTerm, isRankingArea, isGenerationExpanded]);
+  }, [safePokemon, searchTerm, isRankingArea, isGenerationExpanded]);
 
   // Show generation headers if we have multiple generations
   const showGenerationHeaders = useMemo(() => {
-    if (!pokemon || pokemon.length === 0) return false;
+    if (!safePokemon || safePokemon.length === 0) return false;
     
-    const generations = new Set(pokemon.map(p => p?.generation || 1));
+    const generations = new Set(safePokemon.map(p => p?.generation || 1));
     return generations.size > 1;
-  }, [pokemon]);
+  }, [safePokemon]);
 
   console.log(`🎯🎯🎯 [POKEMON_GROUPING_CRITICAL] Final return - items: ${items.length}, showHeaders: ${showGenerationHeaders}`);
 
