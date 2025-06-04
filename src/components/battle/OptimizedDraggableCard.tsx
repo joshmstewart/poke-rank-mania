@@ -1,3 +1,4 @@
+
 import React, { memo } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { useDraggable } from '@dnd-kit/core';
@@ -28,18 +29,13 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
 }) => {
   console.log(`🚀 [OPTIMIZED_CARD] ${pokemon.name}: Rendering optimized card (context: ${context})`);
 
-  // EXPLICIT NOTE: "All Filtered" Pokémon cards intentionally NOT sortable.
-  // Sorted explicitly by Pokédex number.
-  // Pokémon can ONLY be dragged into "Your Rankings" grid.
-  
-  // For Available Pokemon: Use useDraggable (no sorting within grid)
-  // For Ranked Pokemon: Use useSortable (allows reordering within rankings)
-  const sortableId = context === 'available' ? `available-${pokemon.id}` : pokemon.id.toString();
+  // CRITICAL FIX: Use consistent ID formats for proper drag interaction
+  const sortableId = context === 'available' ? `available-${pokemon.id}` : `ranking-${pokemon.id}`;
   
   console.log(`🔧 [DRAG_ID_FIX] Card ${pokemon.name} using ID: ${sortableId} (context: ${context})`);
 
-  // CORRECTED: Available Pokemon use useDraggable only (no sorting)
-  // Ranked Pokemon use useSortable (for reordering within rankings)
+  // For Available Pokemon: Use useDraggable only (no sorting)
+  // For Ranked Pokemon: Use useSortable (for reordering within rankings)
   let dragAttributes, dragListeners, setNodeRef, isDragging, transform, transition;
 
   if (context === 'available') {
@@ -86,7 +82,7 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
 
   const backgroundColorClass = getPokemonBackgroundColor(pokemon);
   
-  // EXPLICITLY: Only apply drag props if draggable to prevent conflicts
+  // Only apply drag props if draggable to prevent conflicts
   const dragProps = isDraggable ? { ...dragAttributes, ...dragListeners } : {};
 
   // Apply transform for sortable items

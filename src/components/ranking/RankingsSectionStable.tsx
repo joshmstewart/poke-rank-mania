@@ -1,8 +1,9 @@
-
 import React, { useCallback, useMemo } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import DragDropGridMemoized from "@/components/battle/DragDropGridMemoized";
 import { useStableDragHandlers } from "@/hooks/battle/useStableDragHandlers";
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { useDroppable } from '@dnd-kit/core';
 
 interface RankingsSectionStableProps {
   displayRankings: (Pokemon | RankedPokemon)[];
@@ -31,6 +32,21 @@ export const RankingsSectionStable: React.FC<RankingsSectionStableProps> = React
     onManualReorder,
     onLocalReorder
   );
+
+  // Create sortable items with consistent ranking- prefix
+  const sortableItems = useMemo(() => 
+    displayRankings.map(pokemon => `ranking-${pokemon.id}`), 
+    [displayRankings]
+  );
+
+  // Setup droppable for the entire rankings area
+  const { setNodeRef: setDroppableRef } = useDroppable({
+    id: 'rankings-drop-zone',
+    data: {
+      type: 'rankings-container',
+      accepts: ['available-pokemon', 'ranked-pokemon']
+    }
+  });
 
   // Memoize pending battle counts to prevent recreation
   const pendingBattleCounts = useMemo(() => new Map<number, number>(), []);
@@ -65,15 +81,17 @@ export const RankingsSectionStable: React.FC<RankingsSectionStableProps> = React
           - No conflicting droppable or sortable contexts
           - Pure content container that delegates to DragDropGridMemoized
           - All drag logic handled by single DndContext in EnhancedRankingLayout */}
-      <div className="flex-1 overflow-y-auto p-4">
+      <div ref={setDroppableRef} className="flex-1 overflow-y-auto p-4">
         {displayRankings.length === 0 ? emptyStateContent : (
-          <DragDropGridMemoized
-            displayRankings={displayRankings}
-            localPendingRefinements={pendingRefinements}
-            pendingBattleCounts={pendingBattleCounts}
-            onManualReorder={stableOnManualReorder}
-            onLocalReorder={stableOnLocalReorder}
-          />
+          <SortableContext items={sortableItems} strategy={verticalListSortingStrategy}>
+            <DragDropGridMemoized
+              displayRankings={displayRankings}
+              localPendingRefinements={pendingRefinements}
+              pendingBattleCounts={pendingBattleCounts}
+              onManualReorder={stableOnManualReorder}
+              onLocalReorder={stableOnLocalReorder}
+            />
+          </SortableContext>
         )}
       </div>
     </div>

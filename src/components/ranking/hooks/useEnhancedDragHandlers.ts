@@ -40,8 +40,10 @@ export const useEnhancedDragHandlers = ({
     
     if (activeId.startsWith('available-')) {
       console.log(`🔧 [MANUAL_DRAG] Dragging from Available grid: ${activeId}`);
-    } else {
+    } else if (activeId.startsWith('ranking-')) {
       console.log(`🔧 [MANUAL_DRAG] Dragging within Rankings grid: ${activeId}`);
+    } else {
+      console.log(`🔧 [MANUAL_DRAG] Legacy ID format detected: ${activeId}`);
     }
     
     handleDragStart(event);
@@ -67,10 +69,23 @@ export const useEnhancedDragHandlers = ({
       return;
     }
     
-    // Handle manual reordering within rankings with detailed debug capture and immediate UI refresh
-    if (!activeId.startsWith('available-') && !overId.startsWith('available-')) {
-      const oldIndex = manualRankingOrder.findIndex(p => p.id.toString() === activeId);
-      const newIndex = manualRankingOrder.findIndex(p => p.id.toString() === overId);
+    // Handle manual reordering within rankings (both legacy and new format)
+    const isRankingReorder = (
+      (activeId.startsWith('ranking-') || !activeId.startsWith('available-')) &&
+      (overId.startsWith('ranking-') || (!overId.startsWith('available-') && !isNaN(parseInt(overId))))
+    );
+    
+    if (isRankingReorder) {
+      // Extract pokemon IDs (handle both ranking- prefix and legacy numeric IDs)
+      const activePokemonId = activeId.startsWith('ranking-') ? 
+        parseInt(activeId.replace('ranking-', '')) : 
+        parseInt(activeId);
+      const overPokemonId = overId.startsWith('ranking-') ? 
+        parseInt(overId.replace('ranking-', '')) : 
+        parseInt(overId);
+      
+      const oldIndex = manualRankingOrder.findIndex(p => p.id === activePokemonId);
+      const newIndex = manualRankingOrder.findIndex(p => p.id === overPokemonId);
       
       console.log(`🔧 [ENHANCED_DEBUG_DRAG] Reordering indices: ${oldIndex} -> ${newIndex}`);
       
@@ -140,7 +155,7 @@ export const useEnhancedDragHandlers = ({
           
           console.log(`🎯 [ENHANCED_DEBUG_SCORING] Immediate neighbors - Above: ${scoreAbove.toFixed(5)}, Below: ${scoreBelow.toFixed(5)}`);
           
-          // Check if cascading adjustment is needed (both immediate neighbors have identical scores)
+          // Check if cascading adjustment is needed
           const needsCascading = Math.abs(scoreAbove - scoreBelow) < 0.000001;
           
           if (needsCascading) {
@@ -301,7 +316,7 @@ export const useEnhancedDragHandlers = ({
         console.log(`🔄 [UI_REFRESH] ✅ UI refreshed with ${refreshedRankings.length} updated rankings`);
         
         // Trigger background manual reorder for external state sync
-        handleManualReorder(parseInt(activeId), oldIndex, newIndex);
+        handleManualReorder(activePokemonId, oldIndex, newIndex);
         
         return;
       }

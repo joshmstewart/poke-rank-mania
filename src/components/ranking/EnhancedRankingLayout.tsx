@@ -7,13 +7,12 @@ import { LoadingType } from "@/hooks/pokemon/types";
 import { RankingsSectionStable } from "./RankingsSectionStable";
 import { EnhancedAvailablePokemonSection } from "./EnhancedAvailablePokemonSection";
 import UnifiedControls from "@/components/shared/UnifiedControls";
-import PokemonCard from "@/components/PokemonCard";
+import OptimizedDraggableCard from "@/components/battle/OptimizedDraggableCard";
 import { Card } from "@/components/ui/card";
 import { useStableDragHandlers } from "@/hooks/battle/useStableDragHandlers";
 import ScoreAdjustmentDebugModal from "./ScoreAdjustmentDebugModal";
 import { DebugControls } from "./components/DebugControls";
 import { useEnhancedDragHandlers } from "./hooks/useEnhancedDragHandlers";
-import { refreshRankingsWithUpdatedScores } from "./utils/scoreRefresh";
 import { ScoreDebugInfo } from "./types/debugTypes";
 
 interface EnhancedRankingLayoutProps {
@@ -151,11 +150,12 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
           <DragOverlay>
             {activeDraggedPokemon ? (
               <div className="transform rotate-3 scale-105 opacity-90">
-                <PokemonCard
+                <OptimizedDraggableCard
                   pokemon={activeDraggedPokemon}
-                  compact={true}
-                  viewMode="grid"
-                  isDragging={true}
+                  index={0}
+                  showRank={false}
+                  isDraggable={false}
+                  context={activeDraggedPokemon.id?.toString().startsWith('available-') ? 'available' : 'ranked'}
                 />
               </div>
             ) : null}
