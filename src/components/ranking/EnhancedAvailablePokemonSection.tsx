@@ -34,8 +34,8 @@ export const EnhancedAvailablePokemonSection: React.FC<EnhancedAvailablePokemonS
   handlePageChange,
   getPageRange
 }) => {
-  // CRITICAL FIX: Ensure array is always defined with safe default
-  const safeEnhancedAvailablePokemon = enhancedAvailablePokemon || [];
+  // CRITICAL FIX: Explicitly ensure array is always valid
+  const safeEnhancedAvailablePokemon = Array.isArray(enhancedAvailablePokemon) ? enhancedAvailablePokemon : [];
   
   console.log(`🔍 [ENHANCED_AVAILABLE_SECTION] Rendering ${safeEnhancedAvailablePokemon.length} enhanced available Pokemon`);
   
