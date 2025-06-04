@@ -20,38 +20,45 @@ export const useRankingDataProcessing = ({
   
   const { localRankings: trueskillRankings, updateLocalRankings } = useTrueSkillSync();
   
-  // CRITICAL FIX: Ensure availablePokemon is always a valid array before any processing
-  const safeAvailablePokemon = Array.isArray(availablePokemon) ? availablePokemon : [];
-  const safeRankedPokemon = Array.isArray(rankedPokemon) ? rankedPokemon : [];
+  // CRITICAL FIX: Ensure all inputs are valid arrays immediately
+  const safeAvailablePokemon = useMemo(() => {
+    return Array.isArray(availablePokemon) ? availablePokemon : [];
+  }, [availablePokemon]);
   
-  console.log(`🔍 [RANKING_DATA_PROCESSING] Safe available Pokemon: ${safeAvailablePokemon.length}`);
-  console.log(`🔍 [RANKING_DATA_PROCESSING] Safe ranked Pokemon: ${safeRankedPokemon.length}`);
+  const safeRankedPokemon = useMemo(() => {
+    return Array.isArray(rankedPokemon) ? rankedPokemon : [];
+  }, [rankedPokemon]);
   
-  // CRITICAL FIX: Use TrueSkill rankings as the primary source, with proper fallback
+  const safeTrueskillRankings = useMemo(() => {
+    return Array.isArray(trueskillRankings) ? trueskillRankings : [];
+  }, [trueskillRankings]);
+  
+  console.log(`🔍 [RANKING_DATA_PROCESSING] Safe arrays - available: ${safeAvailablePokemon.length}, ranked: ${safeRankedPokemon.length}, trueskill: ${safeTrueskillRankings.length}`);
+  
+  // CRITICAL FIX: Use TrueSkill rankings as primary source with safe fallback
   const localRankings = useMemo(() => {
-    // If we have TrueSkill rankings from the 277 rated Pokemon, use them
-    if (trueskillRankings && Array.isArray(trueskillRankings) && trueskillRankings.length > 0) {
-      return trueskillRankings;
+    if (safeTrueskillRankings.length > 0) {
+      return safeTrueskillRankings;
     }
     
-    // Only fall back to manual rankings if TrueSkill is truly empty
     if (safeRankedPokemon.length > 0) {
       return safeRankedPokemon;
     }
     
-    // Default to empty array
     return [];
-  }, [trueskillRankings, safeRankedPokemon]);
+  }, [safeTrueskillRankings, safeRankedPokemon]);
 
-  // Apply generation filtering to available Pokemon with safe array
+  // Apply generation filtering with guaranteed safe array
   const { filteredAvailablePokemon } = useGenerationFilter(safeAvailablePokemon, selectedGeneration);
 
-  // CRITICAL FIX: Ensure filteredAvailablePokemon is always an array before passing to enhanced hook
-  const safeFilteredAvailablePokemon = Array.isArray(filteredAvailablePokemon) ? filteredAvailablePokemon : [];
+  // CRITICAL FIX: Ensure filtered result is always an array
+  const safeFilteredAvailablePokemon = useMemo(() => {
+    return Array.isArray(filteredAvailablePokemon) ? filteredAvailablePokemon : [];
+  }, [filteredAvailablePokemon]);
   
-  console.log(`🔍 [RANKING_DATA_PROCESSING] Safe filtered available Pokemon: ${safeFilteredAvailablePokemon.length}`);
+  console.log(`🔍 [RANKING_DATA_PROCESSING] Final safe filtered available: ${safeFilteredAvailablePokemon.length}`);
 
-  // CRITICAL FIX: Enhanced available Pokemon with proper ranking status
+  // Enhanced available Pokemon with guaranteed safe inputs
   const { enhancedAvailablePokemon } = useEnhancedAvailablePokemon({
     filteredAvailablePokemon: safeFilteredAvailablePokemon,
     localRankings
@@ -62,6 +69,6 @@ export const useRankingDataProcessing = ({
     updateLocalRankings,
     displayRankings: localRankings,
     filteredAvailablePokemon: safeFilteredAvailablePokemon,
-    enhancedAvailablePokemon
+    enhancedAvailablePokemon: enhancedAvailablePokemon || []
   };
 };

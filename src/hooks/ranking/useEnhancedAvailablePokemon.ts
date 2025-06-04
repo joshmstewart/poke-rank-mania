@@ -28,60 +28,38 @@ export const useEnhancedAvailablePokemon = ({
   const enhancedAvailablePokemon = useMemo(() => {
     console.log(`🔍 [ENHANCED_AVAILABLE_DEBUG] === INPUT VERIFICATION ===`);
     
-    // CRITICAL FIX: Multiple layers of safety checks
-    const safeLocalRankings = useMemo(() => {
-      if (!localRankings) {
-        console.warn(`🔍 [ENHANCED_AVAILABLE_DEBUG] localRankings is null/undefined`);
-        return [];
-      }
-      if (!Array.isArray(localRankings)) {
-        console.warn(`🔍 [ENHANCED_AVAILABLE_DEBUG] localRankings is not array: ${typeof localRankings}`);
-        return [];
-      }
-      return localRankings.filter(pokemon => pokemon && typeof pokemon.id === 'number');
-    }, [localRankings]);
+    // CRITICAL FIX: Immediate null/undefined checks before any processing
+    if (!filteredAvailablePokemon || !Array.isArray(filteredAvailablePokemon)) {
+      console.warn(`🔍 [ENHANCED_AVAILABLE_DEBUG] filteredAvailablePokemon is invalid:`, typeof filteredAvailablePokemon);
+      return [];
+    }
     
-    const safeFilteredAvailablePokemon = useMemo(() => {
-      if (!filteredAvailablePokemon) {
-        console.warn(`🔍 [ENHANCED_AVAILABLE_DEBUG] filteredAvailablePokemon is null/undefined`);
-        return [];
-      }
-      if (!Array.isArray(filteredAvailablePokemon)) {
-        console.warn(`🔍 [ENHANCED_AVAILABLE_DEBUG] filteredAvailablePokemon is not array: ${typeof filteredAvailablePokemon}`);
-        return [];
-      }
-      return filteredAvailablePokemon.filter(pokemon => pokemon && typeof pokemon.id === 'number');
-    }, [filteredAvailablePokemon]);
+    if (!localRankings || !Array.isArray(localRankings)) {
+      console.warn(`🔍 [ENHANCED_AVAILABLE_DEBUG] localRankings is invalid:`, typeof localRankings);
+      return [];
+    }
     
-    console.log(`🔍 [ENHANCED_AVAILABLE_DEBUG] Safe localRankings length: ${safeLocalRankings.length}`);
-    console.log(`🔍 [ENHANCED_AVAILABLE_DEBUG] Safe filteredAvailablePokemon length: ${safeFilteredAvailablePokemon.length}`);
+    console.log(`🔍 [ENHANCED_AVAILABLE_DEBUG] Processing ${filteredAvailablePokemon.length} available Pokemon with ${localRankings.length} rankings`);
     
-    // Create efficient lookup map for ranked Pokemon
+    // Create efficient lookup map for ranked Pokemon with safety
     const rankedPokemonMap = new Map<number, { rank: number; pokemon: RankedPokemon }>();
     
-    console.log(`🔍 [ENHANCED_AVAILABLE_DEBUG] === MAP CREATION DEBUG ===`);
-    
-    safeLocalRankings.forEach((pokemon, index) => {
+    localRankings.forEach((pokemon, index) => {
       if (pokemon && typeof pokemon.id === 'number') {
         rankedPokemonMap.set(pokemon.id, { rank: index + 1, pokemon });
-        console.log(`🔍 [ENHANCED_AVAILABLE_DEBUG] Added to map: ${pokemon.id} -> rank ${index + 1}`);
-      } else {
-        console.error(`🔍 [ENHANCED_AVAILABLE_DEBUG] INVALID ranking entry at index ${index}:`, pokemon);
       }
     });
     
-    console.log(`🔍 [ENHANCED_AVAILABLE_DEBUG] rankedPokemonMap size: ${rankedPokemonMap.size}`);
+    console.log(`🔍 [ENHANCED_AVAILABLE_DEBUG] Created ranking map with ${rankedPokemonMap.size} entries`);
 
-    // Process each available Pokemon
+    // Process each available Pokemon with comprehensive validation
     const enhanced: EnhancedPokemon[] = [];
     
-    console.log(`🔍 [ENHANCED_AVAILABLE_DEBUG] === PROCESSING POKEMON ===`);
-    
-    safeFilteredAvailablePokemon.forEach((pokemon, index) => {
-      // Validate Pokemon object
-      if (!pokemon || typeof pokemon.id !== 'number') {
-        console.error(`🔍 [ENHANCED_AVAILABLE_DEBUG] INVALID Pokemon at index ${index}:`, pokemon);
-        return; // Skip invalid Pokemon
+    filteredAvailablePokemon.forEach((pokemon, index) => {
+      // Validate Pokemon object structure
+      if (!pokemon || typeof pokemon.id !== 'number' || !pokemon.name) {
+        console.warn(`🔍 [ENHANCED_AVAILABLE_DEBUG] Invalid Pokemon at index ${index}:`, pokemon);
+        return;
       }
       
       const rankedInfo = rankedPokemonMap.get(pokemon.id);
@@ -101,24 +79,15 @@ export const useEnhancedAvailablePokemon = ({
         generation: pokemon.generation || 1
       };
       
-      // Final validation before adding
-      if (enhancedPokemon.id && enhancedPokemon.name && typeof enhancedPokemon.id === 'number') {
-        enhanced.push(enhancedPokemon);
-      } else {
-        console.error(`🔍 [ENHANCED_AVAILABLE_DEBUG] MALFORMED enhanced Pokemon at index ${index}:`, enhancedPokemon);
-      }
+      enhanced.push(enhancedPokemon);
     });
     
-    console.log(`🔍 [ENHANCED_AVAILABLE_DEBUG] === FINAL RESULT ===`);
-    console.log(`🔍 [ENHANCED_AVAILABLE_DEBUG] Enhanced Pokemon count: ${enhanced.length}`);
-    console.log(`🔍 [ENHANCED_AVAILABLE_DEBUG] Ranked Pokemon in enhanced: ${enhanced.filter(p => p.isRanked).length}`);
-    
-    // CRITICAL: Verify no undefined objects in final array
-    const undefinedCount = enhanced.filter(p => !p || typeof p.id !== 'number').length;
-    console.log(`🔍 [ENHANCED_AVAILABLE_DEBUG] Undefined/invalid objects in final array: ${undefinedCount}`);
-    
+    console.log(`🔍 [ENHANCED_AVAILABLE_DEBUG] Final enhanced array: ${enhanced.length} Pokemon`);
     return enhanced;
+    
   }, [filteredAvailablePokemon, localRankings]);
 
-  return { enhancedAvailablePokemon: enhancedAvailablePokemon || [] };
+  return { 
+    enhancedAvailablePokemon: enhancedAvailablePokemon || [] 
+  };
 };

@@ -17,92 +17,52 @@ export const usePokemonGrouping = (
 ) => {
   console.log(`🎯🎯🎯 [POKEMON_GROUPING_CRITICAL] ===== POKEMON GROUPING DEBUG =====`);
   
-  // CRITICAL FIX: Multiple layers of safety checks
+  // CRITICAL FIX: Immediate validation before any processing
   const safePokemon = useMemo(() => {
-    // First check: null/undefined
-    if (!pokemon) {
-      console.log(`🎯🎯🎯 [POKEMON_GROUPING_CRITICAL] Pokemon is null/undefined, returning empty array`);
+    if (!pokemon || !Array.isArray(pokemon)) {
+      console.log(`🎯🎯🎯 [POKEMON_GROUPING_CRITICAL] Invalid pokemon input: ${typeof pokemon}`);
       return [];
     }
     
-    // Second check: array type
-    if (!Array.isArray(pokemon)) {
-      console.log(`🎯🎯🎯 [POKEMON_GROUPING_CRITICAL] Pokemon is not array (${typeof pokemon}), returning empty array`);
-      return [];
-    }
-    
-    // Third check: valid array with proper elements
-    const validPokemon = pokemon.filter(p => {
-      if (!p) return false;
-      if (typeof p.id !== 'number') return false;
-      if (!p.name) return false;
-      return true;
-    });
-    
-    console.log(`🎯🎯🎯 [POKEMON_GROUPING_CRITICAL] Input: ${pokemon.length}, Valid: ${validPokemon.length}`);
-    return validPokemon;
+    return pokemon.filter(p => p && typeof p.id === 'number' && p.name);
   }, [pokemon]);
   
-  console.log(`🎯🎯🎯 [POKEMON_GROUPING_CRITICAL] Safe Pokemon count: ${safePokemon ? safePokemon.length : 'STILL_UNDEFINED'}`);
+  console.log(`🎯🎯🎯 [POKEMON_GROUPING_CRITICAL] Safe Pokemon count: ${safePokemon.length}`);
 
   const items = useMemo(() => {
-    console.log(`🎯🎯🎯 [POKEMON_GROUPING_CRITICAL] ===== GROUPING LOGIC START =====`);
+    console.log(`🎯🎯🎯 [POKEMON_GROUPING_CRITICAL] Processing ${safePokemon.length} safe Pokemon`);
     
-    // CRITICAL: Final safety check before processing
-    if (!safePokemon || !Array.isArray(safePokemon) || safePokemon.length === 0) {
-      console.log(`🎯🎯🎯 [POKEMON_GROUPING_CRITICAL] No valid Pokemon input - returning empty array`);
+    if (safePokemon.length === 0) {
+      console.log(`🎯🎯🎯 [POKEMON_GROUPING_CRITICAL] No Pokemon to process`);
       return [];
     }
 
-    // Filter Pokemon based on search term with safety
+    // Filter Pokemon based on search term
     let filteredPokemon = safePokemon;
     if (searchTerm && typeof searchTerm === 'string' && searchTerm.trim()) {
-      filteredPokemon = safePokemon.filter(p => {
-        if (!p || !p.name || typeof p.name !== 'string') {
-          console.error(`🎯🎯🎯 [POKEMON_GROUPING_CRITICAL] INVALID Pokemon during search filter:`, p);
-          return false;
-        }
-        return p.name.toLowerCase().includes(searchTerm.toLowerCase());
-      });
-      console.log(`🎯🎯🎯 [POKEMON_GROUPING_CRITICAL] After search filter: ${filteredPokemon.length} Pokemon`);
+      filteredPokemon = safePokemon.filter(p => 
+        p.name && p.name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
     }
 
-    // Group by generation with safety
+    // Group by generation
     const generationGroups = new Map<number, Pokemon[]>();
     
-    filteredPokemon.forEach((p, index) => {
-      if (!p || typeof p.id !== 'number') {
-        console.error(`🎯🎯🎯 [POKEMON_GROUPING_CRITICAL] INVALID Pokemon at index ${index}:`, p);
-        return;
-      }
-      
+    filteredPokemon.forEach((p) => {
       const generation = p.generation || 1;
       if (!generationGroups.has(generation)) {
         generationGroups.set(generation, []);
       }
-      
-      const groupArray = generationGroups.get(generation);
-      if (groupArray && Array.isArray(groupArray)) {
-        groupArray.push(p);
-      }
+      generationGroups.get(generation)!.push(p);
     });
-
-    console.log(`🎯🎯🎯 [POKEMON_GROUPING_CRITICAL] Generation groups created: ${generationGroups.size}`);
 
     // Create items array with headers and Pokemon
     const result: GroupedItem[] = [];
     const sortedGenerations = Array.from(generationGroups.keys()).sort((a, b) => a - b);
 
     sortedGenerations.forEach(generation => {
-      const generationPokemon = generationGroups.get(generation);
+      const generationPokemon = generationGroups.get(generation) || [];
       
-      if (!generationPokemon || !Array.isArray(generationPokemon)) {
-        console.error(`🎯🎯🎯 [POKEMON_GROUPING_CRITICAL] Invalid generation group for ${generation}`);
-        return;
-      }
-      
-      console.log(`🎯🎯🎯 [POKEMON_GROUPING_CRITICAL] Processing generation ${generation}: ${generationPokemon.length} Pokemon`);
-
       // Add generation header
       result.push({
         type: 'header',
@@ -115,63 +75,33 @@ export const usePokemonGrouping = (
       });
 
       // Add Pokemon if generation is expanded
-      if (isGenerationExpanded && typeof isGenerationExpanded === 'function' && isGenerationExpanded(generation)) {
-        generationPokemon.forEach((pokemon, pokemonIndex) => {
-          if (!pokemon || typeof pokemon.id !== 'number') {
-            console.error(`🎯🎯🎯 [POKEMON_GROUPING_CRITICAL] INVALID Pokemon in generation ${generation} at index ${pokemonIndex}:`, pokemon);
-            return;
-          }
-
-          const pokemonItem: GroupedItem = {
+      if (isGenerationExpanded && isGenerationExpanded(generation)) {
+        generationPokemon.forEach((pokemon) => {
+          result.push({
             type: 'pokemon',
             id: pokemon.id,
             data: pokemon
-          };
-
-          // CRITICAL: Verify the item we're adding is valid
-          if (!pokemonItem.data || typeof pokemonItem.data.id !== 'number') {
-            console.error(`🎯🎯🎯 [POKEMON_GROUPING_CRITICAL] CREATING INVALID Pokemon item:`, pokemonItem);
-          } else {
-            result.push(pokemonItem);
-          }
+          });
         });
       }
     });
 
-    console.log(`🎯🎯🎯 [POKEMON_GROUPING_CRITICAL] ===== FINAL RESULT VALIDATION =====`);
-    console.log(`🎯🎯🎯 [POKEMON_GROUPING_CRITICAL] Total items created: ${result.length}`);
-    
-    // CRITICAL: Validate every item in the result
-    let invalidItemCount = 0;
-    result.forEach((item, index) => {
-      if (!item) {
-        console.error(`🎯🎯🎯 [POKEMON_GROUPING_CRITICAL] NULL/UNDEFINED item at index ${index}`);
-        invalidItemCount++;
-      } else if (item.type === 'pokemon') {
-        if (!item.data || typeof item.data.id !== 'number' || !item.data.name) {
-          console.error(`🎯🎯🎯 [POKEMON_GROUPING_CRITICAL] INVALID Pokemon item at index ${index}:`, item);
-          invalidItemCount++;
-        }
-      }
-    });
-    
-    console.log(`🎯🎯🎯 [POKEMON_GROUPING_CRITICAL] Invalid items in final result: ${invalidItemCount}`);
-    console.log(`🎯🎯🎯 [POKEMON_GROUPING_CRITICAL] ===== GROUPING LOGIC COMPLETE =====`);
-
-    return result.filter(item => item && (item.type === 'header' || (item.data && typeof item.data.id === 'number')));
+    console.log(`🎯🎯🎯 [POKEMON_GROUPING_CRITICAL] Final result: ${result.length} items`);
+    return result;
   }, [safePokemon, searchTerm, isRankingArea, isGenerationExpanded]);
 
   // Show generation headers if we have multiple generations
   const showGenerationHeaders = useMemo(() => {
-    if (!safePokemon || !Array.isArray(safePokemon) || safePokemon.length === 0) return false;
+    if (safePokemon.length === 0) return false;
     
-    const generations = new Set(safePokemon.map(p => p?.generation || 1));
+    const generations = new Set(safePokemon.map(p => p.generation || 1));
     return generations.size > 1;
   }, [safePokemon]);
 
-  console.log(`🎯🎯🎯 [POKEMON_GROUPING_CRITICAL] Final return - items: ${items ? items.length : 'UNDEFINED'}, showHeaders: ${showGenerationHeaders}`);
-
-  return { items: items || [], showGenerationHeaders };
+  return { 
+    items: items || [], 
+    showGenerationHeaders 
+  };
 };
 
 // Helper functions
