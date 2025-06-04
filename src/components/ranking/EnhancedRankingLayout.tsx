@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { DndContext, DragOverlay, rectIntersection, useSensor, useSensors, PointerSensor, KeyboardSensor } from '@dnd-kit/core';
+import { DndContext, DragOverlay, closestCorners, useSensor, useSensors, PointerSensor, KeyboardSensor } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { useTrueSkillStore } from "@/stores/trueskillStore";
 import { BattleType } from "@/hooks/battle/types";
@@ -132,16 +132,21 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
       console.log(`🔍 [COLLISION_DEBUG] ===== DRAG OVER COLLISION DETECTED =====`);
       console.log(`🔍 [COLLISION_DEBUG] Active ID: ${event.active.id}`);
       console.log(`🔍 [COLLISION_DEBUG] Over ID: ${event.over.id}`);
-      console.log(`🔍 [COLLISION_DEBUG] Over data:`, event.over.data?.current);
-      console.log(`🔍 [COLLISION_DEBUG] Collision strategy: rectIntersection`);
-      console.log(`🔍 [COLLISION_DEBUG] Cross-context interaction: ${event.active.id.toString().startsWith('available-') && event.over.id === 'rankings-drop-zone'}`);
+      console.log(`🔍 [COLLISION_DEBUG] Over Type: ${event.over.data?.current?.type}`);
+      console.log(`🔍 [COLLISION_DEBUG] Accepts: ${event.over.data?.current?.accepts}`);
+      console.log(`🔍 [COLLISION_DEBUG] Collision strategy: closestCorners`);
+      console.log(`🔍 [COLLISION_DEBUG] Cross-context interaction: ${event.active.id.toString().startsWith('available-') && (event.over.id === 'rankings-drop-zone' || event.over.id.toString().startsWith('ranking-'))}`);
       
-      // EXPLICIT collision detection debugging for droppable container
-      if (event.active.id.toString().startsWith('available-') && event.over.id === 'rankings-drop-zone') {
-        console.log(`🔍 [COLLISION_DEBUG] ✅ Available Pokemon ${event.active.id} colliding with rankings drop zone!`);
-        console.log(`🔍 [COLLISION_DEBUG] Drop zone type: ${event.over.data?.current?.type}`);
-        console.log(`🔍 [COLLISION_DEBUG] Drop zone accepts: ${event.over.data?.current?.accepts}`);
+      // EXPLICIT collision detection debugging for different targets
+      if (event.active.id.toString().startsWith('available-')) {
+        if (event.over.id === 'rankings-drop-zone') {
+          console.log(`🔍 [COLLISION_DEBUG] ✅ Available Pokemon ${event.active.id} colliding with rankings drop zone!`);
+        } else if (event.over.id.toString().startsWith('ranking-')) {
+          console.log(`🔍 [COLLISION_DEBUG] ✅ Available Pokemon ${event.active.id} colliding with sortable ranking card ${event.over.id}!`);
+        }
       }
+    } else {
+      console.log(`🔍 [COLLISION_DEBUG] Dragging over NULL target`);
     }
   };
 
@@ -149,14 +154,18 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
     console.log(`🎯 [DRAG_END_EVENT] ===== DRAG END TRIGGERED =====`);
     console.log(`🎯 [DRAG_END_EVENT] Active ID: ${event.active.id}`);
     console.log(`🎯 [DRAG_END_EVENT] Over ID: ${event.over?.id || 'NULL'}`);
+    console.log(`🎯 [DRAG_END_EVENT] Over Type: ${event.over?.data?.current?.type || 'NULL'}`);
     console.log(`🎯 [DRAG_END_EVENT] Is Available Card: ${event.active.id.toString().startsWith('available-')}`);
     console.log(`🎯 [DRAG_END_EVENT] Is Rankings Drop Zone: ${event.over?.id === 'rankings-drop-zone'}`);
-    console.log(`🎯 [DRAG_END_EVENT] Cross-context drop detected: ${event.active.id.toString().startsWith('available-') && event.over?.id === 'rankings-drop-zone'}`);
+    console.log(`🎯 [DRAG_END_EVENT] Is Sortable Card: ${event.over?.id?.toString().startsWith('ranking-')}`);
+    console.log(`🎯 [DRAG_END_EVENT] Cross-context drop detected: ${event.active.id.toString().startsWith('available-') && (event.over?.id === 'rankings-drop-zone' || event.over?.id?.toString().startsWith('ranking-'))}`);
     
     if (!event.over) {
       console.log(`🎯 [DRAG_END_EVENT] ❌ NO DROP TARGET - this indicates collision detection failure`);
     } else if (event.over.id === 'rankings-drop-zone') {
       console.log(`🎯 [DRAG_END_EVENT] ✅ SUCCESSFUL DROP ON RANKINGS ZONE!`);
+    } else if (event.over.id.toString().startsWith('ranking-')) {
+      console.log(`🎯 [DRAG_END_EVENT] ✅ SUCCESSFUL DROP ON SORTABLE RANKING CARD!`);
     }
     
     // Call the enhanced handler
@@ -183,7 +192,7 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
       <div className="max-w-7xl mx-auto">
         <DndContext
           sensors={sensors}
-          collisionDetection={rectIntersection}
+          collisionDetection={closestCorners}
           onDragStart={debugOnDragStart}
           onDragOver={debugOnDragOver}
           onDragEnd={debugOnDragEnd}
