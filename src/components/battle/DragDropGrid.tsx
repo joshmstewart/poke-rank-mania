@@ -12,7 +12,6 @@ import {
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import OptimizedDraggableCard from "./OptimizedDraggableCard";
 import DragOverlayContent from "./DragOverlayContent";
-import SortableContextDebugger from "./SortableContextDebugger";
 import DndKitInternalTracker from "./DndKitInternalTracker";
 
 interface DragDropGridProps {
@@ -66,27 +65,14 @@ const DragDropGrid: React.FC<DragDropGridProps> = React.memo(({
 
   const gridClassName = `transition-colors ${isOver ? 'bg-yellow-50/50' : ''}`;
 
-  // ITEM 2: FIXED - Always render all cards, use conditional content instead of conditional rendering
+  // CRITICAL FIX: Always render the same component structure - no conditional rendering
   const renderedCards = useMemo(() => {
     console.log(`🎯 [OPTIMIZED_GRID] Creating cards for ${displayRankings.length} pokemon - FIXED CONDITIONAL RENDERING`);
     
     return displayRankings.map((pokemon, index) => {
       const isPending = localPendingRefinements.has(pokemon.id);
       
-      // ITEM 2: ALWAYS render the card, but conditionally show debugger vs normal card
-      if (index < 3) {
-        console.log(`🎯 [OPTIMIZED_GRID] Using SortableContextDebugger for ${pokemon.name} at index ${index}`);
-        return (
-          <SortableContextDebugger
-            key={pokemon.id}
-            pokemonId={pokemon.id}
-            pokemonName={pokemon.name}
-            index={index}
-          />
-        );
-      }
-      
-      // Always render OptimizedDraggableCard for the rest
+      // ALWAYS render OptimizedDraggableCard - no conditional component switching
       return (
         <OptimizedDraggableCard
           key={pokemon.id}
