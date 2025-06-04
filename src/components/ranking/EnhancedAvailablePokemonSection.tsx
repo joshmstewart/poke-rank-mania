@@ -59,11 +59,20 @@ export const EnhancedAvailablePokemonSection: React.FC<EnhancedAvailablePokemonS
     () => {} // Empty function since we handle page changes via props
   );
   
-  // Fix: Call useAutoScrollEffects with proper parameters - this is where the TS error was occurring
+  // Fix: Create refs object for useAutoScrollEffects
+  const autoScrollRefs = useMemo(() => ({
+    containerRef: scrollLoadingRef,
+    previousCountRef: React.useRef(enhancedAvailablePokemon.length),
+    isAtLastCardOnlyRef: React.useRef(false),
+    autoAdjustModeRef: React.useRef(false),
+    lastScrollTopRef: React.useRef(0)
+  }), [scrollLoadingRef]);
+
+  // Fix: Call useAutoScrollEffects with proper refs object
   useAutoScrollEffects(
-    isLoading,
-    scrollLoadingRef,
-    selectedGeneration
+    autoScrollRefs,
+    enhancedAvailablePokemon.length,
+    false // isRankingArea = false for available Pokemon section
   );
 
   const renderPokemonCard = useCallback((pokemon: Pokemon | RankedPokemon, index: number) => (
