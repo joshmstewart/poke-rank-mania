@@ -30,11 +30,6 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
   // CRITICAL FIX: Use consistent ID formats with explicit prefixes
   const id = context === 'available' ? `available-${pokemon.id}` : `ranking-${pokemon.id}`;
   
-  // CRITICAL FIX: Reduced logging to essential events only
-  useEffect(() => {
-    console.log(`[DRAGGABLE_CARD_INIT] ${pokemon.name} (${id}) - ${context}`);
-  }, [pokemon.id, id, context]); // Minimal dependencies
-
   // CRITICAL FIX: Memoize hook data to prevent recreation
   const hookData = useMemo(() => ({
     id,
@@ -48,11 +43,13 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
     }
   }), [id, isDraggable, context, pokemon, index]);
 
-  // CRITICAL FIX: Use only ONE hook per context (never both simultaneously)
-  const activeResult = context === 'available'
-    ? useDraggable(hookData)
-    : useSortable(hookData);
+  // CRITICAL FIX: Always call both hooks but use only the appropriate one
+  // This ensures hooks are called in the same order every time
+  const draggableResult = useDraggable(hookData);
+  const sortableResult = useSortable(hookData);
 
+  // Choose which result to use based on context
+  const activeResult = context === 'available' ? draggableResult : sortableResult;
   const { attributes, listeners, setNodeRef, isDragging, transform } = activeResult;
 
   // CRITICAL FIX: Memoize background color to prevent recalculation
