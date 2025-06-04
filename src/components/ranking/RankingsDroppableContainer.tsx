@@ -11,18 +11,19 @@ export const RankingsDroppableContainer: React.FC<RankingsDroppableContainerProp
     id: 'rankings-drop-zone',
     data: {
       type: 'rankings-container',
-      accepts: ['available-pokemon'],
+      accepts: ['available-pokemon', 'ranked-pokemon'],
       source: 'rankings-droppable'
     },
   });
 
   console.log(`🎯 [DROPPABLE_CONTAINER] Rankings drop zone initialized with ID: rankings-drop-zone`);
   console.log(`🎯 [DROPPABLE_CONTAINER] Drop zone isOver: ${isOver}`);
+  console.log(`🎯 [DROPPABLE_CONTAINER] Accepts: ['available-pokemon', 'ranked-pokemon']`);
 
   return (
     <div 
       ref={setNodeRef} 
-      className={`h-full w-full flex flex-col transition-colors ${
+      className={`h-full w-full flex flex-col transition-colors rankings-drop-zone ${
         isOver ? 'bg-blue-50' : ''
       }`}
     >

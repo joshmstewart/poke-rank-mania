@@ -30,14 +30,14 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
   // CRITICAL: Explicit component rendering confirmation
   console.log(`🚨 OptimizedDraggableCard rendered: ${pokemon.name}, context: ${context}, isDraggable: ${isDraggable}`);
 
-  // CRITICAL FIX: Use consistent ID formats for proper drag interaction
-  const sortableId = context === 'available' ? `available-${pokemon.id}` : `ranking-${pokemon.id}`;
+  // CRITICAL FIX: Use consistent ID formats with explicit prefixes
+  const id = context === 'available' ? `available-${pokemon.id}` : `ranking-${pokemon.id}`;
   
-  console.log(`🎯 [DRAGGABLE_INIT] Initializing Pokemon: ${sortableId} with context: ${context}`);
+  console.log(`🎯 [DRAGGABLE_INIT] Initializing Pokemon: ${id} with context: ${context}`);
 
-  // CRITICAL FIX: Always initialize both hooks, then use the appropriate one
+  // CRITICAL FIX: Initialize hooks with proper data types
   const draggableResult = useDraggable({
-    id: sortableId,
+    id,
     disabled: !isDraggable || context !== 'available',
     data: {
       type: 'available-pokemon',
@@ -49,7 +49,7 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
   });
 
   const sortableResult = useSortable({
-    id: sortableId,
+    id,
     disabled: !isDraggable || context !== 'ranked',
     data: {
       type: 'ranked-pokemon',
@@ -62,13 +62,13 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
   });
 
   // CRITICAL: Log initialization results
-  console.log(`🟢 useDraggable initialized for ${sortableId}:`, {
+  console.log(`🟢 useDraggable initialized for ${id}:`, {
     isDragging: draggableResult.isDragging,
     hasListeners: !!draggableResult.listeners,
     disabled: !isDraggable || context !== 'available'
   });
 
-  console.log(`🟢 useSortable initialized for ${sortableId}:`, {
+  console.log(`🟢 useSortable initialized for ${id}:`, {
     isDragging: sortableResult.isDragging,
     hasListeners: !!sortableResult.listeners,
     disabled: !isDraggable || context !== 'ranked'
@@ -113,14 +113,14 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
 
   // CRITICAL FIX: Add explicit event logging for drag events
   const handlePointerDown = (event: React.PointerEvent) => {
-    console.log(`🎯 [DRAG_EVENT] PointerDown on ${pokemon.name} (${sortableId}) - context: ${context}`);
+    console.log(`🎯 [DRAG_EVENT] PointerDown on ${pokemon.name} (${id}) - context: ${context}`);
     if (listeners?.onPointerDown) {
       listeners.onPointerDown(event);
     }
   };
 
   const handleMouseDown = (event: React.MouseEvent) => {
-    console.log(`🎯 [DRAG_EVENT] MouseDown on ${pokemon.name} (${sortableId}) - context: ${context}`);
+    console.log(`🎯 [DRAG_EVENT] MouseDown on ${pokemon.name} (${id}) - context: ${context}`);
     if (listeners?.onMouseDown) {
       listeners.onMouseDown(event);
     }
@@ -133,7 +133,7 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
       ref={setNodeRef}
       className={cardClassName}
       style={{ ...style, minWidth: '140px' }}
-      {...attributes}
+      {...dragProps}
       onPointerDown={handlePointerDown}
       onMouseDown={handleMouseDown}
     >
