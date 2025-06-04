@@ -9,6 +9,8 @@ import { formatPokemonName } from '@/utils/pokemon';
 export const useTrueSkillSync = () => {
   const { getAllRatings, isHydrated, waitForHydration, syncInProgress, sessionId, loadFromCloud } = useTrueSkillStore();
   const { pokemonLookupMap } = usePokemonContext();
+  
+  // CRITICAL FIX: Initialize as empty array, never undefined
   const [localRankings, setLocalRankings] = useState<RankedPokemon[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
   const [hasTriedCloudSync, setHasTriedCloudSync] = useState(false);
@@ -41,6 +43,7 @@ export const useTrueSkillSync = () => {
           }
         } catch (error) {
           console.error('🔍 [DEBUG] Cloud sync failed:', error);
+          // CRITICAL FIX: Continue with local data, don't fail initialization
         }
       }
       
@@ -60,9 +63,14 @@ export const useTrueSkillSync = () => {
       setIsInitialized(true);
     };
     
-    initializeWithCloudSync();
+    initializeWithCloudSync().catch(error => {
+      console.error('🔍 [DEBUG] Initialization failed:', error);
+      // CRITICAL FIX: Always set initialized to true, even on error
+      setIsInitialized(true);
+    });
   }, [isHydrated, sessionId, hasTriedCloudSync, waitForHydration, loadFromCloud]);
 
+  // CRITICAL FIX: Always ensure we have valid data
   const allRatings = getAllRatings() || {};
   const contextReady = pokemonLookupMap && pokemonLookupMap.size > 0;
   const ratingsCount = Object.keys(allRatings).length;
@@ -77,7 +85,9 @@ export const useTrueSkillSync = () => {
     console.log('🔍 [DEBUG] pokemonLookupMap size:', pokemonLookupMap?.size);
     
     if (!contextReady || !isInitialized || syncInProgress) {
-      console.log('🔍 [DEBUG] Early return from main effect');
+      console.log('🔍 [DEBUG] Early return from main effect - setting empty array');
+      // CRITICAL FIX: Always set empty array, never leave undefined
+      setLocalRankings([]);
       return;
     }
 
@@ -91,43 +101,49 @@ export const useTrueSkillSync = () => {
     const ratedPokemonIds = Object.keys(allRatings).map(Number);
     const rankings: RankedPokemon[] = [];
 
-    ratedPokemonIds.forEach(pokemonId => {
-      if (!pokemonLookupMap) {
-        console.log('🔍 [DEBUG] pokemonLookupMap is null/undefined');
-        return;
-      }
-      
-      const basePokemon = pokemonLookupMap.get(pokemonId);
-      const ratingData = allRatings[pokemonId.toString()];
+    try {
+      ratedPokemonIds.forEach(pokemonId => {
+        if (!pokemonLookupMap) {
+          console.log('🔍 [DEBUG] pokemonLookupMap is null/undefined');
+          return;
+        }
+        
+        const basePokemon = pokemonLookupMap.get(pokemonId);
+        const ratingData = allRatings[pokemonId.toString()];
 
-      if (basePokemon && ratingData) {
-        const rating = new Rating(ratingData.mu, ratingData.sigma);
-        const conservativeEstimate = rating.mu - rating.sigma;
-        const confidence = Math.max(0, Math.min(100, 100 * (1 - (rating.sigma / 8.33))));
+        if (basePokemon && ratingData) {
+          const rating = new Rating(ratingData.mu, ratingData.sigma);
+          const conservativeEstimate = rating.mu - rating.sigma;
+          const confidence = Math.max(0, Math.min(100, 100 * (1 - (rating.sigma / 8.33))));
 
-        const formattedName = formatPokemonName(basePokemon.name);
+          const formattedName = formatPokemonName(basePokemon.name);
 
-        const rankedPokemon: RankedPokemon = {
-          ...basePokemon,
-          name: formattedName,
-          score: conservativeEstimate,
-          confidence: confidence,
-          rating: rating,
-          count: ratingData.battleCount || 0,
-          wins: 0,
-          losses: 0,
-          winRate: 0,
-          generation: basePokemon.generation || 1,
-          image: basePokemon.image || ''
-        };
+          const rankedPokemon: RankedPokemon = {
+            ...basePokemon,
+            name: formattedName,
+            score: conservativeEstimate,
+            confidence: confidence,
+            rating: rating,
+            count: ratingData.battleCount || 0,
+            wins: 0,
+            losses: 0,
+            winRate: 0,
+            generation: basePokemon.generation || 1,
+            image: basePokemon.image || ''
+          };
 
-        rankings.push(rankedPokemon);
-      }
-    });
+          rankings.push(rankedPokemon);
+        }
+      });
 
-    rankings.sort((a, b) => b.score - a.score);
-    console.log('🔍 [DEBUG] Final rankings count:', rankings.length);
-    setLocalRankings(rankings);
+      rankings.sort((a, b) => b.score - a.score);
+      console.log('🔍 [DEBUG] Final rankings count:', rankings.length);
+      setLocalRankings(rankings);
+    } catch (error) {
+      console.error('🔍 [DEBUG] Error processing rankings:', error);
+      // CRITICAL FIX: Set empty array on error
+      setLocalRankings([]);
+    }
   }, [contextReady, ratingsCount, allRatings, pokemonLookupMap, isInitialized, syncInProgress, sessionId]);
 
   const updateLocalRankings = useMemo(() => {
@@ -136,6 +152,8 @@ export const useTrueSkillSync = () => {
       
       if (!Array.isArray(newRankings)) {
         console.warn('updateLocalRankings called with invalid data:', newRankings);
+        // CRITICAL FIX: Set empty array instead of ignoring
+        setLocalRankings([]);
         return;
       }
       
@@ -151,10 +169,12 @@ export const useTrueSkillSync = () => {
     };
   }, []);
 
-  console.log('🔍 [DEBUG] useTrueSkillSync returning localRankings.length:', localRankings?.length || 'undefined');
+  // CRITICAL FIX: Always return a valid length
+  const safeLocalRankings = Array.isArray(localRankings) ? localRankings : [];
+  console.log('🔍 [DEBUG] useTrueSkillSync returning localRankings.length:', safeLocalRankings.length);
 
   return {
-    localRankings,
+    localRankings: safeLocalRankings,
     updateLocalRankings
   };
 };
