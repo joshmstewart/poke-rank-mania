@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState, useEffect } from "react";
 import { DndContext, DragOverlay, pointerWithin, DragStartEvent, DragEndEvent } from '@dnd-kit/core';
 import { Rating } from 'ts-trueskill';
@@ -499,27 +498,27 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
       </div>
 
       <div className="max-w-7xl mx-auto">
-        <div className="grid md:grid-cols-2 gap-4" style={{ height: 'calc(100vh - 12rem)' }}>
-          <Card className="shadow-lg border border-gray-200 overflow-hidden flex flex-col">
-            <EnhancedAvailablePokemonSection
-              enhancedAvailablePokemon={enhancedAvailablePokemon}
-              isLoading={isLoading}
-              selectedGeneration={selectedGeneration}
-              loadingType={loadingType}
-              currentPage={currentPage}
-              totalPages={totalPages}
-              loadingRef={loadingRef}
-              handlePageChange={handlePageChange}
-              getPageRange={getPageRange}
-            />
-          </Card>
+        <DndContext
+          collisionDetection={pointerWithin}
+          onDragStart={enhancedHandleDragStart}
+          onDragEnd={enhancedHandleDragEnd}
+        >
+          <div className="grid md:grid-cols-2 gap-4" style={{ height: 'calc(100vh - 12rem)' }}>
+            <Card className="shadow-lg border border-gray-200 overflow-hidden flex flex-col">
+              <EnhancedAvailablePokemonSection
+                enhancedAvailablePokemon={enhancedAvailablePokemon}
+                isLoading={isLoading}
+                selectedGeneration={selectedGeneration}
+                loadingType={loadingType}
+                currentPage={currentPage}
+                totalPages={totalPages}
+                loadingRef={loadingRef}
+                handlePageChange={handlePageChange}
+                getPageRange={getPageRange}
+              />
+            </Card>
 
-          <Card className="shadow-lg border border-gray-200 overflow-hidden flex flex-col">
-            <DndContext
-              collisionDetection={pointerWithin}
-              onDragStart={enhancedHandleDragStart}
-              onDragEnd={enhancedHandleDragEnd}
-            >
+            <Card className="shadow-lg border border-gray-200 overflow-hidden flex flex-col">
               <RankingsSectionStable
                 displayRankings={manualRankingOrder}
                 onManualReorder={stableOnManualReorder}
@@ -527,22 +526,22 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
                 pendingRefinements={new Set()}
                 availablePokemon={enhancedAvailablePokemon}
               />
-              
-              <DragOverlay>
-                {activeDraggedPokemon ? (
-                  <div className="transform rotate-3 scale-105 opacity-90">
-                    <PokemonCard
-                      pokemon={activeDraggedPokemon}
-                      compact={true}
-                      viewMode="grid"
-                      isDragging={true}
-                    />
-                  </div>
-                ) : null}
-              </DragOverlay>
-            </DndContext>
-          </Card>
-        </div>
+            </Card>
+          </div>
+          
+          <DragOverlay>
+            {activeDraggedPokemon ? (
+              <div className="transform rotate-3 scale-105 opacity-90">
+                <PokemonCard
+                  pokemon={activeDraggedPokemon}
+                  compact={true}
+                  viewMode="grid"
+                  isDragging={true}
+                />
+              </div>
+            ) : null}
+          </DragOverlay>
+        </DndContext>
       </div>
       
       <ScoreAdjustmentDebugModal
