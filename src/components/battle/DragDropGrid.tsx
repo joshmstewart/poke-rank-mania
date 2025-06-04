@@ -1,5 +1,5 @@
 
-import React, { useMemo, useCallback, useState } from "react";
+import React, { useMemo, useCallback } from "react";
 import {
   SortableContext,
   rectSortingStrategy,
@@ -9,8 +9,6 @@ import {
 } from '@dnd-kit/core';
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import OptimizedDraggableCard from "./OptimizedDraggableCard";
-import DragOverlayContent from "./DragOverlayContent";
-import DndKitInternalTracker from "./DndKitInternalTracker";
 
 interface DragDropGridProps {
   displayRankings: (Pokemon | RankedPokemon)[];
@@ -31,45 +29,33 @@ const DragDropGrid: React.FC<DragDropGridProps> = React.memo(({
   onMarkAsPending,
   availablePokemon = []
 }) => {
-  // ITEM 4: Add verification log at top-level
-  React.useEffect(() => {
-    console.log("✅ [HOOK_DEBUG] DragDropGrid - useEffect hook executed successfully");
-  }, []);
+  console.log(`🎯 [DRAG_DROP_GRID] Rendering with ${displayRankings.length} ranked Pokemon`);
 
-  console.log(`🎯 [OPTIMIZED_GRID] DragDropGrid rendering with ${displayRankings.length} items`);
-
-  // CRITICAL FIX: ALWAYS call hooks unconditionally - no try-catch or conditional logic
   const dndContext = useDndContext();
   const { active } = dndContext;
   
-  // CRITICAL FIX: Remove the useDroppable hook that was causing the entire grid to be a drop zone
-  // Individual sortable cards will handle their own drop logic
-
   const activePokemon = useMemo(() => {
     if (!active) return null;
     
-    const activeId = typeof active.id === 'string' ? parseInt(active.id) : active.id;
+    const activeId = typeof active.id === 'string' ? parseInt(active.id.replace('sortable-ranking-', '')) : active.id;
     return displayRankings.find(p => p.id === activeId) || null;
   }, [active, displayRankings]);
 
+  // CRITICAL: Create sortable items with the exact format expected by SortableRankedCard
   const sortableItems = useMemo(() => {
-    // CRITICAL FIX: Use the correct ID format that matches SortableRankedCard
     const items = displayRankings.map(p => `sortable-ranking-${p.id}`);
-    console.log(`🎯 [OPTIMIZED_GRID] Creating sortable items with correct IDs:`, items);
+    console.log(`🎯 [SORTABLE_ITEMS] Created ${items.length} sortable items:`, items.slice(0, 5));
     return items;
   }, [displayRankings]);
 
-  // CRITICAL FIX: Remove the grid className that was highlighting the entire area
-  const gridClassName = ""; // No special highlighting for the grid container
-
-  // CRITICAL FIX: Always render the same component structure - no conditional rendering
   const renderedCards = useMemo(() => {
-    console.log(`🎯 [OPTIMIZED_GRID] Creating cards for ${displayRankings.length} pokemon - FIXED CONDITIONAL RENDERING`);
+    console.log(`🎯 [RENDER_CARDS] Creating ${displayRankings.length} ranked cards`);
     
     return displayRankings.map((pokemon, index) => {
       const isPending = localPendingRefinements.has(pokemon.id);
       
-      // ALWAYS render OptimizedDraggableCard with correct context
+      console.log(`🎯 [CARD_RENDER] Rendering ranked card for ${pokemon.name} (ID: ${pokemon.id}) at index ${index}`);
+      
       return (
         <OptimizedDraggableCard
           key={pokemon.id}
@@ -82,12 +68,10 @@ const DragDropGrid: React.FC<DragDropGridProps> = React.memo(({
     });
   }, [displayRankings, localPendingRefinements]);
 
-  console.log(`🎯 [OPTIMIZED_GRID] Grid render complete - no conflicting drop zones`);
+  console.log(`🎯 [DRAG_DROP_GRID] Setting up SortableContext with ${sortableItems.length} items`);
 
   return (
-    <div className={gridClassName}>
-      <DndKitInternalTracker />
-      
+    <div>
       <SortableContext 
         items={sortableItems}
         strategy={rectSortingStrategy}
@@ -102,10 +86,8 @@ const DragDropGrid: React.FC<DragDropGridProps> = React.memo(({
     </div>
   );
 }, (prevProps, nextProps) => {
-  console.log(`🎯 [OPTIMIZED_GRID_MEMO] Comparing props for re-render decision`);
-  
   if (prevProps.displayRankings.length !== nextProps.displayRankings.length) {
-    console.log(`🎯 [OPTIMIZED_GRID_MEMO] Rankings length changed - ALLOWING RE-RENDER`);
+    console.log(`🎯 [MEMO_CHECK] Rankings length changed - allowing re-render`);
     return false;
   }
   
@@ -114,17 +96,16 @@ const DragDropGrid: React.FC<DragDropGridProps> = React.memo(({
     const next = nextProps.displayRankings[i];
     
     if (prev.id !== next.id) {
-      console.log(`🎯 [OPTIMIZED_GRID_MEMO] Pokemon order changed - ALLOWING RE-RENDER`);
+      console.log(`🎯 [MEMO_CHECK] Pokemon order changed - allowing re-render`);
       return false;
     }
   }
   
   if (prevProps.localPendingRefinements.size !== nextProps.localPendingRefinements.size) {
-    console.log(`🎯 [OPTIMIZED_GRID_MEMO] Pending refinements changed - ALLOWING RE-RENDER`);
+    console.log(`🎯 [MEMO_CHECK] Pending refinements changed - allowing re-render`);
     return false;
   }
   
-  console.log(`🎯 [OPTIMIZED_GRID_MEMO] No changes detected - PREVENTING RE-RENDER`);
   return true;
 });
 

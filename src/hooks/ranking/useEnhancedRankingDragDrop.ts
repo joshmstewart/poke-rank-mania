@@ -52,6 +52,7 @@ export const useEnhancedRankingDragDrop = (
     const overId = over.id.toString();
 
     console.log(`🎯 [VALIDATION_DEBUG] Dragging item: ${activeId} over target: ${overId}`);
+    console.log(`🎯 [VALIDATION_DEBUG] Over data:`, over.data?.current);
 
     // Handle drag from available to rankings
     if (activeId.startsWith('draggable-available-')) {
@@ -84,7 +85,7 @@ export const useEnhancedRankingDragDrop = (
         if (pokemon) {
           console.log(`🚀🚀🚀 [ENHANCED_DRAG_END] ✅ Found pokemon: ${pokemon.name}`);
           
-          // CRITICAL FIX: Always remove from available immediately when dropped on rankings
+          // Remove from available immediately
           console.log(`🔥🔥🔥 [STATE_UPDATE] Removing ${pokemon.name} from available list`);
           setAvailablePokemon(prev => {
             const newAvailable = prev.filter(p => p.id !== pokemonId);

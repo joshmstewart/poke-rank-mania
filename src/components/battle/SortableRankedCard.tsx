@@ -24,11 +24,18 @@ const SortableRankedCard: React.FC<SortableRankedCardProps> = memo(({
   showRank = true,
   isDraggable = true
 }) => {
-  console.log(`🔍 [SORTABLE_RANKED_CARD] Rendering for ${pokemon.name}`);
+  console.log(`🔍 [SORTABLE_RANKED_CARD] Rendering for ${pokemon.name} with ID: sortable-ranking-${pokemon.id}`);
   
   const uniqueId = `sortable-ranking-${pokemon.id}`;
   
-  const { attributes, listeners, setNodeRef, isDragging, transform } = useSortable({
+  const { 
+    attributes, 
+    listeners, 
+    setNodeRef, 
+    isDragging, 
+    transform,
+    isOver
+  } = useSortable({
     id: uniqueId,
     disabled: !isDraggable,
     data: {
@@ -36,24 +43,34 @@ const SortableRankedCard: React.FC<SortableRankedCardProps> = memo(({
       pokemon: pokemon,
       source: 'ranked',
       index,
-      category: 'sortable-ranked'
+      category: 'sortable-ranked',
+      accepts: ['available-pokemon'] // Explicitly accept available Pokemon
     }
   });
 
+  console.log(`🎯 [SORTABLE_DEBUG] Card ${pokemon.name}: isDragging=${isDragging}, isOver=${isOver}, transform=${!!transform}`);
+
   const backgroundColorClass = React.useMemo(() => getPokemonBackgroundColor(pokemon), [pokemon.id]);
   
-  const style = React.useMemo(() => transform ? {
-    transform: CSS.Transform.toString(transform),
-  } : undefined, [transform]);
+  const style = React.useMemo(() => {
+    const baseStyle: React.CSSProperties = {};
+    
+    if (transform) {
+      baseStyle.transform = CSS.Transform.toString(transform);
+    }
+    
+    return baseStyle;
+  }, [transform]);
 
   const cardClassName = React.useMemo(() => {
     const baseClasses = `${backgroundColorClass} rounded-lg border border-gray-200 relative overflow-hidden h-35 flex flex-col group`;
     const cursorClass = isDraggable ? 'cursor-grab active:cursor-grabbing' : '';
     const dragState = isDragging ? 'opacity-80 scale-105 shadow-2xl border-blue-400' : 'hover:shadow-lg transition-all duration-200';
+    const dropState = isOver ? 'ring-2 ring-green-400 ring-opacity-70 bg-green-50' : '';
     const pendingState = isPending ? 'ring-2 ring-blue-400 ring-opacity-50' : '';
     
-    return `${baseClasses} ${cursorClass} ${dragState} ${pendingState}`;
-  }, [backgroundColorClass, isDraggable, isDragging, isPending]);
+    return `${baseClasses} ${cursorClass} ${dragState} ${dropState} ${pendingState}`;
+  }, [backgroundColorClass, isDraggable, isDragging, isOver, isPending]);
 
   const getCurrentRank = React.useMemo((): number | null => {
     if ('currentRank' in pokemon && typeof pokemon.currentRank === 'number') {

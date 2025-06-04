@@ -108,7 +108,7 @@ export const RankingUICore: React.FC<RankingUICoreProps> = React.memo(({
     updateLocalRankings(newRankings);
   };
 
-  // CRITICAL FIX: Setup sensors and DndContext at the TOP LEVEL with better collision detection
+  // CRITICAL FIX: Use closestCorners for better individual card targeting
   const sensors = useSensors(
     useSensor(MouseSensor, {
       activationConstraint: {
@@ -122,6 +122,27 @@ export const RankingUICore: React.FC<RankingUICoreProps> = React.memo(({
       },
     })
   );
+
+  // Enhanced drag start handler with better logging
+  const enhancedHandleDragStart = React.useCallback((event: any) => {
+    console.log(`🚀 [ENHANCED_DRAG_START] Active ID: ${event.active.id}`);
+    console.log(`🚀 [ENHANCED_DRAG_START] Active data:`, event.active.data?.current);
+    handleDragStart(event);
+  }, [handleDragStart]);
+
+  // Enhanced drag end handler with better logging
+  const enhancedHandleDragEnd = React.useCallback((event: any) => {
+    console.log(`🚀 [ENHANCED_DRAG_END] Active: ${event.active.id}, Over: ${event.over?.id || 'NULL'}`);
+    console.log(`🚀 [ENHANCED_DRAG_END] Over data:`, event.over?.data?.current);
+    
+    if (event.over) {
+      console.log(`🚀 [ENHANCED_DRAG_END] Valid drop detected - calling handleDragEnd`);
+    } else {
+      console.log(`🚀 [ENHANCED_DRAG_END] No valid drop target`);
+    }
+    
+    handleDragEnd(event);
+  }, [handleDragEnd]);
 
   // CRITICAL FIX: Determine context from dragged item ID
   const getDraggedItemContext = React.useCallback((draggedPokemon: any): 'available' | 'ranked' => {
@@ -140,8 +161,8 @@ export const RankingUICore: React.FC<RankingUICoreProps> = React.memo(({
     <DndContext
       sensors={sensors}
       collisionDetection={closestCorners}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
+      onDragStart={enhancedHandleDragStart}
+      onDragEnd={enhancedHandleDragEnd}
     >
       <EnhancedRankingLayout
         isLoading={isLoading}
@@ -162,13 +183,12 @@ export const RankingUICore: React.FC<RankingUICoreProps> = React.memo(({
         onGenerationChange={onGenerationChange}
         handleComprehensiveReset={handleComprehensiveReset}
         setBattleType={setBattleType}
-        handleDragStart={handleDragStart}
-        handleDragEnd={handleDragEnd}
+        handleDragStart={enhancedHandleDragStart}
+        handleDragEnd={enhancedHandleDragEnd}
         handleManualReorder={handleManualReorder}
         handleLocalReorder={handleLocalReorder}
       />
       
-      {/* CRITICAL FIX: Properly determine context for DragOverlay */}
       <DragOverlay>
         {activeDraggedPokemon ? (
           <div className="transform rotate-3 scale-105 opacity-90">
