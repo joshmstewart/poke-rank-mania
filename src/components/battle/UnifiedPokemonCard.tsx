@@ -34,14 +34,15 @@ const UnifiedPokemonCard: React.FC<UnifiedPokemonCardProps> = memo(({
 
   console.log(`🔍 [UNIFIED_CARD_DEBUG] UnifiedPokemonCard - ${pokemon.name} - context: ${context}`);
   
-  // CRITICAL FIX: Always call BOTH hooks unconditionally, then use the appropriate one
+  // CRITICAL FIX: Always call hooks with STABLE IDs and NEVER disable them
+  // This ensures React sees the exact same hook calls every time
   const sortableId = `sortable-ranking-${pokemon.id}`;
   const draggableId = `draggable-available-${pokemon.id}`;
   
-  // Always call useSortable (for ranked context)
+  // ALWAYS call useSortable with NEVER disabled (stable hook call)
   const sortableResult = useSortable({
     id: sortableId,
-    disabled: !isDraggable || context !== 'ranked',
+    disabled: false, // NEVER disable to maintain stable hook calls
     data: {
       type: 'ranked-pokemon',
       pokemon: pokemon,
@@ -51,10 +52,10 @@ const UnifiedPokemonCard: React.FC<UnifiedPokemonCardProps> = memo(({
     }
   });
 
-  // Always call useDraggable (for available context)
+  // ALWAYS call useDraggable with NEVER disabled (stable hook call)
   const draggableResult = useDraggable({
     id: draggableId,
-    disabled: !isDraggable || context !== 'available',
+    disabled: false, // NEVER disable to maintain stable hook calls
     data: {
       type: 'available-pokemon',
       pokemon: pokemon,
@@ -64,26 +65,26 @@ const UnifiedPokemonCard: React.FC<UnifiedPokemonCardProps> = memo(({
     }
   });
 
-  // Choose which result to use based on context
+  // Choose which result to use based on context, but only use the event handlers conditionally
   const { attributes, listeners, setNodeRef, isDragging, transform } = useMemo(() => {
     if (context === 'available') {
       return {
-        attributes: draggableResult.attributes,
-        listeners: draggableResult.listeners,
+        attributes: isDraggable ? draggableResult.attributes : {},
+        listeners: isDraggable ? draggableResult.listeners : {},
         setNodeRef: draggableResult.setNodeRef,
         isDragging: draggableResult.isDragging,
         transform: draggableResult.transform
       };
     } else {
       return {
-        attributes: sortableResult.attributes,
-        listeners: sortableResult.listeners,
+        attributes: isDraggable ? sortableResult.attributes : {},
+        listeners: isDraggable ? sortableResult.listeners : {},
         setNodeRef: sortableResult.setNodeRef,
         isDragging: sortableResult.isDragging,
         transform: sortableResult.transform
       };
     }
-  }, [context, sortableResult, draggableResult]);
+  }, [context, sortableResult, draggableResult, isDraggable]);
 
   const backgroundColorClass = useMemo(() => getPokemonBackgroundColor(pokemon), [pokemon.id]);
   
@@ -119,11 +120,6 @@ const UnifiedPokemonCard: React.FC<UnifiedPokemonCardProps> = memo(({
     return null;
   }, [pokemon]);
 
-  const dragProps = useMemo(() => 
-    isDraggable ? { ...attributes, ...listeners } : {}, 
-    [isDraggable, attributes, listeners]
-  );
-
   console.log(`🔍 [UNIFIED_CARD_DEBUG] Rendering unified card for ${pokemon.name} in ${context} context`);
 
   return (
@@ -131,7 +127,8 @@ const UnifiedPokemonCard: React.FC<UnifiedPokemonCardProps> = memo(({
       ref={setNodeRef}
       className={cardClassName}
       style={{ ...style, minWidth: '140px' }}
-      {...dragProps}
+      {...attributes}
+      {...listeners}
     >
       <PokemonMilestoneOverlays
         context={context}
