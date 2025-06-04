@@ -1,6 +1,6 @@
 
 import React from "react";
-import { Droppable } from "react-beautiful-dnd";
+import { useDroppable } from '@dnd-kit/core';
 
 interface PokemonListOverlayProps {
   droppableId: string;
@@ -11,24 +11,25 @@ const PokemonListOverlay: React.FC<PokemonListOverlayProps> = ({
   droppableId,
   isRankingArea
 }) => {
+  const { setNodeRef, isOver } = useDroppable({
+    id: `${droppableId}-overlay`,
+    data: {
+      type: isRankingArea ? 'ranking-overlay' : 'available-overlay',
+      accepts: ['pokemon-card']
+    }
+  });
+
   if (!isRankingArea) return null;
 
   return (
-    <Droppable droppableId={`${droppableId}-overlay`}>
-      {(provided, snapshot) => (
-        <div
-          {...provided.droppableProps}
-          ref={provided.innerRef}
-          className={`absolute inset-0 z-0 ${snapshot.isDraggingOver ? 'bg-green-100/50' : ''}`}
-          style={{ 
-            display: snapshot.isDraggingOver ? 'block' : 'none',
-            pointerEvents: snapshot.isDraggingOver ? 'auto' : 'none'
-          }}
-        >
-          {provided.placeholder}
-        </div>
-      )}
-    </Droppable>
+    <div
+      ref={setNodeRef}
+      className={`absolute inset-0 z-0 ${isOver ? 'bg-green-100/50' : ''}`}
+      style={{ 
+        display: isOver ? 'block' : 'none',
+        pointerEvents: isOver ? 'auto' : 'none'
+      }}
+    />
   );
 };
 
