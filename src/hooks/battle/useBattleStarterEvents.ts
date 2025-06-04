@@ -16,10 +16,22 @@ export const useBattleStarterEvents = (
   // CRITICAL FIX: Start initial battle when Pokemon data is available - but only once
   useEffect(() => {
     const timestamp = new Date().toISOString();
-    console.log(`[${timestamp}] useBattleStarterEvents Pokemon data check: ${allPokemon?.length || 0} Pokemon available`);
+    console.log(`🔍 [DEBUG] useBattleStarterEvents Pokemon data check: ${allPokemon?.length || 0} Pokemon available`);
+    console.log(`🔍 [DEBUG] allPokemon type:`, typeof allPokemon);
+    console.log(`🔍 [DEBUG] allPokemon is array:`, Array.isArray(allPokemon));
+    
+    if (!allPokemon) {
+      console.log(`🔍 [DEBUG] allPokemon is null/undefined`);
+      return;
+    }
+    
+    if (!Array.isArray(allPokemon)) {
+      console.log(`🔍 [DEBUG] allPokemon is not an array:`, allPokemon);
+      return;
+    }
     
     // CRITICAL FIX: Only start initial battle if we have Pokemon AND haven't started yet AND no current battle exists
-    if (allPokemon && allPokemon.length > 0 && !initialBattleStartedRef.current && (!currentBattle || currentBattle.length === 0)) {
+    if (allPokemon.length > 0 && !initialBattleStartedRef.current && (!currentBattle || currentBattle.length === 0)) {
       console.log(`[${timestamp}] Starting initial battle with ${allPokemon.length} Pokemon`);
       initialBattleStartedRef.current = true;
       
@@ -43,12 +55,12 @@ export const useBattleStarterEvents = (
     } else {
       console.log(`[${timestamp}] Skipping initial battle trigger - initialBattleStartedRef.current: ${initialBattleStartedRef.current}, currentBattle.length: ${currentBattle?.length || 0}`);
     }
-  }, [allPokemon.length > 0 ? 1 : 0, currentBattle?.length, setCurrentBattle, setSelectedPokemon]); // CRITICAL FIX: Only depend on whether we HAVE Pokemon, not the exact count
+  }, [allPokemon && allPokemon.length > 0 ? 1 : 0, currentBattle?.length, setCurrentBattle, setSelectedPokemon]); // CRITICAL FIX: Only depend on whether we HAVE Pokemon, not the exact count
 
   // CRITICAL FIX: Simplified initialization
   useEffect(() => {
     const timestamp = new Date().toISOString();
-    console.log(`[${timestamp}] useBattleStarterEvents initialized with ${allPokemon?.length || 0} Pokémon`);
+    console.log(`🔍 [DEBUG] useBattleStarterEvents initialized with ${allPokemon?.length || 0} Pokémon`);
     
     if (initializationTimerRef.current) {
       clearTimeout(initializationTimerRef.current);
