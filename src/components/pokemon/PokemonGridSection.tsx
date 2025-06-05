@@ -1,8 +1,7 @@
 
 import React from "react";
 import GenerationHeader from "./GenerationHeader";
-import DraggablePokemonCard from "./DraggablePokemonCard";
-import PokemonCard from "@/components/PokemonCard";
+import OptimizedDraggableCard from "@/components/battle/OptimizedDraggableCard";
 
 interface PokemonGridSectionProps {
   items: any[];
@@ -21,13 +20,16 @@ export const PokemonGridSection: React.FC<PokemonGridSectionProps> = ({
   isGenerationExpanded,
   onToggleGeneration
 }) => {
-  console.log(`[POKEMON_GRID] Rendering ${items.length} items (isRankingArea: ${isRankingArea})`);
+  console.log(`🎯 [POKEMON_GRID_SECTION] Rendering ${items.length} items`);
+  console.log(`🎯 [POKEMON_GRID_SECTION] Is ranking area: ${isRankingArea}`);
+  console.log(`🎯 [POKEMON_GRID_SECTION] Show generation headers: ${showGenerationHeaders}`);
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
       {items.map((item, index) => {
         // Handle generation headers
         if ('type' in item && item.type === 'generation-header') {
+          console.log(`🎯 [POKEMON_GRID_SECTION] Rendering generation header: ${item.generationName}`);
           return (
             <div key={`gen-${item.generationId}`} className="col-span-full">
               <GenerationHeader
@@ -43,30 +45,19 @@ export const PokemonGridSection: React.FC<PokemonGridSectionProps> = ({
           );
         }
         
-        // Handle Pokemon items
+        // Handle Pokemon items - EXPLICITLY use OptimizedDraggableCard
         const pokemon = item;
+        console.log(`🎯 [POKEMON_GRID_SECTION] Rendering OptimizedDraggableCard for ${isRankingArea ? 'ranking' : 'available'} Pokemon: ${pokemon.id} - ${pokemon.name}`);
         
-        // For available Pokemon (not ranking area), use draggable cards
-        if (!isRankingArea) {
-          return (
-            <div key={`available-${pokemon.id}`} style={{ minWidth: '140px' }}>
-              <DraggablePokemonCard
-                pokemon={pokemon}
-                compact={true}
-                viewMode={viewMode}
-              />
-            </div>
-          );
-        }
-        
-        // For ranking area, use regular cards (droppable will be handled at a higher level)
         return (
-          <div key={`ranking-${pokemon.id}`} style={{ minWidth: '140px' }}>
-            <PokemonCard
+          <div key={`${isRankingArea ? 'ranking' : 'available'}-${pokemon.id}`} style={{ minWidth: '140px' }}>
+            <OptimizedDraggableCard
               pokemon={pokemon}
-              compact={true}
-              viewMode={viewMode}
-              isDragging={false}
+              index={index}
+              isPending={false}
+              showRank={isRankingArea}
+              isDraggable={true}
+              context={isRankingArea ? 'ranked' : 'available'}
             />
           </div>
         );
