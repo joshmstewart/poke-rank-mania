@@ -58,7 +58,8 @@ export const useRankingDragDrop = (
       // Check for valid drop targets
       const isValidDropTarget = (
         // Direct drop zone IDs
-        overId === 'rankings-drop-zone' || 
+        overId === 'rankings-drop-zone' ||
+        overId === 'rankings-container-drop-zone' ||
         overId === 'rankings-grid-drop-zone' ||
         // Drop zone data types
         over.data?.current?.type === 'rankings-container' ||
