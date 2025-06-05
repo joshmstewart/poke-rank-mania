@@ -115,8 +115,6 @@ export const useEnhancedManualReorder = (
         score: conservativeEstimate,
         confidence: confidence,
         rating: rating,
-        mu: rating.mu,
-        sigma: rating.sigma,
         count: pokemon.count || 0
       };
     });
@@ -253,9 +251,10 @@ export const useEnhancedManualReorder = (
           score: conservativeEstimate,
           confidence: confidence,
           rating: rating,
-          mu: rating.mu,
-          sigma: rating.sigma,
-          count: 0
+          count: 0,
+          wins: 0,
+          losses: 0,
+          winRate: 0
         };
         
         console.log('🔥 [ENHANCED_MANUAL_REORDER] New Pokemon object:', newRankedPokemon.name, 'Score:', newRankedPokemon.score);
