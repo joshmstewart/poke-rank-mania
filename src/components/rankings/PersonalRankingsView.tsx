@@ -108,7 +108,7 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
   }, []);
 
   // Use the same enhanced manual reorder hook as Manual mode
-  const { handleEnhancedManualReorder, tooLarge } = useEnhancedManualReorder(
+  const { handleEnhancedManualReorder } = useEnhancedManualReorder(
     localRankings,
     handleRankingsUpdate,
     true // Prevent auto-resorting during drag operations
@@ -197,7 +197,7 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
             displayRankings={displayRankings}
             localPendingRefinements={localPendingRefinements}
             pendingBattleCounts={new Map()}
-            onManualReorder={tooLarge ? (() => {}) : handleEnhancedManualReorder}
+            onManualReorder={handleEnhancedManualReorder}
             onLocalReorder={handleLocalReorder}
             onMarkAsPending={() => {}} // Not needed for rankings view
             availablePokemon={[]} // Not needed for rankings view

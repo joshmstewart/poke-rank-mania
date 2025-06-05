@@ -18,7 +18,7 @@ export const useBattleManualReorder = (
   console.log(`🎯 [BATTLE_MANUAL_REORDER] EXPLICIT NOTE: Implied battles permanently removed`);
 
   // Use the enhanced manual reorder hook with direct TrueSkill updates
-  const { handleEnhancedManualReorder, tooLarge } = useEnhancedManualReorder(
+  const { handleEnhancedManualReorder } = useEnhancedManualReorder(
     finalRankings,
     onRankingsUpdate,
     isMilestoneView, // Prevent auto-resorting during milestone views
@@ -36,11 +36,6 @@ export const useBattleManualReorder = (
     console.log(`🎯 [BATTLE_MANUAL_REORDER] Will prevent auto-resorting: ${isMilestoneView}`);
     console.log(`🎯 [BATTLE_MANUAL_REORDER] Using direct TrueSkill updates instead of implied battles`);
 
-    if (tooLarge) {
-      console.warn(`🎯 [BATTLE_MANUAL_REORDER] Dataset too large - manual reorder disabled`);
-      return;
-    }
-
     if (!handleEnhancedManualReorder) {
       console.error(`🎯 [BATTLE_MANUAL_REORDER] ❌ No enhanced manual reorder function available!`);
       return;
@@ -53,7 +48,7 @@ export const useBattleManualReorder = (
     } catch (error) {
       console.error(`🎯 [BATTLE_MANUAL_REORDER] ❌ Error in enhanced manual reorder:`, error);
     }
-  }, [handleEnhancedManualReorder, isMilestoneView, tooLarge]);
+  }, [handleEnhancedManualReorder, isMilestoneView]);
 
   console.log(`🎯 [BATTLE_MANUAL_REORDER] Hook created, returning handleManualReorder function`);
   

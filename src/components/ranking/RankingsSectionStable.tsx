@@ -8,16 +8,7 @@ import { useDroppable } from '@dnd-kit/core';
 
 interface RankingsSectionStableProps {
   displayRankings: (Pokemon | RankedPokemon)[];
-  /**
-   * IDs for the SortableContext. These should be prefixed with
-   * `ranking-` to match dnd-kit sortable expectations.
-   */
-  sortableItems: string[];
-  onManualReorder?: (
-    draggedPokemonId: number,
-    sourceIndex: number,
-    destinationIndex: number
-  ) => void;
+  onManualReorder?: (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => void;
   onLocalReorder?: (newRankings: (Pokemon | RankedPokemon)[]) => void;
   pendingRefinements?: Set<number>;
   availablePokemon?: any[];
@@ -25,7 +16,6 @@ interface RankingsSectionStableProps {
 
 export const RankingsSectionStable: React.FC<RankingsSectionStableProps> = React.memo(({
   displayRankings,
-  sortableItems,
   onManualReorder,
   onLocalReorder,
   pendingRefinements = new Set<number>(),
@@ -40,6 +30,13 @@ export const RankingsSectionStable: React.FC<RankingsSectionStableProps> = React
     onLocalReorder
   );
 
+  // Create sortable items with consistent ranking- prefix
+  const sortableItems = useMemo(() => {
+    const items = displayRankings.map(pokemon => `ranking-${pokemon.id}`);
+    console.log(`🎯 [SORTABLE_DEBUG] SortableContext Items:`, items.slice(0, 5));
+    console.log(`🎯 [SORTABLE_DEBUG] Total sortable items: ${items.length}`);
+    return items;
+  }, [displayRankings]);
 
   // CRITICAL FIX: Setup droppable for the entire rankings area with explicit collision detection
   const { setNodeRef: setDroppableRef, isOver } = useDroppable({

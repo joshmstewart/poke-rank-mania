@@ -70,8 +70,7 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = React.memo
           isManualOperationInProgress,
           manualOperationTimestamp,
           handleEnhancedManualReorder,
-          stableOnLocalReorder,
-          tooLarge
+          stableOnLocalReorder
         }) => (
           <>
             <MilestoneDebugLogger
@@ -86,7 +85,6 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = React.memo
               displayRankings={displayRankings.slice(0, Math.min(milestoneDisplayCount, maxItems))}
               handleEnhancedManualReorder={handleEnhancedManualReorder}
               stableOnLocalReorder={stableOnLocalReorder}
-              disabled={tooLarge}
             >
               <DragDropGridMemoized
                 displayRankings={displayRankings.slice(0, Math.min(milestoneDisplayCount, maxItems))}

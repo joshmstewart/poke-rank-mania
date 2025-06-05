@@ -1,7 +1,7 @@
 
 import React from "react";
 import { useEnhancedManualReorder } from "@/hooks/battle/useEnhancedManualReorder";
-import { useRankingDragDrop } from "@/hooks/drag/useRankingDragDrop";
+import { useEnhancedRankingDragDrop } from "@/hooks/ranking/useEnhancedRankingDragDrop";
 import { useReRankingTrigger } from "@/hooks/ranking/useReRankingTrigger";
 import { useRankingReset } from "./RankingResetHandler";
 import { EnhancedRankingLayout } from "./EnhancedRankingLayout";
@@ -33,6 +33,8 @@ interface RankingUICoreProps {
   onReset: () => void;
 }
 
+// EXPLICIT NOTE: "Implied Battles" logic has been permanently removed.
+// Manual drag-and-drop explicitly adjusts mu/sigma directly instead.
 export const RankingUICore: React.FC<RankingUICoreProps> = React.memo(({
   isLoading,
   availablePokemon,
@@ -61,7 +63,8 @@ export const RankingUICore: React.FC<RankingUICoreProps> = React.memo(({
   console.log(`🚨🚨🚨 [RANKING_UI_CORE_DEBUG] enhancedAvailablePokemon count: ${enhancedAvailablePokemon.length}`);
 
   // Enhanced manual reorder with manual order preservation and direct TrueSkill updates
-  const { handleEnhancedManualReorder, tooLarge } = useEnhancedManualReorder(
+  // EXPLICIT NOTE: Removed addImpliedBattle parameter - no longer using implied battles
+  const { handleEnhancedManualReorder } = useEnhancedManualReorder(
     localRankings,
     updateLocalRankings,
     true, // preventAutoResorting for Manual Mode
@@ -70,25 +73,19 @@ export const RankingUICore: React.FC<RankingUICoreProps> = React.memo(({
 
   console.log(`🚨🚨🚨 [RANKING_UI_CORE_DEBUG] handleEnhancedManualReorder created:`, !!handleEnhancedManualReorder);
 
-  // CRITICAL FIX: Use the new stable re-ranking trigger
-  const { triggerReRanking, setCurrentRankings } = useReRankingTrigger();
-  
-  // CRITICAL FIX: Update the current rankings in the hook whenever they change
-  // Use a ref to track if we've already set the current rankings to avoid loops
-  const rankingsSetRef = React.useRef(false);
-  const prevRankingsLengthRef = React.useRef(localRankings.length);
-  
-  React.useEffect(() => {
-    // Only update if the rankings length has actually changed or it's the first time
-    if (!rankingsSetRef.current || prevRankingsLengthRef.current !== localRankings.length) {
-      console.log(`🚨🚨🚨 [RANKING_UI_CORE_DEBUG] Setting current rankings:`, localRankings.length);
-      setCurrentRankings(localRankings, updateLocalRankings);
-      rankingsSetRef.current = true;
-      prevRankingsLengthRef.current = localRankings.length;
-    }
-  }, [localRankings.length, setCurrentRankings]); // Remove updateLocalRankings from deps to prevent loops
-
-  console.log(`🚨🚨🚨 [RANKING_UI_CORE_DEBUG] triggerReRanking created:`, !!triggerReRanking);
+  // Re-ranking trigger for already-ranked Pokemon with error handling
+  let triggerReRanking;
+  try {
+    const reRankingResult = useReRankingTrigger(localRankings, updateLocalRankings);
+    triggerReRanking = reRankingResult.triggerReRanking;
+    console.log(`🚨🚨🚨 [RANKING_UI_CORE_DEBUG] triggerReRanking created successfully:`, !!triggerReRanking);
+  } catch (error) {
+    console.error('[RANKING_UI_CORE] Error initializing re-ranking trigger:', error);
+    triggerReRanking = async (pokemonId: number) => {
+      console.warn(`[RANKING_UI_CORE] Re-ranking unavailable for Pokemon ${pokemonId} due to store error`);
+    };
+    console.log(`🚨🚨🚨 [RANKING_UI_CORE_DEBUG] triggerReRanking fallback created:`, !!triggerReRanking);
+  }
 
   // Use the extracted reset functionality
   const { handleComprehensiveReset } = useRankingReset({
@@ -102,13 +99,13 @@ export const RankingUICore: React.FC<RankingUICoreProps> = React.memo(({
     handleDragStart,
     handleDragEnd,
     handleManualReorder
-  } = useRankingDragDrop({
-    availablePokemon: enhancedAvailablePokemon,
+  } = useEnhancedRankingDragDrop(
+    enhancedAvailablePokemon,
     localRankings,
     setAvailablePokemon,
-    onManualReorder: tooLarge ? (() => {}) : handleEnhancedManualReorder,
-    triggerReRanking: triggerReRanking, // Use the stable async function directly
-  });
+    handleEnhancedManualReorder,
+    triggerReRanking
+  );
 
   console.log(`🚨🚨🚨 [RANKING_UI_CORE_DEBUG] Drag handlers created:`, {
     handleDragStart: !!handleDragStart,
@@ -117,10 +114,10 @@ export const RankingUICore: React.FC<RankingUICoreProps> = React.memo(({
   });
 
   // Handle local reordering (for DragDropGrid compatibility)
-  const handleLocalReorder = React.useCallback((newRankings: any[]) => {
+  const handleLocalReorder = (newRankings: any[]) => {
     console.log(`🚨🚨🚨 [RANKING_UI_CORE_DEBUG] Local reorder called with ${newRankings.length} Pokemon`);
     updateLocalRankings(newRankings);
-  }, [updateLocalRankings]);
+  };
 
   console.log(`🚨🚨🚨 [RANKING_UI_CORE_DEBUG] About to render EnhancedRankingLayout`);
 

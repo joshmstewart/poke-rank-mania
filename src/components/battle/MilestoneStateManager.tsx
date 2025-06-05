@@ -14,7 +14,6 @@ interface MilestoneStateManagerProps {
     manualOperationTimestamp: number | null;
     handleEnhancedManualReorder: (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => void;
     stableOnLocalReorder: (newRankings: any[]) => void;
-    tooLarge: boolean;
   }) => React.ReactNode;
 }
 
@@ -103,7 +102,7 @@ const MilestoneStateManager: React.FC<MilestoneStateManagerProps> = ({
   }, [formattedRankings, isManualOperationInProgress, manualOperationTimestamp, localRankings]);
 
   // CRITICAL DEBUG: Enhanced manual reorder with detailed logging
-  const { handleEnhancedManualReorder, tooLarge } = useEnhancedManualReorder(
+  const { handleEnhancedManualReorder } = useEnhancedManualReorder(
     localRankings as RankedPokemon[],
     (updatedRankings: RankedPokemon[]) => {
       const reorderId = Date.now();
@@ -150,7 +149,6 @@ const MilestoneStateManager: React.FC<MilestoneStateManagerProps> = ({
         displayRankings,
         isManualOperationInProgress,
         manualOperationTimestamp,
-        tooLarge,
         handleEnhancedManualReorder,
         stableOnLocalReorder
       })}
