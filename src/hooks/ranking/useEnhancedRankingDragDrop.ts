@@ -73,10 +73,11 @@ export const useEnhancedRankingDragDrop = (
 
       console.log(`🚀 [ENHANCED_DRAG_END] Available Pokemon ${pokemonId} dragged to ${overId}`);
       
-      // Check for valid drop targets
+      // CRITICAL FIX: Accept any ranking- prefixed target as valid
       const isValidDropTarget = (
         overId === 'rankings-drop-zone' ||
         overId === 'rankings-grid-drop-zone' ||
+        overId.startsWith('ranking-') ||
         overId.startsWith('ranking-position-') ||
         over.data?.current?.type === 'ranking-position' ||
         over.data?.current?.type === 'rankings-container' ||
@@ -106,14 +107,27 @@ export const useEnhancedRankingDragDrop = (
           const defaultRating = new Rating(25.0, 8.333);
           updateRating(pokemonId.toString(), defaultRating);
           
-          // Determine insertion position
+          // CRITICAL FIX: Improved insertion position logic
           let insertionPosition = localRankings.length;
-          if (overId.startsWith('ranking-position-')) {
-            const targetIndex = parseId(overId);
-            if (targetIndex !== null && targetIndex >= 0 && targetIndex < localRankings.length) {
-              insertionPosition = targetIndex;
+          
+          if (overId.startsWith('ranking-')) {
+            const targetPokemonId = parseId(overId);
+            if (targetPokemonId !== null) {
+              const targetIndex = localRankings.findIndex(p => p.id === targetPokemonId);
+              if (targetIndex !== -1) {
+                insertionPosition = targetIndex;
+              }
             }
-          } else if (over.data?.current?.index !== undefined) {
+          } else if (overId.startsWith('ranking-position-')) {
+            // For empty slots, use the index from the ID or data
+            const slotIndex = parseId(overId);
+            if (slotIndex !== null && slotIndex >= 0 && slotIndex <= localRankings.length) {
+              insertionPosition = slotIndex;
+            }
+          }
+          
+          // Fall back to over.data for insertion position
+          if (over.data?.current?.index !== undefined) {
             insertionPosition = over.data.current.index;
           }
           
@@ -135,15 +149,25 @@ export const useEnhancedRankingDragDrop = (
     // Handle reordering within rankings
     if (!activeId.startsWith('available-') && !overId.startsWith('available-')) {
       const activePokemonId = parseId(activeId);
-      const overPokemonId = parseId(overId);
+      let overPokemonId = parseId(overId);
       
-      if (activePokemonId === null || overPokemonId === null) {
-        console.log(`🚀 [ENHANCED_DRAG_END] Invalid Pokemon IDs for reorder`);
+      if (activePokemonId === null) {
+        console.log(`🚀 [ENHANCED_DRAG_END] Invalid active Pokemon ID for reorder`);
         return;
       }
 
       const oldIndex = localRankings.findIndex(p => p.id === activePokemonId);
-      const newIndex = localRankings.findIndex(p => p.id === overPokemonId);
+      let newIndex = -1;
+      
+      // CRITICAL FIX: Handle both Pokémon IDs and position-based drops
+      if (overPokemonId !== null) {
+        newIndex = localRankings.findIndex(p => p.id === overPokemonId);
+      }
+      
+      // Fall back to using the droppable slot's index if Pokémon not found
+      if (newIndex === -1 && over.data?.current?.index !== undefined) {
+        newIndex = over.data.current.index;
+      }
       
       if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
         console.log(`🚀 [ENHANCED_DRAG_END] Reordering from ${oldIndex} to ${newIndex}`);

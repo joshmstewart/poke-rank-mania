@@ -45,14 +45,16 @@ export const RankingsSection: React.FC<RankingsSectionProps> = React.memo(({
     [displayRankings]
   );
 
-  // Create individual droppable slot component
+  // Create individual droppable slot component with Pokémon-based IDs
   const DroppableRankingSlot: React.FC<{ index: number; pokemon?: Pokemon | RankedPokemon }> = ({ index, pokemon }) => {
-    const droppableId = `ranking-position-${index}`;
+    // CRITICAL FIX: Use Pokémon ID for droppable slots, fall back to index for empty slots
+    const droppableId = pokemon ? `ranking-${pokemon.id}` : `ranking-position-${index}`;
     const { setNodeRef, isOver } = useDroppable({ 
       id: droppableId,
       data: {
         type: 'ranking-position',
         index: index,
+        pokemonId: pokemon?.id,
         accepts: ['available-pokemon']
       }
     });
