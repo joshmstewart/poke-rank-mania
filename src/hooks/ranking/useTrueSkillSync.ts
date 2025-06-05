@@ -19,31 +19,31 @@ export const useTrueSkillSync = (preventAutoResorting: boolean = false) => {
     const ratings = getAllRatings();
     console.log('🔄🔄🔄 [TRUESKILL_SYNC_RANKING_GENERATION] Retrieved ratings from store:', Object.keys(ratings).length);
     
-    const rankedPokemon: RankedPokemon[] = Object.entries(ratings)
-      .map(([pokemonId, rating]) => {
-        const pokemon = pokemonLookupMap.get(parseInt(pokemonId));
-        if (!pokemon) {
-          console.warn('🔄 [TRUESKILL_SYNC] Pokemon not found in lookup map:', pokemonId);
-          return null;
-        }
-        
-        const conservativeEstimate = rating.mu - rating.sigma;
-        const confidence = Math.max(0, Math.min(100, 100 * (1 - (rating.sigma / 8.33))));
-        
-        console.log(`🔄🔄🔄 [TRUESKILL_SYNC_SCORE_CALC] ${pokemon.name}: μ=${rating.mu.toFixed(3)}, σ=${rating.sigma.toFixed(3)}, score=${conservativeEstimate.toFixed(3)}`);
-        
-        return {
-          ...pokemon,
-          score: conservativeEstimate,
-          confidence: confidence,
-          rating: rating,
-          count: rating.battleCount || 0,
-          wins: 0,
-          losses: 0,
-          winRate: 0
-        };
-      })
-      .filter((pokemon): pokemon is RankedPokemon => pokemon !== null);
+    const rankedPokemon: RankedPokemon[] = [];
+    
+    Object.entries(ratings).forEach(([pokemonId, rating]) => {
+      const pokemon = pokemonLookupMap.get(parseInt(pokemonId));
+      if (!pokemon) {
+        console.warn('🔄 [TRUESKILL_SYNC] Pokemon not found in lookup map:', pokemonId);
+        return;
+      }
+      
+      const conservativeEstimate = rating.mu - rating.sigma;
+      const confidence = Math.max(0, Math.min(100, 100 * (1 - (rating.sigma / 8.33))));
+      
+      console.log(`🔄🔄🔄 [TRUESKILL_SYNC_SCORE_CALC] ${pokemon.name}: μ=${rating.mu.toFixed(3)}, σ=${rating.sigma.toFixed(3)}, score=${conservativeEstimate.toFixed(3)}`);
+      
+      rankedPokemon.push({
+        ...pokemon,
+        score: conservativeEstimate,
+        confidence: confidence,
+        rating: rating,
+        count: rating.battleCount || 0,
+        wins: 0,
+        losses: 0,
+        winRate: 0
+      });
+    });
 
     console.log('🔄🔄🔄 [TRUESKILL_SYNC_RANKING_GENERATION] Created', rankedPokemon.length, 'ranked Pokemon');
 
