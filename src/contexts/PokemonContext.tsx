@@ -1,11 +1,12 @@
 
-import React, { createContext, useContext, useMemo, ReactNode } from 'react';
+import React, { createContext, useContext, useMemo, ReactNode, useEffect } from 'react';
 import { Pokemon } from '@/services/pokemon';
 
 interface PokemonContextType {
   allPokemon: Pokemon[];
   rawUnfilteredPokemon: Pokemon[];
   pokemonLookupMap: Map<number, Pokemon>;
+  isContextReady: boolean;
 }
 
 const PokemonContext = createContext<PokemonContextType | undefined>(undefined);
@@ -81,20 +82,42 @@ export const PokemonProvider: React.FC<PokemonProviderProps> = ({
     return map;
   }, [safeAllPokemon]);
 
+  // CRITICAL FIX: Determine context readiness
+  const isContextReady = useMemo(() => {
+    const ready = safeAllPokemon.length > 0 && pokemonLookupMap.size > 0;
+    console.log(`🌟🌟🌟 [CONTEXT_READINESS] Context ready: ${ready} (Pokemon: ${safeAllPokemon.length}, Map: ${pokemonLookupMap.size})`);
+    return ready;
+  }, [safeAllPokemon.length, pokemonLookupMap.size]);
+
   // CRITICAL FIX: Create completely new context value object when dependencies change
   const contextValue = useMemo(() => {
     const value = {
       allPokemon: safeAllPokemon,
       rawUnfilteredPokemon: actualRawUnfilteredPokemon,
-      pokemonLookupMap
+      pokemonLookupMap,
+      isContextReady
     };
     
     console.log(`🌟🌟🌟 [CONTEXT_VALUE_CRITICAL] NEW context value created - timestamp: ${Date.now()}`);
-    console.log(`🌟🌟🌟 [CONTEXT_VALUE_CRITICAL] allPokemon length: ${safeAllPokemon.length}, map size: ${pokemonLookupMap.size}`);
+    console.log(`🌟🌟🌟 [CONTEXT_VALUE_CRITICAL] allPokemon length: ${safeAllPokemon.length}, map size: ${pokemonLookupMap.size}, ready: ${isContextReady}`);
     console.log(`🌟🌟🌟 [CONTEXT_VALUE_CRITICAL] rawUnfilteredPokemon length: ${actualRawUnfilteredPokemon.length}`);
     
     return value;
-  }, [safeAllPokemon, actualRawUnfilteredPokemon, pokemonLookupMap]);
+  }, [safeAllPokemon, actualRawUnfilteredPokemon, pokemonLookupMap, isContextReady]);
+
+  // CRITICAL FIX: Notify when context becomes ready
+  useEffect(() => {
+    if (isContextReady) {
+      console.log(`🌟🌟🌟 [CONTEXT_READY_EVENT] PokemonContext is now ready with ${pokemonLookupMap.size} Pokemon!`);
+      // Dispatch custom event to notify other components
+      window.dispatchEvent(new CustomEvent('pokemon-context-ready', { 
+        detail: { 
+          pokemonCount: pokemonLookupMap.size,
+          timestamp: Date.now()
+        } 
+      }));
+    }
+  }, [isContextReady, pokemonLookupMap.size]);
 
   return (
     <PokemonContext.Provider value={contextValue}>

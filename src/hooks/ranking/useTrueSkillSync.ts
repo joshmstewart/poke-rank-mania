@@ -1,3 +1,4 @@
+
 import { useEffect, useState, useMemo } from 'react';
 import { useTrueSkillStore } from '@/stores/trueskillStore';
 import { usePokemonContext } from '@/contexts/PokemonContext';
@@ -7,93 +8,45 @@ import { formatPokemonName } from '@/utils/pokemon';
 
 export const useTrueSkillSync = () => {
   const { getAllRatings, isHydrated, waitForHydration, syncInProgress, sessionId, loadFromCloud } = useTrueSkillStore();
-  const { pokemonLookupMap } = usePokemonContext();
+  const { pokemonLookupMap, isContextReady } = usePokemonContext();
   
-  // ULTRA AGGRESSIVE DEBUG: Track every state change with stack traces
-  const [localRankings, setLocalRankingsInternal] = useState<RankedPokemon[]>([]);
+  const [localRankings, setLocalRankings] = useState<RankedPokemon[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
   const [hasTriedCloudSync, setHasTriedCloudSync] = useState(false);
 
-  // ULTRA AGGRESSIVE DEBUG: Wrapper function to track all state changes
-  const setLocalRankings = (newRankings: RankedPokemon[] | ((prev: RankedPokemon[]) => RankedPokemon[])) => {
-    const timestamp = Date.now();
-    const stack = new Error().stack;
-    
-    console.error(`🚨🚨🚨 [ULTRA_AGGRESSIVE_DEBUG_${timestamp}] ===== setLocalRankings CALLED =====`);
-    console.error(`🚨🚨🚨 [ULTRA_AGGRESSIVE_DEBUG_${timestamp}] Call type: ${typeof newRankings}`);
-    console.error(`🚨🚨🚨 [ULTRA_AGGRESSIVE_DEBUG_${timestamp}] Stack trace:`, stack);
-    
-    if (typeof newRankings === 'function') {
-      console.error(`🚨🚨🚨 [ULTRA_AGGRESSIVE_DEBUG_${timestamp}] Function-based update`);
-      
-      setLocalRankingsInternal(prev => {
-        console.error(`🚨🚨🚨 [ULTRA_AGGRESSIVE_DEBUG_${timestamp}] Previous state type:`, typeof prev, 'Array?', Array.isArray(prev));
-        console.error(`🚨🚨🚨 [ULTRA_AGGRESSIVE_DEBUG_${timestamp}] Previous state length:`, Array.isArray(prev) ? prev.length : 'NOT_ARRAY');
-        console.error(`🚨🚨🚨 [ULTRA_AGGRESSIVE_DEBUG_${timestamp}] Previous state value:`, prev);
-        
-        const result = newRankings(prev);
-        
-        console.error(`🚨🚨🚨 [ULTRA_AGGRESSIVE_DEBUG_${timestamp}] Function returned type:`, typeof result, 'Array?', Array.isArray(result));
-        console.error(`🚨🚨🚨 [ULTRA_AGGRESSIVE_DEBUG_${timestamp}] Function returned length:`, Array.isArray(result) ? result.length : 'NOT_ARRAY');
-        console.error(`🚨🚨🚨 [ULTRA_AGGRESSIVE_DEBUG_${timestamp}] Function returned value:`, result);
-        
-        if (!Array.isArray(result)) {
-          console.error(`🚨🚨🚨 [ULTRA_AGGRESSIVE_DEBUG_${timestamp}] ❌❌❌ FUNCTION RETURNED NON-ARRAY! Type: ${typeof result}`);
-          console.error(`🚨🚨🚨 [ULTRA_AGGRESSIVE_DEBUG_${timestamp}] ❌❌❌ Forcing empty array`);
-          return [];
-        }
-        
-        return result;
-      });
-    } else {
-      console.error(`🚨🚨🚨 [ULTRA_AGGRESSIVE_DEBUG_${timestamp}] Direct value update`);
-      console.error(`🚨🚨🚨 [ULTRA_AGGRESSIVE_DEBUG_${timestamp}] Value type:`, typeof newRankings, 'Array?', Array.isArray(newRankings));
-      console.error(`🚨🚨🚨 [ULTRA_AGGRESSIVE_DEBUG_${timestamp}] Value length:`, Array.isArray(newRankings) ? newRankings.length : 'NOT_ARRAY');
-      console.error(`🚨🚨🚨 [ULTRA_AGGRESSIVE_DEBUG_${timestamp}] Value:`, newRankings);
-      
-      if (!Array.isArray(newRankings)) {
-        console.error(`🚨🚨🚨 [ULTRA_AGGRESSIVE_DEBUG_${timestamp}] ❌❌❌ NON-ARRAY PASSED! Type: ${typeof newRankings}`);
-        console.error(`🚨🚨🚨 [ULTRA_AGGRESSIVE_DEBUG_${timestamp}] ❌❌❌ Forcing empty array instead`);
-        setLocalRankingsInternal([]);
-      } else {
-        setLocalRankingsInternal(newRankings);
-      }
-    }
-  };
-
   useEffect(() => {
     const initializeWithCloudSync = async () => {
-      console.log('🔍 [AGGRESSIVE_DEBUG] useTrueSkillSync initialization start');
+      console.log('🔍 [TRUESKILL_SYNC] Initialization start');
       
       if (!isHydrated) {
-        console.log('🔍 [AGGRESSIVE_DEBUG] Waiting for hydration...');
+        console.log('🔍 [TRUESKILL_SYNC] Waiting for hydration...');
         await waitForHydration();
       }
       
       const initialRatings = useTrueSkillStore.getState().getAllRatings();
       const initialCount = Object.keys(initialRatings || {}).length;
-      console.log('🔍 [AGGRESSIVE_DEBUG] Initial ratings count:', initialCount);
+      console.log('🔍 [TRUESKILL_SYNC] Initial ratings count:', initialCount);
       
       if (!hasTriedCloudSync && sessionId) {
         setHasTriedCloudSync(true);
         
         try {
-          console.log('🔍 [AGGRESSIVE_DEBUG] Attempting cloud sync...');
+          console.log('🔍 [TRUESKILL_SYNC] Attempting cloud sync...');
           await loadFromCloud();
           const postSyncRatings = useTrueSkillStore.getState().getAllRatings();
           const postSyncCount = Object.keys(postSyncRatings || {}).length;
-          console.log('🔍 [AGGRESSIVE_DEBUG] Post-sync ratings count:', postSyncCount);
+          console.log('🔍 [TRUESKILL_SYNC] Post-sync ratings count:', postSyncCount);
           
           if (postSyncCount > initialCount) {
             console.log(`Loaded ${postSyncCount - initialCount} additional ratings from cloud`);
           }
         } catch (error) {
-          console.error('🔍 [AGGRESSIVE_DEBUG] Cloud sync failed:', error);
+          console.error('🔍 [TRUESKILL_SYNC] Cloud sync failed:', error);
         }
       }
       
       if (syncInProgress) {
-        console.log('🔍 [AGGRESSIVE_DEBUG] Sync in progress, waiting...');
+        console.log('🔍 [TRUESKILL_SYNC] Sync in progress, waiting...');
         let attempts = 0;
         const maxAttempts = 50;
         
@@ -101,52 +54,48 @@ export const useTrueSkillSync = () => {
           await new Promise(resolve => setTimeout(resolve, 100));
           attempts++;
         }
-        console.log('🔍 [AGGRESSIVE_DEBUG] Sync wait completed, attempts:', attempts);
+        console.log('🔍 [TRUESKILL_SYNC] Sync wait completed, attempts:', attempts);
       }
       
-      console.log('🔍 [AGGRESSIVE_DEBUG] Setting initialized to true');
+      console.log('🔍 [TRUESKILL_SYNC] Setting initialized to true');
       setIsInitialized(true);
     };
     
     initializeWithCloudSync().catch(error => {
-      console.error('🔍 [AGGRESSIVE_DEBUG] Initialization failed:', error);
+      console.error('🔍 [TRUESKILL_SYNC] Initialization failed:', error);
       setIsInitialized(true);
     });
   }, [isHydrated, sessionId, hasTriedCloudSync, waitForHydration, loadFromCloud]);
 
   const allRatings = getAllRatings() || {};
-  const contextReady = pokemonLookupMap && pokemonLookupMap.size > 0;
   const ratingsCount = Object.keys(allRatings).length;
 
+  // CRITICAL FIX: Wait for BOTH TrueSkill initialization AND Pokemon context readiness
   useEffect(() => {
     const effectId = Date.now();
-    console.error(`🔥🔥🔥 [MAIN_EFFECT_${effectId}] ===== MAIN EFFECT TRIGGERED =====`);
-    console.error(`🔥🔥🔥 [MAIN_EFFECT_${effectId}] contextReady:`, contextReady);
-    console.error(`🔥🔥🔥 [MAIN_EFFECT_${effectId}] isInitialized:`, isInitialized);
-    console.error(`🔥🔥🔥 [MAIN_EFFECT_${effectId}] syncInProgress:`, syncInProgress);
-    console.error(`🔥🔥🔥 [MAIN_EFFECT_${effectId}] ratingsCount:`, ratingsCount);
-    console.error(`🔥🔥🔥 [MAIN_EFFECT_${effectId}] pokemonLookupMap:`, pokemonLookupMap);
-    console.error(`🔥🔥🔥 [MAIN_EFFECT_${effectId}] pokemonLookupMap size:`, pokemonLookupMap?.size);
-    console.error(`🔥🔥🔥 [MAIN_EFFECT_${effectId}] allRatings keys:`, Object.keys(allRatings));
-    console.error(`🔥🔥🔥 [MAIN_EFFECT_${effectId}] Current localRankings type:`, typeof localRankings, 'Array?', Array.isArray(localRankings));
-    console.error(`🔥🔥🔥 [MAIN_EFFECT_${effectId}] Current localRankings length:`, Array.isArray(localRankings) ? localRankings.length : 'NOT_ARRAY');
+    console.log(`🚀 [RANKINGS_SYNC_${effectId}] ===== MAIN RANKINGS SYNC =====`);
+    console.log(`🚀 [RANKINGS_SYNC_${effectId}] isContextReady:`, isContextReady);
+    console.log(`🚀 [RANKINGS_SYNC_${effectId}] isInitialized:`, isInitialized);
+    console.log(`🚀 [RANKINGS_SYNC_${effectId}] syncInProgress:`, syncInProgress);
+    console.log(`🚀 [RANKINGS_SYNC_${effectId}] ratingsCount:`, ratingsCount);
+    console.log(`🚀 [RANKINGS_SYNC_${effectId}] pokemonLookupMap size:`, pokemonLookupMap?.size);
     
-    if (!contextReady || !isInitialized || syncInProgress) {
-      console.error(`🔥🔥🔥 [MAIN_EFFECT_${effectId}] ❌ Early return - setting empty array`);
-      console.error(`🔥🔥🔥 [MAIN_EFFECT_${effectId}] Reason: contextReady=${contextReady}, isInitialized=${isInitialized}, syncInProgress=${syncInProgress}`);
+    // CRITICAL: Must have BOTH context ready AND TrueSkill initialized
+    if (!isContextReady || !isInitialized || syncInProgress) {
+      console.log(`🚀 [RANKINGS_SYNC_${effectId}] ❌ Not ready - setting empty array`);
+      console.log(`🚀 [RANKINGS_SYNC_${effectId}] Reason: contextReady=${isContextReady}, initialized=${isInitialized}, syncInProgress=${syncInProgress}`);
       setLocalRankings([]);
       return;
     }
 
     if (ratingsCount === 0) {
-      console.error(`🔥🔥🔥 [MAIN_EFFECT_${effectId}] ❌ No ratings, setting empty array`);
+      console.log(`🚀 [RANKINGS_SYNC_${effectId}] ❌ No ratings, setting empty array`);
       setLocalRankings([]);
       return;
     }
     
-    console.error(`🔥🔥🔥 [MAIN_EFFECT_${effectId}] ✅ Processing ${ratingsCount} ratings...`);
+    console.log(`🚀 [RANKINGS_SYNC_${effectId}] ✅ Processing ${ratingsCount} ratings with ${pokemonLookupMap.size} Pokemon...`);
     const ratedPokemonIds = Object.keys(allRatings).map(Number);
-    console.error(`🔥🔥🔥 [MAIN_EFFECT_${effectId}] Rated Pokemon IDs:`, ratedPokemonIds.slice(0, 10));
     const rankings: RankedPokemon[] = [];
 
     try {
@@ -154,23 +103,17 @@ export const useTrueSkillSync = () => {
       let failedCount = 0;
       
       ratedPokemonIds.forEach(pokemonId => {
-        if (!pokemonLookupMap) {
-          console.error(`🔥🔥🔥 [MAIN_EFFECT_${effectId}] ❌ pokemonLookupMap is null/undefined for ID ${pokemonId}`);
-          failedCount++;
-          return;
-        }
-        
         const basePokemon = pokemonLookupMap.get(pokemonId);
         const ratingData = allRatings[pokemonId.toString()];
 
         if (!basePokemon) {
-          console.error(`🔥🔥🔥 [MAIN_EFFECT_${effectId}] ❌ No basePokemon found for ID ${pokemonId}`);
+          console.warn(`🚀 [RANKINGS_SYNC_${effectId}] ❌ No basePokemon found for ID ${pokemonId}`);
           failedCount++;
           return;
         }
         
         if (!ratingData) {
-          console.error(`🔥🔥🔥 [MAIN_EFFECT_${effectId}] ❌ No ratingData found for ID ${pokemonId}`);
+          console.warn(`🚀 [RANKINGS_SYNC_${effectId}] ❌ No ratingData found for ID ${pokemonId}`);
           failedCount++;
           return;
         }
@@ -197,42 +140,32 @@ export const useTrueSkillSync = () => {
 
         rankings.push(rankedPokemon);
         processedCount++;
-        
-        if (processedCount <= 5) {
-          console.error(`🔥🔥🔥 [MAIN_EFFECT_${effectId}] ✅ Processed Pokemon ${processedCount}: ${rankedPokemon.name} (ID: ${pokemonId})`);
-        }
       });
 
-      console.error(`🔥🔥🔥 [MAIN_EFFECT_${effectId}] ===== PROCESSING COMPLETE =====`);
-      console.error(`🔥🔥🔥 [MAIN_EFFECT_${effectId}] Total processed: ${processedCount}`);
-      console.error(`🔥🔥🔥 [MAIN_EFFECT_${effectId}] Total failed: ${failedCount}`);
-      console.error(`🔥🔥🔥 [MAIN_EFFECT_${effectId}] Final rankings array length: ${rankings.length}`);
+      console.log(`🚀 [RANKINGS_SYNC_${effectId}] ===== PROCESSING COMPLETE =====`);
+      console.log(`🚀 [RANKINGS_SYNC_${effectId}] Total processed: ${processedCount}`);
+      console.log(`🚀 [RANKINGS_SYNC_${effectId}] Total failed: ${failedCount}`);
+      console.log(`🚀 [RANKINGS_SYNC_${effectId}] Final rankings array length: ${rankings.length}`);
 
       rankings.sort((a, b) => b.score - a.score);
-      console.error(`🔥🔥🔥 [MAIN_EFFECT_${effectId}] ✅ Sorted rankings, calling setLocalRankings with ${rankings.length} Pokemon`);
-      console.error(`🔥🔥🔥 [MAIN_EFFECT_${effectId}] Top 3 after sort:`, rankings.slice(0, 3).map(p => `${p.name}: ${p.score}`));
+      console.log(`🚀 [RANKINGS_SYNC_${effectId}] ✅ Sorted rankings, setting ${rankings.length} Pokemon`);
       
       setLocalRankings(rankings);
-      console.error(`🔥🔥🔥 [MAIN_EFFECT_${effectId}] ✅ setLocalRankings called successfully`);
+      console.log(`🚀 [RANKINGS_SYNC_${effectId}] ✅ Rankings set successfully`);
       
     } catch (error) {
-      console.error(`🔥🔥🔥 [MAIN_EFFECT_${effectId}] ❌❌❌ ERROR processing rankings:`, error);
-      console.error(`🔥🔥🔥 [MAIN_EFFECT_${effectId}] Error stack:`, error.stack);
+      console.error(`🚀 [RANKINGS_SYNC_${effectId}] ❌❌❌ ERROR processing rankings:`, error);
       setLocalRankings([]);
     }
-  }, [contextReady, ratingsCount, allRatings, pokemonLookupMap, isInitialized, syncInProgress, sessionId]);
+  }, [isContextReady, ratingsCount, allRatings, pokemonLookupMap, isInitialized, syncInProgress, sessionId]);
 
   const updateLocalRankings = useMemo(() => {
     return (newRankings: RankedPokemon[]) => {
       const updateId = Date.now();
-      console.log(`🔍 [AGGRESSIVE_DEBUG_${updateId}] updateLocalRankings called`);
-      console.log(`🔍 [AGGRESSIVE_DEBUG_${updateId}] Input type:`, typeof newRankings, 'Array?', Array.isArray(newRankings));
-      console.log(`🔍 [AGGRESSIVE_DEBUG_${updateId}] Input value:`, newRankings);
-      console.log(`🔍 [AGGRESSIVE_DEBUG_${updateId}] Input length:`, Array.isArray(newRankings) ? newRankings.length : 'NOT_ARRAY');
-      console.log(`🔍 [AGGRESSIVE_DEBUG_${updateId}] Stack trace:`, new Error().stack);
+      console.log(`🔍 [UPDATE_RANKINGS_${updateId}] updateLocalRankings called with ${newRankings?.length || 0} rankings`);
       
       if (!Array.isArray(newRankings)) {
-        console.warn(`🔍 [AGGRESSIVE_DEBUG_${updateId}] ❌ updateLocalRankings called with invalid data:`, newRankings);
+        console.warn(`🔍 [UPDATE_RANKINGS_${updateId}] ❌ Invalid data passed:`, newRankings);
         setLocalRankings([]);
         return;
       }
@@ -244,32 +177,15 @@ export const useTrueSkillSync = () => {
         image: pokemon.image || ''
       }));
       
-      console.log(`🔍 [AGGRESSIVE_DEBUG_${updateId}] Formatted rankings count:`, formattedRankings.length);
+      console.log(`🔍 [UPDATE_RANKINGS_${updateId}] Setting ${formattedRankings.length} formatted rankings`);
       setLocalRankings(formattedRankings);
     };
   }, []);
 
-  // ULTRA AGGRESSIVE DEBUG: Check state before returning
-  const returnId = Date.now();
-  console.error(`🔥🔥🔥 [RETURN_CHECK_${returnId}] ===== RETURN CHECK =====`);
-  console.error(`🔥🔥🔥 [RETURN_CHECK_${returnId}] localRankings type:`, typeof localRankings);
-  console.error(`🔥🔥🔥 [RETURN_CHECK_${returnId}] localRankings is array:`, Array.isArray(localRankings));
-  console.error(`🔥🔥🔥 [RETURN_CHECK_${returnId}] localRankings length:`, Array.isArray(localRankings) ? localRankings.length : 'NOT_ARRAY');
-  console.error(`🔥🔥🔥 [RETURN_CHECK_${returnId}] localRankings value (first 3):`, Array.isArray(localRankings) ? localRankings.slice(0, 3).map(p => p?.name) : 'NOT_ARRAY');
-
-  // FINAL SAFETY: Force array if somehow still undefined/null
-  const safeLocalRankings = Array.isArray(localRankings) ? localRankings : [];
-  
-  if (!Array.isArray(localRankings)) {
-    console.error(`🔥🔥🔥 [RETURN_CHECK_${returnId}] ❌❌❌ CRITICAL: localRankings is not an array at return time!`);
-    console.error(`🔥🔥🔥 [RETURN_CHECK_${returnId}] Type:`, typeof localRankings);
-    console.error(`🔥🔥🔥 [RETURN_CHECK_${returnId}] Value:`, localRankings);
-  }
-
-  console.error(`🔥🔥🔥 [RETURN_CHECK_${returnId}] ✅ Returning safeLocalRankings length:`, safeLocalRankings.length);
+  console.log(`🔥 [RETURN_CHECK] Returning ${localRankings.length} local rankings`);
 
   return {
-    localRankings: safeLocalRankings,
+    localRankings,
     updateLocalRankings
   };
 };
