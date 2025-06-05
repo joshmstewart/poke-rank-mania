@@ -21,25 +21,37 @@ export const useEnhancedManualReorder = (
   console.log('🔥 [ENHANCED_REORDER_HOOK_INIT] preventAutoResorting:', preventAutoResorting);
   console.log('🔥 [ENHANCED_REORDER_HOOK_INIT] Manual mode active:', preventAutoResorting);
 
-  const [localRankings, setLocalRankings] = useState<RankedPokemon[]>(finalRankings);
-  const [isDragging, setIsDragging] = useState(false);
-  const [draggedPokemonId, setDraggedPokemonId] = useState<number | null>(null);
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [manualAdjustmentInProgress, setManualAdjustmentInProgress] = useState(false);
+  // Simplified state management - combine related states
+  const [dragState, setDragState] = useState({
+    isDragging: false,
+    draggedPokemonId: null as number | null,
+    isUpdating: false,
+    manualAdjustmentInProgress: false
+  });
 
-  // Update local rankings when final rankings change (but not during drag or manual adjustment)
+  const [localRankings, setLocalRankings] = useState<RankedPokemon[]>([]);
+
+  // Initialize local rankings once
+  const isInitialized = useRef(false);
   useEffect(() => {
-    if (!isDragging && !isUpdating && !manualAdjustmentInProgress) {
+    if (!isInitialized.current && finalRankings.length > 0) {
+      console.log('🔥 [ENHANCED_REORDER] Initializing local rankings');
+      setLocalRankings(finalRankings);
+      isInitialized.current = true;
+    }
+  }, [finalRankings]);
+
+  // Update local rankings when final rankings change (but not during operations)
+  useEffect(() => {
+    if (isInitialized.current && 
+        !dragState.isDragging && 
+        !dragState.isUpdating && 
+        !dragState.manualAdjustmentInProgress &&
+        finalRankings.length > 0) {
       console.log('🔥 [ENHANCED_REORDER] Updating local rankings from final rankings');
       setLocalRankings(finalRankings);
-    } else {
-      console.log('🔥 [ENHANCED_REORDER] Skipping local ranking update - in progress operations:', {
-        isDragging,
-        isUpdating,
-        manualAdjustmentInProgress
-      });
     }
-  }, [finalRankings, isDragging, isUpdating, manualAdjustmentInProgress]);
+  }, [finalRankings, dragState.isDragging, dragState.isUpdating, dragState.manualAdjustmentInProgress]);
 
   const validateRankingsIntegrity = useCallback((rankings: RankedPokemon[]): boolean => {
     const uniqueIds = new Set(rankings.map(p => p.id));
@@ -102,9 +114,6 @@ export const useEnhancedManualReorder = (
     } else {
       console.log(`[DRAG-END] Below Pokémon: None (bottom position)`);
     }
-    
-    // Signal that manual adjustment is in progress
-    setManualAdjustmentInProgress(true);
     
     // Standard Drag Logic - Only when above and below have different scores
     if (abovePokemon && belowPokemon) {
@@ -195,16 +204,10 @@ export const useEnhancedManualReorder = (
     } else {
       console.log(`🔥 [MANUAL_SCORE_ADJUSTMENT] Single Pokemon in list - no adjustment needed`);
     }
-    
-    // Clear the manual adjustment flag after a short delay
-    setTimeout(() => {
-      setManualAdjustmentInProgress(false);
-    }, 100);
   }, [getRating, updateRating, preventAutoResorting]);
 
   const recalculateScores = useCallback((rankings: RankedPokemon[]): RankedPokemon[] => {
     console.log('🔥 [ENHANCED_REORDER_RECALC] Recalculating scores for', rankings.length, 'Pokemon');
-    console.log('🔥 [ENHANCED_REORDER_RECALC] Manual adjustment in progress:', manualAdjustmentInProgress);
     
     return rankings.map((pokemon) => {
       const rating = getRating(pokemon.id.toString());
@@ -219,12 +222,15 @@ export const useEnhancedManualReorder = (
         count: pokemon.count || 0
       };
     });
-  }, [getRating, manualAdjustmentInProgress]);
+  }, [getRating]);
 
   const handleDragStart = useCallback((event: any) => {
     const draggedId = parseInt(event.active.id);
-    setIsDragging(true);
-    setDraggedPokemonId(draggedId);
+    setDragState(prev => ({
+      ...prev,
+      isDragging: true,
+      draggedPokemonId: draggedId
+    }));
     console.log('🔥 [ENHANCED_REORDER_DRAG] Drag started for Pokemon ID:', draggedId);
     console.log('🔥 [ENHANCED_REORDER_DRAG] Manual mode active:', preventAutoResorting);
   }, [preventAutoResorting]);
@@ -232,8 +238,12 @@ export const useEnhancedManualReorder = (
   const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
     
-    setIsDragging(false);
-    setDraggedPokemonId(null);
+    // Reset drag state first
+    setDragState(prev => ({
+      ...prev,
+      isDragging: false,
+      draggedPokemonId: null
+    }));
     
     if (!over || active.id === over.id) {
       console.log('🔥 [ENHANCED_REORDER_DRAG] Drag ended with no change');
@@ -244,7 +254,8 @@ export const useEnhancedManualReorder = (
     console.log('🔥 [ENHANCED_REORDER_DRAG] Active ID:', active.id, 'Over ID:', over.id);
     console.log('🔥 [ENHANCED_REORDER_DRAG] Manual mode active:', preventAutoResorting);
     
-    setIsUpdating(true);
+    // Set updating flag
+    setDragState(prev => ({ ...prev, isUpdating: true }));
     
     try {
       const oldIndex = localRankings.findIndex(p => p.id.toString() === active.id);
@@ -252,7 +263,6 @@ export const useEnhancedManualReorder = (
       
       if (oldIndex === -1 || newIndex === -1) {
         console.error('🔥 [ENHANCED_REORDER_DRAG] Could not find Pokemon indices');
-        setIsUpdating(false);
         return;
       }
       
@@ -267,14 +277,22 @@ export const useEnhancedManualReorder = (
       // Validate the integrity of the new rankings
       if (!validateRankingsIntegrity(newRankings)) {
         console.error('🔥 [ENHANCED_REORDER_DRAG] Rankings integrity check failed');
-        setIsUpdating(false);
         return;
       }
       
       if (preventAutoResorting) {
         console.log('🔥 [ENHANCED_REORDER_DRAG] 🎯 MANUAL MODE: Applying manual score adjustment');
-        // Apply manual score adjustment instead of TrueSkill battles
+        
+        // Set manual adjustment flag
+        setDragState(prev => ({ ...prev, manualAdjustmentInProgress: true }));
+        
+        // Apply manual score adjustment
         applyManualScoreAdjustment(movedPokemon, newIndex, newRankings);
+        
+        // Clear manual adjustment flag after a delay
+        setTimeout(() => {
+          setDragState(prev => ({ ...prev, manualAdjustmentInProgress: false }));
+        }, 100);
       } else {
         console.log('🔥 [ENHANCED_REORDER_DRAG] 🤖 BATTLE MODE: Would apply TrueSkill battles (not implemented in this function)');
       }
@@ -295,7 +313,7 @@ export const useEnhancedManualReorder = (
     } catch (error) {
       console.error('🔥 [ENHANCED_REORDER_DRAG] Error during drag end processing:', error);
     } finally {
-      setIsUpdating(false);
+      setDragState(prev => ({ ...prev, isUpdating: false }));
     }
   }, [localRankings, validateRankingsIntegrity, applyManualScoreAdjustment, recalculateScores, onRankingsUpdate, preventAutoResorting]);
 
@@ -311,7 +329,7 @@ export const useEnhancedManualReorder = (
     console.log('🔥 [ENHANCED_MANUAL_REORDER] Destination Index:', destinationIndex);
     console.log('🔥 [ENHANCED_MANUAL_REORDER] Manual mode active:', preventAutoResorting);
     
-    setIsUpdating(true);
+    setDragState(prev => ({ ...prev, isUpdating: true }));
     
     try {
       let newRankings: RankedPokemon[];
@@ -324,7 +342,6 @@ export const useEnhancedManualReorder = (
         const pokemonData = pokemonLookupMap.get(draggedPokemonId);
         if (!pokemonData) {
           console.error('🔥 [ENHANCED_MANUAL_REORDER] ❌ Pokemon not found in lookup map:', draggedPokemonId);
-          setIsUpdating(false);
           return;
         }
         
@@ -364,13 +381,11 @@ export const useEnhancedManualReorder = (
         
         if (sourceIndex < 0 || sourceIndex >= localRankings.length) {
           console.error('🔥 [ENHANCED_MANUAL_REORDER] ❌ Invalid source index:', sourceIndex);
-          setIsUpdating(false);
           return;
         }
         
         if (destinationIndex < 0 || destinationIndex >= localRankings.length) {
           console.error('🔥 [ENHANCED_MANUAL_REORDER] ❌ Invalid destination index:', destinationIndex);
-          setIsUpdating(false);
           return;
         }
         
@@ -389,7 +404,6 @@ export const useEnhancedManualReorder = (
       // Validate the integrity of the new rankings
       if (!validateRankingsIntegrity(newRankings)) {
         console.error('🔥 [ENHANCED_MANUAL_REORDER] ❌ Rankings integrity check failed');
-        setIsUpdating(false);
         return;
       }
       
@@ -407,23 +421,23 @@ export const useEnhancedManualReorder = (
     } catch (error) {
       console.error('🔥 [ENHANCED_MANUAL_REORDER] ❌ Error during manual reorder:', error);
     } finally {
-      setIsUpdating(false);
+      setDragState(prev => ({ ...prev, isUpdating: false }));
     }
   }, [localRankings, pokemonLookupMap, getRating, validateRankingsIntegrity, applyManualScoreAdjustment, recalculateScores, onRankingsUpdate, preventAutoResorting]);
 
   const displayRankings = useMemo(() => {
     return localRankings.map((pokemon) => ({
       ...pokemon,
-      isBeingDragged: draggedPokemonId === pokemon.id
+      isBeingDragged: dragState.draggedPokemonId === pokemon.id
     }));
-  }, [localRankings, draggedPokemonId]);
+  }, [localRankings, dragState.draggedPokemonId]);
 
   return {
     displayRankings,
     handleDragStart,
     handleDragEnd,
     handleEnhancedManualReorder,
-    isDragging,
-    isUpdating
+    isDragging: dragState.isDragging,
+    isUpdating: dragState.isUpdating
   };
 };
