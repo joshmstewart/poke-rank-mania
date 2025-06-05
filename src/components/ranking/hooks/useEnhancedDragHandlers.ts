@@ -10,6 +10,7 @@ import {
   applyCascadingAdjustmentsBelow
 } from '../utils/cascadingAdjustments';
 import { refreshRankingsWithUpdatedScores } from '../utils/scoreRefresh';
+import { parseId } from '../../../hooks/ranking/utils/idParsing';
 
 interface UseEnhancedDragHandlersProps {
   manualRankingOrder: any[];
@@ -61,6 +62,9 @@ export const useEnhancedDragHandlers = ({
     
     const activeId = active.id.toString();
     const overId = over.id.toString();
+
+    const { pokemonId: activePokemonId } = parseId(activeId);
+    const { pokemonId: overPokemonId, positionIndex: overPositionIndex } = parseId(overId);
     
     // Handle dragging from Available to Rankings
     if (activeId.startsWith('available-')) {
@@ -69,23 +73,21 @@ export const useEnhancedDragHandlers = ({
       return;
     }
     
-    // Handle manual reordering within rankings (both legacy and new format)
-    const isRankingReorder = (
-      (activeId.startsWith('ranking-') || !activeId.startsWith('available-')) &&
-      (overId.startsWith('ranking-') || (!overId.startsWith('available-') && !isNaN(parseInt(overId))))
-    );
+    // Handle manual reordering within rankings using parsed IDs
+    const isRankingReorder = activePokemonId !== null && (overPokemonId !== null || overPositionIndex !== null);
     
     if (isRankingReorder) {
-      // Extract pokemon IDs (handle both ranking- prefix and legacy numeric IDs)
-      const activePokemonId = activeId.startsWith('ranking-') ? 
-        parseInt(activeId.replace('ranking-', '')) : 
-        parseInt(activeId);
-      const overPokemonId = overId.startsWith('ranking-') ? 
-        parseInt(overId.replace('ranking-', '')) : 
-        parseInt(overId);
-      
       const oldIndex = manualRankingOrder.findIndex(p => p.id === activePokemonId);
-      const newIndex = manualRankingOrder.findIndex(p => p.id === overPokemonId);
+
+      let newIndex: number = -1;
+      if (overPokemonId !== null) {
+        newIndex = manualRankingOrder.findIndex(p => p.id === overPokemonId);
+      } else if (overPositionIndex !== null) {
+        const dataIndex = over.data?.current?.index;
+        newIndex = dataIndex !== undefined ? dataIndex : overPositionIndex;
+      } else if (over.data?.current?.index !== undefined) {
+        newIndex = over.data.current.index;
+      }
       
       console.log(`🔧 [ENHANCED_DEBUG_DRAG] Reordering indices: ${oldIndex} -> ${newIndex}`);
       
