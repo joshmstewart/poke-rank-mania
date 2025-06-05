@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { DndContext, DragOverlay, closestCorners, useSensor, useSensors, PointerSensor, KeyboardSensor } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, rectSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
@@ -119,7 +118,7 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
   console.log(`🎯 [SORTABLE_CONTEXT] Ranked Pokemon IDs:`, rankedPokemonIds.slice(0, 3));
   console.log(`🎯 [SORTABLE_CONTEXT] Available Pokemon IDs:`, availablePokemonIds.slice(0, 3));
 
-  // CRITICAL FIX: Enhanced collision detection and debug logging
+  // ENHANCED collision detection debugging
   const debugOnDragStart = (event: any) => {
     console.log(`🎯 [DRAG_START_EVENT] ===== DRAG START TRIGGERED =====`);
     console.log(`🎯 [DRAG_START_EVENT] Active ID: ${event.active.id}`);
@@ -141,19 +140,18 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
       console.log(`🔍 [COLLISION_DEBUG] Active Type: ${event.active.data?.current?.type}`);
       console.log(`🔍 [COLLISION_DEBUG] Over Type: ${event.over.data?.current?.type}`);
       console.log(`🔍 [COLLISION_DEBUG] Over Accepts: ${event.over.data?.current?.accepts}`);
+      console.log(`🔍 [COLLISION_DEBUG] Over Index: ${event.over.data?.current?.index}`);
       console.log(`🔍 [COLLISION_DEBUG] Collision strategy: closestCorners`);
-      console.log(`🔍 [COLLISION_DEBUG] Cross-context interaction: ${event.active.id.toString().startsWith('available-') && (event.over.id === 'rankings-drop-zone' || event.over.id.toString().startsWith('ranking-'))}`);
       
-      // EXPLICIT collision detection debugging for different targets
+      // Specific collision type detection
       if (event.active.id.toString().startsWith('available-')) {
-        if (event.over.id === 'rankings-drop-zone') {
-          console.log(`🔍 [COLLISION_DEBUG] ✅ Available Pokemon ${event.active.id} colliding with rankings drop zone!`);
-        } else if (event.over.id.toString().startsWith('ranking-')) {
-          console.log(`🔍 [COLLISION_DEBUG] ✅ Available Pokemon ${event.active.id} colliding with sortable ranking card ${event.over.id}!`);
+        if (event.over.id.toString().startsWith('ranking-')) {
+          console.log(`🔍 [COLLISION_DEBUG] ✅ Available Pokemon ${event.active.id} colliding with ranking slot ${event.over.id}!`);
+          console.log(`🔍 [COLLISION_DEBUG] Target slot index: ${event.over.data?.current?.index}`);
         }
       }
     } else {
-      console.log(`🔍 [COLLISION_DEBUG] Dragging over NULL target`);
+      console.log(`🔍 [COLLISION_DEBUG] Dragging over NULL target - no collision detected`);
     }
   };
 
@@ -163,33 +161,15 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
     console.log(`🎯 [DRAG_END_EVENT] Over ID: ${event.over?.id || 'NULL'}`);
     console.log(`🎯 [DRAG_END_EVENT] Active Type: ${event.active.data?.current?.type}`);
     console.log(`🎯 [DRAG_END_EVENT] Over Type: ${event.over?.data?.current?.type || 'NULL'}`);
+    console.log(`🎯 [DRAG_END_EVENT] Over Index: ${event.over?.data?.current?.index || 'NULL'}`);
     console.log(`🎯 [DRAG_END_EVENT] Is Available Card: ${event.active.id.toString().startsWith('available-')}`);
-    console.log(`🎯 [DRAG_END_EVENT] Is Rankings Drop Zone: ${event.over?.id === 'rankings-drop-zone'}`);
-    console.log(`🎯 [DRAG_END_EVENT] Is Sortable Card: ${event.over?.id?.toString().startsWith('ranking-')}`);
-    console.log(`🎯 [DRAG_END_EVENT] Cross-context drop detected: ${event.active.id.toString().startsWith('available-') && (event.over?.id === 'rankings-drop-zone' || event.over?.id?.toString().startsWith('ranking-'))}`);
+    console.log(`🎯 [DRAG_END_EVENT] Is Ranking Slot: ${event.over?.id?.toString().startsWith('ranking-')}`);
     
     if (!event.over) {
-      console.log(`🎯 [DRAG_END_EVENT] ❌ NO DROP TARGET - this indicates collision detection failure`);
-    } else if (event.over.id === 'rankings-drop-zone') {
-      console.log(`🎯 [DRAG_END_EVENT] ✅ SUCCESSFUL DROP ON RANKINGS ZONE!`);
+      console.log(`🎯 [DRAG_END_EVENT] ❌ NO DROP TARGET - collision detection failed`);
     } else if (event.over.id.toString().startsWith('ranking-')) {
-      console.log(`🎯 [DRAG_END_EVENT] ✅ SUCCESSFUL DROP ON SORTABLE RANKING CARD!`);
-    }
-    
-    // CRITICAL FIX: Enhanced drag end logic with explicit type checking
-    const activeType = event.active.data?.current?.type;
-    const overType = event.over?.data?.current?.type;
-    
-    console.log(`🔥 [DRAG_LOGIC] Active type: ${activeType}, Over type: ${overType}`);
-    
-    if (activeType === 'available-pokemon' && (overType === 'ranked-pokemon' || event.over?.id === 'rankings-drop-zone')) {
-      console.log('✅ [DRAG_LOGIC] Valid drop detected! Available Pokemon -> Rankings');
-      const pokemon = event.active.data.current.pokemon;
-      console.log(`🔥 [DRAG_LOGIC] Moving Pokemon: ${pokemon?.name} (ID: ${pokemon?.id})`);
-    } else if (activeType === 'ranked-pokemon' && overType === 'ranked-pokemon') {
-      console.log('✅ [DRAG_LOGIC] Valid reorder detected! Ranking Pokemon -> Ranking Pokemon');
-    } else {
-      console.log('⚠️ [DRAG_LOGIC] Invalid drop - types do not match expected patterns');
+      console.log(`🎯 [DRAG_END_EVENT] ✅ SUCCESSFUL DROP ON RANKING SLOT ${event.over.id}!`);
+      console.log(`🎯 [DRAG_END_EVENT] Target slot index: ${event.over.data?.current?.index}`);
     }
     
     // Call the enhanced handler
