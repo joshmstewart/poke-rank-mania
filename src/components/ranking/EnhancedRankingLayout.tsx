@@ -15,14 +15,13 @@ import ScoreAdjustmentDebugModal from "./ScoreAdjustmentDebugModal";
 
 interface ScoreDebugInfo {
   name: string;
-  position: string; // e.g., 'Dragged', 'Above 1', 'Below 1', etc.
+  position: string;
   muBefore: number;
   sigmaBefore: number;
   scoreBefore: number;
   muAfter?: number;
   sigmaAfter?: number;
   scoreAfter?: number;
-  adjusted?: boolean; // explicitly indicates if adjusted by cascading logic
 }
 
 interface EnhancedRankingLayoutProps {
@@ -173,7 +172,7 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
     });
   };
 
-  // Enhanced drag handlers with detailed debug information capture
+  // Enhanced drag handlers with cascading logic
   const enhancedHandleDragStart = (event: DragStartEvent) => {
     console.log(`🔧 [MANUAL_DRAG] Manual Drag Start - ID: ${event.active.id}`);
     const activeId = event.active.id.toString();
@@ -189,12 +188,12 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
   };
 
   const enhancedHandleDragEnd = (event: DragEndEvent) => {
-    console.log(`🔧 [ENHANCED_DEBUG_DRAG] Manual Drag End with Detailed Debug - Active: ${event.active.id}, Over: ${event.over?.id || 'NULL'}`);
+    console.log(`🔧 [CASCADING_DRAG] Manual Drag End with Cascading Logic - Active: ${event.active.id}, Over: ${event.over?.id || 'NULL'}`);
     
     const { active, over } = event;
     
     if (!over || active.id === over.id) {
-      console.log(`🔧 [ENHANCED_DEBUG_DRAG] No drop target or same position - exiting`);
+      console.log(`🔧 [CASCADING_DRAG] No drop target or same position - exiting`);
       return;
     }
     
@@ -203,17 +202,17 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
     
     // Handle dragging from Available to Rankings
     if (activeId.startsWith('available-')) {
-      console.log(`🔧 [ENHANCED_DEBUG_DRAG] Available Pokemon dragged to Rankings`);
+      console.log(`🔧 [CASCADING_DRAG] Available Pokemon dragged to Rankings`);
       handleDragEnd(event);
       return;
     }
     
-    // Handle manual reordering within rankings with detailed debug capture
+    // Handle manual reordering within rankings with cascading adjustments
     if (!activeId.startsWith('available-') && !overId.startsWith('available-')) {
       const oldIndex = manualRankingOrder.findIndex(p => p.id.toString() === activeId);
       const newIndex = manualRankingOrder.findIndex(p => p.id.toString() === overId);
       
-      console.log(`🔧 [ENHANCED_DEBUG_DRAG] Reordering indices: ${oldIndex} -> ${newIndex}`);
+      console.log(`🔧 [CASCADING_DRAG] Reordering indices: ${oldIndex} -> ${newIndex}`);
       
       if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
         // Update manual order state for visual persistence
@@ -221,219 +220,99 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
         const [movedPokemon] = updatedManualOrder.splice(oldIndex, 1);
         updatedManualOrder.splice(newIndex, 0, movedPokemon);
         
-        console.log(`🔧 [ENHANCED_DEBUG_DRAG] ✅ Manual order updated: ${movedPokemon.name} moved to position ${newIndex + 1}`);
+        console.log(`🔧 [CASCADING_DRAG] ✅ Manual order updated: ${movedPokemon.name} moved to position ${newIndex + 1}`);
         setManualRankingOrder(updatedManualOrder);
 
-        // Initialize debug data collection
-        const debugInfo: ScoreDebugInfo[] = [];
-
-        // Capture Dragged Pokémon before adjustment
-        const draggedRatingBefore = getRating(movedPokemon.id.toString());
-        debugInfo.push({
-          name: movedPokemon.name,
-          position: 'Dragged',
-          muBefore: draggedRatingBefore.mu,
-          sigmaBefore: draggedRatingBefore.sigma,
-          scoreBefore: draggedRatingBefore.mu - draggedRatingBefore.sigma,
-        });
-
-        // Capture top 3 neighbors above
-        for (let i = 1; i <= 3; i++) {
-          const neighborAbove = updatedManualOrder[newIndex - i];
-          if (!neighborAbove) break;
-
-          const neighborRatingBefore = getRating(neighborAbove.id.toString());
-          debugInfo.push({
-            name: neighborAbove.name,
-            position: `Above ${i}`,
-            muBefore: neighborRatingBefore.mu,
-            sigmaBefore: neighborRatingBefore.sigma,
-            scoreBefore: neighborRatingBefore.mu - neighborRatingBefore.sigma,
-          });
-        }
-
-        // Capture top 3 neighbors below
-        for (let i = 1; i <= 3; i++) {
-          const neighborBelow = updatedManualOrder[newIndex + i];
-          if (!neighborBelow) break;
-
-          const neighborRatingBefore = getRating(neighborBelow.id.toString());
-          debugInfo.push({
-            name: neighborBelow.name,
-            position: `Below ${i}`,
-            muBefore: neighborRatingBefore.mu,
-            sigmaBefore: neighborRatingBefore.sigma,
-            scoreBefore: neighborRatingBefore.mu - neighborRatingBefore.sigma,
-          });
-        }
-
-        console.log(`🎯 [ENHANCED_DEBUG_SCORING] Starting explicit position-based adjustment for ${movedPokemon.name} at position ${newIndex + 1}`);
+        console.log(`🎯 [CASCADING_SCORING] Starting cascading adjustment for ${movedPokemon.name} at position ${newIndex + 1}`);
         
         // Get immediate neighbors
         const immediateNeighborAbove = newIndex > 0 ? updatedManualOrder[newIndex - 1] : null;
         const immediateNeighborBelow = newIndex < updatedManualOrder.length - 1 ? updatedManualOrder[newIndex + 1] : null;
         
+        let finalScoreAbove: number, finalScoreBelow: number;
+        
+        // Check if cascading is needed (both immediate neighbors have identical scores)
+        const needsCascading = immediateNeighborAbove && immediateNeighborBelow &&
+          Math.abs(
+            (getRating(immediateNeighborAbove.id.toString()).mu - getRating(immediateNeighborAbove.id.toString()).sigma) -
+            (getRating(immediateNeighborBelow.id.toString()).mu - getRating(immediateNeighborBelow.id.toString()).sigma)
+          ) < 0.000001;
+        
+        if (needsCascading) {
+          console.log(`🔧 [CASCADING] Identical immediate neighbors detected - applying cascading adjustments`);
+          
+          // Find all identical neighbors above
+          const identicalNeighborsAbove = findIdenticalNeighborsAbove(updatedManualOrder, newIndex, getRating);
+          const identicalNeighborsBelow = findIdenticalNeighborsBelow(updatedManualOrder, newIndex, getRating);
+          
+          console.log(`🔧 [CASCADING] Found ${identicalNeighborsAbove.length} identical neighbors above, ${identicalNeighborsBelow.length} below`);
+          
+          // Find distinct top and bottom scores for cascading
+          const topDistinctIndex = newIndex - identicalNeighborsAbove.length - 1;
+          const bottomDistinctIndex = newIndex + identicalNeighborsBelow.length + 1;
+          
+          const topDistinctScore = topDistinctIndex >= 0 ?
+            getRating(updatedManualOrder[topDistinctIndex].id.toString()).mu - getRating(updatedManualOrder[topDistinctIndex].id.toString()).sigma :
+            (getRating(immediateNeighborAbove.id.toString()).mu - getRating(immediateNeighborAbove.id.toString()).sigma) + 1.0;
+            
+          const bottomDistinctScore = bottomDistinctIndex < updatedManualOrder.length ?
+            getRating(updatedManualOrder[bottomDistinctIndex].id.toString()).mu - getRating(updatedManualOrder[bottomDistinctIndex].id.toString()).sigma :
+            (getRating(immediateNeighborBelow.id.toString()).mu - getRating(immediateNeighborBelow.id.toString()).sigma) - 1.0;
+          
+          // Apply cascading adjustments
+          if (identicalNeighborsAbove.length > 0) {
+            applyCascadingAdjustmentsAbove(identicalNeighborsAbove, topDistinctScore, updateRating);
+          }
+          
+          if (identicalNeighborsBelow.length > 0) {
+            applyCascadingAdjustmentsBelow(identicalNeighborsBelow, bottomDistinctScore, updateRating);
+          }
+          
+          // Get final scores after cascading
+          finalScoreAbove = getRating(immediateNeighborAbove.id.toString()).mu - getRating(immediateNeighborAbove.id.toString()).sigma;
+          finalScoreBelow = getRating(immediateNeighborBelow.id.toString()).mu - getRating(immediateNeighborBelow.id.toString()).sigma;
+          
+        } else {
+          console.log(`🔧 [CASCADING] No cascading needed - immediate neighbors have distinct scores`);
+          
+          // Use existing scores
+          finalScoreAbove = immediateNeighborAbove ? 
+            getRating(immediateNeighborAbove.id.toString()).mu - getRating(immediateNeighborAbove.id.toString()).sigma : null;
+          finalScoreBelow = immediateNeighborBelow ? 
+            getRating(immediateNeighborBelow.id.toString()).mu - getRating(immediateNeighborBelow.id.toString()).sigma : null;
+        }
+        
+        // Calculate final score for dragged Pokemon
         let newMu: number, newSigma: number;
         const beforeMovedRating = getRating(movedPokemon.id.toString());
         
-        if (immediateNeighborAbove && immediateNeighborBelow) {
-          const scoreAbove = getRating(immediateNeighborAbove.id.toString()).mu - getRating(immediateNeighborAbove.id.toString()).sigma;
-          const scoreBelow = getRating(immediateNeighborBelow.id.toString()).mu - getRating(immediateNeighborBelow.id.toString()).sigma;
-          
-          console.log(`🎯 [ENHANCED_DEBUG_SCORING] Immediate neighbors - Above: ${scoreAbove.toFixed(5)}, Below: ${scoreBelow.toFixed(5)}`);
-          
-          // Check if cascading adjustment is needed (both immediate neighbors have identical scores)
-          const needsCascading = Math.abs(scoreAbove - scoreBelow) < 0.000001;
-          
-          if (needsCascading) {
-            console.log(`🔧 [ENHANCED_DEBUG_CASCADING] Identical immediate neighbors detected - applying cascading adjustments`);
-            
-            // Find and adjust identical neighbors above
-            let cascadeIndex = newIndex - 1;
-            const identicalNeighborsAbove = [];
-            
-            // Find all identical neighbors above
-            while (cascadeIndex >= 0) {
-              const neighbor = updatedManualOrder[cascadeIndex];
-              const neighborScore = getRating(neighbor.id.toString()).mu - getRating(neighbor.id.toString()).sigma;
-              
-              if (Math.abs(neighborScore - scoreAbove) < 0.000001) {
-                identicalNeighborsAbove.unshift(neighbor);
-                cascadeIndex--;
-              } else {
-                break;
-              }
-            }
-            
-            // Find top distinct score for cascading
-            const topDistinctScore = cascadeIndex >= 0 ? 
-              getRating(updatedManualOrder[cascadeIndex].id.toString()).mu - getRating(updatedManualOrder[cascadeIndex].id.toString()).sigma :
-              scoreAbove + 1.0;
-            
-            // Apply cascading adjustments above
-            let currentScore = topDistinctScore;
-            identicalNeighborsAbove.forEach((neighbor) => {
-              const originalRating = getRating(neighbor.id.toString());
-              const adjustedSigma = originalRating.sigma * 0.9999;
-              const adjustedScore = currentScore - 0.00001;
-              const adjustedMu = adjustedScore + adjustedSigma;
-              
-              console.log(`🔧 [ENHANCED_DEBUG_CASCADING] ${neighbor.name}: ${originalRating.mu - originalRating.sigma} → ${adjustedScore}`);
-              
-              updateRating(neighbor.id.toString(), new Rating(adjustedMu, adjustedSigma));
-              
-              // Update debug info
-              const debugEntry = debugInfo.find(d => d.name === neighbor.name);
-              if (debugEntry) {
-                debugEntry.muAfter = adjustedMu;
-                debugEntry.sigmaAfter = adjustedSigma;
-                debugEntry.scoreAfter = adjustedScore;
-                debugEntry.adjusted = true;
-              }
-              
-              currentScore = adjustedScore;
-            });
-            
-            // Find and adjust identical neighbors below
-            cascadeIndex = newIndex + 1;
-            const identicalNeighborsBelow = [];
-            
-            // Find all identical neighbors below
-            while (cascadeIndex < updatedManualOrder.length) {
-              const neighbor = updatedManualOrder[cascadeIndex];
-              const neighborScore = getRating(neighbor.id.toString()).mu - getRating(neighbor.id.toString()).sigma;
-              
-              if (Math.abs(neighborScore - scoreBelow) < 0.000001) {
-                identicalNeighborsBelow.push(neighbor);
-                cascadeIndex++;
-              } else {
-                break;
-              }
-            }
-            
-            // Find bottom distinct score for cascading
-            const bottomDistinctScore = cascadeIndex < updatedManualOrder.length ? 
-              getRating(updatedManualOrder[cascadeIndex].id.toString()).mu - getRating(updatedManualOrder[cascadeIndex].id.toString()).sigma :
-              scoreBelow - 1.0;
-            
-            // Apply cascading adjustments below
-            currentScore = bottomDistinctScore;
-            identicalNeighborsBelow.reverse().forEach((neighbor) => {
-              const originalRating = getRating(neighbor.id.toString());
-              const adjustedSigma = originalRating.sigma * 0.9999;
-              const adjustedScore = currentScore + 0.00001;
-              const adjustedMu = adjustedScore + adjustedSigma;
-              
-              console.log(`🔧 [ENHANCED_DEBUG_CASCADING] ${neighbor.name}: ${originalRating.mu - originalRating.sigma} → ${adjustedScore}`);
-              
-              updateRating(neighbor.id.toString(), new Rating(adjustedMu, adjustedSigma));
-              
-              // Update debug info
-              const debugEntry = debugInfo.find(d => d.name === neighbor.name);
-              if (debugEntry) {
-                debugEntry.muAfter = adjustedMu;
-                debugEntry.sigmaAfter = adjustedSigma;
-                debugEntry.scoreAfter = adjustedScore;
-                debugEntry.adjusted = true;
-              }
-              
-              currentScore = adjustedScore;
-            });
-            
-            // Get final scores after cascading
-            const finalScoreAbove = getRating(immediateNeighborAbove.id.toString()).mu - getRating(immediateNeighborAbove.id.toString()).sigma;
-            const finalScoreBelow = getRating(immediateNeighborBelow.id.toString()).mu - getRating(immediateNeighborBelow.id.toString()).sigma;
-            
-            // Position exactly between adjusted neighbors
-            const targetScore = (finalScoreAbove + finalScoreBelow) / 2;
-            newSigma = beforeMovedRating.sigma;
-            newMu = targetScore + newSigma;
-            
-            console.log(`🎯 [ENHANCED_DEBUG_SCORING] After cascading - positioned between ${finalScoreAbove.toFixed(5)} and ${finalScoreBelow.toFixed(5)}, target: ${targetScore.toFixed(5)}`);
-          } else {
-            console.log(`🔧 [ENHANCED_DEBUG_CASCADING] No cascading needed - immediate neighbors have distinct scores`);
-            
-            // Direct positioning between distinct neighbors
-            const targetScore = (scoreAbove + scoreBelow) / 2;
-            newSigma = beforeMovedRating.sigma;
-            newMu = targetScore + newSigma;
-            console.log(`🎯 [ENHANCED_DEBUG_SCORING] Positioned between ${scoreAbove.toFixed(5)} and ${scoreBelow.toFixed(5)}, target: ${targetScore.toFixed(5)}`);
-          }
-        } else if (immediateNeighborAbove) {
+        if (finalScoreAbove !== null && finalScoreBelow !== null) {
+          // Position exactly between adjusted neighbors
+          const targetScore = (finalScoreAbove + finalScoreBelow) / 2;
+          newSigma = beforeMovedRating.sigma; // keep original sigma
+          newMu = targetScore + newSigma;
+          console.log(`🎯 [CASCADING_SCORING] Positioned between ${finalScoreAbove.toFixed(5)} and ${finalScoreBelow.toFixed(5)}, target: ${targetScore.toFixed(5)}`);
+        } else if (finalScoreAbove !== null) {
           // Top position
-          const scoreAbove = getRating(immediateNeighborAbove.id.toString()).mu - getRating(immediateNeighborAbove.id.toString()).sigma;
           newSigma = beforeMovedRating.sigma;
-          newMu = scoreAbove + 0.001 + newSigma;
-          console.log(`🎯 [ENHANCED_DEBUG_SCORING] Top position above ${scoreAbove.toFixed(5)}`);
-        } else if (immediateNeighborBelow) {
+          newMu = finalScoreAbove + 0.001 + newSigma;
+          console.log(`🎯 [CASCADING_SCORING] Top position above ${finalScoreAbove.toFixed(5)}`);
+        } else if (finalScoreBelow !== null) {
           // Bottom position
-          const scoreBelow = getRating(immediateNeighborBelow.id.toString()).mu - getRating(immediateNeighborBelow.id.toString()).sigma;
           newSigma = beforeMovedRating.sigma;
-          newMu = scoreBelow - 0.001 + newSigma;
-          console.log(`🎯 [ENHANCED_DEBUG_SCORING] Bottom position below ${scoreBelow.toFixed(5)}`);
+          newMu = finalScoreBelow - 0.001 + newSigma;
+          console.log(`🎯 [CASCADING_SCORING] Bottom position below ${finalScoreBelow.toFixed(5)}`);
         } else {
           // Only Pokemon
           newMu = beforeMovedRating.mu;
           newSigma = beforeMovedRating.sigma;
-          console.log(`🎯 [ENHANCED_DEBUG_SCORING] Only Pokemon - keeping current rating`);
+          console.log(`🎯 [CASCADING_SCORING] Only Pokemon - keeping current rating`);
         }
         
         // Update dragged Pokemon's rating
         const newRating = new Rating(newMu, newSigma);
         updateRating(movedPokemon.id.toString(), newRating);
-        
-        // Update debug info for dragged Pokemon
-        const draggedDebugEntry = debugInfo.find(d => d.position === 'Dragged');
-        if (draggedDebugEntry) {
-          draggedDebugEntry.muAfter = newMu;
-          draggedDebugEntry.sigmaAfter = newSigma;
-          draggedDebugEntry.scoreAfter = newMu - newSigma;
-        }
-        
-        // Update debug data state
-        setDebugData(debugInfo);
-        
-        console.log(`🎯 [ENHANCED_DEBUG_SCORING] ✅ Updated ${movedPokemon.name} rating with detailed debug capture`);
+        console.log(`🎯 [CASCADING_SCORING] ✅ Updated ${movedPokemon.name} rating with cascading logic`);
         
         // Trigger background manual reorder
         handleManualReorder(parseInt(activeId), oldIndex, newIndex);
