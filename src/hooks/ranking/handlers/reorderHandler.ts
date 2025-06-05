@@ -6,12 +6,7 @@ export const handleRankingReorder = (
   overId: string,
   over: any,
   localRankings: any[],
-  handleEnhancedManualReorder: (
-    pokemonId: number,
-    sourceIndex: number,
-    destinationIndex: number,
-    pokemon?: any
-  ) => void
+  handleEnhancedManualReorder: (pokemonId: number, sourceIndex: number, destinationIndex: number) => void
 ) => {
   const { pokemonId: activePokemonId } = parseId(activeId);
   

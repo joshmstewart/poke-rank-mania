@@ -36,14 +36,6 @@ npm i
 npm run dev
 ```
 
-### Linting
-
-Run ESLint after installing dependencies to catch style or type issues.
-
-```sh
-npm run lint
-```
-
 **Edit a file directly in GitHub**
 
 - Navigate to the desired file(s).

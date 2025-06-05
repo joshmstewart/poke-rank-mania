@@ -177,8 +177,7 @@ export const useManualReorderCore = (
   const handleEnhancedManualReorder = useCallback((
     draggedPokemonId: number,
     sourceIndex: number,
-    destinationIndex: number,
-      pokemon?: RankedPokemon
+    destinationIndex: number
   ) => {
     const enhancedId = Date.now();
     console.log(`🎯 [MANUAL_REORDER_CORE_${enhancedId}] ===== ENHANCED MANUAL REORDER =====`);
@@ -190,31 +189,18 @@ export const useManualReorderCore = (
       console.error(`❌ [MANUAL_REORDER_CORE_${enhancedId}] No valid rankings available!`);
       return;
     }
-
-    if (sourceIndex === -1) {
-      if (!pokemon) {
-        console.error(`❌ [MANUAL_REORDER_CORE_${enhancedId}] Pokemon object required when sourceIndex is -1`);
-        return;
-      }
-      const newRankings = [...currentRankings];
-      newRankings.splice(destinationIndex, 0, pokemon);
-      stableRankingsRef.current = newRankings;
-      setLocalRankings(newRankings);
-      setTimeout(() => onRankingsUpdate(newRankings), 0);
-      return;
-    }
-
+    
     if (sourceIndex < 0 || sourceIndex >= currentRankings.length) {
       console.error(`❌ [MANUAL_REORDER_CORE_${enhancedId}] Invalid source index: ${sourceIndex}`);
       return;
     }
-
+    
     const movedPokemon = currentRankings[sourceIndex];
     if (!movedPokemon) {
       console.error(`❌ [MANUAL_REORDER_CORE_${enhancedId}] Pokemon not found at source index`);
       return;
     }
-
+    
     processReorder(currentRankings, sourceIndex, destinationIndex, movedPokemon);
   }, []); // CRITICAL: Empty deps
 

@@ -9,12 +9,7 @@ export const handleAvailableToRankingsDrop = (
   enhancedAvailablePokemon: any[],
   localRankings: any[],
   updateRating: (id: string, rating: Rating) => void,
-  handleEnhancedManualReorder: (
-    pokemonId: number,
-    sourceIndex: number,
-    destinationIndex: number,
-    pokemon?: any
-  ) => void,
+  handleEnhancedManualReorder: (pokemonId: number, sourceIndex: number, destinationIndex: number) => void,
   triggerReRanking: (pokemonId: number) => Promise<void>
 ) => {
   console.log(`🚀 [ENHANCED_DRAG_END] Available Pokemon ${pokemonId} dragged to ${overId}`);
@@ -92,7 +87,7 @@ export const handleAvailableToRankingsDrop = (
     console.log(`🔥 [ADD_NEW_POKEMON] Final insertion position: ${insertionPosition}`);
     
     try {
-      handleEnhancedManualReorder(pokemonId, -1, insertionPosition, pokemon);
+      handleEnhancedManualReorder(pokemonId, -1, insertionPosition);
       console.log(`🔥 [ADD_NEW_POKEMON] Successfully added ${pokemon.name}`);
     } catch (error) {
       console.error(`🔥 [ADD_NEW_POKEMON] Failed to add Pokemon:`, error);

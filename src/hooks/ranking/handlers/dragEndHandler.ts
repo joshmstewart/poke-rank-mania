@@ -10,12 +10,7 @@ export const useDragEndHandler = (
   enhancedAvailablePokemon: any[],
   localRankings: any[],
   updateRating: (id: string, rating: Rating) => void,
-  handleEnhancedManualReorder: (
-    pokemonId: number,
-    sourceIndex: number,
-    destinationIndex: number,
-    pokemon?: any
-  ) => void,
+  handleEnhancedManualReorder: (pokemonId: number, sourceIndex: number, destinationIndex: number) => void,
   triggerReRanking: (pokemonId: number) => Promise<void>,
   setActiveDraggedPokemon: (pokemon: any) => void
 ) => {
