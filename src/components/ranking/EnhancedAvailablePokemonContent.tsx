@@ -28,9 +28,6 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
   currentPage,
   totalPages
 }) => {
-  console.log(`🎯 [ENHANCED_AVAILABLE_CONTENT] Rendering ${items.length} items with stable layout`);
-  console.log(`🎯 [ENHANCED_AVAILABLE_CONTENT] Explicit verification - items sample:`, items.slice(0, 3));
-  
   return (
     <div className="flex-1 overflow-y-auto">
       <div className="p-4">

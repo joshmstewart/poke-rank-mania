@@ -1,15 +1,16 @@
 
 import React from "react";
+import { Pokemon } from "@/services/pokemon";
+import DraggablePokemonMilestoneCard from "@/components/battle/DraggablePokemonMilestoneCard";
 import GenerationHeader from "./GenerationHeader";
-import OptimizedDraggableCard from "@/components/battle/OptimizedDraggableCard";
 
 interface PokemonGridSectionProps {
   items: any[];
   showGenerationHeaders: boolean;
   viewMode: "list" | "grid";
   isRankingArea: boolean;
-  isGenerationExpanded: (genId: number) => boolean;
-  onToggleGeneration: (genId: number) => void;
+  isGenerationExpanded?: (generationId: number) => boolean;
+  onToggleGeneration?: (generationId: number) => void;
 }
 
 export const PokemonGridSection: React.FC<PokemonGridSectionProps> = ({
@@ -20,47 +21,97 @@ export const PokemonGridSection: React.FC<PokemonGridSectionProps> = ({
   isGenerationExpanded,
   onToggleGeneration
 }) => {
-  console.log(`🎯 [POKEMON_GRID_SECTION] Rendering ${items.length} items`);
-  console.log(`🎯 [POKEMON_GRID_SECTION] Is ranking area: ${isRankingArea}`);
-  console.log(`🎯 [POKEMON_GRID_SECTION] Show generation headers: ${showGenerationHeaders}`);
+  if (!items || items.length === 0) {
+    return (
+      <div className="text-center py-8 text-gray-500">
+        {isRankingArea ? "No ranked Pokémon yet" : "No available Pokémon"}
+      </div>
+    );
+  }
 
-  return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
-      {items.map((item, index) => {
-        // Handle generation headers
-        if ('type' in item && item.type === 'generation-header') {
-          console.log(`🎯 [POKEMON_GRID_SECTION] Rendering generation header: ${item.generationName}`);
-          return (
-            <div key={`gen-${item.generationId}`} className="col-span-full">
-              <GenerationHeader
-                generationId={item.generationId}
-                name={item.generationName}
-                region={item.region}
-                games={item.games}
-                viewMode={viewMode}
-                isExpanded={isGenerationExpanded(item.generationId)}
-                onToggle={() => onToggleGeneration(item.generationId)}
-              />
+  // Group items by generation for proper grid rendering
+  const renderItems = () => {
+    let currentGeneration: number | null = null;
+    let currentPokemonBatch: any[] = [];
+    const sections: JSX.Element[] = [];
+
+    const flushPokemonBatch = () => {
+      if (currentPokemonBatch.length > 0 && currentGeneration !== null) {
+        // Only render Pokemon grid if the generation is expanded
+        const isExpanded = isGenerationExpanded ? isGenerationExpanded(currentGeneration) : true;
+        
+        if (isExpanded) {
+          sections.push(
+            <div 
+              key={`pokemon-grid-${currentGeneration}`} 
+              className="grid gap-4" 
+              style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}
+            >
+              {currentPokemonBatch.map((pokemon, index) => (
+                <DraggablePokemonMilestoneCard
+                  key={`pokemon-${pokemon.id}-${index}`}
+                  pokemon={pokemon}
+                  index={index}
+                  showRank={false}
+                  isDraggable={true}
+                  isAvailable={!isRankingArea}
+                />
+              ))}
             </div>
           );
         }
+        currentPokemonBatch = [];
+      }
+    };
+
+    items.forEach((item, index) => {
+      if (item.type === 'generation-header') {
+        // Flush any pending Pokemon before showing header
+        flushPokemonBatch();
         
-        // Handle Pokemon items - EXPLICITLY use OptimizedDraggableCard
-        const pokemon = item;
-        console.log(`🎯 [POKEMON_GRID_SECTION] Rendering OptimizedDraggableCard for ${isRankingArea ? 'ranking' : 'available'} Pokemon: ${pokemon.id} - ${pokemon.name}`);
-        
-        return (
-          <OptimizedDraggableCard
-            key={`${isRankingArea ? 'ranking' : 'available'}-${pokemon.id}`}
-            pokemon={pokemon}
-            index={index}
-            isPending={false}
-            showRank={isRankingArea}
-            isDraggable={true}
-            context={isRankingArea ? 'ranked' : 'available'}
+        currentGeneration = item.generationId;
+        sections.push(
+          <GenerationHeader
+            key={`gen-${item.generationId}`}
+            generationId={item.generationId}
+            name={item.generationName}
+            region={item.region}
+            games={item.games}
+            viewMode={viewMode}
+            isExpanded={isGenerationExpanded ? isGenerationExpanded(item.generationId) : true}
+            onToggle={() => onToggleGeneration?.(item.generationId)}
           />
         );
-      })}
-    </div>
-  );
+      } else if (item.type === 'header') {
+        // Handle legacy header format
+        flushPokemonBatch();
+        
+        currentGeneration = item.generationId;
+        sections.push(
+          <GenerationHeader
+            key={`gen-${item.generationId}`}
+            generationId={item.generationId}
+            name={item.data.name}
+            region={item.data.region}
+            games={item.data.games}
+            viewMode={viewMode}
+            isExpanded={isGenerationExpanded ? isGenerationExpanded(item.generationId) : true}
+            onToggle={() => onToggleGeneration?.(item.generationId)}
+          />
+        );
+      } else if (item.type === 'pokemon' && item.data) {
+        currentPokemonBatch.push(item.data);
+      } else if (item.id && item.name) {
+        // Direct pokemon object
+        currentPokemonBatch.push(item);
+      }
+    });
+
+    // Flush any remaining Pokemon
+    flushPokemonBatch();
+
+    return sections;
+  };
+
+  return <div className="space-y-6">{renderItems()}</div>;
 };

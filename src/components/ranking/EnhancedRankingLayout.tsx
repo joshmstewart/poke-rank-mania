@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { DndContext, DragOverlay, closestCorners } from '@dnd-kit/core';
 import { useTrueSkillStore } from "@/stores/trueskillStore";
@@ -99,30 +98,30 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
     setDebugData
   });
 
-  // EXPLICIT DEBUG HANDLERS AS REQUESTED
+  // EXPLICIT DEBUG HANDLERS
   const debugOnDragStart = (event: any) => {
-    console.log(`🎯 [DRAG_START_EVENT] ===== DRAG START TRIGGERED =====`);
-    console.log(`🎯 [DRAG_START_EVENT] Active ID: ${event.active.id}`);
-    console.log(`🎯 [DRAG_START_EVENT] Active data:`, event.active.data.current);
-    console.log(`🎯 [DRAG_START_EVENT] Available Pokemon count: ${enhancedAvailablePokemon.length}`);
-    console.log(`🎯 [DRAG_START_EVENT] Rankings count: ${manualRankingOrder.length}`);
+    console.log(`🔍 [COLLISION_DEBUG] ===== DRAG START DEBUG =====`);
+    console.log(`🔍 [COLLISION_DEBUG] Active ID: ${event.active.id}`);
+    console.log(`🔍 [COLLISION_DEBUG] Active data:`, event.active.data.current);
+    console.log(`🔍 [COLLISION_DEBUG] Available Pokemon count: ${enhancedAvailablePokemon.length}`);
+    console.log(`🔍 [COLLISION_DEBUG] Rankings count: ${manualRankingOrder.length}`);
     enhancedHandleDragStart(event);
   };
 
   const debugOnDragOver = (event: any) => {
-    console.log(`🎯 [DRAG_OVER_EVENT] ===== DRAG OVER COLLISION DETECTED =====`);
-    console.log(`🎯 [DRAG_OVER_EVENT] Over ID: ${event.over?.id || 'NULL'}`);
-    console.log(`🎯 [DRAG_OVER_EVENT] Over data:`, event.over?.data?.current);
-    console.log(`🎯 [DRAG_OVER_EVENT] Collision strategy: closestCorners`);
-    console.log(`🎯 [DRAG_OVER_EVENT] Active: ${event.active.id} -> Over: ${event.over?.id || 'NULL'}`);
+    console.log(`🔍 [COLLISION_DEBUG] ===== DRAG OVER COLLISION DETECTED =====`);
+    console.log(`🔍 [COLLISION_DEBUG] Over ID: ${event.over?.id || 'NULL'}`);
+    console.log(`🔍 [COLLISION_DEBUG] Over data:`, event.over?.data?.current);
+    console.log(`🔍 [COLLISION_DEBUG] Collision strategy: closestCorners`);
+    console.log(`🔍 [COLLISION_DEBUG] Active: ${event.active.id} -> Over: ${event.over?.id || 'NULL'}`);
   };
 
   const debugOnDragEnd = (event: any) => {
-    console.log(`🎯 [DRAG_END_EVENT] ===== DRAG END TRIGGERED =====`);
-    console.log(`🎯 [DRAG_END_EVENT] Active ID: ${event.active.id}`);
-    console.log(`🎯 [DRAG_END_EVENT] Over ID: ${event.over?.id || 'NULL'}`);
-    console.log(`🎯 [DRAG_END_EVENT] Is Available Card: ${event.active.id.toString().startsWith('available-')}`);
-    console.log(`🎯 [DRAG_END_EVENT] Is Ranking Target: ${event.over?.id?.toString().startsWith('ranking-') || event.over?.id === 'rankings-drop-zone'}`);
+    console.log(`🔍 [COLLISION_DEBUG] ===== DRAG END DEBUG =====`);
+    console.log(`🔍 [COLLISION_DEBUG] Active ID: ${event.active.id}`);
+    console.log(`🔍 [COLLISION_DEBUG] Over ID: ${event.over?.id || 'NULL'}`);
+    console.log(`🔍 [COLLISION_DEBUG] Is Available Card: ${event.active.id.toString().startsWith('available-')}`);
+    console.log(`🔍 [COLLISION_DEBUG] Is Ranking Target: ${event.over?.id?.toString().startsWith('ranking-') || event.over?.id === 'rankings-drop-zone'}`);
     enhancedHandleDragEnd(event);
   };
 
