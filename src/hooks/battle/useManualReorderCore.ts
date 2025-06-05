@@ -177,7 +177,8 @@ export const useManualReorderCore = (
   const handleEnhancedManualReorder = useCallback((
     draggedPokemonId: number,
     sourceIndex: number,
-    destinationIndex: number
+    destinationIndex: number,
+    newPokemon?: RankedPokemon
   ) => {
     const enhancedId = Date.now();
     console.log(`🎯 [MANUAL_REORDER_CORE_${enhancedId}] ===== ENHANCED MANUAL REORDER =====`);
@@ -190,17 +191,37 @@ export const useManualReorderCore = (
       return;
     }
     
+    if (sourceIndex === -1) {
+      if (!newPokemon) {
+        console.error(`❌ [MANUAL_REORDER_CORE_${enhancedId}] Missing Pokemon object for new insertion`);
+        return;
+      }
+      const insertIndex = Math.min(Math.max(destinationIndex, 0), currentRankings.length);
+      const newRankings = [...currentRankings];
+      newRankings.splice(insertIndex, 0, newPokemon);
+      stableRankingsRef.current = newRankings;
+      setLocalRankings(newRankings);
+      setTimeout(() => {
+        try {
+          onRankingsUpdate(newRankings);
+        } catch (error) {
+          console.error(`❌ [MANUAL_REORDER_CORE_${enhancedId}] Parent callback failed:`, error);
+        }
+      }, 0);
+      return;
+    }
+
     if (sourceIndex < 0 || sourceIndex >= currentRankings.length) {
       console.error(`❌ [MANUAL_REORDER_CORE_${enhancedId}] Invalid source index: ${sourceIndex}`);
       return;
     }
-    
+
     const movedPokemon = currentRankings[sourceIndex];
     if (!movedPokemon) {
       console.error(`❌ [MANUAL_REORDER_CORE_${enhancedId}] Pokemon not found at source index`);
       return;
     }
-    
+
     processReorder(currentRankings, sourceIndex, destinationIndex, movedPokemon);
   }, []); // CRITICAL: Empty deps
 

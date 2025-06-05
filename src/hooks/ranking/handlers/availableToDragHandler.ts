@@ -9,7 +9,7 @@ export const handleAvailableToRankingsDrop = (
   enhancedAvailablePokemon: any[],
   localRankings: any[],
   updateRating: (id: string, rating: Rating) => void,
-  handleEnhancedManualReorder: (pokemonId: number, sourceIndex: number, destinationIndex: number) => void,
+  handleEnhancedManualReorder: (pokemonId: number, sourceIndex: number, destinationIndex: number, newPokemon?: any) => void,
   triggerReRanking: (pokemonId: number) => Promise<void>
 ) => {
   console.log(`🚀 [ENHANCED_DRAG_END] Available Pokemon ${pokemonId} dragged to ${overId}`);
@@ -18,7 +18,7 @@ export const handleAvailableToRankingsDrop = (
   const isValidDropTarget = (
     overId === 'rankings-drop-zone' ||
     overId === 'rankings-grid-drop-zone' ||
-    overId.startsWith('ranking-') ||
+    /^ranking-(?:position-)?\d+$/.test(overId) ||
     over.data?.current?.type === 'ranking-position' ||
     over.data?.current?.type === 'ranked-pokemon' ||
     over.data?.current?.type === 'rankings-container' ||
@@ -66,10 +66,14 @@ export const handleAvailableToRankingsDrop = (
         console.log(`🔥 [ADD_NEW_POKEMON] Inserting before Pokemon ${targetPokemonId} at position ${targetIndex}`);
       }
     } else if (positionIndex !== null) {
-      // Dropped on an empty slot - use the position index
-      if (positionIndex >= 0 && positionIndex <= localRankings.length) {
-        insertionPosition = positionIndex;
-        console.log(`🔥 [ADD_NEW_POKEMON] Inserting at empty slot position ${positionIndex}`);
+      // Dropped on an empty slot - prefer the droppable data index
+      const dataIndex = over.data?.current?.index;
+      const finalIndex = dataIndex !== undefined ? dataIndex : positionIndex;
+      if (finalIndex >= 0 && finalIndex <= localRankings.length) {
+        insertionPosition = finalIndex;
+        console.log(
+          `🔥 [ADD_NEW_POKEMON] Inserting at empty slot position ${finalIndex} (from ${dataIndex !== undefined ? 'data' : 'id'})`
+        );
       }
     }
     
@@ -83,7 +87,7 @@ export const handleAvailableToRankingsDrop = (
     console.log(`🔥 [ADD_NEW_POKEMON] Final insertion position: ${insertionPosition}`);
     
     try {
-      handleEnhancedManualReorder(pokemonId, -1, insertionPosition);
+      handleEnhancedManualReorder(pokemonId, -1, insertionPosition, pokemon);
       console.log(`🔥 [ADD_NEW_POKEMON] Successfully added ${pokemon.name}`);
     } catch (error) {
       console.error(`🔥 [ADD_NEW_POKEMON] Failed to add Pokemon:`, error);
