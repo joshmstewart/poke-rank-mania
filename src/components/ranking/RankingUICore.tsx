@@ -73,20 +73,20 @@ export const RankingUICore: React.FC<RankingUICoreProps> = React.memo(({
   // CRITICAL FIX: Use the new stable re-ranking trigger
   const { triggerReRanking, setCurrentRankings } = useReRankingTrigger();
   
-  // CRITICAL FIX: Memoize the updateLocalRankings to prevent infinite loops
-  const stableUpdateLocalRankings = React.useCallback(updateLocalRankings, []);
-  
   // CRITICAL FIX: Update the current rankings in the hook whenever they change
   // Use a ref to track if we've already set the current rankings to avoid loops
   const rankingsSetRef = React.useRef(false);
+  const prevRankingsLengthRef = React.useRef(localRankings.length);
   
   React.useEffect(() => {
-    if (!rankingsSetRef.current || localRankings.length > 0) {
+    // Only update if the rankings length has actually changed or it's the first time
+    if (!rankingsSetRef.current || prevRankingsLengthRef.current !== localRankings.length) {
       console.log(`🚨🚨🚨 [RANKING_UI_CORE_DEBUG] Setting current rankings:`, localRankings.length);
-      setCurrentRankings(localRankings, stableUpdateLocalRankings);
+      setCurrentRankings(localRankings, updateLocalRankings);
       rankingsSetRef.current = true;
+      prevRankingsLengthRef.current = localRankings.length;
     }
-  }, [localRankings.length, setCurrentRankings, stableUpdateLocalRankings]); // Only depend on length to avoid infinite loops
+  }, [localRankings.length, setCurrentRankings]); // Remove updateLocalRankings from deps to prevent loops
 
   console.log(`🚨🚨🚨 [RANKING_UI_CORE_DEBUG] triggerReRanking created:`, !!triggerReRanking);
 
