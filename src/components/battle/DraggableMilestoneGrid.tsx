@@ -12,7 +12,7 @@ import {
   rectSortingStrategy,
 } from '@dnd-kit/sortable';
 import DraggablePokemonMilestoneCard from "./DraggablePokemonMilestoneCard";
-import { useDragAndDrop } from "@/hooks/battle/useDragAndDrop";
+import { useRankingDragDrop } from "@/hooks/drag/useRankingDragDrop";
 
 interface DraggableMilestoneGridProps {
   displayRankings: (Pokemon | RankedPokemon)[];
@@ -31,12 +31,12 @@ const DraggableMilestoneGrid: React.FC<DraggableMilestoneGridProps> = ({
   console.log(`🎯 [DRAGGABLE_MILESTONE_GRID] onManualReorder provided: ${!!onManualReorder}`);
 
   // Only use drag and drop if onManualReorder is provided
-  const { sensors, handleDragEnd } = useDragAndDrop({
-    displayRankings,
+  const { sensors, handleDragEnd } = useRankingDragDrop({
+    localRankings: displayRankings,
     onManualReorder: onManualReorder || (() => {
       console.log(`🎯 [DRAGGABLE_MILESTONE_GRID] No manual reorder handler - drag disabled`);
     }),
-    onLocalReorder: () => {} // Not needed for milestone grid
+    onLocalReorder: () => {},
   });
 
   const handleDragStart = (event: any) => {
