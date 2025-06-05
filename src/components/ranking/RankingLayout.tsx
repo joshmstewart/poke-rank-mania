@@ -1,6 +1,6 @@
 
 import React from "react";
-import { DndContext, DragOverlay, closestCorners, DragStartEvent, DragEndEvent } from '@dnd-kit/core';
+import { DndContext, DragOverlay, pointerWithin, DragStartEvent, DragEndEvent } from '@dnd-kit/core';
 import { LoadingState } from "./LoadingState";
 import { AvailablePokemonSection } from "./AvailablePokemonSection";
 import { RankingsSection } from "./RankingsSection";
@@ -66,13 +66,11 @@ export const RankingLayout: React.FC<RankingLayoutProps> = ({
   };
 
   const enhancedHandleDragEnd = (event: DragEndEvent) => {
-    console.log(`🚨 [DRAG_END] Active ID: ${event.active.id}, Dropped on: ${event.over?.id || "null"}`);
     console.log(`🚨🚨🚨 [LAYOUT_DRAG_END_DETECTED] ===== DRAG END DETECTED =====`);
     console.log(`🚨🚨🚨 [LAYOUT_DRAG_END_ACTIVE] Active ID: ${event.active.id}`);
     console.log(`🚨🚨🚨 [LAYOUT_DRAG_END_OVER] Over ID: ${event.over?.id || 'NULL'}`);
     
     if (!event.over) {
-      console.log(`[DRAG_END] No target detected.`);
       console.log(`🚨🚨🚨 [LAYOUT_DRAG_END_NO_TARGET] No drop target detected`);
       return;
     }
@@ -100,7 +98,7 @@ export const RankingLayout: React.FC<RankingLayoutProps> = ({
     <DndContext 
       onDragStart={enhancedHandleDragStart} 
       onDragEnd={enhancedHandleDragEnd}
-      collisionDetection={closestCorners}
+      collisionDetection={pointerWithin}
     >
       <div className="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen p-1">
         {/* Battle Controls Header */}

@@ -1,9 +1,8 @@
 
 import React, { useCallback, useMemo } from "react";
-import { useDroppable } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
-import OptimizedDraggableCard from "@/components/battle/OptimizedDraggableCard";
+import DragDropGrid from "@/components/battle/DragDropGrid";
+import { useDroppable } from '@dnd-kit/core';
 import { useRenderTracker } from "@/hooks/battle/useRenderTracker";
 
 interface RankingsSectionProps {
@@ -27,7 +26,34 @@ export const RankingsSection: React.FC<RankingsSectionProps> = React.memo(({
     hasManualReorder: !!onManualReorder 
   });
 
-  console.log(`🚨 [RANKINGS_SECTION] Rendering with ${displayRankings.length} rankings`);
+  console.log(`🚨🚨🚨 [RANKINGS_SECTION_ULTRA_CRITICAL] ===== RENDERING RANKINGS SECTION =====`);
+  console.log(`🚨🚨🚨 [RANKINGS_SECTION_ULTRA_CRITICAL] Display rankings count: ${displayRankings.length}`);
+  console.log(`🚨🚨🚨 [RANKINGS_SECTION_ULTRA_CRITICAL] Available Pokemon for collision: ${availablePokemon.length}`);
+  
+  // Memoize droppable configuration
+  const droppableConfig = useMemo(() => ({
+    id: 'rankings-drop-zone',
+    data: {
+      type: 'rankings-container',
+      accepts: 'available-pokemon'
+    }
+  }), []);
+
+  const { setNodeRef, isOver } = useDroppable(droppableConfig);
+  
+  console.log(`🚨🚨🚨 [RANKINGS_SECTION_ULTRA_CRITICAL] Droppable setup - ID: rankings-drop-zone, isOver: ${isOver}`);
+  
+  const handleMarkAsPending = useCallback((pokemonId: number) => {
+    console.log(`🚨🚨🚨 [RANKINGS_SECTION_ULTRA_CRITICAL] Marking Pokemon ${pokemonId} as pending`);
+    // For manual mode, we don't need special pending logic like battle mode
+  }, []);
+
+  const handleLocalReorderWrapper = useCallback((newRankings: (Pokemon | RankedPokemon)[]) => {
+    console.log(`🚨🚨🚨 [RANKINGS_SECTION_ULTRA_CRITICAL] Local reorder with ${newRankings.length} Pokemon`);
+    if (onLocalReorder) {
+      onLocalReorder(newRankings);
+    }
+  }, [onLocalReorder]);
 
   // Memoize empty state content
   const emptyStateContent = useMemo(() => (
@@ -35,65 +61,16 @@ export const RankingsSection: React.FC<RankingsSectionProps> = React.memo(({
       <div className="text-center">
         <p className="text-lg mb-2">No Pokémon ranked yet</p>
         <p className="text-sm">Drag Pokémon from the left to start ranking!</p>
-      </div>
-    </div>
-  ), []);
-
-  // Sortable item ids must match the ids used by OptimizedDraggableCard
-  const sortableItems = useMemo(
-    () => displayRankings.map((p) => `ranking-${p.id}`),
-    [displayRankings]
-  );
-
-  // Create individual droppable slot component
-  const DroppableRankingSlot: React.FC<{ index: number; pokemon?: Pokemon | RankedPokemon }> = ({ index, pokemon }) => {
-    const droppableId = `ranking-position-${index}`;
-    const { setNodeRef, isOver } = useDroppable({ 
-      id: droppableId,
-      data: {
-        type: 'ranking-position',
-        index: index,
-        accepts: ['available-pokemon']
-      }
-    });
-
-    console.log(`🔍 [DROPPABLE] Slot ${index} (${droppableId}): isOver=${isOver}, pokemon=${pokemon?.name || 'Empty'}`);
-
-    return (
-      <div 
-        ref={setNodeRef}
-        className={`
-          relative p-2 border-2 border-dashed rounded-lg min-h-[180px] 
-          transition-all duration-200
-          ${isOver 
-            ? 'border-green-500 bg-green-50 scale-105 shadow-lg' 
-            : 'border-gray-300 hover:border-gray-400'
-          }
-        `}
-      >
-        {pokemon ? (
-          <OptimizedDraggableCard
-            pokemon={pokemon}
-            index={index}
-            showRank={true}
-            isDraggable={true}
-            context="ranked"
-          />
-        ) : (
-          <div className="flex items-center justify-center h-full text-gray-400">
-            <div className="text-center">
-              <p className="text-sm">Drop here</p>
-              <p className="text-xs">Position #{index + 1}</p>
-            </div>
-          </div>
+        {isOver && (
+          <p className="text-yellow-600 font-medium mt-2">Drop here to add to rankings!</p>
         )}
       </div>
-    );
-  };
+    </div>
+  ), [isOver]);
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
+      {/* Streamlined Header */}
       <div className="bg-white border-b border-gray-200 p-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900">Your Rankings</h2>
@@ -103,28 +80,23 @@ export const RankingsSection: React.FC<RankingsSectionProps> = React.memo(({
         </div>
       </div>
       
-      {/* Rankings Grid */}
-      <div className="flex-1 overflow-y-auto p-4">
-        {displayRankings.length === 0 ? (
-          emptyStateContent
-        ) : (
-          <SortableContext
-            items={sortableItems}
-            strategy={verticalListSortingStrategy}
-          >
-            <div
-              className="grid gap-4"
-              style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}
-            >
-              {displayRankings.map((pokemon, index) => (
-                <DroppableRankingSlot
-                  key={`slot-${index}`}
-                  index={index}
-                  pokemon={pokemon}
-                />
-              ))}
-            </div>
-          </SortableContext>
+      {/* Rankings Grid - Set up as drop zone with visual feedback */}
+      <div 
+        className={`flex-1 overflow-y-auto p-4 transition-colors ${
+          isOver ? 'bg-yellow-50 border-2 border-dashed border-yellow-400' : ''
+        }`} 
+        ref={setNodeRef}
+      >
+        {displayRankings.length === 0 ? emptyStateContent : (
+          <DragDropGrid
+            displayRankings={displayRankings}
+            localPendingRefinements={pendingRefinements}
+            pendingBattleCounts={new Map()}
+            onManualReorder={onManualReorder || (() => {})}
+            onLocalReorder={handleLocalReorderWrapper}
+            onMarkAsPending={handleMarkAsPending}
+            availablePokemon={availablePokemon}
+          />
         )}
       </div>
     </div>

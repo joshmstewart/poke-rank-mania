@@ -48,87 +48,61 @@ const DragDropGrid: React.FC<DragDropGridProps> = React.memo(({
 
   // Stable items array for SortableContext
   const sortableItems = useMemo(() => {
-    const items = displayRankings.map(p => `ranking-${p.id}`);
+    const items = displayRankings.map(p => p.id);
     console.log(`🎯 [OPTIMIZED_GRID] Creating sortable items - count: ${items.length}`);
     return items;
   }, [displayRankings]);
 
-  // Create individual droppable zones for each position
-  const droppableCards = useMemo(() => {
-    return displayRankings.map((pokemon, index) => {
-      const droppableId = `ranking-${index}`;
-      console.log(`[DROPPABLE_INIT] Initialized droppable: ${droppableId}`);
-      
-      return {
-        id: droppableId,
-        pokemon,
-        index
-      };
-    });
-  }, [displayRankings]);
+  const { setNodeRef, isOver } = useDroppable({
+    id: 'rankings-grid-drop-zone',
+    data: {
+      type: 'rankings-grid',
+      accepts: ['available-pokemon', 'ranked-pokemon']
+    }
+  });
+
+  const gridClassName = `transition-colors ${isOver ? 'bg-yellow-50/50' : ''}`;
 
   // REDUCED LOGGING: Use regular optimized cards for most items, debugger only for first 3
   const renderedCards = useMemo(() => {
     console.log(`🎯 [OPTIMIZED_GRID] Creating cards for ${displayRankings.length} pokemon - LIMITED DEBUGGER MODE`);
     
-    return droppableCards.map(({ id, pokemon, index }) => {
+    return displayRankings.map((pokemon, index) => {
       const isPending = localPendingRefinements.has(pokemon.id);
-      
-      // Create individual droppable wrapper for each position
-      const DroppableWrapper = ({ children }: { children: React.ReactNode }) => {
-        const { setNodeRef, isOver } = useDroppable({
-          id: id,
-          data: {
-            type: 'ranking-position',
-            index: index,
-            accepts: ['available-pokemon']
-          }
-        });
-
-        console.log(`[DROPPABLE_INIT] Initialized droppable: ${id}, isOver: ${isOver}`);
-
-        return (
-          <div 
-            ref={setNodeRef} 
-            className={`droppable-slot transition-colors ${isOver ? "bg-green-200 border-2 border-green-400" : "bg-white"}`}
-          >
-            {children}
-          </div>
-        );
-      };
       
       // Use debugger for only first 3 items to reduce log noise
       if (index < 3) {
         console.log(`🎯 [OPTIMIZED_GRID] Using SortableContextDebugger for ${pokemon.name} at index ${index} (limited logging)`);
         return (
-          <DroppableWrapper key={pokemon.id}>
-            <SortableContextDebugger
-              pokemonId={pokemon.id}
-              pokemonName={pokemon.name}
-              index={index}
-            />
-          </DroppableWrapper>
+          <SortableContextDebugger
+            key={pokemon.id}
+            pokemonId={pokemon.id}
+            pokemonName={pokemon.name}
+            index={index}
+          />
         );
       }
       
       // Use regular optimized cards for the rest
       return (
-        <DroppableWrapper key={pokemon.id}>
-          <OptimizedDraggableCard
-            pokemon={pokemon}
-            index={index}
-            isPending={isPending}
-            context="ranked"
-          />
-        </DroppableWrapper>
+        <OptimizedDraggableCard
+          key={pokemon.id}
+          pokemon={pokemon}
+          index={index}
+          isPending={isPending}
+          context="ranked"
+        />
       );
     });
-  }, [droppableCards, localPendingRefinements]);
+  }, [displayRankings, localPendingRefinements]);
 
   console.log(`🎯 [OPTIMIZED_GRID] Grid render complete with DragOverlay support`);
 
   return (
-    <div>
+    <div 
+      ref={setNodeRef}
+      className={gridClassName}
+    >
       <DndKitInternalTracker />
       
       <SortableContext 
