@@ -1,7 +1,8 @@
 
 import React, { useCallback, useMemo } from "react";
+import { useDroppable } from '@dnd-kit/core';
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
-import DragDropGrid from "@/components/battle/DragDropGrid";
+import OptimizedDraggableCard from "@/components/battle/OptimizedDraggableCard";
 import { useRenderTracker } from "@/hooks/battle/useRenderTracker";
 
 interface RankingsSectionProps {
@@ -28,18 +29,6 @@ export const RankingsSection: React.FC<RankingsSectionProps> = React.memo(({
   console.log(`🚨🚨🚨 [RANKINGS_SECTION_ULTRA_CRITICAL] ===== RENDERING RANKINGS SECTION =====`);
   console.log(`🚨🚨🚨 [RANKINGS_SECTION_ULTRA_CRITICAL] Display rankings count: ${displayRankings.length}`);
   console.log(`🚨🚨🚨 [RANKINGS_SECTION_ULTRA_CRITICAL] Available Pokemon for collision: ${availablePokemon.length}`);
-  
-  const handleMarkAsPending = useCallback((pokemonId: number) => {
-    console.log(`🚨🚨🚨 [RANKINGS_SECTION_ULTRA_CRITICAL] Marking Pokemon ${pokemonId} as pending`);
-    // For manual mode, we don't need special pending logic like battle mode
-  }, []);
-
-  const handleLocalReorderWrapper = useCallback((newRankings: (Pokemon | RankedPokemon)[]) => {
-    console.log(`🚨🚨🚨 [RANKINGS_SECTION_ULTRA_CRITICAL] Local reorder with ${newRankings.length} Pokemon`);
-    if (onLocalReorder) {
-      onLocalReorder(newRankings);
-    }
-  }, [onLocalReorder]);
 
   // Memoize empty state content
   const emptyStateContent = useMemo(() => (
@@ -50,6 +39,41 @@ export const RankingsSection: React.FC<RankingsSectionProps> = React.memo(({
       </div>
     </div>
   ), []);
+
+  // Create individual droppable slot component
+  const DroppableRankingSlot: React.FC<{ index: number; pokemon?: Pokemon | RankedPokemon }> = ({ index, pokemon }) => {
+    const { setNodeRef, isOver } = useDroppable({ 
+      id: `ranking-${index}`,
+      data: {
+        type: 'ranking-position',
+        index: index,
+        accepts: ['available-pokemon']
+      }
+    });
+
+    console.log(`[DROPPABLE_INIT] Initialized droppable: ranking-${index}, isOver: ${isOver}`);
+
+    return (
+      <div 
+        ref={setNodeRef} 
+        className={`droppable-slot transition-colors ${isOver ? "bg-green-200 border-2 border-green-400" : "bg-white"}`}
+        style={{ minWidth: '140px', minHeight: '200px' }}
+      >
+        {pokemon ? (
+          <OptimizedDraggableCard
+            pokemon={pokemon}
+            index={index}
+            isPending={pendingRefinements.has(pokemon.id)}
+            context="ranked"
+          />
+        ) : (
+          <div className="empty-slot flex items-center justify-center h-full border-2 border-dashed border-gray-300 rounded-lg text-gray-500">
+            <span className="text-sm">Empty Slot {index + 1}</span>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="flex flex-col h-full">
@@ -63,18 +87,17 @@ export const RankingsSection: React.FC<RankingsSectionProps> = React.memo(({
         </div>
       </div>
       
-      {/* Rankings Grid - Remove wrapper droppable, let DragDropGrid handle individual positions */}
+      {/* Rankings Grid - Each position is a separate droppable */}
       <div className="flex-1 overflow-y-auto p-4">
         {displayRankings.length === 0 ? emptyStateContent : (
-          <DragDropGrid
-            displayRankings={displayRankings}
-            localPendingRefinements={pendingRefinements}
-            pendingBattleCounts={new Map()}
-            onManualReorder={onManualReorder || (() => {})}
-            onLocalReorder={handleLocalReorderWrapper}
-            onMarkAsPending={handleMarkAsPending}
-            availablePokemon={availablePokemon}
-          />
+          <div 
+            className="grid gap-4" 
+            style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}
+          >
+            {displayRankings.map((pokemon, index) => (
+              <DroppableRankingSlot key={index} index={index} pokemon={pokemon} />
+            ))}
+          </div>
         )}
       </div>
     </div>
