@@ -1,9 +1,7 @@
 
 import React, { memo } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
-import { useDraggable } from '@dnd-kit/core';
-import { useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+import { useStableSortable } from "@/hooks/battle/useStableSortable";
 import { getPokemonBackgroundColor } from "./utils/PokemonColorUtils";
 import PokemonMilestoneImage from "@/components/pokemon/PokemonMilestoneImage";
 import PokemonMilestoneInfo from "@/components/pokemon/PokemonMilestoneInfo";
@@ -26,74 +24,35 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
   isDraggable = true,
   context = 'ranked'
 }) => {
-  console.log(`🚀 [OPTIMIZED_CARD] ${pokemon.name}: Rendering optimized card (context: ${context})`);
+  console.log(`🚀 [OPTIMIZED_CARD] ${pokemon.name}: Rendering optimized card`);
 
-  // EXPLICIT NOTE: "All Filtered" Pokémon cards intentionally NOT sortable.
-  // Sorted explicitly by Pokédex number.
-  // Pokémon can ONLY be dragged into "Your Rankings" grid.
+  // STEP 4: Ensure consistent string ID that matches drag handlers
+  const sortableId = pokemon.id.toString();
   
-  // For Available Pokemon: Use useDraggable (no sorting within grid)
-  // For Ranked Pokemon: Use useSortable (allows reordering within rankings)
-  const sortableId = context === 'available' ? `available-${pokemon.id}` : pokemon.id.toString();
-  
-  console.log(`🔧 [DRAG_ID_FIX] Card ${pokemon.name} using ID: ${sortableId} (context: ${context})`);
+  const sortableConfig = {
+    id: sortableId, // Explicit string ID
+    disabled: !isDraggable,
+    data: {
+      type: context === 'available' ? 'available-pokemon' : 'ranked-pokemon',
+      pokemon: pokemon,
+      source: context,
+      index
+    }
+  };
 
-  // CORRECTED: Available Pokemon use useDraggable only (no sorting)
-  // Ranked Pokemon use useSortable (for reordering within rankings)
-  let dragAttributes, dragListeners, setNodeRef, isDragging, transform, transition;
+  console.log(`🔧 [DRAG_ID_FIX] Card ${pokemon.name} using sortable ID: ${sortableId}`);
 
-  if (context === 'available') {
-    // Available Pokemon: draggable but not sortable
-    const draggableConfig = {
-      id: sortableId,
-      disabled: !isDraggable,
-      data: {
-        type: 'available-pokemon',
-        pokemon: pokemon,
-        source: context,
-        index
-      }
-    };
-
-    const draggableResult = useDraggable(draggableConfig);
-    dragAttributes = draggableResult.attributes;
-    dragListeners = draggableResult.listeners;
-    setNodeRef = draggableResult.setNodeRef;
-    isDragging = draggableResult.isDragging;
-    transform = null;
-    transition = null;
-  } else {
-    // Ranked Pokemon: sortable within their grid
-    const sortableConfig = {
-      id: sortableId,
-      disabled: !isDraggable,
-      data: {
-        type: 'ranked-pokemon',
-        pokemon: pokemon,
-        source: context,
-        index
-      }
-    };
-
-    const sortableResult = useSortable(sortableConfig);
-    dragAttributes = sortableResult.attributes;
-    dragListeners = sortableResult.listeners;
-    setNodeRef = sortableResult.setNodeRef;
-    isDragging = sortableResult.isDragging;
-    transform = sortableResult.transform;
-    transition = sortableResult.transition;
-  }
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    isDragging,
+    style
+  } = useStableSortable(sortableConfig);
 
   const backgroundColorClass = getPokemonBackgroundColor(pokemon);
   
-  // EXPLICITLY: Only apply drag props if draggable to prevent conflicts
-  const dragProps = isDraggable ? { ...dragAttributes, ...dragListeners } : {};
-
-  // Apply transform for sortable items
-  const style = transform ? {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  } : undefined;
+  const dragProps = isDraggable ? { ...attributes, ...listeners } : {};
 
   const cardClassName = `${backgroundColorClass} rounded-lg border border-gray-200 relative overflow-hidden h-35 flex flex-col group ${
     isDraggable ? 'cursor-grab active:cursor-grabbing' : ''
@@ -114,8 +73,8 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
   return (
     <div
       ref={setNodeRef}
-      className={cardClassName}
       style={style}
+      className={cardClassName}
       {...dragProps}
     >
       <PokemonMilestoneOverlays

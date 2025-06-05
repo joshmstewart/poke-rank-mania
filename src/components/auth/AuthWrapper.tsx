@@ -1,6 +1,7 @@
 
 import React, { useRef, useEffect, useState } from 'react';
 import { AuthProvider } from '@/contexts/auth';
+import { ImpliedBattleTrackerProvider } from '@/contexts/ImpliedBattleTracker';
 
 interface AuthWrapperProps {
   children: React.ReactNode;
@@ -39,7 +40,9 @@ export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
   return (
     <div className="auth-wrapper-container" style={{ minHeight: '100vh' }}>
       <AuthProvider>
-        {children}
+        <ImpliedBattleTrackerProvider>
+          {children}
+        </ImpliedBattleTrackerProvider>
       </AuthProvider>
     </div>
   );

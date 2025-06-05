@@ -1,8 +1,6 @@
 
 import React, { useMemo, useState, useEffect } from "react";
 import { DndContext, DragOverlay, pointerWithin, DragStartEvent, DragEndEvent } from '@dnd-kit/core';
-import { Rating } from 'ts-trueskill';
-import { useTrueSkillStore } from "@/stores/trueskillStore";
 import { BattleType } from "@/hooks/battle/types";
 import { LoadingType } from "@/hooks/pokemon/types";
 import { RankingsSectionStable } from "./RankingsSectionStable";
@@ -10,20 +8,8 @@ import { EnhancedAvailablePokemonSection } from "./EnhancedAvailablePokemonSecti
 import UnifiedControls from "@/components/shared/UnifiedControls";
 import PokemonCard from "@/components/PokemonCard";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { useStableDragHandlers } from "@/hooks/battle/useStableDragHandlers";
-import ScoreAdjustmentDebugModal from "./ScoreAdjustmentDebugModal";
-
-interface ScoreDebugInfo {
-  name: string;
-  position: string;
-  muBefore: number;
-  sigmaBefore: number;
-  scoreBefore: number;
-  muAfter?: number;
-  sigmaAfter?: number;
-  scoreAfter?: number;
-}
+import { useImpliedBattleTracker } from "@/contexts/ImpliedBattleTracker";
 
 interface EnhancedRankingLayoutProps {
   isLoading: boolean;
@@ -77,15 +63,13 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
   console.log(`🔥🔥🔥 [LAYOUT_FIXED] ===== ENHANCED LAYOUT RENDER =====`);
   console.log(`🔥🔥🔥 [LAYOUT_FIXED] displayRankings count: ${displayRankings.length}`);
 
-  // Manual ranking order state for visual persistence
+  // Connect to implied battle tracker
+  const { addImpliedBattle } = useImpliedBattleTracker();
+
+  // STEP 1: Introduce manual ranking order state for visual persistence
   const [manualRankingOrder, setManualRankingOrder] = useState(displayRankings);
-  const { updateRating, getRating } = useTrueSkillStore();
   
-  // Debug modal state
-  const [showDebugModal, setShowDebugModal] = useState(false);
-  const [debugData, setDebugData] = useState<ScoreDebugInfo[]>([]);
-  
-  // Update manual order when displayRankings changes
+  // Update manual order when displayRankings changes (on initial load or refresh)
   useEffect(() => {
     setManualRankingOrder(displayRankings);
   }, [displayRankings]);
@@ -96,24 +80,14 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
     handleLocalReorder
   );
 
-  // Enhanced drag handlers with explicit position-based score calculation
+  // STEP 2: Enhanced drag handlers with manual order preservation
   const enhancedHandleDragStart = (event: DragStartEvent) => {
     console.log(`🔧 [MANUAL_DRAG] Manual Drag Start - ID: ${event.active.id}`);
     const activeId = event.active.id.toString();
     console.log(`🔧 [MANUAL_DRAG] Active ID as string: ${activeId}`);
-    
-    if (activeId.startsWith('available-')) {
-      console.log(`🔧 [MANUAL_DRAG] Dragging from Available grid: ${activeId}`);
-    } else {
-      console.log(`🔧 [MANUAL_DRAG] Dragging within Rankings grid: ${activeId}`);
-    }
-    
     handleDragStart(event);
   };
 
-  // Drag-and-Drop Explicit Manual Score Adjustment:
-  // Ensures moved Pokémon stays exactly in the dropped position upon refresh.
-  // Explicitly handles identical neighbor scores with a tiny μ adjustment.
   const enhancedHandleDragEnd = (event: DragEndEvent) => {
     console.log(`🔧 [MANUAL_DRAG] Manual Drag End - Active: ${event.active.id}, Over: ${event.over?.id || 'NULL'}`);
     
@@ -124,17 +98,11 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
       return;
     }
     
+    // STEP 2: Handle manual reordering within rankings
     const activeId = active.id.toString();
     const overId = over.id.toString();
     
-    // Handle dragging from Available to Rankings
-    if (activeId.startsWith('available-')) {
-      console.log(`🔧 [MANUAL_DRAG] Available Pokemon dragged to Rankings`);
-      handleDragEnd(event);
-      return;
-    }
-    
-    // Handle manual reordering within rankings (ranked Pokemon only)
+    // Only handle reordering within the rankings (not adding new Pokemon)
     if (!activeId.startsWith('available-') && !overId.startsWith('available-')) {
       const oldIndex = manualRankingOrder.findIndex(p => p.id.toString() === activeId);
       const newIndex = manualRankingOrder.findIndex(p => p.id.toString() === overId);
@@ -142,128 +110,49 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
       console.log(`🔧 [MANUAL_DRAG] Reordering indices: ${oldIndex} -> ${newIndex}`);
       
       if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-        // Update manual order state for visual persistence
+        // CRITICAL: Update only manual order state for visual persistence
         const updatedManualOrder = [...manualRankingOrder];
         const [movedPokemon] = updatedManualOrder.splice(oldIndex, 1);
         updatedManualOrder.splice(newIndex, 0, movedPokemon);
         
-        console.log(`🔧 [MANUAL_DRAG] ✅ Manual order updated: ${movedPokemon.name} moved to position ${newIndex + 1}`);
+        console.log(`🔧 [MANUAL_DRAG] ✅ Manual order updated: ${movedPokemon.name} moved to position ${newIndex}`);
         setManualRankingOrder(updatedManualOrder);
-
-        console.log(`🎯 [POSITION_BASED_SCORING] Starting explicit position-based score adjustment for ${movedPokemon.name}`);
         
-        // Capture BEFORE adjustment data
-        const beforeMovedRating = getRating(movedPokemon.id.toString());
+        // STEP 3: Add implied battles based on the reorder
+        console.log(`🎲 [IMPLIED_BATTLES] Triggering implied battles for reorder`);
         
-        // Explicitly retrieve immediate neighbors
-        const neighborAbove = newIndex > 0 ? updatedManualOrder[newIndex - 1] : null;
-        const neighborBelow = newIndex < updatedManualOrder.length - 1 ? updatedManualOrder[newIndex + 1] : null;
-        
-        let newMu: number, newSigma: number;
-        
-        if (neighborAbove && neighborBelow) {
-          // Get neighbor ratings from TrueSkill store
-          const aboveRating = getRating(neighborAbove.id.toString());
-          const belowRating = getRating(neighborBelow.id.toString());
-          
-          // Clearly defined variables:
-          const scoreAbove = aboveRating.mu - aboveRating.sigma;
-          const scoreBelow = belowRating.mu - belowRating.sigma;
-          
-          // Calculate explicit target score:
-          const targetScore = (scoreAbove + scoreBelow) / 2;
-          
-          console.log(`🎯 [POSITION_BASED_SCORING] Above score: ${scoreAbove.toFixed(3)}, Below score: ${scoreBelow.toFixed(3)}, Target: ${targetScore.toFixed(3)}`);
-          
-          // Handle Special Case – Identical Neighbor Scores
-          if (
-            scoreAbove === scoreBelow &&
-            aboveRating.mu === belowRating.mu &&
-            aboveRating.sigma === belowRating.sigma
-          ) {
-            console.log(`🎯 [POSITION_BASED_SCORING] Identical neighbors detected - applying tiny adjustment`);
-            
-            const tinyAdjustment = 0.001;
-            
-            if (newIndex < oldIndex) { // moving upwards
-              newMu = aboveRating.mu + tinyAdjustment;
-            } else { // moving downwards
-              newMu = belowRating.mu - tinyAdjustment;
+        // Determine who wins based on the direction of movement
+        if (newIndex < oldIndex) {
+          // Pokemon moved up - it beats the Pokemon it moved past
+          for (let i = newIndex; i < oldIndex; i++) {
+            const opponent = updatedManualOrder[i + 1];
+            if (opponent && opponent.id !== movedPokemon.id) {
+              console.log(`🎲 [IMPLIED_BATTLES] ${movedPokemon.name} beats ${opponent.name} (moved up)`);
+              addImpliedBattle({
+                draggedPokemon: movedPokemon.name,
+                opponent: opponent.name,
+                winner: movedPokemon.name,
+                battleType: 'Manual Reorder (Up)'
+              });
             }
-            
-            newSigma = aboveRating.sigma; // keep sigma explicitly unchanged
-            
-            console.log(`🎯 [POSITION_BASED_SCORING] Identical case - mu: ${newMu.toFixed(3)}, sigma: ${newSigma.toFixed(3)}`);
-          } else {
-            // General case: Adjust μ Precisely to Achieve Target Score
-            newSigma = (aboveRating.sigma + belowRating.sigma) / 2;
-            newMu = targetScore + newSigma; // Ensures exactly: newMu - newSigma = targetScore
-            
-            console.log(`🎯 [POSITION_BASED_SCORING] General case - mu: ${newMu.toFixed(3)}, sigma: ${newSigma.toFixed(3)}, resulting score: ${(newMu - newSigma).toFixed(3)}`);
           }
-        } else if (neighborAbove) {
-          // Explicit top position handling
-          const aboveRating = getRating(neighborAbove.id.toString());
-          newSigma = aboveRating.sigma;
-          newMu = aboveRating.mu + 0.001;
-          console.log(`🎯 [POSITION_BASED_SCORING] Top position - mu: ${newMu.toFixed(3)}, sigma: ${newSigma.toFixed(3)}`);
-        } else if (neighborBelow) {
-          // Explicit bottom position handling
-          const belowRating = getRating(neighborBelow.id.toString());
-          newSigma = belowRating.sigma;
-          newMu = belowRating.mu - 0.001;
-          console.log(`🎯 [POSITION_BASED_SCORING] Bottom position - mu: ${newMu.toFixed(3)}, sigma: ${newSigma.toFixed(3)}`);
-        } else {
-          // Only Pokémon in list
-          newMu = beforeMovedRating.mu;
-          newSigma = beforeMovedRating.sigma;
-          console.log(`🎯 [POSITION_BASED_SCORING] Only Pokemon - keeping current rating`);
-        }
-        
-        // Permanent TrueSkill Store Update
-        const newRating = new Rating(newMu, newSigma);
-        updateRating(movedPokemon.id.toString(), newRating);
-        console.log(`🎯 [POSITION_BASED_SCORING] ✅ Permanently updated ${movedPokemon.name} rating in TrueSkill store`);
-        
-        // Set debug data for modal
-        const debugInfo: ScoreDebugInfo[] = [
-          {
-            name: movedPokemon.name,
-            position: `Position ${newIndex + 1}`,
-            muBefore: beforeMovedRating.mu,
-            sigmaBefore: beforeMovedRating.sigma,
-            scoreBefore: beforeMovedRating.mu - beforeMovedRating.sigma,
-            muAfter: newMu,
-            sigmaAfter: newSigma,
-            scoreAfter: newMu - newSigma
+        } else if (newIndex > oldIndex) {
+          // Pokemon moved down - Pokemon it moved past beat it
+          for (let i = oldIndex; i < newIndex; i++) {
+            const opponent = updatedManualOrder[i];
+            if (opponent && opponent.id !== movedPokemon.id) {
+              console.log(`🎲 [IMPLIED_BATTLES] ${opponent.name} beats ${movedPokemon.name} (moved down)`);
+              addImpliedBattle({
+                draggedPokemon: movedPokemon.name,
+                opponent: opponent.name,
+                winner: opponent.name,
+                battleType: 'Manual Reorder (Down)'
+              });
+            }
           }
-        ];
-
-        if (neighborAbove) {
-          const aboveRating = getRating(neighborAbove.id.toString());
-          debugInfo.push({
-            name: neighborAbove.name,
-            position: `Above (Position ${newIndex})`,
-            muBefore: aboveRating.mu,
-            sigmaBefore: aboveRating.sigma,
-            scoreBefore: aboveRating.mu - aboveRating.sigma,
-          });
         }
-
-        if (neighborBelow) {
-          const belowRating = getRating(neighborBelow.id.toString());
-          debugInfo.push({
-            name: neighborBelow.name,
-            position: `Below (Position ${newIndex + 2})`,
-            muBefore: belowRating.mu,
-            sigmaBefore: belowRating.sigma,
-            scoreBefore: belowRating.mu - belowRating.sigma,
-          });
-        }
-
-        setDebugData(debugInfo);
         
-        // Trigger background manual reorder
+        // STEP 4: Trigger background score updates without immediate visual change
         handleManualReorder(parseInt(activeId), oldIndex, newIndex);
         
         return;
@@ -287,17 +176,6 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
           onReset={handleComprehensiveReset}
           customResetAction={handleComprehensiveReset}
         />
-        
-        {/* Debug Controls */}
-        <div className="flex justify-center mt-4">
-          <Button 
-            onClick={() => setShowDebugModal(true)}
-            variant="outline"
-            className="bg-purple-100 border-purple-400 text-purple-800 hover:bg-purple-200"
-          >
-            🔍 Debug Score Adjustment
-          </Button>
-        </div>
       </div>
 
       <div className="max-w-7xl mx-auto">
@@ -346,12 +224,6 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
           </Card>
         </div>
       </div>
-      
-      <ScoreAdjustmentDebugModal
-        open={showDebugModal}
-        onClose={() => setShowDebugModal(false)}
-        debugData={debugData}
-      />
     </div>
   );
 });

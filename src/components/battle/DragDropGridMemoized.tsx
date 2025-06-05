@@ -15,11 +15,6 @@ interface DragDropGridMemoizedProps {
   onLocalReorder?: (newRankings: (Pokemon | RankedPokemon)[]) => void;
 }
 
-// EXPLICITLY THE ONLY SORTABLE CONTEXT:
-// - This is the SINGLE SortableContext in the entire drag-and-drop hierarchy
-// - NO other SortableContexts should exist anywhere else
-// - All draggable cards are wrapped by this context exclusively
-// - Relies on parent DndContext in EnhancedRankingLayout.tsx for drag handling
 const DragDropGridMemoized: React.FC<DragDropGridMemoizedProps> = React.memo(({
   displayRankings,
   localPendingRefinements,
@@ -32,7 +27,6 @@ const DragDropGridMemoized: React.FC<DragDropGridMemoizedProps> = React.memo(({
   console.log('🎨 [GRID_FIXED] onManualReorder exists:', !!onManualReorder);
 
   // Create sortable items for proper drag behavior
-  // EXPLICITLY: These IDs must match the DndContext active.id for proper drag detection
   const sortableItems = useMemo(() => {
     const items = displayRankings.map(p => p.id.toString());
     console.log(`🎨 [GRID_FIXED] Sortable items created:`, items.slice(0, 5));
@@ -63,13 +57,9 @@ const DragDropGridMemoized: React.FC<DragDropGridMemoizedProps> = React.memo(({
     });
   }, [displayRankings, localPendingRefinements]);
 
-  console.log(`🎨 [GRID_FIXED] Rendering ${renderedCards.length} cards in SINGLE SortableContext`);
+  console.log(`🎨 [GRID_FIXED] Rendering ${renderedCards.length} cards in SortableContext`);
 
   return (
-    // EXPLICITLY THE ONLY SORTABLE CONTEXT:
-    // - Single SortableContext wrapping ALL draggable cards
-    // - Uses rectSortingStrategy for grid-based sorting
-    // - NO nested SortableContexts anywhere in the tree
     <SortableContext 
       items={sortableItems}
       strategy={rectSortingStrategy}
