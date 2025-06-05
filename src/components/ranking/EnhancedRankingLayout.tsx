@@ -5,9 +5,8 @@ import { SortableContext, verticalListSortingStrategy, rectSortingStrategy, sort
 import { useTrueSkillStore } from "@/stores/trueskillStore";
 import { BattleType } from "@/hooks/battle/types";
 import { LoadingType } from "@/hooks/pokemon/types";
-import { RankingsSectionStable } from "./RankingsSectionStable";
+import { RankingsSection } from "./RankingsSection";
 import { EnhancedAvailablePokemonSection } from "./EnhancedAvailablePokemonSection";
-import { RankingsDroppableContainer } from "./RankingsDroppableContainer";
 import UnifiedControls from "@/components/shared/UnifiedControls";
 import OptimizedDraggableCard from "@/components/battle/OptimizedDraggableCard";
 import { Card } from "@/components/ui/card";
@@ -241,18 +240,14 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
             </Card>
 
             <Card className="shadow-lg border border-gray-200 overflow-hidden flex flex-col">
-              <RankingsDroppableContainer>
-                {/* CRITICAL FIX: Separate SortableContext for ranked Pokemon */}
-                <SortableContext items={rankedPokemonIds} strategy={verticalListSortingStrategy}>
-                  <RankingsSectionStable
-                    displayRankings={manualRankingOrder}
-                    onManualReorder={stableOnManualReorder}
-                    onLocalReorder={stableOnLocalReorder}
-                    pendingRefinements={new Set()}
-                    availablePokemon={enhancedAvailablePokemon}
-                  />
-                </SortableContext>
-              </RankingsDroppableContainer>
+              {/* CRITICAL FIX: Use the corrected RankingsSection with individual droppable slots */}
+              <RankingsSection 
+                displayRankings={manualRankingOrder}
+                onManualReorder={stableOnManualReorder}
+                onLocalReorder={stableOnLocalReorder}
+                pendingRefinements={new Set()}
+                availablePokemon={enhancedAvailablePokemon}
+              />
             </Card>
           </div>
           
