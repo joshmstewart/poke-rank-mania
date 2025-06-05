@@ -74,16 +74,12 @@ export const RankingUICore: React.FC<RankingUICoreProps> = React.memo(({
   const { triggerReRanking } = useReRankingTrigger(localRankings, updateLocalRankings);
   console.log(`🚨🚨🚨 [RANKING_UI_CORE_DEBUG] triggerReRanking created:`, !!triggerReRanking);
 
-  // FIXED: Create a stable wrapper function that doesn't depend on localRankings
+  // CRITICAL FIX: Create a completely stable wrapper that doesn't access localRankings
   const triggerReRankingWrapper = React.useCallback(async (pokemonId: number) => {
     console.log(`🚨🚨🚨 [RANKING_UI_CORE_DEBUG] triggerReRankingWrapper called for Pokemon ID: ${pokemonId}`);
-    // Call triggerReRanking with a single-item array containing the pokemon to re-rank
-    // The hook will handle finding the pokemon from its internal state
-    const pokemonToRerank = localRankings.filter(p => p.id === pokemonId);
-    if (pokemonToRerank.length > 0) {
-      triggerReRanking(pokemonToRerank);
-    }
-  }, [triggerReRanking]); // CRITICAL FIX: Only depend on triggerReRanking, not localRankings
+    // Pass the pokemon ID directly to the trigger - let the hook handle finding the pokemon
+    triggerReRanking(pokemonId);
+  }, [triggerReRanking]); // Only depend on triggerReRanking
 
   // Use the extracted reset functionality
   const { handleComprehensiveReset } = useRankingReset({

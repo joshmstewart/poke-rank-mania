@@ -10,8 +10,8 @@ export const useReRankingTrigger = (
   // Access store methods safely
   const { getRating, updateRating } = useTrueSkillStore();
 
-  const triggerReRanking = useCallback((pokemonToRerank: RankedPokemon[]) => {
-    console.log(`🔄 [RE_RANKING_TRIGGER] Triggering re-ranking for ${pokemonToRerank.length} Pokemon`);
+  const triggerReRanking = useCallback((pokemonId: number) => {
+    console.log(`🔄 [RE_RANKING_TRIGGER] Triggering re-ranking for Pokemon ID: ${pokemonId}`);
     
     if (!getRating || !updateRating) {
       console.error('[RE_RANKING_TRIGGER] Store methods not available');
@@ -19,12 +19,16 @@ export const useReRankingTrigger = (
     }
 
     try {
-      // CRITICAL FIX: Use current localRankings from the function scope
-      // instead of relying on potentially stale state
+      // CRITICAL FIX: Get current rankings at the time of execution
+      // Find the specific pokemon to update
+      const pokemonToUpdate = localRankings.find(p => p.id === pokemonId);
+      if (!pokemonToUpdate) {
+        console.warn(`[RE_RANKING_TRIGGER] Pokemon ${pokemonId} not found in current rankings`);
+        return;
+      }
+
       const updatedRankings = localRankings.map(pokemon => {
-        const needsUpdate = pokemonToRerank.some(p => p.id === pokemon.id);
-        
-        if (needsUpdate) {
+        if (pokemon.id === pokemonId) {
           const rating = getRating(pokemon.id.toString());
           const conservativeEstimate = rating.mu - rating.sigma;
           const confidence = Math.max(0, Math.min(100, 100 * (1 - (rating.sigma / 8.33))));
@@ -48,11 +52,11 @@ export const useReRankingTrigger = (
       const sortedRankings = updatedRankings.sort((a, b) => b.score - a.score);
       updateLocalRankings(sortedRankings);
       
-      console.log(`🔄 [RE_RANKING_TRIGGER] ✅ Re-ranking completed successfully`);
+      console.log(`🔄 [RE_RANKING_TRIGGER] ✅ Re-ranking completed successfully for Pokemon ${pokemonId}`);
     } catch (error) {
       console.error('[RE_RANKING_TRIGGER] Error during re-ranking:', error);
     }
-  }, [getRating, updateRating, updateLocalRankings]); // FIXED: Removed localRankings from dependencies
+  }, [getRating, updateRating, updateLocalRankings, localRankings]); // Include localRankings for fresh data
 
   return { triggerReRanking };
 };
