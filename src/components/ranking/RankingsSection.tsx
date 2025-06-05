@@ -39,26 +39,21 @@ export const RankingsSection: React.FC<RankingsSectionProps> = React.memo(({
     </div>
   ), []);
 
-  // FIXED: Only include Pokemon-based IDs for SortableContext (filled slots only)
+  // Sortable item ids must match the ids used by OptimizedDraggableCard
   const sortableItems = useMemo(
     () => displayRankings.map((p) => `ranking-${p.id}`),
     [displayRankings]
   );
 
-  // Create individual droppable slot component with consistent ID strategy
+  // Create individual droppable slot component
   const DroppableRankingSlot: React.FC<{ index: number; pokemon?: Pokemon | RankedPokemon }> = ({ index, pokemon }) => {
-    // FIXED: Use consistent ID strategy that aligns with draggable cards
-    // - Filled slots: ranking-${pokemon.id} (matches draggable cards and SortableContext)
-    // - Empty slots: ranking-position-${index} (for insertion points)
-    const droppableId = pokemon ? `ranking-${pokemon.id}` : `ranking-position-${index}`;
-    
+    const droppableId = `ranking-position-${index}`;
     const { setNodeRef, isOver } = useDroppable({ 
       id: droppableId,
       data: {
-        type: pokemon ? 'ranked-pokemon' : 'ranking-position',
+        type: 'ranking-position',
         index: index,
-        pokemonId: pokemon?.id,
-        accepts: ['available-pokemon', 'ranked-pokemon']
+        accepts: ['available-pokemon']
       }
     });
 
@@ -123,17 +118,11 @@ export const RankingsSection: React.FC<RankingsSectionProps> = React.memo(({
             >
               {displayRankings.map((pokemon, index) => (
                 <DroppableRankingSlot
-                  key={`slot-${pokemon.id}-${index}`}
+                  key={`slot-${index}`}
                   index={index}
                   pokemon={pokemon}
                 />
               ))}
-              
-              {/* Add one extra empty slot for easy insertion at the end */}
-              <DroppableRankingSlot
-                key={`empty-slot-${displayRankings.length}`}
-                index={displayRankings.length}
-              />
             </div>
           </SortableContext>
         )}
