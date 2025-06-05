@@ -33,8 +33,6 @@ interface RankingUICoreProps {
   onReset: () => void;
 }
 
-// EXPLICIT NOTE: "Implied Battles" logic has been permanently removed.
-// Manual drag-and-drop explicitly adjusts mu/sigma directly instead.
 export const RankingUICore: React.FC<RankingUICoreProps> = React.memo(({
   isLoading,
   availablePokemon,
@@ -63,7 +61,6 @@ export const RankingUICore: React.FC<RankingUICoreProps> = React.memo(({
   console.log(`🚨🚨🚨 [RANKING_UI_CORE_DEBUG] enhancedAvailablePokemon count: ${enhancedAvailablePokemon.length}`);
 
   // Enhanced manual reorder with manual order preservation and direct TrueSkill updates
-  // EXPLICIT NOTE: Removed addImpliedBattle parameter - no longer using implied battles
   const { handleEnhancedManualReorder, tooLarge } = useEnhancedManualReorder(
     localRankings,
     updateLocalRankings,
@@ -73,19 +70,9 @@ export const RankingUICore: React.FC<RankingUICoreProps> = React.memo(({
 
   console.log(`🚨🚨🚨 [RANKING_UI_CORE_DEBUG] handleEnhancedManualReorder created:`, !!handleEnhancedManualReorder);
 
-  // Re-ranking trigger for already-ranked Pokemon with error handling
-  let triggerReRanking;
-  try {
-    const reRankingResult = useReRankingTrigger(localRankings, updateLocalRankings);
-    triggerReRanking = reRankingResult.triggerReRanking;
-    console.log(`🚨🚨🚨 [RANKING_UI_CORE_DEBUG] triggerReRanking created successfully:`, !!triggerReRanking);
-  } catch (error) {
-    console.error('[RANKING_UI_CORE] Error initializing re-ranking trigger:', error);
-    triggerReRanking = async (pokemonId: number) => {
-      console.warn(`[RANKING_UI_CORE] Re-ranking unavailable for Pokemon ${pokemonId} due to store error`);
-    };
-    console.log(`🚨🚨🚨 [RANKING_UI_CORE_DEBUG] triggerReRanking fallback created:`, !!triggerReRanking);
-  }
+  // Re-ranking trigger for already-ranked Pokemon - FIXED: Remove try-catch around hook
+  const { triggerReRanking } = useReRankingTrigger(localRankings, updateLocalRankings);
+  console.log(`🚨🚨🚨 [RANKING_UI_CORE_DEBUG] triggerReRanking created:`, !!triggerReRanking);
 
   // Use the extracted reset functionality
   const { handleComprehensiveReset } = useRankingReset({

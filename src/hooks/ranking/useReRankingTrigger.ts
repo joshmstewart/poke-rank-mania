@@ -7,29 +7,8 @@ export const useReRankingTrigger = (
   localRankings: RankedPokemon[],
   updateLocalRankings: (rankings: RankedPokemon[]) => void
 ) => {
-  // Add error handling for the store access
-  let getRating, updateRating;
-  
-  try {
-    const store = useTrueSkillStore();
-    if (!store) {
-      console.error('[RE_RANKING_TRIGGER] Store is null or undefined');
-      return {
-        triggerReRanking: () => {
-          console.warn('[RE_RANKING_TRIGGER] Cannot trigger re-ranking - store unavailable');
-        }
-      };
-    }
-    getRating = store.getRating;
-    updateRating = store.updateRating;
-  } catch (error) {
-    console.error('[RE_RANKING_TRIGGER] Error accessing TrueSkill store:', error);
-    return {
-      triggerReRanking: () => {
-        console.warn('[RE_RANKING_TRIGGER] Cannot trigger re-ranking - store error');
-      }
-    };
-  }
+  // Access store methods safely
+  const { getRating, updateRating } = useTrueSkillStore();
 
   const triggerReRanking = useCallback((pokemonToRerank: RankedPokemon[]) => {
     console.log(`🔄 [RE_RANKING_TRIGGER] Triggering re-ranking for ${pokemonToRerank.length} Pokemon`);
