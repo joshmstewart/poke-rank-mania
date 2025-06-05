@@ -46,7 +46,7 @@ export const RankingUI: React.FC<RankingUIProps> = ({
   // Use extracted state management
   const { battleType, setBattleType } = useRankingUIState();
 
-  // Use enhanced data processing with new features
+  // CRITICAL FIX: Use enhanced data processing with preventAutoResorting=true for ranking mode
   const {
     localRankings,
     updateLocalRankings,
@@ -57,7 +57,8 @@ export const RankingUI: React.FC<RankingUIProps> = ({
     availablePokemon,
     rankedPokemon,
     selectedGeneration,
-    totalPages
+    totalPages,
+    preventAutoResorting: true // Always prevent auto-resorting in ranking mode
   });
 
   console.log(`🔮 [ENHANCED_RANKING_UI] After enhanced processing: ${localRankings.length} local, ${displayRankings.length} display rankings`);

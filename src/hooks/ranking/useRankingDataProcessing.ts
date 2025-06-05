@@ -9,16 +9,19 @@ interface UseRankingDataProcessingProps {
   rankedPokemon: any[];
   selectedGeneration: number;
   totalPages: number;
+  preventAutoResorting?: boolean;
 }
 
 export const useRankingDataProcessing = ({
   availablePokemon,
   rankedPokemon,
   selectedGeneration,
-  totalPages
+  totalPages,
+  preventAutoResorting = false
 }: UseRankingDataProcessingProps) => {
   
-  const { localRankings: trueskillRankings, updateLocalRankings } = useTrueSkillSync();
+  // CRITICAL FIX: Pass preventAutoResorting to TrueSkill sync
+  const { localRankings: trueskillRankings, updateLocalRankings } = useTrueSkillSync(preventAutoResorting);
   
   // CRITICAL FIX: Use TrueSkill rankings as the primary source, with proper fallback
   const localRankings = useMemo(() => {

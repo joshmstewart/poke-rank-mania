@@ -1,121 +1,86 @@
 
-import { useEffect, useState, useMemo } from 'react';
-import { useTrueSkillStore } from '@/stores/trueskillStore';
-import { usePokemonContext } from '@/contexts/PokemonContext';
-import { RankedPokemon } from '@/services/pokemon';
-import { Rating } from 'ts-trueskill';
-import { formatPokemonName } from '@/utils/pokemon';
+import { useState, useEffect, useMemo, useRef } from "react";
+import { useTrueSkillStore } from "@/stores/trueskillStore";
+import { usePokemonContext } from "@/contexts/PokemonContext";
+import { RankedPokemon } from "@/services/pokemon";
 
-export const useTrueSkillSync = () => {
-  const { getAllRatings, isHydrated, waitForHydration, syncInProgress, sessionId, loadFromCloud } = useTrueSkillStore();
+export const useTrueSkillSync = (preventAutoResorting: boolean = false) => {
+  const { getAllRatings } = useTrueSkillStore();
   const { pokemonLookupMap } = usePokemonContext();
   const [localRankings, setLocalRankings] = useState<RankedPokemon[]>([]);
-  const [isInitialized, setIsInitialized] = useState(false);
-  const [hasTriedCloudSync, setHasTriedCloudSync] = useState(false);
+  const lastManualOrderRef = useRef<RankedPokemon[]>([]);
+  
+  console.log('🔄 [TRUESKILL_SYNC] Hook initialized with preventAutoResorting:', preventAutoResorting);
 
-  useEffect(() => {
-    const initializeWithCloudSync = async () => {
-      if (!isHydrated) {
-        await waitForHydration();
-      }
-      
-      const initialRatings = useTrueSkillStore.getState().getAllRatings();
-      const initialCount = Object.keys(initialRatings).length;
-      
-      if (!hasTriedCloudSync && sessionId) {
-        setHasTriedCloudSync(true);
-        
-        try {
-          await loadFromCloud();
-          const postSyncRatings = useTrueSkillStore.getState().getAllRatings();
-          const postSyncCount = Object.keys(postSyncRatings).length;
-          
-          if (postSyncCount > initialCount) {
-            console.log(`Loaded ${postSyncCount - initialCount} additional ratings from cloud`);
-          }
-        } catch (error) {
-          console.error('Cloud sync failed:', error);
-        }
-      }
-      
-      if (syncInProgress) {
-        let attempts = 0;
-        const maxAttempts = 50;
-        
-        while (useTrueSkillStore.getState().syncInProgress && attempts < maxAttempts) {
-          await new Promise(resolve => setTimeout(resolve, 100));
-          attempts++;
-        }
-      }
-      
-      setIsInitialized(true);
-    };
+  // Transform TrueSkill ratings to RankedPokemon
+  const rankingsFromTrueSkill = useMemo(() => {
+    const ratings = getAllRatings();
     
-    initializeWithCloudSync();
-  }, [isHydrated, sessionId, hasTriedCloudSync, waitForHydration, loadFromCloud]);
-
-  const allRatings = getAllRatings();
-  const contextReady = pokemonLookupMap.size > 0;
-  const ratingsCount = Object.keys(allRatings).length;
-
-  useEffect(() => {
-    if (!contextReady || !isInitialized || syncInProgress) {
-      return;
-    }
-
-    if (ratingsCount === 0) {
-      setLocalRankings([]);
-      return;
-    }
-    
-    const ratedPokemonIds = Object.keys(allRatings).map(Number);
-    const rankings: RankedPokemon[] = [];
-
-    ratedPokemonIds.forEach(pokemonId => {
-      const basePokemon = pokemonLookupMap.get(pokemonId);
-      const ratingData = allRatings[pokemonId.toString()];
-
-      if (basePokemon && ratingData) {
-        const rating = new Rating(ratingData.mu, ratingData.sigma);
+    const rankedPokemon: RankedPokemon[] = Object.entries(ratings)
+      .map(([pokemonId, rating]) => {
+        const pokemon = pokemonLookupMap.get(parseInt(pokemonId));
+        if (!pokemon) return null;
+        
         const conservativeEstimate = rating.mu - rating.sigma;
         const confidence = Math.max(0, Math.min(100, 100 * (1 - (rating.sigma / 8.33))));
-
-        const formattedName = formatPokemonName(basePokemon.name);
-
-        const rankedPokemon: RankedPokemon = {
-          ...basePokemon,
-          name: formattedName,
+        
+        return {
+          ...pokemon,
           score: conservativeEstimate,
           confidence: confidence,
           rating: rating,
-          count: ratingData.battleCount || 0,
+          count: rating.battleCount || 0,
           wins: 0,
           losses: 0,
-          winRate: 0,
-          generation: basePokemon.generation || 1,
-          image: basePokemon.image || ''
+          winRate: 0
         };
+      })
+      .filter((pokemon): pokemon is RankedPokemon => pokemon !== null);
 
-        rankings.push(rankedPokemon);
+    // CRITICAL: Only auto-sort if preventAutoResorting is false
+    if (preventAutoResorting) {
+      console.log('🔄 [TRUESKILL_SYNC] Manual mode active - preserving manual order');
+      // If we have a manual order, preserve it but update the scores
+      if (lastManualOrderRef.current.length > 0) {
+        const manualOrder = lastManualOrderRef.current.map(manualPokemon => {
+          const updatedPokemon = rankedPokemon.find(p => p.id === manualPokemon.id);
+          return updatedPokemon || manualPokemon;
+        });
+        
+        // Add any new Pokemon that weren't in the manual order
+        const newPokemon = rankedPokemon.filter(p => 
+          !lastManualOrderRef.current.some(manual => manual.id === p.id)
+        );
+        
+        return [...manualOrder, ...newPokemon.sort((a, b) => b.score - a.score)];
       }
-    });
-
-    rankings.sort((a, b) => b.score - a.score);
-    setLocalRankings(rankings);
-  }, [contextReady, ratingsCount, allRatings, pokemonLookupMap, isInitialized, syncInProgress, sessionId]);
-
-  const updateLocalRankings = useMemo(() => {
-    return (newRankings: RankedPokemon[]) => {
-      const formattedRankings = newRankings.map(pokemon => ({
-        ...pokemon,
-        name: formatPokemonName(pokemon.name),
-        generation: pokemon.generation || 1,
-        image: pokemon.image || ''
-      }));
       
-      setLocalRankings(formattedRankings);
-    };
-  }, []);
+      // First time in manual mode, sort by score but remember this order
+      return rankedPokemon.sort((a, b) => b.score - a.score);
+    }
+    
+    // Auto-sort mode - sort by score
+    console.log('🔄 [TRUESKILL_SYNC] Auto-sort mode - sorting by score');
+    return rankedPokemon.sort((a, b) => b.score - a.score);
+  }, [getAllRatings, pokemonLookupMap, preventAutoResorting]);
+
+  // Update local rankings when TrueSkill data changes
+  useEffect(() => {
+    console.log('🔄 [TRUESKILL_SYNC] Rankings from TrueSkill updated:', rankingsFromTrueSkill.length);
+    setLocalRankings(rankingsFromTrueSkill);
+  }, [rankingsFromTrueSkill]);
+
+  const updateLocalRankings = (newRankings: RankedPokemon[]) => {
+    console.log('🔄 [TRUESKILL_SYNC] Manual rankings update received:', newRankings.length);
+    
+    // Store the manual order for future reference
+    if (preventAutoResorting) {
+      lastManualOrderRef.current = [...newRankings];
+      console.log('🔄 [TRUESKILL_SYNC] Stored manual order in ref');
+    }
+    
+    setLocalRankings(newRankings);
+  };
 
   return {
     localRankings,
