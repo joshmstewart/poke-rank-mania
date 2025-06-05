@@ -14,6 +14,7 @@ interface MilestoneStateManagerProps {
     manualOperationTimestamp: number | null;
     handleEnhancedManualReorder: (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => void;
     stableOnLocalReorder: (newRankings: any[]) => void;
+    tooLarge: boolean;
   }) => React.ReactNode;
 }
 

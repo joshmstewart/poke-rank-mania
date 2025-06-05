@@ -74,6 +74,14 @@ export const RankingUICore: React.FC<RankingUICoreProps> = React.memo(({
   const { triggerReRanking } = useReRankingTrigger(localRankings, updateLocalRankings);
   console.log(`🚨🚨🚨 [RANKING_UI_CORE_DEBUG] triggerReRanking created:`, !!triggerReRanking);
 
+  // Create a wrapper function to match the expected signature for useRankingDragDrop
+  const triggerReRankingWrapper = React.useCallback(async (pokemonId: number) => {
+    const pokemonToRerank = localRankings.filter(p => p.id === pokemonId);
+    if (pokemonToRerank.length > 0) {
+      triggerReRanking(pokemonToRerank);
+    }
+  }, [triggerReRanking, localRankings]);
+
   // Use the extracted reset functionality
   const { handleComprehensiveReset } = useRankingReset({
     onReset,
@@ -91,7 +99,7 @@ export const RankingUICore: React.FC<RankingUICoreProps> = React.memo(({
     localRankings,
     setAvailablePokemon,
     onManualReorder: tooLarge ? (() => {}) : handleEnhancedManualReorder,
-    triggerReRanking,
+    triggerReRanking: triggerReRankingWrapper,
   });
 
   console.log(`🚨🚨🚨 [RANKING_UI_CORE_DEBUG] Drag handlers created:`, {
