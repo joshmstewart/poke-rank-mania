@@ -9,6 +9,7 @@ export const useTrueSkillSync = (preventAutoResorting: boolean = false) => {
   const { pokemonLookupMap } = usePokemonContext();
   const [localRankings, setLocalRankings] = useState<RankedPokemon[]>([]);
   const lastManualOrderRef = useRef<RankedPokemon[]>([]);
+  const isManualUpdateRef = useRef(false);
   
   console.log('🔄 [TRUESKILL_SYNC] Hook initialized with preventAutoResorting:', preventAutoResorting);
 
@@ -42,21 +43,24 @@ export const useTrueSkillSync = (preventAutoResorting: boolean = false) => {
           winRate: 0
         };
       })
-      .filter(pokemon => pokemon !== null) as RankedPokemon[];
+      .filter((pokemon): pokemon is RankedPokemon => pokemon !== null);
 
     console.log('🔄🔄🔄 [TRUESKILL_SYNC_RANKING_GENERATION] Created', rankedPokemon.length, 'ranked Pokemon');
 
-    // CRITICAL: Only auto-sort if preventAutoResorting is false
+    // CRITICAL: Only auto-sort if preventAutoResorting is false AND we're not in a manual update
     if (preventAutoResorting) {
       console.log('🔄🔄🔄 [TRUESKILL_SYNC_MANUAL_MODE] Manual mode active - preserving manual order');
+      
       // If we have a manual order, preserve it but update the scores
-      if (lastManualOrderRef.current.length > 0) {
+      if (lastManualOrderRef.current.length > 0 && !isManualUpdateRef.current) {
+        console.log('🔄🔄🔄 [TRUESKILL_SYNC_MANUAL_MODE] Preserving existing manual order, just updating scores');
         const manualOrder = lastManualOrderRef.current.map(manualPokemon => {
           const updatedPokemon = rankedPokemon.find(p => p.id === manualPokemon.id);
           if (updatedPokemon) {
             console.log(`🔄🔄🔄 [TRUESKILL_SYNC_SCORE_UPDATE] Updated ${updatedPokemon.name} score: ${updatedPokemon.score.toFixed(3)}`);
+            return updatedPokemon;
           }
-          return updatedPokemon || manualPokemon;
+          return manualPokemon;
         });
         
         // Add any new Pokemon that weren't in the manual order
@@ -65,13 +69,13 @@ export const useTrueSkillSync = (preventAutoResorting: boolean = false) => {
         );
         
         const finalOrder = [...manualOrder, ...newPokemon.sort((a, b) => b.score - a.score)];
-        console.log('🔄🔄🔄 [TRUESKILL_SYNC_MANUAL_MODE] Final manual order:', finalOrder.length, 'Pokemon');
+        console.log('🔄🔄🔄 [TRUESKILL_SYNC_MANUAL_MODE] Final manual order preserved:', finalOrder.length, 'Pokemon');
         return finalOrder;
       }
       
-      // First time in manual mode, sort by score but remember this order
+      // First time in manual mode or during manual update, sort by score but remember this order
       const sortedByScore = rankedPokemon.sort((a, b) => b.score - a.score);
-      console.log('🔄🔄🔄 [TRUESKILL_SYNC_MANUAL_MODE] First time manual mode - sorted by score');
+      console.log('🔄🔄🔄 [TRUESKILL_SYNC_MANUAL_MODE] First time manual mode or manual update - sorted by score');
       return sortedByScore;
     }
     
@@ -84,12 +88,21 @@ export const useTrueSkillSync = (preventAutoResorting: boolean = false) => {
 
   // Update local rankings when TrueSkill data changes
   useEffect(() => {
+    // Don't update if we're in the middle of a manual update
+    if (isManualUpdateRef.current) {
+      console.log('🔄 [TRUESKILL_SYNC] Skipping auto-update during manual operation');
+      return;
+    }
+    
     console.log('🔄 [TRUESKILL_SYNC] Rankings from TrueSkill updated:', rankingsFromTrueSkill.length);
     setLocalRankings(rankingsFromTrueSkill);
   }, [rankingsFromTrueSkill]);
 
   const updateLocalRankings = (newRankings: RankedPokemon[]) => {
     console.log('🔄🔄🔄 [TRUESKILL_SYNC_UPDATE] Manual rankings update received:', newRankings.length);
+    
+    // Set the manual update flag to prevent auto-updates
+    isManualUpdateRef.current = true;
     
     // Store the manual order for future reference
     if (preventAutoResorting) {
@@ -99,6 +112,12 @@ export const useTrueSkillSync = (preventAutoResorting: boolean = false) => {
     }
     
     setLocalRankings(newRankings);
+    
+    // Clear the manual update flag after a delay
+    setTimeout(() => {
+      isManualUpdateRef.current = false;
+      console.log('🔄🔄🔄 [TRUESKILL_SYNC_UPDATE] Manual update flag cleared');
+    }, 500);
   };
 
   return {
