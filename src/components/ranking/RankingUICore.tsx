@@ -64,7 +64,7 @@ export const RankingUICore: React.FC<RankingUICoreProps> = React.memo(({
 
   // Enhanced manual reorder with manual order preservation and direct TrueSkill updates
   // EXPLICIT NOTE: Removed addImpliedBattle parameter - no longer using implied battles
-  const { handleEnhancedManualReorder } = useEnhancedManualReorder(
+  const { handleEnhancedManualReorder, tooLarge } = useEnhancedManualReorder(
     localRankings,
     updateLocalRankings,
     true, // preventAutoResorting for Manual Mode
@@ -103,7 +103,7 @@ export const RankingUICore: React.FC<RankingUICoreProps> = React.memo(({
     availablePokemon: enhancedAvailablePokemon,
     localRankings,
     setAvailablePokemon,
-    onManualReorder: handleEnhancedManualReorder,
+    onManualReorder: tooLarge ? (() => {}) : handleEnhancedManualReorder,
     triggerReRanking,
   });
 
