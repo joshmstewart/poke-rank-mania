@@ -30,7 +30,6 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
 }) => {
   console.log(`🎯 [ENHANCED_AVAILABLE_CONTENT] Rendering ${items.length} items with stable layout`);
   console.log(`🎯 [ENHANCED_AVAILABLE_CONTENT] Explicit verification - items sample:`, items.slice(0, 3));
-  console.log(`🎯 [ENHANCED_AVAILABLE_CONTENT] About to render PokemonGridSection for available Pokemon`);
   
   return (
     <div className="flex-1 overflow-y-auto">

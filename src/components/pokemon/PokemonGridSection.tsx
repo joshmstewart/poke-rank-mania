@@ -25,7 +25,7 @@ export const PokemonGridSection: React.FC<PokemonGridSectionProps> = ({
   console.log(`🎯 [POKEMON_GRID_SECTION] Show generation headers: ${showGenerationHeaders}`);
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
       {items.map((item, index) => {
         // Handle generation headers
         if ('type' in item && item.type === 'generation-header') {
@@ -50,16 +50,15 @@ export const PokemonGridSection: React.FC<PokemonGridSectionProps> = ({
         console.log(`🎯 [POKEMON_GRID_SECTION] Rendering OptimizedDraggableCard for ${isRankingArea ? 'ranking' : 'available'} Pokemon: ${pokemon.id} - ${pokemon.name}`);
         
         return (
-          <div key={`${isRankingArea ? 'ranking' : 'available'}-${pokemon.id}`} style={{ minWidth: '140px' }}>
-            <OptimizedDraggableCard
-              pokemon={pokemon}
-              index={index}
-              isPending={false}
-              showRank={isRankingArea}
-              isDraggable={true}
-              context={isRankingArea ? 'ranked' : 'available'}
-            />
-          </div>
+          <OptimizedDraggableCard
+            key={`${isRankingArea ? 'ranking' : 'available'}-${pokemon.id}`}
+            pokemon={pokemon}
+            index={index}
+            isPending={false}
+            showRank={isRankingArea}
+            isDraggable={true}
+            context={isRankingArea ? 'ranked' : 'available'}
+          />
         );
       })}
     </div>
