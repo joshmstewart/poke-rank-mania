@@ -28,12 +28,6 @@ export const AvailablePokemonContent: React.FC<AvailablePokemonContentProps> = (
   currentPage,
   totalPages
 }) => {
-  // CRITICAL DIAGNOSTIC: This component should NOT be used for the enhanced ranking
-  console.log(`🚨🚨🚨 [LEGACY_AVAILABLE_CONTENT] ===== LEGACY AvailablePokemonContent.tsx BEING USED! =====`);
-  console.log(`🚨🚨🚨 [LEGACY_AVAILABLE_CONTENT] This is the WRONG component for enhanced ranking!`);
-  console.log(`🚨🚨🚨 [LEGACY_AVAILABLE_CONTENT] Should use EnhancedAvailablePokemonContent instead`);
-  console.log(`🚨🚨🚨 [LEGACY_AVAILABLE_CONTENT] Items received:`, items.length);
-
   return (
     <div className="flex-1 overflow-y-auto p-4">
       <PokemonGridSection

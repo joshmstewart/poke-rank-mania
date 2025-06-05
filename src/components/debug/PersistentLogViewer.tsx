@@ -1,258 +1,294 @@
 
 import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { X, Search, Trash2 } from 'lucide-react';
-
-interface LogEntry {
-  timestamp: string;
-  level: string;
-  message: string;
-  category?: string;
-}
 
 const PersistentLogViewer: React.FC = () => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [logs, setLogs] = useState<LogEntry[]>([]);
-  const [filteredLogs, setFilteredLogs] = useState<LogEntry[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [logs, setLogs] = useState<string[]>([]);
+  const [isVisible, setIsVisible] = useState(false);
+  const [isAutoCapturing, setIsAutoCapturing] = useState(false);
 
-  // Enhanced drag-specific keywords and patterns
-  const dragKeywords = [
-    '[EXPLICIT_DRAG_END]', '[EXPLICIT_DRAG_START]', '[POKEMON_MOVE]', '[POKEMON_REORDER]',
-    '[COLLISION_DETECTION]', '[DROPPABLE_INIT]', '[DRAGGABLE_CARD_INIT]',
-    '[AVAILABLE_CARD_INIT]', '[RANKED_POKEMON_INIT]', '[AVAILABLE_HOOK_DETAILED]',
-    '[DRAG_START]', '[DRAG_END]', '[DRAG_OVER]', '[DRAG_EVENT]',
-    '[SORTABLE_CONTEXT]', '[DRAGGABLE_CONTEXT]', '[SENSORS_INIT]',
-    'useDraggable', 'useDroppable', 'useSortable', 'DndContext',
-    'available-', 'ranking-', 'collision', 'droppable', 'draggable',
-    '🔥', '🚀', '🎯', '✅', '❌', '🚨', '🟢', '🔵', '🟡'
-  ];
+  // Store original console methods
+  const originalConsoleLog = console.log;
+  const originalConsoleError = console.error;
+  const originalConsoleWarn = console.warn;
 
-  // Capture console logs
   useEffect(() => {
-    const originalConsoleLog = console.log;
-    const originalConsoleInfo = console.info;
-    const originalConsoleWarn = console.warn;
-    const originalConsoleError = console.error;
+    if (isAutoCapturing) {
+      // Override console methods to capture drag-related logs
+      console.log = (...args) => {
+        const message = args.join(' ');
+        const timestamp = new Date().toISOString();
+        
+        // Capture drag-related logs
+        if (message.includes('DRAG') || 
+            message.includes('COLLISION') || 
+            message.includes('SORTABLE') || 
+            message.includes('DROPPABLE') ||
+            message.includes('ENHANCED_') ||
+            message.includes('available-') ||
+            message.includes('ranking-') ||
+            message.includes('onDragStart') ||
+            message.includes('onDragEnd') ||
+            message.includes('onDragOver') ||
+            message.includes('useDraggable') ||
+            message.includes('useSortable') ||
+            message.includes('SortableContext') ||
+            message.includes('DndContext')) {
+          
+          const logEntry = `[${timestamp}] ${message}`;
+          
+          // Store in localStorage for persistence
+          const existingLogs = JSON.parse(localStorage.getItem('dragDebugLogs') || '[]');
+          const updatedLogs = [...existingLogs, logEntry].slice(-200); // Keep last 200 logs
+          localStorage.setItem('dragDebugLogs', JSON.stringify(updatedLogs));
+          
+          setLogs(prev => [...prev, logEntry].slice(-200));
+        }
+        
+        // Call original console.log
+        originalConsoleLog(...args);
+      };
 
-    const captureLog = (level: string, args: any[]) => {
-      const message = args.map(arg => 
-        typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
-      ).join(' ');
+      console.error = (...args) => {
+        const message = args.join(' ');
+        const timestamp = new Date().toISOString();
+        const logEntry = `[ERROR][${timestamp}] ${message}`;
+        
+        // Store errors
+        const existingLogs = JSON.parse(localStorage.getItem('dragDebugLogs') || '[]');
+        const updatedLogs = [...existingLogs, logEntry].slice(-200);
+        localStorage.setItem('dragDebugLogs', JSON.stringify(updatedLogs));
+        
+        setLogs(prev => [...prev, logEntry].slice(-200));
+        originalConsoleError(...args);
+      };
 
-      // Check if this is a drag-related log
-      const isDragRelated = dragKeywords.some(keyword => 
-        message.includes(keyword) || 
-        (typeof args[0] === 'string' && args[0].includes(keyword))
-      );
-
-      if (isDragRelated) {
-        const logEntry: LogEntry = {
-          timestamp: new Date().toISOString(),
-          level,
-          message,
-          category: 'drag-debug'
-        };
-
-        setLogs(prev => {
-          const newLogs = [...prev, logEntry].slice(-300); // Keep last 300 logs
-          console.log(`🔍 [PERSISTENT_LOG_VIEWER] Captured drag log: ${message.substring(0, 100)}...`);
-          return newLogs;
-        });
-      }
-    };
-
-    console.log = (...args) => {
-      originalConsoleLog(...args);
-      captureLog('info', args);
-    };
-
-    console.info = (...args) => {
-      originalConsoleInfo(...args);
-      captureLog('info', args);
-    };
-
-    console.warn = (...args) => {
-      originalConsoleWarn(...args);
-      captureLog('warn', args);
-    };
-
-    console.error = (...args) => {
-      originalConsoleError(...args);
-      captureLog('error', args);
-    };
+      console.warn = (...args) => {
+        const message = args.join(' ');
+        const timestamp = new Date().toISOString();
+        const logEntry = `[WARN][${timestamp}] ${message}`;
+        
+        // Store warnings
+        const existingLogs = JSON.parse(localStorage.getItem('dragDebugLogs') || '[]');
+        const updatedLogs = [...existingLogs, logEntry].slice(-200);
+        localStorage.setItem('dragDebugLogs', JSON.stringify(updatedLogs));
+        
+        setLogs(prev => [...prev, logEntry].slice(-200));
+        originalConsoleWarn(...args);
+      };
+    }
 
     return () => {
+      // Restore original console methods
       console.log = originalConsoleLog;
-      console.info = originalConsoleInfo;
-      console.warn = originalConsoleWarn;
       console.error = originalConsoleError;
+      console.warn = originalConsoleWarn;
     };
-  }, []);
+  }, [isAutoCapturing]);
 
-  // Filter logs based on search and category
-  useEffect(() => {
-    let filtered = logs;
-
-    if (searchTerm) {
-      filtered = filtered.filter(log => 
-        log.message.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+  const retrieveLogs = () => {
+    try {
+      const stored = localStorage.getItem('dragDebugLogs');
+      const parsedLogs = stored ? JSON.parse(stored) : [];
+      setLogs(parsedLogs);
+      setIsVisible(true);
+      console.log('🔍 [PERSISTENT_LOG_VIEWER] Retrieved drag debug logs:', parsedLogs.length);
+    } catch (e) {
+      console.error('Failed to retrieve logs:', e);
+      setLogs(['Error retrieving logs']);
     }
-
-    if (selectedCategory !== 'all') {
-      filtered = filtered.filter(log => log.category === selectedCategory);
-    }
-
-    setFilteredLogs(filtered);
-  }, [logs, searchTerm, selectedCategory]);
-
-  const clearLogs = () => {
-    setLogs([]);
-    setFilteredLogs([]);
   };
 
-  const categories = ['all', ...Array.from(new Set(logs.map(log => log.category).filter(Boolean)))];
+  const clearLogs = () => {
+    localStorage.removeItem('dragDebugLogs');
+    setLogs([]);
+    console.log('🔍 [PERSISTENT_LOG_VIEWER] Drag debug logs cleared');
+  };
 
-  console.log(`🔍 [PERSISTENT_LOG_VIEWER] Retrieved drag debug logs: ${logs.length}`);
+  const copyLogsToClipboard = () => {
+    const logText = logs.join('\n');
+    navigator.clipboard.writeText(logText).then(() => {
+      console.log('🔍 [PERSISTENT_LOG_VIEWER] Logs copied to clipboard');
+      alert('Drag debug logs copied to clipboard!');
+    }).catch(err => {
+      console.error('Failed to copy logs:', err);
+    });
+  };
 
-  if (!isOpen) {
+  const startAutoCapture = () => {
+    setIsAutoCapturing(true);
+    setLogs([]);
+    localStorage.removeItem('dragDebugLogs');
+    console.log('🔍 [PERSISTENT_LOG_VIEWER] Started auto-capturing drag debug logs');
+  };
+
+  const stopAutoCapture = () => {
+    setIsAutoCapturing(false);
+    console.log('🔍 [PERSISTENT_LOG_VIEWER] Stopped auto-capturing drag debug logs');
+  };
+
+  const exportDetailedReport = () => {
+    const report = [
+      '=== DRAG & DROP DEBUG REPORT ===',
+      `Generated: ${new Date().toISOString()}`,
+      `Total Logs: ${logs.length}`,
+      '',
+      '=== COLLISION DETECTION LOGS ===',
+      ...logs.filter(log => log.includes('COLLISION')),
+      '',
+      '=== DRAG START/END LOGS ===',
+      ...logs.filter(log => log.includes('DRAG_START') || log.includes('DRAG_END')),
+      '',
+      '=== SORTABLE/DRAGGABLE HOOK LOGS ===',
+      ...logs.filter(log => log.includes('useDraggable') || log.includes('useSortable')),
+      '',
+      '=== CONTEXT LOGS ===',
+      ...logs.filter(log => log.includes('SortableContext') || log.includes('DndContext')),
+      '',
+      '=== ID VERIFICATION LOGS ===',
+      ...logs.filter(log => log.includes('available-') || log.includes('ranking-')),
+      '',
+      '=== ERROR LOGS ===',
+      ...logs.filter(log => log.includes('[ERROR]') || log.includes('[WARN]')),
+      '',
+      '=== ALL LOGS ===',
+      ...logs
+    ].join('\n');
+
+    navigator.clipboard.writeText(report).then(() => {
+      alert('Detailed debug report copied to clipboard!');
+    }).catch(err => {
+      console.error('Failed to copy report:', err);
+    });
+  };
+
+  if (!isVisible) {
     return (
-      <div className="fixed bottom-4 right-4 z-50">
-        <Button 
-          onClick={() => setIsOpen(true)}
-          className="bg-purple-600 hover:bg-purple-700 text-white shadow-lg"
-        >
-          View Drag Debug Logs ({logs.length})
-        </Button>
+      <div className="fixed bottom-4 right-4 z-50 space-y-2">
+        <div className="flex flex-col space-y-2">
+          <button
+            onClick={retrieveLogs}
+            className="bg-blue-500 text-white px-4 py-2 rounded shadow-lg hover:bg-blue-600"
+          >
+            View Drag Debug Logs ({logs.length})
+          </button>
+          
+          {!isAutoCapturing ? (
+            <button
+              onClick={startAutoCapture}
+              className="bg-green-500 text-white px-4 py-2 rounded shadow-lg hover:bg-green-600"
+            >
+              Start Auto-Capture
+            </button>
+          ) : (
+            <button
+              onClick={stopAutoCapture}
+              className="bg-orange-500 text-white px-4 py-2 rounded shadow-lg hover:bg-orange-600"
+            >
+              Stop Auto-Capture
+            </button>
+          )}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="fixed inset-4 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <Card className="w-full max-w-6xl h-full max-h-[90vh] flex flex-col bg-white">
-        <div className="flex items-center justify-between p-4 border-b">
-          <div className="flex items-center space-x-4">
-            <h2 className="text-lg font-semibold">Drag Debug Logs ({filteredLogs.length}/{logs.length})</h2>
-            
-            <div className="flex items-center space-x-2">
-              <Search className="w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search logs..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="px-2 py-1 border rounded text-sm w-40"
-              />
-            </div>
-
-            <select 
-              value={selectedCategory} 
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="px-2 py-1 border rounded text-sm"
-            >
-              {categories.map(cat => (
-                <option key={cat} value={cat}>
-                  {cat === 'all' ? 'All Categories' : cat}
-                </option>
-              ))}
-            </select>
-
-            <Button 
-              onClick={clearLogs}
-              variant="outline" 
-              size="sm"
-              className="flex items-center space-x-1"
-            >
-              <Trash2 className="w-3 h-3" />
-              <span>Clear</span>
-            </Button>
-          </div>
-
-          <Button onClick={() => setIsOpen(false)} variant="ghost" size="sm">
-            <X className="w-4 h-4" />
-          </Button>
+    <div className="fixed inset-4 z-50 bg-white border border-gray-300 rounded-lg shadow-xl overflow-hidden">
+      <div className="bg-gray-100 px-4 py-2 border-b flex justify-between items-center">
+        <div className="flex items-center space-x-4">
+          <h3 className="font-semibold">
+            Drag Debug Logs ({logs.length} entries)
+            {isAutoCapturing && <span className="text-green-600 ml-2">● Auto-Capturing</span>}
+          </h3>
         </div>
-
-        <ScrollArea className="flex-1 p-4">
-          <div className="space-y-2">
-            {filteredLogs.length === 0 ? (
-              <div className="text-center text-gray-500 py-8">
-                {logs.length === 0 ? (
-                  <div>
-                    <p className="text-lg font-medium">No drag debug logs captured yet</p>
-                    <p className="text-sm mt-2">Start dragging Pokémon to see detailed debug information here</p>
-                  </div>
-                ) : (
-                  <p>No logs match your search criteria</p>
-                )}
-              </div>
-            ) : (
-              filteredLogs.map((log, index) => (
-                <div 
-                  key={index} 
-                  className={`p-2 rounded text-xs font-mono border-l-4 ${
-                    log.level === 'error' ? 'bg-red-50 border-red-400' :
-                    log.level === 'warn' ? 'bg-yellow-50 border-yellow-400' :
-                    'bg-blue-50 border-blue-400'
-                  }`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="text-gray-500 text-xs">
-                        {new Date(log.timestamp).toLocaleTimeString()} - {log.level.toUpperCase()}
-                        {log.category && <span className="ml-2 bg-gray-200 px-1 rounded">{log.category}</span>}
-                      </div>
-                      <div className="mt-1 whitespace-pre-wrap break-words">
-                        {log.message}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
+        <div className="space-x-2">
+          {!isAutoCapturing ? (
+            <button
+              onClick={startAutoCapture}
+              className="bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600"
+            >
+              Start Capture
+            </button>
+          ) : (
+            <button
+              onClick={stopAutoCapture}
+              className="bg-orange-500 text-white px-3 py-1 rounded text-sm hover:bg-orange-600"
+            >
+              Stop Capture
+            </button>
+          )}
+          <button
+            onClick={exportDetailedReport}
+            className="bg-purple-500 text-white px-3 py-1 rounded text-sm hover:bg-purple-600"
+          >
+            Export Report
+          </button>
+          <button
+            onClick={copyLogsToClipboard}
+            className="bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600"
+          >
+            Copy All
+          </button>
+          <button
+            onClick={clearLogs}
+            className="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600"
+          >
+            Clear
+          </button>
+          <button
+            onClick={() => setIsVisible(false)}
+            className="bg-gray-500 text-white px-3 py-1 rounded text-sm hover:bg-gray-600"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+      <div className="overflow-auto max-h-96 p-4">
+        {logs.length === 0 ? (
+          <div className="text-center text-gray-500">
+            <p className="text-lg mb-2">No drag debug logs captured yet</p>
+            <p className="text-sm">
+              {isAutoCapturing 
+                ? "Auto-capturing is active. Try dragging a Pokémon card to see logs appear here."
+                : "Start auto-capture and try dragging a Pokémon card to debug the interaction."
+              }
+            </p>
           </div>
-        </ScrollArea>
-
-        <div className="p-4 border-t bg-gray-50">
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-xs">
-            <div>
-              <div className="font-medium">Droppable Init</div>
-              <div className="text-gray-600">
-                {logs.filter(l => l.message.includes('[DROPPABLE_INIT]')).length} logs
+        ) : (
+          <div className="space-y-1">
+            {logs.map((log, index) => (
+              <div 
+                key={index} 
+                className={`text-xs font-mono p-2 rounded ${
+                  log.includes('[ERROR]') ? 'bg-red-100 text-red-800' :
+                  log.includes('[WARN]') ? 'bg-yellow-100 text-yellow-800' :
+                  log.includes('COLLISION') ? 'bg-blue-100 text-blue-800' :
+                  log.includes('DRAG_START') || log.includes('DRAG_END') ? 'bg-green-100 text-green-800' :
+                  log.includes('available-') || log.includes('ranking-') ? 'bg-purple-100 text-purple-800' :
+                  'bg-gray-100 text-gray-800'
+                }`}
+              >
+                {log}
               </div>
-            </div>
-            <div>
-              <div className="font-medium">Collision Detection</div>
-              <div className="text-gray-600">
-                {logs.filter(l => l.message.includes('[COLLISION_DETECTION]')).length} logs
-              </div>
-            </div>
-            <div>
-              <div className="font-medium">Drag Start/End</div>
-              <div className="text-gray-600">
-                {logs.filter(l => l.message.includes('[EXPLICIT_DRAG_START]') || l.message.includes('[EXPLICIT_DRAG_END]')).length} logs
-              </div>
-            </div>
-            <div>
-              <div className="font-medium">Pokémon Moves</div>
-              <div className="text-gray-600">
-                {logs.filter(l => l.message.includes('[POKEMON_MOVE]') || l.message.includes('[POKEMON_REORDER]')).length} logs
-              </div>
-            </div>
-            <div>
-              <div className="font-medium">Card Init</div>
-              <div className="text-gray-600">
-                {logs.filter(l => l.message.includes('[DRAGGABLE_CARD_INIT]')).length} logs
-              </div>
-            </div>
+            ))}
+          </div>
+        )}
+      </div>
+      
+      {logs.length > 0 && (
+        <div className="bg-gray-50 px-4 py-2 border-t text-sm text-gray-600">
+          <div className="flex justify-between">
+            <span>
+              Errors: {logs.filter(l => l.includes('[ERROR]')).length} | 
+              Warnings: {logs.filter(l => l.includes('[WARN]')).length} | 
+              Collisions: {logs.filter(l => l.includes('COLLISION')).length}
+            </span>
+            <span>
+              Last updated: {logs.length > 0 ? logs[logs.length - 1].match(/\[(.*?)\]/)?.[1] || 'Unknown' : 'Never'}
+            </span>
           </div>
         </div>
-      </Card>
+      )}
     </div>
   );
 };

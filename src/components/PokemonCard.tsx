@@ -1,5 +1,5 @@
 
-import React, { useMemo, useEffect } from "react";
+import React, { useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Pokemon } from "@/services/pokemon";
 import { validateBattlePokemon } from "@/services/pokemon/api/utils";
@@ -15,7 +15,8 @@ interface PokemonCardProps {
 }
 
 const PokemonCard = ({ pokemon, isDragging, viewMode = "list", compact }: PokemonCardProps) => {
-  console.log(`🎯 [POKEMON_CARD] Rendering ${pokemon.name} with viewMode: ${viewMode}, compact: ${compact}`);
+  // DEBUG: Log where compact prop comes from
+  console.log(`🔍 [POKEMON_CARD_DEBUG] ${pokemon.name}: compact prop = ${compact}, viewMode = ${viewMode}`);
 
   // Validate the Pokemon to ensure image and name consistency
   const validatedPokemon = useMemo(() => {
@@ -28,29 +29,25 @@ const PokemonCard = ({ pokemon, isDragging, viewMode = "list", compact }: Pokemo
   const imageUrl = validatedPokemon.image;
   const normalizedId = normalizePokedexNumber(pokemonId);
 
-  // Prevent unwanted card clicks during drag operations
+  // Prevent unwanted card clicks
   const handleCardClick = (e: React.MouseEvent) => {
-    if (isDragging) {
-      e.preventDefault();
-      e.stopPropagation();
-      return;
-    }
-    
     // Check if click came from info button
     const target = e.target as HTMLElement;
     if (target.closest('[data-info-button="true"]') || target.textContent === 'i') {
       return;
     }
     
-    // Allow normal interactions when not dragging
+    // Don't do anything on card click - let drag handle interactions
     e.preventDefault();
     e.stopPropagation();
   };
 
   if (viewMode === "grid") {
+    console.log(`🔍 [POKEMON_CARD_DEBUG] ${displayName}: GRID VIEW - using compact=false`);
+    // Grid layout: compact vertical layout with image on top, name and number below
     return (
       <Card 
-        className={`w-full overflow-hidden relative ${isDragging ? "opacity-50 scale-105" : ""}`}
+        className={`w-full overflow-hidden relative ${isDragging ? "opacity-50" : ""}`}
         onClick={handleCardClick}
       >
         <div className="absolute top-1 right-1 z-10">
@@ -58,6 +55,7 @@ const PokemonCard = ({ pokemon, isDragging, viewMode = "list", compact }: Pokemo
         </div>
         
         <div className="flex flex-col p-1">
+          {/* Image section */}
           <div className="aspect-square mb-2">
             <PokemonCardImage 
               pokemonId={pokemonId}
@@ -68,6 +66,7 @@ const PokemonCard = ({ pokemon, isDragging, viewMode = "list", compact }: Pokemo
             />
           </div>
           
+          {/* Name and number section */}
           <div className="text-center px-1">
             <div className="text-xs font-medium leading-tight break-words">
               {displayName}
@@ -81,50 +80,34 @@ const PokemonCard = ({ pokemon, isDragging, viewMode = "list", compact }: Pokemo
     );
   }
 
-  // List view (default)
+  console.log(`🔍 [POKEMON_CARD_DEBUG] ${displayName}: LIST VIEW - using compact=${compact}`);
+  // Original list layout for other views
   return (
     <Card 
-      className={`flex items-center space-x-3 p-3 hover:shadow-md transition-shadow ${
-        isDragging ? "opacity-50 scale-105 shadow-lg" : ""
-      }`}
+      className={`w-full overflow-hidden relative ${isDragging ? "opacity-50" : ""}`}
       onClick={handleCardClick}
     >
-      <div className="absolute top-2 right-2 z-10">
+      <div className="absolute top-1 right-1 z-10">
         <PokemonInfoModal pokemon={validatedPokemon} />
       </div>
       
-      <div className="flex-shrink-0">
+      <div className={`flex items-start gap-1 pr-5 ${compact ? "p-1 min-h-[60px]" : "p-1.5 min-h-[70px]"}`}>
         <PokemonCardImage 
           pokemonId={pokemonId}
           displayName={displayName}
           compact={compact}
           imageUrl={imageUrl}
-          className="w-16 h-16"
         />
-      </div>
-      
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-900 truncate">
-            {displayName}
-          </h3>
-          <span className="text-sm text-gray-500 flex-shrink-0">
-            #{normalizedId}
-          </span>
-        </div>
-        
-        {validatedPokemon.types && (
-          <div className="flex space-x-1 mt-1">
-            {validatedPokemon.types.map((type, index) => (
-              <span 
-                key={index}
-                className="inline-block bg-gray-200 rounded-full px-2 py-1 text-xs font-semibold text-gray-700"
-              >
-                {type}
-              </span>
-            ))}
+        <div className="flex-1 min-w-0">
+          <div className={`flex justify-between items-start ${compact ? "text-xs" : "text-sm"}`}>
+            <span className={`font-medium pr-1 flex-1 min-w-0 leading-tight break-words ${compact ? "text-xs" : "text-sm"}`}>
+              {displayName}
+            </span>
+            <span className={`text-gray-500 whitespace-nowrap ml-1 flex-shrink-0 ${compact ? "text-xs" : "text-xs"}`}>
+              #{normalizedId}
+            </span>
           </div>
-        )}
+        </div>
       </div>
     </Card>
   );
