@@ -39,23 +39,26 @@ export const RankingsSection: React.FC<RankingsSectionProps> = React.memo(({
     </div>
   ), []);
 
-  // Sortable item ids must match the ids used by OptimizedDraggableCard
+  // FIXED: Only include Pokemon-based IDs for SortableContext (filled slots only)
   const sortableItems = useMemo(
     () => displayRankings.map((p) => `ranking-${p.id}`),
     [displayRankings]
   );
 
-  // Create individual droppable slot component with Pokémon-based IDs
+  // Create individual droppable slot component with proper ID alignment
   const DroppableRankingSlot: React.FC<{ index: number; pokemon?: Pokemon | RankedPokemon }> = ({ index, pokemon }) => {
-    // CRITICAL FIX: Use Pokémon ID for droppable slots, fall back to index for empty slots
+    // FIXED: Use consistent ID strategy
+    // - Filled slots: ranking-${pokemon.id} (matches draggable cards and SortableContext)
+    // - Empty slots: ranking-position-${index} (for insertion points)
     const droppableId = pokemon ? `ranking-${pokemon.id}` : `ranking-position-${index}`;
+    
     const { setNodeRef, isOver } = useDroppable({ 
       id: droppableId,
       data: {
-        type: 'ranking-position',
+        type: pokemon ? 'ranked-pokemon' : 'ranking-position',
         index: index,
         pokemonId: pokemon?.id,
-        accepts: ['available-pokemon']
+        accepts: ['available-pokemon', 'ranked-pokemon']
       }
     });
 
@@ -120,11 +123,17 @@ export const RankingsSection: React.FC<RankingsSectionProps> = React.memo(({
             >
               {displayRankings.map((pokemon, index) => (
                 <DroppableRankingSlot
-                  key={`slot-${index}`}
+                  key={`slot-${pokemon.id}-${index}`}
                   index={index}
                   pokemon={pokemon}
                 />
               ))}
+              
+              {/* Add one extra empty slot for easy insertion at the end */}
+              <DroppableRankingSlot
+                key={`empty-slot-${displayRankings.length}`}
+                index={displayRankings.length}
+              />
             </div>
           </SortableContext>
         )}
