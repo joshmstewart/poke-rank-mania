@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useEnhancedManualReorder } from "@/hooks/battle/useEnhancedManualReorder";
 import { useEnhancedRankingDragDrop } from "@/hooks/ranking/useEnhancedRankingDragDrop";
@@ -7,7 +6,6 @@ import { useRankingReset } from "./RankingResetHandler";
 import { EnhancedRankingLayout } from "./EnhancedRankingLayout";
 import { BattleType } from "@/hooks/battle/types";
 import { LoadingType } from "@/hooks/pokemon/types";
-import PersistentLogViewer from "@/components/debug/PersistentLogViewer";
 
 interface RankingUICoreProps {
   isLoading: boolean;
@@ -56,9 +54,7 @@ export const RankingUICore: React.FC<RankingUICoreProps> = React.memo(({
   onGenerationChange,
   onReset
 }) => {
-  console.log(`🚨🚨🚨 [RANKING_UI_CORE_DEBUG] ===== RENDERING =====`);
-  console.log(`🚨🚨🚨 [RANKING_UI_CORE_DEBUG] localRankings count: ${localRankings.length}`);
-  console.log(`🚨🚨🚨 [RANKING_UI_CORE_DEBUG] enhancedAvailablePokemon count: ${enhancedAvailablePokemon.length}`);
+  console.log(`🚨🚨🚨 [ENHANCED_RANKING_UI_CORE_STABLE] Rendering with ${localRankings.length} rankings`);
 
   // Simple implied battle function for Manual Mode
   const addImpliedBattle = (winnerId: number, loserId: number) => {
@@ -73,21 +69,8 @@ export const RankingUICore: React.FC<RankingUICoreProps> = React.memo(({
     addImpliedBattle // Pass battle function for simulation
   );
 
-  console.log(`🚨🚨🚨 [RANKING_UI_CORE_DEBUG] handleEnhancedManualReorder created:`, !!handleEnhancedManualReorder);
-
-  // Re-ranking trigger for already-ranked Pokemon with error handling
-  let triggerReRanking;
-  try {
-    const reRankingResult = useReRankingTrigger(localRankings, updateLocalRankings);
-    triggerReRanking = reRankingResult.triggerReRanking;
-    console.log(`🚨🚨🚨 [RANKING_UI_CORE_DEBUG] triggerReRanking created successfully:`, !!triggerReRanking);
-  } catch (error) {
-    console.error('[RANKING_UI_CORE] Error initializing re-ranking trigger:', error);
-    triggerReRanking = async (pokemonId: number) => {
-      console.warn(`[RANKING_UI_CORE] Re-ranking unavailable for Pokemon ${pokemonId} due to store error`);
-    };
-    console.log(`🚨🚨🚨 [RANKING_UI_CORE_DEBUG] triggerReRanking fallback created:`, !!triggerReRanking);
-  }
+  // Re-ranking trigger for already-ranked Pokemon
+  const { triggerReRanking } = useReRankingTrigger(localRankings, updateLocalRankings);
 
   // Use the extracted reset functionality
   const { handleComprehensiveReset } = useRankingReset({
@@ -109,49 +92,37 @@ export const RankingUICore: React.FC<RankingUICoreProps> = React.memo(({
     triggerReRanking
   );
 
-  console.log(`🚨🚨🚨 [RANKING_UI_CORE_DEBUG] Drag handlers created:`, {
-    handleDragStart: !!handleDragStart,
-    handleDragEnd: !!handleDragEnd,
-    handleManualReorder: !!handleManualReorder
-  });
-
   // Handle local reordering (for DragDropGrid compatibility)
   const handleLocalReorder = (newRankings: any[]) => {
-    console.log(`🚨🚨🚨 [RANKING_UI_CORE_DEBUG] Local reorder called with ${newRankings.length} Pokemon`);
+    console.log(`🚨🚨🚨 [ENHANCED_RANKING_UI_CORE_STABLE] Local reorder called with ${newRankings.length} Pokemon`);
     updateLocalRankings(newRankings);
   };
 
-  console.log(`🚨🚨🚨 [RANKING_UI_CORE_DEBUG] About to render EnhancedRankingLayout`);
-
   return (
-    <>
-      <EnhancedRankingLayout
-        isLoading={isLoading}
-        availablePokemon={availablePokemon}
-        enhancedAvailablePokemon={enhancedAvailablePokemon}
-        displayRankings={displayRankings}
-        selectedGeneration={selectedGeneration}
-        loadingType={loadingType}
-        currentPage={currentPage}
-        totalPages={totalPages}
-        loadSize={loadSize}
-        loadingRef={loadingRef}
-        battleType={battleType}
-        activeDraggedPokemon={activeDraggedPokemon}
-        filteredAvailablePokemon={filteredAvailablePokemon}
-        handlePageChange={handlePageChange}
-        getPageRange={getPageRange}
-        onGenerationChange={onGenerationChange}
-        handleComprehensiveReset={handleComprehensiveReset}
-        setBattleType={setBattleType}
-        handleDragStart={handleDragStart}
-        handleDragEnd={handleDragEnd}
-        handleManualReorder={handleManualReorder}
-        handleLocalReorder={handleLocalReorder}
-      />
-      
-      <PersistentLogViewer />
-    </>
+    <EnhancedRankingLayout
+      isLoading={isLoading}
+      availablePokemon={availablePokemon}
+      enhancedAvailablePokemon={enhancedAvailablePokemon}
+      displayRankings={displayRankings}
+      selectedGeneration={selectedGeneration}
+      loadingType={loadingType}
+      currentPage={currentPage}
+      totalPages={totalPages}
+      loadSize={loadSize}
+      loadingRef={loadingRef}
+      battleType={battleType}
+      activeDraggedPokemon={activeDraggedPokemon}
+      filteredAvailablePokemon={filteredAvailablePokemon}
+      handlePageChange={handlePageChange}
+      getPageRange={getPageRange}
+      onGenerationChange={onGenerationChange}
+      handleComprehensiveReset={handleComprehensiveReset}
+      setBattleType={setBattleType}
+      handleDragStart={handleDragStart}
+      handleDragEnd={handleDragEnd}
+      handleManualReorder={handleManualReorder}
+      handleLocalReorder={handleLocalReorder}
+    />
   );
 }, (prevProps, nextProps) => {
   // Custom comparison to prevent unnecessary re-renders

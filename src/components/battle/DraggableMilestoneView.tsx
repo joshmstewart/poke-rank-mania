@@ -1,13 +1,18 @@
 
-import React, { useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
+import { Button } from "@/components/ui/button";
 import InfiniteScrollHandler from "./InfiniteScrollHandler";
+import AutoBattleLogsModal from "./AutoBattleLogsModal";
 import { usePendingRefinementsManager } from "@/hooks/battle/usePendingRefinementsManager";
+import { useDragAndDrop } from "@/hooks/battle/useDragAndDrop";
+import { useEnhancedManualReorder } from "@/hooks/battle/useEnhancedManualReorder";
+import {
+  DndContext,
+  closestCenter,
+} from '@dnd-kit/core';
 import DragDropGridMemoized from "./DragDropGridMemoized";
-import MilestoneHeader from "./MilestoneHeader";
-import MilestoneDebugLogger from "./MilestoneDebugLogger";
-import MilestoneStateManager from "./MilestoneStateManager";
-import MilestoneDragProvider from "./MilestoneDragProvider";
+import { useStableDragHandlers } from "@/hooks/battle/useStableDragHandlers";
 
 interface DraggableMilestoneViewProps {
   formattedRankings: (Pokemon | RankedPokemon)[];
@@ -32,8 +37,10 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = React.memo
   onManualReorder,
   pendingRefinements = new Set<number>()
 }) => {
-  console.log(`🏆 [MILESTONE_VIEW] Rendering milestone view with ${formattedRankings.length} rankings`);
+  console.log(`🏆 [MILESTONE_STABLE] Rendering milestone view with ${formattedRankings.length} rankings`);
 
+  const [localRankings, setLocalRankings] = useState(formattedRankings);
+  
   const {
     localPendingRefinements,
     pendingBattleCounts,
@@ -42,79 +49,106 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = React.memo
   } = usePendingRefinementsManager(pendingRefinements);
   
   const maxItems = getMaxItemsForTier();
+  
+  // Memoize display rankings to prevent recreation
+  const displayRankings = useMemo(() => 
+    localRankings.slice(0, Math.min(milestoneDisplayCount, maxItems)),
+    [localRankings, milestoneDisplayCount, maxItems]
+  );
+  
+  const hasMoreToLoad = milestoneDisplayCount < maxItems;
+
+  // Use stable drag handlers
+  const { stableOnManualReorder, stableOnLocalReorder } = useStableDragHandlers(
+    onManualReorder,
+    (newRankings: any[]) => setLocalRankings(newRankings)
+  );
+
+  // Update local state when props change, but only if we don't have local changes
+  useEffect(() => {
+    console.log(`🏆 [MILESTONE_STABLE] Props changed - checking for updates`);
+    
+    const hasSignificantDifference = Math.abs(formattedRankings.length - localRankings.length) > 0 ||
+      formattedRankings.slice(0, 5).some((p, i) => p.id !== localRankings[i]?.id);
+    
+    if (hasSignificantDifference) {
+      console.log(`🏆 [MILESTONE_STABLE] Updating local rankings`);
+      setLocalRankings(formattedRankings);
+    }
+  }, [formattedRankings]);
+
+  // FIXED: Use only the enhanced manual reorder
+  const { handleEnhancedManualReorder } = useEnhancedManualReorder(
+    localRankings as RankedPokemon[],
+    stableOnLocalReorder,
+    true // preventAutoResorting = true to maintain manual order
+  );
+
+  // FIXED: Simplified drag and drop that only uses enhanced reorder
+  const { sensors, handleDragEnd } = useDragAndDrop({
+    displayRankings,
+    onManualReorder: (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => {
+      console.log(`🏆 [MILESTONE_STABLE] Drag completed: ${draggedPokemonId} from ${sourceIndex} to ${destinationIndex}`);
+      handleEnhancedManualReorder(draggedPokemonId, sourceIndex, destinationIndex);
+    },
+    onLocalReorder: stableOnLocalReorder
+  });
 
   // Memoized header content
   const headerContent = useMemo(() => (
-    <MilestoneHeader
-      battlesCompleted={battlesCompleted}
-      displayCount={Math.min(milestoneDisplayCount, maxItems)}
-      activeTier={activeTier}
-      maxItems={maxItems}
-      onContinueBattles={onContinueBattles}
-    />
-  ), [battlesCompleted, milestoneDisplayCount, activeTier, maxItems, onContinueBattles]);
-
-  const hasMoreToLoad = milestoneDisplayCount < maxItems;
+    <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center gap-3">
+        <span className="text-2xl">🏆</span>
+        <h1 className="text-xl font-bold text-gray-800">
+          Milestone: {battlesCompleted} Battles
+        </h1>
+        <span className="text-gray-500 text-sm">
+          (Showing {displayRankings.length} of {activeTier === "All" ? maxItems : Math.min(Number(activeTier), maxItems)})
+        </span>
+        <AutoBattleLogsModal />
+      </div>
+      
+      <Button 
+        onClick={onContinueBattles}
+        className="bg-gray-800 hover:bg-gray-900 text-white px-6 py-2 rounded-lg font-medium"
+      >
+        Continue Battles
+      </Button>
+    </div>
+  ), [battlesCompleted, displayRankings.length, activeTier, maxItems, onContinueBattles]);
 
   return (
     <div className="bg-white p-6 w-full max-w-7xl mx-auto">
       {headerContent}
 
-      <MilestoneStateManager
-        formattedRankings={formattedRankings}
-        onManualReorder={onManualReorder}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
       >
-        {({
-          localRankings,
-          displayRankings,
-          isManualOperationInProgress,
-          manualOperationTimestamp,
-          handleEnhancedManualReorder,
-          stableOnLocalReorder
-        }) => (
-          <>
-            <MilestoneDebugLogger
-              formattedRankings={formattedRankings}
-              localRankings={localRankings}
-              displayRankings={displayRankings}
-              isManualOperationInProgress={isManualOperationInProgress}
-              manualOperationTimestamp={manualOperationTimestamp}
-            />
-
-            <MilestoneDragProvider
-              displayRankings={displayRankings.slice(0, Math.min(milestoneDisplayCount, maxItems))}
-              handleEnhancedManualReorder={handleEnhancedManualReorder}
-              stableOnLocalReorder={stableOnLocalReorder}
-            >
-              <DragDropGridMemoized
-                displayRankings={displayRankings.slice(0, Math.min(milestoneDisplayCount, maxItems))}
-                localPendingRefinements={localPendingRefinements}
-                pendingBattleCounts={pendingBattleCounts}
-              />
-            </MilestoneDragProvider>
-          </>
-        )}
-      </MilestoneStateManager>
+        <DragDropGridMemoized
+          displayRankings={displayRankings}
+          localPendingRefinements={localPendingRefinements}
+          pendingBattleCounts={pendingBattleCounts}
+        />
+      </DndContext>
 
       <InfiniteScrollHandler 
         hasMoreToLoad={hasMoreToLoad}
-        currentCount={Math.min(milestoneDisplayCount, maxItems)}
+        currentCount={displayRankings.length}
         maxItems={maxItems}
         onLoadMore={onLoadMore}
       />
     </div>
   );
 }, (prevProps, nextProps) => {
-  // Only allow re-renders for major changes like battle count or tier changes
-  const shouldPreventRerender = (
+  // Custom comparison to prevent unnecessary re-renders
+  return (
+    prevProps.formattedRankings.length === nextProps.formattedRankings.length &&
     prevProps.battlesCompleted === nextProps.battlesCompleted &&
-    prevProps.activeTier === nextProps.activeTier &&
-    prevProps.milestoneDisplayCount === nextProps.milestoneDisplayCount
+    prevProps.milestoneDisplayCount === nextProps.milestoneDisplayCount &&
+    prevProps.activeTier === nextProps.activeTier
   );
-  
-  console.log('🎨 [MILESTONE_MEMO] Enhanced memo comparison result:', shouldPreventRerender ? 'PREVENTING' : 'ALLOWING', 'rerender');
-  
-  return shouldPreventRerender;
 });
 
 DraggableMilestoneView.displayName = 'DraggableMilestoneView';

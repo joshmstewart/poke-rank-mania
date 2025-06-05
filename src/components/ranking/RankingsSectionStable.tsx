@@ -21,7 +21,6 @@ export const RankingsSectionStable: React.FC<RankingsSectionStableProps> = React
   availablePokemon = []
 }) => {
   console.log(`🎯 [RANKINGS_SECTION_STABLE] Rendering with ${displayRankings.length} rankings`);
-  console.log(`🎯 [RANKINGS_SECTION_STABLE] onManualReorder exists: ${!!onManualReorder}`);
 
   // Use stable drag handlers to prevent recreation
   const { stableOnManualReorder, stableOnLocalReorder } = useStableDragHandlers(
@@ -29,12 +28,12 @@ export const RankingsSectionStable: React.FC<RankingsSectionStableProps> = React
     onLocalReorder
   );
 
-  // FIXED: Properly configure droppable without visual conflicts
+  // Memoize droppable configuration
   const droppableConfig = useMemo(() => ({
     id: 'rankings-drop-zone-stable',
     data: {
       type: 'rankings-container',
-      accepts: ['available-pokemon']
+      accepts: 'available-pokemon'
     }
   }), []);
 
@@ -49,9 +48,12 @@ export const RankingsSectionStable: React.FC<RankingsSectionStableProps> = React
       <div className="text-center">
         <p className="text-lg mb-2">No Pokémon ranked yet</p>
         <p className="text-sm">Drag Pokémon from the left to start ranking!</p>
+        {isOver && (
+          <p className="text-yellow-600 font-medium mt-2">Drop here to add to rankings!</p>
+        )}
       </div>
     </div>
-  ), []);
+  ), [isOver]);
 
   // Memoized header content
   const headerContent = useMemo(() => (
@@ -65,12 +67,20 @@ export const RankingsSectionStable: React.FC<RankingsSectionStableProps> = React
     </div>
   ), [displayRankings.length]);
 
+  // Memoized container class
+  const containerClassName = useMemo(() => 
+    `flex-1 overflow-y-auto p-4 transition-colors ${
+      isOver ? 'bg-yellow-50 border-2 border-dashed border-yellow-400' : ''
+    }`, 
+    [isOver]
+  );
+
   return (
     <div className="flex flex-col h-full">
       {headerContent}
       
       <div 
-        className="flex-1 overflow-y-auto p-4"
+        className={containerClassName}
         ref={setNodeRef}
       >
         {displayRankings.length === 0 ? emptyStateContent : (
@@ -78,8 +88,6 @@ export const RankingsSectionStable: React.FC<RankingsSectionStableProps> = React
             displayRankings={displayRankings}
             localPendingRefinements={pendingRefinements}
             pendingBattleCounts={pendingBattleCounts}
-            onManualReorder={stableOnManualReorder}
-            onLocalReorder={stableOnLocalReorder}
           />
         )}
       </div>

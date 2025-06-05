@@ -2,13 +2,13 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { TopNOption } from "@/services/pokemon";
-import AutoBattleLogsModal from "./AutoBattleLogsModal";
 
 interface MilestoneHeaderProps {
   battlesCompleted: number;
   displayCount: number;
   activeTier: TopNOption;
   maxItems: number;
+  pendingRefinementsCount: number;
   onContinueBattles: () => void;
 }
 
@@ -17,6 +17,7 @@ const MilestoneHeader: React.FC<MilestoneHeaderProps> = ({
   displayCount,
   activeTier,
   maxItems,
+  pendingRefinementsCount,
   onContinueBattles
 }) => {
   return (
@@ -29,7 +30,11 @@ const MilestoneHeader: React.FC<MilestoneHeaderProps> = ({
         <span className="text-gray-500 text-sm">
           (Showing {displayCount} of {activeTier === "All" ? maxItems : Math.min(Number(activeTier), maxItems)})
         </span>
-        <AutoBattleLogsModal />
+        {pendingRefinementsCount > 0 && (
+          <span className="text-yellow-600 text-sm font-medium">
+            • {pendingRefinementsCount} pending validation{pendingRefinementsCount > 1 ? 's' : ''}
+          </span>
+        )}
       </div>
       
       <Button 

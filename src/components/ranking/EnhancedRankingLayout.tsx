@@ -1,6 +1,7 @@
 
-import React, { useMemo, useState, useEffect } from "react";
-import { DndContext, DragOverlay, pointerWithin, DragStartEvent, DragEndEvent } from '@dnd-kit/core';
+import React, { useMemo } from "react";
+import { DndContext, DragOverlay, pointerWithin } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { BattleType } from "@/hooks/battle/types";
 import { LoadingType } from "@/hooks/pokemon/types";
 import { RankingsSectionStable } from "./RankingsSectionStable";
@@ -9,7 +10,6 @@ import UnifiedControls from "@/components/shared/UnifiedControls";
 import PokemonCard from "@/components/PokemonCard";
 import { Card } from "@/components/ui/card";
 import { useStableDragHandlers } from "@/hooks/battle/useStableDragHandlers";
-import { useImpliedBattleTracker } from "@/contexts/ImpliedBattleTracker";
 
 interface EnhancedRankingLayoutProps {
   isLoading: boolean;
@@ -60,19 +60,7 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
   handleManualReorder,
   handleLocalReorder
 }) => {
-  console.log(`🔥🔥🔥 [LAYOUT_FIXED] ===== ENHANCED LAYOUT RENDER =====`);
-  console.log(`🔥🔥🔥 [LAYOUT_FIXED] displayRankings count: ${displayRankings.length}`);
-
-  // Connect to implied battle tracker
-  const { addImpliedBattle } = useImpliedBattleTracker();
-
-  // STEP 1: Introduce manual ranking order state for visual persistence
-  const [manualRankingOrder, setManualRankingOrder] = useState(displayRankings);
-  
-  // Update manual order when displayRankings changes (on initial load or refresh)
-  useEffect(() => {
-    setManualRankingOrder(displayRankings);
-  }, [displayRankings]);
+  console.log(`🎨 [ENHANCED_LAYOUT_STABLE] Rendering with ${displayRankings.length} rankings`);
 
   // Use stable drag handlers
   const { stableOnManualReorder, stableOnLocalReorder } = useStableDragHandlers(
@@ -80,151 +68,99 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
     handleLocalReorder
   );
 
-  // STEP 2: Enhanced drag handlers with manual order preservation
-  const enhancedHandleDragStart = (event: DragStartEvent) => {
-    console.log(`🔧 [MANUAL_DRAG] Manual Drag Start - ID: ${event.active.id}`);
-    const activeId = event.active.id.toString();
-    console.log(`🔧 [MANUAL_DRAG] Active ID as string: ${activeId}`);
-    handleDragStart(event);
-  };
+  // Memoize sortable items
+  const sortableItems = useMemo(() => 
+    displayRankings.map(p => p.id.toString()),
+    [displayRankings]
+  );
 
-  const enhancedHandleDragEnd = (event: DragEndEvent) => {
-    console.log(`🔧 [MANUAL_DRAG] Manual Drag End - Active: ${event.active.id}, Over: ${event.over?.id || 'NULL'}`);
-    
-    const { active, over } = event;
-    
-    if (!over || active.id === over.id) {
-      console.log(`🔧 [MANUAL_DRAG] No drop target or same position - exiting`);
-      return;
-    }
-    
-    // STEP 2: Handle manual reordering within rankings
-    const activeId = active.id.toString();
-    const overId = over.id.toString();
-    
-    // Only handle reordering within the rankings (not adding new Pokemon)
-    if (!activeId.startsWith('available-') && !overId.startsWith('available-')) {
-      const oldIndex = manualRankingOrder.findIndex(p => p.id.toString() === activeId);
-      const newIndex = manualRankingOrder.findIndex(p => p.id.toString() === overId);
-      
-      console.log(`🔧 [MANUAL_DRAG] Reordering indices: ${oldIndex} -> ${newIndex}`);
-      
-      if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-        // CRITICAL: Update only manual order state for visual persistence
-        const updatedManualOrder = [...manualRankingOrder];
-        const [movedPokemon] = updatedManualOrder.splice(oldIndex, 1);
-        updatedManualOrder.splice(newIndex, 0, movedPokemon);
-        
-        console.log(`🔧 [MANUAL_DRAG] ✅ Manual order updated: ${movedPokemon.name} moved to position ${newIndex}`);
-        setManualRankingOrder(updatedManualOrder);
-        
-        // STEP 3: Add implied battles based on the reorder
-        console.log(`🎲 [IMPLIED_BATTLES] Triggering implied battles for reorder`);
-        
-        // Determine who wins based on the direction of movement
-        if (newIndex < oldIndex) {
-          // Pokemon moved up - it beats the Pokemon it moved past
-          for (let i = newIndex; i < oldIndex; i++) {
-            const opponent = updatedManualOrder[i + 1];
-            if (opponent && opponent.id !== movedPokemon.id) {
-              console.log(`🎲 [IMPLIED_BATTLES] ${movedPokemon.name} beats ${opponent.name} (moved up)`);
-              addImpliedBattle({
-                draggedPokemon: movedPokemon.name,
-                opponent: opponent.name,
-                winner: movedPokemon.name,
-                battleType: 'Manual Reorder (Up)'
-              });
-            }
-          }
-        } else if (newIndex > oldIndex) {
-          // Pokemon moved down - Pokemon it moved past beat it
-          for (let i = oldIndex; i < newIndex; i++) {
-            const opponent = updatedManualOrder[i];
-            if (opponent && opponent.id !== movedPokemon.id) {
-              console.log(`🎲 [IMPLIED_BATTLES] ${opponent.name} beats ${movedPokemon.name} (moved down)`);
-              addImpliedBattle({
-                draggedPokemon: movedPokemon.name,
-                opponent: opponent.name,
-                winner: opponent.name,
-                battleType: 'Manual Reorder (Down)'
-              });
-            }
-          }
-        }
-        
-        // STEP 4: Trigger background score updates without immediate visual change
-        handleManualReorder(parseInt(activeId), oldIndex, newIndex);
-        
-        return;
-      }
-    }
-    
-    // For other drag operations (like adding Pokemon), use original handler
-    handleDragEnd(event);
-  };
+  // Memoized controls section
+  const controlsSection = useMemo(() => (
+    <div className="max-w-7xl mx-auto mb-4">
+      <UnifiedControls
+        selectedGeneration={selectedGeneration}
+        battleType={battleType}
+        onGenerationChange={(gen) => onGenerationChange(Number(gen))}
+        onBattleTypeChange={setBattleType}
+        showBattleTypeControls={true}
+        mode="manual"
+        onReset={handleComprehensiveReset}
+        customResetAction={handleComprehensiveReset}
+      />
+    </div>
+  ), [selectedGeneration, battleType, onGenerationChange, setBattleType, handleComprehensiveReset]);
+
+  // Memoized drag overlay
+  const dragOverlay = useMemo(() => (
+    <DragOverlay>
+      {activeDraggedPokemon ? (
+        <div className="transform rotate-3 scale-105 opacity-90">
+          <PokemonCard
+            pokemon={activeDraggedPokemon}
+            compact={true}
+            viewMode="grid"
+            isDragging={true}
+          />
+        </div>
+      ) : null}
+    </DragOverlay>
+  ), [activeDraggedPokemon]);
 
   return (
-    <div className="bg-gray-100 min-h-screen p-4">
-      <div className="max-w-7xl mx-auto mb-4">
-        <UnifiedControls
-          selectedGeneration={selectedGeneration}
-          battleType={battleType}
-          onGenerationChange={(gen) => onGenerationChange(Number(gen))}
-          onBattleTypeChange={setBattleType}
-          showBattleTypeControls={true}
-          mode="manual"
-          onReset={handleComprehensiveReset}
-          customResetAction={handleComprehensiveReset}
-        />
-      </div>
+    <DndContext
+      collisionDetection={pointerWithin}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
+      <div className="bg-gray-100 min-h-screen p-4">
+        {controlsSection}
 
-      <div className="max-w-7xl mx-auto">
-        <div className="grid md:grid-cols-2 gap-4" style={{ height: 'calc(100vh - 12rem)' }}>
-          <Card className="shadow-lg border border-gray-200 overflow-hidden flex flex-col">
-            <EnhancedAvailablePokemonSection
-              enhancedAvailablePokemon={enhancedAvailablePokemon}
-              isLoading={isLoading}
-              selectedGeneration={selectedGeneration}
-              loadingType={loadingType}
-              currentPage={currentPage}
-              totalPages={totalPages}
-              loadingRef={loadingRef}
-              handlePageChange={handlePageChange}
-              getPageRange={getPageRange}
-            />
-          </Card>
-
-          <Card className="shadow-lg border border-gray-200 overflow-hidden flex flex-col">
-            <DndContext
-              collisionDetection={pointerWithin}
-              onDragStart={enhancedHandleDragStart}
-              onDragEnd={enhancedHandleDragEnd}
-            >
-              <RankingsSectionStable
-                displayRankings={manualRankingOrder}
-                onManualReorder={stableOnManualReorder}
-                onLocalReorder={stableOnLocalReorder}
-                pendingRefinements={new Set()}
-                availablePokemon={enhancedAvailablePokemon}
+        <div className="max-w-7xl mx-auto">
+          <div className="grid md:grid-cols-2 gap-4" style={{ height: 'calc(100vh - 12rem)' }}>
+            <Card className="shadow-lg border border-gray-200 overflow-hidden flex flex-col">
+              <EnhancedAvailablePokemonSection
+                enhancedAvailablePokemon={enhancedAvailablePokemon}
+                isLoading={isLoading}
+                selectedGeneration={selectedGeneration}
+                loadingType={loadingType}
+                currentPage={currentPage}
+                totalPages={totalPages}
+                loadingRef={loadingRef}
+                handlePageChange={handlePageChange}
+                getPageRange={getPageRange}
               />
-              
-              <DragOverlay>
-                {activeDraggedPokemon ? (
-                  <div className="transform rotate-3 scale-105 opacity-90">
-                    <PokemonCard
-                      pokemon={activeDraggedPokemon}
-                      compact={true}
-                      viewMode="grid"
-                      isDragging={true}
-                    />
-                  </div>
-                ) : null}
-              </DragOverlay>
-            </DndContext>
-          </Card>
+            </Card>
+
+            <Card className="shadow-lg border border-gray-200 overflow-hidden flex flex-col">
+              <SortableContext 
+                items={sortableItems}
+                strategy={verticalListSortingStrategy}
+              >
+                <RankingsSectionStable
+                  displayRankings={displayRankings}
+                  onManualReorder={stableOnManualReorder}
+                  onLocalReorder={stableOnLocalReorder}
+                  pendingRefinements={new Set()}
+                  availablePokemon={enhancedAvailablePokemon}
+                />
+              </SortableContext>
+            </Card>
+          </div>
         </div>
+
+        {dragOverlay}
       </div>
-    </div>
+    </DndContext>
+  );
+}, (prevProps, nextProps) => {
+  // Custom comparison to prevent unnecessary re-renders
+  return (
+    prevProps.displayRankings.length === nextProps.displayRankings.length &&
+    prevProps.enhancedAvailablePokemon.length === nextProps.enhancedAvailablePokemon.length &&
+    prevProps.selectedGeneration === nextProps.selectedGeneration &&
+    prevProps.battleType === nextProps.battleType &&
+    prevProps.currentPage === nextProps.currentPage &&
+    prevProps.isLoading === nextProps.isLoading
   );
 });
 

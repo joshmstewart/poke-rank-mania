@@ -1,77 +1,118 @@
 
-import React, { useMemo } from "react";
-import { Pokemon, RankedPokemon } from "@/services/pokemon";
-import OptimizedDraggableCard from "./OptimizedDraggableCard";
+import React, { useMemo, memo } from "react";
 import {
   SortableContext,
   rectSortingStrategy,
 } from '@dnd-kit/sortable';
+import { useDroppable } from '@dnd-kit/core';
+import { Pokemon, RankedPokemon } from "@/services/pokemon";
+import DraggablePokemonMilestoneCardOptimized from "./DraggablePokemonMilestoneCardOptimized";
 
 interface DragDropGridMemoizedProps {
   displayRankings: (Pokemon | RankedPokemon)[];
   localPendingRefinements: Set<number>;
   pendingBattleCounts: Map<number, number>;
-  onManualReorder?: (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => void;
-  onLocalReorder?: (newRankings: (Pokemon | RankedPokemon)[]) => void;
 }
 
-const DragDropGridMemoized: React.FC<DragDropGridMemoizedProps> = React.memo(({
+// Memoized grid style to prevent recreation
+const GRID_STYLE = {
+  gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))'
+};
+
+// Memoized droppable config to prevent recreation
+const DROPPABLE_CONFIG = {
+  id: 'rankings-grid-drop-zone-memoized',
+  data: {
+    type: 'rankings-grid',
+    accepts: ['available-pokemon', 'ranked-pokemon']
+  }
+};
+
+const DragDropGridMemoized: React.FC<DragDropGridMemoizedProps> = memo(({
   displayRankings,
   localPendingRefinements,
-  pendingBattleCounts,
-  onManualReorder,
-  onLocalReorder
+  pendingBattleCounts
 }) => {
-  console.log('🎨 [GRID_FIXED] ===== DRAG DROP GRID RENDER =====');
-  console.log('🎨 [GRID_FIXED] displayRankings length:', displayRankings.length);
-  console.log('🎨 [GRID_FIXED] onManualReorder exists:', !!onManualReorder);
+  console.log(`🎯 [MEMOIZED_GRID] Rendering with ${displayRankings.length} items`);
 
-  // Create sortable items for proper drag behavior
+  // Memoize sortable items to prevent recreation on every render
   const sortableItems = useMemo(() => {
-    const items = displayRankings.map(p => p.id.toString());
-    console.log(`🎨 [GRID_FIXED] Sortable items created:`, items.slice(0, 5));
-    return items;
+    return displayRankings.map(p => p.id);
   }, [displayRankings]);
 
-  // Create cards with proper sortable integration
+  const { setNodeRef, isOver } = useDroppable(DROPPABLE_CONFIG);
+
+  // Memoize grid class names
+  const gridClassName = useMemo(() => 
+    `transition-colors ${isOver ? 'bg-yellow-50/50' : ''}`, 
+    [isOver]
+  );
+
+  // Memoize the rendered Pokemon cards to prevent unnecessary re-renders
   const renderedCards = useMemo(() => {
-    console.log(`🎨 [GRID_FIXED] Creating ${displayRankings.length} draggable cards`);
-    
     return displayRankings.map((pokemon, index) => {
       const isPending = localPendingRefinements.has(pokemon.id);
       
-      if (index < 3) {
-        const score = 'score' in pokemon ? pokemon.score.toFixed(2) : 'N/A';
-        console.log(`🎨 [GRID_FIXED] Card ${index}: ${pokemon.name} (ID: ${pokemon.id}) score: ${score}`);
-      }
-      
       return (
-        <OptimizedDraggableCard
-          key={pokemon.id.toString()}
+        <DraggablePokemonMilestoneCardOptimized
+          key={pokemon.id}
           pokemon={pokemon}
           index={index}
           isPending={isPending}
+          showRank={true}
+          isDraggable={true}
+          isAvailable={false}
           context="ranked"
         />
       );
     });
   }, [displayRankings, localPendingRefinements]);
 
-  console.log(`🎨 [GRID_FIXED] Rendering ${renderedCards.length} cards in SortableContext`);
-
   return (
-    <SortableContext 
-      items={sortableItems}
-      strategy={rectSortingStrategy}
+    <div 
+      ref={setNodeRef}
+      className={gridClassName}
     >
-      <div 
-        className="grid gap-4" 
-        style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}
+      <SortableContext 
+        items={sortableItems}
+        strategy={rectSortingStrategy}
       >
-        {renderedCards}
-      </div>
-    </SortableContext>
+        <div className="grid gap-4" style={GRID_STYLE}>
+          {renderedCards}
+        </div>
+      </SortableContext>
+    </div>
   );
+}, (prevProps, nextProps) => {
+  // Enhanced comparison to prevent unnecessary re-renders
+  if (prevProps.displayRankings.length !== nextProps.displayRankings.length) {
+    return false;
+  }
+  
+  // Check if any Pokemon in the rankings actually changed
+  for (let i = 0; i < prevProps.displayRankings.length; i++) {
+    const prev = prevProps.displayRankings[i];
+    const next = nextProps.displayRankings[i];
+    
+    if (prev.id !== next.id || prev.name !== next.name) {
+      return false;
+    }
+  }
+  
+  // Check pending refinements
+  if (prevProps.localPendingRefinements.size !== nextProps.localPendingRefinements.size) {
+    return false;
+  }
+  
+  // Compare pending refinements content
+  for (const id of prevProps.localPendingRefinements) {
+    if (!nextProps.localPendingRefinements.has(id)) {
+      return false;
+    }
+  }
+  
+  // If all checks pass, props are effectively the same
+  return true;
 });
 
 DragDropGridMemoized.displayName = 'DragDropGridMemoized';
