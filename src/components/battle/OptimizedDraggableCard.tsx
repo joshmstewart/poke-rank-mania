@@ -50,7 +50,7 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
         source: context,
         index,
         // CRITICAL: Add collision detection helpers
-        accepts: ['rankings-container', 'rankings-grid', 'rankings-drop-zone', 'ranked-pokemon'],
+        accepts: ['rankings-container', 'rankings-grid', 'rankings-drop-zone'],
         category: 'draggable-available'
       }
     };
@@ -83,14 +83,13 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
         pokemon: pokemon,
         source: context,
         index,
-        // CRITICAL: Add collision detection helpers - MUST accept available-pokemon
+        // CRITICAL: Add collision detection helpers
         accepts: ['available-pokemon', 'ranked-pokemon'],
         category: 'sortable-ranked'
       }
     };
 
     console.log(`🎯 [DRAGGABLE_INIT] Ranking Pokemon initialized with useSortable:`, sortableId);
-    console.log(`🎯 [DRAGGABLE_INIT] Sortable config:`, sortableConfig);
     const sortableResult = useSortable(sortableConfig);
     dragAttributes = sortableResult.attributes;
     dragListeners = sortableResult.listeners;
