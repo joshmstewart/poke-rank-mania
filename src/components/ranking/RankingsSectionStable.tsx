@@ -3,8 +3,6 @@ import React, { useCallback, useMemo } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import DragDropGridMemoized from "@/components/battle/DragDropGridMemoized";
 import { useStableDragHandlers } from "@/hooks/battle/useStableDragHandlers";
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { useDroppable } from '@dnd-kit/core';
 
 interface RankingsSectionStableProps {
   displayRankings: (Pokemon | RankedPokemon)[];
@@ -14,6 +12,10 @@ interface RankingsSectionStableProps {
   availablePokemon?: any[];
 }
 
+// EXPLICITLY CLEANED RANKINGS SECTION:
+// - NO SortableContext (moved to DragDropGridMemoized.tsx exclusively)
+// - NO useDroppable hooks (removed to prevent conflicts)
+// - Pure container component that passes props down clearly
 export const RankingsSectionStable: React.FC<RankingsSectionStableProps> = React.memo(({
   displayRankings,
   onManualReorder,
@@ -21,34 +23,14 @@ export const RankingsSectionStable: React.FC<RankingsSectionStableProps> = React
   pendingRefinements = new Set<number>(),
   availablePokemon = []
 }) => {
-  console.log(`🎯 [RANKINGS_DEBUG] Rendering with ${displayRankings.length} rankings`);
-  console.log(`🎯 [RANKINGS_DEBUG] onManualReorder exists: ${!!onManualReorder}`);
+  console.log(`🎯 [RANKINGS_SECTION_STABLE] Rendering with ${displayRankings.length} rankings`);
+  console.log(`🎯 [RANKINGS_SECTION_STABLE] onManualReorder exists: ${!!onManualReorder}`);
 
   // Use stable drag handlers to prevent recreation
   const { stableOnManualReorder, stableOnLocalReorder } = useStableDragHandlers(
     onManualReorder,
     onLocalReorder
   );
-
-  // Create sortable items with consistent ranking- prefix
-  const sortableItems = useMemo(() => {
-    const items = displayRankings.map(pokemon => `ranking-${pokemon.id}`);
-    console.log(`🎯 [SORTABLE_DEBUG] SortableContext Items:`, items.slice(0, 5));
-    console.log(`🎯 [SORTABLE_DEBUG] Total sortable items: ${items.length}`);
-    return items;
-  }, [displayRankings]);
-
-  // Setup droppable for the entire rankings area
-  const { setNodeRef: setDroppableRef } = useDroppable({
-    id: 'rankings-drop-zone',
-    data: {
-      type: 'rankings-container',
-      accepts: ['available-pokemon', 'ranked-pokemon']
-    }
-  });
-
-  console.log(`🎯 [DROPPABLE_DEBUG] Rankings drop zone ID: rankings-drop-zone`);
-  console.log(`🎯 [DROPPABLE_DEBUG] Drop zone accepts: available-pokemon, ranked-pokemon`);
 
   // Memoize pending battle counts to prevent recreation
   const pendingBattleCounts = useMemo(() => new Map<number, number>(), []);
@@ -79,17 +61,19 @@ export const RankingsSectionStable: React.FC<RankingsSectionStableProps> = React
     <div className="flex flex-col h-full">
       {headerContent}
       
-      <div ref={setDroppableRef} className="flex-1 overflow-y-auto p-4">
+      {/* EXPLICITLY SIMPLIFIED CONTAINER: 
+          - No conflicting droppable or sortable contexts
+          - Pure content container that delegates to DragDropGridMemoized
+          - All drag logic handled by single DndContext in EnhancedRankingLayout */}
+      <div className="flex-1 overflow-y-auto p-4">
         {displayRankings.length === 0 ? emptyStateContent : (
-          <SortableContext items={sortableItems} strategy={verticalListSortingStrategy}>
-            <DragDropGridMemoized
-              displayRankings={displayRankings}
-              localPendingRefinements={pendingRefinements}
-              pendingBattleCounts={pendingBattleCounts}
-              onManualReorder={stableOnManualReorder}
-              onLocalReorder={stableOnLocalReorder}
-            />
-          </SortableContext>
+          <DragDropGridMemoized
+            displayRankings={displayRankings}
+            localPendingRefinements={pendingRefinements}
+            pendingBattleCounts={pendingBattleCounts}
+            onManualReorder={stableOnManualReorder}
+            onLocalReorder={stableOnLocalReorder}
+          />
         )}
       </div>
     </div>
