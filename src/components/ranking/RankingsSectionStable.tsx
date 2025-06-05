@@ -38,38 +38,30 @@ export const RankingsSectionStable: React.FC<RankingsSectionStableProps> = React
     return items;
   }, [displayRankings]);
 
-  // CRITICAL FIX: Setup droppable for the entire rankings area with explicit collision detection
-  const { setNodeRef: setDroppableRef, isOver } = useDroppable({
+  // Setup droppable for the entire rankings area
+  const { setNodeRef: setDroppableRef } = useDroppable({
     id: 'rankings-drop-zone',
     data: {
       type: 'rankings-container',
-      accepts: ['available-pokemon', 'ranked-pokemon'],
-      source: 'rankings-section'
+      accepts: ['available-pokemon', 'ranked-pokemon']
     }
   });
 
   console.log(`🎯 [DROPPABLE_DEBUG] Rankings drop zone ID: rankings-drop-zone`);
   console.log(`🎯 [DROPPABLE_DEBUG] Drop zone accepts: available-pokemon, ranked-pokemon`);
-  console.log(`🎯 [DROPPABLE_DEBUG] Drop zone isOver: ${isOver}`);
 
   // Memoize pending battle counts to prevent recreation
   const pendingBattleCounts = useMemo(() => new Map<number, number>(), []);
 
-  // Memoized empty state content with droppable area
+  // Memoized empty state content
   const emptyStateContent = useMemo(() => (
-    <div 
-      className={`flex items-center justify-center h-full text-gray-500 border-2 border-dashed transition-colors ${
-        isOver ? 'border-blue-400 bg-blue-50' : 'border-gray-300'
-      }`}
-      style={{ minHeight: '200px' }}
-    >
+    <div className="flex items-center justify-center h-full text-gray-500">
       <div className="text-center">
         <p className="text-lg mb-2">No Pokémon ranked yet</p>
         <p className="text-sm">Drag Pokémon from the left to start ranking!</p>
-        {isOver && <p className="text-blue-600 font-medium mt-2">Drop here to add to rankings</p>}
       </div>
     </div>
-  ), [isOver]);
+  ), []);
 
   // Memoized header content
   const headerContent = useMemo(() => (
@@ -87,25 +79,16 @@ export const RankingsSectionStable: React.FC<RankingsSectionStableProps> = React
     <div className="flex flex-col h-full">
       {headerContent}
       
-      <div 
-        ref={setDroppableRef} 
-        className={`flex-1 overflow-y-auto p-4 transition-colors ${
-          isOver ? 'bg-blue-50' : ''
-        }`}
-      >
+      <div ref={setDroppableRef} className="flex-1 overflow-y-auto p-4">
         {displayRankings.length === 0 ? emptyStateContent : (
           <SortableContext items={sortableItems} strategy={verticalListSortingStrategy}>
-            <div 
-              className={`transition-colors ${isOver ? 'bg-blue-50 border-2 border-dashed border-blue-400 rounded-lg p-2' : ''}`}
-            >
-              <DragDropGridMemoized
-                displayRankings={displayRankings}
-                localPendingRefinements={pendingRefinements}
-                pendingBattleCounts={pendingBattleCounts}
-                onManualReorder={stableOnManualReorder}
-                onLocalReorder={stableOnLocalReorder}
-              />
-            </div>
+            <DragDropGridMemoized
+              displayRankings={displayRankings}
+              localPendingRefinements={pendingRefinements}
+              pendingBattleCounts={pendingBattleCounts}
+              onManualReorder={stableOnManualReorder}
+              onLocalReorder={stableOnLocalReorder}
+            />
           </SortableContext>
         )}
       </div>
