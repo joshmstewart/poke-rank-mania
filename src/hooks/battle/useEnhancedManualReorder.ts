@@ -214,37 +214,103 @@ export const useEnhancedManualReorder = (
     }
   }, [localRankings, validateRankingsIntegrity, applyTrueSkillUpdates, addImpliedBattle, recalculateScores, onRankingsUpdate]);
 
-  // Add the missing handleEnhancedManualReorder function
+  // FIXED: Enhanced manual reorder function that handles both new additions and reordering
   const handleEnhancedManualReorder = useCallback((
     draggedPokemonId: number,
     sourceIndex: number,
     destinationIndex: number
   ) => {
-    console.log('🔥 [ENHANCED_MANUAL_REORDER] Manual reorder called:', draggedPokemonId, sourceIndex, destinationIndex);
+    console.log('🔥 [ENHANCED_MANUAL_REORDER] ===== MANUAL REORDER CALLED =====');
+    console.log('🔥 [ENHANCED_MANUAL_REORDER] Pokemon ID:', draggedPokemonId);
+    console.log('🔥 [ENHANCED_MANUAL_REORDER] Source Index:', sourceIndex);
+    console.log('🔥 [ENHANCED_MANUAL_REORDER] Destination Index:', destinationIndex);
     
     setIsUpdating(true);
     
     try {
-      const newRankings = arrayMove(localRankings, sourceIndex, destinationIndex);
+      let newRankings: RankedPokemon[];
       
+      if (sourceIndex === -1) {
+        // CASE A: New Pokemon addition (sourceIndex = -1)
+        console.log('🔥 [ENHANCED_MANUAL_REORDER] ✅ ADDING NEW POKEMON TO RANKINGS');
+        
+        // Get Pokemon data from lookup map
+        const pokemonData = pokemonLookupMap.get(draggedPokemonId);
+        if (!pokemonData) {
+          console.error('🔥 [ENHANCED_MANUAL_REORDER] ❌ Pokemon not found in lookup map:', draggedPokemonId);
+          setIsUpdating(false);
+          return;
+        }
+        
+        // Get current rating from TrueSkill store
+        const rating = getRating(draggedPokemonId.toString());
+        const conservativeEstimate = rating.mu - rating.sigma;
+        const confidence = Math.max(0, Math.min(100, 100 * (1 - (rating.sigma / 8.33))));
+        
+        // Create ranked Pokemon object
+        const newRankedPokemon: RankedPokemon = {
+          ...pokemonData,
+          score: conservativeEstimate,
+          confidence: confidence,
+          rating: rating,
+          mu: rating.mu,
+          sigma: rating.sigma,
+          count: 0
+        };
+        
+        console.log('🔥 [ENHANCED_MANUAL_REORDER] New Pokemon object:', newRankedPokemon.name, 'Score:', newRankedPokemon.score);
+        
+        // Insert at the specified position
+        newRankings = [...localRankings];
+        newRankings.splice(destinationIndex, 0, newRankedPokemon);
+        
+        console.log('🔥 [ENHANCED_MANUAL_REORDER] ✅ Inserted at index', destinationIndex, 'New length:', newRankings.length);
+        
+      } else {
+        // CASE B: Existing Pokemon reordering
+        console.log('🔥 [ENHANCED_MANUAL_REORDER] ✅ REORDERING EXISTING POKEMON');
+        
+        if (sourceIndex < 0 || sourceIndex >= localRankings.length) {
+          console.error('🔥 [ENHANCED_MANUAL_REORDER] ❌ Invalid source index:', sourceIndex);
+          setIsUpdating(false);
+          return;
+        }
+        
+        if (destinationIndex < 0 || destinationIndex >= localRankings.length) {
+          console.error('🔥 [ENHANCED_MANUAL_REORDER] ❌ Invalid destination index:', destinationIndex);
+          setIsUpdating(false);
+          return;
+        }
+        
+        // Use arrayMove for existing Pokemon reordering
+        newRankings = arrayMove(localRankings, sourceIndex, destinationIndex);
+        console.log('🔥 [ENHANCED_MANUAL_REORDER] ✅ Moved from', sourceIndex, 'to', destinationIndex);
+      }
+      
+      // Validate the integrity of the new rankings
       if (!validateRankingsIntegrity(newRankings)) {
-        console.error('🔥 [ENHANCED_MANUAL_REORDER] Rankings integrity check failed');
+        console.error('🔥 [ENHANCED_MANUAL_REORDER] ❌ Rankings integrity check failed');
         setIsUpdating(false);
         return;
       }
       
+      // Recalculate scores for all Pokemon
       const updatedRankings = recalculateScores(newRankings);
+      
+      // Update local state
       setLocalRankings(updatedRankings);
+      
+      // Notify parent component
       onRankingsUpdate(updatedRankings);
       
-      console.log('🔥 [ENHANCED_MANUAL_REORDER] ✅ Manual reorder completed');
+      console.log('🔥 [ENHANCED_MANUAL_REORDER] ✅ Manual reorder completed successfully');
       
     } catch (error) {
-      console.error('🔥 [ENHANCED_MANUAL_REORDER] Error during manual reorder:', error);
+      console.error('🔥 [ENHANCED_MANUAL_REORDER] ❌ Error during manual reorder:', error);
     } finally {
       setIsUpdating(false);
     }
-  }, [localRankings, validateRankingsIntegrity, recalculateScores, onRankingsUpdate]);
+  }, [localRankings, pokemonLookupMap, getRating, validateRankingsIntegrity, recalculateScores, onRankingsUpdate]);
 
   const displayRankings = useMemo(() => {
     return localRankings.map((pokemon) => ({
