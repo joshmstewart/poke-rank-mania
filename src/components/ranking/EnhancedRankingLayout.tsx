@@ -1,6 +1,5 @@
-
 import React, { useMemo, useState, useEffect } from "react";
-import { DndContext, DragOverlay, closestCorners, DragStartEvent, DragEndEvent } from '@dnd-kit/core';
+import { DndContext, DragOverlay, pointerWithin, DragStartEvent, DragEndEvent } from '@dnd-kit/core';
 import { Rating } from 'ts-trueskill';
 import { useTrueSkillStore } from "@/stores/trueskillStore";
 import { BattleType } from "@/hooks/battle/types";
@@ -96,25 +95,6 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
     handleManualReorder,
     handleLocalReorder
   );
-
-  // Helper function to refresh rankings with updated TrueSkill scores
-  const refreshRankingsWithUpdatedScores = (rankings: any[]) => {
-    const updatedRankings = rankings.map(pokemon => {
-      const rating = getRating(pokemon.id.toString());
-      const newScore = rating.mu - rating.sigma;
-      
-      return {
-        ...pokemon,
-        score: newScore,
-        rating: rating,
-        mu: rating.mu,
-        sigma: rating.sigma
-      };
-    });
-    
-    console.log(`🔄 [SCORE_REFRESH] Updated scores for ${updatedRankings.length} Pokemon`);
-    return updatedRankings;
-  };
 
   // CASCADING ADJUSTMENT HELPER FUNCTIONS
   const findIdenticalNeighborsAbove = (rankings: any[], startIndex: number, getRating: (id: string) => Rating) => {
@@ -228,7 +208,7 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
       return;
     }
     
-    // Handle manual reordering within rankings with detailed debug capture and immediate UI refresh
+    // Handle manual reordering within rankings with detailed debug capture
     if (!activeId.startsWith('available-') && !overId.startsWith('available-')) {
       const oldIndex = manualRankingOrder.findIndex(p => p.id.toString() === activeId);
       const newIndex = manualRankingOrder.findIndex(p => p.id.toString() === overId);
@@ -242,6 +222,7 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
         updatedManualOrder.splice(newIndex, 0, movedPokemon);
         
         console.log(`🔧 [ENHANCED_DEBUG_DRAG] ✅ Manual order updated: ${movedPokemon.name} moved to position ${newIndex + 1}`);
+        setManualRankingOrder(updatedManualOrder);
 
         // Initialize debug data collection
         const debugInfo: ScoreDebugInfo[] = [];
@@ -454,14 +435,7 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
         
         console.log(`🎯 [ENHANCED_DEBUG_SCORING] ✅ Updated ${movedPokemon.name} rating with detailed debug capture`);
         
-        // CRITICAL: Immediately refresh the UI with updated scores
-        console.log(`🔄 [UI_REFRESH] Refreshing UI with updated TrueSkill scores`);
-        const refreshedRankings = refreshRankingsWithUpdatedScores(updatedManualOrder);
-        setManualRankingOrder(refreshedRankings);
-        
-        console.log(`🔄 [UI_REFRESH] ✅ UI refreshed with ${refreshedRankings.length} updated rankings`);
-        
-        // Trigger background manual reorder for external state sync
+        // Trigger background manual reorder
         handleManualReorder(parseInt(activeId), oldIndex, newIndex);
         
         return;
@@ -499,27 +473,27 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
       </div>
 
       <div className="max-w-7xl mx-auto">
-        <DndContext
-          collisionDetection={closestCorners}
-          onDragStart={enhancedHandleDragStart}
-          onDragEnd={enhancedHandleDragEnd}
-        >
-          <div className="grid md:grid-cols-2 gap-4" style={{ height: 'calc(100vh - 12rem)' }}>
-            <Card className="shadow-lg border border-gray-200 overflow-hidden flex flex-col">
-              <EnhancedAvailablePokemonSection
-                enhancedAvailablePokemon={enhancedAvailablePokemon}
-                isLoading={isLoading}
-                selectedGeneration={selectedGeneration}
-                loadingType={loadingType}
-                currentPage={currentPage}
-                totalPages={totalPages}
-                loadingRef={loadingRef}
-                handlePageChange={handlePageChange}
-                getPageRange={getPageRange}
-              />
-            </Card>
+        <div className="grid md:grid-cols-2 gap-4" style={{ height: 'calc(100vh - 12rem)' }}>
+          <Card className="shadow-lg border border-gray-200 overflow-hidden flex flex-col">
+            <EnhancedAvailablePokemonSection
+              enhancedAvailablePokemon={enhancedAvailablePokemon}
+              isLoading={isLoading}
+              selectedGeneration={selectedGeneration}
+              loadingType={loadingType}
+              currentPage={currentPage}
+              totalPages={totalPages}
+              loadingRef={loadingRef}
+              handlePageChange={handlePageChange}
+              getPageRange={getPageRange}
+            />
+          </Card>
 
-            <Card className="shadow-lg border border-gray-200 overflow-hidden flex flex-col">
+          <Card className="shadow-lg border border-gray-200 overflow-hidden flex flex-col">
+            <DndContext
+              collisionDetection={pointerWithin}
+              onDragStart={enhancedHandleDragStart}
+              onDragEnd={enhancedHandleDragEnd}
+            >
               <RankingsSectionStable
                 displayRankings={manualRankingOrder}
                 onManualReorder={stableOnManualReorder}
@@ -527,22 +501,22 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
                 pendingRefinements={new Set()}
                 availablePokemon={enhancedAvailablePokemon}
               />
-            </Card>
-          </div>
-          
-          <DragOverlay>
-            {activeDraggedPokemon ? (
-              <div className="transform rotate-3 scale-105 opacity-90">
-                <PokemonCard
-                  pokemon={activeDraggedPokemon}
-                  compact={true}
-                  viewMode="grid"
-                  isDragging={true}
-                />
-              </div>
-            ) : null}
-          </DragOverlay>
-        </DndContext>
+              
+              <DragOverlay>
+                {activeDraggedPokemon ? (
+                  <div className="transform rotate-3 scale-105 opacity-90">
+                    <PokemonCard
+                      pokemon={activeDraggedPokemon}
+                      compact={true}
+                      viewMode="grid"
+                      isDragging={true}
+                    />
+                  </div>
+                ) : null}
+              </DragOverlay>
+            </DndContext>
+          </Card>
+        </div>
       </div>
       
       <ScoreAdjustmentDebugModal

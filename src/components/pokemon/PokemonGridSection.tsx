@@ -42,11 +42,7 @@ export const PokemonGridSection: React.FC<PokemonGridSectionProps> = ({
         
         if (isExpanded) {
           sections.push(
-            <div 
-              key={`pokemon-grid-${currentGeneration}`} 
-              className="grid gap-4" 
-              style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}
-            >
+            <div key={`pokemon-grid-${currentGeneration}`} className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
               {currentPokemonBatch.map((pokemon, index) => (
                 <DraggablePokemonMilestoneCard
                   key={`pokemon-${pokemon.id}-${index}`}
@@ -54,7 +50,7 @@ export const PokemonGridSection: React.FC<PokemonGridSectionProps> = ({
                   index={index}
                   showRank={false}
                   isDraggable={true}
-                  isAvailable={!isRankingArea}
+                  isAvailable={true}
                 />
               ))}
             </div>
@@ -65,25 +61,8 @@ export const PokemonGridSection: React.FC<PokemonGridSectionProps> = ({
     };
 
     items.forEach((item, index) => {
-      if (item.type === 'generation-header') {
+      if (item.type === 'header') {
         // Flush any pending Pokemon before showing header
-        flushPokemonBatch();
-        
-        currentGeneration = item.generationId;
-        sections.push(
-          <GenerationHeader
-            key={`gen-${item.generationId}`}
-            generationId={item.generationId}
-            name={item.generationName}
-            region={item.region}
-            games={item.games}
-            viewMode={viewMode}
-            isExpanded={isGenerationExpanded ? isGenerationExpanded(item.generationId) : true}
-            onToggle={() => onToggleGeneration?.(item.generationId)}
-          />
-        );
-      } else if (item.type === 'header') {
-        // Handle legacy header format
         flushPokemonBatch();
         
         currentGeneration = item.generationId;
@@ -101,9 +80,6 @@ export const PokemonGridSection: React.FC<PokemonGridSectionProps> = ({
         );
       } else if (item.type === 'pokemon' && item.data) {
         currentPokemonBatch.push(item.data);
-      } else if (item.id && item.name) {
-        // Direct pokemon object
-        currentPokemonBatch.push(item);
       }
     });
 
