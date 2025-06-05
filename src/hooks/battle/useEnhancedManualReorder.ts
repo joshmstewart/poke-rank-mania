@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { DragEndEvent } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
@@ -55,6 +54,104 @@ export const useEnhancedManualReorder = (
     
     return true;
   }, []);
+
+  const applyManualScoreAdjustment = useCallback((
+    draggedPokemon: RankedPokemon, 
+    newIndex: number,
+    rankings: RankedPokemon[]
+  ) => {
+    console.log('🔥 [MANUAL_SCORE_ADJUSTMENT] ===== APPLYING MANUAL SCORE ADJUSTMENT =====');
+    
+    // Get current rating for the dragged Pokemon
+    const currentRating = getRating(draggedPokemon.id.toString());
+    console.log(`🔥 [MANUAL_SCORE_ADJUSTMENT] Current rating - μ=${currentRating.mu.toFixed(5)}, σ=${currentRating.sigma.toFixed(5)}`);
+    
+    // Get Pokemon above and below the new position
+    const abovePokemon = newIndex > 0 ? rankings[newIndex - 1] : null;
+    const belowPokemon = newIndex < rankings.length - 1 ? rankings[newIndex + 1] : null;
+    
+    // Step A: Detailed Logging
+    console.log(`[DRAG-END] Dragged Pokémon: ${draggedPokemon.name} (μ=${currentRating.mu.toFixed(5)}, σ=${currentRating.sigma.toFixed(5)}, displayedScore=${(currentRating.mu - currentRating.sigma).toFixed(5)})`);
+    
+    if (abovePokemon) {
+      const aboveRating = getRating(abovePokemon.id.toString());
+      console.log(`[DRAG-END] Above Pokémon: ${abovePokemon.name} (μ=${aboveRating.mu.toFixed(5)}, σ=${aboveRating.sigma.toFixed(5)}, displayedScore=${(aboveRating.mu - aboveRating.sigma).toFixed(5)})`);
+    } else {
+      console.log(`[DRAG-END] Above Pokémon: None (top position)`);
+    }
+    
+    if (belowPokemon) {
+      const belowRating = getRating(belowPokemon.id.toString());
+      console.log(`[DRAG-END] Below Pokémon: ${belowPokemon.name} (μ=${belowRating.mu.toFixed(5)}, σ=${belowRating.sigma.toFixed(5)}, displayedScore=${(belowRating.mu - belowRating.sigma).toFixed(5)})`);
+    } else {
+      console.log(`[DRAG-END] Below Pokémon: None (bottom position)`);
+    }
+    
+    // Standard Drag Logic - Only when above and below have different scores
+    if (abovePokemon && belowPokemon) {
+      const aboveRating = getRating(abovePokemon.id.toString());
+      const belowRating = getRating(belowPokemon.id.toString());
+      const aboveScore = aboveRating.mu - aboveRating.sigma;
+      const belowScore = belowRating.mu - belowRating.sigma;
+      
+      console.log(`🔥 [MANUAL_SCORE_ADJUSTMENT] Above score: ${aboveScore.toFixed(5)}, Below score: ${belowScore.toFixed(5)}`);
+      
+      // Check if this is a standard drag scenario (different scores above and below)
+      if (Math.abs(aboveScore - belowScore) > 0.00001) { // Use small epsilon for floating point comparison
+        console.log(`🔥 [MANUAL_SCORE_ADJUSTMENT] Standard drag scenario detected - adjusting score`);
+        
+        // Calculate target score as midpoint between above and below
+        const targetScore = (aboveScore + belowScore) / 2;
+        console.log(`🔥 [MANUAL_SCORE_ADJUSTMENT] Target score: ${targetScore.toFixed(5)}`);
+        
+        // Adjust mu to achieve the target score while keeping sigma unchanged
+        const newMu = targetScore + currentRating.sigma;
+        const newRating = new Rating(newMu, currentRating.sigma);
+        
+        console.log(`🔥 [MANUAL_SCORE_ADJUSTMENT] New rating - μ=${newMu.toFixed(5)}, σ=${currentRating.sigma.toFixed(5)}`);
+        console.log(`🔥 [MANUAL_SCORE_ADJUSTMENT] New displayed score: ${(newMu - currentRating.sigma).toFixed(5)}`);
+        
+        // Update the rating in the store
+        updateRating(draggedPokemon.id.toString(), newRating);
+        
+        console.log(`🔥 [MANUAL_SCORE_ADJUSTMENT] ✅ Score adjustment completed`);
+      } else {
+        console.log(`🔥 [MANUAL_SCORE_ADJUSTMENT] Tied scores detected - no adjustment for now (Step 1 only handles standard drag)`);
+      }
+    } else if (abovePokemon && !belowPokemon) {
+      // Moved to bottom position
+      const aboveRating = getRating(abovePokemon.id.toString());
+      const aboveScore = aboveRating.mu - aboveRating.sigma;
+      
+      console.log(`🔥 [MANUAL_SCORE_ADJUSTMENT] Moved to bottom - above score: ${aboveScore.toFixed(5)}`);
+      
+      // Set score slightly below the Pokemon above
+      const targetScore = aboveScore - 1.0; // Subtract 1 point
+      const newMu = targetScore + currentRating.sigma;
+      const newRating = new Rating(newMu, currentRating.sigma);
+      
+      console.log(`🔥 [MANUAL_SCORE_ADJUSTMENT] Bottom position - new score: ${targetScore.toFixed(5)}`);
+      updateRating(draggedPokemon.id.toString(), newRating);
+      
+    } else if (!abovePokemon && belowPokemon) {
+      // Moved to top position
+      const belowRating = getRating(belowPokemon.id.toString());
+      const belowScore = belowRating.mu - belowRating.sigma;
+      
+      console.log(`🔥 [MANUAL_SCORE_ADJUSTMENT] Moved to top - below score: ${belowScore.toFixed(5)}`);
+      
+      // Set score slightly above the Pokemon below
+      const targetScore = belowScore + 1.0; // Add 1 point
+      const newMu = targetScore + currentRating.sigma;
+      const newRating = new Rating(newMu, currentRating.sigma);
+      
+      console.log(`🔥 [MANUAL_SCORE_ADJUSTMENT] Top position - new score: ${targetScore.toFixed(5)}`);
+      updateRating(draggedPokemon.id.toString(), newRating);
+      
+    } else {
+      console.log(`🔥 [MANUAL_SCORE_ADJUSTMENT] Single Pokemon in list - no adjustment needed`);
+    }
+  }, [getRating, updateRating]);
 
   const applyTrueSkillUpdates = useCallback((
     winnerPokemon: RankedPokemon, 
@@ -168,31 +265,10 @@ export const useEnhancedManualReorder = (
         return;
       }
       
-      // Apply TrueSkill updates for affected Pokemon
-      const rankDifference = Math.abs(newIndex - oldIndex);
-      if (rankDifference > 0 && addImpliedBattle) {
-        if (newIndex < oldIndex) {
-          // Moved up - this Pokemon beats the ones it moved past
-          for (let i = newIndex; i < oldIndex; i++) {
-            const beatenPokemon = newRankings[i + 1];
-            if (beatenPokemon && beatenPokemon.id !== movedPokemon.id) {
-              applyTrueSkillUpdates(movedPokemon, beatenPokemon, 1);
-              addImpliedBattle(movedPokemon.id, beatenPokemon.id);
-            }
-          }
-        } else {
-          // Moved down - the ones it moved past beat this Pokemon
-          for (let i = oldIndex + 1; i <= newIndex; i++) {
-            const winnerPokemon = newRankings[i - 1];
-            if (winnerPokemon && winnerPokemon.id !== movedPokemon.id) {
-              applyTrueSkillUpdates(winnerPokemon, movedPokemon, 1);
-              addImpliedBattle(winnerPokemon.id, movedPokemon.id);
-            }
-          }
-        }
-      }
+      // Apply manual score adjustment instead of TrueSkill battles
+      applyManualScoreAdjustment(movedPokemon, newIndex, newRankings);
       
-      // Recalculate scores with updated TrueSkill ratings
+      // Recalculate scores with updated ratings
       const updatedRankings = recalculateScores(newRankings);
       
       console.log('🔥 [ENHANCED_REORDER_DRAG] Updated rankings calculated');
@@ -210,9 +286,9 @@ export const useEnhancedManualReorder = (
     } finally {
       setIsUpdating(false);
     }
-  }, [localRankings, validateRankingsIntegrity, applyTrueSkillUpdates, addImpliedBattle, recalculateScores, onRankingsUpdate]);
+  }, [localRankings, validateRankingsIntegrity, applyManualScoreAdjustment, recalculateScores, onRankingsUpdate]);
 
-  // FIXED: Enhanced manual reorder function that handles both new additions and reordering
+  // Enhanced manual reorder function that handles both new additions and reordering
   const handleEnhancedManualReorder = useCallback((
     draggedPokemonId: number,
     sourceIndex: number,
@@ -265,6 +341,9 @@ export const useEnhancedManualReorder = (
         
         console.log('🔥 [ENHANCED_MANUAL_REORDER] ✅ Inserted at index', destinationIndex, 'New length:', newRankings.length);
         
+        // Apply manual score adjustment for new Pokemon
+        applyManualScoreAdjustment(newRankedPokemon, destinationIndex, newRankings);
+        
       } else {
         // CASE B: Existing Pokemon reordering
         console.log('🔥 [ENHANCED_MANUAL_REORDER] ✅ REORDERING EXISTING POKEMON');
@@ -283,7 +362,12 @@ export const useEnhancedManualReorder = (
         
         // Use arrayMove for existing Pokemon reordering
         newRankings = arrayMove(localRankings, sourceIndex, destinationIndex);
+        const movedPokemon = newRankings[destinationIndex];
+        
         console.log('🔥 [ENHANCED_MANUAL_REORDER] ✅ Moved from', sourceIndex, 'to', destinationIndex);
+        
+        // Apply manual score adjustment for reordered Pokemon
+        applyManualScoreAdjustment(movedPokemon, destinationIndex, newRankings);
       }
       
       // Validate the integrity of the new rankings
@@ -309,7 +393,7 @@ export const useEnhancedManualReorder = (
     } finally {
       setIsUpdating(false);
     }
-  }, [localRankings, pokemonLookupMap, getRating, validateRankingsIntegrity, recalculateScores, onRankingsUpdate]);
+  }, [localRankings, pokemonLookupMap, getRating, validateRankingsIntegrity, applyManualScoreAdjustment, recalculateScores, onRankingsUpdate]);
 
   const displayRankings = useMemo(() => {
     return localRankings.map((pokemon) => ({
