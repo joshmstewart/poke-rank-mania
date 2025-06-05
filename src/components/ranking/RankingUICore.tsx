@@ -1,14 +1,12 @@
 
 import React from "react";
-import { DndContext, closestCorners, useSensor, useSensors, MouseSensor, TouchSensor, DragOverlay } from '@dnd-kit/core';
 import { useEnhancedManualReorder } from "@/hooks/battle/useEnhancedManualReorder";
 import { useEnhancedRankingDragDrop } from "@/hooks/ranking/useEnhancedRankingDragDrop";
-import { useReRankingTriggerSafe } from "@/hooks/ranking/useReRankingTriggerSafe";
+import { useReRankingTrigger } from "@/hooks/ranking/useReRankingTrigger";
 import { useRankingReset } from "./RankingResetHandler";
 import { EnhancedRankingLayout } from "./EnhancedRankingLayout";
 import { BattleType } from "@/hooks/battle/types";
 import { LoadingType } from "@/hooks/pokemon/types";
-import OptimizedDraggableCard from "@/components/battle/OptimizedDraggableCard";
 import PersistentLogViewer from "@/components/debug/PersistentLogViewer";
 
 interface RankingUICoreProps {
@@ -35,6 +33,8 @@ interface RankingUICoreProps {
   onReset: () => void;
 }
 
+// EXPLICIT NOTE: "Implied Battles" logic has been permanently removed.
+// Manual drag-and-drop explicitly adjusts mu/sigma directly instead.
 export const RankingUICore: React.FC<RankingUICoreProps> = React.memo(({
   isLoading,
   availablePokemon,
@@ -63,6 +63,7 @@ export const RankingUICore: React.FC<RankingUICoreProps> = React.memo(({
   console.log(`🚨🚨🚨 [RANKING_UI_CORE_DEBUG] enhancedAvailablePokemon count: ${enhancedAvailablePokemon.length}`);
 
   // Enhanced manual reorder with manual order preservation and direct TrueSkill updates
+  // EXPLICIT NOTE: Removed addImpliedBattle parameter - no longer using implied battles
   const { handleEnhancedManualReorder } = useEnhancedManualReorder(
     localRankings,
     updateLocalRankings,
@@ -72,9 +73,19 @@ export const RankingUICore: React.FC<RankingUICoreProps> = React.memo(({
 
   console.log(`🚨🚨🚨 [RANKING_UI_CORE_DEBUG] handleEnhancedManualReorder created:`, !!handleEnhancedManualReorder);
 
-  // CRITICAL FIX: Always call the safe re-ranking trigger hook
-  const { triggerReRanking } = useReRankingTriggerSafe(localRankings, updateLocalRankings);
-  console.log(`🚨🚨🚨 [RANKING_UI_CORE_DEBUG] triggerReRanking created successfully:`, !!triggerReRanking);
+  // Re-ranking trigger for already-ranked Pokemon with error handling
+  let triggerReRanking;
+  try {
+    const reRankingResult = useReRankingTrigger(localRankings, updateLocalRankings);
+    triggerReRanking = reRankingResult.triggerReRanking;
+    console.log(`🚨🚨🚨 [RANKING_UI_CORE_DEBUG] triggerReRanking created successfully:`, !!triggerReRanking);
+  } catch (error) {
+    console.error('[RANKING_UI_CORE] Error initializing re-ranking trigger:', error);
+    triggerReRanking = async (pokemonId: number) => {
+      console.warn(`[RANKING_UI_CORE] Re-ranking unavailable for Pokemon ${pokemonId} due to store error`);
+    };
+    console.log(`🚨🚨🚨 [RANKING_UI_CORE_DEBUG] triggerReRanking fallback created:`, !!triggerReRanking);
+  }
 
   // Use the extracted reset functionality
   const { handleComprehensiveReset } = useRankingReset({
@@ -108,62 +119,10 @@ export const RankingUICore: React.FC<RankingUICoreProps> = React.memo(({
     updateLocalRankings(newRankings);
   };
 
-  // CRITICAL FIX: Use closestCorners for better individual card targeting
-  const sensors = useSensors(
-    useSensor(MouseSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    }),
-    useSensor(TouchSensor, {
-      activationConstraint: {
-        delay: 250,
-        tolerance: 8,
-      },
-    })
-  );
-
-  // Enhanced drag start handler with better logging
-  const enhancedHandleDragStart = React.useCallback((event: any) => {
-    console.log(`🚀 [ENHANCED_DRAG_START] Active ID: ${event.active.id}`);
-    console.log(`🚀 [ENHANCED_DRAG_START] Active data:`, event.active.data?.current);
-    handleDragStart(event);
-  }, [handleDragStart]);
-
-  // Enhanced drag end handler with better logging
-  const enhancedHandleDragEnd = React.useCallback((event: any) => {
-    console.log(`🚀 [ENHANCED_DRAG_END] Active: ${event.active.id}, Over: ${event.over?.id || 'NULL'}`);
-    console.log(`🚀 [ENHANCED_DRAG_END] Over data:`, event.over?.data?.current);
-    
-    if (event.over) {
-      console.log(`🚀 [ENHANCED_DRAG_END] Valid drop detected - calling handleDragEnd`);
-    } else {
-      console.log(`🚀 [ENHANCED_DRAG_END] No valid drop target`);
-    }
-    
-    handleDragEnd(event);
-  }, [handleDragEnd]);
-
-  // CRITICAL FIX: Determine context from dragged item ID
-  const getDraggedItemContext = React.useCallback((draggedPokemon: any): 'available' | 'ranked' => {
-    if (!draggedPokemon) return 'ranked';
-    
-    // Check if this Pokemon exists in enhancedAvailablePokemon
-    const isInAvailable = enhancedAvailablePokemon.some(p => p.id === draggedPokemon.id);
-    console.log(`🔍 [CONTEXT_DEBUG] Pokemon ${draggedPokemon.name} found in available: ${isInAvailable}`);
-    
-    return isInAvailable ? 'available' : 'ranked';
-  }, [enhancedAvailablePokemon]);
-
-  console.log(`🚨🚨🚨 [RANKING_UI_CORE_DEBUG] About to render EnhancedRankingLayout with DndContext`);
+  console.log(`🚨🚨🚨 [RANKING_UI_CORE_DEBUG] About to render EnhancedRankingLayout`);
 
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCorners}
-      onDragStart={enhancedHandleDragStart}
-      onDragEnd={enhancedHandleDragEnd}
-    >
+    <>
       <EnhancedRankingLayout
         isLoading={isLoading}
         availablePokemon={availablePokemon}
@@ -183,28 +142,14 @@ export const RankingUICore: React.FC<RankingUICoreProps> = React.memo(({
         onGenerationChange={onGenerationChange}
         handleComprehensiveReset={handleComprehensiveReset}
         setBattleType={setBattleType}
-        handleDragStart={enhancedHandleDragStart}
-        handleDragEnd={enhancedHandleDragEnd}
+        handleDragStart={handleDragStart}
+        handleDragEnd={handleDragEnd}
         handleManualReorder={handleManualReorder}
         handleLocalReorder={handleLocalReorder}
       />
       
-      <DragOverlay>
-        {activeDraggedPokemon ? (
-          <div className="transform rotate-3 scale-105 opacity-90">
-            <OptimizedDraggableCard
-              pokemon={activeDraggedPokemon}
-              index={0}
-              showRank={false}
-              isDraggable={false}
-              context={getDraggedItemContext(activeDraggedPokemon)}
-            />
-          </div>
-        ) : null}
-      </DragOverlay>
-      
       <PersistentLogViewer />
-    </DndContext>
+    </>
   );
 }, (prevProps, nextProps) => {
   // Custom comparison to prevent unnecessary re-renders

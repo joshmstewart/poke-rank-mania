@@ -18,27 +18,8 @@ export const usePokemonData = () => {
     loadingType: LoadingType
   ) => {
     try {
-      // CRITICAL FIX: Validate context data exists and is array with comprehensive checks
-      if (!contextPokemon) {
-        console.warn('[POKEMON_DATA] contextPokemon is null/undefined');
-        return {
-          availablePokemon: [],
-          rankedPokemon: [],
-          totalPages: 0
-        };
-      }
-      
-      if (!Array.isArray(contextPokemon)) {
-        console.warn('[POKEMON_DATA] contextPokemon is not an array:', typeof contextPokemon);
-        return {
-          availablePokemon: [],
-          rankedPokemon: [],
-          totalPages: 0
-        };
-      }
-      
-      if (contextPokemon.length === 0) {
-        console.warn('[POKEMON_DATA] contextPokemon is empty array');
+      // Validate context data exists and is array
+      if (!contextPokemon || !Array.isArray(contextPokemon) || contextPokemon.length === 0) {
         return {
           availablePokemon: [],
           rankedPokemon: [],
@@ -76,9 +57,8 @@ export const usePokemonData = () => {
         filteredByGeneration = formattedPokemon.filter(p => p.id >= min && p.id <= max);
       }
       
-      // CRITICAL FIX: Process TrueSkill rankings with comprehensive safety checks
-      const safeLocalRankings = Array.isArray(localRankings) ? localRankings : [];
-      const validRankings = safeLocalRankings.filter(ranking => {
+      // Process TrueSkill rankings
+      const validRankings = (localRankings || []).filter(ranking => {
         return ranking && typeof ranking.id === 'number' && ranking.id > 0;
       });
       
@@ -112,7 +92,7 @@ export const usePokemonData = () => {
       };
       
     } catch (error) {
-      console.error('[POKEMON_DATA] Error in data processing:', error);
+      console.error('Error in data processing:', error);
       return {
         availablePokemon: [],
         rankedPokemon: [],
