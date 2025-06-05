@@ -42,7 +42,7 @@ export const useTrueSkillSync = (preventAutoResorting: boolean = false) => {
           winRate: 0
         };
       })
-      .filter((pokemon): pokemon is RankedPokemon => pokemon !== null);
+      .filter(pokemon => pokemon !== null) as RankedPokemon[];
 
     console.log('🔄🔄🔄 [TRUESKILL_SYNC_RANKING_GENERATION] Created', rankedPokemon.length, 'ranked Pokemon');
 
