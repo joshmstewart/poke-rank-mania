@@ -54,7 +54,7 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
       }
     };
 
-    console.log(`🎯 [DRAGGABLE_INIT] Available Pokemon ${pokemon.name} being initialized with useDraggable:`, sortableId);
+    console.log(`[DRAGGABLE_INIT] Initialized draggable: ${sortableId}`);
     console.log(`🎯 [DRAGGABLE_INIT] Draggable config:`, draggableConfig);
     
     const draggableResult = useDraggable(draggableConfig);
@@ -88,7 +88,7 @@ const OptimizedDraggableCard: React.FC<OptimizedDraggableCardProps> = memo(({
       }
     };
 
-    console.log(`🎯 [DRAGGABLE_INIT] Ranking Pokemon initialized with useSortable:`, sortableId);
+    console.log(`[DRAGGABLE_INIT] Initialized draggable: ${sortableId}`);
     console.log(`🎯 [DRAGGABLE_INIT] Sortable config:`, sortableConfig);
     const sortableResult = useSortable(sortableConfig);
     dragAttributes = sortableResult.attributes;
