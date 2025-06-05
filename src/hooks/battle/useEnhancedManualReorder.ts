@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { DragEndEvent } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
@@ -62,6 +63,9 @@ export const useEnhancedManualReorder = (
   ) => {
     console.log('🔥 [MANUAL_SCORE_ADJUSTMENT] ===== APPLYING MANUAL SCORE ADJUSTMENT =====');
     
+    // Constants
+    const MIN_SIGMA = 1.0;
+    
     // Get current rating for the dragged Pokemon
     const currentRating = getRating(draggedPokemon.id.toString());
     console.log(`🔥 [MANUAL_SCORE_ADJUSTMENT] Current rating - μ=${currentRating.mu.toFixed(5)}, σ=${currentRating.sigma.toFixed(5)}`);
@@ -100,16 +104,23 @@ export const useEnhancedManualReorder = (
       if (Math.abs(aboveScore - belowScore) > 0.00001) { // Use small epsilon for floating point comparison
         console.log(`🔥 [MANUAL_SCORE_ADJUSTMENT] Standard drag scenario detected - adjusting score`);
         
-        // Calculate target score as midpoint between above and below
-        const targetScore = (aboveScore + belowScore) / 2;
-        console.log(`🔥 [MANUAL_SCORE_ADJUSTMENT] Target score: ${targetScore.toFixed(5)}`);
+        // Step 1: Calculate the exact midpoint displayed score
+        const targetDisplayedScore = (aboveScore + belowScore) / 2;
+        console.log(`🔥 [MANUAL_SCORE_ADJUSTMENT] Target displayed score: ${targetDisplayedScore.toFixed(5)}`);
         
-        // Adjust mu to achieve the target score while keeping sigma unchanged
-        const newMu = targetScore + currentRating.sigma;
-        const newRating = new Rating(newMu, currentRating.sigma);
+        // Step 2: Explicitly reduce sigma (σ) to indicate manual confidence
+        const newSigma = Math.max(currentRating.sigma * 0.8, MIN_SIGMA);
+        console.log(`🔥 [MANUAL_SCORE_ADJUSTMENT] Reducing sigma from ${currentRating.sigma.toFixed(5)} to ${newSigma.toFixed(5)}`);
         
-        console.log(`🔥 [MANUAL_SCORE_ADJUSTMENT] New rating - μ=${newMu.toFixed(5)}, σ=${currentRating.sigma.toFixed(5)}`);
-        console.log(`🔥 [MANUAL_SCORE_ADJUSTMENT] New displayed score: ${(newMu - currentRating.sigma).toFixed(5)}`);
+        // Step 3: Explicitly set mu (μ) based on the new sigma
+        const newMu = targetDisplayedScore + newSigma;
+        console.log(`🔥 [MANUAL_SCORE_ADJUSTMENT] New μ calculation: ${targetDisplayedScore.toFixed(5)} + ${newSigma.toFixed(5)} = ${newMu.toFixed(5)}`);
+        
+        const newRating = new Rating(newMu, newSigma);
+        
+        // Verify the final displayed score
+        const finalDisplayedScore = newMu - newSigma;
+        console.log(`🔥 [MANUAL_SCORE_ADJUSTMENT] Final displayed score: ${finalDisplayedScore.toFixed(5)} (should equal target: ${targetDisplayedScore.toFixed(5)})`);
         
         // Update the rating in the store
         updateRating(draggedPokemon.id.toString(), newRating);
@@ -125,12 +136,19 @@ export const useEnhancedManualReorder = (
       
       console.log(`🔥 [MANUAL_SCORE_ADJUSTMENT] Moved to bottom - above score: ${aboveScore.toFixed(5)}`);
       
-      // Set score slightly below the Pokemon above
-      const targetScore = aboveScore - 1.0; // Subtract 1 point
-      const newMu = targetScore + currentRating.sigma;
-      const newRating = new Rating(newMu, currentRating.sigma);
+      // Step 1: Calculate target score (slightly below the Pokemon above)
+      const targetDisplayedScore = aboveScore - 1.0;
+      console.log(`🔥 [MANUAL_SCORE_ADJUSTMENT] Target displayed score: ${targetDisplayedScore.toFixed(5)}`);
       
-      console.log(`🔥 [MANUAL_SCORE_ADJUSTMENT] Bottom position - new score: ${targetScore.toFixed(5)}`);
+      // Step 2: Explicitly reduce sigma (σ) to indicate manual confidence
+      const newSigma = Math.max(currentRating.sigma * 0.8, MIN_SIGMA);
+      console.log(`🔥 [MANUAL_SCORE_ADJUSTMENT] Reducing sigma from ${currentRating.sigma.toFixed(5)} to ${newSigma.toFixed(5)}`);
+      
+      // Step 3: Explicitly set mu (μ) based on the new sigma
+      const newMu = targetDisplayedScore + newSigma;
+      console.log(`🔥 [MANUAL_SCORE_ADJUSTMENT] New μ calculation: ${targetDisplayedScore.toFixed(5)} + ${newSigma.toFixed(5)} = ${newMu.toFixed(5)}`);
+      
+      const newRating = new Rating(newMu, newSigma);
       updateRating(draggedPokemon.id.toString(), newRating);
       
     } else if (!abovePokemon && belowPokemon) {
@@ -140,12 +158,19 @@ export const useEnhancedManualReorder = (
       
       console.log(`🔥 [MANUAL_SCORE_ADJUSTMENT] Moved to top - below score: ${belowScore.toFixed(5)}`);
       
-      // Set score slightly above the Pokemon below
-      const targetScore = belowScore + 1.0; // Add 1 point
-      const newMu = targetScore + currentRating.sigma;
-      const newRating = new Rating(newMu, currentRating.sigma);
+      // Step 1: Calculate target score (slightly above the Pokemon below)
+      const targetDisplayedScore = belowScore + 1.0;
+      console.log(`🔥 [MANUAL_SCORE_ADJUSTMENT] Target displayed score: ${targetDisplayedScore.toFixed(5)}`);
       
-      console.log(`🔥 [MANUAL_SCORE_ADJUSTMENT] Top position - new score: ${targetScore.toFixed(5)}`);
+      // Step 2: Explicitly reduce sigma (σ) to indicate manual confidence
+      const newSigma = Math.max(currentRating.sigma * 0.8, MIN_SIGMA);
+      console.log(`🔥 [MANUAL_SCORE_ADJUSTMENT] Reducing sigma from ${currentRating.sigma.toFixed(5)} to ${newSigma.toFixed(5)}`);
+      
+      // Step 3: Explicitly set mu (μ) based on the new sigma
+      const newMu = targetDisplayedScore + newSigma;
+      console.log(`🔥 [MANUAL_SCORE_ADJUSTMENT] New μ calculation: ${targetDisplayedScore.toFixed(5)} + ${newSigma.toFixed(5)} = ${newMu.toFixed(5)}`);
+      
+      const newRating = new Rating(newMu, newSigma);
       updateRating(draggedPokemon.id.toString(), newRating);
       
     } else {
