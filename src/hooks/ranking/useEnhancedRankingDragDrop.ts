@@ -14,18 +14,23 @@ export const useEnhancedRankingDragDrop = (
   const [activeDraggedPokemon, setActiveDraggedPokemon] = useState<any>(null);
   const { updateRating } = useTrueSkillStore();
 
-  const parseId = (id: string): number | null => {
+  // FIXED: Enhanced parseId to handle all ID patterns including empty slots
+  const parseId = (id: string): { pokemonId: number | null; positionIndex: number | null } => {
     if (id.startsWith('available-')) {
-      return parseInt(id.replace('available-', ''), 10);
-    }
-    if (id.startsWith('ranking-')) {
-      return parseInt(id.replace('ranking-', ''), 10);
+      const pokemonId = parseInt(id.replace('available-', ''), 10);
+      return { pokemonId: isNaN(pokemonId) ? null : pokemonId, positionIndex: null };
     }
     if (id.startsWith('ranking-position-')) {
-      return parseInt(id.replace('ranking-position-', ''), 10);
+      const positionIndex = parseInt(id.replace('ranking-position-', ''), 10);
+      return { pokemonId: null, positionIndex: isNaN(positionIndex) ? null : positionIndex };
     }
+    if (id.startsWith('ranking-')) {
+      const pokemonId = parseInt(id.replace('ranking-', ''), 10);
+      return { pokemonId: isNaN(pokemonId) ? null : pokemonId, positionIndex: null };
+    }
+    // Legacy numeric IDs
     const numeric = parseInt(id, 10);
-    return isNaN(numeric) ? null : numeric;
+    return { pokemonId: isNaN(numeric) ? null : numeric, positionIndex: null };
   };
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
@@ -35,13 +40,13 @@ export const useEnhancedRankingDragDrop = (
     let draggedPokemon = null;
     
     if (activeId.startsWith('available-')) {
-      const pokemonId = parseId(activeId);
+      const { pokemonId } = parseId(activeId);
       if (pokemonId !== null) {
         draggedPokemon = enhancedAvailablePokemon.find(p => p.id === pokemonId);
         console.log(`🚀 [ENHANCED_DRAG_START] Dragging available: ${draggedPokemon?.name} (ID: ${pokemonId})`);
       }
     } else {
-      const pokemonId = parseId(activeId);
+      const { pokemonId } = parseId(activeId);
       if (pokemonId !== null) {
         draggedPokemon = localRankings.find(p => p.id === pokemonId);
         console.log(`🚀 [ENHANCED_DRAG_START] Dragging ranked: ${draggedPokemon?.name} (ID: ${pokemonId})`);
@@ -68,17 +73,16 @@ export const useEnhancedRankingDragDrop = (
 
     // Handle drag from available to rankings
     if (activeId.startsWith('available-')) {
-      const pokemonId = parseId(activeId);
+      const { pokemonId } = parseId(activeId);
       if (pokemonId === null) return;
 
       console.log(`🚀 [ENHANCED_DRAG_END] Available Pokemon ${pokemonId} dragged to ${overId}`);
       
-      // FIXED: Accept both filled slots (ranking-X) and empty slots (ranking-position-X)
+      // FIXED: Accept any ranking-related drop target
       const isValidDropTarget = (
         overId === 'rankings-drop-zone' ||
         overId === 'rankings-grid-drop-zone' ||
         overId.startsWith('ranking-') ||
-        overId.startsWith('ranking-position-') ||
         over.data?.current?.type === 'ranking-position' ||
         over.data?.current?.type === 'ranked-pokemon' ||
         over.data?.current?.type === 'rankings-container' ||
@@ -108,25 +112,24 @@ export const useEnhancedRankingDragDrop = (
           const defaultRating = new Rating(25.0, 8.333);
           updateRating(pokemonId.toString(), defaultRating);
           
-          // FIXED: Improved insertion position logic with proper ID handling
+          // FIXED: Enhanced insertion position logic with proper ID handling
           let insertionPosition = localRankings.length;
           
-          if (overId.startsWith('ranking-') && !overId.startsWith('ranking-position-')) {
-            // Dropped on a filled slot - get the Pokemon ID
-            const targetPokemonId = parseId(overId);
-            if (targetPokemonId !== null) {
-              const targetIndex = localRankings.findIndex(p => p.id === targetPokemonId);
-              if (targetIndex !== -1) {
-                insertionPosition = targetIndex;
-                console.log(`🔥 [ADD_NEW_POKEMON] Inserting before Pokemon ${targetPokemonId} at position ${targetIndex}`);
-              }
+          // Parse the drop target ID
+          const { pokemonId: targetPokemonId, positionIndex } = parseId(overId);
+          
+          if (targetPokemonId !== null) {
+            // Dropped on a filled slot - insert before this Pokemon
+            const targetIndex = localRankings.findIndex(p => p.id === targetPokemonId);
+            if (targetIndex !== -1) {
+              insertionPosition = targetIndex;
+              console.log(`🔥 [ADD_NEW_POKEMON] Inserting before Pokemon ${targetPokemonId} at position ${targetIndex}`);
             }
-          } else if (overId.startsWith('ranking-position-')) {
-            // Dropped on an empty slot - get the position index
-            const slotIndex = parseId(overId);
-            if (slotIndex !== null && slotIndex >= 0 && slotIndex <= localRankings.length) {
-              insertionPosition = slotIndex;
-              console.log(`🔥 [ADD_NEW_POKEMON] Inserting at empty slot position ${slotIndex}`);
+          } else if (positionIndex !== null) {
+            // Dropped on an empty slot - use the position index
+            if (positionIndex >= 0 && positionIndex <= localRankings.length) {
+              insertionPosition = positionIndex;
+              console.log(`🔥 [ADD_NEW_POKEMON] Inserting at empty slot position ${positionIndex}`);
             }
           }
           
@@ -147,14 +150,14 @@ export const useEnhancedRankingDragDrop = (
           }
         }
       } else {
-        console.log(`🚀 [ENHANCED_DRAG_END] Invalid drop target`);
+        console.log(`🚀 [ENHANCED_DRAG_END] Invalid drop target - ignoring`);
       }
       return;
     }
 
     // Handle reordering within rankings
     if (!activeId.startsWith('available-') && !overId.startsWith('available-')) {
-      const activePokemonId = parseId(activeId);
+      const { pokemonId: activePokemonId } = parseId(activeId);
       
       if (activePokemonId === null) {
         console.log(`🚀 [ENHANCED_DRAG_END] Invalid active Pokemon ID for reorder`);
@@ -165,17 +168,15 @@ export const useEnhancedRankingDragDrop = (
       let newIndex = -1;
       
       // FIXED: Handle both Pokemon-based drops and position-based drops
-      if (overId.startsWith('ranking-') && !overId.startsWith('ranking-position-')) {
+      const { pokemonId: overPokemonId, positionIndex } = parseId(overId);
+      
+      if (overPokemonId !== null) {
         // Dropped on another Pokemon
-        const overPokemonId = parseId(overId);
-        if (overPokemonId !== null) {
-          newIndex = localRankings.findIndex(p => p.id === overPokemonId);
-          console.log(`🚀 [ENHANCED_DRAG_END] Reordering to Pokemon ${overPokemonId} position`);
-        }
-      } else if (overId.startsWith('ranking-position-')) {
+        newIndex = localRankings.findIndex(p => p.id === overPokemonId);
+        console.log(`🚀 [ENHANCED_DRAG_END] Reordering to Pokemon ${overPokemonId} position`);
+      } else if (positionIndex !== null) {
         // Dropped on an empty position
-        const positionIndex = parseId(overId);
-        if (positionIndex !== null && positionIndex >= 0 && positionIndex <= localRankings.length) {
+        if (positionIndex >= 0 && positionIndex <= localRankings.length) {
           newIndex = Math.min(positionIndex, localRankings.length - 1); // Ensure we don't exceed bounds
           console.log(`🚀 [ENHANCED_DRAG_END] Reordering to position slot ${positionIndex} -> ${newIndex}`);
         }

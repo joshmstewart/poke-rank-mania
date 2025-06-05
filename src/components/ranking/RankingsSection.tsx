@@ -45,9 +45,9 @@ export const RankingsSection: React.FC<RankingsSectionProps> = React.memo(({
     [displayRankings]
   );
 
-  // Create individual droppable slot component with proper ID alignment
+  // Create individual droppable slot component with consistent ID strategy
   const DroppableRankingSlot: React.FC<{ index: number; pokemon?: Pokemon | RankedPokemon }> = ({ index, pokemon }) => {
-    // FIXED: Use consistent ID strategy
+    // FIXED: Use consistent ID strategy that aligns with draggable cards
     // - Filled slots: ranking-${pokemon.id} (matches draggable cards and SortableContext)
     // - Empty slots: ranking-position-${index} (for insertion points)
     const droppableId = pokemon ? `ranking-${pokemon.id}` : `ranking-position-${index}`;
