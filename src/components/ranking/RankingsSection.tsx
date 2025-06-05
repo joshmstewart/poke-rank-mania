@@ -50,7 +50,7 @@ export const RankingsSection: React.FC<RankingsSectionProps> = React.memo(({
     // FIXED: Use consistent ID strategy that aligns with draggable cards
     // - Filled slots: ranking-${pokemon.id} (matches draggable cards and SortableContext)
     // - Empty slots: ranking-position-${index} (for insertion points)
-    const droppableId = `ranking-${pokemon ? pokemon.id : 'position-' + index}`;
+    const droppableId = pokemon ? `ranking-${pokemon.id}` : `ranking-position-${index}`;
     
     const { setNodeRef, isOver } = useDroppable({ 
       id: droppableId,

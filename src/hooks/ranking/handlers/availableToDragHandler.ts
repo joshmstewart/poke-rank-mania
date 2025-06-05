@@ -18,7 +18,7 @@ export const handleAvailableToRankingsDrop = (
   const isValidDropTarget = (
     overId === 'rankings-drop-zone' ||
     overId === 'rankings-grid-drop-zone' ||
-    /^ranking-(?:position-)?\d+$/.test(overId) ||
+    overId.startsWith('ranking-') ||
     over.data?.current?.type === 'ranking-position' ||
     over.data?.current?.type === 'ranked-pokemon' ||
     over.data?.current?.type === 'rankings-container' ||
@@ -66,14 +66,10 @@ export const handleAvailableToRankingsDrop = (
         console.log(`🔥 [ADD_NEW_POKEMON] Inserting before Pokemon ${targetPokemonId} at position ${targetIndex}`);
       }
     } else if (positionIndex !== null) {
-      // Dropped on an empty slot - prefer the droppable data index
-      const dataIndex = over.data?.current?.index;
-      const finalIndex = dataIndex !== undefined ? dataIndex : positionIndex;
-      if (finalIndex >= 0 && finalIndex <= localRankings.length) {
-        insertionPosition = finalIndex;
-        console.log(
-          `🔥 [ADD_NEW_POKEMON] Inserting at empty slot position ${finalIndex} (from ${dataIndex !== undefined ? 'data' : 'id'})`
-        );
+      // Dropped on an empty slot - use the position index
+      if (positionIndex >= 0 && positionIndex <= localRankings.length) {
+        insertionPosition = positionIndex;
+        console.log(`🔥 [ADD_NEW_POKEMON] Inserting at empty slot position ${positionIndex}`);
       }
     }
     
