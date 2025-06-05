@@ -48,20 +48,21 @@ const DragDropGrid: React.FC<DragDropGridProps> = React.memo(({
 
   // Stable items array for SortableContext
   const sortableItems = useMemo(() => {
-    const items = displayRankings.map(p => p.id);
+    const items = displayRankings.map(p => `ranking-${p.id}`);
     console.log(`🎯 [OPTIMIZED_GRID] Creating sortable items - count: ${items.length}`);
     return items;
   }, [displayRankings]);
 
-  const { setNodeRef, isOver } = useDroppable({
-    id: 'rankings-grid-drop-zone',
+  // Create individual droppable zones for each position plus empty positions
+  const { setNodeRef: setMainGridRef, isOver: isMainGridOver } = useDroppable({
+    id: 'rankings-main-grid',
     data: {
-      type: 'rankings-grid',
-      accepts: ['available-pokemon', 'ranked-pokemon']
+      type: 'rankings-main-grid',
+      accepts: ['available-pokemon']
     }
   });
 
-  const gridClassName = `transition-colors ${isOver ? 'bg-yellow-50/50' : ''}`;
+  const gridClassName = `transition-colors ${isMainGridOver ? 'bg-yellow-50/50' : ''}`;
 
   // REDUCED LOGGING: Use regular optimized cards for most items, debugger only for first 3
   const renderedCards = useMemo(() => {
@@ -100,7 +101,7 @@ const DragDropGrid: React.FC<DragDropGridProps> = React.memo(({
 
   return (
     <div 
-      ref={setNodeRef}
+      ref={setMainGridRef}
       className={gridClassName}
     >
       <DndKitInternalTracker />
