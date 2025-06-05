@@ -8,7 +8,12 @@ export const useEnhancedRankingDragDrop = (
   enhancedAvailablePokemon: any[],
   localRankings: any[],
   setAvailablePokemon: React.Dispatch<React.SetStateAction<any[]>>,
-  handleEnhancedManualReorder: (pokemonId: number, sourceIndex: number, destinationIndex: number) => void,
+  handleEnhancedManualReorder: (
+    pokemonId: number,
+    sourceIndex: number,
+    destinationIndex: number,
+    pokemon?: any
+  ) => void,
   triggerReRanking: (pokemonId: number) => Promise<void>
 ) => {
   const [activeDraggedPokemon, setActiveDraggedPokemon] = useState<any>(null);

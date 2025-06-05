@@ -8,7 +8,12 @@ export const useRankingDragDrop = (
   availablePokemon: any[],
   localRankings: any[],
   setAvailablePokemon: React.Dispatch<React.SetStateAction<any[]>>,
-  handleEnhancedManualReorder: (pokemonId: number, sourceIndex: number, destinationIndex: number) => void
+  handleEnhancedManualReorder: (
+    pokemonId: number,
+    sourceIndex: number,
+    destinationIndex: number,
+    pokemon?: any
+  ) => void
 ) => {
   const [activeDraggedPokemon, setActiveDraggedPokemon] = useState<any>(null);
   const { updateRating } = useTrueSkillStore();
@@ -114,7 +119,7 @@ export const useRankingDragDrop = (
           
           // Call enhanced manual reorder but with special handling for new additions
           // We use -1 as source index to indicate this is a new addition (not a reorder)
-          handleEnhancedManualReorder(pokemonId, -1, insertionPosition);
+          handleEnhancedManualReorder(pokemonId, -1, insertionPosition, pokemon);
           console.log(`🔥🔥🔥 [MANUAL_ADD_SINGLE_POKEMON] ✅ Enhanced manual reorder called for single Pokemon addition`);
           
           // Dispatch a specific event for single Pokemon addition (not full sync)
