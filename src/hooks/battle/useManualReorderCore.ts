@@ -17,22 +17,17 @@ export const useManualReorderCore = (
   console.log(`🎯 [MANUAL_REORDER_CORE_${hookId}] EXPLICIT NOTE: Implied battles permanently removed`);
   console.log(`🎯 [MANUAL_REORDER_CORE_${hookId}] EXPLICIT NOTE: Immediate TrueSkill updates explicitly removed`);
 
-  // Early bailout for large datasets
-  if (finalRankings.length > 500) {
-    console.error('❌ Dataset too large for manual reorder. Please reduce the number of items.');
-    return {
-      displayRankings: finalRankings,
-      handleDragStart: () => {},
-      handleDragEnd: () => {},
-      handleEnhancedManualReorder: () => {},
-      isDragging: false,
-      isUpdating: false
-    };
+  const tooLarge = finalRankings.length > 500;
+
+  // Log when dataset is too large
+  if (tooLarge) {
+    console.error('❌ Dataset too large for manual reorder. Disabling drag handlers.');
   }
 
-  useRenderTracker('useManualReorderCore', { 
+  useRenderTracker('useManualReorderCore', {
     rankingsCount: finalRankings.length,
-    preventAutoResorting 
+    preventAutoResorting,
+    tooLarge
   });
 
   // CRITICAL FIX: Use completely stable state management
@@ -51,12 +46,13 @@ export const useManualReorderCore = (
 
   // Stable callbacks with no dependencies
   const handleDragStart = useCallback((event: any) => {
+    if (tooLarge) return;
     const draggedId = parseInt(event.active.id);
     isDraggingRef.current = true;
     draggedPokemonIdRef.current = draggedId;
     setRenderTrigger(prev => prev + 1);
     console.log('🎯 [DRAG_STATE] Drag started for Pokemon ID:', draggedId);
-  }, []);
+  }, [tooLarge]);
 
   const clearDragState = useCallback(() => {
     isDraggingRef.current = false;
@@ -75,6 +71,7 @@ export const useManualReorderCore = (
 
   // CRITICAL FIX: Only update when there's a real change and not during drag
   useEffect(() => {
+    if (tooLarge) return;
     if (isDraggingRef.current || isUpdatingRef.current) {
       console.log(`🎯 [MANUAL_REORDER_CORE_${hookId}] Skipping props update - dragging:${isDraggingRef.current}, updating:${isUpdatingRef.current}`);
       return;
@@ -97,6 +94,7 @@ export const useManualReorderCore = (
     newIndex: number,
     movedPokemon: RankedPokemon
   ) => {
+    if (tooLarge) return;
     const processId = Date.now();
     console.log(`🎯 [MANUAL_REORDER_CORE_${processId}] ===== PROCESSING REORDER =====`);
     console.log(`🎯 [MANUAL_REORDER_CORE_${processId}] EXPLICIT NOTE: No TrueSkill updates - visual reordering only`);
@@ -144,6 +142,7 @@ export const useManualReorderCore = (
   }, []); // CRITICAL: Empty deps to prevent re-creation
 
   const handleDragEnd = useCallback((event: DragEndEvent) => {
+    if (tooLarge) return;
     const dragId = Date.now();
     console.log(`🎯 [MANUAL_REORDER_CORE_${dragId}] ===== DRAG END HANDLER =====`);
     
@@ -172,13 +171,15 @@ export const useManualReorderCore = (
     console.log(`🎯 [MANUAL_REORDER_CORE_${dragId}] Moving ${movedPokemon.name} from ${oldIndex} to ${newIndex}`);
     
     processReorder(currentRankings, oldIndex, newIndex, movedPokemon);
-  }, []); // CRITICAL: Empty deps
+  }, [tooLarge]); // CRITICAL: Empty deps
 
-  const handleEnhancedManualReorder = useCallback((
-    draggedPokemonId: number,
-    sourceIndex: number,
-    destinationIndex: number
-  ) => {
+  const handleEnhancedManualReorder = useCallback(
+    (
+      draggedPokemonId: number,
+      sourceIndex: number,
+      destinationIndex: number
+    ) => {
+    if (tooLarge) return;
     const enhancedId = Date.now();
     console.log(`🎯 [MANUAL_REORDER_CORE_${enhancedId}] ===== ENHANCED MANUAL REORDER =====`);
     
@@ -202,10 +203,11 @@ export const useManualReorderCore = (
     }
     
     processReorder(currentRankings, sourceIndex, destinationIndex, movedPokemon);
-  }, []); // CRITICAL: Empty deps
+  }, [tooLarge]); // CRITICAL: Empty deps
 
   // Stable memoization
   const displayRankings = useMemo(() => {
+    if (tooLarge) return finalRankings;
     const source = localRankings.length > 0 ? localRankings : stableRankingsRef.current;
     const result = source.map((pokemon) => ({
       ...pokemon,
@@ -213,7 +215,7 @@ export const useManualReorderCore = (
     }));
     console.log(`🎯 [MANUAL_REORDER_CORE_${hookId}] displayRankings created from ${source.length} items`);
     return result;
-  }, [localRankings, renderTrigger, hookId]); // Include renderTrigger to update when drag state changes
+  }, [localRankings, renderTrigger, hookId, tooLarge, finalRankings]); // Include renderTrigger to update when drag state changes
 
   return {
     displayRankings,
@@ -221,6 +223,7 @@ export const useManualReorderCore = (
     handleDragEnd,
     handleEnhancedManualReorder,
     isDragging: isDraggingRef.current,
-    isUpdating: isUpdatingRef.current
+    isUpdating: isUpdatingRef.current,
+    tooLarge
   };
 };
