@@ -70,17 +70,20 @@ export const RankingUICore: React.FC<RankingUICoreProps> = React.memo(({
 
   console.log(`🚨🚨🚨 [RANKING_UI_CORE_DEBUG] handleEnhancedManualReorder created:`, !!handleEnhancedManualReorder);
 
-  // Re-ranking trigger for already-ranked Pokemon - FIXED: Remove try-catch around hook
+  // Re-ranking trigger for already-ranked Pokemon
   const { triggerReRanking } = useReRankingTrigger(localRankings, updateLocalRankings);
   console.log(`🚨🚨🚨 [RANKING_UI_CORE_DEBUG] triggerReRanking created:`, !!triggerReRanking);
 
-  // Create a wrapper function to match the expected signature for useRankingDragDrop
+  // FIXED: Create a stable wrapper function that doesn't depend on localRankings
   const triggerReRankingWrapper = React.useCallback(async (pokemonId: number) => {
+    console.log(`🚨🚨🚨 [RANKING_UI_CORE_DEBUG] triggerReRankingWrapper called for Pokemon ID: ${pokemonId}`);
+    // Call triggerReRanking with a single-item array containing the pokemon to re-rank
+    // The hook will handle finding the pokemon from its internal state
     const pokemonToRerank = localRankings.filter(p => p.id === pokemonId);
     if (pokemonToRerank.length > 0) {
       triggerReRanking(pokemonToRerank);
     }
-  }, [triggerReRanking, localRankings]);
+  }, [triggerReRanking]); // CRITICAL FIX: Only depend on triggerReRanking, not localRankings
 
   // Use the extracted reset functionality
   const { handleComprehensiveReset } = useRankingReset({

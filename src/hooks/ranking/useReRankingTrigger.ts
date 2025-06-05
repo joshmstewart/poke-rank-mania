@@ -19,6 +19,8 @@ export const useReRankingTrigger = (
     }
 
     try {
+      // CRITICAL FIX: Use current localRankings from the function scope
+      // instead of relying on potentially stale state
       const updatedRankings = localRankings.map(pokemon => {
         const needsUpdate = pokemonToRerank.some(p => p.id === pokemon.id);
         
@@ -50,7 +52,7 @@ export const useReRankingTrigger = (
     } catch (error) {
       console.error('[RE_RANKING_TRIGGER] Error during re-ranking:', error);
     }
-  }, [localRankings, updateLocalRankings, getRating, updateRating]);
+  }, [getRating, updateRating, updateLocalRankings]); // FIXED: Removed localRankings from dependencies
 
   return { triggerReRanking };
 };
