@@ -17,7 +17,7 @@ export const useReRankingTrigger = () => {
     updateLocalRankingsRef.current = updateFn;
   }, []);
 
-  const triggerReRanking = useCallback((pokemonId: number) => {
+  const triggerReRanking = useCallback(async (pokemonId: number) => {
     console.log(`🔄 [RE_RANKING_TRIGGER] Triggering re-ranking for Pokemon ID: ${pokemonId}`);
     
     if (!getRating || !updateRating) {
