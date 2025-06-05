@@ -1,10 +1,4 @@
-diff --git a/src/components/ranking/RankingsSection.tsx b/src/components/ranking/RankingsSection.tsx
-index 8891693b7e1ee37af9a1012fce705ebcfb0a0078..cdb5955fee8576f6d6b34d3ebc2e1f2f56e53f4a 100644
---- a/src/components/ranking/RankingsSection.tsx
-+++ b/src/components/ranking/RankingsSection.tsx
-@@ -1,67 +1,74 @@
- 
- import React, { useCallback, useMemo } from "react";
+import React, { useCallback, useMemo } from "react";
  import { useDroppable } from '@dnd-kit/core';
 +import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
  import { Pokemon, RankedPokemon } from "@/services/pokemon";
