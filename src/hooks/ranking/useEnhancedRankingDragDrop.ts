@@ -66,7 +66,8 @@ export const useEnhancedRankingDragDrop = (
       
       // Check for valid drop targets
       const isValidDropTarget = (
-        overId === 'rankings-drop-zone' || 
+        overId === 'rankings-drop-zone' ||
+        overId === 'rankings-container-drop-zone' ||
         overId === 'rankings-grid-drop-zone' ||
         over.data?.current?.type === 'rankings-container' ||
         over.data?.current?.type === 'rankings-grid' ||
@@ -80,7 +81,7 @@ export const useEnhancedRankingDragDrop = (
       console.log(`🚀🚀🚀 [ENHANCED_DRAG_END] Drop target validation: ${isValidDropTarget}`);
       console.log(`🚀🚀🚀 [ENHANCED_DRAG_END] Drop target details:`, {
         overId,
-        isRankingsDropZone: overId === 'rankings-drop-zone',
+        isRankingsDropZone: overId === 'rankings-drop-zone' || overId === 'rankings-container-drop-zone',
         isRankingsGridDropZone: overId === 'rankings-grid-drop-zone',
         overDataType: over.data?.current?.type,
         overDataAccepts: over.data?.current?.accepts,
