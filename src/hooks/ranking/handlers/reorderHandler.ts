@@ -26,10 +26,14 @@ export const handleRankingReorder = (
     newIndex = localRankings.findIndex(p => p.id === overPokemonId);
     console.log(`🚀 [ENHANCED_DRAG_END] Reordering to Pokemon ${overPokemonId} position`);
   } else if (positionIndex !== null) {
-    // Dropped on an empty position
-    if (positionIndex >= 0 && positionIndex <= localRankings.length) {
-      newIndex = Math.min(positionIndex, localRankings.length - 1); // Ensure we don't exceed bounds
-      console.log(`🚀 [ENHANCED_DRAG_END] Reordering to position slot ${positionIndex} -> ${newIndex}`);
+    // Dropped on an empty position - prefer droppable data index
+    const dataIndex = over.data?.current?.index;
+    const finalIndex = dataIndex !== undefined ? dataIndex : positionIndex;
+    if (finalIndex >= 0 && finalIndex <= localRankings.length) {
+      newIndex = Math.min(finalIndex, localRankings.length - 1); // Ensure we don't exceed bounds
+      console.log(
+        `🚀 [ENHANCED_DRAG_END] Reordering to position slot ${finalIndex} (from ${dataIndex !== undefined ? 'data' : 'id'}) -> ${newIndex}`
+      );
     }
   }
   
