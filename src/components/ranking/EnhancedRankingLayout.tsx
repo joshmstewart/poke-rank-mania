@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import { DndContext, DragOverlay, closestCorners, useSensor, useSensors, PointerSensor, KeyboardSensor } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy, rectSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
+import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { useTrueSkillStore } from "@/stores/trueskillStore";
 import { BattleType } from "@/hooks/battle/types";
 import { LoadingType } from "@/hooks/pokemon/types";
@@ -115,10 +115,8 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
 
   // CRITICAL FIX: Create sortable IDs for proper context separation
   const rankedPokemonIds = manualRankingOrder.map(pokemon => `ranking-${pokemon.id}`);
-  const availablePokemonIds = enhancedAvailablePokemon.map(pokemon => `available-${pokemon.id}`);
 
   console.log(`🎯 [SORTABLE_CONTEXT] Ranked Pokemon IDs:`, rankedPokemonIds.slice(0, 3));
-  console.log(`🎯 [SORTABLE_CONTEXT] Available Pokemon IDs:`, availablePokemonIds.slice(0, 3));
 
   // CRITICAL FIX: Enhanced collision detection and debug logging
   const debugOnDragStart = (event: any) => {
@@ -224,34 +222,29 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
         >
           <div className="grid md:grid-cols-2 gap-4" style={{ height: 'calc(100vh - 12rem)' }}>
             <Card className="shadow-lg border border-gray-200 overflow-hidden flex flex-col">
-              {/* CRITICAL FIX: Separate SortableContext for available Pokemon */}
-              <SortableContext items={availablePokemonIds} strategy={rectSortingStrategy}>
-                <EnhancedAvailablePokemonSection
-                  enhancedAvailablePokemon={enhancedAvailablePokemon}
-                  isLoading={isLoading}
-                  selectedGeneration={selectedGeneration}
-                  loadingType={loadingType}
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  loadingRef={loadingRef}
-                  handlePageChange={handlePageChange}
-                  getPageRange={getPageRange}
-                />
-              </SortableContext>
+              <EnhancedAvailablePokemonSection
+                enhancedAvailablePokemon={enhancedAvailablePokemon}
+                isLoading={isLoading}
+                selectedGeneration={selectedGeneration}
+                loadingType={loadingType}
+                currentPage={currentPage}
+                totalPages={totalPages}
+                loadingRef={loadingRef}
+                handlePageChange={handlePageChange}
+                getPageRange={getPageRange}
+              />
             </Card>
 
             <Card className="shadow-lg border border-gray-200 overflow-hidden flex flex-col">
               <RankingsDroppableContainer>
-                {/* CRITICAL FIX: Separate SortableContext for ranked Pokemon */}
-                <SortableContext items={rankedPokemonIds} strategy={verticalListSortingStrategy}>
-                  <RankingsSectionStable
-                    displayRankings={manualRankingOrder}
-                    onManualReorder={stableOnManualReorder}
-                    onLocalReorder={stableOnLocalReorder}
-                    pendingRefinements={new Set()}
-                    availablePokemon={enhancedAvailablePokemon}
-                  />
-                </SortableContext>
+                <RankingsSectionStable
+                  displayRankings={manualRankingOrder}
+                  sortableItems={rankedPokemonIds}
+                  onManualReorder={stableOnManualReorder}
+                  onLocalReorder={stableOnLocalReorder}
+                  pendingRefinements={new Set()}
+                  availablePokemon={enhancedAvailablePokemon}
+                />
               </RankingsDroppableContainer>
             </Card>
           </div>
