@@ -214,10 +214,10 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
           #{formattedId}
         </div>
         
-        {/* Score display - only for ranked context */}
+        {/* Score display - only for ranked context - now with 5 decimal places */}
         {context === 'ranked' && 'score' in pokemon && (
           <div className="text-xs text-gray-700 font-medium">
-            Score: {pokemon.score.toFixed(1)}
+            Score: {pokemon.score.toFixed(5)}
           </div>
         )}
       </div>
