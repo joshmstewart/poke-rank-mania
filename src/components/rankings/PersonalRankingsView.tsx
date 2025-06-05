@@ -5,8 +5,8 @@ import { generations } from "@/services/pokemon";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { usePokemonContext } from "@/contexts/PokemonContext";
 import { formatPokemonName } from "@/utils/pokemon";
-import DragDropGrid from "../battle/DragDropGrid";
-import { useEnhancedManualReorder } from "@/hooks/battle/useEnhancedManualReorder";
+import DraggableMilestoneGrid from "../battle/DraggableMilestoneGrid";
+import { useBattleManualReorder } from "@/hooks/battle/useBattleManualReorder";
 
 interface PersonalRankingsViewProps {
   selectedGeneration: number;
@@ -101,17 +101,17 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
     setLocalRankings(rankings);
   }, [rankings]);
 
-  // Handle rankings update from manual reorder - same system as Manual mode
+  // Handle rankings update from manual reorder
   const handleRankingsUpdate = useCallback((updatedRankings: RankedPokemon[]) => {
     console.log(`🏆 [PERSONAL_RANKINGS] Received rankings update with ${updatedRankings.length} Pokemon`);
     setLocalRankings(updatedRankings);
   }, []);
 
-  // Use the same enhanced manual reorder hook as Manual mode
-  const { handleEnhancedManualReorder } = useEnhancedManualReorder(
+  // Use the battle manual reorder hook with milestone view behavior
+  const { handleManualReorder } = useBattleManualReorder(
     localRankings,
     handleRankingsUpdate,
-    true // Prevent auto-resorting during drag operations
+    true // isMilestoneView = true to get the proper drag behavior
   );
 
   const displayRankings = localRankings.slice(0, milestoneDisplayCount);
@@ -123,12 +123,6 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
       setMilestoneDisplayCount(prev => Math.min(prev + 50, localRankings.length));
     }
   }, [hasMoreToLoad, localRankings.length]);
-
-  // Handle local reorder (for DragDropGrid compatibility)
-  const handleLocalReorder = useCallback((newRankings: (Pokemon | RankedPokemon)[]) => {
-    console.log(`🏆 [PERSONAL_RANKINGS] Local reorder with ${newRankings.length} Pokemon`);
-    setLocalRankings(newRankings as RankedPokemon[]);
-  }, []);
 
   // Set up infinite scroll observer
   useEffect(() => {
@@ -192,15 +186,10 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
 
       {displayRankings.length > 0 ? (
         <>
-          {/* Use the same DragDropGrid as Manual mode */}
-          <DragDropGrid
+          <DraggableMilestoneGrid
             displayRankings={displayRankings}
             localPendingRefinements={localPendingRefinements}
-            pendingBattleCounts={new Map()}
-            onManualReorder={handleEnhancedManualReorder}
-            onLocalReorder={handleLocalReorder}
-            onMarkAsPending={() => {}} // Not needed for rankings view
-            availablePokemon={[]} // Not needed for rankings view
+            onManualReorder={handleManualReorder}
           />
           
           {/* Infinite scroll loading indicator */}

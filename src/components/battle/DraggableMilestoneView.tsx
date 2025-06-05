@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { Button } from "@/components/ui/button";
 import InfiniteScrollHandler from "./InfiniteScrollHandler";
@@ -11,8 +11,7 @@ import {
   DndContext,
   closestCenter,
 } from '@dnd-kit/core';
-import DragDropGridMemoized from "./DragDropGridMemoized";
-import { useStableDragHandlers } from "@/hooks/battle/useStableDragHandlers";
+import DraggableMilestoneGrid from "./DraggableMilestoneGrid";
 
 interface DraggableMilestoneViewProps {
   formattedRankings: (Pokemon | RankedPokemon)[];
@@ -26,7 +25,7 @@ interface DraggableMilestoneViewProps {
   pendingRefinements?: Set<number>;
 }
 
-const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = React.memo(({
+const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
   formattedRankings,
   battlesCompleted,
   activeTier,
@@ -35,10 +34,8 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = React.memo
   onLoadMore,
   getMaxItemsForTier,
   onManualReorder,
-  pendingRefinements = new Set<number>()
+  pendingRefinements = new Set()
 }) => {
-  console.log(`🏆 [MILESTONE_STABLE] Rendering milestone view with ${formattedRankings.length} rankings`);
-
   const [localRankings, setLocalRankings] = useState(formattedRankings);
   
   const {
@@ -49,38 +46,34 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = React.memo
   } = usePendingRefinementsManager(pendingRefinements);
   
   const maxItems = getMaxItemsForTier();
-  
-  // Memoize display rankings to prevent recreation
-  const displayRankings = useMemo(() => 
-    localRankings.slice(0, Math.min(milestoneDisplayCount, maxItems)),
-    [localRankings, milestoneDisplayCount, maxItems]
-  );
-  
+  const displayRankings = localRankings.slice(0, Math.min(milestoneDisplayCount, maxItems));
   const hasMoreToLoad = milestoneDisplayCount < maxItems;
-
-  // Use stable drag handlers
-  const { stableOnManualReorder, stableOnLocalReorder } = useStableDragHandlers(
-    onManualReorder,
-    (newRankings: any[]) => setLocalRankings(newRankings)
-  );
 
   // Update local state when props change, but only if we don't have local changes
   useEffect(() => {
-    console.log(`🏆 [MILESTONE_STABLE] Props changed - checking for updates`);
+    console.log(`🏆 [MILESTONE_DRAG_SYNC] Props changed - formattedRankings: ${formattedRankings.length}, localRankings: ${localRankings.length}`);
     
+    // Only update if the rankings are significantly different (suggesting external update)
+    // This prevents overwriting local drag changes
     const hasSignificantDifference = Math.abs(formattedRankings.length - localRankings.length) > 0 ||
       formattedRankings.slice(0, 5).some((p, i) => p.id !== localRankings[i]?.id);
     
     if (hasSignificantDifference) {
-      console.log(`🏆 [MILESTONE_STABLE] Updating local rankings`);
+      console.log(`🏆 [MILESTONE_DRAG_SYNC] Significant difference detected, updating local rankings`);
       setLocalRankings(formattedRankings);
+    } else {
+      console.log(`🏆 [MILESTONE_DRAG_SYNC] No significant difference, keeping local rankings to preserve drag state`);
     }
   }, [formattedRankings]);
 
-  // FIXED: Use only the enhanced manual reorder
+  // FIXED: Use only the enhanced manual reorder, don't call the original onManualReorder
   const { handleEnhancedManualReorder } = useEnhancedManualReorder(
     localRankings as RankedPokemon[],
-    stableOnLocalReorder,
+    (updatedRankings: RankedPokemon[]) => {
+      console.log(`🏆 [MILESTONE_DRAG_FIXED] Enhanced reorder callback with ${updatedRankings.length} Pokemon`);
+      setLocalRankings(updatedRankings);
+      // DON'T call onManualReorder here - it's causing the reset
+    },
     true // preventAutoResorting = true to maintain manual order
   );
 
@@ -88,48 +81,52 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = React.memo
   const { sensors, handleDragEnd } = useDragAndDrop({
     displayRankings,
     onManualReorder: (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => {
-      console.log(`🏆 [MILESTONE_STABLE] Drag completed: ${draggedPokemonId} from ${sourceIndex} to ${destinationIndex}`);
-      handleEnhancedManualReorder(draggedPokemonId, sourceIndex, destinationIndex);
-    },
-    onLocalReorder: stableOnLocalReorder
-  });
-
-  // Memoized header content
-  const headerContent = useMemo(() => (
-    <div className="flex items-center justify-between mb-6">
-      <div className="flex items-center gap-3">
-        <span className="text-2xl">🏆</span>
-        <h1 className="text-xl font-bold text-gray-800">
-          Milestone: {battlesCompleted} Battles
-        </h1>
-        <span className="text-gray-500 text-sm">
-          (Showing {displayRankings.length} of {activeTier === "All" ? maxItems : Math.min(Number(activeTier), maxItems)})
-        </span>
-        <AutoBattleLogsModal />
-      </div>
+      console.log(`🏆 [MILESTONE_DRAG_FIXED] Drag completed: ${draggedPokemonId} from ${sourceIndex} to ${destinationIndex}`);
+      console.log(`🏆 [MILESTONE_DRAG_FIXED] Using ONLY enhanced manual reorder (no original handler)`);
       
-      <Button 
-        onClick={onContinueBattles}
-        className="bg-gray-800 hover:bg-gray-900 text-white px-6 py-2 rounded-lg font-medium"
-      >
-        Continue Battles
-      </Button>
-    </div>
-  ), [battlesCompleted, displayRankings.length, activeTier, maxItems, onContinueBattles]);
+      // CRITICAL FIX: Only call the enhanced manual reorder, don't call onManualReorder
+      handleEnhancedManualReorder(draggedPokemonId, sourceIndex, destinationIndex);
+      
+      console.log(`🏆 [MILESTONE_DRAG_FIXED] Enhanced reorder completed, NOT calling original onManualReorder to prevent reset`);
+    },
+    onLocalReorder: (newRankings) => {
+      console.log(`🏆 [MILESTONE_DRAG_FIXED] Local reorder for immediate UI feedback with ${newRankings.length} Pokemon`);
+      setLocalRankings(newRankings);
+    }
+  });
 
   return (
     <div className="bg-white p-6 w-full max-w-7xl mx-auto">
-      {headerContent}
+      {/* Header - exactly matching the image */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <span className="text-2xl">🏆</span>
+          <h1 className="text-xl font-bold text-gray-800">
+            Milestone: {battlesCompleted} Battles
+          </h1>
+          <span className="text-gray-500 text-sm">
+            (Showing {displayRankings.length} of {activeTier === "All" ? maxItems : Math.min(Number(activeTier), maxItems)})
+          </span>
+          <AutoBattleLogsModal />
+        </div>
+        
+        <Button 
+          onClick={onContinueBattles}
+          className="bg-gray-800 hover:bg-gray-900 text-white px-6 py-2 rounded-lg font-medium"
+        >
+          Continue Battles
+        </Button>
+      </div>
 
+      {/* Draggable Grid Layout - exactly 5 columns like the reference with softer colors */}
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
         onDragEnd={handleDragEnd}
       >
-        <DragDropGridMemoized
+        <DraggableMilestoneGrid
           displayRankings={displayRankings}
           localPendingRefinements={localPendingRefinements}
-          pendingBattleCounts={pendingBattleCounts}
         />
       </DndContext>
 
@@ -141,16 +138,6 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = React.memo
       />
     </div>
   );
-}, (prevProps, nextProps) => {
-  // Custom comparison to prevent unnecessary re-renders
-  return (
-    prevProps.formattedRankings.length === nextProps.formattedRankings.length &&
-    prevProps.battlesCompleted === nextProps.battlesCompleted &&
-    prevProps.milestoneDisplayCount === nextProps.milestoneDisplayCount &&
-    prevProps.activeTier === nextProps.activeTier
-  );
-});
-
-DraggableMilestoneView.displayName = 'DraggableMilestoneView';
+};
 
 export default DraggableMilestoneView;

@@ -6,21 +6,18 @@ import { useEnhancedManualReorder } from "./useEnhancedManualReorder";
 export const useBattleManualReorder = (
   finalRankings: RankedPokemon[],
   onRankingsUpdate: (updatedRankings: RankedPokemon[]) => void,
-  isMilestoneView: boolean = false,
-  addImpliedBattle?: (winnerId: number, loserId: number) => void
+  isMilestoneView: boolean = false
 ) => {
   console.log(`🎯 [BATTLE_MANUAL_REORDER] ===== HOOK INITIALIZATION =====`);
   console.log(`🎯 [BATTLE_MANUAL_REORDER] finalRankings length: ${finalRankings?.length || 0}`);
   console.log(`🎯 [BATTLE_MANUAL_REORDER] isMilestoneView: ${isMilestoneView}`);
   console.log(`🎯 [BATTLE_MANUAL_REORDER] onRankingsUpdate exists: ${!!onRankingsUpdate}`);
-  console.log(`🎯 [BATTLE_MANUAL_REORDER] addImpliedBattle exists: ${!!addImpliedBattle}`);
 
-  // Use the enhanced manual reorder hook with battle simulation
+  // Use the enhanced manual reorder hook with preventAutoResorting set to true for milestone views
   const { handleEnhancedManualReorder } = useEnhancedManualReorder(
     finalRankings,
     onRankingsUpdate,
-    isMilestoneView, // Prevent auto-resorting during milestone views
-    addImpliedBattle // Pass the battle function for simulation
+    isMilestoneView // Prevent auto-resorting during milestone views
   );
 
   const handleManualReorder = useCallback((
@@ -39,9 +36,9 @@ export const useBattleManualReorder = (
     }
 
     try {
-      console.log(`🎯 [BATTLE_MANUAL_REORDER] Calling enhanced manual reorder with battle simulation...`);
+      console.log(`🎯 [BATTLE_MANUAL_REORDER] Calling enhanced manual reorder...`);
       handleEnhancedManualReorder(draggedPokemonId, sourceIndex, destinationIndex);
-      console.log(`🎯 [BATTLE_MANUAL_REORDER] ✅ Enhanced manual reorder with battles completed`);
+      console.log(`🎯 [BATTLE_MANUAL_REORDER] ✅ Enhanced manual reorder completed`);
     } catch (error) {
       console.error(`🎯 [BATTLE_MANUAL_REORDER] ❌ Error in enhanced manual reorder:`, error);
     }

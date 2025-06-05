@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useEnhancedManualReorder } from "@/hooks/battle/useEnhancedManualReorder";
 import { useEnhancedRankingDragDrop } from "@/hooks/ranking/useEnhancedRankingDragDrop";
@@ -31,7 +32,7 @@ interface RankingUICoreProps {
   onReset: () => void;
 }
 
-export const RankingUICore: React.FC<RankingUICoreProps> = React.memo(({
+export const RankingUICore: React.FC<RankingUICoreProps> = ({
   isLoading,
   availablePokemon,
   displayRankings,
@@ -54,19 +55,15 @@ export const RankingUICore: React.FC<RankingUICoreProps> = React.memo(({
   onGenerationChange,
   onReset
 }) => {
-  console.log(`🚨🚨🚨 [ENHANCED_RANKING_UI_CORE_STABLE] Rendering with ${localRankings.length} rankings`);
+  console.log(`🚨🚨🚨 [ENHANCED_RANKING_UI_CORE] ===== ENHANCED RENDERING =====`);
+  console.log(`🚨🚨🚨 [ENHANCED_RANKING_UI_CORE] Enhanced available Pokemon: ${enhancedAvailablePokemon.length}`);
+  console.log(`🚨🚨🚨 [ENHANCED_RANKING_UI_CORE] Local rankings: ${localRankings.length}`);
 
-  // Simple implied battle function for Manual Mode
-  const addImpliedBattle = (winnerId: number, loserId: number) => {
-    console.log(`🎲 [MANUAL_IMPLIED_BATTLE] Battle: ${winnerId} beats ${loserId}`);
-  };
-
-  // Enhanced manual reorder with manual order preservation and battle simulation
+  // Enhanced manual reorder with manual order preservation
   const { handleEnhancedManualReorder } = useEnhancedManualReorder(
     localRankings,
     updateLocalRankings,
-    true, // preventAutoResorting for Manual Mode
-    addImpliedBattle // Pass battle function for simulation
+    true
   );
 
   // Re-ranking trigger for already-ranked Pokemon
@@ -94,7 +91,7 @@ export const RankingUICore: React.FC<RankingUICoreProps> = React.memo(({
 
   // Handle local reordering (for DragDropGrid compatibility)
   const handleLocalReorder = (newRankings: any[]) => {
-    console.log(`🚨🚨🚨 [ENHANCED_RANKING_UI_CORE_STABLE] Local reorder called with ${newRankings.length} Pokemon`);
+    console.log(`🚨🚨🚨 [ENHANCED_RANKING_UI_CORE] Local reorder called with ${newRankings.length} Pokemon`);
     updateLocalRankings(newRankings);
   };
 
@@ -124,15 +121,4 @@ export const RankingUICore: React.FC<RankingUICoreProps> = React.memo(({
       handleLocalReorder={handleLocalReorder}
     />
   );
-}, (prevProps, nextProps) => {
-  // Custom comparison to prevent unnecessary re-renders
-  return (
-    prevProps.localRankings.length === nextProps.localRankings.length &&
-    prevProps.enhancedAvailablePokemon.length === nextProps.enhancedAvailablePokemon.length &&
-    prevProps.selectedGeneration === nextProps.selectedGeneration &&
-    prevProps.battleType === nextProps.battleType &&
-    prevProps.isLoading === nextProps.isLoading
-  );
-});
-
-RankingUICore.displayName = 'RankingUICore';
+};

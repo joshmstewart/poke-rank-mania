@@ -1,72 +1,49 @@
 
-import React, { useCallback, useMemo } from "react";
+import React from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import DragDropGrid from "@/components/battle/DragDropGrid";
 import { useDroppable } from '@dnd-kit/core';
-import { useRenderTracker } from "@/hooks/battle/useRenderTracker";
 
 interface RankingsSectionProps {
   displayRankings: (Pokemon | RankedPokemon)[];
   onManualReorder?: (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => void;
   onLocalReorder?: (newRankings: (Pokemon | RankedPokemon)[]) => void;
   pendingRefinements?: Set<number>;
-  availablePokemon?: any[];
+  availablePokemon?: any[]; // Add this prop to pass available Pokemon
 }
 
-export const RankingsSection: React.FC<RankingsSectionProps> = React.memo(({
+export const RankingsSection: React.FC<RankingsSectionProps> = ({
   displayRankings,
   onManualReorder,
   onLocalReorder,
-  pendingRefinements = new Set<number>(),
+  pendingRefinements = new Set(),
   availablePokemon = []
 }) => {
-  // Track renders for performance debugging
-  useRenderTracker('RankingsSection', { 
-    rankingsCount: displayRankings.length,
-    hasManualReorder: !!onManualReorder 
-  });
-
   console.log(`🚨🚨🚨 [RANKINGS_SECTION_ULTRA_CRITICAL] ===== RENDERING RANKINGS SECTION =====`);
   console.log(`🚨🚨🚨 [RANKINGS_SECTION_ULTRA_CRITICAL] Display rankings count: ${displayRankings.length}`);
   console.log(`🚨🚨🚨 [RANKINGS_SECTION_ULTRA_CRITICAL] Available Pokemon for collision: ${availablePokemon.length}`);
   
-  // Memoize droppable configuration
-  const droppableConfig = useMemo(() => ({
+  const { setNodeRef, isOver } = useDroppable({
     id: 'rankings-drop-zone',
     data: {
       type: 'rankings-container',
       accepts: 'available-pokemon'
     }
-  }), []);
-
-  const { setNodeRef, isOver } = useDroppable(droppableConfig);
+  });
   
   console.log(`🚨🚨🚨 [RANKINGS_SECTION_ULTRA_CRITICAL] Droppable setup - ID: rankings-drop-zone, isOver: ${isOver}`);
   
-  const handleMarkAsPending = useCallback((pokemonId: number) => {
+  const handleMarkAsPending = (pokemonId: number) => {
     console.log(`🚨🚨🚨 [RANKINGS_SECTION_ULTRA_CRITICAL] Marking Pokemon ${pokemonId} as pending`);
     // For manual mode, we don't need special pending logic like battle mode
-  }, []);
+  };
 
-  const handleLocalReorderWrapper = useCallback((newRankings: (Pokemon | RankedPokemon)[]) => {
+  const handleLocalReorderWrapper = (newRankings: (Pokemon | RankedPokemon)[]) => {
     console.log(`🚨🚨🚨 [RANKINGS_SECTION_ULTRA_CRITICAL] Local reorder with ${newRankings.length} Pokemon`);
     if (onLocalReorder) {
       onLocalReorder(newRankings);
     }
-  }, [onLocalReorder]);
-
-  // Memoize empty state content
-  const emptyStateContent = useMemo(() => (
-    <div className="flex items-center justify-center h-full text-gray-500">
-      <div className="text-center">
-        <p className="text-lg mb-2">No Pokémon ranked yet</p>
-        <p className="text-sm">Drag Pokémon from the left to start ranking!</p>
-        {isOver && (
-          <p className="text-yellow-600 font-medium mt-2">Drop here to add to rankings!</p>
-        )}
-      </div>
-    </div>
-  ), [isOver]);
+  };
 
   return (
     <div className="flex flex-col h-full">
@@ -87,7 +64,17 @@ export const RankingsSection: React.FC<RankingsSectionProps> = React.memo(({
         }`} 
         ref={setNodeRef}
       >
-        {displayRankings.length === 0 ? emptyStateContent : (
+        {displayRankings.length === 0 ? (
+          <div className="flex items-center justify-center h-full text-gray-500">
+            <div className="text-center">
+              <p className="text-lg mb-2">No Pokémon ranked yet</p>
+              <p className="text-sm">Drag Pokémon from the left to start ranking!</p>
+              {isOver && (
+                <p className="text-yellow-600 font-medium mt-2">Drop here to add to rankings!</p>
+              )}
+            </div>
+          </div>
+        ) : (
           <DragDropGrid
             displayRankings={displayRankings}
             localPendingRefinements={pendingRefinements}
@@ -101,6 +88,4 @@ export const RankingsSection: React.FC<RankingsSectionProps> = React.memo(({
       </div>
     </div>
   );
-});
-
-RankingsSection.displayName = 'RankingsSection';
+};

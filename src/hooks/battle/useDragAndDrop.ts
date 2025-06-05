@@ -1,9 +1,15 @@
 
-import { useSensors, useSensor, PointerSensor, KeyboardSensor } from '@dnd-kit/core';
-import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
+import { useSensors } from '@dnd-kit/core';
+import {
+  useSensor,
+  PointerSensor,
+  KeyboardSensor,
+} from '@dnd-kit/core';
+import {
+  sortableKeyboardCoordinates,
+} from '@dnd-kit/sortable';
+import { arrayMove } from '@dnd-kit/sortable';
 import { DragEndEvent } from '@dnd-kit/core';
-import { useCallback, useMemo, useRef } from 'react';
-import { useRenderTracker } from './useRenderTracker';
 
 interface UseDragAndDropProps {
   displayRankings: any[];
@@ -11,44 +17,18 @@ interface UseDragAndDropProps {
   onLocalReorder: (newRankings: any[]) => void;
 }
 
-// Memoized sensor configuration to prevent recreation
-const SENSOR_CONFIG = {
-  pointer: {
-    activationConstraint: {
-      distance: 8, // Require 8px movement before drag starts
-    },
-  },
-  keyboard: {
-    coordinateGetter: sortableKeyboardCoordinates,
-  }
-};
-
 export const useDragAndDrop = ({ displayRankings, onManualReorder, onLocalReorder }: UseDragAndDropProps) => {
-  // Track renders for performance debugging
-  useRenderTracker('useDragAndDrop', { 
-    rankingsCount: displayRankings.length,
-    hasManualReorder: !!onManualReorder 
-  });
-
   console.log(`🚀 [DRAG_DROP_FLOW] ===== useDragAndDrop with Enhanced Flow =====`);
   console.log(`🚀 [DRAG_DROP_FLOW] onManualReorder function exists: ${!!onManualReorder}`);
 
-  // Stable references to prevent recreation
-  const onManualReorderRef = useRef(onManualReorder);
-  const onLocalReorderRef = useRef(onLocalReorder);
-  
-  // Update refs when props change
-  onManualReorderRef.current = onManualReorder;
-  onLocalReorderRef.current = onLocalReorder;
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
-  // PERFORMANCE FIX: Memoize sensor configuration
-  const sensors = useMemo(() => useSensors(
-    useSensor(PointerSensor, SENSOR_CONFIG.pointer),
-    useSensor(KeyboardSensor, SENSOR_CONFIG.keyboard)
-  ), []);
-
-  // CRITICAL FIX: Stable drag end handler with optimal logic
-  const handleDragEnd = useCallback((event: DragEndEvent) => {
+  const handleDragEnd = (event: DragEndEvent) => {
     console.log(`🚀 [DRAG_DROP_FLOW] ===== DRAG END TRIGGERED =====`);
     
     const { active, over } = event;
@@ -75,23 +55,31 @@ export const useDragAndDrop = ({ displayRankings, onManualReorder, onLocalReorde
     const draggedPokemon = displayRankings[activeIndex];
     console.log(`🚀 [DRAG_DROP_FLOW] Dragged Pokemon: ${draggedPokemon.name} (${draggedPokemon.id})`);
 
-    // CRITICAL FIX: Only call manual reorder - it handles both order preservation AND TrueSkill updates
-    if (activeIndex !== overIndex) {
-      if (onManualReorderRef.current) {
-        console.log(`🚀 [DRAG_DROP_FLOW] ===== CALLING ENHANCED MANUAL REORDER ONLY =====`);
-        console.log(`🚀 [DRAG_DROP_FLOW] This will handle order preservation AND TrueSkill updates`);
-        console.log(`🚀 [DRAG_DROP_FLOW] Calling: onManualReorder(${draggedPokemon.id}, ${activeIndex}, ${overIndex})`);
-        
-        // Call manual reorder directly - it handles everything
-        onManualReorderRef.current(draggedPokemon.id, activeIndex, overIndex);
-        console.log(`🚀 [DRAG_DROP_FLOW] Enhanced manual reorder call completed`);
-      } else {
-        console.error(`🚀 [DRAG_DROP_FLOW] ❌ onManualReorder is not available!`);
-      }
+    // Calculate the new rankings for immediate UI feedback
+    const newRankings = arrayMove(displayRankings, activeIndex, overIndex);
+
+    // Update local rankings for immediate UI feedback
+    if (onLocalReorder) {
+      console.log(`🚀 [DRAG_DROP_FLOW] Updating local rankings for immediate feedback...`);
+      onLocalReorder(newRankings);
+    }
+
+    // CRITICAL: Call the enhanced manual reorder logic
+    if (onManualReorder) {
+      console.log(`🚀 [DRAG_DROP_FLOW] ===== CALLING ENHANCED MANUAL REORDER =====`);
+      console.log(`🚀 [DRAG_DROP_FLOW] This should trigger TrueSkill updates and implied battles`);
+      console.log(`🚀 [DRAG_DROP_FLOW] Calling: onManualReorder(${draggedPokemon.id}, ${activeIndex}, ${overIndex})`);
+      
+      // Call the enhanced manual reorder logic
+      onManualReorder(draggedPokemon.id, activeIndex, overIndex);
+      
+      console.log(`🚀 [DRAG_DROP_FLOW] Enhanced manual reorder call completed`);
+    } else {
+      console.error(`🚀 [DRAG_DROP_FLOW] ❌ onManualReorder is not available!`);
     }
     
     console.log(`🚀 [DRAG_DROP_FLOW] ===== DRAG END COMPLETE =====`);
-  }, []); // Empty deps for maximum stability, using refs for current values
+  };
 
   return { sensors, handleDragEnd };
 };
