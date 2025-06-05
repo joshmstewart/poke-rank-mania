@@ -1,7 +1,7 @@
 
 import React from "react";
 import { useEnhancedManualReorder } from "@/hooks/battle/useEnhancedManualReorder";
-import { useEnhancedRankingDragDrop } from "@/hooks/ranking/useEnhancedRankingDragDrop";
+import { useRankingDragDrop } from "@/hooks/drag/useRankingDragDrop";
 import { useReRankingTrigger } from "@/hooks/ranking/useReRankingTrigger";
 import { useRankingReset } from "./RankingResetHandler";
 import { EnhancedRankingLayout } from "./EnhancedRankingLayout";
@@ -99,13 +99,13 @@ export const RankingUICore: React.FC<RankingUICoreProps> = React.memo(({
     handleDragStart,
     handleDragEnd,
     handleManualReorder
-  } = useEnhancedRankingDragDrop(
-    enhancedAvailablePokemon,
+  } = useRankingDragDrop({
+    availablePokemon: enhancedAvailablePokemon,
     localRankings,
     setAvailablePokemon,
-    handleEnhancedManualReorder,
-    triggerReRanking
-  );
+    onManualReorder: handleEnhancedManualReorder,
+    triggerReRanking,
+  });
 
   console.log(`🚨🚨🚨 [RANKING_UI_CORE_DEBUG] Drag handlers created:`, {
     handleDragStart: !!handleDragStart,
