@@ -1,26 +1,21 @@
+
 import { useCallback, useRef, useEffect } from 'react';
 import { useTrueSkillStore } from '@/stores/trueskillStore';
 import { RankedPokemon } from '@/services/pokemon';
 
-export const useReRankingTrigger = (
-  localRankings: RankedPokemon[],
-  updateLocalRankings: (rankings: RankedPokemon[]) => void
-) => {
+export const useReRankingTrigger = () => {
   // Access store methods safely
   const { getRating, updateRating } = useTrueSkillStore();
   
-  // CRITICAL FIX: Use ref to access current rankings without dependency loop
-  const localRankingsRef = useRef(localRankings);
-  const updateLocalRankingsRef = useRef(updateLocalRankings);
+  // CRITICAL FIX: Store the current rankings and update function in refs that can be set externally
+  const localRankingsRef = useRef<RankedPokemon[]>([]);
+  const updateLocalRankingsRef = useRef<(rankings: RankedPokemon[]) => void>(() => {});
 
-  // Keep refs updated
-  useEffect(() => {
-    localRankingsRef.current = localRankings;
-  }, [localRankings]);
-
-  useEffect(() => {
-    updateLocalRankingsRef.current = updateLocalRankings;
-  }, [updateLocalRankings]);
+  // CRITICAL FIX: Provide a method to set the current rankings and update function
+  const setCurrentRankings = useCallback((rankings: RankedPokemon[], updateFn: (rankings: RankedPokemon[]) => void) => {
+    localRankingsRef.current = rankings;
+    updateLocalRankingsRef.current = updateFn;
+  }, []);
 
   const triggerReRanking = useCallback((pokemonId: number) => {
     console.log(`🔄 [RE_RANKING_TRIGGER] Triggering re-ranking for Pokemon ID: ${pokemonId}`);
@@ -34,6 +29,11 @@ export const useReRankingTrigger = (
       // CRITICAL FIX: Get current rankings from ref at execution time
       const currentRankings = localRankingsRef.current;
       const currentUpdateFunction = updateLocalRankingsRef.current;
+      
+      if (currentRankings.length === 0) {
+        console.warn('[RE_RANKING_TRIGGER] No rankings available');
+        return;
+      }
       
       const pokemonToUpdate = currentRankings.find(p => p.id === pokemonId);
       if (!pokemonToUpdate) {
@@ -72,5 +72,5 @@ export const useReRankingTrigger = (
     }
   }, [getRating, updateRating]); // CRITICAL FIX: Only stable dependencies
 
-  return { triggerReRanking };
+  return { triggerReRanking, setCurrentRankings };
 };

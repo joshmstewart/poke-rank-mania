@@ -70,16 +70,21 @@ export const RankingUICore: React.FC<RankingUICoreProps> = React.memo(({
 
   console.log(`🚨🚨🚨 [RANKING_UI_CORE_DEBUG] handleEnhancedManualReorder created:`, !!handleEnhancedManualReorder);
 
-  // Re-ranking trigger for already-ranked Pokemon
-  const { triggerReRanking } = useReRankingTrigger(localRankings, updateLocalRankings);
+  // CRITICAL FIX: Use the new stable re-ranking trigger
+  const { triggerReRanking, setCurrentRankings } = useReRankingTrigger();
+  
+  // CRITICAL FIX: Update the current rankings in the hook whenever they change
+  React.useEffect(() => {
+    setCurrentRankings(localRankings, updateLocalRankings);
+  }, [localRankings, updateLocalRankings, setCurrentRankings]);
+
   console.log(`🚨🚨🚨 [RANKING_UI_CORE_DEBUG] triggerReRanking created:`, !!triggerReRanking);
 
-  // CRITICAL FIX: Create a completely stable wrapper that doesn't access localRankings
-  const triggerReRankingWrapper = React.useCallback(async (pokemonId: number) => {
+  // CRITICAL FIX: Create a completely stable wrapper that doesn't change
+  const triggerReRankingWrapper = React.useCallback((pokemonId: number) => {
     console.log(`🚨🚨🚨 [RANKING_UI_CORE_DEBUG] triggerReRankingWrapper called for Pokemon ID: ${pokemonId}`);
-    // Pass the pokemon ID directly to the trigger - let the hook handle finding the pokemon
     triggerReRanking(pokemonId);
-  }, [triggerReRanking]); // Only depend on triggerReRanking
+  }, [triggerReRanking]); // triggerReRanking is now stable
 
   // Use the extracted reset functionality
   const { handleComprehensiveReset } = useRankingReset({
@@ -108,10 +113,10 @@ export const RankingUICore: React.FC<RankingUICoreProps> = React.memo(({
   });
 
   // Handle local reordering (for DragDropGrid compatibility)
-  const handleLocalReorder = (newRankings: any[]) => {
+  const handleLocalReorder = React.useCallback((newRankings: any[]) => {
     console.log(`🚨🚨🚨 [RANKING_UI_CORE_DEBUG] Local reorder called with ${newRankings.length} Pokemon`);
     updateLocalRankings(newRankings);
-  };
+  }, [updateLocalRankings]);
 
   console.log(`🚨🚨🚨 [RANKING_UI_CORE_DEBUG] About to render EnhancedRankingLayout`);
 
