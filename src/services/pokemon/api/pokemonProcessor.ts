@@ -16,7 +16,9 @@ export const processPokemonData = async (
   const startProcessingTime = Date.now();
   console.log(`⚙️ [REFRESH_DETECTION] Call #${callId}: Starting Pokemon processing at ${new Date(startProcessingTime).toISOString()}`);
 
-  const pokemonPromises = pokemonResults.map(async (pokemonInfo, index) => {
+  const MAX_CONCURRENT_REQUESTS = 25;
+
+  const fetchSinglePokemon = async (pokemonInfo: any, index: number) => {
     try {
       const response = await fetch(pokemonInfo.url);
       const pokemonData = await response.json();
@@ -77,9 +79,17 @@ export const processPokemonData = async (
     }
   });
 
-  const pokemonList = await Promise.all(pokemonPromises);
+  const pokemonList: (Pokemon | null)[] = [];
+  for (let i = 0; i < pokemonResults.length; i += MAX_CONCURRENT_REQUESTS) {
+    const slice = pokemonResults.slice(i, i + MAX_CONCURRENT_REQUESTS);
+    const results = await Promise.all(
+      slice.map((info, idx) => fetchSinglePokemon(info, i + idx))
+    );
+    pokemonList.push(...results);
+  }
+
   const filteredList = pokemonList.filter((p): p is Pokemon => p !== null);
-  
+
   // ENHANCED: Comprehensive logging with Pokemon name samples
   console.log(`🐩 [FURFROU_FINAL] Call #${callId}: Found ${furfrowFormsFound.length} Furfrou forms:`, furfrowFormsFound);
   console.log(`🍰 [ALCREMIE_FINAL] Call #${callId}: Found ${alcremieFormsFound.length} Alcremie forms:`, alcremieFormsFound);

@@ -1,6 +1,7 @@
 
 import { useState } from 'react';
 import { DragStartEvent, DragEndEvent } from '@dnd-kit/core';
+import { parseId } from '../../../hooks/ranking/utils/idParsing';
 import { Rating } from 'ts-trueskill';
 import { ScoreDebugInfo } from '../types/debugTypes';
 import { 
@@ -69,23 +70,27 @@ export const useEnhancedDragHandlers = ({
       return;
     }
     
-    // Handle manual reordering within rankings (both legacy and new format)
-    const isRankingReorder = (
-      (activeId.startsWith('ranking-') || !activeId.startsWith('available-')) &&
-      (overId.startsWith('ranking-') || (!overId.startsWith('available-') && !isNaN(parseInt(overId))))
-    );
+    // Handle manual reordering within rankings (supports position-based IDs)
+    const { pokemonId: activePokemonId } = parseId(activeId);
+    const { pokemonId: overPokemonId, positionIndex } = parseId(overId);
+
+    const isRankingReorder = activePokemonId !== null && (overPokemonId !== null || positionIndex !== null);
     
     if (isRankingReorder) {
-      // Extract pokemon IDs (handle both ranking- prefix and legacy numeric IDs)
-      const activePokemonId = activeId.startsWith('ranking-') ? 
-        parseInt(activeId.replace('ranking-', '')) : 
-        parseInt(activeId);
-      const overPokemonId = overId.startsWith('ranking-') ? 
-        parseInt(overId.replace('ranking-', '')) : 
-        parseInt(overId);
-      
+      // Determine reorder indices using parsed IDs
       const oldIndex = manualRankingOrder.findIndex(p => p.id === activePokemonId);
-      const newIndex = manualRankingOrder.findIndex(p => p.id === overPokemonId);
+      let newIndex = -1;
+      if (overPokemonId !== null) {
+        newIndex = manualRankingOrder.findIndex(p => p.id === overPokemonId);
+      } else if (positionIndex !== null) {
+        const dataIndex = over.data?.current?.index;
+        const finalIndex = dataIndex !== undefined ? dataIndex : positionIndex;
+        if (finalIndex >= 0 && finalIndex <= manualRankingOrder.length) {
+          newIndex = Math.min(finalIndex, manualRankingOrder.length - 1);
+        }
+      }
+
+      console.log(`🔧 [ENHANCED_DEBUG_DRAG] Reordering indices: ${oldIndex} -> ${newIndex}`);
       
       console.log(`🔧 [ENHANCED_DEBUG_DRAG] Reordering indices: ${oldIndex} -> ${newIndex}`);
       
