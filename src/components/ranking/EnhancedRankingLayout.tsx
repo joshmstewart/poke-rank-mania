@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { DndContext, DragOverlay, closestCorners } from '@dnd-kit/core';
 import { useTrueSkillStore } from "@/stores/trueskillStore";
@@ -13,7 +14,6 @@ import ScoreAdjustmentDebugModal from "./ScoreAdjustmentDebugModal";
 import { DebugControls } from "./components/DebugControls";
 import { useEnhancedDragHandlers } from "./hooks/useEnhancedDragHandlers";
 import { ScoreDebugInfo } from "./types/debugTypes";
-import PersistentLogViewer from "@/components/debug/PersistentLogViewer";
 
 interface EnhancedRankingLayoutProps {
   isLoading: boolean;
@@ -196,8 +196,6 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = React
         onClose={() => setShowDebugModal(false)}
         debugData={debugData}
       />
-      
-      <PersistentLogViewer />
     </div>
   );
 });
