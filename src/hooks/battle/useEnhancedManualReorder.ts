@@ -18,6 +18,7 @@ export const useEnhancedManualReorder = (
   console.log('🔥 [ENHANCED_REORDER_HOOK_INIT] ===== HOOK INITIALIZATION =====');
   console.log('🔥 [ENHANCED_REORDER_HOOK_INIT] finalRankings length:', finalRankings.length);
   console.log('🔥 [ENHANCED_REORDER_HOOK_INIT] preventAutoResorting:', preventAutoResorting);
+  console.log('🔥 [ENHANCED_REORDER_HOOK_INIT] addImpliedBattle provided:', !!addImpliedBattle);
 
   // Simplified state management
   const [dragState, setDragState] = useState({
@@ -80,7 +81,15 @@ export const useEnhancedManualReorder = (
     console.log('🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] ===== APPLYING MANUAL SCORE ADJUSTMENT =====');
     console.log('🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] draggedPokemon:', draggedPokemon.name);
     console.log('🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Target position (newIndex):', newIndex);
-    console.log('🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] rankings.length:', rankings.length);
+    console.log('🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] preventAutoResorting:', preventAutoResorting);
+    
+    // CRITICAL: In ranking mode (preventAutoResorting=true), we do NOT trigger battles
+    // We only adjust the TrueSkill rating to match the desired position
+    if (preventAutoResorting) {
+      console.log('🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] ✅ RANKING MODE: Manual positioning without battles');
+    } else {
+      console.log('🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] ⚔️ BATTLE MODE: May trigger implied battles');
+    }
     
     // Constants
     const MIN_SIGMA = 1.0;
@@ -90,8 +99,7 @@ export const useEnhancedManualReorder = (
     console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Current rating - μ=${currentRating.mu.toFixed(5)}, σ=${currentRating.sigma.toFixed(5)}`);
     console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Current displayed score: ${(currentRating.mu - currentRating.sigma).toFixed(5)}`);
     
-    // CRITICAL FIX: Create the final rankings array to determine correct neighbors
-    // This simulates what the array will look like AFTER the Pokemon is placed
+    // Create the final rankings array to determine correct neighbors
     const finalRankingsAfterMove = [...rankings];
     
     // For new additions (when Pokemon wasn't in rankings before)
@@ -171,7 +179,16 @@ export const useEnhancedManualReorder = (
     
     console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] ✅ Rating updated in TrueSkill store`);
     console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] ✅ Pokemon ${draggedPokemon.name} should now appear at position ${newIndex} after auto-sort`);
-  }, [getRating, updateRating]);
+    
+    // CRITICAL FIX: In ranking mode, we do NOT call addImpliedBattle
+    // This prevents the system from triggering battles that would change the Pokemon's position
+    if (!preventAutoResorting && addImpliedBattle && abovePokemon) {
+      console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] ⚔️ BATTLE MODE: Adding implied battle vs ${abovePokemon.name}`);
+      addImpliedBattle(draggedPokemon.id, abovePokemon.id);
+    } else if (preventAutoResorting) {
+      console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] ✅ RANKING MODE: Skipping implied battles to maintain manual position`);
+    }
+  }, [getRating, updateRating, preventAutoResorting, addImpliedBattle]);
 
   const recalculateScores = useCallback((rankings: RankedPokemon[]): RankedPokemon[] => {
     console.log('🔥 [ENHANCED_REORDER_RECALC] Recalculating scores for', rankings.length, 'Pokemon');
