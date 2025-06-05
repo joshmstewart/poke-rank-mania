@@ -2,10 +2,6 @@
 import React, { useMemo } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import OptimizedDraggableCard from "./OptimizedDraggableCard";
-import {
-  SortableContext,
-  rectSortingStrategy,
-} from '@dnd-kit/sortable';
 
 interface DragDropGridMemoizedProps {
   displayRankings: (Pokemon | RankedPokemon)[];
@@ -26,13 +22,6 @@ const DragDropGridMemoized: React.FC<DragDropGridMemoizedProps> = React.memo(({
   console.log('🎨 [GRID_DEBUG] displayRankings length:', displayRankings.length);
   console.log('🎨 [GRID_DEBUG] onManualReorder exists:', !!onManualReorder);
 
-  // Create sortable items for proper drag behavior
-  const sortableItems = useMemo(() => {
-    const items = displayRankings.map(p => `ranking-${p.id}`);
-    console.log(`🎨 [GRID_DEBUG] Sortable items created:`, items.slice(0, 5));
-    console.log(`🎨 [GRID_DEBUG] Total items: ${items.length}`);
-    return items;
-  }, [displayRankings]);
 
   // Create cards with proper sortable integration
   const renderedCards = useMemo(() => {
@@ -58,20 +47,15 @@ const DragDropGridMemoized: React.FC<DragDropGridMemoizedProps> = React.memo(({
     });
   }, [displayRankings, localPendingRefinements]);
 
-  console.log(`🎨 [GRID_DEBUG] Rendering ${renderedCards.length} cards in SortableContext`);
+  console.log(`🎨 [GRID_DEBUG] Rendering ${renderedCards.length} cards in grid`);
 
   return (
-    <SortableContext 
-      items={sortableItems}
-      strategy={rectSortingStrategy}
+    <div
+      className="grid gap-4"
+      style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}
     >
-      <div 
-        className="grid gap-4" 
-        style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}
-      >
-        {renderedCards}
-      </div>
-    </SortableContext>
+      {renderedCards}
+    </div>
   );
 });
 
