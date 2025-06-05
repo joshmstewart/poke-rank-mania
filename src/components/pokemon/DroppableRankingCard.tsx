@@ -2,7 +2,7 @@
 import React from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { Pokemon, RankedPokemon } from '@/services/pokemon';
-import PokemonCard from './PokemonCard';
+import PokemonCard from '@/components/PokemonCard';
 
 interface DroppableRankingCardProps {
   pokemon?: Pokemon | RankedPokemon;

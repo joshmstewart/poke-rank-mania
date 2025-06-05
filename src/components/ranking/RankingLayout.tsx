@@ -1,4 +1,6 @@
+
 import React from "react";
+import type { DragStartEvent, DragEndEvent } from '@dnd-kit/core';
 import { LoadingState } from "./LoadingState";
 import { DragDropRankingLayout } from "./DragDropRankingLayout";
 import { BattleType } from "@/hooks/battle/types";

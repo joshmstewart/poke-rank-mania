@@ -2,6 +2,7 @@
 import React from "react";
 import GenerationHeader from "./GenerationHeader";
 import DraggablePokemonCard from "./DraggablePokemonCard";
+import PokemonCard from "@/components/PokemonCard";
 
 interface PokemonGridSectionProps {
   items: any[];

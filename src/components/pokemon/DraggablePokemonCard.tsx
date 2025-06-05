@@ -2,7 +2,7 @@
 import React from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { Pokemon } from '@/services/pokemon';
-import PokemonCard from './PokemonCard';
+import PokemonCard from '@/components/PokemonCard';
 
 interface DraggablePokemonCardProps {
   pokemon: Pokemon;
@@ -15,7 +15,7 @@ const DraggablePokemonCard: React.FC<DraggablePokemonCardProps> = ({
   compact = true,
   viewMode = 'grid'
 }) => {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useDraggable({
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `available-${pokemon.id}`,
   });
 
@@ -24,7 +24,7 @@ const DraggablePokemonCard: React.FC<DraggablePokemonCardProps> = ({
   const style = transform
     ? { 
         transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`, 
-        transition,
+        transition: 'transform 250ms ease',
         zIndex: isDragging ? 1000 : 'auto'
       }
     : {};
