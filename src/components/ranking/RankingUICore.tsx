@@ -80,12 +80,6 @@ export const RankingUICore: React.FC<RankingUICoreProps> = React.memo(({
 
   console.log(`🚨🚨🚨 [RANKING_UI_CORE_DEBUG] triggerReRanking created:`, !!triggerReRanking);
 
-  // CRITICAL FIX: Create a completely stable wrapper that doesn't change and is async
-  const triggerReRankingWrapper = React.useCallback(async (pokemonId: number) => {
-    console.log(`🚨🚨🚨 [RANKING_UI_CORE_DEBUG] triggerReRankingWrapper called for Pokemon ID: ${pokemonId}`);
-    await triggerReRanking(pokemonId);
-  }, [triggerReRanking]); // triggerReRanking is now stable
-
   // Use the extracted reset functionality
   const { handleComprehensiveReset } = useRankingReset({
     onReset,
@@ -103,7 +97,7 @@ export const RankingUICore: React.FC<RankingUICoreProps> = React.memo(({
     localRankings,
     setAvailablePokemon,
     onManualReorder: tooLarge ? (() => {}) : handleEnhancedManualReorder,
-    triggerReRanking: triggerReRankingWrapper,
+    triggerReRanking: triggerReRanking, // Use the stable async function directly
   });
 
   console.log(`🚨🚨🚨 [RANKING_UI_CORE_DEBUG] Drag handlers created:`, {
