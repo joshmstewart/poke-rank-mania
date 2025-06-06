@@ -9,13 +9,13 @@ export const HelpButton: React.FC = () => {
 
   return (
     <Button
-      variant="outline"
+      variant="ghost"
       size="sm"
       onClick={startTour}
-      className="flex items-center gap-2"
+      className="p-2 h-auto hover:bg-gray-100"
+      title="Help Tour"
     >
-      <HelpCircle className="w-4 h-4" />
-      Help
+      <HelpCircle className="w-5 h-5 text-gray-600" />
     </Button>
   );
 };

@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 
 interface TourStep {
@@ -66,7 +65,7 @@ const tourSteps: TourStep[] = [
   }
 ];
 
-const TOUR_VISITED_KEY = 'pokerank-tour-completed';
+const TOUR_VISITED_KEY = 'pokerank-tour-visited';
 
 export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isActive, setIsActive] = useState(false);
@@ -74,11 +73,13 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Check if this is the user's first visit and start tour automatically
   useEffect(() => {
-    const hasCompletedTour = localStorage.getItem(TOUR_VISITED_KEY);
-    if (!hasCompletedTour) {
+    const hasVisitedBefore = localStorage.getItem(TOUR_VISITED_KEY);
+    if (!hasVisitedBefore) {
       console.log('🎯 Tour: First visit detected, starting tour automatically');
       setIsActive(true);
       setCurrentStep(0);
+      // Mark as visited immediately so it doesn't show again
+      localStorage.setItem(TOUR_VISITED_KEY, 'true');
     }
   }, []);
 
@@ -90,9 +91,7 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const endTour = useCallback(() => {
     setIsActive(false);
     setCurrentStep(0);
-    // Mark tour as completed
-    localStorage.setItem(TOUR_VISITED_KEY, 'true');
-    console.log('🎯 Tour: Tour completed, marked in localStorage');
+    console.log('🎯 Tour: Tour completed');
   }, []);
 
   const nextStep = useCallback(() => {
