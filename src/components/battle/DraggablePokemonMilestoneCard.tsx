@@ -92,6 +92,10 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   // Format Pokemon ID with leading zeros
   const formattedId = pokemon.id.toString().padStart(pokemon.id >= 10000 ? 5 : 3, '0');
 
+  // CRITICAL FIX: Use the formatted name that's already in the pokemon object
+  // The PersonalRankingsView already formats the name and puts it in pokemon.name
+  const displayName = pokemon.name;
+
   return (
     <div
       ref={setNodeRef}
@@ -133,7 +137,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
                 className="w-5 h-5 rounded-full bg-white/80 hover:bg-white border border-gray-300 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200 backdrop-blur-sm cursor-pointer"
                 onClick={(e) => {
                   e.stopPropagation();
-                  console.log(`Info button clicked for ${pokemon.name}`);
+                  console.log(`Info button clicked for ${displayName}`);
                 }}
                 onPointerDown={(e) => {
                   e.stopPropagation();
@@ -155,7 +159,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
             >
               <DialogHeader>
                 <DialogTitle className="text-2xl font-bold text-center">
-                  {pokemon.name}
+                  {displayName}
                 </DialogTitle>
               </DialogHeader>
 
@@ -200,7 +204,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       <div className="flex-1 flex justify-center items-center px-2 pt-6 pb-1">
         <img 
           src={pokemon.image} 
-          alt={pokemon.name}
+          alt={displayName}
           className={`w-20 h-20 object-contain transition-all duration-200 ${
             isDragging ? 'scale-110' : ''
           }`}
@@ -221,7 +225,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
         isDragging ? 'bg-blue-50' : ''
       }`}>
         <h3 className="font-bold text-gray-800 text-sm leading-tight mb-0.5">
-          {pokemon.name}
+          {displayName}
         </h3>
         <div className="text-xs text-gray-600 mb-1">
           #{formattedId}
