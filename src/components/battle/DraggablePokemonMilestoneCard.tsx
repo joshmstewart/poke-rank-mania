@@ -32,6 +32,19 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
 }) => {
   const [isOpen, setIsOpen] = React.useState(false);
 
+  // CRITICAL DEBUG: Log exactly what we're receiving
+  console.log(`🔍🔍🔍 [CARD_NAME_DEBUG] ===== POKEMON CARD DATA ANALYSIS =====`);
+  console.log(`🔍🔍🔍 [CARD_NAME_DEBUG] Pokemon ID: ${pokemon.id}`);
+  console.log(`🔍🔍🔍 [CARD_NAME_DEBUG] Pokemon name from prop: "${pokemon.name}"`);
+  console.log(`🔍🔍🔍 [CARD_NAME_DEBUG] Context: ${context}`);
+  console.log(`🔍🔍🔍 [CARD_NAME_DEBUG] Index: ${index}`);
+  console.log(`🔍🔍🔍 [CARD_NAME_DEBUG] Pokemon object keys:`, Object.keys(pokemon));
+  console.log(`🔍🔍🔍 [CARD_NAME_DEBUG] Is RankedPokemon:`, 'score' in pokemon);
+  if ('score' in pokemon) {
+    console.log(`🔍🔍🔍 [CARD_NAME_DEBUG] Score: ${pokemon.score}`);
+  }
+  console.log(`🔍🔍🔍 [CARD_NAME_DEBUG] Full pokemon object:`, pokemon);
+
   // Determine if this Pokemon is ranked (for available context)
   const isRankedPokemon = context === 'available' && 'isRanked' in pokemon && pokemon.isRanked;
   const currentRank = isRankedPokemon && 'currentRank' in pokemon ? pokemon.currentRank : null;
@@ -92,9 +105,11 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   // Format Pokemon ID with leading zeros
   const formattedId = pokemon.id.toString().padStart(pokemon.id >= 10000 ? 5 : 3, '0');
 
-  // CRITICAL FIX: Use the formatted name that's already in the pokemon object
-  // The PersonalRankingsView already formats the name and puts it in pokemon.name
+  // CRITICAL FIX: Use the name that should already be formatted in the pokemon object
+  // BUT add debugging to see exactly what we get
   const displayName = pokemon.name;
+  console.log(`🔍🔍🔍 [CARD_NAME_DEBUG] Final displayName: "${displayName}"`);
+  console.log(`🔍🔍🔍 [CARD_NAME_DEBUG] =====================================`);
 
   return (
     <div
