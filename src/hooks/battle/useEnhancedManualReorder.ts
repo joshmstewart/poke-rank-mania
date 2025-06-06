@@ -85,6 +85,15 @@ export const useEnhancedManualReorder = (
     console.log('🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Target position (newIndex):', newIndex);
     console.log('🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] preventAutoResorting:', preventAutoResorting);
     
+    // CRITICAL: Special logging for Cubchoo (ID 613) drag scenario
+    if (draggedPokemon.id === 613) {
+      console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] ===== CUBCHOO BEING MOVED =====`);
+      console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] Current score: ${draggedPokemon.score}`);
+      console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] Current rating:`, draggedPokemon.rating);
+      console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] Target index: ${newIndex}`);
+      console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] Rankings array length: ${rankings.length}`);
+    }
+    
     // CRITICAL: Special logging for Darumaka (ID 554) drag scenario
     if (draggedPokemon.id === 554) {
       console.log(`🎯🎯🎯 [DARUMAKA_BUG_TRACE_${operationId}] ===== DARUMAKA BEING MOVED =====`);
@@ -117,7 +126,7 @@ export const useEnhancedManualReorder = (
     console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Current rating from store - μ=${currentRating.mu.toFixed(5)}, σ=${currentRating.sigma.toFixed(5)}`);
     console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Current displayed score: ${(currentRating.mu - currentRating.sigma).toFixed(5)}`);
     
-    // Create the final rankings array to determine correct neighbors
+    // CRITICAL FIX: Create the final rankings array CORRECTLY to determine proper neighbors
     const finalRankingsAfterMove = [...rankings];
     
     // For new additions (when Pokemon wasn't in rankings before)
@@ -127,20 +136,40 @@ export const useEnhancedManualReorder = (
       finalRankingsAfterMove.splice(newIndex, 0, draggedPokemon);
       console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] NEW POKEMON: Inserted at position ${newIndex}`);
     } else {
-      // Existing Pokemon - remove from old position and insert at new position
+      // CRITICAL BUG FIX: For existing Pokemon, we need to simulate the FINAL arrangement correctly
+      console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] EXISTING POKEMON: Moving from ${existingIndex} to ${newIndex}`);
+      
+      // Remove from old position first
       finalRankingsAfterMove.splice(existingIndex, 1);
+      // Then insert at new position (which may have shifted due to removal)
       finalRankingsAfterMove.splice(newIndex, 0, draggedPokemon);
-      console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] EXISTING POKEMON: Moved from ${existingIndex} to ${newIndex}`);
+      
+      console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] REORDER SIMULATION: Removed from ${existingIndex}, inserted at ${newIndex}`);
     }
     
-    // Now get the Pokemon that will be above and below in the final arrangement
+    // CRITICAL: Now get the Pokemon that will be ACTUALLY above and below in the FINAL arrangement
     const abovePokemon = newIndex > 0 ? finalRankingsAfterMove[newIndex - 1] : null;
     const belowPokemon = newIndex < finalRankingsAfterMove.length - 1 ? finalRankingsAfterMove[newIndex + 1] : null;
     
-    console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] FINAL ARRANGEMENT:`);
+    console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] FINAL ARRANGEMENT NEIGHBORS:`);
     console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Above Pokemon:`, abovePokemon ? `${abovePokemon.name} (ID: ${abovePokemon.id}) at final position ${newIndex - 1}` : 'None (top position)');
     console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Target Pokemon: ${draggedPokemon.name} (ID: ${draggedPokemon.id}) at final position ${newIndex}`);
     console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Below Pokemon:`, belowPokemon ? `${belowPokemon.name} (ID: ${belowPokemon.id}) at final position ${newIndex + 1}` : 'None (bottom position)');
+    
+    // CRITICAL: Special case for Cubchoo neighbor identification
+    if (draggedPokemon.id === 613) {
+      console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] ===== CUBCHOO NEIGHBOR ANALYSIS =====`);
+      if (abovePokemon) {
+        console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] Above: ${abovePokemon.name} (ID: ${abovePokemon.id})`);
+        console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] Above score: ${abovePokemon.score}`);
+        console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] Expected: Should be Wooper-paldea (10253) with ~19.77`);
+        console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] Match check: ${abovePokemon.id === 10253 ? 'CORRECT' : 'WRONG!'}`);
+      }
+      if (belowPokemon) {
+        console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] Below: ${belowPokemon.name} (ID: ${belowPokemon.id})`);
+        console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] Below score: ${belowPokemon.score}`);
+      }
+    }
     
     // CRITICAL: Special case for Darumaka between Voltorb-hisui and Cubchoo
     if (draggedPokemon.id === 554) {
@@ -166,6 +195,14 @@ export const useEnhancedManualReorder = (
       console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Above ${abovePokemon.name}: TrueSkill μ=${aboveRating.mu.toFixed(5)}, σ=${aboveRating.sigma.toFixed(5)}, calculated score=${aboveScore.toFixed(5)}`);
       console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Above ${abovePokemon.name}: Display score from object=${abovePokemon.score.toFixed(5)}`);
       
+      // CRITICAL: Special logging for Cubchoo's above neighbor
+      if (draggedPokemon.id === 613) {
+        console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] Above neighbor score calculation:`);
+        console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] TrueSkill: μ=${aboveRating.mu.toFixed(5)}, σ=${aboveRating.sigma.toFixed(5)}`);
+        console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] Calculated: ${aboveScore.toFixed(5)}`);
+        console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] Expected ~19.77: ${Math.abs(aboveScore - 19.77) < 0.1 ? 'MATCH' : 'MISMATCH'}`);
+      }
+      
       // CRITICAL: Special logging for Darumaka's above neighbor
       if (draggedPokemon.id === 554) {
         console.log(`🎯🎯🎯 [DARUMAKA_BUG_TRACE_${operationId}] Above neighbor score calculation:`);
@@ -180,6 +217,13 @@ export const useEnhancedManualReorder = (
       belowScore = belowRating.mu - belowRating.sigma;
       console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Below ${belowPokemon.name}: TrueSkill μ=${belowRating.mu.toFixed(5)}, σ=${belowRating.sigma.toFixed(5)}, calculated score=${belowScore.toFixed(5)}`);
       console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Below ${belowPokemon.name}: Display score from object=${belowPokemon.score.toFixed(5)}`);
+      
+      // CRITICAL: Special logging for Cubchoo's below neighbor
+      if (draggedPokemon.id === 613) {
+        console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] Below neighbor score calculation:`);
+        console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] TrueSkill: μ=${belowRating.mu.toFixed(5)}, σ=${belowRating.sigma.toFixed(5)}`);
+        console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] Calculated: ${belowScore.toFixed(5)}`);
+      }
       
       // CRITICAL: Special logging for Darumaka's below neighbor
       if (draggedPokemon.id === 554) {
@@ -199,6 +243,16 @@ export const useEnhancedManualReorder = (
       console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Current gap between neighbors: ${currentGap.toFixed(5)}`);
       console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Required gap threshold: ${SCORE_GAP * 2}`);
       
+      // CRITICAL: Special case for Cubchoo
+      if (draggedPokemon.id === 613) {
+        console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] ===== CUBCHOO TARGET CALCULATION =====`);
+        console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] Above score: ${aboveScore.toFixed(5)}`);
+        console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] Below score: ${belowScore.toFixed(5)}`);
+        console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] Gap: ${currentGap.toFixed(5)}`);
+        console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] Expected average: ${((aboveScore + belowScore) / 2).toFixed(5)}`);
+        console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] Should be close to above neighbor: ${Math.abs(((aboveScore + belowScore) / 2) - aboveScore) < 2 ? 'YES' : 'NO'}`);
+      }
+      
       // CRITICAL: Special case for Darumaka
       if (draggedPokemon.id === 554) {
         console.log(`🎯🎯🎯 [DARUMAKA_BUG_TRACE_${operationId}] ===== DARUMAKA TARGET CALCULATION =====`);
@@ -214,7 +268,12 @@ export const useEnhancedManualReorder = (
         console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] INSUFFICIENT GAP: ${currentGap.toFixed(3)} < ${SCORE_GAP * 2}`);
         console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] ⚠️ ADJUSTING NEIGHBOR SCORES ⚠️`);
         
-        // CRITICAL: This is likely where Darumaka's score gets messed up!
+        // CRITICAL: This is likely where the bug happens!
+        if (draggedPokemon.id === 613) {
+          console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] ⚠️ NEIGHBOR ADJUSTMENT TRIGGERED ⚠️`);
+          console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] This might be causing the bug!`);
+        }
+        
         if (draggedPokemon.id === 554) {
           console.log(`🎯🎯🎯 [DARUMAKA_BUG_TRACE_${operationId}] ⚠️ NEIGHBOR ADJUSTMENT TRIGGERED ⚠️`);
           console.log(`🎯🎯🎯 [DARUMAKA_BUG_TRACE_${operationId}] This might be causing the bug!`);
@@ -230,6 +289,14 @@ export const useEnhancedManualReorder = (
         
         console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Old above ${abovePokemon.name} μ: ${aboveRating.mu.toFixed(5)} -> New μ: ${newAboveMu.toFixed(5)}`);
         console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Old below ${belowPokemon.name} μ: ${belowRating.mu.toFixed(5)} -> New μ: ${newBelowMu.toFixed(5)}`);
+        
+        // CRITICAL: Log neighbor adjustments for Cubchoo
+        if (draggedPokemon.id === 613) {
+          console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] ===== NEIGHBOR ADJUSTMENT DETAILS =====`);
+          console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] Above ${abovePokemon.name}: ${aboveRating.mu.toFixed(5)} -> ${newAboveMu.toFixed(5)}`);
+          console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] Below ${belowPokemon.name}: ${belowRating.mu.toFixed(5)} -> ${newBelowMu.toFixed(5)}`);
+          console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] SCORE_GAP: ${SCORE_GAP}, MIN_SIGMA: ${MIN_SIGMA}`);
+        }
         
         // CRITICAL: Log Darumaka's neighbor adjustments
         if (draggedPokemon.id === 554) {
@@ -251,6 +318,15 @@ export const useEnhancedManualReorder = (
         
         console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Target based on adjusted neighbors: (${newAboveDisplayScore.toFixed(5)} + ${newBelowDisplayScore.toFixed(5)}) / 2 = ${targetDisplayedScore.toFixed(5)}`);
         
+        // CRITICAL: Log Cubchoo's final target after neighbor adjustment
+        if (draggedPokemon.id === 613) {
+          console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] ===== CUBCHOO TARGET AFTER ADJUSTMENT =====`);
+          console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] New above score: ${newAboveDisplayScore.toFixed(5)}`);
+          console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] New below score: ${newBelowDisplayScore.toFixed(5)}`);
+          console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] Calculated target: ${targetDisplayedScore.toFixed(5)}`);
+          console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] This is likely way wrong! Should be close to Wooper-paldea's score.`);
+        }
+        
         // CRITICAL: Log Darumaka's final target after neighbor adjustment
         if (draggedPokemon.id === 554) {
           console.log(`🎯🎯🎯 [DARUMAKA_BUG_TRACE_${operationId}] ===== DARUMAKA TARGET AFTER ADJUSTMENT =====`);
@@ -263,6 +339,13 @@ export const useEnhancedManualReorder = (
         // Sufficient gap exists - use simple average
         targetDisplayedScore = (aboveScore + belowScore) / 2;
         console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Target based on existing gap: (${aboveScore.toFixed(5)} + ${belowScore.toFixed(5)}) / 2 = ${targetDisplayedScore.toFixed(5)}`);
+        
+        // CRITICAL: Log Cubchoo's simple average calculation
+        if (draggedPokemon.id === 613) {
+          console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] ===== CUBCHOO SIMPLE AVERAGE =====`);
+          console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] Simple average: ${targetDisplayedScore.toFixed(5)}`);
+          console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] Expected close to above: ${Math.abs(targetDisplayedScore - aboveScore) < 2 ? 'GOOD' : 'BAD'}`);
+        }
         
         // CRITICAL: Log Darumaka's simple average calculation
         if (draggedPokemon.id === 554) {
@@ -297,6 +380,13 @@ export const useEnhancedManualReorder = (
     console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] New σ: ${newSigma.toFixed(5)}`);
     console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] VERIFICATION: new displayed score = ${(newMu - newSigma).toFixed(5)} (should equal target: ${targetDisplayedScore.toFixed(5)})`);
     
+    // CRITICAL: Log before updating if this is Cubchoo
+    if (draggedPokemon.id === 613) {
+      console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] ===== BEFORE TRUESKILL UPDATE =====`);
+      console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] About to set μ=${newMu.toFixed(5)}, σ=${newSigma.toFixed(5)}`);
+      console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] Expected final score: ${(newMu - newSigma).toFixed(5)}`);
+    }
+    
     // CRITICAL: Log before updating if this is Charmander
     if (draggedPokemon.id === 4) {
       console.log(`🔥🔥🔥 [CHARMANDER_TRACE_${operationId}] ===== BEFORE TRUESKILL UPDATE =====`);
@@ -321,6 +411,16 @@ export const useEnhancedManualReorder = (
     console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] ✅ Rating updated in TrueSkill store`);
     console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] ✅ Verification: stored μ=${verifyRating.mu.toFixed(5)}, σ=${verifyRating.sigma.toFixed(5)}`);
     console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] ✅ Verification: calculated score=${(verifyRating.mu - verifyRating.sigma).toFixed(5)}`);
+    
+    // CRITICAL: Log after updating if this is Cubchoo
+    if (draggedPokemon.id === 613) {
+      console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] ===== AFTER TRUESKILL UPDATE =====`);
+      console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] Stored μ=${verifyRating.mu.toFixed(5)}, σ=${verifyRating.sigma.toFixed(5)}`);
+      console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] Calculated score: ${(verifyRating.mu - verifyRating.sigma).toFixed(5)}`);
+      console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] Target was: ${targetDisplayedScore.toFixed(5)}`);
+      console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] Match? ${Math.abs((verifyRating.mu - verifyRating.sigma) - targetDisplayedScore) < 0.001 ? 'YES' : 'NO'}`);
+      console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] Is reasonable? ${(verifyRating.mu - verifyRating.sigma) >= 19 && (verifyRating.mu - verifyRating.sigma) <= 22 ? 'YES' : 'NO'}`);
+    }
     
     // CRITICAL: Log after updating if this is Charmander
     if (draggedPokemon.id === 4) {
