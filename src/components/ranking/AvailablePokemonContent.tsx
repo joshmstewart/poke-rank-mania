@@ -37,6 +37,7 @@ export const AvailablePokemonContent: React.FC<AvailablePokemonContentProps> = (
         isRankingArea={false}
         isGenerationExpanded={isGenerationExpanded}
         onToggleGeneration={onToggleGeneration}
+        useLazyLoading={items.length > 100}
       />
 
       <InfiniteScrollLoader

@@ -8,6 +8,7 @@ import PokemonCardInfo from "./PokemonCardInfo";
 import GenerationHeader from "./GenerationHeader";
 import { VotingArrows } from "@/components/ranking/VotingArrows";
 import DraggablePokemonMilestoneCard from "@/components/battle/DraggablePokemonMilestoneCard";
+import { LazyPokemonGrid } from "./LazyPokemonGrid";
 
 interface PokemonListContentProps {
   items: any[];
@@ -16,6 +17,7 @@ interface PokemonListContentProps {
   isRankingArea: boolean;
   isGenerationExpanded?: (generationId: number) => boolean;
   onToggleGeneration?: (generationId: number) => void;
+  useLazyLoading?: boolean;
 }
 
 export const PokemonListContent: React.FC<PokemonListContentProps> = ({
@@ -24,9 +26,10 @@ export const PokemonListContent: React.FC<PokemonListContentProps> = ({
   viewMode,
   isRankingArea,
   isGenerationExpanded,
-  onToggleGeneration
+  onToggleGeneration,
+  useLazyLoading = false
 }) => {
-  console.log(`🔍 [POKEMON_LIST_CONTENT] Rendering with itemCount: ${items.length}, showHeaders: ${showGenerationHeaders}`);
+  console.log(`🔍 [POKEMON_LIST_CONTENT] Rendering with itemCount: ${items.length}, showHeaders: ${showGenerationHeaders}, lazy: ${useLazyLoading}`);
 
   if (!items || items.length === 0) {
     return (
@@ -36,6 +39,18 @@ export const PokemonListContent: React.FC<PokemonListContentProps> = ({
     );
   }
 
+  // Use lazy loading for large lists
+  if (useLazyLoading && items.length > 50) {
+    return (
+      <LazyPokemonGrid 
+        items={items}
+        showGenerationHeaders={showGenerationHeaders}
+        isRankingArea={isRankingArea}
+      />
+    );
+  }
+
+  // Fallback to original rendering for smaller lists
   return (
     <div className="space-y-4">
       {items.map((item, index) => {
