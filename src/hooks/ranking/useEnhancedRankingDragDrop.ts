@@ -1,6 +1,6 @@
-
 import { useState, useCallback } from "react";
-import { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
+import { DragEndEvent, DragStartEvent, useSensors, useSensor, PointerSensor, TouchSensor, KeyboardSensor } from '@dnd-kit/core';
+import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { useTrueSkillStore } from "@/stores/trueskillStore";
 import { Rating } from "ts-trueskill";
 import { toast } from "@/hooks/use-toast";
@@ -17,6 +17,26 @@ export const useEnhancedRankingDragDrop = (
   const [dragSourceInfo, setDragSourceInfo] = useState<{fromAvailable: boolean, isRanked: boolean} | null>(null);
   const [sourceCardProps, setSourceCardProps] = useState<any>(null);
   const { updateRating } = useTrueSkillStore();
+
+  // Optimized sensors for enhanced ranking drag drop
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+        delay: 100,
+        tolerance: 5,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 200,
+        tolerance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
     const activeId = event.active.id.toString();
@@ -170,6 +190,7 @@ export const useEnhancedRankingDragDrop = (
   }, [handleEnhancedManualReorder]);
 
   return {
+    sensors,
     activeDraggedPokemon,
     dragSourceInfo,
     sourceCardProps,

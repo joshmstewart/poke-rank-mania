@@ -73,6 +73,7 @@ export const RankingUICore: React.FC<RankingUICoreProps> = ({
 
   // Use the enhanced drag and drop functionality
   const {
+    sensors,
     activeDraggedPokemon,
     dragSourceInfo,
     sourceCardProps,
@@ -110,6 +111,7 @@ export const RankingUICore: React.FC<RankingUICoreProps> = ({
       dragSourceInfo={dragSourceInfo}
       sourceCardProps={sourceCardProps}
       filteredAvailablePokemon={filteredAvailablePokemon}
+      sensors={sensors}
       handlePageChange={handlePageChange}
       getPageRange={getPageRange}
       onGenerationChange={onGenerationChange}

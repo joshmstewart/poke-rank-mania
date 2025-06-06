@@ -4,6 +4,7 @@ import {
   useSensor,
   PointerSensor,
   KeyboardSensor,
+  TouchSensor,
 } from '@dnd-kit/core';
 import {
   sortableKeyboardCoordinates,
@@ -21,8 +22,24 @@ export const useDragAndDrop = ({ displayRankings, onManualReorder, onLocalReorde
   console.log(`🚀 [DRAG_DROP_FLOW] ===== useDragAndDrop with Enhanced Flow =====`);
   console.log(`🚀 [DRAG_DROP_FLOW] onManualReorder function exists: ${!!onManualReorder}`);
 
+  // Optimized sensor configuration for better responsiveness
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    // Pointer sensor with activation constraints
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // Must move 8px before drag starts
+        delay: 100, // 100ms delay to prevent accidental drags
+        tolerance: 5, // 5px tolerance for slight movements
+      },
+    }),
+    // Touch sensor optimized for mobile
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 200, // Longer delay for touch to prevent scroll conflicts
+        tolerance: 8, // Higher tolerance for touch imprecision
+      },
+    }),
+    // Keyboard sensor for accessibility
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })

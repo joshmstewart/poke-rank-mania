@@ -26,6 +26,7 @@ interface EnhancedRankingLayoutProps {
   dragSourceInfo: {fromAvailable: boolean, isRanked: boolean} | null;
   sourceCardProps: any;
   filteredAvailablePokemon: any[];
+  sensors: any; // Add sensors prop
   handlePageChange: (page: number) => void;
   getPageRange: () => number[];
   onGenerationChange: (gen: number) => void;
@@ -53,6 +54,7 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = ({
   dragSourceInfo,
   sourceCardProps,
   filteredAvailablePokemon,
+  sensors,
   handlePageChange,
   getPageRange,
   onGenerationChange,
@@ -69,6 +71,7 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = ({
 
   return (
     <DndContext
+      sensors={sensors}
       collisionDetection={closestCenter}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
