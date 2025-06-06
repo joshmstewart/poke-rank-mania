@@ -87,8 +87,112 @@ export const useEnhancedManualReorder = (
     
     console.log(`🔥🔥🔥 [${operationId}] Above: ${abovePokemon ? `${abovePokemon.name} (${abovePokemon.score.toFixed(5)})` : 'None'}`);
     console.log(`🔥🔥🔥 [${operationId}] Below: ${belowPokemon ? `${belowPokemon.name} (${belowPokemon.score.toFixed(5)})` : 'None'}`);
+
+    // 🟢 Step 1: Explicitly detect identical neighbor scores
+    if (abovePokemon && belowPokemon) {
+      const EPSILON = 0.00001;
+      const aboveDisplayedScore = abovePokemon.rating ? (abovePokemon.rating.mu - abovePokemon.rating.sigma) : abovePokemon.score;
+      const belowDisplayedScore = belowPokemon.rating ? (belowPokemon.rating.mu - belowPokemon.rating.sigma) : belowPokemon.score;
+      
+      const identicalScores = Math.abs(aboveDisplayedScore - belowDisplayedScore) < EPSILON;
+      console.log(`🚨 [${operationId}] Identical score scenario explicitly detected:`, identicalScores);
+      console.log(`🚨 [${operationId}] Above displayed score: ${aboveDisplayedScore.toFixed(6)}`);
+      console.log(`🚨 [${operationId}] Below displayed score: ${belowDisplayedScore.toFixed(6)}`);
+      
+      if (identicalScores) {
+        // 🔵 Step 2: Explicitly identify groups with identical scores
+        const aboveGroup: RankedPokemon[] = [];
+        const belowGroup: RankedPokemon[] = [];
+        
+        // Build above group - all Pokemon immediately above with same displayed score
+        for (let i = targetPosition - 1; i >= 0; i--) {
+          const pokemon = currentRankings[i];
+          const pokemonDisplayedScore = pokemon.rating ? (pokemon.rating.mu - pokemon.rating.sigma) : pokemon.score;
+          if (Math.abs(pokemonDisplayedScore - aboveDisplayedScore) < EPSILON) {
+            aboveGroup.unshift(pokemon);
+          } else {
+            break;
+          }
+        }
+        
+        // Build below group - all Pokemon immediately below with same displayed score
+        for (let i = targetPosition; i < currentRankings.length; i++) {
+          const pokemon = currentRankings[i];
+          const pokemonDisplayedScore = pokemon.rating ? (pokemon.rating.mu - pokemon.rating.sigma) : pokemon.score;
+          if (Math.abs(pokemonDisplayedScore - belowDisplayedScore) < EPSILON) {
+            belowGroup.push(pokemon);
+          } else {
+            break;
+          }
+        }
+        
+        console.log(`📌 [${operationId}] Above group explicitly: [${aboveGroup.map(p => `${p.name} (${(p.rating?.mu - p.rating?.sigma || p.score).toFixed(3)})`).join(', ')}]`);
+        console.log(`📌 [${operationId}] Below group explicitly: [${belowGroup.map(p => `${p.name} (${(p.rating?.mu - p.rating?.sigma || p.score).toFixed(3)})`).join(', ')}]`);
+        
+        // 🟡 Step 3: Carefully adjust scores of the tied groups
+        const currentIndexAboveGroup = currentRankings.indexOf(aboveGroup[0]);
+        const currentIndexBelowGroup = currentRankings.indexOf(belowGroup[belowGroup.length - 1]);
+        
+        // Explicit next higher displayed score calculation
+        let nextHigherDisplayedScore;
+        if (currentIndexAboveGroup > 0) {
+          const nextHigherPokemon = currentRankings[currentIndexAboveGroup - 1];
+          nextHigherDisplayedScore = nextHigherPokemon.rating ? (nextHigherPokemon.rating.mu - nextHigherPokemon.rating.sigma) : nextHigherPokemon.score;
+        } else {
+          nextHigherDisplayedScore = aboveDisplayedScore + 0.5; // Explicit small increment
+        }
+        
+        // Explicit next lower displayed score calculation
+        let nextLowerDisplayedScore;
+        if (currentIndexBelowGroup < currentRankings.length - 1) {
+          const nextLowerPokemon = currentRankings[currentIndexBelowGroup + 1];
+          nextLowerDisplayedScore = nextLowerPokemon.rating ? (nextLowerPokemon.rating.mu - nextLowerPokemon.rating.sigma) : nextLowerPokemon.score;
+        } else {
+          nextLowerDisplayedScore = belowDisplayedScore - 0.5; // Explicit small decrement
+        }
+        
+        console.log(`📌 [${operationId}] Next higher displayed score: ${nextHigherDisplayedScore.toFixed(6)}`);
+        console.log(`📌 [${operationId}] Next lower displayed score: ${nextLowerDisplayedScore.toFixed(6)}`);
+        
+        // Adjust Above Group explicitly
+        const newAboveDisplayedScore = (aboveDisplayedScore + nextHigherDisplayedScore) / 2;
+        console.log(`📌 [${operationId}] Above group explicitly adjusted from ${aboveDisplayedScore.toFixed(6)} to ${newAboveDisplayedScore.toFixed(6)}`);
+        
+        aboveGroup.forEach(pokemon => {
+          const currentRating = getRating(pokemon.id.toString());
+          const newMu = newAboveDisplayedScore + currentRating.sigma;
+          const newRating = new Rating(newMu, currentRating.sigma);
+          updateRating(pokemon.id.toString(), newRating);
+          console.log(`📌 [${operationId}] Above group ${pokemon.name}: μ=${newMu.toFixed(3)}, σ=${currentRating.sigma.toFixed(3)}`);
+        });
+        
+        // Adjust Below Group explicitly
+        const newBelowDisplayedScore = (belowDisplayedScore + nextLowerDisplayedScore) / 2;
+        console.log(`📌 [${operationId}] Below group explicitly adjusted from ${belowDisplayedScore.toFixed(6)} to ${newBelowDisplayedScore.toFixed(6)}`);
+        
+        belowGroup.forEach(pokemon => {
+          const currentRating = getRating(pokemon.id.toString());
+          const newMu = newBelowDisplayedScore + currentRating.sigma;
+          const newRating = new Rating(newMu, currentRating.sigma);
+          updateRating(pokemon.id.toString(), newRating);
+          console.log(`📌 [${operationId}] Below group ${pokemon.name}: μ=${newMu.toFixed(3)}, σ=${currentRating.sigma.toFixed(3)}`);
+        });
+        
+        // 🟠 Step 4: Explicitly set dragged Pokemon's score
+        const MIN_SIGMA = 1.0;
+        const currentDraggedRating = getRating(draggedPokemon.id.toString());
+        const newSigma = Math.max(currentDraggedRating.sigma * 0.8, MIN_SIGMA); // Reduce sigma by 20%
+        const newMu = aboveDisplayedScore + newSigma; // Maintain exact original displayed score
+        const newDraggedRating = new Rating(newMu, newSigma);
+        updateRating(draggedPokemon.id.toString(), newDraggedRating);
+        
+        console.log(`✅ [${operationId}] Dragged Pokemon explicitly adjusted: ${draggedPokemon.name} new μ: ${newMu.toFixed(6)} new σ: ${newSigma.toFixed(6)}`);
+        
+        return; // Early return for identical scores case
+      }
+    }
     
-    // Calculate target score
+    // Standard case - no identical scores
     let targetScore: number;
     
     if (abovePokemon && belowPokemon) {
@@ -119,7 +223,7 @@ export const useEnhancedManualReorder = (
     updateRating(draggedPokemon.id.toString(), newRating);
     
     console.log(`🔥🔥🔥 [${operationId}] ✅ SCORE FORCED SUCCESSFULLY`);
-  }, [updateRating]);
+  }, [updateRating, getRating]);
 
   const recalculateAllScores = useCallback((rankings: RankedPokemon[]): RankedPokemon[] => {
     console.log('🔥 [RECALC_SCORES] ===== RECALCULATING ALL SCORES =====');
@@ -140,9 +244,9 @@ export const useEnhancedManualReorder = (
       };
     });
     
-    // ALWAYS SORT BY SCORE
+    // 🔴 Step 5: Explicitly resort the rankings immediately
     const sorted = updated.sort((a, b) => b.score - a.score);
-    console.log('🔥 [RECALC_SCORES] ===== SCORES RECALCULATED AND SORTED =====');
+    console.log('🔥 [RECALC_SCORES] ===== SCORES RECALCULATED AND EXPLICITLY SORTED =====');
     return sorted;
   }, [getRating]);
 
