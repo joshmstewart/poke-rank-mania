@@ -13,6 +13,7 @@ import {
 } from '@dnd-kit/sortable';
 import DraggablePokemonMilestoneCard from "./DraggablePokemonMilestoneCard";
 import { useDragAndDrop } from "@/hooks/battle/useDragAndDrop";
+import { getPokemonBackgroundColor } from "./utils/PokemonColorUtils";
 
 interface DraggableMilestoneGridProps {
   displayRankings: (Pokemon | RankedPokemon)[];
@@ -110,24 +111,25 @@ const DraggableMilestoneGrid: React.FC<DraggableMilestoneGridProps> = ({
           {content}
         </SortableContext>
         
-        {/* Hardware accelerated Drag Overlay for smooth cursor following */}
+        {/* Lightweight drag overlay - only image and background color */}
         <DragOverlay dropAnimation={dropAnimationConfig}>
           {activePokemon ? (
             <div 
-              className="rotate-2 scale-105"
+              className={`${getPokemonBackgroundColor(activePokemon)} rounded-lg w-35 h-35 flex items-center justify-center rotate-2 scale-105 shadow-2xl border-2 border-blue-400`}
               style={{
                 transform: 'translateZ(0)',
                 willChange: 'transform',
                 backfaceVisibility: 'hidden'
               }}
             >
-              <DraggablePokemonMilestoneCard
-                pokemon={activePokemon}
-                index={displayRankings.findIndex(p => p.id === activePokemon.id)}
-                showRank={true}
-                isDraggable={false}
-                context="ranked"
-                isPending={localPendingRefinements.has(activePokemon.id)}
+              <img 
+                src={activePokemon.image} 
+                alt={activePokemon.name}
+                className="w-20 h-20 object-contain"
+                style={{ 
+                  transform: 'translateZ(0)',
+                  willChange: 'auto'
+                }}
               />
             </div>
           ) : null}
