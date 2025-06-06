@@ -3,7 +3,7 @@ import React from "react";
 import LogoSection from "./LogoSection";
 import ModeStyleControls from "./ModeStyleControls";
 import { SaveProgressSection } from "./SaveProgressSection";
-import ImagePreferenceSelector from "@/components/settings/ImagePreferenceSelector";
+import HeaderImagePreferences from "./HeaderImagePreferences";
 
 interface AppHeaderProps {
   mode: "rank" | "battle";
@@ -28,7 +28,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ mode, onModeChange }) => {
             
             {/* Image Preferences */}
             <div className="border-l border-gray-200 pl-6">
-              <ImagePreferenceSelector />
+              <HeaderImagePreferences />
             </div>
           </div>
           
