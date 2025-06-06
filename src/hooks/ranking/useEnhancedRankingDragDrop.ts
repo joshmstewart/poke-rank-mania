@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from "react";
 import { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import { useTrueSkillStore } from "@/stores/trueskillStore";
@@ -14,6 +13,7 @@ export const useEnhancedRankingDragDrop = (
   updateLocalRankings: (rankings: any[]) => void
 ) => {
   const [activeDraggedPokemon, setActiveDraggedPokemon] = useState<any>(null);
+  const [dragSourceInfo, setDragSourceInfo] = useState<{fromAvailable: boolean, isRanked: boolean} | null>(null);
   const { updateRating } = useTrueSkillStore();
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
@@ -22,19 +22,24 @@ export const useEnhancedRankingDragDrop = (
 
     const activeId = event.active.id.toString();
     let draggedPokemon = null;
+    let sourceInfo = { fromAvailable: false, isRanked: false };
     
     if (activeId.startsWith('available-')) {
       const pokemonId = parseInt(activeId.replace('available-', ''));
       draggedPokemon = enhancedAvailablePokemon.find(p => p.id === pokemonId);
-      console.log(`🚀🚀🚀 [ENHANCED_DRAG_START] Dragging available: ${draggedPokemon?.name} (ID: ${pokemonId})`);
+      sourceInfo = { fromAvailable: true, isRanked: draggedPokemon?.isRanked || false };
+      console.log(`🚀🚀🚀 [ENHANCED_DRAG_START] Dragging from available: ${draggedPokemon?.name} (ID: ${pokemonId})`);
       console.log(`🚀🚀🚀 [ENHANCED_DRAG_START] Is already ranked: ${draggedPokemon?.isRanked}`);
     } else {
       const pokemonId = parseInt(activeId);
       draggedPokemon = localRankings.find(p => p.id === pokemonId);
-      console.log(`🚀🚀🚀 [ENHANCED_DRAG_START] Dragging ranked: ${draggedPokemon?.name} (ID: ${pokemonId})`);
+      sourceInfo = { fromAvailable: false, isRanked: true };
+      console.log(`🚀🚀🚀 [ENHANCED_DRAG_START] Dragging from rankings: ${draggedPokemon?.name} (ID: ${pokemonId})`);
     }
     
     setActiveDraggedPokemon(draggedPokemon);
+    setDragSourceInfo(sourceInfo);
+    console.log(`🚀🚀🚀 [ENHANCED_DRAG_START] Source info:`, sourceInfo);
   }, [enhancedAvailablePokemon, localRankings]);
 
   const handleDragEnd = useCallback(async (event: DragEndEvent) => {
@@ -42,6 +47,7 @@ export const useEnhancedRankingDragDrop = (
     console.log(`🚀🚀🚀 [ENHANCED_DRAG_END] Active: ${event.active.id}, Over: ${event.over?.id || 'NULL'}`);
     
     setActiveDraggedPokemon(null);
+    setDragSourceInfo(null);
     
     const { active, over } = event;
     
@@ -176,6 +182,7 @@ export const useEnhancedRankingDragDrop = (
 
   return {
     activeDraggedPokemon,
+    dragSourceInfo,
     handleDragStart,
     handleDragEnd,
     handleManualReorder

@@ -23,6 +23,7 @@ interface EnhancedRankingLayoutProps {
   loadingRef: React.RefObject<HTMLDivElement>;
   battleType: BattleType;
   activeDraggedPokemon: any;
+  dragSourceInfo: {fromAvailable: boolean, isRanked: boolean} | null;
   filteredAvailablePokemon: any[];
   handlePageChange: (page: number) => void;
   getPageRange: () => number[];
@@ -48,6 +49,7 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = ({
   loadingRef,
   battleType,
   activeDraggedPokemon,
+  dragSourceInfo,
   filteredAvailablePokemon,
   handlePageChange,
   getPageRange,
@@ -67,6 +69,25 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = ({
     console.log(`🔄 [MANUAL_MODE_RESET] Performing Manual mode specific reset actions`);
     handleComprehensiveReset();
   };
+
+  // Determine the correct props based on drag source
+  const getDragOverlayProps = () => {
+    if (!dragSourceInfo) {
+      return { compact: false, viewMode: "list" as const };
+    }
+
+    if (dragSourceInfo.fromAvailable) {
+      // Dragging from available section - these cards use compact=false, viewMode="list"
+      console.log(`🎨 [DRAG_OVERLAY] Using available section props: compact=false, viewMode="list"`);
+      return { compact: false, viewMode: "list" as const };
+    } else {
+      // Dragging from rankings section - these cards also use compact=false, viewMode="list"
+      console.log(`🎨 [DRAG_OVERLAY] Using rankings section props: compact=false, viewMode="list"`);
+      return { compact: false, viewMode: "list" as const };
+    }
+  };
+
+  const overlayProps = getDragOverlayProps();
 
   return (
     <DndContext
@@ -125,14 +146,14 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = ({
           </div>
         </div>
 
-        {/* Drag Overlay - Fixed to match actual cards */}
+        {/* Drag Overlay - Match exact props from source */}
         <DragOverlay>
           {activeDraggedPokemon ? (
             <div className="transform rotate-2 scale-105 opacity-95 z-50">
               <PokemonCard
                 pokemon={activeDraggedPokemon}
-                compact={false}
-                viewMode="list"
+                compact={overlayProps.compact}
+                viewMode={overlayProps.viewMode}
                 isDragging={true}
               />
             </div>
