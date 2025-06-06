@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -36,16 +37,16 @@ const smallPokemonIds = new Set([
   252, 255, 258, 385,
   // Gen 4 starters and small legendaries
   387, 390, 393, 480, 481, 482, 489, 490, 492,
-  // Gen 5 starters
-  495, 498, 501, 647, 648,
+  // Gen 5 starters and Virizion
+  495, 498, 501, 647, 648, 640,
   // Gen 6 starters and small legendaries
   650, 653, 656, 719, 720,
   // Gen 7 starters and small legendaries
-  722, 725, 728, 785, 786, 787, 788, 789, 790, 802,
+  722, 725, 728, 785, 786, 787, 788, 789, 790, 791, 792, 802,
   // Gen 8 starters and small legendaries
   810, 813, 816, 891, 807,
-  // Gen 9 starters and small legendaries
-  906, 909, 912, 1025
+  // Gen 9 starters, small legendaries, and Magearna
+  906, 909, 912, 1025, 801
 ]);
 
 // Special case for Meltan which needs extra scaling
