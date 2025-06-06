@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { LoadingType } from "@/hooks/pokemon/types";
 import { usePokemonGrouping } from "@/hooks/pokemon/usePokemonGrouping";
@@ -34,9 +35,6 @@ export const EnhancedAvailablePokemonSection: React.FC<EnhancedAvailablePokemonS
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
 
-  console.log(`🔍 [ENHANCED_AVAILABLE_SECTION] Rendering ${enhancedAvailablePokemon.length} enhanced available Pokemon`);
-  console.log(`🔍 [ENHANCED_AVAILABLE_SECTION] Ranked Pokemon in available: ${enhancedAvailablePokemon.filter(p => p.isRanked).length}`);
-
   // Calculate unranked Pokemon count
   const unrankedCount = enhancedAvailablePokemon.filter(p => !p.isRanked).length;
 
@@ -51,7 +49,6 @@ export const EnhancedAvailablePokemonSection: React.FC<EnhancedAvailablePokemonS
   // Auto-expand generations with search matches
   useEffect(() => {
     if (searchTerm.trim() && generationsWithMatches.length > 0) {
-      console.log(`🔍 [ENHANCED_SEARCH_EXPAND] Auto-expanding generations with matches: ${generationsWithMatches.join(', ')}`);
       expandGenerations(generationsWithMatches);
     }
   }, [searchTerm, generationsWithMatches, expandGenerations]);
@@ -70,9 +67,6 @@ export const EnhancedAvailablePokemonSection: React.FC<EnhancedAvailablePokemonS
     false, // This is not the ranking area
     isGenerationExpandedForDisplay
   );
-
-  console.log(`🔍 [ENHANCED_AVAILABLE_SECTION] Pokemon grouping returned ${items.length} items with headers: ${showGenerationHeaders}`);
-  console.log(`🔍 [ENHANCED_AVAILABLE_SECTION] Available generations: ${availableGenerations.join(', ')}`);
 
   const allExpanded = expandedGenerations.size === availableGenerations.length && availableGenerations.length > 0;
 
