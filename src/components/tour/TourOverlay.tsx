@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -34,40 +33,24 @@ export const TourOverlay: React.FC = () => {
           height: rect.height + 16
         });
         
-        // Calculate overlay position with better spacing
-        const position = steps[currentStep].position || 'bottom';
-        const cardHeight = 200; // Approximate card height
-        const cardWidth = 320; // Card width
-        const spacing = 30; // Increased spacing from target
+        // Center the tour card horizontally and position it lower
+        const cardWidth = 320;
+        const viewportHeight = window.innerHeight;
+        const viewportWidth = window.innerWidth;
         
-        let top = 0;
-        let left = 0;
+        // Center horizontally
+        const left = (viewportWidth - cardWidth) / 2;
         
-        switch (position) {
-          case 'top':
-            top = Math.max(rect.top - cardHeight - spacing, 20);
-            left = rect.left + rect.width / 2;
-            break;
-          case 'bottom':
-            // Position significantly lower to avoid covering content
-            top = Math.min(rect.bottom + spacing + 40, window.innerHeight - cardHeight - 20);
-            left = rect.left + rect.width / 2;
-            break;
-          case 'left':
-            top = rect.top + rect.height / 2;
-            left = Math.max(rect.left - cardWidth - spacing, 20);
-            break;
-          case 'right':
-            top = rect.top + rect.height / 2;
-            left = Math.min(rect.right + spacing, window.innerWidth - cardWidth - 20);
-            break;
-        }
+        // Position in lower third of viewport, with minimum distance from bottom
+        const top = Math.max(
+          viewportHeight * 0.65, // 65% down the viewport
+          rect.bottom + 60 // At least 60px below the target
+        );
         
-        // Ensure the card stays within viewport bounds
-        top = Math.max(20, Math.min(top, window.innerHeight - cardHeight - 20));
-        left = Math.max(20, Math.min(left, window.innerWidth - cardWidth - 20));
+        // Ensure it doesn't go off the bottom of the screen
+        const finalTop = Math.min(top, viewportHeight - 250);
         
-        setOverlayPosition({ top, left });
+        setOverlayPosition({ top: finalTop, left });
       } else {
         console.warn('🎯 Tour: Target element not found:', steps[currentStep].target);
         setTargetElement(null);
@@ -112,14 +95,13 @@ export const TourOverlay: React.FC = () => {
         />
       )}
       
-      {/* Tour card positioned lower */}
+      {/* Tour card centered and positioned lower */}
       <Card 
-        className="absolute pointer-events-auto bg-white p-6 shadow-xl max-w-sm transition-all duration-300 ease-in-out"
+        className="absolute pointer-events-auto bg-white p-6 shadow-xl transition-all duration-300 ease-in-out"
         style={{
           top: overlayPosition.top,
           left: overlayPosition.left,
-          transform: overlayPosition.left > window.innerWidth / 2 ? 'translateX(-100%)' : 'translateX(0)',
-          maxWidth: '320px',
+          width: '320px',
           zIndex: 60
         }}
       >
