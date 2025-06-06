@@ -27,31 +27,6 @@ const generationDetails: Record<number, { name: string, games: string }> = {
   9: { name: "Gen 9", games: "Scarlet & Violet" }
 };
 
-// Pokemon IDs that need scaling up due to smaller sprite sizes
-const smallPokemonIds = new Set([
-  // Gen 1 starters and babies
-  1, 4, 7, 25, 151,
-  // Gen 2 starters and babies
-  152, 155, 158, 172, 251,
-  // Gen 3 starters
-  252, 255, 258, 385,
-  // Gen 4 starters and small legendaries
-  387, 390, 393, 480, 481, 482, 489, 490, 492,
-  // Gen 5 starters and Virizion
-  495, 498, 501, 647, 648, 640,
-  // Gen 6 starters and small legendaries
-  650, 653, 656, 719, 720,
-  // Gen 7 starters and small legendaries
-  722, 725, 728, 785, 786, 787, 788, 789, 790, 791, 792, 802,
-  // Gen 8 starters and small legendaries
-  810, 813, 816, 891, 807,
-  // Gen 9 starters, small legendaries, and Magearna
-  906, 909, 912, 1025, 801
-]);
-
-// Special case for Meltan which needs extra scaling
-const extraLargePokemonIds = new Set([808]); // Meltan
-
 // Function to get Pokemon ID from avatar URL
 const getPokemonIdFromUrl = (url: string): number => {
   const match = url.match(/\/(\d+)\.png$/);
@@ -63,16 +38,6 @@ const getPokemonGeneration = (pokemonId: number) => {
   return generations.find(gen => 
     pokemonId >= gen.start && pokemonId <= gen.end && gen.id !== 0
   );
-};
-
-// Function to determine if Pokemon needs scaling
-const needsScaling = (pokemonId: number): boolean => {
-  return smallPokemonIds.has(pokemonId);
-};
-
-// Function to determine if Pokemon needs extra scaling
-const needsExtraScaling = (pokemonId: number): boolean => {
-  return extraLargePokemonIds.has(pokemonId);
 };
 
 export const AvatarSelectionModal: React.FC<AvatarSelectionModalProps> = ({
@@ -175,48 +140,36 @@ export const AvatarSelectionModal: React.FC<AvatarSelectionModalProps> = ({
                         
                         {/* Pokemon Grid for this generation */}
                         <div className="grid grid-cols-6 gap-3">
-                          {urls.map((avatarUrl, index) => {
-                            const pokemonId = getPokemonIdFromUrl(avatarUrl);
-                            const shouldScale = needsScaling(pokemonId);
-                            const shouldExtraScale = needsExtraScaling(pokemonId);
-                            
-                            return (
-                              <div
-                                key={`${avatarUrl}-${index}`}
-                                className="relative flex justify-center items-center"
-                              >
-                                <div className="relative w-16 h-16 flex justify-center items-center">
-                                  <button
-                                    onClick={() => setSelectedAvatar(avatarUrl)}
-                                    className={`w-16 h-16 aspect-square rounded-full transition-all duration-200 hover:scale-110 ${
-                                      selectedAvatar === avatarUrl
-                                        ? 'ring-4 ring-blue-500 ring-offset-2'
-                                        : 'hover:ring-2 hover:ring-blue-300'
-                                    }`}
-                                  >
-                                    <Avatar className="w-16 h-16">
-                                      <AvatarImage 
-                                        src={avatarUrl} 
-                                        alt={`Pokemon avatar ${pokemonId}`}
-                                        className={`object-cover border-2 border-gray-200 ${
-                                          shouldExtraScale ? 'scale-[1.91]' : shouldScale ? 'scale-150' : ''
-                                        }`}
-                                        style={(shouldScale || shouldExtraScale) ? { 
-                                          transformOrigin: 'center',
-                                          imageRendering: 'pixelated'
-                                        } : {}}
-                                      />
-                                    </Avatar>
-                                    {selectedAvatar === avatarUrl && (
-                                      <div className="absolute -top-1 -right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
-                                        <span className="text-white text-xs">✓</span>
-                                      </div>
-                                    )}
-                                  </button>
-                                </div>
+                          {urls.map((avatarUrl, index) => (
+                            <div
+                              key={`${avatarUrl}-${index}`}
+                              className="relative flex justify-center items-center"
+                            >
+                              <div className="relative w-16 h-16 flex justify-center items-center">
+                                <button
+                                  onClick={() => setSelectedAvatar(avatarUrl)}
+                                  className={`w-16 h-16 aspect-square rounded-full transition-all duration-200 hover:scale-110 ${
+                                    selectedAvatar === avatarUrl
+                                      ? 'ring-4 ring-blue-500 ring-offset-2'
+                                      : 'hover:ring-2 hover:ring-blue-300'
+                                  }`}
+                                >
+                                  <Avatar className="w-16 h-16">
+                                    <AvatarImage 
+                                      src={avatarUrl} 
+                                      alt={`Pokemon avatar ${getPokemonIdFromUrl(avatarUrl)}`}
+                                      className="object-cover border-2 border-gray-200"
+                                    />
+                                  </Avatar>
+                                  {selectedAvatar === avatarUrl && (
+                                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                                      <span className="text-white text-xs">✓</span>
+                                    </div>
+                                  )}
+                                </button>
                               </div>
-                            );
-                          })}
+                            </div>
+                          ))}
                         </div>
                       </div>
                     );
@@ -235,7 +188,7 @@ export const AvatarSelectionModal: React.FC<AvatarSelectionModalProps> = ({
             <Button onClick={handleSelect} disabled={loading}>
               Select Avatar
             </Button>
-            </div>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

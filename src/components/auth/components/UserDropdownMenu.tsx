@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from 'react';
 import {
   DropdownMenu,
@@ -8,13 +9,11 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User, Settings, LogOut, ChevronDown, Hash, Database, Search, CloudUpload, Link, MessageSquare } from 'lucide-react';
+import { User, Settings, LogOut, ChevronDown, Hash, Database, Search, CloudUpload, Link } from 'lucide-react';
 import { useAuth } from '@/contexts/auth/useAuth';
 import { useTrueSkillStore } from '@/stores/trueskillStore';
 import { supabase } from '@/integrations/supabase/client';
 import { ProfileModal } from '../ProfileModal';
-import { FeedbackModal } from '@/components/feedback/FeedbackModal';
-import { useConsoleCapture } from '@/hooks/useConsoleCapture';
 import { toast } from '@/hooks/use-toast';
 
 interface UserDropdownMenuProps {
@@ -32,9 +31,7 @@ interface UserDropdownMenuProps {
 export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({ user }) => {
   const { signOut } = useAuth();
   const { sessionId, getAllRatings, syncToCloud } = useTrueSkillStore();
-  const { getLogsAsString } = useConsoleCapture();
   const [profileModalOpen, setProfileModalOpen] = useState(false);
-  const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
 
   console.log('🎭🎭🎭 [USER_DROPDOWN_FIXED] ===== USER DROPDOWN MENU RENDER =====');
   console.log('🎭🎭🎭 [USER_DROPDOWN_FIXED] User received:', {
@@ -60,14 +57,6 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({ user }) => {
 
   const handleProfileModalClose = useCallback((open: boolean) => {
     setProfileModalOpen(open);
-  }, []);
-
-  const handleFeedbackModalOpen = useCallback(() => {
-    setFeedbackModalOpen(true);
-  }, []);
-
-  const handleFeedbackModalClose = useCallback(() => {
-    setFeedbackModalOpen(false);
   }, []);
 
   // IMPROVED FORCE SYNC: Better error handling and verification
@@ -506,11 +495,6 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({ user }) => {
             Edit Profile
           </DropdownMenuItem>
           
-          <DropdownMenuItem onClick={handleFeedbackModalOpen}>
-            <MessageSquare className="mr-2 h-4 w-4" />
-            Send Feedback
-          </DropdownMenuItem>
-          
           <DropdownMenuSeparator />
           
           <DropdownMenuItem onClick={claimSession} className="text-blue-600">
@@ -558,12 +542,6 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({ user }) => {
       <ProfileModal 
         open={profileModalOpen} 
         onOpenChange={handleProfileModalClose}
-      />
-
-      <FeedbackModal
-        isOpen={feedbackModalOpen}
-        onClose={handleFeedbackModalClose}
-        consoleLogs={getLogsAsString()}
       />
     </>
   );

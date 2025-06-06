@@ -3,7 +3,6 @@ import React from "react";
 import LogoSection from "./LogoSection";
 import ModeStyleControls from "./ModeStyleControls";
 import { SaveProgressSection } from "./SaveProgressSection";
-import HeaderImagePreferences from "./HeaderImagePreferences";
 
 interface AppHeaderProps {
   mode: "rank" | "battle";
@@ -23,14 +22,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ mode, onModeChange }) => {
           <LogoSection />
           
           {/* Center - Mode and Style Controls Group */}
-          <div className="flex items-center gap-6">
-            <ModeStyleControls mode={mode} onModeChange={onModeChange} />
-            
-            {/* Image Preferences */}
-            <div className="border-l border-gray-200 pl-6">
-              <HeaderImagePreferences />
-            </div>
-          </div>
+          <ModeStyleControls mode={mode} onModeChange={onModeChange} />
           
           {/* Right side - Clean Save Progress Section */}
           <div className="flex items-center">

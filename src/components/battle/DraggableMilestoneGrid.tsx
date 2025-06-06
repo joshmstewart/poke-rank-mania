@@ -6,15 +6,10 @@ import {
   closestCenter,
   DragOverlay,
   defaultDropAnimationSideEffects,
-  useSensor,
-  useSensors,
-  PointerSensor,
-  KeyboardSensor,
 } from '@dnd-kit/core';
 import {
   SortableContext,
   rectSortingStrategy,
-  sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable';
 import DraggablePokemonMilestoneCard from "./DraggablePokemonMilestoneCard";
 import { useDragAndDrop } from "@/hooks/battle/useDragAndDrop";
@@ -35,20 +30,8 @@ const DraggableMilestoneGrid: React.FC<DraggableMilestoneGridProps> = ({
   console.log(`🎯 [DRAGGABLE_MILESTONE_GRID] Rendering with ${displayRankings.length} Pokemon`);
   console.log(`🎯 [DRAGGABLE_MILESTONE_GRID] onManualReorder provided: ${!!onManualReorder}`);
 
-  // Configure sensors for better drag detection
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8, // 8px of movement required to start drag
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
-
   // Only use drag and drop if onManualReorder is provided
-  const { handleDragEnd } = useDragAndDrop({
+  const { sensors, handleDragEnd } = useDragAndDrop({
     displayRankings,
     onManualReorder: onManualReorder || (() => {
       console.log(`🎯 [DRAGGABLE_MILESTONE_GRID] No manual reorder handler - drag disabled`);
@@ -57,13 +40,11 @@ const DraggableMilestoneGrid: React.FC<DraggableMilestoneGridProps> = ({
   });
 
   const handleDragStart = (event: any) => {
-    const activePokemon = displayRankings.find(p => p.id === parseInt(event.active.id));
+    const activePokemon = displayRankings.find(p => p.id === event.active.id);
     setActivePokemon(activePokemon || null);
-    console.log(`🎯 [DRAGGABLE_MILESTONE_GRID] Drag started for: ${activePokemon?.name}`);
   };
 
   const handleDragEndWithCleanup = (event: any) => {
-    console.log(`🎯 [DRAGGABLE_MILESTONE_GRID] Drag end - calling handleDragEnd`);
     handleDragEnd(event);
     setActivePokemon(null);
   };
@@ -105,7 +86,7 @@ const DraggableMilestoneGrid: React.FC<DraggableMilestoneGridProps> = ({
         onDragEnd={handleDragEndWithCleanup}
       >
         <SortableContext 
-          items={displayRankings.map(p => p.id)} 
+          items={displayRankings.map(p => p.id.toString())} 
           strategy={rectSortingStrategy}
         >
           {content}

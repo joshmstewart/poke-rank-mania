@@ -3,7 +3,6 @@ import React, { useState, useEffect } from "react";
 import { RankingUI } from "./ranking/RankingUI";
 import { usePokemonRanker } from "@/hooks/usePokemonRanker";
 import { useGenerationState } from "@/hooks/battle/useGenerationState";
-import { useTrueSkillSync } from "@/hooks/ranking/useTrueSkillSync";
 
 export default function PokemonRanker() {
   const { selectedGeneration, setSelectedGeneration } = useGenerationState();
@@ -11,7 +10,7 @@ export default function PokemonRanker() {
   const {
     isLoading,
     availablePokemon,
-    rankedPokemon: originalRankedPokemon,
+    rankedPokemon,
     setAvailablePokemon,
     setRankedPokemon,
     loadingType,
@@ -23,17 +22,6 @@ export default function PokemonRanker() {
     getPageRange,
     resetRankings
   } = usePokemonRanker();
-
-  // CRITICAL FIX: Use TrueSkill sync to get the actual ranked Pokemon
-  const { localRankings } = useTrueSkillSync(true); // preventAutoResorting = true for manual mode
-
-  console.log('🎯 [POKEMON_RANKER] Original ranked Pokemon:', originalRankedPokemon.length);
-  console.log('🎯 [POKEMON_RANKER] TrueSkill ranked Pokemon:', localRankings.length);
-
-  // Use TrueSkill rankings if available, otherwise fall back to original
-  const effectiveRankedPokemon = localRankings.length > 0 ? localRankings : originalRankedPokemon;
-
-  console.log('🎯 [POKEMON_RANKER] Using effective ranked Pokemon:', effectiveRankedPokemon.length);
 
   const handleGenerationChange = (gen: number) => {
     setSelectedGeneration(gen);
@@ -47,7 +35,7 @@ export default function PokemonRanker() {
     <RankingUI
       isLoading={isLoading}
       availablePokemon={availablePokemon}
-      rankedPokemon={effectiveRankedPokemon}
+      rankedPokemon={rankedPokemon}
       selectedGeneration={selectedGeneration}
       loadingType={loadingType}
       currentPage={currentPage}

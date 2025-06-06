@@ -5,7 +5,6 @@ import { Pokemon, RankedPokemon } from '@/services/pokemon';
 import { useTrueSkillStore } from '@/stores/trueskillStore';
 import { usePokemonContext } from '@/contexts/PokemonContext';
 import { Rating } from 'ts-trueskill';
-import { formatPokemonName } from '@/utils/pokemon';
 
 export const useEnhancedManualReorder = (
   finalRankings: RankedPokemon[],
@@ -85,20 +84,21 @@ export const useEnhancedManualReorder = (
     console.log('🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] draggedPokemon:', draggedPokemon.name, 'ID:', draggedPokemon.id);
     console.log('🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Target position (newIndex):', newIndex);
     
+    // CRITICAL: Special logging for Cubchoo (ID 613) drag scenario
+    if (draggedPokemon.id === 613) {
+      console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] ===== CUBCHOO BEING MOVED =====`);
+      console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] Current score: ${draggedPokemon.score}`);
+      console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] Target index: ${newIndex}`);
+    }
+    
     // Constants
     const MIN_SIGMA = 1.0;
-    const EPSILON = 0.001; // For practical identical detection
-    const GROUP_ADJUSTMENT = 0.0001; // Small adjustment for group separation
     
-    console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Using MIN_SIGMA: ${MIN_SIGMA}, EPSILON: ${EPSILON}`);
+    console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Using MIN_SIGMA: ${MIN_SIGMA}`);
     
     // Get current rating for the dragged Pokemon
     const currentRating = getRating(draggedPokemon.id.toString());
     console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Current rating from store - μ=${currentRating.mu.toFixed(5)}, σ=${currentRating.sigma.toFixed(5)}`);
-    
-    // ENHANCED DEBUG: Log the initial score of the dragged Pokemon
-    const initialDisplayedScore = currentRating.mu - currentRating.sigma;
-    console.log(`🔍🔍🔍 [DOUBLADE_DEBUG] ${draggedPokemon.name} BEFORE adjustment: displayedScore=${initialDisplayedScore.toFixed(5)}`);
     
     // Create the final rankings array to determine proper neighbors
     const finalRankingsAfterMove = [...rankings];
@@ -125,193 +125,96 @@ export const useEnhancedManualReorder = (
     console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Below:`, belowPokemon ? `${belowPokemon.name} (ID: ${belowPokemon.id})` : 'None');
     
     // Get neighbor scores from TrueSkill store
-    let aboveDisplayedScore = 0, belowDisplayedScore = 0;
-    let aboveRating: Rating | null = null, belowRating: Rating | null = null;
+    let aboveScore = 0, belowScore = 0;
     
     if (abovePokemon) {
-      aboveRating = getRating(abovePokemon.id.toString());
-      aboveDisplayedScore = aboveRating.mu - aboveRating.sigma;
-      console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Above ${abovePokemon.name}: displayedScore=${aboveDisplayedScore.toFixed(5)}`);
+      const aboveRating = getRating(abovePokemon.id.toString());
+      aboveScore = aboveRating.mu - aboveRating.sigma;
+      console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Above ${abovePokemon.name}: score=${aboveScore.toFixed(5)}`);
     }
     
     if (belowPokemon) {
-      belowRating = getRating(belowPokemon.id.toString());
-      belowDisplayedScore = belowRating.mu - belowRating.sigma;
-      console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Below ${belowPokemon.name}: displayedScore=${belowDisplayedScore.toFixed(5)}`);
+      const belowRating = getRating(belowPokemon.id.toString());
+      belowScore = belowRating.mu - belowRating.sigma;
+      console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Below ${belowPokemon.name}: score=${belowScore.toFixed(5)}`);
     }
-
-    // ENHANCED DEBUG: Check if we're in identical neighbor territory
-    const hasIdenticalNeighbors = abovePokemon && belowPokemon && Math.abs(aboveDisplayedScore - belowDisplayedScore) < EPSILON;
-    console.log(`🔍🔍🔍 [DOUBLADE_DEBUG] ${draggedPokemon.name} hasIdenticalNeighbors: ${hasIdenticalNeighbors}`);
-    if (hasIdenticalNeighbors) {
-      console.log(`🔍🔍🔍 [DOUBLADE_DEBUG] ${draggedPokemon.name} identical score value: ${aboveDisplayedScore.toFixed(5)}`);
-    }
-
-    // 🟢 IMPROVED LOGIC: Check if immediate neighbors have identical scores
-    if (abovePokemon && belowPokemon && Math.abs(aboveDisplayedScore - belowDisplayedScore) < EPSILON) {
-      console.log(`🔵🔵🔵 [IDENTICAL_NEIGHBORS] ===== IDENTICAL NEIGHBOR SCORES =====`);
-      console.log(`🔵🔵🔵 [IDENTICAL_NEIGHBORS] Identical score value: ${aboveDisplayedScore.toFixed(5)}`);
-      
-      const identicalScore = aboveDisplayedScore;
-      
-      // Create a map of all current scores for efficient lookup
-      const allCurrentScores = new Map<number, number>();
-      for (const pokemon of finalRankingsAfterMove) {
-        if (pokemon.id === draggedPokemon.id) continue; // Skip the dragged Pokemon
-        const rating = getRating(pokemon.id.toString());
-        const score = rating.mu - rating.sigma;
-        allCurrentScores.set(pokemon.id, score);
-      }
-      
-      // Find Pokemon that need to be in upper and lower groups
-      const upperGroupIds: number[] = [];
-      const lowerGroupIds: number[] = [];
-      
-      for (let i = 0; i < finalRankingsAfterMove.length; i++) {
-        const pokemon = finalRankingsAfterMove[i];
-        if (pokemon.id === draggedPokemon.id) continue; // Skip the dragged Pokemon
-        
-        const currentScore = allCurrentScores.get(pokemon.id);
-        if (currentScore !== undefined && Math.abs(currentScore - identicalScore) < EPSILON) {
-          if (i < newIndex) {
-            upperGroupIds.push(pokemon.id);
-          } else if (i > newIndex) {
-            lowerGroupIds.push(pokemon.id);
-          }
-        }
-      }
-      
-      console.log(`🔵🔵🔵 [IDENTICAL_NEIGHBORS] Upper group Pokemon IDs: [${upperGroupIds.join(', ')}]`);
-      console.log(`🔵🔵🔵 [IDENTICAL_NEIGHBORS] Lower group Pokemon IDs: [${lowerGroupIds.join(', ')}]`);
-      
-      // ENHANCED DEBUG: Track score changes for each Pokemon
-      const scoreChanges: Array<{id: number, name: string, before: number, after: number}> = [];
-      
-      // Safely adjust upper group (increase by GROUP_ADJUSTMENT)
-      for (const pokemonId of upperGroupIds) {
-        try {
-          const rating = getRating(pokemonId.toString());
-          const beforeScore = rating.mu - rating.sigma;
-          const newDisplayedScore = identicalScore + GROUP_ADJUSTMENT;
-          // Keep sigma unchanged to maintain mathematical consistency
-          const newMu = newDisplayedScore + rating.sigma;
-          
-          console.log(`🔵🔵🔵 [IDENTICAL_NEIGHBORS] Adjusting upper Pokemon ${pokemonId}: ${identicalScore.toFixed(5)} → ${newDisplayedScore.toFixed(5)}`);
-          
-          const newRating = new Rating(newMu, rating.sigma);
-          updateRating(pokemonId.toString(), newRating);
-          
-          // Track the change
-          const pokemonName = finalRankingsAfterMove.find(p => p.id === pokemonId)?.name || `ID:${pokemonId}`;
-          scoreChanges.push({
-            id: pokemonId,
-            name: pokemonName,
-            before: beforeScore,
-            after: newDisplayedScore
-          });
-          
-        } catch (error) {
-          console.error(`🔵🔵🔵 [IDENTICAL_NEIGHBORS] Error adjusting upper Pokemon ${pokemonId}:`, error);
-        }
-      }
-      
-      // Safely adjust lower group (decrease by GROUP_ADJUSTMENT)
-      for (const pokemonId of lowerGroupIds) {
-        try {
-          const rating = getRating(pokemonId.toString());
-          const beforeScore = rating.mu - rating.sigma;
-          const newDisplayedScore = identicalScore - GROUP_ADJUSTMENT;
-          // Keep sigma unchanged to maintain mathematical consistency
-          const newMu = newDisplayedScore + rating.sigma;
-          
-          console.log(`🔵🔵🔵 [IDENTICAL_NEIGHBORS] Adjusting lower Pokemon ${pokemonId}: ${identicalScore.toFixed(5)} → ${newDisplayedScore.toFixed(5)}`);
-          
-          const newRating = new Rating(newMu, rating.sigma);
-          updateRating(pokemonId.toString(), newRating);
-          
-          // Track the change
-          const pokemonName = finalRankingsAfterMove.find(p => p.id === pokemonId)?.name || `ID:${pokemonId}`;
-          scoreChanges.push({
-            id: pokemonId,
-            name: pokemonName,
-            before: beforeScore,
-            after: newDisplayedScore
-          });
-          
-        } catch (error) {
-          console.error(`🔵🔵🔵 [IDENTICAL_NEIGHBORS] Error adjusting lower Pokemon ${pokemonId}:`, error);
-        }
-      }
-      
-      // Set dragged Pokemon to the original identical score (keep sigma unchanged)
-      try {
-        const newMu = identicalScore + currentRating.sigma;
-        
-        console.log(`🔵🔵🔵 [IDENTICAL_NEIGHBORS] Setting dragged ${draggedPokemon.name} to: ${identicalScore.toFixed(5)}`);
-        
-        const newRating = new Rating(newMu, currentRating.sigma);
-        updateRating(draggedPokemon.id.toString(), newRating);
-        
-        // Track the dragged Pokemon change
-        scoreChanges.push({
-          id: draggedPokemon.id,
-          name: draggedPokemon.name,
-          before: initialDisplayedScore,
-          after: identicalScore
-        });
-        
-        // ENHANCED DEBUG: Log all score changes
-        console.log(`🔍🔍🔍 [DOUBLADE_DEBUG] SCORE CHANGES SUMMARY for ${draggedPokemon.name}:`);
-        scoreChanges.forEach(change => {
-          const delta = change.after - change.before;
-          console.log(`🔍🔍🔍 [DOUBLADE_DEBUG] ${change.name}: ${change.before.toFixed(5)} → ${change.after.toFixed(5)} (Δ${delta > 0 ? '+' : ''}${delta.toFixed(5)})`);
-        });
-        
-        console.log(`🔵🔵🔵 [IDENTICAL_NEIGHBORS] ===== IDENTICAL NEIGHBOR ADJUSTMENT COMPLETE =====`);
-      } catch (error) {
-        console.error(`🔵🔵🔵 [IDENTICAL_NEIGHBORS] Error setting dragged Pokemon:`, error);
-      }
-      
-      return;
-    }
-
-    // Standard logic for non-identical scores or simple cases
+    
+    // Calculate target score - SIMPLE LOGIC, NO GAPS!
     let targetDisplayedScore: number;
     
     if (abovePokemon && belowPokemon) {
       // Between two Pokemon - use simple average
-      targetDisplayedScore = (aboveDisplayedScore + belowDisplayedScore) / 2;
-      console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] BETWEEN TWO: target = (${aboveDisplayedScore.toFixed(5)} + ${belowDisplayedScore.toFixed(5)}) / 2 = ${targetDisplayedScore.toFixed(5)}`);
+      targetDisplayedScore = (aboveScore + belowScore) / 2;
+      console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] BETWEEN TWO: target = (${aboveScore.toFixed(5)} + ${belowScore.toFixed(5)}) / 2 = ${targetDisplayedScore.toFixed(5)}`);
+      
+      // CRITICAL: Special case for Cubchoo
+      if (draggedPokemon.id === 613) {
+        console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] SIMPLE AVERAGE: ${targetDisplayedScore.toFixed(5)}`);
+      }
     } else if (abovePokemon && !belowPokemon) {
       // Bottom position - slightly below the Pokemon above
-      targetDisplayedScore = aboveDisplayedScore - 0.1;
-      console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] BOTTOM: target = ${aboveDisplayedScore.toFixed(5)} - 0.1 = ${targetDisplayedScore.toFixed(5)}`);
+      targetDisplayedScore = aboveScore - 0.1;
+      console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] BOTTOM: target = ${aboveScore.toFixed(5)} - 0.1 = ${targetDisplayedScore.toFixed(5)}`);
     } else if (!abovePokemon && belowPokemon) {
       // Top position - slightly above the Pokemon below
-      targetDisplayedScore = belowDisplayedScore + 0.1;
-      console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] TOP: target = ${belowDisplayedScore.toFixed(5)} + 0.1 = ${targetDisplayedScore.toFixed(5)}`);
+      targetDisplayedScore = belowScore + 0.1;
+      console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] TOP: target = ${belowScore.toFixed(5)} + 0.1 = ${targetDisplayedScore.toFixed(5)}`);
     } else {
       // Single Pokemon in list - no adjustment needed
       console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] SINGLE POKEMON - no adjustment needed`);
       return;
     }
     
-    // Calculate new mu (keep sigma unchanged for mathematical consistency)
-    const newMu = targetDisplayedScore + currentRating.sigma;
+    // Calculate new mu and sigma
+    const newSigma = Math.max(currentRating.sigma * 0.7, MIN_SIGMA);
+    const newMu = targetDisplayedScore + newSigma;
     
     console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] FINAL CALCULATION:`);
     console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Target score: ${targetDisplayedScore.toFixed(5)}`);
-    console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Keeping σ: ${currentRating.sigma.toFixed(5)}`);
+    console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] New σ: ${newSigma.toFixed(5)}`);
     console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] New μ: ${newMu.toFixed(5)}`);
-    console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Verification: μ - σ = ${(newMu - currentRating.sigma).toFixed(5)} (should equal ${targetDisplayedScore.toFixed(5)})`);
+    console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Verification: μ - σ = ${(newMu - newSigma).toFixed(5)} (should equal ${targetDisplayedScore.toFixed(5)})`);
     
-    // ENHANCED DEBUG: Log the score change for standard cases
-    const scoreDelta = targetDisplayedScore - initialDisplayedScore;
-    console.log(`🔍🔍🔍 [DOUBLADE_DEBUG] ${draggedPokemon.name} STANDARD CASE: ${initialDisplayedScore.toFixed(5)} → ${targetDisplayedScore.toFixed(5)} (Δ${scoreDelta > 0 ? '+' : ''}${scoreDelta.toFixed(5)})`);
+    // Sanity check
+    const calculatedScore = newMu - newSigma;
+    const scoreDiff = Math.abs(calculatedScore - targetDisplayedScore);
+    if (scoreDiff > 0.001) {
+      console.error(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] ❌ CALCULATION ERROR! Diff: ${scoreDiff.toFixed(8)}`);
+      return;
+    }
     
-    // Update the rating (keep sigma unchanged)
-    const newRating = new Rating(newMu, currentRating.sigma);
+    // CRITICAL: Log for Cubchoo before update
+    if (draggedPokemon.id === 613) {
+      console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] ABOUT TO UPDATE:`);
+      console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] μ=${newMu.toFixed(5)}, σ=${newSigma.toFixed(5)}`);
+      console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] Expected score: ${targetDisplayedScore.toFixed(5)}`);
+    }
+    
+    // Update the rating
+    const newRating = new Rating(newMu, newSigma);
     updateRating(draggedPokemon.id.toString(), newRating);
+    
+    // Verify the update
+    const verifyRating = getRating(draggedPokemon.id.toString());
+    const verifyScore = verifyRating.mu - verifyRating.sigma;
+    
+    console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] ✅ VERIFICATION:`);
+    console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Stored μ=${verifyRating.mu.toFixed(5)}, σ=${verifyRating.sigma.toFixed(5)}`);
+    console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Final score: ${verifyScore.toFixed(5)}`);
+    console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Target was: ${targetDisplayedScore.toFixed(5)}`);
+    console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Match: ${Math.abs(verifyScore - targetDisplayedScore) < 0.001 ? 'YES' : 'NO'}`);
+    
+    // CRITICAL: Final verification for Cubchoo
+    if (draggedPokemon.id === 613) {
+      console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] FINAL VERIFICATION:`);
+      console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] Final score: ${verifyScore.toFixed(5)}`);
+      console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] Should be between ${aboveScore?.toFixed(5)} and ${belowScore?.toFixed(5)}`);
+      
+      if (abovePokemon && belowPokemon) {
+        const isInRange = verifyScore < aboveScore && verifyScore > belowScore;
+        console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] Is in range: ${isInRange ? 'YES' : 'NO'}`);
+      }
+    }
     
     console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] ===== COMPLETE (${operationId}) =====`);
   }, [getRating, updateRating, preventAutoResorting, addImpliedBattle]);
@@ -325,17 +228,12 @@ export const useEnhancedManualReorder = (
       const conservativeEstimate = rating.mu - rating.sigma;
       const confidence = Math.max(0, Math.min(100, 100 * (1 - (rating.sigma / 8.33))));
       
-      // FIXED: Apply proper name formatting to ensure proper display
-      const formattedName = formatPokemonName(pokemon.name);
-      
       if (pokemon.id === 613) {
         console.log(`🧊🧊🧊 [CUBCHOO_RECALC] Position: ${index}, Score: ${conservativeEstimate.toFixed(5)}`);
-        console.log(`🧊🧊🧊 [CUBCHOO_RECALC] Name formatting: "${pokemon.name}" -> "${formattedName}"`);
       }
       
       return {
         ...pokemon,
-        name: formattedName, // Use properly formatted name
         score: conservativeEstimate,
         confidence: confidence,
         rating: rating,
@@ -343,12 +241,8 @@ export const useEnhancedManualReorder = (
       };
     });
     
-    // 🔴 STEP 5: Resort rankings by displayed score after all adjustments
-    const sortedRecalculated = recalculated.sort((a, b) => b.score - a.score);
-    
-    console.log('🔴🔴🔴 [ENHANCED_REORDER_RECALC] Rankings resorted by displayed score');
     console.log('🔥 [ENHANCED_REORDER_RECALC] ===== RECALCULATION COMPLETE =====');
-    return sortedRecalculated;
+    return recalculated;
   }, [getRating]);
 
   const handleDragStart = useCallback((event: any) => {
@@ -451,12 +345,8 @@ export const useEnhancedManualReorder = (
         const conservativeEstimate = rating.mu - rating.sigma;
         const confidence = Math.max(0, Math.min(100, 100 * (1 - (rating.sigma / 8.33))));
         
-        // FIXED: Apply proper name formatting when creating new RankedPokemon
-        const formattedName = formatPokemonName(pokemonData.name);
-        
         const newRankedPokemon: RankedPokemon = {
           ...pokemonData,
-          name: formattedName, // Use properly formatted name
           score: conservativeEstimate,
           confidence: confidence,
           rating: rating,
@@ -467,7 +357,6 @@ export const useEnhancedManualReorder = (
         };
         
         console.log('🔥 [ENHANCED_MANUAL_REORDER] New Pokemon object:', newRankedPokemon.name, 'Score:', newRankedPokemon.score);
-        console.log('🔥 [ENHANCED_MANUAL_REORDER] Name formatting applied:', pokemonData.name, '->', formattedName);
         
         newRankings = [...localRankings];
         newRankings.splice(destinationIndex, 0, newRankedPokemon);

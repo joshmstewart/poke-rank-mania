@@ -130,7 +130,7 @@ const UnifiedControls: React.FC<UnifiedControlsProps> = ({
     <div className="flex items-center justify-between bg-white p-4 rounded-lg shadow border w-full">
       <div className="flex items-center gap-8">
         {/* Generation Selector */}
-        <div className="flex items-center" data-tour="generation-filter">
+        <div className="flex items-center">
           <span className="text-sm font-medium whitespace-nowrap mr-2">Gen:</span>
           <Select 
             value={safeSelectedGeneration.toString()} 
@@ -164,7 +164,6 @@ const UnifiedControls: React.FC<UnifiedControlsProps> = ({
             variant="outline"
             size="sm"
             className="flex items-center gap-1 h-8 text-sm px-4 min-w-[100px]"
-            data-tour="rankings-button"
           >
             <Trophy className="h-4 w-4" /> Rankings
           </Button>
