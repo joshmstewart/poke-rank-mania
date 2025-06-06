@@ -84,9 +84,9 @@ export const useEnhancedManualReorder = (
     console.log(`🔥🔥🔥 [${operationId}] Target position (newIndex): ${newIndex}`);
     console.log(`🔥🔥🔥 [${operationId}] Rankings length: ${rankings.length}`);
     
-    // CRITICAL: Special logging for Cubchoo (ID 613) drag scenario
-    if (draggedPokemon.id === 613) {
-      console.log(`🧊🧊🧊 [${operationId}] ===== CUBCHOO BEING MOVED =====`);
+    // CRITICAL: Special logging for Charmander (ID 4) drag scenario
+    if (draggedPokemon.id === 4) {
+      console.log(`🧊🧊🧊 [${operationId}] ===== CHARMANDER BEING MOVED =====`);
       console.log(`🧊🧊🧊 [${operationId}] Current score: ${draggedPokemon.score}`);
       console.log(`🧊🧊🧊 [${operationId}] Target index: ${newIndex}`);
     }
@@ -147,9 +147,9 @@ export const useEnhancedManualReorder = (
       targetDisplayedScore = (aboveScore + belowScore) / 2;
       console.log(`🔥🔥🔥 [${operationId}] BETWEEN CALCULATION: (${aboveScore.toFixed(5)} + ${belowScore.toFixed(5)}) / 2 = ${targetDisplayedScore.toFixed(5)}`);
       
-      // CRITICAL: Special case for Cubchoo
-      if (draggedPokemon.id === 613) {
-        console.log(`🧊🧊🧊 [${operationId}] CUBCHOO SIMPLE AVERAGE: ${targetDisplayedScore.toFixed(5)}`);
+      // CRITICAL: Special case for Charmander
+      if (draggedPokemon.id === 4) {
+        console.log(`🧊🧊🧊 [${operationId}] CHARMANDER SIMPLE AVERAGE: ${targetDisplayedScore.toFixed(5)}`);
       }
     } else if (abovePokemon && !belowPokemon) {
       // Bottom position - slightly below the Pokemon above
@@ -177,9 +177,9 @@ export const useEnhancedManualReorder = (
     console.log(`🔥🔥🔥 [${operationId}] Verification: μ - σ = ${(newMu - newSigma).toFixed(5)} (should equal ${targetDisplayedScore.toFixed(5)})`);
     console.log(`🔥🔥🔥 [${operationId}] Math check: ${Math.abs((newMu - newSigma) - targetDisplayedScore) < 0.001 ? 'PASS' : 'FAIL'}`);
     
-    // CRITICAL: Log for Cubchoo before update
-    if (draggedPokemon.id === 613) {
-      console.log(`🧊🧊🧊 [${operationId}] CUBCHOO ABOUT TO UPDATE:`);
+    // CRITICAL: Log for Charmander before update
+    if (draggedPokemon.id === 4) {
+      console.log(`🧊🧊🧊 [${operationId}] CHARMANDER ABOUT TO UPDATE:`);
       console.log(`🧊🧊🧊 [${operationId}] μ=${newMu.toFixed(5)}, σ=${newSigma.toFixed(5)}`);
       console.log(`🧊🧊🧊 [${operationId}] Expected score: ${targetDisplayedScore.toFixed(5)}`);
     }
@@ -199,9 +199,9 @@ export const useEnhancedManualReorder = (
     console.log(`🔥🔥🔥 [${operationId}] Target was: ${targetDisplayedScore.toFixed(5)}`);
     console.log(`🔥🔥🔥 [${operationId}] Match: ${Math.abs(verifyScore - targetDisplayedScore) < 0.001 ? 'YES' : 'NO'}`);
     
-    // CRITICAL: Final verification for Cubchoo
-    if (draggedPokemon.id === 613) {
-      console.log(`🧊🧊🧊 [${operationId}] CUBCHOO FINAL VERIFICATION:`);
+    // CRITICAL: Final verification for Charmander
+    if (draggedPokemon.id === 4) {
+      console.log(`🧊🧊🧊 [${operationId}] CHARMANDER FINAL VERIFICATION:`);
       console.log(`🧊🧊🧊 [${operationId}] Final score: ${verifyScore.toFixed(5)}`);
       console.log(`🧊🧊🧊 [${operationId}] Should be between ${aboveScore?.toFixed(5)} and ${belowScore?.toFixed(5)}`);
       
@@ -219,8 +219,8 @@ export const useEnhancedManualReorder = (
       const finalVerifyScore = finalVerifyRating.mu - finalVerifyRating.sigma;
       console.log(`🔥🔥🔥 [${operationId}] FINAL VERIFICATION (500ms later): μ=${finalVerifyRating.mu.toFixed(5)}, σ=${finalVerifyRating.sigma.toFixed(5)}, score=${finalVerifyScore.toFixed(5)}`);
       
-      if (draggedPokemon.id === 613) {
-        console.log(`🧊🧊🧊 [${operationId}] CUBCHOO FINAL CHECK (500ms later): score=${finalVerifyScore.toFixed(5)}`);
+      if (draggedPokemon.id === 4) {
+        console.log(`🧊🧊🧊 [${operationId}] CHARMANDER FINAL CHECK (500ms later): score=${finalVerifyScore.toFixed(5)}`);
       }
     }, 500);
     
@@ -235,8 +235,8 @@ export const useEnhancedManualReorder = (
       const conservativeEstimate = rating.mu - rating.sigma;
       const confidence = Math.max(0, Math.min(100, 100 * (1 - (rating.sigma / 8.33))));
       
-      if (pokemon.id === 613) {
-        console.log(`🧊🧊🧊 [CUBCHOO_RECALC] Position: ${index}, Score: ${conservativeEstimate.toFixed(5)}`);
+      if (pokemon.id === 4) {
+        console.log(`🧊🧊🧊 [CHARMANDER_RECALC] Position: ${index}, Score: ${conservativeEstimate.toFixed(5)}`);
       }
       
       return {
@@ -295,6 +295,13 @@ export const useEnhancedManualReorder = (
       const movedPokemon = localRankings[oldIndex];
       console.log('🔥🔥🔥 [ENHANCED_REORDER_DRAG] Moving Pokemon:', movedPokemon.name);
       
+      // CRITICAL: Log if this is Charmander
+      if (movedPokemon.id === 4) {
+        console.log('🧊🧊🧊 [ENHANCED_REORDER_DRAG] ===== CHARMANDER DRAG DETECTED =====');
+        console.log('🧊🧊🧊 [ENHANCED_REORDER_DRAG] Old index:', oldIndex, 'New index:', newIndex);
+        console.log('🧊🧊🧊 [ENHANCED_REORDER_DRAG] Current score:', movedPokemon.score.toFixed(5));
+      }
+      
       const newRankings = arrayMove(localRankings, oldIndex, newIndex);
       
       if (!validateRankingsIntegrity(newRankings)) {
@@ -307,6 +314,17 @@ export const useEnhancedManualReorder = (
       applyManualScoreAdjustment(movedPokemon, newIndex, newRankings);
       
       const updatedRankings = recalculateScores(newRankings);
+      
+      // CRITICAL: Log Charmander after recalculation
+      if (movedPokemon.id === 4) {
+        const charmanderAfterRecalc = updatedRankings.find(p => p.id === 4);
+        if (charmanderAfterRecalc) {
+          const charmanderIndex = updatedRankings.findIndex(p => p.id === 4);
+          console.log('🧊🧊🧊 [ENHANCED_REORDER_DRAG] ===== CHARMANDER AFTER RECALC =====');
+          console.log('🧊🧊🧊 [ENHANCED_REORDER_DRAG] Position after recalc:', charmanderIndex + 1);
+          console.log('🧊🧊🧊 [ENHANCED_REORDER_DRAG] Score after recalc:', charmanderAfterRecalc.score.toFixed(5));
+        }
+      }
       
       console.log('🔥🔥🔥 [ENHANCED_REORDER_DRAG] Updated rankings calculated');
       
