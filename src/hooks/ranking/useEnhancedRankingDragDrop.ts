@@ -10,7 +10,8 @@ export const useEnhancedRankingDragDrop = (
   localRankings: any[],
   setAvailablePokemon: React.Dispatch<React.SetStateAction<any[]>>,
   handleEnhancedManualReorder: (pokemonId: number, sourceIndex: number, destinationIndex: number) => void,
-  triggerReRanking: (pokemonId: number) => Promise<void>
+  triggerReRanking: (pokemonId: number) => Promise<void>,
+  updateLocalRankings: (rankings: any[]) => void
 ) => {
   const [activeDraggedPokemon, setActiveDraggedPokemon] = useState<any>(null);
   const { updateRating, getRating } = useTrueSkillStore();
@@ -187,7 +188,7 @@ export const useEnhancedRankingDragDrop = (
               }
             }
 
-            // CRITICAL FIX: Calculate the proper TrueSkill rating for the drop position
+            // Calculate the proper TrueSkill rating for the drop position
             const targetRating = calculateTargetRatingForPosition(insertionPosition, localRankings);
             console.log(`🔥🔥🔥 [ADD_NEW_POKEMON] ✅ Calculated target rating: μ=${targetRating.mu.toFixed(5)}, σ=${targetRating.sigma.toFixed(5)}`);
             
@@ -195,7 +196,7 @@ export const useEnhancedRankingDragDrop = (
             updateRating(pokemonId.toString(), targetRating);
             console.log(`🔥🔥🔥 [ADD_NEW_POKEMON] ✅ Updated TrueSkill store with positioned rating`);
             
-            // CRITICAL FIX: Create the updated rankings manually and directly update the parent
+            // Create the updated rankings manually and directly update the parent
             const newPokemonWithRating = {
               ...pokemon,
               score: targetRating.mu - targetRating.sigma,
@@ -217,10 +218,12 @@ export const useEnhancedRankingDragDrop = (
             
             console.log(`🔥🔥🔥 [ADD_NEW_POKEMON] ✅ Manually created updated rankings with ${updatedRankings.length} Pokemon`);
             console.log(`🔥🔥🔥 [ADD_NEW_POKEMON] New Pokemon score: ${newPokemonWithRating.score.toFixed(5)}`);
+            console.log(`🔥🔥🔥 [ADD_NEW_POKEMON] 🚨 DIRECTLY UPDATING RANKINGS - NO MORE SCORE CALCULATION! 🚨`);
             
-            // CRITICAL FIX: Call handleEnhancedManualReorder with the pre-built rankings to avoid double score calculation
-            // This ensures the parent component gets updated with our positioned Pokemon
-            handleEnhancedManualReorder(pokemonId, -1, insertionPosition);
+            // FINAL FIX: Directly update the rankings without any additional score calculation
+            updateLocalRankings(updatedRankings);
+            
+            console.log(`🔥🔥🔥 [ADD_NEW_POKEMON] ✅ DIRECTLY UPDATED PARENT STATE - DONE!`);
             
             toast({
                 title: "Pokemon Added",
@@ -254,7 +257,7 @@ export const useEnhancedRankingDragDrop = (
         handleEnhancedManualReorder(activePokemonId, oldIndex, newIndex);
       }
     }
-  }, [enhancedAvailablePokemon, localRankings, updateRating, handleEnhancedManualReorder, triggerReRanking, calculateTargetRatingForPosition]);
+  }, [enhancedAvailablePokemon, localRankings, updateRating, handleEnhancedManualReorder, triggerReRanking, calculateTargetRatingForPosition, updateLocalRankings]);
 
   const handleManualReorder = useCallback((
     draggedPokemonId: number,
