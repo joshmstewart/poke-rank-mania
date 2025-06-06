@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { useTrueSkillStore } from "@/stores/trueskillStore";
 import { generations } from "@/services/pokemon";
@@ -95,9 +96,18 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
           console.log(`🔥🔥🔥 [DEOXYS_NAME_TRACE] Found Deoxys! ID=${pokemonId}, original="${pokemon.name}", formatted="${formattedName}"`);
         }
         
-        const rankedPokemon = {
-          ...pokemon, // Use actual Pokemon data (id, image, types, etc.)
-          name: formattedName, // Apply name formatting here
+        // CRITICAL FIX: Create object without spreading original pokemon first
+        const rankedPokemon: RankedPokemon = {
+          id: pokemon.id,
+          name: formattedName, // Use formatted name FIRST
+          image: pokemon.image,
+          types: pokemon.types || [],
+          // Copy other Pokemon properties manually to avoid name override
+          ...(pokemon.sprites && { sprites: pokemon.sprites }),
+          ...(pokemon.stats && { stats: pokemon.stats }),
+          ...(pokemon.abilities && { abilities: pokemon.abilities }),
+          ...(pokemon.moves && { moves: pokemon.moves }),
+          // Add ranking-specific properties
           score: score,
           count: battleCount,
           confidence: Math.max(0, 100 - (rating.sigma * 20)), // Convert sigma to confidence percentage
