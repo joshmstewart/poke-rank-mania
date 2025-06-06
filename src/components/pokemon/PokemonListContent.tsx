@@ -1,4 +1,5 @@
 
+
 import React from "react";
 import { Pokemon } from "@/services/pokemon";
 import { Card } from "@/components/ui/card";
@@ -85,9 +86,9 @@ export const PokemonListContent: React.FC<PokemonListContentProps> = ({
                 key={`pokemon-${pokemon.id}-${index}`}
                 className="relative group hover:shadow-lg transition-shadow bg-white border border-gray-200"
               >
-                {/* Star button in top-left corner - made more visible */}
+                {/* Star button in bottom-right corner */}
                 <button 
-                  className="absolute top-2 left-2 z-20 w-8 h-8 flex items-center justify-center rounded-full bg-white hover:bg-yellow-50 border-2 border-gray-300 hover:border-yellow-400 transition-all duration-200 shadow-sm"
+                  className="absolute bottom-2 right-2 z-20 w-8 h-8 flex items-center justify-center rounded-full bg-white hover:bg-yellow-50 border-2 border-gray-300 hover:border-yellow-400 transition-all duration-200 shadow-sm"
                   onClick={(e) => {
                     e.stopPropagation();
                     console.log(`⭐ Star clicked for ${formattedPokemon.name}`);
@@ -168,3 +169,4 @@ export const PokemonListContent: React.FC<PokemonListContentProps> = ({
     </div>
   );
 };
+
