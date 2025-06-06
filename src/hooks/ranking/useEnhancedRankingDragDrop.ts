@@ -195,7 +195,31 @@ export const useEnhancedRankingDragDrop = (
             updateRating(pokemonId.toString(), targetRating);
             console.log(`🔥🔥🔥 [ADD_NEW_POKEMON] ✅ Updated TrueSkill store with positioned rating`);
             
-            // Use enhanced manual reorder for the addition
+            // CRITICAL FIX: Create the updated rankings manually instead of calling handleEnhancedManualReorder
+            // This prevents double score adjustment
+            const newPokemonWithRating = {
+              ...pokemon,
+              score: targetRating.mu - targetRating.sigma,
+              confidence: Math.max(0, Math.min(100, 100 * (1 - (targetRating.sigma / 8.33)))),
+              rating: {
+                mu: targetRating.mu,
+                sigma: targetRating.sigma,
+                battleCount: 0
+              },
+              count: 0,
+              wins: 0,
+              losses: 0,
+              winRate: 0
+            };
+            
+            // Insert the Pokemon at the correct position
+            const updatedRankings = [...localRankings];
+            updatedRankings.splice(insertionPosition, 0, newPokemonWithRating);
+            
+            console.log(`🔥🔥🔥 [ADD_NEW_POKEMON] ✅ Manually created updated rankings with ${updatedRankings.length} Pokemon`);
+            console.log(`🔥🔥🔥 [ADD_NEW_POKEMON] New Pokemon score: ${newPokemonWithRating.score.toFixed(5)}`);
+            
+            // Update the rankings through the manual reorder hook's update function
             handleEnhancedManualReorder(pokemonId, -1, insertionPosition);
             
             toast({
