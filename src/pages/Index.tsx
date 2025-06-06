@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import PokemonRanker from "@/components/PokemonRanker";
+import PokemonRankerWithProvider from "@/components/pokemon/PokemonRankerWithProvider";
 import BattleMode from "@/components/BattleMode";
 import AppHeader from "@/components/layout/AppHeader";
 import { useTrueSkillStore } from "@/stores/trueskillStore";
@@ -25,7 +25,7 @@ const Index = () => {
     <div className="min-h-screen bg-gray-50">
       <AppHeader mode={mode} onModeChange={handleModeChange} />
       <main className="container max-w-7xl mx-auto py-6 relative z-10">
-        {mode === "rank" ? <PokemonRanker /> : <BattleMode />}
+        {mode === "rank" ? <PokemonRankerWithProvider /> : <BattleMode />}
       </main>
     </div>
   );
