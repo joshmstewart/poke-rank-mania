@@ -69,8 +69,8 @@ export const EnhancedAvailablePokemonSection: React.FC<EnhancedAvailablePokemonS
     isGenerationExpanded: isGenerationExpandedForDisplay
   });
 
-  // Fix the type error by ensuring proper number comparison and boolean result
-  const allExpanded: boolean = expandedGenerations.size === availableGenerations.length && availableGenerations.length > 0;
+  // Fix the type error by ensuring proper boolean calculation
+  const allExpanded: boolean = availableGenerations.length > 0 && expandedGenerations.size === availableGenerations.length;
 
   return (
     <div className="flex flex-col h-full">
