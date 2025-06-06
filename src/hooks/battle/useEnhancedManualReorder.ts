@@ -96,6 +96,10 @@ export const useEnhancedManualReorder = (
     const currentRating = getRating(draggedPokemon.id.toString());
     console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Current rating from store - μ=${currentRating.mu.toFixed(5)}, σ=${currentRating.sigma.toFixed(5)}`);
     
+    // ENHANCED DEBUG: Log the initial score of the dragged Pokemon
+    const initialDisplayedScore = currentRating.mu - currentRating.sigma;
+    console.log(`🔍🔍🔍 [DOUBLADE_DEBUG] ${draggedPokemon.name} BEFORE adjustment: displayedScore=${initialDisplayedScore.toFixed(5)}`);
+    
     // Create the final rankings array to determine proper neighbors
     const finalRankingsAfterMove = [...rankings];
     
@@ -136,6 +140,13 @@ export const useEnhancedManualReorder = (
       console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Below ${belowPokemon.name}: displayedScore=${belowDisplayedScore.toFixed(5)}`);
     }
 
+    // ENHANCED DEBUG: Check if we're in identical neighbor territory
+    const hasIdenticalNeighbors = abovePokemon && belowPokemon && Math.abs(aboveDisplayedScore - belowDisplayedScore) < EPSILON;
+    console.log(`🔍🔍🔍 [DOUBLADE_DEBUG] ${draggedPokemon.name} hasIdenticalNeighbors: ${hasIdenticalNeighbors}`);
+    if (hasIdenticalNeighbors) {
+      console.log(`🔍🔍🔍 [DOUBLADE_DEBUG] ${draggedPokemon.name} identical score value: ${aboveDisplayedScore.toFixed(5)}`);
+    }
+
     // 🟢 IMPROVED LOGIC: Check if immediate neighbors have identical scores
     if (abovePokemon && belowPokemon && Math.abs(aboveDisplayedScore - belowDisplayedScore) < EPSILON) {
       console.log(`🔵🔵🔵 [IDENTICAL_NEIGHBORS] ===== IDENTICAL NEIGHBOR SCORES =====`);
@@ -173,10 +184,14 @@ export const useEnhancedManualReorder = (
       console.log(`🔵🔵🔵 [IDENTICAL_NEIGHBORS] Upper group Pokemon IDs: [${upperGroupIds.join(', ')}]`);
       console.log(`🔵🔵🔵 [IDENTICAL_NEIGHBORS] Lower group Pokemon IDs: [${lowerGroupIds.join(', ')}]`);
       
+      // ENHANCED DEBUG: Track score changes for each Pokemon
+      const scoreChanges: Array<{id: number, name: string, before: number, after: number}> = [];
+      
       // Safely adjust upper group (increase by GROUP_ADJUSTMENT)
       for (const pokemonId of upperGroupIds) {
         try {
           const rating = getRating(pokemonId.toString());
+          const beforeScore = rating.mu - rating.sigma;
           const newDisplayedScore = identicalScore + GROUP_ADJUSTMENT;
           // Keep sigma unchanged to maintain mathematical consistency
           const newMu = newDisplayedScore + rating.sigma;
@@ -185,6 +200,16 @@ export const useEnhancedManualReorder = (
           
           const newRating = new Rating(newMu, rating.sigma);
           updateRating(pokemonId.toString(), newRating);
+          
+          // Track the change
+          const pokemonName = finalRankingsAfterMove.find(p => p.id === pokemonId)?.name || `ID:${pokemonId}`;
+          scoreChanges.push({
+            id: pokemonId,
+            name: pokemonName,
+            before: beforeScore,
+            after: newDisplayedScore
+          });
+          
         } catch (error) {
           console.error(`🔵🔵🔵 [IDENTICAL_NEIGHBORS] Error adjusting upper Pokemon ${pokemonId}:`, error);
         }
@@ -194,6 +219,7 @@ export const useEnhancedManualReorder = (
       for (const pokemonId of lowerGroupIds) {
         try {
           const rating = getRating(pokemonId.toString());
+          const beforeScore = rating.mu - rating.sigma;
           const newDisplayedScore = identicalScore - GROUP_ADJUSTMENT;
           // Keep sigma unchanged to maintain mathematical consistency
           const newMu = newDisplayedScore + rating.sigma;
@@ -202,6 +228,16 @@ export const useEnhancedManualReorder = (
           
           const newRating = new Rating(newMu, rating.sigma);
           updateRating(pokemonId.toString(), newRating);
+          
+          // Track the change
+          const pokemonName = finalRankingsAfterMove.find(p => p.id === pokemonId)?.name || `ID:${pokemonId}`;
+          scoreChanges.push({
+            id: pokemonId,
+            name: pokemonName,
+            before: beforeScore,
+            after: newDisplayedScore
+          });
+          
         } catch (error) {
           console.error(`🔵🔵🔵 [IDENTICAL_NEIGHBORS] Error adjusting lower Pokemon ${pokemonId}:`, error);
         }
@@ -215,6 +251,21 @@ export const useEnhancedManualReorder = (
         
         const newRating = new Rating(newMu, currentRating.sigma);
         updateRating(draggedPokemon.id.toString(), newRating);
+        
+        // Track the dragged Pokemon change
+        scoreChanges.push({
+          id: draggedPokemon.id,
+          name: draggedPokemon.name,
+          before: initialDisplayedScore,
+          after: identicalScore
+        });
+        
+        // ENHANCED DEBUG: Log all score changes
+        console.log(`🔍🔍🔍 [DOUBLADE_DEBUG] SCORE CHANGES SUMMARY for ${draggedPokemon.name}:`);
+        scoreChanges.forEach(change => {
+          const delta = change.after - change.before;
+          console.log(`🔍🔍🔍 [DOUBLADE_DEBUG] ${change.name}: ${change.before.toFixed(5)} → ${change.after.toFixed(5)} (Δ${delta > 0 ? '+' : ''}${delta.toFixed(5)})`);
+        });
         
         console.log(`🔵🔵🔵 [IDENTICAL_NEIGHBORS] ===== IDENTICAL NEIGHBOR ADJUSTMENT COMPLETE =====`);
       } catch (error) {
@@ -253,6 +304,10 @@ export const useEnhancedManualReorder = (
     console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Keeping σ: ${currentRating.sigma.toFixed(5)}`);
     console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] New μ: ${newMu.toFixed(5)}`);
     console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Verification: μ - σ = ${(newMu - currentRating.sigma).toFixed(5)} (should equal ${targetDisplayedScore.toFixed(5)})`);
+    
+    // ENHANCED DEBUG: Log the score change for standard cases
+    const scoreDelta = targetDisplayedScore - initialDisplayedScore;
+    console.log(`🔍🔍🔍 [DOUBLADE_DEBUG] ${draggedPokemon.name} STANDARD CASE: ${initialDisplayedScore.toFixed(5)} → ${targetDisplayedScore.toFixed(5)} (Δ${scoreDelta > 0 ? '+' : ''}${scoreDelta.toFixed(5)})`);
     
     // Update the rating (keep sigma unchanged)
     const newRating = new Rating(newMu, currentRating.sigma);
