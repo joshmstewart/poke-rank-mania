@@ -5,6 +5,7 @@ import { Pokemon, RankedPokemon } from '@/services/pokemon';
 import { useTrueSkillStore } from '@/stores/trueskillStore';
 import { usePokemonContext } from '@/contexts/PokemonContext';
 import { Rating } from 'ts-trueskill';
+import { formatPokemonName } from '@/utils/pokemon';
 
 export const useEnhancedManualReorder = (
   finalRankings: RankedPokemon[],
@@ -228,12 +229,17 @@ export const useEnhancedManualReorder = (
       const conservativeEstimate = rating.mu - rating.sigma;
       const confidence = Math.max(0, Math.min(100, 100 * (1 - (rating.sigma / 8.33))));
       
+      // FIXED: Apply name formatting to ensure proper display
+      const formattedName = formatPokemonName(pokemon.name);
+      
       if (pokemon.id === 613) {
         console.log(`🧊🧊🧊 [CUBCHOO_RECALC] Position: ${index}, Score: ${conservativeEstimate.toFixed(5)}`);
+        console.log(`🧊🧊🧊 [CUBCHOO_RECALC] Name formatting: "${pokemon.name}" -> "${formattedName}"`);
       }
       
       return {
         ...pokemon,
+        name: formattedName, // Use formatted name
         score: conservativeEstimate,
         confidence: confidence,
         rating: rating,
@@ -345,8 +351,12 @@ export const useEnhancedManualReorder = (
         const conservativeEstimate = rating.mu - rating.sigma;
         const confidence = Math.max(0, Math.min(100, 100 * (1 - (rating.sigma / 8.33))));
         
+        // FIXED: Apply name formatting when creating new RankedPokemon
+        const formattedName = formatPokemonName(pokemonData.name);
+        
         const newRankedPokemon: RankedPokemon = {
           ...pokemonData,
+          name: formattedName, // Use formatted name
           score: conservativeEstimate,
           confidence: confidence,
           rating: rating,
@@ -357,6 +367,7 @@ export const useEnhancedManualReorder = (
         };
         
         console.log('🔥 [ENHANCED_MANUAL_REORDER] New Pokemon object:', newRankedPokemon.name, 'Score:', newRankedPokemon.score);
+        console.log('🔥 [ENHANCED_MANUAL_REORDER] Name formatting applied:', pokemonData.name, '->', formattedName);
         
         newRankings = [...localRankings];
         newRankings.splice(destinationIndex, 0, newRankedPokemon);
