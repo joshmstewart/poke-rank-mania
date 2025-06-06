@@ -4,7 +4,7 @@ import { useTrueSkillStore } from "@/stores/trueskillStore";
 import { usePokemonContext } from "@/contexts/PokemonContext";
 import { RankedPokemon } from "@/services/pokemon";
 
-export const useTrueSkillSync = (preventAutoResorting: boolean = false) => {
+export const useTrueSkillSync = () => {
   const { getAllRatings } = useTrueSkillStore();
   const { pokemonLookupMap } = usePokemonContext();
   const [localRankings, setLocalRankings] = useState<RankedPokemon[]>([]);
@@ -12,7 +12,7 @@ export const useTrueSkillSync = (preventAutoResorting: boolean = false) => {
   
   console.log('🔄 [TRUESKILL_SYNC] Hook initialized');
 
-  // Transform TrueSkill ratings to RankedPokemon - ONLY SORT IF NOT PREVENTING AUTO-RESORTING
+  // Transform TrueSkill ratings to RankedPokemon - ALWAYS SORT BY SCORE
   const rankingsFromTrueSkill = useMemo(() => {
     const syncId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     console.log('🔄🔄🔄 [TRUESKILL_SYNC_RANKING_GENERATION] ===== GENERATING RANKINGS FROM TRUESKILL =====');
@@ -49,16 +49,13 @@ export const useTrueSkillSync = (preventAutoResorting: boolean = false) => {
 
     console.log('🔄🔄🔄 [TRUESKILL_SYNC_RANKING_GENERATION] Created', rankedPokemon.length, 'ranked Pokemon');
 
-    // CRITICAL CHANGE: Only sort if not preventing auto-resorting
-    if (!preventAutoResorting) {
-      const sortedRankings = rankedPokemon.sort((a, b) => b.score - a.score);
-      console.log('🔄🔄🔄 [TRUESKILL_SYNC_AUTO_SORT] Auto-sorting enabled - sorted by score');
-      return sortedRankings;
-    } else {
-      console.log('🔄🔄🔄 [TRUESKILL_SYNC_NO_SORT] Auto-resorting disabled - preserving manual order');
-      return rankedPokemon;
-    }
-  }, [getAllRatings, pokemonLookupMap, preventAutoResorting]);
+    // ALWAYS SORT BY SCORE - HIGHEST TO LOWEST
+    const sortedRankings = rankedPokemon.sort((a, b) => b.score - a.score);
+    console.log('🔄🔄🔄 [TRUESKILL_SYNC_AUTO_SORT] ALWAYS sorting by score - highest to lowest');
+    console.log('🔄🔄🔄 [TRUESKILL_SYNC_AUTO_SORT] Top 3 scores:', sortedRankings.slice(0, 3).map(p => `${p.name}: ${p.score.toFixed(3)}`));
+    
+    return sortedRankings;
+  }, [getAllRatings, pokemonLookupMap]);
 
   // Update local rankings when TrueSkill data changes
   useEffect(() => {
@@ -88,11 +85,12 @@ export const useTrueSkillSync = (preventAutoResorting: boolean = false) => {
     isManualUpdateRef.current = true;
     console.log(`🔥🔥🔥 [TRUESKILL_SYNC_UPDATE_${updateId}] ⏸️ Manual update flag SET`);
     
-    // CRITICAL CHANGE: Do NOT sort when updating manually - preserve exact order
-    console.log(`🔥🔥🔥 [TRUESKILL_SYNC_UPDATE_${updateId}] Preserving exact manual order - NO SORTING`);
+    // ALWAYS SORT BY SCORE AFTER MANUAL UPDATES TOO
+    const sortedRankings = [...newRankings].sort((a, b) => b.score - a.score);
+    console.log(`🔥🔥🔥 [TRUESKILL_SYNC_UPDATE_${updateId}] ALWAYS sorting after manual update`);
     
-    setLocalRankings(newRankings);
-    console.log(`🔥🔥🔥 [TRUESKILL_SYNC_UPDATE_${updateId}] ✅ Local rankings updated with preserved order`);
+    setLocalRankings(sortedRankings);
+    console.log(`🔥🔥🔥 [TRUESKILL_SYNC_UPDATE_${updateId}] ✅ Local rankings updated with sorted order`);
     
     // Clear the manual update flag after a delay
     setTimeout(() => {

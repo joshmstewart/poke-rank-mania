@@ -59,11 +59,11 @@ export const RankingUICore: React.FC<RankingUICoreProps> = ({
   console.log(`🚨🚨🚨 [ENHANCED_RANKING_UI_CORE] Enhanced available Pokemon: ${enhancedAvailablePokemon.length}`);
   console.log(`🚨🚨🚨 [ENHANCED_RANKING_UI_CORE] Local rankings: ${localRankings.length}`);
 
-  // CRITICAL FIX: Enhanced manual reorder with manual order preservation (always prevent auto-resorting in ranking mode)
+  // Enhanced manual reorder - always allow sorting
   const { handleEnhancedManualReorder } = useEnhancedManualReorder(
     localRankings,
     updateLocalRankings,
-    true // Always prevent auto-resorting in ranking mode
+    false // Never prevent auto-resorting in ranking mode
   );
 
   // Re-ranking trigger for already-ranked Pokemon
@@ -75,7 +75,7 @@ export const RankingUICore: React.FC<RankingUICoreProps> = ({
     setRankedPokemon
   });
 
-  // Use the enhanced drag and drop functionality - NOW WITH 6 ARGUMENTS
+  // Use the enhanced drag and drop functionality
   const {
     activeDraggedPokemon,
     handleDragStart,

@@ -9,23 +9,21 @@ interface UseRankingDataProcessingProps {
   rankedPokemon: any[];
   selectedGeneration: number;
   totalPages: number;
-  preventAutoResorting?: boolean;
 }
 
 export const useRankingDataProcessing = ({
   availablePokemon,
   rankedPokemon,
   selectedGeneration,
-  totalPages,
-  preventAutoResorting = false
+  totalPages
 }: UseRankingDataProcessingProps) => {
   
-  // CRITICAL FIX: Pass preventAutoResorting to TrueSkill sync
-  const { localRankings: trueskillRankings, updateLocalRankings } = useTrueSkillSync(preventAutoResorting);
+  // Always use TrueSkill sync without preventing auto-resorting
+  const { localRankings: trueskillRankings, updateLocalRankings } = useTrueSkillSync();
   
-  // CRITICAL FIX: Use TrueSkill rankings as the primary source, with proper fallback
+  // Use TrueSkill rankings as the primary source, with proper fallback
   const localRankings = useMemo(() => {
-    // If we have TrueSkill rankings from the 277 rated Pokemon, use them
+    // If we have TrueSkill rankings from the rated Pokemon, use them
     if (trueskillRankings && trueskillRankings.length > 0) {
       return trueskillRankings;
     }
@@ -42,7 +40,7 @@ export const useRankingDataProcessing = ({
   // Apply generation filtering to available Pokemon
   const { filteredAvailablePokemon } = useGenerationFilter(availablePokemon, selectedGeneration);
 
-  // CRITICAL FIX: Enhanced available Pokemon with proper ranking status
+  // Enhanced available Pokemon with proper ranking status
   const { enhancedAvailablePokemon } = useEnhancedAvailablePokemon({
     filteredAvailablePokemon,
     localRankings
