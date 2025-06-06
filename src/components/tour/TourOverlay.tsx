@@ -43,7 +43,7 @@ export const TourOverlay: React.FC = () => {
           height: rect.height + 16
         });
         
-        // Center the tour card horizontally and position it moderately lower
+        // Center the tour card horizontally and position it higher
         const cardWidth = 320;
         const viewportHeight = window.innerHeight;
         const viewportWidth = window.innerWidth;
@@ -51,9 +51,9 @@ export const TourOverlay: React.FC = () => {
         // Center horizontally
         const left = (viewportWidth - cardWidth) / 2;
         
-        // Position at about 50% down the viewport, with minimum distance from bottom
+        // Position at about 35% down the viewport (raised from 50%)
         const top = Math.max(
-          viewportHeight * 0.5, // 50% down the viewport (moved up from 65%)
+          viewportHeight * 0.35, // 35% down the viewport (raised significantly)
           rect.bottom + 40 // At least 40px below the target
         );
         
@@ -157,7 +157,7 @@ export const TourOverlay: React.FC = () => {
         />
       )}
       
-      {/* Tour card centered and positioned moderately lower */}
+      {/* Tour card centered and positioned higher */}
       <Card 
         className="absolute pointer-events-auto bg-white p-6 shadow-xl transition-all duration-300 ease-in-out"
         style={{
