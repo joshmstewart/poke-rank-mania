@@ -12,7 +12,7 @@ export const useTrueSkillSync = (preventAutoResorting: boolean = false) => {
   
   console.log('🔄 [TRUESKILL_SYNC] Hook initialized');
 
-  // Transform TrueSkill ratings to RankedPokemon - ALWAYS SORT BY SCORE
+  // Transform TrueSkill ratings to RankedPokemon - ONLY SORT IF NOT PREVENTING AUTO-RESORTING
   const rankingsFromTrueSkill = useMemo(() => {
     const syncId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     console.log('🔄🔄🔄 [TRUESKILL_SYNC_RANKING_GENERATION] ===== GENERATING RANKINGS FROM TRUESKILL =====');
@@ -49,13 +49,16 @@ export const useTrueSkillSync = (preventAutoResorting: boolean = false) => {
 
     console.log('🔄🔄🔄 [TRUESKILL_SYNC_RANKING_GENERATION] Created', rankedPokemon.length, 'ranked Pokemon');
 
-    // ALWAYS sort by score (highest first) - no manual order preservation
-    const sortedRankings = rankedPokemon.sort((a, b) => b.score - a.score);
-    console.log('🔄🔄🔄 [TRUESKILL_SYNC_AUTO_SORT] Always sorting by score - top 5:', 
-      sortedRankings.slice(0, 5).map(p => `${p.name}: ${p.score.toFixed(3)}`));
-    
-    return sortedRankings;
-  }, [getAllRatings, pokemonLookupMap]);
+    // CRITICAL CHANGE: Only sort if not preventing auto-resorting
+    if (!preventAutoResorting) {
+      const sortedRankings = rankedPokemon.sort((a, b) => b.score - a.score);
+      console.log('🔄🔄🔄 [TRUESKILL_SYNC_AUTO_SORT] Auto-sorting enabled - sorted by score');
+      return sortedRankings;
+    } else {
+      console.log('🔄🔄🔄 [TRUESKILL_SYNC_NO_SORT] Auto-resorting disabled - preserving manual order');
+      return rankedPokemon;
+    }
+  }, [getAllRatings, pokemonLookupMap, preventAutoResorting]);
 
   // Update local rankings when TrueSkill data changes
   useEffect(() => {
@@ -85,13 +88,11 @@ export const useTrueSkillSync = (preventAutoResorting: boolean = false) => {
     isManualUpdateRef.current = true;
     console.log(`🔥🔥🔥 [TRUESKILL_SYNC_UPDATE_${updateId}] ⏸️ Manual update flag SET`);
     
-    // ALWAYS sort by score before setting
-    const sortedRankings = [...newRankings].sort((a, b) => b.score - a.score);
-    console.log(`🔥🔥🔥 [TRUESKILL_SYNC_UPDATE_${updateId}] Sorted rankings by score - top 3:`, 
-      sortedRankings.slice(0, 3).map((p, i) => `${i+1}. ${p.name}: ${p.score.toFixed(3)}`));
+    // CRITICAL CHANGE: Do NOT sort when updating manually - preserve exact order
+    console.log(`🔥🔥🔥 [TRUESKILL_SYNC_UPDATE_${updateId}] Preserving exact manual order - NO SORTING`);
     
-    setLocalRankings(sortedRankings);
-    console.log(`🔥🔥🔥 [TRUESKILL_SYNC_UPDATE_${updateId}] ✅ Local rankings updated and sorted`);
+    setLocalRankings(newRankings);
+    console.log(`🔥🔥🔥 [TRUESKILL_SYNC_UPDATE_${updateId}] ✅ Local rankings updated with preserved order`);
     
     // Clear the manual update flag after a delay
     setTimeout(() => {
