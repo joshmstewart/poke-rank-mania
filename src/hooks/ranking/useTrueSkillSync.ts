@@ -63,12 +63,12 @@ export const useTrueSkillSync = (preventAutoResorting: boolean = false) => {
 
     console.log('🔄🔄🔄 [TRUESKILL_SYNC_RANKING_GENERATION] Created', rankedPokemon.length, 'ranked Pokemon');
 
-    // CRITICAL: Only auto-sort if preventAutoResorting is false AND we're not in a manual update
+    // CRITICAL FIX: Only auto-sort if preventAutoResorting is false
     if (preventAutoResorting) {
-      console.log('🔄🔄🔄 [TRUESKILL_SYNC_MANUAL_MODE] Manual mode active - preserving manual order');
+      console.log('🔄🔄🔄 [TRUESKILL_SYNC_MANUAL_MODE] Manual mode active - NEVER auto-sorting');
       
-      // If we have a manual order, preserve it but update the scores
-      if (lastManualOrderRef.current.length > 0 && !isManualUpdateRef.current) {
+      // ALWAYS preserve existing manual order when preventAutoResorting is true
+      if (lastManualOrderRef.current.length > 0) {
         console.log('🔄🔄🔄 [TRUESKILL_SYNC_MANUAL_MODE] Preserving existing manual order, just updating scores');
         const manualOrder = lastManualOrderRef.current.map(manualPokemon => {
           const updatedPokemon = rankedPokemon.find(p => p.id === manualPokemon.id);
@@ -80,6 +80,7 @@ export const useTrueSkillSync = (preventAutoResorting: boolean = false) => {
               console.log(`🔥🔥🔥 [CHARMANDER_SYNC_${syncId}] New score from TrueSkill: ${updatedPokemon.score.toFixed(5)}`);
               console.log(`🔥🔥🔥 [CHARMANDER_SYNC_${syncId}] Score changed: ${Math.abs(updatedPokemon.score - manualPokemon.score) > 0.001 ? 'YES' : 'NO'}`);
               console.log(`🔥🔥🔥 [CHARMANDER_SYNC_${syncId}] Manual order position: ${lastManualOrderRef.current.findIndex(p => p.id === 4) + 1}`);
+              console.log(`🔥🔥🔥 [CHARMANDER_SYNC_${syncId}] PRESERVING POSITION - NOT SORTING`);
             }
             
             console.log(`🔄🔄🔄 [TRUESKILL_SYNC_SCORE_UPDATE] Updated ${updatedPokemon.name} score: ${updatedPokemon.score.toFixed(3)}`);
@@ -93,6 +94,10 @@ export const useTrueSkillSync = (preventAutoResorting: boolean = false) => {
           !lastManualOrderRef.current.some(manual => manual.id === p.id)
         );
         
+        if (newPokemon.length > 0) {
+          console.log(`🔄🔄🔄 [TRUESKILL_SYNC_MANUAL_MODE] Adding ${newPokemon.length} new Pokemon to end of manual order`);
+        }
+        
         const finalOrder = [...manualOrder, ...newPokemon.sort((a, b) => b.score - a.score)];
         console.log('🔄🔄🔄 [TRUESKILL_SYNC_MANUAL_MODE] Final manual order preserved:', finalOrder.length, 'Pokemon');
         
@@ -102,14 +107,18 @@ export const useTrueSkillSync = (preventAutoResorting: boolean = false) => {
           console.log(`🔥🔥🔥 [CHARMANDER_SYNC_${syncId}] ===== CHARMANDER FINAL POSITION =====`);
           console.log(`🔥🔥🔥 [CHARMANDER_SYNC_${syncId}] Final position: ${charmanderIndex + 1}`);
           console.log(`🔥🔥🔥 [CHARMANDER_SYNC_${syncId}] Final score: ${finalOrder[charmanderIndex].score.toFixed(5)}`);
+          console.log(`🔥🔥🔥 [CHARMANDER_SYNC_${syncId}] MANUAL ORDER PRESERVED - NO AUTO-SORTING`);
         }
         
         return finalOrder;
       }
       
-      // First time in manual mode or during manual update, sort by score but remember this order
+      // First time in manual mode - sort by score but remember this order for future preservation
       const sortedByScore = rankedPokemon.sort((a, b) => b.score - a.score);
-      console.log('🔄🔄🔄 [TRUESKILL_SYNC_MANUAL_MODE] First time manual mode or manual update - sorted by score');
+      console.log('🔄🔄🔄 [TRUESKILL_SYNC_MANUAL_MODE] First time manual mode - sorted by score, will preserve future changes');
+      
+      // Store this as the initial manual order
+      lastManualOrderRef.current = [...sortedByScore];
       
       // CRITICAL: Log Charmander's position in first-time manual mode
       const charmanderIndex = sortedByScore.findIndex(p => p.id === 4);
@@ -117,6 +126,7 @@ export const useTrueSkillSync = (preventAutoResorting: boolean = false) => {
         console.log(`🔥🔥🔥 [CHARMANDER_SYNC_${syncId}] ===== CHARMANDER FIRST TIME MANUAL MODE =====`);
         console.log(`🔥🔥🔥 [CHARMANDER_SYNC_${syncId}] First-time position: ${charmanderIndex + 1}`);
         console.log(`🔥🔥🔥 [CHARMANDER_SYNC_${syncId}] First-time score: ${sortedByScore[charmanderIndex].score.toFixed(5)}`);
+        console.log(`🔥🔥🔥 [CHARMANDER_SYNC_${syncId}] STORED AS INITIAL MANUAL ORDER`);
       }
       
       return sortedByScore;
@@ -146,6 +156,12 @@ export const useTrueSkillSync = (preventAutoResorting: boolean = false) => {
     console.log(`🔄🔄🔄 [TRUESKILL_SYNC_EFFECT_${effectId}] rankingsFromTrueSkill.length: ${rankingsFromTrueSkill.length}`);
     console.log(`🔄🔄🔄 [TRUESKILL_SYNC_EFFECT_${effectId}] preventAutoResorting: ${preventAutoResorting}`);
     
+    // CRITICAL FIX: Don't update if we're in manual mode and already have manual order
+    if (preventAutoResorting && lastManualOrderRef.current.length > 0 && !isManualUpdateRef.current) {
+      console.log(`🔄🔄🔄 [TRUESKILL_SYNC_EFFECT_${effectId}] ⏸️ Skipping sync - manual mode with existing order`);
+      return;
+    }
+    
     // Don't update if we're in the middle of a manual update
     if (isManualUpdateRef.current) {
       console.log(`🔄🔄🔄 [TRUESKILL_SYNC_EFFECT_${effectId}] ⏸️ Skipping auto-update during manual operation`);
@@ -166,7 +182,7 @@ export const useTrueSkillSync = (preventAutoResorting: boolean = false) => {
     setLocalRankings(rankingsFromTrueSkill);
     
     console.log(`🔄🔄🔄 [TRUESKILL_SYNC_EFFECT_${effectId}] ===== SYNC EFFECT COMPLETE =====`);
-  }, [rankingsFromTrueSkill]);
+  }, [rankingsFromTrueSkill, preventAutoResorting]);
 
   const updateLocalRankings = (newRankings: RankedPokemon[]) => {
     const updateId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -187,10 +203,10 @@ export const useTrueSkillSync = (preventAutoResorting: boolean = false) => {
     isManualUpdateRef.current = true;
     console.log(`🔥🔥🔥 [TRUESKILL_SYNC_UPDATE_${updateId}] ⏸️ Manual update flag SET`);
     
-    // Store the manual order for future reference
+    // CRITICAL FIX: Always store the manual order when preventAutoResorting is true
     if (preventAutoResorting) {
       lastManualOrderRef.current = [...newRankings];
-      console.log(`🔥🔥🔥 [TRUESKILL_SYNC_UPDATE_${updateId}] Stored manual order in ref - first 3:`, 
+      console.log(`🔥🔥🔥 [TRUESKILL_SYNC_UPDATE_${updateId}] STORED manual order in ref - first 3:`, 
         newRankings.slice(0, 3).map((p, i) => `${i+1}. ${p.name}: ${p.score.toFixed(3)}`));
       
       // CRITICAL: Log Charmander's position in stored manual order
@@ -199,6 +215,7 @@ export const useTrueSkillSync = (preventAutoResorting: boolean = false) => {
         console.log(`🔥🔥🔥 [TRUESKILL_SYNC_UPDATE_${updateId}] ===== CHARMANDER STORED IN MANUAL ORDER =====`);
         console.log(`🔥🔥🔥 [TRUESKILL_SYNC_UPDATE_${updateId}] Stored position: ${charmanderIndex + 1}`);
         console.log(`🔥🔥🔥 [TRUESKILL_SYNC_UPDATE_${updateId}] Stored score: ${newRankings[charmanderIndex].score.toFixed(5)}`);
+        console.log(`🔥🔥🔥 [TRUESKILL_SYNC_UPDATE_${updateId}] THIS ORDER WILL BE PRESERVED IN FUTURE SYNCS`);
       }
     }
     
