@@ -11,7 +11,7 @@ import {
   SortableContext,
   rectSortingStrategy,
 } from '@dnd-kit/sortable';
-import DraggablePokemonMilestoneCard from "./DraggablePokemonMilestoneCard";
+import MemoizedPokemonCard from "./MemoizedPokemonCard";
 import { useDragAndDrop } from "@/hooks/battle/useDragAndDrop";
 
 interface DraggableMilestoneGridProps {
@@ -26,6 +26,7 @@ const DraggableMilestoneGrid: React.FC<DraggableMilestoneGridProps> = ({
   onManualReorder
 }) => {
   const [activePokemon, setActivePokemon] = React.useState<Pokemon | RankedPokemon | null>(null);
+  const [isDragging, setIsDragging] = React.useState(false);
 
   console.log(`🎯 [DRAGGABLE_MILESTONE_GRID] Rendering with ${displayRankings.length} Pokemon`);
   console.log(`🎯 [DRAGGABLE_MILESTONE_GRID] onManualReorder provided: ${!!onManualReorder}`);
@@ -42,11 +43,13 @@ const DraggableMilestoneGrid: React.FC<DraggableMilestoneGridProps> = ({
   const handleDragStart = (event: any) => {
     const activePokemon = displayRankings.find(p => p.id === event.active.id);
     setActivePokemon(activePokemon || null);
+    setIsDragging(true);
   };
 
   const handleDragEndWithCleanup = (event: any) => {
     handleDragEnd(event);
     setActivePokemon(null);
+    setIsDragging(false);
   };
 
   // Custom drop animation for smoother transitions
@@ -63,7 +66,7 @@ const DraggableMilestoneGrid: React.FC<DraggableMilestoneGridProps> = ({
   const content = (
     <div className="grid gap-4 mb-6" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
       {displayRankings.map((pokemon, index) => (
-        <DraggablePokemonMilestoneCard
+        <MemoizedPokemonCard
           key={pokemon.id}
           pokemon={pokemon}
           index={index}
@@ -71,6 +74,7 @@ const DraggableMilestoneGrid: React.FC<DraggableMilestoneGridProps> = ({
           isDraggable={!!onManualReorder}
           context="ranked"
           isPending={localPendingRefinements.has(pokemon.id)}
+          isBeingDragged={isDragging && activePokemon?.id === pokemon.id}
         />
       ))}
     </div>
@@ -96,13 +100,14 @@ const DraggableMilestoneGrid: React.FC<DraggableMilestoneGridProps> = ({
         <DragOverlay dropAnimation={dropAnimationConfig}>
           {activePokemon ? (
             <div className="rotate-2 scale-105">
-              <DraggablePokemonMilestoneCard
+              <MemoizedPokemonCard
                 pokemon={activePokemon}
                 index={displayRankings.findIndex(p => p.id === activePokemon.id)}
                 showRank={true}
                 isDraggable={false}
                 context="ranked"
                 isPending={localPendingRefinements.has(activePokemon.id)}
+                isBeingDragged={false}
               />
             </div>
           ) : null}

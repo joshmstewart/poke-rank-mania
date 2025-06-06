@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import { LoadingType } from "@/hooks/pokemon/types";
-import { usePokemonGroupingMemo } from "@/hooks/pokemon/usePokemonGroupingMemo";
+import { useDragOptimizedPokemonGrouping } from "@/hooks/pokemon/useDragOptimizedPokemonGrouping";
 import { useGenerationExpansion } from "@/hooks/pokemon/useGenerationExpansion";
 import { useAvailablePokemonGenerations } from "@/hooks/pokemon/useAvailablePokemonGenerations";
 import { useSearchMatches } from "@/hooks/pokemon/useSearchMatches";
@@ -19,6 +19,7 @@ interface EnhancedAvailablePokemonSectionProps {
   loadingRef: React.RefObject<HTMLDivElement>;
   handlePageChange: (page: number) => void;
   getPageRange: () => number[];
+  isDragging?: boolean;
 }
 
 export const EnhancedAvailablePokemonSection: React.FC<EnhancedAvailablePokemonSectionProps> = ({
@@ -30,7 +31,8 @@ export const EnhancedAvailablePokemonSection: React.FC<EnhancedAvailablePokemonS
   totalPages,
   loadingRef,
   handlePageChange,
-  getPageRange
+  getPageRange,
+  isDragging = false
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
@@ -61,15 +63,16 @@ export const EnhancedAvailablePokemonSection: React.FC<EnhancedAvailablePokemonS
     return isGenerationExpanded(genId);
   };
 
-  // Use memoized Pokemon grouping
-  const { items, showGenerationHeaders } = usePokemonGroupingMemo({
+  // Use drag-optimized Pokemon grouping
+  const { items, showGenerationHeaders } = useDragOptimizedPokemonGrouping({
     pokemon: enhancedAvailablePokemon,
     searchTerm,
     isRankingArea: false,
-    isGenerationExpanded: isGenerationExpandedForDisplay
+    isGenerationExpanded: isGenerationExpandedForDisplay,
+    isDragging
   });
 
-  const allExpanded = expandedGenerations.size === availableGenerations.length && availableGenerations.length > 0;
+  const allExpanded = Boolean(expandedGenerations.size === availableGenerations.length && availableGenerations.length > 0);
 
   return (
     <div className="flex flex-col h-full">
