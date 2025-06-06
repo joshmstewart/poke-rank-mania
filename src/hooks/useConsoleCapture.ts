@@ -19,13 +19,47 @@ export const useConsoleCapture = () => {
     // Use a ref to prevent infinite loops
     let isUpdating = false;
 
+    // Safe stringify function that handles circular references
+    const safeStringify = (obj: any): string => {
+      if (obj === null || obj === undefined) {
+        return String(obj);
+      }
+      
+      if (typeof obj !== 'object') {
+        return String(obj);
+      }
+      
+      // Handle DOM elements
+      if (obj instanceof Element) {
+        return `[DOM Element: ${obj.tagName}${obj.id ? '#' + obj.id : ''}${obj.className ? '.' + obj.className.split(' ').join('.') : ''}]`;
+      }
+      
+      // Handle other objects with potential circular references
+      try {
+        return JSON.stringify(obj, (key, value) => {
+          // Skip React fiber properties and DOM element properties that cause circular refs
+          if (key.startsWith('__react') || key.startsWith('_react') || key === 'stateNode' || key === 'return' || key === 'child' || key === 'sibling') {
+            return '[Circular Reference]';
+          }
+          
+          // Handle DOM elements in nested objects
+          if (value instanceof Element) {
+            return `[DOM Element: ${value.tagName}]`;
+          }
+          
+          return value;
+        });
+      } catch (error) {
+        // Fallback for any remaining circular reference issues
+        return `[Object: ${obj.constructor?.name || 'Unknown'}]`;
+      }
+    };
+
     const addLog = (level: ConsoleLog['level'], args: any[]) => {
       // Prevent infinite loops by checking if we're already updating
       if (isUpdating) return;
       
-      const message = args.map(arg => 
-        typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
-      ).join(' ');
+      const message = args.map(arg => safeStringify(arg)).join(' ');
       
       // Use setTimeout to batch updates and prevent render loops
       setTimeout(() => {
