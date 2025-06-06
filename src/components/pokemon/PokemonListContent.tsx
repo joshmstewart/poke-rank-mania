@@ -9,6 +9,7 @@ import GenerationHeader from "./GenerationHeader";
 import { VotingArrows } from "@/components/ranking/VotingArrows";
 import DraggablePokemonMilestoneCard from "@/components/battle/DraggablePokemonMilestoneCard";
 import { formatPokemonName } from "@/utils/pokemon";
+import { useDraggable } from '@dnd-kit/core';
 
 interface PokemonListContentProps {
   items: any[];
@@ -18,6 +19,53 @@ interface PokemonListContentProps {
   isGenerationExpanded?: (generationId: number) => boolean;
   onToggleGeneration?: (generationId: number) => void;
 }
+
+// Create a draggable wrapper for available Pokemon
+const DraggableAvailablePokemonCard: React.FC<{ pokemon: any; index: number }> = ({ pokemon, index }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    isDragging,
+  } = useDraggable({
+    id: `available-${pokemon.id}`,
+    data: {
+      type: 'available-pokemon',
+      pokemon: pokemon,
+      source: 'available',
+      index
+    }
+  });
+
+  const style = transform ? {
+    transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+    opacity: isDragging ? 0.5 : 1,
+    cursor: 'grab',
+    zIndex: isDragging ? 1000 : 'auto'
+  } : {
+    cursor: 'grab'
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...listeners}
+      {...attributes}
+    >
+      <DraggablePokemonMilestoneCard
+        pokemon={pokemon}
+        index={index}
+        isPending={false}
+        showRank={false}
+        isDraggable={false} // Let the wrapper handle dragging
+        isAvailable={true}
+        context="available"
+      />
+    </div>
+  );
+};
 
 export const PokemonListContent: React.FC<PokemonListContentProps> = ({
   items,
@@ -71,29 +119,24 @@ export const PokemonListContent: React.FC<PokemonListContentProps> = ({
             return null;
           }
 
-          // CRITICAL FIX: Apply proper name formatting here
+          // Apply proper name formatting here
           const formattedPokemon = {
             ...pokemon,
             name: formatPokemonName(pokemon.name)
           };
 
-          // Use the enhanced card component for available Pokemon to match rankings styling
+          // Use draggable wrapper for available Pokemon
           if (!isRankingArea) {
             return (
-              <DraggablePokemonMilestoneCard
+              <DraggableAvailablePokemonCard
                 key={`pokemon-${pokemon.id}-${index}`}
                 pokemon={formattedPokemon}
                 index={index}
-                isPending={false}
-                showRank={false}
-                isDraggable={true}
-                isAvailable={true}
-                context="available"
               />
             );
           }
 
-          // Original card for ranking area - make images larger here too
+          // Original card for ranking area
           return (
             <Card 
               key={`pokemon-${pokemon.id}-${isRankingArea ? 'ranked' : 'available'}-${index}`}
