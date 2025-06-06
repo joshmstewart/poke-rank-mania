@@ -58,10 +58,10 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     isDragging,
   } = sortableResult;
 
-  // Improved drag styling with better visual feedback
+  // FIXED: Apply transform for ALL sortable items, not just dragged ones
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition: isDragging ? 'none' : transition, // Remove transition during drag for smoother following
+    transition: transition || undefined, // Keep transition for smooth movement
     minHeight: '140px',
     minWidth: '140px',
     zIndex: isDragging ? 1000 : 'auto', // Bring dragged item to front
