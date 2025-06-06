@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import BattleMode from "@/components/battle/BattleModeCore";
@@ -8,9 +9,11 @@ import PokemonRankerWithProvider from "@/components/pokemon/PokemonRankerWithPro
 import { AuthWrapper } from "@/components/auth/AuthWrapper";
 import { TourProvider } from "@/components/tour/TourProvider";
 import { TourOverlay } from "@/components/tour/TourOverlay";
+import SplashPage from "@/components/splash/SplashPage";
 
 function AppContent() {
   const [mode, setMode] = useLocalStorage<"rank" | "battle">("pokemon-ranker-mode", "rank");
+  const [showSplash, setShowSplash] = useState(true);
   const renderCount = useRef(0);
   const mountTime = useRef(new Date().toISOString());
   const stableInstance = useRef('app-content-main-stable-FIXED');
@@ -102,6 +105,10 @@ function AppContent() {
     setMode(newMode);
   };
 
+  const handleSplashComplete = () => {
+    setShowSplash(false);
+  };
+
   const renderContent = () => {
     console.log('🚀🚀🚀 APP_CONTENT_FIXED: Rendering content for mode:', mode);
     if (mode === "battle") {
@@ -110,6 +117,11 @@ function AppContent() {
       return <PokemonRankerWithProvider />;
     }
   };
+
+  // Show splash page first
+  if (showSplash) {
+    return <SplashPage onComplete={handleSplashComplete} />;
+  }
 
   // Clean production interface
   return (
