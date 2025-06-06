@@ -10,6 +10,7 @@ import { usePokemonFlavorText } from "@/hooks/pokemon/usePokemonFlavorText";
 import { usePokemonTCGCard } from "@/hooks/pokemon/usePokemonTCGCard";
 import { Badge } from "@/components/ui/badge";
 import { Crown } from "lucide-react";
+import { formatPokemonName } from "@/utils/pokemon";
 
 interface DraggablePokemonMilestoneCardProps {
   pokemon: Pokemon | RankedPokemon;
@@ -31,6 +32,9 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   context = 'ranked'
 }) => {
   const [isOpen, setIsOpen] = React.useState(false);
+
+  // Apply proper name formatting
+  const formattedName = formatPokemonName(pokemon.name);
 
   // Determine if this Pokemon is ranked (for available context)
   const isRankedPokemon = context === 'available' && 'isRanked' in pokemon && pokemon.isRanked;
@@ -127,7 +131,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
                 className="w-5 h-5 rounded-full bg-white/80 hover:bg-white border border-gray-300 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200 backdrop-blur-sm cursor-pointer"
                 onClick={(e) => {
                   e.stopPropagation();
-                  console.log(`Info button clicked for ${pokemon.name}`);
+                  console.log(`Info button clicked for ${formattedName}`);
                 }}
                 onPointerDown={(e) => {
                   e.stopPropagation();
@@ -149,7 +153,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
             >
               <DialogHeader>
                 <DialogTitle className="text-2xl font-bold text-center">
-                  {pokemon.name}
+                  {formattedName}
                 </DialogTitle>
               </DialogHeader>
 
@@ -194,7 +198,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       <div className="flex-1 flex justify-center items-center px-2 pt-6 pb-1">
         <img 
           src={pokemon.image} 
-          alt={pokemon.name}
+          alt={formattedName}
           className={`w-20 h-20 object-contain transition-all duration-200 ${
             isDragging ? 'scale-110' : ''
           }`}
@@ -211,7 +215,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
         isDragging ? 'bg-blue-50' : ''
       }`}>
         <h3 className="font-bold text-gray-800 text-sm leading-tight mb-0.5">
-          {pokemon.name}
+          {formattedName}
         </h3>
         <div className="text-xs text-gray-600 mb-1">
           #{formattedId}

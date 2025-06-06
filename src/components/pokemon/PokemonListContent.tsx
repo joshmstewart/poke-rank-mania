@@ -8,18 +8,7 @@ import PokemonCardInfo from "./PokemonCardInfo";
 import GenerationHeader from "./GenerationHeader";
 import { VotingArrows } from "@/components/ranking/VotingArrows";
 import DraggablePokemonMilestoneCard from "@/components/battle/DraggablePokemonMilestoneCard";
-
-// Helper function to safely format Pokemon names
-const safeFormatPokemonName = (name: string): string => {
-  if (!name) return '';
-  
-  return name.split(/(\s+|-+)/).map(part => {
-    if (part.match(/^\s+$/) || part.match(/^-+$/)) {
-      return part; // Keep whitespace and hyphens as-is
-    }
-    return part.charAt(0).toUpperCase() + part.slice(1).toLowerCase();
-  }).join('');
-};
+import { formatPokemonName } from "@/utils/pokemon";
 
 interface PokemonListContentProps {
   items: any[];
@@ -82,10 +71,10 @@ export const PokemonListContent: React.FC<PokemonListContentProps> = ({
             return null;
           }
 
-          // CRITICAL FIX: Apply name formatting here
+          // CRITICAL FIX: Apply proper name formatting here
           const formattedPokemon = {
             ...pokemon,
-            name: safeFormatPokemonName(pokemon.name)
+            name: formatPokemonName(pokemon.name)
           };
 
           // Use the enhanced card component for available Pokemon to match rankings styling

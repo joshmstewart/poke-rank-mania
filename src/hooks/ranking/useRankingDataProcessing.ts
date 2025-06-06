@@ -2,19 +2,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { RankedPokemon } from '@/services/pokemon';
 import { useTrueSkillStore } from '@/stores/trueskillStore';
-
-// Helper function to safely format Pokemon names without filtering
-const safeFormatPokemonName = (name: string): string => {
-  if (!name) return '';
-  
-  // Simple capitalization without any filtering logic
-  return name.split(/(\s+|-+)/).map(part => {
-    if (part.match(/^\s+$/) || part.match(/^-+$/)) {
-      return part; // Keep whitespace and hyphens as-is
-    }
-    return part.charAt(0).toUpperCase() + part.slice(1).toLowerCase();
-  }).join('');
-};
+import { formatPokemonName } from '@/utils/pokemon';
 
 interface UseRankingDataProcessingProps {
   availablePokemon: any[];
@@ -45,14 +33,14 @@ export const useRankingDataProcessing = ({
       const isRanked = rankedIds.has(pokemon.id);
       const currentRank = isRanked ? rankedPokemon.findIndex(p => p.id === pokemon.id) + 1 : null;
       
-      // CRITICAL: Apply safe formatting and log it
+      // CRITICAL: Apply proper formatting and log it
       const originalName = pokemon.name;
-      const formattedName = safeFormatPokemonName(pokemon.name);
+      const formattedName = formatPokemonName(pokemon.name);
       console.log(`🔮 [RANKING_DATA_PROCESSING_AVAILABLE_FORMAT] ${originalName} -> ${formattedName}`);
       
       return {
         ...pokemon,
-        name: formattedName, // Apply safe formatting
+        name: formattedName, // Apply proper formatting
         isRanked,
         currentRank: currentRank > 0 ? currentRank : null
       };
@@ -70,14 +58,14 @@ export const useRankingDataProcessing = ({
       const conservativeEstimate = rating.mu - rating.sigma;
       const confidence = Math.max(0, Math.min(100, 100 * (1 - (rating.sigma / 8.33))));
       
-      // CRITICAL: Apply safe formatting and log it
+      // CRITICAL: Apply proper formatting and log it
       const originalName = pokemon.name;
-      const formattedName = safeFormatPokemonName(pokemon.name);
+      const formattedName = formatPokemonName(pokemon.name);
       console.log(`🔮 [RANKING_DATA_PROCESSING_RANKED_FORMAT] ${originalName} -> ${formattedName}`);
       
       return {
         ...pokemon,
-        name: formattedName, // Apply safe formatting
+        name: formattedName, // Apply proper formatting
         score: conservativeEstimate,
         confidence: confidence,
         rating: rating,
@@ -100,9 +88,9 @@ export const useRankingDataProcessing = ({
   // Update local rankings function
   const updateLocalRankings = (newRankings: RankedPokemon[]) => {
     console.log(`🔮 [RANKING_DATA_PROCESSING] Updating local rankings: ${newRankings.length} Pokemon`);
-    // Apply safe formatting to updated rankings
+    // Apply proper formatting to updated rankings
     const formattedRankings = newRankings.map(pokemon => {
-      const formatted = safeFormatPokemonName(pokemon.name);
+      const formatted = formatPokemonName(pokemon.name);
       console.log(`🔮 [RANKING_DATA_PROCESSING_UPDATE_FORMAT] ${pokemon.name} -> ${formatted}`);
       return {
         ...pokemon,
@@ -115,7 +103,7 @@ export const useRankingDataProcessing = ({
   // Display rankings with proper formatting
   const displayRankings = useMemo(() => {
     return localRankings.map(pokemon => {
-      const formatted = safeFormatPokemonName(pokemon.name);
+      const formatted = formatPokemonName(pokemon.name);
       console.log(`🔮 [RANKING_DATA_PROCESSING_DISPLAY_FORMAT] ${pokemon.name} -> ${formatted}`);
       return {
         ...pokemon,

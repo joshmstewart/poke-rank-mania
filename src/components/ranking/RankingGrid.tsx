@@ -3,18 +3,7 @@ import React from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { VotingArrows } from "./VotingArrows";
 import DraggablePokemonMilestoneCard from "@/components/battle/DraggablePokemonMilestoneCard";
-
-// Helper function to safely format Pokemon names
-const safeFormatPokemonName = (name: string): string => {
-  if (!name) return '';
-  
-  return name.split(/(\s+|-+)/).map(part => {
-    if (part.match(/^\s+$/) || part.match(/^-+$/)) {
-      return part; // Keep whitespace and hyphens as-is
-    }
-    return part.charAt(0).toUpperCase() + part.slice(1).toLowerCase();
-  }).join('');
-};
+import { formatPokemonName } from "@/utils/pokemon";
 
 interface RankingGridProps {
   displayRankings: (Pokemon | RankedPokemon)[];
@@ -39,10 +28,10 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
         const isRankedPokemon = 'score' in pokemon;
         const showRankNumber = onSuggestRanking !== undefined; // Only show rank number in rankings section
 
-        // CRITICAL FIX: Apply name formatting here
+        // CRITICAL FIX: Apply proper name formatting here
         const formattedPokemon = {
           ...pokemon,
-          name: safeFormatPokemonName(pokemon.name)
+          name: formatPokemonName(pokemon.name)
         };
 
         return (
