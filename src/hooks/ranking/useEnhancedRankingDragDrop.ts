@@ -2,7 +2,7 @@
 import { useState, useCallback } from "react";
 import { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import { useTrueSkillStore } from "@/stores/trueskillStore";
-import { Rating } from "ts-trueskill";
+import { useNewPokemonAddition } from "./useNewPokemonAddition";
 import { toast } from "@/hooks/use-toast";
 
 export const useEnhancedRankingDragDrop = (
@@ -14,7 +14,10 @@ export const useEnhancedRankingDragDrop = (
   updateLocalRankings: (rankings: any[]) => void
 ) => {
   const [activeDraggedPokemon, setActiveDraggedPokemon] = useState<any>(null);
-  const { updateRating, getRating } = useTrueSkillStore();
+  const { getRating } = useTrueSkillStore();
+
+  // Use the new clean Pokemon addition hook
+  const { addNewPokemonToRankings } = useNewPokemonAddition(localRankings, updateLocalRankings);
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
     console.log(`🚀🚀🚀 [ENHANCED_DRAG_START] ===== ENHANCED DRAG START =====`);
@@ -36,64 +39,6 @@ export const useEnhancedRankingDragDrop = (
     
     setActiveDraggedPokemon(draggedPokemon);
   }, [enhancedAvailablePokemon, localRankings]);
-
-  const calculateTargetRatingForPosition = useCallback((insertionPosition: number, localRankings: any[]) => {
-    console.log(`🎯 [CALCULATE_TARGET_RATING] ===== CALCULATING TARGET RATING =====`);
-    console.log(`🎯 [CALCULATE_TARGET_RATING] Insertion position: ${insertionPosition}`);
-    console.log(`🎯 [CALCULATE_TARGET_RATING] Local rankings length: ${localRankings.length}`);
-
-    const MIN_SIGMA = 1.0;
-    let targetDisplayedScore: number;
-
-    // Get neighbors at the insertion position
-    const abovePokemon = insertionPosition > 0 ? localRankings[insertionPosition - 1] : null;
-    const belowPokemon = insertionPosition < localRankings.length ? localRankings[insertionPosition] : null;
-
-    console.log(`🎯 [CALCULATE_TARGET_RATING] Above Pokemon: ${abovePokemon?.name || 'None'}`);
-    console.log(`🎯 [CALCULATE_TARGET_RATING] Below Pokemon: ${belowPokemon?.name || 'None'}`);
-
-    // Get neighbor scores from TrueSkill store
-    let aboveScore = 0, belowScore = 0;
-    
-    if (abovePokemon) {
-      const aboveRating = getRating(abovePokemon.id.toString());
-      aboveScore = aboveRating.mu - aboveRating.sigma;
-      console.log(`🎯 [CALCULATE_TARGET_RATING] Above score: ${aboveScore.toFixed(5)}`);
-    }
-    
-    if (belowPokemon) {
-      const belowRating = getRating(belowPokemon.id.toString());
-      belowScore = belowRating.mu - belowRating.sigma;
-      console.log(`🎯 [CALCULATE_TARGET_RATING] Below score: ${belowScore.toFixed(5)}`);
-    }
-
-    // Calculate target score based on position
-    if (abovePokemon && belowPokemon) {
-      // Between two Pokemon - use simple average
-      targetDisplayedScore = (aboveScore + belowScore) / 2;
-      console.log(`🎯 [CALCULATE_TARGET_RATING] BETWEEN: target = ${targetDisplayedScore.toFixed(5)}`);
-    } else if (abovePokemon && !belowPokemon) {
-      // Bottom position - slightly below the Pokemon above
-      targetDisplayedScore = aboveScore - 0.1;
-      console.log(`🎯 [CALCULATE_TARGET_RATING] BOTTOM: target = ${targetDisplayedScore.toFixed(5)}`);
-    } else if (!abovePokemon && belowPokemon) {
-      // Top position - slightly above the Pokemon below
-      targetDisplayedScore = belowScore + 0.1;
-      console.log(`🎯 [CALCULATE_TARGET_RATING] TOP: target = ${targetDisplayedScore.toFixed(5)}`);
-    } else {
-      // Single Pokemon in list - use a reasonable default
-      targetDisplayedScore = 20.0;
-      console.log(`🎯 [CALCULATE_TARGET_RATING] SINGLE: target = ${targetDisplayedScore.toFixed(5)}`);
-    }
-
-    // Calculate mu and sigma for the target score
-    const newSigma = MIN_SIGMA; // Use minimum sigma for new Pokemon
-    const newMu = targetDisplayedScore + newSigma;
-
-    console.log(`🎯 [CALCULATE_TARGET_RATING] Final: μ=${newMu.toFixed(5)}, σ=${newSigma.toFixed(5)}, score=${targetDisplayedScore.toFixed(5)}`);
-
-    return new Rating(newMu, newSigma);
-  }, [getRating]);
 
   const handleDragEnd = useCallback(async (event: DragEndEvent) => {
     console.log(`🚀🚀🚀 [ENHANCED_DRAG_END] ===== ENHANCED DRAG END =====`);
@@ -171,9 +116,9 @@ export const useEnhancedRankingDragDrop = (
             }
             
           } else {
-            // CASE B: Pokemon is not ranked - use the proven manual reorder system
-            console.log(`🔥🔥🔥 [ADD_NEW_POKEMON] ===== ADDING NEW POKEMON TO RANKINGS =====`);
-            console.log(`🔥🔥🔥 [ADD_NEW_POKEMON] Pokemon ${pokemonId} (${pokemon.name}) - first time ranking`);
+            // CASE B: Pokemon is not ranked - use the clean new addition system
+            console.log(`🌟🌟🌟 [ADD_NEW_POKEMON] ===== ADDING NEW POKEMON =====`);
+            console.log(`🌟🌟🌟 [ADD_NEW_POKEMON] Pokemon ${pokemonId} (${pokemon.name}) - first time ranking`);
             
             // Determine insertion position
             let insertionPosition = localRankings.length;
@@ -184,24 +129,14 @@ export const useEnhancedRankingDragDrop = (
               const targetIndex = localRankings.findIndex(p => p.id === targetPokemonId);
               if (targetIndex !== -1) {
                 insertionPosition = targetIndex;
-                console.log(`🔥🔥🔥 [ADD_NEW_POKEMON] ✅ Will insert at position ${targetIndex}`);
+                console.log(`🌟🌟🌟 [ADD_NEW_POKEMON] ✅ Will insert at position ${targetIndex}`);
               }
             }
 
-            // PRE-CALCULATE TrueSkill rating for the drop position
-            const targetRating = calculateTargetRatingForPosition(insertionPosition, localRankings);
+            console.log(`🌟🌟🌟 [ADD_NEW_POKEMON] Using clean addition system for position ${insertionPosition}`);
             
-            console.log(`🧮🧮🧮 [FIXED_APPROACH] ===== USING PROVEN MANUAL REORDER SYSTEM =====`);
-            console.log(`🧮🧮🧮 [FIXED_APPROACH] Pokemon: ${pokemon.name} (ID: ${pokemonId})`);
-            console.log(`🧮🧮🧮 [FIXED_APPROACH] Target position: ${insertionPosition}`);
-            console.log(`🧮🧮🧮 [FIXED_APPROACH] Pre-calculated rating: μ=${targetRating.mu.toFixed(5)}, σ=${targetRating.sigma.toFixed(5)}`);
-            
-            // Update TrueSkill store BEFORE calling manual reorder
-            updateRating(pokemonId.toString(), targetRating);
-            
-            // Use the proven manual reorder system (sourceIndex = -1 means new Pokemon)
-            console.log(`🧮🧮🧮 [FIXED_APPROACH] Calling handleEnhancedManualReorder(-1, ${insertionPosition})`);
-            handleEnhancedManualReorder(pokemonId, -1, insertionPosition);
+            // Use the clean, separate addition function
+            addNewPokemonToRankings(pokemonId, insertionPosition);
             
             toast({
                 title: "Pokemon Added",
@@ -209,7 +144,7 @@ export const useEnhancedRankingDragDrop = (
                 duration: 3000
             });
             
-            console.log(`🔥🔥🔥 [ADD_NEW_POKEMON] ✅ Addition process completed using proven system`);
+            console.log(`🌟🌟🌟 [ADD_NEW_POKEMON] ✅ Addition process completed using clean system`);
           }
           
           return;
@@ -235,7 +170,7 @@ export const useEnhancedRankingDragDrop = (
         handleEnhancedManualReorder(activePokemonId, oldIndex, newIndex);
       }
     }
-  }, [enhancedAvailablePokemon, localRankings, updateRating, handleEnhancedManualReorder, triggerReRanking, calculateTargetRatingForPosition, getRating]);
+  }, [enhancedAvailablePokemon, localRankings, handleEnhancedManualReorder, triggerReRanking, addNewPokemonToRankings, getRating]);
 
   const handleManualReorder = useCallback((
     draggedPokemonId: number,
