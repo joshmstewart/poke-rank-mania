@@ -39,6 +39,54 @@ export type Database = {
         }
         Relationships: []
       }
+      feedback_submissions: {
+        Row: {
+          console_logs: string | null
+          created_at: string
+          description: string
+          email: string | null
+          id: string
+          priority: string | null
+          status: string | null
+          title: string
+          type: string
+          updated_at: string
+          url: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          console_logs?: string | null
+          created_at?: string
+          description: string
+          email?: string | null
+          id?: string
+          priority?: string | null
+          status?: string | null
+          title: string
+          type: string
+          updated_at?: string
+          url?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          console_logs?: string | null
+          created_at?: string
+          description?: string
+          email?: string | null
+          id?: string
+          priority?: string | null
+          status?: string | null
+          title?: string
+          type?: string
+          updated_at?: string
+          url?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       global_rankings: {
         Row: {
           average_rating: number
