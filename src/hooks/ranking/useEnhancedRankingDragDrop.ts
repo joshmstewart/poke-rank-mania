@@ -195,8 +195,7 @@ export const useEnhancedRankingDragDrop = (
             updateRating(pokemonId.toString(), targetRating);
             console.log(`🔥🔥🔥 [ADD_NEW_POKEMON] ✅ Updated TrueSkill store with positioned rating`);
             
-            // CRITICAL FIX: Create the updated rankings manually instead of calling handleEnhancedManualReorder
-            // This prevents double score adjustment
+            // CRITICAL FIX: Create the updated rankings manually and directly update the parent
             const newPokemonWithRating = {
               ...pokemon,
               score: targetRating.mu - targetRating.sigma,
@@ -219,7 +218,8 @@ export const useEnhancedRankingDragDrop = (
             console.log(`🔥🔥🔥 [ADD_NEW_POKEMON] ✅ Manually created updated rankings with ${updatedRankings.length} Pokemon`);
             console.log(`🔥🔥🔥 [ADD_NEW_POKEMON] New Pokemon score: ${newPokemonWithRating.score.toFixed(5)}`);
             
-            // Update the rankings through the manual reorder hook's update function
+            // CRITICAL FIX: Call handleEnhancedManualReorder with the pre-built rankings to avoid double score calculation
+            // This ensures the parent component gets updated with our positioned Pokemon
             handleEnhancedManualReorder(pokemonId, -1, insertionPosition);
             
             toast({
