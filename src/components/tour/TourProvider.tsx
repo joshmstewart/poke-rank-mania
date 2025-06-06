@@ -5,25 +5,30 @@ interface TourStep {
   id: string;
   title: string;
   content: string;
-  target: string;
+  target?: string;
   position?: 'top' | 'bottom' | 'left' | 'right';
+  isSplash?: boolean;
 }
 
 interface TourContextType {
   isActive: boolean;
-  showSplash: boolean;
   currentStep: number;
   steps: TourStep[];
   startTour: () => void;
   endTour: () => void;
   nextStep: () => void;
   prevStep: () => void;
-  completeSplash: () => void;
 }
 
 const TourContext = createContext<TourContextType | undefined>(undefined);
 
 const tourSteps: TourStep[] = [
+  {
+    id: 'splash',
+    title: 'Welcome to the Help Tour!',
+    content: "Let's explore PokeRank Mania together and learn how to use all the features.",
+    isSplash: true
+  },
   {
     id: 'mode-switcher',
     title: 'Welcome to Pokemon Ranker!',
@@ -63,22 +68,15 @@ const tourSteps: TourStep[] = [
 
 export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isActive, setIsActive] = useState(false);
-  const [showSplash, setShowSplash] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
 
   const startTour = useCallback(() => {
-    setShowSplash(true);
-  }, []);
-
-  const completeSplash = useCallback(() => {
-    setShowSplash(false);
     setIsActive(true);
     setCurrentStep(0);
   }, []);
 
   const endTour = useCallback(() => {
     setIsActive(false);
-    setShowSplash(false);
     setCurrentStep(0);
   }, []);
 
@@ -99,14 +97,12 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
   return (
     <TourContext.Provider value={{
       isActive,
-      showSplash,
       currentStep,
       steps: tourSteps,
       startTour,
       endTour,
       nextStep,
-      prevStep,
-      completeSplash
+      prevStep
     }}>
       {children}
     </TourContext.Provider>
