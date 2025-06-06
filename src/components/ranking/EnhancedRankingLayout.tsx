@@ -24,6 +24,7 @@ interface EnhancedRankingLayoutProps {
   battleType: BattleType;
   activeDraggedPokemon: any;
   dragSourceInfo: {fromAvailable: boolean, isRanked: boolean} | null;
+  sourceCardProps: any;
   filteredAvailablePokemon: any[];
   handlePageChange: (page: number) => void;
   getPageRange: () => number[];
@@ -50,6 +51,7 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = ({
   battleType,
   activeDraggedPokemon,
   dragSourceInfo,
+  sourceCardProps,
   filteredAvailablePokemon,
   handlePageChange,
   getPageRange,
@@ -69,44 +71,6 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = ({
     console.log(`🔄 [MANUAL_MODE_RESET] Performing Manual mode specific reset actions`);
     handleComprehensiveReset();
   };
-
-  // Determine the correct props based on drag source
-  const getDragOverlayProps = () => {
-    if (!dragSourceInfo) {
-      return { 
-        context: "available" as const, 
-        isAvailable: false, 
-        isDraggable: false,
-        index: 0,
-        showRank: false
-      };
-    }
-
-    if (dragSourceInfo.fromAvailable) {
-      // Dragging from available section
-      console.log(`🎨 [DRAG_OVERLAY] Using available section props`);
-      return { 
-        context: "available" as const, 
-        isAvailable: true, 
-        isDraggable: false,
-        index: 0,
-        showRank: false
-      };
-    } else {
-      // Dragging from rankings section
-      console.log(`🎨 [DRAG_OVERLAY] Using rankings section props`);
-      const rankIndex = displayRankings.findIndex(p => p.id === activeDraggedPokemon?.id);
-      return { 
-        context: "ranked" as const, 
-        isAvailable: false, 
-        isDraggable: false,
-        index: rankIndex >= 0 ? rankIndex : 0,
-        showRank: true
-      };
-    }
-  };
-
-  const overlayProps = getDragOverlayProps();
 
   return (
     <DndContext
@@ -165,17 +129,13 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = ({
           </div>
         </div>
 
-        {/* Drag Overlay - Now uses DraggablePokemonMilestoneCard */}
+        {/* Drag Overlay - Uses exact source card props */}
         <DragOverlay>
-          {activeDraggedPokemon ? (
+          {activeDraggedPokemon && sourceCardProps ? (
             <div className="transform rotate-2 scale-105 opacity-95 z-50">
               <DraggablePokemonMilestoneCard
-                pokemon={activeDraggedPokemon}
-                context={overlayProps.context}
-                isAvailable={overlayProps.isAvailable}
-                isDraggable={overlayProps.isDraggable}
-                index={overlayProps.index}
-                showRank={overlayProps.showRank}
+                {...sourceCardProps}
+                isDraggable={false}
               />
             </div>
           ) : null}

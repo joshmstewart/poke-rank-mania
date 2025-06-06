@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from "react";
 import { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import { useTrueSkillStore } from "@/stores/trueskillStore";
@@ -14,6 +15,7 @@ export const useEnhancedRankingDragDrop = (
 ) => {
   const [activeDraggedPokemon, setActiveDraggedPokemon] = useState<any>(null);
   const [dragSourceInfo, setDragSourceInfo] = useState<{fromAvailable: boolean, isRanked: boolean} | null>(null);
+  const [sourceCardProps, setSourceCardProps] = useState<any>(null);
   const { updateRating } = useTrueSkillStore();
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
@@ -23,23 +25,52 @@ export const useEnhancedRankingDragDrop = (
     const activeId = event.active.id.toString();
     let draggedPokemon = null;
     let sourceInfo = { fromAvailable: false, isRanked: false };
+    let cardProps = null;
     
     if (activeId.startsWith('available-')) {
       const pokemonId = parseInt(activeId.replace('available-', ''));
       draggedPokemon = enhancedAvailablePokemon.find(p => p.id === pokemonId);
       sourceInfo = { fromAvailable: true, isRanked: draggedPokemon?.isRanked || false };
+      
+      // Capture exact props used in available section
+      const index = enhancedAvailablePokemon.findIndex(p => p.id === pokemonId);
+      cardProps = {
+        pokemon: draggedPokemon,
+        index: index,
+        isPending: false,
+        showRank: false,
+        isDraggable: true,
+        isAvailable: true,
+        context: "available" as const
+      };
+      
       console.log(`🚀🚀🚀 [ENHANCED_DRAG_START] Dragging from available: ${draggedPokemon?.name} (ID: ${pokemonId})`);
       console.log(`🚀🚀🚀 [ENHANCED_DRAG_START] Is already ranked: ${draggedPokemon?.isRanked}`);
     } else {
       const pokemonId = parseInt(activeId);
       draggedPokemon = localRankings.find(p => p.id === pokemonId);
       sourceInfo = { fromAvailable: false, isRanked: true };
+      
+      // Capture exact props used in rankings section (via DragDropGrid)
+      const index = localRankings.findIndex(p => p.id === pokemonId);
+      cardProps = {
+        pokemon: draggedPokemon,
+        index: index,
+        isPending: false, // DragDropGrid uses localPendingRefinements.has(pokemon.id)
+        showRank: true,
+        isDraggable: true,
+        isAvailable: false,
+        context: "ranked" as const
+      };
+      
       console.log(`🚀🚀🚀 [ENHANCED_DRAG_START] Dragging from rankings: ${draggedPokemon?.name} (ID: ${pokemonId})`);
     }
     
     setActiveDraggedPokemon(draggedPokemon);
     setDragSourceInfo(sourceInfo);
+    setSourceCardProps(cardProps);
     console.log(`🚀🚀🚀 [ENHANCED_DRAG_START] Source info:`, sourceInfo);
+    console.log(`🚀🚀🚀 [ENHANCED_DRAG_START] Source card props:`, cardProps);
   }, [enhancedAvailablePokemon, localRankings]);
 
   const handleDragEnd = useCallback(async (event: DragEndEvent) => {
@@ -48,6 +79,7 @@ export const useEnhancedRankingDragDrop = (
     
     setActiveDraggedPokemon(null);
     setDragSourceInfo(null);
+    setSourceCardProps(null);
     
     const { active, over } = event;
     
@@ -183,6 +215,7 @@ export const useEnhancedRankingDragDrop = (
   return {
     activeDraggedPokemon,
     dragSourceInfo,
+    sourceCardProps,
     handleDragStart,
     handleDragEnd,
     handleManualReorder

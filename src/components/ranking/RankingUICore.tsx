@@ -79,6 +79,7 @@ export const RankingUICore: React.FC<RankingUICoreProps> = ({
   const {
     activeDraggedPokemon,
     dragSourceInfo,
+    sourceCardProps,
     handleDragStart,
     handleDragEnd,
     handleManualReorder
@@ -112,6 +113,7 @@ export const RankingUICore: React.FC<RankingUICoreProps> = ({
       battleType={battleType}
       activeDraggedPokemon={activeDraggedPokemon}
       dragSourceInfo={dragSourceInfo}
+      sourceCardProps={sourceCardProps}
       filteredAvailablePokemon={filteredAvailablePokemon}
       handlePageChange={handlePageChange}
       getPageRange={getPageRange}
