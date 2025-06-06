@@ -1,10 +1,9 @@
 
 import React from "react";
-import { VirtualPokemonGrid } from "./VirtualPokemonGrid";
-import { InfiniteScrollLoader } from "./InfiniteScrollLoader";
-import GenerationHeader from "@/components/pokemon/GenerationHeader";
-import { Skeleton } from "@/components/ui/skeleton";
+import { useDroppable } from '@dnd-kit/core';
+import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable';
 import DraggablePokemonMilestoneCard from "@/components/battle/DraggablePokemonMilestoneCard";
+import GenerationHeader from "@/components/pokemon/GenerationHeader";
 
 interface EnhancedAvailablePokemonContentProps {
   items: any[];
@@ -18,6 +17,11 @@ interface EnhancedAvailablePokemonContentProps {
   totalPages: number;
 }
 
+// Simple loading placeholder component
+const PokemonLoadingPlaceholder = () => (
+  <div className="animate-pulse bg-gray-200 rounded-lg h-32 w-full"></div>
+);
+
 export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonContentProps> = ({
   items,
   showGenerationHeaders,
@@ -29,120 +33,162 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
   currentPage,
   totalPages
 }) => {
-  const containerHeight = 600;
+  const { setNodeRef, isOver } = useDroppable({
+    id: 'enhanced-available-drop-zone',
+    data: {
+      type: 'available-container',
+      accepts: 'ranked-pokemon'
+    }
+  });
 
-  if (showGenerationHeaders) {
-    // When showing generation headers, render normally
-    return (
-      <div className="flex-1 overflow-y-auto p-2">
-        {items.map((item, index) => {
-          if (item.type === 'header') {
-            return (
-              <GenerationHeader
-                key={`gen-${item.generationId}`}
-                generationId={item.generationId}
-                name={item.data?.name || `Generation ${item.generationId}`}
-                region={item.data?.region || "Unknown"}
-                games={item.data?.games || ""}
-                viewMode={viewMode}
-                isExpanded={isGenerationExpanded(item.generationId)}
-                onToggle={() => onToggleGeneration(item.generationId)}
-              />
-            );
-          }
-
-          // Render individual Pokemon cards
-          return (
-            <div key={`pokemon-${item.id}-${index}`} className={viewMode === 'grid' ? 'inline-block w-1/4 p-1' : 'mb-1'}>
-              <DraggablePokemonMilestoneCard
-                pokemon={item}
-                index={index}
-                isPending={false}
-                showRank={item.isRanked}
-                isDraggable={true}
-                isAvailable={true}
-                context="available"
-              />
-            </div>
-          );
-        })}
-
-        {isLoading && (
-          <div className="flex items-center justify-center p-4">
-            <div className="grid grid-cols-4 gap-2 w-full">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <Skeleton key={i} className="h-32 w-full rounded-lg" />
-              ))}
-            </div>
-          </div>
-        )}
-
-        <InfiniteScrollLoader
-          isLoading={isLoading}
-          currentPage={currentPage}
-          totalPages={totalPages}
-          loadingRef={loadingRef}
-        />
-      </div>
-    );
-  }
-
-  // For flat lists without headers, use simple grid rendering instead of virtual scrolling for now
-  // This ensures Pokemon are actually visible while maintaining good performance
-  const pokemonItems = items.filter(item => item.type !== 'header' && item.id);
-
-  return (
-    <div className="flex-1 flex flex-col">
-      <div className="flex-1 overflow-y-auto p-2">
-        {viewMode === 'grid' ? (
-          <div className="grid grid-cols-4 gap-2">
-            {pokemonItems.map((pokemon, index) => (
-              <DraggablePokemonMilestoneCard
-                key={`available-${pokemon.id}`}
-                pokemon={pokemon}
-                index={index}
-                isPending={false}
-                showRank={pokemon.isRanked}
-                isDraggable={true}
-                isAvailable={true}
-                context="available"
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="space-y-1">
-            {pokemonItems.map((pokemon, index) => (
-              <DraggablePokemonMilestoneCard
-                key={`available-${pokemon.id}`}
-                pokemon={pokemon}
-                index={index}
-                isPending={false}
-                showRank={pokemon.isRanked}
-                isDraggable={true}
-                isAvailable={true}
-                context="available"
-              />
-            ))}
-          </div>
-        )}
-      </div>
-      
-      {isLoading && (
-        <div className="p-4">
-          <div className="grid grid-cols-4 gap-2">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="h-32 w-full rounded-lg" />
-            ))}
+  // Group items by generation for display
+  const renderContent = () => {
+    if (items.length === 0 && !isLoading) {
+      return (
+        <div className="flex items-center justify-center h-full text-gray-500">
+          <div className="text-center">
+            <p className="text-lg mb-2">No Pokémon available</p>
+            <p className="text-sm">Try adjusting your filters</p>
           </div>
         </div>
-      )}
+      );
+    }
 
-      <InfiniteScrollLoader
-        isLoading={isLoading}
-        currentPage={currentPage}
-        totalPages={totalPages}
-        loadingRef={loadingRef}
-      />
+    const result = [];
+    let currentGenerationPokemon = [];
+    let currentGeneration = null;
+
+    for (const item of items) {
+      if (item.type === 'header') {
+        // Render previous generation's Pokemon if any
+        if (currentGenerationPokemon.length > 0) {
+          const pokemonIds = currentGenerationPokemon.map(p => `available-${p.id}`);
+          
+          result.push(
+            <SortableContext 
+              key={`gen-${currentGeneration}-pokemon`}
+              items={pokemonIds}
+              strategy={rectSortingStrategy}
+            >
+              <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
+                {currentGenerationPokemon.map((pokemon, index) => (
+                  <DraggablePokemonMilestoneCard
+                    key={pokemon.id}
+                    pokemon={pokemon}
+                    index={index}
+                    isPending={false}
+                    showRank={false}
+                    isDraggable={true}
+                    isAvailable={true}
+                    context="available"
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          );
+          currentGenerationPokemon = [];
+        }
+
+        // Add generation header with proper data
+        result.push(
+          <GenerationHeader
+            key={`gen-${item.generationId}`}
+            generationId={item.generationId}
+            name={item.data.name}
+            region={item.data.region}
+            games={item.data.games}
+            viewMode={viewMode}
+            isExpanded={isGenerationExpanded(item.generationId)}
+            onToggle={() => onToggleGeneration(item.generationId)}
+          />
+        );
+        
+        currentGeneration = item.generationId;
+      } else if (item.type === 'pokemon') {
+        currentGenerationPokemon.push(item.data);
+      }
+    }
+
+    // Render remaining Pokemon
+    if (currentGenerationPokemon.length > 0) {
+      const pokemonIds = currentGenerationPokemon.map(p => `available-${p.id}`);
+      
+      result.push(
+        <SortableContext 
+          key={`gen-${currentGeneration}-pokemon-final`}
+          items={pokemonIds}
+          strategy={rectSortingStrategy}
+        >
+          <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
+            {currentGenerationPokemon.map((pokemon, index) => (
+              <DraggablePokemonMilestoneCard
+                key={pokemon.id}
+                pokemon={pokemon}
+                index={index}
+                isPending={false}
+                showRank={false}
+                isDraggable={true}
+                isAvailable={true}
+                context="available"
+              />
+            ))}
+          </div>
+        </SortableContext>
+      );
+    }
+
+    return result;
+  };
+
+  return (
+    <div 
+      ref={setNodeRef}
+      className={`flex-1 overflow-y-auto p-4 transition-colors ${
+        isOver ? 'bg-blue-50 border-2 border-dashed border-blue-400' : ''
+      }`}
+    >
+      <div className="space-y-4">
+        {renderContent()}
+        
+        {isLoading && (
+          <div ref={loadingRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <PokemonLoadingPlaceholder key={`loading-${i}`} />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
+};
+
+// Helper functions for generation data
+const getRegionForGeneration = (gen: number): string => {
+  const regions: Record<number, string> = {
+    1: "Kanto",
+    2: "Johto", 
+    3: "Hoenn",
+    4: "Sinnoh",
+    5: "Unova",
+    6: "Kalos",
+    7: "Alola",
+    8: "Galar",
+    9: "Paldea"
+  };
+  return regions[gen] || "Unknown";
+};
+
+const getGamesForGeneration = (gen: number): string => {
+  const games: Record<number, string> = {
+    1: "Red, Blue, Yellow",
+    2: "Gold, Silver, Crystal",
+    3: "Ruby, Sapphire, Emerald",
+    4: "Diamond, Pearl, Platinum",
+    5: "Black, White, B2W2",
+    6: "X, Y, ORAS",
+    7: "Sun, Moon, USUM",
+    8: "Sword, Shield",
+    9: "Scarlet, Violet"
+  };
+  return games[gen] || "Unknown";
 };

@@ -63,7 +63,12 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = ({
   handleManualReorder,
   handleLocalReorder
 }) => {
+  console.log(`🎨 [ENHANCED_LAYOUT] Rendering enhanced layout`);
+  console.log(`🎨 [ENHANCED_LAYOUT] Enhanced available Pokemon: ${enhancedAvailablePokemon.length}`);
+  console.log(`🎨 [ENHANCED_LAYOUT] Ranked Pokemon in enhanced: ${enhancedAvailablePokemon.filter(p => p.isRanked).length}`);
+
   const handleManualModeReset = () => {
+    console.log(`🔄 [MANUAL_MODE_RESET] Performing Manual mode specific reset actions`);
     handleComprehensiveReset();
   };
 

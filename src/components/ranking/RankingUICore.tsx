@@ -55,6 +55,10 @@ export const RankingUICore: React.FC<RankingUICoreProps> = ({
   onGenerationChange,
   onReset
 }) => {
+  console.log(`🚨🚨🚨 [ENHANCED_RANKING_UI_CORE] ===== ENHANCED RENDERING =====`);
+  console.log(`🚨🚨🚨 [ENHANCED_RANKING_UI_CORE] Enhanced available Pokemon: ${enhancedAvailablePokemon.length}`);
+  console.log(`🚨🚨🚨 [ENHANCED_RANKING_UI_CORE] Local rankings: ${localRankings.length}`);
+
   // Enhanced manual reorder - always allow sorting
   const { handleEnhancedManualReorder } = useEnhancedManualReorder(
     localRankings,
@@ -90,6 +94,7 @@ export const RankingUICore: React.FC<RankingUICoreProps> = ({
 
   // Handle local reordering (for DragDropGrid compatibility)
   const handleLocalReorder = (newRankings: any[]) => {
+    console.log(`🚨🚨🚨 [ENHANCED_RANKING_UI_CORE] Local reorder called with ${newRankings.length} Pokemon`);
     updateLocalRankings(newRankings);
   };
 
