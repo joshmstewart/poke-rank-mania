@@ -276,9 +276,8 @@ export const useEnhancedManualReorder = (
       return;
     }
 
-    console.log('🚨🚨🚨 [DRAG_END_DEBUG] ===== CRITICAL DRAG END LOGGING =====');
-    console.log('🚨🚨🚨 [DRAG_END_DEBUG] Active ID:', active.id, '| Over ID:', over.id);
-    console.log('🚨🚨🚨 [DRAG_END_DEBUG] localRankings length:', localRankings.length);
+    console.log('🔥🔥🔥 [ENHANCED_REORDER_DRAG] ===== PROCESSING DRAG END =====');
+    console.log('🔥🔥🔥 [ENHANCED_REORDER_DRAG] Active ID:', active.id, 'Over ID:', over.id);
     
     setDragState(prev => ({ ...prev, isUpdating: true, manualAdjustmentInProgress: true }));
     
@@ -286,61 +285,31 @@ export const useEnhancedManualReorder = (
       const oldIndex = localRankings.findIndex(p => p.id.toString() === active.id);
       const newIndex = localRankings.findIndex(p => p.id.toString() === over.id);
       
-      console.log('🚨🚨🚨 [DRAG_END_DEBUG] CRITICAL INDEX CALCULATION:');
-      console.log('🚨🚨🚨 [DRAG_END_DEBUG] oldIndex:', oldIndex);
-      console.log('🚨🚨🚨 [DRAG_END_DEBUG] newIndex:', newIndex);
-      
       if (oldIndex === -1 || newIndex === -1) {
-        console.error('🚨🚨🚨 [DRAG_END_DEBUG] ❌ Could not find Pokemon indices');
-        console.error('🚨🚨🚨 [DRAG_END_DEBUG] oldIndex:', oldIndex, '| newIndex:', newIndex);
-        console.error('🚨🚨🚨 [DRAG_END_DEBUG] active.id:', active.id, '| over.id:', over.id);
-        console.error('🚨🚨🚨 [DRAG_END_DEBUG] Pokemon IDs in rankings:', localRankings.map(p => p.id));
+        console.error('🔥 [ENHANCED_REORDER_DRAG] Could not find Pokemon indices');
         return;
       }
       
+      console.log('🔥🔥🔥 [ENHANCED_REORDER_DRAG] Moving from index', oldIndex, 'to', newIndex);
+      
       const movedPokemon = localRankings[oldIndex];
-      console.log('🚨🚨🚨 [DRAG_END_DEBUG] POKEMON BEING MOVED:');
-      console.log('🚨🚨🚨 [DRAG_END_DEBUG] Name:', movedPokemon.name, '| ID:', movedPokemon.id);
-      console.log('🚨🚨🚨 [DRAG_END_DEBUG] Moving from index', oldIndex, 'to index', newIndex);
-      console.log('🚨🚨🚨 [DRAG_END_DEBUG] Moving from position', oldIndex + 1, 'to position', newIndex + 1);
+      console.log('🔥🔥🔥 [ENHANCED_REORDER_DRAG] Moving Pokemon:', movedPokemon.name);
       
       // CRITICAL: Log if this is Charmander
       if (movedPokemon.id === 4) {
-        console.log('🧊🧊🧊 [DRAG_END_DEBUG] ===== CHARMANDER DRAG DETECTED =====');
-        console.log('🧊🧊🧊 [DRAG_END_DEBUG] CRITICAL: User dragged Charmander to position', newIndex + 1);
-        console.log('🧊🧊🧊 [DRAG_END_DEBUG] Old position:', oldIndex + 1, '| New position:', newIndex + 1);
-        console.log('🧊🧊🧊 [DRAG_END_DEBUG] Current score:', movedPokemon.score.toFixed(5));
+        console.log('🧊🧊🧊 [ENHANCED_REORDER_DRAG] ===== CHARMANDER DRAG DETECTED =====');
+        console.log('🧊🧊🧊 [ENHANCED_REORDER_DRAG] Old index:', oldIndex, 'New index:', newIndex);
+        console.log('🧊🧊🧊 [ENHANCED_REORDER_DRAG] Current score:', movedPokemon.score.toFixed(5));
       }
-      
-      // CRITICAL: Log the arrayMove operation
-      console.log('🚨🚨🚨 [DRAG_END_DEBUG] BEFORE arrayMove:');
-      console.log('🚨🚨🚨 [DRAG_END_DEBUG] Rankings around oldIndex', oldIndex, ':', 
-        localRankings.slice(Math.max(0, oldIndex - 2), oldIndex + 3).map((p, i) => 
-          `[${Math.max(0, oldIndex - 2) + i}]: ${p.name} (${p.id})`));
-      console.log('🚨🚨🚨 [DRAG_END_DEBUG] Rankings around newIndex', newIndex, ':', 
-        localRankings.slice(Math.max(0, newIndex - 2), newIndex + 3).map((p, i) => 
-          `[${Math.max(0, newIndex - 2) + i}]: ${p.name} (${p.id})`));
       
       const newRankings = arrayMove(localRankings, oldIndex, newIndex);
       
-      console.log('🚨🚨🚨 [DRAG_END_DEBUG] AFTER arrayMove:');
-      console.log('🚨🚨🚨 [DRAG_END_DEBUG] Rankings around newIndex', newIndex, ':', 
-        newRankings.slice(Math.max(0, newIndex - 2), newIndex + 3).map((p, i) => 
-          `[${Math.max(0, newIndex - 2) + i}]: ${p.name} (${p.id})`));
-      
-      // CRITICAL: Verify the moved Pokemon is actually at newIndex
-      const pokemonAtNewIndex = newRankings[newIndex];
-      console.log('🚨🚨🚨 [DRAG_END_DEBUG] VERIFICATION:');
-      console.log('🚨🚨🚨 [DRAG_END_DEBUG] Pokemon at newIndex', newIndex, ':', pokemonAtNewIndex?.name, '(', pokemonAtNewIndex?.id, ')');
-      console.log('🚨🚨🚨 [DRAG_END_DEBUG] Expected Pokemon:', movedPokemon.name, '(', movedPokemon.id, ')');
-      console.log('🚨🚨🚨 [DRAG_END_DEBUG] arrayMove SUCCESS:', pokemonAtNewIndex?.id === movedPokemon.id ? 'YES' : 'NO');
-      
       if (!validateRankingsIntegrity(newRankings)) {
-        console.error('🚨🚨🚨 [DRAG_END_DEBUG] ❌ Rankings integrity check failed');
+        console.error('🔥 [ENHANCED_REORDER_DRAG] Rankings integrity check failed');
         return;
       }
       
-      console.log('🚨🚨🚨 [DRAG_END_DEBUG] CALLING applyManualScoreAdjustment with newIndex:', newIndex);
+      console.log('🔥🔥🔥 [ENHANCED_REORDER_DRAG] APPLYING MANUAL SCORE ADJUSTMENT');
       
       applyManualScoreAdjustment(movedPokemon, newIndex, newRankings);
       
@@ -350,24 +319,22 @@ export const useEnhancedManualReorder = (
       if (movedPokemon.id === 4) {
         const charmanderAfterRecalc = updatedRankings.find(p => p.id === 4);
         if (charmanderAfterRecalc) {
-          const charmanderFinalIndex = updatedRankings.findIndex(p => p.id === 4);
-          console.log('🧊🧊🧊 [DRAG_END_DEBUG] ===== CHARMANDER AFTER RECALC =====');
-          console.log('🧊🧊🧊 [DRAG_END_DEBUG] Final position after recalc:', charmanderFinalIndex + 1);
-          console.log('🧊🧊🧊 [DRAG_END_DEBUG] Final score after recalc:', charmanderAfterRecalc.score.toFixed(5));
-          console.log('🧊🧊🧊 [DRAG_END_DEBUG] Target position was:', newIndex + 1);
-          console.log('🧊🧊🧊 [DRAG_END_DEBUG] POSITION CHANGED DURING RECALC:', charmanderFinalIndex !== newIndex ? 'YES' : 'NO');
+          const charmanderIndex = updatedRankings.findIndex(p => p.id === 4);
+          console.log('🧊🧊🧊 [ENHANCED_REORDER_DRAG] ===== CHARMANDER AFTER RECALC =====');
+          console.log('🧊🧊🧊 [ENHANCED_REORDER_DRAG] Position after recalc:', charmanderIndex + 1);
+          console.log('🧊🧊🧊 [ENHANCED_REORDER_DRAG] Score after recalc:', charmanderAfterRecalc.score.toFixed(5));
         }
       }
       
-      console.log('🚨🚨🚨 [DRAG_END_DEBUG] CALLING setLocalRankings and onRankingsUpdate...');
+      console.log('🔥🔥🔥 [ENHANCED_REORDER_DRAG] Updated rankings calculated');
       
       setLocalRankings(updatedRankings);
       onRankingsUpdate(updatedRankings);
       
-      console.log('🚨🚨🚨 [DRAG_END_DEBUG] ✅ Drag end processing complete');
+      console.log('🔥🔥🔥 [ENHANCED_REORDER_DRAG] ✅ Drag end processing complete');
       
     } catch (error) {
-      console.error('🚨🚨🚨 [DRAG_END_DEBUG] ❌ Error during drag end processing:', error);
+      console.error('🔥 [ENHANCED_REORDER_DRAG] Error during drag end processing:', error);
     } finally {
       setTimeout(() => {
         setDragState(prev => ({ ...prev, isUpdating: false, manualAdjustmentInProgress: false }));

@@ -18,6 +18,8 @@ interface UseDragAndDropProps {
 }
 
 export const useDragAndDrop = ({ displayRankings, onManualReorder, onLocalReorder }: UseDragAndDropProps) => {
+  console.log(`🚀 [DRAG_DROP_FLOW] ===== useDragAndDrop with Enhanced Flow =====`);
+  console.log(`🚀 [DRAG_DROP_FLOW] onManualReorder function exists: ${!!onManualReorder}`);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -27,34 +29,56 @@ export const useDragAndDrop = ({ displayRankings, onManualReorder, onLocalReorde
   );
 
   const handleDragEnd = (event: DragEndEvent) => {
+    console.log(`🚀 [DRAG_DROP_FLOW] ===== DRAG END TRIGGERED =====`);
     
     const { active, over } = event;
 
     if (!over || active.id === over.id) {
+      console.log(`🚀 [DRAG_DROP_FLOW] ❌ No drop target or same position - exiting`);
       return;
     }
 
     const activeIndex = displayRankings.findIndex(pokemon => pokemon.id === active.id);
     const overIndex = displayRankings.findIndex(pokemon => pokemon.id === over.id);
     
+    console.log(`🚀 [DRAG_DROP_FLOW] Drag details:`);
+    console.log(`🚀 [DRAG_DROP_FLOW] - Active Pokemon ID: ${active.id}`);
+    console.log(`🚀 [DRAG_DROP_FLOW] - Over Pokemon ID: ${over.id}`);
+    console.log(`🚀 [DRAG_DROP_FLOW] - Active Index: ${activeIndex}`);
+    console.log(`🚀 [DRAG_DROP_FLOW] - Over Index: ${overIndex}`);
+
     if (activeIndex === -1 || overIndex === -1) {
+      console.error(`🚀 [DRAG_DROP_FLOW] ❌ Invalid indices - activeIndex: ${activeIndex}, overIndex: ${overIndex}`);
       return;
     }
 
     const draggedPokemon = displayRankings[activeIndex];
+    console.log(`🚀 [DRAG_DROP_FLOW] Dragged Pokemon: ${draggedPokemon.name} (${draggedPokemon.id})`);
 
     // Calculate the new rankings for immediate UI feedback
     const newRankings = arrayMove(displayRankings, activeIndex, overIndex);
-    
+
     // Update local rankings for immediate UI feedback
     if (onLocalReorder) {
+      console.log(`🚀 [DRAG_DROP_FLOW] Updating local rankings for immediate feedback...`);
       onLocalReorder(newRankings);
     }
 
-    // Call the enhanced manual reorder logic
+    // CRITICAL: Call the enhanced manual reorder logic
     if (onManualReorder) {
+      console.log(`🚀 [DRAG_DROP_FLOW] ===== CALLING ENHANCED MANUAL REORDER =====`);
+      console.log(`🚀 [DRAG_DROP_FLOW] This should trigger TrueSkill updates and implied battles`);
+      console.log(`🚀 [DRAG_DROP_FLOW] Calling: onManualReorder(${draggedPokemon.id}, ${activeIndex}, ${overIndex})`);
+      
+      // Call the enhanced manual reorder logic
       onManualReorder(draggedPokemon.id, activeIndex, overIndex);
+      
+      console.log(`🚀 [DRAG_DROP_FLOW] Enhanced manual reorder call completed`);
+    } else {
+      console.error(`🚀 [DRAG_DROP_FLOW] ❌ onManualReorder is not available!`);
     }
+    
+    console.log(`🚀 [DRAG_DROP_FLOW] ===== DRAG END COMPLETE =====`);
   };
 
   return { sensors, handleDragEnd };
