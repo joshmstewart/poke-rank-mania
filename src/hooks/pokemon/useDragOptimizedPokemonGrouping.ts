@@ -28,22 +28,38 @@ export const useDragOptimizedPokemonGrouping = ({
     return `${pokemonIds}-${searchTerm}-${isRankingArea}-${expandedGens}`;
   }, [pokemon, searchTerm, isRankingArea, isGenerationExpanded]);
 
-  // Use drag-aware memoization for the grouping result
-  const groupingInput = useDragAwareMemo({
-    value: { pokemon, searchTerm, isRankingArea, isGenerationExpanded },
+  // Use drag-aware memoization for the input parameters
+  const stablePokemon = useDragAwareMemo({
+    value: pokemon,
     isDragging,
     deps: [memoKey]
   });
 
-  // Only recalculate grouping when not dragging or when inputs actually change
-  const groupingResult = useMemo(() => {
-    return usePokemonGrouping(
-      groupingInput.pokemon, 
-      groupingInput.searchTerm, 
-      groupingInput.isRankingArea, 
-      groupingInput.isGenerationExpanded
-    );
-  }, [groupingInput.pokemon, groupingInput.searchTerm, groupingInput.isRankingArea, groupingInput.isGenerationExpanded]);
+  const stableSearchTerm = useDragAwareMemo({
+    value: searchTerm,
+    isDragging,
+    deps: [searchTerm]
+  });
+
+  const stableIsRankingArea = useDragAwareMemo({
+    value: isRankingArea,
+    isDragging,
+    deps: [isRankingArea]
+  });
+
+  const stableIsGenerationExpanded = useDragAwareMemo({
+    value: isGenerationExpanded,
+    isDragging,
+    deps: [memoKey] // Use memoKey since function depends on expanded state
+  });
+
+  // Call the hook directly with stable inputs - this is safe because hooks are called consistently
+  const groupingResult = usePokemonGrouping(
+    stablePokemon,
+    stableSearchTerm,
+    stableIsRankingArea,
+    stableIsGenerationExpanded
+  );
 
   return groupingResult;
 };
