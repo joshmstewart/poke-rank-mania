@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { useTrueSkillStore } from "@/stores/trueskillStore";
 import { generations } from "@/services/pokemon";
@@ -23,12 +24,23 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
   // Get Pokemon data from context
   const { allPokemon, pokemonLookupMap } = usePokemonContext();
   
+  // DEBUG: Log basic state
+  console.log('🏆 [PERSONAL_DEBUG_BASIC] ===== PERSONAL RANKINGS VIEW RENDER =====');
+  console.log('🏆 [PERSONAL_DEBUG_BASIC] allPokemon count:', allPokemon?.length || 0);
+  console.log('🏆 [PERSONAL_DEBUG_BASIC] pokemonLookupMap size:', pokemonLookupMap?.size || 0);
+  console.log('🏆 [PERSONAL_DEBUG_BASIC] selectedGeneration:', selectedGeneration);
+  
   // Get current generation name
   const currentGeneration = generations.find(gen => gen.id === selectedGeneration);
   
   // Filter Pokemon by generation
   const filteredPokemon = useMemo(() => {
+    console.log('🏆 [PERSONAL_DEBUG_FILTER] ===== FILTERING POKEMON =====');
+    console.log('🏆 [PERSONAL_DEBUG_FILTER] selectedGeneration:', selectedGeneration);
+    console.log('🏆 [PERSONAL_DEBUG_FILTER] allPokemon input:', allPokemon?.length || 0);
+    
     if (selectedGeneration === 0) {
+      console.log('🏆 [PERSONAL_DEBUG_FILTER] Using all generations, returning all Pokemon');
       return allPokemon; // All generations
     }
     
@@ -38,35 +50,44 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
     };
     
     const range = genRanges[selectedGeneration];
-    if (!range) return [];
+    if (!range) {
+      console.log('🏆 [PERSONAL_DEBUG_FILTER] No range found for generation:', selectedGeneration);
+      return [];
+    }
     
     const [min, max] = range;
-    return allPokemon.filter(p => p.id >= min && p.id <= max);
+    const filtered = allPokemon.filter(p => p.id >= min && p.id <= max);
+    console.log('🏆 [PERSONAL_DEBUG_FILTER] Filtered to generation', selectedGeneration, ':', filtered.length, 'Pokemon');
+    return filtered;
   }, [allPokemon, selectedGeneration]);
   
   // Transform TrueSkill data to ranked Pokemon format using actual Pokemon data
   const rankings = useMemo(() => {
-    console.log('🏆 [PERSONAL_RANKINGS_MANUAL_DEBUG] ===== STARTING RANKINGS CALCULATION =====');
+    console.log('🏆 [PERSONAL_DEBUG_RANKINGS] ===== STARTING RANKINGS CALCULATION =====');
     const ratings = getAllRatings();
     
+    console.log('🏆 [PERSONAL_DEBUG_RANKINGS] TrueSkill ratings found:', Object.keys(ratings).length);
+    console.log('🏆 [PERSONAL_DEBUG_RANKINGS] Sample ratings keys:', Object.keys(ratings).slice(0, 5));
+    
     if (!filteredPokemon || filteredPokemon.length === 0) {
-      console.log('🏆 [PERSONAL_RANKINGS_MANUAL_DEBUG] No filtered Pokemon available');
+      console.log('🏆 [PERSONAL_DEBUG_RANKINGS] No filtered Pokemon available');
       return [];
     }
     
-    console.log('🏆 [PERSONAL_RANKINGS_MANUAL_DEBUG] Found ratings for', Object.keys(ratings).length, 'Pokemon');
+    console.log('🏆 [PERSONAL_DEBUG_RANKINGS] Found ratings for', Object.keys(ratings).length, 'Pokemon');
+    console.log('🏆 [PERSONAL_DEBUG_RANKINGS] Filtered Pokemon available:', filteredPokemon.length);
     
     // Convert ratings to RankedPokemon format
     const rankedPokemon: RankedPokemon[] = Object.entries(ratings)
       .map(([pokemonId, rating]) => {
         const pokemon = pokemonLookupMap.get(parseInt(pokemonId));
         if (!pokemon) {
-          console.log('🏆 [PERSONAL_RANKINGS_MANUAL_DEBUG] Pokemon not found in lookup:', pokemonId);
+          console.log('🏆 [PERSONAL_DEBUG_RANKINGS] Pokemon not found in lookup:', pokemonId);
           return null; // Skip if Pokemon data not found
         }
         
-        // CRITICAL: Log original Pokemon data for debugging
-        console.log(`🏆 [PERSONAL_RANKINGS_MANUAL_DEBUG] Processing Pokemon ${pokemonId}: original name="${pokemon.name}"`);
+        // CRITICAL: Log EVERY Pokemon name for debugging
+        console.log(`🏆 [PERSONAL_DEBUG_RANKINGS] Processing Pokemon ${pokemonId}: original name="${pokemon.name}"`);
         
         // Filter by generation if needed
         if (selectedGeneration > 0) {
@@ -89,8 +110,9 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
         const winRate = battleCount > 0 ? (wins / battleCount) * 100 : 0;
         
         // CRITICAL: Apply name formatting and log it
+        console.log(`🏆 [PERSONAL_DEBUG_RANKINGS] Before formatting: "${pokemon.name}"`);
         const formattedName = formatPokemonName(pokemon.name);
-        console.log(`🏆 [PERSONAL_RANKINGS_MANUAL_DEBUG] Pokemon ${pokemonId}: "${pokemon.name}" → "${formattedName}"`);
+        console.log(`🏆 [PERSONAL_DEBUG_RANKINGS] After formatting: "${formattedName}"`);
         
         const rankedPokemon = {
           ...pokemon, // Use actual Pokemon data (id, image, types, etc.)
@@ -103,45 +125,46 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
           winRate: winRate
         };
         
-        console.log(`🏆 [PERSONAL_RANKINGS_MANUAL_DEBUG] Final ranked Pokemon ${pokemonId}: name="${rankedPokemon.name}"`);
+        console.log(`🏆 [PERSONAL_DEBUG_RANKINGS] Final ranked Pokemon ${pokemonId}: name="${rankedPokemon.name}"`);
         return rankedPokemon;
       })
       .filter((pokemon): pokemon is RankedPokemon => pokemon !== null);
     
     // Sort by score descending
     const sorted = rankedPokemon.sort((a, b) => b.score - a.score);
-    console.log('🏆 [PERSONAL_RANKINGS_MANUAL_DEBUG] Final sorted rankings:', sorted.length, 'Pokemon');
+    console.log('🏆 [PERSONAL_DEBUG_RANKINGS] Final sorted rankings:', sorted.length, 'Pokemon');
+    console.log('🏆 [PERSONAL_DEBUG_RANKINGS] Top 3 Pokemon names:', sorted.slice(0, 3).map(p => p.name));
     
     return sorted;
-  }, [getAllRatings, pokemonLookupMap, selectedGeneration]);
+  }, [getAllRatings, pokemonLookupMap, selectedGeneration, filteredPokemon]);
 
   // Update local rankings when rankings change
   useEffect(() => {
-    console.log('🏆 [PERSONAL_RANKINGS_MANUAL_DEBUG] ===== UPDATING LOCAL RANKINGS =====');
-    console.log('🏆 [PERSONAL_RANKINGS_MANUAL_DEBUG] Incoming rankings count:', rankings.length);
+    console.log('🏆 [PERSONAL_DEBUG_EFFECT] ===== UPDATING LOCAL RANKINGS =====');
+    console.log('🏆 [PERSONAL_DEBUG_EFFECT] Incoming rankings count:', rankings.length);
     
     if (rankings.length > 0) {
       // Log first few Pokemon names to see if formatting is preserved
       rankings.slice(0, 5).forEach((pokemon, index) => {
-        console.log(`🏆 [PERSONAL_RANKINGS_MANUAL_DEBUG] Ranking #${index + 1}: "${pokemon.name}" (ID: ${pokemon.id})`);
+        console.log(`🏆 [PERSONAL_DEBUG_EFFECT] Ranking #${index + 1}: "${pokemon.name}" (ID: ${pokemon.id})`);
       });
     }
     
     setLocalRankings(rankings);
-    console.log('🏆 [PERSONAL_RANKINGS_MANUAL_DEBUG] Local rankings updated');
+    console.log('🏆 [PERSONAL_DEBUG_EFFECT] Local rankings updated');
   }, [rankings]);
 
   // Handle rankings update from manual reorder
   const handleRankingsUpdate = useCallback((updatedRankings: RankedPokemon[]) => {
-    console.log(`🏆 [PERSONAL_RANKINGS_MANUAL_DEBUG] ===== HANDLING RANKINGS UPDATE =====`);
-    console.log(`🏆 [PERSONAL_RANKINGS_MANUAL_DEBUG] Received ${updatedRankings.length} updated Pokemon`);
+    console.log(`🏆 [PERSONAL_DEBUG_UPDATE] ===== HANDLING RANKINGS UPDATE =====`);
+    console.log(`🏆 [PERSONAL_DEBUG_UPDATE] Received ${updatedRankings.length} updated Pokemon`);
     
     // Log names before and after formatting
     const formattedRankings = updatedRankings.map((pokemon, index) => {
       const originalName = pokemon.name;
       const newFormattedName = formatPokemonName(pokemon.name);
       
-      console.log(`🏆 [PERSONAL_RANKINGS_MANUAL_DEBUG] Update #${index + 1}: "${originalName}" → "${newFormattedName}"`);
+      console.log(`🏆 [PERSONAL_DEBUG_UPDATE] Update #${index + 1}: "${originalName}" → "${newFormattedName}"`);
       
       return {
         ...pokemon,
@@ -150,7 +173,7 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
     });
     
     setLocalRankings(formattedRankings);
-    console.log('🏆 [PERSONAL_RANKINGS_MANUAL_DEBUG] Rankings update complete');
+    console.log('🏆 [PERSONAL_DEBUG_UPDATE] Rankings update complete');
   }, []);
 
   // Use the battle manual reorder hook with milestone view behavior
