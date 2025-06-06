@@ -1,8 +1,7 @@
-
 import { useState, useCallback } from "react";
 import { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import { useTrueSkillStore } from "@/stores/trueskillStore";
-import { useNewPokemonAddition } from "./useNewPokemonAddition";
+import { Rating } from "ts-trueskill";
 import { toast } from "@/hooks/use-toast";
 
 export const useEnhancedRankingDragDrop = (
@@ -14,10 +13,7 @@ export const useEnhancedRankingDragDrop = (
   updateLocalRankings: (rankings: any[]) => void
 ) => {
   const [activeDraggedPokemon, setActiveDraggedPokemon] = useState<any>(null);
-  const { getRating } = useTrueSkillStore();
-
-  // Use the new clean Pokemon addition hook
-  const { addNewPokemonToRankings } = useNewPokemonAddition(localRankings, updateLocalRankings);
+  const { updateRating } = useTrueSkillStore();
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
     console.log(`🚀🚀🚀 [ENHANCED_DRAG_START] ===== ENHANCED DRAG START =====`);
@@ -116,7 +112,7 @@ export const useEnhancedRankingDragDrop = (
             }
             
           } else {
-            // CASE B: Pokemon is not ranked - use the clean new addition system
+            // CASE B: Pokemon is not ranked - add as new
             console.log(`🌟🌟🌟 [ADD_NEW_POKEMON] ===== ADDING NEW POKEMON =====`);
             console.log(`🌟🌟🌟 [ADD_NEW_POKEMON] Pokemon ${pokemonId} (${pokemon.name}) - first time ranking`);
             
@@ -132,19 +128,28 @@ export const useEnhancedRankingDragDrop = (
                 console.log(`🌟🌟🌟 [ADD_NEW_POKEMON] ✅ Will insert at position ${targetIndex}`);
               }
             }
-
-            console.log(`🌟🌟🌟 [ADD_NEW_POKEMON] Using clean addition system for position ${insertionPosition}`);
             
-            // Use the clean, separate addition function
-            addNewPokemonToRankings(pokemonId, insertionPosition);
+            // Add default rating to TrueSkill store
+            const defaultRating = new Rating(25.0, 8.333);
+            updateRating(pokemonId.toString(), defaultRating);
+            console.log(`🌟🌟🌟 [ADD_NEW_POKEMON] ✅ Added default rating to TrueSkill store`);
+            
+            // Remove from available list
+            setAvailablePokemon(prev => prev.filter(p => p.id !== pokemonId));
+            console.log(`🌟🌟🌟 [ADD_NEW_POKEMON] ✅ Removed from available list`);
+            
+            // Use the SAME enhanced manual reorder function with -1 source index
+            // to indicate this is a new addition, not a reorder
+            handleEnhancedManualReorder(pokemonId, -1, insertionPosition);
+            console.log(`🌟🌟🌟 [ADD_NEW_POKEMON] ✅ Called handleEnhancedManualReorder with -1 source index`);
             
             toast({
                 title: "Pokemon Added",
-                description: `${pokemon.name} has been added to rankings at the dropped position!`,
+                description: `${pokemon.name} has been added to rankings at position ${insertionPosition + 1}!`,
                 duration: 3000
             });
             
-            console.log(`🌟🌟🌟 [ADD_NEW_POKEMON] ✅ Addition process completed using clean system`);
+            console.log(`🌟🌟🌟 [ADD_NEW_POKEMON] ✅ Addition process completed`);
           }
           
           return;
@@ -157,7 +162,7 @@ export const useEnhancedRankingDragDrop = (
       return;
     }
 
-    // Handle reordering within rankings (existing logic)
+    // Handle reordering within rankings
     if (!activeId.startsWith('available-') && !overId.startsWith('available-') && !overId.startsWith('collision-placeholder-')) {
       const activePokemonId = Number(activeId);
       const overPokemonId = Number(overId);
@@ -170,7 +175,7 @@ export const useEnhancedRankingDragDrop = (
         handleEnhancedManualReorder(activePokemonId, oldIndex, newIndex);
       }
     }
-  }, [enhancedAvailablePokemon, localRankings, handleEnhancedManualReorder, triggerReRanking, addNewPokemonToRankings, getRating]);
+  }, [enhancedAvailablePokemon, localRankings, handleEnhancedManualReorder, triggerReRanking, updateRating, setAvailablePokemon]);
 
   const handleManualReorder = useCallback((
     draggedPokemonId: number,
