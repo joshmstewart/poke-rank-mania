@@ -4,9 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { X, ArrowLeft, ArrowRight } from 'lucide-react';
 import { useTour } from './TourProvider';
+import TourSplashPage from './TourSplashPage';
 
 export const TourOverlay: React.FC = () => {
-  const { isActive, currentStep, steps, endTour, nextStep, prevStep } = useTour();
+  const { isActive, showSplash, currentStep, steps, endTour, nextStep, prevStep, completeSplash } = useTour();
   const [targetElement, setTargetElement] = useState<HTMLElement | null>(null);
   const [overlayPosition, setOverlayPosition] = useState({ top: 0, left: 0 });
   const [highlightPosition, setHighlightPosition] = useState({ top: 0, left: 0, width: 0, height: 0 });
@@ -73,6 +74,11 @@ export const TourOverlay: React.FC = () => {
       window.removeEventListener('resize', handleResize);
     };
   }, [isActive, currentStep, steps]);
+
+  // Show splash page first
+  if (showSplash) {
+    return <TourSplashPage onComplete={completeSplash} />;
+  }
 
   if (!isActive || !steps[currentStep]) return null;
 

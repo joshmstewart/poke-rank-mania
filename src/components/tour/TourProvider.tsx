@@ -11,12 +11,14 @@ interface TourStep {
 
 interface TourContextType {
   isActive: boolean;
+  showSplash: boolean;
   currentStep: number;
   steps: TourStep[];
   startTour: () => void;
   endTour: () => void;
   nextStep: () => void;
   prevStep: () => void;
+  completeSplash: () => void;
 }
 
 const TourContext = createContext<TourContextType | undefined>(undefined);
@@ -61,15 +63,22 @@ const tourSteps: TourStep[] = [
 
 export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isActive, setIsActive] = useState(false);
+  const [showSplash, setShowSplash] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
 
   const startTour = useCallback(() => {
+    setShowSplash(true);
+  }, []);
+
+  const completeSplash = useCallback(() => {
+    setShowSplash(false);
     setIsActive(true);
     setCurrentStep(0);
   }, []);
 
   const endTour = useCallback(() => {
     setIsActive(false);
+    setShowSplash(false);
     setCurrentStep(0);
   }, []);
 
@@ -90,12 +99,14 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
   return (
     <TourContext.Provider value={{
       isActive,
+      showSplash,
       currentStep,
       steps: tourSteps,
       startTour,
       endTour,
       nextStep,
-      prevStep
+      prevStep,
+      completeSplash
     }}>
       {children}
     </TourContext.Provider>
