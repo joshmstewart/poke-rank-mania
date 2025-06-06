@@ -78,10 +78,19 @@ export const useEnhancedManualReorder = (
     newIndex: number,
     rankings: RankedPokemon[]
   ) => {
+    const operationId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     console.log('🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] ===== APPLYING MANUAL SCORE ADJUSTMENT =====');
-    console.log('🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] draggedPokemon:', draggedPokemon.name);
+    console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Operation ID: ${operationId}`);
+    console.log('🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] draggedPokemon:', draggedPokemon.name, 'ID:', draggedPokemon.id);
     console.log('🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Target position (newIndex):', newIndex);
     console.log('🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] preventAutoResorting:', preventAutoResorting);
+    
+    // CRITICAL: Log Charmander's current state if this is Charmander
+    if (draggedPokemon.id === 4) {
+      console.log(`🔥🔥🔥 [CHARMANDER_TRACE_${operationId}] ===== CHARMANDER BEING MOVED =====`);
+      console.log(`🔥🔥🔥 [CHARMANDER_TRACE_${operationId}] Current score: ${draggedPokemon.score}`);
+      console.log(`🔥🔥🔥 [CHARMANDER_TRACE_${operationId}] Current rating:`, draggedPokemon.rating);
+    }
     
     if (preventAutoResorting) {
       console.log('🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] ✅ RANKING MODE: Manual positioning without battles');
@@ -93,9 +102,11 @@ export const useEnhancedManualReorder = (
     const MIN_SIGMA = 1.0;
     const SCORE_GAP = 3.0; // Increased from 1.0 to 3.0 for better separation
     
+    console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Using MIN_SIGMA: ${MIN_SIGMA}, SCORE_GAP: ${SCORE_GAP}`);
+    
     // Get current rating for the dragged Pokemon
     const currentRating = getRating(draggedPokemon.id.toString());
-    console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Current rating - μ=${currentRating.mu.toFixed(5)}, σ=${currentRating.sigma.toFixed(5)}`);
+    console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Current rating from store - μ=${currentRating.mu.toFixed(5)}, σ=${currentRating.sigma.toFixed(5)}`);
     console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Current displayed score: ${(currentRating.mu - currentRating.sigma).toFixed(5)}`);
     
     // Create the final rankings array to determine correct neighbors
@@ -119,63 +130,76 @@ export const useEnhancedManualReorder = (
     const belowPokemon = newIndex < finalRankingsAfterMove.length - 1 ? finalRankingsAfterMove[newIndex + 1] : null;
     
     console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] FINAL ARRANGEMENT:`);
-    console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Above Pokemon:`, abovePokemon ? `${abovePokemon.name} at final position ${newIndex - 1}` : 'None (top position)');
-    console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Target Pokemon: ${draggedPokemon.name} at final position ${newIndex}`);
-    console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Below Pokemon:`, belowPokemon ? `${belowPokemon.name} at final position ${newIndex + 1}` : 'None (bottom position)');
+    console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Above Pokemon:`, abovePokemon ? `${abovePokemon.name} (ID: ${abovePokemon.id}) at final position ${newIndex - 1}` : 'None (top position)');
+    console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Target Pokemon: ${draggedPokemon.name} (ID: ${draggedPokemon.id}) at final position ${newIndex}`);
+    console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Below Pokemon:`, belowPokemon ? `${belowPokemon.name} (ID: ${belowPokemon.id}) at final position ${newIndex + 1}` : 'None (bottom position)');
+    
+    // CRITICAL: Get neighbor ratings and scores from TrueSkill store (most current)
+    let aboveScore = 0, belowScore = 0;
     
     if (abovePokemon) {
       const aboveRating = getRating(abovePokemon.id.toString());
-      console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Above ${abovePokemon.name}: μ=${aboveRating.mu.toFixed(5)}, σ=${aboveRating.sigma.toFixed(5)}, score=${(aboveRating.mu - aboveRating.sigma).toFixed(5)}`);
+      aboveScore = aboveRating.mu - aboveRating.sigma;
+      console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Above ${abovePokemon.name}: TrueSkill μ=${aboveRating.mu.toFixed(5)}, σ=${aboveRating.sigma.toFixed(5)}, calculated score=${aboveScore.toFixed(5)}`);
+      console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Above ${abovePokemon.name}: Display score from object=${abovePokemon.score.toFixed(5)}`);
     }
     
     if (belowPokemon) {
       const belowRating = getRating(belowPokemon.id.toString());
-      console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Below ${belowPokemon.name}: μ=${belowRating.mu.toFixed(5)}, σ=${belowRating.sigma.toFixed(5)}, score=${(belowRating.mu - belowRating.sigma).toFixed(5)}`);
+      belowScore = belowRating.mu - belowRating.sigma;
+      console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Below ${belowPokemon.name}: TrueSkill μ=${belowRating.mu.toFixed(5)}, σ=${belowRating.sigma.toFixed(5)}, calculated score=${belowScore.toFixed(5)}`);
+      console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Below ${belowPokemon.name}: Display score from object=${belowPokemon.score.toFixed(5)}`);
     }
     
     // Calculate target score based on final position with LARGER GAPS
     let targetDisplayedScore: number;
     
     if (abovePokemon && belowPokemon) {
-      // Between two Pokemon - ensure adequate gap
-      const aboveRating = getRating(abovePokemon.id.toString());
-      const belowRating = getRating(belowPokemon.id.toString());
-      const aboveScore = aboveRating.mu - aboveRating.sigma;
-      const belowScore = belowRating.mu - belowRating.sigma;
-      
-      // Check if there's enough gap between the two Pokemon
+      // Between two Pokemon - check if gap adjustment is needed
       const currentGap = aboveScore - belowScore;
+      console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Current gap between neighbors: ${currentGap.toFixed(5)}`);
+      console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Required gap threshold: ${SCORE_GAP * 2}`);
+      
       if (currentGap < SCORE_GAP * 2) {
         // Not enough gap - adjust the scores of surrounding Pokemon first
         console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] INSUFFICIENT GAP: ${currentGap.toFixed(3)} < ${SCORE_GAP * 2}`);
+        console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] ⚠️ ADJUSTING NEIGHBOR SCORES ⚠️`);
+        
+        // Get current neighbor ratings
+        const aboveRating = getRating(abovePokemon.id.toString());
+        const belowRating = getRating(belowPokemon.id.toString());
         
         // Push the above Pokemon higher and below Pokemon lower
         const newAboveMu = aboveScore + SCORE_GAP + MIN_SIGMA;
         const newBelowMu = belowScore - SCORE_GAP + MIN_SIGMA;
+        
+        console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Old above ${abovePokemon.name} μ: ${aboveRating.mu.toFixed(5)} -> New μ: ${newAboveMu.toFixed(5)}`);
+        console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Old below ${belowPokemon.name} μ: ${belowRating.mu.toFixed(5)} -> New μ: ${newBelowMu.toFixed(5)}`);
         
         updateRating(abovePokemon.id.toString(), new Rating(newAboveMu, Math.max(aboveRating.sigma * 0.9, MIN_SIGMA)));
         updateRating(belowPokemon.id.toString(), new Rating(newBelowMu, Math.max(belowRating.sigma * 0.9, MIN_SIGMA)));
         
         console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] ADJUSTED NEIGHBORS: Above +${SCORE_GAP}, Below -${SCORE_GAP}`);
         
-        // Now set target exactly in the middle
-        targetDisplayedScore = (newAboveMu - MIN_SIGMA + newBelowMu - MIN_SIGMA) / 2;
+        // Now set target exactly in the middle of the NEW scores
+        const newAboveDisplayScore = newAboveMu - MIN_SIGMA;
+        const newBelowDisplayScore = newBelowMu - MIN_SIGMA;
+        targetDisplayedScore = (newAboveDisplayScore + newBelowDisplayScore) / 2;
+        
+        console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Target based on adjusted neighbors: (${newAboveDisplayScore.toFixed(5)} + ${newBelowDisplayScore.toFixed(5)}) / 2 = ${targetDisplayedScore.toFixed(5)}`);
       } else {
-        // Sufficient gap exists
+        // Sufficient gap exists - use simple average
         targetDisplayedScore = (aboveScore + belowScore) / 2;
+        console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Target based on existing gap: (${aboveScore.toFixed(5)} + ${belowScore.toFixed(5)}) / 2 = ${targetDisplayedScore.toFixed(5)}`);
       }
       
       console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] BETWEEN TWO: above=${aboveScore.toFixed(5)}, below=${belowScore.toFixed(5)}, target=${targetDisplayedScore.toFixed(5)}`);
     } else if (abovePokemon && !belowPokemon) {
       // Bottom position - well below the Pokemon above
-      const aboveRating = getRating(abovePokemon.id.toString());
-      const aboveScore = aboveRating.mu - aboveRating.sigma;
       targetDisplayedScore = aboveScore - SCORE_GAP;
       console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] BOTTOM POSITION: above=${aboveScore.toFixed(5)}, target=${targetDisplayedScore.toFixed(5)}`);
     } else if (!abovePokemon && belowPokemon) {
       // Top position - well above the Pokemon below
-      const belowRating = getRating(belowPokemon.id.toString());
-      const belowScore = belowRating.mu - belowRating.sigma;
       targetDisplayedScore = belowScore + SCORE_GAP;
       console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] TOP POSITION: below=${belowScore.toFixed(5)}, target=${targetDisplayedScore.toFixed(5)}`);
     } else {
@@ -194,11 +218,32 @@ export const useEnhancedManualReorder = (
     console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] New σ: ${newSigma.toFixed(5)}`);
     console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] VERIFICATION: new displayed score = ${(newMu - newSigma).toFixed(5)} (should equal target: ${targetDisplayedScore.toFixed(5)})`);
     
+    // CRITICAL: Log before updating if this is Charmander
+    if (draggedPokemon.id === 4) {
+      console.log(`🔥🔥🔥 [CHARMANDER_TRACE_${operationId}] ===== BEFORE TRUESKILL UPDATE =====`);
+      console.log(`🔥🔥🔥 [CHARMANDER_TRACE_${operationId}] About to set μ=${newMu.toFixed(5)}, σ=${newSigma.toFixed(5)}`);
+      console.log(`🔥🔥🔥 [CHARMANDER_TRACE_${operationId}] Expected final score: ${(newMu - newSigma).toFixed(5)}`);
+    }
+    
     // Update the rating in the store
     const newRating = new Rating(newMu, newSigma);
     updateRating(draggedPokemon.id.toString(), newRating);
     
+    // CRITICAL: Verify the update immediately
+    const verifyRating = getRating(draggedPokemon.id.toString());
     console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] ✅ Rating updated in TrueSkill store`);
+    console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] ✅ Verification: stored μ=${verifyRating.mu.toFixed(5)}, σ=${verifyRating.sigma.toFixed(5)}`);
+    console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] ✅ Verification: calculated score=${(verifyRating.mu - verifyRating.sigma).toFixed(5)}`);
+    
+    // CRITICAL: Log after updating if this is Charmander
+    if (draggedPokemon.id === 4) {
+      console.log(`🔥🔥🔥 [CHARMANDER_TRACE_${operationId}] ===== AFTER TRUESKILL UPDATE =====`);
+      console.log(`🔥🔥🔥 [CHARMANDER_TRACE_${operationId}] Stored μ=${verifyRating.mu.toFixed(5)}, σ=${verifyRating.sigma.toFixed(5)}`);
+      console.log(`🔥🔥🔥 [CHARMANDER_TRACE_${operationId}] Calculated score: ${(verifyRating.mu - verifyRating.sigma).toFixed(5)}`);
+      console.log(`🔥🔥🔥 [CHARMANDER_TRACE_${operationId}] Target was: ${targetDisplayedScore.toFixed(5)}`);
+      console.log(`🔥🔥🔥 [CHARMANDER_TRACE_${operationId}] Match? ${Math.abs((verifyRating.mu - verifyRating.sigma) - targetDisplayedScore) < 0.001 ? 'YES' : 'NO'}`);
+    }
+    
     console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] ✅ Pokemon ${draggedPokemon.name} should now stay at position ${newIndex} with increased score gap`);
     
     // CRITICAL FIX: In ranking mode, we do NOT call addImpliedBattle
@@ -208,15 +253,28 @@ export const useEnhancedManualReorder = (
     } else if (preventAutoResorting) {
       console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] ✅ RANKING MODE: Skipping implied battles to maintain manual position`);
     }
+    
+    console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] ===== MANUAL SCORE ADJUSTMENT COMPLETE (${operationId}) =====`);
   }, [getRating, updateRating, preventAutoResorting, addImpliedBattle]);
 
   const recalculateScores = useCallback((rankings: RankedPokemon[]): RankedPokemon[] => {
+    console.log('🔥 [ENHANCED_REORDER_RECALC] ===== RECALCULATING SCORES =====');
     console.log('🔥 [ENHANCED_REORDER_RECALC] Recalculating scores for', rankings.length, 'Pokemon');
     
-    return rankings.map((pokemon) => {
+    const recalculated = rankings.map((pokemon, index) => {
       const rating = getRating(pokemon.id.toString());
       const conservativeEstimate = rating.mu - rating.sigma;
       const confidence = Math.max(0, Math.min(100, 100 * (1 - (rating.sigma / 8.33))));
+      
+      // CRITICAL: Log Charmander's recalculation
+      if (pokemon.id === 4) {
+        console.log(`🔥 [CHARMANDER_RECALC] ===== CHARMANDER RECALCULATION =====`);
+        console.log(`🔥 [CHARMANDER_RECALC] Position in array: ${index}`);
+        console.log(`🔥 [CHARMANDER_RECALC] From TrueSkill store: μ=${rating.mu.toFixed(5)}, σ=${rating.sigma.toFixed(5)}`);
+        console.log(`🔥 [CHARMANDER_RECALC] Calculated score: ${conservativeEstimate.toFixed(5)}`);
+        console.log(`🔥 [CHARMANDER_RECALC] Previous score: ${pokemon.score.toFixed(5)}`);
+        console.log(`🔥 [CHARMANDER_RECALC] Score changed: ${Math.abs(conservativeEstimate - pokemon.score) > 0.001 ? 'YES' : 'NO'}`);
+      }
       
       return {
         ...pokemon,
@@ -226,6 +284,9 @@ export const useEnhancedManualReorder = (
         count: pokemon.count || 0
       };
     });
+    
+    console.log('🔥 [ENHANCED_REORDER_RECALC] ===== RECALCULATION COMPLETE =====');
+    return recalculated;
   }, [getRating]);
 
   const handleDragStart = useCallback((event: any) => {
