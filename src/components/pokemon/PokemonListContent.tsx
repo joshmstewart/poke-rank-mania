@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Pokemon } from "@/services/pokemon";
 import { Card } from "@/components/ui/card";
@@ -84,18 +85,18 @@ export const PokemonListContent: React.FC<PokemonListContentProps> = ({
                 key={`pokemon-${pokemon.id}-${index}`}
                 className="relative group hover:shadow-lg transition-shadow bg-white border border-gray-200"
               >
-                {/* Star button in top-left corner */}
+                {/* Star button in top-left corner - made more visible */}
                 <button 
-                  className="absolute top-2 left-2 z-10 w-6 h-6 flex items-center justify-center rounded-full bg-white/80 hover:bg-white border border-gray-300 transition-colors"
+                  className="absolute top-2 left-2 z-20 w-8 h-8 flex items-center justify-center rounded-full bg-white hover:bg-yellow-50 border-2 border-gray-300 hover:border-yellow-400 transition-all duration-200 shadow-sm"
                   onClick={(e) => {
                     e.stopPropagation();
-                    // TODO: Add star selection logic here
-                    console.log(`Star clicked for ${formattedPokemon.name}`);
+                    console.log(`⭐ Star clicked for ${formattedPokemon.name}`);
                   }}
                 >
                   <Star 
-                    size={14} 
-                    className="text-gray-400 hover:text-yellow-500 transition-colors" 
+                    size={16} 
+                    className="text-gray-500 hover:text-yellow-500 transition-colors" 
+                    fill="none"
                   />
                 </button>
 
