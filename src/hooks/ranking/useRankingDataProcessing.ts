@@ -45,9 +45,14 @@ export const useRankingDataProcessing = ({
       const isRanked = rankedIds.has(pokemon.id);
       const currentRank = isRanked ? rankedPokemon.findIndex(p => p.id === pokemon.id) + 1 : null;
       
+      // CRITICAL: Apply safe formatting and log it
+      const originalName = pokemon.name;
+      const formattedName = safeFormatPokemonName(pokemon.name);
+      console.log(`🔮 [RANKING_DATA_PROCESSING_AVAILABLE_FORMAT] ${originalName} -> ${formattedName}`);
+      
       return {
         ...pokemon,
-        name: safeFormatPokemonName(pokemon.name), // Apply safe formatting
+        name: formattedName, // Apply safe formatting
         isRanked,
         currentRank: currentRank > 0 ? currentRank : null
       };
@@ -65,9 +70,14 @@ export const useRankingDataProcessing = ({
       const conservativeEstimate = rating.mu - rating.sigma;
       const confidence = Math.max(0, Math.min(100, 100 * (1 - (rating.sigma / 8.33))));
       
+      // CRITICAL: Apply safe formatting and log it
+      const originalName = pokemon.name;
+      const formattedName = safeFormatPokemonName(pokemon.name);
+      console.log(`🔮 [RANKING_DATA_PROCESSING_RANKED_FORMAT] ${originalName} -> ${formattedName}`);
+      
       return {
         ...pokemon,
-        name: safeFormatPokemonName(pokemon.name), // Apply safe formatting
+        name: formattedName, // Apply safe formatting
         score: conservativeEstimate,
         confidence: confidence,
         rating: rating,
@@ -91,19 +101,27 @@ export const useRankingDataProcessing = ({
   const updateLocalRankings = (newRankings: RankedPokemon[]) => {
     console.log(`🔮 [RANKING_DATA_PROCESSING] Updating local rankings: ${newRankings.length} Pokemon`);
     // Apply safe formatting to updated rankings
-    const formattedRankings = newRankings.map(pokemon => ({
-      ...pokemon,
-      name: safeFormatPokemonName(pokemon.name)
-    }));
+    const formattedRankings = newRankings.map(pokemon => {
+      const formatted = safeFormatPokemonName(pokemon.name);
+      console.log(`🔮 [RANKING_DATA_PROCESSING_UPDATE_FORMAT] ${pokemon.name} -> ${formatted}`);
+      return {
+        ...pokemon,
+        name: formatted
+      };
+    });
     setLocalRankings(formattedRankings);
   };
 
   // Display rankings with proper formatting
   const displayRankings = useMemo(() => {
-    return localRankings.map(pokemon => ({
-      ...pokemon,
-      name: safeFormatPokemonName(pokemon.name) // Ensure formatting is always applied
-    }));
+    return localRankings.map(pokemon => {
+      const formatted = safeFormatPokemonName(pokemon.name);
+      console.log(`🔮 [RANKING_DATA_PROCESSING_DISPLAY_FORMAT] ${pokemon.name} -> ${formatted}`);
+      return {
+        ...pokemon,
+        name: formatted // Ensure formatting is always applied
+      };
+    });
   }, [localRankings]);
 
   // Filtered available Pokemon for the current generation

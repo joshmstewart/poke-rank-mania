@@ -73,8 +73,11 @@ export const useTrueSkillSync = (preventAutoResorting: boolean = false) => {
       const conservativeEstimate = rating.mu - rating.sigma;
       const confidence = Math.max(0, Math.min(100, 100 * (1 - (rating.sigma / 8.33))));
       
-      // CRITICAL: Apply safe name formatting here
+      // CRITICAL: Apply safe name formatting here AND log it
+      const originalName = pokemon.name;
       const formattedName = safeFormatPokemonName(pokemon.name);
+      
+      console.log(`🔄🔄🔄 [TRUESKILL_SYNC_NAME_FORMAT] ${originalName} -> ${formattedName}`);
       
       console.log(`🔄🔄🔄 [TRUESKILL_SYNC_SCORE_CALC] ${formattedName}: μ=${rating.mu.toFixed(3)}, σ=${rating.sigma.toFixed(3)}, score=${conservativeEstimate.toFixed(3)}, battles=${rating.battleCount}`);
       
@@ -146,7 +149,14 @@ export const useTrueSkillSync = (preventAutoResorting: boolean = false) => {
     }
     
     console.log(`🔄 [TRUESKILL_SYNC_EFFECT_${effectId}] ✅ Updating local rankings - Rankings from TrueSkill updated: ${rankingsFromTrueSkill.length}`);
-    setLocalRankings(rankingsFromTrueSkill);
+    
+    // CRITICAL: Apply formatting again when setting local rankings
+    const formattedRankings = rankingsFromTrueSkill.map(pokemon => ({
+      ...pokemon,
+      name: safeFormatPokemonName(pokemon.name)
+    }));
+    
+    setLocalRankings(formattedRankings);
     console.log(`🔄 [TRUESKILL_SYNC_EFFECT_${effectId}] ===== SYNC EFFECT COMPLETE =====`);
   }, [rankingsFromTrueSkill]);
 
@@ -156,10 +166,14 @@ export const useTrueSkillSync = (preventAutoResorting: boolean = false) => {
     console.log(`🔄🔄🔄 [TRUESKILL_SYNC_UPDATE_${updateId}] Manual rankings update received: ${newRankings.length}`);
     
     // Apply safe formatting to all updated rankings
-    const formattedRankings = newRankings.map(pokemon => ({
-      ...pokemon,
-      name: safeFormatPokemonName(pokemon.name)
-    }));
+    const formattedRankings = newRankings.map(pokemon => {
+      const formatted = safeFormatPokemonName(pokemon.name);
+      console.log(`🔄🔄🔄 [TRUESKILL_SYNC_UPDATE_NAME_FORMAT] ${pokemon.name} -> ${formatted}`);
+      return {
+        ...pokemon,
+        name: formatted
+      };
+    });
     
     // Set the manual update flag to prevent auto-updates
     isManualUpdateRef.current = true;
