@@ -53,6 +53,8 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
       return [];
     }
     
+    console.log('🏆 [PERSONAL_RANKINGS] Applying name formatting to all Pokemon');
+    
     // Convert ratings to RankedPokemon format
     const rankedPokemon: RankedPokemon[] = Object.entries(ratings)
       .map(([pokemonId, rating]) => {
@@ -79,9 +81,12 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
         const losses = battleCount - wins;
         const winRate = battleCount > 0 ? (wins / battleCount) * 100 : 0;
         
+        const formattedName = formatPokemonName(pokemon.name);
+        console.log(`🏆 [PERSONAL_RANKINGS] Pokemon ${pokemon.id}: "${pokemon.name}" → "${formattedName}"`);
+        
         return {
           ...pokemon, // Use actual Pokemon data (id, image, types, etc.)
-          name: formatPokemonName(pokemon.name), // Apply name formatting here
+          name: formattedName, // Apply name formatting here
           score: score,
           count: battleCount,
           confidence: Math.max(0, 100 - (rating.sigma * 20)), // Convert sigma to confidence percentage
@@ -98,13 +103,19 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
 
   // Update local rankings when rankings change
   useEffect(() => {
+    console.log('🏆 [PERSONAL_RANKINGS] Updating local rankings with formatted names');
     setLocalRankings(rankings);
   }, [rankings]);
 
   // Handle rankings update from manual reorder
   const handleRankingsUpdate = useCallback((updatedRankings: RankedPokemon[]) => {
     console.log(`🏆 [PERSONAL_RANKINGS] Received rankings update with ${updatedRankings.length} Pokemon`);
-    setLocalRankings(updatedRankings);
+    // Ensure name formatting is applied when updating rankings
+    const formattedRankings = updatedRankings.map(pokemon => ({
+      ...pokemon,
+      name: formatPokemonName(pokemon.name)
+    }));
+    setLocalRankings(formattedRankings);
   }, []);
 
   // Use the battle manual reorder hook with milestone view behavior

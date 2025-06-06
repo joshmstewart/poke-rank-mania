@@ -6,6 +6,7 @@ import { Pokemon, RankedPokemon } from '@/services/pokemon';
 import { useTrueSkillStore } from '@/stores/trueskillStore';
 import { usePokemonContext } from '@/contexts/PokemonContext';
 import { Rating } from 'ts-trueskill';
+import { formatPokemonName } from '@/utils/pokemon';
 
 export const useEnhancedManualReorder = (
   finalRankings: RankedPokemon[],
@@ -28,12 +29,16 @@ export const useEnhancedManualReorder = (
 
   const [localRankings, setLocalRankings] = useState<RankedPokemon[]>([]);
 
-  // Initialize local rankings once
+  // Initialize local rankings once with proper name formatting
   const isInitialized = useRef(false);
   useEffect(() => {
     if (!isInitialized.current && finalRankings.length > 0) {
-      console.log('🔥 [ENHANCED_REORDER] Initializing local rankings');
-      setLocalRankings(finalRankings);
+      console.log('🔥 [ENHANCED_REORDER] Initializing local rankings with name formatting');
+      const formattedRankings = finalRankings.map(pokemon => ({
+        ...pokemon,
+        name: formatPokemonName(pokemon.name)
+      }));
+      setLocalRankings(formattedRankings);
       isInitialized.current = true;
     }
   }, [finalRankings]);
@@ -45,8 +50,12 @@ export const useEnhancedManualReorder = (
         !dragState.isUpdating && 
         !dragState.manualAdjustmentInProgress &&
         finalRankings.length > 0) {
-      console.log('🔥 [ENHANCED_REORDER] Updating local rankings from final rankings');
-      setLocalRankings(finalRankings);
+      console.log('🔥 [ENHANCED_REORDER] Updating local rankings from final rankings with name formatting');
+      const formattedRankings = finalRankings.map(pokemon => ({
+        ...pokemon,
+        name: formatPokemonName(pokemon.name)
+      }));
+      setLocalRankings(formattedRankings);
     }
   }, [finalRankings, dragState.isDragging, dragState.isUpdating, dragState.manualAdjustmentInProgress]);
 
@@ -237,6 +246,7 @@ export const useEnhancedManualReorder = (
       
       return {
         ...pokemon,
+        name: formatPokemonName(pokemon.name), // Ensure name formatting is applied
         score: newScore,
         confidence: confidence,
         rating: rating,
@@ -334,9 +344,22 @@ export const useEnhancedManualReorder = (
           return;
         }
         
+        // Apply name formatting when creating new Pokemon entry
+        const formattedPokemonData = {
+          ...pokemonData,
+          name: formatPokemonName(pokemonData.name),
+          score: 0,
+          confidence: 0,
+          rating: getRating(draggedPokemonId.toString()),
+          count: 0,
+          wins: 0,
+          losses: 0,
+          winRate: 0
+        };
+        
         // Force score at target position
         forceScoreBetweenNeighbors(
-          { ...pokemonData, score: 0, confidence: 0, rating: getRating(draggedPokemonId.toString()), count: 0, wins: 0, losses: 0, winRate: 0 },
+          formattedPokemonData,
           destinationIndex,
           localRankings
         );
@@ -372,6 +395,7 @@ export const useEnhancedManualReorder = (
   const displayRankings = useMemo(() => {
     return localRankings.map((pokemon) => ({
       ...pokemon,
+      name: formatPokemonName(pokemon.name), // Ensure formatting is applied in display
       isBeingDragged: dragState.draggedPokemonId === pokemon.id
     }));
   }, [localRankings, dragState.draggedPokemonId]);
