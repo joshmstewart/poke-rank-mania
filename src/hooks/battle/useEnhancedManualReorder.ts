@@ -95,6 +95,7 @@ export const useEnhancedManualReorder = (
     // Constants
     const MIN_SIGMA = 1.0;
     const EPSILON = 0.00001;
+    const SMALL_ADJUSTMENT = 0.01; // Very small adjustment for identical scores
     
     console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Using MIN_SIGMA: ${MIN_SIGMA}, EPSILON: ${EPSILON}`);
     
@@ -154,134 +155,38 @@ export const useEnhancedManualReorder = (
     }
 
     if (identicalScores && abovePokemon && belowPokemon) {
-      console.log(`🔵🔵🔵 [IDENTICAL_SCORE_GROUPS] ===== STEP 2: IDENTIFYING IDENTICAL SCORE GROUPS =====`);
+      console.log(`🔵🔵🔵 [IDENTICAL_SCORE_CONSERVATIVE] ===== CONSERVATIVE IDENTICAL SCORE HANDLING =====`);
       
-      // 🔵 STEP 2: Identify all Pokemon with identical scores
       const identicalScore = aboveDisplayedScore; // Both are the same
-      const aboveGroup: RankedPokemon[] = [];
-      const belowGroup: RankedPokemon[] = [];
+      console.log(`🔵🔵🔵 [IDENTICAL_SCORE_CONSERVATIVE] Identical score value: ${identicalScore.toFixed(5)}`);
       
-      // Find above group (consecutive Pokemon above with identical score)
-      for (let i = newIndex - 1; i >= 0; i--) {
-        const pokemon = finalRankingsAfterMove[i];
-        const pokemonRating = getRating(pokemon.id.toString());
-        const pokemonDisplayedScore = pokemonRating.mu - pokemonRating.sigma;
-        
-        if (Math.abs(pokemonDisplayedScore - identicalScore) < EPSILON) {
-          aboveGroup.unshift(pokemon); // Add to beginning to maintain order
-          console.log(`🔵🔵🔵 [IDENTICAL_SCORE_GROUPS] Added to above group: ${pokemon.name} (score: ${pokemonDisplayedScore.toFixed(5)})`);
-        } else {
-          break; // Stop when we find a different score
-        }
-      }
+      // 🔴 CONSERVATIVE APPROACH: Only adjust the dragged Pokemon, leave others alone
+      console.log(`🔴🔴🔴 [CONSERVATIVE_APPROACH] Using conservative approach - only adjusting dragged Pokemon`);
       
-      // Find below group (consecutive Pokemon below with identical score)
-      for (let i = newIndex + 1; i < finalRankingsAfterMove.length; i++) {
-        const pokemon = finalRankingsAfterMove[i];
-        const pokemonRating = getRating(pokemon.id.toString());
-        const pokemonDisplayedScore = pokemonRating.mu - pokemonRating.sigma;
-        
-        if (Math.abs(pokemonDisplayedScore - identicalScore) < EPSILON) {
-          belowGroup.push(pokemon);
-          console.log(`🔵🔵🔵 [IDENTICAL_SCORE_GROUPS] Added to below group: ${pokemon.name} (score: ${pokemonDisplayedScore.toFixed(5)})`);
-        } else {
-          break; // Stop when we find a different score
-        }
-      }
-      
-      console.log(`🔵🔵🔵 [IDENTICAL_SCORE_GROUPS] Above group size: ${aboveGroup.length}`);
-      console.log(`🔵🔵🔵 [IDENTICAL_SCORE_GROUPS] Below group size: ${belowGroup.length}`);
-      
-      // 🟡 STEP 3: FIXED - Correctly identify next higher/lower scores using ONLY immediately adjacent Pokemon
-      console.log(`🟡🟡🟡 [GROUP_ADJUSTMENTS] ===== STEP 3: ADJUSTING IDENTICAL SCORE GROUPS (FIXED LOGIC) =====`);
-      
-      // FIXED: Find next higher score Pokemon - only use the Pokemon immediately above the above group
-      let nextHigherDisplayedScore = identicalScore + 0.5; // Small fallback increment
-      const aboveGroupStartIndex = newIndex - aboveGroup.length;
-      if (aboveGroupStartIndex > 0) {
-        const nextHigherPokemon = finalRankingsAfterMove[aboveGroupStartIndex - 1];
-        const nextHigherRating = getRating(nextHigherPokemon.id.toString());
-        nextHigherDisplayedScore = nextHigherRating.mu - nextHigherRating.sigma;
-        console.log(`🟡🟡🟡 [GROUP_ADJUSTMENTS] FIXED: Found immediately adjacent higher Pokemon: ${nextHigherPokemon.name} (score: ${nextHigherDisplayedScore.toFixed(5)})`);
-      } else {
-        console.log(`🟡🟡🟡 [GROUP_ADJUSTMENTS] FIXED: No Pokemon above, using small increment: ${nextHigherDisplayedScore}`);
-      }
-      
-      // FIXED: Find next lower score Pokemon - only use the Pokemon immediately below the below group
-      let nextLowerDisplayedScore = identicalScore - 0.5; // Small fallback decrement
-      const belowGroupEndIndex = newIndex + belowGroup.length;
-      if (belowGroupEndIndex < finalRankingsAfterMove.length) {
-        const nextLowerPokemon = finalRankingsAfterMove[belowGroupEndIndex + 1];
-        const nextLowerRating = getRating(nextLowerPokemon.id.toString());
-        nextLowerDisplayedScore = nextLowerRating.mu - nextLowerRating.sigma;
-        console.log(`🟡🟡🟡 [GROUP_ADJUSTMENTS] FIXED: Found immediately adjacent lower Pokemon: ${nextLowerPokemon.name} (score: ${nextLowerDisplayedScore.toFixed(5)})`);
-      } else {
-        console.log(`🟡🟡🟡 [GROUP_ADJUSTMENTS] FIXED: No Pokemon below, using small decrement: ${nextLowerDisplayedScore}`);
-      }
-      
-      // FIXED: Calculate new scores using only immediately adjacent values
-      console.log(`🟡🟡🟡 [GROUP_ADJUSTMENTS] FIXED: Adjacent score range: ${nextLowerDisplayedScore.toFixed(5)} < ${identicalScore.toFixed(5)} < ${nextHigherDisplayedScore.toFixed(5)}`);
-      
-      // Adjust above group
-      if (aboveGroup.length > 0) {
-        const newAboveDisplayedScore = (identicalScore + nextHigherDisplayedScore) / 2;
-        console.log(`🟡🟡🟡 [GROUP_ADJUSTMENTS] FIXED: Adjusting above group to new displayed score: ${newAboveDisplayedScore.toFixed(5)}`);
-        console.log(`🟡🟡🟡 [GROUP_ADJUSTMENTS] FIXED: Score change: ${identicalScore.toFixed(5)} → ${newAboveDisplayedScore.toFixed(5)} (diff: +${(newAboveDisplayedScore - identicalScore).toFixed(5)})`);
-        
-        aboveGroup.forEach(pokemon => {
-          const pokemonRating = getRating(pokemon.id.toString());
-          const newMu = newAboveDisplayedScore + pokemonRating.sigma;
-          const newRating = new Rating(newMu, pokemonRating.sigma);
-          updateRating(pokemon.id.toString(), newRating);
-          console.log(`🟡🟡🟡 [GROUP_ADJUSTMENTS] FIXED: Updated ${pokemon.name}: μ=${newMu.toFixed(5)}, σ=${pokemonRating.sigma.toFixed(5)}, displayed=${newAboveDisplayedScore.toFixed(5)}`);
-        });
-      }
-      
-      // Adjust below group
-      if (belowGroup.length > 0) {
-        const newBelowDisplayedScore = (identicalScore + nextLowerDisplayedScore) / 2;
-        console.log(`🟡🟡🟡 [GROUP_ADJUSTMENTS] FIXED: Adjusting below group to new displayed score: ${newBelowDisplayedScore.toFixed(5)}`);
-        console.log(`🟡🟡🟡 [GROUP_ADJUSTMENTS] FIXED: Score change: ${identicalScore.toFixed(5)} → ${newBelowDisplayedScore.toFixed(5)} (diff: ${(newBelowDisplayedScore - identicalScore).toFixed(5)})`);
-        
-        belowGroup.forEach(pokemon => {
-          const pokemonRating = getRating(pokemon.id.toString());
-          const newMu = newBelowDisplayedScore + pokemonRating.sigma;
-          const newRating = new Rating(newMu, pokemonRating.sigma);
-          updateRating(pokemon.id.toString(), newRating);
-          console.log(`🟡🟡🟡 [GROUP_ADJUSTMENTS] FIXED: Updated ${pokemon.name}: μ=${newMu.toFixed(5)}, σ=${pokemonRating.sigma.toFixed(5)}, displayed=${newBelowDisplayedScore.toFixed(5)}`);
-        });
-      }
-      
-      // 🟠 STEP 4: Adjust dragged Pokemon
-      console.log(`🟠🟠🟠 [DRAGGED_ADJUSTMENT] ===== STEP 4: ADJUSTING DRAGGED POKEMON =====`);
-      console.log(`🟠🟠🟠 [DRAGGED_ADJUSTMENT] Setting dragged Pokemon displayed score to original identical score: ${identicalScore.toFixed(5)}`);
-      
-      // Reduce sigma by 20% and recalculate mu
+      // Set dragged Pokemon to the identical score with reduced sigma
       const newSigma = Math.max(currentRating.sigma * 0.8, MIN_SIGMA);
       const newMu = identicalScore + newSigma;
       
-      console.log(`🟠🟠🟠 [DRAGGED_ADJUSTMENT] Original σ: ${currentRating.sigma.toFixed(5)}`);
-      console.log(`🟠🟠🟠 [DRAGGED_ADJUSTMENT] New σ (reduced 20%): ${newSigma.toFixed(5)}`);
-      console.log(`🟠🟠🟠 [DRAGGED_ADJUSTMENT] New μ: ${newMu.toFixed(5)}`);
-      console.log(`🟠🟠🟠 [DRAGGED_ADJUSTMENT] Verification: μ - σ = ${(newMu - newSigma).toFixed(5)} (should equal ${identicalScore.toFixed(5)})`);
+      console.log(`🔴🔴🔴 [CONSERVATIVE_APPROACH] Dragged Pokemon adjustment:`);
+      console.log(`🔴🔴🔴 [CONSERVATIVE_APPROACH] - Original σ: ${currentRating.sigma.toFixed(5)}`);
+      console.log(`🔴🔴🔴 [CONSERVATIVE_APPROACH] - New σ (reduced 20%): ${newSigma.toFixed(5)}`);
+      console.log(`🔴🔴🔴 [CONSERVATIVE_APPROACH] - New μ: ${newMu.toFixed(5)}`);
+      console.log(`🔴🔴🔴 [CONSERVATIVE_APPROACH] - Target displayed score: ${identicalScore.toFixed(5)}`);
+      console.log(`🔴🔴🔴 [CONSERVATIVE_APPROACH] - Verification: μ - σ = ${(newMu - newSigma).toFixed(5)}`);
       
-      // CRITICAL: Log for Cubchoo before update
+      // CRITICAL: Log for special Pokemon before update
       if (draggedPokemon.id === 613) {
-        console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] IDENTICAL SCORE SCENARIO:`);
+        console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] CONSERVATIVE IDENTICAL SCORE SCENARIO:`);
         console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] μ=${newMu.toFixed(5)}, σ=${newSigma.toFixed(5)}`);
         console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] Expected score: ${identicalScore.toFixed(5)}`);
       }
       
-      // Update the rating
+      // Update only the dragged Pokemon's rating
       const newRating = new Rating(newMu, newSigma);
       updateRating(draggedPokemon.id.toString(), newRating);
       
-      console.log(`🟠🟠🟠 [DRAGGED_ADJUSTMENT] ✅ Dragged Pokemon ${draggedPokemon.name} adjusted successfully`);
-      
-      // 🔴 STEP 5: The rankings will be resorted by the calling function
-      console.log(`🔴🔴🔴 [RESORT_RANKINGS] Rankings will be resorted by calling function`);
-      
-      console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] ===== IDENTICAL SCORE SCENARIO COMPLETE (${operationId}) =====`);
+      console.log(`🔴🔴🔴 [CONSERVATIVE_APPROACH] ✅ Only dragged Pokemon adjusted, all others unchanged`);
+      console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] ===== CONSERVATIVE IDENTICAL SCORE SCENARIO COMPLETE (${operationId}) =====`);
       return;
     }
 
@@ -293,7 +198,7 @@ export const useEnhancedManualReorder = (
       targetDisplayedScore = (aboveDisplayedScore + belowDisplayedScore) / 2;
       console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] BETWEEN TWO: target = (${aboveDisplayedScore.toFixed(5)} + ${belowDisplayedScore.toFixed(5)}) / 2 = ${targetDisplayedScore.toFixed(5)}`);
       
-      // CRITICAL: Special case for Cubchoo
+      // CRITICAL: Special case for specific Pokemon
       if (draggedPokemon.id === 613) {
         console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] SIMPLE AVERAGE: ${targetDisplayedScore.toFixed(5)}`);
       }
@@ -329,7 +234,7 @@ export const useEnhancedManualReorder = (
       return;
     }
     
-    // CRITICAL: Log for Cubchoo before update
+    // CRITICAL: Log for special Pokemon before update
     if (draggedPokemon.id === 613) {
       console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] ABOUT TO UPDATE:`);
       console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] μ=${newMu.toFixed(5)}, σ=${newSigma.toFixed(5)}`);
@@ -350,7 +255,7 @@ export const useEnhancedManualReorder = (
     console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Target was: ${targetDisplayedScore.toFixed(5)}`);
     console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Match: ${Math.abs(verifyScore - targetDisplayedScore) < 0.001 ? 'YES' : 'NO'}`);
     
-    // CRITICAL: Final verification for Cubchoo
+    // CRITICAL: Final verification for special Pokemon
     if (draggedPokemon.id === 613) {
       console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] FINAL VERIFICATION:`);
       console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] Final score: ${verifyScore.toFixed(5)}`);
