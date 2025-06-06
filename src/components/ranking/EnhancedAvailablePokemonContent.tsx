@@ -2,7 +2,7 @@
 import React from "react";
 import { VirtualPokemonGrid } from "./VirtualPokemonGrid";
 import { InfiniteScrollLoader } from "./InfiniteScrollLoader";
-import { GenerationHeader } from "@/components/pokemon/GenerationHeader";
+import GenerationHeader from "@/components/pokemon/GenerationHeader";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface EnhancedAvailablePokemonContentProps {
@@ -40,7 +40,10 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
               <GenerationHeader
                 key={`gen-${item.generationId}`}
                 generationId={item.generationId}
-                pokemonCount={item.pokemonCount}
+                name={item.data?.name || `Generation ${item.generationId}`}
+                region={item.data?.region || "Unknown"}
+                games={item.data?.games || ""}
+                viewMode={viewMode}
                 isExpanded={isGenerationExpanded(item.generationId)}
                 onToggle={() => onToggleGeneration(item.generationId)}
               />
@@ -66,7 +69,8 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
 
         <InfiniteScrollLoader
           isLoading={isLoading}
-          hasMore={currentPage < totalPages}
+          currentPage={currentPage}
+          totalPages={totalPages}
           loadingRef={loadingRef}
         />
       </div>
@@ -94,7 +98,8 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
 
       <InfiniteScrollLoader
         isLoading={isLoading}
-        hasMore={currentPage < totalPages}
+        currentPage={currentPage}
+        totalPages={totalPages}
         loadingRef={loadingRef}
       />
     </div>
