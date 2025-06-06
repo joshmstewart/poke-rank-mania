@@ -9,7 +9,6 @@ import NotFound from './pages/NotFound';
 import { AuthWrapper } from '@/components/auth/AuthWrapper';
 import { TourProvider } from '@/components/tour/TourProvider';
 import { TourOverlay } from '@/components/tour/TourOverlay';
-import { FeedbackButton } from '@/components/feedback/FeedbackButton';
 
 function App() {
   const queryClient = new QueryClient();
@@ -26,7 +25,6 @@ function App() {
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Router>
-            <FeedbackButton />
           </div>
           <TourOverlay />
         </TourProvider>

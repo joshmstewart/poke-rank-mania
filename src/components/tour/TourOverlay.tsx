@@ -2,15 +2,19 @@
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { X, ArrowLeft, ArrowRight } from 'lucide-react';
+import { X, ArrowLeft, ArrowRight, MessageSquare } from 'lucide-react';
 import { useTour } from './TourProvider';
 import { Logo } from '@/components/ui/Logo';
+import { FeedbackModal } from '@/components/feedback/FeedbackModal';
+import { useConsoleCapture } from '@/hooks/useConsoleCapture';
 
 export const TourOverlay: React.FC = () => {
   const { isActive, currentStep, steps, endTour, nextStep, prevStep } = useTour();
+  const { getLogsAsString } = useConsoleCapture();
   const [targetElement, setTargetElement] = useState<HTMLElement | null>(null);
   const [overlayPosition, setOverlayPosition] = useState({ top: 0, left: 0 });
   const [highlightPosition, setHighlightPosition] = useState({ top: 0, left: 0, width: 0, height: 0 });
+  const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
 
   useEffect(() => {
     if (!isActive || !steps[currentStep]) return;
@@ -83,6 +87,14 @@ export const TourOverlay: React.FC = () => {
     };
   }, [isActive, currentStep, steps]);
 
+  const handleFeedbackModalOpen = () => {
+    setFeedbackModalOpen(true);
+  };
+
+  const handleFeedbackModalClose = () => {
+    setFeedbackModalOpen(false);
+  };
+
   if (!isActive || !steps[currentStep]) return null;
 
   const currentStepData = steps[currentStep];
@@ -90,51 +102,71 @@ export const TourOverlay: React.FC = () => {
   // Render splash step with larger card and centered layout
   if (currentStepData.isSplash) {
     return (
-      <div className="fixed inset-0 z-50 pointer-events-none">
-        {/* Dark overlay */}
-        <div className="absolute inset-0 bg-black/50" />
-        
-        {/* Large centered splash card */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-auto">
-          <Card className="bg-gradient-to-br from-indigo-500 to-purple-600 p-8 shadow-xl max-w-md w-full mx-4 text-center border-0">
-            <div className="flex justify-end mb-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={endTour}
-                className="p-1 h-auto text-white hover:bg-white/20"
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
-            
-            <div className="mb-6">
-              <Logo />
-            </div>
-            
-            <h3 className="text-2xl font-bold text-white mb-4">{currentStepData.title}</h3>
-            
-            <p className="text-white/90 text-base mb-8 leading-relaxed">
-              {currentStepData.content}
-            </p>
-            
-            <div className="flex justify-between items-center">
-              <span className="text-white/70 text-sm font-medium">
-                {currentStep + 1} of {steps.length}
-              </span>
+      <>
+        <div className="fixed inset-0 z-50 pointer-events-none">
+          {/* Dark overlay */}
+          <div className="absolute inset-0 bg-black/50" />
+          
+          {/* Large centered splash card */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-auto">
+            <Card className="bg-gradient-to-br from-indigo-500 to-purple-600 p-8 shadow-xl max-w-md w-full mx-4 text-center border-0">
+              <div className="flex justify-end mb-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={endTour}
+                  className="p-1 h-auto text-white hover:bg-white/20"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
               
-              <Button
-                size="sm"
-                onClick={nextStep}
-                className="flex items-center bg-white text-indigo-600 hover:bg-white/90"
-              >
-                Get Started
-                <ArrowRight className="w-4 h-4 ml-1" />
-              </Button>
-            </div>
-          </Card>
+              <div className="mb-6">
+                <Logo />
+              </div>
+              
+              <h3 className="text-2xl font-bold text-white mb-4">{currentStepData.title}</h3>
+              
+              <p className="text-white/90 text-base mb-8 leading-relaxed">
+                {currentStepData.content}
+              </p>
+              
+              <div className="flex flex-col gap-4 mb-6">
+                <Button
+                  size="sm"
+                  onClick={handleFeedbackModalOpen}
+                  variant="outline"
+                  className="flex items-center bg-white/10 text-white border-white/30 hover:bg-white/20"
+                >
+                  <MessageSquare className="w-4 h-4 mr-2" />
+                  Send Feedback
+                </Button>
+              </div>
+              
+              <div className="flex justify-between items-center">
+                <span className="text-white/70 text-sm font-medium">
+                  {currentStep + 1} of {steps.length}
+                </span>
+                
+                <Button
+                  size="sm"
+                  onClick={nextStep}
+                  className="flex items-center bg-white text-indigo-600 hover:bg-white/90"
+                >
+                  Get Started
+                  <ArrowRight className="w-4 h-4 ml-1" />
+                </Button>
+              </div>
+            </Card>
+          </div>
         </div>
-      </div>
+
+        <FeedbackModal
+          isOpen={feedbackModalOpen}
+          onClose={handleFeedbackModalClose}
+          consoleLogs={getLogsAsString()}
+        />
+      </>
     );
   }
 
