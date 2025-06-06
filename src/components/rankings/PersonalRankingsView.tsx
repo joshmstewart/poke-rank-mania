@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { useTrueSkillStore } from "@/stores/trueskillStore";
 import { generations } from "@/services/pokemon";
@@ -87,19 +86,20 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
         const winRate = battleCount > 0 ? (wins / battleCount) * 100 : 0;
         
         // CRITICAL: Apply name formatting and trace what happens
-        console.log(`🔥🔥🔥 [NAME_TRACE] BEFORE formatting: "${pokemon.name}"`);
+        const originalName = pokemon.name;
         const formattedName = formatPokemonName(pokemon.name);
-        console.log(`🔥🔥🔥 [NAME_TRACE] AFTER formatting: "${formattedName}"`);
         
         // Special check for Deoxys
         if (pokemon.name.toLowerCase().includes('deoxys')) {
-          console.log(`🔥🔥🔥 [DEOXYS_NAME_TRACE] Found Deoxys! ID=${pokemonId}, original="${pokemon.name}", formatted="${formattedName}"`);
+          console.log(`🔥🔥🔥 [DEOXYS_FORMATTING_TRACE] Pokemon ID: ${pokemonId}`);
+          console.log(`🔥🔥🔥 [DEOXYS_FORMATTING_TRACE] Original name: "${originalName}"`);
+          console.log(`🔥🔥🔥 [DEOXYS_FORMATTING_TRACE] Formatted name: "${formattedName}"`);
         }
         
-        // CRITICAL FIX: Create object with only properties that exist on Pokemon type
-        const rankedPokemon: RankedPokemon = {
+        // CRITICAL FIX: Create object with explicit name assignment
+        const rankedPokemonObject: RankedPokemon = {
           id: pokemon.id,
-          name: formattedName, // Use formatted name FIRST
+          name: formattedName, // Explicitly use formatted name
           image: pokemon.image,
           types: pokemon.types || [],
           // Only copy properties that exist on Pokemon type
@@ -119,14 +119,13 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
           winRate: winRate
         };
         
-        // CRITICAL: Check what name is actually in the final object
+        // CRITICAL: Verify the final object has the correct name
         if (pokemon.name.toLowerCase().includes('deoxys')) {
-          console.log(`🔥🔥🔥 [DEOXYS_FINAL_OBJECT] Final rankedPokemon name: "${rankedPokemon.name}"`);
-          console.log(`🔥🔥🔥 [DEOXYS_FINAL_OBJECT] Original pokemon.name: "${pokemon.name}"`);
-          console.log(`🔥🔥🔥 [DEOXYS_FINAL_OBJECT] Formatted name was: "${formattedName}"`);
+          console.log(`🔥🔥🔥 [DEOXYS_OBJECT_VERIFICATION] Final object name: "${rankedPokemonObject.name}"`);
+          console.log(`🔥🔥🔥 [DEOXYS_OBJECT_VERIFICATION] Object keys: ${Object.keys(rankedPokemonObject)}`);
         }
         
-        return rankedPokemon;
+        return rankedPokemonObject;
       })
       .filter((pokemon): pokemon is RankedPokemon => pokemon !== null);
     
@@ -136,9 +135,9 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
     
     // Check what names are in the final sorted array
     const deoxysInFinal = sorted.filter(p => p.name.toLowerCase().includes('deoxys'));
-    console.log(`🔥🔥🔥 [DEOXYS_IN_FINAL] Deoxys in final sorted array: ${deoxysInFinal.length}`);
+    console.log(`🔥🔥🔥 [DEOXYS_FINAL_CHECK] Deoxys in final sorted array: ${deoxysInFinal.length}`);
     deoxysInFinal.forEach(p => {
-      console.log(`🔥🔥🔥 [DEOXYS_IN_FINAL] Final name: "${p.name}" (ID: ${p.id})`);
+      console.log(`🔥🔥🔥 [DEOXYS_FINAL_CHECK] Final sorted name: "${p.name}" (ID: ${p.id})`);
     });
     
     return sorted;

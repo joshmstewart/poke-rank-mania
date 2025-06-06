@@ -92,8 +92,15 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   // Format Pokemon ID with leading zeros
   const formattedId = pokemon.id.toString().padStart(pokemon.id >= 10000 ? 5 : 3, '0');
 
-  // Use the Pokemon name directly - it should already be formatted by the parent component
+  // CRITICAL DEBUG: Log what name the card is receiving
   const displayName = pokemon.name;
+  
+  // Special debugging for Deoxys
+  if (pokemon.name.toLowerCase().includes('deoxys')) {
+    console.log(`🔥🔥🔥 [CARD_NAME_DEBUG] Card received Pokemon with name: "${pokemon.name}" (ID: ${pokemon.id})`);
+    console.log(`🔥🔥🔥 [CARD_NAME_DEBUG] Display name will be: "${displayName}"`);
+    console.log(`🔥🔥🔥 [CARD_NAME_DEBUG] Pokemon object keys: ${Object.keys(pokemon)}`);
+  }
 
   return (
     <div
