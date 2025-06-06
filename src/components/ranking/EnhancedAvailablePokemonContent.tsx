@@ -4,6 +4,7 @@ import { VirtualPokemonGrid } from "./VirtualPokemonGrid";
 import { InfiniteScrollLoader } from "./InfiniteScrollLoader";
 import GenerationHeader from "@/components/pokemon/GenerationHeader";
 import { Skeleton } from "@/components/ui/skeleton";
+import DraggablePokemonMilestoneCard from "@/components/battle/DraggablePokemonMilestoneCard";
 
 interface EnhancedAvailablePokemonContentProps {
   items: any[];
@@ -28,10 +29,10 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
   currentPage,
   totalPages
 }) => {
-  const containerHeight = 600; // Fixed height for virtual scrolling
+  const containerHeight = 600;
 
   if (showGenerationHeaders) {
-    // When showing generation headers, render normally (less performance critical)
+    // When showing generation headers, render normally
     return (
       <div className="flex-1 overflow-y-auto p-2">
         {items.map((item, index) => {
@@ -50,9 +51,18 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
             );
           }
 
+          // Render individual Pokemon cards
           return (
-            <div key={item.id} className={viewMode === 'grid' ? 'inline-block w-1/4 p-1' : 'mb-1'}>
-              {/* Render individual Pokemon cards here if needed */}
+            <div key={`pokemon-${item.id}-${index}`} className={viewMode === 'grid' ? 'inline-block w-1/4 p-1' : 'mb-1'}>
+              <DraggablePokemonMilestoneCard
+                pokemon={item}
+                index={index}
+                isPending={false}
+                showRank={item.isRanked}
+                isDraggable={true}
+                isAvailable={true}
+                context="available"
+              />
             </div>
           );
         })}
@@ -77,14 +87,45 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
     );
   }
 
-  // Use virtual scrolling for large flat lists
+  // For flat lists without headers, use simple grid rendering instead of virtual scrolling for now
+  // This ensures Pokemon are actually visible while maintaining good performance
+  const pokemonItems = items.filter(item => item.type !== 'header' && item.id);
+
   return (
     <div className="flex-1 flex flex-col">
-      <VirtualPokemonGrid
-        items={items}
-        viewMode={viewMode}
-        containerHeight={containerHeight}
-      />
+      <div className="flex-1 overflow-y-auto p-2">
+        {viewMode === 'grid' ? (
+          <div className="grid grid-cols-4 gap-2">
+            {pokemonItems.map((pokemon, index) => (
+              <DraggablePokemonMilestoneCard
+                key={`available-${pokemon.id}`}
+                pokemon={pokemon}
+                index={index}
+                isPending={false}
+                showRank={pokemon.isRanked}
+                isDraggable={true}
+                isAvailable={true}
+                context="available"
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-1">
+            {pokemonItems.map((pokemon, index) => (
+              <DraggablePokemonMilestoneCard
+                key={`available-${pokemon.id}`}
+                pokemon={pokemon}
+                index={index}
+                isPending={false}
+                showRank={pokemon.isRanked}
+                isDraggable={true}
+                isAvailable={true}
+                context="available"
+              />
+            ))}
+          </div>
+        )}
+      </div>
       
       {isLoading && (
         <div className="p-4">
