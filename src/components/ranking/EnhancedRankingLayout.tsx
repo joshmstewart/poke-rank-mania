@@ -125,14 +125,14 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = ({
           </div>
         </div>
 
-        {/* Drag Overlay */}
+        {/* Drag Overlay - Fixed to match actual cards */}
         <DragOverlay>
           {activeDraggedPokemon ? (
-            <div className="transform rotate-3 scale-105 opacity-90">
+            <div className="transform rotate-2 scale-105 opacity-95 z-50">
               <PokemonCard
                 pokemon={activeDraggedPokemon}
-                compact={true}
-                viewMode="grid"
+                compact={false}
+                viewMode="list"
                 isDragging={true}
               />
             </div>
