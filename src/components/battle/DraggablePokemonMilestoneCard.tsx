@@ -36,9 +36,12 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   const isRankedPokemon = context === 'available' && 'isRanked' in pokemon && pokemon.isRanked;
   const currentRank = isRankedPokemon && 'currentRank' in pokemon ? pokemon.currentRank : null;
 
+  // FIXED: Use pokemon.id directly as number for sortable items
+  const sortableId = isDraggable ? pokemon.id : `static-${pokemon.id}`;
+  
   // Only use sortable if draggable AND modal is not open
   const sortableResult = useSortable({ 
-    id: isDraggable ? (isAvailable ? `available-${pokemon.id}` : pokemon.id) : `static-${pokemon.id}`,
+    id: sortableId,
     disabled: !isDraggable || isOpen, // Disable drag when modal is open
     data: {
       type: context === 'available' ? 'available-pokemon' : 'ranked-pokemon',
@@ -58,13 +61,13 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     isDragging,
   } = sortableResult;
 
-  // FIXED: Apply transform for ALL sortable items, not just dragged ones
+  // FIXED: Apply transform and transition for proper collision avoidance
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition: transition || undefined, // Keep transition for smooth movement
+    transition: transition,
     minHeight: '140px',
     minWidth: '140px',
-    zIndex: isDragging ? 1000 : 'auto', // Bring dragged item to front
+    zIndex: isDragging ? 1000 : 'auto',
     cursor: isDraggable && !isOpen ? 'grab' : 'default'
   };
 
