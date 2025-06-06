@@ -136,75 +136,91 @@ export const useEnhancedManualReorder = (
       console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Below ${belowPokemon.name}: displayedScore=${belowDisplayedScore.toFixed(5)}`);
     }
 
-    // 🟢 SIMPLIFIED LOGIC: Check if immediate neighbors have identical scores
+    // 🟢 IMPROVED LOGIC: Check if immediate neighbors have identical scores
     if (abovePokemon && belowPokemon && Math.abs(aboveDisplayedScore - belowDisplayedScore) < EPSILON) {
       console.log(`🔵🔵🔵 [IDENTICAL_NEIGHBORS] ===== IDENTICAL NEIGHBOR SCORES =====`);
       console.log(`🔵🔵🔵 [IDENTICAL_NEIGHBORS] Identical score value: ${aboveDisplayedScore.toFixed(5)}`);
       
       const identicalScore = aboveDisplayedScore;
       
-      // Find all Pokemon with the same score as the upper neighbor
-      const upperGroupPokemon = finalRankingsAfterMove.filter((pokemon, index) => {
-        if (index === newIndex) return false; // Skip the dragged Pokemon
+      // Create a map of all current scores for efficient lookup
+      const allCurrentScores = new Map<number, number>();
+      for (const pokemon of finalRankingsAfterMove) {
+        if (pokemon.id === draggedPokemon.id) continue; // Skip the dragged Pokemon
         const rating = getRating(pokemon.id.toString());
         const score = rating.mu - rating.sigma;
-        return Math.abs(score - identicalScore) < EPSILON;
-      });
+        allCurrentScores.set(pokemon.id, score);
+      }
       
-      console.log(`🔵🔵🔵 [IDENTICAL_NEIGHBORS] Found ${upperGroupPokemon.length} Pokemon with identical scores`);
+      // Find Pokemon that need to be in upper and lower groups
+      const upperGroupIds: number[] = [];
+      const lowerGroupIds: number[] = [];
       
-      // Separate into upper and lower groups based on position relative to drop point
-      const upperGroup: RankedPokemon[] = [];
-      const lowerGroup: RankedPokemon[] = [];
-      
-      for (const pokemon of upperGroupPokemon) {
-        const pokemonIndex = finalRankingsAfterMove.findIndex(p => p.id === pokemon.id);
-        if (pokemonIndex < newIndex) {
-          upperGroup.push(pokemon);
-        } else if (pokemonIndex > newIndex) {
-          lowerGroup.push(pokemon);
+      for (let i = 0; i < finalRankingsAfterMove.length; i++) {
+        const pokemon = finalRankingsAfterMove[i];
+        if (pokemon.id === draggedPokemon.id) continue; // Skip the dragged Pokemon
+        
+        const currentScore = allCurrentScores.get(pokemon.id);
+        if (currentScore !== undefined && Math.abs(currentScore - identicalScore) < EPSILON) {
+          if (i < newIndex) {
+            upperGroupIds.push(pokemon.id);
+          } else if (i > newIndex) {
+            lowerGroupIds.push(pokemon.id);
+          }
         }
       }
       
-      console.log(`🔵🔵🔵 [IDENTICAL_NEIGHBORS] Upper group: ${upperGroup.length} Pokemon`);
-      console.log(`🔵🔵🔵 [IDENTICAL_NEIGHBORS] Lower group: ${lowerGroup.length} Pokemon`);
+      console.log(`🔵🔵🔵 [IDENTICAL_NEIGHBORS] Upper group Pokemon IDs: [${upperGroupIds.join(', ')}]`);
+      console.log(`🔵🔵🔵 [IDENTICAL_NEIGHBORS] Lower group Pokemon IDs: [${lowerGroupIds.join(', ')}]`);
       
-      // Adjust upper group (increase by GROUP_ADJUSTMENT)
-      for (const pokemon of upperGroup) {
-        const rating = getRating(pokemon.id.toString());
-        const newDisplayedScore = identicalScore + GROUP_ADJUSTMENT;
-        const newSigma = Math.max(rating.sigma * 0.95, MIN_SIGMA);
-        const newMu = newDisplayedScore + newSigma;
-        
-        console.log(`🔵🔵🔵 [IDENTICAL_NEIGHBORS] Adjusting upper ${pokemon.name}: ${identicalScore.toFixed(5)} → ${newDisplayedScore.toFixed(5)}`);
-        
-        const newRating = new Rating(newMu, newSigma);
-        updateRating(pokemon.id.toString(), newRating);
+      // Safely adjust upper group (increase by GROUP_ADJUSTMENT)
+      for (const pokemonId of upperGroupIds) {
+        try {
+          const rating = getRating(pokemonId.toString());
+          const newDisplayedScore = identicalScore + GROUP_ADJUSTMENT;
+          // Keep sigma unchanged to maintain mathematical consistency
+          const newMu = newDisplayedScore + rating.sigma;
+          
+          console.log(`🔵🔵🔵 [IDENTICAL_NEIGHBORS] Adjusting upper Pokemon ${pokemonId}: ${identicalScore.toFixed(5)} → ${newDisplayedScore.toFixed(5)}`);
+          
+          const newRating = new Rating(newMu, rating.sigma);
+          updateRating(pokemonId.toString(), newRating);
+        } catch (error) {
+          console.error(`🔵🔵🔵 [IDENTICAL_NEIGHBORS] Error adjusting upper Pokemon ${pokemonId}:`, error);
+        }
       }
       
-      // Adjust lower group (decrease by GROUP_ADJUSTMENT)
-      for (const pokemon of lowerGroup) {
-        const rating = getRating(pokemon.id.toString());
-        const newDisplayedScore = identicalScore - GROUP_ADJUSTMENT;
-        const newSigma = Math.max(rating.sigma * 0.95, MIN_SIGMA);
-        const newMu = newDisplayedScore + newSigma;
-        
-        console.log(`🔵🔵🔵 [IDENTICAL_NEIGHBORS] Adjusting lower ${pokemon.name}: ${identicalScore.toFixed(5)} → ${newDisplayedScore.toFixed(5)}`);
-        
-        const newRating = new Rating(newMu, newSigma);
-        updateRating(pokemon.id.toString(), newRating);
+      // Safely adjust lower group (decrease by GROUP_ADJUSTMENT)
+      for (const pokemonId of lowerGroupIds) {
+        try {
+          const rating = getRating(pokemonId.toString());
+          const newDisplayedScore = identicalScore - GROUP_ADJUSTMENT;
+          // Keep sigma unchanged to maintain mathematical consistency
+          const newMu = newDisplayedScore + rating.sigma;
+          
+          console.log(`🔵🔵🔵 [IDENTICAL_NEIGHBORS] Adjusting lower Pokemon ${pokemonId}: ${identicalScore.toFixed(5)} → ${newDisplayedScore.toFixed(5)}`);
+          
+          const newRating = new Rating(newMu, rating.sigma);
+          updateRating(pokemonId.toString(), newRating);
+        } catch (error) {
+          console.error(`🔵🔵🔵 [IDENTICAL_NEIGHBORS] Error adjusting lower Pokemon ${pokemonId}:`, error);
+        }
       }
       
-      // Set dragged Pokemon to the original identical score
-      const newSigma = Math.max(currentRating.sigma * 0.8, MIN_SIGMA);
-      const newMu = identicalScore + newSigma;
+      // Set dragged Pokemon to the original identical score (keep sigma unchanged)
+      try {
+        const newMu = identicalScore + currentRating.sigma;
+        
+        console.log(`🔵🔵🔵 [IDENTICAL_NEIGHBORS] Setting dragged ${draggedPokemon.name} to: ${identicalScore.toFixed(5)}`);
+        
+        const newRating = new Rating(newMu, currentRating.sigma);
+        updateRating(draggedPokemon.id.toString(), newRating);
+        
+        console.log(`🔵🔵🔵 [IDENTICAL_NEIGHBORS] ===== IDENTICAL NEIGHBOR ADJUSTMENT COMPLETE =====`);
+      } catch (error) {
+        console.error(`🔵🔵🔵 [IDENTICAL_NEIGHBORS] Error setting dragged Pokemon:`, error);
+      }
       
-      console.log(`🔵🔵🔵 [IDENTICAL_NEIGHBORS] Setting dragged ${draggedPokemon.name} to: ${identicalScore.toFixed(5)}`);
-      
-      const newRating = new Rating(newMu, newSigma);
-      updateRating(draggedPokemon.id.toString(), newRating);
-      
-      console.log(`🔵🔵🔵 [IDENTICAL_NEIGHBORS] ===== IDENTICAL NEIGHBOR ADJUSTMENT COMPLETE =====`);
       return;
     }
 
@@ -229,18 +245,17 @@ export const useEnhancedManualReorder = (
       return;
     }
     
-    // Calculate new mu and sigma
-    const newSigma = Math.max(currentRating.sigma * 0.7, MIN_SIGMA);
-    const newMu = targetDisplayedScore + newSigma;
+    // Calculate new mu (keep sigma unchanged for mathematical consistency)
+    const newMu = targetDisplayedScore + currentRating.sigma;
     
     console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] FINAL CALCULATION:`);
     console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Target score: ${targetDisplayedScore.toFixed(5)}`);
-    console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] New σ: ${newSigma.toFixed(5)}`);
+    console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Keeping σ: ${currentRating.sigma.toFixed(5)}`);
     console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] New μ: ${newMu.toFixed(5)}`);
-    console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Verification: μ - σ = ${(newMu - newSigma).toFixed(5)} (should equal ${targetDisplayedScore.toFixed(5)})`);
+    console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Verification: μ - σ = ${(newMu - currentRating.sigma).toFixed(5)} (should equal ${targetDisplayedScore.toFixed(5)})`);
     
-    // Update the rating
-    const newRating = new Rating(newMu, newSigma);
+    // Update the rating (keep sigma unchanged)
+    const newRating = new Rating(newMu, currentRating.sigma);
     updateRating(draggedPokemon.id.toString(), newRating);
     
     console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] ===== COMPLETE (${operationId}) =====`);
