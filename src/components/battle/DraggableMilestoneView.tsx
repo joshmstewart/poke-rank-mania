@@ -5,12 +5,7 @@ import { Button } from "@/components/ui/button";
 import InfiniteScrollHandler from "./InfiniteScrollHandler";
 import AutoBattleLogsModal from "./AutoBattleLogsModal";
 import { usePendingRefinementsManager } from "@/hooks/battle/usePendingRefinementsManager";
-import { useDragAndDrop } from "@/hooks/battle/useDragAndDrop";
 import { useEnhancedManualReorder } from "@/hooks/battle/useEnhancedManualReorder";
-import {
-  DndContext,
-  closestCenter,
-} from '@dnd-kit/core';
 import DraggableMilestoneGrid from "./DraggableMilestoneGrid";
 
 interface DraggableMilestoneViewProps {
@@ -66,7 +61,7 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
     }
   }, [formattedRankings]);
 
-  // FIXED: Use enhanced manual reorder with proper callback that doesn't cause resets
+  // Enhanced manual reorder with proper callback that doesn't cause resets
   const { handleEnhancedManualReorder } = useEnhancedManualReorder(
     localRankings as RankedPokemon[],
     (updatedRankings: RankedPokemon[]) => {
@@ -76,24 +71,6 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
     },
     true // preventAutoResorting = true to maintain manual order
   );
-
-  // FIXED: Simplified drag and drop that only uses enhanced reorder
-  const { sensors, handleDragEnd } = useDragAndDrop({
-    displayRankings,
-    onManualReorder: (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => {
-      console.log(`🏆 [MILESTONE_DRAG_FIXED] Drag completed: ${draggedPokemonId} from ${sourceIndex} to ${destinationIndex}`);
-      console.log(`🏆 [MILESTONE_DRAG_FIXED] Using ONLY enhanced manual reorder (no original handler)`);
-      
-      // CRITICAL FIX: Only call the enhanced manual reorder
-      handleEnhancedManualReorder(draggedPokemonId, sourceIndex, destinationIndex);
-      
-      console.log(`🏆 [MILESTONE_DRAG_FIXED] Enhanced reorder completed successfully`);
-    },
-    onLocalReorder: (newRankings) => {
-      console.log(`🏆 [MILESTONE_DRAG_FIXED] Local reorder for immediate UI feedback with ${newRankings.length} Pokemon`);
-      setLocalRankings(newRankings);
-    }
-  });
 
   return (
     <div className="bg-white p-6 w-full max-w-7xl mx-auto">
@@ -118,18 +95,12 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
         </Button>
       </div>
 
-      {/* Draggable Grid Layout - exactly 5 columns like the reference with softer colors */}
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd}
-      >
-        <DraggableMilestoneGrid
-          displayRankings={displayRankings}
-          localPendingRefinements={localPendingRefinements}
-          onManualReorder={handleEnhancedManualReorder}
-        />
-      </DndContext>
+      {/* Draggable Grid Layout - DraggableMilestoneGrid handles its own DndContext */}
+      <DraggableMilestoneGrid
+        displayRankings={displayRankings}
+        localPendingRefinements={localPendingRefinements}
+        onManualReorder={handleEnhancedManualReorder}
+      />
 
       <InfiniteScrollHandler 
         hasMoreToLoad={hasMoreToLoad}
