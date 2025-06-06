@@ -198,7 +198,7 @@ export const AvatarSelectionModal: React.FC<AvatarSelectionModalProps> = ({
                                         src={avatarUrl} 
                                         alt={`Pokemon avatar ${pokemonId}`}
                                         className={`object-cover border-2 border-gray-200 ${
-                                          shouldExtraScale ? 'scale-[2.25]' : shouldScale ? 'scale-150' : ''
+                                          shouldExtraScale ? 'scale-[1.91]' : shouldScale ? 'scale-150' : ''
                                         }`}
                                         style={(shouldScale || shouldExtraScale) ? { 
                                           transformOrigin: 'center',
