@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { useTrueSkillStore } from "@/stores/trueskillStore";
 import { generations } from "@/services/pokemon";
@@ -21,8 +20,34 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadingRef = useRef<HTMLDivElement | null>(null);
   
-  // Get Pokemon data from context
-  const { allPokemon, pokemonLookupMap } = usePokemonContext();
+  // Get Pokemon data from context - this contains the RAW unformatted Pokemon
+  const { allPokemon, rawUnfilteredPokemon, pokemonLookupMap } = usePokemonContext();
+  
+  // CRITICAL FIX: Use the filtered allPokemon (which has formatted names) instead of raw lookup map
+  const formattedPokemonMap = useMemo(() => {
+    console.log('🔥🔥🔥 [FORMATTED_MAP_CREATION] Creating formatted Pokemon map');
+    const map = new Map<number, Pokemon>();
+    
+    // Use allPokemon which should have formatted names (from the filtering pipeline)
+    allPokemon.forEach(pokemon => {
+      // Ensure the name is formatted (double-check)
+      const formattedName = formatPokemonName(pokemon.name);
+      
+      if (pokemon.name.toLowerCase().includes('deoxys')) {
+        console.log(`🔥🔥🔥 [FORMATTED_MAP_DEBUG] Deoxys formatting check:`);
+        console.log(`🔥🔥🔥 [FORMATTED_MAP_DEBUG] Original: "${pokemon.name}"`);
+        console.log(`🔥🔥🔥 [FORMATTED_MAP_DEBUG] Formatted: "${formattedName}"`);
+      }
+      
+      map.set(pokemon.id, {
+        ...pokemon,
+        name: formattedName
+      });
+    });
+    
+    console.log(`🔥🔥🔥 [FORMATTED_MAP_CREATION] Created map with ${map.size} formatted Pokemon`);
+    return map;
+  }, [allPokemon]);
   
   // Get current generation name
   const currentGeneration = generations.find(gen => gen.id === selectedGeneration);
@@ -48,7 +73,7 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
     return filtered;
   }, [allPokemon, selectedGeneration]);
   
-  // Transform TrueSkill data to ranked Pokemon format using actual Pokemon data
+  // Transform TrueSkill data to ranked Pokemon format using FORMATTED Pokemon data
   const rankings = useMemo(() => {
     console.log('🔥🔥🔥 [PERSONAL_CRITICAL_DEBUG] ===== STARTING RANKINGS CALCULATION =====');
     const ratings = getAllRatings();
@@ -58,10 +83,11 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
       return [];
     }
     
-    // Convert ratings to RankedPokemon format
+    // Convert ratings to RankedPokemon format using FORMATTED Pokemon map
     const rankedPokemon: RankedPokemon[] = Object.entries(ratings)
       .map(([pokemonId, rating]) => {
-        const pokemon = pokemonLookupMap.get(parseInt(pokemonId));
+        // CRITICAL FIX: Use the formatted Pokemon map instead of raw lookup map
+        const pokemon = formattedPokemonMap.get(parseInt(pokemonId));
         if (!pokemon) {
           return null; // Skip if Pokemon data not found
         }
@@ -86,23 +112,18 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
         const losses = battleCount - wins;
         const winRate = battleCount > 0 ? (wins / battleCount) * 100 : 0;
         
-        // CRITICAL: Apply name formatting and trace what happens
-        const originalName = pokemon.name;
-        const formattedName = formatPokemonName(pokemon.name);
-        
-        // Special check for Deoxys
+        // Special check for Deoxys to verify formatted name
         if (pokemon.name.toLowerCase().includes('deoxys')) {
-          console.log(`🔥🔥🔥 [DEOXYS_FORMATTING_TRACE] Pokemon ID: ${pokemonId}`);
-          console.log(`🔥🔥🔥 [DEOXYS_FORMATTING_TRACE] Original name: "${originalName}"`);
-          console.log(`🔥🔥🔥 [DEOXYS_FORMATTING_TRACE] Formatted name: "${formattedName}"`);
+          console.log(`🔥🔥🔥 [DEOXYS_FINAL_CHECK] Pokemon ID: ${pokemonId}`);
+          console.log(`🔥🔥🔥 [DEOXYS_FINAL_CHECK] Using formatted name: "${pokemon.name}"`);
         }
         
-        // CRITICAL FIX: Don't spread pokemon object to avoid overriding the formatted name
+        // Create RankedPokemon object with formatted name preserved
         const rankedPokemonObject: RankedPokemon = {
           id: pokemon.id,
           image: pokemon.image,
           types: pokemon.types || [],
-          name: formattedName, // Set formatted name LAST to ensure it's not overridden
+          name: pokemon.name, // This should already be formatted from formattedPokemonMap
           // Add ranking-specific properties
           score: score,
           count: battleCount,
@@ -112,10 +133,9 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
           winRate: winRate
         };
         
-        // CRITICAL: Verify the final object has the correct name
+        // CRITICAL: Verify the final object has the formatted name
         if (pokemon.name.toLowerCase().includes('deoxys')) {
           console.log(`🔥🔥🔥 [DEOXYS_OBJECT_VERIFICATION] Final object name: "${rankedPokemonObject.name}"`);
-          console.log(`🔥🔥🔥 [DEOXYS_OBJECT_VERIFICATION] Object keys: ${Object.keys(rankedPokemonObject)}`);
         }
         
         return rankedPokemonObject;
@@ -134,7 +154,7 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
     });
     
     return sorted;
-  }, [getAllRatings, pokemonLookupMap, selectedGeneration, filteredPokemon]);
+  }, [getAllRatings, formattedPokemonMap, selectedGeneration, filteredPokemon]);
 
   // Update local rankings when rankings change
   useEffect(() => {
