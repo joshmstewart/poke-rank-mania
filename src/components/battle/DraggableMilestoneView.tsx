@@ -66,13 +66,13 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
     }
   }, [formattedRankings]);
 
-  // FIXED: Use only the enhanced manual reorder, don't call the original onManualReorder
+  // FIXED: Use enhanced manual reorder with proper callback that doesn't cause resets
   const { handleEnhancedManualReorder } = useEnhancedManualReorder(
     localRankings as RankedPokemon[],
     (updatedRankings: RankedPokemon[]) => {
       console.log(`🏆 [MILESTONE_DRAG_FIXED] Enhanced reorder callback with ${updatedRankings.length} Pokemon`);
       setLocalRankings(updatedRankings);
-      // DON'T call onManualReorder here - it's causing the reset
+      // NOTE: Removed call to onManualReorder here to prevent reset conflicts
     },
     true // preventAutoResorting = true to maintain manual order
   );
@@ -84,10 +84,10 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
       console.log(`🏆 [MILESTONE_DRAG_FIXED] Drag completed: ${draggedPokemonId} from ${sourceIndex} to ${destinationIndex}`);
       console.log(`🏆 [MILESTONE_DRAG_FIXED] Using ONLY enhanced manual reorder (no original handler)`);
       
-      // CRITICAL FIX: Only call the enhanced manual reorder, don't call onManualReorder
+      // CRITICAL FIX: Only call the enhanced manual reorder
       handleEnhancedManualReorder(draggedPokemonId, sourceIndex, destinationIndex);
       
-      console.log(`🏆 [MILESTONE_DRAG_FIXED] Enhanced reorder completed, NOT calling original onManualReorder to prevent reset`);
+      console.log(`🏆 [MILESTONE_DRAG_FIXED] Enhanced reorder completed successfully`);
     },
     onLocalReorder: (newRankings) => {
       console.log(`🏆 [MILESTONE_DRAG_FIXED] Local reorder for immediate UI feedback with ${newRankings.length} Pokemon`);
@@ -127,6 +127,7 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
         <DraggableMilestoneGrid
           displayRankings={displayRankings}
           localPendingRefinements={localPendingRefinements}
+          onManualReorder={handleEnhancedManualReorder}
         />
       </DndContext>
 
