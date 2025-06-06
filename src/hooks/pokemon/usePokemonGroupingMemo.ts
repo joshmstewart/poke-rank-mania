@@ -1,6 +1,5 @@
 
 import { useMemo } from "react";
-import { usePokemonGrouping } from "./usePokemonGrouping";
 
 interface UsePokemonGroupingMemoProps {
   pokemon: any[];
@@ -15,20 +14,58 @@ export const usePokemonGroupingMemo = ({
   isRankingArea,
   isGenerationExpanded
 }: UsePokemonGroupingMemoProps) => {
-  // Create a stable key for memoization based on inputs
-  const memoKey = useMemo(() => {
-    const pokemonIds = pokemon.map(p => p.id).join(',');
-    const expandedGens = Array.from({ length: 10 }, (_, i) => i + 1)
-      .filter(gen => isGenerationExpanded(gen))
-      .join(',');
-    
-    return `${pokemonIds}-${searchTerm}-${isRankingArea}-${expandedGens}`;
-  }, [pokemon, searchTerm, isRankingArea, isGenerationExpanded]);
-
-  // Memoize the grouping result
+  // Direct memoization without calling another hook inside useMemo
   const groupingResult = useMemo(() => {
-    return usePokemonGrouping(pokemon, searchTerm, isRankingArea, isGenerationExpanded);
-  }, [memoKey, pokemon, searchTerm, isRankingArea, isGenerationExpanded]);
+    // Inline the Pokemon grouping logic to avoid hook rule violations
+    const filteredPokemon = searchTerm.trim() 
+      ? pokemon.filter(p => 
+          p.name?.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+      : pokemon;
+
+    if (filteredPokemon.length === 0) {
+      return { items: [], showGenerationHeaders: false };
+    }
+
+    // Group by generation
+    const generationGroups = filteredPokemon.reduce((groups: any, pokemon: any) => {
+      const generation = pokemon.generation || 1;
+      if (!groups[generation]) {
+        groups[generation] = [];
+      }
+      groups[generation].push(pokemon);
+      return groups;
+    }, {});
+
+    const sortedGenerations = Object.keys(generationGroups)
+      .map(Number)
+      .sort((a, b) => a - b);
+
+    const items: any[] = [];
+    const showGenerationHeaders = sortedGenerations.length > 1 || searchTerm.trim();
+
+    for (const generation of sortedGenerations) {
+      const pokemonInGen = generationGroups[generation];
+      
+      if (showGenerationHeaders) {
+        items.push({
+          type: 'generation-header',
+          generation: generation,
+          count: pokemonInGen.length,
+          isExpanded: isGenerationExpanded(generation)
+        });
+      }
+
+      if (!showGenerationHeaders || isGenerationExpanded(generation)) {
+        items.push(...pokemonInGen.map((pokemon: any) => ({
+          type: 'pokemon',
+          ...pokemon
+        })));
+      }
+    }
+
+    return { items, showGenerationHeaders };
+  }, [pokemon, searchTerm, isRankingArea, isGenerationExpanded]);
 
   return groupingResult;
 };
