@@ -218,7 +218,6 @@ const GlobalRankingsView: React.FC<GlobalRankingsViewProps> = ({
                 key={pokemon.id}
                 pokemon={pokemon}
                 index={index}
-                isPending={false}
                 showRank={true}
                 isDraggable={false}
                 context="ranked"
