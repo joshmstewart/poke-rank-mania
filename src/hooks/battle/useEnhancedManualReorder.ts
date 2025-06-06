@@ -192,58 +192,63 @@ export const useEnhancedManualReorder = (
       console.log(`🔵🔵🔵 [IDENTICAL_SCORE_GROUPS] Above group size: ${aboveGroup.length}`);
       console.log(`🔵🔵🔵 [IDENTICAL_SCORE_GROUPS] Below group size: ${belowGroup.length}`);
       
-      // 🟡 STEP 3: Adjust scores of identical-score groups
-      console.log(`🟡🟡🟡 [GROUP_ADJUSTMENTS] ===== STEP 3: ADJUSTING IDENTICAL SCORE GROUPS =====`);
+      // 🟡 STEP 3: FIXED - Correctly identify next higher/lower scores using ONLY immediately adjacent Pokemon
+      console.log(`🟡🟡🟡 [GROUP_ADJUSTMENTS] ===== STEP 3: ADJUSTING IDENTICAL SCORE GROUPS (FIXED LOGIC) =====`);
       
-      // Find next higher score Pokemon (for above group adjustment)
-      let nextHigherDisplayedScore = identicalScore + 50; // default fallback
+      // FIXED: Find next higher score Pokemon - only use the Pokemon immediately above the above group
+      let nextHigherDisplayedScore = identicalScore + 0.5; // Small fallback increment
       const aboveGroupStartIndex = newIndex - aboveGroup.length;
       if (aboveGroupStartIndex > 0) {
         const nextHigherPokemon = finalRankingsAfterMove[aboveGroupStartIndex - 1];
         const nextHigherRating = getRating(nextHigherPokemon.id.toString());
         nextHigherDisplayedScore = nextHigherRating.mu - nextHigherRating.sigma;
-        console.log(`🟡🟡🟡 [GROUP_ADJUSTMENTS] Found next higher Pokemon: ${nextHigherPokemon.name} (score: ${nextHigherDisplayedScore.toFixed(5)})`);
+        console.log(`🟡🟡🟡 [GROUP_ADJUSTMENTS] FIXED: Found immediately adjacent higher Pokemon: ${nextHigherPokemon.name} (score: ${nextHigherDisplayedScore.toFixed(5)})`);
       } else {
-        console.log(`🟡🟡🟡 [GROUP_ADJUSTMENTS] No next higher Pokemon found, using fallback: ${nextHigherDisplayedScore}`);
+        console.log(`🟡🟡🟡 [GROUP_ADJUSTMENTS] FIXED: No Pokemon above, using small increment: ${nextHigherDisplayedScore}`);
       }
       
-      // Find next lower score Pokemon (for below group adjustment)
-      let nextLowerDisplayedScore = identicalScore - 50; // default fallback
+      // FIXED: Find next lower score Pokemon - only use the Pokemon immediately below the below group
+      let nextLowerDisplayedScore = identicalScore - 0.5; // Small fallback decrement
       const belowGroupEndIndex = newIndex + belowGroup.length;
       if (belowGroupEndIndex < finalRankingsAfterMove.length) {
         const nextLowerPokemon = finalRankingsAfterMove[belowGroupEndIndex + 1];
         const nextLowerRating = getRating(nextLowerPokemon.id.toString());
         nextLowerDisplayedScore = nextLowerRating.mu - nextLowerRating.sigma;
-        console.log(`🟡🟡🟡 [GROUP_ADJUSTMENTS] Found next lower Pokemon: ${nextLowerPokemon.name} (score: ${nextLowerDisplayedScore.toFixed(5)})`);
+        console.log(`🟡🟡🟡 [GROUP_ADJUSTMENTS] FIXED: Found immediately adjacent lower Pokemon: ${nextLowerPokemon.name} (score: ${nextLowerDisplayedScore.toFixed(5)})`);
       } else {
-        console.log(`🟡🟡🟡 [GROUP_ADJUSTMENTS] No next lower Pokemon found, using fallback: ${nextLowerDisplayedScore}`);
+        console.log(`🟡🟡🟡 [GROUP_ADJUSTMENTS] FIXED: No Pokemon below, using small decrement: ${nextLowerDisplayedScore}`);
       }
+      
+      // FIXED: Calculate new scores using only immediately adjacent values
+      console.log(`🟡🟡🟡 [GROUP_ADJUSTMENTS] FIXED: Adjacent score range: ${nextLowerDisplayedScore.toFixed(5)} < ${identicalScore.toFixed(5)} < ${nextHigherDisplayedScore.toFixed(5)}`);
       
       // Adjust above group
       if (aboveGroup.length > 0) {
         const newAboveDisplayedScore = (identicalScore + nextHigherDisplayedScore) / 2;
-        console.log(`🟡🟡🟡 [GROUP_ADJUSTMENTS] Adjusting above group to new displayed score: ${newAboveDisplayedScore.toFixed(5)}`);
+        console.log(`🟡🟡🟡 [GROUP_ADJUSTMENTS] FIXED: Adjusting above group to new displayed score: ${newAboveDisplayedScore.toFixed(5)}`);
+        console.log(`🟡🟡🟡 [GROUP_ADJUSTMENTS] FIXED: Score change: ${identicalScore.toFixed(5)} → ${newAboveDisplayedScore.toFixed(5)} (diff: +${(newAboveDisplayedScore - identicalScore).toFixed(5)})`);
         
         aboveGroup.forEach(pokemon => {
           const pokemonRating = getRating(pokemon.id.toString());
           const newMu = newAboveDisplayedScore + pokemonRating.sigma;
           const newRating = new Rating(newMu, pokemonRating.sigma);
           updateRating(pokemon.id.toString(), newRating);
-          console.log(`🟡🟡🟡 [GROUP_ADJUSTMENTS] Updated ${pokemon.name}: μ=${newMu.toFixed(5)}, σ=${pokemonRating.sigma.toFixed(5)}`);
+          console.log(`🟡🟡🟡 [GROUP_ADJUSTMENTS] FIXED: Updated ${pokemon.name}: μ=${newMu.toFixed(5)}, σ=${pokemonRating.sigma.toFixed(5)}, displayed=${newAboveDisplayedScore.toFixed(5)}`);
         });
       }
       
       // Adjust below group
       if (belowGroup.length > 0) {
         const newBelowDisplayedScore = (identicalScore + nextLowerDisplayedScore) / 2;
-        console.log(`🟡🟡🟡 [GROUP_ADJUSTMENTS] Adjusting below group to new displayed score: ${newBelowDisplayedScore.toFixed(5)}`);
+        console.log(`🟡🟡🟡 [GROUP_ADJUSTMENTS] FIXED: Adjusting below group to new displayed score: ${newBelowDisplayedScore.toFixed(5)}`);
+        console.log(`🟡🟡🟡 [GROUP_ADJUSTMENTS] FIXED: Score change: ${identicalScore.toFixed(5)} → ${newBelowDisplayedScore.toFixed(5)} (diff: ${(newBelowDisplayedScore - identicalScore).toFixed(5)})`);
         
         belowGroup.forEach(pokemon => {
           const pokemonRating = getRating(pokemon.id.toString());
           const newMu = newBelowDisplayedScore + pokemonRating.sigma;
           const newRating = new Rating(newMu, pokemonRating.sigma);
           updateRating(pokemon.id.toString(), newRating);
-          console.log(`🟡🟡🟡 [GROUP_ADJUSTMENTS] Updated ${pokemon.name}: μ=${newMu.toFixed(5)}, σ=${pokemonRating.sigma.toFixed(5)}`);
+          console.log(`🟡🟡🟡 [GROUP_ADJUSTMENTS] FIXED: Updated ${pokemon.name}: μ=${newMu.toFixed(5)}, σ=${pokemonRating.sigma.toFixed(5)}, displayed=${newBelowDisplayedScore.toFixed(5)}`);
         });
       }
       
