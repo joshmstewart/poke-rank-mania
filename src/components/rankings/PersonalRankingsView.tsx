@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { useTrueSkillStore } from "@/stores/trueskillStore";
 import { generations } from "@/services/pokemon";
@@ -96,20 +97,12 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
           console.log(`🔥🔥🔥 [DEOXYS_FORMATTING_TRACE] Formatted name: "${formattedName}"`);
         }
         
-        // CRITICAL FIX: Create object with explicit name assignment
+        // CRITICAL FIX: Don't spread pokemon object to avoid overriding the formatted name
         const rankedPokemonObject: RankedPokemon = {
           id: pokemon.id,
-          name: formattedName, // Explicitly use formatted name
           image: pokemon.image,
           types: pokemon.types || [],
-          // Only copy properties that exist on Pokemon type
-          ...(pokemon.flavorText && { flavorText: pokemon.flavorText }),
-          ...(pokemon.rating && { rating: pokemon.rating }),
-          ...(pokemon.height && { height: pokemon.height }),
-          ...(pokemon.weight && { weight: pokemon.weight }),
-          ...(pokemon.stats && { stats: pokemon.stats }),
-          ...(pokemon.generation && { generation: pokemon.generation }),
-          ...(pokemon.suggestedAdjustment && { suggestedAdjustment: pokemon.suggestedAdjustment }),
+          name: formattedName, // Set formatted name LAST to ensure it's not overridden
           // Add ranking-specific properties
           score: score,
           count: battleCount,
