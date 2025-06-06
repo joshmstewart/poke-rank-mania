@@ -86,20 +86,29 @@ export const PokemonListContent: React.FC<PokemonListContentProps> = ({
                 key={`pokemon-${pokemon.id}-${index}`}
                 className="relative group hover:shadow-lg transition-shadow bg-white border border-gray-200"
               >
-                {/* Star button in bottom-right corner */}
-                <button 
-                  className="absolute bottom-2 right-2 z-20 w-8 h-8 flex items-center justify-center rounded-full bg-white hover:bg-yellow-50 border-2 border-gray-300 hover:border-yellow-400 transition-all duration-200 shadow-sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    console.log(`⭐ Star clicked for ${formattedPokemon.name}`);
-                  }}
-                >
-                  <Star 
-                    size={16} 
-                    className="text-gray-500 hover:text-yellow-500 transition-colors" 
-                    fill="none"
-                  />
-                </button>
+                {/* Star button in bottom-right corner - CRITICAL: Use pointer-events-none on container and pointer-events-auto on button */}
+                <div className="absolute bottom-2 right-2 z-20 pointer-events-none">
+                  <button 
+                    className="w-8 h-8 flex items-center justify-center rounded-full bg-white hover:bg-yellow-50 border-2 border-gray-300 hover:border-yellow-400 transition-all duration-200 shadow-sm pointer-events-auto"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      console.log(`⭐ Star clicked for ${formattedPokemon.name}`);
+                    }}
+                    onPointerDown={(e) => {
+                      e.stopPropagation();
+                    }}
+                    onMouseDown={(e) => {
+                      e.stopPropagation();
+                    }}
+                  >
+                    <Star 
+                      size={16} 
+                      className="text-gray-500 hover:text-yellow-500 transition-colors" 
+                      fill="none"
+                    />
+                  </button>
+                </div>
 
                 <PokemonInfoModal pokemon={formattedPokemon}>
                   <div className="p-4 cursor-pointer">
