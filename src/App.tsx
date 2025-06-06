@@ -1,10 +1,11 @@
+
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from 'react-query';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from "@/components/ui/sonner"
 
-import Index from './routes/Index';
-import NotFound from './routes/NotFound';
+import Index from './pages/Index';
+import NotFound from './pages/NotFound';
 import { AuthWrapper } from '@/components/auth/AuthWrapper';
 import { TourProvider } from '@/components/tour/TourProvider';
 import { TourOverlay } from '@/components/tour/TourOverlay';
