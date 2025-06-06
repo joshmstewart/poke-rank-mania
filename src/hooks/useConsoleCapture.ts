@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 interface ConsoleLog {
   level: 'log' | 'warn' | 'error' | 'info';
@@ -16,16 +16,27 @@ export const useConsoleCapture = () => {
     const originalError = console.error;
     const originalInfo = console.info;
 
+    // Use a ref to prevent infinite loops
+    let isUpdating = false;
+
     const addLog = (level: ConsoleLog['level'], args: any[]) => {
+      // Prevent infinite loops by checking if we're already updating
+      if (isUpdating) return;
+      
       const message = args.map(arg => 
         typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
       ).join(' ');
       
-      setLogs(prev => [...prev.slice(-49), { // Keep last 50 logs
-        level,
-        message,
-        timestamp: new Date().toISOString()
-      }]);
+      // Use setTimeout to batch updates and prevent render loops
+      setTimeout(() => {
+        isUpdating = true;
+        setLogs(prev => [...prev.slice(-49), { // Keep last 50 logs
+          level,
+          message,
+          timestamp: new Date().toISOString()
+        }]);
+        isUpdating = false;
+      }, 0);
     };
 
     console.log = (...args) => {
@@ -54,13 +65,13 @@ export const useConsoleCapture = () => {
       console.error = originalError;
       console.info = originalInfo;
     };
-  }, []);
+  }, []); // Empty dependency array to prevent re-running
 
-  const getLogsAsString = () => {
+  const getLogsAsString = useCallback(() => {
     return logs.map(log => 
       `[${log.timestamp}] ${log.level.toUpperCase()}: ${log.message}`
     ).join('\n');
-  };
+  }, [logs]);
 
   return { logs, getLogsAsString };
 };
