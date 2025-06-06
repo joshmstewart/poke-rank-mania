@@ -49,7 +49,7 @@ const DraggableMilestoneGrid: React.FC<DraggableMilestoneGridProps> = ({
     setActivePokemon(null);
   };
 
-  // Custom drop animation for smoother transitions
+  // Hardware accelerated drop animation for smoother transitions
   const dropAnimationConfig = {
     sideEffects: defaultDropAnimationSideEffects({
       styles: {
@@ -58,10 +58,28 @@ const DraggableMilestoneGrid: React.FC<DraggableMilestoneGridProps> = ({
         },
       },
     }),
+    // Add hardware acceleration to drop animation
+    keyframes({ transform }: any) {
+      return [
+        { opacity: 1, transform: transform.initial },
+        { opacity: 0.8, transform: `${transform.initial} scale(1.05)` },
+        { opacity: 1, transform: transform.final },
+      ];
+    },
+    duration: 200,
+    easing: 'cubic-bezier(0.25, 0.1, 0.25, 1)',
   };
 
   const content = (
-    <div className="grid gap-4 mb-6" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
+    <div 
+      className="grid gap-4 mb-6" 
+      style={{ 
+        gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
+        // Hardware acceleration for the grid container
+        transform: 'translateZ(0)',
+        willChange: 'auto'
+      }}
+    >
       {displayRankings.map((pokemon, index) => (
         <DraggablePokemonMilestoneCard
           key={pokemon.id}
@@ -92,10 +110,17 @@ const DraggableMilestoneGrid: React.FC<DraggableMilestoneGridProps> = ({
           {content}
         </SortableContext>
         
-        {/* Drag Overlay for smooth cursor following */}
+        {/* Hardware accelerated Drag Overlay for smooth cursor following */}
         <DragOverlay dropAnimation={dropAnimationConfig}>
           {activePokemon ? (
-            <div className="rotate-2 scale-105">
+            <div 
+              className="rotate-2 scale-105"
+              style={{
+                transform: 'translateZ(0)',
+                willChange: 'transform',
+                backfaceVisibility: 'hidden'
+              }}
+            >
               <DraggablePokemonMilestoneCard
                 pokemon={activePokemon}
                 index={displayRankings.findIndex(p => p.id === activePokemon.id)}

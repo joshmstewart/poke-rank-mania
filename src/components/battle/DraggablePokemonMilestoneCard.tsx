@@ -58,14 +58,20 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     isDragging,
   } = sortableResult;
 
-  // FIXED: Apply transform for ALL sortable items, not just dragged ones
+  // HARDWARE ACCELERATION: Optimized transform with GPU acceleration
   const style = {
-    transform: CSS.Transform.toString(transform),
-    transition: transition || undefined, // Keep transition for smooth movement
+    // Use transform3d for hardware acceleration
+    transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0) scaleX(${transform.scaleX || 1}) scaleY(${transform.scaleY || 1})` : 'translate3d(0, 0, 0)',
+    transition: transition || undefined,
     minHeight: '140px',
     minWidth: '140px',
-    zIndex: isDragging ? 1000 : 'auto', // Bring dragged item to front
-    cursor: isDraggable && !isOpen ? 'grab' : 'default'
+    zIndex: isDragging ? 1000 : 'auto',
+    cursor: isDraggable && !isOpen ? 'grab' : 'default',
+    // Hardware acceleration optimizations
+    willChange: isDragging ? 'transform' : 'auto',
+    backfaceVisibility: 'hidden' as const,
+    perspective: 1000,
+    transformStyle: 'preserve-3d' as const
   };
 
   const backgroundColorClass = getPokemonBackgroundColor(pokemon);
@@ -98,9 +104,12 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       {...(isDraggable && !isOpen ? attributes : {})}
       {...(isDraggable && !isOpen ? listeners : {})}
     >
-      {/* Enhanced drag overlay for better visual feedback */}
+      {/* Enhanced drag overlay for better visual feedback with hardware acceleration */}
       {isDragging && (
-        <div className="absolute inset-0 bg-blue-100 bg-opacity-30 rounded-lg pointer-events-none"></div>
+        <div 
+          className="absolute inset-0 bg-blue-100 bg-opacity-30 rounded-lg pointer-events-none"
+          style={{ transform: 'translateZ(0)' }}
+        ></div>
       )}
 
       {/* Dark overlay for already-ranked Pokemon in available section */}
@@ -187,7 +196,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
         </div>
       )}
       
-      {/* Pokemon image - scaled to 20x20 (80px) */}
+      {/* Pokemon image - scaled to 20x20 (80px) with hardware acceleration */}
       <div className="flex-1 flex justify-center items-center px-2 pt-6 pb-1">
         <img 
           src={pokemon.image} 
@@ -195,6 +204,10 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
           className={`w-20 h-20 object-contain transition-all duration-200 ${
             isDragging ? 'scale-110' : ''
           }`}
+          style={{ 
+            transform: 'translateZ(0)',
+            willChange: isDragging ? 'transform' : 'auto'
+          }}
           loading="lazy"
           onError={(e) => {
             const target = e.target as HTMLImageElement;

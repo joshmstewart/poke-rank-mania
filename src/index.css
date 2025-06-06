@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -114,4 +115,38 @@
 .force-visible {
   visibility: visible !important;
   display: block !important;
+}
+
+/* Hardware acceleration optimizations for drag and drop */
+.transform-gpu {
+  transform: translateZ(0);
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+/* Smooth dragging class for all draggable elements */
+.draggable-optimized {
+  transform: translateZ(0);
+  will-change: auto;
+  backface-visibility: hidden;
+  perspective: 1000px;
+  transform-style: preserve-3d;
+}
+
+.dragging {
+  will-change: transform;
+  transform-style: preserve-3d;
+}
+
+/* Optimize grid containers for hardware acceleration */
+.grid-optimized {
+  transform: translateZ(0);
+  will-change: auto;
+}
+
+/* Optimize images for hardware acceleration during drag */
+.image-optimized {
+  transform: translateZ(0);
+  will-change: auto;
+  backface-visibility: hidden;
 }
