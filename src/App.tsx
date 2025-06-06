@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import BattleMode from "@/components/battle/BattleModeCore";
@@ -7,6 +6,8 @@ import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { Toaster } from "@/components/ui/toaster"
 import PokemonRankerWithProvider from "@/components/pokemon/PokemonRankerWithProvider";
 import { AuthWrapper } from "@/components/auth/AuthWrapper";
+import { TourProvider } from "@/components/tour/TourProvider";
+import { TourOverlay } from "@/components/tour/TourOverlay";
 
 function AppContent() {
   const [mode, setMode] = useLocalStorage<"rank" | "battle">("pokemon-ranker-mode", "rank");
@@ -112,16 +113,19 @@ function AppContent() {
 
   // Clean production interface
   return (
-    <div className="flex flex-col h-screen">
-      <AppHeader mode={mode} onModeChange={handleModeChange} />
-      
-      <main className="flex-grow bg-gray-100 py-6 px-4">
-        <div className="container max-w-7xl mx-auto">
-          {renderContent()}
-        </div>
-      </main>
-      <Toaster />
-    </div>
+    <TourProvider>
+      <div className="flex flex-col h-screen">
+        <AppHeader mode={mode} onModeChange={handleModeChange} />
+        
+        <main className="flex-grow bg-gray-100 py-6 px-4">
+          <div className="container max-w-7xl mx-auto">
+            {renderContent()}
+          </div>
+        </main>
+        <Toaster />
+        <TourOverlay />
+      </div>
+    </TourProvider>
   );
 }
 

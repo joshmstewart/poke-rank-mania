@@ -1,22 +1,20 @@
 
-import React from 'react';
-import { CloudSyncButton } from '@/components/auth/CloudSyncButton';
-import { AuthenticatedUserDisplay } from '@/components/auth/AuthenticatedUserDisplay';
-import { useAuth } from '@/contexts/auth/useAuth';
+import React from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { AuthenticatedUserDisplay } from "@/components/auth/AuthenticatedUserDisplay";
+import { AuthDialog } from "@/components/auth/AuthDialog";
+import { HelpButton } from "@/components/tour/HelpButton";
 
 export const SaveProgressSection = () => {
-  const { user, session } = useAuth();
-
-  // Simple auth check using context only - no additional API calls
-  const isAuthenticated = !!(user || session?.user);
-  const currentUser = user || session?.user;
+  const { user } = useAuth();
 
   return (
-    <div className="flex items-center gap-4">
-      {isAuthenticated ? (
-        <AuthenticatedUserDisplay currentUser={currentUser} />
+    <div className="flex items-center gap-3">
+      <HelpButton />
+      {user ? (
+        <AuthenticatedUserDisplay />
       ) : (
-        <CloudSyncButton />
+        <AuthDialog />
       )}
     </div>
   );
