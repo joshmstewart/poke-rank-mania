@@ -2,6 +2,19 @@
 import { useMemo } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 
+// Helper function to safely format Pokemon names without filtering
+const safeFormatPokemonName = (name: string): string => {
+  if (!name) return '';
+  
+  // Simple capitalization without any filtering logic
+  return name.split(/(\s+|-+)/).map(part => {
+    if (part.match(/^\s+$/) || part.match(/^-+$/)) {
+      return part; // Keep whitespace and hyphens as-is
+    }
+    return part.charAt(0).toUpperCase() + part.slice(1).toLowerCase();
+  }).join('');
+};
+
 interface EnhancedPokemon extends Pokemon {
   isRanked: boolean;
   currentRank: number | null;
@@ -124,9 +137,13 @@ export const useEnhancedAvailablePokemon = ({
           }
         }
         
+        // CRITICAL FIX: Apply safe name formatting here
+        const formattedName = safeFormatPokemonName(pokemon.name);
+        
         // Create enhanced Pokemon with all required properties
         const enhancedPokemon: EnhancedPokemon = {
           ...pokemon,
+          name: formattedName, // Use safely formatted name
           isRanked: !!rankedInfo,
           currentRank: rankedInfo?.rank || null,
           score: rankedInfo?.pokemon.score || 0,
@@ -148,7 +165,8 @@ export const useEnhancedAvailablePokemon = ({
             generation: enhancedPokemon.generation,
             isRanked: enhancedPokemon.isRanked,
             currentRank: enhancedPokemon.currentRank,
-            hasValidId: typeof enhancedPokemon.id === 'number'
+            hasValidId: typeof enhancedPokemon.id === 'number',
+            nameFormatted: `"${pokemon.name}" -> "${formattedName}"`
           });
         }
         

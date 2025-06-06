@@ -9,6 +9,18 @@ import GenerationHeader from "./GenerationHeader";
 import { VotingArrows } from "@/components/ranking/VotingArrows";
 import DraggablePokemonMilestoneCard from "@/components/battle/DraggablePokemonMilestoneCard";
 
+// Helper function to safely format Pokemon names
+const safeFormatPokemonName = (name: string): string => {
+  if (!name) return '';
+  
+  return name.split(/(\s+|-+)/).map(part => {
+    if (part.match(/^\s+$/) || part.match(/^-+$/)) {
+      return part; // Keep whitespace and hyphens as-is
+    }
+    return part.charAt(0).toUpperCase() + part.slice(1).toLowerCase();
+  }).join('');
+};
+
 interface PokemonListContentProps {
   items: any[];
   showGenerationHeaders: boolean;
@@ -70,12 +82,18 @@ export const PokemonListContent: React.FC<PokemonListContentProps> = ({
             return null;
           }
 
+          // CRITICAL FIX: Apply name formatting here
+          const formattedPokemon = {
+            ...pokemon,
+            name: safeFormatPokemonName(pokemon.name)
+          };
+
           // Use the enhanced card component for available Pokemon to match rankings styling
           if (!isRankingArea) {
             return (
               <DraggablePokemonMilestoneCard
                 key={`pokemon-${pokemon.id}-${index}`}
-                pokemon={pokemon}
+                pokemon={formattedPokemon}
                 index={index}
                 isPending={false}
                 showRank={false}
@@ -92,29 +110,29 @@ export const PokemonListContent: React.FC<PokemonListContentProps> = ({
               key={`pokemon-${pokemon.id}-${isRankingArea ? 'ranked' : 'available'}-${index}`}
               className="relative group hover:shadow-lg transition-shadow bg-white border border-gray-200"
             >
-              <PokemonInfoModal pokemon={pokemon}>
+              <PokemonInfoModal pokemon={formattedPokemon}>
                 <div className="p-4 cursor-pointer">
                   <PokemonCardImage 
-                    pokemonId={pokemon.id}
-                    displayName={pokemon.name}
-                    imageUrl={pokemon.image}
+                    pokemonId={formattedPokemon.id}
+                    displayName={formattedPokemon.name}
+                    imageUrl={formattedPokemon.image}
                     compact={false}
                     className=""
                   />
                   <PokemonCardInfo 
-                    pokemonId={pokemon.id}
-                    displayName={pokemon.name}
-                    types={pokemon.types}
-                    flavorText={pokemon.flavorText}
+                    pokemonId={formattedPokemon.id}
+                    displayName={formattedPokemon.name}
+                    types={formattedPokemon.types}
+                    flavorText={formattedPokemon.flavorText}
                   />
                 </div>
               </PokemonInfoModal>
               
-              {isRankingArea && 'score' in pokemon && (
+              {isRankingArea && 'score' in formattedPokemon && (
                 <>
                   <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <VotingArrows
-                      pokemon={pokemon}
+                      pokemon={formattedPokemon}
                       onSuggestRanking={() => {}}
                       onRemoveSuggestion={() => {}}
                     />
