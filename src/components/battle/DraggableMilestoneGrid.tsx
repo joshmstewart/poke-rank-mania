@@ -3,7 +3,7 @@ import React from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import {
   DndContext,
-  closestCenter,
+  closestCorners,
   DragOverlay,
   defaultDropAnimationSideEffects,
 } from '@dnd-kit/core';
@@ -99,7 +99,7 @@ const DraggableMilestoneGrid: React.FC<DraggableMilestoneGridProps> = ({
     return (
       <DndContext
         sensors={sensors}
-        collisionDetection={closestCenter}
+        collisionDetection={closestCorners}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEndWithCleanup}
       >

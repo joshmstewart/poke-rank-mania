@@ -1,6 +1,6 @@
 
 import React from "react";
-import { DndContext, DragOverlay, closestCenter } from '@dnd-kit/core';
+import { DndContext, DragOverlay, closestCorners } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { BattleType } from "@/hooks/battle/types";
 import { LoadingType } from "@/hooks/pokemon/types";
@@ -72,7 +72,7 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = ({
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCenter}
+      collisionDetection={closestCorners}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
