@@ -34,30 +34,38 @@ export const TourOverlay: React.FC = () => {
           height: rect.height + 16
         });
         
-        // Calculate overlay position
+        // Calculate overlay position with better spacing
         const position = steps[currentStep].position || 'bottom';
+        const cardHeight = 200; // Approximate card height
+        const cardWidth = 320; // Card width
+        const spacing = 30; // Increased spacing from target
         
         let top = 0;
         let left = 0;
         
         switch (position) {
           case 'top':
-            top = rect.top - 20;
+            top = Math.max(rect.top - cardHeight - spacing, 20);
             left = rect.left + rect.width / 2;
             break;
           case 'bottom':
-            top = rect.bottom + 20;
+            // Position significantly lower to avoid covering content
+            top = Math.min(rect.bottom + spacing + 40, window.innerHeight - cardHeight - 20);
             left = rect.left + rect.width / 2;
             break;
           case 'left':
             top = rect.top + rect.height / 2;
-            left = rect.left - 20;
+            left = Math.max(rect.left - cardWidth - spacing, 20);
             break;
           case 'right':
             top = rect.top + rect.height / 2;
-            left = rect.right + 20;
+            left = Math.min(rect.right + spacing, window.innerWidth - cardWidth - 20);
             break;
         }
+        
+        // Ensure the card stays within viewport bounds
+        top = Math.max(20, Math.min(top, window.innerHeight - cardHeight - 20));
+        left = Math.max(20, Math.min(left, window.innerWidth - cardWidth - 20));
         
         setOverlayPosition({ top, left });
       } else {
@@ -104,33 +112,35 @@ export const TourOverlay: React.FC = () => {
         />
       )}
       
-      {/* Tour card */}
+      {/* Tour card positioned lower */}
       <Card 
-        className="absolute pointer-events-auto bg-white p-4 shadow-xl max-w-sm transition-all duration-300 ease-in-out"
+        className="absolute pointer-events-auto bg-white p-6 shadow-xl max-w-sm transition-all duration-300 ease-in-out"
         style={{
           top: overlayPosition.top,
-          left: Math.min(Math.max(overlayPosition.left - 150, 10), window.innerWidth - 320),
-          transform: overlayPosition.left < window.innerWidth / 2 ? 'translateX(0)' : 'translateX(-100%)'
+          left: overlayPosition.left,
+          transform: overlayPosition.left > window.innerWidth / 2 ? 'translateX(-100%)' : 'translateX(0)',
+          maxWidth: '320px',
+          zIndex: 60
         }}
       >
-        <div className="flex justify-between items-start mb-3">
-          <h3 className="text-lg font-semibold">{currentStepData.title}</h3>
+        <div className="flex justify-between items-start mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">{currentStepData.title}</h3>
           <Button
             variant="ghost"
             size="sm"
             onClick={endTour}
-            className="p-1 h-auto"
+            className="p-1 h-auto -mt-1 -mr-1"
           >
             <X className="w-4 h-4" />
           </Button>
         </div>
         
-        <p className="text-sm text-gray-600 mb-4">
+        <p className="text-sm text-gray-600 mb-6 leading-relaxed">
           {currentStepData.content}
         </p>
         
         <div className="flex justify-between items-center">
-          <span className="text-xs text-gray-500">
+          <span className="text-xs text-gray-500 font-medium">
             {currentStep + 1} of {steps.length}
           </span>
           
@@ -140,6 +150,7 @@ export const TourOverlay: React.FC = () => {
                 variant="outline"
                 size="sm"
                 onClick={prevStep}
+                className="flex items-center"
               >
                 <ArrowLeft className="w-4 h-4 mr-1" />
                 Back
@@ -149,6 +160,7 @@ export const TourOverlay: React.FC = () => {
             <Button
               size="sm"
               onClick={nextStep}
+              className="flex items-center"
             >
               {currentStep === steps.length - 1 ? 'Finish' : 'Next'}
               {currentStep < steps.length - 1 && <ArrowRight className="w-4 h-4 ml-1" />}
