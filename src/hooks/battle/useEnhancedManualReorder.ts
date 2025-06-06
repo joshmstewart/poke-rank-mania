@@ -85,6 +85,14 @@ export const useEnhancedManualReorder = (
     console.log('🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Target position (newIndex):', newIndex);
     console.log('🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] preventAutoResorting:', preventAutoResorting);
     
+    // CRITICAL: Special logging for Darumaka (ID 554) drag scenario
+    if (draggedPokemon.id === 554) {
+      console.log(`🎯🎯🎯 [DARUMAKA_BUG_TRACE_${operationId}] ===== DARUMAKA BEING MOVED =====`);
+      console.log(`🎯🎯🎯 [DARUMAKA_BUG_TRACE_${operationId}] Current score: ${draggedPokemon.score}`);
+      console.log(`🎯🎯🎯 [DARUMAKA_BUG_TRACE_${operationId}] Current rating:`, draggedPokemon.rating);
+      console.log(`🎯🎯🎯 [DARUMAKA_BUG_TRACE_${operationId}] Target index: ${newIndex}`);
+    }
+    
     // CRITICAL: Log Charmander's current state if this is Charmander
     if (draggedPokemon.id === 4) {
       console.log(`🔥🔥🔥 [CHARMANDER_TRACE_${operationId}] ===== CHARMANDER BEING MOVED =====`);
@@ -134,6 +142,21 @@ export const useEnhancedManualReorder = (
     console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Target Pokemon: ${draggedPokemon.name} (ID: ${draggedPokemon.id}) at final position ${newIndex}`);
     console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Below Pokemon:`, belowPokemon ? `${belowPokemon.name} (ID: ${belowPokemon.id}) at final position ${newIndex + 1}` : 'None (bottom position)');
     
+    // CRITICAL: Special case for Darumaka between Voltorb-hisui and Cubchoo
+    if (draggedPokemon.id === 554) {
+      console.log(`🎯🎯🎯 [DARUMAKA_BUG_TRACE_${operationId}] ===== DARUMAKA NEIGHBOR ANALYSIS =====`);
+      if (abovePokemon) {
+        console.log(`🎯🎯🎯 [DARUMAKA_BUG_TRACE_${operationId}] Above: ${abovePokemon.name} (ID: ${abovePokemon.id})`);
+        console.log(`🎯🎯🎯 [DARUMAKA_BUG_TRACE_${operationId}] Above score: ${abovePokemon.score}`);
+        console.log(`🎯🎯🎯 [DARUMAKA_BUG_TRACE_${operationId}] Is Voltorb-hisui (10231)? ${abovePokemon.id === 10231}`);
+      }
+      if (belowPokemon) {
+        console.log(`🎯🎯🎯 [DARUMAKA_BUG_TRACE_${operationId}] Below: ${belowPokemon.name} (ID: ${belowPokemon.id})`);
+        console.log(`🎯🎯🎯 [DARUMAKA_BUG_TRACE_${operationId}] Below score: ${belowPokemon.score}`);
+        console.log(`🎯🎯🎯 [DARUMAKA_BUG_TRACE_${operationId}] Is Cubchoo (613)? ${belowPokemon.id === 613}`);
+      }
+    }
+    
     // CRITICAL: Get neighbor ratings and scores from TrueSkill store (most current)
     let aboveScore = 0, belowScore = 0;
     
@@ -142,6 +165,14 @@ export const useEnhancedManualReorder = (
       aboveScore = aboveRating.mu - aboveRating.sigma;
       console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Above ${abovePokemon.name}: TrueSkill μ=${aboveRating.mu.toFixed(5)}, σ=${aboveRating.sigma.toFixed(5)}, calculated score=${aboveScore.toFixed(5)}`);
       console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Above ${abovePokemon.name}: Display score from object=${abovePokemon.score.toFixed(5)}`);
+      
+      // CRITICAL: Special logging for Darumaka's above neighbor
+      if (draggedPokemon.id === 554) {
+        console.log(`🎯🎯🎯 [DARUMAKA_BUG_TRACE_${operationId}] Above neighbor score calculation:`);
+        console.log(`🎯🎯🎯 [DARUMAKA_BUG_TRACE_${operationId}] TrueSkill: μ=${aboveRating.mu.toFixed(5)}, σ=${aboveRating.sigma.toFixed(5)}`);
+        console.log(`🎯🎯🎯 [DARUMAKA_BUG_TRACE_${operationId}] Calculated: ${aboveScore.toFixed(5)}`);
+        console.log(`🎯🎯🎯 [DARUMAKA_BUG_TRACE_${operationId}] Expected ~23.67: ${Math.abs(aboveScore - 23.67) < 0.1 ? 'MATCH' : 'MISMATCH'}`);
+      }
     }
     
     if (belowPokemon) {
@@ -149,6 +180,14 @@ export const useEnhancedManualReorder = (
       belowScore = belowRating.mu - belowRating.sigma;
       console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Below ${belowPokemon.name}: TrueSkill μ=${belowRating.mu.toFixed(5)}, σ=${belowRating.sigma.toFixed(5)}, calculated score=${belowScore.toFixed(5)}`);
       console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Below ${belowPokemon.name}: Display score from object=${belowPokemon.score.toFixed(5)}`);
+      
+      // CRITICAL: Special logging for Darumaka's below neighbor
+      if (draggedPokemon.id === 554) {
+        console.log(`🎯🎯🎯 [DARUMAKA_BUG_TRACE_${operationId}] Below neighbor score calculation:`);
+        console.log(`🎯🎯🎯 [DARUMAKA_BUG_TRACE_${operationId}] TrueSkill: μ=${belowRating.mu.toFixed(5)}, σ=${belowRating.sigma.toFixed(5)}`);
+        console.log(`🎯🎯🎯 [DARUMAKA_BUG_TRACE_${operationId}] Calculated: ${belowScore.toFixed(5)}`);
+        console.log(`🎯🎯🎯 [DARUMAKA_BUG_TRACE_${operationId}] Expected ~22.12: ${Math.abs(belowScore - 22.12) < 0.1 ? 'MATCH' : 'MISMATCH'}`);
+      }
     }
     
     // Calculate target score based on final position with LARGER GAPS
@@ -160,10 +199,26 @@ export const useEnhancedManualReorder = (
       console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Current gap between neighbors: ${currentGap.toFixed(5)}`);
       console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Required gap threshold: ${SCORE_GAP * 2}`);
       
+      // CRITICAL: Special case for Darumaka
+      if (draggedPokemon.id === 554) {
+        console.log(`🎯🎯🎯 [DARUMAKA_BUG_TRACE_${operationId}] ===== DARUMAKA TARGET CALCULATION =====`);
+        console.log(`🎯🎯🎯 [DARUMAKA_BUG_TRACE_${operationId}] Above score: ${aboveScore.toFixed(5)}`);
+        console.log(`🎯🎯🎯 [DARUMAKA_BUG_TRACE_${operationId}] Below score: ${belowScore.toFixed(5)}`);
+        console.log(`🎯🎯🎯 [DARUMAKA_BUG_TRACE_${operationId}] Gap: ${currentGap.toFixed(5)}`);
+        console.log(`🎯🎯🎯 [DARUMAKA_BUG_TRACE_${operationId}] Expected average: ${((aboveScore + belowScore) / 2).toFixed(5)}`);
+        console.log(`🎯🎯🎯 [DARUMAKA_BUG_TRACE_${operationId}] Expected range: 22.1 - 23.6`);
+      }
+      
       if (currentGap < SCORE_GAP * 2) {
         // Not enough gap - adjust the scores of surrounding Pokemon first
         console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] INSUFFICIENT GAP: ${currentGap.toFixed(3)} < ${SCORE_GAP * 2}`);
         console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] ⚠️ ADJUSTING NEIGHBOR SCORES ⚠️`);
+        
+        // CRITICAL: This is likely where Darumaka's score gets messed up!
+        if (draggedPokemon.id === 554) {
+          console.log(`🎯🎯🎯 [DARUMAKA_BUG_TRACE_${operationId}] ⚠️ NEIGHBOR ADJUSTMENT TRIGGERED ⚠️`);
+          console.log(`🎯🎯🎯 [DARUMAKA_BUG_TRACE_${operationId}] This might be causing the bug!`);
+        }
         
         // Get current neighbor ratings
         const aboveRating = getRating(abovePokemon.id.toString());
@@ -176,6 +231,14 @@ export const useEnhancedManualReorder = (
         console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Old above ${abovePokemon.name} μ: ${aboveRating.mu.toFixed(5)} -> New μ: ${newAboveMu.toFixed(5)}`);
         console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Old below ${belowPokemon.name} μ: ${belowRating.mu.toFixed(5)} -> New μ: ${newBelowMu.toFixed(5)}`);
         
+        // CRITICAL: Log Darumaka's neighbor adjustments
+        if (draggedPokemon.id === 554) {
+          console.log(`🎯🎯🎯 [DARUMAKA_BUG_TRACE_${operationId}] ===== NEIGHBOR ADJUSTMENT DETAILS =====`);
+          console.log(`🎯🎯🎯 [DARUMAKA_BUG_TRACE_${operationId}] Above ${abovePokemon.name}: ${aboveRating.mu.toFixed(5)} -> ${newAboveMu.toFixed(5)}`);
+          console.log(`🎯🎯🎯 [DARUMAKA_BUG_TRACE_${operationId}] Below ${belowPokemon.name}: ${belowRating.mu.toFixed(5)} -> ${newBelowMu.toFixed(5)}`);
+          console.log(`🎯🎯🎯 [DARUMAKA_BUG_TRACE_${operationId}] SCORE_GAP: ${SCORE_GAP}, MIN_SIGMA: ${MIN_SIGMA}`);
+        }
+        
         updateRating(abovePokemon.id.toString(), new Rating(newAboveMu, Math.max(aboveRating.sigma * 0.9, MIN_SIGMA)));
         updateRating(belowPokemon.id.toString(), new Rating(newBelowMu, Math.max(belowRating.sigma * 0.9, MIN_SIGMA)));
         
@@ -187,10 +250,26 @@ export const useEnhancedManualReorder = (
         targetDisplayedScore = (newAboveDisplayScore + newBelowDisplayScore) / 2;
         
         console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Target based on adjusted neighbors: (${newAboveDisplayScore.toFixed(5)} + ${newBelowDisplayScore.toFixed(5)}) / 2 = ${targetDisplayedScore.toFixed(5)}`);
+        
+        // CRITICAL: Log Darumaka's final target after neighbor adjustment
+        if (draggedPokemon.id === 554) {
+          console.log(`🎯🎯🎯 [DARUMAKA_BUG_TRACE_${operationId}] ===== DARUMAKA TARGET AFTER ADJUSTMENT =====`);
+          console.log(`🎯🎯🎯 [DARUMAKA_BUG_TRACE_${operationId}] New above score: ${newAboveDisplayScore.toFixed(5)}`);
+          console.log(`🎯🎯🎯 [DARUMAKA_BUG_TRACE_${operationId}] New below score: ${newBelowDisplayScore.toFixed(5)}`);
+          console.log(`🎯🎯🎯 [DARUMAKA_BUG_TRACE_${operationId}] Calculated target: ${targetDisplayedScore.toFixed(5)}`);
+          console.log(`🎯🎯🎯 [DARUMAKA_BUG_TRACE_${operationId}] Should be ~22.9 but might be way off!`);
+        }
       } else {
         // Sufficient gap exists - use simple average
         targetDisplayedScore = (aboveScore + belowScore) / 2;
         console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Target based on existing gap: (${aboveScore.toFixed(5)} + ${belowScore.toFixed(5)}) / 2 = ${targetDisplayedScore.toFixed(5)}`);
+        
+        // CRITICAL: Log Darumaka's simple average calculation
+        if (draggedPokemon.id === 554) {
+          console.log(`🎯🎯🎯 [DARUMAKA_BUG_TRACE_${operationId}] ===== DARUMAKA SIMPLE AVERAGE =====`);
+          console.log(`🎯🎯🎯 [DARUMAKA_BUG_TRACE_${operationId}] Simple average: ${targetDisplayedScore.toFixed(5)}`);
+          console.log(`🎯🎯🎯 [DARUMAKA_BUG_TRACE_${operationId}] Expected ~22.9: ${Math.abs(targetDisplayedScore - 22.9) < 0.5 ? 'GOOD' : 'BAD'}`);
+        }
       }
       
       console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] BETWEEN TWO: above=${aboveScore.toFixed(5)}, below=${belowScore.toFixed(5)}, target=${targetDisplayedScore.toFixed(5)}`);
@@ -225,6 +304,14 @@ export const useEnhancedManualReorder = (
       console.log(`🔥🔥🔥 [CHARMANDER_TRACE_${operationId}] Expected final score: ${(newMu - newSigma).toFixed(5)}`);
     }
     
+    // CRITICAL: Log before updating if this is Darumaka
+    if (draggedPokemon.id === 554) {
+      console.log(`🎯🎯🎯 [DARUMAKA_BUG_TRACE_${operationId}] ===== BEFORE TRUESKILL UPDATE =====`);
+      console.log(`🎯🎯🎯 [DARUMAKA_BUG_TRACE_${operationId}] About to set μ=${newMu.toFixed(5)}, σ=${newSigma.toFixed(5)}`);
+      console.log(`🎯🎯🎯 [DARUMAKA_BUG_TRACE_${operationId}] Expected final score: ${(newMu - newSigma).toFixed(5)}`);
+      console.log(`🎯🎯🎯 [DARUMAKA_BUG_TRACE_${operationId}] Should be in range 22.1-23.6: ${(newMu - newSigma) >= 22.1 && (newMu - newSigma) <= 23.6 ? 'YES' : 'NO'}`);
+    }
+    
     // Update the rating in the store
     const newRating = new Rating(newMu, newSigma);
     updateRating(draggedPokemon.id.toString(), newRating);
@@ -242,6 +329,16 @@ export const useEnhancedManualReorder = (
       console.log(`🔥🔥🔥 [CHARMANDER_TRACE_${operationId}] Calculated score: ${(verifyRating.mu - verifyRating.sigma).toFixed(5)}`);
       console.log(`🔥🔥🔥 [CHARMANDER_TRACE_${operationId}] Target was: ${targetDisplayedScore.toFixed(5)}`);
       console.log(`🔥🔥🔥 [CHARMANDER_TRACE_${operationId}] Match? ${Math.abs((verifyRating.mu - verifyRating.sigma) - targetDisplayedScore) < 0.001 ? 'YES' : 'NO'}`);
+    }
+    
+    // CRITICAL: Log after updating if this is Darumaka
+    if (draggedPokemon.id === 554) {
+      console.log(`🎯🎯🎯 [DARUMAKA_BUG_TRACE_${operationId}] ===== AFTER TRUESKILL UPDATE =====`);
+      console.log(`🎯🎯🎯 [DARUMAKA_BUG_TRACE_${operationId}] Stored μ=${verifyRating.mu.toFixed(5)}, σ=${verifyRating.sigma.toFixed(5)}`);
+      console.log(`🎯🎯🎯 [DARUMAKA_BUG_TRACE_${operationId}] Calculated score: ${(verifyRating.mu - verifyRating.sigma).toFixed(5)}`);
+      console.log(`🎯🎯🎯 [DARUMAKA_BUG_TRACE_${operationId}] Target was: ${targetDisplayedScore.toFixed(5)}`);
+      console.log(`🎯🎯🎯 [DARUMAKA_BUG_TRACE_${operationId}] Match? ${Math.abs((verifyRating.mu - verifyRating.sigma) - targetDisplayedScore) < 0.001 ? 'YES' : 'NO'}`);
+      console.log(`🎯🎯🎯 [DARUMAKA_BUG_TRACE_${operationId}] In expected range? ${(verifyRating.mu - verifyRating.sigma) >= 22.1 && (verifyRating.mu - verifyRating.sigma) <= 23.6 ? 'YES' : 'NO'}`);
     }
     
     console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] ✅ Pokemon ${draggedPokemon.name} should now stay at position ${newIndex} with increased score gap`);
@@ -274,6 +371,17 @@ export const useEnhancedManualReorder = (
         console.log(`🔥 [CHARMANDER_RECALC] Calculated score: ${conservativeEstimate.toFixed(5)}`);
         console.log(`🔥 [CHARMANDER_RECALC] Previous score: ${pokemon.score.toFixed(5)}`);
         console.log(`🔥 [CHARMANDER_RECALC] Score changed: ${Math.abs(conservativeEstimate - pokemon.score) > 0.001 ? 'YES' : 'NO'}`);
+      }
+      
+      // CRITICAL: Log Darumaka's recalculation
+      if (pokemon.id === 554) {
+        console.log(`🎯🎯🎯 [DARUMAKA_RECALC] ===== DARUMAKA RECALCULATION =====`);
+        console.log(`🎯🎯🎯 [DARUMAKA_RECALC] Position in array: ${index}`);
+        console.log(`🎯🎯🎯 [DARUMAKA_RECALC] From TrueSkill store: μ=${rating.mu.toFixed(5)}, σ=${rating.sigma.toFixed(5)}`);
+        console.log(`🎯🎯🎯 [DARUMAKA_RECALC] Calculated score: ${conservativeEstimate.toFixed(5)}`);
+        console.log(`🎯🎯🎯 [DARUMAKA_RECALC] Previous score: ${pokemon.score.toFixed(5)}`);
+        console.log(`🎯🎯🎯 [DARUMAKA_RECALC] Score changed: ${Math.abs(conservativeEstimate - pokemon.score) > 0.001 ? 'YES' : 'NO'}`);
+        console.log(`🎯🎯🎯 [DARUMAKA_RECALC] In expected range 22.1-23.6? ${conservativeEstimate >= 22.1 && conservativeEstimate <= 23.6 ? 'YES' : 'NO'}`);
       }
       
       return {
