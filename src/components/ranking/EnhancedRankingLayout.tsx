@@ -7,7 +7,7 @@ import { LoadingType } from "@/hooks/pokemon/types";
 import { RankingsSection } from "./RankingsSection";
 import { EnhancedAvailablePokemonSection } from "./EnhancedAvailablePokemonSection";
 import UnifiedControls from "@/components/shared/UnifiedControls";
-import PokemonCard from "@/components/PokemonCard";
+import DraggablePokemonMilestoneCard from "@/components/battle/DraggablePokemonMilestoneCard";
 import { Card } from "@/components/ui/card";
 
 interface EnhancedRankingLayoutProps {
@@ -73,17 +73,36 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = ({
   // Determine the correct props based on drag source
   const getDragOverlayProps = () => {
     if (!dragSourceInfo) {
-      return { compact: false, viewMode: "list" as const };
+      return { 
+        context: "available" as const, 
+        isAvailable: false, 
+        isDraggable: false,
+        index: 0,
+        showRank: false
+      };
     }
 
     if (dragSourceInfo.fromAvailable) {
-      // Dragging from available section - these cards use compact=false, viewMode="list"
-      console.log(`🎨 [DRAG_OVERLAY] Using available section props: compact=false, viewMode="list"`);
-      return { compact: false, viewMode: "list" as const };
+      // Dragging from available section
+      console.log(`🎨 [DRAG_OVERLAY] Using available section props`);
+      return { 
+        context: "available" as const, 
+        isAvailable: true, 
+        isDraggable: false,
+        index: 0,
+        showRank: false
+      };
     } else {
-      // Dragging from rankings section - these cards also use compact=false, viewMode="list"
-      console.log(`🎨 [DRAG_OVERLAY] Using rankings section props: compact=false, viewMode="list"`);
-      return { compact: false, viewMode: "list" as const };
+      // Dragging from rankings section
+      console.log(`🎨 [DRAG_OVERLAY] Using rankings section props`);
+      const rankIndex = displayRankings.findIndex(p => p.id === activeDraggedPokemon?.id);
+      return { 
+        context: "ranked" as const, 
+        isAvailable: false, 
+        isDraggable: false,
+        index: rankIndex >= 0 ? rankIndex : 0,
+        showRank: true
+      };
     }
   };
 
@@ -146,15 +165,17 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = ({
           </div>
         </div>
 
-        {/* Drag Overlay - Match exact props from source */}
+        {/* Drag Overlay - Now uses DraggablePokemonMilestoneCard */}
         <DragOverlay>
           {activeDraggedPokemon ? (
             <div className="transform rotate-2 scale-105 opacity-95 z-50">
-              <PokemonCard
+              <DraggablePokemonMilestoneCard
                 pokemon={activeDraggedPokemon}
-                compact={overlayProps.compact}
-                viewMode={overlayProps.viewMode}
-                isDragging={true}
+                context={overlayProps.context}
+                isAvailable={overlayProps.isAvailable}
+                isDraggable={overlayProps.isDraggable}
+                index={overlayProps.index}
+                showRank={overlayProps.showRank}
               />
             </div>
           ) : null}
