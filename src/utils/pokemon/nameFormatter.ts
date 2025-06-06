@@ -17,6 +17,11 @@ import { handleGeneralFormFormatting } from './generalFormFormatting';
 export const formatPokemonName = (name: string): string => {
   if (!name) return '';
   
+  // Add debugging for Deoxys specifically
+  if (name.toLowerCase().includes('deoxys')) {
+    console.log(`🎯 [NAME_FORMATTER_DEBUG] Processing Pokemon name: "${name}"`);
+  }
+  
   // Check if this Pokemon should be filtered out
   if (shouldFilterPokemon(name)) {
     return ''; // Return empty to filter out
@@ -25,41 +30,62 @@ export const formatPokemonName = (name: string): string => {
   // Handle special cases first (Zygarde, Nidoran, Greninja Ash, Maushold)
   const specialCaseResult = handleSpecialCases(name);
   if (specialCaseResult) {
+    if (name.toLowerCase().includes('deoxys')) {
+      console.log(`🎯 [NAME_FORMATTER_DEBUG] Special case handled: "${name}" -> "${specialCaseResult}"`);
+    }
     return specialCaseResult;
   }
   
   // Handle variants that should be moved to front (Iron, Great, etc.)
   const variantFormattingResult = handleVariantFormatting(name);
   if (variantFormattingResult) {
+    if (name.toLowerCase().includes('deoxys')) {
+      console.log(`🎯 [NAME_FORMATTER_DEBUG] Variant formatting handled: "${name}" -> "${variantFormattingResult}"`);
+    }
     return variantFormattingResult;
   }
   
   // Try special forms first (G-Max, Mega, Primal, Origin, Deoxys, etc.)
   const specialFormResult = handleSpecialForms(name);
   if (specialFormResult) {
+    if (name.toLowerCase().includes('deoxys')) {
+      console.log(`🎯 [NAME_FORMATTER_DEBUG] Special form handled: "${name}" -> "${specialFormResult}"`);
+    }
     return specialFormResult;
   }
   
   // Try regional forms (Alolan, Galarian, Hisuian, Paldean)
   const regionalFormResult = handleRegionalForms(name);
   if (regionalFormResult) {
+    if (name.toLowerCase().includes('deoxys')) {
+      console.log(`🎯 [NAME_FORMATTER_DEBUG] Regional form handled: "${name}" -> "${regionalFormResult}"`);
+    }
     return regionalFormResult;
   }
   
   // Try Pokemon variants (Miraidon, Koraidon, Totem, Hero, etc.)
   const variantResult = handlePokemonVariants(name);
   if (variantResult) {
+    if (name.toLowerCase().includes('deoxys')) {
+      console.log(`🎯 [NAME_FORMATTER_DEBUG] Pokemon variant handled: "${name}" -> "${variantResult}"`);
+    }
     return variantResult;
   }
   
   // Handle general form formatting (form descriptor moved to front)
   const generalFormResult = handleGeneralFormFormatting(name);
   if (generalFormResult) {
+    if (name.toLowerCase().includes('deoxys')) {
+      console.log(`🎯 [NAME_FORMATTER_DEBUG] General form handled: "${name}" -> "${generalFormResult}"`);
+    }
     return generalFormResult;
   }
   
   // Default: Capitalize the first letter of every word (including after hyphens)
   const result = capitalizeWords(name);
+  if (name.toLowerCase().includes('deoxys')) {
+    console.log(`🎯 [NAME_FORMATTER_DEBUG] Default capitalization: "${name}" -> "${result}"`);
+  }
   return result;
 };
 
