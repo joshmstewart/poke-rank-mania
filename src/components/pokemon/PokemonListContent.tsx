@@ -1,5 +1,4 @@
 
-
 import React from "react";
 import { Pokemon } from "@/services/pokemon";
 import { Card } from "@/components/ui/card";
@@ -10,7 +9,6 @@ import GenerationHeader from "./GenerationHeader";
 import { VotingArrows } from "@/components/ranking/VotingArrows";
 import DraggablePokemonMilestoneCard from "@/components/battle/DraggablePokemonMilestoneCard";
 import { formatPokemonName } from "@/utils/pokemon";
-import { Star } from "lucide-react";
 
 interface PokemonListContentProps {
   items: any[];
@@ -79,59 +77,23 @@ export const PokemonListContent: React.FC<PokemonListContentProps> = ({
             name: formatPokemonName(pokemon.name)
           };
 
-          // For available Pokemon (non-ranking area), use original card format with star
+          // Use the enhanced card component for available Pokemon to match rankings styling
           if (!isRankingArea) {
             return (
-              <Card 
+              <DraggablePokemonMilestoneCard
                 key={`pokemon-${pokemon.id}-${index}`}
-                className="relative group hover:shadow-lg transition-shadow bg-white border border-gray-200"
-              >
-                {/* Star button in bottom-right corner - CRITICAL: Use pointer-events-none on container and pointer-events-auto on button */}
-                <div className="absolute bottom-2 right-2 z-20 pointer-events-none">
-                  <button 
-                    className="w-8 h-8 flex items-center justify-center rounded-full bg-white hover:bg-yellow-50 border-2 border-gray-300 hover:border-yellow-400 transition-all duration-200 shadow-sm pointer-events-auto"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      console.log(`⭐ Star clicked for ${formattedPokemon.name}`);
-                    }}
-                    onPointerDown={(e) => {
-                      e.stopPropagation();
-                    }}
-                    onMouseDown={(e) => {
-                      e.stopPropagation();
-                    }}
-                  >
-                    <Star 
-                      size={16} 
-                      className="text-gray-500 hover:text-yellow-500 transition-colors" 
-                      fill="none"
-                    />
-                  </button>
-                </div>
-
-                <PokemonInfoModal pokemon={formattedPokemon}>
-                  <div className="p-4 cursor-pointer">
-                    <PokemonCardImage 
-                      pokemonId={formattedPokemon.id}
-                      displayName={formattedPokemon.name}
-                      imageUrl={formattedPokemon.image}
-                      compact={false}
-                      className=""
-                    />
-                    <PokemonCardInfo 
-                      pokemonId={formattedPokemon.id}
-                      displayName={formattedPokemon.name}
-                      types={formattedPokemon.types}
-                      flavorText={formattedPokemon.flavorText}
-                    />
-                  </div>
-                </PokemonInfoModal>
-              </Card>
+                pokemon={formattedPokemon}
+                index={index}
+                isPending={false}
+                showRank={false}
+                isDraggable={true}
+                isAvailable={true}
+                context="available"
+              />
             );
           }
 
-          // Original card for ranking area - keep exactly as before
+          // Original card for ranking area - make images larger here too
           return (
             <Card 
               key={`pokemon-${pokemon.id}-${isRankingArea ? 'ranked' : 'available'}-${index}`}
@@ -178,4 +140,3 @@ export const PokemonListContent: React.FC<PokemonListContentProps> = ({
     </div>
   );
 };
-
