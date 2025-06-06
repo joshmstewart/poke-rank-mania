@@ -45,9 +45,25 @@ export const useTrueSkillSync = (preventAutoResorting: boolean = false) => {
     const ratings = getAllRatings();
     console.log('🔄🔄🔄 [TRUESKILL_SYNC_RANKING_GENERATION] Retrieved ratings from store:', Object.keys(ratings).length);
     
+    // CRITICAL FIX: Only include Pokemon that have actually been rated (battleCount > 0)
+    const ratedPokemonEntries = Object.entries(ratings).filter(([pokemonId, rating]) => {
+      const hasRating = rating && (rating.battleCount || 0) > 0;
+      if (!hasRating) {
+        console.log(`🔄🔄🔄 [TRUESKILL_SYNC_FILTER] Skipping Pokemon ${pokemonId} - no battles yet`);
+      }
+      return hasRating;
+    });
+    
+    console.log('🔄🔄🔄 [TRUESKILL_SYNC_RANKING_GENERATION] Pokemon with battles:', ratedPokemonEntries.length);
+    
+    if (ratedPokemonEntries.length === 0) {
+      console.log('🔄🔄🔄 [TRUESKILL_SYNC_RANKING_GENERATION] No Pokemon have been battled yet');
+      return [];
+    }
+    
     const rankedPokemon: RankedPokemon[] = [];
     
-    Object.entries(ratings).forEach(([pokemonId, rating]) => {
+    ratedPokemonEntries.forEach(([pokemonId, rating]) => {
       const pokemon = pokemonLookupMap.get(parseInt(pokemonId));
       if (!pokemon) {
         console.warn('🔄 [TRUESKILL_SYNC] Pokemon not found in lookup map:', pokemonId);
@@ -60,7 +76,7 @@ export const useTrueSkillSync = (preventAutoResorting: boolean = false) => {
       // CRITICAL: Apply safe name formatting here
       const formattedName = safeFormatPokemonName(pokemon.name);
       
-      console.log(`🔄🔄🔄 [TRUESKILL_SYNC_SCORE_CALC] ${formattedName}: μ=${rating.mu.toFixed(3)}, σ=${rating.sigma.toFixed(3)}, score=${conservativeEstimate.toFixed(3)}`);
+      console.log(`🔄🔄🔄 [TRUESKILL_SYNC_SCORE_CALC] ${formattedName}: μ=${rating.mu.toFixed(3)}, σ=${rating.sigma.toFixed(3)}, score=${conservativeEstimate.toFixed(3)}, battles=${rating.battleCount}`);
       
       rankedPokemon.push({
         ...pokemon,
