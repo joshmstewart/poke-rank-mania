@@ -32,20 +32,26 @@ export const handleSpecialForms = (name: string): string | null => {
   
   // Handle Deoxys forms - move the form to front
   if (lowerName.includes('deoxys-')) {
-    console.log(`🔧 [DEOXYS_DEBUG] Processing Deoxys form: "${name}"`);
+    console.log(`🔧 [DEOXYS_DEBUG] Processing Deoxys form: "${name}" (lowercase: "${lowerName}")`);
     
     if (lowerName.includes('deoxys-normal')) {
+      console.log(`🔧 [DEOXYS_DEBUG] Normal form detected`);
       return 'Deoxys'; // Normal form is just "Deoxys"
     }
     if (lowerName.includes('deoxys-attack')) {
+      console.log(`🔧 [DEOXYS_DEBUG] Attack form detected`);
       return 'Attack Deoxys';
     }
     if (lowerName.includes('deoxys-defense')) {
+      console.log(`🔧 [DEOXYS_DEBUG] Defense form detected`);
       return 'Defense Deoxys';
     }
     if (lowerName.includes('deoxys-speed')) {
+      console.log(`🔧 [DEOXYS_DEBUG] Speed form detected`);
       return 'Speed Deoxys';
     }
+    
+    console.log(`🔧 [DEOXYS_DEBUG] No specific form matched for: "${name}"`);
   }
   
   // Handle other special forms that should have the form moved to front
