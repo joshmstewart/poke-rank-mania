@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from "react";
 import { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import { useTrueSkillStore } from "@/stores/trueskillStore";
@@ -76,10 +77,14 @@ export const useEnhancedRankingDragDrop = (
         const pokemon = enhancedAvailablePokemon.find(p => p.id === pokemonId);
         if (pokemon) {
           console.log(`🚀🚀🚀 [ENHANCED_DRAG_END] ✅ Found pokemon: ${pokemon.name}`);
-          console.log(`🚀🚀🚀 [ENHANCED_DRAG_END] Is already ranked: ${pokemon.isRanked}`);
           
-          if (pokemon.isRanked) {
-            // CASE A: Pokemon is already ranked - trigger re-ranking
+          // CRITICAL FIX: Check if Pokemon is actually in the current rankings, not just if it has a rating
+          const isActuallyInRankings = localRankings.some(p => p.id === pokemonId);
+          console.log(`🚀🚀🚀 [ENHANCED_DRAG_END] Is actually in current rankings: ${isActuallyInRankings}`);
+          console.log(`🚀🚀🚀 [ENHANCED_DRAG_END] pokemon.isRanked flag: ${pokemon.isRanked}`);
+          
+          if (isActuallyInRankings) {
+            // CASE A: Pokemon is already in rankings - trigger re-ranking
             console.log(`🔥🔥🔥 [RE_RANK_POKEMON] ===== RE-RANKING EXISTING POKEMON =====`);
             console.log(`🔥🔥🔥 [RE_RANK_POKEMON] Pokemon ${pokemonId} (${pokemon.name}) currently at rank ${pokemon.currentRank}`);
             
@@ -90,7 +95,6 @@ export const useEnhancedRankingDragDrop = (
                 duration: 3000
               });
               
-              // Trigger re-ranking process
               await triggerReRanking(pokemonId);
               
               console.log(`🔥🔥🔥 [RE_RANK_POKEMON] ✅ Re-ranking completed for ${pokemon.name}`);
@@ -112,9 +116,9 @@ export const useEnhancedRankingDragDrop = (
             }
             
           } else {
-            // CASE B: Pokemon is not ranked - add as new
+            // CASE B: Pokemon is not in rankings - add as new
             console.log(`🌟🌟🌟 [ADD_NEW_POKEMON] ===== ADDING NEW POKEMON =====`);
-            console.log(`🌟🌟🌟 [ADD_NEW_POKEMON] Pokemon ${pokemonId} (${pokemon.name}) - first time ranking`);
+            console.log(`🌟🌟🌟 [ADD_NEW_POKEMON] Pokemon ${pokemonId} (${pokemon.name}) - adding to rankings`);
             
             // Determine insertion position
             let insertionPosition = localRankings.length;
@@ -129,16 +133,16 @@ export const useEnhancedRankingDragDrop = (
               }
             }
             
-            // Add default rating to TrueSkill store
+            // Add default rating to TrueSkill store if it doesn't exist
             const defaultRating = new Rating(25.0, 8.333);
             updateRating(pokemonId.toString(), defaultRating);
-            console.log(`🌟🌟🌟 [ADD_NEW_POKEMON] ✅ Added default rating to TrueSkill store`);
+            console.log(`🌟🌟🌟 [ADD_NEW_POKEMON] ✅ Added/updated rating in TrueSkill store`);
             
             // Remove from available list
             setAvailablePokemon(prev => prev.filter(p => p.id !== pokemonId));
             console.log(`🌟🌟🌟 [ADD_NEW_POKEMON] ✅ Removed from available list`);
             
-            // Use the SAME enhanced manual reorder function with -1 source index
+            // Use the enhanced manual reorder function with -1 source index
             // to indicate this is a new addition, not a reorder
             handleEnhancedManualReorder(pokemonId, -1, insertionPosition);
             console.log(`🌟🌟🌟 [ADD_NEW_POKEMON] ✅ Called handleEnhancedManualReorder with -1 source index`);
