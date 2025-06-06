@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import { LoadingType } from "@/hooks/pokemon/types";
-import { usePokemonGrouping } from "@/hooks/pokemon/usePokemonGrouping";
+import { usePokemonGroupingMemo } from "@/hooks/pokemon/usePokemonGroupingMemo";
 import { useGenerationExpansion } from "@/hooks/pokemon/useGenerationExpansion";
 import { useAvailablePokemonGenerations } from "@/hooks/pokemon/useAvailablePokemonGenerations";
 import { useSearchMatches } from "@/hooks/pokemon/useSearchMatches";
@@ -61,12 +61,13 @@ export const EnhancedAvailablePokemonSection: React.FC<EnhancedAvailablePokemonS
     return isGenerationExpanded(genId);
   };
 
-  const { items, showGenerationHeaders } = usePokemonGrouping(
-    enhancedAvailablePokemon,
+  // Use memoized Pokemon grouping
+  const { items, showGenerationHeaders } = usePokemonGroupingMemo({
+    pokemon: enhancedAvailablePokemon,
     searchTerm,
-    false, // This is not the ranking area
-    isGenerationExpandedForDisplay
-  );
+    isRankingArea: false,
+    isGenerationExpanded: isGenerationExpandedForDisplay
+  });
 
   const allExpanded = expandedGenerations.size === availableGenerations.length && availableGenerations.length > 0;
 
