@@ -188,18 +188,33 @@ export const useEnhancedRankingDragDrop = (
               }
             }
 
-            // Calculate the proper TrueSkill rating for the drop position
+            // MATHEMATICAL PROOF STEP 1: Calculate the proper TrueSkill rating for the drop position
             const targetRating = calculateTargetRatingForPosition(insertionPosition, localRankings);
-            console.log(`🔥🔥🔥 [ADD_NEW_POKEMON] ✅ Calculated target rating: μ=${targetRating.mu.toFixed(5)}, σ=${targetRating.sigma.toFixed(5)}`);
+            const calculatedTargetScore = targetRating.mu - targetRating.sigma;
             
-            // Update TrueSkill store with the calculated rating
+            console.log(`🧮🧮🧮 [MATHEMATICAL_PROOF_1] ===== SCORE CALCULATION STEP 1 =====`);
+            console.log(`🧮🧮🧮 [MATHEMATICAL_PROOF_1] Pokemon: ${pokemon.name} (ID: ${pokemonId})`);
+            console.log(`🧮🧮🧮 [MATHEMATICAL_PROOF_1] Calculated target rating: μ=${targetRating.mu.toFixed(5)}, σ=${targetRating.sigma.toFixed(5)}`);
+            console.log(`🧮🧮🧮 [MATHEMATICAL_PROOF_1] Calculated target score: ${calculatedTargetScore.toFixed(5)}`);
+            console.log(`🧮🧮🧮 [MATHEMATICAL_PROOF_1] Expected final score should be: ${calculatedTargetScore.toFixed(5)}`);
+            
+            // MATHEMATICAL PROOF STEP 2: Update TrueSkill store
             updateRating(pokemonId.toString(), targetRating);
-            console.log(`🔥🔥🔥 [ADD_NEW_POKEMON] ✅ Updated TrueSkill store with positioned rating`);
+            console.log(`🧮🧮🧮 [MATHEMATICAL_PROOF_2] ===== TRUESKILL STORE UPDATE =====`);
+            console.log(`🧮🧮🧮 [MATHEMATICAL_PROOF_2] Updated TrueSkill store with: μ=${targetRating.mu.toFixed(5)}, σ=${targetRating.sigma.toFixed(5)}`);
             
-            // Create the updated rankings manually and directly update the parent
+            // MATHEMATICAL PROOF STEP 3: Verify what's in the store
+            const verifyStoreRating = getRating(pokemonId.toString());
+            const verifyStoreScore = verifyStoreRating.mu - verifyStoreRating.sigma;
+            console.log(`🧮🧮🧮 [MATHEMATICAL_PROOF_3] ===== STORE VERIFICATION =====`);
+            console.log(`🧮🧮🧮 [MATHEMATICAL_PROOF_3] Store contains: μ=${verifyStoreRating.mu.toFixed(5)}, σ=${verifyStoreRating.sigma.toFixed(5)}`);
+            console.log(`🧮🧮🧮 [MATHEMATICAL_PROOF_3] Store score: ${verifyStoreScore.toFixed(5)}`);
+            console.log(`🧮🧮🧮 [MATHEMATICAL_PROOF_3] Store score matches calculated: ${Math.abs(verifyStoreScore - calculatedTargetScore) < 0.001 ? '✅ YES' : '❌ NO'}`);
+            
+            // MATHEMATICAL PROOF STEP 4: Create the updated rankings manually
             const newPokemonWithRating = {
               ...pokemon,
-              score: targetRating.mu - targetRating.sigma,
+              score: calculatedTargetScore, // Use our precisely calculated score
               confidence: Math.max(0, Math.min(100, 100 * (1 - (targetRating.sigma / 8.33)))),
               rating: {
                 mu: targetRating.mu,
@@ -212,18 +227,30 @@ export const useEnhancedRankingDragDrop = (
               winRate: 0
             };
             
-            // Insert the Pokemon at the correct position
+            console.log(`🧮🧮🧮 [MATHEMATICAL_PROOF_4] ===== POKEMON OBJECT CREATION =====`);
+            console.log(`🧮🧮🧮 [MATHEMATICAL_PROOF_4] Created Pokemon object with score: ${newPokemonWithRating.score.toFixed(5)}`);
+            console.log(`🧮🧮🧮 [MATHEMATICAL_PROOF_4] Pokemon object rating: μ=${newPokemonWithRating.rating.mu.toFixed(5)}, σ=${newPokemonWithRating.rating.sigma.toFixed(5)}`);
+            
+            // MATHEMATICAL PROOF STEP 5: Insert the Pokemon at the correct position
             const updatedRankings = [...localRankings];
             updatedRankings.splice(insertionPosition, 0, newPokemonWithRating);
             
-            console.log(`🔥🔥🔥 [ADD_NEW_POKEMON] ✅ Manually created updated rankings with ${updatedRankings.length} Pokemon`);
-            console.log(`🔥🔥🔥 [ADD_NEW_POKEMON] New Pokemon score: ${newPokemonWithRating.score.toFixed(5)}`);
-            console.log(`🔥🔥🔥 [ADD_NEW_POKEMON] 🚨 DIRECTLY UPDATING RANKINGS - NO MORE SCORE CALCULATION! 🚨`);
+            console.log(`🧮🧮🧮 [MATHEMATICAL_PROOF_5] ===== RANKINGS ARRAY UPDATE =====`);
+            console.log(`🧮🧮🧮 [MATHEMATICAL_PROOF_5] Inserted Pokemon at position ${insertionPosition}`);
+            console.log(`🧮🧮🧮 [MATHEMATICAL_PROOF_5] Updated rankings length: ${updatedRankings.length}`);
+            console.log(`🧮🧮🧮 [MATHEMATICAL_PROOF_5] Pokemon score in array: ${updatedRankings[insertionPosition].score.toFixed(5)}`);
             
-            // FINAL FIX: Directly update the rankings without any additional score calculation
+            // MATHEMATICAL PROOF STEP 6: Call updateLocalRankings
+            console.log(`🧮🧮🧮 [MATHEMATICAL_PROOF_6] ===== CALLING UPDATE LOCAL RANKINGS =====`);
+            console.log(`🧮🧮🧮 [MATHEMATICAL_PROOF_6] About to call updateLocalRankings with ${updatedRankings.length} Pokemon`);
+            console.log(`🧮🧮🧮 [MATHEMATICAL_PROOF_6] Target Pokemon score before update: ${updatedRankings.find(p => p.id === pokemonId)?.score.toFixed(5)}`);
+            
             updateLocalRankings(updatedRankings);
             
-            console.log(`🔥🔥🔥 [ADD_NEW_POKEMON] ✅ DIRECTLY UPDATED PARENT STATE - DONE!`);
+            console.log(`🧮🧮🧮 [MATHEMATICAL_PROOF_7] ===== UPDATE COMPLETE =====`);
+            console.log(`🧮🧮🧮 [MATHEMATICAL_PROOF_7] updateLocalRankings called - monitoring for score changes...`);
+            console.log(`🧮🧮🧮 [MATHEMATICAL_PROOF_7] Expected final score: ${calculatedTargetScore.toFixed(5)}`);
+            console.log(`🧮🧮🧮 [MATHEMATICAL_PROOF_7] If final score differs, check TrueSkill sync effects`);
             
             toast({
                 title: "Pokemon Added",
@@ -257,7 +284,7 @@ export const useEnhancedRankingDragDrop = (
         handleEnhancedManualReorder(activePokemonId, oldIndex, newIndex);
       }
     }
-  }, [enhancedAvailablePokemon, localRankings, updateRating, handleEnhancedManualReorder, triggerReRanking, calculateTargetRatingForPosition, updateLocalRankings]);
+  }, [enhancedAvailablePokemon, localRankings, updateRating, handleEnhancedManualReorder, triggerReRanking, calculateTargetRatingForPosition, updateLocalRankings, getRating]);
 
   const handleManualReorder = useCallback((
     draggedPokemonId: number,
