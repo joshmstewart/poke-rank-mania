@@ -48,7 +48,6 @@ export const PokemonGridSection: React.FC<PokemonGridSectionProps> = ({
                   key={`pokemon-${pokemon.id}-${index}`}
                   pokemon={pokemon}
                   index={index}
-                  isPending={false}
                   showRank={false}
                   isDraggable={true}
                   isAvailable={true}
