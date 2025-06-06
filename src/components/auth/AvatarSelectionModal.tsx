@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -49,6 +48,9 @@ const smallPokemonIds = new Set([
   906, 909, 912, 1025
 ]);
 
+// Special case for Meltan which needs extra scaling
+const extraLargePokemonIds = new Set([808]); // Meltan
+
 // Function to get Pokemon ID from avatar URL
 const getPokemonIdFromUrl = (url: string): number => {
   const match = url.match(/\/(\d+)\.png$/);
@@ -65,6 +67,11 @@ const getPokemonGeneration = (pokemonId: number) => {
 // Function to determine if Pokemon needs scaling
 const needsScaling = (pokemonId: number): boolean => {
   return smallPokemonIds.has(pokemonId);
+};
+
+// Function to determine if Pokemon needs extra scaling
+const needsExtraScaling = (pokemonId: number): boolean => {
+  return extraLargePokemonIds.has(pokemonId);
 };
 
 export const AvatarSelectionModal: React.FC<AvatarSelectionModalProps> = ({
@@ -170,6 +177,7 @@ export const AvatarSelectionModal: React.FC<AvatarSelectionModalProps> = ({
                           {urls.map((avatarUrl, index) => {
                             const pokemonId = getPokemonIdFromUrl(avatarUrl);
                             const shouldScale = needsScaling(pokemonId);
+                            const shouldExtraScale = needsExtraScaling(pokemonId);
                             
                             return (
                               <div
@@ -190,9 +198,9 @@ export const AvatarSelectionModal: React.FC<AvatarSelectionModalProps> = ({
                                         src={avatarUrl} 
                                         alt={`Pokemon avatar ${pokemonId}`}
                                         className={`object-cover border-2 border-gray-200 ${
-                                          shouldScale ? 'scale-150' : ''
+                                          shouldExtraScale ? 'scale-[2.25]' : shouldScale ? 'scale-150' : ''
                                         }`}
-                                        style={shouldScale ? { 
+                                        style={(shouldScale || shouldExtraScale) ? { 
                                           transformOrigin: 'center',
                                           imageRendering: 'pixelated'
                                         } : {}}
