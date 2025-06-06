@@ -37,24 +37,24 @@ const tourSteps: TourStep[] = [
     position: 'bottom'
   },
   {
-    id: 'battle-area',
-    title: 'Battle Arena',
-    content: 'In Battle Mode, choose your favorite Pokemon from the pairs shown to build rankings.',
-    target: '[data-tour="battle-area"]',
-    position: 'top'
-  },
-  {
-    id: 'progress-tracker',
-    title: 'Progress Tracking',
-    content: 'Track your battle progress and see how many Pokemon you\'ve ranked.',
-    target: '[data-tour="progress-tracker"]',
+    id: 'battle-mode',
+    title: 'Battle Mode',
+    content: 'In Battle Mode, choose your favorite Pokemon from the pairs shown to build rankings automatically.',
+    target: '[data-tour="battle-mode-tab"]',
     position: 'bottom'
   },
   {
-    id: 'rankings-view',
+    id: 'manual-ranking',
+    title: 'Manual Ranking Mode',
+    content: 'In Manual Ranking Mode, you can drag and drop Pokemon to manually adjust their rankings.',
+    target: '[data-tour="manual-ranking-tab"]',
+    position: 'bottom'
+  },
+  {
+    id: 'rankings-button',
     title: 'View Rankings',
-    content: 'Click here to see your current rankings and drag to manually reorder Pokemon.',
-    target: '[data-tour="rankings-view"]',
+    content: 'Click here to see your current rankings and compare Pokemon across both modes.',
+    target: '[data-tour="rankings-button"]',
     position: 'left'
   }
 ];

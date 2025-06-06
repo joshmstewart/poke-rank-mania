@@ -12,8 +12,8 @@ const ModeStyleControls: React.FC<ModeStyleControlsProps> = ({ mode, onModeChang
     <div className="flex items-center justify-center" data-tour="mode-switcher">
       <Tabs value={mode} onValueChange={(value) => onModeChange(value as "rank" | "battle")}>
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="battle">Battle Mode</TabsTrigger>
-          <TabsTrigger value="rank">Manual Ranking</TabsTrigger>
+          <TabsTrigger value="battle" data-tour="battle-mode-tab">Battle Mode</TabsTrigger>
+          <TabsTrigger value="rank" data-tour="manual-ranking-tab">Manual Ranking</TabsTrigger>
         </TabsList>
       </Tabs>
     </div>
