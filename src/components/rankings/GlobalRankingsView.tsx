@@ -220,8 +220,6 @@ const GlobalRankingsView: React.FC<GlobalRankingsViewProps> = ({
                 index={index}
                 showRank={true}
                 isDraggable={false}
-                isAvailable={false}
-                isPending={false}
                 context="ranked"
               />
             ))}

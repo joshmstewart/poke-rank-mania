@@ -51,8 +51,6 @@ export const PokemonGridSection: React.FC<PokemonGridSectionProps> = ({
                   showRank={false}
                   isDraggable={true}
                   isAvailable={true}
-                  isPending={false}
-                  context="available"
                 />
               ))}
             </div>

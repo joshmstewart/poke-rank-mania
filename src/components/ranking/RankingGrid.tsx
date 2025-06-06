@@ -33,21 +33,17 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
   onSuggestRanking,
   onRemoveSuggestion
 }) => {
-  console.log(`🎨 [RANKING_GRID_RENDER] Rendering ${displayRankings.length} Pokemon`);
-  
   return (
     <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
       {displayRankings.map((pokemon, index) => {
         const isRankedPokemon = 'score' in pokemon;
         const showRankNumber = onSuggestRanking !== undefined; // Only show rank number in rankings section
 
-        // CRITICAL FIX: Apply name formatting here and log it
+        // CRITICAL FIX: Apply name formatting here
         const formattedPokemon = {
           ...pokemon,
           name: safeFormatPokemonName(pokemon.name)
         };
-
-        console.log(`🎨 [RANKING_GRID_FORMAT] Pokemon ${index}: ${pokemon.name} -> ${formattedPokemon.name}`);
 
         return (
           <div key={pokemon.id} className="relative group">
