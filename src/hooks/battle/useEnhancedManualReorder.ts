@@ -83,16 +83,15 @@ export const useEnhancedManualReorder = (
     console.log('🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Target position (newIndex):', newIndex);
     console.log('🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] preventAutoResorting:', preventAutoResorting);
     
-    // CRITICAL: In ranking mode (preventAutoResorting=true), we do NOT trigger battles
-    // We only adjust the TrueSkill rating to match the desired position
     if (preventAutoResorting) {
       console.log('🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] ✅ RANKING MODE: Manual positioning without battles');
     } else {
       console.log('🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] ⚔️ BATTLE MODE: May trigger implied battles');
     }
     
-    // Constants
+    // Constants - INCREASED GAPS for better stability
     const MIN_SIGMA = 1.0;
+    const SCORE_GAP = 3.0; // Increased from 1.0 to 3.0 for better separation
     
     // Get current rating for the dragged Pokemon
     const currentRating = getRating(draggedPokemon.id.toString());
@@ -134,28 +133,50 @@ export const useEnhancedManualReorder = (
       console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Below ${belowPokemon.name}: μ=${belowRating.mu.toFixed(5)}, σ=${belowRating.sigma.toFixed(5)}, score=${(belowRating.mu - belowRating.sigma).toFixed(5)}`);
     }
     
-    // Calculate target score based on final position
+    // Calculate target score based on final position with LARGER GAPS
     let targetDisplayedScore: number;
     
     if (abovePokemon && belowPokemon) {
-      // Between two Pokemon - midpoint
+      // Between two Pokemon - ensure adequate gap
       const aboveRating = getRating(abovePokemon.id.toString());
       const belowRating = getRating(belowPokemon.id.toString());
       const aboveScore = aboveRating.mu - aboveRating.sigma;
       const belowScore = belowRating.mu - belowRating.sigma;
-      targetDisplayedScore = (aboveScore + belowScore) / 2;
+      
+      // Check if there's enough gap between the two Pokemon
+      const currentGap = aboveScore - belowScore;
+      if (currentGap < SCORE_GAP * 2) {
+        // Not enough gap - adjust the scores of surrounding Pokemon first
+        console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] INSUFFICIENT GAP: ${currentGap.toFixed(3)} < ${SCORE_GAP * 2}`);
+        
+        // Push the above Pokemon higher and below Pokemon lower
+        const newAboveMu = aboveScore + SCORE_GAP + MIN_SIGMA;
+        const newBelowMu = belowScore - SCORE_GAP + MIN_SIGMA;
+        
+        updateRating(abovePokemon.id.toString(), new Rating(newAboveMu, Math.max(aboveRating.sigma * 0.9, MIN_SIGMA)));
+        updateRating(belowPokemon.id.toString(), new Rating(newBelowMu, Math.max(belowRating.sigma * 0.9, MIN_SIGMA)));
+        
+        console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] ADJUSTED NEIGHBORS: Above +${SCORE_GAP}, Below -${SCORE_GAP}`);
+        
+        // Now set target exactly in the middle
+        targetDisplayedScore = (newAboveMu - MIN_SIGMA + newBelowMu - MIN_SIGMA) / 2;
+      } else {
+        // Sufficient gap exists
+        targetDisplayedScore = (aboveScore + belowScore) / 2;
+      }
+      
       console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] BETWEEN TWO: above=${aboveScore.toFixed(5)}, below=${belowScore.toFixed(5)}, target=${targetDisplayedScore.toFixed(5)}`);
     } else if (abovePokemon && !belowPokemon) {
-      // Bottom position - slightly below the Pokemon above
+      // Bottom position - well below the Pokemon above
       const aboveRating = getRating(abovePokemon.id.toString());
       const aboveScore = aboveRating.mu - aboveRating.sigma;
-      targetDisplayedScore = aboveScore - 1.0;
+      targetDisplayedScore = aboveScore - SCORE_GAP;
       console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] BOTTOM POSITION: above=${aboveScore.toFixed(5)}, target=${targetDisplayedScore.toFixed(5)}`);
     } else if (!abovePokemon && belowPokemon) {
-      // Top position - slightly above the Pokemon below
+      // Top position - well above the Pokemon below
       const belowRating = getRating(belowPokemon.id.toString());
       const belowScore = belowRating.mu - belowRating.sigma;
-      targetDisplayedScore = belowScore + 1.0;
+      targetDisplayedScore = belowScore + SCORE_GAP;
       console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] TOP POSITION: below=${belowScore.toFixed(5)}, target=${targetDisplayedScore.toFixed(5)}`);
     } else {
       // Single Pokemon in list
@@ -163,8 +184,8 @@ export const useEnhancedManualReorder = (
       return;
     }
     
-    // Calculate new mu and sigma
-    const newSigma = Math.max(currentRating.sigma * 0.8, MIN_SIGMA);
+    // Calculate new mu and sigma with reduced sigma for more confidence
+    const newSigma = Math.max(currentRating.sigma * 0.7, MIN_SIGMA); // More confident
     const newMu = targetDisplayedScore + newSigma;
     
     console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] CALCULATED VALUES:`);
@@ -178,10 +199,9 @@ export const useEnhancedManualReorder = (
     updateRating(draggedPokemon.id.toString(), newRating);
     
     console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] ✅ Rating updated in TrueSkill store`);
-    console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] ✅ Pokemon ${draggedPokemon.name} should now appear at position ${newIndex} after auto-sort`);
+    console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] ✅ Pokemon ${draggedPokemon.name} should now stay at position ${newIndex} with increased score gap`);
     
     // CRITICAL FIX: In ranking mode, we do NOT call addImpliedBattle
-    // This prevents the system from triggering battles that would change the Pokemon's position
     if (!preventAutoResorting && addImpliedBattle && abovePokemon) {
       console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] ⚔️ BATTLE MODE: Adding implied battle vs ${abovePokemon.name}`);
       addImpliedBattle(draggedPokemon.id, abovePokemon.id);
