@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { DragEndEvent } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
@@ -5,7 +6,19 @@ import { Pokemon, RankedPokemon } from '@/services/pokemon';
 import { useTrueSkillStore } from '@/stores/trueskillStore';
 import { usePokemonContext } from '@/contexts/PokemonContext';
 import { Rating } from 'ts-trueskill';
-import { formatPokemonName } from '@/utils/pokemon';
+
+// Helper function to safely format Pokemon names without filtering
+const safeFormatPokemonName = (name: string): string => {
+  if (!name) return '';
+  
+  // Simple capitalization without any filtering logic
+  return name.split(/(\s+|-+)/).map(part => {
+    if (part.match(/^\s+$/) || part.match(/^-+$/)) {
+      return part; // Keep whitespace and hyphens as-is
+    }
+    return part.charAt(0).toUpperCase() + part.slice(1).toLowerCase();
+  }).join('');
+};
 
 export const useEnhancedManualReorder = (
   finalRankings: RankedPokemon[],
@@ -229,8 +242,8 @@ export const useEnhancedManualReorder = (
       const conservativeEstimate = rating.mu - rating.sigma;
       const confidence = Math.max(0, Math.min(100, 100 * (1 - (rating.sigma / 8.33))));
       
-      // FIXED: Apply name formatting to ensure proper display
-      const formattedName = formatPokemonName(pokemon.name);
+      // FIXED: Apply safe name formatting to ensure proper display without filtering
+      const formattedName = safeFormatPokemonName(pokemon.name);
       
       if (pokemon.id === 613) {
         console.log(`🧊🧊🧊 [CUBCHOO_RECALC] Position: ${index}, Score: ${conservativeEstimate.toFixed(5)}`);
@@ -239,7 +252,7 @@ export const useEnhancedManualReorder = (
       
       return {
         ...pokemon,
-        name: formattedName, // Use formatted name
+        name: formattedName, // Use safely formatted name
         score: conservativeEstimate,
         confidence: confidence,
         rating: rating,
@@ -351,12 +364,12 @@ export const useEnhancedManualReorder = (
         const conservativeEstimate = rating.mu - rating.sigma;
         const confidence = Math.max(0, Math.min(100, 100 * (1 - (rating.sigma / 8.33))));
         
-        // FIXED: Apply name formatting when creating new RankedPokemon
-        const formattedName = formatPokemonName(pokemonData.name);
+        // FIXED: Apply safe name formatting when creating new RankedPokemon
+        const formattedName = safeFormatPokemonName(pokemonData.name);
         
         const newRankedPokemon: RankedPokemon = {
           ...pokemonData,
-          name: formattedName, // Use formatted name
+          name: formattedName, // Use safely formatted name
           score: conservativeEstimate,
           confidence: confidence,
           rating: rating,
