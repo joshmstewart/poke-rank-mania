@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { useTrueSkillStore } from "@/stores/trueskillStore";
 import { generations } from "@/services/pokemon";
@@ -173,7 +172,21 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
     true // isMilestoneView = true to get the proper drag behavior
   );
 
-  const displayRankings = localRankings.slice(0, milestoneDisplayCount);
+  // CRITICAL FIX: Ensure we're passing the correct formatted Pokemon objects to the grid
+  const displayRankings = useMemo(() => {
+    const sliced = localRankings.slice(0, milestoneDisplayCount);
+    console.log(`🔥🔥🔥 [DISPLAY_RANKINGS_DEBUG] Creating displayRankings with ${sliced.length} Pokemon`);
+    
+    // Check if Deoxys is in the display rankings and what its name is
+    const deoxysInDisplay = sliced.filter(p => p.name.toLowerCase().includes('deoxys'));
+    console.log(`🔥🔥🔥 [DISPLAY_RANKINGS_DEBUG] Deoxys in displayRankings: ${deoxysInDisplay.length}`);
+    deoxysInDisplay.forEach(p => {
+      console.log(`🔥🔥🔥 [DISPLAY_RANKINGS_DEBUG] Display Deoxys: "${p.name}" (ID: ${p.id})`);
+    });
+    
+    return sliced;
+  }, [localRankings, milestoneDisplayCount]);
+
   const localPendingRefinements = new Set<number>();
   const hasMoreToLoad = milestoneDisplayCount < localRankings.length;
   
@@ -183,7 +196,6 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
     }
   }, [hasMoreToLoad, localRankings.length]);
 
-  // Set up infinite scroll observer
   useEffect(() => {
     // Clean up previous observer
     if (observerRef.current && loadingRef.current) {
