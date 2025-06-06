@@ -78,27 +78,27 @@ export const useEnhancedManualReorder = (
     newIndex: number,
     rankings: RankedPokemon[]
   ) => {
-    const operationId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    console.log('🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] ===== APPLYING MANUAL SCORE ADJUSTMENT =====');
-    console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Operation ID: ${operationId}`);
-    console.log('🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] draggedPokemon:', draggedPokemon.name, 'ID:', draggedPokemon.id);
-    console.log('🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Target position (newIndex):', newIndex);
+    const operationId = `MANUAL_REORDER_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    console.log(`🔥🔥🔥 [${operationId}] ===== APPLYING MANUAL SCORE ADJUSTMENT =====`);
+    console.log(`🔥🔥🔥 [${operationId}] draggedPokemon: ${draggedPokemon.name} (ID: ${draggedPokemon.id})`);
+    console.log(`🔥🔥🔥 [${operationId}] Target position (newIndex): ${newIndex}`);
+    console.log(`🔥🔥🔥 [${operationId}] Rankings length: ${rankings.length}`);
     
     // CRITICAL: Special logging for Cubchoo (ID 613) drag scenario
     if (draggedPokemon.id === 613) {
-      console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] ===== CUBCHOO BEING MOVED =====`);
-      console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] Current score: ${draggedPokemon.score}`);
-      console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] Target index: ${newIndex}`);
+      console.log(`🧊🧊🧊 [${operationId}] ===== CUBCHOO BEING MOVED =====`);
+      console.log(`🧊🧊🧊 [${operationId}] Current score: ${draggedPokemon.score}`);
+      console.log(`🧊🧊🧊 [${operationId}] Target index: ${newIndex}`);
     }
     
     // Constants
     const MIN_SIGMA = 1.0;
     
-    console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Using MIN_SIGMA: ${MIN_SIGMA}`);
+    console.log(`🔥🔥🔥 [${operationId}] Using MIN_SIGMA: ${MIN_SIGMA}`);
     
     // Get current rating for the dragged Pokemon
     const currentRating = getRating(draggedPokemon.id.toString());
-    console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Current rating from store - μ=${currentRating.mu.toFixed(5)}, σ=${currentRating.sigma.toFixed(5)}`);
+    console.log(`🔥🔥🔥 [${operationId}] Current rating from store - μ=${currentRating.mu.toFixed(5)}, σ=${currentRating.sigma.toFixed(5)}, score=${(currentRating.mu - currentRating.sigma).toFixed(5)}`);
     
     // Create the final rankings array to determine proper neighbors
     const finalRankingsAfterMove = [...rankings];
@@ -107,10 +107,10 @@ export const useEnhancedManualReorder = (
     if (existingIndex === -1) {
       // New Pokemon - insert at the target position
       finalRankingsAfterMove.splice(newIndex, 0, draggedPokemon);
-      console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] NEW POKEMON: Inserted at position ${newIndex}`);
+      console.log(`🔥🔥🔥 [${operationId}] NEW POKEMON: Inserted at position ${newIndex}`);
     } else {
       // Existing Pokemon - remove from old position, insert at new position
-      console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] EXISTING POKEMON: Moving from ${existingIndex} to ${newIndex}`);
+      console.log(`🔥🔥🔥 [${operationId}] EXISTING POKEMON: Moving from ${existingIndex} to ${newIndex}`);
       finalRankingsAfterMove.splice(existingIndex, 1);
       finalRankingsAfterMove.splice(newIndex, 0, draggedPokemon);
     }
@@ -119,10 +119,10 @@ export const useEnhancedManualReorder = (
     const abovePokemon = newIndex > 0 ? finalRankingsAfterMove[newIndex - 1] : null;
     const belowPokemon = newIndex < finalRankingsAfterMove.length - 1 ? finalRankingsAfterMove[newIndex + 1] : null;
     
-    console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] NEIGHBORS:`);
-    console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Above:`, abovePokemon ? `${abovePokemon.name} (ID: ${abovePokemon.id})` : 'None');
-    console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Target: ${draggedPokemon.name} (ID: ${draggedPokemon.id})`);
-    console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Below:`, belowPokemon ? `${belowPokemon.name} (ID: ${belowPokemon.id})` : 'None');
+    console.log(`🔥🔥🔥 [${operationId}] NEIGHBORS IN FINAL ARRANGEMENT:`);
+    console.log(`🔥🔥🔥 [${operationId}] Above: ${abovePokemon ? `${abovePokemon.name} (ID: ${abovePokemon.id})` : 'None'}`);
+    console.log(`🔥🔥🔥 [${operationId}] Target: ${draggedPokemon.name} (ID: ${draggedPokemon.id})`);
+    console.log(`🔥🔥🔥 [${operationId}] Below: ${belowPokemon ? `${belowPokemon.name} (ID: ${belowPokemon.id})` : 'None'}`);
     
     // Get neighbor scores from TrueSkill store
     let aboveScore = 0, belowScore = 0;
@@ -130,13 +130,13 @@ export const useEnhancedManualReorder = (
     if (abovePokemon) {
       const aboveRating = getRating(abovePokemon.id.toString());
       aboveScore = aboveRating.mu - aboveRating.sigma;
-      console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Above ${abovePokemon.name}: score=${aboveScore.toFixed(5)}`);
+      console.log(`🔥🔥🔥 [${operationId}] Above ${abovePokemon.name}: μ=${aboveRating.mu.toFixed(5)}, σ=${aboveRating.sigma.toFixed(5)}, score=${aboveScore.toFixed(5)}`);
     }
     
     if (belowPokemon) {
       const belowRating = getRating(belowPokemon.id.toString());
       belowScore = belowRating.mu - belowRating.sigma;
-      console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Below ${belowPokemon.name}: score=${belowScore.toFixed(5)}`);
+      console.log(`🔥🔥🔥 [${operationId}] Below ${belowPokemon.name}: μ=${belowRating.mu.toFixed(5)}, σ=${belowRating.sigma.toFixed(5)}, score=${belowScore.toFixed(5)}`);
     }
     
     // Calculate target score - SIMPLE LOGIC, NO GAPS!
@@ -145,23 +145,23 @@ export const useEnhancedManualReorder = (
     if (abovePokemon && belowPokemon) {
       // Between two Pokemon - use simple average
       targetDisplayedScore = (aboveScore + belowScore) / 2;
-      console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] BETWEEN TWO: target = (${aboveScore.toFixed(5)} + ${belowScore.toFixed(5)}) / 2 = ${targetDisplayedScore.toFixed(5)}`);
+      console.log(`🔥🔥🔥 [${operationId}] BETWEEN CALCULATION: (${aboveScore.toFixed(5)} + ${belowScore.toFixed(5)}) / 2 = ${targetDisplayedScore.toFixed(5)}`);
       
       // CRITICAL: Special case for Cubchoo
       if (draggedPokemon.id === 613) {
-        console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] SIMPLE AVERAGE: ${targetDisplayedScore.toFixed(5)}`);
+        console.log(`🧊🧊🧊 [${operationId}] CUBCHOO SIMPLE AVERAGE: ${targetDisplayedScore.toFixed(5)}`);
       }
     } else if (abovePokemon && !belowPokemon) {
       // Bottom position - slightly below the Pokemon above
       targetDisplayedScore = aboveScore - 0.1;
-      console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] BOTTOM: target = ${aboveScore.toFixed(5)} - 0.1 = ${targetDisplayedScore.toFixed(5)}`);
+      console.log(`🔥🔥🔥 [${operationId}] BOTTOM CALCULATION: ${aboveScore.toFixed(5)} - 0.1 = ${targetDisplayedScore.toFixed(5)}`);
     } else if (!abovePokemon && belowPokemon) {
       // Top position - slightly above the Pokemon below
       targetDisplayedScore = belowScore + 0.1;
-      console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] TOP: target = ${belowScore.toFixed(5)} + 0.1 = ${targetDisplayedScore.toFixed(5)}`);
+      console.log(`🔥🔥🔥 [${operationId}] TOP CALCULATION: ${belowScore.toFixed(5)} + 0.1 = ${targetDisplayedScore.toFixed(5)}`);
     } else {
       // Single Pokemon in list - no adjustment needed
-      console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] SINGLE POKEMON - no adjustment needed`);
+      console.log(`🔥🔥🔥 [${operationId}] SINGLE POKEMON - no adjustment needed`);
       return;
     }
     
@@ -169,54 +169,61 @@ export const useEnhancedManualReorder = (
     const newSigma = Math.max(currentRating.sigma * 0.7, MIN_SIGMA);
     const newMu = targetDisplayedScore + newSigma;
     
-    console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] FINAL CALCULATION:`);
-    console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Target score: ${targetDisplayedScore.toFixed(5)}`);
-    console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] New σ: ${newSigma.toFixed(5)}`);
-    console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] New μ: ${newMu.toFixed(5)}`);
-    console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Verification: μ - σ = ${(newMu - newSigma).toFixed(5)} (should equal ${targetDisplayedScore.toFixed(5)})`);
-    
-    // Sanity check
-    const calculatedScore = newMu - newSigma;
-    const scoreDiff = Math.abs(calculatedScore - targetDisplayedScore);
-    if (scoreDiff > 0.001) {
-      console.error(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] ❌ CALCULATION ERROR! Diff: ${scoreDiff.toFixed(8)}`);
-      return;
-    }
+    console.log(`🔥🔥🔥 [${operationId}] FINAL CALCULATION:`);
+    console.log(`🔥🔥🔥 [${operationId}] Target score: ${targetDisplayedScore.toFixed(5)}`);
+    console.log(`🔥🔥🔥 [${operationId}] Current σ: ${currentRating.sigma.toFixed(5)}`);
+    console.log(`🔥🔥🔥 [${operationId}] New σ: ${newSigma.toFixed(5)} (= max(${currentRating.sigma.toFixed(5)} * 0.7, ${MIN_SIGMA}))`);
+    console.log(`🔥🔥🔥 [${operationId}] New μ: ${newMu.toFixed(5)} (= ${targetDisplayedScore.toFixed(5)} + ${newSigma.toFixed(5)})`);
+    console.log(`🔥🔥🔥 [${operationId}] Verification: μ - σ = ${(newMu - newSigma).toFixed(5)} (should equal ${targetDisplayedScore.toFixed(5)})`);
+    console.log(`🔥🔥🔥 [${operationId}] Math check: ${Math.abs((newMu - newSigma) - targetDisplayedScore) < 0.001 ? 'PASS' : 'FAIL'}`);
     
     // CRITICAL: Log for Cubchoo before update
     if (draggedPokemon.id === 613) {
-      console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] ABOUT TO UPDATE:`);
-      console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] μ=${newMu.toFixed(5)}, σ=${newSigma.toFixed(5)}`);
-      console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] Expected score: ${targetDisplayedScore.toFixed(5)}`);
+      console.log(`🧊🧊🧊 [${operationId}] CUBCHOO ABOUT TO UPDATE:`);
+      console.log(`🧊🧊🧊 [${operationId}] μ=${newMu.toFixed(5)}, σ=${newSigma.toFixed(5)}`);
+      console.log(`🧊🧊🧊 [${operationId}] Expected score: ${targetDisplayedScore.toFixed(5)}`);
     }
     
     // Update the rating
+    console.log(`🔥🔥🔥 [${operationId}] UPDATING TrueSkill store for Pokemon ${draggedPokemon.id}...`);
     const newRating = new Rating(newMu, newSigma);
     updateRating(draggedPokemon.id.toString(), newRating);
     
-    // Verify the update
+    // Verify the update immediately
     const verifyRating = getRating(draggedPokemon.id.toString());
     const verifyScore = verifyRating.mu - verifyRating.sigma;
     
-    console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] ✅ VERIFICATION:`);
-    console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Stored μ=${verifyRating.mu.toFixed(5)}, σ=${verifyRating.sigma.toFixed(5)}`);
-    console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Final score: ${verifyScore.toFixed(5)}`);
-    console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Target was: ${targetDisplayedScore.toFixed(5)}`);
-    console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Match: ${Math.abs(verifyScore - targetDisplayedScore) < 0.001 ? 'YES' : 'NO'}`);
+    console.log(`🔥🔥🔥 [${operationId}] STORE VERIFICATION:`);
+    console.log(`🔥🔥🔥 [${operationId}] Stored μ=${verifyRating.mu.toFixed(5)}, σ=${verifyRating.sigma.toFixed(5)}`);
+    console.log(`🔥🔥🔥 [${operationId}] Final score: ${verifyScore.toFixed(5)}`);
+    console.log(`🔥🔥🔥 [${operationId}] Target was: ${targetDisplayedScore.toFixed(5)}`);
+    console.log(`🔥🔥🔥 [${operationId}] Match: ${Math.abs(verifyScore - targetDisplayedScore) < 0.001 ? 'YES' : 'NO'}`);
     
     // CRITICAL: Final verification for Cubchoo
     if (draggedPokemon.id === 613) {
-      console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] FINAL VERIFICATION:`);
-      console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] Final score: ${verifyScore.toFixed(5)}`);
-      console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] Should be between ${aboveScore?.toFixed(5)} and ${belowScore?.toFixed(5)}`);
+      console.log(`🧊🧊🧊 [${operationId}] CUBCHOO FINAL VERIFICATION:`);
+      console.log(`🧊🧊🧊 [${operationId}] Final score: ${verifyScore.toFixed(5)}`);
+      console.log(`🧊🧊🧊 [${operationId}] Should be between ${aboveScore?.toFixed(5)} and ${belowScore?.toFixed(5)}`);
       
       if (abovePokemon && belowPokemon) {
         const isInRange = verifyScore < aboveScore && verifyScore > belowScore;
-        console.log(`🧊🧊🧊 [CUBCHOO_BUG_TRACE_${operationId}] Is in range: ${isInRange ? 'YES' : 'NO'}`);
+        console.log(`🧊🧊🧊 [${operationId}] Is in range: ${isInRange ? 'YES' : 'NO'}`);
       }
     }
     
-    console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] ===== COMPLETE (${operationId}) =====`);
+    console.log(`🔥🔥🔥 [${operationId}] ===== MANUAL SCORE ADJUSTMENT COMPLETE =====`);
+    
+    // Final verification after a delay to catch any async updates
+    setTimeout(() => {
+      const finalVerifyRating = getRating(draggedPokemon.id.toString());
+      const finalVerifyScore = finalVerifyRating.mu - finalVerifyRating.sigma;
+      console.log(`🔥🔥🔥 [${operationId}] FINAL VERIFICATION (500ms later): μ=${finalVerifyRating.mu.toFixed(5)}, σ=${finalVerifyRating.sigma.toFixed(5)}, score=${finalVerifyScore.toFixed(5)}`);
+      
+      if (draggedPokemon.id === 613) {
+        console.log(`🧊🧊🧊 [${operationId}] CUBCHOO FINAL CHECK (500ms later): score=${finalVerifyScore.toFixed(5)}`);
+      }
+    }, 500);
+    
   }, [getRating, updateRating, preventAutoResorting, addImpliedBattle]);
 
   const recalculateScores = useCallback((rankings: RankedPokemon[]): RankedPokemon[] => {
