@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { useTrueSkillStore } from "@/stores/trueskillStore";
 import { generations } from "@/services/pokemon";
@@ -61,6 +60,11 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
         const pokemon = pokemonLookupMap.get(parseInt(pokemonId));
         if (!pokemon) return null; // Skip if Pokemon data not found
         
+        // DEBUG: Log original Pokemon data for Deoxys
+        if (pokemon.name.toLowerCase().includes('deoxys')) {
+          console.log(`🏆 [PERSONAL_RANKINGS_DEOXYS_DEBUG] Original Pokemon from lookup: ID=${pokemon.id}, name="${pokemon.name}"`);
+        }
+        
         // Filter by generation if needed
         if (selectedGeneration > 0) {
           const genRanges: { [key: number]: [number, number] } = {
@@ -82,7 +86,11 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
         const winRate = battleCount > 0 ? (wins / battleCount) * 100 : 0;
         
         const formattedName = formatPokemonName(pokemon.name);
-        console.log(`🏆 [PERSONAL_RANKINGS] Pokemon ${pokemon.id}: "${pokemon.name}" → "${formattedName}"`);
+        
+        // DEBUG: Log formatting results for Deoxys
+        if (pokemon.name.toLowerCase().includes('deoxys')) {
+          console.log(`🏆 [PERSONAL_RANKINGS_DEOXYS_DEBUG] Pokemon ${pokemon.id}: "${pokemon.name}" → "${formattedName}"`);
+        }
         
         return {
           ...pokemon, // Use actual Pokemon data (id, image, types, etc.)
@@ -104,6 +112,11 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
   // Update local rankings when rankings change
   useEffect(() => {
     console.log('🏆 [PERSONAL_RANKINGS] Updating local rankings with formatted names');
+    // DEBUG: Check if any Deoxys in the final rankings
+    const deoxysInRankings = rankings.filter(p => p.name.toLowerCase().includes('deoxys'));
+    if (deoxysInRankings.length > 0) {
+      console.log(`🏆 [PERSONAL_RANKINGS_DEOXYS_DEBUG] Deoxys in final rankings:`, deoxysInRankings.map(p => `ID=${p.id}, name="${p.name}"`));
+    }
     setLocalRankings(rankings);
   }, [rankings]);
 
@@ -111,10 +124,19 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
   const handleRankingsUpdate = useCallback((updatedRankings: RankedPokemon[]) => {
     console.log(`🏆 [PERSONAL_RANKINGS] Received rankings update with ${updatedRankings.length} Pokemon`);
     // Ensure name formatting is applied when updating rankings
-    const formattedRankings = updatedRankings.map(pokemon => ({
-      ...pokemon,
-      name: formatPokemonName(pokemon.name)
-    }));
+    const formattedRankings = updatedRankings.map(pokemon => {
+      const newFormattedName = formatPokemonName(pokemon.name);
+      
+      // DEBUG: Log reformat for Deoxys
+      if (pokemon.name.toLowerCase().includes('deoxys')) {
+        console.log(`🏆 [PERSONAL_RANKINGS_REFORMAT_DEBUG] Reformatting: "${pokemon.name}" → "${newFormattedName}"`);
+      }
+      
+      return {
+        ...pokemon,
+        name: newFormattedName
+      };
+    });
     setLocalRankings(formattedRankings);
   }, []);
 

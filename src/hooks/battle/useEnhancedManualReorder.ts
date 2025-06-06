@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { DragEndEvent } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
@@ -34,10 +33,19 @@ export const useEnhancedManualReorder = (
   useEffect(() => {
     if (!isInitialized.current && finalRankings.length > 0) {
       console.log('🔥 [ENHANCED_REORDER] Initializing local rankings with name formatting');
-      const formattedRankings = finalRankings.map(pokemon => ({
-        ...pokemon,
-        name: formatPokemonName(pokemon.name)
-      }));
+      const formattedRankings = finalRankings.map(pokemon => {
+        const formattedName = formatPokemonName(pokemon.name);
+        
+        // DEBUG: Log formatting for Deoxys
+        if (pokemon.name.toLowerCase().includes('deoxys')) {
+          console.log(`🔥 [ENHANCED_REORDER_DEOXYS_DEBUG] Initializing: "${pokemon.name}" → "${formattedName}"`);
+        }
+        
+        return {
+          ...pokemon,
+          name: formattedName
+        };
+      });
       setLocalRankings(formattedRankings);
       isInitialized.current = true;
     }
@@ -51,10 +59,19 @@ export const useEnhancedManualReorder = (
         !dragState.manualAdjustmentInProgress &&
         finalRankings.length > 0) {
       console.log('🔥 [ENHANCED_REORDER] Updating local rankings from final rankings with name formatting');
-      const formattedRankings = finalRankings.map(pokemon => ({
-        ...pokemon,
-        name: formatPokemonName(pokemon.name)
-      }));
+      const formattedRankings = finalRankings.map(pokemon => {
+        const formattedName = formatPokemonName(pokemon.name);
+        
+        // DEBUG: Log formatting for Deoxys
+        if (pokemon.name.toLowerCase().includes('deoxys')) {
+          console.log(`🔥 [ENHANCED_REORDER_DEOXYS_DEBUG] Updating: "${pokemon.name}" → "${formattedName}"`);
+        }
+        
+        return {
+          ...pokemon,
+          name: formattedName
+        };
+      });
       setLocalRankings(formattedRankings);
     }
   }, [finalRankings, dragState.isDragging, dragState.isUpdating, dragState.manualAdjustmentInProgress]);
@@ -244,9 +261,16 @@ export const useEnhancedManualReorder = (
       
       console.log(`🔥 [RECALC_SCORES] ${pokemon.name}: old=${pokemon.score.toFixed(3)}, new=${newScore.toFixed(3)}`);
       
+      const formattedName = formatPokemonName(pokemon.name);
+      
+      // DEBUG: Log formatting for Deoxys during recalculation
+      if (pokemon.name.toLowerCase().includes('deoxys')) {
+        console.log(`🔥 [RECALC_SCORES_DEOXYS_DEBUG] Recalculating: "${pokemon.name}" → "${formattedName}"`);
+      }
+      
       return {
         ...pokemon,
-        name: formatPokemonName(pokemon.name), // Ensure name formatting is applied
+        name: formattedName, // Ensure name formatting is applied
         score: newScore,
         confidence: confidence,
         rating: rating,
@@ -357,6 +381,11 @@ export const useEnhancedManualReorder = (
           winRate: 0
         };
         
+        // DEBUG: Log formatting for new Deoxys
+        if (pokemonData.name.toLowerCase().includes('deoxys')) {
+          console.log(`🔥 [ENHANCED_MANUAL_REORDER_DEOXYS_DEBUG] Adding new: "${pokemonData.name}" → "${formattedPokemonData.name}"`);
+        }
+        
         // Force score at target position
         forceScoreBetweenNeighbors(
           formattedPokemonData,
@@ -393,11 +422,20 @@ export const useEnhancedManualReorder = (
   }, [localRankings, pokemonLookupMap, getRating, forceScoreBetweenNeighbors, recalculateAllScores, onRankingsUpdate]);
 
   const displayRankings = useMemo(() => {
-    return localRankings.map((pokemon) => ({
-      ...pokemon,
-      name: formatPokemonName(pokemon.name), // Ensure formatting is applied in display
-      isBeingDragged: dragState.draggedPokemonId === pokemon.id
-    }));
+    return localRankings.map((pokemon) => {
+      const formattedName = formatPokemonName(pokemon.name);
+      
+      // DEBUG: Log formatting in display
+      if (pokemon.name.toLowerCase().includes('deoxys')) {
+        console.log(`🔥 [DISPLAY_RANKINGS_DEOXYS_DEBUG] Display formatting: "${pokemon.name}" → "${formattedName}"`);
+      }
+      
+      return {
+        ...pokemon,
+        name: formattedName, // Ensure formatting is applied in display
+        isBeingDragged: dragState.draggedPokemonId === pokemon.id
+      };
+    });
   }, [localRankings, dragState.draggedPokemonId]);
 
   return {
