@@ -75,7 +75,7 @@ export const RankingUICore: React.FC<RankingUICoreProps> = ({
     setRankedPokemon
   });
 
-  // Use the enhanced drag and drop functionality
+  // Use the enhanced drag and drop functionality - NOW WITH 6 ARGUMENTS
   const {
     activeDraggedPokemon,
     handleDragStart,
@@ -86,7 +86,8 @@ export const RankingUICore: React.FC<RankingUICoreProps> = ({
     localRankings,
     setAvailablePokemon,
     handleEnhancedManualReorder,
-    triggerReRanking
+    triggerReRanking,
+    updateLocalRankings
   );
 
   // Handle local reordering (for DragDropGrid compatibility)
