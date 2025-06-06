@@ -5,6 +5,7 @@ import { Pokemon } from "@/services/pokemon";
 import { validateBattlePokemon } from "@/services/pokemon/api/utils";
 import PokemonInfoModal from "@/components/pokemon/PokemonInfoModal";
 import PokemonCardImage from "@/components/pokemon/PokemonCardImage";
+import { PriorityStarButton } from "@/components/battle/PriorityStarButton";
 import { normalizePokedexNumber } from "@/utils/pokemon";
 
 interface PokemonCardProps {
@@ -12,9 +13,20 @@ interface PokemonCardProps {
   isDragging?: boolean;
   viewMode?: "list" | "grid";
   compact?: boolean;
+  showPriorityStar?: boolean;
+  isPrioritySelected?: boolean;
+  onTogglePriority?: (pokemonId: number) => void;
 }
 
-const PokemonCard = ({ pokemon, isDragging, viewMode = "list", compact }: PokemonCardProps) => {
+const PokemonCard = ({ 
+  pokemon, 
+  isDragging, 
+  viewMode = "list", 
+  compact,
+  showPriorityStar = false,
+  isPrioritySelected = false,
+  onTogglePriority
+}: PokemonCardProps) => {
   // DEBUG: Log where compact prop comes from
   console.log(`🔍 [POKEMON_CARD_DEBUG] ${pokemon.name}: compact prop = ${compact}, viewMode = ${viewMode}`);
 
@@ -31,15 +43,21 @@ const PokemonCard = ({ pokemon, isDragging, viewMode = "list", compact }: Pokemo
 
   // Prevent unwanted card clicks
   const handleCardClick = (e: React.MouseEvent) => {
-    // Check if click came from info button
+    // Check if click came from info button or priority star
     const target = e.target as HTMLElement;
-    if (target.closest('[data-info-button="true"]') || target.textContent === 'i') {
+    if (target.closest('[data-info-button="true"]') || target.textContent === 'i' || target.closest('button')) {
       return;
     }
     
     // Don't do anything on card click - let drag handle interactions
     e.preventDefault();
     e.stopPropagation();
+  };
+
+  const handlePriorityToggle = (e: React.MouseEvent) => {
+    if (onTogglePriority) {
+      onTogglePriority(pokemonId);
+    }
   };
 
   if (viewMode === "grid") {
@@ -50,7 +68,13 @@ const PokemonCard = ({ pokemon, isDragging, viewMode = "list", compact }: Pokemo
         className={`w-full overflow-hidden relative ${isDragging ? "opacity-50" : ""}`}
         onClick={handleCardClick}
       >
-        <div className="absolute top-1 right-1 z-10">
+        <div className="absolute top-1 right-1 z-10 flex gap-1">
+          {showPriorityStar && (
+            <PriorityStarButton
+              isSelected={isPrioritySelected}
+              onClick={handlePriorityToggle}
+            />
+          )}
           <PokemonInfoModal pokemon={validatedPokemon} />
         </div>
         
@@ -87,11 +111,17 @@ const PokemonCard = ({ pokemon, isDragging, viewMode = "list", compact }: Pokemo
       className={`w-full overflow-hidden relative ${isDragging ? "opacity-50" : ""}`}
       onClick={handleCardClick}
     >
-      <div className="absolute top-1 right-1 z-10">
+      <div className="absolute top-1 right-1 z-10 flex gap-1">
+        {showPriorityStar && (
+          <PriorityStarButton
+            isSelected={isPrioritySelected}
+            onClick={handlePriorityToggle}
+          />
+        )}
         <PokemonInfoModal pokemon={validatedPokemon} />
       </div>
       
-      <div className={`flex items-start gap-1 pr-5 ${compact ? "p-1 min-h-[60px]" : "p-1.5 min-h-[70px]"}`}>
+      <div className={`flex items-start gap-1 pr-8 ${compact ? "p-1 min-h-[60px]" : "p-1.5 min-h-[70px]"}`}>
         <PokemonCardImage 
           pokemonId={pokemonId}
           displayName={displayName}
