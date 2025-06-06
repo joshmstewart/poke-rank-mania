@@ -3,7 +3,6 @@ import React from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { AuthenticatedUserDisplay } from "@/components/auth/AuthenticatedUserDisplay";
 import { AuthDialog } from "@/components/auth/AuthDialog";
-import { HelpButton } from "@/components/tour/HelpButton";
 import { Button } from "@/components/ui/button";
 import { User } from "lucide-react";
 
@@ -12,7 +11,6 @@ export const SaveProgressSection = () => {
 
   return (
     <div className="flex items-center gap-3">
-      <HelpButton />
       {user ? (
         <AuthenticatedUserDisplay />
       ) : (
