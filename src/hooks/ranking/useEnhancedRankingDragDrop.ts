@@ -78,60 +78,44 @@ export const useEnhancedRankingDragDrop = (
         if (pokemon) {
           console.log(`🚀🚀🚀 [ENHANCED_DRAG_END] ✅ Found pokemon: ${pokemon.name}`);
           
-          // CRITICAL FIX: Check if Pokemon is actually in the current rankings, not just if it has a rating
+          // Check if Pokemon is actually in the current rankings
           const isActuallyInRankings = localRankings.some(p => p.id === pokemonId);
           console.log(`🚀🚀🚀 [ENHANCED_DRAG_END] Is actually in current rankings: ${isActuallyInRankings}`);
           console.log(`🚀🚀🚀 [ENHANCED_DRAG_END] pokemon.isRanked flag: ${pokemon.isRanked}`);
           
-          if (isActuallyInRankings) {
-            // CASE A: Pokemon is already in rankings - trigger re-ranking
-            console.log(`🔥🔥🔥 [RE_RANK_POKEMON] ===== RE-RANKING EXISTING POKEMON =====`);
-            console.log(`🔥🔥🔥 [RE_RANK_POKEMON] Pokemon ${pokemonId} (${pokemon.name}) currently at rank ${pokemon.currentRank}`);
-            
-            try {
-              toast({
-                title: "Re-ranking Pokemon",
-                description: `Triggering new battles for ${pokemon.name} (currently rank #${pokemon.currentRank})`,
-                duration: 3000
-              });
-              
-              await triggerReRanking(pokemonId);
-              
-              console.log(`🔥🔥🔥 [RE_RANK_POKEMON] ✅ Re-ranking completed for ${pokemon.name}`);
-              
-              toast({
-                title: "Re-ranking Complete",
-                description: `${pokemon.name} has been re-ranked based on new battles!`,
-                duration: 3000
-              });
-              
-            } catch (error) {
-              console.error(`🔥🔥🔥 [RE_RANK_POKEMON] ❌ Re-ranking failed:`, error);
-              toast({
-                title: "Re-ranking Failed",
-                description: `Failed to re-rank ${pokemon.name}. Please try again.`,
-                variant: "destructive",
-                duration: 3000
-              });
+          // Determine insertion position
+          let insertionPosition = localRankings.length;
+          if (!overId.startsWith('available-') && 
+              !overId.startsWith('collision-placeholder-') &&
+              !isNaN(parseInt(overId))) {
+            const targetPokemonId = parseInt(overId);
+            const targetIndex = localRankings.findIndex(p => p.id === targetPokemonId);
+            if (targetIndex !== -1) {
+              insertionPosition = targetIndex;
+              console.log(`🚀🚀🚀 [ENHANCED_DRAG_END] ✅ Will insert at position ${targetIndex}`);
             }
+          }
+
+          if (isActuallyInRankings) {
+            // CASE A: Pokemon is already in rankings - this is a REORDER, not re-ranking
+            console.log(`🔥🔥🔥 [REORDER_EXISTING_POKEMON] ===== REORDERING EXISTING POKEMON =====`);
+            console.log(`🔥🔥🔥 [REORDER_EXISTING_POKEMON] Pokemon ${pokemonId} (${pokemon.name}) moving to position ${insertionPosition}`);
+            
+            const currentIndex = localRankings.findIndex(p => p.id === pokemonId);
+            
+            // This is a reorder within rankings - use manual reorder
+            handleEnhancedManualReorder(pokemonId, currentIndex, insertionPosition);
+            
+            toast({
+              title: "Pokemon Reordered",
+              description: `${pokemon.name} moved to position ${insertionPosition + 1}!`,
+              duration: 3000
+            });
             
           } else {
             // CASE B: Pokemon is not in rankings - add as new
             console.log(`🌟🌟🌟 [ADD_NEW_POKEMON] ===== ADDING NEW POKEMON =====`);
             console.log(`🌟🌟🌟 [ADD_NEW_POKEMON] Pokemon ${pokemonId} (${pokemon.name}) - adding to rankings`);
-            
-            // Determine insertion position
-            let insertionPosition = localRankings.length;
-            if (!overId.startsWith('available-') && 
-                !overId.startsWith('collision-placeholder-') &&
-                !isNaN(parseInt(overId))) {
-              const targetPokemonId = parseInt(overId);
-              const targetIndex = localRankings.findIndex(p => p.id === targetPokemonId);
-              if (targetIndex !== -1) {
-                insertionPosition = targetIndex;
-                console.log(`🌟🌟🌟 [ADD_NEW_POKEMON] ✅ Will insert at position ${targetIndex}`);
-              }
-            }
             
             // Add default rating to TrueSkill store if it doesn't exist
             const defaultRating = new Rating(25.0, 8.333);
