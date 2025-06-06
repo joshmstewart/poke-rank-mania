@@ -87,7 +87,7 @@ export const useEnhancedManualReorder = (
     
     // Constants
     const MIN_SIGMA = 1.0;
-    const EPSILON = 0.001; // Increased epsilon for practical identical detection
+    const EPSILON = 0.001; // For practical identical detection
     const GROUP_ADJUSTMENT = 0.0001; // Small adjustment for group separation
     
     console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Using MIN_SIGMA: ${MIN_SIGMA}, EPSILON: ${EPSILON}`);
@@ -136,79 +136,76 @@ export const useEnhancedManualReorder = (
       console.log(`🔥🔥🔥 [MANUAL_SCORE_ADJUSTMENT] Below ${belowPokemon.name}: displayedScore=${belowDisplayedScore.toFixed(5)}`);
     }
 
-    // 🟢 NEW LOGIC: Check for multi-Pokemon identical score scenario
+    // 🟢 SIMPLIFIED LOGIC: Check if immediate neighbors have identical scores
     if (abovePokemon && belowPokemon && Math.abs(aboveDisplayedScore - belowDisplayedScore) < EPSILON) {
-      console.log(`🔵🔵🔵 [MULTI_POKEMON_IDENTICAL] ===== MULTI-POKEMON IDENTICAL SCORE SCENARIO =====`);
-      console.log(`🔵🔵🔵 [MULTI_POKEMON_IDENTICAL] Identical score value: ${aboveDisplayedScore.toFixed(5)}`);
+      console.log(`🔵🔵🔵 [IDENTICAL_NEIGHBORS] ===== IDENTICAL NEIGHBOR SCORES =====`);
+      console.log(`🔵🔵🔵 [IDENTICAL_NEIGHBORS] Identical score value: ${aboveDisplayedScore.toFixed(5)}`);
       
-      // Find all Pokemon with this identical score in the current rankings
       const identicalScore = aboveDisplayedScore;
-      const identicalPokemon = finalRankingsAfterMove.filter((pokemon, index) => {
+      
+      // Find all Pokemon with the same score as the upper neighbor
+      const upperGroupPokemon = finalRankingsAfterMove.filter((pokemon, index) => {
         if (index === newIndex) return false; // Skip the dragged Pokemon
         const rating = getRating(pokemon.id.toString());
         const score = rating.mu - rating.sigma;
         return Math.abs(score - identicalScore) < EPSILON;
       });
       
-      console.log(`🔵🔵🔵 [MULTI_POKEMON_IDENTICAL] Found ${identicalPokemon.length} Pokemon with identical scores`);
+      console.log(`🔵🔵🔵 [IDENTICAL_NEIGHBORS] Found ${upperGroupPokemon.length} Pokemon with identical scores`);
       
-      if (identicalPokemon.length >= 2) {
-        console.log(`🔵🔵🔵 [MULTI_POKEMON_IDENTICAL] Applying group separation logic`);
-        
-        // Find upper and lower groups
-        const upperGroup: RankedPokemon[] = [];
-        const lowerGroup: RankedPokemon[] = [];
-        
-        for (const pokemon of identicalPokemon) {
-          const pokemonIndex = finalRankingsAfterMove.findIndex(p => p.id === pokemon.id);
-          if (pokemonIndex < newIndex) {
-            upperGroup.push(pokemon);
-          } else if (pokemonIndex > newIndex) {
-            lowerGroup.push(pokemon);
-          }
+      // Separate into upper and lower groups based on position relative to drop point
+      const upperGroup: RankedPokemon[] = [];
+      const lowerGroup: RankedPokemon[] = [];
+      
+      for (const pokemon of upperGroupPokemon) {
+        const pokemonIndex = finalRankingsAfterMove.findIndex(p => p.id === pokemon.id);
+        if (pokemonIndex < newIndex) {
+          upperGroup.push(pokemon);
+        } else if (pokemonIndex > newIndex) {
+          lowerGroup.push(pokemon);
         }
+      }
+      
+      console.log(`🔵🔵🔵 [IDENTICAL_NEIGHBORS] Upper group: ${upperGroup.length} Pokemon`);
+      console.log(`🔵🔵🔵 [IDENTICAL_NEIGHBORS] Lower group: ${lowerGroup.length} Pokemon`);
+      
+      // Adjust upper group (increase by GROUP_ADJUSTMENT)
+      for (const pokemon of upperGroup) {
+        const rating = getRating(pokemon.id.toString());
+        const newDisplayedScore = identicalScore + GROUP_ADJUSTMENT;
+        const newSigma = Math.max(rating.sigma * 0.95, MIN_SIGMA);
+        const newMu = newDisplayedScore + newSigma;
         
-        console.log(`🔵🔵🔵 [MULTI_POKEMON_IDENTICAL] Upper group: ${upperGroup.length} Pokemon`);
-        console.log(`🔵🔵🔵 [MULTI_POKEMON_IDENTICAL] Lower group: ${lowerGroup.length} Pokemon`);
-        
-        // Adjust upper group (increase by GROUP_ADJUSTMENT)
-        for (const pokemon of upperGroup) {
-          const rating = getRating(pokemon.id.toString());
-          const newDisplayedScore = identicalScore + GROUP_ADJUSTMENT;
-          const newSigma = Math.max(rating.sigma * 0.95, MIN_SIGMA);
-          const newMu = newDisplayedScore + newSigma;
-          
-          console.log(`🔵🔵🔵 [MULTI_POKEMON_IDENTICAL] Adjusting upper ${pokemon.name}: ${identicalScore.toFixed(5)} → ${newDisplayedScore.toFixed(5)}`);
-          
-          const newRating = new Rating(newMu, newSigma);
-          updateRating(pokemon.id.toString(), newRating);
-        }
-        
-        // Adjust lower group (decrease by GROUP_ADJUSTMENT)
-        for (const pokemon of lowerGroup) {
-          const rating = getRating(pokemon.id.toString());
-          const newDisplayedScore = identicalScore - GROUP_ADJUSTMENT;
-          const newSigma = Math.max(rating.sigma * 0.95, MIN_SIGMA);
-          const newMu = newDisplayedScore + newSigma;
-          
-          console.log(`🔵🔵🔵 [MULTI_POKEMON_IDENTICAL] Adjusting lower ${pokemon.name}: ${identicalScore.toFixed(5)} → ${newDisplayedScore.toFixed(5)}`);
-          
-          const newRating = new Rating(newMu, newSigma);
-          updateRating(pokemon.id.toString(), newRating);
-        }
-        
-        // Set dragged Pokemon to the original identical score
-        const newSigma = Math.max(currentRating.sigma * 0.8, MIN_SIGMA);
-        const newMu = identicalScore + newSigma;
-        
-        console.log(`🔵🔵🔵 [MULTI_POKEMON_IDENTICAL] Setting dragged ${draggedPokemon.name} to: ${identicalScore.toFixed(5)}`);
+        console.log(`🔵🔵🔵 [IDENTICAL_NEIGHBORS] Adjusting upper ${pokemon.name}: ${identicalScore.toFixed(5)} → ${newDisplayedScore.toFixed(5)}`);
         
         const newRating = new Rating(newMu, newSigma);
-        updateRating(draggedPokemon.id.toString(), newRating);
-        
-        console.log(`🔵🔵🔵 [MULTI_POKEMON_IDENTICAL] ===== MULTI-POKEMON ADJUSTMENT COMPLETE =====`);
-        return;
+        updateRating(pokemon.id.toString(), newRating);
       }
+      
+      // Adjust lower group (decrease by GROUP_ADJUSTMENT)
+      for (const pokemon of lowerGroup) {
+        const rating = getRating(pokemon.id.toString());
+        const newDisplayedScore = identicalScore - GROUP_ADJUSTMENT;
+        const newSigma = Math.max(rating.sigma * 0.95, MIN_SIGMA);
+        const newMu = newDisplayedScore + newSigma;
+        
+        console.log(`🔵🔵🔵 [IDENTICAL_NEIGHBORS] Adjusting lower ${pokemon.name}: ${identicalScore.toFixed(5)} → ${newDisplayedScore.toFixed(5)}`);
+        
+        const newRating = new Rating(newMu, newSigma);
+        updateRating(pokemon.id.toString(), newRating);
+      }
+      
+      // Set dragged Pokemon to the original identical score
+      const newSigma = Math.max(currentRating.sigma * 0.8, MIN_SIGMA);
+      const newMu = identicalScore + newSigma;
+      
+      console.log(`🔵🔵🔵 [IDENTICAL_NEIGHBORS] Setting dragged ${draggedPokemon.name} to: ${identicalScore.toFixed(5)}`);
+      
+      const newRating = new Rating(newMu, newSigma);
+      updateRating(draggedPokemon.id.toString(), newRating);
+      
+      console.log(`🔵🔵🔵 [IDENTICAL_NEIGHBORS] ===== IDENTICAL NEIGHBOR ADJUSTMENT COMPLETE =====`);
+      return;
     }
 
     // Standard logic for non-identical scores or simple cases
