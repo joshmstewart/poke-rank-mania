@@ -96,17 +96,20 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
           console.log(`🔥🔥🔥 [DEOXYS_NAME_TRACE] Found Deoxys! ID=${pokemonId}, original="${pokemon.name}", formatted="${formattedName}"`);
         }
         
-        // CRITICAL FIX: Create object without spreading original pokemon first
+        // CRITICAL FIX: Create object with only properties that exist on Pokemon type
         const rankedPokemon: RankedPokemon = {
           id: pokemon.id,
           name: formattedName, // Use formatted name FIRST
           image: pokemon.image,
           types: pokemon.types || [],
-          // Copy other Pokemon properties manually to avoid name override
-          ...(pokemon.sprites && { sprites: pokemon.sprites }),
+          // Only copy properties that exist on Pokemon type
+          ...(pokemon.flavorText && { flavorText: pokemon.flavorText }),
+          ...(pokemon.rating && { rating: pokemon.rating }),
+          ...(pokemon.height && { height: pokemon.height }),
+          ...(pokemon.weight && { weight: pokemon.weight }),
           ...(pokemon.stats && { stats: pokemon.stats }),
-          ...(pokemon.abilities && { abilities: pokemon.abilities }),
-          ...(pokemon.moves && { moves: pokemon.moves }),
+          ...(pokemon.generation && { generation: pokemon.generation }),
+          ...(pokemon.suggestedAdjustment && { suggestedAdjustment: pokemon.suggestedAdjustment }),
           // Add ranking-specific properties
           score: score,
           count: battleCount,
