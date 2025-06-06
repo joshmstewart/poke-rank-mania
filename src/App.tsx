@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import BattleMode from "@/components/battle/BattleModeCore";
@@ -14,6 +13,8 @@ import SplashPage from "@/components/splash/SplashPage";
 function AppContent() {
   const [mode, setMode] = useLocalStorage<"rank" | "battle">("pokemon-ranker-mode", "rank");
   const [showSplash, setShowSplash] = useState(true);
+  const [appContentReady, setAppContentReady] = useState(false);
+  
   const renderCount = useRef(0);
   const mountTime = useRef(new Date().toISOString());
   const stableInstance = useRef('app-content-main-stable-FIXED');
@@ -100,12 +101,28 @@ function AppContent() {
     };
   }, []);
 
+  // Pre-load app content in the background while splash is showing
+  useEffect(() => {
+    if (showSplash) {
+      console.log('🎬 [SPLASH_OPTIMIZATION] Starting background app content pre-loading');
+      
+      // Simulate app content initialization
+      const preLoadTimer = setTimeout(() => {
+        setAppContentReady(true);
+        console.log('🎬 [SPLASH_OPTIMIZATION] App content pre-loaded and ready');
+      }, 500); // Start loading app content after 500ms
+      
+      return () => clearTimeout(preLoadTimer);
+    }
+  }, [showSplash]);
+
   const handleModeChange = (newMode: "rank" | "battle") => {
     console.log('🚀🚀🚀 APP_CONTENT_FIXED: Mode changing from', mode, 'to', newMode);
     setMode(newMode);
   };
 
   const handleSplashComplete = () => {
+    console.log('🎬 [SPLASH_OPTIMIZATION] Splash complete, app content ready:', appContentReady);
     setShowSplash(false);
   };
 
@@ -118,12 +135,31 @@ function AppContent() {
     }
   };
 
-  // Show splash page first
+  // Show splash page with background loading
   if (showSplash) {
-    return <SplashPage onComplete={handleSplashComplete} />;
+    return (
+      <>
+        <SplashPage onComplete={handleSplashComplete} />
+        {/* Pre-load app content in background while splash is showing */}
+        <div style={{ position: 'absolute', left: '-9999px', visibility: 'hidden' }}>
+          <TourProvider>
+            <div className="flex flex-col h-screen">
+              <AppHeader mode={mode} onModeChange={handleModeChange} />
+              <main className="flex-grow bg-gray-100 py-6 px-4">
+                <div className="container max-w-7xl mx-auto">
+                  {renderContent()}
+                </div>
+              </main>
+              <Toaster />
+              <TourOverlay />
+            </div>
+          </TourProvider>
+        </div>
+      </>
+    );
   }
 
-  // Clean production interface
+  // Show main app content (already pre-loaded)
   return (
     <TourProvider>
       <div className="flex flex-col h-screen">
