@@ -4,15 +4,17 @@ import { formatPokemonName } from "@/utils/pokemon";
 
 const API_BASE = "https://pokeapi.co/api/v2";
 
-export const fetchPokemonData = async (generations: number[]): Promise<Pokemon[]> => {
+export const fetchPokemonData = async (generations: number[], cacheBust?: number): Promise<Pokemon[]> => {
   try {
-    console.log("🔍🔍🔍 [API_FETCH_DEBUG] ===== STARTING POKEMON FETCH =====");
+    console.log("🔍🔍🔍 [API_FETCH_DEBUG] ===== STARTING FRESH POKEMON FETCH =====");
+    console.log("🔍🔍🔍 [API_FETCH_DEBUG] Cache bust timestamp:", cacheBust);
     console.log("🔍🔍🔍 [API_FETCH_DEBUG] Fetching Pokemon data for generations:", generations);
     
     const responses = await Promise.all(
       generations.map(async gen => {
         console.log(`🔍🔍🔍 [API_FETCH_DEBUG] Fetching generation ${gen}...`);
-        const response = await fetch(`${API_BASE}/generation/${gen}`);
+        const url = cacheBust ? `${API_BASE}/generation/${gen}?_=${cacheBust}` : `${API_BASE}/generation/${gen}`;
+        const response = await fetch(url, { cache: 'no-cache' });
         const data = await response.json();
         console.log(`🔍🔍🔍 [API_FETCH_DEBUG] Generation ${gen} returned ${data.pokemon_species?.length || 0} species`);
         
@@ -82,8 +84,51 @@ export const fetchPokemonData = async (generations: number[]): Promise<Pokemon[]
           console.log(`🔍🔍🔍 [API_FETCH_DEBUG] Processing Pokemon ${index}/${allSpecies.length} (ID: ${pokemonId})`);
         }
         
-        const pokemonResponse = await fetch(`${API_BASE}/pokemon/${pokemonId}`);
+        const url = cacheBust ? `${API_BASE}/pokemon/${pokemonId}?_=${cacheBust}` : `${API_BASE}/pokemon/${pokemonId}`;
+        const pokemonResponse = await fetch(url, { cache: 'no-cache' });
         const pokemonData = await pokemonResponse.json();
+        
+        // ULTRA-CRITICAL: Enhanced Deoxys logging
+        if (pokemonData.id === 386 || pokemonData.id === 10001 || pokemonData.id === 10002 || pokemonData.id === 10003) {
+          console.log(`🔍🔍🔍 [DEOXYS_RAW_API_DEBUG] ===== RAW API DATA FOR DEOXYS ID ${pokemonData.id} =====`);
+          console.log(`🔍🔍🔍 [DEOXYS_RAW_API_DEBUG] Raw name: "${pokemonData.name}"`);
+          console.log(`🔍🔍🔍 [DEOXYS_RAW_API_DEBUG] Species URL: ${pokemonData.species?.url || 'N/A'}`);
+          console.log(`🔍🔍🔍 [DEOXYS_RAW_API_DEBUG] Forms array:`, pokemonData.forms);
+          console.log(`🔍🔍🔍 [DEOXYS_RAW_API_DEBUG] Full Pokemon object keys:`, Object.keys(pokemonData));
+          console.log(`🔍🔍🔍 [DEOXYS_RAW_API_DEBUG] pokemonInfo from species: ${species.name}`);
+          
+          // Check if there's form data in the forms array
+          if (pokemonData.forms && pokemonData.forms.length > 0) {
+            console.log(`🔍🔍🔍 [DEOXYS_RAW_API_DEBUG] Forms data:`, JSON.stringify(pokemonData.forms, null, 2));
+            
+            // Fetch form details if available
+            for (const form of pokemonData.forms) {
+              try {
+                const formUrl = cacheBust ? `${form.url}?_=${cacheBust}` : form.url;
+                const formResponse = await fetch(formUrl, { cache: 'no-cache' });
+                const formData = await formResponse.json();
+                console.log(`🔍🔍🔍 [DEOXYS_RAW_API_DEBUG] Form "${form.name}" details:`, JSON.stringify(formData, null, 2));
+              } catch (formError) {
+                console.log(`🔍🔍🔍 [DEOXYS_RAW_API_DEBUG] Failed to fetch form details for ${form.name}:`, formError);
+              }
+            }
+          }
+          
+          // Check species data too
+          if (pokemonData.species?.url) {
+            try {
+              const speciesUrl = cacheBust ? `${pokemonData.species.url}?_=${cacheBust}` : pokemonData.species.url;
+              const speciesResponse = await fetch(speciesUrl, { cache: 'no-cache' });
+              const speciesData = await speciesResponse.json();
+              console.log(`🔍🔍🔍 [DEOXYS_RAW_API_DEBUG] Species data name: "${speciesData.name}"`);
+              console.log(`🔍🔍🔍 [DEOXYS_RAW_API_DEBUG] Species varieties:`, speciesData.varieties);
+            } catch (speciesError) {
+              console.log(`🔍🔍🔍 [DEOXYS_RAW_API_DEBUG] Failed to fetch species data:`, speciesError);
+            }
+          }
+          
+          console.log(`🔍🔍🔍 [DEOXYS_RAW_API_DEBUG] ===== END RAW API DATA =====`);
+        }
         
         // ENHANCED CRAMORANT FILTERING: Filter out ALL Cramorant forms completely
         const isCramorantForm = pokemonData.name.toLowerCase().includes('cramorant');
@@ -150,7 +195,7 @@ export const fetchPokemonData = async (generations: number[]): Promise<Pokemon[]
   }
 };
 
-export const fetchAllPokemon = async (): Promise<Pokemon[]> => {
-  console.log(`🔍🔍🔍 [API_FETCH_DEBUG] fetchAllPokemon called - will fetch generations 1-9`);
-  return fetchPokemonData([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+export const fetchAllPokemon = async (genId = 0, fullRankingMode = true, preserveState = false, cacheBust?: number): Promise<Pokemon[]> => {
+  console.log(`🔍🔍🔍 [API_FETCH_DEBUG] fetchAllPokemon called with cache bust: ${cacheBust}`);
+  return fetchPokemonData([1, 2, 3, 4, 5, 6, 7, 8, 9], cacheBust);
 };
