@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { usePokemonContext } from "@/contexts/PokemonContext";
@@ -102,18 +103,21 @@ const GlobalRankingsView: React.FC<GlobalRankingsViewProps> = ({
   const displayRankings = rankings.slice(0, displayCount).map((ranking, index) => {
     const pokemon = pokemonLookupMap.get(ranking.pokemon_id);
     
-    // CRITICAL FIX: Use Pokemon from lookup map if available (already formatted), 
-    // otherwise format the database name
-    const finalName = pokemon?.name || formatPokemonName(ranking.pokemon_name);
-    
+    // CRITICAL FIX: Debug the name formatting issue
     console.log(`🔍 [GLOBAL_RANKINGS_NAME_DEBUG] Pokemon ID ${ranking.pokemon_id}:`);
     console.log(`🔍 [GLOBAL_RANKINGS_NAME_DEBUG] - Database name: "${ranking.pokemon_name}"`);
     console.log(`🔍 [GLOBAL_RANKINGS_NAME_DEBUG] - Lookup map Pokemon:`, pokemon ? `"${pokemon.name}"` : 'NOT FOUND');
-    console.log(`🔍 [GLOBAL_RANKINGS_NAME_DEBUG] - Final name used: "${finalName}"`);
+    
+    // CRITICAL FIX: Use the Pokemon from lookup map if available, otherwise use database name
+    const nameToFormat = pokemon?.name || ranking.pokemon_name;
+    const formattedName = formatPokemonName(nameToFormat);
+    
+    console.log(`🔍 [GLOBAL_RANKINGS_NAME_DEBUG] - Input to formatter: "${nameToFormat}"`);
+    console.log(`🔍 [GLOBAL_RANKINGS_NAME_DEBUG] - Formatted output: "${formattedName}"`);
     
     return {
       id: ranking.pokemon_id,
-      name: finalName,
+      name: formattedName,
       image: pokemon?.image || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${ranking.pokemon_id}.png`,
       types: pokemon?.types || [],
       score: ranking.average_rating,
