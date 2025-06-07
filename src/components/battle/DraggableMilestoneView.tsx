@@ -7,6 +7,7 @@ import AutoBattleLogsModal from "./AutoBattleLogsModal";
 import { usePendingRefinementsManager } from "@/hooks/battle/usePendingRefinementsManager";
 import { useEnhancedManualReorder } from "@/hooks/battle/useEnhancedManualReorder";
 import DraggableMilestoneGrid from "./DraggableMilestoneGrid";
+import { formatPokemonName } from "@/utils/pokemon";
 
 interface DraggableMilestoneViewProps {
   formattedRankings: (Pokemon | RankedPokemon)[];
@@ -31,7 +32,13 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
   onManualReorder,
   pendingRefinements = new Set()
 }) => {
-  const [localRankings, setLocalRankings] = useState(formattedRankings);
+  // Format names in the rankings data before using them
+  const [localRankings, setLocalRankings] = useState(() => {
+    return formattedRankings.map(pokemon => ({
+      ...pokemon,
+      name: formatPokemonName(pokemon.name)
+    }));
+  });
   
   const {
     localPendingRefinements,
@@ -55,7 +62,12 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
     
     if (hasSignificantDifference) {
       console.log(`🏆 [MILESTONE_DRAG_SYNC] Significant difference detected, updating local rankings`);
-      setLocalRankings(formattedRankings);
+      // Apply name formatting when updating from props
+      const formattedData = formattedRankings.map(pokemon => ({
+        ...pokemon,
+        name: formatPokemonName(pokemon.name)
+      }));
+      setLocalRankings(formattedData);
     } else {
       console.log(`🏆 [MILESTONE_DRAG_SYNC] No significant difference, keeping local rankings to preserve drag state`);
     }
@@ -66,7 +78,12 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
     localRankings as RankedPokemon[],
     (updatedRankings: RankedPokemon[]) => {
       console.log(`🏆 [MILESTONE_DRAG_FIXED] Enhanced reorder callback with ${updatedRankings.length} Pokemon`);
-      setLocalRankings(updatedRankings);
+      // Ensure names stay formatted when reordering
+      const formattedUpdatedRankings = updatedRankings.map(pokemon => ({
+        ...pokemon,
+        name: formatPokemonName(pokemon.name)
+      }));
+      setLocalRankings(formattedUpdatedRankings);
       // NOTE: Removed call to onManualReorder here to prevent reset conflicts
     },
     true // preventAutoResorting = true to maintain manual order
