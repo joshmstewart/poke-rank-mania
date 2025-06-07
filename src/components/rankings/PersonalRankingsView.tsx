@@ -45,7 +45,7 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
     return allPokemon.filter(p => p.id >= min && p.id <= max);
   }, [allPokemon, selectedGeneration]);
   
-  // Transform TrueSkill data to ranked Pokemon format using actual Pokemon data
+  // Transform TrueSkill data to ranked Pokemon format - MATCH GLOBAL RANKINGS APPROACH
   const rankings = useMemo(() => {
     const ratings = getAllRatings();
     
@@ -53,7 +53,7 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
       return [];
     }
     
-    // Convert ratings to RankedPokemon format
+    // Convert ratings to RankedPokemon format - USING GLOBAL RANKINGS PATTERN
     const rankedPokemon: RankedPokemon[] = Object.entries(ratings)
       .map(([pokemonId, rating]) => {
         const pokemon = pokemonLookupMap.get(parseInt(pokemonId));
@@ -79,15 +79,19 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
         const losses = battleCount - wins;
         const winRate = battleCount > 0 ? (wins / battleCount) * 100 : 0;
         
+        // CRITICAL: Match Global Rankings name formatting approach exactly
         return {
-          ...pokemon, // Use actual Pokemon data (id, image, types, etc.)
-          name: formatPokemonName(pokemon.name), // Apply name formatting here
+          id: pokemon.id,
+          name: formatPokemonName(pokemon?.name || `pokemon-${pokemon.id}`), // Same pattern as Global Rankings
+          image: pokemon.image,
+          types: pokemon.types,
           score: score,
           count: battleCount,
           confidence: Math.max(0, 100 - (rating.sigma * 20)), // Convert sigma to confidence percentage
           wins: wins,
           losses: losses,
-          winRate: winRate
+          winRate: winRate,
+          rating: rating
         };
       })
       .filter((pokemon): pokemon is RankedPokemon => pokemon !== null);
