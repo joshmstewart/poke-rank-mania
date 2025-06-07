@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { useTrueSkillStore } from "@/stores/trueskillStore";
 import { generations } from "@/services/pokemon";
@@ -71,7 +72,7 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
     // Convert ratings to RankedPokemon format using the context lookup map
     const rankedPokemon: RankedPokemon[] = Object.entries(ratings)
       .map(([pokemonId, rating]) => {
-        // CRITICAL FIX: Use the Pokemon from lookup map directly (already formatted)
+        // Use the Pokemon from context (should now have formatted names)
         const pokemon = pokemonLookupMap.get(parseInt(pokemonId));
         if (!pokemon) {
           return null; // Skip if Pokemon data not found
@@ -102,12 +103,12 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
         const losses = battleCount - wins;
         const winRate = battleCount > 0 ? (wins / battleCount) * 100 : 0;
         
-        // CRITICAL FIX: Use the Pokemon name directly from lookup map (already formatted)
+        // Create RankedPokemon object using the formatted Pokemon from context
         const rankedPokemonObject: RankedPokemon = {
           id: pokemon.id,
           image: pokemon.image,
           types: pokemon.types || [],
-          name: pokemon.name, // Use the already formatted name from the context
+          name: pokemon.name, // This should now be formatted from the provider
           // Add ranking-specific properties
           score: score,
           count: battleCount,
