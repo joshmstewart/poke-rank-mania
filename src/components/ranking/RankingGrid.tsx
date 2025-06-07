@@ -3,6 +3,7 @@ import React from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { VotingArrows } from "./VotingArrows";
 import DraggablePokemonMilestoneCard from "@/components/battle/DraggablePokemonMilestoneCard";
+import { formatPokemonName } from "@/utils/pokemon";
 
 interface RankingGridProps {
   displayRankings: (Pokemon | RankedPokemon)[];
@@ -27,6 +28,12 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
         const isRankedPokemon = 'score' in pokemon;
         const showRankNumber = onSuggestRanking !== undefined; // Only show rank number in rankings section
 
+        // CRITICAL FIX: Format the Pokemon name before passing to the card component
+        const formattedPokemon = {
+          ...pokemon,
+          name: formatPokemonName(pokemon.name)
+        };
+
         return (
           <div key={pokemon.id} className="relative group">
             {/* Voting arrows for ranked Pokemon */}
@@ -38,9 +45,9 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
               />
             )}
 
-            {/* Using draggable card component */}
+            {/* Using draggable card component with formatted Pokemon data */}
             <DraggablePokemonMilestoneCard
-              pokemon={pokemon}
+              pokemon={formattedPokemon}
               index={index}
               isPending={false}
               showRank={showRankNumber}
