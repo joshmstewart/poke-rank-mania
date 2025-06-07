@@ -1,5 +1,6 @@
 
 import { useMemo } from "react";
+import { formatPokemonName } from "@/utils/pokemon";
 
 interface UseEnhancedAvailablePokemonProps {
   filteredAvailablePokemon: any[];
@@ -21,6 +22,7 @@ export const useEnhancedAvailablePokemon = ({
       
       return {
         ...pokemon,
+        name: formatPokemonName(pokemon.name), // Format name here at the data source
         isRanked,
         currentRank
       };
