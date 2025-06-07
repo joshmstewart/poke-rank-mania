@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { PokemonProvider } from "@/contexts/PokemonContext";
 import { Pokemon } from "@/services/pokemon";
 import { usePokemonLoader } from "@/hooks/battle/usePokemonLoader";
+import { usePokemonFilterProcessor } from "@/hooks/battle/usePokemonFilterProcessor";
 
 interface PokemonRankerProviderProps {
   children: React.ReactNode;
@@ -15,13 +16,16 @@ const PokemonRankerProvider: React.FC<PokemonRankerProviderProps> = ({ children 
   const [retryCount, setRetryCount] = useState(0);
   const [errorDetails, setErrorDetails] = useState<string>("");
   
-  // CRITICAL FIX: Get both filtered and raw data from the loader
+  // Get both filtered and raw data from the loader
   const { 
-    allPokemon: filteredPokemon, 
+    allPokemon: loadedPokemon, 
     rawUnfilteredPokemon: rawPokemon, 
     isLoading, 
     loadPokemon 
   } = usePokemonLoader();
+
+  // CRITICAL FIX: Use the same filtering processor as Battle Mode
+  const { processFilteredPokemon } = usePokemonFilterProcessor();
 
   const MAX_RETRIES = 3;
   const RETRY_DELAY = 2000; // 2 seconds
@@ -71,7 +75,10 @@ const PokemonRankerProvider: React.FC<PokemonRankerProviderProps> = ({ children 
           try {
             const cached = JSON.parse(cachedData);
             console.log(`🔒 [MANUAL_MODE_PROVIDER] 💾 Using cached data as fallback: ${cached.length} Pokemon`);
-            setAllPokemon(cached);
+            // CRITICAL FIX: Apply filtering pipeline to cached data too
+            const processedCached = processFilteredPokemon(cached);
+            setAllPokemon(processedCached);
+            setRawUnfilteredPokemon(cached);
           } catch (e) {
             console.error(`🔒 [MANUAL_MODE_PROVIDER] ❌ Failed to parse cached data:`, e);
           }
@@ -80,13 +87,26 @@ const PokemonRankerProvider: React.FC<PokemonRankerProviderProps> = ({ children 
     }
   };
 
-  // CRITICAL FIX: Update local state when loader provides data
+  // CRITICAL FIX: Apply the same filtering pipeline that Battle Mode uses
   useEffect(() => {
-    if (filteredPokemon.length > 0) {
-      console.log(`🔒 [MANUAL_MODE_PROVIDER] Received ${filteredPokemon.length} filtered Pokemon from loader`);
-      setAllPokemon(filteredPokemon);
+    if (loadedPokemon.length > 0) {
+      console.log(`🔒 [MANUAL_MODE_PROVIDER] Received ${loadedPokemon.length} Pokemon from loader`);
+      console.log(`🔒 [MANUAL_MODE_PROVIDER_FIX] Applying filtering pipeline to ensure name formatting...`);
+      
+      // Apply the same filtering pipeline that Battle Mode uses
+      const processedPokemon = processFilteredPokemon(loadedPokemon);
+      
+      console.log(`🔒 [MANUAL_MODE_PROVIDER_FIX] Processed ${processedPokemon.length} Pokemon with formatting`);
+      
+      // Debug: Check if Deoxys names are now formatted
+      const deoxysCheck = processedPokemon.filter(p => p.name.toLowerCase().includes('deoxys'));
+      if (deoxysCheck.length > 0) {
+        console.log(`🔒 [DEOXYS_FORMAT_CHECK] Processed Deoxys names:`, deoxysCheck.map(p => p.name));
+      }
+      
+      setAllPokemon(processedPokemon);
     }
-  }, [filteredPokemon]);
+  }, [loadedPokemon, processFilteredPokemon]);
 
   useEffect(() => {
     if (rawPokemon.length > 0) {
