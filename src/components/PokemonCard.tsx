@@ -3,7 +3,6 @@ import React, { useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Pokemon } from "@/services/pokemon";
 import { validateBattlePokemon } from "@/services/pokemon/api/utils";
-import { formatPokemonName } from "@/utils/pokemon";
 import PokemonInfoModal from "@/components/pokemon/PokemonInfoModal";
 import PokemonCardImage from "@/components/pokemon/PokemonCardImage";
 import { normalizePokedexNumber } from "@/utils/pokemon";
@@ -26,14 +25,7 @@ const PokemonCard = ({ pokemon, isDragging, viewMode = "list", compact }: Pokemo
   }, [pokemon]);
 
   const pokemonId = validatedPokemon.id;
-  
-  // CRITICAL FIX: Always format the display name using formatPokemonName
-  const displayName = useMemo(() => {
-    const formatted = formatPokemonName(validatedPokemon.name);
-    console.log(`🔥 [POKEMON_CARD_FORMAT_FIX] ${validatedPokemon.name} -> ${formatted}`);
-    return formatted;
-  }, [validatedPokemon.name]);
-  
+  const displayName = validatedPokemon.name;
   const imageUrl = validatedPokemon.image;
   const normalizedId = normalizePokedexNumber(pokemonId);
 
