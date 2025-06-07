@@ -92,24 +92,6 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   // Format Pokemon ID with leading zeros
   const formattedId = pokemon.id.toString().padStart(pokemon.id >= 10000 ? 5 : 3, '0');
 
-  // ULTRA-CRITICAL DEBUG: Log what name the card is receiving
-  const displayName = pokemon.name;
-  
-  // ULTRA-CRITICAL: Log EVERY card render with name details
-  console.log(`🎴🎴🎴 [CARD_ULTRA_DEBUG] ===== RENDERING CARD =====`);
-  console.log(`🎴🎴🎴 [CARD_ULTRA_DEBUG] Pokemon ID: ${pokemon.id}, Name: "${pokemon.name}"`);
-  console.log(`🎴🎴🎴 [CARD_ULTRA_DEBUG] Display name: "${displayName}"`);
-  console.log(`🎴🎴🎴 [CARD_ULTRA_DEBUG] Context: ${context}, Index: ${index}`);
-  
-  // Special debugging for Deoxys
-  if (pokemon.name.toLowerCase().includes('deoxys')) {
-    console.log(`🎴🎴🎴 [CARD_DEOXYS_ULTRA_DEBUG] ===== DEOXYS CARD RENDER =====`);
-    console.log(`🎴🎴🎴 [CARD_DEOXYS_ULTRA_DEBUG] Card received Pokemon with name: "${pokemon.name}" (ID: ${pokemon.id})`);
-    console.log(`🎴🎴🎴 [CARD_DEOXYS_ULTRA_DEBUG] Display name will be: "${displayName}"`);
-    console.log(`🎴🎴🎴 [CARD_DEOXYS_ULTRA_DEBUG] Pokemon object keys: ${Object.keys(pokemon)}`);
-    console.log(`🎴🎴🎴 [CARD_DEOXYS_ULTRA_DEBUG] Pokemon object: ${JSON.stringify(pokemon, null, 2)}`);
-  }
-
   return (
     <div
       ref={setNodeRef}
@@ -151,7 +133,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
                 className="w-5 h-5 rounded-full bg-white/80 hover:bg-white border border-gray-300 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200 backdrop-blur-sm cursor-pointer"
                 onClick={(e) => {
                   e.stopPropagation();
-                  console.log(`Info button clicked for ${displayName}`);
+                  console.log(`Info button clicked for ${pokemon.name}`);
                 }}
                 onPointerDown={(e) => {
                   e.stopPropagation();
@@ -173,7 +155,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
             >
               <DialogHeader>
                 <DialogTitle className="text-2xl font-bold text-center">
-                  {displayName}
+                  {pokemon.name}
                 </DialogTitle>
               </DialogHeader>
 
@@ -218,7 +200,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       <div className="flex-1 flex justify-center items-center px-2 pt-6 pb-1">
         <img 
           src={pokemon.image} 
-          alt={displayName}
+          alt={pokemon.name}
           className={`w-20 h-20 object-contain transition-all duration-200 ${
             isDragging ? 'scale-110' : ''
           }`}
@@ -239,7 +221,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
         isDragging ? 'bg-blue-50' : ''
       }`}>
         <h3 className="font-bold text-gray-800 text-sm leading-tight mb-0.5">
-          {displayName}
+          {pokemon.name}
         </h3>
         <div className="text-xs text-gray-600 mb-1">
           #{formattedId}

@@ -3,7 +3,7 @@ import React from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import {
   DndContext,
-  closestCorners,
+  closestCenter,
   DragOverlay,
   defaultDropAnimationSideEffects,
 } from '@dnd-kit/core';
@@ -13,7 +13,6 @@ import {
 } from '@dnd-kit/sortable';
 import DraggablePokemonMilestoneCard from "./DraggablePokemonMilestoneCard";
 import { useDragAndDrop } from "@/hooks/battle/useDragAndDrop";
-import { getPokemonBackgroundColor } from "./utils/PokemonColorUtils";
 
 interface DraggableMilestoneGridProps {
   displayRankings: (Pokemon | RankedPokemon)[];
@@ -100,7 +99,7 @@ const DraggableMilestoneGrid: React.FC<DraggableMilestoneGridProps> = ({
     return (
       <DndContext
         sensors={sensors}
-        collisionDetection={closestCorners}
+        collisionDetection={closestCenter}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEndWithCleanup}
       >
@@ -111,25 +110,24 @@ const DraggableMilestoneGrid: React.FC<DraggableMilestoneGridProps> = ({
           {content}
         </SortableContext>
         
-        {/* Lightweight drag overlay - only image and background color */}
+        {/* Hardware accelerated Drag Overlay for smooth cursor following */}
         <DragOverlay dropAnimation={dropAnimationConfig}>
           {activePokemon ? (
             <div 
-              className={`${getPokemonBackgroundColor(activePokemon)} rounded-lg w-35 h-35 flex items-center justify-center rotate-2 scale-105 shadow-2xl border-2 border-blue-400`}
+              className="rotate-2 scale-105"
               style={{
                 transform: 'translateZ(0)',
                 willChange: 'transform',
                 backfaceVisibility: 'hidden'
               }}
             >
-              <img 
-                src={activePokemon.image} 
-                alt={activePokemon.name}
-                className="w-20 h-20 object-contain"
-                style={{ 
-                  transform: 'translateZ(0)',
-                  willChange: 'auto'
-                }}
+              <DraggablePokemonMilestoneCard
+                pokemon={activePokemon}
+                index={displayRankings.findIndex(p => p.id === activePokemon.id)}
+                showRank={true}
+                isDraggable={false}
+                context="ranked"
+                isPending={localPendingRefinements.has(activePokemon.id)}
               />
             </div>
           ) : null}

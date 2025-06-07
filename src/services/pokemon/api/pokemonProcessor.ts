@@ -21,47 +21,6 @@ export const processPokemonData = async (
       const response = await fetch(pokemonInfo.url);
       const pokemonData = await response.json();
 
-      // ULTRA-CRITICAL: Log raw Pokemon data for Deoxys forms specifically
-      if (pokemonData.id === 386 || pokemonData.id === 10001 || pokemonData.id === 10002 || pokemonData.id === 10003) {
-        console.log(`🔍🔍🔍 [DEOXYS_RAW_API_DEBUG] ===== RAW API DATA FOR DEOXYS ID ${pokemonData.id} =====`);
-        console.log(`🔍🔍🔍 [DEOXYS_RAW_API_DEBUG] Raw name: "${pokemonData.name}"`);
-        console.log(`🔍🔍🔍 [DEOXYS_RAW_API_DEBUG] Species URL: ${pokemonData.species?.url || 'N/A'}`);
-        console.log(`🔍🔍🔍 [DEOXYS_RAW_API_DEBUG] Forms array:`, pokemonData.forms);
-        console.log(`🔍🔍🔍 [DEOXYS_RAW_API_DEBUG] Full Pokemon object keys:`, Object.keys(pokemonData));
-        console.log(`🔍🔍🔍 [DEOXYS_RAW_API_DEBUG] pokemonInfo.url: ${pokemonInfo.url}`);
-        console.log(`🔍🔍🔍 [DEOXYS_RAW_API_DEBUG] pokemonInfo.name: ${pokemonInfo.name}`);
-        
-        // Check if there's form data in the forms array
-        if (pokemonData.forms && pokemonData.forms.length > 0) {
-          console.log(`🔍🔍🔍 [DEOXYS_RAW_API_DEBUG] Forms data:`, JSON.stringify(pokemonData.forms, null, 2));
-          
-          // Fetch form details if available
-          for (const form of pokemonData.forms) {
-            try {
-              const formResponse = await fetch(form.url);
-              const formData = await formResponse.json();
-              console.log(`🔍🔍🔍 [DEOXYS_RAW_API_DEBUG] Form "${form.name}" details:`, JSON.stringify(formData, null, 2));
-            } catch (formError) {
-              console.log(`🔍🔍🔍 [DEOXYS_RAW_API_DEBUG] Failed to fetch form details for ${form.name}:`, formError);
-            }
-          }
-        }
-        
-        // Check species data too
-        if (pokemonData.species?.url) {
-          try {
-            const speciesResponse = await fetch(pokemonData.species.url);
-            const speciesData = await speciesResponse.json();
-            console.log(`🔍🔍🔍 [DEOXYS_RAW_API_DEBUG] Species data name: "${speciesData.name}"`);
-            console.log(`🔍🔍🔍 [DEOXYS_RAW_API_DEBUG] Species varieties:`, speciesData.varieties);
-          } catch (speciesError) {
-            console.log(`🔍🔍🔍 [DEOXYS_RAW_API_DEBUG] Failed to fetch species data:`, speciesError);
-          }
-        }
-        
-        console.log(`🔍🔍🔍 [DEOXYS_RAW_API_DEBUG] ===== END RAW API DATA =====`);
-      }
-
       // NEW: Log every Pokemon name and ID for debugging
       allPokemonNames.push(`${pokemonData.name} (ID: ${pokemonData.id})`);
       

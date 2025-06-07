@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { DragEndEvent } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
@@ -5,7 +6,6 @@ import { Pokemon, RankedPokemon } from '@/services/pokemon';
 import { useTrueSkillStore } from '@/stores/trueskillStore';
 import { usePokemonContext } from '@/contexts/PokemonContext';
 import { Rating } from 'ts-trueskill';
-import { formatPokemonName } from '@/utils/pokemon';
 
 export const useEnhancedManualReorder = (
   finalRankings: RankedPokemon[],
@@ -28,25 +28,12 @@ export const useEnhancedManualReorder = (
 
   const [localRankings, setLocalRankings] = useState<RankedPokemon[]>([]);
 
-  // Initialize local rankings once with proper name formatting
+  // Initialize local rankings once
   const isInitialized = useRef(false);
   useEffect(() => {
     if (!isInitialized.current && finalRankings.length > 0) {
-      console.log('🔥 [ENHANCED_REORDER] Initializing local rankings with name formatting');
-      const formattedRankings = finalRankings.map(pokemon => {
-        const formattedName = formatPokemonName(pokemon.name);
-        
-        // DEBUG: Log formatting for Deoxys
-        if (pokemon.name.toLowerCase().includes('deoxys')) {
-          console.log(`🔥 [ENHANCED_REORDER_DEOXYS_DEBUG] Initializing: "${pokemon.name}" → "${formattedName}"`);
-        }
-        
-        return {
-          ...pokemon,
-          name: formattedName
-        };
-      });
-      setLocalRankings(formattedRankings);
+      console.log('🔥 [ENHANCED_REORDER] Initializing local rankings');
+      setLocalRankings(finalRankings);
       isInitialized.current = true;
     }
   }, [finalRankings]);
@@ -58,21 +45,8 @@ export const useEnhancedManualReorder = (
         !dragState.isUpdating && 
         !dragState.manualAdjustmentInProgress &&
         finalRankings.length > 0) {
-      console.log('🔥 [ENHANCED_REORDER] Updating local rankings from final rankings with name formatting');
-      const formattedRankings = finalRankings.map(pokemon => {
-        const formattedName = formatPokemonName(pokemon.name);
-        
-        // DEBUG: Log formatting for Deoxys
-        if (pokemon.name.toLowerCase().includes('deoxys')) {
-          console.log(`🔥 [ENHANCED_REORDER_DEOXYS_DEBUG] Updating: "${pokemon.name}" → "${formattedName}"`);
-        }
-        
-        return {
-          ...pokemon,
-          name: formattedName
-        };
-      });
-      setLocalRankings(formattedRankings);
+      console.log('🔥 [ENHANCED_REORDER] Updating local rankings from final rankings');
+      setLocalRankings(finalRankings);
     }
   }, [finalRankings, dragState.isDragging, dragState.isUpdating, dragState.manualAdjustmentInProgress]);
 
@@ -113,112 +87,8 @@ export const useEnhancedManualReorder = (
     
     console.log(`🔥🔥🔥 [${operationId}] Above: ${abovePokemon ? `${abovePokemon.name} (${abovePokemon.score.toFixed(5)})` : 'None'}`);
     console.log(`🔥🔥🔥 [${operationId}] Below: ${belowPokemon ? `${belowPokemon.name} (${belowPokemon.score.toFixed(5)})` : 'None'}`);
-
-    // 🟢 Step 1: Explicitly detect identical neighbor scores
-    if (abovePokemon && belowPokemon) {
-      const EPSILON = 0.00001;
-      const aboveDisplayedScore = abovePokemon.rating ? (abovePokemon.rating.mu - abovePokemon.rating.sigma) : abovePokemon.score;
-      const belowDisplayedScore = belowPokemon.rating ? (belowPokemon.rating.mu - belowPokemon.rating.sigma) : belowPokemon.score;
-      
-      const identicalScores = Math.abs(aboveDisplayedScore - belowDisplayedScore) < EPSILON;
-      console.log(`🚨 [${operationId}] Identical score scenario explicitly detected:`, identicalScores);
-      console.log(`🚨 [${operationId}] Above displayed score: ${aboveDisplayedScore.toFixed(6)}`);
-      console.log(`🚨 [${operationId}] Below displayed score: ${belowDisplayedScore.toFixed(6)}`);
-      
-      if (identicalScores) {
-        // 🔵 Step 2: Explicitly identify groups with identical scores
-        const aboveGroup: RankedPokemon[] = [];
-        const belowGroup: RankedPokemon[] = [];
-        
-        // Build above group - all Pokemon immediately above with same displayed score
-        for (let i = targetPosition - 1; i >= 0; i--) {
-          const pokemon = currentRankings[i];
-          const pokemonDisplayedScore = pokemon.rating ? (pokemon.rating.mu - pokemon.rating.sigma) : pokemon.score;
-          if (Math.abs(pokemonDisplayedScore - aboveDisplayedScore) < EPSILON) {
-            aboveGroup.unshift(pokemon);
-          } else {
-            break;
-          }
-        }
-        
-        // Build below group - all Pokemon immediately below with same displayed score
-        for (let i = targetPosition; i < currentRankings.length; i++) {
-          const pokemon = currentRankings[i];
-          const pokemonDisplayedScore = pokemon.rating ? (pokemon.rating.mu - pokemon.rating.sigma) : pokemon.score;
-          if (Math.abs(pokemonDisplayedScore - belowDisplayedScore) < EPSILON) {
-            belowGroup.push(pokemon);
-          } else {
-            break;
-          }
-        }
-        
-        console.log(`📌 [${operationId}] Above group explicitly: [${aboveGroup.map(p => `${p.name} (${(p.rating?.mu - p.rating?.sigma || p.score).toFixed(3)})`).join(', ')}]`);
-        console.log(`📌 [${operationId}] Below group explicitly: [${belowGroup.map(p => `${p.name} (${(p.rating?.mu - p.rating?.sigma || p.score).toFixed(3)})`).join(', ')}]`);
-        
-        // 🟡 Step 3: Carefully adjust scores of the tied groups
-        const currentIndexAboveGroup = currentRankings.indexOf(aboveGroup[0]);
-        const currentIndexBelowGroup = currentRankings.indexOf(belowGroup[belowGroup.length - 1]);
-        
-        // Explicit next higher displayed score calculation
-        let nextHigherDisplayedScore;
-        if (currentIndexAboveGroup > 0) {
-          const nextHigherPokemon = currentRankings[currentIndexAboveGroup - 1];
-          nextHigherDisplayedScore = nextHigherPokemon.rating ? (nextHigherPokemon.rating.mu - nextHigherPokemon.rating.sigma) : nextHigherPokemon.score;
-        } else {
-          nextHigherDisplayedScore = aboveDisplayedScore + 0.5; // Explicit small increment
-        }
-        
-        // Explicit next lower displayed score calculation
-        let nextLowerDisplayedScore;
-        if (currentIndexBelowGroup < currentRankings.length - 1) {
-          const nextLowerPokemon = currentRankings[currentIndexBelowGroup + 1];
-          nextLowerDisplayedScore = nextLowerPokemon.rating ? (nextLowerPokemon.rating.mu - nextLowerPokemon.rating.sigma) : nextLowerPokemon.score;
-        } else {
-          nextLowerDisplayedScore = belowDisplayedScore - 0.5; // Explicit small decrement
-        }
-        
-        console.log(`📌 [${operationId}] Next higher displayed score: ${nextHigherDisplayedScore.toFixed(6)}`);
-        console.log(`📌 [${operationId}] Next lower displayed score: ${nextLowerDisplayedScore.toFixed(6)}`);
-        
-        // Adjust Above Group explicitly
-        const newAboveDisplayedScore = (aboveDisplayedScore + nextHigherDisplayedScore) / 2;
-        console.log(`📌 [${operationId}] Above group explicitly adjusted from ${aboveDisplayedScore.toFixed(6)} to ${newAboveDisplayedScore.toFixed(6)}`);
-        
-        aboveGroup.forEach(pokemon => {
-          const currentRating = getRating(pokemon.id.toString());
-          const newMu = newAboveDisplayedScore + currentRating.sigma;
-          const newRating = new Rating(newMu, currentRating.sigma);
-          updateRating(pokemon.id.toString(), newRating);
-          console.log(`📌 [${operationId}] Above group ${pokemon.name}: μ=${newMu.toFixed(3)}, σ=${currentRating.sigma.toFixed(3)}`);
-        });
-        
-        // Adjust Below Group explicitly
-        const newBelowDisplayedScore = (belowDisplayedScore + nextLowerDisplayedScore) / 2;
-        console.log(`📌 [${operationId}] Below group explicitly adjusted from ${belowDisplayedScore.toFixed(6)} to ${newBelowDisplayedScore.toFixed(6)}`);
-        
-        belowGroup.forEach(pokemon => {
-          const currentRating = getRating(pokemon.id.toString());
-          const newMu = newBelowDisplayedScore + currentRating.sigma;
-          const newRating = new Rating(newMu, currentRating.sigma);
-          updateRating(pokemon.id.toString(), newRating);
-          console.log(`📌 [${operationId}] Below group ${pokemon.name}: μ=${newMu.toFixed(3)}, σ=${currentRating.sigma.toFixed(3)}`);
-        });
-        
-        // 🟠 Step 4: Explicitly set dragged Pokemon's score
-        const MIN_SIGMA = 1.0;
-        const currentDraggedRating = getRating(draggedPokemon.id.toString());
-        const newSigma = Math.max(currentDraggedRating.sigma * 0.8, MIN_SIGMA); // Reduce sigma by 20%
-        const newMu = aboveDisplayedScore + newSigma; // Maintain exact original displayed score
-        const newDraggedRating = new Rating(newMu, newSigma);
-        updateRating(draggedPokemon.id.toString(), newDraggedRating);
-        
-        console.log(`✅ [${operationId}] Dragged Pokemon explicitly adjusted: ${draggedPokemon.name} new μ: ${newMu.toFixed(6)} new σ: ${newSigma.toFixed(6)}`);
-        
-        return; // Early return for identical scores case
-      }
-    }
     
-    // Standard case - no identical scores
+    // Calculate target score
     let targetScore: number;
     
     if (abovePokemon && belowPokemon) {
@@ -249,7 +119,7 @@ export const useEnhancedManualReorder = (
     updateRating(draggedPokemon.id.toString(), newRating);
     
     console.log(`🔥🔥🔥 [${operationId}] ✅ SCORE FORCED SUCCESSFULLY`);
-  }, [updateRating, getRating]);
+  }, [updateRating]);
 
   const recalculateAllScores = useCallback((rankings: RankedPokemon[]): RankedPokemon[] => {
     console.log('🔥 [RECALC_SCORES] ===== RECALCULATING ALL SCORES =====');
@@ -261,16 +131,8 @@ export const useEnhancedManualReorder = (
       
       console.log(`🔥 [RECALC_SCORES] ${pokemon.name}: old=${pokemon.score.toFixed(3)}, new=${newScore.toFixed(3)}`);
       
-      const formattedName = formatPokemonName(pokemon.name);
-      
-      // DEBUG: Log formatting for Deoxys during recalculation
-      if (pokemon.name.toLowerCase().includes('deoxys')) {
-        console.log(`🔥 [RECALC_SCORES_DEOXYS_DEBUG] Recalculating: "${pokemon.name}" → "${formattedName}"`);
-      }
-      
       return {
         ...pokemon,
-        name: formattedName, // Ensure name formatting is applied
         score: newScore,
         confidence: confidence,
         rating: rating,
@@ -278,9 +140,9 @@ export const useEnhancedManualReorder = (
       };
     });
     
-    // 🔴 Step 5: Explicitly resort the rankings immediately
+    // ALWAYS SORT BY SCORE
     const sorted = updated.sort((a, b) => b.score - a.score);
-    console.log('🔥 [RECALC_SCORES] ===== SCORES RECALCULATED AND EXPLICITLY SORTED =====');
+    console.log('🔥 [RECALC_SCORES] ===== SCORES RECALCULATED AND SORTED =====');
     return sorted;
   }, [getRating]);
 
@@ -368,27 +230,9 @@ export const useEnhancedManualReorder = (
           return;
         }
         
-        // Apply name formatting when creating new Pokemon entry
-        const formattedPokemonData = {
-          ...pokemonData,
-          name: formatPokemonName(pokemonData.name),
-          score: 0,
-          confidence: 0,
-          rating: getRating(draggedPokemonId.toString()),
-          count: 0,
-          wins: 0,
-          losses: 0,
-          winRate: 0
-        };
-        
-        // DEBUG: Log formatting for new Deoxys
-        if (pokemonData.name.toLowerCase().includes('deoxys')) {
-          console.log(`🔥 [ENHANCED_MANUAL_REORDER_DEOXYS_DEBUG] Adding new: "${pokemonData.name}" → "${formattedPokemonData.name}"`);
-        }
-        
         // Force score at target position
         forceScoreBetweenNeighbors(
-          formattedPokemonData,
+          { ...pokemonData, score: 0, confidence: 0, rating: getRating(draggedPokemonId.toString()), count: 0, wins: 0, losses: 0, winRate: 0 },
           destinationIndex,
           localRankings
         );
@@ -422,20 +266,10 @@ export const useEnhancedManualReorder = (
   }, [localRankings, pokemonLookupMap, getRating, forceScoreBetweenNeighbors, recalculateAllScores, onRankingsUpdate]);
 
   const displayRankings = useMemo(() => {
-    return localRankings.map((pokemon) => {
-      const formattedName = formatPokemonName(pokemon.name);
-      
-      // DEBUG: Log formatting in display
-      if (pokemon.name.toLowerCase().includes('deoxys')) {
-        console.log(`🔥 [DISPLAY_RANKINGS_DEOXYS_DEBUG] Display formatting: "${pokemon.name}" → "${formattedName}"`);
-      }
-      
-      return {
-        ...pokemon,
-        name: formattedName, // Ensure formatting is applied in display
-        isBeingDragged: dragState.draggedPokemonId === pokemon.id
-      };
-    });
+    return localRankings.map((pokemon) => ({
+      ...pokemon,
+      isBeingDragged: dragState.draggedPokemonId === pokemon.id
+    }));
   }, [localRankings, dragState.draggedPokemonId]);
 
   return {

@@ -1,3 +1,4 @@
+
 import { useSensors } from '@dnd-kit/core';
 import {
   useSensor,
@@ -21,21 +22,21 @@ export const useDragAndDrop = ({ displayRankings, onManualReorder, onLocalReorde
   console.log(`🚀 [DRAG_DROP_FLOW] ===== useDragAndDrop with Enhanced Flow =====`);
   console.log(`🚀 [DRAG_DROP_FLOW] onManualReorder function exists: ${!!onManualReorder}`);
 
-  // Optimized sensor configuration for immediate drag response
+  // Optimized sensor configuration for better responsiveness
   const sensors = useSensors(
-    // Pointer sensor with minimal activation constraints for instant drag
+    // Pointer sensor with activation constraints
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 3, // Reduced from 8px - minimal movement to start drag
-        // Removed delay completely for instant response
-        tolerance: 2, // Reduced tolerance for more precise activation
+        distance: 8, // Must move 8px before drag starts
+        delay: 100, // 100ms delay to prevent accidental drags
+        tolerance: 5, // 5px tolerance for slight movements
       },
     }),
-    // Touch sensor optimized for immediate response
+    // Touch sensor optimized for mobile
     useSensor(TouchSensor, {
       activationConstraint: {
-        delay: 50, // Reduced from 200ms to minimal delay for touch
-        tolerance: 3, // Reduced tolerance for more responsive touch
+        delay: 200, // Longer delay for touch to prevent scroll conflicts
+        tolerance: 8, // Higher tolerance for touch imprecision
       },
     }),
     // Keyboard sensor for accessibility
