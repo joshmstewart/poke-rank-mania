@@ -22,8 +22,14 @@ export const fetchAllPokemon = async (genId = 0, fullRankingMode = true, useFilt
     
     console.log(`🔥 [FETCH_ALL] Fetching Pokemon range: ${pokemonRange[0]} - ${pokemonRange[1]}`);
     
-    // Fetch basic Pokemon data for the range - using the correct function signature
-    const rawPokemonList = await fetchPokemonData([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    // Create array of Pokemon IDs to fetch based on the range
+    const pokemonIds = Array.from(
+      { length: pokemonRange[1] - pokemonRange[0] + 1 }, 
+      (_, i) => pokemonRange[0] + i
+    );
+    
+    // Fetch basic Pokemon data for the range
+    const rawPokemonList = await fetchPokemonData(pokemonIds);
     console.log(`🔥 [FETCH_ALL] Fetched ${rawPokemonList.length} raw Pokemon`);
     
     // Convert Pokemon[] to RawPokemon[] format for the processor
