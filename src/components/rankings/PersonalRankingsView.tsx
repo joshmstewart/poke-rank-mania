@@ -59,6 +59,13 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
         const pokemon = pokemonLookupMap.get(parseInt(pokemonId));
         if (!pokemon) return null; // Skip if Pokemon data not found
         
+        // CRITICAL DEBUG: Log the raw Pokemon data and formatted result
+        console.log(`🐛 [PERSONAL_RANKINGS_NAME_DEBUG] Pokemon ID ${pokemonId}:`);
+        console.log(`🐛 [PERSONAL_RANKINGS_NAME_DEBUG] Raw pokemon.name: "${pokemon.name}"`);
+        
+        const formattedName = formatPokemonName(pokemon.name);
+        console.log(`🐛 [PERSONAL_RANKINGS_NAME_DEBUG] Formatted name: "${formattedName}"`);
+        
         // Filter by generation if needed
         if (selectedGeneration > 0) {
           const genRanges: { [key: number]: [number, number] } = {
@@ -79,12 +86,12 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
         const losses = battleCount - wins;
         const winRate = battleCount > 0 ? (wins / battleCount) * 100 : 0;
         
-        // CRITICAL: Match Global Rankings name formatting approach exactly
-        return {
+        // CRITICAL: Use the formatted name, not the raw Pokemon name
+        const result = {
           id: pokemon.id,
-          name: formatPokemonName(pokemon?.name || `pokemon-${pokemon.id}`), // Same pattern as Global Rankings
+          name: formattedName, // Use the properly formatted name
           image: pokemon.image,
-          types: pokemon.types || [], // FIX: Ensure types is always an array, never undefined
+          types: pokemon.types || [], // Ensure types is always an array
           score: score,
           count: battleCount,
           confidence: Math.max(0, 100 - (rating.sigma * 20)), // Convert sigma to confidence percentage
@@ -92,7 +99,11 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
           losses: losses,
           winRate: winRate,
           rating: rating
-        } as RankedPokemon; // Explicitly cast to RankedPokemon to match interface
+        } as RankedPokemon;
+        
+        console.log(`🐛 [PERSONAL_RANKINGS_NAME_DEBUG] Final result name: "${result.name}"`);
+        
+        return result;
       })
       .filter((pokemon): pokemon is RankedPokemon => pokemon !== null);
     
