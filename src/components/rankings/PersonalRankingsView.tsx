@@ -103,6 +103,7 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
           console.log(`🐛 [DEOXYS_SPECIFIC_DEBUG] Should be "Defense Deoxys" or similar`);
         }
         
+        // CRITICAL: Format the raw name for display
         const formattedName = formatPokemonName(pokemon.name);
         
         // Filter by generation if needed
@@ -150,7 +151,7 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
     
     // Sort by score descending
     return rankedPokemon.sort((a, b) => b.score - a.score);
-  }, [getAllRatings, pokemonLookupMap, selectedGeneration]);
+  }, [getAllRatings, pokemonLookupMap, selectedGeneration, filteredPokemon]);
 
   // Update local rankings when rankings change
   useEffect(() => {
