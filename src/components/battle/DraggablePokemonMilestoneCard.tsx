@@ -92,14 +92,22 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   // Format Pokemon ID with leading zeros
   const formattedId = pokemon.id.toString().padStart(pokemon.id >= 10000 ? 5 : 3, '0');
 
-  // CRITICAL DEBUG: Log what name the card is receiving
+  // ULTRA-CRITICAL DEBUG: Log what name the card is receiving
   const displayName = pokemon.name;
+  
+  // ULTRA-CRITICAL: Log EVERY card render with name details
+  console.log(`🎴🎴🎴 [CARD_ULTRA_DEBUG] ===== RENDERING CARD =====`);
+  console.log(`🎴🎴🎴 [CARD_ULTRA_DEBUG] Pokemon ID: ${pokemon.id}, Name: "${pokemon.name}"`);
+  console.log(`🎴🎴🎴 [CARD_ULTRA_DEBUG] Display name: "${displayName}"`);
+  console.log(`🎴🎴🎴 [CARD_ULTRA_DEBUG] Context: ${context}, Index: ${index}`);
   
   // Special debugging for Deoxys
   if (pokemon.name.toLowerCase().includes('deoxys')) {
-    console.log(`🔥🔥🔥 [CARD_NAME_DEBUG] Card received Pokemon with name: "${pokemon.name}" (ID: ${pokemon.id})`);
-    console.log(`🔥🔥🔥 [CARD_NAME_DEBUG] Display name will be: "${displayName}"`);
-    console.log(`🔥🔥🔥 [CARD_NAME_DEBUG] Pokemon object keys: ${Object.keys(pokemon)}`);
+    console.log(`🎴🎴🎴 [CARD_DEOXYS_ULTRA_DEBUG] ===== DEOXYS CARD RENDER =====`);
+    console.log(`🎴🎴🎴 [CARD_DEOXYS_ULTRA_DEBUG] Card received Pokemon with name: "${pokemon.name}" (ID: ${pokemon.id})`);
+    console.log(`🎴🎴🎴 [CARD_DEOXYS_ULTRA_DEBUG] Display name will be: "${displayName}"`);
+    console.log(`🎴🎴🎴 [CARD_DEOXYS_ULTRA_DEBUG] Pokemon object keys: ${Object.keys(pokemon)}`);
+    console.log(`🎴🎴🎴 [CARD_DEOXYS_ULTRA_DEBUG] Pokemon object: ${JSON.stringify(pokemon, null, 2)}`);
   }
 
   return (

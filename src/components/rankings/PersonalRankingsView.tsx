@@ -23,6 +23,17 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
   // Get Pokemon data from context - this should now have formatted names
   const { allPokemon, pokemonLookupMap } = usePokemonContext();
   
+  console.log(`🏆🏆🏆 [PERSONAL_RANKINGS_ULTRA_DEBUG] ===== PERSONAL RANKINGS VIEW RENDER =====`);
+  console.log(`🏆🏆🏆 [PERSONAL_RANKINGS_ULTRA_DEBUG] allPokemon from context: ${allPokemon.length}`);
+  console.log(`🏆🏆🏆 [PERSONAL_RANKINGS_ULTRA_DEBUG] pokemonLookupMap size: ${pokemonLookupMap.size}`);
+  
+  // ULTRA-CRITICAL: Log what Deoxys names we get from context
+  const deoxysFromContext = allPokemon.filter(p => p.name.toLowerCase().includes('deoxys'));
+  console.log(`🏆🏆🏆 [PERSONAL_DEOXYS_ULTRA_DEBUG] Deoxys from context: ${deoxysFromContext.length}`);
+  deoxysFromContext.forEach(p => {
+    console.log(`🏆🏆🏆 [PERSONAL_DEOXYS_ULTRA_DEBUG] Context Deoxys: "${p.name}" (ID: ${p.id})`);
+  });
+  
   // Get current generation name
   const currentGeneration = generations.find(gen => gen.id === selectedGeneration);
   
@@ -44,16 +55,17 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
     
     const [min, max] = range;
     const filtered = allPokemon.filter(p => p.id >= min && p.id <= max);
+    console.log(`🏆🏆🏆 [PERSONAL_RANKINGS_ULTRA_DEBUG] Filtered for generation ${selectedGeneration}: ${filtered.length} Pokemon`);
     return filtered;
   }, [allPokemon, selectedGeneration]);
   
   // Transform TrueSkill data to ranked Pokemon format
   const rankings = useMemo(() => {
-    console.log('🔥🔥🔥 [PERSONAL_RANKINGS_DEBUG] ===== STARTING RANKINGS CALCULATION =====');
+    console.log(`🏆🏆🏆 [PERSONAL_RANKINGS_ULTRA_DEBUG] ===== STARTING RANKINGS CALCULATION =====`);
     const ratings = getAllRatings();
     
     if (!filteredPokemon || filteredPokemon.length === 0) {
-      console.log('🔥🔥🔥 [PERSONAL_RANKINGS_DEBUG] No filtered Pokemon available');
+      console.log(`🏆🏆🏆 [PERSONAL_RANKINGS_ULTRA_DEBUG] No filtered Pokemon available`);
       return [];
     }
     
@@ -64,6 +76,11 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
         const pokemon = pokemonLookupMap.get(parseInt(pokemonId));
         if (!pokemon) {
           return null; // Skip if Pokemon data not found
+        }
+        
+        // ULTRA-CRITICAL: Log what Pokemon we get from the lookup map
+        if (pokemon.name.toLowerCase().includes('deoxys')) {
+          console.log(`🏆🏆🏆 [PERSONAL_LOOKUP_DEOXYS_ULTRA_DEBUG] Lookup map Deoxys: "${pokemon.name}" (ID: ${pokemon.id})`);
         }
         
         // Filter by generation if needed
@@ -86,11 +103,6 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
         const losses = battleCount - wins;
         const winRate = battleCount > 0 ? (wins / battleCount) * 100 : 0;
         
-        // Debug check for Deoxys to verify formatted name
-        if (pokemon.name.toLowerCase().includes('deoxys')) {
-          console.log(`🔥🔥🔥 [DEOXYS_FINAL_CHECK] Pokemon ID: ${pokemonId}, Name: "${pokemon.name}"`);
-        }
-        
         // Create RankedPokemon object using the formatted Pokemon from context
         const rankedPokemonObject: RankedPokemon = {
           id: pokemon.id,
@@ -106,19 +118,24 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
           winRate: winRate
         };
         
+        // ULTRA-CRITICAL: Log the final ranked Pokemon name
+        if (pokemon.name.toLowerCase().includes('deoxys')) {
+          console.log(`🏆🏆🏆 [PERSONAL_RANKED_DEOXYS_ULTRA_DEBUG] Final ranked Deoxys: "${rankedPokemonObject.name}" (ID: ${rankedPokemonObject.id})`);
+        }
+        
         return rankedPokemonObject;
       })
       .filter((pokemon): pokemon is RankedPokemon => pokemon !== null);
     
     // Sort by score descending
     const sorted = rankedPokemon.sort((a, b) => b.score - a.score);
-    console.log('🔥🔥🔥 [PERSONAL_RANKINGS_DEBUG] Final sorted rankings:', sorted.length, 'Pokemon');
+    console.log(`🏆🏆🏆 [PERSONAL_RANKINGS_ULTRA_DEBUG] Final sorted rankings: ${sorted.length} Pokemon`);
     
-    // Check what names are in the final sorted array
+    // ULTRA-CRITICAL: Check what names are in the final sorted array
     const deoxysInFinal = sorted.filter(p => p.name.toLowerCase().includes('deoxys'));
-    console.log(`🔥🔥🔥 [DEOXYS_FINAL_CHECK] Deoxys in final sorted array: ${deoxysInFinal.length}`);
+    console.log(`🏆🏆🏆 [PERSONAL_FINAL_DEOXYS_ULTRA_DEBUG] Deoxys in final sorted array: ${deoxysInFinal.length}`);
     deoxysInFinal.forEach(p => {
-      console.log(`🔥🔥🔥 [DEOXYS_FINAL_CHECK] Final sorted name: "${p.name}" (ID: ${p.id})`);
+      console.log(`🏆🏆🏆 [PERSONAL_FINAL_DEOXYS_ULTRA_DEBUG] Final sorted name: "${p.name}" (ID: ${p.id})`);
     });
     
     return sorted;
@@ -126,36 +143,36 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
 
   // Update local rankings when rankings change
   useEffect(() => {
-    console.log('🔥🔥🔥 [PERSONAL_EFFECT_DEBUG] ===== UPDATING LOCAL RANKINGS =====');
-    console.log('🔥🔥🔥 [PERSONAL_EFFECT_DEBUG] Incoming rankings count:', rankings.length);
+    console.log(`🏆🏆🏆 [PERSONAL_EFFECT_ULTRA_DEBUG] ===== UPDATING LOCAL RANKINGS =====`);
+    console.log(`🏆🏆🏆 [PERSONAL_EFFECT_ULTRA_DEBUG] Incoming rankings count: ${rankings.length}`);
     
     if (rankings.length > 0) {
-      // Check for Deoxys specifically in the incoming rankings
+      // ULTRA-CRITICAL: Check for Deoxys specifically in the incoming rankings
       const deoxysInRankings = rankings.filter(p => p.name.toLowerCase().includes('deoxys'));
-      console.log(`🔥🔥🔥 [DEOXYS_EFFECT_DEBUG] Deoxys in incoming rankings: ${deoxysInRankings.length}`);
+      console.log(`🏆🏆🏆 [PERSONAL_EFFECT_DEOXYS_ULTRA_DEBUG] Deoxys in incoming rankings: ${deoxysInRankings.length}`);
       deoxysInRankings.forEach(p => {
-        console.log(`🔥🔥🔥 [DEOXYS_EFFECT_DEBUG] Incoming Deoxys: "${p.name}" (ID: ${p.id})`);
+        console.log(`🏆🏆🏆 [PERSONAL_EFFECT_DEOXYS_ULTRA_DEBUG] Incoming Deoxys: "${p.name}" (ID: ${p.id})`);
       });
     }
     
     setLocalRankings(rankings);
-    console.log('🔥🔥🔥 [PERSONAL_EFFECT_DEBUG] Local rankings updated');
+    console.log(`🏆🏆🏆 [PERSONAL_EFFECT_ULTRA_DEBUG] Local rankings updated`);
   }, [rankings]);
 
   // Handle rankings update from manual reorder
   const handleRankingsUpdate = useCallback((updatedRankings: RankedPokemon[]) => {
-    console.log(`🔥🔥🔥 [PERSONAL_UPDATE_DEBUG] ===== HANDLING RANKINGS UPDATE =====`);
-    console.log(`🔥🔥🔥 [PERSONAL_UPDATE_DEBUG] Received ${updatedRankings.length} updated Pokemon`);
+    console.log(`🏆🏆🏆 [PERSONAL_UPDATE_ULTRA_DEBUG] ===== HANDLING RANKINGS UPDATE =====`);
+    console.log(`🏆🏆🏆 [PERSONAL_UPDATE_ULTRA_DEBUG] Received ${updatedRankings.length} updated Pokemon`);
     
-    // Check what names we're getting in the update
+    // ULTRA-CRITICAL: Check what names we're getting in the update
     const deoxysInUpdate = updatedRankings.filter(p => p.name.toLowerCase().includes('deoxys'));
-    console.log(`🔥🔥🔥 [DEOXYS_UPDATE_DEBUG] Deoxys in update: ${deoxysInUpdate.length}`);
+    console.log(`🏆🏆🏆 [PERSONAL_UPDATE_DEOXYS_ULTRA_DEBUG] Deoxys in update: ${deoxysInUpdate.length}`);
     deoxysInUpdate.forEach(p => {
-      console.log(`🔥🔥🔥 [DEOXYS_UPDATE_DEBUG] Update Deoxys: "${p.name}" (ID: ${p.id})`);
+      console.log(`🏆🏆🏆 [PERSONAL_UPDATE_DEOXYS_ULTRA_DEBUG] Update Deoxys: "${p.name}" (ID: ${p.id})`);
     });
     
     setLocalRankings(updatedRankings);
-    console.log('🔥🔥🔥 [PERSONAL_UPDATE_DEBUG] Rankings update complete');
+    console.log(`🏆🏆🏆 [PERSONAL_UPDATE_ULTRA_DEBUG] Rankings update complete`);
   }, []);
 
   // Use the battle manual reorder hook with milestone view behavior
@@ -168,13 +185,13 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
   // Create display rankings for the grid
   const displayRankings = useMemo(() => {
     const sliced = localRankings.slice(0, milestoneDisplayCount);
-    console.log(`🔥🔥🔥 [DISPLAY_RANKINGS_DEBUG] Creating displayRankings with ${sliced.length} Pokemon`);
+    console.log(`🏆🏆🏆 [PERSONAL_DISPLAY_ULTRA_DEBUG] Creating displayRankings with ${sliced.length} Pokemon`);
     
-    // Check if Deoxys is in the display rankings and what its name is
+    // ULTRA-CRITICAL: Check if Deoxys is in the display rankings and what its name is
     const deoxysInDisplay = sliced.filter(p => p.name.toLowerCase().includes('deoxys'));
-    console.log(`🔥🔥🔥 [DISPLAY_RANKINGS_DEBUG] Deoxys in displayRankings: ${deoxysInDisplay.length}`);
+    console.log(`🏆🏆🏆 [PERSONAL_DISPLAY_DEOXYS_ULTRA_DEBUG] Deoxys in displayRankings: ${deoxysInDisplay.length}`);
     deoxysInDisplay.forEach(p => {
-      console.log(`🔥🔥🔥 [DISPLAY_RANKINGS_DEBUG] Display Deoxys: "${p.name}" (ID: ${p.id})`);
+      console.log(`🏆🏆🏆 [PERSONAL_DISPLAY_DEOXYS_ULTRA_DEBUG] Display Deoxys: "${p.name}" (ID: ${p.id})`);
     });
     
     return sliced;
