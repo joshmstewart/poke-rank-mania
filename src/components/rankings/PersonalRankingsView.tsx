@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { useTrueSkillStore } from "@/stores/trueskillStore";
 import { generations } from "@/services/pokemon";
@@ -84,7 +83,7 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
           id: pokemon.id,
           name: formatPokemonName(pokemon?.name || `pokemon-${pokemon.id}`), // Same pattern as Global Rankings
           image: pokemon.image,
-          types: pokemon.types,
+          types: pokemon.types || [], // FIX: Ensure types is always an array, never undefined
           score: score,
           count: battleCount,
           confidence: Math.max(0, 100 - (rating.sigma * 20)), // Convert sigma to confidence percentage
