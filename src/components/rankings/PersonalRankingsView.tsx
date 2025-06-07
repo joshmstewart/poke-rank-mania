@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { useTrueSkillStore } from "@/stores/trueskillStore";
 import { generations } from "@/services/pokemon";
@@ -91,7 +92,7 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
           losses: losses,
           winRate: winRate,
           rating: rating
-        };
+        } as RankedPokemon; // Explicitly cast to RankedPokemon to match interface
       })
       .filter((pokemon): pokemon is RankedPokemon => pokemon !== null);
     
