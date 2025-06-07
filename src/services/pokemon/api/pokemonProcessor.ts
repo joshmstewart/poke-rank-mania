@@ -2,6 +2,7 @@
 import { Pokemon } from "../types";
 import { getPokemonImageUrl } from "./utils";
 import { isCramorantFormToExclude } from "./pokemonFilters";
+import { formatPokemonName } from "@/utils/pokemon";
 
 export const processPokemonData = async (
   pokemonResults: any[],
@@ -50,15 +51,24 @@ export const processPokemonData = async (
         return null;
       }
 
+      // CRITICAL FIX: Check if this Pokemon should be filtered out using formatPokemonName
+      // but DON'T store the formatted result - only use it for filtering
+      const formattedForFilter = formatPokemonName(pokemonData.name);
+      if (!formattedForFilter) {
+        console.log(`🚫 [FILTER_DEBUG] Call #${callId}: Filtering out Pokemon: ${pokemonData.name}`);
+        return null;
+      }
+
       // CRITICAL: Verify types are properly extracted
       const types = pokemonData.types?.map((type: any) => type.type.name) || [];
       if (types.length === 0) {
         console.error(`🚨 [TYPE_ERROR] Call #${callId}: Pokemon ${pokemonData.name} has NO TYPES!`, pokemonData);
       }
 
+      // CRITICAL FIX: Store the ORIGINAL, RAW name from the API - NOT the formatted version
       const pokemon: Pokemon = {
         id: pokemonData.id,
-        name: pokemonData.name.charAt(0).toUpperCase() + pokemonData.name.slice(1),
+        name: pokemonData.name, // Store raw name from API - formatting happens at display time
         image: getPokemonImageUrl(pokemonData.id),
         types: types,
         height: pokemonData.height,
