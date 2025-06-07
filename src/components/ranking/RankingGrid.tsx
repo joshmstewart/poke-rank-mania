@@ -28,7 +28,7 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
         const isRankedPokemon = 'score' in pokemon;
         const showRankNumber = onSuggestRanking !== undefined; // Only show rank number in rankings section
 
-        // CRITICAL FIX: Format the Pokemon name before passing to the card component
+        // Format the Pokemon name before passing to the card component
         const formattedPokemon = {
           ...pokemon,
           name: formatPokemonName(pokemon.name)

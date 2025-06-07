@@ -1,9 +1,9 @@
-
 import React from "react";
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable';
 import DraggablePokemonMilestoneCard from "@/components/battle/DraggablePokemonMilestoneCard";
 import GenerationHeader from "@/components/pokemon/GenerationHeader";
+import { formatPokemonName } from "@/utils/pokemon";
 
 interface EnhancedAvailablePokemonContentProps {
   items: any[];
@@ -71,18 +71,26 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
               strategy={rectSortingStrategy}
             >
               <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
-                {currentGenerationPokemon.map((pokemon, index) => (
-                  <DraggablePokemonMilestoneCard
-                    key={pokemon.id}
-                    pokemon={pokemon}
-                    index={index}
-                    isPending={false}
-                    showRank={false}
-                    isDraggable={true}
-                    isAvailable={true}
-                    context="available"
-                  />
-                ))}
+                {currentGenerationPokemon.map((pokemon, index) => {
+                  // Format the Pokemon name before passing to the card
+                  const formattedPokemon = {
+                    ...pokemon,
+                    name: formatPokemonName(pokemon.name)
+                  };
+                  
+                  return (
+                    <DraggablePokemonMilestoneCard
+                      key={pokemon.id}
+                      pokemon={formattedPokemon}
+                      index={index}
+                      isPending={false}
+                      showRank={false}
+                      isDraggable={true}
+                      isAvailable={true}
+                      context="available"
+                    />
+                  );
+                })}
               </div>
             </SortableContext>
           );
@@ -120,18 +128,26 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
           strategy={rectSortingStrategy}
         >
           <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
-            {currentGenerationPokemon.map((pokemon, index) => (
-              <DraggablePokemonMilestoneCard
-                key={pokemon.id}
-                pokemon={pokemon}
-                index={index}
-                isPending={false}
-                showRank={false}
-                isDraggable={true}
-                isAvailable={true}
-                context="available"
-              />
-            ))}
+            {currentGenerationPokemon.map((pokemon, index) => {
+              // Format the Pokemon name before passing to the card
+              const formattedPokemon = {
+                ...pokemon,
+                name: formatPokemonName(pokemon.name)
+              };
+              
+              return (
+                <DraggablePokemonMilestoneCard
+                  key={pokemon.id}
+                  pokemon={formattedPokemon}
+                  index={index}
+                  isPending={false}
+                  showRank={false}
+                  isDraggable={true}
+                  isAvailable={true}
+                  context="available"
+                />
+              );
+            })}
           </div>
         </SortableContext>
       );
