@@ -1,59 +1,41 @@
 
-import { fetchPokemonData } from './pokemonApi';
-import { processPokemonData } from './pokemonProcessor';
-import { generations } from '../data';
+import { Pokemon, PokemonAPIResponse } from "../types";
+import { trackFetchCall, logFetchParameters } from "./fetchCallTracker";
+import { calculateFetchLimit, validatePokemonCount } from "./fetchParameterHandler";
+import { processPokemonData } from "./pokemonProcessor";
 
-export const fetchAllPokemon = async (genId = 0, fullRankingMode = true, useFilters = true) => {
-  console.log(`🔥 [FETCH_ALL] Starting fetch for generation ${genId}, fullRankingMode: ${fullRankingMode}`);
-  
+const POKEMON_API_BASE = "https://pokeapi.co/api/v2";
+
+export const fetchAllPokemon = async (
+  generationId = 0,
+  fullRankingMode = true,
+  initialBatchOnly = false,
+  batchSize = 150
+): Promise<Pokemon[]> => {
+  const currentCallId = trackFetchCall();
+  logFetchParameters(currentCallId, generationId, fullRankingMode, initialBatchOnly, batchSize);
+
   try {
-    // Determine Pokemon range based on generation
-    let pokemonRange: [number, number];
+    const limit = calculateFetchLimit(initialBatchOnly, batchSize, currentCallId);
+
+    console.log(`🌐 [REFRESH_DETECTION] Call #${currentCallId}: Fetching from API with limit ${limit}`);
     
-    if (genId === 0) {
-      pokemonRange = [1, 1025]; // All generations
-    } else {
-      const generation = generations.find(gen => gen.id === genId);
-      if (!generation) {
-        throw new Error(`Invalid generation ID: ${genId}`);
-      }
-      pokemonRange = [generation.start, generation.end];
+    const response = await fetch(`${POKEMON_API_BASE}/pokemon?limit=${limit}&offset=0`);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
+
+    const data: PokemonAPIResponse = await response.json();
+    console.log(`📥 [REFRESH_DETECTION] Call #${currentCallId}: API returned ${data.results.length} Pokemon`);
     
-    console.log(`🔥 [FETCH_ALL] Fetching Pokemon range: ${pokemonRange[0]} - ${pokemonRange[1]}`);
+    validatePokemonCount(data.results.length, currentCallId);
     
-    // Create array of Pokemon IDs to fetch based on the range
-    const pokemonIds = Array.from(
-      { length: pokemonRange[1] - pokemonRange[0] + 1 }, 
-      (_, i) => pokemonRange[0] + i
-    );
-    
-    // Fetch basic Pokemon data for the range
-    const rawPokemonList = await fetchPokemonData(pokemonIds);
-    console.log(`🔥 [FETCH_ALL] Fetched ${rawPokemonList.length} raw Pokemon`);
-    
-    // Convert Pokemon[] to RawPokemon[] format for the processor
-    const rawPokemonForProcessor = rawPokemonList.map(pokemon => ({
-      id: pokemon.id,
-      name: pokemon.name,
-      types: pokemon.types?.map(type => ({ type: { name: type.toLowerCase() } })) || [],
-      sprites: {
-        other: {
-          'official-artwork': {
-            front_default: pokemon.image
-          }
-        }
-      }
-    }));
-    
-    // Process the data with proper name handling
-    const { allPokemon } = processPokemonData(rawPokemonForProcessor);
-    
-    console.log(`🔥 [FETCH_ALL] Successfully processed ${allPokemon.length} Pokemon with raw names`);
-    return allPokemon;
-    
+    const filteredList = await processPokemonData(data.results, currentCallId);
+
+    return filteredList;
   } catch (error) {
-    console.error(`🔥 [FETCH_ALL] Error fetching Pokemon:`, error);
+    console.error(`❌ [REFRESH_DETECTION] Call #${currentCallId}: fetchAllPokemon failed:`, error);
     throw error;
   }
 };
