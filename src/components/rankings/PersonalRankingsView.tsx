@@ -24,6 +24,40 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
   // Get Pokemon data from context
   const { allPokemon, pokemonLookupMap } = usePokemonContext();
   
+  // CRITICAL DEBUG: Log what's actually in the lookup map for Deoxys
+  useEffect(() => {
+    if (pokemonLookupMap.size > 0) {
+      console.log(`🔍 [LOOKUP_MAP_DEBUG] Total Pokemon in lookup map: ${pokemonLookupMap.size}`);
+      
+      // Find all Deoxys forms in the map
+      const deoxysIds = [386, 10001, 10002, 10003]; // Normal, Attack, Defense, Speed Deoxys IDs
+      deoxysIds.forEach(id => {
+        const pokemon = pokemonLookupMap.get(id);
+        if (pokemon) {
+          console.log(`🔍 [LOOKUP_MAP_DEBUG] Deoxys ID ${id}: name="${pokemon.name}"`);
+        } else {
+          console.log(`🔍 [LOOKUP_MAP_DEBUG] Deoxys ID ${id}: NOT FOUND`);
+        }
+      });
+      
+      // Also check a broader range for any Deoxys variants
+      for (let i = 380; i <= 390; i++) {
+        const pokemon = pokemonLookupMap.get(i);
+        if (pokemon && pokemon.name.toLowerCase().includes('deoxys')) {
+          console.log(`🔍 [LOOKUP_MAP_DEBUG] Found Deoxys variant ID ${i}: name="${pokemon.name}"`);
+        }
+      }
+      
+      // Check high ID range for forms
+      for (let i = 10000; i <= 10010; i++) {
+        const pokemon = pokemonLookupMap.get(i);
+        if (pokemon && pokemon.name.toLowerCase().includes('deoxys')) {
+          console.log(`🔍 [LOOKUP_MAP_DEBUG] Found Deoxys form ID ${i}: name="${pokemon.name}"`);
+        }
+      }
+    }
+  }, [pokemonLookupMap]);
+  
   // Get current generation name
   const currentGeneration = generations.find(gen => gen.id === selectedGeneration);
   
@@ -60,11 +94,16 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
         if (!pokemon) return null; // Skip if Pokemon data not found
         
         // CRITICAL DEBUG: Log the raw Pokemon data and formatted result
-        console.log(`🐛 [PERSONAL_RANKINGS_NAME_DEBUG] Pokemon ID ${pokemonId}:`);
-        console.log(`🐛 [PERSONAL_RANKINGS_NAME_DEBUG] Raw pokemon.name: "${pokemon.name}"`);
+        if (pokemon.name.toLowerCase().includes('deoxys')) {
+          console.log(`🐛 [DEOXYS_SPECIFIC_DEBUG] Pokemon ID ${pokemonId}:`);
+          console.log(`🐛 [DEOXYS_SPECIFIC_DEBUG] Raw pokemon.name: "${pokemon.name}"`);
+          
+          const formattedName = formatPokemonName(pokemon.name);
+          console.log(`🐛 [DEOXYS_SPECIFIC_DEBUG] Formatted name: "${formattedName}"`);
+          console.log(`🐛 [DEOXYS_SPECIFIC_DEBUG] Should be "Defense Deoxys" or similar`);
+        }
         
         const formattedName = formatPokemonName(pokemon.name);
-        console.log(`🐛 [PERSONAL_RANKINGS_NAME_DEBUG] Formatted name: "${formattedName}"`);
         
         // Filter by generation if needed
         if (selectedGeneration > 0) {
@@ -101,7 +140,9 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
           rating: rating
         } as RankedPokemon;
         
-        console.log(`🐛 [PERSONAL_RANKINGS_NAME_DEBUG] Final result name: "${result.name}"`);
+        if (pokemon.name.toLowerCase().includes('deoxys')) {
+          console.log(`🐛 [DEOXYS_SPECIFIC_DEBUG] Final result name: "${result.name}"`);
+        }
         
         return result;
       })
