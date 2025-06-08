@@ -12,6 +12,12 @@ const ModeStyleControls: React.FC<ModeStyleControlsProps> = ({ mode, onModeChang
   console.log('🔥🔥🔥 ModeStyleControls: RENDERING - mode:', mode);
   console.log('🔥🔥🔥 ModeStyleControls: Timestamp:', new Date().toISOString());
 
+  // Default generation and handler for UnifiedControls
+  const handleGenerationChange = (generation: string) => {
+    console.log('Generation changed to:', generation);
+    // This will be handled by the generation state management
+  };
+
   return (
     <div className="flex items-center gap-4">
       {/* Mode Switcher with tutorial attributes */}
@@ -29,7 +35,11 @@ const ModeStyleControls: React.FC<ModeStyleControlsProps> = ({ mode, onModeChang
       
       {/* Unified Controls with tutorial attributes */}
       <div data-tutorial="generation-filter">
-        <UnifiedControls />
+        <UnifiedControls 
+          selectedGeneration={0}
+          onGenerationChange={handleGenerationChange}
+          mode="battle"
+        />
       </div>
     </div>
   );
