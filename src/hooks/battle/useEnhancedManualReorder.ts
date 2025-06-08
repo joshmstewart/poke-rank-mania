@@ -70,13 +70,18 @@ export const useEnhancedManualReorder = (
           return;
         }
 
-        // Create new Pokemon entry with current TrueSkill score
+        // Create new Pokemon entry with current TrueSkill score and all required RankedPokemon properties
         const newPokemon: RankedPokemon = {
           id: draggedPokemonId,
           name: `Pokemon-${draggedPokemonId}`, // This will be updated by the parent
           image: '',
           types: [],
-          score: pokemonRating.mu
+          score: pokemonRating.mu,
+          count: pokemonRating.battleCount || 0,
+          confidence: 50, // Default confidence value
+          wins: 0, // Default wins
+          losses: 0, // Default losses
+          winRate: 0 // Default win rate
         };
 
         // Insert at destination
