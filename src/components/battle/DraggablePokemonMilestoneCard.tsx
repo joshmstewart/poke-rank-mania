@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -31,13 +32,22 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   context = 'ranked'
 }) => {
   const [isOpen, setIsOpen] = React.useState(false);
-  const [localPendingState, setLocalPendingState] = React.useState(false);
+  const [localPendingState, setLocalPendingState] = React.useState(() => {
+    // Initialize from localStorage to persist across mode switches
+    const stored = localStorage.getItem(`pokemon-pending-${pokemon.id}`);
+    return stored === 'true';
+  });
 
   // Get the refinement queue and functions
   const { refinementQueue, queueBattlesForReorder, hasRefinementBattles } = useSharedRefinementQueue();
   
-  // Check if context is available by looking at the queue structure
-  const contextAvailable = Array.isArray(refinementQueue) && typeof queueBattlesForReorder === 'function';
+  // FIXED: Better context detection - check if we actually have valid queue functions
+  const contextAvailable = Boolean(
+    refinementQueue && 
+    Array.isArray(refinementQueue) && 
+    typeof queueBattlesForReorder === 'function' &&
+    typeof hasRefinementBattles === 'boolean'
+  );
   
   console.log(`🌟 [STAR_DEBUG_DETAILED] Pokemon ${pokemon.name} (${pokemon.id}):`);
   console.log(`🌟 [STAR_DEBUG_DETAILED] - contextAvailable: ${contextAvailable}`);
@@ -65,25 +75,33 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     if (!isPendingRefinement) {
       console.log(`🌟 [PRIORITIZE_DETAILED] Adding ${pokemon.name} to refinement queue`);
       
-      // Always set local pending state for immediate feedback
+      // Always set local pending state for immediate feedback AND persist it
       setLocalPendingState(true);
+      localStorage.setItem(`pokemon-pending-${pokemon.id}`, 'true');
       
       if (contextAvailable) {
         console.log(`🌟 [PRIORITIZE_DETAILED] Context available, calling queueBattlesForReorder`);
         queueBattlesForReorder(pokemon.id, [], 0);
       } else {
-        console.log(`🌟 [PRIORITIZE_DETAILED] Context NOT available, only using local state`);
-        // Keep local state active longer when context isn't available
-        setTimeout(() => {
-          console.log(`🌟 [PRIORITIZE_DETAILED] Clearing local pending state for ${pokemon.name}`);
-          setLocalPendingState(false);
-        }, 5000);
+        console.log(`🌟 [PRIORITIZE_DETAILED] Context NOT available, persisting local state`);
+        // Don't clear automatically - let it persist until user manually toggles or battles are processed
       }
     } else {
       console.log(`🌟 [PRIORITIZE_DETAILED] Pokemon ${pokemon.name} is already pending, toggling off`);
       setLocalPendingState(false);
+      localStorage.removeItem(`pokemon-pending-${pokemon.id}`);
     }
   };
+
+  // Clean up localStorage when Pokemon is actually processed in a battle
+  React.useEffect(() => {
+    if (contextAvailable && hasRefinementBattles === false && localPendingState) {
+      // If we had pending state but no refinement battles exist, it means they were processed
+      console.log(`🌟 [CLEANUP] Clearing pending state for ${pokemon.name} - battles processed`);
+      setLocalPendingState(false);
+      localStorage.removeItem(`pokemon-pending-${pokemon.id}`);
+    }
+  }, [contextAvailable, hasRefinementBattles, localPendingState, pokemon.id, pokemon.name]);
 
   // Determine if this Pokemon is ranked (for available context)
   const isRankedPokemon = context === 'available' && 'isRanked' in pokemon && pokemon.isRanked;
