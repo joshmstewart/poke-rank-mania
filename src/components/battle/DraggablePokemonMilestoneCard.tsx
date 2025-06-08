@@ -34,7 +34,11 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
 
   // Get the refinement queue and functions
   const { refinementQueue, queueBattlesForReorder } = useSharedRefinementQueue();
-  const isPendingRefinement = refinementQueue.some(battle => battle.primaryPokemonId === pokemon.id);
+  
+  // FIXED: Check if this Pokemon has any battles in the refinement queue
+  const isPendingRefinement = refinementQueue.some(battle => 
+    battle.primaryPokemonId === pokemon.id || battle.opponentPokemonId === pokemon.id
+  );
 
   const handlePrioritizeClick = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent the dialog from opening
