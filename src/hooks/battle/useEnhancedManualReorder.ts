@@ -70,19 +70,51 @@ export const useEnhancedManualReorder = (
           return;
         }
 
-        // Create new Pokemon entry with current TrueSkill score and all required RankedPokemon properties
+        // CRITICAL FIX: Find the actual Pokemon data from existing rankings to get proper name and image
+        let actualPokemonData = null;
+        
+        // First, try to find it in the current rankings
+        actualPokemonData = finalRankings.find(p => p.id === draggedPokemonId);
+        
+        // If not found, we need to create a proper Pokemon object with real data
+        if (!actualPokemonData) {
+          console.log(`🎯 [ENHANCED_MANUAL_REORDER] Pokemon ${draggedPokemonId} not found in existing rankings, creating new entry`);
+          
+          // Generate proper image URL and name for the Pokemon
+          const pokemonImageUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${draggedPokemonId}.png`;
+          const pokemonName = `Pokemon #${draggedPokemonId.toString().padStart(3, '0')}`; // Temporary name until proper data is fetched
+          
+          actualPokemonData = {
+            id: draggedPokemonId,
+            name: pokemonName,
+            image: pokemonImageUrl,
+            types: [],
+            score: pokemonRating.mu,
+            count: pokemonRating.battleCount || 0,
+            confidence: 50,
+            wins: 0,
+            losses: 0,
+            winRate: 0
+          };
+        }
+
+        // Create new Pokemon entry with proper data
         const newPokemon: RankedPokemon = {
-          id: draggedPokemonId,
-          name: `Pokemon-${draggedPokemonId}`, // This will be updated by the parent
-          image: '',
-          types: [],
+          ...actualPokemonData,
           score: pokemonRating.mu,
           count: pokemonRating.battleCount || 0,
-          confidence: 50, // Default confidence value
-          wins: 0, // Default wins
-          losses: 0, // Default losses
-          winRate: 0 // Default win rate
+          confidence: 50,
+          wins: 0,
+          losses: 0,
+          winRate: 0
         };
+
+        console.log(`🎯 [ENHANCED_MANUAL_REORDER] Created Pokemon entry:`, {
+          id: newPokemon.id,
+          name: newPokemon.name,
+          image: newPokemon.image,
+          score: newPokemon.score
+        });
 
         // Insert at destination
         workingRankings.splice(destinationIndex, 0, newPokemon);
