@@ -9,7 +9,8 @@ import PokemonModalContent from "@/components/pokemon/PokemonModalContent";
 import { usePokemonFlavorText } from "@/hooks/pokemon/usePokemonFlavorText";
 import { usePokemonTCGCard } from "@/hooks/pokemon/usePokemonTCGCard";
 import { Badge } from "@/components/ui/badge";
-import { Crown } from "lucide-react";
+import { Crown, Star } from "lucide-react";
+import { useSharedRefinementQueue } from "@/hooks/battle/useSharedRefinementQueue";
 
 interface DraggablePokemonMilestoneCardProps {
   pokemon: Pokemon | RankedPokemon;
@@ -31,6 +32,19 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   context = 'ranked'
 }) => {
   const [isOpen, setIsOpen] = React.useState(false);
+
+  // Get the refinement queue and functions
+  const { refinementQueue, queueBattlesForReorder } = useSharedRefinementQueue();
+  const isPendingRefinement = refinementQueue.some(battle => battle.primaryPokemonId === pokemon.id);
+
+  const handlePrioritizeClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent the dialog from opening
+    e.preventDefault();
+    if (!isPendingRefinement) {
+      console.log(`🌟 [PRIORITIZE] Adding ${pokemon.name} to refinement queue for priority battles`);
+      queueBattlesForReorder(pokemon.id, "User prioritized this Pokemon for refinement battles");
+    }
+  };
 
   // Determine if this Pokemon is ranked (for available context)
   const isRankedPokemon = context === 'available' && 'isRanked' in pokemon && pokemon.isRanked;
@@ -122,6 +136,27 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
         <div className="absolute top-0 left-0 right-0 bg-blue-500 text-white text-xs py-1 px-2 z-20">
           Pending Battle
         </div>
+      )}
+
+      {/* Prioritize button - only for ranked context and when not dragging */}
+      {!isDragging && context === 'ranked' && (
+        <button
+          onClick={handlePrioritizeClick}
+          className={`absolute top-1 right-8 z-30 p-1 rounded-full group-hover:opacity-100 transition-opacity duration-200 ${
+            isPendingRefinement ? 'opacity-100' : 'opacity-25'
+          }`}
+          title="Prioritize for refinement battle"
+          onPointerDown={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+          type="button"
+          style={{ pointerEvents: 'auto' }}
+        >
+          <Star 
+            className={`w-4 h-4 transition-all ${
+              isPendingRefinement ? 'text-yellow-400 fill-yellow-400' : 'text-gray-500 hover:text-yellow-500'
+            }`} 
+          />
+        </button>
       )}
 
       {/* Info Button with Dialog - now only shows on hover and disabled during drag */}
