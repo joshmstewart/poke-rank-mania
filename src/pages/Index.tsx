@@ -4,7 +4,6 @@ import PokemonRanker from "@/components/PokemonRanker";
 import BattleMode from "@/components/BattleMode";
 import AppHeader from "@/components/layout/AppHeader";
 import { useTrueSkillStore } from "@/stores/trueskillStore";
-import { RefinementQueueProvider } from "@/components/battle/RefinementQueueProvider";
 
 const Index = () => {
   const { getAllRatings } = useTrueSkillStore();
@@ -23,14 +22,12 @@ const Index = () => {
   };
 
   return (
-    <RefinementQueueProvider>
-      <div className="min-h-screen bg-gray-50">
-        <AppHeader mode={mode} onModeChange={handleModeChange} />
-        <main className="container max-w-7xl mx-auto py-6 relative z-10">
-          {mode === "rank" ? <PokemonRanker /> : <BattleMode />}
-        </main>
-      </div>
-    </RefinementQueueProvider>
+    <div className="min-h-screen bg-gray-50">
+      <AppHeader mode={mode} onModeChange={handleModeChange} />
+      <main className="container max-w-7xl mx-auto py-6 relative z-10">
+        {mode === "rank" ? <PokemonRanker /> : <BattleMode />}
+      </main>
+    </div>
   );
 };
 
