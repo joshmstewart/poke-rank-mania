@@ -31,26 +31,57 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   context = 'ranked'
 }) => {
   const [isOpen, setIsOpen] = React.useState(false);
+  const [localPendingState, setLocalPendingState] = React.useState(false);
 
   // Get the refinement queue and functions
-  const { refinementQueue, queueBattlesForReorder } = useSharedRefinementQueue();
+  const { refinementQueue, queueBattlesForReorder, hasRefinementBattles } = useSharedRefinementQueue();
+  
+  // Check if context is available by looking at the queue structure
+  const contextAvailable = Array.isArray(refinementQueue) && typeof queueBattlesForReorder === 'function';
+  
+  console.log(`🌟 [STAR_DEBUG_DETAILED] Pokemon ${pokemon.name} (${pokemon.id}):`);
+  console.log(`🌟 [STAR_DEBUG_DETAILED] - contextAvailable: ${contextAvailable}`);
+  console.log(`🌟 [STAR_DEBUG_DETAILED] - refinementQueue length: ${refinementQueue?.length || 0}`);
+  console.log(`🌟 [STAR_DEBUG_DETAILED] - hasRefinementBattles: ${hasRefinementBattles}`);
+  console.log(`🌟 [STAR_DEBUG_DETAILED] - localPendingState: ${localPendingState}`);
   
   // Check if this Pokemon has any battles in the refinement queue
-  const isPendingRefinement = refinementQueue.some(battle => 
-    battle.primaryPokemonId === pokemon.id || battle.opponentPokemonId === pokemon.id
-  );
+  const isPendingRefinement = contextAvailable ? (
+    refinementQueue.some(battle => 
+      battle.primaryPokemonId === pokemon.id || battle.opponentPokemonId === pokemon.id
+    ) || localPendingState
+  ) : localPendingState;
 
-  console.log(`🌟 [STAR_DEBUG] Pokemon ${pokemon.name} (${pokemon.id}): isPendingRefinement=${isPendingRefinement}, queue length=${refinementQueue.length}`);
-  console.log(`🌟 [STAR_DEBUG] Refinement queue:`, refinementQueue.map(b => `${b.primaryPokemonId} vs ${b.opponentPokemonId}`));
+  console.log(`🌟 [STAR_DEBUG_DETAILED] - isPendingRefinement: ${isPendingRefinement}`);
 
   const handlePrioritizeClick = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent the dialog from opening
+    e.stopPropagation();
     e.preventDefault();
+    
+    console.log(`🌟 [PRIORITIZE_DETAILED] Clicked star for ${pokemon.name}`);
+    console.log(`🌟 [PRIORITIZE_DETAILED] - contextAvailable: ${contextAvailable}`);
+    console.log(`🌟 [PRIORITIZE_DETAILED] - current isPendingRefinement: ${isPendingRefinement}`);
+    
     if (!isPendingRefinement) {
-      console.log(`🌟 [PRIORITIZE] Adding ${pokemon.name} to refinement queue for priority battles`);
-      queueBattlesForReorder(pokemon.id, [], 0);
+      console.log(`🌟 [PRIORITIZE_DETAILED] Adding ${pokemon.name} to refinement queue`);
+      
+      // Always set local pending state for immediate feedback
+      setLocalPendingState(true);
+      
+      if (contextAvailable) {
+        console.log(`🌟 [PRIORITIZE_DETAILED] Context available, calling queueBattlesForReorder`);
+        queueBattlesForReorder(pokemon.id, [], 0);
+      } else {
+        console.log(`🌟 [PRIORITIZE_DETAILED] Context NOT available, only using local state`);
+        // Keep local state active longer when context isn't available
+        setTimeout(() => {
+          console.log(`🌟 [PRIORITIZE_DETAILED] Clearing local pending state for ${pokemon.name}`);
+          setLocalPendingState(false);
+        }, 5000);
+      }
     } else {
-      console.log(`🌟 [PRIORITIZE] Pokemon ${pokemon.name} is already in refinement queue, not adding again`);
+      console.log(`🌟 [PRIORITIZE_DETAILED] Pokemon ${pokemon.name} is already pending, toggling off`);
+      setLocalPendingState(false);
     }
   };
 
