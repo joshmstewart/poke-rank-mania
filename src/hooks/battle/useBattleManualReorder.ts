@@ -28,7 +28,6 @@ export const useBattleManualReorder = (
     console.log(`🎯 [BATTLE_MANUAL_REORDER] ===== MANUAL REORDER CALLED =====`);
     console.log(`🎯 [BATTLE_MANUAL_REORDER] Pokemon ${draggedPokemonId} moved from ${sourceIndex} to ${destinationIndex}`);
     console.log(`🎯 [BATTLE_MANUAL_REORDER] isMilestoneView: ${isMilestoneView}`);
-    console.log(`🎯 [BATTLE_MANUAL_REORDER] Will prevent auto-resorting: ${isMilestoneView}`);
 
     if (!handleEnhancedManualReorder) {
       console.error(`🎯 [BATTLE_MANUAL_REORDER] ❌ No enhanced manual reorder function available!`);

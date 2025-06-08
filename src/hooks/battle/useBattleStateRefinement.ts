@@ -52,6 +52,9 @@ export const useBattleStateRefinement = (
     console.log(`⚔️ [REFINEMENT_COMPLETION] Remaining battles in queue: ${refinementQueue.refinementBattleCount}`);
   }, [refinementQueue]);
 
+  // Note: Manual reorder refinement battle generation has been removed
+  // as manual reordering now directly sets TrueSkill scores
+  
   return {
     refinementQueue,
     enhancedStartNewBattleWithRefinement,
