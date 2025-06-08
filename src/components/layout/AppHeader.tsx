@@ -3,7 +3,9 @@ import React from "react";
 import LogoSection from "./LogoSection";
 import ModeStyleControls from "./ModeStyleControls";
 import { SaveProgressSection } from "./SaveProgressSection";
-import { HelpModal } from "@/components/help/HelpModal";
+import { Button } from "@/components/ui/button";
+import { HelpCircle } from "lucide-react";
+import { useTutorial } from "@/components/help/TutorialManager";
 
 interface AppHeaderProps {
   mode: "rank" | "battle";
@@ -15,6 +17,12 @@ const AppHeader: React.FC<AppHeaderProps> = ({ mode, onModeChange }) => {
   console.log('🔥🔥🔥 AppHeader: Current mode:', mode);
   console.log('🔥🔥🔥 AppHeader: Timestamp:', new Date().toISOString());
 
+  const { startTutorial } = useTutorial();
+
+  const handleHelpClick = () => {
+    startTutorial(0);
+  };
+
   return (
     <header className="bg-white border-b-2 border-gray-300 shadow-md sticky top-0 z-50 relative">
       <div className="container max-w-7xl mx-auto px-6">
@@ -23,12 +31,24 @@ const AppHeader: React.FC<AppHeaderProps> = ({ mode, onModeChange }) => {
           <LogoSection />
           
           {/* Center - Mode and Style Controls Group */}
-          <ModeStyleControls mode={mode} onModeChange={onModeChange} />
+          <div data-tutorial="mode-controls">
+            <ModeStyleControls mode={mode} onModeChange={onModeChange} />
+          </div>
           
           {/* Right side - Help and Save Progress Section */}
           <div className="flex items-center gap-3">
-            <HelpModal />
-            <SaveProgressSection />
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="gap-2"
+              onClick={handleHelpClick}
+            >
+              <HelpCircle className="h-4 w-4" />
+              Help
+            </Button>
+            <div data-tutorial="save-progress">
+              <SaveProgressSection />
+            </div>
           </div>
         </div>
       </div>
