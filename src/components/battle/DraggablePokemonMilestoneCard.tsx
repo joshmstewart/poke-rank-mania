@@ -31,6 +31,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   context = 'ranked'
 }) => {
   const [isOpen, setIsOpen] = React.useState(false);
+  const [isLocalPending, setIsLocalPending] = React.useState(false);
 
   // Get the refinement queue and functions
   const { refinementQueue, queueBattlesForReorder } = useSharedRefinementQueue();
@@ -38,14 +39,22 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   // FIXED: Check if this Pokemon has any battles in the refinement queue
   const isPendingRefinement = refinementQueue.some(battle => 
     battle.primaryPokemonId === pokemon.id || battle.opponentPokemonId === pokemon.id
-  );
+  ) || isLocalPending;
+
+  console.log(`🌟 [STAR_DEBUG] Pokemon ${pokemon.name} (${pokemon.id}): isPendingRefinement=${isPendingRefinement}, queue length=${refinementQueue.length}, isLocalPending=${isLocalPending}`);
 
   const handlePrioritizeClick = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent the dialog from opening
     e.preventDefault();
     if (!isPendingRefinement) {
       console.log(`🌟 [PRIORITIZE] Adding ${pokemon.name} to refinement queue for priority battles`);
+      setIsLocalPending(true); // Immediately show as pending
       queueBattlesForReorder(pokemon.id, [], 0);
+      
+      // Reset local pending after a short delay to let the global state update
+      setTimeout(() => {
+        setIsLocalPending(false);
+      }, 1000);
     }
   };
 
