@@ -1,6 +1,7 @@
+
 import React from "react";
 import ModeSwitcher from "@/components/ModeSwitcher";
-import { UnifiedControls } from "@/components/shared/UnifiedControls";
+import UnifiedControls from "@/components/shared/UnifiedControls";
 
 interface ModeStyleControlsProps {
   mode: "rank" | "battle";
@@ -17,9 +18,8 @@ const ModeStyleControls: React.FC<ModeStyleControlsProps> = ({ mode, onModeChang
       <div className="flex items-center">
         <div data-tutorial="battle-button">
           <ModeSwitcher 
-            mode={mode} 
+            currentMode={mode} 
             onModeChange={onModeChange}
-            battleButtonProps={{ 'data-tutorial': 'battle-button' }}
           />
         </div>
         <div data-tutorial="rank-button">
