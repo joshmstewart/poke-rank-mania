@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -42,7 +41,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     e.preventDefault();
     if (!isPendingRefinement) {
       console.log(`🌟 [PRIORITIZE] Adding ${pokemon.name} to refinement queue for priority battles`);
-      queueBattlesForReorder(pokemon.id, "User prioritized this Pokemon for refinement battles");
+      queueBattlesForReorder(pokemon.id, [], 0);
     }
   };
 
