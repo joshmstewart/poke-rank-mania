@@ -76,8 +76,7 @@ export const useEnhancedManualReorder = (
           name: `Pokemon-${draggedPokemonId}`, // This will be updated by the parent
           image: '',
           types: [],
-          score: pokemonRating.mu,
-          rank: destinationIndex + 1
+          score: pokemonRating.mu
         };
 
         // Insert at destination
@@ -117,7 +116,7 @@ export const useEnhancedManualReorder = (
       // Update the score in the working rankings
       workingRankings[destinationIndex].score = targetScore;
 
-      // Update ranks for all Pokemon
+      // Update ranks for all Pokemon (add rank property here for display purposes)
       const finalRankingsWithRanks = workingRankings.map((pokemon, index) => ({
         ...pokemon,
         rank: index + 1

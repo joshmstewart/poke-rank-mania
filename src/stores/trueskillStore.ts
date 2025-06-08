@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Rating } from 'ts-trueskill';
@@ -26,6 +25,7 @@ interface TrueSkillStore {
   getRating: (pokemonId: string) => Rating;
   hasRating: (pokemonId: string) => boolean;
   clearAllRatings: () => void;
+  forceScoreBetweenNeighbors: (pokemonId: string, higherNeighborId?: string, lowerNeighborId?: string) => void;
   syncToCloud: () => Promise<void>;
   loadFromCloud: () => Promise<void>;
   smartSync: () => Promise<void>;
@@ -106,6 +106,27 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           totalBattles: 0
         });
         setTimeout(() => get().syncToCloud(), 100);
+      },
+
+      forceScoreBetweenNeighbors: (pokemonId: string, higherNeighborId?: string, lowerNeighborId?: string) => {
+        const state = get();
+        const higherNeighborScore = higherNeighborId ? state.ratings[higherNeighborId]?.mu : undefined;
+        const lowerNeighborScore = lowerNeighborId ? state.ratings[lowerNeighborId]?.mu : undefined;
+        
+        let targetScore: number;
+        
+        if (higherNeighborScore !== undefined && lowerNeighborScore !== undefined) {
+          targetScore = (higherNeighborScore + lowerNeighborScore) / 2;
+        } else if (higherNeighborScore !== undefined) {
+          targetScore = higherNeighborScore + 1.0;
+        } else if (lowerNeighborScore !== undefined) {
+          targetScore = lowerNeighborScore - 1.0;
+        } else {
+          targetScore = 25.0; // Default TrueSkill rating
+        }
+        
+        const newRating = new Rating(targetScore, 8.333); // Use default sigma
+        get().updateRating(pokemonId, newRating);
       },
 
       syncToCloud: async () => {
