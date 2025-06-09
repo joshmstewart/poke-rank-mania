@@ -32,6 +32,11 @@ export const LazyPokemonGrid: React.FC<LazyPokemonGridProps> = ({
     containerHeight
   });
 
+  const rankedList = React.useMemo(
+    () => items.filter(i => i.type === 'pokemon').map(i => i.data),
+    [items]
+  );
+
   return (
     <div
       ref={scrollElementRef}
@@ -77,6 +82,7 @@ export const LazyPokemonGrid: React.FC<LazyPokemonGridProps> = ({
                     isDraggable={true}
                     isAvailable={!isRankingArea}
                     context={isRankingArea ? "ranked" : "available"}
+                    allRankedPokemon={isRankingArea ? rankedList : []}
                   />
                 );
               }
