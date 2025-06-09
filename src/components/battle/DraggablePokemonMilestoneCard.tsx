@@ -55,8 +55,8 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   
   // Check if this Pokemon has any battles in the refinement queue
   const isPendingRefinement = contextAvailable ? (
-    refinementQueue.some(battle => 
-      battle.primaryPokemonId === pokemon.id || battle.opponentPokemonId === pokemon.id
+    refinementQueue.some(
+      battle => battle.primaryPokemonId === pokemon.id
     ) || localPendingState
   ) : localPendingState;
 
