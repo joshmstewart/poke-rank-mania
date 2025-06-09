@@ -20,7 +20,7 @@ interface DraggablePokemonMilestoneCardProps {
   isDraggable?: boolean;
   isAvailable?: boolean;
   context?: 'available' | 'ranked';
-  allRankedPokemon?: (Pokemon | RankedPokemon)[]; // Add this to get neighboring Pokemon
+  allRankedPokemon?: (Pokemon | RankedPokemon)[];
 }
 
 const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps> = ({ 
@@ -35,7 +35,6 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
 }) => {
   const [isOpen, setIsOpen] = React.useState(false);
   const [localPendingState, setLocalPendingState] = React.useState(() => {
-    // Initialize from localStorage to persist across mode switches
     const stored = localStorage.getItem(`pokemon-pending-${pokemon.id}`);
     return stored === 'true';
   });
@@ -43,7 +42,6 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   // Get the refinement queue and functions
   const { refinementQueue, queueBattlesForReorder, hasRefinementBattles } = useSharedRefinementQueue();
   
-  // FIXED: Better context detection - check if we actually have valid queue functions
   const contextAvailable = Boolean(
     refinementQueue && 
     Array.isArray(refinementQueue) && 
@@ -51,11 +49,12 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     typeof hasRefinementBattles === 'boolean'
   );
   
-  console.log(`🌟 [STAR_DEBUG_DETAILED] Pokemon ${pokemon.name} (${pokemon.id}):`);
-  console.log(`🌟 [STAR_DEBUG_DETAILED] - contextAvailable: ${contextAvailable}`);
-  console.log(`🌟 [STAR_DEBUG_DETAILED] - refinementQueue length: ${refinementQueue?.length || 0}`);
-  console.log(`🌟 [STAR_DEBUG_DETAILED] - hasRefinementBattles: ${hasRefinementBattles}`);
-  console.log(`🌟 [STAR_DEBUG_DETAILED] - localPendingState: ${localPendingState}`);
+  console.log(`🌟 [STAR_CLICK_TRACE] Pokemon ${pokemon.name} (${pokemon.id}):`);
+  console.log(`🌟 [STAR_CLICK_TRACE] - contextAvailable: ${contextAvailable}`);
+  console.log(`🌟 [STAR_CLICK_TRACE] - refinementQueue length: ${refinementQueue?.length || 0}`);
+  console.log(`🌟 [STAR_CLICK_TRACE] - hasRefinementBattles: ${hasRefinementBattles}`);
+  console.log(`🌟 [STAR_CLICK_TRACE] - localPendingState: ${localPendingState}`);
+  console.log(`🌟 [STAR_CLICK_TRACE] - allRankedPokemon.length: ${allRankedPokemon.length}`);
   
   // Check if this Pokemon has any battles in the refinement queue
   const isPendingRefinement = contextAvailable ? (
@@ -64,66 +63,114 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     ) || localPendingState
   ) : localPendingState;
 
-  console.log(`🌟 [STAR_DEBUG_DETAILED] - isPendingRefinement: ${isPendingRefinement}`);
+  console.log(`🌟 [STAR_CLICK_TRACE] - isPendingRefinement: ${isPendingRefinement}`);
 
   const handlePrioritizeClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
     
-    console.log(`🌟 [PRIORITIZE_DETAILED] Clicked star for ${pokemon.name}`);
-    console.log(`🌟 [PRIORITIZE_DETAILED] - contextAvailable: ${contextAvailable}`);
-    console.log(`🌟 [PRIORITIZE_DETAILED] - current isPendingRefinement: ${isPendingRefinement}`);
+    console.log(`🌟 [STAR_CLICK_DETAILED] ===== STAR CLICKED FOR ${pokemon.name} =====`);
+    console.log(`🌟 [STAR_CLICK_DETAILED] Event details:`, {
+      type: e.type,
+      button: e.button,
+      currentTarget: e.currentTarget.tagName,
+      defaultPrevented: e.defaultPrevented
+    });
+    console.log(`🌟 [STAR_CLICK_DETAILED] Context state:`, {
+      contextAvailable,
+      refinementQueueLength: refinementQueue?.length || 0,
+      hasRefinementBattles,
+      isPendingRefinement,
+      allRankedPokemonLength: allRankedPokemon.length
+    });
     
     if (!isPendingRefinement) {
-      console.log(`🌟 [PRIORITIZE_DETAILED] Adding ${pokemon.name} to refinement queue`);
+      console.log(`🌟 [STAR_CLICK_DETAILED] Adding ${pokemon.name} to refinement queue`);
       
       // Always set local pending state for immediate feedback AND persist it
       setLocalPendingState(true);
       localStorage.setItem(`pokemon-pending-${pokemon.id}`, 'true');
+      console.log(`🌟 [STAR_CLICK_DETAILED] Set localPendingState to true and saved to localStorage`);
       
       if (contextAvailable) {
-        console.log(`🌟 [PRIORITIZE_DETAILED] Context available, calling queueBattlesForReorder`);
+        console.log(`🌟 [STAR_CLICK_DETAILED] Context available, generating neighbor battles`);
         
-        // FIXED: Generate proper neighbor battles for this Pokemon
-        const neighbors: number[] = [];
+        // Find current Pokemon's position in the ranked list
         const currentIndex = allRankedPokemon.findIndex(p => p.id === pokemon.id);
+        console.log(`🌟 [STAR_CLICK_DETAILED] Current index of ${pokemon.name}: ${currentIndex}`);
+        console.log(`🌟 [STAR_CLICK_DETAILED] All ranked Pokemon:`, allRankedPokemon.map((p, i) => `${i}: ${p.name} (${p.id})`));
         
-        // Get 2-3 neighboring Pokemon for battles
+        // Generate neighbor battles for this Pokemon
+        const neighbors: number[] = [];
+        
         if (currentIndex >= 0) {
           // Add Pokemon before current position
           if (currentIndex > 0) {
             neighbors.push(allRankedPokemon[currentIndex - 1].id);
+            console.log(`🌟 [STAR_CLICK_DETAILED] Added previous neighbor: ${allRankedPokemon[currentIndex - 1].name} (${allRankedPokemon[currentIndex - 1].id})`);
           }
           // Add Pokemon after current position  
           if (currentIndex < allRankedPokemon.length - 1) {
             neighbors.push(allRankedPokemon[currentIndex + 1].id);
+            console.log(`🌟 [STAR_CLICK_DETAILED] Added next neighbor: ${allRankedPokemon[currentIndex + 1].name} (${allRankedPokemon[currentIndex + 1].id})`);
           }
           // Add one more neighbor if available for better validation
           if (currentIndex > 1 && neighbors.length < 2) {
             neighbors.push(allRankedPokemon[currentIndex - 2].id);
+            console.log(`🌟 [STAR_CLICK_DETAILED] Added second previous neighbor: ${allRankedPokemon[currentIndex - 2].name} (${allRankedPokemon[currentIndex - 2].id})`);
           } else if (currentIndex < allRankedPokemon.length - 2 && neighbors.length < 2) {
             neighbors.push(allRankedPokemon[currentIndex + 2].id);
+            console.log(`🌟 [STAR_CLICK_DETAILED] Added second next neighbor: ${allRankedPokemon[currentIndex + 2].name} (${allRankedPokemon[currentIndex + 2].id})`);
           }
+        } else {
+          console.log(`🌟 [STAR_CLICK_DETAILED] ❌ Pokemon ${pokemon.name} not found in allRankedPokemon array!`);
         }
         
-        console.log(`🌟 [PRIORITIZE_DETAILED] Generated neighbors for ${pokemon.name}:`, neighbors);
-        queueBattlesForReorder(pokemon.id, neighbors, currentIndex);
+        console.log(`🌟 [STAR_CLICK_DETAILED] Final neighbors for ${pokemon.name}:`, neighbors);
+        console.log(`🌟 [STAR_CLICK_DETAILED] About to call queueBattlesForReorder with:`, {
+          primaryId: pokemon.id,
+          neighbors,
+          currentIndex
+        });
+        
+        // Call the queue function
+        try {
+          queueBattlesForReorder(pokemon.id, neighbors, currentIndex);
+          console.log(`🌟 [STAR_CLICK_DETAILED] ✅ queueBattlesForReorder call completed successfully`);
+        } catch (error) {
+          console.error(`🌟 [STAR_CLICK_DETAILED] ❌ Error calling queueBattlesForReorder:`, error);
+        }
+        
+        // Check the queue state after the call
+        setTimeout(() => {
+          console.log(`🌟 [STAR_CLICK_DETAILED] Queue state after queueBattlesForReorder:`, {
+            refinementQueueLength: refinementQueue?.length || 0,
+            hasRefinementBattles
+          });
+        }, 100);
+        
       } else {
-        console.log(`🌟 [PRIORITIZE_DETAILED] Context NOT available, persisting local state`);
-        // Don't clear automatically - let it persist until user manually toggles or battles are processed
+        console.log(`🌟 [STAR_CLICK_DETAILED] ❌ Context NOT available, only persisting local state`);
+        console.log(`🌟 [STAR_CLICK_DETAILED] Available functions:`, {
+          refinementQueue: !!refinementQueue,
+          queueBattlesForReorder: typeof queueBattlesForReorder,
+          hasRefinementBattles: typeof hasRefinementBattles
+        });
       }
     } else {
-      console.log(`🌟 [PRIORITIZE_DETAILED] Pokemon ${pokemon.name} is already pending, toggling off`);
+      console.log(`🌟 [STAR_CLICK_DETAILED] Pokemon ${pokemon.name} is already pending, toggling off`);
       setLocalPendingState(false);
       localStorage.removeItem(`pokemon-pending-${pokemon.id}`);
+      console.log(`🌟 [STAR_CLICK_DETAILED] Removed pending state and localStorage entry`);
     }
+    
+    console.log(`🌟 [STAR_CLICK_DETAILED] ===== STAR CLICK HANDLER COMPLETE =====`);
   };
 
   // Clean up localStorage when Pokemon is actually processed in a battle
   React.useEffect(() => {
     if (contextAvailable && hasRefinementBattles === false && localPendingState) {
-      // If we had pending state but no refinement battles exist, it means they were processed
-      console.log(`🌟 [CLEANUP] Clearing pending state for ${pokemon.name} - battles processed`);
+      console.log(`🌟 [CLEANUP_TRACE] Clearing pending state for ${pokemon.name} - battles processed`);
       setLocalPendingState(false);
       localStorage.removeItem(`pokemon-pending-${pokemon.id}`);
     }
@@ -136,7 +183,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   // Only use sortable if draggable AND modal is not open
   const sortableResult = useSortable({ 
     id: isDraggable ? (isAvailable ? `available-${pokemon.id}` : pokemon.id) : `static-${pokemon.id}`,
-    disabled: !isDraggable || isOpen, // Disable drag when modal is open
+    disabled: !isDraggable || isOpen,
     data: {
       type: context === 'available' ? 'available-pokemon' : 'ranked-pokemon',
       pokemon: pokemon,
@@ -155,16 +202,13 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     isDragging,
   } = sortableResult;
 
-  // HARDWARE ACCELERATION: Optimized transform with GPU acceleration
   const style = {
-    // Use transform3d for hardware acceleration
     transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0) scaleX(${transform.scaleX || 1}) scaleY(${transform.scaleY || 1})` : 'translate3d(0, 0, 0)',
     transition: transition || undefined,
     minHeight: '140px',
     minWidth: '140px',
     zIndex: isDragging ? 1000 : 'auto',
     cursor: isDraggable && !isOpen ? 'grab' : 'default',
-    // Hardware acceleration optimizations
     willChange: isDragging ? 'transform' : 'auto',
     backfaceVisibility: 'hidden' as const,
     perspective: 1000,
@@ -201,7 +245,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       {...(isDraggable && !isOpen ? attributes : {})}
       {...(isDraggable && !isOpen ? listeners : {})}
     >
-      {/* Enhanced drag overlay for better visual feedback with hardware acceleration */}
+      {/* Enhanced drag overlay for better visual feedback */}
       {isDragging && (
         <div 
           className="absolute inset-0 bg-blue-100 bg-opacity-30 rounded-lg pointer-events-none"
@@ -229,8 +273,14 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
             isPendingRefinement ? 'opacity-100' : 'opacity-25'
           }`}
           title="Prioritize for refinement battle"
-          onPointerDown={(e) => e.stopPropagation()}
-          onMouseDown={(e) => e.stopPropagation()}
+          onPointerDown={(e) => {
+            console.log(`🌟 [STAR_EVENT_TRACE] onPointerDown triggered for ${pokemon.name}`);
+            e.stopPropagation();
+          }}
+          onMouseDown={(e) => {
+            console.log(`🌟 [STAR_EVENT_TRACE] onMouseDown triggered for ${pokemon.name}`);
+            e.stopPropagation();
+          }}
           type="button"
           style={{ pointerEvents: 'auto' }}
         >
@@ -242,7 +292,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
         </button>
       )}
 
-      {/* Info Button with Dialog - now only shows on hover and disabled during drag */}
+      {/* Info Button with Dialog */}
       {!isDragging && (
         <div className="absolute top-1 right-1 z-30 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -251,7 +301,6 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
                 className="w-5 h-5 rounded-full bg-white/80 hover:bg-white border border-gray-300 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200 backdrop-blur-sm cursor-pointer"
                 onClick={(e) => {
                   e.stopPropagation();
-                  console.log(`Info button clicked for ${pokemon.name}`);
                 }}
                 onPointerDown={(e) => {
                   e.stopPropagation();
@@ -305,7 +354,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
         </div>
       )}
 
-      {/* Ranking number - white circle with black text in top left if showRank */}
+      {/* Ranking number */}
       {context === 'ranked' && showRank && (
         <div className={`absolute top-2 left-2 w-7 h-7 bg-white rounded-full flex items-center justify-center text-sm font-bold z-10 shadow-sm border border-gray-200 ${
           isDragging ? 'bg-blue-100 border-blue-300' : ''
@@ -314,7 +363,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
         </div>
       )}
       
-      {/* Pokemon image - scaled to 20x20 (80px) with hardware acceleration */}
+      {/* Pokemon image */}
       <div className="flex-1 flex justify-center items-center px-2 pt-6 pb-1">
         <img 
           src={pokemon.image} 
@@ -334,7 +383,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
         />
       </div>
       
-      {/* Pokemon info - white section at bottom with reduced padding */}
+      {/* Pokemon info */}
       <div className={`bg-white text-center py-1.5 px-2 mt-auto border-t border-gray-100 ${
         isDragging ? 'bg-blue-50' : ''
       }`}>
@@ -345,7 +394,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
           #{formattedId}
         </div>
         
-        {/* Score display - only for ranked context - now with 5 decimal places */}
+        {/* Score display */}
         {context === 'ranked' && 'score' in pokemon && (
           <div className="text-xs text-gray-700 font-medium">
             Score: {pokemon.score.toFixed(5)}
