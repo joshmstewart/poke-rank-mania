@@ -51,6 +51,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   console.log(`🌟 [STAR_CLICK_TRACE] Pokemon ${pokemon.name} (${pokemon.id}):`);
   console.log(`🌟 [STAR_CLICK_TRACE] - contextAvailable: ${contextAvailable}`);
   console.log(`🌟 [STAR_CLICK_TRACE] - allRankedPokemon.length: ${allRankedPokemon.length}`);
+  console.log(`🌟 [STAR_CLICK_TRACE] - context: ${context}`);
   
   // Check if this Pokemon has any battles in the refinement queue
   const isPendingRefinement = contextAvailable ? (
@@ -72,8 +73,9 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       setLocalPendingState(true);
       localStorage.setItem(`pokemon-pending-${pokemon.id}`, 'true');
       
-      if (contextAvailable && allRankedPokemon.length > 1) {
-        console.log(`🌟 [STAR_CLICK_DETAILED] Context available, generating neighbor battles`);
+      // Only try to generate neighbor battles if we're in ranked context AND have sufficient ranked Pokemon
+      if (context === 'ranked' && contextAvailable && allRankedPokemon.length > 1) {
+        console.log(`🌟 [STAR_CLICK_DETAILED] Context available and sufficient ranked Pokemon, generating neighbor battles`);
         
         // Find current Pokemon's position in the ranked list
         const currentIndex = allRankedPokemon.findIndex(p => p.id === pokemon.id);
@@ -108,7 +110,10 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
           console.log(`🌟 [STAR_CLICK_DETAILED] ❌ Pokemon not found in ranked list`);
         }
       } else {
-        console.log(`🌟 [STAR_CLICK_DETAILED] ❌ Context not available or insufficient Pokemon`);
+        console.log(`🌟 [STAR_CLICK_DETAILED] ⚠️ Not in ranked context or insufficient Pokemon - just marking as pending`);
+        console.log(`🌟 [STAR_CLICK_DETAILED] - context: ${context}`);
+        console.log(`🌟 [STAR_CLICK_DETAILED] - contextAvailable: ${contextAvailable}`);
+        console.log(`🌟 [STAR_CLICK_DETAILED] - allRankedPokemon.length: ${allRankedPokemon.length}`);
       }
     } else {
       console.log(`🌟 [STAR_CLICK_DETAILED] Pokemon ${pokemon.name} is already pending, toggling off`);
