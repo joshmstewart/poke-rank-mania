@@ -89,6 +89,7 @@ const DraggableMilestoneGrid: React.FC<DraggableMilestoneGridProps> = ({
           isDraggable={!!onManualReorder}
           context="ranked"
           isPending={localPendingRefinements.has(pokemon.id)}
+          allRankedPokemon={displayRankings}
         />
       ))}
     </div>
@@ -128,6 +129,7 @@ const DraggableMilestoneGrid: React.FC<DraggableMilestoneGridProps> = ({
                 isDraggable={false}
                 context="ranked"
                 isPending={localPendingRefinements.has(activePokemon.id)}
+                allRankedPokemon={displayRankings}
               />
             </div>
           ) : null}
