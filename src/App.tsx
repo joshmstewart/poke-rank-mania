@@ -7,6 +7,7 @@ import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { Toaster } from "@/components/ui/toaster"
 import PokemonRankerWithProvider from "@/components/pokemon/PokemonRankerWithProvider";
 import { AuthWrapper } from "@/components/auth/AuthWrapper";
+import { RefinementQueueProvider } from "@/components/battle/RefinementQueueProvider";
 
 function AppContent() {
   const [mode, setMode] = useLocalStorage<"rank" | "battle">("pokemon-ranker-mode", "rank");
@@ -112,16 +113,18 @@ function AppContent() {
 
   // Clean production interface
   return (
-    <div className="flex flex-col h-screen">
-      <AppHeader mode={mode} onModeChange={handleModeChange} />
-      
-      <main className="flex-grow bg-gray-100 py-6 px-4">
-        <div className="container max-w-7xl mx-auto">
-          {renderContent()}
-        </div>
-      </main>
-      <Toaster />
-    </div>
+    <RefinementQueueProvider>
+      <div className="flex flex-col h-screen">
+        <AppHeader mode={mode} onModeChange={handleModeChange} />
+        
+        <main className="flex-grow bg-gray-100 py-6 px-4">
+          <div className="container max-w-7xl mx-auto">
+            {renderContent()}
+          </div>
+        </main>
+        <Toaster />
+      </div>
+    </RefinementQueueProvider>
   );
 }
 
