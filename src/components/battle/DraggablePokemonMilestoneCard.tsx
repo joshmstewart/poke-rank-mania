@@ -223,6 +223,12 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       {/* Prioritize button - only for ranked context and when not dragging */}
       {!isDragging && context === 'ranked' && (
         <button
+          onPointerDown={(e) => {
+            // Prevent the drag listeners from capturing this interaction so
+            // the click event can fire reliably
+            e.stopPropagation();
+            e.preventDefault();
+          }}
           onClick={handlePrioritizeClick}
           className={`absolute top-1 right-8 z-30 p-1 rounded-full group-hover:opacity-100 transition-opacity duration-200 ${
             isPendingRefinement ? 'opacity-100' : 'opacity-25'
