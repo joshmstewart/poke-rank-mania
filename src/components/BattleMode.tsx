@@ -1,16 +1,11 @@
 
 import React from "react";
-import BattleModeProvider from "./battle/BattleModeProvider";
-import { RefinementQueueProvider } from "./battle/RefinementQueueProvider";
+import BattleModeCore from "./battle/BattleModeCore";
 
 const BattleMode = () => {
   console.log('🔥 BattleMode: Component rendering');
   
-  return (
-    <RefinementQueueProvider>
-      <BattleModeProvider />
-    </RefinementQueueProvider>
-  );
+  return <BattleModeCore />;
 };
 
 export default BattleMode;
