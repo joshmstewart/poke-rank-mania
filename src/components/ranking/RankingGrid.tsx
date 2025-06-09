@@ -56,6 +56,9 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
 
   const activePokemon = activeId ? rankedPokemon.find(p => String(p.id) === activeId) : null;
 
+  console.log(`🎯 [RANKING_GRID_DEBUG] Rendering RankingGrid with ${rankedPokemon.length} Pokemon`);
+  console.log(`🎯 [RANKING_GRID_DEBUG] Passing allRankedPokemon array with length: ${rankedPokemon.length}`);
+
   return (
     <DndContext
       sensors={sensors}
