@@ -1,6 +1,6 @@
 
 import React from "react";
-import { BattleModeProvider } from "./battle/BattleModeProvider";
+import BattleModeProvider from "./battle/BattleModeProvider";
 import { RefinementQueueProvider } from "./battle/RefinementQueueProvider";
 
 const BattleMode = () => {
