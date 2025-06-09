@@ -126,22 +126,46 @@ export const useRefinementQueue = () => {
       }
       
       const newQueue = [...prev, ...battlesToAdd];
-      currentQueueRef.current = newQueue;
+
+      // Randomize the order of the refinement battles so different
+      // prioritized Pokémon don't have their battles grouped together
+      const shuffledQueue = [...newQueue];
+      for (let i = shuffledQueue.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffledQueue[i], shuffledQueue[j]] = [shuffledQueue[j], shuffledQueue[i]];
+      }
+
+      currentQueueRef.current = shuffledQueue;
       
       console.log(`🔄 [QUEUE_BATTLES_MEGA_TRACE] ✅ FINAL RESULT:`, {
         oldQueueLength: prev.length,
-        newQueueLength: newQueue.length,
+        newQueueLength: shuffledQueue.length,
         battlesAdded: battlesToAdd.length,
-        newQueueContents: newQueue.map(b => `${b.primaryPokemonId} vs ${b.opponentPokemonId}`)
+        newQueueContents: shuffledQueue.map(b => `${b.primaryPokemonId} vs ${b.opponentPokemonId}`)
       });
       console.log(`🔄 [QUEUE_BATTLES_MEGA_TRACE] ===== QUEUEING VALIDATION BATTLES END =====`);
-      
-      return newQueue;
+
+      return shuffledQueue;
     });
   }, [isDuplicateBattleGlobally]);
 
   const getNextRefinementBattle = useCallback((): RefinementBattle | null => {
-    const currentQueue = currentQueueRef.current;
+    let currentQueue = currentQueueRef.current;
+
+    if (currentQueue.length > 1) {
+      // Shuffle the queue on each retrieval so battles from different
+      // selections are interleaved even if they were queued separately
+      const shuffled = [...currentQueue];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      // Update state and ref so subsequent calls use the new order
+      setRefinementQueue(shuffled);
+      currentQueueRef.current = shuffled;
+      currentQueue = shuffled;
+    }
+
     const next = currentQueue.length > 0 ? currentQueue[0] : null;
     
     console.log(`⚔️ [GET_NEXT_TRACE] getNextRefinementBattle called`);
