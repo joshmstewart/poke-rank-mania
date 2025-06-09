@@ -3,7 +3,6 @@ import React, { useState, useCallback, useMemo, useEffect, useRef } from "react"
 import BattleModeLoader from "./BattleModeLoader";
 import BattleModeProvider from "./BattleModeProvider";
 import BattleModeContainer from "./BattleModeContainer";
-import { RefinementQueueProvider } from "./RefinementQueueProvider";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "@/hooks/battle/types";
 import { useTrueSkillStore } from "@/stores/trueskillStore";
@@ -11,7 +10,6 @@ import { useBattleDebugger } from "@/hooks/battle/useBattleDebugger";
 
 const BattleModeCore: React.FC = () => {
   console.log('[DEBUG BattleModeCore] Component rendering');
-  console.log(`🔄 [REFINEMENT_PROVIDER_TOP_LEVEL] Wrapping entire BattleMode with single RefinementQueueProvider`);
   
   // CRITICAL FIX: Use TrueSkill store as single source of truth for battle count
   const { totalBattles, isHydrated, waitForHydration, smartSync } = useTrueSkillStore();
@@ -108,7 +106,7 @@ const BattleModeCore: React.FC = () => {
     console.log(`🔒 [POKEMON_LOADING_FIX] BattleModeCore showing loading state - isLoading: ${isLoading}, Pokemon count: ${stablePokemon.length}`);
     
     return (
-      <RefinementQueueProvider>
+      <>
         <BattleModeLoader
           onPokemonLoaded={handlePokemonLoaded}
           onLoadingChange={handleLoadingChange}
@@ -119,12 +117,12 @@ const BattleModeCore: React.FC = () => {
             <p>Loading complete Pokémon dataset for battles...</p>
           </div>
         </div>
-      </RefinementQueueProvider>
+      </>
     );
   }
 
   return (
-    <RefinementQueueProvider>
+    <>
       <BattleModeLoader
         onPokemonLoaded={handlePokemonLoaded}
         onLoadingChange={handleLoadingChange}
@@ -137,7 +135,7 @@ const BattleModeCore: React.FC = () => {
           setBattleResults={stableSetBattleResults}
         />
       </BattleModeProvider>
-    </RefinementQueueProvider>
+    </>
   );
 };
 
