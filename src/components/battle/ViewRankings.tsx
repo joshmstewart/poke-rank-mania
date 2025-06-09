@@ -51,12 +51,9 @@ const ViewRankings: React.FC<ViewRankingsProps> = ({
         />
         
         <RankingGrid 
-          displayRankings={rankings} 
-          activeTier={activeTier}
-          isMilestoneView={isMilestoneView}
-          battlesCompleted={battlesCompleted}
-          onSuggestRanking={onSuggestRanking}
-          onRemoveSuggestion={onRemoveSuggestion}
+          rankedPokemon={rankings} 
+          onReorder={() => {}}
+          isDraggable={false}
         />
       </div>
     );
@@ -76,10 +73,9 @@ const ViewRankings: React.FC<ViewRankingsProps> = ({
       </div>
       
       <RankingGrid 
-        displayRankings={rankings} 
-        activeTier={activeTier}
-        onSuggestRanking={onSuggestRanking}
-        onRemoveSuggestion={onRemoveSuggestion}
+        rankedPokemon={rankings} 
+        onReorder={() => {}}
+        isDraggable={false}
       />
     </div>
   );

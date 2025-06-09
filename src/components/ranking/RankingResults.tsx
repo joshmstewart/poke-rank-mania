@@ -61,10 +61,9 @@ export const RankingResults: React.FC<RankingResultsProps> = ({
 
       <div className="bg-white rounded-lg shadow p-6">
         <RankingGrid 
-          displayRankings={confidentRankedPokemon} 
-          activeTier={currentTier}
-          onSuggestRanking={onSuggestRanking}
-          onRemoveSuggestion={onRemoveSuggestion}
+          rankedPokemon={confidentRankedPokemon} 
+          onReorder={() => {}}
+          isDraggable={false}
         />
       </div>
     </div>

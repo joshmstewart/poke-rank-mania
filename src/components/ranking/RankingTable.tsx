@@ -50,10 +50,9 @@ export const RankingTable: React.FC<RankingTableProps> = ({
   if (useGridView) {
     return (
       <RankingGrid
-        displayRankings={displayRankings}
-        activeTier={activeTier}
-        onSuggestRanking={onSuggestRanking}
-        onRemoveSuggestion={onRemoveSuggestion}
+        rankedPokemon={displayRankings}
+        onReorder={() => {}}
+        isDraggable={false}
       />
     );
   }
