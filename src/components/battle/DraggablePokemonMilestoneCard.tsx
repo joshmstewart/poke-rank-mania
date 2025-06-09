@@ -230,14 +230,14 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
             e.preventDefault();
           }}
           onClick={handlePrioritizeClick}
-          className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 p-2 rounded-full transition-opacity duration-200 ${
+          className={`absolute top-1/2 right-2 -translate-y-1/2 z-30 p-2 rounded-full transition-opacity duration-200 ${
             isPendingRefinement ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
           }`}
           title="Prioritize for refinement battle"
           type="button"
         >
           <Star
-            className={`w-8 h-8 transition-all ${
+            className={`w-16 h-16 transition-all ${
               isPendingRefinement ? 'text-yellow-400 fill-yellow-400' : 'text-gray-500 hover:text-yellow-500'
             }`}
           />
