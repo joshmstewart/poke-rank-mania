@@ -20,6 +20,7 @@ interface DraggablePokemonMilestoneCardProps {
   isDraggable?: boolean;
   isAvailable?: boolean;
   context?: 'available' | 'ranked';
+  allRankedPokemon?: (Pokemon | RankedPokemon)[]; // Add this to get neighboring Pokemon
 }
 
 const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps> = ({ 
@@ -29,7 +30,8 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   showRank = true,
   isDraggable = true,
   isAvailable = false,
-  context = 'ranked'
+  context = 'ranked',
+  allRankedPokemon = []
 }) => {
   const [isOpen, setIsOpen] = React.useState(false);
   const [localPendingState, setLocalPendingState] = React.useState(() => {
@@ -81,7 +83,31 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       
       if (contextAvailable) {
         console.log(`🌟 [PRIORITIZE_DETAILED] Context available, calling queueBattlesForReorder`);
-        queueBattlesForReorder(pokemon.id, [], 0);
+        
+        // FIXED: Generate proper neighbor battles for this Pokemon
+        const neighbors: number[] = [];
+        const currentIndex = allRankedPokemon.findIndex(p => p.id === pokemon.id);
+        
+        // Get 2-3 neighboring Pokemon for battles
+        if (currentIndex >= 0) {
+          // Add Pokemon before current position
+          if (currentIndex > 0) {
+            neighbors.push(allRankedPokemon[currentIndex - 1].id);
+          }
+          // Add Pokemon after current position  
+          if (currentIndex < allRankedPokemon.length - 1) {
+            neighbors.push(allRankedPokemon[currentIndex + 1].id);
+          }
+          // Add one more neighbor if available for better validation
+          if (currentIndex > 1 && neighbors.length < 2) {
+            neighbors.push(allRankedPokemon[currentIndex - 2].id);
+          } else if (currentIndex < allRankedPokemon.length - 2 && neighbors.length < 2) {
+            neighbors.push(allRankedPokemon[currentIndex + 2].id);
+          }
+        }
+        
+        console.log(`🌟 [PRIORITIZE_DETAILED] Generated neighbors for ${pokemon.name}:`, neighbors);
+        queueBattlesForReorder(pokemon.id, neighbors, currentIndex);
       } else {
         console.log(`🌟 [PRIORITIZE_DETAILED] Context NOT available, persisting local state`);
         // Don't clear automatically - let it persist until user manually toggles or battles are processed

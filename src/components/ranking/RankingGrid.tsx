@@ -1,56 +1,97 @@
 
 import React from "react";
-import { Pokemon, RankedPokemon } from "@/services/pokemon";
-import { VotingArrows } from "./VotingArrows";
+import { DndContext, DragEndEvent, DragStartEvent, DragOverlay, closestCenter, PointerSensor, useSensor, useSensors, TouchSensor } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
+import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 import DraggablePokemonMilestoneCard from "@/components/battle/DraggablePokemonMilestoneCard";
+import { RankedPokemon } from "@/services/pokemon";
 
 interface RankingGridProps {
-  displayRankings: (Pokemon | RankedPokemon)[];
-  activeTier?: any;
-  isMilestoneView?: boolean;
-  battlesCompleted?: number;
-  onSuggestRanking?: (pokemon: RankedPokemon, direction: "up" | "down", strength: 1 | 2 | 3) => void;
-  onRemoveSuggestion?: (pokemonId: number) => void;
+  rankedPokemon: RankedPokemon[];
+  onReorder: (newOrder: RankedPokemon[]) => void;
+  isDraggable?: boolean;
 }
 
 export const RankingGrid: React.FC<RankingGridProps> = ({
-  displayRankings,
-  activeTier,
-  isMilestoneView = false,
-  battlesCompleted = 0,
-  onSuggestRanking,
-  onRemoveSuggestion
+  rankedPokemon,
+  onReorder,
+  isDraggable = true
 }) => {
+  const [activeId, setActiveId] = React.useState<string | null>(null);
+  
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 250,
+        tolerance: 5,
+      },
+    })
+  );
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(String(event.active.id));
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveId(null);
+
+    if (!over || active.id === over.id) {
+      return;
+    }
+
+    const oldIndex = rankedPokemon.findIndex(pokemon => String(pokemon.id) === String(active.id));
+    const newIndex = rankedPokemon.findIndex(pokemon => String(pokemon.id) === String(over.id));
+
+    if (oldIndex !== -1 && newIndex !== -1) {
+      const newOrder = arrayMove(rankedPokemon, oldIndex, newIndex);
+      onReorder(newOrder);
+    }
+  };
+
+  const activePokemon = activeId ? rankedPokemon.find(p => String(p.id) === activeId) : null;
+
   return (
-    <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
-      {displayRankings.map((pokemon, index) => {
-        const isRankedPokemon = 'score' in pokemon;
-        const showRankNumber = onSuggestRanking !== undefined; // Only show rank number in rankings section
-
-        return (
-          <div key={pokemon.id} className="relative group">
-            {/* Voting arrows for ranked Pokemon */}
-            {isRankedPokemon && onSuggestRanking && onRemoveSuggestion && (
-              <VotingArrows
-                pokemon={pokemon as RankedPokemon}
-                onSuggestRanking={onSuggestRanking}
-                onRemoveSuggestion={onRemoveSuggestion}
-              />
-            )}
-
-            {/* Using draggable card component - names should already be formatted at data source */}
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      modifiers={[restrictToVerticalAxis]}
+    >
+      <SortableContext items={rankedPokemon.map(p => String(p.id))} strategy={verticalListSortingStrategy}>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+          {rankedPokemon.map((pokemon, index) => (
             <DraggablePokemonMilestoneCard
+              key={pokemon.id}
               pokemon={pokemon}
               index={index}
-              isPending={false}
-              showRank={showRankNumber}
-              isDraggable={false}
-              isAvailable={false}
+              showRank={true}
+              isDraggable={isDraggable}
               context="ranked"
+              allRankedPokemon={rankedPokemon}
             />
-          </div>
-        );
-      })}
-    </div>
+          ))}
+        </div>
+      </SortableContext>
+
+      <DragOverlay>
+        {activePokemon && (
+          <DraggablePokemonMilestoneCard
+            pokemon={activePokemon}
+            index={rankedPokemon.findIndex(p => p.id === activePokemon.id)}
+            showRank={true}
+            isDraggable={false}
+            context="ranked"
+            allRankedPokemon={rankedPokemon}
+          />
+        )}
+      </DragOverlay>
+    </DndContext>
   );
 };
