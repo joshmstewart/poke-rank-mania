@@ -48,15 +48,11 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     typeof hasRefinementBattles === 'boolean'
   );
   
-  console.log(`🌟 [STAR_CLICK_TRACE] Pokemon ${pokemon.name} (${pokemon.id}):`);
-  console.log(`🌟 [STAR_CLICK_TRACE] - contextAvailable: ${contextAvailable}`);
-  console.log(`🌟 [STAR_CLICK_TRACE] - allRankedPokemon.length: ${allRankedPokemon.length}`);
-  console.log(`🌟 [STAR_CLICK_TRACE] - context: ${context}`);
   
   // Check if this Pokemon has any battles in the refinement queue
   const isPendingRefinement = contextAvailable ? (
-    refinementQueue.some(battle => 
-      battle.primaryPokemonId === pokemon.id || battle.opponentPokemonId === pokemon.id
+    refinementQueue.some(
+      battle => battle.primaryPokemonId === pokemon.id
     ) || localPendingState
   ) : localPendingState;
 
@@ -64,59 +60,46 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     e.stopPropagation();
     e.preventDefault();
     
-    console.log(`🌟 [STAR_CLICK_DETAILED] ===== STAR CLICKED FOR ${pokemon.name} =====`);
-    
     if (!isPendingRefinement) {
-      console.log(`🌟 [STAR_CLICK_DETAILED] Adding ${pokemon.name} to refinement queue`);
       
       // Always set local pending state for immediate feedback
       setLocalPendingState(true);
       localStorage.setItem(`pokemon-pending-${pokemon.id}`, 'true');
       
-      // Only try to generate neighbor battles if we're in ranked context AND have sufficient ranked Pokemon
+      // Only try to generate random top 50 battles if we're in ranked context AND have ranked Pokemon
       if (context === 'ranked' && contextAvailable && allRankedPokemon.length > 1) {
-        console.log(`🌟 [STAR_CLICK_DETAILED] Context available and sufficient ranked Pokemon, generating neighbor battles`);
-        
+
         // Find current Pokemon's position in the ranked list
         const currentIndex = allRankedPokemon.findIndex(p => p.id === pokemon.id);
-        console.log(`🌟 [STAR_CLICK_DETAILED] Current index of ${pokemon.name}: ${currentIndex}`);
-        
+
         if (currentIndex >= 0) {
-          // Generate neighbor battles for this Pokemon
-          const neighbors: number[] = [];
-          
-          // Add Pokemon before current position
-          if (currentIndex > 0) {
-            neighbors.push(allRankedPokemon[currentIndex - 1].id);
+          // Pick three random opponents from the top 50 (excluding this Pokemon)
+          const topPool = allRankedPokemon
+            .slice(0, 50)
+            .filter(p => p.id !== pokemon.id);
+          const poolCopy = [...topPool];
+          const opponents: number[] = [];
+          while (opponents.length < 3 && poolCopy.length > 0) {
+            const rand = Math.floor(Math.random() * poolCopy.length);
+            const opponent = poolCopy.splice(rand, 1)[0];
+            opponents.push(opponent.id);
           }
-          // Add Pokemon after current position  
-          if (currentIndex < allRankedPokemon.length - 1) {
-            neighbors.push(allRankedPokemon[currentIndex + 1].id);
-          }
-          
-          console.log(`🌟 [STAR_CLICK_DETAILED] Final neighbors for ${pokemon.name}:`, neighbors);
-          
-          if (neighbors.length > 0) {
+
+
+
+          if (opponents.length > 0) {
             try {
-              queueBattlesForReorder(pokemon.id, neighbors, currentIndex);
-              console.log(`🌟 [STAR_CLICK_DETAILED] ✅ queueBattlesForReorder call completed successfully`);
+              queueBattlesForReorder(pokemon.id, opponents, currentIndex);
             } catch (error) {
               console.error(`🌟 [STAR_CLICK_DETAILED] ❌ Error calling queueBattlesForReorder:`, error);
             }
           } else {
-            console.log(`🌟 [STAR_CLICK_DETAILED] ❌ No valid neighbors found`);
           }
         } else {
-          console.log(`🌟 [STAR_CLICK_DETAILED] ❌ Pokemon not found in ranked list`);
         }
       } else {
-        console.log(`🌟 [STAR_CLICK_DETAILED] ⚠️ Not in ranked context or insufficient Pokemon - just marking as pending`);
-        console.log(`🌟 [STAR_CLICK_DETAILED] - context: ${context}`);
-        console.log(`🌟 [STAR_CLICK_DETAILED] - contextAvailable: ${contextAvailable}`);
-        console.log(`🌟 [STAR_CLICK_DETAILED] - allRankedPokemon.length: ${allRankedPokemon.length}`);
       }
     } else {
-      console.log(`🌟 [STAR_CLICK_DETAILED] Pokemon ${pokemon.name} is already pending, toggling off`);
       setLocalPendingState(false);
       localStorage.removeItem(`pokemon-pending-${pokemon.id}`);
     }
@@ -125,7 +108,6 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   // Clean up localStorage when Pokemon is actually processed in a battle
   React.useEffect(() => {
     if (contextAvailable && hasRefinementBattles === false && localPendingState) {
-      console.log(`🌟 [CLEANUP_TRACE] Clearing pending state for ${pokemon.name} - battles processed`);
       setLocalPendingState(false);
       localStorage.removeItem(`pokemon-pending-${pokemon.id}`);
     }
@@ -223,17 +205,23 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       {/* Prioritize button - only for ranked context and when not dragging */}
       {!isDragging && context === 'ranked' && (
         <button
+          onPointerDown={(e) => {
+            // Prevent the drag listeners from capturing this interaction so
+            // the click event can fire reliably
+            e.stopPropagation();
+            e.preventDefault();
+          }}
           onClick={handlePrioritizeClick}
-          className={`absolute top-1 right-8 z-30 p-1 rounded-full group-hover:opacity-100 transition-opacity duration-200 ${
-            isPendingRefinement ? 'opacity-100' : 'opacity-25'
+          className={`absolute top-1/2 right-2 sm:right-3 -translate-y-1/2 z-30 p-2 rounded-full transition-opacity duration-200 ${
+            isPendingRefinement ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
           }`}
           title="Prioritize for refinement battle"
           type="button"
         >
-          <Star 
-            className={`w-4 h-4 transition-all ${
+          <Star
+            className={`w-8 h-8 transition-all ${
               isPendingRefinement ? 'text-yellow-400 fill-yellow-400' : 'text-gray-500 hover:text-yellow-500'
-            }`} 
+            }`}
           />
         </button>
       )}
