@@ -126,17 +126,26 @@ export const useRefinementQueue = () => {
       }
       
       const newQueue = [...prev, ...battlesToAdd];
-      currentQueueRef.current = newQueue;
+
+      // Randomize the order of the refinement battles so different
+      // prioritized Pokémon don't have their battles grouped together
+      const shuffledQueue = [...newQueue];
+      for (let i = shuffledQueue.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffledQueue[i], shuffledQueue[j]] = [shuffledQueue[j], shuffledQueue[i]];
+      }
+
+      currentQueueRef.current = shuffledQueue;
       
       console.log(`🔄 [QUEUE_BATTLES_MEGA_TRACE] ✅ FINAL RESULT:`, {
         oldQueueLength: prev.length,
-        newQueueLength: newQueue.length,
+        newQueueLength: shuffledQueue.length,
         battlesAdded: battlesToAdd.length,
-        newQueueContents: newQueue.map(b => `${b.primaryPokemonId} vs ${b.opponentPokemonId}`)
+        newQueueContents: shuffledQueue.map(b => `${b.primaryPokemonId} vs ${b.opponentPokemonId}`)
       });
       console.log(`🔄 [QUEUE_BATTLES_MEGA_TRACE] ===== QUEUEING VALIDATION BATTLES END =====`);
-      
-      return newQueue;
+
+      return shuffledQueue;
     });
   }, [isDuplicateBattleGlobally]);
 
