@@ -55,8 +55,8 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   
   // Check if this Pokemon has any battles in the refinement queue
   const isPendingRefinement = contextAvailable ? (
-    refinementQueue.some(battle => 
-      battle.primaryPokemonId === pokemon.id || battle.opponentPokemonId === pokemon.id
+    refinementQueue.some(
+      battle => battle.primaryPokemonId === pokemon.id
     ) || localPendingState
   ) : localPendingState;
 
@@ -73,38 +73,38 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       setLocalPendingState(true);
       localStorage.setItem(`pokemon-pending-${pokemon.id}`, 'true');
       
-      // Only try to generate neighbor battles if we're in ranked context AND have sufficient ranked Pokemon
+      // Only try to generate random top 50 battles if we're in ranked context AND have ranked Pokemon
       if (context === 'ranked' && contextAvailable && allRankedPokemon.length > 1) {
-        console.log(`🌟 [STAR_CLICK_DETAILED] Context available and sufficient ranked Pokemon, generating neighbor battles`);
-        
+        console.log(`🌟 [STAR_CLICK_DETAILED] Context available and sufficient ranked Pokemon, generating random top-50 battles`);
+
         // Find current Pokemon's position in the ranked list
         const currentIndex = allRankedPokemon.findIndex(p => p.id === pokemon.id);
         console.log(`🌟 [STAR_CLICK_DETAILED] Current index of ${pokemon.name}: ${currentIndex}`);
-        
+
         if (currentIndex >= 0) {
-          // Generate neighbor battles for this Pokemon
-          const neighbors: number[] = [];
-          
-          // Add Pokemon before current position
-          if (currentIndex > 0) {
-            neighbors.push(allRankedPokemon[currentIndex - 1].id);
+          // Pick three random opponents from the top 50 (excluding this Pokemon)
+          const topPool = allRankedPokemon
+            .slice(0, 50)
+            .filter(p => p.id !== pokemon.id);
+          const poolCopy = [...topPool];
+          const opponents: number[] = [];
+          while (opponents.length < 3 && poolCopy.length > 0) {
+            const rand = Math.floor(Math.random() * poolCopy.length);
+            const opponent = poolCopy.splice(rand, 1)[0];
+            opponents.push(opponent.id);
           }
-          // Add Pokemon after current position  
-          if (currentIndex < allRankedPokemon.length - 1) {
-            neighbors.push(allRankedPokemon[currentIndex + 1].id);
-          }
-          
-          console.log(`🌟 [STAR_CLICK_DETAILED] Final neighbors for ${pokemon.name}:`, neighbors);
-          
-          if (neighbors.length > 0) {
+
+          console.log(`🌟 [STAR_CLICK_DETAILED] Random opponents for ${pokemon.name}:`, opponents);
+
+          if (opponents.length > 0) {
             try {
-              queueBattlesForReorder(pokemon.id, neighbors, currentIndex);
+              queueBattlesForReorder(pokemon.id, opponents, currentIndex);
               console.log(`🌟 [STAR_CLICK_DETAILED] ✅ queueBattlesForReorder call completed successfully`);
             } catch (error) {
               console.error(`🌟 [STAR_CLICK_DETAILED] ❌ Error calling queueBattlesForReorder:`, error);
             }
           } else {
-            console.log(`🌟 [STAR_CLICK_DETAILED] ❌ No valid neighbors found`);
+            console.log(`🌟 [STAR_CLICK_DETAILED] ❌ No valid opponents found`);
           }
         } else {
           console.log(`🌟 [STAR_CLICK_DETAILED] ❌ Pokemon not found in ranked list`);
@@ -223,17 +223,23 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       {/* Prioritize button - only for ranked context and when not dragging */}
       {!isDragging && context === 'ranked' && (
         <button
+          onPointerDown={(e) => {
+            // Prevent the drag listeners from capturing this interaction so
+            // the click event can fire reliably
+            e.stopPropagation();
+            e.preventDefault();
+          }}
           onClick={handlePrioritizeClick}
-          className={`absolute top-1 right-8 z-30 p-1 rounded-full group-hover:opacity-100 transition-opacity duration-200 ${
-            isPendingRefinement ? 'opacity-100' : 'opacity-25'
+          className={`absolute top-1/2 right-2 -translate-y-1/2 z-30 p-2 rounded-full transition-opacity duration-200 ${
+            isPendingRefinement ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
           }`}
           title="Prioritize for refinement battle"
           type="button"
         >
-          <Star 
-            className={`w-4 h-4 transition-all ${
+          <Star
+            className={`w-8 h-8 transition-all ${
               isPendingRefinement ? 'text-yellow-400 fill-yellow-400' : 'text-gray-500 hover:text-yellow-500'
-            }`} 
+            }`}
           />
         </button>
       )}
