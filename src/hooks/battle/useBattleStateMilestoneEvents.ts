@@ -1,5 +1,6 @@
 
 import { useEffect, useCallback } from "react";
+import { DEFAULT_BATTLE_MILESTONES } from "@/utils/battleMilestones";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
 
@@ -50,11 +51,11 @@ export const useBattleStateMilestoneEvents = ({
   
   // MILESTONE INVESTIGATION: Check where milestones came from
   console.log(`🔍🔍🔍 [MILESTONE_INVESTIGATION] useBattleStateMilestoneEvents received milestones:`, milestones);
-  console.log(`🔍🔍🔍 [MILESTONE_INVESTIGATION] Expected static milestones: [10,25,50,100,150,200,250,300,350,400,450,500,600,700,800,900,1000]`);
+  console.log(`🔍🔍🔍 [MILESTONE_INVESTIGATION] Expected static milestones: ${JSON.stringify(DEFAULT_BATTLE_MILESTONES)}`);
   
   // Check if milestones contains unexpected values
   if (Array.isArray(milestones)) {
-    const expectedMilestones = [10, 25, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 600, 700, 800, 900, 1000];
+    const expectedMilestones = DEFAULT_BATTLE_MILESTONES;
     const hasUnexpectedMilestones = milestones.some(m => !expectedMilestones.includes(m));
     if (hasUnexpectedMilestones) {
       console.error(`🔍🔍🔍 [MILESTONE_INVESTIGATION] ❌ UNEXPECTED MILESTONES DETECTED!`);

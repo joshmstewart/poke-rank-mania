@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { getDefaultBattleMilestones } from "@/utils/battleMilestones";
 
 export const useProgressState = () => {
   const [showingMilestone, setShowingMilestone] = useState(false);
@@ -8,7 +9,7 @@ export const useProgressState = () => {
   const [milestoneInProgress, setMilestoneInProgress] = useState(false);
   
   // CRITICAL FIX: Ensure milestones start with 10 and 25
-  const milestones = [10, 25, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 600, 700, 800, 900, 1000];
+  const milestones = getDefaultBattleMilestones();
   
   console.log("🎯 [MILESTONE_CONFIG] Milestones configured:", milestones);
   
