@@ -1,5 +1,6 @@
 
 import { useState, useCallback } from "react";
+import { getDefaultBattleMilestones } from "@/utils/battleMilestones";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
 import { formatPokemonName } from "@/utils/pokemon";
@@ -9,7 +10,7 @@ export const useBattleStateData = (
   initialSelectedGeneration: number
 ) => {
   // MILESTONE INVESTIGATION: Log initial milestones
-  const initialMilestones = [10, 25, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 600, 700, 800, 900, 1000];
+  const initialMilestones = getDefaultBattleMilestones();
   console.log(`🔍🔍🔍 [MILESTONE_INVESTIGATION] useBattleStateData initializing with milestones:`, initialMilestones);
   
   // All state hooks - must be called unconditionally

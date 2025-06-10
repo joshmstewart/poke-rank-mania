@@ -1,5 +1,6 @@
 
 import { useCallback } from "react";
+import { DEFAULT_BATTLE_MILESTONES } from "@/utils/battleMilestones";
 
 export const useMilestoneCalculations = (
   battlesCompleted: number,
@@ -8,7 +9,7 @@ export const useMilestoneCalculations = (
   battleHistory?: any[]
 ) => {
   // Handle both old signature (4 params) and new signature (2 params)
-  const actualMilestones = Array.isArray(milestones) ? milestones : [10, 25, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 600, 700, 800, 900, 1000];
+  const actualMilestones = Array.isArray(milestones) ? milestones : DEFAULT_BATTLE_MILESTONES;
   const actualFinalRankings = finalRankings || [];
   const actualBattleHistory = battleHistory || [];
   const completionPercentage = typeof milestones === 'number' ? milestones : 0;

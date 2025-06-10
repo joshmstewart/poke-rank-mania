@@ -1,8 +1,9 @@
 
 import { useCallback, useMemo } from "react";
+import { getDefaultBattleMilestones } from "@/utils/battleMilestones";
 
 export const useBattleMilestones = () => {
-  const milestones = useMemo(() => [10, 25, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 600, 700, 800, 900, 1000], []);
+  const milestones = useMemo(() => getDefaultBattleMilestones(), []);
 
   const checkForMilestone = useCallback((newBattlesCompleted: number) => {
     console.log(`🏆🏆🏆 [MILESTONE_DETECTION] ===== Checking Milestone =====`);

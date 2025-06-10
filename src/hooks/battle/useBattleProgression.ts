@@ -10,16 +10,18 @@ export const useBattleProgression = (
   milestones: number[],
   generateRankings: (results: any[]) => void
 ) => {
-  const { 
-    checkMilestone, 
+  const {
+    checkMilestone,
     isBattleGenerationBlocked,
     battleGenerationBlockedRef,
     resetMilestoneTracking,
-    triggerMilestone
+    triggerMilestone,
+    milestoneTracker
   } = useBattleProgressionMilestone(
     milestones,
     generateRankings,
-    setShowingMilestone
+    setShowingMilestone,
+    battlesCompleted
   );
 
   const { 
@@ -45,8 +47,8 @@ export const useBattleProgression = (
     console.log(`🔍 MISSED MILESTONE CHECK: Available milestones: ${milestones.join(', ')}`);
     
     // Find all milestones that should have been triggered by now
-    const missedMilestones = milestones.filter(milestone => 
-      currentBattleCount >= milestone
+    const missedMilestones = milestones.filter(milestone =>
+      currentBattleCount >= milestone && !milestoneTracker.current.has(milestone)
     );
     
     console.log(`🔍 MISSED MILESTONE CHECK: All eligible milestones: ${missedMilestones.join(', ')}`);
@@ -56,8 +58,7 @@ export const useBattleProgression = (
       const latestMissedMilestone = Math.max(...missedMilestones);
       console.log(`🎯 MISSED MILESTONE FOUND: Triggering latest milestone ${latestMissedMilestone}`);
       
-      // Force trigger the milestone view
-      setShowingMilestone(true);
+      // Force trigger the milestone view using centralized trigger
       return triggerMilestone(latestMissedMilestone, battleResults);
     }
     
