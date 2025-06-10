@@ -23,40 +23,53 @@ const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ currentMode, onModeChange }
     const ratingsBefore = getAllRatings();
     const ratingsCountBefore = Object.keys(ratingsBefore).length;
     
-    console.log(`🚨 [MODE_SWITCHER_CRITICAL] ===== MODE SWITCHER BUTTON CLICKED =====`);
-    console.log(`🚨 [MODE_SWITCHER_CRITICAL] From: ${currentMode} → To: ${mode}`);
-    console.log(`🚨 [MODE_SWITCHER_CRITICAL] Store state BEFORE switcher action: ${ratingsCountBefore} ratings`);
-    console.log(`🚨 [MODE_SWITCHER_CRITICAL] Rating IDs: ${Object.keys(ratingsBefore).slice(0, 10).join(', ')}${Object.keys(ratingsBefore).length > 10 ? '...' : ''}`);
+    console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] ===== MODE SWITCHER BUTTON CLICKED =====`);
+    console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] From: ${currentMode} → To: ${mode}`);
+    console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] Store state BEFORE switcher action: ${ratingsCountBefore} ratings`);
+    console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] Rating IDs: ${Object.keys(ratingsBefore).slice(0, 10).join(', ')}${Object.keys(ratingsBefore).length > 10 ? '...' : ''}`);
     
-    // CRITICAL FIX: Check refinement queue before switching modes
+    // CRITICAL DEBUG: Check refinement queue before switching modes
     if (refinementQueueHook) {
       const hasRefinementBattles = refinementQueueHook.hasRefinementBattles;
       const refinementCount = refinementQueueHook.refinementBattleCount;
-      console.log(`🚨 [MODE_SWITCHER_CRITICAL] Refinement queue status: ${hasRefinementBattles ? 'HAS' : 'NO'} battles (${refinementCount} total)`);
+      const queueLength = refinementQueueHook.refinementQueue?.length || 0;
+      
+      console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] Refinement queue status:`);
+      console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] - hasRefinementBattles: ${hasRefinementBattles}`);
+      console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] - refinementCount: ${refinementCount}`);
+      console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] - queueLength: ${queueLength}`);
+      console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] - refinementQueueHook object:`, refinementQueueHook);
       
       if (mode === "battle" && hasRefinementBattles) {
-        console.log(`🚨 [MODE_SWITCHER_CRITICAL] ⭐ SWITCHING TO BATTLE MODE WITH QUEUED REFINEMENT BATTLES!`);
-        console.log(`🚨 [MODE_SWITCHER_CRITICAL] This should trigger refinement battles in battle mode`);
+        console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] ⭐ SWITCHING TO BATTLE MODE WITH QUEUED REFINEMENT BATTLES!`);
+        console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] This should trigger refinement battles in battle mode`);
         
         // Call the mode change first to ensure battle system is mounted
         onModeChange(mode);
         
-        // CRITICAL FIX: Dispatch event with longer delay to ensure battle system is ready
+        // Dispatch event with delay to ensure battle system is ready
         setTimeout(() => {
           const event = new CustomEvent('refinement-battles-available', {
             detail: { 
               count: refinementCount,
               source: 'mode-switcher',
-              timestamp: Date.now()
+              timestamp: Date.now(),
+              queueLength: queueLength
             }
           });
           document.dispatchEvent(event);
-          console.log(`🚨 [MODE_SWITCHER_CRITICAL] ✅ Dispatched refinement-battles-available event after mode switch`);
-        }, 1000); // Increased delay to ensure battle system is mounted
+          console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] ✅ Dispatched refinement-battles-available event after mode switch`);
+          console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] Event detail:`, event.detail);
+        }, 1000);
         
         // Exit early since we already called onModeChange
         return;
+      } else if (mode === "battle") {
+        console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] ⚠️ Switching to battle mode but NO refinement battles queued`);
+        console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] Will proceed with normal mode switch`);
       }
+    } else {
+      console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] ❌ No refinement queue hook available!`);
     }
     
     // Call the mode change for non-battle switches or when no refinement battles
@@ -67,15 +80,15 @@ const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ currentMode, onModeChange }
       const ratingsAfter = getAllRatings();
       const ratingsCountAfter = Object.keys(ratingsAfter).length;
       
-      console.log(`🚨 [MODE_SWITCHER_CRITICAL] Store state AFTER switcher action: ${ratingsCountAfter} ratings`);
+      console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] Store state AFTER switcher action: ${ratingsCountAfter} ratings`);
       
       if (ratingsCountBefore !== ratingsCountAfter) {
-        console.log(`🚨 [MODE_SWITCHER_CRITICAL] ❌ RATING COUNT CHANGED! ${ratingsCountBefore} → ${ratingsCountAfter}`);
-        console.log(`🚨 [MODE_SWITCHER_CRITICAL] This indicates data loss during mode switch!`);
+        console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] ❌ RATING COUNT CHANGED! ${ratingsCountBefore} → ${ratingsCountAfter}`);
+        console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] This indicates data loss during mode switch!`);
       } else {
-        console.log(`🚨 [MODE_SWITCHER_CRITICAL] ✅ Rating count preserved during mode switch`);
+        console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] ✅ Rating count preserved during mode switch`);
       }
-      console.log(`🚨 [MODE_SWITCHER_CRITICAL] ===== MODE SWITCHER ACTION COMPLETE =====`);
+      console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] ===== MODE SWITCHER ACTION COMPLETE =====`);
     }, 100);
   };
 
