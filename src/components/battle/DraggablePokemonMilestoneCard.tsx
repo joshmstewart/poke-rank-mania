@@ -56,6 +56,12 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   console.log(`🌟🌟🌟 [STAR_DIAGNOSTIC_${context.toUpperCase()}] - refinementQueue exists: ${!!refinementQueue}`);
   console.log(`🌟🌟🌟 [STAR_DIAGNOSTIC_${context.toUpperCase()}] - queueBattlesForReorder function: ${typeof queueBattlesForReorder}`);
   
+  // CRITICAL DEBUG: Log the actual queue function details
+  if (contextAvailable) {
+    console.log(`🌟🌟🌟 [STAR_DIAGNOSTIC_${context.toUpperCase()}] - refinementQueue length: ${refinementQueue.length}`);
+    console.log(`🌟🌟🌟 [STAR_DIAGNOSTIC_${context.toUpperCase()}] - queueBattlesForReorder toString: ${queueBattlesForReorder.toString().substring(0, 200)}...`);
+  }
+  
   // Check if this Pokemon has any battles in the refinement queue
   const isPendingRefinement = contextAvailable ? (
     refinementQueue.some(
@@ -74,6 +80,19 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] allRankedPokemon length: ${allRankedPokemon.length}`);
     console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] refinementQueue:`, refinementQueue);
     console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] queueBattlesForReorder type: ${typeof queueBattlesForReorder}`);
+    
+    // CRITICAL DEBUG: Try to call the function and see what happens
+    if (typeof queueBattlesForReorder === 'function') {
+      console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] Function appears to be callable, testing...`);
+      try {
+        // Test with minimal args to see if function exists
+        console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] Function signature test - calling queueBattlesForReorder`);
+        const testResult = queueBattlesForReorder;
+        console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] Function reference obtained: ${typeof testResult}`);
+      } catch (error) {
+        console.error(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] Function test failed:`, error);
+      }
+    }
     
     if (!isPendingRefinement) {
       console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] Adding ${pokemon.name} to refinement queue`);
@@ -111,11 +130,16 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
 
           if (opponents.length > 0) {
             try {
-              console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] Calling queueBattlesForReorder...`);
+              console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] Calling queueBattlesForReorder with args:`, {
+                primaryPokemonId: pokemon.id,
+                opponents: opponents,
+                currentIndex: currentIndex
+              });
               const newLength = queueBattlesForReorder(pokemon.id, opponents, currentIndex);
               console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] ✅ SUCCESS! New queue length: ${newLength}`);
             } catch (error) {
               console.error(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] ❌ Error calling queueBattlesForReorder:`, error);
+              console.error(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] Error stack:`, error.stack);
             }
           } else {
             console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] ❌ No valid opponents found`);

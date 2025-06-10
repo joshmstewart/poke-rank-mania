@@ -1,3 +1,4 @@
+
 import { useEffect, useMemo } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { usePokemonContext } from "@/contexts/PokemonContext";
@@ -39,7 +40,8 @@ export const useBattleCoordination = (
     markSuggestionUsed,
     clearAllSuggestions,
     findNextSuggestion,
-    loadSavedSuggestions
+    loadSavedSuggestions,
+    allRankedPokemon // CRITICAL FIX: Get ranked Pokemon from useRankings
   } = useRankings();
 
   const {
@@ -68,8 +70,9 @@ export const useBattleCoordination = (
     });
     
     console.log(`[DEBUG useBattleCoordination] Filtered Pokemon: ${filtered.length} for generation ${selectedGeneration}`);
+    console.log(`[DEBUG useBattleCoordination] allRankedPokemon: ${allRankedPokemon.length} ranked Pokemon available`);
     return filtered;
-  }, [contextPokemon, selectedGeneration]);
+  }, [contextPokemon, selectedGeneration, allRankedPokemon.length]);
 
   const { 
     battleStarter, 
@@ -128,6 +131,7 @@ export const useBattleCoordination = (
     battleStarter,
     startNewBattle,
     resetSuggestionPriority,
-    refinementQueue // CRITICAL FIX: Include refinement queue in return object
+    refinementQueue, // CRITICAL FIX: Include refinement queue in return object
+    allRankedPokemon // CRITICAL FIX: Include ranked Pokemon in return object
   };
 };
