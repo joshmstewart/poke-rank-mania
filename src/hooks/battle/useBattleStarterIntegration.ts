@@ -257,6 +257,7 @@ export const useBattleStarterIntegration = (
     battleStarter,
     startNewBattle,
     resetSuggestionPriority,
-    refinementQueue
+    refinementQueue,
+    filteredPokemon // CRITICAL FIX: Also return filteredPokemon for the events hook
   };
 };
