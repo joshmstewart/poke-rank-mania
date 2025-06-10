@@ -19,6 +19,7 @@ export const useBattleStarterEvents = (
 
   // CRITICAL FIX: Check for pending Pokemon when battle mode initializes
   useEffect(() => {
+    if (filteredPokemon.length === 0) return;
     if (!isHydrated || pendingCheckRef.current) return;
 
     const checkPendingOnInit = () => {
@@ -49,7 +50,13 @@ export const useBattleStarterEvents = (
 
     // Run the check immediately if hydrated
     checkPendingOnInit();
-  }, [isHydrated, getAllPendingIds, currentBattle.length, startNewBattleCallbackRef]);
+  }, [
+    isHydrated,
+    getAllPendingIds,
+    currentBattle.length,
+    startNewBattleCallbackRef,
+    filteredPokemon.length,
+  ]);
 
   // CRITICAL FIX: Auto-trigger first battle when no battle exists and we have Pokemon
   useEffect(() => {
@@ -86,6 +93,7 @@ export const useBattleStarterEvents = (
 
   // CRITICAL FIX: Listen for mode switch events and check for pending battles
   useEffect(() => {
+    if (filteredPokemon.length === 0) return;
     const handleModeSwitch = (event: CustomEvent) => {
       console.log(`🎯 [BATTLE_STARTER_EVENTS] Mode switch detected:`, event.detail);
       
@@ -115,7 +123,13 @@ export const useBattleStarterEvents = (
     return () => {
       document.removeEventListener('mode-switch', handleModeSwitch as EventListener);
     };
-  }, [getAllPendingIds, currentBattle.length, startNewBattleCallbackRef, isHydrated]);
+  }, [
+    getAllPendingIds,
+    currentBattle.length,
+    startNewBattleCallbackRef,
+    isHydrated,
+    filteredPokemon.length,
+  ]);
 
   // Cleanup on unmount
   useEffect(() => {
