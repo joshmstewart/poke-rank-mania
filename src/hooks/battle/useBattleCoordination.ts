@@ -68,8 +68,8 @@ export const useBattleCoordination = (
       return pokemon.hasOwnProperty('generation') && (pokemon as any).generation === selectedGeneration;
     });
     
-    console.log(`[DEBUG useBattleCoordination] Filtered Pokemon: ${filtered.length} for generation ${selectedGeneration}`);
-    console.log(`[DEBUG useBattleCoordination] allRankedPokemon: ${allRankedPokemon.length} ranked Pokemon available`);
+    console.log(`🔍 [DEBUG_COORDINATION] Filtered Pokemon: ${filtered.length} for generation ${selectedGeneration}`);
+    console.log(`🔍 [DEBUG_COORDINATION] allRankedPokemon: ${allRankedPokemon.length} ranked Pokemon available`);
     return filtered;
   }, [contextPokemon, selectedGeneration, allRankedPokemon.length]);
 
@@ -95,13 +95,15 @@ export const useBattleCoordination = (
   const initializationCompleteRef = useRef(false);
 
   // CRITICAL FIX: Update the callback ref immediately when startNewBattle changes
-  startNewBattleCallbackRef.current = startNewBattle;
-  
-  console.log(`🔧🔧🔧 [BATTLE_COORDINATION_DEBUG] startNewBattle function updated in ref:`, {
-    callbackExists: !!startNewBattleCallbackRef.current,
-    startNewBattleExists: !!startNewBattle,
-    timestamp: new Date().toISOString()
-  });
+  useEffect(() => {
+    console.log(`🔍 [DEBUG_COORDINATION] Updating startNewBattleCallbackRef`);
+    console.log(`🔍 [DEBUG_COORDINATION] - Previous callback: ${!!startNewBattleCallbackRef.current}`);
+    console.log(`🔍 [DEBUG_COORDINATION] - New callback: ${!!startNewBattle}`);
+    
+    startNewBattleCallbackRef.current = startNewBattle;
+    
+    console.log(`🔍 [DEBUG_COORDINATION] - Updated callback: ${!!startNewBattleCallbackRef.current}`);
+  }, [startNewBattle]);
 
   // CRITICAL FIX: Initialize battle starter events to handle auto-battle generation AND pending Pokemon
   useBattleStarterEvents(
