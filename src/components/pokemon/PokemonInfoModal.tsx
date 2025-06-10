@@ -26,7 +26,7 @@ const PokemonInfoModal: React.FC<PokemonInfoModalProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const { flavorText, isLoadingFlavor } = usePokemonFlavorText(pokemon.id, isOpen);
-  const { tcgCard, secondTcgCard, isLoading: isLoadingTCG, error: tcgError, hasTcgCard } = usePokemonTCGCard(pokemon.name, isOpen);
+  const { tcgCard, secondTcgCard, isLoading: isLoadingTCG, hasTcgCard } = usePokemonTCGCard(pokemon.name, isOpen);
   
   const handleDialogClick = (e: React.MouseEvent) => {
     e.stopPropagation();

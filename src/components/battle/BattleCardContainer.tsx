@@ -10,6 +10,8 @@ import LoadingOverlay from "./LoadingOverlay";
 import BattleCardImage from "./BattleCardImage";
 import BattleCardInfo from "./BattleCardInfo";
 import BattleCardInteractions from "./BattleCardInteractions";
+import { Star } from "lucide-react";
+import { useSharedRefinementQueue } from "@/hooks/battle/useSharedRefinementQueue";
 
 interface BattleCardContainerProps {
   pokemon: Pokemon;
@@ -33,12 +35,35 @@ const BattleCardContainer: React.FC<BattleCardContainerProps> = ({
   const lastClickTimeRef = useRef(0);
   const [isHovered, setIsHovered] = useState(false);
 
-  // Hooks for modal content - match manual mode approach
-  const { flavorText, isLoadingFlavor } = usePokemonFlavorText(pokemon.id, isOpen);
-  const { tcgCard, secondTcgCard, isLoading: isLoadingTCG, error: tcgError, hasTcgCard } = usePokemonTCGCard(pokemon.name, isOpen);
+  const [localPendingState, setLocalPendingState] = useState(() => {
+    const stored = localStorage.getItem(`pokemon-pending-${pokemon.id}`);
+    return stored === 'true';
+  });
+
+  const { refinementQueue, hasRefinementBattles } = useSharedRefinementQueue();
+
+  const contextAvailable = Boolean(
+    refinementQueue &&
+    Array.isArray(refinementQueue) &&
+    typeof hasRefinementBattles === 'boolean'
+  );
+
+  const isPendingRefinement = contextAvailable
+    ? refinementQueue.some(b => b.primaryPokemonId === pokemon.id) || localPendingState
+    : localPendingState;
 
   useEffect(() => {
-    console.log(`🔘 [INFO_BUTTON_DEBUG] BattleCardContainer ${displayName}: Component mounted/updated`);
+    if (contextAvailable && hasRefinementBattles === false && localPendingState) {
+      setLocalPendingState(false);
+      localStorage.removeItem(`pokemon-pending-${pokemon.id}`);
+    }
+  }, [contextAvailable, hasRefinementBattles, localPendingState, pokemon.id]);
+
+  // Hooks for modal content - match manual mode approach
+  const { flavorText, isLoadingFlavor } = usePokemonFlavorText(pokemon.id, isOpen);
+  const { tcgCard, secondTcgCard, isLoading: isLoadingTCG, hasTcgCard } = usePokemonTCGCard(pokemon.name, isOpen);
+
+  useEffect(() => {
     return () => {
       if (clickTimeoutRef.current) {
         clearTimeout(clickTimeoutRef.current);
@@ -47,17 +72,14 @@ const BattleCardContainer: React.FC<BattleCardContainerProps> = ({
   }, [displayName]);
 
   const handleClick = useCallback((e: React.MouseEvent) => {
-    console.log(`🖱️ [INFO_BUTTON_DEBUG] BattleCardContainer ${displayName}: Card clicked`);
-    
     // Simple check for info button clicks - match manual mode approach
     const target = e.target as HTMLElement;
-    const isInfoButtonClick = target.closest('[data-info-button="true"]') || 
+    const isInfoButtonClick = target.closest('[data-info-button="true"]') ||
         target.closest('[data-radix-dialog-content]') ||
         target.closest('[data-radix-dialog-overlay]') ||
         target.closest('[role="dialog"]');
     
     if (isInfoButtonClick) {
-      console.log(`ℹ️ [INFO_BUTTON_DEBUG] BattleCardContainer: Info dialog interaction for ${displayName}, preventing card selection`);
       e.preventDefault();
       e.stopPropagation();
       return;
@@ -67,13 +89,10 @@ const BattleCardContainer: React.FC<BattleCardContainerProps> = ({
     
     // Prevent rapid double-clicks
     if (now - lastClickTimeRef.current < 300) {
-      console.log(`🚫 BattleCardContainer: Ignoring rapid click on ${displayName}`);
       return;
     }
     
     lastClickTimeRef.current = now;
-    
-    console.log(`🖱️ BattleCardContainer: Click on ${displayName} (${pokemon.id}) - processing: ${isProcessing}`);
     
     if (clickTimeoutRef.current) {
       clearTimeout(clickTimeoutRef.current);
@@ -86,16 +105,27 @@ const BattleCardContainer: React.FC<BattleCardContainerProps> = ({
   }, [pokemon.id, displayName, onSelect, isProcessing]);
 
   const handleMouseEnter = useCallback(() => {
-    console.log(`🔘 [HOVER_DEBUG] BattleCardContainer ${displayName}: Mouse enter - isProcessing: ${isProcessing}`);
     if (!isProcessing) {
       setIsHovered(true);
     }
   }, [isProcessing, displayName]);
 
   const handleMouseLeave = useCallback(() => {
-    console.log(`🔘 [HOVER_DEBUG] BattleCardContainer ${displayName}: Mouse leave`);
     setIsHovered(false);
   }, [displayName]);
+
+  const handlePrioritizeClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+
+    if (!isPendingRefinement) {
+      setLocalPendingState(true);
+      localStorage.setItem(`pokemon-pending-${pokemon.id}`, 'true');
+    } else {
+      setLocalPendingState(false);
+      localStorage.removeItem(`pokemon-pending-${pokemon.id}`);
+    }
+  };
 
   // Ensure hover state is only applied when appropriate
   const shouldShowHover = isHovered && !isSelected && !isProcessing;
@@ -128,15 +158,36 @@ const BattleCardContainer: React.FC<BattleCardContainerProps> = ({
       data-hovered={shouldShowHover ? "true" : "false"}
     >
       <CardContent className="p-4 text-center relative">
+        {/* Prioritize button - battle context */}
+        <button
+          onPointerDown={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+          }}
+          onClick={handlePrioritizeClick}
+          className={`absolute top-1/2 right-2 -translate-y-1/2 z-30 p-2 rounded-full transition-opacity duration-200 ${
+            isPendingRefinement
+              ? 'opacity-100 pointer-events-auto'
+              : 'opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto'
+          }`}
+          title="Prioritize for refinement battle"
+          type="button"
+        >
+          <Star
+            className={`w-16 h-16 transition-all ${
+              isPendingRefinement ? 'text-yellow-400 fill-yellow-400' : 'text-gray-500 hover:text-yellow-500'
+            }`}
+          />
+        </button>
+
         {/* Info Button - exact copy from manual mode */}
         <div className="absolute top-1 right-1 z-30 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
-              <button 
+              <button
                 className="w-5 h-5 rounded-full bg-white/80 hover:bg-white border border-gray-300 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200 backdrop-blur-sm cursor-pointer"
                 onClick={(e) => {
                   e.stopPropagation();
-                  console.log(`Info button clicked for ${pokemon.name}`);
                 }}
                 onPointerDown={(e) => {
                   e.stopPropagation();

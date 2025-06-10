@@ -48,10 +48,6 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     typeof hasRefinementBattles === 'boolean'
   );
   
-  console.log(`🌟 [STAR_CLICK_TRACE] Pokemon ${pokemon.name} (${pokemon.id}):`);
-  console.log(`🌟 [STAR_CLICK_TRACE] - contextAvailable: ${contextAvailable}`);
-  console.log(`🌟 [STAR_CLICK_TRACE] - allRankedPokemon.length: ${allRankedPokemon.length}`);
-  console.log(`🌟 [STAR_CLICK_TRACE] - context: ${context}`);
   
   // Check if this Pokemon has any battles in the refinement queue
   const isPendingRefinement = contextAvailable ? (
@@ -63,26 +59,16 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   const handlePrioritizeClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    
-    console.log(`🌟 [STAR_CLICK_DETAILED] ===== STAR CLICKED FOR ${pokemon.name} =====`);
-    
+
     if (!isPendingRefinement) {
-      console.log(`🌟 [STAR_CLICK_DETAILED] Adding ${pokemon.name} to refinement queue`);
-      
       // Always set local pending state for immediate feedback
       setLocalPendingState(true);
       localStorage.setItem(`pokemon-pending-${pokemon.id}`, 'true');
-      
-      // Only try to generate random top 50 battles if we're in ranked context AND have ranked Pokemon
-      if (context === 'ranked' && contextAvailable && allRankedPokemon.length > 1) {
-        console.log(`🌟 [STAR_CLICK_DETAILED] Context available and sufficient ranked Pokemon, generating random top-50 battles`);
 
-        // Find current Pokemon's position in the ranked list
+      if (context === 'ranked' && contextAvailable && allRankedPokemon.length > 1) {
         const currentIndex = allRankedPokemon.findIndex(p => p.id === pokemon.id);
-        console.log(`🌟 [STAR_CLICK_DETAILED] Current index of ${pokemon.name}: ${currentIndex}`);
 
         if (currentIndex >= 0) {
-          // Pick three random opponents from the top 50 (excluding this Pokemon)
           const topPool = allRankedPokemon
             .slice(0, 50)
             .filter(p => p.id !== pokemon.id);
@@ -94,29 +80,16 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
             opponents.push(opponent.id);
           }
 
-          console.log(`🌟 [STAR_CLICK_DETAILED] Random opponents for ${pokemon.name}:`, opponents);
-
           if (opponents.length > 0) {
             try {
               queueBattlesForReorder(pokemon.id, opponents, currentIndex);
-              console.log(`🌟 [STAR_CLICK_DETAILED] ✅ queueBattlesForReorder call completed successfully`);
             } catch (error) {
-              console.error(`🌟 [STAR_CLICK_DETAILED] ❌ Error calling queueBattlesForReorder:`, error);
+              console.error(error);
             }
-          } else {
-            console.log(`🌟 [STAR_CLICK_DETAILED] ❌ No valid opponents found`);
           }
-        } else {
-          console.log(`🌟 [STAR_CLICK_DETAILED] ❌ Pokemon not found in ranked list`);
         }
-      } else {
-        console.log(`🌟 [STAR_CLICK_DETAILED] ⚠️ Not in ranked context or insufficient Pokemon - just marking as pending`);
-        console.log(`🌟 [STAR_CLICK_DETAILED] - context: ${context}`);
-        console.log(`🌟 [STAR_CLICK_DETAILED] - contextAvailable: ${contextAvailable}`);
-        console.log(`🌟 [STAR_CLICK_DETAILED] - allRankedPokemon.length: ${allRankedPokemon.length}`);
       }
     } else {
-      console.log(`🌟 [STAR_CLICK_DETAILED] Pokemon ${pokemon.name} is already pending, toggling off`);
       setLocalPendingState(false);
       localStorage.removeItem(`pokemon-pending-${pokemon.id}`);
     }
@@ -125,7 +98,6 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   // Clean up localStorage when Pokemon is actually processed in a battle
   React.useEffect(() => {
     if (contextAvailable && hasRefinementBattles === false && localPendingState) {
-      console.log(`🌟 [CLEANUP_TRACE] Clearing pending state for ${pokemon.name} - battles processed`);
       setLocalPendingState(false);
       localStorage.removeItem(`pokemon-pending-${pokemon.id}`);
     }
@@ -174,7 +146,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
 
   // Hooks for modal content
   const { flavorText, isLoadingFlavor } = usePokemonFlavorText(pokemon.id, isOpen);
-  const { tcgCard, secondTcgCard, isLoading: isLoadingTCG, error: tcgError, hasTcgCard } = usePokemonTCGCard(pokemon.name, isOpen);
+  const { tcgCard, secondTcgCard, isLoading: isLoadingTCG, hasTcgCard } = usePokemonTCGCard(pokemon.name, isOpen);
 
   // Determine what content to show
   const showLoading = isLoadingTCG;
@@ -220,8 +192,8 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
         </div>
       )}
 
-      {/* Prioritize button - only for ranked context and when not dragging */}
-      {!isDragging && context === 'ranked' && (
+      {/* Prioritize button - ranked and available contexts */}
+      {!isDragging && (context === 'ranked' || context === 'available') && (
         <button
           onPointerDown={(e) => {
             // Prevent the drag listeners from capturing this interaction so
@@ -230,14 +202,16 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
             e.preventDefault();
           }}
           onClick={handlePrioritizeClick}
-          className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 p-2 rounded-full transition-opacity duration-200 ${
-            isPendingRefinement ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+          className={`absolute top-1/2 right-2 -translate-y-1/2 z-30 p-2 rounded-full transition-opacity duration-200 ${
+            isPendingRefinement
+              ? 'opacity-100 pointer-events-auto'
+              : 'opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto'
           }`}
           title="Prioritize for refinement battle"
           type="button"
         >
           <Star
-            className={`w-8 h-8 transition-all ${
+            className={`w-16 h-16 transition-all ${
               isPendingRefinement ? 'text-yellow-400 fill-yellow-400' : 'text-gray-500 hover:text-yellow-500'
             }`}
           />
