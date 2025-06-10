@@ -1,10 +1,10 @@
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 
 // Use a separate localStorage key that won't be touched by cloud sync
 const PENDING_STATE_KEY = 'pokemon-refinement-queue-pending';
 
-// CRITICAL FIX: Create a singleton state manager to ensure all components share the same data
+// CRITICAL FIX: Create a singleton state manager with immediate localStorage sync
 class PendingStateManager {
   private static instance: PendingStateManager;
   private pendingSet: Set<number> = new Set();
@@ -46,6 +46,8 @@ class PendingStateManager {
     try {
       const pokemonIds = Array.from(this.pendingSet);
       const jsonString = JSON.stringify(pokemonIds);
+      
+      // CRITICAL FIX: Save immediately with synchronous localStorage
       localStorage.setItem(PENDING_STATE_KEY, jsonString);
       
       console.log(`🔍 [SINGLETON_DEBUG] ✅ SAVED to localStorage:`, {
@@ -54,6 +56,10 @@ class PendingStateManager {
         pokemonIds: pokemonIds,
         count: pokemonIds.length
       });
+      
+      // Also verify the save worked immediately
+      const verification = localStorage.getItem(PENDING_STATE_KEY);
+      console.log(`🔍 [SINGLETON_DEBUG] ✅ VERIFIED save:`, verification);
       
       // Also store individual keys for backwards compatibility
       pokemonIds.forEach(id => {
@@ -88,7 +94,13 @@ class PendingStateManager {
     console.log(`🔍 [SINGLETON_DEBUG] New set size: ${this.pendingSet.size}`);
     console.log(`🔍 [SINGLETON_DEBUG] New set contents:`, Array.from(this.pendingSet));
     
+    // CRITICAL FIX: Save immediately and verify
     this.saveToStorage();
+    
+    // Double-check the state was saved correctly
+    const verifyLoad = localStorage.getItem(PENDING_STATE_KEY);
+    console.log(`🔍 [SINGLETON_DEBUG] Post-add verification:`, verifyLoad);
+    
     this.notifyListeners();
   }
 
@@ -124,14 +136,20 @@ class PendingStateManager {
   }
 
   public isPending(pokemonId: number): boolean {
+    // CRITICAL FIX: Always reload from localStorage before checking to ensure fresh data
+    this.loadFromStorage();
+    
     const isPending = this.pendingSet.has(pokemonId);
-    console.log(`🔍 [SINGLETON_DEBUG] Check pending for ${pokemonId}: ${isPending}`);
+    console.log(`🔍 [SINGLETON_DEBUG] Check pending for ${pokemonId}: ${isPending} (after fresh reload)`);
     return isPending;
   }
 
   public getAllIds(): number[] {
+    // CRITICAL FIX: Always reload from localStorage before returning to ensure fresh data
+    this.loadFromStorage();
+    
     const ids = Array.from(this.pendingSet);
-    console.log(`🔍 [SINGLETON_DEBUG] ===== GET ALL PENDING IDS =====`);
+    console.log(`🔍 [SINGLETON_DEBUG] ===== GET ALL PENDING IDS (FRESH RELOAD) =====`);
     console.log(`🔍 [SINGLETON_DEBUG] Returning:`, ids);
     console.log(`🔍 [SINGLETON_DEBUG] Set size:`, this.pendingSet.size);
     console.log(`🔍 [SINGLETON_DEBUG] hasPendingPokemon:`, this.pendingSet.size > 0);
@@ -139,10 +157,14 @@ class PendingStateManager {
   }
 
   public get hasPending(): boolean {
+    // CRITICAL FIX: Always reload from localStorage before checking
+    this.loadFromStorage();
     return this.pendingSet.size > 0;
   }
 
   public get count(): number {
+    // CRITICAL FIX: Always reload from localStorage before checking
+    this.loadFromStorage();
     return this.pendingSet.size;
   }
 }
