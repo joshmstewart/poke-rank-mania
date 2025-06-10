@@ -1,347 +1,187 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import { Rating } from 'ts-trueskill';
-import { toast } from '@/hooks/use-toast';
 
-interface TrueSkillRating {
-  mu: number;
-  sigma: number;
+import { create } from 'zustand';
+import { persist, subscribeWithSelector } from 'zustand/middleware';
+import { rating, rate, TrueSkillRating } from 'ts-trueskill';
+
+export interface PokemonRating {
+  rating: TrueSkillRating;
   battleCount: number;
+  winCount: number;
+  lastBattleTimestamp: number;
 }
 
 interface TrueSkillStore {
-  ratings: Record<string, TrueSkillRating>;
+  ratings: Record<number, PokemonRating>;
   sessionId: string;
   isHydrated: boolean;
-  lastSyncTime: number;
-  syncInProgress: boolean;
-  totalBattles: number;
   
-  // Actions
-  updateRating: (pokemonId: string, rating: Rating) => void;
-  incrementBattleCount: (pokemonId: string) => void;
-  incrementTotalBattles: () => void;
-  setTotalBattles: (count: number) => void;
-  getAllRatings: () => Record<string, TrueSkillRating>;
-  getRating: (pokemonId: string) => Rating;
-  hasRating: (pokemonId: string) => boolean;
+  // Core rating operations
+  getRating: (pokemonId: number) => TrueSkillRating;
+  updateRatings: (winners: number[], losers: number[]) => void;
+  getAllRatings: () => Record<number, PokemonRating>;
+  
+  // Battle tracking
+  getTotalBattles: () => number;
+  getPokemonBattleCount: (pokemonId: number) => number;
+  getPokemonWinRate: (pokemonId: number) => number;
+  
+  // Utility functions
   clearAllRatings: () => void;
-  forceScoreBetweenNeighbors: (pokemonId: string, higherNeighborId?: string, lowerNeighborId?: string) => void;
-  syncToCloud: () => Promise<void>;
-  loadFromCloud: () => Promise<void>;
-  smartSync: () => Promise<void>;
-  waitForHydration: () => Promise<void>;
-  restoreSessionFromCloud: (userId: string) => Promise<void>;
+  exportRatings: () => string;
+  importRatings: (data: string) => boolean;
+  
+  // Internal state management
+  setHydrated: (hydrated: boolean) => void;
+  generateSessionId: () => string;
 }
 
-const generateSessionId = () => crypto.randomUUID();
-
-// Debounce delay for syncing to the server (in milliseconds)
-const SYNC_DEBOUNCE_DELAY = 1500;
-let syncTimeout: ReturnType<typeof setTimeout> | null = null;
+const generateSessionId = (): string => {
+  return crypto.randomUUID();
+};
 
 export const useTrueSkillStore = create<TrueSkillStore>()(
-  persist(
-    (set, get) => ({
-      ratings: {},
-      sessionId: generateSessionId(),
-      isHydrated: false,
-      lastSyncTime: 0,
-      syncInProgress: false,
-      totalBattles: 0,
+  subscribeWithSelector(
+    persist(
+      (set, get) => ({
+        ratings: {},
+        sessionId: generateSessionId(),
+        isHydrated: false,
 
-      updateRating: (pokemonId: string, rating: Rating) => {
-        set((state) => ({
-          ratings: {
-            ...state.ratings,
-            [pokemonId]: {
-              mu: rating.mu,
-              sigma: rating.sigma,
-              battleCount: (state.ratings[pokemonId]?.battleCount || 0)
-            }
-          }
-        }));
-        
-        // Queue a sync after updates
-        get().syncToCloud();
-      },
+        getRating: (pokemonId: number): TrueSkillRating => {
+          const pokemonRating = get().ratings[pokemonId];
+          return pokemonRating ? pokemonRating.rating : rating();
+        },
 
-      incrementBattleCount: (pokemonId: string) => {
-        set((state) => ({
-          ratings: {
-            ...state.ratings,
-            [pokemonId]: {
-              ...state.ratings[pokemonId],
-              battleCount: (state.ratings[pokemonId]?.battleCount || 0) + 1
-            }
-          }
-        }));
-      },
-
-      incrementTotalBattles: () => {
-        set((state) => ({
-          totalBattles: state.totalBattles + 1
-        }));
-        
-        // Queue a sync after battle count increment
-        get().syncToCloud();
-      },
-
-      setTotalBattles: (count: number) => {
-        set({ totalBattles: count });
-      },
-
-      getAllRatings: () => get().ratings,
-
-      getRating: (pokemonId: string) => {
-        const rating = get().ratings[pokemonId];
-        if (rating) {
-          return new Rating(rating.mu, rating.sigma);
-        }
-        return new Rating(); // Default rating
-      },
-
-      hasRating: (pokemonId: string) => {
-        return pokemonId in get().ratings;
-      },
-
-      clearAllRatings: () => {
-        set({ 
-          ratings: {},
-          totalBattles: 0
-        });
-        get().syncToCloud();
-      },
-
-      forceScoreBetweenNeighbors: (pokemonId: string, higherNeighborId?: string, lowerNeighborId?: string) => {
-        const state = get();
-        const higherNeighborScore = higherNeighborId ? state.ratings[higherNeighborId]?.mu : undefined;
-        const lowerNeighborScore = lowerNeighborId ? state.ratings[lowerNeighborId]?.mu : undefined;
-        
-        let targetScore: number;
-        
-        if (higherNeighborScore !== undefined && lowerNeighborScore !== undefined) {
-          targetScore = (higherNeighborScore + lowerNeighborScore) / 2;
-        } else if (higherNeighborScore !== undefined) {
-          targetScore = higherNeighborScore + 1.0;
-        } else if (lowerNeighborScore !== undefined) {
-          targetScore = lowerNeighborScore - 1.0;
-        } else {
-          targetScore = 25.0; // Default TrueSkill rating
-        }
-        
-        const newRating = new Rating(targetScore, 8.333); // Use default sigma
-        get().updateRating(pokemonId, newRating);
-      },
-
-      syncToCloud: async (options?: { force?: boolean }) => {
-        const force = options?.force ?? false;
-
-        if (!force) {
-          if (syncTimeout) {
-            clearTimeout(syncTimeout);
-          }
-          syncTimeout = setTimeout(() => {
-            syncTimeout = null;
-            get().syncToCloud({ force: true });
-          }, SYNC_DEBOUNCE_DELAY);
-          return;
-        }
-
-        if (syncTimeout) {
-          clearTimeout(syncTimeout);
-          syncTimeout = null;
-        }
-
-        const state = get();
-        if (state.syncInProgress) return;
-
-        const manageFlag = !state.syncInProgress;
-        if (manageFlag) {
-          set({ syncInProgress: true });
-        }
-        
-        try {
-          console.log(`[TRUESKILL_STORE] Syncing to cloud - ${Object.keys(state.ratings).length} ratings, ${state.totalBattles} total battles`);
+        updateRatings: (winners: number[], losers: number[]) => {
+          const state = get();
+          const newRatings = { ...state.ratings };
           
-          const response = await fetch('/api/trueskill/sync', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              sessionId: state.sessionId,
-              ratings: state.ratings as any,
-              totalBattles: state.totalBattles,
-              lastUpdated: new Date().toISOString()
-            })
+          // Get current ratings for all participants
+          const winnerRatings = winners.map(id => 
+            newRatings[id]?.rating || rating()
+          );
+          const loserRatings = losers.map(id => 
+            newRatings[id]?.rating || rating()
+          );
+          
+          // Calculate new ratings
+          const [newWinnerRatings, newLoserRatings] = rate([winnerRatings, loserRatings]);
+          
+          const timestamp = Date.now();
+          
+          // Update winner ratings
+          winners.forEach((id, index) => {
+            const existing = newRatings[id];
+            newRatings[id] = {
+              rating: newWinnerRatings[index],
+              battleCount: (existing?.battleCount || 0) + 1,
+              winCount: (existing?.winCount || 0) + 1,
+              lastBattleTimestamp: timestamp
+            };
           });
+          
+          // Update loser ratings
+          losers.forEach((id, index) => {
+            const existing = newRatings[id];
+            newRatings[id] = {
+              rating: newLoserRatings[index],
+              battleCount: (existing?.battleCount || 0) + 1,
+              winCount: existing?.winCount || 0,
+              lastBattleTimestamp: timestamp
+            };
+          });
+          
+          set({ ratings: newRatings });
+        },
 
-          const raw = await response.text();
+        getAllRatings: () => {
+          return get().ratings;
+        },
 
-          if (!response.ok) {
-            throw new Error(`Sync failed: ${response.status} - ${raw}`);
+        getTotalBattles: () => {
+          const ratings = get().ratings;
+          return Object.values(ratings).reduce((total, pokemon) => {
+            return total + pokemon.battleCount;
+          }, 0) / 2; // Divide by 2 since each battle involves 2 Pokemon
+        },
+
+        getPokemonBattleCount: (pokemonId: number) => {
+          const pokemonRating = get().ratings[pokemonId];
+          return pokemonRating ? pokemonRating.battleCount : 0;
+        },
+
+        getPokemonWinRate: (pokemonId: number) => {
+          const pokemonRating = get().ratings[pokemonId];
+          if (!pokemonRating || pokemonRating.battleCount === 0) {
+            return 0;
           }
+          return pokemonRating.winCount / pokemonRating.battleCount;
+        },
 
-          let result: any;
+        clearAllRatings: () => {
+          set({ 
+            ratings: {},
+            sessionId: generateSessionId()
+          });
+        },
+
+        exportRatings: () => {
+          const state = get();
+          return JSON.stringify({
+            ratings: state.ratings,
+            sessionId: state.sessionId,
+            exportTimestamp: Date.now()
+          });
+        },
+
+        importRatings: (data: string): boolean => {
           try {
-            result = JSON.parse(raw);
-          } catch (jsonError) {
-            console.error(
-              `[TRUESKILL_STORE] Failed to parse JSON: status ${response.status}, body: ${raw}`
-            );
-            toast({
-              title: 'Sync Error',
-              description: 'Unexpected response from the server.',
-              variant: 'destructive'
-            });
-            return;
-          }
-
-          if (result.success) {
-            set({ lastSyncTime: Date.now() });
-            console.log(`[TRUESKILL_STORE] Successfully synced to cloud`);
-          } else {
-            throw new Error(result.error || 'Unknown sync error');
-          }
-        } catch (error) {
-          console.error('[TRUESKILL_STORE] Sync to cloud failed:', error);
-        } finally {
-          if (manageFlag) {
-            set({ syncInProgress: false });
-          }
-        }
-      },
-
-      loadFromCloud: async () => {
-        try {
-          console.log(`[TRUESKILL_STORE] Loading from cloud...`);
-          
-          const response = await fetch('/api/trueskill/get', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sessionId: get().sessionId })
-          });
-          
-          if (!response.ok) {
-            throw new Error(`Load failed: ${response.status}`);
-          }
-          
-          const result = await response.json();
-          if (result.success && result.ratings) {
-            console.log(`[TRUESKILL_STORE] Loaded ${Object.keys(result.ratings).length} ratings, ${result.totalBattles || 0} total battles from cloud`);
-            set({ 
-              ratings: result.ratings,
-              totalBattles: result.totalBattles || 0
-            });
-          }
-        } catch (error) {
-          console.error('[TRUESKILL_STORE] Load from cloud failed:', error);
-        }
-      },
-
-      smartSync: async () => {
-        const state = get();
-        if (state.syncInProgress) return;
-        
-        set({ syncInProgress: true });
-        
-        try {
-          console.log(`[TRUESKILL_SMART_SYNC] Starting smart sync...`);
-          console.log(`[TRUESKILL_SMART_SYNC] Local state: ${state.totalBattles} battles, ${Object.keys(state.ratings).length} ratings`);
-          
-          // Get current cloud data
-          const response = await fetch('/api/trueskill/get', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sessionId: state.sessionId })
-          });
-          
-          let cloudData = null;
-          if (response.ok) {
-            const result = await response.json();
-            if (result.success) {
-              cloudData = {
-                totalBattles: result.totalBattles || 0,
-                ratings: result.ratings || {}
-              };
+            const parsed = JSON.parse(data);
+            if (parsed.ratings && typeof parsed.ratings === 'object') {
+              set({
+                ratings: parsed.ratings,
+                sessionId: parsed.sessionId || generateSessionId()
+              });
+              return true;
             }
+            return false;
+          } catch (error) {
+            console.error('Failed to import ratings:', error);
+            return false;
           }
-          
-          console.log(`[TRUESKILL_SMART_SYNC] Cloud state: ${cloudData?.totalBattles || 0} battles, ${Object.keys(cloudData?.ratings || {}).length} ratings`);
-          
-          const localBattles = state.totalBattles;
-          const cloudBattles = cloudData?.totalBattles || 0;
-          
-          // Smart sync logic
-          if (cloudBattles > localBattles) {
-            // Case 1 & 3: Cloud has more data, use cloud and update local
-            console.log(`[TRUESKILL_SMART_SYNC] Cloud wins (${cloudBattles} > ${localBattles}), updating local with cloud data`);
-            set({
-              ratings: cloudData?.ratings || {},
-              totalBattles: cloudBattles
-            });
-          } else if (localBattles > cloudBattles) {
-            // Case 2: Local has more data, push local to cloud
-            console.log(`[TRUESKILL_SMART_SYNC] Local wins (${localBattles} > ${cloudBattles}), pushing local data to cloud`);
-            await get().syncToCloud({ force: true });
-          } else if (localBattles === cloudBattles && cloudBattles > 0) {
-            // Equal and both have data, use cloud as authoritative
-            console.log(`[TRUESKILL_SMART_SYNC] Equal battle counts (${localBattles}), using cloud as authoritative source`);
-            set({
-              ratings: cloudData?.ratings || {},
-              totalBattles: cloudBattles
-            });
-          } else {
-            // Both are 0 or local > cloud but cloud is 0
-            console.log(`[TRUESKILL_SMART_SYNC] Using local data (local: ${localBattles}, cloud: ${cloudBattles})`);
-            if (localBattles > 0) {
-              await get().syncToCloud({ force: true });
-            }
-          }
-          
-          console.log(`[TRUESKILL_SMART_SYNC] Smart sync completed successfully`);
-          
-        } catch (error) {
-          console.error('[TRUESKILL_SMART_SYNC] Smart sync failed:', error);
-        } finally {
-          set({ syncInProgress: false });
-        }
-      },
+        },
 
-      waitForHydration: () => {
-        return new Promise((resolve) => {
-          if (get().isHydrated) {
-            resolve();
-            return;
-          }
-          
-          const checkHydration = () => {
-            if (get().isHydrated) {
-              resolve();
-            } else {
-              setTimeout(checkHydration, 10);
-            }
-          };
-          checkHydration();
-        });
-      },
+        setHydrated: (hydrated: boolean) => {
+          set({ isHydrated: hydrated });
+        },
 
-      restoreSessionFromCloud: async (userId: string) => {
-        try {
-          console.log(`[TRUESKILL_STORE] Restoring session for user: ${userId}`);
-          await get().smartSync();
-        } catch (error) {
-          console.error('[TRUESKILL_STORE] Session restoration failed:', error);
+        generateSessionId: () => {
+          const newSessionId = generateSessionId();
+          set({ sessionId: newSessionId });
+          return newSessionId;
         }
+      }),
+      {
+        name: 'trueskill-store',
+        onRehydrateStorage: () => (state) => {
+          if (state) {
+            state.setHydrated(true);
+          }
+        },
       }
-    }),
-    {
-      name: 'trueskill-storage',
-      onRehydrateStorage: () => (state) => {
-        if (state) {
-          state.isHydrated = true;
-          console.log('[TRUESKILL_STORE] Hydration complete');
-        }
-      }
-    }
+    )
   )
 );
+
+// Export a selector hook for better performance
+export const useTrueSkillRating = (pokemonId: number) => {
+  return useTrueSkillStore(state => state.getRating(pokemonId));
+};
+
+export const useTrueSkillBattleCount = (pokemonId: number) => {
+  return useTrueSkillStore(state => state.getPokemonBattleCount(pokemonId));
+};
+
+export const useTotalBattles = () => {
+  return useTrueSkillStore(state => state.getTotalBattles());
+};
