@@ -28,7 +28,11 @@ export const useBattleProgressionMilestone = (
       reached.length > 0 ? reached[reached.length - 1] : null;
   }, [initialBattlesCompleted, milestones]);
 
-  const checkMilestone = useCallback((newBattlesCompleted: number, battleResults: any[]): boolean => {
+  const checkMilestone = useCallback(
+    (
+      newBattlesCompleted: number,
+      battleResults: any[]
+    ): number | null => {
     console.log(`🔍 MILESTONE CHECK: Checking ${newBattlesCompleted} battles against milestones: ${milestones.join(', ')}`);
     console.log(`🔍 MILESTONE CHECK: Already tracked milestones: ${Array.from(milestoneTracker.current).join(', ')}`);
     
@@ -52,22 +56,26 @@ export const useBattleProgressionMilestone = (
       lastTriggeredMilestoneRef.current = nextMilestone;
       
       try {
-        console.log(`🔵 useBattleProgression: Generating rankings for milestone ${nextMilestone}`);
+        console.log(
+          `🔵 useBattleProgression: Generating rankings for milestone ${nextMilestone}`
+        );
         generateRankings(battleResults);
         setShowingMilestone(true);
-        
-        console.log(`🚫 MILESTONE: Battle generation BLOCKED during milestone ${nextMilestone}`);
-        return true;
+
+        console.log(
+          `🚫 MILESTONE: Battle generation BLOCKED during milestone ${nextMilestone}`
+        );
+        return nextMilestone;
       } catch (err) {
         console.error("Error generating rankings at milestone:", err);
         // Reset flags on error
         milestoneTracker.current.delete(nextMilestone);
         battleGenerationBlockedRef.current = false;
-        return false;
+        return null;
       }
     }
 
-    return false;
+    return null;
   }, [milestones, generateRankings, setShowingMilestone]);
 
   const isBattleGenerationBlocked = useCallback(() => {
