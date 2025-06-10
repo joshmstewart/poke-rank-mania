@@ -71,3 +71,12 @@ Yes, you can!
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+
+## API Endpoints Setup
+
+The application expects two backend endpoints for syncing TrueSkill data:
+
+* `POST /api/trueskill/sync` – Accepts a payload containing `sessionId`, `ratings`, `totalBattles` and `lastUpdated`. It should store the data and return `{ success: true }` on success.
+* `POST /api/trueskill/get` – Accepts `{ sessionId }` and returns the stored `{ success: true, ratings, totalBattles, lastUpdated }`.
+
+These endpoints can be implemented using your preferred backend (e.g. the Supabase edge functions found in `supabase/functions`). Ensure your development and production environments expose these routes so the store can synchronize correctly.

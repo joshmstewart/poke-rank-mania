@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Rating } from 'ts-trueskill';
+import { toast } from '@/hooks/use-toast';
 
 interface TrueSkillRating {
   mu: number;
@@ -152,13 +153,28 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
               lastUpdated: new Date().toISOString()
             })
           });
-          
+
+          const raw = await response.text();
+
           if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Sync failed: ${response.status} - ${errorText}`);
+            throw new Error(`Sync failed: ${response.status} - ${raw}`);
           }
-          
-          const result = await response.json();
+
+          let result: any;
+          try {
+            result = JSON.parse(raw);
+          } catch (jsonError) {
+            console.error(
+              `[TRUESKILL_STORE] Failed to parse JSON: status ${response.status}, body: ${raw}`
+            );
+            toast({
+              title: 'Sync Error',
+              description: 'Unexpected response from the server.',
+              variant: 'destructive'
+            });
+            return;
+          }
+
           if (result.success) {
             set({ lastSyncTime: Date.now() });
             console.log(`[TRUESKILL_STORE] Successfully synced to cloud`);
