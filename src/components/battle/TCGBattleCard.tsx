@@ -148,7 +148,11 @@ const TCGBattleCard: React.FC<TCGBattleCardProps> = memo(({
     e.stopPropagation();
     e.preventDefault();
 
+    console.log(`⭐ [TCG_STAR_TOGGLE] Star clicked for ${pokemon.name} - current pending: ${isPendingRefinement}`);
+
     if (!isPendingRefinement) {
+      // Add to pending state
+      console.log(`⭐ [TCG_STAR_TOGGLE] Adding ${pokemon.name} to pending state`);
       setLocalPendingState(true);
       localStorage.setItem(`pokemon-pending-${pokemon.id}`, 'true');
 
@@ -167,8 +171,13 @@ const TCGBattleCard: React.FC<TCGBattleCardProps> = memo(({
         }
       }
     } else {
+      // Remove from pending state
+      console.log(`⭐ [TCG_STAR_TOGGLE] Removing ${pokemon.name} from pending state`);
       setLocalPendingState(false);
       localStorage.removeItem(`pokemon-pending-${pokemon.id}`);
+      
+      // TODO: Also remove from refinement queue if present
+      // This would require a method to remove specific battles from the queue
     }
   };
 
@@ -216,7 +225,7 @@ const TCGBattleCard: React.FC<TCGBattleCardProps> = memo(({
                 ? 'opacity-100' 
                 : 'opacity-0 pointer-events-none'
           }`}
-          title="Prioritize for refinement battle"
+          title={isPendingRefinement ? "Remove from refinement queue" : "Prioritize for refinement battle"}
           type="button"
         >
           <Star

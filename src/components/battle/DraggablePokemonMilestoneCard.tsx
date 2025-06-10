@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -36,7 +37,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   const [isHovered, setIsHovered] = React.useState(false);
   
   // Use the cloud-based pending state hook
-  const { isPokemonPending, addPendingPokemon, isHydrated } = useCloudPendingBattles();
+  const { isPokemonPending, addPendingPokemon, removePendingPokemon, isHydrated } = useCloudPendingBattles();
   
   console.log(`🌥️ [CARD_DEBUG] ${pokemon.name} card render - Pending: ${isPokemonPending(pokemon.id)}, Hydrated: ${isHydrated}`);
   
@@ -46,6 +47,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     
     console.log(`🌥️ [CARD_DEBUG] ===== STAR CLICKED FOR ${pokemon.name} =====`);
     console.log(`🌥️ [CARD_DEBUG] Pokemon ID: ${pokemon.id}, Context: ${context}`);
+    console.log(`🌥️ [CARD_DEBUG] Current pending state: ${isPokemonPending(pokemon.id)}`);
     console.log(`🌥️ [CARD_DEBUG] Timestamp: ${new Date().toISOString()}`);
     
     if (!isHydrated) {
@@ -53,8 +55,17 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       return;
     }
     
-    // Add to cloud-based pending state
-    addPendingPokemon(pokemon.id);
+    const currentlyPending = isPokemonPending(pokemon.id);
+    
+    if (!currentlyPending) {
+      // Add to cloud-based pending state
+      console.log(`⭐ [MILESTONE_STAR_TOGGLE] Adding ${pokemon.name} to pending state`);
+      addPendingPokemon(pokemon.id);
+    } else {
+      // Remove from cloud-based pending state
+      console.log(`⭐ [MILESTONE_STAR_TOGGLE] Removing ${pokemon.name} from pending state`);
+      removePendingPokemon(pokemon.id);
+    }
   };
 
   // Check if this Pokemon has pending state
@@ -176,7 +187,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
                 ? 'opacity-100' 
                 : 'opacity-0 pointer-events-none'
           }`}
-          title="Prioritize for refinement battle"
+          title={isPendingRefinement ? "Remove from refinement queue" : "Prioritize for refinement battle"}
           type="button"
           disabled={!isHydrated}
         >
