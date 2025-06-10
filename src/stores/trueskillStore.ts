@@ -265,12 +265,18 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           
           const result = await response.json();
           if (result.success && result.ratings) {
-            console.log(`[TRUESKILL_STORE] Loaded ${Object.keys(result.ratings).length} ratings, ${result.totalBattles || 0} total battles, ${(result.pendingBattles || []).length} pending battles from cloud`);
-            set({ 
+            console.log(
+              `[TRUESKILL_STORE] Loaded ${Object.keys(result.ratings).length} ratings, ${
+                result.totalBattles || 0} total battles, ${
+                (result.pendingBattles || []).length} pending battles from cloud`
+            );
+            set({
               ratings: result.ratings,
               totalBattles: result.totalBattles || 0,
-              pendingBattles: result.pendingBattles || []
+              pendingBattles: result.pendingBattles || [],
+              isHydrated: true
             });
+            console.log('[TRUESKILL_STORE] Hydration flag set after cloud load');
           }
         } catch (error) {
           console.error('[TRUESKILL_STORE] Load from cloud failed:', error);
@@ -341,6 +347,8 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           }
           
           console.log(`[TRUESKILL_SMART_SYNC] Smart sync completed successfully`);
+          set({ isHydrated: true });
+          console.log('[TRUESKILL_STORE] Hydration flag set after smart sync');
           
         } catch (error) {
           console.error('[TRUESKILL_SMART_SYNC] Smart sync failed:', error);

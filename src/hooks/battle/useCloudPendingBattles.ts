@@ -1,5 +1,5 @@
 
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useTrueSkillStore } from '@/stores/trueskillStore';
 
 export const useCloudPendingBattles = () => {
@@ -70,6 +70,16 @@ export const useCloudPendingBattles = () => {
 
   const hasPendingPokemon = getAllPendingBattles().length > 0;
 
+  // If we somehow loaded pending battles but hydration flag is false, fix it
+  useEffect(() => {
+    if (getAllPendingBattles().length > 0 && !isHydrated) {
+      console.warn(
+        '[CLOUD_PENDING_HOOK] Pending battles present but isHydrated is false. Forcing hydration.'
+      );
+      useTrueSkillStore.setState({ isHydrated: true });
+    }
+  }, [isHydrated, getAllPendingBattles]);
+
   // Debug render
   console.log(`🔥🔥🔥 [CLOUD_PENDING_HOOK] Hook render:`, {
     hasPendingPokemon,
@@ -78,6 +88,10 @@ export const useCloudPendingBattles = () => {
     isHydrated,
     timestamp: new Date().toISOString()
   });
+
+  useEffect(() => {
+    console.log(`🔥🔥🔥 [CLOUD_PENDING_HOOK] Hydration status changed: ${isHydrated}`);
+  }, [isHydrated]);
 
   return {
     pendingPokemon: getAllPendingBattles(),
