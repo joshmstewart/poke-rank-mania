@@ -4,7 +4,10 @@ import { useCallback, useRef } from "react";
 export const useBattleProgressionIncrement = (
   battlesCompleted: number,
   setBattlesCompleted: React.Dispatch<React.SetStateAction<number>>,
-  checkMilestone: (newBattlesCompleted: number, battleResults: any[]) => boolean
+  checkMilestone: (
+    newBattlesCompleted: number,
+    battleResults: any[]
+  ) => number | null
 ) => {
   const incrementInProgressRef = useRef(false);
 
@@ -23,11 +26,13 @@ export const useBattleProgressionIncrement = (
     console.log(`✅ setBattlesCompleted called with: ${newBattleCount}`);
     
     const milestoneTriggered = checkMilestone(newBattleCount, battleResults);
-    
-    if (milestoneTriggered) {
-      console.log(`✅ MILESTONE SUCCESSFULLY TRIGGERED for battle ${newBattleCount}`);
+
+    if (milestoneTriggered !== null) {
+      console.log(
+        `✅ MILESTONE SUCCESSFULLY TRIGGERED: ${milestoneTriggered}`
+      );
       incrementInProgressRef.current = false;
-      return newBattleCount;
+      return milestoneTriggered;
     }
     
     incrementInProgressRef.current = false;
