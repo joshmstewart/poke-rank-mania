@@ -1,5 +1,5 @@
 
-import { useMemo } from "react";
+import { useMemo, useCallback } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { createBattleStarter } from "./createBattleStarter";
 import { useSharedRefinementQueue } from "./useSharedRefinementQueue";
@@ -88,7 +88,8 @@ export const useBattleStarterIntegration = (
   // Use shared refinement queue instead of creating a new instance
   const refinementQueue = useSharedRefinementQueue();
 
-  const startNewBattle = (battleType: any) => {
+  // CRITICAL FIX: Stabilize startNewBattle with useCallback and proper dependencies
+  const startNewBattle = useCallback((battleType: any) => {
     const callId = `CALL_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
     console.log(`🔥🔥🔥 [${callId}] ===== startNewBattle CALLED =====`);
@@ -244,13 +245,13 @@ export const useBattleStarterIntegration = (
     
     console.log(`🔥🔥🔥 [${callId}] ===== startNewBattle COMPLETE =====`);
     return result || [];
-  };
+  }, [battleStarter, filteredPokemon, getAllPendingIds, refinementQueue, setCurrentBattle, setSelectedPokemon, allPokemon]);
 
-  const resetSuggestionPriority = () => {
+  const resetSuggestionPriority = useCallback(() => {
     if (battleStarter) {
       battleStarter.resetSuggestionPriority();
     }
-  };
+  }, [battleStarter]);
 
   return {
     battleStarter,
