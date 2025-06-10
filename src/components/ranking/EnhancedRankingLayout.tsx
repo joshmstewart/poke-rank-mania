@@ -93,7 +93,7 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = ({
 
         {/* Main Content Grid */}
         <div className="max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-2 gap-4" style={{ height: 'calc(100vh - 12rem)' }}>
+          <div className="grid md:grid-cols-2 gap-4" style={{ height: 'calc(200vh - 12rem)' }}>
             {/* Enhanced Available Pokemon Card */}
             <Card className="shadow-lg border border-gray-200 overflow-hidden flex flex-col">
               <EnhancedAvailablePokemonSection
