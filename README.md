@@ -36,6 +36,12 @@ npm i
 npm run dev
 ```
 
+### Linting
+
+Before running `npm run lint`, make sure all dependencies are installed. Execute
+`npm install` (or `bun install`) once after cloning the repo so that ESLint and
+its plugins are available.
+
 **Edit a file directly in GitHub**
 
 - Navigate to the desired file(s).
