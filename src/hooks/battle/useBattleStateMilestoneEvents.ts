@@ -19,6 +19,7 @@ interface MilestoneEventHookProps {
   setBattleHistory: (history: any) => void;
   setBattlesCompleted: (count: number) => void;
   setBattleResults: (results: any) => void;
+  generateRankings?: () => void; // Add this optional prop
 }
 
 export const useBattleStateMilestoneEvents = ({
@@ -35,7 +36,8 @@ export const useBattleStateMilestoneEvents = ({
   setSelectedPokemon,
   setBattleHistory,
   setBattlesCompleted,
-  setBattleResults
+  setBattleResults,
+  generateRankings
 }: MilestoneEventHookProps) => {
 
   // SUPER ENHANCED DEBUGGING: Log milestone array source and battle count on every render
@@ -100,7 +102,16 @@ export const useBattleStateMilestoneEvents = ({
     
     if (isMilestone && !showingMilestone && !milestoneInProgress) {
       console.log(`🎯 [MILESTONE_CHECK_SUPER] ✅ VALID MILESTONE TRIGGERED: Battle ${battlesCompleted} is a milestone!`);
-      console.log(`🎯 [MILESTONE_CHECK_SUPER] ✅ Setting milestone flags...`);
+      console.log(`🎯 [MILESTONE_CHECK_SUPER] ✅ Generating rankings first, then setting milestone flags...`);
+      
+      // CRITICAL FIX: Generate rankings BEFORE setting milestone flags
+      if (generateRankings) {
+        console.log(`🎯 [MILESTONE_CHECK_SUPER] 🔧 Calling generateRankings function...`);
+        generateRankings();
+        console.log(`🎯 [MILESTONE_CHECK_SUPER] ✅ generateRankings completed`);
+      } else {
+        console.error(`🎯 [MILESTONE_CHECK_SUPER] ❌ generateRankings function not provided!`);
+      }
       
       setMilestoneInProgress(true);
       setShowingMilestone(true);
@@ -112,7 +123,7 @@ export const useBattleStateMilestoneEvents = ({
     }
     
     console.log(`🎯 [MILESTONE_CHECK_SUPER] ===== END MILESTONE EFFECT =====`);
-  }, [battlesCompleted, milestones, showingMilestone, milestoneInProgress, setMilestoneInProgress, setShowingMilestone, setRankingGenerated]);
+  }, [battlesCompleted, milestones, showingMilestone, milestoneInProgress, setMilestoneInProgress, setShowingMilestone, setRankingGenerated, generateRankings]);
 
   // Enhanced milestone checking that uses the props milestone array
   const checkAndTriggerMilestone = useCallback((newBattlesCompleted: number) => {
@@ -131,6 +142,16 @@ export const useBattleStateMilestoneEvents = ({
     
     if (isMilestone && !showingMilestone && !milestoneInProgress) {
       console.log(`🎯 [MILESTONE_CHECK_CALLBACK_SUPER] ✅ Triggering valid milestone ${newBattlesCompleted}`);
+      
+      // CRITICAL FIX: Generate rankings BEFORE setting milestone flags
+      if (generateRankings) {
+        console.log(`🎯 [MILESTONE_CHECK_CALLBACK_SUPER] 🔧 Calling generateRankings function...`);
+        generateRankings();
+        console.log(`🎯 [MILESTONE_CHECK_CALLBACK_SUPER] ✅ generateRankings completed`);
+      } else {
+        console.error(`🎯 [MILESTONE_CHECK_CALLBACK_SUPER] ❌ generateRankings function not provided!`);
+      }
+      
       setMilestoneInProgress(true);
       setShowingMilestone(true);
       setRankingGenerated(true);
@@ -143,7 +164,7 @@ export const useBattleStateMilestoneEvents = ({
     
     console.log(`🎯 [MILESTONE_CHECK_CALLBACK_SUPER] ===== END CALLBACK CHECK =====`);
     return false;
-  }, [milestones, showingMilestone, milestoneInProgress, setMilestoneInProgress, setShowingMilestone, setRankingGenerated]);
+  }, [milestones, showingMilestone, milestoneInProgress, setMilestoneInProgress, setShowingMilestone, setRankingGenerated, generateRankings]);
 
   // Enhanced process battle result function with props milestone detection
   const originalProcessBattleResult = useCallback((

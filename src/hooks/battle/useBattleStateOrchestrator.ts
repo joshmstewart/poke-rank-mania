@@ -16,10 +16,28 @@ export const useBattleStateOrchestrator = (
 ) => {
   console.log(`🚨🚨🚨 [BATTLE_STATE_ORCHESTRATOR] Starting orchestration...`);
 
+  console.log(`🚨🚨🚨 [BATTLE_STATE_ORCHESTRATOR] About to call milestoneHandlers...`);
+
+  // Initialize milestone handlers FIRST to get generateRankings function
+  const milestoneHandlers = useBattleStateMilestones(
+    stateData.finalRankings,
+    stateData.battleHistory,
+    stateData.battlesCompleted,
+    stateData.completionPercentage,
+    stateData.setShowingMilestone,
+    stateData.setMilestoneInProgress,
+    stateData.setRankingGenerated,
+    stateData.setFinalRankings,
+    coordination.startNewBattle
+  );
+
+  console.log(`🚨🚨🚨 [BATTLE_STATE_ORCHESTRATOR] milestoneHandlers created with generateRankings function`);
+
   // MILESTONE INVESTIGATION: Log before passing to milestone events
   console.log(`🔍🔍🔍 [MILESTONE_INVESTIGATION] About to pass milestones to useBattleStateMilestoneEvents:`, stateData.milestones);
+  console.log(`🔍🔍🔍 [MILESTONE_INVESTIGATION] Passing generateRankings function:`, !!milestoneHandlers.generateRankings);
   
-  // Use milestone events hook
+  // Use milestone events hook - CRITICAL FIX: Pass generateRankings function
   const milestoneEvents = useBattleStateMilestoneEvents({
     battlesCompleted: stateData.battlesCompleted,
     milestones: stateData.milestones,
@@ -34,7 +52,8 @@ export const useBattleStateOrchestrator = (
     setSelectedPokemon: stateData.setSelectedPokemon,
     setBattleHistory: stateData.setBattleHistory,
     setBattlesCompleted: stateData.setBattlesCompleted,
-    setBattleResults: stateData.setBattleResults
+    setBattleResults: stateData.setBattleResults,
+    generateRankings: milestoneHandlers.generateRankings // CRITICAL FIX: Pass the function
   });
 
   // Use event handlers hook - CRITICAL FIX: pass startNewBattleAsync instead of startNewBattle
@@ -51,22 +70,7 @@ export const useBattleStateOrchestrator = (
     eventHandlers.startNewBattleWrapper
   );
 
-  console.log(`🚨🚨🚨 [BATTLE_STATE_ORCHESTRATOR] About to call milestoneHandlers...`);
-
-  // Initialize milestone handlers
-  const milestoneHandlers = useBattleStateMilestones(
-    stateData.finalRankings,
-    stateData.battleHistory,
-    stateData.battlesCompleted,
-    stateData.completionPercentage,
-    stateData.setShowingMilestone,
-    stateData.setMilestoneInProgress,
-    stateData.setRankingGenerated,
-    processors.setFinalRankingsWithLogging,
-    eventHandlers.startNewBattleWrapper
-  );
-
-  console.log(`🚨🚨🚨 [BATTLE_STATE_ORCHESTRATOR] milestoneHandlers created, about to call handlers...`);
+  console.log(`🚨🚨🚨 [BATTLE_STATE_ORCHESTRATOR] About to call handlers...`);
 
   // Create handlers with proper generateRankings - CRITICAL FIX: use synchronous startNewBattle and add setFinalRankings
   const handlers = useBattleStateHandlers(
