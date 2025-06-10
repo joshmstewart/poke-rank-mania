@@ -2,6 +2,7 @@ import React, { useState, useEffect, memo } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "@/hooks/battle/types";
 import { useMilestoneCalculations } from "@/hooks/battle/useMilestoneCalculations";
+import { DEFAULT_BATTLE_MILESTONES } from "@/utils/battleMilestones";
 import { useBattleValidation } from "./BattleValidation";
 import { useBattleAnimationHandler } from "./BattleAnimationHandler";
 import { useBattleInteractionHandler } from "./BattleInteractionHandler";
@@ -44,9 +45,9 @@ const BattleInterface: React.FC<BattleInterfaceProps> = memo(({
   });
   
   // CRITICAL FIX: Use the correct milestones array or fallback to default
-  const actualMilestones = milestones && milestones.length > 0 
-    ? milestones 
-    : [10, 25, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 600, 700, 800, 900, 1000];
+  const actualMilestones = milestones && milestones.length > 0
+    ? milestones
+    : DEFAULT_BATTLE_MILESTONES;
   
   console.log(`🎯 [MILESTONE_FIX] Using milestones:`, actualMilestones);
   
