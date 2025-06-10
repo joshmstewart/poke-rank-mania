@@ -1,5 +1,5 @@
 
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
 
@@ -16,6 +16,19 @@ export const useBattleStateProcessing = (
   startNewBattleWrapper: () => void
 ) => {
   const processingRef = useRef(false);
+
+  console.log(
+    "🔄 [BATTLE_PROCESSING_DEBUG] Hook initialized with setters:",
+    setIsBattleTransitioning,
+    setIsAnyProcessing
+  );
+
+  useEffect(() => {
+    console.log(
+      "🔄 [BATTLE_PROCESSING_DEBUG] selectedPokemon changed:",
+      selectedPokemon
+    );
+  }, [selectedPokemon]);
 
   const handleTripletSelectionComplete = useCallback(async () => {
     const expectedCount = battleType === "pairs" ? 1 : 2;

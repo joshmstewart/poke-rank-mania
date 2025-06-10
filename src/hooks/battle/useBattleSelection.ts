@@ -1,5 +1,5 @@
 
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
 
@@ -12,6 +12,11 @@ export const useBattleSelection = (
   processBattleResultWithRefinement: any,
   handleBattleCompleted: any
 ) => {
+  console.log(
+    "🔄 [BATTLE_SELECTION_DEBUG] Hook initialized with setter:",
+    setSelectedPokemon
+  );
+
   const handlePokemonSelect = useCallback((pokemonId: number) => {
     console.log(`🎯 [POKEMON_SELECT_ULTRA_DEBUG] Pokemon ${pokemonId} selected. Current selections: ${JSON.stringify(selectedPokemon)}`);
     
@@ -33,6 +38,13 @@ export const useBattleSelection = (
       processBattleResultWithRefinement(newSelection, currentBattle, battleType, selectedGeneration);
     }
   }, [selectedPokemon, setSelectedPokemon, battleType, currentBattle, selectedGeneration, processBattleResultWithRefinement, handleBattleCompleted]);
+
+  useEffect(() => {
+    console.log(
+      "🔄 [BATTLE_SELECTION_DEBUG] selectedPokemon updated:",
+      selectedPokemon
+    );
+  }, [selectedPokemon]);
 
   return { handlePokemonSelect };
 };
