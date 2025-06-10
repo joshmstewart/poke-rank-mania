@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -33,6 +34,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   allRankedPokemon = []
 }) => {
   const [isOpen, setIsOpen] = React.useState(false);
+  const [isHovered, setIsHovered] = React.useState(false);
   const [localPendingState, setLocalPendingState] = React.useState(() => {
     const stored = localStorage.getItem(`pokemon-pending-${pokemon.id}`);
     return stored === 'true';
@@ -202,6 +204,16 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     e.stopPropagation();
   };
 
+  const handleMouseEnter = () => {
+    if (!isDragging) {
+      setIsHovered(true);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setIsHovered(false);
+  };
+
   // Format Pokemon ID with leading zeros
   const formattedId = pokemon.id.toString().padStart(pokemon.id >= 10000 ? 5 : 3, '0');
 
@@ -214,6 +226,8 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       } ${
         isDragging ? 'opacity-80 scale-105 shadow-2xl border-blue-400 transform-gpu' : 'hover:shadow-lg transition-all duration-200'
       } ${isPending ? 'ring-2 ring-blue-400 ring-opacity-50' : ''}`}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       {...(isDraggable && !isOpen ? attributes : {})}
       {...(isDraggable && !isOpen ? listeners : {})}
     >
@@ -237,7 +251,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
         </div>
       )}
 
-      {/* Prioritize button - ranked and available contexts */}
+      {/* Prioritize button - only visible on card hover */}
       {!isDragging && (context === 'ranked' || context === 'available') && (
         <button
           onPointerDown={(e) => {
@@ -247,23 +261,29 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
             e.preventDefault();
           }}
           onClick={handlePrioritizeClick}
-          className={`absolute top-1/2 right-2 -translate-y-1/2 z-30 p-2 rounded-full transition-opacity duration-200 ${
-            isPendingRefinement ? 'opacity-100' : 'opacity-80 hover:opacity-100'
+          className={`absolute top-1/2 right-2 -translate-y-1/2 z-30 p-2 rounded-full transition-all duration-300 ${
+            isPendingRefinement 
+              ? 'opacity-100' 
+              : isHovered 
+                ? 'opacity-100' 
+                : 'opacity-0 pointer-events-none'
           }`}
           title="Prioritize for refinement battle"
           type="button"
         >
           <Star
-            className={`w-16 h-16 transition-all ${
+            className={`w-16 h-16 transition-all duration-300 ${
               isPendingRefinement ? 'text-yellow-400 fill-yellow-400' : 'text-gray-500 hover:text-yellow-500'
             }`}
           />
         </button>
       )}
 
-      {/* Info Button with Dialog */}
+      {/* Info Button with Dialog - only visible on card hover */}
       {!isDragging && (
-        <div className="absolute top-1 right-1 z-30 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+        <div className={`absolute top-1 right-1 z-30 transition-all duration-300 ${
+          isHovered ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}>
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
               <button 

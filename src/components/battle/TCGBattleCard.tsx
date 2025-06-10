@@ -202,28 +202,34 @@ const TCGBattleCard: React.FC<TCGBattleCardProps> = memo(({
       data-hovered={shouldShowHover ? "true" : "false"}
     >
       <CardContent className="p-4 text-center relative">
-        {/* Prioritize button - battle context */}
+        {/* Prioritize button - only visible on card hover */}
         <button
           onPointerDown={(e) => {
             e.stopPropagation();
             e.preventDefault();
           }}
           onClick={handlePrioritizeClick}
-          className={`absolute top-1/2 right-2 -translate-y-1/2 z-30 p-2 rounded-full transition-opacity duration-200 ${
-            isPendingRefinement ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+          className={`absolute top-1/2 right-2 -translate-y-1/2 z-30 p-2 rounded-full transition-all duration-300 ${
+            isPendingRefinement 
+              ? 'opacity-100' 
+              : isHovered && !isProcessing 
+                ? 'opacity-100' 
+                : 'opacity-0 pointer-events-none'
           }`}
           title="Prioritize for refinement battle"
           type="button"
         >
           <Star
-            className={`w-16 h-16 transition-all ${
+            className={`w-16 h-16 transition-all duration-300 ${
               isPendingRefinement ? 'text-yellow-400 fill-yellow-400' : 'text-gray-500 hover:text-yellow-500'
             }`}
           />
         </button>
 
-        {/* Info Button - exact copy from manual mode */}
-        <div className="absolute top-1 right-1 z-30 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+        {/* Info Button - only visible on card hover */}
+        <div className={`absolute top-1 right-1 z-30 transition-all duration-300 ${
+          isHovered && !isProcessing ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}>
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
               <button 
