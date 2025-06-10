@@ -21,7 +21,7 @@ export const useBattleResultProcessor = (
   const { saveBattleCount } = useBattleStatePersistence();
   
   // Get the centralized TrueSkill store functions - SINGLE SOURCE OF TRUTH
-  const { updateRatings, getRating, getAllRatings, getTotalBattles } = useTrueSkillStore();
+  const { updateRating, getRating, hasRating, getAllRatings, incrementTotalBattles, incrementBattleCount } = useTrueSkillStore();
 
   const processResult = useCallback((
     selections: number[],
@@ -64,12 +64,62 @@ export const useBattleResultProcessor = (
           console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] Winner: ${winner.name} (${winner.id})`);
           console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] Loser: ${loser.name} (${loser.id})`);
           
-          // Update ratings using the TrueSkill store
-          updateRatings([winner.id], [loser.id]);
-          console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] ✅ Updated ratings for pair battle`);
+          // Get ratings from centralized store ONLY - using string IDs
+          const winnerRatingBefore = getRating(winner.id.toString());
+          const loserRatingBefore = getRating(loser.id.toString());
+          
+          console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] ===== RATINGS BEFORE BATTLE =====`);
+          console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] ${winner.name} BEFORE: μ=${winnerRatingBefore.mu.toFixed(3)}, σ=${winnerRatingBefore.sigma.toFixed(3)}`);
+          console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] ${loser.name} BEFORE: μ=${loserRatingBefore.mu.toFixed(3)}, σ=${loserRatingBefore.sigma.toFixed(3)}`);
+          
+          // Calculate new ratings using TrueSkill algorithm
+          console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] ===== CALCULATING NEW RATINGS =====`);
+          const [newWinnerRating, newLoserRating] = rate_1vs1(winnerRatingBefore, loserRatingBefore);
+          
+          console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] ===== RATINGS AFTER CALCULATION =====`);
+          console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] ${winner.name} AFTER: μ=${newWinnerRating.mu.toFixed(3)}, σ=${newWinnerRating.sigma.toFixed(3)}`);
+          console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] ${loser.name} AFTER: μ=${newLoserRating.mu.toFixed(3)}, σ=${newLoserRating.sigma.toFixed(3)}`);
+          
+          // Store updated ratings in centralized store - CRITICAL POINT
+          console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] ===== UPDATING STORE =====`);
+          console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] Calling updateRating for winner ${winner.name} (${winner.id})`);
+          
+          updateRating(winner.id.toString(), newWinnerRating);
+          console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] ✅ Winner rating updated for ${winner.id}`);
+          
+          console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] Calling updateRating for loser ${loser.name} (${loser.id})`);
+          
+          updateRating(loser.id.toString(), newLoserRating);
+          console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] ✅ Loser rating updated for ${loser.id}`);
+          
+          // CRITICAL FIX: Increment individual battle counts for both Pokemon
+          console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] ===== INCREMENTING BATTLE COUNTS =====`);
+          incrementBattleCount(winner.id.toString());
+          incrementBattleCount(loser.id.toString());
+          console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] ✅ Incremented battle counts for both Pokemon`);
+          
+          // CRITICAL FIX: Increment total battle count - THIS WAS MISSING!
+          console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] ===== INCREMENTING TOTAL BATTLES =====`);
+          incrementTotalBattles();
+          console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] ✅ Incremented total battles count`);
+          
+          // CRITICAL: Verify the ratings were stored immediately after each update
+          console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] ===== VERIFICATION AFTER UPDATES =====`);
+          const verifyWinner = getRating(winner.id.toString());
+          const verifyLoser = getRating(loser.id.toString());
+          console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] ${winner.name} VERIFICATION: μ=${verifyWinner.mu.toFixed(3)}, σ=${verifyWinner.sigma.toFixed(3)}`);
+          console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] ${loser.name} VERIFICATION: μ=${verifyLoser.mu.toFixed(3)}, σ=${verifyLoser.sigma.toFixed(3)}`);
+          
+          // CRITICAL: Check total store state after these updates
+          const ratingsAfterUpdate = getAllRatings();
+          const ratingCountAfter = Object.keys(ratingsAfterUpdate).length;
+          const totalBattlesAfter = useTrueSkillStore.getState().totalBattles;
+          console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] ===== STORE STATE AFTER UPDATES =====`);
+          console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] Total ratings after: ${ratingCountAfter} (was ${ratingCountBefore})`);
+          console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] Total battles after: ${totalBattlesAfter}`);
           
           // ENHANCED: Save battle count for persistence
-          const newBattleCount = getTotalBattles();
+          const newBattleCount = totalBattlesAfter;
           saveBattleCount(newBattleCount);
           console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] Saved battle count: ${newBattleCount}`);
           
@@ -104,30 +154,65 @@ export const useBattleResultProcessor = (
           console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] Winners: ${winners.map(w => `${w.name}(${w.id})`).join(', ')}`);
           console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] Losers: ${losers.map(l => `${l.name}(${l.id})`).join(', ')}`);
           
-          // Update ratings for all winner-loser combinations
-          const winnerIds = winners.map(w => w.id);
-          const loserIds = losers.map(l => l.id);
-          updateRatings(winnerIds, loserIds);
+          let updateCount = 0;
+          winners.forEach(winner => {
+            losers.forEach(loser => {
+              updateCount++;
+              console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] Triplet update #${updateCount}: ${winner.name} beats ${loser.name}`);
+              
+              // Get ratings from centralized store ONLY - using string IDs
+              const winnerRating = getRating(winner.id.toString());
+              const loserRating = getRating(loser.id.toString());
+              
+              console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] Before: ${winner.name} μ=${winnerRating.mu.toFixed(3)}, ${loser.name} μ=${loserRating.mu.toFixed(3)}`);
+              
+              // Update ratings using TrueSkill algorithm
+              const [newWinnerRating, newLoserRating] = rate_1vs1(winnerRating, loserRating);
+              
+              console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] After: ${winner.name} μ=${newWinnerRating.mu.toFixed(3)}, ${loser.name} μ=${newLoserRating.mu.toFixed(3)}`);
+              
+              updateRating(winner.id.toString(), newWinnerRating);
+              updateRating(loser.id.toString(), newLoserRating);
+              console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] ✅ Updated both ratings for triplet matchup #${updateCount}`);
+              
+              // Create battle result record (for UI display only)
+              const newResult: SingleBattle = {
+                battleType,
+                generation: 0,
+                pokemonIds: currentBattle.map(p => p.id),
+                selectedPokemonIds: selections,
+                timestamp: new Date().toISOString(),
+                winner,
+                loser
+              };
+              
+              newResults.push(newResult);
+            });
+          });
+
+          // CRITICAL FIX: Increment battle counts for triplets too
+          console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] ===== INCREMENTING TRIPLET BATTLE COUNTS =====`);
+          currentBattle.forEach(pokemon => {
+            incrementBattleCount(pokemon.id.toString());
+          });
           
-          console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] ✅ Updated ratings for triplet battle`);
+          // CRITICAL FIX: Increment total battle count for triplets
+          incrementTotalBattles();
+          console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] ✅ Incremented total battles count for triplet`);
+
+          // Check store state after all triplet processing
+          const afterTripletRatings = getAllRatings();
+          const tripletRatingCount = Object.keys(afterTripletRatings).length;
+          const totalBattlesAfterTriplet = useTrueSkillStore.getState().totalBattles;
+          console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] ===== TRIPLET BATTLE COMPLETE =====`);
+          console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] Total ratings after triplet: ${tripletRatingCount} (was ${ratingCountBefore})`);
+          console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] Total battles after triplet: ${totalBattlesAfterTriplet}`);
+          console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] Processed ${updateCount} individual matchups`);
 
           // ENHANCED: Save battle count for triplets too
-          const newBattleCount = getTotalBattles();
+          const newBattleCount = totalBattlesAfterTriplet;
           saveBattleCount(newBattleCount);
           console.log(`🔥🔥🔥 [BATTLE_RATING_CRITICAL] Saved battle count: ${newBattleCount}`);
-
-          // Create battle result record (for UI display only)
-          const newResult: SingleBattle = {
-            battleType,
-            generation: 0,
-            pokemonIds: currentBattle.map(p => p.id),
-            selectedPokemonIds: selections,
-            timestamp: new Date().toISOString(),
-            winner: winners[0], // Just use first winner for display
-            loser: losers[0] // Just use first loser for display
-          };
-          
-          newResults.push(newResult);
 
           setIsProcessing(false);
           return newResults;
@@ -142,7 +227,7 @@ export const useBattleResultProcessor = (
       setIsProcessing(false);
       return null;
     }
-  }, [activeTier, freezePokemonForTier, trackLowerTierLoss, updateRatings, getRating, getAllRatings, getTotalBattles, saveBattleCount]);
+  }, [activeTier, freezePokemonForTier, trackLowerTierLoss, updateRating, getRating, getAllRatings, incrementTotalBattles, incrementBattleCount, saveBattleCount]);
 
   // CRITICAL: Create a wrapper that ensures battle results are properly saved to the battle results array
   const processBattleAndUpdateResults = useCallback((

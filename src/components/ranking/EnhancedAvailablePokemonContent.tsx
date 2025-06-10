@@ -1,75 +1,159 @@
-import React, { useState } from "react";
-import { Pokemon } from "@/services/pokemon";
+import React from "react";
+import { useDroppable } from '@dnd-kit/core';
+import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable';
 import DraggablePokemonMilestoneCard from "@/components/battle/DraggablePokemonMilestoneCard";
-import { usePokemonContext } from "@/contexts/PokemonContext";
+import GenerationHeader from "@/components/pokemon/GenerationHeader";
 
 interface EnhancedAvailablePokemonContentProps {
-  enhancedAvailablePokemon: Pokemon[];
+  items: any[];
+  showGenerationHeaders: boolean;
+  viewMode: "list" | "grid";
+  isGenerationExpanded: (genId: number) => boolean;
+  onToggleGeneration: (genId: number) => void;
   isLoading: boolean;
-  selectedGeneration: number;
-  loadingType: string;
+  loadingRef: React.RefObject<HTMLDivElement>;
+  currentPage: number;
+  totalPages: number;
 }
 
-const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonContentProps> = ({
-  enhancedAvailablePokemon,
-  isLoading,
-  selectedGeneration,
-  loadingType
-}) => {
-  const [localSearch, setLocalSearch] = useState("");
-  
-  // Get all available Pokemon for star functionality context
-  const { allPokemon } = usePokemonContext();
-  
-  const filteredPokemon = enhancedAvailablePokemon.filter(pokemon =>
-    pokemon.name.toLowerCase().includes(localSearch.toLowerCase())
-  );
+// Simple loading placeholder component
+const PokemonLoadingPlaceholder = () => (
+  <div className="animate-pulse bg-gray-200 rounded-lg h-32 w-full"></div>
+);
 
-  if (isLoading && enhancedAvailablePokemon.length === 0) {
-    return (
-      <div className="flex-1 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
-          <p className="text-gray-600">Loading Generation {selectedGeneration} Pokémon...</p>
+export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonContentProps> = ({
+  items,
+  showGenerationHeaders,
+  viewMode,
+  isGenerationExpanded,
+  onToggleGeneration,
+  isLoading,
+  loadingRef,
+  currentPage,
+  totalPages
+}) => {
+  const { setNodeRef, isOver } = useDroppable({
+    id: 'enhanced-available-drop-zone',
+    data: {
+      type: 'available-container',
+      accepts: 'ranked-pokemon'
+    }
+  });
+
+  // Group items by generation for display
+  const renderContent = () => {
+    if (items.length === 0 && !isLoading) {
+      return (
+        <div className="flex items-center justify-center h-full text-gray-500">
+          <div className="text-center">
+            <p className="text-lg mb-2">No Pokémon available</p>
+            <p className="text-sm">Try adjusting your filters</p>
+          </div>
         </div>
-      </div>
-    );
-  }
+      );
+    }
+
+    const result = [];
+    let currentGenerationPokemon = [];
+    let currentGeneration = null;
+
+    for (const item of items) {
+      if (item.type === 'header') {
+        // Render previous generation's Pokemon if any
+        if (currentGenerationPokemon.length > 0) {
+          const pokemonIds = currentGenerationPokemon.map(p => `available-${p.id}`);
+          
+          result.push(
+            <SortableContext 
+              key={`gen-${currentGeneration}-pokemon`}
+              items={pokemonIds}
+              strategy={rectSortingStrategy}
+            >
+              <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
+                {currentGenerationPokemon.map((pokemon, index) => (
+                  <DraggablePokemonMilestoneCard
+                    key={pokemon.id}
+                    pokemon={pokemon}
+                    index={index}
+                    isPending={false}
+                    showRank={false}
+                    isDraggable={true}
+                    isAvailable={true}
+                    context="available"
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          );
+          currentGenerationPokemon = [];
+        }
+
+        // Add generation header with proper data
+        result.push(
+          <GenerationHeader
+            key={`gen-${item.generationId}`}
+            generationId={item.generationId}
+            name={item.data.name}
+            region={item.data.region}
+            games={item.data.games}
+            viewMode={viewMode}
+            isExpanded={isGenerationExpanded(item.generationId)}
+            onToggle={() => onToggleGeneration(item.generationId)}
+          />
+        );
+        
+        currentGeneration = item.generationId;
+      } else if (item.type === 'pokemon') {
+        currentGenerationPokemon.push(item.data);
+      }
+    }
+
+    // Render remaining Pokemon
+    if (currentGenerationPokemon.length > 0) {
+      const pokemonIds = currentGenerationPokemon.map(p => `available-${p.id}`);
+      
+      result.push(
+        <SortableContext 
+          key={`gen-${currentGeneration}-pokemon-final`}
+          items={pokemonIds}
+          strategy={rectSortingStrategy}
+        >
+          <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
+            {currentGenerationPokemon.map((pokemon, index) => (
+              <DraggablePokemonMilestoneCard
+                key={pokemon.id}
+                pokemon={pokemon}
+                index={index}
+                isPending={false}
+                showRank={false}
+                isDraggable={true}
+                isAvailable={true}
+                context="available"
+              />
+            ))}
+          </div>
+        </SortableContext>
+      );
+    }
+
+    return result;
+  };
 
   return (
-    <div className="flex-1 flex flex-col min-h-0">
-      {/* Search Bar */}
-      <div className="p-4 border-b border-gray-200 bg-gray-50">
-        <input
-          type="text"
-          placeholder="Search available Pokémon..."
-          value={localSearch}
-          onChange={(e) => setLocalSearch(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      </div>
-
-      {/* Pokemon Grid */}
-      <div className="flex-1 overflow-y-auto p-4">
-        <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
-          {filteredPokemon.map((pokemon, index) => (
-            <DraggablePokemonMilestoneCard
-              key={`available-${pokemon.id}`}
-              pokemon={pokemon}
-              index={index}
-              isPending={false}
-              showRank={false}
-              isDraggable={true}
-              isAvailable={true}
-              context="available"
-              allRankedPokemon={allPokemon}
-            />
-          ))}
-        </div>
-
-        {filteredPokemon.length === 0 && !isLoading && (
-          <div className="text-center py-8 text-gray-500">
-            {localSearch ? "No Pokémon match your search." : "No available Pokémon found."}
+    <div 
+      ref={setNodeRef}
+      className={`flex-1 overflow-y-auto p-4 transition-colors ${
+        isOver ? 'bg-blue-50 border-2 border-dashed border-blue-400' : ''
+      }`}
+    >
+      <div className="space-y-4">
+        {renderContent()}
+        
+        {isLoading && (
+          <div ref={loadingRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <PokemonLoadingPlaceholder key={`loading-${i}`} />
+            ))}
           </div>
         )}
       </div>
@@ -77,4 +161,33 @@ const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonContentP
   );
 };
 
-export default EnhancedAvailablePokemonContent;
+// Helper functions for generation data
+const getRegionForGeneration = (gen: number): string => {
+  const regions: Record<number, string> = {
+    1: "Kanto",
+    2: "Johto", 
+    3: "Hoenn",
+    4: "Sinnoh",
+    5: "Unova",
+    6: "Kalos",
+    7: "Alola",
+    8: "Galar",
+    9: "Paldea"
+  };
+  return regions[gen] || "Unknown";
+};
+
+const getGamesForGeneration = (gen: number): string => {
+  const games: Record<number, string> = {
+    1: "Red, Blue, Yellow",
+    2: "Gold, Silver, Crystal",
+    3: "Ruby, Sapphire, Emerald",
+    4: "Diamond, Pearl, Platinum",
+    5: "Black, White, B2W2",
+    6: "X, Y, ORAS",
+    7: "Sun, Moon, USUM",
+    8: "Sword, Shield",
+    9: "Scarlet, Violet"
+  };
+  return games[gen] || "Unknown";
+};

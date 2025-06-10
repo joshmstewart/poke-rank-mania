@@ -33,7 +33,7 @@ export const useBattleRankings = () => {
       const ratingData = allRatings[pokemonId];
       
       if (basePokemon && ratingData) {
-        const rating = ratingData.rating;
+        const rating = new Rating(ratingData.mu, ratingData.sigma);
         const conservativeEstimate = rating.mu - rating.sigma; // Changed from 3 * sigma to 1 * sigma
         const confidence = Math.max(0, Math.min(100, 100 * (1 - (rating.sigma / 8.33))));
         

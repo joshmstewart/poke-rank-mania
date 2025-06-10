@@ -19,12 +19,12 @@ export function saveRankings(
   // Extract and store rating data in centralized TrueSkill store
   rankings.forEach(pokemon => {
     if (pokemon.rating) {
-      // Note: This would need to be implemented properly if used
-      console.log(`[POKEMON_STORAGE_CLOUD] Would store rating for ${pokemon.id}`);
+      useTrueSkillStore.getState().updateRating(pokemon.id.toString(), pokemon.rating);
     }
   });
   
-  console.log(`[POKEMON_STORAGE_CLOUD] Processed ${rankings.length} Pokemon ratings`);
+  // Auto-sync to cloud will be triggered by the store
+  console.log(`[POKEMON_STORAGE_CLOUD] Stored ${rankings.length} Pokemon ratings in centralized store`);
 }
 
 /**
@@ -98,7 +98,7 @@ export function exportUnifiedSessionData(): string {
     battleHistory: [],
     sessionId: crypto.randomUUID(),
     lastUpdate: Date.now(),
-    ratingData: {}
+    ratingData: allRatings
   };
   
   return JSON.stringify(sessionData);
@@ -114,7 +114,15 @@ export function importUnifiedSessionData(jsonData: string): boolean {
       return false;
     }
     
-    // Import logic would go here if needed
+    // Import rating data to TrueSkill store
+    if (data.ratingData) {
+      const store = useTrueSkillStore.getState();
+      Object.entries(data.ratingData).forEach(([pokemonId, ratingData]) => {
+        const rating = new Rating(ratingData.mu, ratingData.sigma);
+        store.updateRating(pokemonId.toString(), rating);
+      });
+    }
+    
     return true;
   } catch (e) {
     console.error("Error importing session data:", e);

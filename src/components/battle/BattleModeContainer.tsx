@@ -25,8 +25,7 @@ const BattleModeContainer: React.FC<BattleModeContainerProps> = ({
   const [selectedGeneration, setSelectedGeneration] = useState(0);
   
   // CRITICAL FIX: Get battle count from TrueSkill store as single source of truth
-  const { getTotalBattles } = useTrueSkillStore();
-  const totalBattles = getTotalBattles();
+  const { totalBattles } = useTrueSkillStore();
 
   // CRITICAL FIX: Use the battle state from the core hook directly
   const battleState = useBattleStateCore(allPokemon, initialBattleType, selectedGeneration);
@@ -50,7 +49,7 @@ const BattleModeContainer: React.FC<BattleModeContainerProps> = ({
   useEffect(() => {
     const handleBattleSystemReset = () => {
       console.log(`🔄 [CONTAINER_RESET] Forcing state sync after reset`);
-      const currentTotalBattles = useTrueSkillStore.getState().getTotalBattles();
+      const currentTotalBattles = useTrueSkillStore.getState().totalBattles;
       console.log(`🔄 [CONTAINER_RESET] Current TrueSkill battles: ${currentTotalBattles}`);
       
       if (setBattlesCompleted) {

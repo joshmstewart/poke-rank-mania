@@ -7,7 +7,7 @@ import { useAvailablePokemonGenerations } from "@/hooks/pokemon/useAvailablePoke
 import { useSearchMatches } from "@/hooks/pokemon/useSearchMatches";
 import { AvailablePokemonHeader } from "./AvailablePokemonHeader";
 import { AvailablePokemonControls } from "./AvailablePokemonControls";
-import EnhancedAvailablePokemonContent from "./EnhancedAvailablePokemonContent";
+import { EnhancedAvailablePokemonContent } from "./EnhancedAvailablePokemonContent";
 
 interface EnhancedAvailablePokemonSectionProps {
   enhancedAvailablePokemon: any[];

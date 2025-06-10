@@ -75,58 +75,45 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       setLocalPendingState(true);
       localStorage.setItem(`pokemon-pending-${pokemon.id}`, 'true');
       
-      // Generate random battles whenever the refinement queue is available
+      // Generate random top-50 battles whenever the refinement queue is available
       if (contextAvailable && allRankedPokemon.length > 1) {
-        console.log(`🌟 [STAR_CLICK_DETAILED] Context available, generating battles for ${context} context`);
+        console.log(`🌟 [STAR_CLICK_DETAILED] Context available and sufficient ranked Pokemon, generating random top-50 battles`);
 
-        // For available Pokemon, use a pool from allRankedPokemon
-        // For ranked Pokemon, use the ranked list position logic
-        let opponents: number[] = [];
-        
-        if (context === 'available') {
-          // For available Pokemon, pick random opponents from the entire allRankedPokemon pool
-          const pool = allRankedPokemon.filter(p => p.id !== pokemon.id);
-          const poolCopy = [...pool];
+        // Find current Pokemon's position in the ranked list
+        const currentIndex = allRankedPokemon.findIndex(p => p.id === pokemon.id);
+        console.log(`🌟 [STAR_CLICK_DETAILED] Current index of ${pokemon.name}: ${currentIndex}`);
+
+        if (currentIndex >= 0) {
+          // Pick three random opponents from the top 50 (excluding this Pokemon)
+          const topPool = allRankedPokemon
+            .slice(0, 50)
+            .filter(p => p.id !== pokemon.id);
+          const poolCopy = [...topPool];
+          const opponents: number[] = [];
           while (opponents.length < 3 && poolCopy.length > 0) {
             const rand = Math.floor(Math.random() * poolCopy.length);
             const opponent = poolCopy.splice(rand, 1)[0];
             opponents.push(opponent.id);
           }
-          console.log(`🌟 [STAR_CLICK_DETAILED] Available context: Selected random opponents for ${pokemon.name}:`, opponents);
-        } else {
-          // For ranked Pokemon, use top-50 logic as before
-          const currentIndex = allRankedPokemon.findIndex(p => p.id === pokemon.id);
-          console.log(`🌟 [STAR_CLICK_DETAILED] Current index of ${pokemon.name}: ${currentIndex}`);
 
-          if (currentIndex >= 0) {
-            const topPool = allRankedPokemon
-              .slice(0, 50)
-              .filter(p => p.id !== pokemon.id);
-            const poolCopy = [...topPool];
-            while (opponents.length < 3 && poolCopy.length > 0) {
-              const rand = Math.floor(Math.random() * poolCopy.length);
-              const opponent = poolCopy.splice(rand, 1)[0];
-              opponents.push(opponent.id);
+          console.log(`🌟 [STAR_CLICK_DETAILED] (${context}) Opponents chosen for ${pokemon.name} (#${pokemon.id}):`, opponents);
+
+          if (opponents.length > 0) {
+            try {
+              const newLength = queueBattlesForReorder(pokemon.id, opponents, currentIndex);
+              console.log(`🌟 [STAR_QUEUE_${context.toUpperCase()}] New queue length after queuing for ${pokemon.name} (#${pokemon.id}): ${newLength}`);
+            } catch (error) {
+              console.error(`🌟 [STAR_CLICK_DETAILED] ❌ Error calling queueBattlesForReorder:`, error);
             }
-          }
-        }
-
-        console.log(`🌟 [STAR_CLICK_DETAILED] (${context}) Opponents chosen for ${pokemon.name} (#${pokemon.id}):`, opponents);
-
-        if (opponents.length > 0) {
-          try {
-            const currentIndex = context === 'available' ? -1 : allRankedPokemon.findIndex(p => p.id === pokemon.id);
-            const newLength = queueBattlesForReorder(pokemon.id, opponents, currentIndex);
-            console.log(`🌟 [STAR_QUEUE_${context.toUpperCase()}] New queue length after queuing for ${pokemon.name} (#${pokemon.id}): ${newLength}`);
-          } catch (error) {
-            console.error(`🌟 [STAR_CLICK_DETAILED] ❌ Error calling queueBattlesForReorder:`, error);
+          } else {
+            console.log(`🌟 [STAR_CLICK_DETAILED] ❌ No valid opponents found`);
           }
         } else {
-          console.log(`🌟 [STAR_CLICK_DETAILED] ❌ No valid opponents found`);
+          console.log(`🌟 [STAR_CLICK_DETAILED] ❌ Pokemon not found in ranked list`);
         }
       } else {
         console.log(
-          `🌟 [STAR_CLICK_DETAILED] ⚠️ Refinement queue unavailable or insufficient Pokemon`
+          `🌟 [STAR_CLICK_DETAILED] ⚠️ Refinement queue unavailable or insufficient ranked Pokemon`
         );
         console.log(`🌟 [STAR_CLICK_DETAILED] - context: ${context}`);
         console.log(`🌟 [STAR_CLICK_DETAILED] - contextAvailable: ${contextAvailable}`);
