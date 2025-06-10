@@ -13,6 +13,8 @@ import TCGBattleCardContent from "./tcg/TCGBattleCardContent";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import PokemonModalContent from "@/components/pokemon/PokemonModalContent";
 import { usePokemonFlavorText } from "@/hooks/pokemon/usePokemonFlavorText";
+import { Star } from "lucide-react";
+import { useSharedRefinementQueue } from "@/hooks/battle/useSharedRefinementQueue";
 
 interface TCGBattleCardProps {
   pokemon: Pokemon;
@@ -39,6 +41,30 @@ const TCGBattleCard: React.FC<TCGBattleCardProps> = memo(({
     setCurrentImageMode
   } = useTCGBattleCardState();
 
+  const [localPendingState, setLocalPendingState] = React.useState(() => {
+    const stored = localStorage.getItem(`pokemon-pending-${pokemon.id}`);
+    return stored === 'true';
+  });
+
+  const { refinementQueue, hasRefinementBattles } = useSharedRefinementQueue();
+
+  const contextAvailable = Boolean(
+    refinementQueue &&
+    Array.isArray(refinementQueue) &&
+    typeof hasRefinementBattles === 'boolean'
+  );
+
+  const isPendingRefinement = contextAvailable
+    ? refinementQueue.some(b => b.primaryPokemonId === pokemon.id) || localPendingState
+    : localPendingState;
+
+  React.useEffect(() => {
+    if (contextAvailable && hasRefinementBattles === false && localPendingState) {
+      setLocalPendingState(false);
+      localStorage.removeItem(`pokemon-pending-${pokemon.id}`);
+    }
+  }, [contextAvailable, hasRefinementBattles, localPendingState, pokemon.id]);
+
   const { tcgCard, isLoading: isLoadingTCG, hasTcgCard } = usePokemonTCGCard(pokemon.name, true);
   const displayName = pokemon.name;
   
@@ -46,13 +72,11 @@ const TCGBattleCard: React.FC<TCGBattleCardProps> = memo(({
   const { flavorText, isLoadingFlavor } = usePokemonFlavorText(pokemon.id, isOpen);
   const { tcgCard: modalTcgCard, secondTcgCard, isLoading: modalIsLoadingTCG, error: tcgError, hasTcgCard: modalHasTcgCard } = usePokemonTCGCard(pokemon.name, isOpen);
   
-  console.log(`🃏 [TCG_BATTLE_CARD] ${displayName}: TCG loading=${isLoadingTCG}, hasTcgCard=${hasTcgCard}, isProcessing=${isProcessing}`);
 
   useTCGImageModeListener(setCurrentImageMode);
   useTCGCleanupEffect(displayName, clickTimeoutRef);
 
   const handleClick = React.useCallback((e: React.MouseEvent) => {
-    console.log(`🖱️ [INFO_BUTTON_DEBUG] TCGBattleCard ${displayName}: Card clicked`);
     
     // Check for info button clicks - match manual mode approach
     const target = e.target as HTMLElement;
@@ -62,7 +86,6 @@ const TCGBattleCard: React.FC<TCGBattleCardProps> = memo(({
         target.closest('[role="dialog"]');
     
     if (isInfoButtonClick) {
-      console.log(`ℹ️ [INFO_BUTTON_DEBUG] TCGBattleCard: Info dialog interaction for ${displayName}, preventing card selection`);
       e.preventDefault();
       e.stopPropagation();
       return;
@@ -72,13 +95,11 @@ const TCGBattleCard: React.FC<TCGBattleCardProps> = memo(({
     
     // Prevent rapid double-clicks
     if (now - lastClickTimeRef.current < 300) {
-      console.log(`🚫 TCGBattleCard: Ignoring rapid click on ${displayName}`);
       return;
     }
     
     lastClickTimeRef.current = now;
     
-    console.log(`🖱️ TCGBattleCard: Click on ${displayName} (${pokemon.id}) - processing: ${isProcessing}`);
     
     if (clickTimeoutRef.current) {
       clearTimeout(clickTimeoutRef.current);
@@ -91,16 +112,27 @@ const TCGBattleCard: React.FC<TCGBattleCardProps> = memo(({
   }, [pokemon.id, displayName, onSelect, isProcessing]);
 
   const handleMouseEnter = React.useCallback(() => {
-    console.log(`🔘 [HOVER_DEBUG] TCGBattleCard ${displayName}: Mouse enter - isProcessing: ${isProcessing}`);
     if (!isProcessing) {
       setIsHovered(true);
     }
   }, [isProcessing, displayName, setIsHovered]);
 
   const handleMouseLeave = React.useCallback(() => {
-    console.log(`🔘 [HOVER_DEBUG] TCGBattleCard ${displayName}: Mouse leave`);
     setIsHovered(false);
   }, [displayName, setIsHovered]);
+
+  const handlePrioritizeClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+
+    if (!isPendingRefinement) {
+      setLocalPendingState(true);
+      localStorage.setItem(`pokemon-pending-${pokemon.id}`, 'true');
+    } else {
+      setLocalPendingState(false);
+      localStorage.removeItem(`pokemon-pending-${pokemon.id}`);
+    }
+  };
 
   const shouldShowHover = isHovered && !isSelected && !isProcessing && !isLoadingTCG;
 
@@ -132,15 +164,36 @@ const TCGBattleCard: React.FC<TCGBattleCardProps> = memo(({
       data-hovered={shouldShowHover ? "true" : "false"}
     >
       <CardContent className="p-4 text-center relative">
+        {/* Prioritize button - battle context */}
+        <button
+          onPointerDown={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+          }}
+          onClick={handlePrioritizeClick}
+          className={`absolute top-1/2 right-2 -translate-y-1/2 z-30 p-2 rounded-full transition-opacity duration-200 ${
+            isPendingRefinement
+              ? 'opacity-100 pointer-events-auto'
+              : 'opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto'
+          }`}
+          title="Prioritize for refinement battle"
+          type="button"
+        >
+          <Star
+            className={`w-16 h-16 transition-all ${
+              isPendingRefinement ? 'text-yellow-400 fill-yellow-400' : 'text-gray-500 hover:text-yellow-500'
+            }`}
+          />
+        </button>
+
         {/* Info Button - exact copy from manual mode */}
         <div className="absolute top-1 right-1 z-30 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
-              <button 
+              <button
                 className="w-5 h-5 rounded-full bg-white/80 hover:bg-white border border-gray-300 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200 backdrop-blur-sm cursor-pointer"
                 onClick={(e) => {
                   e.stopPropagation();
-                  console.log(`Info button clicked for ${pokemon.name}`);
                 }}
                 onPointerDown={(e) => {
                   e.stopPropagation();
