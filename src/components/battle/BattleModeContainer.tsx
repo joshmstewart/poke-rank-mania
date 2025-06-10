@@ -4,7 +4,8 @@ import BattleContentHeader from "./BattleContentHeader";
 import BattleContentRenderer from "./BattleContentRenderer";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "@/hooks/battle/types";
-import { useBattleStateCore } from "@/hooks/battle/useBattleStateCore";
+// Switch to the refactored battle state hook that uses the coordination system
+import { useBattleStateCoreRefactored } from "@/hooks/battle/useBattleStateCoreRefactored";
 import { useTrueSkillStore } from "@/stores/trueskillStore";
 
 interface BattleModeContainerProps {
@@ -28,7 +29,13 @@ const BattleModeContainer: React.FC<BattleModeContainerProps> = ({
   const { totalBattles } = useTrueSkillStore();
 
   // CRITICAL FIX: Use the battle state from the core hook directly
-  const battleState = useBattleStateCore(allPokemon, initialBattleType, selectedGeneration);
+  // The refactored hook internally uses the coordination system and
+  // triggers battle starter events for pending Pokémon
+  const battleState = useBattleStateCoreRefactored(
+    allPokemon,
+    initialBattleType,
+    selectedGeneration
+  );
 
   // CRITICAL FIX: Always use TrueSkill store value for battles completed
   useEffect(() => {
