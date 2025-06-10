@@ -69,6 +69,7 @@ const BattleCardContainer: React.FC<BattleCardContainerProps> = ({
       localPendingState &&
       hadRefinementBattlesRef.current
     ) {
+      console.log(`🌟 [CLEANUP_TRACE] Cleared pending state for ${pokemon.name} (#${pokemon.id}) - battles processed`);
       setLocalPendingState(false);
       localStorage.removeItem(`pokemon-pending-${pokemon.id}`);
       hadRefinementBattlesRef.current = false;
@@ -155,8 +156,10 @@ const BattleCardContainer: React.FC<BattleCardContainerProps> = ({
           const rand = Math.floor(Math.random() * copy.length);
           opponents.push(copy.splice(rand, 1)[0].id);
         }
+        console.log(`🌟 [BATTLE_CARD] Opponents chosen for ${pokemon.name} (#${pokemon.id}):`, opponents);
         try {
-          queueBattlesForReorder(pokemon.id, opponents, -1);
+          const newLength = queueBattlesForReorder(pokemon.id, opponents, -1);
+          console.log(`🌟 [BATTLE_CARD_QUEUE] New queue length after queuing for ${pokemon.name} (#${pokemon.id}): ${newLength}`);
         } catch (error) {
           console.error('Failed to queue refinement battles from battle card', error);
         }

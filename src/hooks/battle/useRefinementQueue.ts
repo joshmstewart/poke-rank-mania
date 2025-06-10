@@ -57,7 +57,7 @@ export const useRefinementQueue = () => {
     console.log(`🔄 [ADD_VALIDATION_TRACE] ===== ADD VALIDATION BATTLE END =====`);
   }, []);
 
-  const queueBattlesForReorder = useCallback((primaryId: number, neighbors: number[], newPosition: number) => {
+  const queueBattlesForReorder = useCallback((primaryId: number, neighbors: number[], newPosition: number): number => {
     console.log(`🔄 [QUEUE_BATTLES_MEGA_TRACE] ===== QUEUEING VALIDATION BATTLES START =====`);
     console.log(`🔄 [QUEUE_BATTLES_MEGA_TRACE] Input parameters:`, {
       primaryId,
@@ -71,6 +71,8 @@ export const useRefinementQueue = () => {
       return;
     }
     
+    let resultingLength = currentQueueRef.current.length;
+
     setRefinementQueue(prev => {
       console.log(`🔄 [QUEUE_BATTLES_MEGA_TRACE] Current queue before operation:`, {
         length: prev.length,
@@ -136,6 +138,7 @@ export const useRefinementQueue = () => {
       }
 
       currentQueueRef.current = shuffledQueue;
+      resultingLength = shuffledQueue.length;
       
       console.log(`🔄 [QUEUE_BATTLES_MEGA_TRACE] ✅ FINAL RESULT:`, {
         oldQueueLength: prev.length,
@@ -147,6 +150,8 @@ export const useRefinementQueue = () => {
 
       return shuffledQueue;
     });
+
+    return resultingLength;
   }, [isDuplicateBattleGlobally]);
 
   const getNextRefinementBattle = useCallback((): RefinementBattle | null => {

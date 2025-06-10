@@ -94,12 +94,12 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
             opponents.push(opponent.id);
           }
 
-          console.log(`🌟 [STAR_CLICK_DETAILED] Random opponents for ${pokemon.name}:`, opponents);
+          console.log(`🌟 [STAR_CLICK_DETAILED] (${context}) Opponents chosen for ${pokemon.name} (#${pokemon.id}):`, opponents);
 
           if (opponents.length > 0) {
             try {
-              queueBattlesForReorder(pokemon.id, opponents, currentIndex);
-              console.log(`🌟 [STAR_CLICK_DETAILED] ✅ queueBattlesForReorder call completed successfully`);
+              const newLength = queueBattlesForReorder(pokemon.id, opponents, currentIndex);
+              console.log(`🌟 [STAR_QUEUE_${context.toUpperCase()}] New queue length after queuing for ${pokemon.name} (#${pokemon.id}): ${newLength}`);
             } catch (error) {
               console.error(`🌟 [STAR_CLICK_DETAILED] ❌ Error calling queueBattlesForReorder:`, error);
             }
@@ -141,7 +141,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       localPendingState &&
       hadRefinementBattlesRef.current
     ) {
-      console.log(`🌟 [CLEANUP_TRACE] Clearing pending state for ${pokemon.name} - battles processed`);
+      console.log(`🌟 [CLEANUP_TRACE] (${context}) Cleared pending state for ${pokemon.name} (#${pokemon.id}) - battles processed`);
       setLocalPendingState(false);
       localStorage.removeItem(`pokemon-pending-${pokemon.id}`);
       hadRefinementBattlesRef.current = false;
