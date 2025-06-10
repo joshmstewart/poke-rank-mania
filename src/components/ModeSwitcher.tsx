@@ -18,58 +18,92 @@ const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ currentMode, onModeChange }
   const { getAllPendingIds, hasPendingPokemon, isHydrated } = useCloudPendingBattles();
 
   const handleModeChange = (mode: "rank" | "battle") => {
-    console.log(`🌥️ [MODE_DEBUG] ===== MODE SWITCH CLICKED =====`);
-    console.log(`🌥️ [MODE_DEBUG] From: ${currentMode} → To: ${mode}`);
-    console.log(`🌥️ [MODE_DEBUG] Timestamp: ${new Date().toISOString()}`);
-    console.log(`🌥️ [MODE_DEBUG] Is hydrated: ${isHydrated}`);
+    const debugId = `MODE_SWITCH_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
-    // Always get fresh pending data
+    console.log(`🔥🔥🔥 [${debugId}] ===== MODE SWITCH CLICKED =====`);
+    console.log(`🔥🔥🔥 [${debugId}] From: ${currentMode} → To: ${mode}`);
+    console.log(`🔥🔥🔥 [${debugId}] Timestamp: ${new Date().toISOString()}`);
+    console.log(`🔥🔥🔥 [${debugId}] Is hydrated: ${isHydrated}`);
+    
+    // DETAILED PENDING BATTLE ANALYSIS
     const pendingPokemon = getAllPendingIds();
     const hasPending = hasPendingPokemon;
     
-    console.log(`🌥️ [MODE_DEBUG] Fresh pending check:`, {
-      pendingPokemon: pendingPokemon,
-      count: pendingPokemon.length,
-      hasPending: hasPending
-    });
+    console.log(`🔥🔥🔥 [${debugId}] ===== PENDING BATTLE STATE ANALYSIS =====`);
+    console.log(`🔥🔥🔥 [${debugId}] Pending Pokemon IDs:`, pendingPokemon);
+    console.log(`🔥🔥🔥 [${debugId}] Count: ${pendingPokemon.length}`);
+    console.log(`🔥🔥🔥 [${debugId}] Has pending flag: ${hasPending}`);
+    console.log(`🔥🔥🔥 [${debugId}] Is switching to battle: ${mode === "battle"}`);
+    console.log(`🔥🔥🔥 [${debugId}] Should trigger event: ${mode === "battle" && hasPending}`);
     
     // Call the mode change first - this is critical for proper initialization
+    console.log(`🔥🔥🔥 [${debugId}] Calling onModeChange(${mode})`);
     onModeChange(mode);
+    console.log(`🔥🔥🔥 [${debugId}] onModeChange completed`);
     
     if (mode === "battle" && hasPending) {
-      console.log(`🌥️ [MODE_DEBUG] ⭐ SWITCHING TO BATTLE MODE WITH PENDING POKEMON!`);
+      console.log(`🔥🔥🔥 [${debugId}] ⭐ SWITCHING TO BATTLE MODE WITH PENDING POKEMON!`);
       
-      // CRITICAL FIX: Dispatch event AFTER mode change with actual pending data
+      // Multiple timing attempts to ensure event is received
+      const eventDetail = { 
+        pendingPokemon: pendingPokemon,
+        source: 'mode-switcher-cloud',
+        timestamp: Date.now(),
+        immediate: true,
+        debugId: debugId
+      };
+      
+      console.log(`🔥🔥🔥 [${debugId}] ===== DISPATCHING EVENTS =====`);
+      console.log(`🔥🔥🔥 [${debugId}] Event detail:`, eventDetail);
+      
+      // Immediate dispatch
+      console.log(`🔥🔥🔥 [${debugId}] Dispatching IMMEDIATE event`);
+      const immediateEvent = new CustomEvent('pending-battles-detected', {
+        detail: { ...eventDetail, timing: 'immediate' }
+      });
+      document.dispatchEvent(immediateEvent);
+      
+      // Short delay dispatch
       setTimeout(() => {
-        const eventDetail = { 
-          pendingPokemon: pendingPokemon,
-          source: 'mode-switcher-cloud',
-          timestamp: Date.now(),
-          immediate: true // Flag to indicate this should be processed immediately
-        };
-        
-        console.log(`🌥️ [MODE_DEBUG] ===== DISPATCHING EVENT AFTER MODE CHANGE =====`);
-        console.log(`🌥️ [MODE_DEBUG] Event detail:`, eventDetail);
-        
-        const event = new CustomEvent('pending-battles-detected', {
-          detail: eventDetail
+        console.log(`🔥🔥🔥 [${debugId}] Dispatching 100ms DELAYED event`);
+        const delayedEvent = new CustomEvent('pending-battles-detected', {
+          detail: { ...eventDetail, timing: '100ms-delay' }
         });
-        document.dispatchEvent(event);
-        console.log(`🌥️ [MODE_DEBUG] ✅ Event dispatched successfully after mode change`);
-      }, 200); // Increased delay to ensure battle mode is fully loaded
+        document.dispatchEvent(delayedEvent);
+      }, 100);
       
+      // Medium delay dispatch
+      setTimeout(() => {
+        console.log(`🔥🔥🔥 [${debugId}] Dispatching 500ms DELAYED event`);
+        const mediumDelayedEvent = new CustomEvent('pending-battles-detected', {
+          detail: { ...eventDetail, timing: '500ms-delay' }
+        });
+        document.dispatchEvent(mediumDelayedEvent);
+      }, 500);
+      
+      // Long delay dispatch
+      setTimeout(() => {
+        console.log(`🔥🔥🔥 [${debugId}] Dispatching 1000ms DELAYED event`);
+        const longDelayedEvent = new CustomEvent('pending-battles-detected', {
+          detail: { ...eventDetail, timing: '1000ms-delay' }
+        });
+        document.dispatchEvent(longDelayedEvent);
+      }, 1000);
+      
+      console.log(`🔥🔥🔥 [${debugId}] ✅ All events dispatched`);
       return;
     }
     
-    console.log(`🌥️ [MODE_DEBUG] Normal mode switch - no pending Pokemon or not switching to battle`);
+    console.log(`🔥🔥🔥 [${debugId}] Normal mode switch - no pending Pokemon or not switching to battle`);
   };
 
   // Debug render
-  console.log(`🌥️ [MODE_DEBUG] ModeSwitcher render:`, {
+  console.log(`🔥🔥🔥 [MODE_SWITCHER_RENDER] ModeSwitcher render:`, {
     currentMode,
     hasPendingPokemon,
     pendingCount: getAllPendingIds().length,
-    isHydrated
+    isHydrated,
+    timestamp: new Date().toISOString()
   });
 
   return (
