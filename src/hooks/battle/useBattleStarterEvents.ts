@@ -16,11 +16,13 @@ export const useBattleStarterEvents = (
   stableSetSelectedPokemon: (pokemon: number[]) => void
 ) => {
   const { getAllPendingIds, isHydrated } = useCloudPendingBattles();
+  
+  console.log(`🎯 [BATTLE_STARTER_EVENTS] Hook initialized - hydrated: ${isHydrated}`);
+  
   useEffect(() => {
-    console.log(
-      `🎯 [BATTLE_STARTER_EVENTS] Hydration status from pending hook: ${isHydrated}`
-    );
+    console.log(`🎯 [BATTLE_STARTER_EVENTS] Hydration status from pending hook: ${isHydrated}`);
   }, [isHydrated]);
+  
   const pendingCheckRef = useRef(false);
 
   // ENHANCED: Listen for specific pending battle events
@@ -92,39 +94,37 @@ export const useBattleStarterEvents = (
     };
   }, [getAllPendingIds, currentBattle.length, startNewBattleCallbackRef]);
 
-  // CRITICAL FIX: Check for pending Pokemon when battle mode initializes
+  // CRITICAL FIX: Check for pending Pokemon when battle mode initializes AND on every render
   useEffect(() => {
     if (filteredPokemon.length === 0) return;
-    if (!isHydrated || pendingCheckRef.current) return;
+    if (!isHydrated) return;
 
     const checkPendingOnInit = () => {
       const pendingIds = getAllPendingIds();
-      console.log(`🎯 [BATTLE_STARTER_EVENTS] Checking pending Pokemon on init: ${pendingIds}`);
+      console.log(`🎯🎯🎯 [BATTLE_STARTER_PENDING_CHECK] Checking pending Pokemon: ${pendingIds}`);
+      console.log(`🎯🎯🎯 [BATTLE_STARTER_PENDING_CHECK] Current battle length: ${currentBattle.length}`);
+      console.log(`🎯🎯🎯 [BATTLE_STARTER_PENDING_CHECK] Callback available: ${!!startNewBattleCallbackRef.current}`);
       
-      if (pendingIds && Array.isArray(pendingIds) && pendingIds.length > 0) {
-        console.log(`🎯 [BATTLE_STARTER_EVENTS] Found ${pendingIds.length} pending Pokemon, starting battle`);
-        
-        // Set flag to prevent duplicate checks
-        pendingCheckRef.current = true;
+      if (pendingIds && Array.isArray(pendingIds) && pendingIds.length > 0 && currentBattle.length === 0) {
+        console.log(`🎯🎯🎯 [BATTLE_STARTER_PENDING_CHECK] Found ${pendingIds.length} pending Pokemon, starting battle`);
         
         // Small delay to ensure all components are ready
         setTimeout(() => {
-          if (startNewBattleCallbackRef.current && currentBattle.length === 0) {
-            console.log(`🎯 [BATTLE_STARTER_EVENTS] Triggering battle for pending Pokemon`);
+          if (startNewBattleCallbackRef.current) {
+            console.log(`🎯🎯🎯 [BATTLE_STARTER_PENDING_CHECK] Triggering battle for pending Pokemon`);
             const result = startNewBattleCallbackRef.current("pairs");
-            console.log(`🎯 [BATTLE_STARTER_EVENTS] Battle result:`, result?.map(p => p.name));
+            console.log(`🎯🎯🎯 [BATTLE_STARTER_PENDING_CHECK] Battle result:`, result?.map(p => p.name));
           } else {
-            console.log(`🎯 [BATTLE_STARTER_EVENTS] Battle callback not ready or battle already exists`);
+            console.log(`🎯🎯🎯 [BATTLE_STARTER_PENDING_CHECK] Battle callback not ready`);
           }
         }, 100);
       } else {
-        console.log(`🎯 [BATTLE_STARTER_EVENTS] No pending Pokemon found on init`);
-        console.log(`🎯 [BATTLE_STARTER_EVENTS] pendingIds type: ${typeof pendingIds}, isArray: ${Array.isArray(pendingIds)}`);
-        pendingCheckRef.current = true;
+        console.log(`🎯🎯🎯 [BATTLE_STARTER_PENDING_CHECK] No pending Pokemon found or battle exists`);
+        console.log(`🎯🎯🎯 [BATTLE_STARTER_PENDING_CHECK] pendingIds: ${pendingIds}, currentBattle: ${currentBattle.length}`);
       }
     };
 
-    // Run the check immediately if hydrated
+    // Run the check
     checkPendingOnInit();
   }, [
     isHydrated,
@@ -132,7 +132,29 @@ export const useBattleStarterEvents = (
     currentBattle.length,
     startNewBattleCallbackRef,
     filteredPokemon.length,
+    // Add a dependency that changes when we should re-check
+    pendingCheckRef.current
   ]);
+
+  // NEW: Force check when switching to battle mode (no current battle)
+  useEffect(() => {
+    if (currentBattle.length === 0 && isHydrated && filteredPokemon.length > 0) {
+      console.log(`🎯🎯🎯 [BATTLE_MODE_SWITCH_CHECK] No current battle detected, checking for pending Pokemon`);
+      
+      const pendingIds = getAllPendingIds();
+      if (pendingIds && pendingIds.length > 0) {
+        console.log(`🎯🎯🎯 [BATTLE_MODE_SWITCH_CHECK] Found ${pendingIds.length} pending Pokemon on mode switch`);
+        
+        setTimeout(() => {
+          if (startNewBattleCallbackRef.current && currentBattle.length === 0) {
+            console.log(`🎯🎯🎯 [BATTLE_MODE_SWITCH_CHECK] Triggering battle for pending Pokemon`);
+            const result = startNewBattleCallbackRef.current("pairs");
+            console.log(`🎯🎯🎯 [BATTLE_MODE_SWITCH_CHECK] Battle result:`, result?.map(p => p.name));
+          }
+        }, 200);
+      }
+    }
+  }, [currentBattle.length, isHydrated, filteredPokemon.length, getAllPendingIds, startNewBattleCallbackRef]);
 
   // CRITICAL FIX: Auto-trigger first battle when no battle exists and we have Pokemon
   useEffect(() => {
@@ -170,47 +192,6 @@ export const useBattleStarterEvents = (
     startNewBattleCallbackRef,
     isHydrated,
     getAllPendingIds
-  ]);
-
-  // CRITICAL FIX: Listen for mode switch events and check for pending battles
-  useEffect(() => {
-    if (filteredPokemon.length === 0) return;
-    if (!isHydrated) return;
-    const handleModeSwitch = (event: CustomEvent) => {
-      console.log(`🎯 [BATTLE_STARTER_EVENTS] Mode switch detected:`, event.detail);
-      
-      if (event.detail?.mode === 'battle' && isHydrated) {
-        // Reset pending check flag when switching to battle mode
-        pendingCheckRef.current = false;
-        
-        // Check for pending Pokemon after mode switch
-        setTimeout(() => {
-          const pendingIds = getAllPendingIds();
-          console.log(`🎯 [BATTLE_STARTER_EVENTS] Post-switch pending check: ${pendingIds}`);
-          
-          if (pendingIds && Array.isArray(pendingIds) && pendingIds.length > 0 && currentBattle.length === 0) {
-            console.log(`🎯 [BATTLE_STARTER_EVENTS] Triggering battle after mode switch`);
-            if (startNewBattleCallbackRef.current) {
-              const result = startNewBattleCallbackRef.current("pairs");
-              console.log(`🎯 [BATTLE_STARTER_EVENTS] Post-switch battle result:`, result?.map(p => p.name));
-            }
-          }
-        }, 300);
-      }
-    };
-
-    // Listen for mode switch events
-    document.addEventListener('mode-switch', handleModeSwitch as EventListener);
-    
-    return () => {
-      document.removeEventListener('mode-switch', handleModeSwitch as EventListener);
-    };
-  }, [
-    getAllPendingIds,
-    currentBattle.length,
-    startNewBattleCallbackRef,
-    isHydrated,
-    filteredPokemon.length,
   ]);
 
   // Cleanup on unmount

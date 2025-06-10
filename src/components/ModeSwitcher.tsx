@@ -83,13 +83,24 @@ const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ currentMode, onModeChange }
         document.dispatchEvent(mediumDelayedEvent);
       }, 500);
       
-      // Long delay dispatch
+      // Long delay dispatch - CRITICAL ADDITION: Force battle check
       setTimeout(() => {
         console.log(`🔥🔥🔥 [${debugId}] Dispatching 1000ms DELAYED event`);
         const longDelayedEvent = new CustomEvent('pending-battles-detected', {
           detail: { ...eventDetail, timing: '1000ms-delay' }
         });
         document.dispatchEvent(longDelayedEvent);
+        
+        // CRITICAL ADDITION: Also dispatch a force-check event
+        console.log(`🔥🔥🔥 [${debugId}] Dispatching FORCE CHECK event`);
+        const forceCheckEvent = new CustomEvent('force-pending-battle-check', {
+          detail: { 
+            source: 'mode-switcher-force-check',
+            pendingPokemon: pendingPokemon,
+            debugId: debugId
+          }
+        });
+        document.dispatchEvent(forceCheckEvent);
       }, 1000);
       
       console.log(`🔥🔥🔥 [${debugId}] ✅ All events dispatched`);
