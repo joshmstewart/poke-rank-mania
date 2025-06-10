@@ -9,7 +9,7 @@ import { usePokemonFlavorText } from "@/hooks/pokemon/usePokemonFlavorText";
 import { usePokemonTCGCard } from "@/hooks/pokemon/usePokemonTCGCard";
 import { Badge } from "@/components/ui/badge";
 import { Crown, Star } from "lucide-react";
-import { useSharedRefinementQueue } from "@/hooks/battle/useSharedRefinementQueue";
+import { usePersistentPendingState } from "@/hooks/battle/usePersistentPendingState";
 
 interface DraggablePokemonMilestoneCardProps {
   pokemon: Pokemon | RankedPokemon;
@@ -34,30 +34,22 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
 }) => {
   const [isOpen, setIsOpen] = React.useState(false);
   const [isHovered, setIsHovered] = React.useState(false);
-  const [localPendingState, setLocalPendingState] = React.useState(() => {
-    const stored = localStorage.getItem(`pokemon-pending-${pokemon.id}`);
-    return stored === 'true';
-  });
-
-  // Get the refinement queue and functions directly
-  const refinementQueueHook = useSharedRefinementQueue();
   
-  // IMMEDIATE DEBUG: Log every render to see if component is working
-  console.log(`⭐⭐⭐ [IMMEDIATE_STAR_DEBUG] Pokemon ${pokemon.name} card rendered in ${context} mode`);
+  // Use the persistent pending state hook
+  const { isPokemonPending, addPendingPokemon } = usePersistentPendingState();
+  
+  console.log(`🔒⭐ [PERSISTENT_STAR_DEBUG] Pokemon ${pokemon.name} card rendered - Pending: ${isPokemonPending(pokemon.id)}`);
   
   const handlePrioritizeClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
     
-    // IMMEDIATE DEBUG: Log every click
-    console.log(`⭐⭐⭐ [IMMEDIATE_STAR_CLICK] ===== STAR CLICKED FOR ${pokemon.name} =====`);
-    console.log(`⭐⭐⭐ [IMMEDIATE_STAR_CLICK] Pokemon ID: ${pokemon.id}, Context: ${context}`);
-    console.log(`⭐⭐⭐ [IMMEDIATE_STAR_CLICK] Timestamp: ${new Date().toISOString()}`);
+    console.log(`🔒⭐ [PERSISTENT_STAR_CLICK] ===== STAR CLICKED FOR ${pokemon.name} =====`);
+    console.log(`🔒⭐ [PERSISTENT_STAR_CLICK] Pokemon ID: ${pokemon.id}, Context: ${context}`);
+    console.log(`🔒⭐ [PERSISTENT_STAR_CLICK] Timestamp: ${new Date().toISOString()}`);
     
-    // Always set pending state for immediate visual feedback
-    setLocalPendingState(true);
-    localStorage.setItem(`pokemon-pending-${pokemon.id}`, 'true');
-    console.log(`⭐⭐⭐ [IMMEDIATE_STAR_CLICK] Set localStorage pokemon-pending-${pokemon.id} = true`);
+    // Add to persistent pending state
+    addPendingPokemon(pokemon.id);
     
     // Dispatch immediate event to notify system
     const event = new CustomEvent('pokemon-starred-for-battle', {
@@ -69,11 +61,11 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       }
     });
     document.dispatchEvent(event);
-    console.log(`⭐⭐⭐ [IMMEDIATE_STAR_CLICK] Dispatched pokemon-starred-for-battle event`);
+    console.log(`🔒⭐ [PERSISTENT_STAR_CLICK] Dispatched pokemon-starred-for-battle event`);
   };
 
   // Check if this Pokemon has pending state
-  const isPendingRefinement = localPendingState;
+  const isPendingRefinement = isPokemonPending(pokemon.id);
 
   const sortableResult = useSortable({ 
     id: isDraggable ? (isAvailable ? `available-${pokemon.id}` : pokemon.id) : `static-${pokemon.id}`,
@@ -181,7 +173,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
           onPointerDown={(e) => {
             e.stopPropagation();
             e.preventDefault();
-            console.log(`⭐⭐⭐ [IMMEDIATE_STAR_DEBUG] onPointerDown called for ${pokemon.name}`);
+            console.log(`🔒⭐ [PERSISTENT_STAR_DEBUG] onPointerDown called for ${pokemon.name}`);
           }}
           onClick={handlePrioritizeClick}
           className={`absolute top-1/2 right-2 -translate-y-1/2 z-30 p-2 rounded-full transition-all duration-300 ${
