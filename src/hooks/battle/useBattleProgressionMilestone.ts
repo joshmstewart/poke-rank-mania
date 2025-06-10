@@ -4,10 +4,18 @@ import { useCallback, useRef } from "react";
 export const useBattleProgressionMilestone = (
   milestones: number[],
   generateRankings: (results: any[]) => void,
-  setShowingMilestone: (value: boolean) => void
+  setShowingMilestone: (value: boolean) => void,
+  initialBattlesCompleted: number
 ) => {
-  const milestoneTracker = useRef<Set<number>>(new Set());
-  const lastTriggeredMilestoneRef = useRef<number | null>(null);
+  const milestoneTracker = useRef<Set<number>>(
+    new Set(milestones.filter(m => m <= initialBattlesCompleted))
+  );
+  const lastTriggeredMilestoneRef = useRef<number | null>(
+    (() => {
+      const reached = milestones.filter(m => m <= initialBattlesCompleted);
+      return reached.length > 0 ? reached[reached.length - 1] : null;
+    })()
+  );
   const battleGenerationBlockedRef = useRef(false);
 
   const checkMilestone = useCallback((newBattlesCompleted: number, battleResults: any[]): boolean => {
