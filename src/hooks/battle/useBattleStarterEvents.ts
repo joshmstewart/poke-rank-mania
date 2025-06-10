@@ -19,7 +19,21 @@ export const useBattleStarterEvents = (
 
   // CRITICAL FIX: Check for pending Pokemon when battle mode initializes
   useEffect(() => {
-    if (!isHydrated || pendingCheckRef.current) return;
+    console.log(
+      `🔍 [BATTLE_STARTER_EVENTS] Init effect fired. isHydrated=${isHydrated}, pendingChecked=${pendingCheckRef.current}, filteredLength=${filteredPokemon.length}`
+    );
+    if (filteredPokemon.length === 0) {
+      console.log(
+        `🔍 [BATTLE_STARTER_EVENTS] Exiting init check early - no filtered Pokémon yet`
+      );
+      return;
+    }
+    if (!isHydrated || pendingCheckRef.current) {
+      console.log(
+        `🔍 [BATTLE_STARTER_EVENTS] Skipping init check - isHydrated=${isHydrated}, alreadyChecked=${pendingCheckRef.current}`
+      );
+      return;
+    }
 
     const checkPendingOnInit = () => {
       const pendingIds = getAllPendingIds();
@@ -49,7 +63,13 @@ export const useBattleStarterEvents = (
 
     // Run the check immediately if hydrated
     checkPendingOnInit();
-  }, [isHydrated, getAllPendingIds, currentBattle.length, startNewBattleCallbackRef]);
+  }, [
+    isHydrated,
+    getAllPendingIds,
+    currentBattle.length,
+    startNewBattleCallbackRef,
+    filteredPokemon.length,
+  ]);
 
   // CRITICAL FIX: Auto-trigger first battle when no battle exists and we have Pokemon
   useEffect(() => {
@@ -86,6 +106,21 @@ export const useBattleStarterEvents = (
 
   // CRITICAL FIX: Listen for mode switch events and check for pending battles
   useEffect(() => {
+    console.log(
+      `🔍 [BATTLE_STARTER_EVENTS] Mode switch listener effect fired. isHydrated=${isHydrated}, filteredLength=${filteredPokemon.length}`
+    );
+    if (filteredPokemon.length === 0) {
+      console.log(
+        `🔍 [BATTLE_STARTER_EVENTS] Exiting mode switch listener - no filtered Pokémon yet`
+      );
+      return;
+    }
+    if (!isHydrated) {
+      console.log(
+        `🔍 [BATTLE_STARTER_EVENTS] Mode switch listener waiting for hydration`
+      );
+      return;
+    }
     const handleModeSwitch = (event: CustomEvent) => {
       console.log(`🎯 [BATTLE_STARTER_EVENTS] Mode switch detected:`, event.detail);
       
@@ -115,7 +150,13 @@ export const useBattleStarterEvents = (
     return () => {
       document.removeEventListener('mode-switch', handleModeSwitch as EventListener);
     };
-  }, [getAllPendingIds, currentBattle.length, startNewBattleCallbackRef, isHydrated]);
+  }, [
+    getAllPendingIds,
+    currentBattle.length,
+    startNewBattleCallbackRef,
+    isHydrated,
+    filteredPokemon.length,
+  ]);
 
   // Cleanup on unmount
   useEffect(() => {
