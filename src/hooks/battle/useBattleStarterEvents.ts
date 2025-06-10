@@ -33,39 +33,56 @@ export const useBattleStarterEvents = (
       console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] Initial battle started: ${initialBattleStartedRef.current}`);
       console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] Initialization complete: ${initializationCompleteRef.current}`);
       
-      // DETAILED CONDITION ANALYSIS
+      // ULTRA-DETAILED CONDITION ANALYSIS
       const shouldForceStart = event.detail?.immediate === true || event.detail?.source === 'mode-switcher-cloud';
       const hasCallback = !!startNewBattleCallbackRef.current;
       const hasPokemon = filteredPokemon.length > 0;
       
-      console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] ===== DETAILED CONDITION ANALYSIS =====`);
+      console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] ===== ULTRA-DETAILED CONDITION ANALYSIS =====`);
       console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] event.detail?.immediate: ${event.detail?.immediate}`);
       console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] event.detail?.source: ${event.detail?.source}`);
       console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] shouldForceStart: ${shouldForceStart}`);
       console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] hasCallback: ${hasCallback}`);
       console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] hasPokemon: ${hasPokemon}`);
+      console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] startNewBattleCallbackRef.current type: ${typeof startNewBattleCallbackRef.current}`);
+      console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] startNewBattleCallbackRef.current value:`, startNewBattleCallbackRef.current);
       console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] ALL CONDITIONS MET: ${shouldForceStart && hasCallback && hasPokemon}`);
       
       if (shouldForceStart && hasCallback && hasPokemon) {
-        console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] ✅ ALL CONDITIONS MET - TRIGGERING NEW BATTLE`);
+        console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] ✅ ALL CONDITIONS MET - ATTEMPTING TO TRIGGER NEW BATTLE`);
         
         // Set all flags to ensure this works
         autoTriggerDisabledRef.current = true;
         initialBattleStartedRef.current = true;
         initializationCompleteRef.current = true;
         
-        console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] Flags set - calling startNewBattleCallback`);
+        console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] Flags set - about to call startNewBattleCallback`);
         console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] Calling with battle type: "pairs"`);
+        console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] Callback function details:`, {
+          exists: !!startNewBattleCallbackRef.current,
+          type: typeof startNewBattleCallbackRef.current,
+          isFunction: typeof startNewBattleCallbackRef.current === 'function',
+          name: startNewBattleCallbackRef.current?.name || 'anonymous',
+          toString: startNewBattleCallbackRef.current?.toString?.() || 'no toString'
+        });
         
         try {
+          console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] 🚀 CALLING startNewBattleCallbackRef.current("pairs")`);
           const result = startNewBattleCallbackRef.current("pairs");
-          console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] ✅ Battle callback completed`);
-          console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] Battle result:`, result?.map(p => `${p.name}(${p.id})`));
+          console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] 🚀 Battle callback returned:`, result);
+          console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] 🚀 Result type:`, typeof result);
+          console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] 🚀 Result is array:`, Array.isArray(result));
+          console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] 🚀 Result length:`, result?.length || 'no length');
           
           if (result && result.length > 0) {
-            console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] Setting current battle and clearing selected Pokemon`);
+            console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] 🚀 Battle result details:`, result.map(p => `${p.name}(${p.id})`));
+            console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] 🚀 Setting current battle and clearing selected Pokemon`);
+            
+            console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] 🚀 Calling stableSetCurrentBattle with:`, result);
             stableSetCurrentBattle(result);
+            console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] 🚀 Calling stableSetSelectedPokemon with: []`);
             stableSetSelectedPokemon([]);
+            
             console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] ✅ Battle set successfully - ${result.map(p => p.name).join(' vs ')}`);
             
             // Check if any of the pending Pokemon are in this battle
@@ -84,9 +101,15 @@ export const useBattleStarterEvents = (
             }
           } else {
             console.error(`🎯🎯🎯 [${hookId.current}][${eventId}] ❌ Battle callback returned empty/null result`);
+            console.error(`🎯🎯🎯 [${hookId.current}][${eventId}] ❌ This means the battle generation failed silently`);
           }
         } catch (error) {
           console.error(`🎯🎯🎯 [${hookId.current}][${eventId}] ❌ Error calling battle callback:`, error);
+          console.error(`🎯🎯🎯 [${hookId.current}][${eventId}] ❌ Error details:`, {
+            message: error.message,
+            stack: error.stack,
+            type: error.constructor.name
+          });
         }
       } else {
         console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] ❌ CONDITIONS NOT MET - NOT TRIGGERING BATTLE`);
@@ -104,6 +127,8 @@ export const useBattleStarterEvents = (
         
         if (!hasCallback) {
           console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] startNewBattleCallbackRef.current is null/undefined`);
+          console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] startNewBattleCallbackRef object:`, startNewBattleCallbackRef);
+          console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] startNewBattleCallbackRef.current:`, startNewBattleCallbackRef.current);
         }
         
         if (!hasPokemon) {
