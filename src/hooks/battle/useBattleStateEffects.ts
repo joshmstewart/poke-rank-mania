@@ -99,14 +99,7 @@ export const useBattleStateEffects = (
       // Start initial battle immediately without delay
       if (startNewBattle) {
         console.log(`🚀 [BATTLE_INIT_ULTRA_DEBUG] Calling startNewBattle`);
-        const config = {
-          allPokemon,
-          currentRankings: getCurrentRankings(),
-          battleType,
-          selectedGeneration,
-          freezeList: frozenPokemon
-        };
-        const initialBattle = startNewBattle(config);
+        const initialBattle = startNewBattle(battleType);
         if (initialBattle && initialBattle.length > 0) {
           console.log(`✅ [BATTLE_INIT_ULTRA_DEBUG] Initial battle created:`, initialBattle.map(p => p.name).join(' vs '));
           setCurrentBattle(initialBattle);
