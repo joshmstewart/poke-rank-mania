@@ -16,43 +16,59 @@ export const useBattleStarterEvents = (
   // Listen for pending battles detected from mode switcher
   useEffect(() => {
     const handlePendingBattlesDetected = (event: CustomEvent) => {
-      console.log(`🔍 [BATTLE_EVENTS_TRACE] ===== PENDING BATTLES DETECTED =====`);
-      console.log(`🔍 [BATTLE_EVENTS_TRACE] Event detail:`, event.detail);
-      console.log(`🔍 [BATTLE_EVENTS_TRACE] Current battle empty: ${currentBattle.length === 0}`);
-      console.log(`🔍 [BATTLE_EVENTS_TRACE] Callback available: ${!!startNewBattleCallbackRef.current}`);
+      console.log(`🔍 [BATTLE_EVENT_DEBUG] ===== PENDING BATTLES EVENT RECEIVED =====`);
+      console.log(`🔍 [BATTLE_EVENT_DEBUG] Event detail:`, event.detail);
+      console.log(`🔍 [BATTLE_EVENT_DEBUG] Current battle length: ${currentBattle.length}`);
+      console.log(`🔍 [BATTLE_EVENT_DEBUG] Callback available: ${!!startNewBattleCallbackRef.current}`);
+      console.log(`🔍 [BATTLE_EVENT_DEBUG] Filtered Pokemon count: ${filteredPokemon.length}`);
       
       // If we don't have a current battle and we have the callback, trigger a new battle
       if (currentBattle.length === 0 && startNewBattleCallbackRef.current) {
-        console.log(`🔍 [BATTLE_EVENTS_TRACE] ✅ Triggering new battle for pending Pokemon`);
-        const result = startNewBattleCallbackRef.current("pairs");
-        console.log(`🔍 [BATTLE_EVENTS_TRACE] ✅ Battle triggered result:`, result?.map(p => p.name));
+        console.log(`🔍 [BATTLE_EVENT_DEBUG] ✅ Conditions met - triggering new battle`);
         
-        if (result && result.length > 0) {
-          stableSetCurrentBattle(result);
-          stableSetSelectedPokemon([]);
-          console.log(`🔍 [BATTLE_EVENTS_TRACE] ✅ Battle set successfully`);
+        try {
+          const result = startNewBattleCallbackRef.current("pairs");
+          console.log(`🔍 [BATTLE_EVENT_DEBUG] ✅ Battle callback result:`, result?.map(p => p.name));
+          
+          if (result && result.length > 0) {
+            stableSetCurrentBattle(result);
+            stableSetSelectedPokemon([]);
+            console.log(`🔍 [BATTLE_EVENT_DEBUG] ✅ Battle set successfully - ${result.map(p => p.name).join(' vs ')}`);
+          } else {
+            console.error(`🔍 [BATTLE_EVENT_DEBUG] ❌ Battle callback returned empty/null result`);
+          }
+        } catch (error) {
+          console.error(`🔍 [BATTLE_EVENT_DEBUG] ❌ Error calling battle callback:`, error);
         }
       } else {
-        console.log(`🔍 [BATTLE_EVENTS_TRACE] ⚠️ Not triggering - current battle exists or no callback`);
+        console.log(`🔍 [BATTLE_EVENT_DEBUG] ⚠️ Not triggering battle:`, {
+          currentBattleExists: currentBattle.length > 0,
+          callbackAvailable: !!startNewBattleCallbackRef.current
+        });
       }
     };
 
+    console.log(`🔍 [BATTLE_EVENT_DEBUG] Setting up pending-battles-detected event listener`);
     document.addEventListener('pending-battles-detected', handlePendingBattlesDetected as EventListener);
     
     return () => {
+      console.log(`🔍 [BATTLE_EVENT_DEBUG] Removing pending-battles-detected event listener`);
       document.removeEventListener('pending-battles-detected', handlePendingBattlesDetected as EventListener);
     };
-  }, [currentBattle.length, startNewBattleCallbackRef, stableSetCurrentBattle, stableSetSelectedPokemon]);
+  }, [currentBattle.length, startNewBattleCallbackRef, stableSetCurrentBattle, stableSetSelectedPokemon, filteredPokemon.length]);
 
   // Listen for pokemon starred events
   useEffect(() => {
     const handlePokemonStarred = (event: CustomEvent) => {
-      console.log(`🔍 [BATTLE_EVENTS_TRACE] Pokemon starred event received:`, event.detail);
+      console.log(`🔍 [BATTLE_EVENT_DEBUG] ===== POKEMON STARRED EVENT RECEIVED =====`);
+      console.log(`🔍 [BATTLE_EVENT_DEBUG] Event detail:`, event.detail);
     };
 
+    console.log(`🔍 [BATTLE_EVENT_DEBUG] Setting up pokemon-starred-for-battle event listener`);
     document.addEventListener('pokemon-starred-for-battle', handlePokemonStarred as EventListener);
     
     return () => {
+      console.log(`🔍 [BATTLE_EVENT_DEBUG] Removing pokemon-starred-for-battle event listener`);
       document.removeEventListener('pokemon-starred-for-battle', handlePokemonStarred as EventListener);
     };
   }, []);
@@ -66,7 +82,7 @@ export const useBattleStarterEvents = (
       !autoTriggerDisabledRef.current &&
       !initializationCompleteRef.current
     ) {
-      console.log(`🎯 [BATTLE_STARTER_EVENTS] Setting up initialization timer - ${filteredPokemon.length} Pokemon available`);
+      console.log(`🔍 [BATTLE_EVENT_DEBUG] Setting up auto-initialization timer - ${filteredPokemon.length} Pokemon available`);
       
       if (initializationTimerRef.current) {
         clearTimeout(initializationTimerRef.current);
@@ -79,12 +95,12 @@ export const useBattleStarterEvents = (
           !initialBattleStartedRef.current &&
           startNewBattleCallbackRef.current
         ) {
-          console.log(`🎯 [BATTLE_STARTER_EVENTS] ✅ Auto-triggering initial battle`);
+          console.log(`🔍 [BATTLE_EVENT_DEBUG] ✅ Auto-triggering initial battle`);
           initialBattleStartedRef.current = true;
           initializationCompleteRef.current = true;
           
           const result = startNewBattleCallbackRef.current("pairs");
-          console.log(`🎯 [BATTLE_STARTER_EVENTS] Initial battle result:`, result?.map(p => p.name));
+          console.log(`🔍 [BATTLE_EVENT_DEBUG] Auto-trigger battle result:`, result?.map(p => p.name));
         }
       }, 2000);
     }

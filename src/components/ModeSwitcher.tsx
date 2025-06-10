@@ -18,39 +18,57 @@ const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ currentMode, onModeChange }
   const { getAllPendingIds, hasPendingPokemon } = usePersistentPendingState();
 
   const handleModeChange = (mode: "rank" | "battle") => {
-    console.log(`🔍 [MODE_SWITCH_TRACE] ===== MODE SWITCH BUTTON CLICKED =====`);
-    console.log(`🔍 [MODE_SWITCH_TRACE] From: ${currentMode} → To: ${mode}`);
-    console.log(`🔍 [MODE_SWITCH_TRACE] Timestamp: ${new Date().toISOString()}`);
+    console.log(`🔍 [MODE_DEBUG] ===== MODE SWITCH CLICKED =====`);
+    console.log(`🔍 [MODE_DEBUG] From: ${currentMode} → To: ${mode}`);
+    console.log(`🔍 [MODE_DEBUG] Timestamp: ${new Date().toISOString()}`);
     
-    // Get pending Pokemon from persistent state
+    // Always get fresh pending data
     const pendingPokemon = getAllPendingIds();
-    console.log(`🔍 [MODE_SWITCH_TRACE] ✅ Found ${pendingPokemon.length} pending Pokemon:`, pendingPokemon);
+    const hasPending = hasPendingPokemon;
     
-    if (mode === "battle" && hasPendingPokemon) {
-      console.log(`🔍 [MODE_SWITCH_TRACE] ⭐ SWITCHING TO BATTLE MODE WITH PENDING POKEMON!`);
+    console.log(`🔍 [MODE_DEBUG] Fresh pending check:`, {
+      pendingPokemon: pendingPokemon,
+      count: pendingPokemon.length,
+      hasPending: hasPending
+    });
+    
+    if (mode === "battle" && hasPending) {
+      console.log(`🔍 [MODE_DEBUG] ⭐ SWITCHING TO BATTLE MODE WITH PENDING POKEMON!`);
       
       // Call the mode change first
       onModeChange(mode);
       
       // Dispatch event to notify battle system
       setTimeout(() => {
+        const eventDetail = { 
+          pendingPokemon: pendingPokemon,
+          source: 'mode-switcher-persistent',
+          timestamp: Date.now()
+        };
+        
+        console.log(`🔍 [MODE_DEBUG] ===== DISPATCHING EVENT =====`);
+        console.log(`🔍 [MODE_DEBUG] Event detail:`, eventDetail);
+        
         const event = new CustomEvent('pending-battles-detected', {
-          detail: { 
-            pendingPokemon: pendingPokemon,
-            source: 'mode-switcher-persistent',
-            timestamp: Date.now()
-          }
+          detail: eventDetail
         });
         document.dispatchEvent(event);
-        console.log(`🔍 [MODE_SWITCH_TRACE] ✅ Dispatched pending-battles-detected event`);
+        console.log(`🔍 [MODE_DEBUG] ✅ Event dispatched successfully`);
       }, 100);
       
       return;
     }
     
-    console.log(`🔍 [MODE_SWITCH_TRACE] Normal mode switch, no pending Pokemon`);
+    console.log(`🔍 [MODE_DEBUG] Normal mode switch - no pending Pokemon or not switching to battle`);
     onModeChange(mode);
   };
+
+  // Debug render
+  console.log(`🔍 [MODE_DEBUG] ModeSwitcher render:`, {
+    currentMode,
+    hasPendingPokemon,
+    pendingCount: getAllPendingIds().length
+  });
 
   return (
     <TooltipProvider>

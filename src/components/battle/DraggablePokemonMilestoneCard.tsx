@@ -38,30 +38,33 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   // Use the persistent pending state hook
   const { isPokemonPending, addPendingPokemon } = usePersistentPendingState();
   
-  console.log(`🔍 [STAR_TRACE] Pokemon ${pokemon.name} card rendered - Pending: ${isPokemonPending(pokemon.id)}`);
+  console.log(`🔍 [CARD_DEBUG] ${pokemon.name} card render - Pending: ${isPokemonPending(pokemon.id)}`);
   
   const handlePrioritizeClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
     
-    console.log(`🔍 [STAR_TRACE] ===== STAR CLICKED FOR ${pokemon.name} =====`);
-    console.log(`🔍 [STAR_TRACE] Pokemon ID: ${pokemon.id}, Context: ${context}`);
-    console.log(`🔍 [STAR_TRACE] Timestamp: ${new Date().toISOString()}`);
+    console.log(`🔍 [CARD_DEBUG] ===== STAR CLICKED FOR ${pokemon.name} =====`);
+    console.log(`🔍 [CARD_DEBUG] Pokemon ID: ${pokemon.id}, Context: ${context}`);
+    console.log(`🔍 [CARD_DEBUG] Timestamp: ${new Date().toISOString()}`);
     
     // Add to persistent pending state
     addPendingPokemon(pokemon.id);
     
     // Dispatch immediate event to notify system
+    const eventDetail = { 
+      pokemonId: pokemon.id,
+      pokemonName: pokemon.name,
+      context: context,
+      timestamp: Date.now()
+    };
+    
+    console.log(`🔍 [CARD_DEBUG] Dispatching pokemon-starred-for-battle event:`, eventDetail);
     const event = new CustomEvent('pokemon-starred-for-battle', {
-      detail: { 
-        pokemonId: pokemon.id,
-        pokemonName: pokemon.name,
-        context: context,
-        timestamp: Date.now()
-      }
+      detail: eventDetail
     });
     document.dispatchEvent(event);
-    console.log(`🔍 [STAR_TRACE] ✅ Dispatched pokemon-starred-for-battle event`);
+    console.log(`🔍 [CARD_DEBUG] ✅ Event dispatched successfully`);
   };
 
   // Check if this Pokemon has pending state
@@ -173,7 +176,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
           onPointerDown={(e) => {
             e.stopPropagation();
             e.preventDefault();
-            console.log(`🔍 [STAR_TRACE] onPointerDown called for ${pokemon.name}`);
+            console.log(`🔍 [CARD_DEBUG] onPointerDown called for ${pokemon.name}`);
           }}
           onClick={handlePrioritizeClick}
           className={`absolute top-1/2 right-2 -translate-y-1/2 z-30 p-2 rounded-full transition-all duration-300 ${
