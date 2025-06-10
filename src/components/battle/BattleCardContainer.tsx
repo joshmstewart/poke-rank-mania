@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useRef, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Pokemon } from "@/services/pokemon";
@@ -13,6 +12,7 @@ import BattleCardInteractions from "./BattleCardInteractions";
 import { Star } from "lucide-react";
 import { useSharedRefinementQueue } from "@/hooks/battle/useSharedRefinementQueue";
 import { usePokemonContext } from "@/contexts/PokemonContext";
+import { useCloudPendingBattles } from "@/hooks/battle/useCloudPendingBattles";
 
 interface BattleCardContainerProps {
   pokemon: Pokemon;
@@ -36,10 +36,9 @@ const BattleCardContainer: React.FC<BattleCardContainerProps> = ({
   const lastClickTimeRef = useRef(0);
   const [isHovered, setIsHovered] = useState(false);
 
-  const [localPendingState, setLocalPendingState] = useState(() => {
-    const stored = localStorage.getItem(`pokemon-pending-${pokemon.id}`);
-    return stored === 'true';
-  });
+  // CRITICAL FIX: Use cloud pending battles instead of local state
+  const { isPokemonPending, addPendingPokemon, removePendingPokemon } = useCloudPendingBattles();
+  const isPendingRefinement = isPokemonPending(pokemon.id);
 
   const { refinementQueue, hasRefinementBattles, queueBattlesForReorder } = useSharedRefinementQueue();
   const { allPokemon } = usePokemonContext();
@@ -49,10 +48,6 @@ const BattleCardContainer: React.FC<BattleCardContainerProps> = ({
     Array.isArray(refinementQueue) &&
     typeof hasRefinementBattles === 'boolean'
   );
-
-  const isPendingRefinement = contextAvailable
-    ? refinementQueue.some(b => b.primaryPokemonId === pokemon.id) || localPendingState
-    : localPendingState;
 
   const hadRefinementBattlesRef = useRef(false);
 
@@ -66,15 +61,14 @@ const BattleCardContainer: React.FC<BattleCardContainerProps> = ({
     if (
       contextAvailable &&
       hasRefinementBattles === false &&
-      localPendingState &&
+      isPendingRefinement &&
       hadRefinementBattlesRef.current
     ) {
       console.log(`🌟 [CLEANUP_TRACE] Cleared pending state for ${pokemon.name} (#${pokemon.id}) - battles processed`);
-      setLocalPendingState(false);
-      localStorage.removeItem(`pokemon-pending-${pokemon.id}`);
+      removePendingPokemon(pokemon.id);
       hadRefinementBattlesRef.current = false;
     }
-  }, [contextAvailable, hasRefinementBattles, localPendingState, pokemon.id]);
+  }, [contextAvailable, hasRefinementBattles, isPendingRefinement, pokemon.id, removePendingPokemon]);
 
   // Hooks for modal content - match manual mode approach
   const { flavorText, isLoadingFlavor } = usePokemonFlavorText(pokemon.id, isOpen);
@@ -144,13 +138,12 @@ const BattleCardContainer: React.FC<BattleCardContainerProps> = ({
     e.stopPropagation();
     e.preventDefault();
 
-    console.log(`⭐ [STAR_TOGGLE] Star clicked for ${pokemon.name} - current pending: ${isPendingRefinement}`);
+    console.log(`⭐ [STAR_TOGGLE_FIXED] Star clicked for ${pokemon.name} - current pending: ${isPendingRefinement}`);
 
     if (!isPendingRefinement) {
-      // Add to pending state
-      console.log(`⭐ [STAR_TOGGLE] Adding ${pokemon.name} to pending state`);
-      setLocalPendingState(true);
-      localStorage.setItem(`pokemon-pending-${pokemon.id}`, 'true');
+      // CRITICAL FIX: Use cloud pending system
+      console.log(`⭐ [STAR_TOGGLE_FIXED] Adding ${pokemon.name} to CLOUD pending state`);
+      addPendingPokemon(pokemon.id);
 
       if (contextAvailable && allPokemon.length > 1) {
         const pool = allPokemon.filter(p => p.id !== pokemon.id);
@@ -169,13 +162,9 @@ const BattleCardContainer: React.FC<BattleCardContainerProps> = ({
         }
       }
     } else {
-      // Remove from pending state
-      console.log(`⭐ [STAR_TOGGLE] Removing ${pokemon.name} from pending state`);
-      setLocalPendingState(false);
-      localStorage.removeItem(`pokemon-pending-${pokemon.id}`);
-      
-      // TODO: Also remove from refinement queue if present
-      // This would require a method to remove specific battles from the queue
+      // CRITICAL FIX: Use cloud pending system
+      console.log(`⭐ [STAR_TOGGLE_FIXED] Removing ${pokemon.name} from CLOUD pending state`);
+      removePendingPokemon(pokemon.id);
     }
   };
 

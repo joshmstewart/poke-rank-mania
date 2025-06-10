@@ -1,4 +1,3 @@
-
 import React, { memo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Pokemon } from "@/services/pokemon";
@@ -16,6 +15,7 @@ import { usePokemonFlavorText } from "@/hooks/pokemon/usePokemonFlavorText";
 import { Star } from "lucide-react";
 import { useSharedRefinementQueue } from "@/hooks/battle/useSharedRefinementQueue";
 import { usePokemonContext } from "@/contexts/PokemonContext";
+import { useCloudPendingBattles } from "@/hooks/battle/useCloudPendingBattles";
 
 interface TCGBattleCardProps {
   pokemon: Pokemon;
@@ -42,10 +42,9 @@ const TCGBattleCard: React.FC<TCGBattleCardProps> = memo(({
     setCurrentImageMode
   } = useTCGBattleCardState();
 
-  const [localPendingState, setLocalPendingState] = React.useState(() => {
-    const stored = localStorage.getItem(`pokemon-pending-${pokemon.id}`);
-    return stored === 'true';
-  });
+  // CRITICAL FIX: Use cloud pending battles instead of local state
+  const { isPokemonPending, addPendingPokemon, removePendingPokemon } = useCloudPendingBattles();
+  const isPendingRefinement = isPokemonPending(pokemon.id);
 
   const { refinementQueue, hasRefinementBattles, queueBattlesForReorder } = useSharedRefinementQueue();
   const { allPokemon } = usePokemonContext();
@@ -55,10 +54,6 @@ const TCGBattleCard: React.FC<TCGBattleCardProps> = memo(({
     Array.isArray(refinementQueue) &&
     typeof hasRefinementBattles === 'boolean'
   );
-
-  const isPendingRefinement = contextAvailable
-    ? refinementQueue.some(b => b.primaryPokemonId === pokemon.id) || localPendingState
-    : localPendingState;
 
   const hadRefinementBattlesRef = React.useRef(false);
 
@@ -72,14 +67,13 @@ const TCGBattleCard: React.FC<TCGBattleCardProps> = memo(({
     if (
       contextAvailable &&
       hasRefinementBattles === false &&
-      localPendingState &&
+      isPendingRefinement &&
       hadRefinementBattlesRef.current
     ) {
-      setLocalPendingState(false);
-      localStorage.removeItem(`pokemon-pending-${pokemon.id}`);
+      removePendingPokemon(pokemon.id);
       hadRefinementBattlesRef.current = false;
     }
-  }, [contextAvailable, hasRefinementBattles, localPendingState, pokemon.id]);
+  }, [contextAvailable, hasRefinementBattles, isPendingRefinement, pokemon.id, removePendingPokemon]);
 
   const { tcgCard, isLoading: isLoadingTCG, hasTcgCard } = usePokemonTCGCard(pokemon.name, true);
   const displayName = pokemon.name;
@@ -148,13 +142,12 @@ const TCGBattleCard: React.FC<TCGBattleCardProps> = memo(({
     e.stopPropagation();
     e.preventDefault();
 
-    console.log(`⭐ [TCG_STAR_TOGGLE] Star clicked for ${pokemon.name} - current pending: ${isPendingRefinement}`);
+    console.log(`⭐ [TCG_STAR_TOGGLE_FIXED] Star clicked for ${pokemon.name} - current pending: ${isPendingRefinement}`);
 
     if (!isPendingRefinement) {
-      // Add to pending state
-      console.log(`⭐ [TCG_STAR_TOGGLE] Adding ${pokemon.name} to pending state`);
-      setLocalPendingState(true);
-      localStorage.setItem(`pokemon-pending-${pokemon.id}`, 'true');
+      // CRITICAL FIX: Use cloud pending system
+      console.log(`⭐ [TCG_STAR_TOGGLE_FIXED] Adding ${pokemon.name} to CLOUD pending state`);
+      addPendingPokemon(pokemon.id);
 
       if (contextAvailable && allPokemon.length > 1) {
         const pool = allPokemon.filter(p => p.id !== pokemon.id);
@@ -171,13 +164,9 @@ const TCGBattleCard: React.FC<TCGBattleCardProps> = memo(({
         }
       }
     } else {
-      // Remove from pending state
-      console.log(`⭐ [TCG_STAR_TOGGLE] Removing ${pokemon.name} from pending state`);
-      setLocalPendingState(false);
-      localStorage.removeItem(`pokemon-pending-${pokemon.id}`);
-      
-      // TODO: Also remove from refinement queue if present
-      // This would require a method to remove specific battles from the queue
+      // CRITICAL FIX: Use cloud pending system
+      console.log(`⭐ [TCG_STAR_TOGGLE_FIXED] Removing ${pokemon.name} from CLOUD pending state`);
+      removePendingPokemon(pokemon.id);
     }
   };
 
