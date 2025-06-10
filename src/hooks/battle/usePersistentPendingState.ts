@@ -69,9 +69,11 @@ class PendingStateManager {
     this.listeners.forEach(listener => listener());
   }
 
-  public addListener(listener: () => void) {
+  public addListener(listener: () => void): () => void {
     this.listeners.add(listener);
-    return () => this.listeners.delete(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
   }
 
   public addPokemon(pokemonId: number) {
