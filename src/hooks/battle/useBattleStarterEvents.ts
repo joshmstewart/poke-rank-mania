@@ -16,6 +16,11 @@ export const useBattleStarterEvents = (
   stableSetSelectedPokemon: (pokemon: number[]) => void
 ) => {
   const { getAllPendingIds, isHydrated } = useCloudPendingBattles();
+  useEffect(() => {
+    console.log(
+      `🎯 [BATTLE_STARTER_EVENTS] Hydration status from pending hook: ${isHydrated}`
+    );
+  }, [isHydrated]);
   const pendingCheckRef = useRef(false);
 
   // CRITICAL FIX: Check for pending Pokemon when battle mode initializes
