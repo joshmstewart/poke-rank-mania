@@ -12,6 +12,7 @@ import BattleCardInfo from "./BattleCardInfo";
 import BattleCardInteractions from "./BattleCardInteractions";
 import { Star } from "lucide-react";
 import { useSharedRefinementQueue } from "@/hooks/battle/useSharedRefinementQueue";
+import { usePokemonContext } from "@/contexts/PokemonContext";
 
 interface BattleCardContainerProps {
   pokemon: Pokemon;
@@ -40,7 +41,8 @@ const BattleCardContainer: React.FC<BattleCardContainerProps> = ({
     return stored === 'true';
   });
 
-  const { refinementQueue, hasRefinementBattles } = useSharedRefinementQueue();
+  const { refinementQueue, hasRefinementBattles, queueBattlesForReorder } = useSharedRefinementQueue();
+  const { allPokemon } = usePokemonContext();
 
   const contextAvailable = Boolean(
     refinementQueue &&
@@ -52,10 +54,24 @@ const BattleCardContainer: React.FC<BattleCardContainerProps> = ({
     ? refinementQueue.some(b => b.primaryPokemonId === pokemon.id) || localPendingState
     : localPendingState;
 
+  const hadRefinementBattlesRef = useRef(false);
+
   useEffect(() => {
-    if (contextAvailable && hasRefinementBattles === false && localPendingState) {
+    if (hasRefinementBattles) {
+      hadRefinementBattlesRef.current = true;
+    }
+  }, [hasRefinementBattles]);
+
+  useEffect(() => {
+    if (
+      contextAvailable &&
+      hasRefinementBattles === false &&
+      localPendingState &&
+      hadRefinementBattlesRef.current
+    ) {
       setLocalPendingState(false);
       localStorage.removeItem(`pokemon-pending-${pokemon.id}`);
+      hadRefinementBattlesRef.current = false;
     }
   }, [contextAvailable, hasRefinementBattles, localPendingState, pokemon.id]);
 
@@ -130,6 +146,21 @@ const BattleCardContainer: React.FC<BattleCardContainerProps> = ({
     if (!isPendingRefinement) {
       setLocalPendingState(true);
       localStorage.setItem(`pokemon-pending-${pokemon.id}`, 'true');
+
+      if (contextAvailable && allPokemon.length > 1) {
+        const pool = allPokemon.filter(p => p.id !== pokemon.id);
+        const opponents: number[] = [];
+        const copy = [...pool];
+        while (opponents.length < 3 && copy.length > 0) {
+          const rand = Math.floor(Math.random() * copy.length);
+          opponents.push(copy.splice(rand, 1)[0].id);
+        }
+        try {
+          queueBattlesForReorder(pokemon.id, opponents, -1);
+        } catch (error) {
+          console.error('Failed to queue refinement battles from battle card', error);
+        }
+      }
     } else {
       setLocalPendingState(false);
       localStorage.removeItem(`pokemon-pending-${pokemon.id}`);
