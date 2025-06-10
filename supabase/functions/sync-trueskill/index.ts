@@ -23,14 +23,11 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { sessionId, ratings, totalBattles, lastUpdated } = await req.json();
+    const { sessionId, ratings, totalBattles, pendingBattles, lastUpdated } = await req.json();
 
-    if (!sessionId || typeof sessionId !== 'string') {
+    if (!sessionId) {
       return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: 'Session ID is required'
-        }),
+        JSON.stringify({ success: false, error: 'Session ID is required' }),
         { 
           status: 400, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -38,45 +35,31 @@ Deno.serve(async (req) => {
       );
     }
 
-    if (!ratings || typeof ratings !== 'object') {
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: 'Ratings data is required'
-        }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      );
-    }
-
-    console.log(`[Edge Function syncTrueSkill] Syncing data for sessionId: ${sessionId} with ${Object.keys(ratings).length} ratings, ${totalBattles || 0} total battles`);
+    console.log(`[Edge Function syncTrueSkill] Syncing sessionId: ${sessionId} with ${Object.keys(ratings || {}).length} ratings, ${totalBattles || 0} battles, ${(pendingBattles || []).length} pending battles`);
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // First try to update existing record
-    const { data: updateData, error: updateError } = await supabase
+    // Upsert the session data
+    const { data, error } = await supabase
       .from('trueskill_sessions')
-      .update({
-        ratings_data: ratings,
+      .upsert({
+        session_id: sessionId,
+        ratings_data: ratings || {},
         total_battles: totalBattles || 0,
+        pending_battles: pendingBattles || [],
         last_updated: lastUpdated || new Date().toISOString()
+      }, {
+        onConflict: 'session_id'
       })
-      .eq('session_id', sessionId)
-      .select()
-      .maybeSingle();
+      .select();
 
-    if (updateError) {
-      console.error('[Edge Function syncTrueSkill] Update error:', updateError);
+    if (error) {
+      console.error('[Edge Function syncTrueSkill] Supabase error:', error);
       return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: 'Database update error'
-        }),
+        JSON.stringify({ success: false, error: 'Database error' }),
         { 
           status: 500, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -84,41 +67,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    // If no record was updated, create a new one
-    if (!updateData) {
-      console.log(`[Edge Function syncTrueSkill] No existing record found, creating new one for sessionId: ${sessionId}`);
-      
-      const { error: insertError } = await supabase
-        .from('trueskill_sessions')
-        .insert({
-          session_id: sessionId,
-          ratings_data: ratings,
-          total_battles: totalBattles || 0,
-          last_updated: lastUpdated || new Date().toISOString()
-        });
-
-      if (insertError) {
-        console.error('[Edge Function syncTrueSkill] Insert error:', insertError);
-        return new Response(
-          JSON.stringify({ 
-            success: false, 
-            error: 'Database insert error'
-          }),
-          { 
-            status: 500, 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          }
-        );
-      }
-    }
-
     console.log(`[Edge Function syncTrueSkill] Successfully synced data for sessionId: ${sessionId}`);
 
     return new Response(
-      JSON.stringify({
-        success: true,
-        message: 'Data synced successfully'
-      }),
+      JSON.stringify({ success: true, data }),
       { 
         status: 200, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -128,10 +80,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('[Edge Function syncTrueSkill] Unexpected error:', error);
     return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: 'Internal server error'
-      }),
+      JSON.stringify({ success: false, error: 'Internal server error' }),
       { 
         status: 500, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }

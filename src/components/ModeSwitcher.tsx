@@ -7,7 +7,7 @@ import {
   TooltipProvider,
   TooltipTrigger 
 } from "@/components/ui/tooltip";
-import { usePersistentPendingState } from "@/hooks/battle/usePersistentPendingState";
+import { useCloudPendingBattles } from "@/hooks/battle/useCloudPendingBattles";
 
 interface ModeSwitcherProps {
   currentMode: "rank" | "battle";
@@ -15,25 +15,26 @@ interface ModeSwitcherProps {
 }
 
 const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ currentMode, onModeChange }) => {
-  const { getAllPendingIds, hasPendingPokemon } = usePersistentPendingState();
+  const { getAllPendingIds, hasPendingPokemon, isHydrated } = useCloudPendingBattles();
 
   const handleModeChange = (mode: "rank" | "battle") => {
-    console.log(`🔍 [MODE_DEBUG] ===== MODE SWITCH CLICKED =====`);
-    console.log(`🔍 [MODE_DEBUG] From: ${currentMode} → To: ${mode}`);
-    console.log(`🔍 [MODE_DEBUG] Timestamp: ${new Date().toISOString()}`);
+    console.log(`🌥️ [MODE_DEBUG] ===== MODE SWITCH CLICKED =====`);
+    console.log(`🌥️ [MODE_DEBUG] From: ${currentMode} → To: ${mode}`);
+    console.log(`🌥️ [MODE_DEBUG] Timestamp: ${new Date().toISOString()}`);
+    console.log(`🌥️ [MODE_DEBUG] Is hydrated: ${isHydrated}`);
     
     // Always get fresh pending data
     const pendingPokemon = getAllPendingIds();
     const hasPending = hasPendingPokemon;
     
-    console.log(`🔍 [MODE_DEBUG] Fresh pending check:`, {
+    console.log(`🌥️ [MODE_DEBUG] Fresh pending check:`, {
       pendingPokemon: pendingPokemon,
       count: pendingPokemon.length,
       hasPending: hasPending
     });
     
     if (mode === "battle" && hasPending) {
-      console.log(`🔍 [MODE_DEBUG] ⭐ SWITCHING TO BATTLE MODE WITH PENDING POKEMON!`);
+      console.log(`🌥️ [MODE_DEBUG] ⭐ SWITCHING TO BATTLE MODE WITH PENDING POKEMON!`);
       
       // Call the mode change first
       onModeChange(mode);
@@ -42,32 +43,33 @@ const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ currentMode, onModeChange }
       setTimeout(() => {
         const eventDetail = { 
           pendingPokemon: pendingPokemon,
-          source: 'mode-switcher-persistent',
+          source: 'mode-switcher-cloud',
           timestamp: Date.now()
         };
         
-        console.log(`🔍 [MODE_DEBUG] ===== DISPATCHING EVENT =====`);
-        console.log(`🔍 [MODE_DEBUG] Event detail:`, eventDetail);
+        console.log(`🌥️ [MODE_DEBUG] ===== DISPATCHING EVENT =====`);
+        console.log(`🌥️ [MODE_DEBUG] Event detail:`, eventDetail);
         
         const event = new CustomEvent('pending-battles-detected', {
           detail: eventDetail
         });
         document.dispatchEvent(event);
-        console.log(`🔍 [MODE_DEBUG] ✅ Event dispatched successfully`);
+        console.log(`🌥️ [MODE_DEBUG] ✅ Event dispatched successfully`);
       }, 100);
       
       return;
     }
     
-    console.log(`🔍 [MODE_DEBUG] Normal mode switch - no pending Pokemon or not switching to battle`);
+    console.log(`🌥️ [MODE_DEBUG] Normal mode switch - no pending Pokemon or not switching to battle`);
     onModeChange(mode);
   };
 
   // Debug render
-  console.log(`🔍 [MODE_DEBUG] ModeSwitcher render:`, {
+  console.log(`🌥️ [MODE_DEBUG] ModeSwitcher render:`, {
     currentMode,
     hasPendingPokemon,
-    pendingCount: getAllPendingIds().length
+    pendingCount: getAllPendingIds().length,
+    isHydrated
   });
 
   return (

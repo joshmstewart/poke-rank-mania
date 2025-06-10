@@ -9,7 +9,7 @@ import { usePokemonFlavorText } from "@/hooks/pokemon/usePokemonFlavorText";
 import { usePokemonTCGCard } from "@/hooks/pokemon/usePokemonTCGCard";
 import { Badge } from "@/components/ui/badge";
 import { Crown, Star } from "lucide-react";
-import { usePersistentPendingState } from "@/hooks/battle/usePersistentPendingState";
+import { useCloudPendingBattles } from "@/hooks/battle/useCloudPendingBattles";
 
 interface DraggablePokemonMilestoneCardProps {
   pokemon: Pokemon | RankedPokemon;
@@ -35,36 +35,26 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   const [isOpen, setIsOpen] = React.useState(false);
   const [isHovered, setIsHovered] = React.useState(false);
   
-  // Use the persistent pending state hook
-  const { isPokemonPending, addPendingPokemon } = usePersistentPendingState();
+  // Use the cloud-based pending state hook
+  const { isPokemonPending, addPendingPokemon, isHydrated } = useCloudPendingBattles();
   
-  console.log(`🔍 [CARD_DEBUG] ${pokemon.name} card render - Pending: ${isPokemonPending(pokemon.id)}`);
+  console.log(`🌥️ [CARD_DEBUG] ${pokemon.name} card render - Pending: ${isPokemonPending(pokemon.id)}, Hydrated: ${isHydrated}`);
   
   const handlePrioritizeClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
     
-    console.log(`🔍 [CARD_DEBUG] ===== STAR CLICKED FOR ${pokemon.name} =====`);
-    console.log(`🔍 [CARD_DEBUG] Pokemon ID: ${pokemon.id}, Context: ${context}`);
-    console.log(`🔍 [CARD_DEBUG] Timestamp: ${new Date().toISOString()}`);
+    console.log(`🌥️ [CARD_DEBUG] ===== STAR CLICKED FOR ${pokemon.name} =====`);
+    console.log(`🌥️ [CARD_DEBUG] Pokemon ID: ${pokemon.id}, Context: ${context}`);
+    console.log(`🌥️ [CARD_DEBUG] Timestamp: ${new Date().toISOString()}`);
     
-    // Add to persistent pending state
+    if (!isHydrated) {
+      console.warn(`🌥️ [CARD_DEBUG] ⚠️ Store not hydrated yet, skipping action`);
+      return;
+    }
+    
+    // Add to cloud-based pending state
     addPendingPokemon(pokemon.id);
-    
-    // Dispatch immediate event to notify system
-    const eventDetail = { 
-      pokemonId: pokemon.id,
-      pokemonName: pokemon.name,
-      context: context,
-      timestamp: Date.now()
-    };
-    
-    console.log(`🔍 [CARD_DEBUG] Dispatching pokemon-starred-for-battle event:`, eventDetail);
-    const event = new CustomEvent('pokemon-starred-for-battle', {
-      detail: eventDetail
-    });
-    document.dispatchEvent(event);
-    console.log(`🔍 [CARD_DEBUG] ✅ Event dispatched successfully`);
   };
 
   // Check if this Pokemon has pending state
@@ -176,7 +166,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
           onPointerDown={(e) => {
             e.stopPropagation();
             e.preventDefault();
-            console.log(`🔍 [CARD_DEBUG] onPointerDown called for ${pokemon.name}`);
+            console.log(`🌥️ [CARD_DEBUG] onPointerDown called for ${pokemon.name}`);
           }}
           onClick={handlePrioritizeClick}
           className={`absolute top-1/2 right-2 -translate-y-1/2 z-30 p-2 rounded-full transition-all duration-300 ${
@@ -188,6 +178,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
           }`}
           title="Prioritize for refinement battle"
           type="button"
+          disabled={!isHydrated}
         >
           <Star
             className={`w-16 h-16 transition-all duration-300 ${

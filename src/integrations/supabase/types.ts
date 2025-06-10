@@ -230,6 +230,7 @@ export type Database = {
           created_at: string
           id: string
           last_updated: string
+          pending_battles: Json | null
           ratings_data: Json
           session_id: string | null
           total_battles: number
@@ -239,6 +240,7 @@ export type Database = {
           created_at?: string
           id?: string
           last_updated?: string
+          pending_battles?: Json | null
           ratings_data?: Json
           session_id?: string | null
           total_battles?: number
@@ -248,6 +250,7 @@ export type Database = {
           created_at?: string
           id?: string
           last_updated?: string
+          pending_battles?: Json | null
           ratings_data?: Json
           session_id?: string | null
           total_battles?: number

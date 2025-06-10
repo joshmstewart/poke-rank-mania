@@ -12,6 +12,7 @@ interface TrueSkillRating {
 
 interface TrueSkillStore {
   ratings: Record<string, TrueSkillRating>;
+  pendingBattles: number[];
   sessionId: string;
   isHydrated: boolean;
   lastSyncTime: number;
@@ -28,6 +29,15 @@ interface TrueSkillStore {
   hasRating: (pokemonId: string) => boolean;
   clearAllRatings: () => void;
   forceScoreBetweenNeighbors: (pokemonId: string, higherNeighborId?: string, lowerNeighborId?: string) => void;
+  
+  // Pending battles actions
+  addPendingBattle: (pokemonId: number) => void;
+  removePendingBattle: (pokemonId: number) => void;
+  clearAllPendingBattles: () => void;
+  isPokemonPending: (pokemonId: number) => boolean;
+  getAllPendingBattles: () => number[];
+  
+  // Cloud sync actions
   syncToCloud: () => Promise<void>;
   loadFromCloud: () => Promise<void>;
   smartSync: () => Promise<void>;
@@ -45,6 +55,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
   persist(
     (set, get) => ({
       ratings: {},
+      pendingBattles: [],
       sessionId: generateSessionId(),
       isHydrated: false,
       lastSyncTime: 0,
@@ -135,6 +146,48 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
         get().updateRating(pokemonId, newRating);
       },
 
+      // Pending battles management
+      addPendingBattle: (pokemonId: number) => {
+        set((state) => {
+          if (!state.pendingBattles.includes(pokemonId)) {
+            console.log(`🌥️ [CLOUD_PENDING] Adding Pokemon ${pokemonId} to pending battles`);
+            const newPendingBattles = [...state.pendingBattles, pokemonId];
+            return { pendingBattles: newPendingBattles };
+          }
+          return state;
+        });
+        
+        // Sync to cloud immediately
+        get().syncToCloud();
+      },
+
+      removePendingBattle: (pokemonId: number) => {
+        set((state) => ({
+          pendingBattles: state.pendingBattles.filter(id => id !== pokemonId)
+        }));
+        
+        console.log(`🌥️ [CLOUD_PENDING] Removed Pokemon ${pokemonId} from pending battles`);
+        get().syncToCloud();
+      },
+
+      clearAllPendingBattles: () => {
+        console.log(`🌥️ [CLOUD_PENDING] Clearing all pending battles`);
+        set({ pendingBattles: [] });
+        get().syncToCloud();
+      },
+
+      isPokemonPending: (pokemonId: number) => {
+        const isPending = get().pendingBattles.includes(pokemonId);
+        console.log(`🌥️ [CLOUD_PENDING] Check pending for ${pokemonId}: ${isPending}`);
+        return isPending;
+      },
+
+      getAllPendingBattles: () => {
+        const pending = get().pendingBattles;
+        console.log(`🌥️ [CLOUD_PENDING] Get all pending battles:`, pending);
+        return pending;
+      },
+
       syncToCloud: async () => {
         if (syncTimeout) {
           clearTimeout(syncTimeout);
@@ -147,7 +200,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           set({ syncInProgress: true });
           
           try {
-            console.log(`[TRUESKILL_STORE] Syncing to cloud - ${Object.keys(state.ratings).length} ratings, ${state.totalBattles} total battles`);
+            console.log(`[TRUESKILL_STORE] Syncing to cloud - ${Object.keys(state.ratings).length} ratings, ${state.totalBattles} total battles, ${state.pendingBattles.length} pending battles`);
             
             const response = await fetch('/api/trueskill/sync', {
               method: 'POST',
@@ -156,6 +209,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
                 sessionId: state.sessionId,
                 ratings: state.ratings as any,
                 totalBattles: state.totalBattles,
+                pendingBattles: state.pendingBattles,
                 lastUpdated: new Date().toISOString()
               })
             });
@@ -211,10 +265,11 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           
           const result = await response.json();
           if (result.success && result.ratings) {
-            console.log(`[TRUESKILL_STORE] Loaded ${Object.keys(result.ratings).length} ratings, ${result.totalBattles || 0} total battles from cloud`);
+            console.log(`[TRUESKILL_STORE] Loaded ${Object.keys(result.ratings).length} ratings, ${result.totalBattles || 0} total battles, ${(result.pendingBattles || []).length} pending battles from cloud`);
             set({ 
               ratings: result.ratings,
-              totalBattles: result.totalBattles || 0
+              totalBattles: result.totalBattles || 0,
+              pendingBattles: result.pendingBattles || []
             });
           }
         } catch (error) {
@@ -230,7 +285,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
         
         try {
           console.log(`[TRUESKILL_SMART_SYNC] Starting smart sync...`);
-          console.log(`[TRUESKILL_SMART_SYNC] Local state: ${state.totalBattles} battles, ${Object.keys(state.ratings).length} ratings`);
+          console.log(`[TRUESKILL_SMART_SYNC] Local state: ${state.totalBattles} battles, ${Object.keys(state.ratings).length} ratings, ${state.pendingBattles.length} pending battles`);
           
           // Get current cloud data
           const response = await fetch('/api/trueskill/get', {
@@ -245,12 +300,13 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
             if (result.success) {
               cloudData = {
                 totalBattles: result.totalBattles || 0,
-                ratings: result.ratings || {}
+                ratings: result.ratings || {},
+                pendingBattles: result.pendingBattles || []
               };
             }
           }
           
-          console.log(`[TRUESKILL_SMART_SYNC] Cloud state: ${cloudData?.totalBattles || 0} battles, ${Object.keys(cloudData?.ratings || {}).length} ratings`);
+          console.log(`[TRUESKILL_SMART_SYNC] Cloud state: ${cloudData?.totalBattles || 0} battles, ${Object.keys(cloudData?.ratings || {}).length} ratings, ${(cloudData?.pendingBattles || []).length} pending battles`);
           
           const localBattles = state.totalBattles;
           const cloudBattles = cloudData?.totalBattles || 0;
@@ -261,7 +317,8 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
             console.log(`[TRUESKILL_SMART_SYNC] Cloud wins (${cloudBattles} > ${localBattles}), updating local with cloud data`);
             set({
               ratings: cloudData?.ratings || {},
-              totalBattles: cloudBattles
+              totalBattles: cloudBattles,
+              pendingBattles: cloudData?.pendingBattles || []
             });
           } else if (localBattles > cloudBattles) {
             // Case 2: Local has more data, push local to cloud
@@ -272,7 +329,8 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
             console.log(`[TRUESKILL_SMART_SYNC] Equal battle counts (${localBattles}), using cloud as authoritative source`);
             set({
               ratings: cloudData?.ratings || {},
-              totalBattles: cloudBattles
+              totalBattles: cloudBattles,
+              pendingBattles: cloudData?.pendingBattles || []
             });
           } else {
             // Both are 0 or local > cloud but cloud is 0
