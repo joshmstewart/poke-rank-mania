@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -50,10 +49,12 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     typeof hasRefinementBattles === 'boolean'
   );
   
-  console.log(`🌟 [STAR_CLICK_TRACE] Pokemon ${pokemon.name} (${pokemon.id}):`);
-  console.log(`🌟 [STAR_CLICK_TRACE] - contextAvailable: ${contextAvailable}`);
-  console.log(`🌟 [STAR_CLICK_TRACE] - allRankedPokemon.length: ${allRankedPokemon.length}`);
-  console.log(`🌟 [STAR_CLICK_TRACE] - context: ${context}`);
+  console.log(`🌟🌟🌟 [STAR_DIAGNOSTIC_${context.toUpperCase()}] Pokemon ${pokemon.name} (${pokemon.id}):`);
+  console.log(`🌟🌟🌟 [STAR_DIAGNOSTIC_${context.toUpperCase()}] - contextAvailable: ${contextAvailable}`);
+  console.log(`🌟🌟🌟 [STAR_DIAGNOSTIC_${context.toUpperCase()}] - allRankedPokemon.length: ${allRankedPokemon.length}`);
+  console.log(`🌟🌟🌟 [STAR_DIAGNOSTIC_${context.toUpperCase()}] - context: ${context}`);
+  console.log(`🌟🌟🌟 [STAR_DIAGNOSTIC_${context.toUpperCase()}] - refinementQueue exists: ${!!refinementQueue}`);
+  console.log(`🌟🌟🌟 [STAR_DIAGNOSTIC_${context.toUpperCase()}] - queueBattlesForReorder function: ${typeof queueBattlesForReorder}`);
   
   // Check if this Pokemon has any battles in the refinement queue
   const isPendingRefinement = contextAvailable ? (
@@ -66,10 +67,16 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     e.stopPropagation();
     e.preventDefault();
     
-    console.log(`🌟 [STAR_CLICK_DETAILED] ===== STAR CLICKED FOR ${pokemon.name} =====`);
+    console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] ===== STAR CLICKED FOR ${pokemon.name} =====`);
+    console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] Context: ${context}`);
+    console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] isPendingRefinement: ${isPendingRefinement}`);
+    console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] contextAvailable: ${contextAvailable}`);
+    console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] allRankedPokemon length: ${allRankedPokemon.length}`);
+    console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] refinementQueue:`, refinementQueue);
+    console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] queueBattlesForReorder type: ${typeof queueBattlesForReorder}`);
     
     if (!isPendingRefinement) {
-      console.log(`🌟 [STAR_CLICK_DETAILED] Adding ${pokemon.name} to refinement queue`);
+      console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] Adding ${pokemon.name} to refinement queue`);
       
       // Always set local pending state for immediate feedback
       setLocalPendingState(true);
@@ -77,17 +84,21 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       
       // Generate random top-50 battles whenever the refinement queue is available
       if (contextAvailable && allRankedPokemon.length > 1) {
-        console.log(`🌟 [STAR_CLICK_DETAILED] Context available and sufficient ranked Pokemon, generating random top-50 battles`);
+        console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] Context available and sufficient ranked Pokemon`);
 
         // Find current Pokemon's position in the ranked list
         const currentIndex = allRankedPokemon.findIndex(p => p.id === pokemon.id);
-        console.log(`🌟 [STAR_CLICK_DETAILED] Current index of ${pokemon.name}: ${currentIndex}`);
+        console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] Current index of ${pokemon.name}: ${currentIndex}`);
 
         if (currentIndex >= 0) {
           // Pick three random opponents from the top 50 (excluding this Pokemon)
           const topPool = allRankedPokemon
-            .slice(0, 50)
+            .slice(0, Math.min(50, allRankedPokemon.length))
             .filter(p => p.id !== pokemon.id);
+          
+          console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] Top pool size: ${topPool.length}`);
+          console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] Top pool sample:`, topPool.slice(0, 5).map(p => p.name));
+          
           const poolCopy = [...topPool];
           const opponents: number[] = [];
           while (opponents.length < 3 && poolCopy.length > 0) {
@@ -96,34 +107,55 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
             opponents.push(opponent.id);
           }
 
-          console.log(`🌟 [STAR_CLICK_DETAILED] (${context}) Opponents chosen for ${pokemon.name} (#${pokemon.id}):`, opponents);
+          console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] Opponents chosen for ${pokemon.name} (#${pokemon.id}):`, opponents);
 
           if (opponents.length > 0) {
             try {
+              console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] Calling queueBattlesForReorder...`);
               const newLength = queueBattlesForReorder(pokemon.id, opponents, currentIndex);
-              console.log(`🌟 [STAR_QUEUE_${context.toUpperCase()}] New queue length after queuing for ${pokemon.name} (#${pokemon.id}): ${newLength}`);
+              console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] ✅ SUCCESS! New queue length: ${newLength}`);
             } catch (error) {
-              console.error(`🌟 [STAR_CLICK_DETAILED] ❌ Error calling queueBattlesForReorder:`, error);
+              console.error(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] ❌ Error calling queueBattlesForReorder:`, error);
             }
           } else {
-            console.log(`🌟 [STAR_CLICK_DETAILED] ❌ No valid opponents found`);
+            console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] ❌ No valid opponents found`);
           }
         } else {
-          console.log(`🌟 [STAR_CLICK_DETAILED] ❌ Pokemon not found in ranked list`);
+          console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] ❌ Pokemon not found in ranked list`);
+          
+          // If Pokemon not in ranked list, still try to queue battles using a fallback approach
+          if (allRankedPokemon.length >= 3) {
+            console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] Trying fallback approach with top 3 Pokemon`);
+            const fallbackOpponents = allRankedPokemon.slice(0, 3).map(p => p.id);
+            console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] Fallback opponents:`, fallbackOpponents);
+            
+            try {
+              const newLength = queueBattlesForReorder(pokemon.id, fallbackOpponents, -1);
+              console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] ✅ Fallback SUCCESS! New queue length: ${newLength}`);
+            } catch (error) {
+              console.error(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] ❌ Fallback error:`, error);
+            }
+          }
         }
       } else {
-        console.log(
-          `🌟 [STAR_CLICK_DETAILED] ⚠️ Refinement queue unavailable or insufficient ranked Pokemon`
-        );
-        console.log(`🌟 [STAR_CLICK_DETAILED] - context: ${context}`);
-        console.log(`🌟 [STAR_CLICK_DETAILED] - contextAvailable: ${contextAvailable}`);
-        console.log(`🌟 [STAR_CLICK_DETAILED] - allRankedPokemon.length: ${allRankedPokemon.length}`);
+        console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] ⚠️ Cannot queue battles:`);
+        console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] - contextAvailable: ${contextAvailable}`);
+        console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] - allRankedPokemon.length: ${allRankedPokemon.length}`);
+        
+        if (!contextAvailable) {
+          console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] Refinement queue context not available`);
+          console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] - refinementQueue: ${!!refinementQueue}`);
+          console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] - queueBattlesForReorder: ${typeof queueBattlesForReorder}`);
+          console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] - hasRefinementBattles: ${typeof hasRefinementBattles}`);
+        }
       }
     } else {
-      console.log(`🌟 [STAR_CLICK_DETAILED] Pokemon ${pokemon.name} is already pending, toggling off`);
+      console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] Pokemon ${pokemon.name} is already pending, toggling off`);
       setLocalPendingState(false);
       localStorage.removeItem(`pokemon-pending-${pokemon.id}`);
     }
+    
+    console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] ===== END STAR CLICK =====`);
   };
 
   const hadRefinementBattlesRef = React.useRef(false);
@@ -143,7 +175,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       localPendingState &&
       hadRefinementBattlesRef.current
     ) {
-      console.log(`🌟 [CLEANUP_TRACE] (${context}) Cleared pending state for ${pokemon.name} (#${pokemon.id}) - battles processed`);
+      console.log(`🌟🌟🌟 [CLEANUP_TRACE] (${context}) Cleared pending state for ${pokemon.name} (#${pokemon.id}) - battles processed`);
       setLocalPendingState(false);
       localStorage.removeItem(`pokemon-pending-${pokemon.id}`);
       hadRefinementBattlesRef.current = false;
