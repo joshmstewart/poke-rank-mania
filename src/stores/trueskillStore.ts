@@ -36,6 +36,10 @@ interface TrueSkillStore {
 
 const generateSessionId = () => crypto.randomUUID();
 
+// Debounce delay for syncing to the server (in milliseconds)
+const SYNC_DEBOUNCE_DELAY = 1500;
+let syncTimeout: ReturnType<typeof setTimeout> | null = null;
+
 export const useTrueSkillStore = create<TrueSkillStore>()(
   persist(
     (set, get) => ({
@@ -58,8 +62,8 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           }
         }));
         
-        // Auto-sync after updates
-        setTimeout(() => get().syncToCloud(), 100);
+        // Queue a sync after updates
+        get().syncToCloud();
       },
 
       incrementBattleCount: (pokemonId: string) => {
@@ -79,8 +83,8 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           totalBattles: state.totalBattles + 1
         }));
         
-        // Auto-sync after battle count increment
-        setTimeout(() => get().syncToCloud(), 100);
+        // Queue a sync after battle count increment
+        get().syncToCloud();
       },
 
       setTotalBattles: (count: number) => {
@@ -106,7 +110,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           ratings: {},
           totalBattles: 0
         });
-        setTimeout(() => get().syncToCloud(), 100);
+        get().syncToCloud();
       },
 
       forceScoreBetweenNeighbors: (pokemonId: string, higherNeighborId?: string, lowerNeighborId?: string) => {
@@ -132,8 +136,25 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
 
       syncToCloud: async (options?: { force?: boolean }) => {
         const force = options?.force ?? false;
+
+        if (!force) {
+          if (syncTimeout) {
+            clearTimeout(syncTimeout);
+          }
+          syncTimeout = setTimeout(() => {
+            syncTimeout = null;
+            get().syncToCloud({ force: true });
+          }, SYNC_DEBOUNCE_DELAY);
+          return;
+        }
+
+        if (syncTimeout) {
+          clearTimeout(syncTimeout);
+          syncTimeout = null;
+        }
+
         const state = get();
-        if (state.syncInProgress && !force) return;
+        if (state.syncInProgress) return;
 
         const manageFlag = !state.syncInProgress;
         if (manageFlag) {
