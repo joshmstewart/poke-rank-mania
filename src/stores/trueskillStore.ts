@@ -1,7 +1,7 @@
 
 import { create } from 'zustand';
 import { persist, subscribeWithSelector } from 'zustand/middleware';
-import { rating, rate, TrueSkillRating } from 'ts-trueskill';
+import { Rating, rate, TrueSkillRating } from 'ts-trueskill';
 
 export interface PokemonRating {
   rating: TrueSkillRating;
@@ -49,7 +49,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
 
         getRating: (pokemonId: number): TrueSkillRating => {
           const pokemonRating = get().ratings[pokemonId];
-          return pokemonRating ? pokemonRating.rating : rating();
+          return pokemonRating ? pokemonRating.rating : new Rating();
         },
 
         updateRatings: (winners: number[], losers: number[]) => {
@@ -58,10 +58,10 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           
           // Get current ratings for all participants
           const winnerRatings = winners.map(id => 
-            newRatings[id]?.rating || rating()
+            newRatings[id]?.rating || new Rating()
           );
           const loserRatings = losers.map(id => 
-            newRatings[id]?.rating || rating()
+            newRatings[id]?.rating || new Rating()
           );
           
           // Calculate new ratings

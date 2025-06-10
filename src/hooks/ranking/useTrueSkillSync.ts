@@ -23,13 +23,14 @@ export const useTrueSkillSync = () => {
     
     const rankedPokemon: RankedPokemon[] = [];
     
-    Object.entries(ratings).forEach(([pokemonId, rating]) => {
+    Object.entries(ratings).forEach(([pokemonId, ratingData]) => {
       const pokemon = pokemonLookupMap.get(parseInt(pokemonId));
       if (!pokemon) {
         console.warn('🔄 [TRUESKILL_SYNC] Pokemon not found in lookup map:', pokemonId);
         return;
       }
       
+      const rating = ratingData.rating;
       const conservativeEstimate = rating.mu - rating.sigma;
       const confidence = Math.max(0, Math.min(100, 100 * (1 - (rating.sigma / 8.33))));
       
@@ -40,7 +41,7 @@ export const useTrueSkillSync = () => {
         score: conservativeEstimate,
         confidence: confidence,
         rating: rating,
-        count: rating.battleCount || 0,
+        count: ratingData.battleCount || 0,
         wins: 0,
         losses: 0,
         winRate: 0
