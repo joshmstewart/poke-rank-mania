@@ -220,8 +220,8 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
         </div>
       )}
 
-      {/* Prioritize button - only for ranked context and when not dragging */}
-      {!isDragging && context === 'ranked' && (
+      {/* Prioritize button - ranked and available contexts */}
+      {!isDragging && (context === 'ranked' || context === 'available') && (
         <button
           onPointerDown={(e) => {
             // Prevent the drag listeners from capturing this interaction so
