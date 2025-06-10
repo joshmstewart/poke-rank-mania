@@ -1,212 +1,129 @@
 
 import { useEffect, useRef } from "react";
 import { Pokemon } from "@/services/pokemon";
+import { useCloudPendingBattles } from "./useCloudPendingBattles";
 
 export const useBattleStarterEvents = (
   filteredPokemon: Pokemon[],
   currentBattle: Pokemon[],
   initialBattleStartedRef: React.MutableRefObject<boolean>,
   autoTriggerDisabledRef: React.MutableRefObject<boolean>,
-  startNewBattleCallbackRef: React.MutableRefObject<((battleType: any) => Pokemon[]) | null>,
+  startNewBattleCallbackRef: React.MutableRefObject<((battleType: any) => any[]) | null>,
   initializationTimerRef: React.MutableRefObject<NodeJS.Timeout | null>,
   initializationCompleteRef: React.MutableRefObject<boolean>,
   stableSetCurrentBattle: (battle: Pokemon[]) => void,
   stableSetSelectedPokemon: (pokemon: number[]) => void
 ) => {
-  const hookId = useRef(`BATTLE_EVENTS_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
-  
-  console.log(`🎯🎯🎯 [${hookId.current}] useBattleStarterEvents hook initialized`);
+  const { getAllPendingIds, isHydrated } = useCloudPendingBattles();
+  const pendingCheckRef = useRef(false);
 
-  // Listen for pending battles detected from mode switcher
+  // CRITICAL FIX: Check for pending Pokemon when battle mode initializes
   useEffect(() => {
-    const handlePendingBattlesDetected = (event: CustomEvent) => {
-      const eventId = `EVENT_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    if (!isHydrated || pendingCheckRef.current) return;
+
+    const checkPendingOnInit = () => {
+      const pendingIds = getAllPendingIds();
+      console.log(`🎯 [BATTLE_STARTER_EVENTS] Checking pending Pokemon on init: ${pendingIds}`);
       
-      console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] ===== PENDING BATTLES EVENT RECEIVED =====`);
-      console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] Event detail:`, event.detail);
-      console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] Event timing: ${event.detail?.timing || 'unknown'}`);
-      console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] Source debug ID: ${event.detail?.debugId || 'none'}`);
-      console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] Current battle length: ${currentBattle.length}`);
-      console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] Callback available: ${!!startNewBattleCallbackRef.current}`);
-      console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] Filtered Pokemon count: ${filteredPokemon.length}`);
-      console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] Auto trigger disabled: ${autoTriggerDisabledRef.current}`);
-      console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] Initial battle started: ${initialBattleStartedRef.current}`);
-      console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] Initialization complete: ${initializationCompleteRef.current}`);
-      
-      // ULTRA-DETAILED CONDITION ANALYSIS
-      const shouldForceStart = event.detail?.immediate === true || event.detail?.source === 'mode-switcher-cloud';
-      const hasCallback = !!startNewBattleCallbackRef.current;
-      const hasPokemon = filteredPokemon.length > 0;
-      
-      console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] ===== ULTRA-DETAILED CONDITION ANALYSIS =====`);
-      console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] event.detail?.immediate: ${event.detail?.immediate}`);
-      console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] event.detail?.source: ${event.detail?.source}`);
-      console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] shouldForceStart: ${shouldForceStart}`);
-      console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] hasCallback: ${hasCallback}`);
-      console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] hasPokemon: ${hasPokemon}`);
-      console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] startNewBattleCallbackRef.current type: ${typeof startNewBattleCallbackRef.current}`);
-      console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] startNewBattleCallbackRef.current value:`, startNewBattleCallbackRef.current);
-      console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] ALL CONDITIONS MET: ${shouldForceStart && hasCallback && hasPokemon}`);
-      
-      if (shouldForceStart && hasCallback && hasPokemon) {
-        console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] ✅ ALL CONDITIONS MET - ATTEMPTING TO TRIGGER NEW BATTLE`);
+      if (pendingIds.length > 0) {
+        console.log(`🎯 [BATTLE_STARTER_EVENTS] Found ${pendingIds.length} pending Pokemon, starting battle`);
         
-        // Set all flags to ensure this works
-        autoTriggerDisabledRef.current = true;
-        initialBattleStartedRef.current = true;
-        initializationCompleteRef.current = true;
+        // Set flag to prevent duplicate checks
+        pendingCheckRef.current = true;
         
-        console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] Flags set - about to call startNewBattleCallback`);
-        console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] Calling with battle type: "pairs"`);
-        console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] Callback function details:`, {
-          exists: !!startNewBattleCallbackRef.current,
-          type: typeof startNewBattleCallbackRef.current,
-          isFunction: typeof startNewBattleCallbackRef.current === 'function',
-          name: startNewBattleCallbackRef.current?.name || 'anonymous',
-          toString: startNewBattleCallbackRef.current?.toString?.() || 'no toString'
-        });
-        
-        try {
-          console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] 🚀 CALLING startNewBattleCallbackRef.current("pairs")`);
-          const result = startNewBattleCallbackRef.current("pairs");
-          console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] 🚀 Battle callback returned:`, result);
-          console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] 🚀 Result type:`, typeof result);
-          console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] 🚀 Result is array:`, Array.isArray(result));
-          console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] 🚀 Result length:`, result?.length || 'no length');
-          
-          if (result && result.length > 0) {
-            console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] 🚀 Battle result details:`, result.map(p => `${p.name}(${p.id})`));
-            console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] 🚀 Setting current battle and clearing selected Pokemon`);
-            
-            console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] 🚀 Calling stableSetCurrentBattle with:`, result);
-            stableSetCurrentBattle(result);
-            console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] 🚀 Calling stableSetSelectedPokemon with: []`);
-            stableSetSelectedPokemon([]);
-            
-            console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] ✅ Battle set successfully - ${result.map(p => p.name).join(' vs ')}`);
-            
-            // Check if any of the pending Pokemon are in this battle
-            const pendingIds = event.detail?.pendingPokemon || [];
-            const battleIds = result.map(p => p.id);
-            const hasPendingInBattle = pendingIds.some((id: number) => battleIds.includes(id));
-            
-            if (hasPendingInBattle) {
-              console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] 🎯 SUCCESS! Pending Pokemon found in battle!`);
-              console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] Pending IDs: ${pendingIds}`);
-              console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] Battle IDs: ${battleIds}`);
-            } else {
-              console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] ⚠️ No pending Pokemon in this battle`);
-              console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] Pending IDs: ${pendingIds}`);
-              console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] Battle IDs: ${battleIds}`);
-            }
+        // Small delay to ensure all components are ready
+        setTimeout(() => {
+          if (startNewBattleCallbackRef.current && currentBattle.length === 0) {
+            console.log(`🎯 [BATTLE_STARTER_EVENTS] Triggering battle for pending Pokemon`);
+            const result = startNewBattleCallbackRef.current("pairs");
+            console.log(`🎯 [BATTLE_STARTER_EVENTS] Battle result:`, result?.map(p => p.name));
           } else {
-            console.error(`🎯🎯🎯 [${hookId.current}][${eventId}] ❌ Battle callback returned empty/null result`);
-            console.error(`🎯🎯🎯 [${hookId.current}][${eventId}] ❌ This means the battle generation failed silently`);
+            console.log(`🎯 [BATTLE_STARTER_EVENTS] Battle callback not ready or battle already exists`);
           }
-        } catch (error) {
-          console.error(`🎯🎯🎯 [${hookId.current}][${eventId}] ❌ Error calling battle callback:`, error);
-          console.error(`🎯🎯🎯 [${hookId.current}][${eventId}] ❌ Error details:`, {
-            message: error.message,
-            stack: error.stack,
-            type: error.constructor.name
-          });
-        }
+        }, 100);
       } else {
-        console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] ❌ CONDITIONS NOT MET - NOT TRIGGERING BATTLE`);
-        console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] Missing conditions:`, {
-          shouldForceStart: !shouldForceStart ? 'MISSING' : 'OK',
-          hasCallback: !hasCallback ? 'MISSING' : 'OK', 
-          hasPokemon: !hasPokemon ? 'MISSING' : 'OK'
-        });
-        
-        if (!shouldForceStart) {
-          console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] shouldForceStart failed because:`);
-          console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] - immediate: ${event.detail?.immediate} (should be true)`);
-          console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] - source: ${event.detail?.source} (should be 'mode-switcher-cloud')`);
-        }
-        
-        if (!hasCallback) {
-          console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] startNewBattleCallbackRef.current is null/undefined`);
-          console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] startNewBattleCallbackRef object:`, startNewBattleCallbackRef);
-          console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] startNewBattleCallbackRef.current:`, startNewBattleCallbackRef.current);
-        }
-        
-        if (!hasPokemon) {
-          console.log(`🎯🎯🎯 [${hookId.current}][${eventId}] filteredPokemon array is empty (${filteredPokemon.length})`);
-        }
+        console.log(`🎯 [BATTLE_STARTER_EVENTS] No pending Pokemon found on init`);
+        pendingCheckRef.current = true;
       }
     };
 
-    console.log(`🎯🎯🎯 [${hookId.current}] Setting up pending-battles-detected event listener`);
-    document.addEventListener('pending-battles-detected', handlePendingBattlesDetected as EventListener);
-    
-    return () => {
-      console.log(`🎯🎯🎯 [${hookId.current}] Removing pending-battles-detected event listener`);
-      document.removeEventListener('pending-battles-detected', handlePendingBattlesDetected as EventListener);
-    };
-  }, [currentBattle.length, startNewBattleCallbackRef, stableSetCurrentBattle, stableSetSelectedPokemon, filteredPokemon.length]);
+    // Run the check immediately if hydrated
+    checkPendingOnInit();
+  }, [isHydrated, getAllPendingIds, currentBattle.length, startNewBattleCallbackRef]);
 
-  // Listen for pokemon starred events
-  useEffect(() => {
-    const handlePokemonStarred = (event: CustomEvent) => {
-      console.log(`🎯🎯🎯 [${hookId.current}] ===== POKEMON STARRED EVENT RECEIVED =====`);
-      console.log(`🎯🎯🎯 [${hookId.current}] Event detail:`, event.detail);
-    };
-
-    console.log(`🎯🎯🎯 [${hookId.current}] Setting up pokemon-starred-for-battle event listener`);
-    document.addEventListener('pokemon-starred-for-battle', handlePokemonStarred as EventListener);
-    
-    return () => {
-      console.log(`🎯🎯🎯 [${hookId.current}] Removing pokemon-starred-for-battle event listener`);
-      document.removeEventListener('pokemon-starred-for-battle', handlePokemonStarred as EventListener);
-    };
-  }, []);
-
-  // Auto-trigger initialization when Pokemon are loaded (existing logic) - but respect disabled flag
+  // CRITICAL FIX: Auto-trigger first battle when no battle exists and we have Pokemon
   useEffect(() => {
     if (
-      filteredPokemon.length > 0 && 
-      currentBattle.length === 0 && 
       !initialBattleStartedRef.current &&
       !autoTriggerDisabledRef.current &&
-      !initializationCompleteRef.current
+      filteredPokemon.length > 0 &&
+      currentBattle.length === 0 &&
+      startNewBattleCallbackRef.current &&
+      isHydrated
     ) {
-      console.log(`🎯🎯🎯 [${hookId.current}] Setting up auto-initialization timer - ${filteredPokemon.length} Pokemon available`);
+      console.log(`🔥 [BATTLE_STARTER_EVENTS] Auto-triggering first battle with ${filteredPokemon.length} Pokemon`);
       
-      if (initializationTimerRef.current) {
-        clearTimeout(initializationTimerRef.current);
-      }
-      
-      initializationTimerRef.current = setTimeout(() => {
-        if (
-          filteredPokemon.length > 0 && 
-          currentBattle.length === 0 && 
-          !initialBattleStartedRef.current &&
-          !autoTriggerDisabledRef.current &&
-          startNewBattleCallbackRef.current
-        ) {
-          console.log(`🎯🎯🎯 [${hookId.current}] ✅ Auto-triggering initial battle`);
-          initialBattleStartedRef.current = true;
-          initializationCompleteRef.current = true;
-          
+      // Small delay to ensure all hooks are ready
+      const triggerTimer = setTimeout(() => {
+        if (startNewBattleCallbackRef.current) {
+          console.log(`🔥 [BATTLE_STARTER_EVENTS] Executing auto-trigger for first battle`);
           const result = startNewBattleCallbackRef.current("pairs");
-          console.log(`🎯🎯🎯 [${hookId.current}] Auto-trigger battle result:`, result?.map(p => p.name));
+          console.log(`🔥 [BATTLE_STARTER_EVENTS] Auto-trigger result:`, result?.map(p => p.name));
+          initialBattleStartedRef.current = true;
         }
-      }, 2000);
-    }
+      }, 200);
 
-    return () => {
-      if (initializationTimerRef.current) {
-        clearTimeout(initializationTimerRef.current);
-        initializationTimerRef.current = null;
-      }
-    };
+      return () => clearTimeout(triggerTimer);
+    }
   }, [
     filteredPokemon.length,
     currentBattle.length,
     initialBattleStartedRef,
     autoTriggerDisabledRef,
     startNewBattleCallbackRef,
-    initializationCompleteRef
+    isHydrated
   ]);
+
+  // CRITICAL FIX: Listen for mode switch events and check for pending battles
+  useEffect(() => {
+    const handleModeSwitch = (event: CustomEvent) => {
+      console.log(`🎯 [BATTLE_STARTER_EVENTS] Mode switch detected:`, event.detail);
+      
+      if (event.detail?.mode === 'battle' && isHydrated) {
+        // Reset pending check flag when switching to battle mode
+        pendingCheckRef.current = false;
+        
+        // Check for pending Pokemon after mode switch
+        setTimeout(() => {
+          const pendingIds = getAllPendingIds();
+          console.log(`🎯 [BATTLE_STARTER_EVENTS] Post-switch pending check: ${pendingIds}`);
+          
+          if (pendingIds.length > 0 && currentBattle.length === 0) {
+            console.log(`🎯 [BATTLE_STARTER_EVENTS] Triggering battle after mode switch`);
+            if (startNewBattleCallbackRef.current) {
+              const result = startNewBattleCallbackRef.current("pairs");
+              console.log(`🎯 [BATTLE_STARTER_EVENTS] Post-switch battle result:`, result?.map(p => p.name));
+            }
+          }
+        }, 300);
+      }
+    };
+
+    // Listen for mode switch events
+    document.addEventListener('mode-switch', handleModeSwitch as EventListener);
+    
+    return () => {
+      document.removeEventListener('mode-switch', handleModeSwitch as EventListener);
+    };
+  }, [getAllPendingIds, currentBattle.length, startNewBattleCallbackRef, isHydrated]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (initializationTimerRef.current) {
+        clearTimeout(initializationTimerRef.current);
+        initializationTimerRef.current = null;
+      }
+    };
+  }, [initializationTimerRef]);
 };

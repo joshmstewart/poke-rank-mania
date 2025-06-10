@@ -95,7 +95,6 @@ export const useBattleCoordination = (
   const initializationCompleteRef = useRef(false);
 
   // CRITICAL FIX: Update the callback ref immediately when startNewBattle changes
-  // This ensures the ref is NEVER null when events are triggered
   startNewBattleCallbackRef.current = startNewBattle;
   
   console.log(`🔧🔧🔧 [BATTLE_COORDINATION_DEBUG] startNewBattle function updated in ref:`, {
@@ -104,7 +103,7 @@ export const useBattleCoordination = (
     timestamp: new Date().toISOString()
   });
 
-  // CRITICAL FIX: Initialize battle starter events to handle auto-battle generation AND refinement queue events
+  // CRITICAL FIX: Initialize battle starter events to handle auto-battle generation AND pending Pokemon
   useBattleStarterEvents(
     filteredPokemon,
     currentBattle,
