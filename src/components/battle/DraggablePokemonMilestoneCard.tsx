@@ -122,12 +122,27 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     }
   };
 
+  const hadRefinementBattlesRef = React.useRef(false);
+
+  // Track if there have ever been refinement battles
+  React.useEffect(() => {
+    if (hasRefinementBattles) {
+      hadRefinementBattlesRef.current = true;
+    }
+  }, [hasRefinementBattles]);
+
   // Clean up localStorage when Pokemon is actually processed in a battle
   React.useEffect(() => {
-    if (contextAvailable && hasRefinementBattles === false && localPendingState) {
+    if (
+      contextAvailable &&
+      hasRefinementBattles === false &&
+      localPendingState &&
+      hadRefinementBattlesRef.current
+    ) {
       console.log(`🌟 [CLEANUP_TRACE] Clearing pending state for ${pokemon.name} - battles processed`);
       setLocalPendingState(false);
       localStorage.removeItem(`pokemon-pending-${pokemon.id}`);
+      hadRefinementBattlesRef.current = false;
     }
   }, [contextAvailable, hasRefinementBattles, localPendingState, pokemon.id, pokemon.name]);
 
@@ -231,7 +246,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
           }}
           onClick={handlePrioritizeClick}
           className={`absolute top-1/2 right-2 -translate-y-1/2 z-30 p-2 rounded-full transition-opacity duration-200 ${
-            isPendingRefinement ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+            isPendingRefinement ? 'opacity-100' : 'opacity-80 hover:opacity-100'
           }`}
           title="Prioritize for refinement battle"
           type="button"

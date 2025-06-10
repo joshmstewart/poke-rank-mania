@@ -58,10 +58,24 @@ const TCGBattleCard: React.FC<TCGBattleCardProps> = memo(({
     ? refinementQueue.some(b => b.primaryPokemonId === pokemon.id) || localPendingState
     : localPendingState;
 
+  const hadRefinementBattlesRef = React.useRef(false);
+
   React.useEffect(() => {
-    if (contextAvailable && hasRefinementBattles === false && localPendingState) {
+    if (hasRefinementBattles) {
+      hadRefinementBattlesRef.current = true;
+    }
+  }, [hasRefinementBattles]);
+
+  React.useEffect(() => {
+    if (
+      contextAvailable &&
+      hasRefinementBattles === false &&
+      localPendingState &&
+      hadRefinementBattlesRef.current
+    ) {
       setLocalPendingState(false);
       localStorage.removeItem(`pokemon-pending-${pokemon.id}`);
+      hadRefinementBattlesRef.current = false;
     }
   }, [contextAvailable, hasRefinementBattles, localPendingState, pokemon.id]);
 
