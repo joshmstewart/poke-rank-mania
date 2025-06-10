@@ -1,12 +1,11 @@
+
 import React, { useState, useRef, useEffect } from "react";
-import { ModeToggle } from "@/components/mode-toggle";
 import { Settings } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import SettingsSheet from "./SettingsSheet";
 import BattleModeCore from "./battle/BattleModeCore";
 import PokemonRankerProvider from "./pokemon/PokemonRankerProvider";
-import ManualRanker from "./ManualRanker";
+import PokemonRankerWithProvider from "./pokemon/PokemonRankerWithProvider";
 
 const AppContent: React.FC = () => {
   const [mode, setMode] = useState<"rank" | "battle">("rank");
@@ -49,7 +48,6 @@ const AppContent: React.FC = () => {
           <Button variant="ghost" size="sm" onClick={() => handleModeChange(mode === "rank" ? "battle" : "rank")}>
             {mode === "rank" ? "Go to Battle Mode" : "Go to Manual Mode"}
           </Button>
-          <ModeToggle />
           <Sheet>
             <SheetTrigger asChild>
               <Button variant="ghost" size="sm">
@@ -58,13 +56,16 @@ const AppContent: React.FC = () => {
               </Button>
             </SheetTrigger>
             <SheetContent side="right" className="w-96">
-              <SettingsSheet />
+              <div className="p-4">
+                <h2 className="text-lg font-semibold mb-4">Settings</h2>
+                <p>Settings content will go here</p>
+              </div>
             </SheetContent>
           </Sheet>
         </div>
       </div>
 
-      {mode === "rank" ? <ManualRanker /> : <BattleModeCore />}
+      {mode === "rank" ? <PokemonRankerWithProvider /> : <BattleModeCore />}
     </PokemonRankerProvider>
   );
 };
