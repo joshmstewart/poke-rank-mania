@@ -19,6 +19,7 @@ interface EnhancedAvailablePokemonSectionProps {
   loadingRef: React.RefObject<HTMLDivElement>;
   handlePageChange: (page: number) => void;
   getPageRange: () => number[];
+  allRankedPokemon?: any[]; // Add this prop
 }
 
 export const EnhancedAvailablePokemonSection: React.FC<EnhancedAvailablePokemonSectionProps> = ({
@@ -30,7 +31,8 @@ export const EnhancedAvailablePokemonSection: React.FC<EnhancedAvailablePokemonS
   totalPages,
   loadingRef,
   handlePageChange,
-  getPageRange
+  getPageRange,
+  allRankedPokemon = [] // Default to empty array
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
@@ -98,6 +100,7 @@ export const EnhancedAvailablePokemonSection: React.FC<EnhancedAvailablePokemonS
         loadingRef={loadingRef}
         currentPage={currentPage}
         totalPages={totalPages}
+        allRankedPokemon={allRankedPokemon}
       />
     </div>
   );

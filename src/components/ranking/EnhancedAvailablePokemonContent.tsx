@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable';
@@ -14,6 +15,7 @@ interface EnhancedAvailablePokemonContentProps {
   loadingRef: React.RefObject<HTMLDivElement>;
   currentPage: number;
   totalPages: number;
+  allRankedPokemon?: any[]; // Add this prop to pass ranked Pokemon list
 }
 
 // Simple loading placeholder component
@@ -30,7 +32,8 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
   isLoading,
   loadingRef,
   currentPage,
-  totalPages
+  totalPages,
+  allRankedPokemon = [] // Default to empty array
 }) => {
   const { setNodeRef, isOver } = useDroppable({
     id: 'enhanced-available-drop-zone',
@@ -80,6 +83,7 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
                     isDraggable={true}
                     isAvailable={true}
                     context="available"
+                    allRankedPokemon={allRankedPokemon}
                   />
                 ))}
               </div>
@@ -129,6 +133,7 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
                 isDraggable={true}
                 isAvailable={true}
                 context="available"
+                allRankedPokemon={allRankedPokemon}
               />
             ))}
           </div>

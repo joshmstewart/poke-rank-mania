@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Rating } from 'ts-trueskill';
@@ -134,81 +135,64 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
         get().updateRating(pokemonId, newRating);
       },
 
-      syncToCloud: async (options?: { force?: boolean }) => {
-        const force = options?.force ?? false;
-
-        if (!force) {
-          if (syncTimeout) {
-            clearTimeout(syncTimeout);
-          }
-          syncTimeout = setTimeout(() => {
-            syncTimeout = null;
-            get().syncToCloud({ force: true });
-          }, SYNC_DEBOUNCE_DELAY);
-          return;
-        }
-
+      syncToCloud: async () => {
         if (syncTimeout) {
           clearTimeout(syncTimeout);
+        }
+        syncTimeout = setTimeout(async () => {
           syncTimeout = null;
-        }
+          const state = get();
+          if (state.syncInProgress) return;
 
-        const state = get();
-        if (state.syncInProgress) return;
-
-        const manageFlag = !state.syncInProgress;
-        if (manageFlag) {
           set({ syncInProgress: true });
-        }
-        
-        try {
-          console.log(`[TRUESKILL_STORE] Syncing to cloud - ${Object.keys(state.ratings).length} ratings, ${state.totalBattles} total battles`);
           
-          const response = await fetch('/api/trueskill/sync', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              sessionId: state.sessionId,
-              ratings: state.ratings as any,
-              totalBattles: state.totalBattles,
-              lastUpdated: new Date().toISOString()
-            })
-          });
-
-          const raw = await response.text();
-
-          if (!response.ok) {
-            throw new Error(`Sync failed: ${response.status} - ${raw}`);
-          }
-
-          let result: any;
           try {
-            result = JSON.parse(raw);
-          } catch (jsonError) {
-            console.error(
-              `[TRUESKILL_STORE] Failed to parse JSON: status ${response.status}, body: ${raw}`
-            );
-            toast({
-              title: 'Sync Error',
-              description: 'Unexpected response from the server.',
-              variant: 'destructive'
+            console.log(`[TRUESKILL_STORE] Syncing to cloud - ${Object.keys(state.ratings).length} ratings, ${state.totalBattles} total battles`);
+            
+            const response = await fetch('/api/trueskill/sync', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                sessionId: state.sessionId,
+                ratings: state.ratings as any,
+                totalBattles: state.totalBattles,
+                lastUpdated: new Date().toISOString()
+              })
             });
-            return;
-          }
 
-          if (result.success) {
-            set({ lastSyncTime: Date.now() });
-            console.log(`[TRUESKILL_STORE] Successfully synced to cloud`);
-          } else {
-            throw new Error(result.error || 'Unknown sync error');
-          }
-        } catch (error) {
-          console.error('[TRUESKILL_STORE] Sync to cloud failed:', error);
-        } finally {
-          if (manageFlag) {
+            const raw = await response.text();
+
+            if (!response.ok) {
+              throw new Error(`Sync failed: ${response.status} - ${raw}`);
+            }
+
+            let result: any;
+            try {
+              result = JSON.parse(raw);
+            } catch (jsonError) {
+              console.error(
+                `[TRUESKILL_STORE] Failed to parse JSON: status ${response.status}, body: ${raw}`
+              );
+              toast({
+                title: 'Sync Error',
+                description: 'Unexpected response from the server.',
+                variant: 'destructive'
+              });
+              return;
+            }
+
+            if (result.success) {
+              set({ lastSyncTime: Date.now() });
+              console.log(`[TRUESKILL_STORE] Successfully synced to cloud`);
+            } else {
+              throw new Error(result.error || 'Unknown sync error');
+            }
+          } catch (error) {
+            console.error('[TRUESKILL_STORE] Sync to cloud failed:', error);
+          } finally {
             set({ syncInProgress: false });
           }
-        }
+        }, SYNC_DEBOUNCE_DELAY);
       },
 
       loadFromCloud: async () => {
@@ -282,7 +266,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           } else if (localBattles > cloudBattles) {
             // Case 2: Local has more data, push local to cloud
             console.log(`[TRUESKILL_SMART_SYNC] Local wins (${localBattles} > ${cloudBattles}), pushing local data to cloud`);
-            await get().syncToCloud({ force: true });
+            await get().syncToCloud();
           } else if (localBattles === cloudBattles && cloudBattles > 0) {
             // Equal and both have data, use cloud as authoritative
             console.log(`[TRUESKILL_SMART_SYNC] Equal battle counts (${localBattles}), using cloud as authoritative source`);
@@ -294,7 +278,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
             // Both are 0 or local > cloud but cloud is 0
             console.log(`[TRUESKILL_SMART_SYNC] Using local data (local: ${localBattles}, cloud: ${cloudBattles})`);
             if (localBattles > 0) {
-              await get().syncToCloud({ force: true });
+              await get().syncToCloud();
             }
           }
           
