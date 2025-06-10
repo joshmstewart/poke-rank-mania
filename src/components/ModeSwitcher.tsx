@@ -18,22 +18,22 @@ const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ currentMode, onModeChange }
   const { getAllPendingIds, hasPendingPokemon } = usePersistentPendingState();
 
   const handleModeChange = (mode: "rank" | "battle") => {
-    console.log(`🔍 [BASIC_DEBUG] Mode switch button clicked! From: ${currentMode} → To: ${mode}`);
+    console.log(`🔒🚨 [PERSISTENT_MODE_SWITCH] ===== MODE SWITCH BUTTON CLICKED =====`);
+    console.log(`🔒🚨 [PERSISTENT_MODE_SWITCH] From: ${currentMode} → To: ${mode}`);
+    console.log(`🔒🚨 [PERSISTENT_MODE_SWITCH] Timestamp: ${new Date().toISOString()}`);
     
     // Get pending Pokemon from persistent state
     const pendingPokemon = getAllPendingIds();
-    console.log(`🔍 [BASIC_DEBUG] Found ${pendingPokemon.length} pending Pokemon:`, pendingPokemon);
-    console.log(`🔍 [BASIC_DEBUG] hasPendingPokemon: ${hasPendingPokemon}`);
+    console.log(`🔒🚨 [PERSISTENT_MODE_SWITCH] Found ${pendingPokemon.length} pending Pokemon:`, pendingPokemon);
     
     if (mode === "battle" && hasPendingPokemon) {
-      console.log(`🔍 [BASIC_DEBUG] Switching to battle mode WITH pending Pokemon!`);
+      console.log(`🔒🚨 [PERSISTENT_MODE_SWITCH] ⭐ SWITCHING TO BATTLE MODE WITH PENDING POKEMON!`);
       
       // Call the mode change first
       onModeChange(mode);
       
       // Dispatch event to notify battle system
       setTimeout(() => {
-        console.log(`🔍 [BASIC_DEBUG] About to dispatch pending-battles-detected event...`);
         const event = new CustomEvent('pending-battles-detected', {
           detail: { 
             pendingPokemon: pendingPokemon,
@@ -42,13 +42,13 @@ const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ currentMode, onModeChange }
           }
         });
         document.dispatchEvent(event);
-        console.log(`🔍 [BASIC_DEBUG] Event dispatched!`);
+        console.log(`🔒🚨 [PERSISTENT_MODE_SWITCH] Dispatched pending-battles-detected event`);
       }, 100);
       
       return;
     }
     
-    console.log(`🔍 [BASIC_DEBUG] Normal mode switch, no pending Pokemon`);
+    console.log(`🔒🚨 [PERSISTENT_MODE_SWITCH] Normal mode switch, no pending Pokemon`);
     onModeChange(mode);
   };
 
@@ -59,10 +59,7 @@ const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ currentMode, onModeChange }
           <Tooltip>
             <TooltipTrigger asChild>
               <button
-                onClick={() => {
-                  console.log(`🔍 [BASIC_DEBUG] Battle button clicked!`);
-                  handleModeChange("battle");
-                }}
+                onClick={() => handleModeChange("battle")}
                 className={`flex items-center justify-center gap-2 px-4 py-2 rounded-md transition-all duration-200 font-medium text-sm relative ${
                   currentMode === "battle"
                     ? "bg-blue-900 text-white shadow-sm"
@@ -86,10 +83,7 @@ const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ currentMode, onModeChange }
           <Tooltip>
             <TooltipTrigger asChild>
               <button
-                onClick={() => {
-                  console.log(`🔍 [BASIC_DEBUG] Manual button clicked!`);
-                  handleModeChange("rank");
-                }}
+                onClick={() => handleModeChange("rank")}
                 className={`flex items-center justify-center gap-2 px-4 py-2 rounded-md transition-all duration-200 font-medium text-sm ${
                   currentMode === "rank"
                     ? "bg-blue-900 text-white shadow-sm"
