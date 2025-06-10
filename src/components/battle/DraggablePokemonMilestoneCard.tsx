@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -39,28 +40,28 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     return stored === 'true';
   });
 
-  // Get the refinement queue and functions
-  const { refinementQueue, queueBattlesForReorder, hasRefinementBattles } = useSharedRefinementQueue();
+  // Get the refinement queue and functions directly
+  const refinementQueueHook = useSharedRefinementQueue();
+  
+  console.log(`🌟🌟🌟 [STAR_DIAGNOSTIC_${context.toUpperCase()}] Pokemon ${pokemon.name} (${pokemon.id}):`);
+  console.log(`🌟🌟🌟 [STAR_DIAGNOSTIC_${context.toUpperCase()}] - refinementQueueHook:`, refinementQueueHook);
+  console.log(`🌟🌟🌟 [STAR_DIAGNOSTIC_${context.toUpperCase()}] - allRankedPokemon.length: ${allRankedPokemon.length}`);
+  console.log(`🌟🌟🌟 [STAR_DIAGNOSTIC_${context.toUpperCase()}] - context: ${context}`);
+  
+  // Extract the actual values from the hook
+  const refinementQueue = refinementQueueHook?.refinementQueue || [];
+  const queueBattlesForReorder = refinementQueueHook?.queueBattlesForReorder;
+  const hasRefinementBattles = refinementQueueHook?.hasRefinementBattles || false;
   
   const contextAvailable = Boolean(
     refinementQueue && 
     Array.isArray(refinementQueue) && 
-    typeof queueBattlesForReorder === 'function' &&
-    typeof hasRefinementBattles === 'boolean'
+    typeof queueBattlesForReorder === 'function'
   );
   
-  console.log(`🌟🌟🌟 [STAR_DIAGNOSTIC_${context.toUpperCase()}] Pokemon ${pokemon.name} (${pokemon.id}):`);
   console.log(`🌟🌟🌟 [STAR_DIAGNOSTIC_${context.toUpperCase()}] - contextAvailable: ${contextAvailable}`);
-  console.log(`🌟🌟🌟 [STAR_DIAGNOSTIC_${context.toUpperCase()}] - allRankedPokemon.length: ${allRankedPokemon.length}`);
-  console.log(`🌟🌟🌟 [STAR_DIAGNOSTIC_${context.toUpperCase()}] - context: ${context}`);
-  console.log(`🌟🌟🌟 [STAR_DIAGNOSTIC_${context.toUpperCase()}] - refinementQueue exists: ${!!refinementQueue}`);
+  console.log(`🌟🌟🌟 [STAR_DIAGNOSTIC_${context.toUpperCase()}] - refinementQueue length: ${refinementQueue.length}`);
   console.log(`🌟🌟🌟 [STAR_DIAGNOSTIC_${context.toUpperCase()}] - queueBattlesForReorder function: ${typeof queueBattlesForReorder}`);
-  
-  // CRITICAL DEBUG: Log the actual queue function details
-  if (contextAvailable) {
-    console.log(`🌟🌟🌟 [STAR_DIAGNOSTIC_${context.toUpperCase()}] - refinementQueue length: ${refinementQueue.length}`);
-    console.log(`🌟🌟🌟 [STAR_DIAGNOSTIC_${context.toUpperCase()}] - queueBattlesForReorder toString: ${queueBattlesForReorder.toString().substring(0, 200)}...`);
-  }
   
   // Check if this Pokemon has any battles in the refinement queue
   const isPendingRefinement = contextAvailable ? (
@@ -78,21 +79,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] isPendingRefinement: ${isPendingRefinement}`);
     console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] contextAvailable: ${contextAvailable}`);
     console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] allRankedPokemon length: ${allRankedPokemon.length}`);
-    console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] refinementQueue:`, refinementQueue);
     console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] queueBattlesForReorder type: ${typeof queueBattlesForReorder}`);
-    
-    // CRITICAL DEBUG: Try to call the function and see what happens
-    if (typeof queueBattlesForReorder === 'function') {
-      console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] Function appears to be callable, testing...`);
-      try {
-        // Test with minimal args to see if function exists
-        console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] Function signature test - calling queueBattlesForReorder`);
-        const testResult = queueBattlesForReorder;
-        console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] Function reference obtained: ${typeof testResult}`);
-      } catch (error) {
-        console.error(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] Function test failed:`, error);
-      }
-    }
     
     if (!isPendingRefinement) {
       console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] Adding ${pokemon.name} to refinement queue`);
@@ -102,7 +89,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       localStorage.setItem(`pokemon-pending-${pokemon.id}`, 'true');
       
       // Generate random top-50 battles whenever the refinement queue is available
-      if (contextAvailable && allRankedPokemon.length > 1) {
+      if (contextAvailable && allRankedPokemon.length > 1 && typeof queueBattlesForReorder === 'function') {
         console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] Context available and sufficient ranked Pokemon`);
 
         // Find current Pokemon's position in the ranked list
@@ -116,7 +103,6 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
             .filter(p => p.id !== pokemon.id);
           
           console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] Top pool size: ${topPool.length}`);
-          console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] Top pool sample:`, topPool.slice(0, 5).map(p => p.name));
           
           const poolCopy = [...topPool];
           const opponents: number[] = [];
@@ -139,7 +125,6 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
               console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] ✅ SUCCESS! New queue length: ${newLength}`);
             } catch (error) {
               console.error(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] ❌ Error calling queueBattlesForReorder:`, error);
-              console.error(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] Error stack:`, error.stack);
             }
           } else {
             console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] ❌ No valid opponents found`);
@@ -165,13 +150,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
         console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] ⚠️ Cannot queue battles:`);
         console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] - contextAvailable: ${contextAvailable}`);
         console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] - allRankedPokemon.length: ${allRankedPokemon.length}`);
-        
-        if (!contextAvailable) {
-          console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] Refinement queue context not available`);
-          console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] - refinementQueue: ${!!refinementQueue}`);
-          console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] - queueBattlesForReorder: ${typeof queueBattlesForReorder}`);
-          console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] - hasRefinementBattles: ${typeof hasRefinementBattles}`);
-        }
+        console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] - queueBattlesForReorder type: ${typeof queueBattlesForReorder}`);
       }
     } else {
       console.log(`🌟🌟🌟 [STAR_CLICK_MEGA_DIAGNOSTIC] Pokemon ${pokemon.name} is already pending, toggling off`);
