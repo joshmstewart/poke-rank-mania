@@ -37,11 +37,18 @@ export const useBattleStateOrchestrator = (
     setBattleResults: stateData.setBattleResults
   });
 
+  // Use event handlers hook - CRITICAL FIX: pass startNewBattleAsync instead of startNewBattle
+  const eventHandlers = useBattleStateEventHandlers(
+    allPokemon,
+    stateData,
+    coordination.startNewBattleAsync
+  );
+
   // Use processors hook
   const processors = useBattleStateProcessors(
     stateData,
     milestoneEvents,
-    () => {} // Will be set later
+    eventHandlers.startNewBattleWrapper
   );
 
   console.log(`🚨🚨🚨 [BATTLE_STATE_ORCHESTRATOR] About to call milestoneHandlers...`);
@@ -56,16 +63,7 @@ export const useBattleStateOrchestrator = (
     stateData.setMilestoneInProgress,
     stateData.setRankingGenerated,
     processors.setFinalRankingsWithLogging,
-    () => {} // Will be set later
-  );
-
-  // Use event handlers hook - CRITICAL FIX: pass startNewBattleAsync instead of startNewBattle
-  const eventHandlers = useBattleStateEventHandlers(
-    allPokemon,
-    stateData,
-    coordination.startNewBattleAsync,
-    milestoneHandlers,
-    processors.setFinalRankingsWithLogging
+    eventHandlers.startNewBattleWrapper
   );
 
   console.log(`🚨🚨🚨 [BATTLE_STATE_ORCHESTRATOR] milestoneHandlers created, about to call handlers...`);

@@ -6,8 +6,8 @@ export const useBattleStateEventHandlers = (
   allPokemon: Pokemon[],
   stateData: any,
   startNewBattleAsync: (battleType: BattleType) => Promise<Pokemon[]>,
-  milestoneHandlers: any,
-  setFinalRankingsWithLogging: (rankings: any) => void
+  milestoneHandlers?: any,
+  setFinalRankingsWithLogging?: (rankings: any) => void
 ) => {
   // Create a parameterless wrapper for milestone handlers with proper async handling
   const startNewBattleWrapper = useCallback(async () => {
@@ -36,18 +36,29 @@ export const useBattleStateEventHandlers = (
 
   // Completion percentage calculation
   useEffect(() => {
+    if (!milestoneHandlers) return;
+
     const percentage = milestoneHandlers.calculateCompletionPercentage();
-    console.log(`🔧 [COMPLETION_DEBUG] Calculated completion percentage: ${percentage}% for ${stateData.battlesCompleted} battles`);
+    console.log(
+      `🔧 [COMPLETION_DEBUG] Calculated completion percentage: ${percentage}% for ${stateData.battlesCompleted} battles`
+    );
     stateData.setCompletionPercentage(percentage);
   }, [stateData.battlesCompleted, milestoneHandlers, stateData.setCompletionPercentage]);
 
   // Event listener for milestone ranking generation
   useEffect(() => {
+    if (!milestoneHandlers) return;
+
     const handleGenerateMilestoneRankings = (event: CustomEvent) => {
-      console.log(`🔥 [MILESTONE_RANKING_EVENT] Received generate-milestone-rankings event:`, event.detail);
-      console.log(`🔥 [MILESTONE_RANKING_EVENT] Current battle history length: ${stateData.battleHistory.length}`);
+      console.log(
+        `🔥 [MILESTONE_RANKING_EVENT] Received generate-milestone-rankings event:`,
+        event.detail
+      );
+      console.log(
+        `🔥 [MILESTONE_RANKING_EVENT] Current battle history length: ${stateData.battleHistory.length}`
+      );
       console.log(`🔥 [MILESTONE_RANKING_EVENT] Calling milestoneHandlers.generateRankings...`);
-      
+
       try {
         milestoneHandlers.generateRankings();
         console.log(`🔥 [MILESTONE_RANKING_EVENT] ✅ generateRankings called successfully`);
