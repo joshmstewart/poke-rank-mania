@@ -31,17 +31,19 @@ const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ currentMode, onModeChange }
     
     console.log(`🔥🔥🔥 [${debugId}] ===== PENDING BATTLE STATE ANALYSIS =====`);
     console.log(`🔥🔥🔥 [${debugId}] Pending Pokemon IDs:`, pendingPokemon);
-    console.log(`🔥🔥🔥 [${debugId}] Count: ${pendingPokemon.length}`);
+    console.log(`🔥🔥🔥 [${debugId}] Count: ${pendingPokemon?.length || 0}`);
+    console.log(`🔥🔥🔥 [${debugId}] Type: ${typeof pendingPokemon}`);
+    console.log(`🔥🔥🔥 [${debugId}] Is Array: ${Array.isArray(pendingPokemon)}`);
     console.log(`🔥🔥🔥 [${debugId}] Has pending flag: ${hasPending}`);
     console.log(`🔥🔥🔥 [${debugId}] Is switching to battle: ${mode === "battle"}`);
-    console.log(`🔥🔥🔥 [${debugId}] Should trigger event: ${mode === "battle" && hasPending}`);
+    console.log(`🔥🔥🔥 [${debugId}] Should trigger event: ${mode === "battle" && Array.isArray(pendingPokemon) && pendingPokemon.length > 0}`);
     
     // Call the mode change first - this is critical for proper initialization
     console.log(`🔥🔥🔥 [${debugId}] Calling onModeChange(${mode})`);
     onModeChange(mode);
     console.log(`🔥🔥🔥 [${debugId}] onModeChange completed`);
     
-    if (mode === "battle" && hasPending) {
+    if (mode === "battle" && Array.isArray(pendingPokemon) && pendingPokemon.length > 0) {
       console.log(`🔥🔥🔥 [${debugId}] ⭐ SWITCHING TO BATTLE MODE WITH PENDING POKEMON!`);
       
       // Multiple timing attempts to ensure event is received
@@ -95,13 +97,18 @@ const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ currentMode, onModeChange }
     }
     
     console.log(`🔥🔥🔥 [${debugId}] Normal mode switch - no pending Pokemon or not switching to battle`);
+    console.log(`🔥🔥🔥 [${debugId}] Conditions: mode=${mode}, pendingPokemon=${JSON.stringify(pendingPokemon)}, isArray=${Array.isArray(pendingPokemon)}, length=${pendingPokemon?.length}`);
   };
 
   // Debug render
+  const currentPending = getAllPendingIds();
   console.log(`🔥🔥🔥 [MODE_SWITCHER_RENDER] ModeSwitcher render:`, {
     currentMode,
     hasPendingPokemon,
-    pendingCount: getAllPendingIds().length,
+    pendingCount: currentPending?.length || 0,
+    pendingIds: currentPending,
+    pendingType: typeof currentPending,
+    pendingIsArray: Array.isArray(currentPending),
     isHydrated,
     timestamp: new Date().toISOString()
   });

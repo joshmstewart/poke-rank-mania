@@ -63,9 +63,11 @@ export const useCloudPendingBattles = () => {
     console.log(`🔥🔥🔥 [CLOUD_PENDING_HOOK] Raw result:`, ids);
     console.log(`🔥🔥🔥 [CLOUD_PENDING_HOOK] Type:`, typeof ids);
     console.log(`🔥🔥🔥 [CLOUD_PENDING_HOOK] Is Array:`, Array.isArray(ids));
-    console.log(`🔥🔥🔥 [CLOUD_PENDING_HOOK] Length:`, ids.length);
-    console.log(`🔥🔥🔥 [CLOUD_PENDING_HOOK] Individual items:`, ids.map(id => `${id}(${typeof id})`));
-    return ids;
+    console.log(`🔥🔥🔥 [CLOUD_PENDING_HOOK] Length:`, ids?.length || 'undefined');
+    if (Array.isArray(ids)) {
+      console.log(`🔥🔥🔥 [CLOUD_PENDING_HOOK] Individual items:`, ids.map(id => `${id}(${typeof id})`));
+    }
+    return ids || [];
   }, [getAllPendingBattles]);
 
   const hasPendingPokemon = getAllPendingBattles().length > 0;

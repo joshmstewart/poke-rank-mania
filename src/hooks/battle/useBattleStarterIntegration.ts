@@ -105,8 +105,11 @@ export const useBattleStarterIntegration = (
     const cloudPendingIds = getAllPendingIds();
     console.log(`🔥🔥🔥 [${callId}] ===== CLOUD PENDING BATTLES CHECK =====`);
     console.log(`🔥🔥🔥 [${callId}] Cloud pending IDs: ${cloudPendingIds}`);
+    console.log(`🔥🔥🔥 [${callId}] Cloud pending IDs type: ${typeof cloudPendingIds}`);
+    console.log(`🔥🔥🔥 [${callId}] Cloud pending IDs isArray: ${Array.isArray(cloudPendingIds)}`);
+    console.log(`🔥🔥🔥 [${callId}] Cloud pending IDs length: ${cloudPendingIds?.length || 'undefined'}`);
     
-    if (cloudPendingIds.length > 0) {
+    if (cloudPendingIds && Array.isArray(cloudPendingIds) && cloudPendingIds.length > 0) {
       console.log(`🔥🔥🔥 [${callId}] ===== FOUND ${cloudPendingIds.length} CLOUD PENDING BATTLES =====`);
       
       // Find all pending Pokemon in the filtered set
@@ -118,9 +121,13 @@ export const useBattleStarterIntegration = (
         console.error(`🔥🔥🔥 [${callId}] ❌ CRITICAL: No pending Pokemon found in filtered set!`);
         console.error(`🔥🔥🔥 [${callId}] Pending IDs: ${cloudPendingIds}`);
         console.error(`🔥🔥🔥 [${callId}] Available IDs: ${filteredPokemon.map(p => p.id).slice(0, 10)}`);
+        console.error(`🔥🔥🔥 [${callId}] First 10 filtered Pokemon: ${filteredPokemon.slice(0, 10).map(p => `${p.name}(${p.id})`).join(', ')}`);
+        
+        // Check if pending Pokemon exist in original allPokemon
+        const pendingInOriginal = allPokemon.filter(p => cloudPendingIds.includes(p.id));
+        console.error(`🔥🔥🔥 [${callId}] Pending Pokemon in original set: ${pendingInOriginal.map(p => `${p.name}(${p.id})`).join(', ')}`);
         
         // Emergency fallback: use unfiltered pending Pokemon
-        const pendingInOriginal = allPokemon.filter(p => cloudPendingIds.includes(p.id));
         if (pendingInOriginal.length > 0) {
           console.log(`🔥🔥🔥 [${callId}] 🚨 EMERGENCY: Using unfiltered pending Pokemon`);
           const primaryPokemon = pendingInOriginal[0];
@@ -188,6 +195,7 @@ export const useBattleStarterIntegration = (
       }
     } else {
       console.log(`🔥🔥🔥 [${callId}] No cloud pending battles found`);
+      console.log(`🔥🔥🔥 [${callId}] cloudPendingIds details: ${JSON.stringify(cloudPendingIds)}`);
     }
     
     // Check refinement queue
