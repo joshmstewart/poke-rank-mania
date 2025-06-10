@@ -1,4 +1,5 @@
-import { useMemo, useCallback } from "react";
+
+import { useMemo, useCallback, useEffect } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { createBattleStarter } from "./createBattleStarter";
 import { useSharedRefinementQueue } from "./useSharedRefinementQueue";
@@ -126,14 +127,14 @@ export const useBattleStarterIntegration = (
           
           if (availableOpponents.length > 0) {
             const opponent = availableOpponents[Math.floor(Math.random() * availableOpponents.length)];
-            const result = [primaryPokemon, opponent];
+            const emergencyResult = [primaryPokemon, opponent];
             
             console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] 🚨 EMERGENCY BATTLE: ${primaryPokemon.name} vs ${opponent.name}`);
             console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] Setting current battle...`);
-            setCurrentBattle(result);
+            setCurrentBattle(emergencyResult);
             setSelectedPokemon([]);
             console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] ✅ Emergency battle state set`);
-            return result;
+            return emergencyResult;
           }
         }
         
@@ -172,16 +173,16 @@ export const useBattleStarterIntegration = (
           }
         }
         
-        const result = [primaryPokemon, opponent];
+        const pendingResult = [primaryPokemon, opponent];
         console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] ✅ PENDING BATTLE CREATED: ${primaryPokemon.name} vs ${opponent.name}`);
         
         // Set the battle immediately
         console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] Setting current battle...`);
-        setCurrentBattle(result);
+        setCurrentBattle(pendingResult);
         setSelectedPokemon([]);
         console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] ✅ Battle state set successfully`);
         
-        return result;
+        return pendingResult;
       }
     } else {
       console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] No cloud pending battles found`);
@@ -204,13 +205,13 @@ export const useBattleStarterIntegration = (
         
         if (pokemon1 && pokemon2) {
           console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] ✅ REFINEMENT BATTLE GENERATED: ${pokemon1.name} vs ${pokemon2.name}`);
-          const result = [pokemon1, pokemon2];
+          const refinementResult = [pokemon1, pokemon2];
           
-          setCurrentBattle(result);
+          setCurrentBattle(refinementResult);
           setSelectedPokemon([]);
           refinementQueue.popRefinementBattle();
           
-          return result;
+          return refinementResult;
         } else {
           console.error(`🔍 [DEBUG_INTEGRATION] [${callId}] ❌ Could not find Pokemon for refinement battle`);
         }
@@ -221,14 +222,15 @@ export const useBattleStarterIntegration = (
     console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] ===== CALLING NORMAL BATTLE STARTER =====`);
     console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] BattleStarter.startNewBattle exists: ${!!battleStarter.startNewBattle}`);
     
+    let normalResult: Pokemon[] = [];
     try {
-      const result = battleStarter.startNewBattle(battleType, refinementQueue);
+      normalResult = battleStarter.startNewBattle(battleType, refinementQueue);
       
-      console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] Battle result:`, result ? result.map(p => `${p.name}(${p.id})`).join(' vs ') : 'null/empty');
+      console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] Battle result:`, normalResult ? normalResult.map(p => `${p.name}(${p.id})`).join(' vs ') : 'null/empty');
       
-      if (result && result.length > 0) {
+      if (normalResult && normalResult.length > 0) {
         console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] Setting normal battle state...`);
-        setCurrentBattle(result);
+        setCurrentBattle(normalResult);
         setSelectedPokemon([]);
         console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] ✅ Normal battle set successfully`);
       } else {
@@ -239,7 +241,7 @@ export const useBattleStarterIntegration = (
     }
     
     console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] ===== startNewBattle COMPLETE =====`);
-    return result || [];
+    return normalResult || [];
   }, [battleStarter, filteredPokemon, getAllPendingIds, refinementQueue, setCurrentBattle, setSelectedPokemon, allPokemon]);
 
   // Log whenever startNewBattle callback changes
