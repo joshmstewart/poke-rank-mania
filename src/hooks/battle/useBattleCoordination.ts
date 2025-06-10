@@ -1,4 +1,3 @@
-
 import { useEffect, useMemo, useRef } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { usePokemonContext } from "@/contexts/PokemonContext";
@@ -95,10 +94,15 @@ export const useBattleCoordination = (
   const initializationTimerRef = useRef<NodeJS.Timeout | null>(null);
   const initializationCompleteRef = useRef(false);
 
-  // Update the callback ref when startNewBattle changes
-  useEffect(() => {
-    startNewBattleCallbackRef.current = startNewBattle;
-  }, [startNewBattle]);
+  // CRITICAL FIX: Update the callback ref immediately when startNewBattle changes
+  // This ensures the ref is NEVER null when events are triggered
+  startNewBattleCallbackRef.current = startNewBattle;
+  
+  console.log(`🔧🔧🔧 [BATTLE_COORDINATION_DEBUG] startNewBattle function updated in ref:`, {
+    callbackExists: !!startNewBattleCallbackRef.current,
+    startNewBattleExists: !!startNewBattle,
+    timestamp: new Date().toISOString()
+  });
 
   // CRITICAL FIX: Initialize battle starter events to handle auto-battle generation AND refinement queue events
   useBattleStarterEvents(
