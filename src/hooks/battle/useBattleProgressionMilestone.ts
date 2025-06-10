@@ -1,14 +1,32 @@
 
-import { useCallback, useRef } from "react";
+import { useCallback, useRef, useEffect } from "react";
 
 export const useBattleProgressionMilestone = (
   milestones: number[],
   generateRankings: (results: any[]) => void,
-  setShowingMilestone: (value: boolean) => void
+  setShowingMilestone: (value: boolean) => void,
+  initialBattlesCompleted: number
 ) => {
-  const milestoneTracker = useRef<Set<number>>(new Set());
-  const lastTriggeredMilestoneRef = useRef<number | null>(null);
+  const milestoneTracker = useRef<Set<number>>(
+    new Set(milestones.filter(m => m <= initialBattlesCompleted))
+  );
+  const lastTriggeredMilestoneRef = useRef<number | null>(
+    (() => {
+      const reached = milestones.filter(m => m <= initialBattlesCompleted);
+      return reached.length > 0 ? reached[reached.length - 1] : null;
+    })()
+  );
   const battleGenerationBlockedRef = useRef(false);
+
+  // Keep trackers in sync if the initial battle count changes (e.g., after hydration)
+  useEffect(() => {
+    milestoneTracker.current = new Set(
+      milestones.filter(m => m <= initialBattlesCompleted)
+    );
+    const reached = milestones.filter(m => m <= initialBattlesCompleted);
+    lastTriggeredMilestoneRef.current =
+      reached.length > 0 ? reached[reached.length - 1] : null;
+  }, [initialBattlesCompleted, milestones]);
 
   const checkMilestone = useCallback((newBattlesCompleted: number, battleResults: any[]): boolean => {
     console.log(`🔍 MILESTONE CHECK: Checking ${newBattlesCompleted} battles against milestones: ${milestones.join(', ')}`);
