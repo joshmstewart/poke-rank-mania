@@ -38,7 +38,10 @@ const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ currentMode, onModeChange }
         console.log(`🚨 [MODE_SWITCHER_CRITICAL] ⭐ SWITCHING TO BATTLE MODE WITH QUEUED REFINEMENT BATTLES!`);
         console.log(`🚨 [MODE_SWITCHER_CRITICAL] This should trigger refinement battles in battle mode`);
         
-        // Dispatch event to notify battle system about pending refinements
+        // Call the mode change first to ensure battle system is mounted
+        onModeChange(mode);
+        
+        // CRITICAL FIX: Dispatch event with longer delay to ensure battle system is ready
         setTimeout(() => {
           const event = new CustomEvent('refinement-battles-available', {
             detail: { 
@@ -48,12 +51,15 @@ const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ currentMode, onModeChange }
             }
           });
           document.dispatchEvent(event);
-          console.log(`🚨 [MODE_SWITCHER_CRITICAL] ✅ Dispatched refinement-battles-available event`);
-        }, 100);
+          console.log(`🚨 [MODE_SWITCHER_CRITICAL] ✅ Dispatched refinement-battles-available event after mode switch`);
+        }, 1000); // Increased delay to ensure battle system is mounted
+        
+        // Exit early since we already called onModeChange
+        return;
       }
     }
     
-    // Call the mode change
+    // Call the mode change for non-battle switches or when no refinement battles
     onModeChange(mode);
     
     // Check ratings after mode change (with delay to allow state updates)

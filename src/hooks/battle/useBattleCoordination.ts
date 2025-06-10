@@ -1,5 +1,5 @@
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { usePokemonContext } from "@/contexts/PokemonContext";
 import { useProgressState } from "./useProgressState";
@@ -41,7 +41,7 @@ export const useBattleCoordination = (
     clearAllSuggestions,
     findNextSuggestion,
     loadSavedSuggestions,
-    allRankedPokemon // CRITICAL FIX: Get ranked Pokemon from useRankings
+    allRankedPokemon
   } = useRankings();
 
   const {
@@ -78,7 +78,7 @@ export const useBattleCoordination = (
     battleStarter, 
     startNewBattle,
     resetSuggestionPriority,
-    refinementQueue // CRITICAL FIX: Extract refinement queue from integration
+    refinementQueue
   } = useBattleStarterIntegration(
     filteredPokemon, 
     finalRankings || [],
@@ -88,19 +88,44 @@ export const useBattleCoordination = (
     currentBattle
   );
 
-  // CRITICAL: Initialize battle starter events to handle auto-battle generation
+  // CRITICAL FIX: Create refs for battle starter events
+  const initialBattleStartedRef = useRef(false);
+  const autoTriggerDisabledRef = useRef(false);
+  const startNewBattleCallbackRef = useRef(startNewBattle);
+  const initializationTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const initializationCompleteRef = useRef(false);
+
+  // Update the callback ref when startNewBattle changes
+  useEffect(() => {
+    startNewBattleCallbackRef.current = startNewBattle;
+  }, [startNewBattle]);
+
+  // CRITICAL FIX: Initialize battle starter events to handle auto-battle generation AND refinement queue events
   useBattleStarterEvents(
     filteredPokemon,
     currentBattle,
-    // Initialize refs for battle starter events
-    { current: false }, // initialBattleStartedRef
-    { current: false }, // autoTriggerDisabledRef
-    { current: startNewBattle }, // startNewBattleCallbackRef
-    { current: null }, // initializationTimerRef
-    { current: false }, // initializationCompleteRef
+    initialBattleStartedRef,
+    autoTriggerDisabledRef,
+    startNewBattleCallbackRef,
+    initializationTimerRef,
+    initializationCompleteRef,
     stableSetCurrentBattle,
     stableSetSelectedPokemon
   );
+
+  // CRITICAL FIX: Check for queued refinement battles when battle coordination initializes
+  useEffect(() => {
+    // Small delay to ensure all components are mounted
+    const checkForQueuedBattles = setTimeout(() => {
+      if (refinementQueue?.hasRefinementBattles && currentBattle.length === 0) {
+        console.log(`🎯 [BATTLE_COORDINATION] Found queued refinement battles on initialization, triggering battle`);
+        const result = startNewBattle("pairs");
+        console.log(`🎯 [BATTLE_COORDINATION] Battle triggered result:`, result?.map(p => p.name));
+      }
+    }, 500);
+
+    return () => clearTimeout(checkForQueuedBattles);
+  }, [refinementQueue?.hasRefinementBattles, currentBattle.length, startNewBattle]);
 
   return {
     contextPokemon,
@@ -131,7 +156,7 @@ export const useBattleCoordination = (
     battleStarter,
     startNewBattle,
     resetSuggestionPriority,
-    refinementQueue, // CRITICAL FIX: Include refinement queue in return object
-    allRankedPokemon // CRITICAL FIX: Include ranked Pokemon in return object
+    refinementQueue,
+    allRankedPokemon
   };
 };
