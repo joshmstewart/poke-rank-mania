@@ -15,6 +15,7 @@ import PokemonModalContent from "@/components/pokemon/PokemonModalContent";
 import { usePokemonFlavorText } from "@/hooks/pokemon/usePokemonFlavorText";
 import { Star } from "lucide-react";
 import { useSharedRefinementQueue } from "@/hooks/battle/useSharedRefinementQueue";
+import { usePokemonContext } from "@/contexts/PokemonContext";
 
 interface TCGBattleCardProps {
   pokemon: Pokemon;
@@ -46,7 +47,8 @@ const TCGBattleCard: React.FC<TCGBattleCardProps> = memo(({
     return stored === 'true';
   });
 
-  const { refinementQueue, hasRefinementBattles } = useSharedRefinementQueue();
+  const { refinementQueue, hasRefinementBattles, queueBattlesForReorder } = useSharedRefinementQueue();
+  const { allPokemon } = usePokemonContext();
 
   const contextAvailable = Boolean(
     refinementQueue &&
@@ -149,6 +151,21 @@ const TCGBattleCard: React.FC<TCGBattleCardProps> = memo(({
     if (!isPendingRefinement) {
       setLocalPendingState(true);
       localStorage.setItem(`pokemon-pending-${pokemon.id}`, 'true');
+
+      if (contextAvailable && allPokemon.length > 1) {
+        const pool = allPokemon.filter(p => p.id !== pokemon.id);
+        const opponents: number[] = [];
+        const copy = [...pool];
+        while (opponents.length < 3 && copy.length > 0) {
+          const rand = Math.floor(Math.random() * copy.length);
+          opponents.push(copy.splice(rand, 1)[0].id);
+        }
+        try {
+          queueBattlesForReorder(pokemon.id, opponents, -1);
+        } catch (error) {
+          console.error('Failed to queue refinement battles from battle card', error);
+        }
+      }
     } else {
       setLocalPendingState(false);
       localStorage.removeItem(`pokemon-pending-${pokemon.id}`);
