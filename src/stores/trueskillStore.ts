@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Rating } from 'ts-trueskill';
+import { toast } from '@/hooks/use-toast';
 
 interface TrueSkillRating {
   mu: number;
@@ -35,6 +36,10 @@ interface TrueSkillStore {
 
 const generateSessionId = () => crypto.randomUUID();
 
+// Debounce delay for syncing to the server (in milliseconds)
+const SYNC_DEBOUNCE_DELAY = 1500;
+let syncTimeout: ReturnType<typeof setTimeout> | null = null;
+
 export const useTrueSkillStore = create<TrueSkillStore>()(
   persist(
     (set, get) => ({
@@ -57,8 +62,8 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           }
         }));
         
-        // Auto-sync after updates
-        setTimeout(() => get().syncToCloud(), 100);
+        // Queue a sync after updates
+        get().syncToCloud();
       },
 
       incrementBattleCount: (pokemonId: string) => {
@@ -78,8 +83,8 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           totalBattles: state.totalBattles + 1
         }));
         
-        // Auto-sync after battle count increment
-        setTimeout(() => get().syncToCloud(), 100);
+        // Queue a sync after battle count increment
+        get().syncToCloud();
       },
 
       setTotalBattles: (count: number) => {
@@ -105,7 +110,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           ratings: {},
           totalBattles: 0
         });
-        setTimeout(() => get().syncToCloud(), 100);
+        get().syncToCloud();
       },
 
       forceScoreBetweenNeighbors: (pokemonId: string, higherNeighborId?: string, lowerNeighborId?: string) => {
@@ -129,11 +134,32 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
         get().updateRating(pokemonId, newRating);
       },
 
-      syncToCloud: async () => {
+      syncToCloud: async (options?: { force?: boolean }) => {
+        const force = options?.force ?? false;
+
+        if (!force) {
+          if (syncTimeout) {
+            clearTimeout(syncTimeout);
+          }
+          syncTimeout = setTimeout(() => {
+            syncTimeout = null;
+            get().syncToCloud({ force: true });
+          }, SYNC_DEBOUNCE_DELAY);
+          return;
+        }
+
+        if (syncTimeout) {
+          clearTimeout(syncTimeout);
+          syncTimeout = null;
+        }
+
         const state = get();
         if (state.syncInProgress) return;
-        
-        set({ syncInProgress: true });
+
+        const manageFlag = !state.syncInProgress;
+        if (manageFlag) {
+          set({ syncInProgress: true });
+        }
         
         try {
           console.log(`[TRUESKILL_STORE] Syncing to cloud - ${Object.keys(state.ratings).length} ratings, ${state.totalBattles} total battles`);
@@ -148,13 +174,28 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
               lastUpdated: new Date().toISOString()
             })
           });
-          
+
+          const raw = await response.text();
+
           if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Sync failed: ${response.status} - ${errorText}`);
+            throw new Error(`Sync failed: ${response.status} - ${raw}`);
           }
-          
-          const result = await response.json();
+
+          let result: any;
+          try {
+            result = JSON.parse(raw);
+          } catch (jsonError) {
+            console.error(
+              `[TRUESKILL_STORE] Failed to parse JSON: status ${response.status}, body: ${raw}`
+            );
+            toast({
+              title: 'Sync Error',
+              description: 'Unexpected response from the server.',
+              variant: 'destructive'
+            });
+            return;
+          }
+
           if (result.success) {
             set({ lastSyncTime: Date.now() });
             console.log(`[TRUESKILL_STORE] Successfully synced to cloud`);
@@ -164,7 +205,9 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
         } catch (error) {
           console.error('[TRUESKILL_STORE] Sync to cloud failed:', error);
         } finally {
-          set({ syncInProgress: false });
+          if (manageFlag) {
+            set({ syncInProgress: false });
+          }
         }
       },
 
@@ -239,7 +282,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           } else if (localBattles > cloudBattles) {
             // Case 2: Local has more data, push local to cloud
             console.log(`[TRUESKILL_SMART_SYNC] Local wins (${localBattles} > ${cloudBattles}), pushing local data to cloud`);
-            await get().syncToCloud();
+            await get().syncToCloud({ force: true });
           } else if (localBattles === cloudBattles && cloudBattles > 0) {
             // Equal and both have data, use cloud as authoritative
             console.log(`[TRUESKILL_SMART_SYNC] Equal battle counts (${localBattles}), using cloud as authoritative source`);
@@ -251,7 +294,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
             // Both are 0 or local > cloud but cloud is 0
             console.log(`[TRUESKILL_SMART_SYNC] Using local data (local: ${localBattles}, cloud: ${cloudBattles})`);
             if (localBattles > 0) {
-              await get().syncToCloud();
+              await get().syncToCloud({ force: true });
             }
           }
           
