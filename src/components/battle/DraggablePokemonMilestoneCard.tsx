@@ -42,164 +42,39 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   // Get the refinement queue and functions directly
   const refinementQueueHook = useSharedRefinementQueue();
   
-  // ENHANCED DEBUG: Much more detailed logging
-  console.log(`🌟🌟🌟 [ENHANCED_STAR_DEBUG] ===== Pokemon ${pokemon.name} Card State =====`);
-  console.log(`🌟🌟🌟 [ENHANCED_STAR_DEBUG] Pokemon ID: ${pokemon.id}, Context: ${context}`);
-  console.log(`🌟🌟🌟 [ENHANCED_STAR_DEBUG] refinementQueueHook:`, {
-    exists: !!refinementQueueHook,
-    hasRefinementBattles: refinementQueueHook?.hasRefinementBattles,
-    refinementBattleCount: refinementQueueHook?.refinementBattleCount,
-    queueLength: refinementQueueHook?.refinementQueue?.length,
-    queueBattlesForReorderType: typeof refinementQueueHook?.queueBattlesForReorder
-  });
-  console.log(`🌟🌟🌟 [ENHANCED_STAR_DEBUG] allRankedPokemon.length: ${allRankedPokemon.length}`);
-  console.log(`🌟🌟🌟 [ENHANCED_STAR_DEBUG] localPendingState: ${localPendingState}`);
+  // IMMEDIATE DEBUG: Log every render to see if component is working
+  console.log(`⭐⭐⭐ [IMMEDIATE_STAR_DEBUG] Pokemon ${pokemon.name} card rendered in ${context} mode`);
   
-  // Extract the actual values from the hook
-  const refinementQueue = refinementQueueHook?.refinementQueue || [];
-  const queueBattlesForReorder = refinementQueueHook?.queueBattlesForReorder;
-  const hasRefinementBattles = refinementQueueHook?.hasRefinementBattles || false;
-  
-  const contextAvailable = Boolean(
-    refinementQueue && 
-    Array.isArray(refinementQueue) && 
-    typeof queueBattlesForReorder === 'function'
-  );
-  
-  console.log(`🌟🌟🌟 [ENHANCED_STAR_DEBUG] contextAvailable: ${contextAvailable}`);
-  console.log(`🌟🌟🌟 [ENHANCED_STAR_DEBUG] refinementQueue contents:`, refinementQueue);
-  
-  // Check if this Pokemon has any battles in the refinement queue
-  const isPendingRefinement = contextAvailable ? (
-    refinementQueue.some(
-      battle => battle.primaryPokemonId === pokemon.id
-    ) || localPendingState
-  ) : localPendingState;
-
   const handlePrioritizeClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
     
-    console.log(`🌟🔥🔥 [STAR_CLICK_ULTIMATE_DEBUG] ===== STAR CLICKED FOR ${pokemon.name} =====`);
-    console.log(`🌟🔥🔥 [STAR_CLICK_ULTIMATE_DEBUG] Pokemon ID: ${pokemon.id}`);
-    console.log(`🌟🔥🔥 [STAR_CLICK_ULTIMATE_DEBUG] Context: ${context}`);
-    console.log(`🌟🔥🔥 [STAR_CLICK_ULTIMATE_DEBUG] Timestamp: ${new Date().toISOString()}`);
-    console.log(`🌟🔥🔥 [STAR_CLICK_ULTIMATE_DEBUG] isPendingRefinement: ${isPendingRefinement}`);
-    console.log(`🌟🔥🔥 [STAR_CLICK_ULTIMATE_DEBUG] contextAvailable: ${contextAvailable}`);
-    console.log(`🌟🔥🔥 [STAR_CLICK_ULTIMATE_DEBUG] allRankedPokemon length: ${allRankedPokemon.length}`);
-    console.log(`🌟🔥🔥 [STAR_CLICK_ULTIMATE_DEBUG] refinementQueueHook:`, refinementQueueHook);
+    // IMMEDIATE DEBUG: Log every click
+    console.log(`⭐⭐⭐ [IMMEDIATE_STAR_CLICK] ===== STAR CLICKED FOR ${pokemon.name} =====`);
+    console.log(`⭐⭐⭐ [IMMEDIATE_STAR_CLICK] Pokemon ID: ${pokemon.id}, Context: ${context}`);
+    console.log(`⭐⭐⭐ [IMMEDIATE_STAR_CLICK] Timestamp: ${new Date().toISOString()}`);
     
-    if (!isPendingRefinement) {
-      console.log(`🌟🔥🔥 [STAR_CLICK_ULTIMATE_DEBUG] Adding ${pokemon.name} to refinement queue`);
-      
-      // Always set local pending state for immediate feedback
-      setLocalPendingState(true);
-      localStorage.setItem(`pokemon-pending-${pokemon.id}`, 'true');
-      
-      console.log(`🌟🔥🔥 [STAR_CLICK_ULTIMATE_DEBUG] ✅ Local pending state set to true`);
-      console.log(`🌟🔥🔥 [STAR_CLICK_ULTIMATE_DEBUG] localStorage updated for pokemon-pending-${pokemon.id}`);
-      
-      // Try to queue battles if context is available
-      if (contextAvailable && typeof queueBattlesForReorder === 'function') {
-        console.log(`🌟🔥🔥 [STAR_CLICK_ULTIMATE_DEBUG] ✅ Context available, attempting to queue battles`);
-
-        // Find current Pokemon's position in the ranked list
-        const currentIndex = allRankedPokemon.findIndex(p => p.id === pokemon.id);
-        console.log(`🌟🔥🔥 [STAR_CLICK_ULTIMATE_DEBUG] Current index of ${pokemon.name}: ${currentIndex}`);
-
-        // Pick three random opponents from the top 50 (excluding this Pokemon)
-        const topPool = allRankedPokemon
-          .slice(0, Math.min(50, allRankedPokemon.length))
-          .filter(p => p.id !== pokemon.id);
-        
-        console.log(`🌟🔥🔥 [STAR_CLICK_ULTIMATE_DEBUG] Top pool size: ${topPool.length}`);
-        console.log(`🌟🔥🔥 [STAR_CLICK_ULTIMATE_DEBUG] Top pool sample:`, topPool.slice(0, 5).map(p => `${p.name}(${p.id})`));
-        
-        if (topPool.length >= 3) {
-          const poolCopy = [...topPool];
-          const opponents: number[] = [];
-          while (opponents.length < 3 && poolCopy.length > 0) {
-            const rand = Math.floor(Math.random() * poolCopy.length);
-            const opponent = poolCopy.splice(rand, 1)[0];
-            opponents.push(opponent.id);
-          }
-
-          console.log(`🌟🔥🔥 [STAR_CLICK_ULTIMATE_DEBUG] Opponents chosen for ${pokemon.name} (#${pokemon.id}):`, opponents);
-
-          if (opponents.length > 0) {
-            try {
-              console.log(`🌟🔥🔥 [STAR_CLICK_ULTIMATE_DEBUG] 🚀 Calling queueBattlesForReorder with args:`);
-              console.log(`🌟🔥🔥 [STAR_CLICK_ULTIMATE_DEBUG] - primaryPokemonId: ${pokemon.id}`);
-              console.log(`🌟🔥🔥 [STAR_CLICK_ULTIMATE_DEBUG] - opponents: [${opponents.join(', ')}]`);
-              console.log(`🌟🔥🔥 [STAR_CLICK_ULTIMATE_DEBUG] - currentIndex: ${Math.max(0, currentIndex)}`);
-              
-              const newLength = queueBattlesForReorder(pokemon.id, opponents, Math.max(0, currentIndex));
-              console.log(`🌟🔥🔥 [STAR_CLICK_ULTIMATE_DEBUG] ✅ SUCCESS! New queue length: ${newLength}`);
-              
-              // Immediately check the queue state after queuing
-              setTimeout(() => {
-                const updatedHook = refinementQueueHook;
-                console.log(`🌟🔥🔥 [STAR_CLICK_ULTIMATE_DEBUG] 📊 Queue state after queuing:`, {
-                  hasRefinementBattles: updatedHook?.hasRefinementBattles,
-                  refinementBattleCount: updatedHook?.refinementBattleCount,
-                  queueLength: updatedHook?.refinementQueue?.length,
-                  actualQueue: updatedHook?.refinementQueue
-                });
-              }, 50);
-              
-            } catch (error) {
-              console.error(`🌟🔥🔥 [STAR_CLICK_ULTIMATE_DEBUG] ❌ Error calling queueBattlesForReorder:`, error);
-            }
-          } else {
-            console.log(`🌟🔥🔥 [STAR_CLICK_ULTIMATE_DEBUG] ❌ No valid opponents found`);
-          }
-        } else {
-          console.log(`🌟🔥🔥 [STAR_CLICK_ULTIMATE_DEBUG] ❌ Insufficient Pokemon in top pool: ${topPool.length} < 3`);
-        }
-      } else {
-        console.log(`🌟🔥🔥 [STAR_CLICK_ULTIMATE_DEBUG] ❌ Cannot queue battles:`);
-        console.log(`🌟🔥🔥 [STAR_CLICK_ULTIMATE_DEBUG] - contextAvailable: ${contextAvailable}`);
-        console.log(`🌟🔥🔥 [STAR_CLICK_ULTIMATE_DEBUG] - queueBattlesForReorder type: ${typeof queueBattlesForReorder}`);
-        console.log(`🌟🔥🔥 [STAR_CLICK_ULTIMATE_DEBUG] - refinementQueueHook object:`, refinementQueueHook);
+    // Always set pending state for immediate visual feedback
+    setLocalPendingState(true);
+    localStorage.setItem(`pokemon-pending-${pokemon.id}`, 'true');
+    console.log(`⭐⭐⭐ [IMMEDIATE_STAR_CLICK] Set localStorage pokemon-pending-${pokemon.id} = true`);
+    
+    // Dispatch immediate event to notify system
+    const event = new CustomEvent('pokemon-starred-for-battle', {
+      detail: { 
+        pokemonId: pokemon.id,
+        pokemonName: pokemon.name,
+        context: context,
+        timestamp: Date.now()
       }
-    } else {
-      console.log(`🌟🔥🔥 [STAR_CLICK_ULTIMATE_DEBUG] ⚠️ Pokemon ${pokemon.name} is already pending, toggling off`);
-      setLocalPendingState(false);
-      localStorage.removeItem(`pokemon-pending-${pokemon.id}`);
-    }
-    
-    console.log(`🌟🔥🔥 [STAR_CLICK_ULTIMATE_DEBUG] ===== END STAR CLICK =====`);
+    });
+    document.dispatchEvent(event);
+    console.log(`⭐⭐⭐ [IMMEDIATE_STAR_CLICK] Dispatched pokemon-starred-for-battle event`);
   };
 
-  const hadRefinementBattlesRef = React.useRef(false);
+  // Check if this Pokemon has pending state
+  const isPendingRefinement = localPendingState;
 
-  // Track if there have ever been refinement battles
-  React.useEffect(() => {
-    if (hasRefinementBattles) {
-      hadRefinementBattlesRef.current = true;
-    }
-  }, [hasRefinementBattles]);
-
-  // Clean up localStorage when Pokemon is actually processed in a battle
-  React.useEffect(() => {
-    if (
-      contextAvailable &&
-      hasRefinementBattles === false &&
-      localPendingState &&
-      hadRefinementBattlesRef.current
-    ) {
-      console.log(`🌟🔥🔥 [CLEANUP_TRACE] (${context}) Cleared pending state for ${pokemon.name} (#${pokemon.id}) - battles processed`);
-      setLocalPendingState(false);
-      localStorage.removeItem(`pokemon-pending-${pokemon.id}`);
-      hadRefinementBattlesRef.current = false;
-    }
-  }, [contextAvailable, hasRefinementBattles, localPendingState, pokemon.id, pokemon.name]);
-
-  // Determine if this Pokemon is ranked (for available context)
-  const isRankedPokemon = context === 'available' && 'isRanked' in pokemon && pokemon.isRanked;
-  const currentRank = isRankedPokemon && 'currentRank' in pokemon ? pokemon.currentRank : null;
-
-  // Only use sortable if draggable AND modal is not open
   const sortableResult = useSortable({ 
     id: isDraggable ? (isAvailable ? `available-${pokemon.id}` : pokemon.id) : `static-${pokemon.id}`,
     disabled: !isDraggable || isOpen,
@@ -208,7 +83,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       pokemon: pokemon,
       source: context,
       index,
-      isRanked: isRankedPokemon
+      isRanked: context === 'available' && 'isRanked' in pokemon && pokemon.isRanked
     }
   });
 
@@ -262,6 +137,10 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   // Format Pokemon ID with leading zeros
   const formattedId = pokemon.id.toString().padStart(pokemon.id >= 10000 ? 5 : 3, '0');
 
+  // Determine if this Pokemon is ranked (for available context)
+  const isRankedPokemon = context === 'available' && 'isRanked' in pokemon && pokemon.isRanked;
+  const currentRank = isRankedPokemon && 'currentRank' in pokemon ? pokemon.currentRank : null;
+
   return (
     <div
       ref={setNodeRef}
@@ -300,10 +179,9 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       {!isDragging && (context === 'ranked' || context === 'available') && (
         <button
           onPointerDown={(e) => {
-            // Prevent the drag listeners from capturing this interaction so
-            // the click event can fire reliably
             e.stopPropagation();
             e.preventDefault();
+            console.log(`⭐⭐⭐ [IMMEDIATE_STAR_DEBUG] onPointerDown called for ${pokemon.name}`);
           }}
           onClick={handlePrioritizeClick}
           className={`absolute top-1/2 right-2 -translate-y-1/2 z-30 p-2 rounded-full transition-all duration-300 ${

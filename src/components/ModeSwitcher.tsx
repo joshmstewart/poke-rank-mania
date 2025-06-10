@@ -7,8 +7,6 @@ import {
   TooltipProvider,
   TooltipTrigger 
 } from "@/components/ui/tooltip";
-import { useTrueSkillStore } from "@/stores/trueskillStore";
-import { useSharedRefinementQueue } from "@/hooks/battle/useSharedRefinementQueue";
 
 interface ModeSwitcherProps {
   currentMode: "rank" | "battle";
@@ -16,100 +14,46 @@ interface ModeSwitcherProps {
 }
 
 const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ currentMode, onModeChange }) => {
-  const { getAllRatings } = useTrueSkillStore();
-  const refinementQueueHook = useSharedRefinementQueue();
-
   const handleModeChange = (mode: "rank" | "battle") => {
-    const ratingsBefore = getAllRatings();
-    const ratingsCountBefore = Object.keys(ratingsBefore).length;
+    console.log(`⚡⚡⚡ [IMMEDIATE_MODE_SWITCH] ===== MODE SWITCH BUTTON CLICKED =====`);
+    console.log(`⚡⚡⚡ [IMMEDIATE_MODE_SWITCH] From: ${currentMode} → To: ${mode}`);
+    console.log(`⚡⚡⚡ [IMMEDIATE_MODE_SWITCH] Timestamp: ${new Date().toISOString()}`);
     
-    console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] ===== MODE SWITCHER BUTTON CLICKED =====`);
-    console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] Timestamp: ${new Date().toISOString()}`);
-    console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] From: ${currentMode} → To: ${mode}`);
-    console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] Store state BEFORE switcher action: ${ratingsCountBefore} ratings`);
-    console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] Rating IDs sample: ${Object.keys(ratingsBefore).slice(0, 10).join(', ')}${Object.keys(ratingsBefore).length > 10 ? '...' : ''}`);
-    
-    // CRITICAL DEBUG: Check refinement queue before switching modes
-    if (refinementQueueHook) {
-      const hasRefinementBattles = refinementQueueHook.hasRefinementBattles;
-      const refinementCount = refinementQueueHook.refinementBattleCount;
-      const queueLength = refinementQueueHook.refinementQueue?.length || 0;
-      
-      console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] 📊 Refinement queue status:`);
-      console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] - hasRefinementBattles: ${hasRefinementBattles}`);
-      console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] - refinementCount: ${refinementCount}`);
-      console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] - queueLength: ${queueLength}`);
-      console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] - actual queue contents:`, refinementQueueHook.refinementQueue);
-      console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] - refinementQueueHook functions:`, {
-        queueBattlesForReorder: typeof refinementQueueHook.queueBattlesForReorder,
-        getNextRefinementBattle: typeof refinementQueueHook.getNextRefinementBattle,
-        popRefinementBattle: typeof refinementQueueHook.popRefinementBattle
-      });
-      
-      // Check localStorage for pending Pokemon
-      const pendingPokemon = [];
-      for (let i = 1; i <= 1000; i++) {
-        const stored = localStorage.getItem(`pokemon-pending-${i}`);
-        if (stored === 'true') {
-          pendingPokemon.push(i);
-        }
+    // Check localStorage for any pending Pokemon
+    const pendingPokemon = [];
+    for (let i = 1; i <= 1000; i++) {
+      const stored = localStorage.getItem(`pokemon-pending-${i}`);
+      if (stored === 'true') {
+        pendingPokemon.push(i);
       }
-      console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] - pending Pokemon in localStorage:`, pendingPokemon);
-      
-      if (mode === "battle" && (hasRefinementBattles || pendingPokemon.length > 0)) {
-        console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] ⭐ SWITCHING TO BATTLE MODE WITH QUEUED REFINEMENT BATTLES!`);
-        console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] Queue battles: ${hasRefinementBattles}, Pending localStorage: ${pendingPokemon.length}`);
-        console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] This should trigger refinement battles in battle mode`);
-        
-        // Call the mode change first to ensure battle system is mounted
-        onModeChange(mode);
-        
-        // Dispatch event with detailed information
-        setTimeout(() => {
-          const event = new CustomEvent('refinement-battles-available', {
-            detail: { 
-              count: refinementCount || pendingPokemon.length,
-              source: 'mode-switcher',
-              timestamp: Date.now(),
-              queueLength: queueLength,
-              pendingPokemon: pendingPokemon,
-              hasQueuedBattles: hasRefinementBattles,
-              actualQueue: refinementQueueHook.refinementQueue
-            }
-          });
-          document.dispatchEvent(event);
-          console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] ✅ Dispatched refinement-battles-available event after mode switch`);
-          console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] Event detail:`, event.detail);
-        }, 1000);
-        
-        // Exit early since we already called onModeChange
-        return;
-      } else if (mode === "battle") {
-        console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] ⚠️ Switching to battle mode but NO refinement battles queued`);
-        console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] Will proceed with normal mode switch`);
-      }
-    } else {
-      console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] ❌ No refinement queue hook available!`);
     }
     
-    // Call the mode change for non-battle switches or when no refinement battles
-    onModeChange(mode);
+    console.log(`⚡⚡⚡ [IMMEDIATE_MODE_SWITCH] Found ${pendingPokemon.length} pending Pokemon:`, pendingPokemon);
     
-    // Check ratings after mode change (with delay to allow state updates)
-    setTimeout(() => {
-      const ratingsAfter = getAllRatings();
-      const ratingsCountAfter = Object.keys(ratingsAfter).length;
+    if (mode === "battle" && pendingPokemon.length > 0) {
+      console.log(`⚡⚡⚡ [IMMEDIATE_MODE_SWITCH] ⭐ SWITCHING TO BATTLE MODE WITH PENDING POKEMON!`);
       
-      console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] Store state AFTER switcher action: ${ratingsCountAfter} ratings`);
+      // Call the mode change first
+      onModeChange(mode);
       
-      if (ratingsCountBefore !== ratingsCountAfter) {
-        console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] ❌ RATING COUNT CHANGED! ${ratingsCountBefore} → ${ratingsCountAfter}`);
-        console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] This indicates data loss during mode switch!`);
-      } else {
-        console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] ✅ Rating count preserved during mode switch`);
-      }
-      console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] ===== MODE SWITCHER ACTION COMPLETE =====`);
-    }, 100);
+      // Dispatch event to notify battle system
+      setTimeout(() => {
+        const event = new CustomEvent('pending-battles-detected', {
+          detail: { 
+            pendingPokemon: pendingPokemon,
+            source: 'mode-switcher',
+            timestamp: Date.now()
+          }
+        });
+        document.dispatchEvent(event);
+        console.log(`⚡⚡⚡ [IMMEDIATE_MODE_SWITCH] Dispatched pending-battles-detected event`);
+      }, 100);
+      
+      return;
+    }
+    
+    console.log(`⚡⚡⚡ [IMMEDIATE_MODE_SWITCH] Normal mode switch, no pending Pokemon`);
+    onModeChange(mode);
   };
 
   return (
