@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -38,30 +39,36 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   // Use the persistent pending state hook
   const { isPokemonPending, addPendingPokemon } = usePersistentPendingState();
   
-  console.log(`🔒⭐ [PERSISTENT_STAR_DEBUG] Pokemon ${pokemon.name} card rendered - Pending: ${isPokemonPending(pokemon.id)}`);
+  console.log(`🔍 [BASIC_DEBUG] Card rendered for ${pokemon.name}, context: ${context}, isAvailable: ${isAvailable}`);
   
   const handlePrioritizeClick = (e: React.MouseEvent) => {
+    console.log(`🔍 [BASIC_DEBUG] Star button clicked for ${pokemon.name}!`);
+    console.log(`🔍 [BASIC_DEBUG] Event:`, e);
+    console.log(`🔍 [BASIC_DEBUG] Pokemon ID: ${pokemon.id}`);
+    console.log(`🔍 [BASIC_DEBUG] Context: ${context}`);
+    
     e.stopPropagation();
     e.preventDefault();
     
-    console.log(`🔒⭐ [PERSISTENT_STAR_CLICK] ===== STAR CLICKED FOR ${pokemon.name} =====`);
-    console.log(`🔒⭐ [PERSISTENT_STAR_CLICK] Pokemon ID: ${pokemon.id}, Context: ${context}`);
-    console.log(`🔒⭐ [PERSISTENT_STAR_CLICK] Timestamp: ${new Date().toISOString()}`);
-    
-    // Add to persistent pending state
-    addPendingPokemon(pokemon.id);
-    
-    // Dispatch immediate event to notify system
-    const event = new CustomEvent('pokemon-starred-for-battle', {
-      detail: { 
-        pokemonId: pokemon.id,
-        pokemonName: pokemon.name,
-        context: context,
-        timestamp: Date.now()
-      }
-    });
-    document.dispatchEvent(event);
-    console.log(`🔒⭐ [PERSISTENT_STAR_CLICK] Dispatched pokemon-starred-for-battle event`);
+    try {
+      console.log(`🔍 [BASIC_DEBUG] About to call addPendingPokemon...`);
+      addPendingPokemon(pokemon.id);
+      console.log(`🔍 [BASIC_DEBUG] addPendingPokemon called successfully`);
+      
+      console.log(`🔍 [BASIC_DEBUG] About to dispatch event...`);
+      const event = new CustomEvent('pokemon-starred-for-battle', {
+        detail: { 
+          pokemonId: pokemon.id,
+          pokemonName: pokemon.name,
+          context: context,
+          timestamp: Date.now()
+        }
+      });
+      document.dispatchEvent(event);
+      console.log(`🔍 [BASIC_DEBUG] Event dispatched successfully`);
+    } catch (error) {
+      console.error(`🔍 [BASIC_DEBUG] Error in star click:`, error);
+    }
   };
 
   // Check if this Pokemon has pending state
@@ -167,16 +174,11 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
         </div>
       )}
 
-      {/* Prioritize button - only visible on card hover */}
+      {/* Prioritize button - SIMPLIFIED VERSION */}
       {!isDragging && (context === 'ranked' || context === 'available') && (
         <button
-          onPointerDown={(e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            console.log(`🔒⭐ [PERSISTENT_STAR_DEBUG] onPointerDown called for ${pokemon.name}`);
-          }}
           onClick={handlePrioritizeClick}
-          className={`absolute top-1/2 right-2 -translate-y-1/2 z-30 p-2 rounded-full transition-all duration-300 ${
+          className={`absolute top-1/2 right-2 -translate-y-1/2 z-30 p-2 rounded-full transition-all duration-300 bg-red-500 ${
             isPendingRefinement 
               ? 'opacity-100' 
               : isHovered 
@@ -188,7 +190,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
         >
           <Star
             className={`w-16 h-16 transition-all duration-300 ${
-              isPendingRefinement ? 'text-yellow-400 fill-yellow-400' : 'text-gray-500 hover:text-yellow-500'
+              isPendingRefinement ? 'text-yellow-400 fill-yellow-400' : 'text-white'
             }`}
           />
         </button>
