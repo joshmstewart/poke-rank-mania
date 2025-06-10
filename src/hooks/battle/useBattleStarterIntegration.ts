@@ -20,10 +20,14 @@ export const useBattleStarterIntegration = (
   // Get cloud pending battles
   const { getAllPendingIds } = useCloudPendingBattles();
   
-  // Filter Pokemon based on form filters before creating battle starter
+  // CRITICAL FIX: Filter Pokemon but ALWAYS include pending Pokemon
   const filteredPokemon = useMemo(() => {
     console.log(`🔥🔥🔥 [INTEGRATION_FILTER_DEBUG] ===== STARTING POKEMON FILTERING =====`);
     console.log(`🔥🔥🔥 [INTEGRATION_FILTER_DEBUG] Input Pokemon count: ${allPokemon.length}`);
+    
+    // Get pending Pokemon IDs first
+    const pendingIds = getAllPendingIds();
+    console.log(`🔥🔥🔥 [INTEGRATION_FILTER_DEBUG] Pending Pokemon IDs: ${pendingIds}`);
     
     if (allPokemon.length > 0) {
       const inputIds = allPokemon.map(p => p.id);
@@ -31,46 +35,48 @@ export const useBattleStarterIntegration = (
       const inputMaxId = Math.max(...inputIds);
       console.log(`🔥🔥🔥 [INTEGRATION_FILTER_DEBUG] Input ID range: ${inputMinId} - ${inputMaxId}`);
       
-      // Sample some Pokemon from input
-      const sampleLow = allPokemon.filter(p => p.id <= 150).slice(0, 5);
-      const sampleHigh = allPokemon.filter(p => p.id >= 800).slice(0, 5);
-      console.log(`🔥🔥🔥 [INTEGRATION_FILTER_DEBUG] Sample low ID input: ${sampleLow.map(p => `${p.name}(${p.id})`).join(', ')}`);
-      console.log(`🔥🔥🔥 [INTEGRATION_FILTER_DEBUG] Sample high ID input: ${sampleHigh.map(p => `${p.name}(${p.id})`).join(', ')}`);
+      // Check if pending Pokemon exist in input
+      const pendingInInput = allPokemon.filter(p => pendingIds.includes(p.id));
+      console.log(`🔥🔥🔥 [INTEGRATION_FILTER_DEBUG] Pending Pokemon found in input: ${pendingInInput.map(p => `${p.name}(${p.id})`).join(', ')}`);
     }
 
     // Apply form filters and use the analysis function
-    const filtered = analyzeFilteringPipeline(allPokemon);
+    const normalFiltered = analyzeFilteringPipeline(allPokemon);
     
-    console.log(`🔥🔥🔥 [INTEGRATION_FILTER_DEBUG] After form filtering: ${filtered.length} Pokemon`);
+    console.log(`🔥🔥🔥 [INTEGRATION_FILTER_DEBUG] After normal form filtering: ${normalFiltered.length} Pokemon`);
     
-    if (filtered.length > 0) {
-      const filteredIds = filtered.map(p => p.id);
-      const filteredMinId = Math.min(...filteredIds);
-      const filteredMaxId = Math.max(...filteredIds);
-      console.log(`🔥🔥🔥 [INTEGRATION_FILTER_DEBUG] Filtered ID range: ${filteredMinId} - ${filteredMaxId}`);
+    // CRITICAL FIX: Always ensure pending Pokemon are included, even if filtered out
+    const pendingPokemon = allPokemon.filter(p => pendingIds.includes(p.id));
+    console.log(`🔥🔥🔥 [INTEGRATION_FILTER_DEBUG] Pending Pokemon from input: ${pendingPokemon.map(p => `${p.name}(${p.id})`).join(', ')}`);
+    
+    // Combine filtered Pokemon with pending Pokemon (remove duplicates)
+    const normalFilteredIds = new Set(normalFiltered.map(p => p.id));
+    const additionalPending = pendingPokemon.filter(p => !normalFilteredIds.has(p.id));
+    
+    console.log(`🔥🔥🔥 [INTEGRATION_FILTER_DEBUG] Additional pending Pokemon to add: ${additionalPending.map(p => `${p.name}(${p.id})`).join(', ')}`);
+    
+    const finalFiltered = [...normalFiltered, ...additionalPending];
+    
+    console.log(`🔥🔥🔥 [INTEGRATION_FILTER_DEBUG] Final filtered count: ${finalFiltered.length} Pokemon`);
+    
+    if (finalFiltered.length > 0) {
+      const filteredIds = finalFiltered.map(p => p.id);
+      const pendingInFinal = filteredIds.filter(id => pendingIds.includes(id));
+      console.log(`🔥🔥🔥 [INTEGRATION_FILTER_DEBUG] Pending Pokemon in final result: ${pendingInFinal}`);
       
-      // Sample some Pokemon from filtered output
-      const sampleLowFiltered = filtered.filter(p => p.id <= 150).slice(0, 5);
-      const sampleHighFiltered = filtered.filter(p => p.id >= 800).slice(0, 5);
-      console.log(`🔥🔥🔥 [INTEGRATION_FILTER_DEBUG] Sample low ID filtered: ${sampleLowFiltered.map(p => `${p.name}(${p.id})`).join(', ')}`);
-      console.log(`🔥🔥🔥 [INTEGRATION_FILTER_DEBUG] Sample high ID filtered: ${sampleHighFiltered.map(p => `${p.name}(${p.id})`).join(', ')}`);
-      
-      // Check distribution
-      const distribution = {
-        '1-150': filteredIds.filter(id => id >= 1 && id <= 150).length,
-        '151-300': filteredIds.filter(id => id >= 151 && id <= 300).length,
-        '301-500': filteredIds.filter(id => id >= 301 && id <= 500).length,
-        '501-700': filteredIds.filter(id => id >= 501 && id <= 700).length,
-        '701-900': filteredIds.filter(id => id >= 701 && id <= 900).length,
-        '901+': filteredIds.filter(id => id >= 901).length,
-      };
-      console.log(`🔥🔥🔥 [INTEGRATION_FILTER_DEBUG] Filtered distribution:`, distribution);
+      if (pendingInFinal.length !== pendingIds.length) {
+        console.error(`🔥🔥🔥 [INTEGRATION_FILTER_DEBUG] ❌ MISSING PENDING POKEMON!`);
+        console.error(`🔥🔥🔥 [INTEGRATION_FILTER_DEBUG] Expected: ${pendingIds}`);
+        console.error(`🔥🔥🔥 [INTEGRATION_FILTER_DEBUG] Found: ${pendingInFinal}`);
+      } else {
+        console.log(`🔥🔥🔥 [INTEGRATION_FILTER_DEBUG] ✅ All pending Pokemon preserved in filter`);
+      }
     }
     
     console.log(`🔥🔥🔥 [INTEGRATION_FILTER_DEBUG] ===== FILTERING COMPLETE =====`);
     
-    return filtered;
-  }, [allPokemon, shouldIncludePokemon, analyzeFilteringPipeline]);
+    return finalFiltered;
+  }, [allPokemon, shouldIncludePokemon, analyzeFilteringPipeline, getAllPendingIds]);
 
   const battleStarter = useMemo(() => {
     if (!filteredPokemon || filteredPokemon.length === 0) return null;
@@ -107,10 +113,14 @@ export const useBattleStarterIntegration = (
       console.log(`🔥🔥🔥 [${callId}] ===== FOUND CLOUD PENDING BATTLES =====`);
       console.log(`🔥🔥🔥 [${callId}] Processing ${cloudPendingIds.length} pending Pokemon`);
       
-      // Try to create a battle with at least one pending Pokemon
+      // CRITICAL FIX: More detailed Pokemon matching
+      console.log(`🔥🔥🔥 [${callId}] Filtered Pokemon IDs: ${filteredPokemon.map(p => p.id).slice(0, 20).join(', ')}${filteredPokemon.length > 20 ? '...' : ''}`);
+      
       const pendingPokemon = filteredPokemon.filter(p => {
         const isPending = cloudPendingIds.includes(p.id);
-        console.log(`🔥🔥🔥 [${callId}] Pokemon ${p.name}(${p.id}) is pending: ${isPending}`);
+        if (isPending) {
+          console.log(`🔥🔥🔥 [${callId}] ✅ Found pending Pokemon ${p.name}(${p.id}) in filtered set`);
+        }
         return isPending;
       });
       
@@ -118,6 +128,33 @@ export const useBattleStarterIntegration = (
       pendingPokemon.forEach(p => {
         console.log(`🔥🔥🔥 [${callId}] - ${p.name}(${p.id})`);
       });
+      
+      if (pendingPokemon.length === 0) {
+        console.error(`🔥🔥🔥 [${callId}] ❌ CRITICAL: No pending Pokemon found in filtered set!`);
+        console.error(`🔥🔥🔥 [${callId}] This means filtering is removing pending Pokemon`);
+        console.error(`🔥🔥🔥 [${callId}] Pending IDs: ${cloudPendingIds}`);
+        console.error(`🔥🔥🔥 [${callId}] Available IDs: ${filteredPokemon.map(p => p.id).slice(0, 10)}`);
+        
+        // Try to find them in the original unfiltered set
+        const pendingInOriginal = allPokemon.filter(p => cloudPendingIds.includes(p.id));
+        console.error(`🔥🔥🔥 [${callId}] Pending Pokemon in original set: ${pendingInOriginal.map(p => `${p.name}(${p.id})`).join(', ')}`);
+        
+        if (pendingInOriginal.length > 0) {
+          console.log(`🔥🔥🔥 [${callId}] 🚨 EMERGENCY: Using unfiltered pending Pokemon for battle`);
+          const primaryPokemon = pendingInOriginal[0];
+          const availableOpponents = filteredPokemon.filter(p => p.id !== primaryPokemon.id);
+          
+          if (availableOpponents.length > 0) {
+            const opponent = availableOpponents[Math.floor(Math.random() * availableOpponents.length)];
+            const result = [primaryPokemon, opponent];
+            
+            console.log(`🔥🔥🔥 [${callId}] 🚨 EMERGENCY BATTLE: ${primaryPokemon.name} vs ${opponent.name}`);
+            setCurrentBattle(result);
+            setSelectedPokemon([]);
+            return result;
+          }
+        }
+      }
       
       if (pendingPokemon.length > 0) {
         console.log(`🔥🔥🔥 [${callId}] Attempting to generate battle with pending Pokemon`);
@@ -130,7 +167,6 @@ export const useBattleStarterIntegration = (
         const availableOpponents = filteredPokemon.filter(p => {
           const isNotPrimary = p.id !== primaryPokemon.id;
           const isNotPending = !cloudPendingIds.includes(p.id);
-          console.log(`🔥🔥🔥 [${callId}] Opponent candidate ${p.name}(${p.id}): notPrimary=${isNotPrimary}, notPending=${isNotPending}`);
           return isNotPrimary && isNotPending;
         });
         
@@ -158,8 +194,6 @@ export const useBattleStarterIntegration = (
         } else {
           console.log(`🔥🔥🔥 [${callId}] ⚠️ No available opponents for pending Pokemon`);
         }
-      } else {
-        console.log(`🔥🔥🔥 [${callId}] ⚠️ No pending Pokemon found in filtered set`);
       }
     } else {
       console.log(`🔥🔥🔥 [${callId}] No cloud pending battles found`);
