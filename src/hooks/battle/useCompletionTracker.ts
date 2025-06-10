@@ -1,5 +1,6 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
+import { getDefaultBattleMilestones } from "@/utils/battleMilestones";
 import { SingleBattle } from "./types";
 import { RankedPokemon } from "@/services/pokemon";
 
@@ -23,7 +24,7 @@ export const useCompletionTracker = (
   const lastCalculatedPercentageRef = useRef<number>(0);
 
   // Define milestones array locally to ensure consistency
-  const milestones = [10, 25, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 600, 700, 800, 900, 1000];
+  const milestones = getDefaultBattleMilestones();
 
   useEffect(() => {
     showingMilestoneRef.current = showingMilestone;
