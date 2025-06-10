@@ -38,15 +38,15 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   // Use the persistent pending state hook
   const { isPokemonPending, addPendingPokemon } = usePersistentPendingState();
   
-  console.log(`🔒⭐ [PERSISTENT_STAR_DEBUG] Pokemon ${pokemon.name} card rendered - Pending: ${isPokemonPending(pokemon.id)}`);
+  console.log(`🔍 [STAR_TRACE] Pokemon ${pokemon.name} card rendered - Pending: ${isPokemonPending(pokemon.id)}`);
   
   const handlePrioritizeClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
     
-    console.log(`🔒⭐ [PERSISTENT_STAR_CLICK] ===== STAR CLICKED FOR ${pokemon.name} =====`);
-    console.log(`🔒⭐ [PERSISTENT_STAR_CLICK] Pokemon ID: ${pokemon.id}, Context: ${context}`);
-    console.log(`🔒⭐ [PERSISTENT_STAR_CLICK] Timestamp: ${new Date().toISOString()}`);
+    console.log(`🔍 [STAR_TRACE] ===== STAR CLICKED FOR ${pokemon.name} =====`);
+    console.log(`🔍 [STAR_TRACE] Pokemon ID: ${pokemon.id}, Context: ${context}`);
+    console.log(`🔍 [STAR_TRACE] Timestamp: ${new Date().toISOString()}`);
     
     // Add to persistent pending state
     addPendingPokemon(pokemon.id);
@@ -61,7 +61,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       }
     });
     document.dispatchEvent(event);
-    console.log(`🔒⭐ [PERSISTENT_STAR_CLICK] Dispatched pokemon-starred-for-battle event`);
+    console.log(`🔍 [STAR_TRACE] ✅ Dispatched pokemon-starred-for-battle event`);
   };
 
   // Check if this Pokemon has pending state
@@ -173,7 +173,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
           onPointerDown={(e) => {
             e.stopPropagation();
             e.preventDefault();
-            console.log(`🔒⭐ [PERSISTENT_STAR_DEBUG] onPointerDown called for ${pokemon.name}`);
+            console.log(`🔍 [STAR_TRACE] onPointerDown called for ${pokemon.name}`);
           }}
           onClick={handlePrioritizeClick}
           className={`absolute top-1/2 right-2 -translate-y-1/2 z-30 p-2 rounded-full transition-all duration-300 ${

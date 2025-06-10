@@ -18,16 +18,16 @@ const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ currentMode, onModeChange }
   const { getAllPendingIds, hasPendingPokemon } = usePersistentPendingState();
 
   const handleModeChange = (mode: "rank" | "battle") => {
-    console.log(`🔒🚨 [PERSISTENT_MODE_SWITCH] ===== MODE SWITCH BUTTON CLICKED =====`);
-    console.log(`🔒🚨 [PERSISTENT_MODE_SWITCH] From: ${currentMode} → To: ${mode}`);
-    console.log(`🔒🚨 [PERSISTENT_MODE_SWITCH] Timestamp: ${new Date().toISOString()}`);
+    console.log(`🔍 [MODE_SWITCH_TRACE] ===== MODE SWITCH BUTTON CLICKED =====`);
+    console.log(`🔍 [MODE_SWITCH_TRACE] From: ${currentMode} → To: ${mode}`);
+    console.log(`🔍 [MODE_SWITCH_TRACE] Timestamp: ${new Date().toISOString()}`);
     
     // Get pending Pokemon from persistent state
     const pendingPokemon = getAllPendingIds();
-    console.log(`🔒🚨 [PERSISTENT_MODE_SWITCH] Found ${pendingPokemon.length} pending Pokemon:`, pendingPokemon);
+    console.log(`🔍 [MODE_SWITCH_TRACE] ✅ Found ${pendingPokemon.length} pending Pokemon:`, pendingPokemon);
     
     if (mode === "battle" && hasPendingPokemon) {
-      console.log(`🔒🚨 [PERSISTENT_MODE_SWITCH] ⭐ SWITCHING TO BATTLE MODE WITH PENDING POKEMON!`);
+      console.log(`🔍 [MODE_SWITCH_TRACE] ⭐ SWITCHING TO BATTLE MODE WITH PENDING POKEMON!`);
       
       // Call the mode change first
       onModeChange(mode);
@@ -42,13 +42,13 @@ const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ currentMode, onModeChange }
           }
         });
         document.dispatchEvent(event);
-        console.log(`🔒🚨 [PERSISTENT_MODE_SWITCH] Dispatched pending-battles-detected event`);
+        console.log(`🔍 [MODE_SWITCH_TRACE] ✅ Dispatched pending-battles-detected event`);
       }, 100);
       
       return;
     }
     
-    console.log(`🔒🚨 [PERSISTENT_MODE_SWITCH] Normal mode switch, no pending Pokemon`);
+    console.log(`🔍 [MODE_SWITCH_TRACE] Normal mode switch, no pending Pokemon`);
     onModeChange(mode);
   };
 

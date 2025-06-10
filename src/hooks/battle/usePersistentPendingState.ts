@@ -9,7 +9,7 @@ export const usePersistentPendingState = () => {
   const [pendingPokemon, setPendingPokemon] = useState<Set<number>>(new Set());
   const syncBlockRef = useRef(false);
   
-  console.log(`🔒🔒🔒 [PERSISTENT_PENDING] Hook initialized`);
+  console.log(`🔍 [PENDING_TRACE] Hook initialized`);
 
   // Load pending state on initialization
   useEffect(() => {
@@ -20,10 +20,10 @@ export const usePersistentPendingState = () => {
           const pokemonIds = JSON.parse(stored);
           const pendingSet = new Set<number>(pokemonIds);
           setPendingPokemon(pendingSet);
-          console.log(`🔒🔒🔒 [PERSISTENT_PENDING] Loaded ${pendingSet.size} pending Pokemon:`, Array.from(pendingSet));
+          console.log(`🔍 [PENDING_TRACE] Loaded ${pendingSet.size} pending Pokemon:`, Array.from(pendingSet));
         }
       } catch (error) {
-        console.error(`🔒🔒🔒 [PERSISTENT_PENDING] Error loading pending state:`, error);
+        console.error(`🔍 [PENDING_TRACE] Error loading pending state:`, error);
       }
     };
 
@@ -33,7 +33,7 @@ export const usePersistentPendingState = () => {
   // Save pending state to localStorage
   const savePendingState = useCallback((newPendingSet: Set<number>) => {
     if (syncBlockRef.current) {
-      console.log(`🔒🔒🔒 [PERSISTENT_PENDING] ⏸️ Save blocked during sync operation`);
+      console.log(`🔍 [PENDING_TRACE] ⏸️ Save blocked during sync operation`);
       return;
     }
     
@@ -46,15 +46,16 @@ export const usePersistentPendingState = () => {
         localStorage.setItem(`pokemon-pending-${id}`, 'true');
       });
       
-      console.log(`🔒🔒🔒 [PERSISTENT_PENDING] Saved ${pokemonIds.length} pending Pokemon:`, pokemonIds);
+      console.log(`🔍 [PENDING_TRACE] ✅ SAVED ${pokemonIds.length} pending Pokemon:`, pokemonIds);
     } catch (error) {
-      console.error(`🔒🔒🔒 [PERSISTENT_PENDING] Error saving pending state:`, error);
+      console.error(`🔍 [PENDING_TRACE] Error saving pending state:`, error);
     }
   }, []);
 
   // Add Pokemon to pending state
   const addPendingPokemon = useCallback((pokemonId: number) => {
-    console.log(`🔒🔒🔒 [PERSISTENT_PENDING] ===== ADDING POKEMON ${pokemonId} TO PENDING =====`);
+    console.log(`🔍 [PENDING_TRACE] ===== ADDING POKEMON ${pokemonId} TO PENDING =====`);
+    console.log(`🔍 [PENDING_TRACE] Timestamp: ${new Date().toISOString()}`);
     
     setPendingPokemon(prev => {
       const newSet = new Set(prev);
@@ -65,14 +66,14 @@ export const usePersistentPendingState = () => {
         savePendingState(newSet);
       }, 0);
       
-      console.log(`🔒🔒🔒 [PERSISTENT_PENDING] Added Pokemon ${pokemonId}. Total pending: ${newSet.size}`);
+      console.log(`🔍 [PENDING_TRACE] ✅ Added Pokemon ${pokemonId}. Total pending: ${newSet.size}`);
       return newSet;
     });
   }, [savePendingState]);
 
   // Remove Pokemon from pending state
   const removePendingPokemon = useCallback((pokemonId: number) => {
-    console.log(`🔒🔒🔒 [PERSISTENT_PENDING] Removing Pokemon ${pokemonId} from pending`);
+    console.log(`🔍 [PENDING_TRACE] Removing Pokemon ${pokemonId} from pending`);
     
     setPendingPokemon(prev => {
       const newSet = new Set(prev);
@@ -84,14 +85,14 @@ export const usePersistentPendingState = () => {
         localStorage.removeItem(`pokemon-pending-${pokemonId}`);
       }, 0);
       
-      console.log(`🔒🔒🔒 [PERSISTENT_PENDING] Removed Pokemon ${pokemonId}. Total pending: ${newSet.size}`);
+      console.log(`🔍 [PENDING_TRACE] Removed Pokemon ${pokemonId}. Total pending: ${newSet.size}`);
       return newSet;
     });
   }, [savePendingState]);
 
   // Clear all pending Pokemon
   const clearAllPending = useCallback(() => {
-    console.log(`🔒🔒🔒 [PERSISTENT_PENDING] Clearing all pending Pokemon`);
+    console.log(`🔍 [PENDING_TRACE] Clearing all pending Pokemon`);
     
     // Clear individual keys
     pendingPokemon.forEach(id => {
@@ -102,32 +103,32 @@ export const usePersistentPendingState = () => {
     localStorage.removeItem(PENDING_STATE_KEY);
     
     setPendingPokemon(new Set());
-    console.log(`🔒🔒🔒 [PERSISTENT_PENDING] All pending Pokemon cleared`);
+    console.log(`🔍 [PENDING_TRACE] All pending Pokemon cleared`);
   }, [pendingPokemon]);
 
   // Check if Pokemon is pending
   const isPokemonPending = useCallback((pokemonId: number): boolean => {
     const isPending = pendingPokemon.has(pokemonId);
-    console.log(`🔒🔒🔒 [PERSISTENT_PENDING] Check pending for ${pokemonId}: ${isPending}`);
+    console.log(`🔍 [PENDING_TRACE] Check pending for ${pokemonId}: ${isPending}`);
     return isPending;
   }, [pendingPokemon]);
 
   // Get all pending Pokemon IDs
   const getAllPendingIds = useCallback((): number[] => {
     const ids = Array.from(pendingPokemon);
-    console.log(`🔒🔒🔒 [PERSISTENT_PENDING] All pending IDs:`, ids);
+    console.log(`🔍 [PENDING_TRACE] ✅ GET ALL PENDING IDS:`, ids);
     return ids;
   }, [pendingPokemon]);
 
   // Block sync during cloud operations
   const blockSync = useCallback(() => {
     syncBlockRef.current = true;
-    console.log(`🔒🔒🔒 [PERSISTENT_PENDING] ⏸️ Sync blocked`);
+    console.log(`🔍 [PENDING_TRACE] ⏸️ Sync blocked`);
     
     // Auto-unblock after 5 seconds
     setTimeout(() => {
       syncBlockRef.current = false;
-      console.log(`🔒🔒🔒 [PERSISTENT_PENDING] ✅ Sync unblocked`);
+      console.log(`🔍 [PENDING_TRACE] ✅ Sync unblocked`);
     }, 5000);
   }, []);
 
