@@ -22,9 +22,16 @@ export const useBattleStarterEvents = (
       console.log(`🔍 [BATTLE_EVENT_DEBUG] Callback available: ${!!startNewBattleCallbackRef.current}`);
       console.log(`🔍 [BATTLE_EVENT_DEBUG] Filtered Pokemon count: ${filteredPokemon.length}`);
       
-      // If we don't have a current battle and we have the callback, trigger a new battle
-      if (currentBattle.length === 0 && startNewBattleCallbackRef.current) {
-        console.log(`🔍 [BATTLE_EVENT_DEBUG] ✅ Conditions met - triggering new battle`);
+      // CRITICAL FIX: Force trigger even if we have a current battle if this is immediate
+      const shouldForceStart = event.detail?.immediate === true || currentBattle.length === 0;
+      
+      if (shouldForceStart && startNewBattleCallbackRef.current) {
+        console.log(`🔍 [BATTLE_EVENT_DEBUG] ✅ Conditions met - triggering new battle (force: ${event.detail?.immediate})`);
+        
+        // Disable auto-trigger since we're manually triggering
+        autoTriggerDisabledRef.current = true;
+        initialBattleStartedRef.current = true;
+        initializationCompleteRef.current = true;
         
         try {
           const result = startNewBattleCallbackRef.current("pairs");
@@ -34,6 +41,17 @@ export const useBattleStarterEvents = (
             stableSetCurrentBattle(result);
             stableSetSelectedPokemon([]);
             console.log(`🔍 [BATTLE_EVENT_DEBUG] ✅ Battle set successfully - ${result.map(p => p.name).join(' vs ')}`);
+            
+            // Check if any of the pending Pokemon are in this battle
+            const pendingIds = event.detail?.pendingPokemon || [];
+            const battleIds = result.map(p => p.id);
+            const hasPendingInBattle = pendingIds.some((id: number) => battleIds.includes(id));
+            
+            if (hasPendingInBattle) {
+              console.log(`🔍 [BATTLE_EVENT_DEBUG] 🎯 SUCCESS! Pending Pokemon found in battle!`);
+            } else {
+              console.log(`🔍 [BATTLE_EVENT_DEBUG] ⚠️ No pending Pokemon in this battle - may be processed later`);
+            }
           } else {
             console.error(`🔍 [BATTLE_EVENT_DEBUG] ❌ Battle callback returned empty/null result`);
           }
@@ -42,6 +60,8 @@ export const useBattleStarterEvents = (
         }
       } else {
         console.log(`🔍 [BATTLE_EVENT_DEBUG] ⚠️ Not triggering battle:`, {
+          shouldForceStart,
+          immediate: event.detail?.immediate,
           currentBattleExists: currentBattle.length > 0,
           callbackAvailable: !!startNewBattleCallbackRef.current
         });
@@ -73,7 +93,7 @@ export const useBattleStarterEvents = (
     };
   }, []);
 
-  // Auto-trigger initialization when Pokemon are loaded (existing logic)
+  // Auto-trigger initialization when Pokemon are loaded (existing logic) - but respect disabled flag
   useEffect(() => {
     if (
       filteredPokemon.length > 0 && 
@@ -93,6 +113,7 @@ export const useBattleStarterEvents = (
           filteredPokemon.length > 0 && 
           currentBattle.length === 0 && 
           !initialBattleStartedRef.current &&
+          !autoTriggerDisabledRef.current &&
           startNewBattleCallbackRef.current
         ) {
           console.log(`🔍 [BATTLE_EVENT_DEBUG] ✅ Auto-triggering initial battle`);

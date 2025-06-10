@@ -33,35 +33,35 @@ const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ currentMode, onModeChange }
       hasPending: hasPending
     });
     
+    // Call the mode change first - this is critical for proper initialization
+    onModeChange(mode);
+    
     if (mode === "battle" && hasPending) {
       console.log(`🌥️ [MODE_DEBUG] ⭐ SWITCHING TO BATTLE MODE WITH PENDING POKEMON!`);
       
-      // Call the mode change first
-      onModeChange(mode);
-      
-      // Dispatch event to notify battle system
+      // CRITICAL FIX: Dispatch event AFTER mode change with actual pending data
       setTimeout(() => {
         const eventDetail = { 
           pendingPokemon: pendingPokemon,
           source: 'mode-switcher-cloud',
-          timestamp: Date.now()
+          timestamp: Date.now(),
+          immediate: true // Flag to indicate this should be processed immediately
         };
         
-        console.log(`🌥️ [MODE_DEBUG] ===== DISPATCHING EVENT =====`);
+        console.log(`🌥️ [MODE_DEBUG] ===== DISPATCHING EVENT AFTER MODE CHANGE =====`);
         console.log(`🌥️ [MODE_DEBUG] Event detail:`, eventDetail);
         
         const event = new CustomEvent('pending-battles-detected', {
           detail: eventDetail
         });
         document.dispatchEvent(event);
-        console.log(`🌥️ [MODE_DEBUG] ✅ Event dispatched successfully`);
-      }, 100);
+        console.log(`🌥️ [MODE_DEBUG] ✅ Event dispatched successfully after mode change`);
+      }, 200); // Increased delay to ensure battle mode is fully loaded
       
       return;
     }
     
     console.log(`🌥️ [MODE_DEBUG] Normal mode switch - no pending Pokemon or not switching to battle`);
-    onModeChange(mode);
   };
 
   // Debug render

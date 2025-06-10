@@ -4,6 +4,7 @@ import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { createBattleStarter } from "./createBattleStarter";
 import { useSharedRefinementQueue } from "./useSharedRefinementQueue";
 import { useFormFilters } from "@/hooks/useFormFilters";
+import { useCloudPendingBattles } from "./useCloudPendingBattles";
 
 export const useBattleStarterIntegration = (
   allPokemon: Pokemon[],
@@ -15,6 +16,9 @@ export const useBattleStarterIntegration = (
 ) => {
   // Get form filters to ensure battle generation respects them
   const { shouldIncludePokemon, analyzeFilteringPipeline } = useFormFilters();
+  
+  // Get cloud pending battles
+  const { getAllPendingIds } = useCloudPendingBattles();
   
   // Filter Pokemon based on form filters before creating battle starter
   const filteredPokemon = useMemo(() => {
@@ -89,13 +93,50 @@ export const useBattleStarterIntegration = (
       return [];
     }
     
-    // CRITICAL FIX: Check refinement queue FIRST before calling battle starter
-    console.log(`🚨🚨🚨 [BATTLE_STARTER_MEGA_TRACE] ===== CHECKING REFINEMENT QUEUE FIRST =====`);
+    // CRITICAL FIX: Check cloud pending battles FIRST
+    console.log(`🚨🚨🚨 [BATTLE_STARTER_MEGA_TRACE] ===== CHECKING CLOUD PENDING BATTLES FIRST =====`);
+    const cloudPendingIds = getAllPendingIds();
+    console.log(`🚨🚨🚨 [BATTLE_STARTER_MEGA_TRACE] Cloud pending IDs: ${cloudPendingIds}`);
+    
+    if (cloudPendingIds.length > 0) {
+      console.log(`🚨🚨🚨 [BATTLE_STARTER_MEGA_TRACE] ===== FOUND CLOUD PENDING BATTLES =====`);
+      
+      // Try to create a battle with at least one pending Pokemon
+      const pendingPokemon = filteredPokemon.filter(p => cloudPendingIds.includes(p.id));
+      
+      if (pendingPokemon.length > 0) {
+        console.log(`🚨🚨🚨 [BATTLE_STARTER_MEGA_TRACE] Found ${pendingPokemon.length} pending Pokemon in filtered set`);
+        
+        // Get the first pending Pokemon
+        const primaryPokemon = pendingPokemon[0];
+        
+        // Find a good opponent from the current rankings or available Pokemon
+        const availableOpponents = filteredPokemon.filter(p => 
+          p.id !== primaryPokemon.id && !cloudPendingIds.includes(p.id)
+        );
+        
+        if (availableOpponents.length > 0) {
+          // Pick a random opponent or use ranking logic
+          const opponent = availableOpponents[Math.floor(Math.random() * availableOpponents.length)];
+          
+          console.log(`🚨🚨🚨 [BATTLE_STARTER_MEGA_TRACE] ✅ CLOUD PENDING BATTLE GENERATED: ${primaryPokemon.name} vs ${opponent.name}`);
+          const result = [primaryPokemon, opponent];
+          
+          setCurrentBattle(result);
+          setSelectedPokemon([]);
+          
+          return result;
+        }
+      }
+    }
+    
+    // CRITICAL FIX: Check refinement queue SECOND
+    console.log(`🚨🚨🚨 [BATTLE_STARTER_MEGA_TRACE] ===== CHECKING REFINEMENT QUEUE SECOND =====`);
     console.log(`🚨🚨🚨 [BATTLE_STARTER_MEGA_TRACE] Refinement queue exists: ${!!refinementQueue}`);
     console.log(`🚨🚨🚨 [BATTLE_STARTER_MEGA_TRACE] Refinement queue has battles: ${refinementQueue?.hasRefinementBattles}`);
     console.log(`🚨🚨🚨 [BATTLE_STARTER_MEGA_TRACE] Refinement queue count: ${refinementQueue?.refinementBattleCount}`);
     
-    // CRITICAL FIX: If there are refinement battles, generate them directly here
+    // If there are refinement battles, generate them directly here
     if (refinementQueue?.hasRefinementBattles && refinementQueue.getNextRefinementBattle) {
       console.log(`🚨🚨🚨 [BATTLE_STARTER_MEGA_TRACE] ===== GENERATING REFINEMENT BATTLE =====`);
       
@@ -126,7 +167,7 @@ export const useBattleStarterIntegration = (
       }
     }
     
-    // Fall back to normal battle generation if no refinement battles
+    // Fall back to normal battle generation if no pending battles
     console.log(`🚨🚨🚨 [BATTLE_STARTER_MEGA_TRACE] ===== CALLING NORMAL BATTLE STARTER =====`);
     const result = battleStarter.startNewBattle(battleType, refinementQueue);
     
