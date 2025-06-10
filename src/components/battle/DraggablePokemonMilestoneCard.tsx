@@ -73,8 +73,8 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       setLocalPendingState(true);
       localStorage.setItem(`pokemon-pending-${pokemon.id}`, 'true');
       
-      // Only try to generate random top 50 battles if we're in ranked context AND have ranked Pokemon
-      if (context === 'ranked' && contextAvailable && allRankedPokemon.length > 1) {
+      // Generate random top-50 battles whenever the refinement queue is available
+      if (contextAvailable && allRankedPokemon.length > 1) {
         console.log(`🌟 [STAR_CLICK_DETAILED] Context available and sufficient ranked Pokemon, generating random top-50 battles`);
 
         // Find current Pokemon's position in the ranked list
@@ -110,7 +110,9 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
           console.log(`🌟 [STAR_CLICK_DETAILED] ❌ Pokemon not found in ranked list`);
         }
       } else {
-        console.log(`🌟 [STAR_CLICK_DETAILED] ⚠️ Not in ranked context or insufficient Pokemon - just marking as pending`);
+        console.log(
+          `🌟 [STAR_CLICK_DETAILED] ⚠️ Refinement queue unavailable or insufficient ranked Pokemon`
+        );
         console.log(`🌟 [STAR_CLICK_DETAILED] - context: ${context}`);
         console.log(`🌟 [STAR_CLICK_DETAILED] - contextAvailable: ${contextAvailable}`);
         console.log(`🌟 [STAR_CLICK_DETAILED] - allRankedPokemon.length: ${allRankedPokemon.length}`);
@@ -122,12 +124,27 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     }
   };
 
+  const hadRefinementBattlesRef = React.useRef(false);
+
+  // Track if there have ever been refinement battles
+  React.useEffect(() => {
+    if (hasRefinementBattles) {
+      hadRefinementBattlesRef.current = true;
+    }
+  }, [hasRefinementBattles]);
+
   // Clean up localStorage when Pokemon is actually processed in a battle
   React.useEffect(() => {
-    if (contextAvailable && hasRefinementBattles === false && localPendingState) {
+    if (
+      contextAvailable &&
+      hasRefinementBattles === false &&
+      localPendingState &&
+      hadRefinementBattlesRef.current
+    ) {
       console.log(`🌟 [CLEANUP_TRACE] Clearing pending state for ${pokemon.name} - battles processed`);
       setLocalPendingState(false);
       localStorage.removeItem(`pokemon-pending-${pokemon.id}`);
+      hadRefinementBattlesRef.current = false;
     }
   }, [contextAvailable, hasRefinementBattles, localPendingState, pokemon.id, pokemon.name]);
 
