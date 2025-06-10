@@ -89,12 +89,45 @@ export const useBattleStarterIntegration = (
       return [];
     }
     
-    // CRITICAL FIX: Pass refinement queue to the battle starter
-    console.log(`🚨🚨🚨 [BATTLE_STARTER_MEGA_TRACE] ===== CALLING BATTLE STARTER WITH REFINEMENT QUEUE =====`);
+    // CRITICAL FIX: Check refinement queue FIRST before calling battle starter
+    console.log(`🚨🚨🚨 [BATTLE_STARTER_MEGA_TRACE] ===== CHECKING REFINEMENT QUEUE FIRST =====`);
     console.log(`🚨🚨🚨 [BATTLE_STARTER_MEGA_TRACE] Refinement queue exists: ${!!refinementQueue}`);
     console.log(`🚨🚨🚨 [BATTLE_STARTER_MEGA_TRACE] Refinement queue has battles: ${refinementQueue?.hasRefinementBattles}`);
     console.log(`🚨🚨🚨 [BATTLE_STARTER_MEGA_TRACE] Refinement queue count: ${refinementQueue?.refinementBattleCount}`);
     
+    // CRITICAL FIX: If there are refinement battles, generate them directly here
+    if (refinementQueue?.hasRefinementBattles && refinementQueue.getNextRefinementBattle) {
+      console.log(`🚨🚨🚨 [BATTLE_STARTER_MEGA_TRACE] ===== GENERATING REFINEMENT BATTLE =====`);
+      
+      const nextBattle = refinementQueue.getNextRefinementBattle();
+      if (nextBattle) {
+        console.log(`🚨🚨🚨 [BATTLE_STARTER_MEGA_TRACE] Next refinement battle: ${nextBattle.primaryPokemonId} vs ${nextBattle.opponentPokemonId}`);
+        
+        // Find the Pokemon objects for the battle
+        const pokemon1 = filteredPokemon.find(p => p.id === nextBattle.primaryPokemonId);
+        const pokemon2 = filteredPokemon.find(p => p.id === nextBattle.opponentPokemonId);
+        
+        if (pokemon1 && pokemon2) {
+          console.log(`🚨🚨🚨 [BATTLE_STARTER_MEGA_TRACE] ✅ REFINEMENT BATTLE GENERATED: ${pokemon1.name} vs ${pokemon2.name}`);
+          const result = [pokemon1, pokemon2];
+          
+          setCurrentBattle(result);
+          setSelectedPokemon([]);
+          
+          // Remove the battle from the queue since we're using it
+          refinementQueue.popRefinementBattle();
+          
+          return result;
+        } else {
+          console.error(`🚨🚨🚨 [BATTLE_STARTER_MEGA_TRACE] ❌ Could not find Pokemon for refinement battle: ${nextBattle.primaryPokemonId}, ${nextBattle.opponentPokemonId}`);
+        }
+      } else {
+        console.log(`🚨🚨🚨 [BATTLE_STARTER_MEGA_TRACE] ⚠️ No next refinement battle available despite hasRefinementBattles being true`);
+      }
+    }
+    
+    // Fall back to normal battle generation if no refinement battles
+    console.log(`🚨🚨🚨 [BATTLE_STARTER_MEGA_TRACE] ===== CALLING NORMAL BATTLE STARTER =====`);
     const result = battleStarter.startNewBattle(battleType, refinementQueue);
     
     console.log(`🚨🚨🚨 [BATTLE_STARTER_MEGA_TRACE] Battle result:`, result ? result.map(p => `${p.name}(${p.id})`).join(' vs ') : 'null/empty');
