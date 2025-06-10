@@ -13,6 +13,8 @@ import TCGBattleCardContent from "./tcg/TCGBattleCardContent";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import PokemonModalContent from "@/components/pokemon/PokemonModalContent";
 import { usePokemonFlavorText } from "@/hooks/pokemon/usePokemonFlavorText";
+import { Star } from "lucide-react";
+import { useSharedRefinementQueue } from "@/hooks/battle/useSharedRefinementQueue";
 
 interface TCGBattleCardProps {
   pokemon: Pokemon;
@@ -38,6 +40,30 @@ const TCGBattleCard: React.FC<TCGBattleCardProps> = memo(({
     currentImageMode,
     setCurrentImageMode
   } = useTCGBattleCardState();
+
+  const [localPendingState, setLocalPendingState] = React.useState(() => {
+    const stored = localStorage.getItem(`pokemon-pending-${pokemon.id}`);
+    return stored === 'true';
+  });
+
+  const { refinementQueue, hasRefinementBattles } = useSharedRefinementQueue();
+
+  const contextAvailable = Boolean(
+    refinementQueue &&
+    Array.isArray(refinementQueue) &&
+    typeof hasRefinementBattles === 'boolean'
+  );
+
+  const isPendingRefinement = contextAvailable
+    ? refinementQueue.some(b => b.primaryPokemonId === pokemon.id) || localPendingState
+    : localPendingState;
+
+  React.useEffect(() => {
+    if (contextAvailable && hasRefinementBattles === false && localPendingState) {
+      setLocalPendingState(false);
+      localStorage.removeItem(`pokemon-pending-${pokemon.id}`);
+    }
+  }, [contextAvailable, hasRefinementBattles, localPendingState, pokemon.id]);
 
   const { tcgCard, isLoading: isLoadingTCG, hasTcgCard } = usePokemonTCGCard(pokemon.name, true);
   const displayName = pokemon.name;
@@ -102,6 +128,19 @@ const TCGBattleCard: React.FC<TCGBattleCardProps> = memo(({
     setIsHovered(false);
   }, [displayName, setIsHovered]);
 
+  const handlePrioritizeClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+
+    if (!isPendingRefinement) {
+      setLocalPendingState(true);
+      localStorage.setItem(`pokemon-pending-${pokemon.id}`, 'true');
+    } else {
+      setLocalPendingState(false);
+      localStorage.removeItem(`pokemon-pending-${pokemon.id}`);
+    }
+  };
+
   const shouldShowHover = isHovered && !isSelected && !isProcessing && !isLoadingTCG;
 
   const cardClasses = `
@@ -132,6 +171,26 @@ const TCGBattleCard: React.FC<TCGBattleCardProps> = memo(({
       data-hovered={shouldShowHover ? "true" : "false"}
     >
       <CardContent className="p-4 text-center relative">
+        {/* Prioritize button - battle context */}
+        <button
+          onPointerDown={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+          }}
+          onClick={handlePrioritizeClick}
+          className={`absolute top-1/2 right-2 -translate-y-1/2 z-30 p-2 rounded-full transition-opacity duration-200 ${
+            isPendingRefinement ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+          }`}
+          title="Prioritize for refinement battle"
+          type="button"
+        >
+          <Star
+            className={`w-16 h-16 transition-all ${
+              isPendingRefinement ? 'text-yellow-400 fill-yellow-400' : 'text-gray-500 hover:text-yellow-500'
+            }`}
+          />
+        </button>
+
         {/* Info Button - exact copy from manual mode */}
         <div className="absolute top-1 right-1 z-30 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
