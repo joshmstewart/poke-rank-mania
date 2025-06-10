@@ -24,9 +24,10 @@ const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ currentMode, onModeChange }
     const ratingsCountBefore = Object.keys(ratingsBefore).length;
     
     console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] ===== MODE SWITCHER BUTTON CLICKED =====`);
+    console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] Timestamp: ${new Date().toISOString()}`);
     console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] From: ${currentMode} → To: ${mode}`);
     console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] Store state BEFORE switcher action: ${ratingsCountBefore} ratings`);
-    console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] Rating IDs: ${Object.keys(ratingsBefore).slice(0, 10).join(', ')}${Object.keys(ratingsBefore).length > 10 ? '...' : ''}`);
+    console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] Rating IDs sample: ${Object.keys(ratingsBefore).slice(0, 10).join(', ')}${Object.keys(ratingsBefore).length > 10 ? '...' : ''}`);
     
     // CRITICAL DEBUG: Check refinement queue before switching modes
     if (refinementQueueHook) {
@@ -34,27 +35,46 @@ const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ currentMode, onModeChange }
       const refinementCount = refinementQueueHook.refinementBattleCount;
       const queueLength = refinementQueueHook.refinementQueue?.length || 0;
       
-      console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] Refinement queue status:`);
+      console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] 📊 Refinement queue status:`);
       console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] - hasRefinementBattles: ${hasRefinementBattles}`);
       console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] - refinementCount: ${refinementCount}`);
       console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] - queueLength: ${queueLength}`);
-      console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] - refinementQueueHook object:`, refinementQueueHook);
+      console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] - actual queue contents:`, refinementQueueHook.refinementQueue);
+      console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] - refinementQueueHook functions:`, {
+        queueBattlesForReorder: typeof refinementQueueHook.queueBattlesForReorder,
+        getNextRefinementBattle: typeof refinementQueueHook.getNextRefinementBattle,
+        popRefinementBattle: typeof refinementQueueHook.popRefinementBattle
+      });
       
-      if (mode === "battle" && hasRefinementBattles) {
+      // Check localStorage for pending Pokemon
+      const pendingPokemon = [];
+      for (let i = 1; i <= 1000; i++) {
+        const stored = localStorage.getItem(`pokemon-pending-${i}`);
+        if (stored === 'true') {
+          pendingPokemon.push(i);
+        }
+      }
+      console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] - pending Pokemon in localStorage:`, pendingPokemon);
+      
+      if (mode === "battle" && (hasRefinementBattles || pendingPokemon.length > 0)) {
         console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] ⭐ SWITCHING TO BATTLE MODE WITH QUEUED REFINEMENT BATTLES!`);
+        console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] Queue battles: ${hasRefinementBattles}, Pending localStorage: ${pendingPokemon.length}`);
         console.log(`🚨🔥🔥 [MODE_SWITCHER_ULTIMATE_DEBUG] This should trigger refinement battles in battle mode`);
         
         // Call the mode change first to ensure battle system is mounted
         onModeChange(mode);
         
-        // Dispatch event with delay to ensure battle system is ready
+        // Dispatch event with detailed information
         setTimeout(() => {
           const event = new CustomEvent('refinement-battles-available', {
             detail: { 
-              count: refinementCount,
+              count: refinementCount || pendingPokemon.length,
               source: 'mode-switcher',
               timestamp: Date.now(),
-              queueLength: queueLength
+              queueLength: queueLength,
+              pendingPokemon: pendingPokemon,
+              hasQueuedBattles: hasRefinementBattles,
+              actualQueue: refinementQueueHook.refinementQueue
             }
           });
           document.dispatchEvent(event);
