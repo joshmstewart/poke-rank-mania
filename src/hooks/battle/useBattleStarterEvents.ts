@@ -3,66 +3,85 @@ import { useEffect, useRef } from "react";
 import { Pokemon } from "@/services/pokemon";
 
 export const useBattleStarterEvents = (
-  allPokemon: Pokemon[],
-  currentBattle: Pokemon[] | undefined,
+  filteredPokemon: Pokemon[],
+  currentBattle: Pokemon[],
   initialBattleStartedRef: React.MutableRefObject<boolean>,
   autoTriggerDisabledRef: React.MutableRefObject<boolean>,
-  startNewBattleCallbackRef: React.MutableRefObject<((battleType: any) => any[]) | null>,
-  initializationTimerRef: React.MutableRefObject<ReturnType<typeof setTimeout> | null>,
+  startNewBattleCallbackRef: React.MutableRefObject<((battleType: any) => Pokemon[]) | null>,
+  initializationTimerRef: React.MutableRefObject<NodeJS.Timeout | null>,
   initializationCompleteRef: React.MutableRefObject<boolean>,
-  setCurrentBattle: React.Dispatch<React.SetStateAction<Pokemon[]>>,
-  setSelectedPokemon: React.Dispatch<React.SetStateAction<number[]>>
+  stableSetCurrentBattle: (battle: Pokemon[]) => void,
+  stableSetSelectedPokemon: (pokemon: number[]) => void
 ) => {
-  // CRITICAL FIX: Start initial battle when Pokemon data is available - but only once
+  // Listen for refinement battles available event from mode switcher
   useEffect(() => {
-    const timestamp = new Date().toISOString();
-    console.log(`[${timestamp}] useBattleStarterEvents Pokemon data check: ${allPokemon?.length || 0} Pokemon available`);
-    
-    // CRITICAL FIX: Only start initial battle if we have Pokemon AND haven't started yet AND no current battle exists
-    if (allPokemon && allPokemon.length > 0 && !initialBattleStartedRef.current && (!currentBattle || currentBattle.length === 0)) {
-      console.log(`[${timestamp}] Starting initial battle with ${allPokemon.length} Pokemon`);
-      initialBattleStartedRef.current = true;
+    const handleRefinementBattlesAvailable = (event: CustomEvent) => {
+      console.log(`🎯 [BATTLE_STARTER_EVENTS] ===== REFINEMENT BATTLES AVAILABLE EVENT =====`);
+      console.log(`🎯 [BATTLE_STARTER_EVENTS] Event detail:`, event.detail);
+      console.log(`🎯 [BATTLE_STARTER_EVENTS] Current battle empty: ${currentBattle.length === 0}`);
+      console.log(`🎯 [BATTLE_STARTER_EVENTS] Callback available: ${!!startNewBattleCallbackRef.current}`);
       
-      // Start initial battle after short delay to ensure all systems are ready
-      setTimeout(() => {
-        if (!autoTriggerDisabledRef.current && (!currentBattle || currentBattle.length === 0)) {
-          console.log(`[${timestamp}] Triggering initial battle start`);
-          if (startNewBattleCallbackRef.current) {
-            const initialBattle = startNewBattleCallbackRef.current("pairs");
-            if (initialBattle && initialBattle.length > 0) {
-              console.log(`✅ [INITIAL_BATTLE] Generated battle: ${initialBattle.map(p => p.name).join(', ')}`);
-              // CRITICAL FIX: Set the battle immediately
-              setCurrentBattle(initialBattle);
-              setSelectedPokemon([]);
-            }
-          }
-        } else {
-          console.log(`[${timestamp}] Skipping initial battle - auto-triggers disabled or battle already exists`);
-        }
-      }, 500);
-    } else {
-      console.log(`[${timestamp}] Skipping initial battle trigger - initialBattleStartedRef.current: ${initialBattleStartedRef.current}, currentBattle.length: ${currentBattle?.length || 0}`);
-    }
-  }, [allPokemon.length > 0 ? 1 : 0, currentBattle?.length, setCurrentBattle, setSelectedPokemon]); // CRITICAL FIX: Only depend on whether we HAVE Pokemon, not the exact count
+      // If we don't have a current battle and we have the callback, trigger a new battle
+      if (currentBattle.length === 0 && startNewBattleCallbackRef.current) {
+        console.log(`🎯 [BATTLE_STARTER_EVENTS] ✅ Triggering new battle for refinement queue`);
+        const result = startNewBattleCallbackRef.current("pairs");
+        console.log(`🎯 [BATTLE_STARTER_EVENTS] Battle triggered result:`, result?.map(p => p.name));
+      } else {
+        console.log(`🎯 [BATTLE_STARTER_EVENTS] ⚠️ Not triggering - current battle exists or no callback`);
+      }
+    };
 
-  // CRITICAL FIX: Simplified initialization
-  useEffect(() => {
-    const timestamp = new Date().toISOString();
-    console.log(`[${timestamp}] useBattleStarterEvents initialized with ${allPokemon?.length || 0} Pokémon`);
-    
-    if (initializationTimerRef.current) {
-      clearTimeout(initializationTimerRef.current);
-    }
-    
-    initializationTimerRef.current = setTimeout(() => {
-      console.log(`[${new Date().toISOString()}] useBattleStarterEvents initialization complete`);
-      initializationCompleteRef.current = true;
-    }, 100);
+    document.addEventListener('refinement-battles-available', handleRefinementBattlesAvailable as EventListener);
     
     return () => {
+      document.removeEventListener('refinement-battles-available', handleRefinementBattlesAvailable as EventListener);
+    };
+  }, [currentBattle.length, startNewBattleCallbackRef]);
+
+  // Auto-trigger initialization when Pokemon are loaded (existing logic)
+  useEffect(() => {
+    if (
+      filteredPokemon.length > 0 && 
+      currentBattle.length === 0 && 
+      !initialBattleStartedRef.current &&
+      !autoTriggerDisabledRef.current &&
+      !initializationCompleteRef.current
+    ) {
+      console.log(`🎯 [BATTLE_STARTER_EVENTS] Setting up initialization timer - ${filteredPokemon.length} Pokemon available`);
+      
       if (initializationTimerRef.current) {
         clearTimeout(initializationTimerRef.current);
       }
+      
+      initializationTimerRef.current = setTimeout(() => {
+        if (
+          filteredPokemon.length > 0 && 
+          currentBattle.length === 0 && 
+          !initialBattleStartedRef.current &&
+          startNewBattleCallbackRef.current
+        ) {
+          console.log(`🎯 [BATTLE_STARTER_EVENTS] ✅ Auto-triggering initial battle`);
+          initialBattleStartedRef.current = true;
+          initializationCompleteRef.current = true;
+          
+          const result = startNewBattleCallbackRef.current("pairs");
+          console.log(`🎯 [BATTLE_STARTER_EVENTS] Initial battle result:`, result?.map(p => p.name));
+        }
+      }, 2000);
+    }
+
+    return () => {
+      if (initializationTimerRef.current) {
+        clearTimeout(initializationTimerRef.current);
+        initializationTimerRef.current = null;
+      }
     };
-  }, []); // CRITICAL FIX: Empty dependency array - only run once
+  }, [
+    filteredPokemon.length,
+    currentBattle.length,
+    initialBattleStartedRef,
+    autoTriggerDisabledRef,
+    startNewBattleCallbackRef,
+    initializationCompleteRef
+  ]);
 };

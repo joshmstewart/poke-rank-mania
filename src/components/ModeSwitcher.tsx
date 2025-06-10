@@ -8,6 +8,7 @@ import {
   TooltipTrigger 
 } from "@/components/ui/tooltip";
 import { useTrueSkillStore } from "@/stores/trueskillStore";
+import { useSharedRefinementQueue } from "@/hooks/battle/useSharedRefinementQueue";
 
 interface ModeSwitcherProps {
   currentMode: "rank" | "battle";
@@ -16,6 +17,7 @@ interface ModeSwitcherProps {
 
 const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ currentMode, onModeChange }) => {
   const { getAllRatings } = useTrueSkillStore();
+  const refinementQueueHook = useSharedRefinementQueue();
 
   const handleModeChange = (mode: "rank" | "battle") => {
     const ratingsBefore = getAllRatings();
@@ -25,6 +27,31 @@ const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ currentMode, onModeChange }
     console.log(`🚨 [MODE_SWITCHER_CRITICAL] From: ${currentMode} → To: ${mode}`);
     console.log(`🚨 [MODE_SWITCHER_CRITICAL] Store state BEFORE switcher action: ${ratingsCountBefore} ratings`);
     console.log(`🚨 [MODE_SWITCHER_CRITICAL] Rating IDs: ${Object.keys(ratingsBefore).slice(0, 10).join(', ')}${Object.keys(ratingsBefore).length > 10 ? '...' : ''}`);
+    
+    // CRITICAL FIX: Check refinement queue before switching modes
+    if (refinementQueueHook) {
+      const hasRefinementBattles = refinementQueueHook.hasRefinementBattles;
+      const refinementCount = refinementQueueHook.refinementBattleCount;
+      console.log(`🚨 [MODE_SWITCHER_CRITICAL] Refinement queue status: ${hasRefinementBattles ? 'HAS' : 'NO'} battles (${refinementCount} total)`);
+      
+      if (mode === "battle" && hasRefinementBattles) {
+        console.log(`🚨 [MODE_SWITCHER_CRITICAL] ⭐ SWITCHING TO BATTLE MODE WITH QUEUED REFINEMENT BATTLES!`);
+        console.log(`🚨 [MODE_SWITCHER_CRITICAL] This should trigger refinement battles in battle mode`);
+        
+        // Dispatch event to notify battle system about pending refinements
+        setTimeout(() => {
+          const event = new CustomEvent('refinement-battles-available', {
+            detail: { 
+              count: refinementCount,
+              source: 'mode-switcher',
+              timestamp: Date.now()
+            }
+          });
+          document.dispatchEvent(event);
+          console.log(`🚨 [MODE_SWITCHER_CRITICAL] ✅ Dispatched refinement-battles-available event`);
+        }, 100);
+      }
+    }
     
     // Call the mode change
     onModeChange(mode);
