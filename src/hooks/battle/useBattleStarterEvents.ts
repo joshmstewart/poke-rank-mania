@@ -1,6 +1,7 @@
 
 import { useEffect, useRef } from "react";
 import { Pokemon } from "@/services/pokemon";
+import { BattleType } from "./types";
 import { useCloudPendingBattles } from "./useCloudPendingBattles";
 
 export const useBattleStarterEvents = (
@@ -8,7 +9,7 @@ export const useBattleStarterEvents = (
   currentBattle: Pokemon[],
   initialBattleStartedRef: React.MutableRefObject<boolean>,
   autoTriggerDisabledRef: React.MutableRefObject<boolean>,
-  startNewBattleCallbackRef: React.MutableRefObject<((battleType: any) => any[]) | null>,
+  startNewBattleCallbackRef: React.MutableRefObject<((battleType: BattleType) => Pokemon[]) | null>,
   initializationTimerRef: React.MutableRefObject<NodeJS.Timeout | null>,
   initializationCompleteRef: React.MutableRefObject<boolean>,
   stableSetCurrentBattle: (battle: Pokemon[]) => void,
@@ -94,6 +95,7 @@ export const useBattleStarterEvents = (
   // CRITICAL FIX: Listen for mode switch events and check for pending battles
   useEffect(() => {
     if (filteredPokemon.length === 0) return;
+    if (!isHydrated) return;
     const handleModeSwitch = (event: CustomEvent) => {
       console.log(`🎯 [BATTLE_STARTER_EVENTS] Mode switch detected:`, event.detail);
       
