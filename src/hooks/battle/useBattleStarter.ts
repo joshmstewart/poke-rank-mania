@@ -9,14 +9,19 @@ export const createBattleStarter = (
   currentFinalRankings: RankedPokemon[],
   setCurrentBattle: React.Dispatch<React.SetStateAction<Pokemon[]>>,
   activeTier: TopNOption = "All",
-  isPokemonFrozenForTier?: (pokemonId: number, tier: TopNOption) => boolean
+  isPokemonFrozenForTier?: (pokemonId: number, tier: TopNOption) => boolean,
+  refinementQueue?: any
 ) => {
   // Use plain objects instead of hooks
   let lowerTierLosersMap = new Map<number, number>();
 
   console.log(`⚡ [SPEED_FIX] createBattleStarter initialized with ${allPokemonForGeneration.length} total Pokemon`);
 
-  const { startNewBattle } = createBattleGenerator(allPokemonForGeneration, setCurrentBattle);
+  const { startNewBattle } = createBattleGenerator(
+    allPokemonForGeneration, 
+    setCurrentBattle,
+    refinementQueue
+  );
 
   const trackLowerTierLoss = (loserId: number) => {
     const lossCount = lowerTierLosersMap.get(loserId) || 0;

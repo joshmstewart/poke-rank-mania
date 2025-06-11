@@ -4,6 +4,7 @@ import { BattleType } from "./types";
 import { useBattleStateSetup } from "./useBattleStateSetup";
 import { useBattleStateOrchestrator } from "./useBattleStateOrchestrator";
 import { useBattleStateReturn } from "./useBattleStateReturn";
+import { useSharedRefinementQueue } from "./useSharedRefinementQueue";
 
 export const useBattleStateCoreRefactored = (
   allPokemon: Pokemon[],
@@ -12,8 +13,11 @@ export const useBattleStateCoreRefactored = (
 ) => {
   console.log(`🚨🚨🚨 [BATTLE_STATE_CORE_REFACTORED] ===== useBattleStateCoreRefactored called =====`);
   
+  // CRITICAL FIX: Call the hook at the top level where it's valid
+  const refinementQueue = useSharedRefinementQueue();
+  
   // Setup phase - initialize state and coordination
-  const { stateData, coordination, refinementQueue } = useBattleStateSetup(
+  const { stateData, coordination } = useBattleStateSetup(
     allPokemon,
     initialBattleType,
     initialSelectedGeneration

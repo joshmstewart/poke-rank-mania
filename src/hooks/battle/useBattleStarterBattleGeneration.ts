@@ -2,11 +2,11 @@
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
 import { validateBattlePokemon } from "@/services/pokemon/api/utils";
-import { useSharedRefinementQueue } from "./useSharedRefinementQueue";
 
 export const createBattleGenerator = (
   allPokemonForGeneration: Pokemon[],
-  setCurrentBattle: React.Dispatch<React.SetStateAction<Pokemon[]>>
+  setCurrentBattle: React.Dispatch<React.SetStateAction<Pokemon[]>>,
+  refinementQueue?: any
 ) => {
   console.log(`⚡ [BATTLE_GENERATOR_FIX] Battle generator created with ${allPokemonForGeneration.length} Pokemon`);
 
@@ -83,8 +83,8 @@ export const createBattleGenerator = (
     console.log(`🚨🚨🚨 [BATTLE_GENERATION_TRACE] Battle #${battleCount} for type: ${battleType}`);
     console.log(`🚨🚨🚨 [BATTLE_GENERATION_TRACE] Pokemon available for generation: ${allPokemonForGeneration.length}`);
     
-    // CRITICAL FIX: Check refinement queue FIRST
-    const refinementQueue = useSharedRefinementQueue();
+    // CRITICAL FIX: Use the passed refinement queue instead of calling the hook
+    console.log(`🎯 [REFINEMENT_QUEUE_FIX] Refinement queue passed: ${!!refinementQueue}`);
     
     if (refinementQueue && refinementQueue.hasRefinementBattles && refinementQueue.refinementBattleCount > 0) {
       console.log(`🎯 [REFINEMENT_QUEUE_PROCESSING] ✅ Using refinement queue`);
