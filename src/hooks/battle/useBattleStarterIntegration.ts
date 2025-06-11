@@ -12,7 +12,8 @@ export const useBattleStarterIntegration = (
   setCurrentBattle: React.Dispatch<React.SetStateAction<Pokemon[]>>,
   setSelectedPokemon: React.Dispatch<React.SetStateAction<number[]>>,
   markSuggestionUsed?: (suggestion: any) => void,
-  currentBattle?: Pokemon[]
+  currentBattle?: Pokemon[],
+  initialBattleStartedRef?: React.MutableRefObject<boolean> // <-- CRITICAL FIX: Accept the ref
 ) => {
   // Get form filters to ensure battle generation respects them
   const { shouldIncludePokemon, analyzeFilteringPipeline } = useFormFilters();
@@ -81,6 +82,15 @@ export const useBattleStarterIntegration = (
 
   // CRITICAL FIX: Fix the startNewBattle function to actually prioritize pending Pokemon
   const startNewBattle = useCallback((battleType: any) => {
+    // ===============================================================
+    // FINAL FIX: This guard makes it impossible for a second initial
+    // battle to be created, no matter what calls this function.
+    if (initialBattleStartedRef?.current) {
+      console.error(`❌ [startNewBattle] Blocked duplicate call.`);
+      return []; // ABORT
+    }
+    // ===============================================================
+
     const callId = `CALL_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
     console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] ===== startNewBattle CALLED =====`);
@@ -183,7 +193,7 @@ export const useBattleStarterIntegration = (
     }
     
     return normalResult || [];
-  }, [battleStarter, filteredPokemon, getAllPendingIds, removePendingPokemon, refinementQueue, setCurrentBattle, setSelectedPokemon, allPokemon]);
+  }, [battleStarter, filteredPokemon, getAllPendingIds, removePendingPokemon, refinementQueue, setCurrentBattle, setSelectedPokemon, allPokemon, initialBattleStartedRef]);
 
   // Log whenever startNewBattle callback changes
   useEffect(() => {

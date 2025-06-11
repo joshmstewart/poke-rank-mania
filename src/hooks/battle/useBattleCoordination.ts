@@ -74,6 +74,12 @@ export const useBattleCoordination = (
     return filtered;
   }, [contextPokemon, selectedGeneration, allRankedPokemon.length]);
 
+  // CRITICAL FIX: Create refs for battle starter events
+  const initialBattleStartedRef = useRef(false);
+  const autoTriggerDisabledRef = useRef(false);
+  const initializationTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const initializationCompleteRef = useRef(false);
+
   const { 
     battleStarter, 
     startNewBattle,
@@ -85,15 +91,11 @@ export const useBattleCoordination = (
     stableSetCurrentBattle,
     stableSetSelectedPokemon,
     markSuggestionUsed,
-    currentBattle
+    currentBattle,
+    initialBattleStartedRef // <-- CRITICAL FIX: Pass the ref down
   );
 
-  // CRITICAL FIX: Create refs for battle starter events
-  const initialBattleStartedRef = useRef(false);
-  const autoTriggerDisabledRef = useRef(false);
   const startNewBattleCallbackRef = useRef(startNewBattle);
-  const initializationTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const initializationCompleteRef = useRef(false);
 
   // CRITICAL FIX: Update the callback ref immediately when startNewBattle changes
   useEffect(() => {
