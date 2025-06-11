@@ -3,14 +3,9 @@ import React from "react";
 import { RankingUI } from "../ranking/RankingUI";
 import { usePokemonRanker } from "@/hooks/usePokemonRanker";
 import { useGenerationState } from "@/hooks/battle/useGenerationState";
-import PokemonRankerProvider from "./PokemonRankerProvider";
 
 const PokemonRankerWithProvider: React.FC = () => {
-  return (
-    <PokemonRankerProvider>
-      <PokemonRankerContent />
-    </PokemonRankerProvider>
-  );
+  return <PokemonRankerContent />;
 };
 
 const PokemonRankerContent: React.FC = () => {
