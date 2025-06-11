@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Rating } from 'ts-trueskill';
@@ -296,65 +295,76 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
       smartSync: async () => {
         const state = get();
         if (state.syncInProgress) return;
-        
+
         set({ syncInProgress: true });
-        
+        console.log(`[TRUESKILL_SMART_SYNC] Starting smart sync...`);
+
         try {
-          console.log(`[TRUESKILL_SMART_SYNC] Starting smart sync...`);
-          const localRatingsCount = Object.keys(state.ratings).length;
-          const localPendingCount = state.pendingBattles.length;
-          console.log(`[TRUESKILL_SMART_SYNC] Local state: ${state.totalBattles} battles, ${localRatingsCount} ratings, ${localPendingCount} pending`);
+          const localState = {
+            ratings: state.ratings,
+            totalBattles: state.totalBattles,
+            pendingBattles: state.pendingBattles,
+          };
+          console.log(`[TRUESKILL_SMART_SYNC] Local state: ${localState.totalBattles} battles, ${Object.keys(localState.ratings).length} ratings, ${localState.pendingBattles.length} pending.`);
 
           const response = await fetch('/api/trueskill/get', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sessionId: state.sessionId })
+            body: JSON.stringify({ sessionId: state.sessionId }),
           });
-          
-          let cloudData = {
-            totalBattles: 0,
+
+          let cloudState = {
             ratings: {},
-            pendingBattles: []
+            totalBattles: 0,
+            pendingBattles: [],
           };
 
           if (response.ok) {
             const result = await response.json();
             if (result.success) {
-              cloudData = {
-                totalBattles: result.totalBattles || 0,
+              cloudState = {
                 ratings: result.ratings || {},
-                pendingBattles: result.pendingBattles || []
+                totalBattles: result.totalBattles || 0,
+                pendingBattles: result.pendingBattles || [],
               };
             }
+          } else {
+            console.log('[TRUESKILL_SMART_SYNC] Could not fetch cloud state. Proceeding with local state only.');
+          }
+          console.log(`[TRUESKILL_SMART_SYNC] Cloud state: ${cloudState.totalBattles} battles, ${Object.keys(cloudState.ratings).length} ratings, ${cloudState.pendingBattles.length} pending.`);
+
+          // --- THE CORRECTED MERGE LOGIC ---
+          // If local has more battles, it's the newer state. Prioritize it.
+          if (localState.totalBattles >= cloudState.totalBattles) {
+            console.log('[TRUESKILL_SMART_SYNC] Local state is newer or equal. Merging cloud into local.');
+            const mergedPending = [...new Set([...localState.pendingBattles, ...cloudState.pendingBattles])];
+            set({
+              ratings: { ...cloudState.ratings, ...localState.ratings },
+              totalBattles: localState.totalBattles,
+              pendingBattles: mergedPending,
+            });
+          } else {
+            // If cloud has more battles, it's the newer state. Prioritize it.
+            console.log('[TRUESKILL_SMART_SYNC] Cloud state is newer. Merging local into cloud.');
+             const mergedPending = [...new Set([...cloudState.pendingBattles, ...localState.pendingBattles])];
+             set({
+              ratings: { ...localState.ratings, ...cloudState.ratings },
+              totalBattles: cloudState.totalBattles,
+              pendingBattles: mergedPending,
+            });
           }
           
-          const cloudRatingsCount = Object.keys(cloudData.ratings).length;
-          const cloudPendingCount = cloudData.pendingBattles.length;
-          console.log(`[TRUESKILL_SMART_SYNC] Cloud state: ${cloudData.totalBattles} battles, ${cloudRatingsCount} ratings, ${cloudPendingCount} pending`);
-
-          // --- NEW MERGE LOGIC ---
-          const mergedRatings = { ...state.ratings, ...cloudData.ratings };
-          const mergedPendingBattles = [...new Set([...state.pendingBattles, ...cloudData.pendingBattles])];
-          const finalTotalBattles = Math.max(state.totalBattles, cloudData.totalBattles);
+          // --- End of corrected logic ---
           
-          console.log(`[TRUESKILL_SMART_SYNC] Merging data. Final state will have ${finalTotalBattles} battles, ${Object.keys(mergedRatings).length} ratings, and ${mergedPendingBattles.length} pending battles.`);
-
-          set({
-            ratings: mergedRatings,
-            totalBattles: finalTotalBattles,
-            pendingBattles: mergedPendingBattles,
-            isHydrated: true
-          });
-
-          // Sync the newly merged state back to the cloud
+          set({ isHydrated: true });
+          console.log(`[TRUESKILL_STORE] Hydration flag set after smart sync`);
+          
+          // Sync the final merged state back to the cloud
           await get().syncToCloud();
-          
-          console.log(`[TRUESKILL_SMART_SYNC] Smart sync completed successfully`);
-          
+
         } catch (error) {
           console.error('[TRUESKILL_SMART_SYNC] Smart sync failed:', error);
-          // If sync fails, ensure hydration is still set to true to not block the app
-          set({ isHydrated: true });
+          set({ isHydrated: true }); // Ensure app doesn't hang
         } finally {
           set({ syncInProgress: false });
         }
