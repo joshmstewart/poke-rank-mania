@@ -7,6 +7,8 @@ import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { Toaster } from "@/components/ui/toaster"
 import PokemonRankerWithProvider from "@/components/pokemon/PokemonRankerWithProvider";
 import { AuthWrapper } from "@/components/auth/AuthWrapper";
+import PokemonRankerProvider from "@/components/pokemon/PokemonRankerProvider";
+import { RefinementQueueProvider } from "@/components/battle/RefinementQueueProvider";
 
 function AppContent() {
   const [mode, setMode] = useLocalStorage<"rank" | "battle">("pokemon-ranker-mode", "rank");
@@ -191,9 +193,14 @@ function App() {
   
   console.log('🚀🚀🚀 ROOT_APP_FIXED: About to render fixed structure');
   
+  // CRITICAL FIX: Establish proper provider hierarchy at the top level
   return (
     <AuthWrapper>
-      <AppContent />
+      <PokemonRankerProvider>
+        <RefinementQueueProvider>
+          <AppContent />
+        </RefinementQueueProvider>
+      </PokemonRankerProvider>
     </AuthWrapper>
   );
 }

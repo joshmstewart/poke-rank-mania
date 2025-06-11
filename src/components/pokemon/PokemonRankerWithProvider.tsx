@@ -3,14 +3,10 @@ import React from "react";
 import { RankingUI } from "../ranking/RankingUI";
 import { usePokemonRanker } from "@/hooks/usePokemonRanker";
 import { useGenerationState } from "@/hooks/battle/useGenerationState";
-import PokemonRankerProvider from "./PokemonRankerProvider";
 
 const PokemonRankerWithProvider: React.FC = () => {
-  return (
-    <PokemonRankerProvider>
-      <PokemonRankerContent />
-    </PokemonRankerProvider>
-  );
+  // CRITICAL FIX: Provider is now at App.tsx level, so this component just renders content
+  return <PokemonRankerContent />;
 };
 
 const PokemonRankerContent: React.FC = () => {

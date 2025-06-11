@@ -2,12 +2,11 @@
 import { useCallback } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { LoadingType } from "./types";
-import { usePokemonContext } from "@/contexts/PokemonContext";
 import { formatPokemonName } from "@/utils/pokemon";
 import { useTrueSkillSync } from "@/hooks/ranking/useTrueSkillSync";
 
-export const usePokemonData = () => {
-  const { allPokemon: contextPokemon } = usePokemonContext();
+// CRITICAL FIX: This hook no longer consumes PokemonContext to break the circular dependency
+export const usePokemonData = (contextPokemon: Pokemon[]) => {
   const { localRankings } = useTrueSkillSync();
 
   // Deterministic data processing with validation
@@ -18,7 +17,7 @@ export const usePokemonData = () => {
     loadingType: LoadingType
   ) => {
     try {
-      // Validate context data exists and is array
+      // Use the Pokemon data passed in as parameter instead of consuming context
       if (!contextPokemon || !Array.isArray(contextPokemon) || contextPokemon.length === 0) {
         return {
           availablePokemon: [],

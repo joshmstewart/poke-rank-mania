@@ -6,10 +6,11 @@ import { usePokemonLoader } from "@/hooks/battle/usePokemonLoader";
 import { useGenerationFilter } from "@/hooks/battle/useGenerationFilter";
 import { usePagination } from "@/hooks/usePagination";
 import { LoadingType } from "@/hooks/pokemon/types";
+import { usePokemonContext } from "@/contexts/PokemonContext";
 
 export const usePokemonRanker = () => {
-  const { loadPokemon, allPokemon: availablePokemonFromLoader, isLoading } = usePokemonLoader();
-  const [hasInitialized, setHasInitialized] = useState(false);
+  // CRITICAL FIX: Get Pokemon data from context here instead of in usePokemonData
+  const { allPokemon: contextPokemon } = usePokemonContext();
   
   const {
     rankedPokemonState: rankedPokemon,
@@ -28,18 +29,8 @@ export const usePokemonRanker = () => {
     setLoadingType
   } = useRankingState();
 
-  // Initialize Pokemon loading
-  useEffect(() => {
-    if (!hasInitialized) {
-      setHasInitialized(true);
-      setLoadingType("single");
-      setLoadSize(1000);
-      loadPokemon(0, true);
-    }
-  }, [hasInitialized, loadPokemon, setLoadingType, setLoadSize]);
-
   const { filteredAvailablePokemon, setSelectedGeneration: setGen } = useGenerationFilter(
-    availablePokemonFromLoader,
+    contextPokemon, // Use context Pokemon directly
     selectedGeneration
   );
 
@@ -57,6 +48,7 @@ export const usePokemonRanker = () => {
   }, [calculatedTotalPages, totalPages, setTotalPages]);
 
   const loadingRef = useRef<HTMLDivElement>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);

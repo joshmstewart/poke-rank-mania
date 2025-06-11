@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import BattleModeCore from "./battle/BattleModeCore";
 import PokemonRankerWithProvider from "./pokemon/PokemonRankerWithProvider";
-import { RefinementQueueProvider } from "./battle/RefinementQueueProvider";
 
 const AppContent: React.FC = () => {
   const [mode, setMode] = useState<"rank" | "battle">("rank");
@@ -39,8 +38,9 @@ const AppContent: React.FC = () => {
     }, 50);
   };
 
+  // CRITICAL FIX: Providers are now handled at App.tsx level, so this component is clean
   return (
-    <RefinementQueueProvider>
+    <div className="w-full h-full flex flex-col">
       <div className="w-full flex justify-between px-4 py-2 border-b border-border">
         <h1 className="text-lg font-semibold">Pokémon Ranker</h1>
 
@@ -66,7 +66,7 @@ const AppContent: React.FC = () => {
       </div>
 
       {mode === "rank" ? <PokemonRankerWithProvider /> : <BattleModeCore />}
-    </RefinementQueueProvider>
+    </div>
   );
 };
 
