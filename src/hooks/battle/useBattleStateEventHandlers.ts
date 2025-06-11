@@ -1,3 +1,4 @@
+
 import { useCallback, useEffect } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
@@ -24,10 +25,8 @@ export const useBattleStateEventHandlers = (
         console.log(`✅ [START_NEW_BATTLE_WRAPPER] New battle set successfully`);
       } else {
         console.error(`🚀 [START_NEW_BATTLE_WRAPPER] Failed to create new battle - empty result`);
-        // Fallback: try again after a short delay
-        setTimeout(() => {
-          startNewBattleWrapper();
-        }, 100);
+        // REMOVED: Recursive retry that was causing the infinite loop
+        console.log(`🚀 [START_NEW_BATTLE_WRAPPER] Not retrying to prevent infinite loop`);
       }
     } catch (error) {
       console.error(`🚀 [START_NEW_BATTLE_WRAPPER] Error creating new battle:`, error);
@@ -74,9 +73,19 @@ export const useBattleStateEventHandlers = (
     };
   }, [milestoneHandlers, stateData.battleHistory]);
 
-  // CRITICAL FIX: Force initial battle start with proper async handling
+  // CRITICAL FIX: Add mode check to prevent infinite loop on non-battle pages
   useEffect(() => {
-    console.log(`🚀 [INITIAL_BATTLE_DEBUG] Effect triggered - Pokemon: ${allPokemon.length}, currentBattle: ${stateData.currentBattle.length}`);
+    // Check if we're in battle mode by looking at URL or a mode flag
+    const currentPath = window.location.pathname;
+    const isInBattleMode = currentPath === '/' || currentPath.includes('battle');
+    
+    console.log(`🚀 [INITIAL_BATTLE_DEBUG] Effect triggered - Pokemon: ${allPokemon.length}, currentBattle: ${stateData.currentBattle.length}, inBattleMode: ${isInBattleMode}`);
+    
+    // GUARD CLAUSE: Don't start battles if not in battle mode
+    if (!isInBattleMode) {
+      console.log(`🚀 [INITIAL_BATTLE_DEBUG] Not in battle mode, skipping battle initialization`);
+      return;
+    }
     
     if (allPokemon.length > 0 && stateData.currentBattle.length === 0) {
       console.log(`🚀 [INITIAL_BATTLE_DEBUG] Starting initial battle...`);
