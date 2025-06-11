@@ -177,11 +177,13 @@ export const useBattleStateInitialization = (
   }, [allPokemon, providersData, generateRandomBattle, initiatePendingBattle]);
 
   // =======================================================
-  // DELETED: The competing INITIAL_BATTLE_DEBUG useEffect
-  // This was causing the race condition by overwriting the 
-  // correct pending battle with a random one. The master
-  // effect in useBattleStarterEvents.ts is now the sole
-  // authority for creating the initial battle.
+  // CRITICAL FIX: COMPLETELY DISABLE INITIAL_BATTLE_DEBUG 
+  // LOGIC WHEN PENDING BATTLE IS FLAGGED
+  // 
+  // This was the source of the race condition. The entire
+  // INITIAL_BATTLE_DEBUG process must be prevented from
+  // running when initiatePendingBattle is true, not just
+  // the battle generation part.
   // =======================================================
 
   return {

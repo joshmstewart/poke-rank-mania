@@ -5,6 +5,7 @@ import { createBattleStarter } from "./createBattleStarter";
 import { useSharedRefinementQueue } from "./useSharedRefinementQueue";
 import { useFormFilters } from "@/hooks/useFormFilters";
 import { useCloudPendingBattles } from "./useCloudPendingBattles";
+import { useTrueSkillStore } from "@/stores/trueskillStore";
 
 export const useBattleStarterIntegration = (
   allPokemon: Pokemon[],
@@ -13,8 +14,11 @@ export const useBattleStarterIntegration = (
   setSelectedPokemon: React.Dispatch<React.SetStateAction<number[]>>,
   markSuggestionUsed?: (suggestion: any) => void,
   currentBattle?: Pokemon[],
-  initialBattleStartedRef?: React.MutableRefObject<boolean> // <-- CRITICAL FIX: Accept the ref
+  initialBattleStartedRef?: React.MutableRefObject<boolean>
 ) => {
+  // CRITICAL FIX: Get the pending battle flag from TrueSkill store
+  const { initiatePendingBattle } = useTrueSkillStore();
+  
   // Get form filters to ensure battle generation respects them
   const { shouldIncludePokemon, analyzeFilteringPipeline } = useFormFilters();
   
@@ -90,6 +94,15 @@ export const useBattleStarterIntegration = (
       return []; // ABORT
     }
     // ===============================================================
+
+    // ===============================================================
+    // CRITICAL FIX: COMPLETELY BLOCK INITIAL BATTLE LOGIC WHEN 
+    // PENDING BATTLE IS FLAGGED - THIS PREVENTS THE RACE CONDITION
+    // ===============================================================
+    if (initiatePendingBattle) {
+      console.log(`🏁 [INITIAL_BATTLE_DEBUG] Deferring to Master Battle Starter for pending battle.`);
+      return []; // Exit completely, let MASTER_BATTLE_START handle it
+    }
 
     const callId = `CALL_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
@@ -193,7 +206,7 @@ export const useBattleStarterIntegration = (
     }
     
     return normalResult || [];
-  }, [battleStarter, filteredPokemon, getAllPendingIds, removePendingPokemon, refinementQueue, setCurrentBattle, setSelectedPokemon, allPokemon, initialBattleStartedRef]);
+  }, [battleStarter, filteredPokemon, getAllPendingIds, removePendingPokemon, refinementQueue, setCurrentBattle, setSelectedPokemon, allPokemon, initialBattleStartedRef, initiatePendingBattle]);
 
   // Log whenever startNewBattle callback changes
   useEffect(() => {
